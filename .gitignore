@@ -1,0 +1,47 @@
+# 本目录是「游戏发行目录」（LuaSTG Sub 引擎 + Lua 游戏脚本 + 素材），不是引擎源码工程。
+# 忽略原则：只排除运行期生成物、用户数据、外部获取的二进制和派生副本；
+#          游戏内容（Lua 脚本与素材）默认纳入版本控制。
+
+# ---------- 操作系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+.vs/
+
+# ---------- 运行期日志（每次启动都会重写） ----------
+engine.log
+log.txt
+Update.log
+*.log
+
+# ---------- 用户数据、存档与录像 ----------
+User/
+replay/
+*.rep
+*.dat.bak
+
+# ---------- 引擎与运行时二进制（外部获取，非本仓库产物） ----------
+LuaSTGSub.exe
+*.dll
+
+# ---------- 资源包（由 mod/、THlib/、Resources/、shader/ 打包而来，属派生副本） ----------
+/mod.dat
+/core.dat
+/res.dat
+/shader.dat
+
+# ---------- 备份文件 ----------
+*.bak
+*.orig
+
+# ---------- 可选：大体积素材 ----------
+# 上面默认把音乐、BGM、背景图等素材都纳入版本控制（仓库约 391 MiB）。
+# 若本仓库只用于跟踪脚本与逻辑，可取消下面注释来瘦身：
+#   music + BadApple      -> 约 159 MiB
+#   再加 Resources + se   -> 约  66 MiB
+#music/*.ogg
+#BadApple/file*
+#Resources/**/*.png
+#THlib/se/*.wav

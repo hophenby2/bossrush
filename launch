@@ -1,0 +1,9 @@
+﻿package.cpath = package.cpath .. ';.\\?.dll'
+
+for _, f in ipairs({"mod.dat", "core.dat","shader.dat","res.dat"}) do
+    if lstg.FileManager.FileExist(f) then
+        lstg.LoadPackSub(f)
+    end
+end
+
+lstg.DoFile("launch.lua")
