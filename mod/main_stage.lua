@@ -937,6 +937,16 @@ end)--12
 
 
 
+NewStage("TH00", "未命名关卡", 20, function(self)
+    self:Option(TH00_bg, "TH00_0")
+    self:Task(function()
+        task.Wait(60)
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(156)
+end)--20
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

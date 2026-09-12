@@ -3,6 +3,8 @@ AddMusic("SCORE", 62.45, 55.11, "Player's Score", true)
 AddMusic("Bad Apple!!", 219.16, 219.16, "Bad Apple!!")
 AddMusic("SUMMARY", 97, 97, "Eris - Yume, Maboroshi")
 
+AddMusic("TH00_0", 62.45, 55.11, "未命名关卡")
+
 AddMusic("TH06_0", 150.65, 117.45, "魔法少女達の百年祭")
 AddMusic("TH06_1", 122.02, 122.02, "U.N.オーエンは彼女なのか？")
 
