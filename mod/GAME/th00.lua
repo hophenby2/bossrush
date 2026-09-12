@@ -170,18 +170,6 @@ class.th00_sky_bullet = Class(object, {
 })
 
 boss.Define("1a", "未命名Boss", "TH00_0", TH00_bg, { 0, 300 }, class["SCBG1"], "Rumia", 20)
-do
-    local non1 = boss.card.New("", 1, 1, 60, 600)
-    boss.card.add({ { non1, "1a" } }, 20, "非符一", 243)
-    function non1:before()
-        task.MoveTo(0, 120, 60, 2)
-    end
-    function non1:init()
-        task.New(self, function()
-            task.Wait(60)
-        end)
-    end
-end
 
 --============================
 --宇宙主题符卡
@@ -291,9 +279,13 @@ do
 
     class["th00_starbox"] = Class(object, {
         init = function(self, r, cx, cy, nstar)
-            self.r = r or 96
-            self.cx, self.cy = cx or 0, cy or 50
-            self.focal = self.r * 4.4
+            self.r = r or 200
+            self.cx, self.cy = cx or 0, cy or 0
+            --焦距取盒子半径的 20 倍。
+            --k = f/(f+z)，盒子角点的 |z| 最多只有 √3·r，
+            --所以 k 只在 0.92~1.09 之间变化：透视收敛极弱，
+            --12 条棱边在任何旋转角度下看起来都近似平行，不会“中间歪掉”。
+            self.focal = self.r * 20
             self.bound = false
             self.colli = false
             self.group = GROUP.GHOST
@@ -302,9 +294,11 @@ do
             self.M = mat_unit()
             self.M0 = self.M
             self.phase, self.tick, self.wait = 0, 0, 100
-            self.cd = 90
             self.axis = { 0, 1, 0 }
             self.ang, self.rot_len, self.rot_t = 0, 0, 0
+            --棱边开合：1 = 全开，0.55 = 旋转过程中的半开
+            self.open, self.open_t = 0.02, 1
+            self.edge_w = self.r * 0.075
 
             --8 个顶点
             self.verts = {}
@@ -317,27 +311,32 @@ do
                 self.proj[i] = { self.cx, self.cy, 0, 1 }
             end
 
-            --盒内星弹（三维坐标固定，每帧重新投影）
+            --盒内星弹：三维坐标 + 三维速度。位置在盒子局部空间里积分，
+            --撞到内壁就反射，所以它们永远待在盒子里。
             self.stars = {}
-            local n = nstar or 14
+            local box = self.r * 0.62
+            local n = nstar or 36
             local guard = 0
-            while #self.stars < n and guard < 800 do
+            while #self.stars < n and guard < 4000 do
                 guard = guard + 1
-                local p = {
-                    ran:Float(-0.82, 0.82) * self.r,
-                    ran:Float(-0.82, 0.82) * self.r,
-                    ran:Float(-0.82, 0.82) * self.r,
-                }
+                local x = ran:Float(-1, 1) * box
+                local y = ran:Float(-1, 1) * box
+                local z = ran:Float(-1, 1) * box
                 local ok = true
                 for _, s in ipairs(self.stars) do
-                    local dx, dy, dz = p[1] - s[1], p[2] - s[2], p[3] - s[3]
-                    if dx * dx + dy * dy + dz * dz < (self.r * 0.4) ^ 2 then
+                    local dx, dy, dz = x - s[1], y - s[2], z - s[3]
+                    if dx * dx + dy * dy + dz * dz < (self.r * 0.22) ^ 2 then
                         ok = false
                         break
                     end
                 end
                 if ok then
-                    self.stars[#self.stars + 1] = p
+                    local sp, sa, sz = ran:Float(1.5, 2.8), ran:Float(0, 360), ran:Float(-1, 1)
+                    local cr = sqrt(max(0, 1 - sz * sz))
+                    self.stars[#self.stars + 1] = {
+                        x, y, z,
+                        cos(sa) * cr * sp, sz * sp, sin(sa) * cr * sp,
+                    }
                 end
             end
 
@@ -347,7 +346,8 @@ do
                 o.bound = false
                 o._blend = "mul+add"
                 o._a = 230
-                o.hscale, o.vscale = 0.7, 0.7
+                --a/b 保持 star_big 自带的大小（5.5），
+                --由 SetSizeColli 按同一个 k 缩放：判定和画面一起变小/变大
                 o.rot = ran:Float(0, 360)
                 o._spin = ran:Float(-1.8, 1.8)
                 self.starobj[i] = o
@@ -376,20 +376,20 @@ do
                 end
             end
 
-            --12 条棱边：粗激光
+            --12 条棱边：粗激光。纯装饰，l.colli = false，
+            --自机可以一直待在盒子里而不会被棱边扫死。
             self.lasers = {}
             for i = 1, 12 do
-                local l = New(laser, 8, self.cx, self.cy, 0, 0, 0, 0, self.r * 0.16)
+                local l = New(laser, 8, self.cx, self.cy, 0, 0, 0, 0, self.edge_w)
                 l.bound = false
-                l.colli = true
+                l.colli = false
                 l.layer = LAYER.ENEMY_BULLET - 40
                 laser.ChangeImage(l, 4)
-                laser._TurnOn(l, 30, false, false)
                 self.lasers[i] = l
             end
         end,
         frame = function(self)
-            --旋转调度：静止 -> 随机轴旋转 -> 静止
+            --旋转调度：静止 -> 绕随机轴旋转 -> 静止
             if self.phase == 0 then
                 self.tick = self.tick + 1
                 if self.tick >= self.wait then
@@ -405,9 +405,7 @@ do
                     self.axis[1], self.axis[2], self.axis[3] = ax, ay, az
                     self.M0 = self.M
                     --旋转过程中棱边变半开
-                    for i = 1, 12 do
-                        laser._TurnHalfOn(self.lasers[i], 12, false)
-                    end
+                    self.open_t = 0.55
                 end
             else
                 self.rot_t = self.rot_t + 1
@@ -419,11 +417,10 @@ do
                     self.phase = 0
                     self.wait = ran:Int(70, 130)
                     --旋转结束恢复满开
-                    for i = 1, 12 do
-                        laser._TurnOn(self.lasers[i], 12, false, false)
-                    end
+                    self.open_t = 1
                 end
             end
+            self.open = self.open + (self.open_t - self.open) * 0.10
 
             --投影 8 个顶点
             local M, f, cx, cy = self.M, self.focal, self.cx, self.cy
@@ -436,42 +433,59 @@ do
                 p[1], p[2], p[3], p[4] = cx + x * k, cy + y * k, z, k
             end
 
-            --12 条棱边跟随投影端点
+            --12 条棱边跟随投影端点。宽度与亮度也按 z 缩放（远处更细更暗），
+            --并按深度排层：远的先画，避免远边压住近边。
             for i = 1, 12 do
                 local e = BOX_EDGES[i]
                 local p1, p2 = proj[e[1]], proj[e[2]]
+                local z = (p1[3] + p2[3]) * 0.5
                 local l = self.lasers[i]
                 l.x, l.y = p1[1], p1[2]
                 l.rot = Angle(p1[1], p1[2], p2[1], p2[2])
                 l.l1, l.l2, l.l3 = 0, Dist(p1[1], p1[2], p2[1], p2[2]), 0
+                l.w0 = self.edge_w * (f / (f + z))
+                l.w = l.w0 * self.open
+                l.alpha = self.open
+                l.layer = LAYER.ENEMY_BULLET - 40 + z / self.r * 24
             end
 
-            --星弹按同一矩阵投影
-            for i = 1, #self.stars do
-                local o = self.starobj[i]
+            --星弹：先在盒子局部空间里漂移、反射，再用同一矩阵投影
+            local box = self.r * 0.62
+            local stars, starobj = self.stars, self.starobj
+            for i = 1, #stars do
+                local v = stars[i]
+                v[1], v[2], v[3] = v[1] + v[4], v[2] + v[5], v[3] + v[6]
+                if v[1] > box then
+                    v[1] = box + box - v[1]
+                    v[4] = -v[4]
+                elseif v[1] < -box then
+                    v[1] = -box - box - v[1]
+                    v[4] = -v[4]
+                end
+                if v[2] > box then
+                    v[2] = box + box - v[2]
+                    v[5] = -v[5]
+                elseif v[2] < -box then
+                    v[2] = -box - box - v[2]
+                    v[5] = -v[5]
+                end
+                if v[3] > box then
+                    v[3] = box + box - v[3]
+                    v[6] = -v[6]
+                elseif v[3] < -box then
+                    v[3] = -box - box - v[3]
+                    v[6] = -v[6]
+                end
+                local o = starobj[i]
                 if IsValid(o) then
-                    local v = self.stars[i]
                     local x, y, z = mat_apply(M, v[1], v[2], v[3])
                     local k = f / (f + z)
                     local s = k * 0.52
                     o.x, o.y = cx + x * k, cy + y * k
-                    o.hscale, o.vscale = s, s
                     o.rot = o.rot + o._spin
+                    --渲染尺寸与判定半径用同一个 k 缩放，避免“看着小、判定大”
+                    object.SetSizeColli(o, s, s)
                     o.layer = LAYER.ENEMY_BULLET - 20 + (self.r - z) / (2 * self.r) * 8
-                end
-            end
-
-            --盒内星弹每隔一段时间反击
-            self.cd = self.cd - 1
-            if self.cd <= 0 then
-                self.cd = ran:Int(35, 55)
-                local o = self.starobj[ran:Int(1, #self.starobj)]
-                if IsValid(o) then
-                    local base = Angle(o.x, o.y, player.x, player.y)
-                    for k = -1, 1 do
-                        NewSimpleBullet(star_small, 14, o.x, o.y, 2.6, base + k * 16, false, 0)
-                    end
-                    PlaySound("tan00", 0.04, 0, false)
                 end
             end
         end,
@@ -509,21 +523,9 @@ do
         end
 
         function card:init()
-            local b = self
-            b.__starbox = New(class["th00_starbox"], 100, 0, 60, 14)
-            task.New(b, function()
-                task.Wait(70)
-                while true do
-                    for _ = 1, 3 do
-                        for a in sp.math.AngleIterator(ran:Float(0, 360), 5) do
-                            NewSimpleBullet(star_big, ran:Int(1, 16), b.x, b.y, 2.3, a, false, 2.4)
-                        end
-                        PlaySound("tan00", 0.05, 0, true)
-                        task.Wait(24)
-                    end
-                    task.Wait(80)
-                end
-            end)
+            --这张符卡不发其它弹：整个弹幕就是盒子里的星弹本身，
+            --自机全程待在盒子里躲它们（棱边激光只是装饰，没有判定）。
+            self.__starbox = New(class["th00_starbox"], 200, 0, 0, 36)
         end
 
         function card:del()
