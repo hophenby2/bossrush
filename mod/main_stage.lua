@@ -996,7 +996,7 @@ NewStage("TH00", "未命名关卡", 20, function(self)
                 while true do
                     bg = TH00_bg.current
                     if bg and IsValid(bg) then
-                        ba, spd = bg.alpha, bg.speed
+                        ba, spd = bg.opacity, bg.speed
                     else
                         ba, spd = 255, 1.2
                     end

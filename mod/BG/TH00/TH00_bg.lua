@@ -3,7 +3,7 @@
 ---  一镜到底：同一套渲染里同时画“宇宙（TH08 的 stg6bg2）”和“大气层云层”，
 ---  用 self.space（0 = 大气层，1 = 宇宙）交叉淡化。
 ---  中途不切场景、不换背景对象，只有一条连续的镜头；
----  self.alpha（0~255）就是大气层的不透明度，预设弹跟着它一起淡出。
+---  self.opacity（0~255）就是大气层的不透明度，预设弹跟着它一起淡出。
 ---
 ---速度说明：
 ---  misc.RenderTexInRect 的 offy 与 world 坐标是 1:1 的，
@@ -68,7 +68,7 @@ function TH00_bg:init()
 
     self.space = cur_space     -- 0 = 大气层，1 = 宇宙
     self.space_accel = 0       -- 过渡中每帧推进多少
-    self.alpha = 255 * (1 - cur_space)  -- 大气层的不透明度（0~255）
+    self.opacity = 255 * (1 - cur_space)  -- 大气层的不透明度（0~255）
     self.speed = 1.2           -- 当前云层速度（world 单位/帧）
     self.speed_max = 1.2       -- 加速目标
     self.accel = 0             -- 每帧加速度
@@ -100,7 +100,7 @@ function TH00_bg:frame()
         end
     end
     --大气层的不透明度（0~255），子弹用它对齐
-    self.alpha = 255 * (1 - self.space)
+    self.opacity = 255 * (1 - self.space)
     if self.space >= 1 then
         return
     end

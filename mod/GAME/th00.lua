@@ -152,7 +152,7 @@ class.th00_sky_bullet = Class(object, {
         local bg = TH00_bg.current
         local speed, ba = 1.2, 255
         if bg and IsValid(bg) then
-            speed, ba = bg.speed, bg.alpha
+            speed, ba = bg.speed, bg.opacity
         end
         self.vy = -speed * self.k
         self.alpha = ba
