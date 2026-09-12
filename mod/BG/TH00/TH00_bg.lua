@@ -2,6 +2,7 @@
 ---TH00 关卡背景
 ---  一镜到底：同一套渲染里同时画“宇宙（TH08 的 stg6bg2）”和“大气层云层”，
 ---  用 self.space（0 = 大气层，1 = 宇宙）交叉淡化。
+---  大气层段底色为纯黑（th00_0 只是极暗的灰罩层，不能让它把底色染蓝）。
 ---  中途不切场景、不换背景对象，只有一条连续的镜头；
 ---  self.opacity（0~255）就是大气层的不透明度，预设弹跟着它一起淡出。
 ---
@@ -149,13 +150,14 @@ function TH00_bg:render()
         local a = 1 - space
         local turb = self.turb * 7 * sin(t / 19)
         misc.RenderTexInRect(CLOUD, w.l, w.r, w.b, w.t,
-                turb, self.scroll, 0, 1, 1, "", Color(255 * a, 226, 238, 255))
+                turb, self.scroll, 0, 1, 1, "", Color(255 * a, 36, 36, 40))
         misc.RenderTexInRect(CLOUD, w.l, w.r, w.b, w.t,
-                128 - turb, self.scroll2, 0, 1, 1, "", Color(150 * a, 118, 148, 190))
+                128 - turb, self.scroll2, 0, 1, 1, "", Color(150 * a, 16, 16, 20))
         local s
         for i = 1, #self.streaks do
             s = self.streaks[i]
-            SetImageState(WHITE, "mul+add", s.a * a, 220, 240, 255)
+            local k = a * s.a / 255
+            SetImageState(WHITE, "mul+add", 255, 220 * k, 240 * k, 255 * k)
             RenderRect(WHITE, s.x - s.w * 0.5, s.x + s.w * 0.5,
                     s.y - s.len * 0.5, s.y + s.len * 0.5)
         end
