@@ -122,39 +122,54 @@ end
 
 
 --============================
---大气层预设弹（纯表演，无判定）
---与背景云层严格同速下坠，看起来像钉在天空中
+--大气层预设弹
+--  * 与背景云层严格同速下坠，看起来像钉在天空中
+--  * 透明度跟背景一致：背景（云层）淡出，子弹跟着淡出
+--  * 透明度 >= 50 时在 GROUP.INDES 里有判定（会撞自机，但打不掉），
+--    低于 50 自动关掉碰撞，透明到 0 就完全没威胁
+--  * 不循环：飞出下边界即回收
 --============================
 class.th00_sky_bullet = Class(object, {
     init = function(self, img, x, y, size, k, a, r, g, b)
         self.img = img
         self.x, self.y = x, y
-        self.group = GROUP.GHOST
+        self.group = GROUP.INDES
         self.layer = LAYER.ENEMY_BULLET - 30
-        self.colli = false
+        self.colli = true
         self.bound = false
         self.rot = -90
-        self.hscale, self.vscale = size or 1, size or 1
+        local s = size or 1
+        self.hscale, self.vscale = s, s
+        self.a, self.b = 5 * s, 5 * s
         self.k = k or 1
         self._a = a or 255
         self._r, self._g, self._b = r or 255, g or 255, b or 255
         self.vy = 0
+        self.alpha = 255
     end,
     frame = function(self)
-        --每帧从云层读取速度：背景多快，子弹就多快
+        --每帧从云层读速度和透明度：背景多快子弹就多快，背景多淡子弹就多淡
         local bg = TH00_bg.current
-        self.vy = -((bg and bg.speed) or 1.2) * self.k
+        local speed, ba = 1.2, 255
+        if bg and IsValid(bg) then
+            speed, ba = bg.speed, bg.alpha
+        end
+        self.vy = -speed * self.k
+        self.alpha = ba
+        --透明到看不见了就不再有判定
+        self.colli = ba >= 50
+        --不循环：飞出下边界就回收
         if self.y < lstg.world.boundb - 90 then
             object.RawDel(self)
         end
     end,
     render = function(self)
-        SetImageState(self.img, "mul+add", self._a, self._r, self._g, self._b)
+        SetImageState(self.img, "mul+add", self._a * self.alpha / 255, self._r, self._g, self._b)
         Render(self.img, self.x, self.y, self.rot, self.hscale, self.vscale)
     end
 })
 
-boss.Define("1a", "未命名Boss", "TH00_0", TH00_bg_space, { 0, 300 }, class["SCBG1"], "Rumia", 20)
+boss.Define("1a", "未命名Boss", "TH00_0", TH00_bg, { 0, 300 }, class["SCBG1"], "Rumia", 20)
 do
     local non1 = boss.card.New("", 1, 1, 60, 600)
     boss.card.add({ { non1, "1a" } }, 20, "非符一", 243)

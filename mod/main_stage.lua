@@ -938,10 +938,12 @@ end)--12
 
 
 NewStage("TH00", "未命名关卡", 20, function(self)
+    TH00_bg.ResetSpace()
     self:Option(TH00_bg, "TH00_0")
     self:Task(function()
         local E = _editor_class["TH00"]
-        --=========== 道中 ===========
+        --=========== 道中（暂时停用） ===========
+        --[[
         --Part1：两侧小妖精交错下压
         task.Wait(60)
         for i = 0, 3 do
@@ -959,23 +961,52 @@ NewStage("TH00", "未命名关卡", 20, function(self)
         --Part3：中央中型妖精
         New(E.th00_mid, 0, 250, 0, 110, 0)
         task.Wait(360)
+        --]]
         --=========== 冲破大气层 ===========
         local w = lstg.world
         task.Wait(60)
-        --1) 预设弹：先铺满整片天空，随云层缓缓下坠
-        local sky = {}
+        --1) 预设弹：先跑一批随机 xy 键值对（y 全部在屏幕上方 230 以上），
+        --   上升期间一直按对铺出（含冲破过渡），直到背景透明度降到 0 才停；
+        --   与云层同速下坠，透明度也跟云层一致，飞出下边界即回收（不循环）
         do
             local imgs = { "ball_small8", "ball_small12", "ball_mid8", "grain_a8" }
-            for i = 1, 120 do
-                table.insert(sky, New(E.th00_sky_bullet,
+            local pos = {}
+            for i = 1, 128 do
+                pos[i] = { x = ran:Float(w.boundl, w.boundr), y = 230 + ran:Float(0, 220) }
+            end
+            local n, i = #pos, 0
+            local function Spawn()
+                i = i % n + 1
+                local p = pos[i]
+                New(E.th00_sky_bullet,
                         imgs[ran:Int(1, #imgs)],
-                        ran:Float(w.boundl, w.boundr),
-                        ran:Float(w.boundb - 40, w.boundt + 240),
+                        p.x, p.y,
                         ran:Float(0.55, 1.3),
                         1,
                         ran:Int(140, 255),
-                        210, 240, 255))
+                        210, 240, 255)
             end
+            for k = 1, 8 do
+                Spawn()
+            end
+            --后台铺弹：间隔跟着云层速度走，屏幕上弹的疏密基本不变；
+            --背景彻底透明（alpha 降到 0）才收手
+            task.New(self, function()
+                local bg, ba, spd
+                while true do
+                    bg = TH00_bg.current
+                    if bg and IsValid(bg) then
+                        ba, spd = bg.alpha, bg.speed
+                    else
+                        ba, spd = 255, 1.2
+                    end
+                    if ba <= 0 then
+                        break
+                    end
+                    Spawn()
+                    task.Wait(max(2, int(28 / max(0.5, spd))))
+                end
+            end)
         end
         task.Wait(45)
         --2) 加速：整片天空连同预设弹一起高速下坠
@@ -986,22 +1017,14 @@ NewStage("TH00", "未命名关卡", 20, function(self)
             task.Wait(20)
         end
         task.Wait(150)
-        --3) 冲破：白闪 + 最后一冲，然后切到宇宙
-        PlaySound("big", 0.5, 0, true)
-        New(WhiteScreen, LAYER.TOP, 45)
+        --3) 冲破：不切场景，云层在同一个画面里淡出、星空淡入（一镜到底）
         TH00_bg.SetSpeed(22, 40)
         task.Wait(40)
-        for _, o in ipairs(sky) do
-            if IsValid(o) then
-                object.RawDel(o)
-            end
-        end
-        TH00_bg_space.reentry_time = TH00_bg_space.reentry_max
-        background.Create(TH00_bg_space)
+        New(WhiteScreen, LAYER.TOP, 45)
+        PlaySound("big", 0.5, 0, true)
+        TH00_bg.Warp(90)
         PlaySound("explode", 0.35, 0, true)
-        task.Wait(40)
-        New(WhiteScreen, LAYER.TOP, 30)
-        task.Wait(60)
+        task.Wait(110)
         --=========== BOSS ===========
         New(bullet_cleaner, self.x, self.y, 400, 50, 59)
         task.Wait(60)

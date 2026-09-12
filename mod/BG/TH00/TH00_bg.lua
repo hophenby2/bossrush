@@ -1,7 +1,9 @@
 ---=====================================
 ---TH00 关卡背景
----  TH00_bg       大气层：云层高速向下滚动（关卡的“地面~天空”部分）
----  TH00_bg_space 宇宙：星空 + 再入余晖（冲破大气层之后）
+---  一镜到底：同一套渲染里同时画“宇宙（TH08 的 stg6bg2）”和“大气层云层”，
+---  用 self.space（0 = 大气层，1 = 宇宙）交叉淡化。
+---  中途不切场景、不换背景对象，只有一条连续的镜头；
+---  self.alpha（0~255）就是大气层的不透明度，预设弹跟着它一起淡出。
 ---
 ---速度说明：
 ---  misc.RenderTexInRect 的 offy 与 world 坐标是 1:1 的，
@@ -12,6 +14,9 @@
 local SetViewMode = SetViewMode
 local SetImageState = SetImageState
 local RenderRect = RenderRect
+local Render = Render
+local LoadImageFromFile = LoadImageFromFile
+local CheckRes = CheckRes
 local Color = Color
 local background = background
 local misc = misc
@@ -19,32 +24,17 @@ local lstg = lstg
 local sin, cos, max, min, int = sin, cos, max, min, int
 local table = table
 
----==========================
----大气层
----==========================
+local WHITE = "white"
+local CLOUD = "th00_0"
+
 TH00_bg = Class(background)
 
-function TH00_bg:init()
-    background.init(self, false)
-    local w = lstg.world
-    self.speed = 1.2        -- 当前云层速度（world 单位/帧）
-    self.speed_max = 1.2    -- 加速目标
-    self.accel = 0          -- 每帧加速度
-    self.scroll = 0         -- 主云层纹理偏移（= 累计下移距离）
-    self.scroll2 = 0        -- 近景云层纹理偏移
-    self.turb = 0           -- 乱流强度（横向抖动）
-    self.streaks = {}       -- 速度线
-    for i = 1, 48 do
-        table.insert(self.streaks, {
-            x = background.RanFloat(self, w.boundl, w.boundr),
-            y = background.RanFloat(self, w.boundb - 160, w.boundt + 240),
-            len = background.RanFloat(self, 50, 190),
-            w = background.RanFloat(self, 0.6, 2.0),
-            a = background.RanInt(self, 26, 110),
-            k = background.RanFloat(self, 0.85, 1.25),
-        })
-    end
-    TH00_bg.current = self
+---文件级“高度”：BOSS 出场时引擎会拿 _bg 再 New 一个背景，用它记住已经飞到宇宙
+local cur_space = 0
+
+---关卡开始时重置回大气层
+function TH00_bg.ResetSpace()
+    cur_space = 0
 end
 
 ---设置云层目标速度，在 time 帧内平滑过渡（供关卡脚本调用）
@@ -60,7 +50,60 @@ function TH00_bg.SetSpeed(target, time)
     bg.accel = (target - bg.speed) / time
 end
 
+---冲破：不切场景，只是把“高度”连续推上去，云层淡出、星空淡入
+---@param time number|nil @过渡帧数
+function TH00_bg.Warp(time)
+    local bg = TH00_bg.current
+    if not bg or not IsValid(bg) or bg.space >= 1 then
+        return
+    end
+    bg.space_accel = 1 / max(1, int(time or 90))
+end
+
+function TH00_bg:init()
+    if not CheckRes("img", "stg6bg2") then
+        LoadImageFromFile("stg6bg2", "mod\\BG\\TH08\\TH08_bg_stg6bg2.png")
+    end
+    background.init(self, false)
+
+    self.space = cur_space     -- 0 = 大气层，1 = 宇宙
+    self.space_accel = 0       -- 过渡中每帧推进多少
+    self.alpha = 255 * (1 - cur_space)  -- 大气层的不透明度（0~255）
+    self.speed = 1.2           -- 当前云层速度（world 单位/帧）
+    self.speed_max = 1.2       -- 加速目标
+    self.accel = 0             -- 每帧加速度
+    self.scroll = 0            -- 主云层纹理偏移（= 累计下移距离）
+    self.scroll2 = 0           -- 近景云层纹理偏移
+    self.turb = 0              -- 乱流强度（横向抖动）
+    self.streaks = {}          -- 速度线
+    local w = lstg.world
+    for i = 1, 48 do
+        table.insert(self.streaks, {
+            x = background.RanFloat(self, w.boundl, w.boundr),
+            y = background.RanFloat(self, w.boundb - 160, w.boundt + 240),
+            len = background.RanFloat(self, 50, 190),
+            w = background.RanFloat(self, 0.6, 2.0),
+            a = background.RanInt(self, 26, 110),
+            k = background.RanFloat(self, 0.85, 1.25),
+        })
+    end
+    TH00_bg.current = self
+end
+
 function TH00_bg:frame()
+    --高度推进：这就是“冲破”的过渡本身，一帧一帧地飞出去
+    if self.space_accel ~= 0 then
+        self.space = min(1, self.space + self.space_accel)
+        if self.space >= 1 then
+            self.space_accel = 0
+            cur_space = 1
+        end
+    end
+    --大气层的不透明度（0~255），子弹用它对齐
+    self.alpha = 255 * (1 - self.space)
+    if self.space >= 1 then
+        return
+    end
     if self.accel ~= 0 then
         self.speed = self.speed + self.accel
         if (self.accel > 0 and self.speed >= self.speed_max)
@@ -89,95 +132,32 @@ function TH00_bg:render()
     SetViewMode 'world'
     local w = lstg.world
     local t = self.timer
-    local turb = self.turb * 7 * sin(t / 19)
-    -- 高空底色
-    SetImageState("white", "", 255, 12, 26, 56)
-    RenderRect("white", w.l, w.r, w.b, w.t)
-    -- 主云层：高速向下
-    misc.RenderTexInRect("th00_0", w.l, w.r, w.b, w.t,
-            turb, self.scroll, 0, 1, 1, "", Color(255, 226, 238, 255))
-    -- 近景云层：1.7 倍速，压暗后叠上去，拉开层次与速度感
-    misc.RenderTexInRect("th00_0", w.l, w.r, w.b, w.t,
-            128 - turb, self.scroll2, 0, 1, 1, "", Color(150, 118, 148, 190))
-    -- 速度线（与云层同向、同量级下坠）
-    local s
-    for i = 1, #self.streaks do
-        s = self.streaks[i]
-        SetImageState("white", "mul+add", s.a, 220, 240, 255)
-        RenderRect("white", s.x - s.w * 0.5, s.x + s.w * 0.5,
-                s.y - s.len * 0.5, s.y + s.len * 0.5)
+    local space = self.space
+
+    -- 底色：纯黑
+    SetImageState(WHITE, "", 255, 0, 0, 0)
+    RenderRect(WHITE, w.l, w.r, w.b, w.t)
+
+    -- 宇宙：TH08 六面的 stg6bg2，随高度渐显（关掉樱花瓣，只留背景本身）
+    if space > 0 then
+        SetImageState("stg6bg2", "", 255 * space, 255, 255, 255)
+        Render("stg6bg2", sin(t / 9) * 50 * space, 0)
     end
-end
 
----==========================
----宇宙
----==========================
-TH00_bg_space = Class(background)
-
----再入余晖剩余帧数（类级：BOSS 重建背景时不会重置）
-TH00_bg_space.reentry_time = 0
-TH00_bg_space.reentry_max = 300
-
-function TH00_bg_space:init()
-    background.init(self, false)
-    local w = lstg.world
-    self.speed = 0.7        -- 星空下坠速度（world 单位/帧）
-    self.scroll = 0
-    self.reentry = TH00_bg_space.reentry_time / TH00_bg_space.reentry_max
-    self.stars = {}
-    for i = 1, 170 do
-        table.insert(self.stars, {
-            x = background.RanFloat(self, w.boundl, w.boundr),
-            y = background.RanFloat(self, w.boundb - 240, w.boundt + 240),
-            size = background.RanFloat(self, 0.8, 2.8),
-            a = background.RanInt(self, 60, 240),
-            k = background.RanFloat(self, 0.3, 1.9),
-            p = background.RanFloat(self, 0, 360),
-        })
-    end
-end
-
-function TH00_bg_space:frame()
-    local w = lstg.world
-    self.scroll = self.scroll - self.speed * 0.2
-    TH00_bg_space.reentry_time = max(0, TH00_bg_space.reentry_time - 1)
-    self.reentry = TH00_bg_space.reentry_time / TH00_bg_space.reentry_max
-    local s
-    for i = 1, #self.stars do
-        s = self.stars[i]
-        s.y = s.y - self.speed * s.k
-        if s.y < w.boundb - 40 then
-            s.y = s.y + (w.boundt - w.boundb) + 80
-            s.x = background.RanFloat(self, w.boundl, w.boundr)
+    -- 大气层：云层与速度线随高度渐隐，飞到顶就自然没了
+    if space < 1 then
+        local a = 1 - space
+        local turb = self.turb * 7 * sin(t / 19)
+        misc.RenderTexInRect(CLOUD, w.l, w.r, w.b, w.t,
+                turb, self.scroll, 0, 1, 1, "", Color(255 * a, 226, 238, 255))
+        misc.RenderTexInRect(CLOUD, w.l, w.r, w.b, w.t,
+                128 - turb, self.scroll2, 0, 1, 1, "", Color(150 * a, 118, 148, 190))
+        local s
+        for i = 1, #self.streaks do
+            s = self.streaks[i]
+            SetImageState(WHITE, "mul+add", s.a * a, 220, 240, 255)
+            RenderRect(WHITE, s.x - s.w * 0.5, s.x + s.w * 0.5,
+                    s.y - s.len * 0.5, s.y + s.len * 0.5)
         end
-    end
-end
-
-function TH00_bg_space:render()
-    SetViewMode 'world'
-    local w = lstg.world
-    local t = self.timer
-    -- 深空底色
-    SetImageState("white", "", 255, 4, 6, 16)
-    RenderRect("white", w.l, w.r, w.b, w.t)
-    -- 极淡的星云（复用云层贴图做加法混合）
-    misc.RenderTexInRect("th00_0", w.l, w.r, w.b, w.t,
-            0, self.scroll, 0, 1, 1, "mul+add", Color(26, 40, 88, 255))
-    -- 星空（多层视差 + 闪烁）
-    local s, a
-    for i = 1, #self.stars do
-        s = self.stars[i]
-        a = s.a * (0.72 + 0.28 * sin(t / 26 + s.p))
-        SetImageState("white", "mul+add", a, 255, 255, 255)
-        RenderRect("white", s.x - s.size * 0.5, s.x + s.size * 0.5,
-                s.y - s.size * 0.5, s.y + s.size * 0.5)
-    end
-    -- 再入余晖：屏幕底部的大气辉光，随脱离大气层而淡出
-    if self.reentry > 0 then
-        local r = self.reentry
-        SetImageState("white", "mul+add", 150 * r, 110, 175, 255)
-        RenderRect("white", w.l, w.r, w.b - 10, w.b + 60 + 140 * r)
-        SetImageState("white", "mul+add", 90 * r * r, 200, 230, 255)
-        RenderRect("white", w.l, w.r, w.b - 10, w.b + 26 + 60 * r)
     end
 end
