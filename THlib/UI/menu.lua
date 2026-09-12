@@ -410,8 +410,8 @@ function stage_select:fresh()
         table.insert(self.stage_selects, d)
     end
     for t, d in ipairs(self.stage_selects) do
-        self.unlocked_day[t] = d.unlock_way() == true
-    end --是否解锁
+        self.unlocked_day[t] = true
+    end --单篇章游玩已移除解锁限制
     self.stage_count = #self.stage_selects
 end
 function stage_select:init(exit_func, choose_func)
