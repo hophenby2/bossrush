@@ -940,6 +940,27 @@ end)--12
 NewStage("TH00", "未命名关卡", 20, function(self)
     self:Option(TH00_bg, "TH00_0")
     self:Task(function()
+        local E = _editor_class["TH00"]
+        --=========== 道中 ===========
+        --Part1：两侧小妖精交错下压
+        task.Wait(60)
+        for i = 0, 3 do
+            New(E.th00_fairy, -170 + i * 16, 250, -150 + i * 20, 140)
+            New(E.th00_fairy, 170 - i * 16, 250, 150 - i * 20, 140)
+            task.Wait(18)
+        end
+        task.Wait(300)
+        --Part2：斜向切入的编队妖精
+        New(E.th00_wave, -150, 240, -110, 130, -60)
+        New(E.th00_wave, 150, 240, 110, 130, -120)
+        task.Wait(90)
+        New(E.th00_wave, 0, 250, 0, 150, -90)
+        task.Wait(300)
+        --Part3：中央中型妖精
+        New(E.th00_mid, 0, 250, 0, 110, 0)
+        task.Wait(360)
+        --道中结束：清弹后进入boss
+        New(bullet_cleaner, self.x, self.y, 400, 50, 59)
         task.Wait(60)
         boss.CreateGroup(1, self.level)
         task.Wait(120)
