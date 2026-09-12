@@ -17,11 +17,18 @@ local NewSimpleBullet = NewSimpleBullet
 local PlaySound = PlaySound
 local Angle = Angle
 local IsValid = IsValid
+local GROUP, LAYER = GROUP, LAYER
+local SetImageState = SetImageState
+local Render = Render
+local lstg = lstg
 
 class["SCBG1"] = Class(_SC_BG)
 class["SCBG1"].init = function(self)
     _SC_BG.init(self)
-    _SC_BG.AddLayer(self, "th00_0", true, 0, 0, 0, 0, -0.07, 0, "", 1, 1)
+    _SC_BG.AddLayer(self, "th00_0", true, 0, 0, 0, 0, -0.07, 0, "", 1, 1, function(l)
+        --BOSS 战已经来到宇宙，把云层染成星云色
+        l.r, l.g, l.b = 96, 132, 200
+    end)
 end
 
 
@@ -113,7 +120,41 @@ do
     })
 end
 
-boss.Define("1a", "未命名Boss", "TH00_0", TH00_bg, { 0, 300 }, class["SCBG1"], "Rumia", 20)
+
+--============================
+--大气层预设弹（纯表演，无判定）
+--与背景云层严格同速下坠，看起来像钉在天空中
+--============================
+class.th00_sky_bullet = Class(object, {
+    init = function(self, img, x, y, size, k, a, r, g, b)
+        self.img = img
+        self.x, self.y = x, y
+        self.group = GROUP.GHOST
+        self.layer = LAYER.ENEMY_BULLET - 30
+        self.colli = false
+        self.bound = false
+        self.rot = -90
+        self.hscale, self.vscale = size or 1, size or 1
+        self.k = k or 1
+        self._a = a or 255
+        self._r, self._g, self._b = r or 255, g or 255, b or 255
+        self.vy = 0
+    end,
+    frame = function(self)
+        --每帧从云层读取速度：背景多快，子弹就多快
+        local bg = TH00_bg.current
+        self.vy = -((bg and bg.speed) or 1.2) * self.k
+        if self.y < lstg.world.boundb - 90 then
+            object.RawDel(self)
+        end
+    end,
+    render = function(self)
+        SetImageState(self.img, "mul+add", self._a, self._r, self._g, self._b)
+        Render(self.img, self.x, self.y, self.rot, self.hscale, self.vscale)
+    end
+})
+
+boss.Define("1a", "未命名Boss", "TH00_0", TH00_bg_space, { 0, 300 }, class["SCBG1"], "Rumia", 20)
 do
     local non1 = boss.card.New("", 1, 1, 60, 600)
     boss.card.add({ { non1, "1a" } }, 20, "非符一", 243)
