@@ -607,3 +607,11 @@ DefineAchievement(155, [[但是我拒绝支付]], [[在未扫描过一次二维�
 DefineAchievement(156, [[崭新的开始]], [[未命名关卡No Miss]], {
     [[这一关目前还没有内容]],
     [[先占个位置，之后再来填坑吧]] }, false, 6)
+
+DefineAchievement(157, [[水中月天上月]], [[水月 No Miss]], {
+    [[第一次做的第二张新关卡]],
+    [[两颗月亮绕着屏幕中心转来转去]] }, false, 6)
+
+DefineAchievement(158, [[終焉の星図]], [[星河 No Miss]], {
+    [[重写的第三张新关卡：星空主题]],
+    [[弹幕大多交给继承 bullet / object / laser 的类去做]] }, false, 6)

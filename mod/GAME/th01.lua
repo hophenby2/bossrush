@@ -1,0 +1,747 @@
+---=====================================
+---TH01
+---=====================================
+
+local class = {}
+_editor_class["TH01"] = class
+
+local Class = Class
+local boss = boss
+local task = task
+local object = object
+local laser = laser
+local sp = sp
+local New = New
+local NewSimpleBullet = NewSimpleBullet
+local PlaySound = PlaySound
+local Angle = Angle
+local Dist = Dist
+local IsValid = IsValid
+local GROUP, LAYER = GROUP, LAYER
+local SetImageState = SetImageState
+local Render = Render
+local ran = ran
+local cos, sin, max, int = cos, sin, max, int
+
+class["SCBG1"] = Class(_SC_BG)
+class["SCBG1"].init = function(self)
+    _SC_BG.init(self)
+    _SC_BG.AddLayer(self, "th01_0", true, 0, 0, 0, 0, -0.06, 0, "", 1, 1, function(l)
+        --符卡背景：一层偏蓝的夜色
+        l.r, l.g, l.b = 110, 148, 214
+    end)
+end
+
+boss.Define("1a", "未命名Boss", "TH01_0", TH01_bg, { 0, 300 }, class["SCBG1"], "Rumia", 21)
+
+--============================
+--[符卡] 水中月天上月
+--
+--  · 两颗蓝色光玉（月亮）绕着屏幕中心顺时针旋转，极坐标恒差 180°。
+--  · 水中月：每 15 帧放出一圈低密度小玉，并把同一圈的小玉
+--    连成一个闭合线圈（线圈纯绘制，没有判定）。
+--  · 天上月：每 20 帧放出一条短激光，方向沿月亮的一条半径向外；
+--    每放一条，下一条激光的角度就逆时针转 30°。
+--============================
+do
+    ------------------------------------------------------------------
+    --绘制工具
+    ------------------------------------------------------------------
+    --加算细线（自绘，不生成任何对象，所以没有判定）
+    local function thin_line(x1, y1, x2, y2, a, r, g, b, w)
+        local len = Dist(x1, y1, x2, y2)
+        if a <= 0 or len < 1 then
+            return
+        end
+        SetImageState("white", "mul+add", a, r, g, b)
+        Render("white", (x1 + x2) * 0.5, (y1 + y2) * 0.5, Angle(x1, y1, x2, y2), len / 16, w or 0.2)
+    end
+
+    ---画一颗蓝色光玉当月亮
+    ---@param s number @1.0 时主体约 58px
+    ---@param a number @0~1 整体透明度
+    local function draw_orb(x, y, s, a)
+        SetImageState("ball_huge6", "mul+add", 105 * a, 122, 176, 255)
+        Render("ball_huge6", x, y, 0, s * 0.80, s * 0.80)
+        SetImageState("ball_big6", "mul+add", 245 * a, 198, 220, 255)
+        Render("ball_big6", x, y, 0, s * 0.90, s * 0.90)
+        SetImageState("ball_big6", "mul+add", 215 * a, 255, 255, 255)
+        Render("ball_big6", x, y, 0, s * 0.40, s * 0.40)
+    end
+
+    ------------------------------------------------------------------
+    --数值
+    ------------------------------------------------------------------
+    local ORBIT = 150              --两轮月亮的轨道半径
+    local SPIN = -0.7              --角速度（度/帧，负 = 顺时针）
+    local RING_GAP = 15            --水中月放圈间隔
+    local RING_N = 8               --每圈小玉数量（低密度）
+    local RING_V = 1.4             --小玉初速
+    local RING_LIFE = 110          --一圈小玉的存活帧数
+    local RING_FADE = 40           --最后一圈小玉的淡出帧数
+    local RING_COLLI_A = 90        --透明度低于这个值就关掉判定
+    local RING_LINE_A = 150        --线圈亮度
+    local LASER_GAP = 20           --天上月放激光间隔
+    local LASER_LEN = 112          --短激光长度
+    local LASER_W = 15             --短激光宽度
+    local LASER_STEP = 30          --每条激光逆时针推进的角度
+
+    ------------------------------------------------------------------
+    --两颗月亮 + 它们的弹幕
+    ------------------------------------------------------------------
+    class["th01_moons"] = Class(object, {
+        init = function(self, orbit)
+            self.cx, self.cy = 0, 0
+            self.orbit = orbit or ORBIT
+            self.ang = -90                 --水中月的极角（-90 = 屏幕正下方）
+            self.spin = SPIN
+            self.bound = false
+            self.colli = false
+            self.group = GROUP.GHOST
+            self.layer = LAYER.ENEMY_BULLET - 30
+
+            self.wx, self.wy = 0, -self.orbit
+            self.sx, self.sy = 0, self.orbit
+
+            self.rings = {}                --水中月放出的圈
+            self.lasers = {}               --天上月放出的激光
+            self.ring_t = 0
+            self.laser_t = 0
+            self.laser_ang = 0
+        end,
+        frame = function(self)
+            --两轮月亮：同角速度旋转，极坐标差恒为 180°
+            self.ang = (self.ang + self.spin) % 360
+            local wa = self.ang
+            local sa = self.ang + 180
+            self.wx = self.cx + cos(wa) * self.orbit
+            self.wy = self.cy + sin(wa) * self.orbit
+            self.sx = self.cx + cos(sa) * self.orbit
+            self.sy = self.cy + sin(sa) * self.orbit
+
+            --========== 水中月：每 15 帧一圈低密度小玉 ==========
+            self.ring_t = self.ring_t + 1
+            if self.ring_t >= RING_GAP then
+                self.ring_t = 0
+                local ct = {}
+                for a in sp.math.AngleIterator(ran:Float(0, 360), RING_N) do
+                    local o = NewSimpleBullet(ball_small, 6, self.wx, self.wy, RING_V, a, false, 0)
+                    --自己管理生命周期，不让世界边界把它单独回收，
+                    --否则线圈会在半途缺角
+                    o.bound = false
+                    o._blend = "mul+add"
+                    ct[#ct + 1] = o
+                end
+                self.rings[#self.rings + 1] = { ct = ct, age = 0 }
+                PlaySound("tan00", 0.02, self.wx / 200, true)
+            end
+
+            --圈的老化：末尾淡出、淡出期间关掉判定、到点整圈回收
+            local rings = self.rings
+            for i = #rings, 1, -1 do
+                local rg = rings[i]
+                rg.age = rg.age + 1
+                local left = RING_LIFE - rg.age
+                local k = 1
+                if left <= RING_FADE then
+                    k = max(0, left) / RING_FADE
+                end
+                local a = int(255 * k)
+                local colli = a >= RING_COLLI_A
+                local ct = rg.ct
+                for j = 1, #ct do
+                    local o = ct[j]
+                    if IsValid(o) then
+                        o._a = a
+                        o.colli = colli
+                    end
+                end
+                if rg.age >= RING_LIFE then
+                    for j = 1, #ct do
+                        if IsValid(ct[j]) then
+                            object.RawDel(ct[j])
+                        end
+                    end
+                    table.remove(rings, i)
+                end
+            end
+
+            --========== 天上月：每 20 帧一条短激光 ==========
+            self.laser_t = self.laser_t + 1
+            if self.laser_t >= LASER_GAP then
+                self.laser_t = 0
+                local a = self.laser_ang
+                self.laser_ang = (self.laser_ang + LASER_STEP) % 360   --逆时针
+                local l = New(laser, 6, self.sx, self.sy, a, 0, LASER_LEN, 0, LASER_W)
+                laser.ChangeImage(l, 4)                          --纯色贴图
+                l.bound = false
+                l.colli = true
+                l.layer = LAYER.ENEMY_BULLET + 6
+                l._blend, l._a = "mul+add", 255
+                l._r, l._g, l._b = 140, 200, 255
+                l.counter, l.alpha, l.w = 0, 0, 0
+                self.lasers[#self.lasers + 1] = l
+                --激光张开 -> 维持 -> 收束，然后自己回收
+                task.New(l, function()
+                    laser._TurnOn(l, 7, true, true)
+                    task.Wait(22)
+                    laser._TurnOff(l, 9, true)
+                    if IsValid(l) then
+                        object.RawDel(l)
+                    end
+                end)
+            end
+
+            --激光锚在月亮上：方向固定，相当于月亮的一条半径
+            local lasers = self.lasers
+            for i = #lasers, 1, -1 do
+                local l = lasers[i]
+                if IsValid(l) then
+                    l.x, l.y = self.sx, self.sy
+                else
+                    table.remove(lasers, i)
+                end
+            end
+        end,
+        render = function(self)
+            --水中月：把每一圈小玉按放出顺序连成闭合线圈
+            local rings = self.rings
+            for i = 1, #rings do
+                local rg = rings[i]
+                local ct = rg.ct
+                local n = #ct
+                if n >= 3 then
+                    local px, py, m = {}, {}, 0
+                    for j = 1, n do
+                        local o = ct[j]
+                        if IsValid(o) then
+                            m = m + 1
+                            px[m], py[m] = o.x, o.y
+                        end
+                    end
+                    if m >= 3 then
+                        local left = RING_LIFE - rg.age
+                        local k = 1
+                        if left <= RING_FADE then
+                            k = max(0, left) / RING_FADE
+                        end
+                        local a = RING_LINE_A * k
+                        for j = 1, m do
+                            local q = j % m + 1
+                            thin_line(px[j], py[j], px[q], py[q], a, 132, 190, 255, 0.16)
+                        end
+                    end
+                end
+            end
+            --两颗月亮（水中月稍暗，像映在水里）
+            draw_orb(self.wx, self.wy, 0.95, 0.85)
+            draw_orb(self.sx, self.sy, 1.12, 1)
+        end,
+        del = function(self)
+            local rings = self.rings
+            for i = 1, #rings do
+                local ct = rings[i].ct
+                for j = 1, #ct do
+                    if IsValid(ct[j]) then
+                        object.RawDel(ct[j])
+                    end
+                end
+            end
+            for i = 1, #self.lasers do
+                if IsValid(self.lasers[i]) then
+                    object.RawDel(self.lasers[i])
+                end
+            end
+            self.rings, self.lasers = {}, {}
+        end,
+    }, true)
+
+    do
+        local card = boss.card.New("水中月天上月", 1, 2, 50, 1400)
+        boss.card.add({ { card, "1a" } }, 21, "水中月天上月", 254)
+
+        function card:before()
+            task.MoveTo(0, 176, 60, 2)
+        end
+
+        function card:init()
+            self.__moons = New(class["th01_moons"], ORBIT)
+        end
+
+        function card:del()
+            if IsValid(self.__moons) then
+                object.RawDel(self.__moons)
+            end
+            self.__moons = nil
+        end
+    end
+end
+
+--============================
+--[符卡] 镜花水月
+--
+--  一阶段：boss 放出「开花水光弹」——水球飞到半途绽开成一圈水光。
+--  二阶段：追加镜子。镜面横在屏幕顶部，撞上镜面的子弹原速弹回。
+--  三阶段：追加花。莲花从屏幕下方笔直上浮，沿途留下曲线激光；
+--          升到屏幕上方后不再生成激光，摇着摆着坠下。
+--  四阶段：追加月亮与潮汐。th15 的月亮悬在屏幕上方，用阴影表现圆缺，
+--          并周期性地推动全屏子弹的 y 速度。
+--  全程：boss 持续放出低透明度、高密度的装饰性水光弹（无判定）。
+--============================
+do
+    ------------------------------------------------------------------
+    --阶段（帧，从符卡 init 起算）
+    ------------------------------------------------------------------
+    local PH_MIRROR = 240          --4s：镜子
+    local PH_FLOWER = 660          --11s：花
+    local PH_MOON = 1080           --18s：月亮与潮汐
+
+    ------------------------------------------------------------------
+    --版面
+    ------------------------------------------------------------------
+    local BOSS_X, BOSS_Y = 0, 130
+    local MIRROR_Y = 206           --镜面高度（贴着屏幕上沿）
+    local MOON_Y = 224             --月亮中心（悬在屏幕上沿，与 th15 的月亮同高）
+    local MOON_S = 0.9             --月亮贴图的缩放（原图 128px，与 th15 一致）
+    local MOON_SHADOW = 64 * MOON_S * 1.6   --阴影扫过月面的最大距离
+    local TOP_Y = 182              --花升到这个高度就算到顶
+    local FLOOR_Y = -246           --花从屏幕下方多低出发
+
+    ------------------------------------------------------------------
+    --数值
+    ------------------------------------------------------------------
+    local BLOOM_GAP = 30           --开花水光弹的发射间隔
+    local BLOOM_N = 10             --一朵花绽开的瓣数
+    local BLOOM_V = 2.0            --水球初速
+    local BLOOM_T = 34             --水球飞行多少帧后绽开
+    local PETAL_V = 1.8            --花瓣初速
+    local PETAL_LIFE = 120         --花瓣存活帧数
+    local PETAL_FADE = 45          --花瓣淡出帧数
+    local LOTUS_GAP = 100          --莲花的生成间隔
+    local LOTUS_RISE = 2.0         --莲花上浮速度
+    local LOTUS_FALL = 1.6         --莲花下坠速度
+    local LOTUS_SWAY = 26          --莲花摇摆的幅度
+    local LASER_FADE = 14          --到顶后曲线激光的收束帧数
+    local LASER_LEN = 220          --曲线激光的长度（帧）
+    local LASER_W = 7              --曲线激光的宽度
+    local MOON_PERIOD = 240        --月相（潮汐）周期
+    local TIDE_ACC = 0.8           --潮汐每帧推给子弹的 y 位移
+    local DECO_PER = 2             --每帧生成的装饰水光弹数量
+    local DECO_LIFE = 84           --装饰水光弹存活帧数
+    local DECO_FADE = 26           --装饰水光弹淡入淡出的帧数
+
+    ------------------------------------------------------------------
+    --共用
+    ------------------------------------------------------------------
+    local moon_ph = 0              --本帧月相：-1 ~ 1（0 = 新月，±1 = 满月）
+    local tide_dv = 0              --本帧潮汐推给子弹的 y 位移
+    local mirror_on = false        --镜面是否已经出现
+
+    --一团水光（自绘，不生成对象）
+    local function draw_water(x, y, size, k)
+        if k <= 0 then
+            return
+        end
+        SetImageState("ball_light5", "mul+add", 70 * k, 96, 150, 255)
+        Render("ball_light5", x, y, 0, size * 1.6, size * 1.6)
+        SetImageState("ball_light6", "mul+add", 200 * k, 186, 226, 255)
+        Render("ball_light6", x, y, 0, size, size)
+        SetImageState("ball_light6", "mul+add", 170 * k, 255, 255, 255)
+        Render("ball_light6", x, y, 0, size * 0.42, size * 0.42)
+    end
+
+    --潮汐：只推敌方子弹（花的花瓣位置由花自己摆，不接受潮汐）
+    local function tide_push(o)
+        if not o.no_tide then
+            o.y = o.y + tide_dv
+        end
+    end
+
+    --镜面反弹：撞上镜面的子弹原速弹回
+    local function mirror_hit(o)
+        local vy = o.vy
+        if vy and vy > 0 and o.y > MIRROR_Y then
+            o.y = MIRROR_Y * 2 - o.y
+            o.vy = -vy
+            o.rot = Angle(0, 0, o.vx, o.vy)
+        end
+    end
+
+    --子弹的通用寿命：末尾淡出，淡出期间关掉判定
+    local function petal_life(o)
+        o.life = o.life - 1
+        if o.life <= 0 then
+            object.RawDel(o)
+            return
+        end
+        if o.life < o.fade then
+            o._a = int(o.a0 * o.life / o.fade)
+            o.colli = false
+        end
+    end
+
+    ------------------------------------------------------------------
+    --装饰性水光弹：低透明度、高密度、无判定，纯气氛
+    ------------------------------------------------------------------
+    class["th01_mote"] = Class(object, {
+        init = function(self, x, y)
+            self.x, self.y = x, y
+            local a = ran:Float(0, 360)
+            local v = ran:Float(0.7, 2.2)
+            self.vx, self.vy = cos(a) * v, sin(a) * v
+            self.omiga = ran:Float(-1.5, 1.5)
+            self.size = ran:Float(0.45, 1.05)
+            self.a0 = ran:Int(45, 115)     --低透明度，带一点随机
+            self.life = DECO_LIFE
+            self.k = 0
+            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET - 20
+            self.bound, self.colli = false, false
+        end,
+        frame = function(self)
+            self.life = self.life - 1
+            if self.life <= 0 then
+                object.RawDel(self)
+                return
+            end
+            local k = min(1, self.life / DECO_FADE)
+            if self.timer < DECO_FADE then
+                k = min(k, self.timer / DECO_FADE)
+            end
+            self.k = k
+            --装饰水光弹也照镜子、也跟着潮汐漂
+            if mirror_on and self.vy > 0 and self.y > MIRROR_Y then
+                self.y = MIRROR_Y * 2 - self.y
+                self.vy = -self.vy
+            end
+            self.y = self.y + tide_dv
+        end,
+        render = function(self)
+            draw_water(self.x, self.y, self.size * 0.85, self.a0 / 255 * self.k)
+        end,
+    }, true)
+
+    ------------------------------------------------------------------
+    --开花水光弹：飞到半途绽开成一圈水光
+    ------------------------------------------------------------------
+    class["th01_bloom"] = Class(object, {
+        init = function(self, x, y, ang)
+            self.x, self.y = x, y
+            self.ang = ang
+            self.fuse = BLOOM_T
+            self.size = 0.45
+            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET + 16
+            self.bound, self.colli = false, false
+        end,
+        frame = function(self)
+            self.fuse = self.fuse - 1
+            self.size = min(1.25, self.size + 0.028)
+            local k = max(0, self.fuse) / BLOOM_T
+            local v = BLOOM_V * (0.25 + 0.75 * k)
+            self.x = self.x + cos(self.ang) * v
+            self.y = self.y + sin(self.ang) * v
+            if self.fuse > 0 then
+                return
+            end
+            --绽开
+            local col = ran:Int(5, 8)
+            for a in sp.math.AngleIterator(ran:Float(0, 360), BLOOM_N) do
+                local b = NewSimpleBullet(ball_light, col, self.x, self.y, PETAL_V, a, false, ran:Float(-0.7, 0.7))
+                b.bound = false
+                b.a0 = 235
+                b.life = PETAL_LIFE
+                b.fade = PETAL_FADE
+                b.frame_other = petal_life
+            end
+            PlaySound("tan00", 0.06, self.x / 256, true)
+            object.RawDel(self)
+        end,
+        render = function(self)
+            draw_water(self.x, self.y, self.size, 0.95)
+        end,
+    }, true)
+
+    ------------------------------------------------------------------
+    --镜子：二阶段起，横在屏幕顶部
+    ------------------------------------------------------------------
+    class["th01_mirror"] = Class(object, {
+        init = function(self)
+            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET - 110
+            self.bound, self.colli = false, false
+        end,
+        frame = function() end,
+        render = function(self)
+            local k = 0.75 + 0.25 * sin(self.timer * 3)
+            SetImageState("white", "mul+add", 34 * k, 110, 165, 255)
+            Render("white", 0, MIRROR_Y, 0, 25, 15 / 16)
+            SetImageState("white", "mul+add", 120 * k, 170, 215, 255)
+            Render("white", 0, MIRROR_Y, 0, 25, 2 / 16)
+            SetImageState("white", "mul+add", 235 * k, 235, 250, 255)
+            Render("white", 0, MIRROR_Y + 2, 0, 25, 0.6 / 16)
+            SetImageState("white", "mul+add", 90 * k, 200, 235, 255)
+            Render("white", 0, MIRROR_Y - 3, 0, 25, 0.8 / 16)
+        end,
+    }, true)
+
+    ------------------------------------------------------------------
+    --月亮：四阶段起，悬在屏幕上方，阴影扫过就是圆缺
+    ------------------------------------------------------------------
+    class["th01_moon"] = Class(object, {
+        init = function(self)
+            self.group, self.layer = GROUP.GHOST, LAYER.BG + 100
+            self.bound, self.colli = false, false
+        end,
+        frame = function() end,
+        render = function()
+            --月晕
+            SetImageState("ball_light6", "mul+add", 34, 96, 150, 255)
+            Render("ball_light6", 0, MOON_Y, 0, 7.5 * MOON_S, 7.5 * MOON_S)
+            --月亮本体（th15 用的月亮贴图）
+            SetImageState("moon", "", 255, 236, 240, 255)
+            Render("moon", 0, MOON_Y, 0, MOON_S, MOON_S)
+            --阴影：把月亮贴图再画一遍并涂成近黑色，横向偏移就是圆缺
+            --偏移量取正数，月亮只会从满月缩成细月牙，不会整个黑掉
+            SetImageState("moon", "", 255, 5, 8, 22)
+            Render("moon", MOON_SHADOW * (1 + 0.5 * moon_ph), MOON_Y, 0, MOON_S, MOON_S)
+        end,
+    }, true)
+
+    ------------------------------------------------------------------
+    --莲花：屏幕下方笔直上浮、沿路留曲线激光；到顶后摇摆坠下
+    ------------------------------------------------------------------
+    class["th01_lotus"] = Class(object, {
+        init = function(self, x, y)
+            self.x, self.y = x, y
+            self.base_x = x
+            self.sway = ran:Float(0, 360)
+            self.up = true
+            self.fade_t = 0
+            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET + 14
+            self.bound, self.colli = false, false
+
+            local col = ran:Int(5, 8)
+            local ps = {}
+            --五片花瓣：米弹
+            for i = 1, 5 do
+                local b = NewSimpleBullet(knife, col, x, y, 0, 0, false, 0)
+                b.bound = false
+                b.no_tide = true
+                b.group = GROUP.INDES
+                b.colli = true
+                b._blend = "mul+add"
+                b._a, b._r, b._g, b._b = 235, 170, 215, 255
+                ps[#ps + 1] = b
+            end
+            --花心：小玉
+            local c = NewSimpleBullet(ball_small, col, x, y, 0, 0, false, 0)
+            c.bound = false
+            c.no_tide = true
+            c.group = GROUP.INDES
+            c.colli = true
+            c._blend = "mul+add"
+            c._a, c._r, c._g, c._b = 255, 255, 250, 210
+            ps[#ps + 1] = c
+            self.petals = ps
+
+            --沿路的曲线激光
+            local l = New(bent_laser, col, x, y, LASER_LEN, LASER_W, 4, 0)
+            l.bound = false
+            l.alpha = 1
+            l._blend, l._a = "mul+add", 180
+            l._r, l._g, l._b = 130, 200, 255
+            bent_laser.setWidth(l, LASER_W)
+            self.laser = l
+        end,
+        frame = function(self)
+            if self.up then
+                self.y = self.y + LOTUS_RISE
+                self.sway = self.sway + 0.9
+                self.x = self.base_x + sin(self.sway) * LOTUS_SWAY * 0.5
+                if IsValid(self.laser) then
+                    self.laser.x, self.laser.y = self.x, self.y
+                end
+                if self.y >= TOP_Y then
+                    --到顶：不再生成激光，只把已有的收掉
+                    self.up = false
+                    self.fade_t = LASER_FADE
+                    local l = self.laser
+                    if IsValid(l) then
+                        l.counter = LASER_FADE
+                        l.da = -l.alpha / LASER_FADE
+                        l.dw = -l.w / LASER_FADE
+                    end
+                end
+            else
+                self.y = self.y - LOTUS_FALL
+                self.sway = self.sway + 2.4
+                self.x = self.base_x + sin(self.sway) * LOTUS_SWAY
+                if IsValid(self.laser) then
+                    self.fade_t = self.fade_t - 1
+                    if self.fade_t <= 0 then
+                        object.RawDel(self.laser)
+                        self.laser = nil
+                    end
+                end
+                if self.y < FLOOR_Y - 30 then
+                    object.RawDel(self)
+                    return
+                end
+            end
+
+            --摆花瓣
+            local ps = self.petals
+            for i = 1, 5 do
+                local b = ps[i]
+                if IsValid(b) then
+                    local a = self.sway + (i - 1) * 72
+                    b.x = self.x + cos(a) * 17
+                    b.y = self.y + sin(a) * 17
+                    b.rot = a - 90
+                end
+            end
+            local c = ps[6]
+            if IsValid(c) then
+                c.x, c.y = self.x, self.y
+            end
+        end,
+        render = function(self)
+            draw_water(self.x, self.y, 0.9, 0.55)
+        end,
+        del = function(self)
+            local ps = self.petals
+            for i = 1, #ps do
+                if IsValid(ps[i]) then
+                    object.RawDel(ps[i])
+                end
+            end
+            if IsValid(self.laser) then
+                object.RawDel(self.laser)
+            end
+            self.petals, self.laser = {}, nil
+        end,
+    }, true)
+
+    ------------------------------------------------------------------
+    --符卡控制器：只追加、不替换，一镜到底
+    ------------------------------------------------------------------
+    class["th01_kikyo"] = Class(object, {
+        init = function(self, master)
+            self.master = master
+            self.mtime = 0
+            self.phase = 1
+            --共享状态是文件级 upvalue：同一次游戏里重进本关时脚本不会重新
+            --加载，所以必须在这里归零，否则一阶段就会带着上次的镜面与潮汐
+            mirror_on = false
+            moon_ph = 0
+            tide_dv = 0
+            self.bloom_t = 0
+            self.lotus_t = 0
+            self.moon_t = 0
+            self.lotuses = {}
+            self.group, self.layer = GROUP.GHOST, LAYER.TOP
+            self.bound, self.colli = false, false
+        end,
+        frame = function(self)
+            self.mtime = self.mtime + 1
+            if self.phase == 1 and self.mtime >= PH_MIRROR then
+                self.phase = 2
+                mirror_on = true
+                self.mv = New(class["th01_mirror"])
+            end
+            if self.phase == 2 and self.mtime >= PH_FLOWER then
+                self.phase = 3
+            end
+            if self.phase == 3 and self.mtime >= PH_MOON then
+                self.phase = 4
+                self.mo = New(class["th01_moon"])
+            end
+
+            local m = self.master
+            local bx, by = BOSS_X, BOSS_Y
+            if IsValid(m) then
+                bx, by = m.x, m.y
+            end
+
+            --========== 开花水光弹（一阶段起，全程） ==========
+            self.bloom_t = self.bloom_t + 1
+            if self.bloom_t >= BLOOM_GAP then
+                self.bloom_t = 0
+                local base = ran:Float(0, 360)
+                for i = 1, 3 do
+                    New(class["th01_bloom"], bx, by, base + (i - 1) * 120 + ran:Float(-20, 20))
+                end
+            end
+
+            --========== 装饰性水光弹（无判定，全程） ==========
+            for _ = 1, DECO_PER do
+                New(class["th01_mote"], bx + ran:Float(-34, 34), by + ran:Float(-26, 26))
+            end
+
+            --========== 镜子（二阶段起） ==========
+            if self.phase >= 2 then
+                object.BulletDo(mirror_hit)
+                object.IndesDo(mirror_hit)
+            end
+
+            --========== 花（三阶段起） ==========
+            if self.phase >= 3 then
+                self.lotus_t = self.lotus_t + 1
+                if self.lotus_t >= LOTUS_GAP then
+                    self.lotus_t = 0
+                    self.lotuses[#self.lotuses + 1] =
+                            New(class["th01_lotus"], ran:Float(-150, 150), FLOOR_Y)
+                end
+                local ls = self.lotuses
+                for i = #ls, 1, -1 do
+                    if not IsValid(ls[i]) then
+                        table.remove(ls, i)
+                    end
+                end
+            end
+
+            --========== 月亮与潮汐（四阶段起） ==========
+            if self.phase >= 4 then
+                self.moon_t = self.moon_t + 1
+                moon_ph = sin(self.moon_t * 360 / MOON_PERIOD)
+                tide_dv = TIDE_ACC * moon_ph
+                object.BulletDo(tide_push)
+                object.IndesDo(tide_push)
+            end
+        end,
+        render = function() end,
+        del = function(self)
+            local ls = self.lotuses
+            for i = 1, #ls do
+                if IsValid(ls[i]) then
+                    object.RawDel(ls[i])
+                end
+            end
+            if IsValid(self.mv) then
+                object.RawDel(self.mv)
+            end
+            if IsValid(self.mo) then
+                object.RawDel(self.mo)
+            end
+            self.lotuses = {}
+        end,
+    }, true)
+
+    do
+        local card = boss.card.New("镜花水月", 2, 4, 38, 2200)
+        boss.card.add({ { card, "1a" } }, 21, "镜花水月", 255)
+
+        function card:before()
+            task.MoveTo(BOSS_X, BOSS_Y, 60, 2)
+        end
+
+        function card:init()
+            self.__kikyo = New(class["th01_kikyo"], self)
+        end
+
+        function card:del()
+            if IsValid(self.__kikyo) then
+                object.RawDel(self.__kikyo)
+            end
+            self.__kikyo = nil
+        end
+    end
+end

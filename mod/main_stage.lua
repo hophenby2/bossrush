@@ -1034,6 +1034,30 @@ NewStage("TH00", "未命名关卡", 20, function(self)
     self:Next(156)
 end)--20
 
+NewStage("TH01", "水月", 21, function(self)
+    self:Option(TH01_bg, "TH01_0")
+    self:Task(function()
+        --=========== 道中（暂无，先给玩家两秒看看夜色） ===========
+        task.Wait(120)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(157)
+end)--21
+
+NewStage("TH02", "星河", 22, function(self)
+    self:Option(TH02_bg, "TH02_0")
+    self:Task(function()
+        --=========== 道中（暂无，先给玩家两秒看看深空） ===========
+        task.Wait(120)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(158)
+end)--22
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
