@@ -21,7 +21,7 @@ local GROUP, LAYER = GROUP, LAYER
 local SetImageState = SetImageState
 local Render = Render
 local ran = ran
-local cos, sin, min = cos, sin, min
+local cos, sin, min, sqrt = cos, sin, min, sqrt
 
 class["SCBG1"] = Class(_SC_BG)
 class["SCBG1"].init = function(self)
@@ -79,6 +79,7 @@ do
     local RING_N = 8               --每圈小玉数量（低密度）
     local RING_V = 2.0             --小玉初速（小玉要一路飞出屏幕，稍微给快一点）
     local RING_LINE_A = 150        --线圈亮度（固定值，不做淡出）
+    local RING_GLOW_A = 48         --圆圈底光亮度（正圆，铺在线下面）
     local LASER_GAP = 20           --天上月放激光间隔
     local LASER_LEN = 118          --细激光长度
     local LASER_W = 4              --细激光宽度（细）
@@ -243,6 +244,10 @@ do
                 if m >= 2 then
                     local r = sr / m
                     local n = #ct
+                    --底子：th10/th12/th13 画圆用的那张 circle_charge。
+                    --它本身就是正圆（亮环在贴图半径 256 处），铺一层就绝不会看成多边形
+                    SetImageState("circle_charge", "mul+add", RING_GLOW_A, 96, 150, 255)
+                    Render("circle_charge", rg.ox, rg.oy, 0, r / 256)
                     for j = 1, n do
                         if IsValid(ct[j]) then
                             --往后找下一颗还活着的小玉（中间没了的就直接跨过去），
@@ -261,10 +266,12 @@ do
                                 if span <= 0 then
                                     span = span + 360
                                 end
-                                --弧的细分按弧长来：每段大约 45px，最多 8 段
-                                local seg = int(r * span * 0.01745 / 45) + 1
-                                if seg > 8 then
-                                    seg = 8
+                                --弧的细分按「每段跨多少角度」来定：半径越大、弧越长，
+                                --单段的角度就得越小，否则大圈的折线一眼就能看出棱角
+                                --（h = r(1-cos(θ/2)) ~ 0.5px 反推：θ ≈ 114/sqrt(r) 度）
+                                local seg = int(span * sqrt(r) / 114) + 1
+                                if seg > 12 then
+                                    seg = 12
                                 end
                                 for t = 1, seg do
                                     local s1 = a1 + span * (t - 1) / seg
@@ -357,7 +364,7 @@ do
     local BOSS_X, BOSS_Y = 0, 130
     local MIRROR_Y = 206           --镜面高度（贴着屏幕上沿）
     local MOON_Y = 224             --月亮中心（悬在屏幕上沿，与 th15 的月亮同高）
-    local MOON_S = 0.9             --月亮贴图的缩放（原图 128px，与 th15 一致）
+    local MOON_S = 1.5             --月亮贴图的缩放（原图 128px，盘面约 180px，要够大压得住场面）
     local MOON_SHADOW = 64 * MOON_S * 1.6   --阴影扫过月面的最大距离
     local TOP_Y = 182              --花升到这个高度就算到顶
     local FLOOR_Y = -246           --花从屏幕下方多低出发
@@ -487,7 +494,8 @@ do
     ------------------------------------------------------------------
     class["th01_moon"] = Class(object, {
         init = function(self)
-            self.group, self.layer = GROUP.GHOST, LAYER.BG + 100
+            --图层放到 TOP：月亮要压在弹幕、花、装饰水光弹上面，不然会被糊住
+            self.group, self.layer = GROUP.GHOST, LAYER.TOP
             self.bound, self.colli = false, false
         end,
         frame = function() end,
