@@ -311,8 +311,8 @@ do
                 self.proj[i] = { self.cx, self.cy, 0, 1 }
             end
 
-            --盒内星弹：三维坐标 + 三维速度。位置在盒子局部空间里积分，
-            --撞到内壁就反射，所以它们永远待在盒子里。
+            --盒内星弹：只存固定的三维位置，它们是"嵌在盒子里"的点，
+            --自己不会动；屏幕位置完全由盒子的旋转矩阵决定。
             self.stars = {}
             local box = self.r * 0.62
             local n = nstar or 36
@@ -331,12 +331,7 @@ do
                     end
                 end
                 if ok then
-                    local sp, sa, sz = ran:Float(1.5, 2.8), ran:Float(0, 360), ran:Float(-1, 1)
-                    local cr = sqrt(max(0, 1 - sz * sz))
-                    self.stars[#self.stars + 1] = {
-                        x, y, z,
-                        cos(sa) * cr * sp, sz * sp, sin(sa) * cr * sp,
-                    }
+                    self.stars[#self.stars + 1] = { x, y, z }
                 end
             end
 
@@ -449,33 +444,11 @@ do
                 l.layer = LAYER.ENEMY_BULLET - 40 + z / self.r * 24
             end
 
-            --星弹：先在盒子局部空间里漂移、反射，再用同一矩阵投影
-            local box = self.r * 0.62
+            --星弹：局部坐标固定不动，每帧只做一次和 8 个顶点完全相同的投影，
+            --所以它们的运动 = 盒子的运动
             local stars, starobj = self.stars, self.starobj
             for i = 1, #stars do
                 local v = stars[i]
-                v[1], v[2], v[3] = v[1] + v[4], v[2] + v[5], v[3] + v[6]
-                if v[1] > box then
-                    v[1] = box + box - v[1]
-                    v[4] = -v[4]
-                elseif v[1] < -box then
-                    v[1] = -box - box - v[1]
-                    v[4] = -v[4]
-                end
-                if v[2] > box then
-                    v[2] = box + box - v[2]
-                    v[5] = -v[5]
-                elseif v[2] < -box then
-                    v[2] = -box - box - v[2]
-                    v[5] = -v[5]
-                end
-                if v[3] > box then
-                    v[3] = box + box - v[3]
-                    v[6] = -v[6]
-                elseif v[3] < -box then
-                    v[3] = -box - box - v[3]
-                    v[6] = -v[6]
-                end
                 local o = starobj[i]
                 if IsValid(o) then
                     local x, y, z = mat_apply(M, v[1], v[2], v[3])
