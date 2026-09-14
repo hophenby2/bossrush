@@ -77,17 +77,17 @@ do
     local SPIN = -0.7              --角速度（度/帧，负 = 顺时针）
     local RING_GAP = 15            --水中月放圈间隔
     local RING_N = 8               --每圈小玉数量（低密度）
-    local RING_V = 1.4             --小玉初速
-    local RING_LIFE = 110          --一圈小玉的存活帧数（到点整圈回收，不做淡出）
+    local RING_V = 2.0             --小玉初速（小玉要一路飞出屏幕，稍微给快一点）
     local RING_LINE_A = 150        --线圈亮度（固定值，不做淡出）
-    local RING_SEG = 36            --线圈细分段数（连起来就是一个圆）
     local LASER_GAP = 20           --天上月放激光间隔
     local LASER_LEN = 118          --细激光长度
     local LASER_W = 4              --细激光宽度（细）
     local LASER_CORE = 0.125       --自绘白芯的粗细（th12 用的就是 0.125）
     local LASER_V = 7.2            --发射出去的速度
     local LASER_LIFE = 52          --飞这么多帧之后收束
-    local LASER_HEAD = 4           --激光头大小（和 th12 一样，尖端挂一颗光玉）
+    local LASER_HEAD = 8           --激光头大小（head/8 就是缩放，8 = th12 那样一整颗光玉）
+    local LASER_HALO = 0.55        --尖端自绘光晕的大小（再补一层，保证头看得见）
+    local LASER_CORE_S = 0.18      --尖端自绘亮核的大小
     local LASER_STEP = 30          --每条激光逆时针推进的角度
 
     ------------------------------------------------------------------
@@ -105,7 +105,7 @@ do
             self.colli = true
             self.layer = LAYER.ENEMY_BULLET + 6
             self._blend, self._a = "mul+add", 255
-            self._r, self._g, self._b = 140, 200, 255
+            self._r, self._g, self._b = 190, 225, 255
             object.SetV(self, v, a, false)                --飞出去
             task.New(self, function()
                 laser._TurnOn(self, 6, true, true)
@@ -124,6 +124,14 @@ do
                     self.y + sin(self.rot) * LASER_LEN * 0.5,
                     self.rot, LASER_LEN / 16, LASER_CORE)
             laser.render(self)
+            --激光头：引擎的 head 只是一颗小光玉，这里在尖端再补一层光晕 + 亮核。
+            --尖端 = 从激光原点沿 rotation 走 LASER_LEN
+            local hx = self.x + cos(self.rot) * LASER_LEN
+            local hy = self.y + sin(self.rot) * LASER_LEN
+            SetImageState("ball_big6", "mul+add", self.alpha * 120, 90, 160, 255)
+            Render("ball_big6", hx, hy, 0, LASER_HALO, LASER_HALO)
+            SetImageState("ball_mid6", "mul+add", self.alpha * 235, 225, 240, 255)
+            Render("ball_mid6", hx, hy, 0, LASER_CORE_S, LASER_CORE_S)
         end,
     })
 
@@ -164,34 +172,36 @@ do
             self.ring_t = self.ring_t + 1
             if self.ring_t >= RING_GAP then
                 self.ring_t = 0
-                local ct = {}
+                local ct, angs = {}, {}
                 for a in sp.math.AngleIterator(ran:Float(0, 360), RING_N) do
                     local o = NewSimpleBullet(ball_small, 6, self.wx, self.wy, RING_V, a, false, 0)
-                    --自己管理生命周期，不让世界边界把它单独回收，
-                    --否则线圈会在半途缺角
-                    o.bound = false
+                    --不关 bound：小玉飞出世界边界就交给引擎回收，
+                    --也就是「一路飞出屏幕」，不是在半路被整圈一次删掉
                     o._blend = "mul+add"
                     ct[#ct + 1] = o
+                    angs[#angs + 1] = a        --小玉一直沿着这个角度径向飞，角度不变
                 end
                 --记下圆心：一圈小玉是同一时刻、同一点、同一速度甩出去的，
                 --所以它们永远落在以这个点为心、半径 RING_V * age 的圆上
-                self.rings[#self.rings + 1] = { ct = ct, age = 0, ox = self.wx, oy = self.wy }
+                self.rings[#self.rings + 1] =
+                        { ct = ct, angs = angs, age = 0, ox = self.wx, oy = self.wy }
                 PlaySound("tan00", 0.02, self.wx / 200, true)
             end
 
-            --圈的老化：不淡出、不关判定，到点整圈回收
+            --圈的老化：不做淡出、不关判定，小玉自己飞出屏幕由引擎回收；
+            --一圈的小玉全都飞走了，这一圈才从表里去掉
             --（整张卡里只有四阶段的装饰水光弹才动透明度）
             local rings = self.rings
             for i = #rings, 1, -1 do
                 local rg = rings[i]
                 rg.age = rg.age + 1
-                local ct = rg.ct
-                if rg.age >= RING_LIFE then
-                    for j = 1, #ct do
-                        if IsValid(ct[j]) then
-                            object.RawDel(ct[j])
-                        end
+                local ct, alive = rg.ct, 0
+                for j = 1, #ct do
+                    if IsValid(ct[j]) then
+                        alive = alive + 1
                     end
+                end
+                if alive == 0 then
                     table.remove(rings, i)
                 end
             end
@@ -219,8 +229,9 @@ do
             local rings = self.rings
             for i = 1, #rings do
                 local rg = rings[i]
-                local ct = rg.ct
-                --圆心就是当初甩出这一圈的位置，半径取小玉到圆心的平均距离
+                local ct, angs = rg.ct, rg.angs
+                --圆心就是当初甩出这一圈的位置；小玉等速径向飞出，
+                --半径取还在场上的小玉到圆心的平均距离（每颗都一样）
                 local m, sr = 0, 0
                 for j = 1, #ct do
                     local o = ct[j]
@@ -229,15 +240,41 @@ do
                         sr = sr + Dist(o.x, o.y, rg.ox, rg.oy)
                     end
                 end
-                if m >= 3 then
+                if m >= 2 then
                     local r = sr / m
-                    local a = RING_LINE_A
-                    for j = 1, RING_SEG do
-                        local a1 = (j - 1) * 360 / RING_SEG
-                        local a2 = j * 360 / RING_SEG
-                        thin_line(rg.ox + cos(a1) * r, rg.oy + sin(a1) * r,
-                                rg.ox + cos(a2) * r, rg.oy + sin(a2) * r,
-                                a, 132, 190, 255, 0.16)
+                    local n = #ct
+                    for j = 1, n do
+                        if IsValid(ct[j]) then
+                            --往后找下一颗还活着的小玉（中间没了的就直接跨过去），
+                            --小玉飞出屏幕被回收时，只有连在它身上那段弧会跟着没
+                            local k
+                            for d = 1, n - 1 do
+                                local jj = (j + d - 1) % n + 1
+                                if IsValid(ct[jj]) then
+                                    k = jj
+                                    break
+                                end
+                            end
+                            if k then
+                                local a1 = angs[j]
+                                local span = (angs[k] - a1) % 360
+                                if span <= 0 then
+                                    span = span + 360
+                                end
+                                --弧的细分按弧长来：每段大约 45px，最多 8 段
+                                local seg = int(r * span * 0.01745 / 45) + 1
+                                if seg > 8 then
+                                    seg = 8
+                                end
+                                for t = 1, seg do
+                                    local s1 = a1 + span * (t - 1) / seg
+                                    local s2 = a1 + span * t / seg
+                                    thin_line(rg.ox + cos(s1) * r, rg.oy + sin(s1) * r,
+                                            rg.ox + cos(s2) * r, rg.oy + sin(s2) * r,
+                                            RING_LINE_A, 132, 190, 255, 0.16)
+                                end
+                            end
+                        end
                     end
                 end
             end
