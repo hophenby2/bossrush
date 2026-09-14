@@ -286,6 +286,11 @@ do
             --所以 k 只在 0.92~1.09 之间变化：透视收敛极弱，
             --12 条棱边在任何旋转角度下看起来都近似平行，不会“中间歪掉”。
             self.focal = self.r * 20
+            --星弹另外用一个短得多的焦距，专门做"近大远小"：
+            --盒子必须用长焦（棱边才平行），但那样深度缩放只有 ±9%，看不出来。
+            --星弹立方体（±0.62r）旋转后 |z| 最大 0.62*√3*r = 1.074r，
+            --取 1.93r 保证分母不会接近 0：近端约 2.26 倍，远端约 0.64 倍。
+            self.star_focal = self.r * 1.93
             self.bound = false
             self.colli = false
             self.group = GROUP.GHOST
@@ -453,10 +458,11 @@ do
                 if IsValid(o) then
                     local x, y, z = mat_apply(M, v[1], v[2], v[3])
                     local k = f / (f + z)
-                    local s = k * 0.52
+                    --近大远小：贴图和判定共用同一个 s
+                    --（SetSizeColli 保证判定半径按同比例缩放，不会“看着小、判定大”）
+                    local s = k * 0.52 * self.star_focal / (self.star_focal + z)
                     o.x, o.y = cx + x * k, cy + y * k
                     o.rot = o.rot + o._spin
-                    --渲染尺寸与判定半径用同一个 k 缩放，避免“看着小、判定大”
                     object.SetSizeColli(o, s, s)
                     o.layer = LAYER.ENEMY_BULLET - 20 + (self.r - z) / (2 * self.r) * 8
                 end
