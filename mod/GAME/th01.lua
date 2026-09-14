@@ -92,13 +92,15 @@ do
 
     ------------------------------------------------------------------
     --天上月的细激光（参考 th12 的激光：细白芯 + 激光头 + laser 本体）
-    --  发射出去以后自己沿着半径方向飞，不再挂在月亮上
+    --  发射出去以后自己沿着半径方向飞，不再挂在月亮上。
+    --  注意别调 laser.ChangeImage！它会把激光头的贴图换成 ball_mid_b*，
+    --  而 ball_mid_b* 是引擎内置预载的、没进游戏侧 ImageColor 缓存，
+    --  一 SetImageState 就崩；th12 的 Create.laser_line 也是用默认贴图。
     ------------------------------------------------------------------
     class["th01_ray"] = Class(laser, {
         init = function(self, x, y, a, v)
             --最后的 LASER_HEAD 就是激光头：laser.render 会在尖端画一颗光玉
             laser.init(self, 6, x, y, a, 0, LASER_LEN, 0, LASER_W, 0, LASER_HEAD)
-            laser.ChangeImage(self, 4)                    --纯色贴图
             self.bound = false
             self.colli = true
             self.layer = LAYER.ENEMY_BULLET + 6
