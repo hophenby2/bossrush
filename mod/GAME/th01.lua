@@ -21,7 +21,7 @@ local GROUP, LAYER = GROUP, LAYER
 local SetImageState = SetImageState
 local Render = Render
 local ran = ran
-local cos, sin, max, int = cos, sin, max, int
+local cos, sin, min = cos, sin, min
 
 class["SCBG1"] = Class(_SC_BG)
 class["SCBG1"].init = function(self)
@@ -78,10 +78,8 @@ do
     local RING_GAP = 15            --水中月放圈间隔
     local RING_N = 8               --每圈小玉数量（低密度）
     local RING_V = 1.4             --小玉初速
-    local RING_LIFE = 110          --一圈小玉的存活帧数
-    local RING_FADE = 40           --最后一圈小玉的淡出帧数
-    local RING_COLLI_A = 90        --透明度低于这个值就关掉判定
-    local RING_LINE_A = 150        --线圈亮度
+    local RING_LIFE = 110          --一圈小玉的存活帧数（到点整圈回收，不做淡出）
+    local RING_LINE_A = 150        --线圈亮度（固定值，不做淡出）
     local RING_SEG = 36            --线圈细分段数（连起来就是一个圆）
     local LASER_GAP = 20           --天上月放激光间隔
     local LASER_LEN = 118          --细激光长度
@@ -89,15 +87,17 @@ do
     local LASER_CORE = 0.125       --自绘白芯的粗细（th12 用的就是 0.125）
     local LASER_V = 7.2            --发射出去的速度
     local LASER_LIFE = 52          --飞这么多帧之后收束
+    local LASER_HEAD = 4           --激光头大小（和 th12 一样，尖端挂一颗光玉）
     local LASER_STEP = 30          --每条激光逆时针推进的角度
 
     ------------------------------------------------------------------
-    --天上月的细激光（参考 th12 的激光：细白芯 + laser 本体）
+    --天上月的细激光（参考 th12 的激光：细白芯 + 激光头 + laser 本体）
     --  发射出去以后自己沿着半径方向飞，不再挂在月亮上
     ------------------------------------------------------------------
     class["th01_ray"] = Class(laser, {
         init = function(self, x, y, a, v)
-            laser.init(self, 6, x, y, a, 0, LASER_LEN, 0, LASER_W)
+            --最后的 LASER_HEAD 就是激光头：laser.render 会在尖端画一颗光玉
+            laser.init(self, 6, x, y, a, 0, LASER_LEN, 0, LASER_W, 0, LASER_HEAD)
             laser.ChangeImage(self, 4)                    --纯色贴图
             self.bound = false
             self.colli = true
@@ -177,26 +177,13 @@ do
                 PlaySound("tan00", 0.02, self.wx / 200, true)
             end
 
-            --圈的老化：末尾淡出、淡出期间关掉判定、到点整圈回收
+            --圈的老化：不淡出、不关判定，到点整圈回收
+            --（整张卡里只有四阶段的装饰水光弹才动透明度）
             local rings = self.rings
             for i = #rings, 1, -1 do
                 local rg = rings[i]
                 rg.age = rg.age + 1
-                local left = RING_LIFE - rg.age
-                local k = 1
-                if left <= RING_FADE then
-                    k = max(0, left) / RING_FADE
-                end
-                local a = int(255 * k)
-                local colli = a >= RING_COLLI_A
                 local ct = rg.ct
-                for j = 1, #ct do
-                    local o = ct[j]
-                    if IsValid(o) then
-                        o._a = a
-                        o.colli = colli
-                    end
-                end
                 if rg.age >= RING_LIFE then
                     for j = 1, #ct do
                         if IsValid(ct[j]) then
@@ -242,12 +229,7 @@ do
                 end
                 if m >= 3 then
                     local r = sr / m
-                    local left = RING_LIFE - rg.age
-                    local k = 1
-                    if left <= RING_FADE then
-                        k = max(0, left) / RING_FADE
-                    end
-                    local a = RING_LINE_A * k
+                    local a = RING_LINE_A
                     for j = 1, RING_SEG do
                         local a1 = (j - 1) * 360 / RING_SEG
                         local a2 = j * 360 / RING_SEG
@@ -507,7 +489,7 @@ do
                 b.group = GROUP.INDES
                 b.colli = true
                 b._blend = "mul+add"
-                b._a, b._r, b._g, b._b = 235, 170, 215, 255
+                b._r, b._g, b._b = 170, 215, 255
                 ps[#ps + 1] = b
             end
             --花心：小玉
@@ -517,7 +499,7 @@ do
             c.group = GROUP.INDES
             c.colli = true
             c._blend = "mul+add"
-            c._a, c._r, c._g, c._b = 255, 255, 250, 210
+            c._r, c._g, c._b = 255, 255, 250
             ps[#ps + 1] = c
             self.petals = ps
 
@@ -525,7 +507,7 @@ do
             local l = New(bent_laser, col, x, y, LASER_LEN, LASER_W, 4, 0)
             l.bound = false
             l.alpha = 1
-            l._blend, l._a = "mul+add", 180
+            l._blend = "mul+add"
             l._r, l._g, l._b = 130, 200, 255
             bent_laser.setWidth(l, LASER_W)
             self.laser = l

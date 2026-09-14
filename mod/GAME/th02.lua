@@ -194,11 +194,12 @@ do
             self.vscale = 0.55 * k
             self.a, self.b = 5.5 * k, 5.5 * k
             self.rot = self.spin + t * 2
-            self._a = 255 * Forbid((k - 0.55) / 0.9, 0.35, 1)
+            --远近明暗只用在自绘的光晕上；星弹本体不做透明度变化
+            self.depth = Forbid((k - 0.55) / 0.9, 0.35, 1)
         end,
         render = function(self)
-            --远处的星星更暗，近处的更亮
-            draw_star(self.x, self.y, self.rot, 5.5 * self.hscale, 8, 120 * self._a / 255)
+            --远处的星星光晕更暗，近处的更亮（本体始终不透明）
+            draw_star(self.x, self.y, self.rot, 5.5 * self.hscale, 8, 120 * self.depth)
             bullet.render(self)
         end,
     })
@@ -769,7 +770,6 @@ do
         self.rot = self.rot + TRAIL_TURN * self.dir
         self.hscale = max(0.25, 0.85 * (1 - t / 260))
         self.vscale = self.hscale
-        self._a = max(0, 255 * (1 - t / 260))
         if t > 260 then
             object.RawDel(self)
         end
@@ -931,10 +931,10 @@ do
             SetV(self, spd, self.ang, false)
             self.hscale = 0.9 + 0.35 * sin(t * 12)
             self.vscale = self.hscale
-            self._a = 255 * Forbid(1 - t / 200, 0.25, 1)
+            self.depth = Forbid(1 - t / 200, 0.25, 1)
         end,
         render = function(self)
-            SetImageState("ball_light5", "mul+add", self._a * 0.5, 255, 220, 170)
+            SetImageState("ball_light5", "mul+add", 127.5 * self.depth, 255, 220, 170)
             Render("ball_light5", self.x, self.y, 0, 6.5, 6.5)
             bullet.render(self)
         end,
@@ -1219,7 +1219,6 @@ do
         s.x = s.cx + cos(s.ang) * s.rad
         s.y = s.cy + sin(s.ang) * s.rad
         s.rot = s.ang + 90
-        s._a = 255 * Forbid(1 - t / s.max_life, 0, 1)
     end
 
     ---boss 甩出来的星弹：绕一圈螺旋，越飞越直
@@ -1393,7 +1392,6 @@ do
         s.x = s.cx + cos(s.ang) * s.rad
         s.y = s.cy + sin(s.ang) * s.rad
         s.rot = s.ang + 90
-        s._a = 255 * Forbid(1 - t / s.max_life, 0, 1)
     end
 
     ---摇篮曲：螺旋半径一路涨、角速度一路衰减
@@ -1404,7 +1402,6 @@ do
         s.x = s.ox + cos(s.ang) * s.rad
         s.y = s.oy + sin(s.ang) * s.rad
         s.rot = s.ang + 90
-        s._a = 255 * Forbid(1 - t / s.max_life, 0, 1)
     end
 
     ---星尘：先绕着摇篮转，到寿后拐着弯飘走
@@ -1448,7 +1445,6 @@ do
                 SetV(self, min(4.4, v + 0.022), a + self.ow, false)
                 self.hscale, self.vscale = 0.55, 0.55
                 self.a, self.b = 2.9, 2.9
-                self._a = 255 * Forbid(1 - k / 210, 0, 1)
                 if k > 230 then
                     object.RawDel(self)
                 end
@@ -1650,7 +1646,6 @@ do
             self.ang = self.ang + self.dw
             SetV(self, self.v, self.ang, false)
             self.rot = self.ang + 90
-            self._a = 255 * Forbid(1 - (t - 190) / 70, 0, 1)
             if t > 280 or self.x * self.x + self.y * self.y > 560 * 560 then
                 object.RawDel(self)
             end
