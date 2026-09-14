@@ -38,10 +38,11 @@ boss.Define("1a", "未命名Boss", "TH01_0", TH01_bg, { 0, 300 }, class["SCBG1"]
 --[符卡] 水中月天上月
 --
 --  · 两颗蓝色光玉（月亮）绕着屏幕中心顺时针旋转，极坐标恒差 180°。
---  · 水中月：每 15 帧放出一圈低密度小玉，并把同一圈的小玉
---    连成一个闭合线圈（线圈纯绘制，没有判定）。
---  · 天上月：每 20 帧放出一条短激光，方向沿月亮的一条半径向外；
---    每放一条，下一条激光的角度就逆时针转 30°。
+--  · 水中月：每 15 帧放出一圈低密度小玉，并沿着这一圈画一个圆
+--    （小玉本来就落在同一个圆上，线圈纯绘制，没有判定）。
+--  · 天上月：每 20 帧沿月亮的一条半径「发射」一条细激光，激光会
+--    自己向外飞（不再挂在月亮上）；每放一条，下一条激光的角度
+--    就逆时针转 30°。
 --============================
 do
     ------------------------------------------------------------------
@@ -81,10 +82,48 @@ do
     local RING_FADE = 40           --最后一圈小玉的淡出帧数
     local RING_COLLI_A = 90        --透明度低于这个值就关掉判定
     local RING_LINE_A = 150        --线圈亮度
+    local RING_SEG = 36            --线圈细分段数（连起来就是一个圆）
     local LASER_GAP = 20           --天上月放激光间隔
-    local LASER_LEN = 112          --短激光长度
-    local LASER_W = 15             --短激光宽度
+    local LASER_LEN = 118          --细激光长度
+    local LASER_W = 4              --细激光宽度（细）
+    local LASER_CORE = 0.125       --自绘白芯的粗细（th12 用的就是 0.125）
+    local LASER_V = 7.2            --发射出去的速度
+    local LASER_LIFE = 52          --飞这么多帧之后收束
     local LASER_STEP = 30          --每条激光逆时针推进的角度
+
+    ------------------------------------------------------------------
+    --天上月的细激光（参考 th12 的激光：细白芯 + laser 本体）
+    --  发射出去以后自己沿着半径方向飞，不再挂在月亮上
+    ------------------------------------------------------------------
+    class["th01_ray"] = Class(laser, {
+        init = function(self, x, y, a, v)
+            laser.init(self, 6, x, y, a, 0, LASER_LEN, 0, LASER_W)
+            laser.ChangeImage(self, 4)                    --纯色贴图
+            self.bound = false
+            self.colli = true
+            self.layer = LAYER.ENEMY_BULLET + 6
+            self._blend, self._a = "mul+add", 255
+            self._r, self._g, self._b = 140, 200, 255
+            object.SetV(self, v, a, false)                --飞出去
+            task.New(self, function()
+                laser._TurnOn(self, 6, true, true)
+                task.Wait(LASER_LIFE)
+                laser._TurnOff(self, 8, true)
+                object.RawDel(self)
+            end)
+        end,
+        render = function(self)
+            if self.alpha <= 0.01 then
+                return
+            end
+            --th12 那种细白芯：撑在激光中轴上的细线
+            SetImageState("white", "mul+add", self.alpha * 170, 160, 210, 255)
+            Render("white", self.x + cos(self.rot) * LASER_LEN * 0.5,
+                    self.y + sin(self.rot) * LASER_LEN * 0.5,
+                    self.rot, LASER_LEN / 16, LASER_CORE)
+            laser.render(self)
+        end,
+    })
 
     ------------------------------------------------------------------
     --两颗月亮 + 它们的弹幕
@@ -132,7 +171,9 @@ do
                     o._blend = "mul+add"
                     ct[#ct + 1] = o
                 end
-                self.rings[#self.rings + 1] = { ct = ct, age = 0 }
+                --记下圆心：一圈小玉是同一时刻、同一点、同一速度甩出去的，
+                --所以它们永远落在以这个点为心、半径 RING_V * age 的圆上
+                self.rings[#self.rings + 1] = { ct = ct, age = 0, ox = self.wx, oy = self.wy }
                 PlaySound("tan00", 0.02, self.wx / 200, true)
             end
 
@@ -166,70 +207,53 @@ do
                 end
             end
 
-            --========== 天上月：每 20 帧一条短激光 ==========
+            --========== 天上月：每 20 帧沿一条半径发射一条细激光 ==========
             self.laser_t = self.laser_t + 1
             if self.laser_t >= LASER_GAP then
                 self.laser_t = 0
                 local a = self.laser_ang
                 self.laser_ang = (self.laser_ang + LASER_STEP) % 360   --逆时针
-                local l = New(laser, 6, self.sx, self.sy, a, 0, LASER_LEN, 0, LASER_W)
-                laser.ChangeImage(l, 4)                          --纯色贴图
-                l.bound = false
-                l.colli = true
-                l.layer = LAYER.ENEMY_BULLET + 6
-                l._blend, l._a = "mul+add", 255
-                l._r, l._g, l._b = 140, 200, 255
-                l.counter, l.alpha, l.w = 0, 0, 0
-                self.lasers[#self.lasers + 1] = l
-                --激光张开 -> 维持 -> 收束，然后自己回收
-                task.New(l, function()
-                    laser._TurnOn(l, 7, true, true)
-                    task.Wait(22)
-                    laser._TurnOff(l, 9, true)
-                    if IsValid(l) then
-                        object.RawDel(l)
-                    end
-                end)
+                --激光自己会飞，不跟着月亮走
+                self.lasers[#self.lasers + 1] =
+                        New(class["th01_ray"], self.sx, self.sy, a, LASER_V)
             end
-
-            --激光锚在月亮上：方向固定，相当于月亮的一条半径
             local lasers = self.lasers
             for i = #lasers, 1, -1 do
-                local l = lasers[i]
-                if IsValid(l) then
-                    l.x, l.y = self.sx, self.sy
-                else
+                if not IsValid(lasers[i]) then
                     table.remove(lasers, i)
                 end
             end
         end,
         render = function(self)
-            --水中月：把每一圈小玉按放出顺序连成闭合线圈
+            --水中月：每一圈小玉正好落在同一个圆上，所以直接把这个圆画出来，
+            --而不是把相邻的小玉用直线连成多边形
             local rings = self.rings
             for i = 1, #rings do
                 local rg = rings[i]
                 local ct = rg.ct
-                local n = #ct
-                if n >= 3 then
-                    local px, py, m = {}, {}, 0
-                    for j = 1, n do
-                        local o = ct[j]
-                        if IsValid(o) then
-                            m = m + 1
-                            px[m], py[m] = o.x, o.y
-                        end
+                --圆心就是当初甩出这一圈的位置，半径取小玉到圆心的平均距离
+                local m, sr = 0, 0
+                for j = 1, #ct do
+                    local o = ct[j]
+                    if IsValid(o) then
+                        m = m + 1
+                        sr = sr + Dist(o.x, o.y, rg.ox, rg.oy)
                     end
-                    if m >= 3 then
-                        local left = RING_LIFE - rg.age
-                        local k = 1
-                        if left <= RING_FADE then
-                            k = max(0, left) / RING_FADE
-                        end
-                        local a = RING_LINE_A * k
-                        for j = 1, m do
-                            local q = j % m + 1
-                            thin_line(px[j], py[j], px[q], py[q], a, 132, 190, 255, 0.16)
-                        end
+                end
+                if m >= 3 then
+                    local r = sr / m
+                    local left = RING_LIFE - rg.age
+                    local k = 1
+                    if left <= RING_FADE then
+                        k = max(0, left) / RING_FADE
+                    end
+                    local a = RING_LINE_A * k
+                    for j = 1, RING_SEG do
+                        local a1 = (j - 1) * 360 / RING_SEG
+                        local a2 = j * 360 / RING_SEG
+                        thin_line(rg.ox + cos(a1) * r, rg.oy + sin(a1) * r,
+                                rg.ox + cos(a2) * r, rg.oy + sin(a2) * r,
+                                a, 132, 190, 255, 0.16)
                     end
                 end
             end
@@ -280,21 +304,31 @@ end
 --============================
 --[符卡] 镜花水月
 --
---  一阶段：boss 放出「开花水光弹」——水球飞到半途绽开成一圈水光。
+--  阶段推进是「血量狂暴」：打掉的血量够了就追加下一个阶段，
+--  同时也留了兜底时间，打不动也会推进（和 th16AEX 终符一样用
+--  boss 的阶段点 addAutoSPPoint，血条上会显示这几个点）。
+--  一阶段：boss 放出「开花水光弹」——每一朵就是一圈均匀分布的水光弹，
+--          一圈一圈错开着放，层层打开。
 --  二阶段：追加镜子。镜面横在屏幕顶部，撞上镜面的子弹原速弹回。
 --  三阶段：追加花。莲花从屏幕下方笔直上浮，沿途留下曲线激光；
 --          升到屏幕上方后不再生成激光，摇着摆着坠下。
 --  四阶段：追加月亮与潮汐。th15 的月亮悬在屏幕上方，用阴影表现圆缺，
---          并周期性地推动全屏子弹的 y 速度。
---  全程：boss 持续放出低透明度、高密度的装饰性水光弹（无判定）。
+--          并周期性地推动全屏子弹的 y 速度；这时才追加低透明度、
+--          无判定的装饰性水光弹。
+--  越往后越狂暴：开花与莲花的节奏随阶段加快。
 --============================
 do
     ------------------------------------------------------------------
-    --阶段（帧，从符卡 init 起算）
+    --阶段：血量驱动 + 兜底时间
+    --  掉够 HP_xxx 的血就吃掉一个阶段点（boss 系统 checkAutoSPPoint），
+    --  拖到 PH_xxx 帧也会吃掉；两者谁先到算谁
     ------------------------------------------------------------------
-    local PH_MIRROR = 240          --4s：镜子
-    local PH_FLOWER = 660          --11s：花
-    local PH_MOON = 1080           --18s：月亮与潮汐
+    local HP_MIRROR = 550          --掉 550 血：追加镜子
+    local HP_FLOWER = 1100         --掉 1100 血：追加花
+    local HP_MOON = 1650           --掉 1650 血：追加月亮与潮汐
+    local PH_MIRROR = 12 * 60      --兜底：12s
+    local PH_FLOWER = 24 * 60      --兜底：24s
+    local PH_MOON = 34 * 60        --兜底：34s
 
     ------------------------------------------------------------------
     --版面
@@ -310,14 +344,12 @@ do
     ------------------------------------------------------------------
     --数值
     ------------------------------------------------------------------
-    local BLOOM_GAP = 30           --开花水光弹的发射间隔
-    local BLOOM_N = 10             --一朵花绽开的瓣数
-    local BLOOM_V = 2.0            --水球初速
-    local BLOOM_T = 34             --水球飞行多少帧后绽开
-    local PETAL_V = 1.8            --花瓣初速
-    local PETAL_LIFE = 120         --花瓣存活帧数
-    local PETAL_FADE = 45          --花瓣淡出帧数
-    local LOTUS_GAP = 100          --莲花的生成间隔
+    local BLOOM_GAP = { 46, 40, 34, 30 }   --各阶段再次开花的间隔（越往后越狂暴）
+    local BLOOM_WAY = { 2, 3, 3, 4 }       --各阶段一次开几圈（错开时间放，层层打开）
+    local BLOOM_STEP = 8           --同一轮里两圈之间错开的帧数
+    local BLOOM_N = 10             --一圈几瓣（均匀分布）
+    local PETAL_V = 1.8            --一圈水光弹的初速
+    local LOTUS_GAP = { 100, 100, 76, 58 }  --各阶段莲花的生成间隔
     local LOTUS_RISE = 2.0         --莲花上浮速度
     local LOTUS_FALL = 1.6         --莲花下坠速度
     local LOTUS_SWAY = 26          --莲花摇摆的幅度
@@ -367,19 +399,6 @@ do
         end
     end
 
-    --子弹的通用寿命：末尾淡出，淡出期间关掉判定
-    local function petal_life(o)
-        o.life = o.life - 1
-        if o.life <= 0 then
-            object.RawDel(o)
-            return
-        end
-        if o.life < o.fade then
-            o._a = int(o.a0 * o.life / o.fade)
-            o.colli = false
-        end
-    end
-
     ------------------------------------------------------------------
     --装饰性水光弹：低透明度、高密度、无判定，纯气氛
     ------------------------------------------------------------------
@@ -417,46 +436,6 @@ do
         end,
         render = function(self)
             draw_water(self.x, self.y, self.size * 0.85, self.a0 / 255 * self.k)
-        end,
-    }, true)
-
-    ------------------------------------------------------------------
-    --开花水光弹：飞到半途绽开成一圈水光
-    ------------------------------------------------------------------
-    class["th01_bloom"] = Class(object, {
-        init = function(self, x, y, ang)
-            self.x, self.y = x, y
-            self.ang = ang
-            self.fuse = BLOOM_T
-            self.size = 0.45
-            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET + 16
-            self.bound, self.colli = false, false
-        end,
-        frame = function(self)
-            self.fuse = self.fuse - 1
-            self.size = min(1.25, self.size + 0.028)
-            local k = max(0, self.fuse) / BLOOM_T
-            local v = BLOOM_V * (0.25 + 0.75 * k)
-            self.x = self.x + cos(self.ang) * v
-            self.y = self.y + sin(self.ang) * v
-            if self.fuse > 0 then
-                return
-            end
-            --绽开
-            local col = ran:Int(5, 8)
-            for a in sp.math.AngleIterator(ran:Float(0, 360), BLOOM_N) do
-                local b = NewSimpleBullet(ball_light, col, self.x, self.y, PETAL_V, a, false, ran:Float(-0.7, 0.7))
-                b.bound = false
-                b.a0 = 235
-                b.life = PETAL_LIFE
-                b.fade = PETAL_FADE
-                b.frame_other = petal_life
-            end
-            PlaySound("tan00", 0.06, self.x / 256, true)
-            object.RawDel(self)
-        end,
-        render = function(self)
-            draw_water(self.x, self.y, self.size, 0.95)
         end,
     }, true)
 
@@ -634,6 +613,8 @@ do
             moon_ph = 0
             tide_dv = 0
             self.bloom_t = 0
+            self.bloom_q = 0        --本轮还剩几圈没放
+            self.bloom_cd = 0
             self.lotus_t = 0
             self.moon_t = 0
             self.lotuses = {}
@@ -642,38 +623,66 @@ do
         end,
         frame = function(self)
             self.mtime = self.mtime + 1
-            if self.phase == 1 and self.mtime >= PH_MIRROR then
+
+            --========== 阶段推进：血量（或兜底时间）驱动 ==========
+            --boss 系统每吃掉一个阶段点，这里就追加一个阶段；
+            --一次吃掉多个也能一次追上，不会漏阶段
+            local m = self.master
+            local left = 0
+            if m and m._sp_point_auto then
+                left = #m._sp_point_auto
+            end
+            local done = 3 - left          --已经吃掉的阶段点数 0~3
+            if done >= 1 and self.phase < 2 then
                 self.phase = 2
                 mirror_on = true
                 self.mv = New(class["th01_mirror"])
             end
-            if self.phase == 2 and self.mtime >= PH_FLOWER then
+            if done >= 2 and self.phase < 3 then
                 self.phase = 3
             end
-            if self.phase == 3 and self.mtime >= PH_MOON then
+            if done >= 3 and self.phase < 4 then
                 self.phase = 4
                 self.mo = New(class["th01_moon"])
             end
 
-            local m = self.master
             local bx, by = BOSS_X, BOSS_Y
             if IsValid(m) then
                 bx, by = m.x, m.y
             end
+            local ph = self.phase
 
-            --========== 开花水光弹（一阶段起，全程） ==========
-            self.bloom_t = self.bloom_t + 1
-            if self.bloom_t >= BLOOM_GAP then
-                self.bloom_t = 0
-                local base = ran:Float(0, 360)
-                for i = 1, 3 do
-                    New(class["th01_bloom"], bx, by, base + (i - 1) * 120 + ran:Float(-20, 20))
+            --========== 开花水光弹（一阶段起，全程；越往后越狂暴） ==========
+            --一朵花 = 一圈均匀分布的水光弹，直接从 boss 身上开出来；
+            --同一轮的几圈错开几帧放，看上去就是一层一层往外打开。
+            --水光弹本身不做透明度，判定照常（四阶段的装饰弹才无判定）。
+            if self.bloom_q > 0 then
+                self.bloom_cd = self.bloom_cd - 1
+                if self.bloom_cd <= 0 then
+                    self.bloom_cd = BLOOM_STEP
+                    self.bloom_q = self.bloom_q - 1
+                    local col = ran:Int(5, 8)
+                    for a in sp.math.AngleIterator(ran:Float(0, 360), BLOOM_N) do
+                        local b = NewSimpleBullet(ball_light, col, bx, by,
+                                PETAL_V, a, false, 0)
+                        b._blend = "mul+add"
+                    end
+                    PlaySound("tan00", 0.05, bx / 256, true)
+                end
+            else
+                self.bloom_t = self.bloom_t + 1
+                if self.bloom_t >= BLOOM_GAP[ph] then
+                    self.bloom_t = 0
+                    self.bloom_q = BLOOM_WAY[ph]
+                    self.bloom_cd = 0
                 end
             end
 
-            --========== 装饰性水光弹（无判定，全程） ==========
-            for _ = 1, DECO_PER do
-                New(class["th01_mote"], bx + ran:Float(-34, 34), by + ran:Float(-26, 26))
+            --========== 装饰性水光弹（四阶段起：低透明度、无判定，纯气氛） ==========
+            if ph >= 4 then
+                for _ = 1, DECO_PER do
+                    New(class["th01_mote"], bx + ran:Float(-34, 34), by + ran:Float(-26, 26))
+                end
             end
 
             --========== 镜子（二阶段起） ==========
@@ -685,7 +694,7 @@ do
             --========== 花（三阶段起） ==========
             if self.phase >= 3 then
                 self.lotus_t = self.lotus_t + 1
-                if self.lotus_t >= LOTUS_GAP then
+                if self.lotus_t >= LOTUS_GAP[ph] then
                     self.lotus_t = 0
                     self.lotuses[#self.lotuses + 1] =
                             New(class["th01_lotus"], ran:Float(-150, 150), FLOOR_Y)
@@ -734,6 +743,13 @@ do
         end
 
         function card:init()
+            --血量狂暴：打掉 HP_xxx 血（或拖到兜底时间）就追加一个阶段。
+            --用的是 boss 自己的阶段点，所以血条上也能看到这几个位置
+            --最后一个 true = 用「本张符卡」的计时器做兜底，
+            --否则会拿 boss 开打以来的总时间，一进场就直接跳到四阶段
+            self._bosssys:addAutoSPPoint(HP_MIRROR, PH_MIRROR, true)
+            self._bosssys:addAutoSPPoint(HP_FLOWER, PH_FLOWER, true)
+            self._bosssys:addAutoSPPoint(HP_MOON, PH_MOON, true)
             self.__kikyo = New(class["th01_kikyo"], self)
         end
 

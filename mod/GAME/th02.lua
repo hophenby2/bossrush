@@ -1233,6 +1233,24 @@ do
         s.rot = s.ang + 90
     end
 
+    ---炸开的处理：写成局部函数而不是类方法，因为引擎里
+    ---self.xxx 是对对象的 rawget，类上定义的方法取不到
+    local function meteor_burst(self)
+        local cx, cy = self.x, self.y
+        for i in sp.math.AngleIterator(ran:Float(0, 360), M_BURST) do
+            local o = New(path_bullet, star_small, 8, cx, cy, nil, 0, shard_path)
+            o.cx, o.cy = cx, cy
+            o.rad = 5
+            o.dr = ran:Float(2.0, 4.2)
+            o.ang = i
+            o.dw = ran:Float(-3.4, 3.4)
+            o.max_life = SHARD_LIFE
+            o.bound = false
+        end
+        PlaySound("tan00", 0.05, self.x / 256, false)
+        object.RawDel(self)
+    end
+
     ---流星本体：摆尾 + 加速 + 拖影，落地炸开
     class["th02_meteor"] = Class(bullet, {
         init = function(self, x, y, a0, col)
@@ -1258,27 +1276,12 @@ do
             object.smear_add(self, 190)
             object.smear_frame(self, 15)
             if t > self.life or self.y < -276 then
-                self.burst(self)
+                meteor_burst(self)
             end
         end,
         render = function(self)
             object.smear_render(self, "add+alpha", { 168, 148, 255 })
             bullet.render(self)
-        end,
-        burst = function(self)
-            local cx, cy = self.x, self.y
-            for i in sp.math.AngleIterator(ran:Float(0, 360), M_BURST) do
-                local o = New(path_bullet, star_small, 8, cx, cy, nil, 0, shard_path)
-                o.cx, o.cy = cx, cy
-                o.rad = 5
-                o.dr = ran:Float(2.0, 4.2)
-                o.ang = i
-                o.dw = ran:Float(-3.4, 3.4)
-                o.max_life = SHARD_LIFE
-                o.bound = false
-            end
-            PlaySound("tan00", 0.05, self.x / 256, false)
-            object.RawDel(self)
         end,
     })
 
