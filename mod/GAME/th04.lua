@@ -120,6 +120,19 @@ local function fly(style, col, x, y, v, a, omiga, glow)
     return o
 end
 
+---发射点安全距离：出膛到命中至少要有 20 帧。
+---  挪开一发弹 = 反应(≈15 帧) + 横移出判定圈(≈2 帧)，再留一点余量 = 20。
+---  「离自机不足 20×弹速」的发射点**不要吐弹** —— 来不及挪就是**必中**，不是难度。
+---  自检脚本会把这种弹标成「⚠ 贴脸狙」并计入被打频率，那是在报设计缺陷。
+---  环形 / 射线型的限位器尤其需要这个：它们的发射点会扫过自机的整片活动区，
+---  自机正好站在线上时就会有一颗弹在脸上生出来（th04 卡 5/9 实测 17/21 px）。
+---  跳过这几个点留下的缺口很小（几十 px），玩家照样得挪。
+local SPAWN_REACT = 20
+---留 2 帧余量：正好卡在 20 帧上时（距离 == 20×弹速）脚本仍会算成贴脸。
+local function safe_spawn(x, y, v)
+    return Dist(x, y, player.x, player.y) > (SPAWN_REACT + 2) * (v or 0)
+end
+
 ---把自己的弹挂到 boss 名下。
 ---  引擎在换卡时走 boss_system:refresh(1)，里面有一句 object.KillServants(boss)。
 ---  挂上去的弹会被一起收掉；**不挂的话，卡打完了它们还在天上飘** ——
@@ -163,6 +176,13 @@ local path_bullet = Class(bullet, {
 ---      会在**生成的那一帧**就被引擎收掉 —— 墙会缺掉一大块，缺口逻辑全废
 ---  所以墙贴着 ±(HW, HH) 生成，两个方向都留在边界内侧，再朝内推。
 ---
+---  ⚠ 墙**永远来不及躲**：回收边界 ±224/±256 比自机的活动边界 ±192/±224 只大 32 px，
+---    所以墙生成时离自机最近就是 32 px —— 按 v=3.4 算只有 9 帧，那是**必中**。
+---    想靠「把墙往外推」解决是不可能的（推到 ±224 以外引擎当帧就回收）。
+---    只能：① 挖洞（下面这段，墙在自机那一格不生成）；② 压速度到 ≤1.6；
+---    ③ 开火前先把墙画出来（预警）。th04 卡 10 的墙是 3.4 px/帧、不画预览，
+---    所以必须走 ①。
+---
 ---  缺口用「周长参数」定位：s ∈ [0,1) 沿着墙绕一圈（上→右→下→左），
 ---  落在 [gap_s, gap_s+gap_w) 里的那段不放弹。这样缺口能沿墙一格一格地转。
 local function wall_point(cx, cy, hw, hh, s)
@@ -188,8 +208,12 @@ local function wall_with_gap(style, col, cx, cy, hw, hh, n, v, gap_s, gap_w)
         end
         if d > gap_w * 0.5 then
             local x, y, dx, dy = wall_point(cx, cy, hw, hh, s)
-            local o = fly(style, col, x, y, v, Angle(0, 0, dx, dy), 0)
-            o._r, o._g, o._b = 255, 176, 210
+            --自机这一格不生成：墙贴着回收边界长，离自机最近只有 32 px，
+            --不挖洞的话这一发就是**必中**（见上面的 ⚠）
+            if safe_spawn(x, y, v) then
+                local o = fly(style, col, x, y, v, Angle(0, 0, dx, dy), 0)
+                o._r, o._g, o._b = 255, 176, 210
+            end
         end
     end
 end
@@ -331,13 +355,17 @@ do
                 task.Wait(90)
                 Newcharge_out(self.x, self.y, 255, 255, 100)
                 while true do
-                    local a0 = Angle(self, player)
-                    for i = 1, AIM_WAYS do
-                        local o = fly(ball_mid, 4, self.x, self.y, AIM_V,
-                                a0 + (i - 1) * 360 / AIM_WAYS, 0)
-                        o._r, o._g, o._b = 255, 186, 220
+                    --自机贴着 boss 时这一轮**不发**：发射点就是 boss 自己，
+                    --离自机不足 20×AIM_V 的话弹一出来就在脸上，来不及挪。
+                    if safe_spawn(self.x, self.y, AIM_V) then
+                        local a0 = Angle(self, player)
+                        for i = 1, AIM_WAYS do
+                            local o = fly(ball_mid, 4, self.x, self.y, AIM_V,
+                                    a0 + (i - 1) * 360 / AIM_WAYS, 0)
+                            o._r, o._g, o._b = 255, 186, 220
+                        end
+                        PlaySound("tan00", 0.06, self.x / 256, true)
                     end
-                    PlaySound("tan00", 0.06, self.x / 256, true)
                     task.Wait(AIM_GAP)
                 end
             end)
@@ -354,19 +382,23 @@ end
 
 --============================
 --[卡2] 樱符「墨染之川」
---  限位：三途川的**潮汐**——水位在 -210 ~ +90 之间涨落，把玩家顶在它上面（th07:819 的做法）
+--  限位：三途川的**潮汐**——水位在 -180 ~ +140 之间涨落，把玩家顶在它上面（th07:819 的做法）
 --  不做「缺口」：试过在幕布上留 5 条缝，结果玩家只要站进缝里就完全不受力，
 --  限位形同虚设。潮汐是单调的上下界，没有可以「躲进去」的位置。
---  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 300 px；
---        玩家 4 px/帧 追得上（水位 2 px/帧），所以是「压缩活动空间」而不是「推着走」，
---        真正的死线是水位到顶时上方只剩 134 px 的带子。
+--  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 320 px；
+--        水位最快 3.4 px/帧，玩家 4 px/帧 追得上，所以是「压缩活动空间」而不是「推着走」，
+--        真正的死线是水位到顶时上方只剩 84 px 的带子。
 --        推力限速 6 px/帧（连续），不要写成硬夹 —— 会变成单帧瞬移几十 px。
 --  预警：潮汐启动前 90 帧，在底部画一条提示线（水位还没动）
 --  实弹：上方落下的花瓣（v=1.8，每 22 帧一片），落到 -60 炸开成 5 向
 --============================
 do
     local TIDE_PERIOD = 300          -- 潮汐周期（帧）
-    local TIDE_MID, TIDE_AMP = -60, 150  -- 水位 = MID + AMP·sin → 在 -210 ~ +90 之间
+    -- ⚠ 水位顶必须**离 boss 至少 20×实弹弹速 px**，否则限位就是把自机顶到 boss 脸上，
+    -- 自机狙变成贴脸狙（必中）。卡 2 的 boss 在 y=160、实弹弹速 3.0 →
+    -- 水位顶不能超过 160 − 60 = 100。写在 +140 时实测出膛离自机 39 px、只 13 帧。
+    -- 改成 -65±160（顶 +95，离 boss 65 px = 21.7 帧），同时仍然伸进自机活动带（0~186）里。
+    local TIDE_MID, TIDE_AMP = -65, 160  -- 水位 = MID + AMP·sin → 在 -225 ~ +95 之间
     local FLOOR_WARN = 90            -- 预警多少帧
     local FALL_V = 1.8               -- 花瓣下落速度
     local FALL_SWAY = 44
@@ -402,10 +434,11 @@ do
         end,
         render = function(self)
             if self.t < FLOOR_WARN then
-                --预警：水位还没动，先在底部画一条提示线
+                --预警：水位还没动，先在起潮线上画一条提示线
+                --（起潮位置 = MID + AMP·sin(-90°) = -180，和下面 frame 的第一帧对上）
                 local k = 0.4 + 0.6 * sin(self.t * 0.15)
                 SetImageState("white", "mul+add", 110 * k, 255, 214, 236)
-                RenderRect("white", -192, 192, -239, -234)
+                RenderRect("white", -192, 192, -182, -177)
                 return
             end
             local y = self.y
@@ -814,20 +847,26 @@ do
                     for i = 1, LINE_N do
                         local f = (i - 1) / (LINE_N - 1) - 0.5   -- -0.5 ~ 0.5
                         local rr = self.r + f * 2 * LINE_HALF
-                        local o = fly(ellipse, 6, cx + cos(a) * rr, cy + sin(a) * rr,
-                                LINE_V, a + 180, 0)
-                        o._r, o._g, o._b = 255, 206, 230
+                        local px, py = cx + cos(a) * rr, cy + sin(a) * rr
+                        --自机站在线上时，这个点不吐：否则弹在脸上生出来，来不及挪
+                        if safe_spawn(px, py, LINE_V) then
+                            local o = fly(ellipse, 6, px, py, LINE_V, a + 180, 0)
+                            o._r, o._g, o._b = 255, 206, 230
+                        end
                     end
                 end
                 --枝端绽放
                 for k = 1, ARMS do
                     local a = self.rot + (k - 1) * 360 / ARMS
-                    for j = 1, BLOOM_N do
-                        local ang = a + (j - (BLOOM_N + 1) / 2) * 20
-                        local o = fly(butterfly, 2 + (j % 2) * 2,
-                                cx + cos(a) * self.r, cy + sin(a) * self.r,
-                                BLOOM_V, ang, 1.4)
-                        o._r, o._g, o._b = 255, 190, 224
+                    local bx, by = cx + cos(a) * self.r, cy + sin(a) * self.r
+                    --枝端离自机太近就整簇不发（实测贴脸 46 px / 2.30 → 正好 20 帧）
+                    if safe_spawn(bx, by, BLOOM_V) then
+                        for j = 1, BLOOM_N do
+                            local ang = a + (j - (BLOOM_N + 1) / 2) * 20
+                            local o = fly(butterfly, 2 + (j % 2) * 2,
+                                    bx, by, BLOOM_V, ang, 1.4)
+                            o._r, o._g, o._b = 255, 190, 224
+                        end
                     end
                 end
                 PlaySound("tan00", 0.06, 0, true)
@@ -1306,8 +1345,11 @@ do
                 local f = i / HEX_STEPS
                 local px, py = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
                 -- 朝内飞：吐弹点在最大半径上，离自机最远
-                local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
-                o._r, o._g, o._b = 224, 192, 255
+                -- 自机正好站在结界边上时这个点不吐：否则弹在脸上生出来（实测 21 px → 9 帧）
+                if safe_spawn(px, py, HEX_V) then
+                    local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
+                    o._r, o._g, o._b = 224, 192, 255
+                end
             end
         end
     end
@@ -1378,9 +1420,14 @@ do
                     local a0 = Angle(self, player)
                     for i = 1, t do
                         for v = 1, 2 do
-                            local o = fly(ball_mid, 4, self.x, self.y,
-                                    1.2 + (v - 1) * 1.5, a0 + (i - 1) * 360 / t, 0)
-                            o._r, o._g, o._b = 255, 184, 218
+                            local sp = 1.2 + (v - 1) * 1.5
+                            --发射点就是 boss：自机贴上来时**快档不发**
+                            --（2.7 档要 54 px 才够 20 帧，1.2 档只要 26 px，所以照发）
+                            if safe_spawn(self.x, self.y, sp) then
+                                local o = fly(ball_mid, 4, self.x, self.y, sp,
+                                        a0 + (i - 1) * 360 / t, 0)
+                                o._r, o._g, o._b = 255, 184, 218
+                            end
                         end
                     end
                     PlaySound("tan00", 0.08, self.x / 256, true)
@@ -1427,6 +1474,8 @@ do
     local WALL_HW, WALL_HH = 216, 250
     local WALL_N = 52                -- 原来 72：收敛到中心时会挤成一团
     local WALL_V = 3.4               -- 快墙：一口气穿完，两波之间留静默期
+    -- （速度不用为「贴脸」让步：墙的公平性靠 wall_with_gap 里的挖洞解决，
+    --   见那个函数上面的 ⚠ —— 墙贴着回收边界长，靠推远是推不出去的。）
     local WALL_CYCLE = 100           -- 补墙间隔（穿场约 73 帧 → 约 27 帧静默）
     local WALL_CYCLE_RAGE = 78       -- 四阶段加快（仍然留出静默）
     local WALL_JUMP = 90

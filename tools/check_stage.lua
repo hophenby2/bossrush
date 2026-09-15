@@ -86,6 +86,74 @@ _G.CREATED_OBJECTS = 0
 -- 诊断用：卡结束之后到底是谁在造东西
 _G.LOG_NEW, _G.LOG_BULLET = {}, {}
 local _styleNames = {}      -- bulletStyle 表 → 名字
+-- 自机判定半径（和 measure_frame 里的 HIT_R 是同一个数，写在这儿好让出膛判定也能用）
+local HIT_R = 4
+-- 「挪开」需要多久：人类反应 ≈15 帧，再横移出判定圈（自机半径 + 弹半径 ≈8 px，4 px/帧）≈2 帧。
+-- 出膛到命中少于这个帧数，玩家根本没时间动 —— 那不是自机狙，是**必中**。
+_G.SPAWN_REACT = 20
+-- ★ 精确自机狙：出膛那一刻，弹道会在**未来某个时刻**打到自机**现在所在的位置**，
+--   而且**留足了挪开的时间**。这类弹你「该挪开」，把它计进「被打频率」
+--   等于用同义反复刷分 —— 玩家对自机狙的应对本来就是挪开，它不反映这张卡密不密。
+--
+-- ★★ 但前提是**来得及挪**。出膛到命中只剩几帧的「贴脸狙」不能算自机狙：
+--   挪开需要 反应(≈15帧) + 横移出判定圈(≈2帧)，来不及就是**必中**，
+--   必中当然是难度。所以贴脸狙**照常计入被打频率**，并且单独报出来当设计缺陷看。
+--   （th04 卡 2 的 boss 停在 BOSS_Y=160、自机活动带 0~186 —— boss 骑在自机脸上，
+--    7 路自机狙全是贴脸打的，这类卡要先修 boss 站位，不是修统计。）
+--
+--   判据在**出膛那一刻**做（之后不再改）：一发朝你 30 帧前的位置飞来的弹，
+--   早就不是自机狙了，但按出膛意图算，它本来也是「该挪开」的那一发。
+--
+--   ⚠ 判据必须**按时间**，不能按角度、更不能按「出膛点离自机多远」：
+--     · 按角度（|出膛角 − 指向自机的角| < 3°）在远处会放宽成十几 px 的偏差，
+--       贴脸时角度又抖得没有意义；
+--     · 「出膛点离自机 < 40 px 就不判」这种距离门槛更糟 —— 它会把贴脸那批
+--       **整批**漏掉，而贴脸恰好是最该看见的那一批。
+--     · 正确做法：解最近点 t* = −(r·v)/(v·v)。t* > 0 才是「飞向自机」（而不是飞离），
+--       再看最近点落不落在判定圈内。全程只看时间 + 最近点，出膛点在哪都无所谓。
+_G.aimed_bullets, _G.pointblank_bullets = 0, 0
+-- 最糟的一次贴脸：出膛距离 / 弹速，用来看该动「限位」还是「弹速」
+_G.pb_t, _G.pb_d, _G.pb_v = 1e9, 0, 0
+-- 出膛到命中最短的帧数（诊断用：看这张卡到底有没有「贴脸」）
+_G.min_aim_t = 1e9
+local function markAimed(b, x, y, vx, vy, aimflag)
+    if aimflag then
+        b._aimed = true
+        _G.aimed_bullets = _G.aimed_bullets + 1
+        return
+    end
+    local sp2 = vx * vx + vy * vy
+    if sp2 < 1e-9 then
+        return                      -- 出膛速度 0（stay 弹），「飞向谁」没有意义
+    end
+    -- r = 出膛点相对自机的位移。最近点 t* = −(r·v)/(v·v)：
+    -- 飞向自机时 r 和 v 反向 → r·v < 0 → t* > 0。
+    -- ⚠ 符号别写反：用「自机 − 出膛点」的话 t* 会整批变成负数，
+    -- 每发弹都被判成「在飞离自机」，自机狙一个都标不出来。
+    local rx, ry = x - player.x, y - player.y
+    local t = -(rx * vx + ry * vy) / sp2
+    if t <= 0 then
+        return                      -- 最近点在过去 → 这发是在飞离自机
+    end
+    local cx, cy = rx + vx * t, ry + vy * t     -- 最近点相对自机的位置
+    if cx * cx + cy * cy > HIT_R * HIT_R then
+        return                      -- 打不到自机，是散弹
+    end
+    if t <= _G.SPAWN_REACT then
+        -- 贴脸：从出膛到命中只有几帧，玩家来不及挪 → 必中，算难度
+        b._pointblank = true
+        _G.pointblank_bullets = _G.pointblank_bullets + 1
+        if t < _G.pb_t then
+            _G.pb_t = t
+            _G.pb_d = math.sqrt(rx * rx + ry * ry)   -- 出膛点离自机多远
+            _G.pb_v = math.sqrt(sp2)                 -- 这一发多快
+        end
+    else
+        b._aimed = true
+        _G.aimed_bullets = _G.aimed_bullets + 1
+    end
+    if t < _G.min_aim_t then _G.min_aim_t = t end
+end
 local function classKey(c)
     for ek, ev in pairs(_editor_class) do
         if type(ev) == "table" then
@@ -107,6 +175,7 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
                 vx = (v or 0) * math.cos(av), vy = (v or 0) * math.sin(av),
                 _index = Forbid(col or 1, 1, 16), timer = 0, ani = 0,
                 group = 1, _live = true, bound = true, style = style }
+    markAimed(b, x, y, b.vx, b.vy, aim)
     bullets[#bullets + 1] = b
     return b
 end
@@ -158,8 +227,30 @@ _G.object = { RawDel = rawdel, Del = rawdel,
                   end
               end,
               IndesDo = function() end }
-_G.bullet = { init = function() end, frame = function() end, render = function() end }
-_G.laser = { init = function() end, frame = function() end, render = function() end }
+-- ★ 桩件的 bullet.init 必须照引擎写：**真实弹的 group / colli 是在这里赋的**
+--   （THlib/bullet/bullet.lua:85 `self.group = destroyable and 1 or 5`，隔壁一行 `self.colli = true`）。
+--   写成空函数的话，用 `Class(bullet, ...)` 造的自定义弹**根本没有 group**，
+--   于是不满足 each_threat 的 `group == 1/2/5`，整层威胁被无声漏掉 ——
+--   th04 卡 2 的樱花花瓣（th04_petal）就是这么被漏成「被打频率 0」的。
+_G.bullet = {
+    init = function(self, imgclass, index, stay, destroyable, fogtime)
+        self.imgclass, self.stay = imgclass, stay
+        self.group = destroyable and 1 or 5
+        self.colli = true
+        self._index = index
+        self.fogtime = fogtime or 11
+    end,
+    frame = function() end,
+    render = function() end,
+}
+-- 激光：真实 init 里写 `self.group = GROUP.LASER`(10)。
+--   但 each_threat 只认 1/2/5 —— 激光是**线段**不是点，
+--   拿激光原点的坐标去跑「点弹命中预测」会算出垃圾，所以这里故意不收。
+--   （th04 不用激光；th01 用了，那几张卡的激光威胁不在统计里，属于已知局限。）
+_G.laser = {
+    init = function(self) self.group = _G.GROUP.LASER self.colli = true end,
+    frame = function() end, render = function() end,
+}
 _G._SC_BG = { init = function() end, frame = function() end, render = function() end,
               AddLayer = function(self) self.layers = self.layers or {} end }
 _G.GROUP = { GHOST = 0, ENEMY_BULLET = 1, ENEMY = 2, PLAYER_BULLET = 3, PLAYER = 4,
@@ -764,12 +855,23 @@ if #registered == 0 then print("  （没有 boss.card.add）") end
 --   统计自机周围 60 px 内的弹数与「被堵死的方向数」。
 ----------------------------------------------------------------------
 local THREAT = (arg[3] == "--threat") or os.getenv("STAGE_THREAT") == "1"
-local THREAT_R, HIT_R, SECT = 60, 4, 24
+local THREAT_R, SECT = 60, 24        -- HIT_R 在上面（出膛判定也要用）
 -- REACT：留给玩家「反应 + 移动」的帧数。TTH 掉到这个以内 = 现在必须动
 -- HORIZON：预测多少帧以内；超过就算「暂时没威胁」
 local REACT, HORIZON = 30, 90
+-- HIT_HORIZON：「这个位置会被打到」的预测窗口（帧）。
+--   窗口 = REACT(30) 时只剩「马上要死」，非自机狙那部分几乎是 0，分不出卡与卡的区别；
+--   放宽到 90 帧（1.5 秒）才是「这片位置会不会被弹覆盖到」。
+local HIT_HORIZON = 90
 
 ---遍历场上有判定的东西（弹 + 有碰撞的敌方 object）
+---  判定依据是**引擎的碰撞组配对表**（THlib/ext/ext.lua:203-208）：
+---    PLAYER 只和 { ENEMY_BULLET=1, ENEMY_BULLET2=12, ENEMY=2, INDES=5, LASER=10 } 碰。
+---  NewSimpleBullet 造的弹一律收（它们在 bullets 里，组是 1 还是被卡改成 12 都无所谓）；
+---  只有 `Class(object, ...)` 造的东西要看 group —— 引擎里那种对象的默认组是 0(GHOST)，
+---  不在配对表里，**打不到自机**，所以不收（th04 的船、水、笼子都是这一类）。
+---  唯一的例外是 LASER：它确实是 10，但激光是线段不是点，拿原点跑点弹预测会算出垃圾，
+---  所以故意不收（已知局限，见 AGENTS.md §9）。
 local function each_threat(fn)
     for i = 1, #bullets do
         local b = bullets[i]
@@ -778,7 +880,7 @@ local function each_threat(fn)
     for i = 1, #objects do
         local o = objects[i]
         if o._live ~= false and o.colli ~= false
-                and (o.group == 1 or o.group == 2 or o.group == 5) then
+                and (o.group == 1 or o.group == 2 or o.group == 5 or o.group == 12) then
             fn(o)
         end
     end
@@ -815,14 +917,21 @@ local function bot_move()
     end
 end
 
----核心度量：**用「原地不动第几帧会中弹」来算**，而不是数周围的密度。
----  一发朝你飞来的弹和一堆远处打转的弹，密度一样但压力完全不同。
----  每发弹用「上一帧位置差分」求速度，然后解析解出它什么时候会进入自机判定圈：
+---核心度量：**自机当前所在的位置，每秒会被打到多少次**。
+---  不是数周围密度（一发朝你飞来的弹和一堆远处打转的弹密度一样），
+---  也不是数「必须换位」的转换次数（那个只反映抖动，跟挨不挨打没关系）。
+---  要的就是字面意思：**站在这个位置上，多久会被打中一次**。
+---  每发弹用「上一帧位置差分」求速度，解析解出它什么时候会进入自机判定圈：
 ---    |p + v·k|² < r²  →  (v·v)k² + 2(p·v)k + (p·p - r²) < 0
----  取所有弹里最早的那个 = TTH（time to hit）。TTH 越小越急。
-local function measure_frame(prev_alert)
+---  取所有弹里最早的那个 = TTH（time to hit），TTH ≤ REACT 就是「会打到」。
+---  每发弹只在**第一次**进入「会打到」时记一笔，避免同一发弹在窗口里被连记几十帧。
+---dry = true 时只读不写：不动 _mx/_my 的前一帧缓存。
+---   measure_frame 顺带把 t._mx/_my 更新成当前位置，作为下一帧求速度的差分基准；
+---   同一帧里调用两次的话，第二次会因为基准刚被刷新而把每发弹的速度算成 0，
+---   TTH 全变成「已经贴脸」—— 读数直接废掉。要额外偷看一次就用 dry。
+local function measure_frame(prev_alert, dry)
     local tth = HORIZON + 1
-    local n, used, alive = 0, 0, 0
+    local n, used, alive, hits, aim_hits, pb_hits = 0, 0, 0, 0, 0, 0
     local sect = {}
     each_threat(function(t)
         alive = alive + 1
@@ -831,7 +940,9 @@ local function measure_frame(prev_alert)
         if t._mx then
             vx, vy = t.x - t._mx, t.y - t._my
         end
-        t._mx, t._my = t.x, t.y
+        if not dry then
+            t._mx, t._my = t.x, t.y
+        end
         local px, py = t.x - player.x, t.y - player.y
         local d2 = px * px + py * py
         if d2 < THREAT_R * THREAT_R then
@@ -840,10 +951,11 @@ local function measure_frame(prev_alert)
             if k > SECT then k = SECT end
             sect[k] = true
         end
-        -- 命中预测
+        -- 命中预测：这发弹多少帧后会打到自机**当前**的位置
+        local bh = nil
         local a = vx * vx + vy * vy
         if a < 1e-9 then
-            if d2 <= HIT_R * HIT_R then tth = 0 end
+            if d2 <= HIT_R * HIT_R then bh = 0 end
         else
             local b2 = 2 * (px * vx + py * vy)
             local c = d2 - HIT_R * HIT_R
@@ -853,7 +965,25 @@ local function measure_frame(prev_alert)
                 if (-b2 + sq) / (2 * a) >= 0 then       -- 未来会进圈
                     local k1 = (-b2 - sq) / (2 * a)
                     if k1 < 0 then k1 = 0 end
-                    if k1 < tth then tth = k1 end
+                    bh = k1
+                end
+            end
+        end
+        if bh then
+            -- ★ 精确自机狙（留足了挪开时间的）不计入难度：它打中你是构造上的必然。
+            --   贴脸狙（_pointblank）**算**难度 —— 来不及挪就是必中，必中就是难度。
+            if t._aimed then
+                if not dry and bh <= HIT_HORIZON and not t._aim_mark then
+                    t._aim_mark = true
+                    aim_hits = aim_hits + 1
+                end
+            else
+                if bh < tth then tth = bh end
+                -- 被打频率：这发弹会打到自机当前的位置，每发只记一次
+                if not dry and bh <= HIT_HORIZON and not t._hit_mark then
+                    t._hit_mark = true
+                    hits = hits + 1
+                    if t._pointblank then pb_hits = pb_hits + 1 end
                 end
             end
         end
@@ -873,7 +1003,7 @@ local function measure_frame(prev_alert)
     end
     local center = ((besti - 1 + best * 0.5) % SECT) * (360 / SECT)
     local alert = tth <= REACT
-    return tth, n, used, best, center, alert, alive
+    return tth, n, used, best, center, alert, alive, hits, aim_hits, pb_hits
 end
 
 print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
@@ -892,11 +1022,20 @@ for idx, entry in ipairs(registered) do
     player.x, player.y = 0, 0
 
     local peak_obj, peak_bul = 0, 0
+    -- 自机狙统计是全局累计的，按卡清零后才能读出这一张卡的数
+    _G.aimed_bullets, _G.pointblank_bullets, _G.min_aim_t = 0, 0, 1e9
+    _G.pb_t, _G.pb_d, _G.pb_v = 1e9, 0, 0
     local tm_sum, tm_peak, tm_frames, tm_nogo, tm_replan, tm_lastc = 0, 0, 0, 0, 0, nil
     local tm_alive, tm_push_sum, tm_push_peak = 0, 0, 0
-    local tm_tth_sum, tm_tth_min, tm_alert_n, tm_mustmove = 0, HORIZON, 0, 0
+    local tm_tth_sum, tm_tth_min, tm_alert_n, tm_hits, tm_aim_hits, tm_pb_hits =
+            0, HORIZON, 0, 0, 0, 0
     local tm_alert = false
     local tm_leak_b, tm_leak_o = 0, 0
+    -- 诊断（STAGE_PROBE）：自机 y 区间 / 限位面 y 区间 / 自机待在合法区外的帧数
+    local tm_py_min, tm_py_max, tm_py_sum = 1e9, -1e9, 0
+    local tm_px_min, tm_px_max = 1e9, -1e9
+    -- 强制位移（卡片直接改 player.x/y）的诊断
+    local tm_pushed_frames, tm_pre_alert_n, tm_push_to_danger = 0, 0, 0
     local tu_peak, tg_min = 0, SECT
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
@@ -930,18 +1069,47 @@ for idx, entry in ipairs(registered) do
                 tm_push_sum = tm_push_sum + push
                 tm_push_peak = math.max(tm_push_peak, push)
 
-                local tth, n, used, gap, center, alert, alive = measure_frame(tm_alert)
+                -- ★ 强制位移（水位、夹框、推力）就是卡片直接改 player.x/y。
+                --   卡片是**限速推**的（水位 6 px/帧），所以自机可以在界外待几十帧 ——
+                --   但那不是测量误差：**游戏里自机真的就在那个位置上**，
+                --   下面 measure_frame 量的正是这个真实位置，不需要再人为吸附到哪。
+                --   这里额外对比「卡片插手之前（p1x,p1y）」和「插手之后」两个位置，
+                --   回答一个设计问题：是限位器把人**推进**了危险区，还是本来就危险？
+                local push_pre_alert = nil
+                if os.getenv("STAGE_PROBE") then
+                    tm_py_min = math.min(tm_py_min, player.y)
+                    tm_py_max = math.max(tm_py_max, player.y)
+                    tm_py_sum = tm_py_sum + player.y
+                    tm_px_min = math.min(tm_px_min, player.x)
+                    tm_px_max = math.max(tm_px_max, player.x)
+                    if push > 0.01 then
+                        tm_pushed_frames = tm_pushed_frames + 1
+                        -- 把自机挪回卡片插手前的位置量一次（dry：不动速度差分基准）
+                        local px, py = player.x, player.y
+                        player.x, player.y = p1x, p1y
+                        local _, _, _, _, _, a = measure_frame(tm_alert, true)
+                        player.x, player.y = px, py
+                        push_pre_alert = a and true or false
+                        if push_pre_alert then tm_pre_alert_n = tm_pre_alert_n + 1 end
+                    end
+                end
+
+                local tth, n, used, gap, center, alert, alive, hits, aim_hits, pb_hits =
+                        measure_frame(tm_alert)
                 tm_alive = tm_alive + alive
                 tm_sum = tm_sum + n
                 tm_peak = math.max(tm_peak, n)
                 tu_peak = math.max(tu_peak, used)
                 tg_min = math.min(tg_min, gap)
                 tm_frames = tm_frames + 1
+                tm_hits = tm_hits + hits
+                tm_aim_hits = tm_aim_hits + aim_hits
+                tm_pb_hits = tm_pb_hits + pb_hits
                 tm_tth_sum = tm_tth_sum + math.min(tth, HORIZON)
                 tm_tth_min = math.min(tm_tth_min, tth)
                 if alert then tm_alert_n = tm_alert_n + 1 end
-                -- 「必须移动」事件：从安全掉进 REACT 窗口的那一下
-                if alert and not tm_alert then tm_mustmove = tm_mustmove + 1 end
+                -- 被限位器推进危险区的帧：卡片插手前是安全的、插手后才进危险区
+                if push_pre_alert == false and alert then tm_push_to_danger = tm_push_to_danger + 1 end
                 tm_alert = alert
                 if used >= SECT then tm_nogo = tm_nogo + 1 end
                 if tm_lastc and math.abs(((center - tm_lastc + 540) % 360) - 180) > 135 then
@@ -963,7 +1131,16 @@ for idx, entry in ipairs(registered) do
         --   注意先 task.Clear(boss)：引擎的 refresh(1) 在换卡时会这么做，
         --   否则会把「挂在 boss 上的循环」当成泄漏（假报警）。
         if card.del then
-            -- 模拟引擎换卡走的 boss_system:refresh(1)
+            -- 模拟引擎换卡走的 boss_system/refresh(1) 之前，先把**整张卡造了什么**
+            -- 打出来。桩件漏掉一层弹的时候读数会莫名其妙地低，看这张清单最快：
+            -- 卡里应该有的东西没出现，就说明它没进威胁统计（th04 卡 2 的花瓣就是这样）。
+            if os.getenv("STAGE_PROBE") then
+                local listed = {}
+                for k, v in pairs(_G.LOG_BULLET) do listed[#listed + 1] = ("弹:%s×%d"):format(k, v) end
+                for k, v in pairs(_G.LOG_NEW) do listed[#listed + 1] = ("对象:%s×%d"):format(k, v) end
+                table.sort(listed)
+                print("      [probe] 本卡共造：" .. table.concat(listed, "  "))
+            end
             task.Clear(boss_obj)
             object.KillServants(boss_obj)
             _G.LOG_NEW, _G.LOG_BULLET = {}, {}
@@ -980,14 +1157,41 @@ for idx, entry in ipairs(registered) do
         if THREAT and tm_frames > 0 then
             local sec = tm_frames / 60
             print(("  %s"):format(label))
-            print(("      ★必须移动    %.1f 次/秒（原地不动会在 %d 帧内中弹的次数）   |  危险时间占比 %.0f%%")
-                    :format(tm_mustmove / sec, REACT, tm_alert_n / tm_frames * 100))
+            print(("      ★被打频率    %.1f 次/秒（自机**当前所在位置**上，%d 帧内会打到它的弹数；精确自机狙已剔除）")
+                    :format(tm_hits / sec, HIT_HORIZON))
+            print(("      ★危险时间占比 %.0f%%  |  精确自机狙另计 %.1f 次/秒（留足了挪开时间，不计入难度）")
+                    :format(tm_alert_n / tm_frames * 100, tm_aim_hits / sec))
+            if tm_pb_hits > 0 then
+                print(("      ⚠ 其中**贴脸狙** %d 发（%.2f 次/秒）—— 出膛到命中不足 %d 帧，来不及挪 = 必中，已计入难度")
+                    :format(tm_pb_hits, tm_pb_hits / sec, _G.SPAWN_REACT))
+            print(("      [probe] 自机狙判定：出膛即瞄准的弹 %d 发，其中 %d 发贴脸；最短出膛→命中 %.0f 帧")
+                    :format(_G.aimed_bullets + _G.pointblank_bullets,
+                            _G.pointblank_bullets,
+                            _G.min_aim_t < 1e9 and _G.min_aim_t or -1))
+            if _G.pb_t < 1e9 then
+                -- 最糟那一次：把它拆成「距离」和「弹速」两个旋钮，指明该动哪个
+                print(("      [probe] 最糟一次：出膛点离自机 %.0f px、弹速 %.2f px/帧 → 只 %.0f 帧。" ..
+                        "想 >%d 帧：距离得 > %.0f px（或把弹速压到 ≤ %.2f）")
+                        :format(_G.pb_d, _G.pb_v, _G.pb_t, _G.SPAWN_REACT,
+                                _G.pb_v * _G.SPAWN_REACT, _G.pb_d / _G.SPAWN_REACT))
+            end
+            end
             print(("      命中预告TTH  中位 %.0f 帧  最小 %.0f 帧（越小越急）")
                     :format(tm_tth_sum / tm_frames, tm_tth_min))
             print(("      60px 内弹数  平均 %.1f 峰值 %d  |  被堵 %d/%d 格  空隙最少 %d 格（%.0f°）")
                     :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT, tg_min, tg_min * 360 / SECT))
             print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d")
                     :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul))
+            if os.getenv("STAGE_PROBE") then
+                print(("      [probe] 自机 y %.0f~%.0f（均 %.0f）  |  自机 x %.0f~%.0f")
+                        :format(tm_py_min, tm_py_max, tm_py_sum / tm_frames,
+                                tm_px_min, tm_px_max))
+                print(("      [probe] 卡片改了自机坐标 %d/%d 帧（%.0f%%）  |  其中卡片插手前进危险区 %d 帧")
+                        :format(tm_pushed_frames, tm_frames, tm_pushed_frames / tm_frames * 100,
+                                tm_pre_alert_n))
+                print(("      [probe] ★ 卡片**把自机推进**危险区 %d 帧（插手前安全、插手后危险）")
+                        :format(tm_push_to_danger))
+            end
             if os.getenv("STAGE_DEBUG") then
                 local detail = {}
                 for k, v in pairs(_G.LOG_BULLET) do detail[#detail + 1] = ("弹:%s×%d"):format(k, v) end
