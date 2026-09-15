@@ -1058,6 +1058,27 @@ NewStage("TH02", "星河", 22, function(self)
     self:Next(158)
 end)--22
 
+NewStage("TH03", "白玉楼", 23, function(self)
+    self:Option(TH03_bg, "TH03_0")
+    self:Task(function()
+        --=========== 道中：先让冥界的樱吹雪飘一会儿 ===========
+        --纯装饰的落樱（无判定），先把玩家带进白玉楼的气氛里
+        local E = _editor_class["TH03"]
+        local w = lstg.world
+        for _ = 1, 90 do
+            New(E.th03_petal_sky, ran:Float(w.boundl, w.boundr), w.boundt + 24)
+            task.Wait(ran:Int(1, 3))
+        end
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(159)
+end)--23
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

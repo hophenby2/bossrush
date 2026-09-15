@@ -43,7 +43,7 @@ WhiteScreen = Class(object, {
     end
 })
 
-local StageID = { "00", "01", "02", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185" }
+local StageID = { "00", "01", "02", "03", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185" }
 for _, p in ipairs(StageID) do
     IncludeLuaFile("mod\\BG\\TH" .. p .. "\\TH" .. p .. "_bg.lua")
     IncludeLuaFile("mod\\GAME\\th" .. p .. ".lua")
@@ -1207,7 +1207,7 @@ function ParticleLaserLine(pR, pG, pB, x, y, col, v, a, GrowTime, Width, Scale, 
     return l
 end
 
-for t = 1, 22 do
+for t = 1, 23 do
     table.insert(LoadRes, function()
         LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t))
         LoadImage(("stage_pic%d"):format(t), ("stage_pic%d"):format(t), 0, 0, 512, 512)

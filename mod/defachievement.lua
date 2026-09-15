@@ -615,3 +615,7 @@ DefineAchievement(157, [[水中月天上月]], [[水月 No Miss]], {
 DefineAchievement(158, [[終焉の星図]], [[星河 No Miss]], {
     [[重写的第三张新关卡：星空主题]],
     [[弹幕大多交给继承 bullet / object / laser 的类去做]] }, false, 6)
+
+DefineAchievement(159, [[白玉楼]], [[白玉楼 No Miss]], {
+    [[第四张新关卡：西行寺幽幽子专场，十张符卡]],
+    [[扇、蝶、樱三样母题，外加用子弹排成的几何结界]] }, false, 6)
