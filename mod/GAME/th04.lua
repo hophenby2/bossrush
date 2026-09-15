@@ -122,15 +122,25 @@ end
 
 ---发射点安全距离：出膛到命中至少要有 20 帧。
 ---  挪开一发弹 = 反应(≈15 帧) + 横移出判定圈(≈2 帧)，再留一点余量 = 20。
----  「离自机不足 20×弹速」的发射点**不要吐弹** —— 来不及挪就是**必中**，不是难度。
----  自检脚本会把这种弹标成「⚠ 贴脸狙」并计入被打频率，那是在报设计缺陷。
----  环形 / 射线型的限位器尤其需要这个：它们的发射点会扫过自机的整片活动区，
----  自机正好站在线上时就会有一颗弹在脸上生出来（th04 卡 5/9 实测 17/21 px）。
----  跳过这几个点留下的缺口很小（几十 px），玩家照样得挪。
+---  ⚠ **不要用这个来挖洞**（AGENTS.md §10.10）。挖洞会在墙上开个缺口，
+---    玩家看得见「墙少了一块」，限位也被自己废掉一半。正解是下面三条：
+---      ① 改展开：换成不会在自机身上生成的形式（自机贴脸就改发散开 / 整圈）
+---      ② 改弹速：把速度压到 ≤ 距离/20
+---      ③ 改生成位置：挪到**对面**去（`mirror_spawn`）
+---  这两个函数只用来**做①②③的判断**，不用来决定「这一格不发」。
 local SPAWN_REACT = 20
----留 2 帧余量：正好卡在 20 帧上时（距离 == 20×弹速）脚本仍会算成贴脸。
-local function safe_spawn(x, y, v)
-    return Dist(x, y, player.x, player.y) > (SPAWN_REACT + 2) * (v or 0)
+local function near_player(x, y, v)
+    return Dist(x, y, player.x, player.y) < SPAWN_REACT * (v or 0)
+end
+
+---③「改生成位置」：自机贴得太近时，把发射点挪到**圆周的对面**。
+---  不挖洞、不少发弹，只是换个地方生成。对**中心对称**的图形（六边形、六条射线、
+---  偶数个点的环）来说，对面那个点在图案上是合法的，对称性不破。
+local function mirror_spawn(cx, cy, x, y, v)
+    if not near_player(x, y, v) then
+        return x, y
+    end
+    return cx * 2 - x, cy * 2 - y
 end
 
 ---把自己的弹挂到 boss 名下。
@@ -176,25 +186,29 @@ local path_bullet = Class(bullet, {
 ---      会在**生成的那一帧**就被引擎收掉 —— 墙会缺掉一大块，缺口逻辑全废
 ---  所以墙贴着 ±(HW, HH) 生成，两个方向都留在边界内侧，再朝内推。
 ---
----  ⚠ 墙**永远来不及躲**：回收边界 ±224/±256 比自机的活动边界 ±192/±224 只大 32 px，
----    所以墙生成时离自机最近就是 32 px —— 按 v=3.4 算只有 9 帧，那是**必中**。
----    想靠「把墙往外推」解决是不可能的（推到 ±224 以外引擎当帧就回收）。
----    只能：① 挖洞（下面这段，墙在自机那一格不生成）；② 压速度到 ≤1.6；
----    ③ 开火前先把墙画出来（预警）。th04 卡 10 的墙是 3.4 px/帧、不画预览，
----    所以必须走 ①。
----
+---  ⚠ 墙**永远来不及躲**，除非压速度：回收边界 ±224/±256 比自机的活动边界
+---    ±192/±224 只大 32 px，所以墙生成时离自机**最近就是 24~26 px**，推远推不出去。
+---    按「出膛到命中 20 帧」算 ⇒ **墙速必须 ≤ 1.2 px/帧**。
+---    本文件两张墙卡都用 **WALL_V = 1.15**（24/1.15 = 20.9 帧）。
+---    压不下去的话就只剩「缺口跟着自机走」或「开火前先把墙画出来」两条路。
+
 ---  缺口用「周长参数」定位：s ∈ [0,1) 沿着墙绕一圈（上→右→下→左），
 ---  落在 [gap_s, gap_s+gap_w) 里的那段不放弹。这样缺口能沿墙一格一格地转。
+---
+---  ⚠⚠ 每条边必须走满**半周长**：`2*hw` 对应 s 的 0.25，所以系数是 **8** 不是 4。
+---     写成 4 的话上边只画到 x=cx（左半条），右边只画到 y=cy（上半条）……
+---     四条边各自只画了一半、彼此不接，**墙根本没闭合**，四个角各开一个口子。
+---     这是 th04 卡 1 / 卡 10 的限位一直形同虚设的真正原因。
 local function wall_point(cx, cy, hw, hh, s)
     s = s % 1
     if s < 0.25 then                       -- 上边：从左到右
-        return cx - hw + 4 * hw * s, cy + hh, 0, -1
+        return cx - hw + 8 * hw * s, cy + hh, 0, -1
     elseif s < 0.5 then                    -- 右边：从上到下
-        return cx + hw, cy + hh - 4 * hh * (s - 0.25), -1, 0
+        return cx + hw, cy + hh - 8 * hh * (s - 0.25), -1, 0
     elseif s < 0.75 then                   -- 下边：从右到左
-        return cx + hw - 4 * hw * (s - 0.5), cy - hh, 0, 1
+        return cx + hw - 8 * hw * (s - 0.5), cy - hh, 0, 1
     else                                   -- 左边：从下到上
-        return cx - hw, cy - hh + 4 * hh * (s - 0.75), 1, 0
+        return cx - hw, cy - hh + 8 * hh * (s - 0.75), 1, 0
     end
 end
 
@@ -208,12 +222,8 @@ local function wall_with_gap(style, col, cx, cy, hw, hh, n, v, gap_s, gap_w)
         end
         if d > gap_w * 0.5 then
             local x, y, dx, dy = wall_point(cx, cy, hw, hh, s)
-            --自机这一格不生成：墙贴着回收边界长，离自机最近只有 32 px，
-            --不挖洞的话这一发就是**必中**（见上面的 ⚠）
-            if safe_spawn(x, y, v) then
-                local o = fly(style, col, x, y, v, Angle(0, 0, dx, dy), 0)
-                o._r, o._g, o._b = 255, 176, 210
-            end
+            local o = fly(style, col, x, y, v, Angle(0, 0, dx, dy), 0)
+            o._r, o._g, o._b = 255, 176, 210
         end
     end
 end
@@ -267,10 +277,18 @@ do
     local SLOTS = 16                 -- 墙的周长切几格
     local GAP_W = 2.2 / SLOTS        -- 缺口占 2.2 格（≈250 px 周长；1.5 格时太挤）
     local WALL_N = 56                -- 整圈几颗（周长 1820 px → 33 px 一颗）
-    local HW, HH = 208, 244          -- 墙的半宽/半高：都在回收边界(±224/±256)内侧
-    local WALL_V = 3.6               -- 朝内推的速度：**快**，好让每面墙一口气穿完
-    local CYCLE = 130                -- 补墙间隔：要 > 穿场时间(58 帧) 且留足静默；本关第一张，别做难
-    local JUMP = 90                  -- 每 90 帧缺口挪一格
+    -- ⚠ 墙必须**以场地中心(0,0)为心**、且尽量贴近回收边界：
+    --   自机活动到 ±192/±224，墙贴到 ±220/±252 才留下 28 px 余量，
+    --   按 1.15 px/帧 算 24 帧 > 20 —— 这才是「贴着边站也来得及躲」。
+    --   原来写 208/244 且以 boss(y=40) 为心：下边压在 y=-204（离自机只有 20 px），
+    --   上边到 y=284（越过回收边界 ±256，**生成当帧就被引擎收掉**）。
+    local HW, HH = 220, 252          -- 墙的半宽/半高：都在回收边界(±224/±256)内侧
+    -- ⚠ 墙速被回收边界卡死在 1.15：墙贴着 ±208/±244 生成，而自机活动到 ±192/±224，
+    --   离自机最近只有 24 px —— 按「出膛到命中 20 帧」算，速度快过 1.2 就是**必中**。
+    --   （原来写 3.6：24/3.6 只有 7 帧，贴着边站必死。）
+    local WALL_V = 1.15              -- 朝内推的速度：慢，但这是唯一公平的速度
+    local CYCLE = 340                -- 补墙间隔：要 > 穿场时间(≈243 帧) 且留足静默
+    local JUMP = 200                 -- 每 200 帧缺口挪一格
     local WARN = 36                  -- 每轮开头 36 帧只画预警
     local START_WARN = 90            -- 整面墙出现前的预热
     local AIM_GAP = 40               -- 实弹间隔
@@ -284,7 +302,7 @@ do
             self.gap_s = 0               -- 缺口中心（周长参数 0~1）
             self.t = 0
             self.ready = false
-            self.cx, self.cy = BOSS_X, BOSS_Y
+            self.cx, self.cy = 0, 0      -- 墙以场地中心为心（不是 boss），四边余量才对称
             self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET + 30
             self.bound, self.colli = false, false
         end,
@@ -355,17 +373,16 @@ do
                 task.Wait(90)
                 Newcharge_out(self.x, self.y, 255, 255, 100)
                 while true do
-                    --自机贴着 boss 时这一轮**不发**：发射点就是 boss 自己，
-                    --离自机不足 20×AIM_V 的话弹一出来就在脸上，来不及挪。
-                    if safe_spawn(self.x, self.y, AIM_V) then
-                        local a0 = Angle(self, player)
-                        for i = 1, AIM_WAYS do
-                            local o = fly(ball_mid, 4, self.x, self.y, AIM_V,
-                                    a0 + (i - 1) * 360 / AIM_WAYS, 0)
-                            o._r, o._g, o._b = 255, 186, 220
-                        end
-                        PlaySound("tan00", 0.06, self.x / 256, true)
+                    --① 改展开：自机贴着 boss 时（发射点就是 boss 自己）这一轮改成**整圈**，
+                    --   而不是把弹删掉 —— 弹一发不少，只是不再朝自机扎。
+                    local aimed = not near_player(self.x, self.y, AIM_V)
+                    local a0 = aimed and Angle(self, player) or 0
+                    for i = 1, AIM_WAYS do
+                        local o = fly(ball_mid, 4, self.x, self.y, AIM_V,
+                                a0 + (i - 1) * 360 / AIM_WAYS, 0)
+                        o._r, o._g, o._b = 255, 186, 220
                     end
+                    PlaySound("tan00", 0.06, self.x / 256, true)
                     task.Wait(AIM_GAP)
                 end
             end)
@@ -382,14 +399,14 @@ end
 
 --============================
 --[卡2] 樱符「墨染之川」
---  限位：三途川的**潮汐**——水位在 -180 ~ +140 之间涨落，把玩家顶在它上面（th07:819 的做法）
+--  限位：三途川的**潮汐**——水位在 -209 ~ +95 之间涨落，把玩家顶在它上面（th07:819 的做法）
 --  不做「缺口」：试过在幕布上留 5 条缝，结果玩家只要站进缝里就完全不受力，
 --  限位形同虚设。潮汐是单调的上下界，没有可以「躲进去」的位置。
---  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 320 px；
---        水位最快 3.4 px/帧，玩家 4 px/帧 追得上，所以是「压缩活动空间」而不是「推着走」，
---        真正的死线是水位到顶时上方只剩 84 px 的带子。
+--  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 304 px；
+--        水位最快 3.2 px/帧，玩家 4 px/帧 追得上，所以是「压缩活动空间」而不是「推着走」，
+--        真正的死线是水位到顶时上方只剩 129 px 的带子。
 --        推力限速 6 px/帧（连续），不要写成硬夹 —— 会变成单帧瞬移几十 px。
---  预警：潮汐启动前 90 帧，在底部画一条提示线（水位还没动）
+--  预警：潮汐启动前 90 帧，在起潮线上画一条闪烁的提示线（水位还没动）
 --  实弹：上方落下的花瓣（v=1.8，每 22 帧一片），落到 -60 炸开成 5 向
 --============================
 do
@@ -398,7 +415,9 @@ do
     -- 自机狙变成贴脸狙（必中）。卡 2 的 boss 在 y=160、实弹弹速 3.0 →
     -- 水位顶不能超过 160 − 60 = 100。写在 +140 时实测出膛离自机 39 px、只 13 帧。
     -- 改成 -65±160（顶 +95，离 boss 65 px = 21.7 帧），同时仍然伸进自机活动带（0~186）里。
-    local TIDE_MID, TIDE_AMP = -65, 160  -- 水位 = MID + AMP·sin → 在 -225 ~ +95 之间
+    local TIDE_MID, TIDE_AMP = -57, 152  -- 水位 = MID + AMP·sin → 在 -209 ~ +95 之间
+    -- ⚠ 潮底必须留在**画面内**：原来写 -225 已经越过 world.b(-224)，
+    -- 于是预警线（画在起潮位置）整个跑到屏幕外面去，玩家什么都看不到。
     local FLOOR_WARN = 90            -- 预警多少帧
     local FALL_V = 1.8               -- 花瓣下落速度
     local FALL_SWAY = 44
@@ -434,11 +453,13 @@ do
         end,
         render = function(self)
             if self.t < FLOOR_WARN then
-                --预警：水位还没动，先在起潮线上画一条提示线
-                --（起潮位置 = MID + AMP·sin(-90°) = -180，和下面 frame 的第一帧对上）
+                --预警：水位还没动，先在**起潮线**上画一条闪烁的提示线
+                --（起潮位置 = MID + AMP·sin(-90°) = -209，和下面 frame 的第一帧严格对上；
+                --  写死成一个和实际不符的数，玩家就会看到「线在这里、水却从别处冒出来」）
+                local wy = TIDE_MID - TIDE_AMP
                 local k = 0.4 + 0.6 * sin(self.t * 0.15)
                 SetImageState("white", "mul+add", 110 * k, 255, 214, 236)
-                RenderRect("white", -192, 192, -182, -177)
+                RenderRect("white", -192, 192, wy - 2.5, wy + 2.5)
                 return
             end
             local y = self.y
@@ -510,9 +531,14 @@ do
             task.New(self, function()
                 task.Wait(240)
                 while true do
-                    local a0 = Angle(self, player)
+                    --① 改展开：自机贴着 boss 时（发射点就是 boss 自己）这一轮改成**整圈**，
+                    --   而不是把弹删掉 —— 弹一发不少，只是不再朝自机扎。
+                    local aimed = not near_player(self.x, self.y, 3.0)
                     for k = 1, 7 do
-                        local o = fly(ball_mid, 2, self.x, self.y, 3.0, a0 + (k - 4) * 11, 0)
+                        --朝自机时是 7 路扇（±33°）；改成整圈时铺满 360°
+                        local ang = aimed and (Angle(self, player) + (k - 4) * 11)
+                                or ((k - 1) * 360 / 7)
+                        local o = fly(ball_mid, 2, self.x, self.y, 3.0, ang, 0)
                         o._r, o._g, o._b = 255, 178, 212
                     end
                     PlaySound("tan00", 0.07, self.x / 256, true)
@@ -848,25 +874,24 @@ do
                         local f = (i - 1) / (LINE_N - 1) - 0.5   -- -0.5 ~ 0.5
                         local rr = self.r + f * 2 * LINE_HALF
                         local px, py = cx + cos(a) * rr, cy + sin(a) * rr
-                        --自机站在线上时，这个点不吐：否则弹在脸上生出来，来不及挪
-                        if safe_spawn(px, py, LINE_V) then
-                            local o = fly(ellipse, 6, px, py, LINE_V, a + 180, 0)
-                            o._r, o._g, o._b = 255, 206, 230
-                        end
+                        --自机站在线上时，这个点挪到对面那条臂上（六条臂 180° 对径，
+                        --图案仍是六重对称；不挖洞、不少发）
+                        px, py = mirror_spawn(cx, cy, px, py, LINE_V)
+                        local o = fly(ellipse, 6, px, py, LINE_V, a + 180, 0)
+                        o._r, o._g, o._b = 255, 206, 230
                     end
                 end
                 --枝端绽放
                 for k = 1, ARMS do
                     local a = self.rot + (k - 1) * 360 / ARMS
                     local bx, by = cx + cos(a) * self.r, cy + sin(a) * self.r
-                    --枝端离自机太近就整簇不发（实测贴脸 46 px / 2.30 → 正好 20 帧）
-                    if safe_spawn(bx, by, BLOOM_V) then
-                        for j = 1, BLOOM_N do
-                            local ang = a + (j - (BLOOM_N + 1) / 2) * 20
-                            local o = fly(butterfly, 2 + (j % 2) * 2,
-                                    bx, by, BLOOM_V, ang, 1.4)
-                            o._r, o._g, o._b = 255, 190, 224
-                        end
+                    --枝端离自机太近就整簇挪到对面那条臂上（不挖洞、不少发）
+                    bx, by = mirror_spawn(cx, cy, bx, by, BLOOM_V)
+                    for j = 1, BLOOM_N do
+                        local ang = a + (j - (BLOOM_N + 1) / 2) * 20
+                        local o = fly(butterfly, 2 + (j % 2) * 2,
+                                bx, by, BLOOM_V, ang, 1.4)
+                        o._r, o._g, o._b = 255, 190, 224
                     end
                 end
                 PlaySound("tan00", 0.06, 0, true)
@@ -1345,11 +1370,10 @@ do
                 local f = i / HEX_STEPS
                 local px, py = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
                 -- 朝内飞：吐弹点在最大半径上，离自机最远
-                -- 自机正好站在结界边上时这个点不吐：否则弹在脸上生出来（实测 21 px → 9 帧）
-                if safe_spawn(px, py, HEX_V) then
-                    local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
-                    o._r, o._g, o._b = 224, 192, 255
-                end
+                -- 自机正好站在结界边上时，这个点挪到对边（六边形中心对称，图案不破）
+                px, py = mirror_spawn(cx, cy, px, py, HEX_V)
+                local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
+                o._r, o._g, o._b = 224, 192, 255
             end
         end
     end
@@ -1418,16 +1442,21 @@ do
                 task.Wait(HEX_WARN)
                 while true do
                     local a0 = Angle(self, player)
+                    --① 改展开：自机贴上来时，轮盘从「朝自机的扇形」改成**整圈均匀**，
+                    --   弹数一发不少，只是不再对着自机扎（不挖洞）
+                    local aimed = not near_player(self.x, self.y, 2.7)
                     for i = 1, t do
                         for v = 1, 2 do
                             local sp = 1.2 + (v - 1) * 1.5
-                            --发射点就是 boss：自机贴上来时**快档不发**
-                            --（2.7 档要 54 px 才够 20 帧，1.2 档只要 26 px，所以照发）
-                            if safe_spawn(self.x, self.y, sp) then
-                                local o = fly(ball_mid, 4, self.x, self.y, sp,
-                                        a0 + (i - 1) * 360 / t, 0)
-                                o._r, o._g, o._b = 255, 184, 218
+                            --朝自机时是 t 路；改成整圈时把两档交错铺满 360°（共 2t 路）
+                            local ang
+                            if aimed then
+                                ang = a0 + (i - 1) * 360 / t
+                            else
+                                ang = ((i - 1) * 2 + (v - 1)) * 360 / (t * 2)
                             end
+                            local o = fly(ball_mid, 4, self.x, self.y, sp, ang, 0)
+                            o._r, o._g, o._b = 255, 184, 218
                         end
                     end
                     PlaySound("tan00", 0.08, self.x / 256, true)
@@ -1471,21 +1500,21 @@ do
 
     -- 大屏下场地是 ±320/±240，回收边界 ±224/±256 —— 注意横竖的关系翻过来了！
     -- 所以墙的半宽取 216（<224）、半高取 250（<256），仍然全在边界内侧
-    local WALL_HW, WALL_HH = 216, 250
+    -- 同上：以场地中心为心，贴到 ±220/±252，给自机留 28 px（1.15 px/帧 → 24 帧）
+    local WALL_HW, WALL_HH = 220, 252
     local WALL_N = 52                -- 原来 72：收敛到中心时会挤成一团
-    local WALL_V = 3.4               -- 快墙：一口气穿完，两波之间留静默期
-    -- （速度不用为「贴脸」让步：墙的公平性靠 wall_with_gap 里的挖洞解决，
-    --   见那个函数上面的 ⚠ —— 墙贴着回收边界长，靠推远是推不出去的。）
-    local WALL_CYCLE = 100           -- 补墙间隔（穿场约 73 帧 → 约 27 帧静默）
-    local WALL_CYCLE_RAGE = 78       -- 四阶段加快（仍然留出静默）
-    local WALL_JUMP = 90
+    -- ⚠ 同上：墙速上限 1.2（24 px ÷ 20 帧），3.4 时贴着边站就是必中
+    local WALL_V = 1.15              -- 压到公平速度，靠缺口节拍而不是速度给压力
+    local WALL_CYCLE = 340           -- 补墙间隔（穿场约 243 帧 → 约 97 帧静默）
+    local WALL_CYCLE_RAGE = 300      -- 四阶段加快（仍然留出静默）
+    local WALL_JUMP = 200
     local WALL_WARN = 90
     local SLOTS = 16
     -- 每个阶段的缺口宽度与补墙间隔。**转阶段时立刻生效**：
     -- 新加的那一层（结界/摆渡船/风）需要 90 帧预警才吐弹，
     -- 但缺口收窄是当帧就能看见、能感觉到的 —— 否则玩家会觉得「转阶段没反应」。
     local GAP_SLOTS_BY_PHASE = { 1.8, 1.5, 1.2, 1.0 }
-    local CYC_BY_PHASE = { WALL_CYCLE, 92, 84, WALL_CYCLE_RAGE }
+    local CYC_BY_PHASE = { WALL_CYCLE, 330, 315, WALL_CYCLE_RAGE }
     local PETAL_GAP = 26
     local BARRIER_R_OUT = 168
 
@@ -1548,7 +1577,7 @@ do
                 local cyc = CYC_BY_PHASE[self.phase] or WALL_CYCLE
                 local gw = (GAP_SLOTS_BY_PHASE[self.phase] or 1.5) / SLOTS
                 if self.t % cyc == 1 and (self.t % WALL_JUMP) > 30 then
-                    wall_with_gap(butterfly, (self.phase >= 4) and 4 or 2, cx, cy,
+                    wall_with_gap(butterfly, (self.phase >= 4) and 4 or 2, 0, 0,
                             WALL_HW, WALL_HH, WALL_N, WALL_V, self.gap_s, gw)
                 end
             end

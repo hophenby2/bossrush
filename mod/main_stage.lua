@@ -1100,6 +1100,26 @@ NewStage("TH04", "彼岸", 24, function(self)
     self:Next(160)
 end)--24
 
+NewStage("TH05", "花园", 25, function(self)
+    self:Option(TH05_bg, "TH05_0")
+    self:Task(function()
+        --=========== 道中：花园里飘的花瓣 ===========
+        --纯装饰（无判定）——按 §10.10，先把屏幕填亮再进 BOSS
+        local w = lstg.world
+        for _ = 1, 90 do
+            New(_editor_class["TH05"].th05_petalbg)
+            task.Wait(ran:Int(2, 5))
+        end
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(161)
+end)--25
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

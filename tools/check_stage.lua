@@ -86,8 +86,12 @@ _G.CREATED_OBJECTS = 0
 -- 诊断用：卡结束之后到底是谁在造东西
 _G.LOG_NEW, _G.LOG_BULLET = {}, {}
 local _styleNames = {}      -- bulletStyle 表 → 名字
--- 自机判定半径（和 measure_frame 里的 HIT_R 是同一个数，写在这儿好让出膛判定也能用）
-local HIT_R = 4
+-- 自机判定半径 = **自机半宽 + 弹半宽**，不是拍脑袋的 4。
+--   引擎的碰撞是「两个椭圆求交」（GameObjectIntersectDetect.cpp），两边都用各自贴图登记的
+--   a/b：自机在 THlib/player/*/[自机].lua 里写 A/B（灵梦 0.5、魔理沙/文 1），
+--   弹在 THlib/bullet/bulletStyle.lua 的 LoadImageGroup 里带 a,b（ball_mid/knife 4、ellipse 4.5）。
+--   所以实际间隙 ≈ 0.75 + 4.25 ≈ 5 px，比 4 大一档。
+local HIT_R = 5
 -- 「挪开」需要多久：人类反应 ≈15 帧，再横移出判定圈（自机半径 + 弹半径 ≈8 px，4 px/帧）≈2 帧。
 -- 出膛到命中少于这个帧数，玩家根本没时间动 —— 那不是自机狙，是**必中**。
 _G.SPAWN_REACT = 20
@@ -267,9 +271,32 @@ _G.lstg = { world = { l = -192, r = 192, b = -224, t = 224,
             tmpvar = {}, var = {}, view3d = { eye = {0,0,0}, at = {0,0,0}, up = {0,1,0} } }
 _G.player = { x = 0, y = 0, name = "Reimu" }
 _G.player_list = { { "Reimu", 1 } }
-_G.ran = { Float = function(self, a, b) return (a or 0) end,
-           Int = function(self, a, b) return math.floor(a or 0) end,
-           Sign = function(self) return 1 end }
+-- ★ 随机数桩件必须是**真的随机**。
+--   原来写成 `Float = function(self, a, b) return (a or 0) end` —— 返回下界，
+--   于是关卡里每一处 `ran:Float(...)` 都退化成常量，所有「随机撒开」的弹幕
+--   全挤在同一个位置。th04 卡 2 的花瓣是 `ran:Float(w.l, w.r)`（x 撒满整屏），
+--   桩件下 153 片全落在 x=-192 那一列 —— 整张卡量出来「空得离谱」，
+--   而实机是满满一屏花瓣。**这类误差不会报错，只会让读数安静地错掉。**
+--   用固定种子的 32 位 LCG：可复现（每次跑同一张卡结果一样），
+--   且不用 math.random（LuaJIT 的种子随启动变，会毁掉可复现性）。
+local _rs = 20260915
+local function _rand()
+    _rs = (_rs * 1664525 + 1013904223) % 4294967296
+    return _rs / 4294967296
+end
+_G.ran = {
+    Float = function(self, a, b)
+        a, b = a or 0, b or 0
+        return a + (b - a) * _rand()
+    end,
+    Int = function(self, a, b)
+        a, b = a or 0, b or 0
+        if b < a then a, b = b, a end
+        local v = math.floor(a + (b - a + 1) * _rand())
+        return v > b and b or v
+    end,
+    Sign = function(self) return _rand() < 0.5 and -1 or 1 end,
+}
 _G.sp = {
     math = { AngleIterator = function(a) return function() return nil end end },
     CopyTable = function(_, t) return t end,
@@ -859,6 +886,14 @@ local THREAT_R, SECT = 60, 24        -- HIT_R 在上面（出膛判定也要用�
 -- REACT：留给玩家「反应 + 移动」的帧数。TTH 掉到这个以内 = 现在必须动
 -- HORIZON：预测多少帧以内；超过就算「暂时没威胁」
 local REACT, HORIZON = 30, 90
+-- Y_SPLIT：分区域统计用的分界（自机 y 高于它算「屏幕上方」）
+local Y_SPLIT = 96
+-- STAGE_HIGH=<y>：诊断用，把自机**强行压在 y 以上**，看「卡片在屏幕上方到底难不难」。
+--   不设这个开关时机器人会自己挑好走的路（绕开难的地方），只看它的轨迹会低估难度。
+local STAGE_HIGH = tonumber(os.getenv("STAGE_HIGH"))
+-- STAGE_DUMP=<帧号>：诊断用，把那一帧**场上真正有什么**全部打出来
+--   （有什么弹、在哪、多快）。用来分清「卡真的空」和「桩件漏了一层」。
+local STAGE_DUMP = tonumber(os.getenv("STAGE_DUMP"))
 -- HIT_HORIZON：「这个位置会被打到」的预测窗口（帧）。
 --   窗口 = REACT(30) 时只剩「马上要死」，非自机狙那部分几乎是 0，分不出卡与卡的区别；
 --   放宽到 90 帧（1.5 秒）才是「这片位置会不会被弹覆盖到」。
@@ -914,6 +949,10 @@ local function bot_move()
     if m > 1e-9 then
         player.x = player.x + fx / m * 4
         player.y = player.y + fy / m * 4
+    end
+    -- 诊断：强行把自机压在某个高度以上，用来回答「屏幕上方到底难不难」
+    if STAGE_HIGH and player.y < STAGE_HIGH then
+        player.y = STAGE_HIGH
     end
 end
 
@@ -1006,6 +1045,129 @@ local function measure_frame(prev_alert, dry)
     return tth, n, used, best, center, alert, alive, hits, aim_hits, pb_hits
 end
 
+---★ 安全角度范围：**往哪个方向跑能活**。
+---
+---  前面那些指标量的都是「站在原地会不会被打」；这一条量的是**能不能躲**。
+---  对每个方向 θ（共 SECT 个），假设自机以 4 px/帧 一直朝 θ 跑，看会不会撞上任何一发弹：
+---     相对位移 r = 弹 − 自机，相对速度 w = 4·(cosθ,sinθ) − v
+---     最近点 t* = −(r·w)/(w·w)；t* > 0 且 |r + w·t*| ≤ HIT_R → 这个方向会撞死
+---  一个安全方向都没有 = 这一帧是**死局**：不是难，是躲不掉。
+---
+---  ⚠ 这里**必须把自机狙算进去**。躲自机狙靠的就是垂直于弹道跑，
+---    把狙剔掉之后「安全角度」会虚高 —— 看着到处都是路，其实正对着你的那发躲不开。
+---    （自机狙被剔除只对「被打频率」成立：那个量的是「这个位置会不会被弹覆盖」。）
+---  ⚠ 已知局限：没模拟「跑到边界会被挡住」。朝墙跑的方向按「继续跑」算，
+---    所以贴边时安全角度会偏少。
+local PLAYER_SPD = 4
+local function measure_safe_angles(skip_aimed)
+    local list = {}
+    each_threat(function(t)
+        if skip_aimed and t._aimed then return end
+        local vx, vy = 0, 0
+        if t._mx then
+            vx, vy = t.x - t._mx, t.y - t._my
+        else
+            -- 刚出膛那一帧还没有差分基准，退回用出膛速度（桩件存了 vx/vy）
+            vx, vy = t.vx or 0, t.vy or 0
+        end
+        list[#list + 1] = { t.x, t.y, vx, vy }
+    end)
+    local safe, nsafe = {}, 0
+    for i = 1, SECT do
+        local th = math.rad((i - 1) * 360 / SECT)
+        local ux, uy = PLAYER_SPD * math.cos(th), PLAYER_SPD * math.sin(th)
+        local ok = true
+        for k = 1, #list do
+            local b = list[k]
+            local rx, ry = b[1] - player.x, b[2] - player.y
+            local wx, wy = ux - b[3], uy - b[4]
+            local w2 = wx * wx + wy * wy
+            if w2 < 1e-9 then
+                if rx * rx + ry * ry <= HIT_R * HIT_R then ok = false break end
+            else
+                local ts = -(rx * wx + ry * wy) / w2
+                if ts > 0 and ts <= HORIZON then
+                    local cx, cy = rx + wx * ts, ry + wy * ts
+                    if cx * cx + cy * cy <= HIT_R * HIT_R then ok = false break end
+                end
+            end
+        end
+        if ok then
+            safe[i] = true
+            nsafe = nsafe + 1
+        end
+    end
+    -- 最宽的一段连续安全角度，以及它的中心方向
+    local best, cur, besti, curi = 0, 0, 1, 1
+    for i = 1, SECT * 2 do
+        local j = (i - 1) % SECT + 1
+        if safe[j] then
+            if cur == 0 then curi = i end
+            cur = cur + 1
+            if cur > best and cur <= SECT then best, besti = cur, curi end
+        else
+            cur = 0
+        end
+    end
+    local center = ((besti - 1 + best * 0.5) % SECT) * (360 / SECT)
+    return nsafe, best, center
+end
+
+---在**任意一点**上量「有多少发弹正朝这里飞来」（HIT_HORIZON 帧内会打中它）。
+---  measure_frame 量的是自机**实际走过**的那条线；这条量的是**整个屏幕的难度场**。
+---  差别很大：机器人绕开了难的地方，只看它走过的轨迹会得出「这张卡很松」。
+local function measure_point(px, py)
+    local hits = 0
+    each_threat(function(t)
+        local vx, vy = 0, 0
+        if t._mx then
+            vx, vy = t.x - t._mx, t.y - t._my
+        else
+            vx, vy = t.vx or 0, t.vy or 0
+        end
+        local rx, ry = t.x - px, t.y - py
+        local a = vx * vx + vy * vy
+        local bh
+        if a < 1e-9 then
+            if rx * rx + ry * ry <= HIT_R * HIT_R then bh = 0 end
+        else
+            local b2 = 2 * (rx * vx + ry * vy)
+            local c = rx * rx + ry * ry - HIT_R * HIT_R
+            local disc = b2 * b2 - 4 * a * c
+            if disc >= 0 then
+                local sq = math.sqrt(disc)
+                if (-b2 + sq) / (2 * a) >= 0 then
+                    local k1 = (-b2 - sq) / (2 * a)
+                    if k1 < 0 then k1 = 0 end
+                    bh = k1
+                end
+            end
+        end
+        if bh and bh <= HIT_HORIZON then hits = hits + 1 end
+    end)
+    return hits
+end
+
+---难度场：在自机**合法活动范围**里铺一张格子，逐格量「有多少发弹正朝这里飞来」。
+---  自机跑得开的地方才是它真能待的地方，所以格子按 ±192/±224 铺。
+local GRID_X = { -160, -80, 0, 80, 160 }
+local GRID_Y = { -192, -96, 0, 96, 192 }
+local function measure_field()
+    local worst, best, sum, n = -1, 1e9, 0, 0
+    local wy = 0
+    for iy = 1, #GRID_Y do
+        for ix = 1, #GRID_X do
+            local v = measure_point(GRID_X[ix], GRID_Y[iy])
+            sum = sum + v
+            n = n + 1
+            if v > worst then worst, wy = v, GRID_Y[iy] end
+            if v < best then best = v end
+        end
+    end
+    return worst, sum / n, wy
+end
+
+
 print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
 for idx, entry in ipairs(registered) do
     local card = entry.card
@@ -1029,6 +1191,17 @@ for idx, entry in ipairs(registered) do
     local tm_alive, tm_push_sum, tm_push_peak = 0, 0, 0
     local tm_tth_sum, tm_tth_min, tm_alert_n, tm_hits, tm_aim_hits, tm_pb_hits =
             0, HORIZON, 0, 0, 0, 0
+    -- 安全角度范围（往哪个方向跑能活）
+    -- 安全角度 / 分区域统计。**打包成一张表**：
+    --   LuaJIT 对每个函数有 60 个 upvalue 的硬上限，摊成一堆 tm_xxx 会直接编译不过
+    --   （"function has more than 60 upvalues"）。
+    local sa = { sum = 0, min = SECT, gap = SECT, dead = 0, c = 0,
+                 tf = 0, th = 0, tsa = 0, tdead = 0,
+                 bf = 0, bh = 0, bsa = 0, bdead = 0,
+                 fw = 0, fa = 0, fy = 0, fn = 0 }
+    -- 分区域（自机 y 高于/低于 Y_SPLIT）
+    local tm_top_f, tm_top_h, tm_top_sa, tm_top_dead = 0, 0, 0, 0
+    local tm_bot_f, tm_bot_h, tm_bot_sa, tm_bot_dead = 0, 0, 0, 0
     local tm_alert = false
     local tm_leak_b, tm_leak_o = 0, 0
     -- 诊断（STAGE_PROBE）：自机 y 区间 / 限位面 y 区间 / 自机待在合法区外的帧数
@@ -1105,6 +1278,33 @@ for idx, entry in ipairs(registered) do
                 tm_hits = tm_hits + hits
                 tm_aim_hits = tm_aim_hits + aim_hits
                 tm_pb_hits = tm_pb_hits + pb_hits
+                -- ★ 安全角度：往哪个方向跑能活
+                local sa_n, sa_best, sa_c = measure_safe_angles(false)
+                local sa_na, sa_besta = measure_safe_angles(true)
+                sa.sum = sa.sum + sa_n
+                sa.min = math.min(sa.min, sa_n)
+                sa.gap = math.min(sa.gap, sa_best)
+                sa.c = sa_c
+                if sa_n == 0 then sa.dead = sa.dead + 1 end
+                -- 难度场：整个屏幕铺格子量，和「自机实际走过的那条线」对照
+                local fw, fa, fy = measure_field()
+                sa.fw = math.max(sa.fw, fw)
+                sa.fa = sa.fa + fa
+                sa.fy = sa.fy + fy
+                sa.fn = sa.fn + 1
+                -- 按自机在屏幕上的位置分桶：上半场 / 下半场各自的难度
+                --   （「这张卡是不是只在某个区域难」靠平均值是看不出来的）
+                if player.y > Y_SPLIT then
+                    sa.tf = sa.tf + 1
+                    sa.th = sa.th + hits
+                    sa.tsa = sa.tsa + sa_n
+                    if sa_n == 0 then sa.tdead = sa.tdead + 1 end
+                else
+                    sa.bf = sa.bf + 1
+                    sa.bh = sa.bh + hits
+                    sa.bsa = sa.bsa + sa_n
+                    if sa_n == 0 then sa.bdead = sa.bdead + 1 end
+                end
                 tm_tth_sum = tm_tth_sum + math.min(tth, HORIZON)
                 tm_tth_min = math.min(tm_tth_min, tth)
                 if alert then tm_alert_n = tm_alert_n + 1 end
@@ -1116,6 +1316,19 @@ for idx, entry in ipairs(registered) do
                     tm_replan = tm_replan + 1
                 end
                 tm_lastc = center
+            end
+            if STAGE_DUMP and f == STAGE_DUMP then
+                local rows = {}
+                each_threat(function(t)
+                    rows[#rows + 1] = ("    %-22s (%.0f,%.0f)  v=(%.2f,%.2f)")
+                            :format(classKey(t.class), t.x, t.y,
+                                    (t._mx and t.x - t._mx) or t.vx or 0,
+                                    (t._my and t.y - t._my) or t.vy or 0)
+                end)
+                print(("  [dump] f=%d 自机 (%.0f,%.0f)  有判定物件 %d 个："):format(
+                        f, player.x, player.y, #rows))
+                table.sort(rows)
+                for i = 1, #rows do print(rows[i]) end
             end
             peak_obj = math.max(peak_obj, #objects)
             peak_bul = math.max(peak_bul, #bullets)
@@ -1180,6 +1393,19 @@ for idx, entry in ipairs(registered) do
                     :format(tm_tth_sum / tm_frames, tm_tth_min))
             print(("      60px 内弹数  平均 %.1f 峰值 %d  |  被堵 %d/%d 格  空隙最少 %d 格（%.0f°）")
                     :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT, tg_min, tg_min * 360 / SECT))
+            print(("      ★安全角度    平均 %.1f/%d 个方向能活  最少 %d  |  最窄处最宽安全扇区 %d 格（%.0f°，朝 %.0f°）  |  死局 %d 帧（%.1f%%）")
+                    :format(sa.sum / tm_frames, SECT, sa.min,
+                            sa.gap, sa.gap * 360 / SECT, sa.c,
+                            sa.dead, sa.dead / tm_frames * 100))
+            print(("      ★分区域      上方(y>%d) %.1f 次/秒（占 %d/%d 帧，安全角度均 %.1f，死局 %d）  |  下方 %.1f 次/秒（均 %.1f，死局 %d）")
+                    :format(Y_SPLIT,
+                            sa.tf > 0 and sa.th / (sa.tf / 60) or 0, sa.tf, tm_frames,
+                            sa.tf > 0 and sa.tsa / sa.tf or 0, sa.tdead,
+                            sa.bf > 0 and sa.bh / (sa.bf / 60) or 0,
+                            sa.bf > 0 and sa.bsa / sa.bf or 0, sa.bdead))
+            print(("      ★难度场      全场最坏格子 %.1f 发正飞来（在 y≈%.0f）  全场平均 %.1f  |  自机走过的那条线 %.1f")
+                    :format(sa.fw, sa.fn > 0 and sa.fy / sa.fn or 0,
+                            sa.fn > 0 and sa.fa / sa.fn or 0, tm_hits / tm_frames))
             print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d")
                     :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul))
             if os.getenv("STAGE_PROBE") then

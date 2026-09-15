@@ -67,7 +67,8 @@ ui.menu = {
                  "星河",         -- 22  TH02
                  "白玉楼",       -- 23  TH03
                  "彼岸",         -- 24  TH04
-                 "天空璋AEX" },  -- 25  AEX（关卡号是 STAGE_COUNT + 1）
+                 "花园",         -- 25  TH05
+                 "天空璋AEX" },  -- 26  AEX（关卡号是 STAGE_COUNT + 1）
     sntext = { TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
@@ -84,6 +85,7 @@ ui.menu = {
                TH02 = "星河",
                TH03 = "白玉楼",
                TH04 = "彼岸",
+               TH05 = "花园",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },
