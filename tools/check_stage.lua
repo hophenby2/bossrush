@@ -703,7 +703,10 @@ if #registered == 0 then print("  （没有 boss.card.add）") end
 --   统计自机周围 60 px 内的弹数与「被堵死的方向数」。
 ----------------------------------------------------------------------
 local THREAT = (arg[3] == "--threat") or os.getenv("STAGE_THREAT") == "1"
-local THREAT_R, HIT_R, SECT = 60, 8, 24
+local THREAT_R, HIT_R, SECT = 60, 4, 24
+-- REACT：留给玩家「反应 + 移动」的帧数。TTH 掉到这个以内 = 现在必须动
+-- HORIZON：预测多少帧以内；超过就算「暂时没威胁」
+local REACT, HORIZON = 30, 90
 
 ---遍历场上有判定的东西（弹 + 有碰撞的敌方 object）
 local function each_threat(fn)
@@ -751,25 +754,51 @@ local function bot_move()
     end
 end
 
----统计函数：返回 本帧60px内弹数 / 占用的扇区数 / 最大空隙中心角 / 是否被命中
-local function measure_frame()
-    local n, hit, used, alive = 0, false, 0, 0
+---核心度量：**用「原地不动第几帧会中弹」来算**，而不是数周围的密度。
+---  一发朝你飞来的弹和一堆远处打转的弹，密度一样但压力完全不同。
+---  每发弹用「上一帧位置差分」求速度，然后解析解出它什么时候会进入自机判定圈：
+---    |p + v·k|² < r²  →  (v·v)k² + 2(p·v)k + (p·p - r²) < 0
+---  取所有弹里最早的那个 = TTH（time to hit）。TTH 越小越急。
+local function measure_frame(prev_alert)
+    local tth = HORIZON + 1
+    local n, used, alive = 0, 0, 0
     local sect = {}
     each_threat(function(t)
         alive = alive + 1
-        local dx, dy = t.x - player.x, t.y - player.y
-        local d2 = dx * dx + dy * dy
-        if d2 < HIT_R * HIT_R then hit = true end
+        -- 速度：上一帧位置差分（对 path 驱动的自绘弹也有效）
+        local vx, vy = 0, 0
+        if t._mx then
+            vx, vy = t.x - t._mx, t.y - t._my
+        end
+        t._mx, t._my = t.x, t.y
+        local px, py = t.x - player.x, t.y - player.y
+        local d2 = px * px + py * py
         if d2 < THREAT_R * THREAT_R then
             n = n + 1
-            local a = math.deg(math.atan2(dy, dx))
-            local k = int(((a + 360) % 360) / (360 / SECT)) + 1
+            local k = int(((math.deg(math.atan2(py, px)) + 360) % 360) / (360 / SECT)) + 1
             if k > SECT then k = SECT end
             sect[k] = true
         end
+        -- 命中预测
+        local a = vx * vx + vy * vy
+        if a < 1e-9 then
+            if d2 <= HIT_R * HIT_R then tth = 0 end
+        else
+            local b2 = 2 * (px * vx + py * vy)
+            local c = d2 - HIT_R * HIT_R
+            local disc = b2 * b2 - 4 * a * c
+            if disc >= 0 then
+                local sq = math.sqrt(disc)
+                if (-b2 + sq) / (2 * a) >= 0 then       -- 未来会进圈
+                    local k1 = (-b2 - sq) / (2 * a)
+                    if k1 < 0 then k1 = 0 end
+                    if k1 < tth then tth = k1 end
+                end
+            end
+        end
     end)
     for i = 1, SECT do if sect[i] then used = used + 1 end end
-    -- 最大连续空隙（有几个扇区是空的）与它的中心角
+    -- 最大连续空隙
     local best, cur, besti, curi = 0, 0, 1, 1
     for i = 1, SECT * 2 do
         local j = (i - 1) % SECT + 1
@@ -782,7 +811,8 @@ local function measure_frame()
         end
     end
     local center = ((besti - 1 + best * 0.5) % SECT) * (360 / SECT)
-    return n, used, best, center, hit, alive
+    local alert = tth <= REACT
+    return tth, n, used, best, center, alert, alive
 end
 
 print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
@@ -801,8 +831,10 @@ for idx, entry in ipairs(registered) do
     player.x, player.y = 0, 0
 
     local peak_obj, peak_bul = 0, 0
-    local tm_sum, tm_peak, tm_frames, tm_hit, tm_nogo, tm_replan, tm_lastc = 0, 0, 0, 0, 0, 0, nil
-    local tm_alive = 0
+    local tm_sum, tm_peak, tm_frames, tm_nogo, tm_replan, tm_lastc = 0, 0, 0, 0, 0, nil
+    local tm_alive, tm_push_sum, tm_push_peak = 0, 0, 0
+    local tm_tth_sum, tm_tth_min, tm_alert_n, tm_mustmove = 0, HORIZON, 0, 0
+    local tm_alert = false
     local tu_peak, tg_min = 0, SECT
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
@@ -810,6 +842,8 @@ for idx, entry in ipairs(registered) do
         if card.init then drain(function() card.init(boss_obj) end, boss_obj) end
         for f = 1, FRAMES do
             if THREAT then bot_move() end
+            -- 记录机器人走完之后的位置：之后卡片再动自机 = 强制位移
+            local p1x, p1y = player.x, player.y
             if card.frame then card.frame(boss_obj) end
             if card.render then card.render(boss_obj) end
             boss_obj.timer = boss_obj.timer + 1
@@ -817,16 +851,26 @@ for idx, entry in ipairs(registered) do
             step_tasks()
             step_objects()
             if THREAT then
-                local n, used, gap, center, hit, alive = measure_frame()
+                -- 强制位移：卡片（clamp / 水位 / 推力）改动了自机多少
+                local dx, dy = player.x - p1x, player.y - p1y
+                local push = math.sqrt(dx * dx + dy * dy)
+                tm_push_sum = tm_push_sum + push
+                tm_push_peak = math.max(tm_push_peak, push)
+
+                local tth, n, used, gap, center, alert, alive = measure_frame(tm_alert)
                 tm_alive = tm_alive + alive
                 tm_sum = tm_sum + n
                 tm_peak = math.max(tm_peak, n)
                 tu_peak = math.max(tu_peak, used)
                 tg_min = math.min(tg_min, gap)
                 tm_frames = tm_frames + 1
-                if hit then tm_hit = tm_hit + 1 end
+                tm_tth_sum = tm_tth_sum + math.min(tth, HORIZON)
+                tm_tth_min = math.min(tm_tth_min, tth)
+                if alert then tm_alert_n = tm_alert_n + 1 end
+                -- 「必须移动」事件：从安全掉进 REACT 窗口的那一下
+                if alert and not tm_alert then tm_mustmove = tm_mustmove + 1 end
+                tm_alert = alert
                 if used >= SECT then tm_nogo = tm_nogo + 1 end
-                -- 重规划：最大空隙的中心角挪了 45° 以上
                 if tm_lastc and math.abs(((center - tm_lastc + 540) % 360) - 180) > 135 then
                     tm_replan = tm_replan + 1
                 end
@@ -845,13 +889,16 @@ for idx, entry in ipairs(registered) do
     end)
     if good then
         if THREAT and tm_frames > 0 then
+            local sec = tm_frames / 60
             print(("  %s"):format(label))
-            print(("      60px 内弹数  平均 %.1f  峰值 %d   |  被堵方向 峰值 %d/%d 格")
-                    :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT))
-            print(("      最大空隙    最少 %d 格（%.0f°）  |  无路可走 %d 帧  |  自动机被贴身 %d 帧（%.1f 次/秒）")
-                    :format(tg_min, tg_min * 360 / SECT, tm_nogo, tm_hit, tm_hit / (tm_frames / 60)))
-            print(("      重规划       %.1f 次/秒   |  全场有判定 %.1f 发  |  峰值同屏 对象 %d / 弹 %d")
-                    :format(tm_replan / (tm_frames / 60), tm_alive / tm_frames, peak_obj, peak_bul))
+            print(("      ★必须移动    %.1f 次/秒（原地不动会在 %d 帧内中弹的次数）   |  危险时间占比 %.0f%%")
+                    :format(tm_mustmove / sec, REACT, tm_alert_n / tm_frames * 100))
+            print(("      命中预告TTH  中位 %.0f 帧  最小 %.0f 帧（越小越急）")
+                    :format(tm_tth_sum / tm_frames, tm_tth_min))
+            print(("      60px 内弹数  平均 %.1f 峰值 %d  |  被堵 %d/%d 格  空隙最少 %d 格（%.0f°）")
+                    :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT, tg_min, tg_min * 360 / SECT))
+            print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d")
+                    :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul))
         else
             pass(("%s  峰值 对象 %d / 弹 %d"):format(label, peak_obj, peak_bul))
         end

@@ -220,18 +220,21 @@ class["th04_wisp"] = Class(object, {
 --============================
 --[符卡1] 蝶符「胡蝶之栅」
 --  限位：四面内向墙（不是圆环——场地 384×448 是竖长的，圆环围不住它）
---  缺口：1.5 格 / 共 16 格，周长 1820 px → 缺口约 171 px（远大于 32 px 的下限）
+--  缺口：2.2 格 / 共 16 格，周长 1820 px → 缺口约 250 px
 --  容错：缺口每 90 帧沿墙挪一格（114 px 周长）。要走 114 px → 114/4 ≈ 29 帧，余量 3.1 倍
+--        墙 58 帧穿完全场，两波之间有 ~37 帧静默 —— **这一段静默才是玩家的呼吸口**。
+--        （实测：墙慢(2.2)+密(每 40 帧一面)时，场上永远有 2~3 面墙在收，
+--          「必须移动」高达 3.5 次/秒；改成快墙+拉开间隔后见下方实测）
 --  预警：每轮开头的 36 帧只画墙不判；整面墙出现前另有 90 帧预热（亮的缺口段就是提示）
 --  实弹：boss 每 40 帧朝玩家放 12 路扇形（v=2.2），逼你在缺口里还要动
 --============================
 do
     local SLOTS = 16                 -- 墙的周长切几格
-    local GAP_W = 1.5 / SLOTS        -- 缺口占 1.5 格（≈171 px 周长）
-    local WALL_N = 64                -- 整圈几颗（周长 1820 px → 28 px 一颗）
+    local GAP_W = 2.2 / SLOTS        -- 缺口占 2.2 格（≈250 px 周长；1.5 格时太挤）
+    local WALL_N = 56                -- 整圈几颗（周长 1820 px → 33 px 一颗）
     local HW, HH = 208, 244          -- 墙的半宽/半高：都在回收边界(±224/±256)内侧
-    local WALL_V = 2.6               -- 朝内推的速度
-    local CYCLE = 40                 -- 每 40 帧补一面墙
+    local WALL_V = 3.6               -- 朝内推的速度：**快**，好让每面墙一口气穿完
+    local CYCLE = 130                -- 补墙间隔：要 > 穿场时间(58 帧) 且留足静默；本关第一张，别做难
     local JUMP = 90                  -- 每 90 帧缺口挪一格
     local WARN = 36                  -- 每轮开头 36 帧只画预警
     local START_WARN = 90            -- 整面墙出现前的预热
@@ -346,6 +349,7 @@ end
 --  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 300 px；
 --        玩家 4 px/帧 追得上（水位 2 px/帧），所以是「压缩活动空间」而不是「推着走」，
 --        真正的死线是水位到顶时上方只剩 134 px 的带子。
+--        推力限速 6 px/帧（连续），不要写成硬夹 —— 会变成单帧瞬移几十 px。
 --  预警：潮汐启动前 90 帧，在底部画一条提示线（水位还没动）
 --  实弹：上方落下的花瓣（v=1.8，每 22 帧一片），落到 -60 炸开成 5 向
 --============================
@@ -377,9 +381,12 @@ do
             --潮汐：单调的上下界，没有可以「躲进去」的缺口
             --相位 -90°：从最低点(-210)平滑起步，不然预警结束那一帧水位会跳 150 px
             self.y = TIDE_MID + TIDE_AMP * sin((self.t - FLOOR_WARN) * 360 / TIDE_PERIOD - 90)
-            --把玩家顶到水面之上（这就是限位）
+            -- 把玩家顶到水面之上（这就是限位）。
+            -- ⚠ 不能直接写 player.y = self.y：自机被弹压到水下很深时，
+            -- 那一帧会被瞬移几十 px（实测峰值 90 px/帧），对手感来说等于没得躲。
+            -- 改成「最多每帧推 6 px」：比水位涨得快，几帧就追平，且全程连续。
             if player.y < self.y then
-                player.y = self.y
+                player.y = min(self.y, player.y + 6)
             end
         end,
         render = function(self)
@@ -482,20 +489,22 @@ end
 --[卡3] 扇符「胡蝶扇舞」
 --  限位：贴着屏幕边缘的一圈扇幕，持续朝内发弹（蝴蝶梦之舞的做法）
 --  缺口：没有固定缺口，是「软限位」——靠 20 把扇的弹流互相咬住
---  容错：20 把扇**同相位齐射**，每 84 帧一轮（一轮 100 发）；两轮之间有 84 帧的静默期，
---        这就是玩家的决策窗口 —— 不是连续弹流
+--  容错：14 把扇**同相位齐射**，每 150 帧一轮（一轮 70 发）；两轮之间有 150 帧的静默期。
+--        这就是玩家的决策窗口 —— 不是连续弹流。
+--        实测：原来 20 把 / 84 帧时「必须移动 3.9 次/秒」，是全十张里最紧的，收到 14/120
 --  预警：扇幕出现前 90 帧先画出 20 个扇位（自绘扇骨）
 --  实弹：boss 踩华尔兹滑步，每步朝玩家放 20 路扇形，路数每轮 +4（封顶 48）
 --============================
 do
-    local FAN_TOP, FAN_SIDE = 6, 4    -- 上下各 6 把、左右各 4 把（共 20 把）
-    local FAN_GAP = 84                -- 扇幕齐射间隔（20 把一起放 → 有节奏，不是连续流）
+    local FAN_TOP, FAN_SIDE = 4, 3    -- 上下各 4 把、左右各 3 把（共 14 把）
+    local FAN_GAP = 150               -- 扇幕齐射间隔（原来 84/20 把 → 必须移动 3.9 次/秒，太挤）
     local FAN_V = 2.4
     local FAN_SPREAD = 34
     local FAN_WARN = 90               -- 预警
     local WALTZ_T = 150
     local RING_V0, RING_DV = 1.2, 0.7
-    local RING_T0, RING_DT, RING_TMAX = 20, 4, 48
+    -- 瞄准轮封顶从 48 降到 30：48 路 × 3 档 = 每轮 144 发，和扇幕叠起来太挤
+    local RING_T0, RING_DT, RING_TMAX = 14, 3, 30
     local BOSS_X, BOSS_Y = 0, 140
 
     class["th04_fan"] = Class(object, {
@@ -603,7 +612,8 @@ end
 --  限位：直接夹住自机的方框，分三档收缩（蝴蝶梦之舞的做法，但把档位标出来）
 --  缺口：无（整块缩小）
 --  容错：每档之间留 300 帧。第一档只夹纵向（224→173），第二三档才夹横向；
---        最坏一次要从 (192,173) 挪到 (136,122)，走 56 px → 14 帧，余量 21 倍
+--        最坏一次要从 (192,173) 挪到 (136,122)，走 56 px → 14 帧，余量 21 倍。
+--        夹的速度限在 6 px/帧（连续推），不要写成硬 min/max —— 那是单帧瞬移。
 --  预警：第一档生效前 90 帧先闪框；之后每次收缩前 60 帧闪下一档的框
 --  预警：每次收缩前 60 帧，用亮框画出「下一档的边界」
 --  实弹：同心环，每环留一个旋转缺口（缺口每环前进 5 格）
@@ -649,6 +659,19 @@ do
             Render("white", hw, 0, 90, hh / 8, 0.06)
         end
 
+        ---限速夹：一帧最多推 PUSH_V px。
+        ---直接写 min/max 会在收缩那一帧把自机瞬移几十 px（实测峰值 32 px/帧），
+        ---手感上是「被打飞了一下」，不是「被框住」。
+        local PUSH_V = 6
+        local function clamp_axis(v, lim)
+            if v > lim then
+                return max(lim, v - PUSH_V)
+            elseif v < -lim then
+                return min(-lim, v + PUSH_V)
+            end
+            return v
+        end
+
         function card:frame()
             --自己的计时器（不能用 self.ani：那是 boss 出生以来的总帧数）
             self.__t = (self.__t or 0) + 1
@@ -658,8 +681,8 @@ do
             local step = cur_step(self.__t)
             self.__hw = STEPS[step]
             local hh = self.__hw * STEP_RATIO
-            player.x = min(self.__hw, max(-self.__hw, player.x))
-            player.y = min(hh, max(-hh, player.y))
+            player.x = clamp_axis(player.x, self.__hw)
+            player.y = clamp_axis(player.y, hh)
         end
 
         function card:render()
@@ -1250,10 +1273,10 @@ end
 do
     local HEX_CX, HEX_CY = 0, -6
     local R_IN, R_OUT = 70, 168
-    local PULSE = 150
+    local PULSE = 200                 -- 原来 150：两个六边形每 75 帧就轮着收一次，太密
     local EMIT_A = int(PULSE * 0.25)          -- A 张到最大时
     local EMIT_B = int(PULSE * 0.75)          -- B 张到最大时（错开半个周期）
-    local HEX_STEPS = 9
+    local HEX_STEPS = 7              -- 每条边排几颗（6×7=42 发/轮；原来 9 → 54 发）
     local HEX_V = 2.4
     local HEX_WARN = 90
     local WHEEL_GAP = 190
@@ -1382,10 +1405,10 @@ do
     -- 大屏下场地是 ±320/±240，回收边界 ±224/±256 —— 注意横竖的关系翻过来了！
     -- 所以墙的半宽取 216（<224）、半高取 250（<256），仍然全在边界内侧
     local WALL_HW, WALL_HH = 216, 250
-    local WALL_N = 56                -- 原来 72：收敛到中心时会挤成一团
-    local WALL_V = 2.4
-    local WALL_CYCLE = 70            -- 补墙间隔（穿场约 104 帧 → 同屏 ≈ 56×104/70 ≈ 83）
-    local WALL_CYCLE_RAGE = 52       -- 四阶段加快
+    local WALL_N = 52                -- 原来 72：收敛到中心时会挤成一团
+    local WALL_V = 3.4               -- 快墙：一口气穿完，两波之间留静默期
+    local WALL_CYCLE = 100           -- 补墙间隔（穿场约 73 帧 → 约 27 帧静默）
+    local WALL_CYCLE_RAGE = 78       -- 四阶段加快（仍然留出静默）
     local WALL_JUMP = 90
     local WALL_WARN = 90
     local SLOTS = 16
