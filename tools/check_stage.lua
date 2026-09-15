@@ -81,7 +81,27 @@ _G.Tan = function(t) return math.tan(math.rad(t)) end
 _G.hypot = function(x, y) return math.sqrt(x * x + y * y) end
 _G.sign = function(x) if x > 0 then return 1 elseif x < 0 then return -1 else return 0 end end
 
+_G.CREATED_BULLETS = 0
+_G.CREATED_OBJECTS = 0
+-- 诊断用：卡结束之后到底是谁在造东西
+_G.LOG_NEW, _G.LOG_BULLET = {}, {}
+local _styleNames = {}      -- bulletStyle 表 → 名字
+local function classKey(c)
+    for ek, ev in pairs(_editor_class) do
+        if type(ev) == "table" then
+            for kk, vv in pairs(ev) do
+                if vv == c then return ek .. "." .. tostring(kk) end
+            end
+        end
+    end
+    return "(匿名类)"
+end
 _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroyable)
+    _G.CREATED_BULLETS = _G.CREATED_BULLETS + 1
+    do
+        local nm = _styleNames[style] or "(弹样式)"
+        _G.LOG_BULLET[nm] = (_G.LOG_BULLET[nm] or 0) + 1
+    end
     local av = math.rad(a or 0)
     local b = { x = x, y = y, rot = a or 0,
                 vx = (v or 0) * math.cos(av), vy = (v or 0) * math.sin(av),
@@ -102,8 +122,35 @@ _G.ToBigScreen = function() end
 _G.DefaultRenderFunc = function() end
 _G.SetViewMode = function() end
 
-_G.object = { RawDel = function(o) o._live = false end, Del = function(o) o._live = false end,
-              Kill = function(o) o._live = false end, Connect = function() end,
+-- 引擎里 status='del' 之后，manager 会回调该对象的 del（LuaBinding/modern/GameObject.cpp
+-- 的 onQueueToDestroy）。桩件必须照做，否则「卡结束了但派生的东西没被清掉」这类 bug 测不出来。
+local function rawdel(o)
+    if o == nil or o._queued then return end
+    o._queued = true
+    if o.del then pcall(o.del, o) end
+    o._live = false
+end
+---Connect / KillServants 也要照引擎实现，否则「挂到 boss 名下的东西会不会
+---随卡片结束被清掉」这条链等于没测（refresh(1) 里就有一句 KillServants）。
+local function connects(master, servant, dmg_transfer, con_death)
+    if not master or not servant then return end
+    servant._master = master
+    servant._dmg_transfer = dmg_transfer
+    if con_death ~= false then
+        master._servants = master._servants or {}
+        master._servants[#master._servants + 1] = servant
+    end
+end
+local function killServants(master)
+    local sv = master and master._servants
+    if not sv then return end
+    for i = 1, #sv do rawdel(sv[i]) end
+    master._servants = {}
+end
+
+_G.object = { RawDel = rawdel, Del = rawdel,
+              Kill = rawdel, Connect = connects,
+              KillServants = killServants, DelServants = killServants,
               Preserve = function() end,
               BulletDo = function(fn)
                   for i = 1, #bullets do
@@ -145,6 +192,11 @@ _G.scoredata = { UnlockSC = {}, stage_practice = {} }
 _G.spell_card_data = {}
 
 local function New(class, ...)
+    _G.CREATED_OBJECTS = _G.CREATED_OBJECTS + 1
+    do
+        local nm = classKey(class)
+        _G.LOG_NEW[nm] = (_G.LOG_NEW[nm] or 0) + 1
+    end
     local o = setmetatable({}, { __index = class })
     o.class = class
     o.timer, o.ani = 0, 0
@@ -171,7 +223,15 @@ task.Wait = function(n) coroutine.yield(math.max(0, math.floor(n or 1))) end
 task.Wait2 = task.Wait
 task.GetSelf = function() return current_task and current_task.obj or nil end
 task.Do = function() end
-task.Clear = function() end
+---照引擎实现：清掉挂在某个对象名下的所有协程。
+---（boss_system:refresh(1) 在换卡时会 task.Clear(boss)，所以挂在 boss 上的
+--- while true 循环不需要卡片自己清。桩件不模拟这一步的话会误报。）
+task.Clear = function(obj)
+    if obj == nil then return end
+    for i = #tasks, 1, -1 do
+        if tasks[i].obj == obj then table.remove(tasks, i) end
+    end
+end
 task.init_left_wait = function() end
 task.MoveTo = function(x, y, t)
     local o = task.GetSelf()
@@ -223,6 +283,7 @@ for _, n in ipairs({ "arrow_big", "arrow_big_b", "arrow_big_c", "arrow_mid", "ar
                      "silence", "music", "water_drop", "money", "money_big", "gun_bullet",
                      "mildew", "flower2", "sakura", "sakura_big" }) do
     _G[n] = styleStub()
+    _styleNames[_G[n]] = n
 end
 
 local function setv(o, v, a, rot)
@@ -835,11 +896,23 @@ for idx, entry in ipairs(registered) do
     local tm_alive, tm_push_sum, tm_push_peak = 0, 0, 0
     local tm_tth_sum, tm_tth_min, tm_alert_n, tm_mustmove = 0, HORIZON, 0, 0
     local tm_alert = false
+    local tm_leak_b, tm_leak_o = 0, 0
     local tu_peak, tg_min = 0, SECT
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
         if card.before then drain(function() card.before(boss_obj) end, boss_obj) end
         if card.init then drain(function() card.init(boss_obj) end, boss_obj) end
+        -- ★ 阶段阈值必须落在本卡血量之内，否则那个阶段**永远触发不了**
+        --   （只能等兜底计时器，玩家看到的就是「血打下去了却没新弹幕」）
+        if card.init and boss_obj._sp_point_auto then
+            local hp = entry.card.hp or 600
+            for _, d in ipairs(boss_obj._sp_point_auto) do
+                if type(d) == "number" and d > hp then
+                    fail(("%s：addAutoSPPoint 阈值 %s > 本卡血量 %s —— 这个阶段靠掉血永远触发不了")
+                            :format(label, tostring(d), tostring(hp)))
+                end
+            end
+        end
         for f = 1, FRAMES do
             if THREAT then bot_move() end
             -- 记录机器人走完之后的位置：之后卡片再动自机 = 强制位移
@@ -886,6 +959,22 @@ for idx, entry in ipairs(registered) do
             end
         end
         if card.del then card.del(boss_obj) end
+        -- ★ 卡结束后再跑一会儿：看派生的东西有没有被清干净。
+        --   注意先 task.Clear(boss)：引擎的 refresh(1) 在换卡时会这么做，
+        --   否则会把「挂在 boss 上的循环」当成泄漏（假报警）。
+        if card.del then
+            -- 模拟引擎换卡走的 boss_system:refresh(1)
+            task.Clear(boss_obj)
+            object.KillServants(boss_obj)
+            _G.LOG_NEW, _G.LOG_BULLET = {}, {}
+            local b0, o0 = _G.CREATED_BULLETS, _G.CREATED_OBJECTS
+            for f = 1, 180 do
+                step_tasks()
+                step_objects()
+            end
+            tm_leak_b = _G.CREATED_BULLETS - b0
+            tm_leak_o = _G.CREATED_OBJECTS - o0
+        end
     end)
     if good then
         if THREAT and tm_frames > 0 then
@@ -899,6 +988,18 @@ for idx, entry in ipairs(registered) do
                     :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT, tg_min, tg_min * 360 / SECT))
             print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d")
                     :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul))
+            if os.getenv("STAGE_DEBUG") then
+                local detail = {}
+                for k, v in pairs(_G.LOG_BULLET) do detail[#detail + 1] = ("弹:%s×%d"):format(k, v) end
+                for k, v in pairs(_G.LOG_NEW) do detail[#detail + 1] = ("对象:%s×%d"):format(k, v) end
+                table.sort(detail)
+                print(("      卡结束后 180 帧：新建 弹 %d / 对象 %d   %s")
+                        :format(tm_leak_b, tm_leak_o, table.concat(detail, " ")))
+            end
+            if tm_leak_b > 0 or tm_leak_o > 0 then
+                fail(("%s  卡结束后的 180 帧里还在新建 弹 %d / 对象 %d —— del 没清干净")
+                        :format(label, tm_leak_b, tm_leak_o))
+            end
         else
             pass(("%s  峰值 对象 %d / 弹 %d"):format(label, peak_obj, peak_bul))
         end

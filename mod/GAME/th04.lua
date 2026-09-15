@@ -120,6 +120,17 @@ local function fly(style, col, x, y, v, a, omiga, glow)
     return o
 end
 
+---把自己的弹挂到 boss 名下。
+---  引擎在换卡时走 boss_system:refresh(1)，里面有一句 object.KillServants(boss)。
+---  挂上去的弹会被一起收掉；**不挂的话，卡打完了它们还在天上飘** ——
+---  尤其花瓣落到底还会再炸成 5 把刀，玩家看到的就是「击破了还在发弹」。
+local function attach(master, obj)
+    if IsValid(master) and obj then
+        object.Connect(master, obj, 0, true)
+    end
+    return obj
+end
+
 ---通用「路径弹」：位置由 path(self, t) 每帧算，bound 关掉所以要自己回收
 local path_bullet = Class(bullet, {
     init = function(self, style, col, x, y, a, path)
@@ -457,7 +468,8 @@ do
                 task.Wait(30)
                 Newcharge_out(self.x, self.y, 236, 96, 130)
                 while true do
-                    New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r), 236)
+                    attach(self, New(class["th04_petal"],
+                            ran:Float(lstg.world.l, lstg.world.r), 236))
                     task.Wait(22)
                 end
             end)
@@ -852,7 +864,8 @@ do
                 task.Wait(30)
                 Newcharge_out(self.x, self.y, 255, 214, 244)
                 while true do
-                    New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r), 236)
+                    attach(self, New(class["th04_petal"],
+                            ran:Float(lstg.world.l, lstg.world.r), 236))
                     task.Wait(18)
                 end
             end)
@@ -1237,11 +1250,11 @@ do
                 task.Wait(SHIP_WARN)
                 while true do
                     for _ = 1, FIELD_N do
-                        New(class["th04_lilybullet"],
+                        attach(self, New(class["th04_lilybullet"],
                                 ran:Float(lstg.world.l, lstg.world.r),
                                 ran:Float(lstg.world.b, lstg.world.t),
                                 FIELD_V * ran:Float(0.6, 1.4),
-                                ran:Float(0, 360), self.__boats)
+                                ran:Float(0, 360), self.__boats))
                     end
                     PlaySound("tan00", 0.06, 0, true)
                     task.Wait(FIELD_GAP)
@@ -1394,12 +1407,19 @@ end
 --  ⚠ 用了 ToBigScreen，场地变成 ±320/±240，但**回收边界还是 ±224/±256**，
 --     所以墙的半宽/半高必须取 216/250（都在边界内侧），不能按大屏尺寸去撑。
 --     缺口用周长参数定位，跟着墙一起走，不受横竖比例影响。
---  难度递进：四阶段**把缺口从 1.5 格收窄到 1.0 格**（而不是再叠一面墙 ——
---     试过叠墙，同屏弹数会从 ~370 冲到 980）
+--  难度递进：四阶段**把缺口从 1.8 格逐档收窄到 1.0 格**（而不是再叠一面墙 ——
+--     试过叠墙，同屏弹数会从 ~370 冲到 980）。转阶段时缺口当帧就变窄，
+--     所以「阶段推进了」玩家立刻能感觉到，不用等新那一层的 90 帧预警走完。
 --============================
 do
-    local HP_P2, HP_P3, HP_P4 = 700, 1400, 2100
-    local PH_P2, PH_P3, PH_P4 = 20 * 60, 34 * 60, 46 * 60
+    -- ⚠ 阈值必须落在**本张卡的血量之内**。
+    --   原来写 700/1400/2100，而卡的血只有 1200 —— 于是三、四阶段**永远不可能
+    --   靠掉血触发**，只能干等兜底计时器。玩家看到的就是「我把血打下去了，
+    --   却没有新弹幕」。现在按血量的 25/50/75% 分，四个阶段各占约 300 血。
+    local CARD_HP = 1200
+    local HP_P2, HP_P3, HP_P4 = CARD_HP * 0.25, CARD_HP * 0.50, CARD_HP * 0.75
+    -- 兜底计时：打不动也推进，但都要落在 t3 = 60s 之内
+    local PH_P2, PH_P3, PH_P4 = 15 * 60, 28 * 60, 41 * 60
     local BOSS_X, BOSS_Y = 0, 60
 
     -- 大屏下场地是 ±320/±240，回收边界 ±224/±256 —— 注意横竖的关系翻过来了！
@@ -1412,8 +1432,11 @@ do
     local WALL_JUMP = 90
     local WALL_WARN = 90
     local SLOTS = 16
-    local GAP_W = 1.5 / SLOTS
-    local GAP_W_RAGE = 1.0 / SLOTS   -- 四阶段：把缺口收窄，而不是再叠一面墙
+    -- 每个阶段的缺口宽度与补墙间隔。**转阶段时立刻生效**：
+    -- 新加的那一层（结界/摆渡船/风）需要 90 帧预警才吐弹，
+    -- 但缺口收窄是当帧就能看见、能感觉到的 —— 否则玩家会觉得「转阶段没反应」。
+    local GAP_SLOTS_BY_PHASE = { 1.8, 1.5, 1.2, 1.0 }
+    local CYC_BY_PHASE = { WALL_CYCLE, 92, 84, WALL_CYCLE_RAGE }
     local PETAL_GAP = 26
     local BARRIER_R_OUT = 168
 
@@ -1473,23 +1496,24 @@ do
                 if self.t % WALL_JUMP == 1 then
                     self.gap_s = (self.gap_s + 1 / SLOTS) % 1
                 end
-                local rage = self.phase >= 4
-                local cyc = rage and WALL_CYCLE_RAGE or WALL_CYCLE
-                local gw = rage and GAP_W_RAGE or GAP_W
+                local cyc = CYC_BY_PHASE[self.phase] or WALL_CYCLE
+                local gw = (GAP_SLOTS_BY_PHASE[self.phase] or 1.5) / SLOTS
                 if self.t % cyc == 1 and (self.t % WALL_JUMP) > 30 then
-                    wall_with_gap(butterfly, rage and 4 or 2, cx, cy,
+                    wall_with_gap(butterfly, (self.phase >= 4) and 4 or 2, cx, cy,
                             WALL_HW, WALL_HH, WALL_N, WALL_V, self.gap_s, gw)
                 end
             end
             --① 花雨
             if self.t % PETAL_GAP == 0 then
-                New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r),
-                        lstg.world.t + 20)
+                attach(m, New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r),
+                        lstg.world.t + 20))
             end
 
             --② 六芒结界（二阶段起）
             if self.phase >= 2 and not self.hex then
-                self.hex = New(class["th04_hexagram"], m)
+                -- 挂到 boss 名下：换卡时 refresh(1) 的 KillServants 会连带收掉，
+                -- 不必只依赖「自己的 del 有没有被回调」这一条链
+                self.hex = attach(m, New(class["th04_hexagram"], m))
             end
 
             --③ 摆渡船（三阶段起）
@@ -1497,7 +1521,7 @@ do
                 self.boats = {}
                 for i = 1, 3 do
                     self.boats[#self.boats + 1] =
-                            New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 1)
+                            attach(m, New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 1))
                 end
             end
 
@@ -1540,7 +1564,7 @@ do
 
     do
         local name = "「彼岸无余涅槃」"
-        local card = boss.card.New(name, 1, 1, 60, 1200)
+        local card = boss.card.New(name, 1, 1, 60, CARD_HP)
         boss.card.add({ { card, "1a" } }, 24, name, 285)
 
         function card:before()
