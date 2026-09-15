@@ -144,22 +144,40 @@ local path_bullet = Class(bullet, {
     end,
 })
 
----限位墙的标准做法（见 AGENTS.md 10.4）：
----  高密度环 + 挖掉一个扇区。
----  这里把扇区做成参数：gap_a 是缺口中心角，gap_w 是缺口角宽。
----  n 路均匀铺一圈，落在缺口里的直接跳过。
-local function ring_with_gap(style, col, cx, cy, R, n, v, gap_a, gap_w, inward)
-    local half = gap_w * 0.5
+---限位墙的标准做法（见 AGENTS.md 10.4）：高密度的一条墙 + 挖掉一段缺口。
+---
+---  这里用**四边内向墙**而不是圆环，有两个理由：
+---    · 场地是 384×448 的竖长方形，圆环围不住它（上下两个角会漏出去）
+---    · 弹的回收边界是 ±224/±256，从半径比这更大的地方生成的弹
+---      会在**生成的那一帧**就被引擎收掉 —— 墙会缺掉一大块，缺口逻辑全废
+---  所以墙贴着 ±(HW, HH) 生成，两个方向都留在边界内侧，再朝内推。
+---
+---  缺口用「周长参数」定位：s ∈ [0,1) 沿着墙绕一圈（上→右→下→左），
+---  落在 [gap_s, gap_s+gap_w) 里的那段不放弹。这样缺口能沿墙一格一格地转。
+local function wall_point(cx, cy, hw, hh, s)
+    s = s % 1
+    if s < 0.25 then                       -- 上边：从左到右
+        return cx - hw + 4 * hw * s, cy + hh, 0, -1
+    elseif s < 0.5 then                    -- 右边：从上到下
+        return cx + hw, cy + hh - 4 * hh * (s - 0.25), -1, 0
+    elseif s < 0.75 then                   -- 下边：从右到左
+        return cx + hw - 4 * hw * (s - 0.5), cy - hh, 0, 1
+    else                                   -- 左边：从下到上
+        return cx - hw, cy - hh + 4 * hh * (s - 0.75), 1, 0
+    end
+end
+
+local function wall_with_gap(style, col, cx, cy, hw, hh, n, v, gap_s, gap_w)
     for i = 1, n do
-        local a = (i - 1) * 360 / n
-        -- 到缺口中心的角距离
-        local d = (a - gap_a) % 360
-        if d > 180 then
-            d = 360 - d
+        local s = (i - 1) / n
+        -- 到缺口中心的周长距离
+        local d = (s - gap_s) % 1
+        if d > 0.5 then
+            d = 1 - d
         end
-        if d > half then
-            local dir = inward and (a + 180) or a
-            local o = fly(style, col, cx + cos(a) * R, cy + sin(a) * R, v, dir, 0)
+        if d > gap_w * 0.5 then
+            local x, y, dx, dy = wall_point(cx, cy, hw, hh, s)
+            local o = fly(style, col, x, y, v, Angle(0, 0, dx, dy), 0)
             o._r, o._g, o._b = 255, 176, 210
         end
     end
@@ -201,31 +219,31 @@ class["th04_wisp"] = Class(object, {
 
 --============================
 --[符卡1] 蝶符「胡蝶之栅」
---  限位：一圈向心收缩的蝶弹环，只留一个 36° 的缺口。
---  缺口：36°（在 R=150 处弧长约 94 px）
---  容错：缺口每 90 帧跳一格（36°）。要走 94 px → 94/4 ≈ 24 帧，余量 3.7 倍
---  预警：每轮开头的 36 帧用自绘圆弧标出缺口；整面墙出现前另有 90 帧预热
+--  限位：四面内向墙（不是圆环——场地 384×448 是竖长的，圆环围不住它）
+--  缺口：1.5 格 / 共 16 格，周长 1820 px → 缺口约 171 px（远大于 32 px 的下限）
+--  容错：缺口每 90 帧沿墙挪一格（114 px 周长）。要走 114 px → 114/4 ≈ 29 帧，余量 3.1 倍
+--  预警：每轮开头的 36 帧只画墙不判；整面墙出现前另有 90 帧预热（亮的缺口段就是提示）
 --  实弹：boss 每 40 帧朝玩家放 12 路扇形（v=2.2），逼你在缺口里还要动
 --============================
 do
-    local SECTORS = 10               -- 一圈切几格
-    local GAP_A = 36                 -- 缺口角宽（一格）
-    local RING_N = 36                -- 环上几颗（10° 一颗 → 墙够密）
-    local RING_R = 260               -- 从多远往里收
-    local RING_V = 2.6               -- 收的速度
-    local CYCLE = 30                 -- 每 30 帧补一圈
-    local JUMP = 90                  -- 每 90 帧缺口跳一格
+    local SLOTS = 16                 -- 墙的周长切几格
+    local GAP_W = 1.5 / SLOTS        -- 缺口占 1.5 格（≈171 px 周长）
+    local WALL_N = 64                -- 整圈几颗（周长 1820 px → 28 px 一颗）
+    local HW, HH = 208, 244          -- 墙的半宽/半高：都在回收边界(±224/±256)内侧
+    local WALL_V = 2.6               -- 朝内推的速度
+    local CYCLE = 40                 -- 每 40 帧补一面墙
+    local JUMP = 90                  -- 每 90 帧缺口挪一格
     local WARN = 36                  -- 每轮开头 36 帧只画预警
     local START_WARN = 90            -- 整面墙出现前的预热
     local AIM_GAP = 40               -- 实弹间隔
     local AIM_WAYS = 12
     local AIM_V = 2.2
-    local BOSS_X, BOSS_Y = 0, 40     -- boss 站中间偏下，环整个落在可视区里
+    local BOSS_X, BOSS_Y = 0, 40
 
     class["th04_ring_cage"] = Class(object, {
         init = function(self, master)
             self.master = master
-            self.gap = 0                 -- 缺口中心角
+            self.gap_s = 0               -- 缺口中心（周长参数 0~1）
             self.t = 0
             self.ready = false
             self.cx, self.cy = BOSS_X, BOSS_Y
@@ -246,28 +264,35 @@ do
                 self.t = 0
                 PlaySound("kira00", 0.2, 0, true)
             end
-            --缺口每 JUMP 帧跳一格（顺时针）
+            --缺口每 JUMP 帧沿墙挪一格（1/SLOTS 周长 ≈ 114 px）
             if self.t % JUMP == 1 then
-                self.gap = (self.gap + 360 / SECTORS) % 360
-                PlaySound("tan00", 0.05, self.cx / 256, true)
+                self.gap_s = (self.gap_s + 1 / SLOTS) % 1
+                PlaySound("tan00", 0.05, 0, true)
             end
-            --每 CYCLE 帧补一圈；每轮开头 WARN 帧不发实体，只留预警
+            --每 CYCLE 帧补一面墙；每轮开头 WARN 帧不发实体，只留预警
             if self.t % CYCLE == 1 and (self.t % JUMP) > WARN then
-                ring_with_gap(butterfly, 2, self.cx, self.cy, RING_R, RING_N,
-                        RING_V, self.gap, GAP_A, true)
+                wall_with_gap(butterfly, 2, self.cx, self.cy, HW, HH, WALL_N,
+                        WALL_V, self.gap_s, GAP_W)
             end
         end,
         render = function(self)
-            local r = RING_R - 74         -- 预警圆画在墙的内缘附近
-            --整圈：暗的
-            arc(self.cx, self.cy, r, 0, 360, 60, 42, 226, 150, 220, 0.06)
-            --缺口：亮的（这就是预警）
-            local half = GAP_A * 0.5
-            arc(self.cx, self.cy, r, self.gap - half, self.gap + half, 10, 200, 255, 210, 240, 0.12)
+            --整面墙：暗线；缺口那一段：亮线（这就是预警）
+            local seg = 96
+            for i = 1, seg do
+                local s1 = (i - 1) / seg
+                local s2 = i / seg
+                local d1 = (s1 - self.gap_s) % 1
+                if d1 > 0.5 then d1 = 1 - d1 end
+                local in_gap = d1 <= GAP_W * 0.5
+                local x1, y1 = wall_point(self.cx, self.cy, HW, HH, s1)
+                local x2, y2 = wall_point(self.cx, self.cy, HW, HH, s2)
+                thin_line(x1, y1, x2, y2, in_gap and 190 or 40,
+                        in_gap and 255 or 226, in_gap and 210 or 150, 240, 0.08)
+            end
             if self.t < START_WARN then
                 local k = 1 - self.t / START_WARN
-                thin_line(self.cx, self.cy, self.cx + cos(self.gap) * r, self.cy + sin(self.gap) * r,
-                        120 * k, 255, 210, 240, 0.10)
+                local gx, gy = wall_point(self.cx, self.cy, HW, HH, self.gap_s)
+                thin_line(self.cx, self.cy, gx, gy, 100 * k, 255, 210, 240, 0.10)
             end
             draw_orb(self.cx, self.cy, 0.9, 0.85, 255, 205, 238)
         end,
@@ -320,7 +345,7 @@ end
 --        所以只能横向挪到缝里，不能往下退）
 --  容错：幕布从 -240 升到 +240 需要 96 帧；缝之间相距 76 px → 19 帧，余量 5 倍
 --  预警：幕布升起前，先用一条亮线在底部标出 5 个缝的位置，持续 90 帧
---  实弹：上方落下的花瓣（v=1.8），落到 -60 炸开成 5 向
+--  实弹：上方落下的花瓣（v=1.8，每 22 帧一片），落到 -60 炸开成 5 向
 --============================
 do
     local FLOOR_V = 5.0              -- 水位上涨速度
@@ -440,7 +465,7 @@ do
                 Newcharge_out(self.x, self.y, 236, 96, 130)
                 while true do
                     New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r), 236)
-                    task.Wait(16)
+                    task.Wait(22)
                 end
             end)
             --boss 自己补一轮，免得只顾着看水
@@ -902,19 +927,30 @@ end
 
 --============================
 --[卡7] 樱符「樱吹雪」
---  限位：风——横向推全场子弹（已在空中的也推），每 300 帧反向一次
---  缺口：无（是「推力限位」而不是「几何限位」）
---  容错：反向的瞬间外力为 0，那 ±20 帧是唯一的自由窗口（th095 的做法）
---  预警：风向反转前 60 帧，屏幕两侧的「风柱」亮度变化提示要变向了
---  实弹：从风的上游飘进来的花瓣（v=1.6）+ boss 的瞄准轮
+--  题眼是「风」，不是「雪」。风每 360 帧反向，把**已经在空中的花瓣**整体吹歪。
+--
+--  实弹（主）：boss 每 72 帧放一轮 18 路 × 3 档速度（2.0 / 2.7 / 3.4）。
+--    操作频率 = 72 帧/决策，落在 AGENTS.md 10.6 的舒适区（20~100）里。
+--  限位（风 + 花幕）：花瓣每 20 帧 2 片从上游进来（约 6 片/秒），v=1.3，
+--    半透明（_a=170）、小尺寸、**不自转**（自转会让轨迹读不出来，是纯噪声）。
+--    风顺着吹的时候花幕被拉疏，风逆着吹的时候新花顶着风挤成一团 ——
+--    这个疏密变化就是「吹雪」的可读节奏，也是给玩家的呼吸口。
+--  容错：风反向的瞬间外力为 0，那 ±20 帧是自由窗口（th095 的做法）。
+--  预警：两侧风柱的亮度直接显示当前风向；反转前 60 帧开始渐变压向另一边。
+--
+--  同屏量：花瓣 ~20 + 扇形 ~50 ≈ 70。**别把 BLOW_GAP 调回个位数** ——
+--  那会让这张卡从「读风的节奏」退化成「持续 60 秒的噪声微操」。
 --============================
 do
-    local WIND_PERIOD = 300
-    local WIND_MAX = 1.8
-    local BLOW_GAP = 6
-    local BLOW_N = 3
-    local BLOW_V = 1.6
-    local BLOW_SPREAD = 26
+    local WIND_PERIOD = 360
+    local WIND_MAX = 1.5
+    local BLOW_GAP = 20              -- 每 20 帧放一撮（2 片）→ 约 6 片/秒
+    local BLOW_N = 2
+    local BLOW_V = 1.3
+    local BLOW_SPREAD = 22
+    local AIM_GAP = 72               -- 实弹轮的间隔：这就是玩家的操作频率
+    local AIM_WAYS = 18
+    local AIM_V0, AIM_DV = 2.0, 0.7
     local BOSS_X, BOSS_Y = 0, 150
 
     local wind_vx = 0
@@ -987,26 +1023,31 @@ do
                     local from_left = wind_vx >= 0
                     local x = from_left and (lstg.world.l - 16) or (lstg.world.r + 16)
                     for _ = 1, BLOW_N do
+                        -- 不自转：轨迹要能一眼读出来，否则就是噪声
                         local o = fly(ellipse, 4, x,
                                 ran:Float(lstg.world.b - 10, lstg.world.t + 10),
                                 BLOW_V, ran:Float(-BLOW_SPREAD, BLOW_SPREAD)
-                                + (from_left and 0 or 180), ran:Float(-2, 2))
+                                + (from_left and 0 or 180), 0)
                         o._r, o._g, o._b = 255, 194, 224
+                        o._a = 170               -- 半透明，别糊住屏幕
                         o.th04_wind = true
                     end
                     task.Wait(BLOW_GAP)
                 end
             end)
             task.New(self, function()
-                task.Wait(180)
+                task.Wait(120)
                 while true do
                     local a0 = Angle(self, player)
-                    for k = 1, 7 do
-                        local o = fly(ball_mid, 2, self.x, self.y, 3.0, a0 + (k - 4) * 11, 0)
-                        o._r, o._g, o._b = 255, 178, 212
+                    for k = 1, AIM_WAYS do
+                        for v = 1, 3 do
+                            local o = fly(ball_mid, 2, self.x, self.y,
+                                    AIM_V0 + (v - 1) * AIM_DV, a0 + (k - 1) * 360 / AIM_WAYS, 0)
+                            o._r, o._g, o._b = 255, 178, 212
+                        end
                     end
                     PlaySound("tan00", 0.07, self.x / 256, true)
-                    task.Wait(160)
+                    task.Wait(AIM_GAP)
                 end
             end)
         end
@@ -1273,22 +1314,29 @@ end
 --  血量驱动四阶段，只追加不替换（th01 镜花水月的路子）：
 --    ① 蝶环 + 花雨        ② 追加六芒结界
 --    ③ 追加摆渡船（判定圈） ④ 追加风 + 全屏花幕
---  ⚠ 用了 ToBigScreen，场地变成 ±320/±240，限位几何要按大屏算：
---     蝶环半径 150（大屏半高 240，够放）、结界 R_OUT 168、缺口按角度算不受影响
+--  ⚠ 用了 ToBigScreen，场地变成 ±320/±240，但**回收边界还是 ±224/±256**，
+--     所以墙的半宽/半高必须取 216/250（都在边界内侧），不能按大屏尺寸去撑。
+--     缺口用周长参数定位，跟着墙一起走，不受横竖比例影响。
+--  难度递进：四阶段**把缺口从 1.5 格收窄到 1.0 格**（而不是再叠一面墙 ——
+--     试过叠墙，同屏弹数会从 ~370 冲到 980）
 --============================
 do
     local HP_P2, HP_P3, HP_P4 = 700, 1400, 2100
     local PH_P2, PH_P3, PH_P4 = 20 * 60, 34 * 60, 46 * 60
     local BOSS_X, BOSS_Y = 0, 60
 
-    local RING_N = 36
-    local RING_R = 280
-    local RING_V = 2.4
-    local RING_CYCLE = 34
-    local RING_JUMP = 90
-    local RING_WARN = 90
-    local SECTORS = 10
-    local GAP_A = 36
+    -- 大屏下场地是 ±320/±240，回收边界 ±224/±256 —— 注意横竖的关系翻过来了！
+    -- 所以墙的半宽取 216（<224）、半高取 250（<256），仍然全在边界内侧
+    local WALL_HW, WALL_HH = 216, 250
+    local WALL_N = 72
+    local WALL_V = 2.4
+    local WALL_CYCLE = 60            -- 补墙间隔（wall 穿场约 104 帧 → 峰值 ≈ 72×104/60 ≈ 125）
+    local WALL_CYCLE_RAGE = 45       -- 四阶段加快
+    local WALL_JUMP = 90
+    local WALL_WARN = 90
+    local SLOTS = 16
+    local GAP_W = 1.5 / SLOTS
+    local GAP_W_RAGE = 1.0 / SLOTS   -- 四阶段：把缺口收窄，而不是再叠一面墙
     local PETAL_GAP = 26
     local BARRIER_R_OUT = 168
 
@@ -1310,7 +1358,7 @@ do
             self.master = master
             self.phase = 1
             self.t = 0
-            self.gap = 0
+            self.gap_s = 0
             self.wind_t = 0
             wind_vx = 0
             self.orbs = {}
@@ -1343,18 +1391,17 @@ do
                 PlaySound("kira00", 0.3, 0, true)
             end
 
-            --① 蝶环（全程）：大屏下半径 280，缺口 36°，每 90 帧跳一格
-            if self.t > RING_WARN then
-                if self.t % RING_JUMP == 1 then
-                    self.gap = (self.gap + 360 / SECTORS) % 360
+            --① 蝶墙（全程）：四边内向墙，缺口 1.5 格，每 90 帧挪一格
+            if self.t > WALL_WARN then
+                if self.t % WALL_JUMP == 1 then
+                    self.gap_s = (self.gap_s + 1 / SLOTS) % 1
                 end
-                if self.t % RING_CYCLE == 1 and (self.t % RING_JUMP) > 30 then
-                    ring_with_gap(butterfly, 2, cx, cy, RING_R, RING_N,
-                            RING_V, self.gap, GAP_A, true)
-                end
-                if self.phase >= 4 and self.t % 14 == 0 then
-                    ring_with_gap(butterfly, 4, cx, cy, RING_R + 40, RING_N,
-                            RING_V, self.gap, GAP_A, true)
+                local rage = self.phase >= 4
+                local cyc = rage and WALL_CYCLE_RAGE or WALL_CYCLE
+                local gw = rage and GAP_W_RAGE or GAP_W
+                if self.t % cyc == 1 and (self.t % WALL_JUMP) > 30 then
+                    wall_with_gap(butterfly, rage and 4 or 2, cx, cy,
+                            WALL_HW, WALL_HH, WALL_N, WALL_V, self.gap_s, gw)
                 end
             end
             --① 花雨
