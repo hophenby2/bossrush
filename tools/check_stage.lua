@@ -528,6 +528,10 @@ local function step_objects()
         if o._live ~= false then
             o.timer = o.timer + 1
             o.ani = o.ani + 1
+            -- 引擎每帧会替所有对象积分速度与自转（不是只有 bullet 才走）
+            o.x = o.x + (o.vx or 0)
+            o.y = o.y + (o.vy or 0)
+            o.rot = o.rot + (o.omiga or 0)
         end
     end
     for i = 1, n do
@@ -535,7 +539,15 @@ local function step_objects()
         if o._live ~= false and o.frame then o.frame(o) end
     end
     for i = #objects, 1, -1 do
-        if objects[i]._live == false then table.remove(objects, i) end
+        local o = objects[i]
+        if o._live == false then
+            table.remove(objects, i)
+        elseif o.bound ~= false
+                and (o.x < -224 or o.x > 224 or o.y < -256 or o.y > 256) then
+            -- bound 在引擎里的默认值是 true（「离开边界自动回收」），
+            -- 所以没显式关掉它的自绘物件飞出边界也会被收掉
+            table.remove(objects, i)
+        end
     end
     -- 模拟引擎的位移积分与「离开边界自动回收」（bound = true 的弹）
     for i = #bullets, 1, -1 do

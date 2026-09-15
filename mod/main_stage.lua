@@ -1079,6 +1079,27 @@ NewStage("TH03", "白玉楼", 23, function(self)
     self:Next(159)
 end)--23
 
+NewStage("TH04", "彼岸", 24, function(self)
+    self:Option(TH04_bg, "TH04_0")
+    self:Task(function()
+        --=========== 道中：三途川上飘的魂火 ===========
+        --纯装饰（无判定），先把玩家带进彼岸的气氛里
+        local E = _editor_class["TH04"]
+        local w = lstg.world
+        for _ = 1, 80 do
+            New(E.th04_wisp, ran:Float(w.boundl, w.boundr), w.boundb - 20)
+            task.Wait(ran:Int(1, 3))
+        end
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(160)
+end)--24
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
