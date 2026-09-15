@@ -169,6 +169,14 @@ local function classKey(c)
     return "(匿名类)"
 end
 _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroyable)
+    -- ★ style 必须是**弹样式对象**（ball_mid / knife / ellipse …），不是字符串。
+    --   `bullet.init` 里有 `self.class = imgclass`，引擎要求 class 是 luastg 对象类，
+    --   传字符串会在**实机**里当场抛 "invalid argument for property 'class'" ——
+    --   而桩件原来什么都收，所以静态自检放行了。这类错必须在这儿拦下来。
+    if type(style) == "string" then
+        error(("NewSimpleBullet 的 style 是字符串 %q —— 要传弹样式对象（%s），见 AGENTS.md §5.2")
+                :format(style, style), 2)
+    end
     _G.CREATED_BULLETS = _G.CREATED_BULLETS + 1
     do
         local nm = _styleNames[style] or "(弹样式)"

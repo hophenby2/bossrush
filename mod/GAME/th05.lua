@@ -265,7 +265,7 @@ do
                     local a = self.rot + (k - 1) * 360 / RING_N
                     local x, y = cos(a) * self.r, BOSS_Y + sin(a) * self.r
                     x, y = mirror_spawn(0, BOSS_Y, x, y, 1.1)
-                    deco_bullet("flower2", 12, x, y, 1.1, a, 300, 255, 236, 140)
+                    deco_bullet(flower2, 12, x, y, 1.1, a, 300, 255, 236, 140)
                 end
             end
             --环上每 3 朵朝自机补一发：这才是威胁层
@@ -274,7 +274,7 @@ do
                     local a = self.rot + (k - 1) * 360 / RING_N
                     local x, y = cos(a) * self.r, BOSS_Y + sin(a) * self.r
                     if Dist(x, y, player.x, player.y) < 300 then
-                        local o = fly("ball_mid", 13, x, y, 2.0, Angle(x, y, player.x, player.y), 0)
+                        local o = fly(ball_mid, 13, x, y, 2.0, Angle(x, y, player.x, player.y), 0)
                         o._r, o._g, o._b = 255, 236, 120
                     end
                 end
@@ -310,7 +310,7 @@ do
                 while true do
                     local a0 = Angle(self, player)
                     for k = 1, 9 do
-                        local o = fly("ball_mid", 12, self.x, self.y, AIM_V,
+                        local o = fly(ball_mid, 12, self.x, self.y, AIM_V,
                                 a0 + (k - 5) * 9, 0)
                         o._r, o._g, o._b = 255, 226, 120
                     end
@@ -366,7 +366,7 @@ do
                 for s = -1, 1, 2 do
                     for i = 1, 26 do
                         local y = lstg.world.b + (i - 0.5) * (lstg.world.t - lstg.world.b) / 26
-                        local o = fly("flower2", 10, s * (WALL_X + 40), y, 0.9,
+                        local o = fly(flower2, 10, s * (WALL_X + 40), y, 0.9,
                                 s > 0 and 180 or 0, 0)
                         o._r, o._g, o._b = 190, 255, 190
                     end
@@ -413,7 +413,7 @@ do
                     for i = 1, 14 do
                         local y = lstg.world.b + (i - 0.5) * (lstg.world.t - lstg.world.b) / 14
                         local x = from_left and (lstg.world.l - 20) or (lstg.world.r + 20)
-                        local o = fly("ball_mid", 8, x, y, WAVE_V, from_left and 0 or 180, 0)
+                        local o = fly(ball_mid, 8, x, y, WAVE_V, from_left and 0 or 180, 0)
                         o._r, o._g, o._b = 160, 250, 220
                     end
                     task.Wait(WAVE_GAP)
@@ -494,7 +494,7 @@ do
                         --   既是「旋转对称」的图案，又不会自己堆成一堵墙。
                         -- 自机正好站在环上时，这一发挪到对面（不挖洞、不少发）
                         x, y = mirror_spawn(cx, cy, x, y, RING_V)
-                        deco_bullet("ball_mid", R.col, x, y, RING_V,
+                        deco_bullet(ball_mid, R.col, x, y, RING_V,
                                 a + 90, 260, R.rgb[1], R.rgb[2], R.rgb[3])
                     end
                 end
@@ -506,7 +506,7 @@ do
                         local x, y = cx + cos(a) * r, cy + sin(a) * r
                         --自机站在环上时，这一发从**对面**生成（不挖洞、不少发）
                         x, y = mirror_spawn(cx, cy, x, y, 2.2)
-                        local o = fly("ball_mid", R.col, x, y, 2.2,
+                        local o = fly(ball_mid, R.col, x, y, 2.2,
                                 Angle(x, y, player.x, player.y), 0)
                         o._r, o._g, o._b = R.rgb[1], R.rgb[2], R.rgb[3]
                     end
@@ -635,7 +635,7 @@ do
                 Newcharge_out(self.x, self.y, 200, 255, 170)
                 while true do
                     local from_left = ran:Sign() > 0
-                    deco_bullet("grain_a", 10,
+                    deco_bullet(grain_a, 10,
                             from_left and lstg.world.l - 16 or lstg.world.r + 16,
                             ran:Float(lstg.world.b, lstg.world.t),
                             1.0, from_left and 0 or 180, 320, 226, 255, 150)
@@ -649,14 +649,14 @@ do
                 while true do
                     if near_player(self.x, self.y, GUST_V) then
                         for k = 1, GUST_N do
-                            local o = fly("ball_mid", 16, self.x, self.y, GUST_V,
+                            local o = fly(ball_mid, 16, self.x, self.y, GUST_V,
                                     k * 360 / GUST_N, 0)
                             o._r, o._g, o._b = 255, 255, 255
                         end
                     else
                         local a0 = Angle(self, player)
                         for k = 1, GUST_N do
-                            local o = fly("ball_mid", 16, self.x, self.y, GUST_V,
+                            local o = fly(ball_mid, 16, self.x, self.y, GUST_V,
                                     a0 + (k - 6.5) * 7, 0)
                             o._r, o._g, o._b = 255, 255, 255
                         end
@@ -724,12 +724,12 @@ do
                         local x, y = cx + cos(a) * rr, cy + sin(a) * rr
                         --枝上的弹**朝外**走（a 而不是 a+180）：像枝条抽长，
                         --不会一起往 boss 汇聚把自机关在中心
-                        deco_bullet("ellipse", 10, x, y, 1.2, a, 240, 190, 255, 190)
+                        deco_bullet(ellipse, 10, x, y, 1.2, a, 240, 190, 255, 190)
                     end
                     --枝端开花：向外扩散的星，铺面积
                     for j = 1, BLOOM_N do
                         local aa = a + (j - (BLOOM_N + 1) / 2) * 14
-                        deco_bullet("star_small", 12,
+                        deco_bullet(star_small, 12,
                                 cx + cos(a) * (r + 10), cy + sin(a) * (r + 10),
                                 1.0, aa, 280, 255, 226, 130)
                     end
@@ -751,7 +751,7 @@ do
                     local x, y = cx + cos(best) * rr, cy + sin(best) * rr
                     --自机就在这条缝上时，三连从**对面那条缝**生成（不挖洞、不少发）
                     x, y = mirror_spawn(cx, cy, x, y, BRANCH_V)
-                    local o = fly("knife", 12, x, y, BRANCH_V,
+                    local o = fly(knife, 12, x, y, BRANCH_V,
                             Angle(x, y, player.x, player.y), 0)
                     o._r, o._g, o._b = 255, 246, 180
                 end
@@ -850,7 +850,7 @@ do
             if (self.t - COL_WARN) % 26 == 0 then
                 for k = 1, COL_N do
                     local x = (k - (COL_N + 1) / 2) * COL_GAP + sw
-                    deco_bullet("ball_mid", 13, x, lstg.world.b - 14, COL_V, 90, 300,
+                    deco_bullet(ball_mid, 13, x, lstg.world.b - 14, COL_V, 90, 300,
                             255, 240, 170)
                 end
             end
@@ -860,7 +860,7 @@ do
                 for k = 1, COL_N - 1 do
                     local x = (k - COL_N / 2) * COL_GAP + sw
                     if Dist(x, cy, player.x, player.y) > SPAWN_REACT * RAY_V then
-                        local o = fly("ball_mid", 2, x, cy, RAY_V,
+                        local o = fly(ball_mid, 2, x, cy, RAY_V,
                                 Angle(x, cy, player.x, player.y), 0)
                         o._r, o._g, o._b = 255, 210, 160
                     end
@@ -962,7 +962,7 @@ do
                         local y = cy + sin(a) * (r + i * 14)
                         --刺朝外；自机贴上来的那一根整根挪到对面（不挖洞）
                         x, y = mirror_spawn(cx, cy, x, y, 1.7)
-                        deco_bullet("mildew", 2, x, y, 1.7, a, 190, 255, 150, 200)
+                        deco_bullet(mildew, 2, x, y, 1.7, a, 190, 255, 150, 200)
                     end
                 end
             end
@@ -975,7 +975,7 @@ do
                     if abs(off) > 30 then
                         local a = pa + off
                         local x, y = cx + cos(a) * r, cy + sin(a) * r
-                        local o = fly("flower2", 2, x, y, ROSE_V,
+                        local o = fly(flower2, 2, x, y, ROSE_V,
                                 Angle(cx, cy, x, y) + 180, 0)
                         o._r, o._g, o._b = 255, 150, 190
                     end
@@ -1079,7 +1079,7 @@ do
                     local base = s * ROT_V * t
                     for i = 1, SWIRL_N do
                         local a = base + (i - 1) * 360 / SWIRL_N
-                        local o = fly("ball_mid", s > 0 and 6 or 8, cx, cy,
+                        local o = fly(ball_mid, s > 0 and 6 or 8, cx, cy,
                                 SWIRL_V, a, s * 1.6)
                         o._r, o._g, o._b = s > 0 and 255 or 180, 226, 255
                     end
@@ -1195,13 +1195,13 @@ do
                         local a = rot + DOOR_A * 0.5 + (360 - DOOR_A) * s / DOOR_SHOTS
                         local x, y = cx + cos(a) * D.r, cy + sin(a) * D.r
                         x, y = mirror_spawn(cx, cy, x, y, DOOR_V)
-                        deco_bullet("ball_small", D.col, x, y, DOOR_V,
+                        deco_bullet(ball_small, D.col, x, y, DOOR_V,
                                 a + 90, 200, D.rgb[1], D.rgb[2], D.rgb[3])
                     end
                     --门内溢出的花瓣：**向外**（不朝自机）
                     if t % 30 == 0 then
                         local a = rot + 180 + DOOR_A * 0.5
-                        deco_bullet("ellipse", D.col, cx + cos(a) * (D.r + 8),
+                        deco_bullet(ellipse, D.col, cx + cos(a) * (D.r + 8),
                                 cy + sin(a) * (D.r + 8), 1.3, a, 280,
                                 D.rgb[1], D.rgb[2], D.rgb[3])
                     end
@@ -1220,7 +1220,7 @@ do
                 local x, y = cx + cos(a) * D.r, cy + sin(a) * D.r
                 x, y = mirror_spawn(cx, cy, x, y, BURST_V)
                 for k = -2, 2 do
-                    local o = fly("ball_mid", D.col, x, y, BURST_V,
+                    local o = fly(ball_mid, D.col, x, y, BURST_V,
                             Angle(x, y, player.x, player.y) + k * 9, 0)
                     o._r, o._g, o._b = D.rgb[1], D.rgb[2], D.rgb[3]
                 end
@@ -1327,7 +1327,7 @@ do
                     local ways = min(7 + (self.__phase - 1) * 2, 13)
                     local a0 = Angle(self, player)
                     for k = 1, ways do
-                        local o = fly("ball_mid", 12, self.x, self.y, 2.5,
+                        local o = fly(ball_mid, 12, self.x, self.y, 2.5,
                                 a0 + (k - (ways + 1) / 2) * 8, 0)
                         o._r, o._g, o._b = 255, 226, 120
                     end
