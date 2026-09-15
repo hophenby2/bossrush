@@ -340,17 +340,18 @@ end
 
 --============================
 --[卡2] 樱符「墨染之川」
---  限位：三途川的水位上涨——一道自下而上的樱幕把玩家往上推（th07:819 的做法）
---  缺口：幕布分成 5 段，段间留 40 px 的缝（每帧往上挪 5 px，玩家 4 px/帧 追不上，
---        所以只能横向挪到缝里，不能往下退）
---  容错：幕布从 -240 升到 +240 需要 96 帧；缝之间相距 76 px → 19 帧，余量 5 倍
---  预警：幕布升起前，先用一条亮线在底部标出 5 个缝的位置，持续 90 帧
+--  限位：三途川的**潮汐**——水位在 -210 ~ +90 之间涨落，把玩家顶在它上面（th07:819 的做法）
+--  不做「缺口」：试过在幕布上留 5 条缝，结果玩家只要站进缝里就完全不受力，
+--  限位形同虚设。潮汐是单调的上下界，没有可以「躲进去」的位置。
+--  容错：涨落周期 300 帧，半个周期 150 帧里水位走完 300 px；
+--        玩家 4 px/帧 追得上（水位 2 px/帧），所以是「压缩活动空间」而不是「推着走」，
+--        真正的死线是水位到顶时上方只剩 134 px 的带子。
+--  预警：潮汐启动前 90 帧，在底部画一条提示线（水位还没动）
 --  实弹：上方落下的花瓣（v=1.8，每 22 帧一片），落到 -60 炸开成 5 向
 --============================
 do
-    local FLOOR_V = 5.0              -- 水位上涨速度
-    local SEG = 5                    -- 幕布分几段
-    local SEG_W = 40                 -- 缝隙宽度
+    local TIDE_PERIOD = 300          -- 潮汐周期（帧）
+    local TIDE_MID, TIDE_AMP = -60, 150  -- 水位 = MID + AMP·sin → 在 -210 ~ +90 之间
     local FLOOR_WARN = 90            -- 预警多少帧
     local FALL_V = 1.8               -- 花瓣下落速度
     local FALL_SWAY = 44
@@ -373,49 +374,34 @@ do
             if self.t < FLOOR_WARN then
                 return                       -- 预警期：水位还没动
             end
-            self.y = self.y + FLOOR_V
-            if self.y > lstg.world.t then
-                self.y = -260                -- 升到顶就从头再来（一轮 97 帧）
-            end
+            --潮汐：单调的上下界，没有可以「躲进去」的缺口
+            --相位 -90°：从最低点(-210)平滑起步，不然预警结束那一帧水位会跳 150 px
+            self.y = TIDE_MID + TIDE_AMP * sin((self.t - FLOOR_WARN) * 360 / TIDE_PERIOD - 90)
             --把玩家顶到水面之上（这就是限位）
             if player.y < self.y then
-                -- 玩家落在某一段幕布下面 → 顶上去；落在缝里 → 不动
-                local in_gap = false
-                for i = 1, SEG do
-                    local cx = (i - 0.5) * 384 / SEG - 192
-                    if abs(player.x - cx) < SEG_W * 0.5 then
-                        in_gap = true
-                        break
-                    end
-                end
-                if not in_gap then
-                    player.y = self.y
-                end
+                player.y = self.y
             end
         end,
         render = function(self)
-            local y = self.y
             if self.t < FLOOR_WARN then
-                --预警：先在底部画出 5 个缝的位置
+                --预警：水位还没动，先在底部画一条提示线
                 local k = 0.4 + 0.6 * sin(self.t * 0.15)
-                for i = 1, SEG do
-                    local cx = (i - 0.5) * 384 / SEG - 192
-                    thin_line(cx - SEG_W * 0.5, -238, cx - SEG_W * 0.5, -170,
-                            120 * k, 255, 214, 236, 0.12)
-                    thin_line(cx + SEG_W * 0.5, -238, cx + SEG_W * 0.5, -170,
-                            120 * k, 255, 214, 236, 0.12)
-                end
+                SetImageState("white", "mul+add", 110 * k, 255, 214, 236)
+                RenderRect("white", -192, 192, -239, -234)
                 return
             end
-            for i = 1, SEG do
-                local cx = (i - 0.5) * 384 / SEG - 192
-                local hw = 384 / SEG * 0.5 - SEG_W * 0.5
-                thin_line(cx - hw, y, cx, y, 190, 236, 96, 130, 0.16)
-                thin_line(cx, y, cx + hw, y, 190, 236, 96, 130, 0.16)
-                --水面高光
-                SetImageState("ball_light5", "mul+add", 40, 255, 130, 150)
-                Render("ball_light5", cx, y, 0, hw / 100, 0.28)
+            local y = self.y
+            --水面：一条带起伏的长线
+            local segs = 48
+            for i = 1, segs do
+                local x1 = -192 + 384 * (i - 1) / segs
+                local x2 = -192 + 384 * i / segs
+                local w1 = y + sin(self.t * 0.06 + x1 * 0.03) * 3
+                local w2 = y + sin(self.t * 0.06 + x2 * 0.03) * 3
+                thin_line(x1, w1, x2, w2, 190, 236, 96, 130, 0.16)
             end
+            SetImageState("ball_light5", "mul+add", 40, 255, 130, 150)
+            Render("ball_light5", 0, y, 0, 3.6, 0.28)
         end,
     }, true)
 
@@ -496,13 +482,14 @@ end
 --[卡3] 扇符「胡蝶扇舞」
 --  限位：贴着屏幕边缘的一圈扇幕，持续朝内发弹（蝴蝶梦之舞的做法）
 --  缺口：没有固定缺口，是「软限位」——靠 20 把扇的弹流互相咬住
---  容错：连续型，每把扇每 60 帧放一轮 5 发，弹流之间始终有 30~50 px 的缝
+--  容错：20 把扇**同相位齐射**，每 84 帧一轮（一轮 100 发）；两轮之间有 84 帧的静默期，
+--        这就是玩家的决策窗口 —— 不是连续弹流
 --  预警：扇幕出现前 90 帧先画出 20 个扇位（自绘扇骨）
 --  实弹：boss 踩华尔兹滑步，每步朝玩家放 20 路扇形，路数每轮 +4（封顶 48）
 --============================
 do
     local FAN_TOP, FAN_SIDE = 6, 4    -- 上下各 6 把、左右各 4 把（共 20 把）
-    local FAN_GAP = 60                -- 扇幕发弹间隔
+    local FAN_GAP = 84                -- 扇幕齐射间隔（20 把一起放 → 有节奏，不是连续流）
     local FAN_V = 2.4
     local FAN_SPREAD = 34
     local FAN_WARN = 90               -- 预警
@@ -512,11 +499,11 @@ do
     local BOSS_X, BOSS_Y = 0, 140
 
     class["th04_fan"] = Class(object, {
-        init = function(self, x, y, dir, born)
+        init = function(self, x, y, dir)
             self.x, self.y = x, y
             self.dir = dir
-            self.born = born
-            self.t = ran:Int(0, FAN_GAP)
+            -- 从 0 起算 → 20 把扇同相位，变成「一轮一轮的齐射」而不是 20 条连续弹流
+            self.t = 0
             self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET + 22
             self.bound, self.colli = false, false
         end,
@@ -615,14 +602,19 @@ end
 --[卡4] 死符「无寿之栏」
 --  限位：直接夹住自机的方框，分三档收缩（蝴蝶梦之舞的做法，但把档位标出来）
 --  缺口：无（整块缩小）
---  容错：每档之间留 300 帧，足够从 384 宽挪到 288 宽（96 px → 24 帧，余量 12 倍）
+--  容错：每档之间留 300 帧。第一档只夹纵向（224→173），第二三档才夹横向；
+--        最坏一次要从 (192,173) 挪到 (136,122)，走 56 px → 14 帧，余量 21 倍
+--  预警：第一档生效前 90 帧先闪框；之后每次收缩前 60 帧闪下一档的框
 --  预警：每次收缩前 60 帧，用亮框画出「下一档的边界」
 --  实弹：同心环，每环留一个旋转缺口（缺口每环前进 5 格）
 --============================
 do
-    local STEPS = { 320, 288, 256 }   -- 三档半宽
+    -- ⚠ 半宽必须小于可视区半宽 192，否则夹了等于没夹（th08 的蝴蝶梦之舞只有纵向生效）
+    local STEPS = { 192, 164, 136 }   -- 三档半宽（都在 192 以内，真的会夹住）
+    local STEP_RATIO = 0.9            -- 半高 = 半宽 × 这个（224 → 173/148/122）
     local STEP_T = 300                -- 每档撑多少帧
-    local FRAME_WARN = 60             -- 收缩前提前多少帧画预警
+    local START_WARN = 90             -- 第一档生效前的预热（框只画不夹）
+    local FRAME_WARN = 60             -- 之后每次收缩前提前多少帧画预警
     local RING_GAP = 34
     local RING_N = 38
     local GAP_W = 7
@@ -630,6 +622,14 @@ do
     local RING_V = 3.1
     local AIM_GAP = 150
     local BOSS_X, BOSS_Y = 0, 150
+
+    ---当前处在第几档（预热期算第 1 档）。
+    ---注意：卡的 before/init/frame/render/del 才是被引擎按名字调用的，
+    ---其余方法挂在卡表上、用 self 取不到（self 是 boss），所以只能做成局部函数
+    local function cur_step(t)
+        local k = max(0, t - START_WARN)
+        return min(int(k / STEP_T) + 1, #STEPS)
+    end
 
     do
         local name = "死符「无寿之栏」"
@@ -640,30 +640,43 @@ do
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
+        ---画一个方框（预警用）
+        local function draw_box(hw, hh, alpha)
+            SetImageState("white", "mul+add", alpha, 255, 160, 180)
+            Render("white", 0, hh, 0, hw / 8, 0.06)
+            Render("white", 0, -hh, 0, hw / 8, 0.06)
+            Render("white", -hw, 0, 90, hh / 8, 0.06)
+            Render("white", hw, 0, 90, hh / 8, 0.06)
+        end
+
         function card:frame()
             --自己的计时器（不能用 self.ani：那是 boss 出生以来的总帧数）
             self.__t = (self.__t or 0) + 1
-            local step = min(int(self.__t / STEP_T) + 1, #STEPS)
+            if self.__t < START_WARN then
+                return                    -- 预热期：框只画不夹
+            end
+            local step = cur_step(self.__t)
             self.__hw = STEPS[step]
-            local hh = self.__hw * 0.76
+            local hh = self.__hw * STEP_RATIO
             player.x = min(self.__hw, max(-self.__hw, player.x))
             player.y = min(hh, max(-hh, player.y))
         end
 
         function card:render()
-            --下一档的预警框：收缩前 FRAME_WARN 帧开始闪
             local t = self.__t or 0
-            local step = min(int(t / STEP_T) + 1, #STEPS)
-            local left = STEP_T - (t % STEP_T)
+            if t < START_WARN then
+                --预热：第一档的框先闪 90 帧，玩家看清要收到哪儿
+                local k = 0.4 + 0.6 * sin(t * 0.15)
+                draw_box(STEPS[1], STEPS[1] * STEP_RATIO, 100 * k)
+                return
+            end
+            local step = cur_step(t)
+            local left = STEP_T - ((t - START_WARN) % STEP_T)
             if step < #STEPS and left <= FRAME_WARN then
+                --下一档的框：收缩前 60 帧开始闪
                 local k = 0.4 + 0.6 * sin(t * 0.3)
                 local nh = STEPS[step + 1]
-                local nhh = nh * 0.76
-                SetImageState("white", "mul+add", 90 * k, 255, 160, 180)
-                Render("white", 0, nhh, 0, nh / 8, 0.06)
-                Render("white", 0, -nhh, 0, nh / 8, 0.06)
-                Render("white", -nh, 0, 90, nhh / 8, 0.06)
-                Render("white", nh, 0, 90, nhh / 8, 0.06)
+                draw_box(nh, nh * STEP_RATIO, 90 * k)
             end
         end
 
@@ -715,9 +728,12 @@ end
 do
     local ARMS = 6                    -- 六条射线
     local LINE_N = 18                 -- 每条线排几颗
-    local R_IN, R_OUT = 110, 178      -- 张缩半径
+    -- ⚠ 线要整条落在回收边界(±224/±256)内侧：boss 在 y=60，
+    -- 所以 最远半径 R_OUT + LINE_HALF 必须 ≤ 196
+    local R_IN, R_OUT = 80, 140       -- 张缩半径
     local PULSE = 200                 -- 一次张缩
-    local LINE_V = 1.6                -- 线整体向外漂
+    local LINE_HALF = 38              -- 每条线以 self.r 为中心、上下各排这么长
+    local LINE_V = 1.6                -- 线的漂移速度
     local TREE_WARN = 90
     local BLOOM_N = 7
     local BLOOM_V = 2.3
@@ -751,14 +767,13 @@ do
             end
             --缩到最小半径时把这一轮的线放出去
             if self.t % PULSE == 0 then
-                --每条臂 = 沿半径 a 从 (r - L/2) 排到 (r + L/2) 的一列弹；
+                --每条臂 = 沿半径 a 从 (r - LINE_HALF) 排到 (r + LINE_HALF) 的一列弹；
                 --六条这样的径向线就拼成一个六芒星（樱花结界的做法）
-                local half = LINE_V * PULSE * 0.5
                 for k = 1, ARMS do
                     local a = self.rot + (k - 1) * 360 / ARMS
                     for i = 1, LINE_N do
                         local f = (i - 1) / (LINE_N - 1) - 0.5   -- -0.5 ~ 0.5
-                        local rr = self.r + f * 2 * half
+                        local rr = self.r + f * 2 * LINE_HALF
                         local o = fly(ellipse, 6, cx + cos(a) * rr, cy + sin(a) * rr,
                                 LINE_V, a, 0)
                         o._r, o._g, o._b = 255, 206, 230
@@ -830,7 +845,7 @@ end
 --  缺口：90°（在 R=120 处弧长约 188 px，是全项目最宽的「规律型」缺口）
 --  容错：臂以 0.8°/帧 转，扫过 90° 要 112 帧 → 容错 112 帧（余量 7 倍，偏宽松）
 --  预警：前 60 帧只画出四条臂的骨架，之后才挂上蝶
---  实弹：臂上的蝶沿切向排开，越靠外越快（v 从 3.0 插值到 3.9），另有 boss 的瞄准轮
+--  实弹：臂上的蝶沿切向排开，越靠外越快（v 从 2.2 插值到 3.0），另有 boss 的瞄准轮
 --============================
 do
     local ARMS = 4
@@ -838,7 +853,7 @@ do
     local ARM_R0, ARM_R1 = 60, 150    -- 臂上的弹从内往外排
     local ARM_N = 9                   -- 一条臂上几颗
     local ARM_GAP = 26                -- 发一轮的间隔
-    local ARM_V0, ARM_DV = 3.0, 0.9
+    local ARM_V0, ARM_DV = 2.2, 0.8
     local WARN = 60
     local AIM_GAP = 170
     local BOSS_X, BOSS_Y = 0, 40
@@ -1435,13 +1450,16 @@ do
                         wind_dead[i] = nil
                     end
                 end
-                if self.t % 4 == 0 then
+                -- 每 18 帧一片（约 3.3 片/秒）。**别调回个位数** ——
+                -- 那会重演「樱吹雪」的毛病：持续几十秒的噪声微操，没有决策点
+                if self.t % 18 == 0 then
                     local from_left = wind_vx >= 0
                     local o = fly(ellipse, 4,
                             from_left and (lstg.world.l - 16) or (lstg.world.r + 16),
                             ran:Float(lstg.world.b - 10, lstg.world.t + 10),
-                            1.6, from_left and 0 or 180, ran:Float(-2, 2))
+                            1.6, from_left and 0 or 180, 0)
                     o._r, o._g, o._b = 255, 196, 226
+                    o._a = 170
                     o.th04_wind = true
                 end
             end
