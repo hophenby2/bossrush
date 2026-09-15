@@ -696,6 +696,95 @@ for i, r in ipairs(registered) do
 end
 if #registered == 0 then print("  （没有 boss.card.add）") end
 
+----------------------------------------------------------------------
+-- 威胁度量：把「自机周围到底有多少弹要同时处理」量出来
+--   光数全屏弹数是没用的 —— 350 发全在屏幕另一头不等于难。
+--   这里：① 让一个简易躲避机器人真的去躲；② 每帧按角度分 24 个扇区，
+--   统计自机周围 60 px 内的弹数与「被堵死的方向数」。
+----------------------------------------------------------------------
+local THREAT = (arg[3] == "--threat") or os.getenv("STAGE_THREAT") == "1"
+local THREAT_R, HIT_R, SECT = 60, 8, 24
+
+---遍历场上有判定的东西（弹 + 有碰撞的敌方 object）
+local function each_threat(fn)
+    for i = 1, #bullets do
+        local b = bullets[i]
+        if b._live ~= false then fn(b) end
+    end
+    for i = 1, #objects do
+        local o = objects[i]
+        if o._live ~= false and o.colli ~= false
+                and (o.group == 1 or o.group == 2 or o.group == 5) then
+            fn(o)
+        end
+    end
+end
+
+---简易躲避机器人：被 60 px 内的弹斥开，60~180 px 的弹轻推，另外别贴边
+local function bot_move()
+    local fx, fy = 0, 0
+    each_threat(function(t)
+        local dx, dy = player.x - t.x, player.y - t.y
+        local d2 = dx * dx + dy * dy
+        if d2 < 1 then d2 = 1 end
+        if d2 < THREAT_R * THREAT_R then
+            fx = fx + dx / d2
+            fy = fy + dy / d2
+        elseif d2 < (THREAT_R * 3) ^ 2 then
+            fx = fx + dx / d2 * 0.15
+            fy = fy + dy / d2 * 0.15
+        end
+    end)
+    -- 别贴边：**只在离边界 40 px 以内才推**。
+    -- 之前写成「一直往屏幕中心吸」，权重比躲避还大 4 倍，
+    -- 结果机器人根本不躲、就停在中心 —— 测出来的数字全是假的。
+    local w = lstg.world
+    local M = 40
+    if player.x < w.l + M then fx = fx + (w.l + M - player.x) * 0.02 end
+    if player.x > w.r - M then fx = fx + (w.r - M - player.x) * 0.02 end
+    if player.y < w.b + M then fy = fy + (w.b + M - player.y) * 0.02 end
+    if player.y > w.t - M then fy = fy + (w.t - M - player.y) * 0.02 end
+    local m = math.sqrt(fx * fx + fy * fy)
+    if m > 1e-9 then
+        player.x = player.x + fx / m * 4
+        player.y = player.y + fy / m * 4
+    end
+end
+
+---统计函数：返回 本帧60px内弹数 / 占用的扇区数 / 最大空隙中心角 / 是否被命中
+local function measure_frame()
+    local n, hit, used, alive = 0, false, 0, 0
+    local sect = {}
+    each_threat(function(t)
+        alive = alive + 1
+        local dx, dy = t.x - player.x, t.y - player.y
+        local d2 = dx * dx + dy * dy
+        if d2 < HIT_R * HIT_R then hit = true end
+        if d2 < THREAT_R * THREAT_R then
+            n = n + 1
+            local a = math.deg(math.atan2(dy, dx))
+            local k = int(((a + 360) % 360) / (360 / SECT)) + 1
+            if k > SECT then k = SECT end
+            sect[k] = true
+        end
+    end)
+    for i = 1, SECT do if sect[i] then used = used + 1 end end
+    -- 最大连续空隙（有几个扇区是空的）与它的中心角
+    local best, cur, besti, curi = 0, 0, 1, 1
+    for i = 1, SECT * 2 do
+        local j = (i - 1) % SECT + 1
+        if not sect[j] then
+            if cur == 0 then curi = i end
+            cur = cur + 1
+            if cur > best and cur <= SECT then best, besti = cur, curi end
+        else
+            cur = 0
+        end
+    end
+    local center = ((besti - 1 + best * 0.5) % SECT) * (360 / SECT)
+    return n, used, best, center, hit, alive
+end
+
 print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
 for idx, entry in ipairs(registered) do
     local card = entry.card
@@ -712,17 +801,37 @@ for idx, entry in ipairs(registered) do
     player.x, player.y = 0, 0
 
     local peak_obj, peak_bul = 0, 0
+    local tm_sum, tm_peak, tm_frames, tm_hit, tm_nogo, tm_replan, tm_lastc = 0, 0, 0, 0, 0, 0, nil
+    local tm_alive = 0
+    local tu_peak, tg_min = 0, SECT
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
         if card.before then drain(function() card.before(boss_obj) end, boss_obj) end
         if card.init then drain(function() card.init(boss_obj) end, boss_obj) end
         for f = 1, FRAMES do
+            if THREAT then bot_move() end
             if card.frame then card.frame(boss_obj) end
             if card.render then card.render(boss_obj) end
             boss_obj.timer = boss_obj.timer + 1
             boss_obj.ani = boss_obj.ani + 1
             step_tasks()
             step_objects()
+            if THREAT then
+                local n, used, gap, center, hit, alive = measure_frame()
+                tm_alive = tm_alive + alive
+                tm_sum = tm_sum + n
+                tm_peak = math.max(tm_peak, n)
+                tu_peak = math.max(tu_peak, used)
+                tg_min = math.min(tg_min, gap)
+                tm_frames = tm_frames + 1
+                if hit then tm_hit = tm_hit + 1 end
+                if used >= SECT then tm_nogo = tm_nogo + 1 end
+                -- 重规划：最大空隙的中心角挪了 45° 以上
+                if tm_lastc and math.abs(((center - tm_lastc + 540) % 360) - 180) > 135 then
+                    tm_replan = tm_replan + 1
+                end
+                tm_lastc = center
+            end
             peak_obj = math.max(peak_obj, #objects)
             peak_bul = math.max(peak_bul, #bullets)
             -- 走到一半把阶段点吃掉，逼终符那种血量驱动的卡推进阶段
@@ -735,7 +844,17 @@ for idx, entry in ipairs(registered) do
         if card.del then card.del(boss_obj) end
     end)
     if good then
-        pass(("%s  峰值 对象 %d / 弹 %d"):format(label, peak_obj, peak_bul))
+        if THREAT and tm_frames > 0 then
+            print(("  %s"):format(label))
+            print(("      60px 内弹数  平均 %.1f  峰值 %d   |  被堵方向 峰值 %d/%d 格")
+                    :format(tm_sum / tm_frames, tm_peak, tu_peak, SECT))
+            print(("      最大空隙    最少 %d 格（%.0f°）  |  无路可走 %d 帧  |  自动机被贴身 %d 帧（%.1f 次/秒）")
+                    :format(tg_min, tg_min * 360 / SECT, tm_nogo, tm_hit, tm_hit / (tm_frames / 60)))
+            print(("      重规划       %.1f 次/秒   |  全场有判定 %.1f 发  |  峰值同屏 对象 %d / 弹 %d")
+                    :format(tm_replan / (tm_frames / 60), tm_alive / tm_frames, peak_obj, peak_bul))
+        else
+            pass(("%s  峰值 对象 %d / 弹 %d"):format(label, peak_obj, peak_bul))
+        end
     else
         fail(("%s -> %s"):format(label, tostring(msg)))
     end

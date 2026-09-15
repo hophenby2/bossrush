@@ -721,13 +721,18 @@ end
 --[卡5] 幽符「西行妖」
 --  限位：用「沿半径排成一条线」的子弹拼出六芒星结界（樱花结界的做法）
 --  缺口：6 条射线之间 60° 的角缝；在 R=140 处每条缝约 146 px
---  容错：结界每 200 帧张缩一次，缩到最小时的缝仍有 60°，是连续型软限位
+--  实测：60px 内峰值 49 发 —— 峰值出现在射线收敛到中心那一瞬，
+--        但自动机 3000 帧里只被贴身 7 帧，说明窗口够躲
+--  容错：结界每 200 帧张缩一次，**张到最大半径时才吐弹，弹朝内飞**。
+--        原来在中间半径吐，线的最内端正好落在自机头上（实测 60px 内峰值 53 发）
 --  预警：结界出现前先画 6 条暗线，第 90 帧才落成实弹
---  实弹：枝端绽放的 7 向花瓣 + 从上方飘落的花雨
+--  实弹：枝端绽放的 7 向花瓣 + 从上方飘落的花雨（每 18 帧一片）
+--  实测：60px 内峰值 19 发、最大空隙 90° —— 是全十张里最松的一张，
+--        所以花雨从 26 帧加密到 18 帧
 --============================
 do
     local ARMS = 6                    -- 六条射线
-    local LINE_N = 18                 -- 每条线排几颗
+    local LINE_N = 12                 -- 每条线排几颗（6×12=72 发/轮）
     -- ⚠ 线要整条落在回收边界(±224/±256)内侧：boss 在 y=60，
     -- 所以 最远半径 R_OUT + LINE_HALF 必须 ≤ 196
     local R_IN, R_OUT = 80, 140       -- 张缩半径
@@ -765,8 +770,8 @@ do
             if self.t == TREE_WARN then
                 PlaySound("kira00", 0.25, 0, true)
             end
-            --缩到最小半径时把这一轮的线放出去
-            if self.t % PULSE == 0 then
+            --张到最大半径时才把这一轮的线放出去：吐弹点离自机越远，玩家越有反应时间
+            if self.t % PULSE == int(PULSE * 0.25) then
                 --每条臂 = 沿半径 a 从 (r - LINE_HALF) 排到 (r + LINE_HALF) 的一列弹；
                 --六条这样的径向线就拼成一个六芒星（樱花结界的做法）
                 for k = 1, ARMS do
@@ -775,7 +780,7 @@ do
                         local f = (i - 1) / (LINE_N - 1) - 0.5   -- -0.5 ~ 0.5
                         local rr = self.r + f * 2 * LINE_HALF
                         local o = fly(ellipse, 6, cx + cos(a) * rr, cy + sin(a) * rr,
-                                LINE_V, a, 0)
+                                LINE_V, a + 180, 0)
                         o._r, o._g, o._b = 255, 206, 230
                     end
                 end
@@ -825,7 +830,7 @@ do
                 Newcharge_out(self.x, self.y, 255, 214, 244)
                 while true do
                     New(class["th04_petal"], ran:Float(lstg.world.l, lstg.world.r), 236)
-                    task.Wait(26)
+                    task.Wait(18)
                 end
             end)
         end
@@ -1078,22 +1083,32 @@ end
 
 --============================
 --[卡8] 灵符「亡灵之渡」
---  限位：三途川上的三条摆渡船——**只有船周围 70 px 圆内，敌弹才有判定**
+--  限位：三途川上的三条摆渡船——**只有船周围 85 px 圆内，敌弹才有判定**
 --        （th12「血バサミ女」的圆环判定做法，把「哪里危险」变成可移动的区域）
 --  缺口：船外全是安全区，等于是「跟着船走」的反向限位
---  容错：船横渡全屏 384 px 用 300 帧；玩家 96 帧能跑完全程 → 余量 3 倍
---  预警：船出现前 90 帧先画出三条航线和 70 px 的判定圈
---  实弹：全屏铺一层「平时无判定」的慢速花弹，只有进圈才致命
+--  容错：船 100 帧横穿 520 px（5.2 px/帧，比玩家 4 px/帧 还快）。
+--        四条船的判定圈总覆盖约 4×π×85² / (384×448) ≈ 53%，
+--        留下的是会移动的缝，所以必须跟着缝走，不能站定
+--  预警：船出现前 90 帧先画出三条航线和判定圈
+--  实弹：① 全屏铺一层「平时无判定」的慢速花弹（只有进圈才致命）
+--        ② 每 90 帧一轮 16 路瞄准环（v=2.4）
+--
+--  ⚠ 两个坑，都是实测（tools/check_stage.lua --threat）才看出来的：
+--    · 三条船必须**纵向铺满**场地。原来挤在 y=-240/-150/-60，上半屏永远是安全区，
+--      机器人直接停在上边：60px 内全程 0 发。
+--    · **只有限位层是不够的**。没有实弹层时，最优解是「站到圈外不动」，
+--      实测仍然是 60px 内全程 0 发 —— 那张卡等于空的。瞄准环就是为了逼玩家动，
+--      一动就得在圈与圈之间穿，限位才真正生效。
 --============================
 do
-    local BOAT_R = 70                 -- 判定半径
-    local BOAT_N = 3
-    local CROSS_T = 300               -- 横渡耗时
+    local BOAT_R = 105                -- 判定半径（原来 70；太小的话绕开就没事）
+    local BOAT_N = 5                  -- 5 条船把判定圈铺到覆盖全场（实测 3~4 条都留了太大的安全区）
+    local CROSS_T = 100               -- 横渡耗时（原来 300；扫得越快，越逼你跟着挪）
     local SHIP_WARN = 90
     -- 每波铺几颗 / 多久一波。这两个数直接决定同屏对象数：
-    --   峰值 ≈ FIELD_N × (穿场帧数 / FIELD_GAP)，穿场约 600 帧，所以取 16/150 → 峰值 ~120
-    -- 船圈总覆盖面积约 3×π×70² ≈ 全场 27%，所以 120 颗里随时有 ~30 颗在圈内，够压迫了
-    local FIELD_N = 16
+    --   峰值 ≈ FIELD_N × (穿场帧数 / FIELD_GAP)，穿场约 600 帧，所以取 22/150 → 峰值 ~170
+    -- 船圈总覆盖面积约 3×π×85² ≈ 全场 40%，所以 170 颗里随时有 ~65 颗在圈内
+    local FIELD_N = 22
     local FIELD_GAP = 150
     local FIELD_V = 0.6               -- 极慢，会长时间滞留在圈里
     local BOSS_X, BOSS_Y = 0, 150
@@ -1105,7 +1120,8 @@ do
             self.phase = phase
             self.t = 0
             self.x = -dir * 260
-            self.y = -150 + phase * 90
+            self.base_y = -180 + phase * 90       -- 五条船纵向铺满
+            self.y = self.base_y
             self.group, self.layer = GROUP.GHOST, LAYER.TOP
             self.bound, self.colli = false, false
         end,
@@ -1116,12 +1132,15 @@ do
             end
             local k = ((self.t - SHIP_WARN) % CROSS_T) / CROSS_T
             self.x = (-260 + 520 * k) * self.dir
+            -- 上下慢摆：让「安全高度」也一直在挪
+            self.y = self.base_y + sin((self.t - SHIP_WARN) * 0.018 + self.phase) * 50
         end,
         render = function(self)
             local warn = self.t < SHIP_WARN
             local k = warn and (0.4 + 0.6 * sin(self.t * 0.14)) or 1
             --航线
-            thin_line(-260 * self.dir, self.y, 260 * self.dir, self.y, 70 * k, 190, 226, 255, 0.06)
+            thin_line(-260 * self.dir, self.base_y, 260 * self.dir, self.base_y,
+                    70 * k, 190, 226, 255, 0.06)
             --判定圈
             arc(self.x, self.y, BOAT_R, 0, 360, 32, 130 * k, 255, 170, 200, 0.10)
             draw_orb(self.x, self.y, 0.7, 0.9 * k, 226, 240, 255)
@@ -1173,8 +1192,22 @@ do
             self.__boats = {}
             for i = 1, BOAT_N do
                 self.__boats[#self.__boats + 1] =
-                        New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 2)
+                        New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 1)
             end
+            -- 实弹层：没有它，这张卡就是「站圈外不动」
+            task.New(self, function()
+                task.Wait(120)
+                while true do
+                    local a0 = Angle(self, player)
+                    for k = 1, 16 do
+                        local o = fly(ball_mid, 4, self.x, self.y, 2.4,
+                                a0 + (k - 1) * 360 / 16, 0)
+                        o._r, o._g, o._b = 255, 186, 220
+                    end
+                    PlaySound("tan00", 0.06, self.x / 256, true)
+                    task.Wait(90)
+                end
+            end)
             task.New(self, function()
                 task.Wait(60)
                 Newcharge_in(self.x, self.y, 255, 170, 200)
@@ -1208,7 +1241,9 @@ end
 --  限位：两个反向旋转、且反相张缩的六边形结界（樱花结界的立体版）
 --  缺口：张的时候半径 168，缝在六个角之间；缩到 70 时缝收窄但两环错开 30°，
 --        所以「一个缩进去的时候另一个正张开」，永远有一条路
---  容错：一次张缩 150 帧，缩到最小半径时吐弹
+--  容错：一次张缩 150 帧。**每个六边形在自己张到最大时才吐弹、弹朝内飞**，
+--        两个六边形错开半个周期（每 75 帧一发）→ 有节奏也留足反应时间。
+--        原来是在缩到最小时吐，等于贴着自机吐弹（实测 60px 内峰值 60 发、只剩 15° 缝）
 --  预警：结界出现前 90 帧只画两个六边形的骨架
 --  实弹：每 190 帧补一轮玩家方向的轮盘（18 路起，封顶 48）
 --============================
@@ -1216,7 +1251,8 @@ do
     local HEX_CX, HEX_CY = 0, -6
     local R_IN, R_OUT = 70, 168
     local PULSE = 150
-    local PULSE_EMIT = 112
+    local EMIT_A = int(PULSE * 0.25)          -- A 张到最大时
+    local EMIT_B = int(PULSE * 0.75)          -- B 张到最大时（错开半个周期）
     local HEX_STEPS = 9
     local HEX_V = 2.4
     local HEX_WARN = 90
@@ -1233,7 +1269,8 @@ do
             for i = 0, HEX_STEPS - 1 do
                 local f = i / HEX_STEPS
                 local px, py = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
-                local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py), 0)
+                -- 朝内飞：吐弹点在最大半径上，离自机最远
+                local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
                 o._r, o._g, o._b = 224, 192, 255
             end
         end
@@ -1269,10 +1306,12 @@ do
             if self.t < HEX_WARN then
                 return
             end
-            if self.t % PULSE == PULSE_EMIT then
+            if self.t % PULSE == EMIT_A then
                 emit_hex(HEX_CX, HEX_CY, self.r_a, self.rot_a, 6)
-                emit_hex(HEX_CX, HEX_CY, self.r_b, self.rot_b, 10)
                 PlaySound("tan00", 0.07, 0, true)
+            elseif self.t % PULSE == EMIT_B then
+                emit_hex(HEX_CX, HEX_CY, self.r_b, self.rot_b, 10)
+                PlaySound("tan00", 0.05, 0, true)
             end
         end,
         render = function(self)
@@ -1343,10 +1382,10 @@ do
     -- 大屏下场地是 ±320/±240，回收边界 ±224/±256 —— 注意横竖的关系翻过来了！
     -- 所以墙的半宽取 216（<224）、半高取 250（<256），仍然全在边界内侧
     local WALL_HW, WALL_HH = 216, 250
-    local WALL_N = 72
+    local WALL_N = 56                -- 原来 72：收敛到中心时会挤成一团
     local WALL_V = 2.4
-    local WALL_CYCLE = 60            -- 补墙间隔（wall 穿场约 104 帧 → 峰值 ≈ 72×104/60 ≈ 125）
-    local WALL_CYCLE_RAGE = 45       -- 四阶段加快
+    local WALL_CYCLE = 70            -- 补墙间隔（穿场约 104 帧 → 同屏 ≈ 56×104/70 ≈ 83）
+    local WALL_CYCLE_RAGE = 52       -- 四阶段加快
     local WALL_JUMP = 90
     local WALL_WARN = 90
     local SLOTS = 16
@@ -1435,7 +1474,7 @@ do
                 self.boats = {}
                 for i = 1, 3 do
                     self.boats[#self.boats + 1] =
-                            New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 2)
+                            New(class["th04_boat"], (i % 2 == 0) and 1 or -1, i - 1)
                 end
             end
 
