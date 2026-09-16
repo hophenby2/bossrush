@@ -675,14 +675,14 @@ do
     local WALTZ_X, WALTZ_Y1, WALTZ_Y2 = 95, 130, 58
     local WALTZ_REST = 110            -- 走完之后停多久（参考卡是 80，这里留长一点好输出）
     local RING_V0, RING_DV = 1.2, 0.6
-    local RING_T0, RING_DT, RING_TMAX = 12, 2, 20
+    local RING_T0, RING_DT, RING_TMAX = 12, 2, 16
     local ORBIT_N0, ORBIT_DN = 6, 0.5
     local BOSS_X, BOSS_Y = 0, 130
 
-    -- Lfan.png 是 mod/GAME/th08.lua 里 LoadImageGroup 进来的（5 帧，Lfan1..Lfan5）。
-    -- Lfan2 = 绿扇（蝴蝶梦之舞的外圈扇），Lfan3 = 蓝扇（收势扇）。
+    -- Lfan.png 是 mod/GAME/th08.lua 里 LoadImageGroup 进来的（5 帧，Lfan1..Lfan5）：
+    --   Lfan2 = 绿扇（围场那 32 把）  Lfan3 = 蓝扇  Lfan4 = 金扇
+    -- 三把各自的类名见下面 class["th04_fan"] / th04_goldenfan / th04_bluefan 的头注释。
     local FAN_IMG = "Lfan2"
-    local FAN_ORBIT_IMG = "Lfan3"
 
     ---边缘扇：**照抄 Little_Fan_Green（mod/GAME/th08.lua:1966）**
     ---  ① 张开分两步：先竖 12 帧（vscale 0→1），再横 12 帧（hscale 0.27→1）。
@@ -741,11 +741,8 @@ do
                 return
             end
             self._a = min(self._a + 10, 150)
-            if not self.fires then
-                return                -- 纯扇框：只摆，不炸不发
-            end
-            --③ 炸开**同时**吐弹（弹朝 fdir = 场内，不是扇面的朝向）
-            if t == FAN_OPEN + FAN_HOLD then
+            --③ 发弹的那 14 把：炸开**同时**吐弹（弹朝 fdir = 场内，不是扇面的朝向）
+            if self.fires and t == FAN_OPEN + FAN_HOLD then
                 self.burst = 1
                 for i = 1, FAN_WAYS do
                     local off = (i - (FAN_WAYS + 1) / 2) * FAN_SPREAD / 2
@@ -755,6 +752,10 @@ do
                 end
                 PlaySound("tan00", 0.02, self.x / 256, true)
             end
+            --④ 到寿命就淡出 —— **不能写在 `if self.fires` 里面**：
+            --   只当扇框的 18 把（上下两排）不发弹，如果跟着 return 掉就永远走不到这里，
+            --   `bound = false` 又不会被边界回收 → 每 210 帧泄 18 个对象，
+            --   一张 60 秒的卡下来泄 300 多个（自检里的「峰值同屏 对象」就是这么涨上去的）。
             if t > FAN_OPEN + FAN_HOLD then
                 self.burst = self.burst + 1
                 --炸完淡出（不突然消失），淡干净了自己收
@@ -789,37 +790,178 @@ do
         end,
     }, true)
 
-    ---收势：绕 boss 一圈的小扇（蝴蝶梦之舞的收尾动作）
-    class["th04_orbitfan"] = Class(object, {
+    -- ============ 会转的两种扇子（金扇 / 蓝扇）============
+    -- ⚠ 参考卡 mod/GAME/th08-boss_lastword.lua:1539 里一共**三种**小扇，动法完全不同：
+    --   Little_Fan_Green  （Lfan2，围场 32 把）—— **不转**，只摆 ±16~23°     → class["th04_fan"]
+    --   Little_Fan_Golden （Lfan4，每轮 2 把） —— **会转**，绕 boss 转三圈多  → class["th04_goldenfan"]
+    --   Little_Fan_Blue   （Lfan3，每轮 int(n) 把）—— **会转**，转整整两圈    → class["th04_bluefan"]
+    -- 再加上 boss 身后那把大扇（th07 的 `fan`，rot 恒为 0，只开合+呼吸，**不转**）
+    --     → class["th04_dancefan"]
+    -- 之前只搬了 Green 和大扇，把 Golden / Blue 整个漏了 —— 那两把才是「会转的扇子」。
+
+    ---扇子两步张开（Green / Golden / Blue 三把**都是这个**）：
+    ---前 12 帧纵着张（vscale 0→1），后 12 帧横着张（hscale 0.27→1）。返回 0~1 的比例。
+    local function fan_unfold(t)
+        if t <= 12 then
+            local u = sin((t - 1) / 11 * 90)
+            return u * 0.27, u
+        elseif t <= 24 then
+            local u = sin((t - 13) / 11 * 90)
+            return 0.27 + 0.73 * u, 1
+        end
+        return 1, 1
+    end
+
+    ---扇子收起来（24 帧）：先把横的收回成 0.08，再整体缩没。返回 0~1 的比例。
+    ---收完 hscale / vscale 正好到 0，然后才 RawDel —— 不会「突然消失」。
+    local function fan_close(t)
+        if t <= 12 then
+            return (0.30 - 0.22 * sin((t - 1) / 11 * 90)) / 0.30, 1
+        end
+        local u = sin((24 - t) / 11 * 90)
+        return 0.08 * u / 0.30, u
+    end
+
+    local GOLD_IMG, GOLD_SIZE = "Lfan4", 0.18
+    local GOLD_R, GOLD_R2 = 70, 10          -- 环绕半径 / 转起来之后往外涨的余量
+    local GOLD_SPIN, GOLD_T = 10, 240       -- 每帧自转角度 / 转多少帧
+    local BLUE_IMG, BLUE_SIZE = "Lfan3", 0.18
+    local BLUE_R, BLUE_T = 50, 150          -- 出生点离 boss 的距离 / 一去一回的帧数
+
+    ---金扇：**会转的那把**（照抄 Little_Fan_Golden，mod/GAME/th08.lua:1803）
+    ---① 沿 a 方向飞到 r = GOLD_R（30 帧，sin 缓动）；② 在 r 上停 30 帧；
+    ---③ **转 240 帧**：`rot = rot + 10*d*sin(as)`，`as` 从 0 走到 180，
+    ---   累加 ≈ 1146°（三圈多），而且是「先慢→最快→再慢」的 sin 包络，不是匀速；
+    ---   同时半径从 70 涨到 80；每 6 帧朝 `rot±50°` 撒 4 发，弹速 3→1 递减；
+    ---④ 30 帧收回到 r=70；⑤ 24 帧收扇 → 自删。
+    ---⚠ 渲染用 `self.rot = spin - 90` —— 贴图开口才朝外（见 §9「rot 是标准数学角」）。
+    class["th04_goldenfan"] = Class(object, {
         init = function(self, master, a, d)
-            self.master = master
-            self.a, self.d = a, d
+            self.master, self.a, self.d = master, a, d
             self.t = 0
-            self._a = 255
+            self.spin = a
+            self.rot = a - 90
+            self.hscale, self.vscale = 0, 0
             self.group, self.layer = GROUP.GHOST, LAYER.ENEMY
             self.bound, self.colli = false, false
         end,
         frame = function(self)
             self.t = self.t + 1
-            if not IsValid(self.master) or self.t > 90 then
+            if not IsValid(self.master) then
                 object.RawDel(self)
                 return
             end
-            --绕 boss 慢慢甩出去，同时淡出（不突然消失）
-            local r = 40 + self.t * 1.4
-            self.a = self.a + self.d * 1.6
-            self.x = self.master.x + cos(self.a) * r
-            self.y = self.master.y + sin(self.a) * r
-            self._a = 255 - max(0, self.t - 50) * 6
-            self._s = 1 + 0.2 * sin(self.t * 9)
+            local m, t = self.master, self.t
+            if t <= 30 then
+                --① 飞出去
+                local u = sin((t - 1) / 29 * 90)
+                self.x = m.x + cos(self.a) * u * GOLD_R
+                self.y = m.y + sin(self.a) * u * GOLD_R
+                local h, v = fan_unfold(t)
+                self.hscale, self.vscale = h * GOLD_SIZE, v * GOLD_SIZE
+            elseif t <= 60 then
+                --② 停在 r = GOLD_R 上
+                self.x = m.x + cos(self.a) * GOLD_R
+                self.y = m.y + sin(self.a) * GOLD_R
+                self.hscale, self.vscale = GOLD_SIZE, GOLD_SIZE
+            elseif t <= 60 + GOLD_T then
+                --③ 转 + 撒弹
+                local i = t - 60
+                local as = (i - 1) / (GOLD_T - 1) * 180
+                self.spin = self.spin + GOLD_SPIN * self.d * sin(as)
+                local L = GOLD_R + sin(min((i - 1) * 90 / 19, 90)) * GOLD_R2
+                self.x = m.x + cos(self.spin) * L
+                self.y = m.y + sin(self.spin) * L
+                self.rot = self.spin - 90
+                self.hscale, self.vscale = GOLD_SIZE, GOLD_SIZE
+                if i % 24 == 1 then
+                    local bv = 3 - 2 * (i - 1) / (GOLD_T - 1)
+                    local ba = self.spin - 50
+                    for _ = 1, 4 do
+                        local o = fly(butterfly, 8,
+                                m.x + cos(ba) * 100, m.y + sin(ba) * 100, bv, ba, 0)
+                        o._r, o._g, o._b = 255, 226, 120
+                        ba = ba + 100 / 3
+                    end
+                end
+            elseif t <= 90 + GOLD_T then
+                --④ 收回来
+                local u = sin((t - 61 - GOLD_T) / 29 * 90)
+                local L = GOLD_R + GOLD_R2 - u * GOLD_R2
+                self.x = m.x + cos(self.spin) * L
+                self.y = m.y + sin(self.spin) * L
+                self.rot = self.spin - 90
+            else
+                --⑤ 收扇（缩到 0 才自删）
+                local j = t - (90 + GOLD_T)
+                if j > 24 then
+                    object.RawDel(self)
+                    return
+                end
+                local h, v = fan_close(j)
+                self.hscale, self.vscale = h * GOLD_SIZE, v * GOLD_SIZE
+            end
         end,
         render = function(self)
-            if self._a <= 0 then
+            if self.hscale <= 0 then
                 return
             end
-            SetImageState(FAN_ORBIT_IMG, "mul+add", self._a, 255, 255, 255)
-            Render(FAN_ORBIT_IMG, self.x, self.y, self.a - 90,
-                    0.26 * self._s, 0.19 * self._s)
+            SetImageState(GOLD_IMG, "mul+add", 235, 255, 236, 160)
+            Render(GOLD_IMG, self.x, self.y, self.rot, self.hscale, self.vscale)
+        end,
+    }, true)
+
+    ---蓝扇：**也会转**（照抄 Little_Fan_Blue，mod/GAME/th08.lua:1900）
+    ---出生在「离 boss 半径 50、角度 A」处，并记下**出生那一刻**的自机坐标；
+    ---然后 150 帧里用 `sin` 缓动飞过去再飞回来（`sin(u*180)` 正好走一个来回）。
+    ---同时 `rot = A - 90 + sin(u*90) * 720 * d` —— **整整转两圈**，`d` 每轮翻号。
+    ---每 6 帧朝 `rot + 90` 吐一发（弹速 1→3 递增）。
+    ---⚠ 发弹方向是 `rot + 90`，和金扇的撒弹角不是一套，别互相照抄。
+    class["th04_bluefan"] = Class(object, {
+        init = function(self, master, d, A)
+            self.master, self.d, self.A = master, d, A
+            self.x = master.x + cos(A) * BLUE_R
+            self.y = master.y + sin(A) * BLUE_R
+            self.x1, self.y1 = player.x, player.y   -- 出生瞬间的自机位置
+            self.x2, self.y2 = self.x, self.y
+            self.t = 0
+            self.rot = A - 90
+            self.hscale, self.vscale = 0, 0
+            self.group, self.layer = GROUP.GHOST, LAYER.ENEMY
+            self.bound, self.colli = false, false
+        end,
+        frame = function(self)
+            self.t = self.t + 1
+            local t = self.t
+            if t <= 24 then
+                local h, v = fan_unfold(t)
+                self.hscale, self.vscale = h * BLUE_SIZE, v * BLUE_SIZE
+                return
+            end
+            local i = t - 24
+            if i <= BLUE_T then
+                local u = (i - 1) / (BLUE_T - 1)
+                self.x = self.x2 + (self.x1 - self.x2) * sin(u * 180)
+                self.y = self.y2 + (self.y1 - self.y2) * sin(u * 180)
+                self.rot = self.A - 90 + sin(u * 90) * 720 * self.d
+                self.hscale, self.vscale = BLUE_SIZE, BLUE_SIZE
+                if i % 14 == 1 then
+                    local o = fly(butterfly, 12, self.x, self.y, 1 + 2 * u, self.rot + 90, 0)
+                    o._r, o._g, o._b = 150, 214, 255
+                end
+            elseif i <= BLUE_T + 24 then
+                local h, v = fan_close(i - BLUE_T)
+                self.hscale, self.vscale = h * BLUE_SIZE, v * BLUE_SIZE
+            else
+                object.RawDel(self)
+            end
+        end,
+        render = function(self)
+            if self.hscale <= 0 then
+                return
+            end
+            SetImageState(BLUE_IMG, "mul+add", 215, 210, 236, 255)
+            Render(BLUE_IMG, self.x, self.y, self.rot, self.hscale, self.vscale)
         end,
     }, true)
 
@@ -874,7 +1016,7 @@ do
                     end
                 end
             end)
-            --实弹层：华尔兹 + 蝶弹环 + 收势小扇
+            --实弹层：金扇转 + 华尔兹 + 蝶弹环 + 蓝扇转（**照参考卡的顺序**）
             task.New(self, function()
                 local d = 1
                 local t = RING_T0
@@ -884,11 +1026,19 @@ do
                 task.Wait(FAN_OPEN + FAN_HOLD)
                 while true do
                     Newcharge_in(self.x, self.y, 255, 246, 190)
-                    task.Wait(30)
-                    --华尔兹：按场地宽度缩过的端点（参考卡是 ±180 / 640 宽）
+                    --① 两只金扇（**会转的那把**），一正一反开场转起来
+                    --   —— 参考卡就是每轮开头先放金扇，再走位
+                    local ga = ran:Float(0, 360)
+                    for _ = 1, 2 do
+                        attach(self, New(class["th04_goldenfan"], self, ga, d))
+                        ga = ga + 180
+                    end
+                    task.Wait(60)
+                    --② 华尔兹：按场地宽度缩过的端点（参考卡是 ±180 / 640 宽）
                     task.CRMoveTo(WALTZ_T, VALUE_SET.DECEL,
                             -WALTZ_X * d, WALTZ_Y1, 0, WALTZ_Y2, WALTZ_X * d, WALTZ_Y1)
                     PlaySound("tan00", 0.1, self.x / 256, true)
+                    --③ 自机方向轮盘
                     local a = Angle(self, player)
                     for _ = 1, t do
                         for v = 1, 3 do
@@ -899,12 +1049,14 @@ do
                         a = a + 360 / t
                     end
                     Newcharge_out(self.x, self.y, 255, 255, 100)
+                    --④ 蓝扇（**也会转**）：绕 boss 一圈放出去，各飞向自机再飞回
+                    local A = a
                     for i = 1, int(n) do
-                        attach(self, New(class["th04_orbitfan"], self,
-                                a + i * 360 / int(n), d))
+                        attach(self, New(class["th04_bluefan"], self, d, A))
+                        A = A + 360 / int(n)
                     end
                     d = -d
-                    n = min(n + ORBIT_DN, 14)
+                    n = min(n + ORBIT_DN, 10)
                     t = min(t + RING_DT, RING_TMAX)
                     task.Wait(WALTZ_REST)
                 end

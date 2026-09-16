@@ -574,13 +574,50 @@ for y in range(0, h, 16):
 把它们写成同一个值，要么扇子是躺着的，要么弹整层朝屏幕外飞（等于白写）。
 参考卡里镜像成对的两把摆动幅度是 `ran` / `-ran`，**符号相反**。
 
-`th07.lua:2259` 的 `fan` 类（boss 身后那把大扇）是另一回事：
-它的 `render` 里 **`rot` 硬编码为 0**，**根本不转**，只有
-「先横后纵的两步张开 + 呼吸 + 40 帧一次闪光」。别自己加旋转。
-另外它**不用 `object.Connect`** 挂到 boss 身上 ——
+### 「蝴蝶梦之舞」里一共四种扇子，**动法各不相同**（别只看一种就下手）
+
+`mod/GAME/th08-boss_lastword.lua:1539` 用了四种扇，只有两种会**转**：
+
+| 类 | 贴图 | 数量 | 会转吗 | 动法 |
+|---|---|---|---|---|
+| `Little_Fan_Green` | `Lfan2` | 围场 32 把 | **不转** | 只摆 ±16~23°，周期 240 帧（`rot = sin(s)*a + r`） |
+| `Little_Fan_Golden` | `Lfan4` | 每轮 2 把 | **转** | 飞到 r=70 后绕 boss 转 240 帧，累计 ≈1146°（三圈多），`rot = rot + 10*d*sin(as)`，边转边撒 4 连弹；`d` 每轮翻号 |
+| `Little_Fan_Blue` | `Lfan3` | 每轮 `int(n)` 把 | **转** | 飞向自机再飞回（150 帧），`rot = A - 90 + sin(as)*720*d`，**整整两圈** |
+| `_editor_class["TH07"]["fan"]` | `"fan"` | boss 身后 1 把 | **不转** | `rot` 硬编码 0；只做「先横后纵的两步张开 + 呼吸 + 40 帧一次闪光」 |
+
+三把小扇的**张开**是同一套（`fan_unfold`：前 12 帧纵张、后 12 帧横张）、
+**收扇**也是同一套（`fan_close`：先横收到 0.08，再整体缩到 0 才 `Del`）。
+
+`th07.lua:2259` 的 `fan` 类（boss 身后那把大扇）**不用 `object.Connect`** 挂到 boss 身上 ——
 `boss_system:refresh(1)`（`THlib/enemy/boss_system.lua:653`）会
 `object.KillServants` 把 `con_death` 的挂件全清掉；原卡是在 `frame` 里
 自己判 `IsValid(self.master)`、master 没了才自删。
+（金扇/蓝扇那种「本来就在卡内自生自灭」的，用 `object.Connect` 是对的。）
+
+### ⚠ 自删的 `frame` 里，**寿命判断不能写在提前 `return` 后面**
+
+th04 卡 3 踩过：扇框那 18 把（上下两排）不发弹，`frame` 里写了
+
+```lua
+if not self.fires then return end      -- ← 提前 return
+... if t > FAN_OPEN + FAN_HOLD then ... object.RawDel(self) end
+```
+
+于是这 18 把**永远走不到自删那一步**，而 `bound = false` 又不会被边界回收：
+每 210 帧泄 18 个对象，一张 60 秒的卡下来泄 300 多个，而且它们**还在渲染**
+（`_a` 被 `min(_a+10, 150)` 卡在满值）—— 屏幕边缘的扇子会一层层越堆越多。
+
+**症状就是自检里那个「峰值同屏 对象」会随时间线性涨**：
+卡 3 修之前 900/1800/3600 帧分别是 107 / 184 / **341**（线性=漏），
+修完是 42 / 43 / **44**（饱和=正常）。
+一条命令扫全部卡：
+
+```bash
+for f in mod/GAME/th04.lua mod/GAME/th05.lua; do
+  luajit tools/check_stage.lua $f 1800 | grep 'OK  \['
+  luajit tools/check_stage.lua $f 3600 | grep 'OK  \['
+done   # 同一张卡两次的「对象」差得远 = 漏回收
+```
 
 ---
 
