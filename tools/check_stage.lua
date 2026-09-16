@@ -442,9 +442,48 @@ O.SetColli = function() end
 O.SetSizeColli = function() end
 O.SetGroup = function(o, g) o.group = g end
 O.SetLayer = function(o, l) o.layer = l end
-O.smear_add = function() end
-O.smear_frame = function() end
-O.smear_render = function() end
+-- ★ 拖影（残影）：**照 THlib/lib/LObjectEvents.lua:221 抄，不能写成空函数**。
+--   写成空函数的话，「忘了设 self.img」这种错就永远查不出来 ——
+--   真机上 `SetImageState(nil, ...)` 是直接崩的，而自检会全绿，所以在这里查。
+--   同时统计**所有对象拖影条数之和的峰值**：拖影忘了 `smear_frame` 衰减的话
+--   会无限涨，那和「峰值对象线性增长」是同一类漏，看这个数最快。
+_G.SMEAR_TOTAL = 0
+local function smear_track(self)
+    if self.smear then
+        _G.SMEAR_TOTAL = _G.SMEAR_TOTAL + #self.smear
+    end
+end
+O.smear_add = function(self, alpha)
+    if self.img == nil then
+        error("smear_add 时 self.img 是 nil —— 要先把贴图名存下来（`self.img = self.__img`）", 2)
+    end
+    if not self.smear then
+        self.smear = {}
+    end
+    table.insert(self.smear, { x = self.x, y = self.y, rot = self.rot, alpha = alpha,
+                               img = self.img, hscale = self.hscale, vscale = self.vscale })
+end
+O.smear_frame = function(self, dealpha)
+    if self.smear then
+        for i = #self.smear, 1, -1 do
+            local s = self.smear[i]
+            s.alpha = math.max(s.alpha - dealpha, 0)
+            if s.alpha == 0 then
+                table.remove(self.smear, i)
+            end
+        end
+        -- 只在这里统计（add 和 frame 每帧都各调一次，两边都算会翻倍）
+        smear_track(self)
+    end
+end
+O.smear_render = function(self, mode, color)
+    if self.smear then
+        for _, s in ipairs(self.smear) do
+            _G.SetImageState(s.img, mode, s.alpha, color[1], color[2], color[3])
+            _G.Render(s.img, s.x, s.y, s.rot, s.hscale, s.vscale)
+        end
+    end
+end
 O.ReBound = function() end
 O.Shuttle = function() end
 _G.bullet.ReBound = function() end
@@ -1197,6 +1236,7 @@ for idx, entry in ipairs(registered) do
     player.x, player.y = 0, 0
 
     local peak_obj, peak_bul = 0, 0
+    local peak_smear = 0            -- 一帧里所有对象的拖影条数之和
     -- 自机狙统计是全局累计的，按卡清零后才能读出这一张卡的数
     _G.aimed_bullets, _G.pointblank_bullets, _G.min_aim_t = 0, 0, 1e9
     _G.pb_t, _G.pb_d, _G.pb_v = 1e9, 0, 0
@@ -1345,6 +1385,8 @@ for idx, entry in ipairs(registered) do
             end
             peak_obj = math.max(peak_obj, #objects)
             peak_bul = math.max(peak_bul, #bullets)
+            peak_smear = math.max(peak_smear, _G.SMEAR_TOTAL)
+            _G.SMEAR_TOTAL = 0
             -- 走到一半把阶段点吃掉，逼终符那种血量驱动的卡推进阶段
             if f == math.floor(FRAMES * 0.5) then boss_obj._sp_point_auto = {} end
             if DEBUG and f % 120 == 0 then
@@ -1422,8 +1464,8 @@ for idx, entry in ipairs(registered) do
             print(("      ★难度场      全场最坏格子 %.1f 发正飞来（在 y≈%.0f）  全场平均 %.1f  |  自机走过的那条线 %.1f")
                     :format(sa.fw, sa.fn > 0 and sa.fy / sa.fn or 0,
                             sa.fn > 0 and sa.fa / sa.fn or 0, tm_hits / tm_frames))
-            print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d")
-                    :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul))
+            print(("      强制位移     平均 %.2f 峰值 %.2f px/帧  |  全场有判定 %.0f 发  |  峰值同屏 对象 %d / 弹 %d / 拖影 %d")
+                    :format(tm_push_sum / tm_frames, tm_push_peak, tm_alive / tm_frames, peak_obj, peak_bul, peak_smear))
             if os.getenv("STAGE_PROBE") then
                 print(("      [probe] 自机 y %.0f~%.0f（均 %.0f）  |  自机 x %.0f~%.0f")
                         :format(tm_py_min, tm_py_max, tm_py_sum / tm_frames,
@@ -1447,7 +1489,7 @@ for idx, entry in ipairs(registered) do
                         :format(label, tm_leak_b, tm_leak_o))
             end
         else
-            pass(("%s  峰值 对象 %d / 弹 %d"):format(label, peak_obj, peak_bul))
+            pass(("%s  峰值 对象 %d / 弹 %d / 拖影 %d"):format(label, peak_obj, peak_bul, peak_smear))
         end
     else
         fail(("%s -> %s"):format(label, tostring(msg)))

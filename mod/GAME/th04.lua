@@ -111,28 +111,34 @@ local function draw_butterfly(x, y, rot, size, a, flap, col)
     Render(img, x, y, rot, size * 2.2, size * 2.2 * k)
 end
 
----boss 起舞时身后的大扇。**逐行照抄 th07.lua:2259 的 `fan` 类**：
+---boss 起舞时身后的大扇（`fan.png`，偏品红的那个）。**逐行照抄 th07.lua:2259 的 `fan` 类**：
 ---  ① 前 30 帧不显示（hscale = vscale = 0）；
 ---  ② 第 31~60 帧**横向**张开：hscale = sin(i*3)，i = 1..30 → 0→1；
 ---  ③ 第 61~90 帧**纵向**张开：vscale = 0.1 + 0.9*sin(i*3) → 0.1→1；
----  ④ 之后本体做「呼吸」：_s 每 120 帧从 1 涨到 1.35、再停 60 帧；
+---  ④ 之后**永远**做「呼吸」：_s 每 120 帧从 1 涨到 1.35、再停 60 帧；
 ---     上面再叠一层 40 帧一次的闪光：_a 用 10 帧涨到 1、再用 30 帧落回 0；
----  ⑤ 渲染时 **rot 恒等于 0** —— 原卡这把扇子**不旋转**，只有开合 + 呼吸 + 闪光。
+---  ⑤ 渲染时 **rot 恒等于 0** —— 原卡这把扇子**不旋转**，只有开合 + 呼吸 + 闪光；
+---  ⑥ **没有任何收场动作** —— 原卡是 `while true` 死循环，扇子一直张着，
+---     直到 boss 死亡、`IsValid(self.master)` 变假才自删。
+---  ⚠ 之前我自作主张加了「hold 之后淡出」，而且淡出乘的是 **scale 不是 alpha**
+---    （`S = 0.6 * self.fade`），所以每张卡开头都会「张开→又缩到 0」——
+---    原版**没有**这个动作，已删掉。现在它的寿命就是**整张卡**。
 ---  ⚠ `sin` 是**角度制**（Lapi.lua:110 `sin = lstg.sin`）：`sin(i*3)` 里 i 是帧号，
 ---    30 帧正好走完 0→90°。写成弧度的 `sin(t*0.05)` 周期是 7200 帧，等于不动。
----  ⚠ **不要** `object.Connect` 挂到 boss 身上：`boss_system:refresh(1)` 会调
----    `object.KillServants` 把 con_death 的挂件全清掉。原卡也是自己在 frame 里
----    判 `IsValid(self.master)`、master 没了就自删。
 ---  尺寸：原卡场地 640 宽、贴图原尺寸放；我们 384 宽 → 整体乘 0.6。
 class["th04_dancefan"] = Class(object, {
-    init = function(self, master, hold)
+    init = function(self, master)
         self.master = master
-        self.hold = hold or 0
         self.t = 0
         self.hscale, self.vscale = 0, 0
-        self._a, self._s, self.fade = 0, 1, 1
+        self._a, self._s = 0, 1
         self.group, self.layer = GROUP.GHOST, LAYER.ENEMY - 1
         self.bound, self.colli = false, false
+        --挂到 boss 名下：`system:kill()` 换卡时会 `refresh(1)` → `KillServants`，
+        --寿命正好是**整张卡**（原卡是靠 boss 死亡自删，这里靠换卡清，效果一样）。
+        if IsValid(master) then
+            object.Connect(master, self, 0, true)
+        end
     end,
     frame = function(self)
         self.t = self.t + 1
@@ -160,19 +166,12 @@ class["th04_dancefan"] = Class(object, {
             local v = u % 40
             self._a = v < 10 and sin((v + 1) * 9) or sin((39 - v) * 3)
         end
-        --⑤ hold 之后整体淡出（不突然消失）
-        if self.hold > 0 and t > self.hold then
-            self.fade = self.fade - 0.02
-            if self.fade <= 0 then
-                object.RawDel(self)
-            end
-        end
     end,
     render = function(self)
         if self.hscale <= 0 then
             return
         end
-        local S = 0.6 * self.fade
+        local S = 0.6      --原卡 640 宽 → 我们 384 宽
         SetImageState("fan", "mul+add", 255, 255, 255, 255)
         Render("fan", self.x, self.y, 0, self.hscale * S, self.vscale * S)
         if self._a > 0 then
@@ -183,9 +182,9 @@ class["th04_dancefan"] = Class(object, {
     end,
 }, true)
 
----`before()` 走位时开一把舞扇。hold 之后自己淡出。
-local function open_dance_fan(boss_obj, hold)
-    return New(class["th04_dancefan"], boss_obj, hold)
+---`before()` 走位时开一把舞扇。**没有 hold 参数** —— 它一直张到这张卡结束。
+local function open_dance_fan(boss_obj)
+    return New(class["th04_dancefan"], boss_obj)
 end
 
 ---立刻起飞的普通弹：stay = false，一出膛就走，不在原地悬停
@@ -437,7 +436,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 276)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -588,7 +587,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 277)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -662,9 +661,16 @@ do
     local FAN_HOLD = 110              -- 张开之后摆多久才炸
     local FAN_FADE = 16               -- 炸开之后淡出几帧
     local FAN_CYCLE = 210             -- 同一个槽位隔多久再长一把新扇
-    -- 扇子在屏幕上的大小：参考卡是 Lfan 的 0.30 倍（它的场地 640 宽，我们 384）
-    -- → 按 384/640 = 0.6 缩到 0.18。
-    local FAN_SIZE = 0.18
+    ---★ 一个总比例：**我们场地 384 宽 / 参考卡场地 640 宽 = 0.6**。
+    ---参考卡里**所有**长度（扇子 scale、环绕半径、出生半径、撒弹半径）都是按 640 宽的
+    ---场地定的，搬到我们这儿必须**一起乘 0.6**。只乘一部分就会出现
+    ---「扇子缩到 0.18、弹却还从参考卡的 r=100 冒出来」——弹根本不在扇子上。
+    local FAN_K = 0.6
+    ---参考卡三把小扇张开后的最终 scale 就是 0.30（`hscale = vscale = 0.30`）。
+    local FAN_SIZE = 0.30 * FAN_K        -- = 0.18（绿扇 / 金扇 / 蓝扇统一）
+    ---Lfan 贴图 500×256；扇柄在图片底、开口在图片顶 →
+    ---扇心到**外缘**（沿开口方向）的距离 = 贴图半高 × scale。
+    local FAN_REACH = 128 * FAN_SIZE     -- = 23 px
     -- 布局**照抄参考卡**（Little_Fan_Green 的排法），按场地比例缩：
     --   参考：上下各 9 把（x 铺满 ±320，间距 80）、左右各 7 列（y 铺满 ±230）
     --   我们：±192 宽 → 间距 80*0.6 = 48 → 9 把；±224 高 → 7 列
@@ -676,13 +682,25 @@ do
     local WALTZ_REST = 110            -- 走完之后停多久（参考卡是 80，这里留长一点好输出）
     local RING_V0, RING_DV = 1.2, 0.6
     local RING_T0, RING_DT, RING_TMAX = 12, 2, 16
-    local ORBIT_N0, ORBIT_DN = 6, 0.5
+    local ORBIT_N0, ORBIT_DN = 1, 0.5    -- 蓝扇每轮放几把（参考卡就是 1，每轮 +0.5）
     local BOSS_X, BOSS_Y = 0, 130
 
     -- Lfan.png 是 mod/GAME/th08.lua 里 LoadImageGroup 进来的（5 帧，Lfan1..Lfan5）：
     --   Lfan2 = 绿扇（围场那 32 把）  Lfan3 = 蓝扇  Lfan4 = 金扇
     -- 三把各自的类名见下面 class["th04_fan"] / th04_goldenfan / th04_bluefan 的头注释。
     local FAN_IMG = "Lfan2"
+
+    ---三把小扇**都**有的「拖影」（参考卡 `Little_Fan` 基类，mod/GAME/th08.lua:1777）：
+    ---  每帧存一份快照，每帧衰减 13 → 拖尾约 20 帧。
+    ---  ⚠ 少了这一层，蓝扇就是 n 个孤立的扇子；有了它才是一道弧。
+    local function fan_smear_frame(self)
+        self.img = self.__img
+        object.smear_add(self, 255)
+        object.smear_frame(self, 13)
+    end
+    local function fan_smear_render(self, r, g, b)
+        object.smear_render(self, "mul+add", { r, g, b })
+    end
 
     ---边缘扇：**照抄 Little_Fan_Green（mod/GAME/th08.lua:1966）**
     ---  ① 张开分两步：先竖 12 帧（vscale 0→1），再横 12 帧（hscale 0.27→1）。
@@ -707,6 +725,7 @@ do
     class["th04_fan"] = Class(object, {
         init = function(self, x, y, rot, fdir, ssign, fires)
             self.x, self.y = x, y
+            self.__img = FAN_IMG          --拖影（smear_add）要读这个
             self.rot0 = rot             -- 基准朝向（摆动的中心）
             self.rot = rot
             self.fdir = fdir
@@ -737,40 +756,42 @@ do
             end
             --② 张开之后一直摆（在基准朝向 rot0 上叠一个 ±swing 的正弦）
             self.rot = self.rot0 + sin((t - FAN_OPEN) * 1.5) * self.swing
-            if t <= FAN_OPEN then
-                return
-            end
-            self._a = min(self._a + 10, 150)
-            --③ 发弹的那 14 把：炸开**同时**吐弹（弹朝 fdir = 场内，不是扇面的朝向）
-            if self.fires and t == FAN_OPEN + FAN_HOLD then
-                self.burst = 1
-                for i = 1, FAN_WAYS do
-                    local off = (i - (FAN_WAYS + 1) / 2) * FAN_SPREAD / 2
-                    local o = fly(butterfly, 2 + (i % 2) * 2, self.x, self.y, FAN_V,
-                            self.fdir + off, 0)
-                    o._r, o._g, o._b = 255, 214, 236
+            if t > FAN_OPEN then
+                self._a = min(self._a + 10, 150)
+                --③ 发弹的那 14 把：炸开**同时**吐弹（弹朝 fdir = 场内，不是扇面的朝向）
+                if self.fires and t == FAN_OPEN + FAN_HOLD then
+                    self.burst = 1
+                    for i = 1, FAN_WAYS do
+                        local off = (i - (FAN_WAYS + 1) / 2) * FAN_SPREAD / 2
+                        local o = fly(butterfly, 2 + (i % 2) * 2, self.x, self.y, FAN_V,
+                                self.fdir + off, 0)
+                        o._r, o._g, o._b = 255, 214, 236
+                    end
+                    PlaySound("tan00", 0.02, self.x / 256, true)
                 end
-                PlaySound("tan00", 0.02, self.x / 256, true)
-            end
-            --④ 到寿命就淡出 —— **不能写在 `if self.fires` 里面**：
-            --   只当扇框的 18 把（上下两排）不发弹，如果跟着 return 掉就永远走不到这里，
-            --   `bound = false` 又不会被边界回收 → 每 210 帧泄 18 个对象，
-            --   一张 60 秒的卡下来泄 300 多个（自检里的「峰值同屏 对象」就是这么涨上去的）。
-            if t > FAN_OPEN + FAN_HOLD then
-                self.burst = self.burst + 1
-                --炸完淡出（不突然消失），淡干净了自己收
-                self._a = self._a - 16
-                self.hscale = self.hscale * 1.05
-                if self._a <= 0 then
-                    object.RawDel(self)
+                --④ 到寿命就淡出 —— **不能写在 `if self.fires` 里面**：
+                --   只当扇框的 18 把（上下两排）不发弹，如果跟着 return 掉就永远走不到这里，
+                --   `bound = false` 又不会被边界回收 → 每 210 帧泄 18 个对象，
+                --   一张 60 秒的卡下来泄 300 多个（自检里的「峰值同屏 对象」就是这么涨上去的）。
+                if t > FAN_OPEN + FAN_HOLD then
+                    self.burst = self.burst + 1
+                    --炸完淡出（不突然消失），淡干净了自己收
+                    self._a = self._a - 16
+                    self.hscale = self.hscale * 1.05
+                    if self._a <= 0 then
+                        fan_smear_frame(self)
+                        object.RawDel(self)
+                        return
+                    end
                 end
             end
+            fan_smear_frame(self)
         end,
         render = function(self)
             if self.hscale <= 0 then
                 return
             end
-            --④ 两遍
+            fan_smear_render(self, 150, 150, 150)
             SetImageState(FAN_IMG, "mul+add", 205, 255, 255, 255)
             Render(FAN_IMG, self.x, self.y, self.rot,
                     self.hscale * FAN_SIZE, self.vscale * FAN_SIZE)
@@ -822,22 +843,29 @@ do
         return 0.08 * u / 0.30, u
     end
 
-    local GOLD_IMG, GOLD_SIZE = "Lfan4", 0.18
-    local GOLD_R, GOLD_R2 = 70, 10          -- 环绕半径 / 转起来之后往外涨的余量
-    local GOLD_SPIN, GOLD_T = 10, 240       -- 每帧自转角度 / 转多少帧
-    local BLUE_IMG, BLUE_SIZE = "Lfan3", 0.18
-    local BLUE_R, BLUE_T = 50, 150          -- 出生点离 boss 的距离 / 一去一回的帧数
+    ---★ FAN_K / FAN_SIZE / FAN_REACH 在文件上面（绿扇那一节）已经定义过了 ——
+    ---  三把扇子**共用同一套比例**，不要在这里再写一遍（写重了就会各缩各的）。
+    local GOLD_IMG = "Lfan4"
+    local GOLD_R, GOLD_R2 = 70 * FAN_K, 10 * FAN_K   -- 环绕半径 42 / 转起来往外涨到 48
+    --撒弹半径：参考卡写死 100，而它的扇心在 70、扇缘 = 70 + 128*0.30 ≈ 108，
+    --100 正好落在扇缘稍内侧 → 比例 100-70=30 ≈ 0.78 × 128 × 0.30。
+    --这里**按扇子自己的位置和尺寸算**，扇子涨到 48 时弹也跟着到 66 —— 永远贴着扇缘。
+    local GOLD_FIRE_K = 0.78
+    local GOLD_SPIN, GOLD_T = 10, 240    -- 每帧自转角度 / 转多少帧
+    local BLUE_IMG = "Lfan3"
+    local BLUE_R, BLUE_T = 50 * FAN_K, 150   -- 出生点离 boss 的距离 30 / 一去一回 150 帧
 
     ---金扇：**会转的那把**（照抄 Little_Fan_Golden，mod/GAME/th08.lua:1803）
     ---① 沿 a 方向飞到 r = GOLD_R（30 帧，sin 缓动）；② 在 r 上停 30 帧；
     ---③ **转 240 帧**：`rot = rot + 10*d*sin(as)`，`as` 从 0 走到 180，
     ---   累加 ≈ 1146°（三圈多），而且是「先慢→最快→再慢」的 sin 包络，不是匀速；
-    ---   同时半径从 70 涨到 80；每 6 帧朝 `rot±50°` 撒 4 发，弹速 3→1 递减；
-    ---④ 30 帧收回到 r=70；⑤ 24 帧收扇 → 自删。
+    ---   同时半径从 42 涨到 48；撒 4 连弹，**出膛点钉在扇缘上**，弹速 3→1 递减；
+    ---④ 30 帧收回到 r=42；⑤ 24 帧收扇 → 自删。
     ---⚠ 渲染用 `self.rot = spin - 90` —— 贴图开口才朝外（见 §9「rot 是标准数学角」）。
     class["th04_goldenfan"] = Class(object, {
         init = function(self, master, a, d)
             self.master, self.a, self.d = master, a, d
+            self.__img = GOLD_IMG
             self.t = 0
             self.spin = a
             self.rot = a - 90
@@ -858,12 +886,12 @@ do
                 self.x = m.x + cos(self.a) * u * GOLD_R
                 self.y = m.y + sin(self.a) * u * GOLD_R
                 local h, v = fan_unfold(t)
-                self.hscale, self.vscale = h * GOLD_SIZE, v * GOLD_SIZE
+                self.hscale, self.vscale = h * FAN_SIZE, v * FAN_SIZE
             elseif t <= 60 then
                 --② 停在 r = GOLD_R 上
                 self.x = m.x + cos(self.a) * GOLD_R
                 self.y = m.y + sin(self.a) * GOLD_R
-                self.hscale, self.vscale = GOLD_SIZE, GOLD_SIZE
+                self.hscale, self.vscale = FAN_SIZE, FAN_SIZE
             elseif t <= 60 + GOLD_T then
                 --③ 转 + 撒弹
                 local i = t - 60
@@ -873,13 +901,15 @@ do
                 self.x = m.x + cos(self.spin) * L
                 self.y = m.y + sin(self.spin) * L
                 self.rot = self.spin - 90
-                self.hscale, self.vscale = GOLD_SIZE, GOLD_SIZE
+                self.hscale, self.vscale = FAN_SIZE, FAN_SIZE
                 if i % 24 == 1 then
                     local bv = 3 - 2 * (i - 1) / (GOLD_T - 1)
+                    --出膛半径 = 扇心到现在的位置 + 扇缘 —— 扇子涨出去弹也跟着涨
+                    local R = L + GOLD_FIRE_K * FAN_REACH
                     local ba = self.spin - 50
                     for _ = 1, 4 do
                         local o = fly(butterfly, 8,
-                                m.x + cos(ba) * 100, m.y + sin(ba) * 100, bv, ba, 0)
+                                m.x + cos(ba) * R, m.y + sin(ba) * R, bv, ba, 0)
                         o._r, o._g, o._b = 255, 226, 120
                         ba = ba + 100 / 3
                     end
@@ -899,27 +929,32 @@ do
                     return
                 end
                 local h, v = fan_close(j)
-                self.hscale, self.vscale = h * GOLD_SIZE, v * GOLD_SIZE
+                self.hscale, self.vscale = h * FAN_SIZE, v * FAN_SIZE
             end
+            fan_smear_frame(self)
         end,
         render = function(self)
             if self.hscale <= 0 then
                 return
             end
+            fan_smear_render(self, 150, 150, 150)      --拖影在底下
             SetImageState(GOLD_IMG, "mul+add", 235, 255, 236, 160)
             Render(GOLD_IMG, self.x, self.y, self.rot, self.hscale, self.vscale)
         end,
     }, true)
 
     ---蓝扇：**也会转**（照抄 Little_Fan_Blue，mod/GAME/th08.lua:1900）
-    ---出生在「离 boss 半径 50、角度 A」处，并记下**出生那一刻**的自机坐标；
+    ---出生在「离 boss 半径 BLUE_R、角度 A」处，并记下**出生那一刻**的自机坐标；
     ---然后 150 帧里用 `sin` 缓动飞过去再飞回来（`sin(u*180)` 正好走一个来回）。
     ---同时 `rot = A - 90 + sin(u*90) * 720 * d` —— **整整转两圈**，`d` 每轮翻号。
-    ---每 6 帧朝 `rot + 90` 吐一发（弹速 1→3 递增）。
-    ---⚠ 发弹方向是 `rot + 90`，和金扇的撒弹角不是一套，别互相照抄。
+    ---吐弹：方向 `rot + 90`（= 扇子开口方向），**出膛点钉在扇缘**：
+    ---      `扇心 + 开口方向 × FAN_REACH`。参考卡写的是从扇心发（`self.x, self.y`），
+    ---      但扇子 scale 缩到 0.18 之后，从扇心发弹看上去就是从扇子中间冒出来。
+    ---      拖影也一样：少了它，这一圈蓝扇就是 n 个孤立的扇子，而不是一道弧。
     class["th04_bluefan"] = Class(object, {
         init = function(self, master, d, A)
             self.master, self.d, self.A = master, d, A
+            self.__img = BLUE_IMG
             self.x = master.x + cos(A) * BLUE_R
             self.y = master.y + sin(A) * BLUE_R
             self.x1, self.y1 = player.x, player.y   -- 出生瞬间的自机位置
@@ -935,31 +970,38 @@ do
             local t = self.t
             if t <= 24 then
                 local h, v = fan_unfold(t)
-                self.hscale, self.vscale = h * BLUE_SIZE, v * BLUE_SIZE
-                return
-            end
-            local i = t - 24
-            if i <= BLUE_T then
-                local u = (i - 1) / (BLUE_T - 1)
-                self.x = self.x2 + (self.x1 - self.x2) * sin(u * 180)
-                self.y = self.y2 + (self.y1 - self.y2) * sin(u * 180)
-                self.rot = self.A - 90 + sin(u * 90) * 720 * self.d
-                self.hscale, self.vscale = BLUE_SIZE, BLUE_SIZE
-                if i % 14 == 1 then
-                    local o = fly(butterfly, 12, self.x, self.y, 1 + 2 * u, self.rot + 90, 0)
-                    o._r, o._g, o._b = 150, 214, 255
-                end
-            elseif i <= BLUE_T + 24 then
-                local h, v = fan_close(i - BLUE_T)
-                self.hscale, self.vscale = h * BLUE_SIZE, v * BLUE_SIZE
+                self.hscale, self.vscale = h * FAN_SIZE, v * FAN_SIZE
             else
-                object.RawDel(self)
+                local i = t - 24
+                if i <= BLUE_T then
+                    local u = (i - 1) / (BLUE_T - 1)
+                    self.x = self.x2 + (self.x1 - self.x2) * sin(u * 180)
+                    self.y = self.y2 + (self.y1 - self.y2) * sin(u * 180)
+                    self.rot = self.A - 90 + sin(u * 90) * 720 * self.d
+                    self.hscale, self.vscale = FAN_SIZE, FAN_SIZE
+                    if i % 14 == 1 then
+                        local o = fly(butterfly, 12,
+                                self.x + cos(self.rot + 90) * FAN_REACH,
+                                self.y + sin(self.rot + 90) * FAN_REACH,
+                                1 + 2 * u, self.rot + 90, 0)
+                        o._r, o._g, o._b = 150, 214, 255
+                    end
+                elseif i <= BLUE_T + 24 then
+                    local h, v = fan_close(i - BLUE_T)
+                    self.hscale, self.vscale = h * FAN_SIZE, v * FAN_SIZE
+                else
+                    fan_smear_frame(self)
+                    object.RawDel(self)
+                    return
+                end
             end
+            fan_smear_frame(self)
         end,
         render = function(self)
             if self.hscale <= 0 then
                 return
             end
+            fan_smear_render(self, 150, 150, 150)
             SetImageState(BLUE_IMG, "mul+add", 215, 210, 236, 255)
             Render(BLUE_IMG, self.x, self.y, self.rot, self.hscale, self.vscale)
         end,
@@ -971,8 +1013,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 278)
 
         function card:before()
-            --⚠ 这里**不要**再开一把舞扇：init 里那把是常驻的（hold = 0），
-            --   两把叠在同一个位置会互相盖住，看起来像在乱闪。
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -1061,11 +1102,6 @@ do
                     task.Wait(WALTZ_REST)
                 end
             end)
-            --起舞动画：boss 身后那把随开随合的大扇（常驻）
-            task.New(self, function()
-                task.Wait(FAN_OPEN)
-                self.__dancefan = New(class["th04_dancefan"], self, 0)
-            end)
         end
 
         function card:del()
@@ -1076,10 +1112,8 @@ do
                 end
             end
             self.__fans = {}
-            if IsValid(self.__dancefan) then
-                object.RawDel(self.__dancefan)
-            end
-            self.__dancefan = nil
+            --舞扇不用在这里清：它是 `object.Connect` 挂上来的，
+            --`system:kill()` 里的 refresh(1) 会 KillServants 把它带走。
         end
     end
 end
@@ -1102,12 +1136,23 @@ do
     local STEP_T = 300                -- 每档撑多少帧
     local START_WARN = 90             -- 第一档生效前的预热（框只画不夹）
     local FRAME_WARN = 60             -- 之后每次收缩前提前多少帧画预警
-    local RING_GAP = 34
-    local RING_N = 38
-    local GAP_W = 7
+    -- ★ 预警框的粗细与亮度 —— **这两个数就是「限位提示看不见」的根因**。
+    --   原来写的是 `Render("white", 0, hh, 0, hw/8, 0.06)`：
+    --     · `0.06` 是**缩放倍数**不是像素，white 贴图 16×16 → 框线不到 1 px 宽；
+    --     · alpha 用 `100*(0.4 + 0.6*sin(t*9))`，sin 有一半时间为负 → **alpha 是负的**，
+    --       那半圈什么都不画。
+    --   现在改成 `RenderRect` 画实心带，粗细按**像素**给，alpha 恒在 0 以上。
+    local BOX_T = 3                   -- 框线粗细（px）
+    local BOX_GLOW = 14               -- 框外侧再铺一条柔和光带，让框有体积感
+    local RING_GAP = 30
+    local RING_N = 44
+    local GAP_W = 8
     local GAP_STEP = 5
     local RING_V = 3.1
-    local AIM_GAP = 150
+    local RING_V2 = 0.62              -- 第二圈的速度比例（慢的那圈负责填缝）
+    local AIM_GAP = 130
+    local WHEEL_N = 12                -- 背景「栏」的辐条数（纯自绘，没有判定）
+    local WHEEL_T = 0.35              -- 背景轮每帧转多少度
     local BOSS_X, BOSS_Y = 0, 150
 
     ---当前处在第几档（预热期算第 1 档）。
@@ -1124,17 +1169,30 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 279)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
-        ---画一个方框（预警用）
-        local function draw_box(hw, hh, alpha)
-            SetImageState("white", "mul+add", alpha, 255, 160, 180)
-            Render("white", 0, hh, 0, hw / 8, 0.06)
-            Render("white", 0, -hh, 0, hw / 8, 0.06)
-            Render("white", -hw, 0, 90, hh / 8, 0.06)
-            Render("white", hw, 0, 90, hh / 8, 0.06)
+        ---画方框（限位提示）。thick 是**像素**粗细。
+        ---用 `RenderRect(img, x1, x2, y1, y2)` 画实心带 —— 这才是引擎里画边框的正解
+        ---（`THlib/misc/misc.lua:338 misc.RenderOutLine` 就是这么写的）。
+        local function draw_box(hw, hh, alpha, thick, r, g, b)
+            if alpha <= 1 then
+                return
+            end
+            local t = thick or BOX_T
+            --① 外侧柔和光带：先铺一层宽的暗光，框才有体积感、不会像一根头发丝
+            SetImageState("white", "mul+add", alpha * 0.30, r, g, b)
+            RenderRect("white", -hw - BOX_GLOW, hw + BOX_GLOW, hh - BOX_GLOW, hh + BOX_GLOW)
+            RenderRect("white", -hw - BOX_GLOW, hw + BOX_GLOW, -hh - BOX_GLOW, -hh + BOX_GLOW)
+            RenderRect("white", -hw - BOX_GLOW, -hw + BOX_GLOW, -hh - BOX_GLOW, hh + BOX_GLOW)
+            RenderRect("white", hw - BOX_GLOW, hw + BOX_GLOW, -hh - BOX_GLOW, hh + BOX_GLOW)
+            --② 实体框线
+            SetImageState("white", "mul+add", alpha, r, g, b)
+            RenderRect("white", -hw, hw, hh - t, hh + t)
+            RenderRect("white", -hw, hw, -hh - t, -hh + t)
+            RenderRect("white", -hw - t, -hw + t, -hh, hh)
+            RenderRect("white", hw - t, hw + t, -hh, hh)
         end
 
         ---限速夹：一帧最多推 PUSH_V px。
@@ -1153,31 +1211,55 @@ do
         function card:frame()
             --自己的计时器（不能用 self.ani：那是 boss 出生以来的总帧数）
             self.__t = (self.__t or 0) + 1
+            local step = cur_step(self.__t)
+            self.__hw = STEPS[step]
+            self.__hh = self.__hw * STEP_RATIO
             if self.__t < START_WARN then
                 return                    -- 预热期：框只画不夹
             end
-            local step = cur_step(self.__t)
-            self.__hw = STEPS[step]
-            local hh = self.__hw * STEP_RATIO
             player.x = clamp_axis(player.x, self.__hw)
-            player.y = clamp_axis(player.y, hh)
+            player.y = clamp_axis(player.y, self.__hh)
         end
 
         function card:render()
             local t = self.__t or 0
+            local hw = self.__hw or STEPS[1]
+            local hh = self.__hh or STEPS[1] * STEP_RATIO
+
+            --① 背景：一圈缓慢自转的「栏」（辐条 + 同心弧），**纯自绘、没有判定**。
+            --   这张卡的画面原来太空，就是缺这一层 —— 用线画不花子弹预算。
+            local w = lstg.world
+            local wa = t * WHEEL_T
+            for i = 1, WHEEL_N do
+                local a = wa + (i - 1) * 360 / WHEEL_N
+                thin_line(0, 0, cos(a) * 300, sin(a) * 300, 26, 210, 150, 255, 0.10)
+            end
+            arc(0, 0, 90 + 22 * sin(t * 1.2), 0, 360, 48, 30, 200, 160, 255, 0.08)
+            arc(0, 0, 190 + 22 * sin(t * 1.2 + 180), 0, 360, 64, 24, 190, 150, 255, 0.08)
+            --外框也描一道，让场地边界看得见
+            SetImageState("white", "mul+add", 34, 150, 90, 200)
+            RenderRect("white", w.l, w.l + 2, w.b, w.t)
+            RenderRect("white", w.r - 2, w.r, w.b, w.t)
+            RenderRect("white", w.l, w.r, w.t - 2, w.t)
+            RenderRect("white", w.l, w.r, w.b, w.b + 2)
+
+            --② **当前生效的框**：一直画着 —— 这就是「我能站到哪儿」的提示
+            draw_box(hw, hh, 150, BOX_T, 255, 150, 190)
+
+            --③ 预警
             if t < START_WARN then
-                --预热：第一档的框先闪 90 帧，玩家看清要收到哪儿
-                local k = 0.4 + 0.6 * sin(t * 9)
-                draw_box(STEPS[1], STEPS[1] * STEP_RATIO, 100 * k)
+                --预热：第一档的框在闪，玩家看清要收到哪儿去
+                local k = 0.55 + 0.45 * sin(t * 9)      -- 0.10 ~ 1.00，**永远不为负**
+                draw_box(STEPS[1], STEPS[1] * STEP_RATIO, 235 * k, BOX_T + 1, 255, 226, 252)
                 return
             end
             local step = cur_step(t)
             local left = STEP_T - ((t - START_WARN) % STEP_T)
             if step < #STEPS and left <= FRAME_WARN then
-                --下一档的框：收缩前 60 帧开始闪
-                local k = 0.4 + 0.6 * sin(t * 17)
+                --下一档：闪得更急、更亮，颜色偏青，和「现在这一档」一眼能分开
+                local k = 0.45 + 0.55 * sin(t * 21)
                 local nh = STEPS[step + 1]
-                draw_box(nh, nh * STEP_RATIO, 90 * k)
+                draw_box(nh, nh * STEP_RATIO, 255 * k, BOX_T + 1, 150, 240, 255)
             end
         end
 
@@ -1196,6 +1278,12 @@ do
                             local a = (i - 1) * 360 / RING_N
                             local o = fly(ball_mid, 12, self.x, self.y, RING_V, a, 0)
                             o._r, o._g, o._b = 226, 178, 246
+                            --第二圈：慢一半、角度错开半格 —— 填掉第一圈的缝。
+                            --只有一圈的时候环上相邻两颗差 33 px，太容易钻过去了，
+                            --这就是这张卡「太空、太松」的来源。
+                            local o2 = fly(ball_mid, 10, self.x, self.y,
+                                    RING_V * RING_V2, a + 180 / RING_N, 0)
+                            o2._r, o2._g, o2._b = 186, 150, 236
                         end
                     end
                     PlaySound("tan00", 0.05, self.x / 256, true)
@@ -1322,7 +1410,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 280)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -1425,7 +1513,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 281)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -1524,7 +1612,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 282)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -1697,7 +1785,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 283)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -1843,7 +1931,7 @@ do
         boss.card.add({ { card, "1a" } }, 24, name, 284)
 
         function card:before()
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
@@ -2061,7 +2149,7 @@ do
 
         function card:before()
             ToBigScreen(60)
-            open_dance_fan(self, 150)   --走位时身后展开的舞扇
+            open_dance_fan(self)        --走位时身后展开的舞扇（一直张到本卡结束）
             task.MoveTo(BOSS_X, BOSS_Y, 60, VALUE_SET.DECEL)
         end
 
