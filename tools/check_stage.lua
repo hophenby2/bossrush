@@ -32,6 +32,107 @@ end
 local function pass(msg) print("  OK  " .. msg) end
 
 ----------------------------------------------------------------------
+-- 0. 资源名登记表（★ 用来抓「贴图名写错」这一类）
+--    引擎在 `obj.img = "X"` / `SetImageState("X", ...)` / `Render("X", ...)` 时
+--    **会去查资源池**，名字不存在就当场崩（`can't find resource 'X'`）。
+--    桩件原来把这些全吞了，所以这类错一个都查不出来 —— 已经栽过三次：
+--      · `NewSimpleBullet("ball_mid", ...)` 字符串弹样式（th05）
+--      · `smear_add` 读 `self.img`（th02 的流星）
+--      · `img = "Ghost1"` —— 而 `LoadImageGroup('Ghost1', ..., 8, 1, ...)`
+--        实际生成的是 `Ghost11`..`Ghost18`（th20 的 hitter）
+--    这里把「合法名字」收集起来，再扫源码里的字符串字面量。
+----------------------------------------------------------------------
+local RES = {}
+local function reg(n)
+    if type(n) == "string" then RES[n] = true end
+end
+-- ① 引擎内建的图（Lresources.lua / 各系统文件里 LoadImage 过的）
+for _, n in ipairs({
+    "white", "moon", "circle_charge", "circle_charge2", "bright", "bright_line",
+    "Blindness", "BlackFog", "Slash", "servant", "mirror", "fan", "FireBird",
+    "Nuclear1", "Nuclear2", "cherry_bullet", "cherry_bullet2", "ice", "frog",
+    "miko_back", "yukari-ef", "kanako-ef", "kanako-ef2_left", "kanako-ef2_right",
+    "junko_back", "suika_fog", "machine", "Boat", "eyeL", "eyeR", "mask_cloth",
+    "TPyyy", "Yoshika_dead", "ran-ef", "photo_block", "photoOFF", "photoON",
+    "photo2OFF", "photo2ON", "2dcodeOutline", "2dcodeScan", "summary_back",
+    "summary_back2", "byakuren_a", "byakuren_b", "byakuren_c1", "byakuren_c2",
+    "byakuren_d",
+}) do reg(n) end
+-- ② 素材目录（引擎按目录自动扫，名字 = 文件名去掉 .png）
+for _, dir in ipairs({ "Resources/Special/", "Resources/BossBackGround/" }) do
+    local p = io.popen(("ls %s 2>/dev/null"):format(dir))
+    if p then
+        for line in p:lines() do
+            local nm = line:match("^(.+)%.png$")
+            if nm then reg(nm) end
+        end
+        p:close()
+    end
+end
+-- ③ 弹样式图：`bulletStyle.lua` 里 DeFineBulletStyle 第 4 参 + LoadImageGroup
+--    （ball_mid / knife / ellipse / star_small … 全部登记，含 1..16 色下标）
+do
+    local f = io.open("THlib/bullet/bulletStyle.lua")
+    if f then
+        local src = f:read("*a")
+        f:close()
+        for nm in src:gmatch('[Dd]e[fF]ineBulletStyle%([^,]+,%s*%a+%s*,%s*[^,]*,%s*"([%w_]+)"') do
+            for i = 1, 16 do reg(nm .. i) end
+            reg(nm)
+        end
+        for nm in src:gmatch('LoadImageGroup%s*%(%s*"([%w_]+)"') do
+            for i = 1, 16 do reg(nm .. i) end
+            reg(nm)
+        end
+        for nm in src:gmatch('LoadImage%s*%(%s*"([%w_]+)"') do reg(nm) end
+    end
+end
+-- ④ 载入期钩子：项目/关卡文件里 LoadImage* 的名字边跑边登记
+for _, fn in ipairs({ "LoadImage", "LoadImageGroup", "LoadImageFromFile",
+                      "LoadTexture", "LoadTexture2" }) do
+    local orig = _G[fn]
+    _G[fn] = function(name, ...)
+        if fn == "LoadImageGroup" then
+            --⚠ 组名本身**不是**合法贴图名：`LoadImageGroup('Ghost1', ..., 8, 1, ...)`
+            --  生成的是 `Ghost11`..`Ghost18`。登记基名会把错漏掉。
+            for i = 1, 16 do reg(name .. i) end
+        else
+            reg(name)
+        end
+        if orig then return orig(name, ...) end
+    end
+end
+_G.REGISTERED_IMAGES = RES
+
+---扫源码里的贴图名字面量，逐个对登记表。
+---  只扫「写死的字符串」——用变量的地方扫不到，那是刻意的（宁漏勿误报）。
+local function checkImageNames(path)
+    local f = io.open(path)
+    if not f then return 0 end
+    local src = f:read("*a")
+    f:close()
+    local bad, seen = {}, {}
+    -- obj.img = "X"   /   img = "X"
+    for nm in src:gmatch('%.img%s*=%s*"([%w_]+)"') do bad[nm] = true end
+    for nm in src:gmatch('[^%w_%.]img%s*=%s*"([%w_]+)"') do bad[nm] = true end
+    -- SetImageState("X", ...) / Render("X", ...) / RenderRect("X", ...)
+    for fn in ("SetImageState|Render|RenderRect|Render4V|RenderAnimation|RenderTexture"):gmatch("[^|]+") do
+        for nm in src:gmatch(fn .. '%s*%(%s*"([%w_]+)"') do bad[nm] = true end
+    end
+    local n = 0
+    for nm in pairs(bad) do
+        if not RES[nm] and not seen[nm] then
+            seen[nm] = true
+            n = n + 1
+            fail(("%s: 贴图名 %q 不在资源池里 —— 真机上会崩 " ..
+                    "`can't find resource '%s'`（自检的登记表在 tools/check_stage.lua 顶部）")
+                    :format(path, nm, nm))
+        end
+    end
+    return n
+end
+
+----------------------------------------------------------------------
 -- 1. 引擎桩件
 ----------------------------------------------------------------------
 local function Forbid(v, lo, hi)
@@ -297,6 +398,11 @@ local function _rand()
     _rs = (_rs * 1664525 + 1013904223) % 4294967296
     return _rs / 4294967296
 end
+---★ 换种子（每张卡独立定种用）。
+---  原来全片共用一个 _rs 流：任何一处 `ran` 调用数的改动，都会让**后面所有卡**
+---  的随机数整体移位，于是「死局从 0.1% 跳成 5.9%」这种差异分不清是真回归还是
+---  随机流被扰动。定种之后每张卡可复现、且互不影响。
+local function seed_rng(k) _rs = (k * 2654435761) % 4294967296 end
 _G.ran = {
     Float = function(self, a, b)
         a, b = a or 0, b or 0
@@ -322,13 +428,37 @@ _G.STAGE_COUNT = 23
 _G.scoredata = { UnlockSC = {}, stage_practice = {} }
 _G.spell_card_data = {}
 
+---⚠ `classKey` 是「遍历所有 class × 所有成员」，本身就慢。
+---  原来每次 `New` 都无条件跑一遍 → 一张弹多的卡每帧几千次 → 整个自检慢十倍，
+---  严重时看起来像卡死。**只在开 STAGE_PROBE 时才记账。**
+local PROBE = os.getenv("STAGE_PROBE") ~= nil
+local _keycache = {}
+local function classKeyCached(c)
+    local v = _keycache[c]
+    if v == nil then
+        v = classKey(c)
+        _keycache[c] = v
+    end
+    return v
+end
 local function New(class, ...)
     _G.CREATED_OBJECTS = _G.CREATED_OBJECTS + 1
-    do
-        local nm = classKey(class)
+    if PROBE then
+        local nm = classKeyCached(class)
         _G.LOG_NEW[nm] = (_G.LOG_NEW[nm] or 0) + 1
     end
-    local o = setmetatable({}, { __index = class })
+    -- ★ 运行期校验 `img`：引擎在设这个属性时会查资源池，名字不存在就崩
+    --   （`can't find resource 'X'`）。静态扫源码扫不到 `self.img = o.img or "Ghost1"`
+    --   这种「字面量在 fallback 位置」的写法，所以必须在赋值这一刻拦。
+    local o = setmetatable({}, {
+        __index = class,
+        __newindex = function(t, k, v)
+            if k == "img" and type(v) == "string" and not RES[v] then
+                error(("img = %q 不在资源池里 —— 真机上会崩 `can't find resource '%s'`"):format(v, v), 2)
+            end
+            rawset(t, k, v)
+        end,
+    })
     o.class = class
     o.timer, o.ani = 0, 0
     o.hscale, o.vscale = 1, 1
@@ -369,7 +499,48 @@ task.MoveTo = function(x, y, t)
     if o then o.x, o.y = x, y end
     if t and t > 0 then coroutine.yield(t) end
 end
-task.MoveToPlayer = task.MoveTo
+---★ `task.MoveToPlayer(t, x1,x2, y1,y2, dxmin,dxmax, dymin,dymax, mmode, dmode)`
+---  第一个参数是**时长**，和 `MoveTo(x, y, t)` 的签名完全不同。
+---  原来这里直接写成 `task.MoveToPlayer = task.MoveTo` —— 于是 `t` 拿到的是 `x2`，
+---  常常是 0 → `t > 0` 为假 → **一次都不 yield** → 卡里写
+---  `while true do task.MoveToPlayer(...) end` 就当场死循环。
+---  th20 每张卡都用这个原语，所以整关在自检里跑不动。
+---  这里照 `THlib/lib/Ltask.lua:234` 重写一份：框是**相对自机**的，
+---  目标 = 当前位置 + 一小步随机位移，方向被框夹住，走 t 帧（**保证每次都 yield**）。
+task.MoveToPlayer = function(t, x1, x2, y1, y2, dxmin, dxmax, dymin, dymax, mmode, dmode)
+    local o = task.GetSelf()
+    t = max(1, int(t or 30))
+    if not o then
+        coroutine.yield(t)
+        return
+    end
+    if x1 > x2 then x1, x2 = x2, x1 end
+    if y1 > y2 then y1, y2 = y2, y1 end
+    dmode = dmode or 0
+    local dirx, diry = ran:Sign(), ran:Sign()
+    local p = player
+    if dmode < 2 then
+        dirx = (o.x > p.x) and -1 or 1
+    end
+    if dmode == 0 or dmode == 2 then
+        diry = (o.y > p.y) and -1 or 1
+    end
+    local dx = ran:Float(dxmin or 30, dxmax or 60)
+    local dy = ran:Float(dymin or 16, dymax or 32)
+    -- 框是相对自机的：目标点必须落在 [x1,x2]+自机 之内，方向不对就翻
+    if o.x + dx * dirx < x1 + p.x then dirx = 1 end
+    if o.x + dx * dirx > x2 + p.x then dirx = -1 end
+    if o.y + dy * diry < y1 + p.y then diry = 1 end
+    if o.y + dy * diry > y2 + p.y then diry = -1 end
+    local tx, ty = o.x + dx * dirx, o.y + dy * diry
+    local xs, ys = o.x, o.y
+    for s = 1, t do
+        local k = s / t
+        o.x = xs + (tx - xs) * k
+        o.y = ys + (ty - ys) * k
+        coroutine.yield()
+    end
+end
 task.CRMoveTo = function(t, mode, ...)
     local o, a = task.GetSelf(), { ... }
     if o and #a >= 2 then o.x, o.y = a[#a - 1], a[#a] end
@@ -769,6 +940,14 @@ local function step_objects()
         local o = objects[i]
         if o._live ~= false and o.frame then o.frame(o) end
     end
+    -- ★ 引擎每帧 frame 之后必然 render。原来这里**只调 frame 不调 render**，
+    --   于是所有 `Class(object, {...})` 子类里 render 段的 nil 错误
+    --   自检一个都抓不到 —— 真机上第一帧就崩。th20 的「nil 和 xx 比较」
+    --   正是从这儿漏出去的。
+    for i = 1, n do
+        local o = objects[i]
+        if o._live ~= false and o.render then o.render(o) end
+    end
     for i = #objects, 1, -1 do
         local o = objects[i]
         if o._live == false then
@@ -789,6 +968,15 @@ local function step_objects()
             b.x = b.x + b.vx
             b.y = b.y + b.vy
             b.timer = b.timer + 1
+            -- ★ 引擎每帧调 `self.frame_other(self)`、`self.render_other(self)`
+            --   （`THlib/bullet/bullet.lua:251-259`）—— **只有一个参数**。
+            --   原来这里**一次都不调**，于是「自定义运动」的弹在自检里永远静止：
+            --   冻结弹不开、路径弹不动，密度读数全错，
+            --   而且回调里写 `function(b, t)` 这种**签名错**（`t` 恒 nil →
+            --   `attempt to compare nil with number`）自检一个都抓不到。
+            --   th20 的 `freeze_layer` 就是这么在真机上崩的。
+            if b.frame_other then b.frame_other(b) end
+            if b.render_other then b.render_other(b) end
             if b.bound and (b.x < -224 or b.x > 224 or b.y < -256 or b.y > 256) then
                 table.remove(bullets, i)
             end
@@ -906,6 +1094,8 @@ end
 -- 5. 单文件模式
 ----------------------------------------------------------------------
 print("=== 载入 " .. path .. " ===")
+-- ★ 先扫一遍贴图名（在真跑之前，这样报错顺序更直观）
+checkImageNames(path)
 local chunk, cerr = loadfile(path)
 if not chunk then
     print("FAIL: 语法错误 -> " .. tostring(cerr))
@@ -948,6 +1138,8 @@ if #registered == 0 then print("  （没有 boss.card.add）") end
 --   统计自机周围 60 px 内的弹数与「被堵死的方向数」。
 ----------------------------------------------------------------------
 local THREAT = (arg[3] == "--threat") or os.getenv("STAGE_THREAT") == "1"
+---测量用的基准种子：`STAGE_SEED` 可换，用来量随机性带来的方差
+local SEED_BASE = tonumber(os.getenv("STAGE_SEED")) or 20260916
 local THREAT_R, SECT = 60, 24        -- HIT_R 在上面（出膛判定也要用）
 -- REACT：留给玩家「反应 + 移动」的帧数。TTH 掉到这个以内 = 现在必须动
 -- HORIZON：预测多少帧以内；超过就算「暂时没威胁」
@@ -1277,6 +1469,10 @@ for idx, entry in ipairs(registered) do
     -- 强制位移（卡片直接改 player.x/y）的诊断
     local tm_pushed_frames, tm_pre_alert_n, tm_push_to_danger = 0, 0, 0
     local tu_peak, tg_min = 0, SECT
+    -- ★ 每张卡**独立定种**。原来全片共用一个随机流 → 任何一处 ran 调用数的改动
+    --   都会让后面所有卡的数字整体漂移，于是「死局从 0.1% 变 5.9%」这种
+    --   差异分不清是回归还是随机流被扰动。定种之后每张卡可复现、互不影响。
+    seed_rng(SEED_BASE + idx * 7919)
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
         -- ★★ 引擎的真实顺序（THlib/enemy/boss_system.lua:919 `system:doCard`）：
@@ -1289,6 +1485,16 @@ for idx, entry in ipairs(registered) do
         --     把这个顺序**抹平**了，于是「只在 init 里初始化、frame 里直接用」
         --     这一整类错，自检一个都查不出来（真机上就是当场崩）。
         --   th19 卡 1-1 的 `self.__webrot` 就是这么炸的。
+        -- ★★ 引擎的**第一帧**：`system:doCard` 是**立刻** `b.current_card = card` 的，
+        --   而它排的那个协程（before → … → init）**同一帧不一定跑得到**
+        --   （`doTask` 倒序遍历任务表，新加的任务本轮不会被访问）。
+        --   于是 **`frame`/`render` 会先于 `before` 和 `init` 各跑一次**。
+        --   原来这里只模拟了「before 会 yield 的卡」，漏掉了这 1 帧 —— 而
+        --   「只在 init 里初始化、frame 里直接用」的卡正好在这一帧崩。
+        if card.frame then card.frame(boss_obj) end
+        if card.render then card.render(boss_obj) end
+        boss_obj.timer = boss_obj.timer + 1
+        boss_obj.ani = boss_obj.ani + 1
         do
             local co = nil
             if card.before then

@@ -2,6 +2,12 @@
 
 给在这个仓库里写代码的 AI 助手看的说明书。人也可以看。
 
+> 这份文档记录的是**验证过的事实**和**踩过的坑**，不是设计理想。
+> 每条结论后面尽量附「怎么知道的」（文件:行号、实测数字、失败现场），
+> 这样下一个人（或下一次的你）可以自己去核对，而不是照抄。
+>
+> 凡是自己没验证过的，宁可不写。写错了比不写更贵。
+
 ---
 
 ## 1. 这是什么
@@ -10,11 +16,25 @@
 把官方各作的 Boss 战串成一整个长流程，每关一个 Boss 组，外加若干自制关卡。
 
 - 本目录是**游戏发行目录**（引擎 exe + Lua 脚本 + 素材），不是引擎源码工程
-- 引擎 C++ 源码在隔壁 **`../LuaSTG-Sub`**（同版本），查引擎行为/API 真相时去那里找，
-  比如回收规则就在 `LuaSTG/LuaSTG/GameObject/GameObject.hpp`
+- 引擎 C++ 源码在隔壁 **`../LuaSTG-Sub`**（同版本）。查引擎行为/API 真相去那里找，
+  比如回收规则在 `LuaSTG/LuaSTG/GameObject/GameObject.hpp`
 - 远端：`github.com/hophenby2/bossrush`
 
-**语言**：Lua 5.1 语义（引擎内嵌 LuaJIT）。**注释、卡名、文档一律用中文**，与现有代码一致。
+**语言**：Lua 5.1 语义（引擎内嵌 LuaJIT）。
+**注释、卡名、文档一律用中文**，与现有代码一致。
+
+### 关卡编号
+
+| 文件前缀 | level | 说明 |
+|---|---|---|
+| `th06` – `th185` | 1 – 19 | **原作移植**。卡 id 1–243 |
+| `th00` – `th05` | 20 – 25 | 自制关卡。卡 id 244–295 |
+| `th20` | 26 | 自制：地灵殿全员。卡 id 296–330 |
+| `th16AEX` | `STAGE_COUNT + 1` | 天空璋 AEX，自成一套 |
+
+⚠ **别用「卡名是不是日文」判断哪张是原作。** 原作脚本的卡名**已经被中文化**
+（CLAUDE.md 硬性规定），保留日文的只有寥寥几个；反过来 `th00`/`th02`/`th05`/`th20`
+这些自制关卡的卡名里有不少日文。**正确判据是文件批次**（`th06`–`th185` 才是原作）。
 
 ---
 
@@ -24,9 +44,9 @@
 |---|---|
 | **没有构建步骤** | Lua 是引擎解释执行的，改完脚本直接生效，没有编译/打包 |
 | **本机跑不起游戏** | `LuaSTGSub.exe` 是 Windows 的，macOS 上没有构建产物。**别假设你能"跑一下看看"** |
-| **没有 `.dat` 资源包** | `launch` 会优先加载 `mod.dat`/`core.dat`/`res.dat`/`shader.dat`；当前都不存在，所以散装文件直接生效。**若哪天出现了 `.dat`，它会盖住散装文件**，改脚本前先确认 |
+| **没有 `.dat` 资源包** | `launch` 会优先加载 `mod.dat`/`core.dat`/`res.dat`/`shader.dat`；当前都不存在，所以散装文件直接生效。**若哪天出现了 `.dat`，它会盖住散装文件** |
 | **别动 `User/`、`replay/`** | 玩家存档与录像，已在 `.gitignore` 里忽略 |
-| **改动要能被验证** | 见第 8 节。跑不起游戏不代表可以不验证 |
+| **改动要能被验证** | 见第 10 节。跑不起游戏不代表可以不验证 |
 
 ---
 
@@ -35,8 +55,8 @@
 ```
 core.lua              入口回调：GameInit / GameExit，STAGE_COUNT / SYSTEM_COUNT 也在这
 launch.lua            引擎启动 + 全局注入（把 lstg.* 全灌进 _G）+ 按键常量
-launcher.lua          启动器的 UI（setting.mod == 'launcher' 时走这条路）
-manual               游戏内说明书（纯文本）
+launcher.lua          启动器的 UI
+manual                游戏内说明书（纯文本）
 
 mod/
   root.lua            载入 THlib 与 _editor_output
@@ -47,21 +67,38 @@ mod/
   defachievement.lua  DefineAchievement(id, ...)
   BG/TH<id>/TH<id>_bg.lua   关卡背景类（全局 TH<id>_bg）
   GAME/th<id>.lua     ★ 关卡内容：_editor_class["THxx"]、boss.Define、符卡
+  GAME/th08-boss_lastword.lua / th08-boss1.lua   th08 拆出来的两部分
   th16AEX/            天空璋 AfterExtra，自成一套（关卡号 = STAGE_COUNT + 1）
 
 THlib/                游戏框架（"Touhou style library"），一般不用改
   lib/      底层：Lobject(Class/object) LObjectEvents(对象方法) Ltask(协程/移动)
-            Lresources(资源与 SetImageState) Lscreen(世界/摄像机) Lmath(全局数学) ...
-  enemy/    ★ boss.lua(Define/Create/CreateGroup) boss_card.lua(New/add) boss_system.lua(状态机)
+            Lresources(资源与 SetImageState) Lscreen(世界/摄像机) Lmath/Lapi(全局数学)
+  enemy/    ★ boss.lua(Define/Create/CreateGroup) boss_card.lua(New/add)
+            boss_system.lua(状态机) enemy.lua(敌机基类)
   bullet/   bullet.lua + bulletStyle.lua（全部弹样式与贴图名都在这）
   laser/    laser.lua（直线光）/ bent laser.lua（曲线光，别名 bent_laser）
   background/  background.lua(基类) spellcard.lua(_SC_BG 符卡背景基类)
-  player/ item/ sp/ ext/ misc/ UI/
+  sp/       spMath.lua（AngleIterator / EllipseIterator / HeartIterator / PolygonIterator）
+            sp.lua（GetPointLine / GetPointBezier）
+  misc/     misc.lua（RenderRing / SectorRender / RenderOutLine / RenderTexInRect /
+            PolarCoordinatesRender / RenderPointLine / ShakeScreen …）
+  player/ item/ ext/ UI/
 
-Resources/            引擎按目录自动扫的素材（见第 7 节）
+Resources/
+  Special/*.png       ★ 引擎按目录自动扫，名字 = 文件名去 .png（主题贴图库，50 张）
+  BossBackGround/*.png ★ 同上，按文件名注册成**纹理**（th06_1 … th18_13，每作十几张）
+  BossImage/*.png     行走图
+  System/*.lua
+
 music/*.ogg           BGM，文件名必须等于 AddMusic 的 id
 tools/check_stage.lua 静态自检工具（不是游戏的一部分，引擎不会载入）
 ```
+
+**`Resources/Special/` 是主题装饰贴图库**，用之前先翻一遍：
+`Nuclear1/2`（核融合，空的）、`FireBird`、`cherry_bullet`、`fan`、`mirror`、
+`eyeL/eyeR`、`moon`、`Boat`、`servant`、`ice`、`frog`、`miko_back`、`yukari-ef`、
+`kanako-ef*`、`junko_back`、`suika_fog`、`Blindness`、`BlackFog`、`Slash`、
+`bright`、`bright_line`、`circle_charge`、`machine`、`photo*`、`2dcode*` …
 
 ---
 
@@ -78,7 +115,7 @@ core.lua: GameInit()
                  mod/BG/TH<id>/…_bg.lua → mod/GAME/th<id>.lua （每个 id 先 BG 后 GAME）
                  mod/main_stage.lua、mod/summary.lua、mod/th16AEX/root.lua
 
-  STAGE_COUNT = 23、InitAllClass() …… （注意：在 Include 'mod\root.lua' **之后**）
+  STAGE_COUNT = 26、InitAllClass() ……（注意：在 Include 'mod\root.lua' **之后**）
 
 稍后（进游戏、载入画面时）
   THlib/UI/loading.lua 的 LoadingImage() 才真正执行 LoadRes
@@ -88,13 +125,13 @@ core.lua: GameInit()
 
 - `IncludeLuaFile` 只在 `GlobalAddAchievement` 为真时立即执行（那个标志在
   `THlib/UI/title.lua:20` 才置真），所以正常情况下上面那些文件**都是延后载入的**。
-  这也意味着「在文件顶层读 `STAGE_COUNT`」是安全的——等你被载入时它已经赋好值了。
+  这也意味着「在文件顶层读 `STAGE_COUNT`」是安全的 —— 等你被载入时它已经赋好值了。
 - `LoadRes` 是用 `pairs` 遍历的。它是个稠密数组，实践中顺序稳定，所以
-  「BG 先于 GAME」成立——这是**约定**，别依赖得更细。
+  「BG 先于 GAME」成立 —— 这是**约定**，别依赖得更细。
 
 ---
 
-## 5. 写一段新弹幕：两套接口
+## 5. 接口速查
 
 ### 5.1 Boss / 符卡
 
@@ -119,42 +156,58 @@ boss.card.add({ { card, "1a" } }, level, CardName, data_id[, OD, inotherstage])
 --   {card, bossID} 组：双 boss 同一张符卡就写两组
 --   data_id  符卡历史的槽位号（spell_card_data 的键），**跨关卡全局唯一**
 --   OD       填了就变成「只能在符卡练习里打」的隐藏卡，不进 BOSS.cards
+--   卡**挂在各个 boss 自己的 `BOSS.cards` 表上**，所以同一 boss 的 card.add
+--   调用顺序 = 出卡顺序
 
 -- 关卡里生成（mod/main_stage.lua 的关卡任务中）
 boss.CreateGroup(group, level)   -- 依次 Create "…a"/"…b"/…，字母必须从 a 起连续
+boss.Create("1a26")
 ```
 
-符卡的生命周期（`THlib/enemy/boss_system.lua:918`）：
+符卡的生命周期（`THlib/enemy/boss_system.lua:918` `system:doCard`；
+ `b.current_card = card` 在 :922、`card.init(b)` 在 :955、`current_card.frame(b)` 在 :133）：
 
 ```
-before(boss) → castcard → setStatus(HP/计时) → init(boss) → frame(boss) × N → del(boss)
+b.current_card = card            ← ① 立刻设上
+task.New(self, function()        ← ② 协程里排队
+    before(boss)                 ← ③ 等它跑完（可能几十帧）
+    …castcard / setStatus / openSCBonus…
+    init(boss)                   ← ④ 这时才第一次跑
+end)
+frame(boss) × N  →  del(boss)
 ```
 
-**卡里的 `self` 是 boss 本身，不是卡对象**（卡只是被挂到 boss 上的行为表）。
-所以 `self.x/self.y/self.ani/self.timer/self.colli/self._wisys/_bosssys` 都是 boss 的。
-写 `function card:init()` 就等于写 `function card.init(boss)`。
-
-⚠️ `self.ani` / `self.timer` 是 **boss 从出生算起**的总帧数，不是"本张卡的第几帧"。
-卡里要做随时间收窄/加速的效果，得自己在 `init` 里开个计数器，别用 `ani`。
+**`self` 是 boss 本身，不是卡对象**（卡只是被挂到 boss 上的行为表）。
+所以 `self.x/self.y/self.ani/self.timer/self.colli/self._bosssys` 都是 boss 的。
 
 ⚠️ **除了 `before` / `init` / `frame` / `render` / `del` 这五个，别在卡上挂别的方法。**
 引擎只按名字调这五个，其余字段属于**卡表**；而 `self` 是 boss ——
 `function card:helper()` 之后再写 `self:helper()` 会直接 `nil`。
-要在卡里复用逻辑，就写成 `do` 块里的**局部函数**，把 boss 当参数传进去
-（`mod/GAME/th04.lua` 的「无寿之栏」就是这么做的）。
+要在卡里复用逻辑，就写成 `do` 块里的**局部函数**，把 boss 当参数传进去。
+
+⚠️ `self.ani` / `self.timer` 是 **boss 从出生算起**的总帧数，不是"本张卡的第几帧"。
+卡里要做随时间收窄/加速的效果，得自己在 `init` 里开个计数器。
 
 ### 5.2 弹 / 对象 / 激光
 
 ```lua
 -- 最常见的直线弹（THlib/bullet/bullet.lua:287）
-NewSimpleBullet(style, color, x, y, v, a[, aim, omiga, stay, destroyable])
+NewSimpleBullet(style, color, x, y, v, a[, aim, omiga, stay, destroyable,
+                rebound, through, frame, render])
 --   style 必须是**弹样式对象**（ball_mid / knife / butterfly / ellipse …），不是字符串
---   ⚠ 写成 "ball_mid"（带引号）静态自检**查不出来**（桩件不认这个），
---     实机会当场崩：`bullet.init` 里 `self.class = imgclass`，
---     引擎要求 class 是 luastg 对象类 → "invalid argument for property 'class'"。
---     现在桩件会拦（见 §9），但写的时候别写错。
+--   ⚠ 写成 "ball_mid"（带引号）**必崩**：bullet.init 里 `self.class = imgclass`，
+--     引擎要求 class 是 luastg 对象类 → "invalid argument for property 'class'"
 --   color 1..16（COLOR.RED=2 等）；butterfly/music 只有 8 色
---   stay = false 表示"一出膛就走"；不传会先原地悬停约 11 帧（弹幕常见的"浮现"手感）
+--   stay = false 表示"一出膛就走"；不传会先原地悬停约 11 帧
+--   ★ **末两参 frame/render 是自绘钩子** —— 自定义运动不用写子弹子类：
+--     `NewSimpleBullet(..., ..., function(b) … end)`，或事后 `b.frame_other = fn`
+--     （th07.lua:812、th13.lua:671 都是这么写的）
+--     签名：`frame(self)`、`render(self)` —— **只收一个参数**
+--     ⚠ `THlib/bullet/bullet.lua:251` 是 `self.frame_other(self)`，引擎
+--       **不会**把计时器传进来。要计时读 `self.timer`（引擎每帧 +1）。
+--       写成 `function(b, t)` 的话 `t` 恒为 nil → `t > w` 就是
+--       `attempt to compare nil with number`，**真机上第一颗弹就崩**（th20 的
+--       `freeze_layer` 整整 7 张卡都栽在这上面，而自检当时也不调 frame_other）。
 
 -- 自定义运动：继承 bullet，在自己的 frame 里算位置
 local my_bullet = Class(bullet, {
@@ -171,1064 +224,580 @@ local my_bullet = Class(bullet, {
     render = function(self) bullet.render(self) end,
 })
 
--- 纯演出（无判定）：直接继承 object，自己在 frame 里动、自己 RawDel
+-- ★ 可碰撞的实体（无限血、自机会撞到）—— 做「结构」用这个
+class["hitter"] = Class(enemy, {
+    init = function(self, x, y, xx, yy, mst)
+        enemy.init(self, 15, 999999, false, false, false)  -- nontaijutsu=false → group=GROUP.ENEMY
+        self.mst, self.xx, self.yy, self.sc = mst, xx, yy, 0
+        object.Connect(mst, self, 0, true)                 -- 挂到 boss，跟着走
+    end,
+    frame = function(self)
+        self.x = self.mst.x + self.xx * self.sc            -- sc 是 0→1 的 sin 半周
+        self.y = self.mst.y + self.yy * self.sc
+    end,
+})
+--   `ext.lua:205 ck(GROUP.PLAYER, GROUP.ENEMY)` → 自机会撞到 GROUP.ENEMY
+--   `ext.lua:209 ck(GROUP.ENEMY, GROUP.PLAYER_BULLET)` → 自机的弹能打到它
+
+-- 纯演出（无判定）：Class(object, {...}, true)，自己在 frame 里动、自己 RawDel
 -- 光束：laser（直线）/ bent_laser（曲线，别名 bent）
 -- 自绘：SetImageState("white", "mul+add", a, r, g, b) + Render("white", x, y, rot, h, v)
+--      画实心矩形 / 边框用 RenderRect(img, x1, x2, y1, y2)
+```
+
+### 5.3 移动 / 挂载
+
+```lua
+task.MoveTo(x, y, t, mode)                     -- 直线走 t 帧
+task.CRMoveTo(t, mode, x1,y1, x2,y2, …)        -- Catmull-Rom 样条
+task.MoveToPlayer(t, x1,x2, y1,y2,
+                  dxmin,dxmax, dymin,dymax, mmode, dmode)
+--   ★ 第一个参数是**时长**，别和 MoveTo(x, y, t) 搞混
+--   框 [x1,x2]×[y1,y2] 是**相对自机**的：boss 在「自机旁边那个框里」随机游走
+--   dmode：0 从自机方向靠近 / 1 只管 x / 2 只管 y / 3 随机（WANDER_MODE.*）
+--   原作的压迫感主要来自这里 —— th16.lua 用了 18 次、th08-boss1 13 次
+
+object.Connect(master, servant, dmg_transfer, con_death)
+--   con_death 为真 → 登记进 master._servants；object:KillServants() 会 Kill 它们
+--   ⚠ `boss_system:refresh(1)`（boss_system.lua:653，换卡/击破时调）会 KillServants
+--     → **要活得比卡久的物件不要挂**；只活本卡的挂了最省事
+object.SetRelPos(x, y, rot, follow_rot)        -- 相对 master 定位
+object.RawDel(o) / object.Kill(o) / object.Del(o)
+object.smear_add(o, a) / smear_frame(o, decay) / smear_render(o, mode, color)
 ```
 
 ---
 
-## 6. 房屋风格（照 `mod/GAME/th01.lua` 写）
+## 6. 房屋风格
 
 作者的自制关卡有一套很统一的写法，**新代码请沿用**：
 
-- 文件头一段注释说明这一关/这张卡想做什么
+- 文件头一段注释说明这一关/这张卡想做什么（含设计意图和量化参数）
 - `local class = {}` + `_editor_class["THxx"] = class`，所有自定义类都放 `class["..."]`
 - 文件顶部把要用的全局抓成本地（`local task, object, bullet = task, object, bullet`）——
   既能防手滑写错名，也快一点
 - **每张符卡一个 `do … end` 块**，块的**最上面**集中放这一卡的常量（数值、节奏、速度），
   下面才是逻辑。改手感只动那一段
-- 需要复杂运动的弹走「路径弹」子类，不用协程；演出控制器是挂在 boss 上的 object 子类，
-  `card:del` 里 `object.RawDel` 掉
+- 需要复杂运动的弹走 `NewSimpleBullet` 的 `frame` 钩子；演出控制器是挂在 boss 上的
+  object 子类，`card:del` 里 `object.RawDel` 掉
 - **注释写"为什么"**，不写"是什么"。现有代码里大段中文注释解释设计意图，请保持
 
-参数别用魔数随手写。`th01.lua` / `th02.lua` / `th03.lua` 是最好的模板。
+模板：`th01.lua` / `th02.lua` / `th03.lua` 是基本风格；
+**`th20.lua` 是「按第 7 节规范写」的样板**，每张卡块的注释里标了结构、缺口、周期。
 
-想要**合乎第 10 节量化规范**的样板，看 **`mod/GAME/th04.lua`**：它每张卡块的注释里直接写了
-`[限位/缺口/容错/预警]` 四个数，可以直接照抄这个格式。
-
----
-
-## 7. 坑（都是踩过并验证过的）
-
-**① `bound` 是「离开边界自动回收」，不是「限制在边界内」**
-`GameObject.hpp:147`。`NewSimpleBullet` 造的弹保持默认 `true`，飞出屏幕引擎自己收；
-任何你自己 `Class(object/bullet, …)` 造、又把 `bound` 设成 `false` 的东西，
-**必须**在 `frame` 里判寿命/离屏自己 `object.RawDel`，否则会一直漏对象。
-
-**② `SetImageState` 只能用在"登记过的图"上**
-它内部查一张 `ImageColor` 表（`THlib/lib/Lresources.lua`），表项只由游戏侧的
-`LoadImage`/`LoadImageGroup*`/`LoadImageFromFile` 建立。用了别处（比如激光内部换的
-`ball_mid_b*`）的图名会直接崩。**安全来源**：
-`THlib/bullet/bulletStyle.lua` 里的全部弹样式图、`Resources/Special/` 下的图、
-以及 `white` / `moon` / `circle_charge` 这类已登记的引擎图。
-
-**③ 素材目录是**按文件名自动扫的**（`THlib/UI/loading.lua:12-14`）
-
-| 目录 | 加载方式 | 名字怎么来 |
-|---|---|---|
-| `Resources/BossBackGround/*.png` | 纹理 | 去掉扩展名的文件名，如 `th03_0` |
-| `Resources/BossImage/*.png` | 纹理 | 同上 |
-| `Resources/Special/*.png` | 图像（可 `SetImageState`/`Render`） | 同上，如 `fan`、`servant`、`moon` |
-| `music/*.ogg` | BGM | 文件名必须等于 `AddMusic` 的 id |
-
-所以**符卡背景**是这么来的：往 `Resources/BossBackGround/th03_0.png` 丢一张图，
-然后在 `SCBG` 里 `_SC_BG.AddLayer(self, "th03_0", …)`。
-
-**④ `STAGE_COUNT` 和天空璋AEX 是联动的**
-`mod/th16AEX/class.lua:6` 与 `stage.lua:19` 用 `STAGE_COUNT + 1` 当自己的关卡号。
-加一关就要 `STAGE_COUNT += 1`，AEX 整体平移一位。**两边都从同一个全局取值，所以是自洽的**——
-但千万别在别处硬编码 AEX 的关卡号。
-
-**⑤ 符卡练习菜单的下标 = 关卡号**
-`THlib/UI/UI.lua` 的 `difftext` 被 `scpr_menu.lua:22,37` 按 `ipairs` 当下标去取
-`_sc_pr_table[t]`。**下标必须等于 level**，否则会把某关的卡挂在别的标题下面。
-新开一关记得同步补 `difftext`（和 `sntext` 的显示名）。
-
-**⑥ `boss.CreateGroup` 的字母必须从 `a` 起连续**
-它从 `"a"` 开始往后找 `_editor_boss[group..letter..level]`，遇到第一个不存在的就停。
-
-**⑦ 别在 `object.BulletDo` 的遍历里删对象**
-遍历中途 `RawDel` 会跳过一格。要删就攒到表里，遍历结束后统一删
-（`mod/GAME/th03.lua` 的「樱吹雪」就是这么做的）。
-
-**⑧ 自己造的「长命弹」必须挂到 boss 名下，否则卡打完了它还在天上**
-`while true` 那类发弹循环挂在 boss 上，换卡时 `boss_system:refresh(1)` 的
-`task.Clear(b)` 会替你收掉。**但你自己 `New(...)` 造的弹不在任务表里**，
-同一次 `refresh(1)` 还会调 `object.KillServants(b)` —— 只有**用
-`object.Connect(boss, obj, 0, true)` 挂上去的**才会被一起清掉。
-
-不挂会怎样：卡结束了，花瓣还在飘，**落到底还会再炸成 5 把刀** ——
-玩家看到的就是「击破了还在发弹」。
-`mod/GAME/th04.lua` 里包了个 `attach(master, obj)` 做这件事。
-
-**⑨ `addAutoSPPoint` 的阈值必须落在本卡血量之内**
-超了那个阶段就**永远触发不了**（只能等兜底计时器），玩家看到的是
-「我把血打下去了，却没有新弹幕」。th04 终符一度写成 `700/1400/2100`
-而卡只有 1200 血 → 三、四阶段全靠计时器。
-**按血量的百分比写**（`CARD_HP * 0.25/0.50/0.75`），别写绝对值。
-`tools/check_stage.lua` 会检查这一条。
-
-**⑩ 转阶段要有「当帧可见」的变化**
-新加的那一层通常要 60~190 帧预警才吐弹（见 §10.7），所以光加一层，
-玩家会觉得「转阶段没反应」。再配一个**立刻生效**的变化 ——
-比如把限位墙的缺口当帧收窄一档（th04 终符就是这么做的）。
+参数别用魔数随手写。
 
 ---
 
-## 8. 加一个新关卡（9 个地方，缺一个都不行）
+## 7. 弹幕设计规范
 
-以 `TH03`(level 23) 为例，照 `git show 5010471`（th01&th02 那次提交）的清单来：
+### 7.1 核心认识：**没有「限位层」这个东西**
 
-1. `mod/GAME/th03.lua` —— 关卡内容
-2. `mod/BG/TH03/TH03_bg.lua` —— 全局 `TH03_bg = Class(background)`
-3. `Resources/BossBackGround/th03_0.png` —— 符卡背景贴图（256×256）
-4. `mod/GAME/stage_pic23.png` —— 关卡选择缩略图（**文件名是 level，不是关卡名**）
-5. `music/TH03_0.ogg` —— BGM（现有自制关卡都是复制 `SCORE.ogg` 占位）
-6. `core.lua` —— `STAGE_COUNT = 23`
-7. `mod/_editor_output.lua` —— `StageID` 列表加 `"03"`；`stage_pic` 加载循环上界改 23
-8. `mod/main_stage.lua` —— `NewStage("TH03", "白玉楼", 23, …)`，别忘了 `self:Next(<成就 id>)`
-9. `mod/music.lua` 的 `AddMusic` 与 `mod/defachievement.lua` 的 `DefineAchievement`
+这是本仓库最容易走偏的一条。早期版本（`th03`/`th04`，以及已删除的 `th19`）把「限位」当成一个
+要**单独完成**的任务，于是越做越硬：先画矩形弹墙，再直接夹 `player.x/y`。**那是错的。**
 
-另外见第 7 节的 ④⑤：`STAGE_COUNT`、`difftext`/`sntext` 要一起动。
+**证据**（可自行核对）：
 
-**当前的关卡号占用**（加新关时接着往后排，别插空）：
-
-```
-1..19   官方各作（TH06…TH185）
-20..24  自制    TH00 未命名关卡 · TH01 水月 · TH02 星河 · TH03 白玉楼 · TH04 彼岸
-25      天空璋AEX（= STAGE_COUNT + 1，永远跟在最后）
-```
-
-符卡 id（`boss.card.add` 第 4 参）同理：自制关卡占了 **244~285**，官方占 1~243，
-新关从 **286** 往后排。`tools/check_stage.lua` 会检查有没有跨组重号。
-
----
-
-## 9. 验证：跑不起游戏时怎么做
-
-```bash
-# 语法（用 luajit，它是 5.1 兼容；别用 homebrew 的 luac，那是 5.4，会报假错）
-luajit -e 'assert(loadfile("mod/GAME/th03.lua"))'
-
-# ★ 符卡自检：真跑一遍载入，并逐帧模拟每张卡
-luajit tools/check_stage.lua mod/GAME/th03.lua          # 默认模拟 1800 帧
-luajit tools/check_stage.lua mod/GAME/th03.lua 4000     # 想跑久一点
-STAGE_DEBUG=1 luajit tools/check_stage.lua mod/GAME/th03.lua   # 打任务/弹数曲线
-
-# ★ 全项目载入自检（有些文件依赖别的文件里的类，单跑会误报，用这个）
-luajit tools/check_stage.lua --all
-
-# ★ 威胁度量：放一个自动躲避机器人进去真躲，并逐帧按角度分 24 个扇区
-luajit tools/check_stage.lua mod/GAME/th04.lua 3000 --threat
-```
-
-`tools/check_stage.lua` 会报告：boss/符卡的注册结果、`t1<=t2<=t3` 是否合法、
-card_id 有没有跨组重复、以及**每张卡跑 N 帧有没有运行时错误 + 峰值同屏弹数/对象数**。
-峰值弹数是判断"会不会太挤/漏对象"的主要依据（正常卡几百，超过 ~600 要警惕）。
-
-`--threat` 会放一个自动躲避机器人进去真躲，并逐帧在**自机当前所在的位置**上算威胁。
-
-**难度只有一个定义：站在这个位置上，多久会被打中一次。** 不是数周围的密度，
-也不是数「你换了几次位置」（转换次数只反映抖动，跟挨不挨打没关系）。
-
-| 指标 | 含义 | 健康区间 |
+| | 改 `player.x/y` | 铺满屏的自绘墙 |
 |---|---|---|
-| **★被打频率（次/秒）** | 自机所在位置上，90 帧内会打到它的**非自机狙**弹数（每发只计一次）—— **这才是难度** | 0.3~2.5（终符可到 4） |
-| **★危险时间占比** | 这个位置「会被打到」的帧占多少 | 2~15% |
-| **精确自机狙另计（次/秒）** | 出膛就瞄准你、且**留足了挪开时间**（> 20 帧）—— 不计入难度，列出来只是别让它藏起来 | 不设限 |
-| **⚠ 贴脸狙（次/秒）** | 出膛到命中 **≤ 20 帧** —— 来不及挪 = **必中，计入难度** | **应该趋近 0**；有就得查 boss 站位 |
-| **命中预告 TTH（中位）** | 离最近一次命中还有多少帧 | 60~90 帧 |
-| **60px 内弹数（峰值）** | 周围的密度 —— **只作参考，别只看它** | 10~40 |
-| **被堵方向 / 最大空隙** | 24 个 15° 扇区被占几个、逃生窗口最窄几度 | 空隙 ≥ 2 格（30°） |
-| **强制位移（峰值 px/帧）** | 卡片改自机坐标的幅度 | **≤ 10**；几十 px 就是手感事故 |
+| SR_Subterrain_Reanimation（61 张卡） | **0 次** | **0 次**（`RenderRect` 一次没用） |
+| 原作移植 `th06`–`th185`（**221 张**） | **10 处**（20 行），**全是传送 / 软场** | 0 处「四面朝内收」的墙 |
 
-**为什么用 TTH 而不是密度**：一发朝你飞来的弹和一堆远处打转的弹，密度指标一样，
-但一个会打到你、一个不会。
+那 10 处里真正「夹住自机」的**只有 1 处**（`th08-boss_lastword.lua:1552` 蝴蝶梦之舞），
+而且 90 帧才收一点、横向根本夹不住。其余是：
 
-**为什么不算「必须移动」**：那是「原地不动会在 30 帧内中弹」的**转换次数** ——
-自机在线上反复进出这个状态会被连记好几笔，只反映抖动，跟挨不挨打没关系。
-
-**为什么不算精确自机狙**：出膛那一刻弹道就会打到自机**现在所在位置**的弹，
-**构造上必然**会打中你，把它计进频率是用同义反复刷分。
-玩家对自机狙的应对本来就是「挪开」，它不反映这张卡密不密。
-
-### ⚠ 但「该挪开」的前提是**来得及挪** —— 贴脸狙不算自机狙
-
-「挪开」要花 反应(≈15 帧) + 横移出判定圈(≈2 帧)。出膛到命中**不足 20 帧**的，
-玩家根本没时间动 —— 那不是「该挪开」，是**必中**。必中当然算难度。
-
-所以自机狙分两类，判据都在**出膛那一刻**做（只对 `NewSimpleBullet` 生效），之后不再改：
-
-| 类型 | 条件 | 怎么算 |
+| 机制 | 出处 | 性质 |
 |---|---|---|
-| **精确自机狙** | 打到自机位置，且出膛→命中 **> 20 帧** | **不计入难度**，单独报 `精确自机狙另计` |
-| **贴脸狙** | 打到自机位置，但出膛→命中 **≤ 20 帧** | **计入被打频率**，并单独报警 |
-
-一发朝你 30 帧前的位置飞来的弹早就不是自机狙了，但按出膛意图算，它本来也是「该挪开」的那一发。
-
-**判据本身必须按时间，不能按角度、更不能按「出膛点离自机多远」**：
-
-```lua
-r  = 出膛点 − 自机
-t* = −(r·v) / (v·v)        -- 最近点发生的时刻 = 出膛到命中的帧数
-t* > 0  且  |r + v·t*| ≤ 自机判定半径   →  它打得到自机
-  ├─ t* >  20 帧 → 精确自机狙（该挪开，不计难度）
-  └─ t* ≤ 20 帧 → 贴脸狙（来不及挪，算难度，报警）
-```
-
-- 按**角度**（`|出膛角 − 指向自机的角| < 3°`）在远处会放宽成十几 px 的偏差，贴脸时角度又抖得没意义。
-- 按**出膛距离**门槛（「离自机 < 40 px 就不判」）更糟：它会把贴脸那批**整批**漏掉，
-  而贴脸恰好是最该看见的那一批。
-- 解最近点是唯一和出膛点无关的判法，贴脸照判。
-  ⚠ 符号别写反：`r` 要取「出膛点 − 自机」。用「自机 − 出膛点」的话 `t*` 整批变负，
-  每发弹都被判成「在飞离自机」，一个自机狙都标不出来。
-
-`STAGE_PROBE=1` 的 `自机狙判定：出膛即瞄准的弹 N 发，其中 M 发贴脸；最短出膛→命中 X 帧`
-就是查这个的。**贴脸狙应该趋近 0**；有的话先看 boss 停在哪 ——
-boss 站位压进自机活动带时，它的自机狙层必然变成贴脸狙（th04 卡 5/9 最短 10/9 帧就是这么来的）。
-
-**强制位移那一列必须看**：这个项目的限位经常直接改 `player.x/y`（水位、夹框、推力）。
-用 `player.y = self.y` 这种**硬夹**写，自机被压到界外很深处时会在**一帧里瞬移几十 px** ——
-实测卡 2 是 90 px/帧、卡 4 是 32 px/帧，对手感来说等于「被打飞了一下」，不是「被框住」。
-正确写法是**限速推**：`player.y = min(self.y, player.y + 6)` 或指数逼近
-（`player.y = player.y + (target - player.y) * 0.08`，th125 就是这么写的）。
-
-### 「强制位移」到底怎么量：不要人为吸附
-
-限位（水位、夹框、推力）就是卡片在 `frame` 里**直接改 `player.x/y`**。
-卡片是限速推的（水位一帧只推 6 px），所以自机可以在界外待几十帧 ——
-**这不是测量误差：游戏里自机真的就在那个位置上**，被弹擦过就是真的被弹擦过。
-所以检查器量的就是卡片改完之后的自机坐标，**代码和卡片都不用为它做任何标记或吸附**。
-
-真要看的是另外一个问题：**是限位器把人推进了危险区，还是那个人本来就在危险区？**
-
-检查器在 `card.frame` 前后各记一次自机位置（`p1x,p1y` → `player.x,y`），
-对有位移的帧两边各量一次 TTH，于是能分开三件事：
-
-| `STAGE_PROBE=1` 打印的行 | 含义 |
-|---|---|
-| `[probe] 自机 y …` / `自机 x …` | 自机**真实**走过的范围（因为卡片改了坐标，这就是游戏里的范围） |
-| `卡片改了自机坐标 N/M 帧（P%）` | 限位器一共作用了多少帧 —— **P≈0 就是限位形同虚设** |
-| `★ 卡片把自机推进危险区 N 帧` | 插手前安全、插手后才进危险区 —— **这才是强制位移造成的威胁** |
-
-读法：`卡片把自机推进危险区` 只有几十帧 / 3600 是**公平的挤压**；
-占比高说明玩家是被限位器**丢进**弹幕里的，那是设计事故，不是难度。
-
-**校准实例（2026-09-15，th04 卡 2）**：潮汐原来写 `-60±150`（水位顶到 +90）。
-探针显示自机真实活动范围是 y≈0~190，水位顶到 +90 **够不着人**，
-3600 帧里只改了 74 帧自机坐标（2%）—— 限位是摆设。
-改成 `-20±160`（顶 +140）后水位进到自机活动带里。
-**判断限位有没有生效就这么一条：看 `卡片改了自机坐标` 的占比，别看参数写得多漂亮。**
-
-> 改检查器时注意：`measure_frame` 会顺带把每发弹的当前位置写进 `t._mx/_my`，
-> 作为**下一帧**求速度的差分基准。同一帧里想用另一个自机位置再量一次，
-> 必须传 `dry = true`（只读不写）—— 否则第二次会把所有弹的速度算成 0
-> （TTH 全变成「已经贴脸」），读数直接废掉。
-
-### ★ `% N == 偏移` 里的**偏移必须小于 N**，否则整层弹幕静默消失
-
-写周期发射时常见的写法：
-
-```lua
-if (self.t - WARN) % ROSE_GAP == 23 then   -- 吐一轮
-```
-
-**偏移 ≥ 模数时这个分支永远不成立** —— 不报错、不漏对象、峰值弹数也正常，
-只是那一层弹**一发都不发**。调参时把 `ROSE_GAP` 从 112 一路收到 40，
-偏移还留着 45，整张卡的威胁层就凭空没了（实测该卡被打频率 0.7 → 0.0）。
-
-同理，**别在循环里叠 `(i - 1) * 偏移`**：`PULSE` 收到 120 之后，
-`int(PULSE*0.75) + (i-1)*25` 对后两个环是 140 / 165 > 120 —— 那两个环的瞄准轮
-也永远不触发。想让多层错开，就让它错在**别的维度**（相位、半径、角度），
-不要错在同一个模数上。
-
-**怎么发现**：自检看不出来（它是运行时的分支）。只能在调完参数后看
-`--threat` 的读数有没有**莫名其妙地掉到 0**，掉 0 就先回来查模数和偏移。
-
-### ★★ `sin` / `cos` 是**角度制**，不是弧度（这个坑最贵）
-
-`THlib/lib/Lapi.lua:110`：
-
-```lua
-sin = lstg.sin        -- 引擎的 legacy/DegreesMath.lua「角度制三角函数」
-```
-
-**和 Lua 自带的 `math.sin`（弧度）不是一回事。** 写动画系数时按弧度写，
-周期会差 **57 倍**：
-
-| 写法 | 你以为的周期 | 实际周期（角度制） |
-|---|---|---|
-| `sin(t * 0.15)` | 42 帧（眨眼） | **2400 帧 = 40 秒**，等于不动 |
-| `sin(t * 0.05)` | 126 帧 | **7200 帧 = 2 分钟**，完全静止 |
-| `sin(t * 3)` | 2 帧 | **120 帧**，一次平滑摆动 |
-
-**正确写法：想要 P 帧的周期，就写 `sin(t * 360 / P)`。**
-参考卡全是这个套路 —— `th07.lua:2259` 的 `fan`：
-
-```lua
-for i = 1, 30 do self.hscale = sin(i * 3) end   -- 30 帧扫 90° = 平滑张开 0→1
-for i = 1, 60 do self._s = 1 + 0.35*sin(i*1.5) end  -- 60 帧扫 90° = 一次脉动
-```
-
-`i * 3` 是「每帧 3°」，**不是每帧 3 弧度**。看到老代码里 `sin(i*3)`、`sin(i*1.5)`
-这种整数系数，都是角度制的一气呵成。
-
-同理 `cos`，以及 `Sin`/`Cos`（`Lmath.lua` 里有查表的版本，也是角度制）。
-`Angle()` 返回的本来就是角度，可以直接喂给 `sin`/`cos`。
-
-> **检查器已经同步成角度制**（`tools/check_stage.lua` 的 `_G.sin`/`_G.cos` 走 `math.rad`）。
-> 在它改成角度制之前，这个 bug 在自检里**完全看不见** —— 我写的一整套动画
-> （预警闪烁、水面起伏、扇子的摆动与光晕）在自检里全都「正常」，实机里全部是静止的。
-
-### ★ 桩件里的 `ran` 必须是**真的随机**（这个坑很贵）
-检查器的随机数桩件原来写成 `Float = function(self, a, b) return (a or 0) end` ——
-**返回下界 `a`**。于是关卡里每一处 `ran:Float(...)` 都退化成常量：
-所有「随机撒满全屏」的弹幕**全部落在同一个位置**。
-
-th04 卡 2 的花瓣是 `ran:Float(lstg.world.l, lstg.world.r)`（x 铺满 ±192），
-桩件下 153 片花瓣**全挤在 x=-192 那一列**。后果：
-
-| 指标 | 假随机 | 真随机 |
-|---|---|---|
-| 被打频率 | 0.4 次/秒 | **1.7 次/秒** |
-| 危险时间占比 | 4% | **15%** |
-| 60px 内弹数 | 0.6 | **2.3** |
-| 最大空隙 | 150° | **45°** |
-| **上方(y>96) 的被打频率** | **0.0** | **1.8**（比下方 1.3 还高） |
-
-**这类误差不会报错、不会漏对象、峰值弹数也正常** —— 它只会让读数安静地偏小，
-而且**专门偏小在「随机撒开」的那一层**，看起来就像那张卡本来就很空。
-卡 2 因此被误判成「十张里最好躲的一张」，实际它是上方最挤的一张。
-
-现在用固定种子的 32 位 LCG：**可复现**（同一张卡每次跑结果一样），
-不用 `math.random`（LuaJIT 的种子随启动变，会毁掉可复现性）。
-`ran:Int` 是按 `[a,b]` 闭区间取的，`ran:Sign` 返回 ±1。
-
-**怎么发现这类问题**：`STAGE_DUMP=<帧号>` 把那一帧场上所有带判定的东西
-（类别、坐标、速度）全部打出来。看两件事：
-① 数量对不对；② **坐标分布对不对** —— 一堆本该撒开的弹全挤在一条线上，就是它。
-
-> 相关的两个诊断开关：`STAGE_HIGH=<y>` 把自机强行压在某个高度以上
-> （回答「卡片在屏幕上方到底难不难」）；`STAGE_PROBE=1` 打 `本卡共造`。
-
-### 桩件必须照引擎写：`bullet.init` 就是另一个
-
-检查器里那个 `_G.bullet` 桩件，`init` **不能**写成空函数。
-真实弹的 `group` / `colli` 是在 `THlib/bullet/bullet.lua:85` 赋的：
-
-```lua
-self.group = destroyable and 1 or 5
-self.colli = true
-```
-
-`each_threat` 靠 `group ∈ {1,2,5}` 判断「这东西有没有判定」。
-桩件漏掉这两行，**所有 `Class(bullet, ...)` 造的自定义弹都不进威胁统计**，
-整层被无声漏掉 —— th04 卡 2 的樱花花瓣（`th04_petal`，60 秒里 153 片）
-就这么被漏成「被打频率 0」，看着像卡很空，其实是检查器瞎了。
-
-**怎么防**：`STAGE_PROBE=1` 会打印一行 `本卡共造：弹:knife×730  对象:th04_petal×153 …`。
-这是**整张卡造出来的全部东西**（不分有没有判定）。
-读数不对劲时先看它：卡里明明该有的东西没出现在这张清单里（或者清单里有、
-却对不上威胁统计），那就是桩件漏了一层，别去改卡。
-
-> 已知局限：激光（`GROUP.LASER = 10`）**不收**。激光是线段不是点，
-> 拿原点坐标去跑「点弹命中预测」会算出垃圾。th04 不用激光；th01 用了，
-> 那几张卡的激光威胁不在统计里。
-
-> 机器人很笨（只看最空的方向 + 排斥），它的绝对分数不能当难度；**看相对高低**。
-> 另外它自己也可能写坏 —— 这一版之前有过「回中权重比躲避还大 4 倍」的 bug，
-> 结果机器人原地不动，测出来的数字全是假的。改机器人的话，先用几张已知的卡校准。
-
-**它查不出来、只能进游戏看的**：贴图名拼错（桩件不渲染）、手感与观感、
-引擎侧的被弹/擦弹/结算、以及演出效果。改完请让作者实机过一遍。
-
-### ★★ 关卡背景类的 `init` **必须**先调 `background.init(self, false)`
-
-`THlib/background/background.lua:11` 的基类 `init` 干三件事：
-
-```lua
-function background:init(is_sc_bg)
-    self.group = 0                      -- ← 画在背景 pass
-    ...
-    self.layer = -700 - 0.1              -- ← 在所有对象**下面**
-    ...
-    lstg.tmpvar.bg = self
-    background.Capture(self)
-end
-```
-
-漏掉这一句，背景对象就**没有 group / layer** → 它不再落在背景 pass，
-而是被画在**自机和 boss 上面**；而整屏背景是不透明的 →
-
-> **屏幕上只剩背景，自机和 boss 全都看不见。**
-
-th19 的 `TH19_bg` 就是这么漏的（直接抄了 `TH05_bg` 的 frame/render，
-偏偏把第一行 `background.init` 掉了）。
-
-**这个错载入检查查不出来**（文件语法没问题）、**逐卡模拟也查不出来**
-（没有人会去 `init` 一个背景对象）。所以自检的 `--all` 里加了一条静态检查：
-只要文件是 `*_bg.lua`，就必须能找到 `background.init(`。
-
-### ★★ `card.frame` 会**先于** `card.init` 跑满整个 `before()` 期间
-
-这是引擎的实际顺序（`THlib/enemy/boss_system.lua:919` `system:doCard`）：
-
-```lua
-b.current_card = card          -- ① 立刻设上
-task.New(self, function()
-    if card.before then ... 等 before 跑完 ... end
-    ...
-    card.init(b)               -- ③ 要等 before 结束才执行
-end)
-```
-
-而 `system:frame`（同文件 :133）从 ① 那一刻起**每帧都调 `b.current_card.frame(b)`**。
-卡里的 `before` 通常还有 `task.MoveTo(..., 60, ...)`，所以
-
-> **`frame` 会先跑 60 帧左右，然后 `init` 才第一次被调用。**
-
-于是「在 `init` 里初始化、在 `frame` 里直接 `+`」这种写法**必崩**：
-
-```
-[string "mod\GAME\th19.lua"]:289: attempt to perform arithmetic on field '__webrot' (a nil value)
-```
-
-th19 一次踩了 **9 处**（`__webrot` / `__rot2` / `__erot` / `__brot` / `__crot` /
-`__srot` / `__rayrot` / `__side` / `__trace` / `__phase`），th05 的终符还有一处 `__done`。
-
-**写法二选一：**
-
-```lua
--- ① 状态一律 nil 安全（推荐，和顺序无关）
-self.__rot = ((self.__rot or 0) + ROT_V) % 360
-local tr = self.__trace or {}
-
--- ② 或者把初始化挪进 before()（它在任何一次 frame 之前就必定跑过）
-function card:before()  self.__rot = 0  ... end
-```
-
-⚠ **自检原来查不出这一类**：它写的是「先 `drain` 完 `before`、再 `drain` `init`、
-最后逐帧」——把顺序抹平了。现在已改成照引擎来：**`before` 的协程每跑一帧，
-就先调一次 `card.frame`**。改完之后 th19 立刻报出 8 处、th05 报出 1 处，
-全部是同一个原因。**这条顺序以后不要再"简化"。**
-
-### ★ `object.smear_add` 读的是 `self.img`，而 `bullet.init` **不设**它
-
-`smear_render` 会 `SetImageState(s.img, ...)`，而 `Lresources.lua:97` 里
-`local i = ImageColor[img]` 紧接着 `i[1]` —— **`img` 为 nil 当场崩**。
-
-`self.img` 是谁设的？是**弹样式自己的 init**（`bulletStyle.lua:65-70`）：
-
-```lua
-local function init(img, colorful, blend)
-    return function(self, index)
-        self.img = img .. (colorful and int(index) or math.ceil(index / 2))
-    end
-end
-```
-
-所以 `NewSimpleBullet(star_big, ...)` 造出来的弹**有** `self.img`；
-但一个**直接 `Class(bullet, …)` + `bullet.init(self, star_big, ...)`** 的类**没有**
-（`bullet.init` 只设 `self.class` / `self.imgclass`）。th02 的流星就是这么写的，
-要靠 smear 拖尾巴 → 实机必崩。补一行 `self.img = "star_big" .. int(col)` 即可。
-
-**自检桩件里的 `smear_*` 现在会检查这个**（原来三个都是空函数，这类错一个都查不出来）。
-
-### ★ `rot` 是标准数学角，**贴图在 `rot = 0` 时朝上（+y）**
-
-三件事必须一起理解，混用就会出「扇子躺倒」或「弹朝屏幕外飞」：
-
-1. **`sin` / `cos` 是角度制的标准数学函数**（见上一节）：`cos(0)=1, sin(0)=0`，
-   `rot = 90` 指向 +y，逆时针为正。
-   证据：`THlib/lib/LObjectEvents.lua:196` 的 `SetRelPos` 用的是标准旋转矩阵
-   `x' = x·cos(r) − y·sin(r)`。
-2. **`Angle(x1,y1,x2,y2)` 也是同一套**（`atan2(dy, dx)` 角度制）—— 所以
-   `Angle()` 的输出可以直接喂给 `cos/sin` 或 `NewSimpleBullet(..., a)`。
-3. **贴图的「朝向」是贴图自己画的**：`Render(img, x, y, rot, ...)` 把贴图第 0 行
-   画在世界最高的 y 上。所以 `rot = 0` 时，**贴图顶部 = +y**。
-
-要判断一张贴图 rot=0 时朝哪，量它的每行不透明像素跨度：
-
-```python
-from PIL import Image
-im = Image.open('mod/GAME/Lfan.png').convert('RGBA').crop((0, 256, 500, 512))  # 第2帧
-w, h = im.size; px = im.split()[3].load()
-for y in range(0, h, 16):
-    xs = [x for x in range(w) if px[x, y] > 32]
-    print(y, (xs[0], xs[-1], xs[-1]-xs[0]+1) if xs else '(空)')
-```
-
-`Lfan2` 的结果是 **上宽下窄**（160 → 487 → 279 px），即
-**开口（扇面）在图片顶部、扇柄在底部 → `rot = 0` 时开口朝 +y**。
-`Resources/Special/fan.png` 同向。
-
-**于是 `mod/GAME/th08-boss_lastword.lua:1598` 那张卡的 32 把边缘扇**才能读通：
-
-| 位置 | 画出来的 `rot` | 开口朝向 | 朝场内的**发射**方向 |
+| 与 boss **对调坐标** | `th06.lua:329` | 演出（配 `WhiteScreen` + `bullet_cleaner` 清场） |
+| **开局传送**到固定点 | `th07.lua:1214`、`th10.lua:1460`、`th11_2.lua`（6 处） | 演出，一次性 |
+| **隙间**传送 | `th143.lua:200` | 道具 |
+| **抬地板**（单向） | `th07.lua:819` `player.y = max(player.y, y+80)` | 软场 |
+| **弹簧**拖到幕布下方 | `th125.lua:449` `* 0.07`（τ≈14 帧） | 软场 |
+| **切向甩**（不是往外推） | `th095.lua:657` `+90*d` | 软场 |
+| **引力**吸向某点 | `th143.lua:1841` `* 0.4` | 软场 |
+
+**「四面矩形弹墙朝内收」在原作里一处都没有。** 自制关卡里倒有 3 处
+（`th03.lua:521` 夹框、`th04.lua:539` 抬地板、`th04.lua:1235` 夹框三档），
+**`th20` 是 0 处。**
+
+**约束是攻击图案本身的副产品。** 它来自三样东西，按重要性排：
+
+1. **boss 一直贴在自机旁边** —— `task.MoveToPlayer(...)`。原作每个文件用 4~18 次。
+   它决定所有自机狙的出膛距离恒定，是压迫感的**主来源**，跟墙完全无关。
+2. **挂在 boss 身上的实体**（`Class(enemy, …)`，见 7.4）—— 自机会撞到它。
+3. **子弹从结构上发出来**，以及**冻结 / 解冻的节奏**（见 7.6）。
+
+### 7.2 密度的量化标尺
+
+自检的 `--threat` 会报 `60px 内弹数 平均/峰值`、`死局 N 帧 (%)`。
+用实测反推出的档位（数据来自对 `th06`–`th185` 的抽样）：
+
+| 档 | 60px 内平均 | 死局 | 代表 |
 |---|---|---|---|
-| 下边 `y = w.b` | **0** | +y（上）✓ | **+90** |
-| 上边 `y = w.t` | **180** | −y（下）✓ | **−90** |
-| 左边 `x = w.l` | **−90** | +x（右）✓ | **0** |
-| 右边 `x = w.r` | **90** | −x（左）✓ | **180** |
+| 装饰档 | 0 ~ 1 | 0% | th06 暗冰符、th07 春人偶 |
+| **标准符卡** | **5 ~ 14** | 0% | th06 金华、th07 网孔、th12 猛虎 |
+| 高压符卡 | 13 ~ 25 | 0 ~ 3% | th12「缝里的珍宝」、th10 祸斗 |
+| **墙（失控）** | **≥ 25 且 死局 > 5%** | 8% ~ 48% | th07「花诞日」48.2%、th10 祸斗 11.7% |
 
-**四边开口统统朝场内**，但 **`rot` 和发射方向正好差 90°** ——
-把它们写成同一个值，要么扇子是躺着的，要么弹整层朝屏幕外飞（等于白写）。
-参考卡里镜像成对的两把摆动幅度是 `ran` / `-ran`，**符号相反**。
+**判据：一张卡如果 `60px 内平均 > 25` 或 `死局 > 5%`，那是墙，不是符卡。**
+原作 221 张里抽样只见到 3 张（`th07.lua:704` 花诞日 48.2%、`th10.lua:984` 祸斗 11.7%、
+`th12.lua:755`「缝里的珍宝」8.7% —— 都可以用 `--threat` 自己复现）。
 
-### 「蝴蝶梦之舞」里一共四种扇子，**动法各不相同**（别只看一种就下手）
+⚠ **`死局` 比 `密度` 重要。** 密度高但死局 0% = 「很挤但永远有路」；
+死局一有就是「这一帧无解」，玩家会觉得被耍。
 
-`mod/GAME/th08-boss_lastword.lua:1539` 用了四种扇，只有两种会**转**：
+⚠ **`60px 内平均` 量的是自机脚边，不是「屏幕上」。** 自机站在弹幕外围时这一栏会是 0
+（`th20` 的卡 1 实测 0.0，同屏却有 224 发）。判断「这张卡是不是空的」要看
+**`峰值同屏 弹`**：`th20` 修好之后最低的一张是 **158**，中位 **263**；
+低于 **150** 就该怀疑是不是缺了底帘（见 7.3.1）。
 
-| 类 | 贴图 | 数量 | 会转吗 | 动法 |
-|---|---|---|---|---|
-| `Little_Fan_Green` | `Lfan2` | 围场 32 把 | **不转** | 只摆 ±16~23°，周期 240 帧（`rot = sin(s)*a + r`） |
-| `Little_Fan_Golden` | `Lfan4` | 每轮 2 把 | **转** | 飞到 r=70 后绕 boss 转 240 帧，累计 ≈1146°（三圈多），`rot = rot + 10*d*sin(as)`，边转边撒 4 连弹；`d` 每轮翻号 |
-| `Little_Fan_Blue` | `Lfan3` | 每轮 `int(n)` 把 | **转** | 飞向自机再飞回（150 帧），`rot = A - 90 + sin(as)*720*d`，**整整两圈** |
-| `_editor_class["TH07"]["fan"]` | `"fan"` | boss 身后 1 把 | **不转** | `rot` 硬编码 0；只做「先横后纵的两步张开 + 呼吸 + 40 帧一次闪光」 |
+⚠ **所有密度读数都必须跑多种子取最坏**（理由见 §10 扫②）。
 
-三把小扇的**张开**是同一套（`fan_unfold`：前 12 帧纵张、后 12 帧横张）、
-**收扇**也是同一套（`fan_close`：先横收到 0.08，再整体缩到 0 才 `Del`）。
+### 7.3 密度靠**形状**，不靠**墙**
 
-`th07.lua:2259` 的 `fan` 类（boss 身后那把大扇）**不用 `object.Connect`** 挂到 boss 身上 ——
-`boss_system:refresh(1)`（`THlib/enemy/boss_system.lua:653`）会
-`object.KillServants` 把 `con_death` 的挂件全清掉；原卡是在 `frame` 里
-自己判 `IsValid(self.master)`、master 没了才自删。
-（金扇/蓝扇那种「本来就在卡内自生自灭」的，用 `object.Connect` 是对的。）
+每张卡换一种，**别一张抄十遍**（这是本仓库犯过的最大错误：`th19` 的 35 张卡里
+18 张用了同一段螺旋，只改颜色）。可以换的形状：
 
-### ⚠ 自删的 `frame` 里，**寿命判断不能写在提前 `return` 后面**
+| 形状 | 怎么做 | 缺口 / 节奏 |
+|---|---|---|
+| **多路扇 + 相位重掷** | `fly(style, col, x, y, v, base + i*step)`，`n = 13~30` | 缝 = `360/n`°；每波 `base = ran:Float(0,360)` 或 `base += k*d`，20~40 波后 `d=-d` 反向 |
+| **同心环 + 层间速度差** | 同一帧打 `L` 个环，每环相位差 1°、**速度差 `1/L`** | 环在**径向上自己拉开**，玩家穿的是「环与环之间的径向缝」。每 60~80 帧一轮、每轮反向（`th15.lua:1249`「料得年年肠断处」：16 环 × 15 路，v 2.0→3.0） |
+| **双螺旋** | 正反两股，半径递减 + 相位每层推进 | 层间 `task.Wait(5~10)`，`rot = ran:Float(0,360)` 每轮重掷、`d=-d`。**同样弹数下读数比放射环高好几倍** |
+| **冻结环 → 解冻外射** | 先 `v = 0` 冻在场上，等 `w` 帧再把速度从 0 加上去 | 整屏是弹，但「哪些已激活」的波前在推进，**安全区就是这个波前**（SR 的 `4p0-wait`，卡 5092：30 个环，半径 90→3 递减、冻结 30→204 帧递增） |
+| **结构节点吐扇** | 子弹从 7.4 的结构上发，不从 boss 发 | 每个节点各自瞄准 / 各自相位 |
+| **单向帘幕** | 从屏幕**一条边**生成 `行×列` 点阵，每 k 帧推一行 | 只盖住一角，另一侧永远空。`d=-d` 换边（`th13.lua:716`、`th10.lua:351`） |
+| **激光笼** | 几根激光插在一个多边形顶点上，**全程不动** | 限制的是「能去哪」，不是「必须站哪」。安全区 = 笼内全部（`th07.lua:1218`：r=260 八边形 + boss 在内圈公转） |
 
-th04 卡 3 踩过：扇框那 18 把（上下两排）不发弹，`frame` 里写了
+**「环 + 缺口」和「螺旋」是最主流的两种**；「放射环」最不划算 ——
+它的弹走径向，只有正对自机那条线 ±2° 以内的几颗会被统计到
+（实测同参数下放射环 0.1~0.5、螺旋 1.5~3.5）。
+
+#### 7.3.1 每张卡都**先有一层底帘**（`th20` 血的教训）
+
+写完招式不算写完。**每张卡都要先挂一层「不管这张卡在演什么，屏幕上始终有弹在走」的底**，
+招式叠在它上面 —— 原作每张卡都是这两层加起来的密度。
+
+`th20` 第一版漏了这一层，于是 35 张里有 **13 张同屏弹数比原版低一个数量级**
+（最少的一张峰值只有 9 发），玩家看到的就是「空的、不知道这卡在干什么」。
+补上底帘之后同屏峰弹中位从 **207 → 263**，最低的一张从 9 → 158。
+
+`mod/GAME/th20.lua` 的 `base(self, o)` 就是干这个的，四种形状按卡换：
 
 ```lua
-if not self.fires then return end      -- ← 提前 return
-... if t > FAN_OPEN + FAN_HOLD then ... object.RawDel(self) end
+base(self, { kind = "ring",   layers = 7, n = 14, v0 = 1.5, v1 = 3.3 })  -- 同心环
+base(self, { kind = "fan",    n = 14, v0 = 1.8, dv = 0.6 })              -- 自机方向扇
+base(self, { kind = "spiral", layers = 10, n = 14, v0 = 1.5, v1 = 3.5 }) -- 双螺旋
+base(self, { kind = "rain",   n = 20, rows = 3, reps = 26 })             -- 垂帘（缝会滑动）
 ```
 
-于是这 18 把**永远走不到自删那一步**，而 `bound = false` 又不会被边界回收：
-每 210 帧泄 18 个对象，一张 60 秒的卡下来泄 300 多个，而且它们**还在渲染**
-（`_a` 被 `min(_a+10, 150)` 卡在满值）—— 屏幕边缘的扇子会一层层越堆越多。
+**底帘不能和招式叠成两堵墙。** 卡本身已经是全屏约束（比如四边往内收）时，
+底帘要用「环 / 螺旋」这种不封路的，别用「垂帘」。
 
-**症状就是自检里那个「峰值同屏 对象」会随时间线性涨**：
-卡 3 修之前 900/1800/3600 帧分别是 107 / 184 / **341**（线性=漏），
-修完是 42 / 43 / **44**（饱和=正常）。
-一条命令扫全部卡：
+#### 7.3.2 层间速度差**必须够大**，否则环是实心的
+
+同心环 / 螺旋是 `L` 层叠着打出去的。相邻两层在 `T` 帧后拉开 `T*(v1-v0)/L` px。
+`L=12`、`v0=2.0 v1=3.0` → 每层只差 `0.083 px/帧` → 150 帧后才拉开 **12 px**：
+整圈糊成**一个实心环**，玩家一条径向缝都找不到 —— `th20` 里 25 处
+`ring_layer`/`spiral_layer` 调用**全部**踩了这个（死局 4~8%）。
+
+**下限：每层至少差 `0.20 px/帧`**（150 帧 → 30 px 缝，够穿）。
+`th20.lua` 的 `spread_v(L, v0, v1)` 把这条写进了 helper ——
+**约束要写在代码里，不能只写在文档里**，否则下一张卡照样违反。
+
+#### 7.3.3 一股「流」是有宽度上限的
+
+一条从固定点每 `k` 帧发一颗的流，弹与弹的间隔 = `v × k`。
+间隔**小于**自机能钻的宽度（约 14 px）时，**这一股本身就是一条过不去的活动墙** ——
+`th20` 的「死符『ゴーストタウン』」原来 `v=1.9`、每 3 帧 → 间隔 5.7 px，
+四股一扫就把自机夹死（**死局 19%**）。拉到 `v=3.0`、每 6 帧 → 间隔 18 px 才穿得过去。
+
+**同理：缝（缺口）固定不动也是墙。** 垂帘的缝、环的缺口都要在动
+（`gapx` 每帧 `±gapspeed`、`d = -d`），否则两片固定缝一旦错开就夹死。
+
+### 7.4 结构：挂在 boss 身上的实体
+
+这是 SR 最核心的原语（`hitter`，全作用了 **42 次**）：
+
+```lua
+-- 位置 = master + (xx, yy) * sc，sc 是 0→1 的 sin 半周（从 boss 身上长出来）
+frame = function(self)
+    self.x = self.mst.x + self.xx * self.sc
+    self.y = self.mst.y + self.yy * self.sc
+end
+```
+
+用法：
+
+- **排成格 / 圈**：SR 的燐那张卡（`_editor_output.lua:5746`）摆 **3 圈 × 6 个**
+  （半径 30/60/90，每圈错开 30°），整个格绕 boss 转，**子弹全从这 18 个节点发**。
+- **连成链**：`x = o1.x*sc + o2.x*(1-sc)` —— **两点插值，每帧重算**。
+  boss 一动整张网自动跟着变形，**不需要谁去维护它**（SR 的 `1p1-chain`）。
+- **可打掉的节点**：给有限 hp + `kill` 里 `Damage(boss, n)`，清光就结束符卡
+  （SR 山女的网：8 个 `hp=400` 的节点，符卡结束靠打光它们）。
+- **探照灯**：`x = boss.x + dx*cos(aa)`、`y = boss.y + dy*cos(aa+30)` ——
+  李萨如曲线绕 boss 转，各自扫出一道光束（SR 的 `2p0-cctv`）。
+
+⚠ **不要用「每 N 帧往同一批坐标撒一把 `v = 0` 的弹」来做装饰图形。**
+那些弹永远不会离开回收边界（`bound` 对不动的弹没有意义），弹数会**线性涨** ——
+`th19` 有 18 处这么写，几张卡的峰值弹数冲到 24692 / 9188 / 6963（真机就是卡死）。
+**整体在动、单体不动的图形要自绘**（`thin_line` / `Render` / `RenderRect`）。
+
+### 7.5 装饰：**符卡背景是面积最大的装饰面**
+
+原作的装饰分六类，按面积排：
+
+| 类 | 是什么 | 怎么做 |
+|---|---|---|
+| **A 符卡背景 SCBG** | **最大的一层**，原作每张卡 3~5 层 | `_SC_BG.AddLayer(tex, tile, x,y, r, vx,vy, omi, blend, hs, vs, init, …)`；贴图用 `Resources/BossBackGround/th<本作>_<n>.png`。**同图铺两层、`vy` 相反、一层 `mul+add`** 是最省事的做法（`th07.lua:26`）。`Beforeframe` 回调里用互质周期改 RGB |
+| B 全屏 `RenderRect` | 白闪、视野遮挡、扫描线、整屏染色 | `SetImageState("white", "mul+add", a, r,g,b)` + `RenderRect`。**别拿它当墙** |
+| C 无害实体 object | 扇 / 火鸟 / 核融合球 | 见 7.4；`GROUP.GHOST`，`colli = false` |
+| D 装饰**真弹** | 不朝自机，但有判定 | `NewSimpleBullet(...)`，方向不朝自机、速度 0.4~1.2 px/帧 |
+| E 屏幕级后处理 | 残影 / 抖动 / 慢镜 | `mod/_editor_output.lua` 的 `SmearScreen` / `WhiteScreen`；`misc.ShakeScreen`（**只在重音用**）；`lstg.var.timeslow / gray`（**`del` 里必须还原**） |
+| F 文字层 | Last Word 的歌词 | `SimpleText`（`_editor_output.lua:97`），`viewmode = "ui"` 时不随世界滚动 |
+
+**前景装饰按角色母题选贴图**，别一律用「一圈紫色小点」。对照：
+
+| 母题 | 贴图 | 运动 |
+|---|---|---|
+| 樱（幽幽子） | `sakura` / `flower2`（`cherry_bullet.png`） | **椭圆内旋螺线**：`EllipsePoint(x, y, 80+i*2, 80-i*2, …)` —— 半径一增一减，不是同心圆（`th07.lua:744`） |
+| 线 / 笼（芙兰） | `knife` | 沿椭圆绕成**会张缩的笼子**（`th06.lua:490`） |
+| 火（妹红 / 辉夜） | `FireBird.png` 画三遍（常驻 + 周期爆闪 + 拖尾残焰）；火焰用 **`water_drop` 水滴贴图** | `th08-boss_lastword.lua:965` |
+| 核融合（空） | **`Nuclear1`（白心）+ `Nuclear2`（等离子）同轴叠两层** | `s = 0.95 + 0.05*sin(timer*4)` 脉动（`th11.lua:1286`） |
+| 心 / 玫瑰（恋） | `heart` / `ellipse6` | 分层玫瑰，**个数 / 半径 / 角速度三项都不同** |
+| 眼（觉） | `ellipse` 排成杏仁形；`eyeL/eyeR.png` | 第三只眼绕 boss 转 |
+
+### 7.6 配色
+
+- 同一张卡里**主色只用一个色系**，再拿**白心 / 亮边**提对比
+- 贴图自带高光不够亮时用 `_blend = "mul+add"` 叠成发光
+- **装饰层 alpha 压到 120~180，威胁层满 255** —— 玩家一眼分出该躲哪层
+- 深色底放亮弹、亮色底放深弹；别全用同一档灰度的紫
+
+### 7.7 「不显脏」四条（同一图案重复很多遍时）
+
+1. **每轮至少改一个参数**：`d = -d` / `rot += k` / `s = min(s + k, 上限)` /
+   预警时长递减。（`th13.lua:522`「桜吹雪～千年の恋をしました」一轮里同时改了三项）
+2. **至少两层反向自转**，且**个数、半径、角速度三项都不同**
+   （`th12.lua:1415`：内圈 4 个 +0.6、外圈 6 个 −0.3）
+3. **第 i 次发射的参数写成 i 的函数**：`r_step = f(i)`、`wait = g(i)`、
+   `v = base + sin(i*k) - i/N`（`th13.lua:432`）
+4. **狂暴档只改局部变量**，不新增图层
+
+### 7.8 不许做的四件事
+
+1. **不许有独立的「限位层」** —— 见 7.1。约束必须从图案里长出来。
+2. **不许「挖洞」**（`safe_spawn`：发射点离自机近就这一格不放弹）。
+   玩家会看到墙少了一块，限位也被自己废掉一半。
+   自机贴在发射点上时，**只允许整层换形状**（扇形 → 整圈，弹数一发不少），
+   或把整层速度压到 ≤ 距离/20。
+3. **不许「把这一颗挪到对面」**（`mirror_spawn`）。对面那个位置本来就有自己的一颗，
+   挪过去 = 局部加倍，图案反而破了；而且阈值和同层弹的间隔是一个量级，
+   一次只挪得动一两颗，**挡不住贴脸**（实测删掉前后难度几乎不变）。
+4. **不许子弹「突然消失」**。`object.RawDel(弹)` 会让子弹在玩家眼皮底下不见。
+   离场只有三种合法方式：**飞出回收边界**（`bound = true` 默认）、
+   **淡出**（`_a` 递减到 0 再 RawDel）、**转化为下一层**。
+
+**关于改 `player.x/y`**：原作只有四种合法形态，且都限速 ≤ 6 px/帧 ——
+抬地板（**单向**，`player.y = max(player.y, floor + 80)`）、
+弹簧（`player.y += (−player.y + target) * 0.07`，τ≈14 帧）、
+切向甩（`Angle(self, player) + 90*d`，不是往外推）、引力（吸向某个点）。
+**不要用它来「夹住自机」。**
+
+### 7.9 写卡自检清单
+
+1. 用 `luajit tools/check_stage.lua` 跑过吗？再跑一次 `--threat`：
+   **`60px 内平均` 在 5~14 吗（高压可到 25）？`死局` 是 0% 吗？**
+2. 这张卡的约束**从哪来**？说得出「boss 站位 / 结构 / 密度形状」三者之一吗？
+   如果答案是「我另画了一层墙」，回去改。
+3. 每张卡的**形状**和同关其他卡不同吗？参数**每轮都变**吗（7.7 四条）？
+4. 屏幕上大部分区域有弹吗？还是只有中间一团？
+5. **配色**明亮、有对比吗？装饰层和威胁层一眼分得开吗？
+6. 有没有子弹**突然消失**？有没有**挖洞** / **挪一颗**？
+7. 卡里改了 `player.x/y` 吗？是 7.8 那四种之一吗？限速了吗？
+8. 装饰图形是**自绘**的，还是「每 N 帧撒一把 v=0 的弹」（后者会线性涨）？
+9. `del` 里把挂上去的对象、改过的全局（`timeslow`/`gray`）都还原了吗？
+
+---
+
+## 8. 加一个新关卡（**9 个地方，缺一个都不行**）
+
+以「加 `TH21`，level 27」为例（`<N>` = level，`<ID>` = 通关标记 id）：
+
+| # | 文件 | 改什么 |
+|---|---|---|
+| 1 | `core.lua` | `STAGE_COUNT = 26` → `27` |
+| 2 | `mod/_editor_output.lua` | `StageID` 列表里加 `"21"`（**顺序决定载入顺序**） |
+| 3 | `mod/_editor_output.lua` | `for t = 1, 26 do` → `27`（`stage_pic` 纹理循环） |
+| 4 | `THlib/UI/UI.lua` | `difftext` 列表**按 level 下标**加一项（**下标必须等于 level**） |
+| 5 | `THlib/UI/UI.lua` | `sntext` 里加 `TH21 = "关卡名"`（存档 / replay 列表用） |
+| 6 | `mod/main_stage.lua` | `NewStage("TH21", "关卡名", 27, function(self) … end)` + `self:Next(<ID>)` |
+| 7 | `mod/music.lua` | `AddMusic("TH21_0", 循环起点, 循环终点, "曲名")` |
+| 8 | `mod/defachievement.lua` | `DefineAchievement(<ID>, [[关卡名]], [[关卡名 No Miss]], {…})` |
+| 9 | 素材 | `Resources/BossBackGround/th21_0.png`、`mod/GAME/stage_pic27.png`、`music/TH21_0.ogg` |
+
+外加两个新文件：`mod/GAME/th21.lua`、`mod/BG/TH21/TH21_bg.lua`。
+
+**几个联动，动一处要跟着动其余几处：**
+
+- `STAGE_COUNT` 是 `th16AEX` 的关卡号基准（`mod/th16AEX/class.lua:6` 与 `stage.lua:19`
+  都用 `STAGE_COUNT + 1`）→ 改它会让 AEX **整体平移一位**，`boss.Define` / `boss.card.add` /
+  `boss.CreateGroup` 内部一致，不会错位。
+- `THlib/lib/Lstage.lua:193,218` 靠 `STAGE_COUNT` 判断「通关」与「统计关」——
+  新关卡应该是最后一个。`self:Next(<ID>)` 里的 `<ID>` 是**通关标记 id**，不是 level
+  （TH20 是 162、TH05 是 161）。
+- **符卡背景贴图**：`THlib/UI/loading.lua:14` 会把 `Resources/BossBackGround/` 下所有 png
+  按文件名注册成纹理，所以放进去就能用。
+
+**关卡背景类**（`mod/BG/TH21/TH21_bg.lua`）的 `init` 第一行必须是：
+
+```lua
+function TH21_bg:init()
+    background.init(self, false)   -- ★ 漏了这句背景会被画在自机和 boss 上面
+    ...
+end
+```
+
+---
+
+## 9. 坑
+
+按**失败方式**分组，不按发现顺序。
+
+### A. 会当场崩的
+
+**A1. 弹样式写成字符串**：`NewSimpleBullet("ball_mid", …)`。
+`bullet.init` 里 `self.class = imgclass`，引擎要求 class 是 luastg 对象类 →
+`invalid argument for property 'class'`。
+
+**A2. 贴图名不存在**：引擎在 `obj.img = "X"` / `SetImageState("X", …)` / `Render("X", …)`
+时会查资源池，名字不存在直接抛 `can't find resource 'X'`。
+⚠ **`LoadImageGroup('Ghost1', …, 8, 1, …)` 生成的是 `Ghost11`…`Ghost18`，
+没有 `Ghost1`** —— 第 6/7 个参数是**列数、行数**，写组名当图名是最常见的错法。
+自检在 `New` 出来的对象上挂了 `__newindex`，赋值那一刻就会报
+（静态扫源码抓不到 `self.img = o.img or "Ghost1"` 这种 fallback 写法）。
+
+**A3. `card.frame` 会先于 `card.init` 跑满整个 `before()` 期间**（见 5.1 的生命周期）。
+所以「在 `init` 里初始化、在 `frame` 里直接 `+`」必崩：
+
+```
+th19.lua:289: attempt to perform arithmetic on field '__webrot' (a nil value)
+```
+
+⚠ 还有更早的一帧：`system:doCard` 是**立刻** `b.current_card = card` 的，
+而它排的那个协程（`before` → … → `init`）**同一帧不一定跑得到**
+（`doTask` 倒序遍历任务表，新加的任务本轮不会被访问）。
+于是 **`frame`/`render` 会先于 `before` 和 `init` 各跑一次**。
+
+写法二选一：**状态一律 nil 安全**（`self.__r = ((self.__r or 0) + V) % 360`），
+或**把初始化挪进 `before()`**（它在任何一次 frame 之前必定跑过）。
+
+这一类的报错是 `attempt to compare nil with number` /
+`attempt to perform arithmetic on a nil value`，
+**`check_stage.lua` 测不出来**（桩件太宽容，而且只有真走到那一行才炸）——
+必须用静态审计：
 
 ```bash
-for f in mod/GAME/th04.lua mod/GAME/th05.lua; do
-  luajit tools/check_stage.lua $f 1800 | grep 'OK  \['
-  luajit tools/check_stage.lua $f 3600 | grep 'OK  \['
-done   # 同一张卡两次的「对象」差得远 = 漏回收
+luajit tools/check_fields.lua mod/GAME/th20.lua
 ```
 
-### ★ 移植参考卡：**所有长度要按场地比例一起缩**，不能只缩贴图
+`frame`/`render` 里读了、但 `init` 顶层从没赋值的字段，它全列出来（见 §10 扫③）。
 
-`th04` 卡 3 踩过。参考卡场地 640 宽、我们 384 宽，比例 `FAN_K = 0.6`。
-参考卡里扇子最终 scale 是 0.30，我缩成了 `0.30*0.6 = 0.18` —— 但**忘了缩**
-环绕半径（70）、出生半径（50）、撒弹半径（100）。
-结果：扇子缩到 0.18（扇缘只到 r≈65），弹却还从参考卡的 r=100 处冒出来 ——
-**弹根本不在扇子上**，看着像凭空生出来的。
-
-正解是**只留一个比例常数**，所有长度都从它算出来，并且把「扇心 → 扇缘」也写成
-贴图尺寸的函数，而不是魔数：
+**A3b. 自绘钩子的签名是 `frame(self)`，不是 `frame(self, timer)`。**
+`THlib/bullet/bullet.lua:251-259` 调的是 `self.frame_other(self)` / `self.render_other(self)`
+—— **只传一个参数**。写成 `b.frame_other = function(b, t)` 的话 `t` 恒为 `nil`，
+里面任何 `t > w` 都是 `attempt to compare nil with number`，**真机上第一颗弹就崩**。
 
 ```lua
-local FAN_K   = 0.6                       -- 我们场地 / 参考卡场地
-local FAN_SIZE  = 0.30 * FAN_K            -- 参考卡的最终 scale × 比例
-local FAN_REACH = 128 * FAN_SIZE          -- Lfan 半高 256/2 → 扇心到扇缘
-local GOLD_R    = 70 * FAN_K              -- 环绕半径也跟着缩
-local R = L + 0.78 * FAN_REACH            -- 撒弹点：按扇子**当时**的位置和尺寸算
+-- ✗ 崩：t 永远是 nil
+b.frame_other = function(b, t)
+    if t > w then object.SetV(b, v, b.rot, true) end
+end
+-- ✓ 计时读 b.timer（引擎每帧替所有弹 +1）
+b.frame_other = function(b)
+    local t = b.timer
+    if t > w then object.SetV(b, v, b.rot, true) end
+end
 ```
 
-**自检查不出这个** —— 弹的数目、密度、被判定的频率全都不变，
-只有肉眼能看出「弹不是从扇子里出来的」。所以移植完**必须**把参考卡里
-每一个 `New(...)` 的参数逐个对一遍「这一项在我们场地该是多少」。
+原作全都写 `function(self)`：`th07.lua:812`、`th13.lua:671`、`th12.lua:83`。
 
-### ⚠ 不要给原版没有的东西**编生命周期**
+⚠ **`check_stage.lua` 原来从不调 `frame_other`**，所以这一整类错自检一个都抓不到
+（冻结弹不开、路径弹不动，密度读数也跟着全错）。2026-09-16 补上了
+（`step_tasks` 的子弹步进里）。如果你改了自检、把它去掉了，这一类会重新变成盲区。
 
-th04 每张卡的 `before()` 都开一把 boss 身后的舞扇（`fan.png`，品红）。
-我给它加了个 `hold` 参数：撑够 150 帧就淡出。**原版没有这个动作** ——
-`th07.lua:2259` 的 `fan` 是 `while true` 死循环，一直张着到 boss 死亡。
+**A4. `object.smear_add` 读的是 `self.img`，而 `bullet.init` 不设它。**
+`self.img` 是**弹样式自己的 init** 设的（`bulletStyle.lua:67`
+`self.img = img .. int(index)`）。直接 `Class(bullet, …)` + `bullet.init(...)`
+绕过样式 init 的类，`smear_render` 里 `SetImageState(nil, …)` → 崩（th02 的流星）。
 
-更糟的是淡出乘的是 **scale**：
+**A5. 背景类的 `init` 必须先调 `background.init(self, false)`。**
+基类负责设 `self.group = 0` / `self.layer = -700.1`、把 `lstg.tmpvar.bg` 指过来、
+`background.Capture(self)`。漏了 → 背景没有 group/layer → 被画在**自机和 boss 上面**，
+而整屏背景不透明 → **屏幕上只剩背景，自机和 boss 都看不见**（th19 的 `TH19_bg`）。
+
+### B. 会静默失效的（不报错，但东西没了）
+
+**B1. `% N == 偏移` 里的偏移必须 < N。** 否则那个分支永远不成立，
+整层弹幕**无声消失**。改 `GAP` 之类的常数时特别容易踩。
+
+**B2. `sin` / `cos` / `tan` 是角度制。** `THlib/lib/Lapi.lua:110 sin = lstg.sin`，
+引擎的 `legacy/DegreesMath.lua`。想要周期 P 帧就写 `sin(t * 360 / P)`。
+写成弧度的 `sin(t * 0.05)` 周期是 **7200 帧**（等于不动）——
+所有动画都会「冻住」，而且自检以前也查不出来（桩件原来给的是 `math.sin`）。
+
+**B3. 自绘物件 `bound = false` 时必须自己 `RawDel`，而寿命判断不能写在提前 `return` 后面。**
+th04 卡 3 踩过：扇框那 18 把不发弹，`frame` 里写了
 
 ```lua
-local S = 0.6 * self.fade        -- ← 这是缩放，不是透明度
-Render("fan", x, y, 0, self.hscale * S, self.vscale * S)
+if not self.fires then return end        -- ← 提前 return
+… if t > LIFE then … object.RawDel(self) end
 ```
 
-所以每张卡开头都是「张开 → 又缩到 0」，看着像 bug。**要淡出就乘 alpha。**
+于是它们永远走不到自删那一步，每 210 帧泄 18 个对象，一张 60 秒的卡泄 300 多个，
+而且**还在渲染**（`_a` 被卡在满值）—— 屏幕边缘越堆越多。
+**症状：自检里「峰值同屏 对象」随时间线性涨**（修前 900/1800/3600 帧 = 107/184/341，
+修后 42/43/44）。扫描办法见第 10 节。
 
-现在它的寿命就是**整张卡**：`init` 里 `object.Connect(master, self, 0, true)`，
-靠 `system:kill()` 的 `refresh(1)` → `KillServants` 在换卡时收掉。
-（`refresh(1)` 只在 `system:kill()`（换卡/击破）里调，卡进行中不会，
-所以挂上去是安全的。**唯一不能挂的是「必须比卡活得久」的东西**。）
+**B4. 装饰层「每 N 帧往同一批坐标撒 v=0 的弹」。** 那些弹永远不离场，
+弹数线性涨（`th19` 18 处，峰值弹数 24692）。**整体在动、单体不动的图形要自绘。**
 
-### ★ 拖影（`object.smear_*`）：参考卡的小扇**都有**，别漏
-
-`mod/GAME/th08.lua:1777` 的 `Little_Fan` 基类给三把小扇（绿/金/蓝）都加了残影：
-
-```lua
-frame  = function(self)
-    _object.frame(self)
-    object.smear_add(self, 255)      -- 存一份快照（x, y, rot, hscale, vscale, img）
-    object.smear_frame(self, 13)     -- 每帧衰减 13 → 拖尾约 20 帧，alpha 归零就丢
-end,
-render = function(self)
-    object.smear_render(self, "mul+add", { 150, 150, 150 })   -- 拖影画在底下
-    _object.render(self)
-end,
-```
-
-- ⚠ **`smear_add` 会读 `self.img`** —— 自己写的类必须先把贴图名存下来
-  （`self.img = self.__img`），否则真机上 `SetImageState(nil, ...)` 当场崩。
-- ⚠ 自检桩件里的 `smear_*` 原来是**空函数**，所以这类错全查不出来；
-  已经照 `THlib/lib/LObjectEvents.lua:221` 补成真实现（带 nil 检查），
-  并在报告里加了「拖影」峰值 —— 忘了 `smear_frame` 衰减的话它会无限涨。
-- 少了这一层，**旋转的一圈蓝扇就是 n 个孤立的扇子**，而不是一道弧。
-
-### ⚠ 预警线要够粗，`alpha` 不能为负
-
-th04 卡 4 的限位框「根本看不见」，是三个错叠在一起：
-
-```lua
-SetImageState("white", "mul+add", 100 * (0.4 + 0.6 * sin(t * 9)), ...)  -- ①一半时间为负
-Render("white", 0, hh, 0, hw / 8, 0.06)                                 -- ②不到 1 px 宽
-```
-
-- ① `Render(img, x, y, rot, hscale, vscale)` 的后两个是**缩放倍数**，不是像素。
-  `white` 是 16×16，`0.06` → **0.96 px**，屏幕上看不见。要按像素给粗细就用
-  **`RenderRect(img, x1, x2, y1, y2)`** 画实心带
-  （`THlib/misc/misc.lua:338 misc.RenderOutLine` 就是这么写边框的）。
-- ② 亮度写成 `A * (0.4 + 0.6*sin(...))`，`sin` 有一半时间为负 → **alpha 是负的**，
-  那半圈什么都不画。脉冲要写成 `0.55 + 0.45*sin(...)` 这种**恒正**的形式。
-- ③ 预警还要**和「当前生效的框」同时画、用不同颜色**，玩家才能一眼分出
-  「现在能站到哪」和「马上要收到哪」。
-
-### ★★ 把「协程」翻译成「帧计数器」时，**嵌套 `task.New` 的周期是外层的周期**
-
-`th07.lua:2279` 的 `fan` 类是这样写闪光的：
+**B5. 嵌套 `task.New` 的周期是外层的周期。** 把协程翻成帧计数器时：
 
 ```lua
 while true do
-    task.New(self, function()          -- ← 内层：只活 40 帧
-        for i = 1, 10 do  self._a = sin(i * 9); task.Wait() end   -- 10 帧涨到 1
-        for i = 29, 0, -1 do self._a = sin(i * 3); task.Wait() end -- 30 帧落回 0
-    end)
-    for i = 1, 60 do self._s = 1 + 0.35 * sin(i * 1.5); task.Wait() end  -- 60 帧
-    task.Wait(60)                                                       -- 60 帧
+    task.New(self, function() … 只活 40 帧 … end)   -- ← 起完就返回，不阻塞
+    for i = 1, 60 do … task.Wait() end
+    task.Wait(60)
 end
 ```
 
-**`task.New` 不阻塞** —— 外层立刻继续往下跑，60+60 = **120 帧**之后才回到循环开头、
-再起一个新的内层。所以内层虽然只活 40 帧，**它的触发周期是 120 帧**：
+内层虽然只活 40 帧，**触发周期是 120 帧（外层的周期）**。
+翻成 `v = u % 40` 就变成频率高 3 倍。两层各取自己的模。
 
-- 亮：40 帧（10 涨 + 30 落）
-- 暗：**80 帧**
-- 周期：**120 帧**
+### C. 会难看的 / 会看错的
 
-我把它翻译成帧计数器时写成 `local v = u % 40` —— 于是变成每 40 帧连闪三下，
-**频率高了 3 倍**。正确写法是两层各自取自己的模，而且要有「什么都不闪」的那段：
+**C1. `rot` 是标准数学角。** 证据：`LObjectEvents.lua:205` 的 `SetRelPos` 用的是标准
+旋转矩阵 `x' = x·cos(r) − y·sin(r)`。贴图在 `rot = 0` 时朝 **+y（上）**。
+判断一张贴图 rot=0 朝哪：量它每行的不透明像素跨度（上宽下窄 = 开口朝上）。
+`Lfan2` 是「上宽下窄」（160 → 487 → 279 px），所以开口在图片顶部。
+⚠ **「画出来的朝向」和「弹飞出去的方向」是两个数**，别混用同一个变量。
 
-```lua
-local v = u % 120
-if v < 10 then      self._a = sin((v + 1) * 9)     -- 10 帧涨到 1
-elseif v < 40 then  self._a = sin((39 - v) * 3)    -- 30 帧落回 0
-else                self._a = 0                    -- 剩下 80 帧真的不闪
-end
-```
+**C2. 移植参考卡时，所有长度要按场地比例一起缩。**
+我们场地 384 宽、原作 640 宽 → `K = 0.6`。只缩贴图、不缩半径 =
+「扇子缩到 0.18、弹却还从原作的 r=100 冒出来」—— 弹根本不在扇子上。
+**只留一个比例常数，所有长度从它算。**
 
-**同一个 `while` 里两个 `task.New` 要分别取模**（这里是 120 和 120 恰好同相，
-但如果内层是「永远循环」的，它的周期就是它自己那个 `while` 的长度）。
-`th04` 的绿扇还踩过同类的第二处：参考卡的「摆动」是 `init` 里**另一个**
-`task.New`，和张开**同时**从第 1 帧跑，不是张开完才开始 ——
-写成 `sin((t - FAN_OPEN) * 1.5)` 相位就晚了 24 帧。
+**C3. 不要给原作没有的东西编生命周期。** th04 的舞扇我加过 `hold` 淡出，
+而且淡出乘的是 **scale 不是 alpha** → 每张卡开头「张开 → 又缩到 0」。
+原作 `th07.lua:2259` 的 `fan` 是 `while true` 死循环，**一直张着到 boss 死亡**。
 
-**这类错自检一个数字都不会变**（闪光和摆动不带判定）。唯一的办法是
-**把原协程按原结构模拟一遍，和自己的帧计数器逐帧对比**：
+**C4. 预警线要够粗，alpha 不能为负。**
+`Render(img, x, y, rot, hscale, vscale)` 的后两个是**缩放倍数**不是像素 ——
+`white` 是 16×16，写 `0.06` → 不到 1 px，看不见。按像素给粗细用
+`RenderRect(img, x1, x2, y1, y2)`。
+亮度写成 `A * (0.4 + 0.6*sin(...))` 时 `sin` 有一半时间为负 → 那半圈什么都不画。
+用**恒正**的形式（`0.55 + 0.45*sin(...)`）。
 
-```python
-# 按参考卡的 task.New 嵌套写一遍，再按自己的公式写一遍，逐帧 diff
-bad = [t for t in range(720) if abs(ref_a[t] - my_a[t]) > 1e-9]
-```
+**C5. 拖影会让边缘亮很多。** `object.smear_add` 每帧存一份快照、
+`smear_frame(dealpha)` 衰减（13 → 拖尾约 20 帧）、`smear_render` 画在底下。
+**三个都要写**，漏 `smear_frame` 就是一直变亮。
+密度要按**我们场地 384 宽**重算，不是照抄原作的 640。
 
 ---
 
-## 10. 弹幕设计规范（从原版 th06–th185 反推）
+## 10. 验证：跑不起游戏时怎么做
 
-把原版 **318 张符卡**量化之后归纳出来的「怎么写一张卡」。写新卡时逐条对照 10.9 的清单。
-
-### 10.1 硬数字底座
-
-先记住这几个数，否则算不出「这个缝够不够躲」：
-
-| 量 | 值 | 出处 |
-|---|---|---|
-| 玩家速度（低封 / 高封） | **4 / 2 px/帧**（240 / 120 px/s） | `THlib/player/player_system.lua:286-287` |
-| 普通场地 | x ∈ [-192,192]，y ∈ [-224,224]（384×448） | `THlib/lib/Lscreen.lua:206` |
-| 大屏（`ToBigScreen`） | x ∈ [-320,320]，y ∈ [-240,240]（640×480） | `Lscreen.lua:210-223` |
-| 子弹回收边界 | ±224 / ±256（比可视区各外扩 32） | `Lscreen.lua:90` |
-| 锁死自机输入 | `player.lock = true`（`card:del` 记得清） | `player_system.lua:294,364` |
-| 改写自机速度 | `player.hspeed / lspeed`（`del` 里必须还原） | th09:2155 / 2206 |
-
-**移动预算表**——判断容错时间够不够的唯一尺子：
-
-```
-全屏横穿 384px → 96 帧 (1.6s)      半屏 192px → 48 帧 (0.8s)
-70px 通道      → 17.5 帧           32px 缺口  → 8 帧
+```bash
+luajit tools/check_stage.lua mod/GAME/th20.lua        # 单关：注册检查 + 逐卡逐帧模拟
+luajit tools/check_stage.lua mod/GAME/th20.lua 1800 --threat   # 加密度 / 难度分析
+luajit tools/check_stage.lua --all                    # 全项目：按引擎顺序载入检查
 ```
 
-> **设计律**：`转换容错时间 ≥ 玩家要移动的距离 ÷ 4`，再留 2~3 倍余量。
-> 推论：容错时间 < 96 帧的卡**不能**要求玩家跨全屏换位，只能要求就地微调。
+用 `luajit`（5.1 语义），**别用 homebrew 的 `luac`**（那是 5.4，会把 5.1 风格的
+代码报成假错）。环境变量：`STAGE_PROBE`（打每卡造了什么）、`STAGE_DEBUG`、
+`STAGE_DUMP=<帧>`。
 
-> **⚠ 回收边界陷阱（写限位墙时必踩）**：引擎回收用的 `boundl/r = ±224`、`boundb/t = ±256`，
-> **比可视区（±192 / ±224）各外扩 32**。任何从这之外生成、又没把 `bound` 关掉的东西，
-> 会在**生成的那一帧**就被收掉。
-> 典型翻车：想围一圈而把墙画在「以 boss 为圆心、半径 260」的圆上 —— 超出边界的
-> 那一半当场消失，缺口逻辑全废，而同屏弹数看起来还很"轻"，看不出是坏了。
-> 围场要用**四边内向墙**（半宽 ≤ 216、半高 ≤ 250，都在边界内侧），别用圆环：
-> 场地 384×448 是竖长的，圆环本来就围不住它。
+### 它查什么
 
-### 10.2 卡片参数惯例
+- 注册：`boss.Define` / `boss.card.add` 的参数、`addAutoSPPoint` 阈值有没有超出本卡血量
+- 运行：逐卡跑 N 帧，看有没有 Lua 报错
+- **`--threat`**：机器人模拟自机，报 `★被打频率`、`60px 内弹数`、`★安全角度`、
+  `★分区域`、`★难度场`、`死局 N 帧 (%)`
+- **贴图名**：对象上设 `img` 时对资源池校验（见 A2）
+- **`--all`** 里还有一条静态检查：`*_bg.lua` 必须能找到 `background.init(`
 
-| 项 | 惯例 |
-|---|---|
-| `t1` 无敌 | **几乎恒为 1 秒**（218/318）。`t1=60` 的 29 张是全程无敌的**纯演出卡** |
-| `t2` 防御 | `1`（最常见）或 `2`（约 20 张）；`t2>t1` = 多给 1 秒伤害渐入 |
-| `t3` 时限 | **60 秒**绝对主流（176 张），其次 80 / 45 / 70 / 30 |
-| `hp` | 中位 **750**；道中 400~550，标准符卡 700~900，多 boss 公共血 1200~1500 |
-| 最常用组合 | `(1,1,60)`×75 · `(1,2,60)`×33 · `(1,1,80)`×30 · `(60,60,60)`×29 · `(1,1,45)`×18 |
-| 耐久卡 `t1==t3` | 57 张，伤害恒 0；结束靠脚本自己 `self.hp = 0` |
+### 它查不出来（只能进游戏看）
 
-自制关卡（th00–th03）的 `hp 1400~2000` 属于偏高一档，新卡建议回到 700~900。
+**贴图名以外的观感问题、手感、演出效果、引擎侧的被弹/擦弹/结算。**
+桩件是简化的：`Render` / `SetImageState` 是空函数，
+所以「画出来长什么样」一概不验证。
 
-### 10.3 展开：层数与时间
+### 四个必做的扫描
 
-- **并行层数**：一张卡的 `init` 里通常有 **2~4 个独立 `task.New` 循环**（中位 3、众数 2）。
-  这就是「双展开」的基本形态——**限位一层、实弹一层**，两层只通过 boss 坐标隐式耦合。
-- **展开时间**：`init` 第一个 `task.Wait` 通常是 **60 帧（1 秒）**（149/313）；长演出卡 120~180 帧。
-- **`before()` 只做进场走位**：297 处 `task.MoveTo`，43 处 `show_aura`，15 处 `self.colli = false`。
+**① 泄漏扫描**（对象数随时间线性涨 = 漏回收）：
 
-### 10.4 限位（把玩家关起来）的五个强度层级
-
-| 级 | 手法 | 项目里的例子 |
-|---|---|---|
-| 1 硬改坐标 | `player.x/y` 直接赋值或累加 | th095:657（切向甩动）、th125:449（下压推挤）、th08-boss_lastword:1552（夹框） |
-| 2 改自机属性 | 速度腰斩 / `player.lock` | th09:2155（毒区 `hspeed 4→2`）、th14:267（冰冻锁输入） |
-| 3 实体墙 | 激光列 / 幕布 / 扫描线铺满全屏 | th10:445（13 列激光）、th125:426（9 道下压幕布）、th125:319（16px 网格扫描） |
-| 4 轨道定义判定区 | 只在某个圆环/区域里才有 `colli` | th12:1453（10 个旋转圆环）、th13:165（8px 厚反射板） |
-| 5 借 boss 当基准 | 用 boss（或另一个 boss）的坐标当分界线 | th128:176（以另一个 boss 的 y 为明暗分界） |
-
-**限位墙的标准做法 = 高密度环 + 挖掉一个扇区。** 原版里 `AngleIterator(a, 360)` 出现 **89 次**——
-那是「铺满一整圈再删掉一格」的写法；也可以直接少扫一段弧（th11_2「井网」86 颗只扫 324°，留 36°）。
-安全扇区再按固定节拍搬家（见下表）。
-
-#### ⚠ 墙**永远来不及躲**，除非挖洞 / 压速 / 画预警
-
-回收边界是 ±224/±256，自机的活动边界是 ±192/±224 —— **只差 32 px**。
-墙贴着回收边界生成（再往外会被引擎当帧回收），所以墙生成时离自机**最近就是 32 px**。
-按「出膛到命中要 20 帧」算：
-
-| 想达到 | 条件 |
-|---|---|
-| 靠把墙推远 | **不可能**。推过 ±224/±256 就被回收，最多再多 32 px |
-| 靠压速度 | 墙速 **≤ 1.2 px/帧**（24 ÷ 20）。⚠ 是 24 不是 32：墙还得分出余量给「以场地中心为心」摆正 |
-| 靠挖洞 | 发射前判 `Dist(点, 自机) > 22×墙速`，不满足就**这一格不放弹** |
-| 靠预警 | 开火前几十帧先把墙**画出来**（只有真正可见才算） |
-
-**不满足任何一条 = 自机贴着边站就是必中。** 自检脚本会报成 `⚠ 贴脸狙`。
-
-th04 的墙走过两条弯路，都记在这儿：① 卡 10 的墙是 3.4 px/帧、`render` 是空函数，
-靠 `safe_spawn` 挖洞遮丑；② 更早的版本里 `wall_point` 每条边只画了**一半**
-（系数写成 4 而不是 8），四条边彼此不接、四个角全开 —— 墙根本没闭合，
-限位从头到尾形同虚设。**两条都已改成「压速度到 1.15 + 以场地中心为心摆正」。**
-
-### 10.5 限位流程与转换容错时间（实测量）
-
-按**限位强度**分组。每一行都核过源码，不是估的。
-
-**A. 夹住 / 锁住自机（最硬，但全项目只有个位数）**
-
-| 卡 | 出处 | 几何 | 容错 |
-|---|---|---|---|
-| 蝴蝶梦之舞 | `th08-boss_lastword.lua:1549-1553` | 方框 320×240 → 280×190，**只有纵向真的夹住**（横向 280 > 可视区 192） | 90 帧（收缩期） |
-| 死符「无寿之栏」(th04) | `mod/GAME/th04.lua` | 三档 192/164/136（都 < 192，才夹得住） | 300 帧 |
-| 冰冻 | `th14.lua:267` | `player.lock = true` 直接锁输入 | 50 帧 |
-| 毒风「夜中飘毒香」 | `th09.lua:2146-2159` | 毒弹周围 70 px 内 `hspeed 4→2` | 20 帧（狂暴档） |
-
-**B. 实体墙 / 幕布**
-
-| 卡 | 出处 | 几何 | **容错** |
-|---|---|---|---|
-| th11_2 井网「满布蛛网之天」 | `th11_2.lua:1184-1189` | 向心辐条墙，10 个 36° 扇区 | **70 帧**（缺口每 70 帧跳一格） |
-| th10 「御柱祭-寒水豪血」 | `th10.lua:1339-1348, 1377-1383` | 13 根激光列 `x=i*32-192`，一根 `colli=false` | 360 帧（前期）/ 100 帧（后期） |
-| th125 「乾坤…大地啊」 | `th125.lua:1026-1032, 426-451` | 9 道幕布间距 70px，各吃 ±34px → 净空 **2 px** | 190 帧（静止期），之后只能跟着走 |
-| th13 「合力「彩虹音爆」」 | `th13.lua:716-723` | 616 颗墙从屏幕边缘推进 | 352 帧 |
-| th165「要高考了姐妹们-Special」 | `th165.lua:487-548` | T 形墙分 4 条 96 px 走廊 | **500 帧**（题目型，考读题不考手速） |
-| th17 石符「沉沦的垒石」 | `th17.lua:292-349` | 一期 9 块间距 45px；二期 7 块 60px | 160 帧 |
-| th125 「鬼符「鬼气上身」」 | `th125.lua:876-879, 319-345` | 两块 servant 以 16 px/帧扫过全高 | **30 帧**（全项目最紧） |
-
-**C. 轨道 / 判定区（软限位，可读性最好）**
-
-| 卡 | 出处 | 几何 | 容错 |
-|---|---|---|---|
-| th12 「血バサミ女の観覧车」 | `th12.lua:1410-1420, 1448-1466` | 4+6 个旋转圆环，**只在环内才有 `colli`** | 圆环 0.6 / −0.3 °/帧；对齐线 720 帧一圈 |
-| th16 里符「Comfort Zone」 | `th16.lua:1452, 1498` | 跟随自机的 32 / 48 px **免伤泡** | 圆阵间隔 540→200 帧递减 |
-| th185 「现代流行的线上支付」 | `th185.lua:499-585` | 屏幕中心 ±57 px 方框 | **300 帧内必须停在框里**（禁止移动） |
-| 「境界の彼方」 | `th08-boss_lastword.lua:1653-1764` | **镜像判定**：自机同时有两个判定体 | 相位每 300~400 帧跳变 |
-
-**D. 推力 / 场（改的是「你能往哪走」，不是「哪能站」）**
-
-| 卡 | 出处 | 手法 | 容错 |
-|---|---|---|---|
-| th095 「热浪「地狱之轮回」」 | `th095.lua:656-662` | 切向速度 0.8·sin，把自机绕着 boss 甩 | 300 帧反向一次，反转瞬间是自由窗口 |
-| th14_2「弗拉维的盛大演出」 | `th14_2.lua:1017-1021` | 以玩家为心、半径 199→80 的收缩环 | 120 帧（1 px/帧） |
-| th07 亡灵剑「花诞日」 | `th07.lua:802-823` | 光栅抬地板（夹 `player.y`） | 250 帧抬升 76 px |
-| th143 逆转「天地有用的遮蔽布」 | `th143.lua:393-399` | `misc.RotateWorld` 整个世界旋转 | 纯视觉限位，持续跟随 |
-
-**E. 无固定缺口的自由场地**
-
-| 卡 | 出处 | 几何 | 容错 |
-|---|---|---|---|
-| 圣灵「樱花结界」sc2 | `th07.lua:1129-1252` | 8 根紫色激光的八边形笼，R = 150~260 | 自转 0.3°/帧；呼吸半周期 6.28 帧 |
-| 灵神「毘沙门之诞生」 | `th07.lua:831-935` | 半场巨弹扇，左右换边 | 120 帧 |
-| 「蝴蝶梦之舞」扇幕 | `th08-boss_lastword.lua:1598-1613` | 32 把扇贴四条边 | 连续型 |
-
-**读法**：容错时间从 **30 帧到 500 帧**跨了一个数量级，但**除以「要移动的距离 ÷ 4」之后，
-全都落在 2~4 倍**。低于 100 帧的一律是「就地微调」（th125 的扫线、th09 的减速泡），
-高于 300 帧的一律是「跨屏换位」或「不许动」（th165 的走廊、th185 的扫描框）。
-
-### 10.6 限位区内的弹幕：速度与操作频率
-
-**弹速**（`NewSimpleBullet` 的第 5 个参数，实测中位数）：
-
-| 弹型 | 中位 v | 范围 |
-|---|---|---|
-| `ball_mid` / `ball_big` / `square` / `grain_a` | **2.0** | 0~8 |
-| `knife` | 2.5 | 0.6~8 |
-| `ball_huge` | 3.0 | 0.1~5 |
-| `ball_light` / `ball_mid_c` | 1.0~1.8 | 0~6 |
-
-**主区间 1.0~3.0**；4~5 只给收尾或单发噱头；≥6 的必须配硬限位，否则是纯运气。
-
-**环的路数**（实测常用值）：`12 / 15 / 18 / 20 / 24 / 30 / 36 / 40`；
-「墙」则用 120~360 路再挖缺口。
-
-**操作频率**（= 相邻两波之间玩家必须做一次新决策的间隔）：
-
-| 间隔 | 体感 |
-|---|---|
-| 2~6 帧 | 纯压迫，只适合做背景帘幕 |
-| 10~20 帧 | 紧张（th165 的 OD 卡 120 帧走廊 / 狂暴档） |
-| **20~100 帧** | **舒适区**，绝大多数卡的实弹层都在这里 |
-| 100~360 帧 | 只用来做「限位换位」的窗口 |
-
-> **⚠ 这一档最容易写坏**：把「背景帘幕」的间隔（2~6 帧）当成**主弹幕**用，
-> 结果就是持续几十秒的噪声微操 —— 玩家读不出轨迹、没有决策点，只有纯消耗。
-> 规则：**主弹幕的间隔不要低于 20 帧**；帘幕类如果要发得很密，就让它无判定
-> （`GROUP.GHOST` / `colli = false`）当纯演出。
-> 另外别给花瓣之类的东西加随机自转（`omiga`）——自转会毁掉轨迹的可读性。
-
-**子弹样式频次**（318 张卡合计）：`ball_mid` 113 · `ball_big` 102 · `grain_a` 89 · `square` 58 ·
-`ball_huge` 55 · `grain_b` 55 · `ball_mid_c` 47 · `ball_light` 45 · `ellipse` 36 · `arrow_*` 66。
-即：**光玉 + 米弹打底，`knife`/`butterfly`/`arrow_*` 这类有方向感的留给大招收尾**。
-
-### 10.7 预警层（硬性惯例，别省）
-
-限位生效前**一定**有一段可见预告，实测 **90~360 帧**：
-
-- th125：9 颗 `ball_light` 逐帧描出每道幕布的落点（90 帧，`th125.lua:1027-1032`）
-- th10：8 条弯折激光先指向安全列，181 帧后 13 列才落下（`th10.lua:1339,1377`）
-- th13：彩虹墙自己铺 352 帧，铺的过程就是预警
-- th13 天平：`RenderRect` 在屏幕上下各画 84px 高的红带，标出「秤砣会荡到这里」
-
-**做法**：把限位的第一层单独做成「只画不判」（`colli = false` 或纯 `Render`），持续 60~190 帧，
-再让它变成实体。
-
-### 10.8 光效词汇表
-
-| 原语 | 用量 | 用在哪 |
-|---|---|---|
-| `Newcharge_in(x, y, r, g, b)` | **239** | 每轮展开前的聚气；几乎每张卡都有 |
-| `boss.cast(self, 帧数)` | **199** | 符卡宣言姿态；展开点、阶段切换点 |
-| `Newcharge_out(x, y, r, g, b)` | **149** | 展开完成的爆闪 |
-| `_object.set_color(self, "", a, r, g, b)` | 79 | 灰化 = 无敌；染色 = 状态切换（th14 冰冻把**自机**染成天蓝） |
-| `boss.show_aura(self, bool)` | 78 | 开关 boss 光环 |
-| `NewText(...)` | 43 | 弹幕解说文字（th08 lastword 大量用） |
-| `ToBigScreen(帧数)` | 21 | 推镜到 640×480；**只在大招/终符用** |
-| `New(WhiteScreen, ...)` | 17 | 全屏白闪，配瞬移或阶段切换 |
-| `bullet_cleaner(x, y, r, t1, t2)` | 7 | 清弹器，阶段切换时扫场 |
-
-**惯例三件套**：`before()` 走位 → `init` 先 `Wait(60)` 再 `Newcharge_in` 起手 →
-每个展开点 `boss.cast` + `Newcharge_out`。**灰化 + `self.colli = false` = 「这段是演出，别打」的通用信号。**
-
-### 10.10 视觉层：覆盖面积、配色、多展开
-
-前九节讲的是「怎么不打死玩家」。这一节讲**另一件同样重要的事：屏幕不能空**。
-一张卡即使威胁层很合理，只要屏幕上大片是空的，看起来就是「没做完」。
-
-**核心认识：屏幕上绝大部分子弹不需要玩家处理。**
-只有**自机周围那一小圈**才要决策；其余的是「氛围」。所以设计上要**故意**去铺那些
-不构成威胁的弹，而不是把每发弹都做成要躲的。
-
-| 类别 | 怎么造 | 是否需要玩家处理 |
-|---|---|---|
-| **装饰弹** | 不朝自机的：绕 boss 公转的环、向外扩散的星、横着飘的花瓣 | 否 |
-| **对称弹** | 旋转对称的整圈（卡 5/9 那种反向双环）、镜像双发 | 否（有缝就能活） |
-| **空弹链** | 拉得很长的稀疏链、沿固定几何轨迹走的点列 | 否（只要不撞上去） |
-| **威胁弹** | 朝自机的扇形 / 从缺口挤进来的 / 限位压过来的 | **是** |
-
-参考：**灵神「毘沙门之诞生」（`mod/GAME/th07.lua:831`）**——它的屏幕几乎永远是满的，
-但真正需要处理的是「朝自机那几路」。其余是相位漂移的轮盘、自旋轮、樱花雨，
-**它们负责把屏幕填好看**。
-
-**覆盖面积**：屏幕内有子弹的区域要尽量多。经验目标——
-**任意时刻，屏幕上「有弹经过」的面积占比 ≥ 一半**，而且最好**分布均匀**（别只有中间一团）。
-实现手段：
-
-- 大弹（`ball_big` / `ball_huge6` / `moon` 贴图）走慢速外扩，占面积最划算
-- 环 / 星 / 螺旋这类「几何图形」弹幕天生铺得开
-- 装饰层用 **0.4~1.2 px/帧** 的慢速，让它在屏幕上「停留」得久
-
-**配色**：**明亮 + 对比**。
-- 同一张卡里主色只用一个色系，再拿**白心 / 亮边**去提对比（`_r,_g,_b = 255, …, …` 把主色拉亮）
-- 贴图自带的高光不够亮时，用 `_blend = "mul+add"` 把弹叠加成发光
-- 深色底上放亮弹、亮色底上放深弹；**别全用同一档灰度的紫**
-- 装饰层可以低 alpha（120~180），威胁层要满 alpha —— 让玩家**一眼分出哪层是要躲的**
-
-**多展开**：**不限双展开**，可以是三展开、四展开。原则只有一条：
-
-> **限位 + 威胁** 必须有；**装饰**可以有很多层。
-
-典型结构：
-
-```
-限位层   （华丽、大面积、可旋转/张缩；玩家被它框住）
-  ├─ 装饰A（不朝自机的大弹环，慢速外扩）
-  ├─ 装饰B（旋转对称的整圈，反向双旋）
-  └─ 装饰C（横着飘的花瓣/星）
-威胁层   （朝自机 / 从缺口进来 / 限位压过来的）
+```bash
+for f in 3600 7200; do luajit tools/check_stage.lua mod/GAME/th20.lua $f; done
+# 同一张卡两次的「对象 / 弹」峰值应当一致；差得远就是漏
 ```
 
-**限位可以尽可能华丽**——限位本来就是「让你看见并接受」的东西，
-做成花墙、结界、扇幕都比做成一条朴素的线好。旋转对称（卡 5 的六芒星、卡 9 的反向双六边）
-是最省事又最好看的做法：**一个几何形状反向自转 + 反相张缩**，屏幕上立刻就有大面积的图案。
+⚠ 关卡是 60 秒的，1800 帧（30 秒）还在爬升期，**要拿 3600 和 7200 比**。
 
-#### ⚠ 别用 `safe_spawn` 挖洞；「保护」只能是**改整层**，不能是**改一颗**
+**② 密度对表 —— 必须跑多种子。** 单跑一遍的数字**不可信**：`ran` 的相位一变，
+「死局」能从 0.1% 跳到 12%（`th20` 实测）。自检现在**每张卡独立定种**
+（`seed_rng(SEED_BASE + idx * 7919)`，见 `step_tasks` 上方），所以换 `STAGE_SEED`
+就能量同一张卡的方差：
 
-「发射点离自机太近 → 这一格不放弹」这种写法是**下策**：
-它在墙上开了个洞，玩家会看到一条墙莫名其妙地缺了一块，而且限位被自己废掉一半。
+```bash
+for sd in 20260916 11111 98765 55555 31415 777; do
+    STAGE_SEED=$sd STAGE_PROBE=1 luajit tools/check_stage.lua mod/GAME/th20.lua 1200 --threat
+done
+# 取**最坏**那次的「死局%」和「同屏峰弹」做判断
+```
 
-**正解只有两条，两条都是改「这一层怎么发」：**
+判据：`死局 > 3%`（最坏种子）要改；`60px 内平均 < 5` 说明卡是空的；
+**还要看 `峰值同屏 弹`** —— 用户说的「屏幕上没几颗子弹」量的是这个，
+不是 `60px 内平均`（那一栏只统计自机脚边，自机站在远处时恒为 0）。
 
-1. **改展开**——自机贴在发射点上时，把这一轮从「朝自机的扇形」换成**整圈均匀**
-   （`th04.lua` 的 `near_player`：卡 1 / 卡 2 / 卡 9 三处）。弹数一发不少，
-   只是不再对着自机扎 —— 这是**整层换形状**，不是删弹、也不是挪弹。
-2. **改弹速**——整层的速度压到 ≤ 距离/20。
-   注意：**贴着 ±224/±256 回收边界生成的墙，离自机最少只有 32 px，
-   所以墙速必须 ≤ 1.6 px/帧**；压不下去就换形式。
+**③ 字段审计**（`nil` 和数字比较 / 运算这一类当场崩）：
 
-**⚠ 曾经有过的第三条「把这一颗挪到对面」（`th04.lua` 的 `mirror_spawn`），已全部删除。**
-它看着很聪明（六边形、六条臂都是对径的，挪过去「图案没破」），实际两头不讨好：
+```bash
+luajit tools/check_fields.lua mod/GAME/th20.lua      # 单关
+luajit tools/check_fields.lua $(ls mod/GAME/th*.lua) # 全项目
+```
 
-- **图案反而破了**：对面那个位置**本来就有自己的一颗**，挪过去就是**局部加倍**。
-  玩家看到的是一条边/一条臂突然变粗、自己站的这条突然缺口 ——
-  而那条边**就是限位器**，等于限位器在自己身上开了个洞。
-- **根本挡不住贴脸**：阈值是 `20 × v`，和同一层里相邻两颗的间隔是一个量级，
-  一次只挪得动一两颗。实测删掉它前后，卡 5 是 0.8→1.0、卡 9 是 1.3→1.2 ——
-  **几乎没有变化**，说明它一点保护作用都没有，纯粹在破坏图案。
+`check_stage.lua` **测不出这一类**：桩件太宽容，而且只有真走到那一行才会炸。
+`check_fields.lua` 静态地找「`frame`/`render` 里读了、但 `init` 顶层从没赋值」
+的字段 —— 这类字段在真机上第一帧就是 `nil`。它认三种守卫：
+`self.X or 默认值`、`if self.X then`、`self.X and`，也认**同一函数体内先赋值后使用**。
+（所以守卫要**直接**写在 `self.X` 上：`local p = self.X; if not p then` 人看得懂，
+审计器看不懂 —— 写成 `if not self.X then return end; local p = self.X`。）
 
-限位器「涨到最大才吐弹」**本身就是预警**，玩家看得见它在涨。站在墙上挨打是该躲的，
-不是该被系统挪开的。**先把预警和节奏做对，再谈难度。**
-
-#### ★ 移植参考卡：**数量要按占空比重算，不要照抄**
-
-`th04` 卡 3 的外圈绿扇照抄了参考卡的「上下各 9 把、左右各 7 列」（`Little_Fan_Green`），
-结果把整个屏幕边缘糊成一条白带。原因不是数量，是**密度**：
-
-| | 场地宽 | 扇子宽 | 摆几把 | 间距 | 重叠 |
-|---|---|---|---|---|---|
-| 参考卡 | 640 | 150 px | 9 | 80 px | 1.9× |
-| 我们（照抄数量） | 384 | 90 px | 9 | 48 px | 1.9× |
-
-重叠倍数一模一样，但**我们的场地只有 384 宽** —— 同样的重叠倍数摊在更窄的边上，
-外加 20 帧的拖影（每把扇子多画 20 遍、加算混合），就饱和成一片白。
-
-**取法**：先决定「相邻两把要不要叠」和「往场内探多深」，再倒推数量。
-
-- 往场内探的深度 = 贴图半高 × scale（`128 × 0.18 = 23 px`），两侧加起来 46 px；
-- 上/下：384 px 摆 **5** 把 → 间距 96 px，扇子宽 90 px → 刚好挨着不叠；
-- 左/右：448 px 摆 **4** 把 → 间距 149 px，扇子高 90 px → 中间留缝。
-
-**同时**：绿扇（不位移的那一圈）**不加拖影**。参考卡的 `Little_Fan` 基类给三把都加了，
-但它一场地 640 宽、扇子 150 px；我们扇子只有 90 px 还不位移，
-拖影只是一圈旋转模糊 —— 纯加亮度，读不出「动」，却让边缘亮一倍。
-
-> **行为也不一定要一样。** 参考卡的扇子是参考卡场地的答案；
-> 照抄「几把、多大、多快、闪多密」都是把别人的答案抄到自己卷子上。
-
-#### ⚠ 子弹不许「突然消失」
-
-`object.RawDel(弹)` 会让子弹在玩家眼皮底下凭空不见——那是明显的 bug 感。
-子弹离场只有三种合法方式：
-
-| 方式 | 怎么做 |
-|---|---|
-| **飞出回收边界** | 最自然。`bound = true` 的弹自己就收了（`NewSimpleBullet` 默认如此） |
-| **淡出** | 自己维护 `_a`，`_a = _a - 6` 递减到 0 再 `RawDel` |
-| **转化为下一层** | 撞到什么 / 到某个位置时变成别的弹（落花炸开成刀就是这种） |
-
-自绘对象（`bound = false` 的 `Class(object, …)`）**必须**走②或③，不能到点了直接 `RawDel`。
-自检里「卡结束后再跑 180 帧还在造东西」查的是收尾干净，**这条得靠写的时候自觉**。
-
-
-### 10.9 写卡自检清单
-
-写一张新卡时逐条过：
-
-1. 参数是 `(1,1,60)` 档吗？hp 在 700~900 吗？（演出卡才用 `(60,60,60)`）
-2. `init` 里有 **2~4 个并行循环**吗？其中至少一层是限位、一层是实弹吗？
-3. 限位用的是五级里的哪一级？**为什么不用更轻的那一级？**
-4. **转换容错时间**是多少帧？它 ≥ 「要移动的距离 ÷ 4」×2 吗？
-5. 窄缝有 **32 px** 以上吗？没有的话玩家凭什么过去？
-6. 限位生效前有 **60~190 帧的可见预警**吗？
-7. 实弹速度在 **1.0~3.0** 吗？操作频率落在 **20~100 帧**吗？
-8. 光效三件套齐了吗？阶段变化有没有用灰化/染色说清楚？
-9. 用 `luajit tools/check_stage.lua` 跑过吗？再跑一次 `--threat`：
-   **「被打频率」在 0.3~2.5 次/秒吗（终符可到 4）？「强制位移」峰值没超过 10 px/帧吗？**
-   **「贴脸狙」是 0 吗？**（> 0 说明 boss 站位压进了自机活动带，自机狙来不及躲）
-   难度曲线对吗（第一张别最难，终符最高）？
-9b. 卡里直接改过 `player.x/y` 吗？改了的话 `STAGE_PROBE=1` 看一眼
-   `卡片改了自机坐标 N/M 帧（P%）` —— **P≈0 就是限位够不着人，白写**。
-10. 收尾干净吗？`del` 里把挂上去的对象、改过的 `player` 属性都还原了吗？
-11. **（视觉，§10.10）** 屏幕上大部分区域有弹吗？铺了装饰层（不朝自机 / 对称 / 空弹链）吗？
-    还是只有中间一团？
-12. **配色明亮、有对比吗？** 装饰层和威胁层一眼能分开吗（alpha / 亮边 / 白心）？
-13. **有没有子弹「突然消失」？**（`RawDel` 掉还在屏内的弹）——应该飞出边界、淡出、或转化。
-14. **有没有用 `safe_spawn` 挖洞、或者 `mirror_spawn` 那种「把这一颗挪走」的补丁？**
-    删掉，改成**整层换形状**（自机贴脸就把扇形换成整圈）或**压弹速**（墙 ≤ 1.6 px/帧）。
-    「挪一颗」既挡不住贴脸、又在限位器上开洞 —— 实测删掉前后难度几乎不变。
-15. **（贴图朝向，§9）** 用了带 `rot` 的贴图（扇、蝶、刀…）吗？
-    先量一次贴图的「宽端在哪边」，据此核对 `rot`；
-    **「画出来的朝向」和「弹飞出去的方向」是两个数**，别混用同一个变量。
-    演出物件要不要挂到 boss 身上看寿命：**整张卡**的用 `object.Connect(con_death)`；
-    **要活得比卡久**的不要挂。
-16. **（移植，§9）** 抄参考卡的那一段，**每一个长度**都按场地比例缩了吗？
-    把参考卡的 `New(...)` 参数**逐个列出来**，一个个交代「这一项在我们场地是多少」。
-    `rot` 的贴图、拖影、预警线这些自检查不出来 —— 必须逐项对，不能只看数字指标。
-17. **（拖影，§9）** 参考卡那个对象有 `smear_add` 吗？有的话我这边也要有，
-    而且自己的类要先把贴图名存进 `self.img`。看自检报告的「拖影」峰值是否稳定
-    （一直涨 = 忘了 `smear_frame`）。
-18. **（预警，§9）** 预警线的粗细是按**像素**给的吗（用 `RenderRect`，不是 `Render` 的缩放倍数）？
-    亮度公式**恒正**吗？预警色和「当前生效」色是分开的吗？
-19. **（动画周期，§9）** 卡里的动画是从参考卡的 `task.New` 翻译过来的吗？
-    **嵌套 `task.New` 的周期是外层的周期**，不是内层自己的长度 ——
-    把原协程按原结构模拟一遍、和自己的帧计数器**逐帧 diff** 过了吗？
+**④ 贴图名**：自检会自动报（A2）；报不出来时手动核对
+`THlib/bullet/bulletStyle.lua`（弹样式）、`Resources/Special/`（主题贴图）、
+`Resources/BossBackGround/`（背景纹理）。
 
 ---
 
-## 11. 速查
+## 11. 速查表
 
 | 想做的事 | 用什么 |
 |---|---|
-| 造直线弹 | `NewSimpleBullet(style, col, x, y, v, a[, aim, omiga, stay, destroyable])` |
-| 造自定义轨迹弹 | `Class(bullet, {...})` + 自己的 `frame`，`bound=false` 并自己回收 |
+| 造直线弹 | `NewSimpleBullet(style, col, x, y, v, a[, aim, omiga, stay, destroyable, rebound, through, frame, render])` |
+| 造自定义轨迹弹 | 同上，末位传 `frame` 钩子；或 `Class(bullet, {...})` 自己 `RawDel` |
 | 造纯演出物件 | `Class(object, {...}, true)`，`card:del` 里清掉 |
+| **造会挡路的实体** | `Class(enemy, {...})` + `enemy.init(self, style, hp, false, false, false)` + `object.Connect(boss, self, 0, true)` |
 | 弹样式名 / 颜色 | `THlib/bullet/bulletStyle.lua`；`COLOR.*` 1..16 |
-| 挂机移动 | `task.MoveTo(x,y,t,mode)`、`task.MoveToPlayer(...)`、`task.CRMoveTo(t,mode,…)` |
+| 挂机移动 | `task.MoveTo(x,y,t,mode)`、`task.CRMoveTo(t,mode,…)` |
+| **boss 贴着自机** | `task.MoveToPlayer(t, x1,x2, y1,y2, dxmin,dxmax, dymin,dymax, mmode, dmode)`（注意第一个参数是**时长**） |
 | 并行发弹循环 | `task.New(self, function() while true do … task.Wait(n) end end)` |
 | 血量驱动的多阶段 | `self._bosssys:addAutoSPPoint(掉血量, 兜底帧, true)` + 读 `self._sp_point_auto` |
-| 圆形/星形/椭圆排布 | `sp.math.AngleIterator / EllipseIterator / PolygonIterator / HeartIterator` |
-| 画出图形（无判定） | `SetImageState("white", "mul+add", a,r,g,b)` + `Render`/`RenderRect` |
-| 自机坐标 | `player.x` / `player.y`（可以直接夹住它做"场地收缩"） |
+| 圆形 / 星形 / 心形排布 | `sp.math.AngleIterator / EllipseIterator / HeartIterator / PolygonIterator` |
+| 直线上切点 / 贝塞尔 | `sp:GetPointLine(t, …)` / `sp:GetPointBezier(t, mode, …)` |
+| 画图形（无判定） | `SetImageState("white", "mul+add", a,r,g,b)` + `Render` / `RenderRect` / `Render4V` |
+| 画环 / 扇形 / 平铺 | `misc.RenderRing` / `misc.SectorRender` / `misc.RenderTexInRect` / `misc.PolarCoordinatesRender` |
+| 符卡背景 | `class["SCBG"] = Class(_SC_BG)` + `_SC_BG.AddLayer(...)`，贴图 `Resources/BossBackGround/th*.png` |
+| 拖影 | `object.smear_add(o,a)` + `smear_frame(o,13)` + `smear_render(o,"mul+add",{r,g,b})`（三个都要） |
+| 全屏白闪 / 转场 | `New(WhiteScreen, LAYER.TOP, 30)` |
+| 自机坐标 | `player.x` / `player.y`（**只在 7.8 那四种软场里动它**） |
 | 世界边界 | `lstg.world.l/r/b/t`（可视区）、`boundl/r/b/t`（±32 的回收边界） |

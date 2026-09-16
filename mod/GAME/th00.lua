@@ -591,10 +591,12 @@ do
         end
 
         function card:render()
-            local pts = self.__const
-            if not pts then
+            --⚠ 守卫必须**直接**写在 self.__const 上：先 `local pts = self.__const`
+            --  再判 `not pts`，人和静态审计器都看不出这里防住了 nil。
+            if not self.__const then
                 return
             end
+            local pts = self.__const
             local n = #pts
             for i = 1, n do
                 local p1, p2 = pts[i], pts[i % n + 1]
@@ -678,10 +680,10 @@ do
         end
 
         function card:render()
-            local c = self.__comet
-            if not c then
+            if not self.__comet then
                 return
             end
+            local c = self.__comet
             draw_star(c.x, c.y, c.t * 6, 1.5, 13, 255)
             draw_star(c.x, c.y, -c.t * 4, 0.9, 16, 200)
         end
