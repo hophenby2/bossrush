@@ -208,7 +208,7 @@ class["th05_petalbg"] = Class(object, {
     end,
     frame = function(self)
         self.y = self.y - self.v
-        self.sw = self.sw + 0.8
+        self.sw = self.sw + 8
         self.x = self.x + sin(self.sw) * 0.8
         if self.y < lstg.world.boundb - 20 then
             object.RawDel(self)
@@ -236,7 +236,7 @@ do
     local BREATH = 240
     local ROT_V = 0.5
     local RING_WARN = 90
-    local AIM_GAP = 100
+    local AIM_GAP = 38          -- ⚠ sin 修成角度制之后各层真的会转/散了，节奏要跟着加密
     local AIM_V = 2.4
     local BOSS_X, BOSS_Y = 0, 60
 
@@ -269,7 +269,7 @@ do
                 end
             end
             --环上每 3 朵朝自机补一发：这才是威胁层
-            if (self.t - RING_WARN) % BREATH == 30 then
+            if (self.t - RING_WARN) % (BREATH / 2) == 30 then
                 for k = 1, RING_N, 3 do
                     local a = self.rot + (k - 1) * 360 / RING_N
                     local x, y = cos(a) * self.r, BOSS_Y + sin(a) * self.r
@@ -281,7 +281,7 @@ do
             end
         end,
         render = function(self)
-            local k = self.t < RING_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local k = self.t < RING_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             arc(0, BOSS_Y, self.r, 0, 360, 64, 120 * k, 255, 236, 150, 0.05)
             for i = 1, RING_N do
                 local a = self.rot + (i - 1) * 360 / RING_N
@@ -344,7 +344,7 @@ do
     local CYCLE = 400
     local WALL_WARN = 60
     local PETAL_GAP = 14
-    local WAVE_GAP = 90
+    local WAVE_GAP = 55
     local WAVE_V = 2.2
     local BOSS_X, BOSS_Y = 0, 100
 
@@ -374,7 +374,7 @@ do
             end
         end,
         render = function(self)
-            local a = self.t < WALL_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or self.k
+            local a = self.t < WALL_WARN and (0.4 + 0.6 * sin(self.t * 9)) or self.k
             for s = -1, 1, 2 do
                 thin_line(s * WALL_X, lstg.world.b, s * WALL_X, lstg.world.t, 90 * a, 190, 255, 190, 0.12)
             end
@@ -447,7 +447,7 @@ do
         { r0 = 152, r1 = 190, rot = 180, dir = 1,  col = 12, rgb = { 255, 226, 130 } },
         { r0 = 178, r1 = 214, rot = 270, dir = -1, col = 16, rgb = { 240, 245, 255 } },
     }
-    local PULSE = 200
+    local PULSE = 120
     local GAP_A = 60            -- 缺口张角
     local ROT_V = 0.6
     local RING_WARN = 90
@@ -484,7 +484,9 @@ do
                 local r = R.r0 + (R.r1 - R.r0) * k
                 local rot = (R.rot + R.dir * ROT_V * (self.t - RING_WARN)) % 360
                 --张到最大那一刻吐一轮：弹从环上朝内飞，是这张卡的主面积
-                if (self.t - RING_WARN) % PULSE == int(PULSE * 0.25) + (i - 1) * 25 then
+                --⚠ 不要再叠 (i-1)*偏移：四个环的张缩本来就错开 90°，是多余的；
+                --   而且偏移一大就会越过模数，那个环的瞄准轮**永远不触发**（静默失效）
+                if (self.t - RING_WARN) % PULSE == int(PULSE * 0.25) then
                     for s = 0, RING_SHOTS do
                         local a = rot + GAP_A * 0.5 + (360 - GAP_A) * s / RING_SHOTS
                         local x, y = cx + cos(a) * r, cy + sin(a) * r
@@ -499,10 +501,10 @@ do
                     end
                 end
                 --威胁：环上匀出 5 路朝自机（只在自机所在的那一段）
-                if (self.t - RING_WARN) % PULSE == int(PULSE * 0.75) + (i - 1) * 25 then
+                if (self.t - RING_WARN) % PULSE == int(PULSE * 0.75) then
                     local pa = Angle(cx, cy, player.x, player.y)
-                    for s = -2, 2 do
-                        local a = pa + s * 8
+                    for s = -3, 3 do
+                        local a = pa + s * 7
                         local x, y = cx + cos(a) * r, cy + sin(a) * r
                         --自机站在环上时，这一发从**对面**生成（不挖洞、不少发）
                         x, y = mirror_spawn(cx, cy, x, y, 2.2)
@@ -520,7 +522,7 @@ do
             end
             local t = max(self.t - RING_WARN, 0)
             local ph = t * 360 / PULSE
-            local kk = self.t < RING_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < RING_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             for i = 1, #RINGS do
                 local R = RINGS[i]
                 local k = 0.5 + 0.5 * sin(ph + (i - 1) * 90)
@@ -581,7 +583,7 @@ end
 do
     local WIND_PERIOD = 460
     local WIND_MAX = 1.7
-    local GUST_GAP = 110
+    local GUST_GAP = 65
     local GUST_N = 12
     local GUST_V = 2.6
     local POLLEN_GAP = 8
@@ -606,7 +608,7 @@ do
             end)
         end,
         render = function(self)
-            local a = self.t < 90 and (0.4 + 0.6 * sin(self.t * 0.15)) or abs(self.vx) / WIND_MAX
+            local a = self.t < 90 and (0.4 + 0.6 * sin(self.t * 9)) or abs(self.vx) / WIND_MAX
             for i = 1, 9 do
                 local y = lstg.world.b + (i + 0.3) * (lstg.world.t - lstg.world.b) / 10
                 local x = ((self.t * 3 + i * 57) % 420) - 210
@@ -687,7 +689,7 @@ end
 do
     local ARMS = 8
     local R_IN, R_OUT = 95, 165
-    local PULSE = 200
+    local PULSE = 140
     local ROT_V = 0.35
     local BRANCH_V = 1.5
     local BLOOM_N = 6
@@ -736,7 +738,7 @@ do
                 end
             end
             --威胁：从离自机最近的那条缝里吐三连
-            if (self.t - JAIL_WARN) % 80 == 40 then
+            if (self.t - JAIL_WARN) % 42 == 22 then
                 local pa = Angle(cx, cy, player.x, player.y)
                 local best, bestd = pa, 1e9
                 for k = 1, ARMS do
@@ -746,8 +748,8 @@ do
                         bestd, best = d, a
                     end
                 end
-                for i = 1, 3 do
-                    local rr = r + 20 - i * 26
+                for i = 1, 5 do
+                    local rr = r + 30 - i * 23
                     local x, y = cx + cos(best) * rr, cy + sin(best) * rr
                     --自机就在这条缝上时，三连从**对面那条缝**生成（不挖洞、不少发）
                     x, y = mirror_spawn(cx, cy, x, y, BRANCH_V)
@@ -762,7 +764,7 @@ do
             if IsValid(self.master) then
                 cx, cy = self.master.x, self.master.y
             end
-            local kk = self.t < JAIL_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < JAIL_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             local rot = self.t * ROT_V
             local r = R_IN + (R_OUT - R_IN) * (0.5 + 0.5 * sin(self.t * 360 / PULSE))
             for k = 1, ARMS do
@@ -826,7 +828,7 @@ do
     local SWAY = 0.5
     local SWAY_T = 360
     local COL_WARN = 70
-    local RAY_GAP = 100
+    local RAY_GAP = 58
     local RAY_V = 2.3
     local BOSS_X, BOSS_Y = 0, 150
 
@@ -860,15 +862,17 @@ do
                 for k = 1, COL_N - 1 do
                     local x = (k - COL_N / 2) * COL_GAP + sw
                     if Dist(x, cy, player.x, player.y) > SPAWN_REACT * RAY_V then
-                        local o = fly(ball_mid, 2, x, cy, RAY_V,
-                                Angle(x, cy, player.x, player.y), 0)
-                        o._r, o._g, o._b = 255, 210, 160
+                        local pa = Angle(x, cy, player.x, player.y)
+                        for w = -1, 1 do
+                            local o = fly(ball_mid, 2, x, cy, RAY_V, pa + w * 10, 0)
+                            o._r, o._g, o._b = 255, 210, 160
+                        end
                     end
                 end
             end
         end,
         render = function(self)
-            local kk = self.t < COL_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < COL_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             local sw = self.t < COL_WARN and 0 or
                     sin((self.t - COL_WARN) * 360 / SWAY_T) * 40
             for k = 1, COL_N do
@@ -927,8 +931,10 @@ do
     local R_IN, R_OUT = 96, 176
     local BREATH = 260
     local THORN_N = 12
-    local ROSE_GAP = 112
-    local ROSE_N = 9
+    -- ⚠ 模数必须 **大于** 下面的偏移（45 或 23），否则 `% ROSE_GAP == 偏移` 永远不成立，
+    --   整层弹幕**静默消失**而且不报错。原来 112→70→55→40 时踩过这个坑。
+    local ROSE_GAP = 34
+    local ROSE_N = 11
     local ROSE_V = 2.2
     local THORN_WARN = 80
     local BOSS_X, BOSS_Y = 0, 60
@@ -967,7 +973,7 @@ do
                 end
             end
             --威胁：一圈朝内的玫瑰，从**环的远端**开始铺，靠自机那几颗会先飞过去
-            if (self.t - THORN_WARN) % ROSE_GAP == 45 then
+            if (self.t - THORN_WARN) % ROSE_GAP == 17 then
                 local pa = Angle(cx, cy, player.x, player.y)
                 for k = 1, ROSE_N do
                     --跳开自机正对着的那一段，先吐对面的
@@ -987,7 +993,7 @@ do
             if IsValid(self.master) then
                 cx, cy = self.master.x, self.master.y
             end
-            local kk = self.t < THORN_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < THORN_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             local r = self.t < THORN_WARN and R_IN or
                     R_IN + (R_OUT - R_IN) * (0.5 + 0.5 * sin(self.t * 360 / BREATH))
             arc(cx, cy, r, 0, 360, 72, 120 * kk, 255, 150, 190, 0.05)
@@ -1047,7 +1053,7 @@ do
     local SWIRL_T = 120
     local SWIRL_N = 6
     local SWIRL_V = 1.6
-    local SWIRL_GAP = 9
+    local SWIRL_GAP = 6
     local FLY_R = 84
     local ROT_V = 0.8
     local BOSS_X, BOSS_Y = 0, 90
@@ -1091,7 +1097,7 @@ do
             if IsValid(self.master) then
                 cx, cy = self.master.x, self.master.y
             end
-            local kk = self.t < 90 and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < 90 and (0.4 + 0.6 * sin(self.t * 9)) or 1
             local t = max(self.t - 90, 0)
             for s = -1, 1, 2 do
                 for i = 1, 8 do
@@ -1160,9 +1166,9 @@ do
     --   三个环一起朝 boss 收敛，自机在带里被压死（实测死局 795 帧 / 22%）。
     --   装饰层铺的是**面积**：点砍到 12 个、间隔拉到 18 帧、速度压到 0.9。
     local DOOR_SHOTS = 9
-    local DOOR_GAP = 24
+    local DOOR_GAP = 18
     local DOOR_V = 0.9
-    local BURST_GAP = 110
+    local BURST_GAP = 80
     local BURST_V = 2.2
     local BOSS_X, BOSS_Y = 0, 60
 
@@ -1209,20 +1215,17 @@ do
             end
             --威胁：每 100 帧，从**离自机最远的那扇门**里吐一束
             if t % BURST_GAP == 50 then
-                local far, fd = 1, -1
                 for i = 1, #DOORS do
-                    local d = DOORS[i].r
-                    if d > fd then fd, far = d, i end
-                end
-                local D = DOORS[far]
-                local rot = D.rot + D.dir * ROT_V * t
-                local a = rot + 180
-                local x, y = cx + cos(a) * D.r, cy + sin(a) * D.r
-                x, y = mirror_spawn(cx, cy, x, y, BURST_V)
-                for k = -2, 2 do
-                    local o = fly(ball_mid, D.col, x, y, BURST_V,
-                            Angle(x, y, player.x, player.y) + k * 9, 0)
-                    o._r, o._g, o._b = D.rgb[1], D.rgb[2], D.rgb[3]
+                    local D = DOORS[i]
+                    local rot = D.rot + D.dir * ROT_V * t
+                    local a = rot + 180
+                    local x, y = cx + cos(a) * D.r, cy + sin(a) * D.r
+                    x, y = mirror_spawn(cx, cy, x, y, BURST_V)
+                    for k = -1, 1 do
+                        local o = fly(ball_mid, D.col, x, y, BURST_V,
+                                Angle(x, y, player.x, player.y) + k * 11, 0)
+                        o._r, o._g, o._b = D.rgb[1], D.rgb[2], D.rgb[3]
+                    end
                 end
             end
         end,
@@ -1231,7 +1234,7 @@ do
             if IsValid(self.master) then
                 cx, cy = self.master.x, self.master.y
             end
-            local kk = self.t < DOOR_WARN and (0.4 + 0.6 * sin(self.t * 0.15)) or 1
+            local kk = self.t < DOOR_WARN and (0.4 + 0.6 * sin(self.t * 9)) or 1
             local t = max(self.t - DOOR_WARN, 0)
             for i = 1, #DOORS do
                 local D = DOORS[i]
@@ -1323,15 +1326,17 @@ do
             task.New(self, function()
                 task.Wait(180)
                 while true do
-                    --路数封顶 13：终符已经叠了四层装饰，威胁层再加密就变成弹墙
-                    local ways = min(7 + (self.__phase - 1) * 2, 13)
+                    --路数封顶 9：终符已经叠了四层装饰，威胁层再加密就变成弹墙。
+                    --（⚠ sin 修成角度制之后各层装饰真的会转了，同样参数下比之前密得多，
+                    --  实测 6.2 次/秒 → 收到 9 路）
+                    local ways = min(5 + (self.__phase - 1) * 1, 7)
                     local a0 = Angle(self, player)
                     for k = 1, ways do
                         local o = fly(ball_mid, 12, self.x, self.y, 2.5,
                                 a0 + (k - (ways + 1) / 2) * 8, 0)
                         o._r, o._g, o._b = 255, 226, 120
                     end
-                    task.Wait(96 - (self.__phase - 1) * 8)
+                    task.Wait(150 - (self.__phase - 1) * 10)
                 end
             end)
         end

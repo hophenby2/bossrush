@@ -71,7 +71,12 @@ local function stub_table(name)
     })
 end
 _G.Forbid, _G.Angle, _G.Dist = Forbid, Angle, Dist
-_G.cos, _G.sin, _G.tan = math.cos, math.sin, math.tan
+-- ★ sin/cos/tan 是**角度制**（THlib/lib/Lapi.lua:110 `sin = lstg.sin`，
+--   引擎的 legacy/DegreesMath.lua）。桩件原来给的是 math.sin（弧度），
+--   于是「动画系数按弧度写」这种错在自检里完全看不见 —— 实机里全部慢几十倍。
+_G.cos = function(t) return math.cos(math.rad(t or 0)) end
+_G.sin = function(t) return math.sin(math.rad(t or 0)) end
+_G.tan = function(t) return math.tan(math.rad(t or 0)) end
 _G.max, _G.min = math.max, math.min
 _G.abs, _G.sqrt, _G.int = math.abs, math.sqrt, math.floor
 -- Lmath.lua 里的角度版三角函数（注意是大写）
@@ -1348,23 +1353,26 @@ for idx, entry in ipairs(registered) do
             end
         end
         if card.del then card.del(boss_obj) end
+        -- ★「这张卡一共造了什么」**必须打在 `if card.del` 外面**：
+        --   计数器原来是在里面清零的，于是**没写 del 的卡**（如 th04 卡 4 死符「无寿之栏」）
+        --   会把上一张卡的账整个算到下一张头上 —— 看起来像下一张多造了一份东西。
+        --   桩件漏掉一层弹时读数会莫名其妙地低，看这张清单最快：
+        --   卡里应该有的东西没出现，就说明它没进威胁统计（th04 卡 2 的花瓣就是这样）。
+        if os.getenv("STAGE_PROBE") then
+            local listed = {}
+            for k, v in pairs(_G.LOG_BULLET) do listed[#listed + 1] = ("弹:%s×%d"):format(k, v) end
+            for k, v in pairs(_G.LOG_NEW) do listed[#listed + 1] = ("对象:%s×%d"):format(k, v) end
+            table.sort(listed)
+            print("      [probe] 本卡共造：" .. table.concat(listed, "  "))
+        end
+        _G.LOG_NEW, _G.LOG_BULLET = {}, {}
         -- ★ 卡结束后再跑一会儿：看派生的东西有没有被清干净。
         --   注意先 task.Clear(boss)：引擎的 refresh(1) 在换卡时会这么做，
         --   否则会把「挂在 boss 上的循环」当成泄漏（假报警）。
+        --   ⚠ 没写 del 的卡会跳过这一段，它的 tm_leak 恒为 0 —— 那是「没测」不是「干净」。
         if card.del then
-            -- 模拟引擎换卡走的 boss_system/refresh(1) 之前，先把**整张卡造了什么**
-            -- 打出来。桩件漏掉一层弹的时候读数会莫名其妙地低，看这张清单最快：
-            -- 卡里应该有的东西没出现，就说明它没进威胁统计（th04 卡 2 的花瓣就是这样）。
-            if os.getenv("STAGE_PROBE") then
-                local listed = {}
-                for k, v in pairs(_G.LOG_BULLET) do listed[#listed + 1] = ("弹:%s×%d"):format(k, v) end
-                for k, v in pairs(_G.LOG_NEW) do listed[#listed + 1] = ("对象:%s×%d"):format(k, v) end
-                table.sort(listed)
-                print("      [probe] 本卡共造：" .. table.concat(listed, "  "))
-            end
             task.Clear(boss_obj)
             object.KillServants(boss_obj)
-            _G.LOG_NEW, _G.LOG_BULLET = {}, {}
             local b0, o0 = _G.CREATED_BULLETS, _G.CREATED_OBJECTS
             for f = 1, 180 do
                 step_tasks()
