@@ -852,6 +852,20 @@ if path == "--all" then
         else
             fail(("%s -> %s"):format(p, tostring(err)))
         end
+        -- ★ 关卡背景类必须调 `background.init(self, false)`：
+        --   基类负责设 `self.group = 0` / `self.layer = -700.1`、把 lstg.tmpvar.bg
+        --   指过来、`background.Capture(self)`。漏了这一句，背景就没有 group/layer，
+        --   会被画在**自机和 boss 上面** —— 而这层背景是整屏不透明的，
+        --   屏幕上就只剩背景（自机和 boss 都看不见）。
+        --   th19 的 TH19_bg 就是这么漏的；载入检查（这里）和逐卡模拟都查不出来，
+        --   因为没人去 init 一个背景对象。所以在这里做一次静态检查。
+        if p:find("_bg%.lua$") then
+            local src = io.open(p):read("*a")
+            if src:find("background%.init%s*%(") == nil then
+                fail(("%s: 背景类的 init 里没有调 `background.init(self, false)` —— " ..
+                        "背景不会拿到 group/layer，会被画在自机和 boss 上面"):format(p))
+            end
+        end
     end
 
     -- _editor_output.lua 要先载：全局的 global_obj / Create / WhiteScreen / _bullet
@@ -1265,7 +1279,41 @@ for idx, entry in ipairs(registered) do
     local tu_peak, tg_min = 0, SECT
     local label = ("[%d] %s (id=%s)"):format(idx, entry.name, tostring(entry.card_id))
     local good, msg = pcall(function()
-        if card.before then drain(function() card.before(boss_obj) end, boss_obj) end
+        -- ★★ 引擎的真实顺序（THlib/enemy/boss_system.lua:919 `system:doCard`）：
+        --   `b.current_card = card` 是**立刻**设上的，而 `card.init(b)` 在一个协程里、
+        --   要**等 `card.before` 跑完**才执行；可 `system:frame`（同文件 :133）
+        --   从设上那一刻起**每帧都调 `current_card.frame(b)`**。
+        --   于是 `frame` 会先于 `init` 跑满整个 `before` 期间（th19 卡 1-1 的
+        --   `before` 里有 `task.MoveTo(...,60,...)`，整整 60 帧）。
+        --   ⚠ 原来这里写的是「先 drain 完 before、再 drain init」——
+        --     把这个顺序**抹平**了，于是「只在 init 里初始化、frame 里直接用」
+        --     这一整类错，自检一个都查不出来（真机上就是当场崩）。
+        --   th19 卡 1-1 的 `self.__webrot` 就是这么炸的。
+        do
+            local co = nil
+            if card.before then
+                co = coroutine.create(function() card.before(boss_obj) end)
+                current_task = { co = co, obj = boss_obj }
+                local ok, err = coroutine.resume(co)
+                current_task = nil
+                if not ok then error(err, 0) end
+            end
+            local guard = 0
+            while co and coroutine.status(co) ~= "dead" do
+                guard = guard + 1
+                if guard > 600 then error("before 跑不完（超过 600 帧）", 0) end
+                if card.frame then card.frame(boss_obj) end
+                if card.render then card.render(boss_obj) end
+                boss_obj.timer = boss_obj.timer + 1
+                boss_obj.ani = boss_obj.ani + 1
+                step_tasks()
+                step_objects()
+                current_task = { co = co, obj = boss_obj }
+                local ok2, err2 = coroutine.resume(co)
+                current_task = nil
+                if not ok2 then error(err2, 0) end
+            end
+        end
         if card.init then drain(function() card.init(boss_obj) end, boss_obj) end
         -- ★ 阶段阈值必须落在本卡血量之内，否则那个阶段**永远触发不了**
         --   （只能等兜底计时器，玩家看到的就是「血打下去了却没新弹幕」）

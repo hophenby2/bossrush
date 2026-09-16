@@ -1329,14 +1329,14 @@ do
                     --路数封顶 9：终符已经叠了四层装饰，威胁层再加密就变成弹墙。
                     --（⚠ sin 修成角度制之后各层装饰真的会转了，同样参数下比之前密得多，
                     --  实测 6.2 次/秒 → 收到 9 路）
-                    local ways = min(5 + (self.__phase - 1) * 1, 7)
+                    local ways = min(5 + ((self.__phase or 1) - 1) * 1, 7)
                     local a0 = Angle(self, player)
                     for k = 1, ways do
                         local o = fly(ball_mid, 12, self.x, self.y, 2.5,
                                 a0 + (k - (ways + 1) / 2) * 8, 0)
                         o._r, o._g, o._b = 255, 226, 120
                     end
-                    task.Wait(150 - (self.__phase - 1) * 10)
+                    task.Wait(150 - ((self.__phase or 1) - 1) * 10)
                 end
             end)
         end
@@ -1349,17 +1349,19 @@ do
                 left = #self._sp_point_auto
             end
             local done = 3 - left
-            if done >= 1 then self.__done = max(self.__done, 1) end
-            if done >= 2 then self.__done = max(self.__done, 2) end
-            if done >= 3 then self.__done = max(self.__done, 3) end
+            if done >= 1 then self.__done = max(self.__done or 0, 1) end
+            if done >= 2 then self.__done = max(self.__done or 0, 2) end
+            if done >= 3 then self.__done = max(self.__done or 0, 3) end
             local t = self.ani
-            if t > PH_P2 then self.__done = max(self.__done, 1) end
-            if t > PH_P3 then self.__done = max(self.__done, 2) end
-            if t > PH_P4 then self.__done = max(self.__done, 3) end
+            if t > PH_P2 then self.__done = max(self.__done or 0, 1) end
+            if t > PH_P3 then self.__done = max(self.__done or 0, 2) end
+            if t > PH_P4 then self.__done = max(self.__done or 0, 3) end
 
-            local ph = self.__done + 1
-            while self.__phase < ph do
-                self.__phase = self.__phase + 1
+            --⚠ frame 会先于 init 跑满整个 before 期间（见 AGENTS.md §9），
+            --  所以这里一律 nil 安全：__done / __phase 都可能在 init 之前被读到。
+            local ph = (self.__done or 0) + 1
+            while (self.__phase or 1) < ph do
+                self.__phase = (self.__phase or 1) + 1
                 Newcharge_out(self.x, self.y, 255, 226, 140)
                 if self.__phase == 2 then
                     self.__dance10 = attach(self, New(class["th05_ringdance"], self))

@@ -159,12 +159,26 @@ class["th04_dancefan"] = Class(object, {
             self.hscale = 1
             self.vscale = 0.1 + 0.9 * sin((t - 60) * 3)
         else
-            --④ 呼吸（120 帧一轮：涨 60 帧、停 60 帧）+ 闪光（40 帧一轮）
+            --④ 呼吸 + 闪光
+            --⚠ 这两层的**周期不一样**，别用同一个取模：
+            --   原卡是一个 `while true` 里**先 `task.New` 起一个内层协程、再自己等 120 帧**：
+            --     · 内层：10 帧 `sin(i*9)` 涨到 1 + 30 帧 `sin(i*3)` 落回 0 = **40 帧**，
+            --       然后就**结束了**（`_a` 停在 0）—— 后面 80 帧什么都不闪；
+            --     · 外层：60 帧涨 `_s` + 60 帧 `task.Wait(60)` 保持 = **120 帧**，
+            --       每 120 帧才重新起一次内层。
+            --   所以闪光真正的周期是 **120 帧（闪 40、静 80）**，不是 40。
+            --   我之前写成 `v = u % 40` → 变成每 40 帧连闪三下，频率高了 3 倍。
             local u = t - 90
             local p = u % 120
             self._s = 1 + 0.35 * sin((p < 60 and p + 1 or 60) * 1.5)
-            local v = u % 40
-            self._a = v < 10 and sin((v + 1) * 9) or sin((39 - v) * 3)
+            local v = u % 120
+            if v < 10 then
+                self._a = sin((v + 1) * 9)          -- 10 帧涨到 1
+            elseif v < 40 then
+                self._a = sin((39 - v) * 3)         -- 30 帧落回 0
+            else
+                self._a = 0                          -- 剩下 80 帧完全不出闪光
+            end
         end
     end,
     render = function(self)
@@ -199,24 +213,21 @@ end
 ---发射点安全距离：出膛到命中至少要有 20 帧。
 ---  挪开一发弹 = 反应(≈15 帧) + 横移出判定圈(≈2 帧)，再留一点余量 = 20。
 ---  ⚠ **不要用这个来挖洞**（AGENTS.md §10.10）。挖洞会在墙上开个缺口，
----    玩家看得见「墙少了一块」，限位也被自己废掉一半。正解是下面三条：
----      ① 改展开：换成不会在自机身上生成的形式（自机贴脸就改发散开 / 整圈）
----      ② 改弹速：把速度压到 ≤ 距离/20
----      ③ 改生成位置：挪到**对面**去（`mirror_spawn`）
----  这两个函数只用来**做①②③的判断**，不用来决定「这一格不发」。
+---    玩家看得见「墙少了一块」，限位也被自己废掉一半。
+---  正解只有两条，**都是改「整层怎么发」，不是改「这一颗发不发」**：
+---      ① 改展开：自机贴在发射点上时，把这一轮从「朝自机的扇形」改成**整圈均匀**
+---         （弹数一发不少，只是不再对着自机扎）—— 下面三处 `near_player` 都是这个。
+---      ② 改弹速：整层的速度压到 ≤ 距离/20。
+---  ⚠ 曾经还有过第三条「③ 把这一颗挪到对面」（`mirror_spawn`），**已经全部删掉**。
+---    它在几何上确实还算合法（六边形、六条臂都是对径的），但：
+---      · 对面那个位置**本来就有自己的一颗**，挪过去 = 局部加倍，
+---        玩家看到的是一条边/一条臂突然变粗、自己站的这条突然缺口 —— 图案反而破了；
+---      · 阈值 `20 * v` 和弹的间隔是一个量级，一次只挪得动一两颗，
+---        **挡不住贴脸**，纯属白破坏图案。
+---    限位器「涨到最大才吐弹」本身就是预警，站在墙上挨打是该躲的。
 local SPAWN_REACT = 20
 local function near_player(x, y, v)
     return Dist(x, y, player.x, player.y) < SPAWN_REACT * (v or 0)
-end
-
----③「改生成位置」：自机贴得太近时，把发射点挪到**圆周的对面**。
----  不挖洞、不少发弹，只是换个地方生成。对**中心对称**的图形（六边形、六条射线、
----  偶数个点的环）来说，对面那个点在图案上是合法的，对称性不破。
-local function mirror_spawn(cx, cy, x, y, v)
-    if not near_player(x, y, v) then
-        return x, y
-    end
-    return cx * 2 - x, cy * 2 - y
 end
 
 ---把自己的弹挂到 boss 名下。
@@ -654,13 +665,13 @@ end
 --  预警：扇的张开过程本身就是预警（24 帧）。
 --============================
 do
-    local FAN_WAYS = 5                -- 每把扇一次吐几发（和原来一样）
+    local FAN_WAYS = 7                -- 每把扇一次吐几发（侧面只剩 8 把了，补回原来的总速率）
     local FAN_SPREAD = 30
     local FAN_V = 2.2
     local FAN_OPEN = 24               -- 张开的帧数（两步张开，参考卡是 12+12）
     local FAN_HOLD = 110              -- 张开之后摆多久才炸
     local FAN_FADE = 16               -- 炸开之后淡出几帧
-    local FAN_CYCLE = 210             -- 同一个槽位隔多久再长一把新扇
+    local FAN_CYCLE = 180             -- 同一个槽位隔多久再长一把新扇（> 一把的寿命 158）
     ---★ 一个总比例：**我们场地 384 宽 / 参考卡场地 640 宽 = 0.6**。
     ---参考卡里**所有**长度（扇子 scale、环绕半径、出生半径、撒弹半径）都是按 640 宽的
     ---场地定的，搬到我们这儿必须**一起乘 0.6**。只乘一部分就会出现
@@ -671,10 +682,15 @@ do
     ---Lfan 贴图 500×256；扇柄在图片底、开口在图片顶 →
     ---扇心到**外缘**（沿开口方向）的距离 = 贴图半高 × scale。
     local FAN_REACH = 128 * FAN_SIZE     -- = 23 px
-    -- 布局**照抄参考卡**（Little_Fan_Green 的排法），按场地比例缩：
-    --   参考：上下各 9 把（x 铺满 ±320，间距 80）、左右各 7 列（y 铺满 ±230）
-    --   我们：±192 宽 → 间距 80*0.6 = 48 → 9 把；±224 高 → 7 列
-    local FAN_TOP, FAN_SIDE = 9, 7
+    -- 布局：**不照抄参考卡的数量**，按「占空比」定 —— 参考卡一场地 640 宽摆 9 把，
+    --   可它扇子有 150 px 宽；同样摆 9 把、我们扇子 90 px，横向重叠倍数一样，
+    --   但我们的场地只有 384 宽，一串排下来就把整条边糊成一条白带（实测就是这样）。
+    --   现在的取法：**让相邻两把刚好挨着**——
+    --     上/下：384 px 摆 5 把 → 间距 96 px，扇子宽 90 px → 几乎接上但不叠
+    --     左/右：448 px 摆 4 把 → 间距 149 px，扇子高 90 px → 中间留缝
+    --   探进场地内的深度固定是「贴图半高 × scale」= 23 px，两条边加起来 46 px，
+    --   所以中间还有 384-46 × 448-46 的活动区。
+    local FAN_TOP, FAN_SIDE = 5, 4
     local FAN_EDGE = 10               -- 扇锚点离可见边界几 px（参考卡是 10）
     -- 华尔兹：参考卡是 ±180（640 宽的场地），我们 384 宽 → 按比例缩到 ±95
     local WALTZ_T = 240
@@ -702,6 +718,30 @@ do
         object.smear_render(self, "mul+add", { r, g, b })
     end
 
+    ---扇子两步张开（Green / Golden / Blue 三把**都是这个**）：
+    ---前 12 帧纵着张（vscale 0→1），后 12 帧横着张（hscale 0.27→1）。返回 0~1 的比例。
+    local function fan_unfold(t)
+        if t <= 12 then
+            local u = sin((t - 1) / 11 * 90)
+            return u * 0.27, u
+        elseif t <= 24 then
+            local u = sin((t - 13) / 11 * 90)
+            return 0.27 + 0.73 * u, 1
+        end
+        return 1, 1
+    end
+
+    ---扇子收起来（24 帧）：先把横的收回成 0.08，再整体缩没。返回 0~1 的比例。
+    ---收完 hscale / vscale 正好到 0，然后才 RawDel —— 不会「突然消失」。
+    local function fan_close(t)
+        if t <= 12 then
+            return (0.30 - 0.22 * sin((t - 1) / 11 * 90)) / 0.30, 1
+        end
+        local u = sin((24 - t) / 11 * 90)
+        return 0.08 * u / 0.30, u
+    end
+
+
     ---边缘扇：**照抄 Little_Fan_Green（mod/GAME/th08.lua:1966）**
     ---  ① 张开分两步：先竖 12 帧（vscale 0→1），再横 12 帧（hscale 0.27→1）。
     ---     参考卡写的是 `sin(s)*0.3` / `0.08 + 0.22*sin(s)`，比值一样，
@@ -725,7 +765,6 @@ do
     class["th04_fan"] = Class(object, {
         init = function(self, x, y, rot, fdir, ssign, fires)
             self.x, self.y = x, y
-            self.__img = FAN_IMG          --拖影（smear_add）要读这个
             self.rot0 = rot             -- 基准朝向（摆动的中心）
             self.rot = rot
             self.fdir = fdir
@@ -741,21 +780,14 @@ do
         frame = function(self)
             self.t = self.t + 1
             local t = self.t
-            local half = FAN_OPEN / 2
-            --① 两步张开
-            if t <= half then
-                local u = sin(t / half * 90)
-                self.vscale = u
-                self.hscale = u * 0.27
-            elseif t <= FAN_OPEN then
-                local u = sin((t - half) / half * 90)
-                self.vscale = 1
-                self.hscale = 0.27 + 0.73 * u
-            else
-                self.vscale, self.hscale = 1, 1
-            end
-            --② 张开之后一直摆（在基准朝向 rot0 上叠一个 ±swing 的正弦）
-            self.rot = self.rot0 + sin((t - FAN_OPEN) * 1.5) * self.swing
+            --① 两步张开（和另外两把共用 fan_unfold —— 三把各写一份必然写歪）
+            local h, v = fan_unfold(t)
+            self.hscale, self.vscale = h, v
+            --② 一直摆：`rot = rot0 + sin(s) * swing`，`s` 从 0 起、每帧 +1.5° → 周期 240 帧。
+            --   ⚠ 参考卡这个循环是和张开**同时**从第 1 帧开始跑的（`init` 里的另一个
+            --     `task.New`），不是张开完才开始。写成 `sin((t - FAN_OPEN) * 1.5)`
+            --     相位会整整晚 24 帧，而且起手是从 `sin(-36°)` 甩回来的。
+            self.rot = self.rot0 + sin((t - 1) * 1.5) * self.swing
             if t > FAN_OPEN then
                 self._a = min(self._a + 10, 150)
                 --③ 发弹的那 14 把：炸开**同时**吐弹（弹朝 fdir = 场内，不是扇面的朝向）
@@ -769,38 +801,44 @@ do
                     end
                     PlaySound("tan00", 0.02, self.x / 256, true)
                 end
-                --④ 到寿命就淡出 —— **不能写在 `if self.fires` 里面**：
-                --   只当扇框的 18 把（上下两排）不发弹，如果跟着 return 掉就永远走不到这里，
-                --   `bound = false` 又不会被边界回收 → 每 210 帧泄 18 个对象，
-                --   一张 60 秒的卡下来泄 300 多个（自检里的「峰值同屏 对象」就是这么涨上去的）。
+                --④ 到寿命就**收扇**（和另外两把共用 fan_close，缩到 0 才自删）。
+                --   ⚠ 不能写在 `if self.fires` 里面：只当扇框的那几把不发弹，
+                --      跟着 return 掉就永远走不到这里，`bound=false` 又不会被边界回收
+                --      → 每 FAN_CYCLE 帧泄一批对象（「峰值同屏 对象」线性涨）。
+                --   ⚠ 也**不要**写成「边涨边淡」：原来那句 `hscale = hscale * 1.05`
+                --      一边淡出一边把扇子撑大 63%，屏幕边缘的扇子越铺越满 ——
+                --      缩回去才是收场，也才不占地方。
                 if t > FAN_OPEN + FAN_HOLD then
-                    self.burst = self.burst + 1
-                    --炸完淡出（不突然消失），淡干净了自己收
-                    self._a = self._a - 16
-                    self.hscale = self.hscale * 1.05
-                    if self._a <= 0 then
-                        fan_smear_frame(self)
+                    local j = t - (FAN_OPEN + FAN_HOLD)
+                    if j > 24 then
                         object.RawDel(self)
                         return
                     end
+                    local hc, vc = fan_close(j)
+                    self.hscale, self.vscale = hc, vc
+                    self.burst = self.burst + 1
+                    self._a = 150 * vc
                 end
             end
-            fan_smear_frame(self)
         end,
         render = function(self)
             if self.hscale <= 0 then
                 return
             end
-            fan_smear_render(self, 150, 150, 150)
+            --⚠ 绿扇**不加拖影**（另外两把加）。
+            --  参考卡的 `Little_Fan` 基类给三把都加了，但它一场地 640 宽、扇子 150 px，
+            --  我们 384 宽、扇子 90 px，同样的重叠倍数下拖影会把边缘糊成一条白带。
+            --  而且绿扇**不位移**（参考卡里 l = 0），拖影只是一圈旋转模糊 ——
+            --  纯加亮度，读不出「动」。
             SetImageState(FAN_IMG, "mul+add", 205, 255, 255, 255)
             Render(FAN_IMG, self.x, self.y, self.rot,
                     self.hscale * FAN_SIZE, self.vscale * FAN_SIZE)
             if self._a > 0 then
-                local k = self._a / 150
+                local k = min(self._a / 150, 1)
                 SetImageState(FAN_IMG, "mul+add", 130 * k, 255, 244, 210)
                 Render(FAN_IMG, self.x, self.y, self.rot,
-                        self.hscale * FAN_SIZE * (1 + 0.22 * k),
-                        self.vscale * FAN_SIZE * (1 + 0.22 * k))
+                        self.hscale * FAN_SIZE,
+                        self.vscale * FAN_SIZE)
             end
             --炸开那一下：一圈外扩亮环
             if self.burst > 0 then
@@ -819,29 +857,6 @@ do
     -- 再加上 boss 身后那把大扇（th07 的 `fan`，rot 恒为 0，只开合+呼吸，**不转**）
     --     → class["th04_dancefan"]
     -- 之前只搬了 Green 和大扇，把 Golden / Blue 整个漏了 —— 那两把才是「会转的扇子」。
-
-    ---扇子两步张开（Green / Golden / Blue 三把**都是这个**）：
-    ---前 12 帧纵着张（vscale 0→1），后 12 帧横着张（hscale 0.27→1）。返回 0~1 的比例。
-    local function fan_unfold(t)
-        if t <= 12 then
-            local u = sin((t - 1) / 11 * 90)
-            return u * 0.27, u
-        elseif t <= 24 then
-            local u = sin((t - 13) / 11 * 90)
-            return 0.27 + 0.73 * u, 1
-        end
-        return 1, 1
-    end
-
-    ---扇子收起来（24 帧）：先把横的收回成 0.08，再整体缩没。返回 0~1 的比例。
-    ---收完 hscale / vscale 正好到 0，然后才 RawDel —— 不会「突然消失」。
-    local function fan_close(t)
-        if t <= 12 then
-            return (0.30 - 0.22 * sin((t - 1) / 11 * 90)) / 0.30, 1
-        end
-        local u = sin((24 - t) / 11 * 90)
-        return 0.08 * u / 0.30, u
-    end
 
     ---★ FAN_K / FAN_SIZE / FAN_REACH 在文件上面（绿扇那一节）已经定义过了 ——
     ---  三把扇子**共用同一套比例**，不要在这里再写一遍（写重了就会各缩各的）。
@@ -1369,9 +1384,11 @@ do
                         local f = (i - 1) / (LINE_N - 1) - 0.5   -- -0.5 ~ 0.5
                         local rr = self.r + f * 2 * LINE_HALF
                         local px, py = cx + cos(a) * rr, cy + sin(a) * rr
-                        --自机站在线上时，这个点挪到对面那条臂上（六条臂 180° 对径，
-                        --图案仍是六重对称；不挖洞、不少发）
-                        px, py = mirror_spawn(cx, cy, px, py, LINE_V)
+                        --⚠ 这里原来也有一句 `mirror_spawn`，同样删掉了 ——
+                        --  六条臂是对径的，挪到对面那条臂上「图案没破」是真的，
+                        --  但那一条臂上本来就有自己的 12 颗，挪过去就是**局部加倍**，
+                        --  看上去是一条臂突然变粗、自己站的这条突然缺口。
+                        --  阈值 `20 * LINE_V = 32 px` 也只覆盖 12 颗里的 1 颗，挡不住贴脸。
                         local o = fly(ellipse, 6, px, py, LINE_V, a + 180, 0)
                         o._r, o._g, o._b = 255, 206, 230
                     end
@@ -1380,8 +1397,8 @@ do
                 for k = 1, ARMS do
                     local a = self.rot + (k - 1) * 360 / ARMS
                     local bx, by = cx + cos(a) * self.r, cy + sin(a) * self.r
-                    --枝端离自机太近就整簇挪到对面那条臂上（不挖洞、不少发）
-                    bx, by = mirror_spawn(cx, cy, bx, by, BLOOM_V)
+                    --⚠ 原来这里有一句 `mirror_spawn`（枝端离自机近就整簇挪到对面），
+                    --  一并删掉 —— 理由同上：是局部加倍 + 一个挡不住贴脸的补丁。
                     for j = 1, BLOOM_N do
                         local ang = a + (j - (BLOOM_N + 1) / 2) * 20
                         local o = fly(butterfly, 2 + (j % 2) * 2,
@@ -1871,8 +1888,15 @@ do
                 local f = i / HEX_STEPS
                 local px, py = x0 + (x1 - x0) * f, y0 + (y1 - y0) * f
                 -- 朝内飞：吐弹点在最大半径上，离自机最远
-                -- 自机正好站在结界边上时，这个点挪到对边（六边形中心对称，图案不破）
-                px, py = mirror_spawn(cx, cy, px, py, HEX_V)
+                -- ⚠ 这里原来有一句 `mirror_spawn`（自机站得近就把这一颗挪到对边）。
+                --   已经删掉，理由：
+                --     ① 结界是**六边形**，对径是另一条边上的一点，几何上确实还是六个边，
+                --        但那条边上本来就有自己的一串弹 —— 挪过去等于**局部加倍**，
+                --        玩家看到的是一条边凭空变亮、自己站的这条边凭空缺口。
+                --     ② 它其实没用：阈值是 `20 * HEX_V = 48 px`，而边上相邻两点只差
+                --        约 24 px → 42 点里大概只有 2 点会被挪走，挡不住贴脸。
+                --     ③ 六边形是**限位器**，玩家看得见它在涨；涨到最大才吐弹，这就是预警。
+                --        站在墙上挨打是该躲的，不是该被挪开的。
                 local o = fly(square, col, px, py, HEX_V, Angle(cx, cy, px, py) + 180, 0)
                 o._r, o._g, o._b = 224, 192, 255
             end

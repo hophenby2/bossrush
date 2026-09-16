@@ -1120,6 +1120,29 @@ NewStage("TH05", "花园", 25, function(self)
     self:Next(161)
 end)--25
 
+NewStage("TH19", "地底", 26, function(self)
+    self:Option(TH19_bg, "TH19_0")
+    self:Task(function()
+        --=========== 道中：地底上浮的火星与鬼火 ===========
+        --纯装饰（无判定）——按 §10.10，先把屏幕填亮再进 BOSS
+        local w = lstg.world
+        for _ = 1, 90 do
+            New(_editor_class["TH19"].th19_emberbg)
+            task.Wait(ran:Int(2, 5))
+        end
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== 七位 BOSS 依次登场 ===========
+        --每个 CreateGroup 自带等待（它会把这一组的 boss 全建出来并等它们打完）
+        for i = 1, 7 do
+            boss.CreateGroup(i, self.level)
+            task.Wait(120)
+        end
+    end)
+    self:Next(162)
+end)--26
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

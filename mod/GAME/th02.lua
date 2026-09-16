@@ -1254,6 +1254,12 @@ do
     class["th02_meteor"] = Class(bullet, {
         init = function(self, x, y, a0, col)
             bullet.init(self, star_big, col, false, true)
+            --⚠ 这一行是**必需的**：`bullet.init` 只设 `self.class` / `self.imgclass`，
+            --  `self.img` 是**弹样式自己的 init** 设的（bulletStyle.lua:67
+            --  `self.img = img .. int(index)`）。这个类是直接继承 `bullet`、
+            --  绕过样式 init 的，所以不补这一行 `self.img` 就是 nil，
+            --  下面 `smear_render` 里的 `SetImageState(nil, ...)` 会崩。
+            self.img = "star_big" .. int(col)
             self.x, self.y = x, y
             self.a0 = a0
             self.ph = ran:Float(0, 360)
