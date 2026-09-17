@@ -1143,6 +1143,26 @@ NewStage("TH20", "地底", 26, function(self)
     self:Next(162)
 end)--26
 
+NewStage("TH21", "西行庭", 27, function(self)
+    self:Option(TH21_bg, "TH21_0")
+    self:Task(function()
+        --=========== 道中：庭园里飘落的花瓣（纯装饰，无判定）===========
+        local w = lstg.world
+        for _ = 1, 50 do
+            New(_editor_class["TH21"].th21_petaldeco,
+                    ran:Float(w.l, w.r), w.t - 10)
+            task.Wait(ran:Int(3, 7))
+        end
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== BOSS ============
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(163)
+end)--27
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

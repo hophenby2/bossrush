@@ -89,7 +89,8 @@ do
 end
 -- ④ 载入期钩子：项目/关卡文件里 LoadImage* 的名字边跑边登记
 for _, fn in ipairs({ "LoadImage", "LoadImageGroup", "LoadImageFromFile",
-                      "LoadTexture", "LoadTexture2" }) do
+                      "LoadTexture", "LoadTexture2", "LoadImageSetCenter",
+                      "LoadImageSetCenter2", "LoadAnimation", "LoadPS" }) do
     local orig = _G[fn]
     _G[fn] = function(name, ...)
         if fn == "LoadImageGroup" then
@@ -341,7 +342,7 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
                 vx = (v or 0) * math.cos(av), vy = (v or 0) * math.sin(av),
                 _index = Forbid(col or 1, 1, 16), timer = 0, ani = 0,
                 group = 1, _live = true, bound = true, style = style,
-                _sx = x, _sy = y, _sf = (_G.__frame or 0), _v0 = v or 0, _a0 = a or 0, _aim = aim and true or false,
+                _sx = x, _sy = y, _sf = (rawget(_G, "__frame") or 0), _v0 = v or 0, _a0 = a or 0, _aim = aim and true or false,
                 r = _styleRadius[_styleNames[style] or ""] or 4 }
     markAimed(b, x, y, b.vx, b.vy, aim)
     bullets[#bullets + 1] = b
@@ -456,8 +457,54 @@ _G.laser = {
     CutOnUnit = function() end, CyGrow = function() end, RemoveFog = function() end,
     _TurnOn = function() end, _TurnOff = function() end, _TurnHalfOn = function() end,
 }
-_G._SC_BG = { init = function() end, frame = function() end, render = function() end,
-              AddLayer = function(self) self.layers = self.layers or {} end }
+-- 符卡背景基类（引擎：`THlib/background/spellcard.lua`）。
+-- ★ `AddLayer` 必须返回**一个真的图层表**：关卡里普遍这么写 ——
+--     local b = _SC_BG.AddLayer(self, ...)
+--     function b:Beforeframe() ... end
+--   桩件原来返回 nil，`b:Beforeframe` 当场炸（th07/th09/th10/th16… 十六处）。
+--   那是桩件的错，不是关卡的错。这里照引擎抄一份最小实现，
+--   顺带让 `SCBG1:frame/render` 真的被跑到（原来是纯盲区）。
+_G._SC_BG = Class(_G.background)
+function _G._SC_BG:init()
+    _G.background.init(self, true)
+    self.layers = {}
+end
+function _G._SC_BG:frame()
+    for _, lay in ipairs(self.layers) do
+        if lay.Beforeframe then lay:Beforeframe() end
+        lay.x, lay.y = lay.x + lay.vx, lay.y + lay.vy
+        lay.rot = lay.rot + lay.omiga
+        lay.timer = lay.timer + 1
+        if lay.Afterframe then lay:Afterframe() end
+    end
+end
+function _G._SC_BG:render()
+    local a = self.alpha
+    if a and a > 0 then
+        for i = #self.layers, 1, -1 do
+            local lay = self.layers[i]
+            if lay.Beforerender then lay:Beforerender() end
+            lay._cur_alpha = a
+            if lay.Afterrender then lay:Afterrender() end
+        end
+    end
+end
+function _G._SC_BG:AddLayer(tex, tile, x, y, r, vx, vy, omi, blend,
+        hscale, vscale, init, bframe, aframe, brender, arender)
+    table.insert(self.layers, {
+        tex = tex, tile = tile and true,
+        x = x or 0, y = y or 0, rot = r or 0, vx = vx or 0, vy = vy or 0,
+        omiga = omi or 0, blend = blend or "",
+        a = 255, r = 255, g = 255, b = 255,
+        Beforeframe = bframe, Afterframe = aframe,
+        Beforerender = brender, Afterrender = arender,
+        timer = 0, hscale = hscale or 1, vscale = vscale or 1,
+        _cur_alpha = self.alpha,
+    })
+    local l = self.layers[#self.layers]
+    if init then init(l) end
+    return l
+end
 _G.GROUP = { GHOST = 0, ENEMY_BULLET = 1, ENEMY = 2, PLAYER_BULLET = 3, PLAYER = 4,
              INDES = 5, ITEM = 6, NONTJT = 7, SPELL = 8, LASER = 10, ENEMY_BULLET2 = 12 }
 _G.LAYER = { BG = -700, ENEMY = -600, PLAYER_BULLET = -500, PLAYER = -400,
@@ -757,6 +804,16 @@ end
 O.ReBound = function() end
 O.Shuttle = function() end
 _G.bullet.ReBound = function() end
+
+---★ `bulletStyle` 是引擎侧的全局基类（`THlib/bullet/bulletStyle.lua:2` 的
+---  `bulletStyle = Class(object)`）。关卡文件里 `Class(bulletStyle, {...})` 造自定义
+---  弹样式时要用到它；桩件缺了它就会退化成空壳，样式全是假的（th21 的复刻卡就中招了）。
+_G.bulletStyle = Class(O, {
+    init = function(self) self.size = 1 end,
+    frame = function() end, render = function() end,
+    del = function() end, kill = function() end,
+    RenderFunc = function() end, SetColorFunc = function() end,
+})
 _G.bullet.Shuttle = function() end
 _G.bullet.SetLayer = function() end
 _G.bullet.ChangeImage = function() end
@@ -838,7 +895,15 @@ _G.background = Class(O, {
     RanFloat = function(_, a) return a end,
     RanInt = function(_, a) return math.floor(a) end,
     RanSign = function() return 1 end,
-    Create = function() return New(_G.background) end,
+    -- ★ 引擎的 Create 是**实例化传进来的那个类**（`background.lua:72`），
+    --   不是造个自己的对象。原来桩件把参数丢了，于是符卡背景类的 `init`
+    --   **从来没被跑过** —— th21 的 `SCBG1.init` 里把 `_SC_BG` 写成了 `_SCBG`
+    --   （真机 `attempt to index global '_SCBG' (a nil value)`）就这么漏过去了。
+    Create = function(bg)
+        if bg == nil then return nil end
+        local o = New(bg)
+        return o, true
+    end,
     DelBG = function() end, Capture = function() end, ClearToFogColor = function() end,
 })
 
@@ -914,6 +979,45 @@ setmetatable(_G, { __index = function(_, k)
     if permissive then return make_stub(k) end
     return nil
 end })
+---★ `DefineAchievement` 的 rank 只能是 1~6。
+---  `THlib/UI/menus/achievement.lua:26` 的 `rank_power` 恰好 6 项，且没有循环取值的
+---  元表（旁边的 `rank_select` 有、它没有）→ rank=7 时 `rank_power[7]` 是 nil，
+---  成就菜单 Refresh 当场崩。这个错自检原来查不到，是 th21 加成就时踩的。
+---  （`AchievementInfo[id]` 的 [5] 就是 rank）
+--⚠ 必须**扫源码**：自检不载入 core.lua，`AchievementInfo` 是空的，
+--  写成 `pairs(_G.AchievementInfo)` 就是个摆设（我第一版就是那么写的，测了才发现不响）。
+--  做法：按 `DefineAchievement(` 切段，每段末尾的 `, N)` 就是 rank
+--  （参数里有 `{...}` 表，用平衡括号匹配很难写，按段切最省事）。
+do
+    local fh = io.open("mod/defachievement.lua")
+    if fh then
+        local src = fh:read("*a")
+        fh:close()
+        local p0 = 1
+        while true do
+            local a = src:find("DefineAchievement%s*%(", p0)
+            if not a then break end
+            local b = src:find("DefineAchievement%s*%(", a + 1) or (#src + 1)
+            local seg = src:sub(a, b - 1)
+            --去掉行注释再找，否则段尾的 `--` 会让 `$` 锚点失效
+            local body = seg:gsub(("%-%-[^\r\n]*"), "")
+            local id = body:match(("%((%d+)"))
+            local rank = nil
+            for r in body:gmatch((",%s*(%d+)%s*%)")) do rank = r end   -- 取最后一个
+            if id and rank then
+                local rn = tonumber(rank)
+                if rn < 1 or rn > 6 then
+                    fail(("DefineAchievement(%s): rank = %s 超出 1~6 —— " ..
+                            "`achievement.lua:26` 的 rank_power 只有 6 项且没有循环取值，" ..
+                            "成就菜单 Refresh 里 `rank_power[%s]` 是 nil，一进标题就崩")
+                            :format(id, rank, rank))
+                end
+            end
+            p0 = b
+        end
+    end
+end
+
 _G.__report_missing = function()
     local names = {}
     for k in pairs(missing) do names[#names+1] = k end
@@ -927,6 +1031,12 @@ _G.boss = {
         -- 注意 SCBG 允许为 nil（原版 th11 就是这样），所以只检查背景类
         if BG == nil then fail(("boss.Define(%s): 背景类为 nil —— 是不是忘了先载入 mod/BG/THxx/THxx_bg.lua？"):format(editname)) end
         if type(img) ~= "string" then fail(("boss.Define(%s): 行走图名不是字符串"):format(editname)) end
+        -- ★ 符卡背景类要在**载入时**就实例化一次：引擎是 boss 起来时
+        --   `background.Create(class._bg)`（`THlib/UI/sc_pr.lua:11-12`、`ext/ext_boss.lua:35`）。
+        --   不跑这一下，SCBG 的 init/frame/render 全是自检盲区。
+        if SCBG ~= nil then
+            _G.background.Create(SCBG)
+        end
         _editor_boss[editname .. level] = Class(boss, {
             cards = {}, name = name, StageLevel = level, bgm = BGM, _bg = BG,
             difficulty = "All", id = editname .. level, img = img,
@@ -1016,7 +1126,12 @@ local function step_tasks()
             if coroutine.status(t.co) == "dead" then
                 table.remove(tasks, i)
             else
-                t.wait = delay or 0
+                --★ `yield` 的值 = **还要等几帧**，而不是「再等这么多帧**之后**」。
+                --  引擎里 `task.Wait(1)` 是一次裸 `cor.yield()`，也就是**下一帧**恢复
+                --  （`THlib/lib/Ltask.lua:68-77`）。桩件原来是 `yield(1)` + `wait = 1`
+                --  → 中间跳过一帧，**实际等 2 帧** —— 于是整个自检的时间轴只有真实
+                --  速度的一半，所有图案都被拉长一倍，帧数、峰值、循环次数全部对不上。
+                t.wait = math.max((delay or 1) - 1, 0)
             end
         end
     end
@@ -1669,7 +1784,7 @@ for _, __item in ipairs(run_list) do
             boss_obj.ani = boss_obj.ani + 1
             step_tasks()
             step_objects()
-            _G.__frame = f
+            rawset(_G, "__frame", f)
             if HOOK and HOOK.on_frame then HOOK.on_frame(idx, f, bullets, objects) end
             if THREAT then
                 -- 强制位移：卡片（clamp / 水位 / 推力）改动了自机多少
@@ -1884,6 +1999,19 @@ for _, __item in ipairs(run_list) do
 end
 
 ----------------------------------------------------------------------
+--★ 全大写的未知全局（`LAYER` / `_SC_BG` 那种形状）基本只能是引擎常量，
+--  而引擎常量是不存在「没有桩件」这种情况的 —— 写出来就是**拼错**。
+--  桩环境对未知全局返回 nil，所以这种错原来只会躺在下面的「注意」列表里，
+--  一路漏到真机上才炸成 `attempt to index global 'X' (a nil value)`。
+--  th21 的 `_SCBG`（正确是 `_SC_BG`）就是这么过去的。这里直接判失败。
+do
+    for _, k in ipairs(__report_missing()) do
+        if k:match("^_?[A-Z][A-Z0-9_]*$") then
+            fail(("全局 %q 不存在（全大写的名字基本是引擎常量，多半是拼错了）"):format(k))
+        end
+    end
+end
+
 local miss = __report_missing()
 if #miss > 0 then
     print("")

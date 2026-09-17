@@ -633,3 +633,10 @@ DefineAchievement(162, [[地底]], [[地底 No Miss]], {
     [[第七张新关卡：地灵殿全员，七位 BOSS 依次登场（结构驱动的重制版）]],
     [[每位 BOSS 两张非符 + 三张符卡，一共 35 张]],
     [[山女 / 帕露西 / 勇仪 / 觉 / 燐 / 空 / 恋]] }, false, 6)
+
+--⚠ rank 只能是 1~6：`THlib/UI/menus/achievement.lua:26` 的 `rank_power` 恰好 6 项
+--  且**没有**循环取值的元表（`rank_select` 有、`rank_power` 没有）。
+--  写成 7 的话成就菜单 Refresh 里 `rank_power[7]` 是 nil，一进标题画面就崩。
+DefineAchievement(163, [[西行庭]], [[西行庭 No Miss]], {
+    [[第八张新关卡：东方幕华祭 Part II 的幽幽子 Lunatic 关底复刻]],
+    [[七张符卡 + 四张非符，弹幕与贴图都照原数据还原]] }, false, 6)
