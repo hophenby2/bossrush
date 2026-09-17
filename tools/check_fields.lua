@@ -11,6 +11,18 @@
 ---里的赋值**不算** —— 那个协程要下一帧才跑，而 `frame` 这一帧就跑了。
 ---
 ---   luajit tools/check_fields.lua mod/GAME/th20.lua [更多文件...]
+---
+---它**认**这几种安全写法，不会误报：
+---   · `self.X or 默认值` / `if self.X then` / `self.X and`   —— 显式守卫
+---   · 同一个函数体里先赋值后使用（例如 frame 开头先算的）
+---   · `frame` 里算出来、`render` 里直接用（frame 一定先于 render）
+---   · 基类 init 设的字段（`Class(laser, {...})` 里的 `self.alpha` 等 ——
+---     基类字段表是从 THlib 源码现场读出来的，不靠手抄）
+---
+---它**认不出**的写法（报了也请先人工看一眼，多半是安全的）：
+---   · 先 `local p = self.X` 再判 `if not p` —— 局部变量这层它看不穿
+---   （想让它认，就把守卫**直接写在 self.X 上**：
+---     `if not self.X then return end  local p = self.X`）
 ---=====================================
 
 local files = {}
@@ -41,6 +53,31 @@ local function assigned(l)
     return s
 end
 
+---★ 基类 init 会设的字段。`Class(laser, {init = function(self,...) laser.init(self,...) end})`
+---  这种写法里 `self.alpha` / `self.w` 是**基类 init 设的**，子类自己的 init 当然没有。
+---  静态审计不知道这件事，就会把 th01 的 `th01_ray` 报成崩溃 —— 而真机根本不崩。
+---  所以从 THlib 源码里**直接把每个基类 init 赋的字段读出来**，不靠手抄。
+local BASE_FIELDS = {}
+do
+    local h = io.popen("find THlib -name '*.lua' 2>/dev/null")
+    if h then
+        for file in h:lines() do
+            local fh = io.open(file)
+            if fh then
+                local src = fh:read("*a")
+                fh:close()
+                for nm, body in src:gmatch("function%s+([%w_]+)[%.:]init%s*%b()(.-)\nend") do
+                    BASE_FIELDS[nm] = BASE_FIELDS[nm] or {}
+                    for fld in body:gmatch("self%.([%w_]+)%s*=[^=]") do
+                        BASE_FIELDS[nm][fld] = true
+                    end
+                end
+            end
+        end
+        h:close()
+    end
+end
+
 ---引擎/基类自己就会给的字段，不算漏
 local ENGINE_FIELDS = {
     x = true, y = true, rot = true, vx = true, vy = true, omiga = true,
@@ -63,10 +100,12 @@ for _, path in ipairs(files) do
         local segs, cur = {}, nil
         for i, raw in ipairs(lines) do
             local l = strip(raw)
-            local cls = l:match('^class%["([%w_]+)"%]%s*=%s*Class')
+            --⚠ 前面允许缩进：th01/th02 把类定义**缩进在 `do ... end` 里**，
+            --  要求顶格会整段漏掉（th01 的 `self.alpha` 就是这么漏到真机上的）。
+            local cls, base = l:match('^%s*class%["([%w_]+)"%]%s*=%s*Class%s*%(%s*([%w_]+)')
             if cls then
                 if cur then segs[#segs + 1] = cur end
-                cur = { name = cls, head = i, body = {} }
+                cur = { name = cls, base = base, head = i, body = {} }
             elseif l:match("boss%.card%.New") then
                 if cur then segs[#segs + 1] = cur end
                 local nm = raw:match('boss%.card%.New%("([^"]*)"')
@@ -110,7 +149,12 @@ for _, path in ipairs(files) do
             for k in pairs(F) do
                 if k ~= "init" and k ~= "before" then
                     for fld in pairs(F[k].read) do
+                        local bf = s.base and BASE_FIELDS[s.base]
+                        --`frame` 一定先于 `render` 跑：在 frame 里算出来的量，
+                        --render 直接用是安全的（工具跨函数看不到这一点，会假报）
+                        local from_frame = (k == "render") and F.frame and F.frame.set[fld]
                         if not ENGINE_FIELDS[fld] and not (F.init and F.init.set[fld])
+                                and not (bf and bf[fld]) and not from_frame
                                 and not F[k].guard[fld] and not F[k].selfset[fld] then
                             bad[#bad + 1] = ("%s 读了 self.%s"):format(k, fld)
                         end

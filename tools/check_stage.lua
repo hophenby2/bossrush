@@ -102,6 +102,30 @@ for _, fn in ipairs({ "LoadImage", "LoadImageGroup", "LoadImageFromFile",
         if orig then return orig(name, ...) end
     end
 end
+-- ⑤ **静态扫全项目的 LoadImage\***。
+--   ④ 只在「文件真的被载入」时才登记 —— 单跑一个关卡文件时，
+--   别的关卡文件里注册的共用贴图就不在池子里，于是变成**假报**：
+--   th04 用 `Lfan4`，而 `Lfan` 是 `mod/GAME/th08.lua:1775` 的 `LoadImageGroup` 注册的。
+--   真机上所有关卡文件都会载入（`_editor_output.lua` 的 StageID 循环），
+--   所以这里也要按「全都载入过」来算。
+do
+    local p = io.popen("find mod THlib Resources -name '*.lua' 2>/dev/null")
+    if p then
+        for file in p:lines() do
+            local fh = io.open(file)
+            if fh then
+                local src = fh:read("*a")
+                fh:close()
+                for nm in src:gmatch('LoadImageGroup%s*%(%s*"([%w_]+)"') do
+                    for i = 1, 16 do reg(nm .. i) end
+                end
+                for nm in src:gmatch('LoadImage%s*%(%s*"([%w_]+)"') do reg(nm) end
+                for nm in src:gmatch('LoadTexture%d?%s*%(%s*"([%w_]+)"') do reg(nm) end
+            end
+        end
+        p:close()
+    end
+end
 _G.REGISTERED_IMAGES = RES
 
 ---扫源码里的贴图名字面量，逐个对登记表。
@@ -192,6 +216,25 @@ _G.CREATED_OBJECTS = 0
 -- 诊断用：卡结束之后到底是谁在造东西
 _G.LOG_NEW, _G.LOG_BULLET = {}, {}
 local _styleNames = {}      -- bulletStyle 表 → 名字
+
+---★ 弹的判定半径（= `LoadImageGroup` 的**末两参** a, b）。
+---  用来算「自机周围 16 个方向有没有空隙」——空隙要减掉弹的实际大小，
+---  拍脑袋当点弹会把所有弹都算小一圈。见《什么是好的弹设.md》第二节。
+local _styleRadius = {}
+do
+    local f = io.open("THlib/bullet/bulletStyle.lua")
+    if f then
+        local src = f:read("*a")
+        f:close()
+        for nm, _a, _b in src:gmatch("LoadImageGroup%s*%(%s*'([%w_]+)'.-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)") do
+            _styleRadius[nm] = math.max(tonumber(_a) or 4, tonumber(_b) or 4)
+        end
+        for nm, _a, _b in src:gmatch('LoadImageGroup%s*%(%s*"([%w_]+)".-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)') do
+            _styleRadius[nm] = math.max(tonumber(_a) or 4, tonumber(_b) or 4)
+        end
+    end
+end
+_G.STYLE_RADIUS = _styleRadius
 -- 自机判定半径 = **自机半宽 + 弹半宽**，不是拍脑袋的 4。
 --   引擎的碰撞是「两个椭圆求交」（GameObjectIntersectDetect.cpp），两边都用各自贴图登记的
 --   a/b：自机在 THlib/player/*/[自机].lua 里写 A/B（灵梦 0.5、魔理沙/文 1），
@@ -288,13 +331,23 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
         local nm = _styleNames[style] or "(弹样式)"
         _G.LOG_BULLET[nm] = (_G.LOG_BULLET[nm] or 0) + 1
     end
-    local av = math.rad(a or 0)
-    local b = { x = x, y = y, rot = a or 0,
+    -- ★ `aim = true` 表示角度 `a` 是**相对自机方向**的，引擎要加上 Angle(self, player)
+    --   （`THlib/bullet/bullet.lua:232-234`）。桩件原来直接把 a 当绝对角用 ——
+    --   于是所有自机狙在自检里都朝错方向飞，威胁度、安全角、难度场全部失真。
+    local rot = a or 0
+    if aim then rot = rot + Angle(x, y, player.x, player.y) end
+    local av = math.rad(rot)
+    local b = { x = x, y = y, rot = rot,
                 vx = (v or 0) * math.cos(av), vy = (v or 0) * math.sin(av),
                 _index = Forbid(col or 1, 1, 16), timer = 0, ani = 0,
-                group = 1, _live = true, bound = true, style = style }
+                group = 1, _live = true, bound = true, style = style,
+                _sx = x, _sy = y, _sf = (_G.__frame or 0), _v0 = v or 0, _a0 = a or 0, _aim = aim and true or false,
+                r = _styleRadius[_styleNames[style] or ""] or 4 }
     markAimed(b, x, y, b.vx, b.vy, aim)
     bullets[#bullets + 1] = b
+    -- 外部工具（tools/threat.lua）用它在**出膛那一刻**登记发弹事件
+    local cb = rawget(_G, "STAGE_BULLET_CB")
+    if cb then cb(b, style, col, x, y, v, a, aim) end
     return b
 end
 
@@ -365,9 +418,43 @@ _G.bullet = {
 --   但 each_threat 只认 1/2/5 —— 激光是**线段**不是点，
 --   拿激光原点的坐标去跑「点弹命中预测」会算出垃圾，所以这里故意不收。
 --   （th04 不用激光；th01 用了，那几张卡的激光威胁不在统计里，属于已知局限。）
+---★ `laser` 的桩件必须**忠实地照抄 `THlib/laser/laser.lua:35` 的字段表**。
+---  原来只设了 `group`/`colli`，于是任何 `Class(laser, {...})` 的子类在 render 里
+---  读 `self.alpha` / `self.w` / `self.node` 都会读到 nil，自检就报
+---  「attempt to compare nil with number」—— 而真机上 `laser.init` 明明设了。
+---  th01 的 `th01_ray` 就是这么被**假报**成崩溃的（真机根本不崩）。
 _G.laser = {
-    init = function(self) self.group = _G.GROUP.LASER self.colli = true end,
-    frame = function() end, render = function() end,
+    init = function(self, index, x, y, rot, l1, l2, l3, w, node, head)
+        self.index = Forbid(int(index or 1), 1, 16)
+        self.imgid = 1
+        self.x, self.y, self.rot = x or 0, y or 0, rot or 0
+        self.prex, self.prey = self.x, self.y
+        self.l1, self.l2, self.l3 = l1 or 0, l2 or 0, l3 or 0
+        self.w0 = w or 8
+        self.w, self.alpha = 0, 0
+        self.node, self.head = node or 0, head or 0
+        self.dw, self.da, self.counter = 0, 0, 0
+        self.drop_CD, self.protect = 0, 0
+        self.IsLaser = true
+        self._blend, self._a, self._r, self._g, self._b = "mul+add", 255, 255, 255, 255
+        self.group, self.colli = _G.GROUP.LASER, true
+    end,
+    --照抄 laser:frame 里对 w / alpha 的累积（测密度和威胁度要靠它）
+    frame = function(self)
+        self.drop_CD = math.max(0, (self.drop_CD or 0) - 1)
+        self.protect = math.max(0, (self.protect or 0) - 1)
+        if (self.counter or 0) > 0 then
+            self.counter = self.counter - 1
+            self.w = self.w + self.dw
+            self.alpha = self.alpha + self.da
+        end
+    end,
+    render = function() end,
+    del = function() end, kill = function() end,
+    setWidth = function(self, w) self.w, self.w0 = w, w end,
+    ChangeImage = function() end, CutOnRadius = function() return 0, 0 end,
+    CutOnUnit = function() end, CyGrow = function() end, RemoveFog = function() end,
+    _TurnOn = function() end, _TurnOff = function() end, _TurnHalfOn = function() end,
 }
 _G._SC_BG = { init = function() end, frame = function() end, render = function() end,
               AddLayer = function(self) self.layers = self.layers or {} end }
@@ -442,6 +529,17 @@ local function classKeyCached(c)
     return v
 end
 local function New(class, ...)
+    -- ★★ 第一参必须真的**是一个对象类**。
+    --   引擎在这里报 `invalid argument #1, luastg object class required for 'New'`
+    --   —— 真机当场崩。桩件原来什么都不查，于是 `New(class["忘了定义的名字"], ...)`
+    --   会静默造出一个**没有 init / 没有 frame 的死对象**，自检一个错都不报。
+    --   th04 第三版的 `th04_fandeco` 就是这么漏到真机上的（我换正文时删了定义，
+    --   但 limit_fan_ribs 还在调它）。
+    if type(class) ~= "table" then
+        error(("New 的第 1 参不是对象类（%s）—— 多半是 `class[\"名字\"]` 忘了定义、或名字拼错。" ..
+                " 引擎会报 `invalid argument #1, luastg object class required for 'New'`")
+                :format(tostring(class)), 2)
+    end
     _G.CREATED_OBJECTS = _G.CREATED_OBJECTS + 1
     if PROBE then
         local nm = classKeyCached(class)
@@ -587,6 +685,7 @@ for _, n in ipairs({ "arrow_big", "arrow_big_b", "arrow_big_c", "arrow_mid", "ar
     _G[n] = styleStub()
     _styleNames[_G[n]] = n
 end
+
 
 local function setv(o, v, a, rot)
     o.vx = (v or 0) * math.cos(math.rad(a or 0))
@@ -1140,6 +1239,14 @@ if #registered == 0 then print("  （没有 boss.card.add）") end
 local THREAT = (arg[3] == "--threat") or os.getenv("STAGE_THREAT") == "1"
 ---测量用的基准种子：`STAGE_SEED` 可换，用来量随机性带来的方差
 local SEED_BASE = tonumber(os.getenv("STAGE_SEED")) or 20260916
+---★ 外部工具钩子。`tools/threat.lua` 设了它来复用这套桩件做弹幕分析：
+---   `set_player(idx,f)` 决定这一帧自机站哪（返回 true = 接管）
+---   `on_frame(idx,f)`   在 step_objects() 之后调（按帧采样）
+---   `on_card(idx,entry)` 每张卡开始前
+---   `cards = {[idx]=true}` 只跑这几张；`quiet = true` 不打印自检自己的报告
+--   ⚠ 必须用 rawget：`_G` 上挂了「未定义全局就返回空壳」的元表，
+--     直接写 `_G.STAGE_HOOK` 会被记成「缺桩件的全局」。
+local HOOK = rawget(_G, "STAGE_HOOK")
 local THREAT_R, SECT = 60, 24        -- HIT_R 在上面（出膛判定也要用）
 -- REACT：留给玩家「反应 + 移动」的帧数。TTH 掉到这个以内 = 现在必须动
 -- HORIZON：预测多少帧以内；超过就算「暂时没威胁」
@@ -1427,7 +1534,16 @@ end
 
 
 print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
-for idx, entry in ipairs(registered) do
+-- HOOK.cards 指定只跑哪几张（`tools/threat.lua` 用，省时间）
+local run_list = {}
+for i, e in ipairs(registered) do
+    if not (HOOK and HOOK.cards) or HOOK.cards[i] then
+        run_list[#run_list + 1] = { idx = i, entry = e }
+    end
+end
+for _, __item in ipairs(run_list) do
+    local idx, entry = __item.idx, __item.entry
+    if HOOK and HOOK.on_card then HOOK.on_card(idx, entry) end
     local card = entry.card
     objects, bullets, tasks = {}, {}, {}
     local boss_obj = {
@@ -1533,7 +1649,18 @@ for idx, entry in ipairs(registered) do
             end
         end
         for f = 1, FRAMES do
-            if THREAT then bot_move() end
+            -- ★ 外部工具钩子（`tools/threat.lua` 用）：
+            --   `set_player(idx, f)` 决定这一帧自机站哪 —— 有了它才能把自机
+            --   **钉在一个固定参考点**上量「站在这里会怎样」（文档《什么是好的弹设》
+            --   的威胁度就是按自机所在位置定义的）。返回 true 表示接管，跳过机器人。
+            --   `on_frame(idx, f)` 在 step_objects() 之后调，用来按帧采样场上的弹。
+            if HOOK and HOOK.set_player and HOOK.set_player(idx, f, bullets, objects) then
+                -- 工具接管自机
+            elseif THREAT or HOOK then
+                -- ★ 有钩子的外部工具也要让自机动起来：不动的话它永远停在 (0,0)，
+                --   而《什么是好的弹设》的威胁度是「在自机所在位置」量出来的。
+                bot_move()
+            end
             -- 记录机器人走完之后的位置：之后卡片再动自机 = 强制位移
             local p1x, p1y = player.x, player.y
             if card.frame then card.frame(boss_obj) end
@@ -1542,6 +1669,8 @@ for idx, entry in ipairs(registered) do
             boss_obj.ani = boss_obj.ani + 1
             step_tasks()
             step_objects()
+            _G.__frame = f
+            if HOOK and HOOK.on_frame then HOOK.on_frame(idx, f, bullets, objects) end
             if THREAT then
                 -- 强制位移：卡片（clamp / 水位 / 推力）改动了自机多少
                 local dx, dy = player.x - p1x, player.y - p1y
@@ -1742,12 +1871,16 @@ for idx, entry in ipairs(registered) do
                 fail(("%s  卡结束后的 180 帧里还在新建 弹 %d / 对象 %d —— del 没清干净")
                         :format(label, tm_leak_b, tm_leak_o))
             end
-        else
+        elseif not (HOOK and HOOK.quiet) then
             pass(("%s  峰值 对象 %d / 弹 %d / 拖影 %d"):format(label, peak_obj, peak_bul, peak_smear))
         end
-    else
+    elseif not (HOOK and HOOK.quiet) then
         fail(("%s -> %s"):format(label, tostring(msg)))
+    else
+        -- 静默模式下也要让工具知道这张卡炸了（否则工具会报一堆空数据）
+        if HOOK.on_error then HOOK.on_error(idx, tostring(msg)) end
     end
+    if HOOK and HOOK.on_card_end then HOOK.on_card_end(idx) end
 end
 
 ----------------------------------------------------------------------

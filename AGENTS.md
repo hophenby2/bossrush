@@ -674,6 +674,23 @@ end
 内层虽然只活 40 帧，**触发周期是 120 帧（外层的周期）**。
 翻成 `v = u % 40` 就变成频率高 3 倍。两层各取自己的模。
 
+**B?. 自绘物件的自定义速度不要叫 `vx` / `vy`。**
+引擎每帧替**所有**对象做一次 `x += vx`、`y += vy`（不是只有弹才走）。
+你在 `frame` 里再自己算一遍就是**两倍速**；方向相反时正好抵消 ——
+物件永远停在出生点，而且不报错，只是看起来「装饰物不动」。
+
+```lua
+-- ✗ 引擎会再 y += vy 一次，和这里的 -vy 抵消 → 一动不动
+self.vy = 2.2
+frame = function(self) self.y = self.y - self.vy end
+-- ✓ 换个名字，引擎那一路就只看到 0
+self.fall = 2.2
+frame = function(self) self.y = self.y - self.fall end
+```
+
+th04 第三版的装饰蝶 / 花瓣就是这么「不动」的：3600→7200 帧对象峰从 226 涨到 458
+（没有任何一个被回收）。改名之后两处峰值完全一致。
+
 ### C. 会难看的 / 会看错的
 
 **C1. `rot` 是标准数学角。** 证据：`LObjectEvents.lua:205` 的 `SetRelPos` 用的是标准
@@ -732,7 +749,7 @@ luajit tools/check_stage.lua --all                    # 全项目：按引擎顺
 桩件是简化的：`Render` / `SetImageState` 是空函数，
 所以「画出来长什么样」一概不验证。
 
-### 四个必做的扫描
+### 五个必做的扫描
 
 **① 泄漏扫描**（对象数随时间线性涨 = 漏回收）：
 
@@ -767,13 +784,39 @@ luajit tools/check_fields.lua $(ls mod/GAME/th*.lua) # 全项目
 ```
 
 `check_stage.lua` **测不出这一类**：桩件太宽容，而且只有真走到那一行才会炸。
+（它靠 `New` 的第一参加了一道运行期校验：第一参不是对象类就当场报 —— 引擎报的是
+`invalid argument #1, luastg object class required for 'New'`。th04 第三版的 `th04_fandeco`
+就是「换正文时删了类定义、调用还在」这么漏到真机上的，桩件当时会**静默造一个死对象**。）
 `check_fields.lua` 静态地找「`frame`/`render` 里读了、但 `init` 顶层从没赋值」
 的字段 —— 这类字段在真机上第一帧就是 `nil`。它认三种守卫：
 `self.X or 默认值`、`if self.X then`、`self.X and`，也认**同一函数体内先赋值后使用**。
 （所以守卫要**直接**写在 `self.X` 上：`local p = self.X; if not p then` 人看得懂，
 审计器看不懂 —— 写成 `if not self.X then return end; local p = self.X`。）
 
-**④ 贴图名**：自检会自动报（A2）；报不出来时手动核对
+**④ 威胁度 / 限位对表**（按《什么是好的弹设.md》实现，独立于自检）：
+
+```bash
+luajit tools/threat.lua mod/GAME/th04.lua 1800        # 全部卡
+THREAT_CARDS=3,4 luajit tools/threat.lua …            # 只测某几张
+THREAT_POS=0,-176 luajit tools/threat.lua …           # 把自机钉死在一点
+```
+
+文档的两条硬指标：**子弹总威胁度 0.5~1.5**、**同时作用威胁组数 1~2**，
+外加「一张卡 = 至少一种限位 + 至少一种威胁」。报告里逐条给判定。
+
+度量定义（工具头部注释写得更细）：
+- 威胁度 = Σ_帧[自机位置会被打到] × (危险方向数/16)，换算成每秒。
+  **奇数狙不计入「会被打到」的帧数**（不动的自机必中，微移就能躲），
+  但它封死 16 方向里的 9 个 —— 所以它是**限位**，不是威胁。
+- 安全方向 = 沿它量到最近一颗弹**表面**的距隙 > `5 + 自机判定半径`（自机半径取 1，
+  6 px；弹半径取自 `LoadImageGroup` 末两参，见 check_stage 的 `STYLE_RADIUS`）。
+- 参考自机**跟着限位做大范围移动、但不做微操**：当前格还安全就原地不动，
+  不安全了才挪（限速 4 px/帧）。钉死在一点会对「安全区会移动」的卡严重高估；
+  而完美躲避按定义恒等于 0 —— 两个极端都量不出东西。
+
+实测（2026-09-17，第二版 th04 十张卡的对比见 `mod/GAME/th04.lua` 文件头）。
+
+**⑤ 贴图名**：自检会自动报（A2）；报不出来时手动核对
 `THlib/bullet/bulletStyle.lua`（弹样式）、`Resources/Special/`（主题贴图）、
 `Resources/BossBackGround/`（背景纹理）。
 
