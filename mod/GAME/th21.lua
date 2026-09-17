@@ -71,6 +71,7 @@ LoadImageSetCenter("T660_32", "THMHJ_660", 307, 0, 60, 60, 30, 30)       --樱�
 local function styleOf(img, size)
     local u = Class(bulletStyle)
     u.size = size
+    u._imgname = img          -- 贴图名（自检工具把弹幕渲成图时要用）
     u.init = function(self) self.img = img end
     u.RenderFunc = Render
     u.SetColorFunc = SetImageState
@@ -83,6 +84,10 @@ local S_b140 = styleOf("Tg140", 0.55)
 local S_sakura = styleOf("T660_32", 0.85)
 local S_bigfan = styleOf("T660_28", 0.8)
 local S_jin = styleOf("T660_11", 0.9)
+---「不可见载体」用：CS 里 `type=0` → 子弹 type −1 = −1 → **根本不画**
+---（`Barrage.cs:1620-1621` 直接 return），但它照样能当炮塔的挂载点。
+---这里把一张现成贴图缩到 0.001 倍——屏幕上不到一个像素，等于没有。
+local S_none = styleOf("Tg225", 0.001)
 
 ---道中飘落的花瓣（装饰，无判定，自己回收）
 class["th21_petaldeco"] = Class(object, {
@@ -143,28 +148,76 @@ end
 ---XNA(Crazy Storm) → LuaSTG
 ---CS 的逻辑窗口是 640×480，场地就是正中那块 384×448（Touhou 场地的标准尺寸）；
 ---LuaSTG 的 world 也是 384×448（`THlib/lib/Lscreen.lua:51`）。
----所以 **1:1、中心 (320,240)**，只做平移加一次 y 翻转。
-local function CX(x) return x - 320 end
+---所以 **1:1、中心 (315,240)**（`Center` 的默认值，`Center.cs:76-77`），
+---只做平移加一次 y 翻转。
+local function CX(x) return x - 315 end
 local function CY(y) return 240 - y end
 local function CA(a) return -a end
 
+---CS 的离屏回收框（`Barrage.cs:1586-1599`，已换算到 Lua 坐标）。
+---⚠ 它比屏幕**大得多**：默认框 lua x∈[−631, 452]、y∈[−575, 573]；
+---`Outdispel=true` 时换成紧框 x∈[−331, 230]、y∈[−275, 273]（也还是比场地大）。
+---所以 CS 里子弹出屏之后**还会活着飞一段**，靠 `sonlife` 到期才消失 —— 照做。
+local function offscreen(bb, tight)
+    if tight then
+        return bb.x < -331 or bb.x > 230 or bb.y < -275 or bb.y > 273
+    end
+    return bb.x < -631 or bb.x > 452 or bb.y < -575 or bb.y > 573
+end
+
+---把子弹的「速度 + 方向」写进引擎真正读的 vx/vy。
+---⚠ 不能只用 `object.SetV`：CS 的速度是 `speedx = 横比·speed·cos(方向)`、
+---`speedy = 纵比·speed·sin(方向)`（`Barrage.cs:396-397`），**两个轴各有一个缩放**，
+---所以 `横比≠1` 的子弹走的是椭圆（b660 那颗看不见的载体 `横比=9`，就是靠这个
+---把圆周压成一条扁椭圆）。`SetV` 写不出椭圆，这里直接算 vx/vy。
+local function setv(bb)
+    bb.vx = bb._xs * bb._sp * cos(bb._dir)
+    bb.vy = bb._ys * bb._sp * sin(bb._dir)
+end
+
 ---发一发（出膛即走）
-local function fly(style, x, y, v, a, r, g, b, omiga, sw, sh, alpha, head, wsd)
+local function fly(style, x, y, v, a, r, g, b, omiga, sw, sh, alpha, head, wsd, xs, ys, asp, aspd)
     local o = NewSimpleBullet(style, 1, x, y, v, a, false, omiga or 0, false)
     o._v0 = v or 0                        --出膛速度（子事件可能改它）
     o._sp, o._dir = v or 0, a or 0        --子事件「子弹速度/方向」读写的就是这两个
+    o._xs, o._ys = xs or 1, ys or 1       --横比/纵比（速度椭圆的半轴比例）
     o._r, o._g, o._b = r or 255, g or 255, b or 255
+    --加速度：**只在出生这一帧**换算成 aspeedx/aspeedy（`Barrage.cs:396-397`），
+    --之后每帧 `speedx += aspeedx`（`:423-424`）。子事件改它是无效的（原版如此）。
+    o._asp0, o._aspd0 = asp or 0, aspd or 0
+    o._asx = o._xs * (asp or 0) * cos(aspd or 0)
+    o._asy = o._ys * (asp or 0) * sin(aspd or 0)
     o._blend = "mul+add"
+    --★ 离屏回收**交给 CS 自己的框**，不要让引擎提前删：
+    --  CS 的框比屏幕大得多（`Barrage.cs:1586-1599`，换算见 `cs_offscreen`），
+    --  所以子弹飞出屏幕后**依然活着**，靠 `sonlife` 到期才消失。
+    --  b660 的 Layer3 载体就是靠这个活到第二圈（`sonlife=1200` 而它一直在屏幕外绕圈），
+    --  引擎默认的 bound 会把它在第一圈就删掉，那两条尾迹就永远不会出现。
+    o.bound = false
     if sw then o.hscale, o.vscale = sw, (sh or sw) end
     o._a = (alpha or 100) * 2.55          --CS 的 alpha 是 0..100
-    --`Barrage.cs:399`：Withspeedd 时贴图朝向跟着速度方向，否则是批次自己的 head
-    o.rot = wsd and (a or 0) or (head or 0)
+    setv(o)
+    --★ 判定：CS 只在 `alpha > 95` 时才做自机判定（`Barrage.cs:1487`）。
+    --  所以「不透明度」在数据里不只是外观 —— b660 的花瓣出生 `alpha=0`，
+    --  到第 601 帧「不透明度变化到100」才**变得致命**，那条事件就是干这个的。
+    o.colli = o._a > 242.25               --95 × 2.55
+    --★ 贴图旋转 = `-(head + 90)`：
+    --  引擎画的时候是 `ToRadians(head) + π/2`（`Barrage.cs:1637`），**固定多加了 90°**；
+    --  再按 y 翻转取负。所以数据里满地的 `head=270` 意思是 270+90=360 —— **完全不转**，
+    --  保持贴图原本的方向。
+    --  ⚠ 光柱的「竖」**不是贴图自带的**：`Tg225` 实测是 64×64 的各向同性光斑
+    --    （长宽比 1.0），竖起来靠的是 `hscale 2.0 > wscale 1.2` 这种非等比缩放；
+    --    而缩放是在**贴图本地坐标系**里做的，所以 `rot` 一转，被拉长的那根轴跟着转 ——
+    --    id 0/3/4 的 `head 270/290/230` 正是让三根柱子的长轴偏 0°/20°/−40°，张成扇形。
+    --  `Barrage.cs:399`：Withspeedd 时贴图朝向跟着速度方向，否则是批次自己的 head
+    o._head = wsd and (a or 0) or (head or 0)
+    o.rot = (wsd and (a or 0) or (head or 0)) - 90
     return o
 end
 
 ---★ 子事件组用的代理：在事件里读写 `p.w / p.h / p.alpha / p.rot / p.speed / p.dir`
----就等于读写子弹自己的字段。速度/方向改完必须 `object.SetV` 才真的拐弯。
----（子弹的属性表是 `CSManager.cs:133-155` 的 `results2`，和批次的**不是同一张**）
+---就等于读写子弹自己的字段。速度/方向改完要重算 vx/vy 才真的拐弯。
+---（子弹的属性表是 `Barrage.cs:481-501` 的 `results`，和批次的**不是同一张**）
 local function bullet_proxy(bb)
     return setmetatable({}, {
         __index = function(_, k)
@@ -173,16 +226,29 @@ local function bullet_proxy(bb)
             if k == "alpha" then return bb._a / 2.55 end
             if k == "w" then return bb.hscale end
             if k == "h" then return bb.vscale end
+            if k == "rot" then return bb._head end
+            if k == "r" then return bb._r end
+            if k == "g" then return bb._g end
+            if k == "b" then return bb._b end
+            --⚠ CS 里 `aspeed`/`aspeedd` **只在子弹出生的那一帧**算成 aspeedx/aspeedy
+            --  （`Barrage.cs:396-397` 在 `time==1` 块里），之后子事件再改它是**无效**的。
+            --  所以这里只读不生效，读了也返回出生值。
+            if k == "aspeed" then return bb._asp0 end
+            if k == "aspeedd" then return bb._aspd0 end
             return bb[k]
         end,
         __newindex = function(_, k, v)
             if k == "speed" then bb._sp = v
             elseif k == "dir" then bb._dir = v
-            elseif k == "alpha" then bb._a = v * 2.55
+            elseif k == "alpha" then bb._a = v * 2.55; bb.colli = bb._a > 242.25
             elseif k == "w" then bb.hscale = v
             elseif k == "h" then bb.vscale = v
+            elseif k == "rot" then bb._head = v; bb.rot = v - 90
+            elseif k == "r" then bb._r = v
+            elseif k == "g" then bb._g = v
+            elseif k == "b" then bb._b = v
             else bb[k] = v end
-            if k == "speed" or k == "dir" then object.SetV(bb, bb._sp, bb._dir, false) end
+            if k == "speed" or k == "dir" then setv(bb) end
         end,
     })
 end
@@ -193,20 +259,30 @@ end
 ---    how ：0=设为目标值  1=增加  2=减少
 ---    mode：0=正比  1=固定  2=正弦      （`Execution.cs:77 / 529 / 981`）
 ---  触发那一刻把该属性的当前值记成 `region`（正弦绕它振荡），并掷一次随机。
----  ⚠ 属性名（中文）到字段的映射**分四张表**（`CSManager.cs:88-215`）：
----    父事件组用 `results`（半径2 半径方向3 角度6 速度8 生命12 宽比14 高比15 不透明度19 子弹速度21），
----    子事件组用 `results2`（宽比2 高比3 不透明度7 朝向8 子弹速度9 子弹速度方向10）。
+---  ⚠ **状态 `st` 是「每个持有者一份」，不是每组事件一份**：
+---    父事件作用在批次上，一个批次一份；子事件作用在**每颗子弹**上，
+---    而 CS 里 `Shoot` 给每颗子弹都 `barrage.Events.Add(Event.Get()...)`（`Batch.cs:1690-1695`），
+---    也就是**每颗子弹各自克隆了一套事件组**。
+---    共用一个 `st` 的后果很隐蔽：`ctime` 会被同批次的几百颗子弹每帧各扣一次，
+---    于是「持续 140 帧」的事件在十几帧内就耗尽 —— 花瓣只会抖一下就不再自转。
+---  ⚠ 属性名（中文）到字段的映射**分两张表**（`Batch.cs:408-452` / `Barrage.cs:481-501`）：
+---    父事件用批次的 `results`（半径2 半径方向3 角度6 速度8 生命12 宽比14 高比15 不透明度19 子弹速度21），
+---    子事件用子弹的 `results`（宽比2 高比3 不透明度7 朝向8 子弹速度9 子弹速度方向10）。
 ---    所以「子弹速度」在批次上是 `sonspeed`、在子弹上是 `speed`，是**两个**字段。
 local function events(specs)
-    local st = {}
-    return function(b, time)
+    return function(b, time, st)
         for i = 1, #specs do
             local s = specs[i]
             local e = st[i]
             local due = time >= (s.at or 1)
             if due and s.every then due = (time - (s.at or 1)) % s.every == 0 end
             if not e and due then
-                e = { region = b[s.key], ctime = s.frames,
+                --⚠ 生成的数据只写出**非零**的字段，所以事件引用的键可能压根没在表里
+                --  （例如 `sonaspeedd` 数据是 0）。缺键当 0，并且落一个 0 上去，
+                --  否则后面的 `region ± …` 会对 nil 做算术。
+                local reg = b[s.key]
+                if reg == nil then reg = 0; b[s.key] = 0 end
+                e = { region = reg, ctime = s.frames,
                       v = s.v + (s.rand or 0) * ran:Float(-1, 1) }
                 st[i] = e
             end
@@ -241,25 +317,35 @@ end
 --============================
 --★ Crazy Storm 图案播放器
 --==================================================================
---  一个「批次」表长这样（坐标/角度**已经换算过**）：
+--  一个「批次」表长这样（坐标/角度**已经换算过**）。字段由
+--  `tools/thmhj_tolua.py` 从原版数据机械生成，键名一一对应 `Batch` 的字段：
 --    { id, bind, begin, life, t, tiao, spr,
---      ax, ay,            -- 根的发射锚点（= CS 的 fx/fy）
+--      ax, ay, fxp,       -- 根的发射锚点（CS 的 fx/fy）；fxp = 「fx 取自机的 X」
 --      r, rd,             -- 扇形半径 / 扇形中心角（事件会改它 → 枝条）
 --      fa, spread,        -- 射击方向中心角 / 张角
---      v, omi,            -- 子弹速度 / 角速度（CS 的 sonspeed / sonaspeed）
---      sw, sh, head, wsd, -- 贴图缩放 / 朝向 / Withspeedd
---      cr,cg,cb, alpha,   -- 颜色与不透明度
+--      v,                 -- 子弹速度（CS 的 sonspeed）
+--      sw, sh, head, wsd, -- 贴图宽比/高比/朝向 / Withspeedd（朝向跟速度）
+--      xs, ys,            -- 横比/纵比：**速度**椭圆的半轴比例
+--      sonaspeed, sonaspeedd, -- 子弹加速度 / 加速度方向
+--      cr,cg,cb, alpha,   -- 颜色与不透明度（alpha ≤ 95 时**没有判定**）
 --      speed, sd,         -- 批次自身每帧位移（CS 的 speed / speedd）
---      sonlife, dispel, mist,
+--      sonlife, dispel, mist, invisible,
 --      extra,             -- 「当前帧=1：额外发射」→ 时间 1 也发一轮
---      evspec = {...},    -- 父事件组：改批次自己的属性
---      sevspec = {...},   -- 子事件组：改**每颗子弹**自己的属性
+--      evspec = {...},    -- 父事件组（p[51]）：改批次自己的属性
+--      sevspec = {...},   -- 子事件组（p[52]）：改**每颗子弹**自己的属性
 --      ev2(bb)            -- 需要写代码的子弹回调时用它 }
+--  ⚠ `outdispel` / `invincible` 这两个旗标**不影响判定**：前者只影响离屏回收的边界，
+--    后者是「子弹不会被自机打掉」（`Barrage.cs:1474`）。有判定与否只看 `alpha`。
 --==================================================================
 local function run_cs(self, total, layers)
     local st, idx = {}, {}
+    --哪些批次被别的批次当父（`bind` 指向它）——只有这些需要记载体。
+    --不筛的话，花瓣类炮塔（一张卡几千颗）也会攒一份没人查的载体表。
+    local parentof = {}
+    --循环回卷时要复位的字段（事件改过哪个就得存哪个，否则跨圈越滚越大）
     local SAVE = { "r", "rd", "fa", "spread", "tiao", "t", "life", "speed", "sd",
-                   "ax", "ay", "x", "y", "sw", "sh", "alpha", "v", "omi" }
+                   "ax", "ay", "x", "y", "sw", "sh", "alpha", "v", "omi",
+                   "head", "sonaspeed", "sonaspeedd", "xs", "ys" }
     for L, list in ipairs(layers) do
         idx[L] = {}
         for _, b in ipairs(list) do
@@ -278,14 +364,30 @@ local function run_cs(self, total, layers)
             idx[L][b.id] = #st
         end
     end
+    --第二遍：算出「哪些批次被当父」——`bindid` 可以前向引用（枝条三的 `id=3` 挂在
+    --后面的 `id=14` 上），所以不能在同一个循环里就地判定。
+    for i = 1, #st do
+        local s = st[i]
+        if s.b.bind and s.b.bind >= 0 then
+            parentof[s.L] = parentof[s.L] or {}
+            parentof[s.L][s.b.bind] = true
+        end
+    end
     ---回到「原始数据 + 哨兵重算」（`Time.cs:74` 每个循环 `copys = Copy()` 一次）。
     ---少了这一步，事件对 r / speed 的累加会跨循环越滚越大，几圈之后就不是这张卡了。
     local function rewind()
         for i = 1, #st do
             local s = st[i]
             for k, v in pairs(s.orig) do s.b[k] = v end
-            s.carriers = {}
+            --⚠ **不要清 `s.carriers`**。CS 回卷时只重抄批次，在飞的子弹一律留着
+            --  （`Time.cs`），而炮塔扫描的是图层里所有活着的子弹（`Batch.cs:1703`）——
+            --  所以**上一圈打出去的载体，这一圈照样能被炮塔挂上**。
+            --  b660 的 Layer3 正是靠这个：根 `begin=510`、炮塔 `181~300`，第一圈永不相交，
+            --  载体 `sonlife=1200` 跨过 600 帧的回卷点，从**第二圈**起才被炮塔找到。
+            --  清了之后那两条尾迹就永远不会出现。
             if s.b.fxp then s.b.ax = player.x end      --fx=-99999 → 自机的 X（每个循环取一次）
+            --父事件作用在批次上 → 一个批次一份状态；子事件是每颗子弹一份（见 `events`）
+            s.b._st = {}
             if s.b.evspec then s.b.ev = events(s.b.evspec) end
             if s.b.sevspec then s.b.sev = events(s.b.sevspec) end
         end
@@ -315,20 +417,23 @@ local function run_cs(self, total, layers)
                         b.x, b.y = b.x + dx, b.y + dy
                         b.ax, b.ay = b.ax + dx, b.ay + dy
                     end
-                    if b.ev then b.ev(b, time, now) end
+                    if b.ev then b.ev(b, time, b._st) end
                     --⑤ 每 t 帧发一次（Batch.cs:1547），外加「额外发射」
                     if (b.t > 0 and time % b.t == 0) or (b.extra and time == 1) then
                         local n, spread = b.tiao or 1, b.spread or 360
+                        local spr = b.invisible and S_none or b.spr
+                        local mist_a = (b.alpha or 100) * 2.55
                         local function volley(ox, oy)
                             for g = 0, n - 1 do
                                 --位置与方向**共用**同一条扇形（Batch.cs:1740-1742）
                                 local k = g - (n - 1) / 2
                                 local pa = (b.rd or 0) + k * spread / n
                                 local da = (b.fa or 0) + k * spread / n
-                                local o = fly(b.spr, ox + (b.r or 0) * cos(pa),
+                                local o = fly(spr, ox + (b.r or 0) * cos(pa),
                                         oy + (b.r or 0) * sin(pa), b.v or 0, da,
                                         b.cr or 255, b.cg or 255, b.cb or 255,
-                                        b.omi or 0, b.sw, b.sh, b.alpha, b.head, b.wsd)
+                                        b.omi or 0, b.sw, b.sh, b.alpha, b.head, b.wsd,
+                                        b.xs, b.ys, b.sonaspeed, b.sonaspeedd)
                                 --★ 每颗子弹都有寿命：`time > add + sonlife` 之后
                                 --  淡出 20 帧再删（`Barrage.cs:1530-1545`，前提 Dispel）。
                                 --  ⚠ 少了这一步，`sonlife=1` 的**运载弹会永远赖着不走**，
@@ -336,29 +441,65 @@ local function run_cs(self, total, layers)
                                 local lt = b.sonlife + (b.mist and 15 or 0)
                                 local f2, sev = b.ev2, b.sev
                                 local d0 = b.mist and 15 or 0   --Mist 的子弹事件晚 15 帧起算
+                                local asx, asy = o and o._asx, o and o._asy
                                 if o then
                                     o.frame_other = function(bb)
                                         if f2 then f2(bb) end
                                         local t = bb.timer
-                                        if sev then
-                                            local p = bb._proxy
-                                            if not p then p = bullet_proxy(bb); bb._proxy = p end
-                                            sev(p, t - d0)
+                                        --加速度：出生时算好，每帧加到速度上（`Barrage.cs:423-424`）
+                                        if asx ~= 0 or asy ~= 0 then
+                                            bb.vx, bb.vy = bb.vx + asx, bb.vy + asy
                                         end
-                                        if t > lt then
-                                            if b.dispel then
-                                                local k = max(100 - (t - lt) * 5, 0)
-                                                bb._a = k * 2.55
-                                                bb.hscale = max((b.sw or 1) * (k / 100), 0.01)
-                                                bb.vscale = max((b.sh or b.sw or 1) * (k / 100), 0.01)
-                                                if t > lt + 20 then object.RawDel(bb) end
-                                            else
-                                                object.RawDel(bb)      --不淡出，直接到期
+                                        --★ Mist：前 15 帧**画的不是子弹本身**，而是一团逐渐收小、
+                                        --  渐显的雾（`Barrage.cs:1623-1632`：透明度 `t/15·alpha`，
+                                        --  缩放额外 `+1.5·(15−t)/15`）。原版用的是另一张叫 mist 的
+                                        --  贴图；本移植没有那张图，用同一张图放大 + 渐显近似。
+                                        --  ⚠ 判定**不受影响**：CS 的判定看的是 `alpha` 字段
+                                        --  （`Barrage.cs:1487`），而雾只是画法。
+                                        if d0 > 0 then
+                                            if t <= d0 then
+                                                local g2 = 1 + 1.5 * (1 - t / d0)
+                                                bb._a = mist_a * (t / d0)
+                                                bb.hscale = (b.sw or 1) * g2
+                                                bb.vscale = (b.sh or b.sw or 1) * g2
+                                            elseif t == d0 + 1 then
+                                                bb._a = mist_a
+                                                bb.hscale, bb.vscale = b.sw or 1, b.sh or b.sw or 1
                                             end
                                         end
+                                        if sev then
+                                            local p = bb._proxy
+                                            if not p then
+                                                p = bullet_proxy(bb); bb._proxy = p
+                                                bb._st = {}   --★ 每颗子弹各自一份事件状态
+                                            end
+                                            sev(p, t - d0, bb._st)
+                                        end
+                                        bb.colli = bb._a > 242.25   --CS：alpha>95 才有判定
+                                        if b.dispel and t > lt then
+                                            local k = max(100 - (t - lt) * 5, 0)
+                                            bb._a = k * 2.55
+                                            bb.hscale = max((b.sw or 1) * (k / 100), 0.01)
+                                            bb.vscale = max((b.sh or b.sw or 1) * (k / 100), 0.01)
+                                            bb.colli = false
+                                            if t > lt + 20 then object.RawDel(bb) end
+                                        elseif t > lt then
+                                            object.RawDel(bb)      --不淡出，直接到期
+                                        end
+                                        --离屏回收：CS 的框（比屏幕大得多，见 `offscreen`）
+                                        if offscreen(bb, b.outdispel) then object.RawDel(bb) end
                                     end
                                 end
-                                if b.bind < 0 then s.carriers[#s.carriers + 1] = o end
+                                --★ **每个**批次都把自己发的子弹挂进图层表，不只是根：
+                                --  CS 两条分支都做 `barrage.parentid = id` 再 Add
+                                --  （根 `Batch.cs:1695`、炮塔分支同样），炮塔扫描的也是
+                                --  「`parentid == bindid` 的所有活子弹」。所以挂载树可以有三层
+                                --  甚至更多层：根 → 二级载体 → 三级炮塔。
+                                --  b660 的枝条三就是三层（枝条 `id=14` → 二级载体 `id=3` → `id=4/5/6`），
+                                --  只在 `bind < 0` 时记录的话，第三层永远找不到载体。
+                                if parentof[s.L] and parentof[s.L][b.id] then
+                                    s.carriers[#s.carriers + 1] = o
+                                end
                             end
                         end
                         --根：锚点是 (ax, ay)（= CS 的 fx/fy），子弹落在它周围半径 r 的扇形上
@@ -385,29 +526,46 @@ end
 --============================
 --[符卡1] 「西行庭千本桜図」   (b660, Lunatic, Totalframe=600)
 --==================================================================
---  这一张的骨架就是**一棵树**，全部靠「根批次 + 骑在它身上的炮塔」搭出来：
+--  原版是 **TIME 耐久卡**（不掉血，撑时间），本移植照做。
+--  骨架 = 一棵树：**根批次**沿弧线扫出「枝条」，**炮塔**（骑在节点上）在每个节点开花。
+--  批次表由 `tools/thmhj_tolua.py 660` 从原版数据生成，下面是读数据得出的设计：
 --
---  Layer2 三根枝条（`bindid=-1`，`type=240`→本卡[11]=「阵」）：
---    根批次自己 `speedd=90`，`t=4`、`life=13`，事件把**自己的**半径
---    从 0 推到 440、半径方向扫几十度 —— 于是它每 4 帧在弧线上一个更远的点
---    吐一颗「阵」（`sonlife=1`，闪一下就没）。这几颗「阵」就是**载体**，
---    连起来正是一根向外的枝条。
---    ⚠ 根批次带「当前帧=1：额外发射」，所以第一个节点在第 1 帧就有了 —— 一根枝条 4 个节点。
---  · 枝条一 id=1  x=136 y=124  rd=11  → 骑它的是 id=0/2/7/12/13（大头，樱花 6/7/9/9 发）
---  · 枝条二 id=8  x=489 y=68   rd=185 → 骑它的是 id=9/10/11
---  · 枝条三 id=14 x=170 y=105  rd=5   → id=3（二级载体）→ id=4/5/6
+--  Layer1（6 个批次）—— 底部升起三条光柱 + 三向转轮 + 两次爆闪
+--   · id 0/3/4 三条光柱：`fx=-99999` → 锚点 X 取**每个循环开始时的自机 X**，
+--     `fy=480` 贴屏幕底边；`speed 2/1/1` 沿 `speedd 266/270/260`（≈正上方）飞，
+--     再被「速度增加3，正比，60帧」越推越快 → 三根柱子从底部窜上去。
+--     三根用的是同一张 `Tg225`，靠 `head 270/290/230`（= 相对原朝向 0°/20°/−40°）
+--     张开成扇形。注意 `head` 在 CS 里要 +90° 再取负才是引擎的画法（见 `fly`）。
+--   · id 1 三向转轮 / id 2 巨闪：事件组 `t=20 add=20` 的
+--     「半径方向/角度增加360，正比，20帧」= **每 20 帧转一整圈**（18°/帧）→ 持续自转。
 --
---  骑在枝条上的炮塔（`bindid=N`）在**每个节点**开一朵花：
---    `r` 是花心到节点的距离，`rdirection` 是花朝哪边，`range` 是花瓣张角，
---    位置和方向共用同一条扇形 —— 所以「花瓣」是从节点向外**射出去**的。
---    ⚠ 花瓣的**张开**是子事件组做的：「宽比/高比变化到0.8，正比，24帧」——
---      子弹出生时只有 0.1，24 帧里长到 0.8。漏了子事件组，花就只有一粒芝麻大。
+--  Layer2（15 个批次）—— 三根枝条 + 12 个炮塔
+--   · 枝条 id 1/8/14：`bindid=-1`，`t=4 tiao=1 sonlife=1 alpha=30` —— 每 4 帧在
+--     弧线上吐一颗「阵」，`alpha=30 ≤ 95` 所以**没有判定**，只是路标；一串点连起来
+--     就是一根枝条。`r` 在 16 帧里从 0 推到 440/420/500，方向 `rd=11/185/5`。
+--     ⚠ 数据里 id 1/14 还挂着「当前帧=17/18/22」的事件，但 `life` 只有 13 帧 ——
+--       **永远不会触发**（编辑器留下的死事件），别去实现它们。
+--   · 炮塔：id 0/2/7/12/13 骑枝条一、id 9/10/11 骑枝条二、id 3 骑枝条三。
+--     位置和方向**共用同一条扇形**，`r` 是花心到节点的距离、`rd=90` 把花挂在节点
+--     **下方**、`fa=90` 让花瓣往**下**射。`head=270 + Withspeedd=False` → 贴图不跟
+--     速度转（270+90=360 = 原朝向），这是它躺不躺倒的关键。
+--   · 花瓣的子事件：「宽比/高比变化到0.8」（从 0.1 **绽开**）、
+--     「朝向增加120，正比，140帧」+ `t=140 add=140` 每 140 帧重来 → **永远慢慢自转**；
+--     第 261/281/601/861/1201/1461 帧起「子弹速度增加…，正比，360帧」→ 缓慢外飘。
+--   · id 12/13 出生 `alpha=0` → **没有判定**，到第 601/1201 帧
+--     「不透明度变化到100」才**变得致命** —— 那是第二、第三圈的花。
 --
---  Layer1 三条光柱 + 三向转轮 + 两次爆闪；Layer3 一颗看不见的载体拖着两条尾迹。
---
---  ⚠ Totalframe=600：整套每 600 帧**重来一遍**，而樱花 `sonlife=3413` 跨循环累积
---    —— 「千本桜図」的那一屏花就是这么攒出来的。id=12/13 的樱花出生时 `alpha=0`，
---    到第 601 / 1201 帧才「不透明度变化到100」现身，是**第二、第三圈**的花。
+--  Layer3（3 个批次）—— 跨循环的两条拐弯尾迹
+--   · 根 id 0：`type=0` → 子弹不可见（`Barrage` 直接 return），但它照样当挂载点。
+--     `横比=9` 把圆周压成扁椭圆、`sonspeed=8`；子事件
+--     「子弹速度方向增加360，正比，23帧」→ 它自己 23 帧转一圈地飞。
+--   · 炮塔 id 1/2：每帧沿载体吐一颗小弹。父事件把出膛速度从 2 线性压到 0.9
+--     （越晚发的越慢 → 尾迹被拉长）；子事件先给每颗子弹
+--     **随机一个方向**（`子弹速度方向变化到0+360`），再让**各自**拐 120 帧
+--     （`增加0+120，正比，120帧`）—— 那个 `0+N` 就是「基准 0、随机 ±N」。
+--   · ⚠ 根 `begin=510` 而炮塔 `181~300`，**第一圈根本不相交**；但载体 `sonlife=1200`
+--     大于 `Totalframe=600`，**跨循环存活** —— 所以这两条尾迹是**第二圈才开始出现**
+--     并逐圈累积的。这正是 CS「时间循环、子弹跨循环存活」的直接体现，不是 bug。
 --==================================================================
 do
     local name = "「西行庭千本桜図」"
@@ -425,213 +583,162 @@ do
     end
 
     function card:init()
-        task.New(self, function()
-            task.Wait(50)
-            Newcharge_in(self.x, self.y, 255, 190, 236)
-            boss.cast(self, 60)
-            task.Wait(30)
-            Newcharge_out(self.x, self.y, 255, 190, 236)
-        end)
-
-        --三个图层分开装：`bindid` 只在**本图层**里找，混在一起会串线
-        local L1, L2, L3 = {}, {}, {}
-        local function add(t, layer)
-            local dest = (layer == 1) and L1 or (layer == 2) and L2 or L3
-            dest[#dest + 1] = t
-            return t
-        end
-
-        --======== Layer1：三条光柱 + 三向转轮 + 两次爆闪 ========
-        --`fx = -99999` → **每个循环开始时**取一次自机 X（`Time.cs:79-83`），之后不再跟随，
-        --靠 speed 沿 speedd 自己飞；「速度增加3，正比，60帧」把 speed 越加越快。
-        for _, e in ipairs({
-            { id = 0, sd = 266, sp = 2, r = -20, sw = 1.2, sh = 2.0, sv = 0.5, hv = 0.4, sf = 280, gv = 55, gh = 1, head = 270 },
-            { id = 3, sd = 270, sp = 1, r =  30, sw = 0.7, sh = 1.5, sv = 0.2, hv = 0.3, sf = 240, gv = 60, gh = 2, head = 290 },
-            { id = 4, sd = 260, sp = 1, r = -30, sw = 0.6, sh = 1.5, sv = 0.3, hv = 0.3, sf = 300, gv = 55, gh = 1, head = 230 },
-        }) do
-            add({ id = e.id, bind = -1, begin = 71, life = 120, t = 2, tiao = 1, spr = S_beam,
-                fxp = true, ay = CY(480), r = e.r, rd = 0, fa = 0, spread = 360, v = 0.01,
-                speed = e.sp, sd = CA(e.sd), sw = e.sw, sh = e.sh, head = CA(e.head),
-                alpha = 100, sonlife = 600,
-                evspec = {
-                    { at = 1, key = "speed", how = 1, mode = 0, v = 3, frames = 60 },
-                    { at = 1, key = "r",  how = e.gh, mode = 2, v = e.gv, rand = 10, frames = 180 },
-                    { at = 1, key = "sh", how = 2, mode = 2, v = e.hv, frames = e.sf },
-                    { at = 1, key = "sw", how = 2, mode = 2, v = e.sv, frames = e.sf },
-                } }, 1)
-        end
-        --[1] 三向转轮：半径 360 的圆上摆三个点，方向也是三向；事件组 `t=20 add=20`
-        --    「半径方向/角度增加360，正比，20帧」= 每 20 帧转一整圈 → 连续自转 18°/帧
-        add({ id = 1, bind = -1, begin = 1, life = 120, t = 1, tiao = 3, spr = S_beam,
-            fxp = true, ay = CY(490), r = 360, rd = CA(270), fa = CA(90), spread = 360, v = 5,
-            speed = 0, sd = CA(270), sw = 0.3, sh = 1, head = CA(270), wsd = true,
-            alpha = 1, sonlife = 65,
-            evspec = {
-                { at = 1, every = 20, key = "rd", how = 1, mode = 0, v = 360, frames = 20 },
-                { at = 1, every = 20, key = "fa", how = 1, mode = 0, v = 360, frames = 20 },
+        --★ 以下由 `tools/thmhj_tolua.py 660` 从原版数据生成，**不要手改**
+        --   要改请改生成器再重跑；手抄 40 字段 × N 批次一定会出错。
+        local CS = {
+            {   -- Layer1（begin=1 end=520）
+                { id=0, bind=-1, begin=71, life=120, t=2, tiao=1, fxp=true, ay=CY(480), r=-20, rd=0, fa=0, spread=360, speed=2, sd=CA(266), v=0.01, sw=1.2, sh=2, head=CA(270), cr=255, cg=125, cb=125, alpha=100, sonlife=600, mist=true, outdispel=true, invincible=true, spr=S_beam, evspec={
+            { at=1, key="speed", how=1, mode=0, v=3, frames=60 },
+            { at=1, key="r", how=1, mode=2, v=55, rand=10, frames=180 },
+            { at=1, key="sh", how=1, mode=2, v=-0.4, frames=280 },
+            { at=1, key="sw", how=1, mode=2, v=-0.5, frames=280 },
+        } },
+                { id=1, bind=-1, begin=1, life=120, t=1, tiao=3, fxp=true, ay=CY(490), r=360, rd=CA(270), fa=CA(90), spread=360, speed=0, sd=CA(270), v=5, sw=0.3, sh=1, head=CA(270), wsd=true, cr=255, cg=1, cb=155, alpha=1, sonlife=65, invincible=true, spr=S_beam, evspec={
+            { at=1, key="rd", how=1, mode=0, v=-360, frames=20, every=20 },
+            { at=1, key="fa", how=1, mode=0, v=-360, frames=20, every=20 },
+        }, sevspec={
+            { at=1, key="alpha", how=0, mode=2, v=30, rand=10, frames=120 },
+        } },
+                { id=2, bind=-1, begin=1, life=1, t=1, tiao=1, fxp=true, ay=CY(490), r=0, rd=0, fa=CA(90), spread=360, speed=0, sd=CA(270), v=0, sw=55, sh=55, head=CA(270), wsd=true, cr=255, cg=1, cb=155, alpha=1, sonlife=180, invincible=true, spr=S_beam, evspec={
+            { at=1, key="rd", how=1, mode=0, v=360, frames=20, every=20 },
+            { at=1, key="fa", how=1, mode=0, v=360, frames=20, every=20 },
+        }, sevspec={
+            { at=1, key="h", how=0, mode=0, v=1, frames=180 },
+            { at=1, key="w", how=0, mode=0, v=1, frames=180 },
+            { at=1, key="alpha", how=0, mode=0, v=80, frames=180 },
+        } },
+                { id=3, bind=-1, begin=71, life=120, t=2, tiao=1, fxp=true, ay=CY(480), r=30, rd=0, fa=0, spread=360, speed=1, sd=CA(270), v=0.01, sw=0.7, sh=1.5, head=CA(290), cr=255, cg=125, cb=125, alpha=100, sonlife=600, mist=true, outdispel=true, invincible=true, spr=S_beam, evspec={
+            { at=1, key="speed", how=1, mode=0, v=3, frames=60 },
+            { at=1, key="r", how=1, mode=2, v=-60, rand=10, frames=180 },
+            { at=1, key="sh", how=1, mode=2, v=-0.3, frames=240 },
+            { at=1, key="sw", how=1, mode=2, v=-0.2, frames=240 },
+        } },
+                { id=4, bind=-1, begin=71, life=120, t=2, tiao=1, fxp=true, ay=CY(480), r=-30, rd=0, fa=0, spread=360, speed=1, sd=CA(260), v=0.01, sw=0.6, sh=1.5, head=CA(230), cr=255, cg=125, cb=125, alpha=100, sonlife=600, mist=true, outdispel=true, invincible=true, spr=S_beam, evspec={
+            { at=1, key="speed", how=1, mode=0, v=3, frames=60 },
+            { at=1, key="r", how=1, mode=2, v=55, rand=10, frames=180 },
+            { at=1, key="sh", how=1, mode=2, v=-0.3, frames=300 },
+            { at=1, key="sw", how=1, mode=2, v=-0.3, frames=300 },
+        } },
+                { id=5, bind=-1, begin=66, life=1, t=1, tiao=1, fxp=true, ay=CY(470), r=1, rd=0, fa=0, spread=360, speed=0, sd=0, v=0.01, sw=1, sh=1, head=CA(230), cr=255, cg=125, cb=125, alpha=80, sonlife=60, outdispel=true, invincible=true, spr=S_beam, sevspec={
+            { at=1, key="w", how=0, mode=0, v=15, frames=60 },
+            { at=1, key="h", how=0, mode=0, v=15, frames=60 },
+            { at=1, key="alpha", how=0, mode=0, v=1, frames=60 },
+        } },
             },
-            --子事件：「不透明度变化到30+10，正弦，120帧」绕出生值(1)荡到 30
-            sevspec = { { at = 1, key = "alpha", how = 0, mode = 2, v = 30, rand = 10, frames = 120 } } }, 1)
-        --[2] 巨闪：半径 0、宽高比 55，只活 1 帧；子事件把它在 180 帧里收成 1
-        add({ id = 2, bind = -1, begin = 1, life = 1, t = 1, tiao = 1, spr = S_beam,
-            fxp = true, ay = CY(490), r = 0, rd = 0, fa = CA(90), spread = 360, v = 0,
-            speed = 0, sw = 55, sh = 55, head = CA(270), wsd = true, alpha = 1, sonlife = 180,
-            sevspec = {
-                { at = 1, key = "h", how = 0, mode = 0, v = 1, frames = 180 },
-                { at = 1, key = "w", how = 0, mode = 0, v = 1, frames = 180 },
-                { at = 1, key = "alpha", how = 0, mode = 0, v = 80, frames = 180 },
-            } }, 1)
-        --[5] 爆闪
-        add({ id = 5, bind = -1, begin = 66, life = 1, t = 1, tiao = 1, spr = S_beam,
-            fxp = true, ay = CY(470), r = 1, rd = 0, fa = 0, spread = 360, v = 0.01,
-            speed = 0, sw = 1, sh = 1, head = CA(230), alpha = 80, sonlife = 60,
-            sevspec = {
-                { at = 1, key = "w", how = 0, mode = 0, v = 15, frames = 60 },
-                { at = 1, key = "h", how = 0, mode = 0, v = 15, frames = 60 },
-                { at = 1, key = "alpha", how = 0, mode = 0, v = 1, frames = 60 },
-            } }, 1)
-
-        --======== Layer2：三根枝条 ========
-        --根批次（`bindid=-1`）就是**枝条**：它自己 `speedd=90`，事件把**自己的**半径
-        --从小推到大、半径方向来回摆，于是它每 4 帧在弧线上一个更远的点吐一颗「阵」
-        --（`sonlife=1`，闪一下就没）。那几颗「阵」就是**载体**，连起来就是一根枝条。
-        --⚠ life 只有 12~13 帧，所以「当前帧=17/18/22」那些事件在本体上**永远不会触发**
-        --  —— 编辑器里留下的死事件，别照着写（`Deepbind=False`，没有克隆体去跑它们）。
-        for _, e in ipairs({
-            --      id   x    y   begin life  rd   ξgv  gframes  wv  wrand wframes  [第二条摆动]
-            { id = 1,  x = 136, y = 124, begin = 181, life = 13, rd = 11,  gv = 440, gf = 16, wv = 17, wr = 5, wf = 8, a2 = 9, v2 = 10 },
-            { id = 8,  x = 489, y =  68, begin = 186, life = 12, rd = 185, gv = 420, gf = 16, wv = 12, wr = 0, wf = 12 },
-            { id = 14, x = 170, y = 105, begin = 181, life = 13, rd = 5,   gv = 500, gf = 16, wv = 5,  wr = 5, wf = 8, fx = 100 },
-        }) do
-            local spec = {
-                { at = 1, key = "r",  how = 1, mode = 0, v = e.gv, frames = e.gf },
-                { at = 1, key = "rd", how = 1, mode = 2, v = e.wv, rand = e.wr, frames = e.wf },
-            }
-            --「当前帧=9：半径方向增加10，正弦，8帧」——枝条一在生长中途再补摆一次
-            if e.a2 then spec[#spec + 1] = { at = e.a2, key = "rd", how = 1, mode = 2, v = e.v2, frames = 8 } end
-            add({ id = e.id, bind = -1, begin = e.begin, life = e.life, t = 4, tiao = 1,
-                spr = S_jin,
-                --fx/fy：-99998 → x−4 / y+16（`Time.cs:79-90`）；枝条三是字面量 fx=100
-                ax = CX(e.fx or (e.x - 4)), ay = CY(e.y + 16),
-                r = 0, rd = CA(e.rd), fa = CA(0), spread = 360, v = 0,
-                speed = 0, sd = CA(90), sw = 0.1, sh = 0.1, head = 0, wsd = true, alpha = 30,
-                cr = 255, cg = 1, cb = 121, sonlife = 1, dispel = false, mist = false,
-                extra = true, evspec = spec }, 2)
-        end
-
-        --======== 炮塔：在每个节点周围开一朵花 ========
-        --位置和方向**共用**同一条扇形（`Batch.cs:1740-1742` / `Barrage.cs:375-379`）：
-        --  位置 = 节点 + r·(cos,sin)(rdirection + 半宽偏移)
-        --  方向 = fdirection + 同一个偏移
-        --所以「花瓣」是从节点向外**射出去**的，`r` 是花心到节点的距离。
-        --⚠ `extra` 只有数据里带「当前帧=1：额外发射」的批次才有 —— id=4/5/6 没有。
-        local TURRETS = {
-            --id  bind  begin life  t tiao   r   rd   fa spread  贴图        sw    sh    v     sonlife dispel alpha head wsd
-            { 0,   1,  182, 299, 4,  1,   0,   0,   0,  360, S_bigfan, 0.1, 0.7, 0.01,  315,  false, 100, 270, false },
-            { 2,   1,  182, 299, 4,  6,  50,  90,  90,  220, S_sakura, 0.1, 0.1, 0.01, 3413, true,  100, 270, false },
-            { 7,   1,  182, 299, 4,  7,  30,  90,  90,  260, S_sakura, 0.1, 0.1, 0.01, 1413, true,  100, 270, false },
-            { 12,  1,  182, 299, 4,  9,  60,  90,  90,  290, S_sakura, 0.1, 0.1, 0.01, 3413, true,  0,   270, false },
-            { 13,  1,  182, 299, 4,  9,  70,  90,  90,  290, S_sakura, 0.1, 0.1, 0.01, 3413, true,  0,   270, false },
-            { 9,   8,  187, 299, 4,  1,   0,   0,   0,  360, S_bigfan, 0.1, 0.7, 0.01,  315,  false, 100, 270, false },
-            { 10,  8,  187, 299, 4,  7,  40,  90,  90,  220, S_sakura, 0.1, 0.1, 0.01, 1413, true,  100, 270, false },
-            { 11,  8,  187, 299, 4,  8,  75, 270, 270, 220, S_sakura, 0.1, 0.1, 0.01, 1413, true,  100, 270, false },
-            --枝条三：先挂一个二级载体（id=3）到枝条上，再让三个炮塔骑那个二级载体
-            { 3,  14,  182,  16, 4,  2,  40,  90,   0,  220, S_beam,   0.7, 0.7, 1.9,   136,  false, 90,  270, true  },
-            { 4,   3,  181, 120, 5,  1,   0,   0,   0,  360, S_beam,   0.06, 0.5, 0.01, 350,  true,  100, 0,   true  },
-            { 5,   3,  181, 136, 8,  1,   0,   0,  60,  360, S_dot,    1.2, 1.2, 0.5,  1200, true,  100, 0,   true  },
-            { 6,   3,  181, 136, 8,  1,   0,   0, -60,  360, S_dot,    1.2, 1.2, 0.5,  1200, true,  100, 0,   true  },
+            {   -- Layer2（begin=1 end=600）
+                { id=0, bind=1, begin=182, life=299, t=4, tiao=1, r=0, rd=0, fa=0, spread=360, speed=0, sd=0, v=0.01, sw=0.1, sh=0.7, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=315, invincible=true, spr=S_bigfan, extra=true, sevspec={
+            { at=300, key="w", how=0, mode=0, v=0.1, frames=15 },
+            { at=1, key="w", how=0, mode=0, v=0.7, frames=12 },
+            { at=1, key="rot", how=1, mode=2, v=-5, frames=139, every=140 },
+        } },
+                { id=1, bind=-1, begin=181, life=13, t=4, tiao=1, ax=CX(136 - 4), ay=CY(124 + 16), r=0, rd=CA(11), fa=0, spread=360, speed=0, sd=CA(90), v=0, sw=0.1, sh=0.1, head=0, wsd=true, cr=255, cg=1, cb=121, alpha=30, sonlife=1, invincible=true, spr=S_jin, extra=true, evspec={
+            { at=9, key="rd", how=1, mode=2, v=-10, frames=8 },
+            { at=17, key="rd", how=1, mode=0, v=-90, frames=16 },
+            { at=1, key="rd", how=1, mode=2, v=-17, rand=5, frames=8 },
+            { at=1, key="r", how=1, mode=0, v=440, frames=16 },
+            { at=22, key="r", how=1, mode=0, v=-70, frames=8 },
+            { at=18, key="r", how=1, mode=0, v=130, frames=4 },
+        } },
+                { id=2, bind=1, begin=182, life=299, t=4, tiao=6, r=50, rd=CA(90), fa=CA(90), spread=220, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=3413, dispel=true, outdispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=1, key="h", how=0, mode=0, v=0.8, frames=24 },
+            { at=261, key="speed", how=1, mode=0, v=0.45, frames=360 },
+            { at=1, key="w", how=0, mode=0, v=0.8, frames=24 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=3, bind=14, begin=182, life=16, t=4, tiao=2, r=40, rd=CA(90), fa=0, spread=220, speed=0, sd=0, v=1.9, sw=0.7, sh=0.7, head=CA(270), wsd=true, cr=255, cg=125, cb=155, alpha=90, sonlife=136, outdispel=true, invincible=true, spr=S_beam, extra=true, sevspec={
+            { at=2, key="dir", how=1, mode=0, v=0, rand=15, frames=220 },
+            { at=1, key="h", how=0, mode=0, v=0.3, frames=130 },
+            { at=1, key="dir", how=0, mode=0, v=-90, frames=1 },
+            { at=110, key="alpha", how=0, mode=0, v=1, frames=20 },
+            { at=1, key="w", how=0, mode=0, v=0.3, frames=130 },
+        } },
+                { id=4, bind=3, begin=181, life=120, t=5, tiao=1, r=0, rd=0, fa=0, spread=360, speed=0, sd=0, v=0.01, sw=0.06, sh=0.5, head=0, wsd=true, cr=255, cg=95, cb=155, alpha=100, sonlife=350, dispel=true, outdispel=true, invincible=true, spr=S_beam, evspec={
+            { at=1, key="life", how=0, mode=0, v=90, frames=120 },
+        } },
+                { id=5, bind=3, begin=181, life=136, t=8, tiao=1, r=0, rd=0, fa=CA(60), spread=360, speed=0, sd=0, v=0.5, sw=1.2, sh=1.2, head=0, wsd=true, cr=255, cg=255, cb=255, alpha=100, sonlife=1200, mist=true, dispel=true, outdispel=true, invincible=true, spr=S_dot, evspec={
+            { at=1, key="sonaspeedd", how=1, mode=0, v=-120, frames=136 },
+            { at=1, key="fa", how=1, mode=0, v=60, frames=136 },
+        }, sevspec={
+            { at=1, key="speed", how=0, mode=0, v=0.01, frames=30 },
+        } },
+                { id=6, bind=3, begin=181, life=136, t=8, tiao=1, r=0, rd=0, fa=CA(-60), spread=360, speed=0, sd=0, v=0.5, sw=1.2, sh=1.2, head=0, wsd=true, cr=255, cg=255, cb=255, alpha=100, sonlife=1200, mist=true, dispel=true, outdispel=true, invincible=true, spr=S_dot, evspec={
+            { at=1, key="sonaspeedd", how=1, mode=0, v=120, frames=136 },
+            { at=1, key="fa", how=1, mode=0, v=-60, frames=136 },
+        }, sevspec={
+            { at=1, key="speed", how=0, mode=0, v=0.01, frames=30 },
+        } },
+                { id=7, bind=1, begin=182, life=299, t=4, tiao=7, r=30, rd=CA(90), fa=CA(90), spread=260, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=1413, dispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=1, key="h", how=0, mode=0, v=0.8, frames=18 },
+            { at=261, key="speed", how=1, mode=0, v=0.8, frames=360 },
+            { at=1, key="w", how=0, mode=0, v=0.8, frames=18 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=8, bind=-1, begin=186, life=12, t=4, tiao=1, ax=CX(489 - 4), ay=CY(68 + 16), r=0, rd=CA(185), fa=0, spread=360, speed=0, sd=CA(90), v=0, sw=0.1, sh=0.1, head=0, wsd=true, cr=255, cg=1, cb=121, alpha=30, sonlife=1, invincible=true, spr=S_jin, extra=true, evspec={
+            { at=1, key="rd", how=1, mode=2, v=-12, frames=12 },
+            { at=1, key="r", how=1, mode=0, v=420, frames=16 },
+        } },
+                { id=9, bind=8, begin=187, life=299, t=4, tiao=1, r=0, rd=0, fa=0, spread=360, speed=0, sd=0, v=0.01, sw=0.1, sh=0.7, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=315, invincible=true, spr=S_bigfan, extra=true, sevspec={
+            { at=300, key="w", how=0, mode=0, v=0.1, frames=15 },
+            { at=1, key="w", how=0, mode=0, v=0.7, frames=12 },
+            { at=1, key="rot", how=1, mode=2, v=5, frames=139, every=140 },
+        } },
+                { id=10, bind=8, begin=187, life=299, t=4, tiao=7, r=40, rd=CA(90), fa=CA(90), spread=220, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=1413, dispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=1, key="h", how=0, mode=0, v=0.8, frames=24 },
+            { at=281, key="speed", how=1, mode=0, v=1, frames=360 },
+            { at=1, key="w", how=0, mode=0, v=0.8, frames=24 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=11, bind=8, begin=187, life=299, t=4, tiao=8, r=75, rd=CA(270), fa=CA(270), spread=220, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=100, sonlife=1413, dispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=1, key="h", how=0, mode=0, v=0.8, frames=36 },
+            { at=281, key="speed", how=1, mode=0, v=1, frames=240 },
+            { at=1, key="w", how=0, mode=0, v=0.8, frames=36 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=12, bind=1, begin=182, life=299, t=4, tiao=9, r=60, rd=CA(90), fa=CA(90), spread=290, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=0, sonlife=3413, dispel=true, outdispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=601, key="h", how=0, mode=0, v=0.8, frames=18 },
+            { at=861, key="speed", how=1, mode=0, v=0.4, frames=360 },
+            { at=601, key="w", how=0, mode=0, v=0.8, frames=18 },
+            { at=601, key="alpha", how=0, mode=0, v=100, frames=1 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=13, bind=1, begin=182, life=299, t=4, tiao=9, r=70, rd=CA(90), fa=CA(90), spread=290, speed=0, sd=0, v=0.01, sw=0.1, sh=0.1, head=CA(270), cr=255, cg=255, cb=255, alpha=0, sonlife=3413, dispel=true, outdispel=true, invincible=true, spr=S_sakura, extra=true, sevspec={
+            { at=1201, key="h", how=0, mode=0, v=0.8, frames=18 },
+            { at=1461, key="speed", how=1, mode=0, v=1, frames=360 },
+            { at=1201, key="w", how=0, mode=0, v=0.8, frames=18 },
+            { at=1201, key="alpha", how=0, mode=0, v=100, frames=1 },
+            { at=1, key="rot", how=1, mode=0, v=-120, frames=140, every=140 },
+        } },
+                { id=14, bind=-1, begin=181, life=13, t=4, tiao=1, ax=CX(100), ay=CY(105 + 16), r=0, rd=CA(5), fa=0, spread=360, speed=0, sd=CA(90), v=0, sw=0.1, sh=0.1, head=0, wsd=true, cr=255, cg=1, cb=121, alpha=30, sonlife=1, invincible=true, spr=S_jin, extra=true, evspec={
+            { at=17, key="rd", how=1, mode=0, v=-90, frames=16 },
+            { at=1, key="rd", how=1, mode=2, v=-5, rand=5, frames=8 },
+            { at=1, key="r", how=1, mode=0, v=500, frames=16 },
+            { at=22, key="r", how=1, mode=0, v=-70, frames=8 },
+            { at=18, key="r", how=1, mode=0, v=130, frames=4 },
+        } },
+            },
+            {   -- Layer3（begin=1 end=520）
+                { id=0, bind=-1, begin=510, life=1, t=1, tiao=1, ax=CX(288 - 4), ay=CY(32 + 16), r=0, rd=CA(90), fa=0, spread=360, speed=0, sd=0, v=8, sw=1, sh=1, head=0, wsd=true, cr=255, cg=255, cb=255, alpha=100, sonlife=1200, xs=9, invincible=true, invisible=true, sevspec={
+            { at=1, key="dir", how=1, mode=0, v=-360, frames=23, every=23 },
+        } },
+                { id=1, bind=0, begin=181, life=120, t=1, tiao=1, r=0, rd=0, fa=0, spread=360, speed=0, sd=0, v=2, sw=0.9, sh=0.8, head=0, wsd=true, cr=255, cg=255, cb=255, alpha=100, sonlife=2200, mist=true, dispel=true, outdispel=true, spr=S_b138, evspec={
+            { at=1, key="v", how=1, mode=0, v=-1.1, frames=120 },
+        }, sevspec={
+            { at=1, key="w", how=1, mode=2, v=0.3, frames=14, every=15 },
+            { at=1, key="speed", how=1, mode=0, v=0, rand=0.3, frames=1 },
+            { at=1, key="dir", how=0, mode=0, v=0, rand=360, frames=1 },
+            { at=2, key="dir", how=1, mode=0, v=0, rand=120, frames=120 },
+        } },
+                { id=2, bind=0, begin=183, life=120, t=1, tiao=1, r=0, rd=CA(90), fa=0, spread=360, speed=0, sd=0, v=2, sw=0.9, sh=0.8, head=0, wsd=true, cr=255, cg=255, cb=255, alpha=100, sonlife=2200, mist=true, dispel=true, outdispel=true, spr=S_b140, evspec={
+            { at=1, key="v", how=1, mode=0, v=-1.1, frames=120 },
+        }, sevspec={
+            { at=1, key="w", how=1, mode=2, v=0.3, frames=14, every=15 },
+            { at=1, key="speed", how=1, mode=0, v=0, rand=0.3, frames=1 },
+            { at=1, key="dir", how=0, mode=0, v=0, rand=360, frames=1 },
+            { at=2, key="dir", how=1, mode=0, v=0, rand=120, frames=120 },
+        } },
+            },
         }
-        --子事件组：花瓣的张开、旋转、加速 —— 漏了这块花就只有一粒芝麻大
-        local SEV = {
-            [0]  = { { at = 1, key = "w", how = 0, mode = 0, v = 0.7, frames = 12 },
-                     { at = 300, key = "w", how = 0, mode = 0, v = 0.1, frames = 15 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 2, v = 5, frames = 139 } },
-            [2]  = { { at = 1, key = "h", how = 0, mode = 0, v = 0.8, frames = 24 },
-                     { at = 1, key = "w", how = 0, mode = 0, v = 0.8, frames = 24 },
-                     { at = 261, key = "speed", how = 1, mode = 0, v = 0.45, frames = 360 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            [7]  = { { at = 1, key = "h", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 1, key = "w", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 261, key = "speed", how = 1, mode = 0, v = 0.8, frames = 360 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            --id=12/13 出生时 alpha=0，第 601 / 1201 帧才现身 —— 第二、第三圈的花
-            [12] = { { at = 601, key = "h", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 601, key = "w", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 861, key = "speed", how = 1, mode = 0, v = 0.4, frames = 360 },
-                     { at = 601, key = "alpha", how = 0, mode = 0, v = 100, frames = 1 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            [13] = { { at = 1201, key = "h", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 1201, key = "w", how = 0, mode = 0, v = 0.8, frames = 18 },
-                     { at = 1461, key = "speed", how = 1, mode = 0, v = 1, frames = 360 },
-                     { at = 1201, key = "alpha", how = 0, mode = 0, v = 100, frames = 1 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            [9]  = { { at = 1, key = "w", how = 0, mode = 0, v = 0.7, frames = 12 },
-                     { at = 300, key = "w", how = 0, mode = 0, v = 0.1, frames = 15 },
-                     { at = 1, every = 140, key = "rot", how = 2, mode = 2, v = 5, frames = 139 } },
-            [10] = { { at = 1, key = "h", how = 0, mode = 0, v = 0.8, frames = 24 },
-                     { at = 1, key = "w", how = 0, mode = 0, v = 0.8, frames = 24 },
-                     { at = 281, key = "speed", how = 1, mode = 0, v = 1, frames = 360 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            [11] = { { at = 1, key = "h", how = 0, mode = 0, v = 0.8, frames = 36 },
-                     { at = 1, key = "w", how = 0, mode = 0, v = 0.8, frames = 36 },
-                     { at = 281, key = "speed", how = 1, mode = 0, v = 1, frames = 240 },
-                     { at = 1, every = 140, key = "rot", how = 1, mode = 0, v = 120, frames = 140 } },
-            [3]  = { { at = 1, key = "w", how = 0, mode = 0, v = 0.3, frames = 130 },
-                     { at = 1, key = "h", how = 0, mode = 0, v = 0.3, frames = 130 },
-                     { at = 1, key = "dir", how = 0, mode = 0, v = 90, frames = 1 },
-                     { at = 2, key = "dir", how = 1, mode = 0, v = 15, frames = 220 },
-                     { at = 110, key = "alpha", how = 0, mode = 0, v = 1, frames = 20 } },
-            [5]  = { { at = 1, key = "speed", how = 0, mode = 0, v = 0.01, frames = 30 } },
-            [6]  = { { at = 1, key = "speed", how = 0, mode = 0, v = 0.01, frames = 30 } },
-        }
-        --「当前帧=1：额外发射」：数据里只有这些批次有
-        local EXTRA = { [0] = 1, [1] = 1, [2] = 1, [7] = 1, [9] = 1, [10] = 1, [11] = 1, [12] = 1, [13] = 1, [14] = 1 }
-        for _, t in ipairs(TURRETS) do
-            local b = { id = t[1], bind = t[2], begin = t[3], life = t[4], t = t[5], tiao = t[6],
-                spr = t[11], r = t[7], rd = CA(t[8]), fa = CA(t[9]), spread = t[10],
-                v = t[14], sw = t[12], sh = t[13], cr = 255, cg = 255, cb = 255,
-                sonlife = t[15], dispel = t[16], mist = (t[1] == 5 or t[1] == 6),
-                alpha = t[17], head = CA(t[18]), wsd = t[19],
-                extra = EXTRA[t[1]], sevspec = SEV[t[1]] }
-            if t[1] == 3 then b.cg, b.cb = 125, 155 end
-            if t[1] == 4 then b.cg, b.cb = 95, 155
-                b.evspec = { { at = 1, key = "life", how = 0, mode = 0, v = 90, frames = 120 } } end
-            --[5]/[6] 的「角度减少/增加60，正比，136帧」= fdirection 从 ±60 扫回 0
-            if t[1] == 5 then b.evspec = { { at = 1, key = "fa", how = 2, mode = 0, v = 60, frames = 136 } } end
-            if t[1] == 6 then b.evspec = { { at = 1, key = "fa", how = 1, mode = 0, v = 60, frames = 136 } } end
-            add(b, 2)
-        end
 
-        --======== Layer3：一颗看不见的载体 + 两个炮塔（会拐的尾迹）========
-        --根 id=0：`type=0` → 子弹 type −1 = −1 → **不可见**；`sonspeed=8` 飞出去。
-        --它的**子事件**「子弹速度方向增加360，正比，23帧」让载体自己一直转 ——
-        --方向一直转 + 一直往前飞 = 走一个圆，两个炮塔沿路吐小弹，画出**环形**尾迹。
-        --父事件「子弹速度减少1.1，正比，120帧」让**越晚发的弹越慢**（尾迹被拉长）；
-        --子事件「子弹速度方向变化到360」+「增加120，正比，120帧」让每颗子弹自己拐 120°。
-        add({ id = 0, bind = -1, begin = 510, life = 1, t = 1, tiao = 1,
-            spr = S_beam, ax = CX(288 - 4), ay = CY(32 + 16), r = 0, rd = CA(90),
-            fa = CA(0), spread = 360, v = 8, speed = 0, sd = CA(0),
-            sw = 0.001, sh = 0.001, head = 0, wsd = true, alpha = 100,
-            cr = 255, cg = 255, cb = 255, sonlife = 1200, dispel = false, mist = false,
-            extra = true,
-            sevspec = { { at = 1, every = 23, key = "dir", how = 1, mode = 0, v = 360, frames = 23 } } }, 3)
-        for _, t in ipairs({
-            { id = 1, begin = 181, spr = S_b138, rd = 0 },
-            { id = 2, begin = 183, spr = S_b140, rd = 90 },
-        }) do
-            add({ id = t.id, bind = 0, begin = t.begin, life = 120, t = 1, tiao = 1,
-                spr = t.spr, r = 0, rd = CA(t.rd), fa = CA(0), spread = 360, v = 2,
-                sw = 0.9, sh = 0.8, head = 0, wsd = true,
-                cr = 226, cg = 190, cb = 255, sonlife = 2200, dispel = true, mist = true,
-                evspec = { { at = 1, key = "v", how = 2, mode = 0, v = 1.1, frames = 120 } },
-                sevspec = {
-                    { at = 1, every = 15, key = "w", how = 1, mode = 2, v = 0.3, frames = 14 },
-                    { at = 1, key = "speed", how = 1, mode = 0, v = 0.3, frames = 1 },
-                    { at = 1, key = "dir", how = 0, mode = 0, v = 360, frames = 1 },
-                    { at = 2, key = "dir", how = 1, mode = 0, v = 120, frames = 120 },
-                } }, 3)
-        end
-
-        run_cs(self, 600, { L1, L2, L3 })
+        run_cs(self, 600, CS)
     end
 end

@@ -217,6 +217,7 @@ _G.CREATED_OBJECTS = 0
 -- 诊断用：卡结束之后到底是谁在造东西
 _G.LOG_NEW, _G.LOG_BULLET = {}, {}
 local _styleNames = {}      -- bulletStyle 表 → 名字
+_G.__styleNames = _styleNames   -- 给「把弹幕渲成图」的调试脚本用（tools 内部，不影响关卡）
 
 ---★ 弹的判定半径（= `LoadImageGroup` 的**末两参** a, b）。
 ---  用来算「自机周围 16 个方向有没有空隙」——空隙要减掉弹的实际大小，

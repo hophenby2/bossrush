@@ -33,7 +33,11 @@ BATCH_FIELDS = [
 SHOW = ["id", "parentid", "Binding", "bindid", "Bindwithspeedd", "Deepbind", "x", "y", "begin", "life", "fx", "fy", "r", "rdirection", "tiao", "t", "fdirection",
         "range", "speed", "speedd", "aspeed", "type", "wscale", "hscale", "alpha",
         "sonlife", "sonspeed", "colorR", "colorG", "colorB",
-        "aspeed", "aspeedd", "sonaspeed", "sonaspeedd"]
+        "aspeed", "aspeedd", "sonaspeed", "sonaspeedd",
+        #★ 可视相关、之前漏打印的：朝向、贴图跟速度、各向缩放、以及四个消失/渲染旗标。
+        #  `head` 和 `Withspeedd` 直接决定贴图转不转 —— 少核对一个就会整张卡躺倒。
+        "head", "Withspeedd", "xscale", "yscale",
+        "Mist", "Dispel", "Blend", "Afterimage", "Outdispel", "Invincible"]
 SHOW_IDX = {BATCH_FIELDS.index(k): k for k in SHOW if k in BATCH_FIELDS}
 
 
@@ -127,17 +131,24 @@ def parse(bid, verbose):
                     info.append("%s=%s" % (SHOW_IDX[idx], p[idx]))
             tn = sprite_of(int(float(p[27])), types)
             print("    [%s] %s  贴图=%s" % (p[0], " ".join(info), tn))
-            if verbose and len(p) > 51 and p[51]:
-                for grp in p[51].split("&"):
-                    if not grp:
+            if verbose:
+                #★ 事件组是**两个独立字段**：`p[51]` 父事件组（改**批次**自己）、
+                #  `p[52]` 子事件组（改**发出去的每颗子弹**，见 `CrazyStorm.cs:294-324`）。
+                #  只打印 51 会漏掉全部子事件 —— 花不开、弹不拐的元凶。
+                for gi, groups in ((51, "父"), (52, "子")):
+                    raw = p[gi] if len(p) > gi else ""
+                    if not raw:
                         continue
-                    g = grp.split("|")
-                    if len(g) < 4:
-                        continue
-                    print("        父事件组 t=%s add=%s :" % (g[1], g[2]))
-                    for ev in g[3].split(";"):
-                        if ev:
-                            print("           · %s" % ev)
+                    for grp in raw.split("&"):
+                        if not grp:
+                            continue
+                        g = grp.split("|")
+                        if len(g) < 4:
+                            continue
+                        print("        %s事件组 %s t=%s add=%s :" % (groups, g[0] or "", g[1], g[2]))
+                        for ev in g[3].split(";"):
+                            if ev:
+                                print("           · %s" % ev)
         # 一个 Layer 段里批次之后还有 Lase/Cover/Rebound/Force 数组，
         # 数量在表头的 [4]..[7]。本工具只看批次，直接跳到下一个 Layer。
         while True:
