@@ -1158,6 +1158,24 @@ NewStage("TH22", "西行庭", 27, function(self)
     self:Next(163)
 end)--27
 
+NewStage("TH30", "冥府", 28, function(self)
+    self:Option(TH04_bg, "TH04_0")
+    self:Task(function()
+        --=========== 道中：彼岸的魂火 ===========
+        local E = _editor_class["TH30"]
+        local w = lstg.world
+        for _ = 1, 80 do
+            New(E.th04_wisp, ran:Float(w.boundl, w.boundr), w.boundb - 20)
+            task.Wait(ran:Int(1, 3))
+        end
+        
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(164)
+end)--28
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

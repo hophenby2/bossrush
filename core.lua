@@ -51,7 +51,7 @@ function GameInit()
     end
     --最后的准备
     SYSTEM_COUNT = 11--总共有多少系统
-    STAGE_COUNT = 27--总共有多少关卡（不包括统计）
+    STAGE_COUNT = 28--总共有多少关卡（不包括统计）
     musicList = {}
     musicBarList = {}
     AchievementInfo = {}

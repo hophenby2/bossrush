@@ -637,3 +637,7 @@ DefineAchievement(162, [[地底]], [[地底 No Miss]], {
 DefineAchievement(163, [[西行庭]], [[西行庭 No Miss]], {
     [[第八张新关卡：西行寺幽幽子 Lunatic 符卡专场]],
     [[来自 THMHJ PartII 第 6 关的九张命名符卡，已用 LuaSTG 原生语法复刻]] }, false, 6)
+
+DefineAchievement(164, [[冥府]], [[冥府 No Miss]], {
+    [[第九张新关卡：幽幽子符卡的第三版，新增开场非符]],
+    [[沿用彼岸的蝶、樱、扇、栏、妖、渡、结界母题]] }, false, 6)
