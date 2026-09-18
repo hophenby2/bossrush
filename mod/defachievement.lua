@@ -633,3 +633,7 @@ DefineAchievement(162, [[地底]], [[地底 No Miss]], {
     [[第七张新关卡：地灵殿全员，七位 BOSS 依次登场（结构驱动的重制版）]],
     [[每位 BOSS 两张非符 + 三张符卡，一共 35 张]],
     [[山女 / 帕露西 / 勇仪 / 觉 / 燐 / 空 / 恋]] }, false, 6)
+
+DefineAchievement(163, [[西行庭]], [[西行庭 No Miss]], {
+    [[第八张新关卡：西行寺幽幽子 Lunatic 符卡专场]],
+    [[来自 THMHJ PartII 第 6 关的九张命名符卡，已用 LuaSTG 原生语法复刻]] }, false, 6)

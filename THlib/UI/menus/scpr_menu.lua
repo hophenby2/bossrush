@@ -4,16 +4,7 @@ function sc_pr_menu.GetCardInfo(sc, player)
     return spell_card_data[sc.card_id][player]
 end
 function sc_pr_menu.IfInsertCard(sc)
-    if DEBUG or sc.locked_id then
-        return true
-    end
-    local count = 0
-    for _, p in ipairs(player_list) do
-        count = count + (sc_pr_menu.GetCardInfo(sc, p[2]))[2]
-        if (count > 0) then
-            return true
-        end
-    end
+    return true
 end
 
 function sc_pr_menu:TweakCard(onlyshowcard, onlyshowspecialcard)
@@ -51,13 +42,7 @@ function sc_pr_menu:TweakCard(onlyshowcard, onlyshowspecialcard)
 end
 
 local function GetCardUnlock(sc)
-    if not sc.locked_id then
-        return true
-    else
-        if scoredata["UnlockSC"][sc.locked_id] then
-            return true
-        end
-    end
+    return true
 end
 
 function sc_pr_menu:init(exit_func)

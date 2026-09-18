@@ -1143,6 +1143,21 @@ NewStage("TH20", "地底", 26, function(self)
     self:Next(162)
 end)--26
 
+NewStage("TH22", "西行庭", 27, function(self)
+    self:Option(TH22_bg, "TH22_0")
+    self:Task(function()
+        --=========== 道中：千樱飘落 ===========
+        --纯装饰（无判定）——用背景层的落樱把入场节奏铺满
+        task.Wait(150)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        task.Wait(40)
+        --=========== BOSS ===========
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(163)
+end)--27
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
