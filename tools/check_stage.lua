@@ -510,6 +510,24 @@ _G.sp = {
     GetListSection = function(_, t) return t, 1 end,
     UnitListAppend = function() end,
     UnitListUpdate = function() end,
+    HSLtoRGB = function(_, H, S, L)
+        H = H % 360
+        S = Forbid(S, 0, 1)
+        L = Forbid(L, 0, 1)
+        if S == 0 then return L * 255, L * 255, L * 255 end
+        local C = (1 - math.abs(2 * L - 1)) * S
+        local X = C * (1 - math.abs((H / 60) % 2 - 1))
+        local M = L - C / 2
+        local sector = int(H / 60)
+        local R, G, B
+        if sector == 0 then R, G, B = C, X, 0
+        elseif sector == 1 then R, G, B = X, C, 0
+        elseif sector == 2 then R, G, B = 0, C, X
+        elseif sector == 3 then R, G, B = 0, X, C
+        elseif sector == 4 then R, G, B = X, 0, C
+        else R, G, B = C, 0, X end
+        return (R + M) * 255, (G + M) * 255, (B + M) * 255
+    end,
 }
 _G.STAGE_COUNT = 23
 _G.scoredata = { UnlockSC = {}, stage_practice = {} }

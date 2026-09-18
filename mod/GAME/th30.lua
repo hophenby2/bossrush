@@ -367,9 +367,12 @@ local function flower_boat(self, o)
                     local x = w.l + 6 + (w.r - w.l - 12) * (i - 1) / ((o.n or 15) - 1)
                     if abs(x - gapx) > half then
                         --墨染：颜色沿着川由浅入深
-                        local col = 1 + int((ink + i * 2) % 16)
-                        local b = fly(butterfly, col, x, w.t + 14, o.v or 2.3+Float(-0.5, 0.5), -90+ran:Float(-11, 11))
-                        b._r, b._g, b._b = o.r or 255, o.g or 205, o.b or 232
+                        local b = fly(butterfly, o.col or 16, x, w.t + 14,
+                                o.v or 2.3+ran:Float(-0.5, 0.5), -90+ran:Float(-11, 11))
+                        local hue = ran:Float(o.hue_min or 270, o.hue_max or 330)
+                        local saturation = ran:Float(o.s_min or 0.70, o.s_max or 1.0)
+                        local lightness = ran:Float(o.l_min or 0.82, o.l_max or 0.94)
+                        b._r, b._g, b._b = sp:HSLtoRGB(hue, saturation, lightness)
                     end
                 end
                 gapx = Forbid(gapx + d * (o.speed or 4.0), -140, 140)

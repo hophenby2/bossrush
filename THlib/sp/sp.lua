@@ -17,7 +17,7 @@ Include 'THlib\\sp\\spString.lua'
 local table, string, ipairs, pairs, type, setmetatable, getmetatable = table, string, ipairs, pairs, type, setmetatable, getmetatable
 local IsValid = IsValid
 local unpack = unpack
-local int, Forbid = int, Forbid
+local int, abs, Forbid = int, abs, Forbid
 
 ---对一个对象表进行更新，去除无效的luastg object对象
 ---@param lst table
@@ -357,6 +357,41 @@ function sp:HSVtoRGB(H, S, V)
     end
     R, G, B = R * 255, G * 255, B * 255
     return R, G, B
+end
+
+---@param H@色调：0~360
+---@param S@饱和度：0~1
+---@param L@亮度：0~1
+function sp:HSLtoRGB(H, S, L)
+    H = H % 360
+    S = Forbid(S, 0, 1)
+    L = Forbid(L, 0, 1)
+    if S == 0 then
+        L = L * 255
+        return L, L, L
+    end
+
+    local C = (1 - abs(2 * L - 1)) * S
+    local X = C * (1 - abs((H / 60) % 2 - 1))
+    local M = L - C / 2
+    local R, G, B
+
+    local sector = int(H / 60)
+    if sector == 0 then
+        R, G, B = C, X, 0
+    elseif sector == 1 then
+        R, G, B = X, C, 0
+    elseif sector == 2 then
+        R, G, B = 0, C, X
+    elseif sector == 3 then
+        R, G, B = 0, X, C
+    elseif sector == 4 then
+        R, G, B = X, 0, C
+    else
+        R, G, B = C, 0, X
+    end
+
+    return (R + M) * 255, (G + M) * 255, (B + M) * 255
 end
 
 local password = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41 }
