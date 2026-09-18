@@ -297,6 +297,152 @@ class["th04_petal"] = Class(object, {
 }, true)
 
 --============================
+--★ 开场符卡专用：种子 / 巨藤 / 云层视差
+--  云层不用真实判定弹：它是把自机“送上去再落下来”的演出层。
+--  低层云慢、前景云团快，用 depth 做近大远小。
+--============================
+class["th30_cloud_cover"] = Class(object, {
+    init = function(self)
+        self.group, self.layer = GROUP.GHOST, LAYER.ENEMY - 40
+        self.bound, self.colli = false, false
+        self.speed, self.target_speed, self.alpha = 0, 0, 0
+        self.clouds = {}
+        local w = lstg.world
+        for _ = 1, 26 do
+            local depth = ran:Float(0.30, 0.80)
+            table.insert(self.clouds, {
+                x = ran:Float(w.l - 90, w.r + 90),
+                y = ran:Float(w.b - 100, w.t + 100),
+                depth = depth,
+                size = 42 + depth * 68,
+                sway = ran:Float(0, 360),
+            })
+        end
+    end,
+    frame = function(self)
+        local w = lstg.world
+        self.speed = self.speed + (self.target_speed - self.speed) * 0.06
+        self.alpha = self.alpha + ((self.target_speed > 0 and 180 or 0) - self.alpha) * 0.05
+        for _, c in ipairs(self.clouds) do
+            c.y = c.y + self.speed * (0.35 + c.depth)
+            c.x = c.x + sin(self.timer * 0.01 + c.sway) * 0.12
+            if c.y - c.size > w.t + 120 then
+                c.y = w.b - 60 - ran:Float(0, 140)
+                c.x = ran:Float(w.l - 90, w.r + 90)
+            end
+        end
+    end,
+    render = function(self)
+        for _, c in ipairs(self.clouds) do
+            local a = self.alpha * (0.34 + c.depth * 0.45)
+            SetImageState("ball_huge6", "add+alpha", int(a), 212, 206, 232)
+            Render("ball_huge6", c.x, c.y, 0, c.size / 64, c.size / 96)
+            SetImageState("ball_mid6", "add+alpha", int(a * 0.7), 238, 232, 250)
+            Render("ball_mid6", c.x + c.size * 0.28, c.y + c.size * 0.12, 0,
+                    c.size / 90, c.size / 120)
+            Render("ball_mid6", c.x - c.size * 0.30, c.y - c.size * 0.08, 0,
+                    c.size / 105, c.size / 140)
+        end
+    end,
+}, true)
+
+class["th30_cloud_puff"] = Class(object, {
+    init = function(self, x, y, o)
+        o = o or {}
+        self.x, self.y = x, y
+        self.depth = ran:Float(0.95, 1.80)
+        self.rise = (o.speed or 8.0) * self.depth
+        self.life = o.life or 420
+        self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET - 20
+        self.bound, self.colli = false, false
+        self.puffs = {}
+        for _ = 1, ran:Int(4, 6) do
+            table.insert(self.puffs, {
+                dx = ran:Float(-40, 40),
+                dy = ran:Float(-14, 14),
+                size = ran:Float(26, 54),
+                sway = ran:Float(0, 360),
+            })
+        end
+    end,
+    frame = function(self)
+        self.t = (self.t or 0) + 1
+        self.y = self.y + self.rise
+        self.x = self.x + sin(self.t * 0.04) * 0.4
+        if self.y > lstg.world.t + 100 or self.life <= 0 then
+            object.RawDel(self)
+        end
+        self.life = self.life - 1
+    end,
+    render = function(self)
+        for _, p in ipairs(self.puffs) do
+            SetImageState("ball_huge6", "add+alpha", 115, 240, 236, 252)
+            Render("ball_huge6", self.x + p.dx, self.y + p.dy, 0,
+                    p.size / 56, p.size / 84)
+        end
+    end,
+}, true)
+
+class["th30_seed"] = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.t = 0
+        self.group, self.layer = GROUP.GHOST, LAYER.ENEMY - 10
+        self.bound, self.colli = false, false
+    end,
+    frame = function(self)
+        self.t = self.t + 1
+        self.y = self.y - 4.2
+        self.x = self.x + sin(self.t * 0.14) * 0.6
+        if self.y < lstg.world.b + 8 then
+            object.RawDel(self)
+        end
+    end,
+    render = function(self)
+        SetImageState("ball_mid6", "mul+add", 200, 130, 240, 150)
+        Render("ball_mid6", self.x, self.y, 0, 0.45, 0.65)
+        SetImageState("ball_huge6", "add+alpha", 90, 190, 255, 180)
+        Render("ball_huge6", self.x, self.y, 0, 0.55, 0.75)
+    end,
+}, true)
+
+class["th30_vine"] = Class(object, {
+    init = function(self, x)
+        self.x = x
+        self.t = 0
+        self.growth = 0
+        self.group, self.layer = GROUP.GHOST, LAYER.ENEMY - 20
+        self.bound, self.colli = false, false
+    end,
+    frame = function(self)
+        self.t = self.t + 1
+        self.growth = min(1, self.growth + 1 / 90)
+    end,
+    render = function(self)
+        local w = lstg.world
+        local bottom = w.b - 10
+        local top = bottom + (w.t - bottom + 90) * self.growth
+        local segs = max(4, int((top - bottom) / 28))
+        local py, px = bottom, self.x
+        for i = 1, segs do
+            local y = bottom + (top - bottom) * i / segs
+            local x = self.x + sin(y * 0.012 + self.t * 0.025) * 14
+            thin_line(px, py, x, y, 220, 74, 178, 104, 1.6)
+            thin_line(px, py, x, y, 70, 38, 100, 58, 2.4)
+            if i % 5 == 2 then
+                draw_petal(x + 16, y, 35 + self.t * 0.2, 0.36, 180, 104, 214, 122)
+                draw_petal(x - 16, y, 215 - self.t * 0.2, 0.30, 170, 82, 190, 104)
+            end
+            px, py = x, y
+        end
+        if self.growth >= 1 then
+            SetImageState("ball_huge6", "add+alpha", 105, 150, 235, 160)
+            Render("ball_huge6", px, py, 0, 1.35, 1.55)
+        end
+    end,
+}, true)
+
+--============================
 --★★ 威胁组（《什么是好的弹设.md》§一、§五）
 --============================
 
@@ -605,7 +751,104 @@ local function limit_barrier(self, o)
 end
 
 --============================
---[符卡0] 「冥府的花笺」
+--[符卡0] 藤符「冥府的种子」
+--  演出：种子落到底部 → 巨藤长成 → 藤蔓抬自机穿云 → 云层上卷模拟下坠
+--  全程锁自机；卡片结束时还原锁、云层速度和演出对象。
+--============================
+do
+    local name = "藤符「冥府的种子」"
+    local card = boss.card.New(name, 4, 6, 16, 900)
+    boss.card.add({ { card, "1a" } }, 28, name, 339)
+
+    function card:init()
+        if IsValid(player) then
+            self._th30_locked_player = player.lock ~= true
+            player.lock = true
+        end
+        self.th30_cloud_cover = New(class["th30_cloud_cover"])
+
+        task.New(self, function()
+            task.Wait(30)
+            task.MoveTo(0, -80, 90, 4)
+            task.Wait(30)
+            New(class["th30_seed"], self.x, self.y)
+            task.Wait(40)
+            New(class["th30_vine"], self.x)
+            task.Wait(90)
+
+            --藤蔓把自机送出云层；这里直接做受控位移，避免和玩家移动系统抢位置。
+            local w = lstg.world
+            local sx, sy = player.x, player.y
+            local target_x = self.x
+            local target_y = w.t + 70
+            for i = 1, 120 do
+                local f = i / 120
+                player.x = sx + (target_x - sx) * f
+                player.y = sy + (target_y - sy) * f * f
+                task.Wait()
+            end
+
+            --自机越过云层后开始下坠；背景云和前景云团向上卷。
+            local cover = self.th30_cloud_cover
+            if IsValid(cover) then
+                cover.target_speed = 4.2
+            end
+            self.th30_cloud_phase = true
+            for i = 1, 180 do
+                local f = i / 180
+                if IsValid(cover) then
+                    cover.target_speed = 4.2 + f * 3.6
+                end
+                player.y = player.y - (1.2 + f * 3.0)
+                task.Wait()
+            end
+
+            player.y = w.pb + 16
+            self.th30_cloud_phase = false
+            if IsValid(cover) then
+                cover.target_speed = 0
+            end
+            player.lock = nil
+            self._th30_locked_player = nil
+        end)
+
+        task.New(self, function()
+            while not self.th30_cloud_phase do
+                task.Wait()
+            end
+            task.MoveTo(self.x, lstg.world.b + 28, 40, 4)
+            local side = ran:Sign()
+            while self.th30_cloud_phase do
+                local target_x = side * ran:Float(110, 170)
+                for i = 1, 70 do
+                    self.x = self.x + (target_x - self.x) * 0.045
+                    self.y = lstg.world.b + 28 + sin(self.timer * 0.05) * 8
+                    if i % 9 == 0 then
+                        New(class["th30_cloud_puff"], self.x + ran:Float(-34, 34),
+                                self.y + ran:Float(0, 18), { speed = 8.2 })
+                    end
+                    task.Wait()
+                end
+                side = -side
+            end
+        end)
+    end
+
+    function card:del()
+        self.th30_cloud_phase = false
+        if IsValid(self.th30_cloud_cover) then
+            object.RawDel(self.th30_cloud_cover)
+        end
+        self.th30_cloud_cover = nil
+        if self._th30_locked_player and IsValid(player) then
+            player.lock = nil
+        end
+        self._th30_locked_player = nil
+    end
+end
+
+--============================
+--[符卡1] 「冥府的花笺」
 --  
 --  
 --  
@@ -613,7 +856,7 @@ end
 do
     local name = "冥府的花笺"
     local card = boss.card.New(name, 1, 2, 50, 780)
-    boss.card.add({ { card, "1a" } }, 28, name, 339)
+    boss.card.add({ { card, "1a" } }, 28, name, 340)
 
     function card:before()
         task.New(self, function()
@@ -639,7 +882,7 @@ do
 end
 
 --============================
---[符卡1] 蝶符「胡蝶之栅」
+--[符卡2] 蝶符「胡蝶之栅」
 --  锚点：蝶 ·「栅」= 一排蝶结成的一道墙
 --  限位：一排 butterfly 横扫，缝左右交替（缝的两侧各站一只真蝶）
 --  威胁：蝶弹偶数狙 6 路、扇面 30°
@@ -647,7 +890,7 @@ end
 do
     local name = "蝶符「胡蝶之栅」"
     local card = boss.card.New(name, 1, 2, 50, 800)
-    boss.card.add({ { card, "1a" } }, 28, name, 340)
+    boss.card.add({ { card, "1a" } }, 28, name, 341)
 
     function card:before()
         task.New(self, function()
@@ -674,7 +917,7 @@ do
 end
 
 --============================
---[符卡2] 樱符「墨染之川」
+--[符卡3] 樱符「墨染之川」
 --  锚点：樱 ·「墨染」= 花瓣的颜色由白渐深
 --  限位：一条 sakura 组成的川往下流，缝在川上来回扫
 --  威胁：花瓣泛狙
@@ -682,7 +925,7 @@ end
 do
     local name = "樱符「墨染之川」"
     local card = boss.card.New(name, 1, 2, 50, 780)
-    boss.card.add({ { card, "1a" } }, 28, name, 341)
+    boss.card.add({ { card, "1a" } }, 28, name, 342)
 
     function card:before()
         task.New(self, function()
@@ -710,7 +953,7 @@ do
 end
 
 --============================
---[符卡3] 扇符「胡蝶扇舞」
+--[符卡4] 扇符「胡蝶扇舞」
 --  锚点：扇 · 六把扇绕 boss 公转，吐弹沿着扇骨
 --  限位：骨与骨之间的缝随扇的朝向转动
 --  威胁：蝶弹偶数狙（扇舞中飞出的蝶）
@@ -718,7 +961,7 @@ end
 do
     local name = "扇符「胡蝶扇舞」"
     local card = boss.card.New(name, 1, 2, 50, 850)
-    boss.card.add({ { card, "1a" } }, 28, name, 342)
+    boss.card.add({ { card, "1a" } }, 28, name, 343)
 
     function card:before()
         task.New(self, function()
@@ -746,7 +989,7 @@ do
 end
 
 --============================
---[符卡4] 死符「无寿之栏」
+--[符卡5] 死符「无寿之栏」
 --  锚点：死 ·「栏」= 两排刀刃做的栅栏
 --  限位：两排 knife 从左右向内收，缝越来越窄，收到下限重置
 --  威胁：蝶弹偶数狙
@@ -754,7 +997,7 @@ end
 do
     local name = "死符「无寿之栏」"
     local card = boss.card.New(name, 1, 2, 50, 800)
-    boss.card.add({ { card, "1a" } }, 28, name, 343)
+    boss.card.add({ { card, "1a" } }, 28, name, 344)
 
     function card:before()
         task.New(self, function()
@@ -783,7 +1026,7 @@ do
 end
 
 --============================
---[符卡5] 幽符「西行妖」
+--[符卡6] 幽符「西行妖」
 --  锚点：幽 · 西行妖 = 一棵会转的樱花树
 --  限位：五根枝条是沿半径排成一线的 sakura 拼出来的，整棵树左右转，枝端落花
 --  威胁：花瓣泛狙
@@ -791,7 +1034,7 @@ end
 do
     local name = "幽符「西行妖」"
     local card = boss.card.New(name, 1, 2, 50, 820)
-    boss.card.add({ { card, "1a" } }, 28, name, 344)
+    boss.card.add({ { card, "1a" } }, 28, name, 345)
 
     function card:before()
         task.New(self, function()
@@ -820,7 +1063,7 @@ do
 end
 
 --============================
---[符卡6] 蝶符「凤蝶圆舞」
+--[符卡7] 蝶符「凤蝶圆舞」
 --  锚点：蝶 · 凤蝶成对圆舞
 --  限位：两只蝶在中心两侧反向公转，各放一股蝶弹螺旋，交错处是通道
 --  威胁：蝶弹偶数狙
@@ -828,7 +1071,7 @@ end
 do
     local name = "蝶符「凤蝶圆舞」"
     local card = boss.card.New(name, 1, 2, 50, 820)
-    boss.card.add({ { card, "1a" } }, 28, name, 345)
+    boss.card.add({ { card, "1a" } }, 28, name, 346)
 
     function card:before()
         task.New(self, function()
@@ -879,7 +1122,7 @@ do
 end
 
 --============================
---[符卡7] 樱符「樱吹雪」
+--[符卡8] 樱符「樱吹雪」
 --  锚点：樱 · 吹雪 = 花瓣被风吹得横着走
 --  限位：一片斜着扫的花瓣帘，缝来回扫 → 安全区在两条对角带之间
 --  威胁：花瓣泛狙
@@ -887,7 +1130,7 @@ end
 do
     local name = "樱符「樱吹雪」"
     local card = boss.card.New(name, 1, 2, 50, 780)
-    boss.card.add({ { card, "1a" } }, 28, name, 346)
+    boss.card.add({ { card, "1a" } }, 28, name, 347)
 
     function card:before()
         task.New(self, function()
@@ -935,7 +1178,7 @@ do
 end
 
 --============================
---[符卡8] 灵符「亡灵之渡」
+--[符卡9] 灵符「亡灵之渡」
 --  锚点：亡灵 · 渡 = 四边的亡灵船来渡你过河
 --  限位：四条边上各一船亡灵，落脚点沿边滑动，安全区是其余三边
 --  威胁：蝶弹偶数狙
@@ -943,7 +1186,7 @@ end
 do
     local name = "灵符「亡灵之渡」"
     local card = boss.card.New(name, 1, 2, 50, 800)
-    boss.card.add({ { card, "1a" } }, 28, name, 347)
+    boss.card.add({ { card, "1a" } }, 28, name, 348)
 
     function card:before()
         task.New(self, function()
@@ -970,7 +1213,7 @@ do
 end
 
 --============================
---[符卡9] 结界「生死之境」
+--[符卡10] 结界「生死之境」
 --  锚点：结界 · 两条结界线把场地分成「生」与「死」
 --  限位：两层六边形结界线（弹沿边排成一列）反向转、周期张缩，缺口错开
 --  威胁：**只有一组**偶数狙（旧版同时 6 组 = 墙）
@@ -978,7 +1221,7 @@ end
 do
     local name = "结界「生死之境」"
     local card = boss.card.New(name, 1, 2, 50, 850)
-    boss.card.add({ { card, "1a" } }, 28, name, 348)
+    boss.card.add({ { card, "1a" } }, 28, name, 349)
 
     function card:before()
         task.New(self, function()
@@ -1016,7 +1259,7 @@ end
 do
     local name = "「彼岸无余涅槃」"
     local card = boss.card.New(name, 1, 2, 60, 1200)
-    boss.card.add({ { card, "1a" } }, 28, name, 349)
+    boss.card.add({ { card, "1a" } }, 28, name, 350)
 
     function card:before()
         task.New(self, function()
