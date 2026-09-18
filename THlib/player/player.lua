@@ -144,6 +144,7 @@ end
 function grazer:init(player)
     self.layer = LAYER.ENEMY_BULLET_EF + 50
     self.group = GROUP.PLAYER
+    self.bound = false
     self.player = player or lstg.player
     --self.player=lstg.player
     self.gzz = SearchStageLevel[9]

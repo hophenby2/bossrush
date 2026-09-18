@@ -360,6 +360,9 @@ end
 ---帧逻辑事件
 function system:frame()
     local p = self.player
+    if not IsValid(p.grazer) then
+        p.grazer = New(grazer, p)
+    end
     p.grazer.world = p.world
     if p.lock then
         p.timer = p.timer - 1

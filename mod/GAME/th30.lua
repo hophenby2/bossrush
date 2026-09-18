@@ -303,7 +303,7 @@ class["th04_petal"] = Class(object, {
 --============================
 class["th30_cloud_cover"] = Class(object, {
     init = function(self)
-        self.group, self.layer = GROUP.GHOST, LAYER.ENEMY - 40
+        self.group, self.layer = GROUP.GHOST, LAYER.BG + 0.6
         self.bound, self.colli = false, false
         self.speed, self.target_speed, self.alpha = 0, 0, 0
         self.clouds = {}
@@ -322,19 +322,22 @@ class["th30_cloud_cover"] = Class(object, {
     frame = function(self)
         local w = lstg.world
         self.speed = self.speed + (self.target_speed - self.speed) * 0.06
-        self.alpha = self.alpha + ((self.target_speed > 0 and 180 or 0) - self.alpha) * 0.05
+        self.alpha = self.alpha + ((abs(self.target_speed) > 0 and 72 or 0) - self.alpha) * 0.05
         for _, c in ipairs(self.clouds) do
             c.y = c.y + self.speed * (0.35 + c.depth)
             c.x = c.x + sin(self.timer * 0.01 + c.sway) * 0.12
             if c.y - c.size > w.t + 120 then
                 c.y = w.b - 60 - ran:Float(0, 140)
                 c.x = ran:Float(w.l - 90, w.r + 90)
+            elseif c.y + c.size < w.b - 120 then
+                c.y = w.t + 60 + ran:Float(0, 140)
+                c.x = ran:Float(w.l - 90, w.r + 90)
             end
         end
     end,
     render = function(self)
         for _, c in ipairs(self.clouds) do
-            local a = self.alpha * (0.34 + c.depth * 0.45)
+            local a = self.alpha * (0.18 + c.depth * 0.28)
             SetImageState("ball_huge6", "add+alpha", int(a), 212, 206, 232)
             Render("ball_huge6", c.x, c.y, 0, c.size / 64, c.size / 96)
             SetImageState("ball_mid6", "add+alpha", int(a * 0.7), 238, 232, 250)
@@ -369,14 +372,15 @@ class["th30_cloud_puff"] = Class(object, {
         self.t = (self.t or 0) + 1
         self.y = self.y + self.rise
         self.x = self.x + sin(self.t * 0.04) * 0.4
-        if self.y > lstg.world.t + 100 or self.life <= 0 then
+        local w = lstg.world
+        if self.y > w.t + 100 or self.y < w.b - 100 or self.life <= 0 then
             object.RawDel(self)
         end
         self.life = self.life - 1
     end,
     render = function(self)
         for _, p in ipairs(self.puffs) do
-            SetImageState("ball_huge6", "add+alpha", 115, 240, 236, 252)
+            SetImageState("ball_huge6", "add+alpha", 68, 240, 236, 252)
             Render("ball_huge6", self.x + p.dx, self.y + p.dy, 0,
                     p.size / 56, p.size / 84)
         end
@@ -752,8 +756,8 @@ end
 
 --============================
 --[符卡0] 藤符「冥府的种子」
---  演出：种子落到底部 → 巨藤长成 → 藤蔓抬自机穿云 → 云层上卷模拟下坠
---  全程锁自机；卡片结束时还原锁、云层速度和演出对象。
+--  演出：种子落到底部 → 巨藤长成 → 云层下卷模拟上升 → 云层上卷模拟下坠
+--  不锁自机；云层只提供上升/下坠的速度提示。
 --============================
 do
     local name = "藤符「冥府的种子」"
@@ -761,10 +765,6 @@ do
     boss.card.add({ { card, "1a" } }, 28, name, 339)
 
     function card:init()
-        if IsValid(player) then
-            self._th30_locked_player = player.lock ~= true
-            player.lock = true
-        end
         self.th30_cloud_cover = New(class["th30_cloud_cover"])
 
         task.New(self, function()
@@ -776,41 +776,37 @@ do
             New(class["th30_vine"], self.x)
             task.Wait(90)
 
-            --藤蔓把自机送出云层；这里直接做受控位移，避免和玩家移动系统抢位置。
-            local w = lstg.world
-            local sx, sy = player.x, player.y
-            local target_x = self.x
-            local target_y = w.t + 70
-            for i = 1, 120 do
-                local f = i / 120
-                player.x = sx + (target_x - sx) * f
-                player.y = sy + (target_y - sy) * f * f
+            local cover = self.th30_cloud_cover
+            if IsValid(cover) then
+                cover.target_speed = -4.2
+            end
+            self.th30_cloud_phase = "rise"
+            for i = 1, 100 do
+                local f = i / 100
+                if IsValid(cover) then
+                    cover.target_speed = -4.2 - f * 3.0
+                end
                 task.Wait()
             end
 
-            --自机越过云层后开始下坠；背景云和前景云团向上卷。
-            local cover = self.th30_cloud_cover
+            --下坠感；背景云和前景云团向上卷。
             if IsValid(cover) then
                 cover.target_speed = 4.2
             end
-            self.th30_cloud_phase = true
+            self.th30_cloud_phase = "fall"
             for i = 1, 180 do
                 local f = i / 180
                 if IsValid(cover) then
                     cover.target_speed = 4.2 + f * 3.6
                 end
-                player.y = player.y - (1.2 + f * 3.0)
                 task.Wait()
             end
 
-            player.y = w.pb + 16
             self.th30_cloud_phase = false
             if IsValid(cover) then
                 cover.target_speed = 0
             end
-            player.lock = nil
-            self._th30_locked_player = nil
-        end)
+            end)
 
         task.New(self, function()
             while not self.th30_cloud_phase do
@@ -825,7 +821,9 @@ do
                     self.y = lstg.world.b + 28 + sin(self.timer * 0.05) * 8
                     if i % 9 == 0 then
                         New(class["th30_cloud_puff"], self.x + ran:Float(-34, 34),
-                                self.y + ran:Float(0, 18), { speed = 8.2 })
+                                self.y + ran:Float(0, 18), {
+                                speed = self.th30_cloud_phase == "fall" and 8.2 or -8.2,
+                        })
                     end
                     task.Wait()
                 end
@@ -840,10 +838,6 @@ do
             object.RawDel(self.th30_cloud_cover)
         end
         self.th30_cloud_cover = nil
-        if self._th30_locked_player and IsValid(player) then
-            player.lock = nil
-        end
-        self._th30_locked_player = nil
     end
 end
 
