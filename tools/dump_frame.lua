@@ -54,7 +54,10 @@ hook.on_frame = function(idx, f, bl)
             local r = g[key]
             if not r then
                 r = { c = 0, x0 = math.huge, x1 = -math.huge, y0 = math.huge, y1 = -math.huge,
-                      sx = 0, sy = 0, hs = b.hscale or 1, vs = b.vscale or 1 }
+                      sx = 0, sy = 0, hs = b.hscale or 1, vs = b.vscale or 1,
+                      --★ 透明度也要看：`alpha` 低到看不见时，子弹**在数据上存在**，
+                      --  画面上却是空的。「只有树干没有花」多半就是这一项。
+                      a0 = math.huge, a1 = -math.huge, nvis = 0 }
                 g[key] = r
             end
             local x, y = b.x or 0, b.y or 0
@@ -64,6 +67,11 @@ hook.on_frame = function(idx, f, bl)
             if y < r.y0 then r.y0 = y end
             if y > r.y1 then r.y1 = y end
             r.sx = r.sx + x; r.sy = r.sy + y
+            --  `_a` 是 `spawn()` 写的 0~255 透明度；引擎另有 `alpha`，两个都看
+            local av = b._a or b.alpha or 255
+            if av < r.a0 then r.a0 = av end
+            if av > r.a1 then r.a1 = av end
+            if av > 95 * 2.55 then r.nvis = r.nvis + 1 end
         end
     end
 
@@ -71,18 +79,49 @@ hook.on_frame = function(idx, f, bl)
     for k in pairs(g) do keys[#keys + 1] = k end
     table.sort(keys)
 
-    --★ 把该帧自机位置也打出来：这张卡有跟自机的发射点（fx=-99999），
-    --  自机位置不同而图案完全不变，就说明「跟自机」根本没实现 —— 必须能看见这一点，
-    --  否则钉自机到底有没有生效都无从判断。
+    --★ `STAGE_DUMP=<路径>` 时不打表，改成把每颗弹的原样数据（贴图名 / 坐标 / 旋转 /
+    --  缩放 / 不透明度）写成一行行文本，交给同一个渲染脚本画出来。
+    --  这是唯一能回答「画面上到底长什么样」的办法 —— 分组统计看不出图案的形状。
+    local out = os.getenv("STAGE_DUMP")
+    if out then
+        --★ 句柄**不能叫 `f`**：`f` 是上面那个帧号，`("# frame=%d"):format(f)` 会拿
+        --  userdata 去格式化数字而报错。而报错会被 `check_stage.lua` 的 pcall 吞掉，
+        --  表现是「文件被创建了但是 0 字节」，看起来就像「这一帧没有子弹」。
+        local fh = assert(io.open(out, "w"))
+        fh:write(("# frame=%d player=%.1f,%.1f\n"):format(f, _G.player.x or 0, _G.player.y or 0))
+        for i = 1, #bl do
+            local b = bl[i]
+            if b._live ~= false then
+                --  贴图名要读样式对象的 `_imgname`（`styleOf` 里设的）。
+                --  只读 `b.style` 拿到的是表地址，没法映射回图集矩形。
+                local st = b.style
+                local nm = (type(st) == "table" and st._imgname) or "?"
+                fh:write(("%s %.2f %.2f %.1f %.4f %.4f %.1f\n"):format(
+                        nm, b.x or 0, b.y or 0, b.rot or 0,
+                        b.hscale or 1, b.vscale or 1, (b._a or 255) / 2.55))
+            end
+        end
+        fh:close()
+        print(("=== 第 %d 帧   存活子弹 %d   贴图数 %d   自机(%.0f,%.0f)   → %s")
+                :format(f, n, #keys, _G.player.x or 0, _G.player.y or 0, out))
+        return
+    end
+
     print(("=== 第 %d 帧   存活子弹 %d   贴图数 %d   自机(%.0f,%.0f) ===")
             :format(f, n, #keys, _G.player.x or 0, _G.player.y or 0))
-    print(("  %-16s %5s  %-25s %-25s %s"):format("贴图", "数量", "包围盒 x[..]", "包围盒 y[..]", "质心 / 缩放"))
+    print(("  %-16s %5s  %-25s %-25s %s"):format("贴图", "数量", "包围盒 x[..]", "包围盒 y[..]", "质心 / 缩放 / 不透明度[最低,最高] 可见"))
     for _, k in ipairs(keys) do
         local r = g[k]
-        print(("  %-16s %5d  [%8.1f,%8.1f]  [%8.1f,%8.1f]  (%7.1f,%7.1f)  %.3f,%.3f")
-                :format(k, r.c, r.x0, r.x1, r.y0, r.y1, r.sx / r.c, r.sy / r.c, r.hs, r.vs))
+        print(("  %-16s %5d  [%8.1f,%8.1f]  [%8.1f,%8.1f]  (%7.1f,%7.1f)  %.3f,%.3f  [%5.0f,%5.0f] %d")
+                :format(k, r.c, r.x0, r.x1, r.y0, r.y1, r.sx / r.c, r.sy / r.c, r.hs, r.vs,
+                        r.a0, r.a1, r.nvis))
     end
 end
 
 _G.STAGE_HOOK = hook
+--★ 必须把帧数推给 `check_stage.lua`（它读 `arg[2]`，默认只有 1800 帧）。
+--  不推的话 `STAGE_FRAME=2100` 会**一声不吭地什么都不打**，
+--  看起来就像「第 2100 帧弹幕全没了」—— 那是工具没跑到，不是关卡的问题。
+if not arg[1] then arg[1] = "mod/GAME/th21.lua" end
+if not arg[2] or tonumber(arg[2]) < FRAME then arg[2] = tostring(FRAME + 60) end
 dofile("tools/check_stage.lua")
