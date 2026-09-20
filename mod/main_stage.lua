@@ -1176,6 +1176,23 @@ NewStage("TH30", "冥府", 28, function(self)
     self:Next(164)
 end)--28
 
+NewStage("TH31", "永夜LastWord", 29, function(self)
+    self:Option(TH08_bg, "TH08_NEW_0")
+    self:Task(function()
+        task.Wait(60)
+        for i = 1, 7 do
+            boss.CreateGroup(i, self.level)
+            task.Wait(60)
+        end
+        for i = 8, 17 do
+            boss.CreateGroup(i, self.level)
+            task.Wait(60)
+        end
+        task.Wait(60)
+    end)
+    self:Next(52)
+end)--29
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
