@@ -44,7 +44,7 @@ WhiteScreen = Class(object, {
 })
 
 -- TH30 复用 TH04_bg，不建立单独的 mod/BG/TH30。
-local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30" }
+local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30", "31" }
 for _, p in ipairs(StageID) do
     if p ~= "30" then
         IncludeLuaFile("mod\\BG\\TH" .. p .. "\\TH" .. p .. "_bg.lua")
@@ -1210,7 +1210,7 @@ function ParticleLaserLine(pR, pG, pB, x, y, col, v, a, GrowTime, Width, Scale, 
     return l
 end
 
-for t = 1, 28 do
+for t = 1, 29 do
     table.insert(LoadRes, function()
         LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t))
         LoadImage(("stage_pic%d"):format(t), ("stage_pic%d"):format(t), 0, 0, 512, 512)

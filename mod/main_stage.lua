@@ -1176,6 +1176,19 @@ NewStage("TH30", "冥府", 28, function(self)
     self:Next(164)
 end)--28
 
+NewStage("TH31", "永夜LastWord", 29, function(self)
+    self:Option(TH31_bg, "TH08_NEW_0")
+    self:Task(function()
+        --TH08 原版 Last Word：31a..31f 由 th31.lua 从 ECL 手工移植。
+        task.Wait(90)
+        New(bullet_cleaner, 0, 0, 400, 50, 59)
+        boss.CreateGroup(31, self.level)
+        task.Wait(120)
+        ForcePassSpell(false)
+    end)
+    self:Next(165)
+end)--29
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

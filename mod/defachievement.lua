@@ -641,3 +641,7 @@ DefineAchievement(163, [[西行庭]], [[西行庭 No Miss]], {
 DefineAchievement(164, [[冥府]], [[冥府 No Miss]], {
     [[第九张新关卡：幽幽子符卡的第三版，新增开场非符]],
     [[沿用彼岸的蝶、樱、扇、栏、妖、渡、结界母题]] }, false, 6)
+
+DefineAchievement(165, [[永夜LastWord]], [[永夜LastWord No Miss]], {
+    [[TH08full 的 Last Word 专场，直接使用 LuaSTG 卡表复刻]],
+    [[复用 TH08 lastword 的弹幕卡表与原生对象语法]] }, false, 6)

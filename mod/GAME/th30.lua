@@ -223,8 +223,8 @@ class["th04_bfly"] = Class(object, {
         end
     end,
     render = function(self)
-        draw_bfly(self.x, self.y, 90 + sin(self.t * 3) * 18, self.size,
-                self.a, self.t * 12, self.col)
+        draw_bfly(self.x, self.y, 90 + sin(self.t * 1) * 18, self.size,
+                self.a, self.t * 1, self.col)
     end,
 }, true)
 
