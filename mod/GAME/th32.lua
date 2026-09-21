@@ -41,10 +41,12 @@ local red_magic_mid = Class(bullet, {
     end,
 })
 
-local function red_magic_mid_activate(owner, unit, shared_angle)
-    local distance = red_magic_dist(unit.x, unit.y, owner.x, owner.y)
-    local angle = distance * PI / 256 * RAD_TO_DEG
-        + (shared_angle or ran:Float(-180, 180))
+local function red_magic_mid_activate(unit, shared_angle)
+    local distance = red_magic_dist(unit.x, unit.y, _boss.x, _boss.y)
+    local angle = shared_angle
+    if angle == nil then
+        angle = distance * PI / 256 * RAD_TO_DEG + ran:Float(-180, 180)
+    end
     local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
     task.New(unit, function()
         for _ = 1, 120 do
@@ -83,13 +85,16 @@ local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angl
     end
 end
 
-local function red_magic_sub41(shared)
-    local units = red_magic_spawn_mids()
+local function red_magic_sub41()
+    return red_magic_spawn_mids()
+end
+
+local function red_magic_activate_mids(units, shared)
     local owner = _boss
     if owner == nil then return end
     local shared_angle = shared and ran:Float(-180, 180) or nil
     for _, unit in ipairs(units) do
-        red_magic_mid_activate(owner, unit, shared_angle)
+        red_magic_mid_activate(unit, shared_angle)
     end
 end
 
@@ -125,17 +130,20 @@ function red_card:init()
             local phase = ran:Float(-180, 180)
 
             red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
-            red_magic_sub41(false)
+            red_magic_activate_mids(red_magic_sub41(), true)
             red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_sub41(true)
+            red_magic_activate_mids(red_magic_sub41(), false)
+            task.Wait(60)
 
             red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
                     60, 0.026, 0.024543693)
-            red_magic_sub41(true)
+            red_magic_activate_mids(red_magic_sub41(), true)
+            task.Wait(50)
             red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_sub41(false)
+            red_magic_activate_mids(red_magic_sub41(), false)
+            task.Wait(60)
         end
     end)
 end
