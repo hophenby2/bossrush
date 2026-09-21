@@ -11,6 +11,11 @@ local bullet_lw3_5 = TH08["bullet_lw3-5"]
 local RAD_TO_DEG = 57.29577951308232
 local PI = 3.141592653589793
 
+local function red_magic_dist(x1, y1, x2, y2)
+    local dx, dy = x2 - x1, y2 - y1
+    return (dx * dx + dy * dy) ^ 0.5
+end
+
 local red_magic_huge = Class(bullet, {
     init = function(self, angle, speed, duration, speed_delta, angle_delta)
         bullet.init(self, ball_huge, COLOR.RED, true, true)
@@ -25,6 +30,8 @@ local red_magic_huge = Class(bullet, {
     end,
 })
 
+local red_magic_huges = {}
+
 local red_magic_mid = Class(bullet, {
     init = function(self, x, y, angle)
         bullet.init(self, ball_mid, COLOR.RED, true, true)
@@ -33,43 +40,51 @@ local red_magic_mid = Class(bullet, {
     end,
 })
 
-local function red_magic_mid_activate(owner, bullet)
-    local distance = Dist(bullet, owner)
-    local angle = distance * PI / 256 + ran:Float(-180, 180)
+local function red_magic_mid_activate(owner, unit, shared_angle)
+    local distance = red_magic_dist(unit.x, unit.y, owner.x, owner.y)
+    local angle = distance * PI / 256
+        + (shared_angle or ran:Float(-180, 180))
     local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
-    task.New(bullet, function()
+    task.New(unit, function()
         for _ = 1, 120 do
-            bullet.vx, bullet.vy = vx, vy
+            unit.vx, unit.vy = vx, vy
             vx, vy = vx + cos(angle) * 0.01, vy + sin(angle) * 0.01
             task.Wait()
         end
     end)
 end
 
-local function red_magic_bullet_spawn(owner, count, sound)
-    local bullets = {}
-    for i = 0, count - 1 do
-        bullets[i + 1] = New(red_magic_mid, owner.x, owner.y,
-                owner.rot + i * 360 / count)
+local function red_magic_spawn_mids()
+    local units = {}
+    for round = 1, 20 do
+        for index = #red_magic_huges, 1, -1 do
+            local huge = red_magic_huges[index]
+            if IsValid(huge) then
+                units[#units + 1] = New(red_magic_mid, huge.x, huge.y,
+                        ran:Float(-180, 180))
+            else
+                table.remove(red_magic_huges, index)
+            end
+        end
+        task.Wait(10)
     end
-    if sound then
-        PlaySound("tan00", 0.1, owner.x / 256, false)
+    return units
+end
+
+local function red_magic_activate_mids(owner, units, shared)
+    local shared_angle = shared and ran:Float(-180, 180) or nil
+    for _, unit in ipairs(units) do
+        red_magic_mid_activate(owner, unit, shared_angle)
     end
 end
 
 local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angle_delta, sound)
     local huge = New(red_magic_huge, angle, speed,
             duration or 0, speed_delta or 0, angle_delta or 0)
-    task.New(huge, function()
-        task.Wait(10)
-        red_magic_bullet_spawn(huge, 8, sound)
-        task.Wait(10)
-        red_magic_bullet_spawn(huge, 8)
-        task.Wait(10)
-        local boss = _boss
-        if boss == nil then return end
-        red_magic_mid_activate(boss, huge)
-    end)
+    red_magic_huges[#red_magic_huges + 1] = huge
+    if sound then
+        PlaySound("tan00", 0.1, owner.x / 256, false)
+    end
 end
 
 local function red_magic_circle(owner, count, layers, speed, layer_speed, angle,
@@ -104,18 +119,26 @@ function red_card:init()
 
             red_magic_circle(self, 10, 3, 4.0, 1.8, phase, -18)
             task.Wait(60)
+            local mids = red_magic_spawn_mids()
+            red_magic_activate_mids(self, mids, false)
 
             red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
             task.Wait(60)
+            mids = red_magic_spawn_mids()
+            red_magic_activate_mids(self, mids, true)
 
             red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
                     60, 0.026, 0.024543693)
             task.Wait(60)
+            mids = red_magic_spawn_mids()
+            red_magic_activate_mids(self, mids, false)
 
             red_magic_circle(self, 12, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
             task.Wait(60)
+            mids = red_magic_spawn_mids()
+            red_magic_activate_mids(self, mids, true)
 
             task.Wait(50)
         end
