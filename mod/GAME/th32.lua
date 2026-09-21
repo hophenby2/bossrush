@@ -9,6 +9,7 @@ local class = _editor_class["TH32"]
 local bullet_lw3_4 = TH08["bullet_lw3-4"]
 local bullet_lw3_5 = TH08["bullet_lw3-5"]
 local RAD_TO_DEG = 57.29577951308232
+local PI = 3.141592653589793
 
 local red_magic_huge = Class(bullet, {
     init = function(self, angle, speed, duration, speed_delta, angle_delta)
@@ -24,14 +25,32 @@ local red_magic_huge = Class(bullet, {
     end,
 })
 
-local function red_magic_mid(owner, angle, speed)
-    return NewSimpleBullet(ball_mid, COLOR.RED, owner.x, owner.y,
-            speed, angle, false, 0, true, true)
+local red_magic_mid = Class(bullet, {
+    init = function(self, x, y, angle)
+        bullet.init(self, ball_mid, COLOR.RED, true, true)
+        self.x, self.y = x, y
+        object.SetV(self, 0, angle, true)
+    end,
+})
+
+local function red_magic_mid_activate(owner, bullet)
+    local distance = Dist(bullet, owner)
+    local angle = distance * PI / 256 + ran:Float(-180, 180)
+    local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
+    task.New(bullet, function()
+        for _ = 1, 120 do
+            bullet.vx, bullet.vy = vx, vy
+            vx, vy = vx + cos(angle) * 0.01, vy + sin(angle) * 0.01
+            task.Wait()
+        end
+    end)
 end
 
 local function red_magic_bullet_spawn(owner, count, sound)
+    local bullets = {}
     for i = 0, count - 1 do
-        red_magic_mid(owner, owner.rot + i * 360 / count)
+        bullets[i + 1] = New(red_magic_mid, owner.x, owner.y,
+                owner.rot + i * 360 / count)
     end
     if sound then
         PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -46,6 +65,10 @@ local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angl
         red_magic_bullet_spawn(huge, 8, sound)
         task.Wait(10)
         red_magic_bullet_spawn(huge, 8)
+        task.Wait(10)
+        local boss = _boss
+        if boss == nil then return end
+        red_magic_mid_activate(boss, huge)
     end)
 end
 
