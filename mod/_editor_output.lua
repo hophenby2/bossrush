@@ -43,10 +43,10 @@ WhiteScreen = Class(object, {
     end
 })
 
--- TH30 复用 TH04_bg，不建立单独的 mod/BG/TH30。
+-- TH30 复用 TH04_bg，TH31 复用 TH08_bg；都不建立单独的 mod/BG 目录。
 local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30", "31" }
 for _, p in ipairs(StageID) do
-    if p ~= "30" then
+    if p ~= "30" and p ~= "31" then
         IncludeLuaFile("mod\\BG\\TH" .. p .. "\\TH" .. p .. "_bg.lua")
     end
     IncludeLuaFile("mod\\GAME\\th" .. p .. ".lua")

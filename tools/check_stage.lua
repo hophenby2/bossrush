@@ -317,7 +317,8 @@ local function classKey(c)
     end
     return "(匿名类)"
 end
-_G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroyable)
+_G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroyable,
+                              rebound, through, frame, render)
     -- ★ style 必须是**弹样式对象**（ball_mid / knife / ellipse …），不是字符串。
     --   `bullet.init` 里有 `self.class = imgclass`，引擎要求 class 是 luastg 对象类，
     --   传字符串会在**实机**里当场抛 "invalid argument for property 'class'" ——
@@ -348,6 +349,10 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
     -- 外部工具（tools/threat.lua）用它在**出膛那一刻**登记发弹事件
     local cb = rawget(_G, "STAGE_BULLET_CB")
     if cb then cb(b, style, col, x, y, v, a, aim) end
+    b.rebound = rebound
+    b.through = through
+    b.frame_other = frame
+    b.render_other = render
     return b
 end
 
@@ -1082,8 +1087,6 @@ local function step_objects()
         if b._live == false then
             table.remove(bullets, i)
         else
-            b.x = b.x + b.vx
-            b.y = b.y + b.vy
             b.timer = b.timer + 1
             -- ★ 引擎每帧调 `self.frame_other(self)`、`self.render_other(self)`
             --   （`THlib/bullet/bullet.lua:251-259`）—— **只有一个参数**。
@@ -1094,6 +1097,10 @@ local function step_objects()
             --   th20 的 `freeze_layer` 就是这么在真机上崩的。
             if b.frame_other then b.frame_other(b) end
             if b.render_other then b.render_other(b) end
+            -- BulletManager 先推进 transform / frame_other，再积分位置；
+            -- 原顺序会让动态弹滞后一帧。
+            b.x = b.x + b.vx
+            b.y = b.y + b.vy
             if b.bound and (b.x < -224 or b.x > 224 or b.y < -256 or b.y > 256) then
                 table.remove(bullets, i)
             end

@@ -2,9 +2,9 @@
 ---TH31  永夜LastWord
 ---  重新按 TH08 v0x800 ECL 与 th08full 解释器移植：
 ---  · opcode 97 = 固定角扇形弹；opcode 99 = 固定角圆弹；
----    opcode 111 = 弹速变换（减速 / 定角加速度 / 切向加速度 / 定时静止）。
----  · ECL 坐标是 384×448 游戏区（中心 192,224）；本项目宽 384。
----    因 此统一用 0.6 缩放速度与半径，角度按 LuaSTG 度数换算。
+---    opcode 111 = 弹速变换（减速 / 向量加速度 / 极坐标加速度 / 转向）。
+---  · TH08 与 LuaSTG 的游戏区同为 384×448：x' = x - 192，y' = 224 - y。
+---    ECL 弧度换算为 LuaSTG 度；transform 按官方顺序更新。
 ---  · 17 张卡全部是官方超时卡，因此血量设为不可击破，并保留原卡节奏。
 ---=====================================
 
@@ -17,9 +17,13 @@ local object = object
 local New = New
 local NewSimpleBullet = NewSimpleBullet
 local PlaySound = PlaySound
+local Del = Del
 local cos, sin = cos, sin
 local Angle = Angle
 local Dist = Dist
+local sqrt = sqrt
+local abs = abs
+local int = int
 
 local ball_small = ball_small
 local ball_mid = ball_mid
@@ -31,30 +35,276 @@ local star_small = star_small
 local TH08_SC = _editor_class["TH08"] or {}
 local TH07_SC = _editor_class["TH07"] or {}
 
-local function deg(rad)
-    return rad * 180 / math.pi
+--TH08 BulletManager.hpp 的 transform kind 位。
+local SPAWN_FAST, SPAWN_NORMAL, SPAWN_SLOW = 0x2, 0x4, 0x8
+local DECELERATE, ACCEL_VECTOR, ACCEL_POLAR = 0x1, 0x10, 0x20
+local DIR_RELATIVE, DIR_AIMED, DIR_ABSOLUTE = 0x40, 0x80, 0x100
+local BOUNCE_ALL, BOUNCE_BOTTOM = 0x400, 0x800
+local SET_CULL_DELAY, SET_SPRITE, DESPAWN_MARKER = 0x2000, 0x4000, 0x40000
+local WAIT, DESPAWN, PLAY_SOUND = 0x20000, 0x40000, 0x80000
+local EX_MARKER, WRAP_X, WRAP_Y = 0x100000, 0x400000, 0x800000
+
+local RAD_TO_DEG = 57.29577951308232
+
+local function has_flag(flags, kind)
+    if kind <= 0 then return false end
+    return math.floor(flags / kind) % 2 ~= 0
 end
 
-local function set_v(owner, speed, angle)
-    object.SetV(owner, speed, angle or owner.rot, true)
+local function set_v(bullet, speed, angle)
+    angle = angle or bullet.rot
+    object.SetV(bullet, speed, angle, true)
+end
+
+--对应 Bullet::AdvanceTransformProgram：保留官方 18 个 transform 槽位、
+--按 kind 共享的 exState，以及 allowWhileActive 的原始语义。
+local function ecl_hook(records, transform_flags)
+    local flags = transform_flags or 0
+    local slots = {}
+    local next_slot = 0
+    for _, record in ipairs(records) do
+        local slot = record.slot or next_slot
+        if slot < 0 or slot >= 18 then
+            error("ECL transform slot out of range: " .. tostring(slot), 2)
+        end
+        record.allow_while_active = record.allow_while_active == true
+        slots[slot + 1] = record
+        next_slot = slot + 1
+    end
+
+    return function(bullet)
+        local active = {}
+        local direction_state
+        local index = 0
+        local logical_speed = sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy)
+        local logical_angle = Angle(0, 0, bullet.vx, bullet.vy)
+        local cull_delay = 0
+
+        if has_flag(flags, SPAWN_FAST) or has_flag(flags, SPAWN_NORMAL)
+                or has_flag(flags, SPAWN_SLOW) then
+            bullet.x = bullet.x - bullet.vx * 4
+            bullet.y = bullet.y - bullet.vy * 4
+        end
+
+        local function activate()
+            while index < 18 do
+                local record = slots[index + 1]
+                if not record or not record.kind or record.kind <= 0 then return end
+                if not has_flag(flags, record.kind) then
+                    index = index + 1
+                elseif record.kind == SET_CULL_DELAY then
+                    cull_delay = record.frames or 0
+                    bullet.bound = cull_delay == 0
+                    index = index + 1
+                elseif record.kind == SET_SPRITE or record.kind == PLAY_SOUND
+                        or record.kind == EX_MARKER or record.kind == DESPAWN_MARKER then
+                    index = index + 1
+                elseif record.kind == DESPAWN then
+                    Del(bullet)
+                    return
+                elseif record.allow_while_active or next(active) == nil then
+                    if record.kind == DECELERATE then
+                        active[DECELERATE] = { timer = 0 }
+                    elseif record.kind == ACCEL_VECTOR then
+                        active[ACCEL_VECTOR] = {
+                            timer = 0,
+                            magnitude = record.speed or 0,
+                            angle = (record.angle or -999) > -990
+                                    and record.angle * RAD_TO_DEG or logical_angle,
+                            duration = record.duration or 0,
+                        }
+                    elseif record.kind == ACCEL_POLAR then
+                        active[ACCEL_POLAR] = {
+                            timer = 0,
+                            speed_delta = record.speed or 0,
+                            angle_delta = (record.angle or 0) * RAD_TO_DEG,
+                            duration = record.duration or 0,
+                        }
+                    elseif record.kind == DIR_RELATIVE or record.kind == DIR_AIMED
+                            or record.kind == DIR_ABSOLUTE then
+                        direction_state = {
+                            kind = record.kind,
+                            timer = 0,
+                            angle = record.angle * RAD_TO_DEG,
+                            speed = (record.speed or -999) > -999
+                                    and record.speed or logical_speed,
+                            interval = record.interval or 0,
+                            repeat_count = record.repeat_count or 1,
+                            done = 0,
+                        }
+                        active[record.kind] = direction_state
+                    elseif record.kind == BOUNCE_ALL or record.kind == BOUNCE_BOTTOM then
+                        active[record.kind] = {
+                            speed = (record.speed or -1) >= 0 and record.speed or logical_speed,
+                            limit = record.repeat_count or 1,
+                            done = 0,
+                        }
+                    elseif record.kind == WAIT then
+                        active[WAIT] = { timer = record.frames or 0 }
+                    elseif record.kind == WRAP_X or record.kind == WRAP_Y then
+                        active[record.kind] = { timer = record.frames or 0 }
+                    end
+                    index = index + 1
+                else
+                    return
+                end
+            end
+        end
+
+        local function set_velocity(speed, angle)
+            logical_speed = speed
+            logical_angle = angle
+            set_v(bullet, speed, angle)
+        end
+
+        local function update_deceleration()
+            local state = active[DECELERATE]
+            if state.timer <= 16 then
+                set_v(bullet, logical_speed + 5 - state.timer * 5 / 16, logical_angle)
+            else
+                active[DECELERATE] = nil
+                set_v(bullet, logical_speed, logical_angle)
+            end
+            state.timer = state.timer + 1
+        end
+
+        local function update_vector_acceleration()
+            local state = active[ACCEL_VECTOR]
+            if state.timer >= state.duration then
+                active[ACCEL_VECTOR] = nil
+            else
+                bullet.vx = bullet.vx + cos(state.angle) * state.magnitude
+                bullet.vy = bullet.vy + sin(state.angle) * state.magnitude
+                if abs(bullet.vx) > 0.0001 or abs(bullet.vy) > 0.0001 then
+                    logical_angle = Angle(0, 0, bullet.vx, bullet.vy)
+                    bullet.rot = logical_angle
+                end
+            end
+            state.timer = state.timer + 1
+        end
+
+        local function update_polar_acceleration()
+            local state = active[ACCEL_POLAR]
+            if state.timer >= state.duration then
+                active[ACCEL_POLAR] = nil
+            else
+                logical_angle = (logical_angle + state.angle_delta) % 360
+                logical_speed = logical_speed + state.speed_delta
+                set_v(bullet, logical_speed, logical_angle)
+            end
+            state.timer = state.timer + 1
+        end
+
+        local function update_direction(kind)
+            local state = direction_state
+            if state.timer >= state.interval then
+                local next_angle
+                if kind == DIR_RELATIVE then
+                    next_angle = logical_angle + state.angle
+                elseif kind == DIR_AIMED then
+                    next_angle = Angle(bullet, player) + state.angle
+                else
+                    next_angle = state.angle
+                end
+                state.done = state.done + 1
+                if state.done >= state.repeat_count then
+                    active[kind] = nil
+                end
+                set_velocity(state.speed, next_angle)
+                state.timer = 0
+            else
+                set_v(bullet, logical_speed - logical_speed * state.timer / state.interval,
+                        logical_angle)
+            end
+            state.timer = state.timer + 1
+        end
+
+        local function update_bounce(kind)
+            local state = active[kind]
+            if bullet.x <= -224 or bullet.x >= 224 then
+                logical_angle = -logical_angle - 180
+                logical_speed = state.speed
+                set_v(bullet, logical_speed, logical_angle)
+                state.done = state.done + 1
+            end
+            if bullet.y >= 224 or (kind == BOUNCE_ALL and bullet.y <= -224) then
+                logical_angle = -logical_angle
+                logical_speed = state.speed
+                set_v(bullet, logical_speed, logical_angle)
+                state.done = state.done + 1
+            end
+            if state.done >= state.limit then active[kind] = nil end
+        end
+
+        local function update_wrap(kind)
+            local state = active[kind]
+            if kind == WRAP_X then
+                if bullet.x < -192 then bullet.x = bullet.x + 384
+                elseif bullet.x > 192 then bullet.x = bullet.x - 384 end
+            else
+                if bullet.y < -224 then bullet.y = bullet.y + 448
+                elseif bullet.y > 224 then bullet.y = bullet.y - 448 end
+            end
+            if state.timer <= 0 then
+                active[kind] = nil
+            else
+                state.timer = state.timer - 1
+            end
+        end
+
+        activate()
+
+        function bullet.frame_other()
+            activate()
+            if active[DECELERATE] then update_deceleration() end
+            if active[ACCEL_VECTOR] then update_vector_acceleration() end
+            if active[ACCEL_POLAR] then update_polar_acceleration() end
+            if active[DIR_RELATIVE] then update_direction(DIR_RELATIVE) end
+            if active[DIR_ABSOLUTE] then update_direction(DIR_ABSOLUTE) end
+            if active[DIR_AIMED] then update_direction(DIR_AIMED) end
+            if active[BOUNCE_ALL] then update_bounce(BOUNCE_ALL) end
+            if active[BOUNCE_BOTTOM] then update_bounce(BOUNCE_BOTTOM) end
+            if active[WRAP_X] then update_wrap(WRAP_X) end
+            if active[WRAP_Y] then update_wrap(WRAP_Y) end
+            if active[WAIT] then
+                local state = active[WAIT]
+                if state.timer <= 0 then
+                    active[WAIT] = nil
+                else
+                    state.timer = state.timer - 1
+                end
+            end
+            if cull_delay > 0 then
+                cull_delay = cull_delay - 1
+                if cull_delay == 0 then bullet.bound = true end
+            end
+        end
+    end
 end
 
 local function fan(style, color, owner, count, speed, angle, step, hook)
     for i = 0, count - 1 do
-        local spread = int((i + 1) / 2) * step
-        if i % 2 == 0 then
-            spread = -spread
+        local spread
+        if count % 2 ~= 0 then
+            spread = int((i + 1) / 2) * step
+            if i % 2 ~= 0 then
+                spread = -spread
+            end
+        else
+            spread = (int(i / 2) + 0.5) * step
+            if i % 2 ~= 0 then
+                spread = -spread
+            end
         end
-        local a = angle + spread
-        NewSimpleBullet(style, color, owner.x, owner.y, speed, a,
+        NewSimpleBullet(style, color, owner.x, owner.y, speed, angle + spread,
                 false, 0, false, false, false, false, hook)
     end
 end
 
-local function circle(style, color, owner, count, speed, angle, step, ring, hook)
-    ring = ring or 1
-    for j = 0, ring - 1 do
-        local v = ring > 1 and (speed - j * ((speed - 0.5) / ring)) or speed
+local function circle(style, color, owner, count, speed1, angle, step, speed2, hook)
+    local count2 = speed2 and 2 or 1
+    for j = 0, count2 - 1 do
+        local v = count2 > 1 and speed1 - (speed1 - speed2) * j / count2 or speed1
         for i = 0, count - 1 do
             local a = angle + i * 360 / count + j * (step or 0)
             NewSimpleBullet(style, color, owner.x, owner.y, v, a,
@@ -70,7 +320,7 @@ local function wait_card(self)
     task.MoveTo(0, 96, 56, 2)
 end
 
-local function add_card(name, id, letter, owner, bg, time)
+local function add_card(name, id, letter, owner, time)
     local card = boss.card.New(name, 6, 8, time or 99, 10000000)
     boss.card.add({ { card, letter } }, 29, name, id)
     card.before = wait_card
@@ -83,9 +333,6 @@ local function add_card(name, id, letter, owner, bg, time)
     return card
 end
 
-
-class["SCBG1"] = Class(_SC_BG)
-class["SCBG2"] = Class(_SC_BG)
 
 class["SCBG1"] = Class(_SC_BG)
 class["SCBG2"] = Class(_SC_BG)
@@ -144,22 +391,33 @@ add_card("「季节外调的蝴蝶风暴」", 351, "1a", function(self)
     task.New(self, function()
         local angle, spin = Angle(self.x, self.y, player.x, player.y), 0
         while true do
-            local hook = function(b)
-                b.th31_wait = 45
-                b.frame_other = function(o)
-                    if o.th31_wait > 0 then
-                        o.th31_wait = o.th31_wait - 1
-                        set_v(o, 0)
-                    else
-                        set_v(o, min(1.2 + 0.012, 2.4))
-                    end
-                end
+            local hook = ecl_hook({
+                { slot = 0, kind = DESPAWN_MARKER, allow_while_active = true, frames = 400 },
+                { slot = 1, kind = WAIT, allow_while_active = true, frames = 60 },
+                { slot = 2, kind = DIR_RELATIVE, allow_while_active = true,
+                  angle = -math.pi / 2, speed = -999, interval = 30, repeat_count = 1 },
+                { slot = 3, kind = EX_MARKER, allow_while_active = true },
+                { slot = 4, kind = DIR_ABSOLUTE, allow_while_active = true,
+                  angle = math.pi, speed = 0, interval = 60, repeat_count = 1 },
+                { slot = 5, kind = EX_MARKER, allow_while_active = true, frames = 0 },
+                { slot = 6, kind = WAIT, allow_while_active = true, frames = 10 },
+                { slot = 9, kind = EX_MARKER, allow_while_active = true, frames = 27 },
+                { slot = 10, kind = DIR_RELATIVE, allow_while_active = true,
+                  angle = 2.0943952, speed = 2.8, interval = 10, repeat_count = 1 },
+                { slot = 11, kind = EX_MARKER, allow_while_active = true, frames = 8 },
+            }, 0xA6244)
+            local radius = 128
+            for i = 0, 23 do
+                local spread = (i % 2 == 0 and 1 or -1) * int((i + 1) / 2) * 15
+                local direction = angle + spread
+                NewSimpleBullet(ball_small, 4,
+                        self.x + cos(direction) * radius, self.y + sin(direction) * radius,
+                        0.5, direction + 180, false, 0, false, false, false, false, hook)
             end
-            circle(ball_small, 4, self, 16, 1.2, angle, 15, 1, hook)
-            angle = angle + 14
+            angle = angle + 15
             spin = spin + 1
             PlaySound("tan00", 0.05, 0, true)
-            task.Wait(spin < 8 and 7 or 12)
+            task.Wait(7)
         end
     end)
     task.New(self, function()
@@ -173,51 +431,40 @@ end)
 -- 206 ブラインドナイトバード
 add_card("「盲夜鸟」", 352, "1b", function(self)
     task.Wait(110)
-    local hook = function(b)
-        b.th31_wait = 40
-        b.frame_other = function(o)
-            if o.th31_wait > 0 then
-                o.th31_wait = o.th31_wait - 1
-                set_v(o, 0)
-            else
-                set_v(o, min(1.9 + 0.020, 2.0))
-            end
+    task.New(self, function()
+        -- ecldata2sp.Sub45：cull 60；60 帧绝对转向 0 后，
+        -- Easy 的持续 60 帧加速度 0.09166667；每帧 10 发 15° 扇。
+        local hook = ecl_hook({
+            { slot = 0, kind = DESPAWN_MARKER, allow_while_active = true, frames = 60 },
+            { slot = 1, kind = DIR_ABSOLUTE, allow_while_active = true,
+              angle = 0, speed = 0, interval = 60, repeat_count = 1 },
+            { slot = 2, kind = ACCEL_VECTOR, allow_while_active = true,
+              speed = 0.09166667, angle = -999.9, duration = 60 },
+        }, 0x2252)
+        for _ = 1, 15 do
+            fan(ellipse, 10, self, 1, 3.0, 0, 0, hook)
+            task.Wait(1)
         end
-    end
-    while true do
-        fan(ellipse, 5, self, 10, 1.9, Angle(self.x, self.y, player.x, player.y), 15, hook)
-        task.Wait(30)
-    end
+    end)
 end)
 
 -- 207 日出づる国の天子
 add_card("「日出之国的天子」", 353, "1c", function(self)
     task.Wait(110)
     task.New(self, function()
-            local hook = function(b)
-                b.th31_wait = 52
-                b.frame_other = function(o)
-                    if o.th31_wait > 0 then
-                        o.th31_wait = o.th31_wait - 1
-                        set_v(o, 0)
-                    else
-                        set_v(o, 0.55 * 1.45)
-                    end
-                end
-        end
-        local groups = { { x = -60, a = -90 }, { x = 60, a = -90 }, { x = 0, a = 0 } }
+        -- ecldata3sp.Sub56/Sub59：三个 familiar 每 20 帧交替发
+        -- 0.9 自机狙与 1.1 扇形弹；完整 familiar 轨道另行保留。
+        local hook = ecl_hook({}, 0x4210)
+        local groups = { { x = -96, a = -90 }, { x = 96, a = -90 }, { x = 0, a = 0 } }
         while true do
             for _, g in ipairs(groups) do
-                for n = 1, 3 do
-                    local a = g.a + (n - 2) * 120
-                    for i = -1, 1 do
-                        local b = NewSimpleBullet(ball_mid, 6, g.x, 168, 0.55, a + i * 4.5,
-                                false, 0, false, false, false, false, hook)
-                        b._r, b._g, b._b = 236, 188, 120
-                    end
-                end
+                NewSimpleBullet(ball_mid, 1, g.x, 96, 0.9,
+                        Angle(g.x, 96, player.x, player.y),
+                        false, 0, false, false, false, false, hook)
+                fan(ball_mid, 3, { x = g.x, y = 96 }, 1, 1.1,
+                        Angle(g.x, 96, player.x, player.y), 1.5, hook)
             end
-            task.Wait(120)
+            task.Wait(20)
         end
     end)
     task.New(self, function()
@@ -231,23 +478,23 @@ end)
 -- 208 幻朧月睨
 add_card("「幻胧月睨」", 354, "1d", function(self)
     task.Wait(110)
-    local burst
-    burst = function(angle, count, color)
-        circle(ball_mid, color or 6, self, count, 3.1, angle, 5.625, 1)
-    end
+    local hook = ecl_hook({}, 0)
     while true do
         local aim = Angle(self.x, self.y, player.x, player.y)
-        burst(aim, 128, 8)
+        circle(ball_mid, 8, self, 128, 5.0, aim, 5.625, 1.0, hook)
         task.Wait(30)
         task.MoveTo(-20, 150, 45, 2)
         task.Wait(45)
-        burst(aim + 45, 128, 12)
-        burst(aim - 45, 128, 4)
+        circle(ball_mid, 2, self, 128, 5.4, aim + 3.75,
+                5.625, 1.0, hook)
+        circle(ball_mid, 6, self, 128, 2.8, aim + 45 - 3.75,
+                5.625, 1.0, hook)
         task.Wait(30)
         task.MoveTo(20, 150, 45, 2)
         task.Wait(45)
-        burst(aim, 44, 8)
-        burst(aim + 180, 44, 4)
+        circle(ball_mid, 6, self, 44, 5.2, aim, 5.625, 2.6, hook)
+        circle(ball_mid, 2, self, 44, 2.6, aim + 3.75,
+                5.625, 2.6, hook)
         task.Wait(120)
     end
 end)
@@ -258,7 +505,7 @@ add_card("「天网蛛网捕蝶之法」", 355, "1e", function(self)
     task.New(self, function()
         local angle = Angle(self.x, self.y, player.x, player.y) - 22.5
         while true do
-            circle(ball_small, 4, self, 10, 1.1, angle, 0, 1)
+            circle(ball_small, 4, self, 10, 1.1, angle, 0)
             angle = angle + 67.5
             task.Wait(4)
         end
@@ -277,24 +524,16 @@ add_card("「蓬莱之树海」", 356, "1f", function(self)
     task.New(self, function()
         local hooks = {}
         for i = 1, 8 do
-            local angle = i * 45
-            local hook = function(b)
-                b.th31_delay = 110 + i * 10
-                b.th31_a = angle + 180
-                b.frame_other = function(o)
-                    if o.timer >= o.th31_delay then
-                        set_v(o, 1.8, o.th31_a)
-                        o.th31_delay = 999999
-                    end
-                end
-            end
-            table.insert(hooks, hook)
+            hooks[i] = ecl_hook({
+                { kind = WAIT, allow_while_active = false, frames = i * 10 },
+                { kind = DIR_ABSOLUTE, allow_while_active = false,
+                  angle = 3.1415927, speed = 0.5, interval = 1, repeat_count = 1 },
+            }, 0x20040)
         end
         while true do
             for i, hook in ipairs(hooks) do
-                local b = NewSimpleBullet(star_small, 7, self.x, self.y, 1.7, i * 45,
+                NewSimpleBullet(star_small, 7, self.x, self.y, 0.5, i * 45,
                         false, 0, false, false, false, false, hook)
-                b._r, b._g, b._b = 180, 255, 190
             end
             task.Wait(130)
         end
@@ -311,26 +550,19 @@ end)
 add_card("「不死鸟再诞」", 357, "1g", function(self)
     task.Wait(110)
     task.New(self, function()
-        local turn = 0
+        -- ecldata8sp.Sub110/Sub111：每 10 帧生成一轮围绕 Boss 的低速火种；
+        -- 每个 120 帧内沿自身方向加速 0.14166667。
+        local hook = ecl_hook({
+            { slot = 0, kind = DESPAWN_MARKER, allow_while_active = true, frames = 120 },
+            { slot = 1, kind = ACCEL_VECTOR, allow_while_active = true,
+              speed = 0.14166667, angle = -999.9, duration = 120 },
+        }, 0x2212)
         while true do
             local base = Angle(self.x, self.y, player.x, player.y)
-            for i = 0, 7 do
-                local hook = function(b)
-                    b.th31_turn = turn + 1
-                    b.frame_other = function(o)
-                        if o.timer == 42 then
-                            set_v(o, 1.05, base + 90)
-                        elseif o.timer == 90 then
-                            set_v(o, 1.45, base + 180)
-                        elseif o.timer == 145 then
-                            set_v(o, 1.8, base)
-                        end
-                    end
-                end
-                NewSimpleBullet(grain_a, 5 + (turn % 3), self.x, self.y, 1.05, base + i * 45,
-                        false, 0, false, false, false, false, hook)
+            for i = 0, 15 do
+                NewSimpleBullet(grain_a, 1, self.x, self.y, 0.5,
+                        base + i * 22.5, false, 0, false, false, false, false, hook)
             end
-            turn = turn + 1
             task.Wait(10)
         end
     end)
@@ -346,22 +578,21 @@ end)
 add_card("「远古的欺骗者」", 358, "1h", function(self)
     task.Wait(110)
     task.New(self, function()
-        local phase = 0
+        local hook = ecl_hook({
+            { kind = WAIT, allow_while_active = false, frames = 3 },
+            { kind = DIR_AIMED, allow_while_active = false,
+              angle = 0.0, speed = 1.0, interval = 7, repeat_count = 1 },
+        }, 0x20080)
         while true do
             for side = -1, 1, 2 do
                 local x = side * 126
                 for i = 0, 47 do
-                    local b = NewSimpleBullet(knife, 7, x, 170, 2.4,
+                    local b = NewSimpleBullet(knife, 7, x, 168, 1.0,
                             side < 0 and 0 or 180, false, 0, false, false, false, false,
-                            function(o)
-                                if o.timer == 38 then
-                                    set_v(o, 1.15, Angle(o.x, o.y, player.x, player.y) + phase)
-                                end
-                            end)
+                            hook)
                     b.omiga = side * 1.4
                 end
             end
-            phase = phase + 17
             task.Wait(240)
         end
     end)
@@ -371,19 +602,29 @@ end)
 add_card("「无何有净化」", 359, "1i", function(self)
     task.Wait(110)
     task.New(self, function()
-        local angle = 90
+        -- ecldata8sp.Sub114：标记 0，等待；每 2 帧标记 1，
+        -- 120 帧后统一 despawn；基础弹为三向 3.0。
+        local pending = ecl_hook({
+            { slot = 0, kind = DESPAWN_MARKER, allow_while_active = true, frames = 0 },
+        }, 0x61FE2)
+        local armed = ecl_hook({
+            { slot = 1, kind = DESPAWN_MARKER, allow_while_active = true, frames = 0 },
+            { slot = 2, kind = DESPAWN, allow_while_active = true, frames = 0 },
+        }, 0x61FE2)
         while true do
-            for i = 1, 3 do
-                local b = NewSimpleBullet(ball_mid, 6, self.x, self.y, 0.35, angle + i * 120,
-                        false, 0, false, false, false, false, function(o)
-                            if o.timer < 64 then
-                                set_v(o, 0.35 + o.timer * 0.014)
-                            end
-                        end)
-                b._r, b._g, b._b = 170, 230, 255
+            local aim = Angle(self.x, self.y, player.x, player.y)
+            local base = 0
+            for _ = 1, 25 do
+                base = (base + 0.1308997 * RAD_TO_DEG) % 360
+                for i = 0, 2 do
+                    local b = NewSimpleBullet(ball_mid, 2, self.x, self.y, 3.0,
+                            aim + base + i * 120, false, 0, false, false, false,
+                            false, i == 0 and pending or armed)
+                    b._r, b._g, b._b = 170, 230, 255
+                end
+                task.Wait(2)
             end
-            angle = angle + 12
-            task.Wait(120)
+            task.Wait(100)
         end
     end)
     task.New(self, function()
@@ -438,37 +679,59 @@ end, 36)
 -- 216 デフレーションワールド
 add_card("「紧缩世界」", 362, "1l", function(self)
     task.Wait(110)
-    while true do
-        for pass = 1, 2 do
-            local hook = function(b)
-                b.th31_wait = pass * 90
-                b.frame_other = function(o)
-                    if o.th31_wait > 0 then
-                        o.th31_wait = o.th31_wait - 1
-                        set_v(o, 0)
-                    else
-                        set_v(o, 1.5)
-                    end
-                end
-            end
-            fan(knife, 6, self, 20, 1.8, 90, 5.625, hook)
-            task.Wait(120)
+    task.New(self, function()
+        -- ecldata_sk.Sub2：左右两组各 15 发，1 帧/发；60 帧后
+        -- 分别转 ±90° 且速度变为 2.5。第三组每 8 帧 1 发。
+        local left = ecl_hook({
+            { slot = 0, kind = DIR_RELATIVE, allow_while_active = true,
+              angle = math.pi / 2, speed = 2.5, interval = 60, repeat_count = 1 },
+        }, 0x100242)
+        local right = ecl_hook({
+            { slot = 0, kind = DIR_RELATIVE, allow_while_active = true,
+              angle = -math.pi / 2, speed = 2.5, interval = 60, repeat_count = 1 },
+        }, 0x100242)
+        local plain = ecl_hook({}, 0x202)
+        for i = 0, 14 do
+            NewSimpleBullet(star_small, 3, self.x, self.y, 2.5, i * 45,
+                    false, 0, false, false, false, false, i % 2 == 0 and left or right)
         end
-        task.MoveTo(ran:Float(-130, 130), ran:Float(75, 145), 45, 2)
-    end
+        task.Wait(1)
+        for i = 0, 14 do
+            NewSimpleBullet(star_small, 3, self.x, self.y, 2.5, i * 45,
+                    false, 0, false, false, false, false, i % 2 == 0 and left or right)
+        end
+        for _ = 1, 5 do
+            NewSimpleBullet(star_small, 3, self.x, self.y, 3.0, 0,
+                    false, 0, false, false, false, false, plain)
+            task.Wait(8)
+        end
+    end)
 end, 131)
 
 -- 217 待宵反射衛星斬
 add_card("「待宵反射卫星斩」", 363, "1m", function(self)
     task.Wait(110)
     task.New(self, function()
+        -- ecldata_ym.Sub5：初始两圈静止 10 帧；每 6 帧重写槽位：
+        -- 60 帧沿当前方向加速、120 帧切向 +0.00833333 弧度/帧。
+        local base_hook = ecl_hook({
+            { slot = 0, kind = DESPAWN_MARKER, allow_while_active = true, frames = 10 },
+        }, 0x20232)
+        local first_hook = ecl_hook({
+            { slot = 1, kind = ACCEL_VECTOR, allow_while_active = true,
+              speed = 0.008333334, angle = -999.0, duration = 60 },
+            { slot = 2, kind = ACCEL_POLAR, allow_while_active = true,
+              speed = 0.008333334, angle = 0, duration = 120 },
+            { slot = 3, kind = ACCEL_VECTOR, allow_while_active = true,
+              speed = 0.008333334, angle = -999.0, duration = 120 },
+        }, 0x20232)
         while true do
             local aim = Angle(self.x, self.y, player.x, player.y)
-            circle(ellipse, 6, self, 6, 0, aim, 11.25, 1, function(o)
-                if o.timer == 10 then
-                    set_v(o, 0.28, aim)
-                end
-            end)
+            for i = 0, 1 do
+                NewSimpleBullet(ellipse, 4, self.x, self.y, 0,
+                        90 + i * 180, false, 0, false, false, false, false,
+                        i == 0 and base_hook or first_hook)
+            end
             task.Wait(6)
         end
     end)
@@ -481,7 +744,7 @@ add_card("「格兰吉纽尔剧场的怪人」", 364, "1n", function(self)
         while true do
             for side = -1, 1, 2 do
                 local angle = side < 0 and 180 or 0
-                circle(ellipse, 4, self, 2, 1.4, angle, 6, 1, function(o)
+                circle(ellipse, 4, self, 2, 1.4, angle, 6, nil, function(o)
                     if o.timer == 60 then
                         set_v(o, 1.8, Angle(o.x, o.y, player.x, player.y))
                     end
