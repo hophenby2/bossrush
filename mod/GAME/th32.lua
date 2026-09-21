@@ -41,20 +41,28 @@ local red_magic_mid = Class(bullet, {
     end,
 })
 
-local function red_magic_mid_activate(unit, shared_angle)
-    local distance = red_magic_dist(unit.x, unit.y, _boss.x, _boss.y)
-    local angle = shared_angle
-    if angle == nil then
-        angle = distance * PI / 256 * RAD_TO_DEG + ran:Float(-180, 180)
-    end
-    local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
-    task.New(unit, function()
-        for _ = 1, 120 do
-            unit.vx, unit.vy = vx, vy
-            vx, vy = vx + cos(angle) * 0.01, vy + sin(angle) * 0.01
-            task.Wait()
+local function red_magic_mid_activate(distance_mode)
+    local owner = _boss
+    if owner == nil then return function() end end
+    local shared_angle = ran:Float(-180, 180)
+    local function activate(unit)
+        local angle
+        if distance_mode then
+            local distance = red_magic_dist(unit.x, unit.y, owner.x, owner.y)
+            angle = distance * PI / 256 * RAD_TO_DEG + shared_angle
+        else
+            angle = ran:Float(-180, 180)
         end
-    end)
+        local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
+        task.New(unit, function()
+            for _ = 1, 120 do
+                unit.vx, unit.vy = vx, vy
+                vx, vy = vx + cos(angle) * 0.01, vy + sin(angle) * 0.01
+                task.Wait()
+            end
+        end)
+    end
+    return activate
 end
 
 local function red_magic_spawn_mids()
@@ -89,12 +97,10 @@ local function red_magic_sub41()
     return red_magic_spawn_mids()
 end
 
-local function red_magic_activate_mids(units, shared)
-    local owner = _boss
-    if owner == nil then return end
-    local shared_angle = shared and ran:Float(-180, 180) or nil
+local function red_magic_activate_mids(units, distance_mode)
+    local activate = red_magic_mid_activate(distance_mode)
     for _, unit in ipairs(units) do
-        red_magic_mid_activate(unit, shared_angle)
+        activate(unit)
     end
 end
 
@@ -130,19 +136,19 @@ function red_card:init()
             local phase = ran:Float(-180, 180)
 
             red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
-            red_magic_activate_mids(red_magic_sub41(), true)
+            red_magic_activate_mids(red_magic_sub41(), false)
             red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), false)
+            red_magic_activate_mids(red_magic_sub41(), true)
             task.Wait(60)
 
             red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
                     60, 0.026, 0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), true)
+            red_magic_activate_mids(red_magic_sub41(), false)
             task.Wait(50)
             red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), false)
+            red_magic_activate_mids(red_magic_sub41(), true)
             task.Wait(60)
         end
     end)
