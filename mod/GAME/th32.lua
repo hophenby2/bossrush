@@ -18,26 +18,67 @@ end
 
 local red_magic_huge = Class(bullet, {
     init = function(self, x, y, angle, speed, duration, speed_delta, angle_delta)
-        bullet.init(self, ball_huge, COLOR.RED, true, true)
+        bullet.init(self, ball_huge, COLOR.RED, false, true)
         self.x, self.y = x, y
         object.SetV(self, speed, angle, true)
-        task.New(self, function()
-            for elapsed = 1, duration do
-                object.SetV(self, speed + speed_delta * elapsed,
-                        self.rot + angle_delta * RAD_TO_DEG, true)
-                task.Wait()
-            end
-        end)
+        self.red_magic_speed = speed
+        self.red_magic_speed_delta = speed_delta
+        self.red_magic_angle_delta = angle_delta
+        self.red_magic_change_frames = duration
+    end,
+    frame = function(self)
+        bullet.frame(self)
+        if self.red_magic_change_frames > 0 then
+            self.red_magic_change_frames = self.red_magic_change_frames - 1
+            self.red_magic_speed = self.red_magic_speed + self.red_magic_speed_delta
+            object.SetV(self, self.red_magic_speed,
+                    self.rot + self.red_magic_angle_delta * RAD_TO_DEG, true)
+        end
     end,
 })
 
 local red_magic_huges = {}
 
+-- 全池登记表：th06 的 Func9/Func11 扫的是整个 640 颗弹池，判据只有
+-- 「state 活着 + 是小弹 + speed == 0」（EnemyEclInstr.cpp:600-604），
+-- 任何来源的未醒小弹都会被叫醒。移植版没有全局弹池，
+-- 就用本卡自己的 mid 登记表当池子。
+local red_magic_mids = {}
+
+-- th06 的小弹是 flags=8 → BULLET_STATE_SPAWNING_SLOW（BulletManager.cpp:247-282），
+-- 出场动画播完前进不了 0x10 加速分支（BulletManager.cpp:697-706）。
+-- 动画长度取自 data/etama3.anm 的 script19
+-- （ANM_SCRIPT_BULLET3_SPAWN_BIG_BALL_SLOW = 0x200+19，末尾 ins_0 的 time = 32）。
+-- Sub41 每 10 帧出一环（JUMPDEC 指令 time = 10），唤醒又是 Sub41 返回后一次做完的，
+-- 所以最后几环被唤醒时动画还没播完，起速依次晚 32 帧以内。
+local red_magic_spawn_frames = 32
+
 local red_magic_mid = Class(bullet, {
     init = function(self, x, y, angle)
-        bullet.init(self, ball_mid, COLOR.RED, true, true)
+        bullet.init(self, ball_mid, COLOR.RED, false, true)
         self.x, self.y = x, y
         object.SetV(self, 0, angle, true)
+        self.red_magic_accel = 0
+        self.red_magic_ax = 0
+        self.red_magic_ay = 0
+        self.red_magic_awake = false
+        self.red_magic_spawn_left = red_magic_spawn_frames
+        red_magic_mids[#red_magic_mids + 1] = self
+    end,
+    frame = function(self)
+        bullet.frame(self)
+        if self.red_magic_spawn_left > 0 then
+            -- 出场动画期间既不移动也不加速，等价于 SPAWNING_SLOW
+            self.red_magic_spawn_left = self.red_magic_spawn_left - 1
+        elseif self.red_magic_accel > 0 then
+            self.vx = self.vx + self.red_magic_ax
+            self.vy = self.vy + self.red_magic_ay
+            self.red_magic_accel = self.red_magic_accel - 1
+            if self.red_magic_accel == 0 then
+                object.SetV(self, 1.2,
+                        math.atan2(self.vy, self.vx) * RAD_TO_DEG, true)
+            end
+        end
     end,
 })
 
@@ -53,26 +94,20 @@ local function red_magic_mid_activate(distance_mode)
         else
             angle = ran:Float(-180, 180)
         end
-        local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
-        task.New(unit, function()
-            for _ = 1, 120 do
-                unit.vx, unit.vy = vx, vy
-                vx, vy = vx + cos(angle) * 0.01, vy + sin(angle) * 0.01
-                task.Wait()
-            end
-        end)
+        unit.red_magic_ax = cos(angle) * 0.01
+        unit.red_magic_ay = sin(angle) * 0.01
+        unit.red_magic_accel = 120
+        unit.red_magic_awake = true
     end
     return activate
 end
 
 local function red_magic_spawn_mids()
-    local units = {}
     for round = 1, 20 do
         for index = #red_magic_huges, 1, -1 do
             local huge = red_magic_huges[index]
             if IsValid(huge) then
-                units[#units + 1] = New(red_magic_mid, huge.x, huge.y,
-                        ran:Float(-180, 180))
+                New(red_magic_mid, huge.x, huge.y, ran:Float(-180, 180))
             else
                 table.remove(red_magic_huges, index)
             end
@@ -81,7 +116,6 @@ local function red_magic_spawn_mids()
             task.Wait(10)
         end
     end
-    return units
 end
 
 local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angle_delta, sound)
@@ -97,10 +131,17 @@ local function red_magic_sub41()
     return red_magic_spawn_mids()
 end
 
-local function red_magic_activate_mids(units, distance_mode)
+---全池唤醒：th06 侧的判据是 speed == 0（EnemyEclInstr.cpp:604），
+---也就是「所有还没醒的小弹」，不只是本次刚生成的那批。
+local function red_magic_activate_mids(distance_mode)
     local activate = red_magic_mid_activate(distance_mode)
-    for _, unit in ipairs(units) do
-        activate(unit)
+    for index = #red_magic_mids, 1, -1 do
+        local unit = red_magic_mids[index]
+        if not IsValid(unit) then
+            table.remove(red_magic_mids, index)
+        elseif not unit.red_magic_awake then
+            activate(unit)
+        end
     end
 end
 
@@ -117,38 +158,38 @@ local function red_magic_circle(owner, count, layers, speed, layer_speed, angle,
 end
 
 local red_card = boss.card.New("「红色的幻想乡」", 140, 140, 140, 2000)
-local function wait_card(self)
+function red_card:before()
+    red_magic_huges = {}
+    red_magic_mids = {}
     self.NotPlayTimeOutSound = true
     self.colli = false
     self.no_hp_render = true
-    task.MoveTo(0, 120, 60, 2)
-end
-
-function red_card:before()
-    red_magic_huges = {}
-    wait_card(self)
 end
 
 function red_card:init()
     task.New(self, function()
-        task.Wait(180)
+        task.MoveTo(192, 128, 120, VALUE_SET.DECEL)
         while true do
             local phase = ran:Float(-180, 180)
 
             red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
-            red_magic_activate_mids(red_magic_sub41(), false)
+            red_magic_sub41()
+            red_magic_activate_mids(false)
             red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), true)
+            red_magic_sub41()
+            red_magic_activate_mids(true)
             task.Wait(60)
 
             red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
                     60, 0.026, 0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), false)
+            red_magic_sub41()
+            red_magic_activate_mids(false)
             task.Wait(50)
             red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
-            red_magic_activate_mids(red_magic_sub41(), true)
+            red_magic_sub41()
+            red_magic_activate_mids(true)
             task.Wait(60)
         end
     end)
