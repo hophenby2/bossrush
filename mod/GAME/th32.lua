@@ -17,8 +17,9 @@ local function red_magic_dist(x1, y1, x2, y2)
 end
 
 local red_magic_huge = Class(bullet, {
-    init = function(self, angle, speed, duration, speed_delta, angle_delta)
+    init = function(self, x, y, angle, speed, duration, speed_delta, angle_delta)
         bullet.init(self, ball_huge, COLOR.RED, true, true)
+        self.x, self.y = x, y
         object.SetV(self, speed, angle, true)
         task.New(self, function()
             for elapsed = 1, duration do
@@ -42,7 +43,7 @@ local red_magic_mid = Class(bullet, {
 
 local function red_magic_mid_activate(owner, unit, shared_angle)
     local distance = red_magic_dist(unit.x, unit.y, owner.x, owner.y)
-    local angle = distance * PI / 256
+    local angle = distance * PI / 256 * RAD_TO_DEG
         + (shared_angle or ran:Float(-180, 180))
     local vx, vy = cos(angle) * 0.01, sin(angle) * 0.01
     task.New(unit, function()
@@ -79,7 +80,7 @@ local function red_magic_activate_mids(owner, units, shared)
 end
 
 local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angle_delta, sound)
-    local huge = New(red_magic_huge, angle, speed,
+    local huge = New(red_magic_huge, owner.x, owner.y, angle, speed,
             duration or 0, speed_delta or 0, angle_delta or 0)
     red_magic_huges[#red_magic_huges + 1] = huge
     if sound then
@@ -99,7 +100,7 @@ local function red_magic_circle(owner, count, layers, speed, layer_speed, angle,
     end
 end
 
-local red_card = boss.card.New("「红色的幻想乡」", 11, 11, 11, 2000)
+local red_card = boss.card.New("「红色的幻想乡」", 140, 140, 140, 2000)
 local function wait_card(self)
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -108,6 +109,7 @@ local function wait_card(self)
 end
 
 function red_card:before()
+    red_magic_huges = {}
     wait_card(self)
 end
 
@@ -117,7 +119,7 @@ function red_card:init()
         while true do
             local phase = ran:Float(-180, 180)
 
-            red_magic_circle(self, 10, 3, 4.0, 1.8, phase, -18)
+            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
             task.Wait(60)
             local mids = red_magic_spawn_mids()
             red_magic_activate_mids(self, mids, false)
