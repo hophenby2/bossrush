@@ -1193,6 +1193,15 @@ NewStage("TH31", "永夜LastWord", 29, function(self)
     self:Next(52)
 end)--29
 
+NewStage("TH32", "猩红测试", 30, function(self)
+    self:Option(TH08_bg, "TH08_NEW_3")
+    self:Task(function()
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    self:Next(52)
+end)--30
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
