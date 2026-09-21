@@ -131,6 +131,20 @@ local function red_magic_sub41()
     return red_magic_spawn_mids()
 end
 
+---每波开火之后、扫描之前，原作都会 ins_50(-π,π) + ins_47(2.5) + ins_61(60)：
+---BOSS 朝随机方向漂 2.5 * 60 / 2 = 75 px 再停下（EclManager.cpp:623/344/593）。
+---这一下不能省：Func9 量的是「弹 → BOSS」的距离（EnemyEclInstr.cpp:625），
+---BOSS 站在环心上时内圈的 distance 就等于环半径，相邻环方向差 17~20°，
+---到 |位移| = 256/π ≈ 82 px 内圈必然越出外圈；BOSS 离开环心后
+---内圈的 distance 都被抬到 ≈75 px 左右，方向差降到 3~7°，剪切就压没了。
+local function red_magic_boss_drift(owner)
+    local angle = ran:Float(-180, 180)
+    local x, y = owner.x + cos(angle) * 75, owner.y + sin(angle) * 75
+    task.New(owner, function()
+        task.MoveTo(x, y, 60, VALUE_SET.DECEL)
+    end)
+end
+
 ---全池唤醒：th06 侧的判据是 speed == 0（EnemyEclInstr.cpp:604），
 ---也就是「所有还没醒的小弹」，不只是本次刚生成的那批。
 local function red_magic_activate_mids(distance_mode)
@@ -166,28 +180,41 @@ function red_card:before()
     self.no_hp_render = true
 end
 
+---ins_65(32, 48, 352, 120)：原作每帧把 BOSS 夹在这个框里
+---（EclManager.cpp:617 MOVEBOUNDSSET），所以落点其实停在 (192,120)
+function red_card:frame()
+    self.x = min(max(self.x, 32), 352)
+    self.y = min(max(self.y, 48), 120)
+end
+
 function red_card:init()
     task.New(self, function()
         task.MoveTo(192, 128, 120, VALUE_SET.DECEL)
         while true do
             local phase = ran:Float(-180, 180)
 
-            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
+            -- ins_82(120,...,0.023,0.024543693) 是这一波的弹属性，别漏
+            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18,
+                    120, 0.023, 0.024543693)
+            red_magic_boss_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(false)
             red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
+            red_magic_boss_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(true)
             task.Wait(60)
 
             red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
                     60, 0.026, 0.024543693)
+            red_magic_boss_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(false)
             task.Wait(50)
             red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
+            red_magic_boss_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(true)
             task.Wait(60)
