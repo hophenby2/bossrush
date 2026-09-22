@@ -47,6 +47,51 @@ local red_magic_huges = {}
 -- 就用本卡自己的 mid 登记表当池子。
 local red_magic_mids = {}
 
+---同屏弹幕上限。原作全游戏共用 640 个弹槽（BulletManager.hpp:126 的
+---`Bullet bullets[640]`），大玉和小弹占的是同一个池：出弹时从 nextBulletIndex
+---起环形扫 640 个槽位找 BULLET_STATE_UNUSED，扫不到就 return 1
+---（BulletManager.cpp:80-113）；槽位在弹**整体**出屏那一帧被 memset 清零回收
+---（BulletManager.cpp:885-900，越界判据 GameManager.cpp:96-114 的 IsInBounds
+---带半个精灵宽高 —— 换算到我们坐标就是大玉约 ±224/±256，我们的 bound 默认值
+---正好是这一组，见 THlib/lib/Lscreen.lua:90-97）。
+---移植版没有全局弹池，就用本卡自己的登记表当池子：本卡的大玉和小弹都登记进来，
+---弹出屏（被引擎按 bound 回收）就腾出槽位。
+---此时场上只有本卡的弹（每张卡开始时都会清场），所以这个池就是原作的全局池。
+---注意：SpawnSingleBullet 是「从指针处环形扫满 640 槽」，扫满 640 个就能看到所有
+---空位，所以「找得到空槽」等价于「占用数 < 640」—— 这里只数占用数，不复刻
+---nextBulletIndex（那个指针只决定新弹落在哪个下标，不决定能不能生成）。
+local red_magic_pool_size = 640
+local red_magic_pool = {}
+
+---这颗弹还在场上吗（= 还占着槽位）。
+---原作的槽位是按「弹整体离开游戏区域」释放的（BulletManager.cpp:885-900 的
+---IsInBounds），而引擎的越界回收是每帧末尾统一做的；这里直接照同一组阈值判，
+---于是槽位释放的时机和原作一致。
+---（顺带解决自检桩件的问题：check_stage 的 IsValid 只认 `_live`（check_stage.lua:593），
+---出屏被 table.remove 掉的对象仍然「有效」，只按 IsValid 判会把槽位全漏光。）
+local function red_magic_in_bound(unit)
+    return IsValid(unit)
+            and unit.x >= lstg.world.boundl and unit.x <= lstg.world.boundr
+            and unit.y >= lstg.world.boundb and unit.y <= lstg.world.boundt
+end
+
+---回收已经失效的槽位，返回当前占用数。
+---引擎是在一帧末尾统一做越界回收的，所以同一帧里这个数字不会变 ——
+---一次出弹（ins_70 一整波 / Sub41 一轮）内部不会因为回收而多出空位。
+local function red_magic_pool_used()
+    for index = #red_magic_pool, 1, -1 do
+        if not red_magic_in_bound(red_magic_pool[index]) then
+            table.remove(red_magic_pool, index)
+        end
+    end
+    return #red_magic_pool
+end
+
+---等价于 SpawnSingleBullet 的「池满 return 1」：false = 这一颗没生出来。
+local function red_magic_pool_take()
+    return red_magic_pool_used() < red_magic_pool_size
+end
+
 -- th06 的小弹是 flags=8 → BULLET_STATE_SPAWNING_SLOW（BulletManager.cpp:247-282），
 -- 出场动画播完前进不了 0x10 加速分支（BulletManager.cpp:697-706）。
 -- 动画长度取自 data/etama3.anm 的 script19
@@ -139,8 +184,16 @@ local function red_magic_sub41()
     for round = 1, 20 do
         for index = #red_magic_huges, 1, -1 do
             local huge = red_magic_huges[index]
-            if IsValid(huge) then
-                New(red_magic_mid, huge.x, huge.y, ran:Float(-180, 180))
+            -- 大玉出屏后原作里连槽位都没了（Func8 扫不到它），所以这里也按
+            -- 「还在场上」判，不能只看 IsValid。
+            if red_magic_in_bound(huge) then
+                -- Func8 里这次 SpawnBulletPattern 的返回值没人看
+                -- （EnemyEclInstr.cpp:573 直接调用完继续扫），所以池满就是
+                -- 这一颗生不出来，扫描照旧往下走 —— 和 ins_70 的「整波放弃」不同。
+                if red_magic_pool_take() then
+                    local mid = New(red_magic_mid, huge.x, huge.y, ran:Float(-180, 180))
+                    red_magic_pool[#red_magic_pool + 1] = mid
+                end
             else
                 table.remove(red_magic_huges, index)
             end
@@ -149,13 +202,17 @@ local function red_magic_sub41()
     end
 end
 
-local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angle_delta, sound)
+---ins_70 的一颗弹 = 原作的一次 SpawnSingleBullet。池满返回 false，
+---但要不要「整波放弃」是调用方（red_magic_circle = SpawnBulletPattern）的事。
+local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angle_delta)
+    if not red_magic_pool_take() then
+        return false
+    end
     local huge = New(red_magic_huge, owner.x, owner.y, angle, speed,
             duration or 0, speed_delta or 0, angle_delta or 0)
     red_magic_huges[#red_magic_huges + 1] = huge
-    if sound then
-        PlaySound("tan00", 0.1, owner.x / 256, false)
-    end
+    red_magic_pool[#red_magic_pool + 1] = huge
+    return true
 end
 
 ---原作坐标 → 我们坐标的换算。
@@ -251,7 +308,7 @@ local function red_magic_activate_mids(distance_mode)
     local activate = red_magic_mid_activate(distance_mode)
     for index = #red_magic_mids, 1, -1 do
         local unit = red_magic_mids[index]
-        if not IsValid(unit) then
+        if not red_magic_in_bound(unit) then
             table.remove(red_magic_mids, index)
         elseif not unit.red_magic_awake then
             activate(unit)
@@ -259,17 +316,78 @@ local function red_magic_activate_mids(distance_mode)
     end
 end
 
+---难度 rank。移植版没有难度系统，固定取 Lunatic 的上限 32
+---（GameManager.cpp:62-78 的 g_DifficultyInfo[LUNATIC] = {16, 10, 32}：
+---初始值 16，随表现上下浮动的区间是 10..32；取 32 = 打满时的最大影响）。
+local red_magic_rank = 32
+
+---ins_131（ECL_OPCODE_BULLETRANKINFLUENCE）的六个参数，原作是直接赋值到
+---Enemy 上（EclManager.cpp:901-910）。Enemy 出厂默认速度 (-0.5, 0.5)、
+---数量 (0, 0)（EnemyManager.cpp:82-83 与 :353-356），符卡开始时也会被重置回这组
+---（EclManager.cpp:716-721）。
+---Sub44 在 time=60 处执行了 ins_131(0, 0, 0, 0, 0, 0)
+---（裸字节实测：ecldata6.ecl Sub44 偏移 0x63e2，第 10 个字节 = 255 = 全难度都执行），
+---把速度影响直接清零 —— 所以原作这张卡的速度跟 rank 完全无关，
+---rank 取 32 也照样算出 0 偏移（第一波 4.0/1.8、第二三波 2.0/1.0、第四波 1.0/1.0 原样）。
+---（若哪天这一行改回默认 -0.5/0.5，rank=32 会得到 speed1 += 0.5、speed2 += 0.25。）
+local red_magic_rank_speed_low, red_magic_rank_speed_high = 0, 0
+local red_magic_rank_amount1_low, red_magic_rank_amount1_high = 0, 0
+local red_magic_rank_amount2_low, red_magic_rank_amount2_high = 0, 0
+
+---Enemy.hpp:166-189：scale*(high-low)/32 + low（数量是整数除法，速度是浮点）。
+local function red_magic_rank_speed()
+    return red_magic_rank * (red_magic_rank_speed_high - red_magic_rank_speed_low) / 32
+            + red_magic_rank_speed_low
+end
+
+local function red_magic_rank_amount1()
+    return int(red_magic_rank * (red_magic_rank_amount1_high - red_magic_rank_amount1_low) / 32
+            + red_magic_rank_amount1_low)
+end
+
+local function red_magic_rank_amount2()
+    return int(red_magic_rank * (red_magic_rank_amount2_high - red_magic_rank_amount2_low) / 32
+            + red_magic_rank_amount2_low)
+end
+
+---ins_70 → SpawnBulletPattern。调用方 ins_70 的处理顺序是先按 rank 修 count/speed
+---（EclManager.cpp:354-400），再整波交给 SpawnBulletPattern。
+---SpawnBulletPattern 一旦有哪一颗生不出来就 `goto out` 放弃**整波**
+---（BulletManager.cpp:532-556），音效在 out: 之后播，所以哪怕一颗都没生出来也照响。
 local function red_magic_circle(owner, count, layers, speed, layer_speed, angle,
-        layer_angle, duration, speed_delta, angle_delta)
+        layer_angle, duration, speed_delta, angle_delta, sound)
+    count = count + red_magic_rank_amount1()
+    if count <= 0 then count = 1 end
+    layers = layers + red_magic_rank_amount2()
+    if layers <= 0 then layers = 1 end
+    local speed1 = speed
+    if speed1 ~= 0 then
+        speed1 = speed1 + red_magic_rank_speed()
+        if speed1 < 0.3 then speed1 = 0.3 end
+    end
+    local speed2 = layer_speed + red_magic_rank_speed() / 2
+    if speed2 < 0.3 then speed2 = 0.3 end
+
+    local interrupted = false
     for layer = 0, layers - 1 do
         for i = 0, count - 1 do
             -- CIRCLE 分支：angle = angle1 + i*2π/count1 + layer*angle2
             -- （BulletManager.cpp:129-132）。layer_angle 取反的理由同 Func9。
-            red_magic_bullet(owner,
+            -- 每层速度 = speed1 - (speed1-speed2)*layer/count2（BulletManager.cpp:114）。
+            if not red_magic_bullet(owner,
                     angle + i * 360 / count - layer * layer_angle,
-                    speed + (layer_speed - speed) * layer / layers,
-                    duration, speed_delta, angle_delta, layer == 0 and i == 0)
+                    speed1 - (speed1 - speed2) * layer / layers,
+                    duration, speed_delta, angle_delta) then
+                interrupted = true
+                break
+            end
         end
+        if interrupted then break end
+    end
+    -- flags 的 0x200（512）四种波都有（512 / 544 / 544 / 544，裸字节实测），
+    -- 所以每次都响一声；spawn 被池满截断也照响。
+    if sound then
+        PlaySound("tan00", 0.1, owner.x / 256, false)
     end
 end
 
@@ -277,6 +395,7 @@ local red_card = boss.card.New("「红色的幻想乡」", 140, 140, 140, 2000)
 function red_card:before()
     red_magic_huges = {}
     red_magic_mids = {}
+    red_magic_pool = {}
     self.NotPlayTimeOutSound = true
     self.colli = false
     self.no_hp_render = true
@@ -314,7 +433,8 @@ function red_card:init()
             -- 没有 0x20，所以 A 波大玉走直线、不拐弯
             -- （BulletManager.cpp:550 播音效、:331-336 只认 0x20）。
             -- ins_70 的 angle2 = -0.31415927 rad = -18°。
-            red_magic_circle(self, 14, 4, 4.0, 1.8, ran:Float(-180, 180), -18)
+            red_magic_circle(self, 14, 4, 4.0, 1.8, ran:Float(-180, 180), -18,
+                    0, 0, 0, true)
             red_magic_start_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(false)          -- ins_121(11, 0) = Func11
@@ -323,7 +443,7 @@ function red_card:init()
             -- ins_82(80, ..., 0.023, -0.024543693)：ex5 曲线 80 帧，
             -- 每帧速度 +0.023、角度 -0.024543693 rad（= -2π/256）。
             red_magic_circle(self, 12, 1, 2.0, 1.0, ran:Float(-180, 180), 0,
-                    80, 0.023, -0.024543693)
+                    80, 0.023, -0.024543693, true)
             red_magic_start_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(true)           -- ins_121(9, 0) = Func9
@@ -333,14 +453,14 @@ function red_card:init()
 
             -- C 波：Sub41 和唤醒都排在漂移**之前**
             red_magic_circle(self, 17, 1, 2.0, 1.0, ran:Float(-180, 180), 0,
-                    60, 0.026, 0.024543693)
+                    60, 0.026, 0.024543693, true)
             red_magic_sub41()
             red_magic_activate_mids(false)          -- Func11
             red_magic_start_drift(self)
 
             -- D 波与 C 波的漂移同一帧发
             red_magic_circle(self, 16, 1, 1.0, 1.0, ran:Float(-180, 180), 0,
-                    80, 0.023, -0.024543693)
+                    80, 0.023, -0.024543693, true)
             red_magic_sub41()
             red_magic_activate_mids(true)           -- Func9
             red_magic_start_drift(self)
