@@ -131,18 +131,72 @@ local function red_magic_sub41()
     return red_magic_spawn_mids()
 end
 
+---原作坐标 → 我们坐标的换算。
+---th06 的 ECL 坐标是「游戏区域坐标」：区域 384x448、原点在左上、y 轴朝下
+---（GameManager.hpp:44-45 的 GAME_REGION_WIDTH/HEIGHT；BulletManager.cpp:832-838
+--- 判越界用的就是 x∈[0,384)、y∈[0,448)），屏幕上的 (32,16) 偏移是画的时候才加的。
+---我们场地也是 384x448，只是原点在场地中心、y 轴朝上
+---（Lscreen.lua:180-190 的 SetWorld(288,46,384,448) → l=-192,r=192,b=-224,t=224）。
+---两边尺寸完全相同，所以换算是纯平移 + y 翻转，**没有比例缩放**（K = 1）：
+---    x_我们 = x_原作 - 192        y_我们 = 224 - y_原作
+---于是 ins_65(32, 48, 352, 120) 这个框 = 我们坐标的 x∈[-160,160]、y∈[104,176]，
+---ins_57(120, 192, 128, 0) 的落点 = (0, 96)，再被上面的框夹到 (0, 104)。
+local red_magic_bound_l, red_magic_bound_r = -160, 160
+local red_magic_bound_b, red_magic_bound_t = 104, 176
+
+---ins_50(-π,π) 不是「均匀随机方向」：MOVERANDINBOUND 会看 BOSS 离框边多远，
+---离哪边近就把朝那边的那个分量反射回场内（EclManager.cpp:623-659）：
+---x 距左右框边 < 96 px、y 距上下框边 < 48 px 时改角。
+---（y 的反射在两边语义一致：原作 y 朝下、我们 y 朝上，所以原作「别朝 y=48
+---  那面飞」在我们这边就是「别朝 +y 飞」。）
+---注意框只有 72 px 高：BOSS 停在距上下边都 < 48 px 的中间带（原作 y∈(72,96)
+---= 我们 y∈(128,152)）时两个 y 反射互相抵消，这时漂移仍会撞上 y 框、
+---被 ClampPos 截短 —— 原作本来就这样，不是移植误差。
+---实测位移（/tmp/nest/bos3.csv，前四波）：75.0 / 53.1 / 75.0 / 55.4 px，
+---第二、四波就是撞到 y=176 被夹住的。
+local function red_magic_rand_angle_in_bound(owner)
+    local angle = ran:Float(-180, 180)
+    if owner.x < red_magic_bound_l + 96 then
+        if angle > 90 then
+            angle = 180 - angle
+        elseif angle < -90 then
+            angle = -180 - angle
+        end
+    end
+    if owner.x > red_magic_bound_r - 96 then
+        if angle >= 0 and angle < 90 then
+            angle = 180 - angle
+        elseif angle <= 0 and angle > -90 then
+            angle = -180 - angle
+        end
+    end
+    if owner.y > red_magic_bound_t - 48 and angle > 0 then
+        angle = -angle
+    end
+    if owner.y < red_magic_bound_b + 48 and angle < 0 then
+        angle = -angle
+    end
+    return angle
+end
+
 ---每波开火之后、扫描之前，原作都会 ins_50(-π,π) + ins_47(2.5) + ins_61(60)：
----BOSS 朝随机方向漂 2.5 * 60 / 2 = 75 px 再停下（EclManager.cpp:623/344/593）。
+---BOSS 朝随机方向漂 2.5 * 60 / 2 = 75 px 再停下（EclManager.cpp:623/344/593；
+---ins_61 是 MOVETIMEDECELERATE，缓动就是 1-(1-t)²，
+---和我们 task.SetMode[VALUE_SET.DECEL]（Ltask.lua:179）一模一样）。
+---注意 ins_61 是**阻塞**的：脚本要等满 60 帧才走到 ins_35("Sub41")，
+---这 60 帧里大玉照飞——所以第一环小弹是落在大玉飞了 60 帧的位置上
+---（A 波最快那层半径 ≈ 4.0*60 = 240 px），不是环心。用 task.New 并发跑
+---这个位移会让 Sub41 立刻开始，第一环全挤在环心，整套环都比原作小一圈。
+---（原作 C/D 波是 Sub41 → 扫描 → 漂移，扫描时 BOSS 还没动；移植版四波
+--- 统一「先漂后扫」，对 C/D 更宽容：距离抬到 75 px，方向几乎平行，不会撕开。）
 ---这一下不能省：Func9 量的是「弹 → BOSS」的距离（EnemyEclInstr.cpp:625），
 ---BOSS 站在环心上时内圈的 distance 就等于环半径，相邻环方向差 17~20°，
 ---到 |位移| = 256/π ≈ 82 px 内圈必然越出外圈；BOSS 离开环心后
 ---内圈的 distance 都被抬到 ≈75 px 左右，方向差降到 3~7°，剪切就压没了。
 local function red_magic_boss_drift(owner)
-    local angle = ran:Float(-180, 180)
+    local angle = red_magic_rand_angle_in_bound(owner)
     local x, y = owner.x + cos(angle) * 75, owner.y + sin(angle) * 75
-    task.New(owner, function()
-        task.MoveTo(x, y, 60, VALUE_SET.DECEL)
-    end)
+    task.MoveTo(x, y, 60, VALUE_SET.DECEL)
 end
 
 ---全池唤醒：th06 侧的判据是 speed == 0（EnemyEclInstr.cpp:604），
@@ -181,21 +235,25 @@ function red_card:before()
 end
 
 ---ins_65(32, 48, 352, 120)：原作每帧把 BOSS 夹在这个框里
----（EclManager.cpp:617 MOVEBOUNDSSET），所以落点其实停在 (192,120)
+---（EclManager.cpp:617 MOVEBOUNDSSET / EnemyManager.cpp:468 ClampPos）。
+---换算到我们坐标是 x∈[-160,160]、y∈[104,176]，落点 (0,96) 被下边框夹到 (0,104)。
 function red_card:frame()
-    self.x = min(max(self.x, 32), 352)
-    self.y = min(max(self.y, 48), 120)
+    self.x = min(max(self.x, red_magic_bound_l), red_magic_bound_r)
+    self.y = min(max(self.y, red_magic_bound_b), red_magic_bound_t)
 end
 
 function red_card:init()
     task.New(self, function()
-        task.MoveTo(192, 128, 120, VALUE_SET.DECEL)
+        -- ins_57(120, 192, 128, 0)：原作坐标 (192,128) → 我们坐标 (0,96)
+        task.MoveTo(0, 96, 120, VALUE_SET.DECEL)
         while true do
             local phase = ran:Float(-180, 180)
 
-            -- ins_82(120,...,0.023,0.024543693) 是这一波的弹属性，别漏
-            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18,
-                    120, 0.023, 0.024543693)
+            -- ins_82(120, ..., 0.023, 0.024543693) 只是把 ex5 曲线参数写进
+            -- enemy->bulletProps，用不用由 ins_70 的 flags 决定：A 波 flags=512
+            -- 只有 0x200（播音效），没有 0x20，所以 A 波大玉走直线、不拐弯
+            -- （BulletManager.cpp:176 exFlags=flags、:336 只认 0x20）。
+            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
             red_magic_boss_drift(self)
             red_magic_sub41()
             red_magic_activate_mids(false)
@@ -210,7 +268,10 @@ function red_card:init()
                     60, 0.026, 0.024543693)
             red_magic_boss_drift(self)
             red_magic_sub41()
-            red_magic_activate_mids(false)
+            -- C 波原作是 ins_121(9, 0) = Func9（量到 BOSS 的距离定方向），
+            -- 不是 A 波那个 ins_121(11, 0) = Func11（每颗各抽一个随机角）。
+            -- 写成 false 会让整波小弹各飞各的，环当场撕开。
+            red_magic_activate_mids(true)
             task.Wait(50)
             red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
                     80, 0.023, -0.024543693)
