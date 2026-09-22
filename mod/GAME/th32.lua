@@ -31,8 +31,10 @@ local red_magic_huge = Class(bullet, {
         if self.red_magic_change_frames > 0 then
             self.red_magic_change_frames = self.red_magic_change_frames - 1
             self.red_magic_speed = self.red_magic_speed + self.red_magic_speed_delta
+            -- ins_82 写的 ex5 角度增量要取反才是同一个视觉方向：
+            -- 原作 y 朝下、我们 y 朝上（换算见 red_magic_bound_* 上面那段）。
             object.SetV(self, self.red_magic_speed,
-                    self.rot + self.red_magic_angle_delta * RAD_TO_DEG, true)
+                    self.rot - self.red_magic_angle_delta * RAD_TO_DEG, true)
         end
     end,
 })
@@ -66,9 +68,14 @@ local red_magic_mid = Class(bullet, {
         red_magic_mids[#red_magic_mids + 1] = self
     end,
     frame = function(self)
-        bullet.frame(self)
+        -- 引擎每帧是「先跑 frame、再按 vx/vy 积分」：GameObjectPool.cpp:94-112 的
+        -- updateMovementsLegacy 先 dispatchOnUpdate（:106）再 p->Update()（:111），
+        -- 而 GameObject::Update 里才是 x += vx（GameObject.cpp:288-330）。
+        -- 所以在这里累加速度，就等于原作的「先 velocity += ex4Acceleration、
+        -- 再 pos += velocity」（BulletManager.cpp:722-733 与 :884）。
         if self.red_magic_spawn_left > 0 then
-            -- 出场动画期间既不移动也不加速，等价于 SPAWNING_SLOW
+            -- 出场动画期间既不移动也不加速，等价于 SPAWNING_SLOW；
+            -- 速度本来就是 0，「不移动」自动成立。
             self.red_magic_spawn_left = self.red_magic_spawn_left - 1
         elseif self.red_magic_accel > 0 then
             self.vx = self.vx + self.red_magic_ax
@@ -79,30 +86,56 @@ local red_magic_mid = Class(bullet, {
                         math.atan2(self.vy, self.vx) * RAD_TO_DEG, true)
             end
         end
+        bullet.frame(self)
     end,
 })
 
 local function red_magic_mid_activate(distance_mode)
     local owner = _boss
     if owner == nil then return function() end end
-    local shared_angle = ran:Float(-180, 180)
+    -- Func9 的随机角整次调用只抽一次（EnemyEclInstr.cpp:593），
+    -- Func11 是每颗各抽一次（EnemyEclInstr.cpp:643-662）。
+    local shared_angle = ran:Float(-PI, PI)
     local function activate(unit)
         local angle
         if distance_mode then
-            local distance = red_magic_dist(unit.x, unit.y, owner.x, owner.y)
-            angle = distance * PI / 256 * RAD_TO_DEG + shared_angle
+            -- ins_121(9, 0) = Func9：角度 = 「弹到 BOSS 的距离」* π/256 + 本次调用的随机角
+            -- （EnemyEclInstr.cpp:614-627）。同一环上的弹到 BOSS 的距离几乎相同、
+            -- 方向就几乎相同，相邻两环也只差一点点 —— 所以它是「同心环整体往外滑」，
+            -- 不是每颗各飞各的。取反的理由同 red_magic_huge（我们 y 朝上）。
+            angle = -(red_magic_dist(unit.x, unit.y, owner.x, owner.y) * PI / 256
+                    + shared_angle)
         else
-            angle = ran:Float(-180, 180)
+            -- ins_121(11, 0) = Func11：每颗自己抽一个方向（EnemyEclInstr.cpp:631-662）
+            angle = ran:Float(-PI, PI)
         end
-        unit.red_magic_ax = cos(angle) * 0.01
-        unit.red_magic_ay = sin(angle) * 0.01
+        unit.red_magic_ax = math.cos(angle) * 0.01
+        unit.red_magic_ay = math.sin(angle) * 0.01
         unit.red_magic_accel = 120
         unit.red_magic_awake = true
     end
     return activate
 end
 
-local function red_magic_spawn_mids()
+---ins_35("Sub41")：循环 20 轮，每轮 Func8 在**场上每一颗大玉**的当前位置生成一颗小弹
+---（EnemyEclInstr.cpp:544-580，判据只有「槽位活着 + heightPx >= 30」，不区分来源）。
+---原始 ECL 里 Sub41（ecldata6.ecl 偏移 0x5b1a..0x5b96）的 time 字段依次是
+---0/0/0/0/0（循环体：ins_121(8,0) / CMPINT / JUMPNEQ / JUMP）、
+---10（JUMPDEC ins_3(0, Sub41_20, -10009)）、10（RET）；JUMPDEC 跳回循环头时会把
+---time 直接赋值成 0（EclManager.cpp:145-148 的 HANDLE_JUMP），所以「下一环」和
+---JUMPDEC 落在同一帧上 —— 每环正好隔 10 帧：
+---   第 1 环在 CALL 那一帧，第 k 环在第 10*(k-1) 帧，
+---   第 20 环在第 190 帧，第 200 帧计数器减到 0 → 落到 time=10 的 RET → 返回。
+---也就是「每环隔 10 帧、子程序 200 帧后返回」（不是 180）。
+---移植版照抄这个节拍：THlib 的 task.Wait(t) 就是 yield t 次（Ltask.lua:68-77），
+---而每个任务每帧只被 resume 一次（boss_system.lua:347-348 的 doTask 由 boss:frame
+---每帧调一次），所以 Wait(10) = 正好 10 帧，20 轮 = 200 帧。
+---（引擎自带的同款实现见 LuaSTG-Sub 的 data/example/scripts/task/init.lua：
+---  task.wait(times) = for _ = 1, times do coroutine.yield() end。）
+---⚠ tools/check_stage.lua 的 task 桩件把 Wait(n) 模拟成「n+1 帧」
+---（check_stage.lua:604 的 yield(n) 配上 :1024-1035 每帧减一的等待计数），
+---所以自检里读到的环间距是 11 帧 —— 那是桩件的偏差，**别照它把这里改回 9**。
+local function red_magic_sub41()
     for round = 1, 20 do
         for index = #red_magic_huges, 1, -1 do
             local huge = red_magic_huges[index]
@@ -112,9 +145,7 @@ local function red_magic_spawn_mids()
                 table.remove(red_magic_huges, index)
             end
         end
-        if round < 20 then
-            task.Wait(10)
-        end
+        task.Wait(10)
     end
 end
 
@@ -125,10 +156,6 @@ local function red_magic_bullet(owner, angle, speed, duration, speed_delta, angl
     if sound then
         PlaySound("tan00", 0.1, owner.x / 256, false)
     end
-end
-
-local function red_magic_sub41()
-    return red_magic_spawn_mids()
 end
 
 ---原作坐标 → 我们坐标的换算。
@@ -179,24 +206,43 @@ local function red_magic_rand_angle_in_bound(owner)
     return angle
 end
 
----每波开火之后、扫描之前，原作都会 ins_50(-π,π) + ins_47(2.5) + ins_61(60)：
----BOSS 朝随机方向漂 2.5 * 60 / 2 = 75 px 再停下（EclManager.cpp:623/344/593；
----ins_61 是 MOVETIMEDECELERATE，缓动就是 1-(1-t)²，
----和我们 task.SetMode[VALUE_SET.DECEL]（Ltask.lua:179）一模一样）。
----注意 ins_61 是**阻塞**的：脚本要等满 60 帧才走到 ins_35("Sub41")，
----这 60 帧里大玉照飞——所以第一环小弹是落在大玉飞了 60 帧的位置上
----（A 波最快那层半径 ≈ 4.0*60 = 240 px），不是环心。用 task.New 并发跑
----这个位移会让 Sub41 立刻开始，第一环全挤在环心，整套环都比原作小一圈。
----（原作 C/D 波是 Sub41 → 扫描 → 漂移，扫描时 BOSS 还没动；移植版四波
---- 统一「先漂后扫」，对 C/D 更宽容：距离抬到 75 px，方向几乎平行，不会撕开。）
----这一下不能省：Func9 量的是「弹 → BOSS」的距离（EnemyEclInstr.cpp:625），
----BOSS 站在环心上时内圈的 distance 就等于环半径，相邻环方向差 17~20°，
----到 |位移| = 256/π ≈ 82 px 内圈必然越出外圈；BOSS 离开环心后
----内圈的 distance 都被抬到 ≈75 px 左右，方向差降到 3~7°，剪切就压没了。
-local function red_magic_boss_drift(owner)
+---ins_50(-π,π) + ins_47(2.5) + ins_61(60)：三条在**同一帧**执行 ——
+---抽一个方向、把速度设成 2.5、再启动一段 60 帧的减速位移，
+---总位移 = cos*2.5*60/2 = 75 px（MoveTime 里 moveInterp = dir*speed*time/2，
+---EclManager.cpp:1082-1086），缓动 1-(1-u)²（movementEaseType=1，:942-946；
+---和 task.SetMode[VALUE_SET.DECEL] 同式）。
+---这三条**不阻塞**：A/B 波里紧跟其后的 ins_35("Sub41") 的 time 字段同样是 180，
+---而 RunEcl 只在 time == instruction->time 时才执行（EclManager.cpp:112-120），
+---所以 Sub41 和漂移是同一帧开始的；C/D 波把这三条排在 Sub41 与唤醒之后，
+---于是漂移和**下一波**的 Sub41 同帧开始。
+---（原作这段位移是挂在 enemy->flags.movementMode=2 上的状态，会被新的 ins_61
+--- 直接覆盖，所以移植版按状态写而不是 task.MoveTo —— MoveTo 会阻塞 60 帧。）
+local function red_magic_start_drift(owner)
     local angle = red_magic_rand_angle_in_bound(owner)
-    local x, y = owner.x + cos(angle) * 75, owner.y + sin(angle) * 75
-    task.MoveTo(x, y, 60, VALUE_SET.DECEL)
+    owner.red_magic_drift = {
+        x = owner.x, y = owner.y,
+        dx = cos(angle) * 2.5 * 60 / 2,
+        dy = sin(angle) * 2.5 * 60 / 2,
+        t = 0, n = 60,
+    }
+end
+
+---每帧推进一步（等价 enemy 的 movementMode=2 + movementEaseType=1）。
+---放在 red_card:frame 里是因为引擎先调 card.frame 再跑任务，和原作
+---「先 Move() 再 RunEcl」的顺序一致（EnemyManager.cpp:540/570）。
+local function red_magic_drift_step(owner)
+    local drift = owner.red_magic_drift
+    if drift == nil then
+        return
+    end
+    drift.t = drift.t + 1
+    local u = min(drift.t / drift.n, 1)
+    local e = 1 - (1 - u) * (1 - u)
+    owner.x = drift.x + drift.dx * e
+    owner.y = drift.y + drift.dy * e
+    if drift.t >= drift.n then
+        owner.red_magic_drift = nil
+    end
 end
 
 ---全池唤醒：th06 侧的判据是 speed == 0（EnemyEclInstr.cpp:604），
@@ -217,8 +263,10 @@ local function red_magic_circle(owner, count, layers, speed, layer_speed, angle,
         layer_angle, duration, speed_delta, angle_delta)
     for layer = 0, layers - 1 do
         for i = 0, count - 1 do
+            -- CIRCLE 分支：angle = angle1 + i*2π/count1 + layer*angle2
+            -- （BulletManager.cpp:129-132）。layer_angle 取反的理由同 Func9。
             red_magic_bullet(owner,
-                    angle + i * 360 / count + layer * layer_angle,
+                    angle + i * 360 / count - layer * layer_angle,
                     speed + (layer_speed - speed) * layer / layers,
                     duration, speed_delta, angle_delta, layer == 0 and i == 0)
         end
@@ -238,6 +286,7 @@ end
 ---（EclManager.cpp:617 MOVEBOUNDSSET / EnemyManager.cpp:468 ClampPos）。
 ---换算到我们坐标是 x∈[-160,160]、y∈[104,176]，落点 (0,96) 被下边框夹到 (0,104)。
 function red_card:frame()
+    red_magic_drift_step(self)
     self.x = min(max(self.x, red_magic_bound_l), red_magic_bound_r)
     self.y = min(max(self.y, red_magic_bound_b), red_magic_bound_t)
 end
@@ -246,39 +295,56 @@ function red_card:init()
     task.New(self, function()
         -- ins_57(120, 192, 128, 0)：原作坐标 (192,128) → 我们坐标 (0,96)
         task.MoveTo(0, 96, 120, VALUE_SET.DECEL)
+        -- 原作 Sub44 的循环体（Sub44_522）里每条指令的 time 字段：
+        -- A/B 波全是 180、C/D 波全是 260、跳回循环头时把 time 改回 180、
+        -- 循环体末尾那条跳转自己的 time 是 310。time 就是「这条指令在第几帧执行」
+        -- （EclManager.cpp:112-120），而 CALL 期间调用方的 time 冻结、Sub41 要跑
+        -- 200 帧（见 red_magic_sub41），所以以「A 波那一帧」为 0 的节拍是：
+        --   第 0 帧：A 波发大玉 + 漂移开始 + 同帧 CALL Sub41
+        --   第 200 帧：Sub41 返回 → 唤醒（Func11）+ 同帧发 B 波 + 漂移开始
+        --   第 400 帧：B 波唤醒（Func9）
+        --   第 480 帧：C 波发（调用方 time 180 → 260，空 80 帧）
+        --   第 680 帧：C 波唤醒（Func11），之后才漂移；D 波与这次漂移同一帧发
+        --   第 880 帧：D 波唤醒（Func9）+ 漂移开始
+        --   第 930 帧：再等 50 帧，跳回循环头（time 改回 180）→ 下一轮 A 波同帧发
         while true do
-            local phase = ran:Float(-180, 180)
-
-            -- ins_82(120, ..., 0.023, 0.024543693) 只是把 ex5 曲线参数写进
-            -- enemy->bulletProps，用不用由 ins_70 的 flags 决定：A 波 flags=512
-            -- 只有 0x200（播音效），没有 0x20，所以 A 波大玉走直线、不拐弯
-            -- （BulletManager.cpp:176 exFlags=flags、:336 只认 0x20）。
-            red_magic_circle(self, 14, 4, 4.0, 1.8, phase, -18)
-            red_magic_boss_drift(self)
+            -- A 波：ins_9(-10005, 2π, -π) 每波重抽一次基准角。
+            -- ins_82(120, ...) 只是把 ex5 曲线参数写进 enemy->bulletProps，
+            -- 用不用由 ins_70 的 flags 决定：A 波 flags=512 只有 0x200（播音效），
+            -- 没有 0x20，所以 A 波大玉走直线、不拐弯
+            -- （BulletManager.cpp:550 播音效、:331-336 只认 0x20）。
+            -- ins_70 的 angle2 = -0.31415927 rad = -18°。
+            red_magic_circle(self, 14, 4, 4.0, 1.8, ran:Float(-180, 180), -18)
+            red_magic_start_drift(self)
             red_magic_sub41()
-            red_magic_activate_mids(false)
-            red_magic_circle(self, 10, 1, 2.0, 2.0, phase + 18, 0,
+            red_magic_activate_mids(false)          -- ins_121(11, 0) = Func11
+
+            -- B 波：Hard 是 10 颗 1 层、Lunatic 是 12 颗 1 层，按 Lunatic。
+            -- ins_82(80, ..., 0.023, -0.024543693)：ex5 曲线 80 帧，
+            -- 每帧速度 +0.023、角度 -0.024543693 rad（= -2π/256）。
+            red_magic_circle(self, 12, 1, 2.0, 1.0, ran:Float(-180, 180), 0,
                     80, 0.023, -0.024543693)
-            red_magic_boss_drift(self)
+            red_magic_start_drift(self)
             red_magic_sub41()
-            red_magic_activate_mids(true)
-            task.Wait(60)
+            red_magic_activate_mids(true)           -- ins_121(9, 0) = Func9
 
-            red_magic_circle(self, 17, 1, 2.0, 2.0, phase + 18, 0,
+            -- B 波唤醒（time 180）到 C 波 ins_70（time 260）之间空 80 帧
+            task.Wait(80)
+
+            -- C 波：Sub41 和唤醒都排在漂移**之前**
+            red_magic_circle(self, 17, 1, 2.0, 1.0, ran:Float(-180, 180), 0,
                     60, 0.026, 0.024543693)
-            red_magic_boss_drift(self)
             red_magic_sub41()
-            -- C 波原作是 ins_121(9, 0) = Func9（量到 BOSS 的距离定方向），
-            -- 不是 A 波那个 ins_121(11, 0) = Func11（每颗各抽一个随机角）。
-            -- 写成 false 会让整波小弹各飞各的，环当场撕开。
-            red_magic_activate_mids(true)
-            task.Wait(50)
-            red_magic_circle(self, 16, 1, 1.0, 1.0, phase + 18, 0,
+            red_magic_activate_mids(false)          -- Func11
+            red_magic_start_drift(self)
+
+            -- D 波与 C 波的漂移同一帧发
+            red_magic_circle(self, 16, 1, 1.0, 1.0, ran:Float(-180, 180), 0,
                     80, 0.023, -0.024543693)
-            red_magic_boss_drift(self)
             red_magic_sub41()
-            red_magic_activate_mids(true)
-            task.Wait(60)
+            red_magic_activate_mids(true)           -- Func9
+            red_magic_start_drift(self)
+            task.Wait(50)                           -- ins_2 的 time = 310
         end
     end)
 end
