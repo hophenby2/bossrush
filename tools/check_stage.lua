@@ -157,6 +157,100 @@ local function checkImageNames(path)
 end
 
 ----------------------------------------------------------------------
+-- 0b. Lua 5.1 语法自检（★ 用来抓「用了 5.3 才有的语法」）
+--   引擎内嵌的 Lua 只认 5.1 语法。而**本机的 luajit 是 2026 年的 rollup，
+--   它自己支持了 5.3 的位运算符** —— `luajit -bl` / `loadfile` 会把 `a & b`
+--   放行，真机上却在载入时直接炸
+--   `failed to compile 'mod\\GAME\\th31.lua': ')' expected near '&'`。
+--   th31.lua:2028 就是这么炸过一次。所以 `luajit -bl` **不能**当语法闸门，
+--   这里自己做一遍：先去注释、去字符串（长括号也要去），再找 5.3 独有的语法。
+--   ★ 去注释是必须的 —— 这些文件的说明注释里到处都写着 `(flags & mask)` 这种
+--     原文引用，不去掉会满屏误报。
+----------------------------------------------------------------------
+local function blankLuaSource(src)
+    local out, i, n = {}, 1, #src
+    local function long_eq(pos)
+        if src:sub(pos, pos) ~= "[" then return nil end
+        local j, eq = pos + 1, 0
+        while src:sub(j, j) == "=" do eq = eq + 1; j = j + 1 end
+        if src:sub(j, j) == "[" then return eq end
+        return nil
+    end
+    local function blank(from, to)
+        if to >= from then
+            out[#out + 1] = (src:sub(from, to):gsub("[^\n]", " "))
+        end
+    end
+    local function skip_long(from, eq)
+        local close = "]" .. string.rep("=", eq) .. "]"
+        local j = src:find(close, from, true)
+        return j and (j + #close) or (n + 1)
+    end
+    while i <= n do
+        local c = src:sub(i, i)
+        if c == "-" and src:sub(i + 1, i + 1) == "-" then
+            local start, eq = i + 2, long_eq(i + 2)
+            if eq then
+                local fin = skip_long(start, eq)
+                blank(i, fin - 1); i = fin
+            else
+                local j = src:find("\n", i, true) or (n + 1)
+                blank(i, j - 1); i = j
+            end
+        elseif c == "[" and long_eq(i) then
+            local fin = skip_long(i, long_eq(i))
+            blank(i, fin - 1); i = fin
+        elseif c == '"' or c == "'" then
+            local j = i + 1
+            while j <= n do
+                local d = src:sub(j, j)
+                if d == "\\" then j = j + 2
+                elseif d == c then j = j + 1; break
+                elseif d == "\n" then break
+                else j = j + 1 end
+            end
+            blank(i, j - 1); i = j
+        else
+            out[#out + 1] = c; i = i + 1
+        end
+    end
+    return table.concat(out)
+end
+
+local function checkLua51Syntax(path, quiet)
+    local f = io.open(path)
+    if not f then return 0 end
+    local src = f:read("*a")
+    f:close()
+    local code = blankLuaSource(src) .. "\n"
+    local n = 0
+    local ln = 0
+    for line in code:gmatch("([^\n]*)\n") do
+        ln = ln + 1
+        local t = line:gsub("~=", "  ")      -- `~=` 是 5.1 就有的，先挖掉
+        local what
+        if t:find("&", 1, true) then what = "按位与 `&`"
+        elseif t:find("|", 1, true) then what = "按位或 `|`"
+        elseif t:find("<<", 1, true) then what = "左移 `<<`"
+        elseif t:find(">>", 1, true) then what = "右移 `>>`"
+        elseif t:find("//", 1, true) then what = "整除 `//`"
+        elseif t:find("::", 1, true) then what = "标签 `::`（5.2+）"
+        elseif t:find("~", 1, true) then what = "按位取反/异或 `~`"
+        elseif (" " .. t .. " "):find("[^%w_%.:]goto[^%w_]") then what = "`goto` 语句（5.2+ 保留字）"
+        end
+        if what then
+            n = n + 1
+            fail(("%s:%d: 用了 Lua 5.3/5.2 才有的语法 %s —— 真机载入会报 " ..
+                    "`failed to compile ...: ')' expected near ...`（本机 luajit 是 2026 " ..
+                    "rollup，它支持 5.3 位运算所以放行，别拿 `luajit -bl` 当闸门）  ->  %s")
+                    :format(path, ln, what, (line:gsub("^%s+", ""):gsub("%s+$", ""))))
+        end
+    end
+    if n == 0 and not quiet then pass(("语法：%s 没有 5.3/5.2 独有语法"):format(path)) end
+    return n
+end
+
+----------------------------------------------------------------------
 -- 1. 引擎桩件
 ----------------------------------------------------------------------
 local function Forbid(v, lo, hi)
@@ -1160,6 +1254,7 @@ if path == "--all" then
         local fh = io.open(p)
         if not fh then return end          -- 文件不存在就跳过
         fh:close()
+        checkLua51Syntax(p, true)
         local c, cerr = loadfile(p)
         if not c then
             fail(("%s: 语法错误 %s"):format(p, tostring(cerr)))
@@ -1201,6 +1296,21 @@ if path == "--all" then
     tryLoad("mod/th16AEX/stage.lua")
     tryLoad("mod/th16AEX/class.lua")
 
+    -- ★ 全目录再扫一遍 5.3/5.2 语法：`tryLoad` 只点到上面那几个文件，
+    --   而引擎在别处（root.lua 的 DoFile、各关的 _bg.lua…）还会载入更多。
+    --   一个文件里混进一句 `a & b`，整关就载入失败，所以这里不留死角。
+    do
+        local p = io.popen("find mod -name '*.lua' 2>/dev/null")
+        local n = 0
+        if p then
+            for line in p:lines() do
+                if line ~= "" then checkLua51Syntax(line, true); n = n + 1 end
+            end
+            p:close()
+        end
+        print(("语法全扫：mod/ 下 %d 个 lua 文件"):format(n))
+    end
+
     print("")
     local nb = 0
     for _ in pairs(_editor_boss) do nb = nb + 1 end
@@ -1225,8 +1335,9 @@ end
 -- 5. 单文件模式
 ----------------------------------------------------------------------
 print("=== 载入 " .. path .. " ===")
--- ★ 先扫一遍贴图名（在真跑之前，这样报错顺序更直观）
+-- ★ 先扫一遍贴图名和语法（在真跑之前，这样报错顺序更直观）
 checkImageNames(path)
+checkLua51Syntax(path)
 local chunk, cerr = loadfile(path)
 if not chunk then
     print("FAIL: 语法错误 -> " .. tostring(cerr))
