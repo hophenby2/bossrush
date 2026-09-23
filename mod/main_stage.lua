@@ -1180,9 +1180,12 @@ NewStage("TH31", "永夜LastWord", 29, function(self)
     self:Option(TH08_bg, "TH08_NEW_0")
     self:Task(function()
         task.Wait(60)
-        ---17 张 Last Word 一张一张来（boss.CreateGroup 会阻塞到这张卡打完）。
+        ---一张一张来（boss.CreateGroup 会阻塞到这张卡打完）。
         ---原来分成 1..7 / 8..17 两段没有意义；真正的坑是旧版把 17 个角色全
         ---登记在组 1 的 a..q 上，CreateGroup(1) 会一次把 17 个 boss 全建出来。
+        ---★ 仍然是 1..17，**别改成别的数**：Stage EX 的 14 张（191..204）不是独立的组，
+        ---  它们挂在慧音组 3 / 妹红组 7 上（th31.lua 末尾 LIST 的第 5 项），
+        ---  所以 CreateGroup(3/7) 会先把该角色的 Last Word 打完、再按 LIST 顺序打这几张。
         for i = 1, 17 do
             boss.CreateGroup(i, self.level)
             task.Wait(60)
