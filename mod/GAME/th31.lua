@@ -99,29 +99,57 @@
 ---        只有 4，不是 0x10），出生点在场外就当场收掉。
 ---      ★ 同屏上限 1536 发：终盘每真帧 6 发、且**离 BOSS 32px 内不打**；池满整波不生、
 ---        波中间生不出就放弃整波剩下的（BulletManager.cpp:692、:698-712，照抄）。
----Stage EX（ecldata8sp.ecl）的 14 张 —— 全部挂进已有角色组：慧音 191..193（组 3）、
+---Stage EX 的 22 张（14 符卡 + 8 非符）—— 全部挂进已有角色组：慧音 191..193（组 3）、
 ---  妹红 194..204（组 7），所以 boss.CreateGroup(3/7) 会先打完该角色的 Last Word 再逐张打这些。
 ---  （读数也是 tools/check_stage.lua --threat，按每张卡自己的时长跑：3600..5400 帧。）
+---★ 符卡（有 START_SPELL 的那些）在 ecldata8sp.ecl；**非符不在那个文件里** ——
+---  妹红的通常弹幕（一非～八非）在 ecldata8.ecl 的 Sub66/68/70/72/74/76/78/80，
+---  原作里排在对应符卡**前**一张。下面按 LIST 的顺序（= 原作的阶段链）列出来：
+---    一非→194→二非→195→三非→196→四非→197→五非→198→六非→199→七非→200→八非→201→202→203→204
+---  8 张非符是同一副骨架（BOSS 漂移 + 一把常驻的枪），血条格数 10/8/7/6/5/4/3/2 递减；
+---  血量、真帧表、枪参数与全套语义推导见下面「Stage EX 的非符」那一段的注释。
 ---  · 191「旧秘境史 -旧日秘史-」（慧音）    —— 平均 6.0 / 死局 0.0% / 峰值 372 发有判定 216
 ---      ★ BOSS 原地；一把常驻的枪 + 4 只使魔（2 对、life 1350 / 750）。
 ---  · 192「一条归桥」（慧音）              —— 平均 0.2 / 死局 0.0% / 峰值 835 发有判定 729
 ---      ★ BOSS 原地；8 台**看不见**的发射器（4 对 × 2 种色号），各自按 ±ω 自转甩弹。
 ---  · 193「新幻想史 -未来秘史-」（慧音）   —— 平均 9.3 / 死局 0.1% / 峰值 482 发有判定 297
----      ★ BOSS 原地；一把枪 + 一次 8 只使魔；使魔的枪是 14 张里唯一「一发 4 颗十字」的。
+---      ★ BOSS 原地；一把枪 + 一次 8 只使魔；使魔的枪是 14 张符卡里唯一「一发 4 颗十字」的。
+---  · 非符一（妹红 · 枪 67）              —— 平均 10.0 / 死局 0.0% / 峰值 611 发有判定 485
+---      ★ 8 张里唯一的周期 4 帧 —— 每轮 5 圈 × 3 发（色 6/4/2/4/6、速度 2.0/1.8/1.6/1.4/1.2、
+---        每圈 −π/32、轮末回摆 +0.2856）；t=93 挂枪，每 240 真帧换一次漂移方向（位移 60px）。
 ---  · 194「月之岩笠的诅咒」（妹红）        —— 平均 8.1 / 死局 0.1% / 峰值 231 发有判定 184
 ---      ★ BOSS 原地；t=110 挂两条枪（十字 / 八向环）+ 6 只使魔。
+---  · 非符二（妹红 · 枪 69）              —— 平均 6.8 / 死局 0.0% / 峰值 409 发有判定 316
+---      ★ 周期 10 帧；每轮 5 圈、发数 3/4/5/6/7（色 2/4/6/4/2、速度 3.0→1.0）——
+---        每轮是把 5 条不同速度的环叠在一起往外推。
 ---  · 195「火之鸟 -凤翼天翔-」（妹红）      —— 平均 8.7 / 死局 2.9% / 峰值 1092 发有判定 499
 ---      ★ 全场最密的 EX 卡之一；「火之鸟」= 一颗使魔 + 6 圈偏移弹，使魔自己散 150 发。
+---  · 非符三（妹红 · 枪 71）              —— 平均 7.4 / 死局 0.0% / 峰值 475 发有判定 358
+---      ★ 周期 25 帧；与枪 69 同一套形状，只把每圈的发数换成 13/14/15/16/17 ——
+---        节拍慢下来、但每一环都又大又厚。
 ---  · 196「灭罪寺院伤」（妹红）            —— 平均 5.1 / 死局 0.0% / 峰值 113 发有判定 88
 ---      ★ 两只使魔生成在同一个点、方向相反，各带一把枪；BOSS 每 180 帧漂 60 px。
+---  · 非符四（妹红 · 枪 73）              —— 平均 13.0 / 死局 0.0% / 峰值 802 发有判定 631
+---      ★ 周期 20 帧；每轮两环 —— 32 发 @1.0（首发带出声）+ 48 发 @1.5，
+---        两环各 +π/32、轮末 −0.2856。
 ---  · 197「徐福时空」（妹红）              —— 平均 25.8 / 死局 1.6% / 峰值 1549 发有判定 1261
 ---      ★ 全场最密；BOSS 从 (0,96) 漂到 (0,32) 后不夹框，使魔 + **BOSS 自己两把枪**一起压。
+---  · 非符五（妹红 · 枪 75）              —— 平均 10.9 / 死局 0.0% / 峰值 666 发有判定 509
+---      ★ 周期 20 帧；四非的**镜像**（两处 ±π/32 与轮末的符号全反），第二环 1.5 → 2.5。
 ---  · 198「正直者之死」（妹红）            —— 平均 14.3 / 死局 0.0% / 峰值 887 发有判定 794
 ---      ★ BOSS 整卡不动；4 只使魔 + 两把常驻枪（0 号光柱、1 号自机狙扇）。
+---  · 非符六（妹红 · 枪 77）              —— 平均 10.0 / 死局 0.0% / 峰值 684 发有判定 477
+---      ★ 周期 20 帧；32 发 @1.0 + 48 发 @2.5，★ 每轮都从「半径 64 的随机点」发，
+---        所以环心一直在跳、不是同心圆（这是六/七非比四/五非难躲的原因）。
 ---  · 199「乌」（妹红）                    —— 平均 7.5 / 死局 0.0% / 峰值 519 发有判定 267
 ---      ★ 乌鸦 = 一次 3 只；每只自己带枪，整卡的节拍走 0 号子 context（整卡只挂一次）。
+---  · 非符七（妹红 · 枪 79）              —— 平均 10.0 / 死局 0.0% / 峰值 682 发有判定 475
+---      ★ 周期 20 帧；与枪 77 **逐条相同**（连 flags 都一样）—— 原作这里就是复用同一把枪。
 ---  · 200「不死鸟之尾」（妹红）            —— 平均 9.6 / 死局 0.0% / 峰值 446 发有判定 359
 ---      ★ 两条「一次放 5 只凤凰」的链 + 0/1 号子 context（0 号重挂计时、1 号是 BOSS 自己的枪）。
+---  · 非符八（妹红 · 枪 81）              —— 平均 4.8 / 死局 0.0% / 峰值 495 发有判定 327
+---      ★ 周期 10 帧；48 发环 @1.5，同样从随机偏移点发；弹上带「沿自己方向 180 帧 ×
+---        0.025」的加速 ⇒ 速度 1.5 一路加到 6.0（8 张里唯一带 ACCELERATE_VECTOR 的）。
 ---  · 201「凯风快晴 -富士山火山-」（妹红）  —— 平均 15.3 / 死局 2.1% / 峰值 692 发有判定 223
 ---      ★ 24 发环 + 10 只使魔（火山弹的发射台）；t=290 起 0 号子 context 换成另一种枪。
 ---  · 202「被不死鸟附身」（妹红）          —— 平均 7.3 / 死局 0.8% / 峰值 710 发有判定 165
@@ -15245,6 +15273,363 @@ CARD[204] = {
     del = card_del,
 }
 end
+---------------------------------------------------------------
+---Stage EX 的非符：藤原妹红的一非～八非（ecldata8.ecl）
+---  ★ 非符**不在** ecldata8sp.ecl 里（那个文件只有 191..204 的 Last Word 编排）——
+---    真正的 Extra 关卡数据是 ecldata8.ecl（156 个子程序）。非符在那里没有
+---    START_SPELL，只是一串「阶段子程序」，靠上一段结束时的 ins_133 / ins_134
+---    回调切进来：
+---      一非～八非 = Sub 66 / 68 / 70 / 72 / 74 / 76 / 78 / 80（枪 = 67/69/…/81）
+---      194..201  = Sub 93 / 97 / 100 / 103 / 108 / 113 / 118 / 126
+---      202..204  = Sub 131 / 143 / 149（外面还套了 Sub 82/83/84 一层「复活」壳）
+---    链路（EnemyManager.cpp:580-666 HandleTimerCallback / :424-470 HandleLifeCallback）：
+---      · 非符里 `ins_131 SET_LIFE 15000` + `ins_133 SET_LIFE_CALLBACK(0, 2200, 符卡)`
+---        ⇒ 血量掉到阈值以下时把 life **夹回阈值**、切进紧随其后的那张符卡
+---        ⇒ 非符段实打实的血量 = 15000 − 阈值，符卡的进场血量 = 阈值
+---        （与 LIST 里符卡的血量逐一吻合：2200/2200/2200/2500/2500/3000/3000/2500。
+---          只有 199 那张对不上：ecldata8.ecl 给六非的阈值是 2500、给 199 的
+---          SET_LIFE 是 3000。本移植**以 ecldata8.ecl（实际战斗数据）为准**，
+---          六非写 12500；那 500 点血量差落在那张符卡上，与弹幕无关。）
+---      · 符卡里 `ins_130 SET_DEATH_CALLBACK(下一个非符)` + `ins_134(超时, 同上的非符)`
+---        ⇒ 击破或超时都进下一个非符。（非符里那个 SET_DEATH_CALLBACK 永远走不到：
+---          life 到 0 之前一定先被 life 回调截住 ⇒ 移植版不需要它。）
+---  · 一张非符的骨架（8 张逐字相同，只有下面 NS 表里的参数不同）：
+---      ENABLE_INTERACTION_FLAGS 4/3、SET_NO_DAMAGE_DURING_STOP 0、SET_BOSS 0、
+---      SET_ITEM_DROP_COUNTS 25 20、SET_SECONDARY_HITBOX、SET_EXTRA_ANM_SCRIPT_ALT、
+---      PLAY_SPECIAL_ANM、SET_BOSS_GAUGE_SLOT —— 判定 / 贴图 / 掉落，移植版不实现。
+---      SET_DAMAGE_REDUCTION_TIMER 240 = 阶段开头 240 帧「BOSS 伤害 ÷9」
+---      （EnemyManagerUpdate.cpp:392-398）；boss.card 只会「前 t1 帧完全无敌」，
+---      所以这里跟 191..204 一样给 1 秒无敌（已知偏差，记在这里备查）。
+---      CALL 88 = 「不死鸟复活」演出：把 life 存进 li7、临时置 1、六向火花，
+---      112 帧后 `SET_LIFE li7` 再 RETURN。★ 这段 113 帧里**调用者的 time 冻住**
+---      （EclRunLow.inl:416-423 的 CALL 走 restart_context、RETURN 走
+---        low_select_next_context，两处都跳过帧尾的 time++）
+---      ⇒ 一非之外的 7 张，子程序里的 ECL 时间点要 **+113** 才是真帧；
+---        一非的 CALL 85（33 帧的 32 连火花）只把那一段的 +33。
+---      ins_64(60, 4, 192, 128) = MOVE_TO：从**当前**位置（上一张卡留下的）插值
+---      60 帧、缓动 4（OUT_QUADRATIC）漂到场地中心 = 我们 (0, 96)。
+---      ins_135 SET_CHILD_ECL 0 <枪> = 挂那把常驻的枪（子 context）。
+---      ins_67(60, 4, 1.0) = MOVE_RANDOM_IN_BOUNDS：边界感知随机漂 60 px。
+---      JUMP 的落点（一非 #22 / 其余 #24）自己的 time 是 240 / 210 / 360，而 JUMP
+---      给的新 time 是 60 / 30 / 180 ⇒ 落点要等 time 追上它自己的 time 才跑
+---      （EclRun.cpp:55-105 判 `time == instruction->time`，不相等就直接结束这一帧）
+---      ⇒ 两次 ins_67 之间恒为 **240 真帧**（一非 273、二～五非 323、六～八非 473 起）。
+---  · 子 context（枪）：SET_CHILD_ECL 当帧把父的变量整块抄给新 context、并**立刻**跑
+---    第一条（EclRun.cpp:190-208 的 low_select_next_context 在同一帧里依次跑每个
+---    子 context），之后每帧一格 time。8 把枪都是「打一轮 → JUMP 回第一条」，
+---    周期 = JUMP 那条指令的 time：枪 67/69/71/73/75/77/79/81 = 4/10/25/20/20/20/20/10 帧。
+---    出弹用的是该枪当时的 lf0（初值 −π/2，每轮自转 ±π/32）。
+---  · 弹：全部 type 11（16×16 小弹，占位 ball_small）。
+---    flags 514 = SPAWN_FAST|PLAY_SPAWN_SOUND、2 = 只 SPAWN_FAST（两者都**不含出生
+---    动画位** ⇒ 出弹当帧就在飞）、530 = SPAWN_FAST|SPAWN_SND|ACCELERATE_VECTOR。
+---  · 角度：ECL 的角整体取反（见文件头）⇒ 每个 volley 里的 ±0.09817477 (π/32) 与
+---    ∓0.2855993 都是「ECL 的 += / -=」换到我们坐标系后的符号。
+---  · 坐标：TH08 (192,128) = 我们 (0,96)；[32,352]×[48,128] = [−160,160]×[96,176]。
+---------------------------------------------------------------
+do
+local PI = 3.141592653589793
+local HALF_PI = PI / 2
+local QUARTER_PI = PI / 4
+
+---BOSS 落位：`ins_64(60, 4, 192, 128)` 的目标点 = TH08 (192,128) = 我们 (0,96)。
+local BOSS_X, BOSS_Y = 0, 96
+
+---夹框：`ins_75 SET_MOVEMENT_BOUNDS(32, 48, 352, 128)`。
+---wander 的边界修正要在 TH08 口径里判（+96 / +48 那两个阈值），所以两套都留着。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R = -160, 160
+local BW_B, BW_T = 96, 176
+
+---ins_64：60 帧插值、缓动 4 = OUT_QUADRATIC（EclManager.hpp:524）。
+local MOVE_TO_FRAMES = 60
+---ins_67(60, 4, 1.0)：同样 60 帧、1.0 px/帧 ⇒ 位移 60 px。
+local WANDER_FRAMES, WANDER_SPEED = 60, 1.0
+---两次 ins_67 之间的真帧数（见文件头的 JUMP 推导）。
+local WANDER_PERIOD = 240
+
+---AddNormalizeAngle(a, 0)：卷进 (−π, π]（Global.cpp:1231-1252）。
+local function add_norm(a)
+    a = a % (2 * PI)
+    if a > PI then a = a - 2 * PI end
+    return a
+end
+
+---TH08 世界坐标（wander 的边界修正要用 TH08 口径判）。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+
+---ins_67 = BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：先抽方向
+---（自机在左：3π/4 + ran(π/2) 并归一化；在右：ran(π/2) − π/4），再过四条边界修正。
+---★「x > upper.x − 96」那条把角度改写成 `π − movementAngle` —— 用的是**上一段**的
+---  移动方向、不是刚抽到的角（原作自己的怪癖，照抄，别「修」）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = add_norm(ran:Float(0, HALF_PI) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, HALF_PI) - QUARTER_PI
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > HALF_PI then
+            angle = PI - angle
+        elseif angle < -HALF_PI then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < HALF_PI and angle >= 0 then
+            angle = PI - owner.lwns_mv_angle
+        elseif angle > -HALF_PI and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---ins_67 的一段位移：方向 = wander_angle、位移 = 1.0 px/帧 × 60 帧、缓动 4。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)                       -- TH08 口径
+    owner.lwns_mv_angle = angle                             -- = enemy->movementAngle
+    owner.lwns_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,   -- 我们坐标系 = 角取反
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0,
+    }
+end
+
+---ins_64 = MOVE_TO（EclHelpers.cpp:59-87 ConfigureRelativeMotion）：origin = 当前位置、
+---delta = 目标 − worldPosition、timer = duration、缓动 4。
+local function start_move_to(owner, tx, ty)
+    owner.lwns_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = tx - owner.x, dy = ty - owner.y,
+        n = MOVE_TO_FRAMES, t = 0,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:80-121 的 INTERPOLATED 分支）：timer-- →
+---progress = 1 − timer/duration → 套缓动（4 = OUT_QUADRATIC）→ position = origin + delta·progress；
+---timer 归零那一帧直接落在终点。★ 装上的那一帧就走一步（原作先跑 ECL、再更新位移）。
+local function step_move(owner)
+    local mv = owner.lwns_move
+    if mv == nil then return end
+    mv.t = mv.t + 1
+    if mv.t >= mv.n then
+        owner.x, owner.y = mv.x0 + mv.dx, mv.y0 + mv.dy
+        owner.lwns_move = nil
+        return
+    end
+    local u = mv.t / mv.n
+    local e = 1 - (1 - u) * (1 - u)
+    owner.x = mv.x0 + mv.dx * e
+    owner.y = mv.y0 + mv.dy * e
+end
+
+---------------------------------------------------------------
+---出弹
+---------------------------------------------------------------
+---op 99 SHOOT_CIRCLE 的 8 个操作数：type|color<<16、count1、count2、speed1、speed2、
+---angle、angleStep、flags。8 把枪全是 count2 = 1 ⇒ 速度用 speed1、angleStep 用不上。
+local NS_TYPE = 11
+local FL_FAST, FL_FIRST = 2, 514        -- 2 = SPAWN_FAST；514 = SPAWN_FAST|PLAY_SPAWN_SOUND
+local FL_ACCEL = 530                    -- 530 = SPAWN_FAST|SPAWN_SND|ACCELERATE_VECTOR
+local A_INIT = HALF_PI                  -- ECL 的 lf0 = −π/2 ⇒ 我们 +π/2
+local A_STEP = 0.09817477               -- ECL 每轮 `lf0 ± π/32`
+local A_BACK = 0.2855993                -- ECL 每轮末的 `lf0 ∓ 0.2855993`
+local OFF_R = 64                        -- 六/七/八非：出弹点偏移半径
+local VEC_FRAMES, VEC_ACCEL = 180, 0.025    -- 八非：沿弹自己方向 180 帧 × 0.025/帧
+
+---从 BOSS 位置打一圈。
+local function shot(owner, color, n, speed, flags, angle)
+    EX.shoot(owner, owner.x, owner.y, {
+        op = 99, type = NS_TYPE, color = EX.color(color),
+        count1 = n, count2 = 1, speed1 = speed, speed2 = 1.0,
+        angle = angle, step = 0, flags = flags,
+    })
+end
+
+---六/七/八非的枪：`ins_38 POLAR_TO_CARTESIAN(exF0, exF1, RANDOM_ANGLE, 64)` +
+---`ins_110 SET_SHOOT_OFFSET(exF0, exF1)` —— 每打一轮重摇一次。
+---★ 随机角取反后余弦不变、正弦取反，但它在**整个圆**上均匀 ⇒ 偏移点的分布是同一条
+---  圆，直接按我们的角算即可（跟卡 194/195 的 RANDOM_ANGLE 同一个道理）。
+local function shot_offset(owner, color, n, speed, flags, angle)
+    local th = ran:Float(-PI, PI)
+    EX.shoot(owner, owner.x + math.cos(th) * OFF_R, owner.y + math.sin(th) * OFF_R, {
+        op = 99, type = NS_TYPE, color = EX.color(color),
+        count1 = n, count2 = 1, speed1 = speed, speed2 = 1.0,
+        angle = angle, step = 0, flags = flags,
+    })
+end
+
+---------------------------------------------------------------
+---8 把枪（各枪的「一轮」）
+---------------------------------------------------------------
+---Sub67（一非；周期 4 帧）：每轮 5 圈 × 3 发，速度 2.0→1.2，基准角每圈 −π/32，
+---一轮末回摆 0.2855993。
+local function volley_67(owner, g)
+    shot(owner, 6, 3, 2.0, FL_FIRST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 4, 3, 1.8, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 2, 3, 1.6, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 4, 3, 1.4, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 6, 3, 1.2, FL_FAST, g.a)
+    g.a = add_norm(g.a + A_BACK)        -- ECL 的 `lf0 -= 0.2855993`
+end
+
+---Sub69 / Sub71（二非 / 三非；周期 10 / 25 帧）：同一套形状，只有每圈的发数不同 ——
+---69 是 3,4,5,6,7 发，71 是 13,14,15,16,17 发（色 2,4,6,4,2；速度 3.0,2.5,2.0,1.5,1.0）。
+local function volley_ring5(owner, g, n0)
+    shot(owner, 2, n0,     3.0, FL_FIRST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 4, n0 + 1, 2.5, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 6, n0 + 2, 2.0, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 4, n0 + 3, 1.5, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 2, n0 + 4, 1.0, FL_FAST, g.a)
+    g.a = add_norm(g.a + A_BACK)        -- ECL 的 `lf0 += 0.2855993`
+end
+local function volley_69(owner, g) volley_ring5(owner, g, 3) end
+local function volley_71(owner, g) volley_ring5(owner, g, 13) end
+
+---Sub73（四非；周期 20 帧）：32 发环 @1.0（首发的 flags 带出声）+ 48 发环 @1.5，
+---两环与轮末各转一次（ECL 是 `lf0 -= π/32`、`-= π/32`、`+= 0.2855993`）。
+local function volley_73(owner, g)
+    shot(owner, 2, 32, 1.0, FL_FIRST, g.a)
+    g.a = add_norm(g.a + A_STEP)
+    shot(owner, 4, 48, 1.5, FL_FAST, g.a)
+    g.a = add_norm(g.a + A_STEP)
+    g.a = add_norm(g.a - A_BACK)
+end
+
+---Sub75（五非；周期 20 帧）：四非的**镜像** —— 两处 ±π/32 与轮末的符号全反，
+---第二环速度 1.5 → 2.5。
+local function volley_75(owner, g)
+    shot(owner, 2, 32, 1.0, FL_FIRST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot(owner, 4, 48, 2.5, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    g.a = add_norm(g.a + A_BACK)
+end
+
+---Sub77（六非；周期 20 帧）：两轮都从「半径 64 的随机点」发 —— 32 发环 @1.0 + 48 发环 @2.5。
+local function volley_77(owner, g)
+    shot_offset(owner, 2, 32, 1.0, FL_FIRST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    shot_offset(owner, 4, 48, 2.5, FL_FAST, g.a)
+    g.a = add_norm(g.a - A_STEP)
+    g.a = add_norm(g.a + A_BACK)
+end
+
+---Sub79（七非；周期 20 帧）：与 Sub77 **逐条相同**（裸字节逐条对过，连 flags 都一样）。
+local volley_79 = volley_77
+
+---Sub81（八非；周期 10 帧）：48 发环 @1.5，从随机偏移点发射；弹上挂着
+---「沿弹自己方向加速 180 帧 × 0.025」⇒ 速度 1.5 一路加到 6.0（这是八非的手感）。
+local function volley_81(owner, g)
+    shot_offset(owner, 4, 48, 1.5, FL_ACCEL, g.a)
+    g.a = add_norm(g.a - A_BACK)        -- ECL 的 `lf0 += 0.2855993`
+end
+
+---------------------------------------------------------------
+---8 张非符的参数
+---  { 阶段子程序, 枪, 菜单名, 血量, 血条格数, 挂枪真帧, 首次漂移真帧, 枪周期, 一卷, 加速记录 }
+---  血量 = 15000 − life 回调阈值（见文件头）；血条格数 = ins_148 的 10/8/7/6/5/4/3/2；
+---  真帧 = 子程序的 ECL 时间 + 113（一非 +33）。
+---------------------------------------------------------------
+local NS = {
+    { 66, 67, "非符一", 12800, 10,  93, 273,  4, volley_67, false },
+    { 68, 69, "非符二", 12800,  8, 143, 323, 10, volley_69, false },
+    { 70, 71, "非符三", 12800,  7, 143, 323, 25, volley_71, false },
+    { 72, 73, "非符四", 12500,  6, 143, 323, 20, volley_73, false },
+    { 74, 75, "非符五", 12500,  5, 143, 323, 20, volley_75, false },
+    { 76, 77, "非符六", 12500,  4, 293, 473, 20, volley_77, false },
+    { 78, 79, "非符七", 12000,  3, 293, 473, 20, volley_79, false },
+    { 80, 81, "非符八", 12500,  2, 293, 473, 10, volley_81, true  },
+}
+
+---一张非符的实现。8 张的骨架一样，只有 NS 里的参数与那把枪不同。
+local function make_card(p)
+    local volley, period = p[9], p[8]
+    local gun_at, move_at = p[6], p[7]
+    local vec = p[10]
+
+    local function card_init(owner)
+        EX.clear_records(owner)
+        EX.pool_clear()
+        owner.lwns_t = 0
+        owner.lwns_gun = nil
+        owner.lwns_mv_angle = 0
+        ---ins_64(60, 4, 192, 128)：从**当前**位置（上一张卡留下的）漂到场地中心。
+        ---★ 一非在原作里没有这条（它是 Sub65 的「登场」子程序把它摆到中心的），
+        ---  移植版一视同仁地漂过去 —— 位置一样，只是前 60 帧的轨迹在 boss rush 里
+        ---  取决于上一张卡收在哪里。
+        start_move_to(owner, BOSS_X, BOSS_Y)
+    end
+
+    local function card_frame(owner)
+        if owner.lwns_t == nil then return end
+        local t = owner.lwns_t
+        owner.lwns_t = t + 1
+
+        ---① ins_135 SET_CHILD_ECL 0 <枪>：挂上那一帧就跑第一轮（子 context 当帧生效）。
+        local g = owner.lwns_gun
+        if t == gun_at then
+            if vec then
+                ---八非的枪在 t=0 写一条 ACCELERATE_VECTOR 记录（S81 的 ins_111 槽 0）：
+                ---duration 180、size 0.025、float1 = −999.9 ⇒ 用弹**当时**的角度。
+                EX.set_record(owner, 0, EX.K.VEC, 0, VEC_FRAMES, -1, VEC_ACCEL, -999.9)
+            end
+            g = { a = A_INIT }
+            owner.lwns_gun = g
+            volley(owner, g)
+        elseif g and t > gun_at and (t - gun_at) % period == 0 then
+            volley(owner, g)
+        end
+
+        ---② ins_67(60, 4, 1.0)：每 240 真帧一次边界感知随机漂。
+        if t >= move_at and (t - move_at) % WANDER_PERIOD == 0 then
+            begin_wander(owner)
+        end
+
+        ---③ 位移（插值）与夹框：EnemyManagerUpdate.cpp:159-192 先跑 ECL、再积分、再钳。
+        step_move(owner)
+        if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+        if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+    end
+
+    local function card_del(owner)
+        ---★ 帧计数器要清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
+        owner.lwns_t = nil
+        owner.lwns_gun = nil
+        owner.lwns_move = nil
+        EX.clear_records(owner)
+        EX.pool_clear()
+    end
+
+    return { init = card_init, frame = card_frame, del = card_del }
+end
+
+---登记：key 用**阶段子程序号**（66/68/70/72/74/76/78/80）—— 非符没有 START_SPELL
+---卡号可用，LIST 里对应的第 1 项也写这个子程序号。
+for i = 1, #NS do
+    CARD[NS[i][1]] = make_card(NS[i])
+end
+end
 ---还没移植的卡：占位实现。实现一张就在上面的 CARD 表里登记一张
 ---（key = TH08 卡号 205..221）。
 ---------------------------------------------------------------
@@ -15294,9 +15679,12 @@ local CHARS = {
     { "八云紫",              "TH08_NEW_3", "SCBG8",     "Yukari" },
 }
 
----{卡号, 中文卡名, 卡 id, 秒数[, 组号[, 血量]]}。
+---{卡号, 中文卡名, 卡 id, 秒数[, 组号[, 血量[, 菜单名]]]}。
 ---  没有第 5 项时「组号 = 自己的序号」（= 一个角色一张 Last Word）；
 ---  有第 5 项就挂到指定的角色组上（Stage EX 的 191..204 挂到慧音组 3、妹红组 7）。
+---  第 7 项 = 符卡练习菜单里显示的名字：只有非符要给 —— 非符的卡名（第 2 项）必须是
+---  ""，因为 boss.card.New（boss_card.lua:59）用 `name ~= ""` 定 `is_sc`，
+---  非符不算符卡（不显示符卡名 / 不结算符卡分），但练习菜单里总得有个名字。
 ---秒数 = ins_134 的 threshold/60：5940/60=99、2220/60=37、2160/60=36、7860/60=131。
 ---★ EX 卡（带血量）是**普通符卡**，不是 Last Word 那种耐久卡：有 HP、能被击破、
 ---  超时算失败；Last Word 用 hp = 10000000 让血条永远打不掉（t1 = t2 = t3 ⇒ 伤害恒 0）。
@@ -15320,22 +15708,36 @@ local LIST = {
     { 221, "「深弹幕结界 -梦幻泡影-」", 367, 131 },
 
     ---------------------------------------------------------------
-    ---Stage EX（ecldata8sp.ecl）的 14 张：慧音 191..193、妹红 194..204。
+    ---Stage EX 的 22 张：慧音 191..193、妹红 194..204 + 她的一非～八非。
     ---全部挂进上面已有的角色组（组 3 = 上白泽慧音、组 7 = 藤原妹红），
-    ---所以 boss.CreateGroup(3/7, level) 会先把该角色的 Last Word 打完、再逐张打这些。
+    ---所以 boss.CreateGroup(3/7, level) 会先把该角色的 Last Word 打完、再按**本表顺序**
+    ---逐张打这些（k .. "a" 那一条 boss 的 cards 表就是按 add 的顺序入队的）。
     ---（组号的对应：CHARS[3] = 上白泽慧音、CHARS[7] = 藤原妹红，见上面 CHARS。）
     ---HP = Spellcard 表的 life：192/193 都是 1900、195/196 是 2200 …
     ---秒数 = 根子程序的 ins_134(threshold, …) / 60（下面每张卡的注释里都有出处）。
+    ---★ 妹红那一段的顺序照原作 ecldata8.ecl 的阶段链排：
+    ---    一非→194→二非→195→三非→196→四非→197→五非→198→六非→199→七非→200→
+    ---    八非→201→202→203→204
+    ---  （非符第 2 项 = ""、第 1 项 = 它的**阶段子程序号**（66/68/70/72/74/76/78/80），
+    ---    也就是 th31.lua 上面 CARD 的 key；非符的整套推导见那张卡的注释。）
     { 191, "旧史「旧秘境史 -旧日秘史-」",         370, 60, 3, 1900 },
     { 192, "转世「一条归桥」",                   371, 60, 3, 1900 },
     { 193, "新史「新幻想史 -未来秘史-」",         372, 60, 3, 1900 },
+    { 66,  "",                                   384, 60, 7, 12800, "非符一" },
     { 194, "时效「月之岩笠的诅咒」",             373, 60, 7, 2200 },
+    { 68,  "",                                   385, 60, 7, 12800, "非符二" },
     { 195, "不死「火之鸟 -凤翼天翔-」",           374, 77, 7, 2200 },
+    { 70,  "",                                   386, 60, 7, 12800, "非符三" },
     { 196, "藤原「灭罪寺院伤」",                 375, 62, 7, 2200 },
+    { 72,  "",                                   387, 60, 7, 12500, "非符四" },
     { 197, "不死「徐福时空」",                   376, 90, 7, 2500 },
+    { 74,  "",                                   388, 60, 7, 12500, "非符五" },
     { 198, "灭罪「正直者之死」",                 377, 70, 7, 2500 },
+    { 76,  "",                                   389, 60, 7, 12500, "非符六" },
     { 199, "虚人「乌」",                         378, 70, 7, 3000 },
+    { 78,  "",                                   390, 60, 7, 12000, "非符七" },
     { 200, "不灭「不死鸟之尾」",                 379, 70, 7, 3000 },
+    { 80,  "",                                   391, 60, 7, 12500, "非符八" },
     { 201, "蓬莱「凯风快晴 -富士山火山-」",       380, 70, 7, 2500 },
     { 202, "「被不死鸟附身」",                   381, 77, 7, 6000 },
     { 203, "「蓬莱人形」",                       382, 90, 7, 6000 },
@@ -15363,6 +15765,9 @@ for k, e in ipairs(LIST) do
     local cardnum, name, id, seconds = e[1], e[2], e[3], e[4]
     local group = e[5] or k              -- 第 5 项 = 挂到哪个角色组（EX 卡才给）
     local hp = e[6]                      -- 第 6 项 = 血量（有它就说明是能打掉的普通符卡）
+    ---★ 第 7 项 = 符卡练习菜单里的名字。非符的卡名必须是 ""（is_sc = false），
+    ---  但菜单里还得有个名字 ⇒ 这两个字符串在非符上不是同一个。
+    local menu_name = e[7] or name
     local band = group .. "a"
     local card
     if hp then
@@ -15375,7 +15780,7 @@ for k, e in ipairs(LIST) do
         card = boss.card.New(name, seconds, seconds, seconds, 10000000)
     end
     ---boss.card.add(sc_group, level, CardName, data_id)：level 29 = TH31 的关卡号。
-    boss.card.add({ { card, band } }, 29, name, id)
+    boss.card.add({ { card, band } }, 29, menu_name, id)
     local impl = CARD[cardnum]
     if hp then
         ---EX 卡：不动 colli（要靠判定吃伤害），只把超时音关掉。
