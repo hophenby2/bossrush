@@ -991,8 +991,15 @@ boss.card.New = function(name, t1, t2, t3, hp, drop, is_extra)
         fail(("Card.New(%q): 必须 t1<=t2<=t3（单位是秒），实际 %s/%s/%s")
                 :format(tostring(name), tostring(t1), tostring(t2), tostring(t3)))
     end
+    -- ★ 和引擎一样给出五个默认空函数（`THlib/enemy/boss_card.lua:66`
+    --   `{ before=default, init=default, frame=default, render=default, del=default }`）。
+    --   原来桩件返回的表**没有这几个字段**，于是「把 card.render 覆盖成 nil」
+    --   这一整类错自检看不见（真机上 `boss_system.lua:197` 是无条件调用 → 当场崩）。
+    local default = function() end
     return { name = tostring(name), t1 = t1, t2 = t2, t3 = t3, hp = hp or 600,
-             is_sc = (name ~= "") }
+             is_sc = (name ~= ""),
+             before = default, init = default, frame = default,
+             render = default, del = default }
 end
 -- 复用了同一个 card_id 的卡（正常情况：同一组里的双 boss 共用一张符卡）
 local global_ids = {}
@@ -1632,6 +1639,17 @@ for _, __item in ipairs(run_list) do
         --   于是 **`frame`/`render` 会先于 `before` 和 `init` 各跑一次**。
         --   原来这里只模拟了「before 会 yield 的卡」，漏掉了这 1 帧 —— 而
         --   「只在 init 里初始化、frame 里直接用」的卡正好在这一帧崩。
+        -- ★ 引擎对 before/init/frame/render/del 是**无条件**调用的
+        --   （boss_system.lua:133 `current_card.frame(b)`、:197 `current_card.render(b)`），
+        --   所以这五个必须是函数。原来桩件只在「非 nil 时」才调，于是
+        --   「定义卡时把某个回调覆盖成 nil」查不出来 —— th31 卡 218 就这么在实机上崩的。
+        for _, k in ipairs({ "before", "init", "frame", "render", "del" }) do
+            if type(card[k]) ~= "function" then
+                fail(("%s: card.%s 是 %s —— 引擎无条件调用它，实机会报 "
+                        .. "`attempt to call field '%s' (a nil value)`")
+                        :format(label, k, type(card[k]), k))
+            end
+        end
         if card.frame then card.frame(boss_obj) end
         if card.render then card.render(boss_obj) end
         boss_obj.timer = boss_obj.timer + 1
