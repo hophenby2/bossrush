@@ -43,10 +43,10 @@ WhiteScreen = Class(object, {
     end
 })
 
--- TH30 复用 TH04_bg，TH31/TH32 复用 TH08_bg；都不建立单独的 mod/BG 目录。
-local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30", "31", "32" }
+-- TH30 复用 TH04_bg，TH31/TH32 复用 TH08_bg，TH33 复用 TH095_bg；都不建立单独的 mod/BG 目录。
+local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30", "31", "32", "33" }
 for _, p in ipairs(StageID) do
-    if p ~= "30" and p ~= "31" and p ~= "32" then
+    if p ~= "30" and p ~= "31" and p ~= "32" and p ~= "33" then
         IncludeLuaFile("mod\\BG\\TH" .. p .. "\\TH" .. p .. "_bg.lua")
     end
     IncludeLuaFile("mod\\GAME\\th" .. p .. ".lua")
@@ -1210,7 +1210,7 @@ function ParticleLaserLine(pR, pG, pB, x, y, col, v, a, GrowTime, Width, Scale, 
     return l
 end
 
-for t = 1, 30 do
+for t = 1, 31 do
     table.insert(LoadRes, function()
         LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t))
         LoadImage(("stage_pic%d"):format(t), ("stage_pic%d"):format(t), 0, 0, 512, 512)

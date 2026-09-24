@@ -1203,6 +1203,19 @@ NewStage("TH32", "猩红测试", 30, function(self)
     self:Next(52)
 end)--30
 
+NewStage("TH33", "醉生梦死", 31, function(self)
+    ---复用 TH095（文花帖）的背景类与 BGM「幽雅に咲かせ、墨染の桜」——
+    ---这张卡就是文花帖第 7 关第 5 幕，幽幽子自己的主题曲。
+    self:Option(TH095_bg, "TH07_1")
+    self:Task(function()
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
+    ---那是 TH06 的成就 id —— 抄过来的话通关会给「驱散红雾之日」。
+    self:Next(166)
+end)--31
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
