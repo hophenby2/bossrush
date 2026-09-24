@@ -305,7 +305,7 @@ function stage_menu:init()
                 mask_fader:Do("close")
                 task.Wait(30)
                 stage.IsSCpractice = true
-                stage.group.PracticeStart('Spell Practice@Spell Practice')
+                stage.group.PracticeStart('Spell Practice@Spell Practice', true)--true = 符卡练习，开启自机无敌
             end)
         else
             menu.FadeIn(menu_player_system_select)

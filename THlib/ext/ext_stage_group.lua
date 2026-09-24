@@ -79,6 +79,7 @@ local RetryCountToUnlockAchievement = 0
 local ExecuteFlag
 function stg.frame(self)
     ext.sc_pr = false
+    cheat = false--符卡练习之外不给自机无敌（符卡练习走 frame_sc_pr）
     if not lstg.var.init_player_data then
         error('玩家数据加载失败')
     end
@@ -170,6 +171,11 @@ function stg.frame(self)
 end
 function stg.frame_sc_pr()
     ext.sc_pr = true
+    --符卡练习：自机无敌。cheat 只在 THlib/player/player_system.lua:397 被读，
+    --真值时整个碰撞回调短路（不掉命，代价是撞激光切光、命中消弹也一并没了）。
+    --值从 lstg.var 取：录像会把整个 lstg.var 序列化进 stageExtendInfo，
+    --这样开着无敌录的像回放时判定一致，而旧录像里没有这个字段、不会被误开。
+    cheat = lstg.var.cheat or false
     if not lstg.var.init_player_data then
         error('玩家数据加载失败')
     end
@@ -224,12 +230,14 @@ end
 
 function stg.Start(group)
     lstg.var.is_practice = false
+    lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('save', group[1])
     stage.stages[group.title].save_replay = { group[1] }
 end
 
 function stg.StartSaving()
     lstg.var.is_practice = false
+    lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('load to save')
     stage.stages[stage.groups["BossRush"].title].save_replay = {  }
     ext.saving.SaveManager:Refresh()
@@ -239,8 +247,10 @@ function stg.StartSaving()
     end
 end
 
-function stg.PracticeStart(stagename)
+---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
+function stg.PracticeStart(stagename, sc_pr)
     lstg.var.is_practice = true
+    lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像
     stage.Set('save', stagename)
     stage.stages[stage.stages[stagename].group.title].save_replay = { stagename }
 end
