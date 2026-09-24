@@ -363,6 +363,58 @@ function stage_menu:init()
             menu_sc_pr.pos = scoredata.menu_sc_pr.pos or 1
         end
     end
+    ---★ 隐藏秘技：在**主菜单**连按 5 次数字 9 ⇒ 金钱补到 99999（不足才补）。
+    ---写在这里用 task、而不是 stage_menu:frame()：menu_title 是 init 的局部变量，而
+    ---「主菜单是不是在前台」要看它自己那套 alpha / locked，frame 方法里读不到。
+    ---  · 前台判据 = menu_title.alpha > 0 且 not menu_title.locked，就是 main_menu:frame
+    ---    决定要不要接输入的那两个条件（THlib/UI/menu.lua:232）；simple_menu:init 把
+    ---    alpha 初始化成 0、locked 初始化成 true（同文件 :108,:113），淡入 30 帧走完才
+    ---    locked = false（menu:FadeIn，同文件 :2-12）。子菜单会把主菜单 menu:FadeOut 到
+    ---    alpha == 0 ⇒ 这个秘技只在主菜单这一屏生效。
+    ---  · 用 GetKeyState 的**边沿**（按下那一刻）而不是 GetLastKey：GetLastKey 一帧只报
+    ---    最后按下的那个键（引擎 AppFrame::GetLastKey ⇒ Keyboard::State::LastKeyDown），
+    ---    而且按住不放时 Windows 会重复发 KEYDOWN，会被误算成「连按」；GetKeyState 是
+    ---    「当前是否按住」（Keyboard::State::IsKeyDown，include_history 默认 false），
+    ---    自己存上一帧的状态做边沿，和 THlib/lib/Linput.lua:18-31 的 KeyState/KeyStatePre 同理。
+    ---  · 「连按」= 相邻两次间隔不超过 CHEAT_GAP 帧；超时、或主菜单不在前台就清零。
+    ---    不是整个会话累计 5 次 —— 那样迟早会误触发。
+    ---  · 加钱走 AddMoney()：它会同步 CurrentMoney 与 CurrentVerifiableOffset，绕过它直接
+    ---    改 scoredata.money 会在 THlib/ext/ext.lua:303 的 CheckMoney() 里报 "Invalid value"
+    ---    （core.lua:98-105）再强改回来。副作用：>=1万/4万/8万 那三个成就（core.lua:87-93）
+    ---    会顺带解锁 —— 它们本来就是「存到多少钱」。
+    ---  · 只补不足（已经 >= 99999 就不动），免得把攒得更多的存档改小。
+    task.New(self, function()
+        local CHEAT_KEY = KEY['9']      -- 只认主键盘区的 9（0x39）：NUMPAD9 是菜单的「右」。
+        local CHEAT_TIMES = 5           -- 连按几下
+        local CHEAT_GAP = 30            -- 「连按」窗口：30 帧 = 0.5 秒
+        local CHEAT_MONEY = 99999       -- 目标金额
+        local count, since, down_pre = 0, nil, false  -- since = 距上一次按下过了几帧（nil = 还没按过）
+        while true do
+            if menu_title.alpha > 0 and not menu_title.locked then
+                local down = GetKeyState(CHEAT_KEY)
+                if down and not down_pre then
+                    if since and since <= CHEAT_GAP then
+                        count = count + 1
+                    else
+                        count = 1
+                    end
+                    since = 0
+                    if count >= CHEAT_TIMES then
+                        count = 0
+                        if scoredata.money < CHEAT_MONEY then
+                            AddMoney(CHEAT_MONEY - scoredata.money)
+                        end
+                        PlaySound("extend")
+                    end
+                end
+                down_pre = down
+                if since then since = since + 1 end
+            else
+                count, since, down_pre = 0, nil, false
+            end
+            task.Wait()
+        end
+    end)
     if scoredata.version ~= ui.version then
         if scoredata.version and scoredata.version:sub(2, 2) and tonumber(scoredata.version:sub(2, 2)) >= 5 then
         else
