@@ -148,6 +148,24 @@ function InitStore()
             end, function()
                 return not scoredata.UnlockChiruno
             end)
+    AddStoreItem(nil, 20000, "title_pl3", "射命丸文自机",
+            [[东方文花帖的拍照自机：
+按住射击键把取景框收近自机（这样蓄力快 2.5 倍），蓄力满会响一声，
+松手后再按一下射击键 = 按下快门 —— 把取景框里的弹幕拍掉换成分数，
+框里的敌人和 boss 也会吃到伤害
+
+注意：
+文文没有主炮，拍照就是她唯一的攻击手段
+按下快门后有 1 秒不能移动、也不能再拍（冷却 60 帧）
+取景框可以用 X 键转 90°
+得分：基础 6000 起，每拍到一颗弹 +150、一个敌人 +500，
+拍到 boss / 贴脸(RISK) / 一次拍到多种颜色另有倍率加成，
+只拍到 boss 而没拍到弹(SOLO SHOT) 额外 +20000
+「已经拍了几张」还会影响很多拍照符卡的弹幕 —— 拍得越多越凶]], nil, function()
+                scoredata.UnlockAya = true
+            end, function()
+                return not scoredata.UnlockAya
+            end)
     for i, p in ipairs(SystemList) do
         AddStoreItem(i, p.price, ("stage_pic%d"):format(p.pic), p.title, text[i], p.achievementid)
     end

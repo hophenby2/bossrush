@@ -595,7 +595,7 @@ LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 player_system_select = Class(object)
 function player_system_select:fresh()
     self.unlocksystem = {}
-    self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "通关解锁", true }
+    self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
     for i, p in ipairs(scoredata.UnlockSystem) do
         self.unlocksystem[i] = p or "前往商店购买解锁"
     end
