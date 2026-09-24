@@ -1208,7 +1208,11 @@ NewStage("TH33", "醉生梦死", 31, function(self)
     ---这张卡就是文花帖第 7 关第 5 幕，幽幽子自己的主题曲。
     self:Option(TH095_bg, "TH07_1")
     self:Task(function()
+        ---两个 boss 组：组 1 = 西行寺幽幽子（71/73/75/77），组 2 = 魂魄妖梦（72/74/76）。
+        ---CreateGroup 按「组号 + 字母 + 关卡号」枚举，所以两次调用正好各建一个 boss。
         boss.CreateGroup(1, self.level)
+        task.Wait(120)
+        boss.CreateGroup(2, self.level)
         task.Wait(120)
     end)
     ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
