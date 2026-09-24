@@ -44,6 +44,7 @@
 ---     （亮卡名 / 收会话）、ins_150（装饰 ANM）—— 只保留**影响弹幕数值**的那一头：
 ---     卡里用 photo_index()（见文件中部）去读真相机的「已拍张数」当 camera.photoIndex，
 ---     快门音 / 上限 / 计分一概不做；卡名与计时交给符卡系统（CARD_NAME / CARD_TIME）。
+---     ★ 例外：拿到快门数之后**怎么算伤害**这一头按作者要求改了 —— 见差异 9。
 ---  2) 弹型：原作靠 g_PhotoBulletCollisionSizes（th095/src/BulletManager.cpp:118-122，
 ---     存的是**直径**、命中框取 ±size/2，见同文件 :1155）区分二十几种弹。本关按作者
 ---     指定把小玉换成 **butterfly（幽幽子系）与 water_drop（妖梦系）**两种贴图；
@@ -119,6 +120,16 @@
 ---     大玉 —— 出膛点就是**本体所在点**，自机贴到本体身上时那一发是瞬发。那不是
 ---     「必中设计」：真机站到离本体 5 px 的地方会先被本体撞到，而且 6 个种子死局
 ---     全 0；照原作的形状留着，细节写在那张卡常量段尾的那段注释里。
+---  9) 拍照扣血：原作是**拍照关** —— 本体不吃自机子弹，唯一的伤害来源就是快门，
+---     拍够 N 张（N = 本卡的 ins_141，也就是相机在一关里能按的次数：
+---     EclRunTargetHigh.inl:448 → EclRunHigh.inl:113 写 camera.photoLimit、
+---     PhotoCamera.cpp:503 拍到上限就把相机锁死）这一关就结束。
+---     我们这边相机挂在射命丸文自机上（aya.lua:191），拍照命中是
+---     aya_system.lua:260-274 里 `o.class.base.take_damage2(o, 400 - Dist(...))` ——
+---     400−距离 是**普通敌人**的口径（900 血的卡三张就拍死），与「拍 N 张过关」不符。
+---     ⇒ 本关按作者要求把拍照那一口伤害换成**固定 1/N 血**（拍够 N 张正好清空血条，
+---     见文件中部「拍照扣血」那一节）。子弹照旧能打（差异 4/7 的一贯口径：
+---     本体是 HP Boss）⇒ N 张照够打完，边打边拍更快。
 ---=====================================
 
 ---实测（2026-09-24，本机 luajit；自检是**逐卡**跑的 —— 每张卡都清场、从 0 帧起，
@@ -149,9 +160,16 @@
 ---    硬压到 1.5 就成了「把原作改松」，不是移植。卡 1 的 15.18 最高，那是「两组蝶弹
 ---    一起压」的原作形状，**不要压**；真嫌挤就调各卡常量段里的
 ---    RING_SPEED / CYCLE / SPEAR_SPEED —— 改前先想清楚那还是不是原作。
+---  · ⑤ 拍照扣血（差异 9）**自检看不见**：桩件里没有相机，拍照这条路径根本不会
+---    被走到（`player.camera == nil`）。验证方式是把三件套之外的这一条单独测：
+---    照相机那两行的口径（`o.class.base.take_damage2(o, 400 - Dist(...))`）在本机
+---    用真 boss.lua + 桩件跑一遍，断言「标记过的 boss：第 k 张照之后 hp = maxhp×(1−k/N)」
+---    与「没标记的 boss：还是 400−距离」（25 条断言全过；脚本 /tmp/th33_photo_test.lua
+---    不入库，换机器要重写一遍）。逐卡的 N 是 7/7/10/4/6/7/8（见各卡常量段）。
 ---=====================================
 
 local object, boss = object, boss
+local enemybase = enemybase
 local task, ran = task, ran
 local New, NewSimpleBullet = New, NewSimpleBullet
 local PlaySound, IsValid = PlaySound, IsValid
@@ -225,6 +243,71 @@ local function photo_index(limit)
         return 0
     end
     return min((scoredata and scoredata.total_photocount) or 0, limit)
+end
+
+---──────────────────── 拍照扣血：一张照固定扣 1/N 血 ────────────────────
+---原作（TH095）是拍照关：本体不吃自机子弹，唯一的伤害来源就是快门，而且**每关的
+---快门次数是有限的** —— ins_141 → EclRunTargetHigh.inl:448 的 AssignPhotoCameraLimit
+---→ EclRunHigh.inl:113 写进 camera.photoLimit；PhotoCamera.cpp:503 拍到 photoLimit 张
+---之后相机直接锁死（PHOTO_CAMERA_DISABLED）、这一关就结束了，PhotoStage.cpp:855 还
+---按这个数生成照片格。所以「N = 本卡的 ins_141」就是原作要求拍中的张数。
+---
+---本仓库的相机挂在射命丸文自机上（THlib/player/aya/aya.lua:191），拍照命中走
+---THlib/player/aya/aya_system.lua:260-274 的 object.EnemyNontjtDo 分支：先在取景框
+---里 Math.PointInRectangle(Math.NewPoint(o), rect) 判一下，再调
+---    o.class.base.take_damage2(o, 400 - Dist(框心, o))
+---⇒ 「拍照拍中」这一个入口可以精确替换掉，两个前提都成立：
+---  · take_damage2 在整个游戏目录里**只有这一处调用**（grep 全目录：只有
+---    THlib/enemy/boss.lua:66 的定义与上面这一处调用）⇒ 包它 = 只改拍照伤害；
+---  · o.class.base 对 boss 实例**就是 boss 类本身** —— 每个关卡的 boss 是
+---    Class(boss, {...})（THlib/enemy/boss.lua:163 的 boss.Define），实例的 o.class
+---    是那个子类、子类的 base 才是 boss，于是查到的正好是这里包过的这张表。
+---于是本关卡把血条换成「拍照计数」：卡在 init 里写 self.photo_damage_rate = 1/N、
+---在 del 里清掉，被拍到就固定扣 maxhp/N 血 ⇒ 拍够 N 张正好清空，和原作等价。
+---没标记过的 boss（别的关卡、别的自机、卡与卡之间的空档）原样走原函数，一点不影响。
+---为什么不改 aya_system.lua：THlib 是框架，改它会影响整个项目（§2 的硬约束）。
+---为什么不用 onPhotoFunc：那个钩子在**取景框之外也会被调**（aya_system.lua:262 在
+---PointInRectangle **之前**），要用它就得自己复刻取景框几何；take_damage2 这一层
+---已经判过框了，借它的判定更准。
+---⚠ 两个刻意保持原样的口径：
+---  · 拍照伤害**不吃 dmg_factor**（系统的 t1 无敌 / t2 爬升）—— 原函数只乘
+---    DMG_factor 与 astral_dmg_factor，这里沿用，只把伤害值换成 maxhp/N。
+---  · 子弹照旧能打（本仓库对原作移植卡的一贯口径：本体是 HP Boss，见文件头差异 4）
+---    ⇒ N 张照**够**打完这张卡，边打边拍会更快；「只能靠拍照打掉」是另一件事。
+if not boss.photo_damage_patch then
+    boss.photo_damage_patch = true
+    local boss_take_damage2 = boss.take_damage2
+    boss.take_damage2 = function(self, dmg)
+        local rate = self.photo_damage_rate
+        if not rate then
+            ---本关卡没标记过的 boss：原样交给原函数（THlib/enemy/boss.lua:66）。
+            return boss_take_damage2(self, dmg)
+        end
+        local hp_damage = self.maxhp * rate
+        ---enemybase.take_damage 是「计分 / 掉落 / 受击音」那一半
+        ---（THlib/enemy/enemy.lua:94），原函数也是先调它再扣血（boss.lua:66-74）；
+        ---照抄，让拍的这一下该响的响、该掉的掉。
+        enemybase.take_damage(self, hp_damage)
+        if self.dmgmaxt then
+            self.dmgt = self.dmgmaxt        -- 受击闪烁（原函数 boss.lua:68-69）
+        end
+        if not self.protect then
+            local dmg0 = min(self.hp, hp_damage)
+            self.spell_damage = self.spell_damage + dmg0
+            self.hp = min(self.maxhp, self.hp - dmg0)
+        end
+    end
+end
+
+---给「这一张卡」的本体挂上固定的拍照扣血比例（1/limit，limit = 本卡的 ins_141）。
+---init 里调（setStatus 设 maxhp 与 card.init 在同一帧，boss_system.lua:952/955），
+---del 里用 photo_damage_off 收掉，免得别的 boss 沾到。
+local function photo_damage_on(boss_obj, limit)
+    boss_obj.photo_damage_rate = 1 / limit
+end
+
+local function photo_damage_off(boss_obj)
+    boss_obj.photo_damage_rate = nil
 end
 
 ---──────────────────── 两个 boss（必须先 Define、再 card.add） ────────────────────
@@ -469,6 +552,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     end
 
     function card:init()
+        photo_damage_on(self, AIM_LIMIT)    -- 拍照扣血：拍够 AIM_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -492,6 +576,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     end
 
     function card:del()
+        photo_damage_off(self)
         for i = #moths, 1, -1 do
             if IsValid(moths[i]) then
                 object.RawDel(moths[i])
@@ -585,6 +670,11 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     ---子机的淡入 / 淡出（它在原作里靠「飞出屏幕就回收」，我们照做）。
     local DRONE_FADE_IN = 15
     local DRONE_ALPHA = 175                  -- §7.6：装饰层 alpha 压在 120~180
+
+    ---Sub2 的 ins_141(7)（dump 的 @464）：相机快门上限，也就是**原作要求拍中的张数**。
+    ---这张卡的弹幕不读 photoIndex（原作的扇与乱枪都是定死的），所以它只用在
+    ---「拍几张过关」上（见文件头「拍照扣血」那一节）。
+    local PHOTO_LIMIT = 7
 
     local CARD_NAME = "蝶符「鳳蝶紋の死槍」"
     ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；沿用本仓库的 50 秒。
@@ -739,6 +829,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -763,6 +854,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     end
 
     function card:del()
+        photo_damage_off(self)
         for i = #drones, 1, -1 do
             if IsValid(drones[i]) then
                 ---★ 先 task.Clear 再 RawDel：协程是挂在子机名下的，
@@ -885,6 +977,7 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         ---入场点：原作本体第一帧就把自己定到 (-128,-64)（场地外），第 100 帧才起步。
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
@@ -911,6 +1004,7 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     end
 
     function card:del()
+        photo_damage_off(self)
     end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1020,6 +1114,11 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local MOTH_FIRST, MOTH_MORE = 0, 380 - ENTRY_WAIT - ENTRY_TIME
     local MOTH_COUNT1, MOTH_COUNT2 = 4, 8
     local MOTH_ALPHA = 165                   -- §7.6：装饰层 alpha 压在 120~180
+
+    ---Sub2 的 ins_141(4)（dump 的 @468）：相机快门上限，也就是**原作要求拍中的张数**。
+    ---这张卡的弹幕不读 photoIndex（原作四层都是定死的），所以它只用在「拍几张过关」上
+    ---（见文件头「拍照扣血」那一节）。
+    local PHOTO_LIMIT = 4
 
     local CARD_NAME = "「死蝶浮月」"
     ---原作卡计时 ins_114(8408) ≈ 140 秒（拍照关留给玩家取景用）；沿用本仓库的 55 秒。
@@ -1247,6 +1346,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -1290,6 +1390,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     end
 
     function card:del()
+        photo_damage_off(self)
         for i = #lasers, 1, -1 do
             if IsValid(lasers[i]) then
                 object.RawDel(lasers[i])
@@ -1508,6 +1609,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -1526,6 +1628,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     end
 
     function card:del()
+        photo_damage_off(self)
         for i = #keys, 1, -1 do
             if IsValid(keys[i]) then
                 ---★ 先 task.Clear 再 RawDel：协程挂在钥匙名下，自检的协程表不认「对象已死」
@@ -1677,6 +1780,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -1693,6 +1797,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     end
 
     function card:del()
+        photo_damage_off(self)
     end
 
     boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1858,6 +1963,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     end
 
     function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -1874,6 +1980,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     end
 
     function card:del()
+        photo_damage_off(self)
     end
 
     boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
