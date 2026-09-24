@@ -37,19 +37,17 @@
 ---  本文件里每一处用到角度的地方都写了它属于哪一种。
 ---
 ---与原作的差异（7 张卡共有，逐张卡的差异写在各卡块的注释里）
----  1) 拍照关的相机 / 计分系统我们一概没有。原作那套 opcode ——
----     ins_141（快门上限）、ins_143（拍照标记）、ins_144（快门脉冲）、
----     ins_149（分数倍率）、ins_114（卡计时）、ins_104/105（亮卡名 / 收会话）、
----     ins_150（装饰 ANM）—— 全部按本仓库的符卡惯例改写：卡名交给符卡系统、
----     计时交给 CARD_TIME 秒数，「按一次快门」变成**这张卡自己的一个节奏事件**
----     （快门音 + 白闪 + photo 计数），计数再反过来喂给原作里读 camera.photoIndex
----     的那些常量（例如每圈弹数、每圈间隔）。
+---  1) 拍照关的相机 / 计分系统：**相机本身不实现** —— 本仓库有自己的拍照自机
+---     射命丸文（THlib/player/aya/aya.lua:191 给 player 挂了 player.camera，快门由玩家
+---     自己按）。原作那套 opcode —— ins_141（快门上限）、ins_143（拍照标记）、
+---     ins_144（快门脉冲）、ins_149（分数倍率）、ins_114（卡计时）、ins_104/105
+---     （亮卡名 / 收会话）、ins_150（装饰 ANM）—— 只保留**影响弹幕数值**的那一头：
+---     卡里用 photo_index()（见文件中部）去读真相机的「已拍张数」当 camera.photoIndex，
+---     快门音 / 上限 / 计分一概不做；卡名与计时交给符卡系统（CARD_NAME / CARD_TIME）。
 ---  2) 弹型：原作靠 g_PhotoBulletCollisionSizes（th095/src/BulletManager.cpp:118-122，
----     存的是**直径**、命中框取 ±size/2，见同文件 :1155）区分十几种弹。本关统一换成
----     **butterfly（幽幽子系）与 water_drop（妖梦系）**两种贴图（作者指定）——
----     butterfly 的判定半径 4（bulletStyle.lua:145 的 LoadImageGroup 末两参），
----     water_drop 是动画样式、判定取引擎默认。原作的大玉（type17，半径 14）在这里
----     没有对应贴图，改成**更慢 + 更密**来补压迫感（逐卡注释里写明）。
+---     存的是**直径**、命中框取 ±size/2，见同文件 :1155）区分二十几种弹。本关按作者
+---     指定把小玉换成 **butterfly（幽幽子系）与 water_drop（妖梦系）**两种贴图；
+---     原作的大玉（type 17，直径 28 ⇒ 半径 14）用本仓库最大的一档 **ball_huge**。
 ---  3) 回收边界：原作是**弹心一越过场地边就回收**（PhotoBulletIsOutsidePlayfield，
 ---     th095/src/BulletManager.cpp:759-765，判据是「弹心 ± 半宽」出 384x448 的框），
 ---     而且全游戏共用 640 个弹槽、扫不到空槽就不发（同文件 :310-345）。
@@ -79,9 +77,9 @@
 ---  1) 原作是拍照关：玩家按快门，`camera.photoIndex`（已拍张数）决定每圈弹数，
 ---     即 Sub7/Sub8 的 `ins_20(intV0, 0x2761, 32)` —— 0x2761 = camera.photoIndex
 ---     （th095/src/EclOperandsInt.cpp:186），上限由 Sub2 的 ins_141(10) 设定
----     （同文件 EclRunTargetHigh.inl:449）。我们没有相机，改成
----     **每完成一次上下扫动（400 帧）＝ 按一次快门**（快门音 + 白光 + 逐帧计数），
----     上限同样 10 张 —— 弹数曲线 32→42 与原作一致，只是推进方式不同。
+---     （同文件 EclRunTargetHigh.inl:448）。本仓库的相机挂在射命丸文自机上，卡里只读
+---     它的快门数（photo_index(10)，见文件中部）⇒ 弹数曲线 32→42 与原作一致，
+---     而且**卡里不需要自带任何拍照机制**。
 ---  2) 弹种 15 / 18：原作是两种**半径不同**的小玉 —— `g_PhotoBulletCollisionSizes`
 ---     （th095/src/BulletManager.cpp:118-122）存的是**直径**、命中框取 ±size/2
 ---     （同文件 :1155），15 号 = 8.0/2 = 半径 4.0、18 号 = 6.0/2 = 半径 3.0。
@@ -98,7 +96,7 @@
 ---  4) 原作 Sub4 是 ins_83 生成的**寄生敌机**：它的 ANM 12 是一张 512x255 的整屏叠图
 ---     （enm17.anm 的 entry3 = boss17b.png，script12 里在 `fsetDiv(128,4,0,±8,0)`
 ---     之间来回晃），Sub5 每帧把自己挪到拍照目标的位置（ins_63 + 自跳）。
----     我们拿不到那张图，改用**符卡背景 + 花瓣雨**承担「跟着本体动的整屏装饰」。
+---     我们拿不到那张图 ⇒ 整屏装饰交给符卡背景（不做额外的底帘 / 花瓣雨，作者要求）。
 ---  5) 原作的 104/105（拍照会话）、143（拍照标记）、118(0)（死亡照片 VM）、
 ---     149（分数倍率 1.9）、114（10208 帧的卡计时）都是 TH095 的相机 / 计分机制，
 ---     我们没有对应系统；卡时限改用本仓库的惯例秒数（见 CARD_TIME）。
@@ -108,7 +106,7 @@
 ---     我们的回收边界是引擎全局的 ±224/±256（= 场地外 32 px，THlib/lib/Lscreen.lua:90-97，
 ---     bullet.lua:36 用的是 `lstg.world.bound*`，**弹不能单独设**）。后果：同一颗弹多活
 ---     ~10%，稳态同屏弹数比原作的 640 槽多一点（本关最挤的一张 = 死符，
----     7200 帧实测峰值 732）。**屏幕上看不出区别** ——
+---     7200 帧实测峰值 527）。**屏幕上看不出区别** ——
 ---     两种回收都发生在屏幕外（场地是 x±192 / y±224，边界都在它外面），差的只是场外
 ---     那几十颗的寿命，所以没有为它去改引擎的全局边界。
 ---  7) 判定框：Sub2 的 `ins_77(24,24)`（Sub4 的寄生敌机是 `77(8,8)`）设的是敌人判定框
@@ -116,34 +114,41 @@
 ---     没有 PlayerBullet 一类文件，「射击键」就是快门），这个框在拍照关里读不出用处；
 ---     我们这边本体是要用子弹打掉的 HP Boss，判定框交给 boss_system 的默认值
 ---     —— 全仓库没有任何一张卡自己设过判定框，为一张卡破例反而不一致。
----  8) 自检偶尔报这张「贴脸狙 3 发、最短 13 帧」：两股整圈弹是从**本体所在点**发的，
----     而本体一直在中轴上下扫，自机凑到它身边时那一圈里朝向自机的弹就来不及挪。
----     这是原作的形状（ins_89 的位置就是本体），13 帧 ≈ 0.22 秒也够横移 60+ px；
----     6 个种子全 0 死局，所以照原作留着，没有像卡 72 那样加贴脸停火。
+---  8) 自检报「贴脸狙」的只有第 4 张「死蝶浮月」一处（12 个种子实测 2~8 发、
+---     最短 1~19 帧；第 6 张偶尔 1 发）：那是它 Sub7 的 ins_88 CIRCLE_AIMED 自机狙
+---     大玉 —— 出膛点就是**本体所在点**，自机贴到本体身上时那一发是瞬发。那不是
+---     「必中设计」：真机站到离本体 5 px 的地方会先被本体撞到，而且 6 个种子死局
+---     全 0；照原作的形状留着，细节写在那张卡常量段尾的那段注释里。
 ---=====================================
 
 ---实测（2026-09-24，本机 luajit；自检是**逐卡**跑的 —— 每张卡都清场、从 0 帧起，
----所以下面每一列都是「这一张单独打」的数，不是整关同时在场）
+---所以下面每一列都是「这一张单独打」的数，不是整关同时在场。
+---★ 自检桩件里没有相机（`player.camera == nil`）⇒ photo_index() 恒返回 0，所以
+---下面这些读数都是**原作 photoIndex = 0**（一张照都没拍）那一档；真机用射命丸文
+---按过快门之后，弹数与密度会再往上抬。）
 ---  卡                             60px 内平均(1200f×6 种子)  峰值同屏弹(7200f)  威胁度
----  1 幽雅「死出の誘蛾灯」            8.1 ~ 13.9                417              7.09
----  2 蝶符「鳳蝶紋の死槍」            6.2 ~  9.2                308             13.35
----  3 死符「醉人之生、死之梦幻」       8.8 ~ 10.0                732              1.67
----  4 「死蝶浮月」                    4.5 ~  5.3                476              2.73
----  5 密符「御大師様の秘鍵」           3.8 ~  4.3                361              1.61
----  6 行符「八千万枚護摩」             7.8 ~ 10.9                401              2.61
----  7 超人「飛翔役小角」               1.1 ~  1.9                208              0.94
+---  1 幽雅「死出の誘蛾灯」            16.4                      518             15.18
+---  2 蝶符「鳳蝶紋の死槍」             6.0                      267             12.10
+---  3 死符「醉人之生、死之梦幻」        6.6 ~  7.7                527              2.21
+---  4 「死蝶浮月」                     5.0 ~  5.2                437              3.01
+---  5 密符「御大師様の秘鍵」            3.1                      192              0.00
+---  6 行符「八千万枚護摩」              6.8 ~  9.1                301              0.92
+---  7 超人「飛翔役小角」                0.7 ~  1.2                151              0.23
 ---  （威胁度那一列是 `tools/threat.lua mod/GAME/th33.lua 1800` 的默认种子读数。）
----  · ① 泄漏扫描 ✅ —— 7200 / 10800 / 14400 帧三档，7 张卡的峰值同屏弹是平的
----    （417/418/418 … 732/732/732 … 208/209/211）。3600→7200 之间死符会从 672 涨到
----    732，那是它的快门 4000 帧才爬到上限 10（一圈 42 发）的爬坡，不是漏回收。
----  · ② 多种子 ✅ —— 1200 帧 × 6 个种子，最坏 `死局 3/1200 = 0.25%`（> 3% 才要改）。
----    密度：卡 7 的 60px 栏只有 1.1~1.9，**那一栏在这张上量不准**（原因写在那张卡的
----    ③ 里），照 §7.2 权威的那一栏看它是 208 > 阈值 150；其余 6 张 3.8~13.9。
+---  · ① 泄漏扫描 ✅ —— 3600 / 7200 / 14400 帧三档，7 张卡的峰值同屏弹是平的
+---    （518/518/518、266/267/268、527/527/529、147/151/151），不会随时间线性爬。
+---  · ② 多种子 ✅ —— 1200 帧 × 6 个种子，最坏 `死局 2/1200 = 0.17%`（卡 6；> 3% 才要改）。
+---    密度：卡 1 的 16.4 超过 §7.2 的「标准符卡 5~14」，落在「高压 13~25」一档 ——
+---    那是照原版还原**两组蝶弹**之后的真实密度，不是在别处该抄的样板；卡 7 的 60px
+---    栏只有 0.7~1.2，**那一栏在这张上量不准**（原因写在那张卡的注释里），照 §7.2
+---    权威的那一栏看它是 151 ≥ 阈值 150（本来就是最低的一档）；其余 5 张 3.1~9.1。
+---  · ③ 字段审计 ✅ —— `luajit tools/check_fields.lua mod/GAME/th33.lua`：通过。
 ---  · ④ `luajit tools/threat.lua mod/GAME/th33.lua 1800`：7 张全部「有限位」、
----    威胁度 0.94 ~ 13.35。文档的 0.5~1.5 是同工具量**自制卡**定的；拿它量原作移植卡
+---    威胁度 0.00 ~ 15.18。文档的 0.5~1.5 是同工具量**自制卡**定的；拿它量原作移植卡
 ---    本来就是超区间读数（本仓库 th20.lua 的 35 张：中位 1.15、8 张 > 1.5、最高 3.99），
----    硬压到 1.5 就成了「把原作改松」，不是移植。真嫌挤就调各卡常量段里的
----    PHOTO_INTERVAL / RING_SPEED / SPEAR_SPEED —— 改前先想清楚那还是不是原作。
+---    硬压到 1.5 就成了「把原作改松」，不是移植。卡 1 的 15.18 最高，那是「两组蝶弹
+---    一起压」的原作形状，**不要压**；真嫌挤就调各卡常量段里的
+---    RING_SPEED / CYCLE / SPEAR_SPEED —— 改前先想清楚那还是不是原作。
 ---=====================================
 
 local object, boss = object, boss
@@ -199,119 +204,27 @@ do  -- 妖梦的符卡背景
     end
 end
 
----──────────────────── 7 张卡共用的「快门」 ────────────────────
----原作的 ins_144(脉冲帧数) 会在本体上挂一圈 ANM 0x125 并响一声快门
----（th095/src/ecl/EclRunTargetHigh.inl:514-524）。我们没有相机，但「快门响一下、
----整屏白闪一次」这个演出本身值得留着 —— 它就是每一幕「拍到了」的反馈。
----
----photo_count 对应原作的 camera.photoIndex（EclOperandsInt.cpp:186 的 0x2761）：
----它是**每一幕自己的**计数，所以每张卡的 before() 里都要 photo_reset()，
----否则重打这张卡（或进符卡练习）时直接就是最后那一档的密度。
----（踩过：th33 的第一版把 photo_count 写成模块级却没在 before 里清零，
----第二次进这张卡就是 42 发一圈。）我们的拍照节奏由各卡自己决定（见各卡常量）。
-local photo_count = 0
-local shutters = {}
-local SHUTTER_TIME = 20
-local SHUTTER_FLASH = 0.22              -- 整屏白闪的不透明度上限，压得很淡
-
----快门：整屏白闪 + 一圈 photoON + 快门音。贴图与写法照 th143.lua:1451-1453
----（那一关的相机闪光）——「白闪 / 装饰用 RenderRect」是 §7.5 的 B 类装饰，
----只做提示，不当墙用。
-class.shutter = Class(object, {
-    init = function(self, x, y)
-        self.group = GROUP.INDES
-        self.layer = LAYER.ENEMY_BULLET_EF
-        self.x, self.y = x, y
-        self.colli = false
-        self.bound = false
-        self.rot = 0
-        self._a = 255
-        self.scale = 1
-        task.New(self, function()
-            PlaySound("shutter", 1)
-            for i = 1, SHUTTER_TIME do
-                local k = i / SHUTTER_TIME
-                self._a = 255 * (1 - k) * (1 - k)
-                self.scale = 1.1 + 0.7 * k
-                task.Wait()
-            end
-            object.RawDel(self)
-        end)
-    end,
-    frame = task.Do,
-    render = function(self)
-        SetImageState("white", "mul+add", self._a * SHUTTER_FLASH, 255, 255, 255)
-        RenderRect("white", lstg.world.l, lstg.world.r, lstg.world.b, lstg.world.t)
-        SetImageState("photoON", "mul+add", self._a, 255, 255, 255)
-        Render("photoON", self.x, self.y, self.rot, self.scale * 1.2)
-    end,
-})
-
-local function photo_reset()
-    photo_count = 0
-    shutters = {}
-end
-
----拍一张：计数 +1、在 (x,y) 放一次白闪。返回**拍完之后的张数**，
----方便调用方直接拿它当「第几张」用（原作里读 camera.photoIndex 的地方都是这个语义）。
-local function take_photo(x, y)
-    photo_count = photo_count + 1
-    shutters[#shutters + 1] = New(class.shutter, x, y)
-    return photo_count
-end
-
----卡结束时统一收掉快门演出（§7.9 第 9 条）。
-local function photo_clear()
-    for i = #shutters, 1, -1 do
-        if IsValid(shutters[i]) then
-            object.RawDel(shutters[i])
-        end
+---──────────────────── 「已拍张数」（原作 camera.photoIndex） ────────────────────
+---原作有四处读 camera.photoIndex（th095/src/EclOperandsInt.cpp:186 的 0x2761）来定弹数 /
+---间隔：卡 71 的自机狙大圈间隔、卡 75 的每圈弹数、卡 74 的小圈圈数、卡 76 的俯冲速度。
+---本仓库**不实现拍照** —— 项目自带拍照自机射命丸文：THlib/player/aya/aya.lua:191 给
+---player 挂了 player.camera，快门由玩家自己按（aya.lua:59-62 → aya_system.lua 的
+---TenguCamera:GetPhoto），每按一次 aya_system.lua:186 就给 scoredata.total_photocount +1。
+---所以这里只读真相机的快门次数：
+---  · 「是不是文文」= player.camera 是否存在（只有文文那个自机类挂了相机）；
+---  · 张数 = scoredata.total_photocount。
+---⚠ 两处偏差，都是本仓库没有对应数据造成的 —— 各卡按自己的 ins_141 上限截断，
+---  所以取值范围与原作一致（例如卡 71 的 0..7），只是它会**一上来就顶到上限**：
+---  · 原作的 photoIndex 是**关卡内累计**的（相机一直带在身上）；total_photocount 是
+---    **整份存档**的累计值（只为成就服务，THlib/lib/Lscoredata.lua:68）
+---    ⇒ 老存档上直接就是满档密度。
+---  · 非文文自机没有相机（player.camera == nil）⇒ 恒为 0，也就是原作一张没拍时的数值。
+---（想换判定口径只改这一个函数；各卡只给上限。）
+local function photo_index(limit)
+    if not (player and player.camera) then
+        return 0
     end
-    shutters = {}
-end
-
----每 interval 帧拍一张、最多 limit 张。owner 就是 boss（协程挂在它身上，
----换卡时 boss_system 的 task.Clear 会统一清掉）。
-local function photo_clock(owner, interval, limit)
-    task.New(owner, function()
-        while photo_count < limit do
-            task.Wait(interval)
-            take_photo(owner.x, owner.y)
-        end
-    end)
-end
-
----──────────────────── 7 张卡共用的底帘（§7.3.1） ────────────────────
----一张卡必须先有一层底帘。幽幽子系 = 樱花瓣（§7.5 母题表：樱 → sakura），
----妖梦系 = water_drop 水滴（本关指定给妖梦的贴图）。
----两者都是**装饰真弹**：不朝自机、0.5~1.1 px/帧、每一片自己缓慢拐弯（走弧线不是直线），
----落出场地由引擎的 bound 回收 ⇒ 不会越积越多，也不构成墙。
----frame 钩子只收一个参数（§5.2），所以「这一片拐多少」在第一次进钩子时抽一次、存在自己身上。
----cfg = { style, color, interval, vmin, vmax, angle, spread, turn, alpha }
-local function curtain_stream(owner, cfg)
-    local function new_one()
-        local b = NewSimpleBullet(cfg.style, cfg.color,
-                ran:Float(lstg.world.l - 32, lstg.world.r + 32), lstg.world.t + 24,
-                ran:Float(cfg.vmin, cfg.vmax), cfg.angle + ran:Float(-cfg.spread, cfg.spread),
-                false, 0, false, nil, nil, nil,
-                function(unit)
-                    if unit.bend == nil then
-                        unit.bend = ran:Float(-cfg.turn, cfg.turn)
-                    end
-                    object.SetV(unit, sqrt(unit.vx * unit.vx + unit.vy * unit.vy),
-                            unit.rot + unit.bend, true)
-                end)
-        if cfg.alpha then
-            b._a = cfg.alpha
-        end
-        return b
-    end
-    task.New(owner, function()
-        while true do
-            new_one()
-            task.Wait(cfg.interval)
-        end
-    end)
+    return min((scoredata and scoredata.total_photocount) or 0, limit)
 end
 
 ---──────────────────── 两个 boss（必须先 Define、再 card.add） ────────────────────
@@ -345,9 +258,15 @@ boss.Define("2a", "魂魄妖梦", "TH07_1", TH095_bg,
         { 128, field_y(-64) }, class.scbg2, "Youmu", LEVEL)
 
 do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 张）
-    ---原作是「蛾扑向灯」：本体在中轴慢慢起伏，两股整圈弹像蛾群一样绕着它打转，
-    ---再有一只拍照标记（蛾本体）落在目标上。这里用 butterfly 两色圈 + 两只跟着自机飞的
-    ---蝶形装饰，把「灯下的蛾群」这层意思留下。
+    ---原作是「蛾扑向灯」：本体从场外落到中轴，**一条**发弹上下文每 9 帧甩出**两组**
+    ---16 发的整圈蝶弹（像绕着灯打转的蛾群），第 10 秒再放出一只「蛾」（拍照目标）
+    ---加一层自机狙大圈。骨架（/tmp/B_ecl17_a.txt）：
+    ---  · Sub2：ins_63(-128,-64) 进场 → t=100 ins_64(30,4,0,128) 用 30 帧落到 (0,128)，
+    ---    同时 ins_141(7) 把相机的快门上限设成 7 张。
+    ---  · Sub3：t=0 起子 ECL 上下文 ins_117(0,4)（= Sub4）+ 一声 ins_106(5)；
+    ---    t=600 才放拍照目标（ins_83(6) 的蛾）并起第二条上下文 ins_117(1,5)（= Sub5）。
+    ---    两个 ins_117 用的都是**固定槽位**（会把上一个上下文 free 掉、不叠加，
+    ---    EclRunTargetHigh.inl:206）⇒ 全场一共只有两条发弹上下文。
     ---──────────────────────── 常量（改手感只动这一段） ────────────────────────
     ---入场：Sub2 t=0 的 ins_63(-128,-64)、t=100 的 ins_64(30,4,0,128)。
     ---（world08 七幕的本体都在左上角外生成，所以入场段是同一套。）
@@ -356,69 +275,86 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     local ENTRY_WAIT, ENTRY_TIME = 100, 30
     local EASE_OUT = VALUE_SET.DECEL
 
-    ---主弹幕（Sub4）：原作每 8 帧一轮、一轮两圈 16 发（t=0 一圈、t=4 一圈）。
-    ---  t=0  ins_89(15, 4, 16, 1, 4.0, 1.5, floatV0, 0.0327249, 546)
-    ---  t=4  ins_89(15, 5, 16, 1, 4.0, 1.5, floatV1, 0.0327249, 546)
-    ---  t=8  ins_4(0, -240) → 跳回 t=0（@920，也就是那条 ins_101）
-    ---ins_89 的 aimMode = 89 − 0x56 = 3 = CIRCLE（EnemyShotDispatch.cpp:145、
-    ---BulletManager.hpp:165-174）：angle = index1*2π/count1 + index2*angleStep + angle。
-    ---count2 = 1 ⇒ 操作数里的 angleStep（0.0327249 rad = 1.875°）根本没参与。
-    ---基准角只在**第一次**读自机角（t=0 的 ins_7(floatV0, playerAngle)[10032]）；
-    ---循环跳回 @920 而不是 @860，所以之后每轮只 +0.75°。
-    ---★ 节拍这里**故意放慢一倍**（原作 8 帧两圈 ⇒ 16 帧两圈）：原作有 640 个弹槽兜底
-    ---（BulletManager.cpp:310-345，扫不到空槽就不发），我们没有这个上限，
-    ---照原速稳态同屏 1342 发（实测），只能靠「圈数不变、间隔加倍」把同屏压回
-    ---本仓库的档位（死符那张是 665）。圈本身一发不少，所以图案没变、只是变稀。
-    local RING_PERIOD = 16
-    local RING_HALF = 8                     -- 两圈相隔 8 帧 ⇒ 合起来每 8 帧一圈
-    local RING_COUNT = 16
-    local RING_SPEED = 4.0
+    ---主弹幕（Sub4，dump 的 @860-1180）：**一条**上下文、**一轮 9 帧**、一轮发**两组** 16 发。
+    ---  @920  t=0  ins_101(0, 0x20, 0, 120, -1, -0.025,  0.019635)  ← 写 slot0（被下面那行覆盖）
+    ---  @960  t=0  ins_89(15, 4, 16, 1, 4.0, 1.5, floatV0, 0.0327249, 546)  ← 第 1 组：色号 4
+    ---  @1004 t=0  ins_101(0, 0x20, 0, 120, -1, -0.025, -0.019635)  ← 同一个 slot 再写一遍
+    ---  @1044 t=4  ins_89(15, 5, 16, 1, 4.0, 1.5, floatV1, 0.0327249, 546)  ← 第 2 组：色号 5
+    ---  @1088/1124 t=4  ins_15 / ins_16(floatV0 / floatV1, 0.01309)  ← 两个基准角各 +0.75°
+    ---  @1108/1144 t=4  ins_37(floatV0 / floatV1)                    ← 归一化到 (−π,π]
+    ---  @1160 t=8       ins_4(0, -240) → time 设回 0、跳回 @920
+    ---四条**对着源码核过**的读数（旧版注释在这四条上写错过，别再照抄）：
+    ---  · ins_89 的 aimMode = opcode − 0x56 = 3 = CIRCLE（EnemyShotDispatch.cpp:145、
+    ---    BulletManager.hpp:167）：angle = angle + index1×2π/count1 + index2×angleStep，
+    ---    而 count2 = 1 ⇒ 操作数里那个 0.0327249 rad（1.875°）**根本没参与**
+    ---    （BulletManager.cpp:368-372 的 CIRCLE 分支）。
+    ---  · 一轮是 **9 帧**不是 8：ins_4 把 time 设回 0 再跳回 @920，循环体里最后一条的 time
+    ---    是 8，而解释器只在 ctx->time == instruction->time 时执行（EclRun.cpp:305-320）
+    ---    ⇒ time 走 0..8 共 9 帧（ins_4 本体在 EclRunLow.inl:242-246）。
+    ---  · ins_37 **不是取反**、是归一化（EclRunLow.inl:357-363 调 AddNormalizeAngle，
+    ---    RuntimeMath.cpp:7 把角折进 (−π,π]）⇒ 基准角是**单调 +0.75°/轮**地转，
+    ---    不是来回翻（两个基准角 floatV0/floatV1 的值因此始终相同，这里只用一个 base）。
+    ---  · ins_101 是「往第 N 号 transform 槽里写一条记录」（EclRunTargetHigh.inl:45-63），
+    ---    同一个 slot 写两遍 = 后写的生效 ⇒ 角速度取 −0.019635 rad/帧、减速度取 −0.025/帧。
+    local CYCLE, SPLIT = 9, 4               -- 一轮 9 帧；两组之间隔 4 帧（t=0 / t=4）
+    local RING_COUNT = 16                   -- ins_89 的 count1 ⇒ 16 等分 22.5°
+    local RING_SPEED = 4.0                  -- ins_89 的 speed1（count2 = 1 ⇒ speed2 不参与）
     local BASE_STEP = 0.75                  -- ins_15(floatV0, 0.01309 rad)
     local RING_STYLE = butterfly
-    local RING_COLOR_A, RING_COLOR_B = COLOR.PURPLE, COLOR.DEEP_PURPLE
+    ---色号照原作：两组分别是 color 4 与 color 5。butterfly 不是 colorful 样式 ⇒
+    ---贴图下标 = ceil(色号/2)（Lresources.lua:208 的 LoadImageGroup + bulletStyle.lua:64
+    ---的 init），于是两组正好落在 butterfly2 / butterfly3 **两张不同的贴图**上。
+    local RING_COLOR_A, RING_COLOR_B = COLOR.PURPLE, COLOR.DEEP_BLUE
 
-    ---圈里每一颗自己会**一边转一边减速**：Sub4 的
-    ---ins_101(0, 0x20, 0, 120, -1, -0.025, ±0.019635) —— 0x20 = 极坐标加速
-    ---（BulletManager.cpp:826-841）：每帧 angle += float1、speed += float0，持续 120 帧。
-    ---同一个 slot 0 写了两遍 ⇒ 只有后写的生效：角速度 −0.019635 rad = −1.125°/帧、
-    ---速度每帧 −0.025（120 帧后 4.0 → 1.0）。
-    ---（−1.125°/帧 × 20 帧 刚好是一个 22.5° 的格 ⇒ 看上去是一整圈在稳稳自转。）
-    local RING_SPIN = -1.125
+    ---圈里每一颗自己会**一边转一边减速**（Sub4 的 ins_101 slot0，kind = 0x20 = 极坐标加速，
+    ---PhotoBulletSpawnDescriptor.hpp:100；实现在 BulletManager.cpp:822-841 的
+    ---UpdatePolarAcceleration）：每帧 angle += angleDelta、speed += speedDelta，
+    ---持续 int0 = 120 帧，之后整条 transform 失效、弹保持最后的速度与方向直飞。
+    ---  angleDelta = −0.019635 rad/帧 = −1.125°/帧 —— TH095 是「顺时针为正」，换算到
+    ---  我们「逆时针为正」的坐标系要**取反** ⇒ +1.125°/帧（整张卡的镜像一起翻，
+    ---  见文件头「坐标系与角度」）；speedDelta = −0.025/帧 ⇒ 4.0 在 120 帧里线性掉到 1.0。
+    ---★ 「120 帧之后必须停」是硬要求：极坐标加速是有时长的 transform，过了就没了；
+    ---  一直转下去就成了「1.0 px/帧 + 1.125°/帧」的半径 51 px 小圈 —— 子弹永远出不了
+    ---  回收边界，同屏弹数会线性涨（旧版实测 1800 帧 1432 → 7200 帧 5548）。
+    ---（frame 钩子只收一个参数，§5.2；「还剩几帧」存在弹自己身上。）
+    local RING_SPIN = 1.125
     local RING_DRAG = -0.025
-    local RING_DRAG_END = 1.0
-    local RING_DRAG_FRAMES = 120
+    local RING_MIN_SPEED = 1.0              -- 120 帧刚好减到 1.0，这个下限只是兜底
+    local RING_FRAMES = 120
 
-    ---自机狙大圈（Sub5）：ins_88(17, 0, 8, 1, 0.8, 1.5, 0, 0.0327249, 514)
-    ---= CIRCLE_AIMED、8 发一整圈、速度 0.8。间隔由 Sub5 的
-    ---ins_22/ins_21/ins_2 写成「120 − 10×photoIndex」帧（最少 50）
-    ---⇒ 拍得越多、大圈压得越快，这是原作留给玩家的推进感。
-    ---原作 type17 是半径 14 的大玉，这里没有对应贴图，改用 water_drop
-    ---（本关指定给妖梦的贴图借来当「大而慢」的那一层），靠 0.8 的低速保住压迫感。
+    ---自机狙大圈（Sub5，dump 的 @1204-1352）：ins_88(17, 0, 8, 1, 0.8, 1.5, 0, 0.0327249, 514)。
+    ---  · opcode 88 ⇒ aimMode 2 = CIRCLE_AIMED：每一发的角度 = 自机角 + index1×2π/count1，
+    ---    也就是**整圈一起转向自机**（BulletManager.cpp:367-372）。
+    ---  · count1 = 8（8 等分 45°）、speed1 = 0.8（count2 = 1 ⇒ speed2 不参与）、
+    ---    transformFlags 0x202 = 0x200 出场音 + 0x2 SPAWN_FAST（出场回退 4 帧的运动量，
+    ---    BulletManager.cpp:445-457；我们出膛就飞）。
+    ---  · 间隔由 Sub5 自己算：ins_22(extraIntV0, photoIndex, 10) → ×10、
+    ---    ins_21(extraIntV0, 120, extraIntV0) → 120 − 它、ins_2 等这么多帧
+    ---    ⇒ 每 max(50, 120 − 10×photoIndex) 帧一圈 —— 拍得越多压得越密。
+    ---弹型 17 = 原作的**大玉**（g_PhotoBulletCollisionSizes[17] = 28，命中框取
+    ---±28/2 ⇒ 半径 14；BulletManager.cpp:118-122 与 :1155），这里用本仓库最大的一档
+    ---**ball_huge**（bulletStyle.lua:174-180）。原作这一发的色号是 0，但 ball_huge 是
+    ---colorful 样式（贴图名 = "ball_huge"..色号），色号 0 会取到不存在的 ball_huge0
+    ---（AGENTS §9 A2 会当场报错）⇒ 取同色系的紫 4，和上面两组蝶弹同一族。
     local AIM_COUNT = 8
     local AIM_SPEED = 0.8
-    local AIM_STYLE = water_drop
+    local AIM_STYLE = ball_huge
     local AIM_COLOR = COLOR.PURPLE
     local AIM_GAP_BASE, AIM_GAP_STEP, AIM_GAP_MIN = 120, 10, 50
+    local AIM_LIMIT = 7                     -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
 
-    ---蛾（Sub3 的 ins_83(6) + Sub6/Sub7）：原作的拍照标记每帧把自己挪到 photoTarget 上
-    ---（Sub7 的 ins_63(photoTarget0.x, photoTarget0.y)）。我们没有相机，改成 2 只
-    ---**蝶**形装饰跟着自机飘（§7.5 的 A 类装饰，GROUP.GHOST + colli = false），
-    ---既点了「誘蛾灯」的题，也接下原作「告诉你该往哪拍」的位置。
-    ---原作那只标记在 Sub3 的 t=600（第 10 秒）才登场，这里同样是第 600 帧。
+    ---蛾（Sub3 的 ins_83(6)，子程序 Sub6/Sub7）：原作是一只**真的子敌机** ——
+    ---ins_55(12) 指 ANM、ins_143(1,99999) 挂拍照标记、ins_77(8,8) 给个小判定框，
+    ---然后 Sub7 每帧 ins_63(photoTarget0.x, photoTarget0.y) 把自己挪到「拍照目标」身上；
+    ---它自己**不发弹**（整份 ecl17_a 里只有 Sub4/Sub5 发弹）。
+    ---我们这边没有「拍照目标」这个对象、也没有子敌机这一层（§7.3），所以按 §7.4 的 C 类
+    ---做成 2 只**不出判定的蝶形装饰**绕自机飞 —— 位置含义从「拍照目标」换成「自机」，
+    ---既点了「誘蛾灯」的题，也留下原作那只蛾的存在感。
+    ---原作在 Sub3 的 t=600（第 10 秒）登场，这里同样是第 600 帧。
     local MOTH_WAIT = 600
     local MOTH_COUNT = 2
     local MOTH_RADIUS_X, MOTH_RADIUS_Y = 58, 30
     local MOTH_ALPHA = 170                  -- §7.6：装饰层 alpha 压在 120~180
-
-    ---拍照节奏（文件头差异 1）：原作由玩家按快门推进 photoIndex、上限 7
-    ---（Sub2 的 ins_141(7)）；这里每 300 帧自动拍一张，60 秒正好拍满 7 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 300, 7
-
-    ---底帘（§7.3.1）：樱花瓣（§7.5 母题表：幽幽子 → 樱）。
-    local PETALS = {
-        style = sakura, color = COLOR.PURPLE, interval = 14,
-        vmin = 0.5, vmax = 1.1, angle = 270, spread = 18, turn = 0.35,
-    }
 
     local CARD_NAME = "幽雅「死出の誘蛾灯」"
     local CARD_TIME = 60
@@ -463,52 +399,51 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
         end,
     })
 
-    ---圈弹每一颗的逐帧钩子：**只在前 120 帧**减速 + 自转，之后保持最后一帧的速度和方向直飞。
-    ---★ 这个「120 帧之后必须停」很关键：极坐标加速是有 duration 的 transform
-    ---（int0 = 120），过了就整个失效；如果一直转下去，1.0 px/帧 配上 1.125°/帧
-    ---就是半径 51 px 的小圈 —— 实测那样子弹会绕着本体打转、永远出不了回收边界，
-    ---同屏弹数线性涨（1800 帧 1432 → 7200 帧 5548），是泄漏。
-    ---（frame 钩子只收一个参数，§5.2；「转了多少」存在弹自己身上。）
+    ---圈弹每一颗的逐帧钩子：**只在前 RING_FRAMES 帧**自转 + 减速（ins_101 那条 transform
+    ---的时长），之后保持最后的速度与方向直飞（理由见上面 RING_SPIN 的注释）。
     local function ring_frame(unit)
         if unit.spin_left == nil then
-            unit.spin_left = RING_DRAG_FRAMES
-            unit.cur_v = RING_SPEED
+            unit.spin_left = RING_FRAMES
+            unit.ring_v = RING_SPEED
         end
         if unit.spin_left <= 0 then
             return
         end
         unit.spin_left = unit.spin_left - 1
-        unit.cur_v = max(RING_DRAG_END, unit.cur_v + RING_DRAG)
-        object.SetV(unit, unit.cur_v, unit.rot + RING_SPIN, true)
+        unit.ring_v = max(RING_MIN_SPEED, unit.ring_v + RING_DRAG)
+        object.SetV(unit, unit.ring_v, unit.rot + RING_SPIN, true)
     end
 
-    ---一整圈 16 发的定速直线（圈里每一颗自己还要转+减速，见 ring_frame）。
+    ---一整圈 16 发的定速直线（圈里每一颗自己还要转 + 减速，见 ring_frame）。
     local function fire_ring(owner, base, color)
         for i = 0, RING_COUNT - 1 do
             NewSimpleBullet(RING_STYLE, color, owner.x, owner.y, RING_SPEED,
                     base + i * 360 / RING_COUNT, false, 0, false,
                     nil, nil, nil, ring_frame)
         end
-        -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723）。
+        -- transformFlags 的 0x200 = PLAY_SPAWN_SOUND：一整圈只响一声（BulletManager.cpp:717-723）。
         PlaySound("tan00", 0.1, owner.x / 256, false)
     end
 
-    ---一条发弹上下文（原作 Sub4 是 ins_117(0,4) 的**子 ECL 上下文**，不是子敌机）：
-    ---先等自己的相位，然后每 8 帧一圈。两条上下文各记各的基准角 —— 原作里 floatV0 与
-    ---floatV1 也是各自 +0.75°/轮，两圈同轮同相位。
-    local function ring_stream(owner, phase, color, base)
+    ---主弹幕（Sub4 = ins_117(0,4) 的**子 ECL 上下文**，不是子敌机）：一条上下文、一轮两组。
+    ---原作的两个基准角 floatV0/floatV1 值始终相同（都从 playerAngle 起、每轮各 +0.75°，
+    ---ins_15/ins_16 各加一遍），所以这里只用一个 base，一轮里给两组共用；
+    ---转的方向按坐标系换算取负（TH095 的 +0.75°/轮 ⇒ 我们的 −0.75°/轮）。
+    local function ring_stream(owner)
         task.New(owner, function()
-            task.Wait(phase)
+            local base = Angle(owner, player)
             while true do
-                fire_ring(owner, base, color)
-                base = base + BASE_STEP
-                task.Wait(RING_PERIOD)
+                fire_ring(owner, base, RING_COLOR_A)    -- @960 t=0：色号 4
+                task.Wait(SPLIT)
+                fire_ring(owner, base, RING_COLOR_B)    -- @1044 t=4：色号 5
+                task.Wait(CYCLE - SPLIT)
+                base = (base - BASE_STEP) % 360         -- @1088/1124：ins_15/ins_16 + ins_37
             end
         end)
     end
 
-    ---自机狙大圈（Sub5）：每 max(50, 120 − 10×photo_count) 帧放一圈 8 发。
-    ---aim = true ⇒ 整圈一起转到自机方向（CIRCLE_AIMED 就是把 playerAngle 加进 angle）。
+    ---自机狙大圈（Sub5）：从原作第 600 帧起，每 max(50, 120 − 10×photoIndex) 帧一圈 8 发。
+    ---aim = true ⇒ 整圈一起转到自机方向（CIRCLE_AIMED 就是把 angleToPlayer 加进每一发的角度）。
     local function aim_stream(owner)
         task.New(owner, function()
             while true do
@@ -517,7 +452,8 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
                             i * 360 / AIM_COUNT, true, 0, false)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
-                task.Wait(max(AIM_GAP_MIN, AIM_GAP_BASE - AIM_GAP_STEP * photo_count))
+                task.Wait(max(AIM_GAP_MIN,
+                        AIM_GAP_BASE - AIM_GAP_STEP * photo_index(AIM_LIMIT)))
             end
         end)
     end
@@ -529,23 +465,18 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     local moths = {}
 
     function card:before()
-        photo_reset()
         moths = {}
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧（Sub2 的 ins_52(3) 调用 Sub3），
             ---而 Sub3 的 t=0 同时起主弹幕上下文并响一声（ins_106(5)）。
             PlaySound("tan00", 0.1, self.x / 256, false)
-            local base = Angle(self, player)
-            ring_stream(self, 0, RING_COLOR_A, base)
-            ring_stream(self, RING_HALF, RING_COLOR_B, base)
+            ring_stream(self)
             ---Sub3 的 t=600：亮卡名 → 起自机狙大圈 + 放出蛾。
             ---（我们这边卡名由符卡系统在开场就亮，所以这里只做后两件。）
             task.Wait(MOTH_WAIT - ENTRY_WAIT - ENTRY_TIME)
@@ -567,7 +498,6 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             end
         end
         moths = {}
-        photo_clear()
     end
 
     local LEVEL = 31
@@ -655,15 +585,6 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     ---子机的淡入 / 淡出（它在原作里靠「飞出屏幕就回收」，我们照做）。
     local DRONE_FADE_IN = 15
     local DRONE_ALPHA = 175                  -- §7.6：装饰层 alpha 压在 120~180
-
-    ---拍照节奏（文件头差异 1）：Sub2 的 ins_141(7) ⇒ 上限 7 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 300, 7
-
-    ---底帘（§7.3.1）：樱花瓣（§7.5 母题表：幽幽子 → 樱）。
-    local PETALS = {
-        style = sakura, color = COLOR.PURPLE, interval = 12,
-        vmin = 0.5, vmax = 1.1, angle = 270, spread = 18, turn = 0.35,
-    }
 
     local CARD_NAME = "蝶符「鳳蝶紋の死槍」"
     ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；沿用本仓库的 50 秒。
@@ -813,15 +734,12 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local drones = {}
 
     function card:before()
-        photo_reset()
         drones = {}
         lasers = {}
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -861,7 +779,6 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
             end
         end
         lasers = {}
-        photo_clear()
     end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -901,8 +818,7 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     ---而 count2 = 1 ⇒ index2 恒为 0。
     local RING_SPEED = 1.3
     local RING_BASE_COUNT = 32              -- ins_20：count1 = camera.photoIndex + 32
-    local PHOTO_LIMIT = 10                  -- ins_141(10) ⇒ count1 上限 42
-    local PHOTO_INTERVAL = LEG_TIME         -- 移植版的快门节拍（见文件头差异 1）
+    local PHOTO_LIMIT = 10                  -- ins_141(10) ⇒ count1 上限 42（photo_index 的截断值）
 
     ---两股弹的样式/颜色。原作两股是 type18/color0 与 type15/color4 两道 ANM 脚本，
     ---贴图都是小玉；这里按作者要求换成**蝶与水**滴，两股一眼分得开（§7.6：一张卡
@@ -915,13 +831,6 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     local RING_STYLE_B = water_drop
     local RING_COLOR_A = COLOR.PURPLE         -- Sub8 那圈：原作 type15（半径 4.0）→ butterfly（淡紫）
     local RING_COLOR_B = COLOR.DEEP_PURPLE    -- Sub7 那圈：原作 type18（半径 3.0）→ water_drop（深紫）
-
-    ---底帘（§7.3.1）：樱花瓣。§7.5 的母题表里幽幽子＝樱（cherry_bullet.png 的 sakura
-    ---样式），参数交给共用的 curtain_stream（见文件上半）。
-    local PETALS = {
-        style = sakura, color = COLOR.PURPLE, interval = 12,
-        vmin = 0.5, vmax = 1.1, angle = 270, spread = 18, turn = 0.35,
-    }
 
     local CARD_NAME = "死符「醉人之生、死之梦幻」"
     ---原作卡计时是 ins_114(10208) ≈ 170 秒 —— 那是拍照关留给玩家取景用的。
@@ -939,15 +848,13 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     ---  `check_stage.lua --all` 报「card_id 跨组重复：N（spell_card_data 会串）」。
     local CARD_ID = 416
 
-    ---拍照计数与快门演出都是**文件级共用**的（photo_count / take_photo / photo_clock /
-    ---class.shutter，见文件上半）。本卡只是按下面的 PHOTO_INTERVAL 推进它。
     ---──────────────────────── 演出 / 弹幕 ────────────────────────
 
     ---Sub7 / Sub8 的一次发弹：一整圈、定速直线。
     ---count1 的操作数是变量（ins_20 把 camera.photoIndex + 32 写进 intV0），
     ---所以每圈都在发弹那一刻重读一次 —— 两条上下文读的是同一个值，永远一致。
     local function fire_ring(owner, style, color)
-        local count = RING_BASE_COUNT + photo_count
+        local count = RING_BASE_COUNT + photo_index(PHOTO_LIMIT)
         local base = ran:Float(0, 360)      -- 原作 ins_89 的 angle = random(−π,π)
         local x, y = owner.x, owner.y
         for i = 0, count - 1 do
@@ -975,15 +882,11 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        ---photo_count 是文件级的变量，重打这张卡（或进练习）必须回到 0，
-        ---否则第二次进来直接就是 42 发一圈。
-        photo_reset()
     end
 
     function card:init()
         ---入场点：原作本体第一帧就把自己定到 (-128,-64)（场地外），第 100 帧才起步。
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -992,7 +895,6 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
             PlaySound("tan00", 0.1, self.x / 256, false)
             ring_stream(self, 0, RING_STYLE_A, RING_COLOR_A)
             ring_stream(self, RING_PHASE, RING_STYLE_B, RING_COLOR_B)
-            photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
             while true do
                 task.MoveTo(0, SWEEP_MID, LEG_TIME, EASE_IN)
                 task.MoveTo(0, SWEEP_BOTTOM, LEG_TIME, EASE_OUT)
@@ -1009,7 +911,6 @@ do  -- 75 死符「醉人之生、死之梦幻」（ecl17_c，幽幽子，组 1a
     end
 
     function card:del()
-        photo_clear()
     end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1119,15 +1020,6 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local MOTH_FIRST, MOTH_MORE = 0, 380 - ENTRY_WAIT - ENTRY_TIME
     local MOTH_COUNT1, MOTH_COUNT2 = 4, 8
     local MOTH_ALPHA = 165                   -- §7.6：装饰层 alpha 压在 120~180
-
-    ---拍照节奏（文件头差异 1）：Sub2 的 ins_141(4) ⇒ 上限 4 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 300, 4
-
-    ---底帘（§7.3.1）：樱花瓣（§7.5 母题表：幽幽子 → 樱）。
-    local PETALS = {
-        style = sakura, color = COLOR.PURPLE, interval = 13,
-        vmin = 0.5, vmax = 1.1, angle = 270, spread = 18, turn = 0.35,
-    }
 
     local CARD_NAME = "「死蝶浮月」"
     ---原作卡计时 ins_114(8408) ≈ 140 秒（拍照关留给玩家取景用）；沿用本仓库的 55 秒。
@@ -1350,15 +1242,12 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        photo_reset()
         lasers = {}
         moths = {}
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -1414,7 +1303,6 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             end
         end
         moths = {}
-        photo_clear()
     end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1436,7 +1324,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---我们这边的三处折扣（都写在这张卡的注释里）：
     ---  ① 「钥匙」做成**不出判定的法器装饰**（§7.4 的 C 类）—— 原作的子敌机本体能撞死人，
     ---     跟卡 71 的蛾 / 卡 73 的蝶子机一样，威胁全交给弹。
-    ---  ② 三连的**轮数** 12+rand(0..15) → 4 + photo_count/3（4~6 轮 ⇒ 12~18 发）：
+    ---  ② 三连的**轮数** 12+rand(0..15) → 3 + photoIndex/3（3~5 轮 ⇒ 9~15 发）：
     ---     原作一次 36~81 发是全游戏 640 弹槽 + 拍照清屏兜底，我们没有。
     ---  ③ 一轮的间隔 31 → 45 帧；钥匙飞出场地就淡出收掉（原作挂到 t=2000 才退役）。
     ---──────────────────────── 常量（改手感只动这一段） ────────────────────────
@@ -1465,7 +1353,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local KEY_FADE_IN, KEY_FADE_OUT = 20, 25
     local KEY_ALPHA = 170                   -- §7.6：装饰层 alpha 压在 120~180
     local KEY_BURST_PERIOD = 45
-    local KEY_BURST_BASE = 3                -- 轮数 = KEY_BURST_BASE + photo_count/3
+    local KEY_BURST_BASE = 3                -- 轮数 = KEY_BURST_BASE + photoIndex/3（原作 12+rand(0..15)）
     ---★ 贴脸停火（原作**没有**这一条，是本仓库的补丁）：钥匙是**不出判定的装饰**，
     ---要是它正好从自机身上碾过去还甩一轮三连，出膛到命中只有 2 帧 = 必中
     ---（实测：加这条之前自检报「贴脸狙 39 发、最短 2 帧」）。原作靠两件事绕开这个问题 ——
@@ -1485,21 +1373,14 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---自机狙小弹（Sub4）：ins_86(12, 1, 1, 1, 1.5, 1.5, 0, π/2, 514) = FAN_AIMED、
     ---count1 = 1 ⇒ 单发、正对自机；type12（半径 5）、速 1.5；每 45 帧一发。
     ---★ 原作只在 camera.photoIndex ≥ 3 之后才打（ins_44）—— 这是拍照关「拍够了才开始
-    ---给你上强度」的设计，我们照抄：photo_count < 3 时这一层不存在。
+    ---给你上强度」的设计，我们照抄：photo_index(PHOTO_LIMIT) < 3 时这一层不存在。
     local AIM_PERIOD = 45
     local AIM_FROM_PHOTO = 3
     local AIM_SPEED = 1.5
     local AIM_STYLE = water_drop
     local AIM_COLOR = COLOR.CYAN            -- water_drop 是 colorful ⇒ 色号 8 = 亮青 (70,204,207)
 
-    ---拍照节奏（文件头差异 1）：Sub2 的 ins_141(6) ⇒ 上限 6 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 300, 6
-
-    ---底帘（§7.3.1）：妖梦系用 water_drop 水滴（见文件上半的约定）。
-    local PETALS = {
-        style = water_drop, color = COLOR.CYAN, interval = 10,
-        vmin = 0.45, vmax = 1.0, angle = 270, spread = 16, turn = 0.3,
-    }
+    local PHOTO_LIMIT = 6                   -- Sub2 的 ins_141(6)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "密符「御大師様の秘鍵」"
     ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；沿用本仓库的 55 秒。
@@ -1518,7 +1399,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---三发分别在 base、base±90°（FAN 的奇数 count1 分支，和卡 73 的 fire_fan 同一条公式）。
     ---基准角在轮与轮之间**累加**（原作 floatV0 的 ins_15 写在循环体里、跨轮不重置）。
     local function fire_burst(key)
-        local n = KEY_BURST_BASE + int(photo_count / 3)
+        local n = KEY_BURST_BASE + int(photo_index(PHOTO_LIMIT) / 3)
         for k = 1, n do
             local base = key.aim + (k - 1) * KEY_BURST_STEP
             for _, off in ipairs({ 0, KEY_STEP, -KEY_STEP }) do
@@ -1604,12 +1485,12 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
         end)
     end
 
-    ---自机狙小弹（Sub4）：photo_count ≥ AIM_FROM_PHOTO 之后，每 45 帧一发正对自机。
+    ---自机狙小弹（Sub4）：photoIndex ≥ AIM_FROM_PHOTO 之后，每 45 帧一发正对自机。
     local function aim_stream(owner)
         task.New(owner, function()
             while true do
                 task.Wait(AIM_PERIOD)
-                if photo_count >= AIM_FROM_PHOTO then
+                if photo_index(PHOTO_LIMIT) >= AIM_FROM_PHOTO then
                     local a = Angle(owner.x, owner.y, player.x, player.y)
                     NewSimpleBullet(AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED, a,
                             false, 0, false)
@@ -1623,14 +1504,11 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        photo_reset()
         keys = {}
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -1657,7 +1535,6 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
             end
         end
         keys = {}
-        photo_clear()
     end
 
     boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1709,19 +1586,12 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     ---小圈（Sub6）：ins_89(18, 1, intV0, 1, 2.0, 1.5, rand(-π,π), 0.1848, 514)。
     ---type18（半径 3）、color 1、每 4 帧一圈、圈数 = photoIndex/3 + 1（1~3）。
     local RING_PERIOD = 4
-    local RING_BASE_COUNT = 1               -- 1 + photo_count/3
+    local RING_BASE_COUNT = 1               -- 1 + photoIndex/3
     local RING_SPEED = 2.0
     local RING_STYLE = water_drop
     local RING_COLOR = COLOR.CYAN           -- water_drop 是 colorful ⇒ 色号 8 = 亮青 (70,204,207)
 
-    ---拍照节奏（文件头差异 1）：Sub2 的 ins_141(7) ⇒ 上限 7 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 300, 7
-
-    ---底帘（§7.3.1）：妖梦系用 water_drop 水滴。
-    local PETALS = {
-        style = water_drop, color = COLOR.CYAN, interval = 11,
-        vmin = 0.45, vmax = 1.0, angle = 270, spread = 16, turn = 0.3,
-    }
+    local PHOTO_LIMIT = 7                   -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "行符「八千万枚護摩」"
     ---原作卡计时 ins_114(8408) ≈ 140 秒；沿用本仓库的 50 秒。
@@ -1762,9 +1632,9 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
         PlaySound("tan00", 0.1, x / 256, false)
     end
 
-    ---一小圈（Sub6）：圈数 = 1 + photo_count/3，相位每圈重抽（原作 angle = rand(-π,π)）。
+    ---一小圈（Sub6）：圈数 = 1 + photoIndex/3，相位每圈重抽（原作 angle = rand(-π,π)）。
     local function fire_ring(owner)
-        local count = RING_BASE_COUNT + int(photo_count / 3)
+        local count = RING_BASE_COUNT + int(photo_index(PHOTO_LIMIT) / 3)
         local base = ran:Float(0, 360)
         for i = 0, count - 1 do
             NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y, RING_SPEED,
@@ -1804,13 +1674,10 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        photo_reset()
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -1826,7 +1693,6 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     end
 
     function card:del()
-        photo_clear()
     end
 
     boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1852,8 +1718,8 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     ---     见 PhotoBulletSpawnDescriptor.hpp:82-107 的位表）⇒ 最后 ~1.02 px/帧。
     ---    所以这是一片**先悬在半空、再慢慢飘走**的蝶云（母题：役小角身边的蝶）。
     ---我们这边的三处折扣 / 差异：
-    ---  ① 俯冲速度**封顶 6 px/帧**（原作 photoIndex*2、最多 16）。16 px/帧 的撞击
-    ---     在没有拍照闪避的体系里躲不掉；6 px/帧 还能靠提前横移让开。
+    ---  ① 俯冲速度**封顶 6 px/帧**（原作 photoIndex*2、photoIndex 上限 8 ⇒ 最多 16）。
+    ---     16 px/帧 的撞击在没有拍照闪避的体系里躲不掉；6 px/帧 还能靠提前横移让开。
     ---  ② 蝶云只在入场后开一次（原作每次俯冲都重启上下文）。重启只是重置相位
     ---     （ins_117 用的是**固定槽位**、会把上一个上下文 free 掉，EclRunTargetHigh.inl:206，
     ---     不会叠加），图案完全一样，省掉一次协程抖动。
@@ -1903,14 +1769,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     ---色号 8 → butterfly4 = (193,216,235) 冰蓝。
     local CLOUD_COLOR_A, CLOUD_COLOR_B = COLOR.CYAN, COLOR.BLUE
 
-    ---拍照节奏（文件头差异 1）：Sub2 的 ins_141(8) ⇒ 上限 8 张。
-    local PHOTO_INTERVAL, PHOTO_LIMIT = 260, 8
-
-    ---底帘（§7.3.1）：妖梦系用 water_drop 水滴。
-    local PETALS = {
-        style = water_drop, color = COLOR.CYAN, interval = 9,
-        vmin = 0.45, vmax = 1.0, angle = 270, spread = 16, turn = 0.3,
-    }
+    local PHOTO_LIMIT = 8                   -- Sub2 的 ins_141(8)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "超人「飛翔役小角」"
     ---原作卡计时 ins_114(7208) ≈ 120 秒；沿用本仓库的 50 秒。
@@ -1980,7 +1839,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
                     local nx = ran:Float(-DIVE_X_RANGE, DIVE_X_RANGE)
                     owner.x, owner.y = nx, DIVE_SPAWN_Y
                     a = Angle(nx, DIVE_SPAWN_Y, player.x, player.y)
-                    speed = min(DIVE_SPEED_MAX, photo_count * 2)
+                    speed = min(DIVE_SPEED_MAX, photo_index(PHOTO_LIMIT) * 2)
                     accel = DIVE_ACCEL
                     object.SetV(owner, speed, a, true)
                     -- 定位置音效：原作的 ins_106(16)（一个与发弹无关的提示音）
@@ -1996,13 +1855,10 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        photo_reset()
     end
 
     function card:init()
         self.x, self.y = BOSS_X, BOSS_START_Y
-        curtain_stream(self, PETALS)
-        photo_clock(self, PHOTO_INTERVAL, PHOTO_LIMIT)
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(BOSS_HOME_X, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -2018,7 +1874,6 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     end
 
     function card:del()
-        photo_clear()
     end
 
     boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
