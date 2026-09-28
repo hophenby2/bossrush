@@ -12,6 +12,14 @@
 ---    中心、y 朝上（Lscreen.lua 的 SetWorld(288,46,384,448) → l=−192,r=192,b=−224,t=224）。
 ---    两边尺寸相同，所以换算是纯平移 + y 翻转、**没有比例缩放**：
 ---        x_我们 = x_原作 − 192        y_我们 = 224 − y_原作        角度整体取反
+---  · 角度单位（本文件唯一一条换算规则，改代码前先读这条）：
+---      文件内部所有角度一律是**我们坐标系的弧度** —— `math.cos/sin/atan2`、点积、加减 PI
+---      全部按弧度算，任何地方都不用引擎那套「角度制的 sin/cos」（Lapi.lua:110 的
+---      `sin = lstg.sin`）。只有写进引擎的 `obj.rot`（角度制，GameObject.cpp:590 × L_DEG_TO_RAD；
+---      THlib 的 laser 也是拿引擎 cos/sin 画和判，所以 laser:init 的 rot 同样是角度制，
+---      THlib/laser/laser.lua:26/113/128）时才 `× RAD` 换成角度制。
+---      ⇒ 下面每个 laser 类的 `init(x, y, ang, …)` **统一收我们坐标系的弧度**，换算只发生在
+---        它自己那一次 `laser.init(…, ang * RAD, …)` 里；调用方不要预先换算、也不要再取反。
 ---  · rank 固定取 32（移植版没有难度系统）。原作 Last Word 全程是符卡，出弹的 rank 缩放
 ---    整段被 `if (!g_Spellcard.IsActive())` 挡住（EclDependencies.cpp:735-761），
 ---    所以 rank 取多少都不进算式 —— 记一笔备查。
@@ -2698,7 +2706,8 @@ lw207_laser = Class(laser, {
     init = function(self, x, y, angle, color, start_time)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 640 的身部。
-        laser.init(self, color, x, y, angle, 0, LASER_LENGTH, 0, 1.2, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, color, x, y, angle * RAD, 0, LASER_LENGTH, 0, 1.2, 0, 0)
         self.lw207_state = 1
         self.lw207_timer = 0
         self.lw207_start_time = start_time
@@ -3455,6 +3464,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---TH08 世界坐标 → 我们坐标（换算见文件头）：x' = x−192、y' = 224−y、角度整体取反。
 local function to_th08_x(x) return x + 192 end
@@ -3595,7 +3605,8 @@ lw209_laser = Class(laser, {
     init = function(self, x, y, angle)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 600 的身部。
-        laser.init(self, COLOR209, x, y, angle, 0, LASER_LEN, 0, LASER_W0, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, COLOR209, x, y, angle * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
         self.lw209_state = 1
         self.lw209_timer = 0
         self.alpha = 1
@@ -5222,7 +5233,8 @@ lw212_laser = Class(laser, {
     init = function(self, x, y, angle)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 512 的身部。
-        laser.init(self, COLOR_LASER, x, y, angle, 0, LASER_LEN, 0, LASER_W0, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, COLOR_LASER, x, y, angle * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
         self.lw212_state = 1
         self.lw212_timer = 0
         self.alpha = 1
@@ -5407,7 +5419,7 @@ local function s45_step(owner)
         for i = 1, 4 do
             local l = s.lasers[i]
             if IsValid(l) then
-                l.rot = l.rot + S45_SPIN_DIR[i] * S45_SPIN_STEP
+                l.rot = l.rot + S45_SPIN_DIR[i] * S45_SPIN_STEP * RAD   -- STEP 存的是弧度（4.5°）
             end
         end
     elseif k >= S45_SPIN_FIRST + S45_SPIN_FRAMES then
@@ -8202,6 +8214,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（见文件头「角度单位」）
 
 ---色号：TH08 的 c → 我们的 c + 1（COLOR.DEEP_RED = 1，bulletStyle.lua:267）。
 local function th08_color(c) return c + 1 end
@@ -8523,10 +8536,11 @@ lw217_sat = Class(object, {
 
 ---斩击实体（Sub2）。原作是一条 16×1024 的**致命**判定（见卡头注释），移植版做成纯观感。
 lw217_slash = Class(laser, {
-    init = function(self, x, y)
+    ---ang = **我们坐标系的弧度**（本文件所有 laser 类统一口径，见文件头「角度单位」）。
+    init = function(self, x, y, ang)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）。
-        ---rot = 90（角度制）→ 沿 +y 竖着长 683 px，正好贯穿场地。
-        laser.init(self, 2, x, y, 90, 0, SLASH_LEN, 0, SLASH_W, 0, 0)
+        ---ang = π/2 → 沿 +y 竖着长 683 px，正好贯穿场地。
+        laser.init(self, 2, x, y, ang * RAD, 0, SLASH_LEN, 0, SLASH_W, 0, 0)
         self.colli = false
         self.alpha = 1
         self.w = SLASH_W
@@ -8547,7 +8561,7 @@ lw217_slash = Class(laser, {
 
 ---`ins_94(2, dx, 0, …)`：在 BOSS 身上 + dx 生成一条斩击，再被 `ins_63` 把 y 挪到场地正中。
 local function spawn_slash(owner, dx)
-    slashes[#slashes + 1] = New(lw217_slash, owner.x + dx, -SLASH_LEN / 2)
+    slashes[#slashes + 1] = New(lw217_slash, owner.x + dx, -SLASH_LEN / 2, PI / 2)
 end
 
 ---`ins_93(5, ENEMY_POSITION_X, extraFloat1, …)`：在 (BOSS.x, extraFloat1) 生成一颗卫星。
@@ -9557,10 +9571,11 @@ end
 ---光柱（`ins_114`）。状态机照 BulletManager.cpp:1082-1150 抄；
 ---`alpha = 1` 是 THlib laser:frame 开判定的条件（THlib/laser/laser.lua:91）。
 laser_cls = Class(laser, {
-    init = function(self, x, y, ang_th, color)
+    ---★ ang = **我们坐标系的弧度**（跟本文件其它 laser 类同一个口径，见文件头「角度单位」）。
+    init = function(self, x, y, ang, color)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        ---第一位在 THlib 里就是**颜色**（贴图组 1..16）；rot 要**角度制**。
-        laser.init(self, color, x, y, -ang_th * RAD,
+        ---第一位在 THlib 里就是**颜色**（贴图组 1..16）；rot 要**角度制** ⇒ 唯一的换算点。
+        laser.init(self, color, x, y, ang * RAD,
                    LASER_TAIL, LASER_BODY, LASER_TAIL, LASER_W0, 0, 0)
         self.lw_state, self.lw_t = 1, 0
         self.alpha = 1
@@ -9649,10 +9664,12 @@ local function make_emitter(dir, color)
                     ---原作 SpawnLaserPattern 是**找空槽**（BulletManager.cpp:744-790）：
                     ---256 个槽都占着就直接不生成（本卡实际最多几十条，不触顶，照抄兜底）。
                     if laser_used() < LASER_POOL then
-                        local r = -lf2 * RAD
-                        local lx = self.x + LASER_X0 * cos(r)
-                        local ly = self.y + LASER_X0 * sin(r)
-                        local l = New(laser_cls, lx, ly, lf2, color)
+                        ---lf2 是 TH08 口径的弧度；我们坐标系里角度整体取反 ⇒ 换成我们的
+                        ---弧度角（**不**在这里乘 RAD；laser_cls 自己换算成角度制）。
+                        local ang = -lf2
+                        local lx = self.x + LASER_X0 * math.cos(ang)
+                        local ly = self.y + LASER_X0 * math.sin(ang)
+                        local l = New(laser_cls, lx, ly, ang, color)
                         self.lw_slots[k] = l
                         lasers[#lasers + 1] = l
                     end
@@ -17197,6 +17214,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---TH08 世界坐标 → 我们坐标（见文件头）：x' = x − 192、y' = 224 − y、角度整体取反。
 ---（我们的 y 越大越靠上：y_TH08 = 0 = 屏幕顶 ⇒ 我们 224；自机在下面 = 我们 y < 0。）
@@ -17285,7 +17303,8 @@ local lw166_laser = Class(laser, {
     init = function(self, x, y, angle, color)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 400 的身部。
-        laser.init(self, color, x, y, angle, 0, LASER_LEN, 0, LASER_W0, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, color, x, y, angle * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
         self.lw166_state = 1
         self.lw166_t = 0
         self.alpha = 1
@@ -18439,6 +18458,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---TH08 世界坐标 ↔ 我们坐标（见文件头）：x' = x − 192、y' = 224 − y、角度整体取反。
 ---（我们的 y 越大越靠上：y_TH08 = 0 = 屏幕顶 ⇒ 我们 224。）
@@ -18584,7 +18604,8 @@ end
 local lw154_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        laser.init(self, color, x, y, angle, 0, 0, 0, LASER_W0, 0, 0)
+---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
         self.bound = false            -- 寿命只由状态机 / 偏移决定，起点出界不回收
         self.alpha = 1                -- THlib laser:frame 开判定的条件之一
         self.colli = false
@@ -18736,7 +18757,7 @@ local familiar = Class(object, {
         self.colli = false
         self.navi = false
         self.bound = false
-        self.rot = dir                      -- `SET_ANM_ROTATION_ENABLED 1`
+        self.rot = dir * RAD                -- `SET_ANM_ROTATION_ENABLED 1`：dir 是弧度
         self._blend, self._a = "", 255
         self.lw154_t = 0
         self.lw154_ang = dir                -- 我们的口径（movementAngle）
@@ -18784,7 +18805,7 @@ local familiar = Class(object, {
         self.lw154_ang = wrap_pi(self.lw154_ang + self.lw154_w)
         self.x = self.x + math.cos(self.lw154_ang) * self.lw154_speed
         self.y = self.y + math.sin(self.lw154_ang) * self.lw154_speed
-        self.rot = self.lw154_ang
+        self.rot = self.lw154_ang * RAD
         self.lw154_t = t + 1
     end,
 })
@@ -18949,6 +18970,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
 ---（跟文件头的 EX.scr_x / EX.scr_y 是同一个换算，这里只为了本卡片块自足。）
@@ -19102,7 +19124,8 @@ end
 local lw158_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        laser.init(self, color, x, y, angle, 0, 0, 0, LASER_W0, 0, 0)
+---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
         self.bound = false            -- 寿命只由状态机 / 偏移决定，起点出界不回收
         self.alpha = 1                -- THlib laser:frame 开判定的条件之一
         self.colli = false
@@ -19199,7 +19222,7 @@ local familiar = Class(object, {
         self.colli = false
         self.navi = false
         self.bound = false
-        self.rot = dir                      -- `SET_ANM_ROTATION_ENABLED 1`
+        self.rot = dir * RAD                -- `SET_ANM_ROTATION_ENABLED 1`：dir 是弧度
         self._blend, self._a = "", 255
         self.lw158_t = 0
         self.lw158_dir = dir                -- 我们的口径
@@ -19473,6 +19496,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
 local function to_th08_x(x) return x + 192 end
@@ -19600,7 +19624,8 @@ end
 local lw162_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        laser.init(self, color, x, y, angle, 0, 0, 0, LASER_W0, 0, 0)
+---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
         self.bound = false            -- 寿命只由状态机 / 偏移决定，起点出界不回收
         self.alpha = 1                -- THlib laser:frame 开判定的条件之一
         self.colli = false
@@ -19697,7 +19722,7 @@ local familiar = Class(object, {
         self.colli = false
         self.navi = false
         self.bound = false
-        self.rot = dir                      -- `SET_ANM_ROTATION_ENABLED 1`
+        self.rot = dir * RAD                -- `SET_ANM_ROTATION_ENABLED 1`：dir 是弧度
         self._blend, self._a = "", 255
         self.lw162_t = 0
         self.lw162_dir = dir                -- 我们的口径
@@ -19936,6 +19961,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---BOSS 落位与夹框（见头部）：`ins_64(60, 4, 192, 128)` 的目标 = TH08 (192,128) = 我们 (0,96)。
 local BOSS_X, BOSS_Y = 0, 96
@@ -20064,7 +20090,7 @@ local familiar = Class(object, {
         self.colli = false                  -- 原作可被击破，移植版按本文件口径不给判定
         self.navi = false
         self.bound = false
-        self.rot = dir                      -- `SET_ANM_ROTATION_ENABLED 1`
+        self.rot = dir * RAD                -- `SET_ANM_ROTATION_ENABLED 1`：dir 是弧度
         self._blend, self._a = "", 255
         self.lw31_t = 0
         self.lw31_dir = dir                 -- lf0（我们口径）= 飞出去的方向
@@ -20610,6 +20636,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 
 ---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
 local function wrap_pi(a)
@@ -20774,7 +20801,7 @@ local familiar = Class(object, {
         self.colli = false                  -- 原作 300 血可击破；本文件口径不给判定
         self.navi = false
         self.bound = false                  -- 不夹框，一路飞出场地（见卡头注释）
-        self.rot = dir                      -- `REPLACE_ALIGNMENT_EFFECT 1`：贴图朝飞行方向
+        self.rot = dir * RAD                -- `REPLACE_ALIGNMENT_EFFECT 1`：贴图朝飞行方向
         self._blend, self._a = "", 255
         self.lw15_t = 0
         self.lw15_dir = dir                 -- lf0（我们口径）= 飞出去的方向
@@ -21371,6 +21398,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 local TAU = 2 * PI
 
 ---TH08 世界坐标 → 我们坐标（换算见文件头）：x' = x−192、y' = 224−y、角度整体取反。
@@ -21597,7 +21625,8 @@ end
 lw146_laser = Class(laser, {
     init = function(self, x, y, ang)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        laser.init(self, LASER_COLOR_IDX, x, y, ang, 0, LASER_LEN, 0, LASER_W, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, LASER_COLOR_IDX, x, y, ang * RAD, 0, LASER_LEN, 0, LASER_W, 0, 0)
         self.lw146_state = 1
         self.lw146_timer = 0
         self.alpha = 1
@@ -22642,6 +22671,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 local TAU = 2 * PI
 
 ---IsWithinPlayfield（GameManager.cpp:132-150）：加半个精灵宽高之后还在不在场地里。
@@ -22725,7 +22755,8 @@ end
 local lw134_laser = Class(laser, {
     init = function(self, x, y, ang)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        laser.init(self, LASER_COLOR, x, y, ang, 0, LASER_LEN, 0, LASER_W0, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, LASER_COLOR, x, y, ang * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
         self.lw134_state = 1
         self.lw134_t = 0
         self.alpha = 1
@@ -22841,7 +22872,7 @@ local function brain_tick(self, t)
         for i = 1, LASER_N do
             local l = self.b_lasers[i]
             if IsValid(l) then
-                l.rot = wrap_pi(self.b_ang + LASER_OFF[i])
+                l.rot = wrap_pi(self.b_ang + LASER_OFF[i]) * RAD
                 l.x, l.y = self.x, self.y
             end
         end
@@ -23552,6 +23583,7 @@ end
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
+local RAD = 57.29577951308232   -- 弧度 → 角度：引擎的 `.rot` 是角度制（AGENTS.md C1）
 local TAU = 2 * PI
 
 ---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
@@ -23672,7 +23704,8 @@ lw126_laser = Class(laser, {
     init = function(self, x, y, angle)
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 70 的身部。
-        laser.init(self, LASER_COLOR, x, y, angle, 0, LASER_LEN, 0, LASER_W0, 0, 0)
+        ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
+        laser.init(self, LASER_COLOR, x, y, angle * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
         self.l_state, self.l_timer = 1, 0
         self.alpha = 1
         self.colli = false      -- STARTING 段没有判定（hitboxStartTime == startTime == 60）
