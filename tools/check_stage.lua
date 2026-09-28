@@ -696,15 +696,47 @@ local function New(class, ...)
     -- ★ 运行期校验 `img`：引擎在设这个属性时会查资源池，名字不存在就崩
     --   （`can't find resource 'X'`）。静态扫源码扫不到 `self.img = o.img or "Ghost1"`
     --   这种「字面量在 fallback 位置」的写法，所以必须在赋值这一刻拦。
-    local o = setmetatable({}, {
-        __index = class,
-        __newindex = function(t, k, v)
-            if k == "img" and type(v) == "string" and not RES[v] then
-                error(("img = %q 不在资源池里 —— 真机上会崩 `can't find resource '%s'`"):format(v, v), 2)
-            end
-            rawset(t, k, v)
-        end,
-    })
+    local function assignField(t, k, v)
+        if k == "img" and type(v) == "string" and not RES[v] then
+            error(("img = %q 不在资源池里 —— 真机上会崩 `can't find resource '%s'`"):format(v, v), 2)
+        end
+        rawset(t, k, v)
+    end
+
+    ---★STAGE_STRICT_NEW=1 时把 `__index` 收紧到真机的语义，专门抓「把方法写在 `Class`
+    ---  的 define 里、再用 `self:方法()` 调」这种写法。真机对象表的 `__index` 兜底只做
+    ---  `lua_rawget(self, key)`（LuaSTG-Sub/LuaBinding/modern/GameObject.cpp:444，
+    ---  且 MapGameObjectMember 对长度 > 8 的键直接返回 unknown）⇒ **类表上的方法在实例上
+    ---  读不到**，真机当场 `attempt to call method 'X' (a nil value)`；而默认的宽松
+    ---  `__index = class` 会替它兜住，自检一个错都不报（th31 卡 146 的 `self:w146_tick(0)`
+    ---  就这么漏到真机）。回调是例外：真机的 init/del/frame/render/colli/kill 走的是
+    ---  `class[1..6]`，不是实例查表，所以这里照旧抄一份到实例上，免得驱动循环先炸。
+    ---  ⚠ 只拦「类表上是函数」的键；类表上的**数据**字段仍然兜底（比真机宽松，真机上
+    ---     它们也是 nil）—— 免得把别的关卡文件的一堆无关写法报成错。
+    ---  默认（不开这个环境变量）走原来的 `__index = class`，零额外开销。
+    local STRICT_NEW = os.getenv("STAGE_STRICT_NEW") ~= nil
+    local o
+    if STRICT_NEW then
+        o = setmetatable({}, {
+            __index = function(t, k)
+                local v = rawget(t, k)
+                if v ~= nil then return v end
+                local cv = class[k]
+                if type(cv) == "function" then
+                    error(("attempt to call method '%s' (a nil value) —— 类表上的方法实例读不到，" ..
+                            "必须写成模块级 local function + 显式第一参（或 `类.方法(self, …)`）")
+                            :format(tostring(k)), 2)
+                end
+                return cv
+            end,
+            __newindex = assignField,
+        })
+        for _, cn in ipairs({ "init", "del", "frame", "render", "colli", "kill" }) do
+            o[cn] = class[cn]
+        end
+    else
+        o = setmetatable({}, { __index = class, __newindex = assignField })
+    end
     o.class = class
     o.timer, o.ani = 0, 0
     o.hscale, o.vscale = 1, 1

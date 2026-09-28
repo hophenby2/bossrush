@@ -635,6 +635,34 @@ end
 `background.Capture(self)`。漏了 → 背景没有 group/layer → 被画在**自机和 boss 上面**，
 而整屏背景不透明 → **屏幕上只剩背景，自机和 boss 都看不见**（th19 的 `TH19_bg`）。
 
+**A6. `Class(object, {...})` 的 define 里定义的方法，不能用 `self:方法()` 调 —— 真机必崩。**
+真机对象表的 `__index` 兜底只做 `lua_rawget(self, key)`
+（`LuaSTG-Sub/LuaBinding/modern/GameObject.cpp:444`；而且 `MapGameObjectMember` 对长度 > 8 的键
+直接返回 unknown）—— **类表上的方法在实例上根本读不到**，`self.方法` 恒为 `nil`
+⇒ `attempt to call method 'X' (a nil value)`。
+THlib 自己全是绕开的写法：`bullet.lua` 用局部 upvalue `ChangeImage(self, …)`、
+`laser.lua:244` 用 `laser.ChangeImage(self, …)`、`player.lua:163` 的 grazer 干脆把方法
+抄到实例上（`self.other_frame = grazer.other_frame`）。
+
+```lua
+-- ✗ 真机当场崩；桩件的宽松 __index 会替它兜住，自检一个错都不报
+lw_foo = Class(object, {
+    tick = function(self, t) … end,
+    frame = function(self) self:tick(1) end,
+})
+-- ✓ 模块级 local function + 显式第一参（th32/th31 的写法）
+local function foo_tick(self, t) … end
+lw_foo = Class(object, {
+    frame = function(self) foo_tick(self, 1) end,
+})
+```
+
+⚠ `check_stage.lua` 默认的 `New` 用的是 `__index = class`，**测不出**这一类；
+要开 `STAGE_STRICT_NEW=1`（见 §10）才拦得住。
+2026-09-28：th31 卡 146「禁薬「蓬莱の薬」」的 `self:w146_tick(0)` 漏到真机就是这一条，
+同一个文件里另有 14 处同类写法（`ChangeImage` / `tick` / `step_move` / `begin_move` /
+`hermite` / `shot22` / `shot23` / `drift` / `advance` / `gun_volley` / `orbit_step`）一并改掉了。
+
 ### B. 会静默失效的（不报错，但东西没了）
 
 **B1. `% N == 偏移` 里的偏移必须 < N。** 否则那个分支永远不成立，
@@ -728,6 +756,7 @@ th04 第三版的装饰蝶 / 花瓣就是这么「不动」的：3600→7200 帧
 luajit tools/check_stage.lua mod/GAME/th20.lua        # 单关：注册检查 + 逐卡逐帧模拟
 luajit tools/check_stage.lua mod/GAME/th20.lua 1800 --threat   # 加密度 / 难度分析
 luajit tools/check_stage.lua --all                    # 全项目：按引擎顺序载入检查
+STAGE_STRICT_NEW=1 luajit tools/check_stage.lua mod/GAME/th20.lua   # 收紧 __index：抓 self:类方法()
 ```
 
 用 `luajit`（5.1 语义），**别用 homebrew 的 `luac`**（那是 5.4，会把 5.1 风格的
@@ -741,6 +770,9 @@ luajit tools/check_stage.lua --all                    # 全项目：按引擎顺
 - **`--threat`**：机器人模拟自机，报 `★被打频率`、`60px 内弹数`、`★安全角度`、
   `★分区域`、`★难度场`、`死局 N 帧 (%)`
 - **贴图名**：对象上设 `img` 时对资源池校验（见 A2）
+- **`STAGE_STRICT_NEW=1`**：把桩件 `New` 的 `__index` 收紧成真机语义
+  （`rawget(self, key)`，见 A6），抓「类表上的方法被 `self:方法()` 调」这一类
+  —— 默认宽松模式**永远测不出来**
 - **`--all`** 里还有一条静态检查：`*_bg.lua` 必须能找到 `background.init(`
 
 ### 它查不出来（只能进游戏看）

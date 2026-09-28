@@ -607,7 +607,9 @@ local function advance(self)
                 self.ex_half = half
                 ---bullet:ChangeImage(imgclass, index)（THlib/bullet/bullet.lua:116）——
                 ---不是全局函数，是弹类的方法（踩过：全局 ChangeImage 是空的）。
-                self:ChangeImage(style, EX.color(r.i1))
+                ---★ 也不能写 `self:ChangeImage(…)`：本引擎实例读不到类表上的方法
+                ---  （见卡 146 的长注），必须显式把类表当第一参传 —— laser.lua 也是这么调的。
+                bullet.ChangeImage(self, style, EX.color(r.i1))
                 again = true
             elseif k == K_SND then
                 again = true                    -- PLAY_SOUND：移植版不放音效
@@ -1697,7 +1699,8 @@ storm_bullet = Class(bullet, {
             if kind == K_CULL_DELAY then
                 self.tf_cull = r.frames
             elseif kind == K_SPRITE then
-                self:ChangeImage(r.style, r.color)
+                ---★ 不能写 `self:ChangeImage(…)`（实例读不到类表方法，见卡 146 的长注）。
+                bullet.ChangeImage(self, r.style, r.color)
             elseif kind == K_PLAY_SOUND then
                 -- 原作是 PlaySoundPositionedByIdx(27, x)，占位：不出声
             elseif kind == K_WAIT then
@@ -21648,6 +21651,51 @@ lw146_laser = Class(laser, {
 ---的 "white" 顶替，只留「每 16 tick 往前长 109 px」这条链的几何。它自己也是一份
 ---bulletSpawnDescriptor：槽 0 = DESPAWN（那 8 发火花出生当帧就进消失动画）。
 ---------------------------------------------------------------
+---★ 这两个 helper 必须写成模块级 local function + **显式第一参**，不能塞进 Class 的
+---  define 里再用 `self:方法()` 调：本引擎对象表的 `__index` 兜底只做
+---  `lua_rawget(self, key)`（LuaSTG-Sub/LuaBinding/modern/GameObject.cpp:444，且
+---  MapGameObjectMember 对长度 > 8 的键直接返回 unknown）⇒ **类表上的方法在实例上
+---  根本读不到**，`self.w146_tick` 恒为 nil。THlib 自己也是这么绕的：bullet.lua 用
+---  局部 upvalue、laser.lua 用 `laser.ChangeImage(self, …)`、player.lua 的 grazer 干脆
+---  把方法抄到实例上（`self.other_frame = grazer.other_frame`）。
+---  ⚠ 桩件 tools/check_stage.lua 的 New 用 `__index = class`（宽松版），**测不出**这个错。
+local function web_step(self)
+    ---EnemyManager.cpp:80-121 的 INTERPOLATED 分支（缓动 0 = 线性）：每**真帧**走 1/16。
+    self.w146_rt = self.w146_rt + 1
+    local u = self.w146_rt / NODE_STEPS
+    if u > 1 then u = 1 end
+    self.x = self.w146_x0 + self.w146_dx * u
+    self.y = self.w146_y0 + self.w146_dy * u
+end
+
+local function web_tick(self, t)
+    if t == 0 then
+        ---ins_114：光段生成在**移动前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
+        ---光柱槽满就整发不生成（`Laser lasers[0x100]`，BulletManager.hpp:313-339）。
+        if laser_used() < LASER_SLOTS then
+            lasers[#lasers + 1] = New(lw146_laser, self.x, self.y, self.w146_dir)
+        end
+    end
+    ---8 发火花：tick 0,2,…,14 各一发（xi1 = 8 的 JUMP_DEC 循环，`time := 0` 每轮 2 tick）。
+    if t <= 2 * (NODE_SPARKS - 1) and t % 2 == 0 then
+        EX.shoot(self, self.x, self.y, {
+            op = 99, type = SPARK_TYPE, color = EX.color(SPARK_COLOR),
+            count1 = 1, count2 = 1, speed1 = SPARK_SPEED, speed2 = 1,
+            angle = ran:Float(-PI, PI), step = SPARK_STEP, flags = SPARK_FLAGS,
+        })
+    end
+    ---tick 16：`ins_94(Sub79)`。这一帧的 RunEcl 仍在位移之前，而 ins_64 的线性插值
+    ---刚好在第 16 帧走满 109 px ⇒ 子节点正好生在光段的另一端（首尾相接的折线）。
+    ---方向 = lf1 + lf2（lf1 = 本节点出生时的 lf0）、lf2 原样继承；然后自己 TERMINATE。
+    if t >= NODE_TICKS then
+        webs[#webs + 1] = New(lw146_web, self.x, self.y,
+                self.w146_dir + self.w146_delta, self.w146_delta)
+        object.RawDel(self)
+        return false
+    end
+    return true
+end
+
 lw146_web = Class(object, {
     ---x, y = 出生点；dir = 本节点的 lf0（已取反到我们的角度）；delta = lf2（原样继承）。
     init = function(self, x, y, dir, delta)
@@ -21670,45 +21718,10 @@ lw146_web = Class(object, {
         self.w146_acc = 0
         EX.set_record(self, 0, EX.K.DESPAWN, 0, -1, -1, -1, -1)
         ---出生帧：RunEcl（tick 0）先跑，位移后跑 —— 这里手动补一次位移（见下）。
-        self:w146_tick(0)
-        self:w146_step()
+        web_tick(self, 0)
+        web_step(self)
     end,
     render = function() end,
-    ---EnemyManager.cpp:80-121 的 INTERPOLATED 分支（缓动 0 = 线性）：每**真帧**走 1/16。
-    w146_step = function(self)
-        self.w146_rt = self.w146_rt + 1
-        local u = self.w146_rt / NODE_STEPS
-        if u > 1 then u = 1 end
-        self.x = self.w146_x0 + self.w146_dx * u
-        self.y = self.w146_y0 + self.w146_dy * u
-    end,
-    w146_tick = function(self, t)
-        if t == 0 then
-            ---ins_114：光段生成在**移动前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
-            ---光柱槽满就整发不生成（`Laser lasers[0x100]`，BulletManager.hpp:313-339）。
-            if laser_used() < LASER_SLOTS then
-                lasers[#lasers + 1] = New(lw146_laser, self.x, self.y, self.w146_dir)
-            end
-        end
-        ---8 发火花：tick 0,2,…,14 各一发（xi1 = 8 的 JUMP_DEC 循环，`time := 0` 每轮 2 tick）。
-        if t <= 2 * (NODE_SPARKS - 1) and t % 2 == 0 then
-            EX.shoot(self, self.x, self.y, {
-                op = 99, type = SPARK_TYPE, color = EX.color(SPARK_COLOR),
-                count1 = 1, count2 = 1, speed1 = SPARK_SPEED, speed2 = 1,
-                angle = ran:Float(-PI, PI), step = SPARK_STEP, flags = SPARK_FLAGS,
-            })
-        end
-        ---tick 16：`ins_94(Sub79)`。这一帧的 RunEcl 仍在位移之前，而 ins_64 的线性插值
-        ---刚好在第 16 帧走满 109 px ⇒ 子节点正好生在光段的另一端（首尾相接的折线）。
-        ---方向 = lf1 + lf2（lf1 = 本节点出生时的 lf0）、lf2 原样继承；然后自己 TERMINATE。
-        if t >= NODE_TICKS then
-            webs[#webs + 1] = New(lw146_web, self.x, self.y,
-                    self.w146_dir + self.w146_delta, self.w146_delta)
-            object.RawDel(self)
-            return false
-        end
-        return true
-    end,
     frame = function(self)
         ---ECL：context time 每真帧 += fm（ZunTimer，Supervisor.cpp:1165-1185）。
         self.w146_acc = self.w146_acc + EX.fm
@@ -21716,9 +21729,9 @@ lw146_web = Class(object, {
             self.w146_acc = self.w146_acc - 1
             local t = self.w146_t + 1
             self.w146_t = t
-            if not self:w146_tick(t) then return end
+            if not web_tick(self, t) then return end
         end
-        self:w146_step()
+        web_step(self)
     end,
 })
 
@@ -22788,6 +22801,82 @@ local function fan_shot(b)
     })
 end
 
+---★ 下面两个 helper 是模块级 local function（显式第一参）—— 不能写成 Class define 里的
+---  方法再用 `self:方法()` 调，理由见卡 146 的长注。
+---Sub65 主 context 的一帧（child time = t）。
+local function brain_tick(self, t)
+    if t == 0 then
+        ---`ins_64(60, 4, 192, 320)`：从出生点插值到我们 (0,−96)。
+        ---（`ConfigureRelativeMotion` 的 delta = target − worldPosition、origin = position。）
+        self.b_x0, self.b_y0 = self.x, self.y
+        self.b_dx, self.b_dy = 0, B_ENDY - self.y
+        self.b_timer = B_FRAMES
+        self.b_mode = 2
+    elseif t == B_FRAMES then
+        self.b_ang, self.b_speed = B_DIR, B_SPEED
+        self.b_mode = 1
+    elseif t == B_T_GUN then
+        self.b_gun = 0
+    end
+    if t == B_T_LASER then
+        spawn_brain_lasers(self)
+    elseif t == B_T_SPIN then
+        self.b_av = self.b_spin
+    elseif t == B_T_ACCEL then
+        self.b_accel = B_ACCEL
+    elseif t == B_T_STOP then
+        self.b_av = 0
+    elseif t >= B_T_TERM then
+        object.RawDel(self)
+        return false
+    end
+    ---子 context 0（Sub66）：挂上那一帧算 0，之后每 10 帧一轮。
+    if self.b_gun ~= nil then
+        if self.b_gun % FAN_EVERY == 0 then fan_shot(self) end
+        self.b_gun = self.b_gun + 1
+    end
+    ---子 context 1（Sub67）：每帧重算 4 条光柱的角与位置（RunEcl 先跑、位移后跑，
+    ---所以这里用的是**上一帧末**的位置 —— 跟原作一致）。
+    if self.b_lasers then
+        for i = 1, LASER_N do
+            local l = self.b_lasers[i]
+            if IsValid(l) then
+                l.rot = wrap_pi(self.b_ang + LASER_OFF[i])
+                l.x, l.y = self.x, self.y
+            end
+        end
+    end
+    return true
+end
+
+---EnemyManager.cpp:80-121 的位移更新（RunEcl 帧尾调）。
+local function brain_step(self)
+    if self.b_mode == 2 then
+        self.b_timer = self.b_timer - 1
+        local p = 1 - self.b_timer / B_FRAMES
+        if p < 0 then p = 0 end
+        p = 1 - (1 - p) * (1 - p)        -- easing 4 = OUT_QUADRATIC
+        if self.b_timer <= 0 then
+            self.b_mode = 0
+            self.x, self.y = self.b_x0 + self.b_dx, self.b_y0 + self.b_dy
+        else
+            self.x = self.b_x0 + self.b_dx * p
+            self.y = self.b_y0 + self.b_dy * p
+        end
+    elseif self.b_mode == 1 then
+        self.b_ang = wrap_pi(self.b_ang + self.b_av)
+        self.b_speed = self.b_speed + self.b_accel
+        self.x = self.x + math.cos(self.b_ang) * self.b_speed
+        self.y = self.y + math.sin(self.b_ang) * self.b_speed
+    end
+    ---出屏回收（EnemyManagerUpdate.cpp:243-262）：进场之后再出界就整只消失。
+    if outside_field(self.x, self.y, B_HALF) then
+        object.RawDel(self)
+        return false
+    end
+    return true
+end
+
 lw134_brain = Class(object, {
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）；
     ---spin = **我们口径**的角速度（= 出生那一刻 BOSS 的 lf1 取反）。
@@ -22808,83 +22897,11 @@ lw134_brain = Class(object, {
         self.b_gun = 0                  -- 子 context 0（Sub66）自己的时间；nil = 还没挂
         self.b_lasers = nil             -- 子 context 1（Sub67）的 4 条光柱
     end,
-    ---Sub65 主 context 的一帧（child time = t）。
-    tick = function(self, t)
-        if t == 0 then
-            ---`ins_64(60, 4, 192, 320)`：从出生点插值到我们 (0,−96)。
-            ---（`ConfigureRelativeMotion` 的 delta = target − worldPosition、origin = position。）
-            self.b_x0, self.b_y0 = self.x, self.y
-            self.b_dx, self.b_dy = 0, B_ENDY - self.y
-            self.b_timer = B_FRAMES
-            self.b_mode = 2
-        elseif t == B_FRAMES then
-            self.b_ang, self.b_speed = B_DIR, B_SPEED
-            self.b_mode = 1
-        elseif t == B_T_GUN then
-            self.b_gun = 0
-        end
-        if t == B_T_LASER then
-            spawn_brain_lasers(self)
-        elseif t == B_T_SPIN then
-            self.b_av = self.b_spin
-        elseif t == B_T_ACCEL then
-            self.b_accel = B_ACCEL
-        elseif t == B_T_STOP then
-            self.b_av = 0
-        elseif t >= B_T_TERM then
-            object.RawDel(self)
-            return false
-        end
-        ---子 context 0（Sub66）：挂上那一帧算 0，之后每 10 帧一轮。
-        if self.b_gun ~= nil then
-            if self.b_gun % FAN_EVERY == 0 then fan_shot(self) end
-            self.b_gun = self.b_gun + 1
-        end
-        ---子 context 1（Sub67）：每帧重算 4 条光柱的角与位置（RunEcl 先跑、位移后跑，
-        ---所以这里用的是**上一帧末**的位置 —— 跟原作一致）。
-        if self.b_lasers then
-            for i = 1, LASER_N do
-                local l = self.b_lasers[i]
-                if IsValid(l) then
-                    l.rot = wrap_pi(self.b_ang + LASER_OFF[i])
-                    l.x, l.y = self.x, self.y
-                end
-            end
-        end
-        return true
-    end,
-    ---EnemyManager.cpp:80-121 的位移更新（RunEcl 帧尾调）。
-    step_move = function(self)
-        if self.b_mode == 2 then
-            self.b_timer = self.b_timer - 1
-            local p = 1 - self.b_timer / B_FRAMES
-            if p < 0 then p = 0 end
-            p = 1 - (1 - p) * (1 - p)        -- easing 4 = OUT_QUADRATIC
-            if self.b_timer <= 0 then
-                self.b_mode = 0
-                self.x, self.y = self.b_x0 + self.b_dx, self.b_y0 + self.b_dy
-            else
-                self.x = self.b_x0 + self.b_dx * p
-                self.y = self.b_y0 + self.b_dy * p
-            end
-        elseif self.b_mode == 1 then
-            self.b_ang = wrap_pi(self.b_ang + self.b_av)
-            self.b_speed = self.b_speed + self.b_accel
-            self.x = self.x + math.cos(self.b_ang) * self.b_speed
-            self.y = self.y + math.sin(self.b_ang) * self.b_speed
-        end
-        ---出屏回收（EnemyManagerUpdate.cpp:243-262）：进场之后再出界就整只消失。
-        if outside_field(self.x, self.y, B_HALF) then
-            object.RawDel(self)
-            return false
-        end
-        return true
-    end,
     frame = function(self)
         ---① 主 context → 子 context 0 → 1（RunEcl 的 low_select_next_context）。
-        if not self:tick(self.b_t) then return end
+        if not brain_tick(self, self.b_t) then return end
         ---② 位移（RunEcl 帧尾的 UpdateMovement）。
-        if not self:step_move() then return end
+        if not brain_step(self) then return end
         self.b_t = self.b_t + 1
     end,
 })
@@ -23229,6 +23246,19 @@ lw130_cell = Class(object, {
 ---------------------------------------------------------------------
 ---Sub60「使魔」。占位贴图 "servant"；朝自机方位插值飛、每 60 帧放一颗细胞。
 ---------------------------------------------------------------------
+---★ helper 一律写成模块级 local function + 显式第一参（不能 `self:方法()`，见卡 146 长注）。
+---`ins_66(60, 4, ANGLE_TO_PLAYER, speed)`：以**当帧**的位置为原点、朝**当帧**的自机
+---方位走 speed×60 px（ConfigurePolarMotion：位移在指令那一帧就定死）。
+local function fam_begin_move(self, speed)
+    local a = math.atan2(player.y - self.y, player.x - self.x)
+    self.f_move = {
+        x0 = self.x, y0 = self.y,
+        dx = math.cos(a) * speed * FAM_MOVE_FRAMES,
+        dy = math.sin(a) * speed * FAM_MOVE_FRAMES,
+        n = FAM_MOVE_FRAMES, t = 0,
+    }
+end
+
 lw130_familiar = Class(object, {
     init = function(self, x, y)
         self.x, self.y = x, y
@@ -23243,29 +23273,18 @@ lw130_familiar = Class(object, {
         self.f_t = 0
         self.f_move = nil
     end,
-    ---`ins_66(60, 4, ANGLE_TO_PLAYER, speed)`：以**当帧**的位置为原点、朝**当帧**的自机
-    ---方位走 speed×60 px（ConfigurePolarMotion：位移在指令那一帧就定死）。
-    begin_move = function(self, speed)
-        local a = math.atan2(player.y - self.y, player.x - self.x)
-        self.f_move = {
-            x0 = self.x, y0 = self.y,
-            dx = math.cos(a) * speed * FAM_MOVE_FRAMES,
-            dy = math.sin(a) * speed * FAM_MOVE_FRAMES,
-            n = FAM_MOVE_FRAMES, t = 0,
-        }
-    end,
     frame = function(self)
         local t = self.f_t
         if t == 0 then
-            self:begin_move(3.2)
+            fam_begin_move(self, 3.2)
         elseif t == 60 then
             ---`ins_94(62, 0, 0, …)`：细胞生在自己**移动前**的位置上（RunEcl 先跑、
             ---UpdateMovement 后跑）—— 移植版这里也按「先 spawn、后位移」排。
             spawn_cell(self.x, self.y, 0, 0)
-            self:begin_move(2.0)
+            fam_begin_move(self, 2.0)
         elseif t == 120 then
             spawn_cell(self.x, self.y, 0, 0)
-            self:begin_move(2.0)
+            fam_begin_move(self, 2.0)
         elseif t == 180 then
             spawn_cell(self.x, self.y, 0, 0)
             object.RawDel(self)          -- `ins_1()`
@@ -24120,6 +24139,66 @@ local fams = {}
 ---------------------------------------------------------------------
 ---Sub25 = 使魔。占位贴图 "servant"；`Class(object)` ⇒ 没有判定、不吃弹也不撞自机。
 ---------------------------------------------------------------------
+
+---InterpolateHermite（EclDependencies.cpp:321-350）：u ∈ [0, 1]。
+local function fam_hermite(self, u)
+    local w0 = (u - 1) * (u - 1) * (2 * u + 1)
+    local w1 = u * u * (3 - 2 * u)
+    local w2 = (1 - u) * (1 - u) * u
+    local w3 = (u - 1) * u * u
+    self.p8x = w0 * self.f_x0 + w1 * self.f_x1 + w2 * self.f_a0x + w3 * self.f_a1x
+    self.p8y = w0 * self.f_y0 + w1 * self.f_y1 + w2 * self.f_a0y + w3 * self.f_a1y
+end
+
+---Sub22（槽 0）的一轮：三扇 `ins_97`。
+local function fam_shot22(self)
+    ---★ 出弹用的是**上一帧结束**时的位置（RunEcl 在 UpdateMovement 之前跑）——
+    ---self.x/self.y 正是那个位置（主 context 的槽在这一帧的帧尾才走下一步）。
+    local x, y = self.x, self.y
+    local lf1 = math.atan2((224 - y) - self.f_fy, (x + 192) - self.f_fx)
+    local function fan(color, ang, flags)
+        EX.shoot(self, x, y, {
+            op = 97, type = G22_TYPE, color = EX.color(color),
+            count1 = G22_COUNT, count2 = 1,
+            speed1 = G22_SPEED, speed2 = G22_SPEED2,
+            angle = ang, step = -G22_STEP, flags = flags,
+        })
+    end
+    fan(6, -(lf1 + HALF_PI), G22_FLAGS_SND)
+    fan(2, -(lf1 - HALF_PI), G22_FLAGS)
+    fan(4, -lf1, G22_FLAGS)
+end
+
+---Sub23（槽 1）的第 k 发（k = 0, 1, 2, …）：偶数发 `ins_97`、奇数发 `ins_96`。
+local function fam_shot23(self, k)
+    local lf1 = math.atan2(self.f_fy - (224 - self.y), self.f_fx - (self.x + 192))
+    if k % 2 == 0 then
+        local j = rnd_unit() * G23_JIT_A
+        EX.shoot(self, self.x, self.y, {
+            op = 97, type = G23_TYPE, color = EX.color(6),
+            count1 = 1, count2 = 1, speed1 = G23_SPEED, speed2 = G23_SPEED2,
+            angle = -(lf1 + j), step = -G23_STEP, flags = G23_FLAGS,
+        })
+    else
+        local j = rnd_unit() * G23_JIT_B
+        EX.shoot(self, self.x, self.y, {
+            op = 96, type = G23_TYPE, color = EX.color(2),
+            count1 = 1, count2 = 1, speed1 = G23_SPEED, speed2 = G23_SPEED2,
+            angle = -(lf1 + j), step = -G23_STEP, flags = G23_FLAGS,
+        })
+    end
+end
+
+---Sub24（槽 2）的一帧：圆心朝「当帧夹取后的自机」挪 0.2 px，使魔本体跟着挪同一份。
+local function fam_drift(self)
+    local px = clamp(pl8_x(), CL_TH_X0, CL_TH_X1)
+    local py = clamp(pl8_y(), CL_TH_Y0, CL_TH_Y1)
+    local d = math.atan2(py - self.f_cy, px - self.f_cx)
+    local dx, dy = math.cos(d) * DRIFT_STEP, math.sin(d) * DRIFT_STEP
+    self.f_cx, self.f_cy = self.f_cx + dx, self.f_cy + dy
+    self.p8x, self.p8y = self.p8x + dx, self.p8y + dy
+end
+
 local lw122_fam = Class(object, {
     ---bx/by = 出生点（BOSS 的 TH08 坐标）、lf2 = 这只要用的发射方向（TH08 弧度）、
     ---tx/ty = 目标点（TH08）、fx/fy = 轮头那个夹取点（TH08）、pause = 继承到的 exI1。
@@ -24150,63 +24229,8 @@ local lw122_fam = Class(object, {
         self.f_t = 0
         self.p8x, self.p8y = bx, by                   -- TH08 口径的位置
         ---槽装上那一帧就跑第 1 步（RunEcl 帧尾，EclRun.cpp:113-180）。
-        self:hermite(1 / HERM_FRAMES)
+        fam_hermite(self, 1 / HERM_FRAMES)
         self.x, self.y = scr_x(self.p8x), scr_y(self.p8y)
-    end,
-    ---InterpolateHermite（EclDependencies.cpp:321-350）：u ∈ [0, 1]。
-    hermite = function(self, u)
-        local w0 = (u - 1) * (u - 1) * (2 * u + 1)
-        local w1 = u * u * (3 - 2 * u)
-        local w2 = (1 - u) * (1 - u) * u
-        local w3 = (u - 1) * u * u
-        self.p8x = w0 * self.f_x0 + w1 * self.f_x1 + w2 * self.f_a0x + w3 * self.f_a1x
-        self.p8y = w0 * self.f_y0 + w1 * self.f_y1 + w2 * self.f_a0y + w3 * self.f_a1y
-    end,
-    ---Sub22（槽 0）的一轮：三扇 `ins_97`。
-    shot22 = function(self)
-        ---★ 出弹用的是**上一帧结束**时的位置（RunEcl 在 UpdateMovement 之前跑）——
-        ---self.x/self.y 正是那个位置（主 context 的槽在这一帧的帧尾才走下一步）。
-        local x, y = self.x, self.y
-        local lf1 = math.atan2((224 - y) - self.f_fy, (x + 192) - self.f_fx)
-        local function fan(color, ang, flags)
-            EX.shoot(self, x, y, {
-                op = 97, type = G22_TYPE, color = EX.color(color),
-                count1 = G22_COUNT, count2 = 1,
-                speed1 = G22_SPEED, speed2 = G22_SPEED2,
-                angle = ang, step = -G22_STEP, flags = flags,
-            })
-        end
-        fan(6, -(lf1 + HALF_PI), G22_FLAGS_SND)
-        fan(2, -(lf1 - HALF_PI), G22_FLAGS)
-        fan(4, -lf1, G22_FLAGS)
-    end,
-    ---Sub23（槽 1）的第 k 发（k = 0, 1, 2, …）：偶数发 `ins_97`、奇数发 `ins_96`。
-    shot23 = function(self, k)
-        local lf1 = math.atan2(self.f_fy - (224 - self.y), self.f_fx - (self.x + 192))
-        if k % 2 == 0 then
-            local j = rnd_unit() * G23_JIT_A
-            EX.shoot(self, self.x, self.y, {
-                op = 97, type = G23_TYPE, color = EX.color(6),
-                count1 = 1, count2 = 1, speed1 = G23_SPEED, speed2 = G23_SPEED2,
-                angle = -(lf1 + j), step = -G23_STEP, flags = G23_FLAGS,
-            })
-        else
-            local j = rnd_unit() * G23_JIT_B
-            EX.shoot(self, self.x, self.y, {
-                op = 96, type = G23_TYPE, color = EX.color(2),
-                count1 = 1, count2 = 1, speed1 = G23_SPEED, speed2 = G23_SPEED2,
-                angle = -(lf1 + j), step = -G23_STEP, flags = G23_FLAGS,
-            })
-        end
-    end,
-    ---Sub24（槽 2）的一帧：圆心朝「当帧夹取后的自机」挪 0.2 px，使魔本体跟着挪同一份。
-    drift = function(self)
-        local px = clamp(pl8_x(), CL_TH_X0, CL_TH_X1)
-        local py = clamp(pl8_y(), CL_TH_Y0, CL_TH_Y1)
-        local d = math.atan2(py - self.f_cy, px - self.f_cx)
-        local dx, dy = math.cos(d) * DRIFT_STEP, math.sin(d) * DRIFT_STEP
-        self.f_cx, self.f_cy = self.f_cx + dx, self.f_cy + dy
-        self.p8x, self.p8y = self.p8x + dx, self.p8y + dy
     end,
     frame = function(self)
         local t = self.f_t
@@ -24218,18 +24242,18 @@ local lw122_fam = Class(object, {
         ---（RunEcl 帧尾先 ++ 再算 progress）⇒ progress = (t+1)/120，第 119 帧到终点、
         ---槽自动摘掉（callback = 0）。出生帧那一步在 init 里已经走过一次。
         if t <= HERM_FRAMES - 1 then
-            self:hermite((t + 1) / HERM_FRAMES)
+            fam_hermite(self, (t + 1) / HERM_FRAMES)
         end
         ---② 两条枪（槽 0/1）；出弹用的是**这一帧位移之前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
         if t >= t_gun then
             local s = t - t_gun
-            if s % G22_PERIOD == 0 then self:shot22() end
+            if s % G22_PERIOD == 0 then fam_shot22(self) end
             local a = s - 3 * pause           -- `ins_12(exI1, 3)` + `ins_2(exI1)`
-            if a >= 0 and a % G23_PERIOD == 0 then self:shot23(a / G23_PERIOD) end
+            if a >= 0 and a % G23_PERIOD == 0 then fam_shot23(self, a / G23_PERIOD) end
         end
         ---③ 槽 2（Sub24）：真帧 120 挂上、t_orb 那一帧先卸掉再开公转。
         if t >= F_HALT and t < t_orb then
-            self:drift()
+            fam_drift(self)
         end
         ---④ `ins_72` 之后每帧：角度 += lf5、半径 += radialVelocity，位置贴到圆心 + R·(cos,sin)。
         if t >= t_orb then
@@ -24476,6 +24500,34 @@ end
 ---------------------------------------------------------------------
 ---Sub19 = 使魔。占位贴图 "servant"；`Class(object)` ⇒ 没有判定、不吃弹（见卡头差异）。
 ---------------------------------------------------------------------
+
+---POLAR 模式的位移（`position += velocity`）。
+local function f16_advance(self)
+    self.x = self.x + math.cos(self.f_dir) * self.f_sp
+    self.y = self.y - math.sin(self.f_dir) * self.f_sp
+end
+
+---Sub20 的一对手（子 context；挂上那一帧算它的 t=0）。
+local function f16_gun_volley(self)
+    if self.f_gun_dir == nil then
+        ---`ins_15(lf0, π)` + `ins_37`：掉头往回打。
+        self.f_gun_dir = wrap_pi(self.f_lf0 + PI)
+        ---`ins_111(0, 128, 0, 60, 1, 0, 1.5)`：AIMED 折向（只有带 0x80 位的那颗会点亮）。
+        EX.set_record(self, 0, EX.K.AIMED, 0, GUN_AIM_INTERVAL, 1, 0, GUN_AIM_SPEED)
+    end
+    local ang = -self.f_gun_dir      -- 我们口径
+    EX.shoot(self, self.x, self.y, {
+        op = 97, type = 3, color = EX.color(2),
+        count1 = 1, count2 = 1, speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
+        angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_A,
+    })
+    EX.shoot(self, self.x, self.y, {
+        op = 97, type = 3, color = EX.color(6),
+        count1 = 1, count2 = 1, speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
+        angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_B,
+    })
+end
+
 local lw16_fam = Class(object, {
     ---x, y = 出生点（BOSS 此刻的位置）、dir = 出生时从父继承的 lf0（TH08 口径）、
     ---sp = 继承的 lf1 = 1.0。
@@ -24499,44 +24551,19 @@ local lw16_fam = Class(object, {
         EX.clear_records(self)
         ---出生帧：RunEcl 跑完 t=0 之后引擎还会 UpdateMovement 一步
         ---（EnemyManagerUpdate.cpp:159-192），所以这里也走一步。
-        self:advance()
+        f16_advance(self)
         self.f_culled = false           -- 「进过场地」的标志：出生点就在 BOSS 身上 ⇒ 成立
         self.f_t = 1                    -- 下一帧要跑 Sub19 的 t=1
-    end,
-    ---POLAR 模式的位移（`position += velocity`）。
-    advance = function(self)
-        self.x = self.x + math.cos(self.f_dir) * self.f_sp
-        self.y = self.y - math.sin(self.f_dir) * self.f_sp
-    end,
-    ---Sub20 的一对手（子 context；挂上那一帧算它的 t=0）。
-    gun_volley = function(self)
-        if self.f_gun_dir == nil then
-            ---`ins_15(lf0, π)` + `ins_37`：掉头往回打。
-            self.f_gun_dir = wrap_pi(self.f_lf0 + PI)
-            ---`ins_111(0, 128, 0, 60, 1, 0, 1.5)`：AIMED 折向（只有带 0x80 位的那颗会点亮）。
-            EX.set_record(self, 0, EX.K.AIMED, 0, GUN_AIM_INTERVAL, 1, 0, GUN_AIM_SPEED)
-        end
-        local ang = -self.f_gun_dir      -- 我们口径
-        EX.shoot(self, self.x, self.y, {
-            op = 97, type = 3, color = EX.color(2),
-            count1 = 1, count2 = 1, speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
-            angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_A,
-        })
-        EX.shoot(self, self.x, self.y, {
-            op = 97, type = 3, color = EX.color(6),
-            count1 = 1, count2 = 1, speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
-            angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_B,
-        })
     end,
     frame = function(self)
         local t = self.f_t
         ---① 子 context（枪）：`ins_135(0, 20)` 在 Sub19 的 t=1 挂上，子 context 自己
         ---   的 time 从那一帧算 0（EclRun.cpp:184-203）⇒ 出弹发生在位移之前。
         if t >= 1 and t - 1 <= GUN_LAST and (t - 1) % GUN_PERIOD == 0 then
-            self:gun_volley()
+            f16_gun_volley(self)
         end
         ---② 位移。
-        self:advance()
+        f16_advance(self)
         ---③ 出屏回收（EnemyManagerUpdate.cpp:236-262）：进过场地之后整只出屏就消失
         ---   （op91 没给 ALLOW_OFFSCREEN）。
         if outside_field(self.x, self.y, FAM_HALF) then
@@ -24862,6 +24889,35 @@ local fams = {}
 ---------------------------------------------------------------------
 ---Sub39 = 使魔。占位贴图 "servant"；`Class(object)` ⇒ 没有判定、不吃弹（见卡头差异）。
 ---------------------------------------------------------------------
+
+---POLAR 模式的位移（`position += velocity`）。
+local function f36_advance(self)
+    self.x = self.x + math.cos(self.f_dir) * self.f_sp
+    self.y = self.y - math.sin(self.f_dir) * self.f_sp
+end
+
+---Sub38 的一轮（子 context；`ins_135(0, 38)` 挂在使魔的 t=10，挂上那一帧算它的 t=0）。
+local function f36_gun_volley(self)
+    ---出弹点：exF0 = posX + 16 + rndSgn·32 → 截到 16 的倍数（TH08 坐标）→ 再减回 posX
+    ---当 shootOffset；我们直接算绝对点（x 平移不翻转，y 翻转 ⇒ 用 scr_* 换算）。
+    local sx, sy = self.x + 192, 224 - self.y
+    local rx, ry = rnd_sgn(), rnd_sgn()
+    local gx = grid16(sx + 16 + rx * FGUN_SCALE)
+    local gy = grid16(sy + 16 + ry * FGUN_SCALE)
+    ---三条 `ins_111`（EclRunHigh.inl:243-262）——本子程序的循环体每遍都重写。
+    EX.set_record(self, 0, EX.K.WAIT, 0, REC_WAIT, -1, -1, -1)
+    EX.set_record(self, 1, EX.K.SND, 0, REC_SND, -1, -1, -1)
+    EX.set_record(self, 2, EX.K.DESPAWN, 0, -1, -1, -1, -1)
+    ---`ins_99`：count2 = 1 ⇒ speed = speed1 = 0（站桩弹）；角那一栏是第二个 rndSgn·32
+    ---（TH08 口径 ⇒ 我们取反；speed = 0 所以只影响贴图朝向）。
+    EX.shoot(self, gx - 192, 224 - gy, {
+        op = 99, type = FGUN_TYPE, color = EX.color(FGUN_COLOR),
+        count1 = 1, count2 = 1,
+        speed1 = FGUN_SPEED1, speed2 = FGUN_SPEED2,
+        angle = wrap_pi(-ry * FGUN_SCALE), step = -FGUN_STEP, flags = FGUN_FLAGS,
+    })
+end
+
 local lw36_fam = Class(object, {
     ---x, y = 出生点（BOSS 此刻的位置）、dir = 出生时从父继承的 lf0（TH08 口径）、sp = lf1。
     init = function(self, x, y, dir, sp)
@@ -24882,44 +24938,18 @@ local lw36_fam = Class(object, {
         EX.clear_records(self)
         ---出生帧：SpawnEnemy2 里出生当帧就跑一次 RunEcl，跑完引擎还会 UpdateMovement 一步
         ---（EnemyManagerUpdate.cpp:236-262）⇒ 这里也走一步。
-        self:advance()
+        f36_advance(self)
         self.f_t = 1                    -- 下一帧要跑 Sub39 的 t=1
-    end,
-    ---POLAR 模式的位移（`position += velocity`）。
-    advance = function(self)
-        self.x = self.x + math.cos(self.f_dir) * self.f_sp
-        self.y = self.y - math.sin(self.f_dir) * self.f_sp
-    end,
-    ---Sub38 的一轮（子 context；`ins_135(0, 38)` 挂在使魔的 t=10，挂上那一帧算它的 t=0）。
-    gun_volley = function(self)
-        ---出弹点：exF0 = posX + 16 + rndSgn·32 → 截到 16 的倍数（TH08 坐标）→ 再减回 posX
-        ---当 shootOffset；我们直接算绝对点（x 平移不翻转，y 翻转 ⇒ 用 scr_* 换算）。
-        local sx, sy = self.x + 192, 224 - self.y
-        local rx, ry = rnd_sgn(), rnd_sgn()
-        local gx = grid16(sx + 16 + rx * FGUN_SCALE)
-        local gy = grid16(sy + 16 + ry * FGUN_SCALE)
-        ---三条 `ins_111`（EclRunHigh.inl:243-262）——本子程序的循环体每遍都重写。
-        EX.set_record(self, 0, EX.K.WAIT, 0, REC_WAIT, -1, -1, -1)
-        EX.set_record(self, 1, EX.K.SND, 0, REC_SND, -1, -1, -1)
-        EX.set_record(self, 2, EX.K.DESPAWN, 0, -1, -1, -1, -1)
-        ---`ins_99`：count2 = 1 ⇒ speed = speed1 = 0（站桩弹）；角那一栏是第二个 rndSgn·32
-        ---（TH08 口径 ⇒ 我们取反；speed = 0 所以只影响贴图朝向）。
-        EX.shoot(self, gx - 192, 224 - gy, {
-            op = 99, type = FGUN_TYPE, color = EX.color(FGUN_COLOR),
-            count1 = 1, count2 = 1,
-            speed1 = FGUN_SPEED1, speed2 = FGUN_SPEED2,
-            angle = wrap_pi(-ry * FGUN_SCALE), step = -FGUN_STEP, flags = FGUN_FLAGS,
-        })
     end,
     frame = function(self)
         local t = self.f_t
         ---① 子 context（枪）：挂上那一帧算它的 t=0 ⇒ t=10/14/18… 各一发，出弹用的是
         ---   **这一帧位移之前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
         if t >= FAM_GUN_AT and (t - FAM_GUN_AT) % FGUN_PERIOD == 0 then
-            self:gun_volley()
+            f36_gun_volley(self)
         end
         ---② 位移。
-        self:advance()
+        f36_advance(self)
         ---③ 出屏回收（EnemyManagerUpdate.cpp:221-262）：进过场地之后整只出屏就消失
         ---   （op91 没给 ALLOW_OFFSCREEN）。
         if outside_field(self.x, self.y, FAM_HALF) then
@@ -25252,6 +25282,41 @@ local fams = {}
 ---------------------------------------------------------------------
 ---Sub43 = 使魔。占位贴图 "servant"；`Class(object)` ⇒ 没有判定、不吃弹（见卡头差异）。
 ---------------------------------------------------------------------
+
+---ORBIT 模式的位移（EnemyManager.cpp:36-61；更新落在 worldPosition 上、等于 position）。
+---★ TH08 的 y 朝上 ⇒ 我们的 y 用 −sin（等价于把角整体取反）。
+---movementDuration 走完就摘掉 ORBIT 位（:54-59）⇒ 之后停在原地不动。
+local function f40_orbit_step(self)
+    if self.f_dur <= 0 then return end
+    self.f_ang = wrap_pi(self.f_ang + self.f_angvel)
+    self.f_rad = self.f_rad + self.f_radvel
+    self.f_dur = self.f_dur - 1
+    self.x = self.f_ox + math.cos(self.f_ang) * self.f_rad
+    self.y = self.f_oy - math.sin(self.f_ang) * self.f_rad
+end
+
+---Sub42 的一轮（子 context；`ins_135(0, 42)` 挂在使魔的 t=10，挂上那一帧算它的 t=0）。
+local function f40_gun_volley(self)
+    ---`lf0 = rndUnit·0.5; lf0 += 1.0; lf0 /= 120`（抽数顺序照抄：先 lf0、再两个 rndSgn、
+    ---最后才是角那一栏的 rndAngle）。
+    local accel = (ran:Float(0, 1) * FGUN_ACCEL_SPAN + FGUN_ACCEL_MIN) / FGUN_VEC_FRAMES
+    ---三条 `ins_111`（EclRunHigh.inl:243-262）：槽 0/1 原作只写一次、槽 2 每遍重写；
+    ---移植版每遍都重写（内容一样），已在飞的弹不受影响（出弹时整块拷贝）。
+    EX.set_record(self, 0, EX.K.WAIT, 0, FGUN_WAIT, -1, -1, -1)
+    EX.set_record(self, 1, EX.K.SND, 0, FGUN_SND, -1, -1, -1)
+    EX.set_record(self, 2, EX.K.VEC, 0, FGUN_VEC_FRAMES, -1, accel, -999)
+    ---出弹点：exF0 = rndSgn·32、exF1 = rndSgn·32，直接当 shootOffset（不减圆心、不截网格）。
+    local rx, ry = rnd_sgn(), rnd_sgn()
+    ---`ins_25(lf0, rndAngle, lf2)` + `ins_37`：TH08 口径 ⇒ 整体取反。
+    local ang = wrap_pi(-(ran:Float(-PI, PI) + self.f_base))
+    EX.shoot(self, self.x + rx * FGUN_OFFSCALE, self.y - ry * FGUN_OFFSCALE, {
+        op = 99, type = FGUN_TYPE, color = EX.color(self.f_color),
+        count1 = 1, count2 = 1,
+        speed1 = FGUN_SPEED1, speed2 = FGUN_SPEED2,
+        angle = ang, step = 0, flags = FGUN_FLAGS,
+    })
+end
+
 local lw40_fam = Class(object, {
     ---x, y = 出生点（BOSS 此刻的位置）、ang = 继承的 lf0（起始公转角）、
     ---angvel = 继承的 lf1（公转角速度）、color = 继承的 li0（弹色）、base = 继承的 lf2（弹的基准角）。
@@ -25279,40 +25344,8 @@ local lw40_fam = Class(object, {
         EX.clear_records(self)
         ---出生帧：SpawnEnemy2 里出生当帧就跑一次 RunEcl，跑完引擎还会 UpdateMovement 一步
         ---（EnemyManagerUpdate.cpp:183-190）⇒ 这里也走一步。
-        self:orbit_step()
+        f40_orbit_step(self)
         self.f_t = 1                    -- 下一帧要跑 Sub43 的 t=1
-    end,
-    ---ORBIT 模式的位移（EnemyManager.cpp:36-61；更新落在 worldPosition 上、等于 position）。
-    ---★ TH08 的 y 朝上 ⇒ 我们的 y 用 −sin（等价于把角整体取反）。
-    ---movementDuration 走完就摘掉 ORBIT 位（:54-59）⇒ 之后停在原地不动。
-    orbit_step = function(self)
-        if self.f_dur <= 0 then return end
-        self.f_ang = wrap_pi(self.f_ang + self.f_angvel)
-        self.f_rad = self.f_rad + self.f_radvel
-        self.f_dur = self.f_dur - 1
-        self.x = self.f_ox + math.cos(self.f_ang) * self.f_rad
-        self.y = self.f_oy - math.sin(self.f_ang) * self.f_rad
-    end,
-    ---Sub42 的一轮（子 context；`ins_135(0, 42)` 挂在使魔的 t=10，挂上那一帧算它的 t=0）。
-    gun_volley = function(self)
-        ---`lf0 = rndUnit·0.5; lf0 += 1.0; lf0 /= 120`（抽数顺序照抄：先 lf0、再两个 rndSgn、
-        ---最后才是角那一栏的 rndAngle）。
-        local accel = (ran:Float(0, 1) * FGUN_ACCEL_SPAN + FGUN_ACCEL_MIN) / FGUN_VEC_FRAMES
-        ---三条 `ins_111`（EclRunHigh.inl:243-262）：槽 0/1 原作只写一次、槽 2 每遍重写；
-        ---移植版每遍都重写（内容一样），已在飞的弹不受影响（出弹时整块拷贝）。
-        EX.set_record(self, 0, EX.K.WAIT, 0, FGUN_WAIT, -1, -1, -1)
-        EX.set_record(self, 1, EX.K.SND, 0, FGUN_SND, -1, -1, -1)
-        EX.set_record(self, 2, EX.K.VEC, 0, FGUN_VEC_FRAMES, -1, accel, -999)
-        ---出弹点：exF0 = rndSgn·32、exF1 = rndSgn·32，直接当 shootOffset（不减圆心、不截网格）。
-        local rx, ry = rnd_sgn(), rnd_sgn()
-        ---`ins_25(lf0, rndAngle, lf2)` + `ins_37`：TH08 口径 ⇒ 整体取反。
-        local ang = wrap_pi(-(ran:Float(-PI, PI) + self.f_base))
-        EX.shoot(self, self.x + rx * FGUN_OFFSCALE, self.y - ry * FGUN_OFFSCALE, {
-            op = 99, type = FGUN_TYPE, color = EX.color(self.f_color),
-            count1 = 1, count2 = 1,
-            speed1 = FGUN_SPEED1, speed2 = FGUN_SPEED2,
-            angle = ang, step = 0, flags = FGUN_FLAGS,
-        })
     end,
     frame = function(self)
         local t = self.f_t
@@ -25320,10 +25353,10 @@ local lw40_fam = Class(object, {
         ---   （RunEcl 先跑、UpdateMovement 后跑）。
         local g = t - FAM_GUN_AT
         if g >= FGUN_FIRST and g <= FGUN_LAST and (g - FGUN_FIRST) % FGUN_PERIOD == 0 then
-            self:gun_volley()
+            f40_gun_volley(self)
         end
         ---② 公转位移。
-        self:orbit_step()
+        f40_orbit_step(self)
         ---③ 出屏回收（EnemyManagerUpdate.cpp:221-262）：`ins_80(16)` 在前 210 帧给了
         ---   ALLOW_OFFSCREEN ⇒ 那段时间不出屏回收；t=210 之后一离开场地就消失。
         if t >= FAM_CULL_AT and outside_field(self.x, self.y, FAM_HALF) then
