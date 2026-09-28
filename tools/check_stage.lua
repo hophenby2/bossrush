@@ -46,6 +46,14 @@ local RES = {}
 local function reg(n)
     if type(n) == "string" then RES[n] = true end
 end
+---★ 粒子（`LoadPS`）是「资源池里有、但**不是精灵**」：引擎查得到它，可 LRresources 的
+---  `SetImageState` 只认 `LoadImage` 填进 `ImageColor` 的精灵名 —— 粒子名进去就是
+---  `ImageColor[img]` 为 nil，真机崩 `attempt to index local 'i'`（Lresources.lua:112）。
+---  `object.smear_render` 正好走这条路，所以单独记一份给它的桩件查（见 O.smear_add）。
+local PAR = {}
+local function reg_ps(n)
+    if type(n) == "string" then RES[n] = true; PAR[n] = true end
+end
 -- ① 引擎内建的图（Lresources.lua / 各系统文件里 LoadImage 过的）
 for _, n in ipairs({
     "white", "moon", "circle_charge", "circle_charge2", "bright", "bright_line",
@@ -127,14 +135,27 @@ do
                 end
                 for nm in src:gmatch('LoadImage%s*%(%s*"([%w_]+)"') do reg(nm) end
                 for nm in src:gmatch('LoadTexture%d?%s*%(%s*"([%w_]+)"') do reg(nm) end
+                ---⚠ 2026-09-28 补 `LoadImageFromFile*` / `LoadImageGroupFromFile` / `CopyImage`：
+                ---  这三族和 `LoadImage` 是同一张资源表（引擎 `LW_ResourceMgr.cpp`），
+                ---  原来只扫 `LoadImage\*` ⇒ 用它们登记的贴图会被判成「不在资源池里」，
+                ---  或者**真漏登记也扫不出来** —— TH07_bg 的 `hyz_bg5`（只在 TH09_bg:init 里
+                ---  `LoadImageFromFile` 过）就是这么在真机上崩的 `can't find sprite`。
+                ---⚠ 引号两种都要认：`TH09_bg.lua:26` 写的是单引号 `LoadImageFromFile('hyz_bg5', …)`
+                for nm in src:gmatch("LoadImageFromFile%d?%s*%(%s*['\"]([%w_]+)['\"]") do reg(nm) end
+                for nm in src:gmatch("LoadImageGroupFromFile%s*%(%s*['\"]([%w_]+)['\"]") do
+                    for i = 1, 16 do reg(nm .. i) end
+                end
+                for nm in src:gmatch("CopyImage%s*%(%s*['\"]([%w_]+)['\"]") do reg(nm) end
                 ---⚠ 名字的引号两种都要认：`enemy.lua:33` 写的是单引号 `LoadPS('ghost_fire_r', …)`
-                for nm in src:gmatch("LoadPS%s*%(%s*['\"]([%w_]+)['\"]") do reg(nm) end
+                ---⚠ 记进 PAR：粒子能过 `RES`（名字合法），但过不了 smear 的精灵那一关
+                for nm in src:gmatch("LoadPS%s*%(%s*['\"]([%w_]+)['\"]") do reg_ps(nm) end
             end
         end
         p:close()
     end
 end
 _G.REGISTERED_IMAGES = RES
+_G.PARTICLE_IMAGES = PAR
 
 ---扫源码里的贴图名字面量，逐个对登记表。
 ---  只扫「写死的字符串」——用变量的地方扫不到，那是刻意的（宁漏勿误报）。
@@ -148,8 +169,10 @@ local function checkImageNames(path)
     for nm in src:gmatch('%.img%s*=%s*"([%w_]+)"') do bad[nm] = true end
     for nm in src:gmatch('[^%w_%.]img%s*=%s*"([%w_]+)"') do bad[nm] = true end
     -- SetImageState("X", ...) / Render("X", ...) / RenderRect("X", ...)
+    ---⚠ 结尾要求 `,` 或 `)`：`Render4V("stair" .. gr[i % 4 + 1], …)` 这种**拼接**里的字面量
+    ---  只是名字的前缀，不是贴图名 —— 原来的写法会把它当贴图名报假警（TH07_bg 就中过）。
     for fn in ("SetImageState|Render|RenderRect|Render4V|RenderAnimation|RenderTexture"):gmatch("[^|]+") do
-        for nm in src:gmatch(fn .. '%s*%(%s*"([%w_]+)"') do bad[nm] = true end
+        for nm in src:gmatch(fn .. '%s*%(%s*"([%w_]+)"%s*[,)]') do bad[nm] = true end
     end
     local n = 0
     for nm in pairs(bad) do
@@ -874,6 +897,17 @@ end
 O.smear_render = function(self, mode, color)
     if self.smear then
         for _, s in ipairs(self.smear) do
+            ---★ 这里就是真机的崩点（`LObjectEvents.lua:245` → `Lresources.lua:112`）：
+            ---  SetImageState 只认 `LoadImage` 填进 `ImageColor` 的**精灵**，粒子名
+            ---  （`LoadPS`）进去就是空索引。th34 的幽灵/残火 `self.img = "ghost_fire_r"`
+            ---  （style 27/31）就是这么连崩两次的，桩件必须照崩 —— 放在渲染这一层而不是
+            ---  smear_add，是因为「先 add、再把这条的 img 换成精灵」也是合法写法。
+            if s.img and PAR[s.img] then
+                error(("smear_render 要画的拖影贴图 %q 是**粒子**（LoadPS）：SetImageState/Render "
+                        .. "只认精灵（ImageColor 由 LoadImage 填），真机会崩 "
+                        .. "`attempt to index local 'i'`（Lresources.lua:112）。拖影得换成精灵，"
+                        .. "例：th34 的 TRAIL_SPRITE = \"enemy_aura1\"。"):format(s.img), 2)
+            end
             _G.SetImageState(s.img, mode, s.alpha, color[1], color[2], color[3])
             _G.Render(s.img, s.x, s.y, s.rot, s.hscale, s.vscale)
         end

@@ -1220,6 +1220,19 @@ NewStage("TH33", "醉生梦死", 31, function(self)
     self:Next(166)
 end)--31
 
+NewStage("TH34", "成群亡灵", 32, function(self)
+    ---复用 TH07（妖妖梦）第 6 面的背景类与 BGM「幽雅に咲かせ、墨染の桜」（mod/music.lua:25），
+    ---与 mod/GAME/th34.lua 里 boss.Define 用的那两个参数必须一致。
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        ---只有一个空 boss（editname "1a"），它只是那张「成群的亡灵」耐久卡的载体。
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    ---167 = 本关自己的通关成就（166 是 TH33 的）。
+    self:Next(167)
+end)--32
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

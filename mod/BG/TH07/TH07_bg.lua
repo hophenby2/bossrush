@@ -14,6 +14,11 @@ function TH07_bg:init()
     LoadImageGroup("stair", "sth", 0, 256, 256, 64, 1, 4)
     LoadImage("floor", "sth", 0, 0, 256, 256)
     LoadImageGroup("stair2", "sth", 0, 256, 64, 256, 4, 1)
+    ---★ render() 拿 hyz_bg5 当走廊的墙面板，但这张贴图原来只在 TH09_bg:init 里登记。
+    ---  先玩挂 TH07_bg 的关卡（TH07 本关、以及 TH34 那张道中卡）时 TH09 那一关还没跑过，
+    ---  于是 render 直接崩 `can't find sprite 'hyz_bg5'`（TH09 的 init 每次开卡都会重新登记，
+    ---  这里跟着登记一次不额外占资源）。贴图和人家的那张是同一份。
+    LoadImageFromFile('hyz_bg5', "mod\\BG\\TH09\\TH09_bg_hyz_bg5.png")
     background.init(self, false)
     --
 

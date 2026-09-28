@@ -58,6 +58,8 @@
 ---与原作的不同（代码里按「差异 N」引用；每条都写了为什么）
 ---  1  拖影是代理：原作 SET_TRAIL 0x19,48,16,1（enemy trail vm），移植版用
 ---     object.smear_add/frame/render 三件套，衰减 13（≈20 帧尾巴）。
+---     ⚠ 拖影贴图**只能是精灵**：smear_render 走 LRresources 的 SetImageState，
+---     粒子名（ghost_fire_r）不在 ImageColor 里 ⇒ 统一用 `enemy_aura1`（TRAIL_SPRITE）。
 ---  2  载体与小怪**合成一个对象**。原作是两个实体：时间轴放出载体（sub 9/11/13/15）
 ---     先 `SUB_CALL 8` 当 80 帧烟尘，再 `SPAWN_ENEMY_REL` 在原地生一只真幽灵、自己自毁。
 ---     两者位置/朝向/血量/掉落完全一致 ⇒ 移植版第 80 帧换贴图开判定；代价是少一次
@@ -101,14 +103,24 @@
 ---  · `tools/threat.lua`（独立的第二把尺）：威胁度 1.52、威胁组数 1.00（最多 5）、
 ---    安全区有周期 —— 文档的 0.5~1.5 是**符卡**的标尺，这一段是道中；同目录 th33 的
 ---    三张 boss 卡实测是 15.2 / 12.1 / 2.2，所以 1.52 属于偏轻的一档。
----  · `tools/check_fields.lua` 通过；`check_stage.lua --all` 通过（boss 241 / 符卡 491）。
----  · ★ 本文件**还没挂进 StageID**（`mod/_editor_output.lua:47` 只到 "33"），所以游戏现在
----    根本不会载入它 —— 要真进游戏得按 AGENTS §8 把 9 处一起改（`core.lua` 的
----    STAGE_COUNT 31→32、StageID 加 "34"、stage_pic 循环、UI 的 difftext/sntext、
----    main_stage 的 NewStage、music、成就、素材）。**只把 "34" 塞进 StageID 是不行的**：
----    th16AEX 现在占着 `STAGE_COUNT + 1` = 32 这一档、editname 也是 "1a"，而它**最后载入**
----    （_editor_output.lua:1228），会把 `_editor_boss["1a32"]` 整条盖掉 ⇒ 这张卡会挂到
----    一个没人用的空 boss 类上。动 STAGE_COUNT 之后 AEX 顺延到 33，32 才是 th34 的档。
+---  · `tools/check_fields.lua` 通过；`check_stage.lua --all` 通过（boss 242 / 符卡 492）。
+---
+---关卡号 32（= STAGE_COUNT + 1），2026-09-28 已按 AGENTS.md §8 注册完，一处都别漏：
+---  core.lua:54              STAGE_COUNT 31 → 32
+---  _editor_output.lua:47   StageID 加 "34"（顺便决定载入顺序：在 "33" 之后）
+---  _editor_output.lua:49   不建自己的 BG 目录（和 TH30/31/32/33 一样复用别人的，本关用 TH07_bg）
+---  _editor_output.lua:1213 stage_pic 纹理循环 31 → 32
+---  UI.lua:77 的 difftext   第 32 项 = "成群亡灵"（下标必须等于 level，AEX 顺延到 33）
+---  UI.lua:101 的 sntext    TH34 = "成群亡灵"
+---  main_stage.lua           NewStage("TH34", …) + self:Next(167)
+---  defachievement.lua      成就 167
+---  music                    不新增：BGM 复用 mod/music.lua:25 的 TH07_1
+--- 素材 mod/GAME/stage_pic32.png 是**占位图**（用本关 SCBG6 的 th07_5 / th07_6 / th07_0 拼的），
+--- 要换成真立绘直接覆盖这个文件就行。
+---★ 注意注册的**前提是 STAGE_COUNT 一起改**：th16AEX 占着 `STAGE_COUNT + 1` 这一档、
+---  editname 也是 "1a"，且它在 `_editor_output.lua:1228` **最后载入** —— 只把 "34" 塞进
+---  StageID 而不动 STAGE_COUNT 的话，`_editor_boss["1a32"]` 会被 AEX 的 `boss.Define`
+---  整条盖掉，这张卡就挂到一个没人用的空 boss 类上了。现在 AEX 顺延到 33。
 ---
 ---逐波表（47 只；dt = 相对上一只的帧间隔；x/y 已经是**我们的坐标**；
 ---        R = 向右漂（蓝）、L = 向左漂（红）；末位 * = 这一批的残火额外掉道具）
@@ -192,6 +204,14 @@ local FLAME_X1, FLAME_Y1 = -8, 150  -- p1 = (X₀−8, Y₀−150) ⇒ 我们 (�
 local FLAME_Y_M0, FLAME_Y_M1 = -35, 32  -- Y 的 m0 = +35（TH07）⇒ 我们 −35；m1 = ±32
 local FLAME_FADE = 20           -- 原作是硬销毁；末 20 帧淡出，免得「啪」一下没了（差异 10）
 local TRAIL_DECAY = 13          -- 原作 SET_TRAIL 0x19,48,16,1 的代理（差异 1）
+---拖影用的贴图**必须是精灵**。`smear_render`（LObjectEvents.lua:242）走的是
+---LRresources 的 `SetImageState`/`Render`，而它只认 `LoadImage` 登记过的名字
+---（`ImageColor`，Lresources.lua:81）；而本卡所有对象的 `self.img` 都是**粒子**
+---`ghost_fire_r`（style 27/31，WalkImageSystem.lua:367）—— 直接沿用就是
+---`ImageColor[img]` 为 nil，真机第一帧崩 `attempt to index local 'i'`（Lresources.lua:112）。
+---原作这条 SET_TRAIL 画的是对象自己的运动残像，移植版统一借 aura 光环当代理
+---（style 31 本来就会画这一张，同一套色系、也确实跟着对象飘）。
+local TRAIL_SPRITE = "enemy_aura1"
 
 ---原作同屏弹幕上限：全游戏共用 **1024** 个弹槽（TH07 `BulletManager.hpp:254`
 ---`#define MAX_BULLETS 1024`）。丢弹规则（`BulletManager.cpp:635-663`）：
@@ -220,6 +240,17 @@ local function pool_used()
         end
     end
     return #pool
+end
+
+---加一条拖影。★ 别直接调 `object.smear_add`：它抓的是 `self.img`（见 TRAIL_SPRITE 的说明），
+---这里在 add 前后把 `self.img` 换成精灵 —— 不换就是上面那个 `ImageColor` 空索引，真机必崩。
+local function smear_add(self, alpha)
+    ---先换成精灵再 add：`smear_add` 是**当场**把 `self.img` 抄进那条拖影里的，
+    ---add 完再改这张表也行，但那样一来「抄进去的到底是什么」就散在两处了。
+    local keep = self.img
+    self.img = TRAIL_SPRITE
+    object.smear_add(self, alpha)
+    self.img = keep
 end
 
 ---同一帧里同一种音效只响一声：原作 `SoundPlayer.cpp:589-612` 的队列**按 idx 去重**
@@ -301,7 +332,7 @@ class["TH34_ghost"] = Class(enemy, {
         ---`obj.img`，但自检桩件里的 `enemy` 是简化 mock（不建行走图系统那一层），而
         ---`smear_add` 读的正是 `self.img`（AGENTS §9 A4：漏了就是 `SetImageState(nil,…)`）。
         self.img = "ghost_fire_r"
-        object.smear_add(self, 120)         -- 原作 SET_TRAIL 0x19,48,16,1 的代理
+        smear_add(self, 120)                -- 原作 SET_TRAIL 0x19,48,16,1 的代理（差异 1）
         ---★ 生命周期写在单个协程里：前 80 帧什么都不做（烟尘由 frame 里的插值驱动），
         ---第 80 帧（= task.Wait(80) 醒来的那一帧）换装开火。
         task.New(self, function()
@@ -362,7 +393,7 @@ class["TH34_flame"] = Class(enemy, {
         self.fy1 = rnd_sign() * FLAME_Y_M1
         self.colli = false
         self.img = "ghost_fire_r"           -- 同 style 27/31（WalkImageSystem.lua:367）
-        object.smear_add(self, 130)
+        smear_add(self, 130)
     end,
     frame = function(self)
         enemy.frame(self)
@@ -396,10 +427,9 @@ do
     ---给 24 秒留够收尾的余量。
     local CARD_NAME = "六面道中「成群的亡灵」"
     local CARD_TIME = 24
-    ---关卡号 32 = 现在 `core.lua` 的 STAGE_COUNT(31) + 1，注册成正式关卡后就是 th34 自己的档
-    ---（th16AEX 用 `STAGE_COUNT + 1`，会顺延到 33）。⚠ 注册之前 32 这一档是 th16AEX 占着的，
-    ---而它在 `_editor_output.lua:1228` **最后载入**、editname 也是 "1a" ⇒ 只把 "34" 塞进
-    ---StageID 的话，`_editor_boss["1a32"]` 会被它的 `boss.Define` 盖掉。见文件头的说明。
+    ---关卡号 32 = `core.lua` 的 STAGE_COUNT(32) + 1（已注册），th16AEX 顺延到 33。
+    ---th16AEX 的 editname 也是 "1a" 且最后载入，所以 STAGE_COUNT 必须跟着改，
+    ---否则 `_editor_boss["1a32"]` 会被它盖掉。见文件头的注册清单。
     local LEVEL = 32
     ---符卡历史槽位（spell_card_data 的键，也是符卡练习的解锁 id），跨关卡唯一。
     ---实测：把全项目 `boss.card.add` 的末参**和 th31.lua 的 LIST 表第 3 项**一起数，
