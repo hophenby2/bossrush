@@ -136,6 +136,78 @@
 ---  E t=1440   dt 10 : L( 32,112) R(-160,112) L( 96,128) R( -64,160)
 ---                     L(160,144) R(-128,144) L( 64,160) R( -32,160)
 ---  F t=1530   dt  6 : L( 32,112)* R(-128,112)* … 15 只，全是 sub 13/15
+---==================== 第 4 面道中（第二张「道中搬运卡」，2026-09-28 增补） ====================
+---把原作 `data/ecldata4.ecl` **时间轴 0（偏移 0x1AA1C，420 条指令）** 里 t=200..6622 的
+---第一段道中（293 只）复刻成**同一张关卡上的第二张符卡**：挂法、坐标换算、
+---「逐帧跑时间轴」的结构、弹池丢弹规则都照抄上面那张第六面道中卡。
+---
+---数据和读法（同样是逐字节读的字节码，没有用 decl）：
+---  · 时间轴 0 只有 op 0/2（普通 spawn，op2 额外置 mirror）——它就是「道中」。
+---    t=7122 那一条是道中 BOSS（sub 35，进 sub 后 SET_LIFE 13000），跳过；
+---    t=11122 之后是后半段（sub 11 / 24..27 / 29..33），本卡不要。
+---  · 指令头 = i16 time / i16 arg0(sub) / i16 opcode / i16 size + 6×4B args；
+---    args[0..2] 是 Float3 出生点、args[3]=life、args[4]=itemdrop、args[5]=score。
+---    **spawn 是当帧立刻把 sub 跑到第一条 time>0 的指令**，所以 t=0 的指令出生即生效。
+---  · 用到的子程序：4=炮台本体（sub 5/6/7/8 各自 SUB_CALL 4）、9=大幽灵、10=大幽灵的散射、
+---    12=厚血怪的死亡回调、13/14=厚血怪本体、15=旋环妖精本体（17/19/21 各自 SUB_CALL 15）、
+---    16/18/20=三种妖精的死亡弹。（反汇编脚本 /tmp/eclwork/vd.py；语义按同目录
+---    EclManager.cpp / BulletManager.cpp 还原。）
+---
+---这一段道中在干什么（自然语言版）
+---  t=200 起，画面**左右两个屏幕边缘外一点**（原作 x=−16 / 400 ⇒ 我们的 ±208）
+---  按 4 帧（后面加快到 2 帧）一只的节奏冒出一排「炮台」，一共 72 只。
+---  炮台原地不动（原作 MOVE_DIR_TIME 的帧数是 0 ⇒ 空操作），出生后第 50..114 帧
+---  慢慢自转，并且**每 20 帧朝自机打一圈 25 发**（首轮延迟 1..20 帧随机）——
+---  5 层同心环、每层 5 发，层与层再错开 ±3.75°（第二组 ±5.625°），
+---  5 层的速度 4 / 3.4 / 2.8 / 2.2 / 1.6。打到第 114 帧停火，本体 2114 帧后自毁。
+---  这一段的弹数**长期顶着原作 1024 的上限**（72 只 × 5~6 轮 × 25 发 ≈ 9000 发），
+---  所以「池满整波不生」在这里是看得见的。
+---  t=2008 起两批各 5 只**大幽灵**：出生 30 帧无敌，每 10 帧朝自机撒一把 14 发随机散射
+---  （半角从 11.25° 线性收到 0°，速度 1.5~3.8），撒满 10 把就只是飘着、自转。
+---  t=3088 起左右各 7 只**厚血怪**：60 帧里从上往下滑 180 px（ease-out-quad），
+---  到位那一帧把自机角冻结下来，然后打**20 轮 7 路扇**：第 1 轮是直线、之后每轮的
+---  两翼张角从 60°（右半边 90°）线性收到 11.25°（右半边 15°）；速度两档 4 / 2。
+---  被击破时撒 6 个道具、消掉半径 96 内的弹（弹变成点道具）。
+---  t=4348 起是 144 只**旋环妖精**（sub 17/19/21 三色交错），原地自转（三种速度），
+---  出生后第 134 帧朝自机打一圈 24 发，然后原地飘着。三种的**死亡弹**各不相同
+---  （原作 sub 16/18/20，见下面的 `fairy4_death_a/b/c`）。
+---  最后一只在 t=6622 出现，它的那一圈在 t=6756 打完。
+---
+---与原作的不同（承上面那张卡的编号继续排）
+---  17  血量按**这一关的伤害系数**重算：原作第 4 面非 boss 是 ×(1−1/4−1/16) = 0.6875
+---      （EnemyManager.cpp:820-845；只有第 5/6 面才是 ÷2），按灵梦 DPS 比
+---      （本仓库 106.4 / 原作 744.6）折 life × 0.1429 ⇒ 10→1、100→14、300→43、
+---      400→57、500→71（见 `hp4`）。
+---  18  不做 rank 缩放：原作 `SET_SHOOT_INTERVAL_RAND` 会按 rank 加减 `shootInterval/5`
+---      （Lunatic 的 rank 在 10..32 之间漂，间隔会在 16~24 之间抖），本仓库没有 rank，
+---      固定用时间轴里的值 20 帧；count/speed 的 rank 分支本来就被符卡阶段跳过。
+---  19  `SET_SHOOT_INTERVAL_RAND` 用协程 + 首轮随机延迟复刻（原作首轮延迟 1..n 帧，
+---      之后每 n 帧一发，到 t=114 把间隔置 0 停火）。
+---  20  弹的**颜色是代理**：TH07 的 spriteOffset(1..16) 直接是色档、弹型由 sprite 决定，
+---      本仓库用 `COLOR.*` 取同号色近似；弹型 PELLET/RICE→`grain_a`、
+---      BALL/RING_BALL→`ball_small`、ARROWHEAD→`arrow_small`。
+---  21  `INIT_BULLET_CMD` 的两条运动（0x10 每帧往速度上加一个固定向量、0x80 用 60 帧
+---      线性减速到 0 再拐向自机）本仓库没有 API，用 `TH34_cmdbullet` 逐帧复刻。
+---  22  炮台/妖精的 x=±208 忠实取自原作：原作的屏幕比场地宽，它们是**看得见**的；
+---      本仓库的 `SetWorld(288,46,384,448)` 也在场地外侧留了黑边，同样看得见
+---      （只有窗口特别窄的极端情况才会被裁掉）。
+---  23  道具是近似：原作 itemdrop 0/2 是能量道具、−1 是 1/3 概率掉随机道具；
+---      本仓库没有能量类道具 ⇒ 一律折成信仰/点道具。
+---  24  `DEATH_ANM 0x300`（那团亡灵特效）没有 1:1 资源，用本类自带的死亡特效代替。
+---  25  弹池 `POOL4_SIZE = 1024`，丢弹规则与上一张卡一致。
+---  26  原作 sub 5..8 / 17..21 靠**写全局变量再 SUB_CALL** 传参（SUB_CALL 会把
+---      `g_GlobalEclVars` 快照进 context 的 globalVars，sub 4/15 再从 $10029/$10033 读），
+---      移植版直接按各子程序写死常量，不复刻这层全局泄漏。
+---  27  sub 13/14 的扇是 **20 轮**（DEC_JUMP 先减后跳），而且 DEC_JUMP 的落点是
+---      **第一条 op65**（不是 t=60 的块首）⇒ INIT_INTERP 只注册一次、张角连着 20 轮
+---      单调收窄；第 1 轮 $10005 还没被写过 ⇒ 张角是 0（直线）。这两点都照做了。
+---  28  敌人不夹框（原作这段没有 SET_MOVEMENT_BOUNDS）⇒ 厚血怪停在 y=76（画面上方）；
+---      出屏也不回收（我们的回收边界 ±224 比屏幕大），各自靠寿命帧自毁。
+---  29  sub 9 的半角是**每 10 帧读一次插值**：INIT_INTERP 的 fn 索引是 0
+---      ⇒ MathLerp（不是上面那张卡的 Hermite）⇒ 半角 = 11.25° × (1 − min(t,100)/100)。
+---  30  sub 16 的 ②③④ 是 Easy/Normal/Hard 行，Lunatic 只跑 ①⑤⑥⑦ 四条
+---      ⇒ 死亡弹是 6+10+6+6 = 28 发。
+---======================================================================================
 --------------------------------------------------------------
 
 local class = {}
@@ -542,6 +614,627 @@ do
     ---t=120 时 RawDel。最后一只幽灵在卡内 t=894 出生（最晚 t≈1144 出界），就算它临走前被
     ---击破，那团残火也只活到 t≈1264 —— 都在卡长 1440 之内，所以 del 里没事可做。
     ---（也正因为它们不挂 _servants，boss_system:refresh(1) 的 KillServants 不会误杀它们。）
+    function card:del() end
+
+    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+end
+
+---==================== 第 4 面道中：代码 ====================
+---自然语言说明与逐条差异都在文件头的「第 4 面道中」单元里。
+local ball_small, grain_a = ball_small, grain_a
+local bullet = bullet
+local Angle, Dist = Angle, Dist
+---★ 不用全局的 `PI`/`atan2`：自检桩件（tools/check_stage.lua）只导出 `abs/sqrt/int/Angle/Dist`，
+---没有这两个全局（引擎里倒是有，见 THlib/lib/Lmath.lua:8 与 Lapi.lua:72）——
+---本文件其它地方也是 `math.atan2`/字面量 PI 的写法（th31.lua:368）。
+local atan2 = math.atan2
+local PI = math.pi
+
+---TH07 的角度是弧度、y 轴朝下；我们的 sin/cos 是角度制、y 轴朝上。
+---整段只用「弧度 → 角度」这一个换算；方向（取反）按角度**集合**处理（见文件头差异 20）。
+local RAD2DEG = 180 / PI
+
+---第 4 面非 boss 的血量折算（文件头差异 17）：life × 0.1429，保底 1 点。
+local function hp4(life)
+    return max(1, int(life * 0.1429 + 0.5))
+end
+
+---原作同屏弹幕上限 1024（TH07 `BulletManager.hpp` 的 MAX_BULLETS）。
+---丢弹规则与上一张卡一致：池满 ⇒ 整波不生；生到一半见底 ⇒ 丢剩下的；两条路径都响音效。
+local POOL4_SIZE = 1024
+local pool4 = {}
+local sound_tick4, sound_stamp4 = 0, -1
+
+local function pool4_used()
+    for i = #pool4, 1, -1 do
+        if not in_bound(pool4[i]) then
+            table.remove(pool4, i)
+        end
+    end
+    return #pool4
+end
+
+---同一帧里同一种音效只响一声（原作 SoundPlayer 的队列按 idx 去重）。
+local function sound4(self)
+    if sound_stamp4 ~= sound_tick4 then
+        sound_stamp4 = sound_tick4
+        PlaySound("tan00", 0.08, self.x / 256)
+    end
+end
+
+---一次「波」：gen(i) 依次给出发射参数。
+local function volley4(self, total, gen)
+    local room = POOL4_SIZE - pool4_used()
+    local i = 1
+    while i <= total and room > 0 do
+        local style, col, v, a = gen(i)
+        pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x, self.y, v, a, false, 0, false)
+        room, i = room - 1, i + 1
+    end
+    sound4(self)
+end
+
+---同上，但由 gen 自己 New（给带 INIT_BULLET_CMD 的 TH34_cmdbullet 用）。
+local function volley4_raw(self, total, gen)
+    local room = POOL4_SIZE - pool4_used()
+    local i = 1
+    while i <= total and room > 0 do
+        pool4[#pool4 + 1] = gen(i)
+        room, i = room - 1, i + 1
+    end
+    sound4(self)
+end
+
+---op65 SPREAD 的展开（TH07 `BulletManager.cpp:180-202`）：count1 决定偏移、x 奇数取负。
+---返回的是每发的**相对角**（度）；这一族两翼对称，所以取反与否是同一个集合。
+local function spread_offsets(count1, a2)
+    local out = {}
+    for x = 0, count1 - 1 do
+        local a
+        if count1 % 2 == 1 then
+            a = a2 * int((x + 1) / 2)
+        else
+            a = int(x / 2) * a2 + a2 * 0.5
+        end
+        if x % 2 == 1 then
+            a = -a
+        end
+        out[x + 1] = a
+    end
+    return out
+end
+
+---sub 12 的 REMOVE_BULLETS_RADIUS：半径内的弹变成点道具（`BulletManager.cpp:602-627`）。
+---只扫本卡自己的弹池（这张卡的所有弹都登记在 pool4 里，见文件头差异 25）。
+local function clear4_radius(x, y, r)
+    local r2 = r * r
+    for i = #pool4, 1, -1 do
+        local b = pool4[i]
+        if IsValid(b) and (b.x - x) * (b.x - x) + (b.y - y) * (b.y - y) <= r2 then
+            table.remove(pool4, i)
+            New(item.obj.point, b.x, b.y)
+            object.RawDel(b)
+        end
+    end
+end
+
+---INIT_BULLET_CMD 的两条运动（TH07 `BulletManager.cpp:410-421 / 739-756 / 845-875`）：
+---  0x10 TargetVelocity：出生时把（朝向, 速度）冻结成一个向量，之后每帧 velocity += 该向量，
+---       并把朝向重新对齐到速度方向（速度过零后会自己反过来）。
+---  0x80 DirChangeAim：用 dur 帧沿当前朝向把速度线性减到 0，dur 帧后
+---       朝向 = 自机方向 + cmd.speed、速度 = cmd.angle，重复 loopCount 次。
+---本仓库没有对应 API，所以逐帧自己算（差异 21）。bound 留默认 true ⇒ 出屏照常回收。
+class["TH34_cmdbullet"] = Class(bullet, {
+    ---@param cmd table { type, dur, loop, angle(度), speed, vec_x, vec_y }
+    init = function(self, style, col, x, y, v, a, cmd)
+        bullet.init(self, style, col, false, true)
+        self.x, self.y = x, y
+        self.rot = a
+        self.vx, self.vy = v * cos(a), v * sin(a)
+        self.c_type, self.c_dur, self.c_loop = cmd.type, cmd.dur, cmd.loop
+        self.c_timer, self.c_done = 0, 0
+        self.c_angle, self.c_speed = cmd.angle, cmd.speed
+        self.c_vx, self.c_vy = cmd.vec_x or 0, cmd.vec_y or 0
+        self.c_ang, self.c_spd = a, v
+    end,
+    frame = function(self)
+        if self.c_type == 0x10 then
+            if self.c_timer < self.c_dur then
+                self.vx, self.vy = self.vx + self.c_vx, self.vy + self.c_vy
+                if abs(self.vx) > 0.0001 or abs(self.vy) > 0.0001 then
+                    ---TH07 的 this->angle 是弧度，而我们的 `rot` 是角度（LuaSTG 的 Render 吃角度）
+                    self.rot = math.deg(atan2(self.vy, self.vx))
+                end
+            end
+            self.c_timer = self.c_timer + 1
+        elseif self.c_type == 0x80 then
+            local spd
+            if self.c_timer >= self.c_dur then
+                self.c_done = self.c_done + 1
+                self.c_ang = Angle(self, player) + self.c_angle
+                self.c_spd = self.c_speed
+                spd = self.c_spd
+                self.c_timer = 0
+                if self.c_done >= self.c_loop then
+                    self.c_type = 0
+                end
+            else
+                spd = self.c_spd - self.c_timer * self.c_spd / self.c_dur
+            end
+            self.rot = self.c_ang
+            self.vx, self.vy = spd * cos(self.c_ang), spd * sin(self.c_ang)
+            self.c_timer = self.c_timer + 1
+        end
+        bullet.frame(self)
+    end,
+})
+
+---──────────────────── 炮台（原作 sub 5/6/7/8 → SUB_CALL 4） ────────────────────
+---原地不动、t=50..114 自转、每 20 帧打一圈 25 发；sprite 0/3 的差别用弹型代理体现。
+local TUR4_STYLE = 24                       -- 原作 SET_ANM 24；用 enemy_orb2 当代理
+local TUR4_GAP = 20                         -- SET_SHOOT_INTERVAL_RAND 20（Lunatic 行）
+local TUR4_STOP = 114                       -- t=114 把间隔置 0 ⇒ 停火
+local TUR4_LIFE = 2114                      -- t=2114 UNIMP ⇒ 自毁
+local TUR4_INVUL = 10
+local TUR4_SPIN = 0.0981748 * RAD2DEG       -- ANGULAR_VELOCITY = π/32
+local TUR4_C1, TUR4_C2 = 5, 5
+local TUR4_S1, TUR4_S2 = 4, 1
+---sub5/6 的 sprite=0（PELLET）、sub7/8 的 sprite=3（BALL）；spriteOffset 都是 6。
+---★ 层间偏移角的**符号四种各不相同**（sub5 +π/48、sub6 −π/48、sub7 −π/32、sub8 +π/32）——
+---不能只按「弹型」分两组，否则 sub6/sub7 的五层会朝反方向叠（原作 sub5..8 靠
+---`$10041` 传进 sub4 的 `angle2`，四种各写各的）。
+local TUR4_A2 = {
+    [5] = 0.0654498 * RAD2DEG,      -- +π/48
+    [6] = -0.0654498 * RAD2DEG,     -- −π/48
+    [7] = -0.0981748 * RAD2DEG,     -- −π/32
+    [8] = 0.0981748 * RAD2DEG,      -- +π/32
+}
+
+local function turret4_volley(self)
+    local p = Angle(self, player)
+    local step = 360 / TUR4_C1
+    volley4(self, TUR4_C1 * TUR4_C2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / TUR4_C1), k % TUR4_C1
+        local v = TUR4_S1 - (TUR4_S1 - TUR4_S2) * layer / TUR4_C2
+        return self.bstyle, self.bcol, v, p + ring * step + layer * self.a2
+    end)
+end
+
+class["TH34_turret4"] = Class(enemy, {
+    ---@param sub number 原作的子程序号 5/6/7/8（决定 sprite 0/3 与层间偏移角的符号）
+    init = function(self, x, y, life, sub)
+        enemy.init(self, TUR4_STYLE, hp4(life), false, true, true)
+        self.x, self.y = x, y
+        self.kind = sub
+        self.a2 = TUR4_A2[sub]
+        self.bstyle = (sub >= 7) and ball_small or grain_a   -- sub7/8 的 sprite=3（BALL）
+        self.bcol = COLOR.BLUE               -- spriteOffset 6
+        self.protect = true                  -- SET_INVINCIBILITY_TIMER 10
+        task.New(self, function()
+            task.Wait(TUR4_INVUL)
+            self.protect = false
+        end)
+        ---开火：首轮延迟 1..20 帧（SET_SHOOT_INTERVAL_RAND 的 0..n 随机初值），到 t=114 停。
+        task.New(self, function()
+            task.Wait(ran:Int(1, TUR4_GAP))
+            while self.timer < TUR4_STOP do
+                turret4_volley(self)
+                task.Wait(TUR4_GAP)
+            end
+        end)
+        task.New(self, function()
+            task.Wait(TUR4_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        if self.timer > 50 and self.timer <= TUR4_STOP then
+            self.rot = self.rot + TUR4_SPIN
+        end
+    end,
+    kill = function(self)
+        ---itemdrop = −1：原作 1/3 概率掉随机道具（差异 23 折成信仰）。
+        if ran:Int(0, 2) == 0 then
+            New(item.obj.faith, self.x, self.y)
+        end
+        enemy.kill(self)
+    end,
+})
+
+---──────────────────── 大幽灵（原作 sub 9 + sub 10） ────────────────────
+---出生 30 帧无敌、每 10 帧朝自机撒 14 发；半角从 11.25° 线性收到 0（差异 29）。
+local GH4_STYLE = 31
+local GH4_INVUL = 30
+local GH4_SPIN = 0.0314159 * RAD2DEG        -- ANGULAR_VELOCITY = −π/100（我们取 −）
+local GH4_HALO = 0.19635 * RAD2DEG          -- INIT_INTERP 的 p0 = π/16
+local GH4_N = 14                            -- Lunatic 行 count1
+local GH4_S1, GH4_S2 = 3.8, 1.5
+local GH4_LIFE = 2100
+
+local function ghost4_volley(self)
+    local p = Angle(self, player)
+    local halo = GH4_HALO * (1 - min(self.timer, 100) / 100)
+    volley4(self, GH4_N, function()
+        local a = p + ran:Float(-halo, halo)     -- RANDOM：角度先抽
+        return ball_small, COLOR.BLUE, ran:Float(GH4_S2, GH4_S1), a
+    end)
+end
+
+class["TH34_ghost4"] = Class(enemy, {
+    init = function(self, x, y, life)
+        enemy.init(self, GH4_STYLE, hp4(life), false, true, false)
+        self.x, self.y = x, y
+        self.protect = true
+        self.drop = { 0, 0, 1 }              -- itemdrop 1 = 点道具
+        task.New(self, function()
+            task.Wait(GH4_INVUL)
+            self.protect = false
+        end)
+        task.New(self, function()
+            for _ = 1, 10 do
+                task.Wait(10)
+                ghost4_volley(self)
+            end
+        end)
+        task.New(self, function()
+            task.Wait(GH4_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        if self.timer > 50 and self.timer <= 100 then
+            self.rot = self.rot - GH4_SPIN
+        end
+    end,
+})
+
+---──────────────────── 厚血怪（原作 sub 13/14） ────────────────────
+---60 帧 ease-out-quad 下滑 180 px ⇒ 到位后 20 轮 7 路扇，张角逐轮收窄；
+---被击破时撒 6 个道具 + 消掉半径 96 内的弹（原作死亡回调 sub 12）。
+local TANK4_STYLE = 31
+local TANK4_INVUL = 40
+local TANK4_RISE_T = 60
+local TANK4_RISE = 180
+local TANK4_C1, TANK4_C2 = 7, 2
+local TANK4_S1, TANK4_S2 = 4, 2
+local TANK4_ROUNDS = 20
+local TANK4_GAP = 9
+local TANK4_LIFE = 2129
+
+---第 r 轮的张角：第 1 轮 $10005 还没被写过（=0），之后是 INIT_INTERP 的
+---MathLerp(9(r−1)/180) —— 落点是第一条 op65，所以插值只注册一次、不重置（差异 27）。
+local function tank4_a2(self, r)
+    if r <= 1 then
+        return 0
+    end
+    local t = min(TANK4_GAP * (r - 1), 180) / 180
+    return (self.a2_1 - self.a2_0) * t + self.a2_0
+end
+
+local function tank4_volley(self, r)
+    local off = spread_offsets(TANK4_C1, tank4_a2(self, r))
+    volley4(self, TANK4_C1 * TANK4_C2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / TANK4_C1), k % TANK4_C1
+        local v = TANK4_S1 - (TANK4_S1 - TANK4_S2) * layer / TANK4_C2
+        return ball_small, self.bcol, v, self.aim + off[ring + 1]
+    end)
+end
+
+class["TH34_tank4"] = Class(enemy, {
+    ---@param kind string "l"（sub13，spriteOffset 10）/ "r"（sub14，spriteOffset 13）
+    init = function(self, x, y, life, kind)
+        enemy.init(self, TANK4_STYLE, hp4(life), false, true, true)
+        self.x, self.y = x, y
+        self.y0 = y
+        self.kind = kind
+        self.bcol = (kind == "l") and COLOR.GREEN or COLOR.GOLDEN_YELLOW
+        ---INIT_INTERP 的 p0/p1：左（Lunatic 行）60°→11.25°，右（唯一一行）90°→15°
+        self.a2_0 = ((kind == "l") and 1.0472 or 1.5708) * RAD2DEG
+        self.a2_1 = ((kind == "l") and 0.19635 or 0.261799) * RAD2DEG
+        self.aim = 0
+        self.protect = true
+        self.drop = { 0, 0, 1 }              -- itemdrop 1 = 点道具
+        task.New(self, function()
+            task.Wait(TANK4_INVUL)
+            self.protect = false
+        end)
+        task.New(self, function()
+            task.Wait(TANK4_RISE_T)
+            self.aim = Angle(self, player)   -- $10004 在到位这一帧冻结
+            for r = 1, TANK4_ROUNDS do
+                tank4_volley(self, r)
+                task.Wait(TANK4_GAP)
+            end
+        end)
+        task.New(self, function()
+            task.Wait(TANK4_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        ---位置先更新，再让 task 用新位置发弹（子弹必须从到位后的位置出去）。
+        if self.timer <= TANK4_RISE_T then
+            local u = self.timer / TANK4_RISE_T
+            self.y = self.y0 - TANK4_RISE * (1 - (1 - u) * (1 - u))
+        end
+        enemy.frame(self)
+    end,
+    kill = function(self)
+        ---sub 12：4 个随机道具 + 2 个点道具 + 消弹（差异 23）。
+        scatter_items(item.obj.faith, 4, self.x, self.y)
+        scatter_items(item.obj.point, 2, self.x, self.y)
+        clear4_radius(self.x, self.y, 96)
+        enemy.kill(self)
+    end,
+})
+
+---──────────────────── 旋环妖精（原作 sub 17/19/21 → SUB_CALL 15） ────────────────────
+---原地自转（三种速度）、出生第 134 帧打一圈 24 发；死亡弹按 sub 16/18/20 分三种。
+local FA4_STYLE = 5                          -- 用 kedama/enemy5 的蓝色小人当代理
+local FA4_INVUL = 10
+local FA4_LIFE = 2134
+local FA4_SHOT_T = 134
+local FA4_N = 24
+local FA4_S = 4
+local FA4_SPIN = { a = 0.0981748 * RAD2DEG, b = 0.0654498 * RAD2DEG, c = 0.0654498 * RAD2DEG }
+
+---sub 16（Lunatic 实际发射 ①+⑤+⑥+⑦ 四条，差异 30）
+local function fairy4_death_a(self)
+    local p = Angle(self, player)
+    ---① count1=3,count2=2,s1=2,s2=1,a1=π,a2=2.8125°，flags 0x210（0x10：每帧反向加速）
+    local off1 = spread_offsets(3, 0.0490874 * RAD2DEG)
+    local vx, vy = -0.1 * cos(p + 180), -0.1 * sin(p + 180)
+    volley4_raw(self, 3 * 2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / 3), k % 3
+        local v = 2 - (2 - 1) * layer / 2
+        local a = p + 180 + off1[ring + 1]
+        return New(class["TH34_cmdbullet"], ball_small, COLOR.BLUE, self.x, self.y, v, a,
+                   { type = 0x10, dur = 60, loop = 1, angle = 0, speed = -0.1,
+                     vec_x = cos(a) * -0.1, vec_y = sin(a) * -0.1 })
+    end)
+    ---⑤ count1=5,count2=2,s1=3.5,s2=1,a1=0,a2=6.43°
+    local off2 = spread_offsets(5, 0.1122 * RAD2DEG)
+    volley4(self, 5 * 2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / 5), k % 5
+        local v = 3.5 - (3.5 - 1) * layer / 2
+        return ball_small, COLOR.DEEP_BLUE, v, p + off2[ring + 1]
+    end)
+    ---⑥⑦ 各 count1=3,count2=2,s1=2,s2=1,a2=5.625°，a1 = ±120°
+    for _, a1 in ipairs({ 120, -120 }) do
+        local off3 = spread_offsets(3, 0.0981748 * RAD2DEG)
+        volley4(self, 3 * 2, function(i)
+            local k = i - 1
+            local layer, ring = int(k / 3), k % 3
+            local v = 2 - (2 - 1) * layer / 2
+            return ball_small, COLOR.DEEP_BLUE, v, p + a1 + off3[ring + 1]
+        end)
+    end
+end
+
+---sub 18：count1=7,count2=3,s1=距离/128+0.8,s2=0.8,a2=3.6°
+local function fairy4_death_b(self)
+    local p = Angle(self, player)
+    local s1 = Dist(self, player) / 128 + 0.8
+    local off = spread_offsets(7, 0.0628319 * RAD2DEG)
+    volley4(self, 7 * 3, function(i)
+        local k = i - 1
+        local layer, ring = int(k / 7), k % 7
+        local v = s1 - (s1 - 0.8) * layer / 3
+        return ball_small, COLOR.RED, v, p + off[ring + 1]
+    end)
+end
+
+---sub 20：三组 RING_ABS 各 12 发（Lunatic），**每组各挂自己那条 INIT_BULLET_CMD 0x80**
+---（原始字节码是 INIT→spawn 交替三次，不是一条槽被覆盖）：
+---  组1 cmd(speed=0,      angle=1  ) → 朝自机偏移 0°  / 到点后速度 1
+---  组2 cmd(speed=+2.0944, angle=1.5) → 偏移 +120°（我们 −120°）/ 速度 1.5
+---  组3 cmd(speed=−2.0944, angle=1.5) → 偏移 −120°（我们 +120°）/ 速度 1.5
+---（0x80 的读取有个 ZUN 交换：`commandStates[3].angle = cmd.speed`（自机偏移）、
+--- `commandStates[3].speed = cmd.angle`（到点后的速度）——见 BulletManager.cpp:410-420。）
+local FAIRY4_C_CMD = {
+    { off = 0, mag = 1 },
+    { off = -2.0944 * RAD2DEG, mag = 1.5 },
+    { off = 2.0944 * RAD2DEG, mag = 1.5 },
+}
+local function fairy4_death_c(self)
+    for g = 0, 2 do
+        local a1 = (g * 0.174533) * RAD2DEG   -- Lunatic 行：0° / 10° / 20°
+        local cmd = FAIRY4_C_CMD[g + 1]
+        volley4_raw(self, 12, function(i)
+            local a = (i - 1) * (360 / 12) - a1
+            return New(class["TH34_cmdbullet"], grain_a, COLOR.RED, self.x, self.y, 4.2, a,
+                       { type = 0x80, dur = 60, loop = 1, angle = cmd.off, speed = cmd.mag })
+        end)
+    end
+end
+
+class["TH34_fairy4"] = Class(enemy, {
+    ---@param kind string "a"（sub17）/ "b"（sub19）/ "c"（sub21）
+    ---@param drop number 原作时间轴的 itemdrop（0 = 小能量 / 1 = 点）
+    init = function(self, x, y, life, kind, drop)
+        enemy.init(self, FA4_STYLE, hp4(life), false, true, true)
+        self.x, self.y = x, y
+        self.kind = kind
+        self.protect = true
+        self.drop = { 0, DROP_FAITH[drop], DROP_POINT[drop] }
+        task.New(self, function()
+            task.Wait(FA4_INVUL)
+            self.protect = false
+        end)
+        task.New(self, function()
+            task.Wait(FA4_SHOT_T)
+            local p = Angle(self, player)
+            volley4(self, FA4_N, function(i)
+                return arrow_small, COLOR.GREEN, FA4_S, p + (i - 1) * (360 / FA4_N)
+            end)
+        end)
+        task.New(self, function()
+            task.Wait(FA4_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        if self.timer > 50 and self.timer <= TUR4_STOP then
+            self.rot = self.rot + FA4_SPIN[self.kind]
+        end
+    end,
+    kill = function(self)
+        if self.kind == "a" then
+            fairy4_death_a(self)
+        elseif self.kind == "b" then
+            fairy4_death_b(self)
+        else
+            fairy4_death_c(self)
+        end
+        enemy.kill(self)
+    end,
+})
+
+---==================== 挂到空 boss 的第二张符卡 ====================
+---这一张和上面的「六面道中」共用同一个空 boss：`boss.Define` 只能调一次、且必须早于
+---`boss.card.add`，但 `boss.card.add` 可以重复调 —— 每调一次就往 `_editor_boss["1a32"]`
+---的 `cards` 里追加一张，所以这就是「th34 的另一张符卡」。
+---BGM 沿用 boss.Define 时定的 TH07_1（一个 boss 只能有一首），背景仍是第六面。
+do
+    local CARD_NAME = "四面道中「骚灵们的合奏」"
+    ---原作这一段 t=200..6622（约 110 秒），最后一只妖精的死亡弹到 t≈6756；
+    ---给 150 秒留够收尾（所有小怪的寿命帧都在卡内跑完，del 里没事可做）。
+    local CARD_TIME = 150
+    ---关卡号 32 = core.lua 的 STAGE_COUNT(32) + 1（和上一张卡同一个 boss）。
+    local LEVEL = 32
+    ---符卡历史槽位（spell_card_data 的键，也是符卡练习的解锁 id），跨关卡唯一。
+    ---实测：全项目 `boss.card.add` 的末参里 1..432 已被占满（432 = th31 的
+    ---「虚史「幻想郷伝説」」那行），所以这张取 433；注册后 `check_stage.lua --all`
+    ---会复核没有跨组重复。
+    local CARD_ID = 433
+
+    ---逐条生成表：{ 距上一只的帧数, 子程序号, x, y, itemdrop, life }
+    ---（x/y 已按「我们 x = TH07 x − 192 / 我们 y = 224 − TH07 y」换算；293 条全部用
+    --- /tmp/eclwork 的解释器逐值对过时间轴 0，dt 也对过一遍。）
+    ---子程序号决定挂哪个类：5..8=炮台、9=大幽灵、13/14=厚血怪、17/19/21=旋环妖精。
+    local WAVE4 = {
+    {   0,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10},
+    {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10},
+    {   4,  5, -208,  144, -1,  10}, { 200,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10},
+    {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10},
+    {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {  80,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10},
+    {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10},
+    {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {  80,  6,  208,   96, -1,  10},
+    {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10},
+    {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10},
+    {  90,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
+    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
+    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
+    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
+    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, { 120,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
+    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
+    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
+    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
+    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
+    { 120,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, { 120,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
+    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144,  2,  10}, {   2,  7, -208,  144,  2,  10},
+    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
+    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
+    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
+    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144,  2,  10},
+    {   2,  7, -208,  144,  2,  10}, { 700,  9,  176,  240,  1, 100}, {  60,  9, -176,  256,  1, 100}, {  60,  9,  -96,  272,  1, 100},
+    {  60,  9,   64,  240,  1, 100}, {  60,  9,    0,  256,  1, 100}, { 300,  9,  176,  240,  1, 100}, {  60,  9, -176,  256,  1, 100},
+    {  60,  9,  -96,  272,  1, 100}, {  60,  9,   64,  240,  1, 100}, {  60,  9,    0,  256,  1, 100}, { 300, 13, -160,  256,  1, 500},
+    { 100, 14,  160,  256,  1, 500}, { 100, 13, -128,  256,  1, 500}, { 100, 14,  128,  256,  1, 500}, {  90, 13,  -96,  256,  1, 500},
+    {  90, 14,   96,  256,  1, 500}, {  80, 13, -128,  256,  1, 500}, {  80, 14,  160,  256,  1, 500}, {  70, 13, -128,  256,  1, 500},
+    {  70, 14,  128,  256,  1, 400}, {  60, 13,  -96,  256,  1, 400}, {  60, 14,   96,  256,  1, 400}, {  60, 13, -128,  256,  1, 300},
+    {   0, 14,  128,  256,  1, 300}, { 300, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10},
+    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10},
+    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {  50, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10},
+    {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10},
+    {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {  50, 17,  208,  144,  1,  10},
+    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10},
+    {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10},
+    {  50, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10},
+    {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10},
+    {   8, 17, -208,  144,  0,  10}, { 100, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10},
+    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10},
+    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {  50, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
+    {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10},
+    {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {  50, 19,  208,  144,  1,  10},
+    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10},
+    {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10},
+    {  50, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10},
+    {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
+    {   8, 19, -208,  144,  0,  10}, { 100, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
+    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10},
+    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {  50, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10},
+    {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10},
+    {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, { 100, 21,  208,  144,  1,  10},
+    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10},
+    {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
+    {  50, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10},
+    {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10},
+    {   8, 21, -208,  144,  0,  10}, { 300, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
+    {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10},
+    {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {  50, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
+    {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10},
+    {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, { 150, 17,  208,  144,  1,  10},
+    {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10},
+    {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
+    {  50, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10},
+    {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
+    {   8, 21, -208,  144,  0,  10},
+
+    }
+
+    local card = boss.card.New(CARD_NAME, CARD_TIME, CARD_TIME, CARD_TIME, 10000000)
+    function card:before()
+        ---耐久卡：不打超时音、关掉本体的判定与血条（照上面那张卡与 th31 的 Last Word 写法）
+        self.NotPlayTimeOutSound = true
+        self.colli = false
+        self.no_hp_render = true
+    end
+    function card:init()
+        ---弹池登记表与音效去重的帧号都是跨局的模块级状态：重开这张卡（符卡练习）时清一次，
+        ---免得上一局的残留影响第一帧的判定。
+        pool4 = {}
+        sound_tick4, sound_stamp4 = 0, -1
+        ---WAVE4 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
+        ---spawn 当帧就把子程序跑到第一条 time>0 的指令（原作同样如此，见文件头）。
+        task.New(self, function()
+            for _, w in ipairs(WAVE4) do
+                task.Wait(w[1])
+                local sub = w[2]
+                if sub <= 8 then
+                    New(class["TH34_turret4"], w[3], w[4], w[6], sub)
+                elseif sub == 9 then
+                    New(class["TH34_ghost4"], w[3], w[4], w[6])
+                elseif sub <= 14 then
+                    New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
+                else
+                    New(class["TH34_fairy4"], w[3], w[4], w[6],
+                            (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5])
+                end
+            end
+        end)
+    end
+    ---音效去重的时钟：一帧推一格（各小怪拿它跟自己记住的帧号比）。
+    function card:frame()
+        sound_tick4 = sound_tick4 + 1
+    end
+    function card:render() end
+    ---★ 这里不需要清理：所有小怪都是**独立对象**（没有 object.Connect 到 boss），
+    ---寿命最长的妖精是 t=6622 出生、t=8756 自毁，都在 150 秒（9000 帧）的卡内跑完。
     function card:del() end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)

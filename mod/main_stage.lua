@@ -1214,6 +1214,13 @@ NewStage("TH33", "醉生梦死", 31, function(self)
         task.Wait(120)
         boss.CreateGroup(2, self.level)
         task.Wait(120)
+        ---Stage EX（th095 的 scene 100..107，见 mod/GAME/th33.lua）：
+        ---组 3 = 芙兰朵露（100/101）、组 4 = 八云紫（102/103）、
+        ---组 5 = 藤原妹红（104/105）、组 6 = 伊吹萃香（106/107）。
+        for i = 3, 6 do
+            boss.CreateGroup(i, self.level)
+            task.Wait(120)
+        end
     end)
     ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
     ---那是 TH06 的成就 id —— 抄过来的话通关会给「驱散红雾之日」。
