@@ -108,6 +108,12 @@ end
 --   th04 用 `Lfan4`，而 `Lfan` 是 `mod/GAME/th08.lua:1775` 的 `LoadImageGroup` 注册的。
 --   真机上所有关卡文件都会载入（`_editor_output.lua` 的 StageID 循环），
 --   所以这里也要按「全都载入过」来算。
+--   ⚠ 2026-09-24 补 `LoadPS`：粒子也是资源 —— 引擎 `LW_ResourceMgr.cpp:149`
+--   的 `LoadPS(name, …)` 按第 1 参注册成 `ResourceType::Particle`，而
+--   `obj.img = <粒子名>` 在引擎里是**合法**渲染路径（`GameObject.cpp:491` 对
+--   Particle 走 `LAPP.Render(ps, …)`）。th34 的幽灵用 `ghost_fire_y`/`ghost_fire_r`
+--   （`THlib/enemy/enemy.lua:33,36` 注册、`THlib/WalkImageSystem.lua:362-377`
+--   给 style 27..34 用），漏登记就是假报 —— 所以连 `LoadPS` 一起扫。
 do
     local p = io.popen("find mod THlib Resources -name '*.lua' 2>/dev/null")
     if p then
@@ -121,6 +127,8 @@ do
                 end
                 for nm in src:gmatch('LoadImage%s*%(%s*"([%w_]+)"') do reg(nm) end
                 for nm in src:gmatch('LoadTexture%d?%s*%(%s*"([%w_]+)"') do reg(nm) end
+                ---⚠ 名字的引号两种都要认：`enemy.lua:33` 写的是单引号 `LoadPS('ghost_fire_r', …)`
+                for nm in src:gmatch("LoadPS%s*%(%s*['\"]([%w_]+)['\"]") do reg(nm) end
             end
         end
         p:close()
@@ -926,7 +934,31 @@ end
 L.CutOnRadius = function() return 0, 0 end
 
 -- 杂项类
-_G.enemy = Class(O, { init = function(self, hp, drop, ...) self.hp = hp or 1 end,
+-- 敌机的行走图系统：真身 EnemyWalkImageSystem 是在 `enemy:init` 里建的
+-- （`THlib/enemy/enemy.lua:201` `self._wisys = EnemyWalkImageSystem(self, style, 8)`），
+-- 桩件原来不建 —— 于是关卡里 `self._wisys:SetImage(27)`（th34 的幽灵在第 80 帧换装）
+-- 变成 `attempt to index field '_wisys' (a nil value)`。
+-- 只镜像「换装会写 obj.img / obj.rot」这一条，且**名字不在登记表里就不写**
+-- （`WalkImageSystem.lua:355-362` 给 style ≤ 9 生成的是 `enemy<n>_<i>`，
+-- 那些由各关脚本自己注册，桩件里未必有 —— 写下去就变成假报）。
+local GHOST_STYLE_IMG = { [27] = "ghost_fire_r", [28] = "ghost_fire_b", [29] = "ghost_fire_g",
+                          [30] = "ghost_fire_y", [31] = "ghost_fire_r", [32] = "ghost_fire_b",
+                          [33] = "ghost_fire_g", [34] = "ghost_fire_y" }
+local function makeEnemyWisys(obj)
+    return {
+        SetImage = function(_, style)
+            obj.style, obj.ani_intv = style, 8
+            local nm = GHOST_STYLE_IMG[style]
+            if nm then obj.rot = -90 end
+            if nm and _G.REGISTERED_IMAGES[nm] then obj.img = nm end
+        end,
+        frame = function() end, render = function() end,
+    }
+end
+_G.enemy = Class(O, { init = function(self, hp, drop, ...)
+                          self.hp = hp or 1
+                          self._wisys = makeEnemyWisys(self)
+                      end,
                       frame = function() end, render = function() end })
 _G.enemybase = _G.enemy
 for _, n in ipairs({ "bullet_cleaner", "charge_out", "SmearScreen", "SimpleServant",
