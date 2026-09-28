@@ -44,7 +44,8 @@
 ---    · 两层的 v 与基准角是**同一个**（都由那一条 op67 读一次）
 ---  子弹是**直线弹**：从出生点算起固定角度、飞出去就不管自机了（不瞄自机）。
 ---  颜色按漂移方向分：**向右的蓝、向左的红**（原作 spriteOffset 6 / 2 两种箭头色）。
----  小怪血 80、无体术判定（碰到自机不掉血，原作 HAS_CONTACT_HITBOX 0）。
+---  小怪血 16（原作 80，但那是原作的伤害口径，见下面 GHOST_HP 的换算）、
+---  无体术判定（碰到自机不掉血，原作 HAS_CONTACT_HITBOX 0）。
 ---  被击破时原地留一团**残火**（120 帧，向上飘 150 px 后消失），掉 1~2 个道具
 ---  （原作 itemdrop 0=小能量 1=点 2=大能量；本仓库没有能量类道具，见差异 4）。
 ---  t≥1530 那一批（原作 sub 13/15）的残火额外再撒 4 个小能量 + 3 个点。
@@ -92,6 +93,9 @@
 --- 14  原作一条 op67 一次生完「5 + 5」两层，移植版按引擎的双重循环顺序生（层先、环后）——
 ---     同一轮的弹共用一个基准角/速度，看不出差别。
 --- 15  时间轴 t 从**卡开始**算（原作 t=720 映射成 0）。
+--- 16  小怪血量按**本仓库的伤害口径**重新折算成 16（原作 80）—— 原作的 80 是
+---     第 5/6 面「非 boss 伤害 ÷2 + 单帧上限 70」口径下的值，本仓库的灵梦输出只有它
+---     的约 1/5。推导写在 `GHOST_HP` 那里。
 ---
 ---实测（`luajit tools/check_stage.lua mod/GAME/th34.lua 1800 --threat`，场地 384×448）
 ---  · 60px 内弹数 平均 12.5 / 峰值 30（AGENTS §7.2 的「标准符卡 5~14」档）
@@ -184,7 +188,14 @@ end
 ---所以：**本体**要能看见 ⇒ 幽灵用 31（红焰 + Ghost1，还自带一圈光环 aura1）；
 ---纯火焰（烟尘阶段、残火）用 27（只有焰、没身体）。两边都是红焰 ⇒ 一张卡一个色系。
 local GHOST_STYLE, PUFF_STYLE, FLAME_STYLE = 31, 27, 27
-local GHOST_HP = 80             -- 原作时间轴的 life=80（EnemyManager.cpp:885 里 life 就是血）
+---★ 原作时间轴的 life 是 80（`EnemyManager.cpp:885` 里 life 就是血），但**不能直接搬**：
+---原作对第 5/6 面的**非 boss** 敌人伤害要 ÷2（`EnemyManager.cpp:822-828`），
+---且单帧伤害上限 70（`:836-839`）。按这个口径，原作满 P 的灵梦打这段杂鱼只有
+---420（灵梦A）~714（灵梦B）DPS（TH07 `data/ply00*.sht` 的 128 档），而本仓库的灵梦
+---是 96~117 DPS（`reimu.lua:43-62`，2 / 0.3 / 0.65）。等比折算
+---80 × 106.4 / 541.5 ≈ 15.7 ⇒ 取 16，击杀耗时与原作一致（约 9 帧 / 0.15 秒）。
+---不改的话是 50 帧（0.83 秒）才打死一只，手感上就是「打不死」。
+local GHOST_HP = 16
 local GHOST_INVUL = 10          -- 原作 ECL_SET_INVINCIBILITY_TIMER 10
 local PUFF_FRAMES = 80          -- 原作 sub 8 的 SUB_RET 落在 t=80
 local DRIFT_ACCEL = 0.02        -- 原作 ECL_SET_MOVE_ACCEL 0.02（匀加速，不是匀速）
@@ -340,6 +351,11 @@ class["TH34_ghost"] = Class(enemy, {
             self._wisys:SetImage(GHOST_STYLE)
             self.smear = nil                -- 换了贴图，别把烟尘的残影拖到幽灵身上
             self.colli = true
+            ---原作幽灵是 `SET_HITBOX_SIZE 24,24`（sub 10/12/14/16），烟尘才是 `8,8`（sub 8）。
+            ---不写这两行的话，a/b 会一直是粒子贴图 `ghost_fire_r` 自带的半宽 8
+            ---（GameObject.cpp:264 换 img 时按资源半宽覆盖 a/b）—— 幽灵只有 16×16 的判定箱，
+            ---真机上子弹擦着身体过都不算命中，看起来就像「打不死」。
+            self.A, self.B = 24, 24
             task.New(self, function()
                 task.Wait(GHOST_INVUL)
                 self.protect = false
