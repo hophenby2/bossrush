@@ -1242,6 +1242,13 @@ NewStage("TH33", "醉生梦死", 31, function(self)
         task.Wait(120)
         boss.CreateGroup(12, self.level)
         task.Wait(120)
+        ---原作 scene group 5（world06 = 橙与八云蓝）的 8 幕：50/52/54/56 是橙（ecl12_a..d）、
+        ---51/53/55/57 是八云蓝（ecl13_a..d）。同样按「一个角色一个组」拆成两组：
+        ---组 13 = 橙（4 张）、组 14 = 八云蓝（4 张）。
+        boss.CreateGroup(13, self.level)
+        task.Wait(120)
+        boss.CreateGroup(14, self.level)
+        task.Wait(120)
     end)
     ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
     ---那是 TH06 的成就 id —— 抄过来的话通关会给「驱散红雾之日」。
@@ -1267,6 +1274,5 @@ NewStage("SUMMARY", nil, 1, function(self)
     ext.notUIdraw = true
     self.level = 1
 end)
-
 
 

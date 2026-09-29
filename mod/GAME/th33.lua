@@ -216,14 +216,16 @@
 ---     先退到 velocity×4 的位置、再用几帧滑回出膛点（BulletManager.cpp:445-478）；
 ---     本文件没有这层出场滑动，弹一出生就按最终速度飞 —— 弹数、角度、速度曲线都不变，
 ---     只是每颗弹在它自己那条轨迹上比原作早几帧到位。
---- 11) 全局游戏速度（慢放）：Stage 6 的 51/53/55/57（scene 51..57 的八云蓝四张，
----     以及 495 的橙）在 Sub3 里用 `ins_119(11)` 触发扩展回调 11（EclExtended.cpp 的
+--- 11) 全局游戏速度（慢放）：Stage 6 的 51/53/55/57（八云蓝四张，CARD_ID 495/497/499/501）
+---     在 Sub3 里用 `ins_119(11)` 触发扩展回调 11（EclExtended.cpp 的
 ---     PublishGameSpeed：把 g_AnmGameSpeed 设成 floatV7，卡里写 0.25 或 0.5），
 ---     再配 `ins_118(12)/(13)` 切背景 VM 状态，做出「慢镜头 + 换色」的演出；
 ---     ins_119(-1) 收掉。本仓库没有「把整个游戏减速」的接口（改了会连自机、自机弹、
 ---     背景一起慢下来，和本仓库的帧驱动不符）⇒ **这四张一律不实现慢放**，
 ---     弹幕本身的时间轴仍按原作帧数跑。**屏幕上的弹幕形状不变**，只是少了那层慢镜。
 ---     同理 ins_118(12)/(13)/(15)/(16)（背景 VM 状态）也不实现。
+---     （同组橙的四张 494/496/498 用的是 `ins_119(8)` = SpawnEnemyMarkerVm，
+---     那是给本体挂一个标记 VM 的装饰，与慢放无关，同样不实现。）
 ---=====================================
 
 ---实测（2026-09-28，本机 luajit；自检是**逐卡**跑的 —— 每张卡都清场、从 0 帧起，
@@ -274,10 +276,25 @@
 --- 33 魔符「全世界ナイトメア」               0              0.00
 --- 34 時符「トンネルエフェクト」            135              1.68
 --- 35 紅符「ブラッディマジックスクウェア」   356              0.28
---- 36 空虚「インフレーションスクウェア」    123              1.93
+--- 36 空虚「インフレーションスクウェア」    123              0.29
 --- 37 紅蝙蝠「ヴァンパイリッシュナイト」      10              0.00
 --- 38 銀符「パーフェクトメイド」            264              0.71
 --- 39 神鬼「レミリアストーカー」              2              0.00
+---  ── Stage 6（scene group 5 = world06；背景 TH095_bg / BGM TH07_1）──
+--- 40 橙 非符（不亮卡名）               1875             34.73
+--- 41 人智剣「天女返し」                  67（对象 4）       0.21
+--- 42 星符「飛び重ね鱗」                 673              1.16
+--- 43 妄執剣「修羅の血」                 157（对象 1）       2.61
+--- 44 鬼神「鳴動持国天」                  44              0.00
+--- 45 天星剣「涅槃寂静の如し」            299             24.18
+--- 46 化猫「橙」                          62              1.70
+--- 47 四生剣「衆生無情の響き」            386（对象 1）       1.43
+---  （Stage 6 这八行的 44/46 是桩件口径（photoIndex = 0）：卡 44「鳴動持国天」的真正
+---  弹幕是四条帘 + 每拍中一次就变密（ins_115 重开 Sub3/Sub10），卡 46「化猫」的
+---  每轮弹数同样看 photoIndex，卡 47「衆生無情の響き」拍够 4 张才会切进密集波。
+---  用 2400 帧的逼拍桩件（每 120 帧打一下）复测：卡 44 = 44→396、卡 46 = 62→241、
+---  卡 47 = 386→966（卡 41/42/43/45 与基准读数基本持平）。Stage 6 这一批的发弹量
+---  与各卡常量同样按 ECL 原样，没打折。）
 ---  （8 张 Stage 9 的峰值在 1800/3600/14400 帧同样持平：500/500/517、332 平、139 平、
 ---  139 平、150/152/152、0 平、134 平、450 平 —— 卡 16 的末位浮动是发弹相位，不是泄漏。
 ---  卡 21「ギルティ・オワ・ノットギルティ」的 0 是**桩件口径**：它的弹全挂在
@@ -344,7 +361,8 @@
 ---    逐卡的 N：world08 七张是 7/7/10/4/6/7/8，Stage EX 八张是
 ---    6/6/5/6/10/5/3/10，Stage 9 八张是 8/6/6/10/7/6/6/9，Stage 8 八张是
 ---    6/6/7/6/6/7/8/7（scene 80..87，与 SceneSelect.cpp 表末那一列一一对上），
----    Stage 7 八张是 9/3/5/7/6/7/5/7（scene 60..67，同表）
+---    Stage 7 八张是 9/3/5/7/6/7/5/7（scene 60..67，同表），
+---    Stage 6 八张是 8/4/5/3/7/5/5/5（scene 50..57，同表）
 ---    （各卡 PHOTO_LIMIT 就是那一张的 ins_141，见各卡常量段）。
 ---
 ---符卡历史槽位（CARD_ID，跨关唯一）：world08 七张占 410..415 与 416（409 被 th31 占）、
@@ -8198,3 +8216,1181 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
 
     boss.card.add({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--神鬼「レミリアストーカー」
+---──────────────────── Stage 6 橙 非符（ecl12_a，组 13a 第 1 张） ────────────────────
+do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
+    ---原作这一关**没有** ins_104（t=130 是一条 `id=0`，opcode 0 在 EclRunLow.inl 的
+    --- switch 里没有分支 ⇒ NOP），是个前哨：橙从场外落到场地中心，两条**参数完全相同**的
+    ---发弹上下文（Sub5 / Sub6 的字节码逐条一样）轮流甩「正六边形 × 16 档速度」的两组弹；
+    ---另有一条装饰/位移上下文每 20 帧在活动框里漂一次。
+    ---数据源 /tmp/W6d_ecl12_a.txt（ECL …/data/ecl12_a.ecl）。骨架：
+    ---  · Sub2 @384：ins_141(8) ⇒ 拍 8 张；ins_63(-128,-64) 进场 → t=100
+    ---    ins_64(30,4,0,224) 用 30 帧落到 TH095 (0,224)（我们的 (0,0)）→ t=130 的 NOP
+    ---    + ins_75(-160,128,160,345) + ins_52(3) 起主脚本（@660）。
+    ---  · Sub3 @660：t=0 起 Sub4（ins_52(4)）+ 把 slot0 换成 Sub5；t=20 再起一次 Sub4
+    ---    + 把 slot0 换成 Sub6；t=40 的 ins_4(0,-72) 跳回 @680（t=0 那两条）⇒ 40 帧一轮、
+    ---    每 20 帧一波。@660 的 ins_6(extraIntV1,60) 在跳转目标**之前** ⇒ 只写一次。
+    ---  · Sub4 @784：t=15 的 ins_67(20,4,8) 在活动框里按「背离自机」的随机方向漂 160 px；
+    ---    其余（ins_144 / ins_119）不实现。
+    ---  · Sub5 @900 / Sub6 @1052：进上下文**立刻**发两组 —— ins_101 写 slot0 的
+    ---    0x10 VEC（120 帧、每帧 −1/24、方向取出生角），然后
+    ---      OCIRC_AIMED：型 6、色 14、c1=6、c2=16、速 4→1.1875、flags 0x212（带 VEC）
+    ---      CIRC_AIMED ：同参、flags 0x202（**不带** VEC）
+    ---    ⇒ 前一组 96 发沿各自出生方向减速到 −1，后一组 96 发匀速；一波共 192 发。
+    ---    c1=6 是每档速度 6 发（六边形），c2=16 是 16 档速度（4 → 1.1875）。
+    ---    OCIRC 把整圈再转 180/c1 = 30°，所以两组六边形的相位差 30°。
+    local BOSS_X, BOSS_START_Y = -128, field_y(-64)     -- 288（场地外）
+    local HOME_X, HOME_Y = 0, 0                          -- TH095 (0,224)
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 8                               -- ins_141(8)
+    local CARD_NAME = ""                                -- 非符：不亮卡名
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 494
+
+    local BOX = { -160, 128, 160, 345 }                 -- ins_75（TH095 坐标）
+    local BURST_GAP = 20                                -- 每 20 帧一波
+    local CYCLE = 40                                    -- t=40 的 ins_4(0,-72) 跳回 @680
+    ---型 6 的碰撞直径是 4（g_PhotoBulletCollisionSizes[6]）⇒ ball_small。
+    local BULLET_STYLE = ball_small
+    local BULLET_COLOR = ex_color(14)                   -- 原作色 14（黄）
+    local RING_C1, RING_C2 = 6, 16
+    local RING_SP1, RING_SP2 = 4, 1                     -- 4 → 1.1875
+    local ACCEL_FRAMES, ACCEL_STEP = 120, -1 / 24       -- ins_101 的 i0 / f0
+
+    local st = { dead = false }
+    local sub4 = nil
+
+    ---Sub4（t=15 的 ins_67(20,4,8)）：新的顶掉旧的。
+    local function run_sub4(owner)
+        if sub4 then sub4.alive = false end
+        local tok = { alive = true }
+        sub4 = tok
+        task.New(owner, function()
+            task.Wait(15)
+            if not tok.alive or st.dead then return end
+            sg_bmove(owner, st, 20, 4, 8, BOX)
+        end)
+    end
+
+    ---Sub5 / Sub6：一波 = OCIRC_AIMED（带 VEC，减速）+ CIRC_AIMED（不带 VEC，匀速）。
+    local function burst(owner)
+        sg_shot(90, BULLET_STYLE, BULLET_COLOR, owner.x, owner.y,
+                RING_C1, RING_C2, RING_SP1, RING_SP2, 0, 0, true, 0x212,
+                sg_tr_hook({ sg_rec(SG_VEC, 0, ACCEL_FRAMES, -1, ACCEL_STEP, -999.99) }, 0x212))
+        sg_shot(88, BULLET_STYLE, BULLET_COLOR, owner.x, owner.y,
+                RING_C1, RING_C2, RING_SP1, RING_SP2, 0, 0, true, 0x202, nil)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        sub4 = nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            ---到这里是 Sub2 的 t=130 = Sub3 的 t=0。
+            while not st.dead do
+                run_sub4(self)                       -- ins_52(4)
+                burst(self)                          -- ins_117(0,5)
+                task.Wait(BURST_GAP)                 -- t=20
+                if st.dead then return end
+                run_sub4(self)                       -- ins_52(4)
+                burst(self)                          -- ins_117(0,6)
+                task.Wait(CYCLE - BURST_GAP)         -- t=40 → 跳回 t=0
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        photo_damage_off(self)
+    end
+
+    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--橙 非符
+
+---──────────────────── Stage 6 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张） ────────────────────
+do  -- 51 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
+    ---原作是「天女回头甩出的两条交叠光带」：本体在 ±128 之间来回瞬移，每次瞬移前先甩
+    ---一根满长激光、瞬移到位再甩第二根；同时 slot0 的整圈弹从**本体挪走后的位置 + 一个
+    ---固定偏移**处一圈一圈地放。半个月亮一轮，共两根 × 两轮 = 四根激光。
+    ---数据源 /tmp/W6d_ecl13_a.txt（ECL …/data/ecl13_a.ecl）。骨架：
+    ---  · Sub2 @380：ins_141(4) ⇒ 拍 4 张；ins_63(-128,-64) → t=100 ins_64(30,4,128,160)
+    ---    落到 TH095 (128,160)（我们的 (128,64)）→ t=130 ins_104 + ins_149(3.5) + ins_52(3)。
+    ---  · Sub3 @692：t=30 起 Sub4（slot0 装饰，不实现）+ ins_118(12)（背景 VM，不实现）
+    ---    + ins_119(11)（相机/激光回调 11，不实现）；t=50 ins_144、t=65 ins_54（都不实现）。
+    ---    t=70 是**半 A**：先算 floatV2 = world.x−256、floatV3 = world.y，在**原位**
+    ---    甩第一根（ins_118(10)：extraFloatV2 = 2π/3 = 120°、extraFloatV3 = 192），
+    ---    ins_63(floatV2,floatV3) 把本体挪到 (world.x−256, world.y) 后再甩第二根
+    ---    （30°、长 332.5536）；最后 ins_117(0,5) 起整圈。t=130~170 是**半 B**（镜像：
+    ---    60° / 150°、本体挪到 world.x+256）。
+    ---    t=230 的 ins_4(30,-1000) 跳回 @704（t=30）⇒ 一轮 200 帧。
+    ---  · ins_118(10) 回调 = Callback10（th095/src/EclExtended.cpp:786）：position =
+    ---    worldPosition + shootOffset、angle = extraFloatV2、maxLength = extraFloatV3、
+    ---    初始满长、speed 8、宽 16、startup 1、grow 15、**sustain 40**、fade 6、
+    ---    角速 0、follow 0、贴图行 = extraIntV2(=13)。本卡的 shootOffset 恒为 0。
+    ---  · Sub5 @1836（slot0，t=70 / t=170 各起一次）：ins_26 把 ins_100 的 shootOffset
+    ---    算成本体挪走后仍指向 TH095 (world.x∓64, world.y+110.8512) 的那一点；然后
+    ---    ins_101(0,0x10,0,60,-1,1/30,−999.99) 挂 VEC、intV0 = photoIndex×16+8、
+    ---    ins_89 CIRCLE（型 7、色 6、c1=intV0、速 2、基角 rand(−π,π)、flags 0x212）
+    ---    用 ins_5(0,-44,8) 连发 **8 轮、每轮 5 帧**；t=5 的 ins_100(0,0) + ins_53 收尾。
+    ---  · Sub4 @1736 只是 ins_100(0,-32) → ins_150(14) → ins_100(0,0) 的装饰循环，
+    ---    照旧不实现（顺带：它保证 shootOffset 恒为 0）。
+    local BOSS_X, BOSS_START_Y = -128, field_y(-64)     -- 288（场地外）
+    local HOME_X, HOME_Y = 128, field_y(160)            -- 128 / 64
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 4                               -- ins_141(4)
+    local CARD_NAME = "人智剣「天女返し」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 495
+
+    local HALF = 100                                    -- 半轮 100 帧（t=70 → t=170）
+    local CYCLE = 200                                   -- t=230 的 ins_4(30,-1000)
+    local LASER_ROW = 13                                -- extraIntV2（贴图行）
+    local LASER_W, LASER_SPEED = 16, 8
+    local LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE = 1, 15, 40, 6
+    local RING_ROUNDS, RING_GAP = 8, 5                  -- ins_5(0,-44,8)
+    local RING_STYLE = ball_small                       -- 型 7：直径 4
+    local RING_COLOR = ex_color(6)                      -- 原作色 6（蓝）
+    local RING_SPEED, RING_STEP = 2, 0.1848
+    local RING_ACCEL_FRAMES, RING_ACCEL_STEP = 60, 0.0333333351
+    ---整圈的生成点（我们的坐标）：TH095 (64,270.8512) —— 本体在 (-128,160) 再加
+    ---shootOffset (192,110.8512)（半 B 是镜像的 (-64,270.8512)）。
+    local RING_OFF_X, RING_OFF_Y = 64, field_y(270.851196)
+
+    local st = { dead = false }
+    local lasers = {}
+    local ring_tok = nil
+
+    ---一根 ins_118(10)（Callback10）激光：满长、sustain 40、贴图行 13。
+    local function spawn_laser(owner, x, y, th_rad)
+        spawn_ex_laser(owner, lasers, LASER_ROW, x, y, sg_deg(th_rad),
+                192, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, LASER_SUSTAIN,
+                LASER_FADE, 0, 0, 0, false, true)
+    end
+
+    ---上半场一根 120°/192、下半场一根 30°/332.5536，第二根在挪位之后放。
+    ---x1 = 整圈生成点的 x 偏移（半 A 是 −64、半 B 是 +64，见下面 RING_OFF_X 的注释）。
+    local function half(owner, target_x, x1, th1, th2)
+        local wx = owner.x                              -- 这一半开头的 world.x
+        spawn_laser(owner, wx, owner.y, th1)
+        owner.x = target_x
+        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, sg_deg(th2),
+                332.553589, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, LASER_SUSTAIN,
+                LASER_FADE, 0, 0, 0, false, true)
+        if ring_tok then ring_tok.alive = false end
+        local tok = { alive = true }
+        ring_tok = tok
+        local sx, sy = wx + x1, RING_OFF_Y
+        task.New(owner, function()
+            local hook = sg_tr_hook(
+                    { sg_rec(SG_VEC, 0, RING_ACCEL_FRAMES, -1, RING_ACCEL_STEP, -999.99) }, 0x212)
+            local n = photo_index(PHOTO_LIMIT) * 16 + 8
+            ---★ ins_5 在 t=5 那一句上（跳回 t=0 的 CIRCLE）：每次回跳都把 time 归零，
+            ---所以一轮要等 5 帧才够到下一句 ⇒ 第一圈落在 Sub5 的第 5 帧。
+            task.Wait(RING_GAP)
+            for _ = 1, RING_ROUNDS do
+                if not tok.alive or st.dead then return end
+                local a = math.deg(ran:Float(-math.pi, math.pi))   -- TH095 空间的基准角
+                sg_shot(89, RING_STYLE, RING_COLOR, sx, sy, n, 1, RING_SPEED, 0.3,
+                        a, RING_STEP, false, 0x212, hook)
+                task.Wait(RING_GAP)
+            end
+        end)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        lasers = {}
+        ring_tok = nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            ---t=30 的第一段（ins_117(0,4) / ins_118(12) / ins_119(11)）都不实现，
+            ---直接等到 t=70 的半 A。
+            task.Wait(70)
+            while not st.dead do
+                -- 半 A：world.x = 128 → 本体挪到 -128
+                half(self, self.x - 256, -64, 2.09439516, 0.52359879)
+                task.Wait(HALF)                          -- t=170
+                if st.dead then return end
+                -- 半 B：world.x = -128 → 本体挪到 128
+                half(self, self.x + 256, 64, 1.04719758, 2.61799383)
+                task.Wait(CYCLE - HALF)                  -- t=270 = 下一轮的 t=70
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        photo_damage_off(self)
+        sg_clear(lasers)
+    end
+
+    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--人智剣「天女返し」
+
+---──────────────────── Stage 6 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张） ────────────────────
+do  -- 52 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张）
+    ---名字是「鳞片叠着鳞片」：本体在场地上半部沿折线一路**瞬移 + 插值**，每停一处就撒下
+    ---一组三发自机狙 —— 那三发出生速度是 0，先在原地**定住 120 帧**，再用 120 帧沿各自
+    ---出生方向加速到 2 px/帧，于是整条折线上就叠出一层层的鳞。
+    ---数据源 /tmp/W6d_ecl12_b.txt（ECL …/data/ecl12_b.ecl）。骨架：
+    ---  · Sub2 @380：ins_141(5) ⇒ 拍 5 张；ins_63(128,-64) 进场 → t=100
+    ---    ins_64(30,4,-224,160) 落到 TH095 (-224,160)（我们的 (-224,64)）→
+    ---    t=130 亮卡名 + ins_149(2) + ins_52(3) 起主脚本（**没有** ins_75）。
+    ---  · Sub3 @728：t=0 起 Sub4、瞬移到 (-224,64) 再插值到 (224,192)；t=60 到
+    ---    (224,96) → (-224,224)；t=120 到 (-224,128) → (224,256)；t=160 到 (224,160)
+    ---    → (-224,288)；t=200 到 (-224,192) → (224,320)；t=240 到 (224,224) →
+    ---    (-224,356)；t=280 到 (-224,64) → (0,192)；t=310 把 slot0 换成 Sub5；
+    ---    t=330 插值到 (-224,320)、slot0 换回 Sub4；t=350 的 ins_4(0,-468) 跳回
+    ---    @768（t=0 的 ins_63）⇒ 一轮 350 帧。（以上都是 TH095 坐标。）
+    ---  · Sub4 @1268（slot0）：进上下文先写两条 ins_101 —— slot0 = 0x8000 WAIT 120 帧、
+    ---    slot1 = 0x10 VEC（120 帧、每帧 +1/60），然后**每帧**一组
+    ---    ins_86 FAN_AIMED(型 7、色 13、c1=3、速 0、步长 45°、flags 0x8212)。
+    ---    ⇒ 每帧 3 发（±45° 与正前）、出生定住 120 帧再沿各自方向加速到 +2.0。
+    ---    （ins_16/ins_37 维护的 floatV1 = −π 每帧 −0.75° 是**死值**：FAN 的 ang 是字面 0。）
+    ---  · Sub5 @1532（slot0，t=310 起）：每 4 帧一整圈 ins_88 CIRC_AIMED
+    ---    (型 13、色 1、c1=32、速 4、flags 0x202) —— 20 帧里放 5 圈、每圈 32 发。
+    ---  · 不实现：ins_6 / ins_144 / ins_149 / ins_104（拍照会话与装饰）。
+    local BOSS_X, BOSS_START_Y = 128, field_y(-64)      -- 288（场地外）
+    local HOME_X, HOME_Y = -224, field_y(160)           -- -224 / 64
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local EASE_LIN = 0                                  -- ins_64 的缓动 0 = 线性
+    local PHOTO_LIMIT = 5                               -- ins_141(5)
+    local CARD_NAME = "星符「飛び重ね鱗」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 496
+
+    ---Sub4：定住 120 帧 + 沿出生方向加速 120 帧（每帧 +1/60 ⇒ 末速 2.0）。
+    local FAN_FREEZE, FAN_ACCEL_FRAMES = 120, 120
+    local FAN_ACCEL = 0.0166666675
+    local FAN_STEP = math.deg(0.785398)                 -- 45°
+    ---Sub5：整圈的公共参数（c1 = 32、c2 = 1 ⇒ 速 = sp1 = 4）。
+    local RING_COUNT, RING_SPEED, RING_PERIOD = 32, 4, 4
+
+    local st = { dead = false }
+    local sub4, sub5 = nil, nil
+
+    ---slot0 一次只能装一条子上下文：起新的 = 掐旧的。
+    local function slot0_kill()
+        if sub4 then sub4.alive = false; sub4 = nil end
+        if sub5 then sub5.alive = false; sub5 = nil end
+    end
+
+    local function run_sub4(owner)
+        slot0_kill()
+        local tok = { alive = true }
+        sub4 = tok
+        local hook = sg_tr_hook({
+            sg_rec(SG_WAIT, 0, FAN_FREEZE, -1, -1, -1),
+            sg_rec(SG_VEC, 0, FAN_ACCEL_FRAMES, -1, FAN_ACCEL, -999.99),
+        }, 0x8212)
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                sg_shot(86, ball_small, ex_color(13), owner.x, owner.y,
+                        3, 1, 0, 1.5, 0, FAN_STEP, true, 0x8212, hook)
+                task.Wait(1)
+            end
+        end)
+    end
+
+    local function run_sub5(owner)
+        slot0_kill()
+        local tok = { alive = true }
+        sub5 = tok
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                sg_shot(88, ball_mid, ex_color(1), owner.x, owner.y,
+                        RING_COUNT, 1, RING_SPEED, 0.5, 0, math.deg(0.241661),
+                        true, 0x202, nil)
+                task.Wait(RING_PERIOD)
+            end
+        end)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        sub4, sub5 = nil, nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            while not st.dead do
+                self.x, self.y = -224, field_y(64)          -- ins_63
+                run_sub4(self)                              -- ins_117(0,4)
+                sg_move(self, st, 224, field_y(192), 40, EASE_LIN)
+                task.Wait(60)                               -- t=60
+                if st.dead then return end
+                self.x, self.y = 224, field_y(96)
+                sg_move(self, st, -224, field_y(224), 40, EASE_LIN)
+                task.Wait(60)                               -- t=120
+                if st.dead then return end
+                self.x, self.y = -224, field_y(128)
+                sg_move(self, st, 224, field_y(256), 30, EASE_OUT)
+                task.Wait(40)                               -- t=160
+                if st.dead then return end
+                self.x, self.y = 224, field_y(160)
+                sg_move(self, st, -224, field_y(288), 25, EASE_OUT)
+                task.Wait(40)                               -- t=200
+                if st.dead then return end
+                self.x, self.y = -224, field_y(192)
+                sg_move(self, st, 224, field_y(320), 25, EASE_OUT)
+                task.Wait(40)                               -- t=240
+                if st.dead then return end
+                self.x, self.y = 224, field_y(224)
+                sg_move(self, st, -224, field_y(356), 25, EASE_OUT)
+                task.Wait(40)                               -- t=280
+                if st.dead then return end
+                self.x, self.y = -224, field_y(64)
+                sg_move(self, st, 0, field_y(192), 25, EASE_OUT)
+                task.Wait(30)                               -- t=310
+                if st.dead then return end
+                run_sub5(self)                              -- ins_117(0,5)
+                task.Wait(20)                               -- t=330
+                if st.dead then return end
+                sg_move(self, st, -224, field_y(320), 20, EASE_LIN)
+                run_sub4(self)                              -- ins_117(0,4)
+                task.Wait(20)                               -- t=350 → 下一轮 t=0
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        slot0_kill()
+        photo_damage_off(self)
+    end
+
+    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--星符「飛び重ね鱗」
+
+---──────────────────── Stage 6 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张） ────────────────────
+do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
+    ---原作是「阿修罗的血柱」：本体先沉到场地**下方**、两根 576 长的巨柱一上一下地
+    ---贯穿场地，同时从两条竖直的「血线」（本体所在那一列上下的随机点）往全屏撒
+    ---加速弹。拍中本体到第 3 张后（ins_141(3)）这一张就结束。
+    ---数据源 /tmp/W6d_ecl13_b.txt（ECL …/data/ecl13_b.ecl）。骨架：
+    ---  · Sub2 @384：ins_141(3) ⇒ 拍 3 张；ins_63(-128,-64) 进场 → t=100
+    ---    ins_64(30,4,0,64) 落到 TH095 (0,64)（我们的 (0,160)）→ t=130 亮卡名
+    ---    + ins_149(14) + ins_52(3)（**没有** ins_75）。
+    ---  · Sub3 @696：t=30 是装饰（ins_106/54/118(12)/119(11)，见文件头差异 11）；
+    ---    t=70 把本体（在 (0,64)）**先**甩出第一根巨柱 —— extraFloatV2 = π/2（TH095
+    ---    ⇒ 我们的 −90°：朝下）、extraFloatV3 = 576、贴图行 13、ins_118(14)（sustain 300）
+    ---    ——再 ins_64(10,0,world.x,512) 沉到场地下方 64 px；t=80 记下 floatV0 = world.x
+    ---    后把 world.x 瞬间挪到**自机那一列**、起 Sub5；
+    ---    t=81 的 ins_5(80,-20,120) 让 Sub3 **原地空转 120 帧**（原作是「回跳一行 +
+    ---    计数 120 次」，见下面 ins_5 的说明），醒来后 ins_63(player.x, world.y) 再对一次列。
+    ---    t=121 甩第二根巨柱（extraFloatV2 = −π/2 ⇒ 我们的 +90°：朝上），
+    ---    ins_64(10,0,world.x,-64) 升到场地上方；t=131 记 floatV0 = world.x、起 Sub6；
+    ---    t=132 的 ins_5(131,-20,32) 再空转 32 帧，然后 ins_4(30,-868) 跳回 @708（t=30）
+    ---    ⇒ 一轮 102 帧 + 120 + 32 帧的空转。
+    ---  · ★ ins_5(dt, disp, n) 的**第二操作数（回跳位移）是有效的**：case 5 不满足时
+    ---    直接落进 case 4，`context->time = dt; instruction += disp`。上面两条「空转」
+    ---    就是靠它回跳到 dt 对得上的那一句、把同一段再跑 n 次（每次 1 帧）实现的。
+    ---  · Sub5 @1708（slot1，t=80 起）/ Sub6 @2020（slot2，t=131 起）：extraIntV0 = 300；
+    ---    floatV7 = world.y；extraFloatV0 = floatV0 − world.x；extraFloatV1 =
+    ---    randF32×(−448 / +448) + (floatV7 − world.y)；ins_100 设出膛偏移 ⇒ 出膛点 =
+    ---    (floatV0, floatV7 ∓ 448×rand)——即「本体那一列的竖直线上、上下 448 px 内的随机点」，
+    ---    而且出膛点跟着本体当前坐标走（偏移是死的）；
+    ---    然后 floatV2 = randF32×0.9 + 0.5、ins_89 CIRCLE(型 3、色 6/8、c1=1、c2=1、
+    ---    速 = floatV2、基准角 = rand(−π,π)、步长 0.1848、flags 0x202)，t=2 的
+    ---    ins_5(0,-224,300) 回跳 @1748 再放 —— **每 2 帧 1 发、共 300 发**。
+    ---  · 不实现：ins_54/106/118(12)/(13)/(15)、ins_119(±11)、ins_144/149/150。
+    local BOSS_X, BOSS_START_Y = -128, field_y(-64)      -- 288（场地外）
+    local HOME_X, HOME_Y = 0, field_y(64)                -- 0 / 160
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local EASE_LIN = 0
+    local PHOTO_LIMIT = 3                               -- ins_141(3)
+    local CARD_NAME = "妄執剣「修羅の血」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 497
+
+    local LASER_ROW = 13                                -- extraIntV2（贴图行）
+    local LASER_LEN, LASER_W, LASER_SPEED = 576, 16, 8
+    local LASER_STARTUP, LASER_GROW, LASER_FADE = 1, 15, 6
+    local LASER_SUSTAIN_LONG, LASER_SUSTAIN_40 = 300, 40
+    local SPIN_FRAMES = 120                             -- ins_5(80,-20,120)
+    local SUB6_FRAMES = 32                              -- ins_5(131,-20,32)
+    local BURSTS, BURST_PERIOD = 300, 2                  -- ins_5(0,-224,300)
+    local DROP_STYLE = ball_small                        -- 型 3：直径 6
+    local DROP_SPEED_MIN, DROP_SPEED_STEP = 0.5, 0.9
+
+    local lasers = {}
+    local st = { dead = false }
+    local sub5, sub6 = nil, nil
+
+    ---一根 ins_118 回调激光：满长、宽 16、速 8、角速 0、follow 0。
+    local function fire_laser(owner, our_angle, sustain)
+        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
+                LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, sustain,
+                LASER_FADE, 0, 0, 0, false, true)
+    end
+
+    ---Sub5 / Sub6：每 2 帧 1 发、300 发；出膛点 = (colx, basey ∓ 448×rand)。
+    ---colx = Sub3 起它之前记下的 world.x（= floatV0），basey = 进入时的本体 y
+    ---（= floatV7）。★ 出膛点 = (colx, basey ∓ 448×rand)：ECL 里 ins_100 的偏移是
+    ---**每一发重算**的（`floatV7 − world.y` 抵消本体的移动），所以竖直随机点的基准
+    ---fixed 在 Sub5/Sub6 进入那一刻，不跟着本体跑。
+    local function run_drop(owner, slot, colx, basey, dir, color)
+        if slot == 1 then
+            if sub5 then sub5.alive = false end
+        else
+            if sub6 then sub6.alive = false end
+        end
+        local tok = { alive = true }
+        if slot == 1 then sub5 = tok else sub6 = tok end
+        task.New(owner, function()
+            for _ = 1, BURSTS do
+                if not tok.alive or st.dead then return end
+                ---★ ins_5 回跳的是 @1748 起的整段（含 randF32×∓448 与 randF32×0.9），
+                ---所以每一发的竖直偏移与速度都是现抽的。
+                local y = basey + dir * 448 * ran:Float(0, 1)
+                sg_shot(89, DROP_STYLE, ex_color(color), colx, y,
+                        1, 1, DROP_SPEED_MIN + DROP_SPEED_STEP * ran:Float(0, 1), 0.3,
+                        sg_deg(ran:Float(-math.pi, math.pi)), math.deg(0.1848),
+                        false, 0x202, nil)
+                task.Wait(BURST_PERIOD)
+            end
+        end)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        lasers = {}
+        sub5, sub6 = nil, nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            ---入场到 t=130 是 Sub2 的 ins_52(3)；Sub3 的 t=0 从这里起算，
+            ---t=30/50/65 只有装饰 ⇒ 第一件事是 t=70 的第一根柱。一轮 252 帧。
+            task.Wait(70)
+            while not st.dead do
+                fire_laser(self, sg_deg(1.57079637), LASER_SUSTAIN_LONG)   -- 朝下
+                sg_move(self, st, self.x, field_y(512), 10, EASE_LIN)
+                task.Wait(10)                               -- t=80
+                if st.dead then return end
+                local col5, basey5 = self.x, self.y
+                run_drop(self, 1, col5, basey5, 1, 6)       -- Sub5
+                self.x = player.x                           -- world.x = player.x
+                task.Wait(SPIN_FRAMES)                      -- ins_5(80,-20,120)
+                if st.dead then return end
+                self.x = player.x                           -- ins_63(player.x, world.y)
+                task.Wait(40)                               -- t=121
+                if st.dead then return end
+                fire_laser(self, sg_deg(-1.57079637), LASER_SUSTAIN_LONG)  -- 朝上
+                sg_move(self, st, self.x, field_y(-64), 10, EASE_LIN)
+                task.Wait(10)                               -- t=131
+                if st.dead then return end
+                local col6, basey6 = self.x, self.y
+                run_drop(self, 2, col6, basey6, -1, 8)      -- Sub6
+                self.x = player.x
+                task.Wait(SUB6_FRAMES)                      -- ins_5(131,-20,32)
+                if st.dead then return end
+                task.Wait(40)                               -- t=132 空转完 → t=30 的 40 帧后
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        if sub5 then sub5.alive = false end
+        if sub6 then sub6.alive = false end
+        photo_damage_off(self)
+        sg_clear(lasers)
+    end
+
+    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--妄執剣「修羅の血」
+
+---──────────────────── Stage 6 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张） ────────────────────
+do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
+    ---原作是「持国天手中的两条弹幕帘」：前半段本体不动，只从**上边和下边**各撒一条
+    ---竖直的单发线（每帧一发、交替上下、出膛点随机横坐标、出生后沿自身方向加速）；
+    ---拍中本体第 3 张（ins_115 的 frame=3）时主脚本被换成 Sub10：ins_102 清屏后，
+    ---四条**边帘**每 60 帧换一条 —— 下边朝上 → 上边朝下 → 右边朝左 → 左边朝右 ——
+    ---每帘 60 发（每 2 帧一发），发完冻结 max(0, 180 − 20×photoIndex) 帧再来一轮。
+    ---数据源 /tmp/W6d_ecl12_c.txt（ECL …/data/ecl12_c.ecl）。骨架：
+    ---  · Sub2 @400：ins_115(0,3,10)（拍中第 3 张 ⇒ 主脚本换成 Sub10）；ins_104；
+    ---    ins_75(-160,96,160,256)；ins_114(5408)；ins_149(7)；ins_52(3)。
+    ---  · Sub3 @764：t=0 写 5 个 int/extraInt（60/8/60/30/60）+ ins_118(9)；t=60
+    ---    ins_62（停 ANM，不实现）+ ins_117(0,4)；t=100 的 ins_4(60,-20) 跳回 @892
+    ---    （t=60 的 ins_117(0,4)）⇒ 每 40 帧重起一次 Sub4。
+    ---  · Sub4 @944（1 条 3 帧的小循环）：t=0 写 VEC(120 帧、每帧 +1/120)、
+    ---    floatV0 = randF32s×192、floatV1 = 0，ins_100 后 ins_87 FAN(型 0、色 8、
+    ---    c1=1、速 0、ang = +π/2 ⇒ 我们的 −90°：向下)；t=1 同法但 floatV1 = 448、
+    ---    ang = −π/2（⇒ 我们的 +90°：向上）；t=2 的 ins_4(0,-312) 跳回 @1024 ⇒
+    ---    **每帧 1 发**，上/下交替，出膛点 = (rand×192, 0 或 448)（TH095，场地上/下沿）。
+    ---  · Sub6..9 @2128/@2520/@2956/@3348：同一条 VEC 但每帧 +1/240（末速 +0.5）；
+    ---    extraIntV0 = 60；出膛点固定在一条边、速度 sp1 = randF32×0.5；
+    ---    ins_5(0,-N,60) 回跳 ⇒ 每 2 帧 1 发、共 60 发；发完 extraIntV1 = photoIndex×20、
+    ---    ins_2(180 − extraIntV1) 冻结、ins_4(0,-308) 回 t=0。四条边与角：
+    ---      Sub6 左(x=−192)/ang 0（我们 0°：向 +x）  Sub7 右(x=192)/ang π（我们的 −180°）
+    ---      Sub8 上(y=0)  /ang π/2（我们 −90°：向下） Sub9 下(y=448)/ang −π/2（我们 +90°）
+    ---  · Sub10 @3740：ins_102 清屏后 t=0 起 Sub9、t=60 起 Sub8、t=120 起 Sub7、
+    ---    t=180 起 Sub6、t=220 的 ins_4(180,0) 原地自锁（每 40 帧空转一次，不再换帘）。
+    ---  · Sub5 是死代码（没有任何 ins_117 指向它）。
+    local BOSS_X, BOSS_START_Y = -128, field_y(-64)      -- 288（场地外）
+    local HOME_X, HOME_Y = 0, 0                          -- TH095 (0,224)
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 7                               -- ins_141(7)
+    local SUB10_AT = 3                                  -- ins_115(0,3,10)
+    local CARD_NAME = "鬼神「鳴動持国天」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 498
+
+    local BOX = { -160, 96, 160, 256 }                  -- ins_75（本卡用不到）
+    local CURTAIN_BURSTS, CURTAIN_PERIOD = 60, 2
+    local CURTAIN_ACCEL_FRAMES, CURTAIN_ACCEL = 120, 0.00416666688
+    local BULLET_STYLE = ball_small                     -- 型 0：直径 6
+    local BULLET_COLOR = ex_color(8)                    -- 原作色 8
+    local CURTAIN_FREEZE_BASE, CURTAIN_FREEZE_STEP = 180, 20
+
+    local st = { dead = false }
+    local lasers = {}
+    local sub4 = nil
+    local curtains = {}                                 -- 4 条边帘各占一个 slot（原作用 3/2/0/1）
+    local sub3tok = nil
+
+    ---等价 task.Wait(n)，但可以被 ins_115 的重开打断（原作那一刻主上下文被整个换掉）。
+    local function step(tok, n)
+        for _ = 1, n do
+            if not tok.alive or st.dead then return false end
+            task.Wait(1)
+        end
+        return true
+    end
+
+    ---Sub4：上/下沿交替的单发帘（每帧 1 发、末速 +1.0）。
+    ---★ 方向别弄反：t=0 走 floatV1 = 0（TH095 上沿 ⇒ 我们的 y=+224）、ang = +π/2
+    ---（TH095 朝下 ⇒ 我们 −90°）；t=1 走 floatV1 = 448（下沿 ⇒ y=−224）、ang = −π/2
+    ---（我们 +90°）。出膛点 = (randF32s×192, 0/448)（randF32s 有符号）。
+    local function run_sub4(owner)
+        if sub4 then sub4.alive = false end
+        local tok = { alive = true }
+        sub4 = tok
+        local hook = sg_tr_hook({
+            sg_rec(SG_VEC, 0, 120, -1, 0.00833333377, -999.99),
+        }, 0x212)
+        task.New(owner, function()
+            local up = false
+            while tok.alive and not st.dead do
+                local x = 192 * ran:Float(-1, 1)
+                if up then
+                    sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, -224,
+                            1, 1, 0, 1.5, sg_deg(-1.57079637), math.deg(0.0317333),
+                            false, 0x212, hook)
+                else
+                    sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, 224,
+                            1, 1, 0, 1.5, sg_deg(1.57079637), math.deg(0.0317333),
+                            false, 0x212, hook)
+                end
+                up = not up
+                task.Wait(1)
+            end
+        end)
+    end
+
+    ---Sub6..9：一条边帘。spec = { "x"|"y", 固定坐标，TH095 角 }。
+    ---★ 四条帘**同时**跑，各占一个 slot（Sub10 每 60 帧在下一个 slot 上起一条，
+    ---此后不再重开）—— 不是轮流换。每条自己循环：60 发×2 帧 + 冻结。
+    local function run_curtain(owner, slot, spec)
+        if curtains[slot] then curtains[slot].alive = false end
+        local tok = { alive = true }
+        curtains[slot] = tok
+        local hook = sg_tr_hook({
+            sg_rec(SG_VEC, 0, CURTAIN_ACCEL_FRAMES, -1, CURTAIN_ACCEL, -999.99),
+        }, 0x212)
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                for _ = 1, CURTAIN_BURSTS do
+                    if not tok.alive or st.dead then return end
+                    local x, y
+                    if spec[1] == "x" then
+                        x, y = spec[2], 224 - 448 * ran:Float(0, 1)
+                    else
+                        x, y = 192 * ran:Float(-1, 1), spec[2]
+                    end
+                    sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, y,
+                            1, 1, 0.5 * ran:Float(0, 1), 1.5,
+                            sg_deg(spec[3]), math.deg(0.0317333), false, 0x212, hook)
+                    task.Wait(CURTAIN_PERIOD)
+                end
+                local freeze = CURTAIN_FREEZE_BASE
+                        - CURTAIN_FREEZE_STEP * photo_index(PHOTO_LIMIT)
+                if freeze > 0 then
+                    task.Wait(freeze)
+                end
+            end
+        end)
+    end
+
+    ---Sub10：清屏 → 四条边帘每 60 帧在下一个 slot 上起一条。
+    ---slot 编号照原作：Sub9→3、Sub8→2、Sub7→0、Sub6→1。
+    local function run_sub10(owner)
+        sg_clear(lasers)
+        run_curtain(owner, 3, { "y", -224, -1.57079637 })   -- Sub9：下沿朝上
+        task.Wait(60)
+        if st.dead then return end
+        run_curtain(owner, 2, { "y", 224, 1.57079637 })     -- Sub8：上沿朝下
+        task.Wait(60)
+        if st.dead then return end
+        run_curtain(owner, 0, { "x", 192, 3.14159274 })     -- Sub7：右沿朝左
+        task.Wait(60)
+        if st.dead then return end
+        run_curtain(owner, 1, { "x", -192, 0 })             -- Sub6：左沿朝右
+        while not st.dead do                                -- ins_4(180,0)：原地自锁
+            task.Wait(1)
+        end
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        lasers = {}
+        sub4 = nil
+        curtains = {}
+        sub3tok = nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            local tok = { alive = true }
+            sub3tok = tok
+            if not step(tok, ENTRY_WAIT) then return end
+            sg_move(self, st, HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            if not step(tok, 30) then return end
+            ---Sub3 的 t=0 在这里；t=60 才起第一发 Sub4，之后每 40 帧一发
+            ---（t=100 的 ins_4(60,-20) 跳回 t=60 那一句）。
+            if not step(tok, 60) then return end
+            while true do
+                if not tok.alive or st.dead then return end
+                run_sub4(self)
+                if not step(tok, 40) then return end
+            end
+        end)
+        ---ins_115(0,3,10)：拍中本体第 3 张时主上下文被**立刻**重开成 Sub10，
+        ---同时 16 个 slot 的子上下文全部释放（EnemyManagerUpdate.cpp:1293-1310）。
+        task.New(self, function()
+            while not st.dead and photo_index(PHOTO_LIMIT) < SUB10_AT do
+                task.Wait(1)
+            end
+            if st.dead then return end
+            if sub3tok then sub3tok.alive = false; sub3tok = nil end
+            if sub4 then sub4.alive = false; sub4 = nil end
+            run_sub10(self)
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        if sub3tok then sub3tok.alive = false end
+        if sub4 then sub4.alive = false end
+        for i = 0, 3 do
+            if curtains[i] then curtains[i].alive = false end
+        end
+        photo_damage_off(self)
+        sg_clear(lasers)
+    end
+
+    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--鬼神「鳴動持国天」
+
+---──────────────────── Stage 6 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张） ────────────────────
+do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张）
+    ---原作是「流星雨」：本体在活动框里慢慢漂，场地**上半部**随机点上不断生出
+    ---朝下的小玉 —— 它们出生速度 1 ~ 1+0.3×拍照数、在 120 帧里再加速 +1.3，
+    ---所以拍得越多这一层越凶；中段换一条更密的子上下文（每 2 帧一发）并在
+    ---**slot1** 挂一束四发自机狙（速度 4 / 3.375 / 2.75 / 2.125），与流星层叠加。
+    ---数据源 /tmp/W6d_ecl13_c.txt（ECL …/data/ecl13_c.ecl）。骨架：
+    ---  · Sub2 @384：ins_141(5) ⇒ 拍 5 张；ins_63(-128,-64) 进场 → t=100
+    ---    ins_64(30,4,0,224) 落到 TH095 (0,224)（我们的 (0,0)）→ t=130 亮卡名
+    ---    + ins_75(-160,144,160,256) + ins_149(1.5) + ins_52(3)。
+    ---  · Sub3 @724（**一轮 255 帧**，t=255 的 ins_4(0,-432) 跳回 @724）：
+    ---    t=0 起 Sub4（slot0）；t=60 把 slot0 换成 Sub5、起 Sub6（slot1）；
+    ---    t=160 收掉 slot0；t=170 重起 Sub4、收掉 slot1；t=215 ins_67(60,4,2)。
+    ---  · Sub4 @1188（**每帧 1 发**）：ins_101 挂 VEC(120 帧、每帧 +0.0108333)；
+    ---    出膛点 = (randF32s×192, randF32×192)（TH095 的 x ±192、y 0..192 ⇒ 场地
+    ---    上半部）；floatV2 = rand×0.1963495 + 1.4726216 ⇒ 方向 84.375°..95.625°
+    ---    （TH095 弧度，向下）；floatV3 = 1 + rand×(1 + 0.3×photoIndex)；
+    ---    ins_87 FAN(型 0、色 6、c1=1、c2=1、速 = floatV3、flags 0x202)，t=1 的
+    ---    ins_4(0,-312) 回跳 @1268（t=0）⇒ 每帧 1 发。
+    ---  · Sub5 @1624：与 Sub4 同参，只把 flags 换成 0x2（无出声）、回跳放在 t=2
+    ---    ⇒ **每 2 帧 1 发**。
+    ---  · Sub6 @2060（slot1）：出膛点同上；ins_86 FAN_AIMED(型 7、色 15、c1=1、c2=4、
+    ---    速 4 → 3.375 → 2.75 → 2.125、flags 0x2)，t=1 的 ins_4(0,-160) 回跳
+    ---    ⇒ **每帧 4 发**。
+    ---  · 不实现：ins_106/54/118(12)/(13)/(15)/(16)、ins_119(±11)、ins_144/150/149。
+    local BOSS_X, BOSS_START_Y = -128, field_y(-64)      -- 288（场地外）
+    local HOME_X, HOME_Y = 0, 0                          -- TH095 (0,224)
+    local ENTRY_WAIT, ENTRY_TIME = 100, 30
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 5                               -- ins_141(5)
+    local CARD_NAME = "天星剣「涅槃寂静の如し」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 499
+
+    local BOX = { -160, 144, 160, 256 }                 -- ins_75
+    local CYCLE = 255
+    local STAR_FREEZE_STEP, STAR_FREEZE_BASE = 0.3, 1
+    local STAR_ACCEL_FRAMES, STAR_ACCEL = 120, 0.0108333332
+    local AVE_AT = 215                                  -- ins_67 在 t=215
+    local st = { dead = false }
+    local sub4, sub5, sub6 = nil, nil, nil
+
+    ---Sub4 / Sub5：流星雨。period = 1 / 2 帧；sound = 0x202 / 0x2。
+    local function run_stars(owner, slot, period, flags)
+        local tok = { alive = true }
+        if slot == 4 then
+            if sub4 then sub4.alive = false end
+            sub4 = tok
+        else
+            if sub5 then sub5.alive = false end
+            sub5 = tok
+        end
+        local hook = sg_tr_hook({
+            sg_rec(SG_VEC, 0, STAR_ACCEL_FRAMES, -1, STAR_ACCEL, -999.99),
+        }, flags)
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                local px = 192 * ran:Float(-1, 1)
+                local py = 224 - 192 * ran:Float(0, 1)
+                local ang = 1.47262156 + 0.196349546 * ran:Float(0, 1)
+                local sp = 1 + (STAR_FREEZE_BASE
+                        + STAR_FREEZE_STEP * photo_index(PHOTO_LIMIT)) * ran:Float(0, 1)
+                sg_shot(87, ball_small, ex_color(6), px, py,
+                        1, 1, sp, 1.5, sg_deg(ang), math.deg(0.0317333),
+                        false, flags, hook)
+                task.Wait(period)
+            end
+        end)
+    end
+
+    ---Sub6（slot1）：四发自机狙，每帧 4 发。
+    local function run_snipe(owner)
+        if sub6 then sub6.alive = false end
+        local tok = { alive = true }
+        sub6 = tok
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                local px = 192 * ran:Float(-1, 1)
+                local py = 224 - 192 * ran:Float(0, 1)
+                sg_shot(86, ball_small, ex_color(15), px, py,
+                        1, 4, 4, 1.5, 0, math.deg(0.0317333), true, 0x2, nil)
+                task.Wait(1)
+            end
+        end)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        sub4, sub5, sub6 = nil, nil, nil
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            while not st.dead do
+                run_stars(self, 4, 1, 0x202)                -- t=0：Sub4
+                task.Wait(60)
+                if st.dead then return end
+                run_stars(self, 5, 2, 0x2)                  -- t=60：Sub5 顶掉 Sub4
+                run_snipe(self)                             -- t=60：Sub6
+                task.Wait(100)                              -- t=160
+                if st.dead then return end
+                if sub5 then sub5.alive = false; sub5 = nil end     -- ins_117(0,-1)
+                task.Wait(10)                               -- t=170
+                if st.dead then return end
+                run_stars(self, 4, 1, 0x202)                -- t=170：Sub4 重起
+                if sub6 then sub6.alive = false; sub6 = nil end      -- ins_117(1,-1)
+                task.Wait(45)                               -- t=215
+                if st.dead then return end
+                sg_bmove(self, st, 60, 4, 2, BOX)           -- ins_67(60,4,2)
+                task.Wait(40)                               -- t=255 → 下一轮 t=0
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        if sub4 then sub4.alive = false end
+        if sub5 then sub5.alive = false end
+        if sub6 then sub6.alive = false end
+        photo_damage_off(self)
+    end
+
+    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--天星剣「涅槃寂静の如し」
+
+---──────────────────── Stage 6 橙 化猫「橙」（ecl12_d，组 13a 第 4 张） ────────────────────
+do  -- 56 橙 化猫「橙」（ecl12_d，组 13a 第 4 张）
+    ---原作是「猫又乱窜」：本体在场地四个角 / 两条边线 / 中轴之间连续瞬移，每次落地
+    ---ins_52(4) 同步调一次子脚本 —— 11 发的自机狙扇、**连放 photoIndex+1 次**、每次
+    ---隔 6 帧。所以拍得越准，每个落点的扇就越厚。
+    ---数据源 /tmp/W6d_ecl12_d.txt（ECL …/data/ecl12_d.ecl）。骨架：
+    ---  · Sub2 @376：ins_141(5) ⇒ 拍 5 张；ins_63(-2,-64) 进场 → t=100
+    ---    ins_64(60,4,0,448) 落到 TH095 (0,448)（我们的 (0,-224)）→ t=130 亮卡名
+    ---    + ins_149(15) + ins_52(3)（**没有** ins_75）。
+    ---  · Sub3 @724：t=30 调 Sub4；t=62 到 (192, player.y)、t=92 到 (-192, player.y)；
+    ---    t=122 调 Sub4；t=154 到 (player.x, 448)、t=184 调 Sub4；t=216 到
+    ---    (player.x, 0)、t=246 调 Sub4；t=278 到 (-192, player.y)、t=308 到
+    ---    (192, player.y)；t=338 调 Sub4；t=370 到 (player.x, 0)、t=400 调 Sub4；
+    ---    t=432 到 (player.x, 448)、t=462 调 Sub4 + ins_4(30,-448) 跳回 @760（t=62）。
+    ---    （以上都是 TH095 坐标；ins_64 的 4 个目标里带 player.x / player.y 的
+    ---    pm=0004/0008，都是**取执行那一刻**的自机坐标。）
+    ---  · Sub4 @1240：ins_20(extraIntV0, photoIndex, 1) ⇒ 连发次数 = photoIndex + 1；
+    ---    floatV1 = playerAngle；ins_87 FAN(型 7、色 6、c1=11、c2=1、速 1、步长 0.1848、
+    ---    flags 0x202)，t=6 的 ins_5(0,-44,extraIntV0) 回跳 @1284 ⇒ 每次隔 6 帧。
+    ---    ★ 原作是 ins_52（压栈调用）⇒ Sub3 的**时间轴在调用期间停摆**，所以上面那些
+    ---    t=62/92… 是「调用返回之后」的帧号；这里把 call_sub4 写成同步阻塞，等价。
+    ---  · 不实现：ins_119(8)、ins_114/141/149/150/104。
+    local BOSS_X, BOSS_START_Y = -2, field_y(-64)       -- 288（场地外，x = -2）
+    local HOME_X, HOME_Y = 0, field_y(448)              -- 0 / -224
+    local ENTRY_WAIT, ENTRY_TIME = 100, 60
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 5                               -- ins_141(5)
+    local CARD_NAME = "化猫「橙」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 500
+
+    local FAN_COUNT, FAN_SPEED = 11, 1
+    local FAN_STEP = math.deg(0.1848)                   -- 0.1848 rad = 10.588°
+    local FAN_GAP = 6                                   -- ins_5(6,-44,…)
+    local st = { dead = false }
+
+    ---Sub4：11 发自机狙扇，连放 photoIndex+1 次。
+    local function call_sub4(owner)
+        local n = photo_index(PHOTO_LIMIT) + 1
+        for k = 1, n do
+            if st.dead then return end
+            sg_shot(87, ball_small, ex_color(6), owner.x, owner.y,
+                    FAN_COUNT, 1, FAN_SPEED, 1.5, sg_aim(owner.x, owner.y), FAN_STEP,
+                    false, 0x202, nil)
+            if k < n then task.Wait(FAN_GAP) end
+        end
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            task.Wait(ENTRY_WAIT)
+            ---入场 ins_64(60,4,0,448) 要 60 帧才走完，但 Sub2 在 t=130 就
+            ---ins_52(3) 切进 Sub3 ⇒ 移动必须非阻塞（Sub3 的 t=0 是入场第 30 帧）。
+            sg_move(self, st, HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            task.Wait(60)                               -- Sub3 的 t=0（30 帧）→ t=30 第一次 ins_52(4)
+            call_sub4(self)
+            while not st.dead do
+                task.Wait(32)                           -- t=62
+                if st.dead then return end
+                sg_move(self, st, 192, player.y, 30, EASE_OUT)
+                task.Wait(30)                           -- t=92
+                if st.dead then return end
+                sg_move(self, st, -192, player.y, 30, EASE_OUT)
+                task.Wait(30)                           -- t=122
+                call_sub4(self)
+                task.Wait(32)                           -- t=154
+                if st.dead then return end
+                sg_move(self, st, player.x, -224, 30, EASE_OUT)
+                task.Wait(30)                           -- t=184
+                call_sub4(self)
+                task.Wait(32)                           -- t=216
+                if st.dead then return end
+                sg_move(self, st, player.x, 224, 30, EASE_OUT)
+                task.Wait(30)                           -- t=246
+                call_sub4(self)
+                task.Wait(32)                           -- t=278
+                if st.dead then return end
+                sg_move(self, st, -192, player.y, 30, EASE_OUT)
+                task.Wait(30)                           -- t=308
+                sg_move(self, st, 192, player.y, 30, EASE_OUT)
+                task.Wait(30)                           -- t=338
+                call_sub4(self)
+                task.Wait(32)                           -- t=370
+                if st.dead then return end
+                sg_move(self, st, player.x, 224, 30, EASE_OUT)
+                task.Wait(30)                           -- t=400
+                call_sub4(self)
+                task.Wait(32)                           -- t=432
+                if st.dead then return end
+                sg_move(self, st, player.x, -224, 30, EASE_OUT)
+                task.Wait(30)                           -- t=462
+                call_sub4(self)
+                task.Wait(32)                           -- 下一轮 t=62
+            end
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        photo_damage_off(self)
+    end
+
+    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--化猫「橙」
+
+---──────────────────── Stage 6 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张） ────────────────────
+do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张）
+    ---原作是「四生的无情回响」：本体在两段镜像的「曲」里各放一根横贯场地的巨柱
+    ---（先瞬移到一侧边线、朝场地内甩 384 长的大柱、再瞬移回场外），插在两根柱子之间的
+    ---是沿四条对角线泼出去的小玉雨 —— 拍中本体不足 4 张时是稀疏版（每次 4 发、
+    ---每 2 帧一轮），拍够 4 张（ins_115 的 frame=4）主脚本被重开，从此走密集版
+    ---（每次 8 发、每帧一轮，速度区间也抬到 1..2）。
+    ---数据源 /tmp/W6d_ecl13_d.txt（ECL …/data/ecl13_d.ecl）。骨架：
+    ---  · Sub2 @380：ins_115(0,4,3)（拍中第 4 张 ⇒ 重开主脚本）；ins_141(5)；ins_63(-2,-64)
+    ---    进场 → t=100 ins_64(60,4,152,player.y) 落到 TH095 (152,player.y)；ins_114(6008)；
+    ---    t=130 亮卡名 + ins_149(5) + ins_52(3)。
+    ---  · Sub3 @716 是**一条 t=0..470 的大时间轴**（不是两条互斥分支）：
+    ---    t=0 的 ins_44(photoIndex,4,120,184)：photoIndex < 4 时把 time 置 120、跳到 @900
+    ---    （t=150）—— 也就是什么都不做、直接等到 t=150 那一段；photoIndex ≥ 4 时才落到下面：
+    ---    ins_102 清屏、ins_51(world.x,0,60,96)：world.x ≥ 0 时置 time=60 跳到 @852
+    ---    （t=60 的 ins_64(60,4,160,player.y)）；否则落 @784 的 ins_64(-160,player.y)、
+    ---    t=60 的 ins_4(310,524) 把时间轴直接挪到 t=310。
+    ---    t=150..470 这一段里：
+    ---      t=150 装饰（ins_106/54/117(0,4)/118(12)/119(11)，见文件头差异 11）；
+    ---      t=170 ins_144(15)；t=185 ins_54(11)；
+    ---      t=190 记 floatV2 = world.x − 304、floatV3 = world.y、extraFloatV2 = π、
+    ---            extraFloatV3 = 384、extraIntV2 = 13，ins_63(192, world.y) 瞬到右边线 →
+    ---            ins_118(17)（sustain 120）甩出大柱 → ins_63(floatV2, floatV3) 瞬回场外 →
+    ---            ins_117(0,5) 起 Sub5；
+    ---      t=250 ins_64(60,4,-160,player.y)；
+    ---      t=310 装饰；t=330 ins_144(15)；t=345 ins_54(10)；
+    ---      t=350 同 t=190 的套路，但 extraFloatV2 = 0、瞬到**左边线** (−192, world.y)、
+    ---            ins_118(10)（sustain 40）；
+    ---      t=410 ins_64(60,4,160,player.y)；
+    ---      t=470 的 ins_4(150,-836) 跳回 @912（t=150）⇒ 一轮 320 帧。
+    ---  · Sub5 @1880（slot0，t=190 / t=350 各起一次）：floatV1 = world.y（记下当时的 y）；
+    ---    extraIntV0 = 8；ins_101 挂 VEC(60 帧、每帧 +1/30 ⇒ 末速 +2.0)；intV0 = photoIndex×16+8；
+    ---    ins_44(photoIndex,4,0,48)：photoIndex < 4 时跳到 @2052（稀疏波，每次 4 发、
+    ---    每 2 帧一轮、速 0.5 + rand×1.5、色 6/8/10/11），否则落到 @2032 的 ins_4(2,352)
+    ---    → @2384（密集波，每次 8 发 = 4 条 c2=2 的 CIRCLE、每帧一轮、速 1 + rand×1、
+    ---    色 4/2/2/4）；四条对角线是 −π/4、−3π/4、+π/4、+3π/4（TH095）；
+    ---    出膛点是 (randF32s×192, floatV1)——横坐标全屏随机、纵坐标是 Sub5 进入时的本体 y。
+    ---  · 不实现：ins_106/54/62/118(12)/(13)、ins_119(±11)、ins_144/149/150/114。
+    local BOSS_X, BOSS_START_Y = -2, field_y(-64)       -- 288（场地外，x = -2）
+    local HOME_X = 152                                   -- HOME 的 y = 落地那一刻的 player.y
+    local ENTRY_WAIT, ENTRY_TIME = 100, 60
+    local EASE_OUT = VALUE_SET.DECEL
+    local PHOTO_LIMIT = 5                               -- ins_141(5)
+    local RESTART_AT = 4                                -- ins_115(0,4,3)
+    local CARD_NAME = "四生剣「衆生無情の響き」"
+    local CARD_TIME, CARD_HP = 50, 900
+    local CARD_ID = 501
+
+    local LASER_ROW = 13
+    local LASER_LEN, LASER_W, LASER_SPEED = 384, 16, 8
+    local LASER_STARTUP, LASER_GROW, LASER_FADE = 1, 15, 6
+    local LASER_SUSTAIN_A, LASER_SUSTAIN_B = 120, 40   -- ins_118(17) / ins_118(10)
+    local OFF_FIELD = 304                               -- floatV2 = world.x − 304
+    local STAR_ACCEL_FRAMES, STAR_ACCEL = 60, 0.0333333351
+    local DIRS = { -0.785398, -2.35619, 0.785398, 2.35619 }   -- TH095 弧度
+    local SPARSE_COLORS = { 6, 8, 10, 11 }
+    local DENSE_COLORS = { 4, 2, 2, 4 }
+
+    local lasers = {}
+    local st = { dead = false }
+    local sub5 = nil
+    local sub3tok = nil
+
+    ---等价 task.Wait(n)，但可以被 ins_115 的重开（拍够 4 张）随时打断。
+    local function step(tok, n)
+        for _ = 1, n do
+            if not tok.alive or st.dead then return false end
+            task.Wait(1)
+        end
+        return true
+    end
+
+    ---Sub5：四条对角线的小玉雨。dense = photoIndex ≥ 4 的版本。
+    local function run_sub5(owner)
+        if sub5 then sub5.alive = false end
+        local tok = { alive = true }
+        sub5 = tok
+        local sy = owner.y                                 -- floatV1 = world.y
+        local dense = photo_index(PHOTO_LIMIT) >= RESTART_AT
+        local hook = sg_tr_hook({
+            sg_rec(SG_VEC, 0, STAR_ACCEL_FRAMES, -1, STAR_ACCEL, -999.99),
+        }, 0x202)
+        local colors = dense and DENSE_COLORS or SPARSE_COLORS
+        task.New(owner, function()
+            while tok.alive and not st.dead do
+                local px = 192 * ran:Float(-1, 1)
+                local sp = dense and (1 + ran:Float(0, 1)) or (0.5 + 1.5 * ran:Float(0, 1))
+                for i = 1, 4 do
+                    sg_shot(89, ball_small, ex_color(colors[i]), px, sy,
+                            1, dense and 2 or 1, sp, 0.5, sg_deg(DIRS[i]),
+                            math.deg(0.1848), false, 0x202, hook)
+                end
+                task.Wait(dense and 1 or 2)
+            end
+        end)
+    end
+
+    local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
+
+    function card:before()
+        lasers = {}
+        sub5 = nil
+        sub3tok = nil
+    end
+
+    ---一段「边线巨柱」：瞬到 (mx, 当前 y)、甩柱、瞬回 (当前 x − 304, 当前 y)。
+    local function side_laser(owner, mx, our_angle, sustain)
+        local wx, wy = owner.x, owner.y
+        owner.x, owner.y = mx, wy
+        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
+                LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, sustain,
+                LASER_FADE, 0, 0, 0, false, true)
+        owner.x, owner.y = wx - OFF_FIELD, wy
+    end
+
+    ---t=310 → t=470（photoIndex ≥ 4 且 world.x < 0 时由 @812 的 ins_4(310,524) 从 t=60 跳进来）。
+    local function tail310(self, tok)
+        if not step(tok, 40) then return false end            -- t=350
+        side_laser(self, -192, sg_deg(0), LASER_SUSTAIN_B)    -- ins_118(10)：左边线、朝 +x
+        run_sub5(self)                                        -- ins_117(0,5)
+        if not step(tok, 60) then return false end            -- t=410
+        sg_move(self, st, 160, player.y, 60, EASE_OUT)        -- ins_64(60,4,160,player.y)
+        if not step(tok, 60) then return false end            -- t=470
+        return true
+    end
+
+    ---t=150 → t=470：一轮 320 帧（t=470 的 ins_4(150,-836) 把时间轴拉回 t=150）。
+    local function cyc150(self, tok)
+        if not step(tok, 40) then return false end            -- t=190
+        side_laser(self, 192, sg_deg(math.pi), LASER_SUSTAIN_A)  -- ins_118(17)：右边线、朝 −x
+        run_sub5(self)                                        -- ins_117(0,5)
+        if not step(tok, 60) then return false end            -- t=250
+        sg_move(self, st, -160, player.y, 60, EASE_OUT)       -- ins_64(60,4,-160,player.y)
+        if not step(tok, 60) then return false end            -- t=310
+        return tail310(self, tok)
+    end
+
+    ---Sub3：ins_115 重开时按 ins_44/ins_51 的分支走，否则（第一次进）ins_44 直接等到 t=150。
+    local function run_sub3(self, tok)
+        if photo_index(PHOTO_LIMIT) >= RESTART_AT then
+            sg_clear(lasers)                                  -- ins_102
+            if self.x >= 0 then
+                sg_move(self, st, 160, player.y, 60, EASE_OUT) -- ins_51 成立时的 t=60 目标
+                if not step(tok, 60) then return end           -- t=60
+                if not step(tok, 90) then return end           -- t=150（@880 的 ins_4(150,32)）
+            else
+                sg_move(self, st, -160, player.y, 60, EASE_OUT)
+                if not step(tok, 60) then return end           -- t=60 → @812 的 ins_4(310,524)
+                if not tail310(self, tok) then return end      -- t=310 → t=470
+            end
+        else
+            if not step(tok, 150) then return end              -- ins_44：time=120 跳到 t=150
+        end
+        while true do
+            if not cyc150(self, tok) then return end
+        end
+    end
+
+    function card:init()
+        photo_damage_on(self, PHOTO_LIMIT)
+        self.x, self.y = BOSS_X, BOSS_START_Y
+        st.dead = false
+        task.New(self, function()
+            local tok = { alive = true }
+            sub3tok = tok
+            if not step(tok, ENTRY_WAIT) then return end
+            ---入场 ins_64(60,4,152,player.y) 要 60 帧才走完，但 Sub2 在 t=130 就
+            ---ins_52(3) 切进 Sub3 ⇒ 移动必须非阻塞（Sub3 的 t=0 是入场第 30 帧）。
+            sg_move(self, st, HOME_X, player.y, ENTRY_TIME, EASE_OUT)
+            if not step(tok, 30) then return end            -- Sub3 的 t=0
+            run_sub3(self, tok)
+        end)
+        ---ins_115(0,4,3)：拍中本体第 4 张时主上下文被**立刻**重开成 Sub3（t=0），
+        ---并把 16 个 slot 的子上下文全部释放（EnemyManagerUpdate.cpp:1293-1310）。
+        task.New(self, function()
+            while not st.dead and photo_index(PHOTO_LIMIT) < RESTART_AT do
+                task.Wait(1)
+            end
+            if st.dead then return end
+            if sub3tok then sub3tok.alive = false; sub3tok = nil end
+            if sub5 then sub5.alive = false; sub5 = nil end
+            local tok = { alive = true }
+            sub3tok = tok
+            run_sub3(self, tok)
+        end)
+    end
+
+    function card:frame()
+    end
+
+    function card:del()
+        st.dead = true
+        if sub3tok then sub3tok.alive = false end
+        if sub5 then sub5.alive = false end
+        photo_damage_off(self)
+        sg_clear(lasers)
+    end
+
+    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+end--四生剣「衆生無情の響き」
