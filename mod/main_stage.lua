@@ -1221,6 +1221,20 @@ NewStage("TH33", "醉生梦死", 31, function(self)
             boss.CreateGroup(i, self.level)
             task.Wait(120)
         end
+        ---原作 scene group 9（world10）的 8 幕：90/92/94/96 是小町（ecl20_a..d）、
+        ---91/93/95/97 是映姬（ecl21_a..d）。按「一个角色一个组」拆成两组：
+        ---组 7 = 小町（4 张）、组 8 = 映姬（4 张）。★ 别把两人塞进同一个组的 a/b。
+        boss.CreateGroup(7, self.level)
+        task.Wait(120)
+        boss.CreateGroup(8, self.level)
+        task.Wait(120)
+        ---原作 scene group 8（world09 = 永遠亭）的 8 幕：80/82/84/86 是永琳（ecl18_a..d）、
+        ---81/83/85/87 是辉夜（ecl19_a..d）。同样按「一个角色一个组」拆成两组：
+        ---组 9 = 永琳（4 张）、组 10 = 辉夜（4 张）。
+        boss.CreateGroup(9, self.level)
+        task.Wait(120)
+        boss.CreateGroup(10, self.level)
+        task.Wait(120)
     end)
     ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
     ---那是 TH06 的成就 id —— 抄过来的话通关会给「驱散红雾之日」。

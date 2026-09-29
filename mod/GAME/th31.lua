@@ -760,6 +760,10 @@ EX.bullet = Class(bullet, {
         ---`zoneTransitionCooldownFrames`（BulletManager.hpp 的 Bullet 字段；只有灵梦 A
         ---的「二重大結界」那张卡的 ex 指令 21 会写它，见下面卡 434 的 warp_barrier）。
         self.ex_zone_cd = 0
+        ---`bulletVm.type`（AnmVm 构造 memset 0）：ex 指令 12 / 14 都按它分岔。
+        ---★ 卡 454 / 456 / 458 的 ex12 用布尔近似（`ex_frz`）；卡 459 的 ex14 是
+        ---  「0 → 2 → 1 → 0」三相位，必须存 0/1/2，所以另开一个字段、不动 ex_frz。
+        self.ex_phase = 0
         ---出生速度乘 fm（BulletManager.cpp:170-173 的 `FromAngleMagnitude(angle, speed*fm)`）；
         ---`ex_speed` 记的仍是**未缩放**的 speed（UpdateDeceleration/Polar/Direction 都用它）。
         self.ex_vx = math.cos(p.angle) * p.speed * EX.fm
@@ -811,7 +815,10 @@ EX.bullet = Class(bullet, {
                 bullet.frame(self)
                 return
             end
-            self.colli = true
+            ---★ 出生动画结束**不无条件开判定**：原作 `activateBullet`（BulletManager.cpp:819-822）
+            ---  不碰 collisionDisabled —— 出生动画期间被 reisen_ex12（卡 454/456/458）冻住的弹
+            ---  出来时仍然是无判定的（collisionDisabled = 1），要等下一次 ex12 解冻才恢复。
+            self.colli = not self.ex_frz
         end
         ---② 消失动画（DESPAWNING，:1019-1025）：只走 velocity/2、不跑 transform。
         if self.ex_despawn > 0 then
@@ -35875,6 +35882,3844 @@ CARD[453] = {
     del = card_del,
 }
 end
+---------------------------------------------------------------------
+---卡 454「幻波「赤眼催眠(マインドブローイング)」」（铃仙·优昙华院·因幡 · Stage 5
+---  · ecldata5.ecl Sub62 本卡 + Sub85 子 context + Sub86 红眼小怪）。
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：`/tmp/th31/e5.utf8.decl`（Sub62 :1493、Sub85 :2124、Sub86 :2139）
+---
+---  · Sub62（本卡；上一个卡 453 的宿主 Sub48 已经把 BOSS 摆到 TH08 (192,128)）：
+---      t=0   `ins_129(2)`（death mode）/`ins_130(53)`（死亡回调 → 二非）/`ins_105(0)`/
+---            `ins_95()`（清非 BOSS）/`ins_113(−1,−1)`（弹音效）/`ins_80(4)`（开主贴图）/
+---            `ins_110(0,0)`（出弹偏移）/`ins_134(3000, 53)`（超时 **3000 帧 = 50 秒** →
+---            Sub53 二非）/`ins_153()`（把超时回调重置回死亡回调）/`ins_132(0)`/
+---            `ins_6([10039], 0)` / `ins_64(90, 4, 192, 128)`（90 帧 OUT_QUAD 移到 (0,96)）/
+---            `ins_122` 开符卡。⇒ 除 `ins_64` 外全是 boss 系统 / 观感。
+---      t=90  `Sub62_1220` 循环头：`ins_81(4)`/`ins_160(420)`（伤害减免，HP 类，忽略）之后
+---            `ins_7(lf0, rndAngle)` 抽一个整圆基准角，再甩**两圈 48 发**：
+---              ins_99(16, 色2, 48, 1, 1.0, 1.0, lf0,        π/32, 0x104210)
+---              ins_15(lf0, +π/48)   -- 第二圈比第一圈多 3.75°
+---              ins_99(16, 色2, 48, 1, 1.0, 1.0, lf0(改后), π/32, 0x204210)
+---            ★ 0x104210 / 0x204210 只差一个**小组标记位**：0x100000（= 枚举里的
+---              BULLET_TRANSFORM_ECL_EX_TRIGGER_MARKER，BulletManager.hpp:152）/
+---              0x200000（枚举里没登记，原作就是拿它当第二组的标记）。低位 0x4210 =
+---              SET_SPRITE|PLAY_SPAWN_SOUND|ACCELERATE_VECTOR，本卡一条 `ins_111`
+---              记录都没有 ⇒ 除出弹音效外都不生效（照抄；弹照样带这两个标记位）。
+---              冻结 / 解冻就是靠这两个标记位在**全弹池**里认人（见 reisen_ex12）。
+---      t=140 `ins_0()`（NOP）/ `ins_6([10036], 50)`（exI0 = 50，子 context 会继承）/
+---            `ins_7([10094], 192)`、`ins_7([10095], 244)`（红眼的生成点 = TH08 (192,244)）/
+---            `ins_135(0, 85)`（挂子 context 槽 0 = Sub85）/
+---            **冻结 A**：li0 = 0x100000、lf0 = 3π/4、lf1 = 1.0(!L)、li1 = 0、`ins_136(12, 0)`；
+---            **冻结 B**：li0 = 0x200000、lf0 = π/4、`ins_136(12, 0)`。
+---      t=240 li0 = 0x100000 + `ins_6([10001], 1)` + `ins_136(12, 0)`、再 li0 = 0x200000 +
+---            `ins_136(12, 0)` ⇒ **解冻**两组；`ins_6([10007], 64)`(!L) 给下面两轮定发数。
+---      t=260 `ins_7(lf0, rndAngle)` 重新抽角，两圈 **64 × 2**（count2 = 2 ⇒ 两速两角：
+---            j=0 速 1.4；j=1 速 1.4−(1.4−0.8)/2 = 1.1 且角再 +π/32）：
+---              ins_99(16, 色2, li7=64, 2, 1.4, 0.8, lf0, π/32, 0x104210)
+---              ins_15(lf0, +π/48)
+---              ins_99(16, 色2, li7=64, 2, 1.4, 0.8, lf0(改后), π/32, 0x204210)
+---      t=280 同上，色 6、速度 1.2 / 0.6。
+---      t=300 `ins_4(90, Sub62_1220)` ⇒ 把 time 拨回 90、跳回循环头那条 time=90 的
+---            `ins_7`（time 相同 ⇒ **同帧**重跑 t=90 那一段）⇒ 一圈 = 300 − 90 = **210 帧**。
+---  · Sub85（子 context 槽 0；t=140 挂上、同帧从 t=0 开始跑）：
+---      t=0   exI0 ← 父机的 50，再 `ins_11([10036], 25)` ⇒ 25；`ins_137(13, 0)`
+---            （每帧跑 EX 指令 13 = 屏幕红染，观感，不做）；
+---            `ins_93(86, exF0=192, exF1=244, 0, 10, −2, 10)` 在 TH08 (192,244) 生成红眼。
+---      t=2   `ins_5(0, Sub85_56, exI0)` = JUMP_DEC（EclRunLow.inl:234-239）：
+---            `--exI0`，> 0 就把 time 拨回 0、跳回 t=0 那条 `ins_93`（同帧再生一只）
+---            ⇒ 每 2 帧一只、共 **25 只**（t=0,2,…,48）。
+---      t=52  `ins_137(−1, 0)`（撤掉红染）/ `ins_124(25)`（音效）/ `ins_53()` RETURN。
+---  · Sub86（红眼本体）：`ins_80(3)`（关判定）/ `ins_58(5)`（换 anm）/ t=60 `ins_1()`。
+---      原地不动、不出弹 ⇒ 按本文件惯例做成**纯观感**（占位贴图 "eyeL"、`colli = false`）。
+---  ★ 占位贴图：弹 type 16 → ball_mid（EX.style_of 的兜底）；全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x − 192、y' = 224 − y、角度整体取反。
+local BOSS_X, BOSS_Y = 0, 96                 -- TH08 (192,128)（`ins_64` 的落点）
+local EYE_X, EYE_Y = 0, -20                  -- TH08 (192,244)（`ins_93` 的生成点）
+
+local ENT_T = 90                             -- `ins_64(90, 4, 192, 128)`
+local ENT_EASING = 4                         -- 4 = OUT_QUADRATIC
+
+local LOOP_T = 90                            -- Sub62_1220（循环头 / t=90 那一段）
+local LOOP_END_T = 300                       -- `ins_4(90, Sub62_1220)`
+local FREEZE_T = 140
+local THAW_T = 240
+local RING1_T = 260
+local RING2_T = 280
+
+local RING_STEP = 0.09817477                 -- ins_99 的 angleStep = π/32（5.625°）
+local ANGLE_OFF = 0.06544985                 -- `ins_15(lf0, …)` = π/48（3.75°）
+
+---两个小组标记位（见头注）。`bullet->transformFlags & li0` 就是 ReisenFreezeBullets
+---认人的唯一判据 —— **全池扫描**，跟弹是谁发的无关。
+local MARK_A, MARK_B = 0x100000, 0x200000
+local R1_FLAGS_A, R1_FLAGS_B = 0x104210, 0x204210
+
+---t=90 的两圈（count1 = 48、count2 = 1 ⇒ speed2 用不上）。
+local R1_COUNT, R1_COLOR, R1_SPEED = 48, 2, 1.0
+
+---t=260 / t=280 的两圈（count1 = li7 = 64(!L)、count2 = 2 ⇒ 内外两速两角）。
+local R2_COUNT = 64
+local R2A_SP1, R2A_SP2, R2A_COLOR = 1.4, 0.8, 2
+local R2B_SP1, R2B_SP2, R2B_COLOR = 1.2, 0.6, 6
+
+---冻结方向的 TH08 口径（3π/4 / π/4）与速度（!L 的 lf1 = 1.0）。
+local FREEZE_DIR_A, FREEZE_DIR_B = 2.3561945, 0.7853982
+local FREEZE_SPEED = 1.0
+
+---子 context 的起始计数：父机 exI0 = 50（`ins_6([10036], 50)`），
+---子 context 继承一份后再 `ins_11([10036], 25)` ⇒ 50 − 25 = 25。
+local SUB_QUOTA = 25
+local EYE_FRAMES = 60                        -- Sub86 的 `ins_1` 在 t=60
+
+---`bit_hit` 是 EX 引擎块里的局部函数（外面读不到），这里自己再写一份 ——
+---掩码都是 2 的幂，`floor(v / mask) % 2 == 1` 就行。
+local function has_bit(v, mask)
+    return v ~= nil and v >= 0 and math.floor(v / mask) % 2 == 1
+end
+
+---`ins_99 SHOOT_CIRCLE`（DispatchShotInstruction，EclDependencies.cpp:693-787）：
+---位置 = worldPosition + shootOffset(0,0) ⇒ 从 BOSS 身上发；aimMode = op − 96 = 3 = CIRCLE
+---（**不加**自机角）。count2 > 1 时 speed = speed1 − (speed1 − speed2)·j/count2
+---（BulletManager.cpp:114-118），角 = i·2π/count1 + j·angleStep + angle（:128-131）。
+local function ring(owner, ang, count1, count2, sp1, sp2, color, flags)
+    EX.shoot(owner, owner.x, owner.y, {
+        op = 99, type = 16, color = EX.color(color),
+        count1 = count1, count2 = count2,
+        speed1 = sp1, speed2 = sp2,
+        angle = ang, step = RING_STEP, flags = flags,
+    })
+end
+
+---EX 指令 #12 = ReisenFreezeBullets（表在 EclGlobals.cpp:64-99，索引 12 = 0 起第 13 个；
+---实现 EclExIns.cpp:601-667）。它**扫全弹池**（原作 0x600 = 1536 个槽，:608），
+---凡是 `bullet->transformFlags & li0` 非 0 的都处理：
+---  · 弹当前是普通态（`bulletVm.type == 1`）⇒ **冻结**（:626-634）：
+---      换成加算 / `collisionDisabled = 1`、`velocity = FromAngleMagnitude(lf0, fm·lf1)`；
+---  · 否则 ⇒ **解冻**（:638-651）：换回普通 / 开判定、
+---      `velocity = FromAngleMagnitude(bullet->angle, fm·bullet->speed)`
+---      （角与速度在冻结期间没被动过 ⇒ 恢复成出膛时的量）。
+---  ★ 走哪一支只看**弹当前的状态**，li1 只负责给整条敌机链加 / 撤 FORCE_PAUSE。
+---  ★ 移植版用弹上的 `ex_frz` 记「现在是不是冻结态」代替 bulletVm.type（贴图与混合模式
+---    是观感）；本卡每轮固定「t=140 冻 → t=240 解」、两个标记各一次，严格成对 ⇒
+---    与原作的二分支等价。`dir_th08` 只在冻结那一支用到（解冻支沿用弹自己的角度）。
+local function reisen_ex12(marker, dir_th08)
+    local a = -dir_th08                       -- TH08 角 → 我们角（见文件头）
+    local vx, vy = math.cos(a), math.sin(a)
+    for i = #EX.pool, 1, -1 do
+        local b = EX.pool[i]
+        if IsValid(b) and has_bit(b.ex_flags, marker) then
+            if b.ex_frz then
+                b.ex_frz = nil
+                b.colli = true
+                b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
+            else
+                b.ex_frz = true
+                b.colli = false
+                b.ex_vx = vx * FREEZE_SPEED * EX.fm
+                b.ex_vy = vy * FREEZE_SPEED * EX.fm
+            end
+        end
+    end
+end
+
+---红眼小怪（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**
+---（跟卡 215 的 Sub39「月亮」同一副骨架）。活 60 帧（`ins_1` 在 t=60）。
+local eye454
+eye454 = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "eyeL"
+        self.hscale, self.vscale = 2, 2
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.e454_t = 0
+    end,
+    frame = function(self)
+        self.e454_t = self.e454_t + 1
+        if self.e454_t > EYE_FRAMES then object.RawDel(self) end
+    end,
+})
+
+local eyes454 = {}
+
+local function spawn_eye454()
+    eyes454[#eyes454 + 1] = New(eye454, EYE_X, EYE_Y)
+end
+
+---子 context 0 = Sub85 的指令表：{ ECL 的 time, 处理 }。
+---  挂上那一帧就**同帧**从 t=0 跑（EclRun.cpp:196-211 的 low_select_next_context：主 context
+---  这一帧的分派跑完、`time++` 之后，从槽 0 往后找第一个存在的子 context，
+---  直接 goto 进它的分派循环）。
+local SUB454 = {
+    { 0, function()
+        spawn_eye454()                          -- `ins_93(86, exF0, exF1, 0, 10, −2, 10)`
+    end },
+    { 2, function(owner, c)
+        ---JUMP_DEC：`--exI0`，≤ 0 就往下走（去 t=52 收尾），否则 time 拨回 0、
+        ---跳回 t=0 那条 `ins_93`（time 相同的 ⇒ 那一帧立刻再生一只）。
+        c.i0 = c.i0 - 1
+        if c.i0 > 0 then
+            c.t = 0
+            c.pc = 1
+        end
+    end },
+    { 52, function(owner)
+        ---`ins_137(−1, 0)`（撤掉每帧的屏幕红染，观感）/ `ins_124(25)`（音效）/
+        ---`ins_53()` RETURN ⇒ 子 context 结束。
+        owner.c454_sub = nil
+    end },
+}
+
+local function sub_step(owner)
+    local c = owner.c454_sub
+    if c == nil then return end
+    while true do
+        local ins = SUB454[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+    end
+    c.t = c.t + 1
+end
+
+---插值位移的一步（EnemyManager.cpp:80-121 的 INTERPOLATED 支）：
+---`timer--; progress = 1 − timer/duration`，缓动 4 = OUT_QUADRATIC；
+---到点那一帧直接落在 origin + delta。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = move.t / move.n
+    if u > 1 then u = 1 end
+    local e = u
+    if move.easing == 4 then e = 1 - (1 - u) * (1 - u) end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---主 context（Sub62）的指令表：{ ECL 的 time, 处理 }。空档靠每帧的 time++ 补；
+---`ins_4` 拨回 time 再跳的语义照抄（拨回后同帧重查一次 `time == instruction->time`）。
+local PROG454 = {
+    { LOOP_T, function(owner)
+        local ang = ran:Float(0, 2 * PI) - PI   -- `ins_7(lf0, rndAngle)`（rndAngle 的定义）
+        ring(owner, ang, R1_COUNT, 1, R1_SPEED, R1_SPEED, R1_COLOR, R1_FLAGS_A)
+        ring(owner, ang + ANGLE_OFF, R1_COUNT, 1, R1_SPEED, R1_SPEED, R1_COLOR, R1_FLAGS_B)
+    end },
+    { FREEZE_T, function(owner)
+        ---`ins_6([10036], 50)` + `ins_135(0, 85)`：子 context 的变量块是
+        ---**父机那一刻的整块 memcpy**（EclRunHigh.inl:665-676）⇒ exI0 先被抄成 50、
+        ---再由子 context 自己 −25；这里直接给 25。
+        owner.c454_sub = { t = 0, pc = 1, i0 = SUB_QUOTA }
+        reisen_ex12(MARK_A, FREEZE_DIR_A)
+        reisen_ex12(MARK_B, FREEZE_DIR_B)
+    end },
+    { THAW_T, function(owner)
+        ---`ins_6([10001], 1)` ⇒ 原作走 else 支；两个标记各扫一遍（方向参数在这一支不用）。
+        reisen_ex12(MARK_A, FREEZE_DIR_A)
+        reisen_ex12(MARK_B, FREEZE_DIR_B)
+    end },
+    { RING1_T, function(owner)
+        local ang = ran:Float(0, 2 * PI) - PI
+        ring(owner, ang, R2_COUNT, 2, R2A_SP1, R2A_SP2, R2A_COLOR, R1_FLAGS_A)
+        ring(owner, ang + ANGLE_OFF, R2_COUNT, 2, R2A_SP1, R2A_SP2, R2A_COLOR, R1_FLAGS_B)
+    end },
+    { RING2_T, function(owner)
+        local ang = ran:Float(0, 2 * PI) - PI
+        ring(owner, ang, R2_COUNT, 2, R2B_SP1, R2B_SP2, R2B_COLOR, R1_FLAGS_A)
+        ring(owner, ang + ANGLE_OFF, R2_COUNT, 2, R2B_SP1, R2B_SP2, R2B_COLOR, R1_FLAGS_B)
+    end },
+    { LOOP_END_T, function(owner)
+        ---`ins_4(90, Sub62_1220)`：time := 90 后跳回循环头 —— 目标那条的 time 正好是 90
+        ---⇒ 这一帧接着把 t=90 那一段跑完（跟卡 453 的 `ins_4` 不同：那条 time 对不上）。
+        owner.c454_t = LOOP_T
+        owner.c454_pc = 1
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c454_t = 0
+    owner.c454_pc = 1
+    owner.c454_sub = nil
+    ---`ins_64(90, 4, 192, 128)`：从**当前位**用 OUT_QUAD 走到 (0,96)（t=90 才出第一弹，
+    ---走到那一帧正好落位）。
+    owner.c454_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+    for i = #eyes454, 1, -1 do eyes454[i] = nil end
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c454_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG454[owner.c454_pc]
+        if ins == nil or ins[1] ~= owner.c454_t then break end
+        owner.c454_pc = owner.c454_pc + 1
+        ins[2](owner)
+    end
+    owner.c454_t = owner.c454_t + 1
+
+    ---② 帧尾先跑子 context（原作 RunEcl 的 low_select_next_context，EclRun.cpp:196-211）。
+    sub_step(owner)
+
+    ---③ 再 UpdateMovement（RunEcl 尾巴上那句 `enemy->UpdateMovement()`）。
+    local move = owner.c454_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c454_move = nil end
+    end
+end
+
+local function card_del(owner)
+    owner.c454_t = nil
+    owner.c454_sub = nil
+    owner.c454_move = nil
+    for i = #eyes454, 1, -1 do
+        if IsValid(eyes454[i]) then object.RawDel(eyes454[i]) end
+        eyes454[i] = nil
+    end
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[454] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---卡 455「非符二」（铃仙·优昙华院·因幡 · Stage 5 · ecldata5.ecl
+---  Sub53 宿主 + Sub55 使魔 + Sub54 使魔的枪）
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：`/tmp/th31/e5.utf8.decl`（Sub53 :1271、Sub54 :1311、Sub55 :1337）
+---
+---  · Sub53（本卡）：
+---      t=0   `ins_81(4)`/`ins_81(3)`/`ins_160(160)`/`ins_137(-1, 0)`/`ins_123()`/
+---            `ins_127(0)`/`ins_144(10, 5)`/`ins_131(18000)` SET_LIFE/`ins_148(1)`/
+---            `ins_129(2)`（death mode）/`ins_130(56)`（死亡回调 → 三非）/
+---            `ins_134(3000, 66)`（超时 3000 帧 = **50 秒** → 狂視調律）/
+---            `ins_133(0, 2200, 66)`（削血阈值 ⇒ 本卡血量 18000 − 2200 = 15800）/
+---            `ins_158(0,0,[10088],16744576)`（血条槽）/`ins_75(32,48,352,128)`（夹框，
+---            **同时置 CLAMP_POSITION**）/`ins_6([10000], 20)`/`ins_52(61)`（Sub61 =
+---            32 个 `ins_139` 特效，纯观感，不做）/`ins_64(60, 4, 192, 112)`（60 帧
+---            OUT_QUAD 滑到 TH08 (192,112) = 我们 (0,112)）。⇒ 除夹框与落位外都是
+---            boss 系统 / 观感；移植版跟其它卡一样**原地出现在 (0,112)**（入场是纯观感）。
+---      t=70  四条 `ins_92`（见 FAMILIARS），每条前面两条 `ins_7` 定 lf0 / lf1。
+---      t=270 `ins_67(60, 4, 1.0)` MOVE_RANDOM_IN_BOUNDS（边界感知随机漂移，60 px）。
+---      t=300 `ins_4(70, Sub53_648)`：time 拨回 70、跳回 t=270 那条 ⇒ 拨回的 70 ≠ 270
+---            ⇒ 那一帧不再执行任何指令，靠 time++ 涨到 270 再跑 ⇒ 漂移周期
+---            = 300 − 70 = **230 帧**。★ 跳回的是 t=270 那条，t=70 的四条 `ins_92`
+---            只在第一轮跑过一次（永远只有四台使魔）。
+---  · Sub55（使魔本体；life 3000 / 8000，`ins_1` 在 t=30060 ≈ 501 秒，本卡跑不到）：
+---      t=0   `ins_54(53)` SET_MAIN_ANM / `ins_83(1)` / `ins_174(1)` / `ins_145(1)` /
+---            `ins_77(24,24)` SET_HITBOX / `ins_160(30)` —— 除贴图外全是观感或 HP。
+---      t=60  `ins_135(0, 54)` SET_CHILD_ECL 槽 0 = Sub54（枪）。
+---      ★ `ins_92` 生成的使魔会被清掉 ENEMY_FLAG_COLLISION（EclRunLow.inl:909）⇒ 原作
+---        就打不到它（`ins_77` 的 hitbox 只是摆设）⇒ 移植版做成**纯观感**（colli=false）。
+---  · Sub54（枪；子 context 0，t=60 挂上、**同帧**从 t=0 跑起，EclRun.cpp:191-209）：
+---      t=0   `ins_152(0,0,0,0,0,0)`（出弹 rank 影响清零 —— 非符里
+---            `!g_Spellcard.IsActive()` 那一支出弹缩放会生效，EclDependencies.cpp:735-761；
+---            清零后与 rank 无关）/ `!L ins_6([10007], 4)`（发数）/ `!L ins_7([10023], 7.6)`
+---            （初速）/ `ins_111(0, 64, 0, 55, 1, +0.17453292, 1.0)`（record 0 = REL：
+---            55 帧线性减速到 0 → 角度 +10° → 速度换 1.0，BulletManager.cpp:1253-1291）/
+---            `ins_99(16, 2, 4, 1, 7.6, 0.5, lf0, 0.2617994, 578)`（色 2 的 4 发）/
+---            `ins_111(0, 64, 0, 55, 1, −0.17453292, 1.0)`（下一波用 −10°）/
+---            `ins_15(lf0, lf1)` / `ins_37(lf0)`（基准角 += 增量、卷进 (−π, π]）。
+---      t=2   同一条出弹、色 4（此时 record 已是 −10°）+ 同样的角增量。
+---      t=4   `ins_4(0, Sub54_196)`：time 拨回 0 并**同帧**重跑 t=0 那一段
+---            ⇒ 4 帧一圈、每圈两波（色 2 @t=0、色 4 @t=2），每波 4 发 ⇒ 每台 2 发/帧。
+---      ★ `ins_99` = SHOOT_CIRCLE（aimMode = 99 − 96 = 3 = CIRCLE，**不加**自机角）：
+---        count1 = 4、count2 = 1 ⇒ 4 发按 360/4 = 90° 摊开（j 只有 0，angleStep 用不上）。
+---      ★ transformFlags = 578 = 0x242 = SPAWN_FAST(2) | CHANGE_DIRECTION_RELATIVE(0x40) |
+---        PLAY_SPAWN_SOUND(0x200)：type 16 的出生动画 10 帧，期间不跑 transform；与
+---        record 0 的 kind 0x40 对上 ⇒ 动画播完才走上面那条减速 + 折向。
+---      ★ 出弹位置 = enemy->worldPosition + shootOffset(0,0)（EclDependencies.cpp:718-721）
+---        ⇒ 弹只从**四台使魔**所在的那四个角发出，BOSS 自己一枪不发。
+---  · 使魔的跟随：`ins_92` 把 positionOffset 写死成父机当时的 position 并置
+---    inheritParentPosition（EclRunLow.inl:900/937）⇒ 之后每帧 positionOffset 都刷新成
+---    父机的 position（EnemyManagerUpdate.cpp:170-176）⇒ 使魔永远贴在 BOSS 身上：
+---    我们坐标下四台的偏移 = (+56,−56) / (−56,−56) / (+56,+56) / (−56,+56)。
+---    ★ 敌人按 slot 顺序跑，BOSS 在使魔前面（EnemyManagerUpdate.cpp:123）⇒ 使魔读到的
+---      是**本帧已经移动完**的 BOSS 位置；而弹用的 worldPosition 是**上一帧末**的值
+---      （RunEcl 里不刷新 worldPosition，只有帧末那句更新，EnemyManagerUpdate.cpp:178）。
+---  ★ 占位贴图：使魔用 "servant"，弹 type 16 → ball_small。全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+
+---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
+local function wrap_pi(a)
+    if a > PI then a = a - 2 * PI elseif a < -PI then a = a + 2 * PI end
+    return a
+end
+
+---t=0 的 `ins_75(32,48,352,128)`（TH08 口径）⇒ 我们 x∈[−160,160]、y∈[96,176]。
+---★ `ins_67` 的四条边界修正判据用 TH08 的 96 / 48 内缩（BeginBoundaryAwareMove）。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---`ins_64(60, 4, 192, 112)` 的落点：TH08 (192,112) = 我们 (0,112)。
+local BOSS_X, BOSS_Y = 0, 112
+
+---Sub53 的时间轴。
+local SPAWN_T = 70                         -- 四条 `ins_92`
+local WANDER_FIRST = 270                   -- Sub53_648（第一条 `ins_67`）
+local LOOP_T = 300                         -- `ins_4(70, Sub53_648)`
+local LOOP_RESET_T = 70                    -- ... 把它拨回的 time
+local WANDER_FRAMES = 60                   -- `ins_67(60, 4, 1.0)` 的第一个操作数
+local WANDER_SPEED = 1.0                   -- ... 第三个操作数
+local WANDER_EASING = 4                    -- ... 第二个操作数 = movementEasing
+
+---四台使魔（Sub53 t=70 的四条 `ins_92`；lf0 / lf1 是 `ins_7` 写在它们前面的）。
+---★ ins_92 = SPAWN_FAMILIAR_INHERITING_POSITION（EclRunLow.inl:879-950）。
+---  参数 (子程序, x, y, life, itemDrop, score)：x/y 是**脚本坐标**（直接被写进
+---  child->position），worldPosition = position + positionOffset。
+---  lf0 / lf1 随变量块被拷进使魔的 context（SpawnEnemy2 的整块 memcpy，
+---  EnemyTimeline.cpp:92-94），再被 `ins_135` 拷进枪的 context ⇒ 每台使魔的枪有
+---  **自己的**基准角与每波增量。角度我们坐标 = −TH08 角，所以 base / step 都取反。
+local FAMILIARS = {
+    ---lf0 = π/4（0.7853982）, lf1 = +π/32（0.09817477）
+    { dx =  56, dy = -56, base = -PI / 4,     step = -PI / 32 },
+    ---lf0 = 3π/4（2.3561945）, lf1 = −π/32
+    { dx = -56, dy = -56, base = -3 * PI / 4, step =  PI / 32 },
+    ---lf0 = π/2（1.5707964）, lf1 = −π/32
+    { dx =  56, dy =  56, base = -PI / 2,     step =  PI / 32 },
+    ---lf0 = π/2（1.5707964）, lf1 = +π/32
+    { dx = -56, dy =  56, base = -PI / 2,     step = -PI / 32 },
+}
+
+---Sub55 的时间轴。
+local FAM_GUN_T = 60                       -- `ins_135(0, 54)`
+
+---Sub54（枪）的参数（Lunatic 那一支）。
+local GUN_TYPE, GUN_COLOR_A, GUN_COLOR_B = 16, 2, 4
+local GUN_COUNT = 4                        -- !L `ins_6([10007], 4)`
+local GUN_SPEED1 = 7.6                     -- !L `ins_7([10023], 7.6)`
+local GUN_SPEED2 = 0.5                     -- ins_99 的 speed2（count2 = 1 ⇒ 不参与）
+local GUN_ASTEP = 0.2617994                -- 15°（count2 = 1 ⇒ 只影响 j，实际不用）
+local GUN_FLAGS = 0x242                    -- SPAWN_FAST | REL | PLAY_SPAWN_SOUND
+local GUN_LOOP_T = 4                       -- `ins_4(0, Sub54_196)`
+local GUN_SHOT_A_T, GUN_SHOT_B_T = 0, 2    -- 两条 ins_99 的 time
+---record 0：CHANGE_DIRECTION_RELATIVE（55 帧线性减速 → 折角 ±10° → 速度换 1.0）。
+---★ TH08 的两条 `ins_111` 是 +0.17453292 / −0.17453292；我们坐标角度整体取反
+---  ⇒ 色 2 那一波用 −10°、色 4 那一波用 +10°。
+local GUN_TURN_FRAMES = 55
+local GUN_TURN_REPEAT = 1
+local GUN_TURN_A = -0.17453292
+local GUN_TURN_B = 0.17453292
+local GUN_TURN_SPEED = 1.0
+
+local function gun_set_record(fam, ang)
+    EX.set_record(fam, 0, EX.K.REL, 0,
+            GUN_TURN_FRAMES, GUN_TURN_REPEAT, ang, GUN_TURN_SPEED)
+end
+
+local function gun_shoot(fam, g, color)
+    ---`ins_99 SHOOT_CIRCLE`（DispatchShotInstruction，EclDependencies.cpp:693-787）：
+    ---位置 = 使魔的 worldPosition + shootOffset(0,0)、count1 = 4、count2 = 1、
+    ---speed1 = 7.6、angle = 枪自己的基准角（`ins_37` 卷过）。
+    EX.shoot(fam, fam.x, fam.y, {
+        op = 99,
+        type = GUN_TYPE,
+        color = EX.color(color),
+        count1 = GUN_COUNT, count2 = 1,
+        speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
+        angle = g.angle, step = GUN_ASTEP, flags = GUN_FLAGS,
+    })
+end
+
+---------------------------------------------------------------------
+---枪（子 context 0 = Sub54）的指令表：{ ECL 的 time, 处理 }。
+---  `ins_4(0, …)` 把 time 拨回 0 后**同帧**重跑 t=0 那一整段（JUMP 语义，EclRunLow.inl:239-243）。
+---------------------------------------------------------------------
+local GUN_PROG = {
+    { GUN_SHOT_A_T, function(fam, g)
+        gun_set_record(fam, GUN_TURN_A)            -- +0.17453292（TH08）⇒ 我们负角
+        gun_shoot(fam, g, GUN_COLOR_A)
+        gun_set_record(fam, GUN_TURN_B)            -- 下一波用反号
+        g.angle = wrap_pi(g.angle + fam.c455_step) -- `ins_15` + `ins_37`
+    end },
+    { GUN_SHOT_B_T, function(fam, g)
+        gun_shoot(fam, g, GUN_COLOR_B)
+        g.angle = wrap_pi(g.angle + fam.c455_step)
+    end },
+    { GUN_LOOP_T, function(fam, g)
+        g.t = 0                                    -- `ins_4(0, Sub54_196)`
+        g.pc = 1                                   -- 回到 t=0 那条（同帧继续跑）
+    end },
+}
+
+local function gun_step(fam)
+    local g = fam.c455_gun
+    if g == nil then return end
+    ---子 context 的分派循环（EclRun.cpp:57-104）：跟主 context 同一套。
+    while true do
+        local ins = GUN_PROG[g.pc]
+        if ins == nil or ins[1] ~= g.t then break end
+        g.pc = g.pc + 1
+        ins[2](fam, g)
+    end
+    g.t = g.t + 1                                  -- 分派循环收尾的 `context.time++`
+end
+
+---------------------------------------------------------------------
+---使魔（Sub55）。占位贴图 "servant"、无判定（见头注）。
+---★ `frame` 故意留空：使魔的 ECL 与位置全部由 card_frame 按「BOSS → 使魔」的固定
+---  顺序驱动，保证与原作「敌人按 slot 顺序跑」一致（引擎自己的对象顺序不好保证）。
+---------------------------------------------------------------------
+local familiar_cls = Class(object, {
+    init = function(self, x, y, dx, dy, base, step)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.c455_dx, self.c455_dy = dx, dy
+        self.c455_base, self.c455_step = base, step
+        self.c455_t = 0                            -- 主 context（Sub55）的 time
+        self.c455_gun = nil                        -- 子 context 0（Sub54）
+    end,
+    frame = function(self) end,
+})
+
+local function familiar_step(fam)
+    ---① 主 context（Sub55）：只有 t=60 那条 `ins_135(0, 54)` 有内容。
+    if fam.c455_t == FAM_GUN_T then
+        ---枪的基准角 = `ins_135` 那一刻从使魔变量块拷过来的 lf0。
+        fam.c455_gun = { t = 0, pc = 1, angle = fam.c455_base }
+    end
+    fam.c455_t = fam.c455_t + 1
+    ---② 子 context（枪）跟在主 context 后面同帧跑（EclRun.cpp:191-209）。
+    gun_step(fam)
+end
+
+---ins_67 = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
+---抽角度 + 四条边界修正，再交给 StartTimedPolarDisplacement（:105-126）
+---（delta = (cos,sin)(角)·speed·duration、origin = 当前 worldPosition、缓动 4）。
+---★ 「x > upper.x − 96」那条把角度改写成 `π − movementAngle`，用的是**上一段的移动方向**、
+---  不是刚抽到的 angle —— 原作自己的怪癖，照抄（与本文件卡 433 / 453 同一份模板）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = wrap_pi(ran:Float(0, PI / 2) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c455_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+local function begin_wander(owner)
+    local angle = wander_angle(owner)
+    owner.c455_mangle = angle
+    ---TH08 角 → 我们角取反（见文件头），所以位移用 (cos(−a), sin(−a))。
+    owner.c455_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）：
+---`timer--; progress = 1 − timer/duration`，缓动 1/2/3 = IN_QUAD/CUBIC/QUARTIC、
+---4/5/6 = OUT_*；到点那一帧直接落在 origin + delta。
+---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+local function spawn_familiars(owner)
+    for i = 1, #FAMILIARS do
+        local f = FAMILIARS[i]
+        local fam = New(familiar_cls, owner.x + f.dx, owner.y + f.dy,
+                f.dx, f.dy, f.base, f.step)
+        owner.c455_fams[#owner.c455_fams + 1] = fam
+    end
+end
+
+---------------------------------------------------------------------
+---主 context（Sub53）的指令表：{ ECL 的 time, 处理 }。
+---  空档由每帧的 time++ 补上；`ins_4` 那种「把 time 拨回去再跳」的语义照抄。
+---------------------------------------------------------------------
+local PROG = {
+    { 0, function(owner)
+        ---`ins_75(32,48,352,128)`：置 CLAMP_POSITION（判据 EnemyManager.cpp:803-819）。
+        ---同帧的 `ins_52(61)` 是 32 个 `ins_139` 特效 = 纯观感，不做。
+        owner.c455_clamped = true
+    end },
+    { SPAWN_T, spawn_familiars },
+    { WANDER_FIRST, begin_wander },
+    { LOOP_T, function(owner)
+        ---`ins_4(70, Sub53_648)`：time := 70 后跳回 t=270 那条（那一帧不再执行它，
+        ---因为 270 ≠ 70；靠 time++ 涨回 270 再跑）。
+        owner.c455_t = LOOP_RESET_T
+        owner.c455_pc = 3                          -- 上面那条 t=270（begin_wander）
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c455_t = 0
+    owner.c455_pc = 1
+    owner.c455_move = nil
+    ---★ 原作这里有一条 `ins_64(60, 4, 192, 112)`（从上一卡的 (192,128) 上移 16 px，
+    ---  末帧 movementAngle = VectorAngle(0, −16) = −π/2（TH08））。移植版不做入场插值，
+    ---  但把这个 movementAngle 照样带上（`ins_67` 的右边界那一支会用它）。
+    owner.c455_mangle = -PI / 2
+    owner.c455_clamped = false                    -- t=0 的 `ins_75` 才置 CLAMP_POSITION
+    owner.c455_fams = {}
+    ---落位：TH08 (192,112) = 我们 (0,112)（原地出现，不做入场）。
+    owner.x, owner.y = BOSS_X, BOSS_Y
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c455_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:57-104）。本卡没有冻帧指令。
+    while true do
+        local ins = PROG[owner.c455_pc]
+        if ins == nil or ins[1] ~= owner.c455_t then break end
+        owner.c455_pc = owner.c455_pc + 1
+        ins[2](owner)
+    end
+    owner.c455_t = owner.c455_t + 1
+
+    ---② RunEcl 尾巴上的 UpdateMovement（`ins_67` 的插值位移）——boss 的位移要排在使魔之前。
+    local move = owner.c455_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c455_move = nil end
+    end
+
+    ---③ ClampPosition（EnemyManagerUpdate.cpp:172-174 在位移后那一钳）。
+    if owner.c455_clamped then
+        if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+        if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+    end
+
+    ---④ 四台使魔（RunEcl = 主 context → 子 context → 帧末刷新 positionOffset）。
+    local fams = owner.c455_fams
+    for i = 1, #fams do
+        local fam = fams[i]
+        if IsValid(fam) then
+            familiar_step(fam)
+            ---`positionOffset = parentEnemy->position`（EnemyManagerUpdate.cpp:170-176）
+            ---⇒ 使魔每帧贴在 BOSS 身上；弹用的还是它**上一帧末**的位置。
+            fam.x = owner.x + fam.c455_dx
+            fam.y = owner.y + fam.c455_dy
+        end
+    end
+end
+
+local function card_del(owner)
+    local fams = owner.c455_fams
+    if fams then
+        for i = 1, #fams do
+            if IsValid(fams[i]) then object.RawDel(fams[i]) end
+        end
+    end
+    owner.c455_fams = nil
+    owner.c455_t = nil
+    owner.c455_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[455] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---卡 456「狂視「狂視調律(イリュージョンシーカー)」」（铃仙·优昙华院·因幡 · Stage 5
+---  · ecldata5.ecl Sub66 本卡 + Sub67 生成器 + Sub68/69/70/71/72/73 使魔与枪
+---  + Sub85/Sub86 红眼）。
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：`/tmp/th31/e5.utf8.decl`（Sub66 :1663、Sub67 :1713、Sub68 :1741、
+---  Sub69 :1758、Sub70 :1767、Sub71 :1776、Sub72 :1794、Sub73 :1803、Sub85 :2124）
+---
+---  · Sub66（宿主 / 本卡）：
+---      t=0   `ins_129(2)`/`ins_130(56)`/`ins_105(0)`/`ins_95()`（清非 BOSS）/`ins_113(−1,−1)`/
+---            `ins_80(4)`/`ins_110(0,0)`/`ins_134(4620, 56)`（超时 4620 帧 = **77 秒** → 三非）/
+---            `ins_153()`/`ins_132(0)`/`ins_6([10039], 0)`/
+---            `ins_64(90, 4, 192, 128)`（90 帧 OUT_QUAD 滑到 TH08 (192,128) = 我们 (0,96)）/
+---            `ins_122` 开符卡。⇒ 除 `ins_64` 外全是 boss 系统 / 观感。
+---      t=90  `ins_81(4)`/`ins_160(600)`（HP 类，忽略）/ `ins_135(0, 67)` 挂生成器。
+---      t=340 `ins_0()`（NOP）/ `ins_135(0, −1)` 卸生成器 / `ins_6([10036], 50)` 与
+---            `ins_7([10094], 192)`、`ins_7([10095], 244)`（红眼生成点）/
+---            `ins_135(1, 85)` 挂红眼机（Sub85）；
+---            **冻结 A**：li0 = 0x100000、lf0 = 0.0、lf1 = 0.6、li1 = 0、`ins_136(12, 0)`；
+---            **冻结 B**：li0 = 0x200000、lf0 = π、`ins_136(12, 0)`。
+---      t=440 li0 = 0x100000 + `ins_135(0, 67)`（重新挂生成器）+ `ins_6([10001], 1)` +
+---            `ins_136(12, 0)`、再 li0 = 0x200000 + `ins_136(12, 0)` ⇒ **解冻两组**；
+---            `ins_67(60, 0, 1.0)`（★ 缓动 = 0 = LINEAR，不是卡 455 的 4）。
+---      t=540 `ins_4(340, Sub66_1252)` ⇒ time 拨回 340、跳回**那条 time=340 的指令**
+---            （`Sub66_1252` 紧跟 `ins_0()` ⇒ 目标 time = 340）⇒ 同一帧重跑整段 t=340
+---            ⇒ 一圈 = 540 − 340 = **200 帧**。
+---  · Sub67（生成器；子 context 0，t=90 挂上 / t=340 卸 / t=440 再挂）：
+---      t=0（它的指令**全部**都在 t=0）：
+---        `ins_6([10007], 6)`（弹色 6）/ `ins_6([10037], 0)` / `ins_7([10016], π)`（飞行方向）
+---        `ins_27([10094], rndSgn, 16)` + `ins_15([10094], 380)` ⇒ x ∈ [364, 396]
+---        `ins_27([10095], rndSgn, 32)` + `ins_15([10095], 224)` ⇒ y ∈ [192, 256]
+---        `ins_90(68, x, y, 200, −2, 100)` 生成第一组使魔（Sub68）
+---        `ins_2([10038])` ⇒ SET_SECONDARY_TIME = 25（**本 context** 停 25 帧）
+---        `ins_6([10007], 2)` / `ins_7([10016], 0.0)`（第二组：色 2、方向 0）
+---        x = rndSgn·16 + 4 ∈ [−12, 20]、y 同上 ∈ [192, 256]
+---        `ins_90(71, x, y, 200, −2, 100)` 生成第二组使魔（Sub71）
+---        `ins_2([10038])` 再停 25 帧
+---        `ins_4(0, Sub67_80)` ⇒ time 拨回 0、跳回第一条（同帧重跑）
+---      ★ `ins_2` = SET_SECONDARY_TIME（EclRunLow.inl:227-230）：把 `context->secondaryTime`
+---        置成参数；分派循环在**每条指令之后**都查一次（EclRun.cpp:56-66）——
+---        `secondaryTime > 0` 就 `secondaryTime--; time--; break` ⇒ **当帧剩下的指令不再跑**、
+---        time 净不变 ⇒ 效果是「这一条之后整个 context 停 N 帧」。它是**每个 context 各一份**
+---        （`enemy->activeEclContext->secondaryTime`，EclManager.hpp:613）⇒ Sub67 停帧时
+---        BOSS 的主 context 照跑（只有这个子 context 停）。
+---      ⇒ Sub67 的节奏：t=0 生 A → 停 25 帧 → 生 B → 停 25 帧 → 跳回 t=0（同帧再生 A）
+---        ⇒ 每 25 帧一只、每 50 帧一对；这个 context 的 time 永远是 0。
+---  · `ins_90` = SPAWN_FAMILIAR_AT_POSITION（EclRunLow.inl:759-806）：
+---    参数 (子程序, x, y, life, itemDrop, score)，x/y 是**脚本坐标**、直接写进 child->position
+---    （**不**继承父机位置，跟卡 455 的 `ins_92` 不是一回事）；孩子被清掉
+---    ENEMY_FLAG_COLLISION（:775）⇒ 打不到 ⇒ 本移植做成**纯观感**（colli=false）。
+---  · 使魔 Sub68（第一组）/ Sub71（第二组）：指令全在 t=0：
+---      `ins_54(53)`（主贴图）/ `ins_83(1)` / `ins_145(1)` / `ins_77(24,24)` / `ins_160(30)`
+---      （后两条是 hitbox 与减伤，忽略；`ins_82(0.0)` = Sub68 / `ins_80(8192)` = Sub71
+---       —— 8192 = 0x2000，`DISABLE_INTERACTION_FLAGS` 只认 1/2/4/8/16/32（EclRunLow.inl:675-695）
+---       ⇒ **空操作**）
+---      `ins_7([10094], [10042])` / `ins_7([10095], [10043])`：extraFloat0/1 ← **自己的**
+---        worldPosition（10042/10043 = ENEMY_POSITION_X/Y）；本卡没人读它，照抄
+---      `ins_135(0, 69|72)` 挂快枪 / `!HL ins_135(1, 73)` 挂慢枪（两条都不是 Lunatic 专属）
+---      `ins_65([10016], 1.0)` SET_DIRECTION_AND_SPEED（EclRunLow.inl:504-512）：
+---        movementAngle = 继承来的 local float0（第一组 = π、第二组 = 0）、速度 1.0、
+---        POLAR 模式、duration = 0 ⇒ **恒速直飞**（EnemyManager.cpp:71-86 的 POLAR 支）。
+---      t=4200 `ins_1()`（TERMINATE）；本位移速 1 px/帧，出屏回收更早。
+---    ★ 两组的差别只有颜色（[10007] = 6 / 2）与飞行方向（π / 0）。
+---  · 枪 Sub69（快）/ Sub73（慢）与 Sub72（快）/ Sub70（慢，**没人挂**）：
+---      t=0 一次 `ins_111(0, 4194304, 1, 900, −1, −1, −1)`：SET_BULLET_TRANSFORM，
+---        槽 0、kind = 0x400000 = **WRAP_X**（BulletManager.hpp:153）、allowWhileActive = 1、
+---        int0 = 900 = 帧数（`payload.timed.frames`，BulletManager.hpp:71-77）、float0/1 不用。
+---        ⇒ 弹在水平方向出屏就从对面绕回来（BulletManager.cpp:1423-1441：TH08 x < 0 → +384、
+---        x > 384 → −384 ⇒ 我们 ±192），900 帧后自动关掉。
+---        ★ 记录挂在**敌机自己的** `bulletSpawnDescriptor` 上（EclRunHigh.inl:243-262）⇒
+---          两只枪共用一份；出弹那一刻整块拷给弹（BulletManager.cpp:245-248）⇒ 每颗弹都带着它。
+---        ★ allowWhileActive = 1 是必需的：否则 `AdvanceTransformProgram` 会在
+---          「已经有活动位」时直接返回（BulletManager.cpp:315-317），记录永远不生效。
+---      `Sub69_40:`（t=0）`ins_99(16, [10007], 2, 1, 1.3, 0.5, π/2, 0.0, 5247490)`
+---        快枪：每 8 帧一发（`+8: ins_4(0, Sub69_40)` ⇒ 拨回 time=0 后**同帧重跑**）、
+---        一发 2 颗、速度 1.3；`Sub70_40`（2 颗、速度 1.0）每 30 帧一发；
+---        Sub72/Sub73 与它们同形，只有 flags 不同。
+---      ★ `ins_99` = SHOOT_CIRCLE（aimMode = 99 − 96 = 3 = CIRCLE，**不加**自机角）：
+---        count1 = 2、count2 = 1 ⇒ 两发按 180° 对开（TH08 角 = π/2 与 3π/2 = 正下/正上；
+---        我们坐标 = −π/2 与 +π/2，负号见文件头）。angleStep 与 speed2 都不参与。
+---      ★ flags：Sub69/70 = 5247490 = 0x501202、Sub72/73 = 6296066 = 0x601202：
+---          0x1202 = SPAWN_FAST(0x2) | PLAY_SPAWN_SOUND(0x200) | CANCEL_IMMUNE(0x1000)；
+---          0x500000 = WRAP_X(0x400000) | ECL_EX_TRIGGER_MARKER(0x100000)；
+---          0x600000 = WRAP_X 再 | 0x200000（枚举里没有名字的那一位 = 本卡的第二组标记）。
+---        ⇒ 第一组的**快**枪弹带标记 A；两组的慢枪弹与第二组的快枪弹都带标记 B ——
+---          「标记」跟「哪一组使魔」不是一回事，照抄裸字节。
+---      ★ 出弹位置 = 使魔的 worldPosition + shootOffset(0,0)（EclDependencies.cpp:718-721）
+---        ⇒ 弹只从两只使魔身上发，BOSS 自己一枪不发（它 t=0 的 `ins_105(0)` 关掉了自动射击）。
+---  · Sub85（子 context 槽 1；t=340 挂上、同帧从 t=0 跑）/ Sub86（红眼）：
+---      t=0   `ins_11([10036], 25)`（`ins_6([10036], 50)` 是 Sub66 写的 ⇒ 50 − 25 = 25）/
+---            `ins_124(42)` / `ins_137(13, 0)`（每帧屏幕红染，观感，不做）/
+---            `ins_93(86, exF0=192, exF1=244, 0, 10, −2, 10)` 在 TH08 (192,244) = 我们 (0,−20)
+---            生成红眼（`ins_93` = SPAWN_ENEMY_AT_POSITION，**不进**附着链）。
+---      t=2   `ins_5(0, Sub85_56, [10036])` = JUMP_DEC（EclRunLow.inl:234-243）：先
+---            `--[10036]`，> 0 就把 time 拨回 0、跳回 t=0 那条 `ins_93`（同帧再生一只）
+---            ⇒ 每 2 帧一只、共 25 只（t=0,2,…,48）。
+---      t=52  `ins_137(−1, 0)` / `ins_124(25)` / `ins_53()` RETURN。
+---      ★ 与卡 454 用的是同一条 Sub85/Sub86（同一个红眼），参数完全相同。
+---  ★ `ins_136(12, 0)` = EX 指令 #12 ReisenFreezeBullets（表在 EclGlobals.cpp:64-99，
+---    实现 EclExIns.cpp:601-667）：扫**全 1536 个弹槽**，凡 `transformFlags & li0` 非 0 的：
+---      普通弹（bulletVm.type == 1）⇒ 冻结：换加算精灵、`collisionDisabled = 1`、
+---        `velocity = FromAngleMagnitude(lf0, fm·lf1)`；
+---      已冻结的 ⇒ 解冻：换回普通精灵、开判定、`velocity = FromAngleMagnitude(弹自己的角, 弹自己的速)`。
+---    li1 == 0 ⇒ 顺带把**整条附着链**（= 本卡所有使魔）置 FORCE_PAUSE（:653-663）；
+---    li1 != 0 ⇒ 撤掉（:665-675）。EnemyManagerUpdate.cpp:156-162：带 FORCE_PAUSE 的敌机
+---    当帧整个跳过（ECL 不跑、位移不积分）⇒ 使魔在冻结期间**完全静止**。
+---  ★ 入场：`ins_64(90, 4, 192, 128)` 从上一卡的位置滑到 (0,96)（缓动 4 = OUT_QUAD）。
+---  ★ `ins_67` 的四条边界修正读 `enemy->movementBounds`（EclDependencies.cpp:128-191）。
+---    Sub66 自己**没有** `ins_75`，但这台敌机是**同一只**（宿主 Sub48 → 一非 Sub51 → …
+---    依次在同一个 enemy 对象上跑：`ins_126`/`ins_125` 的子程序槽与 `ins_133`/`ins_130`/`ins_134`
+---    的回调都在 `mainEclContextStorage` 上调用，见 EclRunHigh.inl:551-582），
+---    夹框由上一张卡 455 的 `ins_75(32,48,352,128)` 留下、CLAMP_POSITION 也一直开着
+---    ⇒ 这里沿用那个框（TH08 x∈[32,352]、y∈[48,128] = 我们 x∈[−160,160]、y∈[96,176]）。
+---    BOSS 从 (0,96)（框的下沿）出发，`ins_67` 的「下边界」修正把它往上推，之后在框里随机游走。
+---  ★ 占位贴图：使魔 "servant"、红眼 "eyeL"、弹 type 16 → ball_small。
+---    全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+
+---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
+local function wrap_pi(a)
+    if a > PI then a = a - 2 * PI elseif a < -PI then a = a + 2 * PI end
+    return a
+end
+
+---RANDOM_SIGNED_UNIT_FLOAT（Global.cpp:1231-1256 的 GetRandomF32Signed）∈ [−1, 1]：
+---**连续**随机数（不是 ±1）—— Sub67 的 x/y 抖动用它。
+local function rnd_sgn() return ran:Float(0, 1) * 2 - 1 end
+
+---夹框（继承自卡 455 的 `ins_75(32,48,352,128)`，见头注）。
+---★ `ins_67` 的四条边界修正判据用 TH08 的 96 / 48 内缩（BeginBoundaryAwareMove）。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---`ins_64(90, 4, 192, 128)` 的落点：TH08 (192,128) = 我们 (0,96)。
+local BOSS_X, BOSS_Y = 0, 96
+local ENT_T = 90
+local ENT_EASING = 4
+
+---Sub66 的时间轴。
+local GEN_T = 90              -- `ins_135(0, 67)` 挂生成器
+local FREEZE_T = 340          -- 卸生成器 + 挂红眼 + 冻结两组
+local THAW_T = 440            -- 重新挂生成器 + 解冻两组 + `ins_67`
+local LOOP_T = 540            -- `ins_4(340, Sub66_1252)`
+local LOOP_RESET_T = 340      -- ... 拨回的 time（= 目标指令的 time ⇒ 同帧重跑）
+local WANDER_FRAMES = 60      -- `ins_67(60, 0, 1.0)`
+local WANDER_SPEED = 1.0
+local WANDER_EASING = 0       -- ★ 0 = LINEAR
+
+---生成器（Sub67）的参数。
+local GEN_FREEZE = 25         -- `ins_2([10038])`（!L 的 [10038] = 25）
+local GEN_JITTER_X = 16       -- `ins_27([10094], rndSgn, 16)`
+local GEN_JITTER_Y = 32       -- `ins_27([10095], rndSgn, 32)`
+local GEN_BASE_X_A, GEN_BASE_X_B = 380, 4
+local GEN_BASE_Y = 224
+local FAM_LIFE, FAM_DROP, FAM_SCORE = 200, -2, 100
+
+---使魔（Sub68 / Sub71）。
+local FAM_SPEED = 1.0         -- `ins_65([10016], 1.0)`
+local FAM_DEATH_T = 4200      -- `ins_1()`
+local FAM_HALF = 24           -- 出屏回收用的半个精灵宽高（`ins_77(24,24)` 的 hitbox）
+---第一组：TH08 方向 π（向左）、色 6；第二组：方向 0（向右）、色 2。
+local FAM_DIR_A, FAM_DIR_B = PI, 0.0
+local FAM_COLOR_A, FAM_COLOR_B = 6, 2
+
+---枪（Sub69 / Sub70 / Sub72 / Sub73）。
+local GUN_TYPE = 16
+local GUN_ANGLE_TH08 = PI / 2       -- ins_99 的基准角（CIRCLE ⇒ 两发对开）
+local GUN_SPEED2 = 0.5              -- count2 = 1 ⇒ 不参与
+local GUN_FAST_PERIOD, GUN_FAST_SPEED = 8, 1.3
+local GUN_SLOW_PERIOD, GUN_SLOW_SPEED = 30, 1.0
+local GUN_WRAP_FRAMES = 900         -- `ins_111(0, 0x400000, 1, 900, …)`
+local GUN_WRAP_KIND = 0x400000      -- BULLET_TRANSFORM_WRAP_X
+---5247490 = 0x501202（标记 0x100000）、6296066 = 0x601202（标记 0x200000）。
+local GUN_FLAGS_A, GUN_FLAGS_B = 5247490, 6296066
+
+---ReisenFreezeBullets 的两个小组标记（0x200000 在枚举里没名字，见头注）。
+local MARK_A, MARK_B = 0x100000, 0x200000
+local FREEZE_SPEED = 0.6                    -- lf1
+local FREEZE_DIR_A, FREEZE_DIR_B = 0.0, PI  -- lf0（TH08 角）
+
+---红眼（Sub85 / Sub86），与卡 454 同一对。
+local EYE_X, EYE_Y = 0, -20         -- TH08 (192,244)
+local EYE_QUOTA = 25                -- `ins_6([10036], 50)` − `ins_11([10036], 25)`
+local EYE_FRAMES = 60               -- Sub86 的 `ins_1` 在 t=60
+
+---IsWithinPlayfield 的场地（GameManager.cpp:132-150）：TH08 [0,384]×[0,448] ⇒ 我们 ±192 / ±224。
+local FIELD_L, FIELD_R = -192, 192
+local FIELD_B, FIELD_T = -224, 224
+
+---出屏判据（EnemyManagerUpdate.cpp:225-260 的 HasBeenInBounds 那一支；这里使魔出生时
+---一定在界内，所以省略 hasBeenInBounds 的前置）。
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---位判（掩码都是 2 的幂；同前几张卡）。
+local function has_bit(v, mask)
+    return v ~= nil and v >= 0 and math.floor(v / mask) % 2 == 1
+end
+
+---EX 指令 #12 = ReisenFreezeBullets（EclExIns.cpp:601-667）。走哪一支只看**弹当前
+---是不是冻结态**（原作看 `bulletVm.type`，移植版照卡 454 用弹上的 `ex_frz` 代替 ——
+---精灵与混合模式是观感）；li1 那条 FORCE_PAUSE 由调用处单独处理。
+local function reisen_ex12(marker, dir_th08)
+    local a = -dir_th08                       -- TH08 角 → 我们角（见文件头）
+    local ux, uy = math.cos(a), math.sin(a)
+    for i = #EX.pool, 1, -1 do
+        local b = EX.pool[i]
+        if IsValid(b) and has_bit(b.ex_flags, marker) then
+            if b.ex_frz then
+                b.ex_frz = nil
+                b.colli = true
+                b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
+            else
+                b.ex_frz = true
+                b.colli = false
+                b.ex_vx = ux * FREEZE_SPEED * EX.fm
+                b.ex_vy = uy * FREEZE_SPEED * EX.fm
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---红眼（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**。
+---活 60 帧（`ins_1` 在 t=60）。
+---------------------------------------------------------------------
+local eye_cls
+eye_cls = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "eyeL"
+        self.hscale, self.vscale = 2, 2
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.e456_t = 0
+    end,
+    frame = function(self)
+        self.e456_t = self.e456_t + 1
+        if self.e456_t > EYE_FRAMES then object.RawDel(self) end
+    end,
+})
+
+local function spawn_eye(owner)
+    owner.c456_eyes_list[#owner.c456_eyes_list + 1] = New(eye_cls, EYE_X, EYE_Y)
+end
+
+---子 context 1 = Sub85 的指令表：{ ECL 的 time, 处理 }。
+---挂上那一帧就**同帧**从 t=0 跑（EclRun.cpp:191-209 的 low_select_next_context）。
+local EYE_PROG = {
+    { 0, function(owner)
+        spawn_eye(owner)                       -- `ins_93(86, exF0, exF1, 0, 10, −2, 10)`
+    end },
+    { 2, function(owner, c)
+        ---JUMP_DEC：`--[10036]`，≤ 0 就往下走（去 t=52 收尾），否则 time 拨回 0、
+        ---跳回 t=0 那条 `ins_93`（time 相同 ⇒ 那一帧立刻再生一只）。
+        c.i0 = c.i0 - 1
+        if c.i0 > 0 then
+            c.t = 0
+            c.pc = 1
+        end
+    end },
+    { 52, function(owner)
+        ---`ins_137(−1, 0)`（撤掉每帧的屏幕红染，观感）/ `ins_124(25)`（音效）/
+        ---`ins_53()` RETURN ⇒ 子 context 结束。
+        owner.c456_eyes = nil
+    end },
+}
+
+local function eye_step(owner)
+    local c = owner.c456_eyes
+    if c == nil then return end
+    while true do
+        local ins = EYE_PROG[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+    end
+    c.t = c.t + 1
+end
+
+---------------------------------------------------------------------
+---使魔（Sub68 / Sub71）。占位贴图 "servant"、无判定（见头注）。
+---★ `frame` 故意留空：使魔的 ECL / 位移 / 出屏回收全部由卡片的 frame 按「BOSS → 使魔」
+---  的固定顺序驱动，保证与原作「敌人按 slot 顺序跑」一致。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, ang, color, fast_flags)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c456_ang = ang                        -- 我们坐标的飞行角
+        self.c456_color = color
+        self.c456_fast_flags = fast_flags
+        self.c456_vx = math.cos(ang) * FAM_SPEED   -- `ins_65([10016], 1.0)`
+        self.c456_vy = math.sin(ang) * FAM_SPEED
+        self.c456_t = 0                            -- 主 context（Sub68/Sub71）的 time
+        self.c456_guns = nil                       -- 子 context 槽 0/1（两把枪）
+        self.c456_paused = false                   -- ENEMY_FLAG2_FORCE_PAUSE
+        self.c456_dead = false
+        ---`ins_111(0, 0x400000, 1, 900, −1, −1, −1)`：记录挂在敌机自己的描述符上
+        ---（两只枪共用一份、出弹时整块拷给弹）。
+        EX.set_record(self, 0, GUN_WRAP_KIND, 1, GUN_WRAP_FRAMES, -1, -1.0, -1.0)
+    end,
+    frame = function(self) end,
+})
+
+---枪的一发（`ins_99 SHOOT_CIRCLE`）：位置 = 使魔的 worldPosition + shootOffset(0,0)、
+---count1 = 2、count2 = 1 ⇒ 两发按 180° 对开。
+local function gun_shoot(fam, g)
+    EX.shoot(fam, fam.x, fam.y, {
+        op = 99, type = GUN_TYPE, color = EX.color(g.color),
+        count1 = 2, count2 = 1,
+        speed1 = g.speed, speed2 = GUN_SPEED2,
+        angle = -GUN_ANGLE_TH08, step = 0.0, flags = g.flags,
+    })
+end
+
+---枪的循环：t=0 出弹；`+N: ins_4(0, Sub…_40)` 把 time 拨回 0 并**同帧**重跑那条出弹
+---⇒ 每 N 帧一发（N = 8 的快枪 / 30 的慢枪）。
+local function gun_step(g, fam)
+    if g.t >= g.period then g.t = 0 end
+    if g.t == 0 then gun_shoot(fam, g) end
+    g.t = g.t + 1
+end
+
+---使魔的一帧：主 context（全在 t=0）+ 两把枪（子 context，槽序 0 → 1）。
+local function familiar_step(fam)
+    if fam.c456_dead then return end
+    if fam.c456_t == 0 then
+        ---`ins_135(0, 69|72)` / `!HL ins_135(1, 73)`：快枪 + 慢枪，同帧从 t=0 跑。
+        fam.c456_guns = {
+            { t = 0, period = GUN_FAST_PERIOD, speed = GUN_FAST_SPEED,
+              color = fam.c456_color, flags = fam.c456_fast_flags },
+            { t = 0, period = GUN_SLOW_PERIOD, speed = GUN_SLOW_SPEED,
+              color = fam.c456_color, flags = GUN_FLAGS_B },
+        }
+    elseif fam.c456_t >= FAM_DEATH_T then
+        fam.c456_dead = true                       -- `ins_1()`（t=4200）
+        return
+    end
+    fam.c456_t = fam.c456_t + 1
+    local guns = fam.c456_guns
+    if guns ~= nil then
+        gun_step(guns[1], fam)
+        gun_step(guns[2], fam)
+    end
+end
+
+---`ins_90` 生成一只使魔（EclRunLow.inl:759-806 + EclDependencies.cpp:591-620）：
+---x/y 是脚本坐标（TH08）⇒ 换到我们坐标。SpawnEnemy2 里会**当场**对新敌机跑一次 RunEcl
+---（EnemyTimeline.cpp:88-94）⇒ 移植版在生成处立刻走它的一帧（t=0，含两把枪 t=0 的出弹）；
+---之后本帧的「敌机循环」还会再走到它一次（多走一帧）—— 这一点照抄。
+local function spawn_familiar(owner, x_th08, y_th08, ang, color, fast_flags)
+    local fam = New(familiar_cls, x_th08 - 192, 224 - y_th08,
+            ang, color, fast_flags)
+    owner.c456_fams[#owner.c456_fams + 1] = fam
+    familiar_step(fam)
+    return fam
+end
+
+---------------------------------------------------------------------
+---子 context 0 = Sub67（生成器）的指令表：{ ECL 的 time, 处理 } —— 全在 t=0。
+---  靠 `ins_2` 的停帧 + `ins_4` 的回卷循环。
+---------------------------------------------------------------------
+local GEN_PROG = {
+    { 0, function(owner, c)
+        ---`ins_6([10007], 6)` / `ins_6([10037], 0)` / `ins_7([10016], π)`
+        ---+ 抽 x / y + `ins_90(68, x, y, 200, −2, 100)`
+        c.color = FAM_COLOR_A
+        c.dir = FAM_DIR_A
+        c.x = rnd_sgn() * GEN_JITTER_X + GEN_BASE_X_A
+        c.y = rnd_sgn() * GEN_JITTER_Y + GEN_BASE_Y
+        spawn_familiar(owner, c.x, c.y, -c.dir, c.color, GUN_FLAGS_A)
+    end },
+    { 0, function(owner, c)
+        c.freeze = GEN_FREEZE                       -- `ins_2([10038])`
+    end },
+    { 0, function(owner, c)
+        ---`ins_6([10007], 2)` / `ins_7([10016], 0.0)` + 抽 x / y + `ins_90(71, …)`
+        c.color = FAM_COLOR_B
+        c.dir = FAM_DIR_B
+        c.x = rnd_sgn() * GEN_JITTER_X + GEN_BASE_X_B
+        c.y = rnd_sgn() * GEN_JITTER_Y + GEN_BASE_Y
+        spawn_familiar(owner, c.x, c.y, -c.dir, c.color, GUN_FLAGS_B)
+    end },
+    { 0, function(owner, c)
+        c.freeze = GEN_FREEZE                       -- `ins_2([10038])`
+    end },
+    { 0, function(owner, c)
+        ---`ins_4(0, Sub67_80)`：time := 0 后跳回第一条（time 相同 ⇒ 同帧重跑）。
+        c.t = 0
+        c.pc = 1
+    end },
+}
+
+---子 context 的分派循环（EclRun.cpp:50-110）：`ins_2` 的停帧在**每条指令之后**查一次
+---（`secondaryTime > 0` ⇒ `secondaryTime--; time--; break`），所以设完值的当帧就吃掉 1。
+local function gen_step(owner)
+    local c = owner.c456_gen
+    if c == nil then return end
+    if c.freeze > 0 then
+        c.freeze = c.freeze - 1
+        return
+    end
+    while true do
+        local ins = GEN_PROG[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+        if c.freeze > 0 then
+            c.freeze = c.freeze - 1
+            return
+        end
+    end
+    c.t = c.t + 1
+end
+
+---------------------------------------------------------------------
+---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
+---抽角 + 四条边界修正，再交给 StartTimedPolarDisplacement（:105-126）
+---（delta = (cos,sin)(角)·speed·duration、origin = 当前 worldPosition）。
+---★ 「x > upper.x − 96」那条把角改写成 `π − movementAngle`，用的是**上一段的移动方向**
+---  而不是刚抽到的角 —— 原作自己的怪癖，照抄（与本文件卡 453 / 455 同一份模板）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = wrap_pi(ran:Float(0, PI / 2) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c456_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---`ins_67(60, 0, 1.0)`：60 帧线性走 speed·60 = 60 px（缓动 0 = LINEAR）。
+---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)              -- TH08 角
+    owner.c456_mangle = angle                      -- 给下一次「右边界」那一支用
+    owner.c456_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）：
+---`movementTimer--; progress = 1 − timer/duration`；到点那一帧直接落在 origin + delta。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---主 context（Sub66）的指令表：{ ECL 的 time, 处理 }（索引 2 就是 `Sub66_1252` 指的那条）。
+---------------------------------------------------------------------
+local PROG = {
+    { GEN_T, function(owner)
+        ---`ins_81(4)` / `ins_160(600)`（HP 类，忽略）+ `ins_135(0, 67)` 挂生成器。
+        owner.c456_gen = { t = 0, pc = 1, freeze = 0 }
+    end },
+    { FREEZE_T, function(owner)
+        ---`ins_0()`（NOP）+ `ins_135(0, −1)` 卸生成器；红眼的生成点（`ins_6([10036], 50)`、
+        ---`ins_7([10094], 192)`、`ins_7([10095], 244)`）+ `ins_135(1, 85)` 挂红眼机。
+        owner.c456_gen = nil
+        owner.c456_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
+        ---`ins_6([10001], 0)` + `ins_136(12, 0)` ×2：冻结两组，并给附着链加 FORCE_PAUSE。
+        for i = 1, #owner.c456_fams do
+            local fam = owner.c456_fams[i]
+            if IsValid(fam) then fam.c456_paused = true end
+        end
+        reisen_ex12(MARK_A, FREEZE_DIR_A)          -- li0 = 0x100000、lf0 = 0.0
+        reisen_ex12(MARK_B, FREEZE_DIR_B)          -- li0 = 0x200000、lf0 = π
+    end },
+    { THAW_T, function(owner)
+        ---`ins_6([10001], 1)` ⇒ ins_136 走 else 支（撤 FORCE_PAUSE）。
+        reisen_ex12(MARK_A, FREEZE_DIR_A)          -- 解冻 A
+        owner.c456_gen = { t = 0, pc = 1, freeze = 0 }
+        for i = 1, #owner.c456_fams do
+            local fam = owner.c456_fams[i]
+            if IsValid(fam) then fam.c456_paused = false end
+        end
+        reisen_ex12(MARK_B, FREEZE_DIR_B)          -- 解冻 B
+        begin_wander(owner)                        -- `ins_67(60, 0, 1.0)`
+    end },
+    { LOOP_T, function(owner)
+        ---`ins_4(340, Sub66_1252)`：time := 340，跳回上面那条 t=340 的指令
+        ---（目标 time = 340 ⇒ 那一帧**接着**把整段 t=340 跑完）。
+        owner.c456_t = LOOP_RESET_T
+        owner.c456_pc = 2
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c456_t = 0
+    owner.c456_pc = 1
+    owner.c456_gen = nil
+    owner.c456_eyes = nil
+    owner.c456_eyes_list = {}
+    owner.c456_fams = {}
+    owner.c456_mangle = 0
+    ---`ins_64(90, 4, 192, 128)`：从当前位置 90 帧 OUT_QUAD 滑到 (0,96)（走到 t=90 落位，
+    ---生成器也是那一帧挂上）。
+    owner.c456_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c456_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG[owner.c456_pc]
+        if ins == nil or ins[1] ~= owner.c456_t then break end
+        owner.c456_pc = owner.c456_pc + 1
+        ins[2](owner)
+    end
+    owner.c456_t = owner.c456_t + 1
+
+    ---② 帧尾的子 context（low_select_next_context，EclRun.cpp:191-209）：按槽序 0 → 1。
+    gen_step(owner)                                -- 槽 0 = Sub67
+    eye_step(owner)                                -- 槽 1 = Sub85
+
+    ---③ 同一次 RunEcl 尾巴上的 UpdateMovement（`ins_67` 的插值位移）—— BOSS 在使魔之前。
+    local move = owner.c456_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c456_move = nil end
+    end
+
+    ---④ ClampPosition（CLAMP_POSITION 从上一卡的 `ins_75` 起一直开着，见头注）。
+    if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+    if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+
+    ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们：RunEcl（ECL + 两把枪）→ IntegrateVelocity
+    ---   → 出屏回收。FORCE_PAUSE 的敌机整段跳过（EnemyManagerUpdate.cpp:156-162）。
+    local fams = owner.c456_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            if not fam.c456_paused then
+                familiar_step(fam)
+                if not fam.c456_dead then
+                    fam.x = fam.x + fam.c456_vx
+                    fam.y = fam.y + fam.c456_vy
+                    if outside_field(fam.x, fam.y, FAM_HALF) then
+                        fam.c456_dead = true
+                    end
+                end
+            end
+            if fam.c456_dead then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c456_fams then
+        for i = 1, #owner.c456_fams do
+            if IsValid(owner.c456_fams[i]) then object.RawDel(owner.c456_fams[i]) end
+        end
+    end
+    if owner.c456_eyes_list then
+        for i = 1, #owner.c456_eyes_list do
+            if IsValid(owner.c456_eyes_list[i]) then object.RawDel(owner.c456_eyes_list[i]) end
+        end
+    end
+    owner.c456_fams = nil
+    owner.c456_eyes_list = nil
+    owner.c456_gen = nil
+    owner.c456_eyes = nil
+    owner.c456_t = nil
+    owner.c456_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[456] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---卡 457「非符三」（铃仙·优昙华院·因幡 · Stage 5 · ecldata5.ecl
+---  Sub56 本卡 + Sub59 使魔 + Sub57 / Sub58 两把枪 + Sub61 开场特效）
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：/tmp/th31/e5.utf8.decl（Sub56 :1351、Sub57、Sub58、Sub59、Sub61）
+---
+---  · Sub56（宿主 / 本卡）的时间轴：
+---      t=0    `ins_81(4)`/`ins_81(3)`/`ins_160(160)`/`ins_137(−1,0)`/`ins_123`/`ins_127(0)`/
+---             `ins_144(10,5)`/`ins_131(20000)`/`ins_148(0)`/`ins_75(32,48,352,128)`（夹框）/
+---             `ins_129(2)`/`ins_130(56)`/`ins_134(3600, 63)`（60 秒）/`ins_133(0,6200,63)`/
+---             `ins_133(1,3200,74)`/`ins_158(…)` —— 全是 boss 系统 / HUD，不另写
+---             （血量口径见文件末尾 LIST 的注释：13800）；
+---             `ins_64(60, 4, 192, 112)`：60 帧 OUT_QUAD 滑到 TH08 (192,112) = 我们 (0,112)；
+---             `ins_6([10000], 20)`：li0 = 20（本 context 没人读，跳过）；
+---             `ins_52(61)`：CALL 61 → 32 个 `ins_139(17,4,−1)` 特效（纯观感，跳过）——
+---             ★ 但 CALL 期间父 context 的时钟**冻住**（见 CALL_FRAMES 的注释）。
+---      t=70   六个 `ins_92(59, x, 32, life, 1, 100000)`：x = 24 / 8 / −8 / −24（life 3000）
+---             与 40 / −40（life 8000）。后两只前面挂 `ins_44([10040], 1, …)`
+---             = JUMP_IF_INT_LESS(DIFFICULTY, 1, …) ⇒ **只有 Easy 跳过**，Lunatic 六只都生。
+---      t=270  `ins_67(60, 4, 1)`：朝「背离自机 + 边界回避」的随机方向 60 帧走 60 px。
+---      t=300  `ins_4(70, Sub56_880)`：time 拨回 70、跳回 t=70 那条 ⇒ **一轮 230 帧**
+---             （跳回的那一帧整段 t=70 当帧重跑，同卡 456 的 `ins_4`）。
+---  · Sub59（使魔；`ins_92` 生成）：指令全在 t=0（`ins_54(53)` 贴图、`ins_83(1)`/`ins_145(1)`/
+---      `ins_77(24,24)`/`ins_160(30)`/`ins_82(0)`），t=60 挂两把枪（槽 0 = Sub57、槽 1 = Sub58）、
+---      t=30060 自毁。★ `ins_92` = SPAWN_FAMILIAR_INHERITING_POSITION（EclRunLow.inl:878-946）：
+---      孩子 position = 脚本坐标 (x, 32)、`positionOffset` 每帧 = 父的 **position**
+---      （EnemyManagerUpdate.cpp:171-176）⇒ 使魔**跟着 BOSS 走**、偏移恒为 (x, −32)（我们口径）。
+---      孩子被清 ENEMY_FLAG_COLLISION（:925）⇒ 打不到 ⇒ 纯观感（colli = false）。
+---  · Sub57（枪槽 0）：`ins_152(0…0)` 把 rank 影响量清零 ⇒ 出弹不吃 rank 缩放。
+---      lf7 = 8.5（!L 行）、ei2 = 10（!L 行，`ins_2` 的停帧）⇒ **每 10 帧**一发：
+---        lf1 += π/8 → `ins_37` 归一 → lf0 = sin(lf1) → `ins_17` lf0 ×= π/8 →
+---        `ins_111` 写记录 0 → `ins_96` FAN_AIMED(16, 2, 3, 1, 8.5, 0.5, lf0, π/8, 0x242)。
+---  · Sub58（枪槽 1）：另一条 `ins_96`：(16, 1, **12**, 1, 1.5, 0.5, **π**, π/8, 0x242)；
+---      t=80 `ins_4(0, …)` ⇒ **每 80 帧**一发、12 路背对自机的扇（count1 偶数 ⇒ ±0.5/…/±5.5 步）。
+---  · ★ 记录表挂在**敌机**（使魔）身上、两条枪共用一份（EclRunHigh.inl:243-262 的
+---    `TH08_ECL_CONTEXT_ENEMY(ctx)->bulletSpawnDescriptor`）⇒ Sub57 在 t=0 写的记录，
+---    连 Sub58 同帧的第一波弹一起吃。记录 = (kind 0x40 REL, allow 0, i0 60, i1 1, f0 0, f1 1)
+---    ⇒ 弹在 60 帧里从原速线性减到 0、再按速度 1 沿原方向继续
+---    （BulletManager.cpp:372-387 装配 + :1253-1286 每帧）。
+---  ★ 难度：只取 Lunatic（`ins_44` 的 `[10040] = DIFFICULTY`）。
+---  ★ 占位贴图：使魔 "servant"、弹 type 16 → ball_mid（EX.style_of）。全部实现完再统一换。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+
+---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
+local function wrap_pi(a)
+    if a > PI then a = a - 2 * PI elseif a < -PI then a = a + 2 * PI end
+    return a
+end
+
+---夹框与落点（`ins_75(32,48,352,128)` 从上一卡的 CLAMP_POSITION 起一直开着）。
+---  TH08 x∈[32,352] y∈[48,128] → 我们 x∈[−160,160]、y∈[96,176]。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+---`ins_64(60, 4, 192, 112)`：TH08 (192,112) = 我们 (0,112)。
+local BOSS_X, BOSS_Y = 0, 112
+local ENT_T, ENT_EASING = 60, 4
+
+---Sub56 的时间轴。
+local GEN_T = 70               -- 六个 `ins_92` 的 time
+local WANDER_T = 270           -- `ins_67(60, 4, 1)` 的 time
+local LOOP_T = 300             -- `ins_4(70, …)` 的 time
+local LOOP_RESET_T = 70        -- ... 拨回的 time（= 目标指令的 time ⇒ 同帧重跑）
+local WANDER_FRAMES = 60       -- ins_67 的时长（参数 0）
+local WANDER_EASING = 4        -- ... 缓动（参数 1）= ECL_EASING_OUT_QUADRATIC
+local WANDER_SPEED = 1.0       -- ... 速度（参数 2）⇒ 位移 = 60 px
+---★ `ins_52(61)` 的 CALL：Sub61 是「`ins_139(17,4,−1)` ×32 + `ins_5` 回卷」的纯观感特效，
+---  但它把父 context **整份压栈**（CallSubOnEnemy，EclDependencies.cpp:472-504）、
+---  帧末只给「活动 context」的 time++（EclRun.cpp:96-209）⇒ 父 context 的时钟在 Sub61
+---  跑完之前一直是 0。Sub61 的循环体每帧跑一次、跑满 32 帧才 RETURN（第 33 帧恢复父
+---  context 并补上那一次 time++）⇒ 本卡 t=70 那一组比「time = 真实帧」**晚 32 帧**。
+local CALL_FRAMES = 32
+
+---使魔（Sub59）。
+local FAM_OFFSETS = { 24, 8, -8, -24, 40, -40 }   -- `ins_92` 的 x（TH08 脚本坐标）
+local FAM_OFFSET_Y_TH = 32                        -- `ins_92` 的 y（TH08 +32 = 我们 −32）
+local FAM_GUN_T = 60                              -- `ins_135(0, 57)` / `ins_135(1, 58)`
+local FAM_END_T = 30060                           -- `ins_1()`（TERMINATE）
+local FAM_HALF = 24                               -- `ins_77(24,24)` 的 hitbox（出屏回收用）
+
+---两把枪（Sub57 / Sub58）。
+local GUN_TYPE = 16
+local GUN_FLAGS = 578              -- 0x242 = FAST(2) | REL(0x40) | SPAWN_SND(0x200)
+local REL_KIND = 0x40              -- BULLET_TRANSFORM_CHANGE_DIRECTION_RELATIVE
+local REL_ALLOW = 0                -- `ins_111` 的 allowWhileActive
+local REL_FRAMES, REL_REPEAT = 60, 1
+local REL_ANGLE, REL_SPEED = 0.0, 1.0
+local GUN_SPEED2 = 0.5             -- count2 = 1 ⇒ 不参与，照抄
+
+---Sub57：每 10 帧 3 路自机狙。
+local FAST_COLOR = 2
+local FAST_COUNT, FAST_STEP = 3, PI / 8
+local FAST_SPEED = 8.5             -- !L 的 lf7
+local FAST_PERIOD = 10             -- !L 的 [10038]（`ins_2` 的停帧）
+local FAST_LF1_STEP = PI / 8       -- `ins_15([10017], π/8)`
+local FAST_ARC = PI / 8            -- `ins_17([10016], π/8)`
+
+---Sub58：每 80 帧 12 路背对自机。
+local SLOW_COLOR = 1
+local SLOW_COUNT, SLOW_STEP = 12, PI / 8
+local SLOW_SPEED = 1.5
+local SLOW_PERIOD = 80
+local SLOW_ANGLE_TH08 = PI         -- `ins_96` 的基准角（TH08）⇒ 我们的 −π
+
+---IsWithinPlayfield 的场地（GameManager.cpp:132-150）：TH08 [0,384]×[0,448] ⇒ 我们 ±192 / ±224。
+local FIELD_L, FIELD_R = -192, 192
+local FIELD_B, FIELD_T = -224, 224
+
+---出屏判据（EnemyManagerUpdate.cpp:225-260；使魔出生一定在界内，省略 hasBeenInBounds 前置）。
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---------------------------------------------------------------------
+---使魔（Sub59）。占位贴图 "servant"、无判定。
+---★ `frame` 故意留空：使魔的 ECL / 两把枪 / 「跟着 BOSS 走」全部由卡片的 frame 按
+---  「BOSS → 使魔」的固定顺序驱动（= 原作敌机按 slot 顺序跑）。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, dx, dy)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c457_dx, self.c457_dy = dx, dy   -- 相对 BOSS 的固定偏移（我们坐标）
+        self.c457_t = 0                       -- 主 context（Sub59）的 time
+        self.c457_guns = nil                  -- 子 context 槽 0 / 1（t=60 挂上）
+        self.c457_dead = false
+    end,
+    frame = function(self) end,
+})
+
+---枪槽 0（Sub57）：每 10 帧一发 `ins_96`。
+---先写记录再出弹（ECL 里 `ins_111` 就在 `ins_96` 前一条）。
+local function gun_fast_step(g, fam)
+    if g.t % FAST_PERIOD == 0 then
+        EX.set_record(fam, 0, REL_KIND, REL_ALLOW, REL_FRAMES, REL_REPEAT,
+                REL_ANGLE, REL_SPEED)
+        g.lf1 = wrap_pi(g.lf1 + FAST_LF1_STEP)      -- `ins_15` + `ins_37`
+        local lf0 = math.sin(g.lf1) * FAST_ARC      -- `ins_32` + `ins_17`（TH08 角）
+        EX.shoot(fam, fam.x, fam.y, {
+            op = 96, type = GUN_TYPE, color = EX.color(FAST_COLOR),
+            count1 = FAST_COUNT, count2 = 1,
+            speed1 = FAST_SPEED, speed2 = GUN_SPEED2,
+            angle = -lf0, step = FAST_STEP, flags = GUN_FLAGS,
+        })
+    end
+    g.t = g.t + 1
+end
+
+---枪槽 1（Sub58）：每 80 帧一发 12 路扇形（基准角 π 是 TH08 角 ⇒ 我们取 −π）。
+local function gun_slow_step(g, fam)
+    if g.t % SLOW_PERIOD == 0 then
+        EX.shoot(fam, fam.x, fam.y, {
+            op = 96, type = GUN_TYPE, color = EX.color(SLOW_COLOR),
+            count1 = SLOW_COUNT, count2 = 1,
+            speed1 = SLOW_SPEED, speed2 = GUN_SPEED2,
+            angle = -SLOW_ANGLE_TH08, step = SLOW_STEP, flags = GUN_FLAGS,
+        })
+    end
+    g.t = g.t + 1
+end
+
+---使魔的一帧（Sub59 的主 context + 帧尾按槽序 0 → 1 跑两把枪）。
+local function familiar_step(fam)
+    if fam.c457_dead then return end
+    if fam.c457_t == FAM_GUN_T then
+        ---`ins_135(0, 57)` / `ins_135(1, 58)`：两把枪**同帧**从各自的 t=0 起跑
+        ---（CallEclSub 把子 context 的 time 归零，EclManager.cpp:69-82）。
+        fam.c457_guns = { { t = 0, lf1 = 0.0 }, { t = 0 } }
+    elseif fam.c457_t >= FAM_END_T then
+        fam.c457_dead = true                        -- `ins_1()`（t=30060）
+        return
+    end
+    fam.c457_t = fam.c457_t + 1
+    local guns = fam.c457_guns
+    if guns ~= nil then
+        gun_fast_step(guns[1], fam)
+        gun_slow_step(guns[2], fam)
+    end
+end
+
+---`ins_92` 生成一只使魔（EclRunLow.inl:878-946 + SpawnChildAtParentOffset）。
+---SpawnEnemy2 里会**当场**对新敌机跑一次 RunEcl（EnemyTimeline.cpp:88-94）⇒ 移植版在
+---生成处立刻走它的一帧；之后本帧的「敌机循环」还会再走到它一次（多走一帧）——照抄。
+local function spawn_familiar(owner, dx_th08)
+    local fam = New(familiar_cls, owner.x + dx_th08, owner.y - FAM_OFFSET_Y_TH,
+            dx_th08, -FAM_OFFSET_Y_TH)
+    owner.c457_fams[#owner.c457_fams + 1] = fam
+    familiar_step(fam)
+    return fam
+end
+
+---------------------------------------------------------------------
+---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
+---抽角 + 四条边界修正，再交给 StartTimedPolarDisplacement（:105-126）
+---（delta = (cos,sin)(角)·speed·duration、origin = 当前 worldPosition）。
+---★ 「x > upper.x − 96」那条把角改写成 `π − movementAngle`，用的是**上一段的移动方向**
+---  而不是刚抽到的角 —— 原作自己的怪癖，照抄（与本文件卡 453 / 455 / 456 同一份模板）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = wrap_pi(ran:Float(0, PI / 2) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c457_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---`ins_67(60, 4, 1.0)`：60 帧 OUT_QUAD 走 speed·60 = 60 px。
+---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)              -- TH08 角
+    owner.c457_mangle = angle                      -- 给下一次「右边界」那一支用
+    owner.c457_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）：
+---`movementTimer--; progress = 1 − timer/duration`；到点那一帧直接落在 origin + delta。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---主 context（Sub56）的指令表：{ ECL 的 time, 处理 }。
+---------------------------------------------------------------------
+local PROG = {
+    { 0, function(owner)
+        ---`ins_64(60, 4, 192, 112)`：从当前位置 60 帧 OUT_QUAD 滑到我们 (0,112)。
+        owner.c457_move = {
+            x0 = owner.x, y0 = owner.y,
+            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            n = ENT_T, t = 0, easing = ENT_EASING,
+        }
+        ---`ins_52(61)`：CALL 61（32 个特效，纯观感）——只把父 context 的时钟冻 32 帧。
+        owner.c457_wait = CALL_FRAMES
+    end },
+    { GEN_T, function(owner)
+        ---t=70：六只 `ins_92(59, x, 32, …)`（顺序就是 ECL 里的先后）。
+        for i = 1, #FAM_OFFSETS do
+            spawn_familiar(owner, FAM_OFFSETS[i])
+        end
+    end },
+    { WANDER_T, function(owner)
+        begin_wander(owner)                        -- `ins_67(60, 4, 1)`
+    end },
+    { LOOP_T, function(owner)
+        ---`ins_4(70, Sub56_880)`：time 拨回 70、跳回上面那条 t=70 的指令
+        ---（目标 time = 70 ⇒ 同一帧整段重跑）。
+        owner.c457_t = LOOP_RESET_T
+        owner.c457_pc = 2                          -- 指向 t=70 那条（PROG 的下标）
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c457_t = 0
+    owner.c457_pc = 1
+    owner.c457_wait = 0
+    owner.c457_fams = {}
+    ---★ 起手就是 `ins_64` 的插值位移（朝 TH08 +y = 我们 −y），`movementAngle` 因此是 π/2
+    ---  （BeginBoundaryAwareMove 的「右边界」那一支读的正是它）。
+    owner.c457_mangle = PI / 2
+    owner.c457_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c457_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG[owner.c457_pc]
+        if ins == nil or ins[1] ~= owner.c457_t then break end
+        owner.c457_pc = owner.c457_pc + 1
+        ins[2](owner)
+    end
+    ---★ CALL 61 冻住的那些帧（见 CALL_FRAMES 的注释）：时钟不前进。
+    if owner.c457_wait > 0 then
+        owner.c457_wait = owner.c457_wait - 1
+    else
+        owner.c457_t = owner.c457_t + 1
+    end
+
+    ---② 帧尾的 UpdateMovement（`ins_64` / `ins_67` 的插值位移）。
+    local move = owner.c457_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c457_move = nil end
+    end
+
+    ---③ ClampPosition（`ins_75` 起一直开着）。
+    if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+    if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+
+    ---④ 使魔 = 敌机循环按 slot 顺序走到它们：RunEcl（主 context + 两把枪）→ 位移 → 出屏回收。
+    ---   `inheritParentPosition`（EnemyManagerUpdate.cpp:171-176）让它们每帧贴到 BOSS 身上
+    ---   —— 注意用的是**跑完 ECL 之后**才更新的 BOSS 位置，所以先 step 再挪位置。
+    local fams = owner.c457_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            familiar_step(fam)
+            fam.x = owner.x + fam.c457_dx
+            fam.y = owner.y + fam.c457_dy
+            if outside_field(fam.x, fam.y, FAM_HALF) then
+                fam.c457_dead = true
+            end
+            if fam.c457_dead then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c457_fams then
+        for i = 1, #owner.c457_fams do
+            if IsValid(owner.c457_fams[i]) then object.RawDel(owner.c457_fams[i]) end
+        end
+    end
+    owner.c457_fams = nil
+    owner.c457_t = nil
+    owner.c457_move = nil
+    owner.c457_wait = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[457] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---卡 458「懶惰「生神停止(マインドストッパー)」」（铃仙·优昙华院·因幡 · Stage 5 ·
+---  ecldata5.ecl Sub63 本卡 + Sub64 使魔 + Sub65 枪 + Sub85/86 红眼）。
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：/tmp/th31/e5.utf8.decl（Sub63 :1560、Sub64、Sub65、Sub85 :2124、
+---  Sub86、Sub87）。★ 符卡名只有 H/L 是「懶惰」那一号（E/N 叫「懶符」）。
+---
+---  · Sub63（宿主 / 本卡）的时间轴：
+---      t=0   `ins_129(2)`/`ins_130(74)`（死亡回调）`/ins_105(0)`/`ins_95()`（清非 BOSS）/
+---            `ins_113(−1,−1)`/`ins_80(4)`/`ins_110(0,0)`/`ins_134(3000, 87)`（超时 3000 帧
+---            = 50 秒）/`ins_153()`/`ins_132(0)`/`ins_6([10039], 0)` —— 全是 boss 系统；
+---            `ins_64(90, 4, 192, 128)`：90 帧 OUT_QUAD 滑到 TH08 (192,128) = 我们 (0,96)；
+---            四条 `ins_122`（START_SPELL，纯粹报卡名）。
+---      t=90  `ins_81(4)`/`ins_160(360)`（HP 类，忽略）+ `ins_6([10039], 5)` +
+---            lf4 = π/64、lf7 = π/2、lf6 = lf7/2.5 = π/5（没人读，跳过）+
+---            **12 只** `ins_90(64, x, y, 1200, −2, 100)`（x/y 是脚本绝对坐标）：
+---              [10007]=8  → (16,368) (16,432) (80,432)
+---              [10007]=6  → (368,368) (368,432) (304,432)
+---              [10007]=10 → (16,80) (16,16) (80,16)
+---              [10007]=4  → (368,80) (368,16) (304,16)
+---      t=350 `ins_0()`（NOP）+ `ins_6([10036], 50)`（红眼配额）+ `ins_7(exF0, 192)` /
+---            `ins_7(exF1, 244)`（红眼生成点）+ `ins_135(0, 85)` 挂红眼；
+---            **冻结**：li0 = 0x100000、lf0 = 3π/4、lf1 = 0.0、li1 = 0、`ins_136(12, 0)`
+---            ⇒ 全池扫描把带 0x100000 标记的弹**停住**、并给使魔上 FORCE_PAUSE。
+---      t=450 li1 = 1 + `ins_136(12, 0)` ⇒ 解冻（恢复原速）+ 撤 FORCE_PAUSE；
+---            `ins_67(60, 4, 1.0)`（60 帧 60 px 的边界感知随机漂移）/`ins_30([10039])`。
+---      t=710 `ins_4(350, Sub63_1828)` ⇒ time 拨回 350、跳回 t=350 那条（**同一帧重跑整段**
+---            ⇒ 一圈 = 710 − 350 = **360 帧**，所以冻结 / 红眼每 360 帧来一轮）。
+---  · Sub64（使魔；`ins_90` 生成，脚本坐标为绝对落点、**不**跟着 BOSS 走）：
+---      t=0 `ins_54(53)`（贴图）/`ins_83(1)`/`ins_145(1)`/`ins_77(24,24)`/`ins_160(30)`/
+---          `ins_80(8192)`（8192 = 0x2000，不在 1/2/4/8/16/32 里 ⇒ 空操作）/
+---          exF0 ← 自己的 posX、exF1 ← 自己的 posY（本卡没人读，照抄）；
+---      t=60 `ins_135(0, 65)`（挂枪；孩子 context 的变量块从父 context 整块拷走，
+---          EclRunHigh.inl:663-668 ⇒ [10007] 的弹色跟着传下去）；
+---      t=4260 `ins_1()`（TERMINATE）。`ins_90` 会把孩子清掉 ENEMY_FLAG_COLLISION
+---          （EclRunLow.inl:775）⇒ 打不到 ⇒ 本移植做成**纯观感**（colli = false）。
+---  · Sub65（枪；`ins_135` 生成，变量块继承自使魔）：
+---      t=0   `ins_6([10036], 1)`；[10006] 按难度 f1/f2/f4/f8 写 56/56/48/**64** ⇒ Lunatic
+---            count1 = 64；`ins_99(16, [10007], 64, 1, 1.0, 0.5, RANDOM_ANGLE, π/3, 0x100202)`
+---            —— SHOOT_CIRCLE：64 发满圈均分、基准角现抽一个 RANDOM_ANGLE。
+---      t=260 `ins_5(0, Sub65_100, [10036])`：--[10036]（1→0）≤ 0 ⇒ **不跳**、落到 t=310。
+---      t=310 `ins_99(……, 1.2, …)` 同样的满圈，速度 1.2。
+---      t=370 [10036] = 8；`ins_96`（!HL）SHOOT_FAN_AIMED(16, 3, 1, 1, 2.2, 0.5, 0.0, π/3, …)
+---            ⇒ 一发自机狙。
+---      t=380 `ins_5(370, Sub65_232, [10036])`：每 10 帧 --[10036]、>0 就跳回**那条 t=370 的
+---            ins_96**（不含 SET_INT）⇒ 一共 8 发自机狙、隔 10 帧一发。
+---      t=450 `ins_4(260, Sub65_168)`：time 拨回 260、跳到**那条 t=310 的 ins_99**
+---            （350~450 之间没有别的指令）⇒ 之后每 **260 帧**一轮：
+---            轮首一发满圈 1.2 + 随后的 8 发自机狙（第 60/70/…/130 帧）。
+---            （首轮特殊：t=0 还有一发 1.0 的满圈。）
+---     ⇒ 用一台「帧计数器 + 相位」复刻（时钟跳转只影响 context time，出手时刻就是上面这些）。
+---  · Sub85（红眼生成器，挂在 BOSS 的槽 0）：[10036] = 50 − 25 = **25** 只；
+---      `ins_137(13, 0)` 是每帧的观感 ex；t=0 起每 2 帧 `ins_93(86, exF0, exF1, …)` 一只，
+---      t=52 `ins_137(−1, 0)` + `ins_53()` RETURN。
+---  · Sub86（红眼本体）：`ins_80(3)` 关判定 + `ins_58(5)`，t=60 `ins_1()`。
+---  · Sub87（超时回调）全是收尾演出（关结算 / END_SPELL / MOVE_IN_DIR / 特效），跳过。
+---  ★ 难度：只取 Lunatic；原作 life(HP) 一律忽略。
+---  ★ 占位贴图：使魔 "servant"、红眼 "eyeL"、弹 type 16 → ball_small（EX.style_of）。
+---    全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+local function from_th08_x(x) return x - 192 end
+local function from_th08_y(y) return 224 - y end
+
+---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
+local function wrap_pi(a)
+    if a > PI then a = a - 2 * PI elseif a < -PI then a = a + 2 * PI end
+    return a
+end
+
+---位判（掩码都是 2 的幂；同前几张卡）。
+local function has_bit(v, mask)
+    return v ~= nil and v >= 0 and math.floor(v / mask) % 2 == 1
+end
+
+---夹框（继承自卡 455 的 `ins_75(32,48,352,128)`，Sub63 自己没有 ins_75 ⇒ 一路沿用）。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---`ins_64(90, 4, 192, 128)` 的落点：TH08 (192,128) = 我们 (0,96)。
+local BOSS_X, BOSS_Y = 0, 96
+local ENT_T, ENT_EASING = 90, 4
+
+---Sub63 的时间轴。
+local FAM_T = 90               -- 12 只 `ins_90` 的 time
+local FREEZE_T = 350           -- 冻结 + 挂红眼
+local THAW_T = 450             -- 解冻 + `ins_67`
+local LOOP_T = 710             -- `ins_4(350, Sub63_1828)`
+local LOOP_RESET_T = 350       -- ... 拨回的 time（= 目标指令的 time ⇒ 同帧整段重跑）
+local WANDER_FRAMES = 60       -- `ins_67(60, 4, 1.0)`
+local WANDER_EASING = 4        -- ECL_EASING_OUT_QUADRATIC
+local WANDER_SPEED = 1.0
+
+---`ins_136(12, 0)` = ReisenFreezeBullets（EclExIns.cpp:608-667）。
+local MARK = 0x100000              -- li0（在枚举里没有名字：EclExIns.cpp 只按位与）
+local FREEZE_DIR_TH08 = 3 * PI / 4 -- lf0
+local FREEZE_SPEED = 0.0           -- lf1（0 ⇒ 直接停住）
+
+---12 只使魔（`ins_90` 的 x / y 就是脚本绝对坐标；顺序 = ECL 里的先后）。
+local FAM_TH08 = {
+    { 16, 368 }, { 16, 432 }, { 80, 432 },
+    { 368, 368 }, { 368, 432 }, { 304, 432 },
+    { 16, 80 }, { 16, 16 }, { 80, 16 },
+    { 368, 80 }, { 368, 16 }, { 304, 16 },
+}
+local FAM_COLOR = { 8, 8, 8, 6, 6, 6, 10, 10, 10, 4, 4, 4 }
+local FAM_GUN_T = 60               -- `ins_135(0, 65)`
+local FAM_END_T = 4260             -- `ins_1()`
+---★ `ins_152` 没出现 ⇒ rank 影响量保持默认，但本卡是符卡（`g_Spellcard.IsActive()`）
+---  真 ⇒ DispatchShotInstruction 里那一整段 rank 缩放根本不跑（EclDependencies.cpp:735）。
+
+---枪（Sub65）。
+local GUN_TYPE = 16
+local GUN_FLAGS = 0x100202         -- SPAWN_FAST(2) | SPAWN_SND(0x200) | 标记(0x100000)
+local GUN_RING_COUNT = 64          -- Lunatic 的 [10006]
+local GUN_RING_STEP = PI / 3       -- `ins_99` 的 angStep（SHOOT_CIRCLE 里只当层间偏移）
+local GUN_RING_SPEED_0 = 1.0       -- t=0 那一发
+local GUN_RING_SPEED = 1.2         -- 循环里那一发
+local GUN_FAN_COLOR = 3
+local GUN_FAN_SPEED = 2.2
+local GUN_FAN_STEP = PI / 3
+local GUN_CYCLE = 260              -- 一轮 = 450 − 260 + 50 = 260 帧
+local GUN_FIRST_RING_T = 310       -- 循环里第一发满圈的时刻
+local GUN_FAN_T0, GUN_FAN_N, GUN_FAN_GAP = 60, 8, 10   -- 相对 310 的自机狙节拍
+
+---红眼（Sub85 / Sub86），与卡 454 / 456 同一对。
+local EYE_X, EYE_Y = from_th08_x(192), from_th08_y(244)   -- 我们 (0, −20)
+local EYE_QUOTA = 25               -- `ins_11([10036], 25)`：50 − 25
+local EYE_FRAMES = 60              -- Sub86 的 `ins_1` 在 t=60
+
+---IsWithinPlayfield 的场地（GameManager.cpp:132-150）：TH08 [0,384]×[0,448] ⇒ 我们 ±192 / ±224。
+local FIELD_L, FIELD_R = -192, 192
+local FIELD_B, FIELD_T = -224, 224
+
+---出屏判据（EnemyManagerUpdate.cpp:225-260 的 HasBeenInBounds 那一支）。
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---------------------------------------------------------------------
+---`ins_136(12, 0)` = ReisenFreezeBullets（EclExIns.cpp:608-667）。
+---★ 它是**全池扫描**：遍历的是 g_BulletManager.bullets[0x600] 整张表，与发射源无关 ——
+---  凡是 transformFlags 命中 li0 那一位的弹都要处理（包括别的来源的弹；本卡所有弹都带
+---  0x100000，所以这里等价，但实现按原作走全池）。
+---  走哪一支只看弹当前是不是冻结态（原作看 `sprites.bulletVm.type == 1`，移植版照卡 454 /
+---  456 用弹上的 `ex_frz` 代替 —— 精灵与混合模式是观感）：
+---    冻结态 → 解冻：`FromAngleMagnitude(angle, fm·speed)`（恢复**原来的**角与速度）；
+---    否则   → 冻住：`FromAngleMagnitude(lf0, fm·lf1)`（本卡 lf1 = 0 ⇒ 速度归零）。
+---  FORCE_PAUSE（附着链 = 12 只使魔）由调用处按 li1 处理。
+local function reisen_ex12(marker)
+    local a = -FREEZE_DIR_TH08                     -- TH08 角 → 我们角（见文件头）
+    local ux, uy = math.cos(a), math.sin(a)
+    for i = #EX.pool, 1, -1 do
+        local b = EX.pool[i]
+        if IsValid(b) and has_bit(b.ex_flags, marker) then
+            if b.ex_frz then
+                b.ex_frz = nil
+                b.colli = true
+                b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
+            else
+                b.ex_frz = true
+                b.colli = false
+                b.ex_vx = ux * FREEZE_SPEED * EX.fm
+                b.ex_vy = uy * FREEZE_SPEED * EX.fm
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---红眼（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**。
+---活 60 帧（`ins_1` 在 t=60）。
+---------------------------------------------------------------------
+local eye_cls
+eye_cls = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "eyeL"
+        self.hscale, self.vscale = 2, 2
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.e458_t = 0
+    end,
+    frame = function(self)
+        self.e458_t = self.e458_t + 1
+        if self.e458_t > EYE_FRAMES then object.RawDel(self) end
+    end,
+})
+
+local function spawn_eye(owner)
+    owner.c458_eyes_list[#owner.c458_eyes_list + 1] = New(eye_cls, EYE_X, EYE_Y)
+end
+
+---子 context 槽 0 = Sub85 的指令表：{ ECL 的 time, 处理 }。
+---挂上那一帧就**同帧**从 t=0 跑（EclRun.cpp:191-209 的 low_select_next_context）。
+local EYE_PROG = {
+    { 0, function(owner)
+        spawn_eye(owner)                       -- `ins_93(86, exF0, exF1, 0, 10, −2, 10)`
+    end },
+    { 2, function(owner, c)
+        ---`ins_5(0, Sub85_56, [10036])`：--[10036]；≤ 0 就往下走（去 t=52 收尾），
+        ---否则 time 拨回 0、跳回 t=0 那条 `ins_93`（time 相同 ⇒ 那一帧立刻再生一只）。
+        c.i0 = c.i0 - 1
+        if c.i0 > 0 then
+            c.t = 0
+            c.pc = 1
+        end
+    end },
+    { 52, function(owner)
+        ---`ins_137(−1, 0)`（撤每帧 ex，观感）/ `ins_124(25)`（音效）/ `ins_53()` RETURN。
+        owner.c458_eyes = nil
+    end },
+}
+
+local function eye_step(owner)
+    local c = owner.c458_eyes
+    if c == nil then return end
+    while true do
+        local ins = EYE_PROG[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+    end
+    c.t = c.t + 1
+end
+
+---------------------------------------------------------------------
+---使魔（Sub64）。占位贴图 "servant"、无判定（`ins_90` 清了碰撞位）、**位置固定**
+---（`ins_90` = SPAWN_FAMILIAR_AT_POSITION：position 直接写脚本坐标、没有继承父位置那回事，
+---  EclRunLow.inl:759-806 + EclDependencies.cpp:591-618）。
+---★ `frame` 故意留空：使魔的 ECL / 枪全部由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动
+---  （= 原作敌机按 slot 顺序跑）。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, color)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c458_color = color           -- = [10007] 的弹色（跟着变量块继承下来）
+        self.c458_t = 0                   -- 主 context（Sub64）的 time
+        self.c458_gun = nil               -- 子 context 槽 0（t=60 挂上）
+        self.c458_paused = false          -- ReisenFreezeBullets 的 FORCE_PAUSE
+        self.c458_dead = false
+    end,
+    frame = function(self) end,
+})
+
+---SHOOT_CIRCLE（`ins_99`，aimMode 3）：count1 发满圈均分（2π/count1）、基准角 = 现抽的
+---RANDOM_ANGLE（EclOperandsFloat.cpp:56：`rnd[0,2π) − π`，我们口径取反即可 —— 分布对称，
+---但按文件头的规矩照取反）。
+local function gun_circle(fam, speed)
+    local base = ran:Float(-PI, PI)
+    EX.shoot(fam, fam.x, fam.y, {
+        op = 99, type = GUN_TYPE, color = EX.color(fam.c458_color),
+        count1 = GUN_RING_COUNT, count2 = 1,
+        speed1 = speed, speed2 = 0.5,
+        angle = -base, step = GUN_RING_STEP, flags = GUN_FLAGS,
+    })
+end
+
+---SHOOT_FAN_AIMED（`ins_96`，aimMode 0）：1 发自机狙（count1 = 1 ⇒ 扇面只有中路那发）。
+local function gun_fan(fam)
+    EX.shoot(fam, fam.x, fam.y, {
+        op = 96, type = GUN_TYPE, color = EX.color(GUN_FAN_COLOR),
+        count1 = 1, count2 = 1,
+        speed1 = GUN_FAN_SPEED, speed2 = 0.5,
+        angle = 0.0, step = GUN_FAN_STEP, flags = GUN_FLAGS,
+    })
+end
+
+---枪的一帧：Sub65 的出手时刻表（见头注；帧计数器只在**没被 FORCE_PAUSE** 时前进）。
+local function gun_step(g, fam)
+    local f = g.f
+    if f == 0 then
+        gun_circle(fam, GUN_RING_SPEED_0)              -- t=0
+    elseif f >= GUN_FIRST_RING_T then
+        local k = (f - GUN_FIRST_RING_T) % GUN_CYCLE
+        if k == 0 then
+            gun_circle(fam, GUN_RING_SPEED)            -- t=310 / 570 / …
+        elseif k >= GUN_FAN_T0 and k < GUN_FAN_T0 + GUN_FAN_N * GUN_FAN_GAP
+                and (k - GUN_FAN_T0) % GUN_FAN_GAP == 0 then
+            gun_fan(fam)                               -- t=370 / 380 / … / 440（每轮 8 发）
+        end
+    end
+    g.f = g.f + 1
+end
+
+---使魔的一帧（Sub64 的主 context + 帧尾的槽 0 枪）。
+---`ins_135` 的孩子 context 在**同一帧**的帧尾就跑（EclRun.cpp:191-209）⇒ 挂枪那帧当场发第一波。
+local function familiar_step(fam)
+    if fam.c458_dead then return end
+    if fam.c458_t == FAM_GUN_T then
+        fam.c458_gun = { f = 0 }
+    elseif fam.c458_t >= FAM_END_T then
+        fam.c458_dead = true                          -- `ins_1()`（t=4260）
+        return
+    end
+    fam.c458_t = fam.c458_t + 1
+    if fam.c458_gun then gun_step(fam.c458_gun, fam) end
+end
+
+---`ins_90` 生成一只使魔。SpawnEnemy2 里会**当场**对新敌机跑一次 RunEcl（EnemyTimeline.cpp:88-94）
+---⇒ 移植版在生成处立刻走它的一帧；之后本帧的「敌机循环」还会再走到它一次（多走一帧）——照抄。
+local function spawn_familiar(owner, i)
+    local th = FAM_TH08[i]
+    local fam = New(familiar_cls, from_th08_x(th[1]), from_th08_y(th[2]), FAM_COLOR[i])
+    owner.c458_fams[#owner.c458_fams + 1] = fam
+    familiar_step(fam)
+    return fam
+end
+
+---------------------------------------------------------------------
+---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
+---抽角 + 四条边界修正，再交给 StartTimedPolarDisplacement（:105-126）
+---（delta = (cos,sin)(角)·speed·duration、origin = 当前 worldPosition）。
+---★ 「x > upper.x − 96」那条把角改写成 `π − movementAngle`，用的是**上一段的移动方向**
+---  而不是刚抽到的角 —— 原作自己的怪癖，照抄（与本文件卡 453 / 455 / 456 / 457 同一份模板）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = wrap_pi(ran:Float(0, PI / 2) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c458_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---`ins_67(60, 4, 1.0)`：60 帧 OUT_QUAD 走 60 px。
+---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)              -- TH08 角
+    owner.c458_mangle = angle                      -- 给下一次「右边界」那一支用
+    owner.c458_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）：
+---`movementTimer--; progress = 1 − timer/duration`；到点那一帧直接落在 origin + delta。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---主 context（Sub63）的指令表：{ ECL 的 time, 处理 }（下标 2 就是 `Sub63_1828` 那条）。
+---------------------------------------------------------------------
+local PROG = {
+    { FAM_T, function(owner)
+        for i = 1, #FAM_TH08 do
+            spawn_familiar(owner, i)
+        end
+    end },
+    { FREEZE_T, function(owner)
+        ---`ins_6([10036], 50)` + `ins_7(exF0/exF1, 192/244)` + `ins_135(0, 85)` 挂红眼。
+        owner.c458_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
+        ---li1 = 0 ⇒ 附着链（12 只使魔）加 FORCE_PAUSE（EnemyManagerUpdate.cpp:156-162）。
+        for i = 1, #owner.c458_fams do
+            local fam = owner.c458_fams[i]
+            if IsValid(fam) then fam.c458_paused = true end
+        end
+        reisen_ex12(MARK)                          -- `ins_136(12, 0)`：全池扫描冻弹
+    end },
+    { THAW_T, function(owner)
+        ---li1 = 1 ⇒ 撤 FORCE_PAUSE；冻弹恢复原速。
+        reisen_ex12(MARK)
+        for i = 1, #owner.c458_fams do
+            local fam = owner.c458_fams[i]
+            if IsValid(fam) then fam.c458_paused = false end
+        end
+        begin_wander(owner)                        -- `ins_67(60, 4, 1.0)`
+    end },
+    { LOOP_T, function(owner)
+        ---`ins_4(350, Sub63_1828)`：time := 350，跳回上面那条 t=350 的指令
+        ---（目标 time = 350 ⇒ 那一帧**接着**把整段 t=350 跑完）。
+        owner.c458_t = LOOP_RESET_T
+        owner.c458_pc = 2
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c458_t = 0
+    owner.c458_pc = 1
+    owner.c458_fams = {}
+    owner.c458_eyes = nil
+    owner.c458_eyes_list = {}
+    ---★ 起手就是 `ins_64` 的插值位移；它跑完之后 BOSS 的 movementAngle 就是那一段的走向
+    ---  （EnemyManager.cpp:108-113 用 velocity 反算角）⇒ 下一次 `ins_67` 的「右边界」那一支
+    ---  读的正是它。这里按「起点 → 落点」的几何直接算（TH08 口径）。
+    owner.c458_mangle = math.atan2(to_th08_y(BOSS_Y) - to_th08_y(owner.y),
+                                   to_th08_x(BOSS_X) - to_th08_x(owner.x))
+    owner.c458_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c458_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG[owner.c458_pc]
+        if ins == nil or ins[1] ~= owner.c458_t then break end
+        owner.c458_pc = owner.c458_pc + 1
+        ins[2](owner)
+    end
+    owner.c458_t = owner.c458_t + 1
+
+    ---② 帧尾的子 context（low_select_next_context，EclRun.cpp:191-209）：槽 0 = Sub85。
+    eye_step(owner)
+
+    ---③ 同一次 RunEcl 尾巴上的 UpdateMovement（`ins_64` / `ins_67` 的插值位移）—— BOSS 在先。
+    local move = owner.c458_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c458_move = nil end
+    end
+
+    ---④ ClampPosition（CLAMP_POSITION 从上一卡的 `ins_75` 起一直开着，见头注）。
+    if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+    if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+
+    ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（12 只位置固定，所以只有 ECL + 枪）。
+    ---   FORCE_PAUSE 的整段跳过（EnemyManagerUpdate.cpp:156-162）。
+    local fams = owner.c458_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            if not fam.c458_paused then
+                familiar_step(fam)
+            end
+            if fam.c458_dead then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c458_fams then
+        for i = 1, #owner.c458_fams do
+            if IsValid(owner.c458_fams[i]) then object.RawDel(owner.c458_fams[i]) end
+        end
+    end
+    if owner.c458_eyes_list then
+        for i = 1, #owner.c458_eyes_list do
+            if IsValid(owner.c458_eyes_list[i]) then object.RawDel(owner.c458_eyes_list[i]) end
+        end
+    end
+    owner.c458_fams = nil
+    owner.c458_eyes_list = nil
+    owner.c458_eyes = nil
+    owner.c458_t = nil
+    owner.c458_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[458] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------
+---卡 459「散符「真実の月(インビジブルフルムーン)」」（铃仙·优昙华院·因幡 · Stage 5 ·
+---  ecldata5.ecl Sub75 本卡 + Sub77 使魔 + Sub76 枪 + Sub85/86 红眼 + ex 指令 14）。
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：/tmp/th31/e5.utf8.decl（Sub75 :1826、Sub76 :1905、Sub77 :1916、
+---  Sub85 :2124、Sub86）。★ 符卡名四条难度都一样（e5.utf8.decl:1840-1843 的 L 行）。
+---
+---  · Sub75（宿主 / 本卡）的主时间轴（Lunatic；t=300 的 `ins_4(90, Sub75_1220)` 让
+---    90..300 整段**每 210 帧**重跑 —— 回卷目标就是 t=90 那条 SET_FLOAT）：
+---      t=0   boss 系统那套（`ins_129(3)` / `ins_130(87)` / `ins_105(0)` / `ins_95()` /
+---            `ins_113(−1,−1)` / `ins_80(4)` / `ins_110(0,0)` / `ins_134(3000, 53)`（超时
+---            3000 帧 = 50 秒）/ `ins_153()` / `ins_132(0)` / `ins_6([10039], 0)`）+
+---            `ins_64(90, 4, 192, 128)`：90 帧 OUT_QUAD 滑到 TH08 (192,128) = 我们 (0,96)；
+---            四条 `ins_122`（START_SPELL，只报卡名）。
+---      t=90  lf0 = RANDOM_ANGLE（[10016]）；[10007] = 144（Lunatic）；
+---            `ins_99(16, 2, [10007], 1, 1.0, 1.0, lf0, π/32, 0x100200)`
+---            ⇒ **144 发满圈**（type16 / 弹色 2 / 速度 1）；0x200 是 SPAWN_SND、
+---            没有 SPAWN_FAST/NORMAL/SLOW ⇒ 出生即飞、不播出生动画。
+---      t=140 `ins_6([10036], 50)` / exF0 = 192 / exF1 = 244 / `ins_135(0, 85)` 挂红眼；
+---            [10000] = 0x100000、lf0 = 3π/4、lf1 = 0.3、[10001] = 0、`ins_136(14, 0)`
+---            ⇒ **A 组相位推进**（ex 指令 14，见下）；
+---            [10000] = 0x200000、lf0 = π/4、`ins_136(14, 0)` ⇒ B 组（此刻一颗弹都没）。
+---      t=220 A 组相位推进；B 组相位推进。
+---      t=240 A 组（先 [10001] = 1，ex14 不看它）相位推进；B 组相位推进。
+---      t=260 lf0 = RANDOM_ANGLE；[10007] = 56（Lunatic）；
+---            两发 `ins_99(16, 2, 56, 2, 1.4, 0.8, lf0, π/32, …)`：A 组 0x100200、
+---            B 组 0x200200，第二发的 lf0 先 += π/48（我们这边 −π/48）；两发之间没有别的
+---            指令 ⇒ 两发的基准角只差 π/48。count2 = 2 ⇒ **每组同角度两圈**
+---            （速度 1.4 与 1.4−(1.4−0.8)/2 = 1.1，第二圈再偏 π/32；每发 112 颗）。
+---      t=280 lf0 = RANDOM_ANGLE；同样两发但弹色 6、速度 1.2 / 0.6（⇒ 1.2 / 0.9）+ 偏角；
+---            [10036] = 16；lf0 = RANDOM_ANGLE、lf1 = 2.0；
+---            Sub75_2192：`ins_91(77, 0, 0, 200, −2, 100)`（!NHL）生成一只使魔 +
+---            lf0 += π/8 + `ins_37` NORMALIZE(lf0) + `ins_5(280, Sub75_2192, [10036])`
+---            ⇒ **16 只**使魔（都在 BOSS 身上起、方向逐个差 π/8 直线飞出去）。
+---      t=300 `ins_4(90, Sub75_1220)`：time 拨回 90、跳回 t=90 那条 SET_FLOAT（同帧重跑）。
+---  · ex 指令 14 = AdvanceReisenBulletPhase（EclExIns.cpp:669-728）：
+---      遍历全池 bullets[0x600]，凡 `transformFlags & li0` 有那一位的弹按
+---      `bulletVm.type` 走三支（出生时 type = 0 —— AnmVm() 构造 memset）：
+---        type 1 → 0：加色 + alpha 0 + **collisionDisabled = 1** + 速度 = fm·lf1
+---        type 0 → 2：alpha 从 0 插值到 255（**纯观感**，判定与速度都不动）
+---        type 2 → 1：普通混合 + **collisionDisabled = 0** + 速度 = fm·bullet->speed
+---      ⇒ 这就是「现形 → 隐形 → 现形」的周期（本卡的核心机制）。移植版把**相位**与
+---      **判定**分开：`ex_phase` 记 `bulletVm.type`（0/1/2，出生 0），`colli` 由
+---      reisen_ex14 在 1→0（关）/ 2→1（开）两支里直接写 —— 0→2 **不动判定**，
+---      原作也一样（collisionDisabled 出生时就是 0）。
+---  · Sub77（使魔；`ins_91` = SPAWN_FAM_AT_OFFSET，落点 = **父位置 + (0,0)** = BOSS 身上）：
+---      `ins_54(53)`（贴图）/ `ins_83(1)` / `ins_145(1)` / `ins_77(24,24)` / `ins_160(30)` /
+---      `ins_135(0, 76)` 挂枪 / `ins_65(lf0, lf1)`（从父 context 整块抄来的方向与速度 2.0）
+---      直线飞出去；t=30000 `ins_1()`（早就出屏回收了）。
+---      `ins_91` 会清掉碰撞位（EclRunLow.inl:830-834）⇒ 打不到 ⇒ 本移植做成纯观感。
+---  · Sub76（枪；`ins_135` 生成，变量块继承自使魔）：
+---      t=0  三条 `ins_111`：槽 0 = WAIT 300 帧、槽 1 = SET_SPRITE(3, 6)、
+---            槽 2 = VEC 60 帧 × 0.0333（float1 = −999 ⇒ 用弹自己的角度）；
+---            `ins_97(3, 5, 1, 1, 0.0, 0.6, [10069] = moveAngle, π/32, 0x24210)`
+---            ⇒ **一发静止弹**（count2 = 1 ⇒ 速度取 speed1 = 0），300 帧后换贴图再加速。
+---      t=20  `ins_4(0, Sub76_120)` ⇒ 每 **20 帧**一发。
+---  · Sub85（红眼生成器，挂在 BOSS 的槽 0）：[10036] = 50 − 25 = **25** 只；
+---    t=0 起每 2 帧 `ins_93(86, exF0, exF1, …)` 一只，t=52 `ins_53()` RETURN。
+---  · Sub86（红眼本体）：`ins_80(3)` 关判定 + `ins_58(5)`，t=60 `ins_1()`。
+---  · Sub53（超时回调）全是收尾演出，跳过（换卡由 LIST 驱动）。
+---  ★ 难度：只取 Lunatic；原作 life(HP) 一律忽略。
+---  ★ 占位贴图：使魔 "servant"、红眼 "eyeL"、弹 type 16 → ball_small、type 3 → ball_mid
+---    （EX.style_of）。全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+local function from_th08_x(x) return x - 192 end
+local function from_th08_y(y) return 224 - y end
+
+---位判（掩码都是 2 的幂；同前几张卡）。
+local function has_bit(v, mask)
+    return v ~= nil and v >= 0 and math.floor(v / mask) % 2 == 1
+end
+
+---夹框（继承自前面几关的 `ins_75(32,48,352,128)`，Sub75 自己没有 ins_75）：
+---TH08 [32,352]×[48,128] ⇒ 我们 [−160,160]×[96,176]。
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---`ins_64(90, 4, 192, 128)` 的落点：TH08 (192,128) = 我们 (0,96)。
+local BOSS_X, BOSS_Y = 0, 96
+local ENT_T, ENT_EASING = 90, 4
+
+---Sub75 的时间轴（90..300 每 210 帧整段重跑）。
+local RING_T = 90
+local PHASE1_T = 140
+local PHASE2_T = 220
+local PHASE3_T = 240
+local RING26_T = 260
+local RING28_T = 280
+local LOOP_T = 300
+
+---弹的标记位（= ex14 的 li0）与 ex14 的减速速度（li1 = lf1）。
+local MARK_A = 0x100000
+local MARK_B = 0x200000
+local PHASE_SLOW = 0.3
+
+---t=90 / t=260 / t=280 三处出弹的常量。
+local RING_TYPE = 16
+local RING_COLOR_1 = 2                 -- t=90 / t=260 的弹色
+local RING_COLOR_3 = 6                 -- t=280 的弹色
+local RING_STEP = 0.09817477           -- π/32（CIRCLE 里只当层间偏角）
+local RING_HALF_STEP = 0.06544985      -- π/48（第二发的基准角增量）
+local RING1_COUNT = 144                -- Lunatic 的 [10007]
+local RING1_SPEED = 1.0
+local RING2_COUNT = 56                 -- Lunatic 的 [10007]
+local RING26_SPEED1, RING26_SPEED2 = 1.4, 0.8
+local RING28_SPEED1, RING28_SPEED2 = 1.2, 0.6
+local FLAGS_A = 0x100200               -- SPAWN_SND(0x200) + 标记 A
+local FLAGS_B = 0x200200               -- SPAWN_SND(0x200) + 标记 B
+
+---使魔（Sub77）。
+local FAM_QUOTA = 16                   -- [10036]
+local FAM_SPEED = 2.0                  -- lf1
+local FAM_STEP = 0.3926991             -- π/8
+local FAM_HALF = 16                    -- 半个精灵（占位 "servant"）
+
+---枪（Sub76）。
+local GUN_TYPE = 3
+local GUN_COLOR = 5
+local GUN_SPEED1, GUN_SPEED2 = 0.0, 0.6
+local GUN_STEP = 0.09817477
+local GUN_FLAGS = 0x24210              -- WAIT|SET_SPRITE|SPAWN_SND|VEC
+local GUN_WAIT = 300                   -- 槽 0（WAIT）
+local GUN_SPRITE_TYPE, GUN_SPRITE_COLOR = 3, 6   -- 槽 1（SET_SPRITE）
+local GUN_VEC_FRAMES, GUN_VEC_MAG = 60, 0.033333335   -- 槽 2（VEC）
+local GUN_GAP = 20                     -- `ins_4(0, Sub76_120)` 每 20 帧一发
+
+---红眼（Sub85 / Sub86），与卡 454 / 456 / 458 同一对。
+local EYE_X, EYE_Y = from_th08_x(192), from_th08_y(244)   -- 我们 (0, −20)
+local EYE_QUOTA = 25                   -- `ins_6([10036], 50)` − `ins_5` 的 25
+local EYE_FRAMES = 60                  -- Sub86 的 `ins_1` 在 t=60
+
+---IsWithinPlayfield 的场地（GameManager.cpp:132-150）：TH08 [0,384]×[0,448] ⇒ 我们 ±192 / ±224。
+local FIELD_L, FIELD_R = -192, 192
+local FIELD_B, FIELD_T = -224, 224
+
+---出屏判据（EnemyManagerUpdate.cpp:225-260 的 HasBeenInBounds 那一支）。
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---RANDOM_ANGLE（[10082]）：TH08 是 `GetRandomF32InRange(2π) − π`（EclOperandsFloat.cpp:56），
+---我们整体取反；分布对称，抽出来的值怎么取反都一样（照文件头的规矩写）。
+local function rnd_angle()
+    return -ran:Float(-PI, PI)
+end
+
+---------------------------------------------------------------------
+---`ins_136(14, 0)` = AdvanceReisenBulletPhase（EclExIns.cpp:669-728）。
+---★ **全池扫描**：遍历 g_BulletManager.bullets[0x600]，只看 `transformFlags & li0`
+---  有没有那一位（与发射源无关）。
+---★ 三支的分支判据是 `bulletVm.type`，出生时恒 0 ⇒ 每颗弹固定走
+---  `0 → 2 → 1 → 0 → 2 → …`（每被扫到一次推一格）。
+---★ `colli`（= collisionDisabled 的反）只在 1→0 与 2→1 两支里改：
+---    1→0：关判定、速度 = fm·lf1（本卡 0.3）；
+---    0→2：只做 alpha 插值（观感），判定与速度都不动；
+---    2→1：开判定、速度 = fm·bullet->speed（恢复出生速度）。
+---------------------------------------------------------------------
+local function reisen_ex14(marker, slow)
+    for i = #EX.pool, 1, -1 do
+        local b = EX.pool[i]
+        if IsValid(b) and has_bit(b.ex_flags, marker) then
+            local ph = b.ex_phase
+            if ph == 1 then
+                b.ex_phase = 0
+                b.colli = false
+                b.ex_vx = math.cos(b.ex_angle) * slow * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * slow * EX.fm
+            elseif ph == 0 then
+                b.ex_phase = 2
+            else
+                b.ex_phase = 1
+                b.colli = true
+                b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---红眼（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**。
+---活 60 帧（`ins_1` 在 t=60）。
+---------------------------------------------------------------------
+local eye_cls
+eye_cls = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "eyeL"
+        self.hscale, self.vscale = 2, 2
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.e459_t = 0
+    end,
+    frame = function(self)
+        self.e459_t = self.e459_t + 1
+        if self.e459_t > EYE_FRAMES then object.RawDel(self) end
+    end,
+})
+
+local function spawn_eye(owner)
+    owner.c459_eyes_list[#owner.c459_eyes_list + 1] = New(eye_cls, EYE_X, EYE_Y)
+end
+
+---子 context 槽 0 = Sub85 的指令表：{ ECL 的 time, 处理 }。
+---挂上那一帧就**同帧**从 t=0 跑（EclRun.cpp:191-209 的 low_select_next_context）。
+local EYE_PROG = {
+    { 0, function(owner)
+        spawn_eye(owner)                          -- `ins_93(86, exF0, exF1, 0, 10, −2, 10)`
+    end },
+    { 2, function(owner, c)
+        ---`ins_5(0, Sub85_56, [10036])`：--[10036]；≤ 0 就往下走（去 t=52 收尾），
+        ---否则 time 拨回 0、跳回 t=0 那条 `ins_93`（time 相同 ⇒ 那一帧立刻再生一只）。
+        c.i0 = c.i0 - 1
+        if c.i0 > 0 then
+            c.t = 0
+            c.pc = 1
+        end
+    end },
+    { 52, function(owner)
+        ---`ins_137(−1, 0)`（撤每帧 ex，观感）/ `ins_124(25)`（音效）/ `ins_53()` RETURN。
+        owner.c459_eyes = nil
+    end },
+}
+
+local function eye_step(owner)
+    local c = owner.c459_eyes
+    if c == nil then return end
+    while true do
+        local ins = EYE_PROG[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+    end
+    c.t = c.t + 1
+end
+
+---------------------------------------------------------------------
+---使魔（Sub77）。占位贴图 "servant"、无判定（`ins_91` 清了碰撞位）。
+---位置 = BOSS 位置 + (0,0)、随后按 `ins_65` 的方向/速度直线飞（EnemyManager.cpp:936-950
+--- 的 IntegrateVelocity），出屏就回收（EnemyManagerUpdate.cpp:225-260）。
+---★ `frame` 故意留空：使魔的 ECL / 枪全部由卡片的 frame 按「BOSS → 使魔」的固定顺序
+---  驱动（= 原作敌机按 slot 顺序跑）。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, angle, speed)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c459_angle = angle          -- = 从父 context 抄来的 lf0（我们口径）
+        self.c459_speed = speed          -- = lf1 = 2.0
+        self.c459_t = 0                  -- 主 context（Sub77）的 time
+        self.c459_gun = nil              -- 子 context 槽 0（t=0 挂上）
+        self.c459_dead = false
+    end,
+    frame = function(self) end,
+})
+
+---枪的一帧：Sub76 的出手时刻表（每 20 帧一发；t=0 那一发与挂枪同帧）。
+local function gun_step(fam)
+    local g = fam.c459_gun
+    if g.f % GUN_GAP == 0 then
+        ---`ins_97` = SHOOT_FAN（aimMode 1）：count1 = 1 ⇒ 只有中路那发，
+        ---角度 = [10069] = 使魔的 movementAngle；count2 = 1 ⇒ 速度取 speed1 = 0（静止弹）。
+        EX.shoot(fam, fam.x, fam.y, {
+            op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
+            count1 = 1, count2 = 1,
+            speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
+            angle = fam.c459_angle, step = GUN_STEP, flags = GUN_FLAGS,
+        })
+    end
+    g.f = g.f + 1
+end
+
+---使魔的一帧（Sub77 的主 context + 帧尾的槽 0 枪）。
+---`ins_135` 的孩子 context 在**同一帧**的帧尾就跑（EclRun.cpp:191-209）
+---⇒ 挂枪那帧当场发第一波（records 也同帧写好，出弹时整块拷走）。
+local function familiar_step(fam)
+    if fam.c459_dead then return end
+    if fam.c459_t == 0 then
+        fam.c459_gun = { f = 0 }
+        EX.set_record(fam, 0, EX.K.WAIT, 0, GUN_WAIT, -1, -1, -1)
+        EX.set_record(fam, 1, EX.K.SPRITE, 0,
+                      GUN_SPRITE_TYPE, GUN_SPRITE_COLOR, -1, -1)
+        EX.set_record(fam, 2, EX.K.VEC, 0,
+                      GUN_VEC_FRAMES, -1, GUN_VEC_MAG, -999.0)
+    elseif fam.c459_t >= 30000 then
+        fam.c459_dead = true                       -- `ins_1()`（t=30000，够不着）
+        return
+    end
+    fam.c459_t = fam.c459_t + 1
+    if fam.c459_gun then gun_step(fam) end
+end
+
+---`ins_91(77, 0, 0, …)`：落点 = BOSS 位置 + (0,0)（SpawnChildAtParentOffset，
+---EclDependencies.cpp:613-640）；方向与速度来自父 context 的 lf0 / lf1。
+---★ SpawnEnemy2 里会**当场**对新敌机跑一次 RunEcl（EnemyTimeline.cpp:88-94）⇒ 移植版在
+---  生成处立刻走它的一帧；之后本帧的「敌机循环」还会再走到它一次（多走一帧）——照抄。
+local function spawn_familiar(owner, angle)
+    local fam = New(familiar_cls, owner.x, owner.y, angle, FAM_SPEED)
+    owner.c459_fams[#owner.c459_fams + 1] = fam
+    familiar_step(fam)
+    return fam
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）：
+---`movementTimer--; progress = 1 − timer/duration`；到点那一帧直接落在 origin + delta。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---主 context（Sub75）的指令表：{ ECL 的 time, 处理 }（下标 1 就是 t=90 那条，
+---也是 t=300 的 `ins_4` 回卷目标）。
+---------------------------------------------------------------------
+local PROG = {
+    { RING_T, function(owner)
+        ---`ins_99(16, 2, [10007], 1, 1.0, 1.0, lf0, π/32, 0x100200)`。
+        EX.shoot(owner, owner.x, owner.y, {
+            op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
+            count1 = RING1_COUNT, count2 = 1,
+            speed1 = RING1_SPEED, speed2 = RING1_SPEED,
+            angle = rnd_angle(), step = RING_STEP, flags = FLAGS_A,
+        })
+    end },
+    { PHASE1_T, function(owner)
+        ---`ins_135(0, 85)` 挂红眼（孩子 context 同帧从 t=0 跑）。
+        owner.c459_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
+        ---A 组：li0 = 0x100000、lf1 = 0.3 ⇒ 只做 alpha 插值（0 → 2）。
+        reisen_ex14(MARK_A, PHASE_SLOW)
+        ---B 组：li0 = 0x200000（此刻一颗弹都没有，空转）。
+        reisen_ex14(MARK_B, PHASE_SLOW)
+    end },
+    { PHASE2_T, function(owner)
+        reisen_ex14(MARK_A, PHASE_SLOW)            -- 2 → 1：开判定、恢复原速
+        reisen_ex14(MARK_B, PHASE_SLOW)
+    end },
+    { PHASE3_T, function(owner)
+        reisen_ex14(MARK_A, PHASE_SLOW)            -- 1 → 0：关判定、减速到 0.3
+        reisen_ex14(MARK_B, PHASE_SLOW)
+    end },
+    { RING26_T, function(owner)
+        ---`ins_99(16, 2, 56, 2, 1.4, 0.8, lf0, …)` ×2；第二发的 lf0 先 += π/48。
+        local base = rnd_angle()
+        EX.shoot(owner, owner.x, owner.y, {
+            op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
+            count1 = RING2_COUNT, count2 = 2,
+            speed1 = RING26_SPEED1, speed2 = RING26_SPEED2,
+            angle = base, step = RING_STEP, flags = FLAGS_A,
+        })
+        EX.shoot(owner, owner.x, owner.y, {
+            op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
+            count1 = RING2_COUNT, count2 = 2,
+            speed1 = RING26_SPEED1, speed2 = RING26_SPEED2,
+            angle = base - RING_HALF_STEP, step = RING_STEP, flags = FLAGS_B,
+        })
+    end },
+    { RING28_T, function(owner)
+        ---`ins_99(16, 6, 56, 2, 1.2, 0.6, lf0, …)` ×2（弹色 6）。
+        local base = rnd_angle()
+        EX.shoot(owner, owner.x, owner.y, {
+            op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_3),
+            count1 = RING2_COUNT, count2 = 2,
+            speed1 = RING28_SPEED1, speed2 = RING28_SPEED2,
+            angle = base, step = RING_STEP, flags = FLAGS_A,
+        })
+        EX.shoot(owner, owner.x, owner.y, {
+            op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_3),
+            count1 = RING2_COUNT, count2 = 2,
+            speed1 = RING28_SPEED1, speed2 = RING28_SPEED2,
+            angle = base - RING_HALF_STEP, step = RING_STEP, flags = FLAGS_B,
+        })
+        ---[10036] = 16；lf0 = RANDOM_ANGLE、lf1 = 2.0；Sub75_2192 的生成循环。
+        local a = rnd_angle()
+        for _ = 1, FAM_QUOTA do
+            spawn_familiar(owner, a)
+            a = a - FAM_STEP                        -- lf0 += π/8（我们取反 ⇒ 减）
+        end
+    end },
+    { LOOP_T, function(owner)
+        ---`ins_4(90, Sub75_1220)`：time 拨回 90、跳回 t=90 那条 SET_FLOAT
+        ---（目标 time = 90 ⇒ 那一帧**接着**把它跑完）。
+        owner.c459_t = RING_T
+        owner.c459_pc = 1
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c459_t = 0
+    owner.c459_pc = 1
+    owner.c459_fams = {}
+    owner.c459_eyes = nil
+    owner.c459_eyes_list = {}
+    ---★ 起手就是 `ins_64` 的插值位移（落点 (0,96)；本卡之后不再移动）。
+    owner.c459_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c459_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG[owner.c459_pc]
+        if ins == nil or ins[1] ~= owner.c459_t then break end
+        owner.c459_pc = owner.c459_pc + 1
+        ins[2](owner)
+    end
+    owner.c459_t = owner.c459_t + 1
+
+    ---② 帧尾的子 context（low_select_next_context，EclRun.cpp:191-209）：槽 0 = Sub85。
+    eye_step(owner)
+
+    ---③ 同一次 RunEcl 尾巴上的 UpdateMovement（`ins_64` 的插值位移）。
+    local move = owner.c459_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c459_move = nil end
+    end
+
+    ---④ ClampPosition（CLAMP_POSITION 从上一卡的 `ins_75` 起一直开着，见头注）。
+    if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+    if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+
+    ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（RunEcl + IntegrateVelocity + 出屏回收）。
+    local fams = owner.c459_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            familiar_step(fam)
+            if fam.c459_dead then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            else
+                fam.x = fam.x + math.cos(fam.c459_angle) * fam.c459_speed
+                fam.y = fam.y + math.sin(fam.c459_angle) * fam.c459_speed
+                if outside_field(fam.x, fam.y, FAM_HALF) then
+                    object.RawDel(fam)
+                    table.remove(fams, i)
+                end
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c459_fams then
+        for i = 1, #owner.c459_fams do
+            if IsValid(owner.c459_fams[i]) then object.RawDel(owner.c459_fams[i]) end
+        end
+    end
+    if owner.c459_eyes_list then
+        for i = 1, #owner.c459_eyes_list do
+            if IsValid(owner.c459_eyes_list[i]) then object.RawDel(owner.c459_eyes_list[i]) end
+        end
+    end
+    owner.c459_fams = nil
+    owner.c459_eyes_list = nil
+    owner.c459_eyes = nil
+    owner.c459_t = nil
+    owner.c459_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[459] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------
+---卡 460「月眼「月兎遠隔催眠術(テレメスメリズム)」」（铃仙·优昙华院·因幡 · Stage 5 ·
+---  ecldata5.ecl Sub78 本卡 + Sub79/Sub80 使魔发生器 + Sub81/Sub83 使魔 +
+---  Sub82/Sub84 枪 + Sub85/86 红眼 + ex 指令 12）。
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata5.ecl`
+---  可读反汇编：/tmp/th31/e5.utf8.decl（Sub78 :1929、Sub79 :1998、Sub80 :2026、
+---  Sub81 :2054、Sub82 :2072、Sub83 :2086、Sub84 :2102、Sub85 :2124）。
+---
+---  · Sub78（宿主 / 本卡）的主时间轴（Lunatic；t=640 的 `ins_4(240, Sub78_976)` 让
+---    240..640 整段**每 400 帧**重跑 —— 回卷目标就是 t=240 那个子标签）：
+---      t=0   boss 系统那套（`ins_105(0)`/`ins_95()`/`ins_113(−1,−1)`/`ins_80(4)`/
+---            `ins_110(0,0)`/`ins_134(2640, 88)`（超时 2640 帧 = **44 秒**）/`ins_153()`/
+---            `ins_132(0)`/`ins_6([10039],0)`）+
+---            `ins_64(90, 4, 192, 128)`：90 帧 OUT_QUAD 滑到 TH08 (192,128) = 我们 (0,96)；
+---            三条 `ins_122`（START_SPELL，只报卡名）。
+---      t=90  `ins_135(0, 79)`：槽 0 挂 **Sub79** 发生器（一直跑到 t=240）。
+---      t=240（Sub78_976）`ins_135(0, −1)` 撤发生器；[10036] = 50；exF0 = 192 / exF1 = 244；
+---            `ins_135(1, 85)` 槽 1 挂红眼；li0 = 0x100000、lf0 = π/2（TH08 向下）、
+---            lf1 = 0.6、li1 = 0、`ins_136(12, 0)` ⇒ **A 组冻结**（速度 0.6 往下漂、无判定）；
+---            li0 = 0x200000、lf0 = −π/2（向上）、`ins_136(12, 0)` ⇒ B 组冻结。
+---      t=340 li0 = 0x100000、`ins_135(0, 80)` 槽 0 换 **Sub80**、li1 = 1、ex12 ⇒ **A 组解冻**
+---            （恢复各自的角与速度）；B 组解冻；`ins_67(60, 0, 1.0)` 60 帧线性漂 60 px。
+---      t=440 再撤发生器 + 挂红眼 + A/B 冻结（参数同 t=240）。
+---      t=540 槽 0 换回 **Sub79** + A/B 解冻 + `ins_67(60, 0, 1.0)`。
+---      t=640 `ins_4(240, Sub78_976)`：time 拨回 240（同帧重跑那一段）。
+---  · ex 指令 12 = ReisenFreezeBullets（EclExIns.cpp:601-667）：
+---      全池扫描 `transformFlags & li0` 命中的弹，按 `bulletVm.type` 走两支（出生 type = 0）：
+---        type 1 → 0：正常混合、贴图 −16、**collisionDisabled = 0**、恢复原来的角与速度；
+---        否则     → type 1：加色、贴图 +16、**collisionDisabled = 1**、
+---                   速度 = FromAngleMagnitude(lf0, fm·lf1)（本卡 lf1 = 0.6）。
+---      ⇒ 「横向飞 → 被催眠成竖直慢漂 → 醒过来继续横向飞」，这就是本卡的核心。
+---      移植版照卡 454/456/458 用弹上的 `ex_frz` 布尔记「type == 1」。
+---  · Sub79 / Sub80（发生器；`ins_135` 生成，都是 `ins_4(0, …)` 每 20 帧一轮、
+---    每轮 t=0 与 t=10 各生一只）：
+---      Sub79 t=0  [10007] = 6、lf0 = π/2（向下）、lf1 = 2 + rnd[0,1)、
+---                  exF0 = rndSgn·8、exF1 = 0     ⇒ 左边缘上方生 Sub81（往下飞）
+---            t=10 [10007] = 2、lf0 = −π/2（向上）、lf1 = 2 + rnd、exF0 = 384 + rndSgn·16、
+---                  exF1 = 448                    ⇒ 右边缘下方生 Sub83（往上飞）
+---      Sub80 一样，只是两条的 x 基对调（t=0 用 384 + rndSgn·8，t=10 用 rndSgn·8）。
+---      （TH08 场地 [0,384]×[0,448] ⇒ x≈0 / 384 就是左右边缘。）
+---  · Sub81（`ins_90` 生成，脚本坐标是绝对落点）：贴图 53 / hitbox 24×24 /
+---    `ins_135(0, 82)` 挂枪 / `ins_65(lf0, lf1)` 直线飞 / t=4200 `ins_1()`；
+---    Sub83 与它只差枪号（84）。`ins_90` 清了碰撞位 ⇒ 纯观感。
+---  · Sub82（Sub81 的枪）：槽 0 一条 `allowWhileActive = 1` 的 WRAP_Y（900 帧，本卡的弹
+---    横向飞、WRAP_Y 实际不起作用，照抄）；之后每 **16 帧**（Lunatic 的 [10000]）：
+---      `ins_97(16, 6, 1, 1, 2.3, 0.5, 0.0, 0.0, 0x900202)`  ← 标记 A
+---      `ins_97(16, 6, 1, 1, 0.8, 0.5, 0.0, 0.0, 0xA00202)`  ← 标记 B
+---    （flag = WRAP_Y(0x800000) | 标记 | SPAWN_SND(0x200) | SPAWN_FAST(0x2)）
+---    ⇒ 两发都是朝 +x（TH08 右）的水平弹。Sub84（Sub83 的枪）颜色 2、角度 π（朝左），
+---    且速度与标记对调：2.3 带标记 B、0.8 带标记 A。
+---  · Sub85（红眼生成器，挂在 BOSS 的槽 1）：[10036] = 50 − 25 = **25** 只；t=0 起每 2 帧
+---    `ins_93(86, exF0, exF1, …)` 一只，t=52 `ins_53()` RETURN。
+---  · Sub86（红眼本体）：`ins_80(3)` 关判定 + `ins_58(5)`，t=60 `ins_1()`。
+---  · Sub88（超时回调）全是收尾演出，跳过（换卡由 LIST 驱动）。
+---  ★ 难度：只取 Lunatic；原作 life(HP) 一律忽略。
+---  ★ 占位贴图：使魔 "servant"、红眼 "eyeL"、弹 type 16 → ball_small（EX.style_of）。
+---    全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---TH08 世界坐标 → 我们坐标（见文件头）：x' = x−192、y' = 224−y、角度整体取反。
+local function to_th08_x(x) return x + 192 end
+local function to_th08_y(y) return 224 - y end
+local function from_th08_x(x) return x - 192 end
+local function from_th08_y(y) return 224 - y end
+
+---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
+local function wrap_pi(a)
+    if a > PI then a = a - 2 * PI elseif a < -PI then a = a + 2 * PI end
+    return a
+end
+
+---位判（掩码都是 2 的幂；同前几张卡）。
+local function has_bit(v, mask)
+    return v ~= nil and v >= 0 and math.floor(v / mask) % 2 == 1
+end
+
+---夹框（继承自前面几关的 `ins_75(32,48,352,128)`，Sub78 自己没有 ins_75）：
+---TH08 [32,352]×[48,128] ⇒ 我们 [−160,160]×[96,176]（`ins_67` 的边界感知用的原始值另存）。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---`ins_64(90, 4, 192, 128)` 的落点：TH08 (192,128) = 我们 (0,96)。
+local BOSS_X, BOSS_Y = 0, 96
+local ENT_T, ENT_EASING = 90, 4
+
+---Sub78 的时间轴（240..640 每 400 帧整段重跑）。
+local GEN_T = 90                    -- 第一次挂 Sub79
+local FREEZE1_T = 240               -- 撤发生器 + 挂红眼 + 冻结
+local THAW1_T = 340                 -- 挂 Sub80 + 解冻 + ins_67
+local FREEZE2_T = 440               -- 再撤发生器 + 挂红眼 + 冻结
+local THAW2_T = 540                 -- 挂 Sub79 + 解冻 + ins_67
+local LOOP_T = 640                  -- `ins_4(240, Sub78_976)`
+local LOOP_RESET_T = 240
+
+---ex12 的两组标记与冻结参数（li0 / lf0 / lf1）。
+local MARK_A = 0x100000
+local MARK_B = 0x200000
+local FREEZE_A_DIR_TH08 = PI / 2    -- lf0：TH08 +y（屏幕向下）
+local FREEZE_B_DIR_TH08 = -PI / 2
+local FREEZE_SPEED = 0.6            -- lf1
+
+---`ins_67(60, 0, 1.0)`（EclDependencies.cpp:128-191 的 BeginBoundaryAwareMove）。
+local WANDER_FRAMES = 60
+local WANDER_EASING = 0             -- 线性
+local WANDER_SPEED = 1.0
+
+---发生器（Sub79 / Sub80）。
+local GEN_PERIOD = 20               -- `ins_4(0, …)` 每 20 帧一轮
+local GEN_FIRST = 0                 -- 每轮 t=0：往下的那只
+local GEN_SECOND = 10               -- 每轮 t=10：往上的那只
+local GEN_COLOR_DOWN = 6            -- [10007]
+local GEN_COLOR_UP = 2
+local GEN_SPEED_BASE = 2.0          -- lf1 = 2 + rnd[0,1)
+local GEN_X_JITTER = 8              -- rndSgn·8
+local GEN_X_JITTER2 = 16            -- rndSgn·16
+local GEN_FIELD_X = 384             -- TH08 场宽
+local GEN_FIELD_Y = 448             -- TH08 场高
+local GEN_DIR_DOWN = PI / 2         -- ← 我们取反后是 −π/2
+local GEN_DIR_UP = -PI / 2
+
+---使魔（Sub81 / Sub83）。
+local FAM_HALF = 12                 -- 半个精灵（占位 "servant"，hitbox 24×24）
+local FAM_END_T = 4200              -- `ins_1()`（早就出屏回收了）
+local GUN_DOWN = 82                 -- Sub81 的枪号
+local GUN_UP = 84                   -- Sub83 的枪号
+
+---枪（Sub82 / Sub84）。
+local GUN_TYPE = 16
+local GUN_PERIOD = 16               -- Lunatic 的 [10000]（`ins_2` 的等待）
+local GUN_SPEED_FAST = 2.3          -- [10016]（Lunatic）
+local GUN_SPEED_SLOW = 0.8          -- [10017]
+local GUN_SPEED2 = 0.5
+local GUN_WRAP_FRAMES = 900         -- 槽 0 的 WRAP_Y 记录
+local GUN_COLOR_DOWN = 6            -- Sub82 的弹色
+local GUN_COLOR_UP = 2              -- Sub84 的弹色
+local WRAP_Y = 0x800000
+local FLAG_SND_FAST = 0x202         -- SPAWN_SND(0x200) | SPAWN_FAST(0x2)
+local FLAGS_A = WRAP_Y + MARK_A + FLAG_SND_FAST   -- 0x900202
+local FLAGS_B = WRAP_Y + MARK_B + FLAG_SND_FAST   -- 0xA00202
+
+---红眼（Sub85 / Sub86），与卡 454 / 456 / 458 / 459 同一对。
+local EYE_X, EYE_Y = from_th08_x(192), from_th08_y(244)   -- 我们 (0, −20)
+local EYE_QUOTA = 25
+local EYE_FRAMES = 60
+
+---IsWithinPlayfield 的场地（GameManager.cpp:132-150）：TH08 [0,384]×[0,448] ⇒ 我们 ±192 / ±224。
+local FIELD_L, FIELD_R = -192, 192
+local FIELD_B, FIELD_T = -224, 224
+
+---出屏判据（EnemyManagerUpdate.cpp:225-260 的 HasBeenInBounds 那一支）。
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---------------------------------------------------------------------
+---`ins_136(12, 0)` = ReisenFreezeBullets（EclExIns.cpp:601-667）。
+---★ **全池扫描**：与发射源无关，凡 `transformFlags & marker` 命中的弹都按各自当前的
+---  `bulletVm.type` 走一支 —— 所以「冻结」与「解冻」是**同一段代码**，靠 `ex_frz` 分岔。
+---    冻结态 → 解冻：恢复**原来的**角与速度（`bullet->angle` / `bullet->speed`）；
+---    否则   → 冻住：速度 = FromAngleMagnitude(lf0, fm·lf1)、无判定。
+---  lf0 / lf1 由调用处给（本卡 A 组 π/2、B 组 −π/2，速度都是 0.6）。
+---------------------------------------------------------------------
+local function reisen_ex12(marker, dir_th08, speed)
+    local a = -dir_th08                                  -- TH08 角 → 我们角（见文件头）
+    local ux, uy = math.cos(a), math.sin(a)
+    for i = #EX.pool, 1, -1 do
+        local b = EX.pool[i]
+        if IsValid(b) and has_bit(b.ex_flags, marker) then
+            if b.ex_frz then
+                b.ex_frz = nil
+                b.colli = true
+                b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
+                b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
+            else
+                b.ex_frz = true
+                b.colli = false
+                b.ex_vx = ux * speed * EX.fm
+                b.ex_vy = uy * speed * EX.fm
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---红眼（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**。
+---活 60 帧（`ins_1` 在 t=60）。
+---------------------------------------------------------------------
+local eye_cls
+eye_cls = Class(object, {
+    init = function(self, x, y)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "eyeL"
+        self.hscale, self.vscale = 2, 2
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.e460_t = 0
+    end,
+    frame = function(self)
+        self.e460_t = self.e460_t + 1
+        if self.e460_t > EYE_FRAMES then object.RawDel(self) end
+    end,
+})
+
+local function spawn_eye(owner)
+    owner.c460_eyes_list[#owner.c460_eyes_list + 1] = New(eye_cls, EYE_X, EYE_Y)
+end
+
+---子 context 槽 1 = Sub85 的指令表：{ ECL 的 time, 处理 }（与卡 458 同一份）。
+local EYE_PROG = {
+    { 0, function(owner)
+        spawn_eye(owner)                          -- `ins_93(86, exF0, exF1, 0, 10, −2, 10)`
+    end },
+    { 2, function(owner, c)
+        c.i0 = c.i0 - 1
+        if c.i0 > 0 then
+            c.t = 0
+            c.pc = 1
+        end
+    end },
+    { 52, function(owner)
+        owner.c460_eyes = nil
+    end },
+}
+
+local function eye_step(owner)
+    local c = owner.c460_eyes
+    if c == nil then return end
+    while true do
+        local ins = EYE_PROG[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        ins[2](owner, c)
+    end
+    c.t = c.t + 1
+end
+
+---------------------------------------------------------------------
+---使魔（Sub81 = 往下飞、枪 82；Sub83 = 往上飞、枪 84）。
+---占位贴图 "servant"、无判定（`ins_90` 清了碰撞位）；位置 = 脚本绝对落点，
+---随后按 `ins_65` 的方向/速度直线飞；出屏就回收。
+---★ `frame` 故意留空：ECL / 枪由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, angle, speed, gun)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c460_angle = angle          -- 我们口径的运动方向（= −lf0）
+        self.c460_speed = speed          -- lf1 = 2 + rnd[0,1)
+        self.c460_gun_kind = gun         -- 82 / 84
+        self.c460_t = 0                  -- 主 context（Sub81/83）的 time
+        self.c460_gun = nil              -- 子 context 槽 0
+        self.c460_dead = false
+    end,
+    frame = function(self) end,
+})
+
+---`ins_97`（SHOOT_FAN）：count1 = count2 = 1 ⇒ 单发、角度 = 第 7 个操作数。
+local function gun_shot(fam, speed, flags, color, angle)
+    EX.shoot(fam, fam.x, fam.y, {
+        op = 97, type = GUN_TYPE, color = EX.color(color),
+        count1 = 1, count2 = 1,
+        speed1 = speed, speed2 = GUN_SPEED2,
+        angle = angle, step = 0.0, flags = flags,
+    })
+end
+
+---枪的一帧：Sub82 / Sub84 的出手时刻表（每 16 帧一对）。
+local function gun_step(fam)
+    local g = fam.c460_gun
+    if g.f % GUN_PERIOD == 0 then
+        if fam.c460_gun_kind == GUN_DOWN then
+            ---朝 +x（TH08 右）；2.3 带标记 A、0.8 带标记 B。
+            gun_shot(fam, GUN_SPEED_FAST, FLAGS_A, GUN_COLOR_DOWN, 0.0)
+            gun_shot(fam, GUN_SPEED_SLOW, FLAGS_B, GUN_COLOR_DOWN, 0.0)
+        else
+            ---朝 −x（TH08 左）；两道对调：2.3 带标记 B、0.8 带标记 A。
+            gun_shot(fam, GUN_SPEED_FAST, FLAGS_B, GUN_COLOR_UP, PI)
+            gun_shot(fam, GUN_SPEED_SLOW, FLAGS_A, GUN_COLOR_UP, PI)
+        end
+    end
+    g.f = g.f + 1
+end
+
+---使魔的一帧（Sub81/83 的主 context + 帧尾的槽 0 枪）。
+local function familiar_step(fam)
+    if fam.c460_dead then return end
+    if fam.c460_t == 0 then
+        fam.c460_gun = { f = 0 }
+        ---`ins_111(0, 0x800000, allow = 1, i0 = 900, …)`：WRAP_Y 900 帧
+        ---（本卡的弹横向飞，实际不起作用 —— 照抄原作数据）。
+        EX.set_record(fam, 0, EX.K.WRAP_Y, 1, GUN_WRAP_FRAMES, -1, -1, -1)
+    elseif fam.c460_t >= FAM_END_T then
+        fam.c460_dead = true                       -- `ins_1()`（t=4200，够不着）
+        return
+    end
+    fam.c460_t = fam.c460_t + 1
+    if fam.c460_gun then gun_step(fam) end
+end
+
+---`ins_90` 生成一只使魔（脚本坐标 = 绝对落点）。SpawnEnemy2 里会**当场**对新敌机跑一次
+---RunEcl（EnemyTimeline.cpp:88-94）⇒ 移植版在生成处立刻走它的一帧；之后本帧的
+---「敌机循环」还会再走到它一次（多走一帧）——照抄。
+local function spawn_familiar(owner, x, y, angle, speed, gun)
+    local fam = New(familiar_cls, x, y, angle, speed, gun)
+    owner.c460_fams[#owner.c460_fams + 1] = fam
+    familiar_step(fam)
+    return fam
+end
+
+---发生器（Sub79 / Sub80）的一帧：子 context 的 time 从挂上那帧的 0 开始，
+---每 20 帧一轮（`ins_4(0, …)` 把 time 拨回 0 再跑 t=0 那条）。
+local function gen_step(owner)
+    local g = owner.c460_gen
+    if g == nil then return end
+    local k = g.t % GEN_PERIOD
+    if k == GEN_FIRST then
+        ---t=0：往下的那只（color 6 / 枪 82）；Sub79 在左边缘、Sub80 在右边缘。
+        local x = ran:Float(-GEN_X_JITTER, GEN_X_JITTER)
+        if g.sub == 80 then x = x + GEN_FIELD_X end
+        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
+        spawn_familiar(owner, from_th08_x(x), from_th08_y(0),
+                       -GEN_DIR_DOWN, speed, GUN_DOWN)
+    elseif k == GEN_SECOND then
+        ---t=10：往上的那只（color 2 / 枪 84）；Sub79 在右边缘、Sub80 在左边缘。
+        local jit = (g.sub == 79) and GEN_X_JITTER2 or GEN_X_JITTER
+        local x = ran:Float(-jit, jit)
+        if g.sub == 79 then x = x + GEN_FIELD_X end
+        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
+        spawn_familiar(owner, from_th08_x(x), from_th08_y(GEN_FIELD_Y),
+                       -GEN_DIR_UP, speed, GUN_UP)
+    end
+    g.t = g.t + 1
+end
+
+---------------------------------------------------------------------
+---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
+---抽角 + 四条边界修正，再交给 StartTimedPolarDisplacement（:105-126）
+---（delta = (cos,sin)(角)·speed·duration、origin = 当前 worldPosition）。
+---★ 「x > upper.x − 96」那条把角改写成 `π − movementAngle`，用的是**上一段的移动方向**
+---  而不是刚抽到的角 —— 原作自己的怪癖，照抄（与本文件卡 453 / 455 / 456 / 457 / 458 同一份模板）。
+local function wander_angle(owner)
+    local bx = to_th08_x(owner.x)
+    local by = to_th08_y(owner.y)
+    local angle
+    if to_th08_x(player.x) < bx then
+        angle = wrap_pi(ran:Float(0, PI / 2) + 3 * PI / 4)
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c460_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---`ins_67(60, 0, 1.0)`：60 帧线性走 60 px。
+---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)              -- TH08 角
+    owner.c460_mangle = angle
+    owner.c460_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---主 context（Sub78）的指令表：{ ECL 的 time, 处理 }（下标 1 是 t=90，下标 2 是
+---t=240 那个子标签 `Sub78_976`，也是 t=640 的 `ins_4` 回卷目标）。
+---------------------------------------------------------------------
+local PROG = {
+    { GEN_T, function(owner)
+        owner.c460_gen = { sub = 79, t = 0 }        -- `ins_135(0, 79)`
+    end },
+    { FREEZE1_T, function(owner)
+        owner.c460_gen = nil                        -- `ins_135(0, −1)`
+        owner.c460_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
+        reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
+        reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
+    end },
+    { THAW1_T, function(owner)
+        owner.c460_gen = { sub = 80, t = 0 }        -- `ins_135(0, 80)`
+        reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
+        reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
+        begin_wander(owner)                         -- `ins_67(60, 0, 1.0)`
+    end },
+    { FREEZE2_T, function(owner)
+        owner.c460_gen = nil
+        owner.c460_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
+        reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
+        reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
+    end },
+    { THAW2_T, function(owner)
+        owner.c460_gen = { sub = 79, t = 0 }
+        reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
+        reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
+        begin_wander(owner)
+    end },
+    { LOOP_T, function(owner)
+        ---`ins_4(240, Sub78_976)`：time 拨回 240、跳回 t=240 那条（同帧重跑那一段）。
+        owner.c460_t = LOOP_RESET_T
+        owner.c460_pc = 2
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c460_t = 0
+    owner.c460_pc = 1
+    owner.c460_gen = nil
+    owner.c460_fams = {}
+    owner.c460_eyes = nil
+    owner.c460_eyes_list = {}
+    ---★ 起手就是 `ins_64` 的插值位移；它跑完之后 BOSS 的 movementAngle 就是那一段的走向
+    ---  （EnemyManager.cpp:108-113 用 velocity 反算角）⇒ 第一次 `ins_67` 的「右边界」那一支
+    ---  读的正是它。这里按「起点 → 落点」的几何直接算（TH08 口径）。
+    owner.c460_mangle = math.atan2(to_th08_y(BOSS_Y) - to_th08_y(owner.y),
+                                   to_th08_x(BOSS_X) - to_th08_x(owner.x))
+    owner.c460_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        n = ENT_T, t = 0, easing = ENT_EASING,
+    }
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c460_t then return end
+
+    ---① 主 context 的分派循环（EclRun.cpp:50-110）。
+    while true do
+        local ins = PROG[owner.c460_pc]
+        if ins == nil or ins[1] ~= owner.c460_t then break end
+        owner.c460_pc = owner.c460_pc + 1
+        ins[2](owner)
+    end
+    owner.c460_t = owner.c460_t + 1
+
+    ---② 帧尾的子 context（low_select_next_context，EclRun.cpp:191-209）：槽 0 → 槽 1。
+    gen_step(owner)
+    eye_step(owner)
+
+    ---③ 同一次 RunEcl 尾巴上的 UpdateMovement（`ins_64` / `ins_67` 的插值位移）—— BOSS 在先。
+    local move = owner.c460_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c460_move = nil end
+    end
+
+    ---④ ClampPosition（CLAMP_POSITION 从 Sub60 的 `ins_75` 起一直开着，见头注）。
+    if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+    if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+
+    ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（RunEcl + IntegrateVelocity + 出屏回收）。
+    local fams = owner.c460_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            familiar_step(fam)
+            if fam.c460_dead then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            else
+                fam.x = fam.x + math.cos(fam.c460_angle) * fam.c460_speed
+                fam.y = fam.y + math.sin(fam.c460_angle) * fam.c460_speed
+                if outside_field(fam.x, fam.y, FAM_HALF) then
+                    object.RawDel(fam)
+                    table.remove(fams, i)
+                end
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c460_fams then
+        for i = 1, #owner.c460_fams do
+            if IsValid(owner.c460_fams[i]) then object.RawDel(owner.c460_fams[i]) end
+        end
+    end
+    if owner.c460_eyes_list then
+        for i = 1, #owner.c460_eyes_list do
+            if IsValid(owner.c460_eyes_list[i]) then object.RawDel(owner.c460_eyes_list[i]) end
+        end
+    end
+    owner.c460_fams = nil
+    owner.c460_eyes_list = nil
+    owner.c460_eyes = nil
+    owner.c460_gen = nil
+    owner.c460_t = nil
+    owner.c460_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[460] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---卡 461「非符一」（米斯蒂娅·萝蕾拉 · Stage 2 · ecldata2.ecl Sub17 宿主 + Sub19 主循环
+---  + Sub18 枪 + Sub20 使魔）
+---  数据源：`…/[th08] 东方永夜抄 (日文版)/data/ecldata2.ecl`
+---  可读反汇编：`/tmp/th31/d2_all.txt`（Sub17 :326、Sub18 :349、Sub19 :372、Sub20 :413）
+---
+---  · Sub17（宿主）：`ins_131(12000)` SET_LIFE、`ins_134(1980, 23)` / `ins_133(0, 1500, 23)`
+---      （超时 33 秒 / 掉到 1500 → Sub23 声符「木菟咆哮」—— 都由 boss 系统管，见文件头总注）、
+---      `ins_63(−32,256)` + `ins_64(60,4,192,128)` 入场（移植版原地出现在 (0,96)）。
+---      t=120  `ins_75(32,48,352,128)` 设夹框（每帧钳一次）⇒ 我们 x∈[−160,160]、y∈[96,176]；
+---             `ins_52(19)` 子程序调用 Sub19（它不返回 ⇒ 主 context 从此跑 Sub19 的循环）。
+---  · Sub19（主循环；只列 Lunatic 走得到的指令）：
+---      t=0    `ins_25(lf0, angToPl, π/2)` 定基准角、`ins_7(lf2, −0.15708)`、挂枪槽 0、`ins_67` 漂移
+---      t=40   `lf0 = angToPl − π/2`、`lf2 = +0.15708`、挂枪槽 1；`ins_2(60)`（d=f8）**冻结** 60 帧
+---      t=40+  冻结结束后同 t 继续：`lf0 = angToPl + π/2`、挂枪槽 0、`ins_67` 漂移
+---      t=80   挂枪槽 1
+---      t=140  `ins_91` 出 5 只使魔（Sub20，lf1 = ∓π/4..±π/4）；`ins_2(60)` 再冻结 60 帧
+---      t=140+ `ins_4(0, …)` 把 time 拨回 0 并跳回 t=0 ⇒ **一圈 = 140 + 60 + 60 = 260 帧**
+---  · Sub18（枪；子 context 槽 0/1 —— 每次 `ins_135` 重挂都是一个从 t=0 重跑的新 context）：
+---      `ins_6([10036], 32)`（Lunatic）；记录 0 = `ins_111(0, 0x2000, 0, 60)`（CULL 延迟 60 帧）、
+---      记录 1 = `ins_111(1, 0x40, 1, 60, 1, 0, 0)`（CHANGE_DIRECTION_RELATIVE：60 帧里线性减速到 0、
+---      到点原地「折 0 弧度、速度换 0」⇒ 就是**停住**）、记录 2 = `ins_111(2, 0x10, 0, 60, −1, lf1, −999.9)`
+---      （停住之后沿**自身方向**加速 60 帧）。之后每帧一条 `ins_97 SHOOT_FAN`
+---      （count1 = 1、Lunatic 的 count2 = 7、速度 5→0.2、角 = lf0），出手后再
+---      `lf0 += lf2`、`lf1 −= lf4`、`lf4 −= 0.000455729` ⇒ 32 帧里扫 32×9° = 288°。
+---      ⇒ 每颗弹的形状：沿角 lf0 飞出去 → 60 帧内减速停死 → 停一会儿 → 再沿原方向加速冲出。
+---  · Sub20（使魔）：t=0 记录 0 = `ins_111(0, 0x20000, 0, 300)`（WAIT 300 帧 —— 把记录 1
+---      `ins_111(1, 0x10, 0, 60, −1, 0.0333333, −999.9)` 压到 5 秒后才点亮）、
+---      `ins_107` 开延迟出弹 → `ins_97 SHOOT_FAN`（spd1 = 0、spd2 = 0.5）→ `ins_108` 关 →
+---      `ins_106 SET_SHOOT_INTERVAL_DELAYED(16)` ⇒ 之后**每 13 帧**（16 + rank32 的 −3）
+---      从使魔当前位置再补一颗（EnemyManager.cpp:798-808：定时一到就拿 `pendingShotInstruction`
+---      现场重发一次）；`ins_65(lf0, 0.5)` + `ins_71(0.0283333)` 让使魔自己朝自机方向
+---      （±22.5°/±45°/0°）边加速边飞；t=60 `ins_71(0)` 停加速。
+---  ★ rank：移植版固定 rank = 32（见文件头）。本卡是**非符** ⇒ `DispatchShotInstruction` 的
+---    `if (!g_Spellcard.IsActive())` 那道豁免不成立，出弹要叠 rank 缩放（EclDependencies.cpp:745-777）。
+---    但 Sub18 自己在 `ins_111` 之前有一条 `ins_152 SET_BULLET_RANK_INFLUENCE(0,0,0,0,0,0)`
+---    （#9）把 **BOSS 的**影响量清零 ⇒ 枪的弹只有那道 `speed2 < 0.3 → 0.3` 的钳位；
+---    使魔（Sub20）是**另一只敌机**、用的是它自己的默认影响量 ±0.15 ⇒
+---      speed1 是 0（`if (speed1 != 0)` 跳过）、speed2 0.5 → **0.575**。
+---  ★ 占位贴图：使魔 = "servant"、弹 type 3 → ball_mid（EX.style_of 的兜底）。
+---    全部实现完之后再统一换素材。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---出屏判据（GameManager.cpp:132-150 的 IsWithinPlayfield；场 = ±192 / ±224）。
+local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
+local function outside_field(x, y, half)
+    return x + half < FIELD_L or x - half > FIELD_R
+            or y + half < FIELD_B or y - half > FIELD_T
+end
+
+---Sub17 的落点（TH08 (192,128) = 我们 (0,96)；入场是纯观感，移植版原地出现）。
+local BOSS_X, BOSS_Y = 0, 96
+
+---t=120 的 `ins_75(32,48,352,128)`（TH08 口径）⇒ 我们坐标。
+---★ `ins_67` 的四条边界修正判据用 TH08 的 96 / 48 内缩（BeginBoundaryAwareMove）。
+local BW_TH_L, BW_TH_R = 32, 352
+local BW_TH_B, BW_TH_T = 48, 128
+local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
+
+---Sub17 → Sub19 的切换点（`ins_52(19)` 在 t=120）。
+local ENTER_T = 120
+---Sub19 循环体的末尾（`ins_4(0, …)`）与两处 `ins_2(60)`（d=f8）。
+local LOOP_END_T = 140
+local FREEZE_FRAMES = 60
+
+---`ins_67(60, 4, 1.5)`：时长 / 缓动（4 = OUT_QUADRATIC）/ 速度。
+local WANDER_FRAMES, WANDER_EASING, WANDER_SPEED = 60, 4, 1.5
+
+---Sub18（枪）的 Lunatic 参数。
+local GUN_SHOTS = 32                       -- `ins_6([10036], 32)`
+local GUN_MAG = 0.116667                   -- `ins_7(lf1, …)`
+local GUN_DMAG0 = 0.00583333               -- `ins_7(lf4, …)`
+local GUN_DDMAG = 0.000455729              -- `ins_15(lf4, …)`
+local GUN_STEP = 0.15708                   -- `ins_7(lf2, ±0.15708)`（9°）
+---`ins_152 SET_BULLET_RANK_INFLUENCE 0,0,0,0,0,0`（#9）把 **BOSS 的** rank 影响量清零了
+---⇒ 本卡的枪出弹**不叠** rank 缩放，只有 `if (speed2 < 0.3)` 那道钳位会把 0.2 抬到 0.3。
+local GUN_SPEED1, GUN_SPEED2 = 5.0, 0.3
+local GUN_TYPE, GUN_COLOR = 3, 10
+local GUN_ASTEP = 0.261799                 -- count1 = 1 ⇒ 用不到，照抄
+local GUN_FLAGS = 0x22252                  -- FAST|VEC|REL|SPAWN_SND|CULL|WAIT
+
+---记录 1 =「60 帧线性减速到 0 再原地停住」（CHANGE_DIRECTION_RELATIVE）。
+local GUN_DECEL_FRAMES = 60
+---记录 2 =「沿自身方向加速」（ACCELERATE_VECTOR，float1 < −990 ⇒ 用弹自己的角）。
+local GUN_VEC_FRAMES = 60
+---记录 0 = CULL 延迟。
+local GUN_CULL_FRAMES = 60
+
+---Sub20（使魔）。
+local FAM_SPEED = 0.5                      -- `ins_65(lf0, 0.5)`
+local FAM_ACCEL = 0.0283333                -- `ins_71(0.0283333)`
+local FAM_ACCEL_STOP_T = 60                -- t=60 的 `ins_71(0)`
+local FAM_FLY_ANGLES = { -PI / 4, -PI / 8, 0, PI / 8, PI / 4 }   -- lf1（TH08 口径）
+---`ins_106(16)` + rank32 的 `ScaleIntBasedOnRank(3, −3)` = −3 ⇒ 13 帧。
+local FAM_SHOT_INTERVAL = 13
+---ins_97 的 spd1 = 0 / spd2 = 0.5（count2 = 1 ⇒ 实际用 spd1 = 0）+ rank32。
+local FAM_SPEED1, FAM_SPEED2 = 0.0, 0.575
+local FAM_TYPE, FAM_COLOR = 3, 8
+local FAM_FLAGS = 0x20212                  -- FAST|VEC|SPAWN_SND|WAIT
+---记录 0 = WAIT 300 帧；记录 1 = 之后沿自身方向加速。
+local FAM_WAIT_FRAMES = 300
+local FAM_VEC_FRAMES = 60
+local FAM_VEC_MAG = 0.0333333
+local FAM_HALF = 8                         -- 出屏回收用（使魔没有判定）
+
+---自机方向（我们的坐标口径；TH08 的 angToPl = 取反后的它）。
+local function aim_our(owner)
+    return math.atan2(player.y - owner.y, player.x - owner.x)
+end
+
+---ins_67 = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）。
+---它读的是 `angToPl` 那一套 **TH08 口径**的角，所以这里按 TH08 坐标算。
+local function wander_angle(owner)
+    local bx = owner.x + 192
+    local by = 224 - owner.y
+    local angle
+    if (player.x + 192) < bx then
+        angle = ran:Float(0, PI / 2) + 3 * PI / 4
+    else
+        angle = ran:Float(0, PI / 2) - PI / 4
+    end
+    if bx < BW_TH_L + 96 then
+        if angle > PI / 2 then
+            angle = PI - angle
+        elseif angle < -PI / 2 then
+            angle = -PI - angle
+        end
+    end
+    if bx > BW_TH_R - 96 then
+        if angle < PI / 2 and angle >= 0 then
+            angle = PI - (owner.c461_mangle or 0)
+        elseif angle > -PI / 2 and angle <= 0 then
+            angle = -PI - angle
+        end
+    end
+    if by < BW_TH_B + 48 and angle < 0 then
+        angle = -angle
+    end
+    if by > BW_TH_T - 48 and angle > 0 then
+        angle = -angle
+    end
+    return angle
+end
+
+---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
+local function begin_wander(owner)
+    local angle = wander_angle(owner)
+    owner.c461_mangle = angle
+    ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
+    owner.c461_move = {
+        x0 = owner.x, y0 = owner.y,
+        dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        dy = math.sin(-angle) * WANDER_SPEED * WANDER_FRAMES,
+        n = WANDER_FRAMES, t = 0, easing = WANDER_EASING,
+    }
+end
+
+---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）。
+local function move_step(move)
+    move.t = move.t + 1
+    local u = 1 - (move.n - move.t) / move.n
+    if u < 0 then u = 0 end
+    local e = u
+    if move.easing == 1 then
+        e = u * u
+    elseif move.easing == 2 then
+        e = u * u * u
+    elseif move.easing == 3 then
+        e = u * u * u * u
+    elseif move.easing == 4 then
+        e = 1 - (1 - u) * (1 - u)
+    elseif move.easing == 5 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u)
+    elseif move.easing == 6 then
+        e = 1 - (1 - u) * (1 - u) * (1 - u) * (1 - u)
+    end
+    return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= move.n
+end
+
+---------------------------------------------------------------------
+---枪（子 context 槽 0/1 = Sub18 的每一轮）。
+---★ 原来那把枪的「循环」是 `ins_5 JUMP_DEC` 在 t=1 把 time 拨回 0 再跳回去 ⇒
+---  **同一帧**里跑一遍 t=0 那段 ⇒ 每帧一发、共 32 发（`ins_6` 的 32 记在 exI0）。
+---  这里直接按帧展开（第一帧那一发就是 t=0 段的 `ins_97`）。
+---------------------------------------------------------------------
+local function mount_gun(owner, slot, ang, step)
+    ---`ins_135`：新 context 的变量块从父 context 拷一份 ⇒ lf0/lf2 就是挂上去那一刻的值。
+    owner.c461_gun[slot] = {
+        ang = ang, step = step,
+        mag = GUN_MAG, dmag = GUN_DMAG0, n = GUN_SHOTS,
+    }
+end
+
+---枪的一帧：`ins_97` + 出手后的三条增量（`ins_15/16/16`）。
+local function gun_step(owner, g)
+    if g == nil or g.n <= 0 then return end
+    ---记录 1 / 2 每轮都重写（`ins_111` 在 t=0 段里）；记录 0 只写一次（挂上时）。
+    EX.set_record(owner, 1, EX.K.REL, 1, GUN_DECEL_FRAMES, 1, 0, 0)
+    EX.set_record(owner, 2, EX.K.VEC, 0, GUN_VEC_FRAMES, -1, g.mag, -999.9)
+    ---`ins_97 SHOOT_FAN`：count1 = 1、Lunatic 的 count2 = 7、角 = lf0、step = π/15（count1 = 1
+    ---用不到）。7 个 j 的速度 = speed1 − (speed1 − speed2)·j/7（BulletManager.cpp:114-118）。
+    EX.shoot(owner, owner.x, owner.y, {
+        op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
+        count1 = 1, count2 = 7,
+        speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
+        angle = g.ang, step = GUN_ASTEP, flags = GUN_FLAGS,
+    })
+    g.n = g.n - 1
+    g.ang = g.ang + g.step
+    g.mag = g.mag - g.dmag
+    g.dmag = g.dmag - GUN_DDMAG
+end
+
+---------------------------------------------------------------------
+---使魔（Sub20）。占位贴图 "servant"、无判定；`ins_71` 的 POLAR 运动自算
+---（EnemyManager.cpp:57-66：每帧 `speed += acceleration` 再 `velocity = 极角`）。
+---★ `frame` 留空：ECL / 出弹由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
+---------------------------------------------------------------------
+local familiar_cls
+familiar_cls = Class(object, {
+    init = function(self, x, y, ang)
+        self.x, self.y = x, y
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
+        self.img = "servant"
+        self.hscale, self.vscale = 0.75, 0.75
+        self.colli = false
+        self.navi = false
+        self.bound = false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self._r, self._g, self._b = 255, 255, 255
+        self.c461_ang = ang             -- lf0（我们的口径）
+        self.c461_speed = FAM_SPEED
+        self.c461_accel = FAM_ACCEL
+        self.c461_t = 0                 -- 主 context 的 time
+        self.c461_shot_t = 0            -- `shootIntervalTimer`（`ins_106` 随机初值）
+        self.c461_pending = true        -- `pendingShotInstruction` 已存下
+        self.c461_dead = false
+    end,
+    frame = function(self) end,
+})
+
+---使魔的 ECL：t=0 段 + t=60 的 `ins_71(0)`。
+local function fam_ecl_step(fam)
+    if fam.c461_t == 0 then
+        ---记录 0/1 + `ins_107/97/108/106/81/65/71`（t=0 段一次跑完）。
+        EX.set_record(fam, 0, EX.K.WAIT, 0, FAM_WAIT_FRAMES, -1, -1, -1)
+        EX.set_record(fam, 1, EX.K.VEC, 0, FAM_VEC_FRAMES, -1, FAM_VEC_MAG, -999.9)
+        fam.c461_shot_t = ran:Int(0, FAM_SHOT_INTERVAL - 1)
+        fam.c461_t = 1
+    elseif fam.c461_t == FAM_ACCEL_STOP_T then
+        fam.c461_accel = 0
+        fam.c461_t = fam.c461_t + 1
+    else
+        fam.c461_t = fam.c461_t + 1
+    end
+end
+
+---延迟出弹（EnemyManager.cpp:795-810）：定时器每帧 +1，到点就按存下的 ins_97
+---从**当前位置**重发一颗，然后计时器归零（所以是每 13 帧一发）。
+local function fam_shot_tick(fam)
+    fam.c461_shot_t = fam.c461_shot_t + 1
+    if fam.c461_shot_t >= FAM_SHOT_INTERVAL then
+        fam.c461_shot_t = 0
+        EX.shoot(fam, fam.x, fam.y, {
+            op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR),
+            count1 = 1, count2 = 1,
+            speed1 = FAM_SPEED1, speed2 = FAM_SPEED2,
+            angle = fam.c461_ang, step = GUN_ASTEP, flags = FAM_FLAGS,
+        })
+    end
+end
+
+local function spawn_familiar(owner, lf1)
+    ---`ins_91`：位置 = 父机 worldPosition + (0,0)；出膛角 lf0 = angToPl + lf1
+    ---（我们的口径 = aim − lf1）。
+    local fam = New(familiar_cls, owner.x, owner.y, aim_our(owner) - lf1)
+    owner.c461_fams[#owner.c461_fams + 1] = fam
+    ---SpawnEnemy2 会当场对新敌机跑一次 RunEcl ⇒ 移植版在生成处立刻走它的 t=0 段。
+    fam_ecl_step(fam)
+    return fam
+end
+
+---------------------------------------------------------------------
+---主循环（Sub19；冻结用 `ins_2` 的语义：`secondaryTime > 0` 时每帧只减一、time 不前进）。
+---------------------------------------------------------------------
+local SUB19 = {
+    { 0, function(owner, s)
+        ---`ins_25(lf0, angToPl, π/2)` + `ins_7(lf2, −0.15708)` + `ins_135(0, 18)` + `ins_67`。
+        ---（我们口径：lf0 = aim − π/2，lf2 取反 = +0.15708。）
+        mount_gun(owner, 0, aim_our(owner) - PI / 2, GUN_STEP)
+        begin_wander(owner)
+    end },
+    { 40, function(owner, s)
+        ---`lf0 = angToPl − π/2`、`lf2 = +0.15708`、挂槽 1；然后 `ins_2(60)`（d=f8）冻结。
+        mount_gun(owner, 1, aim_our(owner) + PI / 2, -GUN_STEP)
+        s.freeze = FREEZE_FRAMES - 1
+    end },
+    { 40, function(owner, s)
+        ---冻结结束后同 t 继续：`lf0 = angToPl + π/2`、挂槽 0、`ins_67`。
+        mount_gun(owner, 0, aim_our(owner) - PI / 2, GUN_STEP)
+        begin_wander(owner)
+    end },
+    { 80, function(owner, s)
+        ---`lf0 = angToPl − π/2`、挂槽 1。
+        mount_gun(owner, 1, aim_our(owner) + PI / 2, -GUN_STEP)
+    end },
+    { 140, function(owner, s)
+        ---5 只使魔（lf1 = −π/4、−π/8、0、π/8、π/4），然后 `ins_2(60)` 冻结。
+        for i = 1, 5 do
+            spawn_familiar(owner, FAM_FLY_ANGLES[i])
+        end
+        s.freeze = FREEZE_FRAMES - 1
+    end },
+    { 140, function(owner, s)
+        ---`ins_4(0, …)`：把 time 拨回 0 再跳回 t=0 那条（同一帧继续跑）。
+        s.t = 0
+        s.pc = 1
+    end },
+}
+
+local function sub19_step(owner)
+    local s = owner.c461_sub
+    ---冻结帧：只减计数、time 不前进（EclRun.cpp:60-66）。
+    if s.freeze > 0 then
+        s.freeze = s.freeze - 1
+        return
+    end
+    while true do
+        local ins = SUB19[s.pc]
+        if ins == nil or ins[1] ~= s.t then break end
+        s.pc = s.pc + 1
+        ins[2](owner, s)
+        if s.freeze > 0 then return end        -- `ins_2` 之后本帧不再执行
+    end
+    s.t = s.t + 1
+end
+
+---------------------------------------------------------------------
+---主 context（Sub17）。
+---------------------------------------------------------------------
+local PROG = {
+    { ENTER_T, function(owner)
+        ---`ins_75(32,48,352,128)`（置 CLAMP_POSITION；同帧的 6 条 `ins_128` 是纯观感）
+        ---+ `ins_52(19)`：主 context 从此进 Sub19 的循环。
+        owner.c461_clamped = true
+        owner.c461_main_done = true
+        owner.c461_sub = { t = 0, pc = 1, freeze = 0 }
+    end },
+}
+
+local function card_init(owner)
+    EX.clear_records(owner)
+    EX.pool_clear()
+    owner.c461_t = 0
+    owner.c461_pc = 1
+    owner.c461_sub = nil
+    owner.c461_main_done = false
+    owner.c461_move = nil
+    owner.c461_mangle = 0
+    owner.c461_clamped = false
+    owner.c461_gun = {}
+    owner.c461_fams = {}
+    owner.x, owner.y = BOSS_X, BOSS_Y
+end
+
+local function card_frame(owner)
+    ---★ frame 可能先于 init 跑（boss_system 的第一帧）⇒ 必须兜住。
+    if not owner.c461_t then return end
+
+    ---① BOSS：主 context（Sub17）→ 到 t=120 转进 Sub19 的循环。
+    if owner.c461_sub == nil then
+        while true do
+            local ins = PROG[owner.c461_pc]
+            if ins == nil or ins[1] ~= owner.c461_t then break end
+            owner.c461_pc = owner.c461_pc + 1
+            ins[2](owner)
+        end
+        owner.c461_t = owner.c461_t + 1
+        ---`ins_52` 是同一个 context 里的 CALL ⇒ 新 context 在这一帧就开始跑。
+        if owner.c461_sub ~= nil then sub19_step(owner) end
+    else
+        sub19_step(owner)
+    end
+
+    ---② 帧尾：子 context 槽 0 / 1（Sub18 的枪，RunEcl 内部的顺序）。
+    gun_step(owner, owner.c461_gun[0])
+    gun_step(owner, owner.c461_gun[1])
+
+    ---③ 再 UpdateMovement（插值位移），最后夹框（`ins_75` 的 CLAMP_POSITION）。
+    local move = owner.c461_move
+    if move then
+        local mx, my, done = move_step(move)
+        owner.x, owner.y = mx, my
+        if done then owner.c461_move = nil end
+    end
+    if owner.c461_clamped then
+        if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
+        if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
+    end
+
+    ---④ 敌机循环里的使魔（BOSS 之后才轮到它们）：ECL → 位移 → 延迟出弹。
+    local fams = owner.c461_fams
+    for i = #fams, 1, -1 do
+        local fam = fams[i]
+        if IsValid(fam) then
+            fam_ecl_step(fam)
+            fam.c461_speed = fam.c461_speed + fam.c461_accel
+            fam.x = fam.x + math.cos(fam.c461_ang) * fam.c461_speed
+            fam.y = fam.y + math.sin(fam.c461_ang) * fam.c461_speed
+            fam_shot_tick(fam)
+            if outside_field(fam.x, fam.y, FAM_HALF) then
+                object.RawDel(fam)
+                table.remove(fams, i)
+            end
+        else
+            table.remove(fams, i)
+        end
+    end
+end
+
+local function card_del(owner)
+    if owner.c461_fams then
+        for i = 1, #owner.c461_fams do
+            if IsValid(owner.c461_fams[i]) then object.RawDel(owner.c461_fams[i]) end
+        end
+    end
+    owner.c461_fams = nil
+    owner.c461_gun = nil
+    owner.c461_sub = nil
+    owner.c461_t = nil
+    owner.c461_move = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[461] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
 local function placeholder_frame() end
 local function placeholder_del() end
 
@@ -36211,6 +40056,33 @@ local LIST = {
     ---★ CARD 键统一用 id（453..460，写在第 8 项）—— Stage 5 的 51 / 53 / 56 / 63 / 75 虽然
     ---  没撞号，但 62 / 66 / 78 跟 Stage 3 / Stage EX 的卡撞了，为统一起见全部走第 8 项。
     { 51, "", 453, 40, 4, 15800, "非符一", 453 },
+    { 62, "幻波「赤眼催眠(マインドブローイング)」", 454, 50, 4, 2200,
+                                    "幻波「赤眼催眠(マインドブローイング)」", 454 },
+    { 53, "", 455, 50, 4, 15800, "非符二", 455 },
+    { 66, "狂視「狂視調律(イリュージョンシーカー)」", 456, 77, 4, 2200,
+                                    "狂視「狂視調律(イリュージョンシーカー)」", 456 },
+    { 56, "", 457, 60, 4, 13800, "非符三", 457 },
+    { 63, "懶惰「生神停止(マインドストッパー)」", 458, 50, 4, 6200,
+                                    "懶惰「生神停止(マインドストッパー)」", 458 },
+    { 75, "散符「真実の月(インビジブルフルムーン)」", 459, 50, 4, 1700,
+                                    "散符「真実の月(インビジブルフルムーン)」", 459 },
+    { 78, "月眼「月兎遠隔催眠術(テレメスメリズム)」", 460, 44, 4, 1700,
+                                    "月眼「月兎遠隔催眠術(テレメスメリズム)」", 460 },
+    ---------------------------------------------------------------
+    ---Stage 2（米斯蒂娅·萝蕾拉 · 组 2 · 只做 Lunatic 那一号）。数据源 ecldata2.ecl。
+    ---原作的阶段链（Lunatic，宿主 Sub17 挂槽 1 → 逐张 `ins_133` 削血 / `ins_130` 死亡 /
+    ---`ins_134` 超时回调）：
+    ---  17 非符一 → 23 声符「木菟咆哮」→ 27 非符二 → 29 猛毒「毒蛾の暗闇演舞」
+    ---  → 38 非符三 → 44 鷹符「イルスタードダイブ」→ 51 非符四 → 52 夜盲「夜雀の歌」
+    ---  → 58 夜雀「真夜中のコーラスマスター」。
+    ---★ 血量口径同前（`ins_133` 是**绝对 life 阈值**、超时取最大阈值，见文件头那段总注）：
+    ---    一非 = SET_LIFE(12000) − ins_133(0, 1500, "Sub23")              = 10500
+    ---    23   = 上一卡阈值 1500（Sub23 自己没有 ins_131 / ins_133）       =  1500
+    ---    二非 = SET_LIFE(18200) − ins_133(0, 1950, "Sub33") 的 1950       = 16250
+    ---    ...
+    ---★ 秒数 = `ins_134(threshold, cb)` / 60。
+    ---★ CARD 键统一用 id（461..469，写在第 8 项）—— Stage 2 的子程序号跟前面各关大量撞车。
+    { 17, "", 461, 33, 2, 10500, "非符一", 461 },
 }
 
 ---每张卡共用的 before：不打超时音、关掉 BOSS 的判定与血量条渲染。
