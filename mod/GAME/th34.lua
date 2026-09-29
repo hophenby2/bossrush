@@ -5630,8 +5630,11 @@ local function TH34_add_stage78_boss()
     ---gap 帧打一组弹。life/threshold 直接用原作数值，血量按 hpB(life−thr) 折算。
     ---  · opt.t0  周期回调与漂移的起始帧（默认 60）
     ---  · opt.ease MOVE_DIR_TIME 的缓动（默认 4；sub72 起都是 0）
-    ---  · opt.stop_t 周期回调停在第几帧（sub83 是 280）
-    ---  · opt.extra(self) 额外的发弹任务（sub83 的 300 帧慢周期）
+    ---  · opt.drift_t 两次随机漂移的间隔（默认 120；sub83/sub81 的循环长 150 帧）
+    ---  · opt.burst { 每组发数 n, 组后静默帧 pause }：周期回调不再是「一路每 gap 帧一发」，
+    ---    而是「gap 帧后首发 → 连打 n 发（间隔 gap）→ 静默 pause 帧」循环。
+    ---    原作 sub83/sub81 每轮 t=160 起打到 t=280（12 发），t=280 把周期改成 300，
+    ---    t=310 又 JUMP 回 t=160 把周期重置成 10 —— 净效果就是 12 发 + 40 帧空档。
     ---  · fire 传函数就直接用；传 { make = f } 则每次开局调 f() 造一个带累加器的新函数
     ---    （sub78/80/82 的基准角是跨回调累加的，不能每次重掷）。
     local function nonspell(menu, id, life, thr, gap, fire, opt)
@@ -5649,20 +5652,25 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(t0)
                 task.New(self, function()
-                    local t = t0
-                    while true do
-                        if opt.stop_t and t >= opt.stop_t then break end
+                    if opt.burst then
+                        local n, pause = opt.burst[1], opt.burst[2]
                         task.Wait(gap)
-                        t = t + gap
-                        f(self)
+                        while true do
+                            for _ = 1, n do f(self); task.Wait(gap) end
+                            task.Wait(pause)
+                        end
+                    else
+                        while true do
+                            task.Wait(gap)
+                            f(self)
+                        end
                     end
                 end)
                 while true do
                     exdrift(self, 1, ease)
-                    task.Wait(120)
+                    task.Wait(opt.drift_t or 120)
                 end
             end)
-            if opt.extra then task.New(self, function() opt.extra(self) end) end
         end
         card.frame = bframe
         card.del = function() end
@@ -5772,13 +5780,12 @@ local function TH34_add_stage78_boss()
             lf1 = lf1 + 0.1309
         end
     end }, NP2)
+    ---原作 sub83 的周期回调：t=160 起每 10 帧一发打到 t=280（12 发），t=280 把周期改成 300、
+    ---t=310 又 JUMP 回 t=160 把周期重置成 10 —— 净效果就是「12 发（间隔 10 帧）+ 40 帧空档」
+    ---的 150 帧循环，随机漂移也在每个循环开头重掷一次（所以 drift_t=150）。
     nonspell("紫 非符 8", 3425, 20000, 2000, 10, f84, {
-        t0 = 160, ease = 0, stop_t = 280, box = { -128, 128, 96, 176 },
-        ---原作 t=280 把周期改成 300：机枪停、t=580 起改成每 300 帧一发 24×2 大环。
-        extra = function(self)
-            task.Wait(580)
-            while true do f84(self); task.Wait(300) end
-        end })
+        t0 = 160, ease = 0, drift_t = 150, burst = { 12, 30 },
+        box = { -128, 128, 96, 176 } })
 
     ---════════════════════════════════════════════════════════════════════════
     --- 符卡：原作 PH 面 13 张（sub 129→60，逆序实现）
@@ -6046,21 +6053,25 @@ local function TH34_add_stage78_boss()
             end
         end
         ---每一波 = { 距上一波的帧数, { 子机参数... } }，整轮 4390 帧（原作 t=4660 跳回 t=270）。
+        ---sub130..133 的循环体：l2i1 < fast 时先打一发「快弹」（#26/#27）再 JUMP 到 #31；
+        ---否则从 #29 走（先做计数回绕）——两条路都会落到 #31 之后，所以**慢弹每轮都打**，
+        ---快弹只看计数器。fast = 计数器上限（nil = 每轮都打快弹），
+        ---gate = 计数器回绕值（原作 #29 的 JUMP_IF_LEQ 阈值 +1；nil = 不回绕，sub134 无此支）。
         local WAVES = {
-            { 0, { { ang0 = PI, w = -0.0261799, rmax = 224, c = 4, f3 =  1.5708, f4 =  0.00261799, step = 4, n = 130, fast = 6, gate = 7, c1 = 3, v1 = 2.5 },
-                   { ang0 =  0, w = -0.0261799, rmax = 224, c = 6, f3 =  1.5708, f4 =  0.00261799, step = 4, n = 130, fast = 6, gate = 7, c1 = 3, v1 = 2.5 } } },
-            { 800, { { ang0 = PI, w =  0.0174533, rmax = 192, c = 4, f3 = -1.0472, f4 = -0.00785398, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w =  0.0174533, rmax = 192, c = 6, f3 = -1.0472, f4 = -0.00785398, step = 3, n = 173, c1 = 2, v1 = 2 } } },
-            { 800, { { ang0 = PI, w =  0.0174533, rmax = 224, c = 4, f3 = -1.5708, f4 = -0.00261799, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w =  0.0174533, rmax = 224, c = 6, f3 = -1.5708, f4 = -0.00261799, step = 3, n = 173, c1 = 2, v1 = 2 } } },
-            {  20, { { ang0 = PI, w = -0.0261799, rmax = 192, c = 4, f3 =  1.5708, f4 =  0.00261799, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w = -0.0261799, rmax = 192, c = 6, f3 =  1.5708, f4 =  0.00261799, step = 3, n = 173, c1 = 2, v1 = 2 } } },
-            { 830, { { ang0 = PI, w = -0.0174533, rmax = 224, c = 4, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w = -0.0174533, rmax = 224, c = 6, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, c1 = 2, v1 = 2 } } },
-            {  20, { { ang0 = PI, w =  0.0314159, rmax = 208, c = 4, f3 = -0.785398, f4 = -0.010472, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w =  0.0314159, rmax = 208, c = 6, f3 = -0.785398, f4 = -0.010472, step = 3, n = 173, c1 = 2, v1 = 2 } } },
-            {  20, { { ang0 = PI, w = -0.0261799, rmax = 192, c = 4, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, c1 = 2, v1 = 2 },
-                     { ang0 =  0, w = -0.0261799, rmax = 192, c = 6, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, c1 = 2, v1 = 2 } } },
+            { 0, { { ang0 = PI, w = -0.0261799, rmax = 224, c = 4, f3 =  1.5708, f4 =  0.00261799, step = 4, n = 130, fast = 6, gate = 8, c1 = 3, v1 = 2.5 },
+                   { ang0 =  0, w = -0.0261799, rmax = 224, c = 6, f3 =  1.5708, f4 =  0.00261799, step = 4, n = 130, fast = 6, gate = 8, c1 = 3, v1 = 2.5 } } },
+            { 800, { { ang0 = PI, w =  0.0174533, rmax = 192, c = 4, f3 = -1.0472, f4 = -0.00785398, step = 3, n = 173, fast = 15, gate = 21, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w =  0.0174533, rmax = 192, c = 6, f3 = -1.0472, f4 = -0.00785398, step = 3, n = 173, fast = 15, gate = 21, c1 = 2, v1 = 2 } } },
+            { 800, { { ang0 = PI, w =  0.0174533, rmax = 224, c = 4, f3 = -1.5708, f4 = -0.00261799, step = 3, n = 173, fast = 3, gate = 8, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w =  0.0174533, rmax = 224, c = 6, f3 = -1.5708, f4 = -0.00261799, step = 3, n = 173, fast = 3, gate = 8, c1 = 2, v1 = 2 } } },
+            {  20, { { ang0 = PI, w = -0.0261799, rmax = 192, c = 4, f3 =  1.5708, f4 =  0.00261799, step = 3, n = 173, fast = 3, gate = 8, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w = -0.0261799, rmax = 192, c = 6, f3 =  1.5708, f4 =  0.00261799, step = 3, n = 173, fast = 3, gate = 8, c1 = 2, v1 = 2 } } },
+            { 830, { { ang0 = PI, w = -0.0174533, rmax = 224, c = 4, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w = -0.0174533, rmax = 224, c = 6, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 } } },
+            {  20, { { ang0 = PI, w =  0.0314159, rmax = 208, c = 4, f3 = -0.785398, f4 = -0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w =  0.0314159, rmax = 208, c = 6, f3 = -0.785398, f4 = -0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 } } },
+            {  20, { { ang0 = PI, w = -0.0261799, rmax = 192, c = 4, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 },
+                     { ang0 =  0, w = -0.0261799, rmax = 192, c = 6, f3 =  0.785398, f4 =  0.010472, step = 3, n = 173, fast = 3, gate = 10, c1 = 2, v1 = 2 } } },
             { 890, { { ang0 = PI, w =  0.0314159, rmax = 224, c = 4, f3 = -1.5708, f4 = -0.00448799, step = 2, n = 260, c1 = 2, v1 = 2, c2 = 2, v2 = 1 },
                      { ang0 =  0, w =  0.0314159, rmax = 224, c = 6, f3 = -1.5708, f4 = -0.00448799, step = 2, n = 260, c1 = 2, v1 = 2, c2 = 2, v2 = 1 } } },
         }
@@ -6086,11 +6097,14 @@ local function TH34_add_stage78_boss()
     end
 
     ---────────── sc139 结界「生与死的境界」（原作 sub 127 + 周期 128，120s） ──────────
-    ---每 10 帧一轮：第 1 层无条件、第 2..6 层随血量下降逐层解锁（原作门槛是 TH07 血量的
+    ---周期回调在 t=210 挂上、10 帧后才第一次触发（t=220），此后每 10 帧一轮：
+    ---第 1 层无条件、第 2..6 层随血量下降逐层解锁（原作门槛是 TH07 血量的
     ---7000/6000/4000/3000/1500，换算见 hpS）；血量 < 800 再补一发 8 发瞄准扇。
-    ---整场到第 5700 帧（t=5910）之后换成「全解锁加强版」：第 2..6 层的速度提高、
-    ---末发瞄准扇改成 9 发。每层的基准角只在它真正开火的那一轮才自转。
-    ---本体在 {−64..64, 96..160} 的小框里每 300 帧随机漂一次（原作 t=810 的 300 帧循环）。
+    ---回调每次把 li1 加 10，li1 >= 5700（＝第 571 次回调，t=5920）之后换成「全解锁
+    ---加强版」：第 1 层照旧、第 2..6 层速度提高、末发瞄准扇改成 9 发（原作 #0 在
+    ---难度分支之前，所以加强版**也**打第 1 层）。每层的基准角只在它真正开火的那一轮才自转。
+    ---本体在 {−64..64, 96..160} 的小框里每 300 帧随机漂一次（原作 t=810 的 300 帧循环）；
+    ---那次 RAND_EXIT_ANGLE 写的就是 lf0，也就是第 1 层的基准角，所以每 300 帧会被重掷。
     do
         local NAME = "结界「生与死的境界」"
         ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}。at 用 hpS 折算。
@@ -6114,11 +6128,16 @@ local function TH34_add_stage78_boss()
             self._box = { -64, 64, 96, 160 }
             local acc = { rngrad(), rngrad(), rngrad(), rngrad(), rngrad(), rngrad() }
             task.New(self, function()
-                task.Wait(210)
-                ---原作 sub128 每 10 帧回调一次：li1 每次 +10，>= 5700（= t 5910）就换成
-                ---「全解锁加强版」；否则按剩余 life 逐层解锁，血量 < 800 才补那发瞄准扇。
+                task.Wait(220)                    -- 原作 #36 在 t=210 挂回调、10 帧后才首发
+                ---原作 sub128 每 10 帧回调一次：li1 每次 +10，>= 5700（第 571 次、t=5920）
+                ---就换成「全解锁加强版」；否则按剩余 life 逐层解锁，血量 < 800 才补那发瞄准扇。
                 local t = 0
                 while true do
+                    ---第 1 层（原作 sub128 #0）：在难度/血量分支之前，两段都打。
+                    local L1 = LAYER[1]
+                    gspread(self, bs(L1.spr), L1.off, L1.c1, L1.c2, L1.v1, L1.v2,
+                            acc[1] * RAD2DEG, L1.a2 * RAD2DEG, true)
+                    acc[1] = acc[1] + L1.d
                     if t >= 5700 then
                         for k, R in ipairs(RAGE) do
                             gspread(self, bs(R.spr), R.off, R.c1, R.c2, R.v1, R.v2,
@@ -6128,7 +6147,8 @@ local function TH34_add_stage78_boss()
                         shoot(self, 64, 8, 4, 9, 1, 5, 2, 0,
                               0.19635 + ran:Float(0, 0.392699), true)
                     else
-                        for k, L in ipairs(LAYER) do
+                        for k = 2, #LAYER do
+                            local L = LAYER[k]
                             if self.hp <= L.at then
                                 gspread(self, bs(L.spr), L.off, L.c1, L.c2, L.v1, L.v2,
                                         acc[k] * RAD2DEG, L.a2 * RAD2DEG, true)
@@ -6147,7 +6167,11 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(810)
                 while true do
-                    exdrift(self, 1, 0)
+                    ---原作 sub127 #38/#39：RAND_EXIT_ANGLE lf0 + MOVE_DIR_TIME(60,0,lf0,1)。
+                    ---lf0 同时是第 1 层的基准角，所以这里要把重掷结果写回 acc[1]。
+                    local a = exang(self)
+                    acc[1] = a / RAD2DEG
+                    bmove(self, 60, 0, self.x + cos(a) * 60, self.y + sin(a) * 60)
                     task.Wait(300)
                 end
             end)
@@ -7125,9 +7149,11 @@ local function TH34_add_stage78_boss()
     end
 
     ---────────── sc127 幻神「飯綱権現降臨」（原作 sub 123 + 周期 124，120s） ──────────
-    ---与 PH「生与死的境界」同一套 10 帧周期回调，区别：血量门槛 7000/5500/3000/2000/1000、
-    ---且**没有**最后那发瞄准扇；到第 5700 帧之后同样换成 5 层加强版（也不带瞄准扇）。
-    ---本体在 {−64..64, 96..160} 的小框里每 300 帧随机漂一次（原作 t=810 的 300 帧循环）。
+    ---与 PH「生与死的境界」同一套 10 帧周期回调（t=210 挂上、t=220 首发），区别：血量门槛
+    ---7000/5500/3000/2000/1000、且**没有**最后那发瞄准扇；到第 571 次回调（t=5920）之后
+    ---换成 5 层加强版（第 1 层照旧，也不带瞄准扇）。
+    ---本体在 {−64..64, 96..160} 的小框里每 300 帧随机漂一次（原作 t=810 的 300 帧循环）；
+    ---那次 RAND_EXIT_ANGLE 写的就是 lf0，也就是第 1 层的基准角。
     do
         local NAME = "幻神「饭纲权现降临」"
         ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}；at 用 hpS 折算。
@@ -7152,9 +7178,14 @@ local function TH34_add_stage78_boss()
             bmove(self, 120, 4, 0, 96)                -- 原作 #13 MOVE_POS_TIME(120,4,192,128)
             local acc = { rngrad(), rngrad(), rngrad(), rngrad(), rngrad(), rngrad() }
             task.New(self, function()
-                task.Wait(210)
+                task.Wait(220)                    -- 原作 #36 在 t=210 挂回调、10 帧后才首发
                 local t = 0
                 while true do
+                    ---第 1 层（原作 sub124 #0）：在难度/血量分支之前，两段都打。
+                    local L1 = LAYER[1]
+                    gspread(self, bs(L1.spr), L1.off, L1.c1, L1.c2, L1.v1, L1.v2,
+                            acc[1] * RAD2DEG, L1.a2 * RAD2DEG, true)
+                    acc[1] = acc[1] + L1.d
                     if t >= 5700 then
                         for k, R in ipairs(RAGE) do
                             gspread(self, bs(R.spr), R.off, R.c1, R.c2, R.v1, R.v2,
@@ -7162,7 +7193,8 @@ local function TH34_add_stage78_boss()
                             acc[k + 1] = acc[k + 1] + R.d
                         end
                     else
-                        for k, L in ipairs(LAYER) do
+                        for k = 2, #LAYER do
+                            local L = LAYER[k]
                             if self.hp <= L.at then
                                 gspread(self, bs(L.spr), L.off, L.c1, L.c2, L.v1, L.v2,
                                         acc[k] * RAD2DEG, L.a2 * RAD2DEG, true)
@@ -7177,7 +7209,11 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(810)
                 while true do
-                    exdrift(self, 1, 0)
+                    ---原作 sub123 #39/#40：RAND_EXIT_ANGLE lf0 + MOVE_DIR_TIME(60,0,lf0,1)。
+                    ---lf0 同时是第 1 层的基准角，所以这里要把重掷结果写回 acc[1]。
+                    local a = exang(self)
+                    acc[1] = a / RAD2DEG
+                    bmove(self, 60, 0, self.x + cos(a) * 60, self.y + sin(a) * 60)
                     task.Wait(300)
                 end
             end)
@@ -8018,13 +8054,11 @@ local function TH34_add_stage78_boss()
             lf1 = lf1 + 0.1309
         end
     end }, NE)
+    ---原作 sub81 与 PH sub83 同构（同样 12 发 + 40 帧空档的 150 帧循环；只有最后一发的
+    ---环数不同：sub82 是 24 发）。e82 即 sub82。
     nonspell("EX 非符 8", 3487, 20000, 3000, 10, e82, {
-        t0 = 160, ease = 0, stop_t = 280, box = { -128, 128, 96, 176 },
-        ---原作 t=280 把周期改成 300：机枪停、t=580 起每 300 帧一发 24×2 大环。
-        extra = function(self)
-            task.Wait(580)
-            while true do e82(self); task.Wait(300) end
-        end })
+        t0 = 160, ease = 0, drift_t = 150, burst = { 12, 30 },
+        box = { -128, 128, 96, 176 } })
 
     ---────────── EX 中 boss 的非符（原作 sub 55，life 13500 / 阈值 2000） ──────────
     ---与 PH 中 boss 同构：18 组 7 发 ×2 层瞄准扇（速度 4+0.214i）+ 16 组 8 发 ×3 层
@@ -8039,17 +8073,20 @@ local function TH34_add_stage78_boss()
             self._box = { -160, 160, 96, 176 }
             ---原作 sub56：18 组 7 发×2 层瞄准扇，每 2 帧一组（共 36 帧）——SUB_CALL 同步，
             ---母体在打完这 36 帧后才走 MOVE_DIR_TIME（所以这里直接 task.Wait，不并发）。
+            ---扇心就是自机角（原作 SPREAD_AIMED，a1=0），所以 gspread 的 a1 传 +Angle；
+            ---单条 SPREAD 关于扇心对称，a2 的正负只影响镜像、不影响弹幕集合，照原作取正。
             local function burst()
                 for i = 0, 17 do
                     gspread(self, bs(6), 6, 7, 2, 4 + 0.214286 * i, 3.8,
-                            -Angle(self, player), (1.0472 - 0.0539793 * i) * RAD2DEG, true)
+                            Angle(self, player), (1.0472 - 0.0539793 * i) * RAD2DEG, true)
                     task.Wait(2)
                 end
             end
-            ---原作 sub57：16 组 8 发×3 层整圈，每 3 帧一组（共 48 帧），同样同步。
+            ---原作 sub57：16 组 8 发×3 层整圈 RING_ABS，每 3 帧一组（共 48 帧），同样同步。
+            ---RING_ABS 的 a1 是 TH07 口径的 lf1（= i·gF0），翻到我们的角度制要取反。
             local function spiral(g)
                 for i = 0, 15 do
-                    gring(self, bs(2), 2, 8, 3, 2 + 0.1875 * i, 0.5, g * i * RAD2DEG, 0, true)
+                    gring(self, bs(2), 2, 8, 3, 2 + 0.1875 * i, 0.5, -g * i * RAD2DEG, 0, true)
                     task.Wait(3)
                 end
             end

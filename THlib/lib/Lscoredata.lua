@@ -106,12 +106,48 @@ function SaveScoreData()
     score_data_file:close()
 end
 
+---把符卡历史表补齐成「稠密数组」再交给 Serialize。
+---引擎的 Serialize 是 cjson：一张表如果所有键都是 >=1 的整数，就按 JSON 数组编码，
+---而 lua-cjson 的 lua_array_length() 有一条「稀疏数组」防御 ——
+---    max(最大整数键) > 元素个数 × 2  且  max > 10   ⇒  直接报错
+---    「Cannot serialise table: excessively sparse array」
+---本作的符卡 id 是刻意不连续的（th33 用到 501，th34 用自己独立的一段 3400..3488，
+---中间 2898 个号空着），所以最大键 3488 远大于「注册过的卡数 ≤ 502 的两倍」，
+---每次切关时的 SaveSpellCardData 都会在这里炸掉 —— 游戏因此一关都进不去。
+---这里只在 cjson 会拒绝的时候把 1..max 之间的空洞补成 false（编成稠密数组；
+---补出来的 false 下次载入后仍是 false，读卡表的地方本来就是先判空再取 ——
+---真正有卡片的 id 一定有表）。cjson 能接受时原样返回，不动文件格式。
+function EncodeSpellCardData()
+    local data = spell_card_data
+    local max, count, allnum = 0, 0, true
+    for k in pairs(data) do
+        if type(k) == "number" and k >= 1 and k % 1 == 0 then
+            if k > max then max = k end
+            count = count + 1
+        else
+            allnum = false
+        end
+    end
+    if not allnum or max <= 10 or max <= count * 2 then
+        return data
+    end
+    local out = {}
+    for i = 1, max do
+        local v = data[i]
+        if v == nil then
+            v = false
+        end
+        out[i] = v
+    end
+    return out
+end
+
 function SaveSpellCardData()
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
     local spell_card_data_file = io.open("User\\Spellcard.dat", "wb")
-    spell_card_data_file:write(sp:LockString(Serialize(spell_card_data)))
+    spell_card_data_file:write(sp:LockString(Serialize(EncodeSpellCardData())))
     spell_card_data_file:close()
 end
 
