@@ -207,6 +207,123 @@
 ---      ⇒ MathLerp（不是上面那张卡的 Hermite）⇒ 半角 = 11.25° × (1 − min(t,100)/100)。
 ---  30  sub 16 的 ②③④ 是 Easy/Normal/Hard 行，Lunatic 只跑 ①⑤⑥⑦ 四条
 ---      ⇒ 死亡弹是 6+10+6+6 = 28 发。
+---==================== 第 3 面道中（第三张「道中搬运卡」，2026-09-29 增补） ====================
+---把原作 `data/ecldata3.ecl` **时间轴 0** 的 t=450..3023 那一段道中（265 只）
+---复刻成同一关上的第三张符卡（id 462「三道中『青之骚灵』」，130 秒）。
+---挂法、坐标换算（我们的 x = th07 的 x − 192、y = 224 − th07 的 y、角度取反）、
+---逐帧跑时间轴的骨架、「弹池 1024、池满整波不生」的丢弹规则都照抄上面两张卡。
+---
+---数据和读法（逐字节读字节码，没有用 decl）：
+---  · 时间轴 0 = 265 条普通 spawn（op 0/2）：args[0..2] 出生点、args[3] life、
+---    args[4] itemdrop、args[5] score、args[7] 是 op2 才置的 mirror 位。
+---  · 子程序：3/4/5/6 = 小妖精（SET_ANM 0/5）、7/8/9/11/12 = 大幽灵（SET_ANM 31）、
+---    10 是 sub 9 内部的 SUB_CALL。反汇编脚本 /tmp/eclwork。
+---
+---这一段道中在干什么（自然语言版）
+---  t=450 起，画面上方（我们的 y=240）成对冒出**小妖精**，一只在左、一只在右
+---  （mirror 把速度的 x 分量取反），一路往下或斜着飘：
+---    · sub 3 垂直下坠（θ=π/2 ⇒ 我们 −90°，匀速 2）；
+---    · sub 4/5 斜落，θ 每只随机 ∈ [0.0982, 1.62) 弧度，匀速 1.5；
+---    · sub 6 先沿随机 θ 做 60 帧 ease-out-quad 直线冲出 180 px（3 px/帧），
+---      t=60 掉头朝正上方（我们 +90°）匀速 2 继续飞。
+---  每只小妖精带一个**固定齐射**（4~10 发的 SPREAD/RING/RANDOM，见 W3_VOLLEY），
+---  出生当帧就打第一轮；之后按 `SET_SHOOT_INTERVAL_RAND`（sub3=200、sub4=40、
+---  sub5=100 帧）**首轮延迟 1..n 帧随机、之后每 n 帧重打同一轮**，到 t=150 停火。
+---  sub3/4/5 在 t=2150 自毁、sub6 在 t=2060。小怪成对地来、节奏越来越密，
+---  t=2409 起还夹着大幽灵（sub 3/5 的齐射也跟着换行）。
+---
+---  **大幽灵**（sub 7/8/9/11/12）从左右屏幕外（我们的 x=±208）出生，先用 120 帧
+---  Hermite（MathCubicInterp、ease-out-quad）横穿到对侧 x=∓64、同时降到 y=96；
+---  t=240（sub 11 是 270）改 POLAR、朝 ±180° 匀速 2 平飞出屏，t=4240
+---  （sub 11 是 4270）自毁。t=120 各自打一轮固定弹幕：
+---    · sub 7 四连扇（ball_small 5×2 / 4×2 / 2×2，外加 1 发 ball_big）；
+---    · sub 8 一圈 24×4 的同心环；
+---    · sub 9 → SUB_CALL 10：1×10 的「瞄自机 10 层环」，4 次调用（相隔 20 帧）
+---      把 $10004 在 ±π/128 之间来回翻；
+---    · sub 11 t=120 一轮无声慢环（0x200）、t=150 一轮 32×2；
+---    · sub 12 t=120/180/240 三连 RANDOM（角 = 自机角 + rand(−c,+c)、速 = rand[v2,v1)）。
+---
+---与原作的不同（接着上面第 4 面卡的编号继续排）
+---  31  血量按**这一关的伤害系数**重算。原作非 boss 的伤害折扣只给第 4/5/6 面
+---      （EnemyManager.cpp:820-845），第 3 面**没有**减伤 ⇒ 同样 life 的杂鱼要比
+---      第 4/5 面多折一半血：life × 0.09825（= hp5 的 0.1965 × 0.5），保底 1 点，
+---      见 `hp3`。⇒ 30→3、50→5、80→8、150→15。
+---  其余（不做 rank、色档/弹型代理、弹池 1024、道具折叠、贴图代理、不清理）都沿用
+---  上面的差异 3/18/19/20/23/25。
+---==================== 第 5 面道中（第四张「道中搬运卡」，2026-09-29 增补） ====================
+---把原作 `data/ecldata5.ecl` **时间轴 0（偏移 0xAEA8）** 里 t=500..5713 的 94 条
+---spawn 复刻成同一关上的第四张符卡（id 463「五道中『幽明之径』」，120 秒）。
+---
+---数据和读法（逐字节读字节码，没有用 decl；解释器 /tmp/eclwork）：
+---  · 时间轴 0 = 94 条普通 spawn，字段与第 3 面那张卡相同。
+---  · 绝大多数 spawn 放出的是**载体**（sub 10/12/14/16/18/20 与 25/27/29/31/33/35）：
+---    载体先演 80 帧烟尘（sub 9），第 80 帧在原地 `SPAWN_ENEMY_REL` 生出真正
+---    的幽灵（sub 11/13/…/36）后自毁；**本体子程序号 = 载体号 + 1**。
+---  · 时间轴另有直接放的 sub 22/23/24（没有载体、也不带烟尘），照做。
+---  · **跳过**：t=4820 的 sub 37 与 t=6114 的 sub 47 —— 那是道中 BOSS 占位
+---    （SET_BOSS 0、分数 200000、life 1、SET_CAN_BE_DAMAGED 0），不属于道中。
+---
+---这一段道中在干什么（自然语言版）
+---  t=500 起，左右两侧（我们的 x=∓128/∓96/∓64…、y=128..240）不断冒出幽灵。
+---  每只登场前先当 **80 帧烟尘**：贴图是黄焰（style 30），从出生点**下方 147 px、
+---  偏左 3 px** 沿一条 Hermite 曲线飘到出生点（X 的两条切线各 ±144 随机、Y 的
+---  m0=−1、m1=±32），最后 16 帧淡出。第 80 帧原地变成**本体**：换红焰（style 27）、
+---  开判定、起各自的无敌计时，然后开始打弹（本体脚本的 t 从这一帧数起）。
+---
+---  三种本体的行为：
+---    · 平移族（sub 11..21）：出生即沿 θ 匀加速（accel 0.02）平移 ——
+---      11/15/19 往 +x、13/17/21 往 −x；无敌 11/13=10、15/17=0、19/21=30。
+---      发弹：11/13 打「22 轮环，每轮 11 发、每 10 帧把 $10004 转 ∓π/64」；
+---      15/17/19/21 打「n 轮 5 发扇（每 4 帧一轮、速度每轮 +dv、首轮 0.8）」——
+---      15/17 是 16 轮 dv=0.475、19/21 是 12 轮 dv=0.375。
+---    · 俯冲族（时间轴直放的 22/23/24）：前 60 帧 ease-out-quad 俯冲 120 px，
+---      t=120 改 POLAR（22 走镜像后的水平方向、23/24 继续下潜）；无敌 22=30、
+---      23=40、24=30。t=60 打弹：
+---      · 22：三连扇，②③各挂 ±0.25°/帧、60 帧的自旋；
+---      · 23/24：六连扇（前三条 spr6/off2 张角 π/8、后三条 spr6/off14 张角 π/4），
+---        ②⑤与③⑥各挂反向自旋。
+---    · 偏移族（26/28/30/32/34/36）：先打完弹、到 t=4/61/122 才朝正上方（+90°）
+---      匀加速飞走；无敌 26/28=20、32/34=4、30/36=10。
+---      · 26/28：32 轮、每 4 帧一轮，$10004 从 π/2 起每轮 ∓π/16，偏移半径 32、aimed；
+---      · 30：16 轮 × 2 发（t=0 用 $10004 往减、t=2 用 $10009 往加），偏移半径 32；
+---      · 32/34：32 轮、每 1 帧一轮，一个方向 4 发（a1 = |$10004|），偏移半径 32；
+---      · 36：16 轮 × 2 发（偏移半径 64），两条 a1 都取 $10004。
+---  最后一只（载体 35）在 t=5713 出生、本体 t=5793 起用 122 帧飞走。
+---
+---与原作的不同（接着上面第 3 面卡的编号继续排）
+---  32  血量按**这一关的伤害系数**重算。原作第 5/6 面非 boss 的伤害是 ÷2
+---      （EnemyManager.cpp:820-845），按灵梦 DPS 比 106.4 / 541.5 折 life × 0.1965，
+---      保底 1 点 ⇒ 80→16、110→22、160→31、200→39，见 `hp5`。第 3 面的 hp3、
+---      第 4 面的 hp4 都从这同一个 0.1965 再乘各自系数。
+---  33  INIT_BULLET_CMD 的**命令门控**。原作 enemy 的 `bulletProps.commands[]` **只在
+---      出生时重置一次**（EnemyManager.cpp:401，另一次在 callbacks 前 :1033），所以
+---      INIT_BULLET_CMD 写进 commands[0] 的东西会**一直留着**，后续每一轮齐射都带
+---      这条命令；而 `RunCommands` 只在 `(moreFlags & cmd->type) == 0` 时跳过它
+---      （enemy 每帧的 flags 会被重置，`Bullet::AddCommand` 只改 moreFlags）。
+---      ⇒ sub 11/13 的 22 轮、26/28/30 的每一轮**都**带 Burst（flags 0x202/0x203/0x222
+---      含 bit 1）；sub 32/34/36 的 flags 是 0x205（**不含** bit 1）⇒ Burst 当场被
+---      跳过，所以那一族干脆不挂命令。Burst 本身：前 17 帧速度 = 5 − timer·5/16 +
+---      自身速度、沿自身朝向，之后回落到自身速度并清位（BulletManager.cpp:724-741），
+---      移植版用 `TH34_cmdbullet` 的 `{ type = 1 }` 复刻。同理 0x20 TargetAngle
+---      （每帧 angle += cmd.angle、speed += cmd.speed 再重算 velocity，够 60 帧清位，
+---      BulletManager.cpp:759-777）只在 flags 含 bit 5 时生效：sub 22/23/24 里只有带
+---      0x222 的齐射挂得上自旋，0x202/0x205 的挂上也白搭 —— 移植版按这条门控逐条
+---      决定挂不挂命令。
+---  34  载体与小怪**合成一个对象**：原作是两个实体（载体 sub 9 + `SPAWN_ENEMY_REL`），
+---      移植版让一个 `TH34_mid5` 前 80 帧只渲染烟尘、第 80 帧换贴图并开判定；
+---      烟尘的两条 Hermite（原作直接写 POS_X/POS_Y）也在 frame 里逐帧算。
+---      代价是少一次 0x300 死亡特效（同差异 2）。
+---  35  `SET_DEATH_TYPE 1`（SCORE_ONLY）**照样掉道具**：原作从 `goto END_BOSS` 落进
+---      `ENEMY_DEATH_DROP_ITEMS`（EnemyManager.cpp:948-990），会照着时间轴的 itemdrop
+---      调 `SpawnItem`；移植版因此把 itemdrop 折成信仰/点保留（同差异 23：
+---      ECL_SPAWN_ITEMS 首颗大能量、其余小能量，SPAWN_POINT_ITEMS 撒点道具，
+---      都是 pos + rand[0,128)−64 的散射）。死亡回调 sub 6=无、7=4 信仰+3 点、
+---      8=4 信仰+1 点，也照做。
+---  36  跳过 midboss 占位：原作时间轴 t=4820 的 sub 37 与 t=6114 的 sub 47 是
+---      道中 BOSS（SET_BOSS、SET_CAN_BE_DAMAGED 0），本卡不收。
+---  其余（不做 rank、色档/弹型代理、弹池 1024、贴图代理、不清理、SET_VM_AUTO_ROTATE
+---  空操作、DEATH_ANM 0x300 无对应资源所以用本类死亡特效、拖影代理）都用上面的
+---  差异 1/3/9/18/19/20/24/25。
 ---======================================================================================
 --------------------------------------------------------------
 
@@ -718,12 +835,18 @@ local function clear4_radius(x, y, r)
     end
 end
 
----INIT_BULLET_CMD 的两条运动（TH07 `BulletManager.cpp:410-421 / 739-756 / 845-875`）：
+---INIT_BULLET_CMD 的运动（TH07 `BulletManager.cpp:410-421 / 721-775 / 845-875`）：
 ---  0x10 TargetVelocity：出生时把（朝向, 速度）冻结成一个向量，之后每帧 velocity += 该向量，
 ---       并把朝向重新对齐到速度方向（速度过零后会自己反过来）。
+---  0x20 TargetAngle：每帧把朝向转过 cmd.angle、速度加 cmd.speed，够 dur 帧清位
+---       （第 5 面 sub 22/23/24 的两翼扇就靠它反向自旋）。
+---  1    Burst：出生后 17 帧内速度 = 5 − timer*5/16 + 自身速度（沿自身朝向），之后清位
+---       （第 5 面 sub 11/13/26/28/30/32/34/36 的「一出生冲出去再收住」）。
 ---  0x80 DirChangeAim：用 dur 帧沿当前朝向把速度线性减到 0，dur 帧后
 ---       朝向 = 自机方向 + cmd.speed、速度 = cmd.angle，重复 loopCount 次。
 ---本仓库没有对应 API，所以逐帧自己算（差异 21）。bound 留默认 true ⇒ 出屏照常回收。
+---（★ 角度/角速度都按「我们」的口径传进来：TH07 的弧度已经转成度、并且取过反，
+---  见第 3 面/第 5 面那两段代码里的 `rad2our`。）
 class["TH34_cmdbullet"] = Class(bullet, {
     ---@param cmd table { type, dur, loop, angle(度), speed, vec_x, vec_y }
     init = function(self, style, col, x, y, v, a, cmd)
@@ -745,6 +868,26 @@ class["TH34_cmdbullet"] = Class(bullet, {
                     ---TH07 的 this->angle 是弧度，而我们的 `rot` 是角度（LuaSTG 的 Render 吃角度）
                     self.rot = math.deg(atan2(self.vy, self.vx))
                 end
+            end
+            self.c_timer = self.c_timer + 1
+        elseif self.c_type == 0x20 then
+            ---TH07 `UpdateBulletTargetAngle`：每帧 angle += cmd.angle、speed += cmd.speed，
+            ---速度重新按（朝向, 速度）算，够 dur 帧就把命令位清掉。
+            if self.c_timer < self.c_dur then
+                self.c_ang = self.c_ang + self.c_angle
+                self.c_spd = self.c_spd + self.c_speed
+                self.rot = self.c_ang
+                self.vx, self.vy = self.c_spd * cos(self.c_ang), self.c_spd * sin(self.c_ang)
+            end
+            self.c_timer = self.c_timer + 1
+        elseif self.c_type == 1 then
+            ---TH07 `UpdateBulletBurstSpeed`：前 17 帧速度 = 5 − timer*5/16 + 自身速度，
+            ---沿**自己的**朝向（不是 cmd.angle）；第 17 帧之后把命令位清掉。
+            if self.c_timer <= 16 then
+                local spd = 5 - self.c_timer * 5 / 16 + self.c_spd
+                self.vx, self.vy = spd * cos(self.rot), spd * sin(self.rot)
+            else
+                self.c_type = 0
             end
             self.c_timer = self.c_timer + 1
         elseif self.c_type == 0x80 then
@@ -1110,10 +1253,13 @@ do
     ---关卡号 32 = core.lua 的 STAGE_COUNT(32) + 1（和上一张卡同一个 boss）。
     local LEVEL = 32
     ---符卡历史槽位（spell_card_data 的键，也是符卡练习的解锁 id），跨关卡唯一。
-    ---实测：全项目 `boss.card.add` 的末参里 1..432 已被占满（432 = th31 的
-    ---「虚史「幻想郷伝説」」那行），所以这张取 433；注册后 `check_stage.lua --all`
+    ---实测：把全项目 `boss.card.add` 的末参**和 th31.lua 的 LIST 表第 3 项**一起数，
+    ---th31 的 LIST 不是连续一段（351..367、370..409、417..425、427..452），
+    ---th33 的 Stage EX 再用掉 453..460 ⇒ 这张取 461；注册后 `check_stage.lua --all`
     ---会复核没有跨组重复。
-    local CARD_ID = 433
+    ---⚠ 只扫 `boss.card.add` 的末参会漏掉 th31 的 LIST（它的 id 写在表里、由变量传进 add）——
+    ---  照那种扫法挑出来的"空号"（本卡原来取的 433 就是）一注册就报「card_id 跨组重复」。
+    local CARD_ID = 461
 
     ---逐条生成表：{ 距上一只的帧数, 子程序号, x, y, itemdrop, life }
     ---（x/y 已按「我们 x = TH07 x − 192 / 我们 y = 224 − TH07 y」换算；293 条全部用
@@ -1235,6 +1381,1159 @@ do
     function card:render() end
     ---★ 这里不需要清理：所有小怪都是**独立对象**（没有 object.Connect 到 boss），
     ---寿命最长的妖精是 t=6622 出生、t=8756 自毁，都在 150 秒（9000 帧）的卡内跑完。
+    function card:del() end
+
+    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+end
+
+---==================== 第 3 面道中：代码 ====================
+---自然语言说明与逐条差异在文件头的「第 3 面道中」单元里。
+---和上面的四/六面卡一样是「道中搬运卡」：空 boss + 一张耐久符卡，按帧把
+---`ecldata3.ecl` 时间轴 0 的 t=450..3023 搬进来（子程序号 3/4/5/6=小怪、7..12=大幽灵）。
+local ball_big = ball_big
+
+---第 3 面非 boss 的血量折算（文件头差异 31）：life × 0.09825，保底 1 点。
+---0.09825 = 0.1965 × 0.5 / 1.0 —— 第 5/6 面非 boss 是 ÷2、第 3 面**没有**减伤
+---（EnemyManager.cpp:820-845 只给 STAGE4 和 STAGE5/6 打折），所以同样 life 的杂鱼
+---在第 3 面要多折一半血，击杀耗时才与原作一致（照 hp4 = 0.1965 × 0.5 / 0.6875 同一套折算）。
+local function hp3(life)
+    return max(1, int(life * 0.09825 + 0.5))
+end
+
+---TH07 的 spriteOffset(1..16) 就是 16 档色号；本仓库 COLOR.* 的编号与它同序
+---（THlib/bullet/bulletStyle.lua:267），所以同号映射即可（差异 20 已说明色档是近似）。
+local COL16 = { COLOR.DEEP_RED, COLOR.RED, COLOR.DEEP_PURPLE, COLOR.PURPLE,
+                COLOR.DEEP_BLUE, COLOR.BLUE, COLOR.ROYAL_BLUE, COLOR.CYAN,
+                COLOR.DEEP_GREEN, COLOR.GREEN, COLOR.CHARTREUSE, COLOR.YELLOW,
+                COLOR.GOLDEN_YELLOW, COLOR.ORANGE, COLOR.DEEP_GRAY, COLOR.GRAY }
+local function col16(off)
+    return COL16[off] or COLOR.BLUE
+end
+
+---一次「波」（照 volley4，但带一个 plays 开关：flags 0x200 才响音效，
+---第 3 面小怪的 flags=0x2 是**无声**的 spawn-fast）。
+local function volley3(self, total, gen, plays)
+    local room = POOL4_SIZE - pool4_used()
+    local i = 1
+    while i <= total and room > 0 do
+        local style, col, v, a = gen(i)
+        pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x, self.y, v, a, false, 0, false)
+        room, i = room - 1, i + 1
+    end
+    if plays then sound4(self) end
+end
+
+---op65 SPREAD（BulletManager.cpp:180-202）：th07 第 i 发的相对角是 ±(…)·a2，
+---整段取反后就是 ∓(…)·a2 —— offset 对 a2 线性，所以调 spread_offsets 时传 −a2 即可。
+local function spread3(count1, a2_deg)
+    return spread_offsets(count1, -a2_deg)
+end
+
+---把一条 SPREAD 打出去（sprite/offset/count/speed/angle 全照 Lunatic 行）。
+---a1/a2 传 th07 的**弧度**，函数里换算成我们的角度制并取反。
+local function w3_spread(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays)
+    local base = (aim and Angle(self, player) or 0) - a1_th * RAD2DEG
+    local offs = spread3(c1, a2_th * RAD2DEG)
+    volley3(self, c1 * c2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / c1), k % c1
+        local v = v1 - (v1 - v2) * layer / c2
+        return style, col16(off), v, base + offs[ring + 1]
+    end, plays)
+end
+
+---RING（op66/op67）：th07 angle = ±(x·2π/c1 + y·a2 + a1)；取反后 x 那一项还是整圈，
+---于是我们的角 = base + x·360/c1 + y·(−a2)，base 里带 (−a1) 或自机角。
+local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays)
+    local base = (aim and Angle(self, player) or 0) - a1_th * RAD2DEG
+    local step = 360 / c1
+    local a2 = -a2_th * RAD2DEG
+    volley3(self, c1 * c2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / c1), k % c1
+        local v = v1 - (v1 - v2) * layer / c2
+        return style, col16(off), v, base + ring * step + layer * a2
+    end, plays)
+end
+
+---RANDOM（op72）：th07 angle = rand[0, a1−a2) + a2、speed = rand[0, v1−v2) + v2。
+---第 3 面 sub 12 把 a1/a2 取成 Aim±c ⇒ 我们的角 = 自机角 + rand(−c, +c)。
+local function w3_random(self, style, off, c1, v1, v2, c_th, plays)
+    local base = Angle(self, player)
+    local lim = c_th * RAD2DEG
+    volley3(self, c1, function()
+        return style, col16(off), ran:Float(v2, v1), base + ran:Float(-lim, lim)
+    end, plays)
+end
+
+---──────────────────── 道中小怪（原作 sub 3/4/5/6） ────────────────────
+---全部从 y=240（画面上方）出生：sub3 垂直下坠、sub4/5 斜落、sub6 先沿 θ
+---ease-out-quad 冲 60 帧再掉头向上。开火只有 t=0（sub6 是 t=60）那一轮是固定的，
+---其余靠 SET_SHOOT_INTERVAL_RAND 每 n 帧重打同一轮，到 t=150 停火、t=2150 自毁。
+local W3_STYLE = 5                        -- SET_ANM 0/5：kedama 蓝色小人当代理
+local W3_STOP = 150                       -- SET_SHOOT_INTERVAL 0
+local W3_LIFE = 2150                      -- sub 3/4/5 的 UNIMP
+local W3_LIFE6 = 2060                     -- sub 6 的 UNIMP
+local W3_RISE_T = 60                      -- sub 6 的 MOVE_DIR_TIME(60,4,…)
+local W3_RISE_D = 180                     -- 3 px/帧 × 60 帧
+
+---RAND_FLOAT_ADD $10004, 0.0981748, 1.52171 ⇒ θ ∈ [0.0982, 1.62) 弧度
+local function w3_theta()
+    return ran:Float(0.0981748, 0.0981748 + 1.52171)
+end
+
+---每只小怪的固定齐射（Lunatic 行）：{ sprite, offset, c1, c2, v1, v2, a1, a2, aim }
+local W3_VOLLEY = {
+    [3] = { grain_a,    6, 4, 1, 2.1, 0.5, 0,        0.392699,  true  },
+    [4] = { grain_a,    6, 5, 2, 3,   1.3, 0,        0.0654498, true  },
+    [5] = { grain_a,    2, 1, 4, 3.3, 1,   0,        0.0981748, true  },
+    [6] = { ball_small, 2, 2, 3, 3.2, 1,   1.5708,   0.314159,  false },
+}
+local W3_INTERVAL = { [3] = 200, [4] = 40, [5] = 100 }
+
+local function w3_fire(self)
+    local p = W3_VOLLEY[self.kind]
+    if p then
+        w3_spread(self, p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], false)
+    end
+end
+
+class["TH34_walker3"] = Class(enemy, {
+    ---@param sub number 原作的子程序号 3/4/5/6
+    ---@param mirror number 时间轴的 mirror 位（1 = 速度的 x 分量取反，原作 Enemy::Move）
+    init = function(self, x, y, life, sub, mirror)
+        enemy.init(self, W3_STYLE, hp3(life), false, true, false)
+        self.x, self.y = x, y
+        self.A, self.B = 24, 24           -- SET_HITBOX_SIZE 24,24,32
+        self.kind, self.mirror = sub, mirror or 0
+        ---先给默认值：真机第一帧 frame 就会读这四个（分支里再覆盖）。
+        self.dx, self.dy, self.x0, self.y0 = 0, 0, x, y
+        object.SetV(self, 0, 0, false)
+        local th = (sub == 3) and (PI / 2) or w3_theta()
+        if sub == 6 then
+            ---MOVE_DIR_TIME(60,4,θ,3)：ease-out-quad 直线，总位移 3×60 px；
+            ---mirror 只把 x 分量取反（Enemy::Move / MoveDirTime 的两处镜像）。
+            local sx = (self.mirror == 1) and -1 or 1
+            self.dx = sx * cos(th * RAD2DEG) * W3_RISE_D
+            self.dy = -sin(th * RAD2DEG) * W3_RISE_D
+            self.x0, self.y0 = x, y
+            self.rise = false
+        else
+            ---MOVE_DIR_TIME(0,0,θ,spd)：POLAR 匀速直线（th07 的 θ 取反）
+            local spd = (sub == 3) and 2 or 1.5
+            local deg = (self.mirror == 1) and (180 + th * RAD2DEG) or (-th * RAD2DEG)
+            object.SetV(self, spd, deg, false)
+        end
+        ---SET_SHOOT_INTERVAL_RAND n：初值 rand(0,n)（原作首轮延迟 1..n 帧）
+        self.interval = W3_INTERVAL[sub] or 0
+        self.itimer = (self.interval > 0) and ran:Int(0, self.interval) or 0
+        if sub ~= 6 then
+            w3_fire(self)                 -- t=0 那一轮（原作 spawn 当帧就打）
+        end
+        task.New(self, function()
+            if sub == 6 then
+                task.Wait(W3_RISE_T)
+                w3_fire(self)             -- t=60 那一轮
+                object.SetV(self, 2, 90, false)   -- MOVE_DIR_TIME(0,0,−π/2,2) ⇒ 我们 +90°
+                self.rise = true
+            else
+                task.Wait(W3_STOP)
+                self.interval = 0         -- SET_SHOOT_INTERVAL 0
+            end
+        end)
+        task.New(self, function()
+            task.Wait((sub == 6) and W3_LIFE6 or W3_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        ---sub 6 的头 60 帧是脚本插值（原作 ENEMY_MOVE_INTERP 的 ease-out-quad；
+        ---插值期间速度保持 0，别和后面的 POLAR 抢位置）
+        if self.kind == 6 and not self.rise then
+            local u = min(self.timer, W3_RISE_T) / W3_RISE_T
+            local e = 1 - (1 - u) * (1 - u)
+            self.x = self.x0 + self.dx * e
+            self.y = self.y0 + self.dy * e
+        end
+        ---SET_SHOOT_INTERVAL_RAND 的复刻：每帧 ++，到 n 就把**上一轮**重打一次
+        if self.interval > 0 then
+            self.itimer = self.itimer + 1
+            if self.itimer >= self.interval then
+                self.itimer = 0
+                w3_fire(self)
+            end
+        end
+    end,
+    kill = function(self)
+        ---itemdrop −1：原作按 g_ItemDropTable 1/3 概率掉随机道具（表里以小能量为主）
+        ---⇒ 折成信仰（与第 4 面炮台同一条近似，差异 23）。
+        if ran:Int(0, 2) == 0 then
+            New(item.obj.faith, self.x, self.y)
+        end
+        enemy.kill(self)
+    end,
+})
+
+---──────────────────── 大幽灵（原作 sub 7/8/9/11/12，sub 10 是 9 的子调用） ────────────────────
+---出生在左右两条竖线的外侧（我们的 x=±208，th07 x=16/400），先用 120 帧 Hermite
+---（INIT_INTERP，interpType 7 = MathCubicInterp、easing 4 = ease-out-quad）横穿到
+---对侧 x=∓64、同时下降到 y=96；t=240（sub 11 是 270）改 POLAR、朝 ±π 匀速 2 平移；
+---t=4240/4270 自毁。t=120 起按各自子程序打一轮固定弹幕。
+local GH3_STYLE = 31
+local GH3_RISE = 120
+local GH3_Y1 = 96                        -- p1 = 128(th07) ⇒ 224 − 128
+local GH3_Y_M0, GH3_Y_M1 = -64, -144     -- th07 的 +64/+144 取反
+local GH3_EXIT, GH3_EXIT11 = 240, 270
+local GH3_LIFE, GH3_LIFE11 = 4240, 4270
+
+---sub 7：t=120 四连扇（只有第一条 flags=0x202 带音效）
+local function gh3_fire7(self)
+    w3_spread(self, ball_small, 2, 5, 2, 1.8, 1,   0, 0.1122, true, true)
+    w3_spread(self, ball_small, 2, 4, 2, 2.2, 1.6, 0, 0.1122, true, false)
+    w3_spread(self, ball_small, 2, 2, 2, 2.7, 2,   0, 0.1122, true, false)
+    w3_spread(self, ball_big,   1, 1, 1, 3.2, 2,   0, 0.1122, true, false)
+end
+
+---sub 8：24×4 的环（a2=$10004，但那条 RAND_SIGN 0 是无意义的 ±0，略去）
+local function gh3_fire8(self)
+    w3_ring(self, ball_small, 6, 24, 4, 3.5, 0.8, 0, 0, false, true)
+end
+
+---sub 9 → SUB_CALL 10：c1=1、c2=10 的 RING_AIMED —— 10 层共享同一个自机角、
+---每层再转 $10004；4 次调用把 $10004 在 ±π/128 之间来回翻。
+local function gh3_ring10(self, a2_th)
+    w3_ring(self, arrow_small, 2, 1, 10, 3, 0.8, 0, a2_th, true, true)
+end
+
+---sub 11：t=120 一轮无声慢环（0x200）、t=150 一轮 32×2（0x202）
+local function gh3_fire11a(self, a1_our)
+    w3_ring(self, ball_small, 6, 24, 1, 0.8, 0.8, -a1_our / RAD2DEG, 0, false, false)
+end
+local function gh3_fire11b(self, a1_our)
+    w3_ring(self, ball_small, 6, 32, 2, 2.8, 2, -a1_our / RAD2DEG, 0, false, true)
+end
+
+---sub 12：t=120/180/240 三连 RANDOM（角 = 自机角 + rand(−c,+c)、速 = rand[v2,v1)）
+local function gh3_fire12(self, c_th, v1)
+    w3_random(self, arrow_small, 2, 32, v1, 0.8, c_th, false)
+end
+
+class["TH34_bigghost3"] = Class(enemy, {
+    ---@param sub number 原作的子程序号 7/8/9/11/12
+    init = function(self, x, y, life, sub)
+        enemy.init(self, GH3_STYLE, hp3(life), false, true, false)
+        self.x, self.y = x, y
+        self.A, self.B = 24, 24
+        self.kind = sub
+        ---先给默认值：真机第一帧 frame 就会读这两个（分支里再覆盖）。
+        self.x1, self.m1x = 0, 0
+        object.SetV(self, 0, 0, false)
+        ---INIT_INTERP 的 p0/p1/m0/m1 在 t=0 求值一次后冻结；X 的两支按 POS_X≷192 分叉。
+        self.x0, self.y0 = x, y
+        if x >= 0 then                       -- 原作 POS_X >= 192（右半边）
+            self.x1, self.m1x = -64, 144     -- p1 = 128(th07)、m1 = +144
+            self.exit = 180                  -- th07 −π ⇒ 我们 +π
+        else
+            self.x1, self.m1x = 64, -144     -- p1 = 256(th07)、m1 = −144
+            self.exit = -180                 -- th07 +π ⇒ 我们 −π
+        end
+        self.mode = 0
+        task.New(self, function()
+            task.Wait((sub == 11) and GH3_EXIT11 or GH3_EXIT)
+            object.SetV(self, 2, self.exit, false)
+            self.mode = 2
+        end)
+        task.New(self, function()
+            task.Wait(120)
+            if sub == 7 then
+                gh3_fire7(self)
+            elseif sub == 8 then
+                gh3_fire8(self)
+            elseif sub == 9 then
+                gh3_ring10(self, 0.0245437)
+                task.Wait(20); gh3_ring10(self, -0.0245437)
+                task.Wait(20); gh3_ring10(self, 0.0245437)
+                task.Wait(20); gh3_ring10(self, -0.0245437)
+            elseif sub == 11 then
+                gh3_fire11a(self, ran:Float(-180, 180))
+                task.Wait(30)                -- t=150：重掷一次 $10004
+                gh3_fire11b(self, ran:Float(-180, 180))
+            elseif sub == 12 then
+                gh3_fire12(self, 0.19635, 2.5)   -- t=120
+                task.Wait(60); gh3_fire12(self, 0.314159, 3.5)
+                task.Wait(60); gh3_fire12(self, 0.523599, 3.5)
+            end
+        end)
+        task.New(self, function()
+            task.Wait((sub == 11) and GH3_LIFE11 or GH3_LIFE)
+            object.RawDel(self)
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        if self.mode == 0 then
+            local u = min(self.timer, GH3_RISE) / GH3_RISE
+            local e = 1 - (1 - u) * (1 - u)
+            self.x = hermite(e, self.x0, self.x1, 0, self.m1x)
+            self.y = hermite(e, self.y0, GH3_Y1, GH3_Y_M0, GH3_Y_M1)
+            if self.timer >= GH3_RISE then
+                self.mode = 1
+            end
+        end
+    end,
+    kill = function(self)
+        ---SET_DEATH_CALLBACK_SUB 0：SPAWN_ITEMS 4（首颗大能量）→ $10003/=2 →
+        ---SPAWN_POINT_ITEMS 2 ⇒ 折成 4 信仰 + 2 点（差异 23）。
+        scatter_items(item.obj.faith, 4, self.x, self.y)
+        scatter_items(item.obj.point, 2, self.x, self.y)
+        enemy.kill(self)
+    end,
+})
+
+---==================== 挂到空 boss 的第三张符卡 ====================
+do
+    local CARD_NAME = "三道中「青之骚灵」"
+    ---原作 t=450..3023（约 50 秒）；最晚退场的是 t=2943 的 sub 11 大幽灵
+    ---（2943+4270 = 7213 帧），所以给 130 秒把收尾也包进来。
+    local CARD_TIME = 130
+    local LEVEL = 32
+    ---符卡历史槽位：th31(1..409+417..425)、th33(410..416)、th34 六面(426)、四面(461) 之后取 462。
+    local CARD_ID = 462
+
+    ---逐条生成表：{ 距上一只的帧数, 子程序号, x, y, itemdrop, life, mirror }
+    ---（x/y 已换算成我们的坐标；265 条全部用 /tmp/eclwork 的解释器逐值对过时间轴 0）
+    ---子程序号决定挂哪个类：3/4/5/6=小怪、7/8/9/11/12=大幽灵（10 是 9 的内部调用）。
+    local WAVE3 = {
+        {    0,   3,    -142,     240,  -1,   80, 0 },  -- gsub 3 t=450
+        {    0,   3,     142,     240,  -1,   80, 1 },  -- gsub 3 t=450
+        {   10,   3,    -112,     240,  -1,   80, 0 },  -- gsub 3 t=460
+        {    0,   3,     112,     240,  -1,   80, 1 },  -- gsub 3 t=460
+        {   10,   3,     -52,     240,  -1,   80, 0 },  -- gsub 3 t=470
+        {    0,   3,      52,     240,  -1,   80, 1 },  -- gsub 3 t=470
+        {   10,   3,    -162,     240,  -1,   80, 0 },  -- gsub 3 t=480
+        {    0,   3,     162,     240,  -1,   80, 1 },  -- gsub 3 t=480
+        {   10,   3,     -72,     240,  -1,   80, 0 },  -- gsub 3 t=490
+        {    0,   3,      72,     240,  -1,   80, 1 },  -- gsub 3 t=490
+        {   10,   3,     -32,     240,  -1,   80, 0 },  -- gsub 3 t=500
+        {    0,   3,      32,     240,  -1,   80, 1 },  -- gsub 3 t=500
+        {   10,   3,    -152,     240,  -1,   80, 0 },  -- gsub 3 t=510
+        {    0,   3,     152,     240,  -1,   80, 1 },  -- gsub 3 t=510
+        {   10,   3,    -112,     240,  -1,   80, 0 },  -- gsub 3 t=520
+        {    0,   3,     112,     240,  -1,   80, 1 },  -- gsub 3 t=520
+        {  394,   4,    -160,     240,  -1,   50, 0 },  -- gsub 4 t=914
+        {   10,   4,    -128,     240,  -1,   50, 0 },  -- gsub 4 t=924
+        {   10,   4,     -96,     240,  -1,   50, 0 },  -- gsub 4 t=934
+        {   20,   4,     160,     240,  -1,   50, 1 },  -- gsub 4 t=954
+        {   10,   4,     128,     240,  -1,   50, 1 },  -- gsub 4 t=964
+        {   10,   4,      96,     240,  -1,   50, 1 },  -- gsub 4 t=974
+        {   20,   5,     -64,     240,  -1,   50, 0 },  -- gsub 5 t=994
+        {   10,   4,     -96,     240,  -1,   50, 0 },  -- gsub 4 t=1004
+        {   10,   5,    -128,     240,  -1,   50, 0 },  -- gsub 5 t=1014
+        {   20,   4,      64,     240,  -1,   50, 1 },  -- gsub 4 t=1034
+        {   10,   5,      96,     240,  -1,   50, 1 },  -- gsub 5 t=1044
+        {   10,   4,     128,     240,  -1,   50, 1 },  -- gsub 4 t=1054
+        {    7,   3,    -160,     240,  -1,   50, 0 },  -- gsub 3 t=1061
+        {    7,   3,    -128,     240,  -1,   50, 0 },  -- gsub 3 t=1068
+        {    7,   3,     -96,     240,  -1,   50, 0 },  -- gsub 3 t=1075
+        {    7,   3,     160,     240,  -1,   50, 1 },  -- gsub 3 t=1082
+        {    7,   3,     128,     240,  -1,   50, 1 },  -- gsub 3 t=1089
+        {    7,   3,      96,     240,  -1,   50, 1 },  -- gsub 3 t=1096
+        {   20,   6,     -32,     240,  -1,  150, 0 },  -- gsub 6 t=1116
+        {   10,   4,     -64,     240,  -1,   50, 0 },  -- gsub 4 t=1126
+        {   10,   6,    -112,     240,  -1,  150, 0 },  -- gsub 6 t=1136
+        {   20,   4,      32,     240,  -1,   50, 1 },  -- gsub 4 t=1156
+        {   10,   6,      64,     240,  -1,  150, 1 },  -- gsub 6 t=1166
+        {   10,   4,     112,     240,  -1,   50, 1 },  -- gsub 4 t=1176
+        {    7,   3,    -160,     240,  -1,   50, 0 },  -- gsub 3 t=1183
+        {    7,   5,    -128,     240,  -1,   50, 0 },  -- gsub 5 t=1190
+        {    7,   3,     -96,     240,  -1,   50, 0 },  -- gsub 3 t=1197
+        {    7,   5,     160,     240,  -1,   50, 1 },  -- gsub 5 t=1204
+        {    7,   3,     128,     240,  -1,   50, 1 },  -- gsub 3 t=1211
+        {    7,   5,      96,     240,  -1,   50, 1 },  -- gsub 5 t=1218
+        {   20,   4,     -64,     240,  -1,   50, 0 },  -- gsub 4 t=1238
+        {   10,   5,     -96,     240,  -1,   50, 0 },  -- gsub 5 t=1248
+        {   10,   6,    -128,     240,  -1,   50, 0 },  -- gsub 6 t=1258
+        {   20,   4,      64,     240,  -1,   50, 1 },  -- gsub 4 t=1278
+        {   10,   5,      96,     240,  -1,   50, 1 },  -- gsub 5 t=1288
+        {   10,   6,     128,     240,  -1,   50, 1 },  -- gsub 6 t=1298
+        {    7,   6,    -160,     240,  -1,  150, 0 },  -- gsub 6 t=1305
+        {    7,   3,    -128,     240,  -1,   50, 0 },  -- gsub 3 t=1312
+        {    7,   6,     -96,     240,  -1,  150, 0 },  -- gsub 6 t=1319
+        {    7,   3,     160,     240,  -1,   50, 1 },  -- gsub 3 t=1326
+        {    7,   6,     128,     240,  -1,  150, 1 },  -- gsub 6 t=1333
+        {    7,   3,      96,     240,  -1,   50, 1 },  -- gsub 3 t=1340
+        {   20,   4,     -32,     240,  -1,   50, 0 },  -- gsub 4 t=1360
+        {   10,   5,     -64,     240,  -1,   50, 0 },  -- gsub 5 t=1370
+        {   10,   6,    -112,     240,  -1,   50, 0 },  -- gsub 6 t=1380
+        {   20,   4,      32,     240,  -1,   50, 1 },  -- gsub 4 t=1400
+        {   10,   5,      64,     240,  -1,   50, 1 },  -- gsub 5 t=1410
+        {   10,   6,     112,     240,  -1,   50, 1 },  -- gsub 6 t=1420
+        {    7,   4,    -160,     240,  -1,   50, 0 },  -- gsub 4 t=1427
+        {    7,   5,    -128,     240,  -1,   50, 0 },  -- gsub 5 t=1434
+        {    7,   6,     -96,     240,  -1,   50, 0 },  -- gsub 6 t=1441
+        {    7,   4,     160,     240,  -1,   50, 1 },  -- gsub 4 t=1448
+        {    7,   5,     128,     240,  -1,   50, 1 },  -- gsub 5 t=1455
+        {    7,   6,      96,     240,  -1,   50, 1 },  -- gsub 6 t=1462
+        {    6,   3,    -142,     240,  -1,   50, 0 },  -- gsub 3 t=1468
+        {    0,   3,     142,     240,  -1,   50, 1 },  -- gsub 3 t=1468
+        {    6,   3,    -112,     240,  -1,   50, 0 },  -- gsub 3 t=1474
+        {    0,   3,     112,     240,  -1,   50, 1 },  -- gsub 3 t=1474
+        {    6,   3,     -52,     240,  -1,   50, 0 },  -- gsub 3 t=1480
+        {    0,   3,      52,     240,  -1,   50, 1 },  -- gsub 3 t=1480
+        {    6,   3,    -162,     240,  -1,   50, 0 },  -- gsub 3 t=1486
+        {    0,   3,     162,     240,  -1,   50, 1 },  -- gsub 3 t=1486
+        {    6,   3,     -72,     240,  -1,   50, 0 },  -- gsub 3 t=1492
+        {    0,   3,      72,     240,  -1,   50, 1 },  -- gsub 3 t=1492
+        {    6,   3,     -32,     240,  -1,   50, 0 },  -- gsub 3 t=1498
+        {    0,   3,      32,     240,  -1,   50, 1 },  -- gsub 3 t=1498
+        {    6,   3,    -152,     240,  -1,   50, 0 },  -- gsub 3 t=1504
+        {    0,   3,     152,     240,  -1,   50, 1 },  -- gsub 3 t=1504
+        {    6,   3,    -112,     240,  -1,   50, 0 },  -- gsub 3 t=1510
+        {    0,   3,     112,     240,  -1,   50, 1 },  -- gsub 3 t=1510
+        {    6,   3,    -142,     240,  -1,   50, 0 },  -- gsub 3 t=1516
+        {    0,   3,     142,     240,  -1,   50, 1 },  -- gsub 3 t=1516
+        {    6,   3,    -112,     240,  -1,   50, 0 },  -- gsub 3 t=1522
+        {    0,   3,     112,     240,  -1,   50, 1 },  -- gsub 3 t=1522
+        {    6,   3,     -52,     240,  -1,   50, 0 },  -- gsub 3 t=1528
+        {    0,   3,      52,     240,  -1,   50, 1 },  -- gsub 3 t=1528
+        {    6,   3,    -162,     240,  -1,   50, 0 },  -- gsub 3 t=1534
+        {    0,   3,     162,     240,  -1,   50, 1 },  -- gsub 3 t=1534
+        {    6,   3,     -72,     240,  -1,   50, 0 },  -- gsub 3 t=1540
+        {    0,   3,      72,     240,  -1,   50, 1 },  -- gsub 3 t=1540
+        {    6,   3,     -32,     240,   2,   50, 0 },  -- gsub 3 t=1546
+        {    0,   3,      32,     240,   2,   50, 1 },  -- gsub 3 t=1546
+        {    6,   3,    -152,     240,   2,   50, 0 },  -- gsub 3 t=1552
+        {    0,   3,     152,     240,   2,   50, 1 },  -- gsub 3 t=1552
+        {    6,   3,    -112,     240,   2,   50, 0 },  -- gsub 3 t=1558
+        {    0,   3,     112,     240,   2,   50, 1 },  -- gsub 3 t=1558
+        {  307,   3,    -142,     240,  -1,   30, 0 },  -- gsub 3 t=1865
+        {    0,   3,     142,     240,  -1,   30, 1 },  -- gsub 3 t=1865
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=1871
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=1871
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=1877
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=1877
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=1883
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=1883
+        {    6,   3,     -72,     240,  -1,   30, 0 },  -- gsub 3 t=1889
+        {    0,   3,      72,     240,  -1,   30, 1 },  -- gsub 3 t=1889
+        {    6,   3,     -32,     240,  -1,   30, 0 },  -- gsub 3 t=1895
+        {    0,   3,      32,     240,  -1,   30, 1 },  -- gsub 3 t=1895
+        {    6,   3,    -152,     240,  -1,   30, 0 },  -- gsub 3 t=1901
+        {    0,   3,     152,     240,  -1,   30, 1 },  -- gsub 3 t=1901
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=1907
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=1907
+        {    6,   3,    -142,     240,  -1,   30, 0 },  -- gsub 3 t=1913
+        {    0,   3,     142,     240,  -1,   30, 1 },  -- gsub 3 t=1913
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=1919
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=1919
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=1925
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=1925
+        {    6,   5,    -162,     240,  -1,   30, 0 },  -- gsub 5 t=1931
+        {    0,   5,     162,     240,  -1,   30, 1 },  -- gsub 5 t=1931
+        {    6,   5,     -72,     240,  -1,   30, 0 },  -- gsub 5 t=1937
+        {    0,   5,      72,     240,  -1,   30, 1 },  -- gsub 5 t=1937
+        {    0,   7,    -208,     160,  -2,  500, 0 },  -- gsub 7 t=1937
+        {    0,   6,    -160,     240,  -1,   50, 0 },  -- gsub 6 t=1937
+        {    0,   6,    -128,     240,  -1,   50, 0 },  -- gsub 6 t=1937
+        {    0,   6,     128,     240,  -1,   50, 0 },  -- gsub 6 t=1937
+        {    0,   6,     160,     240,  -1,   50, 0 },  -- gsub 6 t=1937
+        {  120,   3,    -160,     240,  -1,   30, 0 },  -- gsub 3 t=2057
+        {    7,   3,    -128,     240,  -1,   30, 0 },  -- gsub 3 t=2064
+        {    7,   3,     -96,     240,  -1,   30, 0 },  -- gsub 3 t=2071
+        {   60,   5,    -142,     240,  -1,   30, 0 },  -- gsub 5 t=2131
+        {    0,   5,     142,     240,  -1,   30, 1 },  -- gsub 5 t=2131
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=2137
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2137
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2143
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2143
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2149
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=2149
+        {    6,   3,     -72,     240,  -1,   30, 0 },  -- gsub 3 t=2155
+        {    0,   3,      72,     240,  -1,   30, 1 },  -- gsub 3 t=2155
+        {    6,   3,     -32,     240,  -1,   30, 0 },  -- gsub 3 t=2161
+        {    0,   3,      32,     240,  -1,   30, 1 },  -- gsub 3 t=2161
+        {    6,   3,    -152,     240,  -1,   30, 0 },  -- gsub 3 t=2167
+        {    0,   5,     152,     240,  -1,   30, 1 },  -- gsub 5 t=2167
+        {    6,   5,    -112,     240,  -1,   30, 0 },  -- gsub 5 t=2173
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2173
+        {    6,   3,    -142,     240,  -1,   30, 0 },  -- gsub 3 t=2179
+        {    0,   3,     142,     240,  -1,   30, 1 },  -- gsub 3 t=2179
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=2185
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2185
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2191
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2191
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2197
+        {    0,   5,     162,     240,  -1,   30, 1 },  -- gsub 5 t=2197
+        {    6,   5,     -72,     240,  -1,   30, 0 },  -- gsub 5 t=2203
+        {    0,   3,      72,     240,  -1,   30, 1 },  -- gsub 3 t=2203
+        {    0,   8,     208,     160,  -2,  500, 0 },  -- gsub 8 t=2203
+        {    0,   6,    -112,     240,  -1,   50, 0 },  -- gsub 6 t=2203
+        {    0,   6,     -64,     240,  -1,   50, 0 },  -- gsub 6 t=2203
+        {    0,   6,      64,     240,  -1,   50, 0 },  -- gsub 6 t=2203
+        {    0,   6,     112,     240,  -1,   50, 0 },  -- gsub 6 t=2203
+        {  120,   3,     160,     240,  -1,   50, 1 },  -- gsub 3 t=2323
+        {    7,   3,     128,     240,  -1,   50, 1 },  -- gsub 3 t=2330
+        {    7,   3,      96,     240,  -1,   50, 1 },  -- gsub 3 t=2337
+        {    6,   5,    -112,     240,  -1,   30, 0 },  -- gsub 5 t=2343
+        {    0,   5,     112,     240,  -1,   30, 1 },  -- gsub 5 t=2343
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2349
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2349
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2355
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=2355
+        {    6,   3,     -72,     240,  -1,   30, 0 },  -- gsub 3 t=2361
+        {    0,   3,      72,     240,  -1,   30, 1 },  -- gsub 3 t=2361
+        {    6,   5,     -32,     240,  -1,   30, 0 },  -- gsub 5 t=2367
+        {    0,   5,      32,     240,  -1,   30, 1 },  -- gsub 5 t=2367
+        {    6,   3,    -152,     240,  -1,   30, 0 },  -- gsub 3 t=2373
+        {    0,   3,     152,     240,  -1,   30, 1 },  -- gsub 3 t=2373
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=2379
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2379
+        {    6,   3,    -142,     240,  -1,   30, 0 },  -- gsub 3 t=2385
+        {    0,   3,     142,     240,  -1,   30, 1 },  -- gsub 3 t=2385
+        {    6,   5,    -112,     240,  -1,   30, 0 },  -- gsub 5 t=2391
+        {    0,   5,     112,     240,  -1,   30, 1 },  -- gsub 5 t=2391
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2397
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2397
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2403
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=2403
+        {    6,   3,     -72,     240,  -1,   30, 0 },  -- gsub 3 t=2409
+        {    0,   3,      72,     240,  -1,   30, 1 },  -- gsub 3 t=2409
+        {    0,   9,    -208,     160,  -2,  500, 0 },  -- gsub 9 t=2409
+        {    0,   6,    -176,     240,  -1,   50, 0 },  -- gsub 6 t=2409
+        {    0,   6,    -128,     240,  -1,   50, 0 },  -- gsub 6 t=2409
+        {    0,   6,     -80,     240,  -1,   50, 0 },  -- gsub 6 t=2409
+        {    0,   6,     -32,     240,  -1,   50, 0 },  -- gsub 6 t=2409
+        {   60,   3,    -160,     240,  -1,   50, 0 },  -- gsub 3 t=2469
+        {    7,   3,    -128,     240,  -1,   50, 0 },  -- gsub 3 t=2476
+        {    7,   3,     -96,     240,  -1,   50, 0 },  -- gsub 3 t=2483
+        {    6,   5,    -112,     240,  -1,   30, 0 },  -- gsub 5 t=2489
+        {    0,   5,     112,     240,  -1,   30, 1 },  -- gsub 5 t=2489
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2495
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2495
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2501
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=2501
+        {    6,   5,     -72,     240,  -1,   30, 0 },  -- gsub 5 t=2507
+        {    0,   5,      72,     240,  -1,   30, 1 },  -- gsub 5 t=2507
+        {    6,   3,     -32,     240,  -1,   30, 0 },  -- gsub 3 t=2513
+        {    0,   3,      32,     240,  -1,   30, 1 },  -- gsub 3 t=2513
+        {    6,   3,    -152,     240,  -1,   30, 0 },  -- gsub 3 t=2519
+        {    0,   3,     152,     240,  -1,   30, 1 },  -- gsub 3 t=2519
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=2525
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2525
+        {    6,   5,    -142,     240,  -1,   30, 0 },  -- gsub 5 t=2531
+        {    0,   5,     142,     240,  -1,   30, 1 },  -- gsub 5 t=2531
+        {    6,   3,    -112,     240,  -1,   30, 0 },  -- gsub 3 t=2537
+        {    0,   3,     112,     240,  -1,   30, 1 },  -- gsub 3 t=2537
+        {    6,   3,     -52,     240,  -1,   30, 0 },  -- gsub 3 t=2543
+        {    0,   3,      52,     240,  -1,   30, 1 },  -- gsub 3 t=2543
+        {    6,   3,    -162,     240,  -1,   30, 0 },  -- gsub 3 t=2549
+        {    0,   3,     162,     240,  -1,   30, 1 },  -- gsub 3 t=2549
+        {    6,   5,     -72,     240,  -1,   30, 0 },  -- gsub 5 t=2555
+        {    0,   5,      72,     240,  -1,   30, 1 },  -- gsub 5 t=2555
+        {    0,  11,     208,     160,  -2,  500, 0 },  -- gsub 11 t=2555
+        {    0,   6,     176,     240,  -1,   50, 0 },  -- gsub 6 t=2555
+        {    0,   6,     128,     240,  -1,   50, 0 },  -- gsub 6 t=2555
+        {    0,   6,      80,     240,  -1,   50, 0 },  -- gsub 6 t=2555
+        {    0,   6,      32,     240,  -1,   50, 0 },  -- gsub 6 t=2555
+        {   60,   5,    -160,     240,  -1,   50, 0 },  -- gsub 5 t=2615
+        {    7,   5,    -128,     240,  -1,   50, 0 },  -- gsub 5 t=2622
+        {    7,   5,     -96,     240,  -1,   50, 0 },  -- gsub 5 t=2629
+        {    0,  12,    -208,     160,  -2,  500, 0 },  -- gsub 12 t=2629
+        {   60,   5,     160,     240,  -1,   50, 1 },  -- gsub 5 t=2689
+        {    7,   5,     128,     240,  -1,   50, 1 },  -- gsub 5 t=2696
+        {    7,   5,      96,     240,  -1,   50, 1 },  -- gsub 5 t=2703
+        {   60,   7,    -208,     208,  -2,  400, 0 },  -- gsub 7 t=2763
+        {   60,   8,     208,     176,  -2,  400, 0 },  -- gsub 8 t=2823
+        {   60,   9,    -208,      96,  -2,  400, 0 },  -- gsub 9 t=2883
+        {   60,  11,     208,      64,  -2,  400, 0 },  -- gsub 11 t=2943
+        {   60,   6,    -176,     240,  -1,   50, 0 },  -- gsub 6 t=3003
+        {    0,   6,    -128,     240,  -1,  150, 0 },  -- gsub 6 t=3003
+        {    0,   6,     -80,     240,  -1,   50, 0 },  -- gsub 6 t=3003
+        {    0,   6,     -32,     240,  -1,  150, 0 },  -- gsub 6 t=3003
+        {    0,   6,     176,     240,  -1,   50, 0 },  -- gsub 6 t=3003
+        {    0,   6,     128,     240,  -1,  150, 0 },  -- gsub 6 t=3003
+        {    0,   6,      80,     240,  -1,   50, 0 },  -- gsub 6 t=3003
+        {    0,   6,      32,     240,  -1,  150, 0 },  -- gsub 6 t=3003
+        {   10,   6,    -160,     240,  -1,  150, 0 },  -- gsub 6 t=3013
+        {    0,   6,    -112,     240,  -1,   50, 0 },  -- gsub 6 t=3013
+        {    0,   6,     -64,     240,  -1,  150, 0 },  -- gsub 6 t=3013
+        {    0,   6,       0,     240,  -1,   50, 0 },  -- gsub 6 t=3013
+        {    0,   6,     160,     240,  -1,  150, 0 },  -- gsub 6 t=3013
+        {    0,   6,     112,     240,  -1,   50, 0 },  -- gsub 6 t=3013
+        {    0,   6,      64,     240,  -1,  150, 0 },  -- gsub 6 t=3013
+        {   10,   6,    -176,     240,  -1,   50, 0 },  -- gsub 6 t=3023
+        {    0,   6,    -128,     240,  -1,  150, 0 },  -- gsub 6 t=3023
+        {    0,   6,     -80,     240,  -1,   50, 0 },  -- gsub 6 t=3023
+        {    0,   6,     -32,     240,  -1,  150, 0 },  -- gsub 6 t=3023
+        {    0,   6,     176,     240,  -1,   50, 0 },  -- gsub 6 t=3023
+        {    0,   6,     128,     240,  -1,  150, 0 },  -- gsub 6 t=3023
+        {    0,   6,      80,     240,  -1,   50, 0 },  -- gsub 6 t=3023
+        {    0,   6,      32,     240,  -1,  150, 0 },  -- gsub 6 t=3023
+    }
+
+    local card = boss.card.New(CARD_NAME, CARD_TIME, CARD_TIME, CARD_TIME, 10000000)
+    function card:before()
+        ---耐久卡：不打超时音、关掉本体的判定与血条（照上面两张卡）
+        self.NotPlayTimeOutSound = true
+        self.colli = false
+        self.no_hp_render = true
+    end
+    function card:init()
+        pool4 = {}
+        sound_tick4, sound_stamp4 = 0, -1
+        task.New(self, function()
+            for _, w in ipairs(WAVE3) do
+                task.Wait(w[1])
+                local sub = w[2]
+                if sub <= 6 then
+                    New(class["TH34_walker3"], w[3], w[4], w[6], sub, w[7])
+                else
+                    New(class["TH34_bigghost3"], w[3], w[4], w[6], sub)
+                end
+            end
+        end)
+    end
+    function card:frame()
+        sound_tick4 = sound_tick4 + 1
+    end
+    function card:render() end
+    ---★ 不用清理：所有小怪都是独立对象（没有 object.Connect 到 boss），
+    ---寿命最长的 sub 11 大幽灵 t=7213 自毁，在 130 秒（7800 帧）内跑完。
+    function card:del() end
+
+    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+end
+
+---==================== 第 5 面道中：代码 ====================
+---自然语言说明与逐条差异都在文件头的「第 5 面道中」单元里。
+---和其它三张道中卡一样：空 boss + 一张耐久符卡，逐帧把 `ecldata5.ecl` 时间轴 0
+---（偏移 0xAEA8）t=500..5713 的 94 条 spawn 搬进来。
+---原作每条 spawn 放出来的是「载体」：载体先演 80 帧烟尘（sub 9）、第 80 帧在
+---原地生出真正的幽灵（sub 11/13/…/36）后自毁；移植版把这两段**合成一个对象**
+---（第 80 帧换贴图、开判定，差异 34）。时间轴直接放的 sub 22/23/24 没有载体、
+---也不带烟尘，照做。
+
+---第 5 面非 boss 的血量折算（差异 32）：life × 0.1965，保底 1 点。
+---0.1965 = 灵梦 DPS 比 106.4 / 541.5，也就是「第 5/6 面非 boss 的伤害 ÷2」那一档
+---（EnemyManager.cpp:820-845）；第 3/4 面在同一套折算里再乘各自系数
+---（hp3 = 0.1965 × 0.5/1.0、hp4 = 0.1965 × 0.5/0.6875）。
+---⇒ 80→16、110→22、160→31、200→39。
+local function hp5(life)
+    return max(1, int(life * 0.1965 + 0.5))
+end
+
+---th07 的角度（弧度、y 朝下）折成我们的角度制（y 朝上）：取反即可。
+local function a5(th)
+    return -th * RAD2DEG
+end
+
+---原作 sprite 1/3/6 → 代理弹型（差异 20）：1 = grain_a、3 = ball_small、6 = arrow_small；
+---spriteOffset(1..16) 同号映射到 col16()（第 3 面那一段的 COL16）。
+local function p5_style(spr)
+    if spr == 6 then
+        return arrow_small
+    end
+    if spr == 3 then
+        return ball_small
+    end
+    return grain_a
+end
+
+---烟尘 / 本体贴图（差异 34）：原作载体的 sub 9 是 SET_ANM 30（黄焰 `ghost_fire_y`
+---+ 叠 Ghost4 的 8 帧本体）、本体 sub 11 起是 SET_ANM 27（红焰 `ghost_fire_r`，
+---不再叠本体）—— 直接沿用本仓库 style 27/30 的渲染（WalkImageSystem.lua:325-340/367）。
+local P5_DUST_STYLE, P5_BODY_STYLE = 30, 27
+local P5_DUST_FRAMES = 80
+---烟尘的起终点：原作 t=0 把 (POS_X−3, POS_Y+147) 和 (POS_X, POS_Y) 快照进两条
+---INIT_INTERP（`EclManager.cpp:1070`）。th07 y 朝下 ⇒ 我们 224−y，所以起点的
+---y 偏移是 **−147**；X 的 m0/m1 各 ±144、Y 的 m0 = +1（⇒ −1）、m1 = ±32。
+local P5_DUST_X0, P5_DUST_Y0 = -3, -147
+local P5_DUST_M = 144
+local P5_DUST_Y_M0, P5_DUST_Y_M1 = -1, 32
+local P5_DUST_FADE = 16
+local P5_ACCEL = 0.02             -- 原作 SET_MOVE_ACCEL 0.02（匀加速，不是匀速）
+
+---INIT_BULLET_CMD 的 Burst（type 1，`BulletManager.cpp:724-741`）：前 17 帧速度
+---= 5 − timer·5/16 + 自身速度、沿自己的朝向，之后回到自身速度并清位。
+---★ enemy 的 `bulletProps` **只在出生时重置一次**（`EnemyManager.cpp:401`，另一次是
+---callbacks 前 `:1033`），INIT_BULLET_CMD 写进 `commands[0]` 的东西会**一直留着** ——
+---所以 sub 11/13 的 22 轮、sub 26/28/30 的 32 轮**每一轮**都带 Burst。
+---sub 32/34/36 的 flags 是 0x205（不含 bit 1）⇒ `RunCommands` 当场跳过（差异 33），
+---所以那一族干脆不挂命令。
+local P5_BURST = { type = 1 }
+
+---0x20 TargetAngle（`BulletManager.cpp:759-777`）：每帧 angle += cmd.angle、speed += cmd.speed，
+---重新按（朝向, 速度）算 velocity，够 duration(60) 帧清位。传进来的是 th07 的
+---弧度/帧 ⇒ 取反并换成度/帧（y 翻转，角速度跟着反号）。
+local function spin5(rate_th)
+    return { type = 0x20, dur = 60, loop = -1, speed = 0, angle = -rate_th * RAD2DEG }
+end
+
+---th07 的极坐标偏移 (R·sin a, R·cos a)（y 朝下）⇒ 我们的 (R·sin a, −R·cos a)。
+local function off5(a_th, r)
+    local d = a_th * RAD2DEG
+    return r * sin(d), -r * cos(d)
+end
+
+---shootOffset 那一点到自机的角。原作 `AngleToPlayer(&bulletProps->pos)` 用的是
+---**偏移点**（`bulletProps->pos = enemy->pos + shootOffset`），不是敌人中心。
+local function aim5(x, y)
+    return atan2(player.y - y, player.x - x) * RAD2DEG
+end
+
+---本卡的一次「波」：把弹登记进 pool4（丢弹规则与上一张卡一致：池满整波不生、
+---半途见底丢剩下的、两条路径都响音效）。`cmd` 非空 ⇒ 走 TH34_cmdbullet。
+local function volley5(self, ox, oy, total, gen)
+    local room = POOL4_SIZE - pool4_used()
+    local i = 1
+    while i <= total and room > 0 do
+        local style, col, v, a, cmd = gen(i)
+        if cmd then
+            pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], style, col,
+                                    self.x + ox, self.y + oy, v, a, cmd)
+        else
+            pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
+                                                v, a, false, 0, false)
+        end
+        room, i = room - 1, i + 1
+    end
+    sound4(self)
+end
+
+---SPREAD（op64/65，`BulletManager.cpp:180-202`）：base 是**我们**的基准角（度），
+---a2_th 是 th07 的弧度（spread3 内部取反）。层序只改速度、不改角度（与 RING 不同）。
+local function w5_spread(self, spr, off, c1, c2, v1, v2, base, a2_th, ox, oy, cmd)
+    local offs = spread3(c1, a2_th * RAD2DEG)
+    volley5(self, ox, oy, c1 * c2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / c1), k % c1
+        local v = (c2 == 1) and v1 or (v1 - (v1 - v2) * layer / c2)
+        return p5_style(spr), col16(off), v, base + offs[ring + 1], cmd
+    end)
+end
+
+---RING_ABS（op67）：angle = 环序·2π/c1 + 层序·a2 + a1（a1 是绝对值，不瞄自机）。
+---环序那一项是整圈，取反与否是同一个集合；层序那一项要取反。
+local function w5_ring(self, spr, off, c1, c2, v1, v2, base, a2_th, cmd)
+    local step = 360 / c1
+    local a2 = -a2_th * RAD2DEG
+    volley5(self, 0, 0, c1 * c2, function(i)
+        local k = i - 1
+        local layer, ring = int(k / c1), k % c1
+        local v = (c2 == 1) and v1 or (v1 - (v1 - v2) * layer / c2)
+        return p5_style(spr), col16(off), v, base + ring * step + layer * a2, cmd
+    end)
+end
+
+---──────────────────── 各 sub 的发弹脚本（全部照 Lunatic 行） ────────────────────
+
+---sub 11/13：一圈 11 发，每 10 帧把 $10004 转 ∓π/64 再打，共 22 轮（DEC_JUMP 在 t=10）。
+---a0/da 是 th07 弧度：11 从 π 往减、13 从 0 往加；两者都不瞄自机。
+local function p5_f11(self, a0, da, v1)
+    local a = a0
+    for _ = 1, 22 do
+        a = a + da
+        w5_ring(self, 6, 2, 11, 1, v1, 1.3, a5(a), 1.5708, P5_BURST)
+        task.Wait(10)
+    end
+end
+
+---sub 15/17/19/21：瞄准自机的 5 发扇（a1 = ANGLE_TO_PLAYER、a2 = 各自的张角），
+---每 4 帧一轮、速度每轮 +dv（首轮 0.8）。DEC_JUMP 的落点在 SPREAD 上 ⇒ 先打后加。
+local function p5_f15(self, n, dv, a2_th)
+    local v = 0.8
+    for _ = 1, n do
+        w5_spread(self, 1, 6, 5, 1, v, 1, Angle(self, player), a2_th, 0, 0, nil)
+        v = v + dv
+        task.Wait(4)
+    end
+end
+
+---sub 22：t=60 的三连扇。第 ①条没有命令（INIT_BULLET_CMD 排在它后面才写），
+---②③条各挂 ±0.25°/帧、60 帧的自旋（flags 0x222 含 bit 5 ⇒ 命令生效；
+---① 的 0x202 不含 ⇒ 就算挂着也会被跳过）。
+local function p5_f22(self)
+    local aim = Angle(self, player)
+    w5_spread(self, 3, 2, 3, 3, 2.4, 1, aim,      0,         0, 0, nil)
+    w5_spread(self, 3, 2, 3, 3, 3,   1, aim + 45, -0.392699, 0, 0, spin5(0.00436332))
+    w5_spread(self, 3, 2, 3, 3, 3,   1, aim - 45,  0.392699, 0, 0, spin5(-0.00436332))
+end
+
+---sub 23/24：t=60 的六连扇 —— 前三条 spr6/off2 张角 π/8、后三条 spr6/off14 张角 π/4；
+---两条各三个方向（a1 = π/2、π/4、3π/4），①④没有命令、②⑤与③⑥各挂反向自旋。
+---（④ 的 flags 是 0x202：就算 ③ 写的命令还在，也会被 flag 门挡掉。）
+local function p5_f23(self)
+    w5_spread(self, 6, 2,  5, 5, 3,   1, a5(1.5708),   0.392699, 0, 0, nil)
+    w5_spread(self, 6, 2,  3, 5, 2.8, 1, a5(0.785398), 0.392699, 0, 0, spin5(0.01309))
+    w5_spread(self, 6, 2,  3, 5, 2.8, 1, a5(2.356194), 0.392699, 0, 0, spin5(-0.01309))
+    w5_spread(self, 6, 14, 3, 4, 2.4, 1, a5(1.5708),   0.785398, 0, 0, nil)
+    w5_spread(self, 6, 14, 3, 4, 2.4, 1, a5(0),        0.785398, 0, 0, spin5(0.0261799))
+    w5_spread(self, 6, 14, 3, 4, 2.4, 1, a5(3.14159),  0.785398, 0, 0, spin5(-0.0261799))
+end
+
+---sub 26/28：32 轮、每 4 帧一轮；$10004 从 π/2 起每轮 ∓ π/16，极坐标偏移半径 32，
+---弹一律瞄**偏移点**的自机角（SPREAD_AIMED、a1=0）。da = ∓0.19635。
+local function p5_f26(self, da, off)
+    local a = 1.5708
+    for _ = 1, 32 do
+        a = a + da
+        local ox, oy = off5(a, 32)
+        w5_spread(self, 1, off, 3, 4, 4.2, 1, aim5(self.x + ox, self.y + oy),
+                  0.0785398, ox, oy, P5_BURST)
+        task.Wait(4)
+    end
+end
+
+---sub 30：16 轮 × 2 发（t=0 用 $10004 从 −π/2 往减、t=2 用 $10009 从 −π/2 往加），
+---偏移半径 32、v1 = 2、aimed。DEC_JUMP 在 t=4。
+local function p5_f30(self)
+    local a, b = -1.5708, -1.5708
+    for _ = 1, 16 do
+        a = a - 0.19635
+        local ox, oy = off5(a, 32)
+        w5_spread(self, 1, 8, 3, 4, 2, 1, aim5(self.x + ox, self.y + oy),
+                  0.0785398, ox, oy, P5_BURST)
+        task.Wait(2)
+        b = b + 0.19635
+        ox, oy = off5(b, 32)
+        w5_spread(self, 1, 8, 3, 4, 2, 1, aim5(self.x + ox, self.y + oy),
+                  0.0785398, ox, oy, P5_BURST)
+        task.Wait(2)
+    end
+end
+
+---sub 32/34：32 轮、每 1 帧一轮；偏移半径 32，一个方向 4 发（a1 = $10004 绝对值）。
+---flags 0x205 ⇒ Burst 被跳过，所以不带命令。
+local function p5_f32(self, off)
+    local a = 1.5708
+    for _ = 1, 32 do
+        a = a - 0.19635
+        local ox, oy = off5(a, 32)
+        w5_spread(self, 6, off, 4, 1, 1.2, 1, a5(a), 0.785398, ox, oy, nil)
+        task.Wait(1)
+    end
+end
+
+---sub 36：16 轮 × 2 发（t=0 用 $10004、t=1 用 $10009 做偏移），偏移半径 64；
+---两条的 a1 都是 $10004（同一个值），spr3。
+local function p5_f36(self)
+    local a, b = -1.5708, -1.5708
+    for _ = 1, 16 do
+        a = a - 0.19635
+        local ox, oy = off5(a, 64)
+        w5_spread(self, 3, 2, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil)
+        task.Wait(1)
+        b = b + 0.19635
+        ox, oy = off5(b, 64)
+        w5_spread(self, 3, 6, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil)
+        task.Wait(1)
+    end
+end
+
+---──────────────────── 道中幽灵（载体烟尘 + 本体，合成一个对象） ────────────────────
+---生命周期的两个阶段写在协程里：前 80 帧只有烟尘（由 frame 里的 Hermite 驱动），
+---第 80 帧换贴图、开判定、起无敌计时，然后跑本体的发弹脚本。
+class["TH34_mid5"] = Class(enemy, {
+    ---@param life number 时间轴的 life（折 HP 见 hp5）
+    ---@param sub number 本体子程序号 11/13/15/…/36
+    ---@param mirror number 时间轴 op2/3 的镜像位（只有 sub 22 用得到）
+    ---@param drop number 时间轴的 itemdrop（0=小能量、1=点、2=大能量）
+    init = function(self, x, y, life, sub, mirror, drop)
+        local dust = (sub ~= 22 and sub ~= 23 and sub ~= 24)
+        ---nontaijutsu = true（原作 SET_HAS_CONTACT_HITBOX 0）：能被打、碰到自机不掉血。
+        enemy.init(self, dust and P5_DUST_STYLE or P5_BODY_STYLE, hp5(life), false, true, true)
+        self.x, self.y = x, y
+        self.hx, self.hy = x, y
+        self.sub, self.mirror, self.dr = sub, mirror or 0, drop
+        self.delay = dust and P5_DUST_FRAMES or 0
+        self.phase = dust and 0 or 1
+        ---★ 第一帧 frame 就会读这些，先在**顶层**给默认值（分支里再覆盖）。
+        self.A, self.B = 24, 24
+        self.dive_t, self.t_move = 0, 0
+        self.ddx, self.ddy = 0, 0
+        self.spd, self.accel, self.dir = 0, P5_ACCEL, 0
+        self.protect, self.colli = true, false
+        self.invul = 0
+        self.cb = 6
+        ---烟尘两条 Hermite 的常量（原作 t=0 求值一次后冻结）
+        self.px0, self.py0 = P5_DUST_X0, P5_DUST_Y0
+        self.pmx0, self.pmx1 = rnd_sign() * P5_DUST_M, rnd_sign() * P5_DUST_M
+        self.pmy0, self.pmy1 = P5_DUST_Y_M0, rnd_sign() * P5_DUST_Y_M1
+        ---按 sub 分派移动 / 无敌 / 掉落回调（数值逐条对过 ECL 的 Lunatic 行）
+        if sub <= 21 then
+            ---MOVE_DIR_TIME(0,0,θ,0) + SET_MOVE_ACCEL 0.02：spawn 当帧起沿 θ 匀加速
+            ---（11/15/19 的 θ=0 往 +x、13/17/21 的 θ=π 往 −x）。
+            self.dir = ((sub == 11 or sub == 15 or sub == 19)) and 0 or 180
+            self.invul = ((sub == 11 or sub == 13) and 10)
+                      or ((sub == 15 or sub == 17) and 0) or 30
+            self.cb = (sub == 11 or sub == 13) and 6 or 8
+        elseif sub <= 24 then
+            ---MOVE_DIR_TIME(60,4,π/2,2)：ease-out-quad 俯冲 120 px（t=0..59），
+            ---t=120 改 POLAR：22 是 θ=0（镜像位把 x 反过来 ⇒ 往画面中间走）、
+            ---23/24 是 θ=π/2（继续下潜）。accel 不写 ⇒ 0。
+            self.dive_t, self.t_move = 60, 120
+            self.ddy = -120
+            self.spd, self.accel = 2, 0
+            self.dir = (sub == 22) and ((self.mirror == 1) and 180 or 0) or -90
+            self.invul = (sub == 23) and 40 or 30
+            self.cb = 7
+        else
+            ---打完之后 t=4/61/122 的 MOVE_DIR_TIME(0,0,−π/2,0) + ACCEL 0.02 ⇒ 往上飞。
+            self.t_move = (sub == 36) and 122 or ((sub == 32 or sub == 34) and 61 or 4)
+            self.dir = 90
+            self.invul = ((sub == 26 or sub == 28) and 20)
+                      or ((sub == 32 or sub == 34) and 4) or 10
+            self.cb = ((sub == 30 or sub == 36) and 8) or 6
+        end
+        ---烟尘阶段的拖影（原作 sub 9 的 SET_TRAIL 0x19,48,16,1）。
+        self.img = "ghost_fire_y"
+        if dust then
+            smear_add(self, 120)
+        end
+        task.New(self, function()
+            if self.delay > 0 then
+                task.Wait(self.delay)
+            end
+            ---本体登场：换贴图（style 27 的 ghost_fire_r）、开判定、开无敌计时。
+            self.phase = 1
+            self._wisys:SetImage(P5_BODY_STYLE)
+            self.img = "ghost_fire_r"
+            self.smear = nil
+            self.colli = true
+            self.A, self.B = 24, 24
+            self._a = 255
+            if self.invul > 0 then
+                task.New(self, function()
+                    task.Wait(self.invul)
+                    self.protect = false
+                end)
+            else
+                self.protect = false
+            end
+            ---本体脚本（t 的零点就是本体的出生帧）
+            if sub == 11 then
+                p5_f11(self, PI, -0.0490874, 2.2)
+            elseif sub == 13 then
+                p5_f11(self, 0, 0.0490874, 2)
+            elseif sub == 15 then
+                p5_f15(self, 16, 0.475, 0.698132)
+            elseif sub == 17 then
+                p5_f15(self, 16, 0.475, 0.628319)
+            elseif sub == 19 then
+                p5_f15(self, 12, 0.375, 0.448799)
+            elseif sub == 21 then
+                p5_f15(self, 12, 0.375, 0.448799)
+            elseif sub == 22 then
+                task.Wait(60); p5_f22(self)
+            elseif sub == 23 or sub == 24 then
+                task.Wait(60); p5_f23(self)
+            elseif sub == 26 then
+                p5_f26(self, -0.19635, 2)
+            elseif sub == 28 then
+                p5_f26(self, 0.19635, 6)
+            elseif sub == 30 then
+                p5_f30(self)
+            elseif sub == 32 then
+                p5_f32(self, 2)
+            elseif sub == 34 then
+                p5_f32(self, 6)
+            elseif sub == 36 then
+                p5_f36(self)
+            end
+        end)
+    end,
+    frame = function(self)
+        enemy.frame(self)
+        if self.phase == 0 then
+            ---烟尘：位置直接由两条 Hermite 写（原作 INIT_INTERP 写 POS_X/POS_Y）。
+            local t = min(self.timer, P5_DUST_FRAMES) / P5_DUST_FRAMES
+            self.x = self.hx + hermite(t, self.px0, 0, self.pmx0, self.pmx1)
+            self.y = self.hy + hermite(t, self.py0, 0, self.pmy0, self.pmy1)
+            if self.timer > P5_DUST_FRAMES - P5_DUST_FADE then
+                self._a = max(0, 255 * (P5_DUST_FRAMES - self.timer) / P5_DUST_FADE)
+            end
+            object.smear_frame(self, TRAIL_DECAY)
+        else
+            local bt = self.timer - self.delay
+            if self.dive_t > 0 and bt <= self.dive_t then
+                ---ENEMY_MOVE_INTERP 的 ease-out-quad：pos = 出生点 + e(u)·位移
+                local u = min(bt, self.dive_t) / self.dive_t
+                local e = 1 - (1 - u) * (1 - u)
+                self.x = self.hx + self.ddx * e
+                self.y = self.hy + self.ddy * e
+            elseif bt >= self.t_move then
+                ---ENEMY_MOVE_POLAR：speed += accel 后 velocity = speed·(cosθ, sinθ)；
+                ---镜像位在 Enemy::Move 里把 velocity.x 取反（EnemyManager.hpp:79）。
+                self.spd = self.spd + self.accel
+                object.SetV(self, self.spd, self.dir, false)
+            end
+        end
+    end,
+    render = function(self)
+        object.smear_render(self, "mul+add", { 200, 210, 255 })
+        enemy.render(self)
+    end,
+    kill = function(self)
+        ---时间轴的 itemdrop 照掉（差异 35）：原作 SET_DEATH_TYPE 1（SCORE_ONLY）
+        ---用 `goto END_BOSS` **落进** DROP_ITEMS 分支（EnemyManager.cpp:968-983），
+        ---所以 SCORE_ONLY 一样会 SpawnItem。0=小能量→1 信仰、1=点→1 点、2=大能量→2 信仰。
+        if self.dr == 1 then
+            New(item.obj.point, self.x, self.y)
+        elseif self.dr == 2 then
+            New(item.obj.faith, self.x, self.y)
+            New(item.obj.faith, self.x, self.y)
+        elseif self.dr == 0 then
+            New(item.obj.faith, self.x, self.y)
+        end
+        ---再跑 SET_DEATH_CALLBACK_SUB：6 = 什么都不做、7 = 4 能量 + 3 点、8 = 4 能量 + 1 点。
+        if self.cb == 7 then
+            scatter_items(item.obj.faith, 4, self.x, self.y)
+            scatter_items(item.obj.point, 3, self.x, self.y)
+        elseif self.cb == 8 then
+            scatter_items(item.obj.faith, 4, self.x, self.y)
+            scatter_items(item.obj.point, 1, self.x, self.y)
+        end
+        enemy.kill(self)
+    end,
+})
+
+---==================== 挂到空 boss 的第四张符卡 ====================
+do
+    local CARD_NAME = "五道中「幽明之径」"
+    ---原作 t=500..5713（约 87 秒）；最晚一只 sub 36 的本体落在 5713+80 = 5793 帧、
+    ---t=122 起飞、再飞约 120 帧出上边界 ⇒ 约 6035 帧收干净。给 120 秒余量。
+    local CARD_TIME = 120
+    local LEVEL = 32
+    ---符卡历史槽位：th31(1..409+417..425)、th33(410..416)、th34 六面(426)、四面(461)、
+    ---三道中(462) 之后取 463。
+    local CARD_ID = 463
+
+    ---逐条生成表：{ 距上一条的帧数, 本体子程序号, x, y, itemdrop, life, mirror }
+    ---（x/y 已换算成我们的坐标；94 条全部用 /tmp/eclwork 的解释器逐值对过时间轴 0）。
+    ---★ sub 是**本体**号（时间轴的载体号 = 本体号 − 1）；22/23/24 是时间轴直接放的，
+    ---所以没有烟尘（见 init 里的 dust 判断）。时间轴的 sub 37（t=4820）和 sub 47
+    ---（t=6114）是道中 boss 占位（SET_BOSS 0、score 200000、life 1），不搬（差异 36）。
+    local WAVE5 = {
+        {    0, 11,   -128,     96,   0,   80, 0 },  -- t=500 载体 10
+        {   10, 11,   -112,    112,   0,   80, 0 },  -- t=510 载体 10
+        {   10, 11,    -96,    120,   1,   80, 0 },  -- t=520 载体 10
+        {  380, 13,    128,    112,   0,   80, 0 },  -- t=900 载体 12
+        {   10, 13,    112,    128,   0,   80, 0 },  -- t=910 载体 12
+        {   10, 13,     96,    144,   1,   80, 0 },  -- t=920 载体 12
+        {   10, 13,     64,    160,   1,   80, 0 },  -- t=930 载体 12
+        {  100, 11,   -160,     96,   2,   80, 0 },  -- t=1030 载体 10
+        {   10, 11,   -144,    112,   0,   80, 0 },  -- t=1040 载体 10
+        {   10, 11,   -128,    120,   0,   80, 0 },  -- t=1050 载体 10
+        {   10, 11,   -112,    128,   1,   80, 0 },  -- t=1060 载体 10
+        {   10, 11,    -96,    136,   1,   80, 0 },  -- t=1070 载体 10
+        {  200, 17,    128,    128,   1,   80, 0 },  -- t=1270 载体 16
+        {  100, 15,   -128,     96,   1,   80, 0 },  -- t=1370 载体 14
+        {  100, 15,    -96,    160,   1,   80, 0 },  -- t=1470 载体 14
+        {  100, 13,    128,    112,   1,   80, 0 },  -- t=1570 载体 12
+        {   10, 13,    112,    128,   1,   80, 0 },  -- t=1580 载体 12
+        {   10, 13,     96,    144,   1,   80, 0 },  -- t=1590 载体 12
+        {   10, 13,     64,    160,   1,   80, 0 },  -- t=1600 载体 12
+        {  200, 21,    128,    128,   1,   80, 0 },  -- t=1800 载体 20
+        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=1810 载体 10
+        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=1840 载体 18
+        {   10, 13,    112,    128,   0,   80, 0 },  -- t=1850 载体 12
+        {   30, 21,     96,    160,   1,   80, 0 },  -- t=1880 载体 20
+        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=1890 载体 10
+        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=1920 载体 18
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=1930 载体 12
+        {   60, 13,    128,    128,   1,   80, 0 },  -- t=1990 载体 12
+        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=2000 载体 10
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=2030 载体 10
+        {   10, 13,    112,    128,   0,   80, 0 },  -- t=2040 载体 12
+        {   30, 13,     96,    160,   1,   80, 0 },  -- t=2070 载体 12
+        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=2080 载体 10
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=2110 载体 10
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=2120 载体 12
+        {   60, 21,    128,    128,   1,   80, 0 },  -- t=2180 载体 20
+        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=2190 载体 10
+        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=2220 载体 18
+        {   10, 13,    112,    128,   0,   80, 0 },  -- t=2230 载体 12
+        {   30, 17,     96,    160,   1,   80, 0 },  -- t=2260 载体 16
+        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=2270 载体 10
+        {   30, 15,   -128,     96,   1,   80, 0 },  -- t=2300 载体 14
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=2310 载体 12
+        {  300, 22,    128,    240,   1,  160, 1 },  -- t=2610 载体 22
+        {  100, 22,   -128,    240,   1,  160, 0 },  -- t=2710 载体 22
+        {  100, 22,    128,    240,   0,  160, 1 },  -- t=2810 载体 22
+        {  100, 22,   -128,    240,   0,  160, 0 },  -- t=2910 载体 22
+        {  100, 22,    128,    240,   0,  160, 1 },  -- t=3010 载体 22
+        {  100, 22,   -128,    240,   0,  160, 0 },  -- t=3110 载体 22
+        {  100, 22,     96,    240,   1,  160, 1 },  -- t=3210 载体 22
+        {    0, 22,    -96,    240,   1,  160, 0 },  -- t=3210 载体 22
+        {  300, 24,      0,    240,   2,  160, 0 },  -- t=3510 载体 24
+        {  100, 22,     96,    240,   1,  160, 1 },  -- t=3610 载体 22
+        {    0, 22,    -96,    240,   1,  160, 0 },  -- t=3610 载体 22
+        {  200, 13,    128,    128,   1,   80, 0 },  -- t=3810 载体 12
+        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=3820 载体 10
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3850 载体 10
+        {   10, 13,    112,    128,   0,   80, 0 },  -- t=3860 载体 12
+        {   30, 13,     96,    160,   1,   80, 0 },  -- t=3890 载体 12
+        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=3900 载体 10
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3930 载体 10
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=3940 载体 12
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3970 载体 10
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=3980 载体 12
+        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=4010 载体 10
+        {   10, 13,     64,    160,   0,   80, 0 },  -- t=4020 载体 12
+        {  300, 23,      0,    240,   1,  160, 0 },  -- t=4320 载体 23
+        {  100, 24,     64,    240,   2,  160, 0 },  -- t=4420 载体 24
+        {    0, 24,    -64,    240,   2,  160, 0 },  -- t=4420 载体 24
+        {  523, 26,   -128,    192,   1,  160, 0 },  -- t=4943 载体 25
+        {   30, 28,    -96,    160,   0,  160, 0 },  -- t=4973 载体 27
+        {   30, 26,    -64,    128,   1,  160, 0 },  -- t=5003 载体 25
+        {   30, 28,    -32,     96,   0,  160, 0 },  -- t=5033 载体 27
+        {   30, 26,      0,     64,   1,  160, 0 },  -- t=5063 载体 25
+        {   30, 28,     32,     32,   0,  160, 0 },  -- t=5093 载体 27
+        {   30, 26,     64,      0,   1,  160, 0 },  -- t=5123 载体 25
+        {   30, 30,     96,    -32,   0,  160, 0 },  -- t=5153 载体 29
+        {  240, 32,    128,    112,   0,  110, 0 },  -- t=5393 载体 31
+        {   20, 34, 110.866, 66.078,   1,  110, 0 },  -- t=5413 载体 33
+        {   20, 32, 79.196, 32.804,   0,  110, 0 },  -- t=5433 载体 31
+        {   20, 34, 39.7991, 15.9165,   1,  110, 0 },  -- t=5453 载体 33
+        {   20, 32,      0,     16,   0,  110, 0 },  -- t=5473 载体 31
+        {   20, 34, -33.6761, 30.6986,   1,  110, 0 },  -- t=5493 载体 33
+        {   20, 32, -56.5685, 55.4315,   0,  110, 0 },  -- t=5513 载体 31
+        {   20, 34, -66.5193, 84.4468,   1,  110, 0 },  -- t=5533 载体 33
+        {   20, 32,    -64,    112,   0,  110, 0 },  -- t=5553 载体 31
+        {   20, 34, -51.7373, 133.43,   1,  110, 0 },  -- t=5573 载体 33
+        {   20, 32, -33.9411, 145.941,   0,  110, 0 },  -- t=5593 载体 31
+        {   20, 34, -15.3073, 148.955,   1,  110, 0 },  -- t=5613 载体 33
+        {   20, 32,      0,    144,   0,  110, 0 },  -- t=5633 载体 31
+        {   20, 34, 9.1844, 134.173,   1,  110, 0 },  -- t=5653 载体 33
+        {   20, 32, 11.3137, 123.314,   0,  110, 0 },  -- t=5673 载体 31
+        {   20, 34, 7.39104, 115.061,   2,  110, 0 },  -- t=5693 载体 33
+        {   20, 36,      0,    112,   0,  200, 0 },  -- t=5713 载体 35
+    }
+
+    local card = boss.card.New(CARD_NAME, CARD_TIME, CARD_TIME, CARD_TIME, 10000000)
+    function card:before()
+        ---耐久卡：不打超时音、关掉本体的判定与血条（照上面三张卡）
+        self.NotPlayTimeOutSound = true
+        self.colli = false
+        self.no_hp_render = true
+    end
+    function card:init()
+        pool4 = {}
+        sound_tick4, sound_stamp4 = 0, -1
+        task.New(self, function()
+            for _, w in ipairs(WAVE5) do
+                task.Wait(w[1])
+                New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
+            end
+        end)
+    end
+    function card:frame()
+        sound_tick4 = sound_tick4 + 1
+    end
+    function card:render() end
+    ---★ 不用清理：所有幽灵都是独立对象（没有 object.Connect 到 boss），
+    ---最晚的一只在 120 秒内飞出场地自毁。
     function card:del() end
 
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)

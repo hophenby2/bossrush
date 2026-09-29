@@ -1,7 +1,8 @@
 ---=====================================
----TH33  文花帖（TH095）第 7 关 world08 —— 幽幽子 4 幕 + 妖梦 3 幕
+---TH33  文花帖（TH095）第 7 关 world08 + Stage EX —— 原作 15 张符卡
 ---
----本关把原作 world08 的 7 张符卡逐幕移植成一条 Boss Rush。数据来源是
+---本关把原作 world08 的 7 张符卡 + Stage EX 的 8 张符卡逐幕移植成一条 Boss Rush。
+---world08 的 7 幕数据来源是
 ---th095/src/SceneSelect.cpp:138-145 的 TH095_SCENE 表（scoreIndex, 关卡组, 幕, ECL, BGM）：
 ---  71 ecl17_a 幽幽子 幽雅「死出の誘蛾灯」    75 ecl17_c 幽幽子 死符「醉人之生、死之梦幻」
 ---  72 ecl16_b 妖梦   密符「御大師様の秘鍵」  76 ecl16_d 妖梦   超人「飛翔役小角」
@@ -14,13 +15,28 @@
 ---是这次临时反汇编出来的（脚本 /tmp/p95b.py 不入库；数据在 `[th095] …/data/ecl1{6,7}_*.ecl`，
 ---换机器要重 dump 一遍）。各卡块里的「@地址」都指这几份 dump，改前先回去核对。
 ---
----两班人马怎么排
----  原作 7 幕是**自由选关**、本来没有先后；这里按角色分成两个 boss 组
+---Stage EX（scene group 10）的 8 幕在文件后半（"Stage EX —— 两件公共工具" 往下），
+---数据来源是 th095/src/SceneSelect.cpp:165-172 的同一张 TH095_SCENE 表（scene 100..107）：
+---  100 ecl22_a 芙兰 禁忌「フォービドゥンフルーツ」   101 ecl22_b 芙兰 禁忌「禁じられた遊び」
+---  102 ecl23_a 紫   境符「色と空の境界」             103 ecl23_b 紫   境符「波と粒の境界」
+---  104 ecl24_a 妹红 貴人「サンジェルマンの忠告」     105 ecl24_b 妹红 蓬莱「瑞江浦嶋子と五色の瑞亀」
+---  106 ecl25_a 萃香 鬼気「濛々迷霧」                 107 ecl25_b 萃香 「百万鬼夜行」
+---八张也是**自由选关**、共用场景资源（world05/06/09/10.std + enm22..25.anm + bgm th095_03.wav），
+---所以四人共用 BGM = "TH09_5_1"（東の国の眠らない夜）、背景 = TH095_bg。
+---每个数值都标了它在反汇编里的出处：`/tmp/E_ecl2{2,3,4,5}_{a,b}.txt`
+---（脚本 /tmp/d95v2.py 不入库；数据在 `[th095] …/data/ecl2{2,3,4,5}_{a,b}.ecl`）。
+---
+---六个 boss 组怎么排
+---  原作 15 幕全是**自由选关**、本来没有先后；这里按角色归成六个 boss 组
 ---  （AGENTS.md §8 与 th31.lua 的教训：**一个角色一个组**，boss.CreateGroup 一次建一组）：
----      组 1 = 西行寺幽幽子：71 → 73 → 75 → 77（4 张）
----      组 2 = 魂魄妖梦：  72 → 74 → 76（3 张）
----  main_stage.lua 的 TH33 里连着调 boss.CreateGroup(1/2, 31)，就会依次打完两班人马。
----  ★ 别把两边塞进同一个组的 a、b：CreateGroup 会把 a、b、c… 一次全建出来（两人同时上场）。
+---      world08：组 1 = 西行寺幽幽子：71 → 73 → 75 → 77（4 张）
+---              组 2 = 魂魄妖梦：  72 → 74 → 76（3 张）
+---      Stage EX：组 3 = 芙兰朵露：100 → 101（2 张）
+---                组 4 = 八云紫：  102 → 103（2 张）
+---                组 5 = 藤原妹红：104 → 105（2 张）
+---                组 6 = 伊吹萃香：106 → 107（2 张）
+---  main_stage.lua 的 TH33 里连着调 boss.CreateGroup(1..6, 31)，就会依次打完这六班的 15 张。
+---  ★ 别把两个角色塞进同一个组的 a、b：CreateGroup 会把 a、b、c… 一次全建出来（两人同时上场）。
 ---
 ---坐标系与角度（换算的理由）
 ---  TH095 的场地同样是 384x448，但原点在**左上**、y 轴**朝下**：世界坐标 (x,y) 画到
@@ -36,7 +52,7 @@
 ---  不必逐个取反；只有**逐发自机狙**那种「每发各朝一个方向」才必须取反。
 ---  本文件里每一处用到角度的地方都写了它属于哪一种。
 ---
----与原作的差异（7 张卡共有，逐张卡的差异写在各卡块的注释里）
+---与原作的差异（15 张卡共有；Stage EX 若某一条的落点不同，写在那张卡自己的注释里）
 ---  1) 拍照关的相机 / 计分系统：**相机本身不实现** —— 本仓库有自己的拍照自机
 ---     射命丸文（THlib/player/aya/aya.lua:191 给 player 挂了 player.camera，快门由玩家
 ---     自己按）。原作那套 opcode —— ins_141（快门上限）、ins_143（拍照标记）、
@@ -149,8 +165,10 @@
 ---所以下面每一列都是「这一张单独打」的数，不是整关同时在场。
 ---★ 自检桩件里没有相机（`player.camera == nil`）⇒ take_damage2 不会被调、photo_hits
 ---恒为 0，所以下面这些读数都是**原作 photoIndex = 0**（一张照都没拍）那一档；
----真机用射命丸文拍中本体之后，看 photoIndex 的那几张（卡 1 的狙间隔、卡 3 的每圈弹数、
----卡 5 的小圈圈数、卡 6 的俯冲速度、卡 7 的光翼）会再往上抬。）
+---真机用射命丸文拍中本体之后，看 photoIndex 的那几张（world08：卡 1 的狙间隔、
+---卡 3 的每圈弹数、卡 5 的小圈圈数、卡 6 的俯冲速度、卡 7 的光翼；Stage EX：卡 8 的
+---每轮弹数、卡 11 的弹速、卡 12 的每圈弹数、卡 13 的基角、卡 15 的躲闪/密度）
+---会再往上抬。）
 ---  卡                             峰值同屏弹(7200f)  威胁度(1800f)
 ---  1 幽雅「死出の誘蛾灯」                704             14.64
 ---  2 蝶符「鳳蝶紋の死槍」                283              4.68
@@ -159,6 +177,26 @@
 ---  5 密符「御大師様の秘鍵」              371              0.00
 ---  6 行符「八千万枚護摩」                888              2.19
 ---  7 超人「飛翔役小角」                  186              0.24
+---  ── Stage EX（scene group 10；背景 TH095_bg / BGM TH09_5_1）──
+---  8 禁忌「フォービドゥンフルーツ」        679              0.78
+---  9 禁忌「禁じられた遊び」                 12              0.34
+--- 10 境符「色と空の境界」                1100              2.60
+--- 11 境符「波と粒の境界」                 277              2.28
+--- 12 貴人「サンジェルマンの忠告」          650              4.64
+--- 13 蓬莱「瑞江浦嶋子と五色の瑞亀」        913              2.71
+--- 14 鬼気「濛々迷霧」                   2161（见下）        10.69
+--- 15 「百万鬼夜行」                       575              2.32
+---  （8 张 EX 的 7200f 峰值都在 14400/28800/57600 帧保持不变或只差个位数，
+---  不是泄漏；唯一的例外是卡 14 濛々迷霧：Sub4 的雾滴速度只有 0.05 px/帧、
+---  平均要在场里飘几千帧才出边界，所以它的同屏数是很长的暂态
+---  —— 1800/3600/7200/14400/28800/57600 帧 = 798/1461/2161/2171/2178/2188，
+---  7200 帧以后基本不再涨；而且本卡 CARD_TIME = 50s = 3000 帧，
+---  **真机一局活不到 7200 帧** —— 按卡时限量到 3000 帧时峰值 1272
+---  （1800/2400/3000 帧 = 798/988/1272），只有表里那个 2161 的六成。
+---  EX 这一批的发射量与各卡常量一律按 ECL 原样，没打折。卡 9「禁じられた遊び」同屏
+---  只有 12 颗弹、出膛总数也少，是因为原作弹幕全在**激光**里（4 组 × 4 根 type 12、
+---  第 4 波再加 8 根朝自机的），唯一的 NewSimpleBullet 是每波 4 颗大玉（type 17
+---  → ball_huge）—— 激光在本仓库是独立对象、不计进这里的弹数，详见那张卡的注释。）
 ---  （威胁度那一列是 `tools/threat.lua mod/GAME/th33.lua 1800` 的默认种子读数。
 ---  这一列对发弹相位极敏感：卡 1 只把蝶弹两组的相位从「闸门多等一帧」改回原作的
 ---  4+4 帧（见那一卡 ring_t 的注释）、自机狙间隔改 1 帧（121→120），读数就从
@@ -171,10 +209,14 @@
 ---    700/702/704、281/283/283、527/527/529、706/708/712、282/308/371、
 ---    885/888/890、183/183/187 —— 不会随时间线性爬（末位浮动是发弹相位，不是泄漏；
 ---    卡 5 的 282→371 是「钥匙边掉边发」的长暂态，14400 帧以后不再涨，见 7200/14400/28800
----    = 371/371/379）。
+---    = 371/371/379）。8 张 EX 同样扫了四档，除了卡 14 濛々迷霧的长暂态（见上表
+---    下面那段）以外全部持平：678/679/679/680、12 平、1100 平、277 平、
+---    633/642/650/664、913 平、798/1461/2161/2171、574/574/575/581。
 ---  · ② 字段审计 ✅ —— `luajit tools/check_fields.lua mod/GAME/th33.lua`：通过。
----  · ③ 整项目扫描 ✅ —— `luajit tools/check_stage.lua --all`：76 个 lua 全过。
----  · ④ `luajit tools/threat.lua mod/GAME/th33.lua 1800`：7 张全部「有限位」、
+---  · ③ 整项目扫描 ✅ —— `luajit tools/check_stage.lua --all`：76 个 lua 全过
+---    （th34.lua 原来那张 433 与本关 Stage EX 之后的空号没关系；它撞的是 th31 的
+---    LIST，已在 2026-09-28 改成 461，现在没有跨组重复）。
+---  · ④ `luajit tools/threat.lua mod/GAME/th33.lua 1800`：15 张全部「有限位」、
 ---    威胁度 0.00 ~ 14.64。文档的 0.5~1.5 是同工具量**自制卡**定的；拿它量原作移植卡
 ---    本来就是超区间读数（本仓库 th20.lua 的 35 张：中位 1.15、8 张 > 1.5、最高 3.99），
 ---    硬压到 1.5 就成了「把原作改松」，不是移植。卡 1 的 14.64 最高，那是「两组蝶弹
@@ -186,7 +228,14 @@
 ---    「第 k 张后 hp = maxhp×(1−k/N)」「第 N 张恰好 == 0（不是 1e-13 级残血）」
 ---    「拍空枪不加计数」「photo_index 截断到 N」「未标记的 boss 仍走原函数」
 ---    「子弹已经打得更狠时不回血」共 14 条全过（脚本 /tmp/th33_photo_test.lua，不入库）。
----    逐卡的 N 是 7/7/10/4/6/7/8（见各卡常量段）。
+---    逐卡的 N：world08 七张是 7/7/10/4/6/7/8，Stage EX 八张是
+---    6/6/5/6/10/5/3/10（各卡 PHOTO_LIMIT 就是那一张的 ins_141，见各卡常量段）。
+---
+---符卡历史槽位（CARD_ID，跨关唯一）：world08 七张占 410..415 与 416（409 被 th31 占）、
+---Stage EX 八张占 453..460。⚠ 只扫 `boss.card.add` 的末参会漏号 —— th31.lua 的
+---`local LIST = {` 表里还有一批带 id 的行（LIST 实际用到 452），所以要从 453 起。
+---th34.lua 的「四面道中」原来取 433（撞 th31 的 LIST），已改成 461 ⇒ 本关的
+---453..460 之后留给 th34 的 461..463，全项目没有跨组重复。
 ---=====================================
 
 local object, boss = object, boss
@@ -2441,7 +2490,9 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900。
     local CARD_HP = 900
     ---符卡历史槽位：410..416 已被上一批七张占掉；th31 的 LIST 实际用到 452
-    ---（mod/GAME/th31.lua:31619-31656，别只看 CARD_ID），所以 Stage EX 从 453 起（见文件头）。
+    ---（mod/GAME/th31.lua 的 `local LIST = {`，末行「魔砲「ファイナルマスタースパーク」」
+    ---占 452 —— **别只扫 boss.card.add 的 CARD_ID=、也别只看 LIST 第 3 项之外的行**），
+    ---所以 Stage EX 从 453 起（见文件头「符卡历史槽位」）。
     local CARD_ID = 453
 
     ---──────────────────────── 演出 / 弹幕 ────────────────────────
@@ -2537,8 +2588,7 @@ end--禁忌「フォービドゥンフルーツ」
 
 do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 张）
     ---原作是「不许玩的游戏」：本体贴着中轴 y=0 在 ±48 的窄框里**左右躲**（自机的反方向），
-    ---同时两层弹幕叠着打 —— 一层是每隔 120 帧换一组朝向的**飞棍激光**，
-    ---另一层是每 10 帧一轮的「对着自机 7 发 / 背着自机 21 发」双扇。
+    ---同时只有**一层**弹幕 —— 每 120 帧换一组朝向的**飞棍激光**（外加每波一颗大玉圈）。
 ---数据源 /tmp/E_ecl22_b.txt。骨架：
     ---  · Sub2：ins_63(-128,-64) 进场 → **t=40** 就 ins_64(30,4,0,224) 落到 (0,224)（TH095
     ---    坐标 y 朝下 ⇒ 我们的 y = 0，正中央）；t=70 亮卡名 + ins_75(-48,224,48,224)
@@ -2553,10 +2603,10 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     ---    组内 4 根的指向是十字 {π, 0, −π/2, π/2}、角速度 ±1.5°/帧）。第 4 波额外再放
     ---    8 根 type 12（长 96、维持 600 帧、角速度 −2°/+3°、漂移 = 朝自机 0.5 px/帧）。
     ---    每波还各甩 4 颗 type 17 大玉（`89(17,0,4,1,1,1.5,基准角,…)`，基准角 π/2 与 π/4 交替）。
-    ---  · Sub5（双扇，每 10 帧一轮）：ins_7(floatV0, playerAngle) → **ins_87 = FAN**
-    ---    （aimMode 1，BulletManager.cpp:352-365）：7 发、步进 0.101342 rad、速 5，
-    ---    角度 = 扇偏移 + floatV0 ⇒ 对着自机的一窄扇；再把 floatV1 设成 floatV0+π 放
-    ---    21 发、步进 0.241661 rad、速 6 ⇒ 背着自机的一大扇。两条都照原作。
+    ---  · Sub5（每 10 帧一轮的 ins_87 = FAN 双扇）**在文件里从来没被调用**：
+    ---    Sub3 只有 ins_117(0,7) 与 ins_117(1,4) 两条（= 装饰 Sub7 + 激光 Sub4），
+    ---    Sub2 的 ins_52(3) 起的是 Sub3 —— 全文件再没有第三条指向 Sub5。
+    ---    ⇒ 原作这里不发弹，移植版不实现（见下面「Sub5 是死代码」那段）。
     ---  · Sub6（54(2)+80(8)+81(16)）只动标志位、Sub7（106(5)+150(10)）是整屏装饰 ANM，
     ---    都跟弹幕无关，不实现。
     ---  · 弹型：type 3 → ball_small（半径 2）、type 13 → ball_mid（半径 4）、
@@ -2660,36 +2710,10 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
         end)
     end
 
-    ---Sub5 的两条扇：ins_87 是 FAN（aimMode 1）⇒
-    ---  弹角(TH095) = 扇偏移 + 操作数 angle；换算到我们这边就是 `基准 − 扇偏移`。
-    ---（奇数 count1 的第 0 发偏移是 +0.5×step、第 1 发是 −1×step…照抄 ex_fan_offsets。）
-    local FAN1_COUNT, FAN1_SPEED, FAN1_STEP = 7, 5, 5.8064        -- 0.101342 rad
-    local FAN1_STYLE, FAN1_COLOR = ball_small, ex_color(6)
-    local FAN2_COUNT, FAN2_SPEED, FAN2_STEP = 21, 6, 13.8462      -- 0.241661 rad
-    local FAN2_STYLE, FAN2_COLOR = ball_mid, ex_color(3)
-    local FAN_INTERVAL = 10
-
-    local FAN1_OFFSETS = ex_fan_offsets(FAN1_COUNT, FAN1_STEP)
-    local FAN2_OFFSETS = ex_fan_offsets(FAN2_COUNT, FAN2_STEP)
-
-    local function fire_fan(style, color, owner, offsets, speed, base_deg)
-        for i = 1, #offsets do
-            local a = base_deg - offsets[i]                 -- TH095 偏移取反（度）
-            NewSimpleBullet(style, color, owner.x, owner.y, speed, a, false, 0, false)
-        end
-    end
-
-    local function fan_context(owner)
-        task.New(owner, function()
-            while true do
-                local pa = Angle(owner.x, owner.y, player.x, player.y)
-                fire_fan(FAN1_STYLE, FAN1_COLOR, owner, FAN1_OFFSETS, FAN1_SPEED, pa)
-                fire_fan(FAN2_STYLE, FAN2_COLOR, owner, FAN2_OFFSETS, FAN2_SPEED, pa + 180)
-                PlaySound("tan00", 0.1, owner.x / 256, false)
-                task.Wait(FAN_INTERVAL)
-            end
-        end)
-    end
+    ---Sub5（原文件里的「对自机 7 发 / 背自机 21 发」双扇）是**死代码**：Sub3 只调
+    ---ins_117(0,7) 与 ins_117(1,4)（= 装饰 Sub7 + 激光 Sub4），全文件再没有第二条
+    ---ins_117/ins_52 指向 Sub5（`grep id=117 /tmp/E_ecl22_b.txt` 只有 @760/@780 两行）
+    ---⇒ 原作里这一层根本不会执行，移植时删掉（旧注释把它当成真发弹，已改正）。
 
     ---──────────────────────── 符卡本体 ────────────────────────
 
@@ -2706,7 +2730,6 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=70：亮卡名 + 起 Sub3。
             laser_context(self)
-            fan_context(self)
             task.Wait(MOVE_DELAY)
             while true do
                 ---ins_51：本体在自机右边就往左走，否则往右走（总是躲开自机）。
@@ -2745,12 +2768,13 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
     ---      → 117(0,5) Sub5 → 等 150 → 117(0,6) Sub6 → 等 120
     ---      → 4 条 Sub8（随机扇）→ 等 110 → 演出 → 等 50 → 全删 → 等 60 → 跳回开头。
     ---  · Sub4 / Sub5 是同一套的镜像（角速度符号相反）：128 根 ins_147 旋转激光，
-    ---    分两批各 64 根 —— 批量 1（type 7、色 5、四段 30/30/30/10、角速度 +0.1758°/帧）
-    ---    在角度 k×11.25°；批量 2（type 12、色 0、四段 60/30/30/10、角速度 −0.1758°/帧）
+    ---    分两批各 64 根 —— 批量 1（type 7、色 5、四段 30/30/30/10、角速度 ±0.1758°/帧）
+    ---    在角度 k×11.25°；批量 2（type 12、色 0、四段 60/30/30/10、角速度 ∓0.1758°/帧）
     ---    在 (k+0.5)×11.25°（Sub4 的 @1836 ins_5 回到 @1708；@2024 回到 @1896）。
     ---    参数照 ins_147：最大长 512、宽 16、followPhotoTarget = 1 ⇒ 每帧钉在本体上。
-    ---  · Sub6 换成 ins_157（每帧长 5、四段 50/10/10/4、最大长 512、角速度 ∓0.3516°/帧），
+    ---  · Sub6 换成 ins_157（四段 50/10/10/4、最大长 512、角速度 ∓0.3516°/帧），
     ---    每轮两根：A 在 (k+0.5)×11.25°、B 在 (k+1)×11.25°；64 轮 ⇒ 128 根。
+    ---    ★ 两段调的**是同一个 Sub6**（@788 与 @1196 都是 ins_117(0,6)）⇒ 旋向不翻。
     ---  · Sub7（每 2 帧一轮）：先 ins_38(floatV0, 32) 把出膛点挪到本体 32 px 外、ins_100 写进去，
     ---    floatV2 = floatV0 + floatV1，再 ins_87 = FAN 8 发（步进 10°、速 2.5）；
     ---    收尾 floatV0 += 6°、floatV1 −= 3.6°（所以扇角 = floatV0 + floatV1 每轮净转 +2.4°）。
@@ -2788,32 +2812,38 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
     local AV_157 = -0.3516                               -- 0.00613592 rad/帧
 
     ---一批 ins_147：count 根、从角度 (k + phase)×LASER_ROT 起、角速度 av。
-    local function burst_147(owner, count, phase, index, av)
+    ---startup 要单独传：同一批里 type 7 是 30 帧、type 12 是 60 帧（见 lasers_4）。
+    local function burst_147(owner, count, phase, index, av, startup)
         for k = 0, count - 1 do
             local a = (k + phase) * LASER_ROT
             spawn_ex_laser(owner, lasers, index, owner.x, owner.y, -a,
-                    LASER_LEN, LASER_W, LASER_SPEED_147, 30, 30, 30, 10,
+                    LASER_LEN, LASER_W, LASER_SPEED_147, startup, 30, 30, 10,
                     av, 0, 0, true, true)
         end
     end
 
-    ---Sub4 / Sub5：两批 64 根（先 type 7 色 5、再 type 12 色 0）。sign = ±1 翻旋向。
+    ---Sub4 / Sub5：两批 64 根（先 type 7 色 5 四段 30/30/30/10、再 type 12 色 0 四段 60/30/30/10）。
+    ---角速度按「TH095 顺时针为正 ⇒ 我们取反」：
+    ---  Sub4（sign = +1）原值 +0.1758 / −0.1758（type 7 / type 12）
+    ---  Sub5（sign = −1）原值 −0.1758 / +0.1758  ⇒ 用 AV_147 = −0.1758 表达就是下表。
     local function lasers_4(owner, sign)
-        burst_147(owner, 64, 0, 7, AV_147 * sign)
-        burst_147(owner, 64, 0.5, 12, -AV_147 * sign)
+        burst_147(owner, 64, 0, 7, AV_147 * sign, 30)
+        burst_147(owner, 64, 0.5, 12, -AV_147 * sign, 60)
     end
 
     ---Sub6：64 轮 × 2 根 ins_157（A 在 (k+0.5)×11.25°、B 在 (k+1)×11.25°）。
-    local function lasers_6(owner, sign)
+    ---★ 两段用的是**同一个 Sub6**（Sub3 两次都 ins_117(0,6)）⇒ 没有 sign，两段一模一样。
+    ---原值：type 12 是 −0.3516°/帧、type 7 是 +0.3516°/帧 ⇒ 我们这边正负互换。
+    local function lasers_6(owner)
         for k = 0, 63 do
             local a = (k + 0.5) * LASER_ROT
             spawn_ex_laser(owner, lasers, 12, owner.x, owner.y, -a,
                     LASER_LEN, LASER_W, LASER_SPEED_157, 50, 10, 10, 4,
-                    AV_157 * sign, 0, 0, true, true)
+                    -AV_157, 0, 0, true, true)
             a = (k + 1) * LASER_ROT
             spawn_ex_laser(owner, lasers, 7, owner.x, owner.y, -a,
                     LASER_LEN, LASER_W, LASER_SPEED_157, 50, 10, 10, 4,
-                    -AV_157 * sign, 0, 0, true, true)
+                    AV_157, 0, 0, true, true)
         end
     end
 
@@ -2893,9 +2923,9 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作 Sub2 的 t=130，起 Sub3。
             while true do
-                lasers_4(self, 1)                     -- +0.1758°/帧
+                lasers_4(self, 1)                     -- 第一批的旋向
                 task.Wait(150)
-                lasers_6(self, 1)                     -- −0.3516°/帧
+                lasers_6(self)                        -- 两段共用、不翻
                 task.Wait(120)
                 local toks = start_fan_children(self, false)
                 task.Wait(110)
@@ -2906,7 +2936,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
 
                 lasers_4(self, -1)                    -- 旋向反过来
                 task.Wait(150)
-                lasers_6(self, -1)
+                lasers_6(self)                        -- 同一份 Sub6
                 task.Wait(120)
                 toks = start_fan_children(self, true)
                 task.Wait(110)
@@ -3045,7 +3075,9 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
     ---      intV1 = photoIndex/2 + 11（拍得越多圈越密，11..16）；
     ---      ins_89(type 18、color 1、count1 = intV1、count2 = 2、speed1 = 4、speed2 = 1.5、
     ---             angleStep = 0) ⇒ 一圈 intV1 个方向，每个方向**两颗**（速 4.0 与 2.75）。
-    ---      基角是 floatV0/floatV1 二选一，但整圈图案与基角无关 ⇒ 那两个变量不实现。
+    ---      基角是 floatV0/floatV1 二选一（intV0 = randU31 % 2，进上下文时抽一次、定死），
+    ---      两者每轮分别 −0.5°/+0.5°（TH095）⇒ 环在慢慢转；变量本身由 Sub3 在 t=90/t=180
+    ---      加减 45°、甚至被位置量覆盖后再复用（见 main_script / teleport_mid 的注释）。
     ---      ★ Sub4 在 t=2 处有一条 ins_4(0,-224) 跳回自己的 t=0 —— 这条跳转**先**执行、
     ---        且把上下文时间重置为 0，所以 @1740 之后那一段（四角 96 发 + 本体 64 发）
     ---        是**死代码**，原作里从来不会执行（旧摘要把它当成了第二段发弹）。
@@ -3074,12 +3106,12 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
     local RING_GAP = 2                                  -- Sub4 的 ins_4(0,-224)
     local BLOCK = 90                                    -- Sub3 每 90 帧重开一次 Sub4
 
-    ---一圈：count1 个方向 × 2 个速度（angleStep = 0 ⇒ 同一方向两颗）。
-    local function fire_ring(owner, count)
+    ---一圈：count1 个方向 × 2 个速度（angleStep = 0 ⇒ 同一方向两颗），基准角 base。
+    local function fire_ring(owner, count, base)
         local step = 360 / count
         local v2 = RING_SPEED1 - (RING_SPEED1 - RING_SPEED2) / 2
         for i = 0, count - 1 do
-            local a = i * step
+            local a = base + i * step
             NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y,
                     RING_SPEED1, a, false, 0, false)
             NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y,
@@ -3088,34 +3120,60 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
     end
 
     ---t=90 的瞬移：随机选左右一侧（clamp 之后落到 ±140）。
+    ---原作顺序是先抽 intV0 = randU31 % 2 决定方向、再抽两个 randF32 当坐标，照抄。
     local function teleport_side(owner)
-        local x = ran:Float(0, 64) + (ran:Int(0, 1) == 0 and -188 or 124)
+        local side = (ran:Int(0, 1) == 0)
+        local x = ran:Float(0, 64) + (side and -188 or 124)
         owner.x = max(BOX_L, min(BOX_R, x))
         owner.y = field_y(ran:Float(BAND_LO, BAND_HI))
     end
 
-    ---t=180 的瞬移：中线附近。
+    ---t=180 的瞬移：中线附近。★ 原作的 floatV0/floatV1 在这里**被位置量覆盖**
+    ---（randF32S×32 与 randF32×64+128，本来是 x/y 坐标），瞬移之后又拿它们 ±45° 当
+    ---**下一轮的基角**用（EclRun 里 floatV0 就是普通 f32，没有类型）——所以把这两个
+    ---残值原样返回给 main_script，别当成普通坐标丢掉。
     local function teleport_mid(owner)
-        owner.x = max(BOX_L, min(BOX_R, ran:Float(-32, 32)))
-        owner.y = field_y(ran:Float(BAND_LO, BAND_HI))
+        local px = ran:Float(-32, 32)           -- floatV0 = randF32S × 32（TH095 x）
+        local py = ran:Float(BAND_LO, BAND_HI)  -- floatV1 = randF32 × 64 + 128（TH095 y）
+        owner.x = max(BOX_L, min(BOX_R, px))
+        owner.y = field_y(py)
+        return px, py
     end
 
-    ---Sub3 + Sub4：每 90 帧重开一次发弹上下文；发弹上下文自己每 2 帧甩一圈。
+    ---一轮发弹上下文（= Sub3 两次 ins_117(0,4) 之间那 90 帧）：
+    ---  · 圈数 intV1 = int(photoIndex / 2) + 11，**重开时才重读**；
+    ---  · 基角在 floatV0 / floatV1 里二选一（intV0 = randU31 % 2，进上下文时抽一次、定死）；
+    ---  · 每轮（2 帧）floatV0 −0.5°、floatV1 +0.5°（TH095 弧度 0.00872665）⇒ 环慢慢转。
+    ---我们这边基角 = −(TH095 角)：floatV0 那一支每轮 +0.5°、floatV1 那一支 −0.5°。
+    local RING_DRIFT = 0.5
+    local function ring_block(owner, base0, base1)
+        local count = math.floor(photo_index(PHOTO_LIMIT) / 2) + RING_COUNT0
+        local use0 = (ran:Int(0, 1) == 0)
+        local b0, b1 = base0, base1
+        for _ = 1, BLOCK / RING_GAP do
+            fire_ring(owner, count, use0 and b0 or b1)
+            b0 = b0 + RING_DRIFT
+            b1 = b1 - RING_DRIFT
+            task.Wait(RING_GAP)
+        end
+    end
+
+    ---Sub3：一轮 180 帧，t=0 / t=90 各起一次发弹上下文（后一次先瞬移、再把两个「角度变量」
+    ---±45°，见 Sub3 @1108/@1144），t=180 瞬移 + 覆盖变量后 ins_4 跳回 t=0（@784，
+    ---**跳过**开头那两句 floatV0 = floatV1 = playerAngle ⇒ 自机角只在第一轮读一次）。
     local function main_script(owner)
         task.New(owner, function()
+            local f0 = Angle(owner.x, owner.y, player.x, player.y)   -- = −deg(floatV0)
+            local f1 = f0                                            -- = −deg(floatV1)
             while true do
-                local count = math.floor(photo_index(PHOTO_LIMIT) / 2) + RING_COUNT0
-                for _ = 1, BLOCK / RING_GAP do
-                    fire_ring(owner, count)
-                    task.Wait(RING_GAP)
-                end
-                teleport_side(owner)
-                count = math.floor(photo_index(PHOTO_LIMIT) / 2) + RING_COUNT0
-                for _ = 1, BLOCK / RING_GAP do
-                    fire_ring(owner, count)
-                    task.Wait(RING_GAP)
-                end
-                teleport_mid(owner)
+                ring_block(owner, f0, f1)            -- @784/@796：起 Sub4
+                teleport_side(owner)                 -- @1056：t=90 瞬移
+                f0, f1 = f0 + 45, f1 - 45            -- @1108/@1144：floatV0 −= 45°、floatV1 += 45°
+                ring_block(owner, f0, f1)            -- @1180：重开 Sub4
+                local px, py = teleport_mid(owner)   -- @1284：t=180 瞬移
+                ---@1304/@1340：残值当角度再 ±45°（TH095 侧 −45/+45 ⇒ 我们 +45/−45）。
+                f0 = -math.deg(px) + 45
+                f1 = -math.deg(py) - 45
             end
         end)
     end
@@ -3150,7 +3208,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
 end--貴人「サンジェルマンの忠告」
 
 do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，组 5a 第 2 张）
-    ---原作：本体在一条浅带里慢慢挪，同时每 30 帧在「上移 32 px 的位置」上向三个方向
+    ---原作：本体在一条浅带里慢慢挪，同时每 30 帧在「上移 32 px 的位置」上向**五**个方向
     ---抛出五色亀（Sub4 = 15 发 24° 等分环、Sub5 = 10 发 36° 等分环，各 5 种颜色）。
     ---数据源 /tmp/E_ecl24_b.txt（ECL …/data/ecl24_b.ecl）。骨架：
     ---  · Sub2：ins_63(-128,-64) 进场 → t=100 ins_64(30,4,0,144) 落 (0,144)（我们的 (0,80)）；
@@ -3160,18 +3218,20 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     ---    ins_2(200) → 杀掉 slot 0（ins_117(0,-1)）→ ins_67(40,4,1) 躲 40 帧 →
     ---    ins_4(0,-124) 跳回 t=0 的 ins_117(0,6)。⇒ 每轮 320 帧齐射 + 40 帧移动。
     ---  · Sub6 是 30 帧一轮的**子上下文**：
-    ---      t=0：ins_26(floatV0, pos.y, 32) + ins_63(pos.x, floatV0) ⇒ 本体 y 临时 −32
-    ---           （TH095 y 下正 ⇒ 屏幕上是上移，我们坐标 +32）；这一帧结束时（@2884）
-    ---           用 ins_25 加回来。发弹用的 worldPosition 就是**移位后**的位置。
-    ---      floatV0 = playerAngle；然后 3 轮（floatV0 += 72°，TH095 弧度）：
+    ---      t=0：ins_26(floatV0, pos.y, 32) + ins_63(pos.x, floatV0) ⇒ floatV0 = pos.y − 32
+    ---           再写回 pos.y（TH095 y 下正 ⇒ 屏幕上**上移** 32 px；我们坐标就是 +32）；
+    ---           一轮结束时（@2884）用 ins_25 加回来。发弹用的 worldPosition 就是**移位后**的位置。
+    ---      floatV0 = playerAngle；然后 **5 轮**（每轮末 floatV0 += 72°、ins_37 归一化）：
     ---        ins_38(eF0,eF1, floatV0, 40) + ins_100 ⇒ shootOffset = 40 px 外
     ---        ins_52(4) ⇒ 调 Sub4（15 发）；40→32 px + ins_52(5) ⇒ Sub5（10 发）；
-    ---        32→72 px + ins_52(5) ⇒ Sub5 再来一次。3 轮 × 35 = **105 发 / 30 帧**。
+    ---        32→72 px + ins_52(5) ⇒ Sub5 再来一次。5 轮 × 35 = **175 发 / 30 帧**。
     ---      ins_4(0,-1232) 跳回 @1716（t=0），一轮正好 30 帧。
-    ---  · Sub4 / Sub5 的基角都含 playerAngle，5 次调用的基角步进 24°/36°：
-    ---      24k + 120i 正好铺满 15 个 24° 的倍数、36k + 180i 正好铺满 10 个 36° 的倍数
-    ---      ⇒ 合起来就是「以自机角为 0°」的 15 角环与 10 角环（photoIndex 只改基角步进的
-    ---      起点，24/36 的整数倍 ⇒ 对最终角度集合没有影响）。
+    ---  · Sub4 / Sub5 的基角：**都是同一个 playerAngle**（floatV1 = playerAngle，5 次调用
+    ---      之间只把 floatV1 **加 24°/36°**，见 @1048 起的 ins_15）—— 不是「每个方向换个基角」。
+    ---      由于 ins_89 的 count2 = 1（angleStep 不参与），Sub4 的 5 次调用得到
+    ---      {pa + 24×(photoIndex+k) + 120i}，k=0..4、i=0..2 恰好铺满 15 个连续的 24° 网格
+    ---      （k+5i = 0..14）⇒ 整体就是「以自机角为 0° 的 15 发 24° 环」；Sub5 同理是
+    ---      10 发 36° 环。photoIndex 只改起点、不改集合（15×24 = 10×36 = 360）。
     ---  · Sub7/Sub8/Sub9：ins_83(7)/83(8) 生出来的装饰敌人（Sub9 每帧跟随 photoTarget0），
     ---    不发弹 ⇒ 按文件头差异 3 不实现。
     ---  · 弹型：Sub4 的 (19,6)(12,0)(19,1)(19,3)(12,7) → 半径 3/5/3/3/5（19→ball_small、
@@ -3231,7 +3291,9 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
                 local ox, oy = owner.x, owner.y + DISPLACE
                 local pa = Angle(ox, oy, player.x, player.y)
                 local pi = photo_index(PHOTO_LIMIT)
-                for j = 0, 2 do
+                ---★ 原作是 **5 轮**（@1972/@2200/@2428/@2656 各一次 floatV0 += 72°，
+                ---第 5 轮 @2692 之后就直接收尾了）⇒ j = 0..4，一圈 5 × 72° = 360°。
+                for j = 0, 4 do
                     local dir = pa - 72 * j
                     local cx, cy = cos(dir), sin(dir)
                     fire_sub4(ox + 40 * cx, oy + 40 * cy, pa, pi)
@@ -3366,6 +3428,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
 
     ---──────────────────────── 弹幕 ────────────────────────
 
+    local SUB3_LEAD = 70                                -- Sub3 t=0 → t=70 才起 Sub4 / 第一次突进
     local DASH_FRAMES, DASH_SPEED = 60, 2               -- ins_66(60,1,pa,2) ⇒ 120 px
     local MIST_R, MIST_SPEED = 64, 0.05                 -- Sub4：偏移半径 / 弹速
     local MIST_STYLE, MIST_COLOR = ball_small, ex_color(6)
@@ -3427,6 +3490,8 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local tok4, tok7
     local function main_script(owner)
         task.New(owner, function()
+            ---Sub3 自己的时间轴：t=0 起 Sub5（装饰）、t=40 演出、t=70 才起 Sub4 与第一次突进。
+            task.Wait(SUB3_LEAD)
             tok4 = { alive = true }
             sub4(owner, tok4)
             for _ = 1, 30 do
@@ -3492,11 +3557,15 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     ---  · Sub3：t=0 起 Sub11（每帧一声脉冲音，装饰）；t=60 起 Sub4..Sub9（六条发弹上下文，
     ---    只起这一次、之后一直跑）；t=60 的 `ins_44(photoIndex,2,60,52)` 是 **CMPlt**：
     ---    photoIndex < 2 就跳过这一轮的 ins_67(60,4,0.8)；ins_4(60,-228) 每 120 帧跳回
-    ---    那句 ins_44（t=60）。⇒ 一轮 120 帧、只有「拍中 ≥2 张」才会躲。
-    ---  · Sub4（每 24 帧一轮）：`ins_44(photoIndex,6,…)` 闸 ⇒ **photoIndex ≥ 6** 才发；
-    ---    每轮 6 次「随机出膛点（半径 16×rand）+ ins_89(型 19、色 3、count1=3、count2=1、速 1)」
-    ---    = 18 发；收尾 floatV0 += 18°（跳回点是 @1032、**跳过**开头的 rand ⇒ 基角持续累加）。
-    ---  · Sub7 同构，只是色 1、速 2（同样 photoIndex ≥ 6）。
+    ---    那句 ins_44（t=60）。⇒ 一轮 120 帧、只有「拍中 ≥2 张」才会躲
+    ---    （ins_67 的 60 帧走位就占这一轮的头 60 帧，task.MoveTo 是阻塞的）。
+    ---  · Sub4（每 24 帧一轮）：**没有闸**，一上来就发（@1012 之后直接是 @1032 的随机半径，
+    ---    全段没有 ins_44）；每轮 6 次「随机出膛点（半径 16×rand）+ ins_89(型 19、色 3、
+    ---    count1=3、count2=1、速 1)」= 18 发；收尾 floatV0 += 18°（跳回点是 @1032、
+    ---    **跳过**开头的 ins_7 rand ⇒ 基角持续累加）。
+    ---  · Sub7 同构，只是色 1、速 2；**它有闸**（@2048 的 `ins_44(photoIndex,6,0,744)`）——
+    ---    跳转目标 @2792 正是收尾的 `ins_15(floatV0, 0.314159)`，所以 photoIndex < 6 时
+    ---    整轮发弹被跳过、但 18° 照样累加。
     ---  · Sub6（每 20 帧）：ins_91 = OFFSET_CIRCLE、型 3、色 6、count1=32、速 2。
     ---  · Sub8（t=10 起每 20 帧）：`ins_44(photoIndex,4,…)` 闸 ⇒ photoIndex ≥ 4 才有
     ---    ins_91（型 3、色 2、速 2、32 发）。
@@ -3547,12 +3616,13 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
         end
     end
 
-    ---Sub4 / Sub7：每 24 帧一轮，6 个随机出膛点各甩一个 3 发环（photoIndex 到闸才发）。
+    ---Sub4 / Sub7：每 24 帧一轮，6 个随机出膛点各甩一个 3 发环。
+    ---gate = nil ⇒ 无闸（Sub4），否则 photoIndex ≥ gate 才发（Sub7 = 6）。
     local function burst_stream(owner, tok, style, color, speed, gate)
         task.New(owner, function()
             local fv0 = ran:Float(-math.pi, math.pi)    -- 只在最开始抽一次
             while tok.alive do
-                if photo_index(PHOTO_LIMIT) >= gate then
+                if not gate or photo_index(PHOTO_LIMIT) >= gate then
                     local b = -math.deg(fv0)
                     for _ = 1, BURST_N do
                         local m = ran:Float(0, BURST_R)
@@ -3632,7 +3702,8 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     local function main_script(owner)
         task.New(owner, function()
             ---t=60：Sub4..Sub9。
-            toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_small, ex_color(3), 1, DENSITY_A)
+            ---Sub4 **没有闸**（它的 @1032 之后没有 ins_44）⇒ 一直发，不传 gate。
+            toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_small, ex_color(3), 1, nil)
             toks[2] = { alive = true }; ring_stream(owner, toks[2], ball_mid, ex_color(3), 1, 60, 90, true, nil)
             toks[3] = { alive = true }; ring_stream(owner, toks[3], ball_small, ex_color(6), 2, 20, 0, false, nil)
             toks[4] = { alive = true }; burst_stream(owner, toks[4], ball_small, ex_color(1), 2, DENSITY_A)
