@@ -14,6 +14,9 @@
    ```
    用 `luajit`（5.1 语义），**别用 homebrew 的 `luac`**（那是 5.4，会把 5.1 风格的代码报成假错）。
 3. **注释、卡名、文档一律用中文**，与现有代码一致。
+4. **原作移植照抄原作**——移植 `th06`–`th185`（含 `th3x` 的整关复刻）时，数值/发数/
+   节奏一律照 ECL，**不要**为了自检的密度指标调参、补底帘或加东西。详见
+   `AGENTS.md` 第 7.0 节。
 
 改动 `core.lua` 的 `STAGE_COUNT`、`mod/_editor_output.lua` 的 `StageID`、
 `THlib/UI/UI.lua` 的 `difftext` 之前，先看 `AGENTS.md` 第 7 节 ④⑤ 和第 8 节——

@@ -9719,27 +9719,6 @@ local function TH34_add_stage56_boss()
     ---原作 0x20 TargetAngle 段（每帧 angle += rate），TH07 弧度/帧 ⇒ 取反。
     local function rot3(rate_th, dur) return acc20(rate_th, 0, dur or 60) end
 
-    ---底帘（AGENTS.md §7.3.1）：每张卡都要先挂一层「不管这张卡在演什么，屏幕上始终有弹在走」的底。
-    ---从本体每 period 帧放一圈慢速整圈弹（相位每轮重掷），弹在场上停得久、密度稳，
-    ---缺口随半径自然张开（环是往外走的，越远缝越大，不会把自机堵死）。
-    local function curtain3(self, spr, col, n, v, period, a2)
-        task.New(self, function()
-            while true do
-                ring3(self, 0, 0, spr, col, n, 1, v, v * 0.72, rngrad(), a2)
-                task.Wait(period)
-            end
-        end)
-    end
-    ---补强底帘：以自机方向为心的慢速整圈（RING_AIMED），保证「自机脚边」始终有弹在走。
-    local function curtainAim3(self, spr, col, n, v, period)
-        task.New(self, function()
-            while true do
-                shoot6(self, 0, 0, 66, spr, col, n, 1, v, v * 0.7, 0, 0, nil, false)
-                task.Wait(period)
-            end
-        end)
-    end
-
     ---──────────────────── アリス 非符 1（原作 sub22/23/24，3 面**中 boss**） ────────────────────
     ---进场后每 600 帧一轮，四段「旋环」连打：偏移点绕半径 80 / 100 每 3 帧转 ±7.5°，
     ---每拍打 3 层快环（2.2 / 2.5 / 2.7 px/帧）+ 3 层慢环（0 / 0.2 / 0.5 双层 v2=0.2）；
@@ -9790,9 +9769,6 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             task.Wait(240)
-            ---底帘：慢速 18 发整圈，每 40 帧一轮。
-            curtain3(self, 6, 6, 22, 0.95, 32)
-            curtainAim3(self, 6, 6, 14, 0.9, 36)
             while true do
                 local a0 = 1.3744 + ran:Float(0, 0.392699)
                 ring3(self, 0, 0, 10, 1, 1, 1, 7, 1.2, a0)
@@ -9820,8 +9796,6 @@ local function TH34_add_stage56_boss()
     ---随后本体在 t=410 与 t=590 各打一组「大白弹花」（sub34：spr3 的 16/24/40/48 发 ×4~5 层
     ---2.8~4.5，紧接 spr6 的 12/24/32/40 发 ×4 层 2~3、张角 ±2.8° 且带自旋，左右镜像再来一组）。
     ncard("アリス 非符 1", 4432, 19000, 2000, function(self)
-        curtain3(self, 6, 6, 22, 0.95, 32)
-        curtainAim3(self, 6, 6, 14, 0.9, 36)
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             while true do
@@ -9874,9 +9848,6 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             task.Wait(480)
-            ---底帘：22 发整圈 / 34 帧，子机的对狙与它叠加。
-            curtain3(self, 6, 4, 26, 1.05, 28)
-            curtainAim3(self, 6, 4, 16, 0.95, 30)
             local n, ang = 8, ran:Float(0, 0.785398)
             local cx, cy = self.x, self.y
             for _ = 1, n do
@@ -9916,8 +9887,6 @@ local function TH34_add_stage56_boss()
     ncard("アリス 非符 2", 4434, 19000, 2000, function(self)
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
-            ---底帘：20 发整圈 / 50 帧（本体出膛，不干扰三层大白弹环）。
-            curtain3(self, 6, 2, 22, 1.05, 44)
             while true do
                 task.Wait(180)
                 local th = rngrad()
@@ -9944,8 +9913,6 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             task.Wait(240)
-            ---底帘：24 发整圈 / 32 帧，配合上下两排「人形」的 6 发小圈。
-            curtain3(self, 2, 6, 26, 1.0, 26)
             local row = {}
             for i = 0, 6 do row[#row + 1] = 32 + i * 48 end
             for _, y in ipairs({ 32, 128 }) do
@@ -9965,7 +9932,7 @@ local function TH34_add_stage56_boss()
             end
             while true do
                 drift(self, 1.0, 60)
-                task.Wait(74)
+                task.Wait(60)
             end
         end)
     end, { skin = skin3, enter = enter3b })
@@ -10015,8 +9982,6 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             task.Wait(240)
-            ---底帘：24 发整圈 / 30 帧，人形围绕本体盘旋的同时垫底。
-            curtain3(self, 2, 9, 24, 1.0, 26)
             local cx, cy = self.x, self.y
             for i = 1, 14 do
                 local a0 = ran:Float(-PI, PI)
@@ -10070,9 +10035,6 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             self._box = box5(32, 48, 352, 128)
             task.Wait(320)
-            ---底帘：26 发整圈 / 32 帧，垫在「针」与人形的三套射击下面。
-            curtain3(self, 2, 4, 26, 1.0, 26)
-            curtainAim3(self, 2, 4, 16, 0.9, 28)
             local cx, cy = self.x, self.y
             for i = 1, 5 do
                 local a0 = (i % 2 == 1) and 2.51327 or -2.51327
@@ -10193,17 +10155,6 @@ local function TH34_add_stage56_boss()
         return { type = 0x40, dur = dur or 60, loop = loop or 3,
                  angle = -rate_th * RAD2DEG, speed = speed }
     end
-    ---底帘加强：RING_AIMED 的 c2 层慢环（层间速度差 ≥ 0.2 px/帧），每 period 帧一轮。
-    ---最快层冲出去、最慢层长时间停在自机脚边 —— 把「60px 内弹数」抬进 5..14 的主力。
-    local function curtain4(self, spr, col, n, c2, v1, v2, period)
-        task.New(self, function()
-            while true do
-                shoot6(self, 0, 0, 66, spr, col, n, c2, v1, v2, rngrad(), 0, nil, false)
-                task.Wait(period)
-            end
-        end)
-    end
-
     ---──────────────────── 露娜萨 非符 1（原作 sub58/59/60/62） ────────────────────
     ---本体左右交替地从侧方 128px 处放「音符」：音符沿自机方向以 4 px/帧飞出，
     ---飞出去 20 帧后原地炸成几扇反向 5 发（半张角 11.25°），再过几拍爆一圈
@@ -10211,9 +10162,6 @@ local function TH34_add_stage56_boss()
     ---GET_EXIT_ANGLE 漂 100 帧（0.8 px/帧）；音符串数逐轮增加（1→4）。
     ncard("露娜萨 非符 1", 4440, 16000, 1600, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 1, 22, 0.95, 32)
-        curtainAim3(self, 6, 6, 14, 0.9, 36)
-        curtain4(self, 6, 1, 14, 2, 1.4, 0.6, 34)
         task.New(self, function()
             local wave = 0
             while true do
@@ -10255,8 +10203,6 @@ local function TH34_add_stage56_boss()
     ---飞满 120 帧后朝自机打一层 li2 发的减速扇（v: lf4→lf5、半张角 lf3），
     ---随后消失。四个波连完再等 40 帧进入下一轮。
     scard("騒符「ライブポルターガイスト -Lunatic-」", 4441, 60, 3000, false, function(self)
-        curtain3(self, 6, 2, 24, 1.0, 30)
-        curtainAim3(self, 6, 6, 14, 0.9, 36)
         task.New(self, function()
             local W = {
                 { col = 2,  n = 2, v = 2.5, half = 0,       curve = 0,        a0 = 0,  arc = 4.71239 },
@@ -10295,8 +10241,6 @@ local function TH34_add_stage56_boss()
     ---七组打完从头再来。原作是 Marisa/Sakuya 行列的梅露兰主动表。
     ncard("梅露兰 非符 1", 4442, 16000, 1600, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 22, 1.0, 34)
-        curtain4(self, 6, 4, 16, 2, 1.5, 0.55, 48)
         task.New(self, function()
             local F = { { 1, 5.0, 0.03927 }, { 3, 5.0, 0.07854 }, { 1, 4.0, 0.03927 },
                         { 2, 4.2, 0.04488 }, { 2, 4.4, 0.05236 }, { 3, 4.6, 0.06283 },
@@ -10323,7 +10267,6 @@ local function TH34_add_stage56_boss()
     ---回收，密度读数会在 3.2..14.4 之间乱跳（六种子最坏值不合格）。
     scard("管霊「ゴーストクリフォード -Lunatic-」", 4443, 60, 3200, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 3, 18, 1.0, 74)
         task.New(self, function()
             local function ghost(ang)
                 pspawn(self.x, self.y, function(o)
@@ -10366,8 +10309,6 @@ local function TH34_add_stage56_boss()
     ---刹停 60 帧后转 ±60°、重复 3 轮）＋内圈 2..8 发普通环（速度 2.5）。
     ---两组的旋转方向相反，基准角每轮转 20°。
     ncard("莉莉卡 非符 1", 4444, 16000, 1600, function(self)
-        curtain3(self, 6, 5, 24, 0.95, 30)
-        curtainAim3(self, 6, 5, 14, 0.9, 36)
         task.New(self, function()
             local base = rngrad()
             while true do
@@ -10391,7 +10332,6 @@ local function TH34_add_stage56_boss()
     ---原作每 60 帧一大轮（两套螺旋 + 两套对开扇），li0 每轮 +1。
     scard("鍵霊「ベーゼンドルファー神奏 -Lunatic-」", 4445, 60, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 14, 1.0, 95)
         task.New(self, function()
             local k = 8
             while true do
@@ -10433,7 +10373,6 @@ local function TH34_add_stage56_boss()
     ---每条弓把基准角每拍推 ±45°，每拍打一圈 32 发 × 3 层（2.8→0.5 px/帧、
     ---半张角 15°）＋放一只音符弹（sub130）。四条弓连完 12 帧一轮。
     scard("偽弦「スードストラディヴァリウス」", 4446, 66, 3600, false, function(self)
-        curtain3(self, 6, 4, 14, 1.0, 90)
         task.New(self, function()
             while true do
                 for k = 1, 4 do
@@ -10457,8 +10396,6 @@ local function TH34_add_stage56_boss()
     ---每 200 帧按 GET_EXIT_ANGLE 漂 30 帧（0.8 px/帧）并把环的基准角重掷一次。
     scard("騒葬「スティジャンリバーサイド -Lunatic-」", 4447, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 2, 24, 1.0, 30)
-        curtain4(self, 6, 2, 14, 2, 1.4, 0.6, 34)
         task.New(self, function()
             local a = rngrad()
             while true do
@@ -10478,7 +10415,6 @@ local function TH34_add_stage56_boss()
     ---「9 圈 × 3 发 × 2 层（2→0.5 px/帧）」的中速环 ＋ 一圈朝自机的 20 发 × 2 层
     ---（1.7 px/帧）；300 帧后额外从相对点各拉两条 224px 长、随公转转动的长激光。
     scard("大合葬「霊車コンチェルトグロッソ怪」", 4448, 60, 3600, false, function(self)
-        curtain3(self, 6, 6, 14, 1.1, 90)
         task.New(self, function()
             local ang = -PI / 2
             local r, rv = 64, 0.213333
@@ -10564,9 +10500,6 @@ local function TH34_add_stage56_boss()
     end
     ---原作 sub20/38/39 的移动是 `MOVE_DIR_TIME`（60 帧、0.7~1.25 px/帧）＋
     ---`GET_EXIT_ANGLE`，移植版直接用 stage3/4 的 `drift`。
-    ---底帘周期统一用一个表放着，方便逐张调密度（AGENTS.md §7.2）。
-    local CUR = {}
-
     ---──────────────────── レティ 非符 1（原作 sub26 的循环 = 25/22/21/23/24） ────────────────────
     ---五段连打：①sub25 = 三组「12 发 × 6 层（3.2→1 px/帧）＋ 自旋指令」的环，收尾补两圈
     ---4 层中速环；②sub22 = 16 发随机方向弹（1.5 px/帧）；③sub21 = 两组 32 发 × 2 层整圈
@@ -10574,7 +10507,6 @@ local function TH34_add_stage56_boss()
     ---每 8 帧一轮共 11 轮；⑤sub24 = 14 发 × 3 层 ＋ 16 发 × 3 层。段间本体漂 60 帧。
     ncard("レティ 非符 1", 4450, 16000, 1600, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 3, 20, 1.0, 40)
         task.New(self, function()
             while true do
                 local a = rngrad()
@@ -10623,10 +10555,6 @@ local function TH34_add_stage56_boss()
     ---    1024 的弹池被灌满后把底帘一起挤掉（实测那样密度反而从 10 掉到 2）。
     scard("霜符「フロストコラムス -Lunatic-」", 4451, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 16, 1.0, 44)
-        curtainAim3(self, 6, 6, 12, 0.9, 30)
-        curtainAim3(self, 6, 6, 6, 0.5, 20)
-        curtain4(self, 6, 2, 14, 2, 1.3, 0.5, 34)
         task.New(self, function()
             local a = rngrad()
             while true do
@@ -10669,8 +10597,6 @@ local function TH34_add_stage56_boss()
     ---且每 4 拍补一圈 16 发自机狙（1 px/帧）。
     ncard("レティ 非符 2", 4452, 16000, 1600, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 20, 1.0, 36)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local f0, f1 = rngrad(), rngrad()
             local function twin(v1)
@@ -10714,9 +10640,6 @@ local function TH34_add_stage56_boss()
     ---速度 3.5、半张角 15°，挂 0x40 指令（刹停 50 帧后转向 ±63°、速度 0.5~1.1，1 轮）。
     scard("寒符「リンガリングコールド -Lunatic-」", 4453, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 2, 22, 1.0, 46)
-        curtainAim3(self, 6, 6, 14, 0.9, 40)
-        curtain4(self, 6, 2, 14, 2, 1.3, 0.5, 34)
         task.New(self, function()
             local T = { 40, 130, 60, 70 }
             local sgn = 1
@@ -10760,8 +10683,6 @@ local function TH34_add_stage56_boss()
     ---段间本体按 GET_EXIT_ANGLE 漂 60 帧；一轮 = 240 帧打底 + 60 帧收尾。
     ncard("レティ 非符 3", 4454, 15000, 1500, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 3, 20, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local f0, f1 = rngrad(), rngrad()
             ---原作 sub40/41：三个绕本体往外旋的「冰桌」，转完 120 帧后吐慢弹。
@@ -10831,8 +10752,6 @@ local function TH34_add_stage56_boss()
     ---的弹池灌满，涟漪的扇会被底帘一起挤掉，实测 60px 平均反而只有 4~6）。
     scard("白符「アンデュレイションレイ」", 4455, 60, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 16, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             local W = { { 0.00369599, 5 }, { -0.00369599, 5 }, { 0.00349066, 4 },
                         { -0.00349066, 4 }, { 0.00392699, 3 }, { -0.00392699, 3 } }
@@ -10873,8 +10792,6 @@ local function TH34_add_stage56_boss()
     ---每轮之间本体按 GET_EXIT_ANGLE 漂 60 帧（1.0 px/帧）再停 90 帧。
     scard("怪符「テーブルターニング」", 4456, 60, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 2, 18, 1.0, 44)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             local sgn = 1
             while true do
@@ -10916,8 +10833,6 @@ local function TH34_add_stage56_boss()
     end
     ncard("橙 非符 1", 4460, 15000, 1500, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 1, 20, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local function volley()
                 for k = -1, 1 do
@@ -10963,9 +10878,6 @@ local function TH34_add_stage56_boss()
     ---与 10 发 × 4 层 3.3→1.6 交替）。一轮 340 帧。
     scard("仙符「鳳凰展翅　-Lunatic-」", 4461, 60, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 16, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
-        curtain4(self, 6, 2, 14, 2, 1.3, 0.5, 34)
         task.New(self, function()
             local function head(big)
                 local tx, ty = ran:Float(-150, 150), ran:Float(-50, 140)
@@ -10996,8 +10908,6 @@ local function TH34_add_stage56_boss()
     ---挂 0x10 加速指令 0.0256 px/帧²）。段间本体漂 60 帧。
     ncard("橙 非符 2", 4462, 17000, 1700, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 1, 20, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local function rings()
                 local a = rngrad()
@@ -11053,8 +10963,6 @@ local function TH34_add_stage56_boss()
     ---由「式神」在这五个点上开火（同 stage3/4 的「只搬弹幕与子机」口径）。
     scard("式符「飛翔晴明」", 4463, 60, 3300, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 16, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             local P = { { -56, 18 }, { 91, 126 }, { -91, 126 }, { 56, 18 }, { 0, 192 } }
             local A = { 2.19911, -0.314159, -2.82743, 0.942478, -1.5708 }
@@ -11081,8 +10989,6 @@ local function TH34_add_stage56_boss()
     ---（t=250~290、t=390~430）。
     scard("陰陽「晴明大紋」", 4464, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 16, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             local P = { { -56, 18 }, { 91, 126 }, { -91, 126 }, { 56, 18 }, { 0, 192 } }
             local A = { 2.19911, -0.314159, -2.82743, 0.942478, -1.5708 }
@@ -11116,8 +11022,6 @@ local function TH34_add_stage56_boss()
     ---段间本体漂 60 帧（2.0 px/帧）。
     ncard("橙 非符 3", 4465, 13000, 1300, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 20, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local function rings()
                 local a = rngrad()
@@ -11176,8 +11080,6 @@ local function TH34_add_stage56_boss()
     ---冲刺折成场地内的五个点，由「天童」在这五点上开火。
     scard("天符「天仙鳴動」", 4466, 60, 4000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 2, 18, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             local S = { { -150, 160 }, { 150, 160 }, { -150, 110 }, { 150, 110 },
                         { 0, 176 } }
@@ -11207,8 +11109,6 @@ local function TH34_add_stage56_boss()
     ---移植版同 4466：本体留在中央，由五点上「天童」开火。
     scard("童符「護法天童乱舞」", 4467, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 18, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local S = { { -150, 160 }, { 150, 160 }, { -150, 110 }, { 150, 110 },
                         { 0, 176 } }
@@ -11239,9 +11139,6 @@ local function TH34_add_stage56_boss()
     ---移植版按同一节奏做「旋转双弹环」。
     scard("仙符「屍解永遠」", 4468, 60, 3200, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 2, 18, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
-        curtain4(self, 6, 2, 14, 2, 1.3, 0.5, 34)
         task.New(self, function()
             local a, k = rngrad(), 0
             while true do
@@ -11266,8 +11163,6 @@ local function TH34_add_stage56_boss()
     ---30 帧后再瞬移到下一个随机点。移植版把瞬移改成「奇门」在随机点周围开花。
     scard("方符「奇門遁甲」", 4469, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 18, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
         task.New(self, function()
             while true do
                 local cx = ran:Float(-110, 110)
@@ -11320,8 +11215,6 @@ local function TH34_add_stage56_boss()
     ---「刹停→拐 15°→再飞」指令），共 12 轮；轮间本体再补一圈 16 发 × 2 层。
     scard("冬符「フラワーウィザラウェイ」", 4457, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 4, 18, 1.0, 40)
-        curtainAim3(self, 6, 6, 12, 0.9, 44)
         task.New(self, function()
             local cx0, cy0 = 0, 112
             ---一朵花：th 用 TH07 口径（shoot6 内部取反）。
@@ -11337,12 +11230,12 @@ local function TH34_add_stage56_boss()
                         task.Wait(1)
                     end
                     local back = th + PI
-                    for k = 1, 10 do
+                    for k = 1, 12 do
                         local f = back + (k - 1) * 2.356194
                         fan4(o, o.x, o.y, 2, col, 3, 1, 1.2, 0.5, f, 0.785398)
                         fan4(o, o.x, o.y, 2, col, 1, 1, 0.8, 0.8, f + 0.785398, 0)
                         fan4(o, o.x, o.y, 2, col, 1, 1, 0.8, 0.8, f + 2.356194, 0)
-                        task.Wait(7)
+                        task.Wait(5)
                     end
                 end)
             end
@@ -11362,7 +11255,7 @@ local function TH34_add_stage56_boss()
                         shoot6(self, 0, 0, 66, 3, 6, 16, 2, 1.5, 0.8, rngrad(),
                                0.19635, nil, true)
                     end
-                    task.Wait(64)
+                    task.Wait(40)
                 end
                 task.Wait(60)
             end
@@ -11376,8 +11269,6 @@ local function TH34_add_stage56_boss()
     ---基准角每圈 ±1.25°），速度 0.9~1.2 随机 —— 原作 N 行是 7 发，E 行 4 发。
     scard("紅符「紅毛の和蘭人形」", 4439, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 2, 10, 22, 1.0, 30)
-        curtainAim3(self, 2, 6, 12, 0.9, 36)
         task.New(self, function()
             task.Wait(240)
             local SPIN = 0.0218166
@@ -11386,7 +11277,7 @@ local function TH34_add_stage56_boss()
                     task.Wait(60)
                     local a0 = rngrad()
                     local v = 0.9 + ran:Float(0, 0.3)
-                    for _ = 1, 5 do
+                    for _ = 1, 6 do
                         ring4(o, o.x, o.y, 2, 10, 7, 1, v, 1.5, a0, 0)
                         a0 = a0 + sgn * SPIN
                         task.Wait(1)
@@ -11398,14 +11289,14 @@ local function TH34_add_stage56_boss()
                 for i = 0, 6 do
                     doll(32 + i * 48 - 192, 224 - ran:Float(20, 420), sgn)
                     sgn = -sgn
-                    task.Wait(14)
+                    task.Wait(10)
                 end
                 drift(self, 1.0, 60)
-                task.Wait(52)
+                task.Wait(40)
                 for i = 0, 6 do
                     doll(352 - i * 48 - 192, 224 - ran:Float(20, 420), sgn)
                     sgn = -sgn
-                    task.Wait(12)
+                    task.Wait(8)
                 end
                 drift(self, 1.0, 60)
                 task.Wait(60)
@@ -11451,9 +11342,6 @@ local function TH34_add_stage56_boss()
     ---并在周围等角放 7 只人形（原作 N 行；E 行 4 只），人形绕本体盘旋、四段打环。
     scard("闇符「霧の倫敦人形」", 4472, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 2, 10, 22, 1.0, 30)
-        curtainAim3(self, 2, 6, 12, 0.9, 36)
-        curtain4(self, 2, 10, 12, 2, 1.3, 0.6, 36)
         task.New(self, function()
             task.Wait(240)
             local cols = { 10, 6, 11, 8 }
@@ -11483,9 +11371,6 @@ local function TH34_add_stage56_boss()
     ---同「闇符」家族，H 行只有 6 只人形、sprite/色档换成 6/6/6/6 那一组。
     scard("廻符「輪廻の西蔵人形」", 4473, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 2, 10, 22, 1.0, 30)
-        curtainAim3(self, 2, 6, 12, 0.9, 36)
-        curtain4(self, 2, 6, 12, 2, 1.3, 0.6, 36)
         task.New(self, function()
             task.Wait(240)
             local cols = { 10, 6, 11, 8 }
@@ -11517,9 +11402,6 @@ local function TH34_add_stage56_boss()
     ---与 12 发（spr6/14 号色）各一圈（速度 2→1.5 与 1.4→1.5）。
     scard("仙符「鳳凰卵」", 4470, 40, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 16, 1.0, 42)
-        curtainAim3(self, 6, 6, 12, 0.9, 46)
-        curtain4(self, 6, 2, 14, 2, 1.3, 0.5, 34)
         task.New(self, function()
             local function head()
                 local tx, ty = ran:Float(-150, 150), ran:Float(-50, 140)
@@ -11547,8 +11429,6 @@ local function TH34_add_stage56_boss()
     ---速度从 2.8 递减到 0.5 再递增回 2.8；打完基准角再随机推进 0.098~0.392。
     scard("鬼符「鬼門金神」", 4471, 45, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 6, 6, 18, 1.0, 38)
-        curtainAim3(self, 6, 10, 12, 0.9, 42)
         task.New(self, function()
             task.Wait(130)
             local function onibi()
@@ -11585,8 +11465,6 @@ local function TH34_add_stage56_boss()
     ---120 帧后炸成一扇 7 发）。四条弓连完 3 帧一拍，一轮之后空 20 帧。
     scard("弦奏「グァルネリ・デル・ジェス」", 4475, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 2, 12, 20, 1.0, 34)
-        curtainAim3(self, 2, 6, 12, 0.9, 40)
         task.New(self, function()
             task.Wait(240)
             ---原作 sub130：一只音符朝 th 方向匀速 6、自转 ±0.9°/帧，120 帧后炸一扇 7 发。
@@ -11614,9 +11492,9 @@ local function TH34_add_stage56_boss()
                         base = base + sgn * 0.785398
                         task.Wait(1)
                     end
-                    task.Wait(19)
+                    task.Wait(4)
                 end
-                task.Wait(46)
+                task.Wait(20)
             end
         end)
     end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
@@ -11627,8 +11505,6 @@ local function TH34_add_stage56_boss()
     ---相邻两圈基准角再错开 2.25°；正反两组交替（色档 1/2/4/6/5 与 9/10/11/13/12）。
     scard("合葬「プリズムコンチェルト」", 4476, 60, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        curtain3(self, 2, 2, 20, 1.0, 34)
-        curtainAim3(self, 2, 10, 12, 0.9, 40)
         task.New(self, function()
             task.Wait(240)
             local CA = { 1, 2, 4, 6, 5 }
