@@ -5820,6 +5820,11 @@ local function TH34_add_stage78_boss()
                 object.RawDel(self)
             end)
         end,
+        ---引擎在 RawDel 时会回调 del（GameObject::dispatchOnQueueToDestroy）。
+        ---派生物自己的协程是挂在**派生物**名下的（THlib Ltask 的 task 表在对象上），
+        ---对象一删协程就没了；桩件的对象表不清 task，所以要在这里显式清一次，
+        ---否则「卡片结束时轮子/魂还在打」会被泄漏扫描判成 FAIL（id=4408/4410）。
+        del = function(self) task.Clear(self) end,
         render = function() end,
     })
 
@@ -8262,6 +8267,1389 @@ local function TH34_add_stage78_boss()
     end
 end
 
+---════════════════════════════════════════════════════════════════════════
+---以下：stage6（西行寺幽々子）与 stage5（魂魄妖夢）的符卡/非符移植。
+---
+---原作 sub 链（全部取 Lunatic 行；`ecldata6.ecl` / `ecldata5.ecl`）：
+---  stage6: 非符1(19)→六道剣(23)→非符2(29)→亡郷(43)
+---          →非符3(34) / 非符4(36)→亡舞(50)→華霊(52)
+---          →非符5(38)→幽曲(55)→桜符(58)→「反魂蝶」(62，生存卡)
+---  stage5: 非符1(38)→幽鬼剣(42)→非符2(48)→獄界剣(57)
+---          →非符3(52)→修羅剣(62)→畜趣剣(66)
+---          →人界剣(55/70)→天上剣(75)
+---
+---血量口径同本文件文件头（非符 hpB(life−收尾阈值)、符卡 hpS(开卡 life)）；
+---坐标/角度换算也同文件头（x−192、224−y、θ 取反）。
+---ECL 的 gI0/gI1/gF0.. 传给子程序后，子程序按 l3i0/l3i1/l3f0.. 读 —— 下面注释里
+---出现「l3i0 = 调用方 gI0」这类说明时就是指这个。
+---
+---卡 id 段：4390..4410。已扫全项目 `boss.card.add` 末参与 `th31.lua` 的 LIST 第 3 项，
+---4390..4419 无任何引用。
+---════════════════════════════════════════════════════════════════════════
+local function TH34_add_stage56_boss()
+    local LEVEL = 32
+    local RAD = 180 / PI
+    local ball_small, grain_a, arrow_small = ball_small, grain_a, arrow_small
+
+    ---TH07 弹型（sprite）→ 本仓库代理（同 78 面那张表）。
+    local BS = { [0] = ball_small, [1] = grain_a, [2] = grain_a, [3] = ball_small,
+                 [4] = ball_small, [5] = ball_small, [6] = ball_small, [7] = arrow_small,
+                 [8] = ball_small, [9] = arrow_small, [10] = grain_a }
+    local function bs(spr) return BS[spr] or grain_a end
+    local function hpB(x) return max(1, int(x * 0.09825 + 0.5)) end
+    local function hpS(x) return max(1, int(x * 0.6878 + 0.5)) end
+    local function rngrad() return ran:Float(-PI, PI) end
+    ---自机方向，TH07 口径的弧度（y 朝下）。
+    local function aimth(self) return -Angle(self, player) * PI / 180 end
+
+    local function bmove(self, t, ease, x, y)
+        self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
+                     dx = x - self.x, dy = y - self.y, ease = ease }
+    end
+    local function bstep(self)
+        local m = self._mv
+        if not m then return end
+        m.n = m.n + 1
+        local u = min(1, m.n / m.t)
+        local e = u
+        if m.ease == 4 then e = 1 - (1 - u) * (1 - u)
+        elseif m.ease == 1 then e = u * u
+        elseif m.ease == 2 then e = u * u * u
+        elseif m.ease == 3 then e = u * u * u * u
+        elseif m.ease == 5 then local v = 1 - u; e = 1 - v * v * v
+        elseif m.ease == 6 then local v = 1 - u; e = 1 - v * v * v * v end
+        self.x, self.y = m.x0 + m.dx * e, m.y0 + m.dy * e
+        if m.n >= m.t then self._mv = nil end
+    end
+    local function bframe(self)
+        sound_tick4 = sound_tick4 + 1
+        bstep(self)
+        local b = self._box
+        if b then
+            self.x = min(max(self.x, b[1]), b[2])
+            self.y = min(max(self.y, b[3]), b[4])
+        end
+    end
+    local function exang(self)
+        if (player.x < self.x and self.x > -96) or self.x > 96 then
+            return ran:Float(135, 225)
+        end
+        return ran:Float(-45, 45)
+    end
+    local function exdrift(self, spd, ease)
+        local a = exang(self)
+        bmove(self, 60, ease or 4, self.x + cos(a) * 60 * spd, self.y + sin(a) * 60 * spd)
+    end
+    ---同上，但可以指定帧数（原作 non-60 的 MOVE_DIR_TIME，位移 = spd×t）。
+    local function drift(self, spd, t, ease)
+        t = t or 60
+        local a = exang(self)
+        bmove(self, t, ease or 4, self.x + cos(a) * t * spd, self.y + sin(a) * t * spd)
+    end
+    ---自机到 boss 的距离（原作 $10026 distToPl）。
+    local function pdist(self)
+        return sqrt((self.x - player.x) ^ 2 + (self.y - player.y) ^ 2)
+    end
+
+    ---op64..67 的通用发弹（语义 = BulletManager::SpawnBulletPattern）。
+    local function shoot(self, op, spr, off, c1, c2, v1, v2, a1, a2, plays)
+        local style = bs(spr)
+        if op == 64 or op == 65 then
+            w3_spread(self, style, off, c1, c2, v1, v2, a1, a2, op == 64, plays)
+        elseif op == 66 or op == 67 then
+            w3_ring(self, style, off, c1, c2, v1, v2, a1, a2, op == 66, plays)
+        end
+    end
+    ---同上，但从 boss 的相对偏移 (ox, oy) 处发（原作 SET_SHOOT_OFFSET）。
+    ---oy 用我们的口径（+y 朝上），调用方负责把 TH07 的偏移换算过来。
+    local function shoot_at(self, ox, oy, op, spr, off, c1, c2, v1, v2, a1, a2, plays)
+        local sx, sy = self.x, self.y
+        self.x, self.y = sx + ox, sy + oy
+        shoot(self, op, spr, off, c1, c2, v1, v2, a1, a2, plays)
+        self.x, self.y = sx, sy
+    end
+
+    ---立绘 / 进场。
+    local function setface(self, img)
+        if self._wisys then self._wisys:SetImageInList(img) end
+    end
+    local function skin6(self)
+        self.NotPlayTimeOutSound = false
+        self.colli = true
+        self.no_hp_render = false
+        setface(self, "Yuyuko")
+    end
+    local function skin5(self)
+        self.NotPlayTimeOutSound = false
+        self.colli = true
+        self.no_hp_render = false
+        setface(self, "Youmu")
+    end
+    local function skin6_wall(self)
+        self.NotPlayTimeOutSound = true
+        self.colli = false
+        self.no_hp_render = true
+        setface(self, "Yuyuko")
+    end
+    local function skin5_wall(self)
+        self.NotPlayTimeOutSound = true
+        self.colli = false
+        self.no_hp_render = true
+        setface(self, "Youmu")
+    end
+    ---原作 sub18：幽幽子从左外进场，落到 (192,128)（我们 (0,96)）。
+    local function enter6(self)
+        self._orb, self._mv = nil, nil
+        self.x, self.y = -224, 192
+        bmove(self, 60, 4, 0, 96)
+    end
+    ---原作 sub37：妖夢从下方升起，落到 (192,112)（我们 (0,112)）。
+    local function enter5(self)
+        self._orb, self._mv = nil, nil
+        self.x, self.y = 0, 256
+        bmove(self, 60, 4, 0, 112)
+    end
+
+    ---符卡登记的子机（卡片结束时统一清场）；fn(self, a) 是协程体。
+    local spell_live
+    local PSCRIPT = Class(enemy, {
+        init = function(self, x, y, fn, a)
+            enemy.init(self, 12, 1, false, true, true)
+            self.x, self.y = x, y
+            self.colli, self.protect = false, true
+            self.A, self.B = 8, 8
+            task.New(self, function()
+                fn(self, a)
+                object.RawDel(self)
+            end)
+        end,
+        ---子机自己的协程挂在**子机**名下；THlib 的 task 表在对象上，对象一删协程就没了。
+        ---桩件的对象表不清 task，所以要显式清一次，否则「卡片结束时轮子/魂还在打」
+        ---会被泄漏扫描判成 FAIL（id=4408 的轮子、4410 的魂）。
+        del = function(self) task.Clear(self) end,
+        ---子机的自绘运动（`bmove`/`bstep`）没有别的地方驱动：挂在 boss 上的卡有
+        ---`card.frame`，子机没有。不补这一帧钩子 `bmove` 永远不动（原作 sub76 的
+        ---魂是 `MOVE_DIR_TIME t=0 spd=4.2` 的匀速直线，必须真的走）。
+        frame = function(self)
+            bstep(self)
+            enemy.frame(self)
+        end,
+        render = function() end,
+    })
+    local function pspawn(x, y, fn, a)
+        local o = New(PSCRIPT, x, y, fn, a)
+        if spell_live then spell_live[#spell_live + 1] = o end
+        return o
+    end
+
+    ---开卡免伤时长（原作 t=0..120 SET_CAN_BE_DAMAGED 0 + 240 帧 ÷9）。
+    local CARD_FREEZE_DEFAULT = 5.555556
+    local CARD_FREEZE = {}
+
+    ---非符骨架：initfn(self) 自己起协程逐帧演。
+    local function ncard(name, id, life, thr, initfn, opt)
+        opt = opt or {}
+        local card = boss.card.New("", 1, 1, 60, hpB(life - thr))
+        card.before = opt.skin or skin6
+        card.init = function(self)
+            pool4 = {}
+            sound_tick4, sound_stamp4 = 0, -1
+            local go = opt.enter or enter6
+            go(self)
+            initfn(self)
+        end
+        card.frame = bframe
+        card.del = function() end
+        boss.card.add({ { card, "1a" } }, LEVEL, name, id)
+    end
+
+    ---符卡骨架（wall=true ⇒ 生存/耐久卡，血量极大、关判定）。
+    local function scard(name, id, t3, life, wall, initfn, opt)
+        opt = opt or {}
+        local live = {}
+        local freeze = wall and t3 or (CARD_FREEZE[id] or CARD_FREEZE_DEFAULT)
+        local card = boss.card.New(name, freeze, freeze, t3,
+                                   wall and 10000000 or hpS(life))
+        card.before = wall and (opt.wallskin or skin6_wall) or (opt.skin or skin6)
+        card.init = function(self)
+            pool4 = {}
+            sound_tick4, sound_stamp4 = 0, -1
+            live = {}
+            spell_live = live
+            local go = opt.enter or enter6
+            go(self)
+            initfn(self)
+        end
+        card.frame = bframe
+        card.del = function()
+            for i = #live, 1, -1 do
+                if IsValid(live[i]) then object.RawDel(live[i]) end
+            end
+            live = {}
+            spell_live = nil
+        end
+        boss.card.add({ { card, "1a" } }, LEVEL, name, id)
+    end
+
+
+    ---──────────────────── 通用：带 INIT_BULLET_CMD 的发弹 ────────────────────
+    ---op64..69 的角度语义与第 3 面的 w3_spread/w3_ring 完全一致（同一套「TH07 角取反」
+    ---推导），这里补两样原作里很关键、w3_* 没有的东西：
+    ---  · (ox, oy)——炸开位置相对 boss 的偏移（**我们的坐标**，y 已翻转过）；
+    ---  · cmd——INIT_BULLET_CMD 的指令串，交给 class["TH34_cmdbullet"] 逐帧模拟。
+    local function shoot6(self, ox, oy, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
+        local style, col = bs(spr), col16(off)
+        local total, room, i = c1 * c2, POOL4_SIZE - pool4_used(), 1
+        ---SPREAD_AIMED / RING_AIMED 的瞄准角取的是**出膛点**（原作
+        ---`AngleToPlayer(&bulletProps->pos)`，而 `pos = enemy->pos + shootOffset`；
+        ---BulletManager.cpp:643）。偏移为 0 时与自机到本体中心等价，偏移大时差很多。
+        local aim = 0
+        if op == 64 or op == 66 or op == 68 then
+            aim = atan2(player.y - (self.y + oy), player.x - (self.x + ox)) * RAD2DEG
+        end
+        while i <= total and room > 0 do
+            local k = i - 1
+            local layer, ring = int(k / c1), k % c1
+            local v = v1 - (v1 - v2) * layer / c2
+            local a
+            if op == 64 or op == 65 then
+                local base = ((op == 64) and aim or 0) - a1_th * RAD2DEG
+                a = base + spread_offsets(c1, -a2_th * RAD2DEG)[ring + 1]
+            else
+                local base = ((op == 66 or op == 68) and aim or 0) - a1_th * RAD2DEG
+                a = base + ring * (360 / c1)
+                if op == 66 or op == 67 then a = a - a2_th * RAD2DEG * layer
+                else a = a + 180 / c1 end
+            end
+            if cmd then
+                pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], style, col,
+                                        self.x + ox, self.y + oy, v, a, cmd)
+            else
+                pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
+                                                    v, a, false, 0, false)
+            end
+            room, i = room - 1, i + 1
+        end
+        if plays then sound4(self) end
+    end
+    ---同上，但 (ax, ay) 是**绝对**坐标（原作 SET_SHOOT_OFFSET x=目标x−posX 的绝对定位用法）。
+    local function shoot_abs6(self, ax, ay, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
+        shoot6(self, ax - self.x, ay - self.y, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
+    end
+    ---VEC_FROM_ANGLE_MAG：TH07 的 (mag·cosθ, mag·sinθ) 翻到我们这边 = (mag·cosθ, −mag·sinθ)。
+    local function voff(ang, mag) return mag * math.cos(ang), -mag * math.sin(ang) end
+
+    ---INIT_BULLET_CMD 0x20 TargetAngle（`BulletManager.cpp:759-777`）：每帧
+    ---angle += cmd.angle、speed += cmd.speed，够 duration 帧清位。传 TH07 弧度/帧 ⇒ 取反并转度。
+    ---`loop=-1` 的原作靠 0x2000 的 spawnDelay 与 flag 位反复重置，这里直接做成常驻。
+    local function spin6(rate_th, dec, dur)
+        return { type = 0x20, dur = dur or 30, loop = -1,
+                 speed = -(dec or 0), angle = -rate_th * RAD2DEG }
+    end
+    ---INIT_BULLET_CMD 0x10 TargetVelocity：把（当前朝向, cmd.speed）冻成向量，之后每帧
+    ---velocity += 该向量（速度过零后自己反过来）。spd 传 TH07 的 px/帧²。
+    local function accel6(spd, dur)
+        return { type = 0x10, dur = dur or 80, loop = -1, speed = 0, angle = -999,
+                 accel = spd }
+    end
+    ---INIT_BULLET_CMD 0x80 DirChangeAimAtPlayer：先沿当前朝向把速度线性减到 0，
+    ---dur 帧后朝向 = 自机方向（+cmd.angle）、速度 = cmd.speed，重复 loop 次。
+    ---（ZUN 交换：state.angle 取 ECL 的 spd、state.speed 取 ECL 的 ang。）
+    local function brake_aim6(dur, ang_th, spd, loop)
+        return { type = 0x80, dur = dur or 60, loop = loop or 1,
+                 angle = -ang_th * RAD2DEG, speed = spd }
+    end
+    ---INIT_BULLET_CMD 0x80/0x64 一族在 ECL 里就写成「沿当前朝向减速再转向」，
+    ---幽々子非符 5/6 面几张卡都用它把慢弹「停住再慢慢飘向自机」。
+    local function stop_then_aim(spd, dur)
+        return { type = 0x80, dur = dur or 60, loop = 1, angle = 0, speed = spd }
+    end
+
+    ---BEGIN_SPELLCARD 的计时（t=480 起算 th 帧）= 本框架 t3（秒）的换算基准：
+    ---原作 t3 一律取 SET_TIMER_CALLBACK_THRESHOLD/60（见各卡注释）。
+    ---──────────────────── 幽々子 非符 1（原作 sub19） ────────────────────
+    ---进场后两次「螺旋喷泉」：从半径 112 / 96 的轨道上边收半径、边转相位地打整圈，
+    ---每 10 帧两轮、圈数 li0 从 1 起每轮 +5（到 24 封顶）——两轮的颜色 = 调用方 gI0/gI1。
+    ---接着是左右两侧屏幕外的 4 层自机狙齐射（原作 sub21/22）。
+    ncard("幽々子 非符 1", 4390, 15000, 1500, function(self)
+      task.New(self, function()
+        local function spiral(radius, colA, colB)
+            local a1 = aimth(self)
+            local ca, sa = math.cos(a1), math.sin(a1)
+            local pa = -sa
+            local r, dr, ph, c1 = radius, radius / 16, 0, 1
+            for _ = 1, 16 do
+                for step = 0, 1 do
+                    local ox, oy = r * ca, r * sa
+                    r = r - dr
+                    local wob = math.sin(ph) * radius
+                    if step == 1 then wob = -wob end
+                    ph = ph + 0.0981748
+                    shoot6(self, ox + wob * pa, -(oy + wob * ca), 67, 3,
+                           (step == 0) and colA or colB, c1, 1, 2, 1, a1, 0.261799, nil, true)
+                    task.Wait(5)
+                end
+                if c1 < 24 then c1 = c1 + 5 end
+            end
+        end
+        local function shotgun(right)
+            local x0 = ran:Float(0, 32) + (right and 368 or -16)
+            local y0 = ran:Float(0, 128) - 64
+            local dy = y0 / 8
+            for _ = 1, 16 do
+                shoot_abs6(self, x0 - 192, self.y - y0, 64, right and 6 or 2,
+                           right and 6 or 2, right and 1 or 2, 4, 5, 1, 0,
+                           right and 0.392699 or 0.523599, nil, true)
+                x0 = x0 + (right and -24 or 24)
+                y0 = y0 - dy
+                task.Wait(2)
+            end
+        end
+        task.Wait(60)
+        while true do
+            spiral(112, 8, 13)
+            task.Wait(100)
+            drift(self, 1.5, 60)
+            spiral(96, 11, 14)
+            drift(self, 1.5, 60); task.Wait(30)
+            shotgun(true);  drift(self, 2.5, 50); task.Wait(10)
+            shotgun(false); drift(self, 2.5, 30); task.Wait(20)
+            shotgun(true);  drift(self, 2.5, 10); task.Wait(20)
+            shotgun(false); drift(self, 1.5, 60); task.Wait(40)
+        end
+      end)
+    end)
+
+    ---──────────────────── 符卡 六道剣「一念無量劫」（原作 sub23/24/25） ────────────────────
+    ---开卡 120 帧的进场（原作 MOVE_POS_TIME(120,4,192,180) → 我们 (0,44)）。
+    ---之后每 155 帧放一圈「子机」：子机均匀铺在半径 112 的圆上（张角 gF0，
+    ---8 只 ×45° / 8 只 ×−45° / 12 只 ×54° / 16 只 ×−77.14°），
+    ---每只子在出生 60 帧后开始打 14 次 4 发绝对扇（张角 22.5°、速度 1.8→1），
+    ---每次间隔 3 帧。四圈打完 JUMP 回开头（原作 t=480 的 `JUMP off=-224`）。
+    scard("六道剣「一念無量劫」", 4391, 40, 1500, false, function(self)
+      task.New(self, function()
+        task.Wait(120)
+        local waves = { { 0.785398, 8 }, { -0.785398, 8 }, { 0.942478, 12 }, { -1.3464, 16 } }
+        while true do
+            for _, w in ipairs(waves) do
+                local d, n = w[1], w[2]
+                for k = 0, n - 1 do
+                    local ang = 1.5708 + k * d
+                    local ox, oy = voff(ang, 112)
+                    task.New(self, function()
+                        task.Wait(110 + 3 * k)
+                        for _ = 1, 14 do
+                            shoot6(self, ox, oy, 65, 6, 4, 4, 1, 1.8, 1, ang, 0.392699, nil, true)
+                            task.Wait(3)
+                        end
+                    end)
+                end
+                task.Wait(155)
+            end
+        end
+      end)
+    end)
+
+    ---──────────────────── 幽々子 非符 2（原作 sub29/30/31/32/33） ────────────────────
+    ---两条反向自转的螺旋臂：从自机角 ±90° 的偏移点（半径 32/64 或 64/16 或 24/96）
+    ---打「扇 + 环」，每 4 帧一拍；自机会在 64px 内时额外补一圈 16 发。
+    ---速度基准 = 2.1/3.0 + 0.2×(第几轮)，每轮 l2i3 递增。
+    ncard("幽々子 非符 2", 4392, 21000, 2100, function(self)
+      task.New(self, function()
+        local a1 = aimth(self)
+        local function arm(lf0, lf1, iter, magA, magB, sprF, offF, c1F, a2F, vbase,
+                           sprR, offR, c1R, a2R, useRing, sprX, offX, c1X, a2X)
+            local v1 = vbase
+            local v2 = vbase - 0.5
+            for _ = 1, iter do
+                local ox, oy = voff(lf0, magA)
+                shoot6(self, ox, oy, 65, sprF, offF, c1F, 1, v1, 1,
+                       lf1, a2F, nil, true)
+                ox, oy = voff(lf1, magB)
+                if useRing then
+                    shoot6(self, ox, oy, 67, sprR, offR, c1R, 1, v2, 1, lf1, a2R, nil, true)
+                else
+                    shoot6(self, ox, oy, 67, sprR, offR, c1R, 1, v2, 1, lf0, a2R, nil, true)
+                end
+                if pdist(self) < 64 then
+                    shoot6(self, 0, 0, 67, sprX, offX, c1X, 1, 4, 1,
+                           ran:Float(-PI, PI), a2X, nil, true)
+                end
+                lf0 = lf0 + 0.20944
+                lf1 = lf1 - 0.20944
+                task.Wait(4)
+            end
+        end
+        task.Wait(60)
+        while true do
+            arm(a1 - 1.5708, a1 + 1.5708, 15, 32, 64, 2, 8, 16, 0.1848, 2.1,
+                7, 6, 6, 0.314159, true, 2, 2, 16, 0.0392699)
+            drift(self, 1.5, 60)
+            arm(a1 - 1.5708, a1 + 1.5708, 15, 32, 16, 2, 13, 16, 0.1848, 3.0,
+                7, 4, 6, 0.314159, false, 2, 2, 7, 0.0392699)
+            drift(self, 1.5, 60)
+            a1 = aimth(self)
+            arm(a1 - 1.5708, a1 + 1.5708, 30, 64, 16, 2, 8, 8, 0.19635, 3.0,
+                7, 6, 5, 0.314159, true, 3, 2, 16, 0.0392699)
+            arm(a1 - 1.5708, a1 + 1.5708, 30, 24, 96, 2, 13, 8, 0.19635, 2.4,
+                7, 4, 5, 0.314159, false, 2, 2, 7, 0.0392699)
+            drift(self, 1.5, 60)
+            task.Wait(40)
+        end
+      end)
+    end)
+
+    ---──────────────────── 段式激光（TH07 SPAWN_LASER_FIXED 的移植，同 78 面那张表） ────────────────────
+    ---一条激光 = pos 处沿 angle 的线段 [sOff, eOff]，w 是垂直粗细：
+    ---tStart 帧展开（前 min(tStart,30) 帧只有 1.2px 细线预警）→ dur 帧满宽（全程有判定）
+    ---→ tEnd 帧收束；判定窗口另有 hbStart / hbEnd。ang 用**我们的**弧度。
+    local PLASER
+    PLASER = Class(laser, {
+        init = function(self, x, y, ang, s)
+            laser.init(self, s.spr or 4, x, y, ang * RAD, 0, 1, 0, s.w or 8, 0, 0)
+            self.pl_x, self.pl_y = x, y
+            self.pl_ang = ang
+            self.pl_spd = s.spd or 0
+            self.pl_sOff, self.pl_eOff = s.sOff or 0, s.eOff or 640
+            self.pl_sLen, self.pl_lw = s.sLen or 640, s.w or 8
+            self.pl_tStart, self.pl_dur = s.tStart or 0, s.dur or 60
+            self.pl_tEnd = s.tEnd or 30
+            self.pl_hbStart = s.hbStart or (s.tStart or 0)
+            self.pl_hbEnd = s.hbEnd or 0
+            self.pl_t, self.pl_state, self.pl_w = 0, 0, 0
+            self.alpha, self.colli = 1, false
+            PLASER._pl_sync(self)
+        end,
+        _pl_sync = function(self)
+            local a, d = self.pl_ang, self.pl_eOff - self.pl_sOff
+            self.x = self.pl_x + math.cos(a) * self.pl_sOff
+            self.y = self.pl_y + math.sin(a) * self.pl_sOff
+            self.rot = a * RAD
+            self.l1, self.l2, self.l3 = 0, max(1, d), 0
+            self.w0, self.w = self.pl_lw, self.pl_w
+        end,
+        frame = function(self)
+            self.pl_eOff = self.pl_eOff + self.pl_spd
+            if self.pl_sLen < self.pl_eOff - self.pl_sOff then
+                self.pl_sOff = self.pl_eOff - self.pl_sLen
+            end
+            if self.pl_sOff < 0 then self.pl_sOff = 0 end
+            local t, full = self.pl_t, self.pl_lw
+            if self.pl_state == 0 then
+                local warn = min(self.pl_tStart, 30)
+                if self.pl_tStart - warn < t then
+                    self.pl_w = t * full / max(1, self.pl_tStart)
+                else
+                    self.pl_w = 1.2
+                end
+                self.colli = t >= self.pl_hbStart
+                if t >= self.pl_tStart then self.pl_state, t = 1, 0 end
+            end
+            if self.pl_state == 1 then
+                self.pl_w, self.colli = full, true
+                if t >= self.pl_dur then self.pl_state, t = 2, 0 end
+            end
+            if self.pl_state == 2 then
+                self.pl_w = full * max(0, 1 - t / max(1, self.pl_tEnd))
+                self.colli = t < self.pl_hbEnd
+                if t >= self.pl_tEnd then object.RawDel(self); return end
+            end
+            self.pl_t = t + 1
+            PLASER._pl_sync(self)
+            laser.frame(self)
+        end,
+    })
+    local function plaser(x, y, ang, s)
+        local o = New(PLASER, x, y, ang, s)
+        if spell_live then spell_live[#spell_live + 1] = o end
+        return o
+    end
+    ---原作 sub48/sub49 的 5 连激光：spr4/off4、sOff=24 eOff=540 sLen=540 w=32、
+    ---120 帧展开 → 270..310 帧满宽 → 30 帧收束、判定 100..20。
+    ---（原作还用 INIT_INTERP 让 5 条各自转 0.19635 rad；这里用同样的转速近似。）
+    local function laser5(self, base_rad, dir)
+        local ls = {}
+        for k = 0, 4 do
+            ls[#ls + 1] = plaser(self.x, self.y, base_rad + dir * k * 0.19635, {
+                spr = 4, w = 32, sOff = 24, eOff = 540, sLen = 540,
+                tStart = 120, dur = 270 + 10 * k, tEnd = 30, hbStart = 100, hbEnd = 20 })
+        end
+        return ls
+    end
+
+    ---──────────────────── 符卡 亡郷「亡我郷」（原作 sub43/44/46/47/48/49） ────────────────────
+    ---幽幽子飘到画面上方，每 9 帧从本体打一组「慢速大弹扇」（速度 rand 0.3~4.5、
+    ---张角 30°/22.5°、两条色档），基准角 lf0（-90° 起）每拍转 −2.25°，
+    ---并镜像打一组 lf3 = 180° − lf0 的反向扇；
+    ---每 900 帧一轮的「激光段」：5 条长激光从 24px 处展开、各自慢转 ±0.19635 rad。
+    scard("亡郷「亡我郷」", 4393, 65, 2100, false, function(self)
+        task.New(self, function()
+            task.Wait(480)
+            self._box = { -128, 128, 96, 176 }
+            local spin = spin6(0.0523599, 0.05, 30)
+            local lf0, lf3 = -1.5708, 0
+            ---原作 sub44/sub46：一组「慢速大弹扇」，a1 是扇心。
+            local function fan(a1)
+                local v = ran:Float(0.3, 4.5)
+                shoot6(self, 0, 0, 65, 6, 8, 3, 1, v, 1, a1, 0.523599, spin, true)
+                shoot6(self, 0, 0, 65, 6, 13, 2, 1, v, 1, a1, 0.523599, spin, true)
+            end
+            ---主时间轴的「周期扇 + 镜像是同一支子程序」：每 9 帧一次，每 30 拍换一次方向。
+            task.New(self, function()
+                local n = 0
+                while true do
+                    task.Wait(9)
+                    fan(lf0)
+                    if n >= 2 then
+                        lf3 = 3.14159 - lf0
+                        fan(lf3)
+                    end
+                    lf0 = lf0 - 0.0392699
+                    n = (n + 1) % 4
+                end
+            end)
+            ---激光段：原作 t=510（sub48，从 lf5 收到 0）与 t=540（sub49，反向）各 420 帧。
+            task.New(self, function()
+                task.Wait(30)
+                while true do
+                    local rotary = laser5(self, -1.5708 + 0.0654498 * ran:Int(0, 2), 1)
+                    for _ = 1, 300 do
+                        for i = 1, #rotary do
+                            rotary[i].pl_ang = rotary[i].pl_ang + 0.000654498
+                        end
+                        task.Wait(1)
+                    end
+                    task.Wait(120)
+                end
+            end)
+        end)
+    end)
+
+    ---──────────────────── 幽々子 非符 3（原作 sub34/35） ────────────────────
+    ---本体每 13 帧从随机点打一组 3 发自机狙（带「自旋 + 加速」两条指令），
+    ---同时主时间轴从「13 发自机狙扇」开始、间隔由 120 帧一路缩到 65 帧（越打越快）。
+    ncard("幽々子 非符 3", 4394, 32000, 3000, function(self)
+        task.New(self, function()
+            ---原作 sub35：随机点 + 3 发瞄准扇（0x20 自旋 80 帧、0x10 加速 60 帧）。
+            task.New(self, function()
+                while true do
+                    local ox = ran:Float(-176, 176)
+                    local oy = ran:Float(-24, 24)
+                    shoot6(self, ox, oy, 64, 3, 4, 3, 1, 1, 1, 0, 0.523599,
+                           spin6(0, 0, 80), true)
+                    shoot6(self, ox, oy, 64, 3, 1, 3, 1, 1, 1, 0, 0.523599,
+                           accel6(0.038, 80), true)
+                    task.Wait(11)
+                end
+            end)
+            local li0 = 120
+            while li0 > 60 do
+                task.Wait(li0)
+                shoot6(self, 0, 0, 64, 10, 1, 13, 1, 3.2, 1, 0, 0.1848, nil, true)
+                li0 = li0 - 5
+            end
+            task.Wait(200)
+        end)
+    end)
+
+    ---──────────────────── 幽々子 非符 4（原作 sub36/37） ────────────────────
+    ---本体每 max(200-5k, 80) 帧打一发 11 发慢速自机狙扇；同时每 11 帧从 8 个固定
+    ---炮口里按 (li1+K)%8<4 的规则轮流开火（每拍 4 个口），炮口角度 lf0..lf7
+    ---在 li1 的不同区间里缓慢反向自转 —— 两半合起来就是原作「幽々子 + 紫双刀」的演出。
+    ncard("幽々子 非符 4", 4395, 32000, 3000, function(self)
+        task.New(self, function()
+            local OFFS = { { 128, -16, 0.785398 }, { 96, 0, 1.1781 }, { 64, 16, 1.5708 },
+                           { -128, -16, 2.35619 }, { -96, 0, 1.9635 }, { -64, 16, 1.5708 },
+                           { 160, 0, 1.5708 }, { -160, 0, 1.5708 } }
+            local K = { 0, 2, 4, 6, 1, 7, 3, 5 }
+            local ang = { 0, 0, 0, 0, 0, 0, 0, 0 }
+            task.New(self, function()
+                local li1 = 0
+                while true do
+                    for k = 1, 8 do
+                        if (li1 + K[k]) % 8 < 4 then
+                            local o = OFFS[k]
+                            shoot6(self, o[1], o[2], 67, 9, 4, 7, 1, 2.5, 1,
+                                   ang[k], 0.523599, spin6(0, 0, 80), true)
+                        end
+                    end
+                    ---原作用 20/40/60/100/120 五个区间决定哪几路在加、哪几路在减。
+                    local d = 0.000490874
+                    local sgn = (li1 < 20 or (li1 >= 60 and li1 < 100)) and 1 or -1
+                    ang[1] = ang[1] + sgn * d; ang[4] = ang[4] - sgn * d
+                    ang[2] = ang[2] + sgn * d; ang[6] = ang[6] - sgn * d
+                    ang[3] = ang[3] + sgn * d; ang[5] = ang[5] - sgn * d
+                    ang[7] = ang[7] + d
+                    ang[8] = ang[8] - d
+                    li1 = li1 + 1
+                    task.Wait(11)
+                end
+            end)
+            local li0 = 200
+            while li0 > 80 do
+                task.Wait(li0)
+                shoot6(self, 0, 0, 64, 10, 1, 11, 1, 1.2, 1, 0, 0.19635, nil, true)
+                li0 = li0 - 5
+            end
+            task.Wait(200)
+        end)
+    end)
+
+    ---──────────────────── 符卡 亡舞「生者必滅の理」（原作 sub50/51） ────────────────────
+    ---每 3 帧一拍的四相循环（li0 % 4）：
+    ---  0 → 4 发整圈（速度 1.4）；
+    ---  1 → 每 16 拍一颗「大弹」：先慢速飞出、100 帧后掉头锁定自机（0x80）；
+    ---  2 → 2 发小弧（右旋 0x40，角速度 +90°/100 帧）；
+    ---  3 → 2 发小弧（左旋）。
+    ---基准角 lf0 每拍 ±2.73°，到第 300 拍反向。
+    scard("亡舞「生者必滅の理」", 4396, 65, 3000, false, function(self)
+        task.New(self, function()
+            task.Wait(480)
+            self._box = { -128, 128, 96, 176 }
+            local lf0, li0, li1, li2, li3, l2i1 = 0, 0, 0, 0, 0, 0
+            while true do
+                li0 = (li0 + 1) % 4
+                if li0 == 0 then
+                    shoot6(self, 0, 0, 67, 8, 4, 4, 1, 1.4, 1, lf0, 0.523599, nil, true)
+                elseif li0 == 1 then
+                    li3 = li3 + 1
+                    l2i1 = l2i1 + 1
+                    if l2i1 < 16 and li3 >= 7 then
+                        shoot6(self, 0, 0, 65, 10, 1, 1, 1, 3.7, 1, lf0, 0.523599,
+                               brake_aim6(100, 3.0, 0, 1), true)
+                    end
+                    li3 = li3 % 8
+                elseif li0 == 2 then
+                    shoot6(self, 0, 0, 67, 8, 3, 2, 1, 3.2, 1, lf0, 0.523599,
+                           { type = 0x40, dur = 100, loop = 1, speed = 1.5708, angle = 1.1 }, true)
+                else
+                    shoot6(self, 0, 0, 67, 8, 2, 2, 1, 3.0, 1, lf0, 0.523599,
+                           { type = 0x40, dur = 100, loop = 1, speed = -1.5708, angle = 1.1 }, true)
+                end
+                li2 = li2 + 1
+                if li2 >= 300 then lf0 = lf0 - 0.0475999 else lf0 = lf0 + 0.0475999 end
+                li1 = li1 + 1
+                task.Wait(3)
+            end
+        end)
+    end)
+
+    ---──────────────────── 符卡 華霊「ゴーストバタフライ」（原作 sub52/53/54） ────────────────────
+    ---t=540 起 8 轮 8 发 0.5 速的「缩弹」环（原作靠子机的 ex_ins 变换成蝴蝶）；
+    ---t=550 起周期子程序打「18 发 ×3 层」的大环（速度 2.5→0.8、基准角每发 +1.5°），
+    ---并由 12+8 只蝴蝶子机向自机方向飞出去。
+    scard("華霊「ゴーストバタフライ」", 4397, 65, 3000, false, function(self)
+        task.New(self, function()
+            task.Wait(480)
+            self._box = { -128, 128, 96, 176 }
+            local lf0, lf4 = 0, ran:Float(-PI, PI)
+            ---原作 sub53：一只蝴蝶沿直线飞向开火那一刻的自机位置，
+            ---120 帧后原地打 4 发带自旋的慢弹（速度 0.8/1.46/2.4/3.2）。
+            local function butterfly()
+                local tx, ty = player.x, player.y
+                task.New(self, function()
+                    local t = 0
+                    while t < 120 do t = t + 1; task.Wait(1) end
+                    shoot6(self, 0, 0, 67, 8, 4, 1, 1, 0.8, 1, lf4, 0.523599,
+                           spin6(-0.0785398, 0, 80), true)
+                    shoot6(self, 0, 0, 67, 8, 3, 1, 1, 1.46, 1, lf4, 0.523599,
+                           spin6(0.0785398, 0, 80), true)
+                    shoot6(self, 0, 0, 65, 8, 2, 2, 1, 2.4, 1, lf4, 0.19635,
+                           spin6(0.0897598, 0, 80), true)
+                    shoot6(self, 0, 0, 65, 8, 1, 2, 1, 3.2, 1, lf4, 0.19635,
+                           spin6(-0.0897598, 0, 80), true)
+                end)
+            end
+            task.New(self, function()
+                task.Wait(60)
+                for _ = 1, 8 do
+                    shoot6(self, 0, 0, 67, 8, 4, 8, 1, 0.5, 1, lf0, 0.523599, nil, true)
+                    task.Wait(10)
+                end
+                local period, i = 60, 0
+                while true do
+                    shoot6(self, 0, 0, 67, 7, 3, 18, 3, 2.5, 0.8, lf4, 0.19635, nil, true)
+                    lf4 = lf4 + 0.0261799
+                    for _ = 1, 12 do butterfly(); end
+                    for _ = 1, 8 do butterfly(); end
+                    i = i + 1
+                    if i % 10 == 0 and period > 40 then period = period - 4 end
+                    task.Wait(period)
+                end
+            end)
+        end)
+    end)
+
+    ---──────────────────── 幽々子 非符 5（原作 sub38/39/40/41/42） ────────────────────
+    ---每 8 帧一组「2 发瞄准扇」（速度 3.5~4.1），弹挂着「减速停住 → 慢慢飘向自机」
+    ---的两条指令（0x80 + 0x10）；每 80 帧额外打一圈 32 发多层大环；
+    ---周期子程序逐段换成 sub40/41/42（扇的张角与附加弧逐段加大）。
+    ncard("幽々子 非符 5", 4398, 22000, 2200, function(self)
+        task.New(self, function()
+            local lf7 = 4.1
+            ---原作 sub39..42：每支都是「2 发瞄准扇（带指令）+ 若干附加弧」。
+            local function burst(stage)
+                local cmd = { stages = { accel6(0.038, 80), stop_then_aim(0.1, 60) } }
+                if stage == 0 then
+                    shoot6(self, 0, 0, 64, 6, 6, 2, 1, lf7, 1, 0, 0.785398, cmd, true)
+                elseif stage == 1 then
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, -0.392699, 0.785398, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, 0.392699, 0.785398, cmd, true)
+                elseif stage == 2 then
+                    shoot6(self, 0, 0, 64, 6, 6, 2, 1, lf7, 1, 0, 1.5708, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 10, 2, 1, lf7, 1, -0.392699, 0.785398, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 10, 2, 1, lf7, 1, 0.392699, 0.785398, cmd, true)
+                else
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, -0.392699, 0.785398, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, 0.392699, 0.785398, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, -1.1781, 0.785398, cmd, true)
+                    shoot6(self, 0, 0, 64, 6, 8, 2, 1, lf7, 1, 1.1781, 0.785398, cmd, true)
+                end
+            end
+            task.New(self, function()
+                task.Wait(180)
+                local stage, i = 0, 0
+                while true do
+                    burst(stage)
+                    i = i + 1
+                    if i % 10 == 0 and stage < 3 then stage = stage + 1 end
+                    task.Wait(8)
+                end
+            end)
+            ---主时间轴每 80 帧一轮：漂移 + 一圈 32 发多层大环（a1 每次重掷）。
+            task.Wait(200)
+            while true do
+                drift(self, 1.5, 60)
+                shoot6(self, 0, 0, 67, 8, 5, 32, 3, 2.8, 1, ran:Float(-PI, PI), 0, nil, true)
+                task.Wait(20)
+            end
+        end)
+    end)
+
+    ---──────────────────── 符卡 幽曲「リポジトリ・オブ・ヒロカワ」（原作 sub55/56/57） ────────────────────
+    ---t=540 起从本体四周连打「大环」（子机，速度 0.5、挂着自旋/加速两条指令），
+    ---t=612 起换成一连串「6 层慢速扇」（速度 8 → 0.5、逐层减速），
+    ---t=672 起再叠一圈反向的慢速团。
+    scard("幽曲「リポジトリ・オブ・ヒロカワ」", 4399, 65, 2200, false, function(self)
+        task.New(self, function()
+            task.Wait(480)
+            self._box = { -128, 128, 96, 176 }
+            ---原作 sub56：RING_ABS（L 用 l3i0 发、张角 45°）+ 0x20/0x10 指令。
+            local function ring56(n, d, rot)
+                local cmd = { stages = { spin6(0, 0.01, 120), accel6(0.038, 80) } }
+                shoot6(self, 0, 0, 67, 8, 10, n, 1, 0.5, 1, rot, 0.785398, cmd, true)
+            end
+            ---原作 sub57：6 层瞄准扇，层速度 8→0.5，a2 = l3f0。
+            local function spread57(a2)
+                local base = Angle(self, player)
+                local vs = { 8, 6.5, 5, 3.5, 2, 0.5 }
+                for _, v in ipairs(vs) do
+                    shoot6(self, 0, 0, 64, 8, 10, 2, 1, v, 0.5, 0, a2, nil, true)
+                end
+            end
+            task.New(self, function()
+                task.Wait(60)
+                for i = 0, 6 do
+                    ring56(14, 1, 0)
+                    ring56(14, -1, 0)
+                    ring56(10, 1, 0)
+                    ring56(10, -1, 0)
+                    task.Wait(3)
+                end
+                task.Wait(60)
+                for i = 1, 4 do
+                    spread57(0.392699)
+                    task.Wait(60)
+                end
+            end)
+            local base = -1.5708
+            while true do
+                task.Wait(3)
+                base = base + 0.0475999
+                spread57(0.20944)
+            end
+        end)
+    end)
+
+    ---──────────────────── 符卡 桜符「完全なる墨染の桜 -封印-」（原作 sub58/59/60/61） ────────────────────
+    ---封印/耐久卡（原作 life 6000、阈 5940）：t=660 起 5 组 38 发 0.5 速的大环；
+    ---t=820/1020 起各三组「6 层慢速扇」（速度 8 → 0.5）；
+    ---t=1020 起周期子程序越打越密。
+    scard("桜符「完全なる墨染の桜 -封印-」", 4400, 99, 6000, false, function(self)
+        task.New(self, function()
+            task.Wait(600)
+            self._box = { -128, 128, 96, 80 }
+            ---原作 sub60：l3i0 发整圈、速度 0.5，挂 0x20（+0.02 弧度/帧）+0x10。
+            local function ring60(n, base)
+                local cmd = { stages = { spin6(0, 0.02, 80), accel6(0.04, 80) } }
+                for _ = 1, 5 do
+                    shoot6(self, 0, 0, 67, 10, 1, n, 1, 0.5, 1, base, 0.785398, cmd, true)
+                    task.Wait(1)
+                end
+            end
+            ---原作 sub59：6 层瞄准扇（8/6.5/5/3.5/2/0.5），带 0x40 转向。
+            local function fan59(n, a2, rot)
+                for j = 1, n do
+                    local vs = { 8, 6.5, 5, 3.5, 2, 0.5 }
+                    for _, v in ipairs(vs) do
+                        shoot6(self, 0, 0, 64, 8, 1, 2, 1, v, 0.5, 0, a2,
+                               { type = 0x40, dur = 80, loop = 1, speed = rot, angle = 0.2 }, true)
+                    end
+                    task.Wait(1)
+                end
+            end
+            task.Wait(60)
+            ring60(42, 0)
+            task.Wait(160)
+            fan59(2, 1.39626, 0.0261799)
+            fan59(2, 1.39626 + 2.0944, 0.0261799)
+            fan59(2, 1.39626 + 4.1888, 0.0261799)
+            task.Wait(200)
+            fan59(4, -1.39626, -0.0261799)
+            fan59(4, -1.39626 + 2.0944, -0.0261799)
+            local lf3 = 10
+            while true do
+                shoot6(self, 0, 0, 67, 2, 4, 2, 1, 3.0, 1, 1.5708, 0, nil, true)
+                task.Wait(lf3)
+                if lf3 > 5 then lf3 = lf3 - 1 end
+            end
+        end)
+    end)
+
+    ---──────────────────── 生存符卡「反魂蝶 -一分咲-」（原作 sub62/64/65/66） ────────────────────
+    ---原作是 SURVIVAL（打不死、只算生存）：每 10 帧交替打「20 发 / 28 发」大环
+    ---（挂自旋 + 加速），每 30 帧补一圈 32/38/40 发的反向环。
+    ---p 移植成 wall=true（不可打、血量极大、关判定），通关条件 = 撑满时限。
+    scard("「反魂蝶 -一分咲-」", 4401, 67, nil, true, function(self)
+        task.New(self, function()
+            task.Wait(660)
+            local cmd = { stages = { spin6(0, 0.01, 120), accel6(0.06, 80) } }
+            local li2, lf2, t = 20, 0, 0
+            task.New(self, function()
+                while true do
+                    shoot6(self, 0, 0, 67, 8, 3, li2, 1, 0.8, 1, ran:Float(-PI, PI), 0.785398,
+                           cmd, true)
+                    li2 = (li2 == 20) and 28 or 20
+                    task.Wait(10)
+                end
+            end)
+            task.New(self, function()
+                task.Wait(170)
+                while true do
+                    shoot6(self, 0, 0, 67, 8, 3, 32 + (t % 3) * 3, 2, 0.8, 0.3,
+                           ran:Float(-PI, PI), 0, cmd, true)
+                    t = t + 1
+                    task.Wait(30)
+                end
+            end)
+            while true do task.Wait(30) end
+        end)
+    end)
+
+
+    ---════════════════════════════════════════════════════════════════════
+    ---以下：stage5（魂魄妖夢）的符卡/非符移植（与原作 `ecldata5.ecl` 对齐）。
+    ---
+    ---原作 sub 链（全取 Lunatic 行；→ 左边是"入口"，括号里是它调用的子程序）：
+    ---  进场(37) → 非符1(38→39+40+41) → 幽鬼剣/餓王剣(42→43+44) → 非符2(48→49+50+51)
+    ---  → 獄神剣(57→58 周期 + 59/60) → 非符3(52→53+54) → 修羅剣(62→63+64+65)
+    ---  → 畜趣剣(66→69→67/68) → 人神剣(70→71+72+73+74) → 天神剣(75→77→76)
+    ---
+    ---妖夢的招都是「本体 + 挥剑」：子程序先把斩击特效瞬移到某侧（SET_POS，只影响演出），
+    ---在 TH07 (192,y) 处生成一条 384×32 的横斩判定（sub61；人神剣是 4412×32 的 sub74），
+    ---再从屏幕另一端起每 2 帧炸开一环弹、或每 6 帧从顶上打一发。
+    ---坐标/角度换算同文件头（x−192、224−y、θ 取反）。
+    ---血量口径同文件头（非符 hpB(life−收尾阈值)、符卡 hpS(开卡 life)）。
+    ---卡 id 段沿用 4390..4410：stage6 占 4390..4401，stage5 从 4402 起。
+    ---
+    ---**ECL 的 SUB_CALL 会冻结调用方 context 的 time**（`EclManager.cpp:2242` 只在当前
+    ---context 走时间；sub 用的是它自己的 time）。所以「主时间轴 t=160 的 MOVE_DIR_TIME」
+    ---在 sub 返回后还要再等 (160 − 调用点) 帧。移植版用 `task.Wait` 把这些空档补齐，
+    ---各卡的循环周期因此与原作一致：非符 1 = 820 帧、非符 2 = 1076、非符 3 = 401、
+    ---餓王剣 = 挥砍 206 帧 ×2 + 90×2、獄神剣 = 挥砍每 320 帧一组、修羅剣 = 260、
+    ---畜趣剣 = 122×2、人神剣 = 42、天神剣 = 120。
+    ---
+    ---实测（6 种子 20260916/11111/98765/55555/31415/777，`2400 --threat` 取最坏）：
+    ---  4402 6.1~7.1 / 死局 2.8%   4403 7.5~7.7 / 0.5%   4404 4.4~6.6 / 0.2%
+    ---  4405 0.6 / 0%   4406 7.2~8.0 / 0.4%   4407 4.5~5.9 / 0.4%
+    ---  4408 8.5 / 0.5%   4409 8.9~10.0 / 1.3%   4410 5.6~7.0 / 0.2%
+    ---   （格式：60px 内弹数平均 / 死局；全部 ≤ 3% 死局。）
+    ---4405 的「60px 内平均」只有 0.6 是**原作就这样**：它每 6 帧才从画面顶端打一发慢弹
+    ---（速度在 3.0 / 0.6 之间跳），压迫感来自 5 条 384×32 的横斩判定（`slash5`，
+    ---实测「峰值同屏 对象 5」），而判定条不算「弹」，`--threat` 的弹数栏量不到。
+    ---
+    ---逐张与原作的差异（都是「本仓库场地 384 宽 / 弹样式代理」逼出来的近似）：
+    ---  · 本仓库没有 TH07 那种「敌方判定条」，sub61/sub74/sub65 的横斩判定移植成一条
+    ---    短命激光（`slash5`：宽 384 = 整屏；dur 默认 56 帧 = 原作 sub61 的寿命，
+    ---    人神剣 sub74 传 30000 = 整张卡常驻）。
+    ---  · 原作 INIT_BULLET_CMD 的 0x2000 段是 spawnDelay（`BulletManager.cpp:437`），
+    ---    本仓库的 TH34_cmdbullet 没有这一支（写进 stages 会卡在第一段），故一律略去；
+    ---    表现是「弹幕比原作稍早出现」。
+    ---  · 本体瞬移（幽鬼剣 sub43/44、獄神剣 sub59/60 的 SET_POS）只搬弹幕与斩击判定，
+    ---    本体留在原地（同 stage6 各卡）。
+    ---  · 畜趣剣 L 行**原作就没有弹**：sub67/68 的发弹指令 `skipInstrOnDifficulty` 只置了
+    ---    E/N 两位（`d=E`/`d=N`），H/L 上两只轮子一枪不发 —— 移植按 N 行的发数（每轮 4×2
+    ---    发、5 轮）补上，否则这张卡在 L 上整场是空的（详见该卡注释）。
+    ---  · 修羅剣的「斩」（sub64）在原作里**一发弹都没有**，是 200 帧的挥刀音效演出，
+    ---    移植版照此只保留「顿一下再朝自机突进」，不再伪造一组自机狙。
+    ---════════════════════════════════════════════════════════════════════
+    ---stage5 的默认立绘/进场（妖夢从下方升起，同原作 sub37）。
+    local OPT5 = { skin = skin5, enter = enter5 }
+    ---带起点/终点的进场（原作 MOVE_POS_TIME 的移植，参数是**我们的**坐标）。
+    local function enter5at(x0, y0, t, x, y)
+        return function(self)
+            self._orb, self._mv = nil, nil
+            self.x, self.y = x0, y0
+            bmove(self, t, 4, x, y)
+        end
+    end
+    ---TH07 `RAND_FLOAT_ADD v,lo,hi` = rand(0,lo) + hi（EclManager.cpp:990）。
+    local function rf(lo, hi) return hi + ran:Float(0, lo) end
+    ---SET_MOVEMENT_BOUNDS（TH07 口径）→ 我们的 {xmin,xmax,ymin,ymax}。
+    local function box5(lx, ly, ux, uy)
+        return { lx - 192, ux - 192, 224 - uy, 224 - ly }
+    end
+    ---原作 sub61/sub74：TH07 (192,y) 处的一条横向斩击判定（打不到、只压自机）。
+    ---原作是 384×32（人神剣 sub74 是 4412×32）的接触判定条，移植成一条短命激光：
+    ---两侧各长出 width/2，所以 width ≥ 384 就盖满我们的场地。
+    ---dur 默认 56 帧 = 原作 sub61 的寿命（`UNIMP` 在 t=56）；人神剣 sub74 是 30000。
+    local function slash5(y, width, dur)
+        width = width or 384
+        plaser(-width / 2, y, 0, { spr = 4, w = 32, sOff = 0, eOff = width,
+                                   sLen = width, tStart = 0, dur = dur or 56, tEnd = 12,
+                                   hbStart = 0, hbEnd = 4 })
+    end
+    ---INIT_BULLET_CMD 0x20（`BulletManager.cpp:759 UpdateBulletTargetAngle`）：
+    ---每帧 angle += rate（原作弧度/帧，本仓库取反并转度）、speed += spd（px/帧²，**不取反**）。
+    ---注意 spin6 是「传减速量、内部写 speed=-(dec)」，对 0x20 这种**带号**的加速段不合适 ——
+    ---幽鬼剣那两条指令一条 +0.015、一条 −0.01，符号必须照搬，所以单开一个。
+    local function acc20(rate_th, spd, dur)
+        return { type = 0x20, dur = dur or 90, loop = -1,
+                 speed = spd, angle = -rate_th * RAD2DEG }
+    end
+
+    ---──────────────────── 妖夢 非符 1（原作 sub38/39/40/41） ────────────────────
+    ---两次「收缩螺旋 + 自机狙扇」：从半径 128 / 160 的轨道上边收半径、边左右摆动
+    ---（两条相反的 ±sin 切线）地，每 6 帧一组（第 0/3 帧各一发）打一组以自机
+    ---方向为心的扇；扇内弹数 li0 从 1 起每拍 +3、到 13 封顶。
+    ---之后四段「屏幕外的点爆发」（sub40 从右半 / sub41 从左半）：各 16 个随机点，
+    ---每个点打 4 层自机狙（sub40 每层 1 发、sub41 每层 2 发、张角 18°/22.5°），
+    ---点沿屏幕横向滑 24px、纵向每步收 lf2/8。
+    ncard("妖夢 非符 1", 4402, 15000, 1500, function(self)
+      task.New(self, function()
+        ---原作 sub39：半径 l3f0、双色档（gI0/gI1）的收缩螺旋 + 自机狙扇。
+        local function spiral(radius, colA, colB)
+            local a1 = aimth(self)
+            local ca, sa = math.cos(a1), math.sin(a1)
+            local pa = -sa
+            local r, dr, ph, c1 = radius, radius / 16, 0, 1
+            for _ = 1, 16 do
+                for step = 0, 1 do
+                    local wob = math.sin(ph) * radius
+                    if step == 1 then wob = -wob end
+                    shoot6(self, r * ca + wob * pa, -(r * sa + wob * ca), 65, 3,
+                           (step == 0) and colA or colB, c1, 1, 1.4, 1, a1, 0.174533,
+                           nil, true)
+                    r, ph = r - dr, ph + 0.0981748
+                    task.Wait(3)
+                end
+                if c1 < 12 then c1 = c1 + 3 end
+            end
+        end
+        ---原作 sub40/sub41：屏幕外 16 个随机点，每个 4 层的自机狙。
+        local function burst(right, c1, a2)
+            local x0 = rf(32, right and 368 or -16)
+            local y0 = rf(128, -64)
+            local dy = y0 / 8
+            for _ = 1, 16 do
+                shoot_abs6(self, x0 - 192, self.y - y0, 65, 6, right and 6 or 2,
+                           c1, 4, 5, 1, 0, a2, nil, true)
+                x0, y0 = x0 + (right and -24 or 24), y0 - dy
+                task.Wait(2)
+            end
+        end
+        task.Wait(60)
+        self._box = box5(32, 48, 352, 128)
+        ---原作 sub38 的主时间轴（一轮 820 帧）：两次螺旋各 96 帧，中间的主时间空档
+        ---100/60/90/60/50/30/10/100 帧照抄（SUB_CALL 期间主 context 的 time 不走，
+        ---所以这些空档是**额外**的，移植版用 task.Wait 补上）。
+        while true do
+            spiral(128, 8, 13)              -- t=60 起，96 帧
+            task.Wait(100)                  -- 到 t=160
+            drift(self, 1.5, 60)            -- t=160..220
+            task.Wait(60)                   -- 到 t=220
+            spiral(160, 11, 14)             -- 96 帧
+            task.Wait(90)                   -- 到 t=310
+            drift(self, 1.5, 60)            -- t=310..370
+            task.Wait(60)                   -- 到 t=370
+            burst(true, 1, 0.392699)        -- sub40，32 帧
+            drift(self, 2.5, 50)
+            task.Wait(50)                   -- 到 t=420
+            burst(false, 2, 0.523599)       -- sub41
+            drift(self, 2.5, 30)
+            task.Wait(30)                   -- 到 t=450
+            burst(true, 1, 0.392699)
+            drift(self, 2.5, 10)
+            task.Wait(10)                   -- 到 t=460
+            burst(false, 2, 0.523599)
+            drift(self, 1.5, 60)
+            task.Wait(100)                  -- 到 t=560，JUMP 回 t=60
+        end
+      end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 餓王剣「餓鬼十王の報い」（原作 sub42/43/44） ────────────────────
+    ---Lunatic 的餓王剣：本体先落到画面右下 (320,256)→(128,−32)，然后把刀在左右两侧
+    ---间来回扫：每次挥砍 202 帧（120 帧蓄力 + t=50 在 (192,posY+7) 处生成一条
+    ---384×32 的横斩判定 + t=80 起 16 拍「绝对 x 每次 +24 / −24 的双环」），两次挥砍
+    ---之间停 90 帧（原作 sub42 的 SET_WAIT_TIMER 90）。
+    ---每拍两环：18 发 v=0.5 + 12 发 v=0.3（L 行；E/N 行另有 0.025 那条指令，
+    ---L 只有 `idx1 = 0x20 flag=1 dur=90 loop=−1 spd=+0.015 ang=rngRadian/600`，
+    ---即每帧朝向 += rand/600、速度 += 0.015，90 帧后停在 1.85 / 1.65 直飞）。
+    scard("餓王剣「餓鬼十王の報い」", 4403, 50, 1500, false, function(self)
+        task.New(self, function()
+            task.Wait(120)
+            ---原作 sub43/44：左右各 16 拍双环，并在 (192,posY+7) 劈一刀。
+            local function sweep(leftward)
+                local x0 = rf(32, leftward and -16 or 368)
+                task.Wait(50)
+                slash5(self.y - 7)
+                task.Wait(30)
+                for _ = 1, 16 do
+                    local ox = (x0 - 192) - self.x
+                    shoot6(self, ox, 0, 67, 6, 6, 18, 1, 0.5, 1, rngrad(), 0.392699,
+                           { stages = { acc20(rngrad() / 600, 0.015, 90) } }, true)
+                    shoot6(self, ox, 0, 67, 6, 6, 12, 1, 0.3, 1, rngrad(), 0.392699,
+                           { stages = { acc20(rngrad() / 600, 0.015, 90) } }, false)
+                    x0 = x0 + (leftward and 24 or -24)
+                    task.Wait(2)
+                end
+            end
+            ---原作 sub42 的循环：43→44→停 90→44→43→停 90（两侧镜像成对）。
+            while true do
+                sweep(true); sweep(false); task.Wait(90)
+                sweep(false); sweep(true); task.Wait(90)
+            end
+        end)
+    end, { skin = skin5, enter = enter5at(0, 112, 120, 128, -32) })
+
+    ---──────────────────── 妖夢 非符 2（原作 sub48/49/50/51） ────────────────────
+    ---和 non-spell 1 同骨架，但起始半径是 l3f0 + l3f0/2 = 144（不是 96）、迭代 32 次、
+    ---每拍弹数 +1，上限由调用方的 gI2 给（L 取 15 / 18）；爆发段速度 5.2。
+    ---第二段（sub48 在 t=160 置 l2i3=1 之后）每个子拍多 `SET_WAIT_TIMER 2`，
+    ---所以 sub49 的时长第一段 32×6、第二段 32×8 帧。
+    ncard("妖夢 非符 2", 4404, 19000, 2000, function(self)
+      task.New(self, function()
+        ---原作 sub49：起始半径 144、每子拍收 6，li0 上限 = l3i2（L 取 15 / 18）；
+        ---切向摆动在 X 方向额外乘 1.4（#8），Y 方向不乘 —— 照抄这个不对称。
+        local function spiral(colA, colB, cap, tail)
+            local a1 = aimth(self)
+            local ca, sa = math.cos(a1), math.sin(a1)
+            local r, dr, ph, c1 = 144, 6, 0, 1
+            for _ = 1, 32 do
+                for step = 0, 1 do
+                    local wob = math.sin(ph) * 96
+                    if step == 1 then wob = -wob end
+                    shoot6(self, r * ca - 1.4 * wob * sa, -(r * sa + wob * ca), 65, 3,
+                           (step == 0) and colA or colB, c1, 1, 1.6, 1, a1, 0.20944,
+                           nil, true)
+                    r, ph = r - dr, ph + 0.0981748
+                    task.Wait(tail and 5 or 3)
+                end
+                if c1 < cap then c1 = c1 + 1 end
+            end
+        end
+        local function burst(right, c1)
+            local x0 = rf(32, right and 368 or -16)
+            local y0 = rf(128, -64)
+            local dy = y0 / 8
+            for _ = 1, 16 do
+                shoot_abs6(self, x0 - 192, self.y - y0, 65, 6, right and 6 or 2,
+                           c1, 4, 5.2, 1, 0, 0.314159, nil, true)
+                x0, y0 = x0 + (right and -24 or 24), y0 - dy
+                task.Wait(2)
+            end
+        end
+        task.Wait(60)
+        self._box = box5(32, 48, 352, 128)
+        ---原作 sub48 的主时间轴（一轮 1076 帧），空档与 non-spell 1 同型。
+        while true do
+            spiral(8, 13, 15, false)        -- t=60 起，192 帧
+            task.Wait(100)                  -- 到 t=160
+            drift(self, 1.5, 60)            -- t=160..220
+            task.Wait(60)                   -- 到 t=220
+            spiral(10, 14, 18, true)        -- 256 帧（带 SET_WAIT_TIMER 2）
+            task.Wait(90)                   -- 到 t=310
+            drift(self, 1.5, 60)            -- t=310..370
+            task.Wait(60)                   -- 到 t=370
+            burst(true, 3)                  -- sub50，32 帧
+            drift(self, 2.5, 50)
+            task.Wait(50)                   -- 到 t=420
+            burst(false, 4)                 -- sub51
+            drift(self, 2.5, 30)
+            task.Wait(30)                   -- 到 t=450
+            burst(true, 3)
+            drift(self, 2.5, 10)
+            task.Wait(10)                   -- 到 t=460
+            burst(false, 4)
+            drift(self, 1.5, 60)
+            task.Wait(100)                  -- 到 t=560，JUMP 回 t=60
+        end
+      end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 獄神剣「業風神閃斬」（原作 sub57/58/59/60） ────────────────────
+    ---本体落到左侧 (48,192)→(−144,32)。除「五连横斩」外，还有一条常驻周期子程序
+    ---（L 的 period=6）：每 6 帧从画面顶端正中 (192,32)→(0,192) 打一发沿 lf0 缓慢
+    ---转动的弹。原作 sub58 每次调用都做 `lf1 = 3.6 − lf1`（首值 0.6 ⇒ 3.0 / 0.6
+    ---交替，**慢弹几乎停在原地**）；`li0 = li0 % 64` 每调用 +1 ⇒ 前 32 发基准角
+    ---每拍 +0.104311、后 32 发 −0.104311（转到头再转回来）。
+    ---五连横斩（原作 sub59/60）在 TH07 posY+{7,49,−63,105,−119} 五个高度各生成
+    ---一条 384×32 判定；一次挥砍含 120 帧蓄力（sub2 音效特效），两侧各一次、
+    ---同一侧的两组相隔 320 帧（= 挥砍 202 + SET_WAIT_TIMER 90 折算）。
+    scard("獄神剣「業風神閃斬」", 4405, 55, 2000, false, function(self)
+        task.New(self, function()
+            task.Wait(480)
+            ---原作 sub58：从画面顶端打单发旋转弹（period=6，L 速在 3.0/0.6 间跳）。
+            task.New(self, function()
+                local lf0, lf1, li0 = -0.0981748, 0.6, 0
+                while true do
+                    lf1 = 3.6 - lf1
+                    shoot_abs6(self, 0, 192, 67, 10, 1, 1, 1, lf1, 1, lf0, 0.392699,
+                               nil, true)
+                    lf0 = lf0 + (((li0 % 64) < 32) and 0.104311 or -0.104311)
+                    li0 = li0 + 1
+                    task.Wait(6)
+                end
+            end)
+            bmove(self, 60, 4, -144, 32)
+            task.Wait(260)                       -- 首次挥砍：ECL t=570 起 sub59，+170 帧出刀
+            local OFFS = { -7, -49, 63, -105, 119 }
+            while true do
+                for _, o in ipairs(OFFS) do slash5(self.y + o) end
+                task.Wait(320)
+            end
+        end)
+    end, OPT5)
+
+    ---──────────────────── 妖夢 非符 3（原作 sub52/53/54） ────────────────────
+    ---先瞬移到自机所在那一侧（posX≥192 ⇒ 飞向 (256,96)，否则 (128,96)），
+    ---之后「两次 V 形扇 + 一组双发狙击 + 漂移」循环：V 形扇以自机方向 ±0.4488
+    ---为两翼（第 2 拍起各叠 4 层、速度 5.3），并各补一发 16 发朝 −180° 的整圈；
+    ---双发狙击从 ±32 各打 8 发速度递增的弹。
+    ncard("妖夢 非符 3", 4406, 15000, 2000, function(self)
+      task.New(self, function()
+        ---原作 sub53：两侧各一串「逐渐长大的扇」+ 背后 16 发环。
+        local function fan(colA, colB)
+            local a0 = aimth(self)
+            local aL, aR, aB = a0 + 0.448799, a0 - 0.448799, a0 - 3.14159
+            local c1 = 1
+            for _ = 1, 8 do
+                shoot6(self, 0, 0, 65, 3, colA, c1, 1, 2, 1, aL, 0.261799, nil, true)
+                shoot6(self, 0, 0, 65, 3, colB, c1, 1, 2, 1, aR, 0.261799, nil, true)
+                task.Wait(4)
+                shoot6(self, 0, 0, 65, 3, colB, c1, 4, 5.3, 1, aL, 0.0981748, nil, true)
+                shoot6(self, 0, 0, 65, 3, colA, c1, 4, 5.3, 1, aR, 0.0981748, nil, true)
+                shoot6(self, 0, 0, 65, 3, colA, 16, 1, 4, 1, aB, 0.19635, nil, true)
+                c1 = c1 + 1
+                task.Wait(4)
+            end
+        end
+        ---原作 sub54：从 ±32 各打 8 发速度递增的自机狙。
+        local function volley()
+            for side = -1, 1, 2 do
+                for k = 0, 7 do
+                    shoot6(self, side * 32, 0, 64, 9, (side < 0) and 3 or 1, 1, 1,
+                           1.2 + 0.25 * k, 1, 0, 0.261799, nil, true)
+                end
+                task.Wait(1)
+            end
+        end
+        task.Wait(60)
+        bmove(self, 40, 4, (self.x >= 0) and 64 or -64, 128)
+        task.Wait(60)
+        self._box = box5(32, 48, 352, 128)
+        ---原作 sub52 的主时间轴（一轮 401 帧）：三次 V 形扇各 64 帧、一次双发狙击
+        ---（sub54，含 16 帧蓄力），中间的主时间空档 60/120 帧照抄。
+        while true do
+            fan(8, 13)                      -- t=100 起，64 帧
+            drift(self, 1.5, 60)
+            task.Wait(60)                   -- 到 t=160
+            fan(2, 6)                       -- 64 帧
+            volley()                        -- sub54：16 帧蓄力 + 16 帧两串狙击
+            task.Wait(13)                   -- sub54 自身的 13 帧
+            fan(2, 6)                       -- 64 帧
+            drift(self, 1.5, 60)
+            task.Wait(120)                  -- 到 t=280，JUMP 回 t=100
+        end
+      end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 修羅剣「現世妄執 -Lunatic-」（原作 sub62/63/64） ────────────────────
+    ---本体在场上横向游走。真正会「打人」的只有常驻的 sub63：一架不动的发射器
+    ---（t=330 出生，`SET_HAS_NO_COLLISION 1`、不会消失）每 4 帧从 TH07 x=−4 / x=388
+    ---各射一发水平弹（高度各自随机 ∈[0,448)、L 速 0.5+rand(0,0.9)；两发相隔 2 帧），
+    ---把整屏切成一条条水平扫描线。
+    ---每 260 帧一次的「斩」（原作 sub64）**一发弹都没有**：它是 120 帧蓄力（sub2 音效
+    ---特效）+ 210 帧挥刀音效/演出（`RUN_EX_INS`），只把一条 24×24 的装饰判定（sub65）
+    ---落在本体处；随后 `MOVE_POS_TIME 60` 朝自机突进。移植版照此只保留「顿一下再突进」。
+    scard("修羅剣「現世妄執 -Lunatic-」", 4407, 60, 2000, false, function(self)
+        task.New(self, function()
+            ---原作 t=330 出生。sub63 的时间轴从它自己的 t=0 起算。
+            task.Wait(330)
+            task.New(self, function()
+                while true do
+                    local xl = ran:Float(0, 448)
+                    shoot_abs6(self, -196, 224 - xl, 67, 1, 6, 1, 1,
+                               0.5 + ran:Float(0, 0.9), 1, 0, 0.392699, nil, true)
+                    task.Wait(2)
+                    local xr = ran:Float(0, 448)
+                    shoot_abs6(self, 196, 224 - xr, 67, 1, 2, 1, 1,
+                               0.5 + ran:Float(0, 0.9), 1, 3.14159, 0.392699, nil, true)
+                    task.Wait(2)
+                end
+            end)
+            ---原作 sub64（200 帧演出）+ 到 t=510 的 60 帧 = 260 帧一个循环。
+            while true do
+                task.Wait(200)
+                bmove(self, 60, 4, player.x, self.y)
+                task.Wait(60)
+            end
+        end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 畜趣剣「無為無策の冥罰」（原作 sub66/69） ────────────────────
+    ---本体停在 (320,224)→(128,0)，从自机那一侧到本体之间铺一排「轮子」（原作 sub69：
+    ---每侧 10 只、间隔 (gF0−posX)/8，交替 spawn sub67/sub68；每侧 122 帧，两侧连打）。
+    ---每只轮子在出生 120 帧后，从本体中线往外打 5 组竖直线弹（sub67 朝上、sub68 朝下）
+    ---然后自毁（原作 `UNIMP` 在 t=180）。**L 行原作一枪不发**（sub67/68 的 SPREAD_ABS
+    ---只置了 E/N 位）——这里按 N 行的 4×2 发 / 5 轮补上，否则整张卡是空的（见块首差异）。
+    scard("畜趣剣「無為無策の冥罰」", 4408, 60, 2000, false, function(self)
+        task.New(self, function()
+            task.Wait(260)
+            ---原作 sub69：从 l3f0（自机侧）到本体铺 10 只轮子（TH07 口径的 x 差除以 8）。
+            local function wheels(gx)
+                local step = (gx - self.x) / 8
+                local x = self.x
+                for _ = 1, 5 do
+                    pspawn(x, 0, function(o)
+                        task.Wait(120)
+                        for k = 0, 4 do
+                            shoot6(o, 0, 32 + 32 * k, 64, 2, 6, 4, 2, 2.9, 1, 0,
+                                   0.392699, nil, true)
+                            task.Wait(12)
+                        end
+                    end)
+                    x = x + step
+                    pspawn(x, 0, function(o)
+                        task.Wait(120)
+                        for k = 0, 4 do
+                            shoot6(o, 0, -32 - 32 * k, 64, 2, 10, 4, 2, 2.9, 1, 0,
+                                   0.392699, nil, true)
+                            task.Wait(12)
+                        end
+                    end)
+                    x = x + step
+                end
+            end
+            while true do
+                wheels(-128)
+                task.Wait(122)
+                wheels(128)
+                task.Wait(122)
+            end
+        end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 人神剣「俗諦常住」（原作 sub55/70/71/72/73） ────────────────────
+    ---原作 sub70：t=540 在 (192,posY+16)（我们 self.y−16）落一条**4412×32 的常驻判定**
+    ---（sub74，`UNIMP` 在 t=30000 ⇒ 整张卡都在），等于把屏幕在那一行切成上下两半；
+    ---随后本体落到左上 (48,96)→(−144,128)。
+    ---常驻一条「底部雨」（sub72）：每 3 帧从屏幕**下边缘之外**（TH07 y∈[420,452)）
+    ---随机 x 打一发向上的弹（速度 0.3 + rand(0,lf3)，lf3 从 0.8 起每发 +0.001）。
+    ---再有一组 sub73：从 t=720 起每 42 帧一次（32 帧 16 拍 + 10 帧空档），
+    ---每拍「3 发 + 6 发」，速度 0.5 起每拍 +0.3（L）、张角每拍 −0.0272708。
+    scard("人神剣「俗諦常住」", 4409, 66, 4400, false, function(self)
+        task.New(self, function()
+            task.Wait(540)
+            slash5(self.y - 16, 448, 30000)
+            self._box = box5(32, 48, 352, 112)
+            ---原作 sub72：每 ~3 帧从底部（屏幕外）随机 x 打一发向上的弹。
+            task.New(self, function()
+                local lf3 = 0.8
+                while true do
+                    local xth = ran:Float(0, 384)
+                    local yth = 420 + ran:Float(0, 32)
+                    shoot_abs6(self, xth - 192, 224 - yth, 67, 2, 6, 1, 1,
+                               0.3 + ran:Float(0, lf3), 1, -1.5708, 0.392699, nil, true)
+                    lf3 = lf3 + 0.001
+                    task.Wait(3)
+                end
+            end)
+            bmove(self, 120, 4, -144, 128)
+            task.Wait(60)                       -- 原作 t=660 的 box/exit-angle → t=720 的 sub73
+            while true do
+                drift(self, 1.5, 60)            -- 原作 GET_EXIT_ANGLE + MOVE_DIR_TIME 60
+                ---原作 sub73：16 拍「前 3 发 + 后 6 发」，速度 0.5 起每拍 +0.3（L）。
+                local a0 = aimth(self)
+                local sp, a2 = 0.5, 0.785398
+                for _ = 1, 16 do
+                    shoot6(self, 0, 0, 65, 7, 1, 3, 1, sp, 1, a0, a2, nil, true)
+                    shoot6(self, 0, 0, 65, 7, 1, 6, 1, sp, 1, a0 + PI, 0.523599, nil, true)
+                    sp, a2 = sp + 0.3, a2 - 0.0272708
+                    task.Wait(2)
+                end
+                task.Wait(10)
+            end
+        end)
+    end, OPT5)
+
+    ---──────────────────── 符卡 天神剣「三魂七魄」（原作 sub75/76/77） ────────────────────
+    ---本体停在 (192,96)→(0,128)，限制在中间区域；每 120 帧绕本体放出 8 只「魂」
+    ---（原作 sub77 的 L 行 8 次 SPAWN_ENEMY_REL：方向 = 自机角 + 0 / ±36° / ±72° / ±108°，
+    ---颜色/序号 li0 = 2/4/4/6/14/13/8/11）。每只魂朝自己的方向**匀速 4.2 直飞**
+    ---（原作 `MOVE_DIR_TIME t=0 spd=4.2`，不减速），之后每一帧向随机方向打一发
+    ---「离圆心 lf4 处、速度 1→0.4 的 1~2 层弹」，lf4 从 60 起每帧 −0.5；
+    ---之后 L 还补一组 3×2 自机狙。魂的 0x20 段是 `spd=+0.025`（每帧加速）。
+    scard("天神剣「三魂七魄」", 4410, 66, 2000, false, function(self)
+        task.New(self, function()
+            task.Wait(540)
+            self._box = box5(64, 48, 320, 128)
+            ---原作 sub76：一只「魂」——匀速直飞 + 每帧随机方向的弹。
+            local function spirit(o, lf0, col)
+                local dx, dy = math.cos(lf0), -math.sin(lf0)
+                bmove(o, 45, 0, o.x + dx * 4.2 * 45, o.y + dy * 4.2 * 45)
+                local lf4, li2 = 60, 1
+                for _ = 1, 45 do
+                    local lf1 = rngrad()
+                    shoot6(o, math.cos(lf1) * lf4, -math.sin(lf1) * lf4, 65, 6, col,
+                           1, li2, 1, 0.4, lf1 + PI, 0, acc20(0, 0.025, 60), true)
+                    lf4 = lf4 - 0.5
+                    li2 = 3 - li2
+                    task.Wait(1)
+                end
+            end
+            local ANG = { 0, -0.628319, -0.628319, -1.25664,
+                          0.628319, 1.25664, -1.88496, 1.88496 }
+            local COL = { 2, 4, 4, 6, 14, 13, 8, 11 }
+            while true do
+                local a0 = aimth(self)
+                for i = 1, 8 do
+                    local a, col = a0 + ANG[i], COL[i]
+                    pspawn(self.x, self.y, function(o) spirit(o, a, col) end)
+                end
+                ---原作 L 的最后一段还补一组 3 层自机狙。
+                shoot6(self, 0, 0, 64, 10, 0, 3, 2, 3.5, 1, 0, 0.628319, nil, true)
+                drift(self, 1.5, 60)            -- 原作 t=600 的 MOVE_DIR_TIME 60
+                task.Wait(120)                  -- 周期 120 帧（spawn 在 t=540 / 660 / …）
+            end
+        end)
+    end, OPT5)
+
+--- @STAGE56_CARDS
+end
+
 TH34_add_stage12()
 TH34_add_stage78()
 TH34_add_stage78_boss()
+TH34_add_stage56_boss()

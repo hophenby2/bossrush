@@ -1335,6 +1335,10 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             end)
         end,
         frame = function(self)
+            ---★ 真机只有 `_object`（THlib/misc/misc.lua:13）和 bullet 的 frame 才带 task.Do；
+            ---  `Class(object, {...})` 的子类得**自己驱动** init 里 task.New 出来的协程 ——
+            ---  否则它永远不 resume（淡入不跑 ⇒ _a 恒 0 ⇒ 不可见；发弹循环与自灭也都不跑）。
+            task.Do(self)
             self.t = self.t + 1
             local a = self.phase + self.t * 1.7
             local tx = player.x + cos(a) * MOTH_RADIUS_X
@@ -2248,6 +2252,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动 init 里的淡入协程
             if not IsValid(self.owner) then
                 object.RawDel(self)
                 return
@@ -6903,6 +6908,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动淡入 / 撒弹 / 自灭协程
         end,
         render = function(self)
             SetImageState("butterfly4", "mul+add", self._a, 210, 170, 250)
@@ -10857,6 +10863,7 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动极坐标飞行 + 一路发激光/小玉
         end,
         render = function(self)
             SetImageState("ball_mid13", "mul+add", self._a, 210, 170, 250)
@@ -12316,6 +12323,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
         end,
         render = function(self)
             SetImageState("butterfly3", "mul+add", self._a, 240, 200, 250)
@@ -12544,6 +12552,7 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
         end,
         render = function(self)
             SetImageState("butterfly3", "mul+add", self._a, 240, 200, 250)
@@ -12761,6 +12770,7 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
         end,
         render = function(self)
             SetImageState("butterfly4", "mul+add", self._a, 235, 205, 255)
@@ -12982,6 +12992,7 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
         end,
         render = function(self)
             SetImageState("butterfly6", "mul+add", self._a, 240, 170, 250)
@@ -13409,6 +13420,7 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动光球转圈 + 每 4 帧甩激光
         end,
         render = function(self)
             SetImageState("ball_mid8", "mul+add", 215, 200, 235, 255)
@@ -14274,6 +14286,7 @@ class.frost_shard = Class(object, {
         end)
     end,
     frame = function(self)
+        task.Do(self)                                      -- ★ 驱动飞行 / 炸裂协程
     end,
     render = function(self)
         SetImageState("ball_mid14", "mul+add", self._a, 190, 220, 255)
@@ -14328,6 +14341,7 @@ class.ice_rain = Class(object, {
         end)
     end,
     frame = function(self)
+        task.Do(self)                                      -- ★ 驱动撒冰尘的循环协程
     end,
     render = function(self)
     end,
@@ -15074,6 +15088,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
             end)
         end,
         frame = function(self)
+            task.Do(self)                                  -- ★ 驱动极坐标飞行 + 发弹协程
         end,
         render = function(self)
             SetImageState("ball_mid14", "mul+add", self._a, 235, 255, 150)
