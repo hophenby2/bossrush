@@ -52265,39 +52265,42 @@ end
 
 ---------------------------------------------------------------
 ---道中搬运卡：TH08 Stage 5 道中（五面 · 铃仙·优昙华院·因幡 · 组 4）
----  把原作 `ecldata5.ecl` **时间轴 0** 里 t=0..7470 的整段道中（含中 BOSS）复刻成一张
----  **耐久卡**，挂在 Stage 5（铃仙 · 组 4）那条链的最前面 —— 原作 t=7481 起是 BOSS 铃仙，
----  不属于本卡。时长 = ceil(7481/60) = **125 秒**（同前六张道中卡的口径）。
+---  数据源 `ecldata5.ecl` **时间轴 0**。原作这一段并不是「一整段没有 BOSS 的过场」：
+---    · t=0..4520      道中前半（一堆小怪波次，到中 BOSS 出现为止）
+---    · t=4530         **中 BOSS**：`SPAWN_ENEMY sub=38 life=15000`（时间轴把它设成 BOSS）
+---    · t=4531         `WAIT_FOR_BOSS_DEFEAT` ⇒ 时间轴**冻住**，直到中 BOSS 退场
+---    · t=4711..7470   道中後段（只在中 BOSS 打完以后才跑）
+---    · t=7481 起      BOSS 铃仙（不属于道中）
+---  ⇒ 本块按原作语义切成**三张卡**（同一个 `build(E, part)` 工厂，只换时间轴 / 血量）：
+---    CARD[1006] = 道中前半（**耐久卡**，t=0..4520，76 秒）
+---    CARD[1007] = 中 BOSS（**能打死、有血条**，两阶段 + 超时 / 死亡回调，60 秒）
+---    CARD[1008] = 道中後段（**耐久卡**，t=4711..7470，47 秒）
 ---
----  ★ 口径与 CARD[1000..1005] 完全一致：
+---  ★ 修正记录：旧版把整段 0..7470 压成**一张 125 秒耐久卡**，并把中 BOSS 降级成
+---    「打不死的普通敌人 + 不实现 SET_BOSS / WAIT_FOR_BOSS_DEFEAT」。**原作没有耐久 BOSS**：
+---    这一段里只有「没有 BOSS 的过场」（前半 / 後段）才是耐久；中 BOSS 有血条、能打死，
+---    而且时间轴由 `WAIT_FOR_BOSS_DEFEAT` 精确控速（他退场前 t≥4711 一行都不跑）。
+---    拆成三张之后既保住了原作的节奏，也保住了「中 BOSS 是真 BOSS」这件事。
+---  ★ 中 BOSS 的两阶段（Sub38 → Sub45，全部读自反汇编）：
+---    Sub38（塔壳，t=120 `SET_BOSS 0` 后 `CALL 39` 变成本体；这里塔和本体是同一只敌人）：
+---      `SET_LIFE 14000`（覆盖时间轴的 15000）、`SET_DAMAGE_REDUCTION_TIMER 60`
+---      （非 BOSS 全免 / BOSS 只吃 1/9）、`SET_TIMER_CALLBACK 2040 45`（34 秒超时 → 二阶段）、
+---      `SET_DEATH_CALLBACK 45`（一阶段被打死 → 二阶段）。
+---    Sub45（二阶段本体）：`ENABLE_INTERACTION_FLAGS 4` … 详见引擎差异 10。
+---
+---  ★ 口径与 CARD[1000..1006] 完全一致：
 ---    x_我们 = x_原作 − 192、y_我们 = 224 − y_原作、**角度整体取反**
 ---    （包括 SET_BULLET_TRANSFORM 记录里的角 —— 折向记录是**加**到弹角上的）；
 ---    ECL 变量一律**存我们口径** —— 原作 `SET_FLOAT lf0 −π` 这里写 `u.lf0 = π`、
 ---    `FLOAT_ADD2 lf0 moveAngle π` 写 `u.lf0 = u.ma + π`；
 ---    只有 `MOVE_TO` / `SET_POSITION` / `SET_MOVEMENT_BOUNDS` 的**坐标**用换算后的值。
----    位置类变量只在 `FLOAT_COS/FLOAT_SIN`（Sub40/41 的 shootOffset）里出现过一次 ——
----    我们的角已经取反，`cos` 偶、`sin` 奇，所以直接拿 u.lf2 算 (cos·64, sin·64) 就是对的。
----  ★ rank 固定 32（道中不叠符卡）⇒ 出弹 speed1 += 0.15、speed2 += 0.075、夹到 ≥ 0.3。
+---  ★ rank 固定 32（道中不叠符卡）⇒ 出弹 speed1 += 0.15、speed2 += 0.075，夹到 ≥ 0.3。
 ---  ★ 只实现 Lunatic（0xf8）：原作每条难度专有行只取 d=0xf8 的那一列。
----  ★ **中 BOSS（Sub38）的处置**：原作 t=4530 生成「塔」，塔 t=120 `SET_BOSS 0` 并
----    `CALL 39` 变成 BOSS 本体（Sub39）；t=4531 的时间轴 `WAIT_FOR_BOSS_DEFEAT` 把
----    时间轴**冻住**，直到玩家把 BOSS 打死才继续（EnemyTimeline.cpp:143 的
----    `!g_Gui.IsBossPresent()` + :245-256 的 WAIT 保持）。
----    本卡是**耐久卡、伤害恒 0**，中 BOSS 永远打不死 —— 若照搬，t≥4711 的六批敌人
----    （到 t=6931 为止）就永远不出。所以这里按「中 BOSS 是道中的一段、照常演出」处理：
----      · `SET_BOSS` 不实现（不压制时间轴）；
----      · `WAIT_FOR_BOSS_DEFEAT` 不实现（时间轴继续走）；
----      · 塔 + BOSS 本体合成**同一只普通敌人**（Sub38 → `CALL 39`），塔 120 帧后切 39 号，
----        Sub39 不 TERMINATE（原作靠被打死退场），本卡让它一直打到卡结束。
----    ⇒ 后半段波次会跟中 BOSS 同时在场上（原作是打完中 BOSS 才出），这是有意为之的近似。
 ---  ★ **CALL / RETURN**：原作 Sub38→39、Sub39→40/41 用的是同 context 的子程序调用
 ---    （EclDependencies.cpp:472-535），不是 `SET_CHILD_ECL` 那种并行子 context。
 ---    本卡的引擎副本因此多带了一份 `E.call` / `return "ret"`（见引擎注释）。
----    40/41 的循环是 64 轮、每轮 1 帧（JUMP_DEC 的 t=1 → JUMP 回 t=0），
----    所以中 BOSS 一进场会先跑约 66 帧的「开局爆发」，再开始 t=120 的循环。
----  ★ 这张卡里 `SET_LIFE 14000`（Sub38）把时间轴给的 15000 压成 14000 ⇒ 表里填 14000；
----    `SET_ITEM_DROP_COUNTS 10 5` 是 Sub39 下的，但跑在同一只敌人身上 ⇒ 挂在 [38] 上。
----  ★ 与 6A/6B 的差别：多了中 BOSS 三件套（38 塔 / 39 本体 / 40+41 爆发 / 42 使魔）；
+---  ★ 与 6A/6B 的差别：多了中 BOSS 三件套（38 塔 / 39 本体 / 40+41 爆发 / 42 使魔）
+---    以及二阶段的 45 本体 / 43 超时退场 / 44 死亡退场 / 46+47 两把枪；
 ---    使魔一律 `DISABLE_INTERACTION_FLAGS 16`（ALLOW_OFFSCREEN ⇒ E.allow_off），
 ---    `ENABLE_INTERACTION_FLAGS 3` 仍被 op92 结尾的 `&= ~COLLISION` 清掉 ⇒ 不需要 CONTACT 表。
 ---------------------------------------------------------------------
@@ -52320,6 +52323,20 @@ end
 ---      要等子程序自己 `ENABLE_INTERACTION_FLAGS 2`（E.contact）才变回 ENEMY。
 ---    9 Stage 5 的这张卡多带一份 **CALL / RETURN**（`E.call(u, sub)` 与 `return "ret"`）：
 ---      原作 Sub38→39、Sub39→40/41 是**同 context** 的子程序调用，不是并行子 context。
+---   10 **定时回调 / 死亡回调**（原作 `SET_TIMER_CALLBACK` / `SET_DEATH_CALLBACK`，
+---      EclRunHigh.inl:548/552 与 HandleTimerCallback / EnemyManagerUpdate.cpp:578-596）：
+---      `E.timer_cb(u, 帧数, 子)` 记进 u.timer_at/u.timer_sub（原作顺手把 bossTimer 归零），
+---      到点在 u_step 里把子程序载进主 context 并 `u.death_sub = u.after_timer_death`；
+---      `E.death_cb(u, 子)` 记进 u.death_sub —— 血空那一帧**先跑回调**（原作 KEEP_RUNTIME_STATE
+---      的敌人跑完回调会带着新 life 继续活着）⇒ Sub38 的死亡回调 = Sub45，
+---      中 BOSS 一阶段打完**变身为二阶段**。回调触发时和原作一样清空子 context /
+---      射击间隔 / callsatck（EnemyManagerUpdate.cpp:585-593）。
+---   11 子 context（`SET_CHILD_ECL`）改成**多槽**（原作 4 槽）：`E.child(u, 子, 槽)`，
+---      Sub45 同时挂 46 / 47 两把枪。
+---   12 `HOST_WATCH`：中 BOSS 卡把「当前在场的唯一敌人」的位置 / 血量镜像到卡片 boss 上
+---      （血条与指针都跟它走），卡片 boss 自己 `_colli = false` ⇒ 伤害只吃在中 BOSS 身上；
+---      那只敌人消失（打死 / 离场）⇒ 卡片 boss 血量置 0 ⇒ 本卡结束。
+---      `TL_START`：道中後段卡的本地计时从原作时间轴的 4711 帧起。
 ---------------------------------------------------------------------
 do
 local PI = 3.141592653589793
@@ -52619,6 +52636,33 @@ local function make_card(build)
         u.allow_off = true
     end
 
+    ---DISABLE/ENABLE_INTERACTION_FLAGS（op80/81）的位（EclManager.hpp:508-513）：
+    ---  1 ACCEPTS_DAMAGE / 2 COLLISION / 4 DAMAGEABLE / 8 NO_SPRITE / 16 ALLOW_OFFSCREEN / 32 NO_DEATH。
+    ---★ 名字是反的：`DISABLE 16` 打开 ALLOW_OFFSCREEN、`ENABLE 16` 关掉（EclRunLow.inl:672-712）。
+    local IF_COLLISION, IF_DAMAGEABLE, IF_OFFSCREEN = 2, 4, 16
+    local function u_disable_if(u, v)
+        if is_bit(v, IF_COLLISION) then u.group = GROUP.NONTJT end
+        if is_bit(v, IF_DAMAGEABLE) then u.not_damageable = true end
+        if is_bit(v, IF_OFFSCREEN) then u.allow_off = true end
+    end
+    local function u_enable_if(u, v)
+        if is_bit(v, IF_COLLISION) then u.group = GROUP.ENEMY end
+        if is_bit(v, IF_DAMAGEABLE) then u.not_damageable = false end
+        if is_bit(v, IF_OFFSCREEN) then u.allow_off = false end
+    end
+
+    ---SET_BOSS 0 / -1：标成 BOSS / 解除（免伤计时器按 1/9 而不是全免）。
+    local function u_boss(u) u.is_boss = true end
+    local function u_boss_off(u) u.is_boss = false end
+    ---DISABLE_MOVEMENT_BOUNDS（op76）。
+    local function u_clear_bounds(u) u.bounds = nil end
+    ---SPAWN_ITEM n：原地撒 n 个信仰道具（原作 ItemManager 的那种）。
+    local function u_items(u, n) item.Dropitem_PFP(u.wx, u.wy, { 0, n, 0 }) end
+    local function u_set_reduction(u, n) u.reduction = n end
+    local function u_set_life(u, n) u.hp, u.maxhp = n, n end
+    ---SET_ITEM_DROP_COUNTS a b ⇒ Dropitem_PFP { 0, b, a }（同 DROP_COUNTS 的口径）。
+    local function u_set_drop_counts(u, a, b) u.drop_counts = { 0, b, a } end
+
     ---SET_SHOOT_OFFSET（op110）：发射点相对 worldPosition 的偏移（我们口径）。
     local function u_set_shoot_offset(u, x, y)
         u.sx, u.sy = x, y
@@ -52684,11 +52728,22 @@ local function make_card(build)
     end
 
     ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
-    local function set_child(u, sub)
-        u.gun = sub
-        u.gctx = { t = 0, pc = 1, stall = 0 }
-        u.gticked = true
-        run_ctx(GUN[sub], u, u.gctx)
+    ---多槽（原作 childEclBlocks[0..3]）：Sub45 同时挂 46（槽 0）/ 47（槽 1）两把枪。
+    local function set_child(u, sub, slot)
+        slot = (slot or 0) + 1                  ---槽号 0 基 → 表下标 1 基
+        u.guns[slot] = { sub = sub, ctx = { t = 0, pc = 1, stall = 0 }, ticked = true }
+        run_ctx(GUN[sub], u, u.guns[slot].ctx)
+    end
+
+    ---SET_TIMER_CALLBACK（op134）：threshold 帧后跑回调子程序；原作顺手 bossTimer = 0。
+    local function u_timer_cb(u, frames, sub)
+        u.timer_at = u.steps + frames
+        u.timer_sub = sub
+    end
+
+    ---SET_DEATH_CALLBACK（op130）：血空那一帧跑回调子程序（不回收）。
+    local function u_death_cb(u, sub)
+        u.death_sub = sub
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -52746,12 +52801,20 @@ local function make_card(build)
         offset = u_set_shoot_offset, contact = u_contact, allow_off = u_allow_off,
         spawn_inherit = spawn_inherit, spawn_offset = spawn_offset, spawn_at_pos = spawn_at_pos,
         child = set_child,
+        disable_if = u_disable_if, enable_if = u_enable_if,
+        boss = u_boss, boss_off = u_boss_off, clear_bounds = u_clear_bounds,
+        items = u_items,
+        reduction = u_set_reduction, set_life = u_set_life,
+        drop_counts = u_set_drop_counts,
+        timer_cb = u_timer_cb, death_cb = u_death_cb,
         kill_all = u_kill_all,
         wipe = EX.pool_cancel, pool_clear = EX.pool_clear, clear_records = u_clear_records,
         suppress = function(v) SUPP.v = v end,
     }
 
     local cfg = build(E)
+    local TL_START = cfg.TL_START or 0
+    local HOST_WATCH = cfg.HOST_WATCH or false
     TIMELINE = cfg.TIMELINE
     HITBOX_HALF = cfg.HITBOX_HALF or {}
     INVULN = cfg.INVULN or {}
@@ -52799,8 +52862,12 @@ local function make_card(build)
             local half = HITBOX_HALF[sub] or 12
             self.A, self.B = half, half
             ---SET_DAMAGE_REDUCTION_TIMER（EnemyManagerUpdate.cpp:391-398）。
-            self.invuln = INVULN[sub] or 0
-            self.protect = self.invuln > 0
+            ---SET_DAMAGE_REDUCTION_TIMER：非 BOSS 完全免伤，BOSS 只吃 1/9
+            ---（Enemy::TakeDamage 的 `/9`；SET_DAMAGE_REDUCTION_TIMER 在子程序里设）。
+            self.reduction = INVULN[sub] or 0
+            self.is_boss = false
+            self.not_damageable = false
+            self.protect = self.reduction > 0
             self.astral_dmg_factor = 1
             ---移动状态。
             self.mv = "none"
@@ -52820,9 +52887,12 @@ local function make_card(build)
             self.insns = SUB[sub]
             self.ctx = { t = 0, pc = 1, stall = 0 }
             self.callstack = {}
-            self.gun = nil
-            self.gctx = nil
-            self.gticked = false
+            ---子 context（枪）多槽；定时 / 死亡回调；单位年龄（原作 bossTimer）。
+            self.guns = {}
+            self.steps = 0
+            self.timer_at, self.timer_sub = nil, nil
+            self.after_timer_death = nil
+            self.death_sub = nil
             self.wx, self.wy = x, y
             self.x, self.y = x, y
             units[#units + 1] = self
@@ -52851,22 +52921,36 @@ local function make_card(build)
     })
 
     local function u_step(u)
-        ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
-        if u.invuln > 0 then
-            u.invuln = u.invuln - 1
+        u.steps = u.steps + 1                   ---原作 bossTimer 每帧 ++
+        ---① SET_DAMAGE_REDUCTION_TIMER（EnemyManagerUpdate.cpp:391-398 + Enemy::TakeDamage）：
+        ---   非 BOSS 完全免伤；BOSS 只吃 1/9。DISABLE/ENABLE_INTERACTION_FLAGS 的
+        ---   DAMAGEABLE(4) 另算（u.not_damageable）。
+        if u.not_damageable then
             u.protect = true
-        elseif u.protect then
-            u.protect = false
+        elseif u.reduction > 0 then
+            u.reduction = u.reduction - 1
+            if u.is_boss then
+                u.protect, u.dmg_factor = false, 1 / 9
+            else
+                u.protect, u.dmg_factor = true, 1
+            end
+        else
+            u.protect, u.dmg_factor = false, 1
         end
         ---② 主 context（可被 CALL / RETURN 换进换出）。
         run_ctx(u.insns, u, u.ctx, true)
         if not u.alive then return end
-        ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-        if u.gun and not u.gticked then
-            run_ctx(GUN[u.gun], u, u.gctx)
-            if not u.alive then return end
+        ---③ 子 context（枪，按槽号顺序）。挂上那一帧已经推过 t=0 ⇒ 用 ticked 跳过这一拍。
+        for slot = 1, #u.guns do
+            local g = u.guns[slot]
+            if g then
+                if not g.ticked then
+                    run_ctx(GUN[g.sub], u, g.ctx)
+                    if not u.alive then return end
+                end
+                g.ticked = false
+            end
         end
-        u.gticked = false
         ---④ UpdateMovement + UpdateShotAndAnm（EclRun.cpp:208-209）。
         u_move_update(u)
         u_shot_tick(u)
@@ -52885,10 +52969,33 @@ local function make_card(build)
         end
         u.wx, u.wy = u.lx + u.px, u.ly + u.py
         u.x, u.y = u.wx, u.wy
-        ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
+        ---⑦ 定时回调（原作 HandleTimerCallback）：到点把子程序载进主 context，并接上死亡回调。
+        if u.timer_at and u.steps >= u.timer_at then
+            local sub = u.timer_sub
+            u.timer_at, u.timer_sub = nil, nil
+            u.death_sub = u.after_timer_death    ---原作 timerCallbackSubId = deathCallbackSubId
+            u.steps = 0                          ---原作 bossTimer = 0
+            u.callstack, u.guns = {}, {}
+            u.si_frames, u.si_timer, u.pending = 0, 0, nil
+            u.insns, u.ctx = SUB[sub], { t = 0, pc = 1, stall = 0 }
+        end
+        ---⑧ 死亡回调（原作 EnemyManagerUpdate.cpp:578-596）：血空了先跑回调、不回收
+        ---（KEEP_RUNTIME_STATE ⇒ 回调里 SET_LIFE 之后这只敌人继续活着）。
+        if u.hp <= 0 and u.death_sub then
+            local sub = u.death_sub
+            u.death_sub = nil
+            ---原作 KEEP_RUNTIME_STATE 也会落进 common_death_mode ⇒ 先掉道具再跑回调。
+            if u.drop_tbl then item.Dropitem_PFP(u.wx, u.wy, u.drop_tbl) end
+            if u.drop_counts then item.Dropitem_PFP(u.wx, u.wy, u.drop_counts) end
+            u.hp = 1
+            u.callstack, u.guns = {}, {}
+            u.si_frames, u.si_timer, u.pending = 0, 0, nil
+            u.insns, u.ctx = SUB[sub], { t = 0, pc = 1, stall = 0 }
+        end
+        ---⑨ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
         if u.hp <= 0 then u.alive = false return end
-        ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
+        ---⑩ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
             if in_field(u.wx, u.wy) then u.seen = true end
         elseif not u.allow_off then
@@ -52902,10 +53009,13 @@ local function make_card(build)
         EX.clear_records(owner)
         EX.pool_clear()
         EX.fm = 1
-        owner.tl_t = 0
+        owner.tl_t = TL_START
         owner.tl_i = 1
         ---BOSS 本体放在场地外、不显形（照前四张道中卡）。
         owner.x, owner.y = 0, 400
+        ---★ HOST_WATCH（中 BOSS 卡）：卡片 boss 自己不吃伤害（`_colli` 假 ⇒
+        --- boss_system 每帧算出来的 colli 恒假），位置 / 血量都由在场的中 BOSS 镜像。
+        if HOST_WATCH then owner._colli = false end
     end
 
     local function card_frame(owner)
@@ -52930,6 +53040,17 @@ local function make_card(build)
             if IsValid(u) and u.alive then u_step(u) end
         end
         EX.suppress_step()
+        ---★ HOST_WATCH：把中 BOSS 的位置 / 血量镜像到卡片 boss 上（血条与指针都跟它走）；
+        ---  那一只消失（打死或按原作时间表离场）⇒ 卡片 boss 血量置 0 ⇒ 本卡结束。
+        if HOST_WATCH then
+            local mb = units[1]
+            if mb ~= nil and IsValid(mb) and mb.alive then
+                owner.x, owner.y = mb.wx, mb.wy
+                owner.hp, owner.maxhp = mb.hp, mb.maxhp
+            else
+                owner.hp = 0
+            end
+        end
         ---③ 收尸。
         local j = 1
         for k = 1, #units do
@@ -52965,7 +53086,7 @@ end
 ---=========================================================================
 ---Stage 5 道中的内容（时间轴 0，t=0..7470；t=7481 起是 BOSS 铃仙）。
 ---=========================================================================
-local function build(E)
+local function build(E, part)
 local PI = E.PI
 local K = E.K
 
@@ -53425,17 +53546,23 @@ end
 local SUB34 = make_platform(2,  0.05235988)
 local SUB36 = make_platform(3, -0.05235988)
 
----Sub38（中 BOSS 的「塔」外壳，时间轴 t=4530 生成）：t=0 直接把机身挪到 (224,256)
----（原作 SET_POSITION 416 −32）、60 帧插值到 (0,96)（原作 MOVE_TO 60 4 192 128）；
----t=120 设活动范围 x∈[−160,160] y∈[96,176]（原作 SET_MOVEMENT_BOUNDS 32 48 352 128）
----并 `CALL 39` —— 同一只敌人接着跑 BOSS 本体（39 号是死循环、不 RETURN）。
----★ 原作这里还有 `SET_BOSS 0`（压制时间轴）与 `SET_LIFE 14000`：前者本卡不实现
----  （见块首注释），后者直接填进时间轴表的 life。
+---Sub38（中 BOSS 的「塔」外壳）：t=0 标成 BOSS（`SET_BOSS 0`）、关掉 DAMAGEABLE 与
+---出屏回收（`DISABLE_INTERACTION_FLAGS 20`）、前 60 帧免伤计时器（BOSS ⇒ 只吃 1/9）、
+---`SET_LIFE 14000`（填在时间轴表的 life）、`SET_TIMER_CALLBACK 2040 45`（超时 34 秒 →
+---二阶段）、`SET_DEATH_CALLBACK 45`（打光血 → 二阶段，不是死）；
+---同时把机身挪到 (224,256)（原作 SET_POSITION 416 −32）、60 帧插值到 (0,96)
+---（原作 MOVE_TO 60 4 192 128）；t=120 设活动范围 x∈[−160,160] y∈[96,176]
+---（原作 SET_MOVEMENT_BOUNDS 32 48 352 128）并 `CALL 39`（同一只敌人接着跑主循环）。
 local SUB38
 do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u)
+        E.boss(u)                               ---SET_BOSS 0
+        E.disable_if(u, 20)                     ---DISABLE_INTERACTION_FLAGS 20
+        E.reduction(u, 60)                      ---SET_DAMAGE_REDUCTION_TIMER 60
+        E.timer_cb(u, 2040, 45)                 ---SET_TIMER_CALLBACK 2040 45
+        E.death_cb(u, 45)                       ---SET_DEATH_CALLBACK 45
         E.set_position(u, 224, 256)
         E.move_to(u, 60, 4, 0, 96)
     end)
@@ -53457,59 +53584,75 @@ end
 ---  t=180  `CALL 41`（第二轮爆发）。
 ---  t=300  再来一遍 16 轮（这一遍不论 exI3 **都**出弹，弹种 1 / 色 2、step 取负）。
 ---  t=360  `INT_INC exI3`、`JUMP 0` 回 t=120 重来。
+---Sub39（中 BOSS 一阶段主循环，Sub38 在 t=120 CALL 进来）：
+---  t=0    `ENABLE_INTERACTION_FLAGS 4`（塔壳打完 ⇒ 可以打了）、`SET_ITEM_DROP_COUNTS 10 5`、
+---         `SET_INT exI3 0`、`CALL 40`（开局 64 轮爆发）。
+---  t=120  `MOVE_RANDOM_IN_BOUNDS 60 4 1`、exI0 = 16、lf1 = 1；随后**同一帧** 16 轮：
+---         每轮**重新**算 lf0 = 自机方向 + π/2（原作 `FLOAT_SUB2 lf0 angToPl π/2` 在回环头
+---         `@0x38a8` 上 ⇒ 每轮都重算，16 只使魔方向一致）、撒一只 Sub42 使魔、
+---         把 lf0 转 +11.25°（下一轮又被冲掉）、exI3 > 0 时再甩一圈 12 发
+---         （弹种 1 / 色 6、step 0.01636246）。首轮 exI3 = 0 ⇒ 不出弹。
+---  t=180  `CALL 41`（第二轮爆发）。
+---  t=300  再来一遍 16 轮（这一遍**都**出弹，弹种 1 / 色 2、step 取负）。
+---  t=360  `INT_INC exI3`、`JUMP 0` 回 **t=0 的 `CALL 40`**（原作回环头 `@0x3840`）。
 local SUB39
 do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u)
+        E.enable_if(u, 4)                       ---ENABLE_INTERACTION_FLAGS 4
+        E.drop_counts(u, 10, 5)                 ---SET_ITEM_DROP_COUNTS 10 5
         u.exi3 = 0                              ---SET_INT exI3 0
-        E.call(u, 40)
     end)
-    local blk = #s + 1
+    local call40 = #s + 1
+    add(0, function(u) E.call(u, 40) end)       ---#3 CALL 40（外循环回到这里）
     add(120, function(u)
-        E.move_random_bounds(u, 60, 4, 1)
-        u.exi0 = 16
-        u.lf1 = 1
-        u.lf0 = E.aim_at(u.wx, u.wy) + 1.570796  ---原作 FLOAT_SUB2 lf0 angToPl π/2
+        E.move_random_bounds(u, 60, 4, 1)       ---#4
+        u.exi0 = 16                             ---#5
+        u.lf1 = 1                               ---#7
     end)
-    local head = #s + 1
+    local head = #s + 1                         ---#6（内循环头：每轮重算自机方向）
     add(120, function(u)
-        E.spawn_offset(u, 42, 0, 0, 300, -2)
-        E.offset(u, 0, 0)
-        if u.exi3 > 0 then
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 1.570796)
+    end)
+    add(120, function(u)
+        E.spawn_offset(u, 42, 0, 0, 300, -2)    ---#9
+        E.offset(u, 0, 0)                       ---#10
+        if u.exi3 > 0 then                      ---#11 JMP_IF_INT_LE exI3 0
             E.shoot(u, { op = 99, type = 1, color = 6, count1 = 1, count2 = 12,
                          speed1 = 3, speed2 = 0.8, angle = u.lf0,
-                         step = 0.01636246, flags = 0x202 })
+                         step = 0.01636246, flags = 0x202 })     ---#15（Lunatic）
         end
-        u.lf0 = u.lf0 + 0.1963495
+        u.lf0 = u.lf0 + 0.1963495               ---#16
     end)
-    add(120, function(u)
+    add(120, function(u)                        ---#17 JUMP_DEC → #6
         u.exi0 = u.exi0 - 1
         if u.exi0 > 0 then return { t = 120, pc = head } end
     end)
-    add(180, function(u) E.call(u, 41) end)
-    local blk2 = #s + 1
+    add(180, function(u) E.call(u, 41) end)     ---#18
     add(300, function(u)
-        E.move_random_bounds(u, 60, 4, 1)
-        u.exi0 = 16
-        u.lf1 = 1
-        u.lf0 = E.aim_at(u.wx, u.wy) + 1.570796  ---原作 FLOAT_SUB2 lf0 angToPl π/2
+        E.move_random_bounds(u, 60, 4, 1)       ---#19
+        u.exi0 = 16                             ---#20
+        u.lf1 = 1                               ---#21
     end)
-    local head2 = #s + 1
+    local head2 = #s + 1                        ---#22（内循环头）
     add(300, function(u)
-        E.spawn_offset(u, 42, 0, 0, 300, -2)
-        E.offset(u, 0, 0)
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 1.570796)
+    end)
+    add(300, function(u)
+        E.spawn_offset(u, 42, 0, 0, 300, -2)    ---#24
+        E.offset(u, 0, 0)                       ---#25
         E.shoot(u, { op = 99, type = 1, color = 2, count1 = 1, count2 = 12,
                      speed1 = 3, speed2 = 0.8, angle = u.lf0,
-                     step = -0.01636246, flags = 0x202 })
-        u.lf0 = u.lf0 + 0.1963495
+                     step = -0.01636246, flags = 0x202 })        ---#29（Lunatic）
+        u.lf0 = u.lf0 + 0.1963495               ---#30
     end)
-    add(300, function(u)
+    add(300, function(u)                        ---#31 JUMP_DEC → #22
         u.exi0 = u.exi0 - 1
         if u.exi0 > 0 then return { t = 300, pc = head2 } end
     end)
-    add(300, function(u) u.exi3 = u.exi3 + 1 end)   ---INT_INC exI3
-    add(360, function() return { t = 0, pc = blk } end)   ---JUMP 0 → 回 t=120（time 归零）
+    add(300, function(u) u.exi3 = u.exi3 + 1 end)   ---#32 INT_INC exI3
+    add(360, function() return { t = 0, pc = call40 } end)  ---#33 JUMP 0 → CALL 40
     SUB39 = s
 end
 
@@ -53606,8 +53749,180 @@ do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u) E.set_dir_speed(u, u.lf0, u.lf1) end)
+    add(1, function(u) E.contact(u) end)        ---t=1 ENABLE_INTERACTION_FLAGS 3（撞到自机会死）
     add(5001, function() return "die" end)
     SUB42 = s
+end
+
+---Sub43（中 BOSS 二阶段的**超时**回调，`SET_TIMER_CALLBACK 1560 43`）：
+---  `SET_BOSS −1`（解除 BOSS ⇒ 原作时间轴的 WAIT_FOR_BOSS_DEFEAT 就此放行）、
+---  `DISABLE_MOVEMENT_BOUNDS`、60 帧飞到 (64,256)（原作 MOVE_TO 60 1 256 −32）后退场。
+local SUB43
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.boss_off(u)                           ---SET_BOSS −1
+        E.clear_bounds(u)                       ---DISABLE_MOVEMENT_BOUNDS
+        E.move_to(u, 60, 1, 64, 256)
+    end)
+    add(60, function() return "die" end)        ---TERMINATE
+    SUB43 = s
+end
+
+---Sub44（中 BOSS 二阶段的**死亡**回调，`SET_DEATH_CALLBACK 44`）：同 Sub43 +
+---  `SPAWN_ITEM 5`（原地撒 5 个道具）。
+local SUB44
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.boss_off(u)                           ---SET_BOSS −1
+        E.clear_bounds(u)                       ---DISABLE_MOVEMENT_BOUNDS
+        E.move_to(u, 60, 1, 64, 256)
+        E.items(u, 5)                           ---SPAWN_ITEM 5
+    end)
+    add(60, function() return "die" end)        ---TERMINATE
+    SUB44 = s
+end
+
+---Sub45（中 BOSS 二阶段，Sub38 的定时回调 / 死亡回调进来）：t=0 重新开打 ——
+---  `ENABLE_INTERACTION_FLAGS 4`、`SET_ITEM_DROP_COUNTS 10 5`、`SET_DAMAGE_REDUCTION_TIMER 320`
+---  （BOSS ⇒ 前 320 帧只吃 1/9）、`SET_LIFE 11000`、`MOVE_TO 60 4 192 128`（我们 (0,96)）、
+---  `SET_TIMER_CALLBACK 1560 43`（超时 26 秒 → 43 离场）、`SET_DEATH_CALLBACK 44`（打死 → 44）。
+---  t=180  `SET_CHILD_ECL 0 46` / `1 47`（两把枪）、exI0 = 16、lf0 = 自机方向 + π/2；
+---         同一帧 16 轮：每轮**重算** lf0、撒一只 Sub42 使魔、lf0 转 +11.25°（被冲掉）。
+---  t=350  再来 16 轮（同样每轮重算）。
+---  t=520  `INT_INC exI3`、`JUMP 180` 回外循环头（`SET_INT exI0 16` 那条）。
+local SUB45
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.enable_if(u, 4)                       ---ENABLE_INTERACTION_FLAGS 4
+        E.drop_counts(u, 10, 5)                 ---SET_ITEM_DROP_COUNTS 10 5
+        E.reduction(u, 320)                     ---SET_DAMAGE_REDUCTION_TIMER 320
+        E.set_life(u, 11000)                    ---SET_LIFE 11000
+        E.move_to(u, 60, 4, 0, 96)              ---MOVE_TO 60 4 192 128
+        E.timer_cb(u, 1560, 43)                 ---SET_TIMER_CALLBACK 1560 43
+        E.death_cb(u, 44)                       ---SET_DEATH_CALLBACK 44
+    end)
+    add(180, function(u) u.exi3 = 0 end)        ---#9 SET_INT exI3 0
+    add(180, function(u) E.child(u, 46, 0) end) ---#10 SET_CHILD_ECL 0 46
+    add(180, function(u) E.child(u, 47, 1) end) ---#11 SET_CHILD_ECL 1 47
+    local loop = #s + 1                         ---#12（外循环头）
+    add(180, function(u) u.exi0 = 16 end)
+    local head = #s + 1                         ---#13（内循环头）
+    add(180, function(u)
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 1.570796)
+    end)
+    add(180, function(u)
+        u.lf1 = 1                               ---#14
+        E.spawn_offset(u, 42, 0, 0, 300, -2)    ---#16
+        E.offset(u, 0, 0)                       ---#17
+        u.lf0 = u.lf0 + 0.1963495               ---#18
+    end)
+    add(180, function(u)                        ---#19 JUMP_DEC → #13
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 180, pc = head } end
+    end)
+    add(350, function(u) u.exi0 = 16 end)       ---#20
+    add(350, function(u) u.lf1 = 1 end)         ---#21
+    local head2 = #s + 1                        ---#22（内循环头）
+    add(350, function(u)
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 1.570796)
+    end)
+    add(350, function(u)
+        E.spawn_offset(u, 42, 0, 0, 300, -2)    ---#24
+        E.offset(u, 0, 0)                       ---#25
+        u.lf0 = u.lf0 + 0.1963495               ---#26
+    end)
+    add(350, function(u)                        ---#27 JUMP_DEC → #22
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 350, pc = head2 } end
+    end)
+    add(350, function(u) u.exi3 = u.exi3 + 1 end)   ---#28 INT_INC exI3
+    add(520, function() return { t = 180, pc = loop } end)  ---#29 JUMP 180
+    SUB45 = s
+end
+
+---Sub46 / Sub47（二阶段挂在 BOSS 身上的两把枪，`SET_CHILD_ECL`）：
+---  无限循环（`JUMP 0` 回 t=0 的开头，原作带一条够不着的 RETURN）：每 4 帧一轮 ——
+---  槽 0 = CULL(120 帧)；槽 1 = 相对折向（60 帧后弹角 ∓90°、速度 1.1）；槽 2 = 换贴图
+---  （46 号色 4/3 交替、47 号色 8/7 交替）。
+---  46：lf2 从 0 起每轮 +0.1847996（10.6°）、主扇弹种 2 / 色 2、Lunatic li7 = 7 路、
+---      lf7 = 0.1308997；自机 96 px 内补一发 3 路自机狙（弹种 3 / 色 6、速度 4）。
+---  47：lf2 从 π/2 起每轮**减** 0.1847996、主扇弹种 2 / 色 6、li7 = 9 路；其余同 46。
+local SUB46
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        u.lf2 = 0                               ---SET_FLOAT lf2 0
+        u.exi0 = 64
+        E.record(u, 0, K.CULL, 0, 120, -1, -1, -1)
+    end)
+    local head = #s + 1
+    add(0, function(u)
+        E.offset(u, math.cos(u.lf2) * 64, math.sin(u.lf2) * 64)
+        u.li0 = u.exi0 % 2                      ---INT_MOD2 li0 exI0 2
+        if u.li0 == 0 then
+            E.record(u, 1, K.REL, 1, 60, 1, -1.570796, 1.1)
+            E.record(u, 2, K.SPRITE, 0, 2, 4, -1, -1)
+        else
+            E.record(u, 1, K.REL, 1, 60, 1, 1.570796, 1.1)
+            E.record(u, 2, K.SPRITE, 0, 2, 3, -1, -1)
+        end
+        u.lf2 = E.norm(u.lf2 + 0.1847996)       ---FLOAT_ADD lf2 0.1847996
+        u.lf7 = 0.1308997                       ---SET_FLOAT lf7（Lunatic）
+        u.li7 = 7                               ---SET_INT li7（Lunatic）
+        E.shoot(u, { op = 97, type = 2, color = 2, count1 = u.li7, count2 = 1,
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+        local dx, dy = player.x - u.wx, player.y - u.wy
+        if dx * dx + dy * dy < 96 * 96 then
+            E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
+                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = 0.09817477, flags = 0x202 })
+        end
+        u.exi0 = u.exi0 + 1                     ---INT_INC exI0
+    end)
+    add(4, function() return { t = 0, pc = head } end)   ---JUMP 0 → 回 t=0
+    SUB46 = s
+end
+
+local SUB47
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        u.lf2 = 1.570796                        ---SET_FLOAT lf2 π/2
+        u.exi0 = 64
+        E.record(u, 0, K.CULL, 0, 120, -1, -1, -1)
+    end)
+    local head = #s + 1
+    add(0, function(u)
+        E.offset(u, math.cos(u.lf2) * 64, math.sin(u.lf2) * 64)
+        u.li0 = u.exi0 % 2
+        if u.li0 == 0 then
+            E.record(u, 1, K.REL, 1, 60, 1, -1.570796, 1.1)
+            E.record(u, 2, K.SPRITE, 0, 2, 8, -1, -1)
+        else
+            E.record(u, 1, K.REL, 1, 60, 1, 1.570796, 1.1)
+            E.record(u, 2, K.SPRITE, 0, 2, 7, -1, -1)
+        end
+        u.lf2 = E.norm(u.lf2 - 0.1847996)       ---FLOAT_SUB lf2 0.1847996
+        u.lf7 = 0.1308997
+        u.li7 = 9
+        E.shoot(u, { op = 97, type = 2, color = 6, count1 = u.li7, count2 = 1,
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+        local dx, dy = player.x - u.wx, player.y - u.wy
+        if dx * dx + dy * dy < 96 * 96 then
+            E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
+                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = 0.09817477, flags = 0x202 })
+        end
+        u.exi0 = u.exi0 + 1
+    end)
+    add(4, function() return { t = 0, pc = head } end)
+    SUB47 = s
 end
 
 ----------------------------------------------------------------------
@@ -53628,7 +53943,9 @@ local INVULN = {
     [0] = 30, [2] = 200, [9] = 60, [10] = 60,
     [15] = 120, [16] = 120, [18] = 120, [20] = 120,
     [22] = 120, [23] = 120, [25] = 120, [27] = 120,
-    [29] = 20, [31] = 20, [34] = 30, [36] = 30, [38] = 60,
+    [29] = 20, [31] = 20, [34] = 30, [36] = 30,
+    ---★ 38（中 BOSS）没有出生免伤表项：它的 `SET_DAMAGE_REDUCTION_TIMER 60` 由 Sub38
+    ---  自己设（BOSS ⇒ 前 60 帧只吃 1/9，而不是完全免伤）。
 }
 ---`SET_ITEM_DROP_COUNTS a b` ⇒ Dropitem_PFP 的 `{ faith值, 信仰个数, 点个数 }`。
 ---★ 38 号那条来自 Sub39 的 `SET_ITEM_DROP_COUNTS 10 5`（同一只敌人）。
@@ -53638,13 +53955,14 @@ local DROP_COUNTS = {
     [10] = { 0, 4, 5 },
     [15] = { 0, 4, 7 },
     [22] = { 0, 4, 7 },
-    [38] = { 0, 5, 10 },
+    ---★ 38（中 BOSS）的掉落不在这里：Sub39 运行时 `SET_ITEM_DROP_COUNTS 10 5` ⇒
+    ---  E.drop_counts(u, 10, 5) 现场改写 u.drop_counts。
 }
 
 ----------------------------------------------------------------------
 ---时间轴（原作时间轴 0 的 t=0..7470；坐标已换成我们口径，x1/x2 已排序）
 ----------------------------------------------------------------------
-local TIMELINE = {
+local TIMELINE_ALL = {
     { 260, 2, 0, 240, 700, 0, -2 },
     { 1100, 0, -208, 96, 50, 0, 1 },
     { 1110, 0, -208, 80, 50, 0, 0 },
@@ -53774,7 +54092,25 @@ local TIMELINE = {
     { 6931, 34, 0, 240, 500, 1, 1 },
 }
 
+---★ 三段切分：原作时间轴 t<4530 是道中前半；t=4530 那一条是**中 BOSS**（Sub38）；
+---  t≥4711 是道中後段（原作 t=4531 的 WAIT_FOR_BOSS_DEFEAT 把时间轴冻到中 BOSS 退场为止，
+---  所以後段只会在中 BOSS 打完以后才开）。三段各挂一张卡。
+local TIMELINE_FRONT, TIMELINE_BACK = {}, {}
+for i = 1, #TIMELINE_ALL do
+    local e = TIMELINE_ALL[i]
+    if e[1] < 4530 then TIMELINE_FRONT[#TIMELINE_FRONT + 1] = e
+    elseif e[1] >= 4711 then TIMELINE_BACK[#TIMELINE_BACK + 1] = e end
+end
+---中 BOSS 卡自己的时间轴：t=0 生成 Sub38、life 14000（Sub38 里 SET_LIFE 14000）。
+local TIMELINE_MID = { { 0, 38, 0, 240, 14000, 0, 1 } }
+
+local TIMELINE, TL_START = TIMELINE_FRONT, 0
+if part == "mid" then TIMELINE, TL_START = TIMELINE_MID, 0 end
+if part == "back" then TIMELINE, TL_START = TIMELINE_BACK, 4711 end
+
 return {
+    TL_START = TL_START,
+    HOST_WATCH = (part == "mid"),
     SUB = {
         [0] = SUB0, [2] = SUB2, [3] = SUB3, [5] = SUB5, [7] = SUB7,
         [9] = SUB9, [10] = SUB10, [11] = SUB11, [13] = SUB13,
@@ -53783,11 +54119,13 @@ return {
         [29] = SUB29, [31] = SUB31, [33] = SUB33, [34] = SUB34,
         [35] = SUB35, [36] = SUB36, [38] = SUB38, [39] = SUB39,
         [40] = SUB40, [41] = SUB41, [42] = SUB42,
+        [43] = SUB43, [44] = SUB44, [45] = SUB45,
     },
     GUN = {
         [1] = SUB1, [4] = SUB4, [6] = SUB6, [8] = SUB8, [12] = SUB12,
         [14] = SUB14, [17] = SUB17, [19] = SUB19, [21] = SUB21,
         [24] = SUB24, [26] = SUB26, [28] = SUB28, [30] = SUB30, [32] = SUB32,
+        [46] = SUB46, [47] = SUB47,
     },
     TIMELINE = TIMELINE,
     HITBOX_HALF = HITBOX_HALF,
@@ -53796,7 +54134,11 @@ return {
 }
 end
 
-CARD[1006] = make_card(build)
+---★ 三段各挂一张卡（`build(E, part)` 用同一个工厂，只换时间轴 / 血量 / HOST_WATCH）：
+---  1006 = 道中前半（耐久）、1007 = 中 BOSS（能打死、有血条）、1008 = 道中後段（耐久）。
+CARD[1006] = make_card(function(E) return build(E, "front") end)
+CARD[1007] = make_card(function(E) return build(E, "mid") end)
+CARD[1008] = make_card(function(E) return build(E, "back") end)
 end
 
 local function placeholder_del() end
@@ -54166,16 +54508,30 @@ local LIST = {
     ---★ CARD 键统一用 id（453..460，写在第 8 项）—— Stage 5 的 51 / 53 / 56 / 63 / 75 虽然
     ---  没撞号，但 62 / 66 / 78 跟 Stage 3 / Stage EX 的卡撞了，为统一起见全部走第 8 项。
     ---------------------------------------------------------------
-    ---★「五面道中」：原作 Stage 5 的道中（`ecldata5.ecl` 时间轴 0，t=0..7470，127 条 spawn）
-    ---  搬进一张**耐久卡**（第 6 项不填 hp ⇒ 伤害恒 0），挂在铃仙那条链的最前面。
-    ---  这一段**含中 BOSS**（原作 t=4530 的塔 → `CALL 39` 变 BOSS 本体）：耐久卡里它打不死，
-    ---  照搬原作的 `SET_BOSS` 时间轴压制 / `WAIT_FOR_BOSS_DEFEAT` 会让 t≥4711 的六批敌人
-    ---  永远不出，所以本卡把中 BOSS 当普通定时敌人组、时间轴照常走（详见卡块首注释）。
-    ---  原作 t=7481 起是 BOSS 铃仙，不属于这一段。
-    ---  卡 id 3432：3426..3439 全项目无引用（3428..3431 已给三面 / 二面 / 六面A / 六面B道中）。
-    ---  时长 125 秒 = 原作 7481/60 = 124.7 向上取整（同其余六张道中卡的口径）。
-    ---  ★ 卡名自选（原作道中无名）。
-    { 1006, "五面道中「幻想乡上空」", 3432, 125, 4, nil, "五面道中「幻想乡上空」", 1006 },
+    ---★「五面道中」：原作 Stage 5 的道中（`ecldata5.ecl` 时间轴 0）。原作这一段**不是一整块**：
+    ---    t=0..4520     前半（小怪波次）          ⇒ CARD[1006]、**耐久卡**、76 秒
+    ---    t=4530        中 BOSS（Sub38 塔 → CALL 39）⇒ CARD[1007]、**能打死、有血条**、60 秒
+    ---    t=4531        `WAIT_FOR_BOSS_DEFEAT`   ⇒ 时间轴冻住，直到中 BOSS 退场
+    ---    t=4711..7470  後段（中 BOSS 打完之后）  ⇒ CARD[1008]、**耐久卡**、47 秒
+    ---    t=7481 起     BOSS 铃仙（不属于道中）
+    ---  ★ 原作**没有耐久 BOSS**：这一段里只有「没有 BOSS 的过场」（前半 / 後段）才是耐久，
+    ---    中 BOSS 是真 BOSS —— 有血条、能打死，两阶段（Sub38 → Sub45）、有超时 / 死亡回调
+    ---    （Sub38 `SET_TIMER_CALLBACK 2040 45` / `SET_DEATH_CALLBACK 45`、
+    ---    Sub45 `SET_TIMER_CALLBACK 1560 43` / `SET_DEATH_CALLBACK 44`），
+    ---    退场走 Sub43 / Sub44 的 `SET_BOSS -1` + `DISABLE_MOVEMENT_BOUNDS` + 退场移动。
+    ---    （旧版把 0..7470 压成一张 125 秒耐久卡、把中 BOSS 降级成打不死的普通敌人 —— 已废弃。）
+    ---  ★ 卡 id 3432 / 3433 / 3434：3426..3439 全项目无引用（3428..3431 已给三面 / 二面 /
+    ---    六面A / 六面B道中）。
+    ---  ★ 秒数：前半 ceil(4530/60) = 76；中 BOSS 两阶段的定时回调 `2040`（一阶段 → 二阶段）+
+    ---    `1560`（二阶段 → 退场）= 3600 帧 ⇒ 60 秒（玩家提前打死就提前结束）；
+    ---    後段 ceil((7481−4711)/60) = ceil(2770/60) = 47。
+    ---  ★ 中 BOSS 那张第 6 项填 hp ⇒ 是普通卡（有血条、能打死）；血条由 HOST_WATCH 每帧
+    ---    镜像在场中 BOSS 的当前 / 最大 life（一阶段 14000、二阶段 11000）。
+    ---  ★ 卡名自选（原作道中无名）；中 BOSS 的名字取原作中 BOSS「月兎遠隔催眠術」那张符卡。
+    { 1006, "五面道中「幻想乡上空」", 3432, 76, 4, nil, "五面道中「幻想乡上空」", 1006 },
+    { 1007, "五面中BOSS「月兎遠隔催眠術」", 3433, 60, 4, 14000,
+                                    "五面中BOSS「月兎遠隔催眠術」", 1007 },
+    { 1008, "五面道中後段「幻想乡上空」", 3434, 47, 4, nil, "五面道中後段「幻想乡上空」", 1008 },
     { 51, "", 453, 40, 4, 15800, "非符一", 453 },
     { 62, "幻波「赤眼催眠(マインドブローイング)」", 454, 50, 4, 2200,
                                     "幻波「赤眼催眠(マインドブローイング)」", 454 },
