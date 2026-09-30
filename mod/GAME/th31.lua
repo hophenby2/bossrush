@@ -707,7 +707,9 @@ local function upd_dir(self, k)
         elseif k == K_ABS then
             self.ex_angle = self.ex_dir_ang                      -- 绝对：直接换成记录里的角
         else
-            self.ex_angle = add_norm(aim_at_player(self.x, self.y) + self.ex_dir_ang)
+            ---原作是 AddNormalizeAngle(AngleToPoint(worldPosition), directionChangeAngle)
+            ---= angToPl + 偏移（TH08 口径）；我们口径取反 ⇒ 偏移要**减**。
+            self.ex_angle = add_norm(aim_at_player(self.x, self.y) - self.ex_dir_ang)
         end
         self.ex_speed = self.ex_dir_spd
         m = self.ex_speed
@@ -46461,6 +46463,10 @@ local DROP_TBL = {
 ---------------------------------------------------------------------
 ---移动（Enemy::UpdateMovement，EnemyManager.cpp:30-118 的三个分支）。
 ---所有量都在**我们坐标**里；`mirror` 的 x 取反放在整合那一步（跟原作一致）。
+---★ 插值位移量写在 `u.mdx` / `u.mdy`，**不能**叫 `u.dx` / `u.dy`：
+---  `dx`/`dy`（以及 `ani`/`rc`）是 lstg.GameObject 的**只读内置属性**，
+---  而 `Class(enemy, …)` 的赋值会经 `enemybase` 的 `__newindex → SetAttr`，
+---  写只读属性会直接抛 `property 'dx' is readonly.`。
 ---------------------------------------------------------------------
 local function u_set_dir_speed(u, angle, speed)
     u.ma = add_norm(angle)
@@ -46477,14 +46483,14 @@ end
 ---MOVE_TO：ConfigureRelativeMotion（EclHelpers.cpp:70-105）⇒
 ---delta = 目标 − worldPosition、origin = position。
 local function u_move_to(u, dur, easing, tx, ty)
-    u.dx = tx - u.wx
-    u.dy = ty - u.wy
+    u.mdx = tx - u.wx
+    u.mdy = ty - u.wy
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     u.vex, u.vey = 0, 0
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---MOVE_IN_DIR：ConfigurePolarMotion（EclHelpers.cpp:29-61）⇒
@@ -46495,13 +46501,13 @@ local function u_move_in_dir(u, dur, easing, angle, speed)
         return
     end
     angle = add_norm(angle)
-    u.dx = math.cos(angle) * speed * dur
-    u.dy = math.sin(angle) * speed * dur
+    u.mdx = math.cos(angle) * speed * dur
+    u.mdy = math.sin(angle) * speed * dur
     u.ox, u.oy = u.wx, u.wy
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---ORBIT_AROUND_CURRENT_POSITION（EclRunLow.inl:598-615）：圆心 = 当前 position、半径从 0 起。
@@ -46546,13 +46552,13 @@ local function u_move_update(u)
         local p = 1 - u.mv_timer / u.mv_dur
         if p < 0 then p = 0 end
         p = ease(u.mv_ease, p)
-        u.vex = u.ox + u.dx * p - u.lx
-        u.vey = u.oy + u.dy * p - u.ly
+        u.vex = u.ox + u.mdx * p - u.lx
+        u.vey = u.oy + u.mdy * p - u.ly
         if u.mirror then u.vex = -u.vex end
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_timer <= 0 then
             u.mv = "none"
-            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
             u.vex, u.vey = 0, 0
         end
     elseif m == "orbit" then
@@ -46684,8 +46690,8 @@ local SUB0 = {
     end },
     { 0, function(u)
         ---#12..#21：把插值 delta 朝「现在自机在 60% 处」拉 0.2%（gain = 0.002）。
-        u.dx = u.dx + 0.002 * (0.6 * (player.x - u.st.sx) - u.dx)
-        u.dy = u.dy + 0.002 * (0.6 * (player.y - u.st.sy) - u.dy)
+        u.mdx = u.mdx + 0.002 * (0.6 * (player.x - u.st.sx) - u.mdx)
+        u.mdy = u.mdy + 0.002 * (0.6 * (player.y - u.st.sy) - u.mdy)
     end },
     { 1, function(u)
         ---#22：JUMP_DEC(0, −216, exI0) —— 减到 0 才落下。
@@ -46947,7 +46953,7 @@ unit = Class(enemy, {
         self.av = 0
         self.vx, self.vy = 0, 0
         self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
         self.oox, self.ooy, self.oa, self.orad, self.oradv = 0, 0, 0, 0, 0
         ---延迟出弹。
         self.defer = false
@@ -47394,15 +47400,15 @@ end
 ---MOVE_TO(时长, 缓动, 目标)：ConfigureRelativeMotion ⇒ delta = 目标 − worldPosition、
 ---origin = position。
 local function u_move_to(u, dur, easing, tx, ty)
-    u.dx = tx - u.wx
-    u.dy = ty - u.wy
+    u.mdx = tx - u.wx
+    u.mdy = ty - u.wy
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     u.vex, u.vey = 0, 0
     ---★ ConfigureRelativeMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:83-86）。
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---MOVE_IN_DIR(时长, 缓动, 角, 速度)：origin = worldPosition；t ≤ 0 退化成极性。
@@ -47411,14 +47417,14 @@ local function u_move_in_dir(u, dur, easing, angle, speed)
         u_set_dir_speed(u, angle, speed)
         return
     end
-    u.dx = math.cos(angle) * speed * dur
-    u.dy = math.sin(angle) * speed * dur
+    u.mdx = math.cos(angle) * speed * dur
+    u.mdy = math.sin(angle) * speed * dur
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     ---★ ConfigurePolarMotion 同样在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---ORBIT_AROUND_CURRENT_POSITION(时长, 起始角, 角速度, 径向速度)：圆心 = 当前 position。
@@ -47460,8 +47466,8 @@ local function u_move_update(u)
         local p = 1 - u.mv_timer / u.mv_dur
         if p < 0 then p = 0 end
         p = ease(u.mv_ease, p)
-        u.vex = u.ox + u.dx * p - u.lx
-        u.vey = u.oy + u.dy * p - u.ly
+        u.vex = u.ox + u.mdx * p - u.lx
+        u.vey = u.oy + u.mdy * p - u.ly
         ---★ 镜像时这里要**再翻一次 x**：delta 在 Configure* 里已经翻过（见上面两处），
         ---  UpdateMovement 的 INTERP 分支算 movementAngle 之前又翻一次 velocity.x
         ---  （EnemyManager.cpp:100-106，**只有 INTERP 分支有这一翻**，POLAR / ORBIT 没有），
@@ -47472,7 +47478,7 @@ local function u_move_update(u)
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_timer <= 0 then
             ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
-            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
             u.mv = "none"
             u.vex, u.vey = 0, 0
         end
@@ -47896,7 +47902,7 @@ unit = Class(enemy, {
         self.av = 0
         self.vex, self.vey = 0, 0
         self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
         self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
         ---延迟出弹。
         self.defer = false
@@ -48458,15 +48464,15 @@ end
 
 ---MOVE_TO(时长, 缓动, 目标)：ConfigureRelativeMotion ⇒ delta = 目标 − worldPosition。
 local function u_move_to(u, dur, easing, tx, ty)
-    u.dx = tx - u.wx
-    u.dy = ty - u.wy
+    u.mdx = tx - u.wx
+    u.mdy = ty - u.wy
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     u.vex, u.vey = 0, 0
     ---★ ConfigureRelativeMotion 装 delta 时就把 delta.x 翻了（EclHelpers.cpp:83-86）。
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---MOVE_IN_DIR(时长, 缓动, 角, 速度)：origin = position；t ≤ 0 退化成极性。
@@ -48475,14 +48481,14 @@ local function u_move_in_dir(u, dur, easing, angle, speed)
         u_set_dir_speed(u, angle, speed)
         return
     end
-    u.dx = math.cos(angle) * speed * dur
-    u.dy = math.sin(angle) * speed * dur
+    u.mdx = math.cos(angle) * speed * dur
+    u.mdy = math.sin(angle) * speed * dur
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     ---★ ConfigurePolarMotion 同样在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---★ 速度**不写进 u.vx/u.vy**：LuaSTG 的引擎每帧都会替**所有**对象积分 `x += vx`，
@@ -48504,15 +48510,15 @@ local function u_move_update(u)
         local p = 1 - u.mv_timer / u.mv_dur
         if p < 0 then p = 0 end
         p = ease(u.mv_ease, p)
-        u.vex = u.ox + u.dx * p - u.lx
-        u.vey = u.oy + u.dy * p - u.ly
+        u.vex = u.ox + u.mdx * p - u.lx
+        u.vey = u.oy + u.mdy * p - u.ly
         ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支有
         ---  这一翻），最后 IntegrateVelocity 按 mirrorMovementX 翻第三次。
         if u.mirror then u.vex = -u.vex end
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_timer <= 0 then
             ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
-            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
             u.mv = "none"
             u.vex, u.vey = 0, 0
         end
@@ -48996,7 +49002,7 @@ unit = Class(enemy, {
         self.av = 0
         self.vex, self.vey = 0, 0
         self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
         ---ECL 的 exI0 / exI1（JUMP_DEC 的计数器）。
         self.exi0, self.exi1 = 0, 0
         ---延迟出弹（本卡没有用到，留着跟另两张道中卡一致）。
@@ -49431,14 +49437,14 @@ local function u_move_in_dir(u, dur, easing, angle, speed)
         u_set_dir_speed(u, angle, speed)
         return
     end
-    u.dx = math.cos(angle) * speed * dur
-    u.dy = math.sin(angle) * speed * dur
+    u.mdx = math.cos(angle) * speed * dur
+    u.mdy = math.sin(angle) * speed * dur
     u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
     ---★ ConfigurePolarMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-    if u.mirror then u.dx = -u.dx end
+    if u.mirror then u.mdx = -u.mdx end
 end
 
 ---ORBIT_AROUND_CURRENT_POSITION(时长, 起始角, 角速度, 径向速度)：圆心 = 当前 position。
@@ -49479,15 +49485,15 @@ local function u_move_update(u)
         local p = 1 - u.mv_timer / u.mv_dur
         if p < 0 then p = 0 end
         p = ease(u.mv_ease, p)
-        u.vex = u.ox + u.dx * p - u.lx
-        u.vey = u.oy + u.dy * p - u.ly
+        u.vex = u.ox + u.mdx * p - u.lx
+        u.vey = u.oy + u.mdy * p - u.ly
         ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支
         ---  有这一翻），最后 IntegrateVelocity 按 mirrorMovementX 翻第三次。
         if u.mirror then u.vex = -u.vex end
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_timer <= 0 then
             ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
-            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
             u.mv = "none"
             u.vex, u.vey = 0, 0
         end
@@ -49714,7 +49720,7 @@ unit = Class(enemy, {
         self.av = 0
         self.vex, self.vey = 0, 0
         self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
         self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
         ---ECL 的 li0 / li1 / exI0 / exI1。
         self.li0, self.li1 = 0, 0
@@ -50668,24 +50674,24 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
             return
         end
-        u.dx = math.cos(angle) * speed * dur
-        u.dy = math.sin(angle) * speed * dur
+        u.mdx = math.cos(angle) * speed * dur
+        u.mdy = math.sin(angle) * speed * dur
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
         ---★ ConfigurePolarMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---MOVE_TO（op64）：目标点是**绝对**坐标（已换成我们的口径）。
     local function u_move_to(u, dur, easing, tx, ty)
-        u.dx, u.dy = tx - u.lx, ty - u.ly
+        u.mdx, u.mdy = tx - u.lx, ty - u.ly
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---SET_POSITION（op63，只写 x/y，**不**加父机、不改 offset）。
@@ -50731,14 +50737,14 @@ local function make_card(build)
             local p = 1 - u.mv_timer / u.mv_dur
             if p < 0 then p = 0 end
             p = ease(u.mv_ease, p)
-            u.vex = u.ox + u.dx * p - u.lx
-            u.vey = u.oy + u.dy * p - u.ly
+            u.vex = u.ox + u.mdx * p - u.lx
+            u.vey = u.oy + u.mdy * p - u.ly
             ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支有）。
             if u.mirror then u.vex = -u.vex end
             u.ma = math.atan2(u.vey, u.vex)
             if u.mv_timer <= 0 then
                 ---差异 4：走完就吸附 + 清速度（delta 已含镜像）。
-                u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+                u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
                 u.mv = "none"
                 u.vex, u.vey = 0, 0
             end
@@ -50793,8 +50799,8 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
         else
             ---StartTimedPolarDisplacement（EclDependencies.cpp:99-125）：**不**翻 mirror。
-            u.dx = math.cos(angle) * speed * dur
-            u.dy = math.sin(angle) * speed * dur
+            u.mdx = math.cos(angle) * speed * dur
+            u.mdy = math.sin(angle) * speed * dur
             u.ox, u.oy = u.lx, u.ly
             u.mv_dur, u.mv_timer = dur, dur
             u.mv_ease = easing
@@ -51041,7 +51047,7 @@ local function make_card(build)
             self.av = 0
             self.vex, self.vey = 0, 0
             self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-            self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+            self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
             self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
             self.bounds = nil
             ---SET_SHOOT_OFFSET / 延迟出弹 / 间隔。
@@ -51375,7 +51381,10 @@ do
     local outer = #s + 1
     add(0, function(u)
         u.exi0 = 12
-        u.lf0 = -E.aim_at(u.wx, u.wy)   ---SET_FLOAT lf0 angToPl（我们口径取反）
+        ---SET_FLOAT lf0 angToPl：原作把 TH08 口径的「朝自机角」直接当发射角。
+        ---换算到我们口径就是取反 —— 而 E.aim_at 本身已经是「我们口径的朝自机角」
+        ---（= −angToPl_原作），所以这里**不能再取反**（取反等于反向放弹）。
+        u.lf0 = E.aim_at(u.wx, u.wy)
         u.li0 = 9                       ---SET_INT li0 9（Lunatic）
         u.lf1 = 5.5                     ---SET_FLOAT lf1 5.5（Lunatic，速率不取反）
     end)
@@ -51622,24 +51631,24 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
             return
         end
-        u.dx = math.cos(angle) * speed * dur
-        u.dy = math.sin(angle) * speed * dur
+        u.mdx = math.cos(angle) * speed * dur
+        u.mdy = math.sin(angle) * speed * dur
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
         ---★ ConfigurePolarMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---MOVE_TO（op64）：目标点是**绝对**坐标（已换成我们的口径）。
     local function u_move_to(u, dur, easing, tx, ty)
-        u.dx, u.dy = tx - u.lx, ty - u.ly
+        u.mdx, u.mdy = tx - u.lx, ty - u.ly
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---SET_POSITION（op63，只写 x/y，**不**加父机、不改 offset）。
@@ -51685,14 +51694,14 @@ local function make_card(build)
             local p = 1 - u.mv_timer / u.mv_dur
             if p < 0 then p = 0 end
             p = ease(u.mv_ease, p)
-            u.vex = u.ox + u.dx * p - u.lx
-            u.vey = u.oy + u.dy * p - u.ly
+            u.vex = u.ox + u.mdx * p - u.lx
+            u.vey = u.oy + u.mdy * p - u.ly
             ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支有）。
             if u.mirror then u.vex = -u.vex end
             u.ma = math.atan2(u.vey, u.vex)
             if u.mv_timer <= 0 then
                 ---差异 4：走完就吸附 + 清速度（delta 已含镜像）。
-                u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+                u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
                 u.mv = "none"
                 u.vex, u.vey = 0, 0
             end
@@ -51747,8 +51756,8 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
         else
             ---StartTimedPolarDisplacement（EclDependencies.cpp:99-125）：**不**翻 mirror。
-            u.dx = math.cos(angle) * speed * dur
-            u.dy = math.sin(angle) * speed * dur
+            u.mdx = math.cos(angle) * speed * dur
+            u.mdy = math.sin(angle) * speed * dur
             u.ox, u.oy = u.lx, u.ly
             u.mv_dur, u.mv_timer = dur, dur
             u.mv_ease = easing
@@ -51995,7 +52004,7 @@ local function make_card(build)
             self.av = 0
             self.vex, self.vey = 0, 0
             self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-            self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+            self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
             self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
             self.bounds = nil
             ---SET_SHOOT_OFFSET / 延迟出弹 / 间隔。
@@ -52336,7 +52345,10 @@ do
     local outer = #s + 1
     add(0, function(u)
         u.exi0 = 12
-        u.lf0 = -E.aim_at(u.wx, u.wy)   ---SET_FLOAT lf0 angToPl（我们口径取反）
+        ---SET_FLOAT lf0 angToPl：原作把 TH08 口径的「朝自机角」直接当发射角。
+        ---换算到我们口径就是取反 —— 而 E.aim_at 本身已经是「我们口径的朝自机角」
+        ---（= −angToPl_原作），所以这里**不能再取反**（取反等于反向放弹）。
+        u.lf0 = E.aim_at(u.wx, u.wy)
         u.li0 = 5                       ---SET_INT li0 5（Lunatic）
     end)
     local inner = #s + 1
@@ -52618,24 +52630,24 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
             return
         end
-        u.dx = math.cos(angle) * speed * dur
-        u.dy = math.sin(angle) * speed * dur
+        u.mdx = math.cos(angle) * speed * dur
+        u.mdy = math.sin(angle) * speed * dur
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
         ---★ ConfigurePolarMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---MOVE_TO（op64）：目标点是**绝对**坐标（已换成我们的口径）。
     local function u_move_to(u, dur, easing, tx, ty)
-        u.dx, u.dy = tx - u.lx, ty - u.ly
+        u.mdx, u.mdy = tx - u.lx, ty - u.ly
         u.ox, u.oy = u.lx, u.ly
         u.mv_dur, u.mv_timer = dur, dur
         u.mv_ease = easing
         u.mv = "interp"
-        if u.mirror then u.dx = -u.dx end
+        if u.mirror then u.mdx = -u.mdx end
     end
 
     ---SET_POSITION（op63，只写 x/y，**不**加父机、不改 offset）。
@@ -52681,14 +52693,14 @@ local function make_card(build)
             local p = 1 - u.mv_timer / u.mv_dur
             if p < 0 then p = 0 end
             p = ease(u.mv_ease, p)
-            u.vex = u.ox + u.dx * p - u.lx
-            u.vey = u.oy + u.dy * p - u.ly
+            u.vex = u.ox + u.mdx * p - u.lx
+            u.vey = u.oy + u.mdy * p - u.ly
             ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支有）。
             if u.mirror then u.vex = -u.vex end
             u.ma = math.atan2(u.vey, u.vex)
             if u.mv_timer <= 0 then
                 ---差异 4：走完就吸附 + 清速度（delta 已含镜像）。
-                u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+                u.lx, u.ly = u.ox + u.mdx, u.oy + u.mdy
                 u.mv = "none"
                 u.vex, u.vey = 0, 0
             end
@@ -52743,8 +52755,8 @@ local function make_card(build)
             u_set_dir_speed(u, angle, speed)
         else
             ---StartTimedPolarDisplacement（EclDependencies.cpp:99-125）：**不**翻 mirror。
-            u.dx = math.cos(angle) * speed * dur
-            u.dy = math.sin(angle) * speed * dur
+            u.mdx = math.cos(angle) * speed * dur
+            u.mdy = math.sin(angle) * speed * dur
             u.ox, u.oy = u.lx, u.ly
             u.mv_dur, u.mv_timer = dur, dur
             u.mv_ease = easing
@@ -53046,7 +53058,7 @@ local function make_card(build)
             self.av = 0
             self.vex, self.vey = 0, 0
             self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
-            self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+            self.ox, self.oy, self.mdx, self.mdy = 0, 0, 0, 0
             self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
             self.bounds = nil
             ---SET_SHOOT_OFFSET / 延迟出弹 / 间隔。
@@ -53598,11 +53610,16 @@ end
 local SUB29 = make_sprinkler(30)
 local SUB31 = make_sprinkler(32)
 
+---连续 [−1,1) 随机符（= 原作 `rndSgn`）。见上面 Sub30 的注释。
+local function rnd_sgn() return ran:Float(0, 1) * 2 - 1 end
+
 ---Sub30（Sub29 的枪）：每 exI2 = 2 帧一发，两发一组：
 ---  第一发 弹种 2 / 色 6：方向 = 现抽的 ±π/4 + 自机方向，速度 = 现抽的 [0,1) + lf2(=1)
 ---  第二发 弹种 2 / 色 4：方向 = 现抽的 ±π/2 + 自机方向，速度同上
 ---（原作 `FLOAT_MUL2 lf0 rndSgn a` + `FLOAT_ADD lf0 angToPl`：我们口径下就是
----  `ran:Sign()*a + E.aim_at(...)`。）
+---  `rnd_sgn()*a + E.aim_at(...)`。★ `rndSgn` = GetRandomF32Signed() 是**连续**的
+---  [−1,1)（EclOperandsFloat.cpp:56 / Global.cpp:1231-1237）——`ran:Sign()` 是离散 ±1，
+---  会把整片锥形随机弹压成 ±a 两条线，所以本卡自己定义一个连续的。）
 local SUB30
 do
     local s = {}
@@ -53613,14 +53630,14 @@ do
     end)
     local head = #s + 1
     add(0, function(u)
-        u.lf0 = ran:Sign() * 0.7853982 + E.aim_at(u.wx, u.wy)
+        u.lf0 = rnd_sgn() * 0.7853982 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = 1, count2 = 1,
                      speed1 = u.lf1, speed2 = 0.5, angle = u.lf0, step = 0, flags = 0x203 })
     end)
     add(0, function(u, c) c.stall = u.exi2 end)
     add(0, function(u)
-        u.lf0 = ran:Sign() * 1.570796 + E.aim_at(u.wx, u.wy)
+        u.lf0 = rnd_sgn() * 1.570796 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 4, count1 = 1, count2 = 1,
                      speed1 = u.lf1, speed2 = 0.5, angle = u.lf0, step = 0, flags = 0x203 })
@@ -53631,7 +53648,8 @@ do
 end
 
 ---Sub32（Sub31 的枪）：同 Sub30 的骨架，差别：exI2 = 5、lf2 = 2.5、两发都带
----`SET_BULLET_TRANSFORM 槽0 kind 0x80（CHANGE_DIRECTION）`（60 帧后把弹角设成 0）、
+---`SET_BULLET_TRANSFORM 槽0 kind 0x80（CHANGE_DIRECTION_AIMED）`（60 帧后把弹角设成
+---「当时朝自机的方向 + f0」——f0 都是 0，所以就是朝自机）、
 ---flags 多 0x80。第一发 弹种 2 / 色 6，第二发 弹种 2 / 色 4。
 ---回环头是**记录写入**那条（`JUMP 0` 回 @0x3030），所以每轮都重挂一次记录。
 local SUB32
@@ -53644,8 +53662,8 @@ do
     end)
     local head = #s + 1
     add(0, function(u)
-        E.record(u, 0, K.AIMED, 0, 60, 1, 0, 1.4)   ---槽0：60 帧后弹角 = 0
-        u.lf0 = ran:Sign() * 0.7853982
+        E.record(u, 0, K.AIMED, 0, 60, 1, 0, 1.4)   ---槽0：60 帧后转成自机狙、速度 1.4
+        u.lf0 = rnd_sgn() * 0.7853982
         u.lf0 = u.lf0 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = 1, count2 = 1,
@@ -53653,8 +53671,8 @@ do
     end)
     add(0, function(u, c) c.stall = u.exi2 end)
     add(0, function(u)
-        u.lf0 = ran:Sign() * 1.570796
-        E.record(u, 0, K.AIMED, 0, 60, 1, 0, 2)     ---槽0：60 帧后弹角 = 0（速度 2）
+        u.lf0 = rnd_sgn() * 1.570796
+        E.record(u, 0, K.AIMED, 0, 60, 1, 0, 2)     ---槽0：60 帧后转成自机狙、速度 2
         u.lf0 = u.lf0 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 4, count1 = 1, count2 = 1,
@@ -54499,6 +54517,783 @@ CARD[1009] = make_card(function(E) return build(E, "back") end)
 ---★ 三面中 BOSS（三上白泽慧音 · 组 3）：同一套引擎 + 自己的 build。
 ---  原作 t=3080 的 `SPAWN_ENEMY sub=20`，非符、有血条（见上面 build_s3mid 的注释）。
 CARD[3436] = make_card(build_s3mid)
+
+---=========================================================================
+---Stage EX 道中（永夜抄 Extra · `ecldata8.ecl` 时间轴 0/1 的 t=400..4895）
+---  原作这一段是「永夜の竹林」的开场：两列小妖精上下对穿四波、中段三只大妖精
+---  各带一圈使魔绕圈扫射、t=3990 起一列小妖精自上而下压下来，t=4895 一声清场
+---  收尾（t=5155 起才是 EX BOSS 藤原妹红，不属于本卡）。
+---  ★ 数据源 = 双时间轴联合模拟（原作时间轴 0 与 1 同时跑）：t=400..4895 共 177 条
+---    `SPAWN_ENEMY`（时间轴 1 的那些是 `variant = 1` = mirrorMovementX）。
+---
+---  ★ 口径（与 CARD[1000..1009] 完全一致）：
+---    x_我们 = x_原作 − 192、y_我们 = 224 − y_原作、**角度整体取反**
+---    （出弹的 angle / angleStep、SET_DIR_AND_SPEED、SET_ANGULAR_VELOCITY、
+---      SET_FLOAT 里的角、SPAWN 记录里的角）。由 ECL 变量算出来的角一律先按**原式**
+---      算、再把**结果**取反 —— 例如 `FLOAT_SUB2 lf0 angToPl 0.78539819`
+---      （原作 lf0 = angToPl − 0.7854）在我们这里是 `aim + 0.7854`；
+---      `FLOAT_ADD2 lf0 orbitAngle π/2` 在我们这里是 `oa − π/2`。
+---    速度 / 加速度 / 时长 / 缓动 / 坐标是标量，**不**取反。
+---  ★ rank 固定 32（道中不叠符卡）⇒ 出弹 speed1 += 0.15、speed2 += 0.075，夹到 ≥ 0.3。
+---  ★ 只实现 Lunatic（0xf8）：原作每条难度专有行只取 d=0xf8 的那一列。
+---  ★ 本地帧 = 原作 − 400 ⇒ 时长 75 秒（ceil((4895−400)/60)）。
+---  ★ 已知差异（与本文件其它道中卡同一套）：
+---    1 子 context（枪）挂上那一帧当帧跑 t=0（原作 EclRun.cpp:180-196 也是这么跑）。
+---    2 Anm / 演出全部不实现；敌人占位贴图 servant、小弹 ball_small 等。
+---    3 op95 KILL_ALL_NON_BOSS 只清本卡自己 spawn 出来的敌人（引擎没有全局敌机表）。
+---    4 Sub14 的 NO_SPRITE（DISABLE_INTERACTION_FLAGS 8）引擎没实现 ⇒ 手动缩成 0 号。
+---    5 Sub12 的 `ENABLE_INTERACTION_FLAGS 2` 照写（E.contact）；时间轴直接撒出来的
+---      小妖精在本引擎里是 NONTJT（撞上去不死），这是本文件道中卡的一贯口径。
+---=========================================================================
+local function build_exmid(E)
+local PI = E.PI
+local K = E.K
+
+local SUB, GUN = {}, {}
+
+---RANDOM_SIGNED_UNIT_FLOAT（rndSgn，Global.cpp:1231-1236）∈ [−1, 1) 的连续随机数。
+local function rnd_sgn() return ran:Float(0, 1) * 2 - 1 end
+
+---小妖精骨架（Sub0/2/4/6/8）：出生当帧挂枪 + 沿 dir 直飞；
+---  t=80 `SET_ANGULAR_VELOCITY av1` + `SET_ACCELERATION acc1`；
+---  t_acc2 再 `SET_ACCELERATION acc2`（没有就传 nil）；t_avstop `SET_ANGULAR_VELOCITY 0`
+---  （acc3 不为 nil 时同一帧再 `SET_ACCELERATION acc3`）。
+---  原作 dir = ±π/2（从上方 / 下方插进来）⇒ 我们取反（见文件头）。
+local function make_fairy(gun, dir, av1, acc1, t_acc2, acc2, t_avstop, acc3, die_at)
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.child(u, gun)                             ---SET_CHILD_ECL 0 gun
+        E.set_dir_speed(u, dir, 4)                  ---SET_DIR_AND_SPEED ±π/2 4
+    end)
+    add(80, function(u)
+        u.av = av1                                  ---SET_ANGULAR_VELOCITY
+        E.set_accel(u, acc1)                        ---SET_ACCELERATION
+    end)
+    if t_acc2 ~= nil then
+        add(t_acc2, function(u) E.set_accel(u, acc2) end)
+    end
+    add(t_avstop, function(u)
+        u.av = 0                                    ---SET_ANGULAR_VELOCITY 0
+        if acc3 ~= nil then E.set_accel(u, acc3) end
+    end)
+    add(die_at, function() return "die" end)
+    return s
+end
+
+---Sub0（上方小妖精 life 10，枪 Sub1）：t=80 转向 −1.5°/帧 + 减速 −0.0333/帧²、
+---t=140 再加速 +0.0333、t=170 定向。
+SUB[0] = make_fairy(1, -1.570796, 0.02617994, -0.033333335, 140, 0.033333335, 170, nil, 5170)
+---Sub2（下方小妖精 life 10，枪 Sub3）：与 Sub0 镜像。
+SUB[2] = make_fairy(3, 1.570796, -0.02617994, -0.033333335, 140, 0.033333335, 170, nil, 5170)
+---Sub4（下方小妖精 life 10，枪 Sub5）：与 Sub2 完全同构。
+SUB[4] = make_fairy(5, 1.570796, -0.02617994, -0.033333335, 140, 0.033333335, 170, nil, 5170)
+---Sub6（下方妖精 life 10，枪 Sub7）：减速更猛（−0.05）、t=140 归零、t=260 才定向并再加速。
+SUB[6] = make_fairy(7, 1.570796, -0.02617994, -0.05, 140, 0, 260, 0.033333335, 5260)
+---Sub8（上方妖精 life 10，枪 Sub9）：Sub6 的镜像。
+SUB[8] = make_fairy(9, -1.570796, 0.02617994, -0.033333335, 140, 0.033333335, 170, nil, 5170)
+
+---Sub1（Sub0 的枪）：exI0 = 2 轮，t=60 色 2、t=76 色 6，每轮自机狙 4×8 发低速散弹。
+---  原作 step = ±0.0098174773 ⇒ 取反（本文件口径：step 一律取反）。
+local SUB1
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(60, function(u) u.exi0 = 2 end)             ---SET_INT exI0 2
+    local head = #s + 1                             ---循环头 = 第一条出弹
+    add(60, function(u)
+        E.shoot(u, { op = 98, type = 0, color = 2, count1 = 4, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = -0.0098174773,
+                     flags = 0x200 })
+    end)
+    add(76, function(u)
+        E.shoot(u, { op = 98, type = 0, color = 6, count1 = 4, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = 0.0098174773,
+                     flags = 0x200 })
+    end)
+    add(92, function(u)                             ---JUMP_DEC 60 −88 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 60, pc = head } end
+    end)
+    add(92, function() end)            ---RETURN（子 context 结束；引擎里就是不再有指令）
+    GUN[1] = s
+end
+
+---Sub3（Sub2 的枪）：exI0 = 3 轮，t=100 色 2、t=116 色 6，自机狙 1×8 发、step = 0。
+local SUB3
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(100, function(u) u.exi0 = 3 end)
+    local head = #s + 1
+    add(100, function(u)
+        E.shoot(u, { op = 98, type = 0, color = 2, count1 = 1, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = 0, flags = 0x200 })
+    end)
+    add(116, function(u)
+        E.shoot(u, { op = 98, type = 0, color = 6, count1 = 1, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = 0, flags = 0x200 })
+    end)
+    add(132, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 100, pc = head } end
+    end)
+    add(132, function() end)
+    GUN[3] = s
+end
+
+---Sub5（Sub4 的枪）：与 Sub3 同参数，但弹型换 SHOT_FAN_AIMED（3 路、step ±60°）。
+local SUB5
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(100, function(u) u.exi0 = 3 end)
+    local head = #s + 1
+    add(100, function(u)
+        E.shoot(u, { op = 96, type = 0, color = 2, count1 = 3, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = -1.0471976,
+                     flags = 0x200 })
+    end)
+    add(116, function(u)
+        E.shoot(u, { op = 96, type = 0, color = 6, count1 = 3, count2 = 8,
+                     speed1 = 7, speed2 = 2.8, angle = 0, step = -1.0471976,
+                     flags = 0x200 })
+    end)
+    add(132, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 100, pc = head } end
+    end)
+    add(132, function() end)
+    GUN[5] = s
+end
+
+---Sub7（Sub6 的枪）：每 3 帧一发随机角小弹（色 2 速 0.2→0.4 / 色 6 速 0.4→2.8），
+---共 64 轮。弹带 WAIT(120) + ACCELERATE_VECTOR(120 帧、+0.0125/帧) 两条记录。
+local SUB7
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(60, function(u)
+        E.record(u, 0, K.WAIT, 0, 120, -1, -1, -1)      ---SET_BULLET_TRANSFORM 0 131072 …
+        E.record(u, 1, K.VEC, 0, 120, -1, 0.0125, -999) ---SET_BULLET_TRANSFORM 1 16 …
+        u.exi0 = 64                                     ---SET_INT exI0 64
+    end)
+    local head = #s + 1
+    add(60, function(u)
+        E.shoot(u, { op = 98, type = 1, color = 2, count1 = 1, count2 = 1,
+                     speed1 = 0.2, speed2 = 0.4, angle = -ran:Float(-PI, PI),
+                     step = -0.0098174773, flags = 0x20210 })
+    end)
+    add(63, function(u)
+        E.shoot(u, { op = 98, type = 1, color = 6, count1 = 1, count2 = 1,
+                     speed1 = 0.4, speed2 = 2.8, angle = -ran:Float(-PI, PI),
+                     step = 0.0098174773, flags = 0x20210 })
+    end)
+    add(66, function(u)                                 ---JUMP_DEC 60 −88 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 60, pc = head } end
+    end)
+    add(66, function() end)
+    GUN[7] = s
+end
+
+---Sub9（Sub8 的枪）：与 Sub7 同构，只是 exI0 = 5、色 4/8、第二条在 t=66、t=72 回环。
+local SUB9
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(60, function(u)
+        E.record(u, 0, K.WAIT, 0, 120, -1, -1, -1)
+        E.record(u, 1, K.VEC, 0, 120, -1, 0.0125, -999)
+        u.exi0 = 5
+    end)
+    local head = #s + 1
+    add(60, function(u)
+        E.shoot(u, { op = 98, type = 1, color = 4, count1 = 1, count2 = 1,
+                     speed1 = 0.2, speed2 = 0.4, angle = -ran:Float(-PI, PI),
+                     step = -0.0098174773, flags = 0x20210 })
+    end)
+    add(66, function(u)
+        E.shoot(u, { op = 98, type = 1, color = 8, count1 = 1, count2 = 1,
+                     speed1 = 0.4, speed2 = 2.8, angle = -ran:Float(-PI, PI),
+                     step = 0.0098174773, flags = 0x20210 })
+    end)
+    add(72, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 60, pc = head } end
+    end)
+    add(72, function() end)
+    GUN[9] = s
+end
+
+---Sub10（父机使魔 life 500）：每 4 帧一轮自机狙 3 路（共 10 轮）＋ 每 4 帧撒一只
+---Sub12（共 6 只，只有第一只 exI0 = 6 的活下来挂枪）；t=109 起沿自机方向撒 6 只、
+---每只再转 22.5°，随后整队缓慢加速。
+local SUB10
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.disable_if(u, 2)                          ---DISABLE_INTERACTION_FLAGS 2
+        E.drop_counts(u, 8, 4)                      ---SET_ITEM_DROP_COUNTS 8 4
+        E.reduction(u, 20)                          ---SET_DAMAGE_REDUCTION_TIMER 20
+    end)
+    add(0, function(u)
+        u.lf0 = ran:Float(0, 1) * 0.5               ---FLOAT_MUL2 lf0 rndUnit 0.5
+        u.lf0 = u.lf0 + 3.8                         ---FLOAT_ADD lf0 3.8（速率，不取反）
+        E.move_in_dir(u, 40, 4, -1.570796, u.lf0)   ---MOVE_IN_DIR 40 4 +π/2 lf0
+    end)
+    add(0, function(u) u.exi2 = 10 end)             ---SET_INT exI2 10
+    local head_a = #s + 1
+    add(0, function(u)                              ---FAN_AIMED（循环头 A）
+        E.shoot(u, { op = 96, type = 1, color = 4, count1 = 3, count2 = 1,
+                     speed1 = 3.2, speed2 = 0.4, angle = 0, step = -0.098174773,
+                     flags = 0x20210 })
+    end)
+    add(4, function(u)                              ---JUMP_DEC 0 −44 exI2
+        u.exi2 = u.exi2 - 1
+        if u.exi2 > 0 then return { t = 0, pc = head_a } end
+    end)
+    add(4, function(u) u.lf0 = E.aim_at(u.wx, u.wy) end)  ---SET_FLOAT lf0 angToPl
+    add(4, function(u) u.exi0 = 6 end)              ---SET_INT exI0 6
+    add(4, function(u) u.li7 = 6 end)               ---SET_INT li7 6
+    add(4, function(u) u.lf1 = 5 end)               ---SET_FLOAT lf1 5（速率）
+    local head_b = #s + 1
+    add(4, function(u) E.spawn_offset(u, 12, 0, 0, 100, -2) end)   ---SPAWN（循环头 B）
+    add(9, function(u)                              ---JUMP_DEC 4 −36 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 4, pc = head_b } end
+    end)
+    add(109, function(u)                            ---SET_DIR_AND_SPEED −π/2 0.5
+        E.set_dir_speed(u, 1.570796, 0.5)
+    end)
+    add(109, function(u) u.lf1 = 2 end)             ---SET_FLOAT lf1 2
+    add(109, function(u)                            ---FLOAT_SUB2 lf0 angToPl 0.78539819
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 0.78539819)
+    end)
+    add(109, function(u) u.lf0 = E.norm(u.lf0) end) ---NORMALIZE_ANGLE lf0
+    for i = 1, 6 do
+        add(109, function(u) E.spawn_offset(u, 12, 0, 0, 100, -2) end)
+        if i < 6 then
+            add(109, function(u) u.lf0 = u.lf0 - 0.39269909 end)  ---FLOAT_ADD lf0 π/8
+            add(109, function(u) u.lf0 = E.norm(u.lf0) end)       ---NORMALIZE_ANGLE
+        end
+    end
+    add(109, function(u) E.set_accel(u, 0.016666668) end)         ---SET_ACCELERATION
+    add(169, function(u) E.set_accel(u, 0) end)
+    add(5169, function() return "die" end)
+    SUB[10] = s
+end
+
+---Sub11（父机使魔 life 500）：与 Sub10 同构；差别是 li7 = 2、没有掉落、第二段在 t=169。
+local SUB11
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.disable_if(u, 2)
+        E.reduction(u, 20)
+    end)
+    add(0, function(u)
+        u.lf0 = ran:Float(0, 1) * 0.5
+        u.lf0 = u.lf0 + 3.8
+        E.move_in_dir(u, 40, 4, -1.570796, u.lf0)
+    end)
+    add(0, function(u) u.exi2 = 10 end)
+    local head_a = #s + 1
+    add(0, function(u)
+        E.shoot(u, { op = 96, type = 1, color = 4, count1 = 3, count2 = 1,
+                     speed1 = 3.2, speed2 = 0.4, angle = 0, step = -0.098174773,
+                     flags = 0x20210 })
+    end)
+    add(4, function(u)
+        u.exi2 = u.exi2 - 1
+        if u.exi2 > 0 then return { t = 0, pc = head_a } end
+    end)
+    add(4, function(u) u.lf0 = E.aim_at(u.wx, u.wy) end)
+    add(4, function(u) u.exi0 = 6 end)
+    add(4, function(u) u.li7 = 2 end)               ---SET_INT li7 2（Lunatic）
+    add(4, function(u) u.lf1 = 5 end)
+    local head_b = #s + 1
+    add(4, function(u) E.spawn_offset(u, 12, 0, 0, 100, -2) end)
+    add(9, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 4, pc = head_b } end
+    end)
+    add(169, function(u) E.set_dir_speed(u, 1.570796, 0.5) end)
+    add(169, function(u) u.lf1 = 2 end)
+    add(169, function(u)
+        u.lf0 = E.norm(E.aim_at(u.wx, u.wy) + 0.78539819)
+    end)
+    add(169, function(u) u.lf0 = E.norm(u.lf0) end)
+    for i = 1, 6 do
+        add(169, function(u) E.spawn_offset(u, 12, 0, 0, 100, -2) end)
+        if i < 6 then
+            add(169, function(u) u.lf0 = u.lf0 - 0.39269909 end)
+            add(169, function(u) u.lf0 = E.norm(u.lf0) end)
+        end
+    end
+    add(169, function(u) E.set_accel(u, 0.016666668) end)
+    add(229, function(u) E.set_accel(u, 0) end)
+    add(5229, function() return "die" end)
+    SUB[11] = s
+end
+
+---Sub12（Sub10/11 撒的使魔 life 100）：沿继承来的 lf0 方向以 lf1 速度直飞；
+---t=1 开接触判定，**只有 exI0 == 6 的那一只**活下来挂枪 Sub13（其余当场退场）。
+local SUB12
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.set_dir_speed(u, u.lf0, u.lf1)            ---SET_DIR_AND_SPEED lf0 lf1
+    end)
+    add(1, function(u)
+        E.contact(u)                                ---ENABLE_INTERACTION_FLAGS 2
+        if u.exi0 ~= 6 then return "die" end        ---JMP_IF_INT_NE exI0 6 → TERMINATE
+        E.child(u, 13)                              ---SET_CHILD_ECL 0 13
+    end)
+    add(5001, function() return "die" end)
+    SUB[12] = s
+end
+
+---Sub13（Sub12 的枪）：每 10 帧沿本体位置撒一只 Sub14（共 7 只，li0 递减 8）。
+local SUB13
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.li0 = 60 end)              ---SET_INT li0 60
+    add(0, function(u) u.exi0 = 7 end)              ---SET_INT exI0 7
+    local head = #s + 1
+    add(0, function(u)                              ---SPAWN_ENEMY_RELATIVE 14 0 0 0 100 −2 100
+        E.spawn_at_pos(u, 14, u.wx, u.wy, 100, -2)
+    end)
+    add(0, function(u) u.li0 = u.li0 - 8 end)       ---INT_SUB li0 8
+    add(10, function(u)                             ---JUMP_DEC 0 −60 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = head } end
+    end)
+    add(10, function() end)            ---RETURN（子 context 结束；引擎里就是不再有指令）
+    GUN[13] = s
+end
+
+---Sub14（Sub13 撒的隐形弹母体 life 100）：停 li0 帧后一次放出 16 颗「原地不动、
+---2 秒后淡出」的弹（每颗带随机偏移 ±32 与随机角）。
+local SUB14
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        ---DISABLE_INTERACTION_FLAGS 8（NO_SPRITE）引擎没实现 ⇒ 手动缩成 0 号（差异 4）。
+        u.hscale, u.vscale = 0.01, 0.01
+        u._a = 0
+    end)
+    add(0, function(u, c) c.stall = u.li0 end)      ---SET_SECONDARY_TIME li0
+    add(0, function(u) u.exi0 = 16 end)             ---SET_INT exI0 16
+    local head = #s + 1
+    add(0, function(u)                              ---FLOAT_MUL2 exF0 rndSgn 32
+        u.exf0 = rnd_sgn() * 32
+    end)
+    add(0, function(u)                              ---FLOAT_MUL2 exF1 rndSgn 32
+        u.exf1 = rnd_sgn() * 32
+    end)
+    add(0, function(u) E.offset(u, u.exf0, -u.exf1) end)   ---SET_SHOOT_OFFSET exF0 exF1
+    add(0, function(u)
+        E.record(u, 0, K.WAIT, 0, 120, -1, -1, -1)         ---SET_BULLET_TRANSFORM 0 131072 …
+        E.record(u, 1, K.DESPAWN, 0, -1, -1, -1, -1)       ---SET_BULLET_TRANSFORM 1 262144 …
+    end)
+    add(0, function(u)
+        E.shoot(u, { op = 99, type = 3, color = u.li7, count1 = 1, count2 = 1,
+                     speed1 = 0, speed2 = 1, angle = -ran:Float(-PI, PI),
+                     step = -0.098174773, flags = 0x60204 })
+    end)
+    add(0, function(u)                              ---JUMP_DEC 0 −192 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = head } end
+    end)
+    add(0, function() return "die" end)             ---TERMINATE
+    SUB[14] = s
+end
+
+---Sub15（左右中妖精 life 800/700，共 3 波）：从场地上方斜插进来（原作 +π/8 ⇒ 我们 −π/8），
+---当场沿以自机为基准的环撒 15 只使魔（每 3 只转 24°、共 5 轮），t=60 摆正机身、
+---t=160 离场。lf1（公转角速度）由 `JMP_IF_FLT_GE posX 192` 定：原作 posX ≥ 192 ⇒ −6°，
+---我们 ⇒ lx ≥ 0 时取 +6°。
+local SUB15
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.reduction(u, 60)                          ---SET_DAMAGE_REDUCTION_TIMER 60
+        E.disable_if(u, 2)                          ---DISABLE_INTERACTION_FLAGS 2
+        E.drop_counts(u, 14, 6)                     ---SET_ITEM_DROP_COUNTS 14 6
+        E.move_in_dir(u, 60, 4, -0.39269909, 4)     ---MOVE_IN_DIR 60 4 +π/8 4
+        u.lf1 = (u.lx >= 0) and 0.10471976 or -0.10471976   ---SET_FLOAT lf1 ∓6°（取反）
+        u.lf0 = PI                                  ---SET_FLOAT lf0 −π
+        u.exi0 = 5                                  ---SET_INT exI0 5
+    end)
+    local head = #s + 1
+    add(0, function(u) E.spawn_inherit(u, 16, 600, -2) end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)   ---FLOAT_ADD lf0 24°
+    add(0, function(u) E.spawn_inherit(u, 18, 600, -2) end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)
+    add(0, function(u) E.spawn_inherit(u, 20, 600, -2) end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)
+    add(0, function(u)                              ---JUMP_DEC 0 −168 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = head } end
+    end)
+    add(60, function(u) E.set_dir_speed(u, -0.39269909, 0) end)   ---SET_DIR_AND_SPEED +π/8 0
+    add(60, function(u) u.lf0 = -1.5707964 end)                   ---SET_FLOAT lf0 +π/2
+    add(60, function(u) u.lf1 = -0.052359879 end)                 ---SET_FLOAT lf1 +3°
+    add(160, function(u) E.set_dir_speed(u, 2.3561945, 0.6) end)  ---SET_DIR_AND_SPEED −3π/4 0.6
+    add(5160, function() return "die" end)
+    SUB[15] = s
+end
+
+---Sub22（左右大妖精 life 500，共 3 波）：与 Sub15 同构，但每轮三档的 lf1 符号**交替**
+---（Sub15 三档同向）、公转半径 1.5/2/3（Sub15 全是 3）、t=260 再飞一段。
+---  原作 posX ≥ 192 的三档分别是 −0.0157 / +0.0196 / −0.0262 ⇒ 我们取反 ⇒ + / − / +。
+local SUB22
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.reduction(u, 60)
+        E.disable_if(u, 2)
+        E.drop_counts(u, 14, 6)
+        E.move_in_dir(u, 60, 4, -0.39269909, 3)      ---MOVE_IN_DIR 60 4 +π/8 3
+        u.lf0 = PI                                  ---SET_FLOAT lf0 −π
+        u.exi0 = 5
+    end)
+    local head = #s + 1
+    add(0, function(u)
+        u.lf1 = (u.lx >= 0) and 0.015707964 or -0.015707964
+        E.spawn_inherit(u, 23, 600, -2)
+    end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)
+    add(0, function(u)
+        u.lf1 = (u.lx >= 0) and -0.019634955 or 0.019634955
+        E.spawn_inherit(u, 25, 600, -2)
+    end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)
+    add(0, function(u)
+        u.lf1 = (u.lx >= 0) and 0.02617994 or -0.02617994
+        E.spawn_inherit(u, 27, 600, -2)
+    end)
+    add(0, function(u) u.lf0 = u.lf0 - 0.41887903 end)
+    add(0, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = head } end
+    end)
+    add(60, function(u) E.set_dir_speed(u, -0.39269909, 0) end)
+    add(60, function(u) u.lf0 = -1.5707964 end)
+    add(60, function(u) u.lf1 = -0.052359879 end)
+    add(160, function(u) E.set_dir_speed(u, 2.3561945, 0.6) end)
+    add(260, function(u) E.set_dir_speed(u, 2.3561945, 2) end)
+    add(5260, function() return "die" end)
+    SUB[22] = s
+end
+
+---使魔骨架（Sub16/18/20/23/25/27）：圆心 = 本体出生点、起始角 lf0、角速度 lf1、
+---20 帧内半径长到 radius 后冻住（`SET_ORBIT_VELOCITIES 6000 lf1 0`），t=20 挂枪。
+---  ★ `ENABLE_INTERACTION_FLAGS 3` 在 op92 结尾被 `child->flags1 &= ~ENEMY_FLAG_COLLISION`
+---    清掉（引擎注释差异 8）⇒ 不写 E.contact；`DISABLE_INTERACTION_FLAGS 16` 是
+---    ALLOW_OFFSCREEN ⇒ 写 E.allow_off。
+local function make_ex_familiar(gun, radius)
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.allow_off(u)                              ---DISABLE_INTERACTION_FLAGS 16
+        E.orbit_current(u, 20, u.lf0, u.lf1, radius)---ORBIT_AROUND_CURRENT 20 lf0 lf1 r
+    end)
+    add(20, function(u)
+        E.orbit_vel(u, 6000, u.lf1, 0)              ---SET_ORBIT_VELOCITIES 6000 lf1 0
+        E.child(u, gun)                             ---SET_CHILD_ECL 0 gun
+    end)
+    add(5020, function() return "die" end)
+    return s
+end
+SUB[16] = make_ex_familiar(17, 3)
+SUB[18] = make_ex_familiar(19, 3)
+SUB[20] = make_ex_familiar(21, 3)
+SUB[23] = make_ex_familiar(24, 1.5)
+SUB[25] = make_ex_familiar(26, 2)
+SUB[27] = make_ex_familiar(28, 3)
+
+---使魔的枪骨架（Sub19/21/24/26/28）：先把 lf0 摆到「公转角 − 90°」（原作 +π/2 ⇒ 取反），
+---然后每 li0 帧沿**本机移动方向**打一发，方向固定（lf0 只在回环时重算）。
+local function make_ex_gun(li0, shot)
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.li0 = li0 end)             ---SET_INT li0
+    local head = #s + 1
+    add(0, function(u)                              ---FLOAT_ADD2 lf0 orbitAngle π/2
+        u.lf0 = E.norm(u.oa - 1.5707964)
+    end)
+    add(0, shot)
+    add(0, function(u, c) c.stall = u.li0 end)      ---SET_SECONDARY_TIME li0
+    add(0, function() return { t = 0, pc = head } end)  ---JUMP 0 −84
+    return s
+end
+GUN[19] = make_ex_gun(14, function(u)               ---Sub19（Sub18 的枪）：FAN 2×3
+    E.shoot(u, { op = 97, type = 1, color = 6, count1 = 2, count2 = 3,
+                 speed1 = 2.6, speed2 = 1.2, angle = u.ma, step = -0.39269909,
+                 flags = 0x200 })
+end)
+GUN[21] = make_ex_gun(13, function(u)               ---Sub21（Sub20 的枪）：CIRCLE 2×1
+    E.shoot(u, { op = 99, type = 1, color = 2, count1 = 2, count2 = 1,
+                 speed1 = 0.8, speed2 = 1.2, angle = u.ma, step = -0.19634955,
+                 flags = 0x200 })
+end)
+GUN[24] = make_ex_gun(8, function(u)                ---Sub24（Sub23 的枪）：CIRCLE 2×1
+    E.shoot(u, { op = 99, type = 2, color = 2, count1 = 2, count2 = 1,
+                 speed1 = 1, speed2 = 0.8, angle = u.lf0, step = -0.098174773,
+                 flags = 0x200 })
+end)
+GUN[26] = make_ex_gun(5, function(u)                ---Sub26（Sub25 的枪）
+    E.shoot(u, { op = 99, type = 2, color = 4, count1 = 2, count2 = 1,
+                 speed1 = 1.3, speed2 = 0.8, angle = u.lf0, step = -0.098174773,
+                 flags = 0x200 })
+end)
+GUN[28] = make_ex_gun(4, function(u)                ---Sub28（Sub27 的枪）
+    E.shoot(u, { op = 99, type = 2, color = 6, count1 = 2, count2 = 1,
+                 speed1 = 1.6, speed2 = 0.8, angle = u.lf0, step = -0.098174773,
+                 flags = 0x200 })
+end)
+
+---Sub17（Sub16 的枪）：记录槽 0 = 50 帧后整体转向（相对角 −90°）并把速度换成 2.2；
+---每 6 帧一发：方向 = 本机移动方向 + π（朝外）、速度 1.4→0.8、弹种 2 / 色 2。
+local SUB17
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.record(u, 0, K.REL, 0, 50, 1, -1.570796, 2.2)   ---SET_BULLET_TRANSFORM 0 64 …
+        u.li0 = 6 end)                                    ---SET_INT li0 6
+    local head = #s + 1
+    add(60, function(u) u.lf0 = E.norm(u.ma + PI) end)    ---FLOAT_SUB2 lf0 moveAngle π
+    add(60, function(u)
+        E.shoot(u, { op = 99, type = 2, color = 2, count1 = 1, count2 = 1,
+                     speed1 = 1.4, speed2 = 0.8, angle = u.lf0, step = -0.098174773,
+                     flags = 0x240 })
+    end)
+    add(60, function(u, c) c.stall = u.li0 end)           ---SET_SECONDARY_TIME li0
+    add(60, function() return { t = 60, pc = head } end)  ---JUMP 60 −84
+    GUN[17] = s
+end
+
+---Sub45（清场）：原作 t=4895 的收尾 —— `REMOVE_ALL_BULLETS` + `KILL_ALL_NON_BOSS`。
+local SUB45
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        E.wipe()                                    ---REMOVE_ALL_BULLETS（差异 3）
+        E.kill_all()                                ---KILL_ALL_NON_BOSS
+        return "die"
+    end)
+    SUB[45] = s
+end
+
+---=========================================================================
+---时间轴（原作时间轴 0/1 联合模拟，t=400..4895 → 本地 0..4495，共 177 条）。
+---  每行 = { 本地帧, 子程序号, x_我们, y_我们, 血, mirror, 掉落类型 }。
+---=========================================================================
+local TIMELINE = {
+    { 0, 2, -160, -240, 10, 0, 0 },
+    { 0, 2, 160, -240, 10, 1, 1 },
+    { 10, 2, -160, -240, 10, 0, 0 },
+    { 10, 2, 160, -240, 10, 1, 1 },
+    { 20, 2, -160, -240, 10, 0, 0 },
+    { 20, 2, 160, -240, 10, 1, 1 },
+    { 30, 2, -160, -240, 10, 0, 0 },
+    { 30, 2, 160, -240, 10, 1, 1 },
+    { 40, 2, -160, -240, 10, 0, 0 },
+    { 40, 2, 160, -240, 10, 1, 1 },
+    { 50, 2, -160, -240, 10, 0, 0 },
+    { 50, 2, 160, -240, 10, 1, 1 },
+    { 170, 2, -160, -240, 10, 0, 1 },
+    { 170, 2, 160, -240, 10, 1, 0 },
+    { 180, 2, -160, -240, 10, 0, 1 },
+    { 180, 2, 160, -240, 10, 1, 0 },
+    { 190, 2, -160, -240, 10, 0, 1 },
+    { 190, 2, 160, -240, 10, 1, 0 },
+    { 200, 2, -160, -240, 10, 0, 1 },
+    { 200, 2, 160, -240, 10, 1, 0 },
+    { 210, 2, -160, -240, 10, 0, 1 },
+    { 210, 2, 160, -240, 10, 1, 0 },
+    { 220, 2, -160, -240, 10, 0, 1 },
+    { 220, 2, 160, -240, 10, 1, 0 },
+    { 340, 2, -160, -240, 10, 0, 0 },
+    { 340, 2, 160, -240, 10, 1, 1 },
+    { 350, 2, -160, -240, 10, 0, 0 },
+    { 350, 2, 160, -240, 10, 1, 1 },
+    { 360, 2, -160, -240, 10, 0, 0 },
+    { 360, 2, 160, -240, 10, 1, 1 },
+    { 370, 2, -160, -240, 10, 0, 2 },
+    { 370, 2, 160, -240, 10, 1, 2 },
+    { 380, 2, -160, -240, 10, 0, 2 },
+    { 380, 2, 160, -240, 10, 1, 2 },
+    { 390, 2, -160, -240, 10, 0, 2 },
+    { 390, 2, 160, -240, 10, 1, 2 },
+    { 670, 10, -64, 240, 500, 0, 2 },
+    { 670, 11, 64, 240, 500, 1, 2 },
+    { 870, 15, -224, 168, 800, 0, 2 },
+    { 1070, 15, 224, 168, 800, 1, 2 },
+    { 1270, 15, -232, 184, 800, 0, 2 },
+    { 1470, 15, 232, 184, 700, 1, 2 },
+    { 1590, 4, -160, -240, 10, 0, 1 },
+    { 1590, 4, 160, -240, 10, 1, 1 },
+    { 1600, 4, -160, -240, 10, 0, 1 },
+    { 1600, 4, 160, -240, 10, 1, 1 },
+    { 1610, 4, -160, -240, 10, 0, 1 },
+    { 1610, 4, 160, -240, 10, 1, 1 },
+    { 1620, 4, -160, -240, 10, 0, 1 },
+    { 1620, 4, 160, -240, 10, 1, 1 },
+    { 1630, 4, -160, -240, 10, 0, 1 },
+    { 1630, 4, 160, -240, 10, 1, 1 },
+    { 1640, 4, -160, -240, 10, 0, 1 },
+    { 1640, 4, 160, -240, 10, 1, 1 },
+    { 1740, 4, -160, -240, 10, 0, 0 },
+    { 1740, 4, 160, -240, 10, 1, 0 },
+    { 1750, 4, -160, -240, 10, 0, 0 },
+    { 1750, 4, 160, -240, 10, 1, 0 },
+    { 1760, 4, -160, -240, 10, 0, 0 },
+    { 1760, 4, 160, -240, 10, 1, 0 },
+    { 1770, 4, -160, -240, 10, 0, 0 },
+    { 1770, 4, 160, -240, 10, 1, 0 },
+    { 1780, 4, -160, -240, 10, 0, 0 },
+    { 1780, 4, 160, -240, 10, 1, 0 },
+    { 1790, 4, -160, -240, 10, 0, 0 },
+    { 1790, 4, 160, -240, 10, 1, 0 },
+    { 1880, 4, -160, -240, 10, 0, 1 },
+    { 1880, 4, 160, -240, 10, 1, 1 },
+    { 1890, 4, -160, -240, 10, 0, 1 },
+    { 1890, 4, 160, -240, 10, 1, 1 },
+    { 1900, 4, -160, -240, 10, 0, 1 },
+    { 1900, 4, 160, -240, 10, 1, 1 },
+    { 1910, 4, -160, -240, 10, 0, 1 },
+    { 1910, 4, 160, -240, 10, 1, 2 },
+    { 1920, 4, -160, -240, 10, 0, 1 },
+    { 1920, 4, 160, -240, 10, 1, 2 },
+    { 1930, 4, -160, -240, 10, 0, 1 },
+    { 1930, 4, 160, -240, 10, 1, 2 },
+    { 2160, 10, -128, 240, 300, 0, 2 },
+    { 2160, 10, 0, 240, 300, 0, 2 },
+    { 2160, 10, 128, 240, 300, 0, 2 },
+    { 2260, 11, -64, 240, 300, 0, 2 },
+    { 2260, 11, 64, 240, 300, 0, 2 },
+    { 2560, 6, -160, -240, 10, 0, 0 },
+    { 2560, 6, 160, -240, 10, 1, 1 },
+    { 2570, 6, -160, -240, 10, 0, 0 },
+    { 2570, 6, 160, -240, 10, 1, 1 },
+    { 2580, 6, -160, -240, 10, 0, 0 },
+    { 2580, 6, 160, -240, 10, 1, 0 },
+    { 2590, 6, -160, -240, 10, 0, 1 },
+    { 2590, 6, 160, -240, 10, 1, 0 },
+    { 2600, 6, -160, -240, 10, 0, 1 },
+    { 2600, 6, 160, -240, 10, 1, 0 },
+    { 2610, 6, -160, -240, 10, 0, 1 },
+    { 2610, 6, 160, -240, 10, 1, 1 },
+    { 2620, 6, -160, -240, 10, 0, 0 },
+    { 2620, 6, 160, -240, 10, 1, 1 },
+    { 2630, 6, -160, -240, 10, 0, 0 },
+    { 2630, 6, 160, -240, 10, 1, 0 },
+    { 2640, 6, -160, -240, 10, 0, 1 },
+    { 2640, 6, 160, -240, 10, 1, 0 },
+    { 2650, 6, -160, -240, 10, 0, 1 },
+    { 2650, 6, 160, -240, 10, 1, 1 },
+    { 2660, 6, -160, -240, 10, 0, 1 },
+    { 2660, 6, 160, -240, 10, 1, 1 },
+    { 2860, 6, -160, -240, 10, 0, 0 },
+    { 2860, 6, 160, -240, 10, 1, 1 },
+    { 2870, 6, -160, -240, 10, 0, 0 },
+    { 2870, 6, 160, -240, 10, 1, 1 },
+    { 2880, 6, -160, -240, 10, 0, 0 },
+    { 2880, 6, 160, -240, 10, 1, 0 },
+    { 2890, 6, -160, -240, 10, 0, 1 },
+    { 2890, 6, 160, -240, 10, 1, 0 },
+    { 2900, 6, -160, -240, 10, 0, 1 },
+    { 2900, 6, 160, -240, 10, 1, 0 },
+    { 2910, 6, -160, -240, 10, 0, 1 },
+    { 2910, 6, 160, -240, 10, 1, 1 },
+    { 2920, 6, -160, -240, 10, 0, 0 },
+    { 2920, 6, 160, -240, 10, 1, 1 },
+    { 2930, 6, -160, -240, 10, 0, 0 },
+    { 2930, 6, 160, -240, 10, 1, 0 },
+    { 2940, 6, -160, -240, 10, 0, 1 },
+    { 2940, 6, 160, -240, 10, 1, 0 },
+    { 2950, 6, -160, -240, 10, 0, 1 },
+    { 2950, 6, 160, -240, 10, 1, 1 },
+    { 2960, 6, -160, -240, 10, 0, 1 },
+    { 2960, 6, 160, -240, 10, 1, 1 },
+    { 3290, 10, -128, 240, 300, 0, 2 },
+    { 3290, 10, 0, 240, 300, 0, 2 },
+    { 3290, 10, 128, 240, 300, 0, 2 },
+    { 3290, 11, -64, 240, 300, 0, 2 },
+    { 3290, 11, 64, 240, 300, 0, 2 },
+    { 3590, 0, -160, 256, 10, 0, 0 },
+    { 3590, 0, 160, 256, 10, 1, 1 },
+    { 3600, 0, -160, 256, 10, 0, 0 },
+    { 3600, 0, 160, 256, 10, 1, 1 },
+    { 3610, 0, -160, 256, 10, 0, 0 },
+    { 3610, 0, 160, 256, 10, 1, 1 },
+    { 3620, 0, -160, 256, 10, 0, 0 },
+    { 3620, 0, 160, 256, 10, 1, 1 },
+    { 3630, 0, -160, 256, 10, 0, 0 },
+    { 3630, 0, 160, 256, 10, 1, 1 },
+    { 3640, 0, -160, 256, 10, 0, 0 },
+    { 3640, 0, 160, 256, 10, 1, 1 },
+    { 3760, 0, -160, 256, 10, 0, 1 },
+    { 3760, 0, 160, 256, 10, 1, 0 },
+    { 3770, 0, -160, 256, 10, 0, 1 },
+    { 3770, 0, 160, 256, 10, 1, 0 },
+    { 3780, 0, -160, 256, 10, 0, 1 },
+    { 3780, 0, 160, 256, 10, 1, 0 },
+    { 3790, 0, -160, 256, 10, 0, 1 },
+    { 3790, 0, 160, 256, 10, 1, 0 },
+    { 3800, 0, -160, 256, 10, 0, 1 },
+    { 3800, 0, 160, 256, 10, 1, 0 },
+    { 3810, 0, -160, 256, 10, 0, 1 },
+    { 3810, 0, 160, 256, 10, 1, 0 },
+    { 3930, 0, -160, 256, 10, 0, 0 },
+    { 3930, 0, 160, 256, 10, 1, 1 },
+    { 3940, 0, -160, 256, 10, 0, 0 },
+    { 3940, 0, 160, 256, 10, 1, 1 },
+    { 3950, 0, -160, 256, 10, 0, 0 },
+    { 3950, 0, 160, 256, 10, 1, 1 },
+    { 3960, 0, -160, 256, 10, 0, 2 },
+    { 3960, 0, 160, 256, 10, 1, 2 },
+    { 3970, 0, -160, 256, 10, 0, 2 },
+    { 3970, 0, 160, 256, 10, 1, 2 },
+    { 3980, 0, -160, 256, 10, 0, 2 },
+    { 3980, 0, 160, 256, 10, 1, 2 },
+    { 4260, 10, -160, 288, 300, 0, 1 },
+    { 4260, 10, -64, 288, 300, 0, 1 },
+    { 4260, 10, 32, 288, 300, 0, 1 },
+    { 4260, 10, 128, 288, 300, 0, 1 },
+    { 4260, 11, -112, 288, 300, 0, 2 },
+    { 4260, 11, -16, 288, 300, 0, 2 },
+    { 4260, 11, 80, 288, 300, 0, 2 },
+    { 4260, 11, 176, 288, 300, 0, 2 },
+    { 4495, 45, 208, 288, 300, 0, -2 },
+}
+
+return {
+    SUB = SUB,
+    GUN = GUN,
+    TIMELINE = TIMELINE,
+    TL_START = 0,
+    HITBOX_HALF = { [0] = 24, [2] = 24, [4] = 24, [6] = 24, [8] = 24,
+                    [10] = 12, [11] = 12, [12] = 12, [14] = 12,
+                    [15] = 24, [16] = 12, [18] = 12, [20] = 12,
+                    [22] = 24, [23] = 12, [25] = 12, [27] = 12, [45] = 12 },
+    INVULN = { [10] = 20, [11] = 20, [12] = 30, [15] = 60, [22] = 60 },
+    DROP_COUNTS = { [10] = { 0, 4, 8 }, [15] = { 0, 6, 14 }, [22] = { 0, 6, 14 } },
+}
+end
+CARD[3438] = make_card(build_exmid)
 end
 
 local function placeholder_del() end
@@ -54631,6 +55426,11 @@ local LIST = {
     ---    八非→201→202→203→204
     ---  （非符第 2 项 = ""、第 1 项 = 它的**阶段子程序号**（66/68/70/72/74/76/78/80），
     ---    也就是 th31.lua 上面 CARD 的 key；非符的整套推导见那张卡的注释。）
+    ---★ EX 道中（永夜抄 Stage EX「永夜の竹林」）：原作 ecldata8.ecl 时间轴 0/1 的
+    ---  t=400..4895（慧音登场前的那一段），搬进一张耐久卡；见上面 build_exmid。
+    ---  75 秒 = (4895 − 400)/60 向上取整；挂组 3（上白泽慧音）⇒ 慧音在 EX 的
+    ---  符卡 191..193 之前先跑这张道中。
+    { 3438, "EX道中「永夜の竹林」", 3438, 75, 3, nil, "EX道中「永夜の竹林」", 3438 },
     { 191, "旧史「旧秘境史 -旧日秘史-」",         370, 60, 3, 1900 },
     { 192, "转世「一条归桥」",                   371, 60, 3, 1900 },
     { 193, "新史「新幻想史 -未来秘史-」",         372, 60, 3, 1900 },
