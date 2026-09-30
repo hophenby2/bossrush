@@ -46335,16 +46335,17 @@ end
 ---   Sub14 烟尘：纯观感（`SPAWN_EFFECT` 51/16）⇒ 差异 2，跳过。
 ---
 ---与原作的不同（代码里按「差异 N」引用）：
----  1  敌人**不给判定 / 血量**（跟本文件 alice_doll、lw210_tree 的占位口径一致）：
----     原作这些道中小怪能被打掉、掉道具；移植版不给 —— 这一段移植的重点是
----     弹幕与走位，先不背死亡/道具/子机连坐那一套。
+---  1  判定 / 血量 / 交互 / 掉落**照原作**：敌人是 `Class(enemy, …)`
+---     （enemybase.init 给 maxhp / hp / colli / group）——hitbox 取 SET_HITBOX 的一半、
+---     life 取时间轴那一栏、中妖精带 SET_DAMAGE_REDUCTION_TIMER 的出生免伤、
+---     击破按时间轴的 itemDropType 掉道具。
 ---  2  烟尘（Sub14）不实现（纯观感）。
 ---  3  贴图是**占位**：所有敌人一律 `servant`，出弹走 EX 的 ball_small / ball_mid
 ---     （跟 Last Word 那 17 张同口径，全部实现完再统一换）。
 ---  4  原作时间轴的每条 spawn 都带 `!g_Gui.IsBossPresent()`；这张卡本身挂在 boss
 ---     上，所以照 th34 的先例**无条件照刷**（否则一条都刷不出来）。
----  5  `SET_DAMAGE_REDUCTION_TIMER` / `SET_FORM_EFFECT_ENABLED` / 各种 Anm 指令
----     只影响演出，移植版忽略。
+---  5  `SET_FORM_EFFECT_ENABLED` / 各种 Anm 指令只影响演出，移植版忽略
+---     （`SET_DAMAGE_REDUCTION_TIMER` 已按差异 1 实现）。
 ---
 ---  ★ 坐标：TH08 → 我们 = x−192、224−y、角度取反（见文件头）。下面时间轴表里
 ---    的 x / y 已经是**我们的坐标**；子程序里的角度常量全部取了反。
@@ -46415,6 +46416,46 @@ local unit            ---前置声明：SUBS 里的闭包要引用（真正的�
 local units           ---本卡活着的单位（card_init 里建表）
 
 ---------------------------------------------------------------------
+---判定 / 免伤 / 交互 / 掉落（跟「四面道中」卡同一套口径）
+---------------------------------------------------------------------
+---SET_HITBOX 的**全宽高**（原作 hitboxDimensions）⇒ 我们的 A/B = 一半；
+---这张卡的每一只都是 24×24。
+local HITBOX_HALF = {
+    [0] = 12, [1] = 12, [2] = 12, [3] = 12, [4] = 12, [5] = 12,
+    [10] = 12, [11] = 12, [12] = 12, [13] = 12,
+}
+---SET_DAMAGE_REDUCTION_TIMER：中妖精（Sub1/3/5/11）出生 30 帧内完全免伤
+---（EnemyManagerUpdate.cpp:391-398：非 BOSS 的 damage 一律清零）。
+local INVULN = {
+    [1] = 30, [3] = 30, [5] = 30, [11] = 30,
+}
+---交互标志（EclManager.hpp:508-514）：
+---  · 妖精 Sub0/1/3/5/11 都 `DISABLE_INTERACTION_FLAGS 2`（清掉 COLLISION 位）
+---    ⇒ 能被打、**撞自机不掉血** ⇒ GROUP.NONTJT；
+---  · Sub13 一条 flags 指令都没有 ⇒ 保留 spawnTemplate 的默认值
+---    （EnemyManager.cpp:169-172：COLLISION|DAMAGEABLE|ACCEPTS_DAMAGE 全开）
+---    ⇒ **撞自机会掉血** ⇒ GROUP.ENEMY；
+---  · 蝶 Sub2/4/10/12 是 `SET_INTERACTION_FLAGS 16`（只留 ALLOW_OFFSCREEN）
+---    ⇒ 打不到、撞不到 ⇒ GROUP.INDES（同时把 colli 关掉，见 unit.init）。
+local GROUP_OF = {
+    [0] = "nontjt", [1] = "nontjt", [3] = "nontjt", [5] = "nontjt",
+    [11] = "nontjt", [13] = "enemy",
+    [2] = "indes", [4] = "indes", [10] = "indes", [12] = "indes",
+}
+---SPAWN_FAM_INHERIT_POS 操作数里的 life（原作 sub=2/4 是 50、sub=10/12 是 100）。
+local FAM_HP = {
+    [2] = 50, [4] = 50, [10] = 100, [12] = 100,
+}
+---原作 itemDropType（ItemManager.hpp:9-19）：0 小能量 / 1 点 / 2 大能量 / 3 炸弹 /
+---−2 不掉。本仓库只有 faith / point 两种道具。
+local DROP_TBL = {
+    [0] = { 0, 1, 0 },
+    [1] = { 0, 0, 1 },
+    [2] = { 0, 2, 0 },
+    [3] = { 0, 2, 0 },
+}
+
+---------------------------------------------------------------------
 ---移动（Enemy::UpdateMovement，EnemyManager.cpp:30-118 的三个分支）。
 ---所有量都在**我们坐标**里；`mirror` 的 x 取反放在整合那一步（跟原作一致）。
 ---------------------------------------------------------------------
@@ -46435,7 +46476,7 @@ end
 local function u_move_to(u, dur, easing, tx, ty)
     u.dx = tx - u.wx
     u.dy = ty - u.wy
-    u.ox, u.oy = u.x, u.y
+    u.ox, u.oy = u.lx, u.ly
     u.mv_dur, u.mv_timer = dur, dur
     u.mv_ease = easing
     u.mv = "interp"
@@ -46463,7 +46504,7 @@ end
 ---ORBIT_AROUND_CURRENT_POSITION（EclRunLow.inl:598-615）：圆心 = 当前 position、半径从 0 起。
 local function u_orbit_current(u, dur, angle, angvel, radvel)
     u.mv_dur, u.mv_timer = dur, dur
-    u.oox, u.ooy = u.x, u.y
+    u.oox, u.ooy = u.lx, u.ly
     u.oa = angle
     u.oav = angvel
     u.orad = 0
@@ -46502,20 +46543,20 @@ local function u_move_update(u)
         local p = 1 - u.mv_timer / u.mv_dur
         if p < 0 then p = 0 end
         p = ease(u.mv_ease, p)
-        u.vex = u.ox + u.dx * p - u.x
-        u.vey = u.oy + u.dy * p - u.y
+        u.vex = u.ox + u.dx * p - u.lx
+        u.vey = u.oy + u.dy * p - u.ly
         if u.mirror then u.vex = -u.vex end
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_timer <= 0 then
             u.mv = "none"
-            u.x, u.y = u.ox + u.dx, u.oy + u.dy
+            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
             u.vex, u.vey = 0, 0
         end
     elseif m == "orbit" then
         u.oa = add_norm(u.oa + EX.fm * u.oav)
         u.orad = EX.fm * u.oradv + u.orad
-        u.vex = math.cos(u.oa) * u.orad + u.oox - u.x
-        u.vey = math.sin(u.oa) * u.orad + u.ooy - u.y
+        u.vex = math.cos(u.oa) * u.orad + u.oox - u.lx
+        u.vey = math.sin(u.oa) * u.orad + u.ooy - u.ly
         u.ma = math.atan2(u.vey, u.vex)
         if u.mv_dur > 0 then
             u.mv_timer = u.mv_timer - 1
@@ -46587,12 +46628,15 @@ local function aim_at(u)
 end
 
 ---SPAWN_FAM_INHERIT_POS（EclRunLow.inl:879-905 + EclDependencies.cpp:591-620）：
----子敌人局部位置 = (0,0)、positionOffset = 父的 position、positionOffset 每帧跟着父刷新；
----变量表整块拷给子（所以 lf0 就是父当时那一个）。
+---子敌人局部位置 = (0,0)、positionOffset = 父的 **worldPosition**、之后每帧跟着父刷新；
+---变量表整块拷给子（所以 lf0 就是父当时那一个）。life / itemDropType 走操作数。
 local function spawn_fam(parent, sub, lf0)
-    local f = New(unit, sub, 0, 0, false, parent, lf0)
-    f.px, f.py = parent.x, parent.y
-    f.wx, f.wy = f.x + f.px, f.y + f.py
+    local f = New(unit, sub, 0, 0, false, parent, lf0, FAM_HP[sub] or 1, -2)
+    if f ~= nil then
+        f.px, f.py = parent.wx, parent.wy
+        f.wx, f.wy = f.lx + f.px, f.ly + f.py
+        f.x, f.y = f.wx, f.wy
+    end
 end
 
 ---Sub6/7/8/9 的枪（SHOOT_CIRCLE_AIMED，op98）。
@@ -46629,11 +46673,11 @@ local GUN = { [6] = SUB6, [7] = SUB7, [8] = SUB8, [9] = SUB9 }
 local SUB0 = {
     { 0, function(u, c)
         ---#0..#11：MOVE_TO(100, OUT_QUAD, 出生点 + 0.6·(自机 − 出生点))。
-        local tx = u.x + 0.6 * (player.x - u.x)
-        local ty = u.y + 0.6 * (player.y - u.y)
+        local tx = u.lx + 0.6 * (player.x - u.lx)
+        local ty = u.ly + 0.6 * (player.y - u.ly)
         u_move_to(u, 100, 4, tx, ty)
         u.st.loop = 90                 -- exI0
-        u.st.sx, u.st.sy = u.x, u.y    -- lf2 / lf3 = 出生瞬间的 posX / posY
+        u.st.sx, u.st.sy = u.lx, u.ly  -- lf2 / lf3 = 出生瞬间的 posX / posY
     end },
     { 0, function(u)
         ---#12..#21：把插值 delta 朝「现在自机在 60% 处」拉 0.2%（gain = 0.002）。
@@ -46803,31 +46847,45 @@ local function u_shot_tick(u)
 end
 
 local function u_step(u)
-    ---① 主 context。
+    ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤
+    ---   （enemy:take_damage 见 protect 就整段跳过，THlib/enemy/enemy.lua:221-227）。
+    if u.invuln > 0 then
+        u.invuln = u.invuln - 1
+        u.protect = true
+    elseif u.protect then
+        u.protect = false
+    end
+    ---② 主 context。
     run_ctx(u.insns, u, u.ctx)
     if not u.alive then return end
-    ---② 子 context（蝶的枪）。
+    ---③ 子 context（蝶的枪）。
     if u.gun then
         run_ctx(GUN[u.gun], u, u.gctx)
         if not u.alive then return end
     end
-    ---③ UpdateMovement。
+    ---④ UpdateMovement。
     u_move_update(u)
-    ---④ UpdateShotAndAnm：延迟出弹每 si_frames 帧重放一次记下的那条。
+    ---⑤ UpdateShotAndAnm：延迟出弹每 si_frames 帧重放一次记下的那条。
     u_shot_tick(u)
-    ---⑤ ClampPosition（这张卡没有任何 SET_MOVEMENT_BOUNDS）→ IntegrateVelocity。
+    ---⑥ ClampPosition（这张卡没有任何 SET_MOVEMENT_BOUNDS）→ IntegrateVelocity。
+    ---   mirror 只翻 x（EnemyManager.cpp:940-943）。
     if u.mirror then
-        u.x = u.x - EX.fm * u.vex
+        u.lx = u.lx - EX.fm * u.vex
     else
-        u.x = u.x + EX.fm * u.vex
+        u.lx = u.lx + EX.fm * u.vex
     end
-    u.y = u.y + EX.fm * u.vey
-    ---⑥ 世界坐标 = position + positionOffset（使魔的 offset 每帧跟着父刷新）。
-    if u.parent and u.parent.alive ~= false then
-        u.px, u.py = u.parent.x, u.parent.y
+    u.ly = u.ly + EX.fm * u.vey
+    ---⑦ 世界坐标 = position + positionOffset（使魔的 offset 每帧跟着父刷新）。
+    if u.parent and IsValid(u.parent) and u.parent.alive ~= false then
+        u.px, u.py = u.parent.wx, u.parent.wy
     end
-    u.wx, u.wy = u.x + u.px, u.y + u.py
-    ---⑦ 出屏回收（EnemyManagerUpdate.cpp:223-260）：先记「进过场」，
+    u.wx, u.wy = u.lx + u.px, u.ly + u.py
+    u.x, u.y = u.wx, u.wy
+    ---⑧ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
+    ---   （→ 触发上面的 kill 掉道具）。
+    enemybase.frame(u)
+    if u.hp <= 0 then u.alive = false return end
+    ---⑨ 出屏回收（EnemyManagerUpdate.cpp:223-260）：先记「进过场」，
     ---   之后出屏就收（ALLOW_OFFSCREEN 的除外）。
     if not u.seen then
         if in_field(u.wx, u.wy) then u.seen = true end
@@ -46836,15 +46894,40 @@ local function u_step(u)
     end
 end
 
-unit = Class(object, {
-    init = function(self, sub, x, y, mirror, parent, lf0)
-        self.x, self.y = x, y
-        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
-        self.img = "servant"                    ---占位（差异 3）
+unit = Class(enemy, {
+    ---@param sub number     敌机子程序号
+    ---@param x number       局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
+    ---@param y number       同上
+    ---@param mirror boolean SPAWN_ENEMY_MIRRORED
+    ---@param parent table   使魔的父机（可为 nil）
+    ---@param lf0 number     局部浮点变量 lf0（使魔 = 起始轨道角）
+    ---@param hp number      原作时间轴 / SPAWN_FAM 给的 life
+    ---@param drop number    原作时间轴的 itemDropType
+    init = function(self, sub, x, y, mirror, parent, lf0, hp, drop)
+        self.lx, self.ly = x, y
+        self.px, self.py = 0, 0
+        ---enemybase.init 会设 group / layer / maxhp / hp / colli / bound + 一堆计数字段。
+        ---nontaijutsu = true ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）。
+        local kind = GROUP_OF[sub]
+        enemybase.init(self, hp or 1, kind ~= "enemy")
+        if kind == "indes" then
+            self.group = GROUP.INDES            ---蝶：打不到、撞不到（ACCEPTS_DAMAGE 0）
+        end
+        self.img = "servant"                    ---占位（差异 3）—— 必须在 A/B 之前设
         self.hscale, self.vscale = 0.6, 0.6
-        self.colli, self.navi, self.bound = false, false, false
+        self.colli = kind ~= "indes"
+        self.navi, self.bound = false, false
         self.rot = 0
         self._blend, self._a = "", 255
+        ---判定：SET_HITBOX 的全宽高的**一半**（本卡的敌人一律 24×24）。
+        local half = HITBOX_HALF[sub] or 12
+        self.A, self.B = half, half
+        ---SET_DAMAGE_REDUCTION_TIMER。
+        self.invuln = INVULN[sub] or 0
+        self.protect = self.invuln > 0
+        self.astral_dmg_factor = 1
+        ---itemDropType（蝶是 −2 ⇒ DROP_TBL 里没有 ⇒ 不掉道具）。
+        self.drop_tbl = DROP_TBL[drop]
         self.sub = sub
         self.mirror = mirror and true or false
         self.parent = parent
@@ -46852,8 +46935,8 @@ unit = Class(object, {
         self.alive = true
         self.seen = false
         self.allow_off = false
-        self.px, self.py = 0, 0
         self.wx, self.wy = x, y
+        self.x, self.y = x, y
         self.st = {}
         ---移动状态。
         self.mv = "none"
@@ -46893,137 +46976,157 @@ unit = Class(object, {
     ---  了这一顺序（并保证同一帧里新撒出的使魔当帧也跑一次）。所以这里留空，
     ---  否则每帧会被推两拍（自检桩件、实机都会）。
     frame = function() end,
+    ---占位贴图走默认渲染（不走 enemy 的行走图系统，我们没有 _wisys）。
+    ---用全局 `DefaultRenderFunc`（同「四面道中」卡：真机与 object.render 等价，
+    ---但自检桩件只提供了前者）。
+    render = function(self)
+        DefaultRenderFunc(self)
+    end,
+    ---击破：掉道具 + 一声击破音。`kill` 由引擎在对象被回收那一下调，
+    ---所以出屏 / 卡结束走的 RawDel 不掉道具（与原作一致）。
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+        PlaySound('enep00', 0.3, self.x / 200, true)
+    end,
 })
 
 ---------------------------------------------------------------------
----时间轴：{ 帧, 子程序号, x, y, life, mirror }（x / y 已经是我们的坐标；
----life 只用来对齐原作，移植版用不到 —— 差异 1）。
----123 条，逐条对过 `ecldata1.ecl` 时间轴 0 的 spawn_enemy。
+---时间轴：{ 帧, 子程序号, x, y, life, mirror, drop }
+---（x / y 已经是我们的坐标；life = 原作时间轴那一栏、drop = itemDropType）。
+---127 条 = `ecldata1.ecl` 时间轴 0 里**Lunatic 会跑**的全部 spawn_enemy
+---（难度闸见 EclRun.cpp:60-85，用 `mask & D == D`，D = 0x28）：
+---  · t=2630 的 sub1 / sub3 是 d=0xf3（Lunatic 不跑）⇒ 删掉；sub5 / sub11 是 d=0xfc ⇒ 留；
+---  · t=2935 / 3035 / 3335 / 3435 / 3735×2 这 6 条中妖精是 d=0xff ⇒ 补上；
+---  · sub15 / 25 / 37（中 BOSS 与 BOSS）属于下一张卡，不在这张卡里。
 ---------------------------------------------------------------------
 local TIMELINE = {
-    {     1, 14,   -162,   240,    20, 0 },
-    {   400,  0,   -162,   240,    20, 0 },
-    {   420,  0,   -132,   240,    20, 0 },
-    {   440,  0,   -102,   240,    20, 0 },
-    {   460,  0,   -152,   240,    20, 0 },
-    {   480,  0,   -122,   240,    20, 0 },
-    {   500,  0,    -92,   240,    20, 0 },
-    {   500,  1,    128,   256,   150, 1 },
-    {   600,  0,   -162,   240,    20, 0 },
-    {   620,  0,   -132,   240,    20, 0 },
-    {   640,  0,   -102,   240,    20, 0 },
-    {   660,  0,   -152,   240,    20, 0 },
-    {   680,  0,   -122,   240,    20, 0 },
-    {   700,  0,    -92,   240,    20, 0 },
-    {   800,  0,    162,   240,    20, 0 },
-    {   810,  0,    132,   240,    20, 0 },
-    {   820,  0,    102,   240,    20, 0 },
-    {   830,  0,    152,   240,    20, 0 },
-    {   840,  0,    122,   240,    20, 0 },
-    {   850,  0,     92,   240,    20, 0 },
-    {   850,  3,      0,   256,   150, 0 },
-    {   860,  0,    162,   240,    20, 0 },
-    {   870,  0,    132,   240,    20, 0 },
-    {   880,  0,    102,   240,    20, 0 },
-    {   890,  0,    152,   240,    20, 0 },
-    {   900,  0,    122,   240,    20, 0 },
-    {   910,  0,     92,   240,    20, 0 },
-    {  1010,  1,    -72,   256,   150, 0 },
-    {  1170,  3,     72,   256,   200, 1 },
-    {  1370,  0,    -92,   256,    20, 0 },
-    {  1380,  0,    -82,   256,    20, 0 },
-    {  1390,  0,    -72,   256,    20, 0 },
-    {  1400,  0,   -162,   256,    20, 0 },
-    {  1410,  0,   -152,   256,    20, 0 },
-    {  1420,  0,   -142,   256,    20, 0 },
-    {  1430,  0,     92,   256,    20, 0 },
-    {  1440,  0,     82,   256,    20, 0 },
-    {  1450,  0,     72,   256,    20, 0 },
-    {  1460,  0,    162,   256,    20, 0 },
-    {  1470,  0,    152,   256,    20, 0 },
-    {  1480,  0,    142,   256,    20, 0 },
-    {  1540,  1,   -112,   240,   300, 0 },
-    {  1540, 11,    112,   240,   400, 1 },
-    {  1940,  5,   -112,   240,   300, 0 },
-    {  1940,  3,    112,   240,   400, 1 },
-    {  2140,  0,    -92,   256,    20, 0 },
-    {  2150,  0,    -82,   256,    20, 0 },
-    {  2160,  0,    -72,   256,    20, 0 },
-    {  2170,  0,   -162,   256,    20, 0 },
-    {  2180,  0,   -152,   256,    20, 0 },
-    {  2190,  0,   -142,   256,    20, 0 },
-    {  2200,  0,    -92,   256,    20, 0 },
-    {  2210,  0,    -82,   256,    20, 0 },
-    {  2220,  0,    -72,   256,    20, 0 },
-    {  2230,  0,   -162,   256,    20, 0 },
-    {  2240,  0,   -152,   256,    20, 0 },
-    {  2250,  0,   -142,   256,    20, 0 },
-    {  2370,  0,     92,   256,    20, 0 },
-    {  2380,  0,     82,   256,    20, 0 },
-    {  2390,  0,     72,   256,    20, 0 },
-    {  2400,  0,    162,   256,    20, 0 },
-    {  2410,  0,    152,   256,    20, 0 },
-    {  2420,  0,    142,   256,    20, 0 },
-    {  2440,  0,    -92,   256,    20, 0 },
-    {  2460,  0,    -82,   256,    20, 0 },
-    {  2480,  0,    -72,   256,    20, 0 },
-    {  2500,  0,   -162,   256,    20, 0 },
-    {  2520,  0,   -152,   256,    20, 0 },
-    {  2540,  0,   -142,   256,    20, 0 },
-    {  2550, 13,   -208,   128,    20, 0 },
-    {  2555, 13,   -208,   192,    20, 0 },
-    {  2560, 13,   -208,   160,    20, 0 },
-    {  2565, 13,   -208,    96,    20, 0 },
-    {  2570, 13,    208,   160,    20, 1 },
-    {  2575, 13,   -208,   144,    20, 0 },
-    {  2580, 13,    208,   192,    20, 1 },
-    {  2585, 13,   -208,    96,    20, 0 },
-    {  2590, 13,    208,   160,    20, 1 },
-    {  2595, 13,    208,   144,    20, 1 },
-    {  2600, 13,    208,   192,    20, 1 },
-    {  2605, 13,    208,    96,    20, 1 },
-    {  2610, 13,   -208,   160,    20, 0 },
-    {  2615, 13,    208,   144,    20, 1 },
-    {  2620, 13,   -208,   192,    20, 0 },
-    {  2625, 13,    208,   144,    20, 1 },
-    {  2630, 13,   -208,   192,    20, 0 },
-    {  2630,  1,   -112,   240,   200, 0 },
-    {  2630,  3,    112,   240,   200, 1 },
-    {  2630,  5,   -112,   240,   200, 0 },
-    {  2630, 11,    112,   240,   200, 1 },
-    {  2635, 13,   -208,    96,    20, 0 },
-    {  2640, 13,   -208,   160,    20, 0 },
-    {  2645, 13,   -208,   144,    20, 0 },
-    {  2650, 13,    208,   192,    20, 1 },
-    {  2655, 13,   -208,    96,    20, 0 },
-    {  2660, 13,    208,   160,    20, 1 },
-    {  2665, 13,   -208,   144,    20, 0 },
-    {  2670, 13,    208,   192,    20, 1 },
-    {  2675, 13,   -208,   160,    20, 0 },
-    {  2680, 13,   -208,   144,    20, 0 },
-    {  2685, 13,    208,   192,    20, 1 },
-    {  2690, 13,   -208,   160,    20, 0 },
-    {  2695, 13,   -208,   144,    20, 0 },
-    {  2700, 13,    208,   192,    20, 1 },
-    {  2705, 13,   -208,   160,    20, 0 },
-    {  2710, 13,   -208,   144,    20, 0 },
-    {  2715, 13,    208,   192,    20, 1 },
-    {  2720, 13,   -208,    44,    20, 0 },
-    {  2725, 13,    208,    92,    20, 1 },
-    {  2730, 13,   -208,    60,    20, 0 },
-    {  2735, 13,   -208,   144,    20, 0 },
-    {  2740, 13,    208,    92,    20, 1 },
-    {  2745, 13,   -208,   160,    20, 0 },
-    {  2750, 13,   -208,    44,    20, 0 },
-    {  2755, 13,    208,   192,    20, 1 },
-    {  2760, 13,   -208,    44,    20, 0 },
-    {  2765, 13,    208,    92,    20, 1 },
-    {  2770, 13,   -208,   160,    20, 0 },
-    {  2775, 13,   -208,    74,    20, 0 },
-    {  2780, 13,    208,   112,    20, 1 },
-    {  2785, 13,   -208,   128,    20, 0 },
-    {  2790, 13,   -208,    64,    20, 0 },
-    {  2795, 13,    208,    96,    20, 1 },
+    {      1, 14,   -162,    240,    20, 0, -2 },
+    {    400,  0,   -162,    240,    20, 0,  0 },
+    {    420,  0,   -132,    240,    20, 0,  0 },
+    {    440,  0,   -102,    240,    20, 0,  0 },
+    {    460,  0,   -152,    240,    20, 0,  0 },
+    {    480,  0,   -122,    240,    20, 0,  1 },
+    {    500,  0,    -92,    240,    20, 0,  1 },
+    {    500,  1,    128,    256,   150, 1, -2 },
+    {    600,  0,   -162,    240,    20, 0,  0 },
+    {    620,  0,   -132,    240,    20, 0,  0 },
+    {    640,  0,   -102,    240,    20, 0,  0 },
+    {    660,  0,   -152,    240,    20, 0,  0 },
+    {    680,  0,   -122,    240,    20, 0,  1 },
+    {    700,  0,    -92,    240,    20, 0,  1 },
+    {    800,  0,    162,    240,    20, 0,  0 },
+    {    810,  0,    132,    240,    20, 0,  0 },
+    {    820,  0,    102,    240,    20, 0,  0 },
+    {    830,  0,    152,    240,    20, 0,  0 },
+    {    840,  0,    122,    240,    20, 0,  0 },
+    {    850,  0,     92,    240,    20, 0,  0 },
+    {    850,  3,      0,    256,   150, 0, -2 },
+    {    860,  0,    162,    240,    20, 0,  0 },
+    {    870,  0,    132,    240,    20, 0,  0 },
+    {    880,  0,    102,    240,    20, 0,  1 },
+    {    890,  0,    152,    240,    20, 0,  1 },
+    {    900,  0,    122,    240,    20, 0,  1 },
+    {    910,  0,     92,    240,    20, 0,  1 },
+    {   1010,  1,    -72,    256,   150, 0,  2 },
+    {   1170,  3,     72,    256,   200, 1,  2 },
+    {   1370,  0,    -92,    256,    20, 0,  0 },
+    {   1380,  0,    -82,    256,    20, 0,  0 },
+    {   1390,  0,    -72,    256,    20, 0,  0 },
+    {   1400,  0,   -162,    256,    20, 0,  0 },
+    {   1410,  0,   -152,    256,    20, 0,  1 },
+    {   1420,  0,   -142,    256,    20, 0,  1 },
+    {   1430,  0,     92,    256,    20, 0,  0 },
+    {   1440,  0,     82,    256,    20, 0,  0 },
+    {   1450,  0,     72,    256,    20, 0,  0 },
+    {   1460,  0,    162,    256,    20, 0,  0 },
+    {   1470,  0,    152,    256,    20, 0,  1 },
+    {   1480,  0,    142,    256,    20, 0,  1 },
+    {   1540,  1,   -112,    240,   300, 0,  1 },
+    {   1540, 11,    112,    240,   400, 1,  1 },
+    {   1940,  5,   -112,    240,   300, 0,  1 },
+    {   1940,  3,    112,    240,   400, 1,  1 },
+    {   2140,  0,    -92,    256,    20, 0,  0 },
+    {   2150,  0,    -82,    256,    20, 0,  0 },
+    {   2160,  0,    -72,    256,    20, 0,  0 },
+    {   2170,  0,   -162,    256,    20, 0,  0 },
+    {   2180,  0,   -152,    256,    20, 0,  1 },
+    {   2190,  0,   -142,    256,    20, 0,  1 },
+    {   2200,  0,    -92,    256,    20, 0,  0 },
+    {   2210,  0,    -82,    256,    20, 0,  0 },
+    {   2220,  0,    -72,    256,    20, 0,  0 },
+    {   2230,  0,   -162,    256,    20, 0,  0 },
+    {   2240,  0,   -152,    256,    20, 0,  1 },
+    {   2250,  0,   -142,    256,    20, 0,  1 },
+    {   2370,  0,     92,    256,    20, 0,  0 },
+    {   2380,  0,     82,    256,    20, 0,  0 },
+    {   2390,  0,     72,    256,    20, 0,  0 },
+    {   2400,  0,    162,    256,    20, 0,  0 },
+    {   2410,  0,    152,    256,    20, 0,  1 },
+    {   2420,  0,    142,    256,    20, 0,  1 },
+    {   2440,  0,    -92,    256,    20, 0,  0 },
+    {   2460,  0,    -82,    256,    20, 0,  0 },
+    {   2480,  0,    -72,    256,    20, 0,  0 },
+    {   2500,  0,   -162,    256,    20, 0,  0 },
+    {   2520,  0,   -152,    256,    20, 0,  1 },
+    {   2540,  0,   -142,    256,    20, 0,  1 },
+    {   2550, 13,   -208,    128,    20, 0,  0 },
+    {   2555, 13,   -208,    192,    20, 0,  0 },
+    {   2560, 13,   -208,    160,    20, 0, -2 },
+    {   2565, 13,   -208,     96,    20, 0,  0 },
+    {   2570, 13,    208,    160,    20, 1,  0 },
+    {   2575, 13,   -208,    144,    20, 0, -2 },
+    {   2580, 13,    208,    192,    20, 1,  0 },
+    {   2585, 13,   -208,     96,    20, 0,  0 },
+    {   2590, 13,    208,    160,    20, 1,  0 },
+    {   2595, 13,    208,    144,    20, 1, -2 },
+    {   2600, 13,    208,    192,    20, 1,  0 },
+    {   2605, 13,    208,     96,    20, 1, -2 },
+    {   2610, 13,   -208,    160,    20, 0,  0 },
+    {   2615, 13,    208,    144,    20, 1, -2 },
+    {   2620, 13,   -208,    192,    20, 0,  0 },
+    {   2625, 13,    208,    144,    20, 1,  0 },
+    {   2630, 13,   -208,    192,    20, 0,  0 },
+    {   2630,  5,   -112,    240,   200, 0,  1 },
+    {   2630, 11,    112,    240,   200, 1,  1 },
+    {   2635, 13,   -208,     96,    20, 0,  0 },
+    {   2640, 13,   -208,    160,    20, 0,  0 },
+    {   2645, 13,   -208,    144,    20, 0, -2 },
+    {   2650, 13,    208,    192,    20, 1, -2 },
+    {   2655, 13,   -208,     96,    20, 0,  0 },
+    {   2660, 13,    208,    160,    20, 1,  0 },
+    {   2665, 13,   -208,    144,    20, 0,  0 },
+    {   2670, 13,    208,    192,    20, 1,  0 },
+    {   2675, 13,   -208,    160,    20, 0,  0 },
+    {   2680, 13,   -208,    144,    20, 0, -2 },
+    {   2685, 13,    208,    192,    20, 1, -2 },
+    {   2690, 13,   -208,    160,    20, 0,  0 },
+    {   2695, 13,   -208,    144,    20, 0, -2 },
+    {   2700, 13,    208,    192,    20, 1, -2 },
+    {   2705, 13,   -208,    160,    20, 0,  0 },
+    {   2710, 13,   -208,    144,    20, 0, -2 },
+    {   2715, 13,    208,    192,    20, 1, -2 },
+    {   2720, 13,   -208,     44,    20, 0, -2 },
+    {   2725, 13,    208,     92,    20, 1, -2 },
+    {   2730, 13,   -208,     60,    20, 0,  0 },
+    {   2735, 13,   -208,    144,    20, 0, -2 },
+    {   2740, 13,    208,     92,    20, 1, -2 },
+    {   2745, 13,   -208,    160,    20, 0,  0 },
+    {   2750, 13,   -208,     44,    20, 0, -2 },
+    {   2755, 13,    208,    192,    20, 1, -2 },
+    {   2760, 13,   -208,     44,    20, 0, -2 },
+    {   2765, 13,    208,     92,    20, 1, -2 },
+    {   2770, 13,   -208,    160,    20, 0,  0 },
+    {   2775, 13,   -208,     74,    20, 0, -2 },
+    {   2780, 13,    208,    112,    20, 1, -2 },
+    {   2785, 13,   -208,    128,    20, 0,  0 },
+    {   2790, 13,   -208,     64,    20, 0, -2 },
+    {   2795, 13,    208,     96,    20, 1, -2 },
+    {   2935,  5,   -112,    240,   300, 0,  1 },
+    {   3035,  3,    112,    240,   400, 1,  1 },
+    {   3335,  3,   -112,    240,   300, 0,  1 },
+    {   3435,  5,    112,    240,   400, 1,  1 },
+    {   3735,  5,   -112,    240,   300, 0,  1 },
+    {   3735, 11,    112,    240,   400, 1,  1 },
 }
 
 local function card_init(owner)
@@ -47045,7 +47148,7 @@ local function card_frame(owner)
         local e = TIMELINE[owner.tl_i]
         owner.tl_i = owner.tl_i + 1
         if e[2] ~= 14 then          ---差异 2：Sub14 是烟尘
-            New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0)
+            New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0, e[5], e[7])
         end
     end
     owner.tl_t = t + 1
@@ -47094,6 +47197,3167 @@ CARD[1000] = {
     del = card_del,
 }
 end
+---------------------------------------------------------------------
+---道中搬运卡：TH08 Stage 4 道中（四面 · 组 10 / 组 11 共用同一份时间轴）
+---  把原作 `ecldata4a.ecl` **时间轴 0** 里 t=1..4552 的那一段道中（125 条 spawn，
+---  4A / 4B 的时间轴逐字节相同）复刻成一张**耐久卡**，挂在 Stage 4A（博丽灵梦 ·
+---  组 10，id 3412）与 Stage 4B（雾雨魔理沙 · 组 11，id 3414）两条链的**最前面**，
+---  正好接上后面的「非符一」（id 433 = 中 BOSS）。
+---
+---  ★ 原作这一段是**道中**（`g_Spellcard.IsActive()` 为假）⇒ 出弹要叠 rank 缩放
+---    （EclDependencies.cpp:735-773）。rank 固定取 32：speed1 += 0.15、speed2 += 0.075、
+---    count1 / count2 不变、速度夹到 ≥ 0.3。
+---  ★ 难度闸：Lunatic 的 difficultyMask = 8 ⇒ 只跑 df ∈ {0xff, 0xf8}。本卡这一段
+---    只有 d=0xff 的行（0xf8 的专有行都在中 BOSS 之后）。
+---  ★ 时间轴 t=4962 起是**中 BOSS**（START_MESSAGE + `SPAWN_ENEMY sub=16 life=60000`），
+---    不属于道中 ⇒ 本卡到 t=4552 的 `sub=14`（清弹 + 清杂兵）为止；时长取
+---    4962/60 = 82.7 ⇒ **83 秒**，与下一张「非符一」无缝接上。
+---
+---  ★ 判定 / 血量**对齐原作**（对齐口径 = EclRunLow.inl:639-706 + EnemyManagerUpdate.cpp:289-400）：
+---    · 判定箱 = `SET_HITBOX` 的全宽高：小妖精 / 中妖精 / 使魔 24×24、大妖精 48×48。
+---      本引擎的判定箱是 `object.A / object.B`（**半**宽高）⇒ 12×12 / 24×24。
+---      ⚠ A/B 必须写在设定 `self.img` **之后**：换 img 会按资源半宽覆盖 a/b
+---      （th34.lua:940 那一句注释指的就是这个）。
+---    · 血量 = 原作时间轴那一栏：小妖精 30、中妖精 500、大妖精 1300/1700、使魔 180
+---      （使魔的 life 写在 `SPAWN_FAM_INHERIT_POS` 的 life 操作数里）。
+---      `SET_DAMAGE_REDUCTION_TIMER`（8 / 30 / 50 帧）在非 BOSS 身上就是**完全免伤**
+---      （EnemyManagerUpdate.cpp:391-398）⇒ 移植版用 `protect` 计时。
+---    · 交互标志（EclRunLow.inl:656-706，位 = **关掉** 对应能力）：
+---        妖精（Sub0/5/7/12）`DISABLE_INTERACTION_FLAGS 2` ⇒ 关 COLLISION
+---          ⇒ 引擎里放 `GROUP.NONTJT`：能被打，碰到自机**不掉血**。
+---        使魔（Sub6/8/10）`ENABLE_INTERACTION_FLAGS 3` ⇒ 开 COLLISION
+---          ⇒ 引擎里放 `GROUP.ENEMY`：自机撞上去会死。
+---    · 死亡掉道具（EnemyManager.cpp:744-806）：时间轴那一栏的 itemDrop
+---        （0 = 小能量、1 = 点、2 = 大能量、3 = 炸弹、−2 = 不掉）。本仓库没有
+---        能量 / 炸弹道具（item.obj 只有 faith / point / faith_minor）⇒ 0 → 1 个信仰、
+---        2/3 → 2 个信仰，口径同 th34（差异 5）。大妖精另有
+---        `SET_ITEM_DROP_COUNTS 5 4`：死时再撒 5 个小能量 + 4 个点。
+---
+--- 逐子程序（`ecldata4a.ecl` 的 Sub0..Sub14，全部按裸字节核过）：
+---   Sub0  小妖精（30）：t=0 挂枪 Sub2 + MOVE_IN_DIR(30, OUT_QUAD, 0, 3) 从画面
+---         左右外侧横着飞进来；t=30 换枪 Sub1、速度 4、角速度 0.001570796。
+---   Sub12 小妖精（30）：同 Sub0，但 t=30 的速度是 2、枪是 Sub13。
+---   Sub1  枪：每 18 帧一发 4 路自机狙扇（bt=6 col=6 速度 1.8，step 0.3926991）。
+---   Sub2  枪：每 10 帧一组三发（速度 4.6 / 3.0 反向 / 2.5 反向两连）。
+---   Sub13 枪：每 15 帧一发 10 路自机狙扇（bt=2 col=6 速度 1.6，step 0.448799）。
+---   Sub5  中妖精（500）：MOVE_IN_DIR(50, OUT_QUAD, 下, 2)；t=30 一圈 48×3
+---         （速度 2.5→0.8）；t=50 转下 0.5/帧；t=50/60/70/80 各撒一只使魔
+---         （Sub6，life 180）；t=680 加速度 −0.02。
+---   Sub6  绕圈使魔（180）：ORBIT_AROUND_CURRENT(60, lf0, lf1, 0.8333333)，
+---         t=60 冻半径（SET_ORBIT_VELOCITIES 6000）。
+---   Sub7  大妖精（1300/1700）：t=0 MOVE_IN_DIR(30, OUT_QUAD, 下, 4)，随即撒
+---         3 只 Sub8 + 5 只 Sub10（lf0 是各自的起始轨道角，posX ≥ 192 的那一半
+---         lf1 反号）；t=30 斜着漂走 0.7/帧。
+---   Sub8  带枪绕圈使魔（300/200）：ORBIT_AROUND_CURRENT(20, lf0, lf1, 1.5)，
+---         t=20 冻半径 + 挂枪 Sub9。
+---   Sub9  枪：每 9 帧一发「朝自己背后 1.8/帧」，50 帧后折向自机、速度 2.5
+---         （SET_BULLET_TRANSFORM kind=0x80 CHANGE_DIRECTION_AIMED）。
+---   Sub10 带枪绕圈使魔（300/200）：同 Sub8 但半径 2.5、挂枪 Sub11。
+---   Sub11 枪：朝 movementAngle 的 1 路 3 层扇（速度 3→1.2），间隔 16 帧起、
+---         每轮 −1 降到 8 帧后固定（JMP_IF_INT_LE li0 8）。
+---   Sub14 收尾：REMOVE_ALL_BULLETS + KILL_ALL_NON_BOSS。
+---   Sub15 开场烟尘：差异 2，跳过。
+---
+---与原作的不同（代码里按「差异 N」引用）：
+---  1  子 context（枪）挂上的那一帧按「当帧跑 t=0」处理（同 Stage 1 道中卡）。
+---  2  烟尘（Sub15）不实现（纯观感）。
+---  3  贴图是**占位**：所有敌人一律 `servant`，出弹走 EX 的 ball_small / ball_mid
+---     （跟本文件其它搬运卡同口径，全部实现完再统一换）。
+---  4  `SET_DAMAGE_REDUCTION_TIMER` 之外的 Anm / 演出指令（SET_MAIN_ANM /
+---     SET_FORM_EFFECT_ENABLED / …）只影响画面，移植版忽略。
+---  5  能量 / 炸弹道具折成信仰道具（见上）；`SET_ITEM_DROP_COUNTS` 用固定 5 + 4
+---     近似（原作按 128 上限决定撒能量还是点，EnemyManager.cpp:780-800）。
+---  6  插值（MOVE_IN_DIR 等）走完那一帧直接吸附到终点并清速度 —— 原作会留下一个
+---     很小的残余速度继续漂；这些子程序紧接着都会 SET_DIR_AND_SPEED，看不出来。
+---
+---  ★ 坐标：TH08 → 我们 = x−192、224−y、**角度整体取反**。下表里的角度都已经是
+---    「我们」坐标系的角（注释里给出原作的操作数）。`SPAWN_ENEMY_MIRRORED` 只翻
+---    x 位移的符号（IntegrateVelocity 的 mirrorMovementX），不影响瞄准 / 出弹角度。
+---  ★ 位置分两层（原作 Enemy::position / positionOffset）：`u.lx/u.ly` = 局部位置
+---    （所有移动逻辑在它上面算）、`u.px/u.py` = positionOffset（使魔 = 父机的世界
+---    坐标，每帧刷新）、`u.wx/u.wy` = worldPosition。引擎可见的 `self.x/self.y`
+---    始终 = worldPosition（判定 / 渲染 / 出弹都用它）。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---rank 固定取 32：ScaleFloatBasedOnRank(low, high) = low + rank·(high−low)/32 ⇒ 取 high。
+local RANK = 32
+local RANK_SPD, RANK_SPD2 = 0.15, 0.075
+
+---SET_SHOOT_INTERVAL(_DELAYED) 的 rank 缩放（EclRunHigh.inl:277-292）。本卡这一段
+---没有延迟出弹，留着是为了与 Stage 1 道中卡同一套口径。
+local function scaled_interval(n)
+    if n == 0 then return 0 end
+    local up = math.floor(n / 5)
+    local scaled = math.floor(RANK * (-up - up) / 32) + up
+    local out = n + scaled
+    if out < 1 then out = 1 end
+    return out
+end
+
+---AddNormalizeAngle(·, 0)：卷进 (−π, π]。
+local function add_norm(a)
+    a = a % (2 * PI)
+    if a > PI then a = a - 2 * PI end
+    return a
+end
+
+---缓动曲线（EclEasingMode，EnemyManager.cpp:94-115）。
+local function ease(mode, p)
+    if mode == 1 then return p * p end
+    if mode == 2 then return p * p * p end
+    if mode == 3 then return p * p * p * p end
+    if mode == 4 then local q = 1 - p; return 1 - q * q end
+    if mode == 5 then local q = 1 - p; return 1 - q * q * q end
+    if mode == 6 then local q = 1 - p; return 1 - q * q * q * q end
+    return p
+end
+
+---位判（内嵌的 Lua 5.1 没有位运算；掩码都是 2 的幂）。
+local function is_bit(v, mask)
+    if v < 0 then return false end
+    return math.floor(v / mask) % 2 == 1
+end
+local K_ONLY_YOUKAI = 0x8000
+local K_ONLY_HUMAN  = 0x10000
+
+local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
+local HALF = 16
+---IsWithinPlayfield（GameManager.cpp:132-150）的矩形判据（带半个精灵宽高）。
+local function in_field(x, y)
+    if x + HALF < FIELD_L then return false end
+    if x - HALF > FIELD_R then return false end
+    if y + HALF < FIELD_B then return false end
+    if y - HALF > FIELD_T then return false end
+    return true
+end
+
+local unit            ---前置声明（SUBS 里的闭包要引用；类表在下面才建）
+local units           ---本卡活着的单位（card_init 里建表）
+local GUN             ---子 context（枪）的表：SUB / set_child 都要用，前置声明
+
+---------------------------------------------------------------------
+---移动（Enemy::UpdateMovement，EnemyManager.cpp:30-118 的三个分支）。
+---角度参数一律是**我们坐标系的角**；mirror 只在整合（IntegrateVelocity）那一步
+---翻 x 的符号，`u.ma`（movementAngle）保持翻之前的值（原作 UpdateMovement 先算
+---movementAngle，IntegrateVelocity 才乘 mirrorMovementX）。
+---------------------------------------------------------------------
+local function u_set_dir_speed(u, angle, speed)
+    u.ma = add_norm(angle)
+    u.spd = speed
+    u.mv = "polar"
+    u.mv_dur, u.mv_timer = 0, 0
+end
+
+local function u_set_accel(u, a)
+    u.acc = a
+    u.mv = "polar"
+end
+
+---MOVE_TO(时长, 缓动, 目标)：ConfigureRelativeMotion ⇒ delta = 目标 − worldPosition、
+---origin = position。
+local function u_move_to(u, dur, easing, tx, ty)
+    u.dx = tx - u.wx
+    u.dy = ty - u.wy
+    u.ox, u.oy = u.lx, u.ly
+    u.mv_dur, u.mv_timer = dur, dur
+    u.mv_ease = easing
+    u.mv = "interp"
+    u.vex, u.vey = 0, 0
+    ---★ ConfigureRelativeMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:83-86）。
+    if u.mirror then u.dx = -u.dx end
+end
+
+---MOVE_IN_DIR(时长, 缓动, 角, 速度)：origin = worldPosition；t ≤ 0 退化成极性。
+local function u_move_in_dir(u, dur, easing, angle, speed)
+    if dur <= 0 then
+        u_set_dir_speed(u, angle, speed)
+        return
+    end
+    u.dx = math.cos(angle) * speed * dur
+    u.dy = math.sin(angle) * speed * dur
+    u.ox, u.oy = u.lx, u.ly
+    u.mv_dur, u.mv_timer = dur, dur
+    u.mv_ease = easing
+    u.mv = "interp"
+    ---★ ConfigurePolarMotion 同样在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
+    if u.mirror then u.dx = -u.dx end
+end
+
+---ORBIT_AROUND_CURRENT_POSITION(时长, 起始角, 角速度, 径向速度)：圆心 = 当前 position。
+local function u_orbit_current(u, dur, angle, angvel, radvel)
+    u.mv_dur, u.mv_timer = dur, dur
+    u.oox, u.ooy = u.lx, u.ly
+    u.oa = angle
+    u.oav = angvel
+    u.orad = 0
+    u.oradv = radvel
+    u.mv = "orbit"
+end
+
+---SET_ORBIT_VELOCITIES(时长, 角速度, 径向速度)：保留圆心与当前半径，只改角速 / 径速。
+local function u_orbit_vel(u, dur, angvel, radvel)
+    u.mv_dur, u.mv_timer = dur, dur
+    u.oav = angvel
+    u.oradv = radvel
+    u.mv = "orbit"
+end
+
+---★ 速度**不写进 u.vx/u.vy**：LuaSTG 的引擎每帧都会替**所有**对象积分 `x += vx`，
+---  而 TH08 的 IntegrateVelocity 是另一套、还带 mirrorMovementX ⇒ 这里自己积分，
+---  把 u.vx/u.vy 留成 0，免得被引擎再积一次（同 Stage 1 道中卡）。
+local function u_move_update(u)
+    local m = u.mv
+    if m == "polar" then
+        u.ma = add_norm(u.ma + EX.fm * u.av)
+        u.spd = EX.fm * u.acc + u.spd
+        u.vex = math.cos(u.ma) * u.spd
+        u.vey = math.sin(u.ma) * u.spd
+        if u.mv_dur > 0 then
+            u.mv_timer = u.mv_timer - 1
+            if u.mv_timer <= 0 then u.mv = "none" end
+        end
+    elseif m == "interp" then
+        ---★ 计时器先减、再算进度（EnemyManager.cpp:84-86）。
+        u.mv_timer = u.mv_timer - 1
+        local p = 1 - u.mv_timer / u.mv_dur
+        if p < 0 then p = 0 end
+        p = ease(u.mv_ease, p)
+        u.vex = u.ox + u.dx * p - u.lx
+        u.vey = u.oy + u.dy * p - u.ly
+        ---★ 镜像时这里要**再翻一次 x**：delta 在 Configure* 里已经翻过（见上面两处），
+        ---  UpdateMovement 的 INTERP 分支算 movementAngle 之前又翻一次 velocity.x
+        ---  （EnemyManager.cpp:100-106，**只有 INTERP 分支有这一翻**，POLAR / ORBIT 没有），
+        ---  最后 IntegrateVelocity 按 mirrorMovementX 翻第三次（EnemyManager.cpp:940-943）
+        ---  ⇒ position 落在**镜像后**的目标上、movementAngle 用逻辑方向。
+        ---  ⚠ 少了这一步，镜像机的位置会变成 2x−T 的倍增递推（越飞越快、冲出场地）。
+        if u.mirror then u.vex = -u.vex end
+        u.ma = math.atan2(u.vey, u.vex)
+        if u.mv_timer <= 0 then
+            ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
+            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.mv = "none"
+            u.vex, u.vey = 0, 0
+        end
+    elseif m == "orbit" then
+        u.oa = add_norm(u.oa + EX.fm * u.oav)
+        u.orad = EX.fm * u.oradv + u.orad
+        u.vex = math.cos(u.oa) * u.orad + u.oox - u.lx
+        u.vey = math.sin(u.oa) * u.orad + u.ooy - u.ly
+        u.ma = math.atan2(u.vey, u.vex)
+        if u.mv_dur > 0 then
+            u.mv_timer = u.mv_timer - 1
+            if u.mv_timer <= 0 then u.mv = "none" end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---出弹（Enemy::UpdateShotAndAnm / DispatchShotInstruction，EclDependencies.cpp:681-773）
+---------------------------------------------------------------------
+local function dispatch_shot(u, a)
+    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    local dx, dy = u.wx - player.x, u.wy - player.y
+    if dx * dx + dy * dy < 1024.0 then return end
+    local c1, c2 = a.count1 or 1, a.count2 or 1
+    if c1 <= 0 then c1 = 1 end
+    if c2 <= 0 then c2 = 1 end
+    local s1, s2 = a.speed1, a.speed2
+    if s1 ~= 0 then
+        s1 = s1 + RANK_SPD
+        if s1 < 0.3 then s1 = 0.3 end
+    end
+    s2 = s2 + RANK_SPD2
+    if s2 < 0.3 then s2 = 0.3 end
+    EX.shoot(u, u.wx, u.wy, {
+        op = a.op, type = a.type, color = EX.color(a.color),
+        count1 = c1, count2 = c2, speed1 = s1, speed2 = s2,
+        angle = a.angle, step = a.step, flags = a.flags,
+    })
+end
+
+---SHOOT_* 指令：延迟出弹开着就先记下，之后由 UpdateShotAndAnm 每 shootIntervalFrames
+---帧重放一次（本卡这一段没有延迟出弹，保留是为了与 Stage 1 道中卡同一套口径）。
+local function shoot(u, a)
+    if u.defer then
+        u.pending = a
+    else
+        dispatch_shot(u, a)
+    end
+end
+
+---------------------------------------------------------------------
+---子程序（一张 { time, fn } 表 + 一个 { t, pc } 状态；JUMP / JUMP_DEC 用返回值表示，
+---同一帧继续往下跑，跟 EclRun.cpp:60-100 一致）。
+---  fn 返回 { t = …, pc = … } = 跳转；返回 "die" = TERMINATE（收走这只敌人）。
+---------------------------------------------------------------------
+local function run_ctx(insns, u, c)
+    while true do
+        local ins = insns[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        local r = ins[2](u, c)
+        if r == "die" then
+            u.alive = false
+            return
+        end
+        if r then c.t, c.pc = r.t, r.pc end
+    end
+    c.t = c.t + 1
+end
+
+---SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。
+local function set_child(u, sub)
+    u.gun = sub
+    u.gctx = { t = 0, pc = 1 }
+    run_ctx(GUN[sub], u, u.gctx)
+end
+
+---SPAWN_FAM_INHERIT_POS：子敌人局部位置 = (0,0)、positionOffset = 父的 worldPosition
+---（之后每帧跟着父刷新）；变量表整块拷给子 ⇒ lf0 / lf1 就是父当时那两个。
+local function spawn_fam(parent, sub, lf0, hp, drop)
+    local f = New(unit, sub, 0, 0, false, parent, lf0, hp, drop, parent.lf1 or 0)
+    if f ~= nil then
+        f.px, f.py = parent.wx, parent.wy
+        f.wx, f.wy = f.lx + f.px, f.ly + f.py
+        f.x, f.y = f.wx, f.wy
+    end
+end
+
+---------------------------------------------------------------------
+---枪（子 context）——原作 `SET_CHILD_ECL` 挂的那个 context。
+---run_ctx 用**绝对帧号**：把「出弹 → SET_SECONDARY_TIME(n) → JUMP 回出弹」摊平成
+---「t0 出弹、t0+n 跳回 t0」——跳回那一帧会当帧再出一发 ⇒ 周期正好 = n
+---（引擎里 secondaryTime 每帧 −1 且 time 一并 −1，见 EclRun.cpp:60-64）。
+---------------------------------------------------------------------
+---Sub1（小妖精 t=30 换上的枪）：每 18 帧（SET_INT li0 = 18，Lunatic 值）一组四发扇。
+---★ 难度掩码是**累积**的：判据是 `mask & D == D`（EclRun.cpp:69-73），D = 0x28
+---  （Lunatic 8 | 人类/妖怪 0x20 或 0x40）⇒ #20(0xff) / #21(0xfe) / #22(0xfc) / #23(0xf8)
+---  四条**在 Lunatic 上全跑**，一组 = 1 + 2 + 3 + 4 = 10 发（速度 4.6 / 2.4 / 2.2 / 1.8）。
+---  ⚠ 对照 Sub5 的四条 0xf1/0xf2/0xf4/0xf8 —— 那才是「每档挑一条」的写法
+---（0xf1 & 0x28 = 0x20 ≠ 0x28 ⇒ 低难度的三条在 Lunatic 上整条跳过）。别把两种写法混了。
+local SUB1 = {
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
+                   speed1 = 4.6, speed2 = 2, angle = 0, step = 0.2855993,
+                   flags = 0x203 })
+    end },
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 1,
+                   speed1 = 2.4, speed2 = 1, angle = 0, step = 0.3926991,
+                   flags = 0x203 })
+    end },
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 3, count2 = 1,
+                   speed1 = 2.2, speed2 = 1, angle = 0, step = 0.3926991,
+                   flags = 0x203 })
+    end },
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 4, count2 = 1,
+                   speed1 = 1.8, speed2 = 1, angle = 0, step = 0.3926991,
+                   flags = 0x203 })
+    end },
+    { 18, function() return { t = 0, pc = 1 } end },
+}
+
+---Sub2：每 10 帧一组三发（SET_INT li0 = 10 / lf0 = 4.6、lf1 = 3、lf2 = 2.5）。
+---第 2 / 3 发的 ang = π（原作角）⇒ 我们这里还是 π。
+local SUB2 = {
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
+                   speed1 = 4.6, speed2 = 2, angle = 0, step = 0.2855993,
+                   flags = 0x203 })
+    end },
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
+                   speed1 = 3, speed2 = 0.5, angle = PI, step = 0.2855993,
+                   flags = 0x203 })
+    end },
+    { 0, function(u)
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 1,
+                   speed1 = 2.5, speed2 = 0.5, angle = PI, step = 0.2855993,
+                   flags = 0x203 })
+    end },
+    { 10, function() return { t = 0, pc = 1 } end },
+}
+
+---Sub13：每 15 帧一发 10 路自机狙扇（SET_INT li0 = 15 / li1 = 10、lf0 = 1.6、lf1 = 0.448799）。
+local SUB13 = {
+    { 0, function(u)
+        shoot(u, { op = 96, type = 2, color = 6, count1 = 10, count2 = 1,
+                   speed1 = 1.6, speed2 = 1, angle = 0, step = 0.448799,
+                   flags = 0x203 })
+    end },
+    { 15, function() return { t = 0, pc = 1 } end },
+}
+
+---Sub9：t=0 先装折向记录（SET_BULLET_TRANSFORM 槽0 kind=0x80 CHANGE_DIRECTION_AIMED、
+---50 帧后折向自机、速度 2.5），之后每 9 帧发一发「朝自己背后 1.8/帧」的弹
+---（SET_INT li0 = 9 / lf1 = 1.8；FLOAT_SUB2 lf0 = moveAngle − π）。
+local SUB9 = {
+    { 0, function(u) EX.set_record(u, 0, EX.K.AIMED, 0, 50, 1, 0, 2.5) end },
+    { 0, function(u)
+        ---原作角 = moveAngle_TH08 − π；我们的角 = −(moveAngle_TH08 − π) = u.ma + π
+        ---（u.ma 是我们坐标系里的 movementAngle = −moveAngle_TH08）。
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 1.8, speed2 = 0.8, angle = u.ma + PI, step = 0,
+                   flags = 0x282 })
+    end },
+    { 9, function() return { t = 0, pc = 2 } end },
+}
+
+---Sub11：朝 movementAngle 的 1 路 3 层扇（bt=1 col=6，速度 3→1.2）。
+---SET_INT li0 = 16 / li1 = 3、SET_FLOAT lf1 = 3；
+---循环头 `JMP_IF_INT_LE li0 8 0 44`：li0 ≤ 8 就不再 −1（间隔固定 8），否则 INT_DEC 后
+---用新值当间隔 ⇒ 出弹帧 = 0, 15, 29, 42, 54, 65, 75, 84, 92, 100, 108, …（之后每 8）。
+local SUB11
+do
+    local shot11 = function(u)
+        shoot(u, { op = 97, type = 1, color = 6, count1 = 1, count2 = 3,
+                   speed1 = 3, speed2 = 1.2, angle = u.ma, step = 0,
+                   flags = 0x202 })
+    end
+    local list = {}
+    local t, li0 = 0, 16
+    while t <= 5000 do
+        list[#list + 1] = { t, shot11 }
+        if li0 > 8 then li0 = li0 - 1 end
+        t = t + li0
+    end
+    ---稳态：跳回最后那一条（它的帧号就是稳态的节拍点），周期 8。
+    local back = #list
+    list[#list + 1] = { list[back][1] + 8, function()
+        return { t = list[back][1], pc = back }
+    end }
+    SUB11 = list
+end
+
+GUN = { [1] = SUB1, [2] = SUB2, [9] = SUB9, [11] = SUB11, [13] = SUB13 }
+
+---------------------------------------------------------------------
+---敌人子程序
+---------------------------------------------------------------------
+---Sub0（小妖精，life 30）：从画面左右外侧横着飞进来，t=30 换枪 + 起旋。
+---#5 MOVE_IN_DIR(30, OUT_QUAD, 0, 3)；#6 SET_DIR_AND_SPEED(0, 4)；
+---#9 SET_ANGULAR_VELOCITY 0.001570796（原作角速度）⇒ 我们 −0.001570796。
+local SUB0 = {
+    { 0, function(u)
+        set_child(u, 2)                    ---#4 SET_CHILD_ECL 0 2
+        u_move_in_dir(u, 30, 4, 0, 3)
+    end },
+    { 30, function(u)
+        u_set_dir_speed(u, 0, 4)
+        set_child(u, 1)                    ---#7 SET_CHILD_ECL 0 1
+        u.av = -0.001570796                ---#9 SET_ANGULAR_VELOCITY
+    end },
+    { 5030, function() return "die" end }, ---#10 TERMINATE
+}
+
+---Sub12（小妖精，life 30）：同 Sub0，但 t=30 的速度是 2、枪是 Sub13。
+local SUB12 = {
+    { 0, function(u)
+        u_move_in_dir(u, 30, 4, 0, 3)
+    end },
+    { 30, function(u)
+        u_set_dir_speed(u, 0, 2)
+        set_child(u, 13)
+        u.av = -0.001570796
+    end },
+    { 5030, function() return "die" end },
+}
+
+---Sub5（中妖精，life 500）：飞进来 → 放一圈 48×3 → 转下漂走，路上撒 4 只使魔。
+local SUB5 = {
+    { 0, function(u)
+        u_move_in_dir(u, 50, 4, -PI / 2, 2)      ---#5 MOVE_IN_DIR(50, 4, π/2, 2)（π/2 = 下）
+    end },
+    { 30, function(u)
+        ---#9（0xf8）SHOOT_CIRCLE_AIMED bt=2 col=2 48×3 速度 2.5→0.8 基准角 0。
+        shoot(u, { op = 98, type = 2, color = 2, count1 = 48, count2 = 3,
+                   speed1 = 2.5, speed2 = 0.8, angle = 0, step = 0,
+                   flags = 0x202 })
+    end },
+    { 50, function(u)
+        u_set_dir_speed(u, -PI / 2, 0.5)         ---#10 SET_DIR_AND_SPEED(π/2, 0.5)
+        u.lf0 = -PI / 2                          ---#11 lf0 = π/2（原作）⇒ 取反
+        u.lf1 = 0.05235988                       ---#12 lf1 = −0.05235988（原作）⇒ 取反
+    end },
+    { 50, function(u) spawn_fam(u, 6, u.lf0, 180, -2) end },   ---#13
+    { 60, function(u) spawn_fam(u, 6, u.lf0, 180, -2) end },   ---#14
+    { 70, function(u) spawn_fam(u, 6, u.lf0, 180, -2) end },   ---#15
+    { 80, function(u) spawn_fam(u, 6, u.lf0, 180, -2) end },   ---#16
+    { 680, function(u) u_set_accel(u, -0.02) end },            ---#17
+    { 5680, function() return "die" end },                     ---#18
+}
+
+---Sub6（绕圈使魔，life 180）：半径 0.8333333/帧 长 60 帧 → 50，之后只公转。
+local SUB6 = {
+    { 0, function(u)
+        u_orbit_current(u, 60, u.lf0, u.lf1, 0.8333333)   ---#5 ORBIT_AROUND_CURRENT
+    end },
+    { 60, function(u)
+        u_orbit_vel(u, 6000, u.lf1, 0)                    ---#6 SET_ORBIT_VELOCITIES
+    end },
+    { 5060, function() return "die" end },                ---#7 TERMINATE
+}
+
+---Sub7（大妖精，life 1300 / 1700）。
+local SUB7 = {
+    { 0, function(u)
+        u_move_in_dir(u, 30, 4, -PI / 2, 4)      ---#6 MOVE_IN_DIR(30, 4, π/2, 4)
+        ---#7 `JMP_IF_FLT_GE posX 192`：posX 是**原作** x，我们 = posX − 192 ⇒ 判 `u.lx >= 0`。
+        ---posX ≥ 192 ⇒ #10 `lf1 = −0.1047198`（原作）⇒ 我们 +0.1047198；否则 −。
+        if u.lx >= 0 then
+            u.lf1 = 0.1047198
+        else
+            u.lf1 = -0.1047198
+        end
+        ---#11..#16：lf0 = −π / −π/3 / +π/3（原作）⇒ 取反后 π / π/3 / −π/3。
+        u.lf0 = PI
+        spawn_fam(u, 8, PI, 300, -2)
+        u.lf0 = PI / 3
+        spawn_fam(u, 8, PI / 3, 200, -2)
+        u.lf0 = -PI / 3
+        spawn_fam(u, 8, -PI / 3, 300, -2)
+        ---#17 `JMP_IF_FLT_GE posX 192` ⇒ posX ≥ 192 时 #20 `lf1 = +0.07853982`（原作）
+        ---⇒ 我们 −0.07853982；否则 +。
+        if u.lx >= 0 then
+            u.lf1 = -0.07853982
+        else
+            u.lf1 = 0.07853982
+        end
+        ---#21..#30：lf0 = −π / −1.884956 / −0.6283185 / +0.6283185 / +1.884956（原作）⇒ 取反。
+        u.lf0 = PI
+        spawn_fam(u, 10, PI, 300, -2)
+        u.lf0 = 1.884956
+        spawn_fam(u, 10, 1.884956, 200, -2)
+        u.lf0 = 0.6283185
+        spawn_fam(u, 10, 0.6283185, 300, -2)
+        u.lf0 = -0.6283185
+        spawn_fam(u, 10, -0.6283185, 200, -2)
+        u.lf0 = -1.884956
+        spawn_fam(u, 10, -1.884956, 200, -2)
+    end },
+    { 30, function(u)
+        u_set_dir_speed(u, -0.3926991, 0.7)      ---#31 SET_DIR_AND_SPEED(0.3926991, 0.7)
+        u.lf0 = -PI / 2                          ---#32（这两个给后面重新挂的枪用，本卡不影响）
+        u.lf1 = -0.05235988                      ---#33
+    end },
+    { 5030, function() return "die" end },       ---#34
+}
+
+---Sub8 / Sub10（带枪绕圈使魔）。
+local function make_fam_gun(radius_vel, gun_sub)
+    return {
+        { 0, function(u)
+            u_orbit_current(u, 20, u.lf0, u.lf1, radius_vel)
+        end },
+        { 20, function(u)
+            u_orbit_vel(u, 6000, u.lf1, 0)
+            set_child(u, gun_sub)
+        end },
+        { 5020, function() return "die" end },
+    }
+end
+local SUB8  = make_fam_gun(1.5, 9)
+local SUB10 = make_fam_gun(2.5, 11)
+
+local SUB = {
+    [0] = SUB0, [5] = SUB5, [6] = SUB6, [7] = SUB7,
+    [8] = SUB8, [10] = SUB10, [12] = SUB12,
+}
+
+---------------------------------------------------------------------
+---判定 / 免伤 / 交互
+---------------------------------------------------------------------
+---SET_HITBOX 的**全宽高**（原作 hitboxDimensions）⇒ 我们的 A/B = 一半。
+local HITBOX_HALF = {
+    [0] = 12, [5] = 12, [6] = 12, [7] = 24, [8] = 12, [10] = 12, [12] = 12,
+}
+---SET_DAMAGE_REDUCTION_TIMER：非 BOSS 敌人在这么多帧内完全免伤
+---（EnemyManagerUpdate.cpp:391-398）。
+local INVULN = {
+    [0] = 8, [5] = 30, [7] = 50, [12] = 8,
+}
+---交互标志里 COLLISION 开着的（`ENABLE_INTERACTION_FLAGS 3`）：只有使魔
+---⇒ 引擎里放 GROUP.ENEMY（自机撞上去会死），其余放 GROUP.NONTJT。
+local CONTACT = { [6] = true, [8] = true, [10] = true }
+---`DISABLE_INTERACTION_FLAGS 16`（ALLOW_OFFSCREEN = 1<<4，DISABLE 支是**置位**，
+---EclRunLow.inl:676-700）⇒ 出屏**不**回收（EnemyManagerUpdate.cpp:241-256）。
+---本关只有 Sub6/8/10（Sub7 用 op92 撒的环绕使魔）带这一位；Sub15（开场烟尘）
+---也带，但它 t=24 就自毁、与出屏无关。Sub6/8/10 绕父机转圈时会荡出场地，
+---没有这一位就会被当帧收掉（它们的子枪也就跟着消失）⇒ 必须照原样放行。
+local ALLOW_OFF = { [6] = true, [8] = true, [10] = true }
+
+---原作 itemDropType（ItemManager.hpp:9-19）：0 小能量 / 1 点 / 2 大能量 / 3 炸弹 /
+---−2 不掉。本仓库只有 faith / point 两种道具（差异 5）。
+local DROP_TBL = {
+    [0] = { 0, 1, 0 },
+    [1] = { 0, 0, 1 },
+    [2] = { 0, 2, 0 },
+    [3] = { 0, 2, 0 },
+}
+
+---------------------------------------------------------------------
+---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套，
+---同 AGENTS §7.4 的 `hitter` 与 th34 的道中敌人）。
+---------------------------------------------------------------------
+local function u_shot_tick(u)
+    if u.si_frames > 0 then
+        u.si_timer = u.si_timer + 1
+        if u.si_timer >= u.si_frames then
+            if u.pending then dispatch_shot(u, u.pending) end
+            u.si_timer = 0
+        end
+    end
+end
+
+unit = Class(enemy, {
+    ---@param sub number 敌机子程序号
+    ---@param x number   局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
+    ---@param mirror boolean SPAWN_ENEMY_MIRRORED
+    ---@param parent table  使魔的父机（可为 nil）
+    ---@param lf0 number  局部浮点变量 lf0（使魔 = 起始轨道角）
+    ---@param hp number   原作时间轴给的 life
+    ---@param drop number 原作时间轴给的 itemDropType
+    ---@param lf1 number  局部浮点变量 lf1（使魔 = 轨道角速度）
+    init = function(self, sub, x, y, mirror, parent, lf0, hp, drop, lf1)
+        self.lx, self.ly = x, y
+        self.px, self.py = 0, 0
+        ---enemybase.init 会设 group / layer / maxhp / hp / colli / bound + 一堆计数字段。
+        ---nontaijutsu = true ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）。
+        enemybase.init(self, hp or 1, not CONTACT[sub])
+        self.sub = sub
+        self.mirror = mirror and true or false
+        self.parent = parent
+        self.lf0 = lf0 or 0
+        self.lf1 = lf1 or 0
+        self.alive = true
+        self.seen = false
+        self.allow_off = ALLOW_OFF[sub] or false
+        self.drop_tbl = DROP_TBL[drop]
+        ---SET_ITEM_DROP_COUNTS 5 4 ⇒ pointItemDropCount = 5（操作数 0）、
+        ---powerOrPointItemDropCount = 4（操作数 1，EclRunHigh.inl:706-708）。
+        ---Dropitem_PFP 的 { faith值, 信仰个数, 点个数 } ⇒ 4 个信仰(power) + 5 个点。
+        self.drop_counts = (sub == 7) and { 0, 4, 5 } or nil
+        ---贴图（占位，差异 3）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
+        self.img = "servant"
+        self.hscale, self.vscale = 0.6, 0.6
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.navi = false
+        local half = HITBOX_HALF[sub] or 12
+        self.A, self.B = half, half
+        ---SET_DAMAGE_REDUCTION_TIMER。
+        self.invuln = INVULN[sub] or 0
+        self.protect = self.invuln > 0
+        self.astral_dmg_factor = 1
+        ---移动状态。
+        self.mv = "none"
+        self.ma, self.spd, self.acc = 0, 0, 0
+        self.av = 0
+        self.vex, self.vey = 0, 0
+        self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
+        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
+        ---延迟出弹。
+        self.defer = false
+        self.pending = nil
+        self.si_frames, self.si_timer = 0, 0
+        ---主 / 子 context。
+        self.insns = SUB[sub]
+        self.ctx = { t = 0, pc = 1 }
+        self.gun = nil
+        self.gctx = nil
+        self.wx, self.wy = x, y
+        self.x, self.y = x, y
+        units[#units + 1] = self
+        ---★ 原作 SpawnEnemy1/2 里就立刻 RunEcl 一次（t=0 当帧生效）⇒ 这里照做，
+        ---  并照 RunEcl 的尾巴再跑一次 UpdateMovement / UpdateShotAndAnm
+        ---  （生成这一拍也算一拍；外面 card_frame 的循环还会再推一拍）。
+        run_ctx(self.insns, self, self.ctx)
+        if self.gun then
+            run_ctx(GUN[self.gun], self, self.gctx)
+        end
+        if self.alive then
+            u_move_update(self)
+            u_shot_tick(self)
+        end
+    end,
+    ---★ 引擎会对每个对象无条件调 frame。本卡的敌人**不用引擎驱动**（同 Stage 1 道中卡）：
+    ---  原作是「时间轴派发 spawn → 敌人循环逐只 RunEcl」，card_frame 里显式复刻了这一
+    ---  顺序。这里留空，否则每帧会被推两拍。
+    frame = function() end,
+    ---占位贴图走默认渲染（不走 enemy 的行走图系统，我们没有 _wisys）。
+    ---用全局 `DefaultRenderFunc`（Lapi.lua 里 = lstg.DefaultRenderFunc）而不是
+    ---`object.render`：两者在真机等价，但自检桩件只提供了前者（THlib/misc/misc.lua:21
+    ---与 THlib/enemy/boss_other.lua:157 就是这么写的）。
+    render = function(self)
+        DefaultRenderFunc(self)
+    end,
+    ---击破：掉道具 + 一声击破音。`kill` 是在对象被引擎回收那一下调的
+    ---（LuaSTG 的 legacy kill 回调），所以 RawDel 走的（出屏 / 卡结束）不掉道具，
+    ---与原作一致。
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+        if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
+        PlaySound('enep00', 0.3, self.x / 200, true)
+    end,
+})
+
+local function u_step(u)
+    ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
+    if u.invuln > 0 then
+        u.invuln = u.invuln - 1
+        u.protect = true
+    elseif u.protect then
+        u.protect = false
+    end
+    ---② 主 context。
+    run_ctx(u.insns, u, u.ctx)
+    if not u.alive then return end
+    ---③ 子 context（枪）。
+    if u.gun then
+        run_ctx(GUN[u.gun], u, u.gctx)
+        if not u.alive then return end
+    end
+    ---④ UpdateMovement。
+    u_move_update(u)
+    ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
+    if u.mirror then
+        u.lx = u.lx - EX.fm * u.vex
+    else
+        u.lx = u.lx + EX.fm * u.vex
+    end
+    u.ly = u.ly + EX.fm * u.vey
+    ---⑥ worldPosition = position + positionOffset（使魔的 offset 每帧跟着父刷新）。
+    if u.parent and IsValid(u.parent) and u.parent.alive ~= false then
+        u.px, u.py = u.parent.wx, u.parent.wy
+    end
+    u.wx, u.wy = u.lx + u.px, u.ly + u.py
+    u.x, u.y = u.wx, u.wy
+    ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
+    ---  （→ 触发上面的 kill 掉道具）。
+    enemybase.frame(u)
+    if u.hp <= 0 then u.alive = false return end
+    ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
+    ---  （ALLOW_OFFSCREEN 的除外）。
+    if not u.seen then
+        if in_field(u.wx, u.wy) then u.seen = true end
+    elseif not u.allow_off then
+        if not in_field(u.wx, u.wy) then u.alive = false end
+    end
+end
+
+---------------------------------------------------------------------
+---时间轴：{ 帧, 子程序号, x, y, life, mirror, drop }
+---（x / y 已经是我们的坐标；life = 原作时间轴那一栏；drop = itemDropType）。
+---125 条，逐条对过 `ecldata4a.ecl` 时间轴 0 的 spawn_enemy（4A / 4B 这一段逐字节相同）。
+---------------------------------------------------------------------
+local TIMELINE = {
+---（共 125 条；原作 t=1..4552 的道中，坐标已换成我们的 x−192 / 224−y）
+    {     1, 15,  -162,   240,    20, 0, -2 },
+    {   400,  0,  -208,   160,    30, 0,  1 },
+    {   410,  0,  -208,   160,    30, 0,  0 },
+    {   420,  0,  -208,   160,    30, 0,  1 },
+    {   430,  0,  -208,   160,    30, 0,  0 },
+    {   440,  0,  -208,   160,    30, 0,  1 },
+    {   540,  0,   208,   160,    30, 1,  1 },
+    {   550,  0,   208,   160,    30, 1,  0 },
+    {   560,  0,   208,   160,    30, 1,  1 },
+    {   570,  0,   208,   160,    30, 1,  0 },
+    {   580,  0,   208,   160,    30, 1,  1 },
+    {   580,  5,     0,   240,   500, 0,  1 },
+    {   660,  0,  -208,   160,    30, 0,  1 },
+    {   670,  0,  -208,   152,    30, 0,  0 },
+    {   680,  0,  -208,   144,    30, 0,  1 },
+    {   690,  0,  -208,   136,    30, 0,  0 },
+    {   700,  0,  -208,   128,    30, 0,  1 },
+    {   700,  5,   -64,   240,   500, 0,  1 },
+    {   760,  0,   208,   128,    30, 1,  1 },
+    {   770,  0,   208,   136,    30, 1,  0 },
+    {   780,  0,   208,   144,    30, 1,  1 },
+    {   790,  0,   208,   152,    30, 1,  0 },
+    {   800,  0,   208,   160,    30, 1,  1 },
+    {   920,  0,  -208,   160,    30, 0,  1 },
+    {   920,  5,    64,   240,   500, 0,  1 },
+    {   930,  0,  -208,   160,    30, 0,  0 },
+    {   940,  0,  -208,   160,    30, 0,  1 },
+    {   950,  0,  -208,   160,    30, 0,  0 },
+    {   960,  0,  -208,   160,    30, 0,  1 },
+    {   980,  0,   208,   160,    30, 1,  1 },
+    {   990,  0,   208,   160,    30, 1,  0 },
+    {  1000,  0,   208,   160,    30, 1,  1 },
+    {  1010,  0,   208,   160,    30, 1,  0 },
+    {  1020,  0,   208,   160,    30, 1,  1 },
+    {  1030,  0,  -208,   112,    30, 0,  1 },
+    {  1040,  0,  -208,   112,    30, 0,  0 },
+    {  1050,  0,  -208,   112,    30, 0,  1 },
+    {  1060,  0,  -208,   112,    30, 0,  0 },
+    {  1070,  0,  -208,   112,    30, 0,  1 },
+    {  1080,  0,   208,   112,    30, 1,  1 },
+    {  1090,  0,   208,   112,    30, 1,  0 },
+    {  1100,  0,   208,   112,    30, 1,  1 },
+    {  1110,  0,   208,   112,    30, 1,  0 },
+    {  1120,  0,   208,   112,    30, 1,  1 },
+    {  1240,  7,   128,   240,  1700, 1, -2 },
+    {  1500,  7,   128,   240,  1300, 1, -2 },
+    {  1900,  7,  -128,   240,  1300, 0, -2 },
+    {  2300,  7,  -128,   240,  1300, 0, -2 },
+    {  2300,  7,   128,   240,  1300, 1, -2 },
+    {  2700, 12,  -208,   160,    30, 0,  1 },
+    {  2710, 12,  -208,   160,    30, 0,  0 },
+    {  2720, 12,  -208,   160,    30, 0,  1 },
+    {  2730, 12,  -208,   160,    30, 0,  0 },
+    {  2740, 12,  -208,   160,    30, 0,  1 },
+    {  2740,  5,   -64,   240,   500, 0,  1 },
+    {  2800, 12,   208,   160,    30, 1,  1 },
+    {  2810, 12,   208,   160,    30, 1,  0 },
+    {  2820, 12,   208,   160,    30, 1,  1 },
+    {  2830, 12,   208,   160,    30, 1,  0 },
+    {  2840, 12,   208,   160,    30, 1,  1 },
+    {  2840,  5,     0,   240,   500, 0,  1 },
+    {  2900, 12,  -208,   160,    30, 0,  1 },
+    {  2910, 12,  -208,   152,    30, 0,  0 },
+    {  2920, 12,  -208,   144,    30, 0,  1 },
+    {  2930, 12,  -208,   136,    30, 0,  0 },
+    {  2940, 12,  -208,   128,    30, 0,  1 },
+    {  2940,  5,   -64,   240,   500, 0,  1 },
+    {  3000, 12,   208,   128,    30, 1,  1 },
+    {  3010, 12,   208,   136,    30, 1,  0 },
+    {  3020, 12,   208,   144,    30, 1,  1 },
+    {  3030, 12,   208,   152,    30, 1,  0 },
+    {  3040, 12,   208,   160,    30, 1,  1 },
+    {  3240, 12,  -208,   160,    30, 0,  1 },
+    {  3250, 12,  -208,   160,    30, 0,  0 },
+    {  3260, 12,  -208,   160,    30, 0,  1 },
+    {  3270, 12,  -208,   160,    30, 0,  0 },
+    {  3280, 12,  -208,   160,    30, 0,  1 },
+    {  3280,  5,   -64,   240,   500, 0,  1 },
+    {  3330, 12,   208,   160,    30, 1,  1 },
+    {  3340, 12,   208,   160,    30, 1,  0 },
+    {  3350, 12,   208,   160,    30, 1,  1 },
+    {  3360, 12,   208,   160,    30, 1,  0 },
+    {  3370, 12,   208,   160,    30, 1,  1 },
+    {  3420, 12,  -208,   160,    30, 0,  1 },
+    {  3430, 12,  -208,   160,    30, 0,  0 },
+    {  3440, 12,  -208,   160,    30, 0,  1 },
+    {  3450, 12,  -208,   160,    30, 0,  0 },
+    {  3460, 12,  -208,   160,    30, 0,  1 },
+    {  3560,  7,  -128,   240,  1300, 0, -2 },
+    {  3660,  7,   128,   240,  1300, 1, -2 },
+    {  3810,  7,  -128,   240,  1300, 0, -2 },
+    {  3860,  7,   128,   240,  1300, 1, -2 },
+    {  4060,  7,  -128,   240,  1300, 0,  3 },
+    {  4060,  7,   128,   240,  1300, 1,  3 },
+    {  4260, 12,  -208,   160,    30, 0,  1 },
+    {  4270, 12,   208,   112,    30, 1,  0 },
+    {  4280, 12,   208,   112,    30, 1,  1 },
+    {  4290, 12,   208,   112,    30, 1,  0 },
+    {  4300, 12,   208,   112,    30, 1,  1 },
+    {  4310, 12,  -208,   160,    30, 0,  1 },
+    {  4320, 12,  -208,   160,    30, 0,  0 },
+    {  4330, 12,  -208,   160,    30, 0,  1 },
+    {  4340, 12,  -208,   160,    30, 0,  0 },
+    {  4350, 12,  -208,   160,    30, 0,  1 },
+    {  4360, 12,   208,   160,    30, 1,  1 },
+    {  4370, 12,   208,   160,    30, 1,  0 },
+    {  4380, 12,   208,   160,    30, 1,  1 },
+    {  4390, 12,   208,   160,    30, 1,  0 },
+    {  4400, 12,   208,   160,    30, 1,  1 },
+    {  4410, 12,  -208,   160,    30, 0,  1 },
+    {  4420, 12,  -208,   152,    30, 0,  0 },
+    {  4430, 12,  -208,   144,    30, 0,  1 },
+    {  4440, 12,  -208,   136,    30, 0,  0 },
+    {  4450, 12,  -208,   128,    30, 0,  1 },
+    {  4460, 12,   208,   128,    30, 1,  1 },
+    {  4470, 12,   208,   136,    30, 1,  0 },
+    {  4480, 12,   208,   144,    30, 1,  1 },
+    {  4490, 12,   208,   152,    30, 1,  0 },
+    {  4500, 12,   208,   160,    30, 1,  1 },
+    {  4510, 12,  -208,   160,    30, 0,  1 },
+    {  4520, 12,  -208,   160,    30, 0,  0 },
+    {  4530, 12,  -208,   160,    30, 0,  1 },
+    {  4540, 12,  -208,   160,    30, 0,  0 },
+    {  4550, 12,  -208,   160,    30, 0,  1 },
+    {  4552, 14,  -208,   160,    30, 0,  1 },
+}
+
+local function card_init(owner)
+    units = {}
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+    owner.tl_t = 0
+    owner.tl_i = 1
+    ---BOSS 本体放在场地外、不显形（照 th34 的搬运卡）。
+    owner.x, owner.y = 0, 400
+end
+
+local function card_frame(owner)
+    if owner.tl_t == nil then return end
+    local t = owner.tl_t
+    ---① 时间轴：派发这一帧的 spawn（原作 EnemyTimeline.cpp:106-121 的 timer == time）。
+    while owner.tl_i <= #TIMELINE and TIMELINE[owner.tl_i][1] == t do
+        local e = TIMELINE[owner.tl_i]
+        owner.tl_i = owner.tl_i + 1
+        if e[2] == 15 then
+            ---差异 2：Sub15 是开场烟尘。
+        elseif e[2] == 14 then
+            ---Sub14：ins_162 REMOVE_ALL_BULLETS + ins_95 KILL_ALL_NON_BOSS。
+            ---★ KILL_ALL_NON_BOSS（EnemyManager.cpp:1426-1450）是把每只非 BOSS 的 `life = 0`
+            ---  ⇒ 走**正常死亡**（掉道具 / 播击破音），不是直接删。这里照做：置 hp = 0，
+            ---  让下面的 u_step → enemybase.frame 去触发 kill。
+            EX.pool_cancel()
+            for i = 1, #units do
+                local u = units[i]
+                if IsValid(u) and u.alive then u.hp = 0 end
+            end
+        else
+            New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0, e[5], e[7], 0)
+        end
+    end
+    owner.tl_t = t + 1
+
+    ---② 逐敌人跑一帧（用 while 而不是 for：父在这帧里撒出的使魔要当帧也被跑到，
+    ---   跟原作「新敌人在同一帧的敌人循环里还会再跑一次」一致）。
+    local i = 0
+    while i < #units do
+        i = i + 1
+        local u = units[i]
+        if IsValid(u) and u.alive then u_step(u) end
+    end
+    EX.suppress_step()
+
+    ---③ 收尸。
+    local j = 1
+    for k = 1, #units do
+        local u = units[k]
+        if IsValid(u) and u.alive then
+            units[j] = u
+            j = j + 1
+        elseif IsValid(u) then
+            object.RawDel(u)
+        end
+    end
+    for k = #units, j, -1 do units[k] = nil end
+end
+
+local function card_del(owner)
+    if units then
+        for i = 1, #units do
+            if IsValid(units[i]) then object.RawDel(units[i]) end
+            units[i] = nil
+        end
+    end
+    units = {}
+    owner.tl_t = nil
+    owner.tl_i = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[1001] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+
+---------------------------------------------------------------------
+---道中搬运卡：TH08 Stage 3 道中（三面 · 上白泽慧音 · 组 3）
+---  把原作 `ecldata3.ecl` **时间轴 0** 里 t=620..2680 的那一段道中（24 只敌人；
+---  t=1 的 Sub19 是开场烟尘，差异 2 跳过）复刻成一张**耐久卡**，挂在 Stage 3
+---  （上白泽慧音 · 组 3）那条链的**最前面**，正好接上后面的「非符一」
+---  （id 427 = 中 BOSS；原作 t=3080 的 `SPAWN_ENEMY sub=20 life=60000`）。
+---
+---  ★ 原作这一段是**道中**（g_Spellcard.IsActive() 为假）⇒ 出弹要叠 rank 缩放
+---    （EclDependencies.cpp:735-773）。rank 固定取 32 ⇒ speed1 += 0.15、
+---    speed2 += 0.075、count1/count2 不变、速度夹到 ≥ 0.3。
+---  ★ 难度闸：判据是 `d & M == M`（EclRun.cpp:69-73），M 含 bit3（Lunatic）
+---    ⇒ 只跑 d ∈ {0xff, 0xfe, 0xfc, 0xf8}；d=0xf1/0xf2/0xf4 那几条专有行整条跳过
+---    （Sub0 的 3 路自机狙、Sub7/13/14 的圈、Sub8 的 5×4 扇、Sub15 的间隔都取 0xf8 行）。
+---  ★ 时间轴 t=3080 起是**中 BOSS**（START_MESSAGE + Sub20）⇒ 本卡到 t=2680
+---    的 Sub14 为止；时长取 3080/60 = 51.3 ⇒ **52 秒**。
+---
+---  ★ 判定 / 血量 / 交互**对齐原作**（EclRunLow.inl:639-706 + EnemyManagerUpdate.cpp:289-400）：
+---    · 判定箱 = `SET_HITBOX` 的**全宽高**：本卡所有敌人都是 24×24 ⇒ 我们 A/B = 12
+---      （本引擎的 A/B 是**半**宽高）。
+---    · 血量 = 原作时间轴那一栏：妖精 200/300/350/400/500/600、使魔 100。
+---    · `SET_DAMAGE_REDUCTION_TIMER`（Sub0 = 30 帧、Sub13/14 = 180 帧）在非 BOSS 身上
+---      = **完全免伤**（EnemyManagerUpdate.cpp:391-398）⇒ 移植版用 `protect` 计时。
+---    · 交互位（EclRunLow.inl:656-706，位 = **关掉**对应能力）：
+---        Sub0/7/13/14 `DISABLE_INTERACTION_FLAGS 2` ⇒ 关 COLLISION ⇒ GROUP.NONTJT；
+---        Sub9（op92 生成，引擎在生成时会 `flags1 &= ~COLLISION`）从不 ENABLE
+---        ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）；
+---        Sub16（op91 生成）在 t=0 `ENABLE_INTERACTION_FLAGS 3` ⇒ 开 COLLISION
+---        ⇒ GROUP.ENEMY（自机撞上去会死）。
+---    · 掉落：`SET_ITEM_DROP_COUNTS a b` ⇒ pointItemDropCount = a、
+---      powerOrPointItemDropCount = b（EclRunHigh.inl:706-708）⇒ `{ 0, b, a }`；
+---      时间轴的 itemDrop 全是 −2 ⇒ 不额外掉道具（EnemyManager.cpp:744-806）。
+---
+--- 逐子程序（`ecldata3.ecl` 的 Sub0/1/7/8/9/13/14/15/16，全部按裸字节核过）：
+---   Sub0  妖精（200/300/400）：t=0 `MOVE_IN_DIR(50,4,下,2.5)` + 挂枪 Sub1、exI1=3；
+---         t=65 算 lf2 = angToPl、lf0..lf4 = lf2 ∓ π/4 / ∓ π/8（原作角，我们取反），
+---         放一组 3 路×3 层自机狙，然后 `JUMP_DEC 65`（exI0 = 8）每 2 帧重放
+---         「5 颗单弹（各带 40 帧旋量 ±1.5°/±0.75°，中间那颗不旋）」，共 8 轮；
+---         落到 t=67 `SET_DIR_AND_SPEED(0,1)`，t=71 `JUMP_DEC 0`（exI1 = 3）把整段
+---         从 #9 再跑 2 遍（每遍重新瞄准）⇒ 一只妖精放 3 遍。
+---   Sub1  Sub0 的枪：每 4 帧一发 0xf8 行（bt=1 col=6 c1=1 c2=2 s1=4 s2=2），12 发后
+---         RETURN（循环体从**出弹那条**起，`SET_INT exI0 12` 不在环里）。
+---   Sub7  妖精（300/350）：t=0 用 op92 撒 2 只 Sub9（局部 x = ∓32 ⇒ 跟着父机走）；
+---         t=60 转 −0.3926991 飞 + 一圈 48×4 自机狙；t=120 起加速度 0.03（t=180 归零）。
+---   Sub9  带枪使魔（100）：`DISABLE_INTERACTION_FLAGS 16` ⇒ ALLOW_OFFSCREEN（不会被
+---         出屏回收）；t=30 挂枪 Sub8；自身没有移动指令 ⇒ 位置 = 父机旁边的固定点。
+---   Sub8  Sub9 的枪：t=0 装 SPRITE 记录 + 5 路×4 层自机狙 + lf0 = 2，然后 10 发
+---         「朝下、速度 2 起每发 +0.15」的单弹（每 3 帧一发）；t=33 再装 AIMED 记录
+---         （30 帧后折向自机、速度 1.6）+ 5×4 扇 + 10 发单弹；t=66 跳回 t=0 的 #6
+---         ⇒ 之后每 66 帧重复后半段（前半段的 SPRITE 记录与 5×4 扇只在第一遍放）。
+---   Sub13 妖精（500/600）：180 帧免伤；t=60 起每 30 帧用 op91 撒一只 Sub16
+---         （子 = 定在出生点、不跟随），并且 exI0%3==0 时在同一帧补一圈 32×3；
+---         t=150 `SET_DIR_AND_SPEED(上,0)` + 加速度 0.04 ⇒ 缓缓向上飘走。
+---   Sub14 同 Sub13，只差 lf0 反号（公转方向相反）+ 圈用 col=6。
+---   Sub16 Sub13/14 的使魔（100）：t=0 开碰撞（GROUP.ENEMY）+ 挂枪 Sub15 +
+---         `SET_DIR_AND_SPEED(下,2)`；t=40/120 把角速度设成继承来的 lf0、t=80/140 归零。
+---   Sub15 Sub16 的枪：`SET_SECONDARY_TIME` 做延后 ⇒ 首发延后 `rndInt%30+10` 帧，
+---         之后每 40 帧一发（0xf8 行：bt=0 col=6 c1=1 c2=2 s1=2.9 s2=0.5 ast=2°），
+---         共 20 发后 RETURN。
+---
+---与原作的不同（差异 N）：
+---  1  子 context（枪）挂上那一帧只推一拍 t=0 —— 引擎里 `SET_CHILD_ECL` 建的子 context
+---     在**同一帧**的 `low_select_next_context` 里跑一次（EclRun.cpp:180-196），
+---     所以一张卡一帧只推子 context 一次（⚠ 与四面道中卡不同：那张卡在挂枪那一帧
+---     会把子 context 推两拍）。
+---  2  开场烟尘（Sub19）不实现（纯观感）。
+---  3  贴图是**占位**：敌人一律 `servant`，出弹走 EX 的 ball_small / ball_mid
+---     （跟本文件其它搬运卡同口径，全部实现完再统一换）。
+---  4  Anm / 演出指令（SET_MAIN_ANM / SET_FORM_EFFECT_ENABLED / …）只影响画面，忽略。
+---  5  能量 / 炸弹道具折成信仰（本仓库只有 faith / point）。
+---  6  插值（MOVE_IN_DIR）走完那一帧直接吸附并清速度（同另两张道中卡）。
+---
+---  ★ 坐标：TH08 → 我们 = x−192、224−y、**角度整体取反**（y 翻转 ⇒ 角取反）。
+---    `angToPl` 在「我们」坐标里就是普通的 atan2，取反自动完成。
+---  ★ 位置分两层（原作 position / positionOffset）：u.lx/u.ly = 局部、u.px/u.py = offset、
+---    u.wx/u.wy = world；op92 的子敌人每帧把 offset 刷成父机的 world，
+---    op91 的子敌人只在出生那一下 = 父机 world + 操作数，之后不再跟随
+---    （EclDependencies.cpp:591-645 + EnemyManagerUpdate.cpp:171-175）。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---rank 固定取 32（ScaleFloatBasedOnRank(low, high) = low + rank·(high−low)/32 ⇒ 取 high）。
+local RANK = 32
+local RANK_SPD, RANK_SPD2 = 0.15, 0.075
+
+---SET_SHOOT_INTERVAL(_DELAYED) 的 rank 缩放（EclRunHigh.inl:277-292）。本卡这一段
+---没有延迟出弹，留着是为了与另两张道中卡同一套口径。
+local function scaled_interval(n)
+    if n == 0 then return 0 end
+    local up = math.floor(n / 5)
+    local scaled = math.floor(RANK * (-up - up) / 32) + up
+    local out = n + scaled
+    if out < 1 then out = 1 end
+    return out
+end
+
+---AddNormalizeAngle(·, 0)：卷进 (−π, π]。
+local function add_norm(a)
+    a = a % (2 * PI)
+    if a > PI then a = a - 2 * PI end
+    return a
+end
+
+---缓动曲线（EclEasingMode，EnemyManager.cpp:94-115）。
+local function ease(mode, p)
+    if mode == 1 then return p * p end
+    if mode == 2 then return p * p * p end
+    if mode == 3 then return p * p * p * p end
+    if mode == 4 then local q = 1 - p; return 1 - q * q end
+    if mode == 5 then local q = 1 - p; return 1 - q * q * q end
+    if mode == 6 then local q = 1 - p; return 1 - q * q * q * q end
+    return p
+end
+
+---位判（内嵌的 Lua 5.1 没有位运算；掩码都是 2 的幂）。
+local function is_bit(v, mask)
+    if v < 0 then return false end
+    return math.floor(v / mask) % 2 == 1
+end
+local K_ONLY_YOUKAI = 0x8000
+local K_ONLY_HUMAN  = 0x10000
+
+local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
+local HALF = 16
+---IsWithinPlayfield（GameManager.cpp:132-150）的矩形判据（带半个精灵宽高）。
+local function in_field(x, y)
+    if x + HALF < FIELD_L then return false end
+    if x - HALF > FIELD_R then return false end
+    if y + HALF < FIELD_B then return false end
+    if y - HALF > FIELD_T then return false end
+    return true
+end
+
+---TH08 的 angToPl 操作数（0x2740）：自机在本机「我们坐标」里的方向。
+local function aim_at(x, y)
+    return math.atan2(player.y - y, player.x - x)
+end
+
+local unit            ---前置声明（子程序里的闭包要引用；类表在下面才建）
+local units           ---本卡活着的单位（card_init 里建表）
+local GUN             ---子 context（枪）的表：SUB / set_child 都要用，前置声明
+
+---------------------------------------------------------------------
+---移动（Enemy::UpdateMovement，EnemyManager.cpp:30-118）
+---------------------------------------------------------------------
+local function u_set_dir_speed(u, angle, speed)
+    u.ma = add_norm(angle)
+    u.spd = speed
+    u.mv = "polar"
+    u.mv_dur, u.mv_timer = 0, 0
+end
+
+local function u_set_accel(u, a)
+    u.acc = a
+    u.mv = "polar"
+end
+
+---MOVE_TO(时长, 缓动, 目标)：ConfigureRelativeMotion ⇒ delta = 目标 − worldPosition。
+local function u_move_to(u, dur, easing, tx, ty)
+    u.dx = tx - u.wx
+    u.dy = ty - u.wy
+    u.ox, u.oy = u.lx, u.ly
+    u.mv_dur, u.mv_timer = dur, dur
+    u.mv_ease = easing
+    u.mv = "interp"
+    u.vex, u.vey = 0, 0
+    ---★ ConfigureRelativeMotion 装 delta 时就把 delta.x 翻了（EclHelpers.cpp:83-86）。
+    if u.mirror then u.dx = -u.dx end
+end
+
+---MOVE_IN_DIR(时长, 缓动, 角, 速度)：origin = position；t ≤ 0 退化成极性。
+local function u_move_in_dir(u, dur, easing, angle, speed)
+    if dur <= 0 then
+        u_set_dir_speed(u, angle, speed)
+        return
+    end
+    u.dx = math.cos(angle) * speed * dur
+    u.dy = math.sin(angle) * speed * dur
+    u.ox, u.oy = u.lx, u.ly
+    u.mv_dur, u.mv_timer = dur, dur
+    u.mv_ease = easing
+    u.mv = "interp"
+    ---★ ConfigurePolarMotion 同样在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
+    if u.mirror then u.dx = -u.dx end
+end
+
+---★ 速度**不写进 u.vx/u.vy**：LuaSTG 的引擎每帧都会替**所有**对象积分 `x += vx`，
+---  而 TH08 的 IntegrateVelocity 是另一套、还带 mirrorMovementX ⇒ 这里自己积分。
+local function u_move_update(u)
+    local m = u.mv
+    if m == "polar" then
+        u.ma = add_norm(u.ma + EX.fm * u.av)
+        u.spd = EX.fm * u.acc + u.spd
+        u.vex = math.cos(u.ma) * u.spd
+        u.vey = math.sin(u.ma) * u.spd
+        if u.mv_dur > 0 then
+            u.mv_timer = u.mv_timer - 1
+            if u.mv_timer <= 0 then u.mv = "none" end
+        end
+    elseif m == "interp" then
+        ---★ 计时器先减、再算进度（EnemyManager.cpp:84-86）。
+        u.mv_timer = u.mv_timer - 1
+        local p = 1 - u.mv_timer / u.mv_dur
+        if p < 0 then p = 0 end
+        p = ease(u.mv_ease, p)
+        u.vex = u.ox + u.dx * p - u.lx
+        u.vey = u.oy + u.dy * p - u.ly
+        ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支有
+        ---  这一翻），最后 IntegrateVelocity 按 mirrorMovementX 翻第三次。
+        if u.mirror then u.vex = -u.vex end
+        u.ma = math.atan2(u.vey, u.vex)
+        if u.mv_timer <= 0 then
+            ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
+            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.mv = "none"
+            u.vex, u.vey = 0, 0
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---出弹（Enemy::UpdateShotAndAnm / DispatchShotInstruction，EclDependencies.cpp:681-773）
+---------------------------------------------------------------------
+local function dispatch_shot(u, a)
+    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    local dx, dy = u.wx - player.x, u.wy - player.y
+    if dx * dx + dy * dy < 1024.0 then return end
+    local c1, c2 = a.count1 or 1, a.count2 or 1
+    if c1 <= 0 then c1 = 1 end
+    if c2 <= 0 then c2 = 1 end
+    local s1, s2 = a.speed1, a.speed2
+    if s1 ~= 0 then
+        s1 = s1 + RANK_SPD
+        if s1 < 0.3 then s1 = 0.3 end
+    end
+    s2 = s2 + RANK_SPD2
+    if s2 < 0.3 then s2 = 0.3 end
+    EX.shoot(u, u.wx, u.wy, {
+        op = a.op, type = a.type, color = EX.color(a.color),
+        count1 = c1, count2 = c2, speed1 = s1, speed2 = s2,
+        angle = a.angle, step = a.step, flags = a.flags,
+    })
+end
+
+---SHOOT_* 指令：延迟出弹开着就先记下（本卡这一段没有延迟出弹，留着跟另两张道中卡一致）。
+local function shoot(u, a)
+    if u.defer then
+        u.pending = a
+    else
+        dispatch_shot(u, a)
+    end
+end
+
+---------------------------------------------------------------------
+---子程序（一张 { time, fn } 表 + 一个 { t, pc, stall } 状态）。
+---  fn 返回 { t = …, pc = … } = JUMP / JUMP_DEC（同一帧继续往下跑，跟 EclRun.cpp:60-100
+---  一致：引擎只在 `time == instruction->time` 时执行，跳回去会当帧重放）；
+---  返回 "die" = TERMINATE（收走这只敌人）。
+---  `stall` = 原作的 secondaryTime（等待计数，见 run_ctx 里那段）。
+---------------------------------------------------------------------
+local function run_ctx(insns, u, c)
+    while true do
+        ---SET_SECONDARY_TIME 的等待：secondaryTime > 0 时引擎把 time 与 secondaryTime
+        ---各减 1 并直接结束这一帧（EclRun.cpp:66-72）⇒ 这里的 stall 就是那个计数，
+        ---**减到 0 那一帧**才继续跑指令（正好是「延后 n 帧」的语义）。
+        if c.stall > 0 then
+            c.stall = c.stall - 1
+            return
+        end
+        local ins = insns[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        local r = ins[2](u, c)
+        if r == "die" then
+            u.alive = false
+            return
+        end
+        if r then c.t, c.pc = r.t, r.pc end
+    end
+    c.t = c.t + 1
+end
+
+---SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。`gticked` 让 u_step 的子
+---context 那一步在**同一帧**不再推第二拍（引擎就是这么跑的：EclRun.cpp:180-196）。
+local function set_child(u, sub)
+    u.gun = sub
+    u.gctx = { t = 0, pc = 1, stall = 0 }
+    u.gticked = true
+    run_ctx(GUN[sub], u, u.gctx)
+end
+
+---op92 SPAWN_FAM_INHERIT_POS：子敌人局部位置 = 操作数、positionOffset = 父机的 world
+---（之后 EnemyManagerUpdate.cpp:171-175 每帧把 offset 刷成 parent->position）；
+---变量表整块拷给子 ⇒ lf0 / lf1 继承。y 操作数在「我们」坐标里取反（见块首注）。
+local function spawn_fam_inherit(parent, sub, ox, oy, hp, drop)
+    local f = New(unit, sub, ox, -oy, false, parent,
+            parent.lf0 or 0, hp, drop, parent.lf1 or 0)
+    if f ~= nil then
+        f.px, f.py = parent.wx, parent.wy
+        f.wx, f.wy = f.lx + f.px, f.ly + f.py
+        f.x, f.y = f.wx, f.wy
+    end
+end
+
+---op91 SPAWN_FAM_AT_OFFSET：出生那一下 position = 操作数 + 父机的 worldPosition，
+---之后**不再跟随**父机（引擎不给它 inheritParentPosition）。
+local function spawn_fam_offset(parent, sub, ox, oy, hp, drop)
+    local f = New(unit, sub, parent.wx + ox, parent.wy - oy, false, nil,
+            parent.lf0 or 0, hp, drop, parent.lf1 or 0)
+    if f ~= nil then
+        f.wx, f.wy = f.lx, f.ly
+        f.x, f.y = f.wx, f.wy
+    end
+end
+
+---------------------------------------------------------------------
+---枪（子 context）——原作 `SET_CHILD_ECL` 挂的那个 context。
+---run_ctx 用**绝对帧号**：把「出弹 → 等 n 帧 → 跳回出弹」摊平成
+---「t0 出弹、t0+n 跳回 t0」——跳回那一帧会当帧再出一发 ⇒ 周期正好 = n。
+---------------------------------------------------------------------
+---Sub1（Sub0 的枪）：每 4 帧一发 0xf8 行（bt=1 col=6 c1=1 c2=2 s1=4 s2=2），12 发后
+---RETURN。★ 循环体从**出弹那条**起（`JUMP_DEC 0 -132` 指向 #1），`SET_INT exI0 12`
+---不在环里 ⇒ 只初始化一次。
+local SUB1
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.exi0 = 12 end)
+    local shot = #s + 1
+    add(0, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 1, count2 = 2,
+                   speed1 = 4, speed2 = 2, angle = 0, step = 0.2855993,
+                   flags = 0x203 })
+    end)
+    add(4, function(u)
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = shot } end
+        u.gun, u.gctx = nil, nil          ---#5 RETURN：子 context 结束
+    end)
+    SUB1 = s
+end
+
+---Sub8（Sub9 的枪）。
+---★ t=66 的 `JUMP 0 -532` 指向 #6（`SET_FLOAT lf0 2`）⇒ 前半段（#0..#5 的 SPRITE
+---记录与 5×4 扇）只在第一遍放，之后每 66 帧重复 #6 起的后半段。
+local SUB8
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.lf1 = 1.6 end)                    ---#0 lf1 = 1.6（折向速度）
+    add(0, function(u)                                     ---#1 槽1 SPRITE（bt=6 col=6）
+        EX.set_record(u, 1, EX.K.SPRITE, 0, 6, 6, -1, -1)
+    end)
+    add(0, function(u)                                     ---#5（0xf8）
+        shoot(u, { op = 96, type = 2, color = 2, count1 = 5, count2 = 4,
+                   speed1 = 3.5, speed2 = 0.8, angle = 0, step = 0.3926991,
+                   flags = 0x202 })
+    end)
+    local head = #s + 1                                    ---#6（每轮的循环头）
+    add(0, function(u) u.lf0 = 2 end)
+    add(0, function(u) u.exi0 = 10 end)                    ---#10
+    local stream0 = #s + 1                                 ---#11
+    add(0, function(u)
+        shoot(u, { op = 97, type = 3, color = 6, count1 = 1, count2 = 1,
+                   speed1 = u.lf0, speed2 = 0.5, angle = -PI / 2,
+                   step = 0.2855993, flags = 0x202 })
+    end)
+    add(0, function(u) u.lf0 = u.lf0 + 0.15 end)           ---#12
+    add(3, function(u)                                     ---#13 JUMP_DEC
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = stream0 } end
+    end)
+    add(33, function(u) u.lf0 = 1 end)                     ---#14
+    add(33, function(u) u.exi0 = 10 end)                   ---#15
+    add(33, function(u)                                    ---#16 槽0 AIMED（30 帧后折向）
+        EX.set_record(u, 0, EX.K.AIMED, 0, 30, 1, 0, u.lf1)
+    end)
+    add(33, function(u)                                    ---#18（0xf8）
+        shoot(u, { op = 96, type = 2, color = 2, count1 = 5, count2 = 4,
+                   speed1 = 3.5, speed2 = 0.8, angle = 0, step = 0.3926991,
+                   flags = 0x202 })
+    end)
+    local stream1 = #s + 1                                 ---#21
+    add(33, function(u)
+        shoot(u, { op = 97, type = 3, color = 2, count1 = 1, count2 = 1,
+                   speed1 = u.lf0, speed2 = 0.5, angle = -PI / 2,
+                   step = 0.2855993, flags = 0x4282 })
+    end)
+    add(33, function(u) u.lf0 = u.lf0 + 0.15 end)          ---#22
+    add(36, function(u)                                    ---#23 JUMP_DEC
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 33, pc = stream1 } end
+    end)
+    add(66, function(u) return { t = 0, pc = head } end)   ---#24 JUMP
+    SUB8 = s
+end
+
+---Sub15（Sub16 的枪）：`SET_SECONDARY_TIME` 做延后 —— 首发延后 rndInt%30+10 帧
+---（#0..#2），之后每 40 帧一发（0xf8 行，共 20 发）后 RETURN。
+---★ 出弹那一条（#11）是循环头：`JUMP_DEC 0 -192` 指向 #8 = 出弹行，
+---  所以 #3..#7（含 exI0 = 20）只在第一遍执行。
+local SUB15
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)                                     ---#0..#2 SET_SECONDARY_TIME
+        u.gctx.stall = ran:Int(0, 29) + 10
+    end)
+    add(0, function(u)                                     ---#3..#7（0xf8 行 li0 = 40）
+        u.exi0 = 20
+        u.gstall = 40
+    end)
+    local shot = #s + 1                                    ---#11（0xf8 行）
+    add(0, function(u)
+        shoot(u, { op = 96, type = 0, color = 6, count1 = 1, count2 = 2,
+                   speed1 = 2.9, speed2 = 0.5, angle = 0, step = 0.03490658,
+                   flags = 0x3 })
+    end)
+    add(0, function(u) u.gctx.stall = u.gstall end)        ---#12 SET_SECONDARY_TIME 40
+    add(0, function(u)                                     ---#13 JUMP_DEC
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = shot } end
+        u.gun, u.gctx = nil, nil                           ---#14 RETURN
+    end)
+    SUB15 = s
+end
+
+GUN = { [1] = SUB1, [8] = SUB8, [15] = SUB15 }
+
+---------------------------------------------------------------------
+---敌人子程序
+---------------------------------------------------------------------
+---Sub0（妖精，life 200/300/400）：飞进来 → 3 遍「3 路自机狙 + 8 轮 5 颗旋弹」。
+local SUB0
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)                                     ---#0..#7
+        set_child(u, 1)                                    ---#7 SET_CHILD_ECL 0 1
+        u_move_in_dir(u, 50, 4, -PI / 2, 2.5)              ---#6 MOVE_IN_DIR(50,4,π/2,2.5)
+    end)
+    add(0, function(u) u.exi1 = 3 end)                     ---#8
+    local outer = #s + 1
+    add(65, function(u) u.exi0 = 8 end)                    ---#9（外圈回跳点）
+    add(65, function(u)                                    ---#10..#14
+        u.lf2 = aim_at(u.wx, u.wy)                         ---#10 SET_FLOAT lf2 angToPl
+        u.lf0 = u.lf2 - PI / 4                             ---#11 lf2 + π/4（原作）
+        u.lf1 = u.lf2 - PI / 8                             ---#12 lf2 + π/8
+        u.lf3 = u.lf2 + PI / 8                             ---#13 lf2 − π/8
+        u.lf4 = u.lf2 + PI / 4                             ---#14 lf2 − π/4
+    end)
+    add(65, function(u)                                    ---#16（0xf8 行）
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 3,
+                   speed1 = 3, speed2 = 1, angle = 0, step = 0.3926991,
+                   flags = 0x203 })
+    end)
+    local inner = #s + 1
+    add(65, function(u)                                    ---#17（内圈回跳点）
+        EX.set_record(u, 0, EX.K.POLAR, 0, 40, -1, 0, 0.02617994)
+    end)
+    add(65, function(u)                                    ---#20（0xf8 / tf=0x222）
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 2, speed2 = 0.5, angle = u.lf0,
+                   step = 0.2855993, flags = 0x222 })
+    end)
+    add(65, function(u)                                    ---#21
+        EX.set_record(u, 0, EX.K.POLAR, 0, 40, -1, 0, 0.01308997)
+    end)
+    add(65, function(u)                                    ---#22（tf=0x22）
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 2, speed2 = 0.5, angle = u.lf1,
+                   step = 0.2855993, flags = 0x22 })
+    end)
+    add(65, function(u)                                    ---#23（tf=0x2，不旋）
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 2, speed2 = 0.5, angle = u.lf2,
+                   step = 0.1847996, flags = 0x2 })
+    end)
+    add(65, function(u)                                    ---#24
+        EX.set_record(u, 0, EX.K.POLAR, 0, 40, -1, 0, -0.01308997)
+    end)
+    add(65, function(u)                                    ---#25（tf=0x22）
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 2, speed2 = 0.5, angle = u.lf3,
+                   step = 0.2855993, flags = 0x22 })
+    end)
+    add(65, function(u)                                    ---#26
+        EX.set_record(u, 0, EX.K.POLAR, 0, 40, -1, 0, -0.02617994)
+    end)
+    add(65, function(u)                                    ---#29（0xf8 / tf=0x22）
+        shoot(u, { op = 97, type = 2, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 2, speed2 = 0.5, angle = u.lf4,
+                   step = 0.2855993, flags = 0x22 })
+    end)
+    add(67, function(u)                                    ---#30 JUMP_DEC 65
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 65, pc = inner } end
+    end)
+    add(67, function(u) u_set_dir_speed(u, 0, 1) end)      ---#31 SET_DIR_AND_SPEED(0,1)
+    add(71, function(u)                                    ---#32 JUMP_DEC 0
+        u.exi1 = u.exi1 - 1
+        if u.exi1 > 0 then return { t = 0, pc = outer } end
+    end)
+    add(5071, function() return "die" end)                 ---#33 TERMINATE
+    SUB0 = s
+end
+
+---Sub7（妖精，life 300/350）：t=0 撒 2 只使魔 Sub9（op92 ⇒ 跟着父机走）。
+---#7 `MOVE_IN_DIR(60, 4, 0.3926991, 2)`（原作）⇒ 我们 −0.3926991。
+local SUB7
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        spawn_fam_inherit(u, 9, -32, 0, 100, -2)           ---#4 SPAWN_FAM_INHERIT_POS
+        spawn_fam_inherit(u, 9,  32, 0, 100, -2)           ---#5
+        u_move_in_dir(u, 60, 4, -PI / 2, 2.1)              ---#6 MOVE_IN_DIR(60,4,π/2,2.1)
+    end)
+    add(60, function(u)                                    ---#7
+        u_move_in_dir(u, 60, 4, -0.3926991, 2)
+    end)
+    add(60, function(u)                                    ---#11（0xf8 行）
+        shoot(u, { op = 98, type = 2, color = 2, count1 = 48, count2 = 4,
+                   speed1 = 3.3, speed2 = 0.8, angle = 0, step = 0,
+                   flags = 0x202 })
+    end)
+    add(120, function(u) u_set_dir_speed(u, -0.3926991, 0) end)  ---#12
+    add(120, function(u) u_set_accel(u, 0.03) end)               ---#13
+    add(180, function(u) u_set_accel(u, 0) end)                  ---#14
+    add(5180, function() return "die" end)                       ---#15
+    SUB7 = s
+end
+
+---Sub9（带枪使魔，life 100）：ALLOW_OFFSCREEN（不会被出屏回收）+ t=30 挂枪 Sub8。
+---自身没有移动指令 ⇒ 位置 = 父机旁边的固定点（op92 每帧跟着父机刷新）。
+local SUB9
+do
+    local s = {}
+    s[#s + 1] = { 0, function() end }                       ---#0..#3（都只影响画面 / 交互位）
+    s[#s + 1] = { 30, function(u) set_child(u, 8) end }     ---#4
+    s[#s + 1] = { 5030, function() return "die" end }       ---#5
+    SUB9 = s
+end
+
+---Sub13 / Sub14（妖精，life 500/600）：180 帧免伤；t=60 起每 30 帧撒一只使魔 Sub16
+---（op91 ⇒ 定在出生点），exI0%3==0 时补一圈 32×3；t=150 起向上加速 0.04。
+---★ `JMP_IF_INT_NE li0 0 60 160` 指向 t=90 的 JUMP_DEC ⇒ 不满足时整组圈跳过。
+---★ lf0 是给子使魔的公转角速度：Sub13 原作 −0.02617994 ⇒ 我们 +0.02617994；
+---  Sub14 反号。
+local function make_ring_walker(lf0, ring_type, ring_color)
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    local jd = {}                                          ---JUMP_DEC 的下标（前向引用）
+    add(0, function(u)
+        u_move_in_dir(u, 60, 4, -PI / 2, 1.2)              ---#6 MOVE_IN_DIR(60,4,π/2,1.2)
+    end)
+    add(60, function(u) u.exi0 = 50 end)                   ---#7（第一次进 t=60 时执行）
+    add(60, function(u)                                    ---#8（每轮的循环头）
+        u.lf0 = lf0
+        spawn_fam_offset(u, 16, 0, 0, 100, -2)             ---#9 SPAWN_FAM_AT_OFFSET
+        if u.exi0 % 3 ~= 0 then return { t = 60, pc = jd.i } end   ---#10/#11
+    end)
+    add(60, function(u)                                    ---#14（0xf8 行）
+        shoot(u, { op = 98, type = ring_type, color = ring_color,
+                   count1 = 32, count2 = 3, speed1 = 3, speed2 = 0.5,
+                   angle = 0, step = 0, flags = 0x202 })
+    end)
+    jd.i = #s + 1
+    add(90, function(u)                                    ---#15 JUMP_DEC 60
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 60, pc = 3 } end
+    end)
+    add(150, function(u)                                   ---#16/#17
+        u_set_dir_speed(u, PI / 2, 0)                      ---SET_DIR_AND_SPEED(−π/2, 0)（原作）
+        u_set_accel(u, 0.04)
+    end)
+    add(5150, function() return "die" end)                 ---#18
+    return s
+end
+local SUB13 = make_ring_walker(0.02617994, 1, 2)
+local SUB14 = make_ring_walker(-0.02617994, 1, 6)
+
+---Sub16（Sub13/14 的使魔，life 100）：t=0 开碰撞 + 挂枪 Sub15 + 朝下飞；
+---t=40/120 把角速度设成继承来的 lf0、t=80/140 归零（来回摆）。
+local SUB16
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u)
+        set_child(u, 15)                                   ---#4 SET_CHILD_ECL 0 15
+        u_set_dir_speed(u, -PI / 2, 2)                     ---#5 SET_DIR_AND_SPEED(π/2, 2)
+    end)
+    add(40, function(u) u.av = u.lf0 end)                  ---#6
+    add(80, function(u) u.av = 0 end)                      ---#7
+    add(120, function(u) u.av = u.lf0 end)                 ---#8
+    add(140, function(u) u.av = 0 end)                     ---#9
+    add(5140, function() return "die" end)                 ---#10
+    SUB16 = s
+end
+
+local SUB = {
+    [0] = SUB0, [7] = SUB7, [9] = SUB9,
+    [13] = SUB13, [14] = SUB14, [16] = SUB16,
+}
+
+---------------------------------------------------------------------
+---判定 / 免伤 / 交互 / 掉落
+---------------------------------------------------------------------
+---SET_HITBOX 的**全宽高**（原作 hitboxDimensions）⇒ 我们的 A/B = 一半。
+local HITBOX_HALF = {
+    [0] = 12, [7] = 12, [9] = 12, [13] = 12, [14] = 12, [16] = 12,
+}
+---SET_DAMAGE_REDUCTION_TIMER：非 BOSS 敌人在这么多帧内完全免伤
+---（EnemyManagerUpdate.cpp:391-398）。
+local INVULN = {
+    [0] = 30, [13] = 180, [14] = 180,
+}
+---交互标志里 COLLISION 开着的：只有 Sub16 自己在 t=0 `ENABLE_INTERACTION_FLAGS 3`
+---（引擎生成使魔时都会先清 COLLISION，Sub9 没有再打开）⇒ 只有它放 GROUP.ENEMY。
+local CONTACT = { [16] = true }
+---`DISABLE_INTERACTION_FLAGS 16`（ALLOW_OFFSCREEN）⇒ 出屏也不回收。
+local ALLOW_OFF = { [9] = true }
+---SET_ITEM_DROP_COUNTS a b ⇒ pointItemDropCount = a、powerOrPointItemDropCount = b
+---（EclRunHigh.inl:706-708）⇒ Dropitem_PFP 的 `{ faith值, 信仰个数, 点个数 }`。
+local DROP_COUNTS = {
+    [0]  = { 0, 2, 3 },
+    [7]  = { 0, 2, 3 },
+    [13] = { 0, 3, 5 },
+    [14] = { 0, 3, 5 },
+}
+---原作 itemDropType（ItemManager.hpp:9-19）：0 小能量 / 1 点 / 2 大能量 / 3 炸弹 /
+---−2 不掉。本仓库只有 faith / point 两种道具（差异 5）；本卡时间轴全是 −2。
+local DROP_TBL = {
+    [0] = { 0, 1, 0 },
+    [1] = { 0, 0, 1 },
+    [2] = { 0, 2, 0 },
+    [3] = { 0, 2, 0 },
+}
+
+---------------------------------------------------------------------
+---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
+---------------------------------------------------------------------
+local function u_shot_tick(u)
+    if u.si_frames > 0 then
+        u.si_timer = u.si_timer + 1
+        if u.si_timer >= u.si_frames then
+            if u.pending then dispatch_shot(u, u.pending) end
+            u.si_timer = 0
+        end
+    end
+end
+
+unit = Class(enemy, {
+    ---@param sub number 敌机子程序号
+    ---@param x number   局部位置（使魔传 0,0 / 操作数）
+    ---@param mirror boolean SPAWN_ENEMY_MIRRORED
+    ---@param parent table  使魔的父机（可为 nil）
+    ---@param lf0 number  局部浮点变量 lf0（使魔 = 公转角速度）
+    ---@param hp number   原作时间轴给的 life
+    ---@param drop number 原作时间轴给的 itemDropType
+    ---@param lf1 number  局部浮点变量 lf1（Sub8 的折向速度）
+    init = function(self, sub, x, y, mirror, parent, lf0, hp, drop, lf1)
+        self.lx, self.ly = x, y
+        self.px, self.py = 0, 0
+        ---enemybase.init 会设 group / layer / maxhp / hp / colli / bound + 一堆计数字段。
+        ---nontaijutsu = true ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）。
+        enemybase.init(self, hp or 1, not CONTACT[sub])
+        self.sub = sub
+        self.mirror = mirror and true or false
+        self.parent = parent
+        self.lf0 = lf0 or 0
+        self.lf1 = lf1 or 0
+        self.lf2, self.lf3, self.lf4 = 0, 0, 0
+        self.alive = true
+        self.seen = false
+        self.allow_off = ALLOW_OFF[sub] or false
+        self.drop_tbl = DROP_TBL[drop]
+        self.drop_counts = DROP_COUNTS[sub]
+        ---贴图（占位，差异 3）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
+        self.img = "servant"
+        self.hscale, self.vscale = 0.6, 0.6
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.navi = false
+        local half = HITBOX_HALF[sub] or 12
+        self.A, self.B = half, half
+        ---SET_DAMAGE_REDUCTION_TIMER。
+        self.invuln = INVULN[sub] or 0
+        self.protect = self.invuln > 0
+        self.astral_dmg_factor = 1
+        ---移动状态。
+        self.mv = "none"
+        self.ma, self.spd, self.acc = 0, 0, 0
+        self.av = 0
+        self.vex, self.vey = 0, 0
+        self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
+        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        ---ECL 的 exI0 / exI1（JUMP_DEC 的计数器）。
+        self.exi0, self.exi1 = 0, 0
+        ---延迟出弹（本卡没有用到，留着跟另两张道中卡一致）。
+        self.defer = false
+        self.pending = nil
+        self.si_frames, self.si_timer = 0, 0
+        ---主 / 子 context。
+        self.insns = SUB[sub]
+        self.ctx = { t = 0, pc = 1, stall = 0 }
+        self.gun = nil
+        self.gctx = nil
+        self.gticked = false
+        self.gstall = 0
+        self.wx, self.wy = x, y
+        self.x, self.y = x, y
+        units[#units + 1] = self
+        ---★ 原作 SpawnEnemy1/2 里就立刻 RunEcl 一次（t=0 当帧生效）⇒ 这里照做。
+        ---  SET_CHILD_ECL 建的子 context 也在那一拍跑过 t=0（gticked 留给 u_step 判），
+        ---  所以 init 里**不要**再推子 context。
+        run_ctx(self.insns, self, self.ctx)
+        if self.alive then
+            u_move_update(self)
+            u_shot_tick(self)
+        end
+    end,
+    ---★ 引擎会对每个对象无条件调 frame。本卡的敌人**不用引擎驱动**（同另两张道中卡）：
+    ---  原作是「时间轴派发 spawn → 敌人循环逐只 RunEcl」，card_frame 里显式复刻了这一
+    ---  顺序。这里留空，否则每帧会被推两拍。
+    frame = function() end,
+    ---占位贴图走默认渲染（不走 enemy 的行走图系统，我们没有 _wisys）。
+    render = function(self)
+        DefaultRenderFunc(self)
+    end,
+    ---击破：掉道具 + 一声击破音。`kill` 是在对象被引擎回收那一下调的，
+    ---所以 RawDel 走的（出屏 / 卡结束）不掉道具，与原作一致。
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+        if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
+        PlaySound('enep00', 0.3, self.x / 200, true)
+    end,
+})
+
+local function u_step(u)
+    ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
+    if u.invuln > 0 then
+        u.invuln = u.invuln - 1
+        u.protect = true
+    elseif u.protect then
+        u.protect = false
+    end
+    ---② 主 context。
+    run_ctx(u.insns, u, u.ctx)
+    if not u.alive then return end
+    ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
+    if u.gun and not u.gticked then
+        run_ctx(GUN[u.gun], u, u.gctx)
+        if not u.alive then return end
+    end
+    u.gticked = false
+    ---④ UpdateMovement。
+    u_move_update(u)
+    ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
+    if u.mirror then
+        u.lx = u.lx - EX.fm * u.vex
+    else
+        u.lx = u.lx + EX.fm * u.vex
+    end
+    u.ly = u.ly + EX.fm * u.vey
+    ---⑥ worldPosition = position + positionOffset（op92 使魔的 offset 每帧跟着父刷新）。
+    if u.parent and IsValid(u.parent) and u.parent.alive ~= false then
+        u.px, u.py = u.parent.wx, u.parent.wy
+    end
+    u.wx, u.wy = u.lx + u.px, u.ly + u.py
+    u.x, u.y = u.wx, u.wy
+    ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
+    enemybase.frame(u)
+    if u.hp <= 0 then u.alive = false return end
+    ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
+    ---  （ALLOW_OFFSCREEN 的除外）。
+    if not u.seen then
+        if in_field(u.wx, u.wy) then u.seen = true end
+    elseif not u.allow_off then
+        if not in_field(u.wx, u.wy) then u.alive = false end
+    end
+end
+
+---------------------------------------------------------------------
+---时间轴：{ 帧, 子程序号, x, y, life, mirror, drop }
+---（x / y 已经是我们的坐标 x−192 / 224−y；原作的 spawn y 全是 −16 ⇒ 我们 240）。
+---24 条，逐条对过 `ecldata3.ecl` 时间轴 0 的 t=620..2680（d 全是 0xff，只有
+---t=1730 的 sub=0 与 t=2010 的两只 sub=0 分别在 0xf8 / 0xfc 行上，Lunatic 都跑）。
+---原作 t=1 的 Sub19（开场烟尘）差异 2 跳过；t=3080 起是中 BOSS，不属于本卡。
+---------------------------------------------------------------------
+local TIMELINE = {
+    {   620,  0,  -64, 240, 300, 0, -2 },
+    {   620,  0,   64, 240, 300, 1, -2 },
+    {   740,  0, -128, 240, 300, 0, -2 },
+    {   740,  0,  128, 240, 300, 1, -2 },
+    {   820,  0, -128, 240, 200, 0, -2 },
+    {   900,  0,  -96, 240, 200, 0, -2 },
+    {   980,  0,  -64, 240, 200, 0, -2 },
+    {  1280,  7, -128, 240, 300, 0, -2 },
+    {  1370,  7, -128, 240, 300, 0, -2 },
+    {  1370,  7,  128, 240, 300, 1, -2 },
+    {  1460,  7, -128, 240, 300, 0, -2 },
+    {  1610,  7,  128, 240, 300, 1, -2 },
+    {  1670,  7,  128, 240, 300, 1, -2 },
+    {  1670,  7, -128, 240, 300, 0, -2 },
+    {  1730,  7,  128, 240, 300, 1, -2 },
+    {  1730,  0,   64, 240, 300, 1, -2 },
+    {  1950,  7, -128, 240, 350, 0, -2 },
+    {  1970,  7,  128, 240, 350, 1, -2 },
+    {  1990,  7, -128, 240, 350, 0, -2 },
+    {  2010,  7,  128, 240, 350, 1, -2 },
+    {  2010,  0, -160, 240, 400, 0, -2 },
+    {  2010,  0,  160, 240, 400, 1, -2 },
+    {  2190, 14,  128, 240, 600, 0, -2 },
+    {  2430, 13, -128, 240, 600, 0, -2 },
+    {  2680, 14,  128, 240, 600, 0, -2 },
+}
+
+local function card_init(owner)
+    units = {}
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+    owner.tl_t = 0
+    owner.tl_i = 1
+    ---BOSS 本体放在场地外、不显形（照另两张道中卡）。
+    owner.x, owner.y = 0, 400
+end
+
+local function card_frame(owner)
+    if owner.tl_t == nil then return end
+    local t = owner.tl_t
+    ---① 时间轴：派发这一帧的 spawn（原作 EnemyTimeline.cpp:106-121 的 timer == time）。
+    while owner.tl_i <= #TIMELINE and TIMELINE[owner.tl_i][1] == t do
+        local e = TIMELINE[owner.tl_i]
+        owner.tl_i = owner.tl_i + 1
+        if e[2] == 19 then
+            ---差异 2：Sub19 是开场烟尘。
+        else
+            New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0, e[5], e[7], 0)
+        end
+    end
+    owner.tl_t = t + 1
+
+    ---② 逐敌人跑一帧（用 while 而不是 for：父在这帧里撒出的使魔要当帧也被跑到，
+    ---   跟原作「新敌人在同一帧的敌人循环里还会再跑一次」一致）。
+    local i = 0
+    while i < #units do
+        i = i + 1
+        local u = units[i]
+        if IsValid(u) and u.alive then u_step(u) end
+    end
+    EX.suppress_step()
+
+    ---③ 收尸。
+    local j = 1
+    for k = 1, #units do
+        local u = units[k]
+        if IsValid(u) and u.alive then
+            units[j] = u
+            j = j + 1
+        elseif IsValid(u) then
+            object.RawDel(u)
+        end
+    end
+    for k = #units, j, -1 do units[k] = nil end
+end
+
+local function card_del(owner)
+    if units then
+        for i = 1, #units do
+            if IsValid(units[i]) then object.RawDel(units[i]) end
+            units[i] = nil
+        end
+    end
+    units = {}
+    owner.tl_t = nil
+    owner.tl_i = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[1002] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+---------------------------------------------------------------------
+---道中搬运卡：TH08 Stage 2 道中（二面 · 米斯蒂娅·萝蕾拉 · 组 2）
+---  把原作 `ecldata2.ecl` **时间轴 0** 里 t=1..4670 的那一段道中（239 条 spawn）复刻成
+---  一张**耐久卡**，挂在 Stage 2（米斯蒂娅 · 组 2）那条链的**最前面**，正好接上后面的
+---  「非符一」（id 461 = 中 BOSS；原作 t=4870 的 `SPAWN_ENEMY sub=17 life=60000`）。
+---
+---  ★ 原作这一段是**道中**（`g_Spellcard.IsActive()` 为假）⇒ 出弹叠 rank 缩放
+---    （EclDependencies.cpp:735-773）。rank 固定取 32 ⇒ speed1 += 0.15、speed2 += 0.075、
+---    count1 / count2 不变、速度夹到 ≥ 0.3；`SET_SHOOT_INTERVAL(_DELAYED)` 的帧数
+---    f += ScaleIntBasedOnRank(f/5, −f/5) ⇒ rank 32 时 = f − f/5（EclRunHigh.inl:269-292）。
+---  ★ 难度闸：判据是 `d & D == D`（D 含 bit3 = Lunatic，EclRun.cpp:69-73）
+---    ⇒ 只跑 d ∈ {0xff, 0xfe, 0xfc, 0xf8}；本卡每处只取 **0xff / 0xf8** 两条
+---    （0xf1/0xf2/0xf4 的专有行整条跳过；Sub9/11/13/14 的「间隔」也是取 0xf8 那条）。
+---  ★ 时间轴 t=1 的 Sub16 是开场烟尘（差异 2 跳过），t=4870 起是中 BOSS
+---    ⇒ 本卡到 t=4670 的 sub=4 为止；时长 4870/60 = 81.2 ⇒ **82 秒**。
+---
+---  ★ `SET_TIMELINE_SPAWNS_SUPPRESSED`（op175）写的是**全局** `g_EnemyManager.
+---    suppressTimelineSpawns`（EclRunHigh.inl:1041），EclTimeline::Run 的 spawn 分支带
+---    `&& suppressTimelineSpawns == 0` 闸（EnemyTimeline.cpp:143/168/190/207）
+---    ⇒ 移植版用 `SUPP.v` 原样实现（不删表里的行，只在派发时跳过）：
+---      · Sub7 出生帧 t=1050 置 1、t=680 清 0；Sub11 出生帧置 1、t=190 清 0。
+---      · 帧序 = 时间轴**先**派发这一帧的 spawn、**之后**敌人循环才跑 ECL
+---        （EnemyManagerUpdate.cpp:113-118 ⇒ 置 1 那一帧自身能出生；清 0 那一帧的
+---        时间轴仍被压，因为标志要等那帧的敌人循环才变 0）。
+---      · 帧号：敌人在出生帧跑 ECL 的 t=0 **与** t=1 两拍（SpawnEnemy1 里那次 RunEcl
+---        + 同一帧敌人循环里那次 RunEcl；EclRun.cpp:174 每次 RunEcl 末尾 time++）
+---        ⇒ 指令 t=T（T ≥ 1）在「出生帧 + (T−1)」执行。
+---      按此推得的被压窗口（照原样实现，注释在此备查）：
+---        · Sub7@1050 的 t=680 在帧 **1729** 生效 ⇒ 时间轴 t ∈ [1051, 1729] 被压
+---          ⇒ 1150..1230 / 1290..1370 / 1430..1510 / 1570..1650 / 1710..1720 全压掉
+---          （含 t=1370/1510/1650 的三只 Sub11 —— 它们根本没出生，自然也没置标志）。
+---        · t=1790 的 Sub11（life 400）**出生**，t=190 在帧 **1979** 生效
+---          ⇒ [1791, 1979] 被压 ⇒ 1850..1930 压掉；1990 起恢复正常。
+---        · t=3410 的 Sub7，t=680 在帧 **4089** 生效 ⇒ [3411, 4089] 被压
+---          ⇒ t=3510..4050 那 18 条 op2 随机 x 全被压掉。
+---  ★ op2 `SPAWN_ENEMY_RANDOM_X_RANGE`（t=3510..4050 的 18 条）：
+---    x = GetRandomF32InRange(x2−x1) + x1（EnemyTimeline.cpp:181-200），y / life / drop
+---    照表；这 18 条都是非镜像变体（op2）⇒ variant = 0。
+---
+---  ★ 判定 / 血量 / 交互**对齐原作**（EclRunLow.inl:639-706 + EnemyManagerUpdate.cpp:289-400）：
+---    · 判定箱 = `SET_HITBOX` 的**全宽高** = 本卡所有敌人都是 24×24 ⇒ 我们 A/B = 12
+---      （本引擎的 A/B 是**半**宽高）。⚠ A/B 必须写在设定 `self.img` **之后**：
+---      换 img 会按资源半宽覆盖 a/b。
+---    · 血量 = 原作时间轴那一栏 / op91/92 操作数里的 life：妖精 10、中妖精 1000
+---      （另两条 Sub11 行是 400 / 500）、Sub4/6 = 120、Sub13/14 = 500、使魔 = 100。
+---    · `SET_DAMAGE_REDUCTION_TIMER`（非 BOSS 身上 = **完全免伤**，
+---      EnemyManagerUpdate.cpp:391-398）⇒ 移植版用 `protect` 计时：
+---      Sub1 8 / Sub2 8 / Sub3 10 / Sub4 20 / Sub5 30 / Sub6 20 / Sub7 80 /
+---      Sub11 30 / Sub12 30 / Sub13 40 / Sub14 40 / Sub15 30（Sub8/9 是枪、
+---      Sub10 没有这条 ⇒ 0）。
+---    · 交互位（位 = **关掉**对应能力，EclRunLow.inl:656-706）：
+---        · 妖精 / 中妖精（Sub1/2/3/4/6/7/11/13/14）都 `DISABLE_INTERACTION_FLAGS 2`
+---          ⇒ 关 COLLISION ⇒ 引擎里放 `GROUP.NONTJT`：能被打、撞自机**不掉血**；
+---        · 使魔 Sub5/12/15 是 op91 生成（引擎生成时先清 COLLISION），随后
+---          t=1 / t=1 / t=91 各自 `ENABLE_INTERACTION_FLAGS 2` ⇒ 开 COLLISION
+---          ⇒ `GROUP.ENEMY`（自机撞上去会死）—— 按原作在**那一帧**才切换；
+---        · 使魔 Sub10 是 op92 生成、从不 ENABLE ⇒ `GROUP.NONTJT`。
+---    · 掉落（EnemyManager.cpp:744-806）：时间轴那一栏 itemDropType
+---      （0 → 1 个点、1 → 1 个信仰、2/3 → 2 个信仰、−2 不掉）；`SET_ITEM_DROP_COUNTS 3 2`
+---      （Sub7/11/13/14）⇒ pointItemDropCount = 3、powerOrPointItemDropCount = 2
+---      （EclRunHigh.inl:706-708）⇒ `{ 0, 2, 3 }`。
+---
+--- 逐子程序（`ecldata2.ecl` 的 Sub1..Sub15，全部按裸字节核过；角度已整体取反）：
+---   Sub1/2/3 妖精（10）：t=0「延迟出弹」记下一条自机狙扇 + `SET_SHOOT_INTERVAL_DELAYED`
+---        （50/50/30 ⇒ rank 后 40/40/24）+ `SET_DIR_AND_SPEED`（0 / 0 / 下 4.5）；
+---        t=35 加速 −0.05555556、角速 −0.05235988；t=125 角速归零、加速 +0.05。
+---   Sub4/6 中妖精（120）：t=0 延迟出弹（单发 1.7）+ MOVE_IN_DIR(60, EASE_OUT, 下, 1.8+rnd·0.5)；
+---        t=35/55 各撒一只 Sub5 使魔（op91，不跟随父机）；t=75 一组 3×7 扇 + 32×2 圈
+---        （Sub4 用 col=6、Sub6 用 col=2）；t=145/135 转下 0.5 + 加速 0.01666667，
+---        t=205/195 加速度归零。
+---   Sub5 使魔（100）：t=0 朝自机 0.5 + 加速 0.025；t=1 开碰撞。
+---   Sub7 中妖精（1000）：t=0 MOVE_IN_DIR(60, EASE_OUT, 下, 2) + 挂枪 Sub8 + 置压标志；
+---        t=80 以 lf0 = 0/π/π2/−π2 撒 4 只 Sub10 使魔（op92 跟随）；t=680 向上 5 并清标志。
+---   Sub8 Sub7 的枪：每 32 帧一发 `c1 = 5 − parentChainDepth` 的自机狙扇（3 层 2.8→0.5）。
+---   Sub9 Sub10 的枪：li0 从 12 起每轮 −1（用 `SET_SECONDARY_TIME` 做间隔）；24 个 exI0 里
+---        只有 exI0%8 < 4 的 12 轮出弹（5 路 × 3 层、速度 3.2→0.5，偏角 π/2 那次是 f0）。
+---   Sub10 使魔（100）：ORBIT_AROUND_CURRENT(100, lf0, +0.05235988, 0.64)，
+---        t=100 冻半径（SET_ORBIT_VELOCITIES 6000）+ 挂枪 Sub9。
+---   Sub11 中妖精（1000/400/500）：t=0 延迟出弹（2×3、速度 4）每 8 帧一发、向下 3、
+---        置压标志；t=50..230 每 20 帧撒一只 Sub12（op91）；t=130/190 各一组 3×5 扇，
+---        t=190 清压标志；t=350 向下 1.7。
+---   Sub12 使魔（100）：t=0 朝自机 +rndSgn·0.1963495 + 0.5 + 加速 0.05；t=1 开碰撞。
+---   Sub13/14 妖精（500）：t=0 延迟出弹（Sub13 = 32 路圈、Sub14 = 2×5 圈）+ 向下 3；
+---        t=160（Sub14 t=80）撒 5/6 只 Sub15（lf1 从 ∓π/4 起每只 ±π/8）；
+---        t=190/210/230（Sub14 110/130/150）各一组 5 路扇；t=350/270 向下 1.7。
+---   Sub15 使魔（100）：t=0 朝自机（+lf1）0.5 + 加速 0.02833333；t=60 加速 −0.05666667；
+---        t=90 重新瞄准 + 加速 0.025；t=91 开碰撞。
+---
+---与原作的不同（差异 N）：
+---  1  子 context（枪）挂上那一帧只推一拍 t=0 —— 引擎里 `SET_CHILD_ECL` 建的子 context
+---     在**同一帧**的 `low_select_next_context` 里跑一次（EclRun.cpp:180-196）。
+---  2  开场烟尘（Sub16）不实现（纯观感）。
+---  3  贴图是**占位**：敌人一律 `servant`，出弹走 EX 的 ball_*（全部实现完再统一换）。
+---  4  Anm / 演出（SET_MAIN_ANM / SET_FORM_EFFECT_ENABLED / SET_DEATH_MODE /
+---     SET_DEATH_CALLBACK …）只影响画面，忽略。
+---  5  能量 / 炸弹道具折成信仰（本仓库只有 faith / point，口径同另三张道中卡）。
+---  6  插值（MOVE_IN_DIR）走完那一帧直接吸附并清速度（同另三张道中卡）。
+---  7  `SET_MIN_PLAYER_DISTANCE` 本卡 Sub1..15 一条都没有 ⇒ dispatch 里固定用默认
+---     1024 px²（EnemyManager.cpp:189）。
+---
+---  ★ 坐标：TH08 → 我们 = x−192、224−y、**角度整体取反**（y 翻转 ⇒ 角取反）；
+---    `angToPl` / `moveAngle` 直接在我们坐标里算，取反自动完成。
+---  ★ 位置分两层（原作 position / positionOffset）：u.lx/u.ly = 局部、u.px/u.py = offset、
+---    u.wx/u.wy = world；op92 的子敌人每帧把 offset 刷成父机的 world（跟随），
+---    op91 的子敌人只在出生那一下 = 父机 world + 操作数（之后不跟随）。
+---------------------------------------------------------------------
+do
+local PI = 3.141592653589793
+
+---rank 固定取 32（ScaleFloatBasedOnRank(low, high) = low + rank·(high−low)/32 ⇒ 取 high）。
+local RANK = 32
+local RANK_SPD, RANK_SPD2 = 0.15, 0.075
+
+---SET_SHOOT_INTERVAL(_DELAYED) 的 rank 缩放（EclRunHigh.inl:269-292）：
+---f += ScaleIntBasedOnRank(f/5, −f/5)；rank = 32 ⇒ 加 high = −f/5 ⇒ 净 f − f/5。
+local function scaled_interval(n)
+    if n == 0 then return 0 end
+    local up = math.floor(n / 5)
+    local out = n - up
+    if out < 1 then out = 1 end
+    return out
+end
+
+---AddNormalizeAngle(·, 0)：卷进 (−π, π]。
+local function add_norm(a)
+    a = a % (2 * PI)
+    if a > PI then a = a - 2 * PI end
+    return a
+end
+
+---缓动曲线（EclEasingMode，EnemyManager.cpp:94-115）。
+local function ease(mode, p)
+    if mode == 1 then return p * p end
+    if mode == 2 then return p * p * p end
+    if mode == 3 then return p * p * p * p end
+    if mode == 4 then local q = 1 - p; return 1 - q * q end
+    if mode == 5 then local q = 1 - p; return 1 - q * q * q end
+    if mode == 6 then local q = 1 - p; return 1 - q * q * q * q end
+    return p
+end
+
+---位判（内嵌的 Lua 5.1 没有位运算；掩码都是 2 的幂）。
+local function is_bit(v, mask)
+    if v < 0 then return false end
+    return math.floor(v / mask) % 2 == 1
+end
+local K_ONLY_YOUKAI = 0x8000
+local K_ONLY_HUMAN  = 0x10000
+
+local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
+local HALF = 16
+---IsWithinPlayfield（GameManager.cpp:132-150）的矩形判据（带半个精灵宽高）。
+local function in_field(x, y)
+    if x + HALF < FIELD_L then return false end
+    if x - HALF > FIELD_R then return false end
+    if y + HALF < FIELD_B then return false end
+    if y - HALF > FIELD_T then return false end
+    return true
+end
+
+---TH08 的 angToPl 操作数（0x2740）：自机在本机「我们坐标」里的方向。
+local function aim_at(x, y)
+    return math.atan2(player.y - y, player.x - x)
+end
+
+local unit            ---前置声明（子程序里的闭包要引用；类表在下面才建）
+local units           ---本卡活着的单位（card_init 里建表）
+local GUN             ---子 context（枪）的表：SUB / set_child 都要用，前置声明
+local SUB              ---敌人子程序表：unit.init 要把 `SUB[sub]` 拷进 context，前置声明
+---`SET_TIMELINE_SPAWNS_SUPPRESSED`（op175）= 全局 g_EnemyManager.suppressTimelineSpawns，
+---由 Sub7 / Sub11 置 1、清 0（见块首那段帧序推导）。
+local SUPP = { v = 0 }
+
+---------------------------------------------------------------------
+---移动（Enemy::UpdateMovement，EnemyManager.cpp:30-118）
+---------------------------------------------------------------------
+local function u_set_dir_speed(u, angle, speed)
+    u.ma = add_norm(angle)
+    u.spd = speed
+    u.mv = "polar"
+    u.mv_dur, u.mv_timer = 0, 0
+end
+
+local function u_set_accel(u, a)
+    u.acc = a
+    u.mv = "polar"
+end
+
+---MOVE_IN_DIR(时长, 缓动, 角, 速度)：origin = position；t ≤ 0 退化成极性。
+local function u_move_in_dir(u, dur, easing, angle, speed)
+    if dur <= 0 then
+        u_set_dir_speed(u, angle, speed)
+        return
+    end
+    u.dx = math.cos(angle) * speed * dur
+    u.dy = math.sin(angle) * speed * dur
+    u.ox, u.oy = u.lx, u.ly
+    u.mv_dur, u.mv_timer = dur, dur
+    u.mv_ease = easing
+    u.mv = "interp"
+    ---★ ConfigurePolarMotion 在装 delta 时就把 delta.x 翻了（EclHelpers.cpp:50-53）。
+    if u.mirror then u.dx = -u.dx end
+end
+
+---ORBIT_AROUND_CURRENT_POSITION(时长, 起始角, 角速度, 径向速度)：圆心 = 当前 position。
+local function u_orbit_current(u, dur, angle, angvel, radvel)
+    u.mv_dur, u.mv_timer = dur, dur
+    u.oox, u.ooy = u.lx, u.ly
+    u.oa = angle
+    u.oav = angvel
+    u.orad = 0
+    u.oradv = radvel
+    u.mv = "orbit"
+end
+
+---SET_ORBIT_VELOCITIES(时长, 角速度, 径向速度)：保留圆心与当前半径，只改角速 / 径速。
+local function u_orbit_vel(u, dur, angvel, radvel)
+    u.mv_dur, u.mv_timer = dur, dur
+    u.oav = angvel
+    u.oradv = radvel
+    u.mv = "orbit"
+end
+
+---★ 速度**不写进 u.vx/u.vy**：LuaSTG 的引擎每帧都会替**所有**对象积分 `x += vx`，
+---  而 TH08 的 IntegrateVelocity 是另一套、还带 mirrorMovementX ⇒ 这里自己积分。
+local function u_move_update(u)
+    local m = u.mv
+    if m == "polar" then
+        u.ma = add_norm(u.ma + EX.fm * u.av)
+        u.spd = EX.fm * u.acc + u.spd
+        u.vex = math.cos(u.ma) * u.spd
+        u.vey = math.sin(u.ma) * u.spd
+        if u.mv_dur > 0 then
+            u.mv_timer = u.mv_timer - 1
+            if u.mv_timer <= 0 then u.mv = "none" end
+        end
+    elseif m == "interp" then
+        ---★ 计时器先减、再算进度（EnemyManager.cpp:84-86）。
+        u.mv_timer = u.mv_timer - 1
+        local p = 1 - u.mv_timer / u.mv_dur
+        if p < 0 then p = 0 end
+        p = ease(u.mv_ease, p)
+        u.vex = u.ox + u.dx * p - u.lx
+        u.vey = u.oy + u.dy * p - u.ly
+        ---★ 镜像时这里要**再翻一次 x**（EnemyManager.cpp:100-106，只有 INTERP 分支
+        ---  有这一翻），最后 IntegrateVelocity 按 mirrorMovementX 翻第三次。
+        if u.mirror then u.vex = -u.vex end
+        u.ma = math.atan2(u.vey, u.vex)
+        if u.mv_timer <= 0 then
+            ---差异 6：走完就吸附 + 清速度（delta 已含镜像）。
+            u.lx, u.ly = u.ox + u.dx, u.oy + u.dy
+            u.mv = "none"
+            u.vex, u.vey = 0, 0
+        end
+    elseif m == "orbit" then
+        u.oa = add_norm(u.oa + EX.fm * u.oav)
+        u.orad = EX.fm * u.oradv + u.orad
+        u.vex = math.cos(u.oa) * u.orad + u.oox - u.lx
+        u.vey = math.sin(u.oa) * u.orad + u.ooy - u.ly
+        u.ma = math.atan2(u.vey, u.vex)
+        if u.mv_dur > 0 then
+            u.mv_timer = u.mv_timer - 1
+            if u.mv_timer <= 0 then u.mv = "none" end
+        end
+    end
+end
+
+---------------------------------------------------------------------
+---出弹（Enemy::UpdateShotAndAnm / DispatchShotInstruction，EclDependencies.cpp:681-773）
+---------------------------------------------------------------------
+local function dispatch_shot(u, a)
+    ---`if (enemy->life <= 0) break;`（EclRunHigh.inl:230）。
+    if u.hp <= 0 then return end
+    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
+    local dx, dy = u.wx - player.x, u.wy - player.y
+    if dx * dx + dy * dy < 1024.0 then return end
+    local c1, c2 = a.count1 or 1, a.count2 or 1
+    if c1 <= 0 then c1 = 1 end
+    if c2 <= 0 then c2 = 1 end
+    local s1, s2 = a.speed1, a.speed2
+    if s1 ~= 0 then
+        s1 = s1 + RANK_SPD
+        if s1 < 0.3 then s1 = 0.3 end
+    end
+    s2 = s2 + RANK_SPD2
+    if s2 < 0.3 then s2 = 0.3 end
+    EX.shoot(u, u.wx, u.wy, {
+        op = a.op, type = a.type, color = EX.color(a.color),
+        count1 = c1, count2 = c2, speed1 = s1, speed2 = s2,
+        angle = a.angle, step = a.step, flags = a.flags,
+    })
+end
+
+---SHOOT_* 指令：延迟出弹开着就只**记下**（原作的 pendingShotInstruction 是整条指令的
+---拷贝，重放时才 resolve 变量；本卡这些延迟弹的操作数全是字面量 ⇒ 存表等价）。
+local function shoot(u, a)
+    if u.defer then
+        u.pending = a
+    else
+        dispatch_shot(u, a)
+    end
+end
+
+---UpdateShotAndAnm 的间隔段（EclDependencies.cpp:795-808）：life > 0 时
+---timer++，到点就重放 pendingShotInstruction 并把 timer 清零。
+local function u_shot_tick(u)
+    if u.hp <= 0 then return end
+    if u.si_frames > 0 then
+        u.si_timer = u.si_timer + 1
+        if u.si_timer >= u.si_frames then
+            if u.pending then dispatch_shot(u, u.pending) end
+            u.si_timer = 0
+        end
+    end
+end
+
+---SET_SHOOT_INTERVAL / _DELAYED（rank 缩放后的帧数；DELAYED 的初值取 rand % f）。
+local function u_interval(u, n, delayed)
+    local f = scaled_interval(n)
+    u.si_frames = f
+    if f > 0 then
+        u.si_timer = delayed and ran:Int(0, f - 1) or 0
+    else
+        u.si_timer = 0
+    end
+end
+
+---ENABLE_INTERACTION_FLAGS 2：开 COLLISION ⇒ 自机撞上去会死（GROUP.ENEMY）。
+local function u_contact(u)
+    u.group = GROUP.ENEMY
+end
+
+---------------------------------------------------------------------
+---子程序（一张 { time, fn } 表 + 一个 { t, pc, stall } 状态；JUMP / JUMP_DEC 用返回值
+---表示，同一帧继续往下跑，跟 EclRun.cpp:60-100 一致）。
+---  fn 返回 { t = …, pc = … } = 跳转；返回 "die" = TERMINATE（收走这只敌人）。
+---  `stall` = 原作的 secondaryTime：>0 时引擎把 time 与 secondaryTime 各减 1 并结束这一帧，
+---  减到 0 才继续（EclRun.cpp:64-72）⇒ 就是「延后 n 帧」的语义。
+---------------------------------------------------------------------
+local function run_ctx(insns, u, c)
+    while true do
+        if c.stall > 0 then
+            c.stall = c.stall - 1
+            return
+        end
+        local ins = insns[c.pc]
+        if ins == nil or ins[1] ~= c.t then break end
+        c.pc = c.pc + 1
+        local r = ins[2](u, c)
+        if r == "die" then
+            u.alive = false
+            return
+        end
+        if r then c.t, c.pc = r.t, r.pc end
+    end
+    c.t = c.t + 1
+end
+
+---SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。`gticked` 让 u_step 的子
+---context 那一步在**同一帧**不再推第二拍（引擎就是这么跑的：EclRun.cpp:180-196）。
+local function set_child(u, sub)
+    u.gun = sub
+    u.gctx = { t = 0, pc = 1, stall = 0 }
+    u.gticked = true
+    run_ctx(GUN[sub], u, u.gctx)
+end
+
+---op92 SPAWN_FAM_INHERIT_POS：子敌人局部位置 = 操作数（本卡全是 0,0）、
+---positionOffset = 父机的 world（之后 EnemyManagerUpdate.cpp:171-175 每帧刷成父机位置）；
+---变量表整块拷给子 ⇒ lf0 / lf1 继承。
+local function spawn_fam_inherit(parent, sub, hp, drop)
+    local f = New(unit, sub, 0, 0, false, parent,
+            parent.lf0 or 0, hp, drop, parent.lf1 or 0)
+    if f ~= nil then
+        f.px, f.py = parent.wx, parent.wy
+        f.wx, f.wy = f.lx + f.px, f.ly + f.py
+        f.x, f.y = f.wx, f.wy
+    end
+end
+
+---op91 SPAWN_FAM_AT_OFFSET：出生那一下 position = 操作数（本卡全是 0,0）+ 父机 world，
+---之后**不再跟随**父机（引擎不给它 inheritParentPosition）。
+local function spawn_fam_offset(parent, sub, hp, drop)
+    local f = New(unit, sub, parent.wx, parent.wy, false, nil,
+            parent.lf0 or 0, hp, drop, parent.lf1 or 0)
+    if f ~= nil then
+        f.wx, f.wy = f.lx, f.ly
+        f.x, f.y = f.wx, f.wy
+    end
+end
+
+---------------------------------------------------------------------
+---判定 / 免伤 / 交互 / 掉落
+---------------------------------------------------------------------
+---SET_HITBOX 的**全宽高**（原作 hitboxDimensions）⇒ 我们的 A/B = 一半；
+---这张卡的每一只都是 24×24。
+local HITBOX_HALF = {
+    [1] = 12, [2] = 12, [3] = 12, [4] = 12, [5] = 12, [6] = 12, [7] = 12,
+    [10] = 12, [11] = 12, [12] = 12, [13] = 12, [14] = 12, [15] = 12,
+}
+---SET_DAMAGE_REDUCTION_TIMER：非 BOSS 敌人在这么多帧内完全免伤
+---（EnemyManagerUpdate.cpp:391-398）。
+local INVULN = {
+    [1] = 8, [2] = 8, [3] = 10, [4] = 20, [5] = 30, [6] = 20, [7] = 80,
+    [11] = 30, [12] = 30, [13] = 40, [14] = 40, [15] = 30,
+}
+---交互标志里 COLLISION 开着的（`ENABLE_INTERACTION_FLAGS 2`）：使魔 Sub5/12/15。
+---★ 它们在**出生**那一帧还没开（op91 生成时引擎会先清 COLLISION）⇒ 出生时先按
+---  NONTJT 建，等 SUB 里的 t=1 / t=1 / t=91 调 `u_contact` 再切 ENEMY。
+local CONTACT = {}
+
+---原作 itemDropType（ItemManager.hpp:9-19）：0 小能量 / 1 点 / 2 大能量 / 3 炸弹 /
+---−2 不掉。本仓库只有 faith / point 两种道具（差异 5）。
+local DROP_TBL = {
+    [0] = { 0, 1, 0 },
+    [1] = { 0, 0, 1 },
+    [2] = { 0, 2, 0 },
+    [3] = { 0, 2, 0 },
+}
+---`SET_ITEM_DROP_COUNTS a b` ⇒ pointItemDropCount = a、powerOrPointItemDropCount = b
+---（EclRunHigh.inl:706-708）⇒ Dropitem_PFP 的 `{ faith值, 信仰个数, 点个数 }`。
+local DROP_COUNTS = {
+    [7]  = { 0, 2, 3 },
+    [11] = { 0, 2, 3 },
+    [13] = { 0, 2, 3 },
+    [14] = { 0, 2, 3 },
+}
+
+---------------------------------------------------------------------
+---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
+---------------------------------------------------------------------
+unit = Class(enemy, {
+    ---@param sub number 敌机子程序号
+    ---@param x number   局部位置（op92 使魔传父机 world，其它传时间轴坐标）
+    ---@param mirror boolean SPAWN_ENEMY_MIRRORED
+    ---@param parent table  使魔的父机（可为 nil）
+    ---@param lf0 number  局部浮点变量 lf0（使魔 = 起始轨道角）
+    ---@param hp number   原作时间轴 / 操作数给的 life
+    ---@param drop number 原作给的 itemDropType
+    ---@param lf1 number  局部浮点变量 lf1（使魔 = 瞄准偏角）
+    init = function(self, sub, x, y, mirror, parent, lf0, hp, drop, lf1)
+        self.lx, self.ly = x, y
+        self.px, self.py = 0, 0
+        ---enemybase.init 会设 group / layer / maxhp / hp / colli / bound + 一堆计数字段。
+        ---nontaijutsu = true ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）。
+        enemybase.init(self, hp or 1, not CONTACT[sub])
+        self.sub = sub
+        self.mirror = mirror and true or false
+        self.parent = parent
+        self.depth = parent and ((parent.depth or 0) + 1) or 0
+        self.lf0 = lf0 or 0
+        self.lf1 = lf1 or 0
+        self.alive = true
+        self.seen = false
+        self.allow_off = false
+        self.drop_tbl = DROP_TBL[drop]
+        self.drop_counts = DROP_COUNTS[sub]
+        ---贴图（占位，差异 3）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
+        self.img = "servant"
+        self.hscale, self.vscale = 0.6, 0.6
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.navi = false
+        local half = HITBOX_HALF[sub] or 12
+        self.A, self.B = half, half
+        ---SET_DAMAGE_REDUCTION_TIMER。
+        self.invuln = INVULN[sub] or 0
+        self.protect = self.invuln > 0
+        self.astral_dmg_factor = 1
+        ---移动状态。
+        self.mv = "none"
+        self.ma, self.spd, self.acc = 0, 0, 0
+        self.av = 0
+        self.vex, self.vey = 0, 0
+        self.mv_dur, self.mv_timer, self.mv_ease = 0, 0, 0
+        self.ox, self.oy, self.dx, self.dy = 0, 0, 0, 0
+        self.oox, self.ooy, self.oa, self.orad, self.oav, self.oradv = 0, 0, 0, 0, 0, 0
+        ---ECL 的 li0 / li1 / exI0 / exI1。
+        self.li0, self.li1 = 0, 0
+        self.exi0, self.exi1 = 0, 0
+        ---延迟出弹（Sub1/2/3/4/6/11/13/14 都用它）。
+        self.defer = false
+        self.pending = nil
+        self.si_frames, self.si_timer = 0, 0
+        ---主 / 子 context。
+        self.insns = SUB[sub]
+        self.ctx = { t = 0, pc = 1, stall = 0 }
+        self.gun = nil
+        self.gctx = nil
+        self.gticked = false
+        self.wx, self.wy = x, y
+        self.x, self.y = x, y
+        units[#units + 1] = self
+        ---★ 原作 SpawnEnemy1/2 里就立刻 RunEcl 一次（t=0 当帧生效）⇒ 这里照做，并照
+        ---  RunEcl 的尾巴再跑一次 UpdateMovement / UpdateShotAndAnm（生成这一拍也算一拍；
+        ---  外面 card_frame 的循环还会再推一拍 ⇒ 出生帧共两拍，跟原作一模一样）。
+        run_ctx(self.insns, self, self.ctx)
+        if self.alive then
+            u_move_update(self)
+            u_shot_tick(self)
+        end
+    end,
+    ---★ 引擎会对每个对象无条件调 frame。本卡的敌人**不用引擎驱动**（同另三张道中卡）：
+    ---  原作是「时间轴派发 spawn → 敌人循环逐只 RunEcl」，card_frame 里显式复刻了这一
+    ---  顺序。这里留空，否则每帧会被推两拍。
+    frame = function() end,
+    ---占位贴图走默认渲染（不走 enemy 的行走图系统，我们没有 _wisys）。
+    render = function(self)
+        DefaultRenderFunc(self)
+    end,
+    ---击破：掉道具 + 一声击破音。`kill` 是在对象被引擎回收那一下调的，
+    ---所以 RawDel 走的（出屏 / 卡结束）不掉道具，与原作一致。
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+        if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
+        PlaySound('enep00', 0.3, self.x / 200, true)
+    end,
+})
+
+local function u_step(u)
+    ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
+    if u.invuln > 0 then
+        u.invuln = u.invuln - 1
+        u.protect = true
+    elseif u.protect then
+        u.protect = false
+    end
+    ---② 主 context。
+    run_ctx(u.insns, u, u.ctx)
+    if not u.alive then return end
+    ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
+    if u.gun and not u.gticked then
+        run_ctx(GUN[u.gun], u, u.gctx)
+        if not u.alive then return end
+    end
+    u.gticked = false
+    ---④ UpdateMovement。
+    u_move_update(u)
+    ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
+    if u.mirror then
+        u.lx = u.lx - EX.fm * u.vex
+    else
+        u.lx = u.lx + EX.fm * u.vex
+    end
+    u.ly = u.ly + EX.fm * u.vey
+    ---⑥ worldPosition = position + positionOffset（op92 使魔的 offset 每帧跟着父刷新）。
+    if u.parent and IsValid(u.parent) and u.parent.alive ~= false then
+        u.px, u.py = u.parent.wx, u.parent.wy
+    end
+    u.wx, u.wy = u.lx + u.px, u.ly + u.py
+    u.x, u.y = u.wx, u.wy
+    ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
+    enemybase.frame(u)
+    if u.hp <= 0 then u.alive = false return end
+    ---⑧ UpdateShotAndAnm 的间隔段。
+    u_shot_tick(u)
+    ---⑨ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收。
+    if not u.seen then
+        if in_field(u.wx, u.wy) then u.seen = true end
+    else
+        if not in_field(u.wx, u.wy) then u.alive = false end
+    end
+end
+
+---------------------------------------------------------------------
+---敌人子程序
+---------------------------------------------------------------------
+---Sub1（妖精 life 10）：延迟出弹（1×2 自机狙扇，间隔 40）→ 右移 4.5 边转边加速。
+local SUB1 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 2,
+                   speed1 = 3, speed2 = 1.2, angle = 0, step = 0.1847996,
+                   flags = 0x203 })
+        u.defer = false
+        u_interval(u, 50, true)
+        u_set_dir_speed(u, 0, 4.5)
+    end },
+    { 35, function(u)
+        u_set_accel(u, -0.05555556)
+        u.av = 0.05235988
+        u.mv = "polar"
+    end },
+    { 125, function(u)
+        u.av = 0
+        u_set_accel(u, 0.05)
+    end },
+    { 5125, function() return "die" end },
+}
+
+---Sub2（妖精 life 10）：同 Sub1，只是 0xf8 行的速度 2.7 / 1，且间隔放在 t=35。
+local SUB2 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 2,
+                   speed1 = 2.7, speed2 = 1, angle = 0, step = 0.1847996,
+                   flags = 0x203 })
+        u.defer = false
+        u_set_dir_speed(u, 0, 4.5)
+    end },
+    { 35, function(u)
+        u_set_accel(u, -0.05555556)
+        u.av = 0.05235988
+        u.mv = "polar"
+        u_interval(u, 50, true)
+    end },
+    { 125, function(u)
+        u.av = 0
+        u_set_accel(u, 0.05)
+    end },
+    { 5125, function() return "die" end },
+}
+
+---Sub3（妖精 life 10）：col=10 的 1×2 扇、间隔 24，一出生就朝下飞。
+local SUB3 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 96, type = 1, color = 10, count1 = 1, count2 = 2,
+                   speed1 = 2.6, speed2 = 1.5, angle = 0, step = 0.1847996,
+                   flags = 0x203 })
+        u.defer = false
+        u_interval(u, 30, true)
+        u_set_dir_speed(u, -PI / 2, 4.5)
+    end },
+    { 35, function(u)
+        u_set_accel(u, -0.05555556)
+        u.av = 0.05235988
+        u.mv = "polar"
+    end },
+    { 125, function(u)
+        u.av = 0
+        u_set_accel(u, 0.05)
+    end },
+    { 5125, function() return "die" end },
+}
+
+---Sub4（中妖精 life 120，col=6）：延迟出弹单发 1.7、向下插值 60 帧，t=75 放扇 + 圈。
+local SUB4 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = 0.1847996,
+                   flags = 0x203 })
+        u.defer = false
+        u_interval(u, 50, true)
+        u.lf0 = 1.8 + ran:Float(0, 0.5)
+        u_move_in_dir(u, 60, 4, -PI / 2, u.lf0)
+    end },
+    { 35, function(u) spawn_fam_offset(u, 5, 100, -2) end },
+    { 55, function(u) spawn_fam_offset(u, 5, 100, -2) end },
+    { 75, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 7,
+                   speed1 = 4, speed2 = 1, angle = 0, step = 0.165347,
+                   flags = 0x202 })
+        shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 2,
+                   speed1 = 3, speed2 = 0.5, angle = 0, step = 0,
+                   flags = 0x202 })
+    end },
+    { 145, function(u)
+        u_set_dir_speed(u, -PI / 2, 0.5)
+        u_set_accel(u, 0.01666667)
+    end },
+    { 205, function(u) u_set_accel(u, 0) end },
+    { 5205, function() return "die" end },
+}
+
+---Sub5（Sub4/6 的使魔 life 100）：朝自机 0.5 起加速 0.025；t=1 开碰撞。
+local SUB5 = {
+    { 0, function(u)
+        u.lf0 = aim_at(u.wx, u.wy)
+        u_set_dir_speed(u, u.lf0, 0.5)
+        u_set_accel(u, 0.025)
+    end },
+    { 1, function(u) u_contact(u) end },
+    { 5001, function() return "die" end },
+}
+
+---Sub6（中妖精 life 120，col=2）：同 Sub4，t=75 的扇与圈用 col=2、收尾早 10 帧。
+local SUB6 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 1,
+                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = 0.1847996,
+                   flags = 0x203 })
+        u.defer = false
+        u_interval(u, 50, true)
+        u.lf0 = 1.8 + ran:Float(0, 0.5)
+        u_move_in_dir(u, 60, 4, -PI / 2, u.lf0)
+    end },
+    { 35, function(u) spawn_fam_offset(u, 5, 100, -2) end },
+    { 55, function(u) spawn_fam_offset(u, 5, 100, -2) end },
+    { 75, function(u)
+        shoot(u, { op = 96, type = 1, color = 2, count1 = 3, count2 = 7,
+                   speed1 = 4, speed2 = 1, angle = 0, step = 0.165347,
+                   flags = 0x202 })
+        shoot(u, { op = 98, type = 2, color = 2, count1 = 32, count2 = 2,
+                   speed1 = 3, speed2 = 0.5, angle = 0, step = 0,
+                   flags = 0x202 })
+    end },
+    { 135, function(u)
+        u_set_dir_speed(u, -PI / 2, 0.5)
+        u_set_accel(u, 0.01666667)
+    end },
+    { 195, function(u) u_set_accel(u, 0) end },
+    { 5195, function() return "die" end },
+}
+
+---Sub7（中妖精 life 1000）：向下插值 + 挂枪 Sub8 + 置「压时间轴」标志；
+---t=80 撒 4 只 Sub10（op92 跟随），t=680 向上 5 并清标志。
+local SUB7 = {
+    { 0, function(u)
+        SUPP.v = 1
+        u_move_in_dir(u, 60, 4, -PI / 2, 2)
+        set_child(u, 8)
+    end },
+    { 80, function(u)
+        u.lf0 = 0
+        spawn_fam_inherit(u, 10, 100, 1)
+        u.lf0 = -PI
+        spawn_fam_inherit(u, 10, 100, 1)
+        u.lf0 = -PI / 2
+        spawn_fam_inherit(u, 10, 100, 1)
+        u.lf0 = PI / 2
+        spawn_fam_inherit(u, 10, 100, 1)
+        u_set_dir_speed(u, -PI / 2, 0.25)
+    end },
+    { 680, function(u)
+        u_move_in_dir(u, 120, 1, PI / 2, 5)
+        SUPP.v = 0
+    end },
+    { 5680, function() return "die" end },
+}
+
+---Sub8（Sub7 的枪）：每 32 帧一发自机狙扇，弹数 = 5 − parentChainDepth。
+---★ `JUMP 0 -156` 指向 #1（INT_SUB2 li0 …）⇒ 每轮**重算** li0 再出弹。
+local SUB8
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.exi0 = 24 end)                      ---#0
+    local head = #s + 1                                        ---#1（循环头）
+    add(0, function(u) u.li0 = 5 - u.depth end)                ---#1 INT_SUB2 li0 5 depth
+    add(0, function(u)                                         ---#4（0xf8 行）
+        shoot(u, { op = 96, type = 2, color = 6, count1 = u.li0, count2 = 3,
+                   speed1 = 2.8, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   flags = 0x203 })
+    end)
+    add(32, function() return { t = 0, pc = head } end)        ---#5 JUMP 0 −156
+    SUB8 = s
+end
+
+---Sub9（Sub10 的枪）：li0 从 12 起每轮 −1 当间隔（SET_SECONDARY_TIME）；
+---exI0 从 24 每轮 −1，只有 exI0 % 8 < 4 的轮才出弹（5 路 × 3 层、速度 3.2→0.5）。
+---★ `JUMP_DEC 0 −284 exI0` 指向 #5（FLOAT_ADD2 lf0 moveAngle π）⇒ 循环从那儿重来。
+local SUB9
+do
+    local s = {}
+    local function add(t, fn) s[#s + 1] = { t, fn } end
+    add(0, function(u) u.li0 = 12 end)                         ---#3（0xf8 行）
+    add(0, function(u) u.exi0 = 24 end)                        ---#4
+    local head = #s + 1                                        ---#5（循环头）
+    add(0, function(u) u.lf0 = add_norm(u.ma - PI) end)        ---#5 FLOAT_ADD2 lf0 moveAngle π
+    add(0, function(u) u.li1 = u.exi0 % 8 end)                 ---#6 INT_MOD2 li1 exI0 8
+    local skip = head + 4                                      ---#12（跳过出弹那几条）
+    add(0, function(u)                                         ---#7 JMP_IF_INT_GE li1 4 → #12
+        if u.li1 >= 4 then return { t = 0, pc = skip } end
+    end)
+    add(0, function(u)                                         ---#11（0xf8 行）
+        shoot(u, { op = 96, type = 3, color = 6, count1 = 5, count2 = 3,
+                   speed1 = 3.2, speed2 = 0.5, angle = 0, step = 0.448799,
+                   flags = 0x203 })
+    end)
+    add(0, function(u, c) c.stall = u.li0 end)                 ---#12 SET_SECONDARY_TIME li0
+    add(0, function(u) u.li0 = u.li0 - 1 end)                  ---#13 INT_DEC li0
+    add(0, function(u)                                         ---#14 JUMP_DEC 0 −284 exI0
+        u.exi0 = u.exi0 - 1
+        if u.exi0 > 0 then return { t = 0, pc = head } end
+        u.gun, u.gctx = nil, nil                               ---#15 RETURN
+    end)
+    SUB9 = s
+end
+
+---Sub10（使魔 life 100）：从出生的地方开始公转（半径 0.64/帧 长 100 帧 → 64），
+---t=100 冻半径 + 挂枪 Sub9。
+local SUB10 = {
+    { 0, function(u)
+        u_orbit_current(u, 100, u.lf0, 0.05235988, 0.64)
+    end },
+    { 100, function(u)
+        u_orbit_vel(u, 6000, 0.05235988, 0)
+        set_child(u, 9)
+    end },
+    { 5100, function() return "die" end },
+}
+
+---Sub11（中妖精 life 1000/400/500）：延迟出弹（2×3、速度 4）每 8 帧一发、向下 3、
+---置「压时间轴」标志；t=50..230 每 20 帧撒一只 Sub12（op91）；t=190 清标志。
+local SUB11 = {
+    { 0, function(u)
+        SUPP.v = 1
+        u.defer = true
+        shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 3,
+                   speed1 = 4, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   flags = 0x202 })
+        u.defer = false
+        u_interval(u, 10, false)
+        u_move_in_dir(u, 50, 4, -PI / 2, 3)
+    end },
+    { 50, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 80, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 110, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 130, function(u)
+        spawn_fam_offset(u, 12, 100, 1)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 5,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   flags = 0x202 })
+    end },
+    { 150, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 170, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 190, function(u)
+        spawn_fam_offset(u, 12, 100, 1)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 5,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   flags = 0x202 })
+        SUPP.v = 0
+    end },
+    { 210, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 230, function(u) spawn_fam_offset(u, 12, 100, 1) end },
+    { 350, function(u) u_set_dir_speed(u, -PI / 2, 1.7) end },
+    { 5350, function() return "die" end },
+}
+
+---Sub12（Sub11 的使魔 life 100）：朝自机 ±0.1963495 起 0.5 + 加速 0.05；t=1 开碰撞。
+local SUB12 = {
+    { 0, function(u)
+        u.lf1 = ran:Float(-1, 1) * 0.1963495
+        u.lf0 = add_norm(aim_at(u.wx, u.wy) + u.lf1)
+        u_set_dir_speed(u, u.lf0, 0.5)
+        u_set_accel(u, 0.05)
+    end },
+    { 1, function(u) u_contact(u) end },
+    { 5001, function() return "die" end },
+}
+
+---Sub13（妖精 life 500）：延迟出弹（32 路圈、间隔 24）+ 向下 3；
+---t=80 一组 2×8 扇；t=160 撒 5 只 Sub15（lf1 从 +π/4 起每只 −π/8）；
+---t=190/210 各一组 5 路扇，t=230 再补一组扇 + 一个 32 路圈。
+local SUB13 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 98, type = 6, color = 2, count1 = 32, count2 = 1,
+                   speed1 = 2.3, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   flags = 0x2 })
+        u.defer = false
+        u_interval(u, 30, false)
+        u_move_in_dir(u, 60, 4, -PI / 2, 3)
+    end },
+    { 80, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 2, count2 = 8,
+                   speed1 = 1.8, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   flags = 0x202 })
+    end },
+    { 160, function(u)
+        u.lf1 = 0.7853982
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = 0.3926991
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = 0
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = -0.3926991
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = -0.7853982
+        spawn_fam_offset(u, 15, 100, 1)
+    end },
+    { 190, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 210, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 230, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+        shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 350, function(u) u_set_dir_speed(u, -PI / 2, 1.7) end },
+    { 5350, function() return "die" end },
+}
+
+---Sub14（妖精 life 500）：同 Sub13，但延迟出弹是 2×5 圈、t=80 撒 **6** 只 Sub15、
+---扇在 110/130/150、t=270 就转向。
+local SUB14 = {
+    { 0, function(u)
+        u.defer = true
+        shoot(u, { op = 98, type = 6, color = 2, count1 = 2, count2 = 5,
+                   speed1 = 3.3, speed2 = 0.5, angle = 0, step = 0,
+                   flags = 0x2 })
+        u.defer = false
+        u_interval(u, 30, false)
+        u_move_in_dir(u, 60, 4, -PI / 2, 3)
+    end },
+    { 80, function(u)
+        u.lf1 = 0.7853982
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = 0.3926991
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = 0
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = -0.3926991
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = -0.7853982
+        spawn_fam_offset(u, 15, 100, 1)
+        u.lf1 = -1.1780972
+        spawn_fam_offset(u, 15, 100, 1)
+    end },
+    { 110, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 130, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 150, function(u)
+        shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+        shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 1,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   flags = 0x202 })
+    end },
+    { 270, function(u) u_set_dir_speed(u, -PI / 2, 1.7) end },
+    { 5270, function() return "die" end },
+}
+
+---Sub15（Sub13/14 的使魔 life 100）：朝自机（+lf1）0.5 + 加速 0.02833333；
+---t=60 减速、t=90 重新瞄准 + 加速 0.025、t=91 开碰撞。
+local SUB15 = {
+    { 0, function(u)
+        u.lf0 = add_norm(aim_at(u.wx, u.wy) + u.lf1)
+        u_set_dir_speed(u, u.lf0, 0.5)
+        u_set_accel(u, 0.02833333)
+    end },
+    { 60, function(u) u_set_accel(u, -0.05666667) end },
+    { 90, function(u)
+        u.lf0 = add_norm(aim_at(u.wx, u.wy) + u.lf1)
+        u_set_dir_speed(u, u.lf0, 0.5)
+        u_set_accel(u, 0.025)
+    end },
+    { 91, function(u) u_contact(u) end },
+    { 5091, function() return "die" end },
+}
+
+SUB = {
+    [1] = SUB1, [2] = SUB2, [3] = SUB3, [4] = SUB4, [5] = SUB5, [6] = SUB6,
+    [7] = SUB7, [10] = SUB10, [11] = SUB11, [12] = SUB12, [13] = SUB13,
+    [14] = SUB14, [15] = SUB15,
+}
+GUN = { [8] = SUB8, [9] = SUB9 }
+
+---------------------------------------------------------------------
+---时间轴：{ 帧, 子程序号, x, y, life, mirror, drop [, {x1,x2}] }
+---（x / y 已经是我们的坐标；life = 原作时间轴那一栏；drop = itemDropType）。
+---239 条，逐条对过 `ecldata2.ecl` 时间轴 0 的 t=1..4670（含 t=1 的开场烟尘 sub=16，
+---差异 2 在 card_frame 里跳过；t=4870 起是中 BOSS，不属于本卡）。
+---第 8 项只给 op2 随机 x 的那 18 条（t=3510..4050，x = ran:Float(0, x2−x1) + x1）。
+---★ 这些行在 t=3410 的 Sub7 清标志之前全被 `SET_TIMELINE_SPAWNS_SUPPRESSED` 压掉
+---  （见块首那段推导），但表里照原作保留。
+---------------------------------------------------------------------
+local TIMELINE = {
+    {     1, 16,  -162,  240,    20, 0,  -2 },
+    {   460,  1,   208,   64,    10, 1,   0 },
+    {   470,  1,   208,   64,    10, 1,   0 },
+    {   480,  1,   208,   64,    10, 1,   0 },
+    {   490,  1,   208,   64,    10, 1,   0 },
+    {   500,  1,   208,   64,    10, 1,   0 },
+    {   510,  1,   208,   64,    10, 1,   0 },
+    {   520,  1,   208,   64,    10, 1,   0 },
+    {   530,  1,   208,   64,    10, 1,   1 },
+    {   540,  1,   208,   64,    10, 1,   1 },
+    {   550,  1,   288,   64,    10, 1,   0 },
+    {   560,  1,   288,   64,    10, 1,   0 },
+    {   570,  1,   288,   64,    10, 1,   0 },
+    {   580,  1,   288,   64,    10, 1,   0 },
+    {   590,  1,   288,   64,    10, 1,   0 },
+    {   600,  1,   288,   64,    10, 1,   0 },
+    {   610,  1,   288,   64,    10, 1,   1 },
+    {   620,  1,   288,   64,    10, 1,   1 },
+    {   630,  1,   288,   64,    10, 1,   1 },
+    {   640,  3,    96,  240,    10, 1,   0 },
+    {   650,  3,    96,  240,    10, 1,   0 },
+    {   660,  3,    96,  240,    10, 1,   0 },
+    {   670,  3,    96,  240,    10, 1,   0 },
+    {   680,  3,    96,  240,    10, 1,   0 },
+    {   690,  3,    96,  240,    10, 1,   0 },
+    {   700,  3,    96,  240,    10, 1,   1 },
+    {   710,  3,    96,  240,    10, 1,   1 },
+    {   720,  3,    96,  240,    10, 1,   1 },
+    {   730,  2,   288,   64,    10, 1,   0 },
+    {   740,  2,   288,   64,    10, 1,   0 },
+    {   750,  2,   288,   64,    10, 1,   0 },
+    {   760,  2,   288,   64,    10, 1,   0 },
+    {   770,  2,   288,   64,    10, 1,   0 },
+    {   780,  2,   288,   64,    10, 1,   0 },
+    {   790,  2,   288,   64,    10, 1,   1 },
+    {   800,  2,   288,   64,    10, 1,   1 },
+    {   810,  2,   288,   64,    10, 1,   1 },
+    {   820,  1,   208,   64,    10, 1,   0 },
+    {   830,  1,   208,   64,    10, 1,   0 },
+    {   840,  1,   208,   64,    10, 1,   0 },
+    {   850,  1,   208,   64,    10, 1,   0 },
+    {   860,  1,   208,   64,    10, 1,   0 },
+    {   870,  1,   208,   64,    10, 1,   0 },
+    {   880,  1,   208,   64,    10, 1,   0 },
+    {   890,  1,   208,   64,    10, 1,   1 },
+    {   900,  1,   208,   64,    10, 1,   1 },
+    {   910,  3,    96,  240,    10, 1,   0 },
+    {   920,  3,    96,  240,    10, 1,   0 },
+    {   930,  3,    96,  240,    10, 1,   0 },
+    {   940,  3,    96,  240,    10, 1,   0 },
+    {   950,  3,    96,  240,    10, 1,   0 },
+    {   960,  3,    96,  240,    10, 1,   0 },
+    {   970,  3,    96,  240,    10, 1,   1 },
+    {   980,  3,    96,  240,    10, 1,   1 },
+    {   990,  3,    96,  240,    10, 1,   1 },
+    {  1050,  7,     0,  240,  1000, 0,   3 },
+    {  1150,  1,   208,   64,    10, 1,  -2 },
+    {  1160,  1,   208,   64,    10, 1,  -2 },
+    {  1170,  1,   208,   64,    10, 1,  -2 },
+    {  1180,  1,   208,   64,    10, 1,  -2 },
+    {  1190,  1,   208,   64,    10, 1,  -2 },
+    {  1200,  1,   208,   64,    10, 1,  -2 },
+    {  1210,  1,   208,   64,    10, 1,  -2 },
+    {  1220,  1,   208,   64,    10, 1,   0 },
+    {  1230,  1,   208,   64,    10, 1,   0 },
+    {  1290,  1,  -208,   64,    10, 0,  -2 },
+    {  1300,  1,  -208,   64,    10, 0,  -2 },
+    {  1310,  1,  -208,   64,    10, 0,  -2 },
+    {  1320,  1,  -208,   64,    10, 0,  -2 },
+    {  1330,  1,  -208,   64,    10, 0,  -2 },
+    {  1340,  1,  -208,   64,    10, 0,  -2 },
+    {  1350,  1,  -208,   64,    10, 0,  -2 },
+    {  1360,  1,  -208,   64,    10, 0,   0 },
+    {  1370,  1,  -208,   64,    10, 0,   0 },
+    {  1370, 11,    64,  240,  1000, 0,   0 },
+    {  1430,  1,   208,   64,    10, 1,  -2 },
+    {  1440,  1,   208,   64,    10, 1,  -2 },
+    {  1450,  1,   208,   64,    10, 1,  -2 },
+    {  1460,  1,   208,   64,    10, 1,  -2 },
+    {  1470,  1,   208,   64,    10, 1,  -2 },
+    {  1480,  1,   208,   64,    10, 1,  -2 },
+    {  1490,  1,   208,   64,    10, 1,  -2 },
+    {  1500,  1,   208,   64,    10, 1,   0 },
+    {  1510,  1,   208,   64,    10, 1,   0 },
+    {  1510, 11,   128,  240,   400, 0,   1 },
+    {  1570,  1,  -208,   64,    10, 0,  -2 },
+    {  1580,  1,  -208,   64,    10, 0,  -2 },
+    {  1590,  1,  -208,   64,    10, 0,  -2 },
+    {  1600,  1,  -208,   64,    10, 0,  -2 },
+    {  1610,  1,  -208,   64,    10, 0,  -2 },
+    {  1620,  1,  -208,   64,    10, 0,  -2 },
+    {  1630,  1,  -208,   64,    10, 0,  -2 },
+    {  1640,  1,  -208,   64,    10, 0,   0 },
+    {  1650,  1,  -208,   64,    10, 0,   0 },
+    {  1650, 11,  -128,  240,   500, 0,   1 },
+    {  1710,  1,   208,   64,    10, 1,  -2 },
+    {  1720,  1,   208,   64,    10, 1,  -2 },
+    {  1730,  1,   208,   64,    10, 1,  -2 },
+    {  1740,  1,   208,   64,    10, 1,  -2 },
+    {  1750,  1,   208,   64,    10, 1,  -2 },
+    {  1760,  1,   208,   64,    10, 1,  -2 },
+    {  1770,  1,   208,   64,    10, 1,  -2 },
+    {  1780,  1,   208,   64,    10, 1,   0 },
+    {  1790,  1,   208,   64,    10, 1,   0 },
+    {  1790, 11,   128,  240,   400, 0,   1 },
+    {  1850,  1,  -208,   64,    10, 0,  -2 },
+    {  1860,  1,  -208,   64,    10, 0,  -2 },
+    {  1870,  1,  -208,   64,    10, 0,  -2 },
+    {  1880,  1,  -208,   64,    10, 0,  -2 },
+    {  1890,  1,  -208,   64,    10, 0,  -2 },
+    {  1900,  1,  -208,   64,    10, 0,  -2 },
+    {  1910,  1,  -208,   64,    10, 0,  -2 },
+    {  1920,  1,  -208,   64,    10, 0,   0 },
+    {  1930,  1,  -208,   64,    10, 0,   0 },
+    {  1930, 11,  -128,  240,   500, 0,   1 },
+    {  1990,  1,   208,   64,    10, 1,  -2 },
+    {  2000,  1,   208,   64,    10, 1,  -2 },
+    {  2010,  1,   208,   64,    10, 1,  -2 },
+    {  2020,  1,   208,   64,    10, 1,  -2 },
+    {  2030,  1,   208,   64,    10, 1,  -2 },
+    {  2040,  1,   208,   64,    10, 1,  -2 },
+    {  2050,  1,   208,   64,    10, 1,  -2 },
+    {  2060,  1,   208,   64,    10, 1,   0 },
+    {  2070,  1,   208,   64,    10, 1,   0 },
+    {  2070, 11,   128,  240,   400, 0,   1 },
+    {  2130,  1,  -208,   64,    10, 0,  -2 },
+    {  2140,  1,  -208,   64,    10, 0,  -2 },
+    {  2150,  1,  -208,   64,    10, 0,  -2 },
+    {  2160,  1,  -208,   64,    10, 0,  -2 },
+    {  2170,  1,  -208,   64,    10, 0,  -2 },
+    {  2180,  1,  -208,   64,    10, 0,  -2 },
+    {  2190,  1,  -208,   64,    10, 0,  -2 },
+    {  2200,  1,  -208,   64,    10, 0,   0 },
+    {  2210,  1,  -208,   64,    10, 0,   0 },
+    {  2210, 11,   -64,  240,   400, 0,   1 },
+    {  2210, 11,    64,  240,   400, 0,   1 },
+    {  2270,  1,   208,   64,    10, 1,  -2 },
+    {  2280,  1,   208,   64,    10, 1,  -2 },
+    {  2290,  1,   208,   64,    10, 1,  -2 },
+    {  2300,  1,   208,   64,    10, 1,  -2 },
+    {  2310,  1,   208,   64,    10, 1,  -2 },
+    {  2320,  1,   208,   64,    10, 1,  -2 },
+    {  2330,  1,   208,   64,    10, 1,  -2 },
+    {  2340,  1,   208,   64,    10, 1,   0 },
+    {  2350,  1,   208,   64,    10, 1,   0 },
+    {  2410,  1,  -208,   64,    10, 0,  -2 },
+    {  2420,  1,  -208,   64,    10, 0,  -2 },
+    {  2430,  1,  -208,   64,    10, 0,  -2 },
+    {  2440,  1,  -208,   64,    10, 0,  -2 },
+    {  2450,  1,  -208,   64,    10, 0,  -2 },
+    {  2460,  1,  -208,   64,    10, 0,  -2 },
+    {  2470,  1,  -208,   64,    10, 0,  -2 },
+    {  2480,  1,  -208,   64,    10, 0,   0 },
+    {  2490,  1,  -208,   64,    10, 0,   0 },
+    {  2490, 13,   -64,  240,   500, 0,   1 },
+    {  2490,  4,  -128,  240,   120, 0,   1 },
+    {  2490,  4,   128,  240,   120, 0,   1 },
+    {  2490,  4,   -96,  240,   120, 0,   1 },
+    {  2490,  4,    96,  240,   120, 0,   1 },
+    {  2690, 14,    64,  240,   500, 0,   1 },
+    {  2890, 14,     0,  240,   500, 0,   1 },
+    {  2950,  1,   208,   64,    10, 1,  -2 },
+    {  2960,  1,   208,   64,    10, 1,  -2 },
+    {  2970,  1,   208,   64,    10, 1,  -2 },
+    {  2980,  1,   208,   64,    10, 1,  -2 },
+    {  2990,  1,   208,   64,    10, 1,  -2 },
+    {  3000,  1,   208,   64,    10, 1,  -2 },
+    {  3010,  1,   208,   64,    10, 1,  -2 },
+    {  3020,  1,   208,   64,    10, 1,   0 },
+    {  3030,  1,   208,   64,    10, 1,   0 },
+    {  3030,  4,  -128,  240,   120, 0,   1 },
+    {  3030,  4,   128,  240,   120, 0,   1 },
+    {  3030,  4,   -96,  240,   120, 0,   1 },
+    {  3030,  4,    96,  240,   120, 0,   1 },
+    {  3090,  1,  -208,   64,    10, 0,  -2 },
+    {  3100,  1,  -208,   64,    10, 0,  -2 },
+    {  3110,  1,  -208,   64,    10, 0,  -2 },
+    {  3120,  1,  -208,   64,    10, 0,  -2 },
+    {  3130,  1,  -208,   64,    10, 0,  -2 },
+    {  3140,  1,  -208,   64,    10, 0,  -2 },
+    {  3150,  1,  -208,   64,    10, 0,  -2 },
+    {  3160,  1,  -208,   64,    10, 0,   0 },
+    {  3170,  1,  -208,   64,    10, 0,   0 },
+    {  3170,  4,  -128,  240,   120, 0,   1 },
+    {  3170,  4,   128,  240,   120, 0,   1 },
+    {  3170,  4,   -96,  240,   120, 0,   1 },
+    {  3170,  4,    96,  240,   120, 0,   1 },
+    {  3230,  1,   208,   64,    10, 1,  -2 },
+    {  3240,  1,   208,   64,    10, 1,  -2 },
+    {  3250,  1,   208,   64,    10, 1,  -2 },
+    {  3260,  1,   208,   64,    10, 1,  -2 },
+    {  3270,  1,   208,   64,    10, 1,  -2 },
+    {  3280,  1,   208,   64,    10, 1,  -2 },
+    {  3290,  1,   208,   64,    10, 1,  -2 },
+    {  3300,  1,   208,   64,    10, 1,   0 },
+    {  3310,  1,   208,   64,    10, 1,   0 },
+    {  3410,  7,     0,  240,  1000, 0,   2 },
+    {  3510,  4,     0,  240,   100, 0,   0, {  -160,   -64 } },
+    {  3530,  4,     0,  240,   100, 0,   0, {    64,   160 } },
+    {  3550,  4,     0,  240,   100, 0,   1, {  -160,   160 } },
+    {  3610,  4,     0,  256,   100, 0,   1, {  -160,   -64 } },
+    {  3630,  6,     0,  240,   100, 0,   0, {    64,   160 } },
+    {  3650,  6,     0,  272,   100, 0,   0, {  -160,   160 } },
+    {  3710,  6,     0,  240,   100, 0,   1, {  -160,   -64 } },
+    {  3730,  6,     0,  256,   100, 0,   1, {    64,   160 } },
+    {  3750,  4,     0,  240,   100, 0,   0, {  -160,   160 } },
+    {  3810,  4,     0,  256,   100, 0,   0, {  -160,   -64 } },
+    {  3830,  4,     0,  240,   100, 0,   1, {    64,   160 } },
+    {  3850,  4,     0,  240,   100, 0,   1, {  -160,   160 } },
+    {  3910,  4,     0,  240,   100, 0,   0, {  -160,   -64 } },
+    {  3930,  6,     0,  256,   100, 0,   0, {    64,   160 } },
+    {  3950,  6,     0,  240,   100, 0,   1, {  -160,   160 } },
+    {  4010,  6,     0,  256,   100, 0,   1, {  -160,   -64 } },
+    {  4030,  6,     0,  256,   100, 0,   0, {    64,   160 } },
+    {  4050,  6,     0,  240,   100, 0,   0, {  -160,   160 } },
+    {  4170,  4,  -128,  240,   100, 0,   0 },
+    {  4180,  4,  -112,  240,   100, 0,   1 },
+    {  4190,  4,   -96,  240,   100, 0,   0 },
+    {  4200,  4,   -80,  240,   100, 0,   1 },
+    {  4210,  4,   -64,  240,   100, 0,   0 },
+    {  4330,  6,   128,  240,   100, 0,   1 },
+    {  4340,  6,   112,  240,   100, 0,   0 },
+    {  4350,  6,    96,  240,   100, 0,   1 },
+    {  4360,  6,    80,  240,   100, 0,   0 },
+    {  4370,  6,    64,  240,   100, 0,   1 },
+    {  4470,  4,  -128,  240,   100, 0,   0 },
+    {  4480,  4,  -112,  240,   100, 0,   1 },
+    {  4490,  4,   -96,  240,   100, 0,   0 },
+    {  4500,  4,   -80,  240,   100, 0,   1 },
+    {  4510,  4,   -64,  240,   100, 0,   0 },
+    {  4590,  6,   128,  240,   100, 0,   1 },
+    {  4600,  6,   112,  240,   100, 0,   0 },
+    {  4610,  6,    96,  240,   100, 0,   1 },
+    {  4620,  6,    80,  240,   100, 0,   0 },
+    {  4630,  4,    64,  240,   100, 0,   1 },
+    {  4640,  4,   112,  240,   100, 0,   0 },
+    {  4650,  4,    96,  240,   100, 0,   1 },
+    {  4660,  4,    80,  240,   100, 0,   2 },
+    {  4670,  4,    64,  240,   100, 0,   2 },
+}
+
+local function card_init(owner)
+    units = {}
+    SUPP.v = 0
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+    owner.tl_t = 0
+    owner.tl_i = 1
+    ---BOSS 本体放在场地外、不显形（照另三张道中卡）。
+    owner.x, owner.y = 0, 400
+end
+
+local function card_frame(owner)
+    if owner.tl_t == nil then return end
+    local t = owner.tl_t
+    ---① 时间轴：派发这一帧的 spawn（原作 EnemyTimeline.cpp:106-121 的 timer == time）。
+    while owner.tl_i <= #TIMELINE and TIMELINE[owner.tl_i][1] == t do
+        local e = TIMELINE[owner.tl_i]
+        owner.tl_i = owner.tl_i + 1
+        if e[2] == 16 then
+            ---差异 2：Sub16 是开场烟尘。
+        elseif SUPP.v == 0 then
+            ---op2 用随机 x；其余用表里的 x。
+            local x = e[3]
+            if e[8] then x = ran:Float(0, e[8][2] - e[8][1]) + e[8][1] end
+            New(unit, e[2], x, e[4], e[6] == 1, nil, 0, e[5], e[7], 0)
+        else
+            ---被 `SET_TIMELINE_SPAWNS_SUPPRESSED` 压掉（见块首推导）。
+        end
+    end
+    owner.tl_t = t + 1
+
+    ---② 逐敌人跑一帧（用 while 而不是 for：父在这帧里撒出的使魔要当帧也被跑到，
+    ---   跟原作「新敌人在同一帧的敌人循环里还会再跑一次」一致）。
+    local i = 0
+    while i < #units do
+        i = i + 1
+        local u = units[i]
+        if IsValid(u) and u.alive then u_step(u) end
+    end
+    EX.suppress_step()
+
+    ---③ 收尸。
+    local j = 1
+    for k = 1, #units do
+        local u = units[k]
+        if IsValid(u) and u.alive then
+            units[j] = u
+            j = j + 1
+        elseif IsValid(u) then
+            object.RawDel(u)
+        end
+    end
+    for k = #units, j, -1 do units[k] = nil end
+end
+
+local function card_del(owner)
+    if units then
+        for i = 1, #units do
+            if IsValid(units[i]) then object.RawDel(units[i]) end
+            units[i] = nil
+        end
+    end
+    units = {}
+    SUPP.v = 0
+    owner.tl_t = nil
+    owner.tl_i = nil
+    EX.clear_records(owner)
+    EX.pool_clear()
+    EX.fm = 1
+end
+
+CARD[1003] = {
+    init = card_init,
+    frame = card_frame,
+    del = card_del,
+}
+end
+
 local function placeholder_del() end
 
 ---------------------------------------------------------------
@@ -47187,6 +50451,13 @@ local LIST = {
     ---  野符四张里也只有 Lunatic 叫「GHQクライシス」。
     ---★ 38 与 44 撞号（6A 的四非 = 44、6B 的四非 = 38）⇒ 这两张用第 8 项给出
     ---  CARD 表的键（3038 / 3044），其余照旧用第 1 项的子程序号。
+    ---★「道中搬运卡」：原作 Stage 3 的道中（`ecldata3.ecl` 时间轴 0，t=620..2680，
+    ---  24 只敌人）搬进一张**耐久卡**（第 6 项不填 hp ⇒ t1 = t2 = t3 ⇒ 耐久、伤害恒 0），
+    ---  正好接上后面的「非符一」（原作中 BOSS 在 t=3080 出现）。
+    ---  卡 id 3428：th34 占了 3400..3425（含紫的 3411/3413/…/3425）与 3440+、3480+，
+    ---  3415 也被 th34 的非符三用掉 ⇒ 3428 全项目无引用。
+    ---  时长 52 秒 = 原作 3080/60 = 51.3 向上取整。
+    { 1002, "三面道中「迷途竹林」", 3428, 52, 3, nil, "三面道中「迷途竹林」", 1002 },
     { 35,  "",                                   427, 37, 3, 13100, "非符一" },
     { 44,  "始符「エフェメラリティ137」",         428, 34, 3, 1700, nil, 3044 },
     { 47,  "野符「GHQクライシス」",               429, 34, 3, 2000 },
@@ -47337,6 +50608,15 @@ local LIST = {
     ---★ 秒数 = 根子程序的 `ins_134(threshold, cb)` / 60。
     ---★ 41 与 Stage 4B 的 41 撞号（两张不同的符卡）⇒ 4A 这一张先占 41，
     ---  4B 的那张到时候改用第 8 项给键。
+    ---★「四面道中」：4A / 4B（组 10 / 组 11）共用同一段时间轴（ecldata4a.ecl 与
+    ---  ecldata4b.ecl 的道中段逐字节相同）⇒ 两条 LIST 条目共用一份 CARD[1001]。
+    ---  id 3412 / 3414 都是空号（th31 用 351..476、th34 用 3400..3409 与 3488）。
+    ---  ★ 这一张是**耐久卡**（第 6 项不填 hp ⇒ t1 = t2 = t3，伤害恒 0），但道中敌人
+    ---    自己带判定 / 血量、能被打掉、会掉道具（与原作对齐）。
+    ---    时长 83 秒：原作中 BOSS 在 t=4962 出现（4962/60 = 82.7），正好接下一张
+    ---    「非符一」（id 433 = 中 BOSS 宿主 Sub16）。
+    { 1001, "四面道中「虚実の境界」", 3412, 83, 10, nil, "四面道中「虚実の境界」", 1001 },
+    { 1001, "四面道中「虚実の境界」", 3414, 83, 11, nil, "四面道中「虚実の境界」", 1001 },
     { 17,  "",                                   433, 40, 10, 13900, "非符一" },
     ---28（夢境「二重大結界」）：Sub28 的 `ins_134(3000, "Sub19")` ⇒ 3000 帧 = **50 秒**；
     ---血量 = 进场 life 2000（上一卡 `ins_133(0,2000,…)` 夹回来的）− 收尾阈值 0（本卡没有新的
@@ -47467,6 +50747,17 @@ local LIST = {
     ---    ...
     ---★ 秒数 = `ins_134(threshold, cb)` / 60。
     ---★ CARD 键统一用 id（461..469，写在第 8 项）—— Stage 2 的子程序号跟前面各关大量撞车。
+    ---★「道中搬运卡」：原作 Stage 2 的道中（`ecldata2.ecl` 时间轴 0，t=1..4670，239 条
+    ---  spawn）搬进一张**耐久卡**（第 6 项不填 hp ⇒ t1 = t2 = t3 ⇒ 耐久、伤害恒 0），
+    ---  正好接上后面的「非符一」（原作中 BOSS 在 t=4870 出现 = 中 BOSS Sub17）。
+    ---  卡 id 3429：th34 占了 3400..3425 与 3440+、3480+，3415/3428 也被用掉
+    ---  ⇒ 3429 全项目无引用（`boss.card.add` 末参与 `LIST` 第 3 项都扫过）。
+    ---  时长 82 秒 = 原作 4870/60 = 81.2 向上取整。
+    ---  ★ 这一段里 Sub7 / Sub11 会各用一次 `SET_TIMELINE_SPAWNS_SUPPRESSED`
+    ---    把时间轴中断一段时间（米斯蒂娅的两段「等待自机靠近」）；被压的行
+    ---    **照表保留**、只在派发生效那一帧跳过 —— 细节见 CARD[1003] 头注。
+    ---  ★ 卡名自选（原作道中无名）：与「一面道中「萤火小径」」配成一组小径。
+    { 1003, "二面道中「夜雀小径」", 3429, 82, 2, nil, "二面道中「夜雀小径」", 1003 },
     { 17, "", 461, 33, 2, 10500, "非符一", 461 },
     { 23, "声符「木菟咆哮」", 462, 30, 2, 1500, "声符「木菟咆哮」", 462 },
     { 27, "", 463, 32, 2, 16400, "非符二", 463 },

@@ -1249,6 +1249,42 @@ NewStage("TH33", "醉生梦死", 31, function(self)
         task.Wait(120)
         boss.CreateGroup(14, self.level)
         task.Wait(120)
+        ---原作 scene group 4（world05 = 红魔馆 / 地下图书馆）的 8 幕：40/42/44/46 是红美铃
+        ---（ecl10_a..d）、41/43/45/47 是帕秋莉（ecl11_a..d）。同样按「一个角色一个组」拆成
+        ---两组：组 15 = 红美铃（4 张，第 1 张是非符）、组 16 = 帕秋莉（4 张）。
+        boss.CreateGroup(15, self.level)
+        task.Wait(120)
+        boss.CreateGroup(16, self.level)
+        task.Wait(120)
+        ---原作 scene group 3（world04 = 迷いの竹林 / 永遠亭）的 9 幕：30/33/35/38 是メディスン
+        ---（ecl7_a..d，第 1 张是非符）、31/34/36 是铃仙（ecl9_a..c）、32/37 是因幡帝
+        ---（ecl8_a..b）。按「一个角色一个组」拆成三组：
+        ---组 17 = メディスン（4 张，第 1 张非符）、组 18 = 铃仙（3 张）、组 19 = 因幡帝（2 张）。
+        boss.CreateGroup(17, self.level)
+        task.Wait(120)
+        boss.CreateGroup(18, self.level)
+        task.Wait(120)
+        boss.CreateGroup(19, self.level)
+        task.Wait(120)
+        ---原作 scene group 2（world03 = 魔法の森）的 8 幕：20/22/24/26 是アリス（ecl6_a..d，
+        ---第 1 张是非符）、21/23/25/27 是上白沢慧音（ecl5_a..d）。按「一个角色一个组」拆成
+        ---两组：组 20 = アリス（4 张）、组 21 = 慧音（4 张）。
+        boss.CreateGroup(21, self.level)
+        task.Wait(120)
+        ---原作 scene group 1（world02 = 魔法の森）的 6 幕：10/12/14 是チルノ（ecl3_a..c）、
+        ---11/13/15 是レティ（ecl4_a..c）。按「一个角色一个组」拆成两组：
+        ---组 22 = チルノ（3 张，第 1 张非符）、组 23 = レティ（3 张，第 1 张非符）。
+        boss.CreateGroup(22, self.level)
+        task.Wait(120)
+        boss.CreateGroup(23, self.level)
+        task.Wait(120)
+        ---原作 scene group 0（world01 = 夜の森）的 6 幕：0/2/4 是リグル（ecl1_a..c）、
+        ---1/3/5 是ルーミア（ecl2_a..c）。同样拆成：组 24 = リグル（3 张，第 1 张非符）、
+        ---组 25 = ルーミア（3 张，第 1 张非符）。
+        boss.CreateGroup(24, self.level)
+        task.Wait(120)
+        boss.CreateGroup(25, self.level)
+        task.Wait(120)
     end)
     ---166 = 本关自己的通关成就（165 是 TH32 的）。注意 TH31/TH32 那两行写的是 52，
     ---那是 TH06 的成就 id —— 抄过来的话通关会给「驱散红雾之日」。

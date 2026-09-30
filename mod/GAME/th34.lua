@@ -1003,7 +1003,9 @@ end
 ---  1    Burst：出生后 17 帧内速度 = 5 − timer*5/16 + 自身速度（沿自身朝向），之后清位
 ---       （第 5 面 sub 11/13/26/28/30/32/34/36 的「一出生冲出去再收住」）。
 ---  0x80 DirChangeAim：用 dur 帧沿当前朝向把速度线性减到 0，dur 帧后
----       朝向 = 自机方向 + cmd.speed、速度 = cmd.angle，重复 loopCount 次。
+---       朝向 = 自机方向 + cmd.angle、速度 = cmd.speed，重复 loopCount 次
+---       （跟 0x40 同一套字段；原作的「ZUN 交换」只发生在指令字段
+---        cmd.speed→commandStates[3].angle 那一层，见帧循环里 0x40 的注释）。
 ---本仓库没有对应 API，所以逐帧自己算（差异 21）。bound 留默认 true ⇒ 出屏照常回收。
 ---（★ 角度/角速度都按「我们」的口径传进来：TH07 的弧度已经转成度、并且取过反，
 ---  见第 3 面/第 5 面那两段代码里的 `rad2our`。）
@@ -5465,6 +5467,15 @@ end
 ---    （`Enemy::HandleLifeCallback` / `HandleTimerCallback`：life 被夹到阈值，弹池清空）。
 ---  · 一张**符卡** = BEGIN_SPELLCARD + 自己的弹幕 + 自己的计时器；卡结束时
 ---    `timerCallbackSub` 被换成 `deathCallbackSub`（= 下一张非符）⇒ 一路串下去。
+---  · **符卡自己带不带 life**：符卡 sub 一般**不写 SET_LIFE**，而 `BeginSpellcard`
+---    （EclManager.cpp:658）也**不重置 life** ⇒ 符卡开始时 life 就是上一张非符被
+---    `HandleLifeCallback` 夹到的那个阈值（2000~2800）。只有 PH 的 85/86/87 与 EX 的
+---    83/84 这种「先 SET_LIFE、再 SUB_CALL 一张符卡 sub」的包壳才自带 life
+---    （3000 / 8000 / 8000）。移植版每张符卡都按**开卡时的那个 life**折算。
+---  · **开卡后的「打不动」窗口**：原作每张符卡先 120 帧 `SET_CAN_BE_DAMAGED 0`
+---    （就是进场动画），紧接着 `SET_INVINCIBILITY_TIMER 240` 把伤害再 ÷9（boss 专属，
+---    EnemyManager.cpp:872-880）⇒ 等效再少 213 帧。移植版用一段等长的**全程免伤**
+---    顶上（框架只有 t1/t2 两档，见 `CARD_FREEZE`），总击杀时长与原作一致。
 ---  · 移植版不串这条链：每张卡自带进场、漂移/弹幕、时限。Boss Rush 与符卡练习里
 ---    每张卡本来就是**独立挑战**的（`boss.card.add` 的 data_id 就是练习解锁号）。
 ---
@@ -5474,7 +5485,9 @@ end
 ---    EnemyManager.cpp:820-845）⇒ 用「无折扣」系数 0.09825（= hp1/hp3 同口径）；
 ---    例：life 20000、阈值 2600 ⇒ 17400 × 0.09825 ≈ 1709。
 ---  · 符卡：原作符卡期间**伤害 ÷7**（EnemyManager.cpp:838-845 的 `damage/7`）⇒
----    系数 0.09825 × 7 ≈ 0.6878；例：阈值 2600 ⇒ 1788（与 th07.lua 的 600~1500 同档）。
+---    系数 0.09825 × 7 ≈ 0.6878；输入是**符卡实际持有的 life**（见上面那条：多数
+---    符卡 = 上一张非符的阈值 2000~2800，包壳卡用 3000 / 8000），例：阈值 2600 ⇒
+---    hpS(2600) = 1788（与 th07.lua 的 600~1500 同档）。
 ---  · 耐久卡（原作无 SET_LIFE 或 SET_IS_SURVIVAL_SPELLCARD）给 10000000、关判定。
 ---弹型/色档是代理（同差异 62/63）：sprite 4/5/6/8 → ball_small、10 → grain_a、
 ---  7/9 → arrow_small、2 → 米弹；色档走 col16（同号近似）。
@@ -5905,6 +5918,8 @@ local function TH34_add_stage78_boss()
     ---之后 0.08px/帧；60 帧展开、16 帧收束、判定从第 60 帧起。
     local function laser_star(x, y)
         local ls = {}
+        ---原作 sub125 #6 / sub121 #6：激光星一出现就响 se_lazer00。
+        PlaySound("lazer00", 0.13, (x or 0) / 256)
         ---原作 sub125 一共插 12 条（li0=0..11，角度 60°·li0）：前 6 条的 spriteOffset=14、
         ---后 6 条 =1，两层角度相同、但 sub126 每帧把它们**反向**拧 0.01309°，于是两两错开。
         for k = 0, 5 do
@@ -5969,12 +5984,35 @@ local function TH34_add_stage78_boss()
         pool4 = {}
     end
 
-    ---符卡公共骨架。wall=true ⇒ 耐久卡（不可打、不唱超时音、血量极大）。
+    ---原作符卡「开卡后打不动」的等效时长（秒）——每张卡开卡时的两段：
+    ---  · t=0..120 帧 `SET_CAN_BE_DAMAGED 0` ⇒ 完全免伤（这 120 帧就是进场动画）；
+    ---  · 紧接着 `SET_INVINCIBILITY_TIMER 240` ⇒ 伤害再 ÷9（EnemyManager.cpp:872-880，
+    ---    boss 的 ÷9，跟符卡阶段的 ÷7 叠乘），240 帧 ÷9 等效 240×8/9 ≈ 213.3 帧。
+    ---框架（boss_system.lua:147-154 的 t1/t2）只有「完全免伤 → 线性升到 1」两档，
+    ---没有 ÷9，所以这里把「等效时长」直接换成一段**全程免伤**（t1 = t2）——
+    ---总击杀时长与原作一致，形状上只是把「几乎打不动」压成「打不动」。
+    ---非符的 60 帧 ÷9（等效 0.89 s）沿用原来的 1 s，不在这张表里。
+    local CARD_FREEZE_DEFAULT = 5.555556          -- 120 + 240×8/9 = 333.33 帧
+    local CARD_FREEZE = {
+        [3450] = 2.0,                             -- 原作 PH sub88：INV 紧接着被清 0 ⇒ 只免伤 120 帧
+        [3452] = 2.0,                             -- 原作 PH sub60：同上
+        [3462] = 2.0,                             -- 原作 EX sub85（与 PH sub88 同型）：同上
+        [3451] = 7.185185,                        -- 原作 PH sub63：0..110 帧 ÷9、110..230 帧免伤、230..470 帧 ÷9
+        [3461] = 7.185185,                        -- 原作 EX sub61：同上
+        [3443] = 10.888889,                       -- 原作 PH sub114：120 帧免伤 + INV 600 帧 ÷9
+        [3469] = 10.888889,                       -- 原作 EX sub110：同上
+    }
+
+    ---符卡公共骨架。wall=true ⇒ 耐久卡（不可打、不唱超时音、血量极大，life 被忽略）。
+    ---life = 该符卡在原作里**开卡那一刻的 life**（多数 = 上一张非符被夹到的阈值，
+    ---自带 SET_LIFE 的包壳卡用自身值 3000/8000；详见文件头的结构说明）——
+    ---**不是**上一张非符的 SET_LIFE 值，别再填 20000。
     ---initfn(self) 里可以用 pspawn 放子机；卡片结束时它们会被统一清掉。
     local function spellcard(name, id, t3, life, wall, initfn)
         local live = {}
-        local card = boss.card.New(name, wall and t3 or 1, wall and t3 or 1, t3,
-                                   wall and 10000000 or hpS(life or 20000))
+        local freeze = wall and t3 or (CARD_FREEZE[id] or CARD_FREEZE_DEFAULT)
+        local card = boss.card.New(name, freeze, freeze, t3,
+                                   wall and 10000000 or hpS(life))
         card.before = wall and skin_wall or skin
         card.init = function(self)
             pool4 = {}
@@ -5996,7 +6034,7 @@ local function TH34_add_stage78_boss()
     end
 
     ---────────── sc140 紫奥義「弹幕结界」（原作 sub 129 + 130..134，生存卡 74s） ──────────
-    ---本体先进场、再走到画面正中；接着每 4390 帧一轮的「发射环」：在中点放两个子机
+    ---本体先进场、再走到画面正中；接着每 4450 帧一轮的「发射环」：在中点放两个子机
     ---（色档 4/6），子机从半径 0 盘旋外扩 120 帧到 rmax，随后每隔 step 帧跑一次扫射
     ---循环（共 n 次），之后继续盘旋到卡片结束。每个循环：
     ---  · 快弹（原作 SPREAD_ABS (6,li2)）：从子机本体沿「轨道切线方向 + lf3」打出；
@@ -6052,7 +6090,8 @@ local function TH34_add_stage78_boss()
                 end
             end
         end
-        ---每一波 = { 距上一波的帧数, { 子机参数... } }，整轮 4390 帧（原作 t=4660 跳回 t=270）。
+        ---每一波 = { 距上一波的帧数, { 子机参数... } }。原作 t=4660 的 JUMP 跳到 instr#29
+        ---（t=270）但把母体时间写成 210，每轮开头因此空转 60 帧 —— 墙钟一轮是 4450 帧。
         ---sub130..133 的循环体：l2i1 < fast 时先打一发「快弹」（#26/#27）再 JUMP 到 #31；
         ---否则从 #29 走（先做计数回绕）——两条路都会落到 #31 之后，所以**慢弹每轮都打**，
         ---快弹只看计数器。fast = 计数器上限（nil = 每轮都打快弹），
@@ -6090,7 +6129,7 @@ local function TH34_add_stage78_boss()
                             pspawn(0, 0, ring(p))
                         end
                     end
-                    task.Wait(4390 - cur)
+                    task.Wait(4450 - cur)
                 end
             end)
         end)
@@ -6107,7 +6146,9 @@ local function TH34_add_stage78_boss()
     ---那次 RAND_EXIT_ANGLE 写的就是 lf0，也就是第 1 层的基准角，所以每 300 帧会被重掷。
     do
         local NAME = "结界「生与死的境界」"
-        ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}。at 用 hpS 折算。
+        ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}。at 用 hpS 折算
+        ---（本卡的开卡 life 是 8000 ⇒ 门槛 7000/6000/4000/3000/1500 才有意义）。
+        ---第 1 层永远打、不看 at（原作 sub128 的血量分支在它之后），20000 只是占位。
         local LAYER = {
             { at = hpS(20000), spr =  2, off = 6, c1 = 7, c2 = 1, v1 = 2.0, v2 = 1, d = -0.349066, a2 = 0.392699 },
             { at = hpS(7000),  spr =  8, off = 2, c1 = 5, c2 = 1, v1 = 1.5, v2 = 1, d =  0.392699, a2 = 0.196350 },
@@ -6124,14 +6165,14 @@ local function TH34_add_stage78_boss()
             { spr =  7, off = 6, c1 = 5, c2 = 1, v1 = 3.5, v2 = 1, d =  0.130900, a2 = 0.392699 },
             { spr =  7, off = 4, c1 = 5, c2 = 2, v1 = 4.5, v2 = 2, d = -0.523599, a2 = 0.392699 },
         }
-        spellcard(NAME, 3441, 120, 20000, false, function(self)
+        spellcard(NAME, 3441, 120, 8000, false, function(self)
             self._box = { -64, 64, 96, 160 }
             local acc = { rngrad(), rngrad(), rngrad(), rngrad(), rngrad(), rngrad() }
             task.New(self, function()
                 task.Wait(220)                    -- 原作 #36 在 t=210 挂回调、10 帧后才首发
                 ---原作 sub128 每 10 帧回调一次：li1 每次 +10，>= 5700（第 571 次、t=5920）
                 ---就换成「全解锁加强版」；否则按剩余 life 逐层解锁，血量 < 800 才补那发瞄准扇。
-                local t = 0
+                local t, lv = 0, 0
                 while true do
                     ---第 1 层（原作 sub128 #0）：在难度/血量分支之前，两段都打。
                     local L1 = LAYER[1]
@@ -6139,6 +6180,10 @@ local function TH34_add_stage78_boss()
                             acc[1] * RAD2DEG, L1.a2 * RAD2DEG, true)
                     acc[1] = acc[1] + L1.d
                     if t >= 5700 then
+                        if lv < 6 then
+                            lv = 6
+                            PlaySound("tan00", 0.1, self.x / 256)   -- 原作 sub128 #54 PLAY_SOUND 0xf
+                        end
                         for k, R in ipairs(RAGE) do
                             gspread(self, bs(R.spr), R.off, R.c1, R.c2, R.v1, R.v2,
                                     acc[k + 1] * RAD2DEG, R.a2 * RAD2DEG, true)
@@ -6150,12 +6195,20 @@ local function TH34_add_stage78_boss()
                         for k = 2, #LAYER do
                             local L = LAYER[k]
                             if self.hp <= L.at then
+                                if lv < k then
+                                    lv = k
+                                    PlaySound("tan00", 0.1, self.x / 256)   -- 原作 sub128 #7/#15/#23/#31/#39 解锁音
+                                end
                                 gspread(self, bs(L.spr), L.off, L.c1, L.c2, L.v1, L.v2,
                                         acc[k] * RAD2DEG, L.a2 * RAD2DEG, true)
                                 acc[k] = acc[k] + L.d
                             end
                         end
                         if self.hp <= hpS(800) then
+                            if lv < 6 then
+                                lv = 6
+                                PlaySound("tan00", 0.1, self.x / 256)   -- 原作 sub128 #47 PLAY_SOUND 0xf
+                            end
                             shoot(self, 64, 8, 4, 8, 1, 4, 2, 0,
                                   0.19635 + ran:Float(0, 0.392699), true)
                         end
@@ -6234,7 +6287,9 @@ local function TH34_add_stage78_boss()
                 end
                 PlaySound("power0", 0.35, self.x / 256)    -- 原作 #37 PLAY_SOUND 5
                 bmove(self, 120, 0, 0, 0)            -- 原作 #38：线性回正中
-                task.Wait(394)                       -- ≈t=451 → t=845
+                ---原作 sub119 的 #29..#31 / #34..#36 两段各 120 次整数的 DEC_JUMP 空转
+                ---不推进母体时间，却实打实走了 238 帧 ⇒ 此后所有绝对时间都要 +238。
+                task.Wait(633)                       -- ≈t=450 → t=1083
                 local sx = (player.x >= 0) and 1 or -1
                 bmove(self, 300, 0, 128 * sx, 128)   -- 原作 #52/#55
                 task.Wait(306)                       -- → t=1151
@@ -6246,32 +6301,36 @@ local function TH34_add_stage78_boss()
                 task.Wait(400)                       -- → t=2951
                 bmove(self, 300, 0, 0, 0)            -- 原作 #98：回正中
             end)
-            ---原作 PLAY_SOUND 5（se_power0）共 6 次：#37 被压到 ≈t=451，
-            ---#48/#64/#77/#91/#97 按绝对时间 785/1091/1791/2491/2891 响。
+            ---原作 PLAY_SOUND 5（se_power0）共 6 次：#37 被压到 ≈t=450，
+            ---#48/#64/#77/#91/#97 按绝对时间 1023/1329/2029/2729/3129 响。
             task.New(self, function()
-                local cur = 451
+                local cur = 450
                 PlaySound("power0", 0.35, self.x / 256)
-                for _, tw in ipairs({ 785, 1091, 1791, 2491, 2891 }) do
+                for _, tw in ipairs({ 1023, 1329, 2029, 2729, 3129 }) do
                     task.Wait(tw - cur); cur = tw
                     PlaySound("power0", 0.35, self.x / 256)
                 end
             end)
             ---四边炮台：{帧, {sub120/121/122/123 的目标点 + 发射角}}（我们的坐标）。
-            ---第一波（原作 t=212/223/234/245）被 sub119 的循环压到 ≈t=451 同时出现。
+            ---第一波（原作 t=212/223/234/245）被 sub119 的循环压到 ≈t=450 同时出现；
+            ---之后三波的原作指令时刻 t=851/1451/1951 也同样落在墙钟 1089/1689/2189。
+            ---第 4 项 = 本波内的额外延迟：第一波的原作四条指令分别落在
+            ---内部 t=212/223/234/245（墙钟 450/461/472/483），后三波同帧。
             local BAT = {
-                {  451, { { -192,  -96,   0 }, { 192,   96, 180 }, {  -64, 224, -90 }, {  64, -224, 90 } } },
-                {  851, { { -192, -128,   0 }, { 192,  128, 180 }, {  -96, 224, -90 }, {  96, -224, 90 } } },
-                { 1451, { { -192,   64,   0 }, { 192,   64, 180 }, {  -32, 224, -90 }, {  32, -224, 90 } } },
-                { 1951, { { -192, -160,   0 }, { 192,  160, 180 }, { -128, 224, -90 }, { 128, -224, 90 } } },
+                {  450, { { -192,  -96,   0, 0 }, { 192,   96, 180, 11 }, {  -64, 224, -90, 22 }, {  64, -224, 90, 33 } } },
+                { 1089, { { -192, -128,   0 }, { 192,  128, 180 }, {  -96, 224, -90 }, {  96, -224, 90 } } },
+                { 1689, { { -192,  -64,   0 }, { 192,   64, 180 }, {  -32, 224, -90 }, {  32, -224, 90 } } },
+                { 2189, { { -192, -160,   0 }, { 192,  160, 180 }, { -128, 224, -90 }, { 128, -224, 90 } } },
             }
             local SPAWNP = { { -192, 224 }, { 192, -224 }, { 192, 224 }, { -192, -224 } }
             local MV = { 400, 400, 300, 300 }
             task.New(self, function()
-                local cur = 0
+                local now = 0
+                local function at(t) if t > now then task.Wait(t - now); now = t end end
                 for _, b in ipairs(BAT) do
-                    task.Wait(b[1] - cur); cur = b[1]
                     for k = 1, 4 do
                         local tgt = b[2][k]
+                        at(b[1] + (tgt[4] or 0))
                         pspawn(SPAWNP[k][1], SPAWNP[k][2], turret,
                                { tx = tgt[1], ty = tgt[2], a = tgt[3], mv = MV[k] })
                     end
@@ -6283,8 +6342,8 @@ local function TH34_add_stage78_boss()
                             {  192, -224, 180 },
                             {  192,  224, -90 },
                             { -192, -224,  90 } }
-                local SW = { 3051, 3201, 3351, 3501, 3601, 3701, 3791, 3871,
-                             3931, 3981, 4021, 4061, 4101, 4141, 4181, 4221 }
+                local SW = { 3289, 3439, 3589, 3739, 3839, 3939, 4029, 4109,
+                             4169, 4219, 4259, 4299, 4339, 4379, 4419, 4459 }
                 task.New(self, function()
                     task.Wait(SW[1])
                     for k = 1, #SW do
@@ -6329,10 +6388,11 @@ local function TH34_add_stage78_boss()
                 gring(self, bs(8), c, 20, 2, 2, 1, 0, 0, true)
                 gspread(self, bs(8), c, 8, 2, 8, 1, aim - 90, 0.19635 * RAD2DEG, true)
                 gspread(self, bs(8), c, 8, 2, 8, 1, aim + 90, 0.19635 * RAD2DEG, true)
+                PlaySound("tan00", 0.1, self.x / 256)    -- 原作 sub115 #53 PLAY_SOUND 0xf
                 st = (st + 1) % 6
             end
         end
-        spellcard(NAME, 3443, 80, 20000, false, function(self)
+        spellcard(NAME, 3443, 80, 2000, false, function(self)
             self._box = { -128, 128, 96, 176 }
             task.New(self, function()
                 task.Wait(210)                            -- 母体 t=210
@@ -6367,11 +6427,19 @@ local function TH34_add_stage78_boss()
     do
         local NAME = "魍魎「二重黑死蝶」"
         ---一批「黑死蝶」：rings 组 4 发环；curve = 每帧角度增量（度，我们的口径）。
+        ---原件那几条 RING_ABS 的 flags = 0x2270 同时挂着三条指令：先 0x40 沿原朝向
+        ---120 帧把速度线性刹到 0（cmd.spd=0 当角增量、cmd.ang=0 当刹后速度 ⇒ 停住），
+        ---再 0x20 每帧转 curve、速度 +0.0111111（180 帧），最后 0x10 沿此刻朝向每帧
+        ---再 +0.00666667（120 帧，TargetVelocity ⇒ 本文件的 accel 字段）。
         local function flock(self, spr, col, rings, curve)
             for _ = 1, rings do
                 local a0 = rngdeg()
                 local v = ran:Float(2, 7)
-                local cmd = { type = 0x20, dur = 180, angle = curve, speed = 0.0111111 }
+                local cmd = { stages = {
+                    { type = 0x40, dur = 120, loop = 1, angle = 0, speed = 0 },
+                    { type = 0x20, dur = 180, loop = -1, angle = curve, speed = 0.0111111 },
+                    { type = 0x10, dur = 120, loop = -1, accel = 0.00666667 },
+                } }
                 for k = 0, 3 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(spr), col16(col),
                                             self.x, self.y, v, a0 + k * 90, cmd)
@@ -6379,7 +6447,7 @@ local function TH34_add_stage78_boss()
             end
             sound4(self)
         end
-        spellcard(NAME, 3444, 80, 20000, false, function(self)
+        spellcard(NAME, 3444, 80, 2700, false, function(self)
             self._box = { -128, 128, 96, 176 }
             task.New(self, function()
                 task.Wait(210)                            -- 母体 t=210：第一批
@@ -6417,15 +6485,23 @@ local function TH34_add_stage78_boss()
     ---f=0 放 4 条径向段（tStart=60,dur=340,tEnd=16,判定 60..16）；f=100 放 4 条切线段
     ---（120,180,16,判定 120..16）并转入 300 帧的「旋转程」；f=400 两组一起换成
     ---tStart=630/dur=338/tEnd=32/判定 600..32 的下一轮，再转 1000 帧，随后回到 f=400
-    ---无限循环（每轮 lf7 恰好 −360°，与首轮同相）。旧激光不被新生成顶掉（原作
-    ---只覆写 enemy->lasers 槽位指针，池里的老激光仍活到自己寿终），所以这里也不主动删。
+    ---无限循环（每轮 lf7 恰好 −360°）。
+    ---★ 原作有**两套反向累积**的相位：臂角靠 ADD_LASER_ANGLE 每帧 −w（我们的口径 +w ⇒ a7），
+    ---lf7 每帧 +w（我们的口径 −w ⇒ lf7）。循环段开头用的是 **lf7**（原作 #55/#56 的
+    ---`NORMALIZE_ANGLE lf7` + `lf0 = lf7`，#76 又拿它当切线段位置基准），不是臂角的平滑续接；
+    ---两套相位每帧差 2w ⇒ 循环接管的那一帧（f=400）比「臂角续接」多转 2·400·w ≡ −0.4π
+    ---（mod 2π），又因 1000·w 恰好一整圈，此后每一轮都固定差这 −0.4π。所以循环段必须用 lf7，
+    ---a7 只管开局那两波。旧激光不被新生成顶掉（原作只覆写 enemy->lasers 槽位指针，
+    ---池里的老激光仍活到自己寿终），所以这里也不主动删。
     local function laser_rig107(self)
         local W, R = 0.00628319, 122
-        local a7 = -PI / 4
+        local a7 = -PI / 4        -- 臂角（我们的口径，每帧 +w）：开局两波的 spawn 基准
+        local lf7 = -PI / 4       -- 原作 lf7 的取反版（每帧 −w）：循环段的 spawn 基准
         local live = {}
-        local function spawn(radial, sOff, eOff, ts, dur, te, hbS, hbE)
+        local function spawn(radial, sOff, eOff, ts, dur, te, hbS, hbE, base)
+            base = base or a7
             for k = 0, 3 do
-                local arm = a7 - k * PI / 2
+                local arm = base - k * PI / 2
                 local o = plaser(0, 0, radial and arm or (arm + PI / 2), {
                     spr = 6, w = 24, sOff = sOff, eOff = eOff, sLen = eOff,
                     tStart = ts, dur = dur, tEnd = te, hbStart = hbS, hbEnd = hbE })
@@ -6449,7 +6525,7 @@ local function TH34_add_stage78_boss()
                     table.remove(live, i)
                 end
             end
-            a7 = a7 + W
+            a7, lf7 = a7 + W, lf7 - W
         end
         spawn(true, 16, 122, 60, 340, 16, 60, 16)        -- f=0
         rot()
@@ -6458,8 +6534,8 @@ local function TH34_add_stage78_boss()
         rot()
         for _ = 1, 299 do task.Wait(1); rot() end        -- f=101..399
         while true do                                    -- f=400、1400、…（每轮 1000 帧）
-            spawn(true, 16, 122, 630, 338, 32, 600, 32)
-            spawn(false, 0, 122, 630, 338, 32, 600, 32)
+            spawn(true, 16, 122, 630, 338, 32, 600, 32, lf7)
+            spawn(false, 0, 122, 630, 338, 32, 600, 32, lf7)
             rot()
             for _ = 1, 999 do task.Wait(1); rot() end    -- f=401..1399
         end
@@ -6507,8 +6583,8 @@ local function TH34_add_stage78_boss()
     ---  · 真实 274 放出两台「妖蝶」激光台（sub107/108），并把周期回调设成每 8 帧一波
     ---    乱射（sub105）——回调独立于主 sub，冻结期间照样开火，再被下一波清屏带走；
     ---  · 真实 544 爆闪（原作 t=480）→ 644 清屏并关掉回调；
-    ---  · 真实 704 改成每 10 帧一波的三组 5 发瞄准环（sub106；原作 RING_AIMED 的
-    ---    flags 字段读到下一条指令的 time=0，所以那些子弹实际不挂任何指令）；
+    ---  · 真实 704 改成每 10 帧一波的三组 5 发瞄准环（sub106；三组的 flags 是
+    ---    0x202/0x2222/0x2222 ⇒ 第 2、3 环的子弹挂 0x20，60 帧里朝 ∓0.9°/帧）；
     ---  · 真实 1144 爆闪（原作 t=980）→ 1244 清屏、改成每 20 帧一波乱射；真实 1274 跳回 t=210。
     do
         local NAME = "罔両「栖于禅寺的妖蝶」"
@@ -6525,13 +6601,25 @@ local function TH34_add_stage78_boss()
             end)
         end
         ---瞄准环（原作 sub106 的 RING_AIMED pk=(8,1) c1=5）：三组同帧、朝自机、速度 4。
+        ---★ 三组的 flags（第 8 个参数）分别是 0x202 / 0x2222 / 0x2222 —— args[7] 是**真字段**
+        ---（指令长 44 字节；EclManager.cpp `bulletProps->flags = bulletInstrArgs[7].u`），
+        ---不是「下一条指令的 time」。0x2222 含 0x20 位 ⇒ 第 2、3 环的子弹挂得上
+        ---INIT_BULLET_CMD idx=1 的 0x20：60 帧里朝向每帧 ∓0.9°、速度不变。
+        ---（第 1 环 0x202 没有 0x20 位，所以不挂指令 —— 移植版原来把三环都当成了这种。）
         local function ring106(self)
             local aim = Angle(self, player)
             gring(self, bs(8), 1, 5, 1, 4, 1, aim, 0, false)
-            gring(self, bs(8), 1, 5, 1, 4, 1, aim, 0, false)
-            gring(self, bs(8), 1, 5, 1, 4, 1, aim, 0, true)
+            for _, dth in ipairs({ -0.9, 0.9 }) do
+                for k = 0, 4 do
+                    pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(8), col16(1),
+                                            self.x, self.y, 4, aim + k * 72,
+                                            { type = 0x20, dur = 60, loop = -1,
+                                              angle = dth, speed = 0 })
+                end
+            end
+            sound4(self)
         end
-        spellcard(NAME, 3445, 80, 20000, false, function(self)
+        spellcard(NAME, 3445, 80, 2700, false, function(self)
             task.New(self, function()
                 bmove(self, 120, 4, 0, 0)
             end)
@@ -6557,17 +6645,19 @@ local function TH34_add_stage78_boss()
                     pspawn(0, 0, laser_rig108)               -- 原作 sub108
                     set_duty(8, function() volley105(self) end)
                     task.Wait(270)                           -- 真实 274 → 544（原作 t=480）
-                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 PLAY_SOUND 0x13 + 爆闪（gI0=25）
+                    PlaySound("nep00", 0.5, self.x / 256)    -- 原作 #32 PLAY_SOUND 0x13（se_nep00）
+                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 #35 SUB_CALL 2（gI0=25 ⇒ 100 帧）
                     task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 PLAY_SOUND 0xf
+                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 #36 PLAY_SOUND 0xf
                     pclear()
                     set_duty(0, nil)
                     task.Wait(60)                            -- 真实 644 → 704（原作 t=540）
                     set_duty(10, function() ring106(self) end)
                     task.Wait(440)                           -- 真实 704 → 1144（原作 t=980）
-                    PlaySound("power0", 0.35, self.x / 256)
+                    PlaySound("nep00", 0.5, self.x / 256)    -- 原作 #40 PLAY_SOUND 0x13（se_nep00）
+                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 #43 SUB_CALL 2（gI0=25 ⇒ 100 帧）
                     task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)
+                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 #44 PLAY_SOUND 0xf
                     pclear()
                     set_duty(20, function() volley105(self) end)
                     task.Wait(30)                            -- 真实 1244 → 1274（JUMP 回 t=210）
@@ -6606,7 +6696,7 @@ local function TH34_add_stage78_boss()
             grandom(self, bs(3), 4, 8, 2, 1,
                     base - 0.392699 * RAD2DEG, 0.785398 * RAD2DEG, true)
         end
-        spellcard(NAME, 3446, 75, 20000, false, function(self)
+        spellcard(NAME, 3446, 75, 1400, false, function(self)
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)
@@ -6619,6 +6709,7 @@ local function TH34_add_stage78_boss()
                     shotgun(self, aim)                       -- 原作 SUB_CALL 103（各 4 帧）
                     shotgun(self, aim + 120)
                     shotgun(self, aim - 120)
+                    PlaySound("lazer00", 0.13, self.x / 256)  -- 原作 sub102 #42 PLAY_SOUND 0xd
                     for k = 0, 5 do                          -- 6 条长激光（60° 间隔）
                         plaser(self.x, self.y, aim / RAD2DEG - k * PI / 3, {
                             spr = 4, w = 8, sOff = 0, eOff = 640, sLen = 640,
@@ -6630,10 +6721,10 @@ local function TH34_add_stage78_boss()
                     task.Wait(20)                            -- t=266
                     self.hide = true                         -- SET_HAS_NO_COLLISION 1（隐身）
                     task.Wait(gap)                           -- 等 l2i1 帧
-                    self.hide = false
                     self.x, self.y = player.x, player.y       -- 神隐：瞬移到自机身上
                     PlaySound("power0", 0.35, self.x / 256)  -- SUB_CALL 2（gI0=10 ⇒ 40 帧）
                     task.Wait(40)
+                    self.hide = false                        -- 原作 #56：爆闪结束后才现身
                     if gap > 40 then gap = gap - 6 end
                 end
             end)
@@ -6645,12 +6736,13 @@ local function TH34_add_stage78_boss()
     ---（l2i1 从 100 每轮 −4、降到 52 后固定）。每次换向之后打：
     ---  · 两条「曲线扇」（原作 INIT_BULLET_CMD idx0 type0x20 + SPREAD_AIMED）：各 6 发、
     ---    出生速度 5、基准角 = 自机角 + a1（a1 随机落在 ±[78.75°,101.25°)；两扇每帧
-    ---    转 ∓1.5°、速度 −0.055/帧，共 60 帧 ⇒ 先直飞、后拐弯）；
+    ---    转 ∓1.5°、速度 −0.055/帧，共 60 帧 ⇒ 一边自转一边减速）；
     ---  · 一对激光（角 lf1 与 180°−lf1）；lf1 每轮 +18°、越过 80° 归零。
     ---另有一支周期子机（原作 sub101，每 8 帧一次）：一轮连打 8 对单发「曲线弹」，
     ---基准角 = lf5 ± lf0；lf0 从 60° 每发 +lf6、子弹「刹停后再飞」的速度从 4 每发
     ---+0.125、角增量系数 lf4 从 −0.2 每发 −0.225。lf6 是周期 60 次、幅值
-    ---0.0625°/帧² 的三角波；lf5 每轮朝自机转 0.9°（±30° 死区内不动）。
+    ---0.0625°/帧² 的三角波；基准角 lf5 恒 90°（原作序言每拍把它写回 1.5708，
+    ---所以 #24..#30 那段「朝自机拨 ±0.9°」是死代码）。
     do
         local NAME = "罔両「直线与曲线的梦乡」"
         ---把 TH07 弧度归一化到 [−π,π)。
@@ -6668,20 +6760,37 @@ local function TH34_add_stage78_boss()
                                     { type = 0x40, dur = 60, loop = 1,
                                       angle = dth_our, speed = new_spd })
         end
-        spellcard(NAME, 3447, 65, 20000, false, function(self)
+        ---一条「曲线扇」弹（原作 cmd 0x20 TargetAngle：每帧朝向 += cmd.angle、
+        ---速度 += cmd.speed，够 dur 帧清位 —— 一边自转一边减速，两扇反向）。
+        ---原作 spd=−0.055/帧、ang=∓1.5°/帧（TH07 口径），到我们这边角增量取反。
+        local function fan(self, ang_our, dth_our)
+            pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(10), col16(0),
+                                    self.x, self.y, 5, ang_our,
+                                    { type = 0x20, dur = 60, loop = -1,
+                                      angle = dth_our, speed = -0.055 })
+        end
+        spellcard(NAME, 3447, 65, 2800, false, function(self)
             self._box = { -128, 128, 128, 176 }
             bmove(self, 120, 4, 0, 160)
             ---周期子机（原作 SET_PERIODIC_CALLBACK period=8 sub=101）：
             ---第一次回调在 t=218（设回调后整 8 帧）。
             task.New(self, function()
                 task.Wait(218)
-                local lf5, lf6, li0 = 1.5708, 0, 0
+                ---★ 原作 sub101 的序言 #0..#5 **每拍都会重跑**（周期回调每次都从 sub 的 #0
+                ---开始），其中 #4 就是 `SET_FLOAT lf5 = 1.5708`。所以 #24..#30 那段
+                ---「lf0 = lf5 − angToPl，|差| 超 30° 就把 lf5 拨 0.9°」在本条调用路径上
+                ---**是死代码**：每拍吐弹用的 lf5 恒为 90°，拨完下一拍又被打回 1.5708。
+                ---（lf6 不在此列 —— 序言不碰它，所以它跨拍累加，三角波是真的。）
+                local lf5, lf6, li0 = 1.5708, 0.19635, 0
                 while true do
+                    lf5 = 1.5708
                     local lf0, lf1, lf4 = 1.0472, 4, -0.2
                     for _ = 1, 8 do
                         local dth = lf0 * lf4
-                        curve(self, -(lf5 + lf0) * RAD2DEG, 6, dth * RAD2DEG, lf1, 5, 8)
-                        curve(self, -(lf5 - lf0) * RAD2DEG, 6, -dth * RAD2DEG, lf1, 5, 8)
+                        ---原作 #7 的 0x40 角增量 = lf3、#12 的 = −lf3（0x40 把 cmd.spd 当
+                        ---角增量用），换到我们口径整体取反 ⇒ 分别是 −dth / +dth。
+                        curve(self, -(lf5 + lf0) * RAD2DEG, 6, -dth * RAD2DEG, lf1, 5, 8)
+                        curve(self, -(lf5 - lf0) * RAD2DEG, 6, dth * RAD2DEG, lf1, 5, 8)
                         sound4(self)
                         lf0 = lf0 + lf6
                         lf1 = lf1 + 0.125
@@ -6689,9 +6798,6 @@ local function TH34_add_stage78_boss()
                     end
                     if li0 >= 30 then lf6 = lf6 + 0.00109083
                     else lf6 = lf6 - 0.00109083 end
-                    local hold = norm(lf5 + Angle(self, player) / RAD2DEG)
-                    if hold > 0.523599 then lf5 = lf5 + 0.015708
-                    elseif hold < -0.523599 then lf5 = lf5 - 0.015708 end
                     li0 = (li0 + 1) % 60
                     task.Wait(8)
                 end
@@ -6712,7 +6818,7 @@ local function TH34_add_stage78_boss()
                         local base = Angle(self, player) - a1 * RAD2DEG
                         local offs = spread_offsets(6, -PI / 8 * RAD2DEG)
                         for k = 1, 6 do
-                            curve(self, base + offs[k], 5, s[2] * RAD2DEG, 1, 10, 0)
+                            fan(self, base + offs[k], -s[2] * RAD2DEG)
                         end
                         sound4(self)
                     end
@@ -6797,7 +6903,7 @@ local function TH34_add_stage78_boss()
                 for _ = 1, 8 do task.Wait(1) end
             end
         end
-        spellcard(NAME, 3448, 75, 20000, false, function(self)
+        spellcard(NAME, 3448, 75, 2400, false, function(self)
             self._box = { -128, 128, 96, 176 }
             bmove(self, 120, 4, 0, 160)
             task.New(self, function()
@@ -6874,7 +6980,7 @@ local function TH34_add_stage78_boss()
                 task.Wait(6)
             end
         end
-        spellcard(NAME, 3449, 65, 20000, false, function(self)
+        spellcard(NAME, 3449, 65, 1700, false, function(self)
             self._box = { -128, 128, 96, 176 }
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
@@ -6900,7 +7006,8 @@ local function TH34_add_stage78_boss()
     ---本体走到 (0,128)，循环（母体 t=210 的 #26..#46）：
     ---  · SUB_CALL 89（占 40 帧）：打一对「大弹」（sprite/色 10/1、速度 12、张角 90°）；
     ---    基准角 = 自机角（原作 angToPl）；但若**自机不在** 22.5°..157.5° 的「正下方」
-    ---    扇里，就改成随机 22.5°..101.25°（原作 #0..#3）。这对弹挂 0x40 指令：20 帧内
+    ---    扇里，就改成随机 78.75°..101.25°（原作 #0..#3：RAND_FLOAT_ADD 是
+---    rand[0,0.392699)+1.37445，不是区间两端）。这对弹挂 0x40 指令：20 帧内
     ---    把速度线性刹到 0 并停在空中；
     ---  · 子程序跑到 t=40 时用 ex-ins 4 依次抓「≥60px 的大弹」：先后各抓一颗、原地
     ---    生成「梦现」子机（sub89 先 91 后 92；sub90 先 92 后 91），大弹随即消失；
@@ -6925,7 +7032,7 @@ local function TH34_add_stage78_boss()
             local aim = th_aim(self)
             local a1 = aim
             if not (aim > 0.392699 and aim < 2.74889) then
-                a1 = ran:Float(0.392699, 1.767149)
+                a1 = ran:Float(1.37445, 1.767149)
             end
             local base = -a1 * RAD2DEG
             local offs = spread_offsets(2, -PI / 2 * RAD2DEG)
@@ -6940,9 +7047,12 @@ local function TH34_add_stage78_boss()
         end
         ---「大梦现」子机（原作 sub91）。出来当帧放 4 圈、10 帧后再放 8 圈，然后自毁。
         local function dream(self)
+            ---★ aim 是**弧度**（TH07 口径），而本工程的 cos/sin 是角度制（Lmath.lua 里
+            ---`Cos/Sin` 用 1..360 的整数度建表即可看出），所以这里必须用 math.cos/math.sin，
+            ---否则 48/96 的环心会全挤在 0° 附近、0x10 的加速方向也全错。
             local aim = th_aim(self)
-            local ux, uy = cos(aim), sin(aim)
-            local px, py = cos(aim + PI / 2), sin(aim + PI / 2)
+            local ux, uy = math.cos(aim), math.sin(aim)
+            local px, py = math.cos(aim + PI / 2), math.sin(aim + PI / 2)
             local function ring(cx, cy, col)
                 for k = 0, 7 do
                     local th = aim + k * PI / 4
@@ -6950,8 +7060,8 @@ local function TH34_add_stage78_boss()
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(6), col16(col),
                                             self.x + cx, self.y - cy, 0.5, ang,
                                             { type = 0x10, dur = 120, loop = -1,
-                                              vec_x = cos(th) * 0.00583333,
-                                              vec_y = -sin(th) * 0.00583333 })
+                                              vec_x = math.cos(th) * 0.00583333,
+                                              vec_y = -math.sin(th) * 0.00583333 })
                 end
                 sound4(self)
             end
@@ -7001,7 +7111,7 @@ local function TH34_add_stage78_boss()
                 end
             end
         end
-        spellcard(NAME, 3450, 60, 20000, false, function(self)
+        spellcard(NAME, 3450, 60, 2600, false, function(self)
             self._box = { -128, 128, 96, 176 }
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
@@ -7027,14 +7137,19 @@ local function TH34_add_stage78_boss()
         end)
     end
 
-    ---两面的中 boss 都带一只「式神」子机（原作 sub65/sub63）：ANM 12、不可打、原地不动，
-    ---到场后第 600 帧起每 100 帧朝自机打一发 9 发、1.5 速、半角 30° 的瞄准扇
-    ---（SPREAD_AIMED pk=(7,2) c1=9 v1=1.5 a2=0.523599，随附 PLAY_SOUND 15）；
-    ---原作 t=800 的 SET_EX_INS 停火、t=840 UNIMP ⇒ 整只只打两发就自毁。
+    ---两面的中 boss 都带一只「式神」子机（原作 sub65/sub63）：ANM 12、SET_IS_HITTABLE 0
+    ---（不可打）、原地不动，到场后第 600 帧起**每 100 帧永久**朝自机打一发 9 发、1.5 速、
+    ---半角 30° 的瞄准扇（SPREAD_AIMED pk=(7,2) c1=9 v1=1.5 a2=0.523599、flags=0x2 不带
+    ---0x200，音效由紧接的 PLAY_SOUND 15 单独播放）。
+    ---★ 原作 #15 的 `JUMP time=600`（t=700 处）把 time 倒回 600 再落到 #13 的 SPREAD 上，
+    ---循环周期 = 700−600 = 100 帧；**JUMP 之后的 t=800 SET_PRIMARY_VM_INTERRUPT /
+    ---SET_EX_INS −1 与 t=840 UNIMP 永远到不了（死代码）**，所以式神不是「只打两发就自毁」，
+    ---而是打到整张卡结束为止（sim.py 实测 wall=600,700,800,… 一直发）。
     local function shiki(self)
         task.Wait(600)
-        for _ = 1, 2 do
-            gspread(self, bs(7), 2, 9, 1, 1.5, 1, Angle(self, player), 30, true)
+        while true do
+            gspread(self, bs(7), 2, 9, 1, 1.5, 1, Angle(self, player), 30, false)
+            PlaySound("tan00", 0.1, self.x / 256)   -- 原作 #14 PLAY_SOUND 15
             task.Wait(100)
         end
     end
@@ -7050,6 +7165,8 @@ local function TH34_add_stage78_boss()
     do
         local NAME = "式神「凭依荼吉尼天」"
         spellcard(NAME, 3451, 55, 1000, false, function(self)
+            ---进场：原作 t=0 的 MOVE_POS_TIME(60, ease4, 64, 128)（我们 (−128,96)）。
+            bmove(self, 60, 4, -128, 96)
             ---原作 t=320..1280 的 8 段 MOVE_ORBIT：{ 起始角, 角速度, 半径, 半径速度 }，
             ---整组都已取到我们的口径（角度与角速度取反，半径量不变）。
             local ORB = {
@@ -7065,7 +7182,9 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(110)
                 bmove(self, 120, 4, 0, -160)
-                task.Wait(90)
+                ---原作 #40 的 MOVE_ORBIT 在 t=320 才生效：先等这 120 帧的进场插值走完
+                ---（t=110→230），再空转 90 帧才到 t=320。
+                task.Wait(210)
                 while true do
                     for _, o in ipairs(ORB) do
                         borbit(self, 0, 0, o[1], o[2], o[3], o[4])
@@ -7114,7 +7233,7 @@ local function TH34_add_stage78_boss()
             pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(10), col16(back and 2 or 3),
                                     self.x, self.y, ran:Float(3.2, 4.2), a, cmd)
         end
-        spellcard(NAME, 3452, 60, 20000, false, function(self)
+        spellcard(NAME, 3452, 60, 2000, false, function(self)
             ---本体进场：原作 t=0 移到 TH07(192,96)（我们 (0,128)）之后不再动。
             task.New(self, function()
                 bmove(self, 120, 4, 0, 128)
@@ -7156,7 +7275,9 @@ local function TH34_add_stage78_boss()
     ---那次 RAND_EXIT_ANGLE 写的就是 lf0，也就是第 1 层的基准角。
     do
         local NAME = "幻神「饭纲权现降临」"
-        ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}；at 用 hpS 折算。
+        ---{血量门槛, sprite, 色档, c1, c2, v1, v2, 每轮基准角增量, a2}；at 用 hpS 折算
+        ---（本卡的开卡 life 是 8000 ⇒ 门槛 7000/5500/3000/2000/1000 才有意义）。
+        ---第 1 层永远打、不看 at（原作 sub124 的血量分支在它之后），20000 只是占位。
         local LAYER = {
             { at = hpS(20000), spr =  2, off = 6, c1 = 7, c2 = 1, v1 = 2.0, v2 = 1, d = -0.349066, a2 = 0.392699 },
             { at = hpS(7000),  spr =  8, off = 2, c1 = 5, c2 = 1, v1 = 1.5, v2 = 1, d =  0.392699, a2 = 0.196350 },
@@ -7173,13 +7294,13 @@ local function TH34_add_stage78_boss()
             { spr =  7, off = 6, c1 = 5, c2 = 1, v1 = 3.5, v2 = 1, d =  0.130900, a2 = 0.392699 },
             { spr =  7, off = 4, c1 = 5, c2 = 2, v1 = 4.5, v2 = 2, d = -0.523599, a2 = 0.392699 },
         }
-        spellcard(NAME, 3471, 120, 20000, false, function(self)
+        spellcard(NAME, 3471, 120, 8000, false, function(self)
             self._box = { -64, 64, 96, 160 }          -- 原作 SET_MOVEMENT_BOUNDS(128,64,256,128)
             bmove(self, 120, 4, 0, 96)                -- 原作 #13 MOVE_POS_TIME(120,4,192,128)
             local acc = { rngrad(), rngrad(), rngrad(), rngrad(), rngrad(), rngrad() }
             task.New(self, function()
                 task.Wait(220)                    -- 原作 #36 在 t=210 挂回调、10 帧后才首发
-                local t = 0
+                local t, lv = 0, 0
                 while true do
                     ---第 1 层（原作 sub124 #0）：在难度/血量分支之前，两段都打。
                     local L1 = LAYER[1]
@@ -7187,6 +7308,10 @@ local function TH34_add_stage78_boss()
                             acc[1] * RAD2DEG, L1.a2 * RAD2DEG, true)
                     acc[1] = acc[1] + L1.d
                     if t >= 5700 then
+                        if lv < 6 then
+                            lv = 6
+                            PlaySound("tan00", 0.1, self.x / 256)   -- 原作 sub124 #47 PLAY_SOUND 0xf
+                        end
                         for k, R in ipairs(RAGE) do
                             gspread(self, bs(R.spr), R.off, R.c1, R.c2, R.v1, R.v2,
                                     acc[k + 1] * RAD2DEG, R.a2 * RAD2DEG, true)
@@ -7196,6 +7321,10 @@ local function TH34_add_stage78_boss()
                         for k = 2, #LAYER do
                             local L = LAYER[k]
                             if self.hp <= L.at then
+                                if lv < k then
+                                    lv = k
+                                    PlaySound("tan00", 0.1, self.x / 256)   -- 原作 sub124 #7/#15/#23/#31/#39 解锁音
+                                end
                                 gspread(self, bs(L.spr), L.off, L.c1, L.c2, L.v1, L.v2,
                                         acc[k] * RAD2DEG, L.a2 * RAD2DEG, true)
                                 acc[k] = acc[k] + L.d
@@ -7278,7 +7407,9 @@ local function TH34_add_stage78_boss()
                 end
                 PlaySound("power0", 0.35, self.x / 256)    -- 原作 #37 PLAY_SOUND 5
                 bmove(self, 120, 0, 0, 0)            -- 原作 #38：线性回正中
-                task.Wait(394)                       -- ≈t=451 → t=845
+                ---原作 sub115 的 #29..#31 / #34..#36 两段各 120 次整数的 DEC_JUMP 空转
+                ---不推进母体时间，却实打实走了 238 帧 ⇒ 此后所有绝对时间都要 +238。
+                task.Wait(633)                       -- ≈t=450 → t=1083
                 local sx = (player.x >= 0) and 1 or -1
                 bmove(self, 300, 0, 128 * sx, -160)  -- 原作 #52/#55：横穿到下半屏同侧
                 task.Wait(306)                       -- → t=1151
@@ -7290,32 +7421,36 @@ local function TH34_add_stage78_boss()
                 task.Wait(400)                       -- → t=2951
                 bmove(self, 300, 0, 0, 0)            -- 原作 #94：回正中
             end)
-            ---原作 PLAY_SOUND 5（se_power0）共 6 次：#37 被压到 ≈t=451，
-            ---#48/#64/#77/#87/#93 按绝对时间 785/1091/1791/2491/2891 响。
+            ---原作 PLAY_SOUND 5（se_power0）共 6 次：#37 被压到 ≈t=450，
+            ---#48/#64/#77/#87/#93 按绝对时间 1023/1329/2029/2729/3129 响。
             task.New(self, function()
-                local cur = 451
+                local cur = 450
                 PlaySound("power0", 0.35, self.x / 256)
-                for _, tw in ipairs({ 785, 1091, 1791, 2491, 2891 }) do
+                for _, tw in ipairs({ 1023, 1329, 2029, 2729, 3129 }) do
                     task.Wait(tw - cur); cur = tw
                     PlaySound("power0", 0.35, self.x / 256)
                 end
             end)
             ---四边炮台：{帧, {sub116/117/118/119 的目标点 + 发射角}}（我们的坐标）。
-            ---第一波（原作 t=212/223/234/245）被 sub115 的循环压到 ≈t=451 同时出现。
+            ---第一波（原作 t=212/223/234/245）被 sub115 的循环压到 ≈t=450 同时出现；
+            ---之后三波的原作指令时刻 t=851/1451/1951 也同样落在墙钟 1089/1689/2189。
+            ---第 4 项 = 本波内的额外延迟：第一波的原作四条指令分别落在
+            ---内部 t=212/223/234/245（墙钟 450/461/472/483），后三波同帧。
             local BAT = {
-                {  451, { { -192,  -96,   0 }, { 192,   96, 180 }, {  -64, 224, -90 }, {  64, -224, 90 } } },
-                {  851, { { -192, -128,   0 }, { 192,  128, 180 }, {  -96, 224, -90 }, {  96, -224, 90 } } },
-                { 1451, { { -192,   64,   0 }, { 192,   64, 180 }, {  -32, 224, -90 }, {  32, -224, 90 } } },
-                { 1951, { { -192, -160,   0 }, { 192,  160, 180 }, { -128, 224, -90 }, { 128, -224, 90 } } },
+                {  450, { { -192,  -96,   0, 0 }, { 192,   96, 180, 11 }, {  -64, 224, -90, 22 }, {  64, -224, 90, 33 } } },
+                { 1089, { { -192, -128,   0 }, { 192,  128, 180 }, {  -96, 224, -90 }, {  96, -224, 90 } } },
+                { 1689, { { -192,  -64,   0 }, { 192,   64, 180 }, {  -32, 224, -90 }, {  32, -224, 90 } } },
+                { 2189, { { -192, -160,   0 }, { 192,  160, 180 }, { -128, 224, -90 }, { 128, -224, 90 } } },
             }
             local SPAWNP = { { -192, 224 }, { 192, -224 }, { 192, 224 }, { -192, -224 } }
             local MV = { 400, 400, 300, 300 }
             task.New(self, function()
-                local cur = 0
+                local now = 0
+                local function at(t) if t > now then task.Wait(t - now); now = t end end
                 for _, b in ipairs(BAT) do
-                    task.Wait(b[1] - cur); cur = b[1]
                     for k = 1, 4 do
                         local tgt = b[2][k]
+                        at(b[1] + (tgt[4] or 0))
                         pspawn(SPAWNP[k][1], SPAWNP[k][2], turret,
                                { tx = tgt[1], ty = tgt[2], a = tgt[3], mv = MV[k] })
                     end
@@ -7327,8 +7462,8 @@ local function TH34_add_stage78_boss()
                             {  192, -224, 180 },
                             {  192,  224, -90 },
                             { -192, -224,  90 } }
-                local SW = { 3051, 3201, 3351, 3501, 3601, 3701, 3791, 3871,
-                             3931, 3981, 4021, 4061, 4101, 4141, 4181, 4221 }
+                local SW = { 3289, 3439, 3589, 3739, 3839, 3939, 4029, 4109,
+                             4169, 4219, 4259, 4299, 4339, 4379, 4419, 4459 }
                 task.New(self, function()
                     task.Wait(SW[1])
                     for k = 1, #SW do
@@ -7379,10 +7514,11 @@ local function TH34_add_stage78_boss()
                 local aim = Angle(self, player)
                 gspread(self, bs(8), col, 8, 2, 8, 1, aim + 90, 0.19635 * RAD2DEG, true)
                 gspread(self, bs(8), col, 8, 2, 8, 1, aim - 90, 0.19635 * RAD2DEG, true)
+                PlaySound("tan00", 0.1, self.x / 256)    -- 原作 sub111 #36 PLAY_SOUND 0xf
                 sx = -sx
             end
         end
-        spellcard(NAME, 3469, 80, 20000, false, function(self)
+        spellcard(NAME, 3469, 80, 3000, false, function(self)
             self._box = { -128, 128, 96, 176 }
             task.New(self, function()
                 task.Wait(210)
@@ -7441,7 +7577,7 @@ local function TH34_add_stage78_boss()
                 task.Wait(10)
             end
         end
-        spellcard(NAME, 3468, 80, 20000, false, function(self)
+        spellcard(NAME, 3468, 80, 2700, false, function(self)
             self._box = { -128, 128, 96, 176 }
             task.New(self, function()
                 task.Wait(210)
@@ -7496,7 +7632,7 @@ local function TH34_add_stage78_boss()
                                type = 0x40, dur = 120, loop = 1, angle = 0, speed = 0.1 })
             end)
         end
-        spellcard(NAME, 3467, 80, 20000, false, function(self)
+        spellcard(NAME, 3467, 80, 2700, false, function(self)
             bmove(self, 120, 4, 0, 0)
             ---周期回调（同 3445）：duty = 间隔（0 = 关），重设时 counter 归零。
             local duty, fire, counter = 0, nil, 0
@@ -7519,9 +7655,10 @@ local function TH34_add_stage78_boss()
                     pspawn(self.x, self.y, laser_rig108)         -- 原作 sub105
                     set_duty(10, function() star(self) end)
                     task.Wait(270)                               -- 真实 274 → 544（原作 t=480）
-                    PlaySound("power0", 0.35, self.x / 256)      -- 原作 PLAY_SOUND 0x13 + 爆闪（gI0=25）
+                    PlaySound("nep00", 0.5, self.x / 256)        -- 原作 #32 PLAY_SOUND 0x13（se_nep00）
+                    PlaySound("power0", 0.35, self.x / 256)      -- 原作 #35 SUB_CALL 2（gI0=25 ⇒ 100 帧）
                     task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)        -- 原作 PLAY_SOUND 0xf
+                    PlaySound("tan00", 0.1, self.x / 256)        -- 原作 #36 PLAY_SOUND 0xf
                     pclear()
                     set_duty(0, nil)
                     task.Wait(60)                                -- 真实 644 → 704（原作 t=540）
@@ -7529,9 +7666,10 @@ local function TH34_add_stage78_boss()
                         gring(self, bs(7), 1, 5, 1, 4, 1, Angle(self, player), 0, true)
                     end)
                     task.Wait(440)                               -- 真实 704 → 1144（原作 t=980）
-                    PlaySound("power0", 0.35, self.x / 256)
+                    PlaySound("nep00", 0.5, self.x / 256)    -- 原作 #40 PLAY_SOUND 0x13（se_nep00）
+                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 #43 SUB_CALL 2（gI0=25 ⇒ 100 帧）
                     task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)
+                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 #44 PLAY_SOUND 0xf
                     pclear()
                     set_duty(20, function() star(self) end)
                     task.Wait(30)                                -- 真实 1244 → 1274（JUMP 回 t=210）
@@ -7572,7 +7710,7 @@ local function TH34_add_stage78_boss()
             task.Wait(10)
             gring(self, bs(8), 4, 32, 4, 2, 1, aim, 0, false)                  -- t=14
         end
-        spellcard(NAME, 3466, 75, 20000, false, function(self)
+        spellcard(NAME, 3466, 75, 1400, false, function(self)
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)                               -- 母体 t=210（循环回跳的落点是 #28）
@@ -7604,11 +7742,13 @@ local function TH34_add_stage78_boss()
     ---    INIT_BULLET_CMD type 0x20），第 2 圈反向。
     ---周期回调 sub98（period 8、t=218 首次）：每拍 16 发「刹车拐弯弹」——8 组、每组
     ---两颗，分别朝 lf5 ± lf0 打出（速度 6、sprite 5/色档 8），60 帧内沿原朝向把速度
-    ---线性刹到 0，再拐到**绝对角** ±lf0·lf4、速度换成 lf1；lf0 每拍 +lf6、lf1 +0.125、
-    ---lf4 −0.125（lf6 初值 11.25°，按 li0<30 每拍微增/微减 0.0625°）。每拍末尾再按
-    ---「lf5 与自机角之差超过 30°」把 lf5 拨 ∓0.9°，li0 每拍 +1 模 60。
-    ---（原作这两组弹还带 flags 0x2000 的 spawnDelay 200：200 帧内无判定；本文件
-    ---不模拟 spawnDelay，差异记在案。）
+    ---线性刹到 0，再按 ±lf0·lf4 转一次向（0x40 的角增量）、速度换成 lf1；lf0 每拍 +lf6、lf1 +0.125、
+    ---lf4 −0.125（lf6 初值 11.25°，按 li0<30 每拍微增/微减 0.0625°）。li0 每拍 +1 模 60。
+    ---★ 原作 #24..#30 还有一段「lf5 与自机角之差超过 30° 就拨 ∓0.9°」，但序言 #4
+    ---每拍都把 lf5 写回 1.5708，所以这段拨角在真机上是**死代码** —— 基准角恒 90°。
+    ---（原作这两组弹的 flags 0x2242 带 0x2000 ⇒ idx1 的 0x2000 指令会把 spawnDelay 设成
+    ---200，但那只是「200 帧内即使出屏也不回收」（BulletManager.cpp:995 的出屏判定）；
+    ---命中判定完全不受影响，且这些弹刹在敌机旁不动，所以本文件不模拟 spawnDelay 没有差异。）
     do
         local NAME = "式辉「四面楚歌 Charminng」"
         ---一圈 12 发（原作 RING_ABS pk=(10,0) c1=12 v1=2 + INIT_BULLET_CMD 0x20）。
@@ -7624,23 +7764,31 @@ local function TH34_add_stage78_boss()
             sound4(self)
         end
         ---一发「刹车拐弯弹」（原作 SPREAD_ABS pk=(5,8) + INIT_BULLET_CMD 0x40）：
-        ---a1th = 发射角（原作弧度）、na = 拐后的**绝对**角（原作弧度）、spd = 拐后速度。
+        ---a1th = 发射角（原作弧度）、na = **角增量**（＝原作 INIT_BULLET_CMD 的 spd 字段，
+        ---弧度：0x40 把 cmd.spd 当 `angle +=` 的增量用，见 BulletManager.cpp:410 的 ZUN
+        ---交换）、spd = 拐后新的速度。角增量取反后才是我们口径。
         local function brake(self, a1th, na, spd)
             local ang = -a1th * RAD2DEG
             pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(5), col16(8),
                                     self.x, self.y, 6, ang,
                                     { type = 0x40, dur = 60, loop = 1,
-                                      angle = (a1th - na) * RAD2DEG, speed = spd })
+                                      angle = -na * RAD2DEG, speed = spd })
         end
-        spellcard(NAME, 3465, 65, 20000, false, function(self)
+        spellcard(NAME, 3465, 65, 2800, false, function(self)
             self._box = { -128, 128, 96, 176 }
             ---进场：原作 t=0 的 MOVE_POS_TIME(120, ease4, 192, 64)。
             bmove(self, 120, 4, 0, 160)
             ---周期回调（原作 SET_PERIODIC_CALLBACK period=8 sub=98，t=218 首次）。
             task.New(self, function()
                 task.Wait(218)
+                ---★ 原作 sub98 的序言 #0..#5 **每拍都会重跑**（周期回调每次都从 sub 的 #0
+                ---开始），其中 #4 就是 `SET_FLOAT lf5 = 1.5708`。所以 #24..#30 那段
+                ---「lf0 = lf5 − angToPl，|差| 超 30° 就把 lf5 拨 0.9°」在本条调用路径上
+                ---**是死代码**：每拍吐弹用的 lf5 恒为 90°，拨完下一拍又被打回 1.5708。
+                ---（lf6 不在此列 —— 序言不碰它，所以它跨拍累加，三角波是真的。）
                 local lf5, lf6, li0 = 1.5708, 0.19635, 0
                 while true do
+                    lf5 = 1.5708
                     for i = 0, 7 do
                         local lf0 = 0.785398 + i * lf6
                         local lf1 = 2 + i * 0.125
@@ -7651,11 +7799,6 @@ local function TH34_add_stage78_boss()
                     sound4(self)
                     if li0 >= 30 then lf6 = lf6 + 0.00109083
                     else lf6 = lf6 - 0.00109083 end
-                    ---原作按「lf5 与原作自机角之差超 30°」把 lf5 拨开（在 TH07 口径下判断）。
-                    local d = (-lf5 + Angle(self, player) / RAD2DEG) % (2 * PI)
-                    if d >= PI then d = d - 2 * PI end
-                    if d > 0.523599 then lf5 = lf5 - 0.015708
-                    elseif d < -0.523599 then lf5 = lf5 + 0.015708 end
                     li0 = (li0 + 1) % 60
                     task.Wait(8)
                 end
@@ -7735,7 +7878,7 @@ local function TH34_add_stage78_boss()
                 for _ = 1, 8 do task.Wait(1) end
             end
         end
-        spellcard(NAME, 3464, 75, 20000, false, function(self)
+        spellcard(NAME, 3464, 75, 2000, false, function(self)
             self._box = { -128, 128, 96, 176 }
             ---进场：原作 t=0 的 MOVE_POS_TIME(120, ease4, 192, 64)。
             bmove(self, 120, 4, 0, 160)
@@ -7784,7 +7927,9 @@ local function TH34_add_stage78_boss()
         local function genbu(self, a)
             bmove(self, 120, 4, a.tx, a.ty)
             for i = 0, 11 do
-                volley3(self, 1, function() return bs(6), col16(0), 0.8 + 0.1 * i, -90 end, true)
+                ---原作 sub89 的 SPREAD_ABS pk=(6,10029)：色档取 l3i0（= gI0），
+                ---由调用者 sub90/91 设 2、sub92 设 4、sub93 设 6。
+                volley3(self, 1, function() return bs(6), col16(a.col), 0.8 + 0.1 * i, -90 end, true)
                 for _ = 1, 10 do bstep(self); task.Wait(1) end
             end
             if a.kind <= 2 then
@@ -7811,17 +7956,20 @@ local function TH34_add_stage78_boss()
             { 370, 3, -160, -128 }, { 390, 3,  160, -128 },
             { 410, 4,  -64,  128 }, { 430, 4,   64,  128 },
         }
-        spellcard(NAME, 3463, 65, 20000, false, function(self)
+        spellcard(NAME, 3463, 65, 2400, false, function(self)
             self._box = { -128, 128, 96, 176 }
             ---进场：原作 t=0 的 MOVE_POS_TIME(120, ease4, 192, 96)（我们 (0,128)）。
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)
                 while true do
-                    for _, g in ipairs(G) do
+                    ---12 只神将相隔 20 帧（t=210,230,…,430），最后一只之后不再等 20 帧；
+                    ---随后 100 帧到 t=530 才是第一次漂移。
+                    for i, g in ipairs(G) do
                         pspawn(self.x, self.y, genbu,
-                               { tx = g[3] + ran:Float(0, 32), ty = g[4], kind = g[2] })
-                        task.Wait(20)
+                               { tx = g[3] + ran:Float(0, 32), ty = g[4], kind = g[2],
+                                 col = (g[2] == 3) and 4 or ((g[2] == 4) and 6 or 2) })
+                        if i < #G then task.Wait(20) end
                     end
                     task.Wait(100)                     -- → t=530
                     exdrift(self, 1, 4)
@@ -7853,6 +8001,8 @@ local function TH34_add_stage78_boss()
     do
         local NAME = "式神「仙狐思念」"
         ---仙狐的一拍：在 |i|+|j| = shell 的所有格点上各打一圈 8 发，拍间停 10 帧。
+        ---每发除初速 0.5 外还挂 INIT_BULLET_CMD 0x10（spd 0.0166667、dur 120、loop −1、
+        ---flags 0x212 里含 0x10）：沿出生朝向每帧加速 1/60，120 帧后速度涨到 0.5+2.0 = 2.5。
         local function shinko(self, a)
             for shell = 1, 3 do
                 local col = col16(8 + shell)
@@ -7863,9 +8013,15 @@ local function TH34_add_stage78_boss()
                             local oy = (i * sin(a) + j * sin(a + 90)) * 32
                             local ox0, oy0 = self.x, self.y
                             self.x, self.y = ox0 + ox, oy0 + oy
-                            volley3(self, 8, function(n)
-                                return bs(6), col, 0.5, a + (n - 1) * 45
-                            end, true)
+                            for n = 0, 7 do
+                                local th = a + n * 45
+                                pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(6), col,
+                                                        self.x, self.y, 0.5, th,
+                                                        { type = 0x10, dur = 120, loop = -1,
+                                                          vec_x = cos(th) * 0.0166667,
+                                                          vec_y = sin(th) * 0.0166667 })
+                            end
+                            sound4(self)
                             self.x, self.y = ox0, oy0
                         end
                     end
@@ -7873,7 +8029,7 @@ local function TH34_add_stage78_boss()
                 task.Wait(10)
             end
         end
-        spellcard(NAME, 3462, 60, 20000, false, function(self)
+        spellcard(NAME, 3462, 60, 2600, false, function(self)
             self._box = { -128, 128, 96, 176 }
             ---进场：原作 t=0 的 MOVE_POS_TIME(120, ease4, 192, 96)（我们 (0,128)）。
             bmove(self, 120, 4, 0, 128)
@@ -7895,12 +8051,10 @@ local function TH34_add_stage78_boss()
                                   { type = 0x40, dur = 20, loop = 1, angle = 0, speed = 0 })
                     pool4[#pool4 + 1] = b
                     sound4(self)
-                    task.New(self, function()
-                        task.Wait(40)
-                        local bx, by = b.x, b.y
-                        if IsValid(b) then object.RawDel(b) end
-                        pspawn(bx, by, shinko, a)
-                    end)
+                    task.Wait(40)                     -- 原作 SUB_CALL 86 同步占 40 帧（弹飞到点后生仙狐）
+                    local bx, by = b.x, b.y
+                    if IsValid(b) then object.RawDel(b) end
+                    pspawn(bx, by, shinko, a)
                     task.Wait(li1)
                     local d = exang(self)
                     bmove(self, li0, 4, self.x + cos(d) * li0 * 3.5, self.y + sin(d) * li0 * 3.5)
@@ -7933,6 +8087,8 @@ local function TH34_add_stage78_boss()
             {  1.5708, -0.0261799, 160,  0 },
         }
         spellcard(NAME, 3461, 55, 1580, false, function(self)
+            ---进场：原作 t=0 的 MOVE_POS_TIME(60, ease4, 64, 128)（我们 (−128,96)）。
+            bmove(self, 60, 4, -128, 96)
             task.New(self, function()
                 task.Wait(110)
                 bmove(self, 120, 4, 0, -160)
@@ -7981,7 +8137,7 @@ local function TH34_add_stage78_boss()
             pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(10), col16(off),
                                     self.x, self.y, ran:Float(3.2, 4.2), -a * RAD2DEG, cmd)
         end
-        spellcard(NAME, 3460, 55, 20000, false, function(self)
+        spellcard(NAME, 3460, 55, 2000, false, function(self)
             ---进场：原作 t=0 的 MOVE_POS_TIME(120, ease4, 192, 64)。
             bmove(self, 120, 4, 0, 160)
             task.New(self, function()
