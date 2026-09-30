@@ -9263,13 +9263,16 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
             local up = false
             while tok.alive and not st.dead do
                 local x = 192 * ran:Float(-1, 1)
+                ---★ sg_shot 的 base 是 **TH095 空间的度**（sg_shot 末尾经 sg_bullet 再取一次反，
+                ---  sg_bullet 的形参就叫 th_deg）⇒ 这里只能用 math.deg；写成 sg_deg 等于多取一次
+                ---  反，上下两条帘都朝场外飞，出生后立刻出 bound（±256）被回收。
                 if up then
                     sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, -224,
-                            1, 1, 0, 1.5, sg_deg(-1.57079637), math.deg(0.0317333),
+                            1, 1, 0, 1.5, math.deg(-1.57079637), math.deg(0.0317333),
                             false, 0x212, hook)
                 else
                     sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, 224,
-                            1, 1, 0, 1.5, sg_deg(1.57079637), math.deg(0.0317333),
+                            1, 1, 0, 1.5, math.deg(1.57079637), math.deg(0.0317333),
                             false, 0x212, hook)
                 end
                 up = not up
@@ -9300,7 +9303,7 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
                     end
                     sg_shot(87, BULLET_STYLE, BULLET_COLOR, x, y,
                             1, 1, 0.5 * ran:Float(0, 1), 1.5,
-                            sg_deg(spec[3]), math.deg(0.0317333), false, 0x212, hook)
+                            math.deg(spec[3]), math.deg(0.0317333), false, 0x212, hook)
                     task.Wait(CURTAIN_PERIOD)
                 end
                 local freeze = CURTAIN_FREEZE_BASE
@@ -9451,8 +9454,9 @@ do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第
                 local ang = 1.47262156 + 0.196349546 * ran:Float(0, 1)
                 local sp = 1 + (STAR_FREEZE_BASE
                         + STAR_FREEZE_STEP * photo_index(PHOTO_LIMIT)) * ran:Float(0, 1)
+                ---★ base 同上（TH095 度）：sg_deg 会把这阵「朝下」的流星雨整个翻成朝上。
                 sg_shot(87, ball_small, ex_color(6), px, py,
-                        1, 1, sp, 1.5, sg_deg(ang), math.deg(0.0317333),
+                        1, 1, sp, 1.5, math.deg(ang), math.deg(0.0317333),
                         false, flags, hook)
                 task.Wait(period)
             end
