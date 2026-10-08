@@ -8759,17 +8759,22 @@ local function TH34_add_stage56_boss()
             end
         end
         local function shotgun(right)
+            ---原作 sub21（右）/sub22（左）：t=0 先 SUB_CALL 2（gi0=4 → 16 帧阻塞），
+            ---之后每 2 帧一发、共 16 发（自机狙 SPREAD_AIMED）；L 行 c1×c2 = 右 1×4 /
+            ---左 2×4；打完 t=2 的空跳 + t=3 的 SUB_RET ⇒ 子程墙钟 49 帧。
             local x0 = ran:Float(0, 32) + (right and 368 or -16)
             local y0 = ran:Float(0, 128) - 64
             local dy = y0 / 8
+            task.Wait(16)
             for _ = 1, 16 do
                 shoot_abs6(self, x0 - 192, self.y - y0, 64, 6, right and 6 or 2,
-                           1, 2, 5, 1, 0,
+                           right and 1 or 2, 4, 5, 1, 0,
                            right and 0.392699 or 0.523599, nil, true)
                 x0 = x0 + (right and -24 or 24)
                 y0 = y0 - dy
                 task.Wait(2)
             end
+            task.Wait(1)
         end
         task.Wait(60)
         while true do
@@ -8811,7 +8816,10 @@ local function TH34_add_stage56_boss()
                         end
                     end)
                 end
-                task.Wait(155)
+                ---原作 sub24 的墙钟 = 16（sub2 阻塞）+ 50（到第一拍）+ 3×n（每只子 3 帧）
+                ---+ 102（跳到 t=155 的 SUB_RET）= 168 + 3n。四段 gi0=8/8/12/16
+                ---⇒ 波距 192/192/204/216（不是常数 155）。
+                task.Wait(168 + 3 * n)
             end
         end
       end)
@@ -8985,38 +8993,60 @@ local function TH34_add_stage56_boss()
         return ls
     end
 
-    ---──────────────────── 符卡 亡郷「亡我郷 -自尽-」（原作 sub43/44/46/47/48/49） ────────────────────
-    ---幽幽子飘到画面上方，每 9 帧从本体打一组「慢速大弹扇」（速度 rand 0.3~4.5、
-    ---张角 30°/22.5°、两条色档），基准角 lf0（-90° 起）每拍转 −2.25°，
-    ---并镜像打一组 lf3 = 180° − lf0 的反向扇；
-    ---每 900 帧一轮的「激光段」：5 条长激光从 24px 处展开、各自慢转 ±0.19635 rad。
+    ---──────────────────── 符卡 亡郷「亡我郷 -自尽-」（原作 sub43/44/45/46/47/48/49） ────────────────────
+    ---逐条照抄原作 sub43 的 L 行。原作把四种难度串在同一个 sub 里，用
+    ---`JNEQ *DIFF 0/1/2/3` 链把 ctx.time 一次性推到 360 再落到 L 行的块 —— 也就是说
+    ---L 行的 "t=360" 其实是**第 0 帧**，后面的 480/510/540 都要减去 360 才是墙钟：
+    ---  · 帧 0   ：块头（SET_INVINCIBILITY_TIMER 300 / SET_ANM 147 / 限位框 /
+    ---             `f0 = -0.0981748`、`f1 = 0.6`、`MOVE_POS_TIME 60 4 192 70`）；
+    ---  · 帧 120 ：`f0 = -1.5708`、`f3 = 0`、`SET_PERIODIC_CALLBACK 9 44`（t=480）；
+    ---  · 帧 150 ：`SUB_CALL 48`（420 帧激光，t=510）；
+    ---  · 帧 570 ：`f0 = 0`、`f3 = -1.5708`、`SET_PERIODIC_CALLBACK 9 46`（t=510）；
+    ---  · 帧 600 ：`SUB_CALL 49`（420 帧，t=540）；
+    ---  · 帧 1020：`JUMP 480` 回帧 120 —— 一轮 900 帧，周期回调**全程不停**，
+    ---            所以每 9 帧必有一拍（ECL 实测 0..2200 帧共 231 拍、每拍 8 发 = 1848）。
+    ---每拍 = sub44（或镜像的 sub46）本体 5 发 + `SUB_CALL 47`（或 45）的 3 发 = **8 发**：
+    ---  · 本体：`SPREAD_ABS 6:8 3 1 v` ＋ `6:13 2 1 v`，v = rand(0.3)+4.2，扇心 f0；
+    ---  · 子程：`SPREAD_ABS 6:8 1 1 v` ＋ `6:10 2 1 v`，v = rand(0.3)+3.7，扇心 f3；
+    ---  · 相 A（sub44）：`f3 = 3.14159 − f0` 后 `f0 -= rand(0.0392699)+0.0392699`；
+    ---    相 B（sub46）：镜像 —— `f0 = 3.14159 − f3` 后 `f3 += rand(0.0392699)+0.0392699`。
     scard("亡郷「亡我郷 -自尽-」", 4393, 65, 2100, false, function(self)
         task.New(self, function()
-            task.Wait(480)
+            task.Wait(120)
             self._box = { -128, 128, 96, 176 }
-            local spin = spin6(0.0523599, 0.05, 30)
+            local spinA = spin6(0.0523599, 0.05, 30)   -- sub44 的 INIT_BULLET_CMD 组
+            local spinB = spin6(-0.0523599, 0.05, 30)  -- sub47 的镜像组
             local lf0, lf3 = -1.5708, 0
-            ---原作 sub44/sub46：一组「慢速大弹扇」，a1 是扇心。
-            local function fan(a1)
-                local v = ran:Float(0.3, 4.5)
-                shoot6(self, 0, 0, 65, 6, 8, 3, 1, v, 1, a1, 0.523599, spin, true)
-                shoot6(self, 0, 0, 65, 6, 13, 2, 1, v, 1, a1, 0.523599, spin, true)
+            ---一拍：5 发扇心 a（指令组 A）＋ 3 发扇心 b（指令组 B）。
+            local function beat(a, b)
+                local v5 = ran:Float(0, 0.3) + 4.2   -- 原作 RAND_FLOAT_ADD f2 0.3 4.2
+                shoot6(self, 0, 0, 65, 6, 8, 3, 1, v5, 1, a, 0.523599, spinA, true)
+                shoot6(self, 0, 0, 65, 6, 13, 2, 1, v5, 1, a, 0.523599, spinA, true)
+                local v3 = ran:Float(0, 0.3) + 3.7   -- 原作 RAND_FLOAT_ADD f2 0.3 3.7
+                shoot6(self, 0, 0, 65, 6, 8, 1, 1, v3, 1, b, 0.523599, spinB, true)
+                shoot6(self, 0, 0, 65, 6, 10, 2, 1, v3, 1, b, 0.523599, spinB, true)
             end
-            ---主时间轴的「周期扇 + 镜像是同一支子程序」：每 9 帧一次，每 30 拍换一次方向。
             task.New(self, function()
-                local n = 0
                 while true do
-                    task.Wait(9)
-                    fan(lf0)
-                    if n >= 2 then
+                    -- 相 A：sub44 挂 450 帧（SET_PERIODIC_CALLBACK 9 44 到切 9 46）
+                    lf0, lf3 = -1.5708, 0
+                    for _ = 1, 50 do
+                        task.Wait(9)
                         lf3 = 3.14159 - lf0
-                        fan(lf3)
+                        beat(lf0, lf3)
+                        lf0 = lf0 - (ran:Float(0, 0.0392699) + 0.0392699)
                     end
-                    lf0 = lf0 - 0.0392699
-                    n = (n + 1) % 4
+                    -- 相 B：sub46 镜像
+                    lf0, lf3 = 0, -1.5708
+                    for _ = 1, 50 do
+                        task.Wait(9)
+                        lf0 = 3.14159 - lf3
+                        beat(lf3, lf0)
+                        lf3 = lf3 + (ran:Float(0, 0.0392699) + 0.0392699)
+                    end
                 end
             end)
-            ---激光段：原作 t=510（sub48，从 lf5 收到 0）与 t=540（sub49，反向）各 420 帧。
+            ---激光段：原作帧 150（sub48，从 lf5 收到 0）与帧 600（sub49，反向）各 420 帧。
             task.New(self, function()
                 task.Wait(30)
                 while true do
@@ -9038,25 +9068,32 @@ local function TH34_add_stage56_boss()
     ---同时主时间轴从「13 发自机狙扇」开始、间隔由 120 帧一路缩到 65 帧（越打越快）。
     ncard("幽々子 非符 3", 4394, 32000, 3000, function(self)
         task.New(self, function()
-            ---原作 sub35：随机点 + 3 发瞄准扇（0x20 自旋 80 帧、0x10 加速 60 帧）。
+            ---原作 sub34 在 t=165（= 进场之后）才 SET_PERIODIC_CALLBACK 11 35，
+            ---所以第一次周期子程比本体起手晚 11 帧；移植版照抄这段相位。
+            ---sub35：一条随机点 + 三扇 3 发瞄准弹（3:4 无 cmd，3:1 挂 cmd1 正/负自转），
+            ---合计 9 发；cmd0 = 0x20 spd0 ang0 dur80，cmd1 = 0x20 spd0.01 ang±0.0261799 dur60。
             task.New(self, function()
+                task.Wait(11)
                 while true do
                     local ox = ran:Float(-176, 176)
                     local oy = ran:Float(-24, 24)
                     shoot6(self, ox, oy, 64, 3, 4, 3, 1, 1, 1, 0, 0.523599,
                            spin6(0, 0, 80), true)
                     shoot6(self, ox, oy, 64, 3, 1, 3, 1, 1, 1, 0, 0.523599,
-                           accel6(0.038, 80), true)
+                           spin6(0.0261799, 0.01, 60), true)
+                    shoot6(self, ox, oy, 64, 3, 1, 3, 1, 1, 1, 0, 0.523599,
+                           spin6(-0.0261799, 0.01, 60), true)
                     task.Wait(11)
                 end
             end)
+            ---主时间轴：i0 从 120 起，每拍 SET_WAIT_TIMER i0 → 打 13 发 → i0-=5；
+            ---i0<=60 后不再递减（原作 JLEQ i0 60 跳过 SUB），但**继续开火**。
             local li0 = 120
-            while li0 > 60 do
+            while true do
                 task.Wait(li0)
                 shoot6(self, 0, 0, 64, 10, 1, 13, 1, 3.2, 1, 0, 0.1848, nil, true)
-                li0 = li0 - 5
+                if li0 > 60 then li0 = li0 - 5 end
             end
-            task.Wait(200)
         end)
     end)
 
@@ -9472,15 +9509,19 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub40/sub41：屏幕外 16 个随机点，每个 4 层的自机狙。
         local function burst(right, c1, a2)
+            ---原作 sub40/sub41：t=0 先 SUB_CALL 2（16 帧阻塞），再每 2 帧一发共 16 发，
+            ---t=2 空跳 + t=3 SUB_RET ⇒ 子程墙钟 49 帧（和幽幽子非符 1 的 sub21/22 同型）。
             local x0 = rf(32, right and 368 or -16)
             local y0 = rf(128, -64)
             local dy = y0 / 8
+            task.Wait(16)
             for _ = 1, 16 do
                 shoot_abs6(self, x0 - 192, self.y - y0, 65, 6, right and 6 or 2,
                            c1, 4, 5, 1, 0, a2, nil, true)
                 x0, y0 = x0 + (right and -24 or 24), y0 - dy
                 task.Wait(2)
             end
+            task.Wait(1)
         end
         task.Wait(60)
         self._box = box5(32, 48, 352, 128)
