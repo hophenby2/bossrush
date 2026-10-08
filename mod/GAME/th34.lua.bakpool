@@ -564,19 +564,10 @@ local TRAIL_SPRITE = "enemy_aura1"
 local POOL_SIZE = 1024
 local pool = {}
 
----★ 「还在场」的判据必须是**原作 TH07 的回收线**，不是 LuaSTG 的。
----   原作 `GameManager::IsInBounds(x,y,w,h)`（GameManager.cpp:40）判的是**384x448 的
----   场地**再各让出半个贴图：x ∈ [-192-w/2, 192+w/2]、y ∈ [-224-h/2, 224+h/2]
----   （TH07 左上原点 0..384/0..448 换到我们坐标就是 ±192/±224，见文件头）。
----   LuaSTG 自己的 `bound*` 是 **±224/±256**（`THlib/lib/Lscreen.lua:90`）——
----   比原作的回收线各宽 32 px，用它当判据会让弹在「原作早就回收了」的地方
----   还占着槽位，池子提前灌满、无谓地丢后面的波。
----   （贴图半宽无从逐颗取得，这里取场地本身；比原作只紧不松，而在会顶到上限的
----    那几张卡上实测两种口径都远未回到 1024，故对发弹条数无影响。）
 local function in_bound(unit)
     return IsValid(unit)
-            and unit.x >= lstg.world.l and unit.x <= lstg.world.r
-            and unit.y >= lstg.world.b and unit.y <= lstg.world.t
+            and unit.x >= lstg.world.boundl and unit.x <= lstg.world.boundr
+            and unit.y >= lstg.world.boundb and unit.y <= lstg.world.boundt
 end
 
 ---还占着槽位的弹有几颗。原作每帧边扫边数（`BulletManager.cpp:942` 那段），
@@ -8490,35 +8481,11 @@ local function TH34_add_stage56_boss()
             self.y = min(max(self.y, b[3]), b[4])
         end
     end
-    ---原作 `GET_EXIT_ANGLE`（EclManager.cpp:1592-1638）。返回值是**我们口径**的
-    ---角度（度）：th07 的 `exitAngle` 取反即我们这边绕行方向。
-    ---th07 抽的是 rand(0,π/2) 的 ±45°/±135° 扇区，再按上下左右限位折返四次。
-    ---`self.angle`（`enemy->angle`）本文件只在极坐标移动里才会变，这里不追；
-    ---只在「贴右壁」那一支用到它，而它此时恒为 0（同原作 sub29 的移动方式）。
     local function exang(self)
-        local a
-        if player.x < self.x then
-            a = ran:Float(135, 225)                 -- rand(0,π/2) + 3π/4
-        else
-            a = ran:Float(-45, 45)                  -- rand(0,π/2) − π/4
+        if (player.x < self.x and self.x > -96) or self.x > 96 then
+            return ran:Float(135, 225)
         end
-        local bx2, by2 = self._box and self._box[2], self._box and self._box[4]
-        local bx1, by1 = self._box and self._box[1], self._box and self._box[3]
-        if bx1 then
-            if self.x < bx1 + 96 then
-                if a > 90 then a = 180 - a
-                elseif a < -90 then a = -180 - a end
-            end
-            if bx2 - 96 < self.x then
-                if a >= 0 and a < 90 then a = 180 - (self.angle or 0)
-                elseif a <= 0 and a > -90 then a = -180 - a end
-            end
-            ---y 限位在我们这边是翻过号的：th07 的 (下界+48, 上界−48) 折返，
-            ---对应我们坐标里的 (box[4]−48, box[3]+48)（box[3] 是 y 上界）。
-            if by2 - 48 < self.y and a < 0 then a = -a end
-            if self.y < by1 + 48 and a > 0 then a = -a end
-        end
-        return -a
+        return ran:Float(-45, 45)
     end
     local function exdrift(self, spd, ease)
         local a = exang(self)
@@ -8697,7 +8664,6 @@ local function TH34_add_stage56_boss()
     local function shoot6(self, ox, oy, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
         local style, col = bs(spr), col16(off)
         local total, room, i = c1 * c2, POOL4_SIZE - pool4_used(), 1
-        if _G.__DBG4 then print('ROOM4\t'..tostring(_G.__frame)..'\t'..tostring(total)..'\t'..tostring(room)) end
         ---SPREAD_AIMED / RING_AIMED 的瞄准角取的是**出膛点**（原作
         ---`AngleToPlayer(&bulletProps->pos)`，而 `pos = enemy->pos + shootOffset`；
         ---BulletManager.cpp:643）。偏移为 0 时与自机到本体中心等价，偏移大时差很多。
@@ -8836,11 +8802,8 @@ local function TH34_add_stage56_boss()
     ---开卡 120 帧的进场（原作 MOVE_POS_TIME(120,4,192,180) → 我们 (0,44)）。
     ---之后每 155 帧放一圈「子机」：子机均匀铺在半径 112 的圆上（张角 gF0，
     ---8 只 ×45° / 8 只 ×−45° / 12 只 ×54° / 16 只 ×−77.14°），
-    ---每只子机在 sub24 的 t=50 出生（该处墙钟 = 16 + 50 = 66，16 帧来自
-    ---sub24 开头的 `SUB_CALL 2`：sub2 的 DEC_JUMP 循环跑 gi0=4 次、每次 4 帧），
-    ---sub25 再过 60 帧开打 ⇒ 从 sub24 起算第 126 帧首发；每只子机打 14 次
-    ---4 发绝对扇（张角 22.5°、速度 1.8→1），每次间隔 3 帧。
-    ---四圈打完 JUMP 回开头（原作 t=480 的 `JUMP off=-224`）。
+    ---每只子在出生 60 帧后开始打 14 次 4 发绝对扇（张角 22.5°、速度 1.8→1），
+    ---每次间隔 3 帧。四圈打完 JUMP 回开头（原作 t=480 的 `JUMP off=-224`）。
     scard("六道剣「一念無量劫 -Lunatic-」", 4391, 40, 1500, false, function(self)
       task.New(self, function()
         task.Wait(120)
@@ -8852,9 +8815,7 @@ local function TH34_add_stage56_boss()
                     local ang = 1.5708 + k * d
                     local ox, oy = voff(ang, 112)
                     task.New(self, function()
-                        ---126 = 16（sub2）+ 50（sub24 出生）+ 60（sub25 开打）；
-                        ---+3k 是 sub24 每只子机 3 帧的出生间隔。
-                        task.Wait(126 + 3 * k)
+                        task.Wait(110 + 3 * k)
                         for _ = 1, 14 do
                             shoot6(self, ox, oy, 65, 6, 4, 4, 1, 1.8, 1, ang, 0.392699, nil, true)
                             task.Wait(3)
@@ -8945,7 +8906,6 @@ local function TH34_add_stage56_boss()
                       a2 = {f = 0, d = -1.5708}, a2_2 = 0.314159, op2 = 65,
                       op3 = 64, s3 = 2, off3 = 2, c3 = 7 }
         task.Wait(60)                                  -- t=60
-        self._box = box5(32, 48, 352, 128)   -- sub29 t=60 的 SET_MOVEMENT_BOUNDS
         while true do
             arm(S30)
             task.Wait(100); drift(self, 1.5, 60)       -- t=160
@@ -9114,9 +9074,6 @@ local function TH34_add_stage56_boss()
     ---同时主时间轴从「13 发自机狙扇」开始、间隔由 120 帧一路缩到 65 帧（越打越快）。
     ncard("幽々子 非符 3", 4394, 32000, 3000, function(self)
         task.New(self, function()
-            ---原作 sub34 进场：MOVE_POS_TIME(60) 与 2×SUB_CALL 2（各 120 帧粒子/音）
-            ---＋t=30/45/105/165 的四段等待 = 405 帧后才设周期子程与主时间轴。
-            task.Wait(405)
             ---原作 sub34 在 t=165（= 进场之后）才 SET_PERIODIC_CALLBACK 11 35，
             ---所以第一次周期子程比本体起手晚 11 帧；移植版照抄这段相位。
             ---sub35：一条随机点 + 三扇 3 发瞄准弹（3:4 无 cmd，3:1 挂 cmd1 正/负自转），
@@ -9161,8 +9118,6 @@ local function TH34_add_stage56_boss()
     ---拍末按 i1 的区间给 8 个 f 加减 0.000490874，i1>120 后回 1（原作 SET_INT i1 0 + INC）。
     ncard("幽々子 非符 4", 4395, 32000, 3000, function(self)
         task.New(self, function()
-            ---原作 sub36 进场：t=0 的 MOVE_POS_TIME(60,4,192,112) 走满 60 帧后才到 t=60。
-            task.Wait(60)
             ---(ox, oy) 已是我们的坐标（原作 SET_SHOOT_OFFSET 的 y 取反）；
             ---第 3 列 = RING_ABS 的基准角 a1（TH07 弧度）；第 4 列 = L 行 count1。
             local OFFS = { { 128, 16, 0.785398, 7 }, { 96, 0, 1.1781, 3 },
@@ -9201,12 +9156,10 @@ local function TH34_add_stage56_boss()
                 end
             end)
             local li0 = 200
-            ---原作 JLEQ i0 80 命中后跳过 `SUB i0 5`（不再缩间隔），但仍继续开火；
-            ---所以墙钟上 i0=80 的那一拍也要打，且此后每 80 帧一拍打到卡结束。
-            while true do
+            while li0 > 80 do
                 task.Wait(li0)
                 shoot6(self, 0, 0, 64, 10, 1, 11, 1, 1.2, 1, 0, 0.19635, nil, true)
-                if li0 > 80 then li0 = li0 - 5 end
+                li0 = li0 - 5
             end
             task.Wait(200)
         end)
@@ -9224,13 +9177,9 @@ local function TH34_add_stage56_boss()
     ---每拍末尾：li2++、基准角 lf0 ± 0.0475999 rad（li2 % 600 ≥ 300 时取负号）。
     scard("亡舞「生者必滅の理 -魔境-」", 4396, 65, 3000, false, function(self)
         task.New(self, function()
-            ---L 行从 t=360 沿 time:=480 的跳转只等满 120 帧（不是从 0 等到 480）。
-            task.Wait(120)
+            task.Wait(480)
             self._box = box5(64, 48, 320, 128)
-            ---`SET_PERIODIC_CALLBACK 3 51` 在 t=480 设下后，计数器当帧不增；
-            ---第一次 sub51 落在 120+3 帧（= ECL 的 123），移植版把这 3 帧补上。
             local lf0, li0, li2, li3, l2i1 = 0, 0, 0, 0, 0
-            task.Wait(3)
             while true do
                 li0 = li0 + 1
                 local ph = li0 % 4
@@ -9267,8 +9216,7 @@ local function TH34_add_stage56_boss()
     ---并由 12+8 只蝴蝶子机向自机方向飞出去。
     scard("華霊「バタフライディルージョン」", 4397, 65, 3000, false, function(self)
         task.New(self, function()
-            ---L 行沿 `JNEQ DIFF 3` 链在 t=360→480 的跳转后只等满 120 帧（同 4396）。
-            task.Wait(120)
+            task.Wait(480)
             self._box = { -128, 128, 96, 176 }
             local lf0, lf4 = 0, ran:Float(-PI, PI)
             ---原作 sub53：一只蝴蝶沿直线飞向开火那一刻的自机位置，
@@ -9787,7 +9735,7 @@ local function TH34_add_stage56_boss()
 
         ---主时间轴（墙钟 = 原作 t）。
         task.New(self, function()
-            task.Wait(540)   -- 原作 sub62 先跑 t=0 的 SUB_CALL 72（60 帧演出）再等 480
+            task.Wait(480)
             bmove(self, 120, 4, 0, 128)       -- 原作 t=480 MOVE_POS_TIME(120,4,192,96)
             task.Wait(120)                    -- → t=600
             bmove(self, 60, 4, 0, 112)        -- 原作 t=600 MOVE_POS_TIME(60,4,192,112)
@@ -10125,12 +10073,10 @@ local function TH34_add_stage56_boss()
     ---同一侧的两组相隔 320 帧（= 挥砍 202 + SET_WAIT_TIMER 90 折算）。
     scard("獄神剣「業風神閃斬」", 4405, 55, 2000, false, function(self)
         task.New(self, function()
-            ---L 行沿难度链在 t=360→480 只等满 120 帧（同 stage6 各卡）。
-            task.Wait(120)                       -- 原作 t=360→480
+            task.Wait(480)
             ---原作 sub58：从画面顶端打单发旋转弹（period=6，L 速在 3.0/0.6 间跳）。
             task.New(self, function()
                 local lf0, lf1, li0 = -0.0981748, 0.6, 0
-                task.Wait(6)                     -- SET_PERIODIC_CALLBACK 6 58 后第 6 帧首调
                 while true do
                     lf1 = 3.6 - lf1
                     shoot_abs6(self, 0, 192, 67, 10, 1, 1, 1, lf1, 1, lf0, 0.392699,
@@ -10140,21 +10086,12 @@ local function TH34_add_stage56_boss()
                     task.Wait(6)
                 end
             end)
-            bmove(self, 60, 4, -144, 32)         -- 原作 t=480 MOVE_POS_TIME(60,4,48,192)
+            bmove(self, 60, 4, -144, 32)
+            task.Wait(260)                       -- 首次挥砍：ECL t=570 起 sub59，+170 帧出刀
             local OFFS = { -7, -49, 63, -105, 119 }
-            ---原作主循环（`JUMP 570 -112`）：t=570 SUB_CALL 59（110 帧，内部 t=50 落斩）
-            ---→ 等 90 帧 → t=660 SUB_CALL 60（同样 110 帧 / t=50 落斩）→ 等 90 帧 → 回 t=570。
-            local function slashbar()
-                task.Wait(50)                    -- sub59/60 的 t=50
-                for _, o in ipairs(OFFS) do slash5(self.y + o) end
-                task.Wait(60)                    -- sub59/60 的 t=110 SUB_RET
-            end
-            task.Wait(90)                        -- t=480 → 570
             while true do
-                slashbar()                       -- sub59
-                task.Wait(90)                    -- t=570 → 660
-                slashbar()                       -- sub60
-                task.Wait(90)                    -- t=660 → 750 JUMP 回 570
+                for _, o in ipairs(OFFS) do slash5(self.y + o) end
+                task.Wait(320)
             end
         end)
     end, OPT5)
@@ -10227,8 +10164,8 @@ local function TH34_add_stage56_boss()
     ---落在本体处；随后 `MOVE_POS_TIME 60` 朝自机突进。移植版照此只保留「顿一下再突进」。
     scard("修羅剣「現世妄執 -Lunatic-」", 4407, 60, 2000, false, function(self)
         task.New(self, function()
-            ---原作 t=330 出生（L 行 t=240 在难度链跳转后落在第 120 帧，故 t=330 = 第 210 帧）。
-            task.Wait(210)
+            ---原作 t=330 出生。sub63 的时间轴从它自己的 t=0 起算。
+            task.Wait(330)
             task.New(self, function()
                 while true do
                     local xl = ran:Float(0, 448)
@@ -10241,13 +10178,9 @@ local function TH34_add_stage56_boss()
                     task.Wait(2)
                 end
             end)
-            ---原作 t=450 SUB_CALL 64：实测子程 340 帧（t=0 的 SUB_CALL 2 =120、
-            ---t=10 的 DEC_JUMP 11 拍 ×10、t=20 的 DEC_JUMP 5 拍 ×10、t=80 前再等 60）。
-            ---之后 MOVE_POS_TIME(60,4,*PX,*Y)，再等 60 帧到 t=510 的 `JUMP 450 -48`：
-            ---一轮 340+60=400 帧，首次落在第 330 帧（t=450）。
-            task.Wait(120)                        -- t=330 → 450
+            ---原作 sub64（200 帧演出）+ 到 t=510 的 60 帧 = 260 帧一个循环。
             while true do
-                task.Wait(340)                    -- sub64 的 340 帧演出（无弹）
+                task.Wait(200)
                 bmove(self, 60, 4, player.x, self.y)
                 task.Wait(60)
             end
@@ -10312,50 +10245,35 @@ local function TH34_add_stage56_boss()
     ---每拍「3 发 + 6 发」，速度 0.5 起每拍 +0.3（L）、张角每拍 −0.0272708。
     scard("人神剣「俗諦常住」", 4409, 66, 4400, false, function(self)
         task.New(self, function()
-            ---L 行：t=480 落在第 120 帧；t=540 SUB_CALL 71（126 帧）**阻塞**，
-            ---所以 t=540 剩下的 MOVE_POS_TIME / SPAWN_ENEMY_ABS 72 都在第 306 帧才执行
-            ---（sub74 的判定条在 sub71 内部 t=50 ⇒ 第 230 帧）。
-            task.Wait(180)                        -- t=540
-            task.Wait(50)
-            slash5(self.y - 16, 448, 30000)       -- 原作 sub71 t=50 的 SPAWN_ENEMY_ABS 74
-            task.Wait(76)                         -- sub71 余下 76 帧 → 第 306 帧
-            bmove(self, 120, 4, -144, 128)        -- 原作 t=540 MOVE_POS_TIME(120,4,48,96)
-            ---原作 sub72：每 3 帧从底部（屏幕外）随机 x 打一发向上的弹。
+            task.Wait(540)
+            slash5(self.y - 16, 448, 30000)
+            self._box = box5(32, 48, 352, 112)
+            ---原作 sub72：每 ~3 帧从底部（屏幕外）随机 x 打一发向上的弹。
             task.New(self, function()
-                ---原作 sub72 的等待是**两条 SET_WAIT_TIMER 叠加**：`SET_WAIT_TIMER *i0`
-                ---（i0 初值 4、每 60 发 `DEC` 一次、到 0 为止）之后还有 `SET_WAIT_TIMER 3`，
-                ---所以间隔 = i0 + 3（首 60 发 7 帧，逐档 6/5/4，之后恒 3）。
-                local lf3, li0, li3 = 0.8, 4, 0
+                local lf3 = 0.8
                 while true do
                     local xth = ran:Float(0, 384)
                     local yth = 420 + ran:Float(0, 32)
                     shoot_abs6(self, xth - 192, 224 - yth, 67, 2, 6, 1, 1,
                                0.3 + ran:Float(0, lf3), 1, -1.5708, 0.392699, nil, true)
-                    li3 = li3 + 1
                     lf3 = lf3 + 0.001
-                    if (li3 % 60) == 0 and li0 > 0 then li0 = li0 - 1 end
-                    task.Wait(li0 + 3)
+                    task.Wait(3)
                 end
             end)
-            task.Wait(120)                        -- t=660 → 第 426 帧
-            self._box = box5(32, 48, 352, 112)
-            drift(self, 1.5, 60)                  -- 原作 t=660 GET_EXIT_ANGLE + MOVE_DIR_TIME 60
-            task.Wait(60)                         -- t=720 → 第 486 帧
-            ---原作主循环：SUB_CALL 73（62 帧）→ 等 10 帧到 t=730 → `JUMP 660 -68`
-            ---回到 t=660（GET_EXIT_ANGLE + MOVE_DIR_TIME 60）→ 等 60 帧到 t=720。一轮 132 帧。
+            bmove(self, 120, 4, -144, 128)
+            task.Wait(60)                       -- 原作 t=660 的 box/exit-angle → t=720 的 sub73
             while true do
-                local a0 = aimth(self)            -- 原作 sub73 t=30 的 SET_FLOAT *f0 *A2P
+                drift(self, 1.5, 60)            -- 原作 GET_EXIT_ANGLE + MOVE_DIR_TIME 60
+                ---原作 sub73：16 拍「前 3 发 + 后 6 发」，速度 0.5 起每拍 +0.3（L）。
+                local a0 = aimth(self)
                 local sp, a2 = 0.5, 0.785398
-                task.Wait(30)                     -- sub73 t=0→30 的演出
                 for _ = 1, 16 do
                     shoot6(self, 0, 0, 65, 7, 1, 3, 1, sp, 1, a0, a2, nil, true)
                     shoot6(self, 0, 0, 65, 7, 1, 6, 1, sp, 1, a0 + PI, 0.523599, nil, true)
                     sp, a2 = sp + 0.3, a2 - 0.0272708
                     task.Wait(2)
                 end
-                task.Wait(10)                     -- t=730 → JUMP 回 t=660
-                drift(self, 1.5, 60)
-                task.Wait(60)
+                task.Wait(10)
             end
         end)
     end, OPT5)
@@ -10792,13 +10710,11 @@ local function TH34_add_stage56_boss()
                     job = 1
                 elseif job then
                     job = job + 1
-                    ---原作 sub45 的 t=0 打种子、t=50/100/150 各 RUN_EX_INS 6 一次；
-                    ---job 在种子那一帧就 =1，所以这三处要写成 51/101/151。
-                    if job == 51 then
+                    if job == 50 then
                         gen = split(gen, 15)
-                    elseif job == 101 then
+                    elseif job == 100 then
                         gen = split(gen, 2)
-                    elseif job == 151 then
+                    elseif job == 150 then
                         gen = split(gen, 10)
                         job = nil
                     end
@@ -10808,9 +10724,6 @@ local function TH34_add_stage56_boss()
         end
         ---本体（ECL t=360 → 移植 t=0）。
         task.New(self, function()
-            ---原作 t=360 的 L 行开局（MOVE_POS_TIME 120 帧 + 开卡）在墙钟 0..120 跑完，
-            ---t=480 的 SUB_CALL 2（120 帧）才在墙钟 120 起步 ⇒ 桩件里先补这 120 帧序奏。
-            task.Wait(120)
             local host = self
             host._orbR, host._orbW, host._mode = 0, 0, 0
             local interps = {}
@@ -10870,11 +10783,7 @@ local function TH34_add_stage56_boss()
                 add_interp("_orbR", 60, 96)
                 add_interp("_orbW", 60, -0.0523599 * RAD2DEG)
                 wait(60)                                -- ⇒ 873
-                ---原作 t=1363 的 `JUMP 480 … -> sub42+1816`：跳回的目标是
-                ---**t=540 的 `SET_INT i2_2 3`**（rel 1816），而 JUMP 把子程时间设成
-                ---**480** ⇒ 跳回后还要再空转 60 帧（480→540）才到下一个「模式 3」拍。
-                ---少这 60 帧，第二轮起每一拍的墙钟都会提前 60（首拍 1123 而非 1183）。
-                wait(190)                               -- ⇒ 原作 t=1363 的 JUMP + 480→540
+                wait(130)                               -- ⇒ 1003 = 原作 t=1363 的 JUMP 点
             end
         end)
     end, { skin = skin3, enter = enter3b })
@@ -11919,120 +11828,51 @@ local function TH34_add_stage56_boss()
     end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
 
     ---──────────────────── 騒葬「スティジャンリバーサイド -Lunatic-」 ────────────────────
-    ---原作 sub133 → sub134（周期回调，每 10 帧一次），Lunatic 行逐条照抄：
-    ---  · sub133 本体：t=120 MOVE_POS_TIME(120,4,192,96)（我们 (0,96)→(0,128)）；
-    ---    t=240 SET_MOVEMENT_BOUNDS(128,96,256,128)、SUB_CALL 2（16 帧粒子）、
-    ---    i0=13 / f0=*RNGRAD / f1=−0.0981748、SET_PERIODIC_CALLBACK 10 134。
-    ---    t=440/640/…/1640 每 200 帧一档：gi0/gf0 → SUB_CALL 60（GET_EXIT_ANGLE
-    ---    + MOVE_DIR_TIME(30,4,θ,0.8)，**不冻结时间轴**，只是启动一段 30 帧位移）、
-    ---    更新 i0（色档 11/10/8/6/4/2/14）、f0=*RNGRAD、f1=±0.0981748、重设周期回调；
-    ---    t=1840 只漂移不更新；JUMP 回 t=240（时间轴重置）。
-    ---  · sub134（每 10 帧一次）：RING_AIMED 2:色档 8 3 1.5 0.5 *f0 0 flags513
-    ---    ——8 发 × 3 层（1.5→0.5 px/帧）、基准角 f0 朝自机；随后 f0 += f1。
+    ---原作 sub133/134：本体每 10 帧打一圈朝自机的 8 发 × 3 层（1.5→0.5 px/帧）；
+    ---每 200 帧按 GET_EXIT_ANGLE 漂 30 帧（0.8 px/帧）并把环的基准角重掷一次。
     scard("騒葬「スティジャンリバーサイド -Lunatic-」", 4447, 60, 3600, false, function(self)
-        local i0, f0, f1
-        task.New(self, function()                          -- sub134（周期回调）
-            task.Wait(266)                                 -- t=240 设回调后第 10 帧首触发（ECL t=266）
+        self._box = box5(32, 48, 352, 128)
+        task.New(self, function()
+            local a = rngrad()
             while true do
-                shoot6(self, 0, 0, 66, 2, i0, 8, 3, 1.5, 0.5, f0, 0, nil, true)
-                f0 = f0 + f1
-                task.Wait(10)
-            end
-        end)
-        task.New(self, function()                          -- sub133（本体时间轴）
-            task.Wait(120)                                 -- t=0..120 前奏（SET_POS 等）
-            bmove(self, 120, 4, 0, 128)                    -- t=120 MOVE_POS_TIME(120,4,192,96)
-            task.Wait(120)                                 -- t=120 → t=240
-            self._box = box5(128, 96, 256, 128)            -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                                  -- SUB_CALL 2
-            i0, f0, f1 = 13, rngrad(), -0.0981748          -- t=240 设定
-            local K = { 11, 10, 8, 6, 4, 2, 14 }           -- t=440…1640 的色档
-            while true do
-                for b = 1, 7 do
-                    task.Wait(200)
-                    drift(self, 0.8, 30)                   -- SUB_CALL 60
-                    i0 = K[b]
-                    f0 = rngrad()
-                    f1 = (b % 2 == 1) and 0.0981748 or -0.0981748
+                for _ = 1, 12 do
+                    shoot6(self, 0, 0, 66, 2, 8, 8, 3, 1.5, 0.5, a, 0, nil, false)
+                    task.Wait(10)
                 end
-                task.Wait(200)                             -- t=1640 → t=1840
-                drift(self, 0.8, 30)                       -- t=1840（只漂移）
-                i0, f0, f1 = 13, rngrad(), -0.0981748      -- JUMP 回 t=240
+                a = rngrad()
+                drift(self, 0.8, 30)
+                task.Wait(110)
             end
         end)
     end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
 
     ---──────────────────── 大合葬「霊車コンチェルトグロッソ怪」 ────────────────────
-    ---原作 sub135 → sub136（周期回调，每 10 帧一次），Lunatic 行逐条照抄：
-    ---  · sub135：t=0 MOVE_POS_TIME(120,4,192,96)（我们 (0,224)→(0,128)）；t=120
-    ---    SET_BOSS_RUN_INTERRUPT 4 / SUB_CALL 2（16 帧）；t=150
-    ---    MOVE_ORBIT(300, 192,160, 0, −π/2, 0.010472, 64, 0.213333)、f0=*RNGRAD、
-    ---    i0=0、SET_PERIODIC_CALLBACK 10 136；t=450 MOVE_ORBIT(0, 192,160, 0, +π/2,
-    ---    0.010472, 128, 0)、f0=4.18879、LASER_FIXED(spr1:off10, sOff=16, eOff=224,
-    ---    sLen=224, w=16, 展开 120, 满宽 252000, 收束 16, 判定 16..16, flags 4)；
-    ---    t=451 拉第二条（f0=6.70206），随后两条激光进入不断加速的转台循环。
-    ---  · sub136（每 10 帧一次）：先把 shootOffset 定到 (192−X, 160−Y)（⇒ 弹从**固定的**
-    ---    (192,160)=我们 (0,64) 打出），再按 i0 打 3 圈或 4 圈 RING_ABS 2:col 3 2 2 0.5
-    ---    f0 0.0785398（每圈 f0 += 0.0261799）；i0%4==0 时补一圈 RING_AIMED 2:13 20 2
-    ---    1.7 0.5 0 0.0785398；末尾 f0 += 3×0.0392699、i0 += 1。
+    ---原作 sub135/136：本体绕 (192,160) 公转（r 64→128），每 10 帧打一组
+    ---「9 圈 × 3 发 × 2 层（2→0.5 px/帧）」的中速环 ＋ 一圈朝自机的 20 发 × 2 层
+    ---（1.7 px/帧）；300 帧后额外从相对点各拉两条 224px 长、随公转转动的长激光。
     scard("大合葬「霊車コンチェルトグロッソ怪」", 4448, 60, 3600, false, function(self)
-        local f0, i0
-        local R3, R4 = { 1, 2, 4 }, { 1, 2, 4, 6 }
-        task.New(self, function()                          -- sub136（周期回调）
-            task.Wait(176)                                 -- t=150 设回调后第 10 帧首触发
-            while true do
-                local ring = (i0 < 30) and R3 or R4
-                for k = 1, #ring do
-                    ring4(self, 0, 64, 2, ring[k], 3, 2, 2, 0.5, f0, 0.0785398, nil)
-                    f0 = f0 + 0.0261799
-                end
-                if i0 % 4 == 0 then
-                    shoot6(self, -self.x, 64 - self.y, 66, 2, 13, 20, 2, 1.7, 0.5,
-                           0, 0.0785398, nil, true)
-                end
-                f0 = f0 + 0.0392699 * 3
-                i0 = i0 + 1
-                task.Wait(10)
-            end
-        end)
-        task.New(self, function()                          -- sub135（本体时间轴）
-            bmove(self, 120, 4, 0, 128)                    -- t=0 MOVE_POS_TIME(120,4,192,96)
-            task.Wait(120)                                 -- t=120
-            task.Wait(16)                                  -- SUB_CALL 2（墙钟 136，time 仍 120）
-            task.Wait(30)                                  -- time 120 → 150（墙钟 166）
-            f0, i0 = rngrad(), 0                           -- t=150 设定
-            ---公转（原作 MOVE_ORBIT；t=450 之后半径停在 128、角速度不变）
-            local ang, r = -PI / 2, 64
+        task.New(self, function()
+            local ang = -PI / 2
+            local r, rv = 64, 0.213333
             task.New(self, function()
-                task.Wait(166)
+                task.Wait(60)
                 self._orb, self._mv = nil, nil
                 while true do
                     ang = ang + 0.010472
-                    r = min(128, r + 0.213333)
-                    self.x, self.y = math.cos(ang) * r, 64 - math.sin(ang) * r
+                    self.x = math.cos(ang) * r
+                    self.y = 64 + math.sin(ang) * r
+                    r = min(128, r + rv)
                     task.Wait(1)
                 end
             end)
-            ---两条长激光（原作 LASER_FIXED；SET_LASER_POS_REL 每帧把激光原点拉回本体）
-            local L = { spr = 1, w = 16, sOff = 16, eOff = 224, sLen = 224,
-                        tStart = 120, dur = 252000, tEnd = 16, hbStart = 16, hbEnd = 16 }
-            local l1, l2
-            task.New(self, function()
-                task.Wait(466)                             -- t=450
-                l1 = plaser(self.x, self.y, -4.18879, L)
-                for _ = 1, 300 do                          -- ADD_LASER_ANGLE 0 0.010472 ×300
-                    l1.pl_ang, l1.pl_x, l1.pl_y = l1.pl_ang - 0.010472, self.x, self.y
-                    task.Wait(1)
+            local COLZ = { 1, 2, 4, 1, 2, 4, 6, 1, 2 }
+            while true do
+                for i = 1, 3 do
+                    ring4(self, self.x, self.y, 2, COLZ[i], 3, 2, 2, 0.5, 0, 0.0785398, nil)
                 end
-                l2 = plaser(self.x, self.y, -6.70206, L)   -- t=451
-                local orbav = 0
-                while true do
-                    orbav = orbav + 2.61799e-05            -- ADD_FLOAT *ORBAV *ORBAV 2.61799e-05
-                    l1.pl_ang, l1.pl_x, l1.pl_y = l1.pl_ang - orbav, self.x, self.y
-                    l2.pl_ang, l2.pl_x, l2.pl_y = l2.pl_ang - orbav, self.x, self.y
-                    task.Wait(1)
-                end
-            end)
+                shoot6(self, 0, 0, 66, 2, 13, 12, 2, 1.7, 0.5, 0, 0.0785398, nil, true)
+                task.Wait(14)
+            end
         end)
     end, { skin = skin4R, wallskin = skin4Rw, enter = enter4 })
 
@@ -12356,9 +12196,6 @@ local function TH34_add_stage56_boss()
             ---原作 sub38 末尾 `JUMP 60 -296`（ins35 @776 → +480 = ins21 GET_EXIT_ANGLE），
             ---跳转目标是 **t=60 的 GET_EXIT_ANGLE**，不含 ins20 的 `SUB_CALL 32`：
             ---首轮的那次 sub32(0.523599) 只执行一次，之后每轮都从 `drift(GET_EXIT_ANGLE)` 起算。
-            ---sub38 的 t=0..60 前奏：SET_ANM/SPAWN_EFFECT×6（本仓库无粒子接口，
-            ---只保留这 60 帧的时长）——首轮 sub32 落在 sub38 的 t=60。
-            task.Wait(60)
             sub32(0.523599)                               -- t=60（仅首轮）
             while true do
                 drift(self, 0.8, 60)                      -- ins21/22（GET_EXIT_ANGLE + 漂 60）
@@ -12421,29 +12258,18 @@ local function TH34_add_stage56_boss()
                 o.x, o.y = o.x + vx, o.y + vy
                 task.Wait(1)
             end
-            ---原作 sub36 的 L 行判定链（六条 RAND **每条都必抽**、顺序固定，否则
-            ---全局随机流与后续雪点错位）：
-            ---  instr14 f1 = rand(0.7)+0.8；instr15 i0 = rand(2)+5；
-            ---  instr16 i1=rand(2)（≠0 ⇒ 只跳过 bullet-command 段，仍发弹）；
-            ---  instr29 i1=rand(2)（≠0 ⇒ 跳过 instr31，那是 E 行）；
-            ---  instr32 i1=rand(3)（==0 ⇒ 跳过 instr34，那是 N 行）；
-            ---  instr35 i1=rand(4)（==0 ⇒ 跳过 instr38 ⇒ **本拍一颗不发**）。
-            local v = ran:Float(0, 0.7) + 0.8
-            local off = ran:Int(0, 1) + 5
-            local skipcmd = ran:Int(0, 1) ~= 0
-            ran:Int(0, 1)
-            ran:Int(0, 2)
-            if ran:Int(0, 3) ~= 0 then
-                ---commands[0] = type1 爆速段（flag=0）、commands[1] = type0x10、
-                ---方向 -0.025/帧、120 帧；只在 instr16 的 rand2==0 时才挂。
-                local cmd = nil
-                if not skipcmd then
-                    cmd = cmds4(533,
-                          { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
-                          { type = 0x10, flag = 0, dur = 120, loop = -1,
-                            speed = -0.025, angle = -999 })
-                end
-                shoot6(o, 0, 0, 65, 3, off, 3, 1, v, 0.5, fan0, 0.0245437, cmd, false)
+            ---原作 sub36 的判定链：RAND i1 2 → 若 != 0 整段跳过（连 bullets 都不发）；
+            ---所以「发弹」= 第一次 rand2==0 × 第二次 rand2==0 × rand4 != 0。
+            if ran:Int(0, 1) == 0 and ran:Int(0, 1) == 0 and ran:Int(0, 3) ~= 0 then
+                local v = ran:Float(0, 0.7) + 0.8
+                ---commands[1] = type0x10、方向 -0.025/帧、120 帧（L 行）；
+                ---前面还有 commands[0] = type1 的爆速段（flag=0）。
+                shoot6(o, 0, 0, 65, 3, ran:Int(0, 1) + 5, 3, 1, v, 0.5, fan0, 0.0245437,
+                       cmds4(533,
+                             { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
+                             { type = 0x10, flag = 0, dur = 120, loop = -1,
+                               speed = -0.025, angle = -999 }),
+                       false)
             end
             for _ = 1, 40 do task.Wait(1) end
         end
@@ -12482,9 +12308,6 @@ local function TH34_add_stage56_boss()
             end)
         end
         task.New(self, function()
-            ---原作 t=360 的 L 行开局（MOVE_POS_TIME 120 帧 + 开卡）在墙钟 0..120 跑完，
-            ---t=480 的 SUB_CALL 2 才在墙钟 120 起步 ⇒ 桩件里先补这 120 帧序奏。
-            task.Wait(120)
             while true do
                 PlaySound("power0", 0.35, self.x / 256)     -- 480: SUB_CALL 2（120 帧）
                 task.Wait(120)
@@ -12797,8 +12620,8 @@ local function TH34_add_stage56_boss()
                 wave(0.0261799, 0.00369599, 5, true)         -- t=120
                 task.Wait(120)                               -- t=240（只改 lf3）
                 task.Wait(30)                                -- t=270
-                drift(self, 1.0, 60)                         -- t=270 起 MOVE_DIR_TIME 60（只下令、不阻塞）
-                task.Wait(100)                               -- t=270 → 370（原作 100 帧）
+                drift(self, 1.0, 60)
+                task.Wait(40)                                -- t=370（漂 60 帧 + 空 40 帧）
                 wave(0.0261799, 0.00349066, 5, true)
                 task.Wait(20)                                -- t=390
                 drift(self, 1.0, 60)
@@ -12863,15 +12686,18 @@ local function TH34_add_stage56_boss()
                 pspawn(self.x, self.y, function(o)
                     for _ = 1, 180 do task.Wait(1) end
                     local a = rngrad()
-                    ---★原作 sub28/sub29 的四条 RING_ABS 是**四选一**难度掩码
-                    ---（0x01/0x02/0x04/0x08），Lunatic 只出最后那一条：
-                    ---  sub28：`RING_ABS 2:6 20 3 3.2 1.5 *f0 0 513`
-                    ---  sub29：`RING_ABS 2:10 10 4 3.3 1.6 *f0 0 513`
                     if big then
+                        ring4(o, o.x, o.y, 2, 6, 5, 2, 2.5, 1.5, a, 0)
+                        ring4(o, o.x, o.y, 2, 6, 8, 3, 2.5, 1.5, a, 0)
+                        ring4(o, o.x, o.y, 2, 6, 12, 3, 2.7, 1.5, a, 0)
                         ring4(o, o.x, o.y, 2, 6, 20, 3, 3.2, 1.5, a, 0)
                     else
+                        ring4(o, o.x, o.y, 2, 10, 4, 4, 3.1, 1.6, a, 0)
+                        ring4(o, o.x, o.y, 2, 10, 6, 4, 3.1, 1.6, a, 0)
+                        ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, a, 0)
                         ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, a, 0)
                     end
+                    sound4(o)
                 end)
             end
             while true do
@@ -12934,18 +12760,25 @@ local function TH34_add_stage56_boss()
                     local G = { { 1.5708, 2.0 }, { 1.66897, 1.9 }, { 1.76715, 1.8 },
                                 { 1.86532, 1.7 }, { 1.9635, 1.6 } }
                     for i = 1, 5 do
-                        ---★原作是**难度二选一**：`RING_ABS 6:6 20 ... [skip=0x04]`（Hard）
-                        ---与 `RING_ABS 6:6 22 1 3 1.5 ... [skip=0x08]`（Lunatic）。本卡
-                        ---走 L 行 ⇒ 每段只有 22 发那一环（旧版把 Hard 的 20 发也发了）。
                         local g = G[i]
                         local th = big and g[1] or -g[1]
                         local cmd = cmds4(0x40, C40(th, g[2]))
                         if big then
-                            ring4(o, o.x, o.y, 6, 6, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            local spr, col = 6, 6
+                            if i < 5 then
+                                ring4(o, o.x, o.y, spr, col, 20, 1, 2.4, 1.5, a, 0, cmd)
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            else
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            end
                         else
-                            ---小凤凰：第 5 段收尾换成 28 发 / 速度 3.2（instr18 无难度掩码）。
-                            local n, v1 = (i < 5) and 22 or 28, (i < 5) and 3.0 or 3.2
-                            ring4(o, o.x, o.y, 6, 10, n, 1, v1, 1.5, a, 0, cmd)
+                            local spr, col = 6, 10
+                            if i < 5 then
+                                ring4(o, o.x, o.y, spr, col, 20, 1, 2.4, 1.5, a, 0, cmd)
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            else
+                                ring4(o, o.x, o.y, spr, col, 28, 1, 3.2, 1.5, a, 0, cmd)
+                            end
                         end
                     end
                 end)
@@ -13028,8 +12861,8 @@ local function TH34_add_stage56_boss()
                 a = a + 0.0654498
                 R(6, 2, 24, 1, 2.0, 0.5, a, 0.1309,
                   cmds4(610, C40(1.5708, 1.1), spin4(0.0392699, 120, 1)))
-                ---★原作那两条 `RING_ABS 6:2 24 3 … [skip=0x04]`（Hard）与
-                ---`… 24 4 … [skip=0x08]`（Lunatic）是**二选一**，L 行只出后者。
+                R(6, 2, 24, 3, 2.0, 0.5, a, -0.0654498,
+                  cmds4(66, C40(2.24399, 2.1)))
                 R(6, 2, 24, 4, 3.5, 0.5, a, -0.0654498,
                   cmds4(66, C40(2.24399, 2.1)))
                 a = rngrad()
@@ -13048,7 +12881,8 @@ local function TH34_add_stage56_boss()
                 a = a - 0.0654498
                 R(6, 6, 32, 1, 2.0, 0.5, a, 0.1309,
                   cmds4(610, C40(-1.5708, 1.1), spin4(-0.0314159, 120, 1)))
-                ---同上：L 行只出 `[skip=0x08]` 的 24 4 那一条。
+                R(6, 6, 24, 3, 2.0, 1.0, a, 0.0654498,
+                  cmds4(66, C40(-2.24399, 2.1)))
                 R(6, 6, 24, 4, 3.5, 1.5, a, 0.0654498,
                   cmds4(66, C40(-2.24399, 2.1)))
             end
@@ -13062,8 +12896,7 @@ local function TH34_add_stage56_boss()
                 end
                 sound4(self)
             end
-            task.Wait(60)                         -- 原作 sub49 t=60 才 SUB_CALL 51
-            rings()                              -- 开场 SUB_CALL 51（164 帧，t=60..224）
+            rings()                              -- 开场 SUB_CALL 51（164 帧）
             task.Wait(120)                        -- 到 t=180 的空档
             while true do
                 drift(self, 1.5, 60)
@@ -13078,10 +12911,9 @@ local function TH34_add_stage56_boss()
                 task.Wait(60)
                 fan5()                            -- 墙钟 466
                 task.Wait(1)
-                task.Wait(60)                     -- t=420 MOVE_POS_TIME 60 4 192 80
-                bmove(self, 60, 4, 0, 144)
-                task.Wait(60)                     -- t=480 SUB_CALL 51 + INC i2_3
-                rings()
+                bmove(self, 60, 4, 0, 144)        -- MOVE_POS_TIME 60 4 192 80
+                task.Wait(60)
+                rings()                           -- t=480 SUB_CALL 51 + INC i2_3
                 task.Wait(120)                    -- JUMP t:=60 → t=180 的空档
             end
         end)
@@ -13175,8 +13007,7 @@ local function TH34_add_stage56_boss()
     ---出生时从本体 context 继承 gf0（随机角）/gf1（±0.0314159 角速度）/gf2=1；
     ---MOVE_ORBIT 半径 0→每帧 +1、角度每帧 ±0.0314159；t=120 起半径冻结，
     ---并连续 40 拍、每拍 3 帧：角速度再 += gf1/30，压一颗 0x20 自旋弹（±0.0261799），
-    ---sub60 每拍 3 发（速度 rand[1.2,1.4]；0x04/0x08 两行同值，只发一条）、
-    ---sub61 每拍 5 发[1.2,1.8]（L 行；H 行是 2 发[1.2,1.4]），
+    ---sub60 每拍 3+3 发（速度 rand[1.2,1.4]）、sub61 每拍 2 发[1.2,1.4]＋5 发[1.2,1.8]，
     ---全部 sprite `1:6`、flags 546（0x200 响一声 + 0x20 自旋 + 0x2 快生特效）；t=240 自毁。
     scard("陰陽「晴明大紋」", 4464, 50, 3600, false, function(self)
         task.New(self, function()
@@ -13205,14 +13036,9 @@ local function TH34_add_stage56_boss()
                 local a0 = ran:Float(-PI, PI)
                 local cmd = spin4(avb, 60)
                 ---op72 RANDOM：每发随机方向 rand[−π,π) + 随机速度 rand[v2,v1]。
-                ---★原作 op72 逐发抽的随机数顺序是**先角度后速度**（vm 桩件
-                ---`RANDOM` 也是先 frange(a1−a2) 再 frange(v1−v2)）；这里必须同序，
-                ---否则随机流错位。
                 local function rnd(o, n, v1, v2)
                     for _ = 1, n do
-                        local th = rngrad()
-                        local v = ran:Float(v2, v1)
-                        dot4(o.x, o.y, 1, 6, v, th, cmd)
+                        dot4(o.x, o.y, 1, 6, ran:Float(v2, v1), rngrad(), cmd)
                     end
                 end
                 for k = 0, 1 do
@@ -13227,12 +13053,11 @@ local function TH34_add_stage56_boss()
                         local av0 = av / 30             -- ADD_FLOAT ORBAV + gf1/30
                         for _ = 1, 40 do                -- 40 拍、每拍 3 帧 = 120 帧
                             avv = avv + av0
-                            ---★原作同样是**难度二选一**：sub60 的 #18(0x04)/#19(0x08) 都是
-                            ---3 发[1.2,1.4]（只发一条）；sub61 的 #17(0x04)=2 发[1.2,1.4]、
-                            ---#18(0x08)=5 发[1.2,1.8]。本卡走 L 行 ⇒ sub60 3 发、sub61 5 发。
                             if is61 then
+                                rnd(o, 2, 1.4, 1.2)
                                 rnd(o, 5, 1.8, 1.2)
                             else
+                                rnd(o, 3, 1.4, 1.2)
                                 rnd(o, 3, 1.4, 1.2)
                             end
                             sound4(o)                   -- flags 546 的 0x200
@@ -13319,8 +13144,7 @@ local function TH34_add_stage56_boss()
                 a = a + 0.0654498
                 ring4(self, self.x, self.y, 6, 2, 20, 1, 2.0, 0.5, 0, 0.1309,
                       cmds4(642, C80(2.2)))                       -- t=12
-                ---★原作 `RING_ABS 2:2 20 3 … [skip=0x04]`（Hard）与
-                ---`RING_ABS 2:2 32 5 … [skip=0x08]`（Lunatic）二选一，只出后者。
+                ring4(self, self.x, self.y, 2, 2, 20, 3, 3.0, 0.5, 0, 0.1309)
                 ring4(self, self.x, self.y, 2, 2, 32, 5, 3.4, 0.5, 0, 0.1309)
                 a = rngrad()
                 task.Wait(60)                                     -- t=72
@@ -13338,7 +13162,7 @@ local function TH34_add_stage56_boss()
                 a = a - 0.0654498
                 ring4(self, self.x, self.y, 6, 6, 20, 1, 2.0, 0.5, 0, 0.1309,
                       cmds4(642, C80(2.2)))                       -- t=84
-                ---同上：L 行只出 `[skip=0x08]` 的 32 5 那一条。
+                ring4(self, self.x, self.y, 2, 6, 20, 3, 3.0, 0.5, 0, 0.1309)
                 ring4(self, self.x, self.y, 2, 6, 32, 5, 3.4, 0.5, 0, 0.1309)
             end
             ---原作 sub55 的弹云（op72 RANDOM）：count1 = n+22，方向 rand[−π,π)、
@@ -13352,9 +13176,8 @@ local function TH34_add_stage56_boss()
                 end
                 sound4(self)
             end
-            task.Wait(120)                    -- 原作 sub53 t=120 才 SUB_CALL 54
-            rings()                          -- 开场 SUB_CALL 54（84 帧，t=120..204）
-            task.Wait(120)                    -- 到 t=240（原作 sub53 t=120→240）
+            rings()                          -- 开场 t=120 的 SUB_CALL 54（84 帧）
+            task.Wait(36)                    -- 到 t=240
             while true do
                 drift(self, 2.0, 60)
                 task.Wait(60)
@@ -13745,25 +13568,20 @@ local function TH34_add_stage56_boss()
                 end
             end
             local function gate73(base, col)
-                ---原作 sub73 逐条：
-                ---  #1 `RAND_FLOAT_ADD f1 0.5 2.8` [skip 0x04 = 仅 H] / #2 `… 0.5 1.5` [仅 L]
-                ---     ——两条是**不同难度行**，L 上只跑 #2 ⇒ f1 = 1.5 + rand(0,0.5)。
-                ---  #4 `RING_ABS 6:*i3_0 2 1 *f1 0.5 *f0 0.1309 512`；#5 `f0 += 0.174533`（10°）。
-                ---  #6 `SUB_FLOAT f1 0.222222` [仅 H] / #7 `… 0.111111` [仅 L] ⇒ **L 上每拍只减
-                ---     0.111111**（H 才是 0.222222，E/N 不减）。第二段 #12/#13 同理只加 0.111111。
-                ---此前把两条难度行当成「连续两条」叠成 0.333333，速度会一路掉到 ≈0.08
-                ---（近乎静止的弹永不离开场地）⇒ 同屏假性顶到 1024、后面整片波被丢掉。
+                ---原作 sub73 #1 `RAND_FLOAT_ADD f1 0.5 2.8` 立刻被 #2 覆写 ⇒ 只剩
+                ---`1.5 + rand(0,0.5)`；第一段每拍 **减 0.222222 再减 0.111111**（共 0.333333，
+                ---#6/#7 两条 SUB_FLOAT），再 `f0 += 0.174533`（10°）。
                 local v = 1.5 + ran:Float(0, 0.5)
                 for _ = 1, 9 do
                     ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
-                    base, v = base + 0.174533, v - 0.111111
+                    base, v = base + 0.174533, v - 0.222222 - 0.111111
                 end
                 for _ = 1, 9 do
                     ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
-                    base, v = base + 0.174533, v + 0.111111
+                    base, v = base + 0.174533, v + 0.222222 + 0.111111
                 end
             end
-            task.Wait(130)              -- 原作 t=10 起算：t=130 才掷随机并开始奇门循环
+            task.Wait(120)
             local tx = ran:Float(0, 128) + 128 - 192
             local ty = 192 - ran:Float(0, 128)
             local mx0, mx1 = rnd_sign() * 144, rnd_sign() * 144
@@ -14166,9 +13984,6 @@ local function TH34_add_stage56_boss()
             ---我们的 y 轴和 TH07 相反，切线要跟着取反（同 sub75 的移植口径）。
             local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
             pspawn(x0, y0, function(o)
-                ---原作 sub30 在出生帧执行 t=0 的 INIT_INTERP，t=180 才 SPAWN_ENEMY_REL 24
-                ---⇒ 位移第 1 拍在出生帧、炸环在出生后第 180 帧（子程先空等 1 帧）。
-                task.Wait(1)
                 for k = 1, 180 do
                     local u = k / 180
                     o.x = hermite(u, x0, tx, mx0, mx1)
@@ -14185,7 +14000,9 @@ local function TH34_add_stage56_boss()
                          angle = -1.5708 * RAD2DEG, speed = 1 }
             local cb = { type = 0x40, dur = 60, loop = 1,
                          angle = 1.5708 * RAD2DEG, speed = 1.8 }
+            shoot6(o, 0, 0, 67, 6, 2, 16, 1, 2, 1.5, a0, 0, ca, false)
             shoot6(o, 0, 0, 67, 6, 2, 24, 1, 2, 1.5, a0, 0, ca, false)
+            shoot6(o, 0, 0, 67, 6, 2, 16, 1, 1.4, 1.5, a0, 0, cb, true)
             shoot6(o, 0, 0, 67, 6, 2, 24, 1, 1.4, 1.5, a0, 0, cb, true)
         end
         ---sub25：spr6／色 14，两组「10 + 12 发」，两条 0x40 的方向与 sub24 对调。
@@ -14195,7 +14012,9 @@ local function TH34_add_stage56_boss()
                          angle = 1.5708 * RAD2DEG, speed = 1 }
             local cb = { type = 0x40, dur = 60, loop = 1,
                          angle = -1.5708 * RAD2DEG, speed = 1.8 }
+            shoot6(o, 0, 0, 67, 6, 14, 10, 1, 2, 1.5, a0, 0, ca, false)
             shoot6(o, 0, 0, 67, 6, 14, 12, 1, 2, 1.5, a0, 0, ca, false)
+            shoot6(o, 0, 0, 67, 6, 14, 10, 1, 1.4, 1.5, a0, 0, cb, true)
             shoot6(o, 0, 0, 67, 6, 14, 12, 1, 1.4, 1.5, a0, 0, cb, true)
         end
         task.New(self, function()
@@ -14256,7 +14075,7 @@ local function TH34_add_stage56_boss()
             end)
         end
         task.New(self, function()
-            task.Wait(130)              -- 原作 t=10 起 120 帧 MOVE_POS_TIME + 开卡
+            task.Wait(120)              -- 原作 t=10 起 120 帧 MOVE_POS_TIME + 开卡
             onibi(6, 1)                 -- t=130（SPAWN_ENEMY_REL 71）
             task.Wait(135)              -- t=130 → 265
             onibi(2, -1)                -- t=265（SPAWN_ENEMY_REL 72）
@@ -14264,120 +14083,67 @@ local function TH34_add_stage56_boss()
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1e })
 
-    ---──────────────────── 弦奏「グァルネリ・デル・ジェス」（原作 sub127 → 130 → 129） ────────────────
-    ---sub127 只带 E/N 两行卡名（L 行落到 sub128 的「偽弦」），但 sub127 内**所有发弹
-    ---指令都没有难度掩码**，所以这里严格照 sub127 的排版移植（= Normal 行的弹幕）。
-    ---逐条照抄 `ecldata4.ecl`：
-    ---  · t=0 MOVE_POS_TIME(120,4,192,80)（我们 (0,224)→(0,144)）；t=120 限位框、
-    ---    SUB_CALL 2（16 帧）；t=150 起进四块循环（t=150/153/156/159）。i2_1 从 150 起
-    ---    每块 −5、≤60 后冻结；块内 `i0 = i2_1/2` 作为两段 SET_WAIT_TIMER。
-    ---      - 每块先 1 次（自机距离 <128 才打）SPREAD_AIMED 3:2 6 3 3.2 0.5 0 0.392699；
-    ---      - 再 3 只 sub130：每 3 帧一只、f2 各 +0.785398；
-    ---      - 四块 (f0, f2 的 A2P 偏移, f4, 色档) =
-    ---          ( 1.5708, −1.74533, +0.015708, 2)  (−1.5708, +1.74533, −0.015708, 6)
-    ---          ( 1.5708, −1.5708 , +0.015708, 6)  (−1.5708, +1.5708 , −0.015708, 2)
-    ---      - t=162 `JUMP 150 -2080` 落回 instr16（SET_ANM 129）——**不重置 i2_1**，
-    ---        所以各块间隔逐块缩短（9+2·⌊i2_1/2⌋ 帧）。
-    ---  · sub130（音符串，共 180 帧）：以 f3=6 沿 f2 飞、自转 f4；按 i2_1 = 4,6,…,26
-    ---    在自己位置放 12 只 sub129。
-    ---  · sub129（音符）：以 f1=0.5 沿 f0 直线飞 120 帧；t=60 记下本体坐标、t=120
-    ---    朝 ATAN2(本体→自己) 取反后打 1 发 SPREAD_ABS 3:col 1 1 1.2 0.5 f0 1.5708
-    ---    （Lunatic 行；Hard 行是 8 发、E/N 行另走一支）；自机距离 ≤32 时自毁。
+    ---──────────────────── 弦奏「グァルネリ・デル・ジェス」（原作 sub127/130/129，E/N 行） ────────────────────
+    ---本体摆到 (192,80)（我们 (0,144)），每轮四条「弓」：朝自机左右各偏 100° 的
+    ---方向起手、每拍推 ±45°；每拍朝自机打一扇 6 发 × 3 层（3.2→0.5 px/帧、
+    ---半张角 22.5°），并在基准角方向放一只「音符」（匀速 6 px/帧 直飞、
+    ---120 帧后炸成一扇 7 发）。四条弓连完 3 帧一拍，一轮之后空 20 帧。
     scard("弦奏「グァルネリ・デル・ジェス」", 4475, 60, 3600, false, function(self)
-        local B = self
-        ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad) }）。
-        local function note(me, a)
-            local col, th = a[1], a[2]
-            local bx, by
-            for i = 1, 120 do
-                me.x, me.y = me.x + cos(th) * 0.5, me.y - sin(th) * 0.5
-                if i == 60 then bx, by = B.x, B.y end     -- t=60 GET_BOSS_FLOAT
-                task.Wait(1)
-            end
-            local f0 = -atan2(by - me.y, me.x - bx)        -- ATAN2 + MUL −1
-            if sqrt((me.x - player.x) ^ 2 + (me.y - player.y) ^ 2) > 32 then
-                shoot6(me, 0, 0, 65, 3, col, 1, 1, 1.2, 0.5, f0, 1.5708, nil, true)
-            end
-        end
-        ---原作 sub130：音符串（a = { f2, f4, 色档, 音符方向 }）。
-        local function chain(me, a)
-            local ang, av = a[1], a[2]
-            local g = 4
-            for _ = 1, 12 do
-                for _ = 1, g do
-                    me.x, me.y = me.x + cos(ang) * 6, me.y - sin(ang) * 6
-                    ang = ang + av
-                    task.Wait(1)
-                end
-                pspawn(me.x, me.y, note, { a[3], a[4] })
-                g = g + 2                                   -- ADD *i2_1 *i2_1 2
-            end
-        end
-        ---原作 sub127 的四块：(f0, f2 的 A2P 偏移, f4, 色档)。
-        local BLK = {
-            {  1.5708, -1.74533,  0.015708, 2 },
-            { -1.5708,  1.74533, -0.015708, 6 },
-            {  1.5708, -1.5708,   0.015708, 6 },
-            { -1.5708,  1.5708,  -0.015708, 2 },
-        }
+        self._box = box5(32, 48, 352, 128)
         task.New(self, function()
-            bmove(self, 120, 4, 0, 144)                 -- t=0 MOVE_POS_TIME(120,4,192,80)
-            task.Wait(120)                              -- t=120
-            self._box = box5(32, 48, 352, 128)          -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                               -- SUB_CALL 2（墙钟 136，time 120）
-            task.Wait(30)                               -- time 120 → 150（墙钟 166）
-            local i2_1 = 150                            -- SET_INT *i2_1 150（每轮只在此设一次）
+            task.Wait(240)
+            ---原作 sub130：一只音符朝 th 方向匀速 6、自转 ±0.9°/帧，120 帧后炸一扇 7 发。
+            local function note(th, sgn)
+                pspawn(self.x, self.y, function(o)
+                    task.New(o, function()
+                        for _ = 1, 120 do
+                            th = th + sgn * 0.015708
+                            o.x = o.x + math.cos(th) * 6
+                            o.y = o.y - math.sin(th) * 6
+                            task.Wait(1)
+                        end
+                        fan4(o, o.x, o.y, 6, 6, 7, 1, 0.8, 0.5, rngrad(), 0.785398)
+                    end)
+                end)
+            end
             while true do
-                for _, b in ipairs(BLK) do
-                    if pdist(self) < 128 then           -- JGEQ_F *DIST 128 → 跳过
-                        shoot6(self, 0, 0, 64, 3, 2, 6, 3, 3.2, 0.5,
-                               0, 0.392699, nil, true)
+                for k = 1, 4 do
+                    local sgn = (k % 2 == 1) and -1 or 1
+                    local base = aimth(self) + sgn * 1.74533
+                    for _ = 1, 3 do
+                        shoot6(self, 0, 0, 64, 2, 6, 6, 3, 3.2, 0.5, 0,
+                               0.392699, nil, true)
+                        note(base, sgn)
+                        base = base + sgn * 0.785398
+                        task.Wait(1)
                     end
-                    local base = aimth(self) + b[2]
-                    for k = 0, 2 do                     -- DEC_JUMP *i2_0 3 次、每 3 帧
-                        local f2 = base + k * 0.785398
-                        pspawn(self.x, self.y, chain,
-                               { f2, b[3], b[4], b[1] + f2 })
-                        task.Wait(3)
-                    end
-                    local w = int(i2_1 / 2)             -- DIV *i0 *i2_1 2
-                    task.Wait(w)                        -- SET_WAIT_TIMER *i0
-                    task.Wait(w)                        -- SET_WAIT_TIMER *i0
-                    if i2_1 > 60 then i2_1 = i2_1 - 5 end
+                    task.Wait(4)
                 end
+                task.Wait(20)
             end
         end)
     end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
 
-    ---──────────────────── 合葬「プリズムコンチェルト」（原作 sub132） ────────────────────
-    ---原作 sub132 L 行（`ecldata4.ecl`）逐条照抄。sub132 的 L 行只有 16 发 × 3 层这一组
-    ---（-Lunatic- 不存在，实际用的是 Normal 行的排版），周期由 DEC_JUMP 控制：
-    ---  · t=120 BEGIN / MOVE_POS_TIME(120,4,192,96)（我们 (0,224)→(0,128)）；
-    ---  · t=240 限位框、SUB_CALL 2（16 帧）后 i2_0=2，连打 2 轮「正转五环 + 反转五环」：
-    ---      每轮 = f0=*RNGRAD、RING_AIMED 2:col 16 3 2 0.5 f0 ±0.0785398（每圈 f0+=0.0392699）
-    ---      五圈色档 1/2/4/6/5（+0.0785398）或 9/10/11/13/12（−0.0785398）；
-    ---  · t=440 起同样结构（复用同一组正/反转五环），t=640 JUMP 回 t=240。
-    ---⇒ 实测：自机钉在 (0,0) 时每 100 帧打一组，+0.0785398 / −0.0785398 交替，
-    ---  首组在墙钟 256（= t=240 + SUB_CALL 2 的 16 帧）。
+    ---──────────────────── 合葬「プリズムコンチェルト」（原作 sub132，E/N 行） ────────────────────
+    ---本体摆到 (192,96)（我们 (0,128)），每 100 帧打一组「五色环」：
+    ---五种颜色各一圈 16 发 × 3 层（2→0.5 px/帧、层间转 4.5°），
+    ---相邻两圈基准角再错开 2.25°；正反两组交替（色档 1/2/4/6/5 与 9/10/11/13/12）。
     scard("合葬「プリズムコンチェルト」", 4476, 60, 3600, false, function(self)
-        local CA = { 1, 2, 4, 6, 5 }                 -- 正转组（a2 = +0.0785398）
-        local CB = { 9, 10, 11, 13, 12 }             -- 反转组（a2 = -0.0785398）
+        self._box = box5(32, 48, 352, 128)
         task.New(self, function()
-            task.Wait(120)                           -- t=0..120 前奏
-            bmove(self, 120, 4, 0, 128)              -- t=120 MOVE_POS_TIME(120,4,192,96)
-            task.Wait(120)                           -- t=120 → t=240
-            self._box = box5(32, 48, 352, 128)       -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                            -- SUB_CALL 2
-            local pos = true
+            task.Wait(240)
+            local CA = { 1, 2, 4, 6, 5 }
+            local CB = { 9, 10, 11, 13, 12 }
+            local sgn = 1
             while true do
                 local a0 = rngrad()
-                local cs = pos and CA or CB
+                local cs = (sgn > 0) and CA or CB
                 for i = 1, 5 do
                     shoot6(self, 0, 0, 66, 2, cs[i], 16, 3, 2, 0.5, a0,
-                           (pos and 1 or -1) * 0.0785398, nil, true)
+                           sgn * 0.0785398, nil, true)
                     a0 = a0 + 0.0392699
                 end
-                pos = not pos
+                sgn = -sgn
                 task.Wait(100)
             end
         end)

@@ -768,7 +768,15 @@ task.Do = function() end
 task.Clear = function(obj)
     if obj == nil then return end
     for i = #tasks, 1, -1 do
-        if tasks[i].obj == obj then table.remove(tasks, i) end
+        ---★ 正在跑的这条协程**不能**在这里就被摘掉：`step_tasks` 在 resume 返回后还会
+        ---   按 `tasks[i]` 判一次「死没死」并 `table.remove(tasks, i)`。如果这里先把
+        ---   当前项删了，数组左移，调度器那一次 remove 就会删掉**邻居**的任务
+        ---   （实测：4439 的红符人形 t=221 自然结束时，会连带杀死同一帧正好在发弹的
+        ---   另一只人形，弹幕凭空少一大截）。真引擎的 task 表在对象删除时自己会处理，
+        ---   不会出现这种「删两次」——所以这里只跳过当前项，交给调度器删。
+        if tasks[i].obj == obj and tasks[i] ~= current_task then
+            table.remove(tasks, i)
+        end
     end
 end
 task.init_left_wait = function() end
