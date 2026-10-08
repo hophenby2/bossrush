@@ -8823,45 +8823,86 @@ local function TH34_add_stage56_boss()
     ---速度基准 = 2.1/3.0 + 0.2×(第几轮)，每轮 l2i3 递增。
     ncard("幽々子 非符 2", 4392, 21000, 2100, function(self)
       task.New(self, function()
-        local a1 = aimth(self)
-        local function arm(lf0, lf1, iter, magA, magB, sprF, offF, c1F, a2F, vbase,
-                           sprR, offR, c1R, a2R, useRing, sprX, offX, c1X, a2X)
-            local v1 = vbase
-            local v2 = vbase - 0.5
-            for _ = 1, iter do
-                local ox, oy = voff(lf0, magA)
-                shoot6(self, ox, oy, 65, sprF, offF, c1F, 1, v1, 1,
-                       lf1, a2F, nil, true)
-                ox, oy = voff(lf1, magB)
-                if useRing then
-                    shoot6(self, ox, oy, 67, sprR, offR, c1R, 1, v2, 1, lf1, a2R, nil, true)
-                else
-                    shoot6(self, ox, oy, 67, sprR, offR, c1R, 1, v2, 1, lf0, a2R, nil, true)
-                end
+        ---原作 sub29 的时间轴（L 行）：
+        ---  t=60 SUB_CALL 30（15 拍）→ t=160 MOVE_DIR_TIME(1.5)＋SUB_CALL 31（15 拍）
+        ---  → t=260 MOVE_DIR_TIME(1.5)＋`gi0=8 gi1=12`＋SUB_CALL 2（8×4=32 帧）
+        ---    ＋SUB_CALL 33 / 32 / 33 / 32（各 30 拍）→ t=360 MOVE_DIR_TIME(1.5)＋INC i2_3
+        ---  → t=460 JUMP 回 t=60。parent time 在子程调用期间冻结，所以每段之间还要补
+        ---    100 帧才到下一个 time 值（墙钟 = 子程时长 + 100）。
+        ---  · sub30..33 都是「一拍 4 帧：t=0 从 VEC(f0,magA) 打一扇 SPREAD_ABS（16 发），
+        ---    t=2 从另一个偏移打第二扇（贴图 7:6 / 7:4，5–6 发），自机距离 DIST<64 时
+        ---    再补第三扇（offset 回 0）」。f0=A2P−π/2、f1=A2P+π/2，每拍 f0+=0.20944、
+        ---    f1−=0.20944；速度 = i2_3×0.2 + base（i2_3 每轮 +1）。
+        ---  · 四个子程只在「偏移/角度/贴图/条数/速度基准/减速」上不同：
+        ---      sub30: v1 off=f0·32 spr2:8 16发 a1=f1 a2=0.1848；v2 off=f1·64 spr7:6 6发
+        ---             a1=f1 a2=0.314159；v3 RING 2:2×16；base 2.1 dec 0.5
+        ---      sub31: v1 off=f0·32 spr2:13；v2 off=f1·16 spr7:4 a1=f0；base 3.0 dec 0.5
+        ---      sub32: v1 off=f0·64 spr2:8 a1=f0−π/2 a2=0.19635；v2 off=f0·16 spr7:6 5发
+        ---             a1=f1+π/2；v3 RING 3:2×16；base 3.0 dec 0.3
+        ---      sub33: v1 off=f0·24 spr2:13 a1=f1+π/2 a2=0.19635；v2 off=f0·96 spr7:4 5发
+        ---             a1=f0−π/2；v3 SPREAD_AIMED 2:2×7（自机狙）；base 2.4 dec 0.1
+        local cyc = 0
+        local function arm(sp)
+            local a = aimth(self)
+            local f0, f1 = a - 1.5708, a + 1.5708
+            local v1 = cyc * 0.2 + sp.base
+            local v2 = v1 - sp.dec
+            local function ref(r, x0, x1)
+                return (r.f == 1) and (x1 + (r.d or 0)) or (x0 + (r.d or 0))
+            end
+            for _ = 1, sp.iter do
+                local ox, oy = voff(ref(sp.o1, f0, f1), sp.m1)
+                shoot6(self, ox, oy, sp.op1, sp.s1, sp.off1, sp.c1, 1, v1, 1,
+                       ref(sp.a1, f0, f1), sp.a2_1, nil, true)
+                task.Wait(2)
+                ox, oy = voff(ref(sp.o2, f0, f1), sp.m2)
+                shoot6(self, ox, oy, sp.op2, sp.s2, sp.off2, sp.c2, 1, v2, 1,
+                       ref(sp.a2, f0, f1), sp.a2_2, nil, true)
                 if pdist(self) < 64 then
-                    shoot6(self, 0, 0, 67, sprX, offX, c1X, 1, 4, 1,
-                           ran:Float(-PI, PI), a2X, nil, true)
+                    shoot6(self, 0, 0, sp.op3, sp.s3, sp.off3, sp.c3, 1, 4, 1,
+                           rngrad(), 0.0392699, nil, true)
                 end
-                lf0 = lf0 + 0.20944
-                lf1 = lf1 - 0.20944
-                task.Wait(4)
+                f0, f1 = f0 + 0.20944, f1 - 0.20944
+                task.Wait(2)
             end
         end
-        task.Wait(60)
+        local S30 = { iter = 15, base = 2.1, dec = 0.5,
+                      o1 = {f = 0}, m1 = 32, s1 = 2,  off1 = 8,  c1 = 16,
+                      a1 = {f = 1}, a2_1 = 0.1848, op1 = 65,
+                      o2 = {f = 1}, m2 = 64, s2 = 7,  off2 = 6,  c2 = 6,
+                      a2 = {f = 1}, a2_2 = 0.314159, op2 = 67,
+                      op3 = 67, s3 = 2, off3 = 2, c3 = 16 }
+        local S31 = { iter = 15, base = 3.0, dec = 0.5,
+                      o1 = {f = 0}, m1 = 32, s1 = 2,  off1 = 13, c1 = 16,
+                      a1 = {f = 1}, a2_1 = 0.1848, op1 = 65,
+                      o2 = {f = 1}, m2 = 16, s2 = 7,  off2 = 4,  c2 = 6,
+                      a2 = {f = 0}, a2_2 = 0.314159, op2 = 67,
+                      op3 = 67, s3 = 2, off3 = 2, c3 = 16 }
+        ---sub32 的 i0 有第二条 `SET_INT *i0 8`（skip=ff，覆盖难度行）⇒ 首扇只有 8 发。
+        local S32 = { iter = 30, base = 3.0, dec = 0.3,
+                      o1 = {f = 0}, m1 = 64, s1 = 2,  off1 = 8,  c1 = 8,
+                      a1 = {f = 0, d = -1.5708}, a2_1 = 0.19635, op1 = 65,
+                      o2 = {f = 0}, m2 = 16, s2 = 7,  off2 = 6,  c2 = 5,
+                      a2 = {f = 1, d = 1.5708}, a2_2 = 0.314159, op2 = 65,
+                      op3 = 67, s3 = 3, off3 = 2, c3 = 16 }
+        local S33 = { iter = 30, base = 2.4, dec = 0.1,
+                      o1 = {f = 0}, m1 = 24, s1 = 2,  off1 = 13, c1 = 16,
+                      a1 = {f = 1, d = 1.5708}, a2_1 = 0.19635, op1 = 65,
+                      o2 = {f = 0}, m2 = 96, s2 = 7,  off2 = 4,  c2 = 5,
+                      a2 = {f = 0, d = -1.5708}, a2_2 = 0.314159, op2 = 65,
+                      op3 = 64, s3 = 2, off3 = 2, c3 = 7 }
+        task.Wait(60)                                  -- t=60
         while true do
-            arm(a1 - 1.5708, a1 + 1.5708, 15, 32, 64, 2, 8, 16, 0.1848, 2.1,
-                7, 6, 6, 0.314159, true, 2, 2, 16, 0.0392699)
+            arm(S30)
+            task.Wait(100); drift(self, 1.5, 60)       -- t=160
+            arm(S31)
+            task.Wait(100)                             -- t=260
             drift(self, 1.5, 60)
-            arm(a1 - 1.5708, a1 + 1.5708, 15, 32, 16, 2, 13, 16, 0.1848, 3.0,
-                7, 4, 6, 0.314159, false, 2, 2, 7, 0.0392699)
-            drift(self, 1.5, 60)
-            a1 = aimth(self)
-            arm(a1 - 1.5708, a1 + 1.5708, 30, 64, 16, 2, 8, 8, 0.19635, 3.0,
-                7, 6, 5, 0.314159, true, 3, 2, 16, 0.0392699)
-            arm(a1 - 1.5708, a1 + 1.5708, 30, 24, 96, 2, 13, 8, 0.19635, 2.4,
-                7, 4, 5, 0.314159, false, 2, 2, 7, 0.0392699)
-            drift(self, 1.5, 60)
-            task.Wait(40)
+            task.Wait(32)                              -- SUB_CALL 2（gi0=8 ⇒ 32 帧）
+            arm(S33); arm(S32); arm(S33); arm(S32)
+            task.Wait(100); drift(self, 1.5, 60)       -- t=360
+            task.Wait(100)                             -- t=460 jump 回 t=60
+            cyc = cyc + 1
         end
       end)
     end)
@@ -10396,55 +10437,42 @@ local function TH34_add_stage56_boss()
     ncard("アリス 非符 3", 4436, 25000, 3300, function(self)
         local function nrm(a) return (a + PI) % (2 * PI) - PI end
         ---sub40 的一次投放。base/total 是角度区间两端，col 是色档（l3i0）。
+        ---★ 每「拍」原作是 7 条 SPREAD_ABS，其中 #8/#9/#10/#11 是 **E/N/H/L 四行**
+        ---（skip 01/02/04/08）：Lunatic 只发 count1=12、v=2.5 那一条；第二组（f0+π）
+        ---同理。移植版原先把四行误当成「4 层扇」全发（8 发/拍），这里只留 Lunatic 行。
+        ---★ 原作 DEC_JUMP 在 t=12（先减后跳、计到 0 不跳）⇒ 两拍之间 **12 帧**；
+        ---移植版原先漏了每拍之间的 `task.Wait(12)`，把整组拍子压在同一帧里。
         local function sub40(self, base, total, col)
             local f0 = base
             local f1 = (total - base) / 14
-            ---t=0：7 拍
             for i2 = 7, 1, -1 do
                 local a2 = PI / (i2 + 7)
                 local g = f0 + PI
-                shoot6(self, 0, 0, 65, 1, col, 5, 1, 1.7, 1.2, f0, a2, nil, true)
-                shoot6(self, 0, 0, 65, 1, col, 6, 1, 2.0, 1.2, f0, a2, nil, true)
-                shoot6(self, 0, 0, 65, 1, col, 10, 1, 2.2, 1.2, f0, a2, nil, true)
                 shoot6(self, 0, 0, 65, 1, col, 12, 1, 2.5, 1.2, f0, a2, nil, true)
-                shoot6(self, 0, 0, 65, 1, col, 5, 1, 1.7, 1.2, g, a2, nil, true)
-                shoot6(self, 0, 0, 65, 1, col, 6, 1, 2.0, 1.2, g, a2, nil, true)
-                shoot6(self, 0, 0, 65, 1, col, 10, 1, 2.2, 1.2, g, a2, nil, true)
                 shoot6(self, 0, 0, 65, 1, col, 12, 1, 2.5, 1.2, g, a2, nil, true)
                 f0 = f0 + (f1 >= 0 and 0.448799 or -0.448799)
+                task.Wait(12)
             end
-            task.Wait(12)
-            ---t=12：14 拍
             local f2 = f1 / -120
             local f3 = 0
             for _ = 1, 14 do
                 local cmd = acc20(f3, 0, 60)
                 local g = f0 + PI
-                shoot6(self, 0, 0, 65, 1, col, 3, 1, 1.7, 1.2, f0, 0.224399, cmd, true)
-                shoot6(self, 0, 0, 65, 1, col, 6, 1, 2.0, 1.2, f0, 0.224399, cmd, true)
-                shoot6(self, 0, 0, 65, 1, col, 16, 1, 2.2, 1.2, f0, 0.15708, cmd, true)
                 shoot6(self, 0, 0, 65, 1, col, 16, 1, 2.5, 1.2, f0, 0.15708, cmd, true)
-                shoot6(self, 0, 0, 65, 1, col, 3, 1, 1.7, 1.2, g, 0.224399, cmd, true)
-                shoot6(self, 0, 0, 65, 1, col, 6, 1, 2.0, 1.2, g, 0.224399, cmd, true)
-                shoot6(self, 0, 0, 65, 1, col, 16, 1, 2.2, 1.2, g, 0.15708, cmd, true)
                 shoot6(self, 0, 0, 65, 1, col, 16, 1, 2.5, 1.2, g, 0.15708, cmd, true)
                 f0, f3 = nrm(f0 + f1), nrm(f3 + f2)
+                task.Wait(12)
             end
-            task.Wait(12)
         end
-        ---sub38 / sub39 的「两层各四圈」；sgn = −1（sub38）/ +1（sub39）。
+        ---sub38 / sub39：sgn = −1（sub38）/ +1（sub39）。
+        ---★ 原作每条 RING_ABS 也是 E/N/H/L 四行（24/28/32/40 发）⇒ Lunatic 只有
+        ---40×6 那一条；移植版原先把四行当成「四圈」全发（8 条/次 ⇒ 应 2 条/次）。
         local C40 = { type = 0x40, dur = 60, loop = 1, angle = -180, resume_own = true }
         local function rings(self, sgn)
             local th = rngrad()
             local own = acc20(sgn * 0.0261799, 0, 60)
             local doll = { stages = { C40, acc20(-sgn * 0.0261799, 0.005, 60) } }
-            shoot6(self, 0, 0, 67, 3, 2, 24, 3, 1.8, 1.2, th, sgn * 0.0392699, own, true)
-            shoot6(self, 0, 0, 67, 3, 2, 28, 5, 2.4, 1.2, th, sgn * 0.0392699, own, true)
-            shoot6(self, 0, 0, 67, 3, 2, 32, 5, 2.8, 1.2, th, sgn * 0.0392699, own, true)
             shoot6(self, 0, 0, 67, 3, 2, 40, 6, 3.2, 1.2, th, sgn * 0.0392699, own, true)
-            shoot6(self, 0, 0, 67, 6, 2, 24, 3, 1.8, 1.2, th, sgn * 0.0392699, doll, true)
-            shoot6(self, 0, 0, 67, 6, 2, 28, 5, 2.4, 1.2, th, sgn * 0.0392699, doll, true)
-            shoot6(self, 0, 0, 67, 6, 2, 32, 5, 2.8, 1.2, th, sgn * 0.0392699, doll, true)
             shoot6(self, 0, 0, 67, 6, 2, 40, 6, 3.2, 1.2, th, sgn * 0.0392699, doll, true)
         end
         task.New(self, function()
@@ -11098,29 +11126,22 @@ local function TH34_add_stage56_boss()
                 ---①sub25：SUB_CALL 2（120 帧）＋ 4 组环 ＋ SUB_RET 前的 60 帧
                 PlaySound("power0", 0.35, self.x / 256)
                 task.Wait(120)
-                ---原作 sub25 的 4 组环，每组都不是单圈而是一帧内叠 **4 圈同心环**
-                ---（RING_ABS 索引 6-9 / 13-16 / 20-23 / 27-30）：
-                ---  count1 = 4 / 6 / 8 / 12，count2 = 4 / 5 / 6 / 6（第四组第一圈是 3），
-                ---  速度 2.5 / 2.5 / 3.0 / 3.2（前两组）、2.0（后两组），一律降到 1.0。
-                ---每圈都用同一份 bulletCmd（原作同一帧里 INIT 完再连发 4 条）。
-                local function rings25(tbl, a1, a2, cmd)
-                    for i = 1, 4 do
-                        rabs(self, self.x, self.y, 6, 6, tbl[i][1], tbl[i][2],
-                             tbl[i][3], 1.0, a1, a2, cmd)
-                    end
-                end
-                rings25({ { 4, 4, 2.5 }, { 6, 5, 2.5 }, { 8, 6, 3.0 }, { 12, 6, 3.2 } },
-                        0, -0.19635,
-                        cmds4(101, CLR(), SP20(0.0523599), T40(2.74889, true)))
-                rings25({ { 4, 4, 2.5 }, { 6, 5, 2.5 }, { 8, 6, 3.0 }, { 12, 6, 3.2 } },
-                        0.19635, -0.19635,
-                        cmds4(100, SP20(-0.0523599), T40(-1.9635, true), SP20(0.0261799, 0)))
-                rings25({ { 4, 4, 2.0 }, { 6, 5, 2.0 }, { 8, 6, 2.0 }, { 12, 6, 2.0 } },
-                        0, 0.19635,
-                        cmds4(101, CLR(), SP20(-0.0261799), T40(-2.74889, true)))
-                rings25({ { 4, 3, 2.0 }, { 6, 5, 2.0 }, { 8, 6, 2.0 }, { 12, 6, 2.0 } },
-                        0.19635, 0.19635,
-                        cmds4(100, SP20(0.0261799), T40(1.9635, true), SP20(-0.01309, 0)))
+                ---★★★ 原作 sub25 的每一「组」都是 **E/N/H/L 四行**（同一 t=0、只差
+                ---skipInstrOnDifficulty：索引 6/7/8/9、13/14/15/16、20/21/22/23、27/28/29/30）。
+                ---TH07 只执行「当前难度那一行」：Easy=(4,4)、Normal=(6,5)、Hard=(8,6)、
+                ---Lunatic=(12,6)。移植版原先把四行误当成「一帧内叠 4 圈同心环」全发了出来
+                ---（=700 发），这里按 Lunatic 只发 (12,6) 那一圈（4 组 × 72 + 两圈 4×5 = 328）。
+                ---三条 INIT_BULLET_CMD（索引 3/4/5、10/11/12、17/18/19、24/25/26）都是 sk=ff
+                ---（全难度），照抄；`RING_ABS` 的 flags=101/100 决定哪几段被激活。
+                rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0, -0.19635,
+                     cmds4(101, CLR(), SP20(0.0523599), T40(2.74889, true)))
+                rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0.19635, -0.19635,
+                     cmds4(100, SP20(-0.0523599), T40(-1.9635, true), SP20(0.0261799, 0)))
+                rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0, 0.19635,
+                     cmds4(101, CLR(), SP20(-0.0261799), T40(-2.74889, true)))
+                rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0.19635, 0.19635,
+                     cmds4(100, SP20(0.0261799), T40(1.9635, true), SP20(-0.01309, 0)))
+                ---最后两圈 flags=4（0x04）：type 位不含任何命令类型 ⇒ **不激活任何段**。
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
                 sound4(self)
@@ -11287,19 +11308,22 @@ local function TH34_add_stage56_boss()
             end
         end
         task.New(self, function()
+            ---原作 sub38 末尾 `JUMP 60 -296`（ins35 @776 → +480 = ins21 GET_EXIT_ANGLE），
+            ---跳转目标是 **t=60 的 GET_EXIT_ANGLE**，不含 ins20 的 `SUB_CALL 32`：
+            ---首轮的那次 sub32(0.523599) 只执行一次，之后每轮都从 `drift(GET_EXIT_ANGLE)` 起算。
+            sub32(0.523599)                               -- t=60（仅首轮）
             while true do
-                sub32(0.523599)                           -- t=60
-                drift(self, 0.8, 60)
+                drift(self, 0.8, 60)                      -- ins21/22（GET_EXIT_ANGLE + 漂 60）
                 task.Wait(60)                             -- t=60 → t=120
                 sub33(-1.5708)                            -- t=120
-                drift(self, 0.8, 60)
+                drift(self, 0.8, 60)                      -- ins25/26
                 task.Wait(60)                             -- → t=180
                 sub33(1.5708)                             -- t=180
-                bmove(self, 60, 4, 0, 160)                -- (192,64) ⇒ (0,160)
+                bmove(self, 60, 4, 0, 160)                -- ins29/30（MOVE_POS_TIME，(192,64) ⇒ (0,160)）
                 task.Wait(80)                             -- → t=260
                 sub32(-0.523599)                          -- t=260
                 sub34(0.523599)
-                task.Wait(100)                            -- t=360 跳回 t=60
+                task.Wait(100)                            -- t=360 jump 回 t=60
             end
         end)
     end, { skin = skin1, enter = enter1 })
