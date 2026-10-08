@@ -1050,19 +1050,12 @@ local function cmdbullet_hasbit(f, t)
     return math.floor(f / t) % 2 == 1
 end
 
----按原作 RunCommands 模拟一遍激活时刻：返回每段的激活帧号（没激活的返回 nil）。
+---`cmds4(flags, 段1, 段2, ...)` 只把段表和这条波写的 flags 打包装起来；
+---**激活时刻由弹自己逐帧跑原作 `Bullet::RunCommands` 决定**（见 class 的 frame），
+---所以「type1 爆速段跑完清掉 exFlags 位 → 后面 `flag == 0` 的段才轮到」这种写法
+---也能原样复现（原作里很多卡就靠它做「先弹出、再接管」）。
 local function cmds4(flags, ...)
-    local list = { ... }
-    local exf, n = 0, 0
-    for i = 1, #list do
-        local c = list[i]
-        if cmdbullet_hasbit(flags, c.type)
-            and not ((c.flag or 0) == 0 and exf ~= 0) then
-            c.arm, n = n, n + 1
-            if not cmdbullet_hasbit(exf, c.type) then exf = exf + c.type end
-        end
-    end
-    return { list = list, flags = flags }
+    return { list = { ... }, flags = flags }
 end
 
 ---一段并发指令的运行时状态（原作 Bullet::commandStates[i]）。
@@ -1150,16 +1143,18 @@ class["TH34_cmdbullet"] = Class(bullet, {
         self.c_timer, self.c_done = 0, 0
         self.c_angle, self.c_speed, self.c_ang, self.c_spd = 0, 0, 0, 0
         self.c_vx, self.c_vy = 0, 0
-        ---★ 并发指令（原作一发弹可以同时挂多段命令）：`cmd.list` 由 `cmds4` 生成。
+        ---★ 并发指令（原作一发弹可以同时挂多段命令）：`cmd.list` 由 `cmds4` 生成，
+        ---激活完全照抄 `Bullet::RunCommands` 的状态机（见 frame 的第一段）。
         self.spd = v
+        self.cs = nil
+        self.c_exf, self.c_cur = 0, 1
+        self.c_flags, self.c_list = 0, nil
         if cmd.list then
-            self.cs, self.age = {}, -1
-            for i = 1, #cmd.list do
-                local c = cmd.list[i]
-                local st = cmdsub_new(self, c)
-                if c.arm == nil then st.finished = 1 else st.arm = c.arm end
-                self.cs[i] = st
-            end
+            self.cs = {}                 -- 每段激活后的运行时状态（未激活为 nil）
+            self.c_exf = 0               -- 原作 Bullet::exFlags（运行期命令位）
+            self.c_cur = 1               -- 原作 Bullet::curCmdIdx（下一条待判定命令）
+            self.c_flags = cmd.flags     -- 原作 Bullet::moreFlags
+            self.c_list = cmd.list
             self.c_type = 0
             return
         end
@@ -1167,13 +1162,35 @@ class["TH34_cmdbullet"] = Class(bullet, {
     end,
     frame = function(self)
         if self.cs then
-            self.age = self.age + 1
+            ---原作 `Bullet::RunCommands`：本帧从 curCmdIdx 往下找，**最多激活一段**；
+            ---type 位不在 moreFlags 里的段直接跳过（可以在同一帧连跳好几条），
+            ---`flag == 0` 的段只有在 exFlags 还是 0（没有任何段激活）时才轮到。
+            local list = self.c_list
+            while true do
+                local c = list[self.c_cur]
+                if not c or c.type == 0 then break end
+                if (c.flag or 0) == 0 and self.c_exf ~= 0 then break end
+                if not cmdbullet_hasbit(self.c_flags, c.type) then
+                    self.c_cur = self.c_cur + 1
+                else
+                    self.cs[self.c_cur] = cmdsub_new(self, c)
+                    if not cmdbullet_hasbit(self.c_exf, c.type) then
+                        self.c_exf = self.c_exf + c.type
+                    end
+                    self.c_cur = self.c_cur + 1
+                    break
+                end
+            end
+            ---再按原作 Update 的固定顺序（1→0x10→0x20→0x40→0x100→0x80）各跑一遍；
+            ---跑完（原作清掉 exFlags 位）的段要真的把位清掉，后面的段才可能接管。
             for rank = 0, 5 do
-                for i = 1, #self.cs do
+                for i = 1, #list do
                     local st = self.cs[i]
-                    if (not st.finished) and st.arm ~= nil and self.age >= st.arm
-                        and CMD_RANK[st.type] == rank then
+                    if st and not st.finished and CMD_RANK[st.type] == rank then
                         cmdsub_run(self, st)
+                        if st.finished and cmdbullet_hasbit(self.c_exf, st.type) then
+                            self.c_exf = self.c_exf - st.type
+                        end
                     end
                 end
             end
@@ -10618,9 +10635,12 @@ local function TH34_add_stage56_boss()
                v2 or 0.5, a1 or 0, a2 or 0, cmd, false)
     end
     ---INIT_BULLET_CMD 0x20 TargetAngle：每帧角度 += rate（TH07 弧度/帧 ⇒ 取反转度）。
-    local function spin4(rate_th, dur)
+    ---`flag` 是 ECL 的第 3 个参数：`RunCommands` 里 `flag == 0 && exFlags != 0` 会把
+    ---**整段扫描停住**（不只跳过这一条），所以「0x40 先激活、0x20 之后才轮到」的卡
+    ---必须把 0x20 写成 flag=1（原作 sub51 的 `INIT_BULLET_CMD 1 32 1 …`）。
+    local function spin4(rate_th, dur, flag)
         return { type = 0x20, dur = dur or 60, loop = -1,
-                 speed = 0, angle = -rate_th * RAD2DEG }
+                 speed = 0, angle = -rate_th * RAD2DEG, flag = flag }
     end
     ---INIT_BULLET_CMD 0x40 DirChangeAndResume：先刹停 dur 帧，再转 rate 弧度、回到
     ---speed 重复 loop 轮（莉莉卡非符的「停一下拐 60° 再飞」就是这个）。
@@ -10973,7 +10993,17 @@ local function TH34_add_stage56_boss()
     ---         方符「奇門遁甲」= sub75 → sub73 / sub74
     ---
     ---坐标 / 角度 / 血量口径同文件头（x−192、224−y、θ 取反；`ring4`/`fan4` 收的是
-    ---TH07 口径的弧度，内部自动取反）。卡 id 段：stage1 = 4450..4456、stage2 = 4460..4469。
+    ---TH07 口径的弧度，内部自动取反）。卡 id 段：stage1 = 4450..4457、stage2 = 4460..4469。
+    ---
+    ---★ 逐帧校准记录（对着 /tmp/br34 的 ECL 解释器与 TH07 C++ 源码逐条核过）：
+    ---  · 禁用弹：原作常用「DISABLE_BULLETS … ENABLE_BULLETS」把某一发夹住，那发**不发**。
+    ---    已按此修正 4450 的 sub22 RANDOM 与 sub23 的首发（首发改由 SET_SHOOT_INTERVAL 8
+    ---    的自动连发在 7 帧后打出，共 11 发）；4453 的 sub36 也补回了它漏掉的一层 rand 判定。
+    ---  · 指令激活：一发弹的命令槽照 `Bullet::RunCommands` **逐帧**判定（每帧最多激活一段，
+    ---    `flag == 0` 的段要等 exFlags 归零），所以「type1 爆速段跑完 → 后面 flag=0 的段接管」
+    ---    这类写法必须动态模拟；`cmds4` 现在就是这套状态机（见 class["TH34_cmdbullet"]）。
+    ---  · 卡时限：`scard` 的 t3 一律 = 原作 `SET_TIMER_CALLBACK_THRESHOLD / 60`。
+    ---  · 进场：`enter1b` 原作是 `MOVE_POS_TIME 120 4 192 112` ⇒ 120 帧（原先写成 60 帧）。
     ---立绘用 `THlib/BossImageList.lua` 的 "Whiterock" / "Chen"，进场沿用 stage3/4 的
     ---「从下方升到场中央」。
     ---════════════════════════════════════════════════════════════════════
@@ -10986,10 +11016,11 @@ local function TH34_add_stage56_boss()
         bmove(self, 60, 4, 0, 96)
     end
     ---同上，落到 (0,112)（原作把本体摆到 (192,112) 的几张卡）。
+    ---原作这些卡都是 `MOVE_POS_TIME 120 4 192 112` ⇒ 120 帧（不是 60 帧）进场。
     local function enter1b(self)
         self._orb, self._mv = nil, nil
         self.x, self.y = 0, 224
-        bmove(self, 60, 4, 0, 112)
+        bmove(self, 120, 4, 0, 112)
     end
     ---原作 sub64/66 的入场：本体从 (192,112)（我们 (0,112)）起步，120 帧 ease-out-quad
     ---横滑到 (336,112)（我们 (144,112)）。这两张卡的主循环都从那个点起算 MOVE_POS_TIME，
@@ -11010,6 +11041,13 @@ local function TH34_add_stage56_boss()
         self._orb, self._mv = nil, nil
         self.x, self.y = 0, 224
         bmove(self, 120, 4, 0, 112)
+    end
+    ---原作 sub29（霜符的 L 行）：t=120 起 `MOVE_POS_TIME 120 4 192 140`（我们 (0,84)；
+    ---移动框 [32,352]×[48,128] 会把 y 夹到 128 ⇒ 实际停在 (0,96)）。
+    local function enter1f(self)
+        self._orb, self._mv = nil, nil
+        self.x, self.y = 0, 224
+        bmove(self, 120, 4, 0, 84)
     end
     ---以**绝对点**为心的 SPREAD_AIMED（op64，a1 是相对自机方向的偏移）。
     local function aim4(self, ax, ay, spr, col, n, c2, v1, v2, a1, a2, cmd)
@@ -11033,11 +11071,13 @@ local function TH34_add_stage56_boss()
     ---    自旋 −π/60 ∞ ＋ 转 +157.5° 一轮)、(a1=0, a2=+0.19635, 转 −157.5° 一轮)、
     ---    (a1=+0.19635, a2=+0.19635, 自旋 +π/120)（后两组第三段 type0x20 的 flag=0，
     ---    在已有一段激活时永远轮不到）；再补两圈 4 发 × 5 层（3.5→1，a1=0.589049 / 0.981748）；
-    ---  · sub22：2 发全向随机弹（速度 1~1.5、角度 [−π,π)），t=60 把连发间隔清零；
+    ---  · sub22：RANDOM 弹（L 行 16 发全向、速度 1~1.5）被同一帧的 DISABLE_BULLETS…
+    ---    ENABLE_BULLETS 夹住 ⇒ 原作**不发**；只有 t=60 的 SET_SHOOT_INTERVAL 0；
     ---  · sub21：t=0 两圈 32 发 × 2 层（2 / 1.5 →1）；t=1 两圈 shifted 32 发 × 2 层
     ---    （3 / 3.5 →1，相位 +π/32）＋ 两圈 4 发 × 5 层；
-    ---  · sub23：以自机为心的 10 发环，`SET_SHOOT_INTERVAL 8` ⇒ 每 8 帧复打一次
-    ---    （Lunatic 的 rank=16 时 ShootInterval 修正恰为 0），初始那次 ＋ 11 次，t=90 停；
+    ---  · sub23：RING_AIMED（以自机为心的 10 发环）同样被 DISABLE/ENABLE 夹住 ⇒
+    ---    第一发不发；`SET_SHOOT_INTERVAL 8` 让自动连发在 t=7,15,…,87 各打一次
+    ---    （共 11 发；Lunatic 的 rank=16 时 ShootInterval 修正恰为 0），t=90 停；
     ---  · sub24：8×3（2.5→1）＋ 10×3（2→1）＋ 14×3（3.5→1）＋ 16×3（3→1）＋ 两圈 4×5。
     ---四段 MOVE_POS_TIME 都是**绝对**坐标：(256,160)/(128,160)/(192,128)
     ---⇒ 我们 (64,64)/(−64,64)/(0,96)。
@@ -11058,23 +11098,37 @@ local function TH34_add_stage56_boss()
                 ---①sub25：SUB_CALL 2（120 帧）＋ 4 组环 ＋ SUB_RET 前的 60 帧
                 PlaySound("power0", 0.35, self.x / 256)
                 task.Wait(120)
-                rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0, -0.19635,
-                     cmds4(101, CLR(), SP20(0.0523599), T40(2.74889, true)))
-                rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0.19635, -0.19635,
-                     cmds4(100, SP20(-0.0523599), T40(-1.9635, true), SP20(0.0261799, 0)))
-                rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0, 0.19635,
-                     cmds4(101, CLR(), SP20(-0.0261799), T40(-2.74889, true)))
-                rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0.19635, 0.19635,
-                     cmds4(100, SP20(0.0261799), T40(1.9635, true), SP20(-0.01309, 0)))
+                ---原作 sub25 的 4 组环，每组都不是单圈而是一帧内叠 **4 圈同心环**
+                ---（RING_ABS 索引 6-9 / 13-16 / 20-23 / 27-30）：
+                ---  count1 = 4 / 6 / 8 / 12，count2 = 4 / 5 / 6 / 6（第四组第一圈是 3），
+                ---  速度 2.5 / 2.5 / 3.0 / 3.2（前两组）、2.0（后两组），一律降到 1.0。
+                ---每圈都用同一份 bulletCmd（原作同一帧里 INIT 完再连发 4 条）。
+                local function rings25(tbl, a1, a2, cmd)
+                    for i = 1, 4 do
+                        rabs(self, self.x, self.y, 6, 6, tbl[i][1], tbl[i][2],
+                             tbl[i][3], 1.0, a1, a2, cmd)
+                    end
+                end
+                rings25({ { 4, 4, 2.5 }, { 6, 5, 2.5 }, { 8, 6, 3.0 }, { 12, 6, 3.2 } },
+                        0, -0.19635,
+                        cmds4(101, CLR(), SP20(0.0523599), T40(2.74889, true)))
+                rings25({ { 4, 4, 2.5 }, { 6, 5, 2.5 }, { 8, 6, 3.0 }, { 12, 6, 3.2 } },
+                        0.19635, -0.19635,
+                        cmds4(100, SP20(-0.0523599), T40(-1.9635, true), SP20(0.0261799, 0)))
+                rings25({ { 4, 4, 2.0 }, { 6, 5, 2.0 }, { 8, 6, 2.0 }, { 12, 6, 2.0 } },
+                        0, 0.19635,
+                        cmds4(101, CLR(), SP20(-0.0261799), T40(-2.74889, true)))
+                rings25({ { 4, 3, 2.0 }, { 6, 5, 2.0 }, { 8, 6, 2.0 }, { 12, 6, 2.0 } },
+                        0.19635, 0.19635,
+                        cmds4(100, SP20(0.0261799), T40(1.9635, true), SP20(-0.01309, 0)))
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
                 sound4(self)
                 task.Wait(60)
                 ---②MOVE_POS_TIME 60 4 (256,160) ＋ sub22（110 帧）
+                ---sub22 的 RANDOM 弹（L 行 16 发）被 DISABLE_BULLETS…ENABLE_BULLETS
+                ---夹在同一帧 ⇒ 原作**一发都不发**（BulletManager.cpp 的 disableBullets 判定）。
                 bmove(self, 60, 4, 64, 64)
-                for _ = 1, 2 do
-                    dot4(self.x, self.y, 16, 6, ran:Float(1.0, 1.5), ran:Float(-PI, PI))
-                end
                 task.Wait(110)
                 ---③MOVE 之后紧接着 sub21（SUB_CALL 2 的 120 帧 ＋ 61 帧）
                 PlaySound("power0", 0.35, self.x / 256)
@@ -11090,7 +11144,8 @@ local function TH34_add_stage56_boss()
                 task.Wait(60)
                 ---④MOVE_POS_TIME 90 0 (128,160) ＋ sub23（90 帧）
                 bmove(self, 90, 0, -64, 64)
-                shoot6(self, 0, 0, 66, 5, 6, 10, 1, 1.5, 1.0, 0, 0, nil, false)
+                ---sub23 的 RING_AIMED 也被 DISABLE/ENABLE 夹住 ⇒ 原作**不发**这一发；
+                ---真正的射击由 SET_SHOOT_INTERVAL 8 的自动连发在 7 帧后打出（共 11 发）。
                 task.Wait(7)
                 for k = 1, 11 do
                     shoot6(self, 0, 0, 66, 5, 6, 10, 1, 1.5, 1.0, 0, 0, nil, false)
@@ -11116,20 +11171,26 @@ local function TH34_add_stage56_boss()
     end, { skin = skin1, enter = enter1 })
 
     ---──────────────────── 霜符「フロストコラムス -Lunatic-」 ────────────────────
-    ---原作 sub29/30：本体每 60 帧放一根「冰柱」，六根一组、共 75° 扇形
-    ---（基准角 angToPl −45°/−30°/−15°/0°/+15°/+30°；第 1、3 根时本体按
-    ---GET_EXIT_ANGLE 漂 60 帧 ×1.25，另有一轮 80 帧的蓄力）。冰柱生在本体处、
-    ---60 帧里沿自己的方位角匀速飞出 160 px；出生当帧起每 6 帧打一圈 8 发
-    ---＋一圈 4 发（同速，速度在 2.6 / 0.8 之间交替），4 发环的相位随机偏 ±12.86°，
-    ---共 10 拍。
-    scard("霜符「フロストコラムス -Lunatic-」", 4451, 50, 3000, false, function(self)
+    ---原作 sub29（L 行从 t=120 起）+ sub30。
+    ---本体：`MOVE_POS_TIME 120 4 192 140` 摆位 → t=240 起每 60 帧放一根「冰柱」，
+    ---六根一组共 75° 扇形：基准角 = 自机方向 + {0, +15°, +30°}，第 3 根时先按
+    ---GET_EXIT_ANGLE 漂 60 帧（1.25 px/帧）并把基准角 −75° ⇒ 后三根是 {−45°,−30°,−15°}；
+    ---第 1、3 根那两拍本体也漂一次。整组开头有 80 帧「粒子+音效」冻结（SUB_CALL 2，gI0=20），
+    ---组末停 40 帧；t=580 跳回 t=240。
+    ---冰柱 sub30：60 帧里沿 spawn 角匀速飞出 160 px（MOVE_POS_TIME 60 0）；**出生当帧**起
+    ---每 6 帧打一组「sprite6 8 发整圈（v=2.6）+ sprite15 4 发整圈（v=2.6，相位 = spawn 角
+    ---±0.224399）」——v 每拍换成 3.4−v（2.6/0.8 交替），共 10 拍，t=6 的第 11 次判停后自毁。
+    scard("霜符「フロストコラムス -Lunatic-」", 4451, 38, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             local OFF = { 0, 0.261799, 0.523599, -0.785398, -0.523599, -0.261799 }
+            task.Wait(120)                                   -- t=120 → t=240
             while true do
+                PlaySound("power0", 0.35, self.x / 256)       -- SUB_CALL 2（gI0=20 ⇒ 80 帧）
                 task.Wait(80)
                 local a = aimth(self)
                 for k = 1, 6 do
+                    if k == 1 or k == 3 then drift(self, 1.25, 60) end
                     local ang = a + OFF[k]
                     pspawn(self.x, self.y, function(o)
                         bmove(o, 60, 0, o.x + math.cos(ang) * 160, o.y - math.sin(ang) * 160)
@@ -11142,246 +11203,550 @@ local function TH34_add_stage56_boss()
                             task.Wait(6)
                         end
                     end)
-                    if k == 1 or k == 3 then drift(self, 1.25, 60) end
                     if k == 6 then task.Wait(40) else task.Wait(60) end
                 end
             end
         end)
-    end, { skin = skin1, wallskin = skin1w, enter = enter1b })
+    end, { skin = skin1, wallskin = skin1w, enter = enter1f })
 
-    ---──────────────────── レティ 非符 2（原作 sub38 的 32/33/33/32/34） ────────────────────
-    ---①sub32：16 拍、每 8 帧一组「7 发 × 2 层（2.5→1.5）＋ 1 发 × 5 层（4→1）」的双扇，
-    ---两个基准角每拍反向转 0.2 弧度；②sub33：60 拍、每 2 帧在本体周围半径 32~64 处
-    ---生成一个雪点，雪点朝外飞并打 2 发窄扇；③再来一遍 32；④sub34：同 32 但速度 2.2，
-    ---且每 4 拍补一圈 16 发自机狙（1 px/帧）。
+    ---──────────────────── レティ 非符 2（原作 sub38 = 32/33/33/32/34） ────────────────────
+    ---sub38 的时间轴（L 行）：t=60 起 `gF0=0.523599` → SUB_CALL 32（128 帧）→ GET_EXIT_ANGLE
+    ---＋漂 60 帧 ×0.8；t=120 `gF0=−1.5708` → SUB_CALL 33（240 帧）→ 漂 60 帧；
+    ---t=180 `gF0=+1.5708` → SUB_CALL 33（240 帧）→ `MOVE_POS_TIME 60 4 192 64`（我们 (0,160)）
+    ---＋等 80 帧；t=260 `gF0=−0.523599` → SUB_CALL 32（128 帧）→ `gF0=+0.523599` →
+    ---SUB_CALL 34（128 帧）→ 等 100 帧；t=360 跳回 t=60。
+    ---  · sub32（g = gF0）：16 拍、每 8 帧一组「7 发 × 2 层（2.5→1.5）+ 1 发 × 5 层（4→1）」
+    ---    的双扇，两个基准角每拍反向转 g（第一/第四次是 ±0.523599，第二/第三次是 ±1.5708）；
+    ---  · sub33：SUB_CALL 2（120 帧）后 60 拍、每 2 帧在本体周围半径 32~64 处生成一个雪点
+    ---    （角度 = 自机方向 + gF0，每拍转 gF0/30）；雪点匀速漂 i3_0（100~119）帧后朝外打
+    ---    2 发窄扇（半张角 0.448799、速度 rand(1.2)+1），弹挂 0x10（沿自身朝向加速 π/120、120 帧）；
+    ---  · sub34：同 sub32，但第二扇速度 2.2；`i2_0 % 4 == 0`（第 1/5/9/13 拍）时再补一圈
+    ---    16 发自机狙（1 px/帧、基准角 = 第二扇的 f1）。
     ncard("レティ 非符 2", 4452, 16000, 1600, function(self)
         self._box = box5(32, 48, 352, 128)
-        task.New(self, function()
-            local f0, f1 = rngrad(), rngrad()
-            local function twin(v1)
-                fan4(self, self.x, self.y, 2, 10, 7, 2, v1, 1.5, f0, 0.19635)
+        ---原作 sub35：雪点本体。等 wait 帧后打 2 发窄扇，再活 40 帧自毁（UNIMP）。
+        local function snowbody(o, a0, spd, wait)
+            local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
+            for _ = 1, wait do
+                o.x, o.y = o.x + vx, o.y + vy
+                task.Wait(1)
+            end
+            local a = ran:Float(0, PI) - PI / 2 + a0
+            local v = ran:Float(0, 1.2) + 1
+            ---原作 sub35 挂 commands[0]=type1（爆速段，flag=0）、commands[1]=type0x10
+            ---（沿自身朝向 +0.00833333/帧、120 帧，flag=0）：爆速段的 exFlags 位 17 帧
+            ---后自己清掉，加速段才轮得到（这条波的 flags=533 同时含这两个 type 位）。
+            shoot6(o, 0, 0, 65, 3, ran:Int(0, 1) + 5, 2, 1, v, 1, a, 0.448799,
+                   cmds4(533,
+                         { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
+                         { type = 0x10, flag = 0, dur = 120, loop = -1,
+                           speed = 0.00833333, angle = -999 }),
+                   false)
+            for _ = 1, 40 do task.Wait(1) end
+        end
+        ---原作 sub32：16 拍双扇（第二扇 v1 = 4）。
+        local function sub32(g)
+            local f0, f1 = 0, -1.5708
+            for _ = 1, 16 do
+                fan4(self, self.x, self.y, 2, 10, 7, 2, 2.5, 1.5, f0, 0.19635)
+                f0 = f0 + g
                 shoot6(self, 0, 0, 65, 3, 6, 1, 5, 4.0, 1.0, f1, 0, nil, false)
-                f0 = f0 + 0.2
-                f1 = f1 - 0.2
+                f1 = f1 - g
+                task.Wait(8)
             end
-            local function snow(n)
-                for _ = 1, n do
-                    local r = ran:Float(32, 64)
-                    local ax, ay = self.x + math.cos(f0) * r, self.y + math.sin(f0) * r
-                    fan4(self, ax, ay, 3, 10, 2, 1, 1.2, 1.0, f0, 0.448799)
-                    dot4(ax, ay, 3, 10, 1.2, f0 + PI, nil)
-                    f0 = f0 + 0.0523599
-                    task.Wait(2)
+        end
+        ---原作 sub34：第二扇 v1 = 2.2，且第 1/5/9/13 拍补一圈 16 发自机狙。
+        local function sub34(g)
+            local f0, f1 = 0, -1.5708
+            for i = 1, 16 do
+                fan4(self, self.x, self.y, 2, 10, 7, 2, 2.5, 1.5, f0, 0.19635)
+                f0 = f0 + g
+                shoot6(self, 0, 0, 65, 3, 6, 1, 5, 2.2, 1.0, f1, 0, nil, false)
+                f1 = f1 - g
+                if (17 - i) % 4 == 0 then
+                    shoot6(self, 0, 0, 66, 1, 6, 16, 1, 1.0, 1.0, f1, 0, nil, false)
                 end
+                task.Wait(8)
             end
+        end
+        ---原作 sub33：SUB_CALL 2（120 帧）＋ 60 拍、每 2 帧放一个雪点。
+        local function sub33(g)
+            PlaySound("power0", 0.35, self.x / 256)
+            task.Wait(120)
+            local step = g / 30
+            local a0 = aimth(self) + g
+            for _ = 1, 60 do
+                local spd = ran:Float(0, 1.5) - 0.4
+                local wait = ran:Int(0, 19) + 100
+                local r = ran:Float(0, 32) + 32
+                pspawn(self.x + math.cos(a0) * r, self.y - math.sin(a0) * r, function(o)
+                    snowbody(o, a0, spd, wait)
+                end)
+                a0 = a0 - step
+                task.Wait(2)
+            end
+        end
+        task.New(self, function()
             while true do
-                for _ = 1, 16 do twin(2.5); task.Wait(8) end
-                snow(60)
-                snow(60)
-                for _ = 1, 16 do twin(2.5); task.Wait(8) end
-                for i = 1, 16 do
-                    twin(2.2)
-                    if i % 4 == 0 then
-                        shoot6(self, 0, 0, 66, 1, 6, 16, 1, 1.0, 1.0, 0, 0, nil, false)
-                    end
-                    task.Wait(8)
-                end
+                sub32(0.523599)                           -- t=60
                 drift(self, 0.8, 60)
-                task.Wait(110)
+                task.Wait(60)                             -- t=60 → t=120
+                sub33(-1.5708)                            -- t=120
+                drift(self, 0.8, 60)
+                task.Wait(60)                             -- → t=180
+                sub33(1.5708)                             -- t=180
+                bmove(self, 60, 4, 0, 160)                -- (192,64) ⇒ (0,160)
+                task.Wait(80)                             -- → t=260
+                sub32(-0.523599)                          -- t=260
+                sub34(0.523599)
+                task.Wait(100)                            -- t=360 跳回 t=60
             end
         end)
     end, { skin = skin1, enter = enter1 })
 
     ---──────────────────── 寒符「リンガリングコールド -Lunatic-」 ────────────────────
-    ---原作 sub42/43/47：本体摆到 (192,112)（我们 (0,112)），每 40~130 帧生成一颗「冰晶」；
-    ---冰晶在 180 帧里绕本体公转、半径一边长（0.78 px/帧）、角速度 ±2°/帧，沿途每 4 帧
-    ---撒一个雪点（雪点打 2 发窄扇）。同时本体按自机方向连打「锥弹」：每拍 1 发、
-    ---速度 3.5、半张角 15°，挂 0x40 指令（刹停 50 帧后转向 ±63°、速度 0.5~1.1，1 轮）。
-    scard("寒符「リンガリングコールド -Lunatic-」", 4453, 60, 3600, false, function(self)
+    ---原作 sub42 的 L 行（时间轴 t=480 起算；SUB_CALL 2 各冻结 120 帧 ⇒ 墙钟 = 时间轴 + 240）：
+    ---  480 `gI0=30 gI1=4`＋SUB_CALL 2（120 帧粒子冻结）；510 在**当前位置**放一颗冰晶（sub43，
+    ---  `f3_0 = rand(0.392699)+1.1781`、`f3_1 = +0.0349066`）；540 GET_EXIT_ANGLE＋漂 60 帧 ×0.7
+    ---  ＋SUB_CALL 47（齐射）；600 SUB_CALL 47＋再放一颗冰晶（`f3_0 = 1.9635−rand(0.392699)`、
+    ---  `f3_1 = −0.0349066`）；660 SUB_CALL 47；680 GET_EXIT_ANGLE＋漂；740 再漂＋SUB_CALL 2（120 帧）；
+    ---  770 放第三颗冰晶（负向）；800 GET_EXIT_ANGLE＋漂＋放第四颗冰晶（正向）＋SUB_CALL 47；
+    ---  860 / 920 SUB_CALL 47；980 漂＋JUMP 回 480。一轮 740 帧。
+    ---  · sub43（冰晶）：绕**生成点**以 f3_0 为初角、f3_1 为角速度、半径 0 起、0.78 px/帧 外扩
+    ---    320 帧（80 拍 × 4 帧），每拍在半径 rand(64)−32 的随机角上放一个雪点；随后半径冻结、
+    ---    再活 ~4000 帧（`SET_DESPAWN_ON_OOB 0`）；
+    ---  · sub36（雪点）：以（rand(2π)−π 方向、速度 rand(0.05)−0.025）几乎原地漂 80 帧
+    ---    （`SET_WAIT_TIMER gI0=80`），随后「rand2==0 × rand2==0 × rand4!=0」才朝 `f3_2`
+    ---    （每拍 +0.20944）方向打 3 发 ±1.406° 的散射（速度 rand(0.7)+0.8；弹挂
+    ---    commands[0]=type1 爆速段 + commands[1]=type0x10 沿自身 −0.025/帧、120 帧）；
+    ---    打完 `SET_PRIMARY_VM_INTERRUPT 1`、40 帧后消失；
+    ---  · sub47（齐射）：1 发正对自机、速度 3.5（挂 type0x40：剎停 50 帧后速度 = 1、角度 +0）；
+    ---    随后 6 拍、每拍 6 发正对自机：速度 f0 从 3 每拍 −0.4；每发挂 type0x40（剎停 50 帧后
+    ---    角度 += f2 或 0−f2、速度 = f1 或 f1−0.4 或 f1−0.8；f1 从 1.1 每拍 +0.6、
+    ---    f2 每拍 +0.1309）。每拍内 6 发的 cmd 参数依次为
+    ---    (f2,f1)(f2,f1−0.4)(f2,f1−0.8)(0−f2,f1)(0−f2,f1−0.4)(0−f2,f1−0.8)。
+    scard("寒符「リンガリングコールド -Lunatic-」", 4453, 50, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
-        task.New(self, function()
-            local T = { 40, 130, 60, 70 }
-            local sgn = 1
-            while true do
-                for w = 1, 4 do
-                    local sa = rngrad()
-                    local av = sgn * 0.0349066
-                    pspawn(self.x, self.y, function(o)
-                        local ang = sa
-                        for t = 1, 180 do
-                            ang = ang + av
-                            local r = 0.78 * t
-                            o.x = self.x + math.cos(ang) * r
-                            o.y = self.y + math.sin(ang) * r
-                            if t % 4 == 0 then
-                                local bx = o.x + math.cos(ang + PI) * 24
-                                local by = o.y + math.sin(ang + PI) * 24
-                                fan4(o, bx, by, 3, 10, 2, 1, 1.0, 0.5, ang, 0.1)
-                            end
-                            task.Wait(1)
-                        end
-                    end)
-                    for k = 1, 4 do
-                        shoot6(self, 0, 0, 64, 7, 4, 1, 1, 3.5, 1.0, 0,
-                               0.261799, turn4(sgn * 1.1, 0.4 + 0.35 * k, 50, 1), true)
-                        task.Wait(T[k])
-                    end
-                    sgn = -sgn
+        ---原作 sub47：本体齐射。
+        local function fire47()
+            shoot6(self, 0, 0, 64, 7, 4, 1, 1, 3.5, 1.0, 0, 0.261799,
+                   turn4(0, 1, 50, 1), true)
+            local f0, f1, f2 = 3, 1.1, 0
+            for _ = 1, 6 do
+                for s = 0, 1 do
+                    local g2 = (s == 0) and f2 or (0 - f2)
+                    shoot6(self, 0, 0, 64, 1, 8, 1, 1, f0, 1.0, 0, 0, turn4(g2, f1, 50, 1), false)
+                    shoot6(self, 0, 0, 64, 1, 8, 1, 1, f0, 1.0, 0, 0, turn4(g2, f1 - 0.4, 50, 1), false)
+                    shoot6(self, 0, 0, 64, 1, 8, 1, 1, f0, 1.0, 0, 0, turn4(g2, f1 - 0.8, 50, 1), false)
                 end
+                f0, f1, f2 = f0 - 0.4, f1 + 0.6, f2 + 0.1309
+            end
+        end
+        ---原作 sub36：雪点。`th0`/`spd` 是 MOVE_DIR_TIME 的方向与速度，`fan0` 是 f3_2（散射基准角）。
+        local function snow(o, th0, spd, fan0)
+            local vx, vy = math.cos(th0) * spd, -math.sin(th0) * spd
+            for _ = 1, 80 do
+                o.x, o.y = o.x + vx, o.y + vy
+                task.Wait(1)
+            end
+            ---原作 sub36 的判定链：RAND i1 2 → 若 != 0 整段跳过（连 bullets 都不发）；
+            ---所以「发弹」= 第一次 rand2==0 × 第二次 rand2==0 × rand4 != 0。
+            if ran:Int(0, 1) == 0 and ran:Int(0, 1) == 0 and ran:Int(0, 3) ~= 0 then
+                local v = ran:Float(0, 0.7) + 0.8
+                ---commands[1] = type0x10、方向 -0.025/帧、120 帧（L 行）；
+                ---前面还有 commands[0] = type1 的爆速段（flag=0）。
+                shoot6(o, 0, 0, 65, 3, ran:Int(0, 1) + 5, 3, 1, v, 0.5, fan0, 0.0245437,
+                       cmds4(533,
+                             { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
+                             { type = 0x10, flag = 0, dur = 120, loop = -1,
+                               speed = -0.025, angle = -999 }),
+                       false)
+            end
+            for _ = 1, 40 do task.Wait(1) end
+        end
+        ---原作 sub43：冰晶。
+        ---`MOVE_ORBIT 180 X Y Z f3_0 f3_1 0 0.78`：以**生成点**为心、f3_0 为初角、
+        ---f3_1 为角速度、半径从 0 每帧 +0.78，绕 180 帧（正好一整圈）后 moveMode 转
+        ---`ENEMY_MOVE_AXIS` —— 之后改为**直线**漂，速度 = 第 180 帧的轨道增量
+        ---（`EclManager.cpp` 的 ENEMY_MOVE_ORBIT 分支）。雪点是 `SPAWN_ENEMY_REL 36`
+        ---（相对**晶体此刻**的位置），所以 180 帧后雪点跟着晶体一起飞出去。
+        local function ice(a0, av)
+            local cx, cy = self.x, self.y
+            pspawn(cx, cy, function(o)
+                local fan0 = 1.5708
+                local th, r = a0, 0
+                local vx, vy = 0, 0
+                for k = 0, 79 do
+                    local sa = rngrad()
+                    local spd = ran:Float(0, 0.05) - 0.025
+                    local rr = ran:Float(0, 64) - 32
+                    pspawn(o.x + math.cos(sa) * rr, o.y - math.sin(sa) * rr,
+                           function(p) snow(p, sa, spd, fan0) end)
+                    fan0 = fan0 + 0.20944
+                    for f = 1, 4 do
+                        local px, py = o.x, o.y
+                        if k * 4 + f <= 180 then
+                            th, r = th + av, r + 0.78
+                            o.x, o.y = cx + math.cos(th) * r, cy - math.sin(th) * r
+                            vx, vy = o.x - px, o.y - py
+                        else
+                            o.x, o.y = px + vx, py + vy
+                        end
+                        task.Wait(1)
+                    end
+                end
+                for _ = 1, 4000 do task.Wait(1) end
+            end)
+        end
+        task.New(self, function()
+            while true do
+                PlaySound("power0", 0.35, self.x / 256)     -- 480: SUB_CALL 2（120 帧）
+                task.Wait(120)
+                task.Wait(30)                              -- → 510
+                ice(ran:Float(0, 0.392699) + 1.1781, 0.0349066)
+                task.Wait(30)                              -- → 540
                 drift(self, 0.7, 60)
-                task.Wait(60)
+                fire47()                                   -- 540
+                task.Wait(60)                              -- → 600
+                fire47()                                   -- 600
+                ice(1.9635 - ran:Float(0, 0.392699), -0.0349066)
+                task.Wait(60)                              -- → 660
+                fire47()                                   -- 660
+                task.Wait(20)                              -- → 680
+                drift(self, 0.7, 60)                       -- 680
+                task.Wait(60)                              -- → 740
+                drift(self, 0.7, 60)                       -- 740
+                PlaySound("power0", 0.35, self.x / 256)     -- 740: SUB_CALL 2（120 帧）
+                task.Wait(120)
+                task.Wait(30)                              -- → 770
+                ice(1.9635 - ran:Float(0, 0.392699), -0.0349066)
+                task.Wait(30)                              -- → 800
+                drift(self, 0.7, 60)
+                ice(ran:Float(0, 0.392699) + 1.1781, 0.0349066)
+                fire47()                                   -- 800
+                task.Wait(60)                              -- → 860
+                fire47()                                   -- 860
+                task.Wait(60)                              -- → 920
+                fire47()                                   -- 920
+                task.Wait(60)                              -- → 980
+                drift(self, 0.7, 60)                       -- 980 → 跳回 480
             end
         end)
     end, { skin = skin1, wallskin = skin1w, enter = enter1b })
 
-    ---──────────────────── レティ 非符 3（原作 sub39 的循环 = 40/40/33/32） ────────────────────
-    ---①两轮「冰桌」：本体处生成 3 个绕本体公转的轨道点，半径一边长（1.0 / 1.15 px/帧）、
-    ---角速度 ±1.8°/帧，120 帧后每 3 帧各打一发覆盖半场的随机方向慢弹；
-    ---②sub33 的 60 个雪点（半径 32~64，随机延迟 0~20 帧后朝外打双发窄扇）；
-    ---③sub32 的双扇（7 发 × 2 层 2.5→1.5 ＋ 1 发 × 5 层 4→1），两基准角每拍反向转 0.2 弧度。
-    ---段间本体按 GET_EXIT_ANGLE 漂 60 帧；一轮 = 240 帧打底 + 60 帧收尾。
+    ---──────────────────── レティ 非符 3（原作 sub39 = 40/40/33/32） ────────────────────
+    ---sub39 的时间轴（L 行）：t=0 `f3=1`、`f0=rand` → `gF0=f0, gF1=+0.0314159, gF2=f3` →
+    ---SUB_CALL 40（360 帧）→ `f3+=0.15`、GET_EXIT_ANGLE、漂 60 帧 ×0.7、`f0=rand`；
+    ---t=60 `gF0=f0, gF1=−0.0314159, gF2=f3` → SUB_CALL 40（360）→ 同上；
+    ---t=120 `gF0=+1.5708` → SUB_CALL 33（240）→ `MOVE_POS_TIME 60 4 192 64`（我们 (0,160)）；
+    ---t=200 `gF0=+0.523599` → SUB_CALL 32（128）→ 等 100 帧；t=300 跳回 t=0。
+    ---  · sub40：SUB_CALL 2（120 帧）后在本体处放 3 个「冰桌」（sub41），互隔 120°；
+    ---    随后 GET_EXIT_ANGLE 漂 90 帧 ×0.6，t=240 返回（合计 360 帧）；
+    ---  · sub41：以初始角 gF0、角速度 gF1、径向速度 gF2（= f3 = 1 / 1.15 / …）往外旋 120 帧，
+    ---    之后半径冻结、角速度每 3 帧再加 gF1/30；每 3 帧打一组 3 发随机慢弹
+    ---    （速度 rand(0.8)+0.2、方向 [−π,π)、sprite 1，挂 0x10 沿自身加速 π/75、120 帧），
+    ---    共 60 组后自毁。原作那条 `i2_0 % 2` 的奇偶判断因为 JNEQ 跳进了「难度组」中间，
+    ---    在四个难度上都不起作用，所以这里照抄成「每组都打」。
     ncard("レティ 非符 3", 4454, 15000, 1500, function(self)
         self._box = box5(32, 48, 352, 128)
-        task.New(self, function()
-            local f0, f1 = rngrad(), rngrad()
-            ---原作 sub40/41：三个绕本体往外旋的「冰桌」，转完 120 帧后吐慢弹。
-            local function tables(sgn, rv)
-                local cx, cy = self.x, self.y
-                for k = 1, 3 do
-                    local a0 = rngrad() + (k - 1) * 2.0944
-                    pspawn(cx, cy, function(o)
-                        local ang, r = a0, 0
-                        for _ = 1, 120 do
-                            ang, r = ang + sgn * 0.0314159, r + rv
-                            o.x, o.y = cx + math.cos(ang) * r, cy + math.sin(ang) * r
-                            task.Wait(1)
-                        end
-                        for t = 1, 60 do
-                            if t % 3 == 0 then
-                                fan4(o, o.x, o.y, 1, 6, 4, 1, 1.0, 0.2, rngrad(), PI)
-                            end
-                            task.Wait(1)
-                        end
-                    end)
-                end
+        ---原作 sub35 的雪点（sub33 生）：匀速漂 wait 帧后朝外打 2 发窄扇。
+        local function snowbody(o, a0, spd, wait)
+            local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
+            for _ = 1, wait do
+                o.x, o.y = o.x + vx, o.y + vy
+                task.Wait(1)
             end
-            ---原作 sub33/35：本体周围半径 32~64 的雪点，等 l3i0 帧后打双发窄扇。
-            local function snow(n)
-                local ang = rngrad()
-                for _ = 1, n do
-                    local r = ran:Float(32, 64)
-                    local ax, ay = self.x + math.cos(ang) * r, self.y + math.sin(ang) * r
-                    local a0 = ang
-                    pspawn(ax, ay, function(o)
-                        for _ = 1, ran:Int(0, 20) do task.Wait(1) end
-                        fan4(o, o.x, o.y, 3, 10, 2, 1, 1.0, 0.5, a0, 0.448799)
-                    end)
-                    ang = ang + 0.0523599
-                    task.Wait(2)
-                end
+            local a = ran:Float(0, PI) - PI / 2 + a0
+            local v = ran:Float(0, 1.2) + 1
+            ---原作 sub35 挂 commands[0]=type1（爆速段，flag=0）、commands[1]=type0x10
+            ---（沿自身朝向 +0.00833333/帧、120 帧，flag=0）：爆速段的 exFlags 位 17 帧
+            ---后自己清掉，加速段才轮得到（这条波的 flags=533 同时含这两个 type 位）。
+            shoot6(o, 0, 0, 65, 3, ran:Int(0, 1) + 5, 2, 1, v, 1, a, 0.448799,
+                   cmds4(533,
+                         { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
+                         { type = 0x10, flag = 0, dur = 120, loop = -1,
+                           speed = 0.00833333, angle = -999 }),
+                   false)
+            for _ = 1, 40 do task.Wait(1) end
+        end
+        ---原作 sub33：SUB_CALL 2（120 帧）＋ 60 拍、每 2 帧一个雪点。
+        local function sub33(g)
+            PlaySound("power0", 0.35, self.x / 256)
+            task.Wait(120)
+            local step = g / 30
+            local a0 = aimth(self) + g
+            for _ = 1, 60 do
+                local spd = ran:Float(0, 1.5) - 0.4
+                local wait = ran:Int(0, 19) + 100
+                local r = ran:Float(0, 32) + 32
+                pspawn(self.x + math.cos(a0) * r, self.y - math.sin(a0) * r, function(o)
+                    snowbody(o, a0, spd, wait)
+                end)
+                a0 = a0 - step
+                task.Wait(2)
             end
-            ---原作 sub32/34：双扇。
-            local function twin(v1)
-                fan4(self, self.x, self.y, 2, 10, 7, 2, v1, 1.5, f0, 0.19635)
+        end
+        ---原作 sub32：16 拍双扇。
+        local function sub32(g)
+            local f0, f1 = 0, -1.5708
+            for _ = 1, 16 do
+                fan4(self, self.x, self.y, 2, 10, 7, 2, 2.5, 1.5, f0, 0.19635)
+                f0 = f0 + g
                 shoot6(self, 0, 0, 65, 3, 6, 1, 5, 4.0, 1.0, f1, 0, nil, false)
-                f0, f1 = f0 + 0.2, f1 - 0.2
+                f1 = f1 - g
+                task.Wait(8)
             end
+        end
+        ---原作 sub41：绕本体外旋的冰桌。
+        local function orbit41(o, cx, cy, a0, av, rv)
+            local ang, r = a0, 0
+            for _ = 1, 120 do
+                ang, r = ang + av, r + rv
+                o.x, o.y = cx + math.cos(ang) * r, cy - math.sin(ang) * r
+                task.Wait(1)
+            end
+            local avv = av
+            for _ = 1, 60 do
+                avv = avv + av / 30
+                for _ = 1, 3 do
+                    dot4(o.x, o.y, 1, 6, ran:Float(0, 0.8) + 0.2,
+                         ran:Float(0, 2 * PI) - PI,
+                         { type = 0x10, dur = 120, loop = -1,
+                           speed = 0.0133333, angle = -999 })
+                end
+                for _ = 1, 3 do
+                    ang = ang + avv
+                    o.x, o.y = cx + math.cos(ang) * r, cy - math.sin(ang) * r
+                end
+                task.Wait(3)
+            end
+            for _ = 1, 40 do task.Wait(1) end
+        end
+        ---原作 sub40：SUB_CALL 2（120 帧）后放 3 个冰桌，再漂 90 帧 ×0.6（t=240 返回）。
+        local function sub40(g0, g1, g2)
+            PlaySound("power0", 0.35, self.x / 256)
+            task.Wait(120)
+            local cx, cy = self.x, self.y
+            for k = 0, 2 do
+                local aa = g0 + k * 2.0944
+                pspawn(cx, cy, function(o)
+                    orbit41(o, cx, cy, aa, g1, g2)
+                end)
+            end
+            task.Wait(120)                    -- t=0 → t=120
+            drift(self, 0.6, 90)              -- t=120 的 MOVE_DIR_TIME
+            task.Wait(120)                    -- t=120 → t=240（漂移在前 90 帧内跑完）
+        end
+        task.New(self, function()
+            local f3 = 1
             while true do
-                tables(1, 1.0)
+                local a = rngrad()
+                sub40(a, 0.0314159, f3)                    -- t=0
+                f3 = f3 + 0.15
                 drift(self, 0.7, 60)
-                task.Wait(60)
-                tables(-1, 1.15)
+                task.Wait(60)                              -- → t=60
+                a = rngrad()
+                sub40(a, -0.0314159, f3)                   -- t=60
+                f3 = f3 + 0.15
                 drift(self, 0.7, 60)
-                task.Wait(60)
-                snow(60)
-                for _ = 1, 16 do twin(2.5); task.Wait(8) end
-                drift(self, 0.7, 60)
-                task.Wait(100)
+                task.Wait(60)                              -- → t=120
+                sub33(1.5708)                              -- t=120
+                bmove(self, 60, 4, 0, 160)                 -- (192,64) ⇒ (0,160)
+                task.Wait(80)                              -- → t=200
+                sub32(0.523599)                            -- t=200
+                task.Wait(100)                             -- t=300 跳回 t=0
             end
         end)
     end, { skin = skin1, enter = enter1 })
 
     ---──────────────────── 白符「アンデュレイションレイ」 ────────────────────
-    ---原作 sub52/53/54：本体摆到 (192,112)（我们 (0,112)）。每轮先蓄力 48 帧
-    ---（只放 SPAWN_PARTICLES，不打弹），随后同一帧放出 n 个「涟漪点」
-    ---（n = 5/5/4/4/3/3；每轮由 gF1 给公转角速度、lf3 给每只 +0.00369599 的增量）。
-    ---涟漪点以 0.8 px/帧 长半径绕本体外旋；出生当帧起每 8 帧打一组「3 发 × 2 层
-    ---（1.8→0.5 px/帧）、半张角 45°、朝向 = 公转反方向」的扇，共 12 组；
-    ---每组前先把公转角速度 ÷1.4（sub54 的 DIV_FLOAT angVel）。
-    ---每轮之间本体按 GET_EXIT_ANGLE 漂 1.5 px/帧 ×60 帧，再等 60 帧。
-    scard("白符「アンデュレイションレイ」", 4455, 60, 3000, false, function(self)
+    ---原作 sub52/53/54（L 行）。`SUB_CALL` 是**阻塞**调用（调用方的 time 在子程序跑完
+    ---前被冻住），所以墙钟 = 调用方 t 差 + 子程序时长；下面把两者都写成等待。
+    ---  · sub52 先 `MOVE_POS_TIME 120 4 192 112`（我们 (0,112)）摆位，再进 **710 帧**主循环：
+    ---      t=120  gF0=π/2 gF1=+0.0349066 gF2=0.8 gI0=5 gI1=1 lf3=+0.00369599 → SUB_CALL 53
+    ---      t=240  gF1=−0.0349066 lf3=−0.00369599（其余同上）               → SUB_CALL 53
+    ---      t=270  GET_EXIT_ANGLE ＋ MOVE_DIR_TIME 60 4 · 1.5，再
+    ---             gF1=+0.0349066 gF2=0.8 gI0=4 lf3=+0.00349066             → SUB_CALL 53
+    ---      t=290  GET_EXIT_ANGLE ＋ MOVE_DIR_TIME 60 4 · 1.5
+    ---      t=350  gF1=−0.0349066 gF2=0.8 gI0=4 lf3=−0.00349066             → SUB_CALL 53
+    ---      t=410  MOVE_POS_TIME 60 4 192 112，再
+    ---             gF1=+0.0369599 gF2=0.8 gI0=3 gI1=1 lf3=+0.00392699       → SUB_CALL 53
+    ---             紧接着 gF1=−0.0369599 gF2=0.8 gI0=3 gI1=0 lf3=−0.00392699 → SUB_CALL 53
+    ---      t=590  JUMP → t=120
+    ---  · sub53：`gI1==1` 时先跑「PLAY_SOUND 5 ＋ 每 4 帧一发 `SPAWN_PARTICLES 17 4`、
+    ---    共 12 发」= **48 帧冻结**；随后 `PLAY_SOUND 16`、`SET_ANM 137`，按 gI0 只涟漪点，
+    ---    每只的 orbitAngleVel = gF1 + (k−1)·lf3（gF0 恒 π/2、半径从 0 起、径速 gF2）。
+    ---  · sub54：`MOVE_ORBIT 120 X Y Z gF0 gF1 0 gF2`（X/Y/Z = 波纹出生点），出生当帧起
+    ---    每 8 帧（共 12 次）打一组 `SPREAD_ABS 5:6 c1=3 c2=2 1.8→0.5 a2=π/4`，
+    ---    基准角 a1 = **ANG+π**；ANG = `enemy->angle`（ECL_VAR_ANGLE）就是 MOVE_ORBIT 的
+    ---    **运动方向** —— EnemyManager 的 ENEMY_MOVE_ORBIT 分支每帧
+    ---    `angle = atan2(velocity)`，velocity = 本帧轨道点 − 上一帧 pos，所以这里逐帧
+    ---    按离散差分重算 ANG（不是拿轨道角）。
+    ---  · H/L 行只差 count2（H: c2=1、L: c2=2），移植版取 L 行。
+    ---差异 64：sub54 每组前的 `DIV_FLOAT ANGVEL ANGVEL 1.4` 里 ANGVEL 是
+    ---  `ECL_VAR_ANGULAR_VELOCITY`（= enemy->angleVel），MOVE_ORBIT 从不写它 ⇒ 这条除法
+    ---  是**恒等**。旧版把它当成「公转角速度 ÷1.4」是错的，朝向跟着全错。
+    ---差异 65：涟漪点是 `SET_IS_PROJECTILE 1`＋8×8×32 体术判定的实体，本仓库的 pspawn
+    ---  子机无判定、无贴图（同 4439/4451 口径）。
+    scard("白符「アンデュレイションレイ」", 4455, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
-            local W = { { 0.00369599, 5, 1 }, { -0.00369599, 5, 1 }, { 0.00349066, 4, 1 },
-                        { -0.00349066, 4, 1 }, { 0.00392699, 3, 0 }, { -0.00392699, 3, 0 } }
-            while true do
-                for wi = 1, 6 do
-                    local av, n, chg = W[wi][1], W[wi][2], W[wi][3]
-                    if chg == 1 then task.Wait(48) end
-                    for _ = 1, n do
-                        local cx, cy = self.x, self.y
-                        local a0, avp = rngrad(), av
-                        pspawn(cx, cy, function(o)
-                            local ang, r = a0, 0
-                            for _ = 1, 12 do
-                                avp = avp / 1.4
-                                fan4(o, o.x, o.y, 5, 6, 3, 2, 1.8, 0.5, ang + PI, 0.785398)
-                                for _ = 1, 8 do
-                                    ang, r = ang + avp, r + 0.8
-                                    o.x, o.y = cx + math.cos(ang) * r, cy + math.sin(ang) * r
-                                    task.Wait(1)
-                                end
-                            end
-                        end)
-                    end
-                    drift(self, 1.5, 60)
-                    task.Wait(60)
-                end
-            end
-        end)
-    end, { skin = skin1, wallskin = skin1w, enter = enter1b })
-
-    ---──────────────────── 怪符「テーブルターニング」 ────────────────────
-    ---原作 sub55/56/57：本体摆到 (192,112)（我们 (0,112)），每轮放出 4 个「冰齿轮」；
-    ---齿轮以 0.5 px/帧 长半径、角速度 ±1.5°/帧 绕本体外旋 160 帧，随后每 8 帧
-    ---打两圈朝公转反方向的 5 发（1.8 px/帧 与 0.5 px/帧 各一圈）；齿轮之间隔 30 帧。
-    ---每轮之间本体按 GET_EXIT_ANGLE 漂 60 帧（1.0 px/帧）再停 90 帧。
-    scard("怪符「テーブルターニング」", 4456, 60, 3000, false, function(self)
-        self._box = box5(32, 48, 352, 128)
-        task.New(self, function()
-            local sgn = 1
-            while true do
-                for _ = 1, 4 do
-                    local cx, cy = self.x, self.y
-                    local av, a0 = sgn * 0.0261799, rngrad()
-                    pspawn(cx, cy, function(o)
-                        local ang, r = a0, 0
-                        for _ = 1, 160 do
-                            ang, r = ang + av, r + 0.5
-                            o.x, o.y = cx + math.cos(ang) * r, cy + math.sin(ang) * r
+            ---原作 sub54：一只涟漪点。th0 = orbitAngle、w = orbitAngleVel、rv = 径速。
+            ---出生当帧先打一组（ANG 还是模板初值 0），再走 8 帧轨道；如此 12 次。
+            local function ripple(cx, cy, th0, w, rv)
+                pspawn(cx, cy, function(o)
+                    local a, rad, px, py, ang = th0, 0, 0, 0, 0
+                    for _ = 1, 12 do
+                        fan4(o, o.x, o.y, 5, 6, 3, 2, 1.8, 0.5, ang + PI, 0.785398)
+                        for _ = 1, 8 do
+                            a, rad = a + w, rad + rv
+                            local nx, ny = math.cos(a) * rad, math.sin(a) * rad
+                            local vx, vy = nx - px, ny - py
+                            if vx ~= 0 or vy ~= 0 then ang = atan2(vy, vx) end
+                            px, py = nx, ny
+                            o.x, o.y = cx + nx, cy - ny
                             task.Wait(1)
                         end
-                        for _ = 1, 12 do
-                            ring4(o, o.x, o.y, 6, 6, 5, 1, 1.8, 0.5, ang, 0)
-                            ring4(o, o.x, o.y, 6, 5, 5, 1, 0.5, 0.5, ang, 0)
-                            task.Wait(8)
-                        end
-                    end)
-                    task.Wait(30)
+                    end
+                end)
+            end
+            ---原作 sub53：一次 SUB_CALL 53。charge（gI1==1）⇒ 48 帧蓄力；随后在**这一刻的
+            ---本体位置**放出 n 只涟漪点，角速度逐只 +f3。
+            local function wave(w, f3, n, charge)
+                if charge then
+                    PlaySound("power0", 0.35, self.x / 256)
+                    task.Wait(48)
                 end
-                drift(self, 1.0, 60)
-                task.Wait(90)
-                sgn = -sgn
+                PlaySound("lazer00", 0.13, self.x / 256)
+                local ww = w
+                for _ = 1, n do
+                    ripple(self.x, self.y, PI / 2, ww, 0.8)
+                    ww = ww + f3
+                end
+            end
+            task.Wait(120)                                   -- t=0 MOVE_POS_TIME 120 4 (192,112)
+            while true do
+                wave(0.0349066, 0.00369599, 5, true)         -- t=120
+                task.Wait(120)                               -- t=240
+                wave(-0.0349066, -0.00369599, 5, true)
+                task.Wait(30)                                -- t=270
+                drift(self, 1.5, 60)
+                wave(0.0349066, 0.00349066, 4, true)         -- 漂 60 帧 + 蓄力 48 帧（本体还在漂）
+                task.Wait(20)                                -- t=290
+                drift(self, 1.5, 60)
+                task.Wait(60)                                -- t=350（漂 60 帧后到位）
+                wave(-0.0349066, -0.00349066, 4, true)
+                task.Wait(60)                                -- t=410
+                bmove(self, 60, 4, 0, 112)
+                wave(0.0369599, 0.00392699, 3, true)         -- 移动 60 帧 + 蓄力 48 帧
+                wave(-0.0369599, -0.00392699, 3, false)      -- gI1=0：不蓄力，同帧再放
+                task.Wait(180)                               -- t=590 → JUMP t:=120
             end
         end)
-    end, { skin = skin1, wallskin = skin1w, enter = enter1b })
+    end, { skin = skin1, wallskin = skin1w, enter = enter1e })
+
+    ---──────────────────── 怪符「テーブルターニング」 ────────────────────
+    ---原作 sub55/56/57（L 行）。主循环 **814 帧**（t 差 + 子程序 48 帧冻结）：
+    ---  t=0    MOVE_POS_TIME 120 4 192 112（我们 (0,112)）
+    ---  t=120  lf3=+0.00369599 gF0=−π/2 gF1=+0.0261799 gF2=0.5 gI0=5 gI1=1 → SUB_CALL 56
+    ---  t=240  lf3=−0.00369599（**没有** SUB_CALL；gF0..gI1 沿用 t=120 那一组）
+    ---  t=270  GET_EXIT_ANGLE ＋ MOVE_DIR_TIME 60 4 · 1.0 ；t=270 另设 lf3=+0.00349066
+    ---  t=370  gF0=−π/2 gF1=+0.0261799 gF2=0.5 gI0=5 gI1=1 → SUB_CALL 56
+    ---  t=390  GET_EXIT_ANGLE ＋ MOVE_DIR_TIME 60 4 · 1.0
+    ---  t=450  lf3=−0.00349066
+    ---  t=510  MOVE_POS_TIME 60 4 192 112 ；lf3=+0.00392699
+    ---  t=610  gF0=−π/2 gF1=+0.0261799 gF2=0.5 gI0=3 gI1=1 → SUB_CALL 56
+    ---  t=610  gF0=−π/2 gF1=−0.0261799 gF2=0.5 gI0=3 gI1=0 → SUB_CALL 56
+    ---  t=790  JUMP → t=120
+    ---  · sub56 与 sub53 同型：gI1==1 时先 48 帧「音效＋粒子×12」，随后按 gI0 只齿轮、
+    ---    每只 orbitAngleVel = gF1 + (k−1)·lf3。
+    ---  · sub57：`MOVE_ORBIT 320 X Y Z gF0 gF1 0 gF2`（径速 0.5、跑 320 帧），每 **24 帧**
+    ---    里发两圈（t=0 与 t=12），共 15 拍：
+    ---      第 1 圈 `RING_ABS 6:6 c1=5 1.8→0.5 a1=−ANG a2=π`（flags 512）
+    ---      第 2 圈 `RING_ABS 6:5 c1=5 0.5→0.5 a1=−ANG a2=π`（flags 529）
+    ---    ⇒ 30 圈、每圈 5 发；360 帧后 `SET_DESPAWN_ON_OOB 0`。
+    ---  · ANG 同 4455：MOVE_ORBIT 的**运动方向**（离散差分），a1 = −ANG。
+    ---差异 64/65 同 4455（`DIV_FLOAT ANGVEL ANGVEL 1.4` 是恒等；pspawn 无判定无贴图）。
+    scard("怪符「テーブルターニング」", 4456, 50, 3000, false, function(self)
+        self._box = box5(32, 48, 352, 128)
+        task.New(self, function()
+            ---原作 sub57：一只冰齿轮。th0 = orbitAngle、w = orbitAngleVel、rv = 径速。
+            local function gear(cx, cy, th0, w, rv)
+                pspawn(cx, cy, function(o)
+                    local a, rad, px, py, ang = th0, 0, 0, 0, 0
+                    local function step(n)
+                        for _ = 1, n do
+                            a, rad = a + w, rad + rv
+                            local nx, ny = math.cos(a) * rad, math.sin(a) * rad
+                            local vx, vy = nx - px, ny - py
+                            if vx ~= 0 or vy ~= 0 then ang = atan2(vy, vx) end
+                            px, py = nx, ny
+                            o.x, o.y = cx + nx, cy - ny
+                            task.Wait(1)
+                        end
+                    end
+                    for _ = 1, 15 do
+                        ring4(o, o.x, o.y, 6, 6, 5, 1, 1.8, 0.5, -ang, PI)
+                        step(12)
+                        ring4(o, o.x, o.y, 6, 5, 5, 1, 0.5, 0.5, -ang, PI)
+                        step(12)
+                    end
+                end)
+            end
+            ---原作 sub56：一次 SUB_CALL 56。
+            local function wave(w, f3, n, charge)
+                if charge then
+                    PlaySound("power0", 0.35, self.x / 256)
+                    task.Wait(48)
+                end
+                PlaySound("lazer00", 0.13, self.x / 256)
+                local ww = w
+                for _ = 1, n do
+                    gear(self.x, self.y, -PI / 2, ww, 0.5)
+                    ww = ww + f3
+                end
+            end
+            task.Wait(120)                                   -- t=0 MOVE_POS_TIME 120 4 (192,112)
+            while true do
+                wave(0.0261799, 0.00369599, 5, true)         -- t=120
+                task.Wait(120)                               -- t=240（只改 lf3）
+                task.Wait(30)                                -- t=270
+                drift(self, 1.0, 60)
+                task.Wait(40)                                -- t=370（漂 60 帧 + 空 40 帧）
+                wave(0.0261799, 0.00349066, 5, true)
+                task.Wait(20)                                -- t=390
+                drift(self, 1.0, 60)
+                task.Wait(60)                                -- t=450（漂 60 帧，只改 lf3）
+                task.Wait(60)                                -- t=510
+                bmove(self, 60, 4, 0, 112)
+                task.Wait(100)                               -- t=610（移动 60 帧 + 空 40 帧）
+                wave(0.0261799, 0.00392699, 3, true)
+                wave(-0.0261799, -0.00392699, 3, false)      -- gI1=0：不蓄力
+                task.Wait(180)                               -- t=790 → JUMP t:=120
+            end
+        end)
+    end, { skin = skin1, wallskin = skin1w, enter = enter1e })
 
     ---──────────────────── 橙 非符 1（原作 sub41 的循环 = 43/43/43/42） ────────────────────
-    ---原作 sub40 把橙摆到 (416,128)（我们 (224,96)）后从右侧进场；随后三段
-    ---「MOVE_DIR 30 帧（速度 1 / 1.5 / 2 px/帧）＋ 一组三重自机狙扇」；
-    ---扇 = 朝自机 0° / ±120° 三个方向各 1..5 发（半张角 18°、速度 1.9→0.7、
-    ---挂 0x10 加速指令 0.0156 px/帧²）。最后回场中央并放 8 只「凤凰火」，
-    ---凤凰火飞到随机点后炸成整圈（20 发 × 3 层 3.2→1.5 或 10 发 × 4 层 3.3→1.6）。
+    ---逐条照抄原作 sub41 的时间轴（墙钟按解释器实测，一次循环 = 421 帧）：
+    ---  · t=0 起三段 `MOVE_DIR_TIME 30 4 f0 (1 / 1.5 / 2)` —— 每段**移动 30 帧之后**
+    ---    才在下一帧调用 sub43（`SUB_CALL` 阻塞调用方 1 帧）；实测三段扇分别落在
+    ---    墙钟 30 / 61 / 92，扇之后紧接下一段移动；
+    ---  · t=90 的 `MOVE_POS_TIME 40 4 192 96`（我们 (0,128)）与第三段扇同帧开始；
+    ---  · t=130 `SUB_CALL 42`：先 `SUB_CALL 2`（gi0=10 / gi1=3 ⇒ 40 帧粒子），
+    ---    再从 t=0 起**每 6 帧**放一只凤凰火（34/35 交替，共 8 只，实测墙钟 173..215），
+    ---    sub42 共 88 帧，返回后调用方再等 200 帧才 JUMP 回 t=0。
+    ---  · sub43（Lunatic）：先 12 组 `3:10` 扇（朝自机 0° / ±120° 三个方向各 4 组、
+    ---    count1 = 1..4、速度 1.3 / 1.0 / 0.7 / 0.4、层间距 15°、指令 0x10 dur 90
+    ---    speed 0.0155556），再 10 组 `3:10` 扇（只有 ±18° 两个方向、count1 = 1..5、
+    ---    速度 1.9..0.7、层间距 18°、指令 0x10 dur 120 speed 0.000833333）。
+    ---    22 组里只有第 3 方向 count1=3 那一组带 flags 0x200 ⇒ 本帧响一次弹音。
+    ---  · 凤凰火本体（sub34/35）：t=0..180 用 `INIT_INTERP` 插值 —— 但目标 (f0,f1)
+    ---    在 life≠9999 时被 `SET_FLOAT f0 *X` / `SET_FLOAT f1 *Y` 覆盖成出生点，
+    ---    所以**原地不动**；t=180 生成本体的爆裂（sub28 / sub29）后自毁。
+    ---  · sub28（大）：`2:6` 四圈同心环 5×2 / 8×3 / 12×3 / 20×3（2.5/2.5/2.7/3.2→1.5）；
+    ---    sub29（小）：`2:10` 四圈 4×4 / 6×4 / 10×4 / 10×4（3.1/3.1/3.3/3.3→1.6）。
+    ---    两者的基准角都是同一帧重掷的 RNG 角。
     local function enter2(self)
         self._orb, self._mv = nil, nil
         self.x, self.y = 224, 96
@@ -11390,131 +11755,273 @@ local function TH34_add_stage56_boss()
     ncard("橙 非符 1", 4460, 15000, 1500, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
+            ---原作 sub43（Lunatic 行）：22 组 `3:10` 自机狙扇。
             local function volley()
-                for k = -1, 1 do
-                    for n = 1, 5 do
-                        shoot6(self, 0, 0, 64, 3, 6, n, 1, 1.9 - 0.3 * (n - 1), 0.5,
-                               k * 2.0944, 0.314159, accel6(0.0155556, 90), true)
+                for _, d in ipairs({ 0, 2.0944, -2.0944 }) do
+                    for n = 1, 4 do
+                        shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.3 - 0.3 * (n - 1), 0.5,
+                               d, 0.261799, accel6(0.0155556, 90), false)
                     end
                 end
-            end
-            local function heads()
-                for k = 1, 8 do
-                    local tx, ty = ran:Float(-150, 150), ran:Float(-40, 130)
-                    local big = (k % 2 == 1)
-                    pspawn(self.x, self.y, function(o)
-                        bmove(o, 60, 4, tx, ty)
-                        for _ = 1, 120 do task.Wait(1) end
-                        if big then
-                            ring4(o, o.x, o.y, 2, 6, 20, 3, 3.2, 1.5, rngrad(), 0)
-                        else
-                            ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, rngrad(), 0)
-                        end
-                    end)
-                    task.Wait(6)
+                for _, d in ipairs({ 0.314159, -0.314159 }) do
+                    for n = 1, 5 do
+                        shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.9 - 0.3 * (n - 1), 0.5,
+                               d, 0.314159, accel6(0.000833333, 120), false)
+                    end
                 end
+                sound4(self)                 -- sub43 里只有第 3 方向 count1=3 那组带 0x200
+            end
+            ---一只凤凰火（sub34 → 爆裂 sub28 / sub35 → sub29）。
+            ---目标点就是出生点（见上方注释），所以 180 帧原地，再炸。
+            local function head(big)
+                pspawn(self.x, self.y, function(o)
+                    for _ = 1, 180 do task.Wait(1) end
+                    local a = rngrad()
+                    if big then
+                        ring4(o, o.x, o.y, 2, 6, 5, 2, 2.5, 1.5, a, 0)
+                        ring4(o, o.x, o.y, 2, 6, 8, 3, 2.5, 1.5, a, 0)
+                        ring4(o, o.x, o.y, 2, 6, 12, 3, 2.7, 1.5, a, 0)
+                        ring4(o, o.x, o.y, 2, 6, 20, 3, 3.2, 1.5, a, 0)
+                    else
+                        ring4(o, o.x, o.y, 2, 10, 4, 4, 3.1, 1.6, a, 0)
+                        ring4(o, o.x, o.y, 2, 10, 6, 4, 3.1, 1.6, a, 0)
+                        ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, a, 0)
+                        ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, a, 0)
+                    end
+                    sound4(o)
+                end)
             end
             while true do
-                for k = 1, 3 do
-                    volley()
-                    drift(self, 0.6 + 0.45 * k, 30)
-                    task.Wait(30)
-                end
-                bmove(self, 40, 4, 0, 128)
+                ---t=0..30：MOVE_DIR 30 帧、速度 1.0（`GET_EXIT_ANGLE` 的随机方向）
+                drift(self, 1.0, 30)
+                task.Wait(30)
+                volley()                                 -- 墙钟 30
+                task.Wait(1)                             -- SUB_CALL 43 阻塞的 1 帧
+                drift(self, 1.5, 30)
+                task.Wait(30)
+                volley()                                 -- 墙钟 61
+                task.Wait(1)
+                drift(self, 2.0, 30)
+                task.Wait(30)
+                volley()                                 -- 墙钟 92
+                task.Wait(1)
+                bmove(self, 40, 4, 0, 128)               -- MOVE_POS_TIME 40 4 192 96
                 task.Wait(40)
-                heads()
-                task.Wait(60)
+                ---SUB_CALL 42：先 SUB_CALL 2（gi0=10 / gi1=3 ⇒ 每 4 帧一发粒子、共 10 发
+                ---+ PLAY_SOUND 5，冻结 40 帧），返回后再每 6 帧一只凤凰火（共 8 只）。
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(40)
+                for k = 1, 8 do
+                    head(k % 2 == 1)                     -- 34(大,sub28) / 35(小,sub29)
+                    task.Wait(6)
+                end
+                task.Wait(200)
             end
         end)
     end, { skin = skin2, enter = enter2 })
 
     ---──────────────────── 仙符「鳳凰展翅 -Lunatic-」 ────────────────────
-    ---原作 sub45/30..33：本体摆到 (192,112)（我们 (0,112)），每轮放 8 只凤凰火，
-    ---隔 20 帧一只；凤凰火飞到随机点、停 120 帧后炸成整圈（20 发 × 3 层 3.2→1.5
-    ---与 10 发 × 4 层 3.3→1.6 交替）。一轮 340 帧。
-    scard("仙符「鳳凰展翅　-Lunatic-」", 4461, 60, 3000, false, function(self)
+    ---原作 sub45：L 行在 t=120 摆到 (192,112)=我们 (0,112) 并开卡，t=240 起进入循环
+    ---（`JUMP t:=240`），一次循环的墙钟 = **420 帧**（`SET_TIMER_CALLBACK_THRESHOLD`
+    ---2400 ⇒ 本框架 t3 = 40 秒）。
+    ---  · 每轮放 8 只凤凰火（32/33 交替），出生时刻（相对循环起点，含 SUB_CALL 2 的
+    ---    40 帧阻塞）：0 / 60 / 70 / 190 / 200 / 280 / 380 / 400；
+    ---  · 凤凰火（sub32/33）：`INIT_INTERP` 的目标 (f0,f1) 在 life≠9999 时被
+    ---    `SET_FLOAT f0 *X` / `f1 *Y` 覆盖成出生点 ⇒ **原地不动** 180 帧；
+    ---    t=180 生成本体的爆裂（32→sub26、33→sub27），t=210 自毁。
+    ---  · sub26（大，贴图 `6:6`）：同一帧叠 9 圈 `RING_ABS`，共享同一个随机基准角；
+    ---    4 组「20 发(2.4→1.5) + 22 发(3.0→1.5)」+ 收尾 22 发(3.0→1.5)，
+    ---    每组各带一条 `0x40`（60 帧刹到停、再转 +1.5708 / +1.66897 / +1.76715 /
+    ---    +1.86532 / +1.9635 弧度、速度换成 2.0 / 1.9 / 1.8 / 1.7 / 1.6）；
+    ---  · sub27（小，贴图 `6:10`）：同上但 0x40 的角增量取负、收尾是 **28 发(3.2→1.5)**。
+    scard("仙符「鳳凰展翅　-Lunatic-」", 4461, 40, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
+            ---原作 `INIT_BULLET_CMD 0 64 0 60 1 <拐角> <复速>`：0x40 DirChangeAndResume
+            ---（state.angle = ECL 的 cmd.speed、state.speed = cmd.angle，见 BulletManager.cpp:410）。
+            local function C40(th, sp)
+                return { type = 0x40, flag = 0, dur = 60, loop = 1,
+                         angle = -th * RAD2DEG, speed = sp }
+            end
+            ---一只凤凰火：原地 180 帧后炸成 sub26（大）/ sub27（小）。
             local function head(big)
-                local tx, ty = ran:Float(-150, 150), ran:Float(-50, 140)
                 pspawn(self.x, self.y, function(o)
-                    bmove(o, 60, 4, tx, ty)
-                    for _ = 1, 120 do task.Wait(1) end
-                    if big then
-                        ring4(o, o.x, o.y, 2, 6, 20, 3, 3.2, 1.5, rngrad(), 0)
-                    else
-                        ring4(o, o.x, o.y, 2, 10, 10, 4, 3.3, 1.6, rngrad(), 0)
+                    for _ = 1, 180 do task.Wait(1) end
+                    local a = rngrad()
+                    local G = { { 1.5708, 2.0 }, { 1.66897, 1.9 }, { 1.76715, 1.8 },
+                                { 1.86532, 1.7 }, { 1.9635, 1.6 } }
+                    for i = 1, 5 do
+                        local g = G[i]
+                        local th = big and g[1] or -g[1]
+                        local cmd = cmds4(0x40, C40(th, g[2]))
+                        if big then
+                            local spr, col = 6, 6
+                            if i < 5 then
+                                ring4(o, o.x, o.y, spr, col, 20, 1, 2.4, 1.5, a, 0, cmd)
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            else
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            end
+                        else
+                            local spr, col = 6, 10
+                            if i < 5 then
+                                ring4(o, o.x, o.y, spr, col, 20, 1, 2.4, 1.5, a, 0, cmd)
+                                ring4(o, o.x, o.y, spr, col, 22, 1, 3.0, 1.5, a, 0, cmd)
+                            else
+                                ring4(o, o.x, o.y, spr, col, 28, 1, 3.2, 1.5, a, 0, cmd)
+                            end
+                        end
                     end
                 end)
             end
+            ---原作 t=120 的 MOVE_POS_TIME 120 4 192 112（= enter1b）走完 120 帧，
+            ---紧接 t=240 的 SUB_CALL 2（gi0=30 / gi1=4 ⇒ 30×4 帧粒子 + PLAY_SOUND 5）
+            ---再冻 120 帧；JUMP 的落点（t=240 的 SPAWN_ENEMY_REL 32）才从 f=240 起算。
+            task.Wait(120)
+            PlaySound("power0", 0.35, self.x / 256)
+            task.Wait(120)
             while true do
-                for k = 1, 8 do
-                    head(k % 2 == 1)
-                    task.Wait(20)
-                end
-                task.Wait(180)
+                ---相对循环起点的出生时刻：0/60/70/190/200/280/380/400（一次 420 帧）
+                head(true)
+                task.Wait(60)
+                head(false)
+                task.Wait(10)
+                head(true)                   -- t=310 的发（在原作排在 SUB_CALL 2 之前）
+                PlaySound("power0", 0.35, self.x / 256)   -- 原作 t=310 SUB_CALL 2（gi0=10 ⇒ 40 帧）
+                task.Wait(120)               -- 含 SUB_CALL 2 的 40 帧
+                head(false)
+                task.Wait(10)
+                head(true)
+                task.Wait(80)
+                head(false)                  -- t=480 的发（同样排在 SUB_CALL 2 之前）
+                PlaySound("power0", 0.35, self.x / 256)   -- 原作 t=480 SUB_CALL 2（gi0=10 ⇒ 40 帧）
+                task.Wait(100)               -- 含 SUB_CALL 2 的 40 帧
+                head(true)
+                task.Wait(20)
+                head(false)
+                task.Wait(20)
             end
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1b })
 
     ---──────────────────── 橙 非符 2（原作 sub49 的循环 = 51/50/50/50/51） ────────────────────
-    ---原作 sub51：四拍「内环（24~32 发、带 0x20 自旋）＋角向错开 0.065 弧度」，
-    ---随后 4 圈 32 发、以及一圈 32 发 × 5 层（3.4→0.5）收尾；
-    ---sub50：五重自机狙加速扇（朝自机 0°/±18°，各 1..5 发，半张角 18°，
-    ---挂 0x10 加速指令 0.0256 px/帧²）。段间本体漂 60 帧。
+    ---逐条照抄原作 sub49（`SET_LIFE 17000` / `SET_TIMER_CALLBACK_THRESHOLD 2100`）。
+    ---解释器实测的墙钟（起点 = `SET_MOVEMENT_BOUNDS` 那一帧，一次循环 **587 帧**）：
+    ---  · 开场先 `SUB_CALL 51`（164 帧），返回后调用方还要等到 t=180 ⇒ 再空 120 帧；
+    ---  · t=180 / 240 / 300 三段 `MOVE_DIR_TIME 60 4 f0 1.5`，每段前接一次 sub50
+    ---    （`SUB_CALL` 阻塞 1 帧 ⇒ 实测扇落在 344 / 405 / 466）；
+    ---  · t=420 `MOVE_POS_TIME 60 4 192 80`（我们 (0,144)）；
+    ---  · t=480 `SUB_CALL 51` + `INC i2_3`，然后 `JUMP t:=60` 到 t=180 的指令 ⇒ 再空 120 帧。
+    ---  · sub50（Lunatic 行）：指令 0x10 dur 90 speed 0.0255556，12 组 `3:10` 扇
+    ---    （朝自机 0°/±120° 三个方向各 4 组、count1 = 1..4、速度 1.3/1.0/0.7/0.4、
+    ---    层间距 15°）。只有第 3 方向 count1=3 那组带 flags 0x200 ⇒ 每拍一声弹音。
+    ---  · sub51：先 `SUB_CALL 2`（gi0=20 / gi1=1 ⇒ **80 帧粒子**），再在 t=0..84
+    ---    连打 **12 圈**：前六圈贴图 `6:2`、后六圈 `6:6`；count1 依次读 i2/i2/i3/i3
+    ---    （sub51 在 t=0 把 i2 定成 32、i3 定成 24）、E/F 与 K/L 是显式 24 发；
+    ---    速度 0.5/1.0/1.5/2.0（前四圈）与 0.5/1.0/1.5/2.0（后四圈），
+    ---    基准角每圈 ±0.0654498；每圈带一条 0x40（120 帧刹停→拐一次→复速
+    ---    2.0/1.7/1.4/1.1 或 ±2.24399），前八圈另带一条 0x20 自旋（±0.0261799 /
+    ---    ∓0.0392699 / ±0.0523599 / ∓0.0314159）。
     ncard("橙 非符 2", 4462, 17000, 1700, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
+            ---原作 sub51 的一整段（含 80 帧粒子），共 164 帧。
+            ---开头 `SUB_CALL 2`（gi0=20 / gi1=1 ⇒ 20 发粒子、冻结 80 帧 + PLAY_SOUND 5）。
             local function rings()
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(80)
+                local function C40(th, sp)
+                    return { type = 0x40, flag = 0, dur = 120, loop = 1,
+                             angle = -th * RAD2DEG, speed = sp }
+                end
+                local function R(spr, col, n, c2, v1, v2, a1, a2, cmd)
+                    ring4(self, self.x, self.y, spr, col, n, c2, v1, v2, a1, a2, cmd)
+                end
                 local a = rngrad()
-                for i = 1, 4 do
-                    local rate = (i % 2 == 1) and 0.0392699 or -0.0392699
-                    ring4(self, self.x, self.y, 6, 2, 24 + 8 * i, 1,
-                          0.5 + 0.35 * (i - 1), 0.5, a, 0.1309, spin4(rate, 120))
-                    a = a + 0.0654498
-                    task.Wait(4)
-                end
-                task.Wait(8)
+                R(6, 2, 32, 1, 0.5, 0.5, a, 0.1309,
+                  cmds4(610, C40(-1.5708, 2.0), spin4(-0.0261799, 120, 1)))
+                task.Wait(4)
+                a = a + 0.0654498
+                R(6, 2, 32, 1, 1.0, 0.5, a, 0.1309,
+                  cmds4(610, C40(1.5708, 1.7), spin4(0.0261799, 120, 1)))
+                task.Wait(4)
+                a = a + 0.0654498
+                R(6, 2, 24, 1, 1.5, 0.5, a, 0.1309,
+                  cmds4(610, C40(-1.5708, 1.4), spin4(-0.0392699, 120, 1)))
+                task.Wait(4)
+                a = a + 0.0654498
+                R(6, 2, 24, 1, 2.0, 0.5, a, 0.1309,
+                  cmds4(610, C40(1.5708, 1.1), spin4(0.0392699, 120, 1)))
+                R(6, 2, 24, 3, 2.0, 0.5, a, -0.0654498,
+                  cmds4(66, C40(2.24399, 2.1)))
+                R(6, 2, 24, 4, 3.5, 0.5, a, -0.0654498,
+                  cmds4(66, C40(2.24399, 2.1)))
                 a = rngrad()
-                for i = 1, 4 do
-                    local rate = (i % 2 == 1) and 0.0523599 or -0.0523599
-                    ring4(self, self.x, self.y, 6, 6, 32, 1, 0.5, 0.5, a, 0.1309,
-                          spin4(rate, 120))
-                    a = a - 0.0654498
-                    task.Wait(4)
-                end
-                ring4(self, self.x, self.y, 2, 2, 32, 5, 3.4, 0.5, rngrad(), 0.1309)
+                task.Wait(60)
+                R(6, 6, 32, 1, 0.5, 0.5, a, 0.1309,
+                  cmds4(610, C40(1.5708, 2.0), spin4(0.0523599, 120, 1)))
+                task.Wait(4)
+                a = a - 0.0654498
+                R(6, 6, 32, 1, 1.0, 0.5, a, 0.1309,
+                  cmds4(610, C40(-1.5708, 1.7), spin4(-0.0523599, 120, 1)))
+                task.Wait(4)
+                a = a - 0.0654498
+                R(6, 6, 32, 1, 1.5, 0.5, a, 0.1309,
+                  cmds4(610, C40(1.5708, 1.4), spin4(0.0314159, 120, 1)))
+                task.Wait(4)
+                a = a - 0.0654498
+                R(6, 6, 32, 1, 2.0, 0.5, a, 0.1309,
+                  cmds4(610, C40(-1.5708, 1.1), spin4(-0.0314159, 120, 1)))
+                R(6, 6, 24, 3, 2.0, 1.0, a, 0.0654498,
+                  cmds4(66, C40(-2.24399, 2.1)))
+                R(6, 6, 24, 4, 3.5, 1.5, a, 0.0654498,
+                  cmds4(66, C40(-2.24399, 2.1)))
             end
+            ---原作 sub50（Lunatic 行）：12 组 `3:10` 扇 + 每拍一声弹音。
             local function fan5()
-                for k = -1, 1 do
-                    for n = 1, 5 do
-                        shoot6(self, 0, 0, 64, 3, 6, n, 1, 1.9 - 0.3 * (n - 1), 0.5,
-                               k * 0.314159, 0.314159, accel6(0.0255556, 90), true)
+                for _, d in ipairs({ 0, 2.0944, -2.0944 }) do
+                    for n = 1, 4 do
+                        shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.3 - 0.3 * (n - 1), 0.5,
+                               d, 0.261799, accel6(0.0255556, 90), false)
                     end
                 end
+                sound4(self)
             end
+            rings()                              -- 开场 SUB_CALL 51（164 帧）
+            task.Wait(120)                        -- 到 t=180 的空档
             while true do
-                rings()
+                drift(self, 1.5, 60)
                 task.Wait(60)
-                drift(self, 1.0, 60)
+                fan5()                            -- 墙钟 344
+                task.Wait(1)                      -- SUB_CALL 50 阻塞的 1 帧
+                drift(self, 1.5, 60)
                 task.Wait(60)
-                for _ = 1, 3 do
-                    fan5()
-                    drift(self, 1.2, 60)
-                    task.Wait(60)
-                end
-                rings()
+                fan5()                            -- 墙钟 405
+                task.Wait(1)
+                drift(self, 1.5, 60)
                 task.Wait(60)
-                drift(self, 1.0, 60)
+                fan5()                            -- 墙钟 466
+                task.Wait(1)
+                bmove(self, 60, 4, 0, 144)        -- MOVE_POS_TIME 60 4 192 80
                 task.Wait(60)
+                rings()                           -- t=480 SUB_CALL 51 + INC i2_3
+                task.Wait(120)                    -- JUMP t:=60 → t=180 的空档
             end
         end)
     end, { skin = skin2, enter = enter2 })
 
     ---──────────────────── 式符「飛翔晴明」 ────────────────────
     ---原作 sub56/57：本体 DISABLE_MOVEMENT_BOUNDS 后在五角形五个顶点间瞬移
-    ---（每段 MOVE_POS_TIME 10 帧），到一点就放一通「式神」弹幕（sub57），
-    ---两趟之后回场中央，再从头循环（周期 240 帧）。
+    ---（每段 MOVE_POS_TIME 10 帧），到一点就放一通渐开扇弹幕（sub57），
+    ---两趟之后回场中央，再从头循环。逐条墙钟（解释器实测，同一循环 520 帧）：
+    ---  f=120 循环头 SUB_CALL 2（gi0=30 ⇒ 冻结 120 帧）→ f=240 起
+    ---  f=250/260/270/280/290 第 1 趟五个顶点各一发，
+    ---  MOVE_POS_TIME 50 回场中央到 f=340；又 SUB_CALL 2（120 帧）
+    ---  → f=470/480/490/500/510 第 2 趟（顺序 P4/P3/P2/P1/P5），
+    ---  MOVE_POS_TIME 50 + t=400..480 的收尾 ≈ 130 帧，再 JUMP 回 t=240。
+    ---（原作每个 t=240/t=380 还 SPAWN_ENEMY_REL 62 生一只 ANM 12 的演出对象 ——
+    --- 纯贴图+拖尾（SET_IS_HITTABLE 0、无发弹），本仓库无对应资源，故省略；它不影响
+    --- 任何弹/判定，只少一层光环特效。sub58/59/60/61 同理。）
     ---TH07 顶点 → 我们口径（x−192、224−y）：
     ---  P1 (135.573,205.666)→(-56.427, 18.334)  基准角 2.19911
     ---  P2 (283.301, 98.334)→( 91.301,125.666)  基准角 -0.314159
@@ -11524,7 +12031,7 @@ local function TH34_add_stage56_boss()
     ---sub57：朝基准角打 1/2/3/4/5 发渐开扇（起始速度 gF1=2.2 或 1.8、每段 −0.3、
     ---半张角 22.5°），第 2、3 段之间补一圈 16 发 × 2 层（1.6→0.5）。
     ---环的色档取 gI0（一趟 6/2/6/2/6，二趟 6/2/6/2/6）。
-    scard("式符「飛翔晴明」", 4463, 60, 3300, false, function(self)
+    scard("式符「飛翔晴明」", 4463, 45, 3300, false, function(self)
         task.New(self, function()
             self._box = nil                 -- 原作 t=240 的 DISABLE_MOVEMENT_BOUNDS
             local P = { { -56.427, 18.334 }, { 91.301, 125.666 },
@@ -11545,6 +12052,7 @@ local function TH34_add_stage56_boss()
                 fan4(self, self.x, self.y, 6, 2, 4, 1, v, 0.5, a1, 0.392699)
                 v = v - 0.3
                 fan4(self, self.x, self.y, 6, 6, 5, 1, v, 0.5, a1, 0.392699)
+                sound4(self)        -- 第 5 发的 flags=512（0x200）⇒ 响一声
             end
             local function pass(ord, v0)
                 for i = 1, 5 do
@@ -11556,58 +12064,99 @@ local function TH34_add_stage56_boss()
                 bmove(self, 50, 4, 0, 96)
                 task.Wait(50)
             end
-            task.Wait(240)
+            ---原作 SUB_CALL 2（sub56 里 gi0=30 / gi1=4）：音效 + 每 4 帧一发粒子、
+            ---共 30 发，把调用方冻结 30×4 = 120 帧（本文件统一按 PlaySound + 等 120 帧建模）。
+            local function sub2()
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(120)
+            end
+            task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
             while true do
+                sub2()                  -- 原作循环头 f=120 SUB_CALL 2
                 pass({ 1, 2, 3, 4, 5 }, 2.2)
+                sub2()                  -- 原作 f=340 SUB_CALL 2
                 pass({ 4, 3, 2, 1, 5 }, 1.8)
-                task.Wait(40)               -- 原作 t=400..480 的收尾空档
+                PlaySound("power0", 0.35, self.x / 256)
+                                        -- ↑ 原作 t=390 的第三次 SUB_CALL 2（gi0=10 / gi1=8 ⇒ 40 帧）
+                task.Wait(80)           -- 原作 t=400..480（RUN_EX_INS / JUMP 回 t=240）
             end
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1b })
 
     ---──────────────────── 陰陽「晴明大紋」 ────────────────────
-    ---原作 sub58/59（L 行在 sub58 的 b=3 分支；tail 从 t=240 起）：与「飛翔晴明」
-    ---同一套五角形瞬移＋弹幕，但每点打 1..6 发渐开扇（2.0/1.7/1.4/1.1/0.8/0.5、
-    ---半张角 22.5°）＋一圈 24 发 × 2 层（1.5→0.5），色档 = 该趟的 gI0（8 / 4）。
-    ---两趟之间（本体回场中央时）还各放两只绕 spawn 点公转的「式神」：
-    ---一趟 sub60 ×2（自旋 +1.5°/帧、每 3 帧 3 发随机方向弹、共 40 拍），
-    ---二趟 sub61 ×2（自旋 −1.5°/帧、每拍 5 发）。一周期 310 帧（t=240..550）。
-    scard("陰陽「晴明大紋」", 4464, 60, 3600, false, function(self)
+    ---原作 sub58/59（Lunatic 在 sub58 的 JNEQ *DIFF 2 分支；tail 从 t=240 起）：
+    ---与「飛翔晴明」同一套五角形瞬移＋弹幕，但每点打 1..6 发渐开扇
+    ---（2.0/1.7/1.4/1.1/0.8/0.5、半张角 22.5°）＋一圈 24 发 × 2 层（1.5→0.5），
+    ---色档 = 该趟的 gI0（一趟 8、二趟 4）；第 6 发的 flags=0x2200 带 0x200 ⇒ 响一声。
+    ---逐条墙钟（解释器实测，同一循环 550 帧）：
+    ---  f=120 循环头 SUB_CALL 2（gi0=30 ⇒ 冻结 120 帧）→ f=250..290 第 1 趟，
+    ---  MOVE_POS_TIME 50 回场中央（第 20 帧、即 f=310 生两只 sub60 式神）到 f=340；
+    ---  t=340 RUN_EX_INS；t=380 又 SUB_CALL 2（120 帧）→ f=510..550 第 2 趟
+    ---  （顺序 P4/P3/P2/P1/P5；第 20 帧 f=570 生两只 sub61），
+    ---  t=480 RUN_EX_INS + t=500 OP0/INIT_BULLET_CMD ⇒ 到 f=670 JUMP 回 t=240。
+    ---两趟之间（本体回场中央时）各放两只绕 spawn 点公转的「式神」（sub60/61）：
+    ---出生时从本体 context 继承 gf0（随机角）/gf1（±0.0314159 角速度）/gf2=1；
+    ---MOVE_ORBIT 半径 0→每帧 +1、角度每帧 ±0.0314159；t=120 起半径冻结，
+    ---并连续 40 拍、每拍 3 帧：角速度再 += gf1/30，压一颗 0x20 自旋弹（±0.0261799），
+    ---sub60 每拍 3+3 发（速度 rand[1.2,1.4]）、sub61 每拍 2 发[1.2,1.4]＋5 发[1.2,1.8]，
+    ---全部 sprite `1:6`、flags 546（0x200 响一声 + 0x20 自旋 + 0x2 快生特效）；t=240 自毁。
+    scard("陰陽「晴明大紋」", 4464, 50, 3600, false, function(self)
         task.New(self, function()
             self._box = nil                 -- 原作 t=240 的 DISABLE_MOVEMENT_BOUNDS
             local P = { { -56.427, 18.334 }, { 91.301, 125.666 },
                         { -91.301, 125.666 }, { 56.427, 18.334 }, { 0, 192 } }
             local A = { 2.19911, -0.314159, -2.82743, 0.942478, -1.5708 }
-            ---原作 sub59：a1 基准角、col 色档（gI0）。
+            ---原作 sub59：a1 基准角、col 色档（gI0 = 一趟 8 / 二趟 4）。
+            ---sub59 开头还 INIT_BULLET_CMD 0 8192 0 300 -1 -1 -1（0x2000 spawn-delay 300，
+            ---让这圈弹 300 帧内不因出界被回收）；本框架没有该口径，故略（见差异 33 同族）。
+            ---所有 SPREAD_ABS/RING_ABS 的 sprite offset 字段都是 `6:*i3_0`（不是常数 6），
+            ---即扇和圈**共用**当趟的 gI0（8 / 4）。
             local function sub59(a1, col)
                 for n = 1, 6 do
-                    fan4(self, self.x, self.y, 6, 6, n, 1, 2.0 - 0.3 * (n - 1), 0.5,
+                    fan4(self, self.x, self.y, 6, col, n, 1, 2.0 - 0.3 * (n - 1), 0.5,
                          a1, 0.392699)
                 end
                 ring4(self, self.x, self.y, 6, col, 24, 2, 1.5, 0.5, 0, 0.1309)
+                sound4(self)        -- 第 6 发的 flags=0x2200 带 0x200
             end
-            ---原作 sub60/sub61：一对绕 spawn 点公转的式神（相位差 π），
-            ---前 120 帧每帧半径 +1、角 +av；随后每 3 帧打一拍随机方向弹（nb 发），
-            ---共 40 拍（t=120..240）。弹带 0x20 自旋指令。
-            local function shiki(av, col, nb)
+            ---原作 sub60/sub61：一对绕本体公转的式神（相位差 π，由 sub58 的
+            ---SPAWN_ENEMY_REL 生出并继承本体 context 的 gf0/gf1/gf2）。
+            ---av = gf1 = ±0.0314159（公转角速度）、avb = 弹的 0x20 自旋 ±0.0261799。
+            local function shiki(av, avb, is61)
                 local cx, cy = self.x, self.y
                 local a0 = ran:Float(-PI, PI)
-                local cmd = spin4(av, 60)
+                local cmd = spin4(avb, 60)
+                ---op72 RANDOM：每发随机方向 rand[−π,π) + 随机速度 rand[v2,v1]。
+                local function rnd(o, n, v1, v2)
+                    for _ = 1, n do
+                        dot4(o.x, o.y, 1, 6, ran:Float(v2, v1), rngrad(), cmd)
+                    end
+                end
                 for k = 0, 1 do
-                    local th0 = a0 + k * PI
                     pspawn(cx, cy, function(o)
-                        local th, r = th0, 0
-                        for _ = 1, 120 do
-                            th, r = th + av, r + 1
+                        local th, r, avv = a0 + k * PI, 0, av
+                        for _ = 1, 120 do                  -- MOVE_ORBIT：半径 +1、角 +av
+                            r = r + 1
+                            th = th + avv
                             o.x, o.y = cx + math.cos(th) * r, cy - math.sin(th) * r
                             task.Wait(1)
                         end
-                        for _ = 1, 40 do
-                            for i = 1, nb do
-                                dot4(o.x, o.y, 1, col,
-                                     1.4 - 0.2 * (i - 1) / nb, rngrad(), cmd)
+                        local av0 = av / 30             -- ADD_FLOAT ORBAV + gf1/30
+                        for _ = 1, 40 do                -- 40 拍、每拍 3 帧 = 120 帧
+                            avv = avv + av0
+                            if is61 then
+                                rnd(o, 2, 1.4, 1.2)
+                                rnd(o, 5, 1.8, 1.2)
+                            else
+                                rnd(o, 3, 1.4, 1.2)
+                                rnd(o, 3, 1.4, 1.2)
                             end
-                            task.Wait(3)
+                            sound4(o)                   -- flags 546 的 0x200
+                            for _ = 1, 3 do
+                                th = th + avv
+                                o.x, o.y = cx + math.cos(th) * r, cy - math.sin(th) * r
+                                task.Wait(1)
+                            end
                         end
                     end)
                 end
@@ -11624,70 +12173,120 @@ local function TH34_add_stage56_boss()
                 if onCenter then onCenter() end
                 task.Wait(30)
             end
-            task.Wait(240)
+            ---原作 SUB_CALL 2（sub58 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
+            local function sub2()
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(120)
+            end
+            task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
             while true do
-                pass({ 1, 2, 3, 4, 5 }, 8, function() shiki(0.0261799, 6, 3) end)
-                task.Wait(40)               -- 原作 t=340..380 的 RUN_EX_INS 空档
-                pass({ 4, 3, 2, 1, 5 }, 4, function() shiki(-0.0261799, 6, 5) end)
-                task.Wait(70)               -- 原作 t=480..550
+                sub2()                  -- 原作循环头 f=120 SUB_CALL 2
+                pass({ 1, 2, 3, 4, 5 }, 8,
+                     function() shiki(0.0314159, 0.0261799, false) end)
+                task.Wait(40)           -- 原作 t=340..380 的 RUN_EX_INS 空档
+                sub2()                  -- 原作 t=380 SUB_CALL 2
+                pass({ 4, 3, 2, 1, 5 }, 4,
+                     function() shiki(-0.0314159, -0.0261799, true) end)
+                task.Wait(70)           -- 原作 t=480..550（RUN_EX_INS / OP0 / JUMP）
             end
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1b })
 
     ---──────────────────── 橙 非符 3（原作 sub53 的循环 = 54/55/55/55/54） ────────────────────
-    ---原作 sub54：四拍「24~28 发内环（0.5→1.5 px/帧、带 0x20 自旋）＋每拍角向错开
-    ---0.065 弧度」，中段补一圈 20 发 × 1 层（2.0 px/帧、0x40 转向）；随后再来四拍，
-    ---最后压一圈 32 发 × 5 层（3.4→0.5）；sub55：加速的随机方向弹云（1.4→0.2 px/帧）。
-    ---段间本体漂 60 帧（2.0 px/帧）。
+    ---原作 sub53：`SET_LIFE 13000`、`SET_TIMER_CALLBACK_THRESHOLD 2700`。开场 t=120
+    ---`SUB_CALL 54`（84 帧），到 t=240 进入循环；循环里三段 `MOVE_DIR_TIME 60 4 f0 2`
+    ---（每段前一次 sub55），第四段 `MOVE_POS_TIME 60 4 192 80`（我们 (0,144)），
+    ---t=540 `SUB_CALL 54` + `INC i2_3` 后 `JUMP t:=120` ⇒ 到 t=240 再空 120 帧。
+    ---  · sub54（84 帧，t=0..84）：8 圈 + 4 圈，count1 依次读 i3/i2（sub54 在 t=0 把
+    ---    i3 定成 24、i2 定成 28）⇒ 24/28/24/28 与 24/28/24/28；
+    ---    贴图前四圈 `3:2`+`6:2`、后四圈 `3:6`+`6:6`；基准角每圈 ±0.0654498。
+    ---    `3:x` 圈带 0x40（120 帧刹停→拐 ±1.5708→复速 2.0 / 1.4，flags 578）；
+    ---    `6:x` 圈带 0x80（120 帧刹停→转向自机→复速 3.0 / 2.2，flags 642）；
+    ---    每段末再补 `2:x` 的 20×3（3.0→0.5）与 32×5（3.4→0.5）（flags 2，无指令）。
+    ---  · sub55：`INIT_BULLET_CMD 0 16 0 120 -1 0.016 1.5708`（0x10 指令，**固定**朝
+    ---    1.5708 弧度加速 0.016/帧）后一发 `RANDOM`（op72）弹云：贴图 `1:gi0`、
+    ---    count1 = gi1+22（sub55 里先 −16 再 +16、再 +22）、方向 rand[−π,π)、
+    ---    速度 rand[0.2,1.4]，flags 531（响一声）。三次 gi0/gi1 = (12,16) / (13,40) / (14,52)。
     ncard("橙 非符 3", 4465, 13000, 1300, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
+            ---原作 sub54 的一整段（84 帧）。
             local function rings()
+                local function C40(th, sp)
+                    return { type = 0x40, flag = 0, dur = 120, loop = 1,
+                             angle = -th * RAD2DEG, speed = sp }
+                end
+                local function C80(sp)
+                    return { type = 0x80, flag = 0, dur = 120, loop = 1,
+                             angle = 0, speed = sp }
+                end
                 local a = rngrad()
-                for i = 1, 4 do
-                    local rate = (i % 2 == 1) and 0.0523599 or -0.0523599
-                    ring4(self, self.x, self.y, 3, 2, (i <= 2) and 24 or 28, 1,
-                          0.5 + 0.35 * (i - 1), 0.5, a, 0.1309, spin4(rate, 120))
-                    if i == 3 then
-                        ring4(self, self.x, self.y, 6, 2, 20, 1, 2.0, 0.5, a, 0.1309,
-                              brake_aim6(120, 2.2, 0, 1))
-                    end
-                    a = a + 0.0654498
-                    task.Wait(4)
-                end
-                task.Wait(56)
+                ring4(self, self.x, self.y, 3, 2, 24, 1, 0.5, 0.5, a, 0.1309,
+                      cmds4(578, C40(-1.5708, 2.0)))              -- t=0
+                task.Wait(4)
+                a = a + 0.0654498
+                ring4(self, self.x, self.y, 6, 2, 20, 1, 1.0, 0.5, 0, 0.1309,
+                      cmds4(642, C80(3.0)))                       -- t=4
+                task.Wait(4)
+                a = a + 0.0654498
+                ring4(self, self.x, self.y, 3, 2, 28, 1, 1.5, 0.5, a, 0.1309,
+                      cmds4(578, C40(-1.5708, 1.4)))              -- t=8
+                task.Wait(4)
+                a = a + 0.0654498
+                ring4(self, self.x, self.y, 6, 2, 20, 1, 2.0, 0.5, 0, 0.1309,
+                      cmds4(642, C80(2.2)))                       -- t=12
+                ring4(self, self.x, self.y, 2, 2, 20, 3, 3.0, 0.5, 0, 0.1309)
+                ring4(self, self.x, self.y, 2, 2, 32, 5, 3.4, 0.5, 0, 0.1309)
                 a = rngrad()
-                for i = 1, 4 do
-                    local rate = (i % 2 == 1) and 0.0523599 or -0.0523599
-                    ring4(self, self.x, self.y, 3, 6, (i <= 2) and 24 or 28, 1,
-                          0.5, 0.5, a, 0.1309, spin4(rate, 120))
-                    a = a - 0.0654498
-                    task.Wait(4)
-                end
-                ring4(self, self.x, self.y, 2, 2, 32, 5, 3.4, 0.5, rngrad(), 0.1309)
+                task.Wait(60)                                     -- t=72
+                ring4(self, self.x, self.y, 3, 6, 24, 1, 0.5, 0.5, a, 0.1309,
+                      cmds4(578, C40(1.5708, 2.0)))
+                task.Wait(4)
+                a = a - 0.0654498
+                ring4(self, self.x, self.y, 6, 6, 20, 1, 1.0, 0.5, 0, 0.1309,
+                      cmds4(642, C80(3.0)))                       -- t=76
+                task.Wait(4)
+                a = a - 0.0654498
+                ring4(self, self.x, self.y, 3, 6, 28, 1, 1.5, 0.5, a, 0.1309,
+                      cmds4(578, C40(1.5708, 1.4)))               -- t=80
+                task.Wait(4)
+                a = a - 0.0654498
+                ring4(self, self.x, self.y, 6, 6, 20, 1, 2.0, 0.5, 0, 0.1309,
+                      cmds4(642, C80(2.2)))                       -- t=84
+                ring4(self, self.x, self.y, 2, 6, 20, 3, 3.0, 0.5, 0, 0.1309)
+                ring4(self, self.x, self.y, 2, 6, 32, 5, 3.4, 0.5, 0, 0.1309)
             end
-            local function cloud(n)
-                for i = 1, n do
-                    dot4(self.x, self.y, 1, 6, 1.4 - 1.2 * (i - 1) / n, rngrad(),
-                         accel6(0.016, 120))
+            ---原作 sub55 的弹云（op72 RANDOM）：count1 = n+22，方向 rand[−π,π)、
+            ---速度 rand[0.2,1.4]，每发挂 0x10「固定朝 1.5708 弧度加速 0.016/帧」。
+            local function cloud(col, n)
+                local cmd = { type = 0x10, flag = 0, dur = 120, loop = -1,
+                              speed = 0.016, accel_angle = -1.5708 }
+                for _ = 1, n + 22 do
+                    dot4(self.x, self.y, 1, col, 0.2 + ran:Float(0, 1.2), rngrad(),
+                         cmds4(531, cmd))
                 end
+                sound4(self)
             end
+            rings()                          -- 开场 t=120 的 SUB_CALL 54（84 帧）
+            task.Wait(36)                    -- 到 t=240
             while true do
-                rings()
-                task.Wait(60)
                 drift(self, 2.0, 60)
                 task.Wait(60)
-                for k = 1, 3 do
-                    cloud(12 + 6 * k)
-                    drift(self, 2.0, 60)
-                    task.Wait(60)
-                end
-                bmove(self, 60, 4, 0, 128)
-                task.Wait(60)
-                rings()
-                task.Wait(60)
+                cloud(12, 16)                -- t=300
+                task.Wait(1)                 -- SUB_CALL 55 阻塞的 1 帧
                 drift(self, 2.0, 60)
                 task.Wait(60)
+                cloud(13, 40)                -- t=360
+                task.Wait(1)
+                drift(self, 2.0, 60)
+                task.Wait(60)
+                cloud(14, 52)                -- t=420
+                task.Wait(1)
+                task.Wait(60)                -- 原作 t=420..480 的空档（三次 MOVE_DIR_TIME 都只到 t=420）
+                bmove(self, 60, 4, 0, 144)   -- MOVE_POS_TIME 60 4 192 80（t=480..540）
+                task.Wait(60)
+                rings()                      -- t=540 SUB_CALL 54 + INC i2_3
+                task.Wait(120)               -- JUMP t:=120 → t=240
             end
         end)
     end, { skin = skin2, enter = enter2 })
@@ -11724,7 +12323,12 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             task.Wait(120)
             self._box = nil                  -- 原作 t=240（墙钟 120）DISABLE_MOVEMENT_BOUNDS
-            task.Wait(120)                   -- 原作 t=240 的 SUB_CALL 2（音效/粒子）
+            ---原作 SUB_CALL 2（sub64 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
+            ---它是**循环头**（JUMP 落点是 SET_INT *gi0 30），所以每个周期都要走一遍。
+            local function sub2()
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(120)
+            end
             ---jump(sx,sy)：SET_POS 到绝对点。
             local function jump(sx, sy) self.x, self.y = sx, sy end
             ---本体一次 10 连渐开扇：pk=0x20001、v1=1、v2=0.5、c2=1、flags 512（响音效）。
@@ -11745,6 +12349,7 @@ local function TH34_add_stage56_boss()
                 end)
             end
             while true do
+                sub2()                          -- 原作循环头 t=240 SUB_CALL 2（120 帧）
                 tendou()
                 bmove(self, 100, 1, -224, -160)
                 for k = 0, 4 do spread(-k * 0.392699, 0.19635); task.Wait(20) end
@@ -11789,7 +12394,8 @@ local function TH34_add_stage56_boss()
                 task.Wait(120)          -- SUB_CALL 2（1352..1472）
                 task.Wait(112)          -- RUN_EX_INS 之后的空档
                 bmove(self, 60, 4, 144, 112)
-                task.Wait(40)           -- 回到帧 240（周期 1444）
+                task.Wait(100)          -- 移动 60 帧 + 原作 t=844..884 的 40 帧空档
+                                        -- （一个周期 = 1564 帧，解释器实测 label240→label240 = 1444 + 前导 120）
             end
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1r })
@@ -11824,7 +12430,12 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             task.Wait(120)
             self._box = nil                  -- 原作 t=240（墙钟 120）DISABLE_MOVEMENT_BOUNDS
-            task.Wait(120)                   -- 原作 t=240 的 SUB_CALL 2（音效/粒子）
+            ---原作 SUB_CALL 2（sub66 的 gi0=30 ⇒ 冻结 120 帧：音效 + 粒子）。
+            ---它是**循环头**（JUMP 落点是 SET_INT *gi0 30），每个周期都要走一遍。
+            local function sub2()
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(120)
+            end
             ---原作 moveAngle（10045）：上一帧移动处理后的方向（我们的口径）。
             local ma = 0
             ---「天童」（sub67）：跟住本体；t=100 UNIMP ⇒ 活 100 帧。
@@ -11836,15 +12447,26 @@ local function TH34_add_stage56_boss()
                     end
                 end)
             end
-            ---本体一拍 10 连渐开扇（L 行：v1=1.3、c2=1、flags 中含 0x200 ⇒ 响音效）。
-            local function volley(col, a2)
-                shoot6(self, 0, 0, 65, 6, col, 10, 1, 1.3, 0.5,
-                       -ma + PI + ran:Float(0, 0.1309) - 0.0654498, a2, nil, true)
+            ---本体一拍 = 一条 op65 SPREAD_ABS（Lunatic 行；Hard 的那条见下）。
+            ---基准角 f1 = `ADD *f1 *ANG 3.14159`（#50，全难度）→ ANG + π
+            ---（#51 的「再 +π」是 Hard 专属，Lunatic 不执行）+ rand[−0.0654, +0.0654)；
+            ---ANG 要到该帧移动处理结束后才刷新，所以每段**第一拍**用的还是上一段的方向
+            ---（`ma` 的更新时机正是照这个来）。每段开头的
+            ---`INIT_BULLET_CMD 0 32 0 100 -1 0.01 ±0.0523599`（每帧转 ±3°、速度 +0.01/帧）
+            ---写的命令位是 0x20，而 Lunatic 弹的 flags 是 512（无 0x20）⇒ 命令不激活。
+            ---★ Lunatic 行只发**一条** op65：#55（10 发、v1=1.3、a2=0.523599、flags 512）；
+            ---#54（9 发、v1=0.1、a2=0.628319、flags 544）与 #51 的「再 +π」都是 **Hard 专属**
+            ---（`skip=0x04`），Lunatic 上不执行 —— 所以基准角是 ANG+π 而不是 ANG，
+            ---而且 flags 512 里没有 0x20 位 ⇒ #49 的 0x20 自旋指令在 Lunatic 上根本不激活。
+            local function volley(col)
+                local a1 = -ma + PI + ran:Float(0, 0.1309) - 0.0654498
+                shoot6(self, 0, 0, 65, 6, col, 10, 1, 1.3, 0.5, a1, 0.523599,
+                       nil, true)
             end
             ---n 拍、每拍 5 帧；第一拍之后才把 ma 刷成这一段的移动方向（见上）。
-            local function burst(n, col, a2)
+            local function burst(n, col)
                 for _ = 1, n do
-                    volley(col, a2)
+                    volley(col)
                     local m = self._mv
                     ma = m and atan2(m.dy, m.dx) or 0
                     task.Wait(5)
@@ -11855,29 +12477,32 @@ local function TH34_add_stage56_boss()
                 shoot6(self, 0, 0, 67, 6, 14, 16, 1, v, 0.5, a1, 0.1309, nil, true)
             end
             while true do
+                sub2()                          -- 原作循环头 t=240 SUB_CALL 2（120 帧）
                 tendou()
                 bmove(self, 100, 1, -224, -224)
-                burst(20, 6, 0.523599)           -- 墙钟 240..340
+                burst(20, 6)                  -- 墙钟 240..340（自旋 +3°/帧）
                 task.Wait(10)
                 self.x, self.y = -224, 256
                 tendou()
                 bmove(self, 60, 0, 224, -224)
-                burst(12, 2, 0.523599)           -- 350..410
+                burst(12, 2)                 -- 350..410
                 task.Wait(10)
+                ---原作 `JLT_F *PX 192`：自机在 TH07 的 x<192（我们 px<0）时
+                ---SET_POS(304,-32)、冲向 (314,480) ⇒ 我们 (112,256)→(122,-256)。
                 if player.x < 0 then
-                    self.x, self.y = -112, 256
-                    bmove(self, 60, 0, -122, -256)
-                else
                     self.x, self.y = 112, 256
                     bmove(self, 60, 0, 122, -256)
+                else
+                    self.x, self.y = -112, 256
+                    bmove(self, 60, 0, -122, -256)
                 end
                 tendou()
-                burst(12, 13, 0.523599)          -- 420..480
+                burst(12, 13)                -- 420..480
                 task.Wait(10)
                 self.x, self.y = -224, 112
                 tendou()
                 bmove(self, 40, 0, 0, 64)
-                burst(8, 13, 0.523599)           -- 490..530
+                burst(8, 13)                 -- 490..530
                 task.Wait(120)                   -- SUB_CALL 2（530..650）
                 local a1, v = rngrad(), 0.6
                 task.Wait(5)                     -- 原作的 RING 在 local 295，比 ADD 晚 5 帧
@@ -11889,30 +12514,30 @@ local function TH34_add_stage56_boss()
                 task.Wait(120)                   -- SUB_CALL 2（675..795）
                 tendou()
                 bmove(self, 100, 1, 192, -272)
-                burst(20, 6, 0.523599)           -- 795..895
+                burst(20, 6)                  -- 795..895
                 task.Wait(10)
                 self.x, self.y = -224, 256
                 tendou()
                 bmove(self, 30, 0, 0, 64)
-                burst(6, 6, 0.523599)            -- 905..935
+                burst(6, 6)                   -- 905..935
                 task.Wait(10)
                 ---原作 COS/SIN 后直接把 (380cos, 380sin) 当 MOVE_POS_TIME 的绝对目标。
                 local ap = aimth(self)
                 bmove(self, 60, 1, 380 * math.cos(ap) - 192, 224 - 380 * math.sin(ap))
-                burst(12, 2, 0.523599)           -- 945..1005
+                burst(12, 2)                 -- 945..1005
                 task.Wait(10)
                 self.x, self.y = 224, 256
                 tendou()
                 bmove(self, 30, 0, 0, 64)
-                burst(6, 6, 0.523599)            -- 1015..1045
+                burst(6, 6)                   -- 1015..1045
                 task.Wait(10)
                 bmove(self, 60, 1, 192, -272)
-                burst(12, 6, 0.523599)           -- 1055..1115
+                burst(12, 6)                 -- 1055..1115
                 task.Wait(10)
                 self.x, self.y = -224, 64
                 tendou()
                 bmove(self, 40, 0, 0, 64)
-                burst(8, 13, 0.523599)           -- 1125..1165
+                burst(8, 13)                  -- 1125..1165
                 task.Wait(120)                   -- SUB_CALL 2（1165..1285）
                 a1, v = rngrad(), 0.6
                 task.Wait(5)
@@ -11954,7 +12579,7 @@ local function TH34_add_stage56_boss()
     ---（RING_ABS count1=2、相隔 180°）」：基准角每拍 +π/22、速度每拍 −3/11；再 **11 次**：
     ---基准角继续 +π/22、速度每拍 +3/11 加回来（DEC_JUMP 先减后跳、计数到 0 不跳 ⇒ 恰好
     ---li1 次）。弹型 spr 6、flags 512 ⇒ 每帧响一次音效（sound4 去重）。
-    scard("仙符「屍解永遠」", 4468, 60, 3200, false, function(self)
+    scard("仙符「屍解永遠」", 4468, 45, 3200, false, function(self)
         task.New(self, function()
             self._box = nil                  -- 原作承接 sub64 的 DISABLE_MOVEMENT_BOUNDS
             task.Wait(10)                    -- 原作 sub68 t=130 那一支在墙钟 10 执行
@@ -12002,20 +12627,28 @@ local function TH34_add_stage56_boss()
     end, { skin = skin2, wallskin = skin2w, enter = enter1c })
 
     ---──────────────────── 方符「奇門遁甲」 ────────────────────
-    ---原作 sub75/73/74：本体在 120 帧的 Hermite 插值里「瞬移」到新的奇门中心
-    ---（X 目标 = 128..256、Y 目标 = 128..160 的绝对值，两条切线各 ±144），
-    ---到位期间在四个基准角（0°/45°/90°/135°）各放一扇「奇门」；每 30 帧一轮，
-    ---每轮 6 次之后才换一个中心（外层 JUMP）。
-    ---奇门 = sub74（从基准角起每 15° 一对、共 12 对，速度由 rand(0.5,2.0)
-    ---先减 1.0 再增回，色档 6 / 10）或 sub73（每 10° 一对、共 18 对、幅度 0.3333…，
-    ---色档 8）。每一对 = 2 发相隔 180°；sub74 刷第一扇时挂 0x10 加速指令
-    ---0.0222 px/帧²，此后该敌方所有弹都带这条指令（EnemyBulletShooter 的命令常驻）。
-    scard("方符「奇門遁甲」", 4469, 60, 3600, false, function(self)
+    ---原作 sub75/73/74：本体在 180 帧的 Hermite 插值里移动到新的奇门中心
+    ---（fn 7 = MathCubicInterp、easing 0 线性；X 目标 = rand(0,128)+128 ∈ [128,256]、
+    ---Y 目标 = rand(0,128)+32 ∈ [32,160] 的绝对值，两条切线各 ±144；重掷时
+    ---`SET_FLOAT f3_2 f2` 把上一条的末切线留作下一条的首切线 ⇒ C1 连续）。
+    ---到位期间在四个基准角（0°/45°/90°/135°）各放一扇「奇门」；每 30 帧一轮
+    ---（DEC_JUMP t=160 → 跳回 t=130，`SET_INT i2_0 6` ⇒ 一轮 6 次），
+    ---6 轮（=180 帧）之后才在 t=160 的块里重掷中心（外层 JUMP 回到 632）。
+    ---奇门 = sub74（从基准角起每 15° 一对、共 12 对，速度 1.5+rand(0,0.5)，
+    ---先 −1/6×6 再 +1/6×6，色档 6 / 10；RING_ABS flags=528）或
+    ---sub73（每 10° 一对、共 18 对，速度 1.5+rand(0,0.5)，先 −2/9×9 再 +2/9+1/9 各 9 次，
+    ---色档 8；flags=512）。每一对 = 2 发相隔 180°。
+    ---★ sub74 刷第一扇前 `INIT_BULLET_CMD 0 16 0 90 -1 0.0222222 -999`（0x10 加速，
+    ---90 帧内沿出生朝向给速度 +2.0）。但 RING_ABS 每次都会把 `bulletProps->flags`
+    ---**整个覆盖**成自己的 arg7（EclManager.cpp:1313），所以只有 sub74 那些
+    ---flags 带 0x10（528=0x210）的弹会激活这条指令；sub73 的 flags=0x200
+    ---在 `RunCommands` 里 `moreFlags & type == 0` 直接跳过 ⇒ **不吃加速**。
+    scard("方符「奇門遁甲」", 4469, 45, 3600, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             local acc = accel6(0.0222222, 90)
             local function gate74(base, col)
-                local v = ran:Float(0.5, 2.0)
+                local v = 1.5 + ran:Float(0, 0.5)
                 for _ = 1, 6 do
                     ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309, acc)
                     base, v = base + 0.261799, v - 0.166667
@@ -12026,23 +12659,26 @@ local function TH34_add_stage56_boss()
                 end
             end
             local function gate73(base, col)
-                local v = ran:Float(0.5, 2.0)
+                ---原作 sub73 #1 `RAND_FLOAT_ADD f1 0.5 2.8` 立刻被 #2 覆写 ⇒ 只剩
+                ---`1.5 + rand(0,0.5)`；第一段每拍 **减 0.222222 再减 0.111111**（共 0.333333，
+                ---#6/#7 两条 SUB_FLOAT），再 `f0 += 0.174533`（10°）。
+                local v = 1.5 + ran:Float(0, 0.5)
                 for _ = 1, 9 do
-                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309, acc)
-                    base, v = base + 0.174533, v - 0.111111
+                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
+                    base, v = base + 0.174533, v - 0.222222 - 0.111111
                 end
                 for _ = 1, 9 do
-                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309, acc)
-                    base, v = base + 0.174533, v + 0.111111
+                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
+                    base, v = base + 0.174533, v + 0.222222 + 0.111111
                 end
             end
             task.Wait(120)
+            local tx = ran:Float(0, 128) + 128 - 192
+            local ty = 192 - ran:Float(0, 128)
+            local mx0, mx1 = rnd_sign() * 144, rnd_sign() * 144
+            local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
             while true do
                 local x0, y0 = self.x, self.y
-                local tx = ran:Float(128, 256) - 192
-                local ty = 224 - ran:Float(128, 160)
-                local mx0, mx1 = rnd_sign() * 144, rnd_sign() * 144
-                local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
                 local nf = 0
                 for _ = 1, 6 do
                     gate74(0, 6)
@@ -12051,13 +12687,17 @@ local function TH34_add_stage56_boss()
                     gate73(2.35619, 8)
                     for _ = 1, 30 do
                         nf = nf + 1
-                        local u = min(nf, 120) / 120
-                        local e = 1 - (1 - u) * (1 - u)
-                        self.x = hermite(e, x0, tx, mx0, mx1)
-                        self.y = hermite(e, y0, ty, my0, my1)
+                        local t = nf / 180
+                        self.x = hermite(t, x0, tx, mx0, mx1)
+                        self.y = hermite(t, y0, ty, my0, my1)
                         task.Wait(1)
                     end
                 end
+                ---原作 t=160 的重掷：p0 = 当前位置、首切线 = 上一条的末切线。
+                tx, mx0 = ran:Float(0, 128) + 128 - 192, mx1
+                mx1 = rnd_sign() * 144
+                ty, my0 = 192 - ran:Float(0, 128), my1
+                my1 = -rnd_sign() * 144
             end
         end)
     end, { skin = skin2, wallskin = skin2w, enter = enter1b })
@@ -12080,59 +12720,93 @@ local function TH34_add_stage56_boss()
     ---════════════════════════════════════════════════════════════════════
 
     ---──────────────────── 冬符「フラワーウィザラウェイ」（原作 sub48/49/50，E/N 行） ────────────────────
-    ---本体摆到 (192,112)（我们 (0,112)），每轮炸出 6 组「花」：两组 5 枚
-    ---（基准角 0 / π、角速度 ±3°/帧）、四组 3 枚（基准角 ±60°，速度 5/5/4/5）；
-    ---组间由原作的阻塞式 SUB_CALL 49 拉开。每朵花先减速外飘 60 帧（自转），
-    ---随后每 5 帧朝**出发方向的反面**打一扇 3 发（半张角 45°，带 0x40 的
-    ---「刹停→拐 15°→再飞」指令），共 12 轮；轮间本体再补一圈 16 发 × 2 层。
+    ---取 N 行（这张符卡原作只有 Easy/Normal 两行，`JNEQ $DIFF` 链在 L 直接跳过）。
+    ---  · sub48：t=0 `MOVE_POS_TIME 120 4 192 112`（我们 (0,112)）；主循环 **1090 帧**：
+    ---      t=240  gF0=0      gF1=+0.0523599 gF2=5 gI0=5 → SUB_CALL 49
+    ---      t=340  gF0=π      gF1=−0.0523599 gF2=5 gI0=5 → SUB_CALL 49
+    ---      t=400  `RING_AIMED 3:6 16 2 1.5→0.8 a1=0(自机) a2=0.19635`（flags 514）
+    ---      t=450  gF0=−π/3    gF1=+0.0523599 gF2=5 gI0=3 → SUB_CALL 49
+    ---      t=450  gF0=+π/3    gF1=−0.0523599 gF2=5 gI0=3 → SUB_CALL 49
+    ---      t=530  gF0=−π/3    gF1=+0.0523599 gF2=**4** gI0=3 → SUB_CALL 49
+    ---      t=530  gF0=+π/3    gF1=−0.0523599 gF2=5 gI0=3 → SUB_CALL 49
+    ---      t=610  JUMP → t=240
+    ---    （每次 SUB_CALL 的调用方 t 差与子程序的 120 帧都算进墙钟。）
+    ---  · sub49：`PLAY_SOUND 5` ＋ 每 4 帧一发 `SPAWN_PARTICLES 17 4`、共 30 发
+    ---    = **120 帧冻结**；随后按 gI0 朵花、f3_0（gF0）逐朵 += 2π/gI0（整圈均分）。
+    ---  · sub50（花）：t=0 `MOVE_DIR_TIME 0 0 gF0 gF2` —— time≤0 的原作走的是
+    ---    `enemy->angle = gF0; enemy->speed = gF2; moveMode = POLAR`（**不是插值**）；
+    ---    再 `SET_ANGULAR_VEL gF1`（±3°/帧）、`SET_MOVE_ACCEL gF2/−180`（120 帧内匀减）。
+    ---    t=120 把加速度改成 `gF2/+120`，同时进 12 拍、每 5 帧一组 3 扇（a1 = ANG+π，
+    ---    ANG = 花的当前朝向）：
+    ---      A `SPREAD_ABS 2:6 c1=3 1.2→0.5 a2=π/4`（flags 514，不挂指令）
+    ---      B `SPREAD_ABS 2:6 c1=1 0.8  a1+π/4 a2=π/4`（flags 578）
+    ---        ＋`INIT_BULLET_CMD 0x40 dur=60 loop=1 angle=−135° cmd.angle=−999`
+    ---      C `SPREAD_ABS 2:6 c1=1 0.8  a1−π/2 a2=π/2`（flags 578）
+    ---        ＋`INIT_BULLET_CMD 0x40 dur=60 loop=1 angle=+135° cmd.angle=−999`
+    ---    （E 行把 A 的 v1 换成 1.0、且没有 B/C；这里按 N 行。）
+    ---差异 66：`0x40` 的 `cmd.angle = −999` ⇒ 停下后「沿用**弹此刻**的速率」，本仓库的
+    ---  TH34_cmdbullet 用 `resume_own = true` 表达。B/C 出生后以当前速率沿原方向匀减到 0
+    ---  （60 帧），再拐 ±135°、以原速继续。
+    ---差异 65：花是 `SET_IS_PROJECTILE 1` 的实体；pspawn 子机无判定无贴图。
     scard("冬符「フラワーウィザラウェイ」", 4457, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
-            local cx0, cy0 = 0, 112
-            ---一朵花：th 用 TH07 口径（shoot6 内部取反）。
-            local function flower(cx, cy, th, av, v, col)
+            ---差异 66 的两段 0x40 指令（角度已按 TH07 取反换成度数）。
+            local CB = { type = 0x40, dur = 60, loop = 1,
+                         angle = 2.35619 * RAD2DEG, resume_own = true }
+            local CC = { type = 0x40, dur = 60, loop = 1,
+                         angle = -2.35619 * RAD2DEG, resume_own = true }
+            ---原作 sub50：一朵花。th0 = 出发朝向、av = 角速度、v = 初速（同时是 120 帧后
+            ---的恢复速度）。每帧 angle += av、speed += accel、pos += dir(angle)·speed。
+            local function flower(cx, cy, th0, av, v)
                 pspawn(cx, cy, function(o)
-                    local r, spd = 0, v
-                    for k = 1, 60 do
-                        th = th + av
-                        r = r + spd
-                        spd = max(0.3, spd - v / 90)
-                        o.x = cx + math.cos(th) * r
-                        o.y = cy - math.sin(th) * r
-                        task.Wait(1)
+                    local th, spd, acc = th0, v, -v / 180
+                    local function step(n)
+                        for _ = 1, n do
+                            th, spd = th + av, spd + acc
+                            o.x, o.y = o.x + math.cos(th) * spd, o.y - math.sin(th) * spd
+                            task.Wait(1)
+                        end
                     end
-                    local back = th + PI
-                    for k = 1, 12 do
-                        local f = back + (k - 1) * 2.356194
-                        fan4(o, o.x, o.y, 2, col, 3, 1, 1.2, 0.5, f, 0.785398)
-                        fan4(o, o.x, o.y, 2, col, 1, 1, 0.8, 0.8, f + 0.785398, 0)
-                        fan4(o, o.x, o.y, 2, col, 1, 1, 0.8, 0.8, f + 2.356194, 0)
-                        task.Wait(5)
+                    step(120)                                -- t=0..119：减速度 −v/180
+                    acc = v / 120                            -- t=120：SET_MOVE_ACCEL +v/120
+                    for _ = 1, 12 do                         -- t=120、125、…、175
+                        local f = th + PI
+                        shoot6(o, 0, 0, 65, 2, 6, 3, 1, 1.2, 0.5, f, 0.785398, nil, false)
+                        shoot6(o, 0, 0, 65, 2, 6, 1, 1, 0.8, 0.8,
+                               f + 0.785398, 0.785398, CB, false)
+                        shoot6(o, 0, 0, 65, 2, 6, 1, 1, 0.8, 0.8, f - 1.5708, 1.5708, CC, false)
+                        step(5)
                     end
                 end)
             end
-            local G = { { 5, 0, 0.0523599, 5, 2 }, { 5, PI, -0.0523599, 5, 6 },
-                        { 3, -1.047198, 0.0523599, 5, 10 },
-                        { 3, 1.047198, -0.0523599, 5, 8 },
-                        { 3, -1.047198, 0.0523599, 4, 6 },
-                        { 3, 1.047198, -0.0523599, 5, 2 } }
-            while true do
-                for i = 1, 6 do
-                    local g = G[i]
-                    for j = 1, g[1] do
-                        local th = g[2] + (j - 1) * (2 * PI / g[1])
-                        flower(cx0, cy0, th, g[3], g[4], g[5])
-                    end
-                    if i == 2 then
-                        shoot6(self, 0, 0, 66, 3, 6, 16, 2, 1.5, 0.8, rngrad(),
-                               0.19635, nil, true)
-                    end
-                    task.Wait(40)
+            ---原作 sub49：一次 SUB_CALL 49（120 帧冻结后放 n 朵花，朝向整圈均分）。
+            local function wave(th0, av, v, n)
+                PlaySound("power0", 0.35, self.x / 256)
+                task.Wait(120)
+                PlaySound("lazer00", 0.13, self.x / 256)
+                local d = 2 * PI / n
+                for k = 0, n - 1 do
+                    flower(self.x, self.y, th0 + k * d, av, v)
                 end
-                task.Wait(60)
+            end
+            task.Wait(120)                                   -- t=0 MOVE_POS_TIME 120 4 (192,112)
+            while true do
+                wave(0, 0.0523599, 5, 5)                     -- t=240
+                task.Wait(100)                               -- t=340
+                wave(PI, -0.0523599, 5, 5)
+                task.Wait(60)                                -- t=400
+                shoot6(self, 0, 0, 66, 3, 6, 16, 2, 1.5, 0.8, 0, 0.19635, nil, true)
+                task.Wait(50)                                -- t=450
+                wave(-1.0472, 0.0523599, 5, 3)
+                wave(1.0472, -0.0523599, 5, 3)
+                task.Wait(80)                                -- t=530
+                wave(-1.0472, 0.0523599, 4, 3)
+                wave(1.0472, -0.0523599, 5, 3)
+                task.Wait(80)                                -- t=610 → JUMP t:=240
             end
         end)
-    end, { skin = skin1, wallskin = skin1w, enter = enter1b })
+    end, { skin = skin1, wallskin = skin1w, enter = enter1e })
 
     ---──────────────────── 紅符「紅毛の和蘭人形」（原作 sub46/47；L 行 = 无后缀那张） ────────────────────
     ---sub46：t=240 起本体摆到 (192,112)（我们 (0,112)），主循环一轮 **288 帧**：
