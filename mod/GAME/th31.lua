@@ -426,6 +426,63 @@ local function player_is_youkai()
     end
     return pform_youkai
 end
+---bulletType → 贴图样式 + 半个精灵宽高。
+---形状逐型对上原作 etama.anm 的精灵（表见 mod/GAME/th31_bullet_sprite_map.md「表 2」，
+---精灵矩形见 etama.decl，目视 etama/etama2/etama6.png）：0=8×8 小粒；1=圆(白心+粗色环)；
+---2=实心竖椭圆；3=圆(白心更大)；4=飞镖(三角头+尾环)；5=细长+尾尖；6=燕尾/箭形；
+---7=32²大圆；8=大圆+光晕；9=剑/长针；10=64²放射爆闪；11=方形札；12/13=五角星；
+---14/15=大五角星；16=胶囊/弹丸（**铃仙 Stage 5 主力弹 → gun_bullet**）；17=竖环椭圆；
+---18=大竖椭圆；19=红爆块(4 帧动画)；20=剑/长针。
+---★ 定义必须放在 `local EX = {}` **外面**：各卡自己的弹类（lw206..lw221 等）也要用。
+---★ 本文件里旧注释写的「占位贴图 ball_small / ball_mid / ellipse …」都是**改表之前**的
+---  口径，一律以本函数（贴图）与 color_of（颜色）为准。不在表内的只有 `object` 自绘
+---  特效（lw209_spark、lw126_dot）和使魔占位图（"servant" / "eyeL" / "white"）。
+local function style_of(t)
+    if t == 0  then return ball_small,  4  end
+    if t == 1  then return ball_mid,    8  end
+    if t == 2  then return ellipse,     8  end
+    if t == 3  then return ball_mid_c,  8  end
+    if t == 4  then return arrow_big_c, 8  end
+    if t == 5  then return knife,       8  end
+    if t == 6  then return arrow_small, 8  end
+    if t == 7  then return ball_big,    16 end
+    if t == 8  then return ball_light,  16 end
+    if t == 9  then return knife_b,     16 end
+    if t == 10 then return ball_huge,   32 end
+    if t == 11 then return square,      8  end
+    if t == 12 or t == 13 then return star_small, 8  end
+    if t == 14 or t == 15 then return star_big,   16 end
+    if t == 16 then return gun_bullet,  8  end
+    if t == 17 then return ball_mid_c,  8  end
+    if t == 18 then return ellipse,     16 end
+    if t == 19 then return ball_huge,   16 end
+    if t == 20 then return knife_b,     16 end
+    return ball_small, 8
+end
+
+---★ 颜色换算（表 3）：原作 color（0..15）→ 本项目**该弹样式**的帧号。
+---  本项目所有弹样式共用同一套 16 帧色序（由 THlib/bullet/img/*.png 采样得到）：
+---    1红 2红浅 3品红 4品红浅 5蓝 6蓝浅 7青 8青浅 9绿 10绿浅 11黄 12黄浅 13橙 14橙浅 15灰 16白
+---  原作的 16 色序和它对不上（0=白、11/12=黄绿、13=黄、14=橙），所以**不能**直接 c+1
+---  （旧口径把原色 0 的白弹画成了红弹）；32² 那几组（7/8/9/14/15/18/19/20）原作只用
+---  color 0..7，另走 8 色表。
+---  调用点给的已经是**帧号**（`EX.color(c) = c + 1` 或 `COLOR.*`），这里先还原成原色号再查表。
+local C_RAW16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }  -- 原色 0..15 → 帧
+local C_RAW8  = { 16, 1, 3, 5, 7, 9, 11, 15 }                               -- 原色 0..7  → 帧
+local function color_is_8(t)
+    return t == 7 or t == 8 or t == 9 or t == 14 or t == 15
+            or t == 18 or t == 19 or t == 20
+end
+---frame（1..16）→ 本项目帧号；t 只用来决定查 16 色表还是 8 色表。
+local function color_of(t, frame)
+    local raw = math.floor((frame or 1) - 1)
+    if raw < 0 then raw = 0 end
+    if color_is_8(t) then
+        return C_RAW8[(raw % 8) + 1]
+    end
+    return C_RAW16[(raw % 16) + 1]
+end
+
 local EX = {}
 do
 local PI = 3.141592653589793
@@ -552,19 +609,8 @@ local function outside_field(x, y, half)
             or y + half < FIELD_B or y - half > FIELD_T
 end
 
----bulletType → 占位贴图 + 半个精灵宽高。
----原作每种 type 的精灵尺寸（etama.anm 的 sprite 表）：0 = 8×8、1..6 = 14×16、
----7..9 = 32×32、10 = 64×64、11..18 是 16×16 / 32×32 混着。
----★ 占位口径（跟 Last Word 那 17 张一致）：小弹 ball_small、大弹 ball_mid、
----  超大 ellipse；全部实现完再统一换素材。
-local function style_of(t)
-    if t == 10 then return ellipse, 32 end
-    if t == 1 or t == 3 or t == 7 or t == 8 or t == 9 or t >= 12 then
-        return ball_mid, 16
-    end
-    return ball_small, 8
-end
 EX.style_of = style_of
+EX.color_of = color_of
 
 ---「子弹生成描述符」的 transform 记录表（敌机的 bulletSpawnDescriptor.transforms，
 ---op111 写它、出弹时**整块拷给弹**，BulletManager.cpp:258-263）。槽从 1 起（原作从 0）。
@@ -680,7 +726,7 @@ local function advance(self)
                 ---不是全局函数，是弹类的方法（踩过：全局 ChangeImage 是空的）。
                 ---★ 也不能写 `self:ChangeImage(…)`：本引擎实例读不到类表上的方法
                 ---  （见卡 146 的长注），必须显式把类表当第一参传 —— laser.lua 也是这么调的。
-                bullet.ChangeImage(self, style, EX.color(r.i1))
+                bullet.ChangeImage(self, style, color_of(r.i0, EX.color(r.i1)))
                 again = true
             elseif k == K_SND then
                 again = true                    -- PLAY_SOUND：移植版不放音效
@@ -1014,7 +1060,7 @@ local function spawn_one(recs, x, y, angle, speed, btype, color, flags, start)
     local style, half = style_of(btype)
     local b = New(EX.bullet, {
         x = x, y = y, angle = angle, speed = speed,
-        style = style, color = color, half = half,
+        style = style, color = color_of(btype, color), half = half,
         btype = btype, flags = flags, recs = recs, start = start,
     })
     EX.pool[#EX.pool + 1] = b
@@ -1215,16 +1261,16 @@ end
 local bullet_218
 
 ---一次出弹。池满 → 整波不生（SpawnBulletPattern 的 BulletManager.cpp:686-690）。
-local function spawn_bullet(x, y, angle, speed, color, turn)
+local function spawn_bullet(x, y, angle, speed, color, turn, btype)
     if pool_used() >= POOL_SIZE then
         return false
     end
-    local unit = New(bullet_218, x, y, angle, speed, color, turn)
+    local unit = New(bullet_218, x, y, angle, speed, color, turn, btype)
     pool[#pool + 1] = unit
     return true
 end
 
----Sub3/Sub4 的弹（bulletType 2 / 6，都是 14×16 的小弹，占位用 ball_small）。
+---Sub3/Sub4 的弹（bulletType 2 / 6，都是 14×16 的小弹；贴图/颜色走 style_of / color_of）。
 ---  op99 = SHOOT_CIRCLE（EclManager.hpp:308）：count1=count2=1、speed1=1.0、
 ---  angle=v10020、color=v10000、flags=514（SPAWN_FAST|PLAY_SPAWN_SOUND）。
 ---  同一条 op99 在 Sub3 的 t=64 用的是 flags=131650 —— 多带 WAIT(0x20000) 与
@@ -1235,8 +1281,8 @@ end
 ---  两种弹都是 SPAWN_FAST：出生位置先减 velocity*4，之后 10 帧每帧 +velocity/2，
 ---  动画播完那一帧再照常走一遍 FIRED 的更新（BulletManager.cpp:250、953-957、:831）。
 bullet_218 = Class(bullet, {
-    init = function(self, x, y, angle, speed, color, turn)
-        bullet.init(self, ball_small, color, false, true)
+    init = function(self, x, y, angle, speed, color, turn, btype)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.alice_angle = angle
         self.alice_speed = speed
         self.alice_turn = turn
@@ -1297,7 +1343,7 @@ bullet_218 = Class(bullet, {
 local function gun_shot(owner, turn)
     local angle = owner.alice_angle + owner.alice_gun_offset
     spawn_bullet(owner.x, owner.y, angle, GUN_SHOT_SPEED, owner.alice_color,
-            turn and owner.alice_turn_angle or nil)
+            turn and owner.alice_turn_angle or nil, 2)
     owner.alice_gun_offset = owner.alice_gun_offset + owner.alice_shot_step
 end
 
@@ -1309,7 +1355,7 @@ local function gun_fan(owner)
     for i = 1, #FAN_OFFSETS do
         -- 生不出来 → 放弃整波剩下的（BulletManager.cpp:700-703）
         if not spawn_bullet(owner.x, owner.y, aim + FAN_OFFSETS[i], FAN_SPEED,
-                owner.alice_color, nil) then
+                owner.alice_color, nil, 6) then
             return
         end
     end
@@ -1726,14 +1772,15 @@ local function storm_program(block, part, sign)
         { kind = K_WAIT,         allow = 1, frames = WAIT_LONG },                 -- 槽 1
         { kind = K_DIR_RELATIVE, allow = 0, angle = sign * PI / 2,                -- 槽 2
           keep_speed = true, interval = DIR_TURN_FRAMES, repeats = 1 },
-        { kind = K_SPRITE,       allow = 0, style = ellipse, color = 2 },         -- 槽 3（type 3）
+        { kind = K_SPRITE,       allow = 0, style = style_of(3), color = color_of(3, 2) },   -- 槽 3（type 3）
         { kind = K_DIR_RELATIVE, allow = 0, angle = -PI, speed = 0,               -- 槽 4
           interval = DIR_STOP_FRAMES, repeats = 1 },
-        { kind = K_SPRITE,       allow = 0, style = ball_small, color = 14 },     -- 槽 5（type 0）
+        { kind = K_SPRITE,       allow = 0, style = style_of(0), color = color_of(0, 14) },  -- 槽 5（type 0）
         { kind = K_WAIT,         allow = 1, frames = WAIT_SHORT },                -- 槽 6
         { kind = K_DIR_RELATIVE, allow = 0, angle = -turn * PI / 180,             -- 槽 7
           speed = speed, interval = DIR_LAST_FRAMES, repeats = 1 },
-        { kind = K_SPRITE,       allow = 0, style = butterfly, color = blk.sprite }, -- 槽 8（type 8）
+        { kind = K_SPRITE,       allow = 0, style = style_of(8),
+          color = color_of(8, blk.sprite) },                                      -- 槽 8（type 8）
         { kind = K_PLAY_SOUND,   allow = 0, index = SOUND_INDEX },                -- 槽 9
     }
     program_cache[key] = p
@@ -1754,8 +1801,8 @@ local storm_bullet
 ---小弹（Sub37 和子机共用）。★ 位移全部自己在 frame 里算：LuaSTG 引擎每帧会替所有对象
 ---积分 x += vx（所以 vx/vy 必须留 0，否则每个位移都算两遍），速度矢量存在 bvx/bvy。
 storm_bullet = Class(bullet, {
-    init = function(self, x, y, angle, speed, program, color, spawn_frames)
-        bullet.init(self, ball_small, color, false, true)
+    init = function(self, x, y, angle, speed, program, color, btype, spawn_frames)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判（槽 0 的 400 帧延迟）
         self.angle = angle                  -- 极坐标里的角
         self.speed = speed
@@ -1916,7 +1963,7 @@ local function storm_shot(owner, base_angle, speed1, block, part, count1, count2
             ---TH08 的角度是 base + i*(2π/count1) + j*angleStep，我们整体取反。
             local angle = base_angle - i * (2 * PI / count1) - j * SHOT_STEP
             pool[#pool + 1] = New(storm_bullet, owner.x, owner.y, angle, speed,
-                    program, SHOT_COLOR, SPAWN_NORMAL_FRAMES)
+                    program, SHOT_COLOR, 0, SPAWN_NORMAL_FRAMES)
             used = used + 1
         end
     end
@@ -1980,7 +2027,7 @@ local familiar = Class(object, {
                     if pool_used() >= POOL_SIZE then break end
                     local angle = self.fam_aim - i * (2 * PI / FAM_COUNT)
                     pool[#pool + 1] = New(storm_bullet, self.x, self.y, angle, FAM_SPEED,
-                            program, color, nil)
+                            program, color, 8, nil)
                 end
             end
         end
@@ -2225,8 +2272,8 @@ local lw206_bullet
 ---本卡的弹。★ 位移全部自己在 frame 里算：LuaSTG 引擎每帧会替所有对象积分 x += vx
 ---（所以 vx/vy 必须留 0，否则每个位移都算两遍），速度矢量存在 bvx/bvy。
 lw206_bullet = Class(bullet, {
-    init = function(self, x, y, angle, speed, style, color, spawn_frames)
-        bullet.init(self, style, color, false, true)
+    init = function(self, x, y, angle, speed, btype, color, spawn_frames)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判
         self.angle = angle                  -- 我们坐标下的方向
         self.speed = speed
@@ -2329,7 +2376,7 @@ local function lw206_shot_fan(owner, angle, speed1, color)
         if used >= POOL_SIZE then return end
         local speed = speed1 - (speed1 - speed2) * j / FAN_COUNT
         pool[#pool + 1] = New(lw206_bullet, owner.x, owner.y, angle, speed,
-                ball_small, color, SPAWN_FAST_FRAMES)
+                6, color, SPAWN_FAST_FRAMES)
         used = used + 1
     end
 end
@@ -2347,7 +2394,7 @@ local function lw206_shot_circle(owner, count1)
             if used >= POOL_SIZE then return end
             local angle = base - i * (2 * PI / count1)
             pool[#pool + 1] = New(lw206_bullet, owner.x, owner.y, angle, speed,
-                    ball_small, RING_COLOR, nil)
+                    1, RING_COLOR, nil)
             used = used + 1
         end
     end
@@ -2672,7 +2719,7 @@ local lw207_bullet
 lw207_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color)
         ---bullet:init(imgclass, index, stay, destroyable, fogtime)（THlib/bullet/bullet.lua:75）
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(8), color_of(8, color), false, true)
         self.angle = angle
         self.speed = speed
         self.vx = math.cos(angle) * speed
@@ -3108,7 +3155,7 @@ local lw208_bullet
 ---type2→1 用弹自己的 speed。
 lw208_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color, mask)
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(16), color_of(16, color), false, true)
         self.lw208_angle = angle           -- 我们坐标
         self.lw208_speed = speed           -- 原速（type2→1 时回到它）
         self.lw208_flags = mask            -- = 原作的 transformFlags 字
@@ -3209,7 +3256,7 @@ local lw208_eye
 ---    之后 60 帧每帧 velocity += 沿该角的 1/30，angle 跟着重算（:1205-1228）
 local lw208_gun_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color)
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(7), color_of(7, color), false, true)
         self.lw208_angle = angle
         self.lw208_flags = GUN_FLAGS
         self.vx = math.cos(angle) * speed
@@ -3687,7 +3734,7 @@ lw209_spark = Class(object, {
 ---出生动画期间**没有判定**（判定在 FIRED 分支里），所以 colli 要到那时才开。
 lw209_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed)
-        bullet.init(self, ball_small, COLOR209, false, true)
+        bullet.init(self, style_of(3), color_of(3, COLOR209), false, true)
         self.lw209_angle = angle
         self.lw209_speed = speed
         self.lw209_vx = math.cos(angle) * speed
@@ -4274,7 +4321,7 @@ end
 lw210_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color, is_tree)
         ---bullet:init(imgclass, index, stay, destroyable)（THlib/bullet/bullet.lua:75）
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(17), color_of(17, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209 同款）
         self.lw210_bvx = math.cos(angle) * speed
         self.lw210_bvy = math.sin(angle) * speed
@@ -4680,10 +4727,10 @@ end
 ---之后每帧只走 velocity/2 或 /2.5，动画播完那一帧补一次完整的 FIRED 更新
 ---（BulletManager.cpp:196-227、:950-1013）。
 lw211_bullet = Class(bullet, {
-    init = function(self, x, y, angle, speed, color,
+    init = function(self, x, y, angle, speed, color, btype,
                     spawn_frames, spawn_step, accel, accel_frames, cull)
         ---bullet:init(imgclass, index, stay, destroyable)（THlib/bullet/bullet.lua:75）
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210 同款）
         self.lw211_bvx = math.cos(angle) * speed
         self.lw211_bvy = math.sin(angle) * speed
@@ -4852,20 +4899,20 @@ local function call_111(owner, shift)
         local o = PHOENIX_OFFSETS[i]
         local a = dir - o[1]
         return New(lw211_bullet, bx + math.cos(a) * o[2], by + math.sin(a) * o[2],
-                dir, PHOENIX_SPEED, th08_color(PHOENIX_COLOR_1),
+                dir, PHOENIX_SPEED, th08_color(PHOENIX_COLOR_1), 19,
                 SPAWN_FAST_FRAMES, SPAWN_FAST_STEP,
                 PHOENIX_ACCEL, PHOENIX_ACCEL_FRAMES, CULL_DELAY)
     end)
     ---③ ins_97：零偏移的那发 bulletType 7（SPAWN_FAST）。
     spawn_batch(1, function()
         return New(lw211_bullet, bx, by, dir, PHOENIX_SPEED, th08_color(PHOENIX_COLOR_1),
-                SPAWN_FAST_FRAMES, SPAWN_FAST_STEP,
+                7, SPAWN_FAST_FRAMES, SPAWN_FAST_STEP,
                 PHOENIX_ACCEL, PHOENIX_ACCEL_FRAMES, CULL_DELAY)
     end)
     ---④ ins_97：零偏移的那发 bulletType 10（flags 0x2214 → 换成 SPAWN_NORMAL，15 帧 /2.5）。
     spawn_batch(1, function()
         return New(lw211_bullet, bx, by, dir, PHOENIX_SPEED, th08_color(PHOENIX_COLOR_0),
-                SPAWN_NORMAL_FRAMES, SPAWN_NORMAL_STEP,
+                10, SPAWN_NORMAL_FRAMES, SPAWN_NORMAL_STEP,
                 PHOENIX_ACCEL, PHOENIX_ACCEL_FRAMES, CULL_DELAY)
     end)
     ---⑤ ins_99 ×2：两圈各 23 发的圆环。angle = RANDOM_ANGLE + i·2π/23（每条自己抽一次
@@ -4875,13 +4922,13 @@ local function call_111(owner, shift)
     local color1 = th08_color(owner.lw211_li7)
     spawn_batch(RING_COUNT, function(i)
         return New(lw211_bullet, bx, by, -(ring1 + (i - 1) * (2 * PI / RING_COUNT)),
-                speed1, color1, SPAWN_FAST_FRAMES, SPAWN_FAST_STEP, 0, 0, 0)
+                speed1, color1, 5, SPAWN_FAST_FRAMES, SPAWN_FAST_STEP, 0, 0, 0)
     end)
     local ring2 = ran:Float(-PI, PI)
     local color2 = th08_color(owner.lw211_li6)  -- @68924 的 color 操作数是 VAR(li6)（不是 li5）
     spawn_batch(RING_COUNT, function(i)
         return New(lw211_bullet, bx, by, -(ring2 + (i - 1) * (2 * PI / RING_COUNT)),
-                RING_SPEED_2, color2, SPAWN_FAST_FRAMES, SPAWN_FAST_STEP, 0, 0, 0)
+                RING_SPEED_2, color2, 5, SPAWN_FAST_FRAMES, SPAWN_FAST_STEP, 0, 0, 0)
     end)
 end
 
@@ -5276,7 +5323,7 @@ end
 ---bulletSpawnDescriptor.transforms 全是 0 → AdvanceTransformProgram 第 2 行就返回）。
 lw212_aim_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed)
-        bullet.init(self, ball_small, COLOR_AIMED, false, true)
+        bullet.init(self, style_of(3), color_of(3, COLOR_AIMED), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210/211 同款）
         self.lw212_bvx = math.cos(angle) * speed
         self.lw212_bvy = math.sin(angle) * speed
@@ -5307,7 +5354,7 @@ lw212_aim_bullet = Class(bullet, {
 ---使魔留在原地的弹（Sub46）：speed = 0，200 帧 WAIT 之后沿出生时的角度加速 60 帧。
 lw212_bullet = Class(bullet, {
     init = function(self, x, y, angle)
-        bullet.init(self, ball_small, COLOR_PELLET, false, true)
+        bullet.init(self, style_of(2), color_of(2, COLOR_PELLET), false, true)
         self.bound = false
         self.x, self.y = x, y
         self.vx, self.vy = 0, 0             -- speed1 = speed2 = 0
@@ -5981,7 +6028,7 @@ end
 ---  count1 奇数 → 偏移 0,±step,±2step…；偶数 → ±step/2,±3step/2…；不含自机角。
 ---  （本卡小怪的 count1 恒为 1 → 偏移恒 0，angleStep 用不上。）
 ---  ★ 池满 → **整波不生**；波中途生不出来就丢掉剩下的（BulletManager.cpp:685-712）。
-local function fan_shot(x, y, base, count1, speed, color, step, spawn_frames, life)
+local function fan_shot(x, y, base, count1, speed, color, btype, step, spawn_frames, life)
     local used = pool_used()
     for i = 0, count1 - 1 do
         if used >= POOL_SIZE then return end
@@ -5992,7 +6039,8 @@ local function fan_shot(x, y, base, count1, speed, color, step, spawn_frames, li
             off = math.floor(i / 2) * step + step * 0.5
         end
         if i % 2 == 1 then off = -off end
-        pool[#pool + 1] = New(lw213_bullet, x, y, base + off, speed, color, spawn_frames, life)
+        pool[#pool + 1] = New(lw213_bullet, x, y, base + off, speed, color, btype,
+                spawn_frames, life)
         used = used + 1
     end
 end
@@ -6000,8 +6048,8 @@ end
 ---本卡的弹。SPAWN_FAST 出生动画 + 直线；`life > 0` = 带 WAIT 记录（小怪弹，
 ---出生 life 帧后自己 DESPAWN），`life == 0` = 没有 transform 记录（BOSS 弹，出屏回收）。
 lw213_bullet = Class(bullet, {
-    init = function(self, x, y, angle, speed, color, spawn_frames, life)
-        bullet.init(self, ball_small, color, false, true)
+    init = function(self, x, y, angle, speed, color, btype, spawn_frames, life)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210/211/212 同款）
         self.lw213_bvx = math.cos(angle) * speed
         self.lw213_bvy = math.sin(angle) * speed
@@ -6088,7 +6136,7 @@ lw213_minion = Class(object, {
             ---出弹位置用的是**上一帧末**的位置（RunEcl 在 UpdateMovement 之前）。
             local ang = self.lw213_theta + PI + self.lw213_acc
             fan_shot(self.x, self.y, ang, self.lw213_count1, MINION_FAN_SPEED,
-                    self.lw213_color, MINION_FAN_STEP, MINION_SPAWN_FRAMES, self.lw213_cull)
+                    self.lw213_color, 2, MINION_FAN_STEP, MINION_SPAWN_FRAMES, self.lw213_cull)
             self.lw213_acc = self.lw213_acc + self.lw213_omega
         end
         ---② 子 context Sub115（t=120）：半径跳到 380、径向速度归零、角度复位成组的随机角。
@@ -6226,7 +6274,7 @@ local function boss_frame(owner)
     if cnt then
         ---`ins_97`：从 BOSS 的 worldPosition（+ shootOffset = 0，t=0 的 ins_110）出弹。
         fan_shot(owner.x, owner.y, owner.lw213_aim, cnt, BOSS_FAN_SPEED,
-                BOSS_BULLET_COLOR, BOSS_FAN_STEP, BOSS_SPAWN_FRAMES, 0)
+                BOSS_BULLET_COLOR, 10, BOSS_FAN_STEP, BOSS_SPAWN_FRAMES, 0)
     end
     if t == CYCLE_LAST then
         owner.lw213_t = RESTART_T                    -- `ins_4(510, −236)`
@@ -6610,10 +6658,11 @@ local function fired_transform(b)
     end
 end
 
----本卡的弹（bulletType 11）。占位贴图 ball_small。
+---本卡的弹（bulletType 11 → style_of(11) = square；颜色走 color_of(11, …)）。
+---★ 飞行途中的 SET_SPRITE 记录（bulletType 3 / 11）移植版只记一笔、尚未真正换贴图。
 lw214_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color)
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(11), color_of(11, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210/211/212/213 同款）
         self.b_angle = angle
         self.b_speed = speed
@@ -7233,11 +7282,11 @@ local function fired_transform(b)
     end
 end
 
----本卡的弹（bulletType 14/15，两者出生脚本都是 script24）。占位贴图 ball_small。
+---本卡的弹（bulletType 14/15 → 都是 style_of 的 star_big；颜色走 color_of，走 8 色表）。
 ---  mag = 这一发所属 Sub61 context 的 lf6（= ins_111 #2 的 magnitude）。
 lw215_bullet = Class(bullet, {
-    init = function(self, x, y, angle, speed, color, mag)
-        bullet.init(self, ball_small, color, false, true)
+    init = function(self, x, y, angle, speed, color, btype, mag)
+        bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209..214 同款）
         self.b_angle = angle
         self.b_speed = speed
@@ -7394,8 +7443,8 @@ lw215_head = Class(object, {
 
 ---一次出弹（ins_99 = SHOOT_CIRCLE）。池满 → 整波不生；波中途生不出来就丢掉剩下的
 ---（BulletManager.cpp:685-712）。角度 = lf0 − i·2π/count1（我们坐标取反）。
----（bulletType 14/15 的占位贴图一样，所以这里只区分颜色：TH08 的 1/3 → 我们的 2/4。）
-local function ring_shot(owner, color)
+---（bulletType 14/15 → star_big；颜色 TH08 的 1/3 → 我们按表 3.2 换算。）
+local function ring_shot(owner, color, btype)
     local used = pool_used()
     if used >= POOL_SIZE then
         return
@@ -7409,7 +7458,7 @@ local function ring_shot(owner, color)
             return
         end
         pool[#pool + 1] = New(lw215_bullet, owner.x, owner.y,
-                owner.g_rot - i * 2 * PI / n, GUN_SPEED, th08_color(color),
+                owner.g_rot - i * 2 * PI / n, GUN_SPEED, th08_color(color), btype,
                 owner.g_accel)
         used = used + 1
     end
@@ -7423,9 +7472,9 @@ end
 ---（t=60 那三条 ins_111 是「一次性写记录」，效果在挂载时就固定了，不再占指令位。）
 local OP_SHOOT, OP_ROT, OP_DECJMP, OP_RET = 1, 2, 3, 4
 local SUB61 = {
-    { t = 60, op = OP_SHOOT, color = 1 },       -- bulletType 14 / color 1
+    { t = 60, op = OP_SHOOT, color = 1, btype = 14 },   -- bulletType 14 / color 1
     { t = 60, op = OP_ROT },
-    { t = 68, op = OP_SHOOT, color = 3 },       -- bulletType 15 / color 3
+    { t = 68, op = OP_SHOOT, color = 3, btype = 15 },   -- bulletType 15 / color 3
     { t = 68, op = OP_ROT },
     { t = 76, op = OP_DECJMP, target = 1 },
     { t = 76, op = OP_RET },
@@ -7455,7 +7504,7 @@ local function gun_frame(owner)
             break
         end
         if ins.op == OP_SHOOT then
-            ring_shot(owner, ins.color)
+            ring_shot(owner, ins.color, ins.btype)
             owner.g_pc = owner.g_pc + 1
         elseif ins.op == OP_ROT then
             owner.g_rot = owner.g_rot + GUN_ROT_STEP
@@ -7888,10 +7937,10 @@ local function fired_transform(b)
     c.timer = c.timer + 1
 end
 
----本卡的弹（bulletType 20）。占位贴图 ball_small。
+---本卡的弹（bulletType 20 → style_of(20) = knife_b）。
 lw216_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color, spawn_frames, cd, mark)
-        bullet.init(self, ball_small, color, false, true)
+        bullet.init(self, style_of(20), color_of(20, color), false, true)
         self.bound = false                   -- 出屏回收自己判（卡 206/209/210/211/212/213 同款）
         self.b_angle = angle
         self.b_speed = speed
@@ -8662,13 +8711,13 @@ local function pol_step(b)
     end
 end
 
----本卡的弹（bulletType 6 / color 4）。占位贴图 ball_small。
+---本卡的弹（bulletType 6 → style_of(6) = arrow_small；颜色走 color_of(6, …)）。
 ---  angle_th08 = 出膛角（TH08 口径）、adelta = 记录 2 的 angleDelta（= 那一拍抽到的 lf0）。
 lw217_bullet = Class(bullet, {
     init = function(self, x, y, angle_th08, adelta)
         ---`bullet.init(self, imgclass, index, stay, destroyable)`：group = 1、colli = true
         ---（THlib/bullet/bullet.lua:85-89）。
-        bullet.init(self, ball_small, th08_color(BULLET_COLOR), false, true)
+        bullet.init(self, style_of(6), color_of(6, th08_color(BULLET_COLOR)), false, true)
         self.b_angle = -angle_th08
         self.b_speed = 0                     -- speed1 = 0、count2 = 1 → 出膛速度恒 0
         self.b_vx, self.b_vy = 0, 0
@@ -9522,8 +9571,8 @@ local function card_del(owner)
     end
 end
 
-BIG_CLS = make_bullet(ball_big, BIG_COLOR, BIG_SPAWN, BIG_HALF)
-MID_CLS = make_bullet(ball_mid, MID_COLOR, MID_SPAWN, MID_HALF)
+BIG_CLS = make_bullet(style_of(20), color_of(20, BIG_COLOR), BIG_SPAWN, BIG_HALF)
+MID_CLS = make_bullet(style_of(10), color_of(10, MID_COLOR), MID_SPAWN, MID_HALF)
 
 CARD[219] = {
     init = function(owner)
@@ -10309,10 +10358,10 @@ local function card_del(owner)
     end
 end
 
-bullet_cls_23a = make_bullet(ball_mid, COLOR_WHEEL_A, HALF23)
-bullet_cls_23b = make_bullet(ball_mid, COLOR_WHEEL_B, HALF23)
-bullet_cls_4 = make_bullet(ball_mid, COLOR_FAN, HALF4)
-bullet_cls_7 = make_bullet(ball_big, COLOR_SUB7, HALF7)
+bullet_cls_23a = make_bullet(style_of(8), color_of(8, COLOR_WHEEL_A), HALF23)
+bullet_cls_23b = make_bullet(style_of(8), color_of(8, COLOR_WHEEL_B), HALF23)
+bullet_cls_4 = make_bullet(style_of(8), color_of(8, COLOR_FAN), HALF4)
+bullet_cls_7 = make_bullet(style_of(10), color_of(10, COLOR_SUB7), HALF7)
 emitter_neg_cls = make_emitter(1, LASER_COLOR_NEG)
 emitter_pos_cls = make_emitter(-1, LASER_COLOR_POS)
 
@@ -10611,14 +10660,14 @@ local function th08_color(c) return c + 1 end
 
 local BULLET = {
     [6] = {
-        [2] = make_bullet(ball_small, th08_color(2), HW6, HH6),
-        [4] = make_bullet(ball_small, th08_color(4), HW6, HH6),
-        [6] = make_bullet(ball_small, th08_color(6), HW6, HH6),
+        [2] = make_bullet(style_of(6), color_of(6, th08_color(2)), HW6, HH6),
+        [4] = make_bullet(style_of(6), color_of(6, th08_color(4)), HW6, HH6),
+        [6] = make_bullet(style_of(6), color_of(6, th08_color(6)), HW6, HH6),
     },
     [11] = {
-        [2] = make_bullet(ball_small, th08_color(2), HW11, HH11),
-        [4] = make_bullet(ball_small, th08_color(4), HW11, HH11),
-        [6] = make_bullet(ball_small, th08_color(6), HW11, HH11),
+        [2] = make_bullet(style_of(11), color_of(11, th08_color(2)), HW11, HH11),
+        [4] = make_bullet(style_of(11), color_of(11, th08_color(4)), HW11, HH11),
+        [6] = make_bullet(style_of(11), color_of(11, th08_color(6)), HW11, HH11),
     },
 }
 
