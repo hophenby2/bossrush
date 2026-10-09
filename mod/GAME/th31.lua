@@ -385,6 +385,47 @@ local CARD = {}
 ---    在本文件里被用到（全 14 张卡扫过一遍，见各卡注释）；没用到的分支也照
 ---    BulletManager.cpp 写了，省得下一张卡再回来补。
 ---------------------------------------------------------------
+---★ 自机当前是不是**妖怪形态**（原作 `g_Player.IsYoukai()`，PlayerBomb.cpp:31-34）：
+---  原作自机每帧更新 `focusTransitionFrames`（Player.cpp:641-694 / 725-755）：
+---    · focus 键**状态变化的那一帧**把它清 0（该帧**不**提交形态，isYoukai 原样保留）；
+---    · 之后每帧 +1，累计到 7 才把 `isYoukai` 提交成当前 focus 值；
+---    · 过渡期间 `isYoukai` 保持**上一次提交**的值（不是立刻翻转；中途松手/再按会重新计时）。
+---  提交后把敌机的难度掩码 override 成 `妖怪 ? 0x40 : 0x20`（EnemyManager.cpp:871-903）
+---  ⇒ ECL 里 0x4x/0x5x 段的「妖怪那一支」只在（低速满 7 帧后）执行。
+---  移植版原来按人类那一支写死，这里给出**带 7 帧过渡**的每帧形态信号。
+---  低速信号 = `player.slow`（THlib 每帧刷新，player_system.lua:133-137；1 = 按住 focus）。
+---★ 过渡必须**每帧只推进一次**（原作在自机 update 里跑一次），而本函数会被同帧的
+---  多发弹调用多次 —— 用关卡帧号 `stage.current_stage.timer`（ext.lua:156 清 0、
+---  :191 每帧 +1，且早于 ObjFrame()，整个对象帧期间不变）当时间戳去重，
+---  同帧内重复调用直接返回已提交值。
+---  取不到**数值**帧号时（离线自检桩件里 `stage` 是 stub）退化成「每次调用都推进」：
+---  桩件里 `player.slow` 恒非 1 ⇒ 永远提交 false，与旧的写死人类支逐字节一致。
+---★ **必须声明在 `local EX = {}` 那个 `do` 块的外面**（块里的 local 出了块就没了，
+---  后面所有卡都会解析成全局 nil）。`player` 只在函数体里取（顶层取会拿到 nil）。
+local pform_stamp = nil         --- 上次推进时的关卡帧号（同帧去重）
+local pform_mode = nil          --- 上一帧观察到的 focus 状态（true = 低速/妖怪）
+local pform_frames = 0          --- = 原作 focusTransitionFrames
+local pform_youkai = false      --- 已提交的 isYoukai
+local function player_is_youkai()
+    local stamp = stage and stage.current_stage and stage.current_stage.timer
+    if type(stamp) == "number" then
+        if stamp == pform_stamp then
+            return pform_youkai
+        end
+        pform_stamp = stamp
+    end
+    local focus = (player ~= nil and player.slow == 1)
+    if focus ~= pform_mode then
+        pform_mode = focus
+        pform_frames = 0
+    else
+        pform_frames = pform_frames + 1
+    end
+    if pform_frames >= 7 then
+        pform_youkai = focus
+    end
+    return pform_youkai
+end
 local EX = {}
 do
 local PI = 3.141592653589793
@@ -1070,9 +1111,15 @@ end
 ---  op 只支持 96..99（FAN_AIMED / FAN / CIRCLE_AIMED / CIRCLE）—— EX 14 张卡
 ---  扫过一遍，这四种之外一条都没有；这四种正好一一对上 aimMode 0..3。
 function EX.shoot(who, x, y, a)
-    ---ONLY_WHEN_PLAYER_YOUKAI / HUMAN（:688-696）：移植版按「自机是人类」这一支，
-    ---所以只打妖梦系的那一半不生。
-    if bit_hit(a.flags, K_ONLY_YOUKAI) then return end
+    ---ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+    ---EclDependencies.cpp:703-711）：原作按敌机的 `youkaiAligned` 位（使魔每帧刷成
+    ---`g_Player.IsYoukai()`，EnemyManager.cpp:871-903）筛。移植版改成**实时**判自机形态：
+    ---低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+    if player_is_youkai() then
+        if bit_hit(a.flags, K_ONLY_HUMAN) then return end
+    else
+        if bit_hit(a.flags, K_ONLY_YOUKAI) then return end
+    end
     spawn_pattern(x, y, {
         aimMode = a.op - 96, btype = a.type, color = a.color,
         count1 = a.count1 or 1, count2 = a.count2 or 1,
@@ -11136,7 +11183,7 @@ local GUN_LOOPS = 3                 -- exI0 = [10036] = 3
 ---  （EnemyManager.cpp:184-186），跟 BOSS 当前相位是第几段无关；Sub36/37 里也没有
 ---  `ins_152` ⇒ 一定吃这组 ⇒ rank 32 时 `speed1 +0.15`、`speed2 +0.075`。
 local RANK_SPD, RANK_SPD2 = 0.15, 0.075
----★ lf6（人类那一支）/ lf7（妖怪那一支）—— 见下面 fire 的注：0x5f 那条不发。
+---★ lf6（人类那一支）/ lf7（妖怪那一支）—— 见下面 fire 的注：两支按自机形态二选一。
 local GUN_SPD_A, GUN_SPD_B = 3.5 + RANK_SPD, 2.5 + RANK_SPD
 local GUN_COUNT = 8                 -- ins_99 的 count1
 ---ins_99 的 angleStep = 0x3e860a92 = float32 π/12（取反；count2 = 1 ⇒ 用不上）。
@@ -11205,22 +11252,31 @@ familiar = Class(object, {
         end
         self.fam_t = t + 1
     end,
-    ---★ 一拍只有**一条** `ins_99` 在人类形态下执行。原件的两行是**同帧并列**的
-    ---  `SHOOT_CIRCLE`（`@17132` / `@17176`），但难度掩码一个是 **0x3f**（色 li2、
-    ---  speed1 = lf6 = 3.5）、一个是 **0x5f**（色 li1、speed1 = lf7 = 2.5）：
+    ---★ 原件的两行是**同帧并列**的 `SHOOT_CIRCLE`（`@17132` / `@17176`）：难度掩码
+    ---  一个是 **0x3f**（色 li2、speed1 = lf6 = 3.5）、一个是 **0x5f**（色 li1、
+    ---  speed1 = lf7 = 2.5）——其余三个操作数完全相同（count1 = 8、count2 = 1、
+    ---  speed2 = 0.5、angle = lf0、step = π/12、flags = 514）。
     ---  `0x5f & 0x28 = 0x08 ≠ 0x28`（EclRun.cpp:69-73；`override = 人类 ? 0x20 : 0x40`，
-    ---  EnemyManager.cpp:903）⇒ **妖怪那一支在人类形态下不执行**。本文件一律按人类
-    ---  形态移植（同卡 191/193 的「色 6 不实现」、同关卡 3436 的 GUN[23]）——
-    ---  所以这里只发色 li2 / 速度 lf6 的 8 向环（li1/GUN_SPD_B 留着表示原件里
-    ---  那一支的参数，不参与出弹）。
-    ---  （★ 必须注意：这不是「一拍两发」。原作人类形态下一拍就是一发。）
+    ---  EnemyManager.cpp:903）⇒ **同帧只有一条执行**：高速（人类）走 0x3f 那支、
+    ---  低速（妖怪）走 0x5f 那支（★ 这不是「一拍两发」）。
     fire = function(self)
-        EX.shoot(self, self.x, self.y, {
-            op = 99, type = GUN_TYPE, color = EX.color(self.li2),
-            count1 = GUN_COUNT, count2 = 1,
-            speed1 = GUN_SPD_A, speed2 = 0.5 + RANK_SPD2,
-            angle = self.gun_ang, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
-        })
+        if player_is_youkai() then
+            ---0x5f：色 li1 / 速度 lf7。
+            EX.shoot(self, self.x, self.y, {
+                op = 99, type = GUN_TYPE, color = EX.color(self.li1),
+                count1 = GUN_COUNT, count2 = 1,
+                speed1 = GUN_SPD_B, speed2 = 0.5 + RANK_SPD2,
+                angle = self.gun_ang, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
+            })
+        else
+            ---0x3f：色 li2 / 速度 lf6。
+            EX.shoot(self, self.x, self.y, {
+                op = 99, type = GUN_TYPE, color = EX.color(self.li2),
+                count1 = GUN_COUNT, count2 = 1,
+                speed1 = GUN_SPD_A, speed2 = 0.5 + RANK_SPD2,
+                angle = self.gun_ang, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
+            })
+        end
     end,
 })
 
@@ -12027,8 +12083,8 @@ end
 ---               A（**0x3f = 人类**）：type 3、色 li2(=2)、count1 = 4（Sub41 是 8）、
 ---                  speed1 = lf6、angle = lf0、angleStep = π/12、flags 514；
 ---               B（**0x5f = 妖怪**）：同参数，色 li1、speed1 = lf7。
----      ★ 人类形态下只有 A 跑（`0x5f & 0x28 = 0x08 ≠ 0x28`，EclRun.cpp:69-73 +
----        EnemyManager.cpp:903）⇒ 本移植版一拍只发 A 那一发（见 fire 的注）。
+---      ★ A 与 B 同帧并列、掩码互斥（`0x5f & 0x28 = 0x08 ≠ 0x28`，EclRun.cpp:69-73 +
+---        EnemyManager.cpp:903）⇒ 一拍只发一发：高速（人类）走 A、低速（妖怪）走 B。
 ---      ★ 一拍就是「一个 4/8 方向十字（CIRCLE，不瞄自机）」。
 ---      节拍：`ins_2(li7)` 冻 15 帧 → 再一拍 → 冻 → `ins_5(0, 轮头, exI0)`：
 ---             JUMP_DEC 把 exI0 减一、还 > 0 就跳回轮头 ⇒ **第一段 3 轮 = 6 拍**
@@ -12244,21 +12300,29 @@ familiar = Class(object, {
         end
         self.fam_t = t + 1
     end,
-    ---★ 一拍只有**一条** `ins_99` 在人类形态下执行。原件的两行是**同帧并列**的
-    ---  `SHOOT_CIRCLE`（Sub39 `@19752`/`@19796`、Sub41 同构），但掩码一个是 **0x3f**
-    ---  （色 li2、speed1 = lf6）、一个是 **0x5f**（色 li1、speed1 = lf7）：
+    ---★ 原件的两行是**同帧并列**的 `SHOOT_CIRCLE`（Sub39 `@19752`/`@19796`、Sub41
+    ---  同构）：难度掩码一个是 **0x3f**（色 li2、speed1 = lf6）、一个是 **0x5f**
+    ---  （色 li1、speed1 = lf7）；其余操作数相同（count2 = 1、speed2 = 0.5、
+    ---  angle = lf0、step = π/12、flags = 514）。
     ---  `0x5f & 0x28 = 0x08 ≠ 0x28`（EclRun.cpp:69-73；`override = 人类 ? 0x20 : 0x40`，
-    ---  EnemyManager.cpp:903）⇒ **妖怪那一支不执行**。本文件一律按人类形态移植
-    ---  （同卡 191/193 的「色 6 不实现」、同关卡 3436 的 GUN[23]）——
-    ---  所以这里只发色 li2 / 速度 spd_a 的那一环（fam_li1/spd_b 留着表示原件里
-    ---  妖怪那一支的参数，不参与出弹）。
+    ---  EnemyManager.cpp:903）⇒ **同帧只有一条执行**：高速（人类）走 0x3f、
+    ---  低速（妖怪）走 0x5f（色 li1 / 速度 spd_b）。
     fire = function(self)
-        EX.shoot(self, self.x, self.y, {
-            op = 99, type = GUN_TYPE, color = EX.color(self.fam_li2),
-            count1 = self.fam_gun.count1, count2 = 1,
-            speed1 = self.fam_gun.spd_a, speed2 = GUN_SPD2,
-            angle = self.gun_ang, step = GUN_STEP, flags = GUN_FLAGS,
-        })
+        if player_is_youkai() then
+            EX.shoot(self, self.x, self.y, {
+                op = 99, type = GUN_TYPE, color = EX.color(self.fam_li1),
+                count1 = self.fam_gun.count1, count2 = 1,
+                speed1 = self.fam_gun.spd_b, speed2 = GUN_SPD2,
+                angle = self.gun_ang, step = GUN_STEP, flags = GUN_FLAGS,
+            })
+        else
+            EX.shoot(self, self.x, self.y, {
+                op = 99, type = GUN_TYPE, color = EX.color(self.fam_li2),
+                count1 = self.fam_gun.count1, count2 = 1,
+                speed1 = self.fam_gun.spd_a, speed2 = GUN_SPD2,
+                angle = self.gun_ang, step = GUN_STEP, flags = GUN_FLAGS,
+            })
+        end
     end,
 })
 
@@ -13090,8 +13154,10 @@ end
 ---      speed = 2.5、angleStep = π/12、flags 514）→ 每发 4 颗 90° 均分的十字；
 ---      之后 xi0 = 12，每轮 2 发、**每发之后 lf0 += lf1**（使魔继承来的偏角）再归一化
 ---      ⇒ 十字一边打一边转（±9° 或 ±6° 一发）。整段 120 帧后 ins_53 RETURN。
----      ★ 每对里的第一条（色 6）在 Lunatic+人类难度下**不执行**（难度掩码判据，
----        EclRun.cpp:69-73）—— 实际只打色 8 的那一半。
+---      ★ 每对里的两条同帧并列：0x5f（色 6、speed1 = lf7 = 2.0）与 0x3f（色 8、
+---        speed1 = lf6 = 2.5），其余操作数相同（count1 = 4、count2 = 1、speed2 = 0.5、
+---        angle = lf0、step = π/12、flags = 514）。难度掩码判据（EclRun.cpp:69-73）⇒
+---        同帧只有一条执行：高速（人类）打色 8、低速（妖怪）打色 6。
 ---  ★ 占位：使魔 = "servant"（原作 24×24 判定、life 1350/750，按本文件 205..216 的惯例
 ---    做成纯观感）、弹 = ball_small。最后统一换素材。
 ---------------------------------------------------------------
@@ -13138,10 +13204,12 @@ local FG_SHOTS_B = 24           -- 后半 xi0 = 12 × 每轮 2 发
 local FG_END = (FG_SHOTS_A + FG_SHOTS_B) * FG_STEP      -- 120 帧后 ins_53 RETURN
 local FG_ANGLE = -PI / 2        -- lf0 = π/2（TH08）→ 我们 −π/2
 local FG_SPEED = 2.5            -- lf6（ins_99 的 speed1）
+local FG_SPEED_B = 2.0          -- lf7（妖怪那一支的 speed1）
 local FG_SPEED2 = 0.5           -- ins_99 的 speed2（count2 = 1，用不上）
 local FG_ANGLE_STEP = 0.2617994 -- ins_99 的 angleStep（π/12）
 local FG_FLAGS = 514            -- 0x202 = SPAWN_FAST | PLAY_SPAWN_SOUND
 local FG_TYPE, FG_COLOR = 2, 8  -- ins_99 的 bulletType / color
+local FG_COLOR_B = 6            -- 妖怪那一支的 color（0x5f 行）
 
 ---BOSS 的枪（Sub6）。
 local GUN_ATTACH = 110          -- Sub5 t=110 的 ins_135(0, 6)
@@ -13198,11 +13266,22 @@ local familiar = Class(object, {
         end
         local g = t - FAM_GUN_AT        -- 枪自己的时间轴
         if g >= 0 and g < FG_END and g % FG_STEP == 0 then
-            EX.shoot(self, self.x, self.y, {
-                op = 99, type = FG_TYPE, color = EX.color(FG_COLOR),
-                count1 = 4, count2 = 1, speed1 = FG_SPEED, speed2 = FG_SPEED2,
-                angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
-            })
+            ---★ 两条同帧并列的 ins_99：0x5f（色 6 / lf7 = 2.0）只在**妖怪**（低速）时执行，
+            ---  0x3f（色 8 / lf6 = 2.5）只在**人类**（高速）时执行（EclRun.cpp:69-73 +
+            ---  EnemyManager.cpp:903 的 `override = 人类 ? 0x20 : 0x40`）。
+            if player_is_youkai() then
+                EX.shoot(self, self.x, self.y, {
+                    op = 99, type = FG_TYPE, color = EX.color(FG_COLOR_B),
+                    count1 = 4, count2 = 1, speed1 = FG_SPEED_B, speed2 = FG_SPEED2,
+                    angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
+                })
+            else
+                EX.shoot(self, self.x, self.y, {
+                    op = 99, type = FG_TYPE, color = EX.color(FG_COLOR),
+                    count1 = 4, count2 = 1, speed1 = FG_SPEED, speed2 = FG_SPEED2,
+                    angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
+                })
+            end
             ---后半（Sub7 #12..#22）：每发之后 lf0 += lf1 再归一化 → 十字一边打一边转。
             if g >= FG_SHOTS_A * FG_STEP then
                 self.fam_ang = add_norm(self.fam_ang + self.fam_delta)
@@ -13589,15 +13668,16 @@ end
 ---  · Sub16（使魔的枪，从使魔的 t=60 起算；★ 时间轴靠 SET_SECONDARY_TIME 冻帧排）：
 ---      xi0 = 2、lf0 = π/2、li7 = 8（每发之间冻 8 帧）、lf6 = 1.2（色 8 的速度）、
 ---      lf7 = 0.8（色 6 的速度）。
----      前 2 轮每轮「色 6 一发 + 色 8 一发」，**色 6 那两条在人类形态下不执行**
----      （difficultyMask 0x5f = 只有妖怪形态才跑，EclRun.cpp:66-75）⇒ 实际每轮 1 发；
----      后 6 轮同样每轮 2 条、只跑色 8 的那一条，并且 `lf0 += lf1` + 归一化
+---      每轮「色 6 一发 + 色 8 一发」同帧并列（0x5f = 妖怪专属，EclRun.cpp:66-75）
+---      ⇒ 每轮只发一条；后 6 轮同样每轮 2 条，并且 `lf0 += lf1` + 归一化
 ---      ⇒ 十字一边打一边转。合起来：**16 发、每 8 帧一发**（0/8/…/120），
 ---      第 5 发（g = 32）起才开始转（前半 2 轮 = 4 发不转），发完 t=128 处 ins_53 RETURN。
 ---      ★ 每发是 `ins_99`(SHOOT_CIRCLE) count1 = 4 ⇒ **4 颗 90° 均分的十字**，
 ---        速度 1.2、angleStep π/12（count1=4 时用不到 step，但照抄）。
----      ★ 色 6（0.8 速）的那一半只在自机是**妖怪**时才出 —— 本移植版按人类形态，
----        所以整条不实现（跟 191 的色 6 处理一致）。
+---      ★ 每轮两条同帧并列：0x5f（色 6、speed1 = lf7 = 0.8）与 0x3f（色 8、
+---        speed1 = lf6 = 1.2），其余操作数相同（count1 = 4、count2 = 1、speed2 = 0.5、
+---        angle = lf0、step = π/12、flags = 514）。难度掩码判据 ⇒ 同帧只有一条执行：
+---        高速（人类）打色 8、低速（妖怪）打色 6 —— 跟 191 的色 6 处理一致。
 ---  ★ 占位：使魔 = "servant"，弹 = ball_small（type 2）/ ball_mid（type 18）。
 ---------------------------------------------------------------
 do
@@ -13638,10 +13718,12 @@ local FG_SHOTS_B = 12                   -- 后半 xi0 = 6 轮 × 每轮 2 条色
 local FG_END = (FG_SHOTS_A + FG_SHOTS_B) * FG_STEP      -- 128 帧后 ins_53 RETURN
 local FG_ANGLE = -PI / 2                -- lf0 = π/2（TH08）→ 我们 −π/2
 local FG_SPEED = 1.2                    -- lf6（色 8 那条的 speed1）
+local FG_SPEED_B = 0.8                  -- lf7（色 6 那条的 speed1）
 local FG_SPEED2 = 0.5
 local FG_ANGLE_STEP = 0.2617994         -- π/12
 local FG_FLAGS = 514                    -- 0x202 = SPAWN_FAST | PLAY_SPAWN_SOUND
 local FG_TYPE, FG_COLOR = 2, 8
+local FG_COLOR_B = 6                    -- 妖怪那一支的 color（0x5f 行）
 
 ---BOSS 的枪（Sub15）—— 与卡 191 的 Sub6 同构，只换弹种。
 local GUN_ATTACH = 110
@@ -13697,11 +13779,21 @@ local familiar = Class(object, {
         end
         local g = t - FAM_GUN_AT
         if g >= 0 and g < FG_END and g % FG_STEP == 0 then
-            EX.shoot(self, self.x, self.y, {
-                op = 99, type = FG_TYPE, color = EX.color(FG_COLOR),
-                count1 = 4, count2 = 1, speed1 = FG_SPEED, speed2 = FG_SPEED2,
-                angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
-            })
+            ---★ 两条同帧并列的 ins_99：0x5f（色 6 / lf7 = 0.8）只在**妖怪**（低速）时执行，
+            ---  0x3f（色 8 / lf6 = 1.2）只在**人类**（高速）时执行。
+            if player_is_youkai() then
+                EX.shoot(self, self.x, self.y, {
+                    op = 99, type = FG_TYPE, color = EX.color(FG_COLOR_B),
+                    count1 = 4, count2 = 1, speed1 = FG_SPEED_B, speed2 = FG_SPEED2,
+                    angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
+                })
+            else
+                EX.shoot(self, self.x, self.y, {
+                    op = 99, type = FG_TYPE, color = EX.color(FG_COLOR),
+                    count1 = 4, count2 = 1, speed1 = FG_SPEED, speed2 = FG_SPEED2,
+                    angle = self.fam_ang, step = FG_ANGLE_STEP, flags = FG_FLAGS,
+                })
+            end
             ---第 3 发（g = 16）起，每发之后 lf0 += lf1 再归一化。
             if g >= FG_SHOTS_A * FG_STEP then
                 self.fam_ang = add_norm(self.fam_ang + self.fam_delta)
@@ -23115,7 +23207,8 @@ end
 ---    Sub15 `#14..#21` 的 (xi0, lf2) 四行 = (8, 0.785398) / (16, 0.392699) /
 ---    (20, 0.314159) / **(20, 0.314159) = 0xf8 = Lunatic**；
 ---    Sub16 `#2..#9` 的 (lf3, li2) 四行 = (1.2, 3) / (1.5, 10) / (2, 10) / **(2.5, 14)**；
----    Sub18 `#5`（mask 0x5f）是低难度的第二条 SHOOT_FAN。其余指令全 0xff ⇒ 结构不随难度变。
+---    Sub18 `#4` 与 `#5` 是同帧并列的第二/第三条 SHOOT_FAN：`#4` = 0x3f（人类，色 2
+---    速 1.5）、`#5` = 0x5f（妖怪，色 6 速 3.0）。其余指令全 0xff ⇒ 结构不随难度变。
 ---  ★ rank：移植版固定 rank = 32（见文件头）。本卡是**非符**，`DispatchShotInstruction`
 ---    里那道 `if (!g_Spellcard.IsActive())` 的豁免**不成立**（EclDependencies.cpp:750-773）
 ---    ⇒ 每发出弹的 count1/count2/speed1/speed2 都要叠 rank 缩放。Sub15/16/18 都没有
@@ -23273,9 +23366,17 @@ local FAM_CHILD_AT = 1                  -- `#6 SET_CHILD_ECL 0 → Sub18` 的 ti
 local FAM_SHOTS = 10                    -- Sub18 `#2 xi0 = 10`
 local FAM_SHOT_GAP = 20                 -- Sub18 `#6 JUMP_DEC` 自己的 time（= 每发间隔）
 local FAM_TYPE, FAM_COLOR = 3, 2        -- Sub18 `#4` 的弹种 / 色号
-local FAM_B_SPEED = 1.5 + RANK_SPD      -- Sub18 `#4` 的 speed1 = 1.5
+local FAM_B_SPEED = 1.5 + RANK_SPD      -- Sub18 `#4`（0x3f，人类）的 speed1 = 1.5
 local FAM_B_SPEED2 = 0.8 + RANK_SPD2    -- Sub18 `#4` 的 speed2（用不上，照抄）
 local FAM_B_FLAGS = 514                 -- 0x202 = SPAWN_FAST | SPAWN_SND
+---★ Sub18 `#5`（原件的第 2 条 SHOOT_FAN，掩码 0x5f）是**妖怪**那一支：色 6、speed1 = 3.0、
+---  flags = 642（0x282 = 0x202 | AIMED）。同帧并列 ⇒ 只有一条执行（EclRun.cpp:69-74 +
+---  EnemyManager.cpp:903）。AIMED 位点亮后才会吃到 ct=0 那条 `SET_BULLET_TRANSFORM`
+---  （`ins_111(0, 128, 0, 60, 1, 0, 1.5)` = 60 帧后折向自机、速度换 1.5）。
+local FAM_COLOR_B = 6
+local FAM_B_SPEED_B = 3.0 + RANK_SPD
+local FAM_B_FLAGS_B = 642
+local FAM_B_AIM_INTERVAL, FAM_B_AIM_SPEED = 60, 1.5
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）。
 local MIN_DIST2 = 1024.0
@@ -23386,6 +23487,9 @@ local familiar = Class(object, {
         ---    t=1：`#6 SET_CHILD_ECL 0 → Sub18` —— 子 context 挂上当帧就跑 ct=0。
         if t == FAM_CHILD_AT then
             self.lw15_gun = 0
+            ---`ins_111(0, 128, 0, 60, 1, 0, 1.5)`（掩码 0xff，无条件执行）：AIMED 折向记录。
+            ---人类那支 flags = 0x202 不带 0x80，所以这条只在妖怪那支上起作用。
+            EX.set_record(self, 0, EX.K.AIMED, 0, FAM_B_AIM_INTERVAL, 1, 0, FAM_B_AIM_SPEED)
         end
         ---② 子 context（Sub18，ct = 挂上那一帧的 0）。逐帧模拟（simsub.py … 18）确认：
         ---   ct=0 抽一次 lf0（= 飞行方向 + π，之后那一句 `lf0 += π` 只此一次）、随后
@@ -23399,12 +23503,22 @@ local familiar = Class(object, {
                 local ang = wrap_pi(self.lw15_dir + PI)
                 ---`#4`：闸②按**每一发**判（原作每条 SHOOT_FAN 各自查一次近身距离）。
                 if not too_close(self.x, self.y) then
-                    EX.shoot(self, self.x, self.y, {
-                        op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR),
-                        count1 = 1, count2 = 1,
-                        speed1 = FAM_B_SPEED, speed2 = FAM_B_SPEED2,
-                        angle = ang, step = 0, flags = FAM_B_FLAGS,
-                    })
+                    ---★ `#4`(0x3f，色 2 速 1.5) / `#5`(0x5f，色 6 速 3.0) 形态二选一。
+                    if player_is_youkai() then
+                        EX.shoot(self, self.x, self.y, {
+                            op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR_B),
+                            count1 = 1, count2 = 1,
+                            speed1 = FAM_B_SPEED_B, speed2 = FAM_B_SPEED2,
+                            angle = ang, step = 0, flags = FAM_B_FLAGS_B,
+                        })
+                    else
+                        EX.shoot(self, self.x, self.y, {
+                            op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR),
+                            count1 = 1, count2 = 1,
+                            speed1 = FAM_B_SPEED, speed2 = FAM_B_SPEED2,
+                            angle = ang, step = 0, flags = FAM_B_FLAGS,
+                        })
+                    end
                 end
             end
             self.lw15_gun = g + 1
@@ -27091,9 +27205,10 @@ end
 ---      · 掩码 **0x3f（人类）**：type3 色2 速 1.5、flags 0x202（普通）；
 ---      · 掩码 **0x5f（妖怪）**：type3 色6 速 3.0、flags 0x282（＋AIMED ⇒ 飞 60 帧减速、
 ---        之后拐向自机、速度换成 1.5，只拐一次）。
----    ★ 人类形态下只有前者跑（`0x5f & 0x28 = 0x08 ≠ 0x28`，EclRun.cpp:69-73 +
----      EnemyManager.cpp:903）⇒ 本移植版只发色 2 速 1.5 的那一发（同卡 191/193 的
----      「色 6 不实现」）；GUN_SPEED_B / GUN_FLAGS_B 留着表示原件里妖怪那一支的参数。
+---    ★ 两条同帧并列，其余操作数相同（count1 = count2 = 1、speed2 = 0.8、angle = lf0、
+---      step = π/32）；难度掩码 `0x5f & 0x28 = 0x08 ≠ 0x28`（EclRun.cpp:69-73 +
+---      EnemyManager.cpp:903）⇒ 同帧只有一条执行：高速（人类）发色 2 速 1.5 那一发、
+---      低速（妖怪）发色 6 速 3.0 那一发（带 AIMED，会拐向自机）。
 ---    `ins_5(0, //20, 10)` 一共 10 组，第 200 帧 RETURN（子 context 回收）。
 ---  ★ 已知差异：原作使魔 `ins_81(3)` 开 ACCEPTS_DAMAGE|COLLISION、life 300 ⇒ 打得掉；
 ---    移植版跟其它卡的使魔一样**不给判定**（占位做法），所以 20 只使魔会一直留到换卡
@@ -27220,7 +27335,7 @@ local function f16_advance(self)
     self.y = self.y - math.sin(self.f_dir) * self.f_sp
 end
 
----Sub20 的一拍（子 context；挂上那一帧算它的 t=0）。人类形态下只有色 2 那一发。
+---Sub20 的一拍（子 context；挂上那一帧算它的 t=0）。两条按自机形态二选一。
 local function f16_gun_volley(self)
     if self.f_gun_dir == nil then
         ---`ins_15(lf0, π)` + `ins_37`：掉头往回打。
@@ -27234,11 +27349,21 @@ local function f16_gun_volley(self)
     ---使魔是 `ins_91` 新生的敌机 ⇒ 出生默认 1024（32 px）的闸照吃（见卡头）。
     if too_close(self.x, self.y) then return end
     local ang = -self.f_gun_dir      -- 我们口径
-    EX.shoot(self, self.x, self.y, {
-        op = 97, type = 3, color = EX.color(2),
-        count1 = 1, count2 = 1, speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
-        angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_A,
-    })
+    ---★ 0x5f（妖怪 / 低速，色 6 速 3.0 / flags 0x282）与 0x3f（人类 / 高速，色 2 速 1.5 /
+    ---  flags 0x202）同帧并列，只有一条执行（EclRun.cpp:69-73 + EnemyManager.cpp:903）。
+    if player_is_youkai() then
+        EX.shoot(self, self.x, self.y, {
+            op = 97, type = 3, color = EX.color(6),
+            count1 = 1, count2 = 1, speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
+            angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_B,
+        })
+    else
+        EX.shoot(self, self.x, self.y, {
+            op = 97, type = 3, color = EX.color(2),
+            count1 = 1, count2 = 1, speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
+            angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_A,
+        })
+    end
 end
 
 local lw16_fam = Class(object, {
@@ -45889,9 +46014,9 @@ end
 ---    `#12 FAN_AIMED(bt3 色6) #13 FAN_AIMED(bt1 色5) #14 SET_SECONDARY_TIME li0
 ---    #15 FAN_AIMED(bt3 色6) #16 SET_SECONDARY_TIME li0 #17 JUMP #12`——
 ---    每次冻结正好 20 帧 ⇒ **每 20 帧一波**。`#13` 的难度掩码是 0x5f（只有妖怪
----    形态），本文件按人类形态移植 ⇒ 不发；`#12`/`#15` 是同一条 bt3 色6 弹，
----    于是人类形态下的实际节奏就是 **每 20 帧一条 bt3 色6 的 5 连自机狙直线**
----    （帧 0、20、40 …）。踩过：曾把 #13 也发出去，多打一倍。
+---    形态才跑），`#12`/`#15` 是人类那一条（0x3f）—— 同帧并列、形态二选一：
+---    高速（人类）发 **bt3 色6 的 5 连自机狙直线**，低速（妖怪）发 **#13 的
+---    bt1 色5 2 连自机狙直线**（两行各冻 20 帧，节奏都是每 20 帧一发）。
 ---  ★ Sub40 / Sub41（BOSS 的螺旋）：`exI0 = 40`、循环体 9 帧一轮（`JUMP_DEC` 在 t=9、
 ---    回跳时 time 置 0）⇒ 共 40 波、占 360 帧。每波（Lunatic 只跑 0xf8 那几条）：
 ---      `SET_BULLET_TRANSFORM slot1 = REL(90, 2, ∓π/2, 1.4)` → CIRCLE(c1 = 4, c2 = 2,
@@ -46021,13 +46146,14 @@ end
 ---------------------------------------------------------------------
 local GUN_PERIOD = 20           -- `ins_2 SET_SECONDARY_TIME li0`（Lunatic li0 = 20）
 local GUN_A = { type = 3, color = 7, count2 = 5, speed1 = 2.5, speed2 = 1.0 }
----★ 循环体里第 2 条 `SHOOT_FAN_AIMED`（bt1 色5、count2 = li1 = 2）的难度掩码是
----  **0x5f**（`#13`），只覆盖妖怪形态（EclRunLow/`EclRun.cpp:66-75`：一行生效
+---妖怪那一支（`#13`，0x5f）：bt1 色5（EX.color(5) = 6）、count2 = li1 = 2、
+---speed1 = lf0 = 2.5、speed2 = 1、angle = 0、step = 0.1847996、flags = 0x208。
+local GUN_B = { type = 1, color = 6, count2 = 2, speed1 = 2.5, speed2 = 1.0 }
+---★ 循环体里 `#12`/`#15` 是 0x3f（人类）、`#13` 是 **0x5f**（妖怪）——
+---  同帧并列、只有一条执行（EclRunLow/`EclRun.cpp:66-75`：一行生效
 ---  ⇔ mask & (Lunatic 8 | 人类 0x20) == 0x28；0x5f & 0x28 = 0x08 ≠ 0x28）。
----  本文件一律按**人类形态**移植（同卡 191/196 的「色 6 不实现」）⇒ 整条不发。
 ---  踩过：一开始当成「A+B / A 交替」，多打了一倍的自机狙直线弹。
----  人类形态下实际节奏：`#12`(0x3f) 与 `#15`(0x3f) 是同一条 bt3 色6 弹，
----  中间各冻 20 帧 ⇒ **每 20 帧一发**（帧 0、20、40 …）。
+---  两条节奏都是每 20 帧一发（帧 0、20、40 …）。
 ---★ `ast` 的裸 float32 = 0x3e3d3c19 = 0.184799567（TH08 口径 → 我们取反）。
 ---  count1 = 1 ⇒ 扇形只有 i=0 一条，step 实际用不到，照抄而已。
 local GUN_STEP = 0.184799567
@@ -46040,7 +46166,12 @@ local function fam_gun_fire(fam, wave)
     })
 end
 local function fam_gun_volley(fam)
-    fam_gun_fire(fam, GUN_A)
+    ---★ 形态二选一：#13（妖怪 / 低速）或 #12/#15（人类 / 高速），不是两发。
+    if player_is_youkai() then
+        fam_gun_fire(fam, GUN_B)
+    else
+        fam_gun_fire(fam, GUN_A)
+    end
 end
 
 ---------------------------------------------------------------------
@@ -46106,8 +46237,8 @@ local function fam474_step(fam)
         fam.c474_fresh = false
         if fam.c474_freeze > 0 then fam.c474_freeze = fam.c474_freeze - 1 end
     end
-    ---② 子 context 0（Sub42）：每 20 帧一条 bt3 色6 的 5 连自机狙直线
-    ---  （`#13` 是 0x5f 的妖怪形态弹，人类形态不发 ⇒ 不像原来那样「A+B/A 交替」）。
+    ---② 子 context 0（Sub42）：每 20 帧一条自机狙直线 —— 高速（人类）发 bt3 色6 的
+    ---  5 连、低速（妖怪）发 `#13`（0x5f）的 bt1 色5 2 连（不是「A+B/A 交替」）。
     ---  ★ 原作帧序 =「主 context → 子 context → UpdateMovement」（EclRun.cpp 的
     ---  frame tail 先跑 child context，EnemyManagerUpdate.cpp:163-177 之后才
     ---  IntegrateVelocity）⇒ 枪的位置/角度用的是**上一帧末**的值。
@@ -47614,8 +47745,13 @@ end
 ---真正把一波弹发出去：ONLY_* 位 → 32px 最近距离 → rank 缩放 → EX.shoot。
 ---（EX 引擎本身不叠 rank、也不判 32px，所以这两件事在这张卡里自己补。）
 local function dispatch_shot(u, a)
-    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+    ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+    if player_is_youkai() then
+        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    else
+        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    end
     local dx, dy = u.wx - player.x, u.wy - player.y
     if dx * dx + dy * dy < 1024.0 then return end
     local c1, c2 = a.count1 or 1, a.count2 or 1
@@ -48565,8 +48701,13 @@ end
 ---出弹（Enemy::UpdateShotAndAnm / DispatchShotInstruction，EclDependencies.cpp:681-773）
 ---------------------------------------------------------------------
 local function dispatch_shot(u, a)
-    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+    ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+    if player_is_youkai() then
+        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    else
+        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    end
     local dx, dy = u.wx - player.x, u.wy - player.y
     if dx * dx + dy * dy < 1024.0 then return end
     local c1, c2 = a.count1 or 1, a.count2 or 1
@@ -49630,8 +49771,13 @@ end
 ---出弹（Enemy::UpdateShotAndAnm / DispatchShotInstruction，EclDependencies.cpp:681-773）
 ---------------------------------------------------------------------
 local function dispatch_shot(u, a)
-    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+    ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+    if player_is_youkai() then
+        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    else
+        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    end
     local dx, dy = u.wx - player.x, u.wy - player.y
     if dx * dx + dy * dy < 1024.0 then return end
     local c1, c2 = a.count1 or 1, a.count2 or 1
@@ -50644,8 +50790,13 @@ end
 local function dispatch_shot(u, a)
     ---`if (enemy->life <= 0) break;`（EclRunHigh.inl:230）。
     if u.hp <= 0 then return end
-    if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-    if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+    ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+    if player_is_youkai() then
+        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+    else
+        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+    end
     ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
     local dx, dy = u.wx - player.x, u.wy - player.y
     if dx * dx + dy * dy < 1024.0 then return end
@@ -51973,8 +52124,13 @@ local function make_card(build)
     ---------------------------------------------------------------------
     local function dispatch_shot(u, a)
         if u.hp <= 0 then return end
-        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+        ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+        if player_is_youkai() then
+            if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        else
+            if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+        end
         ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
         local dx, dy = u.wx - player.x, u.wy - player.y
         if dx * dx + dy * dy < 1024.0 then return end
@@ -52958,8 +53114,13 @@ local function make_card(build)
     ---------------------------------------------------------------------
     local function dispatch_shot(u, a)
         if u.hp <= 0 then return end
-        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+        ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+        if player_is_youkai() then
+            if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        else
+            if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+        end
         ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
         local dx, dy = u.wx - player.x, u.wy - player.y
         if dx * dx + dy * dy < 1024.0 then return end
@@ -53985,8 +54146,13 @@ local function make_card(build)
     ---------------------------------------------------------------------
     local function dispatch_shot(u, a)
         if u.hp <= 0 then return end
-        if is_bit(a.flags, K_ONLY_YOUKAI) then return end
-        if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
+        ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
+        if player_is_youkai() then
+            if is_bit(a.flags, K_ONLY_HUMAN) then return end
+        else
+            if is_bit(a.flags, K_ONLY_YOUKAI) then return end
+        end
         ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
         local dx, dy = u.wx - player.x, u.wy - player.y
         if dx * dx + dy * dy < 1024.0 then return end
@@ -55636,9 +55802,9 @@ end
 ---        ×（c1=4 c2=1 ast=0.2617994）每轮中间夹一条 `SET_SECONDARY_TIME li7`
 ---        （`JUMP_DEC 0 −208` 回 #14）；#21..#30 = 尾环：两圈 → `FLOAT_ADD lf0 lf1`
 ---        → 两圈 → `FLOAT_ADD lf0 lf1` + `NORMALIZE_ANGLE` → `JUMP 0 −264` 回 #21。
----        ★ **只有 col8 那几圈真的出弹**：#14/#17/#21/#25 的掩码 0x5f / 0x4e 只覆盖
----          **妖怪**自机（0x5f & 0x28 = 0x08 ≠ 0x28），本移植版按人类那一支
----          （D = 0x28 = Lunatic 8 | override 0x20）⇒ 那四圈整条跳过。
+---        ★ 每对同帧并列：0x5f / 0x4e（col6、速度 lf7）只覆盖 **妖怪**自机
+---          （0x5f & 0x28 = 0x08 ≠ 0x28），0x3f / 0x2e（col8、速度 lf6）只覆盖**人类**
+---          ⇒ 同一帧只有一圈真的出弹，按自机形态二选一。
 ---        ★ `SET_SECONDARY_TIME` 在引擎里是「下一拍整帧跳过 n 帧」（EclRun.cpp:60-72
 ---          的 secondaryTime 段在**每条指令推进之后**都查一次）⇒ 实际节奏是
 ---          **每 14 帧一圈**：col8 圈之间都隔 14 帧；
@@ -55692,14 +55858,22 @@ do
     add(0, function(u) u.lf6 = 4 end)                        ---#6..#9（0xf8）
     add(0, function(u) u.li7 = 14 end)                       ---#10..#13（0xf8）
     ---★ 原作 #14/#17/#21/#25 这四圈 SHOOT_CIRCLE 的掩码是 0x5f / 0x4e（色 6、速度 lf7）：
-    ---  只有**妖怪**自机才跑（0x5f & 0x28 = 0x08 ≠ 0x28，EclRun.cpp:69-74）。
-    ---  本移植版与其它卡一致按「人类」这一支（D = 0x28 = Lunatic 8 | override 0x20，
-    ---  EnemyManager.cpp:903）⇒ 这四圈整条**不执行**；留空函数占位以保持与裸字节一一对应。
-    local function skipped_side() end
+    ---  只有**妖怪**自机才跑（0x5f & 0x28 = 0x08 ≠ 0x28，EclRun.cpp:69-74）；
+    ---  紧挨着的 #15/#18/#22/#26 是 0x3f / 0x2e（色 8、速度 lf6）——只有**人类**才跑。
+    ---  两行同帧并列 ⇒ 每对里只有一圈真的出弹（二选一）。
+    local function skipped_side(u)                           ---#14 / #17 / #21 / #25（色 6，妖怪侧）
+        if player_is_youkai() then
+            E.shoot(u, { op = 99, type = 3, color = 6, count1 = 4, count2 = 1,
+                         speed1 = u.lf7, speed2 = 0.5, angle = u.lf0,
+                         step = 0.2617994, flags = 0x202 })
+        end
+    end
     local function shot(u)                                   ---#15 / #18 / #22 / #26（色 8，人类侧）
-        E.shoot(u, { op = 99, type = 3, color = 8, count1 = 4, count2 = 1,
-                     speed1 = u.lf6, speed2 = 0.5, angle = u.lf0,
-                     step = 0.2617994, flags = 0x202 })
+        if not player_is_youkai() then
+            E.shoot(u, { op = 99, type = 3, color = 8, count1 = 4, count2 = 1,
+                         speed1 = u.lf6, speed2 = 0.5, angle = u.lf0,
+                         step = 0.2617994, flags = 0x202 })
+        end
     end
     local function stall(u, c) c.stall = u.li7 end           ---#16 / #19 / #24 / #29
     local head = #s + 1

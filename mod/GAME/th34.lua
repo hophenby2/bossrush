@@ -586,7 +586,10 @@ local function pool_used()
         ---★ 本帧刚生出来（timer == 0）的弹还没被引擎积分 —— 出生点在界外就等于还没出界，
         ---   收掉槽位会让这一帧后面的几波把「其实还在场的弹」当成已消失（见 pool4_used）。
         local u = pool[i]
-        if u and u.timer > 0 and not in_bound(u) then
+        if not IsValid(u) then
+            ---同上：死引用先移出池，避免读 u.timer 抛 'invalid lstg object'。
+            table.remove(pool, i)
+        elseif u.timer > 0 and not in_bound(u) then
             table.remove(pool, i)
         end
     end
@@ -924,7 +927,11 @@ local function pool4_used()
         ---   已消失 ⇒ 多生，同屏弹数会冲过 1024（原作 `BulletManager.cpp:994-1022`
         ---   是**先 `pos += velocity`、后 `IsInBounds`**）。
         local u = pool4[i]
-        if u and u.timer > 0 and not in_bound(u) then
+        if not IsValid(u) then
+            ---已被引擎回收 / 被 RawDel 杀掉的对象留在池里会拿到死引用，
+            ---再读 u.timer 就会抛 'invalid lstg object' —— 先清掉。
+            table.remove(pool4, i)
+        elseif u.timer > 0 and not in_bound(u) then
             table.remove(pool4, i)
         end
     end
@@ -8838,42 +8845,89 @@ local function TH34_add_stage56_boss()
     end)
 
     ---──────────────────── 符卡 六道剣「一念無量劫 -Lunatic-」（原作 sub23/24/25） ────────────────────
-    ---开卡 120 帧的进场（原作 MOVE_POS_TIME(120,4,192,180) → 我们 (0,44)）。
-    ---之后每 155 帧放一圈「子机」：子机均匀铺在半径 112 的圆上（张角 gF0，
-    ---8 只 ×45° / 8 只 ×−45° / 12 只 ×54° / 16 只 ×−77.14°），
-    ---每只子机在 sub24 的 t=50 出生（该处墙钟 = 16 + 50 = 66，16 帧来自
-    ---sub24 开头的 `SUB_CALL 2`：sub2 的 DEC_JUMP 循环跑 gi0=4 次、每次 4 帧），
-    ---sub25 再过 60 帧开打 ⇒ 从 sub24 起算第 126 帧首发；每只子机打 14 次
-    ---4 发绝对扇（张角 22.5°、速度 1.8→1），每次间隔 3 帧。
-    ---四圈打完 JUMP 回开头（原作 t=480 的 `JUMP off=-224`）。
+    ---原作 sub23（顶层）：
+    ---  · t=0 起 MOVE_POS_TIME(120,4,192,180)——本体由当前所在直线飘到 (192,180)，
+    ---    我们落到 (0,44)；同帧 SET_MOVEMENT_BOUNDS(64,48,320,256)。
+    ---  · t=480 装 timerCallback 子程 27（本体计时 2400 帧后 END_SPELLCARD + 撤场）
+    ---    并 SET_ANM 128，随即进入「四波」死循环（四波走完 JUMP 回 t=480）。
+    ---每波把 gf0 = 角步、gi0 = 子机数写进全局，再 SUB_CALL 24。★ 原作引擎在
+    ---SUB_CALL 时会把 g_GlobalEclVars 拷进被调子程的上下文（EclManager.cpp:1174
+    ---`eclContextArgs.globalVars = g_GlobalEclVars`），所以子程里读到的 i3_0/f3_0
+    ---**就是**调用方刚写的 gi0/gf0（差异 22）。
+    ---  · sub24：先 gi0=4、gi1=12，再 SUB_CALL 2（4 次 × 4 帧 = 16 帧粒子阻塞）；
+    ---    t=50 起以 3 帧间隔生成 gi0 只 sub25「壁」——
+    ---      壁位置 = 本体 + (cos f5, sin f5)·112，f5 从 0 起每只 += gf0；
+    ---      壁的开火角 f4 = f5 + π/2（切向）。
+    ---    t=155 SUB_RET。子机在墙钟 16+50+3k = 66+3k 帧出生；子程总长 168+3n 帧。
+    ---  · sub25「壁」：不可打（SET_IS_HITTABLE 0 / SET_HAS_CONTACT_HITBOX 0 /
+    ---    SET_CAN_BE_DAMAGED 0）、判定框 384×32、SET_DEATH_ANM(0,3,0)。t=60 起每 3 帧
+    ---    打一发 SPREAD_ABS（spr6/色档4、角 = f4、张角 0.392699、L 行 4 发、速度 1.8），
+    ---    共 14 发；DEC_JUMP 落空后游标停在 t=73 的 UNIMP，等 ctx.time 爬到 73 才执行
+    ---    ⇒ 壁在 t=112 自毁（vm 实测）。
+    ---    SET_SHOOT_OFFSET(f4, f5)：出膛点 = 壁位置 + (f4, f5) 像素；f4/f5 被下面的两条
+    ---    INIT_INTERP 从 0 扫到 ±128 ⇒ 出膛点沿「壁的长轴」扫过 256px（不是常量！）。
+    ---四波（角步 / 子机数）：45°/8、−45°/8、54°/12、−77.14°/16，循环往复。
+    ---壁的每发弹 = 4 发绝对扇（绝对角 f4、张角 22.5°、速度 1.8）。
+    ---TH07 `AddNormalizeAngle`（Global.cpp:946）：加完再折进 (−π, π]。
+    ---sub24 每生成一只都对 f4/f5 各折一次；不折的话 SET_SHOOT_OFFSET(f4,f5)
+    ---会把「绕出去的 2π 整数倍」也算进像素偏移，出膛点整片错位。
+    local function norms6(a) return math.atan2(math.sin(a), math.cos(a)) end
+    ---「壁」（原作 sub25）。a = { f4, f5 }——生成瞬间 sub24 上下文里的两个角（TH07 弧度）。
+    ---★ 原作 t=60 起建两条 `INIT_INTERP`（fn 7 = MathCubicInterp、42 帧、easing 0、
+    ---  两端切线 m0=m1=RAND_SIGN_FLOAT(0)=±0），把 f4/f5 从「生成时的角」一路插到
+    ---  「该角的 128 倍取负」（sub25 idx14..19/22/25）：
+    ---    f0=cos(f4)·128、f1=sin(f4)·128、f2=0−f0、f3=0−f1
+    ---    interp1: dst=f4, p0=f0, p1=f2 ; interp2: dst=f5, p0=f1, p1=f3
+    ---  h00+h01=1 且切线为 0 ⇒ 值 = K·(h00−h01) = K·(1−2·t²(3−2t))，K = 128·cos/sin(f4)。
+    ---  这两条插值同时决定了**出膛点**（SET_SHOOT_OFFSET f4 f5）与**开火角**（angle1=*f4）：
+    ---  f4/f5 在 0..±128 之间横扫 ⇒ 子弹沿壁的长轴扫出一串，且每发朝向 f4（弧度、模 2π）。
+    ---  ★ 旧实现把 f4/f5 当常量（既不出膛点扫、朝向也不变），与原作完全不是一回事。
+    ---  时序：t=60 当帧先按**原值**打第 1 发（插值同帧才建、帧末才推进），之后每 3 帧一发，
+    ---        第 j 发读到的是 timer=3(j−1) 处的插值（t = 3(j−1)/42）。
+    ---  计数：i2_0=14 ⇒ 共 14 发（末发在 t=99）；DEC_JUMP 落空后游标停在 t=73 的 UNIMP，
+    ---        等 ctx.time 爬到 73 才执行 ⇒ 壁在 t=112 自毁（用 vm 实测）。
+    local function six_wall(self, a)
+      local f4, f5 = a[1], a[2]
+      task.Wait(60)                    ---sub25 的 t=60 开打
+      local k4, k5 = 128 * math.cos(f4), 128 * math.sin(f4)
+      local function val(u, k) return k * (1 - 2 * (u * u * (3 - 2 * u))) end
+      local f4t, f5t = f4, f5          ---第 1 发用生成时的原值
+      for j = 1, 14 do
+        ---弹从壁位置 + (f4, −f5) 出膛（TH07 → 我们：y 取反），角 = f4（取反成我们口径）。
+        shoot6(self, f4t, -f5t, 65, 6, 4, 4, 1, 1.8, 1, f4t, 0.3926990926265717, nil, true)
+        local u = (3 * j) / 42
+        f4t, f5t = val(u, k4), val(u, k5)
+        if j < 14 then task.Wait(3) end  ---每拍间隔 3 帧；打满 14 发
+      end
+      task.Wait(13)                    ---原作壁活到 t=112（末发 t=99 后又等 ~13 帧才撞 UNIMP）
+    end
     scard("六道剣「一念無量劫 -Lunatic-」", 4391, 40, 1500, false, function(self)
       task.New(self, function()
-        task.Wait(120)
-        local waves = { { 0.785398, 8 }, { -0.785398, 8 }, { 0.942478, 12 }, { -1.3464, 16 } }
+        task.Wait(120)                     ---MOVE_POS_TIME(120,4,192,180) 的进场
+        local waves = { { 0.7853981852531433, 8 }, { -0.7853981852531433, 8 },
+                           { 0.942477822303772, 12 }, { -1.346396803855896, 16 } }
         while true do
             for _, w in ipairs(waves) do
-                local d, n = w[1], w[2]
-                for k = 0, n - 1 do
-                    local ang = 1.5708 + k * d
-                    local ox, oy = voff(ang, 112)
-                    task.New(self, function()
-                        ---126 = 16（sub2）+ 50（sub24 出生）+ 60（sub25 开打）；
-                        ---+3k 是 sub24 每只子机 3 帧的出生间隔。
-                        task.Wait(126 + 3 * k)
-                        for _ = 1, 14 do
-                            shoot6(self, ox, oy, 65, 6, 4, 4, 1, 1.8, 1, ang, 0.392699, nil, true)
-                            task.Wait(3)
-                        end
-                    end)
+                local step, n = w[1], w[2]
+                task.Wait(16)                      ---sub24：SUB_CALL 2 的 4×4 帧
+                task.Wait(50)                      ---到 sub24 的 t=50
+                local f5, f4 = 0, 1.5707963705062866   ---f32(π/2)
+                for _ = 1, n do
+                    local wx, wy = voff(f5, 112)
+                    pspawn(self.x + wx, self.y + wy, six_wall, { f4, f5 })
+                    f5 = norms6(f5 + step)         ---原作 NORMALIZE_ANGLE f5
+                    f4 = norms6(f4 + step)         ---原作 NORMALIZE_ANGLE f4
+                    task.Wait(3)                   ---sub24 的 DEC_JUMP：每只 3 帧
                 end
-                ---原作 sub24 的墙钟 = 16（sub2 阻塞）+ 50（到第一拍）+ 3×n（每只子 3 帧）
-                ---+ 102（跳到 t=155 的 SUB_RET）= 168 + 3n。四段 gi0=8/8/12/16
-                ---⇒ 波距 192/192/204/216（不是常数 155）。
-                task.Wait(168 + 3 * n)
+                task.Wait(102)                     ---到 sub24 的 t=155：66+3n + 102 = 168+3n
             end
         end
       end)
-    end)
+    end, { enter = function(self)
+      ---原作 SET_MOVEMENT_BOUNDS(64,48,320,256) → 我们 (−128,−32)…(128,176)。
+      self._box = { -128, 128, -32, 176 }
+      bmove(self, 120, 4, 0, 44)               ---MOVE_POS_TIME(120,4,192,180)
+    end })
 
     ---──────────────────── 幽々子 非符 2（原作 sub29/30/31/32/33） ────────────────────
     ---两条反向自转的螺旋臂：从自机角 ±90° 的偏移点（半径 32/64 或 64/16 或 24/96）
