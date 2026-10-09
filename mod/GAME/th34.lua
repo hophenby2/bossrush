@@ -8705,6 +8705,7 @@ local function TH34_add_stage56_boss()
         if op == 64 or op == 66 or op == 68 then
             aim = atan2(player.y - (self.y + oy), player.x - (self.x + ox)) * RAD2DEG
         end
+        local made = {}                    -- 本波新建的弹（蝶弹要登记，见 sub52 的 bd 表）
         while i <= total and room > 0 do
             local k = i - 1
             local layer, ring = int(k / c1), k % c1
@@ -8719,16 +8720,20 @@ local function TH34_add_stage56_boss()
                 if op == 66 or op == 67 then a = a - a2_th * RAD2DEG * layer
                 else a = a + 180 / c1 end
             end
+            local o
             if cmd then
-                pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], style, col,
-                                        self.x + ox, self.y + oy, v, a, cmd)
+                o = New(class["TH34_cmdbullet"], style, col,
+                        self.x + ox, self.y + oy, v, a, cmd)
             else
-                pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
-                                                    v, a, false, 0, false)
+                o = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
+                                    v, a, false, 0, false)
             end
+            pool4[#pool4 + 1] = o
+            made[#made + 1] = o
             room, i = room - 1, i + 1
         end
         if plays then sound4(self) end
+        return made
     end
     ---同上，但 (ax, ay) 是**绝对**坐标（原作 SET_SHOOT_OFFSET x=目标x−posX 的绝对定位用法）。
     local function shoot_abs6(self, ax, ay, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
@@ -9262,49 +9267,194 @@ local function TH34_add_stage56_boss()
     end)
 
     ---──────────────────── 符卡 華霊「バタフライディルージョン」（原作 sub52/53/54） ────────────────────
-    ---t=540 起 8 轮 8 发 0.5 速的「缩弹」环（原作靠子机的 ex_ins 变换成蝴蝶）；
-    ---t=550 起周期子程序打「18 发 ×3 层」的大环（速度 2.5→0.8、基准角每发 +1.5°），
-    ---并由 12+8 只蝴蝶子机向自机方向飞出去。
+    ---L 行时间轴（帧号 = 原作 t − 360；sub52 全篇就是一条 200 帧的大循环）：
+    ---  frame 120（t=480）：SET_MOVEMENT_BOUNDS 64 48 320 128、MOVE_POS_TIME 60 4 (192,112)、
+    ---    f0=0（前一条 −0.0981748 当场被覆盖）、f1=0.6、i0=0、SET_BULLET_SOUND 7、i2=0、
+    ---    i2_3=0、INIT_BULLET_CMD 0 = {0x2000, flag 1, dur 300}（蝶弹的 spawnDelay）；
+    ---  frame 180（t=540）：RING_ABS `8:4` 8 发（v=0.5、a2=30°、a1=f0=0、flags 0x3204）、
+    ---    i2_0=8、RUN_EX_INS 16 —— 8 只 LBLUE 蝶弹每只再炸 5 颗普通弹（spr0/off6、速度 f1、
+    ---    a1=原角+π、a2=22.5°、flags 2）⇒ 本波 8+40=48 发；
+    ---  frame 190..250（每 10 帧）：DEC_JUMP i2_0 ⇒ 只跑 ex16（8 只蝶弹还在场，每波 +40）；
+    ---  frame 260：ex17（每只 LBLUE 蝶弹**在弹位置**生一只 sub53 子机，继承原弹角 f0 与相位 f7；
+    ---    再清掉全部蝶弹）、f4=RNGRAD、i2=60、SET_PERIODIC_CALLBACK i2 54、f1=0.75、
+    ---    i2_0=12、ex18（只数 LBLUE 写 i0）；
+    ---  frame 270..380（每 10 帧）：DEC_JUMP i2_0 ⇒ ex18（不产弹）；
+    ---  frame 380（idx86 链归零后）：f1+=0.25、i2_0=8、ex18；i0==0 ⇒ idx92 **同帧** JUMP 回环帧
+    ---    （⇒ 下一个环仍在 +200 帧）；i0!=0 时改走 idx93 链（再数 12 次 + ex17 + i2−=4 并重装
+    ---    周期回调 + 再跑一次 12×10 帧的 ex18 链，见 tail()）。
+    ---周期子程 sub54（每 i2 帧一次，L 行只跑第 4 条）：RING_ABS `7:3` 18 发 ×3 层
+    ---  （v=2.5→0.8、a2=11.25°、a1=自身的 f4）⇒ 54 发/次；打完 f4 += 0.0261799。
+    ---sub53 蝶子机（ex17 生）：t=0 起用 INIT_INTERP（Cubic、ease 0）分别把 X/Y 插值到
+    ---  **自机当前位置**（p0/p1/m0/m1 每帧实时取值 ⇒ 一路追踪），切向量 m0 = cos/sin(f0)·720、
+    ---  m1 = cos/sin(f0)·180（f0 = 原蝶弹角）；t=120 原地打 4 波带自旋的蝶弹
+    ---  （v=0.8/1.46/2.4/3.2、a1=f7 相位、a2=30°/11.25°、flags 0x3224 + 0x2000 spawnDelay），
+    ---  随后 UNIMP 自毁。
+    ---蝶弹登记表：ex-ins 16/17/18 扫的是 BulletManager 的**全表**（原作这些弹带 spawnDelay 300，
+    ---飞出屏外也不回收），本仓 pool4 会按出屏回收 —— 所以这群蝶弹另记一份（位置随对象走，
+    ---对象没了就用最后位置），按原作语义存活到 ex17 清场。
     scard("華霊「バタフライディルージョン」", 4397, 65, 3000, false, function(self)
-        task.New(self, function()
-            ---L 行沿 `JNEQ DIFF 3` 链在 t=360→480 的跳转后只等满 120 帧（同 4396）。
-            task.Wait(120)
-            self._box = { -128, 128, 96, 176 }
-            local lf0, lf4 = 0, ran:Float(-PI, PI)
-            ---原作 sub53：一只蝴蝶沿直线飞向开火那一刻的自机位置，
-            ---120 帧后原地打 4 发带自旋的慢弹（速度 0.8/1.46/2.4/3.2）。
-            local function butterfly()
-                local tx, ty = player.x, player.y
-                task.New(self, function()
-                    local t = 0
-                    while t < 120 do t = t + 1; task.Wait(1) end
-                    shoot6(self, 0, 0, 67, 8, 4, 1, 1, 0.8, 1, lf4, 0.523599,
-                           spin6(-0.0785398, 0, 80), true)
-                    shoot6(self, 0, 0, 67, 8, 3, 1, 1, 1.46, 1, lf4, 0.523599,
-                           spin6(0.0785398, 0, 80), true)
-                    shoot6(self, 0, 0, 65, 8, 2, 2, 1, 2.4, 1, lf4, 0.19635,
-                           spin6(0.0897598, 0, 80), true)
-                    shoot6(self, 0, 0, 65, 8, 1, 2, 1, 3.2, 1, lf4, 0.19635,
-                           spin6(-0.0897598, 0, 80), true)
-                end)
+        local bd = {}                    -- 蝶弹：{ o = 弹对象, off = 色档, x, y, rot = 我们的角度 }
+        local lf0, lf1, lf4 = 0, 0, 0    -- sub52 的 floatVars1[0]/[1]/[4]
+        local lf4p = 0                   -- 周期子程 sub54 里那份 f4（arm 时从 lf4 复制一份）
+        local li0, li2, li2_0 = 0, 0, 0  -- intVars1[0] / intVars1[2] / intVars2[0]
+        ---周期回调（SET_PERIODIC_CALLBACK i2 54）的计数器；原作在**每帧 RunEcl 开头**检查。
+        local ptim, pcnt, armed = 0, 0, false
+
+        ---蝶弹当前位置（我们的角度）：对象还在就现取，没了就用最后记下的。
+        local function bd_pos(e)
+            if IsValid(e.o) then e.x, e.y, e.rot = e.o.x, e.o.y, e.o.rot end
+            return e.x, e.y, e.rot
+        end
+        local function bd_add(o, off)
+            bd[#bd + 1] = { o = o, off = off, x = o.x, y = o.y, rot = o.rot }
+        end
+        local function bd_clear()
+            for i = 1, #bd do
+                if IsValid(bd[i].o) then object.RawDel(bd[i].o) end
             end
-            task.New(self, function()
-                task.Wait(60)
-                for _ = 1, 8 do
-                    shoot6(self, 0, 0, 67, 8, 4, 8, 1, 0.5, 1, lf0, 0.523599, nil, true)
-                    task.Wait(10)
+            bd = {}
+        end
+
+        ---ex-ins 16 YuyukoTransformButterflyBullets：每颗蝶弹（色档 0..7）再炸 5 颗普通弹
+        ---（spr0/off6、v = 调用方 floatVars1[1] = f1、a1 = 原角+π、a2=22.5°、flags 2），
+        ---原蝶弹保留（留到 ex17 清）。
+        local function ex16()
+            local style, col = bs(0), col16(6)
+            local offs = spread_offsets(5, -22.5)
+            for i = 1, #bd do
+                if POOL4_SIZE - pool4_used() < 5 then break end
+                local x, y, rot = bd_pos(bd[i])
+                local base = rot - 180
+                for k = 1, 5 do
+                    pool4[#pool4 + 1] = NewSimpleBullet(style, col, x, y, lf1,
+                                                        base + offs[k], false, 0, false)
                 end
-                local period, i = 60, 0
-                while true do
-                    shoot6(self, 0, 0, 67, 7, 3, 18, 3, 2.5, 0.8, lf4, 0.19635, nil, true)
-                    lf4 = lf4 + 0.0261799
-                    for _ = 1, 12 do butterfly(); end
-                    for _ = 1, 8 do butterfly(); end
-                    i = i + 1
-                    if i % 10 == 0 and period > 40 then period = period - 4 end
-                    task.Wait(period)
+            end
+        end
+
+        ---sub53 蝶子机协程（ex17 用 pspawn 生；f0 = 原蝶弹的 TH07 角，ph = 相位）。
+        local function butterfly6(self2, a)
+            local f0, ph = a.f0, a.ph
+            local cf, sf = cos(f0), sin(f0)
+            local mx0, mx1 = cf * 720, cf * 180
+            ---TH07 的 y 朝下：换成我们的 y 时等于 X 那条插值整体取反（h00+h01 == 1）。
+            local my0, my1 = -sf * 720, -sf * 180
+            for n = 1, 120 do
+                local t = n / 120
+                self2.x = hermite(t, self2.x, player.x, mx0, mx1)
+                self2.y = hermite(t, self2.y, player.y, my0, my1)
+                task.Wait(1)
+            end
+            local function volley(op, spr, off, c1, c2, v, a2, spin)
+                local cmd = cmds4(0x3224, spin6(spin, 0, 80),
+                                  { type = 0x2000, flag = 1, dur = 300, loop = -1,
+                                    speed = -1, angle = -1 })
+                local objs = shoot6(self2, 0, 0, op, spr, off, c1, c2, v, 1, ph, a2, cmd, true)
+                for i = 1, #objs do bd_add(objs[i], off) end
+            end
+            volley(67, 8, 4, 1, 1, 0.8,  0.523599,  0.0785398)
+            volley(67, 8, 3, 1, 1, 1.46, 0.523599, -0.0785398)
+            volley(65, 8, 2, 2, 1, 2.4,  0.19635,   0.0897598)
+            volley(65, 8, 1, 2, 1, 3.2,  0.19635,  -0.0897598)
+        end
+
+        ---ex-ins 17 YuyukoButterflySpawnEnemy：LBLUE（色档 4）蝶弹就地生一只 sub53 子机
+        ---（floatVars1[0]=原弹角、[7]=相位，每只 +45°），然后清掉**全部**蝶弹。
+        local function ex17()
+            local ph = -PI
+            for i = 1, #bd do
+                local e = bd[i]
+                if e.off == 4 then
+                    local x, y, rot = bd_pos(e)
+                    pspawn(x, y, butterfly6, { f0 = -rot * PI / 180, ph = ph })
+                    ph = ph + PI / 4
                 end
-            end)
+            end
+            bd_clear()
+        end
+
+        ---ex-ins 18 YuyukoCountButterflyBullets：数 LBLUE 蝶弹写 intVars1[0]（不产弹）。
+        local function ex18()
+            li0 = 0
+            for i = 1, #bd do
+                if bd[i].off == 4 then li0 = li0 + 1 end
+            end
+        end
+
+        ---周期子程 sub54（4 条 RING_ABS 按难度四选一，L 只跑第 4 条）。
+        local function sub54()
+            shoot6(self, 0, 0, 67, 7, 3, 18, 3, 2.5, 0.8, lf4p, 0.19635, nil, true)
+            lf4p = lf4p + 0.0261799
+        end
+        ---SET_PERIODIC_CALLBACK（op144）：装表、计数清零、周期子程的局部变量取一份拷贝。
+        local function arm(t)
+            ptim, pcnt, armed = t, 0, true
+            lf4p = lf4
+        end
+        ---每帧 RunEcl 开头：周期计数器 ++，到点就跑 sub54。
+        local function tick()
+            if armed then
+                pcnt = pcnt + 1
+                if pcnt >= ptim then pcnt = 0; sub54() end
+            end
+        end
+
+        ---环帧：RING_ABS `8:4` 8 发（v=0.5、a2=30°、a1=f0、flags 0x3204 + spawnDelay 300）。
+        local function ring()
+            local objs = shoot6(self, 0, 0, 67, 8, 4, 8, 1, 0.5, 1, lf0, 0.523599,
+                                cmds4(0x3204, { type = 0x2000, flag = 1, dur = 300,
+                                                loop = -1, speed = -1, angle = -1 }), true)
+            for i = 1, #objs do bd_add(objs[i], 4) end
+        end
+
+        ---从当前帧起推进 n 帧（每帧帧首先走周期回调），到第 n 帧执行 fn。
+        local function stepf(n, fn)
+            for _ = 1, n do
+                task.Wait(1)
+                tick()
+            end
+            if fn then fn() end
+        end
+
+        ---idx87..idx92 的收尾：返回 true ⇒ 本帧已同帧跳回环帧（idx92）。
+        local function tail()
+            if lf1 < 2 then lf1 = lf1 + 0.25 end    -- idx87/88 JGEQ_F *f1 2
+            li2_0 = 8                               -- idx89
+            ex18()                                  -- idx90
+            while true do
+                if li0 == 0 then return true end    -- idx91 → idx92（同帧 JUMP 回 idx75）
+                li2_0 = li2_0 - 1                   -- idx93 DEC_JUMP
+                if li2_0 <= 0 then break end        -- 落 idx94
+                ex18()                              -- idx90
+            end
+            ex17()                                  -- idx94
+            if li2 > 40 then li2 = li2 - 4; arm(li2) end   -- idx95/96/97
+            li2_0 = 12                              -- idx99 → idx84
+            ex18()                                  -- idx85
+            for _ = 1, 11 do stepf(10, ex18) end    -- idx86 DEC_JUMP 链
+            stepf(10, nil)
+            return false
+        end
+
+        task.New(self, function()
+            task.Wait(120)                              -- 原作 L 行 t=360 BEGIN_SPELLCARD ⇒ frame 0
+            self._box = box5(64, 48, 320, 128)          -- SET_MOVEMENT_BOUNDS 64 48 320 128
+            bmove(self, 60, 4, 0, 112)                  -- MOVE_POS_TIME 60 4 (192,112)
+            lf0, lf1, lf4 = 0, 0.6, 0
+            li0, li2, li2_0 = 0, 0, 0
+            task.Wait(60)                               -- frame 180 = 第一个环帧
+            tick(); ring(); li2_0 = 8; ex16()
+            while true do
+                for _ = 1, 7 do stepf(10, ex16) end     -- frame F+10 .. F+70
+                stepf(10, function()                    -- frame F+80
+                    ex17()
+                    lf4 = rngrad(); li2 = 60; arm(60); lf1 = 0.75; ex18()
+                end)
+                for _ = 1, 11 do stepf(10, ex18) end    -- frame F+90 .. F+190
+                stepf(10, nil)                          -- frame F+200：idx86 链归零
+                while not tail() do end                 -- idx87..idx92（可能跨多帧）
+                ring(); li2_0 = 8; ex16()               -- idx92 同帧回环帧
+            end
         end)
     end)
 

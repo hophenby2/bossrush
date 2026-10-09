@@ -10984,22 +10984,26 @@ end
 ---  · Sub37（使魔）：ins_54(53)/ins_83(1)/ins_174(1)/ins_145(1)/ins_77(24,24)/ins_160(30)；
 ---      t=60 `ins_135(0,"Sub36")` 挂枪；t=720 `ins_1()` TERMINATE。
 ---  · Sub36（使魔的枪；Lunatic 口径）：li0=10（拍与拍之间的等待）、lf0=π/2（基准角）、
----      lf6=3.5（第一发速度）、lf7=2.5（第二发速度）、exI0=[10036]=3（前段轮数）。
+---      lf6=3.5（**人类**那一支的速度）、lf7=2.5（**妖怪**那一支的速度）、
+---      exI0=[10036]=3（前段轮数）。
 ---      ★ ECL 的 time 是**绝对帧号**（EclRun.cpp:52-96：`context->time == instruction->time`
----        才执行、帧尾 time++）⇒ 同一段 t=0 的指令整段在同一帧跑完 —— Sub36 的「一拍」
----        = 相邻两条 ins_99 同帧发出（8 向环 ×2：第一发色 li2/速度 3.5、第二发色 li1/速度 2.5）。
+---        才执行、帧尾 time++）⇒ 同一段 t=0 的指令整段在同一帧跑完。
+---      ★ **一拍一条出弹指令**：原件每拍并列两行 `SHOOT_CIRCLE`，掩码 0x3f（色 li2 / lf6）
+---        与 0x5f（色 li1 / lf7）—— 后者是**妖怪形态**专属（`0x5f & 0x28 ≠ 0x28`，
+---        EclRun.cpp:69-73 + EnemyManager.cpp:903）⇒ 人类形态下不跑，本移植版不发。
 ---      前段 Sub36_340（3 轮 × 每轮 2 拍；`ins_5` 的 time=0 ⇒ 一轮 20 帧、共 60 帧）：
----        每拍 ins_99(3, 色, 8, 1, 速度, 0.5, lf0, π/12, 514) = 8 向圆环
+---        每拍 ins_99(3, 色 li2, 8, 1, lf6, 0.5, lf0, π/12, 514) = 8 向圆环
 ---        （count1=8、count2=1 ⇒ 2π/8 均分，angleStep 这一拍用不上）。
----      后段 Sub36_572（死循环、`ins_4(0,…)` ⇒ 周期 20 帧）：同样两发一拍，拍末
+---      后段 Sub36_572（死循环、`ins_4(0,…)` ⇒ 周期 20 帧）：同样一拍一条，拍末
 ---        `lf0 += lf1`，第二拍后再 `lf1 *= 0.96` 并 NORMALIZE_ANGLE ⇒ 环边打边转、转速衰减。
 ---  ★ 两条口径回检（本轮核对，结论：以下代码不用改）：
 ---    ① 前段 li0 = 10 的「一拍」是**真 10 帧**、不是 11 帧：EclRun.cpp:47-66 的
 ---       `if (secondaryTime > 0) { secondaryTime--; time--; break; }` 说明
 ---       `ins_2(li0)`（SET_SECONDARY_TIME）设完之后**同一帧就先消耗一次** ⇒
 ---       `g % GUN_WAIT == 0` 的写法与原作的间隔完全一致。
----    ② 后段 Sub36_572 的拍序（裸字节）：`ins_99 ×2` → `ins_15(lf0 += lf1)` → `ins_2` →
----       `ins_99 ×2` → `ins_15(lf0 += lf1)` → `ins_17(lf1 *= 0.96)` → `ins_37` → `ins_2`。
+---    ② 后段 Sub36_572 的拍序（裸字节）：`ins_99 ×2`（人类/妖怪各一条，只有前者跑）→
+---       `ins_15(lf0 += lf1)` → `ins_2` → `ins_99 ×2` → `ins_15(lf0 += lf1)` →
+---       `ins_17(lf1 *= 0.96)` → `ins_37` → `ins_2`。
 ---       现行实现（`g < 3*2*10` 段照抄前段 + `q % 10 == 0` 段、`floor(q/10) % 2 == 1` 时
 ---       乘 0.96）与这条拍序等价。
 ---  ★ 出生：使魔 spawn 时把父机的 li1/li2（两个色号）与 lf1（角增量）整块抄走
@@ -11124,7 +11128,8 @@ local GUN_LOOPS = 3                 -- exI0 = [10036] = 3
 ---  （EnemyManager.cpp:184-186），跟 BOSS 当前相位是第几段无关；Sub36/37 里也没有
 ---  `ins_152` ⇒ 一定吃这组 ⇒ rank 32 时 `speed1 +0.15`、`speed2 +0.075`。
 local RANK_SPD, RANK_SPD2 = 0.15, 0.075
-local GUN_SPD_A, GUN_SPD_B = 3.5 + RANK_SPD, 2.5 + RANK_SPD   -- lf6（第一发）/ lf7（第二发），Lunatic
+---★ lf6（人类那一支）/ lf7（妖怪那一支）—— 见下面 fire 的注：0x5f 那条不发。
+local GUN_SPD_A, GUN_SPD_B = 3.5 + RANK_SPD, 2.5 + RANK_SPD
 local GUN_COUNT = 8                 -- ins_99 的 count1
 ---ins_99 的 angleStep = 0x3e860a92 = float32 π/12（取反；count2 = 1 ⇒ 用不上）。
 local GUN_ANGLE_STEP = -0.2617993950843811
@@ -11133,7 +11138,7 @@ local GUN_TYPE = 3
 
 ---使魔（Sub37）。占位贴图 "servant"；原作有 24×24 判定与 life，移植版按本文件
 ---191..204 的惯例做成纯观感（不给判定）。
----（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire_pair`，而 `local x = Class(...)`
+---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。
 ---  同一个坑见本文件卡 218 的长注。）
 local familiar
@@ -11175,12 +11180,12 @@ familiar = Class(object, {
             local g = self.gun_t
             if g < GUN_LOOPS * 2 * GUN_WAIT then
                 if g % GUN_WAIT == 0 then
-                    familiar.fire_pair(self)
+                    familiar.fire(self)
                 end
             else
                 local q = g - GUN_LOOPS * 2 * GUN_WAIT
                 if q % GUN_WAIT == 0 then
-                    familiar.fire_pair(self)
+                    familiar.fire(self)
                     self.gun_ang = wrap_pi(self.gun_ang + self.gun_delta)
                     ---第二拍后 lf1 *= 0.96（`ins_17([10017], 0.96)`）。
                     if math.floor(q / GUN_WAIT) % 2 == 1 then
@@ -11192,18 +11197,20 @@ familiar = Class(object, {
         end
         self.fam_t = t + 1
     end,
-    ---一拍 2 发（同帧）：第一发色 li2/速度 3.5、第二发色 li1/速度 2.5（`ins_99` ×2，8 向环）。
-    fire_pair = function(self)
+    ---★ 一拍只有**一条** `ins_99` 在人类形态下执行。原件的两行是**同帧并列**的
+    ---  `SHOOT_CIRCLE`（`@17132` / `@17176`），但难度掩码一个是 **0x3f**（色 li2、
+    ---  speed1 = lf6 = 3.5）、一个是 **0x5f**（色 li1、speed1 = lf7 = 2.5）：
+    ---  `0x5f & 0x28 = 0x08 ≠ 0x28`（EclRun.cpp:69-73；`override = 人类 ? 0x20 : 0x40`，
+    ---  EnemyManager.cpp:903）⇒ **妖怪那一支在人类形态下不执行**。本文件一律按人类
+    ---  形态移植（同卡 191/193 的「色 6 不实现」、同关卡 3436 的 GUN[23]）——
+    ---  所以这里只发色 li2 / 速度 lf6 的 8 向环（li1/GUN_SPD_B 留着表示原件里
+    ---  那一支的参数，不参与出弹）。
+    ---  （★ 必须注意：这不是「一拍两发」。原作人类形态下一拍就是一发。）
+    fire = function(self)
         EX.shoot(self, self.x, self.y, {
             op = 99, type = GUN_TYPE, color = EX.color(self.li2),
             count1 = GUN_COUNT, count2 = 1,
             speed1 = GUN_SPD_A, speed2 = 0.5 + RANK_SPD2,
-            angle = self.gun_ang, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
-        })
-        EX.shoot(self, self.x, self.y, {
-            op = 99, type = GUN_TYPE, color = EX.color(self.li1),
-            count1 = GUN_COUNT, count2 = 1,
-            speed1 = GUN_SPD_B, speed2 = 0.5 + RANK_SPD2,
             angle = self.gun_ang, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
         })
     end,
@@ -11352,12 +11359,15 @@ end
 ---               lf0 += 0.3926991
 ---               `ins_99(7, 7, 11, 2, speed1 = lf7, speed2 = 3.0, angle = lf0,
 ---                       angleStep = π/32, flags = 0x4210)`
----           ★ flags 0x4210 = SPAWN_SLOW(8) | ACCEL_VEC(10) | PLAY_SPAWN_SOUND(200) |
----             CANCEL_IMMUNE(1000) | SET_SPRITE(4000)：出生 30 帧慢动画（type 7 的 etama
----             脚本就是 30 帧：位置先退 velocity·4、每帧走 velocity/3），动画期间两条
----             记录都不跑；动画一完 VEC 先点亮（40 帧），槽 1 的 `allowWhileActive = 0`
----             把它挡住 ⇒ 要等 VEC 跑完才换贴图/换色（BulletManager.cpp:307-330 的判据，
----             th31.lua 的 `advance` 照抄，这里只要写两条记录）。
+---           ★ flags 0x4210 = ACCEL_VEC(0x10) | PLAY_SPAWN_SOUND(0x200) | SET_SPRITE(0x4000)
+---             （BulletManager.hpp:131-146；**没有** 0x2/0x4/0x8 任何一条出生动画位
+---             ⇒ SpawnSingleBullet 不进 SPAWNING_* 分支、不平移 −velocity·4，弹出生那帧
+---             就按全速走）。出生时 AdvanceTransformProgram 一次跑两条记录：槽 0
+---             `allowWhileActive = 0` 且 `activeTransformFlags` 还是 0 ⇒ 直接点亮
+---             （VEC 40 帧）；随后槽 1 的 `allowWhileActive = 0` 被刚点亮的 VEC 挡住
+---             ⇒ 要等 VEC 跑完（40 帧后 activeTransformFlags 清掉）才换贴图/换色
+---             （BulletManager.cpp:310-478 的判据，th31.lua 的 `advance` 照抄，
+---             这里只要写两条记录）。
 ---           ★ count2 = 2 的速度分法（BulletManager.cpp:110-113）：
 ---             `speed = speed1 − (speed1 − speed2)·j / count2`（分母是 count2，不是 count2−1）
 ---             ⇒ 第一条 `ins_99` 第 0 圈 3.4 / 第 1 圈 2.95；第二条 4.0 / 3.5。
@@ -12005,11 +12015,13 @@ end
 ---      t=0（Lunatic）：exI0 = 3、lf0 = π/2（基准角）、li7 = 15（每拍间隔）、
 ---                      lf7 = 2.5（B 弹速度）、lf6 = 3.0（A 弹速度）；
 ---                      Sub41 是 lf7 = 3.0 / lf6 = 3.6。
----      一拍（`Sub39_340` / `Sub41_340`）＝两条 `ins_99` 同帧发出：
----               A：type 3、色 li2(=2)、count1 = 4（Sub41 是 8）、speed1 = lf6、
----                  angle = lf0、angleStep = π/12、flags 514；
----               B：同参数，色 li1、speed1 = lf7。
----      ★ 一拍就是「一个 4/8 方向十字（CIRCLE，不瞄自机）」，A/B 两发只差色号与速度。
+---      一拍（`Sub39_340` / `Sub41_340`）＝两条 `ins_99` **同帧并列**，但掩码互斥：
+---               A（**0x3f = 人类**）：type 3、色 li2(=2)、count1 = 4（Sub41 是 8）、
+---                  speed1 = lf6、angle = lf0、angleStep = π/12、flags 514；
+---               B（**0x5f = 妖怪**）：同参数，色 li1、speed1 = lf7。
+---      ★ 人类形态下只有 A 跑（`0x5f & 0x28 = 0x08 ≠ 0x28`，EclRun.cpp:69-73 +
+---        EnemyManager.cpp:903）⇒ 本移植版一拍只发 A 那一发（见 fire 的注）。
+---      ★ 一拍就是「一个 4/8 方向十字（CIRCLE，不瞄自机）」。
 ---      节拍：`ins_2(li7)` 冻 15 帧 → 再一拍 → 冻 → `ins_5(0, 轮头, exI0)`：
 ---             JUMP_DEC 把 exI0 减一、还 > 0 就跳回轮头 ⇒ **第一段 3 轮 = 6 拍**
 ---             （子时间 0/15/30/45/60/75），之后落到第二段（`Sub39_572`）：
@@ -12162,7 +12174,7 @@ local FAM_SPAWN_42 = {
 
 ---使魔（Sub40 / Sub42）。占位贴图 "servant"；原作有 24×24 判定与 life，移植版按本文件
 ---的惯例做成纯观感（不给判定）。
----（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire_pair`，而 `local x = Class(...)`
+---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。）
 local familiar
 familiar = Class(object, {
@@ -12207,13 +12219,13 @@ familiar = Class(object, {
             if g < first then
                 ---第一段：3 轮 × 2 拍，每隔 GUN_WAIT 帧一拍（角度不变）。
                 if g % GUN_WAIT == 0 then
-                    familiar.fire_pair(self)
+                    familiar.fire(self)
                 end
             else
                 ---第二段：每拍后转 lf0 += lf1，每两拍 lf1 *= 0.96。
                 local q = g - first
                 if q % GUN_WAIT == 0 then
-                    familiar.fire_pair(self)
+                    familiar.fire(self)
                     self.gun_ang = wrap_pi(self.gun_ang + self.gun_delta)
                     if math.floor(q / GUN_WAIT) % 2 == 1 then
                         self.gun_delta = self.gun_delta * GUN_DECAY
@@ -12224,18 +12236,19 @@ familiar = Class(object, {
         end
         self.fam_t = t + 1
     end,
-    ---一拍 2 发（同帧）：A 用色 li2/速度 spd_a、B 用色 li1/速度 spd_b（`ins_99` ×2）。
-    fire_pair = function(self)
+    ---★ 一拍只有**一条** `ins_99` 在人类形态下执行。原件的两行是**同帧并列**的
+    ---  `SHOOT_CIRCLE`（Sub39 `@19752`/`@19796`、Sub41 同构），但掩码一个是 **0x3f**
+    ---  （色 li2、speed1 = lf6）、一个是 **0x5f**（色 li1、speed1 = lf7）：
+    ---  `0x5f & 0x28 = 0x08 ≠ 0x28`（EclRun.cpp:69-73；`override = 人类 ? 0x20 : 0x40`，
+    ---  EnemyManager.cpp:903）⇒ **妖怪那一支不执行**。本文件一律按人类形态移植
+    ---  （同卡 191/193 的「色 6 不实现」、同关卡 3436 的 GUN[23]）——
+    ---  所以这里只发色 li2 / 速度 spd_a 的那一环（fam_li1/spd_b 留着表示原件里
+    ---  妖怪那一支的参数，不参与出弹）。
+    fire = function(self)
         EX.shoot(self, self.x, self.y, {
             op = 99, type = GUN_TYPE, color = EX.color(self.fam_li2),
             count1 = self.fam_gun.count1, count2 = 1,
             speed1 = self.fam_gun.spd_a, speed2 = GUN_SPD2,
-            angle = self.gun_ang, step = GUN_STEP, flags = GUN_FLAGS,
-        })
-        EX.shoot(self, self.x, self.y, {
-            op = 99, type = GUN_TYPE, color = EX.color(self.fam_li1),
-            count1 = self.fam_gun.count1, count2 = 1,
-            speed1 = self.fam_gun.spd_b, speed2 = GUN_SPD2,
             angle = self.gun_ang, step = GUN_STEP, flags = GUN_FLAGS,
         })
     end,
@@ -27027,8 +27040,13 @@ end
 ---    t=1 `ins_81(3)` 开判定 + `ins_135(0, 20)` 挂上枪 Sub20（子 context 自己的 time 从 0 起）。
 ---    t=5001 的 TERMINATE 远超相位长度（35 秒），到不了。
 ---  · Sub20（枪）：t=0 `lf0 += π`（掉头往回打）、`ins_111(0, 128, 0, 60, 1, 0, 1.5)` 写一条
----    AIMED 折向记录；每 20 帧一对手：type3 色2 速 1.5（普通）、type3 色6 速 3.0
----    （带 AIMED 位 ⇒ 飞 60 帧减速、第五十帧拐向自机、速度换成 1.5，只拐一次）。
+---    AIMED 折向记录；每 20 帧**并列两条** SHOOT_FAN：
+---      · 掩码 **0x3f（人类）**：type3 色2 速 1.5、flags 0x202（普通）；
+---      · 掩码 **0x5f（妖怪）**：type3 色6 速 3.0、flags 0x282（＋AIMED ⇒ 飞 60 帧减速、
+---        之后拐向自机、速度换成 1.5，只拐一次）。
+---    ★ 人类形态下只有前者跑（`0x5f & 0x28 = 0x08 ≠ 0x28`，EclRun.cpp:69-73 +
+---      EnemyManager.cpp:903）⇒ 本移植版只发色 2 速 1.5 的那一发（同卡 191/193 的
+---      「色 6 不实现」）；GUN_SPEED_B / GUN_FLAGS_B 留着表示原件里妖怪那一支的参数。
 ---    `ins_5(0, //20, 10)` 一共 10 组，第 200 帧 RETURN（子 context 回收）。
 ---  ★ 已知差异：原作使魔 `ins_81(3)` 开 ACCEPTS_DAMAGE|COLLISION、life 300 ⇒ 打得掉；
 ---    移植版跟其它卡的使魔一样**不给判定**（占位做法），所以 20 只使魔会一直留到换卡
@@ -27155,12 +27173,15 @@ local function f16_advance(self)
     self.y = self.y - math.sin(self.f_dir) * self.f_sp
 end
 
----Sub20 的一对手（子 context；挂上那一帧算它的 t=0）。
+---Sub20 的一拍（子 context；挂上那一帧算它的 t=0）。人类形态下只有色 2 那一发。
 local function f16_gun_volley(self)
     if self.f_gun_dir == nil then
         ---`ins_15(lf0, π)` + `ins_37`：掉头往回打。
         self.f_gun_dir = wrap_pi(self.f_lf0 + PI)
-        ---`ins_111(0, 128, 0, 60, 1, 0, 1.5)`：AIMED 折向（只有带 0x80 位的那颗会点亮）。
+        ---`ins_111(0, 128, 0, 60, 1, 0, 1.5)`：AIMED 折向记录。原作这条**无条件**执行
+        ---（掩码 0xff），但只有弹自己的 transformFlags 带 0x80 时才会点亮
+        ---（BulletManager.cpp:317-329）—— 人类形态发的那颗 flags = 0x202 不带，所以这里
+        ---只是照抄原件、没有实际效果。
         EX.set_record(self, 0, EX.K.AIMED, 0, GUN_AIM_INTERVAL, 1, 0, GUN_AIM_SPEED)
     end
     ---使魔是 `ins_91` 新生的敌机 ⇒ 出生默认 1024（32 px）的闸照吃（见卡头）。
@@ -27170,11 +27191,6 @@ local function f16_gun_volley(self)
         op = 97, type = 3, color = EX.color(2),
         count1 = 1, count2 = 1, speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
         angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_A,
-    })
-    EX.shoot(self, self.x, self.y, {
-        op = 97, type = 3, color = EX.color(6),
-        count1 = 1, count2 = 1, speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
-        angle = ang, step = -GUN_STEP, flags = GUN_FLAGS_B,
     })
 end
 
@@ -44283,11 +44299,11 @@ local FAM_OMEGA_A, FAM_OMEGA_B = 0.02617994, -0.02617994
 ---------------------------------------------------------------------
 local SUB16 = {
     { 0, function(owner, s)
-        s.fan_ang = ran:Float(0, 2 * PI) * 0.04 - PI / 2
+        s.fan_ang = ran:Float(-PI, PI) * 0.04 - PI / 2
         fan_volley(owner, s.fan_ang, PI / 2)
     end },
     { 60, function(owner, s)
-        s.fan_ang = ran:Float(0, 2 * PI) * 0.04 + PI / 2
+        s.fan_ang = ran:Float(-PI, PI) * 0.04 + PI / 2
         fan_volley(owner, s.fan_ang, -PI / 2)
     end },
     { 120, function(owner) start_move(owner, 96, 104, 50, 4) end },
@@ -44603,7 +44619,12 @@ local function fam_gun_fire(fam)
     EX.set_record(fam, 1, EX.K.WAIT, 1, FAM_WAIT_FRAMES, -1, -1, -1)
     EX.set_record(fam, 2, EX.K.VEC, 0, FAM_VEC_FRAMES, -1, dist * 2 / FAM_VEC_DIV, -999)
     EX.set_record(fam, 3, EX.K.SPRITE, 1, 3, 6, -1, -1)
-    EX.set_record(fam, 4, EX.K.SND, 1, 27, -1, -1, -1)
+    ---★ `allowWhileActive` 必须照抄原作的 **0**（`4 524288 0 27 -1 -1 -1`）：
+    ---  AdvanceTransformProgram（BulletManager.cpp:313-320）遇到 allow==0 且当前有活动状态
+    ---  就直接 return ⇒ 这条 PLAY_SOUND 要等 VEC 那 60 帧跑完才轮到，
+    ---  紧随其后的 5 号 DESPAWN 记录也一并被推后；写成 1 会让整颗弹提前 60 帧
+    ---  进 DESPAWNING（消失帧不再跑 transform，弹速就冻住了）。
+    EX.set_record(fam, 4, EX.K.SND, 0, 27, -1, -1, -1)
     EX.set_record(fam, 5, EX.K.DESPAWN, 0, -1, -1, -1, -1)
     ---★ ECL 里 exF0/exF1 只是**算方向/距离用的草稿点**：`DispatchShotInstruction`
     ---  的出弹位置恒为 `enemy->worldPosition + shootOffset`（EclDependencies.cpp:718-720）
@@ -44676,8 +44697,9 @@ local function spawn_batch(owner, s, count, step, base, omega)
     local ang = base
     for _ = 1, count do
         s.fams[#s.fams + 1] = New(fam_cls, owner, -ang, omega, 0)
-        ---lf7 的初值 `rndAngle + 0.5235988`（TH08，只进 sin，符号无所谓）。
-        s.fams[#s.fams].c471_gun_ang = ran:Float(0, 2 * PI) + 0.5235988
+        ---lf7 的初值 = `SET_FLOAT lf7 rndAngle` + 循环头的 `FLOAT_ADD lf7 0.5235988`
+        ---（TH08 口径；只进 sin，分布等价，仍按 rndAngle = [−π,π) 写以对齐原作）。
+        s.fams[#s.fams].c471_gun_ang = ran:Float(-PI, PI) + 0.5235988
         ang = ang + step
     end
 end
@@ -44699,7 +44721,8 @@ local SUB22 = {
     end },
     { 390, function(owner) begin_wander(owner) end },
     { 490, function(owner, s)
-        spawn_batch(owner, s, BATCH3, STEP3, ran:Float(0, 2 * PI), 0)
+        ---t=490 的 `SET_FLOAT lf0 rndAngle`（[−π,π)）作 13 只使魔的公共极角基准。
+        spawn_batch(owner, s, BATCH3, STEP3, ran:Float(-PI, PI), 0)
     end },
     { 590, function(owner) begin_wander(owner) end },
     { CYCLE_END, function(owner, s)
@@ -44756,10 +44779,14 @@ local function card_frame(owner)
         local fam = s.fams[i]
         if IsValid(fam) then
             fam_step(fam)
-            ---★ Sub24 t=0 的 `ins_80 DISABLE_INTERACTION_FLAGS 3` 把 ALLOW_OFFSCREEN
-            ---  置上（前 100 帧出屏不回收）、t=100 的 `ins_81 ENABLE` 再清掉
-            ---  （EnemyManagerUpdate.cpp:238-262）⇒ 只在 fam 自身 time ≥ 100 之后才判出屏。
-            if fam.c471_ftime >= 100 and outside_field(fam.x, fam.y, FAM_HALF) then
+            ---★ Sub24 t=0 的 `ins_80 DISABLE_INTERACTION_FLAGS 3` / t=100 的
+            ---  `ins_81 ENABLE_INTERACTION_FLAGS 3` 只动 ACCEPTS_DAMAGE|COLLISION
+            ---  （ECL_INTERACTION_* = 1<<0 / 1<<1，EclManager.hpp:508-509）——
+            ---  **不是** ALLOW_OFFSCREEN（=1<<4，EclRunLow.inl:687/707 的语义还反过来写）。
+            ---  spawnTemplate 的 ALLOW_OFFSCREEN 是 0 ⇒ 使魔从第 0 帧起就按
+            ---  EnemyManagerUpdate.cpp:238-262 的出屏判据回收（它生在被夹框内的 BOSS 身上，
+            ---  hasBeenInBounds 当帧就置上）。
+            if outside_field(fam.x, fam.y, FAM_HALF) then
                 object.RawDel(fam)
                 table.remove(s.fams, i)
             end
@@ -45187,7 +45214,8 @@ local function hermite_at(slot, u)
     return w0 * slot.p0 + w1 * slot.p1 + w2 * slot.p2 + w3 * slot.p3
 end
 
----Sub30 的一次齐射（子 context 0 的循环体；`ins_2 SET_SECONDARY_TIME li0` ⇒ 周期 8 帧）。
+---Sub30 的一次齐射（子 context 0 的循环体；`ins_2 SET_SECONDARY_TIME li0` ⇒ 周期 7 帧，
+---  见 FAM_GUN_PERIOD 的推导）。
 local function fam_gun_fire(fam)
     local ang = rnd_angle()
     for i = 1, 3 do
@@ -45806,11 +45834,17 @@ end
 ---    （op74：duration = 0 ⇒ 永不清模式；radialVelocity = 0）和 `SET_CHILD_ECL 0 42`
 ---    都在**解冻那一帧**才跑：使魔先飞出去、到点变纯公转同时开始放弹；
 ---    `TERMINATE` 在 context time 960 ⇒ 寿命 = 120 + 960 帧。
+---    ★ Sub43 头三条里的 `SET_FORM_EFFECT_ENABLED 1`（op83）与
+---      `ins_174 REPLACE_ALIGNMENT_EFFECT 1`（EclRunHigh.inl 的替换对齐特效）在移植版
+---      没有对应系统（本文件所有使魔都不带对齐特效）—— 只是人妖形态切换的辉光，
+---      纯观感，略过不实现（同卡 191..204 的处理）。
 ---  ★ Sub42（使魔的枪）：Lunatic li0 = 20、li1 = 2、lf0 = 2.5。循环体是
 ---    `#12 FAN_AIMED(bt3 色6) #13 FAN_AIMED(bt1 色5) #14 SET_SECONDARY_TIME li0
 ---    #15 FAN_AIMED(bt3 色6) #16 SET_SECONDARY_TIME li0 #17 JUMP #12`——
----    每次冻结正好 20 帧 ⇒ **每 20 帧一波**，且因为 #12/#13 在 JUMP 之后：
----    第 0 帧出「A+B」、第 20 帧只出「A」、第 40 帧又「A+B」… 交替。
+---    每次冻结正好 20 帧 ⇒ **每 20 帧一波**。`#13` 的难度掩码是 0x5f（只有妖怪
+---    形态），本文件按人类形态移植 ⇒ 不发；`#12`/`#15` 是同一条 bt3 色6 弹，
+---    于是人类形态下的实际节奏就是 **每 20 帧一条 bt3 色6 的 5 连自机狙直线**
+---    （帧 0、20、40 …）。踩过：曾把 #13 也发出去，多打一倍。
 ---  ★ Sub40 / Sub41（BOSS 的螺旋）：`exI0 = 40`、循环体 9 帧一轮（`JUMP_DEC` 在 t=9、
 ---    回跳时 time 置 0）⇒ 共 40 波、占 360 帧。每波（Lunatic 只跑 0xf8 那几条）：
 ---      `SET_BULLET_TRANSFORM slot1 = REL(90, 2, ∓π/2, 1.4)` → CIRCLE(c1 = 4, c2 = 2,
@@ -45935,12 +45969,19 @@ local function begin_wander(owner, s, frames, easing, speed)
 end
 
 ---------------------------------------------------------------------
----Sub42：使魔的枪（交替的「A+B」「A」扇形，每 20 帧一波）。
+---Sub42：使魔的枪（自机狙的直线弹，每 20 帧一波）。
 ---------------------------------------------------------------------
 local GUN_PERIOD = 20           -- `ins_2 SET_SECONDARY_TIME li0`（Lunatic li0 = 20）
 local GUN_A = { type = 3, color = 7, count2 = 5, speed1 = 2.5, speed2 = 1.0 }
-local GUN_B = { type = 1, color = 6, count2 = 2, speed1 = 2.5, speed2 = 1.0 }
+---★ 循环体里第 2 条 `SHOOT_FAN_AIMED`（bt1 色5、count2 = li1 = 2）的难度掩码是
+---  **0x5f**（`#13`），只覆盖妖怪形态（EclRunLow/`EclRun.cpp:66-75`：一行生效
+---  ⇔ mask & (Lunatic 8 | 人类 0x20) == 0x28；0x5f & 0x28 = 0x08 ≠ 0x28）。
+---  本文件一律按**人类形态**移植（同卡 191/196 的「色 6 不实现」）⇒ 整条不发。
+---  踩过：一开始当成「A+B / A 交替」，多打了一倍的自机狙直线弹。
+---  人类形态下实际节奏：`#12`(0x3f) 与 `#15`(0x3f) 是同一条 bt3 色6 弹，
+---  中间各冻 20 帧 ⇒ **每 20 帧一发**（帧 0、20、40 …）。
 ---★ `ast` 的裸 float32 = 0x3e3d3c19 = 0.184799567（TH08 口径 → 我们取反）。
+---  count1 = 1 ⇒ 扇形只有 i=0 一条，step 实际用不到，照抄而已。
 local GUN_STEP = 0.184799567
 local function fam_gun_fire(fam, wave)
     shoot(fam, fam.x, fam.y, {
@@ -45952,9 +45993,6 @@ local function fam_gun_fire(fam, wave)
 end
 local function fam_gun_volley(fam)
     fam_gun_fire(fam, GUN_A)
-    if (fam.c474_gct / GUN_PERIOD) % 2 == 0 then
-        fam_gun_fire(fam, GUN_B)
-    end
 end
 
 ---------------------------------------------------------------------
@@ -45974,6 +46012,7 @@ fam_cls = Class(object, {
         ---  （踩过：一开始按「圆心钉死在出生点」写，使魔会越飘越偏。）
         self.c474_boss = boss
         self.c474_freeze = dur
+        self.c474_fresh = true           -- 出生帧要**跑两遍** RunEcl（见 step ①）
         self.c474_ct = 0                 -- 主 context time
         self.c474_ang = ang
         self.c474_av = angvel
@@ -46010,7 +46049,17 @@ local function fam474_step(fam)
         end
         fam.c474_ct = fam.c474_ct + 1
     end
-    ---② 子 context 0（Sub42）：每 20 帧一波（交替 A+B / A）。
+    ---★ 出生那一帧的**第二遍** RunEcl：`ins_92` 的 SpawnEnemy2 内部先跑一遍
+    ---  （EnemyTimeline.cpp:92-99），生成的敌人落进最低空槽（这里是 BOSS 后面的
+    ---  槽位）又在同一帧的敌人循环里再跑一遍（EnemyManagerUpdate.cpp:163-166）
+    ---  ⇒ 冻帧计数一帧减 2。踩过：只减 1 会让解冻（半径冻结 + 挂枪）晚 1 帧，
+    ---  公转半径多长 `rv = lf4/120`（圈数越大越明显）。
+    if fam.c474_fresh then
+        fam.c474_fresh = false
+        if fam.c474_freeze > 0 then fam.c474_freeze = fam.c474_freeze - 1 end
+    end
+    ---② 子 context 0（Sub42）：每 20 帧一条 bt3 色6 的 5 连自机狙直线
+    ---  （`#13` 是 0x5f 的妖怪形态弹，人类形态不发 ⇒ 不像原来那样「A+B/A 交替」）。
     ---  ★ 原作帧序 =「主 context → 子 context → UpdateMovement」（EclRun.cpp 的
     ---  frame tail 先跑 child context，EnemyManagerUpdate.cpp:163-177 之后才
     ---  IntegrateVelocity）⇒ 枪的位置/角度用的是**上一帧末**的值。
@@ -46038,23 +46087,22 @@ end
 ---------------------------------------------------------------------
 local BURST_N, BURST_STEP = 40, 9
 local BURST_FRAMES = BURST_N * BURST_STEP    -- 360
+---★ lf0/lf1/lf2 一律按**原件（TH08）口径**保存（lf0 = lf1 = −π/2、lf2 = π/32），
+---  出弹那一刻才取反 —— 跟卡 473 的头注同一条铁则（「出弹的 angle/angleStep
+---  两个操作数都取反」）。踩过：原来直接把 lf0 塞进 shoot，螺旋朝反方向卷。
 local BURST_F0 = -PI / 2
 local BURST_DF = 0.09817477
-local function burst_start(owner, s, acc)
-    EX.set_record(owner, 0, EX.K.CULL, 1, 270, -1, -1, -1)
-    s.burst = { n = 0, f = 0, lf0 = BURST_F0, lf1 = BURST_F0, lf2 = BURST_DF, acc = acc }
-end
 local function burst_volley(owner, b)
     EX.set_record(owner, 1, EX.K.REL, 1, 90, 2, PI / 2, 1.4)
     shoot(owner, owner.x, owner.y, {
         op = 99, type = 2, color = 9,
         count1 = 4, count2 = 2, speed1 = 3.4, speed2 = 0.5,
-        angle = b.lf0, step = -0.2617994, flags = 0x2242,
+        angle = -b.lf0, step = -0.2617994, flags = 0x2242,
     })
     shoot(owner, owner.x, owner.y, {
         op = 97, type = 2, color = 11,
         count1 = 3, count2 = 1, speed1 = 2.2, speed2 = 0.5,
-        angle = b.lf0, step = -0.7853982, flags = 0x202,
+        angle = -b.lf0, step = -0.7853982, flags = 0x202,
     })
     ---第三条记录：ECL 的 allowWhileActive 写的是 **0**（不是 1）——`1 64 0 90 2 1.570796 -999`。
     ---对本卡的弹等价（出生时没有活动 transform），但照抄原文。
@@ -46062,12 +46110,12 @@ local function burst_volley(owner, b)
     shoot(owner, owner.x, owner.y, {
         op = 97, type = 2, color = 9,
         count1 = 2, count2 = 1, speed1 = 1.8, speed2 = 0.5,
-        angle = b.lf1, step = -0.2617994, flags = 0x2242,
+        angle = -b.lf1, step = -0.2617994, flags = 0x2242,
     })
     shoot(owner, owner.x, owner.y, {
         op = 97, type = 2, color = 11,
         count1 = 4, count2 = 2, speed1 = 2.0, speed2 = 0.5,
-        angle = b.lf1, step = -0.7853982, flags = 0x202,
+        angle = -b.lf1, step = -0.7853982, flags = 0x202,
     })
     if b.acc == 1 then
         b.lf0 = add_norm(b.lf0 + b.lf2)
@@ -46077,6 +46125,16 @@ local function burst_volley(owner, b)
         b.lf1 = add_norm(b.lf1 - b.lf2)
     end
     b.lf2 = b.lf2 * 1.03
+end
+local function burst_start(owner, s, acc)
+    EX.set_record(owner, 0, EX.K.CULL, 1, 270, -1, -1, -1)
+    s.burst = { n = 0, f = 0, lf0 = BURST_F0, lf1 = BURST_F0, lf2 = BURST_DF, acc = acc }
+    ---★ `CALL` 在本帧就进子程序、context time 由 CallEclSub 归零
+    ---  （EclManager.cpp:75-80；EclRunLow.inl:416-418 的 yield 是「重启 run 循环」，
+    ---  不是「下一帧」）⇒ **第 1 波与 CALL 同帧**。踩过：原来把首发推到下一帧，
+    ---  整条 360 帧螺旋整体晚 1 帧（第 40 波挤在收尾前 8 帧）。
+    burst_volley(owner, s.burst)
+    s.burst.n, s.burst.f = 1, 1
 end
 
 ---------------------------------------------------------------------
@@ -46122,6 +46180,10 @@ local SUB38 = {
 
 local function sub38_step(owner, s)
     ---① CALL 40/41 的子程序：主 clock 冻结，直到返回帧才在同一时刻继续。
+    ---  首发在 `burst_start` 里同帧发出（见那里的注），这里管第 2..40 波：
+    ---  波间隔 = JUMP_DEC 的 9 帧；末波（第 40 波）之后再走一整轮 9 帧到
+    ---  t=9 的 JUMP_DEC 才 RETURN ⇒ **子程序共占 360 帧**，返回帧（= 主时间线
+    ---  恢复、`lf4 += 24` 那两条跑的那帧）在 burst_start 之后第 360 帧。
     if s.burst then
         local b = s.burst
         if b.f % BURST_STEP == 0 and b.n < BURST_N then
@@ -46129,7 +46191,7 @@ local function sub38_step(owner, s)
             b.n = b.n + 1
         end
         b.f = b.f + 1
-        if b.f < BURST_FRAMES then return end
+        if b.f <= BURST_FRAMES then return end
         s.burst = nil
     end
     ---② 主时间线。
@@ -47093,10 +47155,17 @@ local SUB48 = {
         s.lf7 = 1.57079637            -- π/2
         s.lf6 = s.lf7 / 2.5
     end },
-    ---`#19..#20`（t=90）：PLAY_SPECIAL_ANM（演出）+ sF0 = lf4 —— `#32 JUMP 90` 的落点。
+    ---`#19..#20`（t=90）：PLAY_SPECIAL_ANM（演出）+ `SET_FLOAT sF0 lf4` —— `#32 JUMP 90` 的落点。
     { 90, function(o, s) s.sF0 = s.lf4 end },
     ---`#21`（t=90）：`CALL 49`（子程序与主 context 共用变量；主 clock 冻结到返回帧）。
+    ---★ CALL 时 `CallSubOnEnemy` 把**共享调用参数** g_EclCallParameters（`SET_FLOAT sF0`
+    ---  写的就是它）整块抄进本 context 的 callParameterInts[0]（= cF0..cF3，
+    ---  EclDependencies.cpp:487-494）⇒ SUB49 的 `#2 lf2 = cF0`、`#3 lf1 = cF0·0.1`、
+    ---  `#8 JMP_IF_FLT_GE cF0 0` 读到的都是 **sF0 = lf4**。
+    ---  漏掉这步 ⇒ 第一轮 lf2 = lf1 = 0（基准角根本不旋），第二轮起 cF0 还残留
+    ---  t=220 写的 angToPl + lf7。
     { 90, function(o, s)
+        s.cF0 = s.sF0
         s.s49 = { pc = 1, t = 0 }
         sub49_frame(o, s)
     end },
@@ -50567,7 +50636,11 @@ local INVULN = {
 ---交互标志里 COLLISION 开着的（`ENABLE_INTERACTION_FLAGS 2`）：使魔 Sub5/12/15。
 ---★ 它们在**出生**那一帧还没开（op91 生成时引擎会先清 COLLISION）⇒ 出生时先按
 ---  NONTJT 建，等 SUB 里的 t=1 / t=1 / t=91 调 `u_contact` 再切 ENEMY。
-local CONTACT = {}
+---★ Sub14（life 500 的妖精，时间轴 t=2690 / 2890）**全程带 COLLISION**：它的 ECL
+---  里没有任何 `DISABLE_INTERACTION_FLAGS`（对比 Sub13 有 `DISABLE ... 2`），而
+---  `SpawnEnemy` 出生默认 `flags1 |= COLLISION`（EnemyManager.cpp:169）⇒ 碰到自机
+---  会死，跟其它「妖精 = 无碰撞」不同 ⇒ 直接在出生时按 ENEMY 建。
+local CONTACT = { [14] = true }
 
 ---原作 itemDropType（ItemManager.hpp:9-19）：0 小能量 / 1 点 / 2 大能量 / 3 炸弹 /
 ---−2 不掉。本仓库只有 faith / point 两种道具（差异 5）。
@@ -51794,11 +51867,15 @@ local function make_card(build)
         u.sx, u.sy = x, y
     end
 
-    ---KILL_ALL_NON_BOSS（op95）：这三张卡里没有 BOSS，直接全杀（不扣血、不掉道具）。
+    ---KILL_ALL_NON_BOSS（op95，EnemyManager.cpp:1426-1450）：遍历全池，把每只 ACTIVE
+    ---且非 BOSS、非 NO_DEATH 的敌人 `life` 置 0 ⇒ 走**正常死亡**路径（掉道具 +
+    ---播击破音），不是直接删。★ 这里写 `hp = 0`，让 u_step → enemybase.frame 去走
+    ---object.Kill → `kill()`；写 `alive = false` 会被当作「出屏回收」用 RawDel 收走，
+    ---反而**丢光道具**。ecldata6 的 Sub21/52/56/63/68/73/78 调它；道中无 BOSS。
     local function u_kill_all()
         for i = 1, #units do
             local o = units[i]
-            if IsValid(o) and o.alive then o.alive = false end
+            if IsValid(o) and o.alive and not o.is_boss then o.hp = 0 end
         end
     end
 
@@ -51834,12 +51911,36 @@ local function make_card(build)
         c.t = c.t + 1
     end
 
+    ---★ 子 context 有**自己独立的变量银行**：挂上那一刻把父机的 int/float/extra 变量
+    ---  整块 memcpy 过去（EclRunHigh.inl:671-675 / EclManager.hpp:607-612）⇒ 枪与本体的
+    ---  li/lf/exI 互不干扰。移植版脚本闭包直接读写 `u.liN/lfN/exIN` ⇒ 这里换入换出。
+    local VAR_NAMES = {
+        "li0", "li1", "li2", "li3", "li4", "li5", "li6", "li7",
+        "lf0", "lf1", "lf2", "lf3", "lf4", "lf5", "lf6", "lf7",
+        "exi0", "exi1", "exi2", "exi3", "exf0", "exf1",
+    }
+    local function vars_save(u, dst)
+        for i = 1, #VAR_NAMES do dst[i] = u[VAR_NAMES[i]] end
+    end
+    local function vars_load(u, src)
+        for i = 1, #VAR_NAMES do u[VAR_NAMES[i]] = src[i] end
+    end
+    local function gun_run(u)
+        vars_save(u, u.gpv)
+        vars_load(u, u.gvars)
+        run_ctx(GUN[u.gun], u, u.gctx)
+        vars_save(u, u.gvars)
+        vars_load(u, u.gpv)
+    end
+
     ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
     local function set_child(u, sub)
         u.gun = sub
         u.gctx = { t = 0, pc = 1, stall = 0 }
         u.gticked = true
-        run_ctx(GUN[sub], u, u.gctx)
+        u.gvars, u.gpv = {}, {}
+        vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
+        gun_run(u)
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -52012,7 +52113,7 @@ local function make_card(build)
         if not u.alive then return end
         ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
         if u.gun and not u.gticked then
-            run_ctx(GUN[u.gun], u, u.gctx)
+            gun_run(u)
             if not u.alive then return end
         end
         u.gticked = false
@@ -52751,11 +52852,15 @@ local function make_card(build)
         u.sx, u.sy = x, y
     end
 
-    ---KILL_ALL_NON_BOSS（op95）：这三张卡里没有 BOSS，直接全杀（不扣血、不掉道具）。
+    ---KILL_ALL_NON_BOSS（op95，EnemyManager.cpp:1426-1450）：遍历全池，把每只 ACTIVE
+    ---且非 BOSS、非 NO_DEATH 的敌人 `life` 置 0 ⇒ 走**正常死亡**路径（掉道具 +
+    ---播击破音），不是直接删。★ 这里写 `hp = 0`，让 u_step → enemybase.frame 去走
+    ---object.Kill → `kill()`；写 `alive = false` 会被当作「出屏回收」用 RawDel 收走，
+    ---反而**丢光道具**。ecldata7 的 Sub19/50/55/61/67/71/77/80/82/84/87 调它；道中无 BOSS。
     local function u_kill_all()
         for i = 1, #units do
             local o = units[i]
-            if IsValid(o) and o.alive then o.alive = false end
+            if IsValid(o) and o.alive and not o.is_boss then o.hp = 0 end
         end
     end
 
@@ -52791,12 +52896,36 @@ local function make_card(build)
         c.t = c.t + 1
     end
 
+    ---★ 子 context 有**自己独立的变量银行**：挂上那一刻把父机的 int/float/extra 变量
+    ---  整块 memcpy 过去（EclRunHigh.inl:671-675 / EclManager.hpp:607-612）⇒ 枪与本体的
+    ---  li/lf/exI 互不干扰。移植版脚本闭包直接读写 `u.liN/lfN/exIN` ⇒ 这里换入换出。
+    local VAR_NAMES = {
+        "li0", "li1", "li2", "li3", "li4", "li5", "li6", "li7",
+        "lf0", "lf1", "lf2", "lf3", "lf4", "lf5", "lf6", "lf7",
+        "exi0", "exi1", "exi2", "exi3", "exf0", "exf1",
+    }
+    local function vars_save(u, dst)
+        for i = 1, #VAR_NAMES do dst[i] = u[VAR_NAMES[i]] end
+    end
+    local function vars_load(u, src)
+        for i = 1, #VAR_NAMES do u[VAR_NAMES[i]] = src[i] end
+    end
+    local function gun_run(u)
+        vars_save(u, u.gpv)
+        vars_load(u, u.gvars)
+        run_ctx(GUN[u.gun], u, u.gctx)
+        vars_save(u, u.gvars)
+        vars_load(u, u.gpv)
+    end
+
     ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
     local function set_child(u, sub)
         u.gun = sub
         u.gctx = { t = 0, pc = 1, stall = 0 }
         u.gticked = true
-        run_ctx(GUN[sub], u, u.gctx)
+        u.gvars, u.gpv = {}, {}
+        vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
+        gun_run(u)
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -52969,7 +53098,7 @@ local function make_card(build)
         if not u.alive then return end
         ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
         if u.gun and not u.gticked then
-            run_ctx(GUN[u.gun], u, u.gctx)
+            gun_run(u)
             if not u.alive then return end
         end
         u.gticked = false
@@ -53772,11 +53901,16 @@ local function make_card(build)
         u.sx, u.sy = x, y
     end
 
-    ---KILL_ALL_NON_BOSS（op95）：这三张卡里没有 BOSS，直接全杀（不扣血、不掉道具）。
+    ---KILL_ALL_NON_BOSS（op95，EnemyManager.cpp:1426-1450）：遍历全池，把每只 ACTIVE
+    ---且非 BOSS、非 NO_DEATH 的敌人 `life` 置 0 ⇒ 走**正常死亡**路径（掉道具 +
+    ---播击破音），不是直接删。★ 这里写 `hp = 0`，让 u_step → enemybase.frame 去走
+    ---object.Kill → `kill()`；写 `alive = false` 会被当作「出屏回收」用 RawDel 收走，
+    ---反而**丢光道具**（ecldata5 的 Sub33 在 t=2790/4470 清场、Sub62/63/66/75/78 同理；
+    ---EX ecldata8 的 Sub45 在 t=4895 收尾）。BOSS 由 `is_boss` 跳过（三面中 BOSS 卡在列）。
     local function u_kill_all()
         for i = 1, #units do
             local o = units[i]
-            if IsValid(o) and o.alive then o.alive = false end
+            if IsValid(o) and o.alive and not o.is_boss then o.hp = 0 end
         end
     end
 
@@ -53831,12 +53965,43 @@ local function make_card(build)
         u.ctx = { t = 0, pc = 1, stall = 0 }
     end
 
+    ---★ SET_CHILD_ECL 的子 context 有**自己独立的变量银行**：挂上那一刻把父机的
+    ---  `intVariables[8] / floatVariables[8] / extraIntVariables[4] / extraFloatVariables[2]`
+    ---  整块 memcpy 过去（EclRunHigh.inl:671-675，字段布局 EclManager.hpp:607-612）。
+    ---  ⇒ 枪和本体各自的 li/lf/exI 互不干扰：原作 Sub45 与 Sub46/47 **都用 exI0**
+    ---    （本体当 16 轮循环计数、枪当扇形序号），正是靠这份拷贝才不打架。
+    ---  移植版全部脚本闭包都直接读写 `u.liN/lfN/exIN`，所以这里跑枪之前把本体变量换出、
+    ---  枪变量换入，跑完存回枪的银行再换回本体。
+    local VAR_NAMES = {
+        "li0", "li1", "li2", "li3", "li4", "li5", "li6", "li7",
+        "lf0", "lf1", "lf2", "lf3", "lf4", "lf5", "lf6", "lf7",
+        "exi0", "exi1", "exi2", "exi3", "exf0", "exf1",
+    }
+    local function vars_save(u, dst)
+        for i = 1, #VAR_NAMES do dst[i] = u[VAR_NAMES[i]] end
+    end
+    local function vars_load(u, src)
+        for i = 1, #VAR_NAMES do u[VAR_NAMES[i]] = src[i] end
+    end
+
+    ---枪的一拍：换入枪变量 → run → 存回枪变量 → 还原本体变量。
+    local function gun_run(u, g)
+        vars_save(u, g.pv)
+        vars_load(u, g.vars)
+        run_ctx(GUN[g.sub], u, g.ctx)
+        vars_save(u, g.vars)
+        vars_load(u, g.pv)
+    end
+
     ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
     ---多槽（原作 childEclBlocks[0..3]）：Sub45 同时挂 46（槽 0）/ 47（槽 1）两把枪。
     local function set_child(u, sub, slot)
         slot = (slot or 0) + 1                  ---槽号 0 基 → 表下标 1 基
-        u.guns[slot] = { sub = sub, ctx = { t = 0, pc = 1, stall = 0 }, ticked = true }
-        run_ctx(GUN[sub], u, u.guns[slot].ctx)
+        local g = { sub = sub, ctx = { t = 0, pc = 1, stall = 0 }, ticked = true,
+                    vars = {}, pv = {} }
+        u.guns[slot] = g
+        vars_save(u, g.vars)                    ---★ 初次 memcpy 本体变量（EclRunHigh.inl:671）
+        gun_run(u, g)
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -53927,9 +54092,15 @@ local function make_card(build)
         init = function(self, sub, x, y, mirror, parent, hp, drop, follow)
             self.lx, self.ly = x, y
             self.px, self.py = 0, 0
-            ---nontaijutsu = true ⇒ GROUP.NONTJT（能被打、碰到自机不掉血）。
-            ---★ 这三张卡没有任何「出生当帧就要开 COLLISION」的场合（差异 8）⇒ 基底恒 NONTJT。
-            enemybase.init(self, hp or 1, true)
+            ---★ 出生默认是 COLLISION **开**：EnemyManager.cpp:169-172 给 spawnTemplate 设了
+            ---  COLLISION|DAMAGEABLE|ACCEPTS_DAMAGE；时间轴 / SPAWN_ENEMY 生成的都是这份默认值，
+            ---  只有子程序自己 `DISABLE_INTERACTION_FLAGS 2` / `SET_INTERACTION_FLAGS 2`
+            ---  才关得掉 COLLISION（EclRunLow.inl:672-706）。
+            ---  ⇒ 时间轴直接撒出来、且 t=0 没关 COLLISION 的（中 BOSS Sub38/45、三面中
+            ---  BOSS Sub20、ecldata8 的小妖精 Sub0/2/4/6）要按 GROUP.ENEMY 处理；
+            ---  其余（Sub0/2/9/10/15/22/29/31/34/36 等都 `DISABLE 2`）才是 GROUP.NONTJT。
+            ---  ★ 使魔（op90/91/92 生成）由引擎强制清掉 COLLISION，init 末尾再统一压回 NONTJT。
+            enemybase.init(self, hp or 1, not (cfg.CONTACT ~= nil and cfg.CONTACT[sub] == true))
             self.sub = sub
             self.mirror = mirror and true or false
             self.follow = follow and true or false
@@ -54034,7 +54205,7 @@ local function make_card(build)
             local g = u.guns[slot]
             if g then
                 if not g.ticked then
-                    run_ctx(GUN[g.sub], u, g.ctx)
+                    gun_run(u, g)
                     if not u.alive then return end
                 end
                 g.ticked = false
@@ -54878,6 +55049,8 @@ do
         ---  （到点 / 被打死都走离场脚本，见上面 Sub43/Sub44 那段注），移植版不实现。
     end)
     add(180, function(u) u.exi3 = 0 end)        ---#9 SET_INT exI3 0
+    ---★ 46 / 47 用的是**子 context 自己的变量银行**（挂上时 memcpy 本体一份，见 set_child）：两把枪
+    ---  也各用 exI0 当扇形序号（从 64 起 +1），**不会**碰下面循环用的本体 exI0 —— 原作就是这么隔离的。
     add(180, function(u) E.child(u, 46, 0) end) ---#10 SET_CHILD_ECL 0 46
     add(180, function(u) E.child(u, 47, 1) end) ---#11 SET_CHILD_ECL 1 47
     local loop = #s + 1                         ---#12（外循环头）
@@ -54946,10 +55119,12 @@ do
         E.offset(u, math.cos(u.lf2) * 64, math.sin(u.lf2) * 64)
         u.li0 = u.exi0 % 2                      ---INT_MOD2 li0 exI0 2
         if u.li0 == 0 then
-            E.record(u, 1, K.REL, 1, 60, 1, -1.57079637, 1.1)
+            ---★ 原作 li0==0 走 `SET_BULLET_TRANSFORM 1 … -1.570796 1.1`（@0x4680 落点前
+            ---  的那条，`JMP_IF_INT_NE li0 0` @0x4660 跳到 +1.570796 那条）⇒ 我们取反 +π/2。
+            E.record(u, 1, K.REL, 1, 60, 1, 1.57079637, 1.1)
             E.record(u, 2, K.SPRITE, 0, 2, 4, -1, -1)
         else
-            E.record(u, 1, K.REL, 1, 60, 1, 1.57079637, 1.1)
+            E.record(u, 1, K.REL, 1, 60, 1, -1.57079637, 1.1)
             E.record(u, 2, K.SPRITE, 0, 2, 3, -1, -1)
         end
         u.lf2 = E.norm(u.lf2 - 0.184799567)       ---FLOAT_ADD lf2 0.184799567（取反）
@@ -54982,10 +55157,11 @@ do
         E.offset(u, math.cos(u.lf2) * 64, math.sin(u.lf2) * 64)
         u.li0 = u.exi0 % 2
         if u.li0 == 0 then
-            E.record(u, 1, K.REL, 1, 60, 1, -1.57079637, 1.1)
+            ---★ 同 Sub46：原作 li0==0 走 −1.570796 那条 ⇒ 我们取反 +π/2。
+            E.record(u, 1, K.REL, 1, 60, 1, 1.57079637, 1.1)
             E.record(u, 2, K.SPRITE, 0, 2, 8, -1, -1)
         else
-            E.record(u, 1, K.REL, 1, 60, 1, 1.57079637, 1.1)
+            E.record(u, 1, K.REL, 1, 60, 1, -1.57079637, 1.1)
             E.record(u, 2, K.SPRITE, 0, 2, 7, -1, -1)
         end
         u.lf2 = E.norm(u.lf2 + 0.184799567)       ---FLOAT_SUB lf2 0.184799567（取反）
@@ -55193,10 +55369,16 @@ local TIMELINE_MID2 = { { 0, 45, 0, 96, 11000, 0, 1 } }
 
 local TIMELINE, TL_START = TIMELINE_FRONT, 0
 local HOST_WATCH, SAVE_POS, LOAD_POS = false, false, false
+---★ 中 BOSS 两阶段（Sub38 / Sub45）在原作里都保留出生默认的 COLLISION
+---  （Sub38 `DISABLE 20`、Sub45 `ENABLE 4`，都没碰 COLLISION 位）⇒ 撞击致命。
+---  中 BOSS 是静止的大躯体，玩家很容易贴上去 ⇒ 这两个子程序按 GROUP.ENEMY 处理。
+local CONTACT = {}
 if part == "mid1" then
     TIMELINE, HOST_WATCH, SAVE_POS = TIMELINE_MID1, true, true
+    CONTACT = { [38] = true }
 elseif part == "mid2" then
     TIMELINE, HOST_WATCH, LOAD_POS = TIMELINE_MID2, true, true
+    CONTACT = { [45] = true }
 elseif part == "back" then
     TIMELINE, TL_START = TIMELINE_BACK, 4711
 end
@@ -55226,6 +55408,7 @@ return {
     HITBOX_HALF = HITBOX_HALF,
     INVULN = INVULN,
     DROP_COUNTS = DROP_COUNTS,
+    CONTACT = CONTACT,
 }
 end
 
@@ -55273,13 +55456,16 @@ end
 ---        tf=0x202）＋ `SET_SECONDARY_TIME li0` ＋ `JUMP 0 −60` 回出弹那条
 ---        ⇒ **每 60 帧**一圈 32 发自机狙。
 ---  Sub23（使魔的枪，槽 0）Lunatic lf7 = 3 / lf6 = 4 / li7 = 14：
----        t=0 `SET_INT exI0 3`、lf0 = π/2；#14..#20 = 3 轮「col6 速 lf7 + col8 速 lf6」
+---        t=0 `SET_INT exI0 3`、lf0 = π/2；#14..#20 = 3 轮「col6 圈 + col8 圈」
 ---        ×（c1=4 c2=1 ast=0.2617994）每轮中间夹一条 `SET_SECONDARY_TIME li7`
----        （`JUMP_DEC 0 −208` 回 #14）；#21..#30 = 尾环：两发 → `FLOAT_ADD lf0 lf1`
----        → 两发 → `FLOAT_ADD lf0 lf1` + `NORMALIZE_ANGLE` → `JUMP 0 −264` 回 #21。
+---        （`JUMP_DEC 0 −208` 回 #14）；#21..#30 = 尾环：两圈 → `FLOAT_ADD lf0 lf1`
+---        → 两圈 → `FLOAT_ADD lf0 lf1` + `NORMALIZE_ANGLE` → `JUMP 0 −264` 回 #21。
+---        ★ **只有 col8 那几圈真的出弹**：#14/#17/#21/#25 的掩码 0x5f / 0x4e 只覆盖
+---          **妖怪**自机（0x5f & 0x28 = 0x08 ≠ 0x28），本移植版按人类那一支
+---          （D = 0x28 = Lunatic 8 | override 0x20）⇒ 那四圈整条跳过。
 ---        ★ `SET_SECONDARY_TIME` 在引擎里是「下一拍整帧跳过 n 帧」（EclRun.cpp:60-72
 ---          的 secondaryTime 段在**每条指令推进之后**都查一次）⇒ 实际节奏是
----          **每 14 帧两发**：#14/#15 那两发与 #17/#18 那两发之间也隔 14 帧；
+---          **每 14 帧一圈**：col8 圈之间都隔 14 帧；
 ---          前 3 轮（6×14 = 84 帧）lf0 不动，之后尾环每 14 帧把 lf0 转 ±9°/±6°。
 ---        ★ #31 RETURN **不可达**（#30 恒跳回 #21）。
 ---  Sub24（使魔）t=0 `SET_HITBOX 24 24`、`SET_DAMAGE_REDUCTION_TIMER 30`（非 BOSS
@@ -55287,8 +55473,8 @@ end
 ---  ★ 坐标 / 角度 / 变量一律按本文件统一口径：x_我们 = x_原作 − 192、
 ---    y_我们 = 224 − y_原作、角取反。op90 的位置是**绝对**坐标（不是相对父机）。
 ---  ★ rank 固定 32（非符不叠符卡那套）⇒ speed1 += 0.15、speed2 += 0.075，夹到 ≥ 0.3。
----  ★ 唯一没对齐的：原作中 BOSS 默认带 COLLISION（撞上会死），移植版按本文件其它
----    中 BOSS 卡的口径维持 GROUP.NONTJT（不吃接触伤害）。
+---  ★ Sub20 的 COLLISION：原作默认开着（EnemyManager.cpp:169-172），`DISABLE 20` 只关了
+---    DAMAGEABLE|ALLOW_OFFSCREEN ⇒ 撞上去会死。移植版由 CONTACT=[20] 放 GROUP.ENEMY。
 local function build_s3mid(E)
 local PI = E.PI
 
@@ -55312,7 +55498,7 @@ do
     GUN[22] = s
 end
 
----Sub23（使魔的枪）：每 14 帧两发（col6 速 3 / col8 速 4），前 84 帧不转向，
+---Sub23（使魔的枪）：每 14 帧一圈 4 发（人类侧 col8 速 4；妖怪侧的 col6 圈跳过），前 84 帧不转向，
 ---之后每两发把 lf0 转 lf1（±9° 或 ±6°，由父机在撒出来之前设好、整块继承）。
 ---★ 本子程序的 lf0/lf1 都是**角**（lf1 是每轮的角增量）⇒ 一律存我们口径：
 ---  `SET_FLOAT lf0 π/2` ⇒ −π/2；父机的 `SET_FLOAT lf1 ±x` ⇒ ∓x；
@@ -55329,34 +55515,35 @@ do
     add(0, function(u) u.lf7 = 3 end)                        ---#2..#5（0xf8）
     add(0, function(u) u.lf6 = 4 end)                        ---#6..#9（0xf8）
     add(0, function(u) u.li7 = 14 end)                       ---#10..#13（0xf8）
-    local function shot6(u)                                  ---#14 / #17 / #21 / #25
-        E.shoot(u, { op = 99, type = 3, color = 6, count1 = 4, count2 = 1,
-                     speed1 = u.lf7, speed2 = 0.5, angle = u.lf0,
-                     step = 0.2617994, flags = 0x202 })
-    end
-    local function shot8(u)                                  ---#15 / #18 / #22 / #26
+    ---★ 原作 #14/#17/#21/#25 这四圈 SHOOT_CIRCLE 的掩码是 0x5f / 0x4e（色 6、速度 lf7）：
+    ---  只有**妖怪**自机才跑（0x5f & 0x28 = 0x08 ≠ 0x28，EclRun.cpp:69-74）。
+    ---  本移植版与其它卡一致按「人类」这一支（D = 0x28 = Lunatic 8 | override 0x20，
+    ---  EnemyManager.cpp:903）⇒ 这四圈整条**不执行**；留空函数占位以保持与裸字节一一对应。
+    local function skipped_side() end
+    local function shot(u)                                   ---#15 / #18 / #22 / #26（色 8，人类侧）
         E.shoot(u, { op = 99, type = 3, color = 8, count1 = 4, count2 = 1,
                      speed1 = u.lf6, speed2 = 0.5, angle = u.lf0,
                      step = 0.2617994, flags = 0x202 })
     end
+    local function stall(u, c) c.stall = u.li7 end           ---#16 / #19 / #24 / #29
     local head = #s + 1
-    add(0, shot6)                                            ---#14
-    add(0, shot8)                                            ---#15
-    add(0, function(u, c) c.stall = u.li7 end)               ---#16
-    add(0, shot6)                                            ---#17
-    add(0, shot8)                                            ---#18
-    add(0, function(u, c) c.stall = u.li7 end)               ---#19
+    add(0, skipped_side)                                     ---#14（色 6，妖怪侧 ⇒ 跳过）
+    add(0, shot)                                             ---#15
+    add(0, stall)                                            ---#16
+    add(0, skipped_side)                                     ---#17（色 6，妖怪侧 ⇒ 跳过）
+    add(0, shot)                                             ---#18
+    add(0, stall)                                            ---#19
     add(0, function(u)                                       ---#20 JUMP_DEC 0 −208 exI0
         u.exi0 = u.exi0 - 1
         if u.exi0 > 0 then return { t = 0, pc = head } end
     end)
     local tail = #s + 1
-    add(0, shot6)                                            ---#21
-    add(0, shot8)                                            ---#22
+    add(0, skipped_side)                                     ---#21（色 6，妖怪侧 ⇒ 跳过）
+    add(0, shot)                                             ---#22
     add(0, function(u) u.lf0 = u.lf0 + u.lf1 end)            ---#23 FLOAT_ADD lf0 lf1
-    add(0, function(u, c) c.stall = u.li7 end)               ---#24
-    add(0, shot6)                                            ---#25
-    add(0, shot8)                                            ---#26
+    add(0, stall)                                            ---#24
+    add(0, skipped_side)                                     ---#25（色 6，妖怪侧 ⇒ 跳过）
+    add(0, shot)                                             ---#26
     add(0, function(u) u.lf0 = u.lf0 + u.lf1 end)            ---#27 FLOAT_ADD lf0 lf1
     add(0, function(u) u.lf0 = E.norm(u.lf0) end)            ---#28 NORMALIZE_ANGLE
     add(0, function(u, c) c.stall = u.li7 end)               ---#29
@@ -55452,6 +55639,9 @@ return {
     HITBOX_HALF = { [20] = 24, [24] = 12 },
     INVULN = {},
     DROP_COUNTS = {},
+    ---★ 三面中 BOSS（Sub20）`DISABLE_INTERACTION_FLAGS 20` 没关 COLLISION
+    ---  ⇒ 原作里撞上去会死（EnemyManager.cpp:169 + Player::CheckLethalCollision）。
+    CONTACT = { [20] = true },
 }
 end
 
@@ -55489,7 +55679,8 @@ CARD[3436] = make_card(build_s3mid)
 ---    3 op95 KILL_ALL_NON_BOSS 只清本卡自己 spawn 出来的敌人（引擎没有全局敌机表）。
 ---    4 Sub14 的 NO_SPRITE（DISABLE_INTERACTION_FLAGS 8）引擎没实现 ⇒ 手动缩成 0 号。
 ---    5 Sub12 的 `ENABLE_INTERACTION_FLAGS 2` 照写（E.contact）；时间轴直接撒出来的
----      小妖精在本引擎里是 NONTJT（撞上去不死），这是本文件道中卡的一贯口径。
+---      小妖精 Sub0/2/4/6 出生就带默认 COLLISION（原作撞上去会死）⇒ 由 CONTACT 表
+---      放 GROUP.ENEMY；Sub10/11/15 自带 `DISABLE_INTERACTION_FLAGS 2` ⇒ NONTJT。
 ---=========================================================================
 local function build_exmid(E)
 local PI = E.PI
@@ -56237,6 +56428,10 @@ return {
                     [22] = 24, [23] = 12, [25] = 12, [27] = 12, [45] = 12 },
     INVULN = { [10] = 20, [11] = 20, [12] = 30, [15] = 60, [22] = 60 },
     DROP_COUNTS = { [10] = { 0, 4, 8 }, [15] = { 0, 6, 14 }, [22] = { 0, 6, 14 } },
+    ---★ EX 道中的小妖精 Sub0/2/4/6 一条交互标志指令都不带（dump 过：只有 ANM / HITBOX /
+    ---  SET_CHILD_ECL / SET_DIR_AND_SPEED ...）⇒ 保留出生默认的 COLLISION ⇒ 撞击致命。
+    ---  Sub10/11/15 都 `DISABLE_INTERACTION_FLAGS 2` ⇒ NONTJT，不列。
+    CONTACT = { [0] = true, [2] = true, [4] = true, [6] = true },
 }
 end
 CARD[3438] = make_card(build_exmid)
