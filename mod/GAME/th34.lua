@@ -921,21 +921,28 @@ local sound_tick4, sound_stamp4 = 0, -1
 
 local function pool4_used()
     for i = #pool4, 1, -1 do
-        ---★ 本帧刚生出来的弹（timer == 0）还**没被引擎积分、也没判过界**：它的出生点
-        ---   可能在界外（悬在屏幕外的小怪开火），但下一帧就飞回界内并活下来。
-        ---   若此刻按出生点收槽位，这一帧后面的几波就会把「其实还在场的弹」误判成
-        ---   已消失 ⇒ 多生，同屏弹数会冲过 1024（原作 `BulletManager.cpp:994-1022`
-        ---   是**先 `pos += velocity`、后 `IsInBounds`**）。
         local u = pool4[i]
         if not IsValid(u) then
             ---已被引擎回收 / 被 RawDel 杀掉的对象留在池里会拿到死引用，
             ---再读 u.timer 就会抛 'invalid lstg object' —— 先清掉。
             table.remove(pool4, i)
-        elseif u.timer > 0 and not in_bound(u) then
-            table.remove(pool4, i)
         end
     end
-    return #pool4
+    ---★ 「同屏弹数」只数**此刻在场内**的弹：本帧刚生出来的（timer == 0）还
+    ---   没被引擎积分、也没判过界，出生点可能在界外（悬在屏幕外的小怪开火），
+    ---   下一帧就飞回界内，所以照样算；已飞出屏外的要等引擎回收才让出槽位
+    ---   （原作 `BulletManager.cpp:994-1022` 是**先 `pos += velocity`、后 `IsInBounds`**）。
+    ---★ 但池子本身必须留住**所有还活着的槽位** —— 包括这一刻刚飞出屏、之后还会
+    ---   飞回来的减速/回头弹。旧实现把这些槽位直接从池里 `table.remove`，于是清屏
+    ---   （`pclear` / 原作 REMOVE_ALL_BULLETS）扫不到它们，屏外弹会变成永不消失的
+    ---   幽灵弹（3445/3467「罔両」就栽在这 5 颗上：VM 清 92 发、移植版只清 87 发）。
+    ---   所以这里只按「在场内」计数，不摘槽位；真正的回收交给 `IsValid` 那一支。
+    local n = 0
+    for i = 1, #pool4 do
+        local u = pool4[i]
+        if u.timer == 0 or in_bound(u) then n = n + 1 end
+    end
+    return n
 end
 
 ---同一帧里同一种音效只响一声（原作 SoundPlayer 的队列按 idx 去重）。
@@ -5815,13 +5822,15 @@ local function TH34_add_stage78_boss()
 
     ---RAND_EXIT_ANGLE（EclManager.cpp:1590）：自机在左边就朝左半（rand(π/2)+3π/4），
     ---否则朝右半（rand(π/2)−π/4）。这条「背对自机」的随机方向取反后落在同一对
-    ---象限里（{135°..225°} 与 {−45°..45°} 都关于 y 轴对称），所以直接用我们的角度。
+    ---象限里（{135°..225°} 与 {−45°..45°} 都关于 y 轴对称），但**逐次取值**并不对称：
+    ---H07 的 θ 换成我们口径必须取反（θ_ours = −θ_th07），否则每次漂移的 y 分量符号相反
+    ---（EX/PH 一整批卡的斜向漂移会整体飘错方向）。所以这里返回 −θ。
     local function exang(self)
         ---原作条件：(自机在左且 x>96) 或 x>288（TH07 绝对坐标；换算成我们的 −96/96）。
         if (player.x < self.x and self.x > -96) or self.x > 96 then
-            return ran:Float(135, 225)
+            return -ran:Float(135, 225)
         end
-        return ran:Float(-45, 45)
+        return -ran:Float(-45, 45)
     end
     ---一段 exang 方向的漂移：MOVE_DIR_TIME(60, ease, θ, spd) ⇒ 总位移 spd×60 px。
     local function exdrift(self, spd, ease)
@@ -6519,7 +6528,7 @@ local function TH34_add_stage78_boss()
                     ---用的是它自己那份 f0（开卡初值 + 每次回调 +0.349066），两者互不影响。
                     ---早先把重掷结果写回 acc[1]，会让第 1 层的基准角从 t=810 起整段错位。
                     local a = exang(self)
-                    bmove(self, 60, 0, self.x + cos(a / RAD2DEG) * 60, self.y - sin(a / RAD2DEG) * 60)
+                    bmove(self, 60, 0, self.x + cos(a) * 60, self.y + sin(a) * 60)
                     task.Wait(300)
                 end
             end)
@@ -6929,7 +6938,12 @@ local function TH34_add_stage78_boss()
         ---★ 三组的 flags（第 8 个参数）分别是 0x202 / 0x2222 / 0x2222 —— args[7] 是**真字段**
         ---（指令长 44 字节；EclManager.cpp `bulletProps->flags = bulletInstrArgs[7].u`），
         ---不是「下一条指令的 time」。0x2222 含 0x20 位 ⇒ 第 2、3 环的子弹挂得上
-        ---INIT_BULLET_CMD idx=1 的 0x20：60 帧里朝向每帧 ∓0.9°、速度不变。
+        ---INIT_BULLET_CMD 里那两条 0x20：先是 `INIT_BULLET_CMD 1`（60 帧里朝向每帧 ∓0.9°、
+        ---速度不变），**跑完位清零之后**又轮到长驻的 commands[2]（sub105 留下的
+        ---`INIT_BULLET_CMD 2 32 0 60 -1 -0.006666667 0`：再 60 帧每帧速度 −0.006666667）。
+        ---两条 0x20 共用 `commandStates[2]` 且 `flag == 0`，靠原作
+        ---`Bullet::RunCommands` 的「`cmd->flag == 0 && exFlags != 0` 直接 return」串行接力
+        ---—— 所以这里是两段 `stages`，不是一段。
         ---（第 1 环 0x202 没有 0x20 位，所以不挂指令 —— 移植版原来把三环都当成了这种。）
         local function ring106(self)
             local aim = Angle(self, player)
@@ -6938,8 +6952,12 @@ local function TH34_add_stage78_boss()
                 for k = 0, 4 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(8), col16(1),
                                             self.x, self.y, 4, aim + k * 72,
-                                            { type = 0x20, dur = 60, loop = -1,
-                                              angle = dth, speed = 0 })
+                                            { stages = {
+                                                { type = 0x20, dur = 60, loop = -1,
+                                                  angle = dth, speed = 0 },
+                                                { type = 0x20, dur = 60, loop = -1,
+                                                  angle = 0, speed = -0.00666667 },
+                                            } })
                 end
             end
             sound4(self)
@@ -7699,7 +7717,7 @@ local function TH34_add_stage78_boss()
                     ---用的是它自己那份 f0（开卡初值 + 每次回调 +0.349066），两者互不影响。
                     ---早先把重掷结果写回 acc[1]，会让第 1 层的基准角从 t=810 起整段错位。
                     local a = exang(self)
-                    bmove(self, 60, 0, self.x + cos(a / RAD2DEG) * 60, self.y - sin(a / RAD2DEG) * 60)
+                    bmove(self, 60, 0, self.x + cos(a) * 60, self.y + sin(a) * 60)
                     task.Wait(300)
                 end
             end)
@@ -8704,6 +8722,27 @@ local function TH34_add_stage56_boss()
     ---自机方向，TH07 口径的弧度（y 朝下）。
     local function aimth(self) return -Angle(self, player) * PI / 180 end
 
+    ---★ TH07 的 `MoveDirTime`（EclManager.cpp:575-594）把位移向量当成 **float32**
+    ---  算：`moveInterp.x = cosf(θ) * spd * t`（θ 也是 f32）。本仓的漂移方向 θ 是
+    ---  角度值，直接喂 double 的 `cos()` 会跟 `cosf()` 差在最后几位 —— 看似无害，
+    ---  但 θ=±90°/180° 时两者**符号都可能相反**：
+    ---    double `cos(90°)` = +6.12e-17（正），f32 `cosf(f32(π/2))` = −4.37e-8（负）。
+    ---  于是漂移后 boss 的 x 一个略大于 0、一个略小于 0，`GET_EXIT_ANGLE` 里
+    ---  `player.x < enemy.x`（EclManager.cpp:1592）这种判定就翻分支。
+    ---  4438 实测：t=836 的 `GET_EXIT_ANGLE` 本该走「自机在右」那支（得到 +90°、
+    ---  boss 竖直下移），本仓因为 x=+2.8e-15 走了「自机在左」那支，整段漂移
+    ---  方向从「竖直向下」变成「水平向左」，5 只人形（sub58）的弹全部偏 46px。
+    ---  ⇒ 这里按 TH07 口径把 θ 和 cos/sin 都压到 float32（TH07 的 pos 也是 f32）。
+    local function tof32(x)
+        if x == 0 or x ~= x or x == 1 / 0 or x == -1 / 0 then return x end
+        local m, e = math.frexp(x)
+        local r = math.floor(m * 16777216 + 0.5) / 16777216
+        if r >= 1 or r <= -1 then r = r * 0.5; e = e + 1 end
+        return math.ldexp(r, e)
+    end
+    local function f32cos(rad) return tof32(math.cos(tof32(rad))) end
+    local function f32sin(rad) return tof32(math.sin(tof32(rad))) end
+
     local function bmove(self, t, ease, x, y)
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
@@ -8782,10 +8821,13 @@ local function TH34_add_stage56_boss()
         bmove(self, 60, ease or 4, self.x + cos(a) * 60 * spd, self.y + sin(a) * 60 * spd)
     end
     ---同上，但可以指定帧数（原作 non-60 的 MOVE_DIR_TIME，位移 = spd×t）。
+    ---方向分量按 TH07 的 float32 `cosf/sinf` 算（见上面 tof32 的说明）。
     local function drift(self, spd, t, ease)
         t = t or 60
         local a = exang(self)
-        bmove(self, t, ease or 4, self.x + cos(a) * t * spd, self.y + sin(a) * t * spd)
+        local rad = tof32(a * PI / 180)
+        bmove(self, t, ease or 4,
+              self.x + f32cos(rad) * t * spd, self.y + f32sin(rad) * t * spd)
     end
 
     ---本体的 ORBR / ORBAV 排程（原作 sub50 / sub52 的 `INIT_INTERP`）：
@@ -9113,6 +9155,10 @@ local function TH34_add_stage56_boss()
             task.Wait(1)
         end
         task.Wait(60)
+        ---★ BUG FIX：原作 sub19 t=60 有 `SET_MOVEMENT_BOUNDS 32 48 352 128`（限位框），
+        ---旧版本漏了这一条 —— 本体一路飘到 y<48（原作下界），
+        ---子弹出生点跟着下移 12.7px（4390 在 f=885 后的失配就是这个）。
+        self._box = box5(32, 48, 352, 128)
         while true do
             spiral(112, 8, 13)
             task.Wait(100)
@@ -9443,8 +9489,16 @@ local function TH34_add_stage56_boss()
     ---    相 B（sub46）：镜像 —— `f0 = 3.14159 − f3` 后 `f3 += rand(0.0392699)+0.0392699`。
     scard("亡郷「亡我郷 -自尽-」", 4393, 65, 2100, false, function(self)
         task.New(self, function()
+            ---★ BUG FIX：原作 sub43 t=0 有 `MOVE_POS_TIME 120 4 192 64`
+            ---（本体从上一张卡的 (192,128) 飘到 (192,64)，我们 (0,96) → (0,160)），
+            ---旧版本漏了这一条 —— 本体停在 (0,96)，所有子弹出生点下移 96px。
+            bmove(self, 120, 4, 0, 160)
             task.Wait(120)
             self._box = { -128, 128, 96, 176 }
+            ---★ BUG FIX：原作 sub43 t=480 还有 `MOVE_POS_TIME 60 4 192 70`
+            ---（本体从 (192,64) 再下移到 (192,70)，我们 (0,160) → (0,154)）。
+            ---漏了它所有子弹出生点就下差横定不变的 ~2px（4393 全程失配）。
+            bmove(self, 60, 4, 0, 154)
             ---原作 sub44/45/46/47 的 INIT_BULLET_CMD 共 **4 段**：
             ---  #0 `0 8192 0 120 -1 -1 -1`            → 0x2000 只记 spawnDelay=120；
             ---  #1 `1 32 1 30 -1 -0.0333333 ∓0.0523599` → 0x20（flag=1，dur30、spd −1/30、角 ∓0.0523599）；
@@ -10146,8 +10200,12 @@ local function TH34_add_stage56_boss()
                 if a < PI / 2 and a >= 0 then a = PI - ea
                 elseif a > -PI / 2 and a <= 0 then a = -PI - a end
             end
-            if b[3] + 48 > self.y and a < 0 then a = -a end
-            if b[4] - 48 < self.y and a > 0 then a = -a end
+            ---★ y 限位折返的符号按 EC 原文（`EclManager.cpp:1592-1638`）：
+            ---  `lowerMoveLimit.y + 48 > pos.y && exitAngle < 0` → 折返；
+            ---  `upperMoveLimit.y - 48 < pos.y && exitAngle > 0` → 折返。
+            ---  换到本仓坐标：lower.y 对应 box[4]、upper.y 对应 box[3]。
+            if b[4] - 48 < self.y and a < 0 then a = -a end
+            if b[3] + 48 > self.y and a > 0 then a = -a end
             return -a * RAD2DEG
         end
         ---sub61：一次周期回调 = 一对随机位置的上下直飞弹（TH07 x=rand(384)、
@@ -10279,8 +10337,12 @@ local function TH34_add_stage56_boss()
                 if a < PI / 2 and a >= 0 then a = PI - ea
                 elseif a > -PI / 2 and a <= 0 then a = -PI - a end
             end
-            if b[3] + 48 > self.y and a < 0 then a = -a end
-            if b[4] - 48 < self.y and a > 0 then a = -a end
+            ---★ y 限位折返的符号按 EC 原文（`EclManager.cpp:1592-1638`）：
+            ---  `lowerMoveLimit.y + 48 > pos.y && exitAngle < 0` → 折返；
+            ---  `upperMoveLimit.y - 48 < pos.y && exitAngle > 0` → 折返。
+            ---  换到本仓坐标：lower.y 对应 box[4]、upper.y 对应 box[3]。
+            if b[4] - 48 < self.y and a < 0 then a = -a end
+            if b[3] + 48 > self.y and a > 0 then a = -a end
             return -a * RAD2DEG
         end
 
@@ -11689,8 +11751,14 @@ local function TH34_add_stage56_boss()
             end)
         end
         task.New(self, function()
+            ---★ t<240 仍是父程（sub32）留下的 (32,48,352,128)；原作 sub48 的 L 行
+            ---  在 t=240（`JUMP_IF_NEQ DIFFICULTY 2 120 328` 跳到 30620 后 `JUMP 240 300`
+            ---  落到 instr 28 那一段）执行 `SET_MOVEMENT_BOUNDS 128 48 256 128`
+            ---  （off=30972）——这条会改变 GET_EXIT_ANGLE 的左右折返，本段两次
+            ---  `MOVE_DIR_TIME 60 4 lf0 1` 的漂移方向全看它，必须照抄。
             self._box = box5(32, 48, 352, 128)
             task.Wait(240)                      -- t=0..120 MOVE_POS_TIME + t=120..240 JUMP 等待
+            self._box = box5(128, 48, 256, 128) -- t=240 SET_MOVEMENT_BOUNDS
             while true do
                 ---(a) 第 0..60 帧：7 只，x=32+48k，y=rand(160)+32，色档 6。
                 local sa = 0.0373999
@@ -14793,9 +14861,11 @@ local function TH34_add_stage56_boss()
                 end
             end
             task.Wait(130)              -- 原作 t=10 起算：t=130 才掷随机并开始奇门循环
+            ---★ 取数顺序必须与原作 t=130 的 #21..#27 一致：X 目标 → X 两条切线
+            ---  → Y 目标 → Y 两条切线（原来先抽完两个目标再抽两条切线，随机流错位）。
             local tx = ran:Float(0, 128) + 128 - 192
-            local ty = 192 - ran:Float(0, 128)
             local mx0, mx1 = rnd_sign() * 144, rnd_sign() * 144
+            local ty = 192 - ran:Float(0, 128)
             local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
             while true do
                 local x0, y0 = self.x, self.y
@@ -15031,10 +15101,24 @@ local function TH34_add_stage56_boss()
             ---  本仓库角取反 ⇒ ang = −(θ0+f3_1) = −θ0 − kick。漏掉这 0.0523599 rad
             ---  （= 3°，半径 96 时约 5px）会让每颗弹的出膛点都偏掉。
             local ang = -(a0_th + kick)                -- 我们的弧度（TH07 角取反）
+            ---★ 位置 task 在**开火 task 之后**才被调度（`task.New` 先建先跑），所以开火
+            ---   那一刻 `ang` / `lastR` 正好还是**上一帧**的值 —— 而弹也正是用「上一帧
+            ---   的子机位置」出膛的（原作子机的弹在指令循环里发出，早于本帧的
+            ---   `Enemy::Move()`）。但子机位置的**圆心**是本体，本体在 ECL 里是「当帧
+            ---   指令执行前」就已更新好的：`SET_EX_INS 5` 每帧把 boss 的当前位置抄进
+            ---   `moveInterpStartPos`（EnemyEclInstr.cpp:227）。本仓库 `bframe` 也在
+            ---   卡片协程之前跑，所以开火时 `boss.x/y` 就是当帧圆心。两者相配
+            ---   （当帧圆心 + 上一帧的角/半径）才与 ECL 逐帧一致；旧写法直接用
+            ---   上一帧的子机整体位置，本体一漂移就整整差一个本体步长
+            ---   （4472 实测 3.95px）。
+            ---   出生帧 `lastR` 还是 0 ⇒ 出膛点 = 本体中心，同原作（子机出生帧的
+            ---   `MOVE_ORBIT` 把半径置 0，当帧位移为 0）。
+            local lastR = 0                            -- 上一帧子机所在半径（出生帧 0）
             task.New(o, function()
                 while true do
                     local r = boss._kR or 0
                     o.x, o.y = boss.x + math.cos(ang) * r, boss.y + math.sin(ang) * r
+                    lastR = r
                     task.Wait(1)
                     ---本体 ORBAV 是 TH07 口径，本仓库角度取反 ⇒ 每帧「减」。
                     ang = ang - (boss._kW or 0)
@@ -15053,6 +15137,9 @@ local function TH34_add_stage56_boss()
             ---一段 20 环：每 gap 帧一环、逐环推 f0（d0）/ f1（d1）。
             local function phase(off, gap, d0, d1, cmd)
                 for k = 1, 20 do
+                    ---出膛点 = 当帧本体位置 + 上一帧的 (角, 半径)（见 kyodoll 注释）。
+                    o.x, o.y = boss.x + math.cos(ang) * lastR,
+                               boss.y + math.sin(ang) * lastR
                     shoot6(o, 0, 0, 67, spr, off, 2, 1, f1, 1.5, f0, 0, cmd, true)
                     f0, f1 = f0 + d0, f1 + d1
                     if k < 20 then task.Wait(gap) end
