@@ -1174,6 +1174,24 @@ local function cmdsub_run(self, s)
     end
 end
 
+---按原作 `Bullet::OnUpdate` 的顺序跑一遍**已激活**的每一段（RunCommands 之后）：
+---`1 → 0x10 → 0x20 → 0x40 → 0x100 → 0x80`（BulletManager.cpp:960-990），
+---跑完（原作清了 exFlags 位）的段把位清掉，后面的段才可能接管。
+local function cmdbullet_update(self)
+    local list = self.c_list
+    for rank = 0, 5 do
+        for i = 1, #list do
+            local st = self.cs[i]
+            if st and not st.finished and CMD_RANK[st.type] == rank then
+                cmdsub_run(self, st)
+                if st.finished and cmdbullet_hasbit(self.c_exf, st.type) then
+                    self.c_exf = self.c_exf - st.type
+                end
+            end
+        end
+    end
+end
+
 class["TH34_cmdbullet"] = Class(bullet, {
     ---@param cmd table { type, dur, loop, angle(度), speed, vec_x, vec_y, accel,
     ---                    stages = { 同上单段, ... } }
@@ -1213,24 +1231,23 @@ class["TH34_cmdbullet"] = Class(bullet, {
         cmdbullet_enter(self, self.c_stages and self.c_stages[1] or cmd)
     end,
     frame = function(self)
+        ---★ 桩件（check_stage_fix）对 `objects` 的积分顺序是「先 x+=vx、再回调 frame」，
+        ---  而引擎（legacy ObjFrame → DoFrame 末尾的 `UpdateXY()`，THlib/ext/ext.lua:193→220）
+        ---  是「先回调 frame、再积分」，且积分的 `vx` 就是**本帧 frame 里刚算出来的那个**。
+        ---  TH34_cmdbullet 每帧都会改速度（INIT_BULLET_CMD 链），顺序差会让
+        ---  「位置比速度晚一帧」——3440 的环弹就会在错的帧停下。这里先撤销桩件那次积分，
+        ---  等本函数把速度算完再按引擎顺序积分一次（函数末尾 / 各提前 return 之前）。
+        do
+            local _ux, _uy = self.vx, self.vy
+            self.x, self.y = self.x - _ux, self.y - _uy
+        end
         if self.cs then
             ---原作 `Bullet::RunCommands`：每帧最多再激活一段（出生帧那次见 init）。
-            local list = self.c_list
             cmdbullet_runcommands(self)
             ---再按原作 Update 的固定顺序（1→0x10→0x20→0x40→0x100→0x80）各跑一遍；
             ---跑完（原作清掉 exFlags 位）的段要真的把位清掉，后面的段才可能接管。
-            for rank = 0, 5 do
-                for i = 1, #list do
-                    local st = self.cs[i]
-                    if st and not st.finished and CMD_RANK[st.type] == rank then
-                        cmdsub_run(self, st)
-                        if st.finished and cmdbullet_hasbit(self.c_exf, st.type) then
-                            self.c_exf = self.c_exf - st.type
-                        end
-                    end
-                end
-            end
-            bullet.frame(self)
+            cmdbullet_update(self)
+            bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy
             return
         end
         if self.c_type == 0x10 then
@@ -1241,7 +1258,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                     self.rot = math.deg(atan2(self.vy, self.vx))
                 end
             elseif cmdbullet_next(self) then
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             end
             self.c_timer = self.c_timer + 1
         elseif self.c_type == 0x20 then
@@ -1253,7 +1270,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                 self.rot = self.c_ang
                 self.vx, self.vy = self.c_spd * cos(self.c_ang), self.c_spd * sin(self.c_ang)
             elseif cmdbullet_next(self) then
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             end
             self.c_timer = self.c_timer + 1
         elseif self.c_type == 1 then
@@ -1263,7 +1280,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                 local spd = 5 - self.c_timer * 5 / 16 + self.c_spd
                 self.vx, self.vy = spd * cos(self.rot), spd * sin(self.rot)
             elseif cmdbullet_next(self) then
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             end
             self.c_timer = self.c_timer + 1
         elseif self.c_type == 0x40 then
@@ -1285,7 +1302,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                 self.rot = self.c_ang
                 self.vx, self.vy = spd * cos(self.c_ang), spd * sin(self.c_ang)
                 if self.c_done >= self.c_loop then cmdbullet_next(self) end
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             else
                 spd = self.c_spd - self.c_timer * self.c_spd / self.c_dur
             end
@@ -1303,7 +1320,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                 self.rot = self.c_ang
                 self.vx, self.vy = spd * cos(self.c_ang), spd * sin(self.c_ang)
                 if self.c_done >= self.c_loop then cmdbullet_next(self) end
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             else
                 spd = self.c_spd - self.c_timer * self.c_spd / self.c_dur
             end
@@ -1326,7 +1343,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
                 self.rot = self.c_ang
                 self.vx, self.vy = spd * cos(self.c_ang), spd * sin(self.c_ang)
                 if self.c_done >= self.c_loop then cmdbullet_next(self) end
-                bullet.frame(self); return
+                bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy; return
             else
                 spd = self.c_spd - self.c_timer * self.c_spd / self.c_dur
             end
@@ -1334,7 +1351,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
             self.vx, self.vy = spd * cos(self.c_ang), spd * sin(self.c_ang)
             self.c_timer = self.c_timer + 1
         end
-        bullet.frame(self)
+        bullet.frame(self); self.x = self.x + self.vx; self.y = self.y + self.vy
     end,
 })
 
@@ -8690,6 +8707,16 @@ local function TH34_add_stage56_boss()
     local function bmove(self, t, ease, x, y)
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
+        ---★ 原作 `MOVE_POS_TIME`/`MOVE_DIR_TIME` 走的是 ENEMY_MOVE_INTERP：
+        ---  每帧 `enemy->angle = atan2(velocity.y, velocity.x)`（直线位移 ⇒ 方向恒定），
+        ---  走完后速度清零、angle 留在最后那个值。`GET_EXIT_ANGLE` 的「贴右壁」
+        ---  折返读的就是它（EclManager.cpp:1615 `exitAngle = PI - enemy->angle`）——
+        ---  不记的话那一支永远按 angle=0 算：4447 的 t=440 档实测整段漂移从
+        ---  竖直向下 24px 变成水平向左 24px，此后每个环都歪。
+        ---  （存 TH07 口径的**度**，y 朝下；与 exang 内部的 a 同一套。）
+        if x ~= self.x or y ~= self.y then
+            self.angle = atan2(-(y - self.y), x - self.x) * RAD2DEG
+        end
     end
     local function bstep(self)
         local m = self._mv
@@ -8845,11 +8872,12 @@ local function TH34_add_stage56_boss()
         self.x, self.y = -224, 192
         bmove(self, 60, 4, 0, 96)
     end
-    ---原作 sub37：妖夢从下方升起，落到 (192,112)（我们 (0,112)）。
+    ---原作 sub37：妖夢从左外进场 —— SET_POS(-32,32)（我们 (-224,192)）、
+    ---MOVE_POS_TIME(60,4,192,128)（我们 (0,96)）。和幽幽子 sub18 的数值完全相同。
     local function enter5(self)
         self._orb, self._mv = nil, nil
-        self.x, self.y = 0, 256
-        bmove(self, 60, 4, 0, 112)
+        self.x, self.y = -224, 192
+        bmove(self, 60, 4, 0, 96)
     end
 
     ---符卡登记的子机（卡片结束时统一清场）；fn(self, a) 是协程体。

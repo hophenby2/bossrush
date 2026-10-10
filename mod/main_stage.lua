@@ -1304,11 +1304,23 @@ NewStage("TH34", "成群亡灵", 32, function(self)
     self:Next(167)
 end)--32
 
+NewStage("TH35", "风神录", 33, function(self)
+    ---复用 TH10（风神录）的背景类与 BGM「神さびた古戦場」（mod/music.lua:42），
+    ---与 mod/GAME/th35.lua 里 boss.Define 用的那两个参数（"TH10_2" + TH10_bg）必须一致。
+    self:Option(TH10_bg, "TH10_2")
+    self:Task(function()
+        ---只有一个 boss（editname "1a"）：六面 BOSS 八坂神奈子，最后一张符卡「風神様の神徳」。
+        boss.CreateGroup(1, self.level)
+        task.Wait(120)
+    end)
+    ---168 = 本关自己的通关成就（167 是 TH34 的）。
+    self:Next(168)
+end)--33
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)
     ext.notUIdraw = true
     self.level = 1
 end)
-
 
