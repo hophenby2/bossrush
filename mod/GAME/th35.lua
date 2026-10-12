@@ -799,6 +799,57 @@ local function et_on(e, slot)
 end
 
 ---=====================================
+--- 二·五、原生卡片接口（TH10 stage03/04 用）
+---  一张「枪」就是一个普通 Lua 函数：用 task.Wait 计时、用 fire 出一波弹、
+---  用 spawn_pod 叫子机。fire 的 cfg 就是原作某一组
+---  `etNew/etAim/etSprite/etCount/etAngle/etSpeed/etOffset/etEx` + `etOn`
+---  —— 用 Lua 表写，不再经过指令表/解释器。
+---
+---  cfg 字段（缺省即原作的初值）：
+---    slot   0..7           pattern 槽（默认 0）
+---    aim    0..8           瞄准模式（0 自机+扇形、1 固定角+扇形、2/3 圆环、4/5 环、
+---                          6 随机角、7/8 随机角+随机速）
+---    sprite {精灵号, 色号}  移植版只保留色号
+---    count  {c1, c2}       内层发数 / 外层圈数
+---    angle, astep          基准角（弧度，原作 y 向下） / 角步长
+---    speed  {s1, s2}       初速 / 末速（c2>1 时按层插值）
+---    off    {x, y}         相对敌机的出弹点
+---    steps  {{allow, kind, i0, i1, f0, f1}, ...}   子弹 transform 程序
+---=====================================
+---fire_slot = 原作 etOn：按槽里**当前**配置打一波
+local function fire_slot(o, slot)
+    local p = o.pat[slot or 0]
+    local sx, sy = o.ecs.wx + p.ox, o.ecs.wy + p.oy
+    local a2p = t10_aim(sx, sy)
+    for i2 = 0, p.c2 - 1 do
+        for i1 = 0, p.c1 - 1 do
+            t10_spawn_one(p, sx, sy, i1, i2, a2p)
+        end
+    end
+end
+
+---fire = 原作 etNew + 配置 + etOn：清空该槽、按 cfg 配置、打一波
+local function fire(o, cfg)
+    local slot = cfg.slot or 0
+    local p = pat_new()
+    o.pat[slot] = p
+    if cfg.sprite then p.type, p.color = cfg.sprite[1], cfg.sprite[2] end
+    if cfg.aim ~= nil then p.aim = cfg.aim end
+    if cfg.count then p.c1, p.c2 = cfg.count[1], cfg.count[2] end
+    if cfg.angle ~= nil then p.angle = cfg.angle end
+    if cfg.astep ~= nil then p.astep = cfg.astep end
+    if cfg.speed then p.s1, p.s2 = cfg.speed[1], cfg.speed[2] end
+    if cfg.off then p.ox, p.oy = cfg.off[1], cfg.off[2] end
+    if cfg.steps then
+        for i, r in ipairs(cfg.steps) do
+            p.ex[i - 1] = tp_record(r.allow or 0, r.kind or 0,
+                    r.i0 or -999999, r.i1 or -999999, r.f0 or -999999, r.f1 or -999999)
+        end
+    end
+    fire_slot(o, slot)
+end
+
+---=====================================
 --- 三、敌机两路 motion（Enemy.cpp EnemyRuntimeUpdate + EnemyEclDispatcher move*）
 ---   · 世界位置 = base + offset；写出时 engine.y = 224 - world.y
 ---   · 通道 ch 的字段：位置 x/y、速度 (vx,vy)、极坐标 (ang,spd)、
@@ -948,10 +999,10 @@ local function circle_pos(angle, r) return math.cos(angle) * r, math.sin(angle) 
 
 ---=====================================
 --- 四、敌机/子机载体（enmCreate / enmCreateA）
----   TH10 的 enmCreate 会把创建者那 8 个 $I0..$I3 / %F0..%F3 整块拷给子机
+---   TH10 的 enmCreate 会把创建者那 8 个 $I0..$I3 / %F0..%F3 整块拷给子机。
+---   ★ 原生版没有「名字 → 指令表」这一步：子机的协程体直接是 Lua 函数，
+---     用 `spawn_pod`（enmCreateA，绝对坐标）/ `spawn_pod_rel`（enmCreate，相对坐标）创建。
 ---=====================================
-local TH10_SUB = {}     -- 名字 → 协程体（下面每张卡的枪/使魔注册进来）
-
 ---本关所有 ECL 子机（含每个 BOSS 的载体）。卡片结束时统一清掉，
 ---否则枪/使魔会跨卡残留（原作靠 killAllAsync/enmKillAll + 敌机系统回收）。
 local T10_PODS = {}
@@ -983,15 +1034,15 @@ local function t10_enm_kill_all(keep)
     if keep ~= nil and IsValid(keep) then T10_PODS[1] = keep end
 end
 
-local function t10_enm_create_a(origin, name, x, y)
-    local sub = TH10_SUB[name]
-    if sub == nil then return nil end
-    local o = New(class["th10_ecs_pod"], origin, x, y, sub)
-    t10_track(o)
-    return o
+---spawn_pod / spawn_pod_rel：叫一个 ECL 子机（原名 enmCreateA / enmCreate）。
+---参数是**原生 Lua 函数**（子机自己的协程体），不是指令表里的名字。
+local function spawn_pod(o, x, y, fn)
+    local p = New(class["th10_ecs_pod"], o, x, y, fn)
+    t10_track(p)
+    return p
 end
-local function t10_enm_create(origin, name, dx, dy)
-    return t10_enm_create_a(origin, name, origin.ecs.wx + dx, origin.ecs.wy + dy)
+local function spawn_pod_rel(o, dx, dy, fn)
+    return spawn_pod(o, o.ecs.wx + dx, o.ecs.wy + dy, fn)
 end
 
 class["th10_ecs_pod"] = Class(object, {
@@ -1026,47 +1077,23 @@ class["th10_ecs_pod"] = Class(object, {
 })
 
 ---=====================================
---- 五、ECL 运行时辅助（时钟 / 全局变量 / 杂项 opcode）
----   ★ 时间语义（EclVm.cpp:695-800, 1218）：VM 每帧 `while (time <= clock) 执行`，
----     帧尾 clock += 1；`jmp(L, T)` / `jmpNeq(L, T)` **把 clock 直接赋成 T**（目标标签的
----     绝对时间），`wait(n)` 是 `clock -= n`。⇒ 同一时间组的指令在同一帧连续执行；只有
----     「下一条指令的时间 > clock」时才真正等待。下面 to/jp/wt 就是这三条语义。
+--- 五、ECL 运行时辅助
+---   ★ 时钟语义（EclVm.cpp:695-800, 1218）——上面每张卡的 task.Wait 都是照着它写死的：
+---     VM 每帧 `while (指令时间 <= clock) 执行`，帧尾 `clock += 1`；`jmp(L, T)` /
+---     `jmpNeq(L, T)` **把 clock 直接赋成 T**（目标标签的绝对时间），`wait(n)` 是
+---     `clock -= n`（SUBTRACT_TIME）。⇒ 同一时间组的指令在同一帧连续执行；只有
+---     「下一条指令的时间 > clock」时才真正等待；向后回跳 + wait 的组合会因为
+---      `while` 条件而被挡住，所以 `wait(n); jmp(...)` 的 n 帧一定是等满的。
 ---=====================================
-local function t10_ecl()
-    local c = 0
-    return {
-        ---普通指令在绝对时间 t：时钟不到就等到 t。（VM: while (instr.time <= clock)）
-        to = function(t) if t > c then task.Wait(t - c); c = t end end,
-        ---jmp / 条件跳转：**先**等到这条跳转指令自己的时间 own（它本身也受 while 条件约束），
-        ---**再**把时钟赋成目标时间 dst（EclVm.cpp:797 currentTime = OperandInt(jmp,1)）。
-        ---dst 可以小于 own（向后回跳），这正是「同帧重跑目标时间起的全部指令」的来源；
-        ---wt(n) 之后跟的跳转也会在这里正确地等满（VM 会先被 while 条件挡住）。
-        jp = function(own, dst)
-            if own > c then task.Wait(own - c); c = own end
-            c = dst
-        end,
-        ---wait(n)：时钟回拨 n（EclVm.cpp:802 currentTime -= ReadInt(0)）
-        wt = function(n) c = c - n end,
-    }
-end
 
 ---随机数辅助（对应原作的 %RANDF / %RANDF2 / %RANDRAD / %RAND）
 local function rnd() return ran:Float(0, 1) end          -- %RANDF
 local function rnd2() return ran:Float(-1, 1) end        -- %RANDF2
 local function rndrad() return ran:Float(-PI, PI) end    -- %RANDRAD
-local function rand60() return ran:Int(0, 59) end        -- %RAND % 60
 
 ---原作 `delete`：子机自毁
 ---delete：敌机自毁，连同它名下所有 ECL 线程一起停掉（原作 delete 就是销毁该敌机）。
 local function t10_delete(o) t10_kill_pod(o) end
-
----原作 `setTimeout` / `MBossEscape` / 观感类 anm/flag opcode：本仓库由符卡流程接管或忽略。
-local function t10_flagset(o, f) end
-local function t10_flagclear(o, f) end
-
----diffI / diffF：本仓库无难度系统，固定取第 4 项（Lunatic）。
-local function dI(e, n, h, l) return l end
-local function dF(e, n, h, l) return l end
 
 ---原作 laserOnA(color, type, angle, speed, initLen, maxLen, term, width)
 ---（EnemyEclDispatcher FIRE_LASER_A 的字段布局：angle@0x0c / max@0x10 / init@0x14 /
@@ -1118,10 +1145,10 @@ local function t10_boss_start(b, main)
     return p
 end
 
----callAsync：在**同一敌机**上另起一个线程（共享 pattern 与全局变量）
-local function t10_call_async(o, name)
-    local sub = TH10_SUB[name]
-    if sub then task.New(o, function() sub(o) end) end
+---callAsync：在**同一敌机**上另起一个线程（共享 pattern 与全局变量）。
+---参数是**原生 Lua 函数**（跟 spawn_pod 一样，不是指令表里的名字）。
+local function t10_call_async(o, fn)
+    task.New(o, function() fn(o) end)
 end
 
 ---killAllAsync：原作 ECL_VM_STOP_ALL_THREADS 停掉本敌机的其它线程（保留当前）。
@@ -1131,80 +1158,61 @@ local function t10_kill_async(o) task.Clear(o, true) end
 ---%ANGLE_PLAYER：从 **offsetMotion.position** 到自机的角度（Enemy.cpp:620）。
 local function t10_angle_player(o) return t10_aim(o.ecs.wx, o.ecs.wy) end
 
----circlePos(&a, &b, angle, radius)：ECL_VM_POLAR_TO_CARTESIAN，写两个 float 变量。
-local function t10_polar(ang, r) return circle_pos(ang, r) end
-
 ---=====================================
----TH10 stage03 / stage04 符卡移植（仅 Lunatic 行）
+---=====================================
+---TH10 stage03 / stage04 符卡（原生 LuaSTG 实现，仅 Lunatic 行）
 ---  组 2a = stage03 中 BOSS 河城荷取（光学「ハイドロカモフラージュ」）
 ---  组 3a = stage03 BOSS    河城荷取（漂溺 / 水符 / 河童）
 ---  组 4a = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）
 ---
----数据来源：thtk 的 thecl 原始反汇编
----        thecl -d 10 -r -m "MAP/th10.eclm" stage03.ecl out.txt
----        thecl -d 10 -r -m "MAP/th10.eclm" stage04.ecl out.txt
----  ＋ TH10 1.00a 复原源码逐条核对（src/EclVm.cpp / EnemyEclDispatcher.cpp /
----     Enemy.cpp / BulletManager.cpp / BulletTransform.cpp / BulletRuntime.cpp）。
+---移植方法：**不用 ECL 字节码 VM**（旧版那种「指令表 + 栈式解释器」整个废弃），跟本文件
+---  上面 stage06 的手写卡、以及 mod/GAME/th31.lua / th32「红色的幻想乡」同一套 —— 逐张读
+---  thecl 的原始反汇编
+---      thecl -d 10 -r -m "MAP/th10.eclm" stage03.ecl out.txt
+---      thecl -d 10 -r -m "MAP/th10.eclm" stage04.ecl out.txt
+---  ＋ TH10 1.00a 复原源码（src/EclVm.cpp / EnemyEclDispatcher.cpp / Enemy.cpp /
+---    BulletManager.cpp / BulletTransform.cpp），把每条指令的语义翻成**原生 LuaSTG 代码**：
+---    `task.Wait` 计时、`fire` / `fire_slot` 出一波弹、`spawn_pod` / `spawn_pod_rel` 叫子机、
+---    `m_pos` / `m_pos_time` / `m_circle` / `m_rand` 走位、`t10_laser_on` 放光柱。
+---  **本段不参考 mod/GAME/th10.lua**（那不是 ECL 实现）。
 ---
----**本段不参考 mod/GAME/th10.lua**（那不是 ECL 实现）：下面的每一张卡都是把 thecl 反汇编
----的**每一条指令**按原样登记成 `v.i(绝对时间, "指令名", 操作数…)`，交给下面那张微型 VM 在
----「真实 VM 时序」下执行（语义与上面手写卡的 `t10_ecl` 的 to/jp/wt 完全相同）：
----    · 每条指令带绝对时间 `time`；VM 每帧 `while (time <= clock) 执行`，帧尾 `clock += 1`
----      （src/EclVm.cpp:693-1219）
----    · `jmp(L, T)` / `jmpEq` / `jmpNeq` 把 clock **直接赋成目标标签的绝对时间**（可回拨）
----    · `wait(n)` / `diffWait(…, L)` 是 `clock -= n`
----    · `deci(v)` 先把**旧值**压栈再 `v -= 1`；`jmpNeq(L, 0)` 弹到非 0 才跳 ⇒ 重复 v 次
----    · `seti/setf` 从栈弹值写变量；`addi/addf/…` 弹两个压结果
----    · 难度：rank 为 `*` / `-` / 含 L 的指令才在 Lunatic 下执行（生成时已过滤）
----    · `call(name)`：同线程、clock 归零；本段唯一的 call（Boss2Et_at2 → Boss2Et_at2h）
----      目标是**永不返回**的死循环，所以直接同步调用即可
----这样就不用手工推 wait/jmp/deci 的帧数，也能对着反汇编逐行核对。
----
----坐标：本段内部一律用**原作坐标**（x 以场地中心为 0、±192 = 左右边；y 从上往下 0..448），
----与上面 stage06 手写卡共用同一套 ecs 运行时（t10_oy / m_pos / et_* / t10_boss_start…）。
+---几条贯穿全段的换算（每张卡都靠它们，改代码前先读）：
+---  · 坐标：TH10 场地 384×448、左上原点、y 朝下；我们原点在场地中心、y 朝上。
+---    换算是纯平移 + y 翻转、**没有缩放**：x_我们 = x_原作、y_我们 = 224 − y_原作、
+---    角度整体取负。上面的 ecs 运行时（t10_oy / m_pos / et_*）内部一律用**原作坐标**，
+---    所以下面所有 movePos / enmCreateA / circlePos 的数字都是**原作坐标**。
+---  · 难度：原作每条指令带 rank 标记（!E !N !H !L，`!*` = 全难度执行）。本段**只搬
+---    Lunatic 行**：`diffI/diffF` 取第 4 项、`diffWait` 取 L 的帧数、
+---    `if ($DIFF …)` 一律按 $DIFF = 3（Lunatic）求值。
+---  · 时间：`jmp(label, T)` 把 ECL 时钟**直接赋成目标标签的绝对时间**（可以回拨，回拨就是
+---    「同一帧继续」）；`wait(n)` 是时钟 −n，`diffWait(…, L)` 同理。翻成原生代码后：
+---      – 相邻两条指令的时间差 = 它们之间的 `task.Wait`；
+---      – 「回跳到更早的时间」= 原生循环回到本轮开头（**同一帧**继续，不再等）；
+---      – `diffWait(…, L)` = 在它**后面**那条指令之前补一个 `task.Wait(L)`。
+---    每个循环里都标了原作的时间轴（`+7: //7` 这种），改速度 / 间隔前先读那几行。
+---  · 随机：`%RAND` = (int)g_EnemyRandom.GetRandomU32()（可负）、`%RANDF` ∈ [0,1]、
+---    `%RANDF2` ∈ [−1,1]、`%RANDRAD` = %RANDF2·π、`%ANGLE_PLAYER` = 世界位置→自机角。
+---    ★ 原作的随机数**消耗顺序**也是行为的一部分（它决定每一发的角度 / 速度），
+---      所以下面凡是「原作先算 A 再算 B」的地方都写成两条独立语句，不能交换、
+---      也不要塞进同一个表构造器（Lua 不保证那里的求值顺序）。
+---  · 弹样式：本仓库没有 TH10 的弹贴图 ⇒ 一律 ball_mid（原作 etSprite 的第 1 参是精灵号、
+---    第 2 参是色号，这里只保留色号，见 `t10_color`）。
+---  · 子机：`enmCreateA(name,x,y,life,score,item)` 用**绝对**坐标、`enmCreate(name,dx,dy,…)`
+---    用相对坐标；两者都把创建者的 $I0..$I3 / %F0..%F3 整块拷给子机
+---    （EnemyEclDispatcher.cpp:1353-1410）。原生版 = `spawn_pod` / `spawn_pod_rel`，
+---    子机的协程体直接写成 Lua 函数（`fn(o)`，`o` 就是那只子机）。
+---  · 原作 `life` 参数是子机的血量（能被打掉、掉道具），本移植版只把子机当「打不掉的
+---    载体」，和上面 stage06 那张卡的处理一致。
 ---=====================================
 
-
----=====================================
---- 六、TH10 ECL 微型 VM（逐条搬运 thecl 反汇编）
----  上面 stage06 那张卡是手写的；stage03 / stage04 这 8 张卡改用**逐条搬运**：
----  每一条 ECL 指令都按原样登记成 `v.i(时间, "指令名", 操作数…)`，由下面这张表在
----  「真实 VM 时序」下执行。这样做的好处是不用人工推 `wait` / `jmp` / `deci` 的帧数，
----  改起来也直接对着反汇编逐行核对。
----
----  时序按 src/EclVm.cpp:693-1219 的 `EclVmContext::Run` 复刻：
----    · 每帧 `while (指令.time <= clock) 执行;`，帧末尾 `clock += 1`
----    · `jmp(L,t)` / `jmpEq` / `jmpNeq` 把 clock **直接赋成目标标签的绝对时间**（可回拨）
----    · `wait(n)` 是 `clock -= n`（可负，负了之后要等 clock 涨回来）
----    · `deci(v)` 先把**旧值**压栈再 `v -= 1`；`jmpNeq(L,0)` 弹出旧值 ≠0 才跳 ⇒ 重复 N 次
----    · 难度过滤：rank 为 `*`/`-`/含 L 的指令才在 Lunatic 下执行（生成器已过滤）
----    · `call(name)`：同一线程、clock 归零跑子程序，`ret` 恢复调用者 clock
----      ——本文件里唯一的 `call` 目标（Boss2Et_at2h）**永不返回**，所以直接函数调用即可。
----  操作数：
----    · `LV(4)` = 本线程栈帧局部 `[4]`；`PP()` = 弹出临时栈（`[-1]`）；
----      `GV("I0")` / `GV("F0")` = 敌机自身变量（跨线程共享）
----=====================================
-local function LV(off) return { r = "l", o = off } end
-local function PP() return { r = "p" } end
-local function GV(n) return { r = "g", n = n } end
-
----向零截断（C 的 (int) 转换 / int 除法）
-local function t10_trunc(x)
-    if x >= 0 then return math.floor(x) end
-    return math.ceil(x)
-end
-local function t10_idiv(a, b)
-    if b == 0 then return 0 end
-    return t10_trunc(a / b)
-end
----C 的 int % int：符号跟被除数
+---C 的 int % int：符号跟被除数（原作 `modi` 的语义，被除数为负时结果也是负的）
 local function t10_imod(a, b)
     if b == 0 then return 0 end
     return math.fmod(a, b)
 end
 
----%RAND（ECL 全局 -10000）= (int)g_EnemyRandom.GetU32()：32 位有符号
----（RandomMath.cpp GetRandomU32 = 两个 16 位结果拼起来）
+---%RAND = (int)g_EnemyRandom.GetRandomU32()：两个 16 位结果拼成 32 位、再按有符号解释
+---（RandomMath.cpp:16 `GetRandomU16() << 16 | GetRandomU16()`；Enemy.cpp:435 就是 (int)）
 local function t10_randmod()
     local hi = ran:Int(0, 65535)
     local lo = ran:Int(0, 65535)
@@ -1213,1733 +1221,584 @@ local function t10_randmod()
     return u
 end
 
----ECL 全局变量读取（Enemy.cpp:434-... ReadIntOperand / ReadFloatOperand）
-local function t10_gv(o, n)
-    if n == "RANDF" then return rnd() end              -- -9999 GetUnitFloat ∈ [0,1]
-    if n == "RANDF2" then return rnd2() end            -- -9987 GetSignedUnitFloat ∈ [-1,1]
-    if n == "RANDRAD" then return rndrad() end         -- -9998 GetSignedUnitFloat·π
-    if n == "RAND" then return t10_randmod() end       -- -10000 (int)GetU32()
-    if n == "DIFF" then return 3 end                   -- -9959 难度：本仓库固定 Lunatic
-    if n == "ANGLE_PLAYER" then return t10_angle_player(o) end  -- -9989 世界位置→自机角
-    if n == "FINAL_ANGLE" then return 0 end            -- -9958 速度角（只喂给观感 stub）
-    if n == "UNKNOWN61" then return 0 end              -- MBossOP 的动画状态（只喂给 stub）
-    local c = n:sub(1, 1)
-    if c == "I" or c == "F" then
-        local k = tonumber(n:sub(2))
-        if k ~= nil then return o[n] or 0 end
+---`%RAND % 60`：卡 3605 拿它当 etEx 的等待帧数（+120 之后使用）。
+---★ 照抄原作的 `pushi($RAND); pushi(60); modi()`，**不能**换成 ran:Int(0,59) ——
+---  原作的 %RAND 可负、C 的 % 结果也可能为负，换成均匀分布会和原作对不上。
+local function t10_rand_mod60() return t10_imod(t10_randmod(), 60) end
+
+---=====================================
+--- 七、逐张符卡
+---=====================================
+
+---卡 3601　光学「ハイドロカモフラージュ」（stage03 中 BOSS 河城荷取）
+---  原作 MBossCard1 / MBossCard1_at / MBossCard1_at2h。
+---  主循环从 t=80 起每 140 帧叫一次 at + at2h，并在 +100 帧处 moveRand(40, 4, 4.0)；
+---  主循环本身是死循环，靠 2700 帧超时（MBossEscape）结束整张卡。
+---    at   （槽 0）：12 轮，每轮 7 帧（+7: //7）—— 11 发扇形（基准角 −π/2、
+---                  角步长 0.17453292、初速 3.0），两波同点、分裂角 ±0.05235988。
+---    at2h （槽 1）：8 轮，每轮 20 帧（+20: //20）—— 20 发环（基准角 %RANDRAD、
+---                  角步长 0.19634955、初速 2.0），两侧分裂角各按 %RANDF·π/64 抖动。
+local function s3_MBossCard1_at(o)
+    local cnt = 11                     -- diffI([4], …, 11)
+    local astep = 0.17453292           -- diffF([8], …, 0.17453292)
+    for _ = 1, 12 do                   -- [0] = 12（+7: //7）
+        fire(o, { slot = 0, aim = 1, sprite = { 8, 6 }, count = { cnt, 1 },
+                  angle = -1.5707964, astep = astep, speed = { 3.0, 1.0 },
+                  steps = { { allow = 1, kind = 4 },
+                            { allow = 0, kind = 32, i0 = 60, i1 = -999999,
+                              f0 = -0.02, f1 = 0.05235988 } } })
+        fire(o, { slot = 0, aim = 1, sprite = { 8, 6 }, count = { cnt, 1 },
+                  angle = -1.5707964, astep = astep, speed = { 3.0, 1.0 },
+                  steps = { { allow = 1, kind = 4 },
+                            { allow = 0, kind = 32, i0 = 60, i1 = -999999,
+                              f0 = -0.02, f1 = -0.05235988 } } })
+        task.Wait(7)
     end
-    return 0
 end
 
----读操作数（数字 / 局部 / 弹栈 / 全局）
-local function t10_val(o, v, x)
-    if type(x) ~= "table" then return x end
-    if x.r == "l" then return v.loc[x.o] or 0 end
-    if x.r == "p" then
-        local t = v.temp
-        local y = t[#t]
-        t[#t] = nil
-        return y or 0
+local function s3_MBossCard1_at2h(o)
+    local speed = 2.0                  -- diffF([12], …, 2.0)
+    local astep = 0.19634955
+    local a = rndrad()                 -- [4] = %RANDRAD
+    local b = a                        -- [8] = [4]
+    for _ = 1, 8 do                    -- [0] = 8（+20: //20）
+        fire(o, { slot = 1, aim = 3, sprite = { 18, 0 }, count = { 20, 1 },
+                  angle = a, astep = astep, speed = { speed, 1.0 },
+                  steps = { { allow = 1, kind = 4 },
+                            ---★ 记录 1 = kind 0x20、记录 2 = kind 0x10 —— etEx 的 record
+                            ---序号就是程序的执行顺序，不能按 kind 大小排。
+                            { allow = 0, kind = 32, i0 = 60, i1 = -999999,
+                              f0 = -0.035, f1 = 0.05235988 },
+                            { allow = 0, kind = 16, i0 = 60, i1 = -999999,
+                              f0 = 0.04, f1 = -999.0 } } })
+        a = a + rnd() * 3.1415927 / 64 -- [4] += %RANDF·π/64（π 取原作 float32）
+        fire(o, { slot = 1, aim = 3, sprite = { 18, 0 }, count = { 20, 1 },
+                  angle = b, astep = astep, speed = { speed, 1.0 },
+                  steps = { { allow = 1, kind = 4 },
+                            ---★ 记录 1 = kind 0x20、记录 2 = kind 0x10 —— etEx 的 record
+                            ---序号就是程序的执行顺序，不能按 kind 大小排。
+                            { allow = 0, kind = 32, i0 = 60, i1 = -999999,
+                              f0 = -0.035, f1 = -0.05235988 },
+                            { allow = 0, kind = 16, i0 = 60, i1 = -999999,
+                              f0 = 0.04, f1 = -999.0 } } })
+        b = b - rnd() * 3.1415927 / 64 -- [8] -= %RANDF·π/64
+        task.Wait(20)
     end
-    return t10_gv(o, x.n)
 end
 
----写操作数（只可能是局部或敌机变量）
-local function t10_st(o, v, x, val)
-    if type(x) ~= "table" then error("bad store") end
-    if x.r == "l" then v.loc[x.o] = val return end
-    if x.r == "g" then o[x.n] = val return end
-    error("bad store")
-end
-
----========== 指令实现 ==========
----每个 handler 返回：nil=继续；number=跳转到的下标；-1=结束本线程。
----（jmp 会把 clock 设成目标指令的时间，与 EclVm.cpp:797 一致）
-local T10_OP = {}
-
-local function pop2(v)
-    local b = v.temp[#v.temp]; v.temp[#v.temp] = nil
-    local a = v.temp[#v.temp]; v.temp[#v.temp] = nil
-    return a or 0, b or 0
-end
-local function push(v, x) v.temp[#v.temp + 1] = x end
-
-function T10_OP.pushi(o, v, a) push(v, t10_trunc(t10_val(o, v, a[1]))) end
-function T10_OP.pushf(o, v, a) push(v, t10_val(o, v, a[1]) + 0.0) end
----seti / setf：从临时栈弹一个值写进目标（EclVm.cpp ECL_VM_STORE_*）
-function T10_OP.seti(o, v, a)
-    local t = v.temp local x = t[#t] t[#t] = nil
-    t10_st(o, v, a[1], t10_trunc(x or 0))
-end
-function T10_OP.setf(o, v, a)
-    local t = v.temp local x = t[#t] t[#t] = nil
-    t10_st(o, v, a[1], (x or 0) + 0.0)
-end
-function T10_OP.deci(o, v, a)
-    local old = t10_trunc(t10_val(o, v, a[1]))
-    t10_st(o, v, a[1], old - 1)
-    push(v, old)
-end
-function T10_OP.diffI(o, v, a)
-    -- diffI(dst, E, N, H, L)：本仓库固定 Lunatic ⇒ 取第 4 个（a[5]）
-    t10_st(o, v, a[1], t10_trunc(t10_val(o, v, a[5])))
-end
-function T10_OP.diffF(o, v, a)
-    t10_st(o, v, a[1], t10_val(o, v, a[5]) + 0.0)
-end
-function T10_OP.diffWait(o, v, a)
-    -- diffWait(E, N, H, L)（ECL_VM_SUBTRACT_TIME）：clock -= L
-    v.ct = v.ct - t10_val(o, v, a[4])
-end
-function T10_OP.validRad(o, v, a)
-    t10_st(o, v, a[1], t10_wrap(t10_val(o, v, a[1]) + 0.0))
-end
-
-local function arith_i(f)
-    return function(o, v, a) local x, y = pop2(v); push(v, f(x, y)) end
-end
-local function arith_f(f)
-    return function(o, v, a) local x, y = pop2(v); push(v, f(x, y)) end
-end
-T10_OP.addi = arith_i(function(x, y) return x + y end)
-T10_OP.subi = arith_i(function(x, y) return x - y end)
-T10_OP.muli = arith_i(function(x, y) return x * y end)
-T10_OP.divi = arith_i(t10_idiv)
-T10_OP.modi = arith_i(t10_imod)
-T10_OP.eqi = arith_i(function(x, y) if x == y then return 1 end return 0 end)
-T10_OP.neqi = arith_i(function(x, y) if x ~= y then return 1 end return 0 end)
-T10_OP.lessi = arith_i(function(x, y) if x < y then return 1 end return 0 end)
-T10_OP.leqi = arith_i(function(x, y) if x <= y then return 1 end return 0 end)
-T10_OP.greateri = arith_i(function(x, y) if x > y then return 1 end return 0 end)
-T10_OP.geqi = arith_i(function(x, y) if x >= y then return 1 end return 0 end)
-T10_OP["or"] = arith_i(function(x, y) if x ~= 0 or y ~= 0 then return 1 end return 0 end)
-T10_OP.addf = arith_f(function(x, y) return x + y end)
-T10_OP.subf = arith_f(function(x, y) return x - y end)
-T10_OP.mulf = arith_f(function(x, y) return x * y end)
-T10_OP.divf = arith_f(function(x, y) if y == 0 then return 0 end return x / y end)
-T10_OP.lessf = arith_f(function(x, y) if x < y then return 1 end return 0 end)
-T10_OP.greaterf = arith_f(function(x, y) if x > y then return 1 end return 0 end)
-
----jmp / jmpEq / jmpNeq(label, T)：把 clock 设成**指令里的时间操作数 T**
----（= 目标标签的绝对时间；src/EclVm.cpp:797 `currentTime = OperandInt(*cursor, 1)`）。
----★ 不能用「目标下标那条指令的 time」代替：标签与下一条指令之间可能夹着被难度过滤掉的
----  nop / stackAlloc（时间不同），用下一条指令的时间会把 clock 拨错 —— MBossOP 会死循环
----  （`jmpEq(MBossOP_292, 0)`：标签处是 nop@1，时间操作数是 0，用 1 就一直跳不出去）。
-local function do_jump(o, v, a)
-    local ip = v.labels[a[1]]
-    if ip == nil then error("th10 vm: unknown label " .. tostring(a[1])) end
-    v.ct = t10_val(o, v, a[2]) + 0.0
-    return ip
-end
-function T10_OP.jmp(o, v, a) return do_jump(o, v, a) end
----jmpEq / jmpNeq：从临时栈弹一个值，按 ==0 / ~=0 决定是否跳
----（EclVm.cpp ECL_VM_JUMP_IF_FALSE / _TRUE；操作数 (label, time) 里 time 只是显示）
-local function pop1(v)
-    local t = v.temp local x = t[#t] t[#t] = nil
-    return t10_trunc(x or 0)
-end
-function T10_OP.jmpEq(o, v, a)
-    if pop1(v) == 0 then return do_jump(o, v, a) end
-end
-function T10_OP.jmpNeq(o, v, a)
-    if pop1(v) ~= 0 then return do_jump(o, v, a) end
-end
-function T10_OP.wait(o, v, a) v.ct = v.ct - t10_val(o, v, a[1]) end
-function T10_OP.ret(o, v, a) return -1 end
-
-function T10_OP.callAsync(o, v, a) t10_call_async(o, a[1]) end
-function T10_OP.callAsyncId(o, v, a) t10_call_async(o, a[1]) end
-function T10_OP.call(o, v, a)
-    --- 唯一的 call 目标是 Boss2Et_at2h（无限循环、永不 ret）⇒ 直接同步调用即可；
-    --- 要是有会返回的 call，这里得再实现「调用者 clock/PC 入栈、ret 恢复」。
-    local f = TH10_SUB[a[1]]
-    if f then f(o) end
-end
-function T10_OP.killAllAsync(o, v, a) t10_kill_async(o) end
-function T10_OP.delete(o, v, a) t10_delete(o) return -1 end
-
----pattern 指令
-function T10_OP.etNew(o, v, a) et_new(o, t10_trunc(t10_val(o, v, a[1]))) end
-function T10_OP.etCopy(o, v, a)
-    et_copy(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])))
-end
-function T10_OP.etAim(o, v, a) et_aim(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2]))) end
-function T10_OP.etSprite(o, v, a)
-    et_sprite(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])), t10_trunc(t10_val(o, v, a[3])))
-end
-function T10_OP.etCount(o, v, a)
-    et_count(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])), t10_trunc(t10_val(o, v, a[3])))
-end
-function T10_OP.etCountD(o, v, a)
-    -- etCountD(slot, c1E,c1N,c1H,c1L, c2E,c2N,c2H,c2L)：Lunatic 取 c1L / c2L
-    et_count(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[5])), t10_trunc(t10_val(o, v, a[9])))
-end
-function T10_OP.etAngle(o, v, a)
-    et_angle(o, t10_trunc(t10_val(o, v, a[1])), t10_val(o, v, a[2]) + 0.0, t10_val(o, v, a[3]) + 0.0)
-end
-function T10_OP.etSpeed(o, v, a)
-    et_speed(o, t10_trunc(t10_val(o, v, a[1])), t10_val(o, v, a[2]) + 0.0, t10_val(o, v, a[3]) + 0.0)
-end
-function T10_OP.etSpeedD(o, v, a)
-    -- etSpeedD(slot, sE,sN,sH,sL, tE,tN,tH,tL)：Lunatic 取 sL / tL
-    et_speed(o, t10_trunc(t10_val(o, v, a[1])), t10_val(o, v, a[5]) + 0.0, t10_val(o, v, a[9]) + 0.0)
-end
-function T10_OP.etOffset(o, v, a)
-    et_offset(o, t10_trunc(t10_val(o, v, a[1])), t10_val(o, v, a[2]) + 0.0, t10_val(o, v, a[3]) + 0.0)
-end
-function T10_OP.etEx(o, v, a)
-    -- etEx(slot, rec, allow, kind, i0, i1, f0, f1)
-    et_ex(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])),
-          t10_trunc(t10_val(o, v, a[3])), t10_trunc(t10_val(o, v, a[4])),
-          t10_val(o, v, a[5]), t10_val(o, v, a[6]),
-          t10_val(o, v, a[7]) + 0.0, t10_val(o, v, a[8]) + 0.0)
-end
-function T10_OP.etOn(o, v, a) et_on(o, t10_trunc(t10_val(o, v, a[1]))) end
-
----运动指令（世界位置 = base + offset；见 Enemy.cpp EnemyRuntimeUpdate）
-function T10_OP.movePos(o, v, a) m_pos(o, "off", t10_val(o, v, a[1]) + 0.0, t10_val(o, v, a[2]) + 0.0) end
-function T10_OP.movePosRel(o, v, a) m_pos(o, "base", t10_val(o, v, a[1]) + 0.0, t10_val(o, v, a[2]) + 0.0) end
-function T10_OP.movePosTime(o, v, a)
-    m_pos_time(o, "off", t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])),
-               t10_val(o, v, a[3]) + 0.0, t10_val(o, v, a[4]) + 0.0)
-end
-function T10_OP.moveRand(o, v, a)
-    m_rand(o, "off", t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])), t10_val(o, v, a[3]) + 0.0)
-end
-function T10_OP.moveCircleRel(o, v, a)
-    m_circle(o, "base", t10_val(o, v, a[1]) + 0.0, t10_val(o, v, a[2]) + 0.0,
-             t10_val(o, v, a[3]) + 0.0, t10_val(o, v, a[4]) + 0.0)
-end
-function T10_OP.moveLimitReset(o, v, a) m_limit_clear(o) end
-function T10_OP.moveLimit(o, v, a)
-    m_limit(o, t10_val(o, v, a[1]) + 0.0, t10_val(o, v, a[2]) + 0.0,
-            t10_val(o, v, a[3]) + 0.0, t10_val(o, v, a[4]) + 0.0)
-end
-
----circlePos(&x, &y, angle, radius)：极坐标 → 直角坐标（原作 y 向下）
-function T10_OP.circlePos(o, v, a)
-    local ang = t10_wrap(t10_val(o, v, a[3]) + 0.0)
-    local r = t10_val(o, v, a[4]) + 0.0
-    local x, y = circle_pos(ang, r)
-    t10_st(o, v, a[1], x)
-    t10_st(o, v, a[2], y)
-end
-
-function T10_OP.laserOnA(o, v, a)
-    t10_laser_on(o, t10_trunc(t10_val(o, v, a[1])), t10_trunc(t10_val(o, v, a[2])),
-                 t10_val(o, v, a[3]) + 0.0, t10_val(o, v, a[4]) + 0.0,
-                 t10_val(o, v, a[5]) + 0.0, t10_val(o, v, a[6]) + 0.0,
-                 t10_val(o, v, a[7]), t10_val(o, v, a[8]) + 0.0)
-end
-
----子机生成：enmCreate 用**相对**位置、enmCreateA 用**绝对**位置
-function T10_OP.enmCreate(o, v, a)
-    t10_enm_create(o, a[1], t10_val(o, v, a[2]) + 0.0, t10_val(o, v, a[3]) + 0.0)
-end
-function T10_OP.enmCreateA(o, v, a)
-    t10_enm_create_a(o, a[1], t10_val(o, v, a[2]) + 0.0, t10_val(o, v, a[3]) + 0.0)
-end
----原作 enmKillAll 清的是「场上的敌机」（残留子机/使魔），发起这条指令的敌机自己不受影响
----（否则每张卡开头那条 `enmCreate("Ecl_EtBreak",…); enmKillAll()` 会当场把自己删掉，
----整张卡只跑第一帧 —— 这正是 2/5/7 号卡 0 弹的根因）。所以必须保留调用者。
-function T10_OP.enmKillAll(o, v, a) t10_enm_kill_all(o) end
-
----观感 / 演出 / 流程类：本仓库由符卡框架接管，或纯视觉，按无效果处理
----（stage06 那张卡的差异 5/7 里同样的处理）
-local function t10_noop(o, v, a) end
-for _, n in ipairs({
-    "anmPlay", "anmSetMain", "anmSetSprite", "anmSelectedPlay", "anmPlayRotate",
-    "anmSelect", "anmSetSpriteMain",
-    "flagSet", "flagClear", "playSound",
-    "setChapter", "setInterrupt", "setTimeout", "setInvuln",
-    "spellEx", "spell3", "spell", "spellEnd", "spellTimeout",
-    "lifeSet", "lifeMarker", "stars", "timerReset", "lifeMarkerReset",
-    "unknown363", "unknown364", "unknown369", "unknown370",
-    "etCancel", "laserCancel", "dialogWait", "setBoss", "setHurtbox", "setHitbox",
-    "setScreenShake", "nop",
-}) do
-    T10_OP[n] = t10_noop
-end
-
----VM 本体
-local function t10_vm(o)
-    local v = { code = {}, labels = {}, loc = {}, temp = {}, ct = 0 }
-    function v.i(t, m, ...)
-        v.code[#v.code + 1] = { t = t, m = m, a = { ... } }
+local function s3_MBossCard1(o)
+    t10_enm_kill_all(o)                -- t=0：enmKillAll()（清掉上一张卡残留的子机）
+    -- 原作同帧还 callAsync("MBossOP")：只轮询动画状态喂 anmPlay，纯视觉，不建线程。
+    task.Wait(80)                      -- +80: //80（anmPlay(0, 409) 也是视觉）
+    while true do                      -- 每轮 140 帧（//80 → //180 → //220 → 回 //80）
+        t10_call_async(o, s3_MBossCard1_at2h)
+        t10_call_async(o, s3_MBossCard1_at)
+        task.Wait(100)
+        m_rand(o, "off", 40, 4, 4.0)   -- moveRand(40, 4, 4.0)
+        task.Wait(40)
     end
-    function v.label(n) v.labels[n] = #v.code + 1 end
-    function v.run()
-        local ip = 1
-        while ip <= #v.code do
-            local c = v.code[ip]
-            if c.t > v.ct then
-                task.Wait(c.t - v.ct)
-                v.ct = c.t
-            end
-            local h = T10_OP[c.m]
-            if h == nil then error("th10 vm: unknown opcode " .. tostring(c.m)) end
-            local nx = h(o, v, c.a)
-            if nx == -1 then return end
-            if nx ~= nil then
-                ---跳转：clock 已由 handler 设成目标时间，这里**不能**再覆盖。
-                if nx > #v.code then return end
-                ip = nx
-            else
-                ip = ip + 1
+end
+
+---卡 3602　漂溺「光り輝く水底のトラウマ」
+---  原作 BossCard1 / BossCard1AtH / BossCard1AtH2。每轮 462 帧：
+---    内层 8 轮 × 40 帧 —— t=0（x=+208）和 t=20（x=−208）各放一对使魔、y 每半轮 +32；
+---    然后 moveRand + t=60..160 的 6 波自机狙扇形（每波 20 帧、9 发），$I0 += 1。
+---  使魔 AtH / AtH2 只差 $I0 的奇偶：同一位置上一对镜像变换。15 轮 × 20 帧，打完 delete()。
+local function s3_BossCard1AtH_(o, want)  -- 原作 BossCard1AtH(want=0) / BossCard1AtH2(want=1)
+    local ang = o.F0                   -- %F0：+x 側 = π、−x 側 = 0（创建时拷过来）
+    local steps = { { allow = 1, kind = 2 },
+                    { allow = 0, kind = 8192, i0 = 320 } }
+    if t10_imod(o.I0 or 0, 2) == want then
+        steps[3] = { allow = 0, kind = 32, i0 = 60,  i1 = -999999, f0 = 0.0, f1 = 0.01308997 }
+        steps[4] = { allow = 0, kind = 32, i0 = 120, i1 = -999999, f0 = 0.0, f1 = -0.01308997 }
+        steps[5] = { allow = 0, kind = 32, i0 = 120, i1 = -999999, f0 = 0.0, f1 = 0.01308997 }
+        steps[6] = { allow = 0, kind = 32, i0 = 60,  i1 = -999999, f0 = 0.0, f1 = -0.01308997 }
+    else
+        steps[3] = { allow = 0, kind = 32, i0 = 60,  i1 = -999999, f0 = 0.0, f1 = -0.01308997 }
+        steps[4] = { allow = 0, kind = 32, i0 = 120, i1 = -999999, f0 = 0.0, f1 = 0.01308997 }
+        steps[5] = { allow = 0, kind = 32, i0 = 120, i1 = -999999, f0 = 0.0, f1 = -0.01308997 }
+        steps[6] = { allow = 0, kind = 32, i0 = 60,  i1 = -999999, f0 = 0.0, f1 = 0.01308997 }
+    end
+    for _ = 1, 15 do                   -- [4] = 15（+20: //20）
+        fire(o, { slot = 0, aim = 3, sprite = { 18, 0 }, count = { 1, 1 },
+                  angle = ang, astep = 0.0, speed = { 1.3, 1.0 }, steps = steps })
+        task.Wait(20)
+    end
+    t10_delete(o)                      -- 原作 delete()
+end
+local function s3_BossCard1AtH(o)  return s3_BossCard1AtH_(o, 0) end
+local function s3_BossCard1AtH2(o) return s3_BossCard1AtH_(o, 1) end
+
+local function s3_BossCard1(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- movePosTime(60, 4, 0, 128)
+    while true do                              -- +160: //2700 → 回 //668（每轮 462 帧）
+        local y = rnd() * 32                   -- [0] = %RANDF·32（每轮重置）
+        for _ = 1, 8 do                        -- [12] = 8
+            o.F0 = PI                          -- %F0 = π
+            spawn_pod(o, 208.0, y, s3_BossCard1AtH)
+            spawn_pod(o, 208.0, y, s3_BossCard1AtH2)
+            y = y + 32                         -- [0] += 32（t=0）
+            task.Wait(20)                      -- +20: //20
+            o.F0 = 0.0                         -- %F0 = 0
+            spawn_pod(o, -208.0, y, s3_BossCard1AtH)
+            spawn_pod(o, -208.0, y, s3_BossCard1AtH2)
+            task.Wait(20)                      -- +40: //40
+            y = y + 32                         -- [0] += 32（t=40）
+        end
+        m_rand(o, "off", 60, 4, 5.0)           -- moveRand(60, 4, 5.0)
+        task.Wait(20)                          -- +60: //60：进入 6 波自机狙
+        local p = o.pat[0]
+        p.type, p.color = 12, 3                -- etSprite(0, 12, 3)
+        p.aim, p.c1, p.c2 = 0, 9, 1            -- etAim(0, 0) / etCount(0, 9(L), 1)
+        p.angle, p.astep = 0.0, 0.19634955     -- etAngle(0, 0, [4])
+        p.s1, p.s2 = 2.0, 1.0                  -- etSpeed(0, 2, 1)
+        p.ex[0] = tp_record(1, 8, -999999, -999999, -999999.0, -999999.0)
+        for i = 1, 6 do                        -- +20 ×6：//60/80/100/120/140/160
+            fire_slot(o, 0)
+            if i < 6 then task.Wait(20) end
+        end
+        o.I0 = (o.I0 or 0) + 1                 -- $I0 += 1
+    end
+end
+
+---卡 3603　水符「河童の幻想大瀑布」
+---  原作 BossCard2 / Boss2Et_at2 / Boss2Et_at2h。t=90..95 在 y=0 摆 6 只使魔
+---  （$DIFF≠0 的分支；Easy 只有 3 只），之后主线程只剩每 150 帧一次 moveRand(50, 0, 2.0)。
+---  ★ 使魔入口 at2 里 `call("Boss2Et_at2h")` 的目标是**死循环**
+---    （Boss2Et_at2h_1512 的 `pushi(1); jmpNeq` 永远跳），所以 at2 后半段是死代码 ——
+---    使魔实际跑的就是 at2h：每 5 帧 1 发、角度在 0.7853982 ↔ 2.3561945 之间来回扫
+---    0.02805、速度 4.4~4.8、出弹点 x 抖动 ±32·%RANDF2、y = −12。
+local function s3_Boss2Et_at2h(o)
+    local a = 2.356194                 -- [0]
+    local dir = 0                      -- [4]：0 = 朝 0.7853982 扫、1 = 朝 2.3561945 扫
+    local p = o.pat[0]
+    p.type, p.color = 18, 0            -- etSprite(0, 18, 0)
+    p.aim, p.c1, p.c2 = 1, 1, 1        -- etAim(0, 1) / etCount(0, 1, 1)
+    p.angle, p.astep = 1.5707964, 0.3926991
+    p.s1, p.s2 = 1.0, 1.0
+    p.ex[0] = tp_record(0, 64, 60, 1, 0.0, 0.1)
+    p.ex[1] = tp_record(0, 32768, 60, -999999, -999999.0, -999999.0)
+    while true do                      -- +5: //5
+        p.ex[2] = tp_record(0, 16, 60, -999999, rnd() * 0.03 + 0.018, -999.0)
+        p.ox, p.oy = rnd2() * 32, -12.0
+        p.s1, p.s2 = rnd() * 0.4 + 4.4, 0.0
+        p.angle, p.astep = a, 0.0
+        if dir == 0 then
+            a = a - 0.02805
+            if a < 0.7853982 then dir = 1 end
+        else
+            a = a + 0.02805
+            if a > 2.3561945 then dir = 0 end
+        end
+        fire_slot(o, 0)
+        task.Wait(5)
+    end
+end
+
+local function s3_BossCard2(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    task.Wait(90)                              -- +90: //90
+    local xs = { 160.0, 96.0, 32.0, -160.0, -96.0, -32.0 }   -- $DIFF≠0 ⇒ 6 只
+    for i = 1, 6 do                            -- //90/91/…/95
+        spawn_pod(o, xs[i], 0.0, s3_Boss2Et_at2h)
+        if i < 6 then task.Wait(1) end
+    end
+    while true do                              -- +247: //247 → 回 //1076（每轮 150 帧）
+        task.Wait(100)
+        m_rand(o, "off", 50, 0, 2.0)           -- moveRand(50, 0, 2.0)
+        task.Wait(50)
+    end
+end
+
+---卡 3604　河童「スピン・ザ・セファリックプレート」
+---  原作 BossCard3L / BossCard3L_at / BossCard3L_at2。主循环 300 帧一轮：
+---    t=120 叫一次 at2（一条常驻线程），之后 t=120 / t=270 各叫一次 at；
+---    两次 at 之间夹 moveRand(70, 4, 3.0)（t=180 / t=330）。
+---    at  ：槽 0 与槽 1（etCopy 出来的双胞胎）各 56 发、3 轮 × 10 帧，
+---          速度 4.0 → 3.0（每轮 −0.5），基准角 %RANDRAD、分裂角带 %F0（±0.008727）。
+---    at2 ：先等 100 帧，然后每 3 帧 1 发（槽 2），角度 %RANDRAD/16、速度 1.0~1.4。
+local function s3_BossCard3L_at(o)
+    local ang = rndrad()               -- etAngle(0, %RANDRAD, 0.0)（槽 1 由 etCopy 共享同角）
+    local base = o.F0                  -- 记录 4 的 f1 = %F0（主线程给的 ±0.008727）
+    local spd = 4.0                    -- [16] = 4.0
+    for _ = 1, 3 do                    -- [12] = 3（+10: //10）
+        fire(o, { slot = 0, aim = 3, sprite = { 26, 10 }, count = { 56, 1 },
+                  angle = ang, astep = 0.0, speed = { spd, 0.0 }, off = { 0.0, 0.0 },
+                  steps = { { allow = 1, kind = 2 },
+                            { allow = 0, kind = 8192, i0 = 400 },
+                            { allow = 0, kind = 64, i0 = 60, i1 = 1, f0 = 0.0, f1 = 0.0 },
+                            { allow = 0, kind = 32768, i0 = 60 },
+                            { allow = 0, kind = 32, i0 = 180, i1 = -999999,
+                              f0 = 0.01, f1 = base } } })
+        fire(o, { slot = 1, aim = 5, sprite = { 26, 10 }, count = { 56, 1 },
+                  angle = ang, astep = 0.0, speed = { spd, 0.0 }, off = { 0.0, 0.0 },
+                  steps = { { allow = 1, kind = 2 },
+                            { allow = 0, kind = 8192, i0 = 400 },
+                            { allow = 0, kind = 64, i0 = 60, i1 = 1, f0 = 0.0, f1 = 0.0 },
+                            { allow = 0, kind = 32768, i0 = 60 },
+                            { allow = 0, kind = 32, i0 = 180, i1 = -999999,
+                              f0 = 0.009, f1 = base } } })
+        spd = spd - 0.5                -- [16] -= 0.5
+        task.Wait(10)
+    end
+end
+
+local function s3_BossCard3L_at2(o)
+    task.Wait(100)                     -- 原作 at2 的配置在 t=100
+    local p = o.pat[2]
+    p.aim, p.c1, p.c2 = 0, 1, 1        -- etAim(2, 0) / etCount(2, 1, 1)
+    p.type, p.color = 24, 8            -- etSprite(2, 24, 8)
+    p.angle, p.astep = rndrad(), 0.0   -- etAngle(2, %RANDRAD, 0.0)（下一轮就被重设）
+    p.s1, p.s2 = 1.3, 1.0              -- etSpeed(2, 1.3, 1.0)（同上）
+    while true do                      -- +3: //3
+        p.angle, p.astep = rndrad() / 16, 0.0     -- etAngle(2, %RANDRAD/16, 0.0)
+        p.s1, p.s2 = rnd() * 0.4 + 1.0, 0.0       -- etSpeed(2, 1.0 + %RANDF·0.4, 0.0)
+        fire_slot(o, 2)
+        task.Wait(3)
+    end
+end
+
+local function s3_BossCard3L(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    ---原作这一段的指令分两组（t=60 的 anmPlay 组、t=120 的配置组）；
+    ---本仓库每个 task.Wait 都各计一帧，所以照原作的组数拆成两次 wait。
+    task.Wait(60)                              -- +60: //60
+    task.Wait(60)                              -- +60: //120
+    o.F0, o.F1 = 0.0, 0.02618                  -- %F0 = 0、%F1 = 0.02618
+    t10_call_async(o, s3_BossCard3L_at2)
+    while true do                              -- +420: //980 → 回 //740（每轮 300 帧）
+        o.F0 = 0.008727                        -- //740：%F0 = 0.008727
+        t10_call_async(o, s3_BossCard3L_at)
+        task.Wait(60)                          -- +60: //180
+        m_rand(o, "off", 70, 4, 3.0)           -- moveRand(70, 4, 3.0)
+        task.Wait(90)                          -- +90: //270
+        o.F0 = -0.008727                       -- %F0 = −0.008727
+        t10_call_async(o, s3_BossCard3L_at)
+        task.Wait(60)                          -- +60: //330
+        m_rand(o, "off", 70, 4, 3.0)           -- moveRand(70, 4, 3.0)
+        task.Wait(90)                          -- +90: //420
+    end
+end
+
+---卡 3605　岐符「サルタクロス」（stage04 BOSS 射命丸文）
+---  原作 BossCard1 / BossCharge / BossChargeP / BossChargeP2。每 300 帧一轮：
+---    t=0   叫一次 BossCharge —— 8 只只转不打的使魔（位置 (−16, +16)，半径 128 / 144，
+---          60/2 = 30 次 × 2 帧后自毁）；
+---    t=120 之后 48 轮 × 6 波自机狙（每波 1 发）**在同一帧**倾泻（原作这几条指令的
+---          时间都是 120），再 wait(180) 等下一轮。
+---    ★ 内层 6 波的速度从 1.0 起每波 +1.0，外层 48 轮的基准角每轮 +5.497787/47。
+local function s4_BossChargeP(o)        -- 原作 BossChargeP / BossChargeP2（只转、不出弹）
+    m_circle(o, "base", o.F0, o.F1, o.F2, o.F3)   -- moveCircleRel(%F0, %F1, %F2, %F3)
+    for _ = 1, math.floor((o.I0 or 0) / 2) do     -- $I0/2 次、每次 2 帧
+        task.Wait(2)
+    end
+    t10_delete(o)
+end
+
+local function s4_BossCharge(o)
+    o.F0, o.F1, o.F2, o.F3, o.I0 = -2.356194, 0.05236, 128.0, -2, 60
+    for _ = 1, 4 do
+        spawn_pod_rel(o, -16.0, 16.0, s4_BossChargeP)
+        o.F0 = o.F0 + 1.570796
+    end
+    o.F0, o.F1, o.F2, o.F3, o.I0 = -1.570796, -0.05236, 144.0, -3, 60
+    for _ = 1, 4 do
+        spawn_pod_rel(o, -16.0, 16.0, s4_BossChargeP)
+        o.F0 = o.F0 + 1.570796
+    end
+end
+
+local function s4_BossCard1(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    local p = o.pat[0]
+    p.type, p.color = 1, 0             -- etSprite(0, 1, 0)
+    p.aim, p.c1, p.c2 = 1, 1, 1        -- etAim(0, 1) / etCount(0, 1, 1)
+    p.angle, p.astep = -1.5707964, 0.1308997
+    p.s1, p.s2 = 1.0, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    -- $DIFF>1（Lunatic）：记录 1 = (allow 1, kind 2048, i0 1)；
+    -- $DIFF≤1 的 E/N 才是 (allow 0, kind −2147483648) —— 这里只搬 L 那一支。
+    p.ex[1] = tp_record(1, 2048, 1, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 4096, 60, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 8192, 300, -999999, -999999.0, -999999.0)
+    p.ex[4] = tp_record(1, 64, 60, 1, 0.0, 0.0)
+    -- $DIFF<2 是 E 的分支（i1 = 6），L 用 i1 = 4
+    p.ex[5] = tp_record(0, 16384, 1, 4, -999999.0, -999999.0)
+    while true do                              -- //1256 → wait(180) → 回 //1256（300 帧/轮）
+        t10_call_async(o, s4_BossCharge)
+        local a = 1.963495                     -- [28] = 1.963495
+        local astep = 5.497787 / (48 - 1)      -- [32] = 5.497787 / ([12] − 1)，[12] = 48(L)
+        task.Wait(120)                         -- +120: //120
+        for _ = 1, 48 do                       -- [12] = 48
+            local spd = 1.0                    -- [24] = 1.0
+            p.angle, p.astep = a, 0.0          -- etAngle(0, [28], 0)
+            a = t10_wrap(a + astep)            -- [28] += [32]；validRad
+            for _ = 1, 6 do                    -- [16] = 6（同一帧连打 6 波）
+                p.s1, p.s2 = spd, 0.0          -- etSpeed(0, [24], 0)
+                ---etEx(0, 6, 0, 16, [20], −999999, 0.01f, [-1.0f])：最后一个操作数是
+                ---**栈顶**（thecl 记作 [-1.0f]）＝ etEx 前压进栈的 `π/2 + %RANDRAD/8`，
+                ---是 vector 方向的基准角，不是速度。%RAND%60+120 先算、%RANDRAD 后算。
+                local i0 = t10_rand_mod60() + 120
+                local f1 = 1.5707964 + rndrad() / 8
+                p.ex[6] = tp_record(0, 16, i0, -999999, 0.01, f1)
+                fire_slot(o, 0)                -- etOn(0)
+                spd = spd + 1.0                -- [24] += 1.0（L 是 1.0，E/N 是 1.6）
             end
         end
+        task.Wait(180)                         -- wait(180)
     end
-    return v
 end
 
-TH10_SUB["s3_MBossCard1"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "setChapter", 15)
-    v.i(0, "flagClear", 3)
-    v.i(0, "setInvuln", 80)
-    v.i(0, "playSound", 7)
-    v.i(0, "spell3", 28, 2700, 1000000, "光学「ハイドロカモフラージュ」")
-    v.i(0, "lifeMarker", 0, 2200.0, -24448)
-    v.i(0, "enmKillAll")
-    v.i(0, "callAsync", "s3_MBossOP")
-    v.i(0, "setInterrupt", 0, 0, 2700, "s3_MBossDead")
-    v.i(0, "setTimeout", 0, "MBossEscape")
-    v.i(80, "anmPlay", 0, 409)
-    v.i(80, "jmp", "s3_MBossCard1_600", 220)
-    v.label("s3_MBossCard1_448")
-    v.i(80, "callAsync", "s3_MBossCard1_at2h")
-    v.i(80, "callAsync", "s3_MBossCard1_at")
-    v.i(180, "moveRand", 40, 4, 4.0)
-    v.label("s3_MBossCard1_600")
-    v.i(220, "pushi", 1)
-    v.i(220, "jmpNeq", "s3_MBossCard1_448", 80)
-    v.i(220, "ret")
-    v.run()
+---卡 3606　風神「二百十日」
+---  原作 BossCard2。每轮 220 帧：
+---    t=0   叫一次 BossCharge（跟卡 3605 同一套 8 只使魔）；
+---    t=120 起 30 轮 × 4 帧 —— 槽 0 / 槽 1 各 16 发、两条反向旋转的自机狙扇形
+---          （初速 6.0、分裂角 ±0.025，旋转量随时间线性增大：每轮 +0.00003）；
+---    t=184 再叫一次 BossCharge，等 60 + 40 帧。
+local function s4_BossCard2(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_call_async(o, s4_BossCharge)
+    task.Wait(120)                             -- +120: //120（原作在这之前不动作）
+    local p0, p1 = o.pat[0], o.pat[1]
+    p0.type, p0.color = 3, 10          -- etSprite(0, 3, 10)
+    p0.aim, p0.c1, p0.c2 = 3, 16, 1    -- etAim(0, 3) / etCount(0, 16(L), 1)
+    p0.angle, p0.astep = -1.5707964, 0.1308997
+    p0.s1, p0.s2 = 6.0, 1.0
+    p0.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p0.ex[1] = tp_record(0, 32, 120, -999999, -0.025, 0.05235988)
+    p0.ex[2] = tp_record(0, 8192, 120, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)                   -- etCopy(1, 0)
+    p1.ex[1] = tp_record(0, 32, 120, -999999, -0.025, -0.06283186)
+    p1.type, p1.color = 3, 6           -- etSprite(1, 3, 8) 然后 (1, 3, 6)
+    while true do                              -- //1048 → wait(60)+wait(40) → 220 帧/轮
+        local a0 = rndrad()                    -- etAngle(0, %RANDRAD, 0)
+        local a1 = rndrad()                    -- etAngle(1, %RANDRAD, 0)
+        p0.angle, p0.astep = a0, 0.0
+        p1.angle, p1.astep = a1, 0.0
+        local t = 0.0                          -- [0] = 0.0
+        for _ = 1, 30 do                       -- [4] = 30（+4: //4）
+            local r0 = rndrad()                -- 槽 0 记录的旋转量
+            local r1 = rndrad()                -- 槽 1 记录的旋转量
+            ---$DIFF=3 ⇒ `$DIFF < 3` 为假 ⇒ jmpEq 跳到 _1664：f0 = −0.029166667
+            ---（−0.0375 那支只有 E/N/H 走得到；+120 组的 −0.025 只是初值）
+            p0.ex[1] = tp_record(0, 32, 120, -999999, -0.029166667, 3.1415927 / 60 + r0 * t)
+            p1.ex[1] = tp_record(0, 32, 120, -999999, -0.029166667, -3.1415927 / 60 + r1 * t)
+            fire_slot(o, 0)
+            fire_slot(o, 1)
+            task.Wait(4)
+            t = t + 0.00002                    -- [0] += 2e-5
+            t = t + 0.00001                    -- [0] += 1e-5
+        end
+        task.Wait(60)                          -- +60: //184
+        t10_call_async(o, s4_BossCharge)
+        task.Wait(40)                          -- wait(40)
+    end
 end
 
-TH10_SUB["s3_MBossOP"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "jmp", "s3_MBossOP_308", 1)
-    v.label("s3_MBossOP_60")
-    v.i(0, "pushi", GV("UNKNOWN61"))
-    v.i(0, "pushi", 7)
-    v.i(0, "eqi")
-    v.i(0, "pushi", GV("UNKNOWN61"))
-    v.i(0, "pushi", 8)
-    v.i(0, "eqi")
-    v.i(0, "or")
-    v.i(0, "jmpEq", "s3_MBossOP_292", 0)
-    v.i(0, "pushi", GV("UNKNOWN61"))
-    v.i(0, "pushi", 6)
-    v.i(0, "addi")
-    v.i(0, "anmPlay", 2, PP())
-    v.label("s3_MBossOP_292")
-    v.label("s3_MBossOP_308")
-    v.i(1, "pushi", 1)
-    v.i(1, "jmpNeq", "s3_MBossOP_60", 0)
-    v.i(1, "ret")
-    v.run()
+---卡 3607　「無双風神」（耐久符卡，1080 帧）
+---  原作 BossCard3 / BossCard3_at / BossCard3_at2 / BossCard3_at3。
+---    t=0   清场、入场（movePosTime(60, 4, 0, 128)）；
+---    t=60  从 (−448, 320) 起步（movePosTime(40, 1, −448, 320)）；
+---    t=150 配置槽 1、叫常驻线程 at（每帧 2 发，出弹点在 ±64 圆内随机），
+---          然后开始左右横跳：间隔 50/45/40/35 帧，到 t=360 之后靠 diffWait
+---          把间隔压到 35/22/18/15/12/10 帧；
+---    t=360 起 stopAllThreads + 进入激光循环：每 10 帧一轮，
+---          先 enmCreate(at2) + laserOnA、再 enmCreate(at3) + laserOnA，无限循环。
+local function s4_BossCard3_at(o)
+    local p = o.pat[1]
+    while true do                      -- +1: //1
+        -- 原作两发都是：%F0/%F1 = circlePos(%RANDRAD, %RANDF2·64)、
+        -- etSpeed(1 + %RANDF2·0.3)、etOffset(%F0, %F1)、etOn(1)
+        local r = rnd2() * 64
+        local a = rndrad()
+        local v = 1.0 + rnd2() * 0.3
+        p.ox, p.oy = circle_pos(a, r)
+        p.s1, p.s2 = v, 1.0
+        fire_slot(o, 1)
+        local r2 = rnd2() * 64
+        local a2 = rndrad()
+        local v2 = 1.0 + rnd2() * 0.3
+        p.ox, p.oy = circle_pos(a2, r2)
+        p.s1, p.s2 = v2, 1.0
+        fire_slot(o, 1)
+        task.Wait(1)
+    end
 end
 
-TH10_SUB["s3_MBossCard1_at"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffF", LV(8), 0.3926991, 0.19634955, 0.14279966, 0.17453292)
-    v.i(0, "diffI", LV(4), 4, 5, 11, 11)
-    v.i(0, "pushi", 12)
-    v.i(0, "seti", LV(0))
-    v.i(0, "etNew", 0)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 1)
-    v.i(0, "etSprite", 0, 8, 6)
-    v.i(0, "etCount", 0, LV(4), 1)
-    v.i(0, "etAngle", 0, -1.5707964, LV(8))
-    v.i(0, "etSpeed", 0, 3.0, 1.0)
-    v.i(0, "etEx", 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "jmp", "s3_MBossCard1_at_548", 7)
-    v.label("s3_MBossCard1_at_396")
-    v.i(0, "etEx", 0, 1, 0, 32, 60, -999999, -0.02, 0.05235988)
-    v.i(0, "etOn", 0)
-    v.i(0, "etEx", 0, 1, 0, 32, 60, -999999, -0.02, -0.05235988)
-    v.i(0, "etOn", 0)
-    v.label("s3_MBossCard1_at_548")
-    v.i(7, "deci", LV(0))
-    v.i(7, "jmpNeq", "s3_MBossCard1_at_396", 0)
-    v.i(7, "ret")
-    v.run()
+---at2 / at3：从 ±192 飞到 ∓192（6 帧）的使魔，一边飞一边乱射（各自 6 轮 × 1 帧）。
+local function s4_BossCard3_side(o, x0, x1)
+    local p = o.pat[1]
+    -- 原作顺序：先 movePos / movePosTime（各吃一个 %RANDF2），再 etAngle(%RANDRAD)、
+    -- etSpeed(%RANDF2) —— 随机数消耗顺序不能换。
+    m_pos(o, "off", x0, 128.0 + rnd2() * 128.0)
+    m_pos_time(o, "off", 6, 0, x1, 128.0 + rnd2() * 128.0)
+    p.aim, p.c1, p.c2 = 1, 1, 1        -- etAim(1, 1) / etCount(1, 1, 1)
+    p.type, p.color = 3, 10            -- etSprite(1, 3, 10)
+    local a = -1.5707964 + rndrad() * 0.3      -- etAngle(1, −π/2 + %RANDRAD·0.3, 0)
+    p.angle, p.astep = a, 0.0
+    local v = 1.0 + rnd2() * 0.3               -- etSpeed(1, 1 + %RANDF2·0.3, 1)
+    p.s1, p.s2 = v, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 16, 60, -999999, 0.05, 1.5707964)
+    for _ = 1, 6 do                    -- [4] = 6（+1: //1）
+        local r = rnd2() * 64
+        local aa = rndrad()
+        local vv = 1.0 + rnd2() * 0.3
+        p.ox, p.oy = circle_pos(aa, r)
+        p.s1, p.s2 = vv, 1.0
+        fire_slot(o, 1)
+        local r2 = rnd2() * 64
+        local aa2 = rndrad()
+        local vv2 = 1.0 + rnd2() * 0.3
+        p.ox, p.oy = circle_pos(aa2, r2)
+        p.s1, p.s2 = vv2, 1.0
+        fire_slot(o, 1)
+        task.Wait(1)
+    end
+    t10_delete(o)
+end
+local function s4_BossCard3_at2(o) return s4_BossCard3_side(o, 192.0, -192.0) end
+local function s4_BossCard3_at3(o) return s4_BossCard3_side(o, -192.0, 192.0) end
+
+---原作那对横跳：「movePos(x, 128+%RANDF2·128)；movePosTime(dur, 0, −x, 128+%RANDF2·128)」
+---（先瞬移到一侧、再用 dur 帧滑到另一侧；两个 y 各消耗一个 %RANDF2，顺序照抄）
+local function s4_BossCard3_hop(o, x, dur)
+    local y1 = 128.0 + rnd2() * 128.0
+    m_pos(o, "off", x, y1)
+    m_pos_time(o, "off", dur, 0, -x, 128.0 + rnd2() * 128.0)
 end
 
-TH10_SUB["s3_MBossCard1_at2h"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffF", LV(12), 3.0, 3.0, 3.0, 2.0)
-    v.i(0, "pushf", GV("RANDRAD"))
-    v.i(0, "setf", LV(4))
-    v.i(0, "diffI", LV(0), 2, 4, 8, 8)
-    v.i(0, "etNew", 1)
-    v.i(0, "etNew", 1)
-    v.i(0, "etAim", 1, 3)
-    v.i(0, "etSprite", 1, 18, 0)
-    v.i(0, "etCount", 1, 20, 1)
-    v.i(0, "etAngle", 1, LV(4), 0.19634955)
-    v.i(0, "etSpeed", 1, LV(12), 1.0)
-    v.i(0, "etEx", 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 1, 2, 0, 16, 60, -999999, 0.04, -999.0)
-    v.i(0, "pushf", LV(4))
-    v.i(0, "setf", LV(8))
-    v.i(0, "jmp", "s3_MBossCard1_at2h_1012", 0)
-    v.label("s3_MBossCard1_at2h_484")
-    v.i(0, "etAngle", 1, LV(4), 0.19634955)
-    v.i(0, "pushf", LV(4))
-    v.i(0, "pushf", GV("RANDF"))
-    v.i(0, "pushf", 3.1415927)
-    v.i(0, "mulf")
-    v.i(0, "pushi", 64)
-    v.i(0, "divf")
-    v.i(0, "addf")
-    v.i(0, "setf", LV(4))
-    v.i(0, "etEx", 1, 1, 0, 32, 60, -999999, -0.035, 0.05235988)
-    v.i(0, "etOn", 1)
-    v.i(0, "etAngle", 1, LV(8), 0.19634955)
-    v.i(0, "pushf", LV(8))
-    v.i(0, "pushf", GV("RANDF"))
-    v.i(0, "pushf", 3.1415927)
-    v.i(0, "mulf")
-    v.i(0, "pushi", 64)
-    v.i(0, "divf")
-    v.i(0, "subf")
-    v.i(0, "setf", LV(8))
-    v.i(0, "etEx", 1, 1, 0, 32, 60, -999999, -0.035, -0.05235988)
-    v.i(0, "etOn", 1)
-    v.i(0, "wait", 20)
-    v.label("s3_MBossCard1_at2h_1012")
-    v.i(0, "deci", LV(0))
-    v.i(0, "jmpNeq", "s3_MBossCard1_at2h_484", 0)
-    v.i(0, "ret")
-    v.run()
+local function s4_BossCard3(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- 入场（同帧还有一条 90 帧的，被这条覆盖）
+    m_limit_clear(o)                           -- moveLimitReset()
+    task.Wait(60)                              -- +60: //60
+    m_pos_time(o, "off", 40, 1, -448.0, 320.0) -- movePosTime(40, 1, −448, 320)
+    task.Wait(90)                              -- +90: //150
+    et_new(o, 1)                               -- etNew(1)
+    local p = o.pat[1]                         -- ★ 必须在 etNew 之后取，否则拿到的是旧表
+    p.aim, p.c1, p.c2 = 1, 1, 1                -- etAim(1, 1) / etCount(1, 1, 1)
+    p.type, p.color = 3, 10                    -- etSprite(1, 3, 10)
+    local a0 = -1.5707964 + rndrad() * 0.1     -- etAngle(1, −π/2 + %RANDRAD·0.1, 0)
+    p.angle, p.astep = a0, 0.0
+    local v0 = 1.0 + rnd2() * 0.3              -- etSpeed(1, 1 + %RANDF2·0.3, 1)
+    p.s1, p.s2 = v0, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 16, 60, -999999, 0.05, 1.5707964)
+    t10_call_async(o, s4_BossCard3_at)         -- callAsyncId("BossCard3_at")
+    s4_BossCard3_hop(o, -384.0, 50)            -- movePos(−384, y) + movePosTime(50, 0, 384, y)
+    et_angle(o, 1, -1.2707963, 0.0)
+    task.Wait(60)                              -- +60: //210
+    s4_BossCard3_hop(o, 384.0, 45)
+    et_angle(o, 1, -1.8707963, 0.0)
+    task.Wait(55)                              -- +55: //265
+    s4_BossCard3_hop(o, -384.0, 40)
+    et_angle(o, 1, -1.2707963, 0.0)
+    task.Wait(50)                              -- +50: //315
+    s4_BossCard3_hop(o, 384.0, 35)
+    et_angle(o, 1, -1.8707963, 0.0)
+    task.Wait(45)                              -- +45: //360
+    -- //360 起：间隔被 diffWait 一路压到 35/22/18/15/12/10 帧
+    s4_BossCard3_hop(o, -384.0, 30)
+    et_angle(o, 1, -1.2707963, 0.0)            -- 原作此处同样有 etAngle(−1.2707963, 0)
+    task.Wait(35)                              -- diffWait(…, 35)
+    s4_BossCard3_hop(o, 384.0, 35)
+    et_angle(o, 1, -1.8707963, 0.0)
+    task.Wait(22)
+    s4_BossCard3_hop(o, -384.0, 20)
+    et_angle(o, 1, -1.2707963, 0.0)
+    task.Wait(18)
+    s4_BossCard3_hop(o, 384.0, 15)
+    et_angle(o, 1, -1.8707963, 0.0)
+    task.Wait(15)
+    s4_BossCard3_hop(o, -384.0, 15)
+    et_angle(o, 1, -1.2707963, 0.0)
+    task.Wait(12)
+    s4_BossCard3_hop(o, 384.0, 10)
+    et_angle(o, 1, -1.8707963, 0.0)
+    task.Wait(10)                              -- diffWait(…, 10)
+    et_offset(o, 0, 0.0, 0.0)                  -- etOffset(0, 0, 0)（原作写的是槽 0，空操作）
+    t10_kill_async(o)                          -- killAllAsync()：停掉常驻线程 at
+    while true do                              -- +5 / +5：每 10 帧一轮，无限循环
+        spawn_pod_rel(o, 0.0, 0.0, s4_BossCard3_at2)   -- enmCreate("BossCard3_at2", 0, 0)
+        m_pos(o, "off", -384.0, 96.0 + rnd2() * 96.0)
+        local la = rndrad() / 16
+        t10_laser_on(o, 3, 2, la, 60.0, 192.0, 800.0, 0, 32.0)
+        task.Wait(5)                           -- diffWait(…, 5)
+        spawn_pod_rel(o, 0.0, 0.0, s4_BossCard3_at3)
+        m_pos(o, "off", 384.0, 96.0 + rnd2() * 96.0)
+        local la2 = rndrad() / 16 + 3.1415927
+        t10_laser_on(o, 3, 2, la2, 60.0, 192.0, 800.0, 0, 32.0)
+        task.Wait(5)                           -- diffWait(…, 5)
+    end
 end
 
-TH10_SUB["s3_BossCard1"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffF", LV(4), 0.2617994, 0.19634955, 0.19634955, 0.19634955)
-    v.i(0, "pushi", 0)
-    v.i(0, "setf", LV(8))
-    v.i(0, "diffI", LV(16), 1, 9, 9, 9)
-    v.i(0, "setChapter", 43)
-    v.i(0, "setInterrupt", 0, 0, 3600, "s3_Boss2")
-    v.i(0, "spellEx", 33, 3600, 1000000, "漂溺「光り輝く水底のトラウマ」")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 60)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s3_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "anmPlay", 0, 409)
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(0, "pushi", 0)
-    v.i(0, "seti", GV("I0"))
-    v.i(0, "jmp", "s3_BossCard1_2700", 160)
-    v.label("s3_BossCard1_668")
-    v.i(0, "pushf", GV("RANDF"))
-    v.i(0, "pushi", 32)
-    v.i(0, "mulf")
-    v.i(0, "setf", LV(0))
-    v.i(0, "pushi", 8)
-    v.i(0, "seti", LV(12))
-    v.i(0, "jmp", "s3_BossCard1_2212", 40)
-    v.label("s3_BossCard1_964")
-    v.i(0, "pushf", 3.141593)
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "pushi", 192)
-    v.i(0, "pushi", 16)
-    v.i(0, "addi")
-    v.i(0, "pushf", LV(8))
-    v.i(0, "addf")
-    v.i(0, "enmCreateA", "s3_BossCard1AtH", PP(), LV(0), 50, 1000, 1)
-    v.i(0, "pushi", 192)
-    v.i(0, "pushi", 16)
-    v.i(0, "addi")
-    v.i(0, "pushf", LV(8))
-    v.i(0, "addf")
-    v.i(0, "enmCreateA", "s3_BossCard1AtH2", PP(), LV(0), 50, 1000, 1)
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushi", 32)
-    v.i(0, "addf")
-    v.i(0, "setf", LV(0))
-    v.i(20, "pushf", 0.0)
-    v.i(20, "setf", GV("F0"))
-    v.i(20, "pushf", LV(8))
-    v.i(20, "pushi", 192)
-    v.i(20, "subf")
-    v.i(20, "pushi", 16)
-    v.i(20, "subi")
-    v.i(20, "enmCreateA", "s3_BossCard1AtH", PP(), LV(0), 50, 1000, 1)
-    v.i(20, "pushf", LV(8))
-    v.i(20, "pushi", 192)
-    v.i(20, "subf")
-    v.i(20, "pushi", 16)
-    v.i(20, "subi")
-    v.i(20, "enmCreateA", "s3_BossCard1AtH2", PP(), LV(0), 50, 1000, 1)
-    v.i(40, "pushf", LV(0))
-    v.i(40, "pushi", 32)
-    v.i(40, "addf")
-    v.i(40, "setf", LV(0))
-    v.label("s3_BossCard1_2212")
-    v.i(40, "deci", LV(12))
-    v.i(40, "jmpNeq", "s3_BossCard1_964", 0)
-    v.i(40, "moveRand", 60, 4, 5.0)
-    v.i(60, "etNew", 0)
-    v.i(60, "etAim", 0, 0)
-    v.i(60, "etSprite", 0, 12, 3)
-    v.i(60, "etCount", 0, LV(16), 1)
-    v.i(60, "etAngle", 0, 0.0, LV(4))
-    v.i(60, "etSpeed", 0, 2.0, 1.0)
-    v.i(60, "etEx", 0, 0, 1, 8, -999999, -999999, -999999.0, -999999.0)
-    v.i(60, "etOn", 0)
-    v.i(80, "etOn", 0)
-    v.i(100, "etOn", 0)
-    v.i(120, "etOn", 0)
-    v.i(140, "etOn", 0)
-    v.i(160, "etOn", 0)
-    v.i(160, "pushi", GV("I0"))
-    v.i(160, "pushi", 1)
-    v.i(160, "addi")
-    v.i(160, "seti", GV("I0"))
-    v.label("s3_BossCard1_2700")
-    v.i(160, "pushi", 1)
-    v.i(160, "jmpNeq", "s3_BossCard1_668", 0)
-    v.i(160, "ret")
-    v.run()
+---卡 3608　塞符「天上天下の照國」
+---  原作 BossCard4 / BossCard4_at / _at2 / _at3。入场分两拍：t=0 先 movePos(−216, 160)
+---  再走 90 帧的 movePosTime(90, 4, 0, 128)、wait(90)；t=90 的 _476 组里又有一条
+---  movePosTime(60, 4, 0, 128)（此时已在终点，等于空转），接着才是 `+120:` 标签。
+---  ⇒ 三条线程在 **t=210** 同帧叫起（旧版漏了前面 90 帧，线程早开 90 帧）：
+---    at  （槽 0）：64 发大环、角度完全随机；波间隔从 80 帧起每次 −5，
+---                  减到 40 帧后固定（80, 75, 70, …, 45, 40, 40, 40, …）。
+---    at2 （槽 1）、at3（槽 2）：16 发环，角度 = π/2 ± k·0.021817 反向旋转，每 9 帧一波
+---                  （原作 diffWait(22, 13, 11, 9)）。
+---  主线程之后只每 100 帧空转，整张卡靠 4200 帧超时结束。
+local function s4_BossCard4_at(o)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 64, 1        -- etAim(0, 3) / etCountD(0, …, 64(L), …)
+    p.type, p.color = 3, 13             -- etSprite(0, 0, 10) 再 (0, 3, 13) ⇒ 最终 3/13
+    p.angle, p.astep = rndrad(), 0.1308997     -- etAngle(0, %RANDRAD, 0.1308997)
+    p.s1, p.s2 = 2.0, 1.0               -- etSpeed(0, 1.0, 1.0) 再 (0, 2.0, 1.0)
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local gap = 80                      -- diffI([0], …, 80)
+    while true do                       -- //392
+        p.angle, p.astep = rndrad(), 0.0       -- etAngle(0, %RANDRAD, 0)
+        fire_slot(o, 0)                 -- etOn(0)
+        task.Wait(gap)                  -- wait([0])
+        if gap > 40 then gap = gap - 5 end     -- [0] > 40 时 [0] −= 5
+    end
 end
 
-TH10_SUB["s3_BossCard1AtH"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 15)
-    v.i(0, "seti", LV(4))
-    v.i(0, "flagSet", 16)
-    v.i(0, "flagSet", 132)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 3)
-    v.i(0, "etSprite", 0, 18, 0)
-    v.i(0, "etCount", 0, 1, 1)
-    v.i(0, "etAngle", 0, GV("F0"), 0.0)
-    v.i(0, "etSpeed", 0, 1.3, 1.0)
-    v.i(0, "etEx", 0, 0, 1, 2, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "pushi", GV("I0"))
-    v.i(0, "pushi", 2)
-    v.i(0, "modi")
-    v.i(0, "pushi", 0)
-    v.i(0, "eqi")
-    v.i(0, "jmpEq", "s3_BossCard1AtH_700", 0)
-    v.i(0, "etEx", 0, 1, 0, 8192, 320, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 2, 0, 32, 60, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 3, 0, 32, 120, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 4, 0, 32, 120, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 5, 0, 32, 60, -999999, 0.0, -0.01308997)
-    v.i(0, "jmp", "s3_BossCard1AtH_940", 0)
-    v.label("s3_BossCard1AtH_700")
-    v.i(0, "etEx", 0, 1, 0, 8192, 320, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 2, 0, 32, 60, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 3, 0, 32, 120, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 4, 0, 32, 120, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 5, 0, 32, 60, -999999, 0.0, 0.01308997)
-    v.label("s3_BossCard1AtH_940")
-    v.i(0, "jmp", "s3_BossCard1AtH_1000", 20)
-    v.label("s3_BossCard1AtH_964")
-    v.i(0, "etOn", 0)
-    v.label("s3_BossCard1AtH_1000")
-    v.i(20, "deci", LV(4))
-    v.i(20, "jmpNeq", "s3_BossCard1AtH_964", 0)
-    v.i(20, "delete")
-    v.run()
+local function s4_BossCard4_spin(o, slot, dir)
+    local p = o.pat[slot]
+    local a = 1.570796                  -- [0] = 1.570796
+    p.aim, p.c1, p.c2 = 5, 16, 1        -- etAim(·, 5) / etCountD(·, …, 16(L), …, 1)
+    p.type, p.color = 7, 13             -- etSprite(·, 3, 6) 再 (·, 7, 13) ⇒ 最终 7/13
+    p.angle, p.astep = a, 0.1308997     -- etAngle(·, [0], 0.1308997)
+    p.s1, p.s2 = 4.0, 1.0               -- etSpeedD(·, …, 4.0(L), …, 1.0(L))
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do                       -- //408
+        a = t10_wrap(a + dir * 0.021817)       -- [0] ±= 0.021817；validRad
+        p.angle, p.astep = a, 0.0              -- etAngle(·, [0], 0)
+        fire_slot(o, slot)                     -- etOn(·)
+        task.Wait(9)                           -- diffWait(22, 13, 11, 9)
+    end
 end
+local function s4_BossCard4_at2(o) return s4_BossCard4_spin(o, 1, 1) end
+local function s4_BossCard4_at3(o) return s4_BossCard4_spin(o, 2, -1) end
 
-TH10_SUB["s3_BossCard1AtH2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 15)
-    v.i(0, "seti", LV(4))
-    v.i(0, "flagSet", 16)
-    v.i(0, "flagSet", 132)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 3)
-    v.i(0, "etSprite", 0, 18, 0)
-    v.i(0, "etCount", 0, 1, 1)
-    v.i(0, "etAngle", 0, GV("F0"), 0.0)
-    v.i(0, "etSpeed", 0, 1.3, 1.0)
-    v.i(0, "etEx", 0, 0, 1, 2, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "pushi", GV("I0"))
-    v.i(0, "pushi", 2)
-    v.i(0, "modi")
-    v.i(0, "pushi", 1)
-    v.i(0, "eqi")
-    v.i(0, "jmpEq", "s3_BossCard1AtH2_700", 0)
-    v.i(0, "etEx", 0, 1, 0, 8192, 320, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 2, 0, 32, 60, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 3, 0, 32, 120, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 4, 0, 32, 120, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 5, 0, 32, 60, -999999, 0.0, -0.01308997)
-    v.i(0, "jmp", "s3_BossCard1AtH2_940", 0)
-    v.label("s3_BossCard1AtH2_700")
-    v.i(0, "etEx", 0, 1, 0, 8192, 320, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 2, 0, 32, 60, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 3, 0, 32, 120, -999999, 0.0, 0.01308997)
-    v.i(0, "etEx", 0, 4, 0, 32, 120, -999999, 0.0, -0.01308997)
-    v.i(0, "etEx", 0, 5, 0, 32, 60, -999999, 0.0, 0.01308997)
-    v.label("s3_BossCard1AtH2_940")
-    v.i(0, "jmp", "s3_BossCard1AtH2_1000", 20)
-    v.label("s3_BossCard1AtH2_964")
-    v.i(0, "etOn", 0)
-    v.label("s3_BossCard1AtH2_1000")
-    v.i(20, "deci", LV(4))
-    v.i(20, "jmpNeq", "s3_BossCard1AtH2_964", 0)
-    v.i(20, "delete")
-    v.run()
+local function s4_BossCard4(o)
+    t10_enm_kill_all(o)                        -- enmKillAll()
+    -- 原作 $DIFF≥1 的分支：enmCreate("Ecl_EtBreak", …)（「清弹载体」，本版没有）。
+    -- 入场：movePos(−216,160) → movePosTime(90,4,0,128) → wait(90)（90 帧滑到 (0,128)）；
+    -- _476 组的 movePosTime(60,4,0,128) 起点已是终点，纯属重复。
+    m_pos(o, "off", -216.0, 160.0)              -- movePos(−216, 160)：从左侧入场
+    m_pos_time(o, "off", 90, 4, 0.0, 128.0)     -- movePosTime(90, 4, 0, 128)
+    task.Wait(90)                              -- wait(90)（jmp 到 _476 时时钟才被设回 0）
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- _476 组再插值一次（此时已在终点）
+    task.Wait(120)                             -- +120: //120
+    t10_call_async(o, s4_BossCard4_at)
+    t10_call_async(o, s4_BossCard4_at2)
+    t10_call_async(o, s4_BossCard4_at3)
+    while true do                              -- //1008：每 100 帧空转
+        task.Wait(100)
+    end
 end
-
-TH10_SUB["s3_BossCard2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "setChapter", 44)
-    v.i(0, "setInterrupt", 0, 0, 3600, "s3_Boss3")
-    v.i(0, "spellEx", 37, 3600, 1000000, "水符「河童の幻想大瀑布」")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 60)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s3_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(90, "pushi", GV("DIFF"))
-    v.i(90, "pushi", 0)
-    v.i(90, "neqi")
-    v.i(90, "jmpEq", "s3_BossCard2_896", 95)
-    v.i(90, "enmCreateA", "s3_Boss2Et_at2", 160.0, 0.0, 240, 1000, 0)
-    v.i(91, "enmCreateA", "s3_Boss2Et_at2", 96.0, 0.0, 240, 1000, 0)
-    v.i(92, "enmCreateA", "s3_Boss2Et_at2", 32.0, 0.0, 240, 1000, 0)
-    v.i(93, "enmCreateA", "s3_Boss2Et_at2", -160.0, 0.0, 240, 1000, 0)
-    v.i(94, "enmCreateA", "s3_Boss2Et_at2", -96.0, 0.0, 240, 1000, 0)
-    v.i(95, "enmCreateA", "s3_Boss2Et_at2", -32.0, 0.0, 240, 1000, 0)
-    v.i(95, "jmp", "s3_BossCard2_1052", 97)
-    v.label("s3_BossCard2_896")
-    v.i(95, "enmCreateA", "s3_Boss2Et_at2", 128.0, 0.0, 240, 1000, 0)
-    v.i(96, "enmCreateA", "s3_Boss2Et_at2", 0.0, 0.0, 240, 1000, 0)
-    v.i(97, "enmCreateA", "s3_Boss2Et_at2", -128.0, 0.0, 240, 1000, 0)
-    v.label("s3_BossCard2_1052")
-    v.i(97, "jmp", "s3_BossCard2_1136", 247)
-    v.label("s3_BossCard2_1076")
-    v.i(197, "moveRand", 50, 0, 2.0)
-    v.label("s3_BossCard2_1136")
-    v.i(247, "pushi", 1)
-    v.i(247, "jmpNeq", "s3_BossCard2_1076", 97)
-    v.i(247, "ret")
-    v.run()
-end
-
-TH10_SUB["s3_Boss2Et_at2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 0)
-    v.i(0, "seti", LV(8))
-    v.i(0, "pushf", 2.356194)
-    v.i(0, "setf", LV(4))
-    v.i(0, "call", "s3_Boss2Et_at2h")
-    v.i(0, "flagSet", 16)
-    v.i(0, "flagSet", 132)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 1)
-    v.i(0, "etSprite", 0, 18, 0)
-    v.i(0, "etCount", 0, 1, 1)
-    v.i(0, "etAngle", 0, 1.5707964, 0.3926991)
-    v.i(0, "etSpeed", 0, 1.0, 1.0)
-    v.i(0, "jmp", "s3_Boss2Et_at2_1392", 5)
-    v.label("s3_Boss2Et_at2_372")
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushi", 32)
-    v.i(0, "mulf")
-    v.i(0, "etOffset", 0, PP(), -12.0)
-    v.i(0, "etAngle", 0, LV(4), 0.0)
-    v.i(0, "pushi", LV(8))
-    v.i(0, "pushi", 0)
-    v.i(0, "eqi")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2_1140", 0)
-    v.i(0, "pushf", LV(4))
-    v.i(0, "pushf", 0.049087)
-    v.i(0, "subf")
-    v.i(0, "setf", LV(4))
-    v.i(0, "pushf", LV(4))
-    v.i(0, "pushf", 0.7853982)
-    v.i(0, "lessf")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2_1116", 0)
-    v.i(0, "pushi", 1)
-    v.i(0, "seti", LV(8))
-    v.label("s3_Boss2Et_at2_1116")
-    v.i(0, "jmp", "s3_Boss2Et_at2_1336", 0)
-    v.label("s3_Boss2Et_at2_1140")
-    v.i(0, "pushf", LV(4))
-    v.i(0, "pushf", 0.049087)
-    v.i(0, "addf")
-    v.i(0, "setf", LV(4))
-    v.i(0, "pushf", LV(4))
-    v.i(0, "pushf", 2.3561945)
-    v.i(0, "greaterf")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2_1336", 0)
-    v.i(0, "pushi", 0)
-    v.i(0, "seti", LV(8))
-    v.label("s3_Boss2Et_at2_1336")
-    v.i(0, "etOn", 0)
-    v.label("s3_Boss2Et_at2_1392")
-    v.i(5, "pushi", 1)
-    v.i(5, "jmpNeq", "s3_Boss2Et_at2_372", 0)
-    v.i(5, "delete")
-    v.run()
-end
-
-TH10_SUB["s3_Boss2Et_at2h"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 0)
-    v.i(0, "seti", LV(4))
-    v.i(0, "pushf", 2.356194)
-    v.i(0, "setf", LV(0))
-    v.i(0, "flagSet", 16)
-    v.i(0, "flagSet", 132)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 1)
-    v.i(0, "etSprite", 0, 18, 0)
-    v.i(0, "etCount", 0, 1, 1)
-    v.i(0, "etAngle", 0, 1.5707964, 0.3926991)
-    v.i(0, "etSpeed", 0, 1.0, 1.0)
-    v.i(0, "etEx", 0, 0, 0, 64, 60, 1, 0.0, 0.1)
-    v.i(0, "etEx", 0, 1, 0, 32768, 60, -999999, -999999.0, -999999.0)
-    v.i(0, "jmp", "s3_Boss2Et_at2h_1512", 0)
-    v.label("s3_Boss2Et_at2h_432")
-    v.i(0, "pushf", GV("RANDF"))
-    v.i(0, "pushf", 0.03)
-    v.i(0, "mulf")
-    v.i(0, "pushf", 0.018)
-    v.i(0, "addf")
-    v.i(0, "etEx", 0, 2, 0, 16, 60, -999999, PP(), -999.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushi", 32)
-    v.i(0, "mulf")
-    v.i(0, "etOffset", 0, PP(), -12.0)
-    v.i(0, "pushf", GV("RANDF"))
-    v.i(0, "pushf", 0.4)
-    v.i(0, "mulf")
-    v.i(0, "pushf", 4.4)
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 0, PP(), 0.0)
-    v.i(0, "etAngle", 0, LV(0), 0.0)
-    v.i(0, "pushi", LV(4))
-    v.i(0, "pushi", 0)
-    v.i(0, "eqi")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2h_1180", 0)
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 0.02805)
-    v.i(0, "subf")
-    v.i(0, "setf", LV(0))
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 0.7853982)
-    v.i(0, "lessf")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2h_1156", 0)
-    v.i(0, "pushi", 1)
-    v.i(0, "seti", LV(4))
-    v.label("s3_Boss2Et_at2h_1156")
-    v.i(0, "jmp", "s3_Boss2Et_at2h_1452", 0)
-    v.label("s3_Boss2Et_at2h_1180")
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 0.02805)
-    v.i(0, "addf")
-    v.i(0, "setf", LV(0))
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 2.3561945)
-    v.i(0, "greaterf")
-    v.i(0, "jmpEq", "s3_Boss2Et_at2h_1452", 0)
-    v.i(0, "pushi", 0)
-    v.i(0, "seti", LV(4))
-    v.label("s3_Boss2Et_at2h_1452")
-    v.i(0, "etOn", 0)
-    v.i(0, "wait", 5)
-    v.label("s3_Boss2Et_at2h_1512")
-    v.i(0, "pushi", 1)
-    v.i(0, "jmpNeq", "s3_Boss2Et_at2h_432", 0)
-    v.i(0, "ret")
-    v.run()
-end
-
-TH10_SUB["s3_BossCard3L"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffI", LV(24), 16, 32, 32, 32)
-    v.i(0, "setChapter", 45)
-    v.i(0, "setInterrupt", 1, 0, 3600, "s3_BossDead")
-    v.i(0, "spellEx", 41, 3600, 1000000, "河童「スピン・ザ・セファリックプレート」")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 60)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s3_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(60, "anmPlay", 0, 409)
-    v.i(120, "anmSetMain", 0, 0)
-    v.i(120, "pushi", 0)
-    v.i(120, "setf", GV("F0"))
-    v.i(120, "pushf", 0.02618)
-    v.i(120, "setf", GV("F1"))
-    v.i(120, "pushf", 3.141593)
-    v.i(120, "setf", LV(0))
-    v.i(120, "pushi", 0)
-    v.i(120, "seti", LV(16))
-    v.i(120, "pushi", 0)
-    v.i(120, "setf", LV(12))
-    v.i(120, "pushi", 1)
-    v.i(120, "seti", LV(20))
-    v.i(120, "callAsync", "s3_BossCard3L_at2")
-    v.i(120, "jmp", "s3_BossCard3L_980", 420)
-    v.label("s3_BossCard3L_740")
-    v.i(120, "pushf", 0.008727)
-    v.i(120, "setf", GV("F0"))
-    v.i(120, "callAsync", "s3_BossCard3L_at")
-    v.i(180, "moveRand", 70, 4, 3.0)
-    v.i(270, "pushf", -0.008727)
-    v.i(270, "setf", GV("F0"))
-    v.i(270, "callAsync", "s3_BossCard3L_at")
-    v.i(330, "moveRand", 70, 4, 3.0)
-    v.label("s3_BossCard3L_980")
-    v.i(420, "pushi", 1)
-    v.i(420, "jmpNeq", "s3_BossCard3L_740", 120)
-    v.i(420, "ret")
-    v.run()
-end
-
-TH10_SUB["s3_BossCard3L_at"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushf", 4.0)
-    v.i(0, "setf", LV(16))
-    v.i(0, "pushi", 3)
-    v.i(0, "seti", LV(12))
-    v.i(0, "pushf", GV("ANGLE_PLAYER"))
-    v.i(0, "pushf", 3.1415927)
-    v.i(0, "pushf", 2.0)
-    v.i(0, "divf")
-    v.i(0, "addf")
-    v.i(0, "setf", LV(8))
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 3)
-    v.i(0, "etSprite", 0, 26, 10)
-    v.i(0, "etCount", 0, 56, 1)
-    v.i(0, "etAngle", 0, GV("RANDRAD"), 0.0)
-    v.i(0, "etSpeed", 0, 1.3, 1.0)
-    v.i(0, "etOffset", 0, 0.0, 0.0)
-    v.i(0, "etEx", 0, 0, 1, 2, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 1, 0, 8192, 400, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 2, 0, 64, 60, 1, 0.0, 0.0)
-    v.i(0, "etEx", 0, 3, 0, 32768, 60, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 4, 0, 32, 180, -999999, 0.01, GV("F0"))
-    v.i(0, "etCopy", 1, 0)
-    v.i(0, "etEx", 1, 4, 0, 32, 180, -999999, 0.009, GV("F0"))
-    v.i(0, "etAim", 1, 5)
-    v.i(0, "jmp", "s3_BossCard3L_at_964", 10)
-    v.label("s3_BossCard3L_at_772")
-    v.i(0, "etSpeed", 0, LV(16), 0.0)
-    v.i(0, "etOn", 0)
-    v.i(0, "etSpeed", 1, LV(16), 0.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "pushf", LV(16))
-    v.i(0, "pushf", 0.5)
-    v.i(0, "subf")
-    v.i(0, "setf", LV(16))
-    v.i(10, "validRad", LV(8))
-    v.label("s3_BossCard3L_at_964")
-    v.i(10, "deci", LV(12))
-    v.i(10, "jmpNeq", "s3_BossCard3L_at_772", 0)
-    v.i(10, "ret")
-    v.run()
-end
-
-TH10_SUB["s3_BossCard3L_at2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushf", 4.0)
-    v.i(0, "setf", LV(16))
-    v.i(0, "pushi", 3)
-    v.i(0, "seti", LV(12))
-    v.i(100, "pushf", GV("ANGLE_PLAYER"))
-    v.i(100, "pushf", 3.1415927)
-    v.i(100, "pushf", 2.0)
-    v.i(100, "divf")
-    v.i(100, "addf")
-    v.i(100, "setf", LV(8))
-    v.i(100, "etNew", 2)
-    v.i(100, "etAim", 2, 0)
-    v.i(100, "etSprite", 2, 24, 8)
-    v.i(100, "etCount", 2, 1, 1)
-    v.i(100, "etAngle", 2, GV("RANDRAD"), 0.0)
-    v.i(100, "etSpeed", 2, 1.3, 1.0)
-    v.i(100, "jmp", "s3_BossCard3L_at2_652", 100)
-    v.label("s3_BossCard3L_at2_408")
-    v.i(100, "pushf", GV("RANDRAD"))
-    v.i(100, "pushf", 16.0)
-    v.i(100, "divf")
-    v.i(100, "etAngle", 2, PP(), 0.0)
-    v.i(100, "pushf", GV("RANDF"))
-    v.i(100, "pushf", 0.4)
-    v.i(100, "mulf")
-    v.i(100, "pushf", 1.0)
-    v.i(100, "addf")
-    v.i(100, "etSpeed", 2, PP(), 0.0)
-    v.i(100, "etOn", 2)
-    v.i(100, "wait", 3)
-    v.label("s3_BossCard3L_at2_652")
-    v.i(100, "pushi", 1)
-    v.i(100, "jmpNeq", "s3_BossCard3L_at2_408", 100)
-    v.i(100, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard1"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffF", LV(4), 0.2617994, 0.19634955, 0.19634955, 0.19634955)
-    v.i(0, "pushi", 0)
-    v.i(0, "setf", LV(8))
-    v.i(0, "setChapter", 43)
-    v.i(0, "setInterrupt", 0, 0, 3600, "s4_Boss2")
-    v.i(0, "spell3", 44, 3600, 1000000, "岐符「サルタクロス」")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 60)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s4_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "anmPlay", 0, 409)
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 1)
-    v.i(0, "etSprite", 0, 1, 0)
-    v.i(0, "etCount", 0, 1, 1)
-    v.i(0, "etAngle", 0, -1.5707964, 0.1308997)
-    v.i(0, "etSpeed", 0, 1.0, 1.0)
-    v.i(0, "etEx", 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "pushi", GV("DIFF"))
-    v.i(0, "pushi", 1)
-    v.i(0, "leqi")
-    v.i(0, "jmpEq", "s4_BossCard1_840", 0)
-    v.i(0, "etEx", 0, 1, 0, -2147483648, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "jmp", "s4_BossCard1_888", 0)
-    v.label("s4_BossCard1_840")
-    v.i(0, "etEx", 0, 1, 1, 2048, 1, -999999, -999999.0, -999999.0)
-    v.label("s4_BossCard1_888")
-    v.i(0, "etEx", 0, 2, 0, 4096, 60, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 3, 0, 8192, 300, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 0, 4, 1, 64, 60, 1, 0.0, 0.0)
-    v.i(0, "pushi", GV("DIFF"))
-    v.i(0, "pushi", 2)
-    v.i(0, "lessi")
-    v.i(0, "jmpEq", "s4_BossCard1_1184", 0)
-    v.i(0, "etEx", 0, 5, 0, 16384, 1, 6, -999999.0, -999999.0)
-    v.i(0, "jmp", "s4_BossCard1_1232", 0)
-    v.label("s4_BossCard1_1184")
-    v.i(0, "etEx", 0, 5, 0, 16384, 1, 4, -999999.0, -999999.0)
-    v.label("s4_BossCard1_1232")
-    v.i(0, "jmp", "s4_BossCard1_2460", 120)
-    v.label("s4_BossCard1_1256")
-    v.i(0, "callAsync", "s4_BossCharge")
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(0, "anmSelectedPlay", 0)
-    v.i(0, "anmSetSprite", 0, 7)
-    v.i(120, "anmSetSprite", 0, 5)
-    v.i(120, "diffI", LV(12), 12, 32, 36, 48)
-    v.i(120, "pushf", 1.963495)
-    v.i(120, "setf", LV(28))
-    v.i(120, "pushf", 5.497787)
-    v.i(120, "setf", LV(32))
-    v.i(120, "pushf", LV(32))
-    v.i(120, "pushi", LV(12))
-    v.i(120, "pushi", 1)
-    v.i(120, "subi")
-    v.i(120, "divf")
-    v.i(120, "setf", LV(32))
-    v.i(120, "jmp", "s4_BossCard1_2396", 120)
-    v.label("s4_BossCard1_1632")
-    v.i(120, "pushi", 6)
-    v.i(120, "seti", LV(16))
-    v.i(120, "pushf", 1.0)
-    v.i(120, "setf", LV(24))
-    v.i(120, "etAngle", 0, LV(28), 0.0)
-    v.i(120, "pushf", LV(28))
-    v.i(120, "pushf", LV(32))
-    v.i(120, "addf")
-    v.i(120, "setf", LV(28))
-    v.i(120, "validRad", LV(28))
-    v.i(120, "jmp", "s4_BossCard1_2352", 120)
-    v.label("s4_BossCard1_1860")
-    v.i(120, "pushi", GV("RAND"))
-    v.i(120, "pushi", 60)
-    v.i(120, "modi")
-    v.i(120, "seti", LV(20))
-    v.i(120, "pushi", LV(20))
-    v.i(120, "pushi", 120)
-    v.i(120, "addi")
-    v.i(120, "seti", LV(20))
-    v.i(120, "etSpeed", 0, LV(24), 0.0)
-    v.i(120, "pushf", 1.5707964)
-    v.i(120, "pushf", GV("RANDRAD"))
-    v.i(120, "pushi", 8)
-    v.i(120, "divf")
-    v.i(120, "addf")
-    v.i(120, "etEx", 0, 6, 0, 16, LV(20), -999999, 0.01, PP())
-    v.i(120, "etOn", 0)
-    v.i(120, "pushf", LV(24))
-    v.i(120, "pushf", 1.0)
-    v.i(120, "addf")
-    v.i(120, "setf", LV(24))
-    v.label("s4_BossCard1_2352")
-    v.i(120, "deci", LV(16))
-    v.i(120, "jmpNeq", "s4_BossCard1_1860", 120)
-    v.label("s4_BossCard1_2396")
-    v.i(120, "deci", LV(12))
-    v.i(120, "jmpNeq", "s4_BossCard1_1632", 120)
-    v.i(120, "wait", 180)
-    v.label("s4_BossCard1_2460")
-    v.i(120, "pushi", 1)
-    v.i(120, "jmpNeq", "s4_BossCard1_1256", 0)
-    v.i(120, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCharge"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "playSound", 41)
-    v.i(0, "pushf", -2.356194)
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "pushf", 0.05236)
-    v.i(0, "setf", GV("F1"))
-    v.i(0, "pushi", 128)
-    v.i(0, "setf", GV("F2"))
-    v.i(0, "pushi", -2)
-    v.i(0, "setf", GV("F3"))
-    v.i(0, "pushi", 60)
-    v.i(0, "seti", GV("I0"))
-    v.i(0, "enmCreate", "s4_BossChargeP", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "playSound", 41)
-    v.i(0, "pushf", -1.570796)
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "pushf", -0.05236)
-    v.i(0, "setf", GV("F1"))
-    v.i(0, "pushi", 144)
-    v.i(0, "setf", GV("F2"))
-    v.i(0, "pushi", -3)
-    v.i(0, "setf", GV("F3"))
-    v.i(0, "pushi", 60)
-    v.i(0, "seti", GV("I0"))
-    v.i(0, "enmCreate", "s4_BossChargeP2", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP2", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP2", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "pushf", GV("F0"))
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "addf")
-    v.i(0, "setf", GV("F0"))
-    v.i(0, "enmCreate", "s4_BossChargeP2", -16.0, 16.0, 40, 10000, 1)
-    v.i(0, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossChargeP"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "moveCircleRel", GV("F0"), GV("F1"), GV("F2"), GV("F3"))
-    v.i(0, "flagSet", 20)
-    v.i(0, "pushi", GV("I0"))
-    v.i(0, "pushi", 2)
-    v.i(0, "divi")
-    v.i(0, "seti", LV(4))
-    v.i(0, "jmp", "s4_BossChargeP_232", 2)
-    v.label("s4_BossChargeP_188")
-    v.i(2, "anmPlayRotate", 1, 61, GV("FINAL_ANGLE"))
-    v.label("s4_BossChargeP_232")
-    v.i(2, "deci", LV(4))
-    v.i(2, "jmpNeq", "s4_BossChargeP_188", 0)
-    v.i(2, "delete")
-    v.run()
-end
-
-TH10_SUB["s4_BossChargeP2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "moveCircleRel", GV("F0"), GV("F1"), GV("F2"), GV("F3"))
-    v.i(0, "flagSet", 20)
-    v.i(0, "pushi", GV("I0"))
-    v.i(0, "pushi", 2)
-    v.i(0, "divi")
-    v.i(0, "seti", LV(4))
-    v.i(0, "jmp", "s4_BossChargeP2_232", 2)
-    v.label("s4_BossChargeP2_188")
-    v.i(2, "anmPlayRotate", 1, 62, GV("FINAL_ANGLE"))
-    v.label("s4_BossChargeP2_232")
-    v.i(2, "deci", LV(4))
-    v.i(2, "jmpNeq", "s4_BossChargeP2_188", 0)
-    v.i(2, "delete")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "setChapter", 44)
-    v.i(0, "setInterrupt", 0, 0, 3600, "s4_Boss3")
-    v.i(0, "spellEx", 49, 3600, 1000000, "風神「二百十日」")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 300)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s4_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "callAsync", "s4_BossCharge")
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(0, "anmSelectedPlay", 0)
-    v.i(0, "anmSetSprite", 0, 7)
-    v.i(120, "anmSetSprite", 0, 5)
-    v.i(120, "diffI", LV(8), 10, 16, 16, 16)
-    v.i(120, "etNew", 0)
-    v.i(120, "etAim", 0, 3)
-    v.i(120, "etSprite", 0, 3, 10)
-    v.i(120, "etCount", 0, LV(8), 1)
-    v.i(120, "etAngle", 0, -1.5707964, 0.1308997)
-    v.i(120, "etSpeed", 0, 6.0, 1.0)
-    v.i(120, "etEx", 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(120, "etEx", 0, 1, 0, 32, 120, -999999, -0.025, 0.05235988)
-    v.i(120, "etEx", 0, 2, 0, 8192, 120, -999999, -999999.0, -999999.0)
-    v.i(120, "etCopy", 1, 0)
-    v.i(120, "etEx", 1, 1, 0, 32, 120, -999999, -0.025, -0.06283186)
-    v.i(120, "etSprite", 1, 3, 8)
-    v.i(120, "etSprite", 1, 3, 6)
-    v.i(120, "jmp", "s4_BossCard2_2508", 184)
-    v.label("s4_BossCard2_1048")
-    v.i(120, "etAngle", 0, GV("RANDRAD"), 0.0)
-    v.i(120, "etAngle", 1, GV("RANDRAD"), 0.0)
-    v.i(120, "pushi", 30)
-    v.i(120, "seti", LV(4))
-    v.i(120, "pushi", 0)
-    v.i(120, "setf", LV(0))
-    v.i(120, "jmp", "s4_BossCard2_2300", 124)
-    v.label("s4_BossCard2_1208")
-    v.i(120, "pushi", GV("DIFF"))
-    v.i(120, "pushi", 3)
-    v.i(120, "lessi")
-    v.i(120, "jmpEq", "s4_BossCard2_1664", 120)
-    v.i(120, "pushf", 3.1415927)
-    v.i(120, "pushi", 60)
-    v.i(120, "divf")
-    v.i(120, "pushf", GV("RANDRAD"))
-    v.i(120, "pushf", LV(0))
-    v.i(120, "mulf")
-    v.i(120, "addf")
-    v.i(120, "etEx", 0, 1, 0, 32, 120, -999999, -0.0375, PP())
-    v.i(120, "pushf", -3.1415927)
-    v.i(120, "pushi", 60)
-    v.i(120, "divf")
-    v.i(120, "pushf", GV("RANDRAD"))
-    v.i(120, "pushf", LV(0))
-    v.i(120, "mulf")
-    v.i(120, "addf")
-    v.i(120, "etEx", 1, 1, 0, 32, 120, -999999, -0.0375, PP())
-    v.i(120, "jmp", "s4_BossCard2_2016", 120)
-    v.label("s4_BossCard2_1664")
-    v.i(120, "pushf", 3.1415927)
-    v.i(120, "pushi", 60)
-    v.i(120, "divf")
-    v.i(120, "pushf", GV("RANDRAD"))
-    v.i(120, "pushf", LV(0))
-    v.i(120, "mulf")
-    v.i(120, "addf")
-    v.i(120, "etEx", 0, 1, 0, 32, 120, -999999, -0.029166667, PP())
-    v.i(120, "pushf", -3.1415927)
-    v.i(120, "pushi", 60)
-    v.i(120, "divf")
-    v.i(120, "pushf", GV("RANDRAD"))
-    v.i(120, "pushf", LV(0))
-    v.i(120, "mulf")
-    v.i(120, "addf")
-    v.i(120, "etEx", 1, 1, 0, 32, 120, -999999, -0.029166667, PP())
-    v.label("s4_BossCard2_2016")
-    v.i(120, "etOn", 0)
-    v.i(120, "etOn", 1)
-    v.i(124, "pushf", LV(0))
-    v.i(124, "pushf", 2e-05)
-    v.i(124, "addf")
-    v.i(124, "setf", LV(0))
-    v.i(124, "pushf", LV(0))
-    v.i(124, "pushf", 1e-05)
-    v.i(124, "addf")
-    v.i(124, "setf", LV(0))
-    v.label("s4_BossCard2_2300")
-    v.i(124, "deci", LV(4))
-    v.i(124, "jmpNeq", "s4_BossCard2_1208", 120)
-    v.i(184, "callAsync", "s4_BossCharge")
-    v.i(184, "anmSetMain", 0, 0)
-    v.i(184, "anmSelectedPlay", 0)
-    v.i(184, "anmSetSprite", 0, 7)
-    v.i(184, "wait", 40)
-    v.i(184, "anmSetSprite", 0, 5)
-    v.label("s4_BossCard2_2508")
-    v.i(184, "pushi", 1)
-    v.i(184, "jmpNeq", "s4_BossCard2_1048", 120)
-    v.i(184, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard3"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffI", LV(24), 16, 32, 32, 32)
-    v.i(0, "lifeSet", 2301)
-    v.i(0, "lifeMarker", 0, 2301.0, -24448)
-    v.i(0, "stars", 0)
-    v.i(0, "timerReset")
-    v.i(0, "setChapter", 45)
-    v.i(0, "setInterrupt", 0, 2300, 1080, "s4_BossCard4")
-    v.i(0, "spellEx", 52, 1080, 1000000, "「無双風神」")
-    v.i(0, "spellTimeout")
-    v.i(0, "killAllAsync")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 1080)
-    v.i(0, "playSound", 7)
-    v.i(0, "enmCreate", "s4_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "enmKillAll")
-    v.i(0, "moveLimitReset")
-    v.i(60, "anmPlay", 0, 409)
-    v.i(60, "movePosTime", 40, 1, -448.0, 320.0)
-    v.i(150, "unknown363")
-    v.i(150, "etNew", 1)
-    v.i(150, "etAim", 1, 1)
-    v.i(150, "etSprite", 1, 3, 10)
-    v.i(150, "etCount", 1, 1, 1)
-    v.i(150, "pushf", -1.5707964)
-    v.i(150, "pushf", GV("RANDRAD"))
-    v.i(150, "pushf", 0.1)
-    v.i(150, "mulf")
-    v.i(150, "addf")
-    v.i(150, "etAngle", 1, PP(), 0.0)
-    v.i(150, "pushf", 1.0)
-    v.i(150, "pushf", GV("RANDF2"))
-    v.i(150, "pushf", 0.3)
-    v.i(150, "mulf")
-    v.i(150, "addf")
-    v.i(150, "etSpeed", 1, PP(), 1.0)
-    v.i(150, "etEx", 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(150, "etEx", 1, 1, 0, 16, 60, -999999, 0.05, 1.5707964)
-    v.i(150, "callAsyncId", "s4_BossCard3_at", 0)
-    v.i(150, "playSound", 7)
-    v.i(150, "pushf", 128.0)
-    v.i(150, "pushf", GV("RANDF2"))
-    v.i(150, "pushf", 128.0)
-    v.i(150, "mulf")
-    v.i(150, "addf")
-    v.i(150, "movePos", -384.0, PP())
-    v.i(150, "pushf", 128.0)
-    v.i(150, "pushf", GV("RANDF2"))
-    v.i(150, "pushf", 128.0)
-    v.i(150, "mulf")
-    v.i(150, "addf")
-    v.i(150, "movePosTime", 50, 0, 384.0, PP())
-    v.i(150, "etAngle", 1, -1.2707963, 0.0)
-    v.i(210, "pushf", 128.0)
-    v.i(210, "pushf", GV("RANDF2"))
-    v.i(210, "pushf", 128.0)
-    v.i(210, "mulf")
-    v.i(210, "addf")
-    v.i(210, "movePos", 384.0, PP())
-    v.i(210, "pushf", 128.0)
-    v.i(210, "pushf", GV("RANDF2"))
-    v.i(210, "pushf", 128.0)
-    v.i(210, "mulf")
-    v.i(210, "addf")
-    v.i(210, "movePosTime", 45, 0, -384.0, PP())
-    v.i(210, "playSound", 15)
-    v.i(210, "etAngle", 1, -1.8707963, 0.0)
-    v.i(265, "playSound", 15)
-    v.i(265, "pushf", 128.0)
-    v.i(265, "pushf", GV("RANDF2"))
-    v.i(265, "pushf", 128.0)
-    v.i(265, "mulf")
-    v.i(265, "addf")
-    v.i(265, "movePos", -384.0, PP())
-    v.i(265, "pushf", 128.0)
-    v.i(265, "pushf", GV("RANDF2"))
-    v.i(265, "pushf", 128.0)
-    v.i(265, "mulf")
-    v.i(265, "addf")
-    v.i(265, "movePosTime", 40, 0, 384.0, PP())
-    v.i(265, "etAngle", 1, -1.2707963, 0.0)
-    v.i(315, "pushf", 128.0)
-    v.i(315, "pushf", GV("RANDF2"))
-    v.i(315, "pushf", 128.0)
-    v.i(315, "mulf")
-    v.i(315, "addf")
-    v.i(315, "movePos", 384.0, PP())
-    v.i(315, "pushf", 128.0)
-    v.i(315, "pushf", GV("RANDF2"))
-    v.i(315, "pushf", 128.0)
-    v.i(315, "mulf")
-    v.i(315, "addf")
-    v.i(315, "movePosTime", 35, 0, -384.0, PP())
-    v.i(315, "playSound", 15)
-    v.i(315, "etAngle", 1, -1.8707963, 0.0)
-    v.i(360, "playSound", 15)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", -384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 30, 0, 384.0, PP())
-    v.i(360, "etAngle", 1, -1.2707963, 0.0)
-    v.i(360, "diffWait", 40, 40, 35, 35)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", 384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 35, 0, -384.0, PP())
-    v.i(360, "playSound", 15)
-    v.i(360, "etAngle", 1, -1.8707963, 0.0)
-    v.i(360, "diffWait", 35, 35, 30, 22)
-    v.i(360, "playSound", 15)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", -384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 20, 0, 384.0, PP())
-    v.i(360, "etAngle", 1, -1.2707963, 0.0)
-    v.i(360, "diffWait", 30, 30, 25, 18)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", 384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 15, 0, -384.0, PP())
-    v.i(360, "playSound", 15)
-    v.i(360, "etAngle", 1, -1.8707963, 0.0)
-    v.i(360, "diffWait", 25, 25, 20, 15)
-    v.i(360, "playSound", 15)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", -384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 15, 0, 384.0, PP())
-    v.i(360, "etAngle", 1, -1.2707963, 0.0)
-    v.i(360, "diffWait", 20, 20, 18, 12)
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", 384.0, PP())
-    v.i(360, "pushf", 128.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 128.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePosTime", 10, 0, -384.0, PP())
-    v.i(360, "playSound", 15)
-    v.i(360, "etAngle", 1, -1.8707963, 0.0)
-    v.i(360, "unknown364", 1)
-    v.i(360, "diffWait", 15, 15, 13, 10)
-    v.i(360, "etOffset", 0, 0.0, 0.0)
-    v.i(360, "killAllAsync")
-    v.i(360, "jmp", "s4_BossCard3_5188", 360)
-    v.label("s4_BossCard3_4496")
-    v.i(360, "enmCreate", "s4_BossCard3_at2", 0.0, 0.0, 0, 0, 0)
-    v.i(360, "pushf", 96.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 96.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", -384.0, PP())
-    v.i(360, "pushf", GV("RANDRAD"))
-    v.i(360, "pushi", 16)
-    v.i(360, "divf")
-    v.i(360, "laserOnA", 3, 2, PP(), 60.0, 192.0, 800.0, 0, 32.0)
-    v.i(360, "playSound", 15)
-    v.i(360, "diffWait", 10, 10, 10, 5)
-    v.i(360, "enmCreate", "s4_BossCard3_at3", 0.0, 0.0, 0, 0, 0)
-    v.i(360, "pushf", 96.0)
-    v.i(360, "pushf", GV("RANDF2"))
-    v.i(360, "pushf", 96.0)
-    v.i(360, "mulf")
-    v.i(360, "addf")
-    v.i(360, "movePos", 384.0, PP())
-    v.i(360, "pushf", GV("RANDRAD"))
-    v.i(360, "pushi", 16)
-    v.i(360, "divf")
-    v.i(360, "pushf", 3.1415927)
-    v.i(360, "addf")
-    v.i(360, "laserOnA", 3, 2, PP(), 60.0, 192.0, 800.0, 0, 32.0)
-    v.i(360, "playSound", 15)
-    v.i(360, "diffWait", 10, 10, 7, 5)
-    v.label("s4_BossCard3_5188")
-    v.i(360, "pushi", 1)
-    v.i(360, "jmpNeq", "s4_BossCard3_4496", 360)
-    v.i(360, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard3_at"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "jmp", "s4_BossCard3_at_592", 0)
-    v.label("s4_BossCard3_at_60")
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "wait", 1)
-    v.label("s4_BossCard3_at_592")
-    v.i(0, "pushi", 1)
-    v.i(0, "jmpNeq", "s4_BossCard3_at_60", 0)
-    v.i(0, "etOffset", 1, 0.0, 0.0)
-    v.i(0, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard3_at2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 6)
-    v.i(0, "seti", LV(4))
-    v.i(0, "flagSet", 144)
-    v.i(0, "pushf", 128.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 128.0)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "movePos", 192.0, PP())
-    v.i(0, "pushf", 128.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 128.0)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "movePosTime", LV(4), 0, -192.0, PP())
-    v.i(0, "etNew", 1)
-    v.i(0, "etAim", 1, 1)
-    v.i(0, "etSprite", 1, 3, 10)
-    v.i(0, "etCount", 1, 1, 1)
-    v.i(0, "pushf", -1.5707964)
-    v.i(0, "pushf", GV("RANDRAD"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etAngle", 1, PP(), 0.0)
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etEx", 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 1, 1, 0, 16, 60, -999999, 0.05, 1.5707964)
-    v.i(0, "jmp", "s4_BossCard3_at2_1564", 0)
-    v.label("s4_BossCard3_at2_1032")
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "etOn", 1)
-    v.i(0, "wait", 1)
-    v.label("s4_BossCard3_at2_1564")
-    v.i(0, "deci", LV(4))
-    v.i(0, "jmpNeq", "s4_BossCard3_at2_1032", 0)
-    v.i(0, "delete")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard3_at3"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushi", 6)
-    v.i(0, "seti", LV(4))
-    v.i(0, "flagSet", 144)
-    v.i(0, "pushf", 128.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 128.0)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "movePos", -192.0, PP())
-    v.i(0, "pushf", 128.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 128.0)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "movePosTime", LV(4), 0, 192.0, PP())
-    v.i(0, "etNew", 1)
-    v.i(0, "etAim", 1, 1)
-    v.i(0, "etSprite", 1, 3, 10)
-    v.i(0, "etCount", 1, 1, 1)
-    v.i(0, "pushf", -1.5707964)
-    v.i(0, "pushf", GV("RANDRAD"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etAngle", 1, PP(), 0.0)
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etEx", 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etEx", 1, 1, 0, 16, 60, -999999, 0.05, 1.5707964)
-    v.i(0, "jmp", "s4_BossCard3_at3_1564", 0)
-    v.label("s4_BossCard3_at3_1032")
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 64.0)
-    v.i(0, "mulf")
-    v.i(0, "circlePos", GV("F0"), GV("F1"), GV("RANDRAD"), PP())
-    v.i(0, "etOffset", 1, GV("F0"), GV("F1"))
-    v.i(0, "pushf", 1.0)
-    v.i(0, "pushf", GV("RANDF2"))
-    v.i(0, "pushf", 0.3)
-    v.i(0, "mulf")
-    v.i(0, "addf")
-    v.i(0, "etSpeed", 1, PP(), 1.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "wait", 1)
-    v.label("s4_BossCard3_at3_1564")
-    v.i(0, "deci", LV(4))
-    v.i(0, "jmpNeq", "s4_BossCard3_at3_1032", 0)
-    v.i(0, "delete")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard4"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "lifeSet", 2300)
-    v.i(0, "lifeMarker", 0, 2300.0, -24448)
-    v.i(0, "killAllAsync")
-    v.i(0, "enmKillAll")
-    v.i(0, "pushi", GV("DIFF"))
-    v.i(0, "pushi", 1)
-    v.i(0, "geqi")
-    v.i(0, "jmpEq", "s4_BossCard4_392", 0)
-    v.i(0, "setInvuln", 90)
-    v.i(0, "playSound", 7)
-    v.i(0, "unknown364", 0)
-    v.i(0, "spellEnd")
-    v.i(0, "etCancel", 1024.0)
-    v.i(0, "movePos", -216.0, 160.0)
-    v.i(0, "movePosTime", 90, 4, 0.0, 128.0)
-    v.i(0, "wait", 90)
-    v.i(0, "jmp", "s4_BossCard4_476", 0)
-    v.label("s4_BossCard4_392")
-    v.i(0, "enmCreate", "s4_Ecl_EtBreak", 0.0, 0.0, 9999, 0, 0)
-    v.i(0, "movePosTime", 90, 4, 0.0, 128.0)
-    v.label("s4_BossCard4_476")
-    v.i(0, "setChapter", 46)
-    v.i(0, "setInterrupt", 0, 0, 4200, "s4_BossDead")
-    v.i(0, "spellEx", 56, 4200, 1000000, "塞符「天上天下の照國」")
-    v.i(0, "movePosTime", 60, 4, 0.0, 128.0)
-    v.i(0, "setInvuln", 300)
-    v.i(0, "callAsync", "s4_BossCharge")
-    v.i(0, "anmSetMain", 0, 0)
-    v.i(0, "anmSelectedPlay", 0)
-    v.i(0, "anmSetSprite", 0, 7)
-    v.i(120, "anmSetSprite", 0, 5)
-    v.i(120, "callAsync", "s4_BossCard4_at")
-    v.i(120, "callAsync", "s4_BossCard4_at2")
-    v.i(120, "callAsync", "s4_BossCard4_at3")
-    v.i(120, "jmp", "s4_BossCard4_1028", 120)
-    v.label("s4_BossCard4_1008")
-    v.i(120, "wait", 100)
-    v.label("s4_BossCard4_1028")
-    v.i(120, "pushi", 1)
-    v.i(120, "jmpNeq", "s4_BossCard4_1008", 120)
-    v.i(120, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard4_at"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "diffI", LV(4), 32, 64, 64, 64)
-    v.i(0, "diffI", LV(0), 120, 120, 120, 80)
-    v.i(0, "etNew", 0)
-    v.i(0, "etAim", 0, 3)
-    v.i(0, "etSprite", 0, 0, 10)
-    v.i(0, "etCount", 0, LV(4), 1)
-    v.i(0, "etAngle", 0, GV("RANDRAD"), 0.1308997)
-    v.i(0, "etSpeed", 0, 1.0, 1.0)
-    v.i(0, "etEx", 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etSprite", 0, 3, 13)
-    v.i(0, "etSpeed", 0, 2.0, 1.0)
-    v.i(0, "jmp", "s4_BossCard4_at_616", 0)
-    v.label("s4_BossCard4_at_392")
-    v.i(0, "etAngle", 0, GV("RANDRAD"), 0.0)
-    v.i(0, "etOn", 0)
-    v.i(0, "wait", LV(0))
-    v.i(0, "pushi", LV(0))
-    v.i(0, "pushi", 40)
-    v.i(0, "greateri")
-    v.i(0, "jmpEq", "s4_BossCard4_at_616", 0)
-    v.i(0, "pushi", LV(0))
-    v.i(0, "pushi", 5)
-    v.i(0, "subi")
-    v.i(0, "seti", LV(0))
-    v.label("s4_BossCard4_at_616")
-    v.i(0, "pushi", 1)
-    v.i(0, "jmpNeq", "s4_BossCard4_at_392", 0)
-    v.i(0, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard4_at2"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "setf", LV(0))
-    v.i(0, "etNew", 1)
-    v.i(0, "etAim", 1, 5)
-    v.i(0, "etSprite", 1, 3, 6)
-    v.i(0, "etCountD", 1, 8, 16, 16, 16, 1, 1, 1, 1)
-    v.i(0, "etAngle", 1, LV(0), 0.1308997)
-    v.i(0, "etSpeedD", 1, 2.0, 2.0, 3.0, 4.0, 1.0, 1.0, 1.0, 1.0)
-    v.i(0, "etEx", 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etSprite", 1, 7, 13)
-    v.i(0, "jmp", "s4_BossCard4_at2_812", 0)
-    v.label("s4_BossCard4_at2_408")
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 0.021817)
-    v.i(0, "addf")
-    v.i(0, "setf", LV(0))
-    v.i(0, "validRad", LV(0))
-    v.i(0, "etAngle", 1, LV(0), 0.0)
-    v.i(0, "etOn", 1)
-    v.i(0, "diffWait", 22, 13, 11, 9)
-    v.label("s4_BossCard4_at2_812")
-    v.i(0, "pushi", 1)
-    v.i(0, "jmpNeq", "s4_BossCard4_at2_408", 0)
-    v.i(0, "ret")
-    v.run()
-end
-
-TH10_SUB["s4_BossCard4_at3"] = function(o)
-    local v = t10_vm(o)
-    v.i(0, "pushf", 1.570796)
-    v.i(0, "setf", LV(0))
-    v.i(0, "etNew", 2)
-    v.i(0, "etAim", 2, 5)
-    v.i(0, "etSprite", 2, 3, 6)
-    v.i(0, "etCountD", 2, 8, 16, 16, 16, 1, 1, 1, 1)
-    v.i(0, "etAngle", 2, LV(0), 0.1308997)
-    v.i(0, "etSpeedD", 2, 2.0, 2.0, 3.0, 4.0, 1.0, 1.0, 1.0, 1.0)
-    v.i(0, "etEx", 2, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
-    v.i(0, "etSprite", 2, 7, 13)
-    v.i(0, "jmp", "s4_BossCard4_at3_812", 0)
-    v.label("s4_BossCard4_at3_408")
-    v.i(0, "pushf", LV(0))
-    v.i(0, "pushf", 0.021817)
-    v.i(0, "subf")
-    v.i(0, "setf", LV(0))
-    v.i(0, "validRad", LV(0))
-    v.i(0, "etAngle", 2, LV(0), 0.0)
-    v.i(0, "etOn", 2)
-    v.i(0, "diffWait", 22, 13, 11, 9)
-    v.label("s4_BossCard4_at3_812")
-    v.i(0, "pushi", 1)
-    v.i(0, "jmpNeq", "s4_BossCard4_at3_408", 0)
-    v.i(0, "ret")
-    v.run()
-end
-
 
 ---=====================================
 ---符卡注册（一个角色一个组；boss.Define 必须先于 boss.card.add）
@@ -2968,22 +1827,22 @@ boss.Define("4a", "射命丸文",           "TH10_4", TH10_bg, { 0, 80 }, nil, "
 ---  CARD_ID 3601..3608（th35 的 3600 是 stage06 那张；注册完跑 check_stage.lua --all 核对）。
 ---=====================================
 local T10_CARDS = {
-    { "s3_MBossCard1", "光学「ハイドロカモフラージュ」",           "2a", 3601, 80 / 60, 80 / 60, 2700 / 60, 2200 },
-    { "s3_BossCard1",  "漂溺「光り輝く水底のトラウマ」",           "3a", 3602, 1,       1,       3600 / 60, 8800 },
-    { "s3_BossCard2",  "水符「河童の幻想大瀑布」",                 "3a", 3603, 1,       1,       3600 / 60, 8600 },
-    { "s3_BossCard3L", "河童「スピン・ザ・セファリックプレート」", "3a", 3604, 1,       1,       3600 / 60, 8800 },
-    { "s4_BossCard1",  "岐符「サルタクロス」",                     "4a", 3605, 1,       1,       3600 / 60, 9500 },
-    { "s4_BossCard2",  "風神「二百十日」",                         "4a", 3606, 5,       5,       3600 / 60, 9500 },
-    { "s4_BossCard3",  "「無双風神」",                             "4a", 3607, 18,      18,      1080 / 60, 2301 },
-    { "s4_BossCard4",  "塞符「天上天下の照國」",                   "4a", 3608, 8,       8,       4200 / 60, 2300 },
+    { s3_MBossCard1, "光学「ハイドロカモフラージュ」",           "2a", 3601, 80 / 60, 80 / 60, 2700 / 60, 2200 },
+    { s3_BossCard1,  "漂溺「光り輝く水底のトラウマ」",           "3a", 3602, 1,       1,       3600 / 60, 8800 },
+    { s3_BossCard2,  "水符「河童の幻想大瀑布」",                 "3a", 3603, 1,       1,       3600 / 60, 8600 },
+    { s3_BossCard3L, "河童「スピン・ザ・セファリックプレート」", "3a", 3604, 1,       1,       3600 / 60, 8800 },
+    { s4_BossCard1,  "岐符「サルタクロス」",                     "4a", 3605, 1,       1,       3600 / 60, 9500 },
+    { s4_BossCard2,  "風神「二百十日」",                         "4a", 3606, 5,       5,       3600 / 60, 9500 },
+    { s4_BossCard3,  "「無双風神」",                             "4a", 3607, 18,      18,      1080 / 60, 2301 },
+    { s4_BossCard4,  "塞符「天上天下の照國」",                   "4a", 3608, 8,       8,       4200 / 60, 2300 },
 }
 
 for _, e in ipairs(T10_CARDS) do
-    local subname, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
     local c = boss.card.New(name, t1, t2, t3, hp)
-    ---主 ECL 跑在 BOSS 的载体（th10_ecs_pod）上：每帧把 BOSS 钉在 ECL 位置上。
-    ---（子程序表 TH10_SUB 在下面填好，运行时才查表。）
-    c.init = function(self) t10_boss_start(self, TH10_SUB[subname]) end
+    ---主协程跑在 BOSS 的载体（th10_ecs_pod）上：每帧把 BOSS 钉在原作 ECL 的位置上。
+    ---`main` 就是上面那张卡的**原生 Lua 主函数**（不再是 TH10_SUB 里的指令表）。
+    c.init = function(self) t10_boss_start(self, main) end
     ---卡片结束时把本卡生成的枪/使魔载体一起清掉（原作靠 killAllAsync/enmKillAll + 敌机回收）。
     c.del = function(self) t10_clear_pods() end
     boss.card.add({ { c, band } }, LEVEL, name, id)
