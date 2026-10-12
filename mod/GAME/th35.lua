@@ -866,7 +866,8 @@ local function ch_step(ch)
     if ch.scal then
         local s = ch.scal
         local n = (s.dur <= 0) and 1 or math.min(1, s.t / s.dur)
-        ch.ang = s.a0
+        ---%s.a1 存在时角也一起插值（moveVelTime：原作对「角, 速度」两条都插值）
+        if s.a1 ~= nil then ch.ang = s.a0 + (s.a1 - s.a0) * n else ch.ang = s.a0 end
         ch.spd = s.s0 + (s.s1 - s.s0) * n
         s.t = s.t + 1
         if s.t > s.dur then ch.scal = nil end
@@ -954,6 +955,33 @@ local function m_circle(o, w, a, av, r, rv)
     if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
     ch.circle, ch.interp, ch.scal = true, nil, nil
     ch.ang, ch.cav, ch.r, ch.rv = a, av, r, rv
+end
+
+---moveVel / moveVelRel：SET_OFFSET_POLAR / SET_BASE_POLAR —— 只设（角, 速度），
+---本帧不动位置，下一帧起按极速度前进（EnemyEclDispatcher.cpp:1713）。
+---参数 > -999999 才写入，否则保持原值（原作 -999999 表示「不改」）。
+local function m_vel(o, w, ang, spd)
+    local ch = M(o, w)
+    if ang > -999999 then ch.ang = ang end
+    if spd > -999999 then ch.spd = spd end
+    ch.circle, ch.interp, ch.scal = false, nil, nil
+end
+
+---moveVelTime / moveVelRelTime：INTERPOLATE_OFFSET_POLAR —— 对（角, 速度）插值
+---（EnemyEclDispatcher.cpp:1735；角差先折进 ±π，与原作一致）。本仓库 mode 一律按线性近似。
+local function m_vel_time(o, w, dur, mode, ang, spd)
+    local ch = M(o, w)
+    local a0, a1 = ch.ang, ch.ang
+    if ang > -999999 then
+        a1 = ang
+        if math.abs(a0 - a1) >= PI then
+            if a1 <= a0 then a1 = a1 + 2.0 * PI else a0 = a0 + 2.0 * PI end
+        end
+    end
+    local s0 = ch.spd
+    local s1 = (spd > -999999) and spd or ch.spd
+    ch.scal = { t = 0, dur = dur, mode = mode, a0 = a0, a1 = a1, s0 = s0, s1 = s1 }
+    ch.circle, ch.interp = false, nil
 end
 
 local function m_add(o, w, x, y, z)
@@ -1068,6 +1096,10 @@ class["th10_ecs_pod"] = Class(object, {
         --- 差一帧（子机刚 movePos 就出弹、以及 moveRand 的起始位置都会错）。
         ecs_step(self)
         task.Do(self)
+        ---%TIME = runtime.updateTimer.current：原作在 EnemyRuntimeUpdate 的**末尾**自增
+        ---（Enemy.cpp:1039），所以本帧 ECL 读到的还是上一帧末的值 ⇒ 计数器在 task.Do
+        ---之后才加。stage07 的祟符「ミシャグジさま」用 %TIME 分阶段，必须照抄。
+        self.__t10frames = (self.__t10frames or 0) + 1
         ---BOSS 载体：把 BOSS 本体钉在 ECL 位置上。
         ---（守卫直接写在 self.th10_boss 上：T10 载体是可选绑定，字段审计据此判定 init 无赋值也安全。）
         if self.th10_boss and IsValid(self.th10_boss) then
@@ -1157,6 +1189,13 @@ local function t10_kill_async(o) task.Clear(o, true) end
 
 ---%ANGLE_PLAYER：从 **offsetMotion.position** 到自机的角度（Enemy.cpp:620）。
 local function t10_angle_player(o) return t10_aim(o.ecs.wx, o.ecs.wy) end
+
+---%FINAL_ANGLE：本帧的**世界位移角**（Enemy.cpp:615 取 base.v + offset.v 的 atan2）。
+---★ 不是极坐标速度角：movePos/moveCircle 走插值时两者会不同，stage07 BossCard9 用它定弹向。
+local function t10_final_angle(o)
+    local b, f = o.ecs.base, o.ecs.off
+    return math.atan2(b.vy + f.vy, b.vx + f.vx)
+end
 
 ---=====================================
 ---=====================================
@@ -1801,6 +1840,1026 @@ local function s4_BossCard4(o)
 end
 
 ---=====================================
+---=====================================
+---TH10 stage07（Extra = stageex）符卡（原生 LuaSTG 实现，仅 Lunatic 行）
+---  组 1a 三张 = 中 BOSS（原作 stage07 开头的 MBoss 阶段；沿用已注册的「1a」神奈子）
+---  组 5a 十张 = BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符 …）
+---
+---移植方法与上面 stage03/04 完全一致：逐条读 thecl 反汇编
+---    thecl -d 10 -r -m "MAP/th10.eclm" stage07.ecl out.txt
+---＋ TH10 1.00a 复原源码，把每条 ECL 指令翻成原生 LuaSTG：
+---    task.Wait 计时、fire_slot 出一波弹、spawn_pod(_rel) 叫子机、m_pos*/m_vel*/m_rand 走位、
+---    t10_laser_on 放光柱。**不参考 mod/GAME/th10.lua**（那不是 ECL 实现）。
+---
+---stage07 **没有难度分级**（整关一条 rank != 0xFF 都没有）⇒ 所有指令都按原样执行。
+---另外：原作 BOSS 的十张符卡之间各夹一段「非符」（Boss1()..Boss8() 那批 sub），本移植版
+---  只做符卡，所以那几段不进表；唯 Boss1() 在开头 +20 帧记下的 `%F0 = %ANGLE_PLAYER`
+---  会被后面的開宴「二拝二拍一拝」用到，故在那张卡开头补上（见 s7_BossCard1）。
+---
+---几条 ECL 读法（stage07 里反复出现，改代码前先读）：
+---  · `%B = %RANDF2 * _f(192)` = 局部变量赋值；`$D--` 是 `deci`（**先压旧值再减**），
+---    放在循环体末尾时等价于 `for _=1,N do … end`（N = 初值）。
+---  · `jmp(label, T)` 把 ECL 时钟直接设成 T（可以回拨，回拨 = 同一帧继续）；
+---    `jmpEq/jmpNeq` 只在栈顶为 0 / 非 0 时跳。⇒ 带 `wait` 的循环就是「每帧一轮」，
+---    而循环体末尾那条「回拨到更早时间」的 jmp 不额外消耗帧。
+---  · `enmCreateA(name, x, y)` 用**绝对**坐标、`enmCreate(name, dx, dy)` 用相对坐标；
+---    两者都把创建者的 $I0..$I3 / %F0..%F3 整块拷给子机。
+---  · et* 系列改的是「槽」；`etEx` 的记录号就是执行顺序，`etOn` 才真正出一波弹。
+---  · 随机数**消耗顺序**是行为的一部分：凡「原作先算 A 再算 B」都写成两条独立语句。
+---=====================================
+
+---原作 default.ecl 的 et_ofs_r(slot, B)：radius = %RANDF·B、angle = %RANDRAD，
+---再 etOffset(slot, circlePos(angle, radius))。★ 先 %RANDF 再 %RANDRAD，顺序不能换。
+local function et_ofs_r(o, slot, b)
+    local r = rnd() * b
+    local a = rndrad()
+    local x, y = circle_pos(a, r)
+    et_offset(o, slot, x, y)
+end
+
+---stage07 的 44 个子程序统一挂在这张表上：主 chunk 顶层局部早已逼近 LuaJIT 的 200 上限
+---（LuaJIT 的计数是「同一作用域内同时存活的局部」），塞进 table 只占 1 个 local。
+local s7 = {}
+
+---=====================================
+---七·A、中 BOSS 三张（组 1a = 神奈子，原作 stage07 开场的 MBoss 阶段）
+---=====================================
+
+---卡 3609　神符「水眼の如き美しき源泉」
+---  原作 MBossCard1 / MBossCard_at。主循环从 t=90 起每 220 帧叫一次 at（+160 帧处 moveRand）。
+---    at（槽 0）：8 圈 × 1 发（角度自 %RANDRAD 起每轮 +3.883222），每帧一轮、共 160 轮；
+---                两发分裂：一发 16 帧后按 0.02 甩出、一发 90 帧后按 −999（不改）。
+function s7.MBossCard_at(o)
+    local a = rndrad()
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 8          -- etAim(0, 3) / etCount(0, 1, 8)
+    p.type, p.color = 3, 6               -- etSprite(0, 3, 6)
+    p.angle, p.astep = 1.5707964, 0.0    -- etAngle(0, π/2, 0)
+    p.s1, p.s2 = 3.6, 0.6                -- etSpeed(0, 3.6, 0.6)
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 16, 90, -999999, 0.02, -999.0)
+    for _ = 1, 160 do                    -- +1: //1（时钟 1 上的 deci 让每帧恰好一轮）
+        et_angle(o, 0, a, 0.0)
+        fire_slot(o, 0)
+        a = t10_wrap(a + 3.883222)
+        task.Wait(1)
+    end
+end
+
+function s7.MBossCard1(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(90)
+    while true do                        -- //90 → //310 = 220 帧一轮
+        t10_call_async(o, s7.MBossCard_at)
+        task.Wait(160)
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(60)
+    end
+end
+
+---卡 3610　神符「杉で結ぶ古き縁」
+---  原作 MBossCard2 / _at / _at2 / _at3。t=120 重新入场并换符卡；t=210 起三个线程；
+---  主线程每 60 帧把 $I0 从 60 减到 44（做子弹的「等待帧数」）。
+---    at   （槽 0）：8 速、基准角 π，每帧角在 π ± π/16 内抖；30 发后 wait $I0。
+---    at2  （槽 1）：同 at 但精灵色 9、角在 0 ± π/16 内抖。
+---    at3  （槽 2/3）：8 发扇形（角步长 0.19634955），两侧分裂角 ±0.05235988，每 10 帧一波。
+function s7.MBossCard2_at(o)
+    local _a = rndrad()
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 1, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = 3.1415927, 0.0   -- etAngle(0, 3.1415927, 0)：ECL 里是 float 常量
+    p.s1, p.s2 = 8.0, 0.6
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 256, 45, 1, 1.5707964, 6.0)
+    p.ex[2] = tp_record(0, 128, 60, 1, 0.0, 6.0)
+    p.ex[3] = tp_record(0, 128, 50, 1, 0.0, 1.0)
+    p.ex[4] = tp_record(0, 16384, 3, 0, -999999.0, -999999.0)
+    while true do
+        for _ = 1, 30 do
+            et_angle(o, 0, 3.1415927 + rndrad() / 16, 0.0)
+            fire_slot(o, 0)
+            task.Wait(1)
+        end
+        task.Wait(o.I0)
+    end
+end
+
+function s7.MBossCard2_at2(o)
+    local _a = rndrad()
+    et_new(o, 1)
+    local p = o.pat[1]
+    p.aim, p.c1, p.c2 = 1, 1, 1
+    p.type, p.color = 3, 9
+    p.angle, p.astep = 3.1415927, 0.0   -- etAngle(1, 3.1415927, 0)：同上
+    p.s1, p.s2 = 8.0, 0.6
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 256, 45, 1, 1.5707964, 6.0)
+    p.ex[2] = tp_record(0, 128, 60, 1, 0.0, 6.0)
+    p.ex[3] = tp_record(0, 128, 50, 1, 0.0, 1.0)
+    p.ex[4] = tp_record(0, 16384, 3, 0, -999999.0, -999999.0)
+    while true do
+        for _ = 1, 30 do
+            et_angle(o, 1, 0.0 + rndrad() / 16, 0.0)
+            fire_slot(o, 1)
+            task.Wait(1)
+        end
+        task.Wait(o.I0)
+    end
+end
+
+function s7.MBossCard2_at3(o)
+    et_new(o, 2)
+    local p = o.pat[2]
+    p.aim, p.c1, p.c2 = 1, 8, 1
+    p.type, p.color = 3, 6
+    p.angle, p.astep = -1.5707964, 0.19634955
+    p.s1, p.s2 = 4.0, 0.6
+    p.ex[0] = tp_record(0, 32, 120, -999999, 0.0, 0.05235988)
+    et_new(o, 3)
+    local q = o.pat[3]
+    q.aim, q.c1, q.c2 = 1, 8, 1
+    q.type, q.color = 3, 6
+    q.angle, q.astep = -1.5707964, 0.19634955
+    q.s1, q.s2 = 4.0, 0.6
+    q.ex[0] = tp_record(0, 32, 120, -999999, 0.0, -0.05235988)
+    while true do
+        fire_slot(o, 2)
+        fire_slot(o, 3)
+        task.Wait(10)
+    end
+end
+
+function s7.MBossCard2(o)
+    t10_kill_async(o)
+    t10_enm_kill_all(o)
+    m_limit_clear(o)
+    task.Wait(120)                       -- +120: //120
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    task.Wait(90)                        -- //210
+    t10_call_async(o, s7.MBossCard2_at)
+    t10_call_async(o, s7.MBossCard2_at2)
+    t10_call_async(o, s7.MBossCard2_at3)
+    o.I0 = 60
+    while true do                        -- //210 → //270 = 60 帧一轮
+        if o.I0 > 44 then o.I0 = o.I0 - 2 end
+        task.Wait(60)
+    end
+end
+
+---卡 3611　神符「神が歩かれた御神渡り」
+---  原作 MBossCard3 / _at2 / _at3。t=180 起每 220 帧放一只「拄杖」子机（相对 0,−128），
+---  160 帧后 BOSS 自己横向插值到自机 x（movePosTime(60,4,%PLAYER_X2,%FINAL_Y)）。
+---    at2（子机）：moveVel(π/2, 4) 往下走，世界 y ≥ 448 自毁；同时开 at3。
+---    at3（子机槽 0/1）：单发 + 一子在 x 上按 sin 摆 24px（槽 1 = etCopy 槽 0，色 15）。
+function s7.MBossCard3_at3(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 1, 1
+    p.type, p.color = 5, 6
+    p.angle, p.astep = 3.1415927, 0.0   -- etAngle(0, 3.1415927, 0)
+    p.s1, p.s2 = 0.0, 0.6
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 100, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16, 90, -999999, 0.01, -999.0)
+    et_copy(o, 1, 0)
+    et_sprite(o, 1, 5, 15)
+    local b = rndrad()
+    local c = rndrad()
+    while true do                        -- +1: //1
+        et_angle(o, 0, rndrad(), 0.0)
+        fire_slot(o, 0)
+        et_offset(o, 1, math.sin(b) * 24.0, 0.0)
+        et_angle(o, 1, c, 0.0)
+        fire_slot(o, 1)
+        b = t10_wrap(b + 0.10472)
+        c = t10_wrap(c + 0.20944)
+        task.Wait(1)
+    end
+end
+
+function s7.MBossCard3_at2(o)
+    m_vel(o, "off", 1.5707964, 4.0)      -- moveVel(π/2, 4)：往下走
+    t10_call_async(o, s7.MBossCard3_at3)
+    while true do
+        if o.ecs.wy >= 448.0 then t10_delete(o) return end
+        task.Wait(1)
+    end
+end
+
+function s7.MBossCard3(o)
+    t10_kill_async(o)
+    t10_enm_kill_all(o)
+    m_limit_clear(o)
+    task.Wait(90)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    task.Wait(90)                        -- //180
+    while true do                        -- //180 → //400 = 220 帧一轮
+        spawn_pod_rel(o, 0.0, -128.0, s7.MBossCard3_at2)
+        task.Wait(160)
+        m_pos_time(o, "off", 60, 4, player.x, o.ecs.wy)
+        task.Wait(60)
+    end
+end
+
+---=====================================
+---七·B、BOSS 十张（组 5a = 洩矢諏訪子）
+---=====================================
+
+---卡 3612　開宴「二拝二拍一拝」
+---  原作 BossCard1 / _at / _at2 / _at2b / _at3。主循环 480 帧一轮：两条激光柱斜扫
+---  （_at2 / _at2b 各 20 段）、两次自机狙散弹（_at，4 组 D = 4/8/16/32）、一次双臂对扫（_at3）。
+---  ★ `%F0` 来自原作上一段 Boss1()：入场 +20 帧记下自机角。这里在卡开头补这一笔
+---    （只影响激光柱的基准角，不影响任何弹）。
+function s7.BossCard1_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 1
+    p.type, p.color = 5, 6
+    p.angle, p.astep = 0.0, 0.0
+    p.s1, p.s2 = 2.0, 1.0
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 120, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 16, 60, -999999, 0.06, 999.0)
+    -- 4 组：$D = 4 / 8 / 16 / 32，精灵 (17,1) / (12,3) / (1,6) / (0,6)
+    local groups = { { 4, 17, 1 }, { 8, 12, 3 }, { 16, 1, 6 }, { 32, 0, 6 } }
+    for g = 1, 4 do
+        local d = groups[g]
+        et_sprite(o, 0, d[2], d[3])
+        for _ = 1, d[1] do                  -- ★ 每轮先 %RANDF2、再 %RANDF、再 %RANDRAD
+            local b = rnd2() * 192.0
+            local c = -128.0 * rnd()
+            et_ex(o, 0, 2, 0, 16, 40, -999999, 0.04, 1.5707964)
+            et_offset(o, 0, b, c)
+            et_angle(o, 0, rndrad() / 16 - 1.5707964, 0.0)
+            et_speed(o, 0, 2.0, 0.0)
+            fire_slot(o, 0)
+        end
+    end
+    et_ex(o, 0, 2, 0, 16, 120, -999999, 0.03, 1.5707964)
+    et_offset(o, 0, 0.0, 0.0)
+end
+
+function s7.BossCard1_at2(o, kind)
+    local b = 0.03927
+    local c = o.F0 - 1.5707964
+    for _ = 1, 20 do
+        t10_laser_on(o, 3, kind, c, 6.0, 0, 128.0, 0, 14.0)
+        c = t10_wrap(c + b)
+        task.Wait(4)
+        t10_laser_on(o, 3, 15, c, 6.0, 0.0, 128.0, 0, 14.0)
+        c = t10_wrap(c + b)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard1_at2b(o, kind)
+    local b = 0.03927
+    local c = o.F0 + 1.5707964
+    for _ = 1, 20 do
+        t10_laser_on(o, 3, kind, c, 6.0, 0, 128.0, 0, 14.0)
+        c = t10_wrap(c - b)
+        task.Wait(4)
+        t10_laser_on(o, 3, 15, c, 6.0, 0.0, 128.0, 0, 14.0)
+        c = t10_wrap(c - b)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard1_at3(o)
+    local a = 0.034907
+    local b = o.F0 - 1.5707964
+    local c = o.F0 + 1.5707964
+    for _ = 1, 20 do
+        t10_laser_on(o, 3, 2, b, 6.0, 0, 128.0, 0, 14.0)
+        t10_laser_on(o, 3, 2, c, 6.0, 0, 128.0, 0, 14.0)
+        b = t10_wrap(b + a)
+        c = t10_wrap(c - a)
+        task.Wait(4)
+        t10_laser_on(o, 3, 15, b, 6.0, 0.0, 128.0, 0, 14.0)
+        t10_laser_on(o, 3, 15, c, 6.0, 0.0, 128.0, 0, 14.0)
+        b = t10_wrap(b + a)
+        c = t10_wrap(c - a)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard1(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    ---原作 Boss1() 在 +20 帧记 `%F0 = %ANGLE_PLAYER`，但開宴的三个子程序
+    ---（at/at2/at2b）都不读 %F0（at2 自己会覆盖它）⇒ 此处不插 wait 边界，
+    ---保持与本卡 ECL 时间轴一致（多一个 wait 会整张卡晚 1 帧）。
+    task.Wait(90)                        -- //90
+    while true do                        -- //90 → //570 = 480 帧一轮
+        t10_call_async(o, function(p) s7.BossCard1_at2(p, 2) end);  task.Wait(30)
+        t10_call_async(o, function(p) s7.BossCard1_at2b(p, 8) end); task.Wait(30)
+        s7.BossCard1_at(o); task.Wait(30)
+        s7.BossCard1_at(o); task.Wait(30)
+        t10_call_async(o, s7.BossCard1_at3); task.Wait(60)
+        m_rand(o, "off", 60, 4, 1.0); task.Wait(60)
+        t10_call_async(o, function(p) s7.BossCard1_at2b(p, 2) end); task.Wait(30)
+        t10_call_async(o, function(p) s7.BossCard1_at2(p, 8) end);  task.Wait(30)
+        s7.BossCard1_at(o); task.Wait(30)
+        s7.BossCard1_at(o); task.Wait(30)
+        t10_call_async(o, s7.BossCard1_at3); task.Wait(60)
+        m_rand(o, "off", 60, 4, 1.0); task.Wait(60)
+    end
+end
+
+---卡 3613　土着神「手長足長さま」
+---  原作 BossCard2 / _at / _at2 / _at3 / _at4。t=90 起四把激光（两把 sin 摆、两把反相 sin
+---  同时刻在 0.436332 幅度内扫）、一条 112 发慢速环（每 360 帧一波）、一条 144 发环（每 60 帧一波）。
+function s7.BossCard2_at(o, kind, phase)
+    et_new(o, 0)
+    local c = 0.436332
+    local e = 2.356194
+    while true do
+        local d = t10_wrap(e + c * math.sin(phase))
+        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0)
+        phase = t10_wrap(phase + 0.034907)
+        task.Wait(4)
+        d = t10_wrap(e + c * math.sin(phase))
+        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0)
+        phase = t10_wrap(phase + 0.034907)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard2_at2(o, kind, phase)
+    et_new(o, 0)
+    local c = 0.436332
+    local e = 0.785398
+    while true do
+        local d = t10_wrap(e - c * math.sin(phase))
+        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0)
+        phase = t10_wrap(phase + 0.034907)
+        task.Wait(4)
+        d = t10_wrap(e - c * math.sin(phase))
+        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0)
+        phase = t10_wrap(phase + 0.034907)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard2_at3(o)
+    local a = rndrad()
+    et_new(o, 1)
+    local p = o.pat[1]
+    p.aim, p.c1, p.c2 = 3, 112, 1
+    p.type, p.color = 3, 6
+    p.angle, p.astep = rndrad(), 0.0
+    p.s1, p.s2 = 0.52, 1.0
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(60)
+    while true do
+        et_angle(o, 1, rndrad(), 0.0)
+        fire_slot(o, 1)
+        task.Wait(360)
+    end
+end
+
+function s7.BossCard2_at4(o)
+    et_new(o, 2)
+    local p = o.pat[2]
+    p.aim, p.c1, p.c2 = 1, 144, 1
+    p.type, p.color = 3, 6
+    p.angle, p.astep = -1.5707964 + rndrad() / 192, 0.032724924
+    p.s1, p.s2 = 1.5, 1.0
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(60)
+    while true do
+        fire_slot(o, 2)
+        task.Wait(60)
+    end
+end
+
+function s7.BossCard2(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(90)
+    et_offset(o, 0, 0.0, -8.0)
+    t10_call_async(o, function(p) s7.BossCard2_at(p, 2, 0.0) end)
+    t10_call_async(o, function(p) s7.BossCard2_at2(p, 2, 0.0) end)
+    t10_call_async(o, function(p) s7.BossCard2_at(p, 10, 3.1415927) end)
+    t10_call_async(o, function(p) s7.BossCard2_at2(p, 10, 3.1415927) end)
+    t10_call_async(o, s7.BossCard2_at3)
+    t10_call_async(o, s7.BossCard2_at4)
+    o.I0 = 0
+    while true do                        -- //90 → //330 = 240 帧一轮
+        task.Wait(240)
+    end
+end
+
+---卡 3614　神具「洩矢の鉄の輪」
+---  原作 BossCard3 / _at。三把 48 发环（速度 2.5 / 2.0 / 1.5，逐级变慢），
+---  每轮 10 波、每波间隔 40 帧后再等 150 帧；每波的弹带自机狙分裂。
+function s7.BossCard3_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 48, 1
+    p.type, p.color = 3, 2
+    p.angle, p.astep = rndrad(), 0.09817477
+    p.s1, p.s2 = 2.4, 1.5
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16, 40, -999999, 0.04, -999999.0)
+    et_copy(o, 1, 0)
+    et_ex(o, 1, 3, 1, 1024, 1, -999999, -999999.0, -999999.0)
+    et_ex(o, 1, 4, 0, 16384, 3, 1, -999999.0, -999999.0)
+    et_copy(o, 2, 1)
+    et_ex(o, 2, 5, 1, 1024, 1, -999999, -999999.0, -999999.0)
+    et_ex(o, 2, 6, 0, 16384, 3, 0, -999999.0, -999999.0)
+    et_speed(o, 2, 1.5, 0.0)
+    et_speed(o, 1, 2.0, 0.0)
+    et_speed(o, 0, 2.5, 0.0)
+    local c = -2.356194
+    while true do
+        for _ = 1, 10 do
+            et_ex(o, 0, 1, 0, 256, 60, 1, t10_angle_player(o), 0.01)
+            et_ex(o, 1, 1, 0, 256, 60, 1, t10_angle_player(o), 0.01)
+            et_ex(o, 2, 1, 0, 256, 60, 1, t10_angle_player(o), 0.01)
+            et_angle(o, 0, c, 0.09817477)
+            et_angle(o, 1, c, 0.09817477)
+            et_angle(o, 2, c, 0.09817477)
+            c = t10_wrap(c + 0.943421)
+            fire_slot(o, 0)
+            fire_slot(o, 1)
+            fire_slot(o, 2)
+            task.Wait(40)
+        end
+        task.Wait(150)
+    end
+end
+
+function s7.BossCard3(o)
+    t10_kill_async(o)
+    m_limit_clear(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 224.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)
+    t10_call_async(o, s7.BossCard3_at)
+    while true do
+        task.Wait(60)
+    end
+end
+
+---卡 3615　源符「厭い川の翡翠」
+---  原作 BossCard4 / _at。900 帧一轮、每轮三批共六个使魔（绝对 x = ±192、y = 0）：
+---  每只使魔按自己的 %F0（初始角）/ %F1（初速）/ %F2（每 4 帧的加速度）连打 57 波后自毁，
+---  使魔本体一边按极速度 π/2、2.0 往下飘。
+function s7.BossCard4_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = o.F0, 0.09817477
+    p.s1, p.s2 = 4.0, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 64, 60, 1, -999999.0, 0.01)
+    p.ex[2] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 128, 35, 1, 0.0, 1.4)
+    m_vel(o, "off", 1.5707964, 2.0)
+    for _ = 1, 57 do                    -- +4: //4
+        et_speed(o, 0, o.F1, 0.0)
+        fire_slot(o, 0)
+        o.F1 = o.F1 + o.F2
+        task.Wait(4)
+    end
+    t10_delete(o)
+end
+
+function s7.BossCard4(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)
+    while true do                        -- //80 → //980 = 900 帧一轮
+        o.F0, o.F1, o.F2 = 0.0, 8.0, -0.1
+        spawn_pod(o, -192.0, 0.0, s7.BossCard4_at)
+        o.F0, o.F1, o.F2 = 3.141593, 1.0, 0.1
+        spawn_pod(o, 192.0, 0.0, s7.BossCard4_at)
+        task.Wait(240)
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(60)
+        o.F0, o.F1, o.F2 = 0.0, 4.0, 0.0
+        spawn_pod(o, -192.0, 0.0, s7.BossCard4_at)
+        o.F0, o.F1, o.F2 = 3.141593, 4.0, 0.0
+        spawn_pod(o, 192.0, 0.0, s7.BossCard4_at)
+        task.Wait(240)
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(60)
+        o.F0, o.F1, o.F2 = 0.0, 1.0, 0.1
+        spawn_pod(o, -192.0, 0.0, s7.BossCard4_at)
+        o.F0, o.F1, o.F2 = 3.141593, 8.0, -0.1
+        spawn_pod(o, 192.0, 0.0, s7.BossCard4_at)
+        task.Wait(240)
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(60)
+    end
+end
+
+---卡 3616　蛙狩「蛙は口ゆえ蛇に呑まるる」
+---  原作 BossCard5 / _at / _at2。840 帧一轮、每 420 帧换一只使魔（相对 0,0）。
+---  使魔绕半径 0.8 的圆（半径随每帧 +0.8）慢慢转，同时按「剩余帧数」越接近末段越密地喷弹
+---  （起点 480，<440 / <220 / <180 三段闸门；at2 只有后两段）。
+function s7.BossCard5_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 6, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = rndrad(), 0.09817477
+    p.s1, p.s2 = 0.002, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 64, 1, 1, -999999.0, 4.0)
+    p.ex[3] = tp_record(0, 64, 35, 1, -999999.0, 0.01)
+    p.ex[4] = tp_record(0, 65536, -999999, -999999, -999999.0, -999999.0)
+    m_circle(o, "off", -0.7853982, 0.05235988, 0.0, 0.8)
+    local e = 480
+    for _ = 1, 480 do                   -- +1: //1
+        ---★ 原作循环头是 `BossCard5_at_1096: if ($E--) goto ..._548`：**先减后判**。
+        ---  写成「先判后减」会让闸门整整晚一轮（2 帧）——at 的首发和 at2 的 220/180
+        ---  闸门都会跟着错位。
+        e = e - 1
+        if e < 440 then
+            et_angle(o, 0, rndrad(), 0.0)
+            et_ofs_r(o, 0, 38.0)
+            fire_slot(o, 0)
+        end
+        if e < 220 then
+            et_angle(o, 0, rndrad(), 0.0)
+            et_ofs_r(o, 0, 38.0)
+            fire_slot(o, 0)
+        end
+        if e < 180 then
+            et_angle(o, 0, rndrad(), 0.0)
+            et_ofs_r(o, 0, 38.0)
+            fire_slot(o, 0)
+        end
+        task.Wait(1)
+    end
+    t10_delete(o)
+end
+
+function s7.BossCard5_at2(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 6, 1
+    p.type, p.color = 3, 8
+    p.angle, p.astep = rndrad(), 0.09817477
+    p.s1, p.s2 = 0.002, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 64, 1, 1, -999999.0, 4.0)
+    p.ex[3] = tp_record(0, 64, 35, 1, -999999.0, 0.01)
+    p.ex[4] = tp_record(0, 65536, -999999, -999999, -999999.0, -999999.0)
+    m_circle(o, "off", -2.3561945, -0.05235988, 0.0, 0.8)
+    local e = 480
+    for _ = 1, 480 do
+        e = e - 1                          -- ★ 同 at：原作 deci 在循环头（先减后判）
+        et_angle(o, 0, rndrad(), 0.0)      -- at2 第一发**无闸门**（at 才有 $E<440）
+        et_ofs_r(o, 0, 38.0)
+        fire_slot(o, 0)
+        if e < 220 then
+            et_angle(o, 0, rndrad(), 0.0)
+            et_ofs_r(o, 0, 38.0)
+            fire_slot(o, 0)
+        end
+        if e < 180 then
+            et_angle(o, 0, rndrad(), 0.0)
+            et_ofs_r(o, 0, 38.0)
+            fire_slot(o, 0)
+        end
+        task.Wait(1)
+    end
+    t10_delete(o)
+end
+
+function s7.BossCard5(o)
+    t10_kill_async(o)
+    m_limit_clear(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 224.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)
+    while true do                        -- //80 → //920 = 840 帧一轮
+        spawn_pod_rel(o, 0.0, 0.0, s7.BossCard5_at)
+        task.Wait(420)
+        spawn_pod_rel(o, 0.0, 0.0, s7.BossCard5_at2)
+        task.Wait(420)
+    end
+end
+
+---卡 3617　土着神「七つの石と七つの木」
+---  原作 BossCard6 / _at / _at2 / _at3 / _at3b。t=30 放七只固定使魔（绝对 x 依次
+---  −168…168，各自的 $I0 = 2/14/13/10/8/6/4 = 放柱子的颜色号）；t=80 起一条主弹源
+---  每 4 帧喷一次「七连」——at3 依次按 1,7,6,5,4,3,2 给七只使魔各派一发（精灵色 = $I0）。
+function s7.BossCard6_at3b(o, a)
+    et_sprite(o, 0, 13, a)
+    et_angle(o, 0, o.F0, 0.0)
+    fire_slot(o, 0)
+    o.F0 = t10_wrap(o.F0 + 0.897598)
+end
+
+function s7.BossCard6_at3(o)
+    s7.BossCard6_at3b(o, 1)
+    s7.BossCard6_at3b(o, 7)
+    s7.BossCard6_at3b(o, 6)
+    s7.BossCard6_at3b(o, 5)
+    s7.BossCard6_at3b(o, 4)
+    s7.BossCard6_at3b(o, 3)
+    s7.BossCard6_at3b(o, 2)
+end
+
+function s7.BossCard6_at2(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = rndrad(), 0.09817477
+    p.s1, p.s2 = 1.0, 1.5
+    while true do                        -- 两段（+3.883222 / −3.883222）× 30 轮，段间等 120 帧
+        o.F0 = rndrad()
+        for _ = 1, 30 do
+            et_ex(o, 0, 0, 0, 32, 90, -999999, 0.01, 0.015707964)
+            s7.BossCard6_at3(o)
+            task.Wait(4)
+            o.F0 = t10_wrap(o.F0 + 3.883222)
+            et_ex(o, 0, 0, 0, 32, 90, -999999, 0.01, -0.015707964)
+            s7.BossCard6_at3(o)
+            o.F0 = t10_wrap(o.F0 + 3.883222)
+            task.Wait(4)
+        end
+        task.Wait(120)
+        o.F0 = rndrad()
+        for _ = 1, 30 do
+            et_ex(o, 0, 0, 0, 32, 90, -999999, 0.01, 0.015707964)
+            s7.BossCard6_at3(o)
+            task.Wait(4)
+            o.F0 = t10_wrap(o.F0 - 3.883222)
+            et_ex(o, 0, 0, 0, 32, 90, -999999, 0.01, -0.015707964)
+            s7.BossCard6_at3(o)
+            o.F0 = t10_wrap(o.F0 - 3.883222)
+            task.Wait(4)
+        end
+        task.Wait(120)
+    end
+end
+
+function s7.BossCard6_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(0, 64, 120, 1, 0.0, 0.01)
+    p.ex[1] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16, 120, -999999, 0.03, -999999.0)
+    local b = o.I0
+    while true do                        -- +360: //360（60 + 300）
+        task.Wait(60)
+        t10_laser_on(o, 3, b, 1.5707964, 8.0, 0, 320.0, 0.0, 16.0)
+        task.Wait(300)
+    end
+end
+
+function s7.BossCard6(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(30)
+    local xs = { -168.0, -112.0, -56.0, 0.0, 56.0, 112.0, 168.0 }
+    local ks = { 2, 14, 13, 10, 8, 6, 4 }
+    for i = 1, 7 do
+        o.I0 = ks[i]
+        spawn_pod(o, xs[i], 0.0, s7.BossCard6_at)
+    end
+    task.Wait(50)                        -- //80
+    t10_call_async(o, s7.BossCard6_at2)
+    while true do                        -- //80 → //440 = 360 帧一轮
+        task.Wait(360)
+    end
+end
+
+---卡 3618　土着神「ケロちゃん風雨に負けず」
+---  原作 BossCard7 / _at / _at2。t=80 起一条波形弹源（角在 −π/2 ± 0.5235988 间摆、
+---  角步长 0.3926991），配一条 8 发扇（基准角 = 未初始化的 %F0 = 0）与一子在 delay 后
+---  每 4 帧发一发随机角、速度 1.0+%RANDF·0.8 的弹。主循环每 120 帧一次 moveRand。
+function s7.BossCard7_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 8, 1
+    p.type, p.color = 18, 0
+    p.angle, p.astep = o.F0, 0.09817477
+    p.s1, p.s2 = 4.0, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 240, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16, 120, -999999, 0.032, 1.5707964)
+    et_copy(o, 1, 0)
+    et_sprite(o, 1, 3, 8)
+    local c = 0.0
+    t10_call_async(o, s7.BossCard7_at2)
+    while true do                        -- +4: //4
+        local a = 0.5235988 * math.sin(c) - 1.5707964
+        et_angle(o, 0, a, 0.3926991)
+        et_speed(o, 0, 2.5, 0.0)
+        fire_slot(o, 0)
+        c = t10_wrap(c + 0.10472)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard7_at2(o)
+    task.Wait(100)
+    while true do                        -- +4: //4
+        et_angle(o, 1, -1.5707964 + rndrad() / 8, 0.3926991)
+        et_speed(o, 1, 1.0 + rnd() * 0.8, 0.0)
+        fire_slot(o, 1)
+        task.Wait(4)
+    end
+end
+
+function s7.BossCard7(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)
+    t10_call_async(o, s7.BossCard7_at)
+    while true do                        -- //80 → //200 = 120 帧一轮
+        task.Wait(60)
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(60)
+    end
+end
+
+---卡 3619　土着神「宝永四年の赤蛙」（耐久）
+---  原作 BossCard8 / _at / _at2。t=80 放第一只使魔，+1260 帧后再放第二只（原作 ECL 的
+---  循环只回到 `wait(2400)` —— 那之后不再生成，本移植版照抄，不擅自改成「循环生成」）。
+---  使魔：先绕半径 0→0.8 的圆转，再横移到自机 x、按极速度冲一段、速度衰减到 0，之后
+---  每 80 帧重新朝自机冲一次（16.0 → 0 用 60 帧）。
+function s7.BossCard8_at2(o)
+    while true do                        -- +2: //2
+        et_angle(o, 0, rndrad(), 0.0)
+        et_ofs_r(o, 0, 4.0)
+        fire_slot(o, 0)
+        task.Wait(2)
+    end
+end
+
+function s7.BossCard8_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 3, 1
+    p.type, p.color = 3, 2
+    p.angle, p.astep = rndrad(), 0.09817477
+    p.s1, p.s2 = 0.002, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 340, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16384, 3, 15, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 32768, 60, -999999, -999999.0, -999999.0)
+    p.ex[4] = tp_record(0, 64, 1, 1, -999999.0, 5.0)
+    p.ex[5] = tp_record(0, 16384, 3, 15, -999999.0, -999999.0)
+    p.ex[6] = tp_record(0, 64, 35, 1, -999999.0, 0.01)
+    p.ex[7] = tp_record(0, 65536, -999999, -999999, -999999.0, -999999.0)
+    m_circle(o, "off", -0.7853982, 0.05235988, 0.0, 0.8)
+    t10_call_async(o, s7.BossCard8_at2)
+    m_pos_time(o, "off", 60, 4, o.ecs.wx, 128.0)   -- %FINAL_X = 生成时的世界 x
+    task.Wait(60)                        -- //60：原作此处 anmPlay(0, 442)（纯视觉，但占一个时间组）
+    task.Wait(20)                        -- //80
+    m_vel(o, "off", t10_angle_player(o), 8.0)
+    m_vel_time(o, "off", 100, 4, t10_angle_player(o), 0.0)
+    task.Wait(100)                       -- //180：原作 anmPlay(0, 442)
+    task.Wait(20)                        -- //200
+    while true do                        -- //200 → //280 = 80 帧一轮
+        m_vel(o, "off", t10_angle_player(o), 16.0)
+        m_vel_time(o, "off", 60, 4, t10_angle_player(o), 0.0)
+        task.Wait(60)                    -- //260：原作 anmPlay(0, 442)
+        task.Wait(20)                    -- //280
+    end
+end
+
+function s7.BossCard8(o)
+    t10_kill_async(o)
+    m_limit_clear(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 224.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)
+    spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
+    task.Wait(1200)
+    task.Wait(60)                        -- //1340
+    spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
+    while true do                        -- 原作此处只回到 wait(2400)，不再生成
+        task.Wait(2400)
+    end
+end
+
+---卡 3620　「諏訪大戦　～ 土着神話 vs 中央神話」（耐久）
+---  原作 BossCard9 / _at / _at2 / _MoveSin。上半拍自下缘（y=448）升起六只「石」使魔
+---  （x = −192,−128,−64,64,128,192，跳过 0；%F0 在两值间交替），下半拍自上缘（y=0）
+---  落七只（中间那只在 $I1 ≥ 5 时不再生成）。两半拍之间各等 $C 帧，$C 从 460 每次 −50 到 60 为止。
+function s7.BossCard9_MoveSin(o)
+    local a = o.F0
+    local c = 0.0
+    task.Wait(math.floor(rnd() * 40 + 1))
+    while true do                        -- +1: //1
+        local b = c * math.sin(a)
+        m_pos_time(o, "base", 1, 0, b, 0.0)
+        if c < 80.0 then c = c + 0.3 end
+        a = t10_wrap(a + 0.05236)
+        task.Wait(1)
+    end
+end
+
+function s7.BossCard9_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = 0.0, 0.09817477
+    p.s1, p.s2 = 0.001, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 60, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16384, 3, 4, -999999.0, -999999.0)
+    p.ex[5] = tp_record(0, 65536, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(60)
+    t10_call_async(o, s7.BossCard9_MoveSin)
+    m_vel(o, "off", -1.5707964, 2.0)
+    local f = 526 - o.I1 * 20
+    for _ = 1, 56 do                    -- +4: //4
+        task.Wait(4)
+        local d = t10_wrap(t10_final_angle(o) + 3.1415927)
+        et_ex(o, 0, 4, 0, 32768, f, -999999, -999999.0, -999999.0)
+        if f > 10 then f = f - 6 end
+        et_ex(o, 0, 3, 0, 16, 60, -999999, 0.015, d)
+        et_angle(o, 0, d, 0.0)
+        fire_slot(o, 0)
+    end
+    t10_delete(o)
+end
+
+function s7.BossCard9_at2(o)
+    task.Wait(60)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 13, 1
+    p.type, p.color = 0, 1
+    p.angle, p.astep = 0.0, 0.09817477
+    p.s1, p.s2 = 4.0, 1.5
+    p.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 200, -999999, -999999.0, -999999.0)
+    et_new(o, 1)
+    local q = o.pat[1]
+    q.aim, q.c1, q.c2 = 3, 1, 1
+    q.type, q.color = 12, 1
+    q.angle, q.astep = 0.0, 0.09817477
+    q.s1, q.s2 = 0.01, 1.5
+    q.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    q.ex[1] = tp_record(0, 8192, 200, -999999, -999999.0, -999999.0)
+    ---★ 原作的 `wait(($I2 % 80) + 10)`：%I2 可负、C 的 % 也为负 ⇒ wait 值可能是 0 或负数，
+    ---  而 ECL 的 wait(n<=0) 根本不等待（`clock -= n` 只会让时钟前进，随后的 jmp 又把
+    ---  时钟归零）。这里若老老实实写 task.Wait(负/0) 会白白多耗 1 帧 ⇒ 只在正数时才等。
+    local w = t10_imod(o.I2, 80) + 10
+    if w > 0 then task.Wait(w) end
+    if o.I0 ~= 0 then et_sprite(o, 0, 24, 1) end
+    local e = (o.I0 == 0) and 4 or 3
+    for _ = 1, e do
+        local d = t10_wrap(t10_final_angle(o) + 3.1415927)
+        local rad = 32 * rnd()           -- ★ 先 %RANDF 再 %RANDRAD
+        local a = rndrad()
+        local bx, by = circle_pos(a, rad)
+        et_offset(o, 0, bx, by)
+        et_offset(o, 1, bx, by)
+        et_angle(o, 0, rndrad(), 0.0)
+        if o.I0 == 0 then
+            d = 1.5707964 + rndrad() / 8
+        else
+            d = t10_angle_player(o)
+        end
+        et_ex(o, 0, 2, 0, 256, 8, 1, d, 2.5)
+        et_ex(o, 1, 2, 0, 256, 8, 1, d, 2.5)
+        fire_slot(o, 0)
+        fire_slot(o, 1)
+        if o.I0 == 0 then task.Wait(70) else task.Wait(90) end
+    end
+    t10_delete(o)
+end
+
+function s7.BossCard9(o)
+    t10_kill_async(o)
+    m_limit_clear(o)
+    t10_enm_kill_all(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 224.0)
+    task.Wait(80)                        -- //80：原作在此 setInterrupt/spellEx/spellTimeout
+    task.Wait(20)                        -- //100
+    local c = 460
+    o.I0 = 0
+    o.I1 = 0
+    while true do
+        -- 上半拍：六只「石」自下缘升起（x 跳过 0）
+        local a = -192.0
+        o.F0 = (o.I0 == 0) and 3.141593 or -3.141593
+        spawn_pod(o, a, 448.0, s7.BossCard9_at); a = a + 64; o.F0 = o.F0 * (-1)
+        spawn_pod(o, a, 448.0, s7.BossCard9_at); a = a + 64; o.F0 = o.F0 * (-1)
+        spawn_pod(o, a, 448.0, s7.BossCard9_at); a = a + 128
+        spawn_pod(o, a, 448.0, s7.BossCard9_at); a = a + 64; o.F0 = o.F0 * (-1)
+        spawn_pod(o, a, 448.0, s7.BossCard9_at); a = a + 64; o.F0 = o.F0 * (-1)
+        spawn_pod(o, a, 448.0, s7.BossCard9_at)
+        task.Wait(c)
+        -- 下半拍：七只自上缘落下（中间那只在 $I1 ≥ 5 时省掉）
+        a = -192.0
+        o.I2 = t10_rand_mod60()
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2); o.I2 = o.I2 + 25; a = a + 64
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2); o.I2 = o.I2 + 25; a = a + 64
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2); o.I2 = o.I2 + 25; a = a + 64
+        if o.I1 < 5 then spawn_pod(o, a, 0.0, s7.BossCard9_at2) end
+        o.I2 = o.I2 + 25; a = a + 64
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2); o.I2 = o.I2 + 25; a = a + 64
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2); o.I2 = o.I2 + 25; a = a + 64
+        spawn_pod(o, a, 0.0, s7.BossCard9_at2)
+        o.I0 = 1 - o.I0
+        o.I1 = o.I1 + 1
+        task.Wait(c)
+        if c > 60 then c = c - 50 end
+    end
+end
+
+---卡 3621　祟符「ミシャグジさま」（耐久）
+---  原作 BossCard10 / _at / _tbl。主弹源每轮先取 %RANDRAD，两子（etCopy）分别以该角与
+---  +0.05236 出 60 发环；_tbl 读 **BOSS 血量** 与 **本机计时 %TIME** 把 $I0 推到 0→5，
+---  主弹源按 $I0 把波间隔从 100 帧一路压到 30 帧。
+function s7.BossCard10_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 60, 1
+    p.type, p.color = 3, 10
+    p.angle, p.astep = 0.0, 0.09817477
+    p.s1, p.s2 = 1.7, 1.5
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 180, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 4096, 10000, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 32768, 60, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    et_ex(o, 0, 4, 0, 32, 90, -999999, -0.01, 0.017453292)
+    et_ex(o, 1, 4, 0, 32, 90, -999999, -0.01, -0.017453292)
+    while true do
+        local a = rndrad()
+        et_angle(o, 0, a, 0.0)
+        a = a + 0.05236
+        et_angle(o, 1, a, 0.0)
+        fire_slot(o, 0)
+        fire_slot(o, 1)
+        if o.I0 == 0 then task.Wait(100)
+        elseif o.I0 == 1 then task.Wait(80)
+        elseif o.I0 == 2 then task.Wait(60)
+        elseif o.I0 == 3 then task.Wait(50)
+        elseif o.I0 == 4 then task.Wait(40)
+        elseif o.I0 == 5 then task.Wait(30) end
+    end
+end
+
+function s7.BossCard10_tbl(o)
+    local a = 0
+    o.I0 = 0
+    while true do                        -- +1: //1
+        local life = (o.th10_boss and o.th10_boss.hp) or 0
+        if a == 0 then
+            if life <= 8000 then o.I0 = o.I0 + 1; a = a + 1 end
+        elseif a == 1 then
+            if life <= 5500 then o.I0 = o.I0 + 1; a = a + 1 end
+        elseif a == 2 then
+            if life <= 3500 then o.I0 = o.I0 + 1; a = a + 1 end
+        elseif a == 3 then
+            if life <= 1700 then o.I0 = o.I0 + 1; a = a + 1 end
+        end
+        if a ~= 99 and (o.__t10frames or 0) > (160 * 60 - 20 * 60) then
+            o.I0 = 5
+            a = 99
+        end
+        task.Wait(1)
+    end
+end
+
+function s7.BossCard10(o)
+    t10_kill_async(o)
+    m_limit_clear(o)
+    t10_enm_kill_all(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    task.Wait(80)
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    task.Wait(20)                        -- //100
+    o.I0 = 0
+    o.I1 = 0
+    t10_call_async(o, s7.BossCard10_tbl)
+    t10_call_async(o, s7.BossCard10_at)
+    while true do                        -- //100 → //420 = 320 帧一轮
+        task.Wait(320)
+    end
+end
+
+---=====================================
 ---符卡注册（一个角色一个组；boss.Define 必须先于 boss.card.add）
 ---  boss.card.add 会当场按 "<字母><关卡号>" 查 _editor_boss，Define 晚一行就报
 ---  「找不到 boss」（踩过）。组 2 / 3 都是河城荷取，但原作里是**两次出场**
@@ -1813,6 +2872,9 @@ end
 boss.Define("2a", "河城荷取（中ボス）", "TH10_2", TH10_bg, { 0, 80 }, nil, "Nitori", LEVEL)
 boss.Define("3a", "河城荷取",           "TH10_2", TH10_bg, { 0, 80 }, nil, "Nitori", LEVEL)
 boss.Define("4a", "射命丸文",           "TH10_4", TH10_bg, { 0, 80 }, nil, "Aya",    LEVEL)
+--- 组 5a = stage07（Extra）BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符）。
+--- 原作 stage07 = 「ネイティブフェイス」，本仓库音乐表里没有 ⇒ 沿用 TH10_2。
+boss.Define("5a", "洩矢諏訪子",         "TH10_2", TH10_bg, { 0, 80 }, nil, "Suwako", LEVEL)
 
 ---=====================================
 ---八张符卡：{ 主 ECL 子程序, 卡名（符卡练习菜单）, 组, CARD_ID, t1秒, t2秒, t3秒, HP }
@@ -1844,6 +2906,42 @@ for _, e in ipairs(T10_CARDS) do
     ---`main` 就是上面那张卡的**原生 Lua 主函数**（不再是 TH10_SUB 里的指令表）。
     c.init = function(self) t10_boss_start(self, main) end
     ---卡片结束时把本卡生成的枪/使魔载体一起清掉（原作靠 killAllAsync/enmKillAll + 敌机回收）。
+    c.del = function(self) t10_clear_pods() end
+    boss.card.add({ { c, band } }, LEVEL, name, id)
+end
+
+---=====================================
+---stage07（Extra）十三张：{ 主 ECL 子程序, 卡名, 组, CARD_ID, t1, t2, t3, HP }
+---  组 1a = 神奈子（中 BOSS 三张）、组 5a = 洩矢諏訪子（BOSS 十张）——
+---    中 BOSS 三张挂回 1a 是刻意的：原作 stage07 的中 BOSS 也是神奈子，
+---    用 5a 会让它们顶着諏訪子的立绘出场（原作的 BOSS 是諏訪子，中 BOSS 不是）。
+---  t1/t2 = setInvuln(n)/60；t3 = spell*(…, 时间, …) 的帧数 / 60。
+---    但 3619「宝永四年の赤蛙」/ 3620「諏訪大戦」/ 3621「祟符」原作都带 spellTimeout()
+---    ⇒ 是**耐久符卡**：按本工程的约定写 t1 = t2 = t3（boss_system.lua:161 据 t1==t3
+---    判 time_sc ⇒ dmg_factor 恒 0、只靠 t3 计时结束），和 3607「無双風神」同一处理。
+---  HP = 该卡开始时 BOSS 的 lifeSet（中 BOSS 三张 2300；3619/3620/3621 是 10000）。
+---  CARD_ID 3609..3621（th35 现有 3600..3608；注册完跑 check_stage.lua --all 核对不撞号）。
+---=====================================
+local T10_CARDS_EX = {
+    { s7.MBossCard1, "神符「水眼の如き美しき源泉」",              "1a", 3609, 200 / 60, 200 / 60, 4200 / 60, 2300 },
+    { s7.MBossCard2, "神符「杉で結ぶ古き縁」",                    "1a", 3610, 320 / 60, 320 / 60, 4200 / 60, 2300 },
+    { s7.MBossCard3, "神符「神が歩かれた御神渡り」",              "1a", 3611, 150 / 60, 150 / 60, 4200 / 60, 2300 },
+    { s7.BossCard1,  "開宴「二拝二拍一拝」",                      "5a", 3612, 90 / 60,  90 / 60,  6300 / 60, 2800 },
+    { s7.BossCard2,  "土着神「手長足長さま」",                    "5a", 3613, 90 / 60,  90 / 60,  6300 / 60, 3600 },
+    { s7.BossCard3,  "神具「洩矢の鉄の輪」",                      "5a", 3614, 60 / 60,  60 / 60,  6300 / 60, 2800 },
+    { s7.BossCard4,  "源符「厭い川の翡翠」",                      "5a", 3615, 60 / 60,  60 / 60,  6300 / 60, 3600 },
+    { s7.BossCard5,  "蛙狩「蛙は口ゆえ蛇に呑まるる」",            "5a", 3616, 60 / 60,  60 / 60,  6300 / 60, 3500 },
+    { s7.BossCard6,  "土着神「七つの石と七つの木」",              "5a", 3617, 60 / 60,  60 / 60,  6300 / 60, 3500 },
+    { s7.BossCard7,  "土着神「ケロちゃん風雨に負けず」",          "5a", 3618, 60 / 60,  60 / 60,  6300 / 60, 4500 },
+    { s7.BossCard8,  "土着神「宝永四年の赤蛙」",                  "5a", 3619, 2400 / 60, 2400 / 60, 2400 / 60, 10000 },
+    { s7.BossCard9,  "「諏訪大戦　～ 土着神話 vs 中央神話」",     "5a", 3620, 5040 / 60, 5040 / 60, 5040 / 60, 10000 },
+    { s7.BossCard10, "祟符「ミシャグジさま」",                    "5a", 3621, 9600 / 60, 9600 / 60, 9600 / 60, 10000 },
+}
+
+for _, e in ipairs(T10_CARDS_EX) do
+    local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local c = boss.card.New(name, t1, t2, t3, hp)
+    c.init = function(self) t10_boss_start(self, main) end
     c.del = function(self) t10_clear_pods() end
     boss.card.add({ { c, band } }, LEVEL, name, id)
 end

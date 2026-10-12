@@ -1313,6 +1313,7 @@ NewStage("TH35", "风神录", 33, function(self)
         ---  组 2 = stage03 中 BOSS 河城荷取（光学「ハイドロカモフラージュ」）；
         ---  组 3 = stage03 BOSS    河城荷取（漂溺 / 水符 / 河童）；
         ---  组 4 = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）。
+        ---  组 5 = stage07（Extra）BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符）。
         ---一个角色一个组；boss.CreateGroup 会依次把该组打完再返回（boss.lua:226），
         ---所以连着调用就是「打完一组再上下一组」。
         boss.CreateGroup(1, self.level)
@@ -1322,6 +1323,8 @@ NewStage("TH35", "风神录", 33, function(self)
         boss.CreateGroup(3, self.level)
         task.Wait(120)
         boss.CreateGroup(4, self.level)
+        task.Wait(120)
+        boss.CreateGroup(5, self.level)
         task.Wait(120)
     end)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。
