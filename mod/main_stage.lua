@@ -1309,8 +1309,19 @@ NewStage("TH35", "风神录", 33, function(self)
     ---与 mod/GAME/th35.lua 里 boss.Define 用的那两个参数（"TH10_2" + TH10_bg）必须一致。
     self:Option(TH10_bg, "TH10_2")
     self:Task(function()
-        ---只有一个 boss（editname "1a"）：六面 BOSS 八坂神奈子，最后一张符卡「風神様の神徳」。
+        ---  组 1 = 六面 BOSS 八坂神奈子，最后一张符卡「風神様の神徳」；
+        ---  组 2 = stage03 中 BOSS 河城荷取（光学「ハイドロカモフラージュ」）；
+        ---  组 3 = stage03 BOSS    河城荷取（漂溺 / 水符 / 河童）；
+        ---  组 4 = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）。
+        ---一个角色一个组；boss.CreateGroup 会依次把该组打完再返回（boss.lua:226），
+        ---所以连着调用就是「打完一组再上下一组」。
         boss.CreateGroup(1, self.level)
+        task.Wait(120)
+        boss.CreateGroup(2, self.level)
+        task.Wait(120)
+        boss.CreateGroup(3, self.level)
+        task.Wait(120)
+        boss.CreateGroup(4, self.level)
         task.Wait(120)
     end)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。
@@ -1323,4 +1334,3 @@ NewStage("SUMMARY", nil, 1, function(self)
     ext.notUIdraw = true
     self.level = 1
 end)
-

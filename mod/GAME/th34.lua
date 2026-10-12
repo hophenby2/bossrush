@@ -10580,8 +10580,10 @@ local function TH34_add_stage56_boss()
     ---  · 原作 INIT_BULLET_CMD 的 0x2000 段是 spawnDelay（`BulletManager.cpp:437`），
     ---    本仓库的 TH34_cmdbullet 没有这一支（写进 stages 会卡在第一段），故一律略去；
     ---    表现是「弹幕比原作稍早出现」。
-    ---  · 本体瞬移（幽鬼剣 sub43/44、獄神剣 sub59/60 的 SET_POS）只搬弹幕与斩击判定，
-    ---    本体留在原地（同 stage6 各卡）。
+    ---  · 本体落位：原作各符卡 sub 里的 `SET_POS`（幽鬼剣 sub43/44、獄神剣 sub59/60）
+    ---    与开卡 `MOVE_POS_TIME`（修羅剣 → (192,64)、畜趣剣 → (192,128)、
+    ---    人神剣 → (352,416)、天神剣 → (192,96)…）都照搬，`self.x/self.y` 与原作一致。
+    ---    （难度链「同帧跳转」把 L 行那条 MOVE 放在**卡片第 0 帧**起跑——见各卡注释。）
     ---  · 畜趣剣 L 行**原作就没有弹**：sub67/68 的发弹指令 `skipInstrOnDifficulty` 只置了
     ---    E/N 两位（`d=E`/`d=N`，`EclManager.cpp:934`），H/L 上两只轮子一枪不发。
     ---    移植照 L 行原样搬（只搬轮子出场/收场的演出，不补任何弹，详见该卡注释）。
@@ -10721,8 +10723,9 @@ local function TH34_add_stage56_boss()
     ---差异 67：INIT_BULLET_CMD slot0 的 `0x2000 spawnDelay 160` 略（只影响出屏回收）。
     scard("餓王剣「餓鬼十王の報い」", 4403, 50, 1500, false, function(self)
         ---sub43/44 的共用骨架（`startOff`/`step` 区分左右两个子程的 f0）。
-        local function sweep(startOff, step)
+        local function sweep(startOff, step, teleX)
             task.Wait(170)                     -- 子程 +0：SUB_CALL 2（120）+ t=20 + t=50
+            self.x = teleX                     -- 原作 sub43/44 #7 SET_POS(f3_0, POS_Y)
             slash5(self.y + 7)                 -- 原作 SPAWN_ENEMY_ABS 61 (192, posY−7)
             task.Wait(30)                      -- → 子程 +200
             local f0 = rf(32, startOff)        -- 原作 RAND_FLOAT_ADD f0 32 startOff
@@ -10747,8 +10750,8 @@ local function TH34_add_stage56_boss()
         task.New(self, function()
             task.Wait(120)                     -- 原作 t=480 的 SUB_CALL 44
             while true do
-                sweep(368, -24)                -- 原作 SUB_CALL 44（gf0=64，左挥砍）
-                sweep(-16, 24)                 -- 原作 SUB_CALL 43（gf0=320，右挥砍）
+                sweep(368, -24, -128)          -- 原作 SUB_CALL 44（gf0=64，本体到左侧）
+                sweep(-16, 24, 128)            -- 原作 SUB_CALL 43（gf0=320，本体到右侧）
             end
         end)
     end, { skin = skin5, enter = enter5at(0, 112, 120, 128, -32) })
@@ -10857,16 +10860,22 @@ local function TH34_add_stage56_boss()
             local OFFS = { -7, -49, 63, -105, 119 }
             ---原作主循环（`JUMP 570 -112`）：t=570 SUB_CALL 59（110 帧，内部 t=50 落斩）
             ---→ 等 90 帧 → t=660 SUB_CALL 60（同样 110 帧 / t=50 落斩）→ 等 90 帧 → 回 t=570。
-            local function slashbar()
-                task.Wait(50)                    -- sub59/60 的 t=50
+            ---原作 sub59/60 的 #7 `SET_POS *f3_0 *f3_1`（sub57 在 SUB_CALL 前写
+            ---GLOBAL_FLOAT_1 = 320 / 64、GLOBAL_FLOAT_2 = POS_Y）：本体瞬移到斩击那一侧。
+            ---y 不动（= POS_Y），只换 x；斩击判定本身在绝对 (192, y)，不受影响。
+            local function slashbar(teleX)
+                ---★ sub59/60 的 t=0 有 `SUB_CALL 2`（gI0=30 ⇒ 30×4 = 120 帧阻塞），
+                ---  SET_POS / SPAWN_ENEMY_ABS 61 都在墙钟 +170（= 120 + t=20 + t=50）。
+                task.Wait(170)                   -- sub59/60：SUB_CALL 2（120）+ t=20 + t=50
+                self.x = teleX                   -- 原作 SET_POS(f3_0, POS_Y)
                 for _, o in ipairs(OFFS) do slash5(self.y + o) end
                 task.Wait(60)                    -- sub59/60 的 t=110 SUB_RET
             end
             task.Wait(90)                        -- t=480 → 570
             while true do
-                slashbar()                       -- sub59
+                slashbar(128)                    -- sub59（gf0=320 ⇒ 本体到右侧）
                 task.Wait(90)                    -- t=570 → 660
-                slashbar()                       -- sub60
+                slashbar(-128)                   -- sub60（gf0=64 ⇒ 本体到左侧）
                 task.Wait(90)                    -- t=660 → 750 JUMP 回 570
             end
         end)
@@ -10969,9 +10978,11 @@ local function TH34_add_stage56_boss()
                 task.Wait(60)
             end
         end)
-    end, OPT5)
-
-    ---──────────────────── 符卡 畜趣剣「無為無策の冥罰」（原作 sub66/69） ────────────────────
+    ---★ 原作 sub62 的 L 行：t=0 的 `JNEQ DIFF 2` 把子程时间拉到 120，
+    ---  t=120 的 `JNEQ DIFF 3` 对 L 不跳 ⇒ 紧跟的 `MOVE_POS_TIME 120 4 192 64`
+    ---  在**第 0 帧**起跑（我们 (0,160)）——本体全程停在这个「高位」上，
+    ---  旧版用默认进场 (0,96) 就停住了（差 64px；jumpcmp 抓不到，因为本体整卡不动）。
+    end, { skin = skin5, enter = enter5at(0, 112, 120, 0, 160) })
     ---原作 sub66 的 **Lunatic 行**既不声明符卡、轮子也一枪不发：sub67/sub68 的发弹指令
     ---（SPREAD_ABS）`skipInstrOnDifficulty` 只置了 E/N 两位（0x01/0x02，`EclManager.cpp:934`），
     ---H/L 上整条跳过；原作 H/L 这一格走的是「修羅剣」那一支（sub52 的
@@ -11000,7 +11011,9 @@ local function TH34_add_stage56_boss()
             ---原作 sub69：从 x0=进 sub69 时的本体 X 到 gf0 铺一排轮子。
             local function wheels(gx, gy)
                 local x0 = self.x                   -- 原作 #5：f0 = X
-                task.Wait(120)                      -- 原作 SUB_CALL 2
+                ---★ 原作 sub69 的 t=0 有 `SUB_CALL 2`（gI0=30 ⇒ 30×4 = 120 帧），
+                ---  之后 t=20 + t=50 才 SET_POS / 落 wheel ⇒ 墙钟 +170。
+                task.Wait(170)                      -- 原作 SUB_CALL 2（120）+ t=20 + t=50
                 self.x, self.y = gx, gy             -- 原作 SET_POS(gf0, gf1)
                 local step = (gx - x0) / 8          -- 原作 f1 = (gf0 − X)/8
                 local x = x0
@@ -11012,9 +11025,13 @@ local function TH34_add_stage56_boss()
                     x = x + step
                     task.Wait(6)                    -- 原作 t=62 的 DEC_JUMP ⇒ 下一拍
                 end
-                task.Wait(12)                       -- 原作 t=110 → 122（PLAY_SOUND/SUB_RET）
+                ---★ 最后一拍 DEC_JUMP 落在 t=62（不是 t=110），到 t=122 SUB_RET 还有 60 帧。
+                task.Wait(60)                       -- 原作 t=62 → 122（PLAY_SOUND/SUB_RET）
+                
             end
-            task.Wait(260)                          -- 原作 t=240 的装填 + 到 t=260
+            ---★ 原作 sub66 的 L 行进法是三连 `JNEQ *DIFFICULTY` **同一帧**跳到目标行
+            ---  （0→120→240），t=240 那一块在第 0 帧就跑完，t=260 只在第 **20** 帧。
+            task.Wait(20)                           -- 原作 t=240 装填 → t=260
             while true do
                 wheels(-128, 0)                     -- gf0=64  (TH07) → 我们 −128
                 wheels(128, 0)                      -- gf0=320 (TH07) → 我们 +128
@@ -11035,10 +11052,13 @@ local function TH34_add_stage56_boss()
             ---L 行：t=480 落在第 120 帧；t=540 SUB_CALL 71（126 帧）**阻塞**，
             ---所以 t=540 剩下的 MOVE_POS_TIME / SPAWN_ENEMY_ABS 72 都在第 306 帧才执行
             ---（sub74 的判定条在 sub71 内部 t=50 ⇒ 第 230 帧）。
-            task.Wait(180)                        -- t=540
-            task.Wait(50)
-            slash5(self.y - 16, 448, 30000)       -- 原作 sub71 t=50 的 SPAWN_ENEMY_ABS 74
-            task.Wait(76)                         -- sub71 余下 76 帧 → 第 306 帧
+            task.Wait(180)                        -- 原作 t=540
+            ---★ sub71 的 t=0 有 `SUB_CALL 2`（gI0=4 ⇒ 4×4 = 16 帧阻塞）：
+            ---  SET_POS / SPAWN_ENEMY_ABS 74 都在墙钟 +66（= 16 + t=20 + t=50）。
+            task.Wait(66)                         -- sub71：SUB_CALL 2（16）+ t=20 + t=50
+            self.x = 32 - 192                     -- 原作 sub71 #7 SET_POS(f3_0=32, POS_Y)
+            slash5(self.y - 16, 448, 30000)       -- 原作 SPAWN_ENEMY_ABS 74 (192, posY+16)
+            task.Wait(60)                         -- sub71 余下 60 帧 → 第 306 帧
             bmove(self, 120, 4, -144, 128)        -- 原作 t=540 MOVE_POS_TIME(120,4,48,96)
             ---原作 sub72：每 3 帧从底部（屏幕外）随机 x 打一发向上的弹。
             task.New(self, function()
@@ -11083,9 +11103,13 @@ local function TH34_add_stage56_boss()
                 task.Wait(60)
             end
         end)
-    end, OPT5)
-
-    ---──────────────────── 符卡 天神剣「三魂七魄」（原作 sub75/76/77） ────────────────────
+    ---★ 原作 sub70 的 L 行：难度链 t=0→120→240→360 同帧走完，t=360 的
+    ---  `MOVE_POS_TIME 120 4 352 416` 在**第 0 帧**起跑 ⇒ 本体在整个前摇期间停在
+    ---  TH07 (352,416)（我们 (160,−192)，场地右下角），t=540 的 SET_POS(32,POS_Y)
+    ---  才把它平移到 x=32、t=540 的 MOVE_POS_TIME(120,4,48,96) 再升到 (48,96)。
+    ---  旧版本体一直停在 (192,128)：不但位置错，`slash5(self.y−16)` 那条 4412×32
+    ---  的判定条也跟着差了 288px（原作在 TH07 y=432，旧版在 y=112）。
+    end, { skin = skin5, enter = enter5at(-224, -192, 120, 160, -192) })
     ---原作 sub75 的四个难度分支是**同一帧连跳三次**（每次 JNEQ 都把 context 的 t 重置成
     ---目标行自己的 t），所以 L 行整段设置在卡片第 60 帧就跑完（MOVE_POS_TIME 120 帧到
     ---(192,96) → 我们 (0,128)）；真正的循环从 t=540（第 180 帧）起，**180 帧一轮**：
@@ -11675,6 +11699,10 @@ local function TH34_add_stage56_boss()
 
     ---──────────────────── アリス 非符 2（原作 sub36 的非符段 + sub39，L 行） ────────────────────
     ---原作 sub36 是本体「非符 2」这一个攻击槽的**顶层脚本**（sub32 的死亡回调接过来的）：
+    ---★ 补注（本轮校准）：sub36 的 t=340 还有 `sd=03 SUB_CALL 46`（紅符）/ `sd=0c
+    ---  SUB_CALL 48`（白符）——它们是**下一张攻击**（見 4439 / 4435 两张卡），
+    ---  且 sub46/sub48 都以 `JUMP` 回到自身、永不 `SUB_RET`（无限循环），
+    ---  所以本非符只搬 t=340 之前的内容，t=340 之后由 boss rush 的下一张卡承接。
     ---  · t=0 `END_SPELLCARD`、`SET_LIFE 2000`、`SET_BOSS_HEALTH 0 0 2000`、接触判定开；
     ---    `SET_CAN_BE_DAMAGED 0`，**到 t=340 才 = 1** ⇒ 这 340 帧本体免伤；
     ---  · t=180 只 `SUB_CALL 39` 一次 —— 这是整段非符**唯一**的发弹；
@@ -15071,7 +15099,11 @@ local function TH34_add_stage56_boss()
                 task.Wait(60)                   -- t=528 JUMP 回 t=240（一轮 396 帧）
             end
         end)
-    end, { skin = skin3, enter = enter3b })
+    ---★ 原作 sub46 的 L 行：t=0 的 `JNEQ DIFF 0` 把子程时间拉到 120 ⇒ t=120 的
+    ---  `MOVE_POS_TIME 120 4 192 112` 在**第 0 帧**起跑，本体停到 TH07 (192,112)
+    ---  （我们 (0,112)）。旧版用 enter3b 停在 (0,96)（=TH07 128），差 16px，
+    ---  后面 `drift` 的 GET_EXIT_ANGLE 基准点也跟着错。
+    end, { skin = skin3, enter = enter3c })
 
     ---原作 sub51 / sub53 的「人形」（闇符 / 廻符共用同一套四段循环，只有弹型与指令不同）：
     ---  · 公转：圆心 = 本体**当前**位置、半径 = 本体 ORBR、角速度 = 本体 ORBAV。
