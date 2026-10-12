@@ -1309,11 +1309,21 @@ NewStage("TH35", "风神录", 33, function(self)
     ---与 mod/GAME/th35.lua 里 boss.Define 用的那两个参数（"TH10_2" + TH10_bg）必须一致。
     self:Option(TH10_bg, "TH10_2")
     self:Task(function()
-        ---  组 1 = 六面 BOSS 八坂神奈子，最后一张符卡「風神様の神徳」；
+        ---  组 1 = 六面 BOSS 八坂神奈子（風神様の神徳）
+        ---        + stage07 中 BOSS 三张（神符「水眼の如き美しき源泉」/「杉で結ぶ古き縁」/
+        ---          「神が歩かれた御神渡り」）+ stage05 BOSS 神奈子四张（奇跡「客星の明るすぎる夜」/
+        ---          開海「モーゼの奇跡」/ 準備「サモンタケミナカタ」/ 大奇跡「八坂の神風」）——
+        ---          stage07 的中 BOSS 也是神奈子，所以和 stage05 的 BOSS 共用 1a 组
+        ---          （用别的组会让中 BOSS 顶着諏訪子的立绘出场）；
         ---  组 2 = stage03 中 BOSS 河城荷取（光学「ハイドロカモフラージュ」）；
         ---  组 3 = stage03 BOSS    河城荷取（漂溺 / 水符 / 河童）；
-        ---  组 4 = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）。
-        ---  组 5 = stage07（Extra）BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符）。
+        ---  组 4 = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）；
+        ---  组 5 = stage07（Extra）BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符）；
+        ---  组 6 = stage01 中 BOSS 秋静葉（葉符「狂いの落葉」）；
+        ---  组 7 = stage01 BOSS    秋穣子（秋符「秋の空と乙女の心」/ 豊作「穀物神の約束」）；
+        ---  组 8 = stage02 BOSS    犬走椛（厄符「厄神様のバイオリズム」/ 疵痕「壊されたお守り」/
+        ---                              悲運「大鐘婆の火」/ 創符「流刑人形」）；
+        ---  组 9 = stage05 中 BOSS 東風谷早苗（秘術「一子相伝の弾幕」）。
         ---一个角色一个组；boss.CreateGroup 会依次把该组打完再返回（boss.lua:226），
         ---所以连着调用就是「打完一组再上下一组」。
         boss.CreateGroup(1, self.level)
@@ -1325,6 +1335,15 @@ NewStage("TH35", "风神录", 33, function(self)
         boss.CreateGroup(4, self.level)
         task.Wait(120)
         boss.CreateGroup(5, self.level)
+        task.Wait(120)
+        ---stage01 / stage02 / stage05（th35.lua 下半段"八、stage01/02/05 符卡"）。
+        boss.CreateGroup(6, self.level)
+        task.Wait(120)
+        boss.CreateGroup(7, self.level)
+        task.Wait(120)
+        boss.CreateGroup(8, self.level)
+        task.Wait(120)
+        boss.CreateGroup(9, self.level)
         task.Wait(120)
     end)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。

@@ -2945,3 +2945,1315 @@ for _, e in ipairs(T10_CARDS_EX) do
     c.del = function(self) t10_clear_pods() end
     boss.card.add({ { c, band } }, LEVEL, name, id)
 end
+--=====================================
+-- 八、stage01 / stage02 / stage05 符卡（原生 LuaSTG；只做 Lunatic 难度行）
+--   逐张对齐原作 ECL（thecl -d 10 -m th10.eclm -r -x 反汇编）。
+--   演出/流程指令（spell*/anm*/playSound/setChapter/flagSet/drop*/bombShield/
+--   etClear/etCancel/laser*/dialogWait/…）在本移植里按无效果处理或由符卡框架接管，
+--   但它们占的 wait 边界按 ECL 时间戳原样补齐（漏一条会让整张卡偏移一帧）。
+--   「下一张卡」不移植：setInterrupt/setTimeout 指向的后续子程序交给本仓库符卡框架。
+--   ★ 三个命名空间用 table 字段而不是 40 个 local function：主 chunk 的局部早已逼近
+--     LuaJIT 的 200 上限（`do … end` 不顶用，只有表字段不占 local）。
+--=====================================
+local s1 = {}
+local s2 = {}
+local s5 = {}
+
+--=====================================
+--八·A、stage01（秋静葉 中 BOSS 一张 + 秋穣子 BOSS 两张）
+--=====================================
+
+---卡 3630　葉符「狂いの落葉」（中 BOSS 秋静葉）
+---  原作 MBossCard1 / MBossCard1_at。
+---  主线程 t=150 起只叫一次 at，之后进入「每 120 帧 moveRand(60,4,2.0)」的死循环
+---  （原作靠 2160 帧 setInterrupt→MBossDead 结束整张卡）。
+---    at（槽 0）：每 3 帧一轮，t=1/2/3 各出一枪；t=3 那一轮出两枪（色 2 / 色 1）。
+---      每枪先取 %RANDRAD/6 做「正负分流」，再按分支写 ex[3] 的 f1（0 或 π）——
+---      t=1 分支 a>0 时 [0] -= π，t=2 分支 a>0 时 [0] = ([0] − 5π)/6，
+---      t=3 分支两枪都是 [0] = %RANDRAD/6 − π/2。随机消耗顺序必须照抄。
+function s1.MBossCard1_at(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 1, 1
+    p.type, p.color = 3, 2
+    p.angle, p.astep = 0.0, 0.0
+    p.s1, p.s2 = 1.0, 2.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 180, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 16, 120, -999999, 0.018, 1.5707964)
+    while true do
+        task.Wait(1)                       -- //1 → //2 → //3 → 回 //1
+        local a = rndrad() / 6
+        if a > 0 then
+            a = a - 3.1415927
+            p.ex[3] = tp_record(0, 16, 120, -999999, 0.01, 0.0)
+        else
+            p.ex[3] = tp_record(0, 16, 120, -999999, 0.01, 3.1415927)
+        end
+        et_sprite(o, 0, 3, 12)
+        et_angle(o, 0, a, 0.0)
+        et_speed(o, 0, rnd() * 1.5 + 0.4, 0.0)
+        fire_slot(o, 0)
+        task.Wait(1)                       -- //2
+        local b = rndrad() / 6
+        if b > 0 then
+            b = (b - 3.1415927 * 5) / 6
+            p.ex[3] = tp_record(0, 16, 120, -999999, 0.01, 0.0)
+        else
+            b = b - 3.1415927 / 6
+            p.ex[3] = tp_record(0, 16, 120, -999999, 0.01, 3.1415927)
+        end
+        et_angle(o, 0, b, 0.0)
+        et_sprite(o, 0, 3, 13)
+        et_speed(o, 0, rnd() * 1.5 + 0.4, 0.0)
+        fire_slot(o, 0)
+        task.Wait(1)                       -- //3
+        local c = rndrad() / 6 - 3.1415927 / 2
+        et_angle(o, 0, c, 0.0)
+        p.ex[3] = tp_record(0, -2147483648, -999999, -999999, -999999.0, -999999.0)
+        et_speed(o, 0, rnd() * 1.5 + 0.4, 0.0)
+        et_sprite(o, 0, 3, 2)
+        fire_slot(o, 0)
+        local d = rndrad() / 6 - 3.1415927 / 2
+        et_angle(o, 0, d, 0.0)
+        p.ex[3] = tp_record(0, -2147483648, -999999, -999999, -999999.0, -999999.0)
+        et_speed(o, 0, rnd() * 1.5 + 0.4, 0.0)
+        et_sprite(o, 0, 3, 1)
+        fire_slot(o, 0)
+    end
+end
+
+function s1.MBossCard1(o)
+    t10_kill_async(o)
+    m_limit(o, 0.0, 80.0, 280.0, 64.0)     -- moveLimit(0, 80, 280, 64)
+    m_pos_time(o, "off", 60, 4, 0.0, 112.0)
+    task.Wait(60)                          -- //60：anmPlay(0, 409)（纯视觉，但占一个时间边界）
+    task.Wait(90)                          -- //150
+    t10_call_async(o, s1.MBossCard1_at)
+    task.Wait(120)                         -- //150 → //270
+    while true do                          -- 每 120 帧一轮
+        m_rand(o, "off", 60, 4, 2.0)
+        task.Wait(120)
+    end
+end
+
+---卡 3631　秋符「秋の空と乙女の心」（BOSS 秋穣子 - 1；L/H 行名）
+---  原作 BossCard1 / BossCard1_at。E/N 的名字是「秋符「オータムスカイ」」（spell(2)），
+---  Lunatic 走 spell3(4) 这条（!HL）——这里只做 L 行。
+---  主循环 360 帧一轮，分上下两个「四边形枪阵」：
+---    4448 = 槽 0..3，5788 = 槽 4..7；每半段 180 帧（三个 60 帧的 moveRand+at 段）。
+---    每半段开头 %RANDRAD 定基准角、etOn 打一波，然后内层 2 次循环
+---      （deci $I4=2 ⇒ 共 3 波：f1 = 1.2 → 1.4 → 1.6，[0]/[8]/[12]/[16] 是四支的基准角），
+---      循环结束再补一波 f1 = 1.2 的定角弹。
+---    ★ 第二半段内层的 etEx 写的是 **槽 4..7**、而 etOn 打的是 **槽 0..3**
+---      —— ECL 原文如此（thecl 反汇编逐条核对过），照抄，不改「逻辑上更顺」的写法。
+---    at（槽 4）：10 发一组（aim 2 = 自机狙 + 扇形），每 10 帧一波共 3 波后返回
+---      （$I0 由 diffI 定：L 行 = 3）。
+function s1.BossCard1_at(o)
+    local n = 3                            -- diffI([0], 1,1,1,3) → L = 3
+    et_new(o, 4)
+    local p = o.pat[4]
+    p.aim, p.c1, p.c2 = 2, 10, 1
+    p.type, p.color = 12, 6
+    p.angle, p.astep = 0.0, 0.0
+    p.s1, p.s2 = 3.0, 2.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    while n > 0 do
+        n = n - 1
+        fire_slot(o, 4)
+        task.Wait(10)
+    end
+end
+
+function s1.BossCard1(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    -- ★ 入场必须按 ECL 的**每个时间戳边界**各写一个 task.Wait：探针的 task.Wait(n)
+    --   实际吃掉 n+1 帧，把 //60 / //120 / //150 三个边界并成一条 Wait(150) 会少 2 帧
+    --   （真机引擎里只有总帧数有意义，但探针对拍必须逐边界对齐）。
+    task.Wait(60)                          -- //60：anmPlay(0, 409)
+    task.Wait(60)                          -- //120：anmSelectedPlay(0)
+    task.Wait(30)                          -- //150：nop
+    -- t=150 入场：8 个槽位整套建好。每槽 c1 = $I24 = 38（L 行）、初速 2.0/2.0、
+    -- 基准角 = 本卡开头的 %RANDRAD（存在 [0]）。7 条 ex 记录逐槽照抄反汇编：
+    --   ex1/ex3 = 一对 ±π/2 的 60 帧延迟分裂（f1 = -999 不改速）
+    --   ex2/ex4 = kind 2 / 6 的 3 帧 × N 次延迟分裂（两种 kind 按槽交替）
+    --   ex5     = 60 帧延迟后按 [0]/[8]/[12]/[16] 定角的「生长环」
+    --   ex6     = 与 ex2 同 kind
+    local base = rndrad()
+    local n = 38                           -- diffI([24], 28,38,38,38)
+    local SET = {
+        {  1.5707964, 2, -1.5707964, 6,  1.5707964 },
+        { -1.5707964, 6,  1.5707964, 2, -1.0471976 },
+        {  1.5707964, 2, -1.5707964, 6,  0.8975979 },
+        { -1.5707964, 6,  1.5707964, 2, -1.2566371 },
+        { -1.5707964, 2,  1.5707964, 6, -1.5707964 },
+        {  1.5707964, 6, -1.5707964, 2,  1.0471976 },
+        { -1.5707964, 2,  1.5707964, 6, -0.8975979 },
+        {  1.5707964, 6, -1.5707964, 2,  1.2566371 },
+    }
+    for i = 0, 7 do
+        et_new(o, i)
+        local p = o.pat[i]
+        local d = SET[i + 1]
+        p.aim, p.c1, p.c2 = 3, n, 1
+        p.type, p.color = 3, 6
+        p.angle, p.astep = base, 0.0
+        p.s1, p.s2 = 2.0, 2.0
+        p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        p.ex[1] = tp_record(0, 64, 60, 1, d[1], -999.0)
+        p.ex[2] = tp_record(0, 16384, 3, d[2], -999999.0, -999999.0)
+        p.ex[3] = tp_record(0, 64, 60, 1, d[3], -999.0)
+        p.ex[4] = tp_record(0, 16384, 3, d[4], -999999.0, -999999.0)
+        p.ex[5] = tp_record(0, 64, 60, 1, d[5], 1.2)
+        p.ex[6] = tp_record(0, 16384, 3, d[2], -999999.0, -999999.0)
+    end
+    -- 两半段内层循环用的四支基准角（ECL 里的 [0]/[8]/[12]/[16]）
+    local quad1 = { 1.570796, -1.047198, 0.897598, -1.256637 }
+    -- 第二半段收尾（etEx 4..7）用的四支基准角
+    local quad2 = { -1.5707964, 1.0471976, -0.8975979, 1.2566371 }
+    while true do                          -- //150 → … → //510，共 360 帧一轮
+        -- 4448：槽 0..3
+        base = rndrad()
+        for i = 0, 3 do
+            et_angle(o, i, base, 0.0)
+            fire_slot(o, i)
+        end
+        local v = 1.2
+        for _ = 1, 2 do
+            v = v + 0.2
+            for i = 0, 3 do et_ex(o, i, 5, 0, 64, 60, 1, quad1[i + 1], v) end
+            for i = 0, 3 do fire_slot(o, i) end
+        end
+        for i = 0, 3 do et_ex(o, i, 5, 0, 64, 60, 1, quad1[i + 1], 1.2) end
+        task.Wait(60)                      -- //150 → //210
+        m_rand(o, "off", 60, 4, 2.0)
+        t10_call_async(o, s1.BossCard1_at)
+        task.Wait(60)                      -- //210 → //270
+        m_rand(o, "off", 60, 4, 2.0)
+        t10_call_async(o, s1.BossCard1_at)
+        task.Wait(60)                      -- //270 → //330
+        t10_call_async(o, s1.BossCard1_at)
+        -- 5788：槽 4..7（内层 etEx 写 4..7、etOn 打 0..3 —— 见函数头注释）
+        base = rndrad()
+        for i = 4, 7 do
+            et_angle(o, i, base, 0.0)
+            fire_slot(o, i)
+        end
+        v = 1.2
+        for _ = 1, 2 do
+            v = v + 0.2
+            for i = 4, 7 do et_ex(o, i, 5, 0, 64, 60, 1, quad1[i - 3], v) end
+            for i = 0, 3 do fire_slot(o, i) end
+        end
+        for i = 4, 7 do et_ex(o, i, 5, 0, 64, 60, 1, quad2[i - 3], 1.2) end
+        task.Wait(60)                      -- //330 → //390
+        m_rand(o, "off", 60, 4, 2.0)
+        t10_call_async(o, s1.BossCard1_at)
+        task.Wait(60)                      -- //390 → //450
+        m_rand(o, "off", 60, 4, 2.0)
+        t10_call_async(o, s1.BossCard1_at)
+        task.Wait(60)                      -- //450 → //510
+        t10_call_async(o, s1.BossCard1_at)
+        -- //510 之后 pushi/jmpNeq 把 clock 直接拨回 //150，**没有**等待：
+        -- 下一轮的 //150 组（槽 0..3 的第一波）与 t=510 同帧执行。
+    end
+end
+
+---卡 3632　豊作「穀物神の約束」（BOSS 秋穣子 - 2）
+---  原作 BossCard2 / BossCard2At1 / BossCard2At1b / BossCard2At2。E/N 名是
+---  「豊符「オヲトシハーベスター」」；L 走 spell3(8)。
+---  主循环 180 帧一轮：At1（64 根圆排激光，一帧内跑完）、At2（1 帧 1 轮的螺旋枪）、
+---  At1b（48 根直排激光）各叫一次，t=150/210/250 处按 ECL 的 ±40 帧边界推进。
+---    At1 ：[4] = %RANDRAD（角度），$I0 = 64，$F16 = 2π/64；
+---          每轮取 %RANDF2·64 当半径、%RANDRAD 当角度做 circlePos 定激光位置，
+---          再 [4] += 2π/64 —— **一帧内跑完 64 轮**（循环里没有 wait）。
+---    At2 ：螺旋枪。$F12 = 1（半径，每轮 +1）、$I0 = 110；两张弹都自机狙（aim 3/4），
+---          每轮先 [16] -= 0.15708、[20] += 0.15708 各定一条的极坐标位置。
+---    At1b：[4] = %RANDRAD，$I0 = 48，$F16 = 2π/48；48 根激光都用同一个 [4]（视觉）。
+function s1.BossCard2At1(o)
+    local ang = rndrad()
+    local cnt = 64                         -- diffI([0], 8,32,32,64)
+    local step = 6.2831855 / cnt           -- [16]
+    for _ = 1, cnt do
+        local r = rnd2() * 64              -- 先 %RANDF2（半径）
+        local a = rndrad()                 -- 再 %RANDRAD（角度）
+        local x, y = circle_pos(a, r)
+        et_offset(o, 0, x, y)
+        t10_laser_on(o, 3, 13, ang, 2.0, 0.0, 512.0, 60.0, 16.0)   -- laserStOn（视觉近似）
+        ang = t10_wrap(ang + step)
+    end
+end
+
+function s1.BossCard2At1b(o)
+    local ang = rndrad()
+    local cnt = 48                         -- diffI([0], 16,32,32,48)
+    local step = 6.2831855 / cnt
+    for _ = 1, cnt do
+        et_offset(o, 0, 0.0, 0.0)
+        t10_laser_on(o, 3, 2, ang, 2.5, 0.0, 180.0, 0.0, 14.0)     -- laserOnA（视觉近似）
+        ang = t10_wrap(ang + step)
+    end
+end
+
+function s1.BossCard2At2(o)
+    et_new(o, 0)
+    local p0 = o.pat[0]
+    p0.aim, p0.c1, p0.c2 = 3, 1, 1
+    p0.type, p0.color = 3, 2
+    p0.angle, p0.astep = 0.0, 1.0471976
+    p0.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p0.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p0.ex[2] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    et_sprite(o, 1, 3, 1)
+    et_aim(o, 1, 4)
+    local r = 1.0                          -- [12]
+    local a = rndrad()                     -- [16]
+    local b = a                            -- [20]
+    local n = 110                          -- diffI([0], 60,110,110,110)
+    for _ = 1, n do
+        r = r + 1.0
+        a = t10_wrap(a - 0.15708)
+        local x, y = circle_pos(a, r)
+        et_speed(o, 0, rnd() * 0.7 + 1.0, 1.0)
+        et_angle(o, 0, rndrad(), 1.0471976)
+        et_offset(o, 0, x, y)
+        task.Wait(1)                       -- +1: //1：etOn(0) 与 body 的 t=0 段之间差一帧
+        fire_slot(o, 0)                    -- etOn(0)
+        b = t10_wrap(b + 0.15708)          -- etOn(1) 与 etOn(0) **同帧**（都是 t=1）
+        local x2, y2 = circle_pos(b, r)
+        et_speed(o, 1, rnd() * 0.7 + 1.0, 1.0)
+        et_angle(o, 1, rndrad(), 1.0471976)
+        et_offset(o, 1, x2, y2)
+        fire_slot(o, 1)
+    end
+end
+
+function s1.BossCard2(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    task.Wait(60)                          -- //60：anmPlay(0, 409)
+    task.Wait(60)                          -- //120：anmSelectedPlay(0)
+    task.Wait(30)                          -- //150：nop
+    while true do                          -- 180 帧一轮（帧消耗 60+40+40+40）
+        t10_call_async(o, s1.BossCard2At1)
+        task.Wait(60)                      -- //150 → //210
+        t10_call_async(o, s1.BossCard2At2)
+        task.Wait(40)                      -- wait(40)：只把 clock 拨回 //170（不占帧）；
+                                           --   下一条指令仍标在 //210，所以这里要等满 40 帧
+        t10_call_async(o, s1.BossCard2At1b)
+        task.Wait(40)                      -- 第二个 wait(40)（same：先回拨、再等回 //210）
+        m_rand(o, "off", 40, 4, 3.0)       -- moveRand 的指令时间仍是 //210，本帧执行
+        task.Wait(40)                      -- //210 → //250（jmpNeq 的时间戳）
+        -- //250 之后 jmp/jmpNeq 把 clock 拨回 //150，**没有**等待
+    end
+end
+
+--=====================================
+--八·B、stage02（犬走椛 中 BOSS 一张 + BOSS 三张）
+--=====================================
+
+---ECL 时钟辅助：对应 VM 的「if 指令时间 > clock then task.Wait(指令时间 - clock)」。
+---原作 EclVm 里 wait(n) 是 clock -= n（不占帧），jmp/jmpNeq(L, T) 把 clock 直接设成 T；
+---原生代码每一步都显式写 ct，才保证与逐条 VM（以及真引擎）的帧边界完全一致。
+local function s_wait(ct, t)
+    if t > ct then task.Wait(t - ct) end
+    return t
+end
+
+---特殊敌机（= BOSS 本体）的世界 y：原作 %BOSS_Y（Enemy.cpp 的
+---ENEMY_ECL_OPERAND_SPECIAL_ENEMY_Y = specialEnemySlots[0]->worldMotion.position.y）。
+---BOSS 载体在注册时把 t10_bossref 指向自己，enmCreate 再传给子机。
+local function s_boss_y(o)
+    local b = o.t10_bossref
+    if b == nil then return 0.0 end
+    return b.ecs.wy
+end
+
+---callAsync：在同一敌机上另起线程并把实参投给它（原作 callAsync(name, a0, a4…)）
+local function s_async(o, fn, a0, a4)
+    task.New(o, function() fn(o, a0, a4) end)
+end
+
+---enmCreate（相对坐标）+ 把 BOSS 引用传给子机（%BOSS_X/%BOSS_Y 要用）
+local function s_pod(origin, dx, dy, fn)
+    local p = spawn_pod_rel(origin, dx, dy, fn)
+    p.t10_bossref = origin.t10_bossref
+    return p
+end
+
+---MBossDummyShadow / BossDummyShadow：t=0 起每帧 anmPlay 的死循环。
+---（原作 jmp(L,1) → L: anmPlay → jmpNeq 回跳；anmPlay 是纯视觉，这里只占帧。）
+function s2.MBossDummyShadow(o) while true do task.Wait(1) end end
+function s2.BossDummyShadow(o)  while true do task.Wait(1) end end
+
+---BossTrace：每帧把 offsetMotion 设成自机坐标（原作 moveBoss = COPY_PLAYER_TO_OFFSET）。
+---★ 第一帧不执行（ECL 是 jmp 到 jmpNeq 再回跳到 t=1 的组），所以 Wait 在前。
+function s2.BossTrace(o)
+    while true do
+        task.Wait(1)
+        m_pos(o, "off", player.x, t10_oy(player.y))
+    end
+end
+
+---卡 3633　厄符「厄神様のバイオリズム」（中 BOSS 犬走椛）
+---  原作 MBossCard1 / MBossAtEnemy / MBossAtEnemy2 / MBossAtEnemyAt / MBossDummyShadow。
+---  主线程：入场 60 帧后进死循环 —— 每 180 帧一对子机（t=60 出 AtEnemy、t=150 出 AtEnemy2、
+---  t=240 同帧 moveRand(40,0,1.0)+wait(40)，随后 jmpNeq 立刻回到 L412 再出一只 AtEnemy）。
+---  ★ t=240 那一帧里 moveRand、wait(40)、jmpNeq、下一次 enmCreate 全部同帧执行（clock 被
+---    wait 拨到 200 又被 jmp 设回 60），所以 AtEnemy 的出机帧是 60/240/420…
+function s2.MBossCard1(o)
+    local ct = 0
+    t10_kill_async(o)                             -- killAllAsync
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)                           -- enmKillAll
+    ct = s_wait(ct, 60)                           -- //60：anmPlay(0, 409)（视觉）
+    ct = 240                                      -- jmp(MBossCard1_572, 240)
+    ct = 60                                       -- jmpNeq(MBossCard1_412, 60)
+    while true do                                 -- L412
+        s_pod(o, 0.0, 0.0, s2.MBossAtEnemy)
+        ct = s_wait(ct, 150)                      -- //150
+        s_pod(o, 0.0, 0.0, s2.MBossAtEnemy2)
+        ct = s_wait(ct, 240)                      -- //240
+        m_rand(o, "off", 40, 0, 1.0)
+        ct = ct - 40                              -- wait(40) → clock 240→200（不占帧）
+        ct = s_wait(ct, 240)                      -- ★ pushi/jmpNeq 的时间戳仍是 //240：
+                                                  --   wait 把 clock 拨到 200 后，要等回 240
+                                                  --   才能执行（漏这条会让下一只子机早出 41 帧）
+        ct = 60                                   -- jmpNeq(L412, 60)
+    end
+end
+
+---MBossAtEnemy：绕 BOSS 逆时针外扩的子机（base 圆运动），t=120 起改成「朝自机偏 +π/6」
+---  的 60 帧极坐标插值（角 π/2 → ANGLE_PLAYER+π/6、速度 0 → 5），t=240 自毁。
+function s2.MBossAtEnemy(o)
+    local ct = 0
+    s_async(o, s2.MBossDummyShadow)               -- callAsync("MBossDummyShadow")
+    s_async(o, s2.MBossAtEnemyAt, 0.0, 0.15707964)
+    m_circle(o, "base", 0.0, 0.05235988, 0.0, 0.53333336)
+    ct = s_wait(ct, 120)                          -- //120
+    m_vel(o, "base", 1.5707964, 0.0)
+    m_vel_time(o, "base", 60, 0, t10_angle_player(o) + 3.1415927 / 6, 5.0)
+    ct = s_wait(ct, 180)                          -- //180：etProtectRange（视觉）
+    ct = s_wait(ct, 240)                          -- //240
+    t10_delete(o)
+end
+
+---MBossAtEnemy2：与 MBossAtEnemy 同构、符号相反（起始角 π、角速度 −π/100、
+---  插值角 = ANGLE_PLAYER − π/6）。
+function s2.MBossAtEnemy2(o)
+    local ct = 0
+    s_async(o, s2.MBossDummyShadow)
+    s_async(o, s2.MBossAtEnemyAt, 3.1415927, -0.15707964)
+    m_circle(o, "base", 3.1415927, -0.05235988, 0.0, 0.53333336)
+    ct = s_wait(ct, 120)
+    m_vel(o, "base", 1.5707964, 0.0)
+    m_vel_time(o, "base", 60, 0, t10_angle_player(o) - 3.1415927 / 6, 5.0)
+    ct = s_wait(ct, 180)
+    ct = s_wait(ct, 240)
+    t10_delete(o)
+end
+
+---MBossAtEnemyAt 參數：a0（起始角）、a4（每 5 帧的角增量）。
+---  槽 0：3 发（L）自机狙 + 每 5 帧一根「外甩」弹（记录 2，f1 = 本帧角）；
+---  槽 1：槽 0 的复制（每 5 帧用 [8] 的角再打一枪）。两槽的角每 5 帧各 +a4 并折进 ±π。
+function s2.MBossAtEnemyAt(o, a0, a4)
+    local b = a0 + a4 / 2.5
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 3, 1
+    p.type, p.color = 5, 2
+    p.angle, p.astep = rndrad(), 0.0
+    p.s1, p.s2 = 0.0, 1.0
+    p.ex[0] = tp_record(1, 8, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    while true do
+        task.Wait(5)                              -- //5（首轮也在 t=5）
+        et_angle(o, 0, a0, 0.0)
+        et_angle(o, 1, b, 0.0)
+        -- ★ 难度链是 if (DIFF<=1) {0.01, f1=[0]} else if (DIFF==2) {…} else if (DIFF==3)
+        --   {speed 0.01/0.01; 0.016, f1=-999}（jmpEq = 弹栈为 0 才跳）。L 走最后一条。
+        et_speed(o, 0, 0.01, 0.01)
+        et_speed(o, 1, 0.01, 0.01)
+        p.ex[2] = tp_record(1, 16, 100, -999999, 0.016, -999.0)
+        et_ex(o, 1, 2, 1, 16, 100, -999999, 0.016, -999.0)
+        fire_slot(o, 0)
+        fire_slot(o, 1)
+        a0 = t10_wrap(a0 + a4)
+        b = t10_wrap(b + a4)
+    end
+end
+
+---卡 3634　疵痕「壊されたお守り」（BOSS 犬走椛 - 1）
+---  原作 BossCard1 / Boss1CardAtEnemy / Boss1CardAtEnemyAt / BossTrace / BossDummyShadow。
+---  主循环 360 帧一轮：t=150 一帧内连出 14 只子机（%F0 每只 +0.523599），
+---  之后 t=210 / t=310 各 moveRand 一次，t=360 回跳。
+---  ★ 14 只子机是**同一帧**建出来的（clock 在这一帧被反复拨回 150），每只拿到自己的 %F0。
+function s2.BossCard1(o)
+    local ct = 0
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    ct = 360                                      -- jmp(BossCard1_1148, 360)
+    ct = 0                                        -- jmpNeq(BossCard1_396, 0)
+    while true do                                 -- L396
+        ct = s_wait(ct, 60)                       -- //60：anmPlay(0, 409)
+        ct = s_wait(ct, 120)                      -- //120：anmSelectedPlay(0)
+        ct = s_wait(ct, 150)                      -- //150
+        local _a = rndrad()                       -- [0] = %RANDRAD（后续没用，但要消耗随机数）
+        local n = 14                              -- diffI([4], 6, 8, 10, 14)
+        o.F0 = rndrad()                           -- %F0 = %RANDRAD
+        o.F1 = 0.0                                -- %F1 = 0
+        -- L1020: deci([4]); jmpNeq(L636, 150) —— 先减后判，体在标签之前
+        while true do
+            local old = n
+            n = n - 1
+            if old == 0 then break end
+            s_pod(o, 0.0, 0.0, s2.Boss1CardAtEnemy)
+            o.F0 = t10_wrap(o.F0 + 0.523599)      -- [!L] %F0 += 0.523599
+        end
+        ct = s_wait(ct, 210)                      -- //210：anmSetMain(0, 5)
+        ct = s_wait(ct, 310)                      -- //310
+        m_rand(o, "off", 50, 0, 2.0)
+        ct = s_wait(ct, 360)                      -- //360
+        ct = 0                                    -- jmpNeq(L396, 0)
+    end
+end
+
+---Boss1CardAtEnemy：子机本体。offset 被 BossTrace 钉在自机身上，
+---  base 走圆：t=0 起 半径 0→（60 帧）、角 %F0、角速度 %F1；
+---  t=120 换成「起始角 %F0−π、半径 60、半径速度 0」（即停在自机外 60px 处）后自毁。
+function s2.Boss1CardAtEnemy(o)
+    local ct = 0
+    s_async(o, s2.BossTrace)
+    s_async(o, s2.BossDummyShadow)
+    s_async(o, s2.Boss1CardAtEnemyAt)
+    m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
+    ct = s_wait(ct, 120)                          -- //120
+    m_circle(o, "base", o.F0 - 3.1415927, o.F1, 60.0, 0.0)
+    t10_delete(o)
+end
+
+---Boss1CardAtEnemyAt：槽 0 每 10 帧打 5 发（速度 1.1、角 %RANDRAD），共 30 发；
+---  每发的记录 3 按 ([0] % 5) 更新（4 个固定分裂角 + 1 个 kind 0 的「停」），
+---  出弹角用 %REL_ANGLE（= base 极坐标当前角，Enemy.cpp value1C）。
+function s2.Boss1CardAtEnemyAt(o)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 5, 1
+    p.type, p.color = 5, 2
+    p.angle, p.astep = rndrad(), 0.0
+    p.s1, p.s2 = 1.1, 1.0                       -- [!L] etSpeed(0, 1.1f, 1.0f)
+    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 8, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 32768, 50, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    local n = 30
+    while true do
+        local old = n
+        n = n - 1
+        if old == 0 then break end
+        task.Wait(10)                             -- //10
+        local m = n % 5
+        if m == 0 then
+            p.ex[3] = tp_record(0, -2147483648, -999999, -999999, -999999.0, -999999.0)
+        elseif m == 1 then
+            p.ex[3] = tp_record(0, 64, 1, 1, 1.5707964, -999.0)
+        elseif m == 2 then
+            p.ex[3] = tp_record(0, 64, 1, 1, -1.5707964, -999.0)
+        elseif m == 3 then
+            p.ex[3] = tp_record(0, 64, 1, 1, 4.712389, -999.0)
+        else
+            p.ex[3] = tp_record(0, 64, 1, 1, -4.712389, -999.0)
+        end
+        et_angle(o, 0, o.ecs.base.ang, 0.0)       -- etAngle(0, %REL_ANGLE, 0)
+        fire_slot(o, 0)
+    end
+end
+
+---卡 3635　悲運「大鐘婆の火」（BOSS 犬走椛 - 2）
+---  原作 BossCard2 / Boss2CardAtEnemy / Boss2CardAtEnemyAt / BossTrace / BossDummyShadow。
+---  主循环每轮两批子机（各 8 只，同帧连出）：第一批角速度 %F1 = +0.017453、
+---  第二批 −0.017453（%F0 每只 +0.785398）。两批之间与之后各有一条 wait(60)
+---  （clock 回到 150，靠下一条指令的绝对时间补满 60 帧）。
+function s2.BossCard2(o)
+    local ct = 0
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    -- 原作 t=0 还有 etCancel(640)/etClear(640) 的二选一（按 %TIMEOUT）——两者在本移植里
+    -- 都是「清上一张卡的残余弹」，由符卡框架接管，不写。
+    ct = 300                                      -- jmp(BossCard2_1668, 300)
+    ct = 0                                        -- jmpNeq(BossCard2_492, 0)
+    while true do                                 -- L492
+        ct = s_wait(ct, 60)                       -- //60：anmPlay(0, 409)
+        ct = s_wait(ct, 120)                      -- //120：anmSelectedPlay(0)
+        ct = s_wait(ct, 150)                      -- //150
+        local _a = rndrad()                       -- [0] = %RANDRAD
+        local n = 8                               -- diffI([4], 6, 8, 8, 8)
+        o.F0 = 0.0                                -- %F0 = 0
+        o.F1 = 0.017453                           -- %F1 = +0.017453
+        o.I0 = 4                                  -- $I0 = 4（弹精灵色号）
+        while true do                             -- L772 / L1004
+            local old = n
+            n = n - 1
+            if old == 0 then break end
+            s_pod(o, 0.0, 0.0, s2.Boss2CardAtEnemy)
+            o.F0 = t10_wrap(o.F0 + 0.785398)      -- [!NHL]
+        end
+        ct = ct - 60                              -- [!HL] wait(60)
+        ct = s_wait(ct, 150)                      -- 下一条指令的绝对时间是 150
+        n = 8
+        o.F0 = 0.0
+        o.F1 = -0.017453
+        o.I0 = 4
+        while true do                             -- L1268 / L1500
+            local old = n
+            n = n - 1
+            if old == 0 then break end
+            s_pod(o, 0.0, 0.0, s2.Boss2CardAtEnemy)
+            o.F0 = t10_wrap(o.F0 + 0.785398)
+        end
+        ct = ct - 60                              -- [!HL] wait(60)
+        ct = s_wait(ct, 150)
+        ct = s_wait(ct, 250)                      -- //250：anmSetMain(0, 5) 之后的 moveRand
+        m_rand(o, "off", 50, 0, 2.0)
+        ct = s_wait(ct, 300)                      -- //300
+        ct = 0                                    -- jmpNeq(L492, 0)
+    end
+end
+
+---Boss2CardAtEnemy：base 圆运动（角 %F0、角速度 %F1、半径 0→1/帧），t=280 自毁。
+---  自己带 BossTrace（offset = 自机）+ 一个打弹线程，弹的第二个参数是 %F1×2（原作
+---  `pushf(%F1); pushf(2.0f); mulf()` 的结果被 callAsync 的 [-1.0f] 操作数弹出来）。
+function s2.Boss2CardAtEnemy(o)
+    local ct = 0
+    s_async(o, s2.BossTrace)
+    s_async(o, s2.BossDummyShadow)
+    s_async(o, s2.Boss2CardAtEnemyAt, o.F0, o.F1 * 2.0)
+    m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
+    ct = s_wait(ct, 60)                           -- //60：etProtectRange(32)（视觉）
+    ct = s_wait(ct, 280)                          -- //280
+    t10_delete(o)
+end
+
+---Boss2CardAtEnemyAt：a0 = 起始角、a4 = 每 8 帧的角增量（这里是 %F1×2 = ±0.034906）。
+---  槽 0：精灵 (25,0)（H/L 覆盖）、2 列（L 行 count(0,1,2)），speed 0→0.3，每 8 帧打一枪；
+---        L 行 ex 记录 2 的 f0 = 0.01（DIFF>1 的分支），f1 = 当前角。
+function s2.Boss2CardAtEnemyAt(o, a0, a4)
+    local b = a0 + a4 / 3.0
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 1, 2
+    p.type, p.color = 25, 0
+    p.angle, p.astep = rndrad(), 0.0
+    p.s1, p.s2 = 0.0, 0.3
+    p.ex[0] = tp_record(1, 8, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32768, 120, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    while true do
+        task.Wait(8)                              -- //8（首轮也在 t=8）
+        -- DIFF>1（L 一定）走 else：f0 = 0.013
+        p.ex[2] = tp_record(1, 16, 100, -999999, 0.013, a0)
+        fire_slot(o, 0)
+        a0 = t10_wrap(a0 + a4)
+        b = t10_wrap(b + a4)
+    end
+end
+
+---卡 3636　創符「流刑人形」（BOSS 犬走椛 - 3）
+---  原作 BossCard3 / BossAtEnemy3 / BossTrace / BossDummyShadow。
+---  t=120 一帧内出 4 只子机（起始角 0、π/2、π、−π/2，角速度都是 0.02618）；
+---  主线程之后每 2 帧在半径 %RANDF×[12]（从 0 起、每帧 +0.1、上限 64）的随机角上
+---  打一枪 9 发扇形，基准角 [0] 每轮 −0.1309，色号 [20] 在 1..4 循环。
+function s2.BossCard3(o)
+    local ct = 0
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    ct = s_wait(ct, 60)                           -- //60：anmPlay(0, 409)
+    ct = s_wait(ct, 120)                          -- //120：anmSelectedPlay(0)
+    o.F0, o.F1 = 0.0, 0.02618
+    s_pod(o, 0.0, 0.0, s2.BossAtEnemy3)
+    o.F0, o.F1 = 1.570796, 0.02618
+    s_pod(o, 0.0, 0.0, s2.BossAtEnemy3)
+    o.F0, o.F1 = 3.141593, 0.02618
+    s_pod(o, 0.0, 0.0, s2.BossAtEnemy3)
+    o.F0, o.F1 = -1.570796, 0.02618
+    s_pod(o, 0.0, 0.0, s2.BossAtEnemy3)
+    local a0    = 3.141593                        -- [0]
+    local n     = 9                               -- [24] = diffI([24], 3, 5, 5, 9)
+    local spd   = 2.0                             -- [28] = diffF([28], 1.0, 1.5, 1.5, 2.0)
+    local fc    = 0                               -- [16]（帧计数）
+    local scale = 0.0                             -- [12]（弹环半径系数）
+    local col   = 1                               -- [20]（精灵色号）
+    ct = 122                                      -- jmp(BossCard3_2232, 122)
+    ct = 120                                      -- jmpNeq(BossCard3_1224, 120)
+    while true do                                 -- L1224（每 2 帧一轮）
+        local r = rnd() * scale                   -- %RANDF × [12]（先取随机）
+        local ang = rndrad()                      -- %RANDRAD（后取随机）
+        local x, y = circle_pos(ang, r)           -- circlePos([4], [8], %RANDRAD, [-1.0f])
+        if fc > 60 and scale < 64 then scale = scale + 0.1 end
+        et_new(o, 0)
+        local p = o.pat[0]
+        p.aim, p.c1, p.c2 = 1, n, 1
+        p.type, p.color = 5, col
+        p.angle, p.astep = a0, 0.3926991
+        p.s1, p.s2 = spd, 1.0
+        p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+        p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        et_offset(o, 0, x, y)
+        fire_slot(o, 0)
+        a0 = t10_wrap(a0 - 0.1309)
+        fc = fc + 1
+        col = col + 1
+        if col > 4 then col = 1 end
+        ct = s_wait(ct, 122)                      -- +2: //122
+        ct = 120                                  -- jmpNeq(L1224, 120)
+    end
+end
+
+---BossAtEnemy3：子机。offset 被 BossTrace 钉在自机身上，base 走圆：
+---  t=0 起半径 0→（1/帧）、角 %F0、角速度 %F1；t=80 换成「起始角 %F0−π、半径 80、半径速度 0」。
+---  之后每 7 帧两枪：
+---    ① 只有自机在 BOSS 下方（%PLAYER_Y2 ≥ %BOSS_Y）时打：角 %RANDRAD/6（视觉用）；
+---    ② L 难度无条件打：角按 [4] % 7 从 %RANDRAD/8 ± {0, π/4, π/2} 里选一个。
+---  [8] 每打一枪 +1、每满 10 枪 [4] +1（[4] 决定②的角度档位）。
+function s2.BossAtEnemy3(o)
+    local ct = 0
+    local r4, r8 = 0, 0                           -- [4] / [8]
+    s_async(o, s2.BossTrace)
+    s_async(o, s2.BossDummyShadow)
+    m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
+    ct = s_wait(ct, 80)                           -- //80
+    m_circle(o, "base", o.F0 - 3.1415927, o.F1, 80.0, 0.0)
+    ct = 87                                       -- jmp(BossAtEnemy3_4364, 87)
+    ct = 80                                       -- jmpNeq(BossAtEnemy3_368, 80)
+    while true do                                 -- L368（每 7 帧一轮）
+        if t10_oy(player.y) < s_boss_y(o) then    -- %PLAYER_Y2 < %BOSS_Y（jmpEq = 假才跳）
+            et_new(o, 0)
+            local p = o.pat[0]
+            p.aim, p.c1, p.c2 = 0, 1, 1
+            p.type, p.color = 24, 6
+            p.angle, p.astep = rndrad() / 6, 0.3926991
+            p.s1, p.s2 = 0.8, 1.0
+            p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+            p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+            fire_slot(o, 0)
+        end
+        -- L776：DIFF >= 2 才打第二枪（本仓库固定 L ⇒ 一定打）
+        local m = r4 % 7
+        local q = rndrad() / 8
+        if     m == 0 then q = q - 3.1415927 / 2
+        elseif m == 1 then q = q - 3.1415927 / 4
+        elseif m == 2 then q = q
+        elseif m == 3 then q = q + 3.1415927 / 4
+        elseif m == 4 then q = q + 3.1415927 / 2
+        elseif m == 5 then q = q + 3.1415927 / 4
+        else                q = q                    -- [4]%7 == 6：不偏移
+        end
+        et_new(o, 0)
+        local p = o.pat[0]
+        p.aim, p.c1, p.c2 = 0, 1, 1
+        p.type, p.color = 24, 6
+        p.angle, p.astep = q, 0.3926991
+        p.s1, p.s2 = 0.8, 1.0
+        p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+        p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        fire_slot(o, 0)
+        r8 = r8 + 1
+        if r8 % 10 == 0 then r4 = r4 + 1 end
+        ct = s_wait(ct, 87)                       -- +7: //87
+        ct = 80                                   -- jmpNeq(L368, 80)
+    end
+end
+
+--=====================================
+--八·C、stage05（早苗 中 BOSS 一张 + 神奈子 BOSS 四张；只做 Lunatic 难度行）
+--  ECL 源：stage05.ecl（thecl -d 10 -m th10.eclm -j -r -x 反汇编 → r05raw.txt）。
+--  卡：MBossCard1（spellEx 60）、BossCard1（spell3 63）、BossCard2（spellEx 68）、
+--      BossCard3（spell3 71）、BossCard4（spell3 75）。
+--  ★ 原作 BossCard1/at3/at4 是 `!N`（Normal 专属）——L 行**不**调它们，这里也不写。
+--  ★ BossCard3_at / BossCard3_at2 / BossCard2_at2 在原作 ECL 里没有任何调用点
+--    （grep callAsync 确认），属死代码，不移植。
+--=====================================
+
+---%BOSS_X：specialEnemySlots[0]（= BOSS 本体）的世界坐标 x（与 s_boss_y 一对）。
+local function s_boss_x(o)
+    local b = o.t10_bossref
+    if b == nil then return 0.0 end
+    return b.ecs.wx
+end
+
+---enmCreateA（绝对坐标）+ 把 BOSS 引用传给子机（%BOSS_X/%BOSS_Y 要用）
+local function s_pod_a(origin, x, y, fn)
+    local p = spawn_pod(origin, x, y, fn)
+    p.t10_bossref = origin.t10_bossref
+    return p
+end
+
+---callAsync(name, a0, a4, a8, aC)：带 4 个实参起一个同敌机线程（BossCard4_at 用）。
+local function s5_async4(o, fn, a, b, c, d)
+    task.New(o, function() fn(o, a, b, c, d) end)
+end
+
+---=====================================
+---卡 3637　秘術「一子相伝の弾幕」（中 BOSS 東風谷早苗）
+---  原作 MBossCard1 / MBossCard1Dummy / Dummy2 / Dummy3。
+---  t=90 起 420 帧一轮：先取 %F0 = ANGLE_PLAYER，出一只 Dummy；%F0 += π、validRad，
+---  再出 Dummy2；[HL] 再出 Dummy3（L 也出）。之后 120/90/30/180 四段 wait。
+---  ★ 主循环的 jmp/jmpNeq 组合把 clock 从 510 直接拨回 90（不等待），所以下一轮的
+---    三只子机与 t=510 的 nop 同帧出生。
+function s5.MBossCard1(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(90)                                -- //90：anmPlay/anmSetMain/anmSelected…（视觉）
+    while true do                                -- L588（t=90）
+        o.F0 = t10_angle_player(o)
+        s_pod(o, 0.0, 0.0, s5.MBossCard1Dummy)
+        o.F0 = t10_wrap(o.F0 + 3.141593)
+        s_pod(o, 0.0, 0.0, s5.MBossCard1Dummy2)
+        s_pod(o, 0.0, 0.0, s5.MBossCard1Dummy3)  -- [!HL]
+        task.Wait(120)                           -- //210（anmSetSprite，视觉但占帧）
+        task.Wait(90)                            -- //300（anmSelectedPlay）
+        task.Wait(30)                            -- //330（moveRand）
+        m_rand(o, "off", 60, 4, 1.0)
+        task.Wait(180)                           -- //510
+    end
+end
+
+---MBossCard1Dummy：绕 BOSS 半径 96 的旋臂，三层波（%F0 每轮 +2.513274）。
+---  槽 0：5 发扇形（etCountD → L=5/1）、angle = ANGLE_PLAYER（出生时的）；
+---  内层 20 次循环每次往前打一发：ex5 = 90 帧延迟、f1 = 当前角（$LUNATIC 两个分支相同），
+---  ex3 = [12] 帧延迟（[12] 从 120 递减）、f1 = 3.0。
+function s5.MBossCard1Dummy(o)
+    local ang = o.F0
+    local r = 96.0
+    local x, y = circle_pos(ang, r)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 5, 1
+    p.type, p.color = 3, 6
+    p.angle, p.astep = 0.0, 0.7853982
+    p.s1, p.s2 = 0.001, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 4096, 100, -999999, -999999.0, -999999.0)
+    p.ex[4] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    local n12 = 120
+    local n8  = 5
+    local ct  = 0
+    while true do                                -- L1548（先判 [8]）
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end
+        ct = 0                                   -- jmpNeq(L728, 0)
+        ang = ang + 2.513274           -- L728
+        local x2, y2 = circle_pos(ang, r)
+        m_pos_time(o, "off", 20, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4 = 20
+        local a24 = ang
+        while true do                            -- L1504（先判 [4]）
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end
+            ct = 0                               -- jmpNeq(L1084, 0)
+            ct = s_wait(ct, 1)                   -- +1: //1（L1084 的 nop 在 t=0、下一段在 t=1）
+            p.ex[5] = tp_record(0, 16, 90, -999999, 0.01, a24)
+            a24 = t10_wrap(a24 + 0.1309)
+            p.ex[3] = tp_record(0, 64, n12, 1, 0.0, 3.0)
+            fire_slot(o, 0)
+            n12 = n12 - 1
+        end
+    end
+    t10_delete(o)
+end
+
+---MBossCard1Dummy2：同上、半径 64、精灵 (0,2)、旋臂反向；每轮 ex4 的 f1 = 0.007（L 行，
+---  原作用 `pushi($LUNATIC); jmpEq(...)` —— LUNATIC==1 时 jmpEq 不跳、走 0.007 分支）。
+function s5.MBossCard1Dummy2(o)
+    local ang = o.F0
+    local r = 64.0
+    local x, y = circle_pos(ang, r)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 5, 1
+    p.type, p.color = 0, 2
+    p.angle, p.astep = 0.0, 0.7853982
+    p.s1, p.s2 = 0.001, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, ang, 0.0)
+    local n12 = 120
+    local n8  = 5
+    local ct  = 0
+    while true do
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end
+        ct = 0
+        ang = ang - 2.513274
+        local x2, y2 = circle_pos(ang, r)
+        m_pos_time(o, "off", 20, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4 = 20
+        local a24 = ang
+        while true do
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end
+            ct = 0
+            ct = s_wait(ct, 1)
+            p.ex[4] = tp_record(0, 16, 90, -999999, 0.007, a24)
+            a24 = t10_wrap(a24 - 0.1309)
+            p.ex[2] = tp_record(0, 64, n12, 1, 0.0, 2.0)
+            fire_slot(o, 0)
+            n12 = n12 - 1
+        end
+    end
+    t10_delete(o)
+end
+
+---MBossCard1Dummy3：半径 128、精灵 (0,6)、ex2 的 f1 = 4.0；打弹前多一个
+---  `($LUNATIC) or ([4]%2==0)` 条件 —— LUNATIC=1 ⇒ 恒真 ⇒ 每轮都 etOn（与 Dummy2 同）。
+function s5.MBossCard1Dummy3(o)
+    local ang = o.F0
+    local r = 128.0
+    local x, y = circle_pos(ang, r)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 5, 1
+    p.type, p.color = 0, 6
+    p.angle, p.astep = 0.0, 0.7853982
+    p.s1, p.s2 = 0.001, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, ang, 0.0)
+    local n12 = 120
+    local n8  = 5
+    local ct  = 0
+    while true do
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end
+        ct = 0
+        ang = ang - 2.513274
+        local x2, y2 = circle_pos(ang, r)
+        m_pos_time(o, "off", 20, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4 = 20
+        local a24 = ang
+        while true do
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end
+            ct = 0
+            ct = s_wait(ct, 1)
+            p.ex[4] = tp_record(0, 16, 90, -999999, 0.007, a24)
+            a24 = t10_wrap(a24 - 0.1309)
+            p.ex[2] = tp_record(0, 64, n12, 1, 0.0, 4.0)
+            fire_slot(o, 0)                      -- $LUNATIC or [4]%2==0 ⇒ L 恒真
+            n12 = n12 - 1
+        end
+    end
+    t10_delete(o)
+end
+
+---=====================================
+---卡 3638　奇跡「客星の明るすぎる夜」（BOSS 八坂神奈子 - 1）
+---  原作 BossCard1 / _at / _at2 / _at5（_at3/_at4 是 !N，L 不跑）。
+---  t=90 起三线程：at（右侧光柱臂）、at2（左侧光柱臂）、at5（两列弹），主线程随后 1 帧死循环。
+function s5.BossCard1(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(90)                                -- //90
+    t10_call_async(o, s5.BossCard1_at)
+    t10_call_async(o, s5.BossCard1_at2)
+    t10_call_async(o, s5.BossCard1_at5)
+    while true do task.Wait(1) end               -- L788/L804：clock 91↔90 的 1 帧死循环
+end
+
+---BossCard1_at：右侧（offset +128）旋转光柱，每 4 帧一根，角度 [4] 每帧 +0.106272。
+function s5.BossCard1_at(o)
+    local a4 = -3.043418
+    et_new(o, 0)
+    o.pat[0].ex[0] = tp_record(1, 134217728, 1, -999999, -999999.0, -999999.0)
+    local ct = 0
+    while true do                                -- L168（t=0）
+        et_offset(o, 0, 128.0, 0.0)
+        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, 128.0, 0.0)
+        a4 = t10_wrap(a4 + 0.106272)
+        ct = s_wait(ct, 4)                       -- //4
+        ct = 0                                   -- jmpNeq(L168, 0)
+    end
+end
+
+---BossCard1_at2：左侧（offset −128）同构、角度每帧 −0.106272。
+function s5.BossCard1_at2(o)
+    local a4 = -3.043418                         -- diffF([4], 0.09817477, 0.09817477, -3.043418, -3.043418)
+    local ct = 0
+    while true do                                -- L96（t=0）
+        et_offset(o, 0, -128.0, 0.0)
+        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, -128.0, 0.0)
+        a4 = t10_wrap(a4 - 0.106272)
+        ct = s_wait(ct, 4)
+        ct = 0
+    end
+end
+
+---BossCard1_at5：槽 3/4 各一列弹（speed 2.5 / 1.0），每轮同时 etOn，然后 diffWait(…,20)。
+function s5.BossCard1_at5(o)
+    et_new(o, 3)
+    local p3 = o.pat[3]
+    p3.aim, p3.c1, p3.c2 = 0, 1, 1
+    p3.type, p3.color = 25, 0
+    p3.angle, p3.astep = 0.0052359877, 0.0
+    p3.s1, p3.s2 = 2.5, 1.0
+    p3.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    et_offset(o, 3, 0.0, 0.0)
+    et_new(o, 4)
+    local p4 = o.pat[4]
+    p4.aim, p4.c1, p4.c2 = 0, 1, 1
+    p4.type, p4.color = 18, 0
+    p4.angle, p4.astep = -0.0052359877, 0.0
+    p4.s1, p4.s2 = 2.5, 1.0
+    p4.ex[0] = tp_record(1, 2, -999999, -999999, -999999.0, -999999.0)
+    et_offset(o, 4, 0.0, 0.0)
+    local ct = 0
+    while true do                                -- L652
+        fire_slot(o, 3)
+        fire_slot(o, 4)
+        ct = ct - 20                             -- diffWait(60, 60, 120, 20)
+        ct = s_wait(ct, 0)                       -- 下一条（jmpNeq 组）在 t=0
+    end
+end
+
+---=====================================
+---卡 3639　開海「モーゼの奇跡」（BOSS 八坂神奈子 - 2；L 行是 spellEx）
+---  原作 BossCard2 / _at / _atEt / Boss2Et_at。
+---  t=90 起：先叫 _at 线程（不断刷 BossCard2_atEt 子机），主线程每轮在 t=90 与 t=120
+---  各出一只 Boss2Et_at（enmCreateA），%F0 每只 +0.523599，%F2 从 16 起每次 <128 就 +16。
+function s5.BossCard2(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(90)                                -- //90
+    t10_call_async(o, s5.BossCard2_at)
+    o.F0 = rndrad()                              -- %F0
+    o.F2 = 16.0                                  -- %F2
+    while true do                                -- L576（t=90）
+        s_pod_a(o, 0.0, 0.0, s5.Boss2Et_at)
+        o.F0 = t10_wrap(o.F0 + 0.523599)
+        if o.F2 < 128 then o.F2 = o.F2 + 16 end
+        task.Wait(30)                            -- //120
+        m_rand(o, "off", 50, 0, 3.0)
+        s_pod_a(o, 0.0, 0.0, s5.Boss2Et_at)
+        o.F0 = t10_wrap(o.F0 + 0.523599)
+        if o.F2 < 128 then o.F2 = o.F2 + 16 end
+        task.Wait(30)                            -- //150
+    end
+end
+
+---BossCard2_at：[8] = 64 起（每轮 +1，到 112 封顶）；每轮两次在随机半径（%RANDF×80）
+---  的随机角上出 BossCard2_atEt 子机，$I0 = [8]/8（8→14），%F1 = ±0.10472。
+---  ★ 开头的 `wait(120)` 把 clock 拨到 −120，下一条指令要等回 0 ⇒ 起手先空转 121 帧。
+function s5.BossCard2_at(o)
+    local n8 = 64                                -- [8]
+    local ct = 0
+    ct = ct - 120                                -- wait(120)（不占帧）
+    ct = s_wait(ct, 0)                           -- 下一条（jmp）在 t=0 ⇒ 等回 0
+    while true do                                -- L120（t=0）
+        local r = rnd() * 80.0                   -- %RANDF×80（先取）
+        local x, y = circle_pos(rndrad(), r)     -- %RANDRAD（后取）
+        o.I0 = math.floor(n8 / 8)                -- $I0
+        o.F1 = 0.10472
+        s_pod(o, x, y, s5.BossCard2_atEt)
+        ct = s_wait(ct, 30)                      -- //30
+        n8 = n8 + 1
+        local r2 = rnd() * 80.0
+        local x2, y2 = circle_pos(rndrad(), r2)
+        o.I0 = math.floor(n8 / 8)
+        o.F1 = t10_wrap(-0.10472)
+        s_pod(o, x2, y2, s5.BossCard2_atEt)
+        ct = s_wait(ct, 60)                      -- //60
+        if n8 < 112 then n8 = n8 + 1 end
+        ct = 0                                   -- jmpNeq(L120, 0)
+    end
+end
+
+---BossCard2_atEt：[4] = $I0（从父线程拿），每轮 4 次 etOn（0/2 同帧、1/3 同帧、间隔 1+3 帧）：
+---  槽 0 = 主弹（自机狙 + 延迟分裂 0.08），槽 1 = 槽 0 的复制（精灵 25,0），
+---  槽 2/3 = [HL] 三向扇形（精灵 5,6 / 18,0）。
+function s5.BossCard2_atEt(o)
+    local n4 = o.I0
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 1, 1, 1
+    p.type, p.color = 5, 2
+    p.angle, p.astep = t10_angle_player(o), 0.0
+    p.s1, p.s2 = 1.0, 1.4
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 32, 60, -999999, 0.08, 0.0)      -- L 行
+    et_copy(o, 1, 0)
+    et_copy(o, 2, 0)
+    et_sprite(o, 1, 25, 0)
+    et_copy(o, 3, 1)
+    et_count(o, 2, 3, 1)                                    -- [L]
+    et_angle(o, 2, 1.5707964, 0.5235988)
+    et_sprite(o, 2, 5, 6)
+    et_count(o, 3, 3, 1)                                    -- [L]
+    et_angle(o, 3, 1.5707964, 0.5235988)
+    et_sprite(o, 3, 18, 0)
+    local ct = 0
+    while true do                                -- L900（jmp(900,4) → deci 立即执行）
+        local old = n4; n4 = n4 - 1
+        if old == 0 then break end
+        ct = 0                                   -- jmpNeq(L804, 0)
+        fire_slot(o, 0)
+        fire_slot(o, 2)                          -- [!HL]
+        ct = s_wait(ct, 1)                       -- +1: //1
+        fire_slot(o, 1)
+        fire_slot(o, 3)                          -- [!HL]
+        ct = s_wait(ct, 4)                       -- +3: //4
+    end
+    t10_delete(o)
+end
+
+---Boss2Et_at：enmCreateA 出来的「分海」子机。[4] 从 %RANDF×8 起每轮 +12，到 448 为止；
+---  每轮在 ±224 处各放一根竖直长条激光（长度 = %F2 ± sin([24])×64，>0 才放），
+---  [24] 每轮 −0.1309。激光是本移植的视觉近似（原作 laserStOn 的几何没搬）。
+function s5.Boss2Et_at(o)
+    local v4  = rnd() * 8.0                      -- [4]
+    local a24 = o.F0                             -- [24]
+    m_pos(o, "off", 0.0, 0.0)
+    local ct = 1                                 -- jmp(L1288, 1)
+    while true do                                -- L1288
+        if not (v4 < 448.0) then break end
+        ct = 0                                   -- jmpNeq(L380, 0)
+        ct = s_wait(ct, 1)                       -- +1: //1
+        local s8 = math.sin(a24)
+        a24 = t10_wrap(a24 - 0.1309)
+        et_offset(o, 0, -224.0, v4)
+        local w12 = o.F2 + s8 * 64.0
+        if w12 > 0 then
+            t10_laser_on(o, 8, 6, 0.0, 0.0, w12, w12, 0.0, 32.0, -224.0, v4)
+        end
+        et_offset(o, 0, 224.0, v4)
+        w12 = o.F2 - s8 * 64.0
+        if w12 > 0 then
+            t10_laser_on(o, 8, 6, 3.1415927, 0.0, w12, w12, 0.0, 32.0, 224.0, v4)
+        end
+        v4 = v4 + 12.0
+    end
+    t10_delete(o)
+end
+
+---=====================================
+---卡 3640　準備「サモンタケミナカタ」（BOSS 八坂神奈子 - 3）
+---  原作 BossCard3 / BossCard3Dummy×4。360 帧一轮，每轮 4+4 只子机（两批）。
+function s5.BossCard3(o)
+    t10_kill_async(o)
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)
+    task.Wait(80)                                -- //80
+    while true do                                -- L416（t=80）
+        o.F0 = t10_angle_player(o)
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy3)
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy4)
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy)    -- [!HL]
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy2)   -- [!HL]
+        task.Wait(60)                            -- //140（anmSetSprite）
+        task.Wait(90)                            -- //230
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy)
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy2)
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy3)   -- [!HL]
+        s_pod(o, 0.0, 0.0, s5.BossCard3Dummy4)   -- [!HL]
+        task.Wait(60)                            -- //290（anmSetSprite）
+        task.Wait(90)                            -- //380
+        m_rand(o, "off", 40, 0, 2.0)
+        task.Wait(60)                            -- //440
+    end
+end
+
+---BossCard3Dummy×4：绕 BOSS 的旋臂子机，5 轮 × 10 次内层循环。
+---  参数（L 行列）：radius/[32] 环长、aim、精灵色、%F0 旋向、[24] 每轮增量。
+---  内层每轮打一发：ex4（90 帧延迟、f1 = 当前角、f0 = 0.015 —— LUNATIC 走 `noti` 分支）、
+---  ex2（[12] 帧延迟的圆环，f1 = [32]）。
+local function s5_boss3_dummy(o, aim, sp, col, radius, cnt, f0dir, d24)
+    local ang = o.F0
+    local x, y = circle_pos(ang, radius)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = aim, 5, 1
+    p.type, p.color = sp, col
+    p.angle, p.astep = 0.0, 0.7853982
+    p.s1, p.s2 = 0.001, 1.0
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    local n12 = 60
+    local n8  = 5
+    local ct  = 0
+    while true do                                -- L1752
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end
+        ct = 0                                   -- jmpNeq(L728, 0)
+        ang = ang + f0dir * 2.513274   -- L728
+        local x2, y2 = circle_pos(ang, radius)
+        m_pos_time(o, "off", 10, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4 = 10
+        local a24 = ang
+        while true do                            -- L1708
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end
+            ct = 0                               -- jmpNeq(L1084, 0)
+            ct = s_wait(ct, 1)                   -- +1: //1
+            p.ex[4] = tp_record(0, 16, 90, -999999, 0.015, a24)
+            a24 = t10_wrap(a24 + d24)
+            p.ex[2] = tp_record(0, 64, n12, 1, 0.0, cnt)
+            fire_slot(o, 0)                      -- ($DIFF>=1) or ([4]%2==0) ⇒ L 恒真
+            n12 = n12 - 1
+        end
+    end
+    t10_delete(o)
+end
+
+function s5.BossCard3Dummy(o)  s5_boss3_dummy(o, 3, 2, 6, 64.0, 4, 1, 0.024544) end
+function s5.BossCard3Dummy2(o) s5_boss3_dummy(o, 5, 2, 6, 64.0, 4, -1, -0.024544) end
+function s5.BossCard3Dummy3(o) s5_boss3_dummy(o, 3, 2, 2, 48.0, 3, 1, -0.1309) end
+function s5.BossCard3Dummy4(o) s5_boss3_dummy(o, 5, 2, 2, 48.0, 3, -1, 0.1309) end
+
+---=====================================
+---卡 3641　大奇跡「八坂の神風」（BOSS 八坂神奈子 - 4；卡内 lifeSet(3000)）
+---  原作 BossCard4 / _at / _at2。t=150 起：一只 at2 常态弹幕 + 每轮两发 at 旋臂。
+function s5.BossCard4(o)
+    t10_kill_async(o)
+    t10_enm_kill_all(o)
+    m_limit_clear(o)
+    m_pos_time(o, "off", 90, 4, 0.0, 224.0)
+    task.Wait(90)                                -- //90（setChapter/spell3/setInvuln 在 t=90）
+    task.Wait(60)                                -- //150
+    local a0 = 3.141593                          -- [0] = π
+    t10_call_async(o, s5.BossCard4_at2)
+    while true do                                -- L732（jmpNeq 把 clock 拨回 150）
+        local ct = 150                           -- 「jmpNeq(L732, 150)」：每轮重新起算
+        a0 = rndrad()                            -- [0] = %RANDRAD
+        -- ★ 两处都是裸加减：原作 7d9c..7de8 / 7ec8..7f4c **没有** validRad。
+        --   （实参顺序：[0]/[8] 两个弹栈值里，后压栈的给 a0，见 StartSubroutine 的弹栈顺序）
+        s5_async4(o, s5.BossCard4_at, a0, 3.883222, a0 - 3.1415927 / 2, 6)
+        ct = ct - 170                            -- diffWait(284, 284, 160, 170)
+        ct = s_wait(ct, 166)                     -- +16: //166
+        a0 = rndrad()
+        s5_async4(o, s5.BossCard4_at,
+                  a0 + 3.1415927 / 2, -3.883222,
+                  a0 + 3.1415927, 10)
+        ct = ct - 180                            -- diffWait(284, 284, 160, 180)
+        ct = s_wait(ct, 182)                     -- +16: //182
+        a0 = t10_wrap(a0 + 0.392699)
+    end
+end
+
+---BossCard4_at：一圈向外扩的旋臂子机（[0]/[8] 两个角同向转、半径 32 起每轮 +0.5）。
+---  [32]（L=340）每轮 −1；每轮 ex1 = [32] 帧延迟弹、ex2 = 16 帧延迟（L 行 f0 = 0.02）；
+---  只有 [32] 为偶数的那一轮才 wait(1)（`($DIFF<=2) or ([32]%2==0)` ⇒ L 看奇偶）。
+function s5.BossCard4_at(o, a0, a4, a8, aC)
+    et_new(o, 0)
+    local p = o.pat[0]
+    p.aim, p.c1, p.c2 = 3, 1, 1
+    p.type, p.color = 3, aC
+    p.angle, p.astep = 0.0, 0.3926991
+    p.s1, p.s2 = 0.1, 1.5
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local r24 = 32.0                             -- [24] = 32.0
+    local n32 = 340                              -- diffI([32], 284, 284, 320, 340)
+    local ct  = 0
+    while true do                                -- L340
+        local old = n32; n32 = n32 - 1
+        if old == 0 then break end
+        ct = 0                                   -- jmpNeq(L340, 0)
+        local x, y = circle_pos(a0, r24)
+        a0 = t10_wrap(a0 + a4)
+        a8 = t10_wrap(a8 + a4)
+        r24 = r24 + 0.5
+        p.ex[1] = tp_record(0, 32768, n32, -999999, -999999.0, -999999.0)
+        p.ex[2] = tp_record(0, 16, 90, -999999, 0.02, -999.0)   -- L 行
+        et_offset(o, 0, x, y)
+        et_angle(o, 0, a8, 0.028049935)
+        fire_slot(o, 0)
+        if n32 % 2 == 0 then                     -- ([32]%2==0) ⇒ 等 1 帧
+            ct = ct - 1                          -- wait(1)
+            ct = s_wait(ct, 0)
+        end
+    end
+end
+
+---BossCard4_at2：常态弹幕（槽 1，16 发/列），先 diffWait(300,300,176,186) 再每 diffWait(…,50) 一轮。
+function s5.BossCard4_at2(o)
+    et_new(o, 1)
+    local p = o.pat[1]
+    p.aim, p.c1, p.c2 = 2, 16, 1
+    p.type, p.color = 12, 3
+    p.angle, p.astep = 0.0, 0.3926991
+    p.s1, p.s2 = 1.5, 1.5
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    -- diffWait(300, 300, 176, 186)：clock -= 186。紧跟的 `jmp(L372, 0)` 指令
+    --   自身时间字段是 0 > clock，所以引擎会在**执行 jmp 之前**等满 186 帧
+    --   （EclVm.cpp 的 `while (指令.time <= currentTime)`；clock 此时是 −186）。
+    local ct = 0
+    ct = ct - 186
+    ct = s_wait(ct, 0)
+    while true do                                -- L320
+        fire_slot(o, 1)
+        ct = ct - 50                             -- diffWait(284, 50, 50, 50)
+        ct = s_wait(ct, 0)
+    end
+end
+
+--=====================================
+--八·H、stage01 / stage02 / stage05 的符卡注册（boss.card.add 必须晚于 boss.Define）
+boss.Define("6a", "秋静葉", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sizuha", LEVEL)
+boss.Define("7a", "秋穣子", "TH10_2", TH10_bg, { 0, 80 }, nil, "Minoriko", LEVEL)
+boss.Define("8a", "犬走椛", "TH10_2", TH10_bg, { 0, 80 }, nil, "Momizi", LEVEL)
+boss.Define("9a", "東風谷早苗", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sanae", LEVEL)
+
+---stage01/02/05 十二张：{ 主 ECL 子程序, 卡名, 组, CARD_ID, t1秒, t2秒, t3秒, HP }
+---  t3 = spell*(…, 时间, …) 的帧数 / 60（与 setInterrupt 的第三个参数一致）；
+---  HP = 该卡开始时 BOSS 的 lifeSet：
+---    stage01 中 BOSS 静葉 5850、穣子 8200；
+---    stage02 中 BOSS 椛 2300、椛（BOSS）三张 13400（lifeSet(13400)）。
+---  t1/t2 取该卡 ECL 里 setInvuln 的值（都是入场 60 帧 → 1/1）。
+---  原作「厄符「バッドフォーチュン」」「疵符…」等 E/N 行不移植，只做 Lunatic。
+local T10_CARDS_S125 = {
+    { s1.MBossCard1, "葉符「狂いの落葉」",           "6a", 3630, 1, 1, 2160 / 60, 5850 },
+    { s1.BossCard1,  "秋符「秋の空と乙女の心」",     "7a", 3631, 1, 1, 2700 / 60, 8200 },
+    { s1.BossCard2,  "豊作「穀物神の約束」",         "7a", 3632, 1, 1, 2700 / 60, 8200 },
+    { s2.MBossCard1, "厄符「厄神様のバイオリズム」", "8a", 3633, 1, 1, 2400 / 60, 2300 },
+    { s2.BossCard1,  "疵痕「壊されたお守り」",       "8a", 3634, 1, 1, 2700 / 60, 13400 },
+    { s2.BossCard2,  "悲運「大鐘婆の火」",           "8a", 3635, 1, 1, 2700 / 60, 13400 },
+    { s2.BossCard3,  "創符「流刑人形」",             "8a", 3636, 1, 1, 2700 / 60, 13400 },
+
+    -- stage05（早苗 中BOSS 1 张 / 神奈子 BOSS 4 张）；HP = 卡开始时 BOSS 的 lifeSet：
+    --   早苗 MBoss 12900；神奈子 12400（Boss() HL）→ 10400（Boss2/Boss3）→ 卡内 lifeSet(3000)。
+    --   t3 = spell*(…, 帧数, …)/60；t1/t2 = setInvuln(n)/60。
+    { s5.MBossCard1, "秘術「一子相伝の弾幕」",       "9a", 3637, 200 / 60, 200 / 60, 2400 / 60, 12900 },
+    { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "1a", 3638, 90 / 60,  90 / 60,  4200 / 60, 12400 },
+    { s5.BossCard2,  "開海「モーゼの奇跡」",         "1a", 3639, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.BossCard3,  "準備「サモンタケミナカタ」",   "1a", 3640, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.BossCard4,  "大奇跡「八坂の神風」",         "1a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
+
+---★ 子机的 %BOSS_X / %BOSS_Y（原作 specialEnemySlots[0] 的世界坐标）走 t10_bossref：
+---  主 BOSS 的载体在这里登记，s_pod 再把它复制给每一只子机。
+for _, e in ipairs(T10_CARDS_S125) do
+    local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local c = boss.card.New(name, t1, t2, t3, hp)
+    c.init = function(self)
+        local p = t10_boss_start(self, main)
+        p.t10_bossref = p
+    end
+    c.del = function(self) t10_clear_pods() end
+    boss.card.add({ { c, band } }, LEVEL, name, id)
+end
