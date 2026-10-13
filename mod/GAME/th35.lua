@@ -1197,6 +1197,35 @@ local function t10_final_angle(o)
     return math.atan2(b.vy + f.vy, b.vx + f.vx)
 end
 
+---ECL 时钟辅助：对应 VM 的「if 指令时间 > clock then task.Wait(指令时间 - clock)」。
+---原作 EclVm 里 wait(n) 是 clock -= n（不占帧），jmp/jmpNeq(L, T) 把 clock 直接设成 T；
+---原生代码每一步都显式写 ct，才保证与逐条 VM（以及真引擎）的帧边界完全一致。
+local function s_wait(ct, t)
+    if t > ct then task.Wait(t - ct) end
+    return t
+end
+
+---特殊敌机（= BOSS 本体）的世界 y：原作 %BOSS_Y（Enemy.cpp 的
+---ENEMY_ECL_OPERAND_SPECIAL_ENEMY_Y = specialEnemySlots[0]->worldMotion.position.y）。
+---BOSS 载体在注册时把 t10_bossref 指向自己，enmCreate 再传给子机。
+local function s_boss_y(o)
+    local b = o.t10_bossref
+    if b == nil then return 0.0 end
+    return b.ecs.wy
+end
+
+---callAsync：在同一敌机上另起线程并把实参投给它（原作 callAsync(name, a0, a4…)）
+local function s_async(o, fn, a0, a4)
+    task.New(o, function() fn(o, a0, a4) end)
+end
+
+---enmCreate（相对坐标）+ 把 BOSS 引用传给子机（%BOSS_X/%BOSS_Y 要用）
+local function s_pod(origin, dx, dy, fn)
+    local p = spawn_pod_rel(origin, dx, dy, fn)
+    p.t10_bossref = origin.t10_bossref
+    return p
+end
+
 ---=====================================
 ---=====================================
 ---TH10 stage03 / stage04 符卡（原生 LuaSTG 实现，仅 Lunatic 行）
@@ -1537,15 +1566,19 @@ local function s4_BossChargeP(o)        -- 原作 BossChargeP / BossChargeP2（�
     t10_delete(o)
 end
 
-local function s4_BossCharge(o)
+---BossCharge：8 只「只转不打」的使魔（BossChargeP 在 (−16, +16) 处绕圈）。
+---Lunatic 用的是 BossChargeL —— 逐条与它相同，**只有 enmCreate 的 x 偏移从 −16 改成 +16**，
+---所以这里参数化一个 dx，两个名字共用一份实现。
+local function s4_BossCharge(o, dx)
+    dx = dx or -16.0
     o.F0, o.F1, o.F2, o.F3, o.I0 = -2.356194, 0.05236, 128.0, -2, 60
     for _ = 1, 4 do
-        spawn_pod_rel(o, -16.0, 16.0, s4_BossChargeP)
+        spawn_pod_rel(o, dx, 16.0, s4_BossChargeP)
         o.F0 = o.F0 + 1.570796
     end
     o.F0, o.F1, o.F2, o.F3, o.I0 = -1.570796, -0.05236, 144.0, -3, 60
     for _ = 1, 4 do
-        spawn_pod_rel(o, -16.0, 16.0, s4_BossChargeP)
+        spawn_pod_rel(o, dx, 16.0, s4_BossChargeP)
         o.F0 = o.F0 + 1.570796
     end
 end
@@ -2859,6 +2892,1025 @@ function s7.BossCard10(o)
     end
 end
 
+--=====================================
+--七·B、stage07（Extra）中 BOSS / BOSS 的非符（原生 LuaSTG；stage07 不分难度）
+--  原作时间轴逐条对照 thecl 反汇编（thecl -d 10 -r -m "MAP/th10.eclm" stage07.ecl out.txt）。
+--  ★ stage07（Extra）的 ECL 里没有 rank 分支，所以这些相位在唯一一档难度下原样执行。
+--  ★ 这些非符与符卡在原作里共用同一只敌机：Boss1() 在 +20 帧记下 `%F0 = %ANGLE_PLAYER`，
+--    后被 BossCard1()（開宴）的子程序读走。本移植一张卡一个载体，%F0 从 0 起算
+--    ——和本工程既有的 s7.BossCard1 处理一致（见那张卡的注释），这里只保证非符
+--    自己的时间轴逐帧对齐。
+--  ★ HP = 该相 lifeSet − setInterrupt 的收尾阈值，BOSS 链一律 8000；
+--    t3 = setInterrupt 的时限 3600 帧 = 60 s；t1 = t2 = setInvuln 帧数 / 60。
+--=====================================
+
+---非符 3651　洩矢諏訪子（stage07 中 BOSS 非符一，原作 MBoss1）
+---  原作 MBoss()：lifeSet(9300) 之后 call("MBoss1")；
+---  MBoss1 = setInvuln(60) + setInterrupt(0, 2300, 3600, "MBossCard1") ⇒ HP = 9300 − 2300 = 7000。
+---  时间轴：t=60 起叫一次 MBoss1_at（那是死循环，自己每 4 帧一轮），
+---  之后主线程只按 60 帧节拍空转（jmp(_320,120) → jmpNeq(_304,60) 的时钟回拨）。
+function s7.MBoss1(o)
+    local ct = 0
+    ct = s_wait(ct, 60)                     -- +60: //60
+    t10_call_async(o, s7.MBoss1_at)         -- callAsync("MBoss1_at")
+    while true do                           -- _320：pushi(1); jmpNeq(_304, 60)
+        ct = s_wait(ct, 120)                -- jmp(_320, 120)
+        ct = s_wait(ct, 60)                 -- jmpNeq(_304, 60) —— 时钟拨回 60
+    end
+end
+
+---MBoss1_at：两段各 16 / 20 轮、每轮 4 帧，打满一段立刻接下一段（jmpNeq 回 _108 是死循环）。
+---  段 1：[0] 从 −192 起每轮 +24；每轮 etOffset(0, [0]+%RANDF2·8, −128)、
+---        etSpeed(0, 2+%RANDF, 0)、etOn（8 发扇：基准角 π/2、每发 +0.3926991）。
+---  段 2：[0] 从 +192 起每轮 −24，扇形步长取负、RANDF2/RANDF 的消耗顺序完全相同。
+function s7.MBoss1_at(o)
+    local ct = 0
+    local a0                                 -- [0]（每波 _108 都要重写 −192）
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    ct = 8                                  -- jmp(_1500, 8)
+    while true do                            -- _1500：pushi(1); jmpNeq(_108, 0)
+        ct = 0
+        a0 = -192.0                          -- pushi(-192); setf([0])（_108 的波首重置）
+        -- ── 段 1（_108 → _760 → _408）──
+        et_new(o, 0)
+        et_aim(o, 0, 3)
+        et_sprite(o, 0, 12, 3)
+        et_count(o, 0, 1, 8)
+        et_angle(o, 0, 1.5707964, 0.3926991)
+        et_speed(o, 0, 1.8, 1.5)
+        local n1 = 16                        -- [12]
+        local o1 = n1; n1 = n1 - 1
+        while o1 ~= 0 do                     -- _760：deci([12]); jmpNeq(_408, 0)
+            ct = 0
+            et_offset(o, 0, a0 + rnd2() * 8.0, -128.0)
+            et_speed(o, 0, 2.0 + rnd(), 0.0)
+            fire_slot(o, 0)                  -- etOn(0)
+            a0 = a0 + 24.0                   -- [0] += 24
+            ct = s_wait(ct, 4)               -- 回 _760（t=4）
+            o1 = n1; n1 = n1 - 1
+        end
+        -- ── 段 2（_1104 → _1456）──
+        et_new(o, 0)
+        et_aim(o, 0, 3)
+        et_sprite(o, 0, 12, 3)
+        et_count(o, 0, 1, 8)
+        et_angle(o, 0, 1.5707964, -0.3926991)
+        et_speed(o, 0, 1.8, 1.5)
+        a0 = 192.0                           -- [0] = 192
+        local n2 = 20                        -- [12] = 20
+        ct = 8                               -- jmp(_1456, 8)
+        local o2 = n2; n2 = n2 - 1
+        while o2 ~= 0 do                     -- _1456：deci([12]); jmpNeq(_1104, 4)
+            ct = 4
+            et_offset(o, 0, a0 + rnd2() * 8.0, -128.0)
+            et_speed(o, 0, 2.0 + rnd(), 0.0)
+            fire_slot(o, 0)
+            a0 = a0 - 24.0                   -- [0] −= 24
+            ct = s_wait(ct, 8)               -- 回 _1456（t=8）
+            o2 = n2; n2 = n2 - 1
+        end
+    end
+end
+
+---非符 3652　洩矢諏訪子（stage07 BOSS 非符一，原作 Boss1）
+---  原作 Boss()：setInvuln(200) + lifeSet(10800) 之后 call("Boss1")；
+---  Boss1 = setInterrupt(0, 2800, 3600, "BossCard1") ⇒ HP = 10800 − 2800 = 8000；
+---  t1 = t2 = setInvuln(200)/60。
+---  时间轴：t=20 记 %F0 = %ANGLE_PLAYER；t=80 起每 60 帧叫一次 Boss1_at、+30 帧处 moveRand。
+function s7.Boss1(o)
+    local ct = 0
+    ct = s_wait(ct, 20)                     -- +20: //20
+    o.F0 = t10_angle_player(o)              -- %F0 = %ANGLE_PLAYER
+    while true do                           -- _360：pushi(1); jmpNeq(_264, 80)
+        ct = s_wait(ct, 80)                 -- jmp(_360, 140) → jmpNeq(_264, 80)
+        t10_call_async(o, s7.Boss1_at)      -- callAsync("Boss1_at")
+        ct = s_wait(ct, 110)                -- //110
+        m_rand(o, "off", 30, 0, 2.0)        -- moveRand(30, 0, 2.0)
+        ct = s_wait(ct, 140)                -- //140
+    end
+end
+
+---Boss1_at：一发 28 环（aim=4、速 3.5→1.5），间隔 30 帧再打一发反向扇。
+function s7.Boss1_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 4)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 28, 4)
+    et_angle(o, 0, 0.0, 0.037399914)
+    et_speed(o, 0, 3.5, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)                          -- etOn(0)
+    task.Wait(30)                            -- wait(30)
+    et_new(o, 0)
+    et_aim(o, 0, 4)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 28, 4)
+    et_angle(o, 0, 0.0, -0.037399914)
+    et_speed(o, 0, 3.5, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+end
+
+---非符 3653　洩矢諏訪子（stage07 BOSS 非符二，原作 Boss2）
+---  原作 Boss2：lifeSet(11600) + setInvuln(90) + setInterrupt(0, 3600, 3600, "BossCard2")
+---  ⇒ HP = 11600 − 3600 = 8000；t1 = t2 = 90/60。
+---  时间轴：t=110 moveLimit 之后每 60 帧叫一次 Boss2_at（它是单发，必须反复叫）、
+---  +30 帧处 moveRand。
+function s7.Boss2(o)
+    local ct = 0
+    ct = s_wait(ct, 110)                    -- +110: //110
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)      -- moveLimit（只在首次进入执行）
+    while true do                            -- _792：pushi(1); jmpNeq(_696, 110)
+        ct = s_wait(ct, 110)
+        t10_call_async(o, s7.Boss2_at)      -- callAsync("Boss2_at")
+        ct = s_wait(ct, 140)                -- //140
+        m_rand(o, "off", 30, 0, 2.0)        -- moveRand(30, 0, 2.0)
+        ct = s_wait(ct, 170)                -- //170
+    end
+end
+
+---Boss2_at：32 发环（基准角 %ANGLE_PLAYER、每发 +0.3926991，速 3.0→1.5），
+---  带两条分裂与一条加速记录。
+function s7.Boss2_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 2)
+    et_angle(o, 0, 0.0, 0.3926991)
+    et_speed(o, 0, 3.0, 1.5)
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 0, 2048, 1, -999999, 1.0, -999999.0)
+    et_ex(o, 0, 2, 0, 16384, 6, 2, -999999.0, -999999.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    fire_slot(o, 0)                          -- etOn(0)
+end
+
+---非符 3654　洩矢諏訪子（stage07 BOSS 非符三，原作 Boss3）
+---  原作 Boss3：lifeSet(10800) + setInvuln(60) + setInterrupt(0, 2800, 3600, "BossCard3")
+---  ⇒ HP = 10800 − 2800 = 8000；t1 = t2 = 60/60 = 1。
+---  时间轴：t=120 起两把异线程 at / at2（都是死循环），主线程之后每 180 帧 moveRand 一次
+---  （jmp(_832,300) → jmpNeq(_788,120) 把时钟拨回 120 ⇒ 下一拍在 240）。
+function s7.Boss3(o)
+    local ct = 0
+    ct = s_wait(ct, 120)                    -- +120: //120
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)      -- moveLimit
+    t10_call_async(o, s7.Boss3_at)          -- callAsync("Boss3_at")
+    t10_call_async(o, s7.Boss3_at2)         -- callAsync("Boss3_at2")
+    while true do                            -- _832：pushi(1); jmpNeq(_788, 120)
+        ct = s_wait(ct, 240)                -- _788：//240（首轮等 120 帧）
+        m_rand(o, "off", 40, 0, 1.0)        -- moveRand(40, 0, 1.0)
+        ct = s_wait(ct, 300)                -- //300
+        ct = 120                            -- jmpNeq(_788, 120)
+    end
+end
+
+---Boss3_at / _at2：每 13 帧一波、一波 8 轮，每轮 8 发环；
+---  at 槽 0（角步长 −0.016362462、速 2.3→1.9、色 6）、at2 槽 1（角步长 +0.016362462、速 3.0→2.4、色 2）。
+---  一波打完立刻接下一波（jmpNeq(_128, 0) 把时钟拨回 0）⇒ 每波 104 帧。
+---  [0] 跨波累加：每轮 ±0.19635（validRad 归一）。
+function s7.Boss3_at(o)
+    local ct = 0
+    local a0 = 0.0                           -- [0]
+    et_offset(o, 0, 0.0, 0.0)
+    while true do                             -- _600：pushi(1); jmpNeq(_128, 0)
+        et_new(o, 0)
+        et_aim(o, 0, 3)
+        et_sprite(o, 0, 5, 6)
+        et_count(o, 0, 8, 8)
+        et_angle(o, 0, 1.5707964, 0.0)
+        et_speed(o, 0, 2.3, 1.9)
+        o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                          -- [4] = 8
+        local old = n4; n4 = n4 - 1
+        while old ~= 0 do                     -- _556：deci([4]); jmpNeq(_396, 0)
+            ct = 0                            -- jmpNeq(_396, 0)：每轮把时钟拨回 0（nop@13 才等得到 13 帧）
+            et_angle(o, 0, a0, -0.016362462)
+            fire_slot(o, 0)                   -- etOn(0)
+            a0 = t10_wrap(a0 + 0.19635)       -- [0] += 0.19635；validRad([0])
+            ct = s_wait(ct, 13)               -- //13
+            old = n4; n4 = n4 - 1
+        end
+    end
+end
+
+function s7.Boss3_at2(o)
+    local ct = 0
+    local a0 = 0.0                           -- [0]
+    et_offset(o, 1, 0.0, 0.0)
+    while true do                             -- _600：pushi(1); jmpNeq(_128, 0)
+        et_new(o, 1)
+        et_aim(o, 1, 3)
+        et_sprite(o, 1, 5, 2)
+        et_count(o, 1, 8, 8)
+        et_angle(o, 1, 1.5707964, 0.0)
+        et_speed(o, 1, 3.0, 2.4)
+        o.pat[1].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                          -- [4] = 8
+        local old = n4; n4 = n4 - 1
+        while old ~= 0 do                     -- _556：deci([4]); jmpNeq(_396, 0)
+            ct = 0                            -- jmpNeq(_396, 0)：每轮把时钟拨回 0
+            et_angle(o, 1, a0, 0.016362462)
+            fire_slot(o, 1)                   -- etOn(1)
+            a0 = t10_wrap(a0 - 0.19635)       -- [0] −= 0.19635；validRad([0])
+            ct = s_wait(ct, 13)
+            old = n4; n4 = n4 - 1
+        end
+    end
+end
+
+---非符 3655　洩矢諏訪子（stage07 BOSS 非符四，原作 Boss4）
+---  原作 Boss4：lifeSet(11600) + setInvuln(60) + setInterrupt(0, 3600, 3600, "BossCard4")
+---  ⇒ HP = 8000；t1 = t2 = 1。
+---  时间轴：t=120 moveLimit 之后每 60 帧叫一次 Boss4_at、+30 帧处 moveRand。
+function s7.Boss4(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)  -- movePosTime(60, 4, 0, 128)（t=0）
+    ct = s_wait(ct, 120)                    -- +120: //120
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    while true do                            -- _852：pushi(1); jmpNeq(_756, 120)
+        ct = s_wait(ct, 120)
+        t10_call_async(o, s7.Boss4_at)      -- callAsync("Boss4_at")
+        ct = s_wait(ct, 150)                -- //150
+        m_rand(o, "off", 30, 0, 2.0)
+        ct = s_wait(ct, 180)                -- //180
+    end
+end
+
+---Boss4_at：32 发环（速 5.0→1.5、角不递增），间隔 30 帧再打一模一样的一发。
+function s7.Boss4_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 4)
+    et_angle(o, 0, 0.0, 0.0)
+    et_speed(o, 0, 5.0, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+    task.Wait(30)                            -- wait(30)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 4)
+    et_angle(o, 0, 0.0, 0.0)
+    et_speed(o, 0, 5.0, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+end
+
+---非符 3656　洩矢諏訪子（stage07 BOSS 非符五，原作 Boss5）
+---  原作 Boss5：lifeSet(11500) + setInvuln(90) + setInterrupt(0, 3500, 3600, "BossCard5")
+---  ⇒ HP = 11500 − 3500 = 8000；t1 = t2 = 90/60。
+---  时间轴：t=110 moveLimit 之后每 50 帧叫一次 Boss5_at（jmp(_872,160) → jmpNeq(_776,110)）、
+---  +20 帧处 moveRand。
+function s7.Boss5(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)  -- movePosTime(60, 4, 0, 128)（t=0）
+    ct = s_wait(ct, 110)                    -- +110: //110
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    while true do                            -- _872：pushi(1); jmpNeq(_776, 110)
+        ct = s_wait(ct, 110)
+        t10_call_async(o, s7.Boss5_at)      -- callAsync("Boss5_at")
+        ct = s_wait(ct, 130)                -- //130
+        m_rand(o, "off", 30, 0, 2.0)
+        ct = s_wait(ct, 160)                -- //160
+    end
+end
+
+---Boss5_at：与 Boss2_at 逐条相同（32 发环 + 两条分裂/加速记录、基准角 %ANGLE_PLAYER）。
+function s7.Boss5_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 2)
+    et_angle(o, 0, 0.0, 0.3926991)
+    et_speed(o, 0, 3.0, 1.5)
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 0, 2048, 1, -999999, 1.0, -999999.0)
+    et_ex(o, 0, 2, 0, 16384, 6, 2, -999999.0, -999999.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    fire_slot(o, 0)
+end
+
+---非符 3657　洩矢諏訪子（stage07 BOSS 非符六，原作 Boss6）
+---  原作 Boss6：lifeSet(11500) + setInvuln(60) + setInterrupt(0, 3500, 3600, "BossCard6")
+---  ⇒ HP = 8000；t1 = t2 = 1。结构与 Boss3 相同：t=120 起两把异线程、之后每 180 帧 moveRand。
+function s7.Boss6(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)  -- movePosTime(60, 4, 0, 128)（t=0）
+    ct = s_wait(ct, 120)                    -- +120: //120
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    t10_call_async(o, s7.Boss6_at)          -- callAsync("Boss6_at")
+    t10_call_async(o, s7.Boss6_at2)         -- callAsync("Boss6_at2")
+    while true do                            -- _864：pushi(1); jmpNeq(_820, 120)
+        ct = s_wait(ct, 240)                -- _820：//240（首轮等 120 帧）
+        m_rand(o, "off", 40, 0, 1.0)
+        ct = s_wait(ct, 300)                -- //300
+        ct = 120
+    end
+end
+
+---Boss6_at / _at2：与 Boss3_at / Boss3_at2 逐条相同（槽 0 / 槽 1、角步长 ∓0.016362462）。
+function s7.Boss6_at(o)
+    local ct = 0
+    local a0 = 0.0                           -- [0]
+    et_offset(o, 0, 0.0, 0.0)
+    while true do                             -- _600：pushi(1); jmpNeq(_128, 0)
+        et_new(o, 0)
+        et_aim(o, 0, 3)
+        et_sprite(o, 0, 5, 6)
+        et_count(o, 0, 8, 8)
+        et_angle(o, 0, 1.5707964, 0.0)
+        et_speed(o, 0, 2.3, 1.9)
+        o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                          -- [4] = 8
+        local old = n4; n4 = n4 - 1
+        while old ~= 0 do                     -- _556：deci([4]); jmpNeq(_396, 0)
+            ct = 0                            -- jmpNeq(_396, 0)：每轮把时钟拨回 0（nop@13 才等得到 13 帧）
+            et_angle(o, 0, a0, -0.016362462)
+            fire_slot(o, 0)
+            a0 = t10_wrap(a0 + 0.19635)
+            ct = s_wait(ct, 13)
+            old = n4; n4 = n4 - 1
+        end
+    end
+end
+
+function s7.Boss6_at2(o)
+    local ct = 0
+    local a0 = 0.0                           -- [0]
+    et_offset(o, 1, 0.0, 0.0)
+    while true do                             -- _600：pushi(1); jmpNeq(_128, 0)
+        et_new(o, 1)
+        et_aim(o, 1, 3)
+        et_sprite(o, 1, 5, 2)
+        et_count(o, 1, 8, 8)
+        et_angle(o, 1, 1.5707964, 0.0)
+        et_speed(o, 1, 3.0, 2.4)
+        o.pat[1].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                          -- [4] = 8
+        local old = n4; n4 = n4 - 1
+        while old ~= 0 do                     -- _556：deci([4]); jmpNeq(_396, 0)
+            ct = 0                            -- jmpNeq(_396, 0)：每轮把时钟拨回 0
+            et_angle(o, 1, a0, 0.016362462)
+            fire_slot(o, 1)
+            a0 = t10_wrap(a0 - 0.19635)
+            ct = s_wait(ct, 13)
+            old = n4; n4 = n4 - 1
+        end
+    end
+end
+
+---非符 3658　洩矢諏訪子（stage07 BOSS 非符七，原作 Boss7）
+---  原作 Boss7：lifeSet(12500) + setInvuln(60) + setInterrupt(0, 4500, 3600, "BossCard7")
+---  ⇒ HP = 12500 − 4500 = 8000；t1 = t2 = 1。结构与 Boss4 相同。
+function s7.Boss7(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)  -- movePosTime(60, 4, 0, 128)（t=0）
+    ct = s_wait(ct, 120)                    -- +120: //120
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    while true do                            -- _852：pushi(1); jmpNeq(_756, 120)
+        ct = s_wait(ct, 120)
+        t10_call_async(o, s7.Boss7_at)      -- callAsync("Boss7_at")
+        ct = s_wait(ct, 150)                -- //150
+        m_rand(o, "off", 30, 0, 2.0)
+        ct = s_wait(ct, 180)                -- //180
+    end
+end
+
+---Boss7_at：与 Boss4_at 逐条相同（32 发环、间隔 30 帧再打一发）。
+function s7.Boss7_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 4)
+    et_angle(o, 0, 0.0, 0.0)
+    et_speed(o, 0, 5.0, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+    task.Wait(30)                            -- wait(30)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_sprite(o, 0, 6, 6)
+    et_count(o, 0, 32, 4)
+    et_angle(o, 0, 0.0, 0.0)
+    et_speed(o, 0, 5.0, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+end
+
+---非符 3659　洩矢諏訪子（stage07 BOSS 非符八，原作 Boss8，最后一相非符）
+---  原作 Boss8：lifeSet(8001) + setInvuln(90) + setInterrupt(0, 1, 3600, "BossCard8")
+---  ⇒ HP = 8001 − 1 = 8000；t1 = t2 = 90/60。
+---  时间轴：t=110 起只叫一次 Boss8_at（死循环），主线程之后每 50 帧 moveRand。
+function s7.Boss8(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)  -- movePosTime(60, 4, 0, 128)（t=0）
+    ct = s_wait(ct, 110)                    -- +110: //110
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)
+    t10_call_async(o, s7.Boss8_at)          -- callAsync("Boss8_at")
+    while true do                            -- _824：pushi(1); jmpNeq(_760, 110)
+        ct = 110                            -- jmpNeq(_760, 110)
+        ct = s_wait(ct, 130)                -- //130
+        m_rand(o, "off", 30, 0, 2.0)
+        ct = s_wait(ct, 160)                -- //160（_824）
+    end
+end
+
+---Boss8_at：56 发环（速 4.0→1.5、每发 +0.3926991），每 10 帧重瞄一次自机再打，
+---  死循环（jmp(_332, 0) → jmpNeq(_264, 0) 恒真）。
+function s7.Boss8_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 6, 10)
+    et_count(o, 0, 56, 1)
+    et_angle(o, 0, 0.0, 0.3926991)
+    et_speed(o, 0, 4.0, 1.5)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do                            -- _332：pushi(1); jmpNeq(_264, 0)
+        et_angle(o, 0, t10_angle_player(o), 0.0)
+        fire_slot(o, 0)                      -- etOn(0)
+        task.Wait(10)                        -- wait(10)
+    end
+end
+
+--=====================================
+--八·B、stage03 / stage04 非符（原生 LuaSTG；只做 Lunatic 难度行）
+--  stage04 的中 BOSS（射命丸文）也是一张纯非符（原作 MBoss / MBossAt），
+--  与 BOSS 同组「4a」注册在最前（原作里中 BOSS 先于 BOSS 出场）。
+--  照例逐条读 thecl 反汇编
+--      thecl -d 10 -r -m "MAP/th10.eclm" stage03.ecl out.txt
+--  ＋ TH10 1.00a 复原源码，把每条 ECL 指令翻成原生 LuaSTG
+--  （task.Wait 计时 / fire_slot 出弹 / spawn_pod 叫子机 / m_rand 走位）。
+--
+--  ★ 原作的非符与符卡共用同一只敌机（Boss() 里 setInterrupt 一路切到 BossCard1()…），
+--    %F0/$I0 这些寄存器跨相保留；本移植版一张卡一个载体，所以凡「上一相设置、
+--    下一相读取」的寄存器都在读的一方重建（见各卡注释）。
+--  ★ stage03 的 Boss1/Boss2/Boss3 用 callAsyncId(name, 0) 起线程、killAsync(0) 停它
+--    （EclVm.cpp:726-745：id = 名字后的第 1 个实参，只有 callAsyncId 出来的线程有 id；
+--    主线程 id = −1 ⇒ killAsync(0) 命中的就是它）。这里用 o.t10_tid[id] 存协程，
+--    killAsync 把它从 o.task 摘掉 —— THlib 停任务就是这个做法。
+--  ★ 演出/流程指令（timerReset / lifeSet / lifeMarker / setInterrupt / setChapter /
+--    stars / playSound / anm* / TIMEOUT 分支的 etClear·etCancel·drop*）在本移植里
+--    按无效果处理或交给卡片框架；它们都不占帧，漏掉不影响弹幕时间轴。
+--=====================================
+local s3n = {}
+local s4n = {}
+
+---callAsyncId(name, id)：起一个带 id 的 ECL 线程（id 记在载体上）。
+local function t10_async_id(o, id, fn)
+    local co = task.New(o, function() fn(o) end)
+    o.t10_tid = o.t10_tid or {}
+    o.t10_tid[id] = co
+    return co
+end
+
+---killAsync(id)：停掉 id 号线程（找不到就是 no-op）。
+---★ 用「换一张 o.task 表」而不是表内 table.remove：真引擎 task:Do 用 pairs 遍历 o.task，
+---  遍历中间挪数组是未定义行为（会漏跑挨着的线程）；换表与 task:Clear 同款写法。
+---  自检桩件按「协程还在不在 o.task 里」判存活，两边语义一致。
+local function t10_kill_id(o, id)
+    local m = o.t10_tid
+    local co = m and m[id]
+    if co == nil then return end
+    m[id] = nil
+    local ts = o.task
+    if ts then
+        local keep = {}
+        for i = 1, #ts do
+            if ts[i] ~= co then keep[#keep + 1] = ts[i] end
+        end
+        o.task = keep
+    end
+end
+
+---非符 3651　河城荷取（stage03 BOSS 非符一）
+---  原作 Boss1：入场 120 帧后进入 120 帧一轮的循环——_368 把时钟拨回 0：
+---    t=0   callAsyncId("Boss1_at", 0)（三槽螺旋，本身是死循环）
+---    t=60  killAsync(0) 停掉 at → moveRand(40,0,2.0) → callAsyncId("Boss1_at2", 0)
+---    t=120 killAsync(0) 停掉 at2 → 回 t=0
+---  HP = Boss() 的 lifeSet 8800 − setInterrupt 阈值 2300 = 6500；
+---  t1 = t2 = Boss() 的 setInvuln(60)/60 = 1（Boss1 自己不带 setInvuln）。
+function s3n.Boss1(o)
+    local ct = 0
+    ct = 120                                    -- jmp(Boss1_368, 120)
+    while true do                               -- _368：pushi(1); jmpNeq(Boss1_168, 0)
+        ct = 0
+        t10_async_id(o, 0, s3n.Boss1_at)        -- callAsyncId("Boss1_at", 0)
+        ct = s_wait(ct, 60)                     -- //60
+        t10_kill_id(o, 0)                       -- killAsync(0)
+        m_rand(o, "off", 40, 0, 2.0)            -- moveRand(40, 0, 2.0)
+        t10_async_id(o, 0, s3n.Boss1_at2)       -- callAsyncId("Boss1_at2", 0)
+        ct = s_wait(ct, 120)                    -- //120
+        t10_kill_id(o, 0)                       -- killAsync(0)
+    end
+end
+
+---Boss1_at：三槽（初始角 π/2、−π/3、−2π/3）绕自身旋转的螺旋。
+---  L：astep 0.11219974、速度 4.5、内层每轮 32 发（[0]）；每轮先 etCount 改内层发数、
+---  2 帧后 etOn 三槽一起打。
+---  ★ 外层 `pushi(1); jmpNeq(_928, 0)` 是死循环：每 32 轮把 [0] 复位、[4] 从 1 重新数。
+function s3n.Boss1_at(o)
+    local astep = 0.11219974                    -- diffF([8], 0.3926991,0.19634955,0.19634955,0.11219974)
+    local spd = 4.5                             -- diffF([12], 2.5,2.5,3.5,4.5)
+    et_new(o, 0); et_aim(o, 0, 1); et_sprite(o, 0, 8, 6); et_count(o, 0, 1, 1)
+    et_angle(o, 0, 1.5707964, astep); et_speed(o, 0, spd, 1.0)
+    et_new(o, 1); et_aim(o, 1, 1); et_sprite(o, 1, 8, 6); et_count(o, 1, 1, 1)
+    et_angle(o, 1, -1.0471976, astep); et_speed(o, 1, spd, 1.0)
+    et_new(o, 2); et_aim(o, 2, 1); et_sprite(o, 2, 8, 6); et_count(o, 2, 1, 1)
+    et_angle(o, 2, -2.0943952, astep); et_speed(o, 2, spd, 1.0)
+    for i = 0, 2 do
+        o.pat[i].ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+        o.pat[i].ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    end
+    local ct = 0
+    ct = 2                                      -- jmp(Boss1_at_1292, 2)
+    while true do                               -- _1292：pushi(1); jmpNeq(_928, 0)
+        ct = 0
+        local n0 = 32                           -- diffI([0], 8,16,16,32) L
+        local n4 = 1                            -- [4] = 1
+        ct = 2                                  -- jmp(_1248, 2)
+        local old = n0; n0 = n0 - 1             -- _1248：deci([0])
+        while old ~= 0 do                       -- jmpNeq(_1028, 0)
+            ct = 0
+            et_count(o, 0, n4, 1); et_count(o, 1, n4, 1); et_count(o, 2, n4, 1)
+            ct = s_wait(ct, 2)                  -- +2：三槽 etOn
+            fire_slot(o, 0); fire_slot(o, 1); fire_slot(o, 2)
+            n4 = n4 + 1                         -- [4] += 1
+            old = n0; n0 = n0 - 1               -- 落回 _1248
+        end
+    end
+end
+
+---Boss1_at2：单槽（槽 1）每 20 帧一波、每波 5 发 × 3 圈的自机狙。
+---  L：c2 = 3（= etCount(1, 5, [12]) 的第 2 个计数，**不是外层循环次数**）、速度 4.6。
+function s3n.Boss1_at2(o)
+    local c2 = 3                                -- diffI([12], 1,1,3,3) L
+    local spd = 4.6                             -- diffF([8], 1.6,1.6,3.0,4.6) L
+    et_new(o, 1); et_aim(o, 1, 0); et_sprite(o, 1, 12, 3)
+    et_count(o, 1, 5, c2); et_angle(o, 1, 0.0, 0.3926991); et_speed(o, 1, spd, 1.0)
+    o.pat[1].ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    o.pat[1].ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    while true do                               -- _444：pushi(1); jmpNeq(_424, 0)
+        ct = 0
+        ct = s_wait(ct, 20)                     -- _424：etOn(1) 在 t=20
+        fire_slot(o, 1)
+    end
+end
+
+---非符 3652　河城荷取（stage03 BOSS 非符二）
+---  原作 Boss2：lifeSet(8600) + setInterrupt(0, 2100, 3600, "BossCard2") ⇒ HP = 6500。
+---  入场 560 帧（jmp(Boss2_1104, 560)）后进入 440 帧一轮的循环（_1104 把时钟拨回 120）：
+---    t=120 %F0 = +0.004134 → callAsyncId("Boss2_at", 0)
+---    t=280 killAsync(0) → moveRand(40,0,2.0) → callAsyncId("Boss2_at2", 0)
+---    t=340 killAsync(0) → %F0 = −0.004134 → callAsyncId("Boss2_at", 0)
+---    t=500 killAsync(0) → moveRand(40,0,2.0) → callAsyncId("Boss2_at2", 0)
+---    t=560 killAsync(0) → 回 t=120
+function s3n.Boss2(o)
+    local ct = 0
+    ct = s_wait(ct, 120)                        -- +120: //120（原作 nop 在 t=120）
+    ct = 560                                    -- jmp(Boss2_1104, 560)
+    while true do                               -- _1104：pushi(1); jmpNeq(Boss2_624, 120)
+        ct = 120
+        o.F0 = 0.004134                         -- %F0：Boss2_at 每轮的转角增量
+        t10_async_id(o, 0, s3n.Boss2_at)
+        ct = s_wait(ct, 280)                    -- //280
+        t10_kill_id(o, 0)
+        m_rand(o, "off", 40, 0, 2.0)
+        t10_async_id(o, 0, s3n.Boss2_at2)
+        ct = s_wait(ct, 340)                    -- //340
+        t10_kill_id(o, 0)
+        o.F0 = -0.004134
+        t10_async_id(o, 0, s3n.Boss2_at)
+        ct = s_wait(ct, 500)                    -- //500
+        t10_kill_id(o, 0)
+        m_rand(o, "off", 40, 0, 2.0)
+        t10_async_id(o, 0, s3n.Boss2_at2)
+        ct = s_wait(ct, 560)                    -- //560
+        t10_kill_id(o, 0)
+    end
+end
+
+---Boss2_at：三槽（π/2、−π/3、−2π/3）螺旋，每轮把三个角各 +%F0（%F0 由主线程给）。
+---  L：astep 0.19634955、速度 3.5、内层每轮 20 发（[0]）。
+---  ★ [8]/[12]/[16] 三个基准角在每轮外层（_928）重新写死 ⇒ 角度不会被上一轮带偏；
+---    外层每跑完 20 轮把 %F0 取反（±0.004134 交替）。
+function s3n.Boss2_at(o)
+    local astep = 0.19634955                    -- diffF([24], 0.3926991,0.3926991,0.2617994,0.19634955)
+    local spd = 3.5                             -- diffF([20], 2.0,2.5,3.5,3.5)
+    et_new(o, 0); et_aim(o, 0, 1); et_sprite(o, 0, 8, 6); et_count(o, 0, 1, 1)
+    et_angle(o, 0, 1.5707964, astep); et_speed(o, 0, spd, 1.0)
+    et_new(o, 1); et_aim(o, 1, 1); et_sprite(o, 1, 8, 6); et_count(o, 1, 1, 1)
+    et_angle(o, 1, -1.0471976, astep); et_speed(o, 1, spd, 1.0)
+    et_new(o, 2); et_aim(o, 2, 1); et_sprite(o, 2, 8, 6); et_count(o, 2, 1, 1)
+    et_angle(o, 2, -2.0943952, astep); et_speed(o, 2, spd, 1.0)
+    for i = 0, 2 do
+        o.pat[i].ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+        o.pat[i].ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    end
+    local ct = 0
+    ct = 2                                      -- jmp(Boss2_at_1860, 2)
+    while true do                               -- _1860：pushi(1); jmpNeq(_928, 0)
+        ct = 0
+        local n0 = 20                           -- diffI([0], 10,10,15,20) L
+        local n4 = 1                            -- [4] = 1
+        local a8, a12, a16 = 1.570796, -1.047198, -2.094395
+        ct = 2                                  -- jmp(_1740, 2)
+        local old = n0; n0 = n0 - 1             -- _1740：deci([0])
+        while old ~= 0 do                       -- jmpNeq(_1148, 0)
+            ct = 0
+            et_angle(o, 0, a8, astep)           -- _1148（t=0）
+            et_angle(o, 1, a12, astep)
+            et_angle(o, 2, a16, astep)
+            et_count(o, 0, n4, 1)
+            et_count(o, 1, n4, 1)
+            et_count(o, 2, n4, 1)
+            ct = s_wait(ct, 2)                  -- +2
+            fire_slot(o, 0); fire_slot(o, 1); fire_slot(o, 2)
+            a8 = a8 + o.F0                      -- [8] += %F0
+            a12 = a12 + o.F0                    -- [12] += %F0
+            a16 = a16 + o.F0                    -- [16] += %F0
+            o.F0 = t10_wrap(o.F0)               -- validRad(%F0/%F1/%F2)
+            o.F1 = t10_wrap(o.F1)
+            o.F2 = t10_wrap(o.F2)
+            n4 = n4 + 1                         -- [4] += 1
+            old = n0; n0 = n0 - 1               -- 落回 _1740
+        end
+        o.F0 = -o.F0                            -- 20 轮后 %F0 = −%F0
+    end
+end
+
+---Boss2_at2：单槽（槽 3）每 20 帧一波、每波 5 发 × 1 圈。
+function s3n.Boss2_at2(o)
+    et_new(o, 3); et_aim(o, 3, 0); et_sprite(o, 3, 12, 3)
+    et_count(o, 3, 5, 1); et_angle(o, 3, 0.0, 0.3926991); et_speed(o, 3, 1.6, 1.0)
+    o.pat[3].ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    o.pat[3].ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    while true do                               -- _372：pushi(1); jmpNeq(_352, 0)
+        ct = 0
+        ct = s_wait(ct, 20)                     -- _352：etOn(3) 在 t=20
+        fire_slot(o, 3)
+    end
+end
+
+---非符 3653　河城荷取（stage03 BOSS 非符三）
+---  原作 Boss3：lifeSet(8800) + !L setInterrupt(0, 2300, 3600, "BossCard3L") ⇒ HP = 6500。
+---  结构与 Boss2 完全一样（共用 Boss2_at / Boss2_at2），只有 %F0 按难度分档：
+---  !E 0.004909 / !NH 0.008727 / !L 0.006283 —— 而且**两拍都是 +0.006283**
+---  （不像 Boss2 第二拍取负）。
+function s3n.Boss3(o)
+    local ct = 0
+    ct = s_wait(ct, 120)                        -- +120: //120（原作 nop 在 t=120）
+    ct = 560                                    -- jmp(Boss3_1336, 560)
+    while true do                               -- _1336：pushi(1); jmpNeq(Boss3_696, 120)
+        ct = 120
+        o.F0 = 0.006283                         -- !L
+        t10_async_id(o, 0, s3n.Boss2_at)
+        ct = s_wait(ct, 280)                    -- //280
+        t10_kill_id(o, 0)
+        m_rand(o, "off", 40, 0, 2.0)
+        t10_async_id(o, 0, s3n.Boss2_at2)
+        ct = s_wait(ct, 340)                    -- //340
+        t10_kill_id(o, 0)
+        o.F0 = 0.006283                         -- 第二拍也是 +0.006283（!L）
+        t10_async_id(o, 0, s3n.Boss2_at)
+        ct = s_wait(ct, 500)                    -- //500
+        t10_kill_id(o, 0)
+        m_rand(o, "off", 40, 0, 2.0)
+        t10_async_id(o, 0, s3n.Boss2_at2)
+        ct = s_wait(ct, 560)                    -- //560
+        t10_kill_id(o, 0)
+    end
+end
+
+---中BOSS 非符 3670　射命丸文（stage04 中 BOSS；原作 MBoss + MBossAt）
+---  MBoss：入场 movePosTime(60, 4, 0, 128)；lifeSet(10000)、
+---    setInterrupt(1, 0, 1800, "MBossDead") 的阈值是 0 ⇒ HP = 10000、时限 1800 帧 = 30 s；
+---    setInvuln(200) ⇒ t1 = t2 = 200/60。
+---  主循环（_684 的 deci([4])，[4] 初值 100）每轮真实 240 帧：
+---    //60  %F0 = 2.019595 → 同步 call("MBossAt")（占 81 帧）→ moveRand(60, 4, 1.5)
+---    //100 %F0 = 1.121997 → 同步 call("MBossAt")（占 81 帧）→ moveRand(60, 4, 1.5)
+---    //140 回到 deci。deci 的第 0 次（old = 100）在同一帧里就跳到 //60。
+function s4n.MBoss(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)     -- movePosTime(60, 4, 0, 128)
+    local n4 = 100                              -- seti([4], 100)
+    ct = s_wait(ct, 60)                         -- +60: //60
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)          -- moveLimit(0, 96, 280, 64)
+    ct = 140                                    -- jmp(MBoss_684, 140)
+    while true do                               -- MBoss_684：deci([4]); jmpNeq(MBoss_460, 60)
+        local old = n4; n4 = n4 - 1
+        if old == 0 then break end
+        ct = 60                                 -- jmpNeq(MBoss_460, 60)：时钟拨回 60
+        o.F0 = 2.019595                         -- setf(%F0)
+        s4n.MBossAt(o)                          -- call("MBossAt")（同步：占 81 真实帧）
+        m_rand(o, "off", 60, 4, 1.5)            -- moveRand(60, 4, 1.5)
+        ct = s_wait(ct, 100)                    -- +40: //100
+        o.F0 = 1.121997                         -- setf(%F0)
+        s4n.MBossAt(o)                          -- call("MBossAt")（同步：占 81 真实帧）
+        m_rand(o, "off", 60, 4, 1.5)            -- moveRand(60, 4, 1.5)
+        ct = s_wait(ct, 140)                    -- +40: //140
+    end
+end
+
+---MBossAt（**同步子程序**，只由 MBoss 用 call 调用）：绕 BOSS 画螺旋，80 帧各出一排两发。
+---  槽 0：角 [16] 每帧 += 0.15708（validRad），半径 [12] 每帧 += 1.5（从 1.0 起）；
+---  槽 1：与槽 0 同角、半径取反（原作把 [12] 取负→circlePos→再取负）。
+---  deci([0]) 从 80 递减：第 0 帧只跑 head（4 条指令的时间戳都是 0），
+---  之后每帧「tail(t=1) → deci → head(t=0)」；81 帧后 ret，调用者的 clock 才恢复。
+function s4n.MBossAt(o)
+    local a12 = 1.0                             -- setf([12], 1.0)
+    local n0 = 80                               -- seti([0], 80)
+    et_new(o, 0); et_aim(o, 0, 3); et_sprite(o, 0, 3, 6)
+    et_count(o, 0, 3, 1)
+    et_angle(o, 0, 0.0, 0.7853982)
+    et_speed(o, 0, 1.8, 1.0)
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 2, 0, 8192, 100, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    et_angle(o, 1, o.F0, 0.31415927)            -- etAngle(1, %F0, 0.31415927)
+    et_count(o, 0, 5, 2)                        -- etCountD(0, 1,5,6,5, 1,1,1,2) 的 L 行
+    et_sprite(o, 0, 3, 6); et_sprite(o, 1, 12, 3)
+    et_speed(o, 0, 1.8, 1.0)                    -- etSpeedD(0, …) 的 L 行
+    et_speed(o, 1, 1.2, 1.0)                    -- etSpeedD(1, …) 的 L 行
+    local a16 = rndrad()                        -- setf([16], %RANDRAD)
+    local function head()                       -- _744 的 t=0 段
+        a12 = a12 + 1.5                         -- [12] += 1.5
+        a16 = t10_wrap(a16 + 0.15708)           -- [16] += 0.15708；validRad([16])
+        et_angle(o, 0, a16, 0.31415927)         -- etAngle(0, [16], 0.31415927)
+        et_offset(o, 0, circle_pos(a16, a12))   -- circlePos([4],[8],[16],[12]); etOffset(0,…)
+    end
+    local function tail()                       -- _744 的 t=1 段
+        fire_slot(o, 0)                         -- etOn(0)
+        et_offset(o, 1, circle_pos(a16, -a12))  -- [12] 取负 → circlePos → 取回；etOffset(1,…)
+        fire_slot(o, 1)                         -- etOn(1)
+    end
+    n0 = n0 - 1                                 -- 第 0 帧的 deci([0])（old = 80 ≠ 0 ⇒ 跳转）
+    head()
+    while true do
+        task.Wait(1)
+        tail()
+        local old = n0; n0 = n0 - 1             -- 下一帧的 deci([0])
+        if old == 0 then break end              -- jmpNeq(MBossAt_744, 0)
+        head()
+    end
+end
+
+---非符 3654　射命丸文（stage04 BOSS 非符一）
+---  原作 Boss1：lifeSet 9500（Boss() 给的）− setInterrupt 阈值 2500 = HP 7000。
+---  入场 280 帧（jmp(Boss1_504, 280)）后进入 280 帧一轮的循环（_504 把时钟拨回 0）：
+---    t=0   callAsync("BossCharge")（8 只只转不打的使魔，偏移 −16）
+---    t=60  callAsync("Boss1_at2")（8 轮 × 4 组圆环）
+---    t=80  callAsync("BossChargeL")（与 BossCharge 同构，只有偏移取 +16）
+---    t=140 callAsync("Boss1_at3")（同 at2，基准角不同、每轮 +0.314159）
+---    t=220 moveRand(40, 0, 4.0)
+---    t=280 回 t=0
+function s4n.Boss1(o)
+    local ct = 0
+    ct = 280                                    -- jmp(Boss1_504, 280)
+    while true do                               -- _504：pushi(1); jmpNeq(Boss1_168, 0)
+        ct = 0
+        t10_call_async(o, s4_BossCharge)        -- callAsync("BossCharge")
+        ct = s_wait(ct, 60)                     -- //60
+        t10_call_async(o, s4n.Boss1_at2)
+        ct = s_wait(ct, 80)                     -- //80
+        t10_call_async(o, s4n.BossChargeL)
+        ct = s_wait(ct, 140)                    -- //140
+        t10_call_async(o, s4n.Boss1_at3)
+        ct = s_wait(ct, 220)                    -- //220
+        m_rand(o, "off", 40, 0, 4.0)
+        ct = s_wait(ct, 280)                    -- //280
+    end
+end
+
+---BossChargeL = BossCharge 的 +16 版（Lunatic 行专用），逐条相同、只有偏移取正。
+function s4n.BossChargeL(o)
+    s4_BossCharge(o, 16.0)
+end
+
+---Boss1_at（**同步子程序**，被 at2/at3 用 call 调用）：一次调用 = 同一帧打出 [16] 发
+---  （L = 16）圆环，出弹点 = circlePos([20], [8])，[20] 每发 +2π/[16]。
+---  实参按 ECL 调用约定落 [0]/[4]/[8]/[12]：基准角 / 速度 / 半径 / 精灵色。
+---  ★ 整段没有 wait ⇒ 16 发全在同一帧出（原作就是「一发指令打一圈」）。
+function s4n.Boss1_at(o, a0, a4, a8, aC)
+    local n16 = 16                              -- diffI([16], 12,12,12,16) L
+    et_new(o, 0); et_aim(o, 0, 1); et_sprite(o, 0, 2, aC); et_count(o, 0, 1, 1)
+    et_angle(o, 0, a0, 0.0); et_speed(o, 0, a4, 1.0)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    o.pat[0].ex[1] = tp_record(0, 8192, 60, -999999, -999999.0, -999999.0)
+    local a20 = a0                              -- [20] = [0]
+    local a24 = 6.2831855 / n16                 -- [24] = 2π/[16]
+    local old = n16; n16 = n16 - 1              -- jmp(_640, 0) → _640：deci([16])
+    while old ~= 0 do
+        local x, y = circle_pos(a20, a8)        -- circlePos(%F0, %F1, [20], [8])
+        et_offset(o, 0, x, y)
+        fire_slot(o, 0)                         -- etOn(0)
+        a20 = t10_wrap(a20 + a24)               -- [20] += [24]；validRad([20])
+        old = n16; n16 = n16 - 1
+    end
+    et_offset(o, 0, 0.0, 0.0)                   -- etOffset(0, 0, 0)
+end
+
+---Boss1_at2 / Boss1_at3：8 轮 × 4 组圆环，每轮 5 帧。
+---  L：($DIFF≥1)、($DIFF≥2) 两个条件都恒真 ⇒ 每轮 4 次 call（色 6/2/4/4）。
+---  at2：基准角 2.356194、每轮 −0.314159；at3：基准角 0.785398、每轮 +0.314159。
+---  两者每轮都 [4] += 0.3、[8] += 16。
+function s4n.Boss1_at2(o)
+    local a0, a4, a8 = 2.356194, 0.8, 16.0
+    local n12 = 8                               -- [12] = 8
+    local ct = 0
+    ct = 5                                      -- jmp(Boss1_at2_1160, 5)
+    local old = n12; n12 = n12 - 1              -- _1160：deci([12])
+    while old ~= 0 do
+        ct = 0                                  -- jmpNeq(_240, 0)
+        s4n.Boss1_at(o, a0, a4, a8, 6)          -- ($DIFF≥1) or ([12]%2==0)：L 恒真
+        s4n.Boss1_at(o, a0 - PI, a4, a8, 2)
+        s4n.Boss1_at(o, a0 - 1.5707964, a4, a8, 4)   -- $DIFF≥2：L 恒真
+        s4n.Boss1_at(o, a0 + 1.5707964, a4, a8, 4)
+        a4 = a4 + 0.3                           -- _932 组（t=0）
+        a8 = a8 + 16.0
+        ct = s_wait(ct, 5)
+        a0 = a0 - 0.314159                      -- t=5
+        old = n12; n12 = n12 - 1
+    end
+end
+
+function s4n.Boss1_at3(o)
+    local a0, a4, a8 = 0.785398, 0.8, 16.0
+    local n12 = 8
+    local ct = 0
+    ct = 5                                      -- jmp(Boss1_at3_1160, 5)
+    local old = n12; n12 = n12 - 1
+    while old ~= 0 do
+        ct = 0
+        s4n.Boss1_at(o, a0, a4, a8, 6)
+        s4n.Boss1_at(o, a0 - PI, a4, a8, 2)
+        s4n.Boss1_at(o, a0 - 1.5707964, a4, a8, 4)
+        s4n.Boss1_at(o, a0 + 1.5707964, a4, a8, 4)
+        a4 = a4 + 0.3
+        a8 = a8 + 16.0
+        ct = s_wait(ct, 5)
+        a0 = a0 + 0.314159                      -- t=5（at3 是加）
+        old = n12; n12 = n12 - 1
+    end
+end
+
+---非符 3655　射命丸文（stage04 BOSS 非符二）
+---  原作 Boss2：lifeSet(9500) + setInterrupt(0, 2500, 3600, "BossCard2") ⇒ HP = 7000。
+---  入场 240 帧（jmp(Boss2_932, 240)）后进入 120 帧一轮的循环（_932 把时钟拨回 120）：
+---    t=120 callAsync("BossCharge")（此时在本仓库坐标里是 t=0 时间戳的指令）
+---    t=180 callAsync("Boss2_at2") + callAsync("Boss2_at3") + diffWait(…,50) + moveRand
+---    t=240 回 t=120
+---  ★ diffWait(80,80,50,50) ⇒ L 时 clock 被减 50，把 //240 的等待从 60 帧拉到 110 帧。
+function s4n.Boss2(o)
+    local ct = 0
+    ct = s_wait(ct, 120)                        -- +120: //120（原作 nop 在 t=120）
+    ct = 240                                    -- jmp(Boss2_932, 240)
+    while true do                               -- _932：pushi(1); jmpNeq(Boss2_668, 120)
+        ct = 120
+        t10_call_async(o, s4_BossCharge)        -- callAsync("BossCharge")
+        ct = s_wait(ct, 180)                    -- //180
+        t10_call_async(o, s4n.Boss2_at2)
+        t10_call_async(o, s4n.Boss2_at3)
+        ct = ct - 50                            -- diffWait(80,80,50,50) ⇒ L：时钟提前 50
+        ct = s_wait(ct, 180)                    -- moveRand 在 t=180 ⇒ 再等 50 帧
+        m_rand(o, "off", 40, 0, 4.0)            -- moveRand(40, 0, 4.0)
+        ct = s_wait(ct, 240)                    -- //240
+    end
+end
+
+---Boss2_at：单槽（槽 0）圆环，**与 Boss1_at 同构**但 [16] = 12、[20] 先 validRad；
+---  [0] 每发 +2π/[16]，[16] = 12 发/圈。
+function s4n.Boss2_at(o, a0, a4, a8, aC)
+    local n16 = 12                              -- [16] = 12
+    et_new(o, 0); et_aim(o, 0, 1); et_sprite(o, 0, 2, aC); et_count(o, 0, 1, 1)
+    et_angle(o, 0, a0, 0.0); et_speed(o, 0, a4, 1.0)
+    o.pat[0].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    o.pat[0].ex[1] = tp_record(0, 8192, 60, -999999, -999999.0, -999999.0)
+    local a20 = t10_wrap(a0)                    -- [20] = [0]；validRad([20])
+    local a24 = 6.2831855 / n16                 -- [24] = 2π/[16]
+    local old = n16; n16 = n16 - 1              -- jmp(_664, 0) → _664：deci([16])
+    while old ~= 0 do
+        local x, y = circle_pos(a20, a8)
+        et_offset(o, 0, x, y)
+        fire_slot(o, 0)
+        a20 = t10_wrap(a20 + a24)
+        old = n16; n16 = n16 - 1
+    end
+    et_offset(o, 0, 0.0, 0.0)
+end
+
+---Boss2_at2：32 轮、每轮 2 帧，两列（角 ±π）各一发 12 环。
+---  L：速度 diffF([4], 1.5,1.5,2.5,3.5) = 3.5；!L 的 [0] += 0.15708（再 validRad）在 L 执行。
+function s4n.Boss2_at2(o)
+    local a8 = 16.0
+    local a0 = t10_wrap(2.356194 + 0.15708)  -- !L：pushf([0]); pushf(0.15708f); addf; validRad([0])
+    local a4 = 3.5                              -- diffF([4], 1.5,1.5,2.5,3.5) L
+    local n12 = 32                              -- [12] = 32
+    local ct = 0
+    local old = n12; n12 = n12 - 1              -- jmp(_624, 0) → _624：deci([12])
+    while old ~= 0 do
+        ct = 0                                  -- jmpNeq(_332, 0)
+        s4n.Boss2_at(o, a0, a4, a8, 6)
+        s4n.Boss2_at(o, a0 - PI, a4, a8, 6)     -- [!NHL]：L 执行
+        ct = ct - 2                             -- diffWait(5,5,3,2) ⇒ L 等 2 帧
+        ct = s_wait(ct, 0)
+        a0 = a0 - 0.314159
+        old = n12; n12 = n12 - 1
+    end
+end
+
+---Boss2_at3：32 轮、每轮 2 帧，两列（角 ±π）各一发，速度 L = 6.0；[0] 每轮 +0.314159。
+---  起手与 at2 一样有 !L 的 [0] += 0.15708。
+function s4n.Boss2_at3(o)
+    local a8 = 16.0
+    local a0 = t10_wrap(0.628319 + 0.15708)  -- !L：pushf([0]); pushf(0.15708f); addf; validRad([0])
+    local a4 = 6.0                              -- diffF([4], 3.0,3.0,4.0,6.0) L
+    local n12 = 32
+    local ct = 0
+    local old = n12; n12 = n12 - 1
+    while old ~= 0 do
+        ct = 0
+        s4n.Boss2_at(o, a0, a4, a8, 2)          -- [!NHL]：L 执行
+        s4n.Boss2_at(o, a0 - PI, a4, a8, 2)
+        ct = ct - 2                             -- diffWait(5,5,3,2) ⇒ L 等 2 帧
+        ct = s_wait(ct, 0)
+        a0 = a0 + 0.314159
+        old = n12; n12 = n12 - 1
+    end
+end
+
+---非符 3656　射命丸文（stage04 BOSS 非符三）
+---  原作 Boss3：!NHL lifeSet(7000) + !NHL setInterrupt(0, 0, 3600, "BossCard3")
+---  （阈值 0 ⇒ 整条血打完）⇒ HP = 7000；setInvuln(120) ⇒ t1 = t2 = 2。
+---  入场 320 帧（jmp(Boss3_940, 320)）后进入 200 帧一轮的循环（_940 拨回 120）：
+---    t=120 callAsync("BossCharge")
+---    t=180 callAsync("Boss3_at2") + callAsync("Boss3_at3")
+---    t=260 moveRand(40, 0, 4.0)
+---    t=320 回 t=120
+function s4n.Boss3(o)
+    local ct = 0
+    ct = s_wait(ct, 120)                        -- +120: //120（原作 nop 在 t=120）
+    ct = 320                                    -- jmp(Boss3_940, 320)
+    while true do                               -- _940：pushi(1); jmpNeq(Boss3_708, 120)
+        ct = 120
+        t10_call_async(o, s4_BossCharge)        -- callAsync("BossCharge")
+        ct = s_wait(ct, 180)                    -- //180
+        t10_call_async(o, s4n.Boss3_at2)
+        t10_call_async(o, s4n.Boss3_at3)
+        ct = s_wait(ct, 260)                    -- //260
+        m_rand(o, "off", 40, 0, 4.0)
+        ct = s_wait(ct, 320)                    -- //320
+    end
+end
+
+---Boss3_at2：32 轮、每轮 5 帧，两列（角 ±π）各一发 12 环；L：半径 20、速度 2.0。
+---  [!NHL] 的第二发 L 也执行。
+function s4n.Boss3_at2(o)
+    local a8 = 20.0
+    local a0 = 2.356194
+    local a4 = 2.0                              -- diffF([4], 1.0,1.0,1.5,2.0) L
+    local n12 = 32
+    local ct = 0
+    ct = 5                                      -- jmp(Boss3_at2_496, 5)
+    local old = n12; n12 = n12 - 1              -- _496：deci([12])
+    while old ~= 0 do
+        ct = 0
+        s4n.Boss2_at(o, a0, a4, a8, 6)          -- call("Boss2_at", …) ← stage04 的 Boss2_at
+        s4n.Boss2_at(o, a0 - PI, a4, a8, 6)     -- [!NHL]：L 执行
+        ct = s_wait(ct, 5)
+        a0 = a0 - 0.314159
+        old = n12; n12 = n12 - 1
+    end
+end
+
+---Boss3_at3：32 轮、每轮 10 帧；$DIFF==3（L）时每轮打 5 发：
+---  [0]、[0]−2π/5、[0]−2.513274、[0]−3.769911、[0]−5.026548，然后 [0] += 0.20944。
+---  （!EN 那支才是 +0.314159 的 5 帧节奏，L 不走。）
+function s4n.Boss3_at3(o)
+    local a8 = 16.0
+    local a0 = 0.628319
+    local a4 = 5.0                              -- diffF([4], 3.0,3.0,4.0,5.0) L
+    local n12 = 32
+    local ct = 0
+    ct = s_wait(ct, 10)                         -- jmp(_2000, 0)：_2000 的 deci 在 t=10 ⇒ 首轮先等 10 帧
+    local old = n12; n12 = n12 - 1              -- jmp(_2000, 0) → _2000：deci([12])
+    while old ~= 0 do
+        ct = 0                                  -- jmpNeq(_236, 0)
+        s4n.Boss2_at(o, a0, a4, a8, 2)
+        -- $DIFF==3（L）：再补 4 发
+        s4n.Boss2_at(o, a0 - 6.2831855 / 5, a4, a8, 2)
+        s4n.Boss2_at(o, a0 - 2.513274, a4, a8, 2)
+        s4n.Boss2_at(o, a0 - 3.769911, a4, a8, 2)
+        s4n.Boss2_at(o, a0 - 5.026548, a4, a8, 2)
+        ct = s_wait(ct, 10)                     -- !HL 的 [0] += 0.20944 在 t=10
+        a0 = a0 + 0.20944
+        old = n12; n12 = n12 - 1
+    end
+end
+
 ---=====================================
 ---符卡注册（一个角色一个组；boss.Define 必须先于 boss.card.add）
 ---  boss.card.add 会当场按 "<字母><关卡号>" 查 _editor_boss，Define 晚一行就报
@@ -2886,28 +3938,52 @@ boss.Define("5a", "洩矢諏訪子",         "TH10_2", TH10_bg, { 0, 80 }, nil, 
 ---    · t1 / t2 = setInvuln(n) 的 n / 60（t1 = t2 ⇒ 高防一结束就满伤害，和原作一致）
 ---  例外：「無双風神」原作 setInvuln(1080) 正好覆盖整张卡的 1080 帧（并且带 spellTimeout()）
 ---    ⇒ 是**耐久符卡**，t1 = t2 = t3（boss_system.lua:161 据此判成耐久卡、伤害恒 0）。
----  CARD_ID 3601..3608（th35 的 3600 是 stage06 那张；注册完跑 check_stage.lua --all 核对）。
+---  CARD_ID：符卡 3601..3608、非符 3660..3665、中 BOSS 非符 3670（th35 的 3600 是 stage06 那张；跑 check_stage.lua --all 核对）。
 ---=====================================
 local T10_CARDS = {
     { s3_MBossCard1, "光学「ハイドロカモフラージュ」",           "2a", 3601, 80 / 60, 80 / 60, 2700 / 60, 2200 },
+    ---stage03 BOSS 河城荷取（L 行的相序）：非符一 → 漂溺 → 非符二 → 水符 → 非符三 → 河童。
+    ---  非符的 HP = 该相 lifeSet − setInterrupt 阈值（Boss1 8800−2300、Boss2 8600−2100、
+    ---  Boss3 8800−2300，一律 6500）；非符的 t1/t2 = setInvuln/60（Boss1 走 Boss() 的 60 ⇒ 1）。
+    { s3n.Boss1,     "",                                        "3a", 3660, 1,       1,       3600 / 60, 6500, "stage03 非符一" },
     { s3_BossCard1,  "漂溺「光り輝く水底のトラウマ」",           "3a", 3602, 1,       1,       3600 / 60, 8800 },
+    { s3n.Boss2,     "",                                        "3a", 3661, 1,       1,       3600 / 60, 6500, "stage03 非符二" },
     { s3_BossCard2,  "水符「河童の幻想大瀑布」",                 "3a", 3603, 1,       1,       3600 / 60, 8600 },
+    { s3n.Boss3,     "",                                        "3a", 3662, 1,       1,       3600 / 60, 6500, "stage03 非符三" },
     { s3_BossCard3L, "河童「スピン・ザ・セファリックプレート」", "3a", 3604, 1,       1,       3600 / 60, 8800 },
+    ---stage04 中 BOSS 射命丸文（原作 MBoss / MBossAt，纯非符）：lifeSet(10000) −
+    ---  setInterrupt 阈值 0 = HP 10000；setInvuln(200) ⇒ t1 = t2 = 200/60、时限 1800 帧 = 30 s。
+    ---  原作里中 BOSS 先于 BOSS 出场 ⇒ 这张排在 4a 组最前。
+    { s4n.MBoss,     "",                                        "4a", 3670, 200 / 60, 200 / 60, 1800 / 60, 10000, "stage04 中BOSS 非符" },
+    ---stage04 BOSS 射命丸文（L 行的相序）：非符一 → 岐符 → 非符二 → 風神 → 非符三 → 無双風神 → 塞符。
+    ---  非符的 HP = Boss() 的 lifeSet 9500 − setInterrupt 阈值 2500 = 7000（Boss3 是
+    ---  lifeSet 7000 − 阈值 0 = 7000）；Boss3 的 setInvuln(120) ⇒ t1 = t2 = 2。
+    { s4n.Boss1,     "",                                        "4a", 3663, 1,       1,       3600 / 60, 7000, "stage04 非符一" },
     { s4_BossCard1,  "岐符「サルタクロス」",                     "4a", 3605, 1,       1,       3600 / 60, 9500 },
+    { s4n.Boss2,     "",                                        "4a", 3664, 1,       1,       3600 / 60, 7000, "stage04 非符二" },
     { s4_BossCard2,  "風神「二百十日」",                         "4a", 3606, 5,       5,       3600 / 60, 9500 },
+    { s4n.Boss3,     "",                                        "4a", 3665, 2,       2,       3600 / 60, 7000, "stage04 非符三" },
     { s4_BossCard3,  "「無双風神」",                             "4a", 3607, 18,      18,      1080 / 60, 2301 },
     { s4_BossCard4,  "塞符「天上天下の照國」",                   "4a", 3608, 8,       8,       4200 / 60, 2300 },
 }
 
+---主协程跑在 BOSS 的载体（th10_ecs_pod）上：每帧把 BOSS 钉在原作 ECL 的位置上。
+---`main` 就是上面那张卡的**原生 Lua 主函数**（不再是 TH10_SUB 里的指令表）。
+---★ 第 9 项 = 菜单名：非符的卡名必须是 ""（is_sc=false，不亮卡名），但符卡练习
+---  菜单里还得有个名字 ⇒ 这两个字符串在非符上不是同一个。
+---★ 主 BOSS 的载体在这里登记 t10_bossref：s_pod 会把它复制给每只子机，
+---  子机里的 %BOSS_X / %BOSS_Y 才取得到 BOSS 本体的世界坐标。
 for _, e in ipairs(T10_CARDS) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
-    ---主协程跑在 BOSS 的载体（th10_ecs_pod）上：每帧把 BOSS 钉在原作 ECL 的位置上。
-    ---`main` 就是上面那张卡的**原生 Lua 主函数**（不再是 TH10_SUB 里的指令表）。
-    c.init = function(self) t10_boss_start(self, main) end
+    c.init = function(self)
+        local p = t10_boss_start(self, main)
+        p.t10_bossref = p
+    end
     ---卡片结束时把本卡生成的枪/使魔载体一起清掉（原作靠 killAllAsync/enmKillAll + 敌机回收）。
     c.del = function(self) t10_clear_pods() end
-    boss.card.add({ { c, band } }, LEVEL, name, id)
+    boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 
 ---=====================================
@@ -2920,19 +3996,32 @@ end
 ---    ⇒ 是**耐久符卡**：按本工程的约定写 t1 = t2 = t3（boss_system.lua:161 据 t1==t3
 ---    判 time_sc ⇒ dmg_factor 恒 0、只靠 t3 计时结束），和 3607「無双風神」同一处理。
 ---  HP = 该卡开始时 BOSS 的 lifeSet（中 BOSS 三张 2300；3619/3620/3621 是 10000）。
----  CARD_ID 3609..3621（th35 现有 3600..3608；注册完跑 check_stage.lua --all 核对不撞号）。
+---  CARD_ID：符卡 3609..3621、非符 3651..3659（注册完跑 check_stage.lua --all 核对不撞号）。
 ---=====================================
 local T10_CARDS_EX = {
+    ---中 BOSS 神奈子（原作 MBoss → MBoss1 非符 → 三张神符）。
+    ---  非符的 HP = MBoss() 的 lifeSet 9300 − setInterrupt 阈值 2300 = 7000；t1 = t2 = 1。
+    { s7.MBoss1,     "",                                          "1a", 3651, 60 / 60,  60 / 60,  3600 / 60, 7000, "stage07 中BOSS 非符" },
     { s7.MBossCard1, "神符「水眼の如き美しき源泉」",              "1a", 3609, 200 / 60, 200 / 60, 4200 / 60, 2300 },
     { s7.MBossCard2, "神符「杉で結ぶ古き縁」",                    "1a", 3610, 320 / 60, 320 / 60, 4200 / 60, 2300 },
     { s7.MBossCard3, "神符「神が歩かれた御神渡り」",              "1a", 3611, 150 / 60, 150 / 60, 4200 / 60, 2300 },
+    ---stage07 BOSS 洩矢諏訪子（L 之外无难度分级）：非符与符卡逐相交错。
+    ---  非符 HP 一律 8000（= 该相 lifeSet − setInterrupt 阈值）；t3 = 3600 帧 = 60 s。
+    { s7.Boss1,      "",                                          "5a", 3652, 200 / 60, 200 / 60, 3600 / 60, 8000, "stage07 非符一" },
     { s7.BossCard1,  "開宴「二拝二拍一拝」",                      "5a", 3612, 90 / 60,  90 / 60,  6300 / 60, 2800 },
+    { s7.Boss2,      "",                                          "5a", 3653, 90 / 60,  90 / 60,  3600 / 60, 8000, "stage07 非符二" },
     { s7.BossCard2,  "土着神「手長足長さま」",                    "5a", 3613, 90 / 60,  90 / 60,  6300 / 60, 3600 },
+    { s7.Boss3,      "",                                          "5a", 3654, 60 / 60,  60 / 60,  3600 / 60, 8000, "stage07 非符三" },
     { s7.BossCard3,  "神具「洩矢の鉄の輪」",                      "5a", 3614, 60 / 60,  60 / 60,  6300 / 60, 2800 },
+    { s7.Boss4,      "",                                          "5a", 3655, 60 / 60,  60 / 60,  3600 / 60, 8000, "stage07 非符四" },
     { s7.BossCard4,  "源符「厭い川の翡翠」",                      "5a", 3615, 60 / 60,  60 / 60,  6300 / 60, 3600 },
+    { s7.Boss5,      "",                                          "5a", 3656, 90 / 60,  90 / 60,  3600 / 60, 8000, "stage07 非符五" },
     { s7.BossCard5,  "蛙狩「蛙は口ゆえ蛇に呑まるる」",            "5a", 3616, 60 / 60,  60 / 60,  6300 / 60, 3500 },
+    { s7.Boss6,      "",                                          "5a", 3657, 60 / 60,  60 / 60,  3600 / 60, 8000, "stage07 非符六" },
     { s7.BossCard6,  "土着神「七つの石と七つの木」",              "5a", 3617, 60 / 60,  60 / 60,  6300 / 60, 3500 },
+    { s7.Boss7,      "",                                          "5a", 3658, 60 / 60,  60 / 60,  3600 / 60, 8000, "stage07 非符七" },
     { s7.BossCard7,  "土着神「ケロちゃん風雨に負けず」",          "5a", 3618, 60 / 60,  60 / 60,  6300 / 60, 4500 },
+    { s7.Boss8,      "",                                          "5a", 3659, 90 / 60,  90 / 60,  3600 / 60, 8000, "stage07 非符八" },
     { s7.BossCard8,  "土着神「宝永四年の赤蛙」",                  "5a", 3619, 2400 / 60, 2400 / 60, 2400 / 60, 10000 },
     { s7.BossCard9,  "「諏訪大戦　～ 土着神話 vs 中央神話」",     "5a", 3620, 5040 / 60, 5040 / 60, 5040 / 60, 10000 },
     { s7.BossCard10, "祟符「ミシャグジさま」",                    "5a", 3621, 9600 / 60, 9600 / 60, 9600 / 60, 10000 },
@@ -2940,10 +4029,421 @@ local T10_CARDS_EX = {
 
 for _, e in ipairs(T10_CARDS_EX) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
-    c.init = function(self) t10_boss_start(self, main) end
+    c.init = function(self)
+        local p = t10_boss_start(self, main)
+        p.t10_bossref = p
+    end
     c.del = function(self) t10_clear_pods() end
-    boss.card.add({ { c, band } }, LEVEL, name, id)
+    boss.card.add({ { c, band } }, LEVEL, menu, id)
+end
+
+
+--=====================================
+--九、stage06（八坂神奈子）非符（原生 LuaSTG；只做 Lunatic 行）
+--  逐条对照 thecl 原始反汇编（thecl -d 10 -r -m "MAP/th10.eclm" stage06.ecl out.txt）。
+--  沿用本工程统一约定：
+--    · 内部一律原作坐标（y 上→下），写进引擎才由 m_* / et_* 换算；
+--    · 时钟 ct 逐指令显式推进——jmp/jmpNeq(L,T) 把 ct 直接设成 T（可回拨），
+--      wait(n)/diffWait(…,L) 把 ct 减 n，遇到「下一条指令的时间 > ct」才真正等待
+--      （见 s_wait 与文件中部「ECL 时钟语义」的注解）；
+--    · 演出/流程指令（anm*/playSound/setChapter/setInvuln/stars/spellEnd/drop*/
+--      etCancel/etClear/laserCancel/enmKillAll 之类）在本移植里按无效果处理，
+--      但它们占的 wait 边界按 ECL 时间戳原样补齐（漏一条会让整张卡偏移）。
+--  HP = 该相 lifeSet − setInterrupt 的收尾阈值；t3 = setInterrupt 时限/60；
+--    t1 = t2 = setInvuln/60。原作 Boss() 先 lifeSet(11500) 再 call("Boss1")。
+--  子机是独立敌机：callAsync 出来的枪与本卡主线程共用 $I/%F，故 BOSS 载体登记
+--    t10_bossref 后由 s_pod/spawn_pod_rel 拷给子机。
+--=====================================
+local s6 = {}
+
+---非符 3666　八坂神奈子（stage06 非符一，原作 Boss1）
+---  Boss1 自己不写 lifeSet ⇒ HP = Boss() 的 11500 − 阈值 2500 = 9000；
+---  setInvuln(120) ⇒ t1 = t2 = 2；setInterrupt 时限 4200 帧 ⇒ t3 = 70 s。
+---  时间轴：t=20 记 %F0 = %ANGLE_PLAYER；t=80 callAsync("Boss1_at") 之后主线程只在
+---  「拨回 80 → 等 60 帧」的空转循环里（at 是死循环，卡片靠 4200 帧超时结束）。
+function s6.Boss1(o)
+    local ct = 0
+    ct = s_wait(ct, 20)                 -- +20: //20
+    o.F0 = t10_angle_player(o)          -- %F0 = %ANGLE_PLAYER
+    ct = s_wait(ct, 80)                 -- +60: //80
+    t10_call_async(o, s6.Boss1_at)      -- callAsync("Boss1_at")
+    ct = 140                            -- jmp(Boss1_356, 140)
+    while true do                       -- _356：pushi(1); jmpNeq(_340, 80)
+        ct = s_wait(ct, 140)            -- _340：+60: //140（空转）
+        ct = 80                         -- jmpNeq(_340, 80)：时钟拨回 80
+    end
+end
+
+---Boss1_at：两把枪（槽 0/1）交替，每把 48 发（etCountD L 行）、速 3.2→1.5。
+---  角度 = %RANDRAD、角步 0.028049935；两枪各隔 10 帧（diffWait L = 10）。
+---  ★ %RANDRAD 在 etAngle 执行时才求值 ⇒ 原生必须把 rndrad() 写在参数位，
+---    随机数消耗顺序才与原作一致。
+function s6.Boss1_at(o)
+    et_new(o, 0); et_aim(o, 0, 3); et_sprite(o, 0, 3, 2)
+    et_count(o, 0, 48, 1)               -- etCountD(0, 24,48,48,48, 1,1,1,1) 的 L 行
+    et_angle(o, 0, 0.0, 0.3926991)
+    et_speed(o, 0, 3.2, 1.5)            -- etSpeedD(0, 2.2,2.2,2.2,3.2, 1.5,1.5,1.5,1.5) 的 L 行
+    et_ex(o, 0, 0, 1, 8, -999999, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    et_sprite(o, 1, 3, 4)
+    et_offset(o, 0, 32.0, -24.0)
+    et_offset(o, 1, -32.0, -24.0)
+    while true do                       -- _620：pushi(1); jmpNeq(_460, 0)
+        et_angle(o, 0, rndrad(), 0.028049935)
+        fire_slot(o, 0)                 -- etOn(0)
+        task.Wait(10)                   -- diffWait(15, 15, 10, 10)
+        et_angle(o, 1, rndrad(), 0.028049935)
+        fire_slot(o, 1)                 -- etOn(1)
+        task.Wait(10)
+    end
+end
+
+---装饰卫星 BossCirR/G/B（原作 moveCircleRel(θ, 0.15707964, 320, −5.3333335)：
+---  以出生点（= BOSS 位置）为圆心、半径 320 起、每帧 −5.3333335 收束到 0，60 帧后自毁）。
+---  颜色：R→15、G→16、B→17（与 stage06 BossCard5 的圆环卫星同一套贴图约定）。
+function s6.boss_cir(o, theta)
+    m_circle(o, "base", theta, 0.15707964, 320.0, -5.3333335)
+    task.Wait(2)                        -- +2: //2
+    task.Wait(60)                       -- wait(60)
+    t10_kill_pod(o)                     -- delete()
+end
+function s6.BossCirR(o) s6.boss_cir(o, -1.5707964) end   -- −π/2
+function s6.BossCirG(o) s6.boss_cir(o, 0.5235988) end    --  π/6
+function s6.BossCirB(o) s6.boss_cir(o, 2.6179938) end    --  5π/6
+
+---非符 3667　八坂神奈子（stage06 非符二，原作 Boss2）
+---  lifeSet(11500) − 阈值 2500 = 9000；setInvuln(180) ⇒ t1 = t2 = 3。
+---  时间轴：t=0 movePosTime(60,0,0,192)；t=60 moveLimit(0,128,64,96)；
+---  t=120 三颗装饰卫星 BossCirR/G/B；t=180 起 callAsync("Boss2_at") 与 callAsync("Boss2_at2")；
+---  之后每 180 帧 moveRand(40,0,2.0)（_1260 的时钟回拨）。
+function s6.Boss2(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 0, 0.0, 192.0)     -- movePosTime(60, 0, 0, 192)
+    ct = s_wait(ct, 60)                         -- +60: //60
+    m_limit(o, 0.0, 128.0, 64.0, 96.0)          -- moveLimit(0, 128, 64, 96)
+    ct = s_wait(ct, 120)                        -- +60: //120
+    spawn_pod_rel(o, 0.0, 0.0, s6.BossCirR)     -- enmCreate("BossCirR", 0, 0)
+    spawn_pod_rel(o, 0.0, 0.0, s6.BossCirG)
+    spawn_pod_rel(o, 0.0, 0.0, s6.BossCirB)
+    ct = s_wait(ct, 180)                        -- +60: //180
+    t10_call_async(o, s6.Boss2_at)              -- callAsync("Boss2_at")
+    t10_call_async(o, s6.Boss2_at2)             -- callAsync("Boss2_at2")
+    -- jmp(Boss2_1304, 360) 后紧跟 _1304 的 pushi(1)+jmpNeq(_1260, 180)：
+    -- 同一帧内时钟被改回 180（净效果 clock=180），因此首次 moveRand 落在 360。
+    ct = 180                                    -- jmp(Boss2_1304, 360); jmpNeq(_1260, 180)
+    while true do                               -- _1260：+60://240 nop → +120://360
+        ct = s_wait(ct, 360)                    -- moveRand 的绝对时刻 360（每轮 +180）
+        m_rand(o, "off", 40, 0, 2.0)            -- moveRand(40, 0, 2.0)
+        ct = 180                                -- jmpNeq(_1260, 180)
+    end
+end
+
+---Boss2_at：四把枪（槽 0..3，出弹点 ±48/−32、±56/−24）。
+---  两段循环，各 10 轮：
+---    前半（槽 0/1）_992：每轮 etEx(…,kind=128,int0=60,int1=1,[4],6.5)（L 行）、etOn(0/1)、
+---                        [4] += 0.017453，隔 4 帧（+4: //4）；
+---    后半（槽 2/3）_1772：每轮 etEx(…)、etOn(2/3)、[4] −= 0.017453，隔 4 帧（+4: //8）。
+---  每半结束后 wait(10)（此时 ct=4 / 8 ⇒ 分别再等 6 / 2 帧）再进下一段；
+---  外层 jmpNeq(_892, 0) 无限循环。%DIFF≥2 时跳过 E/N 的 etEx 分支、L 行照打。
+function s6.Boss2_at(o)
+    et_new(o, 0); et_aim(o, 0, 1); et_sprite(o, 0, 5, 6)
+    et_count(o, 0, 16, 1)               -- etCountD(0, 4,4,8,16, 1,1,1,1) 的 L 行
+    et_angle(o, 0, -2.3561945, 0.19634955)
+    et_speed(o, 0, 3.5, 1.4)
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 0, 8192, 160, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 2, 0, 128, 60, 1, 0.0, 6.5)     -- !L 行
+    et_copy(o, 1, 0); et_copy(o, 2, 0); et_copy(o, 3, 0)
+    et_offset(o, 0, -48.0, -32.0)
+    et_offset(o, 1, 48.0, -32.0)
+    et_offset(o, 2, -56.0, -24.0)
+    et_offset(o, 3, 56.0, -24.0)
+    et_angle(o, 1, -0.7853982, 0.19634955)
+    et_angle(o, 2, -2.7488935, 0.19634955)
+    et_angle(o, 3, -0.3926991, 0.19634955)
+    et_sprite(o, 2, 5, 2); et_sprite(o, 3, 5, 2)
+    local ct = 0
+    local n8, a4
+    ct = 8                              -- jmp(Boss2_at_2452, 8)：仅把时钟设成 8（t=0 的指令照跑）
+    while true do                       -- _2452：pushi(1); jmpNeq(_892, 0)
+        ct = 0                          -- jmpNeq(_892, 0)：时钟拨回 0
+        n8 = 10                         -- diffI([8], 6, 10, 10, 10) 的 L 行
+        a4 = 0.0                        -- setf([4])
+        ct = 4                          -- jmp(Boss2_at_1588, 4)
+        -- ── 前半：槽 0/1（_1588 的 deci + _992/_1456 的主体）──
+        local old = n8; n8 = n8 - 1
+        while old ~= 0 do               -- _1588 deci；jmpNeq(_992, 0)
+            ct = 0                      -- jmpNeq(_992, 0)
+            et_ex(o, 0, 2, 0, 128, 60, 1, a4, 6.5)  -- !L
+            et_ex(o, 1, 2, 0, 128, 60, 1, a4, 6.5)  -- !L
+            fire_slot(o, 0); fire_slot(o, 1)        -- etOn(0); etOn(1)
+            a4 = a4 + 0.017453                      -- [4] += 0.017453
+            ct = s_wait(ct, 4)                      -- +4: //4
+            old = n8; n8 = n8 - 1
+        end
+        ct = ct - 10                    -- wait(10)：clock -= 10
+        ct = s_wait(ct, 4)              -- 恢复条件＝下一条指令时间 4 ⇒ 实际停 10 帧
+        n8 = 10                         -- diffI([8], 6, 10, 10, 10) 的 L 行
+        a4 = 0.0                        -- setf([4])
+        ct = 8                          -- jmp(Boss2_at_2368, 8)
+        -- ── 后半：槽 2/3（_2368 的 deci + _1772/_2236 的主体）──
+        local old2 = n8; n8 = n8 - 1
+        while old2 ~= 0 do              -- _2368 deci；jmpNeq(_1772, 4)
+            ct = 4                      -- jmpNeq(_1772, 4)
+            et_ex(o, 2, 2, 0, 128, 60, 1, a4, 6.5)  -- !L
+            et_ex(o, 3, 2, 0, 128, 60, 1, a4, 6.5)  -- !L
+            fire_slot(o, 2); fire_slot(o, 3)        -- etOn(2); etOn(3)
+            a4 = a4 - 0.017453                      -- [4] −= 0.017453
+            ct = s_wait(ct, 8)                      -- +4: //8
+            old2 = n8; n8 = n8 - 1
+        end
+        ct = ct - 10                    -- wait(10)：clock -= 10
+        ct = s_wait(ct, 8)              -- 恢复条件＝下一条指令(_2452)时间 8 ⇒ 实际停 10 帧
+    end
+end
+
+---Boss2_at2：第五把枪（槽 4）每 15 帧一轮、每轮 3 波（角步 1.5707964 → 1.3744467 → 1.1780972）。
+---  每波 2 发（etCount(4, 2, 1)）、速 5.5→1.4。死循环。
+function s6.Boss2_at2(o)
+    et_new(o, 4); et_aim(o, 4, 1); et_sprite(o, 4, 5, 10)
+    et_count(o, 4, 2, 1)
+    et_angle(o, 4, 1.5707964, 1.5707964)
+    et_speed(o, 4, 5.5, 1.4)
+    et_ex(o, 4, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    ct = 15                             -- jmp(Boss2_at2_464, 15)
+    while true do                       -- _464：pushi(1); jmpNeq(_304, 0)
+        ct = 0
+        et_angle(o, 4, 1.5707964, 1.5707964); fire_slot(o, 4)   -- etOn(4)
+        et_angle(o, 4, 1.5707964, 1.3744467); fire_slot(o, 4)
+        et_angle(o, 4, 1.5707964, 1.1780972); fire_slot(o, 4)
+        ct = s_wait(ct, 15)             -- +15: //15
+    end
+end
+
+---非符 3668　八坂神奈子（stage06 非符三，原作 Boss3／Boss3H）
+---  $DIFF≤1 用 "BossCard3"、否则 "BossCard3H"（L 走 H 支），lifeSet(12900) − 阈值 2900 = 10000；
+---  setInvuln(60) ⇒ t1 = t2 = 1；时限 4200 帧。
+---  时间轴：t=30 movePosTime(60,4,0,128)；t=90 moveLimit(0,96,280,64) + callAsync("Boss3_at")；
+---  之后每 180 帧 moveRand(40,0,1.0)（_1168 的时钟回拨）。
+function s6.Boss3(o)
+    local ct = 0
+    ct = s_wait(ct, 30)                         -- +30: //30
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)     -- movePosTime(60, 4, 0, 128)
+    ct = s_wait(ct, 90)                         -- +60: //90
+    m_limit(o, 0.0, 96.0, 280.0, 64.0)          -- moveLimit(0, 96, 280, 64)
+    t10_call_async(o, s6.Boss3_at)              -- callAsync("Boss3_at")
+    ct = 270                                    -- jmp(Boss3_1212, 270)
+    while true do                               -- _1212：pushi(1); jmpNeq(_1168, 90)
+        ct = 90                                 -- jmpNeq(_1168, 90)：时钟拨回 90
+        ct = s_wait(ct, 210)                    -- _1168：+120://210
+        m_rand(o, "off", 40, 0, 1.0)            -- moveRand(40, 0, 1.0)
+        ct = s_wait(ct, 270)                    -- +60://270 nop
+    end
+end
+
+---Boss3_at：单枪（槽 0）每 13 帧一发（diffWait L = 13）、8 发一轮；每发 32 弹
+---  （etCount(0, 4, 8)＝内层 4 发 × 8 圈）。基准角 [0] 每发 +0.19635（validRad 归一），
+---  角步 −0.018925257、速 2.5→1.8（etSpeedD L 行）、L 行加速度记录 f0=1.8。
+function s6.Boss3_at(o)
+    et_offset(o, 0, 0.0, 0.0)
+    local a0 = 0.0                      -- [0] = 0
+    local ct = 0
+    while true do                       -- _880：pushi(1); jmpNeq(_128, 0)
+        ct = 0
+        et_new(o, 0); et_aim(o, 0, 3); et_sprite(o, 0, 5, 6)
+        et_count(o, 0, 4, 8)
+        et_angle(o, 0, 1.5707964, 0.0)
+        et_speed(o, 0, 2.5, 1.8)        -- etSpeedD(0, 1.8,1.8,2.2,2.5, 1.4,1.4,1.4,1.8) 的 L 行
+        et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+        et_ex(o, 0, 1, 0, 2048, 1, -999999, 1.8, -999999.0)     -- !L 行
+        et_ex(o, 0, 2, 0, 16384, 5, 2, -999999.0, -999999.0)
+        local n4 = 8                    -- pushi(8); seti([4])
+        ct = 0                          -- jmp(Boss3_at_836, 0)
+        local old = n4; n4 = n4 - 1
+        while old ~= 0 do               -- _836：deci([4]); jmpNeq(_660, 0)
+            ct = 0
+            et_angle(o, 0, a0, -0.018925257)
+            fire_slot(o, 0)             -- etOn(0)
+            a0 = t10_wrap(a0 + 0.19635) -- [0] += 0.19635；validRad([0])
+            ct = ct - 13                -- diffWait(40, 20, 15, 13)
+            ct = s_wait(ct, 0)
+            old = n4; n4 = n4 - 1
+        end
+    end
+end
+
+---装饰卫星 BossCirR4/G4/B4：复用 stage06 BossCard5 那套 th35_sat 类（双圆叠加、每帧把圆心
+---  钉在 BOSS 上），并登记进 T10_PODS——这样原作的 enmKillAll（清屏）会把上一段留下的
+---  卫星收掉，不会随三段循环越积越多。参数见文件顶部的 SATS 表（R4/G4/B4 三条）。
+function s6.sat(master, e)
+    local s = New(class["th35_sat"], master, e[2], e[3], e[4], e[5], e[6], e[7])
+    t10_track(s)
+    return s
+end
+
+---非符 3669　八坂神奈子（stage06 非符四，原作 Boss4）
+---  lifeSet(12200) − 阈值 3200 = 9000；setInvuln(90) ⇒ t1 = t2 = 1.5；时限 5400 帧 = 90 s。
+---  时间轴：t=30 movePosTime(60,4,0,128)；t=90 moveLimit(0,112,128,64)；
+---  t=210/570/870 各起一颗三连卫星 + wait(60) 后 callAsync(at / at2 / at3)；
+---  三段之间各 180 帧（moveRand(120,0,1.0) 的时钟回拨）；_2932 之外层死循环。
+---  ★ 原作每段开头 enmKillAll：把上一段的卫星/残留子机清掉（保留自己）。
+function s6.Boss4(o)
+    local ct = 0
+    ct = s_wait(ct, 30)                         -- +30: //30
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)     -- movePosTime(60, 4, 0, 128)
+    ct = s_wait(ct, 90)                         -- +60: //90
+    m_limit(o, 0.0, 112.0, 128.0, 64.0)         -- moveLimit(0, 112, 128, 64)
+    ct = 1050                                   -- jmp(Boss4_2932, 1050)
+    while true do                               -- _2932：pushi(1); jmpNeq(_920, 90)
+        ct = 90                                 -- jmpNeq(_920, 90)：时钟拨回 90
+        ct = s_wait(ct, 150)                    -- +60: //150（空转）
+        ct = s_wait(ct, 210)                    -- +60: //210
+        t10_enm_kill_all(o)                     -- enmKillAll()
+        s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])   -- BossCirR4/G4/B4
+        ct = ct - 60                            -- wait(60)
+        ct = s_wait(ct, 210)                    -- callAsync("Boss4_at")（等满 60）
+        t10_call_async(o, s6.Boss4_at)
+        ct = s_wait(ct, 330)                    -- +120: //330
+        m_rand(o, "off", 120, 0, 1.0)           -- moveRand(120, 0, 1.0)
+        ct = s_wait(ct, 450)                    -- +120: //450
+        t10_enm_kill_all(o)                     -- enmKillAll()
+        ct = s_wait(ct, 510)                    -- +60: //510（空转）
+        ct = s_wait(ct, 570)                    -- +60: //570
+        s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
+        ct = ct - 60                            -- wait(60)
+        ct = s_wait(ct, 570)                    -- callAsync("Boss4_at2")（等满 60）
+        t10_call_async(o, s6.Boss4_at2)
+        ct = s_wait(ct, 630)                    -- +60: //630
+        m_rand(o, "off", 120, 0, 1.0)           -- moveRand(120, 0, 1.0)
+        ct = s_wait(ct, 750)                    -- +120: //750
+        t10_enm_kill_all(o)                     -- enmKillAll()
+        ct = s_wait(ct, 810)                    -- +60: //810（空转）
+        ct = s_wait(ct, 870)                    -- +60: //870
+        s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
+        ct = ct - 60                            -- wait(60)
+        ct = s_wait(ct, 870)                    -- callAsync("Boss4_at3")（等满 60）
+        t10_call_async(o, s6.Boss4_at3)
+        ct = s_wait(ct, 930)                    -- +60: //930
+        m_rand(o, "off", 120, 0, 1.0)           -- moveRand(120, 0, 1.0)
+        ct = s_wait(ct, 1050)                   -- +120: //1050
+    end
+end
+
+---Boss4_at：两把旋转枪（槽 0/1）。t=0 etOn(0)；隔 60 帧 etCopy(1,0) 后把两把枪的角步改成
+---  !HL 行的 −0.2617994 / 0.19634955，接「50/40/30/20/10/5 帧交替 etOn(0)/etOn(1)」。
+---  槽 0：etCountD(0, …) L 行 c1=3,c2=12、etSprite(0,17,1)、速 7.8→1.4。
+function s6.Boss4_at(o)
+    et_offset(o, 0, 0.0, 0.0)
+    et_new(o, 0); et_aim(o, 0, 2); et_sprite(o, 0, 17, 1)
+    et_count(o, 0, 3, 12)               -- etCountD(0, 1,1,3,3, 6,10,12,12) 的 L 行
+    et_angle(o, 0, 1.5707964, -0.31415927)
+    et_speed(o, 0, 7.8, 1.4)            -- etSpeedD(0, 6.8,6.8,6.8,7.8, 1.4,…) 的 L 行
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)                     -- etOn(0)
+    task.Wait(60)                       -- wait(60)
+    et_copy(o, 1, 0)                    -- etCopy(1, 0)
+    et_angle(o, 1, -1.5707964, 0.31415927)
+    et_angle(o, 0, 1.5707964, -0.2617994)   -- !HL 行
+    et_angle(o, 1, -1.5707964, 0.19634955)  -- !HL 行
+    fire_slot(o, 1)                     -- etOn(1)
+    task.Wait(50); fire_slot(o, 0)      -- wait(50); etOn(0)
+    task.Wait(40); fire_slot(o, 1)      -- wait(40); etOn(1)
+    task.Wait(30); fire_slot(o, 0)      -- wait(30); etOn(0)
+    task.Wait(20); fire_slot(o, 1)      -- wait(20); etOn(1)
+    task.Wait(10); fire_slot(o, 0)      -- wait(10); etOn(0)
+    task.Wait(5);  fire_slot(o, 1)      -- wait(5);  etOn(1)
+end
+
+---Boss4_at2：四把枪（槽 0..3）各 10 发环、每 10 帧一发（etOn 0→1→2→3），共 4 轮（每轮 40 帧）。
+---  槽 0/1：etSprite(·,14,1)、角步 ∓0.31415927、速 8.0→1.4、L 行加速度记录 f1=6.0；
+---  槽 2/3：etSprite(·,14,2)、etCountD(·, …, 8,16,16,24) 的 L 行 c2=24、速 4/…/8→1.4，
+---          角步 [4] = ∓0.19634955（diffF 的 L 行）。
+---  ★ 原作在槽 2/3 的 etEx 写的是槽 0/1（int0=1、kind=4）；这里照抄，不「修正」。
+function s6.Boss4_at2(o)
+    et_new(o, 0); et_aim(o, 0, 2); et_sprite(o, 0, 14, 1)
+    et_count(o, 0, 1, 10)               -- etCountD(0, 1,1,1,1, 10,10,10,10)（各难度同）
+    et_angle(o, 0, 1.5707964, -0.31415927)
+    et_speed(o, 0, 8.0, 1.4)
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 0, 128, 60, 1, 0.0, 6.0)     -- !L 行
+    et_new(o, 1); et_aim(o, 1, 2); et_sprite(o, 1, 14, 1)
+    et_count(o, 1, 1, 10)
+    et_angle(o, 1, -1.5707964, 0.31415927)
+    et_speed(o, 1, 8.0, 1.4)
+    et_ex(o, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 1, 1, 0, 128, 60, 1, 0.0, 6.0)     -- !L 行
+    et_new(o, 2); et_aim(o, 2, 2); et_sprite(o, 2, 14, 2)
+    et_count(o, 2, 1, 24)               -- etCountD(2, 1,1,1,1, 8,16,16,24) 的 L 行
+    et_angle(o, 2, 1.5707964, -0.19634955)      -- diffF([4], …) 的 L 行
+    et_speed(o, 2, 8.0, 1.4)            -- etSpeedD(2, 4,4,6,8, 1.4,…) 的 L 行
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)    -- 原作写槽 0
+    et_new(o, 3); et_aim(o, 3, 2); et_sprite(o, 3, 14, 2)
+    et_count(o, 3, 1, 24)
+    et_angle(o, 3, -1.5707964, 0.19634955)      -- diffF([4], …) 的 L 行
+    et_speed(o, 3, 8.0, 1.4)
+    et_ex(o, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)    -- 原作写槽 1
+    local ct = 0
+    local n0 = 4                        -- pushi(4); seti([0])
+    ct = 40                             -- jmp(Boss4_at2_1644, 40)
+    local old = n0; n0 = n0 - 1
+    while old ~= 0 do                   -- _1644：deci([0]); jmpNeq(_1564, 0)
+        ct = 0                          -- jmpNeq(_1564, 0)
+        ct = s_wait(ct, 10); fire_slot(o, 0)    -- +10: //10
+        ct = s_wait(ct, 20); fire_slot(o, 1)    -- +10: //20
+        ct = s_wait(ct, 30); fire_slot(o, 2)    -- +10: //30
+        ct = s_wait(ct, 40); fire_slot(o, 3)    -- +10: //40
+        old = n0; n0 = n0 - 1
+    end
+end
+
+---Boss4_at3：单枪（槽 0）自 160 帧、每帧一发环（etCountD L 行 c2=10）、速 7.6→0.6。
+---  基准角 [0] 从 π/2 起每帧 +3.883222（validRad 归一）、角步 0；L 行加速度记录 f1=6.0。
+function s6.Boss4_at3(o)
+    et_new(o, 0); et_aim(o, 0, 3); et_sprite(o, 0, 12, 5)
+    et_count(o, 0, 1, 10)               -- etCountD(0, 1,1,1,1, 1,4,6,10) 的 L 行
+    et_angle(o, 0, 1.5707964, 0.0)
+    et_speed(o, 0, 7.6, 0.6)            -- etSpeedD(0, 4.6,4.6,6.6,7.6, 0.6,…) 的 L 行
+    et_ex(o, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(o, 0, 1, 0, 64, 60, 1, 0.0, 6.0)      -- !L 行（覆盖同一条 0.01 记录）
+    local a0 = 1.570796                 -- [0] = 1.570796
+    local n4 = 160                      -- pushi(160); seti([4])
+    local ct = 0
+    ct = 1                              -- jmp(Boss4_at3_792, 1)：仅设时钟（首轮不等）
+    local old = n4; n4 = n4 - 1
+    while old ~= 0 do                   -- _792：deci([4]); jmpNeq(_632, 0)
+        ct = 0
+        et_angle(o, 0, a0, 0.0)
+        fire_slot(o, 0)                 -- etOn(0)
+        a0 = t10_wrap(a0 + 3.883222)    -- [0] += 3.883222；validRad([0])
+        ct = s_wait(ct, 1)              -- +1: //1
+        old = n4; n4 = n4 - 1
+    end
+end
+
+---stage06 四张非符：{ 主 ECL 子程序, 卡名（非符为 ""）, 组, CARD_ID, t1秒, t2秒, t3秒, HP, 菜单名 }
+---  组 1a = 八坂神奈子（与 stage06 BossCard5、stage05 神奈子共用）。
+---  CARD_ID 3666..3669（跑 `luajit tools/check_stage.lua --all` 核对：3600 是本关手写卡、
+---    3601..3621 是 03/04/07、3630..3665 是 01/02/05 + 03/04/07 非符）。
+s6.cards = {
+    { s6.Boss1, "", "1a", 3666, 2,   2,   4200 / 60, 9000,  "stage06 非符一" },
+    { s6.Boss2, "", "1a", 3667, 3,   3,   4200 / 60, 9000,  "stage06 非符二" },
+    { s6.Boss3, "", "1a", 3668, 1,   1,   4200 / 60, 10000, "stage06 非符三" },
+    { s6.Boss4, "", "1a", 3669, 1.5, 1.5, 5400 / 60, 9000,  "stage06 非符四" },
+}
+
+for _, e in ipairs(s6.cards) do
+    local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    local menu = e[9] or name
+    local c = boss.card.New(name, t1, t2, t3, hp)
+    c.init = function(self)
+        local p = t10_boss_start(self, main)
+        p.t10_bossref = p
+    end
+    c.del = function(self) t10_clear_pods() end
+    boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 --=====================================
 -- 八、stage01 / stage02 / stage05 符卡（原生 LuaSTG；只做 Lunatic 难度行）
@@ -2954,6 +4454,8 @@ end
 --   「下一张卡」不移植：setInterrupt/setTimeout 指向的后续子程序交给本仓库符卡框架。
 --   ★ 三个命名空间用 table 字段而不是 40 个 local function：主 chunk 的局部早已逼近
 --     LuaJIT 的 200 上限（`do … end` 不顶用，只有表字段不占 local）。
+--=====================================
+
 --=====================================
 local s1 = {}
 local s2 = {}
@@ -3251,37 +4753,271 @@ function s1.BossCard2(o)
 end
 
 --=====================================
+--八·A-2、stage01 非符（秋静葉 中 BOSS 一张 + 秋穣子 BOSS 两张；只做 Lunatic 难度行）
+--  ECL 源：r01raw.txt 的 MBoss / Boss1 / Boss2 及其子线程。
+--  ★ 原作非符 = 「有血量、有时限、不亮卡名」的阶段 ⇒ 注册时 name 必须是 ""
+--    （boss.card.New("", …) 会让 is_sc=false），菜单名另用第 9 项给。
+--  ★ call(name) 是**同步**子调用（EclVm.cpp ECL_VM_CALL/ECL_VM_RETURN）：调用者的
+--    clock 在 CALL 时入栈、RETURN 才恢复；被调子程序占掉的真实帧数会叠加在调用者身上。
+--    这里直接写同名的 Lua 函数调用，调用者的 ct 在调用期间不动。
+--  ★ 血量按原作「进场 life − 收尾阈值」算（Enemy.cpp Fn004127A0：life 掉到阈值就
+--    夹回阈值再切下一相，所以一相实打实的伤害 = 进场 life − 阈值）。
+--=====================================
+
+---非符 3642　静葉（中 BOSS 非符）
+---  MBoss：入场 movePosTime(60,4,64,96)；之后 480 帧一轮（时钟看起来是 260 帧，
+---  但两次同步 call 各占 80 / 60 帧，真实周期是 60+80+80+60+60+80+60 = 480）：
+---    t=60  同步 MBoss_at1（80 帧，出弹在真实 60/100/140）
+---    t=140 同步 MBoss_at2（60 帧，出弹在真实 +20/+40/+60）
+---    t=200 同步 MBoss_at1 + 异线程 MBoss_at2
+---    t=260 movePosTime(60,4,64,96)
+---  血量：lifeSet(5850) → 阈值 1650 ⇒ 4200；时限 = 1560 帧 = 26 秒。
+function s1.MBoss(o)
+    local ct = 0
+    m_pos_time(o, "off", 60, 4, 64.0, 96.0)   -- movePosTime(60, 4, 64, 96)
+    ct = 260                                   -- jmp(MBoss_764, 260)
+    ct = 0                                     -- jmpNeq(MBoss_476, 0)
+    while true do
+        ct = s_wait(ct, 60)                    -- //60
+        s1.MBoss_at1(o)                        -- call("MBoss_at1")（同步）
+        m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+        ct = s_wait(ct, 140)                   -- //140
+        s1.MBoss_at2(o)                        -- call("MBoss_at2")（同步）
+        m_pos_time(o, "off", 60, 4, -64.0, 96.0)
+        ct = s_wait(ct, 200)                   -- //200
+        s1.MBoss_at1(o)
+        s_async(o, s1.MBoss_at2)               -- callAsync("MBoss_at2")
+        m_pos_time(o, "off", 60, 4, 64.0, 96.0)
+        ct = s_wait(ct, 260)                   -- //260
+        m_pos_time(o, "off", 60, 4, 64.0, 96.0)
+        ct = 0                                 -- jmpNeq(MBoss_476, 0)
+    end
+end
+
+---MBoss_at1：三连发（真实 t=0/40/80 各一波，精灵号 13→14→2），80 帧后 ret。
+---  L 行：14 发、角速 0.22439948、速度 4.0/1.3。
+function s1.MBoss_at1(o)
+    et_new(o, 0)
+    et_sprite(o, 0, 1, 13)
+    et_aim(o, 0, 1)
+    et_angle(o, 0, 1.5707964, 0.22439948)     -- L
+    et_count(o, 0, 14, 4)                     -- L
+    et_speed(o, 0, 4.0, 1.3)                  -- L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+    task.Wait(40)                             -- //40
+    et_sprite(o, 0, 1, 14)
+    fire_slot(o, 0)
+    task.Wait(40)                             -- //80
+    et_sprite(o, 0, 1, 2)
+    fire_slot(o, 0)
+end
+
+---MBoss_at2：单发环（L 行 24 发、角速 0.09817477、速度 3.0/1.0）。
+---  三枪之间用 wait([4])（[4]=20）把 clock 拉到 −20，再由「下一条指令时间 0」自然补回
+---  ⇒ 真实出弹落在 t=20/40/60，60 帧后 ret。
+function s1.MBoss_at2(o)
+    et_new(o, 0)
+    et_sprite(o, 0, 0, 2)
+    et_aim(o, 0, 3)
+    et_angle(o, 0, 0.0, 0.09817477)           -- L
+    et_count(o, 0, 24, 6)                     -- L
+    et_speed(o, 0, 3.0, 1.0)                  -- L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    ct = ct - 20                              -- wait([4])（[4] = 20，diffI 四行同值）
+    ct = s_wait(ct, 0)
+    fire_slot(o, 0)
+    et_angle(o, 0, 0.0, -0.09817477)
+    ct = ct - 20
+    ct = s_wait(ct, 0)
+    fire_slot(o, 0)
+    et_angle(o, 0, 0.0, 0.09817477)
+    ct = ct - 20
+    ct = s_wait(ct, 0)
+    fire_slot(o, 0)
+end
+
+---非符 3643　穣子（BOSS 非符 1）
+---  Boss1：240 帧一轮。指令时间戳（绝对）：moveRand#1=0、At1=40、wait(40)、
+---    moveRand#2=40、At2=80、nop=120、At3=160、nop=200。`wait([0])`（[0]=40）把
+---    clock 从 40 拨回 0，所以 moveRand#2 要再等 40 帧（不是等到 80）。
+---  ★ moveRand#1 的时间戳是 0 —— 它在 jmpNeq 落回 224 的**同一帧**执行，必须写在
+---    第一次 s_wait 之前，否则老板位置会整体晚 40 帧（出弹起点坐标随之漂移）。
+---  血量：lifeSet(8200) → 阈值 2200 ⇒ 6000；时限 2700 帧 = 45 秒。
+function s1.Boss1(o)
+    local ct = 0
+    ct = 200                                  -- jmp(Boss1_428, 200)
+    ct = 0                                    -- jmpNeq(Boss1_224, 0)（同时把 clock 设为 0）
+    while true do
+        m_rand(o, "off", 40, 4, 6.0)          -- moveRand(40, 4, 6.0f)（t=0，先动）
+        ct = s_wait(ct, 40)                   -- //40
+        s_async(o, s1.Boss1At1)
+        ct = ct - 40                          -- wait([0])（[0] = 40，L 行）
+        ct = s_wait(ct, 40)                   -- moveRand#2 的时间戳也是 40（clock 已回 0）
+        m_rand(o, "off", 40, 4, 6.0)
+        ct = s_wait(ct, 80)                   -- //80
+        s_async(o, s1.Boss1At2)
+        ct = s_wait(ct, 120)                  -- //120
+        ct = s_wait(ct, 160)                  -- //160
+        s_async(o, s1.Boss1At3)
+        ct = s_wait(ct, 200)                  -- //200
+        ct = 0                                -- jmpNeq(Boss1_224, 0)
+    end
+end
+
+---Boss1At1：60 帧外扩螺旋。每帧半径 +1.5、角 +0.15708，
+---  先按 polar(角, 半径) 打精灵 2 的一发，再按 polar(角, −半径) 打精灵 1 的一发。
+---  （原作把半径取负、算完坐标后又取负还原 —— 两次取负等价于不变，这里直接写负半径。）
+---  L 行：5 发、角速 0.31415927、速度 2.5/1.0。
+function s1.Boss1At1(o)
+    et_new(o, 0)
+    et_aim(o, 0, 0)
+    et_angle(o, 0, 0.0, 0.31415927)           -- L
+    et_count(o, 0, 5, 1)                      -- L
+    et_speed(o, 0, 2.5, 1.0)                  -- L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    local r   = 1.0                           -- [12] = 1.0f
+    local ang = rndrad()                      -- [16] = %RANDRAD
+    local ct  = 1                             -- jmp(Boss1At1_1152, 1)
+    ---★ ECL 的 deci 是「后减」：它压回的是**减之前**的值（EclVm.cpp
+    ---  ECL_VM_POST_DECREMENT_INT），jmpNeq 判的是旧值。所以 [0]=60 时
+    ---  循环要跑满 60 轮（不是 59）。
+    local n   = 60                            -- pushi(60)
+    ct = 0                                    -- jmpNeq(Boss1At1_612, 0)
+    while true do
+        r = r + 1.5
+        ang = t10_wrap(ang + 0.15708)         -- validRad([16])
+        et_sprite(o, 0, 3, 2)
+        et_offset(o, 0, circle_pos(ang, r))   -- circlePos([4],[8],[16],[12])
+        ct = s_wait(ct, 1)                    -- //1
+        fire_slot(o, 0)
+        et_sprite(o, 0, 3, 1)
+        et_offset(o, 0, circle_pos(ang, -r))  -- 半径取负的另一侧
+        fire_slot(o, 0)
+        n = n - 1                             -- deci([0])
+        if n == 0 then break end              -- jmpNeq(Boss1At1_612, 0)
+        ct = 0
+    end
+end
+
+---Boss1At2 / Boss1At3：一次性环（L 行 32 发、角速 0.09817477、速度 2.8/1.0，
+---  精灵 2 色 6，第 3 条 transform 记录带 ±0.03926991 的自转）。两者只差自转符号。
+function s1.Boss1At2(o) return s1.Boss1At2_(o, 0.03926991) end
+function s1.Boss1At3(o) return s1.Boss1At2_(o, -0.03926991) end
+function s1.Boss1At2_(o, spin)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_angle(o, 0, 0.0, 0.09817477)
+    et_count(o, 0, 32, 5)                     -- L
+    et_speed(o, 0, 2.8, 1.0)                  -- L
+    et_sprite(o, 0, 2, 6)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 32, 40, -999999, 0.0, spin)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)  -- 原作重复写一次
+    fire_slot(o, 0)
+end
+
+---非符 3644　穣子（BOSS 非符 2）
+---  Boss2：290 帧一轮（t=100/180/260/350 各出一只子机、t=220/350 各 moveRand 一次）。
+---  血量：lifeSet(8200) → 阈值 2200 ⇒ 6000；时限 2700 帧 = 45 秒。
+function s1.Boss2(o)
+    local ct = 0
+    t10_kill_async(o)                         -- killAllAsync
+    ct = s_wait(ct, 60)                       -- //60：playSound(15) 之后的 nop
+    ct = 350                                  -- jmp(Boss2_808, 350)
+    ct = 60                                   -- jmpNeq(Boss2_608, 60)
+    while true do
+        ct = s_wait(ct, 100)                  -- //100
+        s_async(o, s1.Boss2At2)               -- callAsync("Boss2At2")
+        ct = s_wait(ct, 140)                  -- //140
+        ct = s_wait(ct, 180)                  -- //180
+        s_async(o, s1.Boss2At3)
+        ct = s_wait(ct, 220)                  -- //220
+        m_rand(o, "off", 40, 4, 6.0)
+        ct = s_wait(ct, 260)                  -- //260
+        s_async(o, s1.Boss2At1)
+        ct = s_wait(ct, 350)                  -- //350
+        m_rand(o, "off", 40, 4, 6.0)
+        ct = 60                               -- jmpNeq(Boss2_608, 60)
+    end
+end
+
+---Boss2At1：双槽交错螺旋，109 帧。每帧半径 +1.0：
+---  槽 0 = 角 [16]（每帧 −0.15708、折进 ±π）、精灵 3 色 2；
+---  槽 1 = 槽 0 的副本、精灵 3 色 1、aim 4，角 [20]（每帧 +0.15708）。
+---  ★ 原作在槽 1 那里写的是 `validRad([16])`（折的是槽 0 的角、不是 [20]），
+---    照抄；[20] 因此不折、直接进 cos/sin。
+---  L 行：槽 0 6 发、速度 4.0/1.0、角速 1.0471976。
+function s1.Boss2At1(o)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_angle(o, 0, 0.0, 1.0471976)
+    et_count(o, 0, 6, 1)                      -- L
+    et_speed(o, 0, 4.0, 1.0)                  -- L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    et_sprite(o, 0, 3, 2)
+    et_copy(o, 1, 0)                          -- etCopy(1, 0)
+    et_sprite(o, 1, 3, 1)
+    et_aim(o, 1, 4)
+    local r  = 1.0                            -- [12] = 1.0f
+    local a0 = rndrad()                       -- [16] = %RANDRAD
+    local a1 = a0                             -- [20] = [16]
+    local ct = 1                              -- jmp(Boss2At1_1100, 1)
+    local n  = 110                            -- pushi(110)；deci 压回旧值 ⇒ 110 轮
+    ct = 0                                    -- jmpNeq(Boss2At1_672, 0)
+    while true do
+        r = r + 1.0
+        a0 = t10_wrap(a0 - 0.15708)           -- validRad([16])
+        et_offset(o, 0, circle_pos(a0, r))    -- circlePos([4],[8],[16],[12])
+        ct = s_wait(ct, 1)                    -- //1
+        fire_slot(o, 0)
+        a1 = a1 + 0.15708
+        a0 = t10_wrap(a0)                     -- validRad([16])（原作如此，作用在槽 0 的角上）
+        et_offset(o, 1, circle_pos(a1, r))    -- circlePos([4],[8],[20],[12])
+        fire_slot(o, 1)                       -- !NHL ⇒ L 行也打
+        n = n - 1                             -- deci([0])
+        if n == 0 then break end              -- jmpNeq(Boss2At1_672, 0)
+        ct = 0
+    end
+end
+
+---Boss2At2 / Boss2At3：一次性环（L 行 32 发、角速 0.19634955、速度 3.2/1.0，
+---  精灵 2 色 6，第 4 条 transform 记录带 ±0.05235988 的自转）。
+---  ★ Boss2At2 的第 4 条记录 i1 = 9（L 行 count 32/9），Boss2At3 是 32/5。
+function s1.Boss2At2(o) return s1.Boss2At2_(o, 9,  -0.05235988) end
+function s1.Boss2At3(o) return s1.Boss2At2_(o, 5,   0.05235988) end
+function s1.Boss2At2_(o, c2, spin)
+    et_new(o, 0)
+    et_aim(o, 0, 2)
+    et_angle(o, 0, 0.0, 0.19634955)
+    et_count(o, 0, 32, c2)                    -- L 行
+    et_speed(o, 0, 3.2, 1.0)                  -- L 行
+    et_sprite(o, 0, 2, 6)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[2] = tp_record(0, 8192, 200, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 32, 50, -999999, 0.0, spin)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, 0)
+end
+--=====================================
 --八·B、stage02（犬走椛 中 BOSS 一张 + BOSS 三张）
 --=====================================
 
----ECL 时钟辅助：对应 VM 的「if 指令时间 > clock then task.Wait(指令时间 - clock)」。
----原作 EclVm 里 wait(n) 是 clock -= n（不占帧），jmp/jmpNeq(L, T) 把 clock 直接设成 T；
----原生代码每一步都显式写 ct，才保证与逐条 VM（以及真引擎）的帧边界完全一致。
-local function s_wait(ct, t)
-    if t > ct then task.Wait(t - ct) end
-    return t
-end
-
----特殊敌机（= BOSS 本体）的世界 y：原作 %BOSS_Y（Enemy.cpp 的
----ENEMY_ECL_OPERAND_SPECIAL_ENEMY_Y = specialEnemySlots[0]->worldMotion.position.y）。
----BOSS 载体在注册时把 t10_bossref 指向自己，enmCreate 再传给子机。
-local function s_boss_y(o)
-    local b = o.t10_bossref
-    if b == nil then return 0.0 end
-    return b.ecs.wy
-end
-
----callAsync：在同一敌机上另起线程并把实参投给它（原作 callAsync(name, a0, a4…)）
-local function s_async(o, fn, a0, a4)
-    task.New(o, function() fn(o, a0, a4) end)
-end
-
----enmCreate（相对坐标）+ 把 BOSS 引用传给子机（%BOSS_X/%BOSS_Y 要用）
-local function s_pod(origin, dx, dy, fn)
-    local p = spawn_pod_rel(origin, dx, dy, fn)
-    p.t10_bossref = origin.t10_bossref
-    return p
-end
 
 ---MBossDummyShadow / BossDummyShadow：t=0 起每帧 anmPlay 的死循环。
 ---（原作 jmp(L,1) → L: anmPlay → jmpNeq 回跳；anmPlay 是纯视觉，这里只占帧。）
@@ -3667,6 +5403,197 @@ function s2.BossAtEnemy3(o)
         if r8 % 10 == 0 then r4 = r4 + 1 end
         ct = s_wait(ct, 87)                       -- +7: //87
         ct = 80                                   -- jmpNeq(L368, 80)
+    end
+end
+
+--=====================================
+--八·B-2、stage02 非符（犬走椛 BOSS 两张；只做 Lunatic 难度行）
+--  ECL 源：r02raw.txt 的 Boss1 / Boss2 及其子线程。
+--  ★ 中 BOSS **没有**非符：MBoss() 里 lifeSet(2300) 之后直接 call("MBossCard1")（= 厄符）。
+--  ★ 血量按「进场 life − 收尾阈值」：Boss1 = 9000−2700 = 6300；Boss2 = 13400−5400 = 8000。
+--    （所以原来的符卡血量 13400 是错的，见注册表注释。）
+--=====================================
+
+---Boss1/Boss2 主线程共用的「环」：etNew(slot) + 两条 ex 记录 + 5 个 etOn
+---  （t=0/10/20/30/40，每个 etOn 前重取一次 %RANDRAD 作基准角）。
+---  返回最后一个 etOn 的绝对时间（= 传入 ct + 40）。
+function s2.ring(o, slot, cnt, spd, ct)
+    et_new(o, slot)
+    et_aim(o, slot, 3)
+    et_sprite(o, slot, 5, 2)
+    et_count(o, slot, cnt, 1)
+    et_angle(o, slot, rndrad(), 0.0)
+    et_speed(o, slot, spd, 1.0)
+    local p = o.pat[slot]
+    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(o, slot)
+    for _ = 1, 4 do
+        ct = s_wait(ct, ct + 10)
+        et_angle(o, slot, rndrad(), 0.0)
+        fire_slot(o, slot)
+    end
+    return ct
+end
+
+---卡 3645　犬走椛（BOSS 非符 1）
+---  Boss1 主循环 720 帧一轮：t=0 左右各出一只绕身子机（%F0=0/π）；
+---  t=280 与 t=640 各来一串 5×32 的环（角每 10 帧重取 %RANDRAD）；
+---  t=320 / t=680 各 moveRand(40,0,2.0) 一次。起手 jmp(720)+jmpNeq 把 clock 归 0。
+---  另起一条 Boss1At 线程（[!NHL]，L 也跑）。
+function s2.Boss1(o)
+    local ct = 0
+    s_async(o, s2.Boss1At)                    -- [!NHL] callAsync("Boss1At")
+    ct = 720                                   -- jmp(Boss1_2172, 720)
+    ct = 0                                     -- jmpNeq(Boss1_196, 0)（同时把 clock 设为 0）
+    while true do
+        o.F0, o.F1, o.I0 = 0.0, 0.05236, 2
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy)
+        o.F0, o.I0 = 3.141593, 6
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy)
+        ct = s_wait(ct, 60)                    -- //60：anmSetMain（视觉）
+        ct = s_wait(ct, 280)                   -- //280
+        ct = s2.ring(o, 2, 32, 2.0, ct)        -- DIFF>=2：环（5 个 etOn，280→320）
+        m_rand(o, "off", 40, 0, 2.0)           -- jmp(Boss1_1148, 320) 后的 moveRand(40,0,2.0)
+        ct = s_wait(ct, 360)
+        o.F0, o.F1, o.I0 = 0.0, -0.05236, 2
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy)
+        o.F0, o.I0 = -3.141593, 6
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy)
+        ct = s_wait(ct, 420)                   -- //420：anmSetMain（视觉）
+        ct = s_wait(ct, 640)                   -- //640
+        ct = s2.ring(o, 2, 32, 2.0, ct)        -- 环（640→680）
+        m_rand(o, "off", 40, 0, 2.0)           -- jmp(Boss1_2128, 680) 后的 moveRand
+        ct = s_wait(ct, 720)                   -- //720
+        ct = 0                                 -- jmpNeq(Boss1_196, 0)
+    end
+end
+
+---Boss1At：槽 1 每 60 帧打一波（L：[!L] etCount(1,48,1) 覆盖 8；速度 diffF L=2.2）。
+function s2.Boss1At(o)
+    et_new(o, 1)
+    et_aim(o, 1, 2)
+    et_sprite(o, 1, 12, 2)
+    et_count(o, 1, 48, 1)                     -- [!L] L 行覆盖前面的 8
+    et_angle(o, 1, 0.0, 0.0)
+    et_speed(o, 1, 2.2, 1.0)                  -- diffF([0], 1.5, 2.2, 2.2, 2.2) ⇒ L = 2.2
+    local p = o.pat[1]
+    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    while true do
+        ct = s_wait(ct, 60)                   -- 起手 jmp(412,60)+jmpNeq 回到 t=60 的 etOn
+        fire_slot(o, 1)
+        ct = 0                                -- jmpNeq(Boss1At_96, 0)
+    end
+end
+
+---BossAtEnemy / BossAtEnemy2L：绕 BOSS 转的子机（base 极坐标圆，圆心=出生点）。
+---  t=60 换成「角 %F0−π、半径 60、半径速 0」（即停在 BOSS 外 60px）后到 t=360 自毁。
+function s2.BossAtEnemy(o)
+    local ct = 0
+    s_async(o, s2.BossTrace)
+    s_async(o, s2.BossDummyShadow)
+    s_async(o, s2.BossAtEnemyAt)
+    m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
+    ct = s_wait(ct, 60)
+    m_circle(o, "base", o.F0 - 3.1415927, o.F1, 60.0, 0.0)
+    ct = s_wait(ct, 360)
+    t10_delete(o)
+end
+function s2.BossAtEnemy2L(o)
+    local ct = 0
+    s_async(o, s2.BossTrace)
+    s_async(o, s2.BossDummyShadow)
+    s_async(o, s2.BossAtEnemy2LAt)
+    m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
+    ct = s_wait(ct, 60)
+    m_circle(o, "base", o.F0 - 3.1415927, o.F1, 60.0, 0.0)
+    ct = s_wait(ct, 360)
+    t10_delete(o)
+end
+
+---BossAtEnemyAt / BossAtEnemy2LAt：槽 0 每 5 帧打 7×2 发、基准角取 %REL_ANGLE
+---  （= base 极坐标当前角），共 60 轮。两者只差速度（L：3.3 / 4.0）。
+---  ★ 循环体是「先 deci 后等 5 帧再出弹」——deci 压回的是旧值，所以正好打 60 轮。
+function s2.at_enemy_at(o, spd)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 6, o.I0)
+    et_count(o, 0, 7, 2)                      -- [!L] etCount(0, [4]=7, 2)
+    et_angle(o, 0, rndrad(), 0.0)
+    et_speed(o, 0, spd, 1.5)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 8, -999999, -999999, -999999.0, -999999.0)
+    et_copy(o, 1, 0)
+    local n = 60
+    local ct = 0
+    while true do
+        local old = n
+        n = n - 1
+        if old == 0 then break end            -- jmpNeq（判旧值）
+        ct = ct - 5                           -- wait(5)：clock −5
+        ct = s_wait(ct, 0)
+        et_angle(o, 0, o.ecs.base.ang, 0.0)   -- etAngle(0, %REL_ANGLE, 0)
+        fire_slot(o, 0)
+        ct = 0                                -- jmpNeq(BossAtEnemy*At_516, 0)
+    end
+end
+function s2.BossAtEnemyAt(o)   return s2.at_enemy_at(o, 3.3) end
+function s2.BossAtEnemy2LAt(o) return s2.at_enemy_at(o, 4.0) end
+
+---卡 3646　犬走椛（BOSS 非符 2）
+---  Boss2 主循环 760 帧一轮（clock 120→880）：t=120 起一对 2L 子机（%F0=0/π）；
+---  t=420 / t=800 各一串 5×32 的环；t=460 / t=840 各 moveRand(40,0,2.0) 一次。
+---  另起一条 Boss2_atL 线程（[!L]）：槽 1 每 20 帧打 16 发，无限循环。
+function s2.Boss2(o)
+    local ct = 0
+    t10_enm_kill_all(o)                        -- enmKillAll
+    t10_kill_async(o)                          -- killAllAsync
+    ct = s_wait(ct, 120)                       -- //120
+    s_async(o, s2.Boss2_atL)                   -- [!L] callAsync("Boss2_atL")
+    ct = 880                                   -- jmp(Boss2_2752, 880)
+    ct = 120                                   -- jmpNeq(Boss2_720, 120)
+    while true do
+        o.F0, o.F1, o.I0 = 0.0, 0.05236, 2     -- [!L] %F1 = 0.05236
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy2L)   -- [!L]
+        o.F0, o.I0 = 3.141593, 6
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy2L)   -- [!L]
+        ct = s_wait(ct, 180)                   -- //180：anmSetMain（视觉）
+        ct = s_wait(ct, 420)                   -- //420
+        ct = s2.ring(o, 0, 32, 1.5, ct)        -- 环（420→460，L：etCount(0,[0]=32,1)）
+        m_rand(o, "off", 40, 0, 2.0)           -- 同帧 moveRand(40,0,2.0)
+        ct = s_wait(ct, 500)
+        o.F0, o.F1, o.I0 = 0.0, 0.05236, 2     -- [!L] %F1 = 0.05236（基值 −0.02618 被覆盖）
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy2L)
+        o.F0, o.I0 = -3.141593, 6
+        s_pod(o, 0.0, 0.0, s2.BossAtEnemy2L)
+        ct = s_wait(ct, 560)                   -- //560：anmSetMain（视觉）
+        ct = s_wait(ct, 800)                   -- //800
+        ct = s2.ring(o, 0, 32, 1.5, ct)        -- 环（800→840）
+        m_rand(o, "off", 40, 0, 2.0)
+        ct = s_wait(ct, 880)                   -- //880
+        ct = 120                               -- jmpNeq(Boss2_720, 120)
+    end
+end
+
+---Boss2_atL：槽 1 每 20 帧打 16 发（自机狙、速度 3.0）的死循环。
+function s2.Boss2_atL(o)
+    et_new(o, 1)
+    et_aim(o, 1, 2)
+    et_sprite(o, 1, 6, 4)
+    et_count(o, 1, 16, 1)
+    et_angle(o, 1, 0.0, 0.0)
+    et_speed(o, 1, 3.0, 1.0)
+    local p = o.pat[1]
+    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local ct = 0
+    while true do
+        ct = s_wait(ct, 20)                    -- 起手 jmp(332,20)+jmpNeq 后 t=20 的 etOn
+        fire_slot(o, 1)
+        ct = 0                                 -- jmpNeq(Boss2_atL_312, 0)
     end
 end
 
@@ -4214,6 +6141,426 @@ function s5.BossCard4_at2(o)
 end
 
 --=====================================
+--八·C-2、stage05 非符（早苗 中 BOSS 一张 + 神奈子 BOSS 三张；只做 Lunatic 难度行）
+--  ECL 源：r05raw.txt 的 MBoss / Boss1 / Boss2 / Boss3 及其子线程。
+--  ★ 血量 = 一相「进场 life − 收尾阈值」（Enemy.cpp 掉到阈值就夹回、切下一相）：
+--      MBoss = 12900 − 2900 = 10000（时限 setInterrupt(1, 0, 2400, "MBossEscape") = 40 秒）；
+--      Boss1 = 沿用 Boss() 的 life 12400 − 阈值 2400 = 10000；
+--      Boss2 / Boss3 = lifeSet(10400) − 阈值 2400 = 8000。
+--  ★ killAsync(0) 是 **no-op**：EclVm.cpp 的 ECL_VM_STOP_THREAD 用 FindThread(0) 找 id 为 0
+--    的线程，而主线程与 callAsync 出来的线程 id 都是 −1（Enemy.cpp 构造里 unknown1010 = −1；
+--    ECL_VM_SPAWN_THREAD 走 SpawnThread(−1, 0)），只有 callAsyncId(0, …) 才注册 id 0。
+--    Boss1 循环尾那条 killAsync(0) 因此什么都不杀，这里也不写。
+--  ★ 三个 Boss 的 moveLimit(0,96,280,64) 写在 Boss() 里（原作的「上一相残留状态」），
+--    ECL 反汇编里看不到、也不属于任何一张卡的子程序 ⇒ 与 stage01/02 非符同样不搬。
+--=====================================
+
+---非符 3647　早苗（中 BOSS 非符）
+---  MBoss：入场按自机左右选 x = −96 / +96（`pushf(%PLAYER_X2); pushi(0); lessf();
+---  jmpEq(MBoss_636, 0)`：jmpEq「假才跳」⇒ %PLAYER_X2 ≥ 0 时跳去 −96 那一支），
+---  再 movePosTime(60,4,0,128) 降到屏幕高度 128。
+---  t=60 moveLimit(0,96,280,100)；t=80 取 %F0 = ANGLE_PLAYER 并出一只 MBossDummy；
+---  t=550 起 180 帧一轮（jmp(MBoss_1148,730) 会立刻被 jmpNeq(…,550) 拨回 550）：
+---    550 起异线程 MBossAt；610 moveRand(60,4,2.0)；670 异线程 MBossAt2 + moveRand；730 nop。
+function s5.MBoss(o)
+    local ct = 0
+    if player.x < 0 then
+        m_pos(o, "off", 96.0, -96.0)
+    else
+        m_pos(o, "off", -96.0, -96.0)
+    end
+    m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    t10_enm_kill_all(o)                           -- enmKillAll()
+    ct = s_wait(ct, 60)                           -- //60
+    m_limit(o, 0.0, 96.0, 280.0, 100.0)
+    ct = s_wait(ct, 80)                           -- //80
+    o.F0 = t10_angle_player(o)
+    s_pod(o, 0.0, 0.0, s5.MBossDummy)             -- enmCreate("MBossDummy")
+    ct = s_wait(ct, 200)                          -- //200
+    ct = s_wait(ct, 290)                          -- //290
+    ct = s_wait(ct, 550)                          -- //550
+    ct = 550                                      -- jmp(MBoss_1148,730) ⇒ jmpNeq(…,550)
+    while true do
+        s_async(o, s5.MBossAt)                    -- callAsync("MBossAt")
+        o.F0 = 2.019595
+        ct = s_wait(ct, 610)                      -- //610
+        m_rand(o, "off", 60, 4, 2.0)
+        ct = s_wait(ct, 670)                      -- //670
+        s_async(o, s5.MBossAt2)
+        o.F0 = 1.121997
+        m_rand(o, "off", 60, 4, 2.0)
+        ct = s_wait(ct, 730)                      -- //730
+        ct = 550
+    end
+end
+
+---MBossDummy：绕 BOSS（世界坐标 + 极坐标偏移）半径 96 的旋臂子机。槽 0 主弹 + 槽 1 复制
+---  （[!HL] 精灵 0 色 6）。外层 5 轮（[8]，%F0 每轮 +2.513274、movePosTime 20 帧），
+---  内层 20 轮（[4]，1 帧一轮；[24] 每帧 −0.1309、[12] 每帧 −1）。
+---  ★ noti($LUNATIC)：`pushi($LUNATIC); noti(); jmpEq(MBossDummy_1308,1)` ⇒ L 走 0.015 分支。
+---  ★ ($DIFF≥1) or ([4]%2==0)：L 恒真 ⇒ 每帧都 etOn。
+function s5.MBossDummy(o)
+    local r28 = 96.0                              -- circlePos(…, 96.0f)
+    local ang = o.F0
+    local x, y = circle_pos(ang, r28)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 2, 6)
+    et_count(o, 0, 5, 1)
+    et_angle(o, 0, 0.0, 0.7853982)
+    et_speed(o, 0, 0.001, 1.0)
+    local p0 = o.pat[0]
+    p0.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p0.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p0.ex[2] = tp_record(0, 4096, 100, -999999, -999999.0, -999999.0)
+    p0.ex[4] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    et_copy(o, 1, 0)                              -- etCopy(1, 0)
+    et_sprite(o, 1, 0, 6)                         -- [!HL]
+    local p1 = o.pat[1]
+    local n12 = 120                               -- [12]
+    local n8  = 5                                 -- [8]
+    local ct  = 0
+    n8 = n8 - 1                                   -- jmp(MBossDummy_1944,1) → deci([8])
+    while true do
+        ang = o.F0 + 2.513274                     -- MBossDummy_756（t=0）
+        o.F0 = ang
+        local x2, y2 = circle_pos(ang, r28)
+        m_pos_time(o, "off", 20, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4  = 20                            -- [4]
+        local a24 = ang                           -- [24] = %F0
+        n4 = n4 - 1                               -- jmp(MBossDummy_1900,1) → deci([4])
+        ct = 0
+        while true do
+            ct = s_wait(ct, 1)                    -- +1: //1
+            p0.ex[5] = tp_record(0, 16, 90, -999999, 0.015, a24)   -- L 行
+            p1.ex[5] = tp_record(0, 16, 60, -999999, 0.015, a24)
+            a24 = t10_wrap(a24 - 0.1309)          -- validRad([24])
+            p0.ex[3] = tp_record(0, 64, n12, 1, 0.0, 3.0)
+            p1.ex[3] = tp_record(0, 64, n12, 1, 0.0, 3.0)
+            fire_slot(o, 0)                       -- etOn(0)
+            fire_slot(o, 1)                       -- etOn(1) [!HL]
+            n12 = n12 - 1
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end           -- deci([4]) + jmpNeq(…,0)
+            ct = 0
+        end
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end               -- deci([8]) + jmpNeq(…,0)
+        ct = 0
+    end
+    t10_delete(o)
+end
+
+---MBossAt / MBossAt2：每帧一发环绕弹，共 60 发（1 帧一发）。槽 0：5 发一圈、角速 0.7853982。
+---  [4] 从 ANGLE_PLAYER 起每帧 ±0.019635（validRad）；[8] 从 1.0 起每帧 +0.1，
+---  超过 2.0 就 −1.0（锯齿）。两处只差 [4] 的符号。
+function s5.mboss_at(o, dir)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 3, 4)
+    et_count(o, 0, 5, 1)
+    et_angle(o, 0, 0.0, 0.7853982)
+    et_speed(o, 0, 0.001, 1.0)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+    local a4  = t10_angle_player(o)               -- [4] = %ANGLE_PLAYER
+    local s8  = 1.0                               -- [8] = 1.0f
+    local n0  = 60                                -- [0] = 60
+    local ct  = 0
+    n0 = n0 - 1                                   -- jmp(MBossAt_1040,1) → deci([0])
+    ct = 0
+    while true do                                 -- MBossAt_432（t=0）
+        et_angle(o, 0, a4, 0.0)
+        et_speed(o, 0, s8, 0.0)
+        s8 = s8 + 0.1
+        if s8 > 2.0 then s8 = s8 - 1.0 end
+        a4 = t10_wrap(a4 + dir * 0.019635)        -- validRad([4])
+        fire_slot(o, 0)                           -- ($DIFF≥1) or (%2==0) ⇒ L 每帧
+        ct = s_wait(ct, 1)                        -- +1: //1
+        local old = n0; n0 = n0 - 1
+        if old == 0 then break end                -- deci([0]) + jmpNeq(…,0)
+        ct = 0
+    end
+end
+function s5.MBossAt(o)  return s5.mboss_at(o, 1) end
+function s5.MBossAt2(o) return s5.mboss_at(o, -1) end
+
+---非符 3648　神奈子（BOSS 非符 1）
+---  Boss1：t=20 取 %F0 = ANGLE_PLAYER 并出 Boss1Dummy / Boss1Dummy2；
+---  t=170 起 120 帧一轮：170 叫 at/at2 两个异线程（之后 diffWait(60,60,20,10) ⇒ L 等 10 帧），
+---  230 moveRand(40,0,2.0)，290 nop（`killAsync(0)` 是 no-op，见本节开头）。
+function s5.Boss1(o)
+    local ct = 0
+    ct = s_wait(ct, 20)                           -- //20
+    o.F0 = t10_angle_player(o)
+    s_pod(o, 0.0, 0.0, s5.Boss1Dummy)
+    s_pod(o, 0.0, 0.0, s5.Boss1Dummy2)
+    ct = s_wait(ct, 80)                           -- //80
+    ct = s_wait(ct, 170)                          -- //170
+    ct = ct - 10                                  -- diffWait(60,60,20,10) ⇒ L = 10
+    ct = s_wait(ct, 170)                          -- jmp(Boss1_692,290) ⇒ jmpNeq(…,170)
+    while true do
+        s_async(o, s5.Boss1_at)                   -- callAsync("Boss1_at")
+        s_async(o, s5.Boss1_at2)
+        ct = s_wait(ct, 230)                      -- //230
+        m_rand(o, "off", 40, 0, 2.0)
+        ct = s_wait(ct, 290)                      -- //290
+        ct = 170                                  -- jmpNeq(Boss1_520, 170)
+    end
+end
+
+---Boss1Dummy / Boss1Dummy2：绕 BOSS（世界坐标 + 极坐标偏移）半径 64（L 行；E/N/H = 24/48/48）
+---  的旋臂子机。外层 5 轮（[8]，%F0 每轮 ∓2.513274、movePosTime 10 帧），
+---  内层 10 轮（[4]，1 帧一轮；[24] 每帧 ±0.06545、[12] 每帧 −1）。
+---  ★ 外层第 k 轮与内层第 10k 帧同帧（内层 deci 不跳后直接落进 deci([8])，jmpNeq 把
+---    clock 拨回 0、692 在 t=0 ⇒ 同帧执行）——所以 5 轮共占 50 帧。
+function s5.boss1_dummy(o, aim, dir)
+    local r28 = 64.0                              -- diffF([28], 24,48,48,64) ⇒ L
+    local ang = o.F0
+    local x, y = circle_pos(ang, r28)
+    m_pos(o, "off", s_boss_x(o) + x, s_boss_y(o) + y)
+    et_new(o, 0)
+    et_aim(o, 0, aim)
+    et_sprite(o, 0, 2, 6)
+    et_count(o, 0, 5, 1)
+    et_angle(o, 0, 0.0, 0.7853982)
+    et_speed(o, 0, 0.001, 1.0)
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    p.ex[1] = tp_record(0, 8192, 100, -999999, -999999.0, -999999.0)
+    p.ex[3] = tp_record(0, 64, 90, 1, 0.0, 0.0)
+    et_angle(o, 0, t10_angle_player(o), 0.0)
+    local n12 = 60                                -- [12]
+    local n8  = 5                                 -- [8]
+    local ct  = 0
+    n8 = n8 - 1                                   -- jmp(Boss1Dummy_1540,1) → deci([8])
+    while true do                                 -- Boss1Dummy_692（t=0）
+        ang = o.F0 + dir * 2.513274
+        o.F0 = ang
+        local x2, y2 = circle_pos(ang, r28)
+        m_pos_time(o, "off", 10, 0, s_boss_x(o) + x2, s_boss_y(o) + y2)
+        local n4  = 10                            -- [4]
+        local a24 = ang                           -- [24] = %F0
+        n4 = n4 - 1                               -- jmp(Boss1Dummy_1496,1) → deci([4])
+        ct = 0
+        while true do                             -- Boss1Dummy_1048（t=1）
+            ct = s_wait(ct, 1)                    -- +1: //1
+            p.ex[4] = tp_record(0, 16, 90, -999999, 0.025, a24)    -- L 行
+            a24 = t10_wrap(a24 + dir * 0.06545)   -- validRad([24])
+            p.ex[2] = tp_record(0, 64, n12, 1, 0.0, 3.0)
+            fire_slot(o, 0)                       -- etOn(0)
+            n12 = n12 - 1
+            local old4 = n4; n4 = n4 - 1
+            if old4 == 0 then break end           -- deci([4]) + jmpNeq(…,0)
+            ct = 0
+        end
+        local old8 = n8; n8 = n8 - 1
+        if old8 == 0 then break end               -- deci([8]) + jmpNeq(…,0)
+        ct = 0
+    end
+    t10_delete(o)
+end
+function s5.Boss1Dummy(o)  return s5.boss1_dummy(o, 3, 1) end
+function s5.Boss1Dummy2(o) return s5.boss1_dummy(o, 5, -1) end
+
+---Boss1_at / Boss1_at2：两支 600 帧的旋转环（20 轮 × 30 帧）。槽 0：L 行 10 发/轮。
+---  at：角速 0.3926991、速度 3.2/2.5、[8] = π 起每轮 −0.261799；
+---  at2：角速 −0.3926991、速度 3.5/2.5、[8] = 0 起每轮 +0.261799，且起手先 wait(15)。
+---  两轮都在半径 64 的随机角（%RANDRAD）上写 etOffset（at2 是「先写角与 [8] 再 circlePos」）。
+function s5.Boss1_at(o)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 2, 6)
+    et_count(o, 0, 1, 10)                         -- etCountD(0,1,1,1,1,8,8,10,10) ⇒ L：c1=1、c2=10
+    et_angle(o, 0, 0.0, 0.3926991)
+    et_speed(o, 0, 3.2, 2.5)                      -- etSpeedD(…,1.5,1.5,1.5,2.5) ⇒ L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local a8  = 3.141593                          -- [8] = π
+    local n12 = 20                                -- [12]
+    local ct  = 0
+    n12 = n12 - 1                                 -- jmp(Boss1_at_696,30) → deci([12])
+    ct = 0
+    while true do                                 -- Boss1_at_392（t=0）
+        local x, y = circle_pos(rndrad(), 64.0)   -- circlePos([0],[4],%RANDRAD,64)
+        et_offset(o, 0, x, y)
+        et_angle(o, 0, a8, 0.028049935)           -- L 行
+        a8 = t10_wrap(a8 - 0.261799)              -- validRad([8])
+        fire_slot(o, 0)                           -- etOn(0)
+        ct = s_wait(ct, 30)                       -- +30: //30
+        local old = n12; n12 = n12 - 1
+        if old == 0 then break end                -- deci([12]) + jmpNeq(…,0)
+        ct = 0
+    end
+end
+
+function s5.Boss1_at2(o)
+    et_new(o, 0)
+    et_aim(o, 0, 3)
+    et_sprite(o, 0, 2, 6)
+    et_count(o, 0, 1, 10)                         -- etCountD(0,1,1,1,1,8,8,10,10) ⇒ L：c1=1、c2=10
+    et_angle(o, 0, 0.0, -0.3926991)
+    et_speed(o, 0, 3.5, 2.5)                      -- etSpeedD(…,1.5,1.5,1.5,2.5) ⇒ L
+    local p = o.pat[0]
+    p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+    local a8  = 0.0                               -- [8] = 0.0f
+    local n12 = 20                                -- [12]
+    local ct  = 0
+    ct = ct - 15                                  -- wait(15)
+    ct = s_wait(ct, 0)                            -- 下一条在 t=0 ⇒ 等回 0
+    n12 = n12 - 1                                 -- jmp(Boss1_at2_716,30) → deci([12])
+    ct = 0
+    while true do                                 -- Boss1_at2_412（t=0）
+        et_angle(o, 0, a8, -0.028049935)          -- L 行
+        a8 = t10_wrap(a8 + 0.261799)              -- validRad([8])
+        local x, y = circle_pos(rndrad(), 64.0)
+        et_offset(o, 0, x, y)
+        fire_slot(o, 0)                           -- etOn(0)
+        ct = s_wait(ct, 30)                       -- +30: //30
+        local old = n12; n12 = n12 - 1
+        if old == 0 then break end                -- deci([12]) + jmpNeq(…,0)
+        ct = 0
+    end
+end
+
+---非符 3649　神奈子（BOSS 非符 2）
+---  Boss2：lifeSet(10400)；t=0 killAllAsync（停掉上一相留下的线程）；
+---  t=120 叫 Boss2_at / Boss2_at2 两个异线程，之后 180 帧一轮：
+---    「240 的 moveRand」被 jmpNeq(…,120) 拨回 120 ⇒ 每轮先等 120 帧再 moveRand、再等 60 帧。
+function s5.Boss2(o)
+    local ct = 0
+    t10_kill_async(o)                             -- killAllAsync()
+    ct = s_wait(ct, 120)                          -- //120
+    s_async(o, s5.Boss2_at)                       -- callAsync("Boss2_at")
+    s_async(o, s5.Boss2_at2)
+    ct = 120                                      -- jmp(Boss2_748,300) ⇒ jmpNeq(…,120)
+    while true do
+        ct = s_wait(ct, 240)                      -- Boss2_704
+        m_rand(o, "off", 40, 0, 2.0)
+        ct = s_wait(ct, 300)                      -- //300
+        ct = 120                                  -- jmpNeq(Boss2_704, 120)
+    end
+end
+
+---Boss2_at：槽 0 的 8 连发环，每轮 140 帧（内含 8 × diffWait(…,10) 加收尾 diffWait(…,60)）。
+---  [0] 每发 +0.19635、[8] 每轮 +1；L 行：8 发、角速 0.018925257、速度 2.8/2.4。
+function s5.Boss2_at(o)
+    local a0 = 0.0                                -- [0]
+    et_offset(o, 0, 0.0, 0.0)
+    local ct = 0
+    while true do                                 -- Boss2_at_168（t=0）
+        et_new(o, 0)
+        et_aim(o, 0, 3)
+        et_sprite(o, 0, 5, 6)
+        et_count(o, 0, 8, 8)
+        et_angle(o, 0, 1.5707964, 0.0)
+        et_speed(o, 0, 2.8, 2.4)                  -- etSpeedD(…,1.4,1.4,1.4,2.4) ⇒ L
+        local p = o.pat[0]
+        p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                              -- [4]
+        n4 = n4 - 1                               -- jmp(Boss2_at_712,0) → deci([4])
+        ct = 0
+        while true do                             -- Boss2_at_536（t=0）
+            et_angle(o, 0, a0, 0.018925257)
+            fire_slot(o, 0)                       -- etOn(0)
+            a0 = t10_wrap(a0 + 0.19635)           -- validRad([0])
+            ct = ct - 10                          -- diffWait(30,20,10,10) ⇒ L = 10
+            ct = s_wait(ct, 0)
+            local old = n4; n4 = n4 - 1
+            if old == 0 then break end            -- deci([4]) + jmpNeq(…,0)
+            ct = 0
+        end
+        ct = ct - 60                              -- diffWait(120,120,90,60) ⇒ L = 60
+        ct = s_wait(ct, 0)
+    end
+end
+
+---Boss2_at2：槽 1 的同构环（精灵 5 色 2，反向）。★ diffWait 在**外层开头**（每轮先等 60 帧），
+---  内层结束直接落回外层；L 行：8 发、角速 −0.018925257、速度 3.4/2.9。
+function s5.Boss2_at2(o)
+    local a0 = 0.0                                -- [0]
+    et_offset(o, 1, 0.0, 0.0)
+    local ct = 0
+    while true do                                 -- Boss2_at2_168（t=0）
+        ct = ct - 60                              -- diffWait(120,120,90,60) ⇒ L = 60
+        ct = s_wait(ct, 0)
+        et_new(o, 1)
+        et_aim(o, 1, 3)
+        et_sprite(o, 1, 5, 2)
+        et_count(o, 1, 8, 8)
+        et_angle(o, 1, 1.5707964, 0.0)
+        et_speed(o, 1, 3.4, 2.9)                  -- etSpeedD(…,1.9,1.9,1.9,2.9) ⇒ L
+        local p = o.pat[1]
+        p.ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                              -- [4]
+        n4 = n4 - 1                               -- jmp(Boss2_at2_744,0) → deci([4])
+        ct = 0
+        while true do                             -- Boss2_at2_568（t=0）
+            et_angle(o, 1, a0, -0.018925257)
+            fire_slot(o, 1)                       -- etOn(1)
+            a0 = t10_wrap(a0 - 0.19635)           -- validRad([0])
+            ct = ct - 10                          -- diffWait(30,20,10,10) ⇒ L = 10
+            ct = s_wait(ct, 0)
+            local old = n4; n4 = n4 - 1
+            if old == 0 then break end            -- deci([4]) + jmpNeq(…,0)
+            ct = 0
+        end
+    end
+end
+
+---非符 3650　神奈子（BOSS 非符 3）
+---  Boss3：lifeSet(10400)；t=0 killAllAsync；t=100 叫 Boss3_at / Boss3_at2，
+---  之后 180 帧一轮（220 的 moveRand 被 jmpNeq(…,100) 拨回 100）。
+function s5.Boss3(o)
+    local ct = 0
+    t10_kill_async(o)                             -- killAllAsync()
+    ct = s_wait(ct, 100)                          -- //100
+    s_async(o, s5.Boss3_at)                       -- callAsync("Boss3_at")
+    s_async(o, s5.Boss3_at2)
+    ct = 100                                      -- jmp(Boss3_748,280) ⇒ jmpNeq(…,100)
+    while true do
+        ct = s_wait(ct, 220)                      -- Boss3_704
+        m_rand(o, "off", 40, 0, 1.0)
+        ct = s_wait(ct, 280)                      -- //280
+        ct = 100                                  -- jmpNeq(Boss3_704, 100)
+    end
+end
+
+---Boss3_at / Boss3_at2：两支永不结束的 8 连发环，每发间隔 diffWait(30,20,15,11) ⇒ L = 11。
+---  L 行：8 发、角速 ∓0.018925257、[0] 每发 ±0.19635、速度 at = 3.0/2.6、at2 = 3.6/3.1。
+function s5.boss3_at(o, slot, dir, sp1, sp2, sprite_col)
+    local a0 = 0.0                                -- [0]
+    et_offset(o, slot, 0.0, 0.0)
+    local ct = 0
+    while true do                                 -- Boss3_at_128 / Boss3_at2_128（t=0）
+        et_new(o, slot)
+        et_aim(o, slot, 3)
+        et_sprite(o, slot, 5, sprite_col)
+        et_count(o, slot, 8, 8)                   -- etCountD(…, 8,8,8,8,8,8,8,8)
+        et_angle(o, slot, 1.5707964, 0.0)
+        et_speed(o, slot, sp1, sp2)               -- etSpeedD 的 L 行
+        o.pat[slot].ex[0] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
+        local n4 = 8                              -- [4]
+        n4 = n4 - 1                               -- jmp(Boss3_at_620,0) → deci([4])
+        ct = 0
+        while true do                             -- Boss3_at_444（t=0）
+            et_angle(o, slot, a0, dir * 0.018925257)
+            fire_slot(o, slot)                    -- etOn(slot)
+            a0 = t10_wrap(a0 - dir * 0.19635)     -- validRad([0])：at 是 +、at2 是 −（与 astep 反号）
+            ct = ct - 11                          -- diffWait(30,20,15,11) ⇒ L = 11
+            ct = s_wait(ct, 0)
+            local old = n4; n4 = n4 - 1
+            if old == 0 then break end            -- deci([4]) + jmpNeq(…,0)
+            ct = 0
+        end
+    end
+end
+function s5.Boss3_at(o)  return s5.boss3_at(o, 0, -1, 3.0, 2.6, 6) end
+function s5.Boss3_at2(o) return s5.boss3_at(o, 1,  1, 3.6, 3.1, 2) end
+--=====================================
 --八·H、stage01 / stage02 / stage05 的符卡注册（boss.card.add 必须晚于 boss.Define）
 boss.Define("6a", "秋静葉", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sizuha", LEVEL)
 boss.Define("7a", "秋穣子", "TH10_2", TH10_bg, { 0, 80 }, nil, "Minoriko", LEVEL)
@@ -4228,20 +6575,36 @@ boss.Define("9a", "東風谷早苗", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sanae",
 ---  t1/t2 取该卡 ECL 里 setInvuln 的值（都是入场 60 帧 → 1/1）。
 ---  原作「厄符「バッドフォーチュン」」「疵符…」等 E/N 行不移植，只做 Lunatic。
 local T10_CARDS_S125 = {
-    { s1.MBossCard1, "葉符「狂いの落葉」",           "6a", 3630, 1, 1, 2160 / 60, 5850 },
-    { s1.BossCard1,  "秋符「秋の空と乙女の心」",     "7a", 3631, 1, 1, 2700 / 60, 8200 },
-    { s1.BossCard2,  "豊作「穀物神の約束」",         "7a", 3632, 1, 1, 2700 / 60, 8200 },
+    ---stage01：静葉中 BOSS = 非符(4200)→葉符(1650)；穣子 = 非符1(6000)→秋符(2200)→
+    ---  非符2(6000)→豊作(2200)。血量一律按原作「进场 life − 收尾阈值」。
+    { s1.MBoss,      "",                              "6a", 3642, 1, 1, 1560 / 60, 4200, "stage01 中BOSS 非符" },
+    { s1.MBossCard1, "葉符「狂いの落葉」",            "6a", 3630, 1, 1, 2160 / 60, 1650 },
+    { s1.Boss1,      "",                              "7a", 3643, 1, 1, 2700 / 60, 6000, "stage01 非符一" },
+    { s1.BossCard1,  "秋符「秋の空と乙女の心」",      "7a", 3631, 1, 1, 2700 / 60, 2200 },
+    { s1.Boss2,      "",                              "7a", 3644, 1, 1, 2700 / 60, 6000, "stage01 非符二" },
+    { s1.BossCard2,  "豊作「穀物神の約束」",          "7a", 3632, 1, 1, 2700 / 60, 2200 },
     { s2.MBossCard1, "厄符「厄神様のバイオリズム」", "8a", 3633, 1, 1, 2400 / 60, 2300 },
-    { s2.BossCard1,  "疵痕「壊されたお守り」",       "8a", 3634, 1, 1, 2700 / 60, 13400 },
-    { s2.BossCard2,  "悲運「大鐘婆の火」",           "8a", 3635, 1, 1, 2700 / 60, 13400 },
-    { s2.BossCard3,  "創符「流刑人形」",             "8a", 3636, 1, 1, 2700 / 60, 13400 },
+    ---Boss1 非符：进场 life 9000（Boss() 的 lifeSet）− 收尾阈值 2700 = 6300。
+    { s2.Boss1,      "",                              "8a", 3645, 1, 1, 2700 / 60, 6300, "stage02 非符一" },
+    ---疵痕、悲運、創符三张符卡的血量原写成 13400（= Boss2 的 lifeSet），按换卡规则
+    ---  「进场 life − 收尾阈值」应为 2700 / 2700 / 2700。
+    { s2.BossCard1,  "疵痕「壊されたお守り」",       "8a", 3634, 1, 1, 2700 / 60, 2700 },
+    ---Boss2 非符：lifeSet(13400) − 收尾阈值 5400 = 8000。
+    { s2.Boss2,      "",                              "8a", 3646, 1, 1, 2700 / 60, 8000, "stage02 非符二" },
+    { s2.BossCard2,  "悲運「大鐘婆の火」",           "8a", 3635, 1, 1, 2700 / 60, 2700 },
+    { s2.BossCard3,  "創符「流刑人形」",             "8a", 3636, 1, 1, 2700 / 60, 2700 },
 
-    -- stage05（早苗 中BOSS 1 张 / 神奈子 BOSS 4 张）；HP = 卡开始时 BOSS 的 lifeSet：
-    --   早苗 MBoss 12900；神奈子 12400（Boss() HL）→ 10400（Boss2/Boss3）→ 卡内 lifeSet(3000)。
-    --   t3 = spell*(…, 帧数, …)/60；t1/t2 = setInvuln(n)/60。
+    -- stage05（早苗 中BOSS 非符+符卡 / 神奈子 BOSS 三张非符 + 四张符卡）。
+    --   符卡的 HP = 卡开始时 BOSS 的 lifeSet；非符的 HP = 一相「进场 life − 收尾阈值」：
+    --     早苗 MBoss 12900 − 2900 = 10000；神奈子 Boss1 12400 − 2400 = 10000（沿用 Boss() 的 life）、
+    --     Boss2 / Boss3 = 10400 − 2400 = 8000。t3 = setInterrupt 时限/60、t1/t2 = setInvuln/60。
+    { s5.MBoss,      "",                              "9a", 3647, 200 / 60, 200 / 60, 2400 / 60, 10000, "stage05 中BOSS 非符" },
     { s5.MBossCard1, "秘術「一子相伝の弾幕」",       "9a", 3637, 200 / 60, 200 / 60, 2400 / 60, 12900 },
+    { s5.Boss1,      "",                              "1a", 3648, 200 / 60, 200 / 60, 4200 / 60, 10000, "stage05 非符一" },
     { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "1a", 3638, 90 / 60,  90 / 60,  4200 / 60, 12400 },
+    { s5.Boss2,      "",                              "1a", 3649, 1,        1,        4200 / 60, 8000,  "stage05 非符二" },
     { s5.BossCard2,  "開海「モーゼの奇跡」",         "1a", 3639, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.Boss3,      "",                              "1a", 3650, 100 / 60, 100 / 60, 4200 / 60, 8000,  "stage05 非符三" },
     { s5.BossCard3,  "準備「サモンタケミナカタ」",   "1a", 3640, 60 / 60,  60 / 60,  4200 / 60, 10400 },
     { s5.BossCard4,  "大奇跡「八坂の神風」",         "1a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
 
@@ -4249,11 +6612,14 @@ local T10_CARDS_S125 = {
 ---  主 BOSS 的载体在这里登记，s_pod 再把它复制给每一只子机。
 for _, e in ipairs(T10_CARDS_S125) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    ---第 9 项 = 菜单名：非符的卡名必须是 ""（is_sc=false，不亮卡名），
+    ---  但符卡练习菜单里还得有个名字 ⇒ 这两个字符串在非符上不是同一个。
+    local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
         local p = t10_boss_start(self, main)
         p.t10_bossref = p
     end
     c.del = function(self) t10_clear_pods() end
-    boss.card.add({ { c, band } }, LEVEL, name, id)
+    boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
