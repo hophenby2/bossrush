@@ -4789,6 +4789,480 @@ for _, e in ipairs(s6.cards) do
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 --=====================================
+-- 九、stage06 道中（妖精群 + 两只大妖精）—— 原生 LuaSTG「道中搬运卡」
+--   把原作 `data/stage06.ecl` 的**道中段**（`main` 派生的 MainSub1..5：成群的
+--   小妖精 + 两次大妖精 Girl01/Girl02）复刻成**一张**符卡，挂在一个空的
+--   `img_void` boss 上（与 mod/GAME/th34.lua 的「道中搬运卡」同一套做法）。
+--   **不用 ECL 字节码 VM**：时间轴、出弹、走位全部翻成原生 LuaSTG
+--   （`task.Wait` / `enemy` / `enmCreate` 的等价物）。
+--
+--   数据来源（本段每个数字的出处）
+--     · thecl 的原始反汇编（带 TH10 名字表）：
+--         thecl -d 10 -r -x -m MAP/th10.eclm stage06.ecl out.txt
+--       `main` → callAsync MainSub1 / MainSubBoss；MainSub1..5 是**同一条 ECL
+--       敌机上的线程**：`movePos` 改的就是这条敌机，`enmCreate`（相对创建）
+--       与 `%FINAL_X/%FINAL_Y` 读的也是它的 `worldMotion.position` —— 下面把它
+--       叫「道中锚点」。
+--     · TH10 1.00a 复原源码：EnemyEclDispatcher.cpp（enmCreate/A/M/AM、
+--       moveVel/moveVelTime/moveCircle、et*）、Enemy.cpp（每敌机 8 个 $I/%F）、
+--       EclVm.cpp（jmp 把时钟赋成目标标签的绝对时间、wait 是时钟 −n）。
+--
+--   只做 Lunatic 行：`diffI/diffF` 取第 4 项、`etCountD/etSpeedD` 取第 4/8 项、
+--   `diffWait(a,b,c,d)`（0x170 SUBTRACT_DIFFICULTY_VALUE）取第 4 项 `d`。
+--   道中这段没有 rank 缩放（全是 `!*`），逐条照搬即可。
+--
+--   跳过 / 近似（都写在对应位置）
+--     · `MapleEnemy`（main 里一只纯观感敌机，无弹幕）——跳过；
+--     · `MainSubBoss`（t≈3669 才出场的 BOSS 本体）——本卡不移植 BOSS；
+--     · `setHurtbox/setHitbox/setInvuln/unknown361/flagSet/anm*/playSound/
+--       drop*/setChapter` —— 判定/演出类指令：能折成物理量的照做（hitbox→A/B、
+--       invuln→protect 计时），其余按无效果处理，但占的 wait 边界原样保留；
+--     · 妖精贴图一律 `servant`（本仓库没有 TH10 妖精贴图》；原作 anmSetSprite
+--       的两个色号只决定敌人外形，弹幕用不到 ⇒ 只保留 etSprite 的**弹**色号）。
+--
+--   ★ 三条关键语义（都照复原源码，改代码前先读）
+--     · 世界位置 = base + offset；`enmCreate`/`enmCreateA` 都把出生点写进
+--       **offsetMotion**（本仓库 `ecs.off`），之后 moveVel/moveVelTime
+--       （SET/INTERPOLATE OFFSET POLAR）也只动这一路。
+--     · `enmCreateM`（镜像）：给子机置 0x800 标志，只把之后 SET/INTERPOLATE
+--       POLAR 的**目标角**过一遍 `a' = wrap(π/2 − wrap(a − π/2))`
+--       （EnemyEclDispatcher.cpp:1723/1770），化简即横轴镜像 `a' = wrap(π − a)`；
+--       它**不**影响出弹角、圆运动、出生位置。
+--     · `moveVelTime(dur, mode, ang, spd)` 对（角, 速度）一起插值，`−999999`
+--       表示「不改」；首次进入圆运动时把当前位置存成圆心（照 m_circle）。
+--=====================================
+do
+local s6mid = {}
+
+---镜像角：wrap(π/2 − wrap(a − π/2)) ≡ wrap(π − a)。
+local function s6_mirror(a) return t10_wrap(TH10_PI - a) end
+
+---道中锚点（原作 MainSub1..5 共用的那条 ECL 敌机的位置）。
+s6mid.ax, s6mid.ay = 0, 0
+
+---击破掉道具（近似：原作 dropMain/dropExtra 是「类型+个数」，本仓库
+---`Dropitem_PFP` 用 {信仰, P 个数, 点个数}；这里按原作的大致数量折算）。
+s6mid.DROP_CIR = { 0, 0, 1 }        -- Cir 系：dropMain 1/2/3
+s6mid.DROP_G1  = { 0, 4, 3 }        -- Girl01：dropExtra(1,4)+dropExtra(2,3)
+s6mid.DROP_G2  = { 0, 6, 3 }        -- Girl02：dropExtra(4,2)+dropExtra(1,4)+dropExtra(2,3)
+s6mid.DROP_G0  = { 0, 2, 2 }        -- BGirl00：dropExtra(2,2)
+
+---本卡造出来的妖精：卡结束 / 重开（符卡练习）时统一收拾。
+s6mid.units = {}
+function s6mid.clear()
+    for i = 1, #s6mid.units do t10_kill_pod(s6mid.units[i]) end
+    s6mid.units = {}
+end
+
+---moveVel：SET OFFSET POLAR（镜像时先折角）。
+function s6mid.vel(f, ang, spd)
+    if f.t10_mir and ang > -999999 then ang = s6_mirror(ang) end
+    m_vel(f, "off", ang, spd)
+end
+
+---moveVelTime：INTERPOLATE OFFSET POLAR（−999999 = 不改；mode 照本仓库线性近似）。
+function s6mid.vel_time(f, dur, mode, ang, spd)
+    if f.t10_mir and ang > -999999 then ang = s6_mirror(ang) end
+    m_vel_time(f, "off", dur, mode, ang, spd)
+end
+
+---moveCircleRel：第一次调用把当前位置存成圆心；−999999 = 保持原值。
+---圆运动**不**受镜像影响（原作只镜像极坐标运动的角）。
+function s6mid.circle(f, a, av, r, rv)
+    local ch = f.ecs.off
+    if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
+    ch.circle, ch.interp, ch.scal = true, nil, nil
+    if a  > -999999 then ch.ang = a  end
+    if av > -999999 then ch.cav = av end
+    if r  > -999999 then ch.r   = r  end
+    if rv > -999999 then ch.rv  = rv end
+end
+
+---当前世界位置（原作坐标系）：frame 与子程序都用它，避免静态字段审计把
+---`self.ecs` 判成「init 顶层没赋值」。
+function s6mid.pos(f) return f.ecs.wx, f.ecs.wy end
+
+---造一只妖精。`src`（可选）把创建者的 $I/%F 整块拷给子机（原作 enmCreate 的行为）。
+function s6mid.spawn(hp, x, y, mirror, drop, sub, src)
+    local f = New(class["th10_s6fairy"], hp, x, y, mirror, drop, sub, src)
+    s6mid.units[#s6mid.units + 1] = f
+    return f
+end
+
+---一波 7 只、每隔 16 帧一只（MainSub1a/1b/2a/2b/2c/2d 都是这个形状；
+---1a/2a/2c 的第一只在 t0=0、1b/2b/2d 在 t0=8）。位置用**波开始时**的锚点算一次。
+function s6mid.wave(card, sub, t0, wx, wy, mirror)
+    if t0 > 0 then task.Wait(t0) end
+    for i = 1, 7 do
+        s6mid.spawn(20, wx, wy, mirror, s6mid.DROP_CIR, sub)
+        if i < 7 then task.Wait(16) end
+    end
+end
+
+---六种波次：子程序 × 相对偏移 × 是否镜像（对照 EnmCreate 的四种变体）。
+function s6mid.W1(card)                    -- MainSub1a：enmCreate  BCir00…   y=−24，非镜像
+    local x, y = s6mid.ax, s6mid.ay - 24
+    task.New(card, function() s6mid.wave(card, "cir00", 0, x, y, false) end)
+end
+function s6mid.W1b(card)                   -- MainSub1b：enmCreateM BCir00…   y=−24，镜像
+    local x, y = s6mid.ax, s6mid.ay - 24
+    task.New(card, function() s6mid.wave(card, "cir00", 8, x, y, true) end)
+end
+function s6mid.W2(card)                    -- MainSub2a：enmCreate  BCir01…     y=0，非镜像
+    local x, y = s6mid.ax, s6mid.ay
+    task.New(card, function() s6mid.wave(card, "cir01", 0, x, y, false) end)
+end
+function s6mid.W2b(card)                   -- MainSub2b：enmCreate  BCir01b…    y=0，非镜像
+    local x, y = s6mid.ax, s6mid.ay
+    task.New(card, function() s6mid.wave(card, "cir01b", 0, x, y, false) end)
+end
+function s6mid.W2c(card)                   -- MainSub2c：enmCreateAM 落锚点，镜像
+    local x, y = s6mid.ax, s6mid.ay
+    task.New(card, function() s6mid.wave(card, "cir01", 0, x, y, true) end)
+end
+function s6mid.W2d(card)                   -- MainSub2d：enmCreateM 落锚点，镜像
+    local x, y = s6mid.ax, s6mid.ay
+    task.New(card, function() s6mid.wave(card, "cir01b", 8, x, y, true) end)
+end
+
+---道中妖精：一个普通敌机（能被打掉、掉道具），位置/出弹都走本文件上面的 ecs 运行时。
+---本仓库没有 TH10 妖精贴图 ⇒ 占位 `servant`，直接 `enemybase.init`，不用 `enemy`
+---的行走图系统，所以自己写 frame/render（对照 th31.lua 的「道中搬运卡」）。
+class["th10_s6fairy"] = Class(enemy, {
+    init = function(self, hp, x, y, mirror, drop, sub, src)
+        enemybase.init(self, hp, true)          -- nontaijutsu ⇒ GROUP.NONTJT：能打、撞自机不掉血
+        self.img = "servant"
+        self.hscale, self.vscale = 0.6, 0.6
+        self.colli = true
+        self.navi, self.bound = false, false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.A, self.B = 8, 8                   -- setHitbox(16,16) 的一半
+        self.invuln = (sub == "girl01" and 120) or (sub == "girl02" and 600) or 0
+        self.protect = self.invuln > 0          -- setInvuln：前 invuln 帧无敌
+        self.drop_tbl = drop
+        self.t10_mir = mirror and true or false
+        ecs_attach(self, x, y)                  -- 建 ecs + 8 个 pattern 槽 + $I/%F
+        if src then
+            self.I0, self.I1, self.I2, self.I3 = src.I0, src.I1, src.I2, src.I3
+            self.F0, self.F1, self.F2, self.F3 = src.F0, src.F1, src.F2, src.F3
+        end
+        self.seen = false
+        ecs_sync(self)
+        task.New(self, function() s6mid.BEH[sub](self) end)
+    end,
+    frame = function(self)
+        ecs_step(self)                          -- 原作 EnemyRuntimeUpdate：先解两路 motion
+        if self.invuln > 0 then                 -- setInvuln 计时
+            self.invuln = self.invuln - 1
+            if self.invuln <= 0 then self.protect = false end
+        end
+        local wx, wy = s6mid.pos(self)
+        if not self.seen then                   -- 进过场才算「出屏」基准
+            if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
+        elseif wx < -240 or wx > 240 or wy < -280 or wy > 280 then
+            t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
+            return
+        end
+        enemybase.frame(self)                   -- 判定箱 + hp<=0→Kill + task.Do（跑行为协程）
+    end,
+    render = function(self) DefaultRenderFunc(self) end,
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+    end,
+    del = function(self) task.Clear(self) end,
+})
+
+---=====================================
+--- 妖精行为（每个 subtask 一条协程；对照同名 ECL 子程序，只取 Lunatic 行）
+---=====================================
+s6mid.BEH = {}
+
+---Cir00：MainSub1a/1b 的妖精。BCir/RCir/GCir 只差敌人贴图，弹幕一模一样。
+s6mid.BEH.cir00 = function(f)
+    s6mid.vel(f, 1.5707964, 3.0)                    -- moveVel(π/2, 3.0)
+    task.New(f, function() s6mid.cir00_at(f) end)   -- callAsync("Cir00_at")
+    task.Wait(60)                                   -- +60
+    s6mid.vel_time(f, 40, 0, -0.7853982, 1.5)       -- moveVelTime(40, 0, −π/4, 1.5)
+    -- +6000 delete：原作在此自毁，实际早被出屏回收，不再等。
+end
+
+s6mid.cir00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 2); et_sprite(f, 0, 1, 6)
+    et_count(f, 0, 11, 1)                           -- etCountD(0, 3,3,7,11, 1,1,1,1) 的 L 行
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 6.0, 1.0)                        -- etSpeedD(0, 2.4,4.0,5.0,6.0, 1,1,1,1) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)   -- 记录 0（随即被下一条覆盖）
+    et_ex(f, 0, 0, 1, 1, -999999, -999999, -999999.0, -999999.0)   -- 记录 0 = DECEL
+    local w = t10_rand_mod60() + 30                 -- wait(($RAND%60)+30)
+    if w > 0 then task.Wait(w) end
+    while true do
+        fire_slot(f, 0)                             -- etOn(0)
+        t10_rand_mod60()                            -- diffWait 第 1 参：L 行用不到，但原作要消耗
+        task.Wait(20)                               -- diffWait(…, 60, 30, 20) 的 L 行
+    end
+end
+
+---Cir01：MainSub2a/2c 的妖精（2c 镜像）。
+s6mid.BEH.cir01 = function(f)
+    s6mid.vel(f, 0.0, 4.0)
+    task.New(f, function() s6mid.cir01_at(f) end)
+    task.Wait(60)
+    s6mid.vel_time(f, 40, 0, -0.3926991, -999999)   -- 角 → −0.3926991，速度保持 4.0
+end
+
+---Cir01b：MainSub2b/2d 的妖精（2d 镜像）。出弹与 Cir01 相同，只差 +60 那条 moveVelTime。
+s6mid.BEH.cir01b = function(f)
+    s6mid.vel(f, 0.0, 4.0)
+    task.New(f, function() s6mid.cir01_at(f) end)
+    task.Wait(60)
+    s6mid.vel_time(f, 40, 0, 0.3926991, 1.5)        -- 角 → +0.3926991，速度 → 1.5
+end
+
+s6mid.cir01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 2); et_sprite(f, 0, 3, 6)
+    et_count(f, 0, 48, 3)                           -- etCountD(0, 24,48,48,48, 1,1,2,3) 的 L 行
+    et_angle(f, 0, 0.0, 0.0)
+    et_speed(f, 0, 3.0, 1.0)                        -- etSpeedD(0, 1.0,1.0,2.0,3.0, 1,1,1,1) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 0, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(60 + t10_rand_mod60())                -- wait(60 + %RAND%60)
+    while true do
+        fire_slot(f, 0)
+        task.Wait(60)
+    end
+end
+
+---Girl01：MainSub3 在锚点 (0,0) 处 enmCreate ⇒ 落点 (0,−24)。
+---时间轴：t=60 起枪、t=120/180 再各撒一次、t=240 减速下移并 killAllAsync。
+s6mid.BEH.girl01 = function(f)
+    s6mid.vel(f, 1.5707964, 5.0)
+    s6mid.vel_time(f, 60, 4, -999999, 0.0)          -- 60 帧内 5→0（悬停）
+    task.Wait(60)
+    f.F0 = rndrad(); f.F1 = 0.05236
+    task.New(f, function() s6mid.girl01_at(f) end)
+    task.New(f, function() s6mid.girl01_at2(f, 6, 0.0, 0.049087387) end)
+    task.New(f, function() s6mid.girl01_at2(f, 2, TH10_PI, -0.049087387) end)
+    task.Wait(60)                                   -- +60 → //120
+    f.F0 = rndrad(); f.F1 = -0.05236
+    task.New(f, function() s6mid.girl01_at(f) end)
+    task.Wait(60)                                   -- +60 → //180
+    f.F0 = rndrad(); f.F1 = 0.05236
+    task.New(f, function() s6mid.girl01_at(f) end)
+    task.Wait(60)                                   -- +60 → //240
+    s6mid.vel_time(f, 40, 4, 1.5707964, 2.0)
+    t10_kill_async(f)                               -- killAllAsync：停掉这只妖精的其它线程
+end
+
+---Girl01_at：原地撒 4 只 BGirl00（占位妖精、不出弹），每撒一只 %F0 += π/2。
+s6mid.girl01_at = function(f)
+    for _ = 1, 4 do
+        s6mid.spawn(120, f.ecs.wx, f.ecs.wy, false, s6mid.DROP_G0, "girl00", f)
+        f.F0 = f.F0 + 1.570796
+    end
+end
+
+---Girl01_at2(A, B, C)：固定扇（aim=5）×8 发 ×2 圈，每轮角 += C。
+---A 只当弹色号（原作 etSprite(0, 5, $A)）；B 每轮都 validRad 归一。
+s6mid.girl01_at2 = function(f, A, B, C)
+    et_new(f, 0); et_aim(f, 0, 5); et_sprite(f, 0, 5, A)
+    et_count(f, 0, 8, 2)                            -- etCountD(0, 8,8,8,8, 1,1,2,2) 的 L 行
+    et_angle(f, 0, B, 0.0)
+    et_speed(f, 0, 5.0, 2.8)                        -- etSpeedD(0, 1.5,2.8,3.5,5.0, 0.8,0.8,2.8,2.8) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        et_angle(f, 0, B, 0.0)
+        fire_slot(f, 0)                             -- etOn(0)
+        B = t10_wrap(B + C)                         -- $B += $C; validRad($B)
+        task.Wait(8)
+    end
+end
+
+---Girl00 / BGirl00：纯占位妖精（**不出弹**）。
+---moveCircleRel(%F0, %F1, 0, 1.5) 起旋 → +40 半径冻结 → +100 朝自机 → +160 减速到 2。
+s6mid.BEH.girl00 = function(f)
+    s6mid.circle(f, f.F0, f.F1, 0.0, 1.5)
+    task.Wait(40)                                   -- +40
+    s6mid.circle(f, -999999, f.F1, -999999, 0.0)    -- 半径冻结（角速度继续）
+    task.Wait(60)                                   -- +60 → //100
+    s6mid.vel(f, t10_angle_player(f), 0.0)          -- moveVel(%ABS_ANGLE_PLAYER, 0)
+    s6mid.vel_time(f, 60, 0, -999999, 2.0)
+    -- +60 flagClear(4)：无效果。
+end
+
+---Girl02：MainSub5 末尾在锚点 (0,0) 处 enmCreate ⇒ 落点 (0,−24)。
+---t=60 起 Girl02_at（6 轮 × 120 帧），t=760 开始上飘。
+s6mid.BEH.girl02 = function(f)
+    s6mid.vel(f, 1.5707964, 5.0)
+    s6mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)                                   -- +60
+    task.New(f, function() s6mid.girl02_at(f) end)
+    task.Wait(700)                                  -- +700 → //760
+    s6mid.vel_time(f, 40, 4, -1.5707964, 1.0)       -- moveVelTime(40, 4, −π/2, 1.0)
+end
+
+---Girl02_at：槽 1 的双环。6 轮，每轮先「角 += RANDRAD/80 + π/80」的 AB 段 60 帧、
+---再「角 −= RANDRAD/80 + π/80」的 CD 段 60 帧；每帧两拍、每拍 2 发。
+---★ 随机数**消耗顺序**是行为的一部分（每帧 2×%RANDRAD + 4×%RANDF2），不能交换。
+s6mid.girl02_at = function(f)
+    et_new(f, 1); et_aim(f, 1, 3); et_sprite(f, 1, 0, 2)
+    et_count(f, 1, 2, 1)                            -- etCountD(1, 1,1,2,2, 1,1,1,1) 的 L 行
+    et_angle(f, 1, 0.0, TH10_PI)
+    et_speed(f, 1, 3.2, 1.0)                        -- etSpeedD(1, 1.2,1.2,2.2,3.2, 1,1,1,1) 的 L 行
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 1, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    for _ = 1, 6 do
+        local c = rndrad()                          -- %C = %RANDRAD
+        et_sprite(f, 1, 0, 4)
+        for _ = 1, 60 do                            -- AB 段（$A=60 次 deci）
+            task.Wait(1)
+            c = c + (rndrad() / 80 + TH10_PI / 80)
+            et_angle(f, 1, c, 0.0)
+            local ox = rnd2() * 32
+            local oy = rnd2() * 32
+            et_offset(f, 1, ox, oy)
+            fire_slot(f, 1)
+            c = c + (rndrad() / 80 + TH10_PI / 80)
+            et_angle(f, 1, c, 0.0)
+            ox = rnd2() * 32
+            oy = rnd2() * 32
+            et_offset(f, 1, ox, oy)
+            fire_slot(f, 1)
+        end
+        c = rndrad()
+        et_sprite(f, 1, 0, 6)
+        for _ = 1, 60 do                            -- CD 段
+            task.Wait(1)
+            c = c - (rndrad() / 80 + TH10_PI / 80)
+            et_angle(f, 1, c, 0.0)
+            local ox = rnd2() * 32
+            local oy = rnd2() * 32
+            et_offset(f, 1, ox, oy)
+            fire_slot(f, 1)
+            c = c - (rndrad() / 80 + TH10_PI / 80)
+            et_angle(f, 1, c, 0.0)
+            ox = rnd2() * 32
+            oy = rnd2() * 32
+            et_offset(f, 1, ox, oy)
+            fire_slot(f, 1)
+        end
+    end
+    et_offset(f, 1, 0.0, 0.0)
+end
+
+---=====================================
+--- 道中时间轴（MainSub1..5，锚点每 115 帧左右跳一次）
+---   相对 MainSub1 的 t=0：160/275/390 三波 → 505 交 MainSub2
+---   → +300/+415/+530/+645 → 交 MainSub3 → +200 出 Girl01、交 MainSub4
+---   → +200/+315/+430/+545 → 交 MainSub5 → +160/+275/+390/+505、+40 出 Girl02。
+---=====================================
+s6mid.sub1 = function(card)
+    s6mid.ax, s6mid.ay = 0, 0
+    task.Wait(160)                                  -- //160
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //275
+    s6mid.ax = -140
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //390
+    s6mid.ax = 140
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //505
+    s6mid.ax = 0
+    task.New(card, function() s6mid.sub2(card) end) -- callAsync("MainSub2")
+end
+
+s6mid.sub2 = function(card)
+    task.Wait(300)                                  -- //300
+    s6mid.ax, s6mid.ay = -224, 64
+    s6mid.W2(card); s6mid.W2b(card)
+    task.Wait(115)                                  -- //415
+    s6mid.ax, s6mid.ay = 224, 96
+    s6mid.W2c(card); s6mid.W2d(card)                -- 2c/2d 落点 = 当时锚点
+    task.Wait(115)                                  -- //530
+    s6mid.ax, s6mid.ay = -224, 128
+    s6mid.W2(card); s6mid.W2b(card)
+    task.Wait(115)                                  -- //645
+    s6mid.ax, s6mid.ay = 224, 32
+    s6mid.W2c(card); s6mid.W2d(card)
+    task.New(card, function() s6mid.sub3(card) end) -- callAsync("MainSub3")
+end
+
+s6mid.sub3 = function(card)
+    task.Wait(200)                                  -- //200
+    s6mid.ax, s6mid.ay = 0, 0
+    s6mid.spawn(400, 0, -24, false, s6mid.DROP_G1, "girl01")   -- enmCreate("Girl01", 0, −24)
+    task.New(card, function() s6mid.sub4(card) end) -- callAsync("MainSub4")
+end
+
+s6mid.sub4 = function(card)
+    task.Wait(200)                                  -- //200
+    s6mid.ax = -96; s6mid.ay = 0
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //315
+    s6mid.ax = 96
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //430
+    s6mid.ax = -128
+    s6mid.W1(card); s6mid.W1b(card)
+    task.Wait(115)                                  -- //545
+    s6mid.ax = 0
+    task.New(card, function() s6mid.sub5(card) end) -- callAsync("MainSub5")
+end
+
+s6mid.sub5 = function(card)
+    task.Wait(160)                                  -- //160
+    s6mid.ax, s6mid.ay = -224, 64
+    s6mid.W2(card); s6mid.W2b(card)
+    task.Wait(115)                                  -- //275
+    s6mid.ax, s6mid.ay = 224, 96
+    s6mid.W2c(card); s6mid.W2d(card)
+    task.Wait(115)                                  -- //390
+    s6mid.ax, s6mid.ay = -224, 128
+    s6mid.W2(card); s6mid.W2b(card)
+    task.Wait(115)                                  -- //505
+    s6mid.ax, s6mid.ay = 224, 32
+    s6mid.W2c(card); s6mid.W2d(card)
+    task.Wait(40)                                   -- //545
+    s6mid.ax, s6mid.ay = 0, 0
+    s6mid.spawn(1500, 0, -24, false, s6mid.DROP_G2, "girl02")  -- enmCreate("Girl02", 0, −24)
+end
+
+---main：原作的 MainSubBoss（t≈3669 才登场的 BOSS 本体）不移植。
+s6mid.main = function(card)
+    task.New(card, function() s6mid.sub1(card) end)
+end
+
+---=========================== 挂到空 boss 的一张符卡 ===========================
+local BOSS_NAME = "道中"
+local CARD_NAME = "六面道中「妖怪之山的妖精」"
+---时长：最后一发弹（Girl02 的双环）在道中开始后约 3220 帧收尾 ⇒ 56 秒留余量。
+local CARD_TIME = 56
+---符卡历史槽位（spell_card_data 的键 + 练习解锁号）：跨关卡唯一，取 3671
+---（见 th35.lua 文件头的注册清单；已用 3500/3600/3601..3625/3630..3670）。
+local CARD_ID = 3671
+
+---BGM/背景沿用 TH10 六面（同本文件其它 stage06 卡）；空 boss 用 `img_void` 不显形。
+boss.Define("aa", BOSS_NAME, "TH10_2", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+
+local card = boss.card.New(CARD_NAME, CARD_TIME, CARD_TIME, CARD_TIME, 10000000)
+function card:before()
+    ---耐久卡（t1=t2=t3 ⇒ time_sc、伤害恒 0）：不打超时音、关掉本体判定与血条。
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function card:init()
+    s6mid.clear()                                   -- 重开（符卡练习）时先清上一局残留
+    s6mid.ax, s6mid.ay = 0, 0
+    s6mid.main(self)
+end
+function card:frame() end
+function card:render() end
+function card:del() s6mid.clear() end
+
+boss.card.add({ { card, "aa" } }, LEVEL, CARD_NAME, CARD_ID)
+end
+--=====================================
 -- 八、stage01 / stage02 / stage05 符卡（原生 LuaSTG；只做 Lunatic 难度行）
 --   逐张对齐原作 ECL（thecl -d 10 -m th10.eclm -r -x 反汇编）。
 --   演出/流程指令（spell*/anm*/playSound/setChapter/flagSet/drop*/bombShield/
