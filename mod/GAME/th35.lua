@@ -4789,6 +4789,105 @@ for _, e in ipairs(s6.cards) do
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 --=====================================
+-- 道中妖精框架（stage01..07 的「道中搬运卡」共用；stage06 那张也走它）
+--   一个「道中妖精」= 一只普通敌机：能被打掉、掉道具；位置 / 出弹走本文件上面的
+--   ecs 运行时（两路 motion + 8 个 pattern 槽 + $I/%F）。各 stage 只需写两样：
+--     · 时间轴：谁、在第几帧、在哪个**绝对**坐标出生、是否镜像（enmCreateA/M/AM/F）
+--     · 行为子程序：moveVel / moveVelTime / moveCircle(Rel) + et* / etOn
+--   本框架由 stage06（九、）那张卡抽出，二者同一套口径。
+--=====================================
+t10mid = {}
+t10mid.units = {}
+t10mid.ax, t10mid.ay = 0, 0        -- 道中锚点（enmCreate 相对创建用；见 stage06 段）
+
+---卡结束 / 重开（符卡练习）时统一收拾本卡造出来的妖精。
+function t10mid.clear()
+    for i = 1, #t10mid.units do t10_kill_pod(t10mid.units[i]) end
+    t10mid.units = {}
+end
+
+---当前世界位置（原作坐标系）；子程序与 frame 都用它。
+function t10mid.pos(f) return f.ecs.wx, f.ecs.wy end
+
+---镜像角：enmCreateM 只翻 SET/INTERPOLATE POLAR 的目标角：
+---  a' = wrap(π/2 − wrap(a − π/2)) ≡ wrap(π − a)。
+function t10mid.mirror(a) return t10_wrap(TH10_PI - a) end
+
+---moveVel（SET OFFSET POLAR）/ moveVelTime（INTERPOLATE OFFSET POLAR）。
+---mirror=true（子机带 0x800 标志）时先折角。
+function t10mid.vel(f, ang, spd)
+    if f.t10_mir and ang > -999999 then ang = t10mid.mirror(ang) end
+    m_vel(f, "off", ang, spd)
+end
+function t10mid.vel_time(f, dur, mode, ang, spd)
+    if f.t10_mir and ang > -999999 then ang = t10mid.mirror(ang) end
+    m_vel_time(f, "off", dur, mode, ang, spd)
+end
+
+---moveCircle / moveCircleRel：第一次调用把当前位置存成圆心；−999999 = 保持原值。
+---圆运动**不**受镜像影响（原作只镜像极坐标运动的角）。
+function t10mid.circle(f, w, a, av, r, rv)
+    local ch = (w == "base") and f.ecs.base or f.ecs.off
+    if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
+    ch.circle, ch.interp, ch.scal = true, nil, nil
+    if a  > -999999 then ch.ang = a  end
+    if av > -999999 then ch.cav = av end
+    if r  > -999999 then ch.r   = r  end
+    if rv > -999999 then ch.rv  = rv end
+end
+
+class["th10_midfairy"] = Class(enemy, {
+    init = function(self, hp, x, y, mirror, drop, beh, src, inv)
+        enemybase.init(self, hp, true)          -- nontaijutsu ⇒ GROUP.NONTJT：能打、撞自机不掉血
+        self.img = "servant"
+        self.hscale, self.vscale = 0.6, 0.6
+        self.colli = true
+        self.navi, self.bound = false, false
+        self.rot = 0
+        self._blend, self._a = "", 255
+        self.A, self.B = 8, 8                   -- setHitbox(16,16) 的一半
+        self.invuln = inv or 0
+        self.protect = self.invuln > 0          -- setInvuln：前 invuln 帧无敌
+        self.drop_tbl = drop
+        self.t10_mir = mirror and true or false
+        ecs_attach(self, x, y)                  -- 建 ecs + 8 个 pattern 槽 + $I/%F
+        if src then
+            self.I0, self.I1, self.I2, self.I3 = src.I0, src.I1, src.I2, src.I3
+            self.F0, self.F1, self.F2, self.F3 = src.F0, src.F1, src.F2, src.F3
+        end
+        self.seen = false
+        ecs_sync(self)
+        task.New(self, function() beh(self) end)
+    end,
+    frame = function(self)
+        ecs_step(self)                          -- 原作 EnemyRuntimeUpdate：先解两路 motion
+        if self.invuln > 0 then                 -- setInvuln 计时
+            self.invuln = self.invuln - 1
+            if self.invuln <= 0 then self.protect = false end
+        end
+        local wx, wy = t10mid.pos(self)
+        if not self.seen then                   -- 进过场才算「出屏」基准
+            if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
+        elseif wx < -240 or wx > 240 or wy < -280 or wy > 280 then
+            t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
+            return
+        end
+        enemybase.frame(self)                   -- 判定箱 + hp<=0→Kill + task.Do（跑行为协程）
+    end,
+    render = function(self) DefaultRenderFunc(self) end,
+    kill = function(self)
+        if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
+    end,
+    del = function(self) task.Clear(self) end,
+})
+
+---造一只妖精。`beh` = 行为子程序（函数）；`src`（可选）把创建者的 $I/%F 拷给子机。
+function t10mid.spawn(hp, x, y, mirror, drop, beh, src, inv)
+    local f = New(class["th10_midfairy"], hp, x, y, mirror, drop, beh, src, inv)
+    t10mid.units[#t10mid.units + 1] = f
+    return f
+end
+--=====================================
 -- 九、stage06 道中（妖精群 + 两只大妖精）—— 原生 LuaSTG「道中搬运卡」
 --   把原作 `data/stage06.ecl` 的**道中段**（`main` 派生的 MainSub1..5：成群的
 --   小妖精 + 两次大妖精 Girl01/Girl02）复刻成**一张**符卡，挂在一个空的
@@ -5262,6 +5361,2981 @@ function card:del() s6mid.clear() end
 
 boss.card.add({ { card, "aa" } }, LEVEL, CARD_NAME, CARD_ID)
 end
+--=====================================
+-- 十、stage01 道中（妖精群）—— 原生 LuaSTG「道中搬运卡」
+--   把 `stage01.ecl` 的 main 道中段复刻成一张符卡（跳过 MapleEnemy / 中 BOSS 静葉 /
+--   Boss 本体 —— 中 BOSS 与 BOSS 已有各自的卡）。走共用的 t10mid 妖精框架。
+--   数据：thecl -d 10 -r -x -j -m th10.eclm stage01.ecl 反汇编。
+--   只做 Lunatic：`diffI/diffF` 取第 4 项、`!L` 块。
+--   妖精贴图一律 servant（本仓库无 TH10 妖精贴图）；弹色号照抄 etSprite 第 2 参。
+--   近似：原作 e/n/h 的 etCount/etSpeed 分支不写；drop* 折算成 Dropitem_PFP 表。
+--=====================================
+t10mid.s01 = {}
+
+---Ecl_Girl00（Ecl_R/B/G 三种色共用）：朝自机冲 7 帧速 60 帧抬到 0，60 帧后起枪。
+t10mid.s01.eclg_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, 6)
+    et_count(f, 0, 3, 1); et_angle(f, 0, 0.0, 0.09817477); et_speed(f, 0, 4.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    while true do fire_slot(f, 0); task.Wait(10) end
+end
+t10mid.s01.eclg = function(f)
+    t10mid.vel(f, t10_angle_player(f), 7.0)
+    t10mid.vel_time(f, 60, 4, t10_angle_player(f), 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s01.eclg_at(f) end)
+    task.Wait(200)
+    t10mid.vel(f, t10_angle_player(f) + TH10_PI, 0.0)
+    t10mid.vel_time(f, -1, 7, 0.0, 0.03)
+    while true do task.Wait(60) end
+end
+
+---RGirl00_at：固定扇形（aim=0）×1 发，每 4 帧一轮、20 轮。
+t10mid.s01.ga = function(f)
+    et_new(f, 0); et_sprite(f, 0, 2, 6); et_aim(f, 0, 0); et_angle(f, 0, 0.0, 0.19634955)
+    et_count(f, 0, 1, 1); et_speed(f, 0, 4.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    for _ = 1, 20 do task.Wait(4); fire_slot(f, 0) end
+end
+---Girl00 基型：直下 2.7，60 帧抬到 0；RGirl00B/GGirl00 同型（色不同）。
+t10mid.s01.g0 = function(f)
+    task.New(f, function() t10mid.s01.ga(f) end)
+    t10mid.vel(f, 1.5707964, 2.7)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, 0.0, -999999)
+end
+
+---Girl00B_at：先等 $RAND%10，再 15 轮（等 I4=8 帧、开火）。
+t10mid.s01.gb_at = function(f)
+    et_new(f, 0); et_sprite(f, 0, 2, 6); et_aim(f, 0, 0); et_angle(f, 0, 0.0, 0.19634955)
+    et_count(f, 0, 1, 1); et_speed(f, 0, 3.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local w = t10_imod(t10_randmod(), 10)
+    if w > 0 then task.Wait(w) end
+    for _ = 1, 15 do task.Wait(8); fire_slot(f, 0) end
+end
+t10mid.s01.g0b = function(f)
+    t10mid.vel(f, 1.5707964, 2.7)
+    task.New(f, function() t10mid.s01.gb_at(f) end)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, 0.0, -999999)
+end
+
+---Girl00C：直下 7.0 → 60 帧减速到 0；60 帧后打一梭 9 发环，180 帧转向、慢飘。
+t10mid.s01.g0c = function(f)
+    t10mid.vel(f, 1.5707964, 7.0)
+    t10mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)
+    et_new(f, 0); et_sprite(f, 0, 1, 6); et_aim(f, 0, 0); et_angle(f, 0, 0.0, 0.19634955)
+    et_count(f, 0, 9, 1); et_speed(f, 0, 2.5, 2.5)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(f, 0)
+    task.Wait(120)
+    t10mid.vel(f, t10_angle_player(f) + TH10_PI, 0.0)
+    t10mid.vel_time(f, -1, 7, 0.0, 0.03)
+    while true do task.Wait(60) end
+end
+
+---RGirl00D_at：60 帧后打 2 梭（aim=2 环 ×20 发）。
+t10mid.s01.gd_at = function(f)
+    et_new(f, 0); et_sprite(f, 0, 0, 6); et_aim(f, 0, 2); et_angle(f, 0, 0.0, 0.19634955)
+    et_count(f, 0, 20, 1); et_speed(f, 0, 1.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    for _ = 1, 2 do task.Wait(60); fire_slot(f, 0) end
+end
+---Girl00D：直下 6.0、60 帧减速停；60 帧后改 -π/2 慢速 0.5。
+t10mid.s01.g0d = function(f)
+    t10mid.vel(f, 1.5707964, 6.0)
+    t10mid.vel_time(f, 60, 0, 0.0, 0.0)
+    task.New(f, function() t10mid.s01.gd_at(f) end)
+    task.Wait(60)
+    t10mid.vel(f, -1.5707964, 0.5)
+    while true do task.Wait(6000) end
+end
+
+---RGirl00E_at：9 轮（等 10 帧、开火），每轮 1 发环。
+t10mid.s01.ge_at = function(f)
+    et_new(f, 0); et_sprite(f, 0, 2, 6); et_aim(f, 0, 0); et_angle(f, 0, 0.0, 0.19634955)
+    et_count(f, 0, 1, 1); et_speed(f, 0, 1.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    for _ = 1, 9 do task.Wait(10); fire_slot(f, 0) end
+end
+t10mid.s01.g0e = function(f)
+    task.New(f, function() t10mid.s01.ge_at(f) end)
+    t10mid.vel(f, 1.5707964, 1.8)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, -999999, -999999)
+    while true do task.Wait(6000) end
+end
+
+---Girl01_at：一梭 11 次「发数递增」的固定扇（发数 I0 从 1 起），每次隔 4 帧；循环。
+t10mid.s01.g1_at = function(f)
+    while true do
+        et_new(f, 0); et_aim(f, 0, 1); et_sprite(f, 0, 3, 4)
+        et_angle(f, 0, t10_angle_player(f), 0.049087387)
+        et_speed(f, 0, 4.0, 0.0)
+        et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+        et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+        local i0 = 1
+        for _ = 1, 11 do
+            et_count(f, 0, i0, 1); fire_slot(f, 0)
+            i0 = i0 + 1
+            task.Wait(4)
+        end
+        task.Wait(20)
+    end
+end
+---Girl01：入场直下 5.0、60 帧停；起枪后转向 2.7488935 用 180 帧降到 0.005。
+t10mid.s01.g1 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s01.g1_at(f) end)
+    t10mid.vel(f, 2.7488935, 0.0)
+    t10mid.vel_time(f, 180, 7, 0.0, 0.005)
+    task.Wait(180)
+    while true do task.Wait(6000) end
+end
+
+---道中时间轴（wallframe = 各 +N 之和；镜像 = enmCreate*M）。
+t10mid.s01.run = function(card)
+    local B, D = t10mid.s01, t10mid.D1
+    local x
+    task.Wait(160)
+    -- 9 只 Ecl_*（x=-144 起、步 32）+ 末尾 1 只 Ecl_G（x=144）
+    x = -144
+    for i = 0, 9 do
+        t10mid.spawn(20, x, -16, false, D, B.eclg)
+        x = x + 32
+        if i < 9 then task.Wait(20) end
+    end
+    -- 左右两波 Girl00 系（右半镜像）
+    task.Wait(300)
+    t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(20); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(20); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(20); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(80); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(60); t10mid.spawn(300,  64, -16, false, t10mid.D2, B.g1)
+    task.Wait(100); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, true,  D, B.g0)
+    task.Wait(60); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(60); t10mid.spawn(300, -64, -16, true, t10mid.D2, B.g1)
+    task.Wait(120)
+    -- 第二段斜列（x=144 起、步 -32）+ 末尾 Ecl_G（x=-144）
+    x = 144
+    for i = 0, 9 do
+        t10mid.spawn(20, x, -16, false, D, B.eclg)
+        x = x - 32
+        if i < 9 then task.Wait(20) end
+    end
+    task.Wait(80); t10mid.spawn(20, 144, -64, true, D, B.g0)      -- AM GGirl00 + 起 MainSub
+    task.Wait(20); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(20); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(20); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(20); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(20); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(20); t10mid.spawn(20,  24, -64, true, D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  24, -64, true, D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  24, -64, true, D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  24, -64, true, D, B.g0)
+    task.Wait(20); t10mid.spawn(20,  24, -64, true, D, B.g0)
+    task.Wait(200); t10mid.spawn(300, 64, -16, false, t10mid.D2, B.g1)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20, -144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, false, D, B.g0)
+    task.Wait(10); t10mid.spawn(20,  144, -64, false, D, B.g0)
+    task.Wait(80)
+    for _, px in ipairs({ -48, 0, 48 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -72, -24, 24, 72 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -96, -48, 48, 96 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -120, -72, 72, 120 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -144, -96, 96, 144 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -168, -120, 120, 168 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(160)                                   -- MapleEnemy + 中 BOSS 静葉：跳过
+    -- RGirl00D 波（每 80 帧一波、左右交替，后两波多掉 1）
+    local dx, dm = -144, false
+    task.Wait(400)
+    for i = 1, 10 do
+        t10mid.spawn(160, dx, -16, dm, (i >= 9) and t10mid.D2 or D, B.g0d)
+        dx, dm = -dx, not dm
+        if i < 10 then task.Wait(80) end
+    end
+    task.Wait(100); t10mid.spawn(300,  64, -16, false, t10mid.D2, B.g1)
+                    t10mid.spawn(300, -64, -16, true,  t10mid.D2, B.g1)
+    task.Wait(160)
+    -- 20 只 Ecl_*E：x 每只随机 %RANDF2×128
+    for i = 0, 19 do
+        t10mid.spawn(20, rnd2() * 128, -16, false, D, B.g0e)
+        task.Wait(10)
+    end
+    task.Wait(60); t10mid.spawn(300,  128, -16, false, t10mid.D2, B.g1)
+                    t10mid.spawn(300, -128, -16, true,  t10mid.D2, B.g1)
+    task.Wait(80); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(10); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(10); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(10); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(10); t10mid.spawn(20,  84, -64, true, D, B.g0b)
+    task.Wait(100)
+    for _, px in ipairs({ -48, 0, 48 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -72, -24, 24, 72 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -96, -48, 48, 96 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -120, -72, 72, 120 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -144, -96, 96, 144 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    task.Wait(20)
+    for _, px in ipairs({ -168, -120, 120, 168 }) do t10mid.spawn(20, px, -16, false, D, B.g0c) end
+    -- +400 后 Boss 本体：不移植 ⇒ 本卡到此结束
+end
+
+---挂到空 boss「ba」上的一张耐久符卡（与 stage06 道中同一套注册方式）。
+boss.Define("ba", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s01card = boss.card.New("一道中「初雪之妖精」", 84, 84, 84, 10000000)
+function t10mid.s01card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s01card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s01.run(self) end)
+end
+function t10mid.s01card:frame() end
+function t10mid.s01card:render() end
+function t10mid.s01card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s01card, "ba" } }, LEVEL, "一道中「初雪之妖精」", 3680)
+
+--=====================================
+-- 十一、stage02 道中（妖精群）—— 原生 LuaSTG「道中搬运卡」
+--   把 `stage02.ecl` 的 main 道中段复刻成一张符卡（跳过 MapleEnemy / MBossDummy /
+--   Boss 本体 —— 中 BOSS 与 BOSS 已有各自的卡）。走共用的 t10mid 妖精框架。
+--   数据：thecl -d 10 -r -x -j -m th10.eclm stage02.ecl 反汇编。
+--   只做 Lunatic：`diffI/diffF` 取第 4 项、`!L` 块；`!HL`（H/L 共有）也照做。
+--   近似：妖精贴图一律 servant；dropMain(1/2/3) 折成 D1/D2；anm* 只当纯视觉。
+--   `enmCreateF/AF/MF/AMF` = 「无 BOSS 时才创建」；本卡不建 BOSS ⇒ 条件恒真。
+--=====================================
+t10mid.s02 = {}
+
+---RGirl00_at：12 轮×4 帧的自机狙螺旋。基准角初值 %RANDRAD、每轮 +π/10；
+---出弹点在半径 [16] 的圆上（每轮 +6，从 0 起）、速度每轮 +0.4（从 3.0 起）；
+---每轮 3 发（L）、扇形步长 π/4。
+t10mid.s02.rg00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 2, 6); et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.7853982); et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local a, r, sp = rndrad(), 0.0, 3.0
+    for _ = 1, 12 do
+        et_count(f, 0, 3, 1)
+        et_speed(f, 0, sp, sp)
+        et_offset(f, 0, math.cos(a) * r, math.sin(a) * r)
+        task.Wait(4); fire_slot(f, 0)
+        a = t10_wrap(a + 0.314159); r = r + 6.0; sp = sp + 0.4
+    end
+end
+
+---RGirl00D_at：同型螺旋，但 16 轮、每轮 1 发（角步长 0，纯半径螺旋）、
+---半径每轮 +4（从 0 起）、速度 1.5 起每轮 +0.1；基准角仍每轮 +π/10。
+t10mid.s02.rg00d_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 2, 6); et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.0); et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local a, r, sp = rndrad(), 0.0, 1.5
+    for _ = 1, 16 do
+        et_speed(f, 0, sp, sp)
+        et_offset(f, 0, math.cos(a) * r, math.sin(a) * r)
+        task.Wait(4); fire_slot(f, 0)
+        a = t10_wrap(a + 0.314159); r = r + 4.0; sp = sp + 0.1
+    end
+end
+
+---Girl00 / Girl00D：直下（初速 %RANDF·2+5.5）、40 帧减速到 0；同时起 _at 螺旋；
+---100 帧后把角拉到 π/8+%RANDF2·0.4、40 帧加速到 2.7。两者只差 _at 子程序。
+t10mid.s02.dive = function(f, atfn)
+    t10mid.vel(f, 1.5707964, rnd() * 2.0 + 5.5)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.New(f, function() atfn(f) end)
+    task.Wait(100)
+    t10mid.vel_time(f, 40, 4, 0.3926991 + rnd2() * 0.4, 2.7)
+    while true do task.Wait(6000) end
+end
+t10mid.s02.g00  = function(f) t10mid.s02.dive(f, t10mid.s02.rg00_at)  end
+t10mid.s02.g00d = function(f) t10mid.s02.dive(f, t10mid.s02.rg00d_at) end
+
+---Girl00B_at：5 发扇形（L：速度 4、扇形步长 π/8、aim=0 自机狙）；
+---第 0/10/20/30/40/50 帧各一梭（`!L etOn` 是 L 多出来的那一梭）。
+t10mid.s02.g00b_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 6); et_count(f, 0, 5, 1)
+    et_angle(f, 0, 0.0, 0.3926991); et_speed(f, 0, 4.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    fire_slot(f, 0)
+    for _ = 1, 5 do task.Wait(10); fire_slot(f, 0) end
+end
+
+---Girl00B：直下 4.7；60 帧内把角拉到 π/8+%RANDF2·0.4（速度降到 0）；
+---再过 60 帧加速到 4.0，并起 Girl00B_at。
+t10mid.s02.g00b = function(f)
+    t10mid.vel(f, 1.5707964, 4.7)
+    t10mid.vel_time(f, 60, 0, 0.3926991 + rnd2() * 0.4, 0.0)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, -999999, 4.0)
+    task.New(f, function() t10mid.s02.g00b_at(f) end)
+    while true do task.Wait(6000) end
+end
+
+---RGirl00C_at：60 帧后两梭。槽 0（H/L）：9 层、每层 1 发自机狙，速度 4.0→1.0；
+---槽 1：L 行 3 层×12 发（角步长 0.24166097、速度 3.5）。两槽都只打一帧。
+t10mid.s02.rg00c_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 24, 6); et_count(f, 0, 1, 9)
+    et_angle(f, 0, 0.0, 0.0); et_speed(f, 0, 4.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    et_new(f, 1); et_aim(f, 1, 0); et_sprite(f, 1, 2, 6); et_count(f, 1, 12, 3)
+    et_angle(f, 1, 0.0, 0.24166097); et_speed(f, 1, 3.5, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 1, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(60)
+    fire_slot(f, 0)
+    fire_slot(f, 1)
+end
+
+---Girl00C：直下 4.7 → 60 帧内把角拉到 π/4（速度 →0）→ 再 60 帧加速到 2.0；
+---160 帧起 moveVel(π/8, 2.7)；同时起 RGirl00C_at。
+t10mid.s02.g00c = function(f)
+    task.New(f, function() t10mid.s02.rg00c_at(f) end)
+    t10mid.vel(f, 1.5707964, 4.7)
+    t10mid.vel_time(f, 60, 0, 0.7853982, 0.0)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+    task.Wait(100)
+    t10mid.vel(f, 0.3926991, 2.7)
+    while true do task.Wait(6000) end
+end
+
+---Girl01_at：每 7 帧一梭「对称扇形」——第 k 轮 k 发（k=1..9），第 j 发角为
+---ANGLE_PLAYER−(k−1)·0.098175+j·0.19635（同一帧内打完）；弹在 90 帧后按 rec2
+---折角（角增量 [8]=0.19635·(k−1)−j·0.392699）、速度恒 2.8。整轮无限循环。
+t10mid.s02.g01_at = function(f)
+    while true do
+        if f.s02_g01_stop then return end
+        local a0 = t10_angle_player(f)
+        et_new(f, 0); et_aim(f, 0, 1); et_sprite(f, 0, 3, 3); et_count(f, 0, 1, 1)
+        et_angle(f, 0, a0, 0.09817477); et_speed(f, 0, 3.0, 0.0)
+        et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+        et_ex(f, 0, 1, 0, -2147483648, -999999, -999999, -999999.0, -999999.0)
+        et_ex(f, 0, 3, 0, 16384, 3, 13, -999999.0, -999999.0)
+        for k = 1, 9 do
+            local a = a0 - 0.098175 * (k - 1)
+            local b = 0.19635 * (k - 1)
+            for _ = 1, k do
+                et_ex(f, 0, 2, 0, 64, 90, 1, b, 2.8)
+                et_angle(f, 0, a, 0.0)
+                fire_slot(f, 0)
+                a = t10_wrap(a + 0.19635)
+                b = b - 0.392699
+            end
+            task.Wait(7)
+        end
+    end
+end
+
+---Girl01：从 (±224, 32) 斜插（7π/8、5.0 → 60 帧降到 1.0）；60 帧起 Girl01_at；
+---340 帧 killAsync(0) 停火，本体留到约 6340 帧。
+t10mid.s02.g01 = function(f)
+    t10mid.vel(f, 2.7488935, 5.0)
+    t10mid.vel_time(f, 60, 4, -999999, 1.0)
+    task.Wait(60)
+    f.s02_g01_stop = false
+    task.New(f, function() t10mid.s02.g01_at(f) end)
+    task.Wait(280)
+    f.s02_g01_stop = true
+    while true do task.Wait(6000) end
+end
+
+---Girl02_at：双槽（基准角 ±1.570796 对称）每 2 帧一梭；每梭 [8]=4 层×1 发、
+---角步长 0.09817477、速度 5.0→1.0；两槽基准角每梭分别 +/−0.1309。
+t10mid.s02.g02_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 1); et_sprite(f, 0, 6, 4); et_count(f, 0, 1, 4)
+    et_angle(f, 0, -1.570796, 0.09817477); et_speed(f, 0, 5.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_new(f, 1); et_aim(f, 1, 1); et_sprite(f, 1, 6, 4); et_count(f, 1, 1, 4)
+    et_angle(f, 1, -1.570796, 0.09817477); et_speed(f, 1, 5.0, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local a0, a1 = -1.570796, -1.570796
+    while true do
+        if f.s02_g02_stop then return end
+        et_angle(f, 0, a0, 0.09817477); fire_slot(f, 0)
+        et_angle(f, 1, a1, 0.09817477); fire_slot(f, 1)
+        a0 = t10_wrap(a0 + 0.1309)
+        a1 = t10_wrap(a1 - 0.1309)
+        task.Wait(2)
+    end
+end
+
+---Girl02：从 (0,−32)/(±96/112) 直下 10.0、40 帧降到 0；40 帧起 Girl02_at；
+---320 帧 killAsync(0)，本体留到约 6320 帧。
+t10mid.s02.g02 = function(f)
+    t10mid.vel(f, 1.5707964, 10.0)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    f.s02_g02_stop = false
+    task.New(f, function() t10mid.s02.g02_at(f) end)
+    task.Wait(280)
+    f.s02_g02_stop = true
+    while true do task.Wait(6000) end
+end
+
+---MainSub01（主时间轴 //830 起）：x=−128..−112 步 10，每 10 帧一只 BGirl00B。
+t10mid.s02.ms01 = function(card)
+    for _, x in ipairs({ -128, -112, -96, -80, -64, -48, -64, -80, -96, -112 }) do
+        t10mid.spawn(30, x, -16, false, t10mid.D1, t10mid.s02.g00b)
+        task.Wait(10)
+    end
+end
+---MainSub02（//5164、//5534 各起一次）：同上，但每 30 帧一只。
+t10mid.s02.ms02 = function(card)
+    for _, x in ipairs({ -128, -112, -96, -80, -64, -48, -64, -80, -96, -112 }) do
+        t10mid.spawn(30, x, -16, false, t10mid.D1, t10mid.s02.g00b)
+        task.Wait(30)
+    end
+end
+
+---道中时间轴（`+N:` = 相对上一事件帧数；镜像 = enmCreate*M）。
+t10mid.s02.run = function(card)
+    local B, D, D2 = t10mid.s02, t10mid.D1, t10mid.D2
+    local xs9 = { 112, 96, 80, 64, 48, 64, 80, 96, 112 }
+    task.Wait(160)
+    -- BGirl00 ×5（非镜像，x=−144,−126,−112,−160,−100）
+    for _, x in ipairs({ -144, -126, -112, -160 }) do
+        t10mid.spawn(60, x, -16, false, D, B.g00); task.Wait(10)
+    end
+    t10mid.spawn(60, -100, -16, false, D, B.g00)            -- //200
+    -- BGirl00B ×10（镜像，x=128→112 折返；第一只与上面同帧）
+    for _, x in ipairs({ 128, 112, 96, 80, 64, 48, 64, 80, 96 }) do
+        t10mid.spawn(30, x, -16, true, D, B.g00b); task.Wait(10)
+    end
+    t10mid.spawn(30, 112, -16, true, D, B.g00b)             -- //290
+    task.Wait(270)                                          -- //560
+    -- xxxGirl00C 成对（左镜像 / 右非镜像），每 30 帧一对，共 8 对
+    for _, xc in ipairs({ 16, 16, 16, 16, 96, 96, 96, 96 }) do
+        t10mid.spawn(60, -xc, -16, true, D, B.g00c)
+        t10mid.spawn(60,  xc, -16, false, D, B.g00c)
+        task.Wait(30)
+    end
+    task.Wait(30)                                           -- //830
+    -- AM BGirl00B(128) + MainSub01 并行
+    task.New(card, function() B.ms01(card) end)
+    t10mid.spawn(30, 128, -16, true, D, B.g00b)
+    for _, x in ipairs({ 112, 96, 80, 64, 48, 64, 80, 96, 112 }) do
+        task.Wait(10); t10mid.spawn(30, x, -16, true, D, B.g00b)
+    end
+    task.Wait(54 + 2000)                                    -- 跳过 MBossDummy → //2974
+    -- xxxGirl00D 波 ×11：左右交替，每波 5 只（间隔 10）、波间隔 60
+    local dxs = { -144, -126, -112, -160, -100 }
+    for wi = 1, 11 do
+        local mir = (wi % 2 == 0)
+        local sx = mir and 1 or -1
+        for i = 1, 5 do
+            t10mid.spawn(60, sx * dxs[i], -16, mir, D, B.g00d)
+            if i < 5 then task.Wait(10) end
+        end
+        if wi < 11 then task.Wait(60) end
+    end
+    task.Wait(100)                                          -- //4114
+    -- Girl01 ×4（AF, 224,32）+ ×4（AMF, −224,32），各隔 60 帧
+    for _ = 1, 4 do t10mid.spawn(400,  224, 32, false, D2, B.g01, nil, 30); task.Wait(60) end
+    for _ = 1, 4 do t10mid.spawn(400, -224, 32, true,  D2, B.g01, nil, 30); task.Wait(60) end
+    task.Wait(60)                                           -- //4654
+    -- Girl01 ×6（±224, 64，AF/AMF 交替，隔 30 帧）
+    for i = 1, 6 do
+        if i % 2 == 1 then t10mid.spawn(300,  224, 64, false, D2, B.g01, nil, 30)
+        else               t10mid.spawn(300, -224, 64, true,  D2, B.g01, nil, 30) end
+        task.Wait(30)
+    end
+    task.Wait(130)                                          -- //4964
+    t10mid.spawn(4000, 0, -32, false, D2, B.g02, nil, 40)   -- L 行
+    task.Wait(200)                                          -- //5164
+    -- MainSub02 + AM BGirl00B ×9（隔 30）两轮
+    task.New(card, function() B.ms02(card) end)
+    task.Wait(30)                                           -- //5194
+    for i = 1, 9 do
+        t10mid.spawn(30, xs9[i], -16, true, D, B.g00b)
+        task.Wait(i < 9 and 30 or 100)
+    end
+    task.New(card, function() B.ms02(card) end)             -- //5534
+    task.Wait(30)                                           -- //5564
+    for i = 1, 9 do
+        t10mid.spawn(30, xs9[i], -16, true, D, B.g00b)
+        task.Wait(i < 9 and 30 or 60)
+    end
+    -- +60 后 Boss 本体：不移植 ⇒ 本卡到此结束
+end
+
+---挂到空 boss「ca」上的一张耐久符卡（与 stage01/06 道中同一套注册方式）。
+boss.Define("ca", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s02card = boss.card.New("二道中「人里の妖精」", 100, 100, 100, 10000000)
+function t10mid.s02card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s02card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s02.run(self) end)
+end
+function t10mid.s02card:frame() end
+function t10mid.s02card:render() end
+function t10mid.s02card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s02card, "ca" } }, LEVEL, "二道中「人里の妖精」", 3681)
+
+--=====================================
+-- 十二、stage03 道中（妖精群 + 环状妖精）—— 原生 LuaSTG「道中搬运卡」
+--   把 `stage03.ecl` 的 main 道中段复刻成一张符卡（跳过 MapleEnemy / MBossDummy /
+--   MBoss / Boss 本体 —— 中 BOSS 与 BOSS 已有各自的卡）。走共用的 t10mid 妖精框架。
+--   数据：thecl -d 10 -r -x -j -m th10.eclm stage03.ecl 反汇编。
+--   只做 Lunatic：`diffI/diffF` 取第 4 项、`!HL`（H/L 共有，L 也生效）块照做。
+--   近似：妖精贴图一律 servant；颜色变体（R/B/G/YGirl00* 之类）只差敌人外形与
+--         掉落 ⇒ 行为共用同一子程序；dropMain(1/2/3) 折成 D1/D2；anm* 只当纯视觉。
+--   ★ 踩坑（照复原源码 EclVm.cpp:780）：`wait(n)` = 时钟 −n；ECL 的循环写成
+--     `wait(…) + jmp(L, 0)`，回跳时把时钟**重置回 0** ⇒ 循环入口那条
+--     `wait(%RAND…)` 的效果被丢掉，但 `%RAND/%RANDRAD` 照样被消耗
+--     （随机序列要对齐，所以每种都照抄一次消耗）。
+--   ★ `call("MainSubNN")` 是**同步**子程序（EclVm.cpp:503 StartSubroutine 把父时钟
+--     压栈、子程序时钟归零）⇒ 父时序在子程序跑完前冻结；本文件按同一口径写成
+--     直接函数调用（子程序里的 task.Wait 就是墙钟）。
+--=====================================
+t10mid.s03 = {}
+
+---RGirl00_at：7 发自机狙扇形（角步长 π/8、速度 3.5→1.0），每 18 帧一梭、无限循环；
+---主人 Girl00 在 +340 帧 killAsync(0) 停它（原作的 `[0]=420/[4]`、`[16]=%RANDRAD`
+---两处都是死代码，但 %RANDRAD 的消耗要保留）。
+t10mid.s03.rg00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 8, f.I0)
+    et_count(f, 0, 7, 1); et_angle(f, 0, 0.0, 0.3926991); et_speed(f, 0, 3.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    rndrad()                                    -- [16] = %RANDRAD：值被丢弃
+    while true do
+        if f.s03_stop then return end
+        task.Wait(18); fire_slot(f, 0)
+    end
+end
+
+---Girl00：直下（初速 %RANDF·2+5.5）、40 帧减速到 0；+40 起 RGirl00_at；
+---+340 把角拉到 π/8+%RANDF2·0.2、120 帧加速到 1.5，并 killAsync(0)。
+t10mid.s03.g00 = function(f)
+    t10mid.vel(f, 1.5707964, rnd() * 2.0 + 5.5)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    task.New(f, function() t10mid.s03.rg00_at(f) end)
+    task.Wait(300)
+    t10mid.vel_time(f, 120, 4, 0.3926991 + rnd2() * 0.2, 1.5)
+    f.s03_stop = true
+    while true do task.Wait(6000) end
+end
+
+---Girl00B_at：1 发自机狙（角步长 π/8、速度 3.2），每 20 帧一梭、无限循环。
+t10mid.s03.g00b_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 2, 6); et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.3926991); et_speed(f, 0, 3.2, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    t10_imod(t10_randmod(), 30)                 -- wait(%RAND % 30)：消耗保留
+    while true do task.Wait(20); fire_slot(f, 0) end
+end
+
+---Girl00B：斜下（角 1.8+%RANDF·1.2、速度 0.3927+%RANDF2·0.1）；入场 15 帧无敌；
+---!HL（H/L 都有）起 Girl00B_at。
+t10mid.s03.g00b = function(f)
+    t10mid.vel(f, 1.8 + rnd() * 1.2, 0.3926991 + rnd2() * 0.1)
+    task.New(f, function() t10mid.s03.g00b_at(f) end)
+    while true do task.Wait(6000) end
+end
+
+---RGirl00C_at：等 100 帧 → 16 梭、每 4 帧一梭；基准角每梭 +%F0、速度 2.0 起每梭 +0.2。
+t10mid.s03.rg00c_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 6); et_count(f, 0, 1, 2)
+    et_angle(f, 0, 0.0, 0.0); et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(100)
+    local a, sp = 0.0, 2.0
+    for _ = 1, 16 do
+        et_angle(f, 0, a, 0.0); et_speed(f, 0, sp, 0.0)
+        task.Wait(4); fire_slot(f, 0)
+        sp = sp + 0.2; a = t10_wrap(a + f.F0)
+    end
+end
+
+---Girl00C：−3π/8 方向斜插、速度 8；+20 起 120 帧转到正下方、同时起 RGirl00C_at；
+---+140 起 60 帧（ease-in）转到 π/4、速度 1.0。入场 100 帧无敌。
+t10mid.s03.g00c = function(f)
+    t10mid.vel(f, -1.1780972, 8.0)
+    task.Wait(20)
+    t10mid.vel_time(f, 120, 4, 1.5707964, 0.0)
+    task.New(f, function() t10mid.s03.rg00c_at(f) end)
+    task.Wait(120)
+    t10mid.vel_time(f, 60, 1, 0.7853982, 1.0)
+    while true do task.Wait(6000) end
+end
+
+---RGirl00D_at：12 梭、每 4 帧一梭的半径螺旋（角每梭 +π/10、半径 0 起每梭 +4、
+---速度 1.5 起每梭 +0.1、出弹点在半径 [16] 的圆上）。
+t10mid.s03.rg00d_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 2, 6); et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.0); et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local a, r, sp = rndrad(), 0.0, 1.5
+    for _ = 1, 12 do
+        et_speed(f, 0, sp, sp)
+        et_offset(f, 0, math.cos(a) * r, math.sin(a) * r)
+        task.Wait(4); fire_slot(f, 0)
+        a = t10_wrap(a + 0.314159); r = r + 4.0; sp = sp + 0.1
+    end
+end
+
+---Girl00D：直下（%RANDF·2+5.5）、40 帧减速到 0；同时起 RGirl00D_at；
+---+100 起 40 帧把角拉到 π/8+%RANDF2·0.4、速度 2.7。
+t10mid.s03.g00d = function(f)
+    t10mid.vel(f, 1.5707964, rnd() * 2.0 + 5.5)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.New(f, function() t10mid.s03.rg00d_at(f) end)
+    task.Wait(100)
+    t10mid.vel_time(f, 40, 4, 0.3926991 + rnd2() * 0.4, 2.7)
+    while true do task.Wait(6000) end
+end
+
+---Girl01_at：双槽、每 5 帧一梭、共 64 梭。槽 0：6 发（L）× 角步长 0.44879895、
+---基准角 −π/2 每梭 +%F0、速度 3.0；槽 1：3 层 × 6 发（纯环）、基准角同、速度 4.0。
+t10mid.s03.g01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 1); et_sprite(f, 0, 7, 5); et_count(f, 0, 6, 1)
+    et_angle(f, 0, -1.570796, 0.44879895); et_speed(f, 0, 3.0, 0.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_new(f, 1); et_aim(f, 1, 3); et_sprite(f, 1, 8, 3); et_count(f, 1, 3, 6)
+    et_angle(f, 1, -1.570796, 0.0); et_speed(f, 1, 4.0, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local a = -1.570796
+    for _ = 1, 64 do
+        if f.s03_g01_stop then return end
+        et_angle(f, 0, a, 0.3926991); fire_slot(f, 0)
+        et_angle(f, 1, a, 0.0);      fire_slot(f, 1)
+        task.Wait(5)
+        a = t10_wrap(a + f.F0)
+    end
+end
+
+---Girl01：直下 5.0、60 帧减速到 0；+60 起 Girl01_at；+180 起 60 帧转到 π/4、速度 1.0；
+---+360 killAsync(0)。入场 30 帧无敌。
+t10mid.s03.g01 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s03.g01_at(f) end)
+    task.Wait(120)
+    t10mid.vel_time(f, 60, 4, 0.7853982, 1.0)
+    task.Wait(180)
+    f.s03_g01_stop = true
+    while true do task.Wait(6000) end
+end
+
+---Girl02_at：槽 0：14 层 × 10 发（L；随机基准角、角步长 %F0）、速度 3.0→+1.0；
+---入场即一梭，然后每 30 帧一梭、共 4 梭（角步长符号 +,−,+,−；
+---每梭各消耗一次 %RANDRAD）。
+t10mid.s03.g02_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 8, 2); et_count(f, 0, 14, 10)
+    et_angle(f, 0, rndrad(), f.F0); et_speed(f, 0, 3.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 0, 64, 60, 1, 0.0, 1.5)
+    fire_slot(f, 0)
+    task.Wait(30); et_angle(f, 0, rndrad(), -f.F0); fire_slot(f, 0)
+    task.Wait(30); et_angle(f, 0, rndrad(),  f.F0); fire_slot(f, 0)
+    task.Wait(30); et_angle(f, 0, rndrad(), -f.F0); fire_slot(f, 0)
+end
+
+---Girl02：直下 10.0、40 帧减速到 0；+40 起 Girl02_at；+360 起 70 帧转到 −π/2、速度 6.0。
+---入场 40 帧无敌。
+t10mid.s03.g02 = function(f)
+    t10mid.vel(f, 1.5707964, 10.0)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    task.New(f, function() t10mid.s03.g02_at(f) end)
+    task.Wait(320)
+    t10mid.vel_time(f, 70, 4, -1.5707964, 6.0)
+    while true do task.Wait(6000) end
+end
+
+---SpCir00_at：7 层 × 1 发（自机狙、角步长 π/32、速度 2.4）；先消耗一次
+---`$RAND%20`（原作的 `wait(%RAND%20+10)` 被回跳重置掉，只留消耗），
+---之后每 30 帧一梭。弹色号 = SpCir00 的第 3 个实参（B=6 / R=2 / G=10）。
+t10mid.s03.sp00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, f.s03_spc)
+    et_count(f, 0, 7, 1); et_angle(f, 0, 0.0, 0.09817477); et_speed(f, 0, 2.4, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    t10_imod(t10_randmod(), 20)                 -- wait(%RAND % 20 + 10)：消耗保留
+    while true do
+        task.Wait(10); fire_slot(f, 0)
+        task.Wait(20)
+    end
+end
+
+---SpCir00：直下 3.0；+60 起 40 帧转到 0；+100 起 40 帧转到 −π/2。
+t10mid.s03.sp00 = function(f)
+    task.New(f, function() t10mid.s03.sp00_at(f) end)
+    t10mid.vel(f, 1.5707964, 3.0)
+    task.Wait(60)
+    t10mid.vel_time(f, 40, 0, 0.0, 3.0)
+    task.Wait(40)
+    t10mid.vel_time(f, 40, 0, -1.5707964, 3.0)
+    while true do task.Wait(6000) end
+end
+
+---三个色号入口（对应原作的 BSpCir00 / RSpCir00 / GSpCir00 三条 call 包装）。
+t10mid.s03.bsp = function(f) f.s03_spc = 6;  t10mid.s03.sp00(f) end
+t10mid.s03.rsp = function(f) f.s03_spc = 2;  t10mid.s03.sp00(f) end
+t10mid.s03.gsp = function(f) f.s03_spc = 10; t10mid.s03.sp00(f) end
+
+---MainSub01：x=−224 固定、每 10 帧一只 Girl00B（32 只，y 每 8 只一轮）。
+t10mid.s03.ms01 = function(card)
+    local y8 = { -16, 32, 96, 64, 96, 32, 96, 16 }
+    for i = 1, 32 do
+        t10mid.spawn(20, -224, y8[(i - 1) % 8 + 1], false, t10mid.D1, t10mid.s03.g00b)
+        if i < 32 then task.Wait(10) end
+    end
+end
+
+---MainSub02 / MainSub02r：x=∓224、每 10 帧一只 Girl00B（各 8 只）。
+t10mid.s03.ms02 = function(card, x, mir)
+    local y8 = { -16, 32, 96, 64, 96, 32, 96, 16 }
+    for i = 1, 8 do
+        t10mid.spawn(20, x, y8[i], mir, t10mid.D1, t10mid.s03.g00b)
+        if i < 8 then task.Wait(10) end
+    end
+end
+
+---MainSub03 / MainSub03b：16 只 Girl00C（前半靠左、后半镜像靠右），每 20 帧一只，
+---%F0 逐只 ±0.082673 交替（原作的两种配色只差敌人外形 ⇒ 合成一个函数）。
+t10mid.s03.ms03 = function(card)
+    local seq = {
+        { -216, 256, false }, { -256, 224, false }, { -224, 256, false }, { -216, 224, false },
+        { -284, 256, false }, { -216, 224, false }, { -224, 256, false }, { -256, 224, false },
+        {  216, 256, true  }, {  256, 224, true  }, {  224, 256, true  }, {  216, 224, true  },
+        {  284, 256, true  }, {  216, 224, true  }, {  224, 256, true  }, {  256, 224, true  },
+    }
+    for i = 1, 16 do
+        local s = seq[i]
+        t10mid.spawn(110, s[1], s[2], s[3], t10mid.D2, t10mid.s03.g00c,
+                     { F0 = (i % 2 == 1) and 0.082673 or -0.082673 })
+        if i ~= 8 and i < 16 then task.Wait(20) end
+    end
+end
+
+---MainSub04 / MainSub04r：x=∓224、每 10 帧一只 Girl00B（各 8 只）。
+t10mid.s03.ms04 = function(card, x, mir)
+    local y8 = { -16, 32, 96, 64, 96, 32, 96, 16 }
+    for i = 1, 8 do
+        t10mid.spawn(20, x, y8[i], mir, t10mid.D1, t10mid.s03.g00b)
+        if i < 8 then task.Wait(10) end
+    end
+end
+
+---SpCir 群：同一 x 上 7 只、每 20 帧一只；`s` 是 "BRBRBRG" 这种颜色串。
+t10mid.s03.spgroup = function(card, x, mir, s)
+    for i = 1, #s do
+        local c = s:sub(i, i)
+        local beh = t10mid.s03.gsp
+        if c == "B" then beh = t10mid.s03.bsp
+        elseif c == "R" then beh = t10mid.s03.rsp end
+        t10mid.spawn(20, x, -16, mir, t10mid.D1, beh)
+        if i < #s then task.Wait(20) end
+    end
+end
+
+---道中时间轴（`//N` = 原作 main 的绝对帧；`+N:` = 相对上一事件帧数）。
+t10mid.s03.run = function(card)
+    local B, D, D2 = t10mid.s03, t10mid.D1, t10mid.D2
+    task.Wait(160)                                          -- //160
+    task.New(card, function() B.ms01(card) end)
+    task.Wait(60)                                           -- //220
+    t10mid.spawn(240,  96, -16, true, D2, B.g00, { I0 = 6 })
+    task.Wait(30)                                           -- //250
+    t10mid.spawn(240, 128, -16, true, D, B.g00b)
+    task.Wait(30)                                           -- //280
+    t10mid.spawn(240, 144, -16, true, D, B.g00b)
+    task.Wait(800)                                          -- //1080
+    t10mid.spawn(360,  128, -16, false, D2, B.g01, { F0 = 0.1309 }, 30)
+    t10mid.spawn(360, -128, -16, true,  D2, B.g01, { F0 = -0.1309 }, 30)
+    task.Wait(200)                                          -- //1280
+    t10mid.spawn(150, -96, -16, false, D2, B.g00, { I0 = 6 })
+    task.Wait(30)                                           -- //1310
+    t10mid.spawn(150, -128, -16, false, D, B.g00b)
+    task.Wait(60)                                           -- //1370
+    t10mid.spawn(150,  96, -16, true, D2, B.g00, { I0 = 4 })
+    task.Wait(30)                                           -- //1400
+    t10mid.spawn(150, 128, -16, true, D, B.g00b)
+    task.Wait(60)                                           -- //1460
+    t10mid.spawn(150, -96, -16, false, D2, B.g00, { I0 = 13 })
+    task.Wait(30)                                           -- //1490
+    t10mid.spawn(150, -128, -16, false, D, B.g00b)
+    task.Wait(60)                                           -- //1550
+    t10mid.spawn(150,  96, -16, true, D2, B.g00, { I0 = 10 })
+    task.New(card, function() B.ms02(card, 224, true) end)  -- MainSub02r
+    task.Wait(30)                                           -- //1580
+    t10mid.spawn(150, 128, -16, true, D, B.g00b)
+    task.Wait(60)                                           -- //1640
+    t10mid.spawn(150, -96, -16, false, D2, B.g00, { I0 = 2 })
+    task.New(card, function() B.ms02(card, -224, false) end)-- MainSub02
+    task.Wait(30)                                           -- //1670
+    t10mid.spawn(150, -128, -16, false, D, B.g00b)
+    task.Wait(60)                                           -- //1730
+    t10mid.spawn(150,  96, -16, true, D2, B.g00, { I0 = 8 })
+    task.Wait(30)                                           -- //1760
+    t10mid.spawn(150, 128, -16, true, D, B.g00b)
+    task.Wait(300)                                          -- //2060
+    B.ms03(card)                                            -- call MainSub03（同步）
+    task.Wait(60); B.ms03(card)                             -- //2120 call MainSub03b
+    task.Wait(60); B.ms03(card)                             -- //2180 call MainSub03
+    task.Wait(300)                                          -- //2480
+    t10mid.spawn(360,  128, -16, true,  D2, B.g01, { F0 = 0.1309 }, 30)
+    t10mid.spawn(360, -128, -16, false, D2, B.g01, { F0 = -0.1309 }, 30)
+    task.Wait(120)                                          -- //2600
+    t10mid.spawn(360,  96, -16, true,  D2, B.g01, { F0 = 0.1309 }, 30)
+    t10mid.spawn(360, -96, -16, false, D2, B.g01, { F0 = -0.1309 }, 30)
+    task.Wait(260)                                          -- //2860（MBossDummy 跳过）
+    task.Wait(60)                                           -- //2920（dialog 跳过）
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(120)                                          -- //3040
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(120)                                          -- //3160
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(120)                                          -- //3280（MBoss 跳过）
+    t10mid.spawn(640, -96, -16, true, D2, B.g02, { F0 = 0.024544 }, 40)
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(175)                                          -- //3455
+    t10mid.spawn(640,  96, -16, true, D2, B.g02, { F0 = 0.024544 }, 40)
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(175)                                          -- //3630
+    t10mid.spawn(640, -112, -16, true, D2, B.g02, { F0 = 0.024544 }, 40)
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(175)                                          -- //3805
+    t10mid.spawn(640, 0, -16, true, D2, B.g02, { F0 = 0.024544 }, 40)
+    task.New(card, function() B.ms04(card, -224, false) end)
+    task.New(card, function() B.ms04(card,  224, true)  end)
+    task.Wait(200)                                          -- //4005
+    B.spgroup(card,  128, true,  "BRBRBRG")
+    task.Wait(40); B.spgroup(card,  -32, false, "BRBRBRG")  -- //4165
+    task.Wait(40); B.spgroup(card, -112, false, "BRBRBRG")  -- //4325
+    task.Wait(40); B.spgroup(card,   48, true,  "BRBRBRG")  -- //4485
+    task.Wait(20); B.spgroup(card, -128, false, "BRBRBRG")  -- //4625
+    task.Wait(20); B.spgroup(card,  -32, true,  "BRBBBRG")  -- //4765
+    task.Wait(20); B.spgroup(card,  112, false, "BRBRBRG")  -- //4905
+    task.Wait(20); B.spgroup(card,  -96, true,  "BRBRBRG")  -- //5045
+    task.Wait(120)                                          -- //5285
+    t10mid.spawn(640, -32, -16, false, D2, B.g02, { F0 = -0.016362 }, 40)
+    t10mid.spawn(640,  32, -16, true,  D2, B.g02, { F0 = 0.019635 }, 40)
+    task.Wait(200)                                          -- //5485
+    t10mid.spawn(640, -64, -16, false, D2, B.g02, { F0 = 0.016362 }, 40)
+    t10mid.spawn(640,  64, -16, true,  D2, B.g02, { F0 = -0.024544 }, 40)
+    -- +400 后 Boss 本体：不移植 ⇒ 本卡到此结束
+end
+
+---挂到空 boss「da」上的一张耐久符卡（与 stage01/02/06 道中同一套注册方式）。
+boss.Define("da", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s03card = boss.card.New("三道中「河童の渓谷」", 120, 120, 120, 10000000)
+function t10mid.s03card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s03card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s03.run(self) end)
+end
+function t10mid.s03card:frame() end
+function t10mid.s03card:render() end
+function t10mid.s03card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s03card, "da" } }, LEVEL, "三道中「河童の渓谷」", 3682)
+
+--=====================================
+-- 十三、stage04 道中（妖怪の山：乌鸦 / 潜行妖精 / 大妖精）—— 原生 LuaSTG「道中搬运卡」
+--   把 `stage04.ecl` 的 main 道中段复刻成一张符卡（跳过 MapleEnemy / MBoss 中 BOSS /
+--   Boss 本体 —— 中 BOSS 与 BOSS 已有各自的卡）。走共用的 t10mid 妖精框架。
+--   数据：thecl -d 10 -r -x -j -m th10.eclm stage04.ecl 反汇编。
+--   只做 Lunatic：`diffI/diffF` 取第 4 项、`!L`/`!NHL` 块在 L 下生效、`$DIFF`=3。
+--   近似：妖精/乌鸦贴图一律 servant；色系（R/B/G/Y）只差敌人外形与掉落 ⇒ 行为共用；
+--         dropMain(N) 折成 D1/D2；anm*/playSound/setHurtbox/movePos3d 只当视觉。
+--   ★ 同一条敌机的所有 ECL 线程共用它的 $I/%F（EclVm 的 eclVariables 挂在**敌机**上）
+--     ⇒ main/MainSub1..8 里的寄存器是同一个池子；本文件把需要传给子机的值显式塞进
+--     `src`（spawn 的第 7 参）。子机出生点写进 offsetMotion（原作 EnemySpawn 的口径）。
+--   ★ `callAsync` 起线程时时钟归零（相对父程序**当前帧**）；`call` 是同步子程序。
+--   ★ ECL 的 `deci(v); jmpNeq(loop, t)` 是「先减再判」：入口先 deci 一次 ⇒ 初值 N
+--     只跑 N−1 圈；jmp 目标时间 < 当前时间时，圈与圈之间才真的过帧。
+--=====================================
+t10mid.s04 = {}
+
+---掉落近似（原作 dropMain：R→1、B→2、G→3、Y→0；本仓库 Dropitem_PFP 用 {信仰,P,点}）。
+t10mid.s04.D1 = { 0, 1, 1 }
+t10mid.s04.D2 = { 0, 3, 3 }
+
+---生成一只 Girl 子机（相对创建 ⇒ 落在父敌机的当前位置）；src 拷父的 $I/%F。
+---`behs` = 四个色系共用的行为入口（色系只影响掉落）。
+t10mid.s04.mkgirl = function(f, hp, behs, inv)
+    local i0 = f.I0 or 0
+    local x, y = t10mid.pos(f)
+    local drop = (i0 == 1 or i0 == 2) and t10mid.s04.D2 or t10mid.s04.D1
+    return t10mid.spawn(hp, x, y, false, drop, behs[i0 % 4 + 1],
+                        { I0 = i0, I1 = f.I1 or 0, F0 = f.F0 or 0, F1 = f.F1 or 0 }, inv)
+end
+
+---========================= 乌鸦（Crow 系） =========================
+---Crow00L / Crow00R：从右上 / 左上斜插的乌鸦（不射击）；setInvuln(8)、life 20。
+t10mid.s04.crow00l = function(f) t10mid.vel(f, 2.8797932, 1.0 + rnd() * 2.0) end
+t10mid.s04.crow00r = function(f) t10mid.vel(f, 0.2617994, 1.0 + rnd() * 2.0) end
+
+---Crow01At：每 20 帧一发（L）、共 9 发；角 %RANDRAD/2−π/2、速 %RANDF·0.4+0.1。
+t10mid.s04.crow01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 1); et_sprite(f, 0, 1, 14)
+    et_count(f, 0, 1, 1); et_angle(f, 0, 3.1415927, 0.7853982); et_speed(f, 0, 2.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 2, 1, 16, 90, -999999, 0.027, 1.5707964)
+    local w = t10_imod(t10_randmod(), 60)   -- wait($RAND % 60)：首发的随机延迟
+    if w > 0 then task.Wait(w) end
+    local n = 10 - 1
+    while n ~= 0 do
+        et_angle(f, 0, rndrad() / 2 - 1.5707964, 0.0)
+        et_speed(f, 0, rnd() * 0.4 + 0.1, 0.0)
+        fire_slot(f, 0)
+        task.Wait(20)
+        n = n - 1
+    end
+end
+
+---Crow01L / Crow01R：同 Crow00 的入场 + 起枪线程。
+t10mid.s04.crow01l = function(f)
+    t10mid.vel(f, 2.8797932, 1.0 + rnd() * 2.0)
+    task.New(f, function() t10mid.s04.crow01_at(f) end)
+end
+t10mid.s04.crow01r = function(f)
+    t10mid.vel(f, 0.2617994, 1.0 + rnd() * 2.0)
+    task.New(f, function() t10mid.s04.crow01_at(f) end)
+end
+
+---========================= Girl00 系 =========================
+---RGirl00_at（Girl00 的枪）：10 帧延迟 → 9 发扇形 + 1 发 → 30 帧后 9 发（同角）。
+t10mid.s04.rg00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 12, 3)
+    et_count(f, 0, 9, 1); et_angle(f, 0, 0.0, 0.2617994); et_speed(f, 0, 3.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    task.Wait(10)                           -- diffWait(40,40,10,10) 的 L 行
+    fire_slot(f, 0)
+    et_count(f, 0, 1, 1); fire_slot(f, 0)
+    task.Wait(30)
+    et_count(f, 0, 9, 1); fire_slot(f, 0)
+end
+
+---Girl00：−π/2（向上）冲 4.0、40 帧减速停；+60 转向自机（+%RANDF2·0.2）再加速到 1.5。
+t10mid.s04.g00 = function(f)
+    t10mid.vel(f, -1.5707964, 4.0)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.New(f, function() t10mid.s04.rg00_at(f) end)
+    task.Wait(60)
+    t10mid.vel(f, t10_angle_player(f) + rnd2() * 0.2, 0.0)
+    t10mid.vel_time(f, 120, 4, -999999, 1.5)
+end
+
+---========================= Girl01 系 =========================
+---Girl01_at：外层 2 轮（diffI=3 先减一次）；每轮 9 拍 × (等 5 帧、3 连发)，轮间等 40 帧。
+t10mid.s04.g01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, f.I1 or 1)
+    et_count(f, 0, 3, 1); et_angle(f, 0, 0.0, 0.3926991); et_speed(f, 0, 5.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local outer = 3 - 1
+    while outer ~= 0 do
+        local n = 10 - 1
+        while n ~= 0 do
+            task.Wait(5)
+            fire_slot(f, 0)
+            n = n - 1
+        end
+        task.Wait(40)
+        outer = outer - 1
+    end
+end
+
+---Girl01：+π/2（向下）入 2.0、40 帧停；同时起 Girl01_at；+40 起 40 帧转向 %F0、加速到 1.0。
+t10mid.s04.g01 = function(f)
+    t10mid.vel(f, 1.5707964, 2.0)
+    task.New(f, function() t10mid.s04.g01_at(f) end)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    t10mid.vel_time(f, 40, 4, f.F0, 1.0)
+end
+
+---========================= Girl02 系（大妖精） =========================
+---Girl02_at：槽 1 双旋。外层 5 轮；每轮 A 段 59 帧（角 += %RANDRAD/40+π/40）、
+---B 段 59 帧（角 −= 同量）。L 行（$DIFF>=3）每帧 3 发、每发重掷角增与位移。
+t10mid.s04.g02_at = function(f)
+    et_new(f, 1); et_aim(f, 1, 3); et_sprite(f, 1, 24, 2)
+    et_count(f, 1, 1, 1); et_angle(f, 1, 0.0, 0.049087387); et_speed(f, 1, 2.0, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 1, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    local outer = 6 - 1
+    while outer ~= 0 do
+        local a = rndrad()
+        et_sprite(f, 1, 24, 4)
+        local n = 60 - 1
+        while n ~= 0 do
+            task.Wait(1)
+            a = a + rndrad() / 40 + 3.1415927 / 40
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            a = a + rndrad() / 40 + 3.1415927 / 40
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            n = n - 1
+        end
+        a = rndrad()
+        et_sprite(f, 1, 24, 6)
+        local m = 60 - 1
+        while m ~= 0 do
+            task.Wait(1)
+            a = a - rndrad() / 40 - 3.1415927 / 40
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            a = a - rndrad() / 40 - 3.1415927 / 40
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            et_angle(f, 1, a, 0.0); et_offset(f, 1, rnd2() * 32, rnd2() * 32)
+            fire_slot(f, 1)
+            m = m - 1
+        end
+        et_offset(f, 1, 0.0, 0.0)
+        outer = outer - 1
+    end
+end
+
+---Girl02_at2：槽 0 双环（10×8）无限循环：等 100 帧打一次、再等 60 帧反向打一次。
+t10mid.s04.g02_at2 = function(f)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 2, 2)
+    et_count(f, 0, 10, 8); et_angle(f, 0, 0.0, 0.049087387); et_speed(f, 0, 2.0, 0.8)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        task.Wait(100)
+        et_sprite(f, 0, 2, 2); et_angle(f, 0, 0.0, 0.049087387); fire_slot(f, 0)
+        task.Wait(60)
+        et_sprite(f, 0, 2, 2); et_angle(f, 0, 0.0, -0.049087387); fire_slot(f, 0)
+    end
+end
+
+---Girl02：+π/2 入 2.0、40 帧停；起两条枪线程；+440 起 40 帧转向 %F0、加速到 1.0。
+t10mid.s04.g02 = function(f)
+    t10mid.vel(f, 1.5707964, 2.0)
+    task.New(f, function() t10mid.s04.g02_at(f) end)
+    task.New(f, function() t10mid.s04.g02_at2(f) end)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(440)
+    t10mid.vel_time(f, 40, 4, f.F0, 1.0)
+end
+
+---========================= Girl03 系 =========================
+---Girl03_at2：槽 2 独弹无限循环（L：速 5.6、每 40 帧一发）。
+t10mid.s04.g03_at2 = function(f)
+    et_new(f, 2); et_aim(f, 2, 2); et_sprite(f, 2, 12, 3)
+    et_count(f, 2, 1, 1); et_angle(f, 2, 0.0, 0.3926991); et_speed(f, 2, 5.6, 1.0)
+    while true do
+        fire_slot(f, 2)
+        task.Wait(40)                       -- diffWait(300,300,60,40) 的 L 行
+    end
+end
+
+---Girl03_at：槽 0（4 发扇形自机狙）+ 槽 1（复制后改 3 环）；外层 2 轮、内层 9 拍。
+---每拍等 5 帧，两槽各带一次 ±8 的随机位移（%RANDF2 消耗顺序照抄）。
+t10mid.s04.g03_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 5); et_sprite(f, 0, 3, 6)
+    et_count(f, 0, 4, 1); et_angle(f, 0, 0.0, 0.3926991); et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    et_copy(f, 1, 0); et_aim(f, 1, 3); et_speed(f, 1, 1.5, 1.0); et_sprite(f, 1, 3, 8)
+    task.New(f, function() t10mid.s04.g03_at2(f) end)     -- !NHL（L 生效）
+    local outer = 3 - 1
+    while outer ~= 0 do
+        local n = 10 - 1
+        while n ~= 0 do
+            task.Wait(5)
+            et_offset(f, 0, rnd2() * 8, rnd2() * 8); fire_slot(f, 0)
+            et_offset(f, 1, rnd2() * 8, rnd2() * 8); fire_slot(f, 1)
+            n = n - 1
+        end
+        task.Wait(60)
+        outer = outer - 1
+    end
+end
+
+---Girl03：+π/2 入 8.0；同时起 Girl03_at；40 帧内转向 0.0、减速到 2.0。
+t10mid.s04.g03 = function(f)
+    t10mid.vel(f, 1.5707964, 8.0)
+    task.New(f, function() t10mid.s04.g03_at(f) end)
+    t10mid.vel_time(f, 40, 4, 0.0, 2.0)
+end
+
+---========================= Girl04 系 =========================
+---Girl04_at2：槽 1（3 发 × 2 环，L 速 5.5）；先减一次 ⇒ 打 2 发、间隔 20 帧。
+t10mid.s04.g04_at2 = function(f)
+    et_new(f, 1); et_aim(f, 1, 2); et_sprite(f, 1, 12, 3)
+    et_count(f, 1, 3, 2); et_angle(f, 1, 0.0, 0.7853982); et_speed(f, 1, 5.5, 1.0)
+    local n = 3 - 1
+    while n ~= 0 do
+        task.Wait(20)                       -- diffWait(50,50,30,20) 的 L 行
+        fire_slot(f, 1)
+        n = n - 1
+    end
+end
+
+---Girl04_at：槽 0（2 发扇形自机狙，基准角 π、步长 π/4、速 2.5）9 拍；起 Girl04_at2。
+t10mid.s04.g04_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, f.I1 or 0)
+    et_count(f, 0, 2, 1); et_angle(f, 0, 3.1415927, 0.7853982); et_speed(f, 0, 2.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    task.New(f, function() t10mid.s04.g04_at2(f) end)     -- !NHL（L 生效）
+    local n = 10 - 1
+    while n ~= 0 do
+        task.Wait(5)
+        fire_slot(f, 0)
+        n = n - 1
+    end
+end
+
+---Girl04：+π/2 入 2.0、40 帧停；+40 转向自机、160 帧加速到 6.0。
+t10mid.s04.g04 = function(f)
+    t10mid.vel(f, 1.5707964, 2.0)
+    task.New(f, function() t10mid.s04.g04_at(f) end)
+    t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    t10mid.vel(f, t10_angle_player(f), 0.0)
+    t10mid.vel_time(f, 160, 4, -999999, 6.0)
+end
+
+---========================= Dive 系（下潜标记，到点生成 Girl 后自毁） =========================
+---DiveEnemy00：−π/2 入 −4.8、40 帧减速；+80 生成 Girl00 系（$I0 选色）。
+t10mid.s04.de00 = function(f)
+    t10mid.vel(f, -1.5707964, -4.8)
+    task.Wait(40); t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    t10mid.s04.mkgirl(f, 80, { t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00 }, 0)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy00B：同 00，减速改在 +80（40 帧）、+120 生成。
+t10mid.s04.de00b = function(f)
+    t10mid.vel(f, -1.5707964, -4.8)
+    task.Wait(80); t10mid.vel_time(f, 40, 4, -999999, 0.0)
+    task.Wait(40)
+    t10mid.s04.mkgirl(f, 80, { t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00 }, 0)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy01：−π/2 入 −4.8、+40 起 70 帧减速；+110 生成 Girl01 系（入场 40 帧无敌）。
+t10mid.s04.de01 = function(f)
+    t10mid.vel(f, -1.5707964, -4.8)
+    task.Wait(40); t10mid.vel_time(f, 70, 4, -999999, 0.0)
+    task.Wait(70)
+    t10mid.s04.mkgirl(f, 80, { t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01 }, 40)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy01B：入场角 −π/2+%F1、速 −6.2；+100 起 70 帧减速；+170 生成 Girl01。
+t10mid.s04.de01b = function(f)
+    t10mid.vel(f, -1.5707964 + (f.F1 or 0), -6.2)
+    task.Wait(100); t10mid.vel_time(f, 70, 4, -999999, 0.0)
+    task.Wait(70)
+    t10mid.s04.mkgirl(f, 80, { t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01 }, 40)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy02：−π/2 入 −1.8、+160 起 70 帧减速；+230 生成 Girl02（入场 160 帧无敌）。
+t10mid.s04.de02 = function(f)
+    t10mid.vel(f, -1.5707964, -1.8)
+    task.Wait(160); t10mid.vel_time(f, 70, 4, -999999, 0.0)
+    task.Wait(70)
+    t10mid.s04.mkgirl(f, 1500, { t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02 }, 160)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy02B：−π/2 入 −3.4、+240 起 70 帧减速；+310 生成 Girl02。
+t10mid.s04.de02b = function(f)
+    t10mid.vel(f, -1.5707964, -3.4)
+    task.Wait(240); t10mid.vel_time(f, 70, 4, -999999, 0.0)
+    task.Wait(70)
+    t10mid.s04.mkgirl(f, 1500, { t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02 }, 160)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy04：入场角 −π/2+%RANDRAD/16、速 −(3+%RANDF·0.5)（%RANDF 先、%RANDRAD 后）；
+---+100 起 70 帧减速；+170 生成 Girl04 系（入场 20 帧无敌）。
+t10mid.s04.de04 = function(f)
+    local sp = -3.0 + rnd() * 0.5
+    local a  = -1.5707964 + rndrad() / 16
+    t10mid.vel(f, a, sp)
+    task.Wait(100); t10mid.vel_time(f, 70, 4, -999999, 0.0)
+    task.Wait(70)
+    t10mid.s04.mkgirl(f, 100, { t10mid.s04.g04, t10mid.s04.g04, t10mid.s04.g04, t10mid.s04.g04 }, 20)
+    t10_kill_pod(f)
+end
+
+---DiveEnemy04B：入场角 −π/2+%RANDRAD/16、速 −3.8，300 帧内插到 (角 −π/2, 速 −3.8)，然后自毁。
+t10mid.s04.de04b = function(f)
+    t10mid.vel(f, -1.5707964 + rndrad() / 16, -3.8)
+    t10mid.vel_time(f, 300, 0, -1.5707964, -3.8)
+    task.Wait(300)
+    t10_kill_pod(f)
+end
+
+---========================= MainSub1..8（散兵时间轴） =========================
+---MainSub1（t=0 起，main 的 callAsync）：5 只 DiveEnemy00 + 15 只 DiveEnemy01 + 1 只 DiveEnemy02。
+t10mid.s04.ms1 = function(card)
+    local S = t10mid.s04
+    task.Wait(30)                                                   -- //30
+    for i = 1, 5 do
+        if i > 1 then task.Wait(20) end
+        t10mid.spawn(60, -128 + (i - 1) * 64, 160, false, S.D1, S.de00, { I0 = 0, I1 = 2, F0 = 0.0 })
+    end
+    local q = {   -- { x, $I0, $I1, %F0, 距上一只帧数 }
+        {  128, 0, 2,  3.1415927, 300 },
+        {  -64, 1, 2,  0.3926991,  20 },
+        {   64, 0, 2,  0.3926991,  20 },
+        { -128, 1, 2,  0.0,        20 },
+        {    0, 0, 2,  3.1415927,  20 },
+        {  -96, 1, 2,  0.3926991,  60 },
+        {   96, 0, 2,  0.3926991,  20 },
+        {  -32, 1, 2,  3.1415927,  20 },
+        {  160, 0, 2,  1.5707964,  20 },
+        {   32, 0, 2,  3.1415927,  20 },
+        {   96, 1, 2,  0.3926991,  60 },
+        {  -96, 0, 2,  0.3926991,  20 },
+        {   32, 1, 2,  0.0,        20 },
+        { -160, 0, 2,  1.5707964,  20 },
+        {  -32, 0, 2,  1.5707964,  20 },
+    }
+    for _, e in ipairs(q) do
+        task.Wait(e[5])
+        t10mid.spawn(60, e[1], -512, false, S.D1, S.de01, { I0 = e[2], I1 = e[3], F0 = e[4] })
+    end
+    task.Wait(50)                                                   -- //820
+    t10mid.spawn(60, 0, -512, false, S.D1, S.de02, { I0 = 0, I1 = 2, F0 = -1.5707964 })
+    task.Wait(600)                                                  -- //1420
+    task.New(card, function() S.ms2(card) end)                      -- callAsync("MainSub2")
+end
+
+---MainSub2（t=0 相对 abs 1420）：BGirl03 两波（±两侧）+ 15 只 DiveEnemy00 + DiveEnemy02。
+---★ 原作的「右侧组」并不与左侧同时起步：先左 5 只（0/30/60/90/120），右 5 只紧接
+---  在左第 5 只之后（120/150/180/210/240）；第二波（左 8+右 8）更是**无等待**接在
+---  右第 5 只（240）后面。逐个 spawn 的帧号照反汇编标出来。
+t10mid.s04.ms2 = function(card)
+    local S = t10mid.s04
+    ---第一波：左 5（非镜像，$I1=6）t=0..120；右 5（镜像，$I1=8）t=120..240。
+    local waveA_l = {
+        { -192, -24 }, { -160, -24 }, { -128, -24 }, { -216, 16 }, { -220, 32 },
+    }
+    local waveA_r = {
+        {  192, -24 }, {  160, -24 }, {  128, -24 }, {  216, 16 }, {  220, 32 },
+    }
+    for i = 1, 5 do
+        local e = waveA_l[i]
+        t10mid.spawn(120, e[1], e[2], false, S.D2, S.g03, { I1 = 6 }, 40)
+        if i < 5 then task.Wait(30) end
+    end
+    for i = 1, 5 do
+        local e = waveA_r[i]
+        t10mid.spawn(120, e[1], e[2], true, S.D2, S.g03, { I1 = 8 }, 40)
+        if i < 5 then task.Wait(30) end
+    end
+    ---第二波（紧接）：左 8（t=240..310）再右 8（t=310..380），每只间隔 10 帧。
+    local waveB_l = {
+        { -192, -24 }, { -160, -24 }, { -128, -24 }, { -216, 16 },
+        { -220,  32 }, { -220,  64 }, { -220,  96 }, { -220, 128 },
+    }
+    local waveB_r = {
+        {  192, -24 }, {  160, -24 }, {  128, -24 }, {  216, 16 },
+        {  220,  32 }, {  220,  64 }, {  220,  96 }, {  220, 128 },
+    }
+    for j = 1, 8 do
+        local e = waveB_l[j]
+        t10mid.spawn(120, e[1], e[2], false, S.D2, S.g03, { I1 = 6 }, 40)
+        if j < 8 then task.Wait(10) end
+    end
+    for j = 1, 8 do
+        local e = waveB_r[j]
+        t10mid.spawn(120, e[1], e[2], true, S.D2, S.g03, { I1 = 8 }, 40)
+        if j < 8 then task.Wait(10) end
+    end
+    ---DiveEnemy00 三排 ×5（x 128→−128，y −512/−576/−640）+ DiveEnemy02。
+    task.Wait(120)                                                  -- //500
+    task.Wait(30)                                                   -- //530 第一只
+    local dz = { { -512, 2 }, { -576, 1 }, { -640, 0 } }
+    for rz, row in ipairs(dz) do
+        for i = 1, 5 do
+            t10mid.spawn(60, 128 - (i - 1) * 64, row[1], false, S.D1, S.de00,
+                         { I0 = row[2], I1 = 8, F0 = 0.0 })
+            if not (rz == 3 and i == 5) then task.Wait(20) end
+        end
+    end
+    task.Wait(50)                                                   -- //860
+    t10mid.spawn(60, 64, -512, false, S.D1, S.de02, { I0 = 0, I1 = 8, F0 = -1.5707964 })
+    task.Wait(600)                                                  -- //1460
+    task.New(card, function() S.ms3(card) end)                      -- callAsync("MainSub3")
+    task.New(card, function() S.ms3b(card) end)                     -- callAsync("MainSub3B")
+end
+
+---MainSub3：第一段 5 只 DiveEnemy04（x −48 起每只 +32，40 帧一只）；
+---第二段 23 只（x 144 起每只 −7，10 帧一只，x 再叠 %RANDF2·32）。$I0=1 ⇒ BGirl04。
+---★ 这条子程序用「回跳 + 时间戳回退」的循环：`jmp(L,70)` 把时钟设到 70、
+---  `jmpNeq(L,30)` 又设回 30 ⇒ 每圈固定耗 40 帧（实测帧号见注释）。
+t10mid.s04.ms3 = function(card)
+    local S = t10mid.s04
+    task.Wait(30)                                                   -- //30  第一只
+    local x = -48.0
+    for i = 1, 5 do
+        if i > 1 then
+            task.Wait(40)
+            x = x + 32.0
+        end
+        t10mid.spawn(60, x, -512, false, S.D1, S.de04, { I0 = 1, I1 = 8, F0 = 0.0 })
+    end
+    ---5 只在 t=30/70/110/150/190；圈末的 deci 落在 t=230。
+    task.Wait(40)                                                   -- //230
+    task.Wait(30)                                                   -- //260（+30 后 nop 与 [0]+=32）
+    x = x + 32.0                                                    -- → 144
+    for i = 1, 23 do
+        if i > 1 then x = x - 7.0 end
+        t10mid.spawn(60, x + rnd2() * 32.0, -512, false, S.D1, S.de04,
+                     { I0 = 1, I1 = 8, F0 = 0.0 })
+        if i < 23 then task.Wait(10) end
+    end                                                             -- t=260..480
+end
+
+---MainSub3B：DiveEnemy04B 9 圈 ×2 只（每圈 A 在 x、B 在 x+%RANDF·128+32），
+---每只间隔 20 帧（t=30/50/70/…/370，共 18 只）；每圈 x += 32。
+t10mid.s04.ms3b = function(card)
+    local S = t10mid.s04
+    task.Wait(30)                                                   -- //30  A#1
+    local x = -128.0
+    for k = 1, 9 do
+        t10mid.spawn(60, x, -512, false, S.D1, S.de04b, { I0 = 0, I1 = 8, F0 = 0.0 })
+        task.Wait(20)
+        t10mid.spawn(60, x + rnd() * 128.0 + 32.0, -512, false, S.D1, S.de04b,
+                     { I0 = 0, I1 = 8, F0 = 0.0 })
+        if k < 9 then task.Wait(20) end
+        x = x + 32.0
+    end
+end
+
+---MainSub4：t=3600 出中 BOSS（跳过）；t=4100 同步调 MainSub5。
+t10mid.s04.ms4 = function(card)
+    task.Wait(3600)
+    task.Wait(500)
+    t10mid.s04.ms5(card)                                            -- call("MainSub5")
+end
+
+---MainSub5（t=0 相对 abs 4100）：BGirl03 四波（1×5+5、3×8+8）+ 乌鸦 + DiveEnemy00B 六排
+---+ MainSub7。第一波用 enmCreateF/MF（原作是 "if no boss" 变体：中 BOSS 在 t=3600 出场、
+---  t≈4100 时可能还没走；本移植跳过了中 BOSS ⇒ 无 boss ⇒ F 变体照常生效，按 enmCreate 处理）。
+t10mid.s04.ms5 = function(card)
+    local S = t10mid.s04
+    ---各波共用的两排位置（左列为非镜像版、右列为镜像版）。
+    local left8 = {
+        { -192, -24 }, { -160, -24 }, { -128, -24 }, { -216, 16 },
+        { -220,  32 }, { -220,  64 }, { -220,  96 }, { -220, 128 },
+    }
+    local right8 = {
+        {  192, -24 }, {  160, -24 }, {  128, -24 }, {  216, 16 },
+        {  220,  32 }, {  220,  64 }, {  220,  96 }, {  220, 128 },
+    }
+    ---第一波：左 5（非镜像）t=0/30/60/90/120；右 5（镜像）紧接在左第 5 只后 t=120..240。
+    local waveA = {
+        { -192, -24 }, { -160, -24 }, { -128, -24 }, { -216, 16 }, { -220, 32 },
+    }
+    local waveAm = {
+        {  192, -24 }, {  160, -24 }, {  128, -24 }, {  216, 16 }, {  220, 32 },
+    }
+    for i = 1, 5 do
+        local e = waveA[i]
+        t10mid.spawn(120, e[1], e[2], false, S.D2, S.g03, { I1 = 6 }, 40)
+        if i < 5 then task.Wait(30) end
+    end
+    for i = 1, 5 do
+        local f = waveAm[i]
+        t10mid.spawn(120, f[1], f[2], true, S.D2, S.g03, { I1 = 8 }, 40)
+        if i < 5 then task.Wait(30) end
+    end
+    ---第二..四波：每波「等 60 → 左 8（10 帧一只）→ 右 8（10 帧一只，紧接左第 8 只）」。
+    ---  t=300..440 / 500..640 / 700..840。
+    for _ = 1, 3 do
+        task.Wait(60)
+        for j = 1, 8 do
+            local e = left8[j]
+            t10mid.spawn(120, e[1], e[2], false, S.D2, S.g03, { I1 = 6 }, 40)
+            if j < 8 then task.Wait(10) end
+        end
+        for j = 1, 8 do
+            local f = right8[j]
+            t10mid.spawn(120, f[1], f[2], true, S.D2, S.g03, { I1 = 8 }, 40)
+            if j < 8 then task.Wait(10) end
+        end
+    end
+    task.Wait(200)                                                  -- //1040
+    task.New(card, function() S.ms6l(card) end)                     -- callAsync("MainSub6L")
+    task.Wait(30)                                                   -- //1070
+    task.New(card, function() S.ms6r(card) end)                     -- callAsync("MainSub6R")
+    task.Wait(120)                                                  -- //1190
+    task.Wait(10)                                                   -- //1200 第一只
+    ---DiveEnemy00B 六排 ×5（y 循环 −512/−576/−640；x 逐排交替 192→−64 / −64→192；
+    ---$I0 循环 2/1/0）。t=1200..1490，每 10 帧一只，共 30 只。
+    local dz = {
+        { -512, 2 }, { -576, 1 }, { -640, 0 },
+        { -512, 2 }, { -576, 1 }, { -640, 0 },
+    }
+    for k, row in ipairs(dz) do
+        for i = 1, 5 do
+            local x = (k % 2 == 1) and (192 - (i - 1) * 64) or (-64 + (i - 1) * 64)
+            t10mid.spawn(60, x, row[1], false, S.D1, S.de00b, { I0 = row[2], I1 = 8, F0 = 0.0 })
+            if not (k == 6 and i == 5) then task.Wait(10) end
+        end
+    end
+    task.Wait(200)                                                  -- //1690
+    task.New(card, function() S.ms7(card) end)                      -- callAsync("MainSub7")
+end
+
+---MainSub6L / MainSub6R：各 25 只 Crow00，x=±216、y=−%RANDF·128，每 6 帧一只。
+t10mid.s04.ms6l = function(card)
+    local S = t10mid.s04
+    for i = 1, 25 do
+        t10mid.spawn(20, 216, -rnd() * 128.0, false, S.D1, S.crow00l, nil, 8)
+        if i < 25 then task.Wait(6) end
+    end
+end
+t10mid.s04.ms6r = function(card)
+    local S = t10mid.s04
+    for i = 1, 25 do
+        t10mid.spawn(20, -216, -rnd() * 128.0, false, S.D1, S.crow00r, nil, 8)
+        if i < 25 then task.Wait(6) end
+    end
+end
+
+---MainSub7：15 只 DiveEnemy01B（$I0/$I1/%F0/%F1 逐只换）+ 3 只 DiveEnemy02B + 三波 Crow01。
+t10mid.s04.ms7 = function(card)
+    local S = t10mid.s04
+    ---每只用的寄存器（原作「先 enmCreate、再 set 下一只的寄存器」，即出生时用的
+    ---就是上一条 set 的值；本表已按「本只使用值」写好）：
+    local use = {   -- { x, $I0, $I1, %F0, %F1, 距上一只帧数 }
+        {   96, 2, 2, 3.1415927, 0.19635,   0 },
+        {  -48, 2, 2, 0.3926991, 0.19635,  20 },
+        {   48, 2, 2, 0.3926991, -0.19635, 20 },
+        {  -98, 2, 2, 0.0,       -0.19635, 20 },
+        {    0, 2, 2, 1.5707964, 0.0,      20 },
+        {  -64, 0, 2, 3.1415927, -0.19635, 60 },
+        {   80, 1, 2, 0.3926991, -0.19635, 20 },
+        {  -16, 0, 2, 0.3926991, 0.19635,  20 },
+        {  130, 1, 2, 3.1415927, 0.19635,  20 },
+        {   32, 0, 2, 1.5707964, 0.0,      20 },
+        {   64, 0, 2, 3.1415927, 0.0,      60 },
+        {  -80, 1, 2, 0.3926991, 0.0,      20 },
+        {   16, 0, 2, 0.3926991, 0.0,      20 },
+        { -128, 1, 2, 0.0,       0.0,      20 },
+        {  -32, 0, 2, 1.5707964, 0.0,      20 },
+    }
+    for _, e in ipairs(use) do
+        task.Wait(e[6])
+        t10mid.spawn(60, e[1], -640, false, S.D1, S.de01b,
+                     { I0 = e[2], I1 = e[3], F0 = e[4], F1 = e[5] })
+    end
+    task.Wait(50)                                                   -- //410
+    t10mid.spawn(60, -96, -512, false, S.D1, S.de02b, { I0 = 0, I1 = 2, F0 = -1.5707964, F1 = 0.0 })
+    task.Wait(300)                                                  -- //710
+    t10mid.spawn(60,  96, -512, false, S.D1, S.de02b, { I0 = 0, I1 = 2, F0 = -1.5707964, F1 = 0.0 })
+    task.Wait(300)                                                  -- //1010
+    t10mid.spawn(60,   0, -512, false, S.D1, S.de02b, { I0 = 0, I1 = 2, F0 = -1.5707964, F1 = 0.0 })
+    task.Wait(660)                                                  -- //1670
+    task.New(card, function() S.ms8l(card) end)
+    task.Wait(60)                                                   -- //1730
+    task.New(card, function() S.ms8r(card) end)
+    task.Wait(200)                                                  -- //1930
+    task.New(card, function() S.ms8l(card) end)
+    task.Wait(60)                                                   -- //1990
+    task.New(card, function() S.ms8r(card) end)
+    task.Wait(200)                                                  -- //2190
+    task.New(card, function() S.ms8l(card) end)
+    task.Wait(60)                                                   -- //2250
+    task.New(card, function() S.ms8r(card) end)
+end
+
+---MainSub8L / MainSub8R：各 25 只 Crow01，x=±216、y=−%RANDF·128，每 12 帧一只。
+t10mid.s04.ms8l = function(card)
+    local S = t10mid.s04
+    for i = 1, 25 do
+        t10mid.spawn(20, 216, -rnd() * 128.0, false, S.D1, S.crow01l, nil, 8)
+        if i < 25 then task.Wait(12) end
+    end
+end
+t10mid.s04.ms8r = function(card)
+    local S = t10mid.s04
+    for i = 1, 25 do
+        t10mid.spawn(20, -216, -rnd() * 128.0, false, S.D1, S.crow01r, nil, 8)
+        if i < 25 then task.Wait(12) end
+    end
+end
+
+---道中总时间轴（main 的 callAsync MainSub1 / MainSub4）。
+t10mid.s04.run = function(card)
+    local S = t10mid.s04
+    task.New(card, function() S.ms1(card) end)                      -- callAsync("MainSub1")
+    task.New(card, function() S.ms4(card) end)                      -- callAsync("MainSub4")
+end
+
+---挂到空 boss「ea」上的一张耐久符卡（与 stage01/02/03/06 道中同一套注册方式）。
+---时长：最后一批 Crow01 在道中开始后约 8328 帧 ⇒ 150 秒留余量。
+boss.Define("ea", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s04card = boss.card.New("四道中「妖怪の山」", 150, 150, 150, 10000000)
+function t10mid.s04card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s04card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s04.run(self) end)
+end
+function t10mid.s04card:frame() end
+function t10mid.s04card:render() end
+function t10mid.s04card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s04card, "ea" } }, LEVEL, "四道中「妖怪の山」", 3683)
+--=====================================
+-- 十、stage05 道中（河童の渓谷：Cir 妖精群 + Girl 妖精群）—— 原生 LuaSTG「道中搬运卡」
+--   原作 `data/stage05.ecl` 的 main 派生段：callAsync MainSub1 / MainSubMBoss。
+--   MainSub1→2→3→(4/5/6/7)，MainSub7 再叫一次 MainSub5；MainSubMBoss 等 3800 帧出
+--   中 BOSS，中 BOSS 死后再 callAsync MainSub8→(9/10/11)。本仓库把中 BOSS 单独做成
+--   另一张卡（组 9），所以这里跳过 MBoss 本体，只在 3800 帧后用固定等待接 MainSub8
+--   （近似：原作是 `deathWait`，等中 BOSS 死；见 t10mid.s05.MBOSS_WAIT）。
+--
+--   只做 Lunatic 行：etCountD/etSpeedD 取第 4/8 项、diffI/diffF 取第 4 项、
+--   diffWait(a,b,c,d) 取第 4 项；`!L`/`!HL` 块生效，`!E`/`!EN`/`!H` 块跳过。
+--   stage05 的道中**没有**章节 rank 缩放。
+--
+--   跳过 / 近似（都写在对应位置）
+--     · `MapleEnemy`（main 里一只纯观感敌机，无弹幕）——跳过；
+--     · `MBoss`/`MainSubMBoss`（t≈3800 才出场的中 BOSS）——本卡不移植 BOSS；
+--     · `setHurtbox/setHitbox/setInvuln/unknown361/flagSet/anm*/playSound/drop*/
+--       计时），其余按无效果处理，但占的 wait 边界原样保留；
+--     · 妖精贴图一律 `servant`（原作 anmSetSprite 的色号只决定敌人外形）；
+--     · 掉落：原作 `dropMain(N)` + enmCreate 第 6 参 `itemDropType`；这里按敌人名的
+--       色前缀折成 {信仰,P,点} 近似表（D 表），未着色的一律按 R。
+--
+--   ★ 关键语义（照复原源码；改代码前先读）
+--     · 世界位置 = base + offset；enmCreate/enmCreateA/M 都把出生点写进 offsetMotion。
+--     · `xxxL` 后缀（如 Girl00L）是原作**手工镜像**的右侧版（入场角不同）——它不用
+--       enmCreateM，`%ANGLE_PLAYER` 也不该被折角，所以必须单独一套行为；
+--       而 MainSub5/10/11 的右侧用 `enmCreateM`（镜像标志），走 `t10mid.mirror`。
+--     · `%RAND` 是**有符号** 32 位随机（可负），`%RAND%n` 照 C 的 `%` 语义。
+--     · `etAngle(slot,a,step)` 同时写基准角与角步长 ⇒ 只改基准角时 step 要照抄。
+--     · `etOn` = fire_slot；本框架 pattern 槽/transform 记录全在上面的 et_* 运行时里。
+--=====================================
+t10mid.s05 = {}
+
+---掉落近似（原作 dropMain：R→1、B→2、G→3、Y→0；Dropitem_PFP 用 {信仰,P,点}）。
+t10mid.s05.DROP = {
+    R = { 0, 1, 1 },
+    B = { 0, 2, 2 },
+    G = { 0, 3, 3 },
+    Y = { 0, 0, 1 },
+}
+
+---血量（原作 enmCreate 第 4 参）与入场无敌帧（setInvuln）。
+t10mid.s05.HP = {
+    Cir00 = 20, Cir01 = 20, Cir02 = 20,
+    Girl00 = 60, Girl00L = 60, Girl01 = 600, Girl02 = 20, Girl03 = 3000, Girl04 = 20,
+}
+t10mid.s05.INV = { Girl01 = 120, Girl03 = 120 }
+
+---跳过中 BOSS 后接 MainSub8 的等待（原作：3800 帧后出中 BOSS，再等它死）。
+t10mid.s05.MBOSS_WAIT = 3800
+
+---========================= Cir 系（入场圆周妖精） =========================
+---Cir00_at：每 (30 ~ 89) 帧一发（L：7 发自机扇形、基准角自机向、角步长 π/48、速 5.0→1.0）。
+t10mid.s05.cir00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 4, f.I0 or 6)
+    et_count(f, 0, 7, 1)                        -- etCountD(0, 1,3,5,7, 1,1,1,1) 的 L 行
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 5.0, 1.0)                    -- etSpeedD(0, 1.4,2.0,4.0,5.0, 1,1,1,1) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)   -- 记录 0（随即被下一条覆盖）
+    et_ex(f, 0, 0, 1, 1, -999999, -999999, -999999.0, -999999.0)   -- 记录 0 = DECEL
+    while true do
+        local w = t10_rand_mod60() + 30         -- wait(($RAND%60)+30)
+        if w > 0 then task.Wait(w) end
+        fire_slot(f, 0)
+    end
+end
+
+---Cir00：入场 moveVel(3π/8, 4.0)，+40 帧后 80 帧内把角转到 −3π/8（速度保持）。
+t10mid.s05.cir00 = function(f)
+    t10mid.vel(f, 1.1780972, 4.0)
+    task.New(f, function() t10mid.s05.cir00_at(f) end)
+    task.Wait(40)
+    t10mid.vel_time(f, 80, 0, -1.1780972, -999999)
+end
+
+---Cir01_at：每 (10 ~ 49) 帧一发（L：5 发环、角步长 π/48、速 4.0→1.0）。
+t10mid.s05.cir01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 2); et_sprite(f, 0, 3, f.I0 or 2)
+    et_count(f, 0, 5, 1)                        -- etCountD(0, 5,5,5,5, 1,1,1,1) 的 L 行
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 4.0, 1.0)                    -- etSpeedD(0, 1.5,3.0,3.5,4.0, 1,1,1,1) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 0, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        local w = t10_imod(t10_randmod(), 40) + 10   -- !L: wait(%RAND%40+10)
+        if w > 0 then task.Wait(w) end
+        fire_slot(f, 0)
+    end
+end
+
+---Cir01：与 Cir00 同一条入场运动（原作两份代码逐条相同）。
+t10mid.s05.cir01 = function(f)
+    t10mid.vel(f, 1.1780972, 4.0)
+    task.New(f, function() t10mid.s05.cir01_at(f) end)
+    task.Wait(40)
+    t10mid.vel_time(f, 80, 0, -1.1780972, -999999)
+end
+
+---Cir02_at：等 $I1 帧后**只打一发**（L：4 发 × 6 环、基准角 π/2、速 5.0→1.0）。
+---   $I1 在同排内逐只 +5 ⇒ 15 只排成一条由 0 递增到 70 的错峰。
+t10mid.s05.cir02_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 4, f.I0 or 13)
+    et_count(f, 0, 4, 6)
+    et_angle(f, 0, 1.5707964, 0.0)
+    et_speed(f, 0, 5.0, 1.0)                    -- !HL: etSpeed(0, 5.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 0, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    if (f.I1 or 0) > 0 then task.Wait(f.I1) end
+    fire_slot(f, 0)
+end
+
+---Cir02：入场运动与 Cir00 相同。
+t10mid.s05.cir02 = function(f)
+    t10mid.vel(f, 1.1780972, 4.0)
+    task.New(f, function() t10mid.s05.cir02_at(f) end)
+    task.Wait(40)
+    t10mid.vel_time(f, 80, 0, -1.1780972, -999999)
+end
+
+---========================= Girl 系（俯冲妖精） =========================
+---Girl00_at：一次性环形弹（L：16 发 × 3 环、基准角自机向、速 3.3→0.3，
+---   外加「记录 2 = kind 128、i0 60、i1 1、f0 0.0、f1 2.5」的变换程序）。
+t10mid.s05.g00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 2); et_sprite(f, 0, 4, 2)
+    et_count(f, 0, 16, 3)                       -- etCountD(0, 3,16,16,16, 1,1,2,3) 的 L 行
+    et_angle(f, 0, 0.0, 0.0)
+    et_speed(f, 0, 3.3, 0.3)                    -- etSpeedD(0, 0.3,0.3,1.3,3.3, 0.3,0.3,0.3,0.3) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 1, 1, 1, -999999, -999999, -999999.0, -999999.0)
+    et_ex(f, 0, 2, 0, 128, 60, 1, 0.0, 2.5)     -- !L：记录 2
+    fire_slot(f, 0)
+end
+
+---Girl00：45° 入场、$I0 帧内减速停下、再等 $I0 帧、朝自机 40 帧加速到 2.0，出弹一次。
+t10mid.s05.g00 = function(f)
+    t10mid.vel(f, 0.7853982, f.F0 or 5.0)
+    t10mid.vel_time(f, f.I0 or 40, 0, -999999, 0.0)
+    task.Wait(f.I0 or 40)
+    t10mid.vel(f, t10_angle_player(f), 0.0)
+    t10mid.vel_time(f, 40, 0, -999999, 2.0)
+    task.New(f, function() t10mid.s05.g00_at(f) end)
+end
+
+---Girl00L：Girl00 的手工镜像版（135° 入场）。
+t10mid.s05.g00l = function(f)
+    t10mid.vel(f, 2.3561945, f.F0 or 5.0)
+    t10mid.vel_time(f, f.I0 or 40, 0, -999999, 0.0)
+    task.Wait(f.I0 or 40)
+    t10mid.vel(f, t10_angle_player(f), 0.0)
+    t10mid.vel_time(f, 40, 0, -999999, 2.0)
+    task.New(f, function() t10mid.s05.g00_at(f) end)
+end
+
+---Girl01_at：槽 1（16 发扇形、基准角 %F0+π、角步长 π/12、速 3.0）；每 8 帧把基准角
+---   +4.0 弧度（validRad 折回），转 39 拍。%F0/%F1 由 Girl01 用 callAsync 参数传给本线程。
+t10mid.s05.g01_at = function(f)
+    local a = t10_wrap((f.F0 or 0.0) + TH10_PI)
+    et_new(f, 1); et_aim(f, 1, 1); et_sprite(f, 1, 5, 2)
+    et_count(f, 1, 16, 1)
+    et_angle(f, 1, a, 0.2617994)
+    et_speed(f, 1, 3.0, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        et_angle(f, 1, a, 0.2617994)
+        fire_slot(f, 1)
+        a = t10_wrap(a + 4.0)
+        task.Wait(8)
+        n = n - 1
+    end
+end
+
+---Girl01_at2：槽 0（单发、基准角 %F0、速 3.5）；每 4 帧一发、基准角 +4.0 弧度；
+---   内层 10→9 拍、圈间等 8 帧（L）、外层 4→3 圈。
+t10mid.s05.g01_at2 = function(f)
+    local a = t10_wrap(f.F0 or 0.0)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 5, 6)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, a, 0.0)
+    et_speed(f, 0, 3.5, 0.8)                    -- etSpeedD(0, 1.5,1.5,2.5,3.5, 0.8,0.8,0.8,0.8) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local outer = 4 - 1
+    while outer ~= 0 do
+        local n = 10 - 1
+        while n ~= 0 do
+            et_angle(f, 0, a, 0.0)
+            fire_slot(f, 0)
+            a = t10_wrap(a + 4.0)
+            task.Wait(4)
+            n = n - 1
+        end
+        task.Wait(8)                            -- diffWait(32,32,16,8) 的 L 行
+        outer = outer - 1
+    end
+end
+
+---Girl01：直下入场（π/2、速 5.0）60 帧内停下；+60 起两条 _at 线程；+380 转向 π/2、
+---   加速到 2.0。setInvuln(120) ⇒ 入场 120 帧无敌。
+t10mid.s05.g01 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s05.g01_at(f) end)
+    task.New(f, function() t10mid.s05.g01_at2(f) end)
+    task.Wait(320)
+    t10mid.vel_time(f, 40, 4, 1.5707964, 2.0)
+end
+
+---Girl02_at：单发自机狙（基准角自机向、速 5.0）；L：立即首发，之后每 20~69 帧一发，
+---   共 59 发（计数器 60 → deci/jmpNeq ⇒ 跑 59 圈）。
+t10mid.s05.g02_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 2); et_sprite(f, 0, 12, 6)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 5.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 60 - 1
+    while n ~= 0 do
+        local w = t10_imod(t10_randmod(), 50) + 20   -- !L: wait(%RAND%50+20)
+        if w > 0 then task.Wait(w) end
+        fire_slot(f, 0)
+        n = n - 1
+    end
+end
+
+---Girl02：45° 入场速 6.0；+30 转向 π、减速到 1.0；+90 转向 −π/4、加速到 5.0。
+t10mid.s05.g02 = function(f)
+    task.New(f, function() t10mid.s05.g02_at(f) end)
+    t10mid.vel(f, 0.7853982, 6.0)
+    task.Wait(30)
+    t10mid.vel_time(f, 60, 0, 3.1415927, 1.0)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, -0.7853982, 5.0)
+end
+
+---Girl03_at：槽 1（16 发扇形、基准角**每拍重算** %ANGLE_PLAYER+π、角步长 π/10、速 3.0）；
+---   每 8 帧一拍，共 39 拍。
+t10mid.s05.g03_at = function(f)
+    et_new(f, 1); et_aim(f, 1, 1); et_sprite(f, 1, 5, 2)
+    et_count(f, 1, 16, 1)
+    et_angle(f, 1, 0.0, 0.2617994)
+    et_speed(f, 1, 3.0, 1.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        et_angle(f, 1, t10_wrap(t10_angle_player(f) + TH10_PI), 0.31415927)
+        fire_slot(f, 1)
+        task.Wait(8)
+        n = n - 1
+    end
+end
+
+---Girl03_at2：槽 0（8 发同心不同速的「直线流」、基准角 %RANDRAD、速 3.5→0.8）；
+---   每 1 帧一发，内层 80→79 拍、圈间等 32 帧（L）、外层 4→3 圈。
+t10mid.s05.g03_at2 = function(f)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 5, 6)
+    et_count(f, 0, 1, 8)                        -- etCountD(0, 1,1,1,1, 3,3,5,8) 的 L 行
+    et_angle(f, 0, 0.0, 0.0)
+    et_speed(f, 0, 3.5, 0.8)                    -- etSpeedD(0, 1.5,1.5,2.5,3.5, 0.8,0.8,0.8,0.8) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local outer = 4 - 1
+    while outer ~= 0 do
+        local n = 80 - 1                        -- diffI([8], 30,80,80,80) 的 L 行
+        while n ~= 0 do
+            et_angle(f, 0, rndrad(), 0.0)       -- etAngle(0, %RANDRAD, 0.0)
+            fire_slot(f, 0)
+            task.Wait(1)
+            n = n - 1
+        end
+        task.Wait(32)                           -- diffWait(80,32,32,32) 的 L 行
+        outer = outer - 1
+    end
+end
+
+---Girl03：与 Girl01 同一条入场运动 + setInvuln(120)。
+t10mid.s05.g03 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 4, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s05.g03_at(f) end)
+    task.New(f, function() t10mid.s05.g03_at2(f) end)
+    task.Wait(320)
+    t10mid.vel_time(f, 40, 4, 1.5707964, 2.0)
+end
+
+---Girl04_at：L：5 发散形自机狙（角步长 π/8、速 3.5）；首发等 60~179 帧，共 59 发。
+t10mid.s05.g04_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 12, 6)
+    et_count(f, 0, 5, 1)                        -- etCountD(0, 1,1,3,5, 1,1,1,1) 的 L 行
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 3.5, 1.0)                    -- etSpeedD(0, 1.5,2.5,3.0,3.5, 1,1,1,1) 的 L 行
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 60 - 1
+    while n ~= 0 do
+        local w = t10_imod(t10_randmod(), 120) + 60  -- wait(%RAND%120+60)
+        if w > 0 then task.Wait(w) end
+        fire_slot(f, 0)
+        n = n - 1
+    end
+end
+
+---Girl04：与 Girl02 同一条运动。
+t10mid.s05.g04 = function(f)
+    task.New(f, function() t10mid.s05.g04_at(f) end)
+    t10mid.vel(f, 0.7853982, 6.0)
+    task.Wait(30)
+    t10mid.vel_time(f, 60, 0, 3.1415927, 1.0)
+    task.Wait(60)
+    t10mid.vel_time(f, 60, 0, -0.7853982, 5.0)
+end
+
+
+---========================= 时间轴 =========================
+---道中锚点在 (0,0)（原作 main 那条 ECL 敌机不移动），所以 enmCreate 的 x/y 即绝对坐标。
+t10mid.s05.BEH = {
+    Cir00 = t10mid.s05.cir00, Cir01 = t10mid.s05.cir01, Cir02 = t10mid.s05.cir02,
+    Girl00 = t10mid.s05.g00, Girl00L = t10mid.s05.g00l,
+    Girl01 = t10mid.s05.g01, Girl02 = t10mid.s05.g02,
+    Girl03 = t10mid.s05.g03, Girl04 = t10mid.s05.g04,
+}
+
+---名字 = 色前缀（B/R/G/Y，决定掉落表）+ 基础名（决定行为/血量）。
+---「xxxL」后缀是原作**手工镜像**的右侧版（别和 enmCreateM 的镜像标志搞混）。
+t10mid.s05.one = function(name, x, y, mirror, src)
+    local S = t10mid.s05
+    local base, col = name, "R"
+    if not S.BEH[name] then col = name:sub(1, 1); base = name:sub(2) end
+    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0)
+end
+
+---色序串 → 敌人名表：S.n("BBBRR", "Girl02") = { "BGirl02","BGirl02","BGirl02","RGirl02","RGirl02" }。
+t10mid.s05.n = function(seq, base)
+    local t = {}
+    for i = 1, #seq do t[i] = seq:sub(i, i) .. base end
+    return t
+end
+---按「下标 → src」取值的辅助（配对排里两只的 $I/%F 不同）。
+t10mid.s05.idx = function(t) return function(i) return t[i] end end
+---Girl01 两只一对的 %F0/%F1（原作逐只 setf；Girl01_at / _at2 拿它当栈参数）。
+t10mid.s05.G01 = { { F0 = 1.178097, F1 = 0.024544 }, { F0 = 1.963495, F1 = -0.024544 } }
+t10mid.s05.g01src = t10mid.s05.idx(t10mid.s05.G01)
+---Cir02 每排内 $I1 逐只 +5（= wait($I1) 的错峰帧数）。
+t10mid.s05.cir2src = function(i) return { I0 = 13, I1 = (i - 1) * 5 } end
+t10mid.s05.CIR0SRC = { I0 = 6 }
+t10mid.s05.CIR1SRC = { I0 = 2 }
+t10mid.s05.G00SRC = { { F0 = 5, I0 = 40 }, { F0 = 5, I0 = 60 }, { F0 = 5, I0 = 80 } }
+t10mid.s05.G00S10 = t10mid.s05.G00SRC[1]
+t10mid.s05.G00S20 = t10mid.s05.G00SRC[2]
+t10mid.s05.G00S30 = t10mid.s05.G00SRC[3]
+t10mid.s05.G00R = { F0 = 5, I0 = 60 }
+
+---一把「排」：{ 距上一排的帧数, x, y, mirror, 排内帧距, 名字表, src }。
+---  x 可是数字（整排同 x）或数组（逐只不同 x）；src 可是表、表数组或函数。
+t10mid.s05.row = function(dt, x, y, mirror, gap, names, src)
+    if dt > 0 then task.Wait(dt) end
+    for i = 1, #names do
+        local sx = (type(x) == "table") and x[i] or x
+        local ss = src
+        if type(src) == "function" then ss = src(i)
+        elseif type(src) == "table" and type(src[1]) == "table" then ss = src[i] end
+        t10mid.s05.one(names[i], sx, y, mirror, ss)
+        if i < #names and gap > 0 then task.Wait(gap) end
+    end
+end
+
+---MainSub1：t=160 起 4 排 Cir00（左 −192 / 右镜像 192 / 左 −144 / 右镜像 144），每 8 帧一只。
+t10mid.s05.ms1 = function(card)
+    local S = t10mid.s05
+    S.row(160, -192.0, -24.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir00"), { I0 = 6 })
+    S.row(48, 192.0, -24.0, true, 8, S.n("BBBBBRRBBRRRRRR", "Cir00"), { I0 = 6 })
+    S.row(40, -144.0, -24.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir00"), { I0 = 6 })
+    S.row(48, 144.0, -24.0, true, 8, S.n("BBBBBRRBBRRRRGG", "Cir00"), { I0 = 6 })
+    task.New(card, function() S.ms2(card) end)
+end
+
+---MainSub2：t=240 起 Girl00 三批（$I0 = 40/60/80 决定减速时长），左 −216 + 右 216L。
+t10mid.s05.ms2 = function(card)
+    local S = t10mid.s05
+    S.row(240, { -216.0, 216.0 }, 64.0, false, 15, { "BGirl00", "BGirl00L" }, { F0 = 5, I0 = 40 })
+    S.row(30, { -216.0, 216.0 }, 96.0, false, 15, { "BGirl00", "BGirl00L" }, { F0 = 5, I0 = 40 })
+    S.row(30, { -216.0, 216.0 }, 48.0, false, 15, { "BGirl00", "BGirl00L" }, { F0 = 5, I0 = 40 })
+    S.row(30, { -216.0, 216.0 }, 64.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 96.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 48.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 64.0, false, 15, { "BGirl00", "BGirl00L" }, { F0 = 5, I0 = 80 })
+    S.row(30, { -216.0, 216.0 }, 96.0, false, 15, { "BGirl00", "BGirl00L" }, { F0 = 5, I0 = 80 })
+    S.row(30, { -216.0, 216.0 }, 48.0, false, 15, { "GGirl00", "GGirl00L" }, { F0 = 5, I0 = 80 })
+    task.New(card, function() S.ms3(card) end)
+end
+
+---MainSub3：t=120 起 4 对 Girl01（$F0/$F1 逐对换），并在 t=720/1040/1180/1500 排 4/5/6/7。
+t10mid.s05.ms3 = function(card)
+    local S = t10mid.s05
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -96.0, 96.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -48.0, 48.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    task.New(card, function() S.ms4(card) end)
+    task.Wait(320)
+    task.New(card, function() S.ms5(card) end)
+    task.Wait(140)
+    task.New(card, function() S.ms6(card) end)
+    task.Wait(320)
+    task.New(card, function() S.ms7(card) end)
+end
+
+---MainSub4：t=30 起 3 对 RGirl00 / RGirl00L（$F0=5.0、$I0=60）。
+t10mid.s05.ms4 = function(card)
+    local S = t10mid.s05
+    S.row(30, { -216.0, 216.0 }, 64.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 96.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 48.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+end
+
+---MainSub5：4 排 Girl02（每排左 5 + 右镜像 5，排内 10 帧一只、排间 0 帧）。
+t10mid.s05.ms5 = function(card)
+    local S = t10mid.s05
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBRR", "Girl02"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBRR", "Girl02"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBBB", "Girl02"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBBB", "Girl02"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBRR", "Girl02"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBRR", "Girl02"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBGG", "Girl02"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBGG", "Girl02"), nil)
+end
+
+---MainSub6：同 MainSub4（再来一遍）。
+t10mid.s05.ms6 = function(card)
+    local S = t10mid.s05
+    S.row(30, { -216.0, 216.0 }, 64.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 96.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+    S.row(30, { -216.0, 216.0 }, 48.0, false, 15, { "RGirl00", "RGirl00L" }, { F0 = 5, I0 = 60 })
+end
+
+---MainSub7：t=120 起 4 对 Girl01，并在 t=360 再喊一次 MainSub5。
+t10mid.s05.ms7 = function(card)
+    local S = t10mid.s05
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -96.0, 96.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    task.New(card, function() S.ms5(card) end)
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -48.0, 48.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+end
+
+---MainSub8：t=120 起 4 对 Girl01、t=1020 一只 Girl03，并在 t=360/1420/1620 排 MainSub9/10/11。
+t10mid.s05.ms8 = function(card)
+    local S = t10mid.s05
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -96.0, 96.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    task.New(card, function() S.ms9(card) end)
+    S.row(120, { -64.0, 64.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(120, { -48.0, 48.0 }, -32.0, false, 60, { "Girl01", "Girl01" }, S.g01src)
+    S.row(300, 0.0, -32.0, false, 0, { "Girl03" }, nil)
+    task.Wait(400)
+    task.New(card, function() S.ms10(card) end)
+    task.Wait(200)
+    task.New(card, function() S.ms11(card) end)
+end
+
+---MainSub9：t=0 起 4 排 Cir01（y=−64），每 8 帧一只。
+t10mid.s05.ms9 = function(card)
+    local S = t10mid.s05
+    S.row(0, -192.0, -64.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir01"), { I0 = 2 })
+    S.row(48, 192.0, -64.0, true, 8, S.n("BBBBBRRBBRRRRRR", "Cir01"), { I0 = 2 })
+    S.row(40, -144.0, -64.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir01"), { I0 = 2 })
+    S.row(48, 144.0, -64.0, true, 8, S.n("BBBBBRRBBRRRRGG", "Cir01"), { I0 = 2 })
+end
+
+---MainSub10：t=0 起 5 排 Cir02（y=−24）；$I1 在这一排内 0,5,10,… 递增（错峰开火）。
+t10mid.s05.ms10 = function(card)
+    local S = t10mid.s05
+    S.row(0, -192.0, -24.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir02"), S.cir2src)
+    S.row(48, 192.0, -24.0, true, 8, S.n("BBBBBRRBBRRRRRR", "Cir02"), S.cir2src)
+    S.row(40, -144.0, -24.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir02"), S.cir2src)
+    S.row(48, 144.0, -24.0, true, 8, S.n("BBBBBRRBBRRRRGG", "Cir02"), S.cir2src)
+    S.row(40, -192.0, -24.0, false, 8, S.n("BBBBRRBBBBRRGG", "Cir02"), S.cir2src)
+end
+
+---MainSub11：4 排 Girl04（每排左 5 + 右镜像 5）。
+t10mid.s05.ms11 = function(card)
+    local S = t10mid.s05
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBBB", "Girl04"), nil)
+    S.row(0, { -216.0, -168.0, -96.0, -128.0, -192.0 }, -24.0, false, 10, S.n("BBBGG", "Girl04"), nil)
+    S.row(0, { 216.0, 168.0, 96.0, 128.0, 192.0 }, -24.0, true, 10, S.n("BBBGG", "Girl04"), nil)
+end
+
+---MainSubMBoss：原作等 3800 帧出中 BOSS，等它死后才叫 MainSub8。
+---本卡的「中 BOSS」是另一张卡（组 9），所以跳过 MBoss 本体，只用 MBOSS_WAIT 近似
+---「开打前的等待」。要更贴近原作节奏就调大它。
+t10mid.s05.msMBoss = function(card)
+    local S = t10mid.s05
+    task.Wait(S.MBOSS_WAIT)
+    task.New(card, function() S.ms8(card) end)
+end
+
+---道中总时间轴（main 的 callAsync MainSub1 / MainSubMBoss）。
+t10mid.s05.run = function(card)
+    local S = t10mid.s05
+    task.New(card, function() S.ms1(card) end)        -- callAsync("MainSub1")
+    task.New(card, function() S.msMBoss(card) end)    -- callAsync("MainSubMBoss")
+end
+
+---挂到空 boss「fa」上的一张耐久符卡（与 stage01/02/03/04/06 道中同一套注册方式）。
+---时长：最后一批妖精（MainSub11，约 t=5740 帧）⇒ 120 秒留余量。
+boss.Define("fa", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s05card = boss.card.New("五道中「洩矢の王国跡」", 120, 120, 120, 10000000)
+function t10mid.s05card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s05card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s05.run(self) end)
+end
+function t10mid.s05card:frame() end
+function t10mid.s05card:render() end
+function t10mid.s05card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s05card, "fa" } }, LEVEL, "五道中「洩矢の王国跡」", 3684)
+--=====================================
+-- 十四、stage07（Extra）道中（妖精群 + 大妖精）—— 原生 LuaSTG「道中搬运卡」
+--   把原作 `data/stage07.ecl` 的**道中段**（`main` 派生的 MainSub1..10：成群的
+--   小妖精 + 三只大妖精 Girl01/Girl03/Girl04 + 六只 Girl02）复刻成**一张**符卡，
+--   挂在一个空的 `img_void` boss 上（与本文件其它道中卡同一套做法）。
+--   **不用 ECL 字节码 VM**：时间轴、出弹、走位全部翻成原生 LuaSTG。
+--
+--   数据来源
+--     · thecl 的原始反汇编（带 TH10 名字表，见本文件顶部）：
+--         thecl -d 10 -r -x -m MAP/th10.eclm stage07.ecl out.txt
+--     · `main` → t=0 `callAsync MainSub1`；t=10000 再叫一次 MainSub1；t=20000 `delete()`。
+--       MainSub1→2→3→4→5→6→7→8→9→10 是**同一条 ECL 敌机上的线程**（callAsync 会把
+--       该线程的时钟归零、坐标仍用同一「道中锚点」）。本关锚点不移动（0,0）⇒
+--       enmCreate 的 x/y 即**绝对坐标**（y 从上往下量，472 = 从下边入场）。
+--
+--   跳过 / 近似（都写在对应位置）
+--     · `MapleEnemy`（main 里一只纯观感敌机）——跳过；
+--     · `MainSub7`：原作在这里 `enmCreateA("MBoss", …)` + dialogRead/dialogWait 后
+--       `deathWait` 等中 BOSS 死。本仓库的中 BOSS 是另一张卡（组 1a = 神奈子），
+--       所以这里只按固定帧数近似「等中 BOSS 打完」，再 callAsync MainSub8。
+--     · `MainSubBoss`（道中末尾出 BOSS 本体）——不移植（本仓库另一张卡）。
+--     · 演出/流程指令（anm*/flagSet/setHurtbox/setHitbox/dropClear/dropExtra/dropArea/
+--       dialog*/playSound/计时）按无效果处理，但它们占的 wait 边界原样保留。
+--     · 妖精贴图一律 `servant`（原作 anmSetSprite 的色号只决定敌人外形）；
+--       弹样式一律 `ball_mid`（原作 etSprite 第 1 参是精灵号，这里只保留第 2 参色号）。
+--     · 掉落：原作 `dropMain(N)` 的 N 就是名字的色前缀（R→1/B→2/G→3/Y→0），
+--       这里折成 {信仰,P,点} 近似表（D 表）。唯一例外：原作 `YGirl06b` 的
+--       包装子程序没有 dropMain（近似按 Y 处理）。
+--     · `wait(%RAND % 10)`（Girl05/06 的开火错峰）：原作 `%RAND` 有符号、C 的 `%`
+--       结果也可能为负，而 VM 的 wait 是 `clock -= n` ⇒ 负值会让线程的时钟**前跳**。
+--       本文件按其它道中卡同款写法只处理「> 0 才等」，负值当 0（最多影响 Girl05/06
+--       三发弹的几帧错峰，见 t10mid.s07.go05_at / go06_at）。
+--
+--   ★ 关键语义（照复原源码；改代码前先读）
+--     · 世界位置 = base + offset；enmCreate/enmCreateA/M 都把出生点写进 offsetMotion。
+--     · 本关**没有难度分级**（整关一条 rank 判据都没有）⇒ 所有指令按原样执行。
+--     · `etAngle(slot,a,step)` 同时写基准角与角步长 ⇒ 只改基准角时 step 要照抄。
+--     · `etEx(0,0,1,4,…)` 的记录 kind=4 在复原源码里落到 default（空操作）⇒
+--       本关道中的弹一律**匀速直线**（对照 stage05 的 Cir00_at 是 kind=1 DECEL）。
+--     · `deci(v); jmpNeq(L,0)` = 先减再判 ⇒ 初值 N 跑 N−1 圈。
+--     · `killAllAsync` = THlib 的 `task.Clear(o, true)`（停掉本敌机除当前外的线程）。
+--     · 随机数**消耗顺序是行为的一部分**：`%RAND`（有符号 32 位 = 两个 16 位拼）
+--       与 `%RANDF`（[0,1)）/`%RANDRAD`（[−π,π)）按原作顺序调用。
+--=====================================
+t10mid.s07 = {}
+
+---掉落近似（原作 dropMain：R→1、B→2、G→3、Y→0；Dropitem_PFP 用 {信仰,P,点}）。
+t10mid.s07.DROP = {
+    R = { 0, 1, 1 },
+    B = { 0, 2, 2 },
+    G = { 0, 3, 3 },
+    Y = { 0, 0, 1 },
+}
+
+---血量（原作 enmCreate 第 4 参）与入场无敌帧（setInvuln）。
+t10mid.s07.HP = {
+    Cir00 = 20, Cir00b = 20, Cir00c = 20,
+    Girl00 = 200, Girl01 = 2000, Girl02 = 1400, Girl03 = 2000,
+    Girl04 = 600, Girl05 = 20, Girl06 = 20, Girl06b = 200,
+}
+t10mid.s07.INV = {
+    Cir00 = 8, Cir00b = 30, Cir00c = 30,
+    Girl00 = 8, Girl01 = 80, Girl02 = 120, Girl03 = 60, Girl04 = 60,
+    Girl05 = 8, Girl06 = 8, Girl06b = 8,
+}
+
+---跳过中 BOSS 后接 MainSub8 的等待（原作：MainSub7 等 MBoss 死；本卡用固定帧近似）。
+t10mid.s07.MBOSS_WAIT = 3800
+
+---========================= Cir 系（入场圆周妖精） =========================
+---Cir00_at：每 15 帧一发（单发、自机狙、角步长 π/48、速 5.0→1.0）。
+t10mid.s07.cir00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 6)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 5.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        task.Wait(15)
+        fire_slot(f, 0)
+    end
+end
+
+---Cir00：t=30 朝下速 4.0；t=60 起 60 帧内把角转到 0（速度保持 4.0）。
+t10mid.s07.cir00 = function(f)
+    task.New(f, function() t10mid.s07.cir00_at(f) end)
+    task.Wait(30)
+    t10mid.vel(f, 1.5707964, 4.0)
+    task.Wait(30)
+    t10mid.vel_time(f, 60, 0, 0.0, 4.0)
+    task.Wait(60)
+end
+
+---Cir00b_at：先等 10 帧（整个 pattern 都在这一刻配好）；之后每 15 帧一发：
+---   基准角 = 随机角、速 = 1.0 + %RANDF×0.6。
+t10mid.s07.cir00b_at = function(f)
+    task.Wait(10)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, 10)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        task.Wait(15)
+        et_angle(f, 0, rndrad(), 0.0)
+        et_speed(f, 0, 1.0 + rnd() * 0.6, 0.0)
+        fire_slot(f, 0)
+    end
+end
+
+---Cir00b：朝左速 2.0；+120 起 60 帧内把角转到 0。
+t10mid.s07.cir00b = function(f)
+    task.New(f, function() t10mid.s07.cir00b_at(f) end)
+    t10mid.vel(f, -1.5707964, 2.0)
+    task.Wait(120)
+    t10mid.vel_time(f, 60, 0, 0.0, 2.0)
+    task.Wait(60)
+end
+
+---Cir00c_at：与 Cir00b_at 同一条，唯每发间隔 20 帧。
+t10mid.s07.cir00c_at = function(f)
+    task.Wait(10)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, 10)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.06544985)
+    et_speed(f, 0, 2.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        task.Wait(20)
+        et_angle(f, 0, rndrad(), 0.0)
+        et_speed(f, 0, 1.0 + rnd() * 0.6, 0.0)
+        fire_slot(f, 0)
+    end
+end
+
+---Cir00c：朝左速 2.0；+120 起 60 帧内把角转到 −π/4。
+t10mid.s07.cir00c = function(f)
+    task.New(f, function() t10mid.s07.cir00c_at(f) end)
+    t10mid.vel(f, -1.5707964, 2.0)
+    task.Wait(120)
+    t10mid.vel_time(f, 60, 0, -0.7853982, 2.0)
+    task.Wait(60)
+end
+
+---========================= Girl 系（俯冲妖精） =========================
+---Girl00_at：一共 3 拍（$I0=4 → 3 圈），每拍等 30 帧后打一发 5 连扇形
+---   （自机狙、角步长 π/8、速 5.0→4.0）。
+t10mid.s07.go00_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 10)
+    et_count(f, 0, 5, 1)
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 5.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 4 - 1
+    while n ~= 0 do
+        task.Wait(30)
+        fire_slot(f, 0)
+        n = n - 1
+    end
+end
+
+---Girl00：朝下速 6.0、30 帧内减速停下；+160 朝自机、60 帧加速到 2.0。
+t10mid.s07.go00 = function(f)
+    task.New(f, function() t10mid.s07.go00_at(f) end)
+    t10mid.vel(f, 1.5707964, 6.0)
+    t10mid.vel_time(f, 30, 0, -999999, 0.0)
+    task.Wait(160)
+    t10mid.vel(f, t10_angle_player(f), 0.0)
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+end
+
+---Girl01_at：39 拍（$I0=40 → 39 圈），每拍等 10 帧后打一发 8 连扇
+---   （自机狙、角步长每次重算 = π/8 + %RANDRAD/32、速 3.0→4.0）。
+t10mid.s07.go01_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 3, 2)
+    et_count(f, 0, 8, 1)
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 3.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        task.Wait(10)
+        et_angle(f, 0, 0.0, TH10_PI / 8 + rndrad() / 32)
+        fire_slot(f, 0)
+        n = n - 1
+    end
+end
+
+---Girl01_at2：槽 1；9 拍（$I0=10 → 9 圈），每拍等 40 帧后打单发（速 6.0→4.0）。
+t10mid.s07.go01_at2 = function(f)
+    et_new(f, 1); et_aim(f, 1, 0); et_sprite(f, 1, 17, 1)
+    et_count(f, 1, 1, 1)
+    et_angle(f, 1, 0.0, 0.3926991)
+    et_speed(f, 1, 6.0, 4.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 10 - 1
+    while n ~= 0 do
+        task.Wait(40)
+        fire_slot(f, 1)
+        n = n - 1
+    end
+end
+
+---Girl01：朝下速 6.0、40 帧内停下；+40 起两条 _at 线程；+400 朝上、60 帧加速到 2.0。
+t10mid.s07.go01 = function(f)
+    t10mid.vel(f, 1.5707964, 6.0)
+    t10mid.vel_time(f, 40, 0, -999999, 0.0)
+    task.Wait(40)
+    task.New(f, function() t10mid.s07.go01_at(f) end)
+    task.New(f, function() t10mid.s07.go01_at2(f) end)
+    task.Wait(400)
+    t10mid.vel(f, -1.5707964, 0.0)
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+end
+
+---Girl02 的四条 _at：都是「重算基准角/角步长 → 打一发 → 等 N 帧」的循环
+---   （速度每发 = 基值 + %RANDF）。$I0=40 ⇒ 各 39 圈。
+---   at：速 3.0+%RANDF、步长 %RANDRAD/14、等 5 帧；at2：速 3.5、步长 /22、等 15 帧；
+---   at3：速 4.0、步长 /40、等 30 帧；at4：速 5.0、**基准角固定 0**、步长 π/8+%RANDRAD/32、等 60 帧。
+t10mid.s07.go02_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 2)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 3.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        local sp = rnd() * 1.0 + 3.0                -- %RANDF
+        local ab = TH10_PI / 8 + rndrad() / 32      -- %RANDRAD（先）
+        local st = rndrad() / 14                    -- %RANDRAD（后）
+        et_speed(f, 0, sp, 0.0)
+        et_angle(f, 0, ab, st)
+        fire_slot(f, 0)
+        task.Wait(5)
+        n = n - 1
+    end
+end
+
+t10mid.s07.go02_at2 = function(f)
+    et_new(f, 1); et_aim(f, 1, 0); et_sprite(f, 1, 0, 2)
+    et_count(f, 1, 1, 1)
+    et_angle(f, 1, 0.0, 0.3926991)
+    et_speed(f, 1, 3.0, 4.0)
+    et_ex(f, 1, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        local sp = rnd() * 1.0 + 3.5                -- %RANDF
+        local ab = TH10_PI / 8 + rndrad() / 32      -- %RANDRAD（先）
+        local st = rndrad() / 22                    -- %RANDRAD（后）
+        et_speed(f, 1, sp, 0.0)
+        et_angle(f, 1, ab, st)
+        fire_slot(f, 1)
+        task.Wait(15)
+        n = n - 1
+    end
+end
+
+t10mid.s07.go02_at3 = function(f)
+    et_new(f, 2); et_aim(f, 2, 0); et_sprite(f, 2, 12, 1)
+    et_count(f, 2, 1, 1)
+    et_angle(f, 2, 0.0, 0.3926991)
+    et_speed(f, 2, 3.0, 4.0)
+    et_ex(f, 2, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        local sp = rnd() * 1.0 + 4.0                -- %RANDF
+        local ab = TH10_PI / 8 + rndrad() / 32      -- %RANDRAD（先）
+        local st = rndrad() / 40                    -- %RANDRAD（后）
+        et_speed(f, 2, sp, 0.0)
+        et_angle(f, 2, ab, st)
+        fire_slot(f, 2)
+        task.Wait(30)
+        n = n - 1
+    end
+end
+
+t10mid.s07.go02_at4 = function(f)
+    et_new(f, 3); et_aim(f, 3, 0); et_sprite(f, 3, 17, 0)
+    et_count(f, 3, 1, 1)
+    et_angle(f, 3, 0.0, 0.3926991)
+    et_speed(f, 3, 3.0, 4.0)
+    et_ex(f, 3, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 40 - 1
+    while n ~= 0 do
+        et_speed(f, 3, rnd() * 1.0 + 5.0, 0.0)
+        et_angle(f, 3, 0.0, TH10_PI / 8 + rndrad() / 32)
+        fire_slot(f, 3)
+        task.Wait(60)
+        n = n - 1
+    end
+end
+
+---Girl02：朝下速 3.0、120 帧内停下；+120 起四条 _at；+600 停火、转向下、60 帧加速到 2.0。
+t10mid.s07.go02 = function(f)
+    t10mid.vel(f, 1.5707964, 3.0)
+    t10mid.vel_time(f, 120, 0, -999999, 0.0)
+    task.Wait(120)
+    task.New(f, function() t10mid.s07.go02_at(f) end)
+    task.New(f, function() t10mid.s07.go02_at2(f) end)
+    task.New(f, function() t10mid.s07.go02_at3(f) end)
+    task.New(f, function() t10mid.s07.go02_at4(f) end)
+    task.Wait(600)
+    t10mid.vel(f, 1.5707964, 0.0)
+    t10_kill_async(f)                               -- killAllAsync()
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+end
+
+---Girl03_at（传入 −π/2）：无限循环，每帧打 3 发（角依次 +2π/3，色 2/4/6；
+---   速 = sin($8)×1.6 + 2.2；$0 每帧 +2π/3+0.1632、$8（初值 π）每帧 +0.206006）。
+t10mid.s07.go03_at = function(f, a0)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 3, 2)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 3.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local a = a0 or 0.0                    -- $0：初值 = 传入的 −π/2
+    local ph = TH10_PI                     -- $8：初值 π
+    while true do
+        et_speed(f, 0, math.sin(ph) * 1.6 + 2.2, 1.0)
+        et_sprite(f, 0, 3, 2); et_angle(f, 0, a, 0.0); fire_slot(f, 0)
+        a = t10_wrap(a + 2.094395)
+        et_sprite(f, 0, 3, 4); et_angle(f, 0, a, 0.0); fire_slot(f, 0)
+        a = t10_wrap(a + 2.094395)
+        et_sprite(f, 0, 3, 6); et_angle(f, 0, a, 0.0); fire_slot(f, 0)
+        a = t10_wrap(a + 2.094395 + 0.1632)
+        ph = t10_wrap(ph + 0.206006)
+        task.Wait(1)
+    end
+end
+
+---Girl03：朝下速 5.0、60 帧内停下；+60 起 Girl03_at；+200 停火、转向下、60 帧加速到 2.0。
+t10mid.s07.go03 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 0, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s07.go03_at(f, -1.5707964) end)
+    task.Wait(200)
+    t10mid.vel(f, 1.5707964, 0.0)
+    t10_kill_async(f)                               -- killAllAsync()
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+end
+
+---Girl04_at：无限循环，每拍把基准角设为自机向、4→3 次「打一发、等 4 帧」，圈间等 20 帧。
+t10mid.s07.go04_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 3); et_sprite(f, 0, 6, 2)
+    et_count(f, 0, 1, 1)
+    et_angle(f, 0, 0.0, 0.3926991)
+    et_speed(f, 0, 3.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    while true do
+        et_angle(f, 0, t10_angle_player(f), 0.0)
+        local n = 4 - 1                             -- pushi(4) + deci/jmpNeq ⇒ 3 圈
+        while n ~= 0 do
+            fire_slot(f, 0)
+            task.Wait(4)
+            n = n - 1
+        end
+        task.Wait(20)
+    end
+end
+
+---Girl04：与 Girl03 同形（速 5.0/60 帧停；+60 起 _at；+300 停火转向下加速 2.0）。
+t10mid.s07.go04 = function(f)
+    t10mid.vel(f, 1.5707964, 5.0)
+    t10mid.vel_time(f, 60, 0, -999999, 0.0)
+    task.Wait(60)
+    task.New(f, function() t10mid.s07.go04_at(f) end)
+    task.Wait(300)
+    t10mid.vel(f, 1.5707964, 0.0)
+    t10_kill_async(f)                               -- killAllAsync()
+    t10mid.vel_time(f, 60, 0, -999999, 2.0)
+end
+
+---Girl05_at：3 拍（$I0=4），每拍「等 %RAND%10 帧 → 打一发 5 连扇形 → 等 30 帧」
+---   （自机狙、角步长 π/64、速 5.0→4.0）。
+t10mid.s07.go05_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 1, 10)
+    et_count(f, 0, 5, 1)
+    et_angle(f, 0, 0.0, 0.049087387)
+    et_speed(f, 0, 5.0, 4.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local n = 4 - 1
+    while n ~= 0 do
+        local w = t10_imod(t10_randmod(), 10)       -- pushi($RAND)%10
+        if w > 0 then task.Wait(w) end
+        fire_slot(f, 0)
+        task.Wait(30)
+        n = n - 1
+    end
+end
+
+---Girl05：朝右（镜像则朝左）速 4.0；+70 起 60 帧内把角转到 3.043418。
+t10mid.s07.go05 = function(f)
+    task.New(f, function() t10mid.s07.go05_at(f) end)
+    t10mid.vel(f, 0.0, 4.0)
+    task.Wait(70)
+    t10mid.vel_time(f, 60, 0, 3.043418, 4.0)
+end
+
+---Girl06_at：先等 %RAND%10 帧，然后 3 拍「打一发 5 连扇形（自机狙、步长 0.03926991）、等 30 帧」。
+t10mid.s07.go06_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 0, 2)
+    et_count(f, 0, 5, 1)
+    et_angle(f, 0, 0.0, 0.03926991)
+    et_speed(f, 0, 1.5, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local w = t10_imod(t10_randmod(), 10)
+    if w > 0 then task.Wait(w) end
+    local n = 4 - 1
+    while n ~= 0 do
+        fire_slot(f, 0)
+        task.Wait(30)
+        n = n - 1
+    end
+end
+
+---Girl06：朝右速 3.0（镜像则朝左）。@go06_at 一样。
+t10mid.s07.go06 = function(f)
+    task.New(f, function() t10mid.s07.go06_at(f) end)
+    t10mid.vel(f, 0.0, 3.0)
+end
+
+---Girl06b_at：与 Girl06_at 同，唯速 1.0→1.0。
+t10mid.s07.go06b_at = function(f)
+    et_new(f, 0); et_aim(f, 0, 0); et_sprite(f, 0, 0, 2)
+    et_count(f, 0, 5, 1)
+    et_angle(f, 0, 0.0, 0.03926991)
+    et_speed(f, 0, 1.0, 1.0)
+    et_ex(f, 0, 0, 1, 4, -999999, -999999, -999999.0, -999999.0)
+    local w = t10_imod(t10_randmod(), 10)
+    if w > 0 then task.Wait(w) end
+    local n = 4 - 1
+    while n ~= 0 do
+        fire_slot(f, 0)
+        task.Wait(30)
+        n = n - 1
+    end
+end
+
+---Girl06b：朝右速 1.0（镜像则朝左）。
+t10mid.s07.go06b = function(f)
+    task.New(f, function() t10mid.s07.go06b_at(f) end)
+    t10mid.vel(f, 0.0, 1.0)
+end
+
+---========================= 时间轴 =========================
+---道中锚点在 (0,0)（原作 main 那条 ECL 敌机不移动），所以 enmCreate 的 x/y 即绝对坐标。
+t10mid.s07.BEH = {
+    Cir00 = t10mid.s07.cir00, Cir00b = t10mid.s07.cir00b, Cir00c = t10mid.s07.cir00c,
+    Girl00 = t10mid.s07.go00, Girl01 = t10mid.s07.go01, Girl02 = t10mid.s07.go02,
+    Girl03 = t10mid.s07.go03, Girl04 = t10mid.s07.go04, Girl05 = t10mid.s07.go05,
+    Girl06 = t10mid.s07.go06, Girl06b = t10mid.s07.go06b,
+}
+
+---名字 = 色前缀（B/R/G/Y，决定掉落表）+ 基础名（决定行为/血量）；
+---   无前缀的（Girl01..06b）按 R。
+t10mid.s07.one = function(name, x, y, mirror, src)
+    local S = t10mid.s07
+    local base, col = name, "R"
+    if not S.BEH[name] then col = name:sub(1, 1); base = name:sub(2) end
+    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0)
+end
+
+---第 1 只立即出、以后每 gap 帧一只，共 n 只（对应原作里「+10:」连排的 enmCreate）。
+t10mid.s07.rep = function(n, name, x, y, mirror, gap)
+    local S = t10mid.s07
+    for i = 1, n do
+        S.one(name, x, y, mirror)
+        if i < n then task.Wait(gap) end
+    end
+end
+t10mid.s07.ms1 = function(card)
+    local S = t10mid.s07
+    task.Wait(300)
+    S.one("BCir00", -128.0, -24.0, false)
+    task.Wait(10)
+    S.rep(5, "BCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(6, "BCir00", 128.0, -24.0, true, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", 128.0, -24.0, true, 10)
+    task.Wait(60)
+    S.one("BCir00", -128.0, -24.0, false)
+    task.Wait(10)
+    S.rep(5, "BCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(6, "BCir00", 128.0, -24.0, true, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", 128.0, -24.0, true, 10)
+    task.New(card, function() S.ms2(card) end)
+end
+
+t10mid.s07.ms2 = function(card)
+    local S = t10mid.s07
+    task.Wait(130)
+    S.one("GCir00b", -128.0, 472.0, false)
+    task.Wait(10)
+    S.rep(8, "GCir00b", -128.0, 472.0, false, 10)
+    task.Wait(10)
+    S.rep(9, "GCir00b", 128.0, 472.0, true, 10)
+    task.Wait(150)
+    S.one("BCir00", 128.0, -24.0, true)
+    task.Wait(10)
+    S.rep(4, "BCir00", 128.0, -24.0, true, 10)
+    task.Wait(60)
+    S.one("BCir00", -128.0, -24.0, false)
+    task.Wait(10)
+    S.rep(4, "BCir00", -128.0, -24.0, false, 10)
+    task.New(card, function() S.ms3(card) end)
+end
+
+t10mid.s07.ms3 = function(card)
+    local S = t10mid.s07
+    task.Wait(160)
+    S.one("RGirl00", -160.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", -80.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 0.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 80.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 160.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", -160.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", -80.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 0.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 80.0, -24.0, false)
+    task.Wait(30)
+    S.one("RGirl00", 160.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", -160.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", -80.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 0.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 80.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 160.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", -160.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", -80.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 0.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 80.0, -24.0, false)
+    task.Wait(30)
+    S.one("BGirl00", 160.0, -24.0, false)
+    task.New(card, function() S.ms4(card) end)
+end
+
+t10mid.s07.ms4 = function(card)
+    local S = t10mid.s07
+    task.Wait(200)
+    S.one("Girl01", 0.0, -24.0, false)
+    task.Wait(200)
+    S.one("BCir00", -128.0, -24.0, false)
+    task.Wait(10)
+    S.rep(5, "BCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", -128.0, -24.0, false, 10)
+    task.Wait(100)
+    S.one("Girl01", 0.0, -24.0, false)
+    task.Wait(200)
+    S.one("BCir00", 128.0, -24.0, true)
+    task.Wait(10)
+    S.rep(5, "BCir00", 128.0, -24.0, true, 10)
+    task.Wait(10)
+    S.rep(3, "GCir00", 128.0, -24.0, true, 10)
+    task.New(card, function() S.ms5(card) end)
+end
+
+t10mid.s07.ms5 = function(card)
+    local S = t10mid.s07
+    task.Wait(110)
+    S.one("BCir00c", -144.0, 472.0, false)
+    task.Wait(10)
+    S.rep(8, "BCir00c", -144.0, 472.0, false, 10)
+    task.Wait(10)
+    S.rep(9, "BCir00c", 144.0, 472.0, true, 10)
+    task.Wait(10)
+    S.rep(9, "BCir00b", -144.0, 472.0, false, 10)
+    task.Wait(10)
+    S.rep(9, "BCir00b", 144.0, 472.0, true, 10)
+    task.Wait(10)
+    S.rep(9, "RCir00b", -144.0, 472.0, false, 10)
+    task.Wait(10)
+    S.rep(9, "RCir00b", 144.0, 472.0, true, 10)
+    task.New(card, function() S.ms6(card) end)
+end
+
+t10mid.s07.ms6 = function(card)
+    local S = t10mid.s07
+    task.Wait(200)
+    S.one("Girl02", 64.0, -24.0, false)
+    task.Wait(180)
+    S.one("Girl02", -64.0, -24.0, false)
+    task.Wait(180)
+    S.one("Girl02", 96.0, -24.0, false)
+    task.Wait(180)
+    S.one("Girl02", -96.0, -24.0, false)
+    task.Wait(180)
+    S.one("Girl02", 128.0, -24.0, false)
+    task.Wait(180)
+    S.one("Girl02", -128.0, -24.0, false)
+    task.Wait(420)
+    task.New(card, function() S.ms7(card) end)
+end
+
+t10mid.s07.ms8 = function(card)
+    local S = t10mid.s07
+    task.Wait(200)
+    S.one("GCir00", -128.0, -24.0, false)
+    task.Wait(10)
+    S.rep(8, "GCir00", -128.0, -24.0, false, 10)
+    task.Wait(10)
+    S.rep(9, "GCir00", 128.0, -24.0, true, 10)
+    task.Wait(100)
+    S.one("Girl03", 0.0, -24.0, false)
+    task.Wait(60)
+    S.one("Girl04", -128.0, -24.0, false)
+    S.one("Girl04", 128.0, -24.0, false)
+    task.Wait(220)
+    task.New(card, function() S.ms9(card) end)
+end
+
+t10mid.s07.ms9 = function(card)
+    local S = t10mid.s07
+    task.Wait(120)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(60)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(40)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(40)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(30)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(30)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(30)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("RGirl05", -224.0, 32.0, false)
+    task.Wait(10)
+    S.one("BGirl05", -224.0, 32.0, false)
+    task.Wait(30)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("RGirl05", 224.0, 32.0, true)
+    task.Wait(10)
+    S.one("BGirl05", 224.0, 32.0, true)
+    task.Wait(100)
+    S.one("Girl03", 0.0, -24.0, false)
+    task.Wait(60)
+    S.one("Girl04", -128.0, -24.0, false)
+    S.one("Girl04", 128.0, -24.0, false)
+    task.New(card, function() S.ms10(card) end)
+end
+
+t10mid.s07.ms10 = function(card)
+    local S = t10mid.s07
+    task.Wait(300)
+    S.one("BGirl06", -224.0, 224.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 224.0, false, 10)
+    S.one("BGirl06", 224.0, 224.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 224.0, true, 10)
+    S.one("BGirl06", -224.0, 192.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 192.0, false, 10)
+    S.one("BGirl06", 224.0, 192.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 192.0, true, 10)
+    S.one("BGirl06", -224.0, 32.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 32.0, false, 10)
+    S.one("BGirl06", 224.0, 32.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 32.0, true, 10)
+    S.one("BGirl06", -224.0, 224.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 224.0, false, 10)
+    S.one("BGirl06", 224.0, 224.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 224.0, true, 10)
+    S.one("BGirl06", -224.0, 128.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 128.0, false, 10)
+    S.one("BGirl06", 224.0, 128.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 128.0, true, 10)
+    S.one("BGirl06", -224.0, 32.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 32.0, false, 10)
+    S.one("BGirl06", 224.0, 32.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 32.0, true, 10)
+    S.one("BGirl06", -224.0, 224.0, false)
+    task.Wait(10)
+    S.rep(5, "BGirl06", -224.0, 224.0, false, 10)
+    S.one("BGirl06", 224.0, 224.0, true)
+    task.Wait(10)
+    S.rep(5, "BGirl06", 224.0, 224.0, true, 10)
+    task.Wait(120)
+    task.New(card, function() S.ms10b(card, 128.0) end)
+    task.New(card, function() S.ms10a(card, 192.0) end)
+    task.New(card, function() S.ms10b(card, 256.0) end)
+    S.one("BGirl06b", -224.0, 64.0, false)
+    task.Wait(30)
+    S.rep(5, "BGirl06b", -224.0, 64.0, false, 30)
+    S.one("BGirl06b", 224.0, 64.0, true)
+    task.Wait(30)
+    S.rep(2, "BGirl06b", 224.0, 64.0, true, 30)
+    task.Wait(30)
+    S.rep(3, "YGirl06b", 224.0, 64.0, true, 30)
+    task.Wait(360)
+    ---callAsync("MainSubBoss")：BOSS 本体不移植（本仓库另一张卡）。
+end
+
+t10mid.s07.ms10a = function(card, y)
+    local S = t10mid.s07
+    S.one("BGirl06b", -224.0, y, false)
+    task.Wait(30)
+    S.rep(5, "BGirl06b", -224.0, y, false, 30)
+    S.one("BGirl06b", 224.0, y, true)
+    task.Wait(30)
+    S.rep(5, "BGirl06b", 224.0, y, true, 30)
+end
+
+t10mid.s07.ms10b = function(card, y)
+    local S = t10mid.s07
+    S.one("BGirl06b", 224.0, y, true)
+    task.Wait(30)
+    S.rep(5, "BGirl06b", 224.0, y, true, 30)
+    S.one("BGirl06b", -224.0, y, false)
+    task.Wait(30)
+    S.rep(5, "BGirl06b", -224.0, y, false, 30)
+end
+
+---MainSub7：原作 enmCreateA("MBoss") + dialogRead(0)/dialogWait/deathWait 后叫 MainSub8。
+---中 BOSS 在本仓库是另一张卡（组 1a），所以这里只用 MBOSS_WAIT 帧近似「等它打完」。
+t10mid.s07.ms7 = function(card)
+    local S = t10mid.s07
+    task.Wait(S.MBOSS_WAIT)
+    task.New(card, function() S.ms8(card) end)
+end
+
+---道中总时间轴（main：t=0 叫 MainSub1、t=10000 再叫一次、t=20000 delete）。
+t10mid.s07.run = function(card)
+    local S = t10mid.s07
+    task.New(card, function() S.ms1(card) end)        -- callAsync("MainSub1")
+    task.Wait(10000)
+    task.New(card, function() S.ms1(card) end)        -- 第二次 callAsync("MainSub1")
+    task.Wait(10000)                                  -- 原作此处 delete()
+end
+
+---挂到空 boss「ga」上的一张耐久符卡（与 stage01..06 道中同一套注册方式）。
+---时长：原作 main 到 20000 帧 delete ⇒ 340 秒留余量。
+boss.Define("ga", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
+t10mid.s07card = boss.card.New("EX道中「ネイティブフェイス」", 340, 340, 340, 10000000)
+function t10mid.s07card:before()
+    self.NotPlayTimeOutSound = true
+    self.colli = false
+    self.no_hp_render = true
+end
+function t10mid.s07card:init()
+    t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
+    task.New(self, function() t10mid.s07.run(self) end)
+end
+function t10mid.s07card:frame() end
+function t10mid.s07card:render() end
+function t10mid.s07card:del() t10mid.clear() end
+boss.card.add({ { t10mid.s07card, "ga" } }, LEVEL, "EX道中「ネイティブフェイス」", 3685)
 --=====================================
 -- 八、stage01 / stage02 / stage05 符卡（原生 LuaSTG；只做 Lunatic 难度行）
 --   逐张对齐原作 ECL（thecl -d 10 -m th10.eclm -r -x 反汇编）。

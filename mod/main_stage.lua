@@ -1349,6 +1349,21 @@ NewStage("TH35", "风神录", 33, function(self)
         ---boss.Define 用的是 editname "aa" ⇒ 建组时带 letter "a"）。
         boss.CreateGroup("a", self.level, "a")
         task.Wait(120)
+        ---组 "b".."g" = stage01/02/03/04/05/07 的道中搬运卡
+        ---（editname "ba".."ga" ⇒ 建组时再带 letter "a"）。
+        boss.CreateGroup("b", self.level, "a")
+        task.Wait(120)
+        boss.CreateGroup("c", self.level, "a")
+        task.Wait(120)
+        boss.CreateGroup("d", self.level, "a")
+        task.Wait(120)
+        boss.CreateGroup("e", self.level, "a")
+        task.Wait(120)
+        ---组 "f"/"g" = stage05 / stage07(Extra) 的道中搬运卡（editname "fa"/"ga"）。
+        boss.CreateGroup("f", self.level, "a")
+        task.Wait(120)
+        boss.CreateGroup("g", self.level, "a")
+        task.Wait(120)
     end)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。
     self:Next(168)
