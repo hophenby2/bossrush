@@ -1,0 +1,8 @@
+{
+  "name": "LuaSTG-x",
+  "version": "20260913",
+  "url": "https://github.com/Xrysnow/LuaSTG-x/releases/download/20260913/LuaSTG-x_release_20260913.zip",
+  "sha256": "d733a967a1167f3a6db0beb3929f66a625c55aae763567a8b528bb7c72d1ab7d",
+  "ndk": "26.3.11579264",
+  "abi": "arm64-v8a"
+}

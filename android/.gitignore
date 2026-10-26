@@ -1,0 +1,6 @@
+.cache/
+build/
+dist/
+*.keystore
+local.properties
+__pycache__/

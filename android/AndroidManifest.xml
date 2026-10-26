@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.bossrush.hd" android:versionCode="2" android:versionName="0.2.0-android">
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <application android:label="Boss Rush HD" android:allowBackup="false"
+        android:hasCode="true" android:extractNativeLibs="true" android:debuggable="true"
+        android:largeHeap="true" android:hardwareAccelerated="true"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar.Fullscreen">
+        <meta-data android:name="android.app.lib_name" android:value="cocos2dlua" />
+        <activity android:name=".BossRushActivity" android:exported="true"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation|uiMode|smallestScreenSize|screenLayout|density"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
