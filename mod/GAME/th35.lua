@@ -63,8 +63,8 @@
 ---     原作 mode 4 的曲线本仓库没有反编译（EnemyEvaluatePositionInterpolation 未复原），
 ---     DECEL 是同类入场曲线里最接近的（th30/th32 的 BOSS 入场也用 DECEL）。
 ---     起点 = 上一张卡把 BOSS 留在的高度（原作 y=144 ⇒ 我们 80），终点 = 原作 y=160 ⇒ 我们 64。
----  2  弹样式是代理：原作 `etSprite(0, 6, $I0)` = TH10 精灵表第 6 号弹、色号 $I0；
----     本仓库没有 TH10 的弹精灵表 ⇒ 取 `ball_mid`，色号 2/4/6/8/9/10 原样沿用。
+---  2  弹样式用本仓库最接近的原生贴图代理：原作 `etSprite(0, 6, $I0)` 的 type 6
+---     对应 `square`。轮廓与颜色组对齐，但不是逐像素相同（见 `T10_STYLE`）。
 ---  3  弹池上限不建模：原作 TH10 全游戏共用 2000 个弹槽（BulletManager.cpp 的
 ---     SpawnSingleBullet 从指针起环形扫 2000 槽；满槽 ⇒ 整波不生、生到一半见底 ⇒ 丢剩下的）。
 ---     本卡一轮要往外挤近 2000 发，真机上会顶到上限 —— 移植版交给引擎自己按边界回收。
@@ -96,6 +96,57 @@ local class = _editor_class["TH35"]
 
 local RAD = 180 / math.pi           -- 弧度 → 角度（引擎的 rot / SetV 是角度制）
 local PI = math.pi
+local bullet = bullet
+
+---TH10 `etSprite(type, color)` → 本项目原生弹样式。type 是原作 bullet type，
+---color 是在该 type 的连续精灵帧里的色号。依据是 bullet.anm 的脚本起点
+---`g_BulletSpriteScriptBase` 与各脚本主弹 `ins_3(spriteN)` 的轮廓/尺寸。
+local T10_STYLE = {
+    [0]  = ball_small,  [1]  = ball_mid_c, [2]  = ball_mid_c,
+    [3]  = ellipse,     [4]  = arrow_small, [5] = grain_b,
+    [6]  = square,      [7]  = arrow_big_c, [8] = grain_d,
+    [9]  = grain_a,     [10] = ellipse,     [11] = star_small,
+    [12] = ball_big,    [13] = ellipse,     [14] = ellipse,
+    [15] = butterfly,   [16] = star_big,    [17] = ball_huge,
+    [18] = ball_light,  [19] = ball_big,    [20] = ellipse,
+    [21] = ellipse,     [22] = butterfly,   [23] = square,
+    [24] = ball_small,  [25] = ball_light,  [26] = ellipse,
+}
+
+---本项目贴图统一是 16 行；这三张表把原作各色组的色号换成本项目行号。
+local T10_C16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
+local T10_C8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
+local T10_C4  = { 2, 3, 10, 12 } -- type17 原图：红、紫、绿、黄
+local T10_C3  = { 16, 1, 2 }
+---色号上限来自连续脚本数：type 12–16/19–22 为 8 色，17 为 4 色，23 为 3 色；
+---18/25 是单帧固定色（蓝/红），其余为 16 色。
+local T10_COLOR_COUNT = {
+    [0]=16, [1]=16, [2]=16, [3]=16, [4]=16, [5]=16, [6]=16, [7]=16,
+    [8]=16, [9]=16, [10]=16, [11]=16, [12]=8, [13]=8, [14]=8, [15]=8,
+    [16]=8, [17]=4, [18]=1, [19]=8, [20]=8, [21]=8, [22]=8, [23]=3,
+    [24]=16, [25]=1, [26]=16,
+}
+local T10_FIXED_COLOR = { [18] = 6, [25] = 2 } -- type18 原图蓝、type25 原图红
+
+local function t10_style(t)
+    t = math.floor(tonumber(t) or 0)
+    return T10_STYLE[t] or ball_small
+end
+
+local function t10_color(i, t)
+    t = math.floor(tonumber(t) or 0)
+    local fixed = T10_FIXED_COLOR[t]
+    if fixed then return fixed end
+    i = math.floor(tonumber(i) or 0)
+    if i < 0 then i = 0 end
+    local n = T10_COLOR_COUNT[t] or 16
+    if i >= n then i = n - 1 end
+    local map = T10_C16
+    if n == 8 then map = T10_C8
+    elseif n == 4 then map = T10_C4
+    elseif n == 3 then map = T10_C3 end
+    return map[i + 1]
+end
 
 ---===== 原作常量（stage06.ecl BossCard5，Lunatic 行）=====
 local CARD_NAME = "「風神様の神徳」"
@@ -108,7 +159,7 @@ local CARD_ID = 3600
 local MAX_LIFE = 8200               -- 原作 lifeSet(8200)（差异 9）
 
 ---弹（BossCard5_atN / at2 共用）
-local BULLET_STYLE = ball_mid       -- 差异 2
+local BULLET_TYPE = 6               -- 原作 etSprite(0, 6, $I0) 的 type 6 → `square`
 local BULLET_INIT_SPEED = 0.001     -- etSpeed(0, 0.001, 1.5)：count2 == 1 ⇒ 出膛速度 = speed1
 local BULLET_ACCEL_FRAMES = 120     -- etEx(…, kind=0x20, int0=120, float0=F, float1=0)
 local F_ATN_BASE = 0.017            -- atN 的每帧加速度基值（Lunatic 行）
@@ -170,7 +221,7 @@ local function th35_bullet_frame(self)
 end
 
 local function spawn_bullet(x, y, angle_deg, delta, wait, color)
-    local b = NewSimpleBullet(BULLET_STYLE, color, x, y,
+    local b = NewSimpleBullet(t10_style(BULLET_TYPE), t10_color(color, BULLET_TYPE), x, y,
             BULLET_INIT_SPEED, angle_deg, false, 0, false, true, nil, nil,
             th35_bullet_frame)
     b.th_wait = wait
@@ -513,9 +564,15 @@ local function t10_tp_advance(b)
         elseif k == TK_CULL then
             b.cull = r.i0
         elseif k == TK_SPRITE then
-            -- 视觉代理：TH10 换弹贴图，本仓库统一 ball_mid ⇒ 只记颜色
+            -- 原作飞行中 etSprite 换 type/color：形状和颜色都要跟随。
             b.color = r.i1
-            if b.eb then b.eb.th10_color = r.i1 end
+            b.type = r.i0
+            local style = t10_style(r.i0)
+            local color = t10_color(r.i1, r.i0)
+            if b.eb then
+                b.eb.th10_color = color
+                bullet.ChangeImage(b.eb, style, color)
+            end
         elseif k == TK_WAIT then
             b.af.wait = true
             b.st.wait = { t = r.i0 }
@@ -721,14 +778,6 @@ local function et_ex(e, slot, rec, allow, kind, i0, i1, f0, f1)
     e.pat[slot].ex[rec] = tp_record(allow, kind, i0, i1, f0, f1)
 end
 
----弹样式代理：本仓库没有 TH10 弹贴图 ⇒ 一律 ball_mid（差异：原作 etSprite 的第 1 参是
----精灵号，第 2 参是色号；这里只保留色号，色号 0 会被夹到 1）。
-local function t10_color(c)
-    if c == nil or c < 1 then return 1 end
-    if c > 16 then return 16 end
-    return c
-end
-
 ---生成一发弹（SpawnSingleBullet）
 local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
     local speed
@@ -766,7 +815,7 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
         angle = ran:Float(p.angle - p.astep, 0) + p.astep
         speed = ran:Float(p.s1 - p.s2, 0) + p.s2
     end
-    local b = NewSimpleBullet(ball_mid, t10_color(p.color),
+    local b = NewSimpleBullet(t10_style(p.type), t10_color(p.color, p.type),
             sx, t10_oy(sy), 0, 0, false, 0, false, true, nil, nil, t10_bullet_frame)
     local tp = {}
     for k = 0, TP_LIMIT - 1 do
@@ -780,7 +829,8 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
         tp = tp, ti = 0, af = {}, st = {}, cull = 10, cancel = 0,
         eb = b,
     }
-    b.t10_color = p.color
+    b.t10_color = t10_color(p.color, p.type)
+    b.t10_type = p.type
     -- 原作在生成当帧就 AdvanceTransformProgram 一次（BulletManager.cpp:767）
     t10_tp_advance(b.tb)
     return true
@@ -1263,8 +1313,8 @@ end
 ---    ★ 原作的随机数**消耗顺序**也是行为的一部分（它决定每一发的角度 / 速度），
 ---      所以下面凡是「原作先算 A 再算 B」的地方都写成两条独立语句，不能交换、
 ---      也不要塞进同一个表构造器（Lua 不保证那里的求值顺序）。
----  · 弹样式：本仓库没有 TH10 的弹贴图 ⇒ 一律 ball_mid（原作 etSprite 的第 1 参是精灵号、
----    第 2 参是色号，这里只保留色号，见 `t10_color`）。
+---  · 弹样式：`etSprite(type, color)` 的第 1 参按 `T10_STYLE` 换成最接近的原生弹型，
+---    第 2 参按该 type 的 16/8/4/3/1 色组换成本项目贴图行（见 `t10_color`）。
 ---  · 子机：`enmCreateA(name,x,y,life,score,item)` 用**绝对**坐标、`enmCreate(name,dx,dy,…)`
 ---    用相对坐标；两者都把创建者的 $I0..$I3 / %F0..%F3 整块拷给子机
 ---    （EnemyEclDispatcher.cpp:1353-1410）。原生版 = `spawn_pod` / `spawn_pod_rel`，
@@ -7504,7 +7554,7 @@ boss.card.add({ { t10mid.s05card, "fa" } }, LEVEL, "五道中「洩矢の王国�
 --     · 演出/流程指令（anm*/flagSet/setHurtbox/setHitbox/dropClear/dropExtra/dropArea/
 --       dialog*/playSound/计时）按无效果处理，但它们占的 wait 边界原样保留。
 --     · 妖精贴图一律 `servant`（原作 anmSetSprite 的色号只决定敌人外形）；
---       弹样式一律 `ball_mid`（原作 etSprite 第 1 参是精灵号，这里只保留第 2 参色号）。
+--       弹样式按原作 etSprite 的 type/color 查 `T10_STYLE` / `t10_color`。
 --     · 掉落：原作 `dropMain(N)` 的 N 就是名字的色前缀（R→1/B→2/G→3/Y→0），
 --       这里折成 {信仰,P,点} 近似表（D 表）。唯一例外：原作 `YGirl06b` 的
 --       包装子程序没有 dropMain（近似按 Y 处理）。

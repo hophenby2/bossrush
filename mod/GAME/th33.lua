@@ -488,6 +488,48 @@ local lstg = lstg
 local VALUE_SET = VALUE_SET
 local Angle, Dist = Angle, Dist
 
+---TH095 的弹色是调色板下标。主弹按 type 选 16 / 8 / 4 色组；本项目贴图统一
+---是 16 行，所以这里先把原作色号换算成本项目的贴图行号。
+local EX_COLOR16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
+local EX_COLOR8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
+local EX_COLOR4  = { 2, 6, 10, 12 }
+local function ex_color(i, t)
+    i = math.floor(tonumber(i) or 0)
+    if i < 0 then i = 0 elseif i > 15 then i = 15 end
+    local map = EX_COLOR16
+    if t == 17 then
+        map = EX_COLOR4
+    elseif t and t >= 12 then
+        map = EX_COLOR8
+    end
+    local k = i + 1
+    if k > #map then k = #map end
+    return map[k]
+end
+
+---TH095 bulletType → 本项目最接近的弹样式。颜色和样式分开处理：sg_style()
+---只返回形状描述，颜色由调用点传原作色号，实际出弹时 ex_color() 只查一次表。
+local SG_STYLE = {
+    [0]  = ball_small,  [1]  = ball_mid_c, [2]  = ball_mid_c,
+    [3]  = ellipse,     [4]  = arrow_small, [5] = grain_b,
+    [6]  = square,      [7]  = arrow_big_c, [8] = grain_d,
+    [9]  = grain_a,     [10] = ellipse,     [11] = star_small,
+    [12] = ball_big,    [13] = ellipse,     [14] = ellipse,
+    [15] = butterfly,   [16] = star_big,    [17] = ball_huge,
+    [18] = ball_light,  [19] = ball_big,    [20] = ellipse,
+    [21] = ellipse,     [22] = butterfly,   [23] = square,
+}
+local SG_DESC = {}
+local function sg_style(t)
+    t = math.floor(tonumber(t) or 0)
+    local d = SG_DESC[t]
+    if not d then
+        d = { SG_STYLE[t] or ball_small, t }
+        SG_DESC[t] = d
+    end
+    return d
+end
+
 local class = {}
 _editor_class["TH33"] = class
 
@@ -1243,7 +1285,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     ---色号照原作：两组分别是 color 4 与 color 5。butterfly 不是 colorful 样式 ⇒
     ---贴图下标 = ceil(色号/2)（Lresources.lua:208 的 LoadImageGroup + bulletStyle.lua:64
     ---的 init），于是两组正好落在 butterfly2 / butterfly3 **两张不同的贴图**上。
-    local RING_COLOR_A, RING_COLOR_B = COLOR.PURPLE, COLOR.DEEP_BLUE
+    local RING_COLOR_A, RING_COLOR_B = ex_color(4, 22), ex_color(5, 22)
 
     ---圈里每一颗自己会**一边转一边减速**（Sub4 的 ins_101 slot0，kind = 0x20 = 极坐标加速，
     ---PhotoBulletSpawnDescriptor.hpp:100；实现在 BulletManager.cpp:822-841 的
@@ -1285,7 +1327,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     local AIM_COUNT = 8
     local AIM_SPEED = 0.8
     local AIM_STYLE = ball_huge
-    local AIM_COLOR = COLOR.PURPLE
+    local AIM_COLOR = ex_color(0, 17)
     local AIM_GAP_BASE, AIM_GAP_STEP, AIM_GAP_MIN = 120, 10, 50
     local AIM_LIMIT = 7                     -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
 
@@ -1571,7 +1613,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local FAN_ACCEL = 1 / 120
     local FAN_ACCEL_FRAMES = 120
     local FAN_STYLE = butterfly
-    local FAN_COLOR = COLOR.PURPLE
+    local FAN_COLOR = ex_color(3, 15)
 
 ---乱枪（ins_94，aimMode 8 = RANDOM）：angle = random(angle ∓ angleStep)、
 ---speed = random(speed2, speed1)（BulletManager.cpp:383-395）。
@@ -1587,7 +1629,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local VOLLEY_ARC = 100
     local VOLLEY_COUNT = 64                 -- ins_94 的 count1
     local VOLLEY_SPEED1, VOLLEY_SPEED2 = 4.0, 0.5
-    local VOLLEY_STYLE = water_drop
+    local VOLLEY_STYLE = ball_mid_c
 
     ---子机的淡入 / 淡出（它在原作里靠「飞出屏幕就回收」，我们照做）。
     local DRONE_FADE_IN = 15
@@ -1678,7 +1720,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         local base = Angle(x, y, player.x, player.y)
         local pa = ran:Float(0, 360)
         local pr = FAN_OFFSET_R * ran:Float(0, 1)
-        NewSimpleBullet(FAN_STYLE, color,
+        NewSimpleBullet(FAN_STYLE, ex_color(color, 15),
                 x + cos(pa) * pr, y + sin(pa) * pr,
                 FAN_SPEED, base, false, 0, false,
                 nil, nil, nil, spear_frame)
@@ -1689,7 +1731,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_volley(x, y, color)
         local center = Angle(x, y, player.x, player.y) + 180
         for _ = 1, VOLLEY_COUNT do
-            NewSimpleBullet(VOLLEY_STYLE, color, x, y,
+            NewSimpleBullet(VOLLEY_STYLE, ex_color(color, 1), x, y,
                     ran:Float(VOLLEY_SPEED2, VOLLEY_SPEED1),
                     center + ran:Float(-VOLLEY_ARC, VOLLEY_ARC), false, 0, false)
         end
@@ -1949,9 +1991,9 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
     ---    所以色号 4 落在第 2 行。
     ---  · water_drop 有 16 行，water_drop3 = (104,47,207) 深紫（colorful ⇒ 色号 = 下标）。
     local RING_STYLE_A = butterfly
-    local RING_STYLE_B = water_drop
-    local RING_COLOR_A = COLOR.PURPLE         -- Sub8 那圈：原作 type15（半径 4.0）→ butterfly（淡紫）
-    local RING_COLOR_B = COLOR.DEEP_PURPLE    -- Sub7 那圈：原作 type18（半径 3.0）→ water_drop（深紫）
+    local RING_STYLE_B = ball_light
+    local RING_COLOR_A = ex_color(0, 18)     -- 型 18、色 0
+    local RING_COLOR_B = ex_color(4, 15)     -- 型 15、色 4
 
     local CARD_NAME = "死符「酔人の生、死の夢幻」"
     ---原作卡计时是 ins_114(10208) ≈ 170 秒 —— 那是拍照关留给玩家取景用的。
@@ -2095,7 +2137,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     ---8 行；非 colorful ⇒ 贴图号 = ceil(色号/2)）：
     ---色号 4 → butterfly2 = (228,201,237) 淡紫；色号 5 → butterfly3 = (190,190,242) 蓝紫。
     ---两个都在紫系里、又一眼分得开（§7.6）。
-    local RING_COLOR_A, RING_COLOR_B = COLOR.PURPLE, COLOR.DEEP_BLUE
+    local RING_COLOR_A, RING_COLOR_B = ex_color(4, 22), ex_color(5, 22)
 
     ---小环（Sub7）：ins_88(17, 1, 12, 1, 2.5, 1.5, 0, 0.0327249, 514) = CIRCLE_AIMED、
     ---type17（半径 14 的大玉）12 发、整圈、速 2.5；ins_4(0,-44) 跳回 t=0（t=30）⇒ 每 30 帧。
@@ -2112,7 +2154,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local TICK_COUNT = 12
     local TICK_SPEED = 2.5
     local TICK_STYLE = ball_huge
-    local TICK_COLOR = 1                    -- ins_88 的 color（ball_huge 是 colorful：1..16）
+    local TICK_COLOR = ex_color(1, 17)      -- 型 17、色 1
     ---★ 自检偶尔会报这张「贴脸狙」（最多 8 发/1200 帧、最短 0 帧）：小环是 ins_88
     ---的 CIRCLE_AIMED、出膛点就是**本体所在点**，所以自机贴在本体身上时那颗是瞬发。
     ---那不是「必中设计」—— 自机站在离本体 5 px 的地方，真机上先被本体撞到；
@@ -2523,9 +2565,9 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local KEY_STEP = 90                     -- ins_87 的 angleStep = π/2
     local KEY_AIM0 = 90                     -- ins_87 的 angle = -π/2（TH095 朝上）⇒ 我们的 +90°
     local KEY_BULLET_SPEED = 2.0
-    local KEY_STYLE = butterfly
+    local KEY_STYLE = square
     ---颜色：butterfly 非 colorful ⇒ 贴图号 = ceil(色号/2)；色号 8 → butterfly4 = (193,216,235) 冰蓝。
-    local KEY_COLOR = COLOR.CYAN
+    local KEY_COLOR = ex_color(4, 6)
 
     ---自机狙小弹（Sub4）：ins_86(12, 1, 1, 1, 1.5, 1.5, 0, π/2, 514) = FAN_AIMED、
     ---count1 = 1 ⇒ 单发、正对自机；type12（半径 5）、速 1.5；每 45 帧一发。
@@ -2534,8 +2576,8 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local AIM_PERIOD = 45
     local AIM_FROM_PHOTO = 3
     local AIM_SPEED = 1.5
-    local AIM_STYLE = water_drop
-    local AIM_COLOR = COLOR.CYAN            -- water_drop 是 colorful ⇒ 色号 8 = 亮青 (70,204,207)
+    local AIM_STYLE = ball_big
+    local AIM_COLOR = ex_color(1, 12)
 
     local PHOTO_LIMIT = 6                   -- Sub2 的 ins_141(6)：相机快门上限（photo_index 的截断值）
 
@@ -2783,9 +2825,8 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local FAN_COUNT = 128
     local FAN_STEP = 1.875
     local FAN_SPEED = 1.4
-    local FAN_STYLE = butterfly
-    ---butterfly 非 colorful ⇒ 贴图号 = ceil(色号/2)；色号 8 → butterfly4 = (193,216,235) 冰蓝。
-    local FAN_COLOR = COLOR.CYAN
+    local FAN_STYLE = square
+    local FAN_COLOR = ex_color(4, 6)
 
     ---小圈（Sub6）：ins_89(18, 1, intV0, 1, 2.0, 1.5, rand(-π,π), 0.1848, 514)。
     ---type18（半径 3）、color 1、每 3 帧一圈、圈数 = photoIndex/3 + 1（1~3）。
@@ -2797,8 +2838,8 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local RING_DELAY = 100
     local RING_BASE_COUNT = 1               -- 1 + photoIndex/3
     local RING_SPEED = 2.0
-    local RING_STYLE = water_drop
-    local RING_COLOR = COLOR.CYAN           -- water_drop 是 colorful ⇒ 色号 8 = 亮青 (70,204,207)
+    local RING_STYLE = ball_light
+    local RING_COLOR = ex_color(1, 18)
 
     local PHOTO_LIMIT = 7                   -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
 
@@ -3036,7 +3077,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
                 for k = 1, CLOUD_BURST do
                     local pa = ran:Float(0, 360)
                     local pr = CLOUD_RADIUS * ran:Float(0, 1)
-                    NewSimpleBullet(CLOUD_STYLE, CLOUD_COLORS[k],
+                    NewSimpleBullet(CLOUD_STYLE, ex_color(CLOUD_COLORS[k], 15),
                             owner.x + cos(pa) * pr, owner.y + sin(pa) * pr,
                             CLOUD_SPEED0, ran:Float(0, 360), false, 0, false,
                             nil, nil, nil, cloud_frame)
@@ -3107,33 +3148,6 @@ end--超人「飛翔役小角」
 ---下面八张卡（scene 100..107）都要用到的两样东西：
 ---  ① TH095 的 16 色表 → 本仓库弹贴图的行号；
 ---  ② 原作的「旋转激光」（ins_147/148/153..157）→ 本仓库 laser 的四段驱动。
-
----TH095 的弹色是**调色板下标**（BulletManager.cpp:128-133 的 g_PhotoBulletColors16）：
----  0 灰 / 1,2 红 / 3,4 紫 / 5,6 蓝 / 7,8 青 / 9,10,11 绿 / 12,13,14 黄 / 15 灰。
----本仓库的弹样式（ball_small / ball_mid / ball_huge / butterfly / water_drop）都用
----COLOR.* 选行号，所以按色相挑最近的一行（灰 = 16，红 = 2，紫 = 4，蓝 = 6，
----青 = 8，绿 = 10，黄 = 12）。同一张卡的注释里只写原作色号，换算走这张表。
-local EX_COLOR = {
-    COLOR.GRAY,                    -- 0  0x808080 灰
-    COLOR.RED,                     -- 1  0xff1010 红
-    COLOR.RED,                     -- 2
-    COLOR.PURPLE,                  -- 3  0x801080 紫
-    COLOR.PURPLE,                  -- 4
-    COLOR.BLUE,                    -- 5  0x1010ff 蓝
-    COLOR.BLUE,                    -- 6
-    COLOR.CYAN,                    -- 7  0x108080 青
-    COLOR.CYAN,                    -- 8
-    COLOR.GREEN,                   -- 9  0x10ff10 绿
-    COLOR.GREEN,                   -- 10
-    COLOR.GREEN,                   -- 11
-    COLOR.YELLOW,                  -- 12 0x808010 黄
-    COLOR.YELLOW,                  -- 13
-    COLOR.YELLOW,                  -- 14
-    COLOR.GRAY,                    -- 15
-}
-local function ex_color(i)
-    return EX_COLOR[i] or COLOR.GRAY
-end
 
 ---一把整圈（原作 ins_89，aimMode = CIRCLE）：基准角 + index1×2π/count1 + index2×angleStep。
 ---count2 = 1 时 speed2/angleStep 都不参与（BulletManager.cpp:369-372）；整圈是对称的，
@@ -3260,13 +3274,12 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---    （两色都是 68 发、速 0.8）。四个角是 ins_26(extraFloat, 角坐标, pos) + ins_100 得到的
     ---    **世界坐标** (-192,0)/(192,0)/(-192,448)/(192,448)（TH095 坐标），
     ---    换算到我们这边 y = 224 − y ⇒ 四个角就是场地的四角。
-    ---  · 弹型 18 = 直径 6 ⇒ 用 ball_small（半径 2，最接近）；ins_89 的 aimMode = CIRCLE
+    ---  · 弹型 18 用本项目 ball_light；ins_89 的 aimMode = CIRCLE
     ---    （angle = 操作数 angle + index1×2π/count1 + index2×angleStep，而 count2 = 1 ⇒
     ---    angleStep = 0.1848 不参与，BulletManager.cpp:369-372）。
     ---    flags 514 = 0x202 = PLAY_SPAWN_SOUND + SPAWN_FAST；出场滑动我们统一不做（文件头差异 3），
     ---    出膛音每条弹幕响一次（原作也是整波响一次，BulletManager.cpp:717-723）。
-    ---  · 色号：原作两色是 1 与 0。TH095 的 16 色表 g_PhotoBulletColors16 下标 0 = 灰、
-    ---    1 = 红（见文件头「色表」一节）⇒ 我们取 ball_small1（红）与 COLOR.GRAY（16，灰）。
+    ---  · 色号：原作两色是 1 与 0，按 type 18 的 8 色表换算。
     ---  · Sub8（106(5)+150(10) 每帧）是整屏装饰 ANM，Sub4/Sub5 在 Sub3 里从来没被调用过
     ---    （旧摘要把 4/5 当成主发弹是读错了），Sub9 也没被调用 —— 一律不实现。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)     -- 288（场地外）
@@ -3293,11 +3306,11 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---四个角（我们的坐标；TH095 的 (-192,0)/(192,0)/(-192,448)/(192,448) 各翻一次 y）。
     local CORNERS = { { -192, 224 }, { 192, 224 }, { -192, -224 }, { 192, -224 } }
 
-    local STYLE = ball_small
+    local STYLE = ball_light
     local CORNER_SPEED = 1.0                -- 四角那几圈 ins_89 的 speed1（count2 = 1）
     local BODY_SPEED = 0.8                  -- 本体那圈 ins_89 的 speed1
-    local COLOR_A = ex_color(1)             -- Sub6 的 color 1（红）
-    local COLOR_B = ex_color(0)             -- Sub7 的 color 0（灰）
+    local COLOR_A = ex_color(1, 18)         -- 型 18、色 1
+    local COLOR_B = ex_color(0, 18)         -- 型 18、色 0
 
     ---时间轴（单位：帧，全部从 Sub3 的 t=0 起算）：60 → Sub6 发第一轮；
     ---Sub6 自己会在 +60 / +120 再各发一轮（photoIndex ≥ 3 才发）；Sub3 冻结到 240 才醒；
@@ -3402,8 +3415,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     ---    ⇒ 原作这里不发弹，移植版不实现（见下面「Sub5 是死代码」那段）。
     ---  · Sub6（54(2)+80(8)+81(16)）只动标志位、Sub7（106(5)+150(10)）是整屏装饰 ANM，
     ---    都跟弹幕无关，不实现。
-    ---  · 弹型：type 3 → ball_small（半径 2）、type 13 → ball_mid（半径 4）、
-    ---    type 17 → ball_huge（半径 13.5）。色号走文件头 ex_color()。
+    ---  · 弹型：type 3/13 → ellipse、type 17 → ball_huge；色号走 ex_color()。
     ---  · 角度换算：TH095 顺时针为正、我们逆时针为正 ⇒ 指向角取反、角速度取反、
     ---    漂移向量按 (cos(−θ), sin(−θ)) 算；x 轴不变。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)     -- 288（场地外）
@@ -3448,7 +3460,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     local WAVE_GAP = 120
     local RING_BASE = { 90, 45, 90, 45 }                -- 每波大玉圈的基准角（TH095 度）
     local BIG_STYLE = ball_huge
-    local BIG_COLOR = ex_color(0)                       -- 89(17, 0, …)
+    local BIG_COLOR = ex_color(0, 17)                   -- 89(17, 0, …)
     local BIG_COUNT, BIG_SPEED = 4, 1.0
     ---组内 4 根的指向角（TH095 度）：十字。
     local CROSS = { 180, 0, -90, 90 }
@@ -3642,7 +3654,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
 
     ---Sub7 / Sub8：4 条子上下文，初值 floatV0 = π/2、−π/2、0、π（见卡头注释）。
     local SPAWN_R = 32                                   -- ins_38 的 magnitude
-    local FAN_STYLE, FAN_COLOR = ball_small, ex_color(6)
+    local FAN_STYLE, FAN_COLOR = ball_small, ex_color(6, 0)
     local FAN_COUNT, FAN_SPEED, FAN_STEP_DEG = 8, 2.5, 10
     local FAN_OFFSETS = ex_fan_offsets(FAN_COUNT, FAN_STEP_DEG)
     local RND_STYLE, RND_COLOR = FAN_STYLE, FAN_COLOR
@@ -3773,7 +3785,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
     ---  · Sub5（102 清屏 + 把 floatV2 改成负的 + 重起 Sub4）在整份 ECL 里**没有任何
     ---    ins_117(·,5)** —— 是死代码，原作里从来没跑过（自己在文件里搜过一遍字节确认），
     ---    所以「加速度反向」这件事不会发生，不实现。
-    ---  · 弹型 3 → ball_small（半径 2）；色 4 走 ex_color()。flags 514 = 0x202（出场音 + SPAWN_FAST，
+    ---  · 弹型 3 → ellipse；色 4 走 ex_color()。flags 514 = 0x202（出场音 + SPAWN_FAST，
     ---    出场滑动我们统一不做，见文件头差异 3）。
     ---  · 角度：OFFSET_CIRCLE 的一圈是对称的，但整圈的**相位** floatV0 会被取反，
     ---    所以照常按 −(π/5 + i×2π/5 + floatV0) 发。
@@ -3791,8 +3803,8 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
     ---──────────────────────── 演出 / 弹幕 ────────────────────────
 
     local RING_COUNT = 5                                -- ins_91 的 count1
-    local RING_STYLE = ball_small
-    local RING_COLOR = ex_color(4)                      -- ins_91 的 color 4
+    local RING_STYLE = ellipse
+    local RING_COLOR = ex_color(4, 3)                   -- 型 3、色 4
     local SPEED_BASE, SPEED_PER_PHOTO = 2.6, 0.1        -- floatV3 = photoIndex×0.1 + 2.6
     local ACCEL = math.pi / 4800                        -- floatV2 = 0.000654498 rad/帧
     local STEP0 = math.pi * 0.5                         -- floatV0 的初值 π/2
@@ -3893,7 +3905,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
 
     ---──────────────────────── 弹幕 ────────────────────────
 
-    local RING_STYLE, RING_COLOR = ball_small, ex_color(1)
+    local RING_STYLE, RING_COLOR = ball_light, ex_color(1, 18)
     local RING_COUNT0 = 11                              -- intV1 = photoIndex/2 + 11
     local RING_SPEED1, RING_SPEED2 = 4, 1.5             -- count2 = 2 ⇒ 4.0 与 2.75
     local RING_GAP = 2                                  -- Sub4 的 ins_4(0,-224)
@@ -4027,8 +4039,8 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     ---      10 发 36° 环。photoIndex 只改起点、不改集合（15×24 = 10×36 = 360）。
     ---  · Sub7/Sub8/Sub9：ins_83(7)/83(8) 生出来的装饰敌人（Sub9 每帧跟随 photoTarget0），
     ---    不发弹 ⇒ 按文件头差异 3 不实现。
-    ---  · 弹型：Sub4 的 (19,6)(12,0)(19,1)(19,3)(12,7) → 半径 3/5/3/3/5（19→ball_small、
-    ---    12→ball_mid）；Sub5 全是型 1（半径 3 → ball_small），色 13,0,2,6,15。
+    ---  · 弹型：Sub4 的 (19,6)(12,0)(19,1)(19,3)(12,7) → 19/12 都用 ball_big；
+    ---    Sub5 全是型 1（ball_mid_c），色 13,0,2,6,15。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
     local HOME_X, HOME_Y = 0, field_y(144)              -- 0 / 80
     local ENTRY_WAIT, ENTRY_TIME = 100, 30
@@ -4057,10 +4069,10 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     local function fire_sub4(x, y, pa, pi)
         for k = 0, 4 do
             local st, co = TURTLE4[k + 1][1], TURTLE4[k + 1][2]
-            local style = (st == 12) and ball_mid or ball_small
+            local style = SG_STYLE[st] or ball_small
             local b = pa - SUB4_STEP * (pi + k)
             for i = 0, 2 do
-                NewSimpleBullet(style, ex_color(co), x, y, SUB4_SPEED,
+                NewSimpleBullet(style, ex_color(co, st), x, y, SUB4_SPEED,
                         b - 120 * i, false, 0, false)
             end
         end
@@ -4071,7 +4083,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
         for k = 0, 4 do
             local b = pa - SUB5_STEP * (pi + k)
             for i = 0, 1 do
-                NewSimpleBullet(ball_small, ex_color(TURTLE5_COLOR[k + 1]), x, y,
+                NewSimpleBullet(ball_mid_c, ex_color(TURTLE5_COLOR[k + 1], 1), x, y,
                         SUB5_SPEED, b - 180 * i, false, 0, false)
             end
         end
@@ -4224,8 +4236,8 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local SUB3_LEAD = 70                                -- Sub3 t=0 → t=70 才起 Sub4 / 第一次突进
     local DASH_FRAMES, DASH_SPEED = 60, 2               -- ins_66(60,1,pa,2) ⇒ 120 px
     local MIST_R, MIST_SPEED = 64, 0.05                 -- Sub4：偏移半径 / 弹速
-    local MIST_STYLE, MIST_COLOR = ball_small, ex_color(6)
-    local BIG_STYLE, BIG_COLOR = ball_huge, ex_color(1)
+    local MIST_STYLE, MIST_COLOR = ellipse, ex_color(6, 3)
+    local BIG_STYLE, BIG_COLOR = ball_huge, ex_color(1, 17)
     local BIG_COUNT, BIG_SPEED = 12, 1                  -- Sub7 的 ins_89
     local BIG_GAP = 60                                  -- Sub7 的 ins_4(0,-80)
     local ACCEL_STEP, ACCEL_FRAMES = 0.025, 120         -- ins_101 的 f0 / int0
@@ -4367,7 +4379,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     ---  · Sub5（t=90 起每 60 帧）：ins_88 = CIRCLE_AIMED（型 12、色 3、速 1、32 发）。
     ---  · 32 发的整圈（360/32 = 11.25°）在取反后**方向集合不变**；OFFSET_CIRCLE 多出的
     ---    π/count1 = 5.625° 相位也正好落在同一网格上（−5.625 ≡ 5.625 + 11.25×31）。
-    ---  · 弹型：12（半径 5）→ ball_mid；3/19（半径 2/3）→ ball_small。
+    ---  · 弹型：12/19 → ball_big；3 → ellipse。
     ---  · Sub10/Sub11 的 150(17)/150(18) 是 ANM 脉冲 ⇒ 不实现（文件头差异 3）。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
     local HOME_X, HOME_Y = 0, field_y(192)              -- 0 / 32
@@ -4496,12 +4508,12 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
         task.New(owner, function()
             ---t=60：Sub4..Sub9。
             ---Sub4 **没有闸**（它的 @1032 之后没有 ins_44）⇒ 一直发，不传 gate。
-            toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_small, ex_color(3), 1, nil)
-            toks[2] = { alive = true }; ring_stream(owner, toks[2], ball_mid, ex_color(3), 1, 60, 90, true, nil)
-            toks[3] = { alive = true }; ring_stream(owner, toks[3], ball_small, ex_color(6), 2, 20, 0, false, nil)
-            toks[4] = { alive = true }; burst_stream(owner, toks[4], ball_small, ex_color(1), 2, DENSITY_A)
-            toks[5] = { alive = true }; ring_stream(owner, toks[5], ball_small, ex_color(2), 2, 20, 10, false, DENSITY_B)
-            toks[6] = { alive = true }; ring_stream(owner, toks[6], ball_small, ex_color(1), 2, 20, 120, true, DENSITY_C)
+            toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_big, ex_color(3, 19), 1, nil)
+            toks[2] = { alive = true }; ring_stream(owner, toks[2], ball_big, ex_color(3, 12), 1, 60, 90, true, nil)
+            toks[3] = { alive = true }; ring_stream(owner, toks[3], ellipse, ex_color(6, 3), 2, 20, 0, false, nil)
+            toks[4] = { alive = true }; burst_stream(owner, toks[4], ball_big, ex_color(1, 19), 2, DENSITY_A)
+            toks[5] = { alive = true }; ring_stream(owner, toks[5], ellipse, ex_color(2, 3), 2, 20, 10, false, DENSITY_B)
+            toks[6] = { alive = true }; ring_stream(owner, toks[6], ball_big, ex_color(1, 19), 2, 20, 120, true, DENSITY_C)
             while true do
                 if photo_index(PHOTO_LIMIT) >= MOVE_MIN_PHOTOS then
                     ---ins_67 的移动占一轮的头 60 帧（ins_4 在 t=180 才跳回）。
@@ -4551,26 +4563,35 @@ end--「百万鬼夜行」
 ---ECL 在 `[th095] …/data/ecl2{0,1}_*.ecl`），各卡注释里的「@地址」都指这几份 dump。
 ---色表 ex_color / ins_145/147 的激光工具见上面「Stage EX」那一段（同一套）。
 
+local function sg_parts(style)
+    if type(style) == "table" then
+        return style[1], style[2]
+    end
+    return style, nil
+end
+
+---不带角度翻转的直接出弹口；颜色仍按描述里的 TH095 type 选调色板。
+local function sg_new(style, color, x, y, speed, angle, frame)
+    local img, t = sg_parts(style)
+    ---固定样式（不带 type）的调用点已经用 ex_color(..., 原类型) 换过色；
+    ---带 type 的描述这里才换，避免同一个色号被查两次表。
+    local c = t and ex_color(color, t) or color
+    return NewSimpleBullet(img, c, x, y, speed, angle, false, 0, false,
+            nil, nil, nil, frame)
+end
+
 ---ins_86..94 的一发。th_deg 是 TH095 空间的**度**（顺时针为正、y 朝下）；
 ---本仓库的角度 = −th_deg（见文件头「坐标系与角度」）。
 local function sg_bullet(style, color, x, y, speed, th_deg, frame)
-    NewSimpleBullet(style, color, x, y, speed, -th_deg, false, 0, false,
+    local img, t = sg_parts(style)
+    local c = t and ex_color(color, t) or color
+    NewSimpleBullet(img, c, x, y, speed, -th_deg, false, 0, false,
             nil, nil, nil, frame)
 end
 
 ---自机在 TH095 空间的角度（度）：本仓库 Angle 返回我们的角度（度、逆时针为正）⇒ 取反。
 local function sg_aim(x, y)
     return -Angle(x, y, player.x, player.y)
-end
-
----TH095 的弹型 → 本仓库贴图。碰撞直径见 g_PhotoBulletCollisionSizes
----（th095/src/BulletManager.cpp:113-133）：1/3/7/18/23 = 6、4/12 = 10、14/15/16 = 8、
----17 = 28。既有卡的映射是 6→ball_small（半径 2）、10→ball_mid、28→ball_huge；
----直径 8 的 14/15/16 夹在中间，按「观感更接近中玉」一律给 ball_mid（Stage 7 大量用它）。
-local function sg_style(t)
-    if t == 17 then return ball_huge end
-    if t == 1 or t == 3 or t == 7 or t == 18 or t == 23 then return ball_small end
-    return ball_mid
 end
 
 ---flags 的 0x200 = PLAY_SPAWN_SOUND：整条 ins_86..94 响一次（BulletManager.cpp:717-723）。
@@ -4817,7 +4838,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
                     for _ = 1, FAN_SEG do
                         if not alive(g, tok) then return end
                         for k = 1, #FAN_GROUP do
-                            sg_shot(87, ball_small, ex_color(FAN_GROUP[k][2]),
+                            sg_shot(87, sg_style(23), FAN_GROUP[k][2],
                                     owner.x, owner.y, FAN_GROUP[k][1], 1, sp, 1.5,
                                     math.deg(ang), FAN_STEP_DEG, false, 514)
                         end
@@ -4841,7 +4862,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
                     local ang = -math.rad(Angle(owner.x, owner.y, player.x, player.y))
                     for _ = 1, RING_SEG do
                         if not alive(g, tok) then return end
-                        sg_shot(89, ball_small, ex_color(pass), owner.x, owner.y,
+                        sg_shot(89, sg_style(23), pass, owner.x, owner.y,
                                 RING_COUNT, n2, sp, 0.5, math.deg(ang), 22.5, false, 514)
                         sp = sp + RING_SPEED_STEP
                         ang = ang + (pass == 0 and RING_SPIN or -RING_SPIN)
@@ -4863,7 +4884,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
                 for c = 0, 2 do
                     local sp = SPRAY_SPEED0 + ran:Float(0, 1) * SPRAY_SPEED1
                     local base = math.deg(ran:Float(-math.pi, math.pi))
-                    sg_shot(89, ball_small, ex_color(c), owner.x + ox, owner.y + oy,
+                    sg_shot(89, sg_style(23), c, owner.x + ox, owner.y + oy,
                             2, 1, sp, 0.5, base, 22.5, false, 514)
                 end
                 task.Wait(1)
@@ -5033,7 +5054,7 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
             while tok.alive do
                 local base = sg_aim(owner.x, owner.y)
                         + math.deg(ran:Float(-math.pi, math.pi) * spread)
-                sg_shot(89, ball_small, ex_color(0), owner.x, owner.y,
+                sg_shot(89, sg_style(18), 0, owner.x, owner.y,
                         count, 1, RING_SPEED, 1.5, base, RING_STEP, false, 514)
                 spread = spread + RING_SPREAD
                 task.Wait(RING_WAIT)
@@ -5045,7 +5066,7 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
     local function sub5(owner, tok)
         task.New(owner, function()
             while tok.alive do
-                sg_shot(88, ball_small, ex_color(1), owner.x, owner.y,
+                sg_shot(88, sg_style(18), 1, owner.x, owner.y,
                         1, AIM_COUNT, AIM_SPEED0, AIM_SPEED1, 0, 0, true, 514)
                 task.Wait(AIM_WAIT)
             end
@@ -5222,9 +5243,9 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
         task.New(owner, function()
             while tok.alive do
                 local sp = FAN_SPEED0 + photo_index(PHOTO_LIMIT) * FAN_SPEED_STEP
-                sg_shot(86, ball_small, ex_color(0), owner.x, owner.y,
+                sg_shot(86, sg_style(23), 0, owner.x, owner.y,
                         FAN_COUNT, 1, sp, 1.5, 0, FAN_STEP, true, 2)
-                sg_shot(86, ball_small, ex_color(1), owner.x, owner.y,
+                sg_shot(86, sg_style(23), 1, owner.x, owner.y,
                         FAN_COUNT, 1, sp, 1.5, 180, FAN_STEP, true, 2)
                 task.Wait(max(1, FAN_FREEZE0 - FAN_FREEZE_STEP * photo_index(PHOTO_LIMIT)))
             end
@@ -5395,7 +5416,7 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     local function fan(owner, tok, style, color, count, speed, base_off, step, period)
         task.New(owner, function()
             while alive(tok) do
-                sg_shot(87, style, ex_color(color), owner.x, owner.y,
+                sg_shot(87, style, color, owner.x, owner.y,
                         count, 1, speed, 1.5, sg_aim(owner.x, owner.y) + base_off,
                         step, false, 514)
                 task.Wait(period)
@@ -5408,9 +5429,9 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
         task.New(owner, function()
             while alive(tok) do
                 local a = sg_aim(owner.x, owner.y)
-                sg_shot(87, ball_small, ex_color(small_color), owner.x, owner.y,
+                sg_shot(87, sg_style(3), small_color, owner.x, owner.y,
                         7, 1, 5, 1.5, a, FAN_STEP_A, false, 514)
-                sg_shot(87, ball_mid, ex_color(big_color), owner.x, owner.y,
+                sg_shot(87, sg_style(13), big_color, owner.x, owner.y,
                         21, 1, 6, 1.5, a + 180, FAN_STEP_B, false, 514)
                 task.Wait(10)
             end
@@ -5425,10 +5446,10 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
                 for _ = 1, n do
                     local sp = 3.5 + ran:Float(0, 1) * dspread
                     local ang = a - SPREAD + ran:Float(0, 1) * SPREAD * 2
-                    sg_shot(87, ball_small, ex_color(dcolor), owner.x, owner.y,
+                    sg_shot(87, sg_style(3), dcolor, owner.x, owner.y,
                             1, 1, sp, 1.5, ang, SPREAD, false, 514)
                 end
-                sg_shot(87, ball_mid, ex_color(big_color), owner.x, owner.y,
+                sg_shot(87, sg_style(13), big_color, owner.x, owner.y,
                         24, 1, 6, 1.5, a + 180, FAN_STEP_B, false, 514)
                 task.Wait(10)
             end
@@ -5441,9 +5462,9 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
         task.New(owner, function()
             local ang = start
             while alive(tok) do
-                sg_shot(87, ball_small, ex_color(color), owner.x, owner.y,
+                sg_shot(87, sg_style(3), color, owner.x, owner.y,
                         count, 1, sp, 1.5, ang, step, false, 514)
-                sg_shot(87, ball_small, ex_color(big_color), owner.x, owner.y,
+                sg_shot(87, sg_style(18), big_color, owner.x, owner.y,
                         24, 1, 6, 1.5, sg_aim(owner.x, owner.y) + 180, FAN_STEP_B, false, 514)
                 ang = ang + drift
                 task.Wait(4)
@@ -5514,7 +5535,7 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
         { laser_five,
           function(o, t) fan_pair(o, t, 4, 2) end },
         { laser_ring_147,
-          function(o, t) fan(o, t, ball_small, 2, 7, 5, 0, FAN_STEP_A, 10) end },
+          function(o, t) fan(o, t, sg_style(3), 2, 7, 5, 0, FAN_STEP_A, 10) end },
         { function(o, t) laser_single(o, t, 6, 4, ran:Float(-SPREAD, SPREAD), 4) end,
           function(o, t) fan_random(o, t, 3, 13, 1.5, 6) end },
         { function(o, t) laser_single(o, t, 7, 5, ran:Float(-SPREAD, SPREAD), 4) end,
@@ -5635,12 +5656,12 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
         task.New(owner, function()
             while not st.dead and tok.alive do
                 local x, y = rain_point()
-                sg_shot(87, ball_small, ex_color(6), x, y, 1, 1,
+                sg_shot(87, sg_style(3), 6, x, y, 1, 1,
                         DROP_SPEED0 + ran:Float(0, 1) * DROP_SPEED_RND, 0.5,
                         math.deg(DROP_ANGLE0 + ran:Float(0, 1) * DROP_ANGLE_RND), 0, false, 514)
                 if photo_index(PHOTO_LIMIT) >= GATE_DROP2 then
                     local x2, y2 = rain_point()
-                    sg_shot(87, ball_small, ex_color(4), x2, y2, 1, 1,
+                    sg_shot(87, sg_style(3), 4, x2, y2, 1, 1,
                             DROP_SPEED0 + ran:Float(0, 1) * DROP2_SPEED_RND, 0.5,
                             math.deg(DROP_ANGLE0 + ran:Float(0, 1) * DROP_ANGLE_RND), 0, false, 514)
                 end
@@ -5654,7 +5675,7 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
         task.New(owner, function()
             while not st.dead and tok.alive do
                 local x, y = rain_point()
-                sg_shot(86, ball_small, ex_color(8), x, y, 1, 1,
+                sg_shot(86, sg_style(3), 8, x, y, 1, 1,
                         AIM_SPEED0 + ran:Float(0, 1) * AIM_SPEED_RND, 0.5, 0, 0, true, 514)
                 task.Wait(4)
             end
@@ -5669,7 +5690,7 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
                 for _ = 1, RING_COUNT do
                     if not tok.alive or st.dead then return end
                     if photo_index(PHOTO_LIMIT) >= GATE_RING then
-                        sg_shot(89, ball_small, ex_color(0), owner.x, owner.y, 1, 1,
+                        sg_shot(89, sg_style(23), 0, owner.x, owner.y, 1, 1,
                                 sp, 0.5, sg_aim(owner.x, owner.y), 0, false, 514)
                     end
                     sp = sp + RING_SPEED_STEP
@@ -5688,7 +5709,7 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
                 for _ = 1, FAN_BURST do
                     if not tok.alive or st.dead then return end
                     if photo_index(PHOTO_LIMIT) >= GATE_FAN then
-                        sg_shot(87, ball_small, ex_color(1), owner.x, owner.y,
+                        sg_shot(87, sg_style(23), 1, owner.x, owner.y,
                                 FAN_COUNT, 1, sp, 0.5, sg_aim(owner.x, owner.y),
                                 math.deg(0.392699), false, 514)
                     end
@@ -5820,14 +5841,14 @@ do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，
             task.Wait(FAN_FIRST)
             while tok.alive and not st.dead do
                 local n = photo_index(PHOTO_LIMIT) + 2
-                sg_shot(86, ball_huge, ex_color(1), owner.x, owner.y,
+                sg_shot(86, sg_style(17), 1, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, a, FAN_STEP, true, 514)
-                sg_shot(86, ball_huge, ex_color(0), owner.x, owner.y,
+                sg_shot(86, sg_style(17), 0, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, -a, FAN_STEP, true, 514)
                 local b = a + FAN_SPIN
-                sg_shot(86, ball_huge, ex_color(1), owner.x, owner.y,
+                sg_shot(86, sg_style(17), 1, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, b + 180, FAN_STEP, true, 514)
-                sg_shot(86, ball_huge, ex_color(0), owner.x, owner.y,
+                sg_shot(86, sg_style(17), 0, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, -(b + 180), FAN_STEP, true, 514)
                 a = b + FAN_SPIN
                 task.Wait(FAN_WAIT)
@@ -5953,13 +5974,13 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 local sx = player.x + RING_SPAWN_GAP * cos(-base)
                 local sy = player.y + RING_SPAWN_GAP * sin(-base)
                 local color = (base0 > 0) and 2 or 1
-                NewSimpleBullet(ball_small, ex_color(color), sx, sy, BULLET_SPEED0,
+                NewSimpleBullet(square, ex_color(color, 23), sx, sy, BULLET_SPEED0,
                         -base, false, 0, false, nil, nil, nil, accel_hook)
                 PlaySound("tan00", 0.1, sx / 256, false)     -- flags 的 0x200
                 if photo_index(PHOTO_LIMIT) >= BIG_AT and n >= BIG_EVERY then
                     local a0 = ran:Float(-math.pi, math.pi)
                     for i = 0, BIG_COUNT - 1 do
-                        NewSimpleBullet(ball_small, ex_color(1), sx, sy, BIG_SPEED,
+                        NewSimpleBullet(square, ex_color(1, 23), sx, sy, BIG_SPEED,
                                 -math.deg(a0 + i * math.pi / 5), false, 0, false)
                     end
                     PlaySound("tan00", 0.1, sx / 256, false)
@@ -5981,7 +6002,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 if photo_index(PHOTO_LIMIT) >= BOUNCE_AT then
                     local a0 = ran:Float(-math.pi, math.pi)
                     for i = 0, BOUNCE_COUNT - 1 do
-                        NewSimpleBullet(ball_small, ex_color(0), owner.x, owner.y,
+                        NewSimpleBullet(square, ex_color(0, 23), owner.x, owner.y,
                                 BOUNCE_SPEED, -math.deg(a0 + i * math.pi / 8),
                                 false, 0, false, nil, true)      -- rebound = BOUNCE_ALL
                     end
@@ -6172,13 +6193,13 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
         task.New(owner, function()
             local aim = sg_aim(owner.x, owner.y)
             while alive(g, tok) do
-                sg_shot(89, ball_small, ex_color(2), owner.x, owner.y,
+                sg_shot(89, sg_style(7), 2, owner.x, owner.y,
                         1, SUB4_RAY_COUNT, SUB4_RAY_SPEED0, SUB4_RAY_SPEED1,
                         aim, 0, false, 514)
                 local f0 = math.deg(ran:Float(-math.pi, math.pi) * 16)
                 local a0 = sg_aim(owner.x, owner.y) + 180
                 for i = 0, SUB4_BACK_COUNT - 1 do
-                    NewSimpleBullet(ball_small, ex_color(2), owner.x, owner.y,
+                    NewSimpleBullet(arrow_big_c, ex_color(2, 7), owner.x, owner.y,
                             SUB4_BACK_SPEED, -(a0 + i * (360 / SUB4_BACK_COUNT)),
                             false, 0, false, nil, nil, nil, chdir_hook(f0))
                 end
@@ -6193,7 +6214,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
         task.New(owner, function()
             local base = sg_aim(owner.x, owner.y)
             while alive(g, tok) do
-                sg_shot(89, ball_mid, ex_color(1), owner.x, owner.y,
+                sg_shot(89, sg_style(15), 1, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1, base, 0, false, 514)
                 base = base + RING_STEP_DEG
                 task.Wait(4)
@@ -6203,7 +6224,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
 
     ---Sub7 的一把 32 发 RANDOM：base/step 就是原作的 angle/angleStep（TH095 度）。
     local function burst(owner, base_deg, step_deg)
-        sg_shot(94, ball_small, ex_color(2), owner.x, owner.y,
+        sg_shot(94, sg_style(7), 2, owner.x, owner.y,
                 BURST_COUNT, 1, BURST_SPEED1, BURST_SPEED2, base_deg, step_deg,
                 false, 514)
     end
@@ -6280,7 +6301,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 if not alive(g) then return end
                 sg_move(owner, st, player.x, player.y, DASH_FRAMES, sg_ease(EASE_INOUT))
                 PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(15)
-                sg_shot(88, ball_small, ex_color(6), owner.x, owner.y,
+                sg_shot(88, sg_style(7), 6, owner.x, owner.y,
                         RUSH_COUNT, 1, RUSH_SPEED, 1, 0, 0, true, 514)
                 task.Wait(DASH_FRAMES)
             end
@@ -6296,7 +6317,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 if not alive(g) then return end
                 sg_move(owner, st, player.x, player.y, DASH_FRAMES, sg_ease(EASE_INOUT))
                 PlaySound("tan00", 0.1, owner.x / 256, false)
-                sg_shot(86, ball_small, ex_color(6), owner.x, owner.y,
+                sg_shot(86, sg_style(7), 6, owner.x, owner.y,
                         FAN_GROUP, 8, FAN_SPEED1, FAN_SPEED2, 0, FAN_STEP_DEG, true, 514)
                 task.Wait(DASH_FRAMES)
             end
@@ -6526,7 +6547,7 @@ local function sg_tr_hook(recs, flags, start)
                 local base = sec and sec.f0 or 0
                 local step = sec and sec.f1 or 0
                 local hook = sg_tr_hook(recs, cflags, sidx + 1)
-                sg_shot(86 + aim, sg_style(btype), ex_color(bcolor), self.x, self.y,
+                sg_shot(86 + aim, sg_style(btype), bcolor, self.x, self.y,
                         c1, c2, r.f0, r.f1, math.deg(base), math.deg(step),
                         false, cflags, hook)
                 st.i = st.i + 2
@@ -6749,11 +6770,11 @@ do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
         task.New(owner, function()
             while not st.dead do
                 local base = sg_deg(ran:Float(-math.pi, math.pi))
-                sg_shot(89, ball_mid, ex_color(2), owner.x, owner.y,
+                sg_shot(89, sg_style(13), 2, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1.5, base, 0, false, 546, hook_ccw)
                 task.Wait(FIRE_GAP)
                 if st.dead then return end
-                sg_shot(89, ball_mid, ex_color(3), owner.x, owner.y,
+                sg_shot(89, sg_style(13), 3, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1.5, base, 0, false, 546, hook_cw)
                 task.Wait(FIRE_GAP)
             end
@@ -6856,8 +6877,8 @@ do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a �
                         { sg_rec(SG_VEC, 0, ACCEL_FRAMES, -1, ACCEL_MAG, acc) }, SG_VEC)
                 local base = sg_deg(ran:Float(-math.pi, math.pi))
                 local count = photo_index(PHOTO_LIMIT) + RING_EXTRA
-                local color = ex_color(ran:Int(0, COLOR_SPAN - 1) + 1)
-                sg_shot(89, ball_small, color, sx, sy, count, 1, RING_SPEED, 1.5,
+                local color = ran:Int(0, COLOR_SPAN - 1) + 1
+                sg_shot(89, sg_style(0), color, sx, sy, count, 1, RING_SPEED, 1.5,
                         base, 0, false, 530, hook)
                 task.Wait(FIRE_GAP)
             end
@@ -6999,7 +7020,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
                     local m = EMIT_R * ran:Float(0, 1)
                     local oa = sg_deg(ran:Float(-math.pi, math.pi))
                     local sx, sy = self.x + m * cos(oa), self.y + m * sin(oa)
-                    NewSimpleBullet(ball_small, ex_color(color), sx, sy, EMIT_SPEED,
+                    NewSimpleBullet(ellipse, ex_color(color, 3), sx, sy, EMIT_SPEED,
                             sg_deg(ran:Float(-math.pi, math.pi)), false, 0, false)
                     PlaySound("tan00", 0.1, sx / 256, false)   -- flags 536 的 0x200
                     task.Wait(gap)
@@ -7028,7 +7049,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
         for k = 1, BURST_LAYERS do
             local hook = sg_tr_hook({ sg_rec(SG_VEC, 0, BURST_FRAMES, -1,
                     BURST_STEP * k, -999.99) }, SG_VEC)
-            sg_shot(90, ball_mid, ex_color(3), owner.x, owner.y,
+            sg_shot(90, sg_style(15), 3, owner.x, owner.y,
                     BURST_COUNT, 1, 0, 0, 0, 0.0327249, true, 536, hook)
         end
     end
@@ -7175,7 +7196,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
                         -sg_aim(owner.x, owner.y), BEAM_LEN, BEAM_W, BEAM_SPEED)
                 for i = 1, #BIG do
                     local b = BIG[i]
-                    sg_shot(86, ball_huge, ex_color(BIG_COLOR), owner.x, owner.y,
+                    sg_shot(86, sg_style(17), BIG_COLOR, owner.x, owner.y,
                             b[1], 1, b[2], 1.5, 0, b[3], true, 514)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)   -- t=64 的 ins_106(16)
@@ -7313,11 +7334,11 @@ do  -- 84 錬丹「水銀の海」（ecl18_c，永琳，组 9a 第 3 张）
                 local m = EMIT_R * ran:Float(0, 1)
                 local oa = sg_deg(ran:Float(-math.pi, math.pi))
                 local sx, sy = owner.x + m * cos(oa), owner.y + m * sin(oa)
-                sg_shot(87, ball_small, ex_color(8), sx, sy,
+                sg_shot(87, sg_style(1), 8, sx, sy,
                         1, 1, EMIT_SPEED, 0.5, math.deg(a0), 90, false,
                         EMIT_FLAGS, hook_bounce)
                 if photo_index(PHOTO_LIMIT) >= EMIT_SECOND_AT then
-                    sg_shot(87, ball_small, ex_color(10), sx, sy,
+                    sg_shot(87, sg_style(1), 10, sx, sy,
                             1, 1, EMIT_SPEED, 0.5, math.deg(a1), 90, false,
                             EMIT_FLAGS, hook_bounce)
                 end
@@ -7436,11 +7457,11 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
                 local f0 = (player.y <= owner.y) and -CEIL_TURN or CEIL_TURN
                 local hook = sg_tr_hook(
                         { sg_rec(SG_CHDIR_A, 0, CEIL_WAIT, 1, f0, 1) }, SG_CHDIR_A)
-                sg_shot(89, ball_small, ex_color(13), owner.x, owner.y,
+                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
                         1, CEIL_COUNT, CEIL_SP1, CEIL_SP2, 0, 0, false, CEIL_FLAGS, hook)
                 task.Wait(CEIL_DELTA)
                 if st.dead then return end
-                sg_shot(89, ball_small, ex_color(13), owner.x, owner.y,
+                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
                         1, CEIL_COUNT, CEIL_SP1, CEIL_SP2, 180, 0, false, CEIL_FLAGS, hook)
                 task.Wait(CEIL_WAIT - CEIL_DELTA)
             end
@@ -7462,7 +7483,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
                 for i = 1, #CROSS do
                     local c = CROSS[i]
                     if n >= c[3] then
-                        sg_shot(89, ball_small, ex_color(c[1]), sx, sy,
+                        sg_shot(89, sg_style(3), c[1], sx, sy,
                                 4, 1, c[2], 0.5, math.deg(a[i]), 0, false, CROSS_FLAGS)
                         a[i] = a[i] + c[4]
                     end
@@ -7598,7 +7619,7 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
             while not st.dead do
                 local sp = BALL_SPEED_BASE
                         + BALL_SPEED_STEP * photo_index(PHOTO_LIMIT)
-                sg_shot(88, ball_huge, ex_color(2), owner.x, owner.y,
+                sg_shot(88, sg_style(17), 2, owner.x, owner.y,
                         BALL_COUNT, 1, sp, 0.5, 0, 90, true, BALL_FLAGS, hook_bounce)
                 task.Wait(BALL_GAP)
             end
@@ -7748,11 +7769,11 @@ do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 �
             local a8 = sg_deg(ran:Float(-math.pi, math.pi))     -- floatV1（只抽一次）
             while not st.dead do
                 local n = RING_BASE + RING_STEP * photo_index(PHOTO_LIMIT)
-                sg_shot(89, ball_small, ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(3), 6, owner.x, owner.y,
                         n, 1, RING_SPEED, 0, a6, 90, false, RING_FLAGS, hook_a)
                 task.Wait(RING_GAP)
                 if st.dead then return end
-                sg_shot(89, ball_small, ex_color(8), owner.x, owner.y,
+                sg_shot(89, sg_style(3), 8, owner.x, owner.y,
                         n, 1, RING_SPEED, 0, a8, 90, false, RING_FLAGS, hook_b)
                 task.Wait(RING_GAP)
                 a6 = a6 - RING_DRIFT_A
@@ -7938,7 +7959,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local base = -Angle(self.x, self.y, player.x, player.y)
                     for k = 0, 5 do                          -- t=60,70,…,110（6 轮）
                         skip_to(60 + 10 * k)
-                        sg_shot(89, ball_mid, ex_color(6), self.x, self.y,
+                        sg_shot(89, sg_style(15), 6, self.x, self.y,
                                 32, 1, 3, 1.5, base, DRONE_STEP, false, FLAGS_FAN32)
                     end
                     skip_to(120)                             -- Sub6 收掉 slot1
@@ -7949,7 +7970,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local hook = bounce_once()
                     for k = 0, 11 do                         -- t=60,70,…,170（12 轮）
                         skip_to(60 + 10 * k)
-                        sg_shot(89, ball_mid, ex_color(3), self.x, self.y,
+                        sg_shot(89, sg_style(15), 3, self.x, self.y,
                                 4, 1, 2, 1.5, base, DRONE_STEP, false,
                                 FLAGS_RING4, hook)
                         base = base + math.deg(th_turn)      -- ins_15(floatV0, floatV1)
@@ -7961,7 +7982,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local hook = zigzag(-math.deg(th_turn))
                     for k = 0, 32 do                         -- t=30,34,…,158（33 轮）
                         skip_to(30 + 4 * k)
-                        sg_shot(89, ball_mid, ex_color(2), self.x, self.y,
+                        sg_shot(89, sg_style(15), 2, self.x, self.y,
                                 8, 1, 4, 1.5, base, DRONE_STEP, false,
                                 FLAGS_RING8, hook)
                     end
@@ -8174,7 +8195,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
                 for _ = 1, FAN5_ROUNDS do
                     local n = photo_index(PHOTO_LIMIT) + FAN5_COUNT
                     for _ = 1, 3 do
-                        sg_shot(87, sg_style(4), ex_color(2), owner.x, owner.y,
+                        sg_shot(87, sg_style(4), 2, owner.x, owner.y,
                                 n, 1, 4, 1.5, a, 5.625, false, 514, nil)
                         a = a + 120
                     end
@@ -8193,7 +8214,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
                 local a = sg_aim(owner.x, owner.y)
                 for _ = 1, FAN6_ROUNDS do
                     local n = photo_index(PHOTO_LIMIT) + FAN6_COUNT
-                    sg_shot(88, sg_style(12), ex_color(1), owner.x, owner.y,
+                    sg_shot(88, sg_style(12), 1, owner.x, owner.y,
                             n, 1, 1, 1.5, a, 5.625, true, 514, nil)
                     task.Wait(60)
                 end
@@ -8307,7 +8328,7 @@ do  -- 62 咲夜 時符「トンネルエフェクト」（ecl14_b，组 11a 第
     ---Sub5：进每轮 t=0 时一圈（一次，不重复）。
     local function ring_burst(owner)
         local n = 16 + 8 * photo_index(PHOTO_LIMIT)
-        sg_shot(89, sg_style(14), ex_color(1), owner.x, owner.y,
+        sg_shot(89, sg_style(14), 1, owner.x, owner.y,
                 n, 1, 2, 1.5, 0, 5.625, false, 514, nil)
     end
 
@@ -8329,7 +8350,7 @@ do  -- 62 咲夜 時符「トンネルエフェクト」（ecl14_b，组 11a 第
                 local px = ox + R * math.cos(math.rad(ang))
                 local py = oy - R * math.sin(math.rad(ang))
                 ---方向 = 环上角度 − π（TH095）⇒ base 直接给 TH095 度数（sg_shot 内部取反）。
-                sg_shot(87, sg_style(14), ex_color(3), px, py,
+                sg_shot(87, sg_style(14), 3, px, py,
                         1, 3, 4, 1.5, ang - 180, 5.625, false, 512, nil)
                 ang = ang + sign * step
                 if st.dead then return end
@@ -8342,7 +8363,7 @@ do  -- 62 咲夜 時符「トンネルエフェクト」（ecl14_b，组 11a 第
     local function huge_fan(owner)
         task.New(owner, function()
             for _ = 1, 5 do                              -- t=120..195 只有 5 个周期
-                sg_shot(86, sg_style(17), ex_color(0), owner.x, owner.y,
+                sg_shot(86, sg_style(17), 0, owner.x, owner.y,
                         3, 1, 3.5, 1.5, 0, 36, true, 514, nil)
                 if st.dead then return end
                 task.Wait(15)
@@ -8452,7 +8473,7 @@ do  -- 63 レミリア 紅符「ブラッディマジックスクウェア」（
         for i = 1, 24 do
             local rot = (i <= 12) and 1 or -1            -- 两段 ins_5：+1°/帧、−1°/帧
             local hook = sg_tr_hook(square_recs(dur, rot, c), SQ_FLAGS)
-            sg_shot(89, sg_style(14), ex_color(1), owner.x, owner.y,
+            sg_shot(89, sg_style(14), 1, owner.x, owner.y,
                     1, 1, 0.3, 1.5, a, 10.5880, false, SQ_FLAGS, hook)
             a = a + 30
             if a >= 180 then a = a - 360 end
@@ -8530,7 +8551,7 @@ do  -- 64 咲夜 空虚「インフレーションスクウェア」（ecl14_c�
                 local px = player.x + R * math.cos(math.rad(ang))
                 local py = player.y - R * math.sin(math.rad(ang))
                 for k = 1, 2 do
-                    sg_shot(86, sg_style(4), ex_color(2), px, py,
+                    sg_shot(86, sg_style(4), 2, px, py,
                             1, 1, 2, 1.5, 0, 36, true, 514, nil)
                     ang = ang + 6                       -- extraFloatV2 += 6°
                     px = player.x + R * math.cos(math.rad(ang))
@@ -8556,7 +8577,7 @@ do  -- 64 咲夜 空虚「インフレーションスクウェア」（ecl14_c�
                     local px, py = thx, field_y(thy)     -- 我们的坐标
                     local dx, dy = player.x - px, player.y - py
                     if dx * dx + dy * dy >= 64 * 64 then
-                        sg_shot(86, sg_style(14), ex_color(3), px, py,
+                        sg_shot(86, sg_style(14), 3, px, py,
                                 1, 1, 1 + 0.2 * photo_index(PHOTO_LIMIT), 1.5,
                                 sg_deg(ran:Float(-math.pi, math.pi)), 36, true, 514, nil)
                     end
@@ -8665,7 +8686,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
                 local n = math.floor(BAT_FIRE_LIFE / max(1, gap))
                 local sp = 1 + 0.1 * photo_index(PHOTO_LIMIT)
                 for _ = 1, n do
-                    sg_shot(86, sg_style(14), ex_color(1), self.x, self.y,
+                    sg_shot(86, sg_style(14), 1, self.x, self.y,
                             1, 1, sp, 1.5,
                             sg_deg(ran:Float(-math.pi, math.pi)), 36, true, 514, nil)
                     if st.dead then return end
@@ -8787,7 +8808,7 @@ do  -- 66 咲夜 銀符「パーフェクトメイド」（ecl14_d，组 11a 第
             while not st.dead do
                 if owner.x == last then                   -- ins_43：没动过才发
                     local n = 8 + photo_index(PHOTO_LIMIT)
-                    sg_shot(89, sg_style(14), ex_color(3), owner.x, owner.y,
+                    sg_shot(89, sg_style(14), 3, owner.x, owner.y,
                             n, 1, 2, 1.5, a, 10.5880, false, 514, nil)
                 end
                 a = a + drift
@@ -8918,7 +8939,7 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
                 local px = owner.x + d * math.cos(a)
                 local py = owner.y - d * math.sin(a)     -- TH095 y 轴翻过来
                 local n = 1 + math.floor(photo_index(PHOTO_LIMIT) / 2)
-                sg_shot(89, sg_style(4), ex_color(2), px, py,
+                sg_shot(89, sg_style(4), 2, px, py,
                         n, 1, 1, 1.5, math.deg(ran:Float(-math.pi, math.pi)), 10.5880,
                         false, 514, nil)
                 task.Wait(1)
@@ -9006,9 +9027,9 @@ do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
     local BOX = { -160, 128, 160, 345 }                 -- ins_75（TH095 坐标）
     local BURST_GAP = 20                                -- 每 20 帧一波
     local CYCLE = 40                                    -- t=40 的 ins_4(0,-72) 跳回 @680
-    ---型 6 的碰撞直径是 4（g_PhotoBulletCollisionSizes[6]）⇒ ball_small。
-    local BULLET_STYLE = ball_small
-    local BULLET_COLOR = ex_color(14)                   -- 原作色 14（黄）
+    ---型 6 是方形符卡弹。
+    local BULLET_STYLE = square
+    local BULLET_COLOR = ex_color(14, 6)                -- 型 6、色 14（黄）
     local RING_C1, RING_C2 = 6, 16
     local RING_SP1, RING_SP2 = 4, 1                     -- 4 → 1.1875
     local ACCEL_FRAMES, ACCEL_STEP = 120, -1 / 24       -- ins_101 的 i0 / f0
@@ -9116,8 +9137,8 @@ do  -- 51 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
     local LASER_W, LASER_SPEED = 16, 8
     local LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE = 1, 15, 40, 6
     local RING_ROUNDS, RING_GAP = 8, 5                  -- ins_5(0,-44,8)
-    local RING_STYLE = ball_small                       -- 型 7：直径 4
-    local RING_COLOR = ex_color(6)                      -- 原作色 6（蓝）
+    local RING_STYLE = arrow_big_c                      -- 型 7（燕尾箭头）
+    local RING_COLOR = ex_color(6, 7)                   -- 型 7、色 6（蓝）
     local RING_SPEED, RING_STEP = 2, 0.1848
     local RING_ACCEL_FRAMES, RING_ACCEL_STEP = 60, 0.0333333351
     ---整圈的生成点（我们的坐标）：TH095 (64,270.8512) —— 本体在 (-128,160) 再加
@@ -9266,7 +9287,7 @@ do  -- 52 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张）
         }, 0x8212)
         task.New(owner, function()
             while tok.alive and not st.dead do
-                sg_shot(86, ball_small, ex_color(13), owner.x, owner.y,
+                sg_shot(86, sg_style(7), 13, owner.x, owner.y,
                         3, 1, 0, 1.5, 0, FAN_STEP, true, 0x8212, hook)
                 task.Wait(1)
             end
@@ -9279,7 +9300,7 @@ do  -- 52 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张）
         sub5 = tok
         task.New(owner, function()
             while tok.alive and not st.dead do
-                sg_shot(88, ball_mid, ex_color(1), owner.x, owner.y,
+                sg_shot(88, sg_style(13), 1, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 0.5, 0, math.deg(0.241661),
                         true, 0x202, nil)
                 task.Wait(RING_PERIOD)
@@ -9402,7 +9423,7 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
     local SPIN_FRAMES = 120                             -- ins_5(80,-20,120)
     local SUB6_FRAMES = 32                              -- ins_5(131,-20,32)
     local BURSTS, BURST_PERIOD = 300, 2                  -- ins_5(0,-224,300)
-    local DROP_STYLE = ball_small                        -- 型 3：直径 6
+    local DROP_STYLE = sg_style(3)                       -- 型 3
     local DROP_SPEED_MIN, DROP_SPEED_STEP = 0.5, 0.9
 
     local lasers = {}
@@ -9435,7 +9456,7 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
                 ---★ ins_5 回跳的是 @1748 起的整段（含 randF32×∓448 与 randF32×0.9），
                 ---所以每一发的竖直偏移与速度都是现抽的。
                 local y = basey + dir * 448 * ran:Float(0, 1)
-                sg_shot(89, DROP_STYLE, ex_color(color), colx, y,
+                sg_shot(89, DROP_STYLE, color, colx, y,
                         1, 1, DROP_SPEED_MIN + DROP_SPEED_STEP * ran:Float(0, 1), 0.3,
                         sg_deg(ran:Float(-math.pi, math.pi)), math.deg(0.1848),
                         false, 0x202, nil)
@@ -9558,8 +9579,8 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
     local BOX = { -160, 96, 160, 256 }                  -- ins_75（本卡用不到）
     local CURTAIN_BURSTS, CURTAIN_PERIOD = 60, 2
     local CURTAIN_ACCEL_FRAMES, CURTAIN_ACCEL = 120, 0.00416666688
-    local BULLET_STYLE = ball_small                     -- 型 0：直径 6
-    local BULLET_COLOR = ex_color(8)                    -- 原作色 8
+    local BULLET_STYLE = ball_small                     -- 型 0：小玉
+    local BULLET_COLOR = ex_color(8, 0)                 -- 型 0、色 8
     local CURTAIN_FREEZE_BASE, CURTAIN_FREEZE_STEP = 180, 20
 
     local st = { dead = false }
@@ -9784,7 +9805,7 @@ do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第
                 local sp = 1 + (STAR_FREEZE_BASE
                         + STAR_FREEZE_STEP * photo_index(PHOTO_LIMIT)) * ran:Float(0, 1)
                 ---★ base 同上（TH095 度）：sg_deg 会把这阵「朝下」的流星雨整个翻成朝上。
-                sg_shot(87, ball_small, ex_color(6), px, py,
+                sg_shot(87, sg_style(0), 6, px, py,
                         1, 1, sp, 1.5, math.deg(ang), math.deg(0.0317333),
                         false, flags, hook)
                 task.Wait(period)
@@ -9801,7 +9822,7 @@ do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第
             while tok.alive and not st.dead do
                 local px = 192 * ran:Float(-1, 1)
                 local py = 224 - 192 * ran:Float(0, 1)
-                sg_shot(86, ball_small, ex_color(15), px, py,
+                sg_shot(86, sg_style(7), 15, px, py,
                         1, 4, 4, 1.5, 0, math.deg(0.0317333), true, 0x2, nil)
                 task.Wait(1)
             end
@@ -9901,7 +9922,7 @@ do  -- 56 橙 化猫「橙」（ecl12_d，组 13a 第 4 张）
         local aim = sg_aim(owner.x, owner.y)
         for _ = 1, n do
             if st.dead then return end
-            sg_shot(87, ball_small, ex_color(6), owner.x, owner.y,
+            sg_shot(87, sg_style(7), 6, owner.x, owner.y,
                     FAN_COUNT, 1, FAN_SPEED, 1.5, aim, FAN_STEP,
                     false, 0x202, nil)
             task.Wait(FAN_GAP)
@@ -10064,7 +10085,7 @@ do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第
                 local px = 192 * ran:Float(-1, 1)
                 local sp = dense and (1 + ran:Float(0, 1)) or (0.5 + 1.5 * ran:Float(0, 1))
                 for i = 1, 4 do
-                    sg_shot(89, ball_small, ex_color(colors[i]), px, sy,
+                    sg_shot(89, sg_style(0), colors[i], px, sy,
                             1, dense and 2 or 1, sp, 0.5, sg_deg(DIRS[i]),
                             math.deg(0.1848), false, 0x202, hook)
                 end
@@ -10273,7 +10294,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
             local f2 = math.deg(SPREAD0 + SPREAD_PER * photo_index(PHOTO_LIMIT))
             local mA = st.mv_angle
             for i = 1, #COLORS do
-                sg_shot(94, sg_style(3), ex_color(COLORS[i]), owner.x, owner.y,
+                sg_shot(94, sg_style(3), COLORS[i], owner.x, owner.y,
                         24, 1, 6, 0.5, mA + f2, mA - f2, false, 0x200)
             end
             task.Wait(1)
@@ -10281,7 +10302,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
             local far = math.deg(FAR)
             local hook = sg_tr_hook({ VEC }, SG_VEC)
             for i = 1, #COLORS do
-                sg_shot(94, sg_style(0), ex_color(COLORS[i]), owner.x, owner.y,
+                sg_shot(94, sg_style(0), COLORS[i], owner.x, owner.y,
                         12, 1, 3, 0.4, mA + far, mA - far, false, 0x210, hook)
             end
         end)
@@ -10422,7 +10443,7 @@ do  -- 41 日＆水符「ハイドロジェナスプロミネンス」（ecl11_a
                 if st.dead then return end
                 task.Wait(1)
             end
-            sg_shot(89, sg_style(17), ex_color(0), owner.x, owner.y,
+            sg_shot(89, sg_style(17), 0, owner.x, owner.y,
                     RING_N, 1, RING_SPEED, 1.5, sg_aim(owner.x, owner.y), 0, false, 0x202)
         end)
     end
@@ -10438,7 +10459,7 @@ do  -- 41 日＆水符「ハイドロジェナスプロミネンス」（ecl11_a
             for _ = 1, 1 + photo_index(PHOTO_LIMIT) do
                 for k = 1, 2 do
                     local ox, oy = sg_off(SPRAY_R * ran:Float(0, 1), ran:Float(-math.pi, math.pi))
-                    sg_shot(94, sg_style(0), ex_color(k == 1 and 2 or 6),
+                    sg_shot(94, sg_style(0), k == 1 and 2 or 6,
                             owner.x + ox, owner.y + oy,
                             SPRAY_N, 1, SPRAY_SPEED0, SPRAY_SPEED1, base, step,
                             false, 0x202)
@@ -10553,7 +10574,7 @@ do  -- 42 華符「彩光蓮華掌」（ecl10_b，红美铃，组 15a 第 2 张�
                     local hook = sg_tr_hook({
                         sg_rec(SG_CHDIR_R, 0, CHDIR_FRAMES, CHDIR_REPEAT, 0, RING_SPEEDS[k]),
                     }, SG_CHDIR_R)
-                    sg_shot(89, sg_style(3), ex_color(RING_COLORS[k]), owner.x, owner.y,
+                    sg_shot(89, sg_style(3), RING_COLORS[k], owner.x, owner.y,
                             RING_N, 1, RING_SPEED, 1.5, fv, RING_STEP, false,
                             CHDIR_FLAGS, hook)
                     ---@1348：每一圈发完都做一次 ins_16(floatV0 −= floatV1) + ins_37(归一化)
@@ -10693,7 +10714,7 @@ do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋
         task.New(owner, function()
             local a = th0
             while not st.dead do
-                sg_shot(87, sg_style(18), ex_color(0), owner.x, owner.y,
+                sg_shot(87, sg_style(18), 0, owner.x, owner.y,
                         1, 1, STREAM_SPEED, 1.5, a, 0, false, 0x202)
                 a = sg_norm(a - STREAM_TURN)
                 task.Wait(1)
@@ -10710,7 +10731,7 @@ do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋
             local base = sg_aim(owner.x, owner.y)
             for n = 1, FAN_N do
                 if st.dead then return end
-                sg_shot(87, sg_style(18), ex_color(0), owner.x, owner.y,
+                sg_shot(87, sg_style(18), 0, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, base, FAN_STEP, false, 0x202)
                 if n < FAN_N then
                     for _ = 1, FAN_GAP do
@@ -10829,7 +10850,7 @@ do  -- 44 彩翔「飛花落葉」（ecl10_c，红美铃，组 15a 第 3 张）
             local base = math.deg(BATCHES[b][2])
             local step = math.deg(BATCHES[b][3])
             for i = 1, #COLORS do
-                sg_shot(94, sg_style(3), ex_color(COLORS[i]), owner.x, owner.y,
+                sg_shot(94, sg_style(3), COLORS[i], owner.x, owner.y,
                         BALL_N, 1, BALL_SP1, BALL_SP2, base, step, false, 0x210, hook)
             end
         end
@@ -10956,7 +10977,7 @@ do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，
                         sg_rec(SG_WAIT, 0, A_WAIT, -1, -1, -1),
                         sg_rec(SG_VEC, 0, 60, -1, A_ACCS[k], -999.9),
                     }, FLAGS)
-                    sg_shot(87, sg_style(3), ex_color(13), owner.x + ox, owner.y + oy,
+                    sg_shot(87, sg_style(3), 13, owner.x + ox, owner.y + oy,
                             3, 1, 0, 1.5, math.deg(tilt), A_STEP, false, FLAGS, hook)
                 end
                 ---ins_16(ef2, +3.6°) 是**减**（EclRunLow.inl:16 的 float -=）；
@@ -10981,7 +11002,7 @@ do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，
                     sg_rec(SG_WAIT, 0, B_WAIT, -1, -1, -1),
                     sg_rec(SG_VEC, 0, 60, -1, B_ACC, -999.9),
                 }, FLAGS)
-                sg_shot(87, sg_style(3), ex_color(10), owner.x + ox, owner.y + oy,
+                sg_shot(87, sg_style(3), 10, owner.x + ox, owner.y + oy,
                         2, 1, 0, 1, math.deg(tilt), B_STEP, false, FLAGS, hook)
                 off = off - B_SPIN                  -- ins_16(ef2, +0.9°)，同 Sub4
                 tilt = tilt + B_TILT
@@ -11083,7 +11104,7 @@ do  -- 46 彩華「虹色太極拳」（ecl10_d，红美铃，组 15a 第 4 张�
                 for fi = 1, #SHOT_SHAPE do
                     for _ = 1, SHOT_SHAPE[fi] do
                         if st.dead then return end
-                        sg_shot(87, sg_style(5), ex_color(COLORS[j + 1]), owner.x, owner.y,
+                        sg_shot(87, sg_style(5), COLORS[j + 1], owner.x, owner.y,
                                 1, 1, 2, 1.5, fv + RING_STEP * j, FAN_STEP, false, FLAGS, hook)
                         j = j + 1
                     end
@@ -11225,7 +11246,7 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
                         spawn_ex_laser(self, lasers, LASER_ROW, self.x, self.y, a,
                                 LASER_LEN, LASER_W, 8, LASER_SEG[1], LASER_SEG[2],
                                 LASER_SEG[3], LASER_SEG[4], 0, 0, 0, false, true)
-                        sg_shot(87, sg_style(1), ex_color(13), self.x, self.y,
+                        sg_shot(87, sg_style(1), 13, self.x, self.y,
                                 1, 1, REV_SPEED, 1.5, sg_norm(math.deg(self.dir) + 180),
                                 REV_STEP, false, FLAGS, hook)
                     end
@@ -11449,7 +11470,7 @@ do  -- 30 メディスン 非符（ecl7_a，组 17a 第 1 张）
             local n, sp = RING0, SPD0
             for i = 1, RINGS do
                 if st.dead then return end
-                sg_shot(89, sg_style(8), ex_color((i % 2 == 1) and 2 or 4),
+                sg_shot(89, sg_style(8), (i % 2 == 1) and 2 or 4,
                         owner.x, owner.y, n, 1, sp, 1, base, 0, false, 0x202)
                 n = n - RING_STEP
                 sp = sp + SPD_STEP
@@ -11580,7 +11601,7 @@ do  -- 31 霧符「ガシングガーデン」（ecl9_a，铃仙，组 18a 第 1
                 end
                 for i = 1, 4 do
                     if not tok.alive or st.dead then return end
-                    sg_shot(94, sg_style(3), ex_color(SPRAY_COLOR[i]),
+                    sg_shot(94, sg_style(3), SPRAY_COLOR[i],
                             owner.x, owner.y, SPRAY[i], 1, hi, lo, 180, -180, false, 0x202)
                     if i < 4 then
                         task.Wait(1)
@@ -11704,7 +11725,7 @@ do  -- 32 脱兎「フラスターエスケープ」（ecl8_a，帝，组 19a �
                     ---就和反弹**同时**生效（BulletManager.cpp:523 的判据）。
                     sg_rec(SG_POLAR, 1, 6000, -1, 0, sg_deg(d)),
                 }, FLAGS)
-                sg_shot(87, sg_style(3), ex_color(2), owner.x, owner.y,
+                sg_shot(87, sg_style(3), 2, owner.x, owner.y,
                         count, 1, FAN_SPEED1, FAN_SPEED2, base, FAN_STEP,
                         false, FLAGS, hook)
                 for _ = 1, 2 do
@@ -11829,7 +11850,7 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
                     if not tok.alive or st.dead then return end
                     local dx, dy = OFFSETS[i][1], OFFSETS[i][2]
                     local hook = sg_tr_hook({ sg_rec(SG_TAG, 0, tag, -1, 0, 0) }, RING_FLAGS)
-                    sg_shot(89, sg_style(8), ex_color(2),
+                    sg_shot(89, sg_style(8), 2,
                             owner.x + dx, owner.y - dy,
                             RING_COUNT, 1, RING_SPEED, 1, base, 0, false, RING_FLAGS, hook)
                     tag = (tag + 1) % 4
@@ -11964,7 +11985,7 @@ do  -- 34 毒符「ポイズンブレス」（ecl9_b，铃仙，组 18a 第 2 �
             while tok.alive and not st.dead do
                 local count = photo_index(PHOTO_LIMIT) + 1
                 for k = 1, 4 do
-                    sg_shot(87, sg_style(5), ex_color(FAN_COLORS[k]), owner.x, owner.y,
+                    sg_shot(87, sg_style(5), FAN_COLORS[k], owner.x, owner.y,
                             count, 1, FAN_SP1, FAN_SP2, dir[k], FAN_STEP, false, FAN_FLAGS)
                 end
                 for k = 1, 4 do
@@ -12078,11 +12099,11 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
     local function sub4(owner)
         local base = 0                                  -- 上下文的 floatV0 初值
         local h1 = sg_tr_hook({ sg_rec(SG_TAG, 0, 1, -1, 0, 0) }, RING_FLAGS)
-        sg_shot(89, sg_style(8), ex_color(2), owner.x, owner.y,
+        sg_shot(89, sg_style(8), 2, owner.x, owner.y,
                 RING_BIG1[1], RING_BIG1[2], RING_BIG1[3], RING_BIG1[4],
                 base, 0, false, RING_FLAGS, h1)
         local h2 = sg_tr_hook({ sg_rec(SG_TAG, 0, 2, -1, 0, 0) }, RING_FLAGS)
-        sg_shot(89, sg_style(8), ex_color(2), owner.x, owner.y,
+        sg_shot(89, sg_style(8), 2, owner.x, owner.y,
                 RING_BIG2[1], RING_BIG2[2], RING_BIG2[3], RING_BIG2[4],
                 base, 0, false, RING_FLAGS, h2)
     end
@@ -12094,7 +12115,7 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
             while tok.alive and not st.dead do
                 local count = photo_index(PHOTO_LIMIT) * 2 + 10
                 local hook = sg_tr_hook({ sg_rec(SG_TAG, 0, 0, -1, 0, 0) }, RING_FLAGS)
-                sg_shot(88, sg_style(13), ex_color(3), owner.x, owner.y,
+                sg_shot(88, sg_style(13), 3, owner.x, owner.y,
                         count, 1, AIM_SPEED, 0.6, 0, AIM_STEP, true, RING_FLAGS, hook)
                 for _ = 1, 5 do
                     if not tok.alive or st.dead then return end
@@ -12204,11 +12225,11 @@ do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，铃仙，组 18a �
                 if not tok.alive or st.dead then return end
                 local dx, dy = sg_off(OFFSET_R, ran:Float(-math.pi, math.pi))
                 local sp = ran:Float(0, 1) * 2 + 1
-                sg_shot(87, sg_style(17), ex_color(2), owner.x + dx, owner.y + dy,
+                sg_shot(87, sg_style(17), 2, owner.x + dx, owner.y + dy,
                         1, 1, sp, 1.5, ran:Float(0, 360), FAN_STEP, false, FAN_FLAGS)
                 local dx2, dy2 = sg_off(OFFSET_R, ran:Float(-math.pi, math.pi))
                 local sp2 = ran:Float(0, 1) * 2 + 1
-                sg_shot(87, sg_style(12), ex_color(6), owner.x + dx2, owner.y + dy2,
+                sg_shot(87, sg_style(12), 6, owner.x + dx2, owner.y + dy2,
                         1, 1, sp2, 1.5, ran:Float(0, 360), FAN_STEP, false, FAN_FLAGS)
                 task.Wait(1)
             end
@@ -12326,7 +12347,7 @@ do  -- 37 借符「大穴牟遅様の薬」（ecl8_b，帝，组 19a 第 2 张�
                     sg_rec(SG_BOUNCE_EB, 0, BOUNCES, -1, -999, 0),
                     sg_rec(SG_POLAR, 1, 6000, -1, 0, sg_deg(TURN)),
                 }, RING_FLAGS)
-                sg_shot(89, sg_style(13), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(13), 6, owner.x, owner.y,
                         count, 1, RING_SPEED1, RING_SPEED2, base, 0, false, RING_FLAGS, h1)
                 for _ = 1, 2 do
                     if not tok.alive or st.dead then return end
@@ -12336,7 +12357,7 @@ do  -- 37 借符「大穴牟遅様の薬」（ecl8_b，帝，组 19a 第 2 张�
                     sg_rec(SG_BOUNCE_EB, 0, BOUNCES, -1, -999, 0),
                     sg_rec(SG_POLAR, 1, 6000, -1, 0, sg_deg(-TURN)),
                 }, RING_FLAGS)
-                sg_shot(89, sg_style(13), ex_color(5), owner.x, owner.y,
+                sg_shot(89, sg_style(13), 5, owner.x, owner.y,
                         count, 1, RING_SPEED1, RING_SPEED2, base, 0, false, RING_FLAGS, h2)
                 for _ = 1, 2 do
                     if not tok.alive or st.dead then return end
@@ -12448,14 +12469,14 @@ do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，メ�
                     sg_rec(SG_TAG, 0, 1, -1, 0, 0),
                     sg_rec(SG_POLAR, 0, POLAR_FRAMES, -1, ACCEL, sg_deg(SPIN)),
                 }, RING_FLAGS)
-                sg_shot(89, sg_style(8), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(8), 6, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, RING_SPEED, 0,
                         RING_STEP, false, RING_FLAGS, h1)
                 local h2 = sg_tr_hook({
                     sg_rec(SG_TAG, 0, 2, -1, 0, 0),
                     sg_rec(SG_POLAR, 0, POLAR_FRAMES, -1, ACCEL, sg_deg(-SPIN)),
                 }, RING_FLAGS)
-                sg_shot(89, sg_style(8), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(8), 6, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, RING_SPEED, 0,
                         RING_STEP, false, RING_FLAGS, h2)
                 for _ = 1, 5 do
@@ -12688,7 +12709,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
                     if tick % FIRE_GAP == 0 then
                         local hook = sg_tr_hook({ sg_rec(SG_VEC, 0, BULLET_FRAMES, -1,
                                 BULLET_ACC, -999) }, 0x212)
-                        sg_shot(89, sg_style(7), ex_color(2), self.x, self.y,
+                        sg_shot(89, sg_style(7), 2, self.x, self.y,
                                 1, 1, BULLET_SPEED, BULLET_SPEED, math.deg(vfire), 0,
                                 false, 0x212, hook)
                         vfire = vfire - v7f
@@ -12931,7 +12952,7 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
                     ---拍中数重取，照抄 ins_21 在循环体内）。原作 ins_2 是**冻结**（th095/src/
                     ---ecl/EclRun.cpp:299 的 secondaryTime），所以两发之间正好差 10−拍中数 帧。
                     if fired < rounds and life >= next_fire then
-                        sg_shot(89, sg_style(3), ex_color(6), self.x, self.y,
+                        sg_shot(89, sg_style(3), 6, self.x, self.y,
                                 2, 1, FIRE_SPEED0 + FIRE_SPEED_STEP * pi_now, 1.5,
                                 math.deg(fire), 0, false, DOLL_FLAGS,
                                 sg_tr_hook({ sg_rec(SG_VEC, 0, VEC_FRAMES, -1, vec_acc, -999.99) },
@@ -13165,10 +13186,10 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
                     ---   ⇒ 每 2 帧一发、两型交替。发弹角整支 Sub7 固定用 fire_a。
                     if firing and sub7 % 2 == 0 then
                         if (sub7 / 2) % 2 == 0 then
-                            sg_shot(89, sg_style(1), ex_color(13), self.x, self.y,
+                            sg_shot(89, sg_style(1), 13, self.x, self.y,
                                     1, 1, 0, 1, fire_a, 0, false, FIRE_FLAGS, hook)
                         else
-                            sg_shot(89, sg_style(0), ex_color(12), self.x, self.y,
+                            sg_shot(89, sg_style(0), 12, self.x, self.y,
                                     1, 1, 0, 1, fire_a, 0, false, FIRE_FLAGS, hook)
                         end
                     end
@@ -13401,7 +13422,7 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
                 while not st.dead and life < DOLL_LIFE do
                     ---① 本帧的发弹（用**位移之前**的位置：ECL 的 UpdateMovement 在帧尾）。
                     if next_at <= 0 then
-                        sg_shot(88, sg_style(BALL_STYLE_T), ex_color(0), self.x, self.y,
+                        sg_shot(88, sg_style(BALL_STYLE_T), 0, self.x, self.y,
                                 1, 1, BALL_SPEED, 1, 0, 0, true, 0x202)
                         next_at = FIRE_GAP0 - FIRE_GAP_MUL * photo_index(PHOTO_LIMIT)
                     end
@@ -13446,7 +13467,7 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
         task.New(owner, function()
             local a = math.rad(sg_aim(owner.x, owner.y))    -- Sub4 t=0 的 aimAngle（TH095 弧度）
             while not st.dead do
-                sg_shot(89, sg_style(RING_STYLE_T), ex_color(RING_COLOR), owner.x, owner.y,
+                sg_shot(89, sg_style(RING_STYLE_T), RING_COLOR, owner.x, owner.y,
                         RING_N, 1, RING_SPEED, 1.5, math.deg(a), 0, false, 0x202)
                 a = sg_norm(a + 0.196349546)               -- ins_15 + ins_37
                 task.Wait(RING_GAP)
@@ -13477,7 +13498,7 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
                 sub5(owner)
                 task.Wait(RING_AT)
                 if st.dead or g ~= gen then return end
-                sg_shot(89, sg_style(RING_STYLE_T), ex_color(RING_COLOR), owner.x, owner.y,
+                sg_shot(89, sg_style(RING_STYLE_T), RING_COLOR, owner.x, owner.y,
                         RING_MUL * photo_index(PHOTO_LIMIT) + RING_ADD, 2, 2, 1,
                         sg_aim(owner.x, owner.y), math.deg(0.196349546), false, 0x202)
                 task.Wait(MOVE_AT - RING_AT)
@@ -13738,7 +13759,7 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
             local speed = FAN_SPEED0
             for _ = 1, FAN_ROUNDS do
                 if st.dead then return end
-                sg_shot(86, sg_style(3), ex_color(8), owner.x, owner.y,
+                sg_shot(86, sg_style(3), 8, owner.x, owner.y,
                         FAN_COUNT, 1, speed, FAN_SPEED2, FAN_BASE, FAN_STEP, true, 0x202)
                 speed = speed + FAN_SPEED_STEP                  -- ins_15：floatV1 += 0.3
                 task.Wait(FAN_GAP)
@@ -13890,7 +13911,7 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
             local base = math.rad(sg_aim(owner.x, owner.y))
             for _ = 1, RING_ROUNDS do
                 if st.dead then return end
-                sg_shot(89, sg_style(7), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(7), 6, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, RING_SPEED2, math.deg(base), RING_STEP,
                         false, 0x202)
                 base = base + turn * RING_TURN
@@ -14034,7 +14055,7 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
             while not st.dead do
                 local th = ran:Float(-math.pi, math.pi)         -- ins_38 的极角
                 local ox, oy = sg_off(RING_OFF_R, th)           -- ins_38 + ins_100
-                sg_shot(89, sg_style(7), ex_color(6), owner.x + ox, owner.y + oy,
+                sg_shot(89, sg_style(7), 6, owner.x + ox, owner.y + oy,
                         RING_COUNT, 1, RING_SPEED, RING_SPEED2, math.deg(base), RING_STEP,
                         false, 0x202)
                 base = base + RING_TURN                         -- ins_15：floatV0 += 0.785398
@@ -14220,7 +14241,7 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
             if st.dead then return end
             for _ = 1, A4_SHOTS do                          -- ins_6(ei2,2) 的内层循环
                 local a = base_a + ran:Float(-math.pi, math.pi) * f4
-                sg_shot(87, sg_style(5), ex_color(6), owner.x, owner.y, 1, 1,
+                sg_shot(87, sg_style(5), 6, owner.x, owner.y, 1, 1,
                         ran:Float(0, 1) * f1 + A4_SPEED, 1.5, math.deg(a), 0, false,
                         0x202, hook_decel)
             end
@@ -14236,7 +14257,7 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
         local sp = A5_SPEED0
         for i = 1, A5_SHOTS do
             if st.dead then return end
-            sg_shot(87, sg_style(1), ex_color(6), owner.x, owner.y, 1, 1,
+            sg_shot(87, sg_style(1), 6, owner.x, owner.y, 1, 1,
                     sp, 1.5, math.deg(a), 0, false, 0x202, hook_decel)
             sp = sp + A5_SPEED_STEP
             if i < A5_SHOTS then task.Wait(A5_GAP) end
@@ -14248,7 +14269,7 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
         local a = th_aim(owner.x, owner.y)
         for i = 1, A7_SHOTS do
             if st.dead then return end
-            sg_shot(87, sg_style(12), ex_color(3), owner.x, owner.y, A7_COUNT, 1,
+            sg_shot(87, sg_style(12), 3, owner.x, owner.y, A7_COUNT, 1,
                     A7_SPEED, 1.5, math.deg(a), math.deg(A7_STEP), false, 0x202, hook_decel)
             if i < A7_SHOTS then task.Wait(A7_GAP) end
         end
@@ -14385,7 +14406,7 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
                 local ox, oy = sg_off(r, ran:Float(-math.pi, math.pi))
                 local sp = ran:Float(-1, 1) + RING_SPEED_BIAS    -- ins_27(rnd_f32s)×1 + 1.7
                 local a = ran:Float(-math.pi, math.pi)
-                sg_shot(89, sg_style(btype), ex_color(bcolor), owner.x + ox, owner.y + oy,
+                sg_shot(89, sg_style(btype), bcolor, owner.x + ox, owner.y + oy,
                         count, 1, sp, 1.5, math.deg(a), math.deg(RING_STEP),
                         false, 0x202, hook_decel)
                 task.Wait(freeze)
@@ -14571,7 +14592,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
                     local v3 = base + math.pi / 4            -- floatV3
                     local v4 = base - math.pi / 4            -- floatV4
                     local hook = sg_tr_hook(parent_recs(v3, v4), PARENT_FLAGS)
-                    sg_shot(89, sg_style(PARENT_TYPE), ex_color(PARENT_COLOR),
+                    sg_shot(89, sg_style(PARENT_TYPE), PARENT_COLOR,
                             owner.x, owner.y, 1, 1, PARENT_SPEED, 1.5,
                             math.deg(base), math.deg(RING_STEP), false, PARENT_FLAGS, hook)
                     base = base + 2 * math.pi / 3
@@ -14590,7 +14611,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
                 local ox, oy = sg_off(mag, off)
                 local sp = ran:Float(0, 1) + 0.2
                 local a = ran:Float(-math.pi, math.pi)
-                sg_shot(89, sg_style(btype), ex_color(bcolor), owner.x + ox, owner.y + oy,
+                sg_shot(89, sg_style(btype), bcolor, owner.x + ox, owner.y + oy,
                         count, 1, sp, 1.5, math.deg(a), 0, false, 0x202)
                 task.Wait(freeze)
             end
@@ -14735,7 +14756,7 @@ class.frost_shard = Class(object, {
                 local v4 = ran:Float(-1, 1) * radius
                 local off = ran:Float(-math.pi, math.pi)
                 local ox, oy = sg_off(v4, off)
-                sg_shot(94, sg_style(opt.btype), ex_color(opt.bcolor), self.x + ox, self.y + oy,
+                sg_shot(94, sg_style(opt.btype), opt.bcolor, self.x + ox, self.y + oy,
                         1, 1, opt.sp1, opt.sp2, math.deg(v2), math.deg(v3),
                         false, opt.flags, hook)
                 ---★ 没有 task.Wait：Sub9/Sub10 的 ins_5 的 time 操作数 = 60 = 标签处指令的
@@ -14808,7 +14829,7 @@ class.ice_rain = Class(object, {
                 local y = field_y(ran:Float(0, RAIN_Y))
                 local a = ran:Float(-1, 1) * RAIN_ANG1 + RAIN_ANG0   -- ins_27(rnd_f32s)×0.0982+π/2
                 local sp = ran:Float(0, 1) + 0.5
-                sg_shot(87, sg_style(0), ex_color(15), x, y,
+                sg_shot(87, sg_style(0), 15, x, y,
                         1, 1, sp, 0.5, math.deg(a), 0, false, DECEL_FLAGS)
                 task.Wait(RAIN_GAP)
             end
@@ -15151,7 +15172,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
 
     ---Sub5（@1408）：自机狙的 3 连大玉（±60°、速 3.2）。
     local function sub5(owner)
-        sg_shot(86, sg_style(FAN_TYPE), ex_color(FAN_COLOR), owner.x, owner.y,
+        sg_shot(86, sg_style(FAN_TYPE), FAN_COLOR, owner.x, owner.y,
                 FAN_N, 1, FAN_SPEED, 0.5, 0, math.deg(FAN_STEP), true, FAN_FLAGS, nil)
     end
 
@@ -15338,7 +15359,7 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, shots do
                 if st.dead then return end
-                sg_shot(89, sg_style(1), ex_color(13), owner.x, owner.y,
+                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
                         A_COUNT, 1, A_SPEED, 1.5, a, 0, false, 0x222, hook)
                 if i < shots then task.Wait(A_GAP) end
             end
@@ -15352,7 +15373,7 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, B_SHOTS do
                 if st.dead then return end
-                sg_shot(89, sg_style(12), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(12), 6, owner.x, owner.y,
                         B_COUNT, 1, B_SPEED, 1.5, a, math.deg(B_STEP), false, 0x202)
                 if i < B_SHOTS then task.Wait(B_GAP) end
             end
@@ -15549,7 +15570,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                     local p = plan[f]
                     if p then
                         for _, k in ipairs(p) do
-                            sg_shot(89, sg_style(k[1]), ex_color(k[2]), self.x, self.y,
+                            sg_shot(89, sg_style(k[1]), k[2], self.x, self.y,
                                     1, 1, FF_SPEED, 1.5, math.deg(aim), 0, false,
                                     FF_FLAGS, hook)
                             aim = aim + step
@@ -15811,7 +15832,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
                         local color = (half == 0) and 1 or 3
                         for _ = 1, BF_RING_N do
                             if not IsValid(self) or st.dead then return end
-                            sg_shot(89, sg_style(15), ex_color(color),
+                            sg_shot(89, sg_style(15), color,
                                     self.x, self.y, BF_RING_CNT, 1, speed, 0.5,
                                     math.deg(aim), 0, false, BF_RING_FLAGS, hook)
                             task.Wait(BF_RING_GAP)
@@ -15862,7 +15883,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
             else
                 hook = bf_hook(callf0, sg_deg(math.rad(-120)), v6)
             end
-            sg_shot(89, sg_style(0), ex_color(0), owner.x, owner.y,
+            sg_shot(89, sg_style(0), 0, owner.x, owner.y,
                     ring, 1, v7, 0.7, math.deg(v0), math.deg(BF_STEP), false,
                     BF_FLAGS, hook)
             v7 = v7 - BF_DECAY
@@ -16048,7 +16069,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
             for i = 1, P_SHOTS do
                 if st.dead then return end
                 local base = (which == 1) and v0 or v2
-                sg_shot(89, sg_style(2), ex_color(10), owner.x, owner.y,
+                sg_shot(89, sg_style(2), 10, owner.x, owner.y,
                         1, 2, v1, v1 / 2, math.deg(base), 0, false, 0x202)
                 v0 = v0 + P_TURN
                 v2 = v2 - P_TURN
@@ -16058,7 +16079,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
             task.Wait(P_AIM_DELAY)
             if st.dead then return end
             local n = P_AIM_BASE + P_AIM_PER * photo_index(PHOTO_LIMIT)
-            sg_shot(88, sg_style(0), ex_color(10),
+            sg_shot(88, sg_style(0), 10,
                     owner.x + P_AIM_OFF_X, owner.y + P_AIM_OFF_Y,
                     n, 1, P_AIM_SPEED, 0, 0, 0, true, 0x202)
         end)
@@ -16070,7 +16091,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, shots do
                 if st.dead then return end
-                sg_shot(89, sg_style(1), ex_color(13), owner.x, owner.y,
+                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
                         A_COUNT, 1, A_SPEED, 1.5, a, 0, false, 0x222, hook)
                 if i < shots then task.Wait(6) end
             end
@@ -16083,7 +16104,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, B_SHOTS do
                 if st.dead then return end
-                sg_shot(89, sg_style(12), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(12), 6, owner.x, owner.y,
                         B_COUNT, 1, B_SPEED, 1.5, a, math.deg(B_STEP), false, 0x202)
                 if i < B_SHOTS then task.Wait(B_GAP) end
             end
@@ -16245,7 +16266,7 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
                     local ox = ran:Float(-PAIR_OFF, PAIR_OFF)
                     local oy = -ran:Float(-PAIR_OFF, PAIR_OFF)
                     local a = -math.deg(ran:Float(-math.pi, math.pi))
-                    sg_shot(89, sg_style(PAIR_TYPES[j]), ex_color(PAIR_COLORS[j]),
+                    sg_shot(89, sg_style(PAIR_TYPES[j]), PAIR_COLORS[j],
                             owner.x + ox, owner.y + oy,
                             PAIR_COUNT, 1, PAIR_SPEEDS[j], 1.5, a, 0, false, RING_FLAGS)
                 end
@@ -16270,7 +16291,7 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
                 if st.dead or g ~= gen then return end
                 stop[1] = true                          -- ins_117(0,-1)
                 local a = -math.deg(ran:Float(-math.pi, math.pi))
-                sg_shot(89, sg_style(12), ex_color(6), owner.x, owner.y,
+                sg_shot(89, sg_style(12), 6, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1.5, a, 0, false, RING_FLAGS)
                 task.Wait(ROUND - RING_AT)              -- t=180 → 下一轮
             end
@@ -16383,7 +16404,7 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
             local spd = MB_SPEED0
             for i = 1, MB_SHOTS do
                 if st.dead or g ~= gen then return end
-                sg_shot(89, sg_style(2), ex_color(10), owner.x, owner.y,
+                sg_shot(89, sg_style(2), 10, owner.x, owner.y,
                         1, 1, spd, spd / 2, -math.deg(ang), 0, false, 0x202)
                 ang = ang - side * MB_TURN
                 spd = spd - MB_DECAY
@@ -16432,7 +16453,7 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
                 end
                 task.Wait(S6_RING_AT - S6_LEAD - (S6_SLOT_N - 1) * S6_SLOT_GAP)  -- t=125
                 if st.dead or g ~= gen then return end
-                sg_shot(89, sg_style(17), ex_color(3), owner.x, owner.y,
+                sg_shot(89, sg_style(17), 3, owner.x, owner.y,
                         S6_RING_N, 1, S6_RING_SPEED, 1, sg_aim(owner.x, owner.y),
                         0, false, 0x202)
                 task.Wait(S6_MOVE_AT - S6_RING_AT)              -- t=180
