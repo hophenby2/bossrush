@@ -114,6 +114,7 @@ local function start()
     GameInit()
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 完成')
     local pauseCache = load('game/android/pause_cache.lua')
+    AndroidPauseCache = pauseCache
     pauseCache.install()
     AndroidInput.install(scene)
     lstg.SystemLog('BOSSRUSH_INPUT: 已安装')
@@ -124,6 +125,7 @@ local function start()
     function AndroidBack() AndroidInput.pulse(27) end
     function AndroidFocus(active)
         if not active then
+            if SaveResume then SaveResume.flush('切到后台') end
             pauseCache.invalidate()
             AndroidInput.reset()
             if ext and not ext.StageIsMenu() then ext.pop_pause_menu = true end

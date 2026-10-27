@@ -449,7 +449,7 @@ function pausemenu:ResumeSound()
         for _, v in pairs(EnumRes2('bgm')) do
             if GetMusicState(v) ~= 'stopped' and self.bgmlist[v] then
                 --ResumeMusic(v)
-                PlayMusic(v, 1, ext.music[v].timer / 60)--防止暂停时出现的音乐卡顿情况
+                if ext.music[v] then PlayMusic(v, 1, ext.music[v].timer / 60) else ext.ResumeMusic(v) end--防止暂停时出现的音乐卡顿情况
             end
         end
     else

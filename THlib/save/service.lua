@@ -4,7 +4,7 @@ local S={visible=false,pending={},jobs={},requests={}}
 local static={['/']={'index.html','text/html; charset=utf-8'},['/app.js']={'app.js','text/javascript; charset=utf-8'},
     ['/style.css']={'style.css','text/css; charset=utf-8'},['/vendor/qrcode.js']={'vendor/qrcode.js','text/javascript'},
     ['/vendor/jsQR.js']={'vendor/jsQR.js','text/javascript'}}
-local function snapshot() if scoredata then SaveSpellCardData(); SaveScoreData() end end
+local function snapshot() if SaveResume then SaveResume.flush('管理或导出') end;if scoredata then SaveSpellCardData();SaveScoreData() end end
 local function code(ip,port,key)
     local bytes={}; for v in ip:gmatch('%d+') do bytes[#bytes+1]=string.char(tonumber(v)) end
     bytes[#bytes+1]=string.char(math.floor(port/256),port%256)
@@ -46,6 +46,7 @@ local function operation(path,body,callback)
     return {job=which}
 end
 function S.requestSwitch(which)
+    assert(not SaveResume or not SaveResume.recovering,'正在重建续玩位置，请先完成或取消恢复')
     P.entry(which)
     if which==P.index.active then return end
     assert(not P.pending,'正在切换存档，请稍候')
@@ -120,6 +121,7 @@ function S.start(port)
     S.server=N.server(dispatch,port)
 end
 function S.open()
+    if SaveResume and SaveResume.recovering then return end
     if S.visible then return end
     local ok,err=pcall(function()
         snapshot(); S.start(); S.visible=true; S.heartbeat=N.now()+100
@@ -145,6 +147,7 @@ function S.poll()
     if S.visible and not AndroidPlatform and now-(S.heartbeat or now)>20 then S.close() end
 end
 function S.frame()
+    if SaveResume then SaveResume.controls() end
     S.poll()
     if not stage or not stage.current_stage or stage.current_stage.stage_name=='init' or stage.current_stage.stage_name=='setname' then return end
     local key=GetLastKey()
@@ -160,6 +163,7 @@ function S.render()
     if not ui or not stage.current_stage or stage.current_stage.stage_name=='init' then return end
     SetViewMode('ui'); SetImageState('white','',210,15,30,52); RenderRect('white',800,956,510,538)
     ui:RenderText('title','存档 / 同步  F10',878,524,0.6,Color(255,210,235,255),'centerpoint')
+    if SaveResume then SaveResume.draw() end
     if S.error then ui:RenderText('title',S.error,480,490,0.5,Color(255,255,170,140),'centerpoint') end
 end
 S.stageImport,S.decodeCode,S.code=stageImport,decodeCode,code

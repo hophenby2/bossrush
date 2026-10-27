@@ -4,6 +4,11 @@ local function check(ok,label) assert(ok,label);total=total+1 end
 local function rejects(fn,label) check(not pcall(fn),label) end
 check(C.sha256('abc')=='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad','SHA-256 向量')
 check(C.sha256(string.rep('a',1000000))=='cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0','SHA-256 长消息')
+-- 对照原版实际函数验证线性存档编码的字节兼容性，而非只做自身往返。
+Include=function() end;dofile(R.root..'/THlib/sp/sp.lua')
+local legacyBytes={};for i=0,511 do legacyBytes[#legacyBytes+1]=string.char(i%256) end;legacyBytes=table.concat(legacyBytes)
+check(C.lock(legacyBytes)==sp:LockString(legacyBytes),'存档编码与原版全部字节一致')
+check(C.lock(legacyBytes,true)==sp:UnLockString(legacyBytes),'存档解码与原版全部字节一致')
 for n=0,300 do local t={};for i=1,n do t[i]=string.char((i*47+n)%256) end;local s=table.concat(t)
     check(C.unbase64(C.base64(s))==s,'Base64 二进制往返');check(C.decompress(C.compress(s))==s,'LZ 二进制往返') end
 local s=string.rep('Boss Rush 中文 data 0123456789\0',10000)
@@ -41,7 +46,7 @@ local active=P.export({second},true);active.entries[1].files['Score.dat']=C.base
 rejects(function() P.import(active,{1},'replace') end,'不覆盖正在运行的存档')
 local valid=C.pack(changed);rejects(function() C.unpack(valid:sub(1,#valid-1)..(valid:sub(-1)=='A' and 'B' or 'A')) end,'口令篡改拒绝')
 local evil=C.unpack(token);evil.entries[1].files['../setting']='eA';rejects(function() P.validate(evil) end,'路径穿越拒绝')
-evil=C.unpack(token);evil.version=2;rejects(function() P.validate(evil) end,'不兼容版本拒绝')
+evil=C.unpack(token);evil.version=99;rejects(function() P.validate(evil) end,'不兼容版本拒绝')
 evil=C.unpack(token);evil.entries[1].uuid='../bad';rejects(function() P.validate(evil) end,'非法编号拒绝')
 evil=C.unpack(token);evil.entries[1].files['Score.dat']=C.base64(C.lock(Serialize({money='wrong'})));rejects(function() P.validate(evil) end,'错误数值类型拒绝')
 local originalOpen=io.open;local oldIndex=Serialize(P.index)

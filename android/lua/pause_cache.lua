@@ -19,6 +19,7 @@ function C.install()
     end
     PostEffect,lstg.PostEffect=post,post
     RenderFunc=function()
+        if SaveResume and SaveResume.recovering then return render() end
         if SaveSync and SaveSync.visible then return end
         local current=stage.current_stage
         local paused=current and not current.is_menu and not ext.pause_menu:IsKilled()

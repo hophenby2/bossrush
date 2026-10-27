@@ -82,6 +82,9 @@ function I.touch(id, x, y, event)
         local t = I.touches[id]
         if not t then
             t = { x = x, y = y }
+            if x>=640 and x<=790 and y>=510 and y<=538 then
+                t.button={key=116}; I.pulse(116)
+            end
             if x>=800 and x<=956 and y>=510 and y<=538 then
                 t.button={key=121}; I.pulse(121)
             end

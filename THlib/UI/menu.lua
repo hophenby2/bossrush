@@ -274,7 +274,7 @@ function main_menu:frame()
             end
             local mouse = ext.mouse
             if mouse:isDown(1) then
-                local height = ui.menu.line_height * 1.2
+                local height = min(ui.menu.line_height * 1.2, 395 / #self.text)
                 local selected = menu:mouseCheck(430, 0, height, #self.text)
                 if selected then
                     if selected ~= self.pos and not self.nopos[selected] then
@@ -333,7 +333,7 @@ function main_menu:render()
     local x, y = -60 + 300 * sin(self.alpha * 90), 430
     local count = #self.text
     local r2
-    local height = ui.menu.line_height * 1.2
+    local height = min(ui.menu.line_height * 1.2, 395 / #self.text)
     local R, G, B
     local sub_x, sub_y = 0, 0
     for i = 1, count do

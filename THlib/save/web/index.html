@@ -5,12 +5,12 @@
 <body><header><div><small>BOSS RUSH HD</small><h1>存档与同步</h1></div><button id="returnGame">返回游戏</button></header>
 <div id="message" role="status" aria-live="polite"></div>
 <nav><button data-tab="profiles" class="active">我的存档</button><button data-tab="exchange">口令 / 二维码</button><button data-tab="network">局域网同步</button></nav>
-<main><section id="profiles" class="tab active"><div class="intro"><h2>每段旅程，独立保存</h2><p>切换前会保存当前成长记录。战斗中切换将返回标题；继续游戏从该存档最近的关卡检查点开始。</p></div>
+<main><section id="profiles" class="tab active"><div class="intro"><h2>每段旅程，独立保存</h2><p>切换前会保存当前成长记录。战斗中切换将返回标题；可从该存档最近的关内续玩点或关卡检查点继续。</p></div>
 <form id="createForm" class="toolbar"><input id="profileName" maxlength="32" placeholder="新存档名称" aria-label="新存档名称" required><button type="submit" class="primary">新建存档</button><button type="button" id="cloneProfile">复制选中存档</button></form>
 <div class="toolbar"><label><input id="selectAll" type="checkbox"> 全选</label><span id="selectionCount"></span></div><div id="profileList" class="cards"></div>
 <details id="backups"><summary>替换前的备份</summary><div id="backupList"></div></details></section>
 <section id="exchange" class="tab"><div class="intro"><h2>离线也能带走进度</h2><p>先在“我的存档”勾选一份或几份。口令与文件包含相同数据；二维码较大时会分片，收齐后才能导入。</p></div>
-<label class="check"><input id="includeCheckpoint" type="checkbox" checked> 附带“继续游戏”数据（体积可能较大）</label>
+<label class="check"><input id="includeCheckpoint" type="checkbox" checked> 附带关卡检查点与关内续玩点（体积可能较大）</label>
 <div class="toolbar"><button id="exportToken" class="primary">生成导出口令</button><button id="copyToken">复制口令</button><button id="downloadToken">保存为文件</button><button id="showQR">显示二维码</button></div>
 <textarea id="exportText" rows="4" readonly aria-label="导出口令" placeholder="生成后会显示 BRS1 开头的存档口令"></textarea>
 <div class="panel"><h3>导入到此设备</h3><textarea id="importText" rows="4" aria-label="待导入口令" placeholder="粘贴 BRS1 存档口令；也可粘贴二维码分片"></textarea>
@@ -23,4 +23,4 @@
 </main><dialog id="qrDialog"><h2 id="qrTitle">存档二维码</h2><div id="qrCanvas"></div><p id="qrPage"></p><div class="toolbar"><button id="previousQR">上一张</button><button id="autoQR">自动轮播</button><button id="nextQR">下一张</button><button id="closeQR">关闭</button></div></dialog>
 <dialog id="cameraDialog"><h2>扫描存档或配对二维码</h2><video id="camera" autoplay muted playsinline></video><p id="cameraStatus">正在打开相机…</p><button id="closeCamera">关闭相机</button></dialog>
 <dialog id="askDialog"><form method="dialog"><h2 id="askTitle"></h2><p id="askText"></p><input id="askInput" maxlength="32" aria-label="存档名称"><div class="toolbar"><button value="cancel">取消</button><button value="ok" class="primary">确认</button></div></form></dialog>
-<footer>进度、解锁、符卡记录和所选检查点随存档同步。按键、分辨率等设备设置与录像库保留在各自设备。</footer></body></html>
+<footer>进度、解锁、符卡记录与勾选的续玩数据随存档同步。按键、分辨率等设备设置与录像库保留在各自设备。</footer></body></html>

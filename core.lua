@@ -18,6 +18,7 @@ lstg.DoFile("THlib/save/profiles.lua")
 SaveProfiles.init()
 lstg.DoFile("THlib/save/transport.lua")
 lstg.DoFile("THlib/save/service.lua")
+lstg.DoFile("THlib/save/resume.lua")
 lstg.DoFile("THlib\\lib\\Lobject.lua")--Luastg的Class、object
 lstg.DoFile("THlib\\lib\\LObjectEvents.lua")--一些object事件函数
 
@@ -35,6 +36,7 @@ lstg.DoFile("THlib\\lib\\Lscoredata.lua")--玩家存档
 
 
 function GameExit()
+    if SaveResume then SaveResume.flush('退出游戏') end
     if not lstg.quit_flag then
         if not scoredata["Alt+F4"] then
             scoredata["Alt+F4"] = true
@@ -79,6 +81,12 @@ function GameInit()
 end
 
 local floatmoney = 0
+function GetSaveMoneyState() return {fraction=floatmoney,offset=CurrentVerifiableOffset or 0} end
+function SetSaveMoneyState(value)
+    floatmoney=value.fraction or 0
+    CurrentVerifiableOffset=value.offset or CurrentVerifiableOffset or 0
+    CurrentMoney=scoredata.money+CurrentVerifiableOffset
+end
 -- 只在旧场景完成结算与销毁后调用；重建与玩家存档有关的运行时缓存。
 function ReloadSaveProfile()
     local which=assert(SaveProfiles.pending)

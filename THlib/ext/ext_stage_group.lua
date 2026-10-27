@@ -259,6 +259,7 @@ function stg.FinishStage()
     local self = stage.current_stage
     local group = self.group
     if self.number == group.number or lstg.var.is_practice then
+        if SaveResume and not ext.replay.IsReplay() then SaveResume.clear() end
         if ext.replay.IsReplay() then
             ext.rep_over = true
             ext.pop_pause_menu = true

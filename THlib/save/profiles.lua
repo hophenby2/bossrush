@@ -1,6 +1,6 @@
 -- 每份存档有独立目录；旧版文件只复制，不删除。索引提交前不暴露导入中的目录。
 local C=assert(SaveCodec)
-local P={ ROOT='User/profiles', FILES={'Score.dat','Spellcard.dat','saving1.file'} }
+local P={ ROOT='User/profiles', FILES={'Score.dat','Spellcard.dat','saving1.file','resume.dat'} }
 local function clone(v) return DeSerialize(Serialize(v)) end
 local function id(v) return type(v)=='string' and #v==32 and not v:find('[^0-9a-f]') end
 local function name(v) assert(type(v)=='string' and #v>0 and #v<=96 and not v:find('[%z\1-\31]'),'存档名称须为 1–32 个汉字或 1–96 个字节'); return v end
@@ -37,7 +37,7 @@ function P.entry(which)
     error('找不到这份存档')
 end
 function P.path(file,which)
-    assert(file=='Score.dat' or file=='Spellcard.dat' or file=='saving1.file' or file=='saving.file' or file:match('^Score[_%.]') or file:match('^Spellcard[_%.]'),'未知存档文件')
+    assert(file=='Score.dat' or file=='Spellcard.dat' or file=='saving1.file' or file=='saving.file' or file=='resume.dat' or file:match('^Score[_%.]') or file:match('^Spellcard[_%.]'),'未知存档文件')
     assert(not file:find('[/\\]'),'存档文件名无效')
     local slot=which or P.index.active; assert(id(slot),'存档编号无效')
     return P.ROOT..'/'..slot..'/'..file
@@ -85,11 +85,11 @@ function P.init()
 end
 function P.files(which,checkpoint)
     local files={}
-    for _,file in ipairs(P.FILES) do if file~='saving1.file' or checkpoint then files[file]=P.read(file,which) end end
+    for _,file in ipairs(P.FILES) do if (file~='saving1.file' and file~='resume.dat') or checkpoint then files[file]=P.read(file,which) end end
     return files
 end
 local function digest(files)
-    local parts={}; for _,file in ipairs(P.FILES) do local s=files[file] or ''; parts[#parts+1]=file..':'..#s..':'..s end
+    local parts={}; for _,file in ipairs(P.FILES) do if file~='resume.dat' or files[file] then local s=files[file] or '';parts[#parts+1]=file..':'..#s..':'..s end end
     return C.sha256(table.concat(parts))
 end
 function P.summary(entry)
@@ -97,7 +97,7 @@ function P.summary(entry)
     data=ok and type(data)=='table' and data or {}
     return {id=entry.id,uuid=entry.uuid,name=entry.name,created=entry.created,updated=entry.updated,
         active=entry.id==P.index.active,player=type(data.PlayerBrand)=='string' and data.PlayerBrand or '',
-        money=type(data.money)=='number' and data.money or 0,checkpoint=exists(P.path('saving1.file',entry.id))}
+        money=type(data.money)=='number' and data.money or 0,checkpoint=exists(P.path('saving1.file',entry.id)),resume=exists(P.path('resume.dat',entry.id))}
 end
 function P.list()
     local out={}; for _,entry in ipairs(P.index.profiles) do out[#out+1]=P.summary(entry) end; return out
@@ -124,14 +124,14 @@ function P.activate(which)
 end
 function P.export(selection,checkpoint)
     assert(type(selection)=='table' and #selection>0 and #selection<=128,'请选择要导出的存档')
-    local entries,seen={},{}
+    local entries,seen,version={},{},1
     for _,which in ipairs(selection) do
         assert(not seen[which],'重复选择存档'); seen[which]=true
         local entry=P.entry(which); local files=P.files(which,checkpoint); local encoded={}
-        for file,bytes in pairs(files) do encoded[file]=C.base64(bytes) end
+        for file,bytes in pairs(files) do encoded[file]=C.base64(bytes);if file=='resume.dat' then version=2 end end
         entries[#entries+1]={uuid=entry.uuid,name=entry.name,created=entry.created,updated=entry.updated,files=encoded,digest=digest(files)}
     end
-    return {format='BossRushSave',version=1,game='Boss Rush HD',created=os.time(),entries=entries}
+    return {format='BossRushSave',version=version,game='Boss Rush HD',created=os.time(),entries=entries}
 end
 local function dataTree(value,depth,budget)
     assert(depth<=24,'存档嵌套过深')
@@ -164,8 +164,31 @@ local function checkpoint(bytes)
     end
     assert(position==#bytes+1,'检查点存在多余数据')
 end
+function P.validateGrowth(score,spell)
+    assert(type(score)=='table' and type(spell)=='table','成长或符卡数据无效')
+    dataTree(score,0,{0});dataTree(spell,0,{0})
+    assert(score.money==nil or (type(score.money)=='number' and score.money>=0 and score.money<=1e12),'金币数值无效')
+    assert(score.PlayerBrand==nil or (type(score.PlayerBrand)=='string' and #score.PlayerBrand<=96),'机签数据无效')
+    assert(score.version==nil or type(score.version)=='string','存档版本字段无效')
+    for _,key in ipairs({'ContinuousLogin','LastLoginDate','hair','total_icecount','total_photocount','music_bar_pos','music_bar_playmode','music_bar_time','player_select','stageselectPos','resume_count'}) do
+        assert(score[key]==nil or (type(score[key])=='number' and score[key]>=0),'存档数值类型错误：'..key)
+    end
+    for _,key in ipairs({'Manual','Achievement','NoticeAchievement','Duration','UnlockSystem','UnlockSC','bought','hiscore','stage_practice','system_selectid','menu_sc_pr','Player_playtime','AllFinishCount'}) do
+        assert(score[key]==nil or type(score[key])=='table','成长字段类型错误：'..key)
+    end
+    for _,key in ipairs({'Duration','Player_playtime','AllFinishCount','hiscore'}) do
+        if score[key] then for _,value in pairs(score[key]) do assert(type(value)=='number' and value>=0,'成长数值无效：'..key) end end
+    end
+    for _,players in pairs(spell) do if players~=false then
+        assert(type(players)=='table','符卡记录类型无效')
+        for player,history in pairs(players) do assert(type(player)=='string' and type(history)=='table' and type(history[1])=='number' and type(history[2])=='number' and history[1]>=0 and history[2]>=0,'符卡次数无效') end
+    end end
+end
+function P.validateState(value)
+    assert(type(value)=='table','续玩状态类型无效');dataTree(value,0,{0})
+end
 function P.validate(bundle)
-    assert(type(bundle)=='table' and bundle.format=='BossRushSave' and bundle.version==1 and bundle.game=='Boss Rush HD','不兼容的存档格式或版本')
+    assert(type(bundle)=='table' and bundle.format=='BossRushSave' and (bundle.version==1 or bundle.version==2) and bundle.game=='Boss Rush HD','不兼容的存档格式或版本')
     assert(type(bundle.entries)=='table' and #bundle.entries>0 and #bundle.entries<=128,'存档数量无效')
     local decoded={}
     for _,entry in ipairs(bundle.entries) do
@@ -173,7 +196,7 @@ function P.validate(bundle)
         assert(type(entry.created)=='number' and entry.created>=0 and entry.created<1e12 and type(entry.updated)=='number' and entry.updated>=0 and entry.updated<1e12,'存档时间无效')
         assert(type(entry.files)=='table','缺少存档内容'); local files={}
         for file,encoded in pairs(entry.files) do
-            assert(file=='Score.dat' or file=='Spellcard.dat' or file=='saving1.file','交换包包含未知文件')
+            assert(file=='Score.dat' or file=='Spellcard.dat' or file=='saving1.file' or (file=='resume.dat' and bundle.version==2),'交换包包含未知文件')
             assert(type(encoded)=='string','存档文件编码无效'); files[file]=C.unbase64(encoded)
         end
         for _,file in ipairs({'Score.dat','Spellcard.dat'}) do
@@ -205,6 +228,10 @@ function P.validate(bundle)
             end
         end
         if files['saving1.file'] then checkpoint(files['saving1.file']) end
+        if files['resume.dat'] then
+            assert(SaveResume,'当前运行时不支持关内续玩，请更新客户端')
+            SaveResume.decode(files['resume.dat'])
+        end
         assert(C.equal(digest(files),entry.digest),'存档文件校验失败')
         decoded[#decoded+1]={entry=entry,files=files}
     end
@@ -217,11 +244,11 @@ function P.preview(bundle)
         for _,localEntry in ipairs(P.index.profiles) do
             if localEntry.uuid==item.entry.uuid then
                 matching[#matching+1]={id=localEntry.id,name=localEntry.name,active=localEntry.id==P.index.active}
-                if digest(P.files(localEntry.id,item.files['saving1.file']~=nil))==item.entry.digest then same=true end
+                if digest(P.files(localEntry.id,(item.files['saving1.file']~=nil or item.files['resume.dat']~=nil)))==item.entry.digest then same=true end
             end
         end
         out[i]={index=i,name=item.entry.name,uuid=item.entry.uuid,updated=item.entry.updated,
-            checkpoint=item.files['saving1.file']~=nil,matches=matching,identical=same}
+            checkpoint=item.files['saving1.file']~=nil,resume=item.files['resume.dat']~=nil,matches=matching,identical=same}
     end
     return out
 end
@@ -234,7 +261,7 @@ function P.import(bundle,selection,policy)
         local item=decoded[number]; local target,identical
         for _,entry in ipairs(index.profiles) do if entry.uuid==item.entry.uuid then
             target=target or entry
-            if digest(P.files(entry.id,item.files['saving1.file']~=nil))==item.entry.digest then identical=true end
+            if digest(P.files(entry.id,(item.files['saving1.file']~=nil or item.files['resume.dat']~=nil)))==item.entry.digest then identical=true end
         end end
         if identical then skipped=skipped+1
         else
@@ -242,10 +269,9 @@ function P.import(bundle,selection,policy)
             local entry=record(item.entry.name,item.entry.uuid); entry.created=item.entry.created; entry.updated=item.entry.updated
             prepare(entry,item.files)
             if target and policy=='replace' then
-                if not item.files['saving1.file'] then
-                    local checkpoint=P.read('saving1.file',target.id)
-                    if checkpoint then atomic(P.path('saving1.file',entry.id),checkpoint) end
-                end
+                for _,file in ipairs({'saving1.file','resume.dat'}) do if not item.files[file] then
+                    local saved=P.read(file,target.id);if saved then atomic(P.path(file,entry.id),saved) end
+                end end
                 index.backups[#index.backups+1]=target
                 for i,v in ipairs(index.profiles) do if v.id==target.id then index.profiles[i]=entry end end
             else

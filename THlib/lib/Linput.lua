@@ -22,6 +22,9 @@ function GetInput()
             KeyStatePre[k] = KeyState[k]
         end
     end
+    if SaveResume and SaveResume.readInput(KeyState) then
+        return
+    end
     if rep.IsRecording() then
         -- 更新按键状态
 
@@ -42,6 +45,13 @@ function GetInput()
         -- 载入按键状态
         replayReader:Next(KeyState)
     end
+end
+
+function LoadSaveInputState(saved)
+    for key in pairs(KeyState) do KeyState[key]=nil end
+    for key in pairs(KeyStatePre) do KeyStatePre[key]=nil end
+    for key,value in pairs(saved or {}) do KeyState[key]=value;KeyStatePre[key]=value end
+    _G.KeyStatePre=KeyStatePre
 end
 
 ---是否按下

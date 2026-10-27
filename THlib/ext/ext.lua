@@ -135,6 +135,7 @@ local function ChangeGameStage()
         lstg.tmpvar = lstg.nexttmpvar
         lstg.nexttmpvar = nil
     end
+    if SaveResume then SaveResume.prepareStage() end
     -- 初始化随机数
     if lstg.var.ran_seed then
         ran:Seed(lstg.var.ran_seed)
@@ -159,6 +160,7 @@ local function ChangeGameStage()
     if not stage.current_stage.is_menu then
         lstg.system:init_value()
     end
+    if SaveResume then SaveResume.afterStageInit() end
 end
 
 ---行为帧动作(和游戏循环的帧更新分开)
@@ -179,6 +181,7 @@ local function DoFrame()
         end
         ChangeGameStage()
     end
+    if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()
     --stage和object逻辑
@@ -220,6 +223,7 @@ local function DoFrame()
     end
     UpdateXY()
     AfterFrame()
+    if SaveResume then SaveResume.afterLogic() end
 end
 _G.DoFrame = DoFrame
 ---缓速和加速
@@ -292,6 +296,11 @@ function FrameFunc()
         return false
     end
 
+    if SaveResume and SaveResume.recovering then
+        before=stopWatch:GetElapsed();after=before;offset=0
+        SaveResume.pump(DoFrame)
+        return false
+    end
     after = stopWatch:GetElapsed()
     differ = (after - before) * 60
     before = stopWatch:GetElapsed()
@@ -327,6 +336,7 @@ function FrameFunc()
         --按键弹出菜单
         if (GetLastKey() == setting.keysys.menu and not lstg.tmpvar.noPause or ext.pop_pause_menu) and not ext.StageIsMenu() then
             ext.pause_menu:FlyIn()
+            if SaveResume then SaveResume.flush("暂停") end
         end
     end
     --暂停菜单更新
@@ -356,6 +366,7 @@ function FrameFunc()
 end
 
 function RenderFunc()
+    if SaveResume and SaveResume.recovering then return SaveResume.renderRecovery() end
     if SaveSync.visible then return end
     BeginScene()
     SetViewMode("ui")
@@ -394,6 +405,7 @@ function RenderFunc()
     SaveSync.render()
 
     EndScene()
+    if SaveResume then SaveResume.afterRender() end
 
 
     --截图
@@ -407,6 +419,7 @@ function RenderFunc()
 end
 
 function FocusLoseFunc()
+    if SaveResume then SaveResume.flush("失去焦点") end
     --[[
         if not stage.current_stage.is_menu and ext.pause_menu:IsKilled() then
             ext.pause_menu:FlyIn()

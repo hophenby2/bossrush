@@ -475,11 +475,11 @@ function _G.StopMusic(bgm)
 end
 function _G.ResumeMusic(bgm)
     ext.ResumeMusic(bgm)
-    ext.music[bgm].paused = false
+    if ext.music[bgm] then ext.music[bgm].paused = false end
 end
 function _G.PauseMusic(bgm)
     ext.PauseMusic(bgm)
-    ext.music[bgm].paused = true
+    if ext.music[bgm] then ext.music[bgm].paused = true end
 end
 
 function ext.SetMusicSpeed(speed)

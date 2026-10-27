@@ -94,10 +94,11 @@ function InitSpellCardData()
 end
 
 function SaveScoreData()
+    if SaveResume and SaveResume.recovering then return end
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    SaveProfiles.write("Score.dat", sp:LockString(Serialize(scoredata)))
+    SaveProfiles.write("Score.dat", SaveCodec.lock(Serialize(scoredata)))
 end
 
 ---把符卡历史表补齐成「稠密数组」再交给 Serialize。
@@ -137,10 +138,11 @@ function EncodeSpellCardData()
 end
 
 function SaveSpellCardData()
+    if SaveResume and SaveResume.recovering then return end
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    SaveProfiles.write("Spellcard.dat", sp:LockString(Serialize(EncodeSpellCardData())))
+    SaveProfiles.write("Spellcard.dat", SaveCodec.lock(Serialize(EncodeSpellCardData())))
 end
 
 function DataBackUp()

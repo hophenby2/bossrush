@@ -85,6 +85,7 @@ ext.saving = saving
 local SAVE_DIR = SaveProfiles.userRoot()
 
 function saving.Save(stageNames)
+    if SaveResume and SaveResume.recovering then return end
     local stages = {}
     for _, v in ipairs(stageNames) do
         assert(replayStages[v])
@@ -111,6 +112,7 @@ saving.SaveManager = plus.ReplayManager(SAVE_DIR, "file", "saving")
 ---@param path string @录像文件路径（可选）
 ---@param stageName string @关卡名称
 function stage.Set(mode, path, stageName)
+    if SaveResume and not SaveResume.beforeStageSet(mode) then return end
     Print('Set', mode, path, stageName)
     if mode == "load" and stage.next_stage then
         return
@@ -156,6 +158,10 @@ function stage.Set(mode, path, stageName)
         -- 设置随机数种子
 
         lstg.var.ran_seed = ((os.time() % 65536) * 877) % 65536
+        if SaveResume then
+            lstg.var.__resume_version=1
+            if not lstg.var.__resume_run or (stage.current_stage and stage.current_stage.is_menu) then lstg.var.__resume_run=SaveCodec.id() end
+        end
         --由OLC添加，用于录像和切关
         lstg.var.stage_name = stageName
         --lstg.var.FakeGameFPS = setting.FakeGameFPS
@@ -191,6 +197,9 @@ function stage.Set(mode, path, stageName)
             stageName = stage.groups["BossRush"][i]
             --Print(stageName)
             lstg.var = DeSerialize(saveinfo.stages[i].stageExtendInfo)
+            if SaveResume and i==#saveinfo.stages then
+                lstg.var.__resume_version=1;lstg.var.__resume_run=lstg.var.__resume_run or SaveCodec.id()
+            end
             if i == #saveinfo.stages and i ~= STAGE_COUNT + 1 then
                 local v = lstg.var
                 v.saving = v.saving + 1
@@ -235,6 +244,34 @@ function stage.Set(mode, path, stageName)
         --stage.next_stage = stage.stages[stageName]
         --replayStages[stageName].stageExtendInfo = Serialize(lstg.var)
         stage.next_stage = stage.stages[stageName]--by OLC
+    elseif mode == "resume" then
+        local data=assert(SaveResume.pending)
+        local initial=DeSerialize(data.start.var)
+        local names={}
+        local saved=SaveProfiles.read("saving1.file")
+        if saved and not initial.is_practice then
+            local info=plus.ReplayManager.ReadReplayInfo(SaveProfiles.path("saving1.file"))
+            local matching=false
+            for _,record in ipairs(info.stages) do
+                if record.stageName==data.stage and DeSerialize(record.stageExtendInfo).__resume_run==data.run then matching=true end
+            end
+            for _,record in ipairs(info.stages) do
+                if record.stageName==data.stage then break end
+                if matching then
+                    local writer=plus.ReplayFrameWriter()
+                    local reader=plus.ReplayFrameReader(SaveProfiles.path("saving1.file"),record.frameDataPosition,record.frameCount)
+                    for _=1,record.frameCount do writer._count=writer._count+1;writer._data[writer._count]=reader._fs:ReadByte() end
+                    reader:Close();record.frameData=writer;replayStages[record.stageName]=record;names[#names+1]=record.stageName
+                end
+            end
+        end
+        local target=assert(stage.stages[data.stage])
+        if not initial.is_practice then assert(#names==(target.number or 1)-1,"缺少此前关卡记录，请使用关卡检查点继续") end
+        replayWriter=plus.ReplayFrameWriter()
+        replayStages[data.stage]={stageName=data.stage,score=0,randomSeed=initial.ran_seed,stageTime=os.time(),stageDate=os.time(),
+            stagePlayer=initial.rep_player,frameData=replayWriter,stageExtendInfo=data.start.var}
+        names[#names+1]=data.stage;stage.stages[target.group.title].save_replay=names
+        lstg.nextvar=initial;stage.next_stage=target
     elseif mode == "load" then
         if path ~= replayFilename then
             replayFilename = path

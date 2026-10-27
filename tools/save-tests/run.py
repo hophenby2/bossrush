@@ -3,6 +3,7 @@
 from pathlib import Path
 import argparse
 import platform
+import os
 import subprocess
 import tempfile
 
@@ -23,6 +24,13 @@ flags=['-bundle','-undefined','dynamic_lookup'] if platform.system()=='Darwin' e
 subprocess.run(['cc','-O2',*flags,'-I',str(engine/'luajit/include'),'-I',str(source),str(patched),str(source/'strbuf.c'),str(source/'fpconv.c'),'-o',str(build/'cjson.so')],check=True)
 with tempfile.TemporaryDirectory(prefix='bossrush-save-tests-') as sandbox:
     subprocess.run(['luajit',str(ROOT/'tools/save-tests/unit.lua'),str(ROOT),sandbox],cwd=ROOT,check=True)
+with tempfile.TemporaryDirectory(prefix='bossrush-resume-tests-') as sandbox:
+    subprocess.run(['luajit',str(ROOT/'tools/save-tests/resume.lua'),str(ROOT),sandbox],cwd=ROOT,check=True)
+if args.windows_pc:
+    with tempfile.TemporaryDirectory(prefix='bossrush-win-resume-tests-') as sandbox:
+        win=lambda p:'Z:'+str(p).replace('/','\\')
+        environment=dict(os.environ,WINEPREFIX=str(build/'wine'),WINEDEBUG='-all',MVK_CONFIG_LOG_LEVEL='0')
+        subprocess.run(['wine',str(build/'LuaJIT-win/src/luajit.exe'),win(ROOT/'tools/save-tests/resume.lua'),win(ROOT),win(sandbox)],env=environment,cwd=ROOT,check=True)
 subprocess.run(['python3',str(ROOT/'tools/save-tests/integration.py'),*(['--windows-pc'] if args.windows_pc else [])],cwd=ROOT,check=True)
 if args.browser:
     (ROOT/'android/dist/save-sync-test').mkdir(parents=True,exist_ok=True)

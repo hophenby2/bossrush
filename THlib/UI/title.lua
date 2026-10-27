@@ -73,7 +73,7 @@ function stage_menu:init()
             practice = nil
             last_menu = menu_title
             ext.saving.SaveManager:Refresh()
-            if ext.saving.SaveManager:GetRecord(1) then
+            if ext.saving.SaveManager:GetRecord(1) or (SaveResume and SaveResume.has()) then
                 New(SimpleChoose, menu_title, function()
                     menu_player_system_select.state = "stage"
                     menu_player_system_select:fresh()
@@ -87,7 +87,11 @@ function stage_menu:init()
                 menu.FadeOut(menu_title, "left")
             end
         end, "New Game" },
-        { "继续游戏", function()
+        { "恢复关内续玩", function()
+            local ok,err=pcall(SaveResume.request)
+            if not ok then New(SimpleNotice,menu_title,"无法恢复关内位置",tostring(err)) end
+        end, "Resume Position" },
+        { "从关卡检查点继续", function()
             practice = nil
             ext.saving.SaveManager:Refresh()
             local slot = ext.saving.SaveManager:GetRecord(1)
@@ -192,7 +196,7 @@ function stage_menu:init()
         else
             menu_title.pos = #menu_title.text
         end
-    end, { [2] = not ext.saving.SaveManager:GetRecord(1) })
+    end, { [2] = not (SaveResume and SaveResume.has()), [3] = not ext.saving.SaveManager:GetRecord(1) })
     menu_player_system_select = New(player_system_select, function(start)
         if start == "stage" then
             menu.FadeOut(menu_player_system_select)
