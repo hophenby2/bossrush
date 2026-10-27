@@ -44,6 +44,14 @@ PC 与 Android 可通过 BRS1 口令、文件、分片二维码或同网 / 热�
 支持既有 F5 / 触屏保存、强杀续玩和录像；详细规则见 mod/roguelike.txt。
 本轮测试在 dist/roguelike-test/，使用独立模拟器测试槽；不更新 Release。
 
+0.5.0 双Boss随机十战
+-------------------
+主菜单新增“双Boss随机十战”，每步同时两名 Boss，十步共二十张不同卡，允许同角色。
+出场与开卡初始化 X 分别 +96 / -96，Y 不变；后续移动依原卡执行。
+双方都结束后推进；弹池、子机和清场按实例隔离。双模式成绩单独记录。
+规则见 mod/roguelike.txt，验证记录位于 dist/dual-rogue-test/。
+本次同时提供 Windows x64 完整包（含引擎、脚本、音乐和素材），并发布 0.5.0 测试版 Release。
+
 构建（本机 macOS ARM64 已验证）
 ----------------------------
 需要 Python 3.11+、JDK 17、CMake、Ninja、Android SDK 和 NDK 26.3.11579264。

@@ -595,6 +595,8 @@ LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 player_system_select = Class(object)
 function player_system_select:fresh()
     self.simple_mode = false
+    self.simple_dual = false
+    self.simple_title = nil
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
     for i, p in ipairs(scoredata.UnlockSystem) do
@@ -778,7 +780,7 @@ function player_system_select:render()
     ui:DrawBack(Alpha, self.timer)
     menu:RenderExit(0, 30, 540, 510, Alpha)
     local mx, my, r = 240, 250, 155 + (cur_setting.easyrender and 0 or sin(self.timer * 3) * 2)
-    ui:RenderText("title", self.simple_mode and "选择玩家 · 随机十战" or self.title, Alpha * 200 - 100, 460, 1.25,
+    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · 随机十战")) or self.title, self.simple_dual and 240 or Alpha * 200 - 100, 460, self.simple_dual and 1.0 or 1.25,
             Color(255 * Alpha, 230, 230, 230), "centerpoint")
     SetImageState("bright_line", "mul+add", Alpha * 255, 255, 255, 255)
     Render("bright_line", Alpha * 200 - 100, 446, 0, 0.5, 0.5)
@@ -845,7 +847,8 @@ function player_system_select:render()
                 930, 83 + Alpha * 400, 1, Color(Alpha * (155 + 50 * sin(self.timer * 4)), 255, 255, 255), "right")
 
     else
-        local tips={"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误结束","不启用异变系统与道具构筑","支持关内自动保存 / F5 手动保存"}
+        local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场横移 +96 / -96，纵坐标不变","十次失误结束，支持自动 / F5 保存"}
+            or {"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误结束","不启用异变系统与道具构筑","支持关内自动保存 / F5 手动保存"}
         for i,text in ipairs(tips) do
             ui:RenderText("title",text,700,370-i*42,0.8,Color(Alpha*255,210,235,245),"centerpoint")
         end

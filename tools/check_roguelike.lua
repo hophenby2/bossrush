@@ -1,4 +1,5 @@
 -- 读取原卡注册，验证抽取与十战生命周期；不读写玩家 User/ 或 replay/。
+local checkDual=arg[1]=='--dual'
 arg[1]='roguelike-registry'
 local file=assert(io.open('tools/check_stage.lua','rb'));local source=file:read('*a');file:close()
 local position=assert(source:find('if path == "--all" then',1,true))
@@ -42,7 +43,7 @@ function stage:Option()
 end
 New=function(class,cards)
     local obj=setmetatable({_live=true,otherboss={}}, {__index=class})
-    if cards then obj.life=3;spawned[#spawned+1]={obj=obj,class=class,card=cards[1]}
+    if cards then obj.life=3;spawned[#spawned+1]={obj=obj,class=class,card=cards[1],tick=stage.current_stage.timer}
     elseif class.init then class.init(obj) end
     return obj
 end
@@ -69,9 +70,9 @@ check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽�
 check(keys(R.draw(17))~=keys(R.draw(31415)),'不同种子产生不同路线')
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
 check(true,'抽取不改原卡参数与函数')
-local function simulate(seed,failRound)
+local function simulate(seed,failRound,variant)
     lstg.var={ran_seed=seed,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={}
-    R.start();local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
+    R.start(variant);local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
@@ -96,3 +97,9 @@ replay=true;cleared=0;stage.next_stage=nil;battle.rogue_finished=false;lstg.var.
 R.finish(battle,true)
 check(ext.rep_over and ext.pop_pause_menu and not stage.next_stage and cleared==0,'录像结束使用回放菜单，不删玩家续玩点')
 print(('随机十战回归通过：%d 项；TH31=%d、TH34=%d、TH35=%d；400 个种子、十战成功与失败、录像收尾。'):format(total,counts.TH31,counts.TH34,counts.TH35))
+
+if checkDual then
+    local verify=dofile('tools/check_dual_rogue.lua')
+    verify({R=R,pool=pool,check=check,simulate=simulate,spawns=function() return spawned end,setReplay=function(v) replay=v end})
+    print('双 Boss 检查累计通过：'..total..' 项')
+end
