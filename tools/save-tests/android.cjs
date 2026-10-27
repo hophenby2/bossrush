@@ -6,12 +6,13 @@ const win=p=>'Z:'+p.replaceAll('/','\\'),sleep=ms=>new Promise(r=>setTimeout(r,m
 const run=(...args)=>execFileSync(adb,args,{encoding:'utf8',timeout:10000});
 const sandbox=fs.mkdtempSync(path.join(os.tmpdir(),'bossrush-win-android-'));
 const pc=spawn('wine',[path.join(root,'android/build/save-tests/LuaJIT-win/src/luajit.exe'),win(path.join(__dirname,'host.lua')),win(root),win(sandbox)],{env:{...process.env,WINEPREFIX:path.join(root,'android/build/save-tests/wine'),WINEDEBUG:'-all',MVK_CONFIG_LOG_LEVEL:'0'},stdio:['ignore','pipe','pipe']});
-let browser;
+let browser,pcHeartbeat;
 (async()=>{
   for(let n=0;!fs.existsSync(path.join(sandbox,'host.json'))&&n<1000;n++)await sleep(30);
   const config=JSON.parse(fs.readFileSync(path.join(sandbox,'host.json')));
   const desktop=async(p,body)=>{const r=await fetch('http://127.0.0.1:'+config.port+p,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+config.token,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
   const tag=Date.now().toString(36),labelA='PC 同步测试 A '+tag,labelB='PC 同步测试 B '+tag,labelMobile='Android 反向同步测试 '+tag;
+  pcHeartbeat=setInterval(()=>desktop('/api/status').catch(()=>{}),4000);pcHeartbeat.unref();
   const first=(await desktop('/api/create',{name:labelA})).id,second=(await desktop('/api/create',{name:labelB})).id;
   const lock=s=>{const p=[2,3,5,7,11,13,17,19,23,29,31,37,41];return Buffer.from([...Buffer.from(s)].map((v,i)=>(v+p[(i+1)%13]-1)%127+1));};
   fs.writeFileSync(path.join(sandbox,'User/profiles',first,'Score.dat'),lock(JSON.stringify({money:321,PlayerBrand:'PC_SYNC'})));
@@ -60,4 +61,4 @@ let browser;
   fs.writeFileSync(path.join(root,'android/dist/save-sync-test/android-integration.json'),JSON.stringify({passed:true,qrParts:fragments.length,selectedImport:true,windowsToAndroid:true,androidToWindows:true,switchAndRestore:true,camera},null,2));
   await page.click('#returnGame').catch(()=>{});await sleep(1000);fs.writeFileSync(path.join(root,'android/dist/save-sync-test/android-restored.png'),execFileSync(adb,['exec-out','screencap','-p'],{maxBuffer:16*1024*1024}));
   console.log('Android 实机运行回归通过：QR 图像导入、多存档筛选、Windows x64 双向传输、切换空槽再恢复、相机视频帧。');
-})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{if(browser)browser.disconnect();pc.kill();fs.rmSync(sandbox,{recursive:true,force:true});});
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{clearInterval(pcHeartbeat);if(browser)browser.disconnect();pc.kill();fs.rmSync(sandbox,{recursive:true,force:true});});
