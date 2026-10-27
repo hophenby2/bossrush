@@ -1223,6 +1223,7 @@ if FileExist("Creative.lua") then
 end
 
 IncludeLuaFile("mod\\main_stage.lua")
+IncludeLuaFile("mod\\roguelike.lua")
 IncludeLuaFile("mod\\summary.lua")
 
 IncludeLuaFile("mod\\th16AEX\\root.lua")

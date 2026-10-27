@@ -594,6 +594,7 @@ LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 
 player_system_select = Class(object)
 function player_system_select:fresh()
+    self.simple_mode = false
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
     for i, p in ipairs(scoredata.UnlockSystem) do
@@ -637,12 +638,14 @@ function player_system_select:init(exit_func)
             lstg.var.player_name = player_list[self.pos1][2]
             lstg.var.rep_player = player_list[self.pos1][3]
             lstg.var.current_system = ""
-            for i, u in pairs(self.system_selectid) do
-                if u then
-                    lstg.var.current_system = lstg.var.current_system .. tostring(i + 64):char()
+            if not self.simple_mode then
+                for i, u in pairs(self.system_selectid) do
+                    if u then
+                        lstg.var.current_system = lstg.var.current_system .. tostring(i + 64):char()
+                    end
                 end
+                scoredata.system_selectid = sp:CopyTable(self.system_selectid)
             end
-            scoredata.system_selectid = sp:CopyTable(self.system_selectid)
 
             self.exit_func(self.state)
             PlaySound("ok00")
@@ -656,6 +659,7 @@ function player_system_select:init(exit_func)
         PlaySound("cancel00")
     end
     function self:setsystem()
+        if self.simple_mode then return end
         if self.unlocksystem[self.pos2] == true then
             for i = 1, self.pos2 - 1 do
                 self.system_selectid[i] = self.system_selectid[i] or false
@@ -675,6 +679,7 @@ function player_system_select:init(exit_func)
         PlaySound("select00")
     end
     function self:addpos2(num)
+        if self.simple_mode then return end
         self.pos2 = sp:TweakValue(self.pos2 + num, SYSTEM_COUNT, 1)
         self.oy = self.oy - self.liney * num
         self.wa_index[(num < 0) and 3 or 4] = 1
@@ -773,7 +778,7 @@ function player_system_select:render()
     ui:DrawBack(Alpha, self.timer)
     menu:RenderExit(0, 30, 540, 510, Alpha)
     local mx, my, r = 240, 250, 155 + (cur_setting.easyrender and 0 or sin(self.timer * 3) * 2)
-    ui:RenderText("title", self.title, Alpha * 200 - 100, 460, 1.25,
+    ui:RenderText("title", self.simple_mode and "选择玩家 · 随机十战" or self.title, Alpha * 200 - 100, 460, 1.25,
             Color(255 * Alpha, 230, 230, 230), "centerpoint")
     SetImageState("bright_line", "mul+add", Alpha * 255, 255, 255, 255)
     Render("bright_line", Alpha * 200 - 100, 446, 0, 0.5, 0.5)
@@ -808,45 +813,56 @@ function player_system_select:render()
     ui:RenderText("title", self.playername[self.pos1], mx, my + r, 1,
             Color(255 * Alpha * self.tri, 189, 252, 201), "center", "bottom")
 
-    local lines = 8
-    for k = -lines, lines do
-        local pos = sp:TweakValue(-k + self.pos2, SYSTEM_COUNT, 1)
-        local y = 270 + k * self.liney + self.oy
-        local yindex = abs(y - 270) / self.liney / lines
-        local x = 780 - task.SetMode[2](yindex) * 100 * Alpha
-        local size = 1 - yindex * 0.5
-        local alpha = (1 - yindex) * Alpha
-        local blk = (k == 0) and 255 or 150
-        local unit = self.systemdata[pos]
-        local img = ("stage_pic%d"):format(unit.pic)
-        local R, G, B = blk, blk, blk
-        if self.unlocksystem[pos] ~= true then
-            R, G, B = 125, 64, 57
-            ui:RenderText("title", "locked", x - 40 - 20, y, 0.8, Color(alpha * 255, 100, 100, 100), "right", "vcenter")
-        elseif self.system_selectid[pos] then
-            R, G, B = 189, 252, 201
-            ui:RenderText("title", "√", x - 40 - 20, y, 1, Color(alpha * 255, R, G, B), "right", "vcenter")
+    if not self.simple_mode then
+        local lines = 8
+        for k = -lines, lines do
+            local pos = sp:TweakValue(-k + self.pos2, SYSTEM_COUNT, 1)
+            local y = 270 + k * self.liney + self.oy
+            local yindex = abs(y - 270) / self.liney / lines
+            local x = 780 - task.SetMode[2](yindex) * 100 * Alpha
+            local size = 1 - yindex * 0.5
+            local alpha = (1 - yindex) * Alpha
+            local blk = (k == 0) and 255 or 150
+            local unit = self.systemdata[pos]
+            local img = ("stage_pic%d"):format(unit.pic)
+            local R, G, B = blk, blk, blk
+            if self.unlocksystem[pos] ~= true then
+                R, G, B = 125, 64, 57
+                ui:RenderText("title", "locked", x - 40 - 20, y, 0.8, Color(alpha * 255, 100, 100, 100), "right", "vcenter")
+            elseif self.system_selectid[pos] then
+                R, G, B = 189, 252, 201
+                ui:RenderText("title", "√", x - 40 - 20, y, 1, Color(alpha * 255, R, G, B), "right", "vcenter")
+            end
+            SetImageState("bright_line", "mul+add", alpha * 255, R, G, B)
+            Render("bright_line", x + 47, y - 13, 0, 0.5, 0.3)
+            ui:RenderText("title", unit.title, x, y, size, Color(alpha * 255, R, G, B), "left", "vcenter")
+            SetImageState(img, "", alpha * 255, blk, blk, blk)
+            Render(img, x - 40, y, 0, 15 / 256)
+            SetImageState("white", "", alpha * 255, blk, blk, blk)
+            misc.RenderOutLine("white", x - 40 - 15, x - 40 + 15, y - 15, y + 15, 0, 1)
         end
-        SetImageState("bright_line", "mul+add", alpha * 255, R, G, B)
-        Render("bright_line", x + 47, y - 13, 0, 0.5, 0.3)
-        ui:RenderText("title", unit.title, x, y, size, Color(alpha * 255, R, G, B), "left", "vcenter")
-        SetImageState(img, "", alpha * 255, blk, blk, blk)
-        Render(img, x - 40, y, 0, 15 / 256)
-        SetImageState("white", "", alpha * 255, blk, blk, blk)
-        misc.RenderOutLine("white", x - 40 - 15, x - 40 + 15, y - 15, y + 15, 0, 1)
+        ui:RenderText("title", ("按%s键选择系统"):format(self.keyname[setting.keys.special]),
+                930, 83 + Alpha * 400, 1, Color(Alpha * (155 + 50 * sin(self.timer * 4)), 255, 255, 255), "right")
+
+    else
+        local tips={"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误结束","不启用异变系统与道具构筑","支持关内自动保存 / F5 手动保存"}
+        for i,text in ipairs(tips) do
+            ui:RenderText("title",text,700,370-i*42,0.8,Color(Alpha*255,210,235,245),"centerpoint")
+        end
     end
-    ui:RenderText("title", ("按%s键选择系统"):format(self.keyname[setting.keys.special]),
-            930, 83 + Alpha * 400, 1, Color(Alpha * (155 + 50 * sin(self.timer * 4)), 255, 255, 255), "right")
 
     local wa = self.wa_index
     SetImageState("weapon_arrow", "", Alpha * (150 + wa[1] * 75), 175 - wa[1] * 75, 175, 175 - wa[1] * 75)
     Render("weapon_arrow", 240 - r - 45, 250, 0, 0.8 + wa[1] * 0.1)
     SetImageState("weapon_arrow", "", Alpha * (150 + wa[2] * 75), 175 - wa[2] * 75, 175, 175 - wa[2] * 75)
     Render("weapon_arrow", 240 + r + 45, 250, 180, 0.8 + wa[2] * 0.1)
-    SetImageState("weapon_arrow", "", Alpha * (150 + wa[3] * 75), 175 - wa[3] * 75, 175, 175 - wa[3] * 75)
-    Render("weapon_arrow", 880, 420, 270, 0.8 + wa[3] * 0.1)
-    SetImageState("weapon_arrow", "", Alpha * (150 + wa[4] * 75), 175 - wa[4] * 75, 175, 175 - wa[4] * 75)
-    Render("weapon_arrow", 880, 120, 90, 0.8 + wa[4] * 0.1)
+    if not self.simple_mode then
+        SetImageState("weapon_arrow", "", Alpha * (150 + wa[3] * 75), 175 - wa[3] * 75, 175, 175 - wa[3] * 75)
+        Render("weapon_arrow", 880, 420, 270, 0.8 + wa[3] * 0.1)
+        SetImageState("weapon_arrow", "", Alpha * (150 + wa[4] * 75), 175 - wa[4] * 75, 175, 175 - wa[4] * 75)
+        Render("weapon_arrow", 880, 120, 90, 0.8 + wa[4] * 0.1)
+
+    end
 
     SetImageState("general_button", "", Alpha * 200, 255, 255, 255)
     Render("general_button", 480, 45, 0, 0.3 + self.colindex * 0.05)

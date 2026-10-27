@@ -150,6 +150,17 @@ function stage_menu:init()
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
         end, "Spell Start" },
+        { "随机十战", function()
+            local function enter()
+                practice='roguelike';last_menu=menu_title
+                menu_player_system_select:fresh();menu_player_system_select.simple_mode=true
+                menu_player_system_select.state="stage"
+                menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
+            end
+            if SaveResume and SaveResume.has() then
+                New(SimpleChoose,menu_title,enter,load(""),"随机十战","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
+            else enter() end
+        end, "Random 10" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)
             menu.FadeIn(menu_replay_loader, "left")
@@ -214,7 +225,9 @@ function stage_menu:init()
                 if last_menu and last_menu.level then
                     stage.group.Start(stage.groups[last_menu.level])
                 else
-                    if practice == 'stage' then
+                    if practice == 'roguelike' then
+                        RogueTen.start()
+                    elseif practice == 'stage' then
                         local select = menu_practice.stage_selects[menu_practice.pos]
                         if type(select.stage) == "function" then
                             select.stage()

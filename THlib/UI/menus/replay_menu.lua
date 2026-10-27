@@ -20,7 +20,7 @@ local function FetchReplaySlots()
                 tmp = string.match(k.stageName, '^(.+)@.+$')
                 tmp = ui.menu.sntext[tmp] or tmp
             end
-            diff = (diff == 'Spell Practice') and '符卡练习' or "关卡"
+            diff = (diff == 'Spell Practice') and '符卡练习' or (diff == 'RogueTen' and '随机十战' or "关卡")
             stage_num = (tmp == 'Spell Practice') and "SC" or tmp
             if slot.group_finish == 1 then
                 stage_num = 'All'
