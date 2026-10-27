@@ -28,3 +28,8 @@ extern "C" JNIEXPORT void JNICALL
 Java_org_bossrush_hd_BossRushActivity_nativeBack(JNIEnv*, jclass) {
     callGame("AndroidBack", 0, false);
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_bossrush_hd_BossRushActivity_nativeSaveClose(JNIEnv*, jclass) {
+    callGame("BossRushSaveClose", 0, false);
+}

@@ -1,0 +1,18 @@
+{
+  "qrcode-generator": {
+    "version": "1.4.4",
+    "url": "https://registry.npmjs.org/qrcode-generator/-/qrcode-generator-1.4.4.tgz",
+    "archiveSha256": "ab6ed47d378877441deae95972e07b2716c26545a735a23aa6b9d442b33026ed",
+    "file": "qrcode.js",
+    "fileSha256": "18ae399f81182bc9de916e9c77b195df20cc58d6f2d55a62b085a299f1bf1780",
+    "license": "MIT"
+  },
+  "jsqr": {
+    "version": "1.4.0",
+    "url": "https://registry.npmjs.org/jsqr/-/jsqr-1.4.0.tgz",
+    "archiveSha256": "b5299b37917a1fe7a8cab9dd5cc6b8accf82663add80abe5bf7761a921cc6602",
+    "file": "jsQR.js",
+    "fileSha256": "bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859",
+    "license": "Apache-2.0"
+  }
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """检查离线 APK 的完整性、资源隔离、ARM64 库和无损 WAV 重封装。"""
 from pathlib import Path
+import argparse
 import hashlib
 import io
 import json
@@ -9,7 +10,10 @@ import wave
 import zipfile
 
 ROOT = Path(__file__).resolve().parent
-GAME = ROOT.parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--game-root', type=Path, default=ROOT.parent, help='与 APK 对应的游戏源码快照')
+args = parser.parse_args()
+GAME = args.game_root.resolve()
 apk = ROOT / 'dist/BossRushHD-android-arm64-debug.apk'
 with zipfile.ZipFile(apk) as archive:
     names = archive.namelist()

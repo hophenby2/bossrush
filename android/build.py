@@ -269,13 +269,19 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
+    global GAME
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
     args = parser.parse_args()
+    if args.game_root:
+        GAME = args.game_root.resolve()
+        if not (GAME / 'core.lua').is_file():
+            parser.error('--game-root 必须包含 core.lua')
     BUILD.mkdir(exist_ok=True)
     prepare_engine(args.engine_archive)
     assets = prepare_assets()

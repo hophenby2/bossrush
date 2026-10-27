@@ -174,6 +174,7 @@ function stage_menu:init()
             menu.FadeIn(menu_key)
             menu.FadeOut(menu_title, "left")
         end, "Key Settings" },
+        { "存档 / 同步", function() SaveSync.open() end, "Save / Sync" },
         { "其他设置", function()
             menu.FadeIn(menu_setting)
             menu.FadeOut(menu_title)
@@ -418,8 +419,8 @@ function stage_menu:init()
     if scoredata.version ~= ui.version then
         if scoredata.version and scoredata.version:sub(2, 2) and tonumber(scoredata.version:sub(2, 2)) >= 5 then
         else
-            if FileExist("User\\saving1.file") then
-                os.remove("User\\saving1.file")
+            if FileExist(SaveProfiles.path("saving1.file")) then
+                os.remove(SaveProfiles.path("saving1.file"))
             end
         end
         --更新版本初始化

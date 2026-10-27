@@ -8,6 +8,10 @@ local toX, fromX = {}, {}
 for name, key in pairs(windows) do toX[key] = xKeys[name]; fromX[xKeys[name]] = key end
 for code = 65, 90 do toX[code] = xKeys[string.char(code)]; fromX[toX[code]] = code end
 for code = 48, 57 do toX[code] = xKeys[string.char(code)]; fromX[toX[code]] = code end
+for number = 1, 12 do
+    local value = xKeys['F'..number]
+    if value then toX[111+number]=value; fromX[value]=111+number end
+end
 local buttons = {
     { key = 90, action = 'shoot', x = 853, y = 90, radius = 48, label = '射击' },
     { key = 16, action = 'slow', x = 750, y = 92, radius = 40, label = '低速' },
@@ -78,7 +82,11 @@ function I.touch(id, x, y, event)
         local t = I.touches[id]
         if not t then
             t = { x = x, y = y }
+            if x>=800 and x<=956 and y>=510 and y<=538 then
+                t.button={key=121}; I.pulse(121)
+            end
             for _, button in ipairs(I.menuMode() and menuButtons or buttons) do
+                if t.button then break end
                 if (x-button.x)^2 + (y-button.y)^2 <= button.radius^2 then
                     t.button = button
                     if button.key == 27 then I.pulse(27) end

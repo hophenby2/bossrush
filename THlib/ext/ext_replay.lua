@@ -82,7 +82,7 @@ function replay.SaveReplay(stageNames, slot, playerName, finish)
 end
 local saving = {}
 ext.saving = saving
-local SAVE_DIR = "User"
+local SAVE_DIR = SaveProfiles.userRoot()
 
 function saving.Save(stageNames)
     local stages = {}
@@ -184,7 +184,7 @@ function stage.Set(mode, path, stageName)
 
     elseif mode == "load to save" then
         ContinueGame = true
-        local saveinfo = plus.ReplayManager.ReadReplayInfo("User\\saving1.file")  -- 重新读取录像信息以保证准确性
+        local saveinfo = plus.ReplayManager.ReadReplayInfo(SaveProfiles.path("saving1.file"))  -- 重新读取录像信息以保证准确性
         local save = {}
         assert(#saveinfo.stages > 0)
         for i = 1, #saveinfo.stages do
@@ -210,7 +210,7 @@ function stage.Set(mode, path, stageName)
             end
             local sg = string.match(stageName, '^.+@(.+)$')
             replayWriter = plus.ReplayFrameWriter()
-            replayReader = plus.ReplayFrameReader("User\\saving1.file", saveinfo.stages[i].frameDataPosition, saveinfo.stages[i].frameCount)
+            replayReader = plus.ReplayFrameReader(SaveProfiles.path("saving1.file"), saveinfo.stages[i].frameDataPosition, saveinfo.stages[i].frameCount)
             for _ = 1, replayReader._count do
                 replayWriter._count = replayWriter._count + 1
                 replayWriter._data[replayWriter._count] = replayReader._fs:ReadByte()

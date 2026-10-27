@@ -115,7 +115,7 @@ function ReplayManager:init(replayDirectory, format, name)
     self._repdir = replayDirectory
     format = format or "rep"
     name = name or "slot"
-    self._filefmt = name .. "(%d+)." .. format
+    self._filefmt = "^" .. name .. "(%d+)%." .. format .. "$"
     self._filefmt2 = name .. "%d." .. format
     self._slots = nil
     self._slotmax = 16
@@ -304,7 +304,7 @@ end
 ---@param data table
 function ReplayManager.SaveReplayInfo2(data)
     --先存在saving.file里
-    local f = plus.FileStream(__UTF8ToANSI("User\\saving.file"), "wb")
+    local f = plus.FileStream(__UTF8ToANSI(SaveProfiles.path("saving.file")), "wb")
     local w = plus.BinaryWriter(f)
     local _save_finish = false
     plus.TryCatch {
@@ -379,10 +379,9 @@ function ReplayManager.SaveReplayInfo2(data)
                 希望有朝一日能解决这个问题（]])
             else
                 --如果成功，就替换文件
-                if FileExist("User\\saving1.file") then
-                    os.remove("User\\saving1.file")
-                end
-                os.rename("User\\saving.file", "User\\saving1.file")
+                SaveProfiles.atomic(SaveProfiles.path("saving1.file"),
+                    assert(SaveProfiles.readFile(SaveProfiles.path("saving.file"))))
+                os.remove(SaveProfiles.path("saving.file"))
             end
 
         end

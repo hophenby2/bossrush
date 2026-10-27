@@ -19,6 +19,7 @@ function C.install()
     end
     PostEffect,lstg.PostEffect=post,post
     RenderFunc=function()
+        if SaveSync and SaveSync.visible then return end
         local current=stage.current_stage
         local paused=current and not current.is_menu and not ext.pause_menu:IsKilled()
         if not paused or C.stage~=current or not C.ready then
@@ -30,6 +31,7 @@ function C.install()
             ext.pause_menu:render()
             ext.manual:render(); ext.achievement:render()
             SetViewMode('ui'); ext.RenderFPS()
+            if SaveSync then SaveSync.render() end
             EndScene()
         end
     end

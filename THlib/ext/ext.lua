@@ -121,6 +121,7 @@ local function ChangeGameStage()
     ResetCurSystem()--重制system选择
     SaveSpellCardData()
     SaveScoreData()
+    if SaveProfiles.pending then ReloadSaveProfile() end
     ext.Aya_texture = nil--重制拍照图像
     ext.notUIdraw = nil
     sp:UnitListUpdate(boss_group)
@@ -284,6 +285,12 @@ local mask_fader = mask_fader
 local ui_drawing = ui_drawing
 local setting = setting
 function FrameFunc()
+    SaveSync.frame()
+    if SaveSync.visible and not SaveProfiles.pending then
+        -- 同步页暂停期间仍更新计时基准，避免返回时补跑数分钟的战斗帧。
+        before=stopWatch:GetElapsed(); after=before; offset=0
+        return false
+    end
 
     after = stopWatch:GetElapsed()
     differ = (after - before) * 60
@@ -349,6 +356,7 @@ function FrameFunc()
 end
 
 function RenderFunc()
+    if SaveSync.visible then return end
     BeginScene()
     SetViewMode("ui")
     SetWorldFlag(1)
@@ -383,6 +391,7 @@ function RenderFunc()
     Failed_Show:AfterRender()
 
     Failed_Show:frame()
+    SaveSync.render()
 
     EndScene()
 

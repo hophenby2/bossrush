@@ -13,6 +13,11 @@ lstg.DoFile("THlib\\lib\\Llog.lua")--简单的log系统
 lstg.DoFile("THlib\\lib\\Lglobal.lua")--用户全局变量
 lstg.DoFile("THlib\\lib\\Lmath.lua")--数学常量、数学函数、随机数系统
 lstg.DoFile("THlib\\plus\\plus.lua")--CHU神的plus库，replay系统、plusClass、NativeAPI
+lstg.DoFile("THlib/save/codec.lua")
+lstg.DoFile("THlib/save/profiles.lua")
+SaveProfiles.init()
+lstg.DoFile("THlib/save/transport.lua")
+lstg.DoFile("THlib/save/service.lua")
 lstg.DoFile("THlib\\lib\\Lobject.lua")--Luastg的Class、object
 lstg.DoFile("THlib\\lib\\LObjectEvents.lua")--一些object事件函数
 
@@ -74,6 +79,41 @@ function GameInit()
 end
 
 local floatmoney = 0
+-- 只在旧场景完成结算与销毁后调用；重建与玩家存档有关的运行时缓存。
+function ReloadSaveProfile()
+    local which=assert(SaveProfiles.pending)
+    SaveProfiles.activate(which)
+    InitScoreData()
+    InitSpellCardData()
+    scoredata.PlayerBrand=scoredata.PlayerBrand or 'PLAYER'
+    -- 符卡注册只在启动时执行一次，换到空存档后须重新补齐所有已注册的历史槽。
+    for _,unit in ipairs(_sc_table or {}) do
+        local number=unit.card.card_id
+        if number then
+            if type(spell_card_data[number])~='table' then spell_card_data[number]={} end
+            for _,playerInfo in ipairs(player_list) do
+                local history=spell_card_data[number][playerInfo[2]]
+                if type(history)~='table' then spell_card_data[number][playerInfo[2]]={0,0} end
+            end
+        end
+    end
+    floatmoney=0
+    CurrentMoney=scoredata.money+CurrentVerifiableOffset
+    if ext.achievement then
+        ext.achievement.getcount=0
+        ext.achievement.achievement={}
+        for _,value in pairs(scoredata.Achievement) do
+            if value==true then ext.achievement.getcount=ext.achievement.getcount+1 end
+        end
+    end
+    if ext.saving then
+        ext.saving.SaveManager._repdir=SaveProfiles.userRoot()
+        ext.saving.SaveManager:Refresh()
+    end
+    if AndroidInput then AndroidInput.reset() end
+    if lstg.AndroidClock then lstg.SystemLog('BOSSRUSH_PROFILE_SWITCH: '..which) end
+    SaveProfiles.pending=nil
+end
 function AddMoney(nums)
     if not ext.replay.IsReplay() then
         local data = scoredata

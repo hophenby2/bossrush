@@ -19,23 +19,21 @@ function InitScoreData()
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    local file = "User\\Score.dat"
+    local file = SaveProfiles.path("Score.dat")
     --读取文件
     local data
-    if not FileExist(file) then
+    local saved = SaveProfiles.read(file:match("([^/]+)$"))
+    if not saved then
         data = {}
     else
-        local scoredata_file = io.open(file, "rb")
-        local text = sp:UnLockString(scoredata_file:read("*a"))
+        local text = sp:UnLockString(saved)
         if pcall(DeSerialize, text) then
             data = DeSerialize(text)
         else
-            lstg.ExtractRes(file, "User\\Score_error.dat")
+            lstg.ExtractRes(file, SaveProfiles.path("Score_error.dat"))
             lstg.MsgBoxError("读取 Score.dat 失败\n已为您保留出现错误的存档\n请及时联系作者反馈此问题", "Warning!!", false)
             data = {}
         end
-        scoredata_file:close()
-        scoredata_file = nil
     end
     --初始化
     do
@@ -74,24 +72,22 @@ function InitSpellCardData()
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    local file = "User\\Spellcard.dat"
+    local file = SaveProfiles.path("Spellcard.dat")
     --读取文件
     local data
-    if not FileExist(file) then
+    local saved = SaveProfiles.read(file:match("([^/]+)$"))
+    if not saved then
         data = {}
     else
-        local spell_card_data_file = io.open(file, "rb")
-        local text = sp:UnLockString(spell_card_data_file:read("*a"))
+        local text = sp:UnLockString(saved)
         --Print(text)
         if pcall(DeSerialize, text) then
             data = DeSerialize(text)
         else
-            lstg.ExtractRes(file, "User\\Spellcard_error.dat")
+            lstg.ExtractRes(file, SaveProfiles.path("Spellcard_error.dat"))
             lstg.MsgBoxError("读取 Spellcard.dat 失败\n已为您保留出现错误的存档\n请及时联系作者反馈此问题", "Warning!!", false)
             data = {}
         end
-        spell_card_data_file:close()
-        spell_card_data_file = nil
     end
     CheckData(data)
     spell_card_data = data
@@ -101,9 +97,7 @@ function SaveScoreData()
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    local score_data_file = io.open("User\\Score.dat", "wb")
-    score_data_file:write(sp:LockString(Serialize(scoredata)))
-    score_data_file:close()
+    SaveProfiles.write("Score.dat", sp:LockString(Serialize(scoredata)))
 end
 
 ---把符卡历史表补齐成「稠密数组」再交给 Serialize。
@@ -146,20 +140,10 @@ function SaveSpellCardData()
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
     end
-    local spell_card_data_file = io.open("User\\Spellcard.dat", "wb")
-    spell_card_data_file:write(sp:LockString(Serialize(EncodeSpellCardData())))
-    spell_card_data_file:close()
+    SaveProfiles.write("Spellcard.dat", sp:LockString(Serialize(EncodeSpellCardData())))
 end
 
 function DataBackUp()
-    local file = io.open("User\\Score.dat.bak", "wb")
-    for str in io.lines("User\\Score.dat") do
-        file:write(str .. "\n")
-    end
-    file:close()
-    file = io.open("User\\Spellcard.dat.bak", "wb")
-    for str in io.lines("User\\Spellcard.dat") do
-        file:write(str .. "\n")
-    end
-    file:close()
+    SaveProfiles.atomic(SaveProfiles.path("Score.dat.bak"), assert(SaveProfiles.read("Score.dat")))
+    SaveProfiles.atomic(SaveProfiles.path("Spellcard.dat.bak"), assert(SaveProfiles.read("Spellcard.dat")))
 end
