@@ -63,6 +63,10 @@ end
 local function imageKind(name)
     if CheckRes('ani',name) then return 'ani' elseif CheckRes('psi',name) then return 'psi' end;return 'img'
 end
+local function targetSize(name)
+    -- 框架的全局 GetTextureSize 只缓存 LoadTexture，渲染目标须查询底层 API。
+    return (lstg.GetTextureSize or GetTextureSize)(name)
+end
 local function default(o)
     if not N.host() and not C.active then return C.raw.DefaultRenderFunc(o) end
     local image=o.img
@@ -135,7 +139,7 @@ function C.install()
                 if factor~=1 and kind then setStyle(kind,a[1],style,1) end
                 local metadata
                 if name=='RenderTexture' and C.targets[a[1]] then
-                    local w,h=GetTextureSize(a[1]);local full=setting and w==setting.resx and h==setting.resy
+                    local w,h=targetSize(a[1]);local full=setting and w==setting.resx and h==setting.resy
                     metadata={w,h,screen.dx,screen.dy,screen.scale,full==true}
                 end
                 emit(name,a,style,metadata);return unpack(result)
@@ -229,6 +233,9 @@ function C.receiveResources(bytes)
                 local pool=GetResourceStatus and GetResourceStatus()
                 if SetResourceStatus then SetResourceStatus(v[3]=='stage' and 'stage' or 'global') end
                 raw(unpack(a,1,a.n or #a))
+                if name=='LoadImage' or name=='CopyImage' then C.states['img:'..a[1]]={'',255,255,255,255}
+                elseif name=='LoadAnimation' or name=='CopyAnimation' then C.states['ani:'..a[1]]={'',255,255,255,255}
+                elseif name=='LoadFont' then C.states['font:'..a[1]]={'',255,255,255,255} end
                 if pool then SetResourceStatus(pool) end
             end
             if name=='LoadTexture' then changedTextures[a[1]]=true end
@@ -370,7 +377,7 @@ function C.render()
                 elseif name=='RenderTexture' and (call[8] or fade(call[2])~=1) then
                     values=copy(a)
                     local sx,sy,ox,oy=1,1,0,0
-                    if call[8] then local w,h=GetTextureSize(a[1]);sx=w/call[8][1];sy=h/call[8][2] end
+                    if call[8] then local w,h=targetSize(a[1]);sx=w/call[8][1];sy=h/call[8][2] end
                     if call[8] and call[8][6] then
                         sx=screen.scale/call[8][5];sy=sx;ox=screen.dx-call[8][3]*sx;oy=screen.dy-call[8][4]*sy
                     end

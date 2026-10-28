@@ -96,7 +96,8 @@ N.role='client';N.predict=nil;Capture.receiveFrame(sent.F);check(N.receivedFrame
 local proxy=player;N.pause={false,true};Capture.receiveFrame(sent.F);check(player==proxy,'连续快照保留拖拽对象身份')
 check(N.pause[2]==true,'迟到画面不能覆盖可靠通道中的暂停指令');N.pause={false,false}
 draws={};Capture.render();check(draws[1].style[2]==200 and draws[2].style[2]==130,'客机看到自己全不透明、房主半透明')
-N.role='host';Capture.last=nil;Capture.begin();GetTextureSize=function() if N.role=='host' then return 200,100 else return 400,300 end end
+N.role='host';Capture.last=nil;Capture.begin();lstg.GetTextureSize=function() if N.role=='host' then return 200,100 else return 400,300 end end
+GetTextureSize=function() error('普通纹理缓存不含渲染目标') end
 CreateRenderTarget('net-target');local vertex={0,0,.5,100,50,Color(255,255,255,255)}
 RenderTexture('net-target','',vertex,vertex,vertex,vertex);Capture.finish()
 N.role='client';Capture.receiveFrame(sent.F);draws={};Capture.render()
@@ -119,6 +120,10 @@ local delta=W.decode(sent.R,Color);check(#delta==1 and delta[1][2][1]=='new-imag
 sent.R=nil;Capture.sendResources(true);check(#W.decode(sent.R,Color)>1,'重连强制补齐完整资源')
 N.summary={won=true};N.newRound();check(N.summary==nil and DeSerialize(sent.J).t=='new-round','合作结果页再开一局时通知客机清除旧结算')
 N.role='client'
+Capture.receiveResources(W.encode({{'LoadImage',{'remote-only','test',0,0,8,8},'global'}}))
+check(Capture.states['img:remote-only'][2]==255,'接收端动态创建的图像也登记本地颜色缓存')
+Capture.raw.OriginalSetImageState('remote-only','',Color(50,100,100,100));Capture.reset()
+check(states['remote-only'][2]==255,'退出联机时动态图像恢复为本地缓存颜色')
 rejects(function() Capture.receiveResources(W.encode({{'LoadTexture',{'evil','THlib/../../User/secret'},'global'}})) end,'资源路径禁止越界')
 rejects(function() Capture.receiveFrame(W.encode({tick=1,time=1,calls={{99,0,0,0,0,{}}}})) end,'拒绝未知绘制操作')
 rejects(function() Capture.receiveResources(W.encode({{'LoadAnimation',{'huge','test',0,0,16,16,65535,65535,1},'global'}})) end,'拒绝超量动画分配')
