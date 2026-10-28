@@ -5740,6 +5740,37 @@ end
 ---  · 耐久卡（原作无 SET_LIFE 或 SET_IS_SURVIVAL_SPELLCARD）给 10000000、关判定。
 ---弹型/色档是代理（同差异 62/63）：sprite 4/5/6/8 → ball_small、10 → grain_a、
 ---  7/9 → arrow_small、2 → 米弹；色档走 col16（同号近似）。
+--- 以文档的“灵梦建议 HP”覆盖有限血量卡的最终有效 HP。
+--- 原作 life / hpB / hpS 的注释与其余换卡逻辑保持不变。
+local TH34_REIMU_HP = {
+    [3408] = 1529, [3411] = 2313, [3413] = 2167, [3415] = 2339,
+    [3417] = 2286, [3419] = 2472, [3421] = 2299, [3423] = 2299,
+    [3425] = 2392, [3441] = 7700, [3443] = 1925, [3444] = 2599,
+    [3445] = 2599, [3446] = 1348, [3447] = 2695, [3448] = 2310,
+    [3449] = 1636, [3450] = 2502, [3451] = 963, [3452] = 1925,
+    [3460] = 1925, [3461] = 1521, [3462] = 2502, [3463] = 2310,
+    [3464] = 1925, [3465] = 2695, [3466] = 1348, [3467] = 2599,
+    [3468] = 2599, [3469] = 2888, [3471] = 7700, [3480] = 2313,
+    [3481] = 2339, [3482] = 2392, [3483] = 2286, [3484] = 2472,
+    [3485] = 2299, [3486] = 2299, [3487] = 2260, [3488] = 1529,
+    [4390] = 1794, [4391] = 1444, [4392] = 2512, [4393] = 2021,
+    [4394] = 3855, [4395] = 3855, [4396] = 2888, [4397] = 2888,
+    [4398] = 2632, [4399] = 2118, [4400] = 5775, [4402] = 1794,
+    [4403] = 1444, [4404] = 2260, [4405] = 1925, [4406] = 1728,
+    [4407] = 1925, [4408] = 1925, [4409] = 4235, [4410] = 1925,
+    [4430] = 1303, [4431] = 1925, [4432] = 2260, [4433] = 2888,
+    [4434] = 266, [4435] = 3465, [4436] = 2884, [4437] = 2599,
+    [4438] = 3176, [4439] = 3465, [4440] = 1914, [4441] = 2888,
+    [4442] = 1914, [4443] = 3080, [4444] = 1914, [4445] = 2888,
+    [4446] = 3465, [4447] = 3465, [4448] = 3465, [4450] = 1914,
+    [4451] = 2888, [4452] = 1914, [4453] = 3465, [4454] = 1794,
+    [4455] = 2888, [4456] = 2888, [4457] = 2888, [4460] = 1794,
+    [4461] = 2888, [4462] = 2034, [4463] = 3176, [4464] = 3465,
+    [4465] = 1555, [4466] = 3850, [4467] = 3465, [4468] = 3080,
+    [4469] = 3465, [4470] = 2888, [4471] = 3465, [4472] = 2599,
+    [4473] = 2599, [4475] = 3465, [4476] = 3465,
+}
+
 local function TH34_add_stage78_boss()
     local LEVEL = 32
     local RAD = 180 / PI
@@ -5904,7 +5935,7 @@ local function TH34_add_stage78_boss()
     ---    （sub78/80/82 的基准角是跨回调累加的，不能每次重掷）。
     local function nonspell(menu, id, life, thr, gap, fire, opt)
         opt = opt or {}
-        local card = boss.card.New("", 1, 1, 60, hpB(life - thr))
+        local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[id] or hpB(life - thr))
         card.before = skin
         card.init = function(self)
             pool4 = {}
@@ -5974,7 +6005,7 @@ local function TH34_add_stage78_boss()
     ---  · sub 59：16 组 7 发 ×5 层整圈，每 3 帧一组；速度 2+0.1875i、基准角每轮转
     ---    gF0（±0.06545 = ±3.75°）—— 两遍反向，合起来是一条来回扫的螺旋。
     do
-        local card = boss.card.New("", 1, 1, 60, hpB(13500 - 2000))
+        local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[3408] or hpB(13500 - 2000))
         card.before = skin
         card.init = function(self)
             pool4 = {}
@@ -6279,7 +6310,7 @@ local function TH34_add_stage78_boss()
         local live = {}
         local freeze = wall and t3 or (CARD_FREEZE[id] or CARD_FREEZE_DEFAULT)
         local card = boss.card.New(name, freeze, freeze, t3,
-                                   wall and 10000000 or hpS(life))
+                                   wall and 10000000 or (TH34_REIMU_HP[id] or hpS(life)))
         card.before = wall and skin_wall or skin
         card.init = function(self)
             pool4 = {}
@@ -8653,7 +8684,7 @@ local function TH34_add_stage78_boss()
     ---与 PH 中 boss 同构：18 组 7 发 ×2 层瞄准扇（速度 4+0.214i）+ 16 组 8 发 ×3 层
     ---整圈（速度 2+0.1875i，基准角 ±3.75° 来回）。
     do
-        local card = boss.card.New("", 1, 1, 60, hpB(13500 - 2000))
+        local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[3488] or hpB(13500 - 2000))
         card.before = skin
         card.init = function(self)
             pool4 = {}
@@ -8972,7 +9003,7 @@ local function TH34_add_stage56_boss()
     local function ncard(name, id, life, thr, initfn, opt)
         opt = opt or {}
         local live = {}
-        local card = boss.card.New("", 1, 1, 60, hpB(life - thr))
+        local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[id] or hpB(life - thr))
         card.before = opt.skin or skin6
         card.init = function(self)
             pool4 = {}
@@ -9002,7 +9033,7 @@ local function TH34_add_stage56_boss()
         local live = {}
         local freeze = wall and t3 or (CARD_FREEZE[id] or CARD_FREEZE_DEFAULT)
         local card = boss.card.New(name, freeze, freeze, t3,
-                                   wall and 10000000 or hpS(life))
+                                   wall and 10000000 or (TH34_REIMU_HP[id] or hpS(life)))
         card.before = wall and (opt.wallskin or skin6_wall) or (opt.skin or skin6)
         card.init = function(self)
             pool4 = {}

@@ -158,6 +158,26 @@ local LEVEL = 33                    -- = core.lua 的 STAGE_COUNT + 1，见文�
 local CARD_ID = 3600
 local MAX_LIFE = 8200               -- 原作 lifeSet(8200)（差异 9）
 
+--- 以文档的“灵梦建议 HP”覆盖有限血量卡的最终有效 HP；耐久卡不在此表。
+local TH35_REIMU_HP = {
+    [3600] = 4985, [3601] = 1337, [3602] = 5349, [3603] = 5228,
+    [3604] = 5349, [3605] = 5775, [3606] = 5775, [3608] = 1398,
+    [3609] = 1398, [3610] = 1398, [3611] = 1398, [3612] = 1702,
+    [3613] = 2188, [3614] = 1702, [3615] = 2188, [3616] = 2128,
+    [3617] = 2128, [3618] = 2736, [3622] = 6991, [3623] = 6991,
+    [3624] = 7842, [3625] = 7416, [3630] = 1003, [3631] = 1337,
+    [3632] = 1337, [3633] = 1398, [3634] = 1641, [3635] = 1641,
+    [3636] = 1641, [3637] = 7842, [3638] = 7538, [3639] = 6322,
+    [3640] = 6322, [3641] = 1824, [3642] = 480, [3643] = 686,
+    [3644] = 686, [3645] = 720, [3646] = 915, [3647] = 1144,
+    [3648] = 1144, [3649] = 915, [3650] = 915, [3651] = 800,
+    [3652] = 915, [3653] = 915, [3654] = 915, [3655] = 915,
+    [3656] = 915, [3657] = 915, [3658] = 915, [3659] = 915,
+    [3660] = 743, [3661] = 743, [3662] = 743, [3663] = 800,
+    [3664] = 800, [3665] = 800, [3666] = 1029, [3667] = 1029,
+    [3668] = 1144, [3669] = 1029, [3670] = 1144,
+}
+
 ---弹（BossCard5_atN / at2 共用）
 local BULLET_TYPE = 6               -- 原作 etSprite(0, 6, $I0) 的 type 6 → `square`
 local BULLET_INIT_SPEED = 0.001     -- etSpeed(0, 0.001, 1.5)：count2 == 1 ⇒ 出膛速度 = speed1
@@ -352,7 +372,8 @@ class["th35_sat"] = Class(object, {
 ---=====================================
 boss.Define("1a", "八坂神奈子", "TH10_2", TH10_bg, { 0, 80 }, nil, "Kanako", LEVEL)
 
-local card = boss.card.New(CARD_NAME, 2.5, 2.5, 151.5, MAX_LIFE)  -- 差异 9
+local card = boss.card.New(CARD_NAME, 2.5, 2.5, 151.5,
+                           TH35_REIMU_HP[CARD_ID] or MAX_LIFE)
 
 function card:before()
     ---原作 t=0 的 movePosTime(90, 4, 0, 160)：BOSS 从上一张卡留下的高度再降到本卡高度。
@@ -4028,6 +4049,7 @@ local T10_CARDS = {
 ---  子机里的 %BOSS_X / %BOSS_Y 才取得到 BOSS 本体的世界坐标。
 for _, e in ipairs(T10_CARDS) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    hp = TH35_REIMU_HP[id] or hp
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
@@ -4082,6 +4104,7 @@ local T10_CARDS_EX = {
 
 for _, e in ipairs(T10_CARDS_EX) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    hp = TH35_REIMU_HP[id] or hp
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
@@ -4832,6 +4855,7 @@ s6.cards = {
 
 for _, e in ipairs(s6.cards) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    hp = TH35_REIMU_HP[id] or hp
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
@@ -10556,6 +10580,7 @@ local T10_CARDS_S125 = {
 ---  主 BOSS 的载体在这里登记，s_pod 再把它复制给每一只子机。
 for _, e in ipairs(T10_CARDS_S125) do
     local main, name, band, id, t1, t2, t3, hp = e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8]
+    hp = TH35_REIMU_HP[id] or hp
     ---第 9 项 = 菜单名：非符的卡名必须是 ""（is_sc=false，不亮卡名），
     ---  但符卡练习菜单里还得有个名字 ⇒ 这两个字符串在非符上不是同一个。
     local menu = e[9] or name
