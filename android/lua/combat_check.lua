@@ -9,7 +9,8 @@ function C.install(mode)
         -- 自动入口避免依赖菜单动画时长；仍通过游戏正常的开局与续玩 API。
         if automatic and not booted and scene and scene.stage_name=='menu' and scene.timer>=120 then
             booted=true
-            if mode:match('combat%-resume') then SaveResume.request();paused=true else RogueTen.start('dual') end
+            if mode:match('combat%-resume') then SaveResume.request();paused=true
+            else lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';RogueTen.start('dual') end
         end
         local run=lstg.var.rogue_run
         if scene and not scene.is_menu and scene.revive_miss_limit and run and not run.__combat_check_miss and scene.timer>=160 then
