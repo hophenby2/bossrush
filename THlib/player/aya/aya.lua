@@ -28,7 +28,7 @@ local defaultFrameEvent = {
         if self.photopre < self.preok and self.cd == 0 then
             self.playsound = false
             if self.slow == 2 then
-                self.photopre = self.photopre + 5
+                self.photopre = self.photopre + 5 * (GameDrops and GameDrops.rate(self) or 1)
                 table.insert(self.charge_sp, { x = self.x + ran:Float(-100, 100), y = self.y + ran:Float(-100, 100),
                                                scale = 1, alpha = 0, timer = 0, v = ran:Float(0.05, 0.08),
                                                rot = ran:Float(0, 360), omiga = ran:Sign() * ran:Float(3, 1) })
@@ -36,7 +36,7 @@ local defaultFrameEvent = {
                     PlaySound("ch00")
                 end
             else
-                self.photopre = self.photopre + 2
+                self.photopre = self.photopre + 2 * (GameDrops and GameDrops.rate(self) or 1)
                 if GetSoundState("ch00") == "playing" then
                     StopSound("ch00")
                 end
@@ -119,7 +119,7 @@ local defaultFrameEvent = {
             self.nicemoment = self.nicemoment - 1
         end
         if self.cd > 0 then
-            self.cd = self.cd - 1
+            self.cd = max(0,self.cd - (GameDrops and GameDrops.rate(self) or 1))
         end
     end }
 }

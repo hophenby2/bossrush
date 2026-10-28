@@ -187,7 +187,7 @@ local function DoFrame()
     --刷新输入
     GetInput()
     if GameNet then GameNet.beforeLogic() end
-    if GameRevive.active() and ext.GetPauseMenuOrder() then
+    if (GameRevive.active() or (GameDrops and GameDrops.active())) and ext.GetPauseMenuOrder() then
         stage.group.frame_pause(stage.current_stage)
         if stage.next_stage then
             if SaveResume then SaveResume.afterLogic() end
@@ -195,6 +195,10 @@ local function DoFrame()
         end
     end
     if (GameNet and GameNet.quiz or function(fn,s) return fn(s) end)(GameRevive.frame,stage.current_stage) then
+        if SaveResume then SaveResume.afterLogic() end
+        return
+    end
+    if GameDrops and GameDrops.frame(stage.current_stage) then
         if SaveResume then SaveResume.afterLogic() end
         return
     end
@@ -419,6 +423,7 @@ function RenderFunc()
         stage.current_stage:render()
         ext.CameraBefore()
         ObjRender()
+        if GameDrops then GameDrops.render() end
         ext.CameraAfter()
         ui_drawing:Afterrender()
 

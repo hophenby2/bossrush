@@ -147,7 +147,7 @@ end
 function enemybase:colli(other)
     if other.dmg then
         lstg.var.score = lstg.var.score + 10
-        local dmg = other.dmg
+        local dmg = GameDrops and GameDrops.damage(other.dmg,other) or other.dmg
         Damage(self, dmg)
         if self._master and self._dmg_transfer and IsValid(self._master) then
             Damage(self._master, dmg * self._dmg_transfer)

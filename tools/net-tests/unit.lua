@@ -86,6 +86,13 @@ check(p1.death==0 and p2.death==90 and player==p1,'独立死亡状态')
 N.keys[2]={shoot=true};N.lastMissSlot=2;local quizPlayer
 N.quiz(function() quizPlayer=player;check(KeyState.shoot and not KeyState.left,'客机答题输入使用自己的按键') end,{})
 check(quizPlayer==p2 and player==p1 and KeyState.left,'最后中弹玩家答题，之后恢复房主输入')
+local Drops=load('THlib/drops.lua');lstg.var.__drops_version=1;Drops.reset();Drops.bind(p1);Drops.bind(p2)
+p1.x=-96;p2.x=96;p2.death=0;p1.key={};p2.key={}
+lstg.var.upgrades.queue={{id=1,age=0,options={1,2},picks={false,false}}}
+for i=1,60 do Drops.frame({is_menu=false}) end
+local red1,blue1=Drops.values(1);local red2,blue2=Drops.values(2)
+check(red1==105 and blue1==100 and red2==100 and blue2==105,'正式联机玩家对象独立接取两侧道具')
+
 local sent={};N.peer={send=function(_,kind,body) sent[kind]=body;return true end};N.connected=true;N.ready=true;N.epoch=SaveTransport.now()-1
 Capture.begin();draws={};SetImageState('hero','',200,255,255,255)
 p2.class[4](p2)

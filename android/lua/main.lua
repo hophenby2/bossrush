@@ -114,6 +114,7 @@ local function start()
     GameInit()
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 完成')
     if diagnosticsMode and diagnosticsMode:match('combat') then load('game/android/combat_check.lua').install(diagnosticsMode) end
+    if diagnosticsMode and diagnosticsMode:match('drops') then load('game/android/drops_check.lua').install(diagnosticsMode) end
     local pauseCache = load('game/android/pause_cache.lua')
     AndroidPauseCache = pauseCache
     pauseCache.install()

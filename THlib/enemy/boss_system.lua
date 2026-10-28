@@ -245,6 +245,7 @@ function system:kill()
         b.__card_finish = nil
     end
     if not b.cannot_kill then
+        if GameDrops then GameDrops.award(b) end
         if not b.__NoPlayerProtect then
             player.protect = player.protect + 60
         end
@@ -924,6 +925,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
     sc_bonus = sc_bonus or card.is_sc
     b.current_card = card
     if GameRank then GameRank.beginCard(b,card) end
+    if GameDrops then GameDrops.beginCard(b,card) end
     task.New(self, function()
         if card.before then
             self:openSCBackground(false)

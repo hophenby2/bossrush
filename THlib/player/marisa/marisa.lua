@@ -91,7 +91,7 @@ function marisa_player:shoot()
                         --self.offset[i] = max(0, self.offset[i] - t.b)
                         self.hitting[i] = true
                         table.insert(self.bright, { x = x, y = y + t[2], alpha = 150, a = math.random() * 360, v = math.random() * 2 + 3 })
-                        t[1].class.base.take_damage(t[1], 0.42)
+                        t[1].class.base.take_damage(t[1], GameDrops and GameDrops.damage(0.42,self) or 0.42)
                         if t[1].maxhp then
                             if t[1].hp > t[1].maxhp * 0.1 then
                                 PlaySound('damage00', 0.3, t[1].x / 1024)
@@ -117,7 +117,7 @@ function marisa_player:shoot()
                     --self.offset[i] = max(0, self.offset[i] - target.b)
                     self.hitting[i] = true
                     table.insert(self.bright, { x = x, y = y + self.offset[i], alpha = 150, a = math.random() * 360, v = math.random() * 2 + 3 })
-                    target.class.base.take_damage(target, 0.34)
+                    target.class.base.take_damage(target, GameDrops and GameDrops.damage(0.34,self) or 0.34)
                     if target.maxhp then
                         if target.hp > target.maxhp * 0.1 then
                             PlaySound('damage00', 0.3, target.x / 1024)

@@ -7,6 +7,7 @@
 ---加载的列表
 LoadRes = {  }
 Include 'THlib\\rank.lua'--全局 Rank，先于各模块缓存 New
+Include 'THlib\\drops.lua'--阶段二选一与自机伤害 / 射速成长
 ---加载脚本
 Include 'THlib\\WalkImageSystem.lua'
 --Include 'THlib\\DNHWalkImageSystem.lua'

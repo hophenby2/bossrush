@@ -138,7 +138,7 @@ local defaultFrameEvent = {
     end },
     ["frame.control"] = { 98, function(self, system)
         if not self.dialog then
-            if self.__shoot_flag and self.nextshoot <= 0 then
+            if self.__shoot_flag and (self.nextshoot <= 0 or (GameDrops and GameDrops.enabled())) then
                 system:shoot()
             end
         else
@@ -242,7 +242,7 @@ local defaultFrameEvent = {
             self.lh = 1
         end
         if self.nextshoot > 0 then
-            self.nextshoot = self.nextshoot - 1
+            self.nextshoot = max(0,self.nextshoot - (GameDrops and GameDrops.cooldownStep(self) or 1))
         end
         if self.nextspell > 0 then
             self.nextspell = self.nextspell - 1
@@ -309,6 +309,7 @@ function system:init(p, slot)
     p.__move_dy = 0 --本帧操作移动y距离
     p.__up_counting, p.__down_counting, p.__left_counting, p.__right_counting = 0, 0, 0, 0
     p.__shoot_count = 0
+    if GameDrops then GameDrops.bind(p) end
 
     p.supportx = p.supportx or p.x
     p.supporty = p.supporty or p.y
@@ -367,6 +368,7 @@ function system:frame()
     if p.lock then
         p.timer = p.timer - 1
     else
+        if GameDrops then GameDrops.playerStep(p) end
         self:updateKeyState() --更新自机按键状态（之后应改为外部调用）
         self:findTarget() --更新target目标
         self:doFrameEvent() --执行帧逻辑事件
@@ -387,7 +389,7 @@ end
 function system:shoot()
     local p = self.player
     if p.class.shoot then
-        p.class.shoot(p)
+        if GameDrops then GameDrops.shoot(p,p.class.shoot) else p.class.shoot(p) end
     end
 end
 

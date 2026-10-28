@@ -1,0 +1,165 @@
+-- 正式自机、敌机碰撞、阶段掉落、联机独立选择与帧循环回归；只写调用方的临时目录。
+local R=dofile(assert(arg[1])..'/tools/save-tests/runtime.lua');local root=R.root
+local function load(path) return dofile(root..'/'..path) end
+local count=0;local function check(v,label) assert(v,label);count=count+1 end
+local function near(a,b) return math.abs(a-b)<1e-7 end
+local noop=function() end
+local function random()
+    local g={v=1};function g:Seed(v) self.v=v%2147483646+1 end
+    function g:Int(a,b) self.v=self.v*48271%2147483647;return a+math.floor(self.v/2147483647*(b-a+1)) end
+    function g:Float(a,b) return a+(b-a)*self:Int(0,1000000)/1000000 end
+    function g:Sign() return self:Int(0,1)*2-1 end;return g
+end
+Rand=random;ran=Rand()
+abs=math.abs;max=math.max;min=math.min;int=math.floor;SQRT2_2=2^-0.5
+cos=function(a) return math.cos(math.rad(a)) end;sin=function(a) return math.sin(math.rad(a)) end
+acos=function(x) return math.deg(math.acos(x)) end
+Forbid=function(v,a,b) return max(a,min(b,v)) end
+Dist=function(a,b) return ((a.x-b.x)^2+(a.y-b.y)^2)^0.5 end
+DefaultRenderFunc=noop;PlaySound=noop;GameNet=nil;GameRank=nil
+lstg={var={},tmpvar={},world={l=-192,r=192,b=-224,t=224,pl=-192,pr=192,pb=-224,pt=224}}
+SearchStageLevel={};SetCurSystem=noop;GetGlobal=function(k) return lstg.var[k] end
+for _,name in ipairs({'CopyImage','CopyAnimation','LoadTexture','LoadImage','LoadPS','LoadImageGroup','LoadAnimation','SetImageState','SetAnimationState','SetAnimationCenter','SetImageCenter','LoadImageFromFile','SetImageScale'}) do _G[name]=noop end
+GetTextureSize=function() return 512,512 end
+Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
+local drawn={};SetViewMode=noop;RenderRect=noop
+ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y} end}
+GetAttr=function(o,k) return rawget(o,k) end;SetAttr=rawset
+load('THlib/lib/Lobject.lua');load('THlib/plus/Utility.lua');load('THlib/eventListener.lua')
+task={Do=noop,Clear=noop,New=noop,SetMode={[1]=function(x) return x end,[2]=function(x) return x end,[3]=function(x) return x end}}
+object.EnemyNontjtDo=noop;object.DelServants=noop;object.RawDel=function(o) o._live=false end;object.Kill=function(o) o._live=false end
+local objects={}
+IsValid=function(o) return type(o)=='table' and o._live==true end
+New=function(class,...)
+    local o={class=class,_live=true,timer=0,ani=0,x=0,y=0,vx=0,vy=0,dx=0,dy=0,rot=0,hscale=1,vscale=1,group=0,world=1,a=1,b=1,colli=true}
+    objects[#objects+1]=o;assert(type(class[1])=='function','类未整理');class[1](o,...);return o
+end
+ObjList=function(group) local i=0;return function() repeat i=i+1 until not objects[i] or (objects[i]._live and objects[i].group==group);if objects[i] then return i,objects[i] end end end
+Include=function(path) return load(path:gsub('\\','/')) end
+System=Class(object);BulletBreak_Table=Class(object)
+PlayerWalkImageSystem=function() return {frame=noop,render=noop} end
+EnemyWalkImageSystem=PlayerWalkImageSystem
+local D=load('THlib/drops.lua');load('THlib/ext/ext_quiz.lua')
+load('THlib/player/player.lua');load('THlib/player/reimu/reimu.lua');load('THlib/player/marisa/marisa.lua');load('THlib/player/chiruno/chiruno.lua')
+local include=Include;Include=noop;load('THlib/enemy/enemy.lua');Include=include
+local cooldown=Class(player_class,{init=function(p) player_class.init(p);p.shots=0 end,shoot=function(p) p.shots=p.shots+1;p.nextshoot=4 end})
+local targetClass=Class(enemy,{init=function(o) enemybase.init(o,10000) end})
+InitAllClass();item={};ext={replay={IsReplay=function() return false end},achievement={get=noop}}
+AddMoney=noop;load('THlib/item/item_func.lua')
+stage={current_stage={is_menu=false,timer=0}};KeyState={};KeyStatePre={}
+local function reset()
+    GameNet=nil;objects={};lstg.var={__drops_version=1,ran_seed=18373,player_name='reimu_player',current_system=''}
+    item.PlayerInit();object.EnemyNontjtDo=noop;player=nil
+end
+local function hero(class,slot)
+    local p=New(class);if slot==2 then p._net_slot=2;D.bind(p) end;player=p;lstg.player=p;return p
+end
+local function shots(class,blue,enabled,start)
+    reset();if enabled==false then lstg.var.__drops_version=nil;lstg.var.upgrades=nil end
+    local p=hero(class);if class==chiruno_player then p._playersys:removeFrameEvent('frame.ice') end;if D.enabled() then lstg.var.upgrades.players[1].blue=blue*100 end
+    KeyState={shoot=true}
+    for i=start or 0,(start or 0)+239 do p.timer=i;p._playersys:frame();check(p.timer==i,'射击虚拟时钟不改变真实自机计时') end
+    local n=0;for _,o in ipairs(objects) do if o.group==3 then n=n+1 end end
+    return n,p.shots
+end
+for _,class in ipairs({reimu_player,chiruno_player}) do
+    local base=shots(class,100);local legacy=shots(class,100,false)
+    check(base==legacy and base>0,'100 射速与原始发弹数量一致')
+    local faster=shots(class,200);check(faster==base*2,'200 射速实际弹数翻倍')
+    check(shots(class,50)==base/2,'50 射速实际弹数减半')
+    check(near(shots(class,110),base*1.1),'110 射速保留小数累积，不被取整吞掉')
+    check(shots(class,100,true,1)==shots(class,100,false,1),'首次回调 timer=1 也与原始节拍一致')
+end
+local _,base=shots(cooldown,100);local _,fast=shots(cooldown,200);local _,slow=shots(cooldown,50)
+check(base==60 and fast==120 and slow==30,'nextshoot 冷却按同一虚拟节拍计算，不重复扣减')
+-- 魔理沙激光的直伤也与红字和射速分别相乘。
+local function laserDamage(red,blue)
+    reset();local p=hero(marisa_player);local state=lstg.var.upgrades.players[1];state.red=red*100;state.blue=blue*100
+    local damage=0;local enemy={x=0,y=p.y,a=1000,colli=true,hp=10000,maxhp=10000,class={base={take_damage=function(_,n) damage=damage+n end}}}
+    object.EnemyNontjtDo=function(fn) fn(enemy) end;marisa_player.IsInLaser=function() return true end
+    KeyState={shoot=true};for i=0,119 do p.timer=i;p._playersys:frame() end;return damage
+end
+local ray=laserDamage(100,100);check(ray>0 and near(laserDamage(200,100),ray*2),'魔理沙激光火力倍率生效')
+check(near(laserDamage(100,200),ray*2),'魔理沙持续激光射速倍率生效')
+-- 标准弹、穿透弹与伤害转移均在命中处乘一次，弹体基准伤害不被写回。
+reset();local p=hero(reimu_player);lstg.var.upgrades.players[1].red=15000
+local e=New(targetClass);local shot={dmg=10,killflag=true,mute=true,_drop_owner=1}
+enemybase.colli(e,shot);enemybase.colli(e,shot)
+check(near(e.hp,9970) and shot.dmg==10,'穿透重复命中每次只乘一次火力')
+local master=New(targetClass);e._master=master;e._dmg_transfer=.5;enemybase.colli(e,shot)
+check(near(master.hp,9992.5),'传递到主机的伤害不会再次乘倍率')
+lstg.var.upgrades.players[2].red=20000;shot._drop_owner=2;enemybase.colli(e,shot)
+check(near(e.hp,9935),'碰撞使用子弹所属玩家的火力')
+-- 选项运算与数值显示。
+reset();D.apply(1,1);D.apply(1,4);local red,blue=D.values(1)
+check(red==105 and blue==110,'红加法与蓝乘法')
+D.apply(1,5);red,blue=D.values(1);check(red==115 and blue==105,'红+10蓝-5同时生效')
+for _=1,200 do D.apply(1,9) end;red,blue=D.values(1)
+check(red==1000 and blue>=1,'倍率有上界，下限不归零')
+local seen={};for seed=1,300 do local pair=D.draw(seed*7919,7);check(pair[1]~=pair[2],'两个选项不重复');seen[pair[1]]=true;seen[pair[2]]=true;check(table.concat(pair,',')==table.concat(D.draw(seed*7919,7),','),'同种子与序号稳定重建') end
+local total=0;for _ in pairs(seen) do total=total+1 end;check(total==#D.pool,'随机池中的所有道具都可抽到')
+local function boss(id,others)
+    local card={card_id=id,is_combat=true};local b={current_card=card,is_combat=true,otherboss=others or {}}
+    D.beginCard(b,card);return b
+end
+reset();local a,b=boss(50),boss(50);a.otherboss={b};b.otherboss={a}
+check(D.award(a) and not D.award(a) and not D.award(b) and #lstg.var.upgrades.queue==1,'同卡多 Boss 和重复结算只掉一次')
+D.beginCard(a,a.current_card);D.beginCard(b,b.current_card)
+check(D.award(b) and not D.award(a),'下次出现同一张卡仍可正常掉落')
+local other=boss(51);other.timeout=true;check(not D.award(other),'普通符卡拖到超时不算击破')
+other.time_sc=true;check(D.award(other),'完成耐久阶段可以掉落')
+local fake=boss(52);fake.cannot_kill=true;check(not D.award(fake),'伪击破不掉落')
+fake.cannot_kill=false;fake.is_combat=false;check(not D.award(fake),'非战斗过场不掉落')
+reset();check(D.award(boss(53)) and D.award(boss(54)) and #lstg.var.upgrades.queue==2,'双 Boss 的不同卡分别排队，选择不重叠')
+-- 从正式 Boss 系统取出击破回调，验证真实生命周期入口。
+local bf=assert(io.open(root..'/THlib/enemy/boss_system.lua','rb'));local bs=bf:read('*a');bf:close()
+local start=assert(bs:find('function system:kill()',1,true));local ending=assert(bs:find('---boss系统消亡逻辑',start,true))
+local sys={};assert(loadstring('local system=...\n'..bs:sub(start,ending-1)))(sys)
+reset();local phase=boss(60);phase.ui={};phase.countdown=12;phase.__NoPlayerProtect=true;phase.current_card.del=noop
+local runtime=setmetatable({boss=phase,KillBonus=noop,refresh=noop,popSpellResult=noop,popResult=noop},{__index=sys})
+runtime:kill();check(#lstg.var.upgrades.queue==1,'正式 Boss 击破回调确实生成掉落')
+reset();phase=boss(61);phase.ui={};phase.current_card.del=function(b) b.cannot_kill=true end
+runtime.boss=phase;object.Preserve=noop;runtime:kill();check(#lstg.var.upgrades.queue==0,'卡片 del 中声明继续存活时不掉落')
+local function pick(up,coop)
+    reset();local p=hero(reimu_player);p.x=-96;p.y=-176
+    local ps={p};if coop then local q=hero(reimu_player,2);q.x=96;q.y=-176;q.key={};ps[2]=q;GameNet={host=function() return true end,players=ps} end
+    player=p;KeyState={up=up};p.key=KeyState
+    D.award(boss(70));lstg.var.upgrades.queue[1].options={1,2}
+    for i=1,60 do D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
+    error('掉落未在 60 帧内结束')
+end
+local stationary=pick(false);red,blue=D.values(1);check(stationary<=60 and red==105 and blue==100,'原地等待可在一秒内接到左侧红字')
+local early=pick(true);check(early<stationary,'向上移动可以提前接取')
+pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
+check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')
+drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text[#text+1]=v.text end
+check(table.concat(text,'|'):find('P1 火力 105',1,true) and table.concat(text,'|'):find('P2 火力 100',1,true),'右侧 HUD 显式显示两位玩家数值')
+-- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
+reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
+p.death=0;check(D.frame(stage.current_stage),'重生后开始选择')
+check(D.active(),'下落选择状态可供暂停流程识别');stage.current_stage.is_menu=true;drawn={};D.render()
+check(not D.active() and #drawn==0,'回标题或切换存档后不会在菜单继续画旧选项');stage.current_stage.is_menu=false
+-- 使用正式 DoFrame，选择时冻结战斗，仍记录输入；结束后恢复。
+reset();p=hero(reimu_player);p.x=-96;KeyState={};D.award(boss(73));lstg.var.upgrades.queue[1].options={1,2}
+local physics,recorded,rank=0,0,0
+SaveResume={beforeLogic=function() return true end,afterLogic=function() recorded=recorded+1 end}
+GameRevive={active=function() return false end,frame=function() return false end};GameRank={step=function() rank=rank+1 end,beforeObjects=noop,afterObjects=noop}
+GetInput=noop;GetCurrentSuperPause=function() return 0 end;stage.current_stage.frame=noop;stage.current_stage.timer=0
+lstg.system={frame=noop};ObjFrame=function() physics=physics+1 end;UpdateXY=noop;AfterFrame=noop;BoundCheck=noop;CollisionCheck=noop
+ext={notUIdraw=false,boss_ui={frame=noop},GetPauseMenuOrder=noop}
+local f=assert(io.open(root..'/THlib/ext/ext.lua','rb'));local code=f:read('*a');f:close()
+local first=assert(code:find('local function DoFrame()',1,true));local last=assert(code:find('_G.DoFrame = DoFrame',first,true))
+local tick=assert(loadstring(code:sub(first,last-1)..'\nreturn DoFrame'))()
+while lstg.var.upgrades.active or #lstg.var.upgrades.queue>0 do tick() end
+check(physics==0 and rank==0 and stage.current_stage.timer==0 and recorded>0,'选择期间冻结敌弹、Boss、Rank，但保留逻辑输入记录')
+tick();check(physics==1 and rank==1 and stage.current_stage.timer==1,'接取后恢复战斗')
+lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.values(1);D.power(1);D.rate(1);D.signature();check(Serialize(lstg.var)==before,'零帧 HUD 与签名只读')
+lstg.var.__drops_version=nil;check(D.power(1)==1 and D.rate(1)==1,'旧录像没有版本标记时保持原倍率')
+local diagnostic=load('android/lua/drops_check.lua');RogueTen=nil
+check(pcall(diagnostic.install,'drops-new'),'私有诊断不提前访问尚未加载的随机模式')
+R.P.init();lstg.var.__drops_version=1;D.reset();stage.current_stage={is_menu=false,timer=0,stage_name='test'}
+check(pcall(D.frame,stage.current_stage),'私有诊断能在测试槽写出状态，使用独立文件而非受限存档文件名')
+local df=assert(io.open(R.P.userRoot()..'/drops-check.json','rb'));local data=DeSerialize(df:read('*a'));df:close()
+check(data.phase=='battle' and data.red==100 and data.blue==100,'真实诊断输出包含初始数值')
+
+print('阶段掉落回归通过：'..count..' 项。')

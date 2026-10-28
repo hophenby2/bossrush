@@ -279,6 +279,7 @@ function player_bullet_straight:init(img, x, y, v, angle, dmg)
     self.vx = v * cos(angle)
     self.vy = v * sin(angle)
     self.dmg = dmg
+    if GameDrops then self._drop_owner=GameDrops.slot(player) end
     if self.a ~= self.b then
         self.rect = true
     end
@@ -297,6 +298,7 @@ function player_bullet_trail:init(img, x, y, v, angle, target, trail, dmg)
     self.target = target
     self.trail = trail
     self.dmg = dmg
+    if GameDrops then self._drop_owner=GameDrops.slot(player) end
 end
 
 function player_bullet_trail:frame()

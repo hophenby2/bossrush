@@ -32,7 +32,7 @@ stage={stages={},groups={}}
 local group={title='menu',number=1,[1]='TH06@BossRush'};stage.groups.BossRush=group
 stage.stages.menu={is_menu=true,stage_name='menu',save_replay={}}
 local objects,hero,worker={}
-local withRevive,withRank,skipRankInit=false,false,false
+local withRevive,withRank,skipRankInit,withDrops=false,false,false,false
 local stageObject={is_menu=false,stage_name='TH06@BossRush',number=1,group=group,timer=0}
 stage.stages[stageObject.stage_name]=stageObject;stage.current_stage=stage.stages.menu
 ObjList=function(g)
@@ -49,6 +49,7 @@ function stageObject:init()
         hero.hspeed=4;hero.lspeed=2
     end
     if withRank then if not skipRankInit then GameRank.reset() end;hero.group=4 end
+    if withDrops then GameDrops.reset();GameDrops.bind(hero);hero.nextshoot=0 end
     self.watch=StopWatch()
     worker=coroutine.create(function()
         while true do
@@ -69,6 +70,18 @@ local function step()
     if withRevive then
         if stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true;if withRank then GameRank.miss() end end
         if GameRevive.frame(stage.current_stage) then R.afterLogic();return end
+    end
+    if withDrops then
+        if stage.current_stage.timer==45 and not lstg.var.test_drop then
+            lstg.var.test_drop=true
+            local card={card_id=998,is_combat=true};local b={is_combat=true,current_card=card,otherboss={}}
+            GameDrops.beginCard(b,card);GameDrops.award(b)
+        end
+        if GameDrops.frame(stage.current_stage) then R.afterLogic();return end
+        GameDrops.playerStep(hero)
+        GameDrops.shoot(hero,function(p)
+            if p.timer%4==0 then objects[#objects+1]={_live=true,group=3,x=p.x,y=p.y,vx=0,vy=3,rot=0,timer=0,hp=1} end
+        end)
     end
     if withRank then
         GameRank.step()
@@ -201,3 +214,23 @@ local beforeHUD=R.signature();GameRank.value();GameRank.factor()
 check(lstg.var.rank==nil and R.signature()==beforeHUD,'零帧 HUD 显示不改变保存状态')
 coldRestore();check(R.signature()==beforeHUD and lstg.var.rank==nil,'旧检查点默认 Rank 的零帧冷重建一致')
 print('含 Rank 和零帧边界的续玩回归通过：'..total..' 项。')
+
+-- 掉落过程和成长后的射击时钟也参与精确重建。
+GameDrops=dofile(host.root..'/THlib/drops.lua');withDrops=true;replayWriter=nil
+lstg.world={l=-192,r=192,b=-224,t=224,pl=-192,pr=192,pb=-224,pt=224}
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=1,__rank_version=1,__drops_version=1}
+stage.current_stage=stage.stages.menu;stage.next_stage=nil;stage.Set('save',stageObject.stage_name);initialize()
+keys={[39]=true};last=0
+for i=1,62 do step() end
+check(lstg.var.upgrades.active and lstg.var.upgrades.active.age==17 and stageObject.timer==45,'选择期间关卡冻结，输入逻辑帧继续')
+check(R.flush('drops-active'),'掉落中途保存')
+local activeDropSignature=R.signature();local activeDrop=Serialize(lstg.var.upgrades)
+coldRestore();check(R.signature()==activeDropSignature and Serialize(lstg.var.upgrades)==activeDrop,'下落位置、候选项、玩家数值和射击时钟冷重建一致')
+for i=1,80 do if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then break end;step() end
+local red,blue=GameDrops.values(1);check(red~=100 or blue~=100,'重建后可继续接取道具')
+check(R.flush('drops-picked'),'成长后保存')
+local pickedSignature=R.signature();local pickedValues=Serialize(lstg.var.upgrades)
+coldRestore();check(R.signature()==pickedSignature and Serialize(lstg.var.upgrades)==pickedValues,'已接取奖励不会因恢复重复应用')
+for i=1,30 do step() end;check(R.flush('drops-shoot'),'成长后的发弹过程保存')
+local shootSignature=R.signature();coldRestore();check(R.signature()==shootSignature,'成长后真实弹数与射击节拍重新构建一致')
+print('含掉落与火力 / 射速的续玩回归通过：'..total..' 项。')
