@@ -106,6 +106,7 @@ N.role='host';sent.R=nil;Capture.sendResources();check(sent.R==nil,'资源未改
 LoadImage('new-image','test',0,0,8,8);Capture.sendResources()
 local delta=W.decode(sent.R,Color);check(#delta==1 and delta[1][2][1]=='new-image','新资源只发送增量')
 sent.R=nil;Capture.sendResources(true);check(#W.decode(sent.R,Color)>1,'重连强制补齐完整资源')
+N.summary={won=true};N.newRound();check(N.summary==nil and DeSerialize(sent.J).t=='new-round','合作结果页再开一局时通知客机清除旧结算')
 N.role='client'
 rejects(function() Capture.receiveResources(W.encode({{'LoadTexture',{'evil','THlib/../../User/secret'},'global'}})) end,'资源路径禁止越界')
 rejects(function() Capture.receiveFrame(W.encode({tick=1,time=1,calls={{99,0,0,0,0,{}}}})) end,'拒绝未知绘制操作')
@@ -126,4 +127,7 @@ check(hits[1]==1 and hits[2]==1 and beam.counter==1 and beam.w==11,'同束激光
 load('THlib/lib/Lscoredata.lua');local writes=0;SaveProfiles.write=function() writes=writes+1 end
 scoredata={money=123,hiscore={}};spell_card_data={};SaveScoreData();SaveSpellCardData();check(writes==0,'联机中屏蔽单人磁盘写入')
 N.match=false;SaveScoreData();SaveSpellCardData();check(writes==2,'离开联机后恢复正常保存')
+stage={current_stage={is_menu=false}};lstg.var.__resume_version=1
+rejects(function() N.create({}) end,'单人游戏中建房须先返回标题')
+N.leave();check(lstg.var.__resume_version==1,'只关闭大厅连接不会清除单人续玩标记')
 print('联机核心回归通过：'..count..' 项，含 1000 个畸形报文。')

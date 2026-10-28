@@ -233,6 +233,7 @@ function stg.render()
 end
 
 function stg.Start(group)
+    if GameNet then GameNet.newRound() end
     lstg.var.__revive_version=1;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = false
@@ -255,6 +256,7 @@ end
 
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
+    if GameNet then GameNet.newRound() end
     lstg.var.__revive_version=1;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = true

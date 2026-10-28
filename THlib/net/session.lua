@@ -105,6 +105,8 @@ local function control(v,connection)
     elseif v.t=='summary' then
         assert(N.role=='client' and type(v.value)=='table','结算消息无效')
         local s=v.value;assert(finite(s.score,1e15) and finite(s.misses,1e6) and finite(s.captures,1e6) and type(s.won)=='boolean','结算数值无效');N.summary=s
+    elseif v.t=='new-round' then
+        assert(N.role=='client','新一局消息方向无效');N.summary=nil;N.predict=nil
     else error('未知联机消息：'..v.t) end
 end
 local function onMessage(kind,body,connection)
@@ -135,7 +137,9 @@ function N.info()
         tick=N.tick,players=positions,snapshotBytes=N.Capture and N.Capture.bytes or 0,renderCommands=N.Capture and N.Capture.drawCount or 0}
 end
 function N.create(options)
-    assert(not N.match,'请先退出当前联机');N.leave();options=options or {}
+    assert(not N.match,'请先退出当前联机')
+    assert(stage.current_stage and stage.current_stage.is_menu and not stage.next_stage,'请先返回标题，再创建联机房间')
+    N.leave();options=options or {}
     N.role='host';N.phase='hosting';N.hero=validHero(options.hero or 'reimu_player');N.mode=options.mode or 'dual'
     assert(N.mode=='dual' or N.mode=='single' or N.mode=='main','联机关卡类型无效')
     N.key=C.base64(C.random(24));N.epoch=T.now();N.connections={};N.pause={false,false};N.error=nil
@@ -163,6 +167,7 @@ function N.join(options)
     options=options or {}
     local reconnect=N.client() and not N.connected and options.code==N.code
     assert(not N.match or reconnect,'请先退出当前联机')
+    assert(reconnect or (stage.current_stage and stage.current_stage.is_menu and not stage.next_stage),'请先返回标题，再加入联机房间')
     if reconnect then
         for _,c in ipairs(N.connections or {}) do c:close() end
         N.connections={};N.match=false
@@ -205,6 +210,9 @@ function N.finish(won)
     N.summary={won=won==true,score=lstg.var.score or 0,misses=lstg.var.dead or 0,captures=lstg.var.getsc or 0}
     send({t='summary',value=N.summary})
 end
+function N.newRound()
+    if N.host() and N.summary then N.summary=nil;N.quizKeys=nil;N.lastMissSlot=1;send({t='new-round'}) end
+end
 function N.leave()
     local playing=N.match
     if N.host() then N.finish(false) end
@@ -222,7 +230,7 @@ function N.leave()
     end
     N.phase='idle';N.role=nil;N.code=nil;N.key=nil;N.players={};N.pause={false,false};N.keys={{},{}};N.predict=nil
     N.clientSeq=0;N.inputSeq=-1;N.lastPing=nil;N.lastSent=nil;N.guestHero=nil;N.hostHero=nil
-    if lstg.var then lstg.var.__coop=nil;lstg.var.__resume_version=nil end
+    if playing and lstg.var then lstg.var.__coop=nil;lstg.var.__resume_version=nil end
     if N.Capture then N.Capture.reset() end
     N.error=nil
 end
