@@ -54,6 +54,7 @@ function R.finish(self,won)
     local run=lstg.var.rogue_run
     run.won=won and misses()<R.MISS_LIMIT
     run.finished=true
+    if GameNet and GameNet.host() then GameNet.finish(run.won) end
     run.score=lstg.var.score;run.misses=lstg.var.dead;run.captures=lstg.var.getsc
     run.revives=lstg.var.revive and lstg.var.revive.used or 0
     run.elapsed=self.stop_watch:GetElapsed()

@@ -23,6 +23,10 @@ lstg.DoFile("THlib\\lib\\Lobject.lua")--Luastg的Class、object
 lstg.DoFile("THlib\\lib\\LObjectEvents.lua")--一些object事件函数
 
 lstg.DoFile("THlib\\lib\\Lscreen.lua")--world、3d、viewmode的参数设置
+lstg.DoFile("THlib/net/codec.lua")
+lstg.DoFile("THlib/net/session.lua")
+lstg.DoFile("THlib/net/capture.lua")
+if GameNet then GameNet.Capture.install() end
 lstg.DoFile("THlib\\lib\\Linput.lua")--按键状态更新
 lstg.DoFile("THlib\\lib\\Ltask.lua")--task
 lstg.DoFile("THlib\\lib\\Lstage.lua")--stage关卡系统
@@ -36,6 +40,7 @@ lstg.DoFile("THlib\\lib\\Lscoredata.lua")--玩家存档
 
 
 function GameExit()
+    if GameNet and GameNet.active() then GameNet.leave() end
     if SaveResume then SaveResume.flush('退出游戏') end
     if not lstg.quit_flag then
         if not scoredata["Alt+F4"] then

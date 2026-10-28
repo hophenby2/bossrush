@@ -67,16 +67,7 @@ function laser:init(index, x, y, rot, l1, l2, l3, w, node, head)
     self.protect = 0
 end
 
-function laser:frame()
-    task.Do(self)
-    self.drop_CD = max(0, self.drop_CD - 1)
-    self.protect = max(0, self.protect - 1)
-    if self.counter > 0 then
-        self.counter = self.counter - 1
-        self.w = self.w + self.dw
-        self.alpha = self.alpha + self.da
-    end
-    local player = player
+local function checkPlayer(player,self)
     local len = self.l1 + self.l2 + self.l3
     if self.alpha > 0.999 and self.colli then
         local dx = player.x - self.x
@@ -114,6 +105,19 @@ function laser:frame()
             end
         end
     end
+end
+
+function laser:frame()
+    task.Do(self)
+    self.drop_CD = max(0, self.drop_CD - 1)
+    self.protect = max(0, self.protect - 1)
+    if self.counter > 0 then
+        self.counter = self.counter - 1
+        self.w = self.w + self.dw
+        self.alpha = self.alpha + self.da
+    end
+    if GameNet then GameNet.forEachPlayer(checkPlayer,self) else checkPlayer(player,self) end
+
 end
 local SetImageState = SetImageState
 local Render = Render

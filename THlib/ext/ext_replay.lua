@@ -112,6 +112,10 @@ saving.SaveManager = plus.ReplayManager(SAVE_DIR, "file", "saving")
 ---@param path string @录像文件路径（可选）
 ---@param stageName string @关卡名称
 function stage.Set(mode, path, stageName)
+    if GameNet and GameNet.host() and mode=="save" then
+        mode="none";lstg.var.ran_seed=((os.time()%65536)*877)%65536
+        lstg.var.__resume_version=nil;lstg.var.__coop=true;ContinueGame=false
+    end
     if SaveResume and not SaveResume.beforeStageSet(mode) then return end
     Print('Set', mode, path, stageName)
     if mode == "load" and stage.next_stage then
@@ -142,7 +146,7 @@ function stage.Set(mode, path, stageName)
     ext.ResetTicker()--重置计数器
 
     -- 刷新最高分
-    if (not stage.current_stage.is_menu) and (not replay.IsReplay()) then
+    if (not stage.current_stage.is_menu) and (not replay.IsReplay()) and not (GameNet and GameNet.active()) then
         local str = stage.current_stage.stage_name .. '@' .. tostring(lstg.var.player_name)
         if scoredata.hiscore[str] == nil then
             scoredata.hiscore[str] = 0

@@ -24,6 +24,7 @@ local menuButtons = {
     { key=27, x=810, y=40, radius=28, label='返回' },
 }
 function I.menuMode()
+    if GameNet and GameNet.client() then return false end
     return ext and (ext.StageIsMenu() or (ext.pause_menu and not ext.pause_menu:IsKilled())) or false
 end
 function I.pulse(key) I.pulses[key] = 2; I.last = key end
@@ -82,6 +83,7 @@ function I.touch(id, x, y, event)
         local t = I.touches[id]
         if not t then
             t = { x = x, y = y }
+            if x>=480 and x<=630 and y>=510 and y<=538 then t.button={key=120};I.pulse(120) end
             if x>=640 and x<=790 and y>=510 and y<=538 then
                 t.button={key=116}; I.pulse(116)
             end

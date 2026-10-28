@@ -97,6 +97,9 @@ local function ClassSort(class)
     class[4] = class.render
     class[5] = class.colli
     class[6] = class.kill
+    if GameNet then
+        for i,kind in ipairs({"init","del","frame","render","colli","kill"}) do class[i]=GameNet.callback(class[kind],kind) end
+    end
 end
 ---定义新类
 ---@param base object

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Boss Rush · 联机合作</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><div><h1>联机合作</h1><p>两位玩家各自操作，房主负责关卡结算</p></div><button id="returnGame">返回游戏</button></header><main>
+<p id="message" role="status"></p>
+<section class="panel"><h2>房间状态</h2><p id="status">读取中…</p><p id="details" class="muted"></p><div class="toolbar"><button id="start" disabled>房主开始游戏</button><button id="resume">继续游戏</button><button id="reconnect" hidden>重新连接</button><button id="leave">退出房间</button></div><p id="summary"></p></section>
+<section class="panel"><label>我的自机 <select id="hero"><option value="reimu_player">博丽灵梦</option><option value="marisa_player">雾雨魔理沙</option><option value="aya_player">射命丸文</option><option value="chiruno_player">琪露诺</option></select></label></section>
+<section class="panel"><h2>创建房间</h2><label>关卡 <select id="mode"><option value="dual">双 Boss 随机十战</option><option value="single">随机十战</option><option value="main">Boss Rush 主线</option></select></label>
+<label>连接方式 <select id="transport"><option value="direct">局域网 / 公网直连</option><option value="relay">公网中继</option></select></label>
+<div id="directFields"><label>监听端口 <input id="port" type="number" min="1024" max="65535" value="39777"></label><label>给对方的 IPv4 地址 <input id="address" placeholder="留空自动选择本机局域网地址" maxlength="64"></label><p id="addresses" class="muted"></p><p class="muted">局域网：连接同一 Wi-Fi 或一方热点。公网：填写公网 IPv4，并将 TCP 监听端口转发到房主；同时放行系统防火墙。</p></div>
+<div id="relayFields" hidden><label>中继地址 <input id="relay" placeholder="服务器 IPv4:39778" maxlength="64"></label><p class="muted">双方都向中继发起连接。可部署的服务与步骤见 tools/relay/部署说明.txt。</p></div><button id="host">创建房间</button>
+<div id="invite" hidden><label>房间口令<textarea id="code" readonly rows="4"></textarea></label><div class="toolbar"><button id="copy">复制口令</button></div><div id="qr"></div><p class="muted">将口令发给另一位玩家。局域网地址只能在同一网络使用；请勿公开分享房间口令。</p></div></section>
+<section class="panel"><h2>加入房间</h2><label>房主的房间口令<textarea id="joinCode" rows="4" placeholder="粘贴 BRM1. 开头的口令" maxlength="2048"></textarea></label><details><summary>手动指定连接地址</summary><label>IPv4:端口<input id="override" maxlength="64" placeholder="一般留空；端口映射不同时可覆盖"></label></details><button id="join">加入房间</button></section>
+<section class="panel"><h2>合作规则</h2><p>各自移动、射击和中弹，对方自机及其子弹以 65% 不透明度显示。失误、分数、Rank 和三次答题复活额度由队伍共享；触发失败的玩家负责答题。任一方暂停或断线时，房主暂停战斗。</p><p>联机使用独立的合作统计，不写入单人符卡历史、金币和续玩点。当前版本不保存双人录像或联机中途存档。F9 打开本页，ESC 暂停或继续；断线后可使用原口令、原自机重新加入仍在等待的房主。</p></section>
+</main><script src="/vendor/qrcode.js"></script><script src="/coop.js"></script></body></html>

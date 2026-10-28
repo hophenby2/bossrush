@@ -186,5 +186,88 @@ function N.request(ip,port,path,token,body,callback)
     end
     return c
 end
+-- 游戏联机专用长连接；存档 HTTP 请求仍保留原有的私网限制。
+local function packetSize(s) local a,b,c,d=s:byte(1,4);return ((a*256+b)*256+c)*256+d end
+local function prefix(n) return string.char(math.floor(n/16777216)%256,math.floor(n/65536)%256,math.floor(n/256)%256,n%256) end
+local function stream(s,onMessage,onClose)
+    lib.setsockopt(s,6,1,ffi.new('int[1]',1),4)
+    local c={socket=s,queue={},head='',body={},length=0,last=N.now(),offset=1,MAX=2*1024*1024}
+    function c:close(reason)
+        if self.closed then return end
+        self.closed=true;close(self.socket);self.queue={};self.latest=nil;self.output=nil
+        if onClose then onClose(reason or '连接已关闭') end
+    end
+    function c:send(kind,body,latest)
+        assert(type(kind)=='string' and #kind==1 and type(body)=='string' and #body+1<=self.MAX,'联机消息过大')
+        if self.closed then return false end
+        local bytes=prefix(#body+1)..kind..body
+        if latest then self.latest=bytes
+        else assert(#self.queue<128,'联机消息积压');self.queue[#self.queue+1]=bytes end
+        return true
+    end
+    function c:poll()
+        if self.closed then return end
+        local worked,err=pcall(function()
+            for _=1,32 do
+                if not self.output then
+                    self.output=table.remove(self.queue,1) or self.latest
+                    if not self.output then break end
+                    if self.output==self.latest then self.latest=nil end
+                    self.offset=1
+                end
+                local length=math.min(32768,#self.output-self.offset+1)
+                local n=tonumber(lib.send(self.socket,self.output:sub(self.offset,self.offset+length-1),length,sendFlags))
+                if n<0 then if again() then break end;error('联机发送失败') end
+                if n==0 then error('联机连接关闭') end
+                self.offset=self.offset+n
+                if self.offset>#self.output then self.output=nil end
+            end
+            for _=1,64 do
+                local n=tonumber(lib.recv(self.socket,buffer,8192,0))
+                if n<0 then if again() then break end;error('联机读取失败') end
+                if n==0 then error('对方已断开连接') end
+                self.last=N.now();local bytes=ffi.string(buffer,n);local p=1
+                while p<=#bytes do
+                    if not self.expected then
+                        local take=math.min(4-#self.head,#bytes-p+1);self.head=self.head..bytes:sub(p,p+take-1);p=p+take
+                        if #self.head==4 then
+                            self.expected=packetSize(self.head);self.head=''
+                            assert(self.expected>=1 and self.expected<=self.MAX,'联机数据长度无效')
+                        end
+                    else
+                        local take=math.min(self.expected-self.length,#bytes-p+1)
+                        self.body[#self.body+1]=bytes:sub(p,p+take-1);self.length=self.length+take;p=p+take
+                        if self.length==self.expected then
+                            local message=table.concat(self.body);self.body={};self.length=0;self.expected=nil
+                            onMessage(message:sub(1,1),message:sub(2),self)
+                            if self.closed then return end
+                        end
+                    end
+                end
+            end
+            if N.now()-self.last>20 then error('联机心跳超时') end
+        end)
+        if not worked then self:close(tostring(err)) end
+    end
+    return c
+end
+function N.tcpConnect(ip,port,onMessage,onClose)
+    -- 由联机界面的明确地址发起连接，不复用存档配对码的授权。
+    local endpoint=address(ip,port);local s=makeSocket()
+    local result=lib.connect(s,endpoint,16)
+    if result~=0 and not again() then close(s);error('无法连接房主或中继，请检查地址与端口') end
+    return stream(s,onMessage,onClose)
+end
+function N.tcpListen(port,onConnect)
+    local s=makeSocket();lib.setsockopt(s,windows and 65535 or (mac and 65535 or 1),2,ffi.new('int[1]',1),4)
+    if lib.bind(s,address('0.0.0.0',port),16)~=0 then close(s);error('联机端口被占用或没有监听权限') end
+    if lib.listen(s,4)~=0 then close(s);error('联机监听失败') end
+    local server={socket=s}
+    function server:poll()
+        for _=1,4 do local client=lib.accept(s,nil,nil);if invalid(client) then break end;nonblock(client);onConnect(client,stream) end
+    end
+    function server:close() if not self.closed then self.closed=true;close(s) end end
+    return server
+end
 SaveTransport=N
 return N

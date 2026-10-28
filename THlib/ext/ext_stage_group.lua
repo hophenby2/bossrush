@@ -238,7 +238,7 @@ function stg.Start(group)
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('save', group[1])
-    stage.stages[group.title].save_replay = { group[1] }
+    stage.stages[group.title].save_replay = not (GameNet and GameNet.host()) and { group[1] } or nil
 end
 
 function stg.StartSaving()
@@ -289,7 +289,7 @@ function stg.FinishStage()
             if stage.stages[group.title].save_replay then
                 table.insert(stage.stages[group.title].save_replay, group[self.number + 1])
             end
-            if group == stage.groups["BossRush"] then
+            if group == stage.groups["BossRush"] and not (GameNet and GameNet.host()) then
                 ext.saving.Save(stage.stages[group.title].save_replay)
             end
         end
@@ -338,6 +338,7 @@ function stg.FinishGroup()
 end
 
 function stg.ReturnToTitle(save_rep, finish)
+    if GameNet and GameNet.host() then GameNet.finish(finish==1);save_rep=false end
     for _, v in pairs(EnumRes2('bgm')) do
         if GetMusicState(v) == "playing" then
             StopMusic(v)

@@ -202,6 +202,7 @@ function stage_menu:init()
             menu.FadeIn(menu_key)
             menu.FadeOut(menu_title, "left")
         end, "Key Settings" },
+        { "联机合作", function() GameNet.open() end, "Co-op" },
         { "存档 / 同步", function() SaveSync.open() end, "Save / Sync" },
         { "其他设置", function()
             menu.FadeIn(menu_setting)

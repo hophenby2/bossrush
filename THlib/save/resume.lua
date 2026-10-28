@@ -206,6 +206,7 @@ function R.peek()
     return nil,problem
 end
 function R.clear()
+    if GameNet and GameNet.active() then return end
     if R.recovering then return end
     os.remove(P.path('resume.dat'));os.remove(P.path('resume.dat')..'.bak');R.session=nil;R.memo=nil
 end

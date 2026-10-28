@@ -186,6 +186,7 @@ local function DoFrame()
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()
+    if GameNet then GameNet.beforeLogic() end
     if GameRevive.active() and ext.GetPauseMenuOrder() then
         stage.group.frame_pause(stage.current_stage)
         if stage.next_stage then
@@ -193,7 +194,7 @@ local function DoFrame()
             return
         end
     end
-    if GameRevive.frame(stage.current_stage) then
+    if (GameNet and GameNet.quiz or function(fn,s) return fn(s) end)(GameRevive.frame,stage.current_stage) then
         if SaveResume then SaveResume.afterLogic() end
         return
     end
@@ -310,6 +311,7 @@ local mask_fader = mask_fader
 local ui_drawing = ui_drawing
 local setting = setting
 function FrameFunc()
+    if GameNet then GameNet.poll();GameNet.controls() end
     SaveSync.frame()
     if SaveSync.visible and not SaveProfiles.pending then
         -- 同步页暂停期间仍更新计时基准，避免返回时补跑数分钟的战斗帧。
@@ -317,6 +319,14 @@ function FrameFunc()
         return false
     end
 
+    if GameNet and GameNet.client() then
+        before=stopWatch:GetElapsed();after=before;offset=0
+        if stage.next_stage then DoFrame() end
+        GameNet.clientFrame();return false
+    end
+    if GameNet and not GameNet.readyForLogic() then
+        before=stopWatch:GetElapsed();after=before;offset=0;return false
+    end
     if SaveResume and SaveResume.recovering then
         before=stopWatch:GetElapsed();after=before;offset=0
         SaveResume.pump(DoFrame)
@@ -355,7 +365,7 @@ function FrameFunc()
         end
         DoFrameEx(1 + add)
         --按键弹出菜单
-        if (GetLastKey() == setting.keysys.menu and not lstg.tmpvar.noPause or ext.pop_pause_menu) and not ext.StageIsMenu() then
+        if not (GameNet and GameNet.active()) and (GetLastKey() == setting.keysys.menu and not lstg.tmpvar.noPause or ext.pop_pause_menu) and not ext.StageIsMenu() then
             ext.pause_menu:FlyIn()
             if SaveResume then SaveResume.flush("暂停") end
         end
@@ -389,6 +399,10 @@ end
 function RenderFunc()
     if SaveResume and SaveResume.recovering then return SaveResume.renderRecovery() end
     if SaveSync.visible then return end
+    if GameNet and GameNet.client() then
+        BeginScene();GameNet.clientRender();GameNet.render();EndScene();return
+    end
+    if GameNet then GameNet.Capture.begin() end
     BeginScene()
     SetViewMode("ui")
     SetWorldFlag(1)
@@ -426,6 +440,7 @@ function RenderFunc()
     SaveSync.render()
 
     EndScene()
+    if GameNet then GameNet.Capture.finish() end
     if SaveResume then SaveResume.afterRender() end
 
 

@@ -164,3 +164,10 @@ WorldToScreen 加入宽屏留边偏移、离屏目标出栈后恢复 Sub 所需�
 
 像素检查脚本需要 Pillow。原始 Mac SwiftShader 测试保存在 dist/mac-emulator-test/，
 其黑屏与性能记录为 0.1.0 历史结果；当前包和报告以 dist/optimization-test/ 为准。
+
+0.8.0 双人合作
+F9 或顶部“联机合作”建房/加入；双方有独立自机，支持同角色。
+局域网/热点或公网 IPv4 TCP 直连；也可部署 tools/relay/server.cjs 并填写中继地址。
+对方自机与子弹显示为原透明度的 65%；分数、Rank、失误和复活次数共享。
+断线暂停，原口令与原自机可重连；合作统计独立，不覆盖单人关内点和金币。
+详见 THlib/net/联机说明.txt。

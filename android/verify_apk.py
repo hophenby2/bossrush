@@ -52,6 +52,9 @@ with zipfile.ZipFile(apk) as archive:
         fingerprint.append(f'{relative}:{len(data)}:{hashlib.sha256(data).hexdigest()}')
     expected = hashlib.sha256('\n'.join(fingerprint).encode('utf-8')).hexdigest()
     assert archive.read('assets/game/android/resume-version.txt').decode() == expected, '续玩版本指纹与实际入包源码不一致'
+    net_parts = [part for part in fingerprint if not part.startswith('android/')]
+    net_expected = hashlib.sha256('\n'.join(net_parts).encode('utf-8')).hexdigest()
+    assert archive.read('assets/game/android/net-version.txt').decode() == net_expected, '跨平台联机版本指纹不一致'
     libraries = [name for name in names if name.startswith('lib/')]
     for name in libraries:
         data = archive.read(name)

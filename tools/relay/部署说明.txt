@@ -1,0 +1,48 @@
+Boss Rush HD 双人联机中继
+
+中继只负责转发联机报文，游戏由房主运行；两位玩家都向服务器发起 TCP 连接。
+需要一台双方可访问的 IPv4 服务器和 Node.js（使用 node:net、node:crypto 内置模块，无依赖）。
+
+1. 将 server.cjs 上传到服务器，例如 /opt/bossrush-relay/server.cjs。
+2. 执行：PORT=39778 BIND=0.0.0.0 node /opt/bossrush-relay/server.cjs
+3. 在服务器防火墙及云安全组放行 TCP 39778。
+4. 房主在游戏 F9 → 创建房间 → 公网中继，填“服务器 IPv4:39778”。
+5. 房主把生成的 BRM1. 房间口令发给另一位玩家；对方选自机并粘贴加入。
+6. 对方准备后，由房主开始游戏。两端必须使用相同版本的游戏内容。
+
+可选环境变量：PORT（39778）、BIND（0.0.0.0）、MAX_ROOMS（200）。
+退出服务：Ctrl+C，或向进程发送 SIGTERM。
+
+长期运行示例（systemd，先创建无特权账户 bossrush，并确认 node 的实际路径）：
+
+[Unit]
+Description=Boss Rush 双人联机中继
+After=network.target
+
+[Service]
+User=bossrush
+WorkingDirectory=/opt/bossrush-relay
+ExecStart=/usr/bin/node /opt/bossrush-relay/server.cjs
+Environment=PORT=39778
+Environment=MAX_ROOMS=200
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+将上述内容保存为 /etc/systemd/system/bossrush-relay.service，执行：
+sudo systemctl daemon-reload
+sudo systemctl enable --now bossrush-relay
+sudo journalctl -u bossrush-relay -f
+
+房间口令含随机密钥。中继校验密钥摘要，并限制每个房间一位房主、一位加入者。
+协议为明文 TCP；房间口令不是端到端加密，中继管理员可以读取转发数据。
+不要公开分享正在使用的房间口令。中继不接受 Lua 脚本执行或存档上传。
+离开房间会销毁房间；加入方断线时保留房主房间，允许使用原口令重新加入。
+
+不使用中继：同一 Wi-Fi/热点直接填写房主局域网 IPv4。
+公网直连需要房主具备可访问的公网 IPv4，转发 TCP 39777 并放行本机防火墙。
+运营商 CGNAT、没有端口映射权限时，应使用公网中继。
+当前实现只支持 IPv4 地址，不解析域名。未附带预设的公共中继服务器。

@@ -23,10 +23,10 @@ ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
 
 
-def resume_fingerprint(game):
+def resume_fingerprint(game, include_android=True):
     """对实际入包的游戏与移植 Lua 源码生成续玩版本指纹。"""
     files = {game / 'core.lua', game / 'launch.lua'}
-    for folder in ['THlib', 'mod', 'Resources/System', 'android']:
+    for folder in ['THlib', 'mod', 'Resources/System'] + (['android'] if include_android else []):
         files.update((game / folder).rglob('*.lua'))
     parts = []
     for path in sorted(files, key=lambda item: item.relative_to(game).as_posix()):
@@ -154,6 +154,7 @@ def prepare_assets():
     (destination / 'android/render_modes.lua').write_text(
         '-- 来自固定版本 LuaSTG-x core/corefunc.lua 的渲染模式与雾效。\nlocal shader_path = ' + modes)
     (destination / 'android/resume-version.txt').write_text(resume_fingerprint(destination))
+    (destination / 'android/net-version.txt').write_text(resume_fingerprint(destination, include_android=False))
     shutil.copy2(ROOT / 'lua' / 'main.lua', assets / 'src' / 'main.lua')
     for source in ENGINE.rglob('*'):
         if source.is_file() and source.name.lower() in {

@@ -2,6 +2,7 @@
 local C,P,N=assert(SaveCodec),assert(SaveProfiles),assert(SaveTransport)
 local S={visible=false,pending={},jobs={},requests={}}
 local static={['/']={'index.html','text/html; charset=utf-8'},['/app.js']={'app.js','text/javascript; charset=utf-8'},
+    ['/coop.html']={'coop.html','text/html; charset=utf-8'},['/coop.js']={'coop.js','text/javascript; charset=utf-8'},
     ['/style.css']={'style.css','text/css; charset=utf-8'},['/vendor/qrcode.js']={'vendor/qrcode.js','text/javascript'},
     ['/vendor/jsQR.js']={'vendor/jsQR.js','text/javascript'}}
 local function snapshot() if SaveResume then SaveResume.flush('管理或导出') end;if scoredata then SaveSpellCardData();SaveScoreData() end end
@@ -46,6 +47,7 @@ local function operation(path,body,callback)
     return {job=which}
 end
 function S.requestSwitch(which)
+    if GameNet and GameNet.active() then GameNet.leave() end
     assert(not SaveResume or not SaveResume.recovering,'正在重建续玩位置，请先完成或取消恢复')
     P.entry(which)
     if which==P.index.active then return end
@@ -58,6 +60,7 @@ function S.requestSwitch(which)
 end
 function S.close()
     S.visible=false; S.pairExpires=0
+    if GameNet and GameNet.active() then GameNet.togglePause(false) end
 end
 function S.info()
     local pairing={}
@@ -86,6 +89,7 @@ local function dispatch(request)
     if not peer then S.heartbeat=N.now() end
     local path=request.path
     if request.method=='GET' then
+        if path=='/api/coop/status' then return 200,Serialize(GameNet.info()) end
         if path=='/api/status' then return 200,Serialize(S.info()) end
         if path=='/peer/list' then snapshot(); return 200,Serialize({profiles=P.list()}) end
         local id=path:match('^/api/job/([0-9a-f]+)$')
@@ -94,7 +98,12 @@ local function dispatch(request)
     end
     local body=json(request.body)
     local result={ok=true}
-    if path=='/api/create' then result.id=P.create(body.name,body.clone)
+    if path=='/api/coop/host' then result=GameNet.create(body)
+    elseif path=='/api/coop/join' then result=GameNet.join(body)
+    elseif path=='/api/coop/start' then result=GameNet.start()
+    elseif path=='/api/coop/leave' then GameNet.leave()
+    elseif path=='/api/coop/pause' then GameNet.togglePause(body.value)
+    elseif path=='/api/create' then result.id=P.create(body.name,body.clone)
     elseif path=='/api/rename' then P.rename(body.id,body.name)
     elseif path=='/api/archive' then P.archive(body.id)
     elseif path=='/api/switch' then S.requestSwitch(body.id)
@@ -120,14 +129,15 @@ function S.start(port)
     S.localToken=C.base64(C.random(24)); S.pairRaw=C.random(16); S.pairToken=C.base64(S.pairRaw); S.pairExpires=0
     S.server=N.server(dispatch,port)
 end
-function S.open()
+function S.open(view)
     if SaveResume and SaveResume.recovering then return end
     if S.visible then return end
     local ok,err=pcall(function()
         snapshot(); S.start(); S.visible=true; S.heartbeat=N.now()+100
         S.pairRaw=C.random(16); S.pairToken=C.base64(S.pairRaw); S.pairExpires=N.now()+600
-        if stage.current_stage and not stage.current_stage.is_menu and ext.pause_menu:IsKilled() then ext.pause_menu:FlyIn() end
-        local url='http://127.0.0.1:'..S.server.port..'/#token='..S.localToken
+        if GameNet and GameNet.active() then GameNet.togglePause(true)
+        elseif stage.current_stage and not stage.current_stage.is_menu and ext.pause_menu:IsKilled() then ext.pause_menu:FlyIn() end
+        local url='http://127.0.0.1:'..S.server.port..(view=='coop' and '/coop.html' or '/')..'#token='..S.localToken
         if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_SAVE_OPEN: port='..S.server.port) end
         if AndroidPlatform then
             local worked,message=require('cocos.cocos2d.luaj').callStaticMethod('org/bossrush/hd/BossRushActivity','openSaveManager',{url},'(Ljava/lang/String;)V')
@@ -160,6 +170,7 @@ function S.frame()
     S.mouseDown=down
 end
 function S.render()
+    if GameNet then GameNet.render() end
     if not ui or not stage.current_stage or stage.current_stage.stage_name=='init' then return end
     SetViewMode('ui'); SetImageState('white','',210,15,30,52); RenderRect('white',800,956,510,538)
     ui:RenderText('title','存档 / 同步  F10',878,524,0.6,Color(255,210,235,255),'centerpoint')

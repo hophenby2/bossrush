@@ -94,6 +94,7 @@ function InitSpellCardData()
 end
 
 function SaveScoreData()
+    if GameNet and GameNet.active() then return end
     if SaveResume and SaveResume.recovering then return end
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")
@@ -138,6 +139,7 @@ function EncodeSpellCardData()
 end
 
 function SaveSpellCardData()
+    if GameNet and GameNet.active() then return end
     if SaveResume and SaveResume.recovering then return end
     if not plus.DirectoryExists("User") then
         plus.CreateDirectory("User")

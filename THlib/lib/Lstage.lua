@@ -106,7 +106,7 @@ function stage:CheckMiss()
     if lstg.var.dead == count then
         ext.achievement:get(71)
     end--刚刚好的成就
-    if GameRevive and GameRevive.request(count) then
+    if GameRevive and ((GameNet and GameNet.quiz or function(fn,v) return fn(v) end)(GameRevive.request,count)) then
         while GameRevive.active() do task.Wait() end
     end
     if (GameRevive and GameRevive.misses() or lstg.var.dead) > count then
@@ -349,7 +349,7 @@ end
 function stage:Option(bg, music, full_screen)
     item._init_item(self)
     mask_fader:Do("open")
-    New(_G[lstg.var.player_name])
+    if GameNet then GameNet.spawnPlayers() else New(_G[lstg.var.player_name]) end
     if bg then
         background.Create(bg)
     end

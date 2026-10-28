@@ -37,7 +37,7 @@ final class SaveManagerDialog extends Dialog {
         this.activity = activity;
         Uri uri = Uri.parse(url);
         if (!"http".equals(uri.getScheme()) || !"127.0.0.1".equals(uri.getHost()) || uri.getPort() < 1024 ||
-            !"/".equals(uri.getPath()) || uri.getFragment() == null || !uri.getFragment().startsWith("token=")) {
+            !("/".equals(uri.getPath()) || "/coop.html".equals(uri.getPath())) || uri.getFragment() == null || !uri.getFragment().startsWith("token=")) {
             throw new IllegalArgumentException("存档管理地址无效");
         }
         origin = "http://127.0.0.1:" + uri.getPort();

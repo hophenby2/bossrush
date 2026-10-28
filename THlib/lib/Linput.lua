@@ -22,6 +22,7 @@ function GetInput()
             KeyStatePre[k] = KeyState[k]
         end
     end
+    if GameNet and GameNet.host() then GameNet.readKeys(KeyState);_G.KeyStatePre=KeyStatePre;return end
     if SaveResume and SaveResume.readInput(KeyState) then
         return
     end

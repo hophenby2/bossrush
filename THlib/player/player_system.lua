@@ -409,6 +409,7 @@ function system:colli(other)
             else
                 PlaySound("pldead00", 0.5)
                 p.death = 90--无决死的10帧
+                if GameNet then GameNet.miss(p) end
                 item.PlayerMiss(p)
                 New(player_death_ef, p.x, p.y)
             end

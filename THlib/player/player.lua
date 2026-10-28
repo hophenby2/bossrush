@@ -18,9 +18,13 @@ local player_class = player_class
 player_lib.player_class = player_class
 
 function player_class:init(slot)
-    SetCurSystem(lstg.var.current_system or "")
-    New(System)
-    New(BulletBreak_Table)
+    local netSlot=GameNet and GameNet.host() and GameNet.creatingSlot
+    if netSlot then GameNet.registerPlayer(self,netSlot) end
+    if not netSlot or netSlot==1 then
+        SetCurSystem(lstg.var.current_system or "")
+        New(System)
+        New(BulletBreak_Table)
+    end
     self.group = GROUP.PLAYER
     self.layer = LAYER.PLAYER
     lstg.var.timeslow = 1

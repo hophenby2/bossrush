@@ -121,11 +121,19 @@ local function start()
     lstg.SystemLog('BOSSRUSH_INPUT: 已安装')
     -- x 的绘制命令池每个 BeginScene 复用一次，触屏控件必须与游戏共用同一帧。
     local endScene = EndScene
-    EndScene = function() AndroidInput.render(); return endScene() end
+    EndScene = function()
+        local capture=GameNet and GameNet.Capture
+        local old=capture and capture.suppress
+        if capture then capture.suppress=true end
+        AndroidInput.render()
+        if capture then capture.suppress=old end
+        return endScene()
+    end
     local pausedMusic = {}
     function AndroidBack() AndroidInput.pulse(27) end
     function AndroidFocus(active)
         if not active then
+            if GameNet and GameNet.active() then GameNet.togglePause(true) end
             if SaveResume then SaveResume.flush('切到后台') end
             pauseCache.invalidate()
             AndroidInput.reset()

@@ -57,6 +57,23 @@ function bent:init(index, x, y, l, w, sample, node)
     })
 end
 
+local function checkPlayer(player,self)
+    if self.alpha > 0.999 and self._colli then
+        if self._colli and self.data:CollisionCheck(player.x, player.y, player.rot, player.A, player.B, player.rect) then
+            player.class.colli(player, self)
+        end
+        if self.timer % 4 == 0 then
+            --可改为使用自机圆碰撞判定
+            if self._colli and self.data:CollisionCheckWidth(player.grazer.x, player.grazer.y, self.w, player.grazer.rot,
+                    player.grazer.a, player.grazer.b, player.grazer.rect) then
+
+                --TODO:激光擦弹的具体位置获得
+                player.grazer.class.colli(player.grazer, self, true)
+            end
+        end
+    end
+end
+
 function bent:frame()
     --by ETC
     task.Do(self)
@@ -85,20 +102,7 @@ function bent:frame()
         self._w = self.w
     end
 
-    if self.alpha > 0.999 and self._colli then
-        if self._colli and self.data:CollisionCheck(player.x, player.y, player.rot, player.A, player.B, player.rect) then
-            player.class.colli(player, self)
-        end
-        if self.timer % 4 == 0 then
-            --可改为使用自机圆碰撞判定
-            if self._colli and self.data:CollisionCheckWidth(player.grazer.x, player.grazer.y, self.w, player.grazer.rot,
-                    player.grazer.a, player.grazer.b, player.grazer.rect) then
-
-                --TODO:激光擦弹的具体位置获得
-                player.grazer.class.colli(player.grazer, self, true)
-            end
-        end
-    end
+    if GameNet then GameNet.forEachPlayer(checkPlayer,self) else checkPlayer(player,self) end
     if self._bound and not self.data:BoundCheck() and not BoxCheck(self, lstg.world.boundl, lstg.world.boundr, lstg.world.boundb, lstg.world.boundt) then
         object.Del(self)
     end

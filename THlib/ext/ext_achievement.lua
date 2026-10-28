@@ -113,6 +113,7 @@ function achievement:render()
 end
 local getmoney = { 150, 300, 600, 1000, 1500, 3500 }
 function achievement:get(id)
+    if GameNet and GameNet.active() then return end
     if not GlobalAddAchievement or ext.replay.IsReplay() then
         return
     end
