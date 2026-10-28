@@ -595,6 +595,11 @@ function lstg_ui:drawInfo1()
             ui:RenderText(ttf,("答题复活：%d / 3"):format(var.revive.used or 0),scrr+6,scrt-160,
                     0.7,Color(falpha,173,210,230),left,bottom)
         end
+        if GameRank and GameRank.enabled() then
+            local color=Color(falpha,173,225,205)
+            ui:RenderText(ttf,("Rank %.1f / 100"):format(GameRank.value()),scrr+6,scrt-190,0.7,color,left,bottom)
+            ui:RenderText(ttf,("弹速 ×%.3f  下卡HP ×%.3f"):format(GameRank.factor(),GameRank.factor()),scrr+6,scrt-214,0.52,color,left,bottom)
+        end
     end--other
 
 

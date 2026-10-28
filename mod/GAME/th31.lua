@@ -54286,9 +54286,15 @@ local function make_card(build)
     end
 
     ---SET_BOSS 0：标成 BOSS（免伤计时器按 1/9 而不是全免，见 u_step ①）。
-    local function u_boss(u) u.is_boss = true end
+    local function u_boss(u)
+        if not u.is_boss and GameRank then u.maxhp,u.hp=GameRank.health(u,u.maxhp,u.hp) end
+        u.is_boss = true
+    end
     local function u_set_reduction(u, n) u.reduction = n end
-    local function u_set_life(u, n) u.hp, u.maxhp = n, n end
+    local function u_set_life(u, n)
+        if u.is_boss and GameRank then u.maxhp,u.hp=GameRank.health(u,n,n)
+        else u.hp,u.maxhp=n,n end
+    end
     ---SET_ITEM_DROP_COUNTS a b ⇒ Dropitem_PFP { 0, b, a }（同 DROP_COUNTS 的口径）。
     local function u_set_drop_counts(u, a, b) u.drop_counts = { 0, b, a } end
 
@@ -54648,7 +54654,7 @@ local function make_card(build)
         owner.x, owner.y = 0, 400
         ---★ HOST_WATCH（中 BOSS 卡）：卡片 boss 自己不吃伤害（`_colli` 假 ⇒
         --- boss_system 每帧算出来的 colli 恒假），位置 / 血量都由在场的中 BOSS 镜像。
-        if HOST_WATCH then owner._colli = false end
+        if HOST_WATCH then owner._colli = false;owner._rank_hp_proxy=true end
     end
 
     local function card_frame(owner)

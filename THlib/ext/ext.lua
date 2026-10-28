@@ -200,6 +200,7 @@ local function DoFrame()
     --stage和object逻辑
     local nopause = (GetCurrentSuperPause() <= 0)
     if nopause or stage.nopause then
+        if GameRank and nopause then GameRank.step() end
         if not stage.current_stage.is_menu and not ext.notUIdraw then
             lstg.system:frame()
         end
@@ -212,7 +213,9 @@ local function DoFrame()
         stage.current_stage:frame()
         stage.current_stage.timer = stage.current_stage.timer + 1
     end
+    if GameRank then GameRank.beforeObjects() end
     ObjFrame()
+    if GameRank then GameRank.afterObjects() end
     ext.boss_ui:frame()
     if nopause or stage.nopause then
         BoundCheck()

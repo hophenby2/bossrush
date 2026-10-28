@@ -35,6 +35,7 @@ end
 function boss:frame()
     self.astral_dmg_factor = lstg.var.ON_astral and 2.5 or 1
     self._bosssys:frame() --boss系统帧逻辑
+    if GameRank then GameRank.verifyHealth(self) end
     self._wisys:frame() --行走图系统帧逻辑
     --受击闪烁
     if self.dmgt and self.dmgt > 0 then

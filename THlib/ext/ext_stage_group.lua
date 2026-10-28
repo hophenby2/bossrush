@@ -234,6 +234,7 @@ end
 
 function stg.Start(group)
     lstg.var.__revive_version=1;lstg.var.revive=nil
+    lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('save', group[1])
@@ -255,6 +256,7 @@ end
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__revive_version=1;lstg.var.revive=nil
+    lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = true
     lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像
     stage.Set('save', stagename)

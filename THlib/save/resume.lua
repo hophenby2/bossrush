@@ -113,6 +113,8 @@ local signatureFields={'x','y','vx','vy','rot','timer','hp','life','protect','po
 function R.signature()
     local output={tostring(stage.current_stage.timer)}
     for _,key in ipairs({'score','dead','getsc','graze','lifeleft','bomb','power','faith','pointrate'}) do output[#output+1]=key..'='..quantize(lstg.var[key]) end
+    local rank=lstg.var.rank
+    if rank then output[#output+1]='rank='..table.concat({rank.units,rank.frames,rank.captures,rank.misses},',') end
     local revive=lstg.var.revive
     if revive then
         output[#output+1]='revive='..table.concat({revive.used or 0,revive.credits or 0,revive.failedAt or -1},',')

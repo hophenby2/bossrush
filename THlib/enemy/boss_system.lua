@@ -494,6 +494,7 @@ local time_rate = 60
 function system:GetBonus(b)
     AddMoney(100)
     lstg.var.getsc = lstg.var.getsc + 1
+    if GameRank then GameRank.capture(b) end
     if SearchStageLevel[1] then
         for i = 1, 20 do
             New(item.obj.sakura, b.x + cos(i * 18) * 45, b.y + sin(i * 18) * 45)
@@ -569,6 +570,7 @@ function system:SpecialCheckGetCard()
     local b = self.boss
     if b.chip_bonus and b.bombchip_bonus then
         lstg.var.getsc = lstg.var.getsc + 1
+        if GameRank then GameRank.capture(b) end
         b._getcard = true
     end
     self:finishSpellHist(b._getcard)
@@ -748,6 +750,7 @@ end
 ---@param maxhp number @最大血量
 ---@param hp number @血量
 function system:setHP(maxhp, hp)
+    if GameRank then maxhp,hp=GameRank.health(self.boss,maxhp,hp) end
     self.boss.maxhp, self.boss.hp = maxhp, hp or maxhp
 end
 
@@ -920,6 +923,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
     score = score or card.is_sc
     sc_bonus = sc_bonus or card.is_sc
     b.current_card = card
+    if GameRank then GameRank.beginCard(b,card) end
     task.New(self, function()
         if card.before then
             self:openSCBackground(false)

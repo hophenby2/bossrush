@@ -6,6 +6,7 @@
 ----------------------------------------
 ---加载的列表
 LoadRes = {  }
+Include 'THlib\\rank.lua'--全局 Rank，先于各模块缓存 New
 ---加载脚本
 Include 'THlib\\WalkImageSystem.lua'
 --Include 'THlib\\DNHWalkImageSystem.lua'

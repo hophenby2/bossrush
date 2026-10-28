@@ -25,6 +25,7 @@ end
 local bullet = Class(object)
 _G.bullet = bullet
 function bullet:frame()
+    if GameRank then GameRank.observe(self) end
     self._motion_rot=motion_angle(self) or self._motion_rot
     task.Do(self)
     if (lstg.var.gray or self.own_gray) and (not self._no_gray) then

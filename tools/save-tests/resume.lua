@@ -32,7 +32,7 @@ stage={stages={},groups={}}
 local group={title='menu',number=1,[1]='TH06@BossRush'};stage.groups.BossRush=group
 stage.stages.menu={is_menu=true,stage_name='menu',save_replay={}}
 local objects,hero,worker={}
-local withRevive=false
+local withRevive,withRank,skipRankInit=false,false,false
 local stageObject={is_menu=false,stage_name='TH06@BossRush',number=1,group=group,timer=0}
 stage.stages[stageObject.stage_name]=stageObject;stage.current_stage=stage.stages.menu
 ObjList=function(g)
@@ -48,10 +48,11 @@ function stageObject:init()
         player=hero;hero._live=true;hero.death=0;hero.lock=false;hero.dialog=false;hero.hide=false;hero.colli=true;hero.time_stop=false
         hero.hspeed=4;hero.lspeed=2
     end
+    if withRank then if not skipRankInit then GameRank.reset() end;hero.group=4 end
     self.watch=StopWatch()
     worker=coroutine.create(function()
         while true do
-            if self.timer%7==0 then objects[#objects+1]={group=2,x=ran:Float(-100,100),y=120,vx=capturedRandom(-2,2),vy=-2,rot=0,timer=0,hp=1} end
+            if self.timer%7==0 then objects[#objects+1]={_live=true,status='normal',group=withRank and 1 or 2,x=ran:Float(-100,100),y=120,vx=capturedRandom(-2,2),vy=-2,rot=0,timer=0,hp=1} end
             coroutine.yield()
         end
     end)
@@ -66,15 +67,23 @@ local function step()
     if not R.beforeLogic() then return end
     GetInput()
     if withRevive then
-        if stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true end
+        if stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true;if withRank then GameRank.miss() end end
         if GameRevive.frame(stage.current_stage) then R.afterLogic();return end
+    end
+    if withRank then
+        GameRank.step()
+        if stage.current_stage.timer==40 then
+            local b={is_sc=true,otherboss={}};GameRank.beginCard(b,{card_id=999,is_sc=true,t1=1,t3=10});GameRank.capture(b)
+        end
+        GameRank.beforeObjects()
     end
     stage.current_stage.timer=stage.current_stage.timer+1
     hero.vx=(KeyState.right and 2 or 0)-(KeyState.left and 2 or 0);hero.x=hero.x+hero.vx
     if GetKeyState(65) then hero.y=hero.y+1 end
     if GetLastKey()==13 then hero.y=hero.y-1 end
     local ok,err=coroutine.resume(worker);assert(ok,err)
-    for _,obj in ipairs(objects) do obj.x=obj.x+(obj.group==2 and obj.vx or 0);obj.y=obj.y+(obj.vy or 0);obj.timer=obj.timer+1 end
+    for _,obj in ipairs(objects) do obj.x=obj.x+((obj.group==2 or (withRank and obj~=hero)) and obj.vx or 0);obj.y=obj.y+(obj.vy or 0);obj.timer=obj.timer+1 end
+    if withRank then GameRank.afterObjects() end
     if stage.current_stage.timer%5==0 then scoredata.money=scoredata.money+1;CurrentMoney=scoredata.money+offset;spell_card_data[1].reimu[2]=spell_card_data[1].reimu[2]+1 end
     lstg.var.score=stage.current_stage.timer*10;R.afterLogic()
 end
@@ -167,3 +176,28 @@ local revivedSignature=R.signature();local used=lstg.var.revive.used
 coldRestore()
 check(R.signature()==revivedSignature and lstg.var.revive.used==used and used==1,'复活次数与无敌时间冷重建，不额外补机会')
 print('含答题与复活的续玩回归通过：'..total..' 项。')
+
+-- Rank、倍率后的弹幕位置和答题冻结一起冷重建；不能再次补收卡或重复扣 Rank。
+GameRank=dofile(host.root..'/THlib/rank.lua');withRank=true;replayWriter=nil
+R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil;R.enabled=false;R.inLogic=false
+stage.current_stage=stage.stages.menu;stage.next_stage=nil
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=1,__rank_version=1}
+keys={};last=0;stage.Set('save',stageObject.stage_name)
+for _=1,200 do step() end
+check(lstg.var.rank.frames==80 and lstg.var.rank.captures==1 and lstg.var.rank.misses==1,'自然成长只累计真实战斗帧，收卡和中弹各发生一次')
+check(lstg.var.rank.units==50*1200+80+3*1200-8*1200,'Rank 按整数单位记录准确值')
+check(R.flush('rank'),'含 Rank 的关内位置保存')
+local rankSignature=R.signature();local savedRank=Serialize(lstg.var.rank)
+coldRestore()
+check(R.signature()==rankSignature and Serialize(lstg.var.rank)==savedRank,'Rank、事件计数及变速后的世界签名完全重建')
+check(lstg.var.rank.captures==1 and lstg.var.rank.misses==1,'恢复没有重复加收卡奖励或重复扣 Rank')
+print('含 Rank 的续玩回归通过：'..total..' 项。')
+
+skipRankInit=true;replayWriter=nil;R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil;R.inLogic=false
+stage.current_stage=stage.stages.menu;stage.next_stage=nil
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=1,__rank_version=1}
+stage.Set('save',stageObject.stage_name);initialize();check(R.flush('rank-zero'),'迁移后的零帧 Rank 位置保存')
+local beforeHUD=R.signature();GameRank.value();GameRank.factor()
+check(lstg.var.rank==nil and R.signature()==beforeHUD,'零帧 HUD 显示不改变保存状态')
+coldRestore();check(R.signature()==beforeHUD and lstg.var.rank==nil,'旧检查点默认 Rank 的零帧冷重建一致')
+print('含 Rank 和零帧边界的续玩回归通过：'..total..' 项。')
