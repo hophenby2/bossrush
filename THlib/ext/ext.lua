@@ -186,6 +186,13 @@ local function DoFrame()
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()
+    if GameRevive.active() and ext.GetPauseMenuOrder() then
+        stage.group.frame_pause(stage.current_stage)
+        if stage.next_stage then
+            if SaveResume then SaveResume.afterLogic() end
+            return
+        end
+    end
     if GameRevive.frame(stage.current_stage) then
         if SaveResume then SaveResume.afterLogic() end
         return

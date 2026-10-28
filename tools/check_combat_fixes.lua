@@ -86,7 +86,7 @@ GetCurrentSuperPause=function() return 0 end
 task.Do=function() calls.task=calls.task+1 end
 ObjFrame=function() calls.world=calls.world+1 end
 BoundCheck=function() end;CollisionCheck=function() end;UpdateXY=function() end;AfterFrame=function() end
-ext={notUIdraw=false,boss_ui={frame=function() end}}
+ext={notUIdraw=false,GetPauseMenuOrder=function() end,boss_ui={frame=function() end}}
 local f=assert(io.open('THlib/ext/ext.lua','rb'));local code=f:read('*a');f:close()
 local first=assert(code:find('local function DoFrame()',1,true));local last=assert(code:find('_G.DoFrame = DoFrame',first,true))
 assert(loadstring(code:sub(first,last-1)..'\n_G.DoFrame=DoFrame'))()
@@ -94,4 +94,11 @@ DoFrame();DoFrame();check(calls.input==2 and calls.save==2 and calls.world==0 an
 stage.current_stage.is_menu=true;stage.current_stage.frame=function() end
 DoFrame();ui=nil;V.render()
 check(not V.active() and calls.world==1 and calls.task==1 and stage.current_stage.timer==101,'答题中返回标题后菜单可用，不被旧答题状态覆盖或冻结')
+stage.current_stage.is_menu=false
+local commands=0
+stage.group={frame_pause=function(scene) commands=commands+1;stage.next_stage={is_menu=true} end}
+ext.GetPauseMenuOrder=function() return '返回标题菜单' end
+DoFrame()
+check(commands==1 and stage.next_stage and calls.world==1 and calls.task==1,'答题期间暂停菜单的退出指令仍执行，并立即停止旧场景物理更新')
+
 print('战斗修复回归通过：'..total..' 项（朝向/换形、八题共用、三次复活、失败/放弃/超时、实际循环冻结）。')

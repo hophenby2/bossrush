@@ -124,6 +124,10 @@ function stg.frame(self)
 
     end
     --
+    stg.frame_pause(self)
+end
+-- 答题冻结战斗时仍需处理暂停菜单，不能因此启动超额失误的原失败演出。
+function stg.frame_pause(self)
     local order = ext.GetPauseMenuOrder()
     if order == "返回标题菜单" then
         lstg.var.timeslow = nil
