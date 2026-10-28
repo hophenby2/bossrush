@@ -384,7 +384,9 @@ end
 function N.render()
     if not ui or not stage.current_stage or stage.current_stage.stage_name=='init' then return end
     local old=N.Capture.suppress;N.Capture.suppress=true
-    SetViewMode('ui');SetImageState('white','',210,15,30,52);RenderRect('white',480,630,510,538)
+    SetViewMode('ui');SetImageState('white','',210,15,30,52)
+    if N.client() and N.Capture.raw.OriginalSetImageState then N.Capture.raw.OriginalSetImageState('white','',Color(210,15,30,52)) end
+    RenderRect('white',480,630,510,538)
     ui:RenderText('title','联机合作 F9',555,524,0.6,Color(255,210,235,255),'centerpoint')
     if N.match then
         local text=(N.role=='host' and '房主 P1' or '加入方 P2')..'  '..math.floor(N.ping or 0)..' ms'

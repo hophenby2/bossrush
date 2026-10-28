@@ -12,7 +12,7 @@ local function copy(v,depth)
 end
 local drawNames={'Render','RenderRect','Render4V','RenderAnimation','RenderTexture','RenderTTF','RenderTTF2','RenderText',
     'RenderClear','PushRenderTarget','PopRenderTarget','PostEffect','PostEffectCapture','PostEffectApply',
-    'SetImageScale','SetFog','SetViewMode','Set2D','Set3Dwithmode','SetOrtho','SetPerspective','SetViewport','SetScissorRect','SetWorldFlag'}
+    'SetImageScale','SetFog','SetViewMode','Set2D','Set3Dwithmode','SetOrtho','SetPerspective','SetViewport','SetScissorRect','SetWorldFlag','ClearZBuffer','SetZBufferEnable'}
 local resources={'LoadTexture','LoadImage','LoadAnimation','LoadPS','LoadFont','LoadTTF','LoadFX','CopyImage','CopyAnimation','CreateRenderTarget',
     'SetImageCenter','SetAnimationCenter','SetTextureSamplerState','SetAnimationScale','LoadSound','LoadMusic'}
 local op,byId={},{}
@@ -172,7 +172,9 @@ function C.installBent()
                 for i=1,math.min(length,1024) do self.points[i]={list[i].x,list[i].y,width} end
             end end
             if name=='Render' then return function(_,...)
-                real:Render(...);emit('Bent',{args(...),copy(self.points),self.width})
+                local a=args(...);local values=a;local factor=C.context and fade(C.context.slot) or 1
+                if factor~=1 and a[3] then values=copy(a);local A,R,G,B=a[3]:ARGB();values[3]=Color(A*factor,R,G,B) end
+                real:Render(unpack(values,1,values.n or #values));emit('Bent',{a,copy(self.points),self.width})
             end end
             if name=='Release' then return function(_) self.points={};return real:Release() end end
             local value=real[name]
@@ -305,9 +307,10 @@ local function applyCamera(a,name)
     if data.billboard then lstg.viewbillboard=data.billboard end
     C.raw[name](unpack(params,1,params.n or #params))
 end
-local function bent(a)
+local function bent(a,factor)
     local r,points,width=a[1],a[2],a[3];assert(type(points)=='table' and #points<=1024 and type(r[1])=='string','曲线光数据无效')
     local texture,blend,color=r[1],r[2],r[3];if not CheckRes('tex',texture) then return end
+    if factor~=1 and color then local A,R,G,B=color:ARGB();color=Color(A*factor,R,G,B) end
     local u0,v0,w,h=r[4] or 0,r[5] or 0,r[6] or 256,r[7] or 32
     for i=2,#points do
         local p,q=points[i-1],points[i];local dx,dy=q[1]-p[1],q[2]-p[2];local length=math.sqrt(dx*dx+dy*dy)
@@ -339,7 +342,7 @@ function C.render()
                 if not entry or not IsValid(entry.obj) then entry={obj=New(C.particleClass,image)};C.particles[uid]=entry end
                 local p=entry.obj;p.x=x;p.y=y;p.rot=rot;p.hscale=hs;p.vscale=vs;entry.seen=SaveTransport.now();C.raw.DefaultRenderFunc(p)
             end
-        elseif name=='Bent' then bent(a)
+        elseif name=='Bent' then bent(a,fade(call[2]))
         else
             local raw=C.raw[name];assert(raw,'本引擎缺少绘制操作：'..name)
             if name=='Render' or name=='RenderRect' or name=='Render4V' then kind='img'
@@ -380,6 +383,11 @@ function C.predictionOffset(call)
     return 0,0
 end
 function C.reset()
+    -- 客机直接重放了原生状态；离开时让原生贴图重新匹配本地 Lua 颜色缓存。
+    for key,s in pairs(C.states) do
+        local kind,name=key:match('^([^:]+):(.+)$')
+        if kind and CheckRes(kind=='font' and 'fnt' or kind,name) then setStyle(kind,name,s,1) end
+    end
     C.latest=nil;C.previous=nil;C.previousCalls={};C.sentVersion=nil;C.last=nil;C.active=false;C.calls={};C.context=nil;C.audio={};C.music={};C.remoteMusic={};C.particles={}
 end
 N.Capture=C

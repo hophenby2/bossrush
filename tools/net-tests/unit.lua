@@ -22,7 +22,7 @@ for _,name in ipairs({'SetImageCenter','SetAnimationCenter','SetImageScale','Set
 RemoveResource=function() end
 local function style(img,blend,c,r,g,b) local a;if type(c)=='userdata' then a,r,g,b=c:ARGB() else a=c end;states[img]={blend,a or 255,r or 255,g or 255,b or 255} end
 for _,name in ipairs({'SetImageState','OriginalSetImageState','SetAnimationState','OriginalSetAnimationState','SetFontState','OriginalSetFontState'}) do _G[name]=style;lstg[name]=style end
-for _,name in ipairs({'Render','RenderRect','Render4V','RenderAnimation','RenderTexture','RenderTTF','RenderText','RenderClear','PushRenderTarget','PopRenderTarget','PostEffect','PostEffectCapture','PostEffectApply','SetOrtho','SetPerspective','SetViewport','SetScissorRect'}) do
+for _,name in ipairs({'Render','RenderRect','Render4V','RenderAnimation','RenderTexture','RenderTTF','RenderText','RenderClear','PushRenderTarget','PopRenderTarget','PostEffect','PostEffectCapture','PostEffectApply','SetOrtho','SetPerspective','SetViewport','SetScissorRect','ClearZBuffer','SetZBufferEnable'}) do
     _G[name]=function(...) draws[#draws+1]={name=name,args={...},style=states[(...)]} end;lstg[name]=_G[name]
 end
 SetViewMode=function() end;Set2D=SetViewMode;Set3Dwithmode=SetViewMode
@@ -96,9 +96,11 @@ N.role='client';N.predict=nil;Capture.receiveFrame(sent.F);check(N.receivedFrame
 local proxy=player;Capture.receiveFrame(sent.F);check(player==proxy,'连续快照保留拖拽对象身份')
 draws={};Capture.render();check(draws[1].style[2]==200 and draws[2].style[2]==130,'客机看到自己全不透明、房主半透明')
 N.role='host';N.players={p1,p2};Capture.last=nil;Capture.begin()
+ClearZBuffer();SetZBufferEnable(1);
 LoadFont('net-font','THlib/test.fnt');SetFontState('net-font','',255,255,255,255);RenderText('net-font','联机',12,34,1,0)
-Capture.finish();N.role='client';Capture.receiveFrame(sent.F);draws={};Capture.render()
-check(draws[#draws].name=='RenderText','字体显示使用 fnt 资源类型，支持正式 CheckRes')
+SetZBufferEnable(0);Capture.finish();N.role='client';Capture.receiveFrame(sent.F);draws={};Capture.render()
+check(draws[1].name=='ClearZBuffer' and draws[2].name=='SetZBufferEnable' and draws[#draws].name=='SetZBufferEnable','三维背景深度状态按原顺序同步')
+check(draws[#draws-1].name=='RenderText','字体显示使用 fnt 资源类型，支持正式 CheckRes')
 N.role='host';sent.R=nil;Capture.sendResources();check(sent.R==nil,'资源未改变时不重复传输全表')
 LoadImage('new-image','test',0,0,8,8);Capture.sendResources()
 local delta=W.decode(sent.R,Color);check(#delta==1 and delta[1][2][1]=='new-image','新资源只发送增量')
