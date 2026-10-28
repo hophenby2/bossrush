@@ -2,7 +2,7 @@
 -- 接收端只分派固定白名单的绘制/资源 API，绝不执行对方提供的 Lua。
 local N=assert(GameNet)
 local W=assert(NetCodec)
-local C={raw={},states={},registry={},properties={},version=0,serial=0,context=nil,MAX_CALLS=40000,audio={},music={}}
+local C={raw={},states={},registry={},properties={},targets={},version=0,serial=0,context=nil,MAX_CALLS=40000,audio={},music={}}
 local unpack=unpack
 local function args(...) return {n=select('#',...),...} end
 local function copy(v,depth)
@@ -43,12 +43,13 @@ local function state(kind,name,blend,a,r,g,b)
     else previous={blend or '',previous[2],previous[3],previous[4],previous[5]} end
     C.states[kind..':'..name]=previous
 end
-local function emit(name,a,style)
+local function emit(name,a,style,metadata)
     if not C.active or C.suppress then return end
     assert(#C.calls<C.MAX_CALLS,'本帧绘制指令过多')
     local owner=C.context
     if owner then owner.index=owner.index+1 end
-    C.calls[#C.calls+1]={op[name],owner and owner.slot or 0,owner and owner.role or 0,owner and owner.uid or 0,owner and owner.index or #C.calls+1,a,style}
+    local call={op[name],owner and owner.slot or 0,owner and owner.role or 0,owner and owner.uid or 0,owner and owner.index or #C.calls+1,a,style}
+    if metadata then call[8]=metadata;call.n=8 end;C.calls[#C.calls+1]=call
 end
 local function fade(slot) return slot>0 and slot~=(N.role=='client' and 2 or 1) and N.alpha or 1 end
 local function setStyle(kind,name,s,factor)
@@ -95,6 +96,7 @@ function C.install()
                 if name=='LoadTexture' or name=='LoadPS' or name=='LoadTTF' or name=='LoadFont' or name=='LoadFX' or name=='LoadSound' or name=='LoadMusic' then permitted=pcall(safePath,a[2]) end
                 if name=='LoadImage' then C.states['img:'..a[1]]={'',255,255,255,255}
                 elseif name=='LoadAnimation' then C.states['ani:'..a[1]]={'',255,255,255,255} end
+                if name=='CreateRenderTarget' then C.targets[a[1]]=true end
                 if permitted then resource(name,a) end
                 return unpack(result)
             end
@@ -131,7 +133,12 @@ function C.install()
                 end
                 local result={raw(unpack(values,1,values.n or #values))}
                 if factor~=1 and kind then setStyle(kind,a[1],style,1) end
-                emit(name,a,style);return unpack(result)
+                local metadata
+                if name=='RenderTexture' and C.targets[a[1]] then
+                    local w,h=GetTextureSize(a[1]);local full=setting and w==setting.resx and h==setting.resy
+                    metadata={w,h,screen.dx,screen.dy,screen.scale,full==true}
+                end
+                emit(name,a,style,metadata);return unpack(result)
             end
             if lstg[name]==raw then lstg[name]=_G[name] end
         end
@@ -198,6 +205,7 @@ function C.receiveResources(bytes)
     for _,v in ipairs(items) do
         assert(type(v)=='table' and type(v[1])=='string' and type(v[2])=='table','资源消息无效')
         local name,a=v[1],v[2];assert(resourceOps[name] or name=='SetImageScale','资源操作不允许')
+        if name=='CreateRenderTarget' then C.targets[a[1]]=true end
         assert(type(a[1])=='string' and #a[1]<=128 and not a[1]:find('%z'),'资源名称无效')
         assert((a.n or #a)<=16,'资源参数过多')
         for _,arg in pairs(a) do if type(arg)=='number' then assert(arg==arg and math.abs(arg)<=65536,'资源参数越界') end end
@@ -265,6 +273,14 @@ function C.receiveFrame(bytes)
         assert(type(call)=='table' and byId[call[1]] and call[2]>=0 and call[2]<=2 and (call[3]==1 or call[3]==2 or call[3]==0),'画面操作无效')
         validArguments(call[6]);assert(call[7]==nil or (type(call[7])=='table' and #call[7]==5),'图像状态无效')
         if call[7] then for i=2,5 do assert(type(call[7][i])=='number' and call[7][i]>=0 and call[7][i]<=255,'图像颜色越界') end end
+        if call[8] then
+            assert(byId[call[1]]=='RenderTexture' and type(call[8])=='table','渲染目标尺寸无效')
+            for i=1,2 do assert(type(call[8][i])=='number' and call[8][i]>0 and call[8][i]<=16384,'渲染目标尺寸越界') end
+            if call[8][6] then
+                for i=3,5 do assert(type(call[8][i])=='number' and math.abs(call[8][i])<=16384,'渲染目标视口无效') end
+                assert(call[8][5]>0,'渲染目标缩放无效')
+            end
+        end
         if byId[call[1]]=='PushRenderTarget' then targets=targets+1 elseif byId[call[1]]=='PopRenderTarget' then targets=targets-1 end
         assert(targets>=0 and targets<=16,'画面目标栈无效')
     end
@@ -351,9 +367,20 @@ function C.render()
                 if kind then setStyle(kind,a[1],s,fade(call[2])) end
                 local values=a
                 if name=='SetViewport' or name=='SetScissorRect' then values={a[1]*screen.scale+screen.dx,a[2]*screen.scale+screen.dx,a[3]*screen.scale+screen.dy,a[4]*screen.scale+screen.dy}
-                elseif name=='RenderTexture' and fade(call[2])~=1 then
+                elseif name=='RenderTexture' and (call[8] or fade(call[2])~=1) then
                     values=copy(a)
-                    for i=3,6 do local vertex=values[i];if type(vertex)=='table' and vertex[6] then local A,R,G,B=vertex[6]:ARGB();vertex[6]=Color(A*fade(call[2]),R,G,B) end end
+                    local sx,sy,ox,oy=1,1,0,0
+                    if call[8] then local w,h=GetTextureSize(a[1]);sx=w/call[8][1];sy=h/call[8][2] end
+                    if call[8] and call[8][6] then
+                        sx=screen.scale/call[8][5];sy=sx;ox=screen.dx-call[8][3]*sx;oy=screen.dy-call[8][4]*sy
+                    end
+                    for i=3,6 do
+                        local vertex=values[i]
+                        if type(vertex)=='table' then
+                            vertex[4]=vertex[4]*sx+ox;vertex[5]=vertex[5]*sy+oy
+                            if vertex[6] then local A,R,G,B=vertex[6]:ARGB();vertex[6]=Color(A*fade(call[2]),R,G,B) end
+                        end
+                    end
                 elseif name=='Render' or name=='RenderAnimation' then
                     values=copy(a);local ix=name=='Render' and 2 or 3;local ox,oy=C.predictionOffset(call)
                     local old=C.previousCalls[tostring(call[4])..':'..call[5]..':'..call[1]]

@@ -96,6 +96,17 @@ N.role='client';N.predict=nil;Capture.receiveFrame(sent.F);check(N.receivedFrame
 local proxy=player;N.pause={false,true};Capture.receiveFrame(sent.F);check(player==proxy,'连续快照保留拖拽对象身份')
 check(N.pause[2]==true,'迟到画面不能覆盖可靠通道中的暂停指令');N.pause={false,false}
 draws={};Capture.render();check(draws[1].style[2]==200 and draws[2].style[2]==130,'客机看到自己全不透明、房主半透明')
+N.role='host';Capture.last=nil;Capture.begin();GetTextureSize=function() if N.role=='host' then return 200,100 else return 400,300 end end
+CreateRenderTarget('net-target');local vertex={0,0,.5,100,50,Color(255,255,255,255)}
+RenderTexture('net-target','',vertex,vertex,vertex,vertex);Capture.finish()
+N.role='client';Capture.receiveFrame(sent.F);draws={};Capture.render()
+check(draws[1].args[3][4]==200 and draws[1].args[3][5]==150,'不同分辨率按渲染目标比例换算 UV，避免拉伸或黑块')
+local oldSetting,oldScreen=setting,screen;setting={resx=200,resy=100};screen={dx=20,dy=10,scale=2}
+N.role='host';Capture.last=nil;Capture.begin();RenderTexture('net-target','',vertex,vertex,vertex,vertex);Capture.finish()
+N.role='client';screen={dx=40,dy=30,scale=3};Capture.receiveFrame(sent.F);draws={};Capture.render()
+check(draws[1].args[3][4]==160 and draws[1].args[3][5]==90,'全窗口渲染目标按逻辑视口换算 UV，正确处理两端留黑边差异')
+setting,screen=oldSetting,oldScreen
+
 N.role='host';N.players={p1,p2};Capture.last=nil;Capture.begin()
 ClearZBuffer();SetZBufferEnable(1);
 LoadFont('net-font','THlib/test.fnt');SetFontState('net-font','',255,255,255,255);RenderText('net-font','联机',12,34,1,0)
