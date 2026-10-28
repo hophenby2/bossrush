@@ -847,8 +847,8 @@ function player_system_select:render()
                 930, 83 + Alpha * 400, 1, Color(Alpha * (155 + 50 * sin(self.timer * 4)), 255, 255, 255), "right")
 
     else
-        local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场横移 +96 / -96，纵坐标不变","十次失误结束，支持自动 / F5 保存"}
-            or {"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误结束","不启用异变系统与道具构筑","支持关内自动保存 / F5 手动保存"}
+        local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
+            or {"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误触发答题","答对可复活三次，无异变与道具构筑","支持关内自动保存 / F5 手动保存"}
         for i,text in ipairs(tips) do
             ui:RenderText("title",text,700,370-i*42,0.8,Color(Alpha*255,210,235,245),"centerpoint")
         end

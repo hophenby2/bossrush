@@ -119,6 +119,7 @@ end
 function ext.AfterRender()
     --暂停菜单渲染
     ext.boss_ui:render()
+    GameRevive.render()
     if not ext.pause_menu:IsKilled() then
         PopRenderTarget("PauseMenuBlur")
     end

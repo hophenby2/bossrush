@@ -32,7 +32,7 @@ function bulletStyle:kill()
 end
 function bulletStyle:render()
     SetImageState('preimg' .. self._index, self._blend, 255 * self.timer / self.fogtime, 255, 255, 255)
-    Render('preimg' .. self._index, self.x, self.y, self.rot, ((self.fogtime - self.timer) / self.fogtime * 3 + 1) * self.imgclass.size)
+    Render('preimg' .. self._index, self.x, self.y, bullet.GetRenderRotation(self), ((self.fogtime - self.timer) / self.fogtime * 3 + 1) * self.imgclass.size)
 end
 
 local path = "THlib\\bullet\\img\\"

@@ -3,6 +3,7 @@
 local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen'}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='随机十战',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'}}
+local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead end
 local function mode(run) return R.modes[run and run.mode or 'single'] or R.modes.single end
 local sources={{level=29,code='TH31'},{level=32,code='TH34'},{level=33,code='TH35'}}
 function R.buildPool()
@@ -51,9 +52,10 @@ function R.finish(self,won)
     if self.rogue_finished then return end
     self.rogue_finished=true
     local run=lstg.var.rogue_run
-    run.won=won and lstg.var.dead<R.MISS_LIMIT
+    run.won=won and misses()<R.MISS_LIMIT
     run.finished=true
     run.score=lstg.var.score;run.misses=lstg.var.dead;run.captures=lstg.var.getsc
+    run.revives=lstg.var.revive and lstg.var.revive.used or 0
     run.elapsed=self.stop_watch:GetElapsed()
     if IsValid(player) then player.lock=true;player.protect=600 end
     if ext.replay.IsReplay() then
@@ -70,7 +72,7 @@ local function runCards(self)
     task.Wait(60)
     local config=mode(run)
     for index=1,R.COUNT do
-        if lstg.var.dead>=R.MISS_LIMIT then R.finish(self,false);return end
+        if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.current=index
         local first=(index-1)*config.width+1
         local entry=run.cards[first]
@@ -108,7 +110,7 @@ local function runCards(self)
             end
             for _,b in ipairs(active) do while IsValid(b) do task.Wait() end end
         end
-        if lstg.var.dead>=R.MISS_LIMIT then R.finish(self,false);return end
+        if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.completed=index
         if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..'/'..R.COUNT..' '..entry.key) end
         task.Wait(90)
@@ -120,6 +122,7 @@ local function register(variant,config)
     local group=stage.group.New('menu',{},config.name,false)
     local battle=stage.group.AddStage(config.name,config.battle,false)
     battle.displayname=config.title
+    battle.revive_miss_limit=R.MISS_LIMIT-1
     function battle:init()
         self.rogue_finished=false
         self:Option()
@@ -134,7 +137,7 @@ local function register(variant,config)
     end
     function battle:frame()
         if self.rogue_finished then stage.group.frame(self);return end
-        if lstg.var.dead>=R.MISS_LIMIT then R.finish(self,false);return end
+        if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         stage.group.frame(self)
     end
     function battle:render()
@@ -176,7 +179,7 @@ local function register(variant,config)
         ui:RenderText('title',run.won and (config.width==2 and '双Boss十战达成！' or '十战达成！') or (config.width==2 and '双Boss本局结束' or '本局结束'),480,410,1.7,c,'centerpoint')
         ui:RenderText('title',string.format('完成 %d / %d 战',run.completed,R.COUNT),480,345,1,c,'centerpoint')
         ui:RenderText('title',string.format('得分 %s    收卡 %d    失误 %d',tostring(run.score),run.captures,run.misses),480,285,0.8,c,'centerpoint')
-        ui:RenderText('title',string.format('用时 %.1f 秒 · 种子 %d',run.elapsed,run.seed),480,235,0.65,c,'centerpoint')
+        ui:RenderText('title',string.format('用时 %.1f 秒 · 种子 %d · 复活 %d / 3',run.elapsed,run.seed,run.revives or 0),480,235,0.65,c,'centerpoint')
         for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'再来一局 ENTER'}}) do
             SetImageState('white','',Color(255,29,64,85));RenderRect('white',b[1],b[2],85,125)
             ui:RenderText('title',b[3],(b[1]+b[2])/2,105,0.65,c,'centerpoint')
@@ -206,7 +209,8 @@ function panel:render()
         if config.width==2 then text=(side==1 and '右侧 ' or '左侧 ')..text end
         ui:RenderText('title',text,150,315-(side-1)*25,0.65,color,'centerpoint')
     end
-    ui:RenderText('title',string.format('失误 %d / %d',lstg.var.dead,R.MISS_LIMIT),150,mode(run).width==2 and 260 or 285,0.7,color,'centerpoint')
+    ui:RenderText('title',string.format('失误 %d / %d',lstg.var.dead,R.MISS_LIMIT+((lstg.var.revive and lstg.var.revive.credits) or 0)),150,mode(run).width==2 and 260 or 285,0.7,color,'centerpoint')
+    ui:RenderText('title',string.format('答题复活 %d / 3',(lstg.var.revive and lstg.var.revive.used) or 0),150,mode(run).width==2 and 230 or 255,0.65,color,'centerpoint')
 end
 register('single',R.modes.single)
 register('dual',R.modes.dual)

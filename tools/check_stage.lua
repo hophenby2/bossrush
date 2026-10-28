@@ -662,6 +662,7 @@ _G.sp = {
 _G.STAGE_COUNT = 23
 _G.scoredata = { UnlockSC = {}, stage_practice = {} }
 _G.spell_card_data = {}
+_G.GameQuiz=dofile('THlib/ext/ext_quiz.lua')
 
 ---⚠ `classKey` 是「遍历所有 class × 所有成员」，本身就慢。
 ---  原来每次 `New` 都无条件跑一遍 → 一张弹多的卡每帧几千次 → 整个自检慢十倍，

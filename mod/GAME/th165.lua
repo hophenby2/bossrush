@@ -485,14 +485,8 @@ do
             end)
             local YES
             local fall_y = 460
-            local Time = 500
-            local move_set = function(n)
-                if n < 0.5 then
-                    return n * 1.3
-                else
-                    return -1.2 * n * n + 2.5 * n - 0.3
-                end
-            end
+            local Time = GameQuiz.TIME
+            local move_set = GameQuiz.fall
             local Question = Class(object, {
                 init = function(self, text)
                     self.y = 358
@@ -555,11 +549,7 @@ do
                 local _true
                 YES = nil
                 New(Question, q)
-                local in_k, out_k = { 1, 2, 3, 4 }, {}
-                for _ = 1, 4 do
-                    local t = table.remove(in_k, ran:Int(1, #in_k))
-                    table.insert(out_k, t)
-                end
+                local out_k = GameQuiz.shuffle(4,ran)
                 _true = out_k[1]
                 New(Choice, out_k[1], c1)
                 New(Choice, out_k[2], c2)
@@ -576,7 +566,7 @@ do
                 end
                 task.Wait(Time)
                 sp:UnitListUpdate(walls)
-                local answer = 3 + int(player.x / 96)
+                local answer = GameQuiz.answer(player.x)
                 if _true == answer then
                     PlaySound("bonus")
                     for _, w in ipairs(walls) do
@@ -589,32 +579,11 @@ do
                     end
                 end
             end
-            local Questions = {
-                function()
-                    NewQuestion("已知lg x+lg y=2,则x+y的最小值为？", "20", "2", "40", "-20")
-                end,
-                function()
-                    NewQuestion("已知(x-3)²+(y-4)²=9,则x²+y²的最大值为？", "64", "2", "4", "32")
-                end,
-                function()
-                    NewQuestion("已知z=2-i,则5/z为？", "2+i", "(10+5i)/3", "2.5+5i", "2-i")
-                end,
-                function()
-                    NewQuestion("已知tanx=3,则(sin2x+cos2x+1)/2=?", "2/5", "6/5", "5/6", "1/5")
-                end,
-                function()
-                    NewQuestion("已知y=f(x)的图像在点M(0,f(0))处的切线方程为y=-2x,\n则f(0)+f'(0)=?", "-2", "0", "2", "1")
-                end,
-                function()
-                    NewQuestion("已知向量AB=(3,8),A(-1,5),则B的坐标为？", "(2,13)", "(4,3)", "(4,13)", "(2,3)")
-                end,
-                function()
-                    NewQuestion("|lgx|=2的两个根的等比中项为？", "±1", "±100", "±10", "±1000")
-                end,
-                function()
-                    NewQuestion("已知向量a,b满足条件|a|=8,|b|=3,a·b=12,a与b的夹角为？", "60°", "30°", "45°", "120°")
-                end,
-            }
+            local Questions = {}
+            for i,row in ipairs(GameQuiz.questions) do
+                local entry=row
+                Questions[i]=function() NewQuestion(unpack(entry)) end
+            end
             local in_k, out_k = {}, {}
             for i = 1, #Questions do
                 in_k[i] = i

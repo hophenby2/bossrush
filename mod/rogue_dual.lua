@@ -7,6 +7,33 @@ local realNew,realBullet,realList=New,NewSimpleBullet,ObjList
 local realValid,realTask,realObject=IsValid,task,object
 local baseBoss=boss
 local function proxy(base) return setmetatable({},{__index=base}) end
+-- 原卡把插值保存在 before/init 的普通状态表里；需同步平移起点和终点。
+local function shiftMotions(ctx,b)
+    local seen,motions={},{}
+    local function find(value,depth,key)
+        if type(value)~='table' or seen[value] or depth>3 or value.class or value==b.task then return end
+        seen[value]=true
+        local moving=key:find('move',1,true) or key=='mv' or key:sub(-3)=='_mv'
+        if moving and type(value.x0)=='number' and type(value.y0)=='number' and type(value.dx)=='number' and type(value.dy)=='number' then
+            if not ctx.shifted[value] then motions[#motions+1]=value;ctx.shifted[value]=true end
+            return
+        end
+        for field,v in pairs(value) do
+            if type(field)=='string' and field~='_bosssys' and field~='_wisys' and field~='cards' and field~='current_card' then find(v,depth+1,field) end
+        end
+    end
+    for key,value in pairs(b) do
+        if type(key)=='string' and key~='_bosssys' and key~='_wisys' and key~='task' and key~='cards' and key~='current_card' and key~='_rogue_owner' then find(value,0,key) end
+    end
+    local first=not ctx.firstMove or ctx.normalizedMove
+    for _,motion in ipairs(motions) do
+        motion.x0=motion.x0+ctx.dx
+        -- 后续原目标不平移，但从当前屏幕位置起步，不能从原始快照跳回去。
+        if not first then motion.dx=motion.dx-ctx.dx end
+    end
+    if #motions>0 then ctx.firstMove=true end
+    ctx.normalizedMove=false
+end
 local function callback(ctx,fn,b,...)
     if not fn then return end
     -- before 允许等待；每次恢复协程时在原坐标中执行，再将出场位置平移回屏幕。
@@ -14,8 +41,10 @@ local function callback(ctx,fn,b,...)
     local co=coroutine.create(function() return fn(b,unpack(args)) end)
     while true do
         if realValid(b) then b.x=b.x-ctx.dx end
+        ctx.normalized=true
         local values={coroutine.resume(co)}
-        if realValid(b) then b.x=b.x+ctx.dx;b.__NoCleanBullet=true end
+        ctx.normalized=false
+        if realValid(b) then b.x=b.x+ctx.dx;b.__NoCleanBullet=true;shiftMotions(ctx,b) end
         if not values[1] then error(debug.traceback(co,tostring(values[2])),0) end
         if coroutine.status(co)=='dead' then return unpack(values,2) end
         coroutine.yield(unpack(values,2))
@@ -23,8 +52,23 @@ local function callback(ctx,fn,b,...)
 end
 function D.context(source,dx)
     local path=assert(files[source],'未知双 Boss 卡源')
-    local ctx={dx=dx,source=source,objects=setmetatable({},{__mode='k'}),serial=0,units={}}
+    local ctx={shifted=setmetatable({},{__mode='k'}),dx=dx,source=source,objects=setmetatable({},{__mode='k'}),serial=0,units={}}
     local env=proxy(_G);env._G=env;ctx.env=env
+    -- 开场目标可能晚于 init 执行；只偏移第一段定位，后续游走仍使用原卡目标。
+    env.RogueInitialTarget=function(o,x,teleport)
+        if o~=ctx.root and o.th10_boss~=ctx.root then return x end
+        if ctx.firstMove then return x end
+        if not teleport then ctx.firstMove=true;ctx.normalizedMove=ctx.normalized end
+        return x+(ctx.normalized and 0 or dx)
+    end
+    env.RogueInitialCarrier=function(o)
+        if ctx.normalized then o.ecs.off.x=o.ecs.off.x+dx end
+    end
+    env.task=proxy(realTask)
+    env.task.MoveTo=function(x,y,t,mode)
+        local o=realTask.GetSelf()
+        return realTask.MoveTo(env.RogueInitialTarget(o,x),y,t,mode)
+    end
     env._editor_class=proxy(_editor_class);env._editor_boss={}
     env._sc_table={};env._sc_pr_table=ctx.units
     function ctx:owns(o) return realValid(o) and o._rogue_owner==self end
@@ -104,6 +148,7 @@ function D.context(source,dx)
         local before,init,del=card.before,card.init,card.del
         card.before=function(b) return callback(self,before,b) end
         card.init=function(b)
+            self.normalizedMove=false
             callback(self,init,b)
             if realValid(b) then
                 b._rogue_initial_x,b._rogue_initial_y=b.x,b.y

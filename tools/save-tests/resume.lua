@@ -32,6 +32,7 @@ stage={stages={},groups={}}
 local group={title='menu',number=1,[1]='TH06@BossRush'};stage.groups.BossRush=group
 stage.stages.menu={is_menu=true,stage_name='menu',save_replay={}}
 local objects,hero,worker={}
+local withRevive=false
 local stageObject={is_menu=false,stage_name='TH06@BossRush',number=1,group=group,timer=0}
 stage.stages[stageObject.stage_name]=stageObject;stage.current_stage=stage.stages.menu
 ObjList=function(g)
@@ -43,6 +44,10 @@ local capturedRandom=math.random
 function stageObject:init()
     mask_fader.time=31
     objects={};hero={group=1,x=0,y=-100,vx=0,vy=0,rot=0,timer=0,life=3,protect=0,power=1};objects[1]=hero
+    if withRevive then
+        player=hero;hero._live=true;hero.death=0;hero.lock=false;hero.dialog=false;hero.hide=false;hero.colli=true;hero.time_stop=false
+        hero.hspeed=4;hero.lspeed=2
+    end
     self.watch=StopWatch()
     worker=coroutine.create(function()
         while true do
@@ -59,7 +64,12 @@ end
 local function step()
     if stage.next_stage then initialize() end
     if not R.beforeLogic() then return end
-    GetInput();stage.current_stage.timer=stage.current_stage.timer+1
+    GetInput()
+    if withRevive then
+        if stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true end
+        if GameRevive.frame(stage.current_stage) then R.afterLogic();return end
+    end
+    stage.current_stage.timer=stage.current_stage.timer+1
     hero.vx=(KeyState.right and 2 or 0)-(KeyState.left and 2 or 0);hero.x=hero.x+hero.vx
     if GetKeyState(65) then hero.y=hero.y+1 end
     if GetLastKey()==13 then hero.y=hero.y-1 end
@@ -120,3 +130,40 @@ local zeroSignature=R.signature();R.session=nil;stage.current_stage=stage.stages
 R.request();R.pump(step)
 check(not R.recovering and R.session.frames==0 and R.signature()==zeroSignature,'零帧恢复不多跑一个逻辑帧')
 print('关内续玩回归通过：'..total..' 项；420 帧随机物理与协程重建，成长数据不重复。')
+
+-- 答题期间与复活后的完整冷重建：世界帧冻结，题目、选项、答题时间和次数不能重抽。
+dofile(host.root..'/THlib/ext/ext_quiz.lua');local V=dofile(host.root..'/THlib/ext/ext_revive.lua')
+IsValid=function(o) return o and o._live end;PlaySound=function() end
+withRevive=true;stageObject.revive_miss_limit=9;replayWriter=nil
+R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil;R.enabled=false;R.inLogic=false
+stage.current_stage=stage.stages.menu;stage.next_stage=nil
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=1}
+keys={};last=0;stage.Set('save',stageObject.stage_name)
+for _=1,200 do step() end
+check(V.active() and stageObject.timer==80 and lstg.var.revive.quiz.age==120,'答题中物理冻结而续玩帧持续记录')
+check(R.flush('quiz'),'答题中保存')
+local quiz=Serialize(lstg.var.revive.quiz);local quizSignature=R.signature()
+local function coldRestore()
+    R.memo=nil;R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil
+    stage.current_stage=stage.stages.menu;stage.next_stage=nil;keys={};last=0
+    R.request();for _=1,1000 do if not R.recovering then break end;R.pump(step) end
+    check(not R.recovering and not R.failure and R.session,'复活状态冷重建完成')
+    R.afterRender()
+end
+coldRestore()
+check(Serialize(lstg.var.revive.quiz)==quiz and R.signature()==quizSignature,'答题恢复题目、乱序选项、时间、选择和世界签名一致')
+local correct=lstg.var.revive.quiz.correct
+for _=1,100 do
+    local lane=GameQuiz.answer(hero.x)
+    if lane==correct then break end
+    keys={[lane<correct and 39 or 37]=true};step()
+end
+keys={};step();keys={[90]=true};step();keys={}
+for _=1,60 do step() end
+check(not V.active() and lstg.var.revive.used==1 and V.misses()==9 and lstg.var.dead==10,'恢复后可正确作答，累计失误不回退')
+for _=1,15 do step() end
+check(R.flush('revived'),'复活后保存')
+local revivedSignature=R.signature();local used=lstg.var.revive.used
+coldRestore()
+check(R.signature()==revivedSignature and lstg.var.revive.used==used and used==1,'复活次数与无敌时间冷重建，不额外补机会')
+print('含答题与复活的续玩回归通过：'..total..' 项。')

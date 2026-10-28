@@ -113,6 +113,13 @@ local signatureFields={'x','y','vx','vy','rot','timer','hp','life','protect','po
 function R.signature()
     local output={tostring(stage.current_stage.timer)}
     for _,key in ipairs({'score','dead','getsc','graze','lifeleft','bomb','power','faith','pointrate'}) do output[#output+1]=key..'='..quantize(lstg.var[key]) end
+    local revive=lstg.var.revive
+    if revive then
+        output[#output+1]='revive='..table.concat({revive.used or 0,revive.credits or 0,revive.failedAt or -1},',')
+        output[#output+1]='asked='..table.concat(revive.asked or {},',')
+        local q=revive.quiz
+        if q then output[#output+1]='quiz='..table.concat({q.index,q.age,q.choice,q.correct,q.feedback or -1,tostring(q.result)},',') end
+    end
     -- 不记录引擎指针、资源句柄、对象池编号或墙钟；同逻辑步的物理对象顺序参与校验。
     for group=0,15 do
         local count=0

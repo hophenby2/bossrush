@@ -106,7 +106,10 @@ function stage:CheckMiss()
     if lstg.var.dead == count then
         ext.achievement:get(71)
     end--刚刚好的成就
-    if lstg.var.dead > count then
+    if GameRevive and GameRevive.request(count) then
+        while GameRevive.active() do task.Wait() end
+    end
+    if (GameRevive and GameRevive.misses() or lstg.var.dead) > count then
         ext.achievement:get(34)
         if not IsValid(self.noPassOBJ) then
             if self.now_music and GetMusicState(self.now_music) == "playing" then

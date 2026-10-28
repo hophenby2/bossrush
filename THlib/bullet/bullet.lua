@@ -3,6 +3,21 @@ local cos, sin = cos, sin
 local max = max
 local table = table
 local ChangeImage
+-- 朝向仅用于绘制；部分 ECL 用 rot 计算下一帧位移，不能让引擎 navi 回写破坏弹道。
+local function follows(style)
+    return style~=star_small and style~=star_big and style~=music
+end
+local function motion_angle(self)
+    local x,y=self.dx or 0,self.dy or 0
+    if x*x+y*y<1e-12 then x,y=self.vx or 0,self.vy or 0 end
+    if x*x+y*y>=1e-12 then return math.deg(math.atan2(y,x)) end
+end
+local function render_rotation(self)
+    local follow=self.auto_rotate
+    if follow==nil then follow=self._follow_motion and (self.omiga or 0)==0 end
+    if follow then return motion_angle(self) or self._motion_rot or self.rot end
+    return self.rot
+end
 --------------------------
 ---支持妖梦斩击效果变化，开启gray即可
 ---支持拖影
@@ -10,12 +25,13 @@ local ChangeImage
 local bullet = Class(object)
 _G.bullet = bullet
 function bullet:frame()
+    self._motion_rot=motion_angle(self) or self._motion_rot
     task.Do(self)
     if (lstg.var.gray or self.own_gray) and (not self._no_gray) then
         if self._index ~= 16 then
             ChangeImage(self, self.imgclass, 16, true)
         end
-        table.insert(self.graysmear, { x = self.x, y = self.y, rot = self.rot, alpha = 80, img = self.img, hscale = self.hscale, vscale = self.vscale })
+        table.insert(self.graysmear, { x = self.x, y = self.y, rot = render_rotation(self), alpha = 80, img = self.img, hscale = self.hscale, vscale = self.vscale })
     else
         if self._index ~= self.real_index then
             ChangeImage(self, self.imgclass, self.real_index)
@@ -52,6 +68,7 @@ function bullet:del()
 end
 function bullet:render()
     local c = self.imgclass
+    local drawrot=render_rotation(self)
     for _, s in ipairs(self.graysmear) do
         c.SetColorFunc(s.img, "add+alpha", s.alpha, 255, 255, 255)
         c.RenderFunc(s.img, s.x, s.y, s.rot, s.hscale, s.vscale)
@@ -59,11 +76,11 @@ function bullet:render()
     if self.graze2 and self.graze2 > 0 and self.graze2ing then
         local t = int((self.ani + self.gzz_off) / 6) % 4 * 90
         c.SetColorFunc(self.img, self._blend, self._a, self._r, self._g * 0.7, self._b * 0.7)
-        c.RenderFunc(self.img, self.x + cos(t), self.y + sin(t), self.rot, self.hscale, self.vscale, 0.5, self.ani)
+        c.RenderFunc(self.img, self.x + cos(t), self.y + sin(t), drawrot, self.hscale, self.vscale, 0.5, self.ani)
         self.graze2ing = nil
     else
         c.SetColorFunc(self.img, self._blend, self._a, self._r, self._g, self._b)
-        DefaultRenderFunc(self)
+        c.RenderFunc(self.img,self.x,self.y,drawrot,self.hscale,self.vscale,0.5,self.ani)
     end
 end
 
@@ -97,6 +114,8 @@ function bullet:init(imgclass, index, stay, destroyable, fogtime)
         self.index = int((index + 1) / 2)
     end
     imgclass.init(self, index)
+    self._follow_motion=follows(imgclass)
+    self._motion_rot=self.rot
 end
 
 ---@param layer number
@@ -114,6 +133,7 @@ end
 ---@param index number
 ---@param fake boolean@设置假颜色，目前用于妖梦时缓子弹变灰效果
 function bullet:ChangeImage(imgclass, index, fake)
+    local changed=self.imgclass~=imgclass
     if self.class == self.imgclass then
         self.class = imgclass
         self.imgclass = imgclass
@@ -125,8 +145,10 @@ function bullet:ChangeImage(imgclass, index, fake)
     end
     self._index = index
     imgclass.init(self, self._index)
+    if changed then self._follow_motion=follows(imgclass) end
 end
 ChangeImage = bullet.ChangeImage
+bullet.GetRenderRotation=render_rotation
 
 ---取消雾化效果
 function bullet:RemoveFog()

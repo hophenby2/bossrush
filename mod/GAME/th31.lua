@@ -358,6 +358,11 @@
 ---  「平均」= 自机 60px 内弹数）。
 ---=====================================
 
+-- 双 Boss 的首次绝对定位也可能由 frame 在演出后发起；普通模式目标保持原值。
+local function initial_target(o,x)
+    if RogueInitialTarget then return RogueInitialTarget(o,x) end
+    return x
+end
 local class = {}
 _editor_class["TH31"] = class
 
@@ -1584,7 +1589,7 @@ local function card_init(owner)
     owner.alice_movement_angle = 0
     owner.alice_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     -- 原作 Sub1 t=0 还有一堆「关掉射击、关判定、登记符卡」的指令：
@@ -2126,7 +2131,7 @@ local function card_init(owner)
     owner.x, owner.y = 0, BOSS_END_Y
     owner.lw205_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     ---原作 Sub36 t=0 还有一堆关射击、关判定、登记符卡、清场的指令
@@ -2538,7 +2543,7 @@ local function card_init(owner)
     owner.x, owner.y = 0, BOSS_END_Y
     owner.lw206_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     ---原作 Sub46 t=0 还有一堆关射击、关判定、登记符卡、清场的指令
@@ -2971,7 +2976,7 @@ local function card_init(owner)
     owner.x, owner.y = 0, BOSS_END_Y
     owner.lw207_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     ---原作 Sub56 t=0 还有一堆关射击、关判定、登记符卡、清场的指令
@@ -3511,7 +3516,7 @@ local function card_init(owner)
     owner.lw208_movement_angle = 0
     owner.lw208_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0, easing = 4,
     }
     ---原作 Sub40 t=0 还有一堆关射击、关判定、登记符卡、清场的指令
@@ -4035,7 +4040,7 @@ local function card_init(owner)
     owner.lw209_movement_angle = 0
     owner.lw209_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     ---原作 Sub76 t=0 还有一堆关射击、关判定、登记符卡、清场的指令
@@ -4523,7 +4528,7 @@ local function card_init(owner)
     owner.x, owner.y = 0, FIRST_Y
     owner.lw210_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = FIRST_Y - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = FIRST_Y - owner.y,
         n = FIRST_FRAMES, t = 0,
     }
     ---原作 t=0 还有一串关射击、关判定、登记符卡、清场的指令 —— boss 系统与 lw_before 管。
@@ -5016,7 +5021,7 @@ local function card_init(owner)
     owner.lw211_mangle = 0
     owner.lw211_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
     ---原作 t=0 还有一串关射击、关判定、登记符卡、清场的指令（ins_105/110/113/80/134/122/95）
@@ -5818,7 +5823,7 @@ local function card_init(owner)
     owner.lw212_mangle = 0
     owner.lw212_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0, easing = WANDER_EASING,
     }
     ---原作 t=0 还有一串关射击、关判定、登记符卡、清场的指令（ins_105/110/113/80/134/122/95）
@@ -6309,7 +6314,7 @@ local function card_init(owner)
     owner.lw213_mangle = 0
     owner.lw213_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0, easing = WANDER_EASING,
     }
 end
@@ -6991,7 +6996,7 @@ local function card_init(owner)
     owner.lw214_mangle = PI / 2
     owner.lw214_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_END_X - owner.x, dy = BOSS_END_Y - owner.y,
+        dx = initial_target(owner,BOSS_END_X) - owner.x, dy = BOSS_END_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0, easing = MOVE_EASING,
     }
 end
@@ -7541,7 +7546,7 @@ end
 ---t=210 / t=400 的俯冲：`ins_64(60, 1, lf7, 640)`。
 local function dive(owner)
     owner.lw215_move = { x0 = owner.x, y0 = owner.y,
-                         dx = owner.lw215_aimx - owner.x, dy = DIVE_Y - owner.y,
+                         dx = initial_target(owner,owner.lw215_aimx) - owner.x, dy = DIVE_Y - owner.y,
                          n = DIVE_FRAMES, t = 0, easing = EASING_IN_QUAD }
 end
 
@@ -7638,7 +7643,7 @@ local function card_init(owner)
     owner.g_t = nil
     ---`ins_64(90, 4, 192, 160)`：从 (0,96) 插值到我们 (0,64)（缓动 4 = OUT_QUADRATIC）。
     owner.lw215_move = { x0 = owner.x, y0 = owner.y,
-                         dx = 0 - owner.x, dy = ENTER_Y - owner.y,
+                         dx = initial_target(owner,0) - owner.x, dy = ENTER_Y - owner.y,
                          n = ENTER_FRAMES, t = 0, easing = EASING_OUT_QUAD }
 end
 
@@ -8349,7 +8354,7 @@ local function card_init(owner)
     owner.g_t = nil
     freeze_left = 0
     owner.lw216_move = { x0 = owner.x, y0 = owner.y,
-                         dx = 0 - owner.x, dy = ENTER_Y - owner.y,
+                         dx = initial_target(owner,0) - owner.x, dy = ENTER_Y - owner.y,
                          n = ENTER_FRAMES, t = 0 }
 end
 
@@ -8992,7 +8997,7 @@ local function root_step(owner, t)
     elseif t == AIM_T then
         ---`ins_64(60, 4, PLAYER_POSITION_X, 128)`：朝自机**此刻**的 x 飞到中场 (x, 96)。
         owner.lw217_move = { x0 = owner.x, y0 = owner.y,
-                             dx = player.x - owner.x, dy = ENTER_Y - owner.y,
+                             dx = initial_target(owner,player.x) - owner.x, dy = ENTER_Y - owner.y,
                              n = AIM_FRAMES, t = 0, easing = EASING_OUT_QUAD }
         ---`ins_47(lf5, 500, …)` + `ins_16(lf5, 300)`：lf5 > 500 才继续减。
         if owner.lw217_lf5 > LF_MIN then
@@ -9061,7 +9066,7 @@ local function card_init(owner)
     ---  不是从场外飞进来（旧版从出生点插值，还会被 ins_75 的夹框拉回来）。
     owner.x, owner.y = 0, ENTER_Y
     owner.lw217_move = { x0 = owner.x, y0 = owner.y,
-                         dx = 0 - owner.x, dy = ENTER_Y - owner.y,
+                         dx = initial_target(owner,0) - owner.x, dy = ENTER_Y - owner.y,
                          n = ENTER_FRAMES, t = 0, easing = EASING_OUT_QUAD }
     fm, sub_acc, tick_frame = 1, 0, true
     sat, sub4_pc = nil, nil
@@ -12026,7 +12031,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 128)`：从上个相位结束的位置滑到 (0,96)。
     owner.s3c_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENTER_FRAMES, t = 0, easing = 4,
     }
 end
@@ -12718,7 +12723,7 @@ local function card_init(owner)
     ---`ins_64(110, 4, 192, 128)`：从上个相位结束的位置滑到 (0,96)。
     owner.s3d_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENTER_FRAMES, t = 0, easing = 4,
     }
 end
@@ -13086,7 +13091,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 128)`：从上个相位结束的位置滑到 (0,96)。
     owner.s3e_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENTER_FRAMES, t = 0, easing = 4,
     }
 end
@@ -15677,7 +15682,7 @@ end
 local function begin_move(owner, tx, n, ease)
     owner.lw199_mv = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = 0,
+        dx = initial_target(owner,tx) - owner.x, dy = 0,
         n = n, ease = ease, t = 0,
     }
 end
@@ -17269,7 +17274,7 @@ end
 local function config_move(obj, n, th08x, th08y)
     local tx, ty = scr_x(th08x), scr_y(th08y)
     obj.fam_mv = {
-        x0 = obj.x, y0 = obj.y, dx = tx - obj.x, dy = ty - obj.y, n = n, t = 0,
+        x0 = obj.x, y0 = obj.y, dx = initial_target(obj,tx) - obj.x, dy = ty - obj.y, n = n, t = 0,
     }
 end
 
@@ -17704,7 +17709,7 @@ local ROOT = {
     ---  `#11 ins_12 START_SPELL`、`#12 ins_155 SET_TIMEOUT_SPELL 1`。）
     [0] = function(o, c)
         c.mv = { t = 0, n = MOVE_N, x0 = o.x, y0 = o.y,
-                 dx = BOSS_X - o.x, dy = BOSS_END_Y - o.y }
+                 dx = initial_target(o,BOSS_X) - o.x, dy = BOSS_END_Y - o.y }
     end,
 
     ---真帧 90 = t=90 的 `#13..#21`：开判定（`ins_81 ENABLE_INTERACTION_FLAGS 4`）、
@@ -18252,7 +18257,7 @@ end
 local function start_move_to(owner, tx, ty)
     owner.lwns_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = MOVE_TO_FRAMES, t = 0,
     }
 end
@@ -20201,7 +20206,7 @@ local function card_init(owner)
     ---（子程序 t=0 那一刻的 worldPosition 就是上一张卡结束时的位置。）
     owner.lw166.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
 end
@@ -20400,7 +20405,7 @@ local function card_init(owner)
     ---ins_64(60, 4, 192, 128)：从卡开始时所在的位置插到我们 (0, 96)。
     owner.lw6b4_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
 end
@@ -20932,7 +20937,7 @@ local function card_init(owner)
         ---#3/#16 MOVE_TO(90, 4, 192, 128)：从卡开始时所在的位置插到我们 (0, 96)。
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = BOSS_MOVE_FRAMES, t = 0,
         },
     }
@@ -21497,7 +21502,7 @@ local function card_init(owner)
         ---ins_64(90, 4, 192, 128)：从卡开始时所在的位置插到我们 (0, 96)。
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = BOSS_MOVE_FRAMES, t = 0,
         },
     }
@@ -22041,7 +22046,7 @@ local function card_init(owner)
         ---ins_64(90, 4, 192, 128)：从卡开始时所在的位置插到我们 (0, 96)。
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = BOSS_MOVE_FRAMES, t = 0,
         },
     }
@@ -22509,7 +22514,7 @@ local function card_init(owner)
     ---ins_64(90, 4, 192, 128)：从卡开始时所在的位置插到我们 (0,96)。
     owner.lw162.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = BOSS_MOVE_FRAMES, t = 0,
     }
 end
@@ -22840,7 +22845,7 @@ local function card_init(owner)
         ---`#16 ins_64(60, 4, 192, 128)`：从卡开始时所在的位置插到我们 (0, 96)。
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = BOSS_MOVE_FRAMES, t = 0,
         },
     }
@@ -24018,7 +24023,7 @@ local function card_init(owner)
         ---`#19 ins_64(60, 4, 192, 128)`：从卡开始时所在的位置插到我们 (0, 96)。
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = BOSS_MOVE_FRAMES, t = 0,
         },
     }
@@ -29156,7 +29161,7 @@ local function card_init(owner)
     owner.c28_seg = 2                     -- 2 ⇒ 下一帧换到第一段（7..11 发）
     owner.c28_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = MOVE_N, t = 0, easing = MOVE_EASE,
     }
 end
@@ -29514,7 +29519,7 @@ local function card_init(owner)
     local tx = st.side and 96 or -96
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = MOVE0_Y - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = MOVE0_Y - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
 end
@@ -29885,7 +29890,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 160)`（见常量注）。
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = MOVE0_TX - owner.x, dy = MOVE0_TY - owner.y,
+        dx = initial_target(owner,MOVE0_TX) - owner.x, dy = MOVE0_TY - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
 end
@@ -30074,7 +30079,7 @@ local function move_to(owner, tx_th08, ty_th08, dur, ease)
     local tx, ty = tx_th08 - 192, 224 - ty_th08
     return {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = dur, t = 0, easing = ease,
     }
 end
@@ -30162,7 +30167,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 288, 128)`（见常量注）。
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = MOVE0_TX - owner.x, dy = MOVE0_TY - owner.y,
+        dx = initial_target(owner,MOVE0_TX) - owner.x, dy = MOVE0_TY - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
 end
@@ -30578,7 +30583,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 160)`（缓动 4 = OUT_QUADRATIC）。
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = MOVE0_TX - owner.x, dy = MOVE0_TY - owner.y,
+        dx = initial_target(owner,MOVE0_TX) - owner.x, dy = MOVE0_TY - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
 end
@@ -30826,7 +30831,7 @@ local function move_to(owner, tx_th08, ty_th08, dur, ease)
     local tx, ty = tx_th08 - 192, 224 - ty_th08
     return {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = dur, t = 0, easing = ease,
     }
 end
@@ -30986,7 +30991,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 288, 128)`（见常量注）。
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = MOVE0_TX - owner.x, dy = MOVE0_TY - owner.y,
+        dx = initial_target(owner,MOVE0_TX) - owner.x, dy = MOVE0_TY - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
 end
@@ -31463,7 +31468,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 160)`：origin = 当前位置、delta = 目标 − 当前位置。
     st.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = MOVE0_TX - owner.x, dy = MOVE0_TY - owner.y,
+        dx = initial_target(owner,MOVE0_TX) - owner.x, dy = MOVE0_TY - owner.y,
         n = MOVE0_N, t = 0, easing = MOVE0_EASE,
     }
     st.mang = math.atan2(-(MOVE0_TY - owner.y), MOVE0_TX - owner.x)
@@ -31909,7 +31914,7 @@ local function card_init(owner)
         mang = 0,          -- movementAngle（TH08 口径）
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_TX - owner.x, dy = BOSS_TY - owner.y,
+            dx = initial_target(owner,BOSS_TX) - owner.x, dy = BOSS_TY - owner.y,
             n = MOVE_N, t = 0, easing = MOVE_EASE,
         },
     }
@@ -32169,7 +32174,7 @@ local function card_init(owner)
         wrap_freeze = 0,    -- Sub57 的 ins_2(3) 冻结
         move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_TX - owner.x, dy = BOSS_TY - owner.y,
+            dx = initial_target(owner,BOSS_TX) - owner.x, dy = BOSS_TY - owner.y,
             n = OPEN_N, t = 0, easing = OPEN_EASE,
         },
     }
@@ -33859,7 +33864,7 @@ local function card_init(owner)
     ---`ins_64(90, 4, 192, 224)`：从上一卡（445）的收尾位置滑到我们 (0, 0)。
     owner.c446_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = 0 - owner.x, dy = 0 - owner.y,
+        dx = initial_target(owner,0) - owner.x, dy = 0 - owner.y,
         n = MOVE_FRAMES, t = 0, easing = MOVE_EASE,
     }
 end
@@ -36003,7 +36008,7 @@ local function card_frame(owner)
     if t == 0 then
         owner.c451_move = {
             x0 = owner.x, y0 = owner.y,
-            dx = ENTER_X - owner.x, dy = ENTER_Y - owner.y,
+            dx = initial_target(owner,ENTER_X) - owner.x, dy = ENTER_Y - owner.y,
             n = ENTER_FRAMES, t = 0, easing = ENTER_EASING,
         }
     end
@@ -36428,7 +36433,7 @@ end
 local function start_move_to(owner)
     owner.c452_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = ENTER_X - owner.x, dy = ENTER_Y - owner.y,
+        dx = initial_target(owner,ENTER_X) - owner.x, dy = ENTER_Y - owner.y,
         n = ENTER_FRAMES, t = 0, easing = ENTER_EASING,
     }
     owner.c452_clamped = true               -- `ins_75 SET_MOVEMENT_BOUNDS`（CLAMP_POSITION）
@@ -37156,7 +37161,7 @@ local function card_init(owner)
     ---走到那一帧正好落位）。
     owner.c454_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
     for i = #eyes454, 1, -1 do eyes454[i] = nil end
@@ -38170,7 +38175,7 @@ local function card_init(owner)
     ---生成器也是那一帧挂上）。
     owner.c456_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
 end
@@ -38547,7 +38552,7 @@ local PROG = {
         ---`ins_64(60, 4, 192, 112)`：从当前位置 60 帧 OUT_QUAD 滑到我们 (0,112)。
         owner.c457_move = {
             x0 = owner.x, y0 = owner.y,
-            dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+            dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
             n = ENT_T, t = 0, easing = ENT_EASING,
         }
         ---`ins_52(61)`：CALL 61（32 个特效，纯观感）——只把父 context 的时钟冻 32 帧。
@@ -38582,7 +38587,7 @@ local function card_init(owner)
     owner.c457_mangle = PI / 2
     owner.c457_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
 end
@@ -39118,7 +39123,7 @@ local function card_init(owner)
                                    to_th08_x(BOSS_X) - to_th08_x(owner.x))
     owner.c458_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
 end
@@ -39630,7 +39635,7 @@ local function card_init(owner)
     ---★ 起手就是 `ins_64` 的插值位移（落点 (0,96)；本卡之后不再移动）。
     owner.c459_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
 end
@@ -40193,7 +40198,7 @@ local function card_init(owner)
                                    to_th08_x(BOSS_X) - to_th08_x(owner.x))
     owner.c460_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = BOSS_X - owner.x, dy = BOSS_Y - owner.y,
+        dx = initial_target(owner,BOSS_X) - owner.x, dy = BOSS_Y - owner.y,
         n = ENT_T, t = 0, easing = ENT_EASING,
     }
 end
@@ -42801,7 +42806,7 @@ end
 local function start_move(owner, tx, ty, n, easing)
     owner.c466_move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = n, t = 0, easing = easing,
     }
 end
@@ -44334,7 +44339,7 @@ end
 ---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）。
 local function start_move(owner, tx, ty, n, easing)
     owner.c470_move = {
-        x0 = owner.x, y0 = owner.y, dx = tx - owner.x, dy = ty - owner.y,
+        x0 = owner.x, y0 = owner.y, dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = n, t = 0, easing = easing,
     }
 end
@@ -44720,7 +44725,7 @@ end
 ---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支）。
 local function start_move(owner, tx, ty, n, easing)
     owner.c471_move = {
-        x0 = owner.x, y0 = owner.y, dx = tx - owner.x, dy = ty - owner.y,
+        x0 = owner.x, y0 = owner.y, dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = n, t = 0, easing = easing,
     }
 end
@@ -46148,7 +46153,7 @@ end
 local function begin_move_to(owner, s, frames, easing, tx, ty)
     s.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = frames, t = 0, easing = easing,
     }
 end
@@ -46624,7 +46629,7 @@ end
 local function begin_move_to(owner, s, frames, easing, tx, ty)
     s.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = frames, t = 0, easing = easing,
     }
 end
@@ -47185,7 +47190,7 @@ end
 local function begin_move_to(owner, s, frames, easing, tx, ty)
     s.move = {
         x0 = owner.x, y0 = owner.y,
-        dx = tx - owner.x, dy = ty - owner.y,
+        dx = initial_target(owner,tx) - owner.x, dy = ty - owner.y,
         n = frames, t = 0, easing = easing,
     }
 end

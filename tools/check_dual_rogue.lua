@@ -23,7 +23,7 @@ return function(f)
     local savedBulletDo=object.BulletIndesDo
     local objects={}
     New=function(class,...)
-        local o=setmetatable({_live=true,otherboss={},group=0}, {__index=class})
+        local o=setmetatable({_live=true,class=class,otherboss={},group=0}, {__index=class})
         objects[#objects+1]=o
         if class.init then class.init(o,...) end
         return o
@@ -46,6 +46,13 @@ return function(f)
     for _,key in ipairs({'hp','t1','t2','t3','card_id','is_sc'}) do check(original[key]==baseline[key],'原卡数值不变：'..key) end
     l.current_card.init(l);r.current_card.init(r)
     check(l.th10carrier and r.th10carrier and IsValid(l.th10carrier) and IsValid(r.th10carrier),'真实 TH35 两张卡都建立了 ECL 子机')
+    check(l.th10carrier.x==96 and r.th10carrier.x==-96,'ECL 载体继承横移，首帧不会拉回中线')
+    player.x,player.y=0,-176
+    local moveEntry
+    for _,entry in ipairs(f.pool[3].cards) do if entry.cardId==3655 then moveEntry=entry end end
+    local moving=D.context('TH35',-96);local mb=moving:spawn(assert(moveEntry));mb.current_card.init(mb)
+    for _=1,65 do mb.th10carrier.class.frame(mb.th10carrier) end
+    check(math.abs(mb.x+96)<0.001 and math.abs(mb.y-96)<0.001,'真实 TH35 第一段 movePosTime 终点 X-96，Y 不变')
     l.current_card.del(l)
     check(not IsValid(l.th10carrier) and IsValid(r.th10carrier),'结束一张 TH35 卡不清除另一张的子机')
     check(_sc_pr_table[a.level][a.index].sc_group[1].card.init==mainBefore,'主卡目录的函数未被覆盖')
@@ -66,6 +73,33 @@ return function(f)
     for _=1,5 do task.Do(p) end
     check(p.x==123 and p.y==123,'before 完成后仍保留横移')
     p.current_card.init(p);check(p.x==127 and p.y==111,'开卡重新定位按原 X+96 / 原 Y 生效')
+    local deferred=D.context('TH35',-96)
+    local dc=deferred.units[a.level][a.index].sc_group[1].card
+    dc.before=nil
+    dc.init=function(o)
+        task.New(o,function()
+            task.Wait(2);deferred.env.task.MoveTo(23,101,3,0)
+            o._firstx=o.x;o._firsty=o.y
+            deferred.env.task.MoveTo(12,111,3,0)
+        end)
+    end
+    local d=deferred:spawn(a);d.current_card.init(d)
+    for _=1,12 do task.Do(d) end
+    check(d._firstx==23-96 and d._firsty==101,'延迟协程第一次 MoveTo 的指定终点偏移，Y 不变')
+    check(d.x==12 and d.y==111,'后续 MoveTo 不再次施加偏移')
+    local snapshot=D.context('TH31',96)
+    local e=f.pool[1].cards[1];local sc=snapshot.units[e.level][e.index].sc_group[1].card
+    sc.before=nil
+    sc.init=function(o) o.state={move={x0=o.x,y0=o.y,dx=21-o.x,dy=100-o.y,n=60,t=0}} end
+    local s=snapshot:spawn(e);s.current_card.init(s)
+    check(s.state.move.x0+s.state.move.dx==117 and s.state.move.y0+s.state.move.dy==100,'嵌套初始插值的起点与终点均平移，Y 不变')
+    local delayedEntry
+    for _,entry in ipairs(f.pool[1].cards) do if entry.cardId==386 then delayedEntry=entry end end
+    local afterShow=D.context('TH31',96);local shown=afterShow:spawn(assert(delayedEntry))
+    shown.current_card.init(shown)
+    for _=1,163 do shown.current_card.frame(shown) end
+    local firstMove=assert(shown.lwns_move)
+    check(firstMove.x0+firstMove.dx==96 and firstMove.y0+firstMove.dy==96,'真实 TH31 演出 162 帧后的首次绝对移动仍偏移 +96')
     left:cleanup()
     local function trackedCount() local n=0;for _ in pairs(left.objects) do n=n+1 end;return n end
     local baselineCount=trackedCount()

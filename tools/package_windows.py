@@ -38,13 +38,15 @@ def package(version):
 
 主菜单：随机十战 / 双Boss随机十战。
 双模式每步同时运行两张不同卡，十步共二十张，允许同角色。
-Boss 出场与开卡初始化位置按原 X+96 / X-96、原 Y；后续移动沿用原卡。
-两张卡全部结束后推进；累计十次失误结束。不加入天气、商店与道具构筑。
+Boss 出场、开卡初始化及第一段指定位置移动按原 X+96 / X-96、原 Y；后续移动沿用原卡。
+两张卡全部结束后推进；第十次失误触发答题复活，每局最多成功三次。
+答题沿用原 Special 的八道数学题；移动选择、射击确认、符卡放弃，答对后原场续战并无敌三秒。
+答题期间冻结战斗；累计失误不回退，题目与复活次数可关内恢复。不加入天气、商店与道具构筑。
 规则详见 mod/roguelike.txt。F5 手动保存，F10 存档同步；暂停、退出及每 120 逻辑帧补存。
 
 本包不含用户存档或录像。旧玩家更新前可保留自己的 User/、replay/，再覆盖游戏文件。
 精确关内续玩需要同 Lua 源码和引擎平台；旧版关内点因源码更新会保留并拒绝重建。
-本次含 0.3.1 关内续玩、0.4.0 单 Boss 随机十战与 0.5.0 双 Boss 模式。
+本次含关内续玩、多存档同步、单/双 Boss 随机十战和 0.6.0 答题复活、定位及子弹朝向修复。
 Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证见 licenses/。
 '''
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
@@ -63,5 +65,5 @@ Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.5.0')
+    parser.add_argument('--version',default='0.6.0')
     package(parser.parse_args().version)

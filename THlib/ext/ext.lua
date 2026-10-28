@@ -19,6 +19,8 @@ DoFile(extpath .. "ext_boss.lua")--可能会很傻逼的操作，boss的ui集中
 DoFile(extpath .. "ext_manual.lua")--像天邪鬼那样的弹出界面来说明游戏内容的
 DoFile(extpath .. "ext_other.lua")--一些函数整理
 DoFile(extpath .. "ext_mouse.lua")--鼠标控制
+DoFile(extpath .. "ext_quiz.lua")--原符卡与复活共用题库
+DoFile(extpath .. "ext_revive.lua")--失败前答题续战
 
 local replayTicker = 0--控制录像播放速度时有用
 local slowTicker = 0--控制时缓的变量
@@ -184,6 +186,10 @@ local function DoFrame()
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()
+    if GameRevive.frame(stage.current_stage) then
+        if SaveResume then SaveResume.afterLogic() end
+        return
+    end
     --stage和object逻辑
     local nopause = (GetCurrentSuperPause() <= 0)
     if nopause or stage.nopause then
@@ -191,6 +197,11 @@ local function DoFrame()
             lstg.system:frame()
         end
         task.Do(stage.current_stage)
+        -- 主线过关限制也可能在关卡协程内触发答题，本帧立即停止物理更新。
+        if GameRevive.active() then
+            if SaveResume then SaveResume.afterLogic() end
+            return
+        end
         stage.current_stage:frame()
         stage.current_stage.timer = stage.current_stage.timer + 1
     end

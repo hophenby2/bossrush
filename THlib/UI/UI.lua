@@ -529,7 +529,7 @@ function lstg_ui:drawInfo1()
                 0.8, Color(falpha, 200, 100, 100), left, bottom)
         if sg.AllowMissCount then
             local r, g, b = 255, 255, 255
-            local pmc = sg.AllowMissCount
+            local pmc = sg.AllowMissCount+((var.revive and var.revive.credits) or 0)
             if pmc and var.dead > pmc then
                 r, g, b = 155 + 100 * sin(s.timer * 3), 100, 100
             end
@@ -542,6 +542,7 @@ function lstg_ui:drawInfo1()
             else
                 local r, g, b = 255, 255, 255
                 local pmc = s.PassMissCount[s.level + 1]
+                if pmc then pmc=pmc+((var.revive and var.revive.credits) or 0) end
                 if pmc and var.dead > pmc then
                     r, g, b = 155 + 100 * sin(s.timer * 3), 100, 100
                 end
@@ -589,6 +590,10 @@ function lstg_ui:drawInfo1()
                     0.8, Color(falpha, 150, 150, 150), left, bottom)
             ui:RenderText(ttf, var.saving, 960 - 6, scrt - 130,
                     0.8, Color(falpha, 150, 150, 150), right, bottom)
+        end
+        if var.revive then
+            ui:RenderText(ttf,("答题复活：%d / 3"):format(var.revive.used or 0),scrr+6,scrt-160,
+                    0.7,Color(falpha,173,210,230),left,bottom)
         end
     end--other
 

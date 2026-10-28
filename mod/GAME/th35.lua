@@ -716,9 +716,9 @@ local function t10_bullet_frame(self)
     if b.dead then object.RawDel(self) return end
     local mag = math.sqrt(b.vx * b.vx + b.vy * b.vy)
     if mag > 0.0001 then
-        object.SetV(self, mag, -math.atan2(b.vy, b.vx) * RAD, true)
+        object.SetV(self, mag, -math.atan2(b.vy, b.vx) * RAD, bullet.GetNavi(self))
     else
-        object.SetV(self, 0, 0, true)
+        object.SetV(self, 0, 0, false)
     end
 end
 
@@ -985,6 +985,7 @@ end
 local function M(o, w) return w == "off" and o.ecs.off or o.ecs.base end
 
 local function m_pos(o, w, x, y)
+    if w=='off' and x>-999999 and RogueInitialTarget then x=RogueInitialTarget(o,x,true) end
     local ch = M(o, w)
     if x > -999999 then ch.x = x end
     if y > -999999 then ch.y = y end
@@ -993,6 +994,7 @@ local function m_pos(o, w, x, y)
 end
 
 local function m_pos_time(o, w, dur, mode, x, y)
+    if w=='off' and x>-999999 and RogueInitialTarget then x=RogueInitialTarget(o,x) end
     local ch = M(o, w)
     ch.interp = { t = 0, dur = dur, mode = mode, x0 = ch.x, y0 = ch.y,
                   x1 = (x > -999999) and x or ch.x, y1 = (y > -999999) and y or ch.y }
@@ -1221,6 +1223,7 @@ local function t10_boss_start(b, main)
     ---BOSS 出生点 = 当前的屏幕位置（原作出生时也把位置写进 offsetMotion）。
     ---y 从本仓库坐标换回原作坐标（224 − engine.y）。
     p.ecs.off.x, p.ecs.off.y = b.x, 224 - b.y
+    if RogueInitialCarrier then RogueInitialCarrier(p) end
     ecs_sync(p)
     b.th10carrier = p
     t10_track(p)

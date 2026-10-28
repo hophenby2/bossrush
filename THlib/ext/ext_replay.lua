@@ -199,6 +199,7 @@ function stage.Set(mode, path, stageName)
             lstg.var = DeSerialize(saveinfo.stages[i].stageExtendInfo)
             if SaveResume and i==#saveinfo.stages then
                 lstg.var.__resume_version=1;lstg.var.__resume_run=lstg.var.__resume_run or SaveCodec.id()
+                lstg.var.__revive_version=1
             end
             if i == #saveinfo.stages and i ~= STAGE_COUNT + 1 then
                 local v = lstg.var

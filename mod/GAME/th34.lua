@@ -5757,6 +5757,7 @@ local function TH34_add_stage78_boss()
     ---更新在 EclManager.cpp:2044）：每帧 pos = 起点 + e(u)·位移，u = 已走/总帧。
     ---ease 4 = ease-out-quad；原作那些 8 落在引擎 switch 之外 ⇒ 线性，这里照做。
     local function bmove(self, t, ease, x, y)
+        if RogueInitialTarget then x=RogueInitialTarget(self,x) end
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
     end
@@ -8745,6 +8746,7 @@ local function TH34_add_stage56_boss()
     local function f32sin(rad) return tof32(math.sin(tof32(rad))) end
 
     local function bmove(self, t, ease, x, y)
+        if RogueInitialTarget then x=RogueInitialTarget(self,x) end
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
         ---★ 原作 `MOVE_POS_TIME`/`MOVE_DIR_TIME` 走的是 ENEMY_MOVE_INTERP：
