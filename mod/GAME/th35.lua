@@ -455,7 +455,7 @@ end
 boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 
 ---=====================================
----TH10 stage03（河城荷取 / 中 BOSS 键山雏）与 stage04（射命丸文）符卡移植
+---TH10 stage03（中 BOSS / BOSS 河城荷取）与 stage04（中 BOSS 犬走椛 / BOSS 射命丸文）符卡移植
 ---  仅移植 Lunatic 行（本仓库没有难度系统，th32/th34/th35 同一约定）。
 ---  数据来源：thtk 的 thecl 原始反汇编
 ---        thecl -d 10 -r -m "MAP/th10.eclm" stage03.ecl out.txt
@@ -1305,6 +1305,7 @@ end
 ---TH10 stage03 / stage04 符卡（原生 LuaSTG 实现，仅 Lunatic 行）
 ---  组 2a = stage03 中 BOSS 河城荷取（光学「ハイドロカモフラージュ」）
 ---  组 3a = stage03 BOSS    河城荷取（漂溺 / 水符 / 河童）
+---  组 4b = stage04 中 BOSS 犬走椛（MBoss 非符）
 ---  组 4a = stage04 BOSS    射命丸文（岐符 / 風神 / 無双風神 / 塞符）
 ---
 ---移植方法：**不用 ECL 字节码 VM**（旧版那种「指令表 + 栈式解释器」整个废弃），跟本文件
@@ -2978,7 +2979,7 @@ end
 --    t3 = setInterrupt 的时限 3600 帧 = 60 s；t1 = t2 = setInvuln 帧数 / 60。
 --=====================================
 
----非符 3651　洩矢諏訪子（stage07 中 BOSS 非符一，原作 MBoss1）
+---非符 3651　八坂神奈子（stage07 中 BOSS 非符一，原作 MBoss1）
 ---  原作 MBoss()：lifeSet(9300) 之后 call("MBoss1")；
 ---  MBoss1 = setInvuln(60) + setInterrupt(0, 2300, 3600, "MBossCard1") ⇒ HP = 9300 − 2300 = 7000。
 ---  时间轴：t=60 起叫一次 MBoss1_at（那是死循环，自己每 4 帧一轮），
@@ -3409,8 +3410,8 @@ end
 
 --=====================================
 --八·B、stage03 / stage04 非符（原生 LuaSTG；只做 Lunatic 难度行）
---  stage04 的中 BOSS（射命丸文）也是一张纯非符（原作 MBoss / MBossAt），
---  与 BOSS 同组「4a」注册在最前（原作里中 BOSS 先于 BOSS 出场）。
+--  stage04 的中 BOSS（犬走椛）也是一张纯非符（原作 MBoss / MBossAt），
+--  单独用「4b」注册在最前；「4a」留给 BOSS 射命丸文。
 --  照例逐条读 thecl 反汇编
 --      thecl -d 10 -r -m "MAP/th10.eclm" stage03.ecl out.txt
 --  ＋ TH10 1.00a 复原源码，把每条 ECL 指令翻成原生 LuaSTG
@@ -3658,7 +3659,7 @@ function s3n.Boss3(o)
     end
 end
 
----中BOSS 非符 3670　射命丸文（stage04 中 BOSS；原作 MBoss + MBossAt）
+---中BOSS 非符 3670　犬走椛（stage04 中 BOSS；原作 MBoss + MBossAt）
 ---  MBoss：入场 movePosTime(60, 4, 0, 128)；lifeSet(10000)、
 ---    setInterrupt(1, 0, 1800, "MBossDead") 的阈值是 0 ⇒ HP = 10000、时限 1800 帧 = 30 s；
 ---    setInvuln(200) ⇒ t1 = t2 = 200/60。
@@ -3998,6 +3999,7 @@ end
 boss.Define("2a", "河城荷取（中ボス）", "TH10_2", TH10_bg, { 0, 80 }, nil, "Nitori", LEVEL)
 boss.Define("3a", "河城荷取",           "TH10_2", TH10_bg, { 0, 80 }, nil, "Nitori", LEVEL)
 boss.Define("4a", "射命丸文",           "TH10_4", TH10_bg, { 0, 80 }, nil, "Aya",    LEVEL)
+boss.Define("4b", "犬走椛",             "TH10_4", TH10_bg, { 0, 80 }, nil, "Momizi", LEVEL)
 --- 组 5a = stage07（Extra）BOSS 洩矢諏訪子（開宴 / 土着神 / 神具 / 源符 / 蛙狩 / 祟符）。
 --- 原作 stage07 = 「ネイティブフェイス」，本仓库音乐表里没有 ⇒ 沿用 TH10_2。
 boss.Define("5a", "洩矢諏訪子",         "TH10_2", TH10_bg, { 0, 80 }, nil, "Suwako", LEVEL)
@@ -4025,10 +4027,10 @@ local T10_CARDS = {
     { s3_BossCard2,  "水符「河童の幻想大瀑布」",                 "3a", 3603, 1,       1,       3600 / 60, 8600 },
     { s3n.Boss3,     "",                                        "3a", 3662, 1,       1,       3600 / 60, 6500, "stage03 非符三" },
     { s3_BossCard3L, "河童「スピン・ザ・セファリックプレート」", "3a", 3604, 1,       1,       3600 / 60, 8800 },
-    ---stage04 中 BOSS 射命丸文（原作 MBoss / MBossAt，纯非符）：lifeSet(10000) −
+    ---stage04 中 BOSS 犬走椛（原作 MBoss / MBossAt，纯非符）：lifeSet(10000) −
     ---  setInterrupt 阈值 0 = HP 10000；setInvuln(200) ⇒ t1 = t2 = 200/60、时限 1800 帧 = 30 s。
-    ---  原作里中 BOSS 先于 BOSS 出场 ⇒ 这张排在 4a 组最前。
-    { s4n.MBoss,     "",                                        "4a", 3670, 200 / 60, 200 / 60, 1800 / 60, 10000, "stage04 中BOSS 非符" },
+    ---  原作里中 BOSS 先于 BOSS 出场 ⇒ 这张排在 4b 组最前。
+    { s4n.MBoss,     "",                                        "4b", 3670, 200 / 60, 200 / 60, 1800 / 60, 10000, "stage04 中BOSS 非符" },
     ---stage04 BOSS 射命丸文（L 行的相序）：非符一 → 岐符 → 非符二 → 風神 → 非符三 → 無双風神 → 塞符。
     ---  非符的 HP = Boss() 的 lifeSet 9500 − setInterrupt 阈值 2500 = 7000（Boss3 是
     ---  lifeSet 7000 − 阈值 0 = 7000）；Boss3 的 setInvuln(120) ⇒ t1 = t2 = 2。
@@ -4839,7 +4841,7 @@ end
 ---stage06 四张符卡：{ 主 ECL 子程序, 卡名, 组, CARD_ID, t1秒, t2秒, t3秒, HP, 菜单名 }
 ---  CARD_ID 3622..3625（3600 是本关手写卡、3601..3621 是 03/04/07、3666..3669 是本关非符）。
 ---stage06 四张非符：{ 主 ECL 子程序, 卡名（非符为 ""）, 组, CARD_ID, t1秒, t2秒, t3秒, HP, 菜单名 }
----  组 1a = 八坂神奈子（与 stage06 BossCard5、stage05 神奈子共用）。
+---  组 1a = 八坂神奈子（与 stage06 BossCard5、stage07 中 BOSS 共用）。
 ---  CARD_ID 3666..3669（跑 `luajit tools/check_stage.lua --all` 核对：3600 是本关手写卡、
 ---    3601..3621 是 03/04/07、3630..3665 是 01/02/05 + 03/04/07 非符）。
 s6.cards = {
@@ -8983,7 +8985,7 @@ function s1.Boss2At2_(o, c2, spin)
     fire_slot(o, 0)
 end
 --=====================================
---八·B、stage02（犬走椛 中 BOSS 一张 + BOSS 三张）
+---八·B、stage02（鍵山雛 中 BOSS 一张 + BOSS 三张）
 --=====================================
 
 
@@ -9001,7 +9003,7 @@ function s2.BossTrace(o)
     end
 end
 
----卡 3633　厄符「厄神様のバイオリズム」（中 BOSS 犬走椛）
+---卡 3633　厄符「厄神様のバイオリズム」（中 BOSS 鍵山雛）
 ---  原作 MBossCard1 / MBossAtEnemy / MBossAtEnemy2 / MBossAtEnemyAt / MBossDummyShadow。
 ---  主线程：入场 60 帧后进死循环 —— 每 180 帧一对子机（t=60 出 AtEnemy、t=150 出 AtEnemy2、
 ---  t=240 同帧 moveRand(40,0,1.0)+wait(40)，随后 jmpNeq 立刻回到 L412 再出一只 AtEnemy）。
@@ -9090,7 +9092,7 @@ function s2.MBossAtEnemyAt(o, a0, a4)
     end
 end
 
----卡 3634　疵痕「壊されたお守り」（BOSS 犬走椛 - 1）
+---卡 3634　疵痕「壊されたお守り」（BOSS 鍵山雛 - 1）
 ---  原作 BossCard1 / Boss1CardAtEnemy / Boss1CardAtEnemyAt / BossTrace / BossDummyShadow。
 ---  主循环 360 帧一轮：t=150 一帧内连出 14 只子机（%F0 每只 +0.523599），
 ---  之后 t=210 / t=310 各 moveRand 一次，t=360 回跳。
@@ -9177,7 +9179,7 @@ function s2.Boss1CardAtEnemyAt(o)
     end
 end
 
----卡 3635　悲運「大鐘婆の火」（BOSS 犬走椛 - 2）
+---卡 3635　悲運「大鐘婆の火」（BOSS 鍵山雛 - 2）
 ---  原作 BossCard2 / Boss2CardAtEnemy / Boss2CardAtEnemyAt / BossTrace / BossDummyShadow。
 ---  主循环每轮两批子机（各 8 只，同帧连出）：第一批角速度 %F1 = +0.017453、
 ---  第二批 −0.017453（%F0 每只 +0.785398）。两批之间与之后各有一条 wait(60)
@@ -9267,7 +9269,7 @@ function s2.Boss2CardAtEnemyAt(o, a0, a4)
     end
 end
 
----卡 3636　創符「流刑人形」（BOSS 犬走椛 - 3）
+---卡 3636　創符「流刑人形」（BOSS 鍵山雛 - 3）
 ---  原作 BossCard3 / BossAtEnemy3 / BossTrace / BossDummyShadow。
 ---  t=120 一帧内出 4 只子机（起始角 0、π/2、π、−π/2，角速度都是 0.02618）；
 ---  主线程之后每 2 帧在半径 %RANDF×[12]（从 0 起、每帧 +0.1、上限 64）的随机角上
@@ -9375,7 +9377,7 @@ function s2.BossAtEnemy3(o)
 end
 
 --=====================================
---八·B-2、stage02 非符（犬走椛 BOSS 两张；只做 Lunatic 难度行）
+--八·B-2、stage02 非符（鍵山雛 BOSS 两张；只做 Lunatic 难度行）
 --  ECL 源：r02raw.txt 的 Boss1 / Boss2 及其子线程。
 --  ★ 中 BOSS **没有**非符：MBoss() 里 lifeSet(2300) 之后直接 call("MBossCard1")（= 厄符）。
 --  ★ 血量按「进场 life − 收尾阈值」：Boss1 = 9000−2700 = 6300；Boss2 = 13400−5400 = 8000。
@@ -9404,7 +9406,7 @@ function s2.ring(o, slot, cnt, spd, ct)
     return ct
 end
 
----卡 3645　犬走椛（BOSS 非符 1）
+---卡 3645　鍵山雛（BOSS 非符 1）
 ---  Boss1 主循环 720 帧一轮：t=0 左右各出一只绕身子机（%F0=0/π）；
 ---  t=280 与 t=640 各来一串 5×32 的环（角每 10 帧重取 %RANDRAD）；
 ---  t=320 / t=680 各 moveRand(40,0,2.0) 一次。起手 jmp(720)+jmpNeq 把 clock 归 0。
@@ -9511,7 +9513,7 @@ end
 function s2.BossAtEnemyAt(o)   return s2.at_enemy_at(o, 3.3) end
 function s2.BossAtEnemy2LAt(o) return s2.at_enemy_at(o, 4.0) end
 
----卡 3646　犬走椛（BOSS 非符 2）
+---卡 3646　鍵山雛（BOSS 非符 2）
 ---  Boss2 主循环 760 帧一轮（clock 120→880）：t=120 起一对 2L 子机（%F0=0/π）；
 ---  t=420 / t=800 各一串 5×32 的环；t=460 / t=840 各 moveRand(40,0,2.0) 一次。
 ---  另起一条 Boss2_atL 线程（[!L]）：槽 1 每 20 帧打 16 发，无限循环。
@@ -9566,7 +9568,7 @@ function s2.Boss2_atL(o)
 end
 
 --=====================================
---八·C、stage05（早苗 中 BOSS 一张 + 神奈子 BOSS 四张；只做 Lunatic 难度行）
+--八·C、stage05（早苗 中 BOSS 一张 + 早苗 BOSS 四张；只做 Lunatic 难度行）
 --  ECL 源：stage05.ecl（thecl -d 10 -m th10.eclm -j -r -x 反汇编 → r05raw.txt）。
 --  卡：MBossCard1（spellEx 60）、BossCard1（spell3 63）、BossCard2（spellEx 68）、
 --      BossCard3（spell3 71）、BossCard4（spell3 75）。
@@ -9756,7 +9758,7 @@ function s5.MBossCard1Dummy3(o)
 end
 
 ---=====================================
----卡 3638　奇跡「客星の明るすぎる夜」（BOSS 八坂神奈子 - 1）
+---卡 3638　奇跡「客星の明るすぎる夜」（BOSS 東風谷早苗 - 1）
 ---  原作 BossCard1 / _at / _at2 / _at5（_at3/_at4 是 !N，L 不跑）。
 ---  t=90 起三线程：at（右侧光柱臂）、at2（左侧光柱臂）、at5（两列弹），主线程随后 1 帧死循环。
 function s5.BossCard1(o)
@@ -9826,7 +9828,7 @@ function s5.BossCard1_at5(o)
 end
 
 ---=====================================
----卡 3639　開海「モーゼの奇跡」（BOSS 八坂神奈子 - 2；L 行是 spellEx）
+---卡 3639　開海「モーゼの奇跡」（BOSS 東風谷早苗 - 2；L 行是 spellEx）
 ---  原作 BossCard2 / _at / _atEt / Boss2Et_at。
 ---  t=90 起：先叫 _at 线程（不断刷 BossCard2_atEt 子机），主线程每轮在 t=90 与 t=120
 ---  各出一只 Boss2Et_at（enmCreateA），%F0 每只 +0.523599，%F2 从 16 起每次 <128 就 +16。
@@ -9946,7 +9948,7 @@ function s5.Boss2Et_at(o)
 end
 
 ---=====================================
----卡 3640　準備「サモンタケミナカタ」（BOSS 八坂神奈子 - 3）
+---卡 3640　準備「サモンタケミナカタ」（BOSS 東風谷早苗 - 3）
 ---  原作 BossCard3 / BossCard3Dummy×4。360 帧一轮，每轮 4+4 只子机（两批）。
 function s5.BossCard3(o)
     t10_kill_async(o)
@@ -10023,7 +10025,7 @@ function s5.BossCard3Dummy3(o) s5_boss3_dummy(o, 3, 2, 2, 48.0, 3, 1, -0.1309) e
 function s5.BossCard3Dummy4(o) s5_boss3_dummy(o, 5, 2, 2, 48.0, 3, -1, 0.1309) end
 
 ---=====================================
----卡 3641　大奇跡「八坂の神風」（BOSS 八坂神奈子 - 4；卡内 lifeSet(3000)）
+---卡 3641　大奇跡「八坂の神風」（BOSS 東風谷早苗 - 4；卡内 lifeSet(3000)）
 ---  原作 BossCard4 / _at / _at2。t=150 起：一只 at2 常态弹幕 + 每轮两发 at 旋臂。
 function s5.BossCard4(o)
     t10_kill_async(o)
@@ -10109,7 +10111,7 @@ function s5.BossCard4_at2(o)
 end
 
 --=====================================
---八·C-2、stage05 非符（早苗 中 BOSS 一张 + 神奈子 BOSS 三张；只做 Lunatic 难度行）
+--八·C-2、stage05 非符（早苗 中 BOSS 一张 + 早苗 BOSS 三张；只做 Lunatic 难度行）
 --  ECL 源：r05raw.txt 的 MBoss / Boss1 / Boss2 / Boss3 及其子线程。
 --  ★ 血量 = 一相「进场 life − 收尾阈值」（Enemy.cpp 掉到阈值就夹回、切下一相）：
 --      MBoss = 12900 − 2900 = 10000（时限 setInterrupt(1, 0, 2400, "MBossEscape") = 40 秒）；
@@ -10256,7 +10258,7 @@ end
 function s5.MBossAt(o)  return s5.mboss_at(o, 1) end
 function s5.MBossAt2(o) return s5.mboss_at(o, -1) end
 
----非符 3648　神奈子（BOSS 非符 1）
+---非符 3648　早苗（BOSS 非符 1）
 ---  Boss1：t=20 取 %F0 = ANGLE_PLAYER 并出 Boss1Dummy / Boss1Dummy2；
 ---  t=170 起 120 帧一轮：170 叫 at/at2 两个异线程（之后 diffWait(60,60,20,10) ⇒ L 等 10 帧），
 ---  230 moveRand(40,0,2.0)，290 nop（`killAsync(0)` 是 no-op，见本节开头）。
@@ -10394,7 +10396,7 @@ function s5.Boss1_at2(o)
     end
 end
 
----非符 3649　神奈子（BOSS 非符 2）
+---非符 3649　早苗（BOSS 非符 2）
 ---  Boss2：lifeSet(10400)；t=0 killAllAsync（停掉上一相留下的线程）；
 ---  t=120 叫 Boss2_at / Boss2_at2 两个异线程，之后 180 帧一轮：
 ---    「240 的 moveRand」被 jmpNeq(…,120) 拨回 120 ⇒ 每轮先等 120 帧再 moveRand、再等 60 帧。
@@ -10479,7 +10481,7 @@ function s5.Boss2_at2(o)
     end
 end
 
----非符 3650　神奈子（BOSS 非符 3）
+---非符 3650　早苗（BOSS 非符 3）
 ---  Boss3：lifeSet(10400)；t=0 killAllAsync；t=100 叫 Boss3_at / Boss3_at2，
 ---  之后 180 帧一轮（220 的 moveRand 被 jmpNeq(…,100) 拨回 100）。
 function s5.Boss3(o)
@@ -10532,14 +10534,14 @@ function s5.Boss3_at2(o) return s5.boss3_at(o, 1,  1, 3.6, 3.1, 2) end
 --八·H、stage01 / stage02 / stage05 的符卡注册（boss.card.add 必须晚于 boss.Define）
 boss.Define("6a", "秋静葉", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sizuha", LEVEL)
 boss.Define("7a", "秋穣子", "TH10_2", TH10_bg, { 0, 80 }, nil, "Minoriko", LEVEL)
-boss.Define("8a", "犬走椛", "TH10_2", TH10_bg, { 0, 80 }, nil, "Momizi", LEVEL)
+boss.Define("8a", "鍵山雛", "TH10_2", TH10_bg, { 0, 80 }, nil, "Hina", LEVEL)
 boss.Define("9a", "東風谷早苗", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sanae", LEVEL)
 
 ---stage01/02/05 十二张：{ 主 ECL 子程序, 卡名, 组, CARD_ID, t1秒, t2秒, t3秒, HP }
 ---  t3 = spell*(…, 时间, …) 的帧数 / 60（与 setInterrupt 的第三个参数一致）；
 ---  HP = 该卡开始时 BOSS 的 lifeSet：
 ---    stage01 中 BOSS 静葉 5850、穣子 8200；
----    stage02 中 BOSS 椛 2300、椛（BOSS）三张 13400（lifeSet(13400)）。
+---    stage02 中 BOSS 雛 2300、雛（BOSS）三张 13400（lifeSet(13400)）。
 ---  t1/t2 取该卡 ECL 里 setInvuln 的值（都是入场 60 帧 → 1/1）。
 ---  原作「厄符「バッドフォーチュン」」「疵符…」等 E/N 行不移植，只做 Lunatic。
 local T10_CARDS_S125 = {
@@ -10562,19 +10564,19 @@ local T10_CARDS_S125 = {
     { s2.BossCard2,  "悲運「大鐘婆の火」",           "8a", 3635, 1, 1, 2700 / 60, 2700 },
     { s2.BossCard3,  "創符「流刑人形」",             "8a", 3636, 1, 1, 2700 / 60, 2700 },
 
-    -- stage05（早苗 中BOSS 非符+符卡 / 神奈子 BOSS 三张非符 + 四张符卡）。
+    -- stage05（早苗 中BOSS 非符+符卡 / 早苗 BOSS 三张非符 + 四张符卡）。
     --   符卡的 HP = 卡开始时 BOSS 的 lifeSet；非符的 HP = 一相「进场 life − 收尾阈值」：
-    --     早苗 MBoss 12900 − 2900 = 10000；神奈子 Boss1 12400 − 2400 = 10000（沿用 Boss() 的 life）、
+    --     早苗 MBoss 12900 − 2900 = 10000；早苗 Boss1 12400 − 2400 = 10000（沿用 Boss() 的 life）、
     --     Boss2 / Boss3 = 10400 − 2400 = 8000。t3 = setInterrupt 时限/60、t1/t2 = setInvuln/60。
     { s5.MBoss,      "",                              "9a", 3647, 200 / 60, 200 / 60, 2400 / 60, 10000, "stage05 中BOSS 非符" },
     { s5.MBossCard1, "秘術「一子相伝の弾幕」",       "9a", 3637, 200 / 60, 200 / 60, 2400 / 60, 12900 },
-    { s5.Boss1,      "",                              "1a", 3648, 200 / 60, 200 / 60, 4200 / 60, 10000, "stage05 非符一" },
-    { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "1a", 3638, 90 / 60,  90 / 60,  4200 / 60, 12400 },
-    { s5.Boss2,      "",                              "1a", 3649, 1,        1,        4200 / 60, 8000,  "stage05 非符二" },
-    { s5.BossCard2,  "開海「モーゼの奇跡」",         "1a", 3639, 60 / 60,  60 / 60,  4200 / 60, 10400 },
-    { s5.Boss3,      "",                              "1a", 3650, 100 / 60, 100 / 60, 4200 / 60, 8000,  "stage05 非符三" },
-    { s5.BossCard3,  "準備「サモンタケミナカタ」",   "1a", 3640, 60 / 60,  60 / 60,  4200 / 60, 10400 },
-    { s5.BossCard4,  "大奇跡「八坂の神風」",         "1a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
+    { s5.Boss1,      "",                              "9a", 3648, 200 / 60, 200 / 60, 4200 / 60, 10000, "stage05 非符一" },
+    { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "9a", 3638, 90 / 60,  90 / 60,  4200 / 60, 12400 },
+    { s5.Boss2,      "",                              "9a", 3649, 1,        1,        4200 / 60, 8000,  "stage05 非符二" },
+    { s5.BossCard2,  "開海「モーゼの奇跡」",         "9a", 3639, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.Boss3,      "",                              "9a", 3650, 100 / 60, 100 / 60, 4200 / 60, 8000,  "stage05 非符三" },
+    { s5.BossCard3,  "準備「サモンタケミナカタ」",   "9a", 3640, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.BossCard4,  "大奇跡「八坂の神風」",         "9a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
 
 ---★ 子机的 %BOSS_X / %BOSS_Y（原作 specialEnemySlots[0] 的世界坐标）走 t10_bossref：
 ---  主 BOSS 的载体在这里登记，s_pod 再把它复制给每一只子机。

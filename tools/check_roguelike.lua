@@ -49,11 +49,14 @@ New=function(class,cards)
 end
 local R=dofile('mod/roguelike.lua');local pool=R.buildPool()
 local counts={};local original={};local spell,non=false,false
+-- 锁住会暴露“拿 Boss 资源 id 查标定表”的代表卡：三面非符、五面中 BOSS 非符、二面过渡非符。
+local calibrated={[427]=1575,[3433]=1683,[467]=493}
 for _,bucket in ipairs(pool) do
     counts[bucket.code]=#bucket.cards
     for _,entry in ipairs(bucket.cards) do
         check(not entry.title:find('道中',1,true),'不混入整段道中')
         local c=_sc_pr_table[entry.level][entry.index].sc_group[1].card
+        if calibrated[entry.cardId] then check(c.hp==calibrated[entry.cardId],'TH31 灵梦标定 HP 取键正确') end
         original[c]={hp=c.hp,t1=c.t1,t2=c.t2,t3=c.t3,init=c.init,frame=c.frame}
         spell=spell or entry.spell;non=non or not entry.spell
     end

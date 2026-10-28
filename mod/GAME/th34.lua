@@ -5700,12 +5700,13 @@ end
 end
 
 ---=====================================
----TH07 EX/PH boss 战 —— 八雲紫（符卡 + 非符，逐张）
+---TH07 EX/PH boss 战 —— 八雲藍 / 八雲紫（符卡 + 非符，逐张）
 ---=====================================
----把 `ecldata8.ecl`（PH）/ `ecldata7.ecl`（EX）里紫的每一张**符卡**与**非符**逐张翻成
+---把 `ecldata8.ecl`（PH）/ `ecldata7.ecl`（EX）里的每一张**符卡**与**非符**逐张翻成
 ---原生 LuaSTG 卡片（不用 ECL VM、不用 decl），挂在 th34 这个 boss 组的另一批卡上。
 ---`main_stage.lua` 只 `boss.CreateGroup(1, 32)`，所以新卡一律登记到同一组的 "1a"
 ---（改别的组需要动 main_stage.lua，超出本次范围）。
+---角色按原作：PH 中 boss 八雲藍、boss 八雲紫；EX 中 boss 橙、boss 八雲藍。
 ---
 ---原作这张 boss 战的结构（`th07/src/th07/EclManager.cpp` + `EnemyManager.cpp`）：
 ---  · boss 主 sub（PH = 69、EX = 67）：SET_POS(-32,32) → MOVE_POS_TIME(60,4,192,128)
@@ -5899,25 +5900,22 @@ local function TH34_add_stage78_boss()
         bmove(self, 60, 4, 0, 96)
     end
 
-    ---BossImage 里的 "Yukari" 立绘（th07.lua 的 7b/8b/9od 都用它；中 boss 组默认是
-    ---img_void 不显形，所以符卡一开就把立绘换回来）。
-    local function yukari(self)
-        if self._wisys then self._wisys:SetImageInList("Yukari") end
+    ---boss 卡的公共皮肤：hittable（真符卡）/ 耐久卡另说。Boss 组默认是 img_void
+    ---不显形，所以符卡一开就把 BossImage 里的对应立绘换回来。
+    local function skin_of(image, wall)
+        return function(self)
+            self.NotPlayTimeOutSound = wall
+            self.colli = not wall
+            self.no_hp_render = wall
+            if self._wisys then self._wisys:SetImageInList(image) end
+        end
     end
-
-    ---boss 卡的公共皮肤：hittable（真符卡）/ 耐久卡另说。
-    local function skin(self)
-        self.NotPlayTimeOutSound = false
-        self.colli = true
-        self.no_hp_render = false
-        yukari(self)
-    end
-    local function skin_wall(self)
-        self.NotPlayTimeOutSound = true
-        self.colli = false
-        self.no_hp_render = true
-        yukari(self)
-    end
+    local skin, skin_wall = skin_of("Yukari", false), skin_of("Yukari", true)
+    local skin_ran, skin_ran_wall = skin_of("Ran", false), skin_of("Ran", true)
+    local skin_chen = skin_of("Chen", false)
+    ---本段先建 PH 主 boss 的卡（紫），到 EX 段再切到藍；建卡时 card.before 会立即
+    ---取得当时的函数，因此不会反过来改到已经登记的 PH 卡。
+    local current_skin, current_skin_wall = skin, skin_wall
 
     ---──────────────────── 非符：公共骨架（原作 sub 70/72/73/75/77/79/81/83） ────────────────────
     ---进场后在 opt.box（默认 x∈[−160,160]、y∈[96,176]）里漂：每 120 帧重掷一次 exang 方向、
@@ -5936,7 +5934,7 @@ local function TH34_add_stage78_boss()
     local function nonspell(menu, id, life, thr, gap, fire, opt)
         opt = opt or {}
         local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[id] or hpB(life - thr))
-        card.before = skin
+        card.before = current_skin
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
@@ -6006,7 +6004,7 @@ local function TH34_add_stage78_boss()
     ---    gF0（±0.06545 = ±3.75°）—— 两遍反向，合起来是一条来回扫的螺旋。
     do
         local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[3408] or hpB(13500 - 2000))
-        card.before = skin
+        card.before = skin_ran
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
@@ -6041,7 +6039,7 @@ local function TH34_add_stage78_boss()
         end
         card.frame = bframe
         card.del = function() end
-        boss.card.add({ { card, "1a" } }, LEVEL, "紫 非符 0", 3408)
+        boss.card.add({ { card, "1a" } }, LEVEL, "藍 非符 0", 3408)
     end
 
     ---────────── 主 boss 的八张非符（原作 sub 70/72/73/75/77/79/81/83） ──────────
@@ -6311,7 +6309,7 @@ local function TH34_add_stage78_boss()
         local freeze = wall and t3 or (CARD_FREEZE[id] or CARD_FREEZE_DEFAULT)
         local card = boss.card.New(name, freeze, freeze, t3,
                                    wall and 10000000 or (TH34_REIMU_HP[id] or hpS(life)))
-        card.before = wall and skin_wall or skin
+        card.before = wall and current_skin_wall or current_skin
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
@@ -7661,6 +7659,9 @@ local function TH34_add_stage78_boss()
         end)
     end
 
+    ---以下进入 TH07 Extra 面。主 boss 是八雲藍；EX 中 boss 的卡片单独用橙的皮肤。
+    current_skin, current_skin_wall = skin_ran, skin_ran_wall
+
     ---EX 的「仙狐」子机（原作 sub 87）：原地打 4 组 8 发环（速度 0.5，逐组挪一点）。
     local function shinko(self, a)
         for k = 0, 2 do
@@ -8685,7 +8686,7 @@ local function TH34_add_stage78_boss()
     ---整圈（速度 2+0.1875i，基准角 ±3.75° 来回）。
     do
         local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[3488] or hpB(13500 - 2000))
-        card.before = skin
+        card.before = skin_chen
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
@@ -8722,7 +8723,7 @@ local function TH34_add_stage78_boss()
         end
         card.frame = bframe
         card.del = function() end
-        boss.card.add({ { card, "1a" } }, LEVEL, "EX 紫 非符 0", 3488)
+        boss.card.add({ { card, "1a" } }, LEVEL, "EX 橙 非符 0", 3488)
     end
 end
 

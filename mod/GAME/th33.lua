@@ -1211,11 +1211,11 @@ boss.Define("21a", "上白沢慧音", "TH09_5_1", TH095_bg,
 ---  14 ecl3_c チルノ 凍符「マイナスＫ」  15 ecl4_c レティ 冬符「ノーザンウイナー」
 ---按「一个角色一个组」拆：组 22 = チルノ（10/12/14，第 1 张是非符）、
 ---组 23 = レティ・ホワイトロック（11/13/15）。
----立绘：チルノ "Chiruno"、レティ "Lorelei"（BossImageList.lua:14/36）。
+---立绘：チルノ "Chiruno"、レティ "Whiterock"（BossImageList.lua:14/23）。
 boss.Define("22a", "チルノ", "TH09_5_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg22, "Chiruno", LEVEL)
 boss.Define("23a", "レティ・ホワイトロック", "TH09_5_1", TH095_bg,
-        { -128, field_y(-64) }, class.scbg23, "Lorelei", LEVEL)
+        { -128, field_y(-64) }, class.scbg23, "Whiterock", LEVEL)
 
 ---──────────────────── Stage 1（scene group 0 = world01）的两个 boss 组 ────────────────────
 ---TH095 的 scene group 0 是 scene 0..5（SceneSelect.cpp:76-81），六幕分属两位角色：

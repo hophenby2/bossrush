@@ -57,12 +57,16 @@ local function eligible(b,maxhp)
 end
 function R.health(b,maxhp,hp)
     hp=hp or maxhp
+    -- 随机十战 / 双 Boss 随机十战的血量直接采用卡表的灵梦标定值；
+    -- Rank 仍参与弹速，但不再改写 HP，避免同一张卡随局内 Rank 漂移。
+    if lstg.var.rogue_run then return maxhp,hp end
     if not R.enabled() or not eligible(b,maxhp) then return maxhp,hp end
     local factor=b._rank_hp_factor or R.factor();b._rank_hp_factor=factor
     b._rank_hp_ready=true;b._rank_hp_last=maxhp*factor
     return maxhp*factor,hp*factor
 end
 function R.verifyHealth(b)
+    if lstg.var.rogue_run then return end
     if R.enabled() and b._rank_hp_ready and not b._rank_hp_proxy and eligible(b,b.maxhp) and b.maxhp~=b._rank_hp_last then
         b.maxhp,b.hp=R.health(b,b.maxhp,b.hp)
     end

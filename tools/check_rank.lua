@@ -81,6 +81,12 @@ check(near(target.maxhp,1100) and near(target.hp,440) and card.hp==1000,'Boss HP
 R.add(-100);target.hp=300;R.verifyHealth(target);check(near(target.maxhp,1100) and target.hp==300,'中途 Rank 降低不改变当前卡血量或回血')
 target.maxhp=2000;target.hp=500;R.verifyHealth(target);check(near(target.maxhp,2200) and near(target.hp,550),'脚本重新设置血量仍沿用本卡快照，避免丢失倍率')
 R.beginCard(target,card);system:setHP(1000);check(near(target.hp,900),'下一卡采样新的低 Rank')
+-- 随机十战与双 Boss 随机十战共用 rogue_run 标记：HP 保持卡表标定值，Rank 只影响弹速。
+reset(100);lstg.var.rogue_run={mode='single'};local rogue=boss(card);system.boss=rogue;system:setHP(1000,400)
+check(rogue.maxhp==1000 and rogue.hp==400,'随机十战不乘 Rank HP 倍率')
+rogue.maxhp,rogue.hp=2000,500;R.verifyHealth(rogue)
+check(rogue.maxhp==2000 and rogue.hp==500,'随机十战校验不回写 Rank HP 倍率')
+lstg.var.rogue_run=nil
 reset(100);local survival=boss({is_sc=true,is_combat=true,t1=3600,t3=3600});system.boss=survival;system:setHP(10000000);check(survival.hp==10000000,'耐久卡不改变原时限与占位 HP')
 local proxy=boss(card);proxy._rank_hp_proxy=true;proxy.maxhp,proxy.hp=1500,1200;proxy._rank_hp_ready=true;proxy._rank_hp_last=1100;R.verifyHealth(proxy);check(proxy.hp==1200,'镜像血条不把子机已经缩放的 HP 再乘一次')
 -- 实际 DoFrame 调用顺序：先逻辑与出生，再倍率校正，最后边界和碰撞。
