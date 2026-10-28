@@ -259,7 +259,7 @@ function N.tcpConnect(ip,port,onMessage,onClose)
     return stream(s,onMessage,onClose)
 end
 function N.tcpListen(port,onConnect)
-    local s=makeSocket();lib.setsockopt(s,windows and 65535 or (mac and 65535 or 1),2,ffi.new('int[1]',1),4)
+    local s=makeSocket();lib.setsockopt(s,(windows or mac) and 65535 or 1,(windows or mac) and 4 or 2,ffi.new('int[1]',1),4)
     if lib.bind(s,address('0.0.0.0',port),16)~=0 then close(s);error('联机端口被占用或没有监听权限') end
     if lib.listen(s,4)~=0 then close(s);error('联机监听失败') end
     local server={socket=s}

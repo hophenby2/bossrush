@@ -97,6 +97,12 @@ with tempfile.TemporaryDirectory(prefix='bossrush-net-tests-') as temp:
             check(wait(lambda:json.loads((temp/'0/status.json').read_text()))['tick']>tick,'原房间重连并继续')
             api(guest,'/api/coop/leave',{});api(host,'/api/coop/leave',{})
             if relay:relay.terminate();relay.wait(timeout=5)
+        reuse={'hero':'reimu_player','mode':'dual','port':port(),'address':'127.0.0.1'}
+        invite=api(host,'/api/coop/host',reuse)['code'];api(guest,'/api/coop/join',{'code':invite})
+        wait(lambda:status(host)['ready']);api(host,'/api/coop/leave',{})
+        wait(lambda:not status(guest)['connected'])
+        check(api(host,'/api/coop/host',reuse)['phase']=='hosting','房主主动离开后立即复用同一监听端口')
+        api(guest,'/api/coop/leave',{});api(host,'/api/coop/leave',{})
         print(f'真实联机回归通过：{count} 项（直连、中继、密钥/版本校验、暂停、断线、重连）'+('；房主为 Windows x64 LuaJIT / Wine。' if args.windows_pc else '。'))
     except BaseException:
         for folder in temp.iterdir():
