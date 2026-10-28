@@ -275,7 +275,7 @@ function C.receiveFrame(bytes)
     for i=1,2 do local p=frame.players[i];if p then assert(type(p.x)=='number' and type(p.y)=='number' and math.abs(p.x)<1e6 and math.abs(p.y)<1e6,'自机坐标无效') end end
     C.previous=C.latest;C.latest=frame;C.receivedAt=SaveTransport.now();N.receivedFrames=(N.receivedFrames or 0)+1;N.tick=frame.tick
     if frame.world then lstg.world=frame.world end
-    N.pause=frame.paused or {false,false}
+    -- 暂停以可靠控制报文为准，旧画面可能在最新暂停指令之后才被处理。
     local p=frame.players and frame.players[2]
     if p then
         local prediction=N.predict or {};local x,y=prediction.x,prediction.y

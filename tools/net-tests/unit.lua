@@ -93,7 +93,8 @@ check(draws[#draws].style[2]==130 and states.hero[2]==200,'房主看到客机 65
 p1.class[4](p1);check(draws[#draws].style[2]==200,'相同贴图的房主自机仍为全不透明度')
 Capture.finish();check(sent.R and sent.F,'生成资源和画面快照')
 N.role='client';N.predict=nil;Capture.receiveFrame(sent.F);check(N.receivedFrames==1 and player.x==p2.x,'接收画面后建立 P2 移动代理')
-local proxy=player;Capture.receiveFrame(sent.F);check(player==proxy,'连续快照保留拖拽对象身份')
+local proxy=player;N.pause={false,true};Capture.receiveFrame(sent.F);check(player==proxy,'连续快照保留拖拽对象身份')
+check(N.pause[2]==true,'迟到画面不能覆盖可靠通道中的暂停指令');N.pause={false,false}
 draws={};Capture.render();check(draws[1].style[2]==200 and draws[2].style[2]==130,'客机看到自己全不透明、房主半透明')
 N.role='host';N.players={p1,p2};Capture.last=nil;Capture.begin()
 ClearZBuffer();SetZBufferEnable(1);
