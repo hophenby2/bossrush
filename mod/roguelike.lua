@@ -1,10 +1,55 @@
 -- 简易随机十战：借鉴参考项目的事件抽取与逐步推进，不引入天气、道具或商店。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen'}
+local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+    CHAIN_HP=0.30,CHAIN_TIME_FRAMES=7*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='随机十战',width=1,record='rogue10'},
-    dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'}}
+    dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
+    chain={name='RogueChain',battle='RogueChain@RogueChain',result='RogueChainResult@RogueChain',title='接续模式',width=1,record='rogue_chain10',chain=true}}
 local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead end
 local function mode(run) return R.modes[run and run.mode or 'single'] or R.modes.single end
+local function chainDone(b)
+    if not IsValid(b) then return true,'gone' end
+    if not b.is_combat or b.__is_waiting then return false end
+    local maxhp=tonumber(b.maxhp)
+    if maxhp and maxhp>0 and b.hp and b.hp<=maxhp*R.CHAIN_HP then return true,'hp' end
+    local t3,timer=tonumber(b.t3),tonumber(b.timer)
+    if t3 and timer and t3-timer<R.CHAIN_TIME_FRAMES then return true,'time' end
+    return false
+end
+R.chainDone=chainDone
+local function holdChainGhost(battle, previous, active)
+    local previousAlive=false
+    for _,b in ipairs(previous) do
+        if IsValid(b) then previousAlive=true;break end
+    end
+    if not previousAlive then return end
+    local watch={previous=previous,active={},groups={}}
+    for _,b in ipairs(active) do
+        if IsValid(b) then
+            watch.active[#watch.active+1]=b
+            watch.groups[#watch.groups+1]=b.group or GROUP.ENEMY
+            b.group=GROUP.GHOST
+        end
+    end
+    if #watch.active==0 then return end
+    battle.rogue_chain_ghosts=battle.rogue_chain_ghosts or {}
+    battle.rogue_chain_ghosts[#battle.rogue_chain_ghosts+1]=watch
+end
+local function releaseChainGhosts(battle)
+    local watches=battle.rogue_chain_ghosts
+    if not watches then return end
+    for i=#watches,1,-1 do
+        local watch=watches[i]
+        local previousAlive=false
+        for _,b in ipairs(watch.previous) do
+            if IsValid(b) then previousAlive=true;break end
+        end
+        for j,b in ipairs(watch.active) do
+            if IsValid(b) then b.group=previousAlive and GROUP.GHOST or watch.groups[j] end
+        end
+        if not previousAlive then table.remove(watches,i) end
+    end
+end
 local sources={{level=29,code='TH31'},{level=32,code='TH34'},{level=33,code='TH35'}}
 function R.buildPool()
     local pool={}
@@ -72,11 +117,7 @@ local function runCards(self)
     local run=lstg.var.rogue_run
     task.Wait(60)
     local config=mode(run)
-    for index=1,R.COUNT do
-        if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
-        run.current=index
-        local first=(index-1)*config.width+1
-        local entry=run.cards[first]
+    local function prepare(entry)
         local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
         local class=unit.sc_group[1].boss
         self.level=entry.level
@@ -87,6 +128,55 @@ local function runCards(self)
             if class.bgm then PlayMusic(class.bgm) end
         end
         player.protect=math.max(player.protect or 0,90)
+        return unit
+    end
+    local function spawnSingle(unit)
+        local active={}
+        for i,part in ipairs(unit.sc_group) do active[i]=New(part.boss,{part.card}) end
+        for i,b in ipairs(active) do
+            for j,other in ipairs(active) do if i~=j then table.insert(b.otherboss,other) end end
+        end
+        return active
+    end
+    local function retire(active)
+        for _,b in ipairs(active) do
+            if IsValid(b) and IsValid(b.ui) then
+                b.NotPlayTimeOutSound=true
+                b.ui.no_infobar=true;b.ui.no_timeCounter=true;b.ui.no_pointer=true
+            end
+        end
+    end
+    if config.chain then
+        local previous
+        for index=1,R.COUNT do
+            if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
+            run.current=index
+            local entry=run.cards[index]
+            local unit=prepare(entry)
+            if index==1 then task.Wait(45) end
+            local active=spawnSingle(unit)
+            if previous then holdChainGhost(self,previous,active) end
+            previous=active
+            while true do
+                local done=true
+                for _,b in ipairs(active) do if not chainDone(b) then done=false;break end end
+                if done then break end
+                task.Wait()
+            end
+            if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
+            run.completed=index
+            if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_CHAIN: advance '..index..'/'..R.COUNT..' '..entry.key) end
+            if index==R.COUNT then R.finish(self,true);return end
+            retire(active)
+        end
+        return
+    end
+    for index=1,R.COUNT do
+        if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
+        run.current=index
+        local first=(index-1)*config.width+1
+        local entry=run.cards[first]
+        local unit=prepare(entry)
         task.Wait(45)
         local active,owners={},{}
         if config.width==2 then
@@ -105,10 +195,7 @@ local function runCards(self)
                 task.Wait()
             end
         else
-            for i,part in ipairs(unit.sc_group) do active[i]=New(part.boss,{part.card}) end
-            for i,b in ipairs(active) do
-                for j,other in ipairs(active) do if i~=j then table.insert(b.otherboss,other) end end
-            end
+            active=spawnSingle(unit)
             for _,b in ipairs(active) do while IsValid(b) do task.Wait() end end
         end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
@@ -126,6 +213,7 @@ local function register(variant,config)
     battle.revive_miss_limit=R.MISS_LIMIT-1
     function battle:init()
         self.rogue_finished=false
+        self.rogue_chain_ghosts=nil
         self:Option()
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,cards=R.draw(lstg.var.ran_seed,config.width),current=0,completed=0}
         self.level=29
@@ -137,6 +225,7 @@ local function register(variant,config)
         end
     end
     function battle:frame()
+        releaseChainGhosts(self)
         if self.rogue_finished then stage.group.frame(self);return end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         stage.group.frame(self)
@@ -177,7 +266,9 @@ local function register(variant,config)
     function result:render()
         SetViewMode('ui');RenderClear(Color(255,12,21,36))
         local c=Color(255,225,241,250);local run=self.run
-        ui:RenderText('title',run.won and (config.width==2 and '双Boss十战达成！' or '十战达成！') or (config.width==2 and '双Boss本局结束' or '本局结束'),480,410,1.7,c,'centerpoint')
+        local won_title=config.chain and '接续十战达成！' or (config.width==2 and '双Boss十战达成！' or '十战达成！')
+        local lost_title=config.chain and '接续本局结束' or (config.width==2 and '双Boss本局结束' or '本局结束')
+        ui:RenderText('title',run.won and won_title or lost_title,480,410,1.7,c,'centerpoint')
         ui:RenderText('title',string.format('完成 %d / %d 战',run.completed,R.COUNT),480,345,1,c,'centerpoint')
         ui:RenderText('title',string.format('得分 %s    收卡 %d    失误 %d',tostring(run.score),run.captures,run.misses),480,285,0.8,c,'centerpoint')
         ui:RenderText('title',string.format('用时 %.1f 秒 · 种子 %d · 复活 %d / 3',run.elapsed,run.seed,run.revives or 0),480,235,0.65,c,'centerpoint')
@@ -215,5 +306,6 @@ function panel:render()
 end
 register('single',R.modes.single)
 register('dual',R.modes.dual)
+register('chain',R.modes.chain)
 RogueTen=R
 return R

@@ -596,6 +596,7 @@ player_system_select = Class(object)
 function player_system_select:fresh()
     self.simple_mode = false
     self.simple_dual = false
+    self.simple_chain = false
     self.simple_title = nil
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
@@ -848,6 +849,7 @@ function player_system_select:render()
 
     else
         local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
+            or self.simple_chain and {"TH31 / TH34 / TH35","随机十张符卡或非符，不重复","Boss 剩余 30% HP 或不足 7 秒时","立即创建下一张，旧 Boss 继续战斗","答对可复活三次，支持自动 / F5 保存"}
             or {"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误触发答题","答对可复活三次，无异变与道具构筑","支持关内自动保存 / F5 手动保存"}
         for i,text in ipairs(tips) do
             ui:RenderText("title",text,700,370-i*42,0.8,Color(Alpha*255,210,235,245),"centerpoint")

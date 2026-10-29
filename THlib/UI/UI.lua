@@ -77,7 +77,7 @@ ui.menu = {
                  "成群亡灵",     -- 32  TH34
                  "风神录",       -- 33  TH35
                  "天空璋AEX" },  -- AEX（关卡号是 STAGE_COUNT + 1 = 34）
-    sntext = { RogueDuo = "双Boss随机十战", RogueTen = "随机十战", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
+    sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "随机十战", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
                TH125 = "文花帖DS", TH128 = "大战争",

@@ -32,7 +32,7 @@ SaveResume={clear=function() cleared=cleared+1 end}
 SaveScoreData=function() saved=saved+1 end;SaveSpellCardData=function() end
 PlayMusic=function() end;StopMusic=function() end;background.Create=function() end
 mask_fader={Do=function() end};lstg={var={},tmpvar={}};scoredata={}
-GROUP={GHOST=0};LAYER={TOP=0}
+GROUP={GHOST=0,ENEMY=2};LAYER={TOP=0}
 function stage.Set(mode,name)
     stage.next_stage=assert(stage.stages[name]);lstg.var.stage_name=name
     if mode=='save' then lstg.var.ran_seed=(lstg.var.ran_seed or 1234)+1 end
@@ -43,7 +43,10 @@ function stage:Option()
 end
 New=function(class,cards)
     local obj=setmetatable({_live=true,otherboss={}}, {__index=class})
-    if cards then obj.life=3;spawned[#spawned+1]={obj=obj,class=class,card=cards[1],tick=stage.current_stage.timer}
+    obj.group=GROUP.ENEMY
+    if cards then
+        obj.life=3;obj.maxhp=100;obj.hp=100;obj.t3=3600;obj.timer=0;obj.is_combat=true;obj.__is_waiting=false
+        spawned[#spawned+1]={obj=obj,class=class,card=cards[1],tick=stage.current_stage.timer}
     elseif class.init then class.init(obj) end
     return obj
 end
@@ -62,6 +65,20 @@ for _,bucket in ipairs(pool) do
     end
 end
 check(spell and non,'卡池同时包含符卡与非符')
+check(R.modes.chain and stage.groups[R.modes.chain.name],'接续模式已注册')
+local function atThreshold(t)
+    t._live=true
+    local done,why=R.chainDone(t)
+    return done,why
+end
+local done=atThreshold{is_combat=true,hp=31,maxhp=100,t3=1000,timer=0}
+check(not done,'接续模式：剩余 31% 不推进')
+done=atThreshold{is_combat=true,hp=30,maxhp=100,t3=1000,timer=0}
+check(done,'接续模式：剩余 30% 推进')
+done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=580}
+check(not done,'接续模式：剩余 420 帧不推进')
+done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=581}
+check(done,'接续模式：剩余 419 帧推进')
 local function keys(cards) local out={};for _,v in ipairs(cards) do out[#out+1]=v.key end;return table.concat(out,',') end
 local observed={}
 for seed=1,400 do
@@ -99,7 +116,38 @@ check(scoredata.rogue10.played==2 and scoredata.rogue10.cleared==1,'失败次数
 replay=true;cleared=0;stage.next_stage=nil;battle.rogue_finished=false;lstg.var.dead=0;run.completed=10
 R.finish(battle,true)
 check(ext.rep_over and ext.pop_pause_menu and not stage.next_stage and cleared==0,'录像结束使用回放菜单，不删玩家续玩点')
-print(('随机十战回归通过：%d 项；TH31=%d、TH34=%d、TH35=%d；400 个种子、十战成功与失败、录像收尾。'):format(total,counts.TH31,counts.TH34,counts.TH35))
+
+-- 接续模式：达到血量或时间阈值时下一帧创建下一张，旧 Boss 继续存活。
+replay=false;ext.rep_over=nil;ext.pop_pause_menu=nil
+lstg.var={ran_seed=8801,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={}
+R.start('chain');battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
+local function chainTick()
+    task.Do(battle);battle:frame();battle.timer=battle.timer+1
+end
+for _=1,150 do chainTick() end
+check(#spawned==1,'接续模式：先创建第一张')
+local first=spawned[1].obj
+first.hp=31;chainTick();check(#spawned==1,'接续模式：31% 仍等待')
+first.ui={};first.hp=30;chainTick()
+check(#spawned==2 and IsValid(first) and first.ui.no_infobar and first.NotPlayTimeOutSound,'接续模式：30% 创建下一张、旧 Boss 保留并静默旧 UI')
+local second=spawned[2].obj
+check(second.group==GROUP.GHOST,'接续模式：旧 Boss 存活时新 Boss 使用 GHOST 碰撞组')
+first._live=false;chainTick()
+check(second.group==GROUP.ENEMY,'接续模式：旧 Boss 死亡后恢复新 Boss 碰撞组')
+chainTick();check(second.group==GROUP.ENEMY,'接续模式：恢复后不会再次变回 GHOST')
+second.hp=second.maxhp;second.t3=1000;second.timer=580;chainTick();check(#spawned==2,'接续模式：剩余 7 秒仍等待')
+second.timer=581;chainTick();check(#spawned==3,'接续模式：不足 7 秒创建下一张')
+check(spawned[3].obj.group==GROUP.GHOST,'接续模式：每张新 Boss 都先以 GHOST 等待前一张死亡')
+while #spawned<10 do
+    local current=spawned[#spawned].obj
+    current.hp=current.maxhp*R.CHAIN_HP
+    chainTick()
+end
+check(#spawned==10 and run and lstg.var.rogue_run.completed==9,'接续模式：创建满十张')
+local last=spawned[10].obj;last.hp=last.maxhp*R.CHAIN_HP;chainTick()
+run=lstg.var.rogue_run
+check(stage.next_stage==stage.stages[R.modes.chain.result] and run.won and run.completed==10,'接续模式：第十张达到阈值后成功结算')
+print(('随机十战回归通过：%d 项；TH31=%d、TH34=%d、TH35=%d；含接续模式阈值与重叠生成。'):format(total,counts.TH31,counts.TH34,counts.TH35))
 
 if checkDual then
     local verify=dofile('tools/check_dual_rogue.lua')

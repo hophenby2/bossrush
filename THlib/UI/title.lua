@@ -161,6 +161,19 @@ function stage_menu:init()
                 New(SimpleChoose,menu_title,enter,load(""),"随机十战","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
             else enter() end
         end, "Random 10" },
+        { "接续模式", function()
+            local function enter()
+                practice='rogue_chain';last_menu=menu_title
+                menu_player_system_select:fresh();menu_player_system_select.simple_mode=true
+                menu_player_system_select.simple_chain=true
+                menu_player_system_select.simple_title="选择玩家 · 接续模式"
+                menu_player_system_select.state="stage"
+                menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
+            end
+            if SaveResume and SaveResume.has() then
+                New(SimpleChoose,menu_title,enter,load(""),"接续模式","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
+            else enter() end
+        end, "Chain Mode" },
         { "双Boss随机十战", function()
             local function enter()
                 practice='rogue_dual';last_menu=menu_title
@@ -241,6 +254,8 @@ function stage_menu:init()
                 else
                     if practice == 'rogue_dual' then
                         RogueTen.start('dual')
+                    elseif practice == 'rogue_chain' then
+                        RogueTen.start('chain')
                     elseif practice == 'roguelike' then
                         RogueTen.start()
                     elseif practice == 'stage' then
