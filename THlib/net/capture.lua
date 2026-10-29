@@ -85,7 +85,12 @@ function C.install()
             local name=(original and 'OriginalSet' or 'Set')..kind..'State'
             if type(_G[name])=='function' then
                 local raw=_G[name];C.raw[name]=raw
-                _G[name]=function(image,blend,a,r,g,b) state(prefix,image,blend,a,r,g,b);return raw(image,blend,a,r,g,b) end
+                _G[name]=function(...)
+                    local image,blend,a,r,g,b=...
+                    state(prefix,image,blend,a,r,g,b)
+                    -- Color 重载是 3 个参数，数字分量重载是 6 个；必须原样转发参数个数。
+                    return raw(...)
+                end
             end
         end
     end

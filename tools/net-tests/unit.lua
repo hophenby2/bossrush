@@ -21,7 +21,12 @@ end
 for _,name in ipairs({'SetImageCenter','SetAnimationCenter','SetImageScale','SetAnimationScale','SetTextureSamplerState','PlaySound','PlayMusic','StopMusic','PauseMusic','ResumeMusic','SetBGMVolume','SetFog','SetWorldFlag'}) do _G[name]=noop;lstg[name]=noop end
 RemoveResource=function() end
 local function style(img,blend,c,r,g,b) local a;if type(c)=='userdata' then a,r,g,b=c:ARGB() else a=c end;states[img]={blend,a or 255,r or 255,g or 255,b or 255} end
-for _,name in ipairs({'SetImageState','OriginalSetImageState','SetAnimationState','OriginalSetAnimationState','SetFontState','OriginalSetFontState'}) do _G[name]=style;lstg[name]=style end
+local stateArgCount={}
+for _,name in ipairs({'SetImageState','OriginalSetImageState','SetAnimationState','OriginalSetAnimationState','SetFontState','OriginalSetFontState'}) do
+    local api=name
+    local fn=function(...) stateArgCount[api]=select('#',...);return style(...) end
+    _G[name]=fn;lstg[name]=fn
+end
 for _,name in ipairs({'Render','RenderRect','Render4V','RenderAnimation','RenderTexture','RenderTTF','RenderText','RenderClear','PushRenderTarget','PopRenderTarget','PostEffect','PostEffectCapture','PostEffectApply','SetOrtho','SetPerspective','SetViewport','SetScissorRect','ClearZBuffer','SetZBufferEnable'}) do
     _G[name]=function(...) draws[#draws+1]={name=name,args={...},style=states[(...)]} end;lstg[name]=_G[name]
 end
@@ -44,6 +49,10 @@ for _=1,1000 do local s={};for i=1,math.random(1,50) do s[i]=string.char(math.ra
 check(true,'随机畸形输入不越界或崩溃')
 local N=load('THlib/net/session.lua');local Capture=load('THlib/net/capture.lua')
 load('THlib/lib/Lobject.lua');object.EnemyNontjtDo=function() end;Capture.install()
+OriginalSetImageState('argc-probe','',Color(10,20,30,40))
+check(stateArgCount.OriginalSetImageState==3,'联机钩子保留 SetImageState 的 Color 三参数重载')
+OriginalSetImageState('argc-probe','',10,20,30,40)
+check(stateArgCount.OriginalSetImageState==6,'联机钩子保留 SetImageState 的数字六参数重载')
 local objects={}
 IsValid=function(o) return type(o)=='table' and o._alive==true end
 local nativeNew=function(class,...)
