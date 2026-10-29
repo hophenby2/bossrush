@@ -363,6 +363,7 @@ local function initial_target(o,x)
     if RogueInitialTarget then return RogueInitialTarget(o,x) end
     return x
 end
+local laser = OriginalBulletVisual.laser(laser, 8)
 local class = {}
 _editor_class["TH31"] = class
 
@@ -431,37 +432,32 @@ local function player_is_youkai()
     end
     return pform_youkai
 end
----bulletType → 贴图样式 + 半个精灵宽高。
----形状逐型对上原作 etama.anm 的精灵（表见 mod/GAME/th31_bullet_sprite_map.md「表 2」，
----精灵矩形见 etama.decl，目视 etama/etama2/etama6.png）：0=8×8 小粒；1=圆(白心+粗色环)；
----2=实心竖椭圆；3=圆(白心更大)；4=飞镖(三角头+尾环)；5=细长+尾尖；6=燕尾/箭形；
----7=32²大圆；8=大圆+光晕；9=剑/长针；10=64²放射爆闪；11=方形札；12/13=五角星；
----14/15=大五角星；16=胶囊/弹丸（**铃仙 Stage 5 主力弹 → gun_bullet**）；17=竖环椭圆；
----18=大竖椭圆；19=红爆块(4 帧动画)；20=剑/长针。
----★ 定义必须放在 `local EX = {}` **外面**：各卡自己的弹类（lw206..lw221 等）也要用。
----★ 本文件里旧注释写的「占位贴图 ball_small / ball_mid / ellipse …」都是**改表之前**的
----  口径，一律以本函数（贴图）与 color_of（颜色）为准。不在表内的只有 `object` 自绘
----  特效（lw209_spark、lw126_dot）和使魔占位图（"servant" / "eyeL" / "white"）。
+---bulletType → 默认显示尺寸接近的现成样式 + 原作出屏半宽。
+---依据二进制 etama.anm 的主弹矩形和可见纹理，见 th31_bullet_sprite_map.md 表2。
+---小米弹改用 grain_a，细粒用 grain_b，描边米弹用 grain_c；大光晕不能代替小弹。
+---只换图、不写 hscale/vscale；代理样式在换图后恢复旧判定 A/B。
+---出屏 half、弹道、速度与发数不随显示映射改变。
+---定义必须在 EX 块外，各卡自定义弹类与飞行中换图也使用同一映射。
 local function style_of(t)
     if t == 0  then return ball_small,  4  end
     if t == 1  then return ball_mid,    8  end
-    if t == 2  then return ellipse,     8  end
+    if t == 2  then return OriginalBulletVisual.style(ellipse, grain_a),     8  end
     if t == 3  then return ball_mid_c,  8  end
-    if t == 4  then return arrow_big_c, 8  end
-    if t == 5  then return knife,       8  end
-    if t == 6  then return arrow_small, 8  end
+    if t == 4  then return OriginalBulletVisual.style(arrow_big_c, arrow_small), 8  end
+    if t == 5  then return OriginalBulletVisual.style(knife, grain_b),       8  end
+    if t == 6  then return OriginalBulletVisual.style(arrow_small, arrow_big_c), 8  end
     if t == 7  then return ball_big,    16 end
-    if t == 8  then return ball_light,  16 end
-    if t == 9  then return knife_b,     16 end
+    if t == 8  then return OriginalBulletVisual.style(ball_light, butterfly),  16 end
+    if t == 9  then return OriginalBulletVisual.style(knife_b, knife),     16 end
     if t == 10 then return ball_huge,   32 end
     if t == 11 then return square,      8  end
     if t == 12 or t == 13 then return star_small, 8  end
     if t == 14 or t == 15 then return star_big,   16 end
-    if t == 16 then return gun_bullet,  8  end
-    if t == 17 then return ball_mid_c,  8  end
-    if t == 18 then return ellipse,     16 end
-    if t == 19 then return ball_huge,   16 end
-    if t == 20 then return knife_b,     16 end
+    if t == 16 then return OriginalBulletVisual.style(gun_bullet, grain_b),  8  end
+    if t == 17 then return OriginalBulletVisual.style(ball_mid_c, grain_c),  8  end
+    if t == 18 then return OriginalBulletVisual.style(ellipse, gun_bullet),     16 end
+    if t == 19 then return OriginalBulletVisual.style(ball_huge, water_drop),   16 end
+    if t == 20 then return OriginalBulletVisual.style(knife_b, knife),     16 end
     return ball_small, 8
 end
 
@@ -2845,6 +2841,7 @@ lw207_familiar = Class(object, {
 ---  DESPAWNING（despawnDuration 帧）：宽度线性收到 0，判定留到 hitboxEndDelay。
 lw207_laser = Class(laser, {
     init = function(self, x, y, angle, color, start_time)
+        self._native_laser_phase = { "lw207_state", "lw207_timer", 20, 12 }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 640 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -3601,7 +3598,7 @@ end
 ---    本卡 hitboxStartTime == startTime == 110，所以**从第 110 帧起**才成实体；ACTIVE 50 帧满宽
 ---    判定；之后 DESPAWNING 20 帧。★ 消散段原作把 laserSize[0]（= 判定盒的**长度**）
 ---    改写成 currentWidth/2，而盒心还钉在 position + 300 —— 于是那 20 帧的判定只剩
----    「光柱中点附近一个 5 px 的小方块」，等于没有；移植版据此在消散段关掉判定，
+---    「光柱中点附近一个 5 px 的小方块」，等于没有；本轮由 visual_match 复原消散段的中点判定，
 ---    只保留宽度收细的观感（照抄反而更不忠实）。
 ---  · 同屏上限：光柱槽只有 256 个（`Laser lasers[0x100]`，BulletManager.hpp:313-339），
 ---    SpawnLaserPattern（BulletManager.cpp:712-760）只是**从头找第一个空槽**，槽满就整发不生成。
@@ -3765,6 +3762,8 @@ lw209_bullet = Class(bullet, {
 ---光柱（ins_114）。状态机见头部注释；`alpha = 1` 是 THlib laser:frame 开判定的条件。
 lw209_laser = Class(laser, {
     init = function(self, x, y, angle)
+        self._native_laser_phase = { "lw209_state", "lw209_timer", 20, 10 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 600 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -5193,7 +5192,7 @@ end
 ---    ★ DESPAWNING 段的近似：原作那 60 帧把判定盒的**长度**改写成 `currentWidth/2`
 ---      （半宽仍是 width/4 = 8），盒心还钉在 `position + 256`（laserCenter 在 switch
 ---      之前就用 endOffset−startOffset = 512 算好了，BulletManager.cpp:1069）——
----      也就是「光柱中点上一个小方块」。THlib 的 laser 类表达不出「中点上的小盒子」，
+---      也就是「光柱中点上一个小方块」。本轮由 visual_match 在碰撞时临时重建「中点上的小盒子」，
 ---      所以照卡 209 的口径在消散段关掉判定（照抄整条 512 px 的判定会比原作狠得多）。
 ---
 ---  · 同屏上限：弹 1536 槽、光柱 256 槽（BulletManager.hpp:455、:313-339）。波满不生、
@@ -5408,6 +5407,8 @@ lw212_bullet = Class(bullet, {
 ---`alpha = 1` 是 THlib laser:frame 开判定的条件。
 lw212_laser = Class(laser, {
     init = function(self, x, y, angle)
+        self._native_laser_phase = { "lw212_state", "lw212_timer", 60, 32 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 512 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -5447,10 +5448,10 @@ lw212_laser = Class(laser, {
             end
         end
         if self.lw212_state == 3 then
-            ---★ 消散段关判定：原作那 60 帧的盒子只剩「中点 ±8 px」（见头部注释），
+            ---★ 消散段判定由 visual_match 接管：原作那 60 帧的盒子只剩「中点 ±8 px」（见头部注释），
             ---  照抄成整条 512 px 的光柱反而比原作狠得多（卡 209 同款处理）。
             ---  原作的 hitboxEndDelay 是 60，也就是整个消散段都在判 —— 但它判的是那个
-            ---  中点小方块，不是整条光柱，所以这里只能整个关掉。
+            ---  中点小方块，不是整条光柱；这里的基础开关由 visual_match 按阶段覆盖。
             self.colli = false
             self.w = LASER_W - t * LASER_W / LASER_DESPAWN
             if t >= LASER_DESPAWN then
@@ -7367,6 +7368,7 @@ local BEAM_T0, BEAM_T1 = 60, 180            -- `ins_137(25, 0)` / `ins_137(-1, 0
 
 lw215_beam = Class(laser, {
     init = function(self, boss, theta)
+        self._native_laser_box = true
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---rot 是角度制（AGENTS.md C1）：我们坐标的 θ（弧度）×RAD。
         laser.init(self, 1, boss.x, boss.y, theta * RAD, 0, BEAM_LEN, 0, BEAM_W, 0, 0)
@@ -9928,6 +9930,9 @@ end
 laser_cls = Class(laser, {
     ---★ ang = **我们坐标系的弧度**（跟本文件其它 laser 类同一个口径，见文件头「角度单位」）。
     init = function(self, x, y, ang, color)
+        self._native_laser_phase = { "lw_state", "lw_t", 30, 16 }
+        self._native_laser_start = 64
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---第一位在 THlib 里就是**颜色**（贴图组 1..16）；rot 要**角度制** ⇒ 唯一的换算点。
         laser.init(self, color, x, y, ang * RAD,
@@ -15363,6 +15368,7 @@ local LG_PAUSE_STEP   = 10
 ---  DESPAWNING（despawnDuration 帧）：宽度线性收到 0，判定留到 hitboxEndDelay。
 local laser198 = Class(laser, {
     init = function(self, x, y, ang)
+        self._native_laser_phase = { "l198_state", "l198_t", 20, 16 }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）：
         ---第一位在 THlib 里就是**颜色组**；rot 是**角度制**的世界角（AGENTS.md C1）。
         ---l1/l2/l3 = 尾/身/头三段长度 —— 这里只有一段 512 的身部（起点 = 光柱原点）。
@@ -19951,6 +19957,7 @@ end
 ---光柱（ins_114 CREATE_LASER）。状态机见头部注释。
 local lw166_laser = Class(laser, {
     init = function(self, x, y, angle, color)
+        self._native_laser_phase = { "lw166_state", "lw166_t", 20, 8 }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 400 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -21272,9 +21279,10 @@ end
 ---★ 原作里光柱的 position 钉在出招点上、靠 laserCenter/laserScale 表现「尾在动」；
 ---  移植版直接把对象摆到**尾**上、把 l2 设成长度，画出来完全一样（同卡 158/162 的手法）。
 ---★ 判定长度：原作 ACTIVE 段用 `laserSize[0] = (endOffset − startOffset) * 0.7`（:1063-1066），
----  移植版沿用同文件既有口径（l2 = 全长的矩形），只差一个 0.7 系数。
+---  显示仍保留全长，碰撞时由 visual_match 单独裁剪为原作有效段。
 local lw154_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
+        self._native_laser_phase = { "lw154_state", "lw154_t", p.hbEnd, p.width }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -21351,6 +21359,7 @@ local lw154_laser = Class(laser, {
             return
         end
         self.lw154_t = t + 1
+        self._native_laser_start = self.lw154_start
         laser.frame(self)
     end,
 })
@@ -21812,6 +21821,7 @@ end
 ---  移植版直接把对象摆到**尾**上、把 l2 设成长度，画出来完全一样（同卡 162 的手法）。
 local lw158_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
+        self._native_laser_phase = { "lw158_state", "lw158_t", p.hbEnd, p.width }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -21887,6 +21897,7 @@ local lw158_laser = Class(laser, {
             return
         end
         self.lw158_t = t + 1
+        self._native_laser_start = self.lw158_start
         laser.frame(self)
     end,
 })
@@ -22315,6 +22326,7 @@ end
 ---  移植版直接把对象摆到**尾**上、把 l2 设成长度，画出来完全一样（同卡 209 的手法）。
 local lw162_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
+        self._native_laser_phase = { "lw162_state", "lw162_t", p.hbEnd, p.width }
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -22390,6 +22402,7 @@ local lw162_laser = Class(laser, {
             return
         end
         self.lw162_t = t + 1
+        self._native_laser_start = self.lw162_start
         laser.frame(self)
     end,
 })
@@ -24408,6 +24421,8 @@ end
 ---------------------------------------------------------------
 lw146_laser = Class(laser, {
     init = function(self, x, y, ang)
+        self._native_laser_phase = { "lw146_state", "lw146_timer", 10, 16 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, LASER_COLOR_IDX, x, y, ang * RAD, 0, LASER_LEN, 0, LASER_W, 0, 0)
@@ -25573,6 +25588,8 @@ end
 ---------------------------------------------------------------------
 local lw134_laser = Class(laser, {
     init = function(self, x, y, ang)
+        self._native_laser_phase = { "lw134_state", "lw134_t", 60, 8 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, LASER_COLOR, x, y, ang * RAD, 0, LASER_LEN, 0, LASER_W0, 0, 0)
@@ -26521,6 +26538,8 @@ lw126_dot = Class(object, {
 ---------------------------------------------------------------------
 lw126_laser = Class(laser, {
     init = function(self, x, y, angle)
+        self._native_laser_phase = { "l_state", "l_timer", 20, 10 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 70 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -34554,6 +34573,8 @@ end
 local lw448_laser
 lw448_laser = Class(laser, {
     init = function(self, x, y, angle, color)
+        self._native_laser_phase = { "l448_state", "l448_timer", 10, 16 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 320 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制** ⇒ 这里乘 RAD。
@@ -34589,7 +34610,7 @@ lw448_laser = Class(laser, {
             end
         end
         if self.l448_state == 3 then
-            self.colli = false          -- 见上面：「中点小方块」不忠实，直接关判定
+            self.colli = false          -- 中点小方块由 visual_match 按阶段计算
             self.w = LASER_W - t * LASER_W / LASER_DESPAWN
             if t >= LASER_DESPAWN then
                 object.RawDel(self)
@@ -35786,6 +35807,8 @@ end
 local lw451_laser
 lw451_laser = Class(laser, {
     init = function(self, x, y, angle_our, color)
+        self._native_laser_phase = { "l451_state", "l451_timer", 20, 16 }
+        self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是角度制 ⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle_our * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -35845,6 +35868,7 @@ lw451_laser = Class(laser, {
             end
         end
         self.l451_timer = t + 1
+        self._native_laser_start = start
         laser.frame(self)
     end,
 })

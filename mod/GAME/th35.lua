@@ -103,14 +103,14 @@ local bullet = bullet
 ---`g_BulletSpriteScriptBase` 与各脚本主弹 `ins_3(spriteN)` 的轮廓/尺寸。
 local T10_STYLE = {
     [0]  = ball_small,  [1]  = ball_mid_c, [2]  = ball_mid_c,
-    [3]  = ellipse,     [4]  = arrow_small, [5] = grain_b,
+    [3]  = OriginalBulletVisual.style(ellipse, grain_a),     [4]  = arrow_small, [5] = grain_b,
     [6]  = square,      [7]  = arrow_big_c, [8] = grain_d,
-    [9]  = grain_a,     [10] = ellipse,     [11] = star_small,
-    [12] = ball_big,    [13] = ellipse,     [14] = ellipse,
+    [9]  = grain_a,     [10] = OriginalBulletVisual.style(ellipse, grain_c),     [11] = star_small,
+    [12] = ball_big,    [13] = ellipse,     [14] = OriginalBulletVisual.style(ellipse, knife),
     [15] = butterfly,   [16] = star_big,    [17] = ball_huge,
-    [18] = ball_light,  [19] = ball_big,    [20] = ellipse,
-    [21] = ellipse,     [22] = butterfly,   [23] = square,
-    [24] = ball_small,  [25] = ball_light,  [26] = ellipse,
+    [18] = OriginalBulletVisual.style(ball_light, water_drop),  [19] = ball_big,    [20] = ellipse,
+    [21] = OriginalBulletVisual.style(ellipse, knife),     [22] = butterfly,   [23] = square,
+    [24] = ball_small,  [25] = OriginalBulletVisual.style(ball_light, water_drop),  [26] = OriginalBulletVisual.style(ellipse, grain_a),
 }
 
 ---本项目贴图统一是 16 行；这三张表把原作各色组的色号换成本项目行号。

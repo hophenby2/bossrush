@@ -481,7 +481,7 @@ local New, NewSimpleBullet = New, NewSimpleBullet
 local PlaySound, IsValid = PlaySound, IsValid
 local SetImageState, Render, RenderRect = SetImageState, Render, RenderRect
 local Class = Class
-local laser = laser
+local laser = OriginalBulletVisual.laser(laser, 95)
 local sqrt = sqrt
 local cos, sin, max, min = cos, sin, max, min
 local lstg = lstg
@@ -508,17 +508,21 @@ local function ex_color(i, t)
 end
 
 ---TH095 bulletType → 本项目最接近的弹样式。颜色和样式分开处理：sg_style()
----只返回形状描述，颜色由调用点传原作色号，实际出弹时 ex_color() 只查一次表。
+---返回按默认尺寸选定的形状描述，颜色由调用点传原作色号，实际出弹时 ex_color() 只查一次表。
 local SG_STYLE = {
     [0]  = ball_small,  [1]  = ball_mid_c, [2]  = ball_mid_c,
-    [3]  = ellipse,     [4]  = arrow_small, [5] = grain_b,
+    [3]  = OriginalBulletVisual.style(ellipse, grain_a),     [4]  = arrow_small, [5] = grain_b,
     [6]  = square,      [7]  = arrow_big_c, [8] = grain_d,
-    [9]  = grain_a,     [10] = ellipse,     [11] = star_small,
-    [12] = ball_big,    [13] = ellipse,     [14] = ellipse,
+    [9]  = grain_a,     [10] = OriginalBulletVisual.style(ellipse, grain_c),     [11] = star_small,
+    [12] = ball_big,    [13] = ellipse,     [14] = OriginalBulletVisual.style(ellipse, knife),
     [15] = butterfly,   [16] = star_big,    [17] = ball_huge,
-    [18] = ball_light,  [19] = ball_big,    [20] = ellipse,
-    [21] = ellipse,     [22] = butterfly,   [23] = square,
+    [18] = OriginalBulletVisual.style(ball_light, water_drop),  [19] = ball_big,    [20] = ellipse,
+    [21] = OriginalBulletVisual.style(ellipse, knife),     [22] = butterfly,   [23] = square,
 }
+-- 固定弹型调用点仍保留各自旧判定，只换成该 type 的新显示样式。
+local function sg_visual(previous, t)
+    return OriginalBulletVisual.style(previous, SG_STYLE[t])
+end
 local SG_DESC = {}
 local function sg_style(t)
     t = math.floor(tonumber(t) or 0)
@@ -1680,6 +1684,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_spear_laser(drone, x, y, a, color)
         local owner = drone.owner
         local l = New(laser, color, x, y, a, 0, 0, 0, LASER_W, LASER_W, 0)
+        l._native_laser_straight = true
         laser.CyGrow(l, LASER_SPEED, LASER_GROW, 3, a, true)
         lasers[#lasers + 1] = l
         drone.my_lasers[#drone.my_lasers + 1] = l
@@ -1990,8 +1995,8 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
     ---    是淡紫；butterfly 的 DeFineBulletStyle 没给 colorful ⇒ 贴图下标 = ceil(色号/2)，
     ---    所以色号 4 落在第 2 行。
     ---  · water_drop 有 16 行，water_drop3 = (104,47,207) 深紫（colorful ⇒ 色号 = 下标）。
-    local RING_STYLE_A = butterfly
-    local RING_STYLE_B = ball_light
+    local RING_STYLE_A = sg_visual(butterfly, 18)
+    local RING_STYLE_B = sg_visual(ball_light, 15)
     local RING_COLOR_A = ex_color(0, 18)     -- 型 18、色 0
     local RING_COLOR_B = ex_color(4, 15)     -- 型 15、色 4
 
@@ -2294,13 +2299,13 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         render = function(self)
             if self.warn > 0 then
                 ---细白线：全长的预警，粗细按像素给（§C4）—— white 是 16x16，
-                ---Render 的 hscale 是「倍数」⇒ LASER_LEN/16 才是全长，0.2 = 3.2 px 粗。
+                ---Render 的 hscale 是「倍数」⇒ LASER_LEN/16 才是全长，0.125 = 原作 2px 预警。
                 ---亮度恒正（§C4）：120 + 60*sin(...) ∈ [60,180]。
                 local k = 1 - self.warn / FAN_WARN
                 SetImageState("white", "mul+add", 120 + 60 * sin(self.timer * 8), 255, 235, 255)
                 Render("white", self.x + cos(self.rot) * LASER_LEN * 0.5,
                         self.y + sin(self.rot) * LASER_LEN * 0.5,
-                        self.rot, LASER_LEN / 16, 0.2)
+                        self.rot, LASER_LEN / 16, 0.125)
             else
                 laser.render(self)
             end
@@ -2838,7 +2843,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local RING_DELAY = 100
     local RING_BASE_COUNT = 1               -- 1 + photoIndex/3
     local RING_SPEED = 2.0
-    local RING_STYLE = ball_light
+    local RING_STYLE = sg_visual(ball_light, 18)
     local RING_COLOR = ex_color(1, 18)
 
     local PHOTO_LIMIT = 7                   -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
@@ -3191,8 +3196,8 @@ end
 ---  · followPhotoTarget 的激光每帧把位置拉回拍照目标（原作 ins_109 指的 boss），
 ---    我们这边就是本体（见各卡注释）。
 ---  · 原作的 g_AnmGameSpeed = 1；同时最多 256 条（PhotoEffect.cpp:1165），移植不设上限。
----★ 本仓库 laser 的命中半宽 = w/2（laser.lua:81-110 的 dist = 2），和上面的 width/2 一致；
----  长度放 l2、l1 = l3 = 0 ⇒ 判定盒是直矩形，不是本仓库默认两头收窄的六边形。
+---显示使用原作全宽，命中时由 visual_match 按 CalcLaserHitbox 的 width/2 再换算。
+---两端各留 8px，判定盒为直矩形；不再用默认两头收窄的六边形。
 ---★ 四段计时必须**挂在 owner（boss）的 task 上**：check_stage.lua 的 laser 桩件里
 ---  _TurnOn/_TurnOff 是空函数、laser:frame 也不跑 task.Do ⇒ 挂在 laser 自己身上，
 ---  自检里永远不收（th33 的 fan_laser 踩过同一个坑，见 :1310-1400）。
@@ -3306,7 +3311,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---四个角（我们的坐标；TH095 的 (-192,0)/(192,0)/(-192,448)/(192,448) 各翻一次 y）。
     local CORNERS = { { -192, 224 }, { 192, 224 }, { -192, -224 }, { 192, -224 } }
 
-    local STYLE = ball_light
+    local STYLE = sg_visual(ball_light, 18)
     local CORNER_SPEED = 1.0                -- 四角那几圈 ins_89 的 speed1（count2 = 1）
     local BODY_SPEED = 0.8                  -- 本体那圈 ins_89 的 speed1
     local COLOR_A = ex_color(1, 18)         -- 型 18、色 1
@@ -3803,7 +3808,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
     ---──────────────────────── 演出 / 弹幕 ────────────────────────
 
     local RING_COUNT = 5                                -- ins_91 的 count1
-    local RING_STYLE = ellipse
+    local RING_STYLE = sg_visual(ellipse, 3)
     local RING_COLOR = ex_color(4, 3)                   -- 型 3、色 4
     local SPEED_BASE, SPEED_PER_PHOTO = 2.6, 0.1        -- floatV3 = photoIndex×0.1 + 2.6
     local ACCEL = math.pi / 4800                        -- floatV2 = 0.000654498 rad/帧
@@ -3905,7 +3910,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
 
     ---──────────────────────── 弹幕 ────────────────────────
 
-    local RING_STYLE, RING_COLOR = ball_light, ex_color(1, 18)
+    local RING_STYLE, RING_COLOR = sg_visual(ball_light, 18), ex_color(1, 18)
     local RING_COUNT0 = 11                              -- intV1 = photoIndex/2 + 11
     local RING_SPEED1, RING_SPEED2 = 4, 1.5             -- count2 = 2 ⇒ 4.0 与 2.75
     local RING_GAP = 2                                  -- Sub4 的 ins_4(0,-224)
@@ -4236,7 +4241,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local SUB3_LEAD = 70                                -- Sub3 t=0 → t=70 才起 Sub4 / 第一次突进
     local DASH_FRAMES, DASH_SPEED = 60, 2               -- ins_66(60,1,pa,2) ⇒ 120 px
     local MIST_R, MIST_SPEED = 64, 0.05                 -- Sub4：偏移半径 / 弹速
-    local MIST_STYLE, MIST_COLOR = ellipse, ex_color(6, 3)
+    local MIST_STYLE, MIST_COLOR = sg_visual(ellipse, 3), ex_color(6, 3)
     local BIG_STYLE, BIG_COLOR = ball_huge, ex_color(1, 17)
     local BIG_COUNT, BIG_SPEED = 12, 1                  -- Sub7 的 ins_89
     local BIG_GAP = 60                                  -- Sub7 的 ins_4(0,-80)
@@ -4510,9 +4515,9 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
             ---Sub4 **没有闸**（它的 @1032 之后没有 ins_44）⇒ 一直发，不传 gate。
             toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_big, ex_color(3, 19), 1, nil)
             toks[2] = { alive = true }; ring_stream(owner, toks[2], ball_big, ex_color(3, 12), 1, 60, 90, true, nil)
-            toks[3] = { alive = true }; ring_stream(owner, toks[3], ellipse, ex_color(6, 3), 2, 20, 0, false, nil)
+            toks[3] = { alive = true }; ring_stream(owner, toks[3], sg_visual(ellipse, 3), ex_color(6, 3), 2, 20, 0, false, nil)
             toks[4] = { alive = true }; burst_stream(owner, toks[4], ball_big, ex_color(1, 19), 2, DENSITY_A)
-            toks[5] = { alive = true }; ring_stream(owner, toks[5], ellipse, ex_color(2, 3), 2, 20, 10, false, DENSITY_B)
+            toks[5] = { alive = true }; ring_stream(owner, toks[5], sg_visual(ellipse, 3), ex_color(2, 3), 2, 20, 10, false, DENSITY_B)
             toks[6] = { alive = true }; ring_stream(owner, toks[6], ball_big, ex_color(1, 19), 2, 20, 120, true, DENSITY_C)
             while true do
                 if photo_index(PHOTO_LIMIT) >= MOVE_MIN_PHOTOS then
@@ -4564,7 +4569,7 @@ end--「百万鬼夜行」
 ---色表 ex_color / ins_145/147 的激光工具见上面「Stage EX」那一段（同一套）。
 
 local function sg_parts(style)
-    if type(style) == "table" then
+    if type(style) == "table" and type(style[1]) == "table" and type(style[2]) == "number" then
         return style[1], style[2]
     end
     return style, nil
@@ -4709,10 +4714,8 @@ end
 ---ins_145 直线激光（PhotoStraightLaserView::Update，PhotoEffect.cpp:208-230）：
 ---从长度 0 起、每帧 +speed 长到 max_len；长满后每帧沿自己的方向前进 speed。
 ---初始化时 state 直接是 ACTIVE、宽度恒定（同文件:290-325），所以没有 147 的四段。
----★ 原作 145 的判定还多一道 width > 40 的闸（同文件:252 的 `length > 16 && width > 40`）；
----  world10 的 145 全是 width 16 —— 照搬的话这些激光一颗都打不到自机、这张符卡只剩背景。
----  本仓库的激光本来就是独立判定对象（见上面 run_ex_laser 的口径），这里让 145 和 147
----  一样在 length > 16 时判定。这是本卡组唯一一处对原作的刻意偏离，记在各卡注释里。
+---原作 145 只在 width > 40 时判定（同文件:252），visual_match 已恢复这个闸；
+---小于该宽度的直线光只显示，不额外添加原作没有的碰撞。
 local function run_ex_laser_straight(owner, l, max_len, width, speed)
     ---★ 旧写法漏了这一步：laser:init 把 self.w 置 0、只有 counter > 0 时才长宽，
     ---  于是 145 生成的激光**宽度恒为 0** —— 既不显示也不判定（laser.lua:52 与 :76）。
@@ -4742,6 +4745,7 @@ end
 ---生成一根 ins_145 直线激光。
 local function spawn_ex_laser_straight(owner, lasers, index, x, y, angle, max_len, width, speed)
     local l = New(laser, index, x, y, angle, 0, 0, 0, 0, 0, 0)
+    l._native_laser_straight = true
     l.colli = false
     lasers[#lasers + 1] = l
     run_ex_laser_straight(owner, l, max_len, width, speed)
@@ -7020,7 +7024,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
                     local m = EMIT_R * ran:Float(0, 1)
                     local oa = sg_deg(ran:Float(-math.pi, math.pi))
                     local sx, sy = self.x + m * cos(oa), self.y + m * sin(oa)
-                    NewSimpleBullet(ellipse, ex_color(color, 3), sx, sy, EMIT_SPEED,
+                    NewSimpleBullet(sg_visual(ellipse, 3), ex_color(color, 3), sx, sy, EMIT_SPEED,
                             sg_deg(ran:Float(-math.pi, math.pi)), false, 0, false)
                     PlaySound("tan00", 0.1, sx / 256, false)   -- flags 536 的 0x200
                     task.Wait(gap)
@@ -13569,8 +13573,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
     ---      出膛偏移 = 沿该角 8 px（ins_38 + ins_100）；每根后 floatV0 += 0.392699（22.5°）；
     ---    t=20 再一批 16 根（色 2）、floatV0 先 +0.19635（11.25°）、floatV2 += 0.5；
     ---    t=40 ins_5(0,−404,extraIntV0)：循环数 −1，>0 就跳回 @928（time=0）重来。
-    ---★ 原作 145 的判定还多一道 width > 40 的闸（PhotoEffect.cpp:252）—— 这张的宽只有 8，
-    ---  照搬就一根都打不到人；按 Stage 9 已写下的口径，145 和 147 一样在 length > 16 时判定。
+    ---原作 145 的 width > 40 判定闸由 visual_match 处理；本卡 width=8，仅显示。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
     local HOME_X, HOME_Y = 0, field_y(128)              -- 0 / 96
     local ENTRY_WAIT, ENTRY_TIME = 100, 30

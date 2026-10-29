@@ -1,143 +1,113 @@
-# TH33–TH35 子弹贴图映射方案
+# TH33–TH35 子弹贴图映射方案（默认尺寸复核版）
 
-目标：按原作 ANM 的主弹精灵，把移植版使用的占位弹型换成本项目里形状、颜色
-最接近的原生弹样式。本文只描述视觉映射；弹道、发数、速度、变换程序和判定口径
-不在这次替换范围内。
+按原作 ANM 主弹精灵的轮廓与**可见大小**一起选型。遵循本轮约束：
 
-依据：
+- 只用现有样式的默认大小，不增加子弹缩放，也不修改全局贴图倍率。
+- 子弹既有判定保持不变。`OriginalBulletVisual.style(旧样式, 新样式)` 换图后恢复旧 A/B。
+- 弹道、发数、速度、变换节奏不变；飞行途中换图与固定弹型调用点也使用同一规则。
+- 激光显示宽度及碰撞范围另外按原作校准，不混同显示全宽与命中半宽。
 
-- TH095：`/Users/happyelements/th095/src/BulletManager.cpp`
-  （`g_PhotoBulletScriptBases`、`g_PhotoBulletCollisionSizes`、颜色表）
-- TH07：`/Users/happyelements/th07/src/th07/BulletManager.cpp`
-  （`g_BulletTypeInfos`、主弹 `spriteOffset`）
-- TH10：`th10.exe` 的 `g_BulletSpriteScriptBase`，以及
-  `th10/src/BulletManager.cpp`、`th10/src/BulletTransform.cpp`
-- 原作 ANM 解包：`/tmp/bulletmap/{th07,th10,th095}/list.txt`
-- 本项目可选样式：`THlib/bullet/bulletStyle.lua`
+依据为原版 `etama.anm` / `bullet.anm` 的二进制 sprite 记录和纹理，
+TH08/TH07/TH095/TH10 的 BulletManager、PhotoEffect、PhotoGame 激光实现，
+以及项目 `THlib/bullet/bulletStyle.lua` 的资源定义。未以出生光晕代替主弹尺寸。
 
-## 1. 本项目样式
+## 1. 项目默认样式的可见尺寸
 
-映射优先看轮廓，其次看尺寸；尺寸接近时优先使用不带动画的单帧样式。
+下表按代表色纹理测量，阈值为透明度×最亮颜色通道 > 32，计入资源原有默认倍率。
+尺寸按长轴×短轴列出；不是含透明边框的裁切矩形。不同颜色和动画有少量像素差异。
 
-| 原生样式 | 用途 |
-| --- | --- |
-| `ball_small` | 8×8/16×16 小圆粒 |
-| `ball_mid_c` | 白心 + 粗色环圆弹 |
-| `ball_big` | 30×30/32×32 大圆弹 |
-| `ball_huge` | 56×56/64×64 特大圆弹 |
-| `ball_light` | 加算光晕球 |
-| `ellipse` | 竖椭圆/米弹 |
-| `square` | 方形符卡/札 |
-| `arrow_small` | 小箭头/飞镖 |
-| `arrow_big_c` | 大箭头/燕尾 |
-| `grain_a` | 彗星/叶片 |
-| `grain_b` | 细长胶囊/针 |
-| `grain_d` | 水滴 |
-| `star_small` | 小五角星 |
-| `star_big` | 大五角星 |
-| `butterfly` | 四瓣/蝶形 |
+| 样式 | 默认可见范围约 | 说明 |
+| --- | --- | --- |
+| `ball_small` | 10×10 | 小圆粒 |
+| `ball_mid` / `ball_mid_c` | 17×17 / 16×16 | 中圆、白心圆环 |
+| `grain_a` | 14×8 | 小实心米弹 |
+| `grain_b` | 15.5×9.5 | 小胶囊、细粒 |
+| `grain_c` | 14×7 | 小描边米弹 |
+| `grain_d` | 14×7 | 小水滴 |
+| `arrow_small` | 15.5×8 | 小飞镖 |
+| `arrow_big_c` | 18×13 | 燕尾 |
+| `ellipse` | 31.5×18 | 大椭圆，不能再用于 14×8 的小米弹 |
+| `gun_bullet` | 18.5×10 | 中型胶囊 |
+| `water_drop` | 34.5×21 | 带亮芯和尾迹的中型弹，不能当成未缩放的小水滴 |
+| `square` | 15×13 | 札 |
+| `star_small` / `star_big` | 15×15 / 23×22 | 星形；大星没有同尺寸更接近的候选 |
+| `butterfly` | 32×28 | 蝶/花形光晕 |
+| `knife` / `knife_b` | 30.5×18 / 35.25×15 | 剑/长针 |
+| `ball_big` | 30×30 | 大圆 |
+| `ball_light` | 51×51 | 大加算光球，不能再代替原作 30px 级亮芯弹 |
+| `ball_huge` | 62×62 | 特大圆环 |
 
-## 2. TH095 → `th33.lua`
+## 2. TH095 → TH33
 
-TH095 的 24 个 `bulletType`（0–23）映射如下：
+| type | 原作主弹可见范围约 | 轮廓 | 当前样式 |
+| ---: | --- | --- | --- |
+| 0 | 8×8 | 小圆粒 | `ball_small` |
+| 1 | 16×16 | 白心圆 | `ball_mid_c` |
+| 2 | 16×16 | 圆环 | `ball_mid_c` |
+| 3 | 14×8 | 小实心米弹 | `grain_a` |
+| 4 | 14×8 | 小飞镖 | `arrow_small` |
+| 5 | 14×8 | 小胶囊 | `grain_b` |
+| 6 | 16×14 | 札 | `square` |
+| 7 | 15×14 | 燕尾 | `arrow_big_c` |
+| 8 | 14×8 | 小水滴 | `grain_d` |
+| 9 | 14×12 | 彗星/叶片 | `grain_a` |
+| 10 | 16×8 | 小描边米弹 | `grain_c` |
+| 11 | 15×14 | 小星 | `star_small` |
+| 12 | 27×26 | 大圆 | `ball_big` |
+| 13 | 27×14 | 大椭圆 | `ellipse` |
+| 14 | 30×17 | 剑/长针 | `knife` |
+| 15 | 30×27 | 蝶形 | `butterfly` |
+| 16 | 30×29 | 大星 | `star_big` |
+| 17 | 62×62 | 特大圆环 | `ball_huge` |
+| 18 | 28×24 | 亮芯/尾迹 | `water_drop` |
+| 19 | 26×26 | 大圆 | `ball_big` |
+| 20 | 27×14 | 大椭圆 | `ellipse` |
+| 21 | 30×17 | 剑/长针 | `knife` |
+| 22 | 30×27 | 蝶形 | `butterfly` |
+| 23 | 14×14 | 小符片 | `square` |
 
-| type | 原作形状 | 本项目样式 |
-| ---: | --- | --- |
-| 0 | 8×8 小圆粒 | `ball_small` |
-| 1 | 白心 + 外环圆弹 | `ball_mid_c` |
-| 2 | 白心 + 点状外环 | `ball_mid_c` |
-| 3 | 实心竖椭圆 | `ellipse` |
-| 4 | 三角箭头 + 尾环 | `arrow_small` |
-| 5 | 细长胶囊 | `grain_b` |
-| 6 | 方形符卡 | `square` |
-| 7 | 拱形/燕尾 | `arrow_big_c` |
-| 8 | 水滴 | `grain_d` |
-| 9 | 彗星/叶片 | `grain_a` |
-| 10 | 描边竖椭圆 | `ellipse` |
-| 11 | 小五角星 | `star_small` |
-| 12 | 32×32 圆弹 | `ball_big` |
-| 13 | 30×30 竖椭圆 | `ellipse` |
-| 14 | 大竖椭圆 | `ellipse` |
-| 15 | 四瓣/蝶形 | `butterfly` |
-| 16 | 大五角星 | `star_big` |
-| 17 | 64×64 红色眼球 | `ball_huge` |
-| 18 | 光晕球 | `ball_light` |
-| 19 | 32×32 圆弹 | `ball_big` |
-| 20 | 竖椭圆 | `ellipse` |
-| 21 | 大竖椭圆 | `ellipse` |
-| 22 | 四瓣/蝶形 | `butterfly` |
-| 23 | 方形符卡 | `square` |
+前半段直接使用 `NewSimpleBullet` 的固定样式也已复核，不能只修改后半段 `SG_STYLE`。
+其中一处 type18/type15 的形状对调已纠正；这两条旧调用各自的碰撞半径仍保持原值。
 
-## 3. TH10 → `th35.lua`
+## 3. TH10 → TH35
 
-TH10 的 `etSprite(slot, type, color)` 中，第二个参数是 bullet type：
+TH10 的 type0–23 与上表同族，实际精灵号不同。主要尺寸差异为 type9 的可见范围
+约 14×14；type18/25 为原版固定蓝/红亮芯动画。表内仅列与共享表有差别或新增的项目：
 
-| type | 原作形状 | 本项目样式 |
-| ---: | --- | --- |
-| 0 | 8×8 小圆粒 | `ball_small` |
-| 1 | 白心 + 外环圆弹 | `ball_mid_c` |
-| 2 | 白心 + 点状外环 | `ball_mid_c` |
-| 3 | 实心竖椭圆 | `ellipse` |
-| 4 | 三角箭头 + 尾环 | `arrow_small` |
-| 5 | 细长胶囊 | `grain_b` |
-| 6 | 方形符卡 | `square` |
-| 7 | 拱形/燕尾 | `arrow_big_c` |
-| 8 | 水滴 | `grain_d` |
-| 9 | 彗星/叶片 | `grain_a` |
-| 10 | 描边竖椭圆 | `ellipse` |
-| 11 | 小五角星 | `star_small` |
-| 12 | 32×32 圆弹 | `ball_big` |
-| 13 | 30×30 竖椭圆 | `ellipse` |
-| 14 | 大竖椭圆 | `ellipse` |
-| 15 | 四瓣/蝶形 | `butterfly` |
-| 16 | 大五角星 | `star_big` |
-| 17 | 64×64 红色眼球 | `ball_huge` |
-| 18 | 光晕球 | `ball_light` |
-| 19 | 32×32 圆弹 | `ball_big` |
-| 20 | 竖椭圆 | `ellipse` |
-| 21 | 大竖椭圆 | `ellipse` |
-| 22 | 四瓣/蝶形 | `butterfly` |
-| 23 | 16×16 方形符卡 | `square` |
-| 24 | 8×8 小粒子 | `ball_small` |
-| 25 | 红色光晕球 | `ball_light` |
-| 26 | 竖椭圆 | `ellipse` |
+| type | 原作可见范围约 | 当前样式 | 说明 |
+| ---: | --- | --- | --- |
+| 3 | 14×8 | `grain_a` | 不再使用大 `ellipse` |
+| 9 | 14×14 | `grain_a` | 保留最接近的现成叶片候选 |
+| 10 | 16×8 | `grain_c` | 小描边米弹 |
+| 14 / 21 | 30×17 | `knife` | 原作实际为剑，不是大椭圆 |
+| 18 | 28×24 | `water_drop` | 固定蓝色，替换 51×51 的 `ball_light` |
+| 24 | 8×8 | `ball_small` | 小粒子 |
+| 25 | 28×24 | `water_drop` | 固定红色，同 type18 的尺度 |
+| 26 | 14×8 | `grain_a` | 小实心米弹 |
 
-`風神様の神徳` 的原作调用是 `etSprite(0, 6, $I0)`，因此它的
-弹型改为 `square`；色号仍按 type 6 的 16 色表换算。
+其余 type 使用第 2 节对应样式。type6「風神様の神徳」继续使用 `square`。
+`TK_SPRITE` 的飞行中换型会同时重算显示样式与颜色，并保留该旧映射的判定。
 
-`etSprite` 在飞行途中还会改 type/color。`th35.lua` 的 `TK_SPRITE` 必须同时执行
-`ChangeImage(t10_style(type), t10_color(type, color))`，不能只记录颜色。
+TH10 连续色组仍为：0–11/24/26 为16色，12–16/19–22 为8色，17为4色，23为3色，
+18/25 为固定蓝/红单脚本。不按尺寸猜颜色组。
 
-TH10 各 type 的连续调色板帧数（由 `g_BulletSpriteScriptBase` 与
-`bullet.anm` 的相邻脚本数核对）为：
+## 4. TH07 → TH34
 
-- type 0–11、24、26：16 色；
-- type 12–16、19–22：8 色；
-- type 17：4 色（红、紫、绿、黄）；
-- type 23：3 色；
-- type 18、25：各只有 1 个固定色脚本，分别是蓝色与红色光球，不按色表偏移。
+| type | 原作可见范围约 | 当前样式 | 说明 |
+| ---: | --- | --- | --- |
+| 0 | 8×8 | `ball_small` | 小圆粒 |
+| 1 | 16×16 | `ball_mid_c` | 白心环 |
+| 2 | 16×8 | `grain_a` | 不再使用 31.5×18 的大椭圆 |
+| 3 | 16×16 | `ball_mid` | 圆弹 |
+| 4 | 16×9 | `arrow_small` | 飞镖 |
+| 5 | 16×8 | `grain_b` | 小胶囊 |
+| 6 | 15×14 | `arrow_big_c` | 燕尾 |
+| 7 | 27×27 | `ball_big` | 大圆 |
+| 8 | 32×28 | `butterfly` | 蝶形 |
+| 9 | 30×22 | `knife` | 比 `knife_b` 尺寸更接近 |
+| 10 | 62×62 | `ball_huge` | 特大环 |
 
-## 4. TH07 → `th34.lua`
-
-TH07 的 bullet sprite 是 `g_BulletTypeInfos[type]` 的主弹脚本，再由
-`spriteOffset` 选颜色帧。
-
-| sprite | 原作形状 | 本项目样式 |
-| ---: | --- | --- |
-| 0 | 8×8 小粒子 | `ball_small` |
-| 1 | 白心 + 外环圆弹 | `ball_mid_c` |
-| 2 | 实心竖椭圆/米弹 | `ellipse` |
-| 3 | 白心 + 细色环圆弹 | `ball_mid` |
-| 4 | 三角箭头 + 尾环 | `arrow_small` |
-| 5 | 细长粒子 | `grain_b` |
-| 6 | 拱形/燕尾 | `arrow_big_c` |
-| 7 | 32×32 大圆弹 | `ball_big` |
-| 8 | 蝶形 | `butterfly` |
-| 9 | 剑/长针 | `knife_b` |
-| 10 | 64×64 爆闪光球 | `ball_huge` |
-
-TH07 的主弹颜色是 `baseSprite + spriteOffset`。`g_BulletSpriteOffset16Px` /
-`g_BulletSpriteOffset32Px` 只用于出生特效，不能用它们代替主弹颜色映射。
+反向查色表同时登记显示代理类，避免换成新样式后误走错误色组。
 
 ## 5. 颜色映射
 
@@ -168,30 +138,29 @@ TH07 按主弹精灵尺寸选用 16/8/4 色组。TH10 的精确分组见第 3 �
 尺寸类推 type 18/23/25。尤其要注意颜色号 0 是白/灰，不能像旧代理那样夹到 1
 （红）。
 
-## 6. 已知不可完全等价项
+## 6. 激光显示与命中范围
 
-- `butterfly` 在本项目只有 8 行贴图，且 non-colorful；原作蝶形弹的色相只能近似。
-- `ball_light` 是加算光晕，适合 type 18/25，但原作某些大光球的边缘纹理仍不同。
-- `arrow_small`/`grain_b` 的轮廓与原作 14×16 飞镖/胶囊同族，但不是逐像素相同。
-- 原作的逐帧自转、4 帧动画（如 TH07/TH10 的大眼球、TH095 的 type 19）本次不补；
-  本次只对齐第一帧外形与色号。
-- 本项目样式自带碰撞尺寸；替换后如果与原移植版的占位判定不同，应以脚本检查结果
-  为准，后续再单独处理判定兼容。
+| 原作 | 显示全宽 | 原作判定口径 |
+| --- | --- | --- |
+| TH07 | ECL width | 判定全宽 width/2；不套用 TH08 的70%长度规则 |
+| TH08 | ECL width | 判定全宽 width/2；正的 startOffset 使用中间70%长度 |
+| TH095 | 当前实际 width | 小于32时判定全宽 width/2，否则 width−16；两端各留8px |
+| TH10 | 当前实际 width | 沿用原版 LaserLine/Type1 的独立几何，见 TH35 实现 |
 
-## 7. 实现状态
+THlib 原来按16px贴图的 `w/7` 绘制，不能据此认为贴图矩形就是原作 w 像素。
+本轮显示按实际像素宽度换算，碰撞另行处理，渲染后恢复实例参数。
+TH31/33/34 选用项目现有 `laser2` 亮芯纹理，保留节点和头部的原色号；TH35 的原版 ANM 纹理不变。
+TH07/08 展开、收束阶段还原中点小判定段，收束判定按原 hitboxEndDelay 关闭，
+不再把整条激光维持为致命范围，也不把原作的中点判定完全删掉。
+TH095 ins145 还恢复原版 width>40 的碰撞闸；较细的该类直线光仅显示。
+妖梦的敌人矩形斩击仍按原矩形处理，不误用激光的半宽。
+TH35 原版 ANM 激光精灵及其宽度换算保持原实现。
 
-- `th33.lua`：已落地。`ex_color` 按 TH095 的 16/8/4 色组换算，`sg_style`
-  覆盖 bulletType 0–23；固定样式调用点已改为按 type 取图。
-- `th34.lua`：已落地。公共 `TH07_STYLE` / `th07_color` 覆盖 TH07 bulletType
-  0–10，各关道中、Boss 非符和符卡均已替换旧的局部占位样式。
-- `th35.lua`：已落地。公共 `T10_STYLE` / `t10_color` 覆盖 TH10 bulletType
-  0–26；顶部「風神様の神徳」使用 type 6，后半 ECL pattern 发弹按 type/color
-  取图，飞行中的 `TK_SPRITE` 同时换形状与颜色。
-- 验证：`luajit tools/check_stage.lua mod/GAME/th33.lua`、
-  `th34.lua`、`th35.lua` 均通过，注册与全卡模拟无运行时错误。
+## 7. 实现与验证
 
-近似项：
-
-- `butterfly`、`ball_light` 与部分 14×16 的 arrow/grain 只是同族轮廓，不是逐像素一致；
-- 原作出生/消散动画、自转和 4 帧循环动画本次不补，只对齐主弹第一帧外形与色相；
-- 本项目样式自带碰撞尺寸；本次没有为了视觉映射改弹道、发数、速度、判定或流程。
+- 公共支持：`THlib/bullet/visual_match.lua`。子弹只换样式、恢复旧 A/B；不写 hscale/vscale。
+- TH31/33/34/35 的公共表、固定类型调用点、飞行中换图都遵循上述映射。
+- `water_drop` 默认仍比原作部分亮芯弹略长，但远小于此前的大光球；按要求不缩放。
+- 星形等没有完全同尺寸的替代项时保留形状最接近的样式，不改成圆球凑尺寸。
+- 颜色及原作/现有样式的动画近似仍保留；不更改弹道、发数、速度、时间轴或子弹判定。
+- 验证入口：`luajit tools/check_bullet_visuals.lua`、四关 `tools/check_stage.lua`。

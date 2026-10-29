@@ -466,6 +466,7 @@
 ---======================================================================================
 --------------------------------------------------------------
 
+local laser = OriginalBulletVisual.laser(laser, 7)
 local class = {}
 _editor_class["TH34"] = class
 
@@ -485,10 +486,10 @@ local IsValid, lstg = IsValid, lstg
 
 ---TH07 的 bulletType（0..10）→ 本仓库最接近的主弹样式。
 local TH07_STYLE = {
-    [0] = ball_small,  [1] = ball_mid_c, [2] = ellipse,
+    [0] = ball_small,  [1] = ball_mid_c, [2] = OriginalBulletVisual.style(ellipse, grain_a),
     [3] = ball_mid,    [4] = arrow_small, [5] = grain_b,
     [6] = arrow_big_c,[7] = ball_big,    [8] = butterfly,
-    [9] = knife_b,     [10] = ball_huge,
+    [9] = OriginalBulletVisual.style(knife_b, knife),     [10] = ball_huge,
 }
 local function th07_style(spr)
     return TH07_STYLE[math.floor(tonumber(spr) or 0)] or ball_small
@@ -513,6 +514,7 @@ local TH07_SPRITE = {
     [arrow_big_c] = 6, [ball_big] = 7, [butterfly] = 8,
     [knife_b] = 9, [ball_huge] = 10,
 }
+for spr, style in pairs(TH07_STYLE) do TH07_SPRITE[style] = spr end
 local function th07_color_for(off, style)
     return th07_color(off, TH07_SPRITE[style] or 0)
 end
@@ -6143,6 +6145,7 @@ local function TH34_add_stage78_boss()
             laser.init(self, s.spr or 4, x, y, ang * RAD, 0, 1, 0, s.w or 8, 0, 0)
             self.pl_x, self.pl_y = x, y
             self.pl_ang = ang
+            self._native_laser_box = s.box or false
             self.pl_spd = s.spd or 0
             self.pl_sOff, self.pl_eOff = s.sOff or 0, s.eOff or 640
             self.pl_sLen, self.pl_lw = s.sLen or 640, s.w or 8
@@ -9400,6 +9403,7 @@ local function TH34_add_stage56_boss()
             laser.init(self, s.spr or 4, x, y, ang * RAD, 0, 1, 0, s.w or 8, 0, 0)
             self.pl_x, self.pl_y = x, y
             self.pl_ang = ang
+            self._native_laser_box = s.box or false
             self.pl_spd = s.spd or 0
             self.pl_sOff, self.pl_eOff = s.sOff or 0, s.eOff or 640
             self.pl_sLen, self.pl_lw = s.sLen or 640, s.w or 8
@@ -10649,7 +10653,7 @@ local function TH34_add_stage56_boss()
     ---dur 默认 56 帧 = 原作 sub61 的寿命（`UNIMP` 在 t=56）；人神剣 sub74 是 30000。
     local function slash5(y, width, dur)
         width = width or 384
-        plaser(-width / 2, y, 0, { spr = 4, w = 32, sOff = 0, eOff = width,
+        plaser(-width / 2, y, 0, { box = true, spr = 4, w = 32, sOff = 0, eOff = width,
                                    sLen = width, tStart = 0, dur = dur or 56, tEnd = 12,
                                    hbStart = 0, hbEnd = 4 })
     end

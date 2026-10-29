@@ -107,6 +107,10 @@ local function checkPlayer(player,self)
     end
 end
 
+local function checkPlayers(self)
+    if GameNet then GameNet.forEachPlayer(checkPlayer,self) else checkPlayer(player,self) end
+end
+
 function laser:frame()
     task.Do(self)
     self.drop_CD = max(0, self.drop_CD - 1)
@@ -116,7 +120,11 @@ function laser:frame()
         self.w = self.w + self.dw
         self.alpha = self.alpha + self.da
     end
-    if GameNet then GameNet.forEachPlayer(checkPlayer,self) else checkPlayer(player,self) end
+    if self._native_laser_game then
+        OriginalBulletVisual.laser_collision(self, checkPlayers)
+    else
+        checkPlayers(self)
+    end
 
 end
 local SetImageState = SetImageState
@@ -124,16 +132,18 @@ local Render = Render
 local Color = Color
 function laser:render()
     local b = self._blend
+    local draw_w = self.w
+    if self._native_laser_game then draw_w = OriginalBulletVisual.laser_render_width(self) end
     if self.w > 0 then
         local c = Color(self._a * self.alpha, self._r, self._g, self._b)
         local data = laser_data[self.imgid]
         local l = (self.l1 + self.l2 + self.l3) * 0.95
         SetImageState(self.img1, b, self._a * self.alpha, self._r, self._g, self._b)
-        Render(self.img1, self.x, self.y, self.rot, self.l1 / data[1], self.w / 7)
+        Render(self.img1, self.x, self.y, self.rot, self.l1 / data[1], draw_w / 7)
         SetImageState(self.img2, b, self._a * self.alpha, self._r, self._g, self._b)
-        Render(self.img2, self.x + self.l1 * cos(self.rot), self.y + self.l1 * sin(self.rot), self.rot, self.l2 / data[2], self.w / 7)
+        Render(self.img2, self.x + self.l1 * cos(self.rot), self.y + self.l1 * sin(self.rot), self.rot, self.l2 / data[2], draw_w / 7)
         SetImageState(self.img3, b, self._a * self.alpha, self._r, self._g, self._b)
-        Render(self.img3, self.x + (self.l1 + self.l2) * cos(self.rot), self.y + (self.l1 + self.l2) * sin(self.rot), self.rot, self.l3 / data[3], self.w / 7)
+        Render(self.img3, self.x + (self.l1 + self.l2) * cos(self.rot), self.y + (self.l1 + self.l2) * sin(self.rot), self.rot, self.l3 / data[3], draw_w / 7)
         if self.node > 0 then
             c = Color(self._a * self.w / self.w0, self._r, self._g, self._b)
             SetImageState(self.img4, b, self._a * self.w / self.w0, self._r, self._g, self._b)
@@ -243,6 +253,9 @@ function laser:CutOnRadius(l1, l2)
     if l > 4 then
         BulletBreak_Table:New(self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.index)
         local other_laser = New(laser, self.index, self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.rot, l / 2 / c, l - l / c, l / 2 / c, self.w, 0, self.head)
+        other_laser._native_laser_game = self._native_laser_game
+        other_laser._visual_width_factor = self._visual_width_factor
+        other_laser._native_laser_box = self._native_laser_box
         other_laser.protect = 1
         if self.imgid ~= 1 then
             laser.ChangeImage(self, self.imgid, self.index)

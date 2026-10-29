@@ -454,7 +454,7 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
     end
     _G.CREATED_BULLETS = _G.CREATED_BULLETS + 1
     do
-        local nm = _styleNames[style] or "(弹样式)"
+        local nm = _styleNames[style and (style.visual_style or style)] or "(弹样式)"
         _G.LOG_BULLET[nm] = (_G.LOG_BULLET[nm] or 0) + 1
     end
     -- ★ `aim = true` 表示角度 `a` 是**相对自机方向**的，引擎要加上 Angle(self, player)
@@ -468,7 +468,7 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
                 _index = Forbid(col or 1, 1, 16), timer = 0, ani = 0,
                 group = 1, _live = true, bound = true, style = style,
                 _sx = x, _sy = y, _sf = (_G.__frame or 0), _v0 = v or 0, _a0 = a or 0, _aim = aim and true or false,
-                r = _styleRadius[_styleNames[style] or ""] or 4 }
+                r = _styleRadius[_styleNames[style and (style.collision_style or style)] or ""] or 4 }
     markAimed(b, x, y, b.vx, b.vy, aim)
     bullets[#bullets + 1] = b
     -- 外部工具（tools/threat.lua）用它在**出膛那一刻**登记发弹事件
@@ -1341,6 +1341,8 @@ end
 --    （有些文件依赖别的文件里的类，比如 th08-boss_lastword 要用 _editor_class.TH08，
 --      单跑一个文件会误报，这个模式才是它们正确的检查方式）
 ----------------------------------------------------------------------
+dofile('THlib/bullet/visual_match.lua')
+
 if path == "--all" then
     local ids = {}
     local f = io.open("mod/_editor_output.lua")

@@ -72,7 +72,7 @@ function bullet:render()
     local drawrot=render_rotation(self)
     for _, s in ipairs(self.graysmear) do
         c.SetColorFunc(s.img, "add+alpha", s.alpha, 255, 255, 255)
-        c.RenderFunc(s.img, s.x, s.y, s.rot, s.hscale, s.vscale)
+        c.RenderFunc(s.img, s.x, s.y, s.rot, s.hscale, s.vscale, 0.5, self.ani)
     end
     if self.graze2 and self.graze2 > 0 and self.graze2ing then
         local t = int((self.ani + self.gzz_off) / 6) % 4 * 90
@@ -244,6 +244,7 @@ function BulletBreak_Table:New(x, y, index)
 end
 
 Include("THlib\\bullet\\bulletStyle.lua")
+Include("THlib\\bullet\\visual_match.lua")
 Include("THlib\\bullet\\clearbullet.lua")
 
 local straight_bullet = Class(bullet, {
