@@ -171,6 +171,7 @@ fake.cannot_kill=false;fake.is_combat=false;check(not D.award(fake),'非战斗�
 reset();check(D.award(boss(53)) and D.award(boss(54)) and #lstg.var.upgrades.queue==2,'双 Boss 的不同卡分别排队，选择不重叠')
 -- 接续只移除强化掉落；其它模式仍发放，已有队列也不能让接续战斗停下。
 reset();local chainHero=hero(reimu_player);lstg.var.rogue_run={mode='chain'}
+local oldGroup=stage.current_stage.group;stage.current_stage.group={_name='RogueChain'}
 check(not D.award(boss(55)) and lstg.var.upgrades.count==0 and #lstg.var.upgrades.queue==0,'接续击破阶段不生成强化，也不消耗掉落序号')
 local pending={id=1,age=100,options={1,2},picks={false,false},previous={{x=chainHero.x,y=chainHero.y}}}
 lstg.var.upgrades.active=pending;lstg.var.upgrades.queue={pending}
@@ -178,9 +179,11 @@ local cached=Q.selection('drops',pending,nil,{D.optionLines(1),D.optionLines(2)}
 check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0,'接续清除旧检查点待选掉落，不冻结战斗')
 check(not IsValid(cached.walls[1]) and not IsValid(cached.labels[1]),'接续移除已经显示的强化弹体与文字')
 for _,variant in ipairs({'single','dual','main'}) do
-    reset();if variant~='main' then lstg.var.rogue_run={mode=variant} end
-    check(D.award(boss(56)) and #lstg.var.upgrades.queue==1,'其它模式仍正常掉落：'..variant)
+    reset();lstg.var.rogue_run={mode=variant=='main' and 'chain' or variant}
+    stage.current_stage.group={_name=({single='RogueTen',dual='RogueDuo',main='BossRush'})[variant]}
+    check(D.award(boss(56)) and #lstg.var.upgrades.queue==1,'其它模式正常掉落，残留接续记录不会影响主线：'..variant)
 end
+stage.current_stage.group=oldGroup
 -- 从正式 Boss 系统取出击破回调，验证真实生命周期入口。
 local bf=assert(io.open(root..'/THlib/enemy/boss_system.lua','rb'));local bs=bf:read('*a');bf:close()
 local start=assert(bs:find('function system:kill()',1,true));local ending=assert(bs:find('---boss系统消亡逻辑',start,true))

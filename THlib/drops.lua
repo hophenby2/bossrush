@@ -8,8 +8,9 @@ D.pool={
     {{'red','mul',6,5},{'blue','mul',9,10}},{{'red','mul',9,10},{'blue','mul',6,5}},
 }
 local function fresh() return {red=10000,blue=10000,clock=-1,fraction=0} end
-local function allowDrops()
-    return not (lstg.var.rogue_run and lstg.var.rogue_run.mode=='chain')
+local function allowDrops(scene)
+    scene=scene or (stage and stage.current_stage)
+    return not (scene and scene.group and scene.group._name=='RogueChain')
 end
 function D.enabled() return lstg.var.__drops_version==D.VERSION end
 function D.reset()
@@ -124,7 +125,7 @@ function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age) end
 function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
-    if not allowDrops() then
+    if not allowDrops(scene) then
         -- 兼容已有检查点中排队 / 正在下落的选项，接续战斗不再为强化选择冻结。
         if s.active or #s.queue>0 then s.active=nil;s.queue={} end
         GameQuiz.clearSelection('drops',true);return false
