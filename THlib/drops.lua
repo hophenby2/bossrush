@@ -122,6 +122,14 @@ local function controllable(p)
     return p and IsValid(p) and not p.lock and not p.dialog and not p.realrealreal_lock and not p.hide and (p.death or 0)==0
 end
 function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age) end
+function D.suspend()
+    local s=peek();local row=s and s.active
+    if not row then return end
+    row.previous=row.previous or {}
+    -- 答题复活期间只隐藏掉落；同步位置，避免复活传送被当成穿过接取线。
+    for i,p in ipairs(players()) do if p and IsValid(p) then row.previous[i]={x=p.x,y=p.y} end end
+    GameQuiz.setSelectionVisible('drops',false)
+end
 function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
@@ -138,13 +146,13 @@ function D.frame(scene)
         for i,p in ipairs(ps) do s.active.previous[i]={x=p.x,y=p.y} end
     end
     local row=s.active;if not row then return false end
+    row.previous=row.previous or {}
     local oldAge=row.age;row.age=row.age+1
     GameQuiz.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
     local count=(GameNet and GameNet.host()) and 2 or 1;local complete=true
     for i=1,count do
         local p=ps[i]
         if controllable(p) then
-            GameQuiz.move(p,p.key or KeyState)
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
                 local choice=GameQuiz.contact(previous,p,oldAge,row.age,2)
@@ -153,12 +161,13 @@ function D.frame(scene)
                     PlaySound('item00',0.5)
                 end
             end
-            row.previous[i]={x=p.x,y=p.y}
         end
+        if p and IsValid(p) then row.previous[i]={x=p.x,y=p.y} end
         if not row.picks[i] then complete=false end
     end
     if complete or row.age>=D.TIME then GameQuiz.clearSelection('drops',true);s.active=nil end
-    return true
+    -- 掉落只叠加演出与接取，不接管自机，也不要求调用方停止战斗。
+    return false
 end
 local function number(value)
     return (string.format('%.2f',value):gsub('%.?0+$',''))

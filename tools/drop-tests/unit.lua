@@ -198,7 +198,9 @@ local function pick(up,coop)
     local ps={p};if coop then local q=hero(reimu_player,2);q.x=96;q.y=-176;q.key={};ps[2]=q;GameNet={host=function() return true end,players=ps} end
     player=p;KeyState={up=up};p.key=KeyState
     D.award(boss(70));lstg.var.upgrades.queue[1].options={1,2}
-    for i=1,Q.TIME do D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
+    for i=1,Q.TIME do
+        for _,unit in ipairs(ps) do unit.timer=unit.timer+1;unit._playersys:frame() end
+        D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
     error('掉落未在原卡 500 帧内结束')
 end
 reset();p=hero(reimu_player);D.award(boss(69));D.frame(stage.current_stage)
@@ -231,23 +233,50 @@ drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text
 check(table.concat(text,'|'):find('P1 火力 105',1,true) and table.concat(text,'|'):find('P2 火力 100',1,true),'右侧 HUD 显式显示两位玩家数值')
 -- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
 reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
-p.death=0;check(D.frame(stage.current_stage),'重生后开始选择')
+p.death=0;check(not D.frame(stage.current_stage) and D.active(),'重生后叠加选择，但不接管战斗')
 check(D.active(),'下落选择状态可供暂停流程识别');stage.current_stage.is_menu=true;drawn={};D.render()
 check(not D.active() and #drawn==0,'回标题或切换存档后不会在菜单继续画旧选项');stage.current_stage.is_menu=false
--- 使用正式 DoFrame，选择时冻结战斗，仍记录输入；结束后恢复。
-reset();p=hero(reimu_player);p.x=-96;KeyState={};D.award(boss(73));lstg.var.upgrades.queue[1].options={1,2}
-local physics,recorded,rank=0,0,0
+-- 使用正式 DoFrame：选择期间世界正常前进，自机仍按原系统只移动 / 射击一次。
+reset();p=hero(reimu_player);p.x=-96;KeyState={up=true,shoot=true};p.key=KeyState
+D.award(boss(73));lstg.var.upgrades.queue[1].options={1,2}
+local physics,recorded,rank,collisions=0,0,0,0;local phase
 SaveResume={beforeLogic=function() return true end,afterLogic=function() recorded=recorded+1 end}
 GameRevive={active=function() return false end,frame=function() return false end};GameRank={step=function() rank=rank+1 end,beforeObjects=noop,afterObjects=noop}
-GetInput=noop;GetCurrentSuperPause=function() return 0 end;stage.current_stage.frame=noop;stage.current_stage.timer=0
-lstg.system={frame=noop};ObjFrame=function() physics=physics+1 end;UpdateXY=noop;AfterFrame=noop;BoundCheck=noop;CollisionCheck=noop
+GetInput=function() phase='input' end;GetCurrentSuperPause=function() return 0 end;stage.current_stage.frame=noop;stage.current_stage.timer=0
+lstg.system={frame=noop}
+ObjFrame=function()
+    physics=physics+1;phase='physics'
+    if GetCurrentSuperPause()<=0 then p.timer=p.timer+1;p._playersys:frame() end
+end
+UpdateXY=noop;AfterFrame=noop;BoundCheck=noop
+CollisionCheck=function() collisions=collisions+1;phase='collision' end
 ext={notUIdraw=false,boss_ui={frame=noop},GetPauseMenuOrder=noop}
 local f=assert(io.open(root..'/THlib/ext/ext.lua','rb'));local code=f:read('*a');f:close()
 local first=assert(code:find('local function DoFrame()',1,true));local last=assert(code:find('_G.DoFrame = DoFrame',first,true))
 local tick=assert(loadstring(code:sub(first,last-1)..'\nreturn DoFrame'))()
+local update=D.frame
+D.frame=function(scene) check(phase=='collision','掉落在正常物理和碰撞后更新');return update(scene) end
+local y=p.y;tick();check(near(p.y,y+p.hspeed),'叠加掉落不额外移动自机')
+for _=1,12 do tick() end
+local shotCount=0;for _,o in ipairs(objects) do if o.group==GROUP.PLAYER_BULLET then shotCount=shotCount+1 end end
+check(D.active() and shotCount>0 and physics==13 and stage.current_stage.timer==13 and rank==13 and collisions>0,'选项下落期间仍正常移动、射击、碰撞、计时和增长Rank')
+-- 超级暂停沿用游戏规则，掉落自身不建立新的暂停。
+local age=lstg.var.upgrades.active.age;GetCurrentSuperPause=function() return 1 end;tick()
+check(lstg.var.upgrades.active.age==age,'超级暂停时不额外推进掉落')
+GetCurrentSuperPause=function() return 0 end
 while lstg.var.upgrades.active or #lstg.var.upgrades.queue>0 do tick() end
-check(physics==0 and rank==0 and stage.current_stage.timer==0 and recorded>0,'选择期间冻结敌弹、Boss、Rank，但保留逻辑输入记录')
-tick();check(physics==1 and rank==1 and stage.current_stage.timer==1,'接取后恢复战斗')
+check(rank==stage.current_stage.timer and recorded==physics and rank==physics-1,'选择完成前后战斗与输入持续前进，仅尊重原超级暂停')
+local previous=physics;tick();check(physics==previous+1,'接取完成后继续正常战斗')
+D.frame=update;GameRank=nil
+-- 答题复活冻结原战斗时隐藏掉落，结束后原进度恢复且不把传送算作接取。
+reset();p=hero(reimu_player);D.award(boss(74));D.frame(stage.current_stage)
+local row=lstg.var.upgrades.active;local board=Q.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
+local age=row.age;p.x=-100;p.y=-200;D.suspend()
+check(board.walls[1].hide and board.labels[1].hide and row.age==age and row.previous[1].y==-200,'复活答题隐藏选项并保持下落进度，同步自机位置')
+D.frame(stage.current_stage);check(not board.walls[1].hide and not board.labels[1].hide and row.age==age+1,'答题结束恢复叠加掉落')
+-- 中弹先于拾取结算，本帧已死亡的自机不能因为穿过横线获得强化。
+row.age=400;p.y=Q.top(401);row.previous[1]={x=p.x,y=p.y};p.death=90
+D.frame(stage.current_stage);check(not row.picks[1],'死亡状态不能接取正在下落的强化')
 lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.values(1);D.power(1);D.rate(1);D.signature();check(Serialize(lstg.var)==before,'零帧 HUD 与签名只读')
 lstg.var.__drops_version=nil;check(D.power(1)==1 and D.rate(1)==1,'旧录像没有版本标记时保持原倍率')
 -- 正式符卡名组件：保留底部上移入场，进度栏 / 三维对象不能改变屏幕锚点。

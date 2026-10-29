@@ -187,7 +187,7 @@ local function DoFrame()
     --刷新输入
     GetInput()
     if GameNet then GameNet.beforeLogic() end
-    if (GameRevive.active() or (GameDrops and GameDrops.active())) and ext.GetPauseMenuOrder() then
+    if GameRevive.active() and ext.GetPauseMenuOrder() then
         stage.group.frame_pause(stage.current_stage)
         if stage.next_stage then
             if SaveResume then SaveResume.afterLogic() end
@@ -195,10 +195,7 @@ local function DoFrame()
         end
     end
     if (GameNet and GameNet.quiz or function(fn,s) return fn(s) end)(GameRevive.frame,stage.current_stage) then
-        if SaveResume then SaveResume.afterLogic() end
-        return
-    end
-    if GameDrops and GameDrops.frame(stage.current_stage) then
+        if GameDrops then GameDrops.suspend() end
         if SaveResume then SaveResume.afterLogic() end
         return
     end
@@ -212,6 +209,7 @@ local function DoFrame()
         task.Do(stage.current_stage)
         -- 主线过关限制也可能在关卡协程内触发答题，本帧立即停止物理更新。
         if GameRevive.active() then
+            if GameDrops then GameDrops.suspend() end
             if SaveResume then SaveResume.afterLogic() end
             return
         end
@@ -247,6 +245,8 @@ local function DoFrame()
         ck(GROUP.SPELL, GROUP.INDES)
         ck(GROUP.SPELL, GROUP.LASER)
     end
+    -- 使用本帧正常移动和碰撞后的自机位置接取，掉落不冻结关卡或额外移动自机。
+    if nopause and GameDrops then GameDrops.frame(stage.current_stage) end
     UpdateXY()
     AfterFrame()
     if SaveResume then SaveResume.afterLogic() end

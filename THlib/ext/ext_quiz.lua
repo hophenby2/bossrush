@@ -104,6 +104,14 @@ function Q.spawn(text,choices,manual)
     return board
 end
 local selections={}
+function Q.setSelectionVisible(key,visible)
+    local cached=selections[key];if not cached or cached.visible==visible then return end
+    cached.visible=visible
+    local board=cached.board
+    local function show(o) if o and IsValid(o) then o.hide=not visible end end
+    show(board.question);for _,o in ipairs(board.labels) do show(o) end
+    for _,o in ipairs(board.walls) do show(o) end
+end
 function Q.selection(key,state,text,choices,alpha)
     local cached=selections[key]
     if not cached or cached.state~=state or not IsValid(cached.board.walls[1]) then
@@ -120,13 +128,14 @@ function Q.selection(key,state,text,choices,alpha)
     for i,o in ipairs(board.walls) do
         o.y=Q.TOP-(i<=33 and 0 or ((i-34)%8+1)*Q.STEP)-offset;o._a=alpha*255
     end
+    Q.setSelectionVisible(key,true)
     return board
 end
 function Q.clearSelection(key,fading)
     local cached=selections[key];if not cached then return end
     local board=cached.board;selections[key]=nil
     for _,o in ipairs(board.walls) do if IsValid(o) then if fading then Del(o) else object.RawDel(o) end end end
-    -- 下一组选择仍会冻结 ObjFrame，文字不能留给普通协程淡出，否则会与下一组重叠。
+    -- 结束时一起移除文字，避免与下一组下落选项重叠。
     local function remove(o) if o and IsValid(o) then object.RawDel(o) end end
     remove(board.question);for _,o in ipairs(board.labels) do remove(o) end
 end

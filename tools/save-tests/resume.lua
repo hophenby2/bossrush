@@ -68,8 +68,8 @@ local function step()
     if not R.beforeLogic() then return end
     GetInput()
     if withRevive then
-        if stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true;if withRank then GameRank.miss() end end
-        if GameRevive.frame(stage.current_stage) then R.afterLogic();return end
+        if not withDrops and stage.current_stage.timer==80 and not lstg.var.test_missed then lstg.var.dead=10;lstg.var.test_missed=true;if withRank then GameRank.miss() end end
+        if GameRevive.frame(stage.current_stage) then if withDrops then GameDrops.suspend() end;R.afterLogic();return end
     end
     if withDrops then
         if stage.current_stage.timer==45 and not lstg.var.test_drop then
@@ -77,7 +77,6 @@ local function step()
             local card={card_id=998,is_combat=true};local b={is_combat=true,current_card=card,otherboss={}}
             GameDrops.beginCard(b,card);GameDrops.award(b)
         end
-        if GameDrops.frame(stage.current_stage) then R.afterLogic();return end
         GameDrops.playerStep(hero)
         GameDrops.shoot(hero,function(p)
             if p.timer%4==0 then objects[#objects+1]={_live=true,group=3,x=p.x,y=p.y,vx=0,vy=3,rot=0,timer=0,hp=1} end
@@ -97,6 +96,7 @@ local function step()
     local ok,err=coroutine.resume(worker);assert(ok,err)
     for _,obj in ipairs(objects) do obj.x=obj.x+((obj.group==2 or (withRank and obj~=hero)) and obj.vx or 0);obj.y=obj.y+(obj.vy or 0);obj.timer=obj.timer+1 end
     if withRank then GameRank.afterObjects() end
+    if withDrops then GameDrops.frame(stage.current_stage) end
     if stage.current_stage.timer%5==0 then scoredata.money=scoredata.money+1;CurrentMoney=scoredata.money+offset;spell_card_data[1].reimu[2]=spell_card_data[1].reimu[2]+1 end
     lstg.var.score=stage.current_stage.timer*10;R.afterLogic()
 end
@@ -222,7 +222,7 @@ lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,
 stage.current_stage=stage.stages.menu;stage.next_stage=nil;stage.Set('save',stageObject.stage_name);initialize()
 keys={[39]=true};last=0
 for i=1,62 do step() end
-check(lstg.var.upgrades.active and lstg.var.upgrades.active.age==17 and stageObject.timer==45,'选择期间关卡冻结，输入逻辑帧继续')
+check(lstg.var.upgrades.active and lstg.var.upgrades.active.age==17 and stageObject.timer==62,'掉落叠加期间关卡与输入逻辑帧同步前进')
 check(R.flush('drops-active'),'掉落中途保存')
 local activeDropSignature=R.signature();local activeDrop=Serialize(lstg.var.upgrades)
 coldRestore();check(R.signature()==activeDropSignature and Serialize(lstg.var.upgrades)==activeDrop,'下落位置、候选项、玩家数值和射击时钟冷重建一致')
