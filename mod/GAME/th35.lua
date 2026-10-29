@@ -9187,12 +9187,15 @@ end
 function s2.MBossDummyShadow(o) while true do task.Wait(1) end end
 function s2.BossDummyShadow(o)  while true do task.Wait(1) end end
 
----BossTrace：每帧把 offsetMotion 设成自机坐标（原作 moveBoss = COPY_PLAYER_TO_OFFSET）。
+---BossTrace：op294 / moveBoss 复制 specialEnemySlots[0] 的世界坐标。
+---复原源码把这个 opcode 命名为 COPY_PLAYER_TO_OFFSET，但其实际读的是 EnemyManager
+---+0x10 的 Boss 槽（EnemyEclDispatcher.cpp 的 dispatch_copy_player_to_motion）。
 ---★ 第一帧不执行（ECL 是 jmp 到 jmpNeq 再回跳到 t=1 的组），所以 Wait 在前。
 function s2.BossTrace(o)
     while true do
         task.Wait(1)
-        m_pos(o, "off", player.x, t10_oy(player.y))
+        local b = o.t10_bossref
+        if b and IsValid(b) then m_pos(o, "off", b.ecs.wx, b.ecs.wy) end
     end
 end
 
@@ -9514,7 +9517,7 @@ function s2.BossCard3(o)
     end
 end
 
----BossAtEnemy3：子机。offset 被 BossTrace 钉在自机身上，base 走圆：
+---BossAtEnemy3：子机。offset 被 BossTrace 钉在 Boss 身上，base 走圆：
 ---  t=0 起半径 0→（1/帧）、角 %F0、角速度 %F1；t=80 换成「起始角 %F0−π、半径 80、半径速度 0」。
 ---  之后每 7 帧两枪：
 ---    ① 只有自机在 BOSS 下方（%PLAYER_Y2 ≥ %BOSS_Y）时打：角 %RANDRAD/6（视觉用）；

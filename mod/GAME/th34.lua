@@ -9483,7 +9483,7 @@ local function TH34_add_stage56_boss()
             f5 = f5 + 0.19635
         end
         for k = 0, 4 do
-            ls[#ls + 1] = plaser(self.x, self.y, -p0 * RAD2DEG, {
+            ls[#ls + 1] = plaser(self.x, self.y, -p0, {
                 spr = 1, w = 32, sOff = 24, eOff = 540, sLen = 540,
                 tStart = 120, dur = 270 + 10 * k, tEnd = 30, hbStart = 100, hbEnd = 20 })
         end
@@ -9497,7 +9497,7 @@ local function TH34_add_stage56_boss()
                     local o = ls[k]
                     if IsValid(o) then
                         ---TH07 的角 θ → 我们的角 −θ（同文件头口径）。
-                        o.pl_ang = -(p0 + (p1[k] - p0) * e) * RAD2DEG
+                        o.pl_ang = -(p0 + (p1[k] - p0) * e)
                     end
                 end
                 task.Wait(1)
@@ -10462,7 +10462,7 @@ local function TH34_add_stage56_boss()
             for k = 1, i30 do
                 local ang = mirror and (f0 - PI / 3) or (f0 + PI / 3)
                 ang = norms6(ang)
-                live[k] = plaser(self.x, self.y, -ang * RAD2DEG, {
+                live[k] = plaser(self.x, self.y, -ang, {
                     spr = 1, w = 16, sOff = 64, eOff = 448, sLen = 448,
                     tStart = 120, dur = 120, tEnd = 60, hbStart = 90, hbEnd = 30 })
                 f0 = norms6(f0 + f1)
@@ -10482,7 +10482,8 @@ local function TH34_add_stage56_boss()
                     prev = cur
                     for k = 1, i30 do
                         local o = live[k]
-                        if IsValid(o) then o.pl_ang = o.pl_ang + d * RAD2DEG end
+                        ---pl_ang 始终是我们的弧度；原作 y 向下，差分也必须取反。
+                        if IsValid(o) then o.pl_ang = o.pl_ang - d end
                     end
                     task.Wait(1)
                 end

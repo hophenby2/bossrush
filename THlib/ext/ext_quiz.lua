@@ -26,8 +26,8 @@ function Q.answer(x,count)
     return math.max(1,math.min(count,1+math.floor((x+192)/(384/count))))
 end
 function Q.fall(n) return n<0.5 and n*1.3 or -1.2*n*n+2.5*n-0.3 end
-function Q.offset(age) return Q.FALL*Q.fall(math.max(0,math.min(1,age/Q.TIME))) end
-function Q.top(age) return Q.TOP-Q.offset(age) end
+function Q.offset(age,duration) return Q.FALL*Q.fall(math.max(0,math.min(1,age/(duration or Q.TIME)))) end
+function Q.top(age,duration) return Q.TOP-Q.offset(age,duration) end
 function Q.wrap(text,width)
     local lines,row,length={},'',0
     for char in text:gmatch('[%z\1-\127\194-\244][\128-\191]*') do
@@ -122,7 +122,7 @@ function Q.selection(key,state,text,choices,alpha)
         if not ok then error(board,0) end
         cached={state=state,board=board};selections[key]=cached
     end
-    local board=cached.board;local offset=Q.offset(state.age);alpha=alpha or 1
+    local board=cached.board;local offset=Q.offset(state.age,state.duration);alpha=alpha or 1
     if board.question then board.question.y=Q.QUESTION_Y-offset;board.question.alpha=alpha end
     for _,o in ipairs(board.labels) do o.y=Q.CHOICE_Y-offset;o.alpha=alpha end
     for i,o in ipairs(board.walls) do
@@ -150,14 +150,14 @@ function Q.move(p,key)
     if p.sp then for _,v in ipairs(p.sp) do v[1]=v[1]+p.x-x;v[2]=v[2]+p.y-y end end
     p.supportx=(p.supportx or x)+p.x-x;p.supporty=(p.supporty or y)+p.y-y
 end
-function Q.contact(previous,p,oldAge,age,count)
+function Q.contact(previous,p,oldAge,age,count,duration)
     local radius=6+math.max(p.A or 0,p.B or 0,3)
-    local a,b=previous.y-Q.top(oldAge),p.y-Q.top(age)
+    local a,b=previous.y-Q.top(oldAge,duration),p.y-Q.top(age,duration)
     if math.min(a,b)<=radius and math.max(a,b)>=-radius then
         local t=b~=a and math.max(0,math.min(1,(-radius-a)/(b-a))) or 1
         return Q.answer(previous.x+(p.x-previous.x)*t,count)
     end
-    if age>=Q.TIME then return Q.answer(p.x,count) end
+    if age>=(duration or Q.TIME) then return Q.answer(p.x,count) end
 end
 GameQuiz=Q
 return Q

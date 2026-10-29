@@ -1,5 +1,5 @@
 -- 击破阶段后的弹幕二选一。成长和选择过程都保存在 var 中，供录像与关内恢复重建。
-local D={VERSION=1,UNIT=100,TIME=500,MIN=100,MAX=100000}
+local D={VERSION=1,UNIT=100,TIME=2*60,MIN=100,MAX=100000}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -103,7 +103,7 @@ function D.award(b)
         local seen=rawget(other,'_drop_awards') or {};seen[id]=math.max(seen[id] or 0,phase);rawset(other,'_drop_awards',seen)
     end
     mark(b);for _,other in ipairs(b.otherboss or {}) do mark(other) end
-    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(s.seed,s.count),age=0,picks={false,false}}
+    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(s.seed,s.count),age=0,duration=D.TIME,picks={false,false}}
     return true
 end
 function D.apply(slot,option)
@@ -121,7 +121,7 @@ end
 local function controllable(p)
     return p and IsValid(p) and not p.lock and not p.dialog and not p.realrealreal_lock and not p.hide and (p.death or 0)==0
 end
-function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age) end
+function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age,row.duration or D.TIME) end
 function D.suspend()
     local s=peek();local row=s and s.active
     if not row then return end
@@ -146,6 +146,8 @@ function D.frame(scene)
         for i,p in ipairs(ps) do s.active.previous[i]={x=p.x,y=p.y} end
     end
     local row=s.active;if not row then return false end
+    -- 仅击破掉落使用 120 帧；复活答题和原 Special 仍沿用它们自己的时长。
+    row.duration=row.duration or D.TIME
     row.previous=row.previous or {}
     local oldAge=row.age;row.age=row.age+1
     GameQuiz.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
@@ -155,7 +157,7 @@ function D.frame(scene)
         if controllable(p) then
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
-                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2)
+                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2,row.duration)
                 if choice then
                     row.picks[i]=choice;D.apply(i,row.options[choice]);p.protect=math.max(p.protect or 0,60)
                     PlaySound('item00',0.5)
@@ -165,7 +167,7 @@ function D.frame(scene)
         if p and IsValid(p) then row.previous[i]={x=p.x,y=p.y} end
         if not row.picks[i] then complete=false end
     end
-    if complete or row.age>=D.TIME then GameQuiz.clearSelection('drops',true);s.active=nil end
+    if complete or row.age>=row.duration then GameQuiz.clearSelection('drops',true);s.active=nil end
     -- 掉落只叠加演出与接取，不接管自机，也不要求调用方停止战斗。
     return false
 end
@@ -197,7 +199,7 @@ function D.signature()
     local out={'drops',s.seed,s.count}
     for _,p in ipairs(s.players) do out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',') end
     local function row(r)
-        out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],tostring(r.picks[1]),tostring(r.picks[2])},',')
+        out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],tostring(r.picks[1]),tostring(r.picks[2]),r.duration or D.TIME},',')
         for _,p in ipairs(r.previous or {}) do out[#out+1]=string.format('%.6f,%.6f',p.x,p.y) end
     end
     if s.active then row(s.active) else out[#out+1]='no-active' end

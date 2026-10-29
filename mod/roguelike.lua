@@ -179,7 +179,8 @@ local function runCards(self)
         local first=(index-1)*config.width+1
         local entry=run.cards[first]
         local unit=prepare(entry)
-        task.Wait(45)
+        -- 单 Boss 只保留首战入场；后续战在上一位死亡后立即创建。双 Boss 节奏不变。
+        if index==1 or config.width==2 then task.Wait(45) end
         local active,owners={},{}
         if config.width==2 then
             for side=1,2 do
@@ -203,7 +204,7 @@ local function runCards(self)
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
         run.completed=index
         if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_ROGUE: cleared '..index..'/'..R.COUNT..' '..entry.key) end
-        task.Wait(90)
+        if config.width==2 then task.Wait(90) end
     end
     R.finish(self,true)
 end

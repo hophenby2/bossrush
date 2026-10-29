@@ -97,7 +97,7 @@ local function simulate(seed,failRound,variant)
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
-        for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false end end end
+        for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false;entry.died=stage.current_stage.timer end end end
         if failRound and lstg.var.rogue_run.current==failRound then lstg.var.dead=R.MISS_LIMIT end
         if stage.next_stage then break end
     end
@@ -106,6 +106,9 @@ end
 local battle,run=simulate(100)
 check(stage.next_stage==stage.stages[R.RESULT] and run.won and run.completed==10,'十战完成进入成功结算')
 check(#spawned==10,'每次只运行抽中的一张卡，共十张')
+for i=2,#spawned do
+    check(spawned[i].tick==spawned[i-1].died,'单 Boss 随机十战死亡后立即创建下一位，没有两战之间的固定等待')
+end
 check(not spawned[1].obj.__NoCleanBullet,'普通随机十战沿用原有 Boss 自动消弹开关')
 for i,entry in ipairs(spawned) do local e=run.cards[i];check(entry.card==_sc_pr_table[e.level][e.index].sc_group[1].card,'运行原始卡对象') end
 check(cleared==1,'完成清理续玩点')
