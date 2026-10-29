@@ -155,6 +155,8 @@ local function runCards(self)
             local unit=prepare(entry)
             if index==1 then task.Wait(45) end
             local active=spawnSingle(unit)
+            -- 旧 Boss 死亡时不能清掉仍在战斗的其他 Boss 弹幕，结算 / 爆炸共用此开关。
+            for _,b in ipairs(active) do b.__NoCleanBullet=true end
             if previous then holdChainGhost(self,previous,active) end
             previous=active
             while true do

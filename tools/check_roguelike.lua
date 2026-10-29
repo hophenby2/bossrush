@@ -105,6 +105,7 @@ end
 local battle,run=simulate(100)
 check(stage.next_stage==stage.stages[R.RESULT] and run.won and run.completed==10,'十战完成进入成功结算')
 check(#spawned==10,'每次只运行抽中的一张卡，共十张')
+check(not spawned[1].obj.__NoCleanBullet,'普通随机十战沿用原有 Boss 自动消弹开关')
 for i,entry in ipairs(spawned) do local e=run.cards[i];check(entry.card==_sc_pr_table[e.level][e.index].sc_group[1].card,'运行原始卡对象') end
 check(cleared==1,'完成清理续玩点')
 stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
@@ -127,6 +128,7 @@ end
 for _=1,150 do chainTick() end
 check(#spawned==1,'接续模式：先创建第一张')
 local first=spawned[1].obj
+check(first.__NoCleanBullet==true,'接续首个 Boss 禁止击破结算和死亡爆炸自动全屏消弹')
 first.hp=16;chainTick();check(#spawned==1,'接续模式：16% 仍等待')
 first.ui={};first.hp=15;chainTick()
 check(#spawned==2 and IsValid(first) and first.ui.no_infobar and first.NotPlayTimeOutSound,'接续模式：15% 创建下一张、旧 Boss 保留并静默旧 UI')
@@ -144,9 +146,37 @@ while #spawned<10 do
     chainTick()
 end
 check(#spawned==10 and run and lstg.var.rogue_run.completed==9,'接续模式：创建满十张')
+for _,entry in ipairs(spawned) do check(entry.obj.__NoCleanBullet==true,'接续后续 Boss 均继承不消弹开关') end
 local last=spawned[10].obj;last.hp=last.maxhp*R.CHAIN_HP;chainTick()
 run=lstg.var.rogue_run
 check(stage.next_stage==stage.stages[R.modes.chain.result] and run.won and run.completed==10,'接续模式：第十张达到阈值后成功结算')
+-- 使用正式 Boss 系统函数验证两种自动清屏，而不是只检查接续对象上的标记。
+local f=assert(io.open('THlib/enemy/boss_system.lua','rb'));local bossSource=f:read('*a');f:close()
+local system={}
+for _,name in ipairs({'explode','popResult'}) do
+    local a=assert(bossSource:find('function system:'..name..'(',1,true))
+    local b=assert(bossSource:find('\nfunction system:',a+1,true))
+    assert(loadstring('local system=...\n'..bossSource:sub(a,b-1)))(system)
+end
+local oldNew,oldDel=New,object.Del
+local cleaners=0
+New=function(class) if class==bullet_cleaner then cleaners=cleaners+1 end end
+object.Del=function(o) o._live=false end
+local function cleanCount(name,disabled)
+    cleaners=0
+    local b={_live=true,x=0,y=0,timer=0,hp=100,sc_left=1,is_combat=true,
+        __NoCleanBullet=disabled,__dieinstantly=true,__no_drop_explode_cherry=true}
+    local sys={boss=b,popSpellResult=function() end,popResult=function() end,
+        setIsSpellcard=function() end,setSCName=function() end,setIsWaiting=function() end}
+    system[name](sys,false)
+    if name=='explode' then task.Do(b) end
+    return cleaners
+end
+for _,name in ipairs({'explode','popResult'}) do
+    check(cleanCount(name,first.__NoCleanBullet)==0,'接续真实结算不创建全屏消弹器：'..name)
+    check(cleanCount(name,nil)==1,'普通真实结算仍创建全屏消弹器：'..name)
+end
+New,object.Del=oldNew,oldDel
 print(('随机十战回归通过：%d 项；TH31=%d、TH34=%d、TH35=%d；含接续模式阈值与重叠生成。'):format(total,counts.TH31,counts.TH34,counts.TH35))
 
 if checkDual then
