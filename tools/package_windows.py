@@ -76,5 +76,5 @@ Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.10.2')
+    parser.add_argument('--version',default='0.10.3')
     package(parser.parse_args().version)
