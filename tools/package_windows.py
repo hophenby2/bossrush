@@ -39,7 +39,7 @@ def package(version):
 使用 Windows 10 / 11 x64 及支持 Direct3D 11 的显卡。
 
 主菜单：随机十战 / 接续模式 / 双Boss随机十战。
-接续模式在当前 Boss 剩余 HP ≤15% 或剩余时间 <3秒时推进；旧 Boss 继续存活，下一张先用 GHOST 碰撞组等旧 Boss 退出。
+接续模式在当前 Boss 剩余 HP ≤15% 或剩余时间 <3秒时推进；旧 Boss 继续存活，下一张先用 GHOST 碰撞组等旧 Boss 退出。接续模式不掉落强化选项。
 双模式每步同时运行两张不同卡，十步共二十张，允许同角色。
 Boss 出场、开卡初始化及第一段指定位置移动按原 X+96 / X-96、原 Y；后续移动沿用原卡。
 两张卡全部结束后推进；第十次失误触发答题复活，每局最多成功三次。
@@ -76,5 +76,5 @@ Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.10.0')
+    parser.add_argument('--version',default='0.10.1')
     package(parser.parse_args().version)

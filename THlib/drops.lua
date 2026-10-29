@@ -8,6 +8,9 @@ D.pool={
     {{'red','mul',6,5},{'blue','mul',9,10}},{{'red','mul',9,10},{'blue','mul',6,5}},
 }
 local function fresh() return {red=10000,blue=10000,clock=-1,fraction=0} end
+local function allowDrops()
+    return not (lstg.var.rogue_run and lstg.var.rogue_run.mode=='chain')
+end
 function D.enabled() return lstg.var.__drops_version==D.VERSION end
 function D.reset()
     lstg.var.upgrades=D.enabled() and {version=D.VERSION,seed=lstg.var.ran_seed or 1,count=0,players={fresh(),fresh()},queue={}} or nil
@@ -86,6 +89,7 @@ function D.draw(seed,index)
     return {a,b}
 end
 function D.award(b)
+    if not allowDrops() then return false end
     local s=ensure()
     if not s or not b.is_combat or b.cannot_kill or b._drop_awarded or (b.timeout and not b.time_sc) then return false end
     if not b.current_card or b.current_card.is_combat==false then return false end
@@ -120,6 +124,11 @@ function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age) end
 function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
+    if not allowDrops() then
+        -- 兼容已有检查点中排队 / 正在下落的选项，接续战斗不再为强化选择冻结。
+        if s.active or #s.queue>0 then s.active=nil;s.queue={} end
+        GameQuiz.clearSelection('drops',true);return false
+    end
     local ps=players()
     if not s.active and #s.queue>0 then
         -- 死亡、对话或过场仍正常推进，等两位玩家都能移动后再开始下落。
