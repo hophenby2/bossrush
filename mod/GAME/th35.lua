@@ -174,9 +174,9 @@ local TH35_REIMU_HP = {
     [ 3625] = 5219, [ 3642] = 355, [ 3630] = 706, [ 3643] = 507,
     [ 3631] = 941, [ 3644] = 507, [ 3632] = 941, [ 3633] = 984,
     [ 3645] = 532, [ 3634] = 1155, [ 3646] = 675, [ 3635] = 1155,
-    [ 3636] = 1155, [ 3647] = 844, [ 3637] = 5518, [ 3648] = 844,
-    [ 3638] = 5304, [ 3649] = 675, [ 3639] = 4449, [ 3650] = 675,
-    [ 3640] = 4449, [ 3641] = 1283, [ 3600] = 3508,
+    [ 3636] = 1155, [ 3647] = 844, [ 3637] = 2900, [ 3648] = 844,
+    [ 3638] = 2400, [ 3649] = 675, [ 3639] = 2400, [ 3650] = 675,
+    [ 3640] = 2400, [ 3641] = 1283, [ 3600] = 3508,
 }
 
 ---弹（BossCard5_atN / at2 共用）
@@ -1108,7 +1108,10 @@ local function circle_pos(angle, r) return math.cos(angle) * r, math.sin(angle) 
 ---本关所有 ECL 子机（含每个 BOSS 的载体）。卡片结束时统一清掉，
 ---否则枪/使魔会跨卡残留（原作靠 killAllAsync/enmKillAll + 敌机系统回收）。
 local T10_PODS = {}
-local function t10_track(o) T10_PODS[#T10_PODS + 1] = o end
+local function t10_track(o, owner)
+    if owner then o.t10_root = owner.t10_root or owner end
+    T10_PODS[#T10_PODS + 1] = o
+end
 
 ---停掉一个 ECL 载体：先清掉挂在它名下的协程，再删对象。
 ---★ 真引擎删对象时会连带停掉它的 task；自检工具的调度器不看对象死活，
@@ -1119,21 +1122,30 @@ local function t10_kill_pod(o)
     if IsValid(o) then object.RawDel(o) end
 end
 
-local function t10_clear_pods()
-    for i = 1, #T10_PODS do
-        t10_kill_pod(T10_PODS[i])
+local function t10_clear_pods(root)
+    for i = #T10_PODS, 1, -1 do
+        local o = T10_PODS[i]
+        if o.t10_root == root then
+            t10_kill_pod(o)
+            table.remove(T10_PODS, i)
+        elseif not IsValid(o) then
+            table.remove(T10_PODS, i)
+        end
     end
-    T10_PODS = {}
 end
 
----enmKillAll：清掉当前所有 ECL 子机（可保留一个调用者）。
+---原作只有一个阶段；接续战会让两个阶段重叠，清场只能作用于调用者所属的卡。
+---否则旧卡 del / enmKillAll 会删除新卡载体，「一子相传」连 t=90 的枪都启动不了。
 local function t10_enm_kill_all(keep)
-    for i = 1, #T10_PODS do
+    for i = #T10_PODS, 1, -1 do
         local o = T10_PODS[i]
-        if o ~= keep then t10_kill_pod(o) end
+        if o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser then
+            t10_kill_pod(o)
+            table.remove(T10_PODS, i)
+        elseif not IsValid(o) then
+            table.remove(T10_PODS, i)
+        end
     end
-    T10_PODS = {}
-    if keep ~= nil and IsValid(keep) then T10_PODS[1] = keep end
 end
 
 ---spawn_pod / spawn_pod_rel：叫一个 ECL 子机（原名 enmCreateA / enmCreate）。
@@ -1149,6 +1161,7 @@ end
 
 class["th10_ecs_pod"] = Class(object, {
     init = function(self, origin, x, y, sub)
+        self.t10_root = origin and origin.t10_root or self
         self.x, self.y = x, t10_oy(y)
         self.hide = true
         self.group, self.layer = GROUP.ENEMY, LAYER.ENEMY
@@ -1201,38 +1214,150 @@ local function rndrad() return ran:Float(-PI, PI) end    -- %RANDRAD
 ---delete：敌机自毁，连同它名下所有 ECL 线程一起停掉（原作 delete 就是销毁该敌机）。
 local function t10_delete(o) t10_kill_pod(o) end
 
----原作 laserOnA(color, type, angle, speed, initLen, maxLen, term, width)
----（EnemyEclDispatcher FIRE_LASER_A 的字段布局：angle@0x0c / max@0x10 / init@0x14 /
----  term@0x18 / width@0x1c / speed@0x20）。用 THlib 的 laser 画一根逐渐变长的直线光柱。
+---激光几何沿用 th31 的做法：对象放在光柱尾端，THlib 只负责画线和玩家判定。
+---TH10 LaserLine.cpp:Update 先增长到 maximumLength，下一帧才开始 position += velocity；
+---terminalDistance 是总行程，0 表示飞出边界才回收，不能用「长满后 30 帧」当寿命。
+---差异：光柱贴图用 THlib 代理；颜色、长度、速度、发射偏移与判定范围按原作保留。
+local function t10_new_laser(owner, cls, ...)
+    ---EnemyFireLaser（0x41C510）只有 256 槽，满槽时整根不生成。
+    ---与 th31 一样每个卡片实例独立计数；尤其不能让客星的反射分支无限分配对象。
+    local root, count = owner.t10_root or owner, 0
+    for i = #T10_PODS, 1, -1 do
+        local o = T10_PODS[i]
+        if not IsValid(o) then table.remove(T10_PODS, i)
+        elseif o.t10_root == root and o.IsLaser then count = count + 1 end
+    end
+    if count >= 256 then return end
+    local l = New(cls, ...)
+    t10_track(l, owner)
+    return l
+end
+
+local function t10_laser_geometry(self, width, active, straight)
+    local x, y, len = self.x, self.y, self.t10_len
+    local dx, dy = math.cos(-self.t10_ang), math.sin(-self.t10_ang)
+    local hitwidth = width * 0.5
+    if width >= 32 then hitwidth = width - (width + 16) * (straight and (1 / 3) or 0.5) end
+    ---LaserLine / LaserType1 都只判中间 80%；画面仍画整段矩形。
+    self.x, self.y = x + dx * len * 0.1, y + dy * len * 0.1
+    self.l1, self.l2, self.l3 = 0, len * 0.8, 0
+    self.w, self.colli = hitwidth, active and len > 16 and (straight or width > 3)
+    laser.frame(self)
+    self.x, self.y = x, y
+    self.l2, self.w = len, width
+end
+
 local th10_laser = Class(laser, {
-    init = function(self, x, y, ang, initlen, maxlen, speed, width)
-        laser.init(self, 1, x, y, -ang * RAD, 0, 0, 1, width or 32, 0, 0)
-        ---基准宽度：laser.init 已按第 8 参设好 w0（THlib/laser/laser.lua:51），
-        ---这里显式再写一次——frame 每帧要用它还原 self.w，也让字段审计看到 init 顶层赋值。
-        self.w0 = width or 32
-        self.t10_len = initlen
-        self.t10_max = maxlen
-        self.t10_spd = speed
-        self.t10_life = math.floor((maxlen - initlen) / (speed > 0 and speed or 1)) + 30
-        self.colli = true
-        self.bound = false
-        self.alpha = 1
-        self.w = width or 32
-        self.logclass = nil
+    init = function(self, x, y, kind, color, ang, initlen, maxlen, speed, term, width, program)
+        laser.init(self, t10_color(color, kind), x, y, -ang * RAD, 0, initlen, 0, width, 0, 0)
+        self.w0 = width
+        self.t10_len, self.t10_max, self.t10_initial = initlen, maxlen, initlen
+        self.t10_ang, self.t10_spd, self.t10_term = ang, speed, term
+        self.t10_kind, self.t10_color = kind, color
+        self.t10_traveled = initlen > 0 and 0.01 or 0
+        self.t10_age = 0
+        self.t10_program = program
+        self.t10_motion = { px = x, py = t10_oy(y), angle = ang, speed = speed,
+            vx = math.cos(ang) * speed, vy = math.sin(ang) * speed,
+            tp = program or {}, ti = 0, af = {}, st = {}, cull = 10, cancel = 0 }
+        self.colli, self.bound, self.alpha, self.w = true, false, 1, width
     end,
     frame = function(self)
-        self.t10_len = math.min(self.t10_max, self.t10_len + self.t10_spd)
-        self.l1, self.l2, self.l3 = 0, 0, self.t10_len
-        self.w = self.w0
-        laser.frame(self)
-        if self.timer > self.t10_life then object.RawDel(self) end
+        local m = self.t10_motion
+        m.px, m.py = self.x, t10_oy(self.y)
+        t10_tp_advance(m)
+        ---激光的反弹是从「头」另生一段，不能套用点弹的整弹镜像。
+        local bounce = m.af.bounce
+        m.af.bounce = nil
+        t10_tp_tick(m)
+        m.af.bounce = bounce
+        self.t10_ang, self.t10_spd, self.rot = m.angle, m.speed, -m.angle * RAD
+        if m.dead then object.RawDel(self) return end
+        if bounce then
+            local hx = m.px + math.cos(m.angle) * self.t10_len
+            local hy = m.py + math.sin(m.angle) * self.t10_len
+            local reflected
+            if hx < -192 or hx >= 192 then reflected = t10_wrap(-m.angle - PI)
+            elseif bounce ~= TK_BOUNCE_VAR and (hy < 0 or (hy >= 448 and bounce == TK_BOUNCE_ALL)) then
+                reflected = -m.angle
+            end
+            if reflected then
+                local spd = m.st.bounce.v0 >= 0 and m.st.bounce.v0 or m.speed
+                t10_new_laser(self, self.class, hx, t10_oy(hy), self.t10_kind, self.t10_color,
+                    reflected, self.t10_initial, self.t10_max, spd, self.t10_term, self.w0, self.t10_program)
+                m.af.bounce = nil
+            end
+        end
+        if self.t10_len < self.t10_max then
+            self.t10_len = math.min(self.t10_max, self.t10_len + self.t10_spd)
+        else
+            self.t10_traveled = self.t10_traveled + self.t10_spd
+            self.x, self.y = self.x + m.vx, self.y - m.vy
+            if self.t10_term > 0 and self.t10_traveled + self.t10_len > self.t10_term then
+                self.t10_len = self.t10_term - self.t10_traveled
+                self.t10_max = self.t10_len
+                if self.t10_len <= 0 then object.RawDel(self) return end
+            end
+        end
+        ---只要尾或头仍在场内就保留，长光柱不能按原点的 bound 回收。
+        local hx = self.x + math.cos(self.t10_ang) * self.t10_len
+        local hy = self.y - math.sin(self.t10_ang) * self.t10_len
+        local w = self.w0
+        local tail_out = self.x + w <= -192 or self.x - w >= 192 or self.y + w <= -224 or self.y - w >= 224
+        local head_out = hx + w <= -192 or hx - w >= 192 or hy + w <= -224 or hy - w >= 224
+        if self.t10_age >= 30 and tail_out and head_out then object.RawDel(self) return end
+        self.t10_age = self.t10_age + 1
+        t10_laser_geometry(self, self.w0, true, false)
     end,
 })
 
----laserOnA：在敌机世界位置生成一根光柱（原作 y 向下 ⇒ 引擎角度取负）
-local function t10_laser_on(o, color, kind, ang, speed, initlen, maxlen, term, width)
-    local wx, wy = o.ecs.wx, o.ecs.wy
-    New(th10_laser, wx, t10_oy(wy), ang, initlen, maxlen, speed, width)
+---laserOnA / laserOn 的发射点都读取 etOffset 的槽 0；带 Ex 的指令复制槽 0 的程序。
+local function t10_laser_on(o, kind, color, ang, speed, initlen, maxlen, term, width, with_pattern)
+    local p = o.pat[0]
+    local program
+    if with_pattern then
+        program = {}
+        for i, r in pairs(p.ex) do
+            program[i + 1] = tp_record(r.a, r.k, r.i0, r.i1, r.f0, r.f1)
+        end
+    end
+    return t10_new_laser(o, th10_laser, o.ecs.wx + p.ox, t10_oy(o.ecs.wy + p.oy),
+        kind, color, ang, initlen, maxlen, speed, term, width, program)
+end
+
+---laserStOn 是另一类激光：位置固定，以 wait/grow/hold/shrink 四段控制粗细与判定。
+---参数直接对应二进制 op413；它的默认长度增长速度是 8，与移动激光的 speed 无关。
+local th10_st_laser = Class(laser, {
+    init = function(self, x, y, kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
+        laser.init(self, t10_color(color, kind), x, y, -ang * RAD, 0, initlen, 0, width, 0, 0)
+        self.t10_ang, self.t10_len, self.t10_max = ang, initlen, maxlen
+        self.t10_wait, self.t10_grow, self.t10_hold, self.t10_shrink = wait, grow, hold, shrink
+        self.t10_state, self.t10_age = 3, 0
+        self.w, self.alpha, self.colli, self.bound = 2, 1, false, false
+    end,
+    frame = function(self)
+        self.t10_len = math.min(self.t10_max, self.t10_len + 8)
+        local state, t, w = self.t10_state, self.t10_age, self.w
+        if state == 3 then
+            if t >= self.t10_wait then state, t = 4, 0 end
+        elseif state == 4 then
+            if t >= self.t10_grow then state, t, w = 2, 0, self.w0
+            else w = self.w0 * t / self.t10_grow end
+        end
+        if state == 2 and t >= self.t10_hold then state, t = 5, 0 end
+        if state == 5 then
+            if t >= self.t10_shrink then object.RawDel(self) return end
+            w = self.w0 * (1 - t / self.t10_shrink)
+        end
+        self.t10_state, self.t10_age = state, t + 1
+        t10_laser_geometry(self, w, state == 4 or state == 2, true)
+    end,
+})
+
+local function t10_laser_st_on(o, kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
+    local p = o.pat[0]
+    return t10_new_laser(o, th10_st_laser, o.ecs.wx + p.ox, t10_oy(o.ecs.wy + p.oy),
+        kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
 end
 
 ---moveLimit：把世界位置夹进 [center ± size/2]（原作 moveLimit）
@@ -2291,11 +2416,11 @@ function s7.BossCard2_at(o, kind, phase)
     local e = 2.356194
     while true do
         local d = t10_wrap(e + c * math.sin(phase))
-        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0)
+        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0, true)
         phase = t10_wrap(phase + 0.034907)
         task.Wait(4)
         d = t10_wrap(e + c * math.sin(phase))
-        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0)
+        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0, true)
         phase = t10_wrap(phase + 0.034907)
         task.Wait(4)
     end
@@ -2307,11 +2432,11 @@ function s7.BossCard2_at2(o, kind, phase)
     local e = 0.785398
     while true do
         local d = t10_wrap(e - c * math.sin(phase))
-        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0)
+        t10_laser_on(o, 3, kind, d, 6.0, 0, 128.0, 0.0, 14.0, true)
         phase = t10_wrap(phase + 0.034907)
         task.Wait(4)
         d = t10_wrap(e - c * math.sin(phase))
-        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0)
+        t10_laser_on(o, 3, 15, d, 6.0, 0, 128.0, 0.0, 14.0, true)
         phase = t10_wrap(phase + 0.034907)
         task.Wait(4)
     end
@@ -2630,7 +2755,7 @@ function s7.BossCard6_at(o)
     local b = o.I0
     while true do                        -- +360: //360（60 + 300）
         task.Wait(60)
-        t10_laser_on(o, 3, b, 1.5707964, 8.0, 0, 320.0, 0.0, 16.0)
+        t10_laser_on(o, 3, b, 1.5707964, 8.0, 0, 320.0, 0.0, 16.0, true)
         task.Wait(300)
     end
 end
@@ -4060,7 +4185,7 @@ for _, e in ipairs(T10_CARDS) do
         p.t10_bossref = p
     end
     ---卡片结束时把本卡生成的枪/使魔载体一起清掉（原作靠 killAllAsync/enmKillAll + 敌机回收）。
-    c.del = function(self) t10_clear_pods() end
+    c.del = function(self) t10_clear_pods(self.th10carrier) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 
@@ -4114,7 +4239,7 @@ for _, e in ipairs(T10_CARDS_EX) do
         local p = t10_boss_start(self, main)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods() end
+    c.del = function(self) t10_clear_pods(self.th10carrier) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 
@@ -4359,7 +4484,7 @@ end
 ---  卫星收掉，不会随三段循环越积越多。参数见文件顶部的 SATS 表（R4/G4/B4 三条）。
 function s6.sat(master, e)
     local s = New(class["th35_sat"], master, e[2], e[3], e[4], e[5], e[6], e[7])
-    t10_track(s)
+    t10_track(s, master)
     return s
 end
 
@@ -4865,7 +4990,7 @@ for _, e in ipairs(s6.cards) do
         local p = t10_boss_start(self, main)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods() end
+    c.del = function(self) t10_clear_pods(self.th10carrier) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 --=====================================
@@ -8653,7 +8778,7 @@ function s1.BossCard2At1(o)
         local a = rndrad()                 -- 再 %RANDRAD（角度）
         local x, y = circle_pos(a, r)
         et_offset(o, 0, x, y)
-        t10_laser_on(o, 3, 13, ang, 2.0, 0.0, 512.0, 60.0, 16.0)   -- laserStOn（视觉近似）
+        t10_laser_st_on(o, 3, 13, ang, 0.0, 512.0, 60, 20, 60, 20, 16.0)
         ang = t10_wrap(ang + step)
     end
 end
@@ -8664,7 +8789,7 @@ function s1.BossCard2At1b(o)
     local step = 6.2831855 / cnt
     for _ = 1, cnt do
         et_offset(o, 0, 0.0, 0.0)
-        t10_laser_on(o, 3, 2, ang, 2.5, 0.0, 180.0, 0.0, 14.0)     -- laserOnA（视觉近似）
+        t10_laser_on(o, 3, 2, ang, 20.0, 0.0, 180.0, 0.0, 14.0)
         ang = t10_wrap(ang + step)
     end
 end
@@ -9781,7 +9906,7 @@ function s5.BossCard1_at(o)
     local ct = 0
     while true do                                -- L168（t=0）
         et_offset(o, 0, 128.0, 0.0)
-        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, 128.0, 0.0)
+        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, true)
         a4 = t10_wrap(a4 + 0.106272)
         ct = s_wait(ct, 4)                       -- //4
         ct = 0                                   -- jmpNeq(L168, 0)
@@ -9794,7 +9919,7 @@ function s5.BossCard1_at2(o)
     local ct = 0
     while true do                                -- L96（t=0）
         et_offset(o, 0, -128.0, 0.0)
-        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, -128.0, 0.0)
+        t10_laser_on(o, 3, 6, a4, 2.0, 0.0, 128.0, 0.0, 16.0, true)
         a4 = t10_wrap(a4 - 0.106272)
         ct = s_wait(ct, 4)
         ct = 0
@@ -9921,7 +10046,7 @@ end
 
 ---Boss2Et_at：enmCreateA 出来的「分海」子机。[4] 从 %RANDF×8 起每轮 +12，到 448 为止；
 ---  每轮在 ±224 处各放一根竖直长条激光（长度 = %F2 ± sin([24])×64，>0 才放），
----  [24] 每轮 −0.1309。激光是本移植的视觉近似（原作 laserStOn 的几何没搬）。
+---  [24] 每轮 −0.1309。激光按原作 laserStOn 的 1/10/30/1 帧四段状态机运行。
 function s5.Boss2Et_at(o)
     local v4  = rnd() * 8.0                      -- [4]
     local a24 = o.F0                             -- [24]
@@ -9936,12 +10061,12 @@ function s5.Boss2Et_at(o)
         et_offset(o, 0, -224.0, v4)
         local w12 = o.F2 + s8 * 64.0
         if w12 > 0 then
-            t10_laser_on(o, 8, 6, 0.0, 0.0, w12, w12, 0.0, 32.0, -224.0, v4)
+            t10_laser_st_on(o, 8, 6, 0.0, w12, w12, 1, 10, 30, 1, 32.0)
         end
         et_offset(o, 0, 224.0, v4)
         w12 = o.F2 - s8 * 64.0
         if w12 > 0 then
-            t10_laser_on(o, 8, 6, 3.1415927, 0.0, w12, w12, 0.0, 32.0, 224.0, v4)
+            t10_laser_st_on(o, 8, 6, 3.1415927, w12, w12, 1, 10, 30, 1, 32.0)
         end
         v4 = v4 + 12.0
     end
@@ -10566,17 +10691,20 @@ local T10_CARDS_S125 = {
     { s2.BossCard3,  "創符「流刑人形」",             "8a", 3636, 1, 1, 2700 / 60, 2700 },
 
     -- stage05（早苗 中BOSS 非符+符卡 / 早苗 BOSS 三张非符 + 四张符卡）。
-    --   符卡的 HP = 卡开始时 BOSS 的 lifeSet；非符的 HP = 一相「进场 life − 收尾阈值」：
+    --   非符的 HP = 一相「进场 life − 收尾阈值」：
     --     早苗 MBoss 12900 − 2900 = 10000；早苗 Boss1 12400 − 2400 = 10000（沿用 Boss() 的 life）、
     --     Boss2 / Boss3 = 10400 − 2400 = 8000。t3 = setInterrupt 时限/60、t1/t2 = setInvuln/60。
+    --   符卡没有 SET_LIFE 时继承上一非符的收尾阈值，而不是上一相的初始 lifeSet：
+    --     3637 从 2900 开始；3638 从 2400 开始；3639 / 3640 从 2400 开始。
+    --     12400 是 Boss1 非符的初始 life，不是「客星」的血量。
     { s5.MBoss,      "",                              "9a", 3647, 200 / 60, 200 / 60, 2400 / 60, 10000, "stage05 中BOSS 非符" },
-    { s5.MBossCard1, "秘術「一子相伝の弾幕」",       "9a", 3637, 200 / 60, 200 / 60, 2400 / 60, 12900 },
+    { s5.MBossCard1, "秘術「一子相伝の弾幕」",       "9a", 3637, 200 / 60, 200 / 60, 2400 / 60, 2900 },
     { s5.Boss1,      "",                              "9a", 3648, 200 / 60, 200 / 60, 4200 / 60, 10000, "stage05 非符一" },
-    { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "9a", 3638, 90 / 60,  90 / 60,  4200 / 60, 12400 },
+    { s5.BossCard1,  "奇跡「客星の明るすぎる夜」",   "9a", 3638, 90 / 60,  90 / 60,  4200 / 60, 2400 },
     { s5.Boss2,      "",                              "9a", 3649, 1,        1,        4200 / 60, 8000,  "stage05 非符二" },
-    { s5.BossCard2,  "開海「モーゼの奇跡」",         "9a", 3639, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.BossCard2,  "開海「モーゼの奇跡」",         "9a", 3639, 60 / 60,  60 / 60,  4200 / 60, 2400 },
     { s5.Boss3,      "",                              "9a", 3650, 100 / 60, 100 / 60, 4200 / 60, 8000,  "stage05 非符三" },
-    { s5.BossCard3,  "準備「サモンタケミナカタ」",   "9a", 3640, 60 / 60,  60 / 60,  4200 / 60, 10400 },
+    { s5.BossCard3,  "準備「サモンタケミナカタ」",   "9a", 3640, 60 / 60,  60 / 60,  4200 / 60, 2400 },
     { s5.BossCard4,  "大奇跡「八坂の神風」",         "9a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
 
 ---★ 子机的 %BOSS_X / %BOSS_Y（原作 specialEnemySlots[0] 的世界坐标）走 t10_bossref：
@@ -10592,6 +10720,6 @@ for _, e in ipairs(T10_CARDS_S125) do
         local p = t10_boss_start(self, main)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods() end
+    c.del = function(self) t10_clear_pods(self.th10carrier) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
