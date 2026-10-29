@@ -50,7 +50,7 @@ end
 local R=dofile('mod/roguelike.lua');local pool=R.buildPool()
 local counts={};local original={};local spell,non=false,false
 -- 锁住会暴露“拿 Boss 资源 id 查标定表”的代表卡：三面非符、五面中 BOSS 非符、二面过渡非符。
-local calibrated={[427]=1575,[3433]=1683,[467]=493}
+local calibrated={[427]=725,[3433]=774,[467]=227}
 for _,bucket in ipairs(pool) do
     counts[bucket.code]=#bucket.cards
     for _,entry in ipairs(bucket.cards) do
