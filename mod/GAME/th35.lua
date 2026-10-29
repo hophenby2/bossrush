@@ -606,8 +606,13 @@ local function t10_tp_advance(b)
         elseif k == TK_BOUNCE_ALL or k == TK_BOUNCE_NB or k == TK_BOUNCE_VAR then
             -- BulletTransform.cpp：value0 = float0（反弹后速度，-999999 = 不变）、
             -- int1 = int0（最多反弹几次）、int0 = 0（已反弹次数）
-            b.af.bounce = k
-            b.st.bounce = { n = 0, max = r.i0, v0 = r.f0 }
+            if not b.is_laser or r.i0 > 0 then
+                b.af.bounce = k
+                b.st.bounce = { n = 0, max = r.i0, v0 = r.f0 }
+                ---激光 RunCommands 在启用反射时直接 --command.int0（原版 0x41CECB）。
+                ---反射段复制的是扣过次数的程序；点弹则在反弹时累计次数，不能混用。
+                if b.is_laser then r.i0 = r.i0 - 1 end
+            end
         end
     end
     return not stopped
@@ -1117,18 +1122,19 @@ end
 ---★ 真引擎删对象时会连带停掉它的 task；自检工具的调度器不看对象死活，
 ---  只删对象的话子机 ECL 会继续跑（表现为「卡结束后还在造弹」——del 没清干净）。
 local function t10_kill_pod(o)
-    if o == nil then return end
+    ---task.Clear 会写 self.task；句柄回收后，这次写入本身就会抛 invalid lstg object。
+    if o == nil or not IsValid(o) then return end
     task.Clear(o)
-    if IsValid(o) then object.RawDel(o) end
+    object.RawDel(o)
 end
 
 local function t10_clear_pods(root)
     for i = #T10_PODS, 1, -1 do
         local o = T10_PODS[i]
-        if o.t10_root == root then
-            t10_kill_pod(o)
+        if not IsValid(o) then
             table.remove(T10_PODS, i)
-        elseif not IsValid(o) then
+        elseif o.t10_root == root then
+            t10_kill_pod(o)
             table.remove(T10_PODS, i)
         end
     end
@@ -1139,10 +1145,10 @@ end
 local function t10_enm_kill_all(keep)
     for i = #T10_PODS, 1, -1 do
         local o = T10_PODS[i]
-        if o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser then
-            t10_kill_pod(o)
+        if not IsValid(o) then
             table.remove(T10_PODS, i)
-        elseif not IsValid(o) then
+        elseif o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser then
+            t10_kill_pod(o)
             table.remove(T10_PODS, i)
         end
     end
@@ -1217,7 +1223,55 @@ local function t10_delete(o) t10_kill_pod(o) end
 ---激光几何沿用 th31 的做法：对象放在光柱尾端，THlib 只负责画线和玩家判定。
 ---TH10 LaserLine.cpp:Update 先增长到 maximumLength，下一帧才开始 position += velocity；
 ---terminalDistance 是总行程，0 表示飞出边界才回收，不能用「长满后 30 帧」当寿命。
----差异：光柱贴图用 THlib 代理；颜色、长度、速度、发射偏移与判定范围按原作保留。
+---原版 bullet.anm 的主弹精灵（interrupt 2）：type3=64..79、type8=144..159、
+---type13=264..271。两张 PNG 直接从二进制 ANM 提取，透明边缘与亮芯不再用代理贴图。
+local T10_LASER_SPRITES = {
+    [3] = { tex = 'th35_laser_etama', x = 0, y = 65, w = 16, h = 14, step = 16, count = 16 },
+    [8] = { tex = 'th35_laser_etama', x = 1, y = 129, w = 14, h = 14, step = 16, count = 16 },
+    [13] = { tex = 'th35_laser_etama6', x = 1, y = 129, w = 30, h = 30, step = 32, count = 8 },
+}
+do
+    if not CheckRes('img', 'th35_laser_3_0') then
+        LoadTexture('th35_laser_etama', 'mod\\GAME\\th35\\etama.png')
+        LoadTexture('th35_laser_etama6', 'mod\\GAME\\th35\\etama6.png')
+        for kind, p in pairs(T10_LASER_SPRITES) do
+            for color = 0, p.count - 1 do
+                local name = 'th35_laser_' .. kind .. '_' .. color
+                LoadImage(name, p.tex, p.x + color * p.step, p.y, p.w, p.h)
+                ---原版 flags 0x600000：横向居中、纵向底部为锚点。
+                SetImageCenter(name, p.w / 2, p.h)
+            end
+        end
+    end
+end
+
+local function t10_laser_sprite(kind, color)
+    local p = T10_LASER_SPRITES[kind]
+    color = math.max(0, math.min(p.count - 1, math.floor(color)))
+    return 'th35_laser_' .. kind .. '_' .. color, p.w, p.h
+end
+
+local function t10_laser_render(self)
+    local len = self.l1 + self.l2 + self.l3
+    if self.w <= 0 or len <= 0 then return end
+    SetImageState(self.t10_sprite, self._blend, self._a * self.alpha, self._r, self._g, self._b)
+    ---LaserLine/Type1 的缩放就是 width/sprite.width、length/sprite.height。
+    ---THlib 的 w/7 会把原作 16px 的贴图矩形放大到 36.57px，不能用于 TH10。
+    Render(self.t10_sprite, self.x, self.y, self.rot - 90,
+        self.w / self.t10_sprite_w, len / self.t10_sprite_h)
+end
+
+local th10_laser_fade = Class(laser, {
+    frame = task.Do,
+    render = t10_laser_render,
+    del = function() end,
+    kill = function() end,
+})
+local function t10_laser_kill(self)
+    laser.kill(self)
+    self.class = th10_laser_fade
+end
+
 local function t10_new_laser(owner, cls, ...)
     ---EnemyFireLaser（0x41C510）只有 256 槽，满槽时整根不生成。
     ---与 th31 一样每个卡片实例独立计数；尤其不能让客星的反射分支无限分配对象。
@@ -1225,7 +1279,7 @@ local function t10_new_laser(owner, cls, ...)
     for i = #T10_PODS, 1, -1 do
         local o = T10_PODS[i]
         if not IsValid(o) then table.remove(T10_PODS, i)
-        elseif o.t10_root == root and o.IsLaser then count = count + 1 end
+        elseif o.t10_root == root and o.IsLaser and o.group == GROUP.LASER then count = count + 1 end
     end
     if count >= 256 then return end
     local l = New(cls, ...)
@@ -1254,12 +1308,17 @@ local th10_laser = Class(laser, {
         self.t10_len, self.t10_max, self.t10_initial = initlen, maxlen, initlen
         self.t10_ang, self.t10_spd, self.t10_term = ang, speed, term
         self.t10_kind, self.t10_color = kind, color
+        self.t10_sprite, self.t10_sprite_w, self.t10_sprite_h = t10_laser_sprite(kind, color)
         self.t10_traveled = initlen > 0 and 0.01 or 0
         self.t10_age = 0
-        self.t10_program = program
+        ---每根激光持有可变程序副本；反射次数会被消耗，不能共用父段/枪的表。
+        self.t10_program = {}
+        for i, r in pairs(program or {}) do
+            self.t10_program[i] = tp_record(r.a, r.k, r.i0, r.i1, r.f0, r.f1)
+        end
         self.t10_motion = { px = x, py = t10_oy(y), angle = ang, speed = speed,
             vx = math.cos(ang) * speed, vy = math.sin(ang) * speed,
-            tp = program or {}, ti = 0, af = {}, st = {}, cull = 10, cancel = 0 }
+            tp = self.t10_program, ti = 0, af = {}, st = {}, cull = 10, cancel = 0, is_laser = true }
         self.colli, self.bound, self.alpha, self.w = true, false, 1, width
     end,
     frame = function(self)
@@ -1309,6 +1368,10 @@ local th10_laser = Class(laser, {
         self.t10_age = self.t10_age + 1
         t10_laser_geometry(self, self.w0, true, false)
     end,
+    render = t10_laser_render,
+    kill = t10_laser_kill,
+    ---原版出界直接释放槽位，不套用 THlib del 的 30 帧保留光柱。
+    del = function() end,
 })
 
 ---laserOnA / laserOn 的发射点都读取 etOffset 的槽 0；带 Ex 的指令复制槽 0 的程序。
@@ -1330,6 +1393,7 @@ end
 local th10_st_laser = Class(laser, {
     init = function(self, x, y, kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
         laser.init(self, t10_color(color, kind), x, y, -ang * RAD, 0, initlen, 0, width, 0, 0)
+        self.t10_sprite, self.t10_sprite_w, self.t10_sprite_h = t10_laser_sprite(kind, color)
         self.t10_ang, self.t10_len, self.t10_max = ang, initlen, maxlen
         self.t10_wait, self.t10_grow, self.t10_hold, self.t10_shrink = wait, grow, hold, shrink
         self.t10_state, self.t10_age = 3, 0
@@ -1352,6 +1416,9 @@ local th10_st_laser = Class(laser, {
         self.t10_state, self.t10_age = state, t + 1
         t10_laser_geometry(self, w, state == 4 or state == 2, true)
     end,
+    render = t10_laser_render,
+    kill = t10_laser_kill,
+    del = function() end,
 })
 
 local function t10_laser_st_on(o, kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
