@@ -250,6 +250,39 @@ check(physics==0 and rank==0 and stage.current_stage.timer==0 and recorded>0,'�
 tick();check(physics==1 and rank==1 and stage.current_stage.timer==1,'接取后恢复战斗')
 lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.values(1);D.power(1);D.rate(1);D.signature();check(Serialize(lstg.var)==before,'零帧 HUD 与签名只读')
 lstg.var.__drops_version=nil;check(D.power(1)==1 and D.rate(1)==1,'旧录像没有版本标记时保持原倍率')
+-- 正式符卡名组件：保留底部上移入场，进度栏 / 三维对象不能改变屏幕锚点。
+local oldBoss,oldView,oldRender,oldText,oldFont,oldDist=_G.boss,SetViewMode,Render,RenderText,SetFontState,Dist
+local oldRank,oldSmooth=GameRank,task.Smooth;GameRank=nil;task.Smooth=task.SetMode[3]
+_G.boss={};SetViewMode=function(mode) lstg.viewmode=mode end
+Render=noop;RenderText=noop;SetFontState=noop
+Dist=function(a,b,c,d) if type(a)=='table' then return oldDist(a,b) end;return ((a-c)^2+(b-d)^2)^.5 end
+load('THlib/enemy/boss_ui.lua');InitAllClass();reset();hero(reimu_player)
+local oldWorld=lstg.world
+for _,viewport in ipairs({{288,672,46,494},{192,768,30,510}}) do
+    lstg.world={l=-192,r=192,b=-224,t=224,scrl=viewport[1],scrr=viewport[2],scrb=viewport[3],scrt=viewport[4]}
+    for slot=1,2 do for _,score in ipairs({true,false}) do
+        local b={_live=true,ui_slot=slot,sc_bonus=100000,_sc_hist={1,2},ui={_live=true,drawspell=true,sc_hist={1,2}}}
+        local label=New(_G.boss.sc_name,b,'标题锚点回归',score)
+        for _,tick in ipairs({0,1,30,60,100,110,140,150,220}) do
+            label.timer=tick;if tick>0 then label.class[3](label) end
+            if tick==100 then check(near(label.yoffset,-190),'保留原有下方上移入场的中点') end
+            if tick>=140 then check(label.yoffset==0,'原入场结束后精确回到顶端锚点') end
+            for _,view in ipairs({'ui','world','3d'}) do
+                lstg.viewmode=view;drawn={};label.class[4](label)
+                local text;for _,call in ipairs(drawn) do if call.text==label.name then text=call end end
+                check(text and text.mode=='ui','符卡名主动使用屏幕坐标，不受前一对象影响')
+                check(text.x==viewport[2]-8 and near(text.y,viewport[4]-1-(slot-1)*44+label.yoffset),'入场沿右侧上移，稳定后固定右上角，保留多Boss分行')
+                check(lstg.viewmode==view,'显示 / 隐藏收卡分数都完整恢复原视图')
+            end
+        end
+    end end
+end
+local calls=0;local b={_live=true}
+local function part() return {render=function() check(lstg.viewmode=='world','Boss计时器等战斗坐标组件主动设置视图');calls=calls+1 end} end
+local widget={boss=b,infobar=part(),timeCounter=part(),pointer=part()};lstg.viewmode='ui';_G.boss.ui.render(widget)
+check(calls==3 and lstg.viewmode=='ui','Boss信息栏显示完成恢复调用方视图')
+GameRank,task.Smooth=oldRank,oldSmooth
+lstg.world=oldWorld;_G.boss,SetViewMode,Render,RenderText,SetFontState,Dist=oldBoss,oldView,oldRender,oldText,oldFont,oldDist
 local diagnostic=load('android/lua/drops_check.lua');RogueTen=nil
 check(pcall(diagnostic.install,'drops-new'),'私有诊断不提前访问尚未加载的随机模式')
 R.P.init();lstg.var.__drops_version=1;D.reset();stage.current_stage={is_menu=false,timer=0,stage_name='test'}

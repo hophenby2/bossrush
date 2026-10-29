@@ -49,6 +49,8 @@ function boss.ui:frame()
     end
 end
 function boss.ui:render()
+    local previous=lstg.viewmode
+    SetViewMode('world')
     if IsValid(self.boss) then
         if self.infobar and not self.no_infobar then
             self.infobar:render()
@@ -60,6 +62,7 @@ function boss.ui:render()
             self.pointer:render()
         end
     end
+    if previous then SetViewMode(previous) end
 end
 ----------------------------------------
 ---boss 计时器
@@ -342,6 +345,8 @@ function sc_name:init(b, name, score)
     self.talpha2 = 0
     self.talpha3 = 0
     self.yoffset2 = 0
+    self._dy = ((b.ui_slot or 1) - 1) * 44
+    self.bonus = 'FAILED'
 
 end
 local Smooth = task.Smooth
@@ -386,6 +391,8 @@ function sc_name:frame()
         if self.timer > 60 + etc and self.timer < 60 + etc + t then
             local tmp = (90 / t) * (self.timer - 60 - etc)
             self.yoffset = -self.ybot + (self.ybot + self.yp) * Smooth(tmp / 90)
+        elseif self.timer >= 60 + etc + t then
+            self.yoffset = self.yp
         end
         if self.timer > t3 - ct and self.timer < t3 - ct + t2 then
             self.talpha2 = min(self.talpha2 + (1 / t2), 1)
@@ -414,14 +421,21 @@ function sc_name:frame()
     end
 end
 function sc_name:render()
+    -- 标题使用屏幕 HUD 坐标，保留原入场动画，不继承前一个对象的视口。
+    local previous=lstg.viewmode
+    SetViewMode('ui')
     local sc_hist = self.sc_hist or { 0, 0 }
     local w = lstg.world
-    local scrx, scry = w.scrr - 672, w.scrt - 494
+    local scrx, scry = w.scrr - 192, w.scrt - 224
     local x = self.x + self.xoffset + self.xp + scrx
     local y = self.y + self.yoffset - self._dy + self.yp + self.yoffset2 * 30 + scry
+    -- 接近标题时的淡化仍比较战斗坐标，不能拿屏幕坐标与自机位置比较。
+    local wx = self.x + self.xoffset + self.xp + w.r - 192
+    local wy = self.y + self.yoffset - self._dy + self.yp + self.yoffset2 * 30 + w.t - 224
+    local distance = Dist(player.x, player.y, wx - 50, wy - 5)
     local a_ = 1
-    if Dist(player.x, player.y, x - 50, y - 5) <= 90 then
-        a_ = 1 - (90 - max(Dist(player.x, player.y, x - 50, y - 5), 40)) / 60
+    if distance <= 90 then
+        a_ = 1 - (90 - max(distance, 40)) / 60
     end
     SetImageState("boss_spell_name_bg", "",
             Color(255 * self.talpha * a_, 255, 255, 255))
@@ -454,8 +468,8 @@ function sc_name:render()
         end
 
         RenderText("bonus2", ("%02d/%02d"):format(sc_hist[1], sc_hist[2]), x - 42, y, fontsize, "left")
-        SetViewMode("world")
     end
+    if previous then SetViewMode(previous) end
 end
 function sc_name:del()
     object.Preserve(self)

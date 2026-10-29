@@ -285,6 +285,7 @@ function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP end
 function panel:render()
     local run=lstg.var.rogue_run
     if not run then return end
+    local previous=lstg.viewmode
     SetViewMode('ui')
     local color=Color(255,220,239,250)
     ui:RenderText('title',mode(run).title,150,450,1.0,color,'centerpoint')
@@ -305,6 +306,7 @@ function panel:render()
     end
     ui:RenderText('title',string.format('失误 %d / %d',lstg.var.dead,R.MISS_LIMIT+((lstg.var.revive and lstg.var.revive.credits) or 0)),150,mode(run).width==2 and 260 or 285,0.7,color,'centerpoint')
     ui:RenderText('title',string.format('答题复活 %d / 3',(lstg.var.revive and lstg.var.revive.used) or 0),150,mode(run).width==2 and 230 or 255,0.65,color,'centerpoint')
+    if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)
 register('dual',R.modes.dual)

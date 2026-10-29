@@ -27,6 +27,7 @@ Rand=random
 dofile('THlib/lib/Lstage.lua');dofile('THlib/ext/ext_stage_group.lua');dofile('THlib/lib/Ltask.lua')
 stage.stages.menu={is_menu=true};stage.current_stage=stage.stages.menu
 local replay=false;local cleared,saved,spawned=0,0,{}
+local panels={}
 ext={replay={IsReplay=function() return replay end},GetPauseMenuOrder=function() end,achievement={get=function() end}}
 SaveResume={clear=function() cleared=cleared+1 end}
 SaveScoreData=function() saved=saved+1 end;SaveSpellCardData=function() end
@@ -47,7 +48,7 @@ New=function(class,cards)
     if cards then
         obj.life=3;obj.maxhp=100;obj.hp=100;obj.t3=3600;obj.timer=0;obj.is_combat=true;obj.__is_waiting=false
         spawned[#spawned+1]={obj=obj,class=class,card=cards[1],tick=stage.current_stage.timer}
-    elseif class.init then class.init(obj) end
+    elseif class.init then class.init(obj);if obj.group==GROUP.GHOST and obj.layer==LAYER.TOP then panels[#panels+1]={obj=obj,class=class} end end
     return obj
 end
 local R=dofile('mod/roguelike.lua');local pool=R.buildPool()
@@ -150,6 +151,15 @@ for _,entry in ipairs(spawned) do check(entry.obj.__NoCleanBullet==true,'接续�
 local last=spawned[10].obj;last.hp=last.maxhp*R.CHAIN_HP;chainTick()
 run=lstg.var.rogue_run
 check(stage.next_stage==stage.stages[R.modes.chain.result] and run.won and run.completed==10,'接续模式：第十张达到阈值后成功结算')
+-- 进度栏在 ObjRender 中先于符卡名绘制，不能把后续对象留在 UI 坐标系。
+local panel=assert(panels[#panels]);local setView,oldUI=SetViewMode,ui
+ui={RenderText=function() end}
+SetViewMode=function(mode) lstg.viewmode=mode end
+for _,view in ipairs({'world','ui','3d'}) do
+    lstg.viewmode=view;panel.class.render(panel.obj)
+    check(lstg.viewmode==view,'随机模式进度栏恢复调用方坐标系：'..view)
+end
+SetViewMode,ui=setView,oldUI
 -- 使用正式 Boss 系统函数验证两种自动清屏，而不是只检查接续对象上的标记。
 local f=assert(io.open('THlib/enemy/boss_system.lua','rb'));local bossSource=f:read('*a');f:close()
 local system={}
