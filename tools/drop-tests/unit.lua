@@ -90,6 +90,55 @@ local function laserDamage(red,blue)
 end
 local ray=laserDamage(100,100);check(ray>0 and near(laserDamage(200,100),ray*2),'魔理沙激光火力倍率生效')
 check(near(laserDamage(100,200),ray*2),'魔理沙持续激光射速倍率生效')
+-- 移动端开关关闭当帧停火；桌面原有短连射与旧录像仍沿用原规则。
+local function releaseBurst(touch,version,coop,guestTouch)
+    reset();AndroidPlatform=touch and {} or nil;lstg.var.__touch_toggle_version=version
+    local p=hero(reimu_player);if coop then GameNet={host=function() return true end};p.key={shoot=true,touch_shoot=guestTouch} end
+    KeyState={shoot=true};p._playersys:frame();check(p.__shoot_flag,'射击按下正常发弹')
+    KeyState={};if coop then p.key.shoot=false end;p._playersys:frame()
+    local stopped=not p.__shoot_flag;AndroidPlatform=nil;GameNet=nil;return stopped
+end
+check(releaseBurst(true,1),'移动端新局关闭时立即停火')
+check(not releaseBurst(false,1),'桌面按键保留原有15帧短连射')
+check(not releaseBurst(true,nil),'旧录像无新标记时保留旧行为')
+check(releaseBurst(false,1,true,true),'Windows 房主收到移动端关闭也立即停火')
+check(not releaseBurst(true,1,true,false),'Android 房主不改变桌面客机原有松键行为')
+-- 真实自机类的绘制尺寸随当前火力线性变化，绘制后恢复物理对象缩放。
+reset();local visualPlayer=hero(reimu_player);lstg.var.upgrades.players[1].red=15000
+local defaultDraw,rawRender=DefaultRenderFunc,Render
+local defaultCalls,trailCalls={},{}
+DefaultRenderFunc=function(o) defaultCalls[#defaultCalls+1]={h=o.hscale,v=o.vscale,img=o.img} end
+Render=function(img,x,y,rot,h,v) trailCalls[#trailCalls+1]={h=h,v=v,img=img} end
+local visualShots={
+    New(reimu_player.bullets.square,0,0,10,90,.3),New(reimu_player.bullets.needle,0,0,10,90,.3),
+    New(reimu_player.bullets.trail,0,0,10,90,5,.3),New(marisa_player.bullets.main,0,0,10,90,.3),
+    New(marisa_player.bullets.missile,0,0,10,90,.3),New(marisa_player.bullets.missile_ef,0,0,.3,5),
+    New(chiruno_player.bullets.main,0,0,10,90,.3),
+}
+for _,o in ipairs(visualShots) do
+    o.hscale=.8;o.vscale=1.2;local a,b,dmg=o.a,o.b,o.dmg;o.class[4](o)
+    local call=defaultCalls[#defaultCalls]
+    check(near(call.h,1.2) and near(call.v,1.8),'火力150使正式子弹宽高均乘1.5')
+    check(o.hscale==.8 and o.vscale==1.2 and o.a==a and o.b==b and o.dmg==dmg,'绘制恢复缩放，不累乘尺寸或改写碰撞及伤害')
+end
+local trace=visualShots[3];trace.smear={{x=0,y=0,rot=90,alpha=40}};trace.class[4](trace)
+check(near(trailCalls[1].h,1.2) and near(trailCalls[1].v,1.8),'追踪弹拖影与弹体按相同比例放大')
+D.apply(1,1);trace.class[4](trace);check(near(defaultCalls[#defaultCalls].h,.8*1.55),'已经在场的子弹立即使用提升后的当前火力')
+lstg.var.upgrades.players[2].red=25000;trace._drop_owner=2;trace.class[4](trace)
+check(near(defaultCalls[#defaultCalls].h,2) and near(defaultCalls[#defaultCalls].v,3),'联机 P2 子弹按各自火力放大')
+DefaultRenderFunc=function() error('绘制测试错误') end
+check(not pcall(D.renderBullet,trace) and trace.hscale==.8 and trace.vscale==1.2,'绘制异常也恢复基准尺寸')
+DefaultRenderFunc=function(o) defaultCalls[#defaultCalls+1]={h=o.hscale,v=o.vscale} end
+lstg.var.__drops_version=nil;D.renderBullet(trace);check(defaultCalls[#defaultCalls].h==.8,'旧录像保持原尺寸')
+-- 魔理沙的光束沿弹道延伸，只按火力放大横向宽度与发射光点。
+reset();local beamPlayer=hero(marisa_player);lstg.var.upgrades.players[1].red=15000
+beamPlayer.fire=1;beamPlayer.nextshoot=0
+local oldLaser,oldPlayerRender=marisa_player.CreateLaser,player_class.render;local widths={}
+marisa_player.CreateLaser=function(_,x,y,a,w) widths[#widths+1]=w end;player_class.render=noop
+marisa_player.render(beamPlayer)
+check(#widths==4 and near(widths[1],42),'魔理沙四条光束的宽度也按火力150放大1.5倍')
+marisa_player.CreateLaser,player_class.render=oldLaser,oldPlayerRender
+DefaultRenderFunc,Render=defaultDraw,rawRender
 -- 标准弹、穿透弹与伤害转移均在命中处乘一次，弹体基准伤害不被写回。
 reset();local p=hero(reimu_player);lstg.var.upgrades.players[1].red=15000
 local e=New(targetClass);local shot={dmg=10,killflag=true,mute=true,_drop_owner=1}

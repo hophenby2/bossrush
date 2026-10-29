@@ -170,12 +170,13 @@ function trail:frame()
     end
 end
 function trail:render()
+    local factor=GameDrops and GameDrops.power(self) or 1
     for _, s in ipairs(self.smear) do
         SetImageState(self.img, 'mul+add', s.alpha, 255, 255, 255)
-        Render(self.img, s.x, s.y, s.rot)
+        Render(self.img, s.x, s.y, s.rot, self.hscale*factor, self.vscale*factor)
     end
     SetImageState(self.img, '', 100, 255, 255, 255)
-    DefaultRenderFunc(self)
+    player_bullet_trail.render(self)
 end
 function trail:kill()
     New(bullets.trail_ef, self.x, self.y, self.rot)

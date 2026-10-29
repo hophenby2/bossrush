@@ -93,7 +93,11 @@ local defaultKeyEvent = {
         self.__shoot_count = 15
     end },
     { "shoot", "up", "key.shoot.up", 0, function(self)
-        if self.__shoot_count <= 0 then
+        local coop=GameNet and GameNet.host()
+        local touch=coop and self.key and self.key.touch_shoot
+            or (not coop and AndroidPlatform and lstg.var.__touch_toggle_version==1)
+        if touch or self.__shoot_count <= 0 then
+            self.__shoot_count = 0
             self.__shoot_flag = false
         end
         self.__aya_shoot = false--给文文用的

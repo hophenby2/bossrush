@@ -136,6 +136,7 @@ function marisa_player:shoot()
 
 end
 function marisa_player:render()
+    local fireScale=GameDrops and GameDrops.power(self) or 1
     --support
     SetImageState('marisa_support', '', 255, 255, 255, 255)
     for i = 1, 4 do
@@ -153,11 +154,11 @@ function marisa_player:render()
         local x, y
         for i = 1, 4 do
             x, y = self.sp[i][1], self.sp[i][2]
-            marisa_player.CreateLaser("MarisaLaser", x, y, angle, 28, timer,
+            marisa_player.CreateLaser("MarisaLaser", x, y, angle, 28*fireScale, timer,
                     Color(200, (self.hitting[i] and 40) or 255, (self.hitting[i] and 40) or 255, 255), self.offset[i])
-            Render('bright', x, y + self.offset[i], 0, 0.15)
-            Render('bright', x, y + self.offset[i], 0, 0.15)
-            Render('marisa_laser_light', x, y, self.timer * 5, 1 + 0.4 * sin(self.timer * 45 + i * 90))
+            Render('bright', x, y + self.offset[i], 0, 0.15*fireScale)
+            Render('bright', x, y + self.offset[i], 0, 0.15*fireScale)
+            Render('marisa_laser_light', x, y, self.timer * 5, (1 + 0.4 * sin(self.timer * 45 + i * 90))*fireScale)
         end
     end
     for _, b in ipairs(self.bright) do
@@ -213,6 +214,7 @@ end
 bullets.missile = missile
 
 local missile_ef = Class(object)
+missile_ef.render = player_bullet_straight.render
 function missile_ef:init(x, y, dmg, t)
     self.x = x
     self.y = y

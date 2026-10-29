@@ -233,7 +233,7 @@ function stg.render()
 end
 
 function stg.Start(group)
-    lstg.var.__drops_version=1;lstg.var.upgrades=nil
+    lstg.var.__drops_version=1;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
     lstg.var.__revive_version=1;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
@@ -257,7 +257,7 @@ end
 
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
-    lstg.var.__drops_version=1;lstg.var.upgrades=nil
+    lstg.var.__drops_version=1;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
     lstg.var.__revive_version=1;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil

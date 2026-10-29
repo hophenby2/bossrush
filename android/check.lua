@@ -81,10 +81,15 @@ input.touch(2, 853, 90, 'began')
 input.touch(3, 750, 92, 'began')
 assert(lstg.GetKeyState(39) and lstg.GetKeyState(90) and lstg.GetKeyState(16))
 input.touch(2, 853, 90, 'ended')
-assert(lstg.GetKeyState(39) and lstg.GetKeyState(16) and not lstg.GetKeyState(90))
+assert(lstg.GetKeyState(39) and lstg.GetKeyState(16) and lstg.GetKeyState(90), '射击抬手后保持开启')
+input.touch(6,853,90,'began');assert(not lstg.GetKeyState(90) and lstg.GetKeyState(16), '再次点击立即关闭射击，低速独立')
+input.touch(6,853,90,'moved');assert(not lstg.GetKeyState(90), '移动事件不重复切换')
+input.touch(6,853,90,'ended')
 input.touch(4, 750, 92, 'began')
 input.touch(3, 750, 92, 'cancelled')
-assert(lstg.GetKeyState(16))
+assert(not lstg.GetKeyState(16), '第二次点击关闭低速，取消另一个触点不会反转开关')
+input.touch(4,750,92,'ended');input.touch(7,750,92,'began');input.touch(7,750,92,'ended')
+assert(lstg.GetKeyState(16), '重新点击并抬手保持低速')
 input.touch(5, 500, 400, 'began'); assert(lstg.GetMouseState(0))
 input.touch(5, 500, 420, 'moved'); assert(input.wheel == -160)
 input.touch(5, 500, 420, 'ended'); assert(lstg.GetMouseState(0))
@@ -104,7 +109,8 @@ screen = { scale=2, dx=240, dy=0 }
 input.install({})
 local touch = { getId=function() return 42 end, getLocation=function() return { x=1946, y=180 } end }
 handlers[1]({touch}); assert(lstg.GetKeyState(90))
-handlers[3]({touch}); assert(not lstg.GetKeyState(90))
+handlers[3]({touch}); assert(lstg.GetKeyState(90), '原生抬手仍保持射击')
+handlers[1]({touch});handlers[3]({touch});assert(not lstg.GetKeyState(90), '原生再次点击关闭射击')
 input.reset()
 player = { x=0, y=0, hspeed=4, lspeed=2, death=0 }
 lstg.world = { l=-192,r=192,b=-224,t=224,scrl=288,scrr=672,scrb=46,scrt=494,pl=-192,pr=192,pb=-224,pt=224 }
@@ -127,8 +133,15 @@ player.death=100; input.beginFrame(); assert(not lstg.GetKeyState(39))
 input.reset(); player.death=0; setting={keys={shoot=65,right=68}}
 input.touch(10,180,130,'began'); input.touch(11,853,90,'began')
 assert(lstg.GetKeyState(68) and lstg.GetKeyState(65) and not lstg.GetKeyState(90))
-ext={StageIsMenu=function() return true end}; input.beginFrame()
-assert(not lstg.GetKeyState(68) and not lstg.GetKeyState(65))
+local atTitle,atPause=false,false
+ext={StageIsMenu=function() return atTitle end,pause_menu={IsKilled=function() return not atPause end}}
+input.beginFrame();atPause=true;input.beginFrame()
+assert(input.toggles.shoot and not lstg.GetKeyState(65), '暂停保留开关，但暂停菜单不接收射击')
+atPause=false;input.beginFrame();assert(lstg.GetKeyState(65), '继续游戏自动沿用暂停前的射击开关')
+atTitle=true;input.beginFrame()
+assert(not lstg.GetKeyState(68) and not lstg.GetKeyState(65) and not input.toggles.shoot, '回到标题清除开关')
+atTitle=false;input.beginFrame();input.touch(12,853,90,'began');input.touch(12,853,90,'ended');assert(lstg.GetKeyState(65))
+input.reset();input.beginFrame();assert(not lstg.GetKeyState(65), '切后台 / 失焦使用完整重置，清除开关')
 local paused,sceneRenders,blurs,copies=false,0,0,0
 PostEffect=function(fx) if fx=='fx:pause_menu_blur' then blurs=blurs+1 else copies=copies+1 end end
 RenderFunc=function() sceneRenders=sceneRenders+1; if paused then PostEffect('fx:pause_menu_blur') end end
@@ -149,4 +162,4 @@ pauseCache.invalidate(); RenderFunc(); assert(sceneRenders==3 and blurs==2)
 paused=false; RenderFunc(); paused=true; RenderFunc()
 assert(sceneRenders==5 and blurs==3,'恢复后再暂停必须重新捕获')
 stage.current_stage={is_menu=false}; RenderFunc(); assert(sceneRenders==6 and blurs==4)
-print('Android 契约检查通过：资源、流、多指摇杆/相对拖拽、释放/死亡/键位、菜单及暂停缓存失效')
+print('Android 契约检查通过：资源、流、多指摇杆/相对拖拽、射击/低速开关、暂停延续/失焦重置、死亡/键位及暂停缓存失效')

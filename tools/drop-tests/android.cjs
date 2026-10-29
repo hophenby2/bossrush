@@ -2,7 +2,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const puppeteer=require(process.env.BOSSRUSH_PUPPETEER||'/opt/homebrew/lib/node_modules/@mermaid-js/mermaid-cli/node_modules/puppeteer');
-const root=path.resolve(__dirname,'../..'),out=path.join(root,'android/dist/choice-test');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'../..'),out=path.join(root,'android/dist',process.env.BOSSRUSH_ANDROID_TEST_DIR||'choice-test');fs.mkdirSync(out,{recursive:true});
 const file=path.join(out,'device-state.json');let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file)):{};
 const adb=process.env.ADB||path.join(process.env.HOME,'Library/Android/sdk/platform-tools/adb'),serial=process.env.BOSSRUSH_SERIAL||'emulator-5554';
 const run=(...args)=>cp.execFileSync(adb,['-s',serial,...args],{timeout:30000,maxBuffer:16*1024*1024});
@@ -69,6 +69,18 @@ async function start(mode){
   run('shell','input','swipe','324','660','340','650','3000');
   const picked=await until(()=>{const v=read();return v.phase==='picked'&&v;});
   if(picked.red!==110||picked.blue!==95)throw Error('实际接取组合数值不符：'+JSON.stringify(picked));
+  if(mode.includes('toggle')){
+    const tap=(x,y)=>run('shell','input','tap',String(x),String(y));
+    tap(1946,900);
+    const on=await until(()=>{const v=read();return v.input?.shoot&&v.input.shootKey&&v.visual?.factor===1.1&&v.shots>0&&v;},30);
+    await sleep(1000);const sustained=read();if(sustained.shots<=on.shots)throw Error('点击抬手后未持续射击');
+    tap(1740,896);const both=await until(()=>{const v=read();return v.input?.shoot&&v.input?.slow&&v.input.slowKey&&v;},30);snapshot('toggles-on');
+    tap(1946,900);await until(()=>{const v=read();return !v.input?.shoot&&v.input?.slow&&!v.input.shootKey&&v;},30);
+    await sleep(700);const stopped=read();await sleep(1200);const still=read();if(stopped.shots!==still.shots)throw Error('关闭后仍产生新子弹');
+    tap(1740,896);const off=await until(()=>{const v=read();return !v.input?.shoot&&!v.input?.slow&&!v.input.slowKey&&v;},30);snapshot('toggles-off');
+    fs.writeFileSync(path.join(out,'toggle-result.json'),JSON.stringify({on,sustained,both,stopped,still,off},null,2));
+    console.log('真实单击开关、抬手连续射击、独立低速开关、关闭后停火与贴图×1.1通过');return;
+  }
   run('shell','input','swipe','1946','900','1946','900','3000');
   const hit=await until(()=>{const v=read();return v.damage&&v;},30);
   if(Math.abs(hit.damage.factor-1.1)>0.0001||Math.abs(hit.damage.value-hit.damage.base*1.1)>0.0001)throw Error('实际命中倍率错误');

@@ -4,6 +4,7 @@ local function load(path) return dofile(root..'/'..path) end
 local C,P,T=R.C,R.P,R.N;P.init()
 local W=load('THlib/net/codec.lua');local N=load('THlib/net/session.lua')
 N.hash=string.rep(arg[3] or 'a',64)
+AndroidPlatform=arg[4]=='touch' and {} or nil -- 仅标记测试客机的触屏输入方式，不加载安卓图形环境。
 lstg={var={},SystemLog=function(s) print(s);io.stdout:flush() end}
 setting={keys={up=1,down=2,left=3,right=4,slow=5,shoot=6,spell=7,special=8}}
 GetKeyState=function(code) return math.floor((N.testMask or 0)/2^(code-1))%2==1 end

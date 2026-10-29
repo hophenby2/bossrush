@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory(prefix='bossrush-net-tests-') as temp:
         peers=[]
         for i in range(3):
             folder=temp/str(i);folder.mkdir();log=(folder/'process.log').open('wb');logs.append(log)
-            proc=subprocess.Popen(command('tools/net-tests/peer.lua',folder,args.windows_pc and i==0,*(('b',) if i==2 else ())),env=env,stdout=log,stderr=log);processes.append(proc)
+            proc=subprocess.Popen(command('tools/net-tests/peer.lua',folder,args.windows_pc and i==0,*(('b',) if i==2 else (('a','touch') if i==1 else ()))),env=env,stdout=log,stderr=log);processes.append(proc)
             peers.append(wait(lambda:json.loads((folder/'peer.json').read_text())))
         host,guest,bad=peers
         for transport in ['direct','relay']:
@@ -82,6 +82,8 @@ with tempfile.TemporaryDirectory(prefix='bossrush-net-tests-') as temp:
             (temp/'1/keys.json').write_text(json.dumps({'mask':8+32}))
             wait(lambda:wait(lambda:json.loads((temp/'0/status.json').read_text()))['inputs'][1].get('right'))
             check(True,'客机独立方向和射击输入到达房主')
+            wait(lambda:wait(lambda:json.loads((temp/'0/status.json').read_text()))['inputs'][1].get('touch_shoot'))
+            check(True,'移动端停火方式随真实输入传到 Windows 房主')
             api(guest,'/api/coop/pause',{'value':True})
             wait(lambda:status(host)['paused'][1])
             tick=wait(lambda:(v if v['paused'][1] else None) if (v:=json.loads((temp/'0/status.json').read_text())) else None)['tick'];time.sleep(.15)
@@ -94,7 +96,9 @@ with tempfile.TemporaryDirectory(prefix='bossrush-net-tests-') as temp:
             check(wait(lambda:json.loads((temp/'0/status.json').read_text()))['tick']==tick,'断线后房主暂停')
             api(guest,'/api/coop/join',{'code':code,'hero':'reimu_player'})
             wait(lambda:status(guest)['frames']>3 and status(host)['ready'])
-            check(wait(lambda:json.loads((temp/'0/status.json').read_text()))['tick']>tick,'原房间重连并继续')
+            # 握手完成与宿主下一次物理更新不同步，等待真正恢复逻辑后再断言。
+            wait(lambda:wait(lambda:json.loads((temp/'0/status.json').read_text()))['tick']>tick)
+            check(True,'原房间重连并继续')
             api(guest,'/api/coop/leave',{});api(host,'/api/coop/leave',{})
             if relay:relay.terminate();relay.wait(timeout=5)
         reuse={'hero':'reimu_player','mode':'dual','port':port(),'address':'127.0.0.1'}

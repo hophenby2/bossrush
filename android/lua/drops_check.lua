@@ -4,15 +4,36 @@ function C.install(mode)
     local D=assert(GameDrops);local originalFrame,originalRender,originalDamage=D.frame,D.render,D.damage
     local booted,lastDamage,lastMarker,probeSpawned
     local revival=mode:match('revive')~=nil
+    local toggleCheck=mode:match('toggle')~=nil
+    local visual,shotsSeen,renderedShots=nil,{},0
     local paused=mode:match('resume')~=nil
     local probeClass=Class(enemy,{
-        init=function(o) enemybase.init(o,100000000,true);o.a=32;o.b=32;o.hide=true end,
+        init=function(o) enemybase.init(o,100000000,true);o.a=toggleCheck and 8 or 32;o.b=o.a;o.hide=true end,
         frame=function(o)
-            if IsValid(player) then o.x=player.x;o.y=math.min(lstg.world.t-10,player.y+64) end
+            if IsValid(player) then o.x=player.x;o.y=math.min(lstg.world.t-10,player.y+(toggleCheck and 192 or 64)) end
             enemybase.frame(o)
         end,
         render=function() end,
     },true)
+    if toggleCheck then
+        local renderBullet,draw=D.renderBullet,DefaultRenderFunc
+        local expected
+        D.renderBullet=function(o)
+            local h,v=o.hscale,o.vscale
+            expected={h=h,v=v,factor=D.power(o)}
+            renderBullet(o);expected=nil
+            assert(o.hscale==h and o.vscale==v,'实际绘制后未恢复弹体缩放')
+        end
+        DefaultRenderFunc=function(o)
+            if expected then
+                assert(math.abs(o.hscale-expected.h*expected.factor)<0.00001,'实际子弹横向放大倍率不符')
+                assert(math.abs(o.vscale-expected.v*expected.factor)<0.00001,'实际子弹纵向放大倍率不符')
+                if not shotsSeen[o] then shotsSeen[o]=true;renderedShots=renderedShots+1 end
+                visual={h=o.hscale,v=o.vscale,baseH=expected.h,baseV=expected.v,factor=expected.factor}
+            end
+            return draw(o)
+        end
+    end
     local function installPlan()
         local draw=assert(RogueTen).draw
         RogueTen.draw=function(seed,width)
@@ -39,10 +60,15 @@ function C.install(mode)
         local row=revival and revive and revive.quiz or s.active
         local phase=row and (row.result~=nil and 'feedback' or 'falling') or (((revival and revive and revive.used>0) or s.count>0) and 'picked' or 'battle')
         local marker=phase..':'..(row and row.age or math.floor(stage.current_stage.timer/30))..':'..tostring(lastDamage~=nil)
+        local input
+        if toggleCheck then
+            input={shoot=AndroidInput.toggles.shoot==true,slow=AndroidInput.toggles.slow==true,shootKey=KeyIsDown('shoot'),slowKey=KeyIsDown('slow')}
+            marker=marker..':'..tostring(input.shoot)..':'..tostring(input.slow)..':'..renderedShots
+        end
         if marker==lastMarker then return end;lastMarker=marker
         local red,blue=D.values(1)
         local data={phase=phase,age=row and row.age,frame=stage.current_stage.timer,red=red,blue=blue,upgrades=s,
-            revive=revive,quiz=revival and row or nil,damage=lastDamage,hero=IsValid(player) and {x=player.x,y=player.y,timer=player.timer} or nil,recovering=SaveResume.recovering}
+            input=input,visual=visual,shots=toggleCheck and renderedShots or nil,revive=revive,quiz=revival and row or nil,damage=lastDamage,hero=IsValid(player) and {x=player.x,y=player.y,timer=player.timer} or nil,recovering=SaveResume.recovering}
         local f=assert(io.open(SaveProfiles.userRoot()..'/drops-check.json','w'));f:write(Serialize(data));f:close()
         if phase=='picked' or (row and row.age==200) then lstg.SystemLog('BOSSRUSH_DROPS_CHECK: '..Serialize(data)) end
     end

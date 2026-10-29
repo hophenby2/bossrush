@@ -71,14 +71,14 @@ local function atThreshold(t)
     local done,why=R.chainDone(t)
     return done,why
 end
-local done=atThreshold{is_combat=true,hp=31,maxhp=100,t3=1000,timer=0}
-check(not done,'接续模式：剩余 31% 不推进')
-done=atThreshold{is_combat=true,hp=30,maxhp=100,t3=1000,timer=0}
-check(done,'接续模式：剩余 30% 推进')
-done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=580}
-check(not done,'接续模式：剩余 420 帧不推进')
-done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=581}
-check(done,'接续模式：剩余 419 帧推进')
+local done=atThreshold{is_combat=true,hp=16,maxhp=100,t3=1000,timer=0}
+check(not done,'接续模式：剩余 16% 不推进')
+done=atThreshold{is_combat=true,hp=15,maxhp=100,t3=1000,timer=0}
+check(done,'接续模式：剩余 15% 推进')
+done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=820}
+check(not done,'接续模式：剩余 180 帧不推进')
+done=atThreshold{is_combat=true,hp=100,maxhp=100,t3=1000,timer=821}
+check(done,'接续模式：剩余 179 帧推进')
 local function keys(cards) local out={};for _,v in ipairs(cards) do out[#out+1]=v.key end;return table.concat(out,',') end
 local observed={}
 for seed=1,400 do
@@ -127,16 +127,16 @@ end
 for _=1,150 do chainTick() end
 check(#spawned==1,'接续模式：先创建第一张')
 local first=spawned[1].obj
-first.hp=31;chainTick();check(#spawned==1,'接续模式：31% 仍等待')
-first.ui={};first.hp=30;chainTick()
-check(#spawned==2 and IsValid(first) and first.ui.no_infobar and first.NotPlayTimeOutSound,'接续模式：30% 创建下一张、旧 Boss 保留并静默旧 UI')
+first.hp=16;chainTick();check(#spawned==1,'接续模式：16% 仍等待')
+first.ui={};first.hp=15;chainTick()
+check(#spawned==2 and IsValid(first) and first.ui.no_infobar and first.NotPlayTimeOutSound,'接续模式：15% 创建下一张、旧 Boss 保留并静默旧 UI')
 local second=spawned[2].obj
 check(second.group==GROUP.GHOST,'接续模式：旧 Boss 存活时新 Boss 使用 GHOST 碰撞组')
 first._live=false;chainTick()
 check(second.group==GROUP.ENEMY,'接续模式：旧 Boss 死亡后恢复新 Boss 碰撞组')
 chainTick();check(second.group==GROUP.ENEMY,'接续模式：恢复后不会再次变回 GHOST')
-second.hp=second.maxhp;second.t3=1000;second.timer=580;chainTick();check(#spawned==2,'接续模式：剩余 7 秒仍等待')
-second.timer=581;chainTick();check(#spawned==3,'接续模式：不足 7 秒创建下一张')
+second.hp=second.maxhp;second.t3=1000;second.timer=820;chainTick();check(#spawned==2,'接续模式：剩余 3 秒仍等待')
+second.timer=821;chainTick();check(#spawned==3,'接续模式：不足 3 秒创建下一张')
 check(spawned[3].obj.group==GROUP.GHOST,'接续模式：每张新 Boss 都先以 GHOST 等待前一张死亡')
 while #spawned<10 do
     local current=spawned[#spawned].obj

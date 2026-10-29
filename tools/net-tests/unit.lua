@@ -144,6 +144,17 @@ check(states['remote-only'][2]==255,'退出联机时动态图像恢复为本地�
 rejects(function() Capture.receiveResources(W.encode({{'LoadTexture',{'evil','THlib/../../User/secret'},'global'}})) end,'资源路径禁止越界')
 rejects(function() Capture.receiveFrame(W.encode({tick=1,time=1,calls={{99,0,0,0,0,{}}}})) end,'拒绝未知绘制操作')
 rejects(function() Capture.receiveResources(W.encode({{'LoadAnimation',{'huge','test',0,0,16,16,65535,65535,1},'global'}})) end,'拒绝超量动画分配')
+-- 放大在房主实际绘制时应用，客机接收尺寸后不再重复乘火力，并保留对方透明度。
+N.role='host';N.players={p1,p2};N.match=true;Capture.last=nil
+lstg.var.upgrades.players[1].red=15000;lstg.var.upgrades.players[2].red=25000
+local one,two=New(shot),New(shot);one._net_slot=1;two._net_slot=2;one._drop_owner=1;two._drop_owner=2
+SetImageState('shot','',200,255,255,255);Capture.begin()
+local renderShot=N.callback(Drops.renderBullet,'render');renderShot(one);renderShot(two);Capture.finish()
+check(one.hscale==1 and two.hscale==1,'房主完成捕获后恢复两位玩家子弹的基准尺寸')
+N.role='client';Capture.receiveFrame(sent.F);draws={};Capture.render()
+local received={};for _,call in ipairs(draws) do if call.name=='Render' and call.args[1]=='shot' then received[#received+1]=call end end
+check(#received==2 and received[1].args[5]==1.5 and received[2].args[5]==2.5,'客机分别还原1.5倍与2.5倍尺寸，不再次放大')
+check(received[1].style[2]==130 and received[2].style[2]==200,'放大子弹仍按所属玩家保持对方半透明、自己不透明')
 -- 使用正式激光 frame，确认两位玩家都被检测，光束逻辑仅执行一次。
 N.role='host';N.match=true
 LoadImageGroup=function(prefix,tex,x,y,w,h,cols,rows) for i=1,cols*rows do LoadImage(prefix..i,tex,x,y,w,h) end end

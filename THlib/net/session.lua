@@ -94,7 +94,9 @@ local function control(v,connection)
         N.mode=v.mode;N.beginClient()
     elseif v.t=='input' then
         assert(N.role=='host' and N.match and finite(v.seq,2^31) and v.seq>=0 and v.seq%1==0,'输入序号无效')
-        if v.seq>(N.inputSeq or -1) then N.inputSeq=v.seq;N.keys[2]=keys(v.keys);N.lastInput=T.now() end
+        if v.seq>(N.inputSeq or -1) then
+            N.inputSeq=v.seq;N.keys[2]=keys(v.keys);N.keys[2].touch_shoot=v.touch==true;N.lastInput=T.now()
+        end
     elseif v.t=='pause' then
         assert(type(v.value)=='boolean','暂停消息无效')
         if N.role=='host' then N.pause[2]=v.value;send({t='paused',flags=N.pause}) end
@@ -245,7 +247,7 @@ function N.poll()
     end
     if N.connected and N.peer and not N.peer.closed and now-(N.lastPing or 0)>1 then N.lastPing=now;send({t='ping',clock=now-N.epoch}) end
     if N.client() and N.connected and now-(N.lastSent or 0)>1/60 then
-        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;send({t='input',seq=N.clientSeq,keys=mask(N.localKeys())})
+        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;send({t='input',seq=N.clientSeq,keys=mask(N.localKeys()),touch=AndroidPlatform~=nil})
     end
 end
 function N.readyForLogic()
@@ -264,7 +266,7 @@ end
 function N.open() SaveSync.open('coop') end
 function N.beforeLogic()
     if not N.host() then return end
-    N.tick=N.tick+1;N.keys[1]=clone(KeyState)
+    N.tick=N.tick+1;N.keys[1]=clone(KeyState);N.keys[1].touch_shoot=AndroidPlatform~=nil
     for i,p in ipairs(N.players) do if IsValid(p) then p.key=N.keys[i] end end
     player=N.players[1] or player;lstg.player=player
 end

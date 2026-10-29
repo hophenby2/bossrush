@@ -268,6 +268,9 @@ end
 ---一些自机组件
 
 player_bullet_straight = Class(object)
+function player_bullet_straight:render()
+    if GameDrops then GameDrops.renderBullet(self) else DefaultRenderFunc(self) end
+end
 
 function player_bullet_straight:init(img, x, y, v, angle, dmg)
     self.group = GROUP.PLAYER_BULLET
@@ -286,6 +289,7 @@ function player_bullet_straight:init(img, x, y, v, angle, dmg)
 end
 
 player_bullet_trail = Class(object)
+player_bullet_trail.render = player_bullet_straight.render
 
 function player_bullet_trail:init(img, x, y, v, angle, target, trail, dmg)
     self.group = GROUP.PLAYER_BULLET

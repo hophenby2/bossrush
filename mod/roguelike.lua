@@ -1,7 +1,7 @@
 -- 简易随机十战：借鉴参考项目的事件抽取与逐步推进，不引入天气、道具或商店。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
 local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
-    CHAIN_HP=0.30,CHAIN_TIME_FRAMES=7*60}
+    CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='随机十战',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
     chain={name='RogueChain',battle='RogueChain@RogueChain',result='RogueChainResult@RogueChain',title='接续模式',width=1,record='rogue_chain10',chain=true}}

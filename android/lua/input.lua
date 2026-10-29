@@ -1,5 +1,5 @@
--- 多个触点分别持有动作，抬起一个触点不会释放另一个仍按住的动作。
-local I = { touches = {}, keys = {}, pulses = {}, mouse = { x = 480, y = 270, down = false }, mouseTap = 0, wheel = 0 }
+-- 射击 / 低速按下时各自切换，其余动作与移动仍由触点持有。
+local I = { touches = {}, keys = {}, pulses = {}, toggles = {}, mouse = { x = 480, y = 270, down = false }, mouseTap = 0, wheel = 0 }
 local rawKey, rawLast = lstg.GetKeyState, lstg.GetLastKey
 local xKeys = require('keycode')
 local windows = { ESCAPE=27, BACKSPACE=8, TAB=9, ENTER=13, SPACE=32, SHIFT=16, CTRL=17,
@@ -13,8 +13,8 @@ for number = 1, 12 do
     if value then toX[111+number]=value; fromX[value]=111+number end
 end
 local buttons = {
-    { key = 90, action = 'shoot', x = 853, y = 90, radius = 48, label = '射击' },
-    { key = 16, action = 'slow', x = 750, y = 92, radius = 40, label = '低速' },
+    { key = 90, action = 'shoot', x = 853, y = 90, radius = 48, label = '射击', toggle = true },
+    { key = 16, action = 'slow', x = 750, y = 92, radius = 40, label = '低速', toggle = true },
     { key = 88, action = 'spell', x = 853, y = 200, radius = 40, label = '符卡' },
     { key = 67, action = 'special', x = 750, y = 200, radius = 40, label = '特殊' },
     { key = 27, x = 874, y = 488, radius = 30, label = '暂停' },
@@ -40,8 +40,11 @@ end
 local function rebuild()
     local old, keys = I.keys, {}
     I.mouse.down = false
+    if not I.menuMode() then
+        for _,b in ipairs(buttons) do if b.toggle and I.toggles[b.action] then keys[buttonKey(b)]=true end end
+    end
     for _, t in pairs(I.touches) do
-        if t.button then keys[buttonKey(t.button)] = true
+        if t.button then if not t.button.toggle then keys[buttonKey(t.button)] = true end
         elseif not t.joystick and not t.drag and not t.ignored then
             I.mouse.down = true; I.mouse.x = t.x; I.mouse.y = t.y
         end
@@ -94,6 +97,7 @@ function I.touch(id, x, y, event)
                 if t.button then break end
                 if (x-button.x)^2 + (y-button.y)^2 <= button.radius^2 then
                     t.button = button
+                    if button.toggle and event=='began' then I.toggles[button.action]=not I.toggles[button.action] end
                     if button.key == 27 then I.pulse(27) end
                     break
                 end
@@ -122,11 +126,16 @@ function I.touch(id, x, y, event)
     end
     rebuild()
 end
-function I.reset() I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil end
+function I.reset(keepToggles)
+    I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil
+    if not keepToggles then I.toggles={} end
+end
 local previousMode
 function I.beginFrame()
     local mode = I.menuMode()
-    if previousMode ~= nil and previousMode ~= mode then I.reset() end
+    -- 普通暂停只释放触点并暂时屏蔽开关，继续时沿用；回标题 / 切后台则清除开关。
+    if previousMode ~= nil and previousMode ~= mode then I.reset(true) end
+    if ext and ext.StageIsMenu() then I.toggles={} end
     previousMode = mode
     local t = I.movementId and I.touches[I.movementId]
     if t and t.drag then
@@ -169,9 +178,11 @@ function I.render()
     SetViewMode('ui')
     local menuMode = I.menuMode()
     for _, b in ipairs(menuMode and menuButtons or buttons) do
-        SetImageState('white', '', Color(I.keys[buttonKey(b)] and 150 or 90, 34, 57, 82))
+        local active=I.keys[buttonKey(b)]
+        SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
         RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
-        RenderTTF('title', b.label, b.x, b.y, Color(210, 235, 241, 247), 'centerpoint')
+        local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
+        RenderTTF('title', label, b.x, b.y, Color(230, 235, 241, 247), 'centerpoint')
     end
     if not menuMode then
         SetImageState('white', '', Color(90, 34, 57, 82))
