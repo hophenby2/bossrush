@@ -44,6 +44,9 @@ KeyIsPressed=function(k) return keys[k] and not previous[k] end
 IsValid=function(o) return o and o._live end
 PlaySound=function() end
 lstg={var={},tmpvar={}};stage={current_stage={is_menu=false,revive_miss_limit=9,timer=100}}
+local selectionCount=0
+Q.selection=function(key,q,text,choices) selectionCount=selectionCount+1;assert(key=='revive' and #choices==4 and text==q.text) end
+Q.clearSelection=function() end
 local V=dofile('THlib/ext/ext_revive.lua')
 local function reset(dead)
     lstg.var={__revive_version=1,ran_seed=12345,dead=dead or 10}
@@ -56,13 +59,14 @@ end
 local function answer(correct)
     local q=lstg.var.revive.quiz
     player.x=((correct and q.correct or q.correct%4+1)-2.5)*96
-    for _=1,31 do step() end
-    step({shoot=true});check(q.result==correct,'射击确认按所选答案判定')
+    for _=1,Q.TIME do if q.result~=nil then break end;step({up=true}) end
+    check(q.result==correct and q.age<Q.TIME,'上顶子弹横线提前按所在区判题')
     for _=1,60 do step() end
 end
 reset();check(V.frame(stage.current_stage) and V.active(),'失败前进入答题')
 check(player.death==0 and not player.lock and not player.colli,'答题允许移动且不参与碰撞')
-local x=player.x;step({left=true});check(player.x==x-4,'方向键移动用于选择答案区')
+local x,y=player.x,player.y;step({left=true,up=true});check(player.x<x and player.y>y,'方向键允许上下左右移动，向上可提前触发')
+local q=lstg.var.revive.quiz;step({shoot=true});check(q.result==nil,'射击不再越过接触逻辑直接确认');check(selectionCount>0,'复活调用与原符卡相同的子弹 / 文字实体工厂')
 answer(true)
 check(lstg.var.dead==10 and V.misses()==9 and lstg.var.revive.used==1,'成功后保留累计死亡，只补一个失败余量')
 check(player.death==0 and player.protect==180 and player.colli and not player.lock,'复活有三秒无敌并恢复操作')

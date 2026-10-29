@@ -1,5 +1,5 @@
--- 击破阶段后的快速二选一。成长和选择过程都保存在 var 中，供录像与关内恢复重建。
-local D={VERSION=1,UNIT=100,TIME=60,MIN=100,MAX=100000,HEIGHT=58}
+-- 击破阶段后的弹幕二选一。成长和选择过程都保存在 var 中，供录像与关内恢复重建。
+local D={VERSION=1,UNIT=100,TIME=500,MIN=100,MAX=100000}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -106,46 +106,29 @@ end
 local function controllable(p)
     return p and IsValid(p) and not p.lock and not p.dialog and not p.realrealreal_lock and not p.hide and (p.death or 0)==0
 end
-local function move(p,key,w)
-    local dx=(key.right and 1 or 0)-(key.left and 1 or 0);local dy=(key.up and 1 or 0)-(key.down and 1 or 0)
-    local speed=key.slow and (p.lspeed or 2) or (p.hspeed or 4)
-    if dx*dy~=0 then speed=speed*0.70710678118655 end
-    local x,y=p.x,p.y
-    p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+dx*speed));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+dy*speed))
-    if p.grazer and IsValid(p.grazer) then p.grazer.x=p.x;p.grazer.y=p.y end
-    if p.sp then for _,v in ipairs(p.sp) do v[1]=v[1]+p.x-x;v[2]=v[2]+p.y-y end end
-    p.supportx=(p.supportx or x)+p.x-x;p.supporty=(p.supporty or y)+p.y-y
-end
-function D.rowY(row,w)
-    local progress=math.min(1,row.age/D.TIME)
-    local fall=GameQuiz and GameQuiz.fall(progress) or progress
-    return w.t+D.HEIGHT/2+8-(w.t-w.b+D.HEIGHT+8)*fall
-end
+function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age) end
 function D.frame(scene)
     local s=peek()
-    if not s or not scene or scene.is_menu then return false end
+    if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
     local ps=players()
     if not s.active and #s.queue>0 then
-        -- 死亡、对话或过场仍正常推进，等两位玩家都能移动后再开始这一秒。
+        -- 死亡、对话或过场仍正常推进，等两位玩家都能移动后再开始下落。
         for i=1,(GameNet and GameNet.host()) and 2 or 1 do if not controllable(ps[i]) then return false end end
         s.active=table.remove(s.queue,1);s.active.previous={}
         for i,p in ipairs(ps) do s.active.previous[i]={x=p.x,y=p.y} end
     end
     local row=s.active;if not row then return false end
-    local w=lstg.world;local oldY=D.rowY(row,w);row.age=row.age+1;local newY=D.rowY(row,w)
+    local oldAge=row.age;row.age=row.age+1
+    GameQuiz.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
     local count=(GameNet and GameNet.host()) and 2 or 1;local complete=true
     for i=1,count do
         local p=ps[i]
         if controllable(p) then
-            move(p,p.key or KeyState,w)
+            GameQuiz.move(p,p.key or KeyState)
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
-                local radius=math.max(p.A or 0,p.B or 0,3)+D.HEIGHT/2
-                local a,b=previous.y-oldY,p.y-newY
-                if (math.min(a,b)<=radius and math.max(a,b)>=-radius) then
-                    local t=b~=a and math.max(0,math.min(1,(-radius-a)/(b-a))) or 1
-                    local x=previous.x+(p.x-previous.x)*t
-                    local choice=x<(w.l+w.r)/2 and 1 or 2
+                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2)
+                if choice then
                     row.picks[i]=choice;D.apply(i,row.options[choice]);p.protect=math.max(p.protect or 0,60)
                     PlaySound('item00',0.5)
                 end
@@ -154,7 +137,7 @@ function D.frame(scene)
         end
         if not row.picks[i] then complete=false end
     end
-    if complete or row.age>=D.TIME then s.active=nil end
+    if complete or row.age>=D.TIME then GameQuiz.clearSelection('drops',true);s.active=nil end
     return true
 end
 local function number(value)
@@ -169,24 +152,7 @@ function D.optionLines(id)
     return out
 end
 function D.render()
-    if not stage.current_stage or stage.current_stage.is_menu then return end
-    local s=peek();local row=s and s.active;if not row then return end
-    local w=lstg.world;local mid=(w.l+w.r)/2;local y=D.rowY(row,w)
-    local previousMode=lstg.viewmode
-    SetViewMode('world')
-    for side,id in ipairs(row.options) do
-        local left=side==1 and w.l+4 or mid+4;local right=side==1 and mid-4 or w.r-4
-        SetImageState('white','',Color(228,14,24,42));RenderRect('white',left,right,y-D.HEIGHT/2,y+D.HEIGHT/2)
-        local lines=D.optionLines(id)
-        for i,line in ipairs(lines) do
-            local c=line.color=='red' and Color(255,255,115,120) or Color(255,110,190,255)
-            ui:RenderText('title',line.text,(left+right)/2,y+(#lines+1-2*i)*12,0.8,c,'centerpoint')
-        end
-        local picked={};for slot,choice in ipairs(row.picks) do if choice==side then picked[#picked+1]='P'..slot..' 已选' end end
-        if #picked>0 then ui:RenderText('title',table.concat(picked,'  '),(left+right)/2,y-D.HEIGHT/2+7,0.45,Color(255,180,245,200),'centerpoint') end
-    end
-    ui:RenderText('title','二选一 · 碰到即选 · 上移可提前接取',mid,y+D.HEIGHT/2+13,0.52,Color(255,240,245,255),'centerpoint')
-    if previousMode then SetViewMode(previousMode) end
+    -- 选项由共用 Question / Choice 与中玉实体随 ObjRender 绘制，不再叠加面板。
 end
 function D.renderHUD(scrr,scrt,alpha)
     if not D.enabled() then return end

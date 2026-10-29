@@ -28,7 +28,7 @@ function V.request(allowed)
     s.quiz=q
     player.death=0;player.lock=false;player.dialog=false;player.time_stop=false;player.hide=false;player.colli=false
     player.x=math.max(-184,math.min(184,player.x));player.y=-176
-    q.choice=Q.answer(player.x)
+    q.choice=Q.answer(player.x);q.previous={x=player.x,y=player.y}
     if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_REVIVE: question='..index..' used='..s.used) end
     return true
 end
@@ -40,28 +40,32 @@ local function complete(s,q)
         player.x=x;player.y=-176;player.death=0;player.hide=false
         player.protect=math.max(player.protect or 0,V.PROTECT)
     else s.failedAt=lstg.var.dead end
-    s.quiz=nil
+    Q.clearSelection('revive');s.quiz=nil
     if lstg.SystemLog then lstg.SystemLog('BOSSRUSH_REVIVE: result='..tostring(q.result)..' used='..s.used..' dead='..lstg.var.dead) end
 end
 function V.frame(scene)
-    if not scene or scene.is_menu then return false end
+    if not scene or scene.is_menu then Q.clearSelection('revive');return false end
     local allowed=scene.revive_miss_limit or scene.AllowMissCount
     if allowed then V.request(allowed) end
     local s=state();local q=s and s.quiz
     if not q then return false end
-    if not IsValid(player) then s.quiz=nil;s.failedAt=lstg.var.dead;return false end
+    if not IsValid(player) then Q.clearSelection('revive');s.quiz=nil;s.failedAt=lstg.var.dead;return false end
     if q.result~=nil then
         q.feedback=q.feedback-1
+        Q.selection('revive',q,q.text,q.choices,q.feedback/60)
         if q.feedback<=0 then complete(s,q) end
         return true
     end
-    q.age=q.age+1
-    local speed=KeyIsDown('slow') and (player.lspeed or 2) or (player.hspeed or 4)
-    player.x=math.max(-184,math.min(184,player.x+((KeyIsDown('right') and 1 or 0)-(KeyIsDown('left') and 1 or 0))*speed))
+    local oldAge=q.age;q.age=q.age+1
+    Q.selection('revive',q,q.text,q.choices)
+    local key={};for _,name in ipairs({'up','down','left','right','slow'}) do key[name]=KeyIsDown(name) end
+    Q.move(player,key)
     q.choice=Q.answer(player.x)
+    local choice=Q.contact(q.previous or {x=player.x,y=player.y},player,oldAge,q.age,4)
+    q.previous={x=player.x,y=player.y}
     local cancel=q.age>=30 and KeyIsPressed('spell')
-    if q.age>=Q.TIME or (q.age>=30 and KeyIsPressed('shoot')) or cancel then
-        q.result=not cancel and q.choice==q.correct;q.feedback=60
+    if choice or cancel then
+        q.choice=choice or q.choice;q.result=not cancel and q.choice==q.correct;q.feedback=60
         PlaySound(q.result and 'bonus' or 'invalid')
     end
     return true
@@ -70,30 +74,11 @@ function V.render()
     if not stage.current_stage or stage.current_stage.is_menu then return end
     local s=state();local q=s and s.quiz
     if not q then return end
-    SetViewMode('ui')
-    SetImageState('white','',Color(238,10,18,32));RenderRect('white',272,692,30,506)
-    local color=Color(255,237,244,255)
-    ui:RenderText('title',string.format('答题复活 · 剩余 %d 次',V.MAX-s.used),482,478,0.85,color,'centerpoint')
-    ui:RenderText('title','原符卡题库 · 移动到答案区，射击确认',482,444,0.55,color,'centerpoint')
-    -- 沿用原题目落下曲线，压缩高度为说明区与四个答案区留出空间。
-    local progress=math.min(1,q.age/Q.TIME)
-    for i,line in ipairs(Q.wrap(q.text,24)) do
-        ui:RenderText('title',line,482,400-(i-1)*28-Q.fall(progress)*36,0.58,color,'centerpoint')
-    end
-    local labels={'A','B','C','D'}
-    for i=1,4 do
-        local left=282+(i-1)*100
-        local selected=q.choice==i
-        local correct=q.result~=nil and q.correct==i
-        SetImageState('white','',Color(230,correct and 35 or (selected and 75 or 28),correct and 137 or (selected and 102 or 42),correct and 90 or (selected and 158 or 65)))
-        RenderRect('white',left,left+96,140,265)
-        ui:RenderText('title',labels[i],left+48,242,0.75,color,'centerpoint')
-        ui:RenderText('title',q.choices[i],left+48,204,0.48,color,'centerpoint')
-        if selected then ui:RenderText('title','▲',left+48,164,0.7,color,'centerpoint') end
-    end
-    local text=q.result==nil and string.format('剩余 %.1f 秒 · 符卡键放弃',(Q.TIME-q.age)/60)
+    local previousMode=lstg.viewmode;SetViewMode('world')
+    local text=q.result==nil and string.format('复活剩余 %d 次 · 上顶横线作答 · %.1f 秒',V.MAX-s.used,(Q.TIME-q.age)/60)
         or (q.result and '答对了！复活后无敌 3 秒' or '本局结束')
-    ui:RenderText('title',text,482,100,0.6,color,'centerpoint')
+    ui:RenderText('title',text,0,-210,0.55,Color(255,237,244,255),'centerpoint')
+    if previousMode then SetViewMode(previousMode) end
 end
 GameRevive=V
 return V

@@ -154,7 +154,7 @@ check(not R.recovering and R.session.frames==0 and R.signature()==zeroSignature,
 print('关内续玩回归通过：'..total..' 项；420 帧随机物理与协程重建，成长数据不重复。')
 
 -- 答题期间与复活后的完整冷重建：世界帧冻结，题目、选项、答题时间和次数不能重抽。
-dofile(host.root..'/THlib/ext/ext_quiz.lua');local V=dofile(host.root..'/THlib/ext/ext_revive.lua')
+dofile(host.root..'/THlib/ext/ext_quiz.lua');GameQuiz.selection=function() end;GameQuiz.clearSelection=function() end;local V=dofile(host.root..'/THlib/ext/ext_revive.lua')
 IsValid=function(o) return o and o._live end;PlaySound=function() end
 withRevive=true;stageObject.revive_miss_limit=9;replayWriter=nil
 R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil;R.enabled=false;R.inLogic=false
@@ -180,7 +180,7 @@ for _=1,100 do
     if lane==correct then break end
     keys={[lane<correct and 39 or 37]=true};step()
 end
-keys={};step();keys={[90]=true};step();keys={}
+keys={[38]=true};for _=1,GameQuiz.TIME do step();if lstg.var.revive.quiz and lstg.var.revive.quiz.result~=nil then break end end;keys={}
 for _=1,60 do step() end
 check(not V.active() and lstg.var.revive.used==1 and V.misses()==9 and lstg.var.dead==10,'恢复后可正确作答，累计失误不回退')
 for _=1,15 do step() end
@@ -226,7 +226,7 @@ check(lstg.var.upgrades.active and lstg.var.upgrades.active.age==17 and stageObj
 check(R.flush('drops-active'),'掉落中途保存')
 local activeDropSignature=R.signature();local activeDrop=Serialize(lstg.var.upgrades)
 coldRestore();check(R.signature()==activeDropSignature and Serialize(lstg.var.upgrades)==activeDrop,'下落位置、候选项、玩家数值和射击时钟冷重建一致')
-for i=1,80 do if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then break end;step() end
+for i=1,GameQuiz.TIME do if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then break end;step() end
 local red,blue=GameDrops.values(1);check(red~=100 or blue~=100,'重建后可继续接取道具')
 check(R.flush('drops-picked'),'成长后保存')
 local pickedSignature=R.signature();local pickedValues=Serialize(lstg.var.upgrades)

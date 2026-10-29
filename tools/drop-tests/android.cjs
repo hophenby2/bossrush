@@ -2,7 +2,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
 const puppeteer=require(process.env.BOSSRUSH_PUPPETEER||'/opt/homebrew/lib/node_modules/@mermaid-js/mermaid-cli/node_modules/puppeteer');
-const root=path.resolve(__dirname,'../..'),out=path.join(root,'android/dist/drops-test');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'../..'),out=path.join(root,'android/dist/choice-test');fs.mkdirSync(out,{recursive:true});
 const file=path.join(out,'device-state.json');let state=fs.existsSync(file)?JSON.parse(fs.readFileSync(file)):{};
 const adb=process.env.ADB||path.join(process.env.HOME,'Library/Android/sdk/platform-tools/adb'),serial=process.env.BOSSRUSH_SERIAL||'emulator-5554';
 const run=(...args)=>cp.execFileSync(adb,['-s',serial,...args],{timeout:30000,maxBuffer:16*1024*1024});
@@ -43,13 +43,30 @@ async function start(mode){
  run('shell','am','force-stop','org.bossrush.hd');diagnostics('drops-'+mode);run('shell','run-as','org.bossrush.hd','rm','-f','files/bossrush/User/profiles/'+state.test+'/drops-check.json');
  run('shell','am','start','-n','org.bossrush.hd/.BossRushActivity');await sleep(2000);
  let lastContinue=0;
- const result=await until(()=>{const v=read();if((v.phase==='battle'||(v.phase==='falling'&&v.age<12))&&Date.now()-lastContinue>3500&&checkLog().slice(-2000).includes('paused=true')){run('shell','input','tap','2020','1000');lastContinue=Date.now();}return v.phase==='falling'&&v.age>=12&&!v.recovering&&v;});await sleep(3200);const saved=read();snapshot(mode==='new'?'falling':'restored');
- if(mode==='new'){state.falling=saved;save();console.log('真实 Boss 击破并暂停于掉落中途',JSON.stringify({age:saved.age,red:saved.red,blue:saved.blue}));}
+ const result=await until(()=>{const v=read();if((v.phase==='battle'||(v.phase==='falling'&&v.age<200))&&Date.now()-lastContinue>3500&&checkLog().slice(-2000).includes('paused=true')){run('shell','input','tap','2020','1000');lastContinue=Date.now();}return v.phase==='falling'&&v.age>=200&&!v.recovering&&v;});await sleep(3200);const saved=read();const revival=mode.includes('revive');snapshot(mode.endsWith('new')?'falling':'restored');
+ if(mode.endsWith('new')){state.falling=saved;save();console.log('真实 Boss 击破并暂停于掉落中途',JSON.stringify({age:saved.age,red:saved.red,blue:saved.blue}));}
  else{
   await until(()=>checkLog().includes('restore verified'));
   if(saved.age!==state.falling.age||saved.red!==100||saved.blue!==100)throw Error('掉落恢复状态不符');
   console.log('强杀恢复保留下落进度与初始倍率',saved.age);
-  run('shell','input','tap','2020','1000');await sleep(120);run('shell','input','swipe','324','660','340','650','3000');
+  run('shell','input','tap','2020','1000');await sleep(1200);snapshot(revival?'revive-live':'drop-live');
+  if(revival){
+    const q=read().quiz;const target=(q.correct-2.5)*96;
+    // 使用真实虚拟摇杆先横移到正确区域，再上顶横线，不直接改位置或答案。
+    for(let attempt=0;attempt<16;attempt++){
+      const hero=read().hero;if(Math.abs(target-hero.x)<20)break;
+      const px=target<hero.x?400:570;
+      run('shell','input','swipe',String(px),'820',String(px),'820','120');
+    }
+    const middle=read();const lane=Math.max(1,Math.min(4,1+Math.floor((middle.hero.x+192)/96)));
+    if(lane!==q.correct)throw Error('未移到正确答案区：'+JSON.stringify(middle.hero));
+    run('shell','input','swipe','484','670','484','670','2200');
+    const revived=await until(()=>{const v=read();return v.phase==='picked'&&v;});
+    if(revived.revive.used!==1)throw Error('真实复活没有结算一次');
+    fs.writeFileSync(path.join(out,'revive-result.json'),JSON.stringify({falling:state.falling,restored:saved,revived},null,2));snapshot('revived');
+    console.log('复活四区实体、强杀恢复和上顶提前提交通过');return;
+  }
+  run('shell','input','swipe','324','660','340','650','3000');
   const picked=await until(()=>{const v=read();return v.phase==='picked'&&v;});
   if(picked.red!==110||picked.blue!==95)throw Error('实际接取组合数值不符：'+JSON.stringify(picked));
   run('shell','input','swipe','1946','900','1946','900','3000');

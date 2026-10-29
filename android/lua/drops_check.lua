@@ -3,6 +3,7 @@ local C={}
 function C.install(mode)
     local D=assert(GameDrops);local originalFrame,originalRender,originalDamage=D.frame,D.render,D.damage
     local booted,lastDamage,lastMarker,probeSpawned
+    local revival=mode:match('revive')~=nil
     local paused=mode:match('resume')~=nil
     local probeClass=Class(enemy,{
         init=function(o) enemybase.init(o,100000000,true);o.a=32;o.b=32;o.hide=true end,
@@ -34,14 +35,29 @@ function C.install(mode)
     local function report()
         local s=lstg.var.upgrades
         if not s or not stage.current_stage or stage.current_stage.is_menu then return end
-        local row=s.active;local phase=row and 'falling' or (s.count>0 and 'picked' or 'battle')
+        local revive=lstg.var.revive
+        local row=revival and revive and revive.quiz or s.active
+        local phase=row and (row.result~=nil and 'feedback' or 'falling') or (((revival and revive and revive.used>0) or s.count>0) and 'picked' or 'battle')
         local marker=phase..':'..(row and row.age or math.floor(stage.current_stage.timer/30))..':'..tostring(lastDamage~=nil)
         if marker==lastMarker then return end;lastMarker=marker
         local red,blue=D.values(1)
         local data={phase=phase,age=row and row.age,frame=stage.current_stage.timer,red=red,blue=blue,upgrades=s,
-            damage=lastDamage,hero=IsValid(player) and {x=player.x,y=player.y,timer=player.timer} or nil,recovering=SaveResume.recovering}
+            revive=revive,quiz=revival and row or nil,damage=lastDamage,hero=IsValid(player) and {x=player.x,y=player.y,timer=player.timer} or nil,recovering=SaveResume.recovering}
         local f=assert(io.open(SaveProfiles.userRoot()..'/drops-check.json','w'));f:write(Serialize(data));f:close()
-        if phase=='picked' or (row and row.age==12) then lstg.SystemLog('BOSSRUSH_DROPS_CHECK: '..Serialize(data)) end
+        if phase=='picked' or (row and row.age==200) then lstg.SystemLog('BOSSRUSH_DROPS_CHECK: '..Serialize(data)) end
+    end
+    if revival then
+        local originalRevive=GameRevive.frame
+        GameRevive.frame=function(scene)
+            if scene and not scene.is_menu and scene.timer>=100 and not lstg.var.__drops_revive_triggered then
+                lstg.var.__drops_revive_triggered=true;lstg.var.dead=(scene.revive_miss_limit or scene.AllowMissCount or 9)+1
+            end
+            local frozen=originalRevive(scene)
+            local q=lstg.var.revive and lstg.var.revive.quiz
+            if q and q.age>=200 and not paused and not SaveResume.recovering then paused=true;ext.pop_pause_menu=true end
+            if not SaveResume.recovering then report() end
+            return frozen
+        end
     end
     D.frame=function(scene)
         if not booted and scene and scene.stage_name=='menu' and scene.timer>=120 then
@@ -49,7 +65,7 @@ function C.install(mode)
             if mode:match('resume') then SaveResume.request()
             else lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';RogueTen.start('single') end
         end
-        if scene and not scene.is_menu and scene.timer>=100 and not lstg.var.__drops_check_triggered then
+        if not revival and scene and not scene.is_menu and scene.timer>=100 and not lstg.var.__drops_check_triggered then
             for _,group in ipairs({GROUP.ENEMY,GROUP.NONTJT}) do for _,b in ObjList(group) do
                 if b.IsBoss and b.is_combat and not b.cannot_kill then b.hp=0;object.Kill(b) end
             end end
@@ -58,10 +74,10 @@ function C.install(mode)
         if scene and not scene.is_menu and IsValid(player) then player.protect=math.max(player.protect or 0,120) end
         local frozen=originalFrame(scene);local row=lstg.var.upgrades and lstg.var.upgrades.active
         local state=lstg.var.upgrades
-        if state and state.count>0 and not row and #state.queue==0 and not probeSpawned and scene and not scene.is_menu then
+        if not revival and state and state.count>0 and not row and #state.queue==0 and not probeSpawned and scene and not scene.is_menu then
             probeSpawned=true;New(probeClass)
         end
-        if row and row.age>=12 and not paused and not SaveResume.recovering then paused=true;ext.pop_pause_menu=true end
+        if row and row.age>=200 and not paused and not SaveResume.recovering then paused=true;ext.pop_pause_menu=true end
         if not SaveResume.recovering then report() end
         return frozen
     end

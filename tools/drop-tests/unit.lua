@@ -23,7 +23,7 @@ for _,name in ipairs({'CopyImage','CopyAnimation','LoadTexture','LoadImage','Loa
 GetTextureSize=function() return 512,512 end
 Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
 local drawn={};SetViewMode=noop;RenderRect=noop
-ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y} end}
+ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y,mode=lstg.viewmode} end}
 GetAttr=function(o,k) return rawget(o,k) end;SetAttr=rawset
 load('THlib/lib/Lobject.lua');load('THlib/plus/Utility.lua');load('THlib/eventListener.lua')
 task={Do=noop,Clear=noop,New=noop,SetMode={[1]=function(x) return x end,[2]=function(x) return x end,[3]=function(x) return x end}}
@@ -39,7 +39,16 @@ Include=function(path) return load(path:gsub('\\','/')) end
 System=Class(object);BulletBreak_Table=Class(object)
 PlayerWalkImageSystem=function() return {frame=noop,render=noop} end
 EnemyWalkImageSystem=PlayerWalkImageSystem
-local D=load('THlib/drops.lua');load('THlib/ext/ext_quiz.lua')
+local D=load('THlib/drops.lua');local Q=load('THlib/ext/ext_quiz.lua')
+-- 图形桩保留真实对象池 / 数字回调语义，实际贴图与渲染另由安卓原生回归验证。
+NewObject=function(c) return New(c) end
+Del=function(o) if o.class[2] then o.class[2](o) end;o._live=false end
+bullet=Class(object,{init=function(o,style)
+    if not style then return end
+    o.imgclass=style;o.class=bullet;o.group=GROUP.INDES;o.a=4;o.b=4;o._layer=-200
+end,render=function(o) drawn[#drawn+1]={bullet=true,x=o.x,y=o.y,alpha=o._a} end},true)
+ball_mid={}
+
 load('THlib/player/player.lua');load('THlib/player/reimu/reimu.lua');load('THlib/player/marisa/marisa.lua');load('THlib/player/chiruno/chiruno.lua')
 local include=Include;Include=noop;load('THlib/enemy/enemy.lua');Include=include
 local cooldown=Class(player_class,{init=function(p) player_class.init(p);p.shots=0 end,shoot=function(p) p.shots=p.shots+1;p.nextshoot=4 end})
@@ -125,10 +134,32 @@ local function pick(up,coop)
     local ps={p};if coop then local q=hero(reimu_player,2);q.x=96;q.y=-176;q.key={};ps[2]=q;GameNet={host=function() return true end,players=ps} end
     player=p;KeyState={up=up};p.key=KeyState
     D.award(boss(70));lstg.var.upgrades.queue[1].options={1,2}
-    for i=1,60 do D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
-    error('掉落未在 60 帧内结束')
+    for i=1,Q.TIME do D.frame(stage.current_stage);if not lstg.var.upgrades.active and #lstg.var.upgrades.queue==0 then return i,ps end end
+    error('掉落未在原卡 500 帧内结束')
 end
-local stationary=pick(false);red,blue=D.values(1);check(stationary<=60 and red==105 and blue==100,'原地等待可在一秒内接到左侧红字')
+reset();p=hero(reimu_player);D.award(boss(69));D.frame(stage.current_stage)
+local row=lstg.var.upgrades.active;local board=Q.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
+check(#board.walls==41 and #board.labels==2,'二选一由 33 颗横弹和 8 颗分隔弹组成，选项是实体文字')
+check(board.walls[34].x==0 and near(board.walls[41].y,Q.top(row.age)-96),'二选一竖向分隔位置与原卡一致')
+local gap=board.walls[1].y-board.labels[1].y;row.age=250
+Q.selection('drops',row,nil,{D.optionLines(1),D.optionLines(2)})
+check(near(board.walls[1].y,Q.top(250)) and near(board.walls[1].y-board.labels[1].y,gap),'子弹与选项文字按同一原始曲线下落，偏移不变')
+local oldView=SetViewMode;SetViewMode=function(mode) lstg.viewmode=mode end;lstg.viewmode='ui'
+local rectangles=0;local rect=RenderRect;RenderRect=function() rectangles=rectangles+1 end
+for _,o in ipairs(board.walls) do o.class[4](o) end;for _,o in ipairs(board.labels) do o.class[4](o) end;D.render()
+check(rectangles==0,'选择呈现不绘制遮挡矩形或浮层');RenderRect=rect
+check(drawn[#drawn].mode=='world' and lstg.viewmode=='ui','文字明确使用世界坐标并恢复原视图，不会落到屏幕左下角');SetViewMode=oldView
+Q.clearSelection('drops',true);check(not IsValid(board.walls[1]) and not IsValid(board.labels[1]),'选择结束清理弹体与文字，不残留覆盖')
+local gen=Rand();gen:Seed(17);local quiz=Q.new(1,gen);quiz.age=220
+local beforeRandom=ran;local four=Q.selection('revive',quiz,quiz.text,quiz.choices)
+check(ran==beforeRandom and #four.walls==57 and #four.labels==4 and four.question,'四区答题使用相同工厂：33 横弹、24 分隔弹、题目与四个答案，不替换战斗随机源')
+check(four.walls[34].x==-96 and four.walls[42].x==0 and four.walls[50].x==96,'四区分隔与原符卡 -96 / 0 / 96 完全一致')
+local y=four.labels[1].y;Q.selection('revive',quiz,quiz.text,quiz.choices,.5)
+check(four.labels[1].alpha==.5 and four.walls[1]._a==127.5 and four.labels[1].y==y,'答题结果时弹体和文字一起淡出，位置保持同步')
+Q.clearSelection('revive');check(not IsValid(four.question) and not IsValid(four.walls[57]),'四区结果淡出后清理全部实体')
+local live=Q.spawn(quiz.text,quiz.choices)
+check(#live.walls==57 and live.walls[1].group~=GROUP.GHOST,'原卡调用同一工厂，保留真实敌弹碰撞组')
+local stationary=pick(false);red,blue=D.values(1);check(stationary==Q.TIME and D.TIME==Q.TIME and red==105 and blue==100,'原地等待沿用原符卡 500 帧周期，超时按所在区选择')
 local early=pick(true);check(early<stationary,'向上移动可以提前接取')
 pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
 check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')

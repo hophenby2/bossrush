@@ -484,86 +484,16 @@ do
                 end
             end)
             local YES
-            local fall_y = 460
             local Time = GameQuiz.TIME
-            local move_set = GameQuiz.fall
-            local Question = Class(object, {
-                init = function(self, text)
-                    self.y = 358
-                    self.x = 0
-                    self.bound = false
-                    self.colli = false
-                    self.layer = 0
-                    self.alpha = 1
-                    self.text = text
-                    task.New(self, function()
-                        task.MoveToEx(0, -fall_y, Time, move_set)
-                        task.SmoothSetValueTo("alpha", 0, 60, 0)
-                        Del(self)
-                    end)
-                end,
-                frame = task.Do,
-                render = function(self)
-                    ui:RenderText("title", self.text, self.x, self.y, 0.9,
-                            Color(self.alpha * 255, 255, 255, 255), "centerpoint")
-                end
-            }, true)
-            local Choice = Class(object, {
-                init = function(self, pos, text)
-                    self.bound = false
-                    self.colli = false
-                    self.layer = 0
-                    self.alpha = 1
-                    self.levels = { "A", "B", "C", "D" }
-                    self.pos = pos
-                    self.text = text
-                    self.y = 282
-                    self.x = (pos - 2.5) * 192 / 2
-                    task.New(self, function()
-                        task.MoveToEx(0, -fall_y, Time, move_set)
-                        task.SmoothSetValueTo("alpha", 0, 60, 0)
-                        Del(self)
-                    end)
-                end,
-                frame = task.Do,
-                render = function(self)
-                    ui:RenderText("title", ("%s. %s"):format(self.levels[self.pos], self.text), self.x, self.y, 0.85,
-                            Color(self.alpha * 255, 255, 255, 255), "centerpoint")
-                end
-            }, true)
-            local wall = function(x, y)
-                local self = NewObject(bullet)
-                bullet.init(self, ball_mid, 2, false, false)
-                self.fogtime = 0
-                self.x, self.y = x, y
-                self.a, self.b = self.a * 1.5, self.b * 1.5
-                self.bound = false
-                task.New(self, function()
-                    task.MoveToEx(0, -fall_y, Time, move_set)
-                    self.bound = true
-                end)
-                return self
-            end
             --把正确答案填在第一个
             local function NewQuestion(q, c1, c2, c3, c4)
                 local _true
                 YES = nil
-                New(Question, q)
                 local out_k = GameQuiz.shuffle(4,ran)
                 _true = out_k[1]
-                New(Choice, out_k[1], c1)
-                New(Choice, out_k[2], c2)
-                New(Choice, out_k[3], c3)
-                New(Choice, out_k[4], c4)
-                local walls = {}
-                for x = -16, 16 do
-                    table.insert(walls, wall(x / 16 * 192, 330))
-                end
-                for x = -1, 1 do
-                    for y = 1, 8 do
-                        table.insert(walls, wall(x / 2 * 192, 330 - y / 16 * 192))
-                    end
-                end
+                local choices={}
+                choices[out_k[1]]=c1;choices[out_k[2]]=c2;choices[out_k[3]]=c3;choices[out_k[4]]=c4
+                local walls = GameQuiz.spawn(q,choices).walls
                 task.Wait(Time)
                 sp:UnitListUpdate(walls)
                 local answer = GameQuiz.answer(player.x)
