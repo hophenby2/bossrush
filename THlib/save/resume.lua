@@ -262,7 +262,7 @@ function R.beforeLogic()
 end
 function R.readInput(state)
     if not R.recovering then return false end
-    Byte2KeyState(state,R.actionByte);state.touch_x,state.touch_y=nil,nil
+    Byte2KeyState(state,R.actionByte);state.touch_x,state.touch_y,state.touch_unlimited=nil,nil,nil
     if R.touchInput then UnpackTouchInput(state,R.touchInput) end
     if replayWriter then replayWriter:Record(state) end;return true
 end

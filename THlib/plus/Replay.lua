@@ -70,7 +70,7 @@ function ReplayFrameReader:Next(state)
         local ret = self._fs:ReadByte()
         self._read = self._read + 1
         Byte2KeyState(state, ret)
-        state.touch_x,state.touch_y=nil,nil
+        state.touch_x,state.touch_y,state.touch_unlimited=nil,nil,nil
         if self._touch then
             local bytes={};for i=1,4 do bytes[i]=string.char(assert(self._fs:ReadByte())) end
             UnpackTouchInput(state,table.concat(bytes))

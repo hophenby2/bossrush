@@ -74,7 +74,7 @@ package.preload.keycode = function()
         SHIFT=12, CTRL=14, ALT=16, LEFT=26, RIGHT=27, UP=28, DOWN=29,
         HOME=21, END=24, PGUP=22, PGDN=25 }, { __index=function(_, key) return key:byte()+100 end })
 end
-lstg = { GetKeyState=function() return false end, GetLastKey=function() return 0 end }
+lstg = { var={}, GetKeyState=function() return false end, GetLastKey=function() return 0 end }
 local input = dofile('android/lua/input.lua')
 input.touch(1, 180, 130, 'began')
 input.touch(2, 853, 90, 'began')
@@ -140,7 +140,8 @@ assert(input.toggles.shoot and not lstg.GetKeyState(65), '暂停保留开关，�
 atPause=false;input.beginFrame();assert(lstg.GetKeyState(65), '继续游戏自动沿用暂停前的射击开关')
 atTitle=true;input.beginFrame()
 assert(not lstg.GetKeyState(68) and not lstg.GetKeyState(65) and not input.toggles.shoot, '回到标题清除开关')
-atTitle=false;input.beginFrame();input.touch(12,853,90,'began');input.touch(12,853,90,'ended');assert(lstg.GetKeyState(65))
+atTitle=false;input.beginFrame();assert(lstg.GetKeyState(65),'进关默认射击')
+input.touch(12,853,90,'began');input.touch(12,853,90,'ended');assert(not lstg.GetKeyState(65),'手动关闭默认射击')
 input.reset();input.beginFrame();assert(not lstg.GetKeyState(65), '切后台 / 失焦使用完整重置，清除开关')
 local paused,sceneRenders,blurs,copies=false,0,0,0
 PostEffect=function(fx) if fx=='fx:pause_menu_blur' then blurs=blurs+1 else copies=copies+1 end end

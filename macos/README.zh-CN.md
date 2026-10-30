@@ -52,7 +52,9 @@ python3 macos/verify.py
 python3 macos/verify.py --smoke
 ```
 
-后者启动真实 Metal 应用，依次检查菜单、TH35「客星」、2D / RenderTarget / 平铺 / 3D、逐帧拖拽与松手停止，以及 1920 次高频音效请求、暂停 / 恢复 / 停止和 BGM 连续播放。渲染包含 30 项像素检查，测试使用临时存档，截图与日志输出至 `macos/dist/test/`。
+后者启动真实 Metal 应用，依次检查菜单、TH35「客星」、2D / RenderTarget / 平铺 / 3D、逐帧拖拽与松手停止、双击 Bomb、触控设置保存，以及 1920 次高频音效请求、暂停 / 恢复 / 停止和 BGM 连续播放。渲染包含 30 项像素检查，测试使用临时存档，截图与日志输出至 `macos/dist/test/`。
+
+F8 触屏预览也支持“设置 → 触控”：双击 Bomb 最大间隔默认 0.10 秒，可调为 0.05–0.50 秒；“拖动无移速限制”默认关闭。开启后自机直接跟随相对拖拽向量，松手停止。移动选项从下一局开始生效，并记录进录像 / 续玩初态。使用 `BOSSRUSH_MAC_TEST_UNLIMITED=1 python3 macos/verify.py --smoke --mode input` 可检查无限速拖拽与双击 Bomb。
 
 Mac 与 Android 一样只链接随包的 OpenAL Soft。旧 Mac 可执行文件同时链接系统 OpenAL，导致音效重播时主线程阻塞在系统 `alBufferData`；这些等待发生在命中回调中，之前被误计为碰撞计算耗时。构建校验现在禁止系统 OpenAL 依赖，并在真实运行中检查 AL 符号归属。
 

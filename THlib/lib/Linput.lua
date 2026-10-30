@@ -40,7 +40,7 @@ function GetInput()
         if not GetKeyState(keys.shoot) and GetKeyState(KEY.CTRL) then
             KeyState["shoot"] = not KeyStatePre["shoot"]
         end
-        KeyState.touch_x,KeyState.touch_y=nil,nil
+        KeyState.touch_x,KeyState.touch_y,KeyState.touch_unlimited=nil,nil,nil
         if AndroidInput and lstg.var.__input_version==2 then AndroidInput.readMovement(KeyState) end
         -- 记录当前帧的按键
         replayWriter:Record(KeyState)
@@ -85,6 +85,9 @@ end
 function TouchInputMovement(p,key,speed)
     if not key or type(key.touch_x)~='number' or type(key.touch_y)~='number' then return end
     local dx,dy=key.touch_x-p.x,key.touch_y-p.y
+    local unlimited=key.touch_unlimited
+    if unlimited==nil then unlimited=lstg.var and lstg.var.__touch_unlimited end
+    if unlimited then return dx,dy end
     local distance=math.sqrt(dx*dx+dy*dy)
     if distance>speed and distance>0 then dx=dx*speed/distance;dy=dy*speed/distance end
     return dx,dy

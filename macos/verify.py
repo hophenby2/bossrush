@@ -7,7 +7,7 @@ APP=ROOT/'dist/Boss Rush HD.app'
 BINARY=APP/'Contents/MacOS/BossRushHD'
 def run(*args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','input','audio']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','input','audio','settings']);args=parser.parse_args()
  run('luajit',ROOT/'tests/input.lua',ROOT.parent)
  run('codesign','--verify','--deep','--strict',APP)
  info=plistlib.loads((APP/'Contents/Info.plist').read_bytes())
@@ -24,7 +24,7 @@ def main():
  print('Mac 应用结构、Apple Silicon 架构、签名、动态库隔离校验通过',flush=True)
  if not args.smoke:return
  out=ROOT/'dist/test';out.mkdir(exist_ok=True);reports=[]
- for mode in ([args.mode] if args.mode else ('menu','battle','graphics','input','audio')):
+ for mode in ([args.mode] if args.mode else ('menu','battle','graphics','input','audio','settings')):
   with tempfile.TemporaryDirectory(prefix='bossrush-mac-'+mode+'-') as sandbox:
    data=Path(sandbox)
    env=dict(os.environ,BOSSRUSH_MAC_DATA=sandbox,BOSSRUSH_MAC_TEST=mode)
@@ -43,7 +43,8 @@ def main():
    result=json.loads(report.read_text());assert 'Metal' in result['version']
    assert result['audio']['renderer']=='OpenAL Soft' and '/Frameworks/soft_oal' in result['audio']['library'],'AL 符号未绑定到打包的 OpenAL Soft'
    assert mode!='battle' or result['peak']>0,'战斗测试没有生成弹幕'
-   assert mode!='input' or (result['input_checked'] and result['paused']),'Mac 逐帧拖拽 / 暂停未完成验证'
+   assert mode!='input' or (result['input_checked'] and result['input_bomb_checked'] and result['paused']),'Mac 逐帧拖拽 / 双击 Bomb / 暂停未完成验证'
+   assert mode!='settings' or result['settings_checked'],'触控设置 / 持久保存未完成验证'
    assert mode!='audio' or (result['audio_checked'] and result['audio_calls']==1920),'高频音效 / BGM 状态回归未完成'
    screenshot=data/('bossrush/snapshot/mac-'+mode+'.png')
    assert screenshot.is_file(),'未生成画面截图'

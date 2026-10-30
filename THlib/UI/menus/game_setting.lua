@@ -21,6 +21,8 @@ local function other_setting_default()
     cs.displayBG = ds.displayBG
     cs.auradistortion = ds.auradistortion
     cs.easyrender = ds.easyrender
+    cs.touchBombInterval = ds.touchBombInterval
+    cs.touchUnlimited = ds.touchUnlimited
 
 end
 
@@ -291,7 +293,7 @@ function game_setting:init(exit)
     self.pos2 = 1
     self.x1, self.x2, self.y1, self.y2 = 100, 860, 40, 450
     self.dpline = 270
-    self.h1, self.h2 = 70, 50
+    self.h1, self.h2 = AndroidInput and 60 or 70, 50
     local x1, x2, y1, y2 = self.x1, self.x2, self.y1, self.y2
     local _line = self.dpline
     local h1, h2 = self.h1, self.h2
@@ -338,6 +340,13 @@ function game_setting:init(exit)
             Newsetting_button("简单UI渲染（减少动态渲染）", "easyrender", _line, x2, y2 - h2 * 3, y2 - h2 * 2),
         }),
     }
+    if AndroidInput then
+        self.menus[#self.menus+1]=Newsmall_menu("触控",x1,_line,y2-h1*6,y2-h1*5,{
+            Newsetting_bar("双击 Bomb 最大间隔","touchBombInterval",10,50,50,500,10,
+                _line,x2,y2-h2,y2,function(t) return ("%.2f 秒"):format(t/1000) end),
+            Newsetting_button("拖动无移速限制（下一局）","touchUnlimited",_line,x2,y2-h2*2,y2-h2),
+        })
+    end
     self.menus[self.pos1].choosing = true
     self.menus[self.pos1].setting_item[self.pos2].choosing = true
     self.curb_size = 0

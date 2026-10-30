@@ -1,9 +1,9 @@
 -- 失败前冻结同一场战斗，答对一题抵消一次失败判定；真实失误与收卡历史不回退。
-local V={MAX=3,PROTECT=180}
+local V={MAX=3,PROTECT=180,LIVES=5}
 local Q=GameQuiz
 local savedFields={'x','y','death','lock','dialog','hide','colli','time_stop'}
 local function state()
-    if lstg.var.__revive_version~=1 then return end
+    if lstg.var.__revive_version~=1 and lstg.var.__revive_version~=2 then return end
     if not lstg.var.revive then lstg.var.revive={used=0,credits=0,asked={}} end
     return lstg.var.revive
 end
@@ -36,7 +36,8 @@ local function complete(s,q)
     local x=player.x
     for _,key in ipairs(savedFields) do player[key]=q.original[key] end
     if q.result then
-        s.used=s.used+1;s.credits=s.credits+math.max(1,V.misses()-q.allowed)
+        local lives=lstg.var.__revive_version==2 and V.LIVES or 1
+        s.used=s.used+1;s.credits=s.credits+math.max(1,V.misses()-q.allowed)+lives-1
         player.x=x;player.y=-176;player.death=0;player.hide=false
         player.protect=math.max(player.protect or 0,V.PROTECT)
     else s.failedAt=lstg.var.dead end
@@ -59,6 +60,7 @@ function V.frame(scene)
     local oldAge=q.age;q.age=q.age+1
     Q.selection('revive',q,q.text,q.choices)
     local key={};for _,name in ipairs({'up','down','left','right','slow'}) do key[name]=KeyIsDown(name) end
+    if KeyState then key.touch_x,key.touch_y,key.touch_unlimited=KeyState.touch_x,KeyState.touch_y,KeyState.touch_unlimited end
     Q.move(player,key)
     q.choice=Q.answer(player.x)
     local choice=Q.contact(q.previous or {x=player.x,y=player.y},player,oldAge,q.age,4)
@@ -76,7 +78,7 @@ function V.render()
     if not q then return end
     local previousMode=lstg.viewmode;SetViewMode('world')
     local text=q.result==nil and string.format('复活剩余 %d 次 · 上顶横线作答 · %.1f 秒',V.MAX-s.used,(Q.TIME-q.age)/60)
-        or (q.result and '答对了！复活后无敌 3 秒' or '本局结束')
+        or (q.result and (lstg.var.__revive_version==2 and '答对了！恢复 5 条命，无敌 3 秒' or '答对了！复活后无敌 3 秒') or '本局结束')
     ui:RenderText('title',text,0,-210,0.55,Color(255,237,244,255),'centerpoint')
     if previousMode then SetViewMode(previousMode) end
 end

@@ -162,7 +162,7 @@ IsValid=function(o) return o and o._live end;PlaySound=function() end
 withRevive=true;stageObject.revive_miss_limit=9;replayWriter=nil
 R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil;R.enabled=false;R.inLogic=false
 stage.current_stage=stage.stages.menu;stage.next_stage=nil
-lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=1}
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,__revive_version=2}
 keys={};last=0;stage.Set('save',stageObject.stage_name)
 for _=1,200 do step() end
 check(V.active() and stageObject.timer==80 and lstg.var.revive.quiz.age==120,'答题中物理冻结而续玩帧持续记录')
@@ -186,7 +186,7 @@ for _=1,100 do
 end
 keys={[38]=true};for _=1,GameQuiz.TIME do step();if lstg.var.revive.quiz and lstg.var.revive.quiz.result~=nil then break end end;keys={}
 for _=1,60 do step() end
-check(not V.active() and lstg.var.revive.used==1 and V.misses()==9 and lstg.var.dead==10,'恢复后可正确作答，累计失误不回退')
+check(not V.active() and lstg.var.revive.used==1 and V.misses()==5 and lstg.var.dead==10,'恢复后可正确作答并获得五条命，累计失误不回退')
 for _=1,15 do step() end
 check(R.flush('revived'),'复活后保存')
 local revivedSignature=R.signature();local used=lstg.var.revive.used
@@ -245,7 +245,7 @@ withTouch,withBomb=true,true;skipRankInit=false;replayWriter=nil;R.session=nil;R
 R.pauseAfterRender=nil;R.memo=nil;R.enabled=false;LoadSaveInputState({})
 stage.current_stage=stage.stages.menu;stage.next_stage=nil
 lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,
-    __revive_version=1,__rank_version=1,__drops_version=2,__input_version=2}
+    __revive_version=2,__rank_version=1,__drops_version=2,__input_version=2,__touch_unlimited=true}
 local liveTouch={};AndroidInput={reset=function() end,readMovement=function(out) out.touch_x,out.touch_y=liveTouch.x,liveTouch.y end}
 lstg.system={castCharge4=function(_,p) p.protect=300;objects[#objects+1]={_live=true,group=3,x=p.x,y=p.y,vx=0,vy=1,rot=0,timer=0,hp=1} end}
 keys={};last=0;stage.Set('save',stageObject.stage_name)
@@ -261,6 +261,7 @@ local checkpoint=assert(R.peek());local changed=DeSerialize(Serialize(checkpoint
 changed.inputs=C.base64(C.unbase64(changed.inputs):sub(1,-2))
 check(not pcall(R.validate,changed),'拒绝缺失拖拽字节的续玩输入')
 coldRestore()
+check(lstg.var.__touch_unlimited==true,'续玩从关卡初态恢复无移速限制选项')
 check(R.signature()==touchSignature and hero.x==savedHeroX and hero.y==savedHeroY,'任意角度拖拽与抬手后的实际移动完整重建')
 check(Serialize(lstg.var.upgrades)==growth and GameDrops.bombState(hero)==1,'红蓝成长、Bomb 数量和恢复余量完整重建')
 print('含精确拖拽和 Bomb 的续玩回归通过：'..total..' 项。')

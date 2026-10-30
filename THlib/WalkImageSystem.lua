@@ -252,6 +252,7 @@ local WalkImage = WalkImage
 local unpack = unpack
 function BossWalkImageSystem:SetImageInList(img)
     local b = self.obj
+    if boss and boss.UpdateSpellBackground then boss.UpdateSpellBackground(b,img) end
     if WalkImage.imglist[img] then
         WalkImage.LoadFunc[img]()
         b.WALKIMGID = img

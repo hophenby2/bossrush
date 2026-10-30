@@ -50,6 +50,7 @@ end
 function N.readKeys(out)
     local localKeys=N.localKeys();for _,k in ipairs(actions) do out[k]=localKeys[k] end
     out.touch_x,out.touch_y=localKeys.touch_x,localKeys.touch_y
+    out.touch_unlimited=localKeys.touch_unlimited
 end
 local function clearPeer(reason)
     N.connected=false;N.ready=false;N.keys[2]={};N.lastInput=0
@@ -101,6 +102,7 @@ local function control(v,connection)
             if v.x~=nil or v.y~=nil then
                 assert(finite(v.x,2048) and finite(v.y,2048),'联机拖拽目标无效')
                 input.touch_x=math.floor(v.x*16+0.5)/16;input.touch_y=math.floor(v.y*16+0.5)/16
+                input.touch_unlimited=v.unlimited==true
             end
             N.inputSeq=v.seq;N.keys[2]=input;N.keys[2].touch_shoot=v.touch==true;N.lastInput=T.now()
         end
@@ -254,7 +256,7 @@ function N.poll()
     end
     if N.connected and N.peer and not N.peer.closed and now-(N.lastPing or 0)>1 then N.lastPing=now;send({t='ping',clock=now-N.epoch}) end
     if N.client() and N.connected and now-(N.lastSent or 0)>1/60 then
-        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;local input=N.localKeys();send({t='input',seq=N.clientSeq,keys=mask(input),touch=AndroidPlatform~=nil,x=input.touch_x,y=input.touch_y})
+        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;local input=N.localKeys();send({t='input',seq=N.clientSeq,keys=mask(input),touch=AndroidPlatform~=nil,x=input.touch_x,y=input.touch_y,unlimited=input.touch_unlimited})
     end
 end
 function N.readyForLogic()
@@ -342,9 +344,10 @@ function N.quiz(fn,scene)
     local slot=N.lastMissSlot or 1;local p=N.players[slot]
     if not p or not IsValid(p) then return fn(scene) end
     local old,oldLstg=player,lstg.player;local current,previous={},{}
-    for _,k in ipairs(actions) do current[k]=KeyState[k];previous[k]=KeyStatePre[k];KeyState[k]=N.keys[slot][k];KeyStatePre[k]=(N.quizKeys or {})[k] end
+    local quizInputs={'up','down','left','right','slow','shoot','spell','special','touch_x','touch_y','touch_unlimited'}
+    for _,k in ipairs(quizInputs) do current[k]=KeyState[k];previous[k]=KeyStatePre[k];KeyState[k]=N.keys[slot][k];KeyStatePre[k]=(N.quizKeys or {})[k] end
     player=p;lstg.player=p;local result={pcall(fn,scene)}
-    N.quizKeys=clone(N.keys[slot]);for _,k in ipairs(actions) do KeyState[k]=current[k];KeyStatePre[k]=previous[k] end
+    N.quizKeys=clone(N.keys[slot]);for _,k in ipairs(quizInputs) do KeyState[k]=current[k];KeyStatePre[k]=previous[k] end
     player=old;lstg.player=oldLstg;if not result[1] then error(result[2],0) end;return unpack(result,2)
 end
 -- 激光的手动碰撞也逐个玩家检查，但任务、宽度变化和寿命每帧只运行一次。

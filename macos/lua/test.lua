@@ -37,6 +37,8 @@ function T.install()
     local logicalTarget=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LOGIC_FRAMES') or '')
     local benchmarkStart
     local audioCalls,audioChecked,audioMusic=0,false,nil
+    local settingsObject,settingsChecked,bombBefore,inputBombChecked
+    local unlimited=os.getenv('BOSSRUSH_MAC_TEST_UNLIMITED')=='1'
     local inputTick,inputStart,inputStopped,inputChecked=0,nil,nil,false
     local timings={}
     for _,name in ipairs({'ObjFrame','CollisionCheck','UpdateXY','AfterFrame'}) do
@@ -86,12 +88,22 @@ function T.install()
         if not (logicalTarget and captured) then quit=original() end
         if canInput and inputTick>=11 and inputTick<=20 then
             local distance=math.sqrt((p.x-beforeX)^2+(p.y-beforeY)^2)
-            assert(math.abs(distance-p.lspeed)<.001,'Mac 逐帧拖拽移速不符')
+            local expected=unlimited and (inputTick==11 and 40 or 0) or p.lspeed
+            assert(math.abs(distance-expected)<.001,'Mac 逐帧拖拽移速不符')
         end
         if canInput and inputTick==50 then
             assert(math.abs(p.x-inputStart[1]-32)<.001 and math.abs(p.y-inputStart[2]-24)<.001,'Mac 拖拽终点不符')
             assert(p.x==inputStopped[1] and p.y==inputStopped[2],'Mac 抬手后没有立即停止')
             inputChecked=true
+        end
+        if canInput and inputTick==51 then
+            bombBefore=GameDrops.bombState(p)
+            AndroidInput.touch('mac-tap',400,300,'began');AndroidInput.touch('mac-tap',400,300,'ended')
+        elseif canInput and inputTick==52 then
+            AndroidInput.touch('mac-tap',400,300,'began');AndroidInput.touch('mac-tap',400,300,'ended')
+        elseif canInput and inputTick==54 then
+            assert(GameDrops.bombState(p)==bombBefore-1,'双击未在真实引擎中释放一枚 Bomb')
+            inputBombChecked=true
         end
         local scene=stage.current_stage
         if scene and scene.stage_name=='menu' and scene.timer>=90 and not started then
@@ -107,9 +119,24 @@ function T.install()
                     for _,entry in ipairs(plan) do if entry.cardId~=3638 and #out<10 then out[#out+1]=entry end end
                     return out
                 end
+                setting.touchUnlimited=unlimited
                 lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';RogueTen.start()
             elseif mode=='graphics' then
                 assert(loadstring(cc.FileUtils:getInstance():getStringFromFile('game/android/graphics_check.lua')))().run()
+            elseif mode=='audio' then
+                -- 自动化运行不因切回编辑器而暂停；使用固定循环曲，避免菜单曲切换影响断言。
+                AndroidFocus=function() end
+                audioMusic='SCORE';PlayMusic(audioMusic)
+            elseif mode=='settings' then
+                settingsObject=New(game_setting,function() end)
+                assert(#settingsObject.menus==6 and settingsObject.menus[6].display_name=='触控','缺少触控设置页')
+                assert(cur_setting.touchBombInterval==100 and cur_setting.touchUnlimited==false,'触控默认值错误')
+                settingsObject.menus[1].choosing=false;settingsObject.menus[6].choosing=true
+                settingsObject.pos1=6;settingsObject.alpha=1;settingsObject.locked=false
+                settingsObject.menus[6].setting_item[1].choosing=true
+                cur_setting.touchBombInterval=250;cur_setting.touchUnlimited=true;save_setting();loadConfigure()
+                assert(setting.touchBombInterval==250 and setting.touchUnlimited==true,'触控设置未持久保存')
+                settingsChecked=true
             end
         end
         if started then
@@ -144,7 +171,7 @@ function T.install()
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
                     f:write(Serialize({mode=mode,stage=scene.stage_name,frames=frames,peak=maxBullets,
-                        audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
+                        input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true
                     lstg.SystemLog('BOSSRUSH_MAC_TEST: '..mode..' 通过')

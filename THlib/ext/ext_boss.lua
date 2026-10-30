@@ -122,25 +122,16 @@ end
 ---@param unit object
 ---@param other function
 function extboss:Do(index, unit, other)
-    if IsValid(self[index]) then
-        if self.boss_id ~= boss_group[1].ID then
-            self.boss_id = nil
-            object.Del(self[index])
-            if unit then
-                self[index] = New(unit)
-            end
-            if other then
-                other(self)
-            end
-        end
-    else
-        if unit then
-            self[index] = New(unit)
-        end
-        if other then
-            other(self)
-        end
+    -- 相同 ID 可能来自不同关卡；同一个 TH34 载体也会在换卡时更换角色。
+    local owner=boss_group[1]
+    local ownerKey,classKey=index..'_owner',index..'_class'
+    if self[ownerKey]~=owner or self[classKey]~=unit then
+        if IsValid(self[index]) then object.Del(self[index]) end
+        self[index]=nil
+        self[ownerKey],self[classKey]=owner,unit
     end
+    if not IsValid(self[index]) and unit then self[index]=New(unit) end
+    if other then other(self) end
 end
 function extboss:refresh()
     self.alpha = 0
@@ -148,6 +139,7 @@ function extboss:refresh()
     self.boss_bg = nil --背景处理
     self.boss_aura = nil --法阵处理
     self.boss_SCcircle = nil--符卡环处理
+    self.boss_bg_owner,self.boss_bg_class,self.boss_SCcircle_owner,self.boss_SCcircle_class=nil,nil,nil,nil
     self.maxlen = 0
     self.curlen = 0
 end
@@ -165,6 +157,7 @@ function extboss:ValidDel()
     self.boss_bg = nil
     self.boss_aura = nil
     self.boss_SCcircle = nil
+    self.boss_bg_owner,self.boss_bg_class,self.boss_SCcircle_owner,self.boss_SCcircle_class=nil,nil,nil,nil
 end
 
 ---@class ext.boss

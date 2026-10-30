@@ -1,6 +1,32 @@
 ---@class boss
 boss = Class(enemybase)
 
+-- TH31–TH35 以角色行走图为稳定键，复用 TH07–TH10 的现有符卡背景。
+-- 空载体和这些作品里没有的角色继续使用注册时传入的背景。
+local spellBackgrounds = {
+    Reimu={'TH08','SCBG3+'}, Marisa={'TH08','SCBG3+'},
+    Nightbug={'TH08','SCBG1'}, Lorelei={'TH08','SCBG2'},
+    Kamishirasawa={'TH08','SCBG2'}, Kamishirasawa2={'TH08','SCBG6'},
+    Reisen={'TH08','SCBG4'}, Tewi={'TH08','SCBG4'},
+    Yagokoro={'TH08','SCBG5'}, Neet={'TH08','SCBG5'}, Mokou={'TH08','SCBG6'},
+    Remilia={'TH08','SCBG-LW13'}, Sakuya={'TH09','SCBG4'},
+    Yuyuko={'TH07','SCBG6'}, Youmu={'TH07','SCBG5'}, Alice={'TH07','SCBG3'},
+    Chen={'TH07','SCBG2'}, Ran={'TH07','SCBG7'}, Yukari={'TH07','SCBG8'},
+    Chiruno={'TH07','SCBG1'}, Whiterock={'TH07','SCBG2'},
+    Medicine={'TH09','SCBG6'}, Komachi={'TH09','SCBG9'}, Shikieiki={'TH09','SCBG10'},
+    Sizuha={'TH10','SCBG1'}, Minoriko={'TH10','SCBG1'},
+    Hina={'TH10','SCBG2'}, Nitori={'TH10','SCBG2'},
+    Aya={'TH10','SCBG3'}, Momizi={'TH10','SCBG3'},
+    Sanae={'TH10','SCBG4'}, Kanako={'TH10','SCBG4'}, Suwako={'TH10','SCBG5'},
+}
+function boss.UpdateSpellBackground(b,img)
+    local level=b.class and b.class.StageLevel
+    if not level or level<29 or level>33 then return end
+    local ref=spellBackgrounds[img]
+    local source=ref and _editor_class[ref[1]]
+    if source and source[ref[2]] then b._bg=source[ref[2]] end
+end
+
 function boss:init(x, y, cards, bg, diff, scname, img)
     enemybase.init(self, 999999999)
     self.x, self.y = x, y

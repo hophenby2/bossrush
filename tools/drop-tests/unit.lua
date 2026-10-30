@@ -427,6 +427,46 @@ end
 local dx,dy=TouchInputMovement(p,{touch_x=p.x+.2,touch_y=p.y+.1},2)
 check(near(dx,.2) and near(dy,.1),'末帧截断到终点，不抖动也不越过目标')
 
+-- 无移速限制随关卡初态决定，实际自机直接跟随相对向量；默认仍限速。
+I.reset();lstg.var.__touch_unlimited=true;I.beginFrame();local ux,uy=p.x,p.y
+I.touch(30,400,270,'began');I.touch(30,432,294,'moved');mobileFrame()
+local function quantize(v) return math.floor(v*16+.5)/16 end
+check(near(p.x,quantize(ux+32)) and near(p.y,quantize(uy+24)),'开启无移速限制后单帧跟随完整拖拽向量')
+I.touch(30,416,282,'moved');mobileFrame()
+check(near(p.x,quantize(ux+16)) and near(p.y,quantize(uy+12)),'无移速限制下转向立即更新向量终点')
+I.touch(30,416,282,'ended');ux,uy=p.x,p.y;mobileFrame()
+check(p.x==ux and p.y==uy,'无移速限制抬手同样立即停止')
+lstg.var.__touch_unlimited=false
+dx,dy=TouchInputMovement(p,{touch_x=p.x+30,touch_y=p.y+40},2)
+check(near((dx*dx+dy*dy)^.5,2),'默认关闭无移速限制仍保持设定移速')
+lstg.var.__touch_unlimited=true
+dx,dy=TouchInputMovement(p,{touch_x=p.x+30,touch_y=p.y+40,touch_unlimited=false},2)
+check(near((dx*dx+dy*dy)^.5,2),'远端明确关闭无限速时不继承房主选项')
+lstg.var.__touch_unlimited=false
+
+-- 使用可控实时时钟验证双击窗口和真实 Bomb 扣除；拖动、取消和 UI 操作不触发。
+local tapClock=0;lstg.AndroidClock=function() return tapClock end
+local function tap(id,x,y,time,ending)
+    tapClock=time;I.touch(id,x,y,'began');tapClock=time+.02;I.touch(id,x,y,ending or 'ended')
+end
+I.reset();I.beginFrame();tap(31,400,270,1)
+tapClock=1.09;I.touch(32,400,270,'began')
+check(lstg.GetKeyState(88),'默认 0.1 秒内第二次按下产生 Bomb 输入')
+local bombsBefore=D.bombState(p);D.bombInput(p,{spell=lstg.GetKeyState(88)},{})
+check(D.bombState(p)==bombsBefore-1,'双击输入经过正式 Bomb 路径扣除一枚')
+I.touch(32,400,270,'ended');I.endFrame();I.endFrame();check(not lstg.GetKeyState(88),'双击脉冲不会一直保持 Bomb')
+I.reset();tap(31,400,270,2);tapClock=2.11;I.touch(32,400,270,'began')
+check(not lstg.GetKeyState(88),'超过默认 0.1 秒不触发 Bomb')
+I.reset();setting.touchBombInterval=300;tap(31,400,270,3);tapClock=3.25;I.touch(32,400,270,'began')
+check(lstg.GetKeyState(88),'设置为 0.3 秒后较慢双击可触发')
+I.reset();setting.touchBombInterval=nil;tapClock=4;I.touch(31,400,270,'began');I.touch(31,430,270,'moved');I.touch(31,400,270,'moved');I.touch(31,400,270,'ended')
+tapClock=4.05;I.touch(32,400,270,'began');check(not lstg.GetKeyState(88),'拖动后回原点也不会被当成第一次点击')
+I.reset();tap(31,400,270,5,'cancelled');tapClock=5.05;I.touch(32,400,270,'began')
+check(not lstg.GetKeyState(88),'取消触点不构成双击')
+I.reset();tap(31,853,90,6);tapClock=6.05;I.touch(32,400,270,'began')
+check(not lstg.GetKeyState(88),'点击射击按钮不会与战斗区触点组合成双击')
+I.reset();lstg.AndroidClock=nil
+
 
 -- 文文独立的移动回调也使用拖拽目标，并保留拍照蓄力时的超低速。
 local oldInclude=Include;Include=noop;CreateRenderTarget=noop;load('THlib/player/aya/aya.lua');Include=oldInclude

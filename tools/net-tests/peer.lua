@@ -4,7 +4,7 @@ local function load(path) return dofile(root..'/'..path) end
 local C,P,T=R.C,R.P,R.N;P.init()
 local W=load('THlib/net/codec.lua');local N=load('THlib/net/session.lua')
 N.hash=string.rep(arg[3] or 'a',64)
-AndroidInput=arg[4]=='touch' and {reset=function() end,readMovement=function(out) out.touch_x,out.touch_y=N.testX,N.testY end} or nil
+AndroidInput=arg[4]=='touch' and {reset=function() end,readMovement=function(out) out.touch_x,out.touch_y,out.touch_unlimited=N.testX,N.testY,N.testUnlimited end} or nil
 AndroidPlatform=arg[4]=='touch' and {} or nil -- 仅标记测试客机的触屏输入方式，不加载安卓图形环境。
 lstg={var={},SystemLog=function(s) print(s);io.stdout:flush() end}
 setting={keys={up=1,down=2,left=3,right=4,slow=5,shoot=6,spell=7,special=8}}
@@ -32,7 +32,7 @@ local sent,last,read=0,0,0
 while true do
     N.poll();S.poll();if N.client() then N.clientFrame() end;local now=T.now()
     if now-read>.01 then
-        read=now;local config=io.open('keys.json','rb');if config then local v=DeSerialize(config:read('*a'));config:close();N.testMask=v.mask;N.testX,N.testY=v.x,v.y end
+        read=now;local config=io.open('keys.json','rb');if config then local v=DeSerialize(config:read('*a'));config:close();N.testMask=v.mask;N.testX,N.testY,N.testUnlimited=v.x,v.y,v.unlimited end
     end
     if N.host() and N.readyForLogic() and now-last>=.02 then
         last=now;N.readKeys(KeyState);N.beforeLogic()

@@ -31,7 +31,10 @@ local panels={}
 ext={replay={IsReplay=function() return replay end},GetPauseMenuOrder=function() end,achievement={get=function() end}}
 SaveResume={clear=function() cleared=cleared+1 end}
 SaveScoreData=function() saved=saved+1 end;SaveSpellCardData=function() end
-PlayMusic=function() end;StopMusic=function() end;background.Create=function() end
+local musicEvents,backgroundEvents={},{}
+PlayMusic=function(name) musicEvents[#musicEvents+1]=name end
+StopMusic=function() error('随机十战不应在战斗中切换音乐') end
+background.Create=function(class) backgroundEvents[#backgroundEvents+1]=class end
 mask_fader={Do=function() end};lstg={var={},tmpvar={}};scoredata={}
 GROUP={GHOST=0,ENEMY=2};LAYER={TOP=0}
 function stage.Set(mode,name)
@@ -92,9 +95,10 @@ check(keys(R.draw(17))~=keys(R.draw(31415)),'不同种子产生不同路线')
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
 check(true,'抽取不改原卡参数与函数')
 local function simulate(seed,failRound,variant)
-    lstg.var={ran_seed=seed,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={}
+    lstg.var={ran_seed=seed,player_name='reimu_player',current_system='ABC'};lstg.tmpvar={};spawned={};musicEvents={};backgroundEvents={}
     R.start(variant);local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
+    check(lstg.var.__revive_version==2,'新局使用五命复活规则')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
         for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false;entry.died=stage.current_stage.timer end end end
@@ -106,6 +110,8 @@ end
 local battle,run=simulate(100)
 check(stage.next_stage==stage.stages[R.RESULT] and run.won and run.completed==10,'十战完成进入成功结算')
 check(#spawned==10,'每次只运行抽中的一张卡，共十张')
+check(#musicEvents==1 and musicEvents[1]==spawned[1].class.bgm,'单 Boss 十战全程只播放首位 Boss 的 BGM')
+check(#backgroundEvents==1 and backgroundEvents[1]==spawned[1].class._bg,'单 Boss 十战只创建首位 Boss 的关卡背景')
 for i=2,#spawned do
     check(spawned[i].tick==spawned[i-1].died,'单 Boss 随机十战死亡后立即创建下一位，没有两战之间的固定等待')
 end
@@ -149,6 +155,8 @@ while #spawned<10 do
     current.hp=current.maxhp*R.CHAIN_HP
     chainTick()
 end
+-- 接续复用同一条 prepare 路径，不能在新 Boss 入场时重建场景。
+check(battle.rogue_scene_ready and battle.now_music==spawned[1].class.bgm,'接续模式仍持有首位 Boss 音乐')
 check(#spawned==10 and run and lstg.var.rogue_run.completed==9,'接续模式：创建满十张')
 for _,entry in ipairs(spawned) do check(entry.obj.__NoCleanBullet==true,'接续后续 Boss 均继承不消弹开关') end
 local last=spawned[10].obj;last.hp=last.maxhp*R.CHAIN_HP;chainTick()

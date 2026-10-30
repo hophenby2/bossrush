@@ -95,6 +95,10 @@ check(p1.death==0 and p2.death==90 and player==p1,'独立死亡状态')
 N.keys[2]={shoot=true};N.lastMissSlot=2;local quizPlayer
 N.quiz(function() quizPlayer=player;check(KeyState.shoot and not KeyState.left,'客机答题输入使用自己的按键') end,{})
 check(quizPlayer==p2 and player==p1 and KeyState.left,'最后中弹玩家答题，之后恢复房主输入')
+KeyState.touch_x,KeyState.touch_y,KeyState.touch_unlimited=90,-80,true
+N.keys[2]={touch_x=-96,touch_y=-150,touch_unlimited=false}
+N.quiz(function() check(KeyState.touch_x==-96 and KeyState.touch_y==-150 and KeyState.touch_unlimited==false,'客机答题沿用自己的拖拽终点与限速选项') end,{})
+check(KeyState.touch_x==90 and KeyState.touch_y==-80 and KeyState.touch_unlimited==true,'客机答题后恢复房主拖拽状态')
 local Q=load('THlib/ext/ext_quiz.lua');Q.selection=noop;Q.clearSelection=noop
 local Drops=load('THlib/drops.lua');lstg.var.__drops_version=1;Drops.reset();Drops.bind(p1);Drops.bind(p2)
 p1.x=-96;p2.x=96;p2.death=0;p1.key={};p2.key={}

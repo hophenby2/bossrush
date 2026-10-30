@@ -121,9 +121,10 @@ local function runCards(self)
         local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
         local class=unit.sc_group[1].boss
         self.level=entry.level
-        if class._bg then background.Create(class._bg) end
-        if self.now_music~=class.bgm then
-            if self.now_music then StopMusic(self.now_music) end
+        -- 整局沿用首位 Boss 的场景；符卡背景仍由当前 Boss 自己的 _bg 管理。
+        if not self.rogue_scene_ready then
+            self.rogue_scene_ready=true
+            if class._bg then background.Create(class._bg) end
             self.now_music=class.bgm
             if class.bgm then PlayMusic(class.bgm) end
         end
@@ -216,6 +217,7 @@ local function register(variant,config)
     battle.revive_miss_limit=R.MISS_LIMIT-1
     function battle:init()
         self.rogue_finished=false
+        self.rogue_scene_ready=false
         self.rogue_chain_ghosts=nil
         self:Option()
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,cards=R.draw(lstg.var.ran_seed,config.width),current=0,completed=0}

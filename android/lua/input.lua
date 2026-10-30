@@ -37,6 +37,10 @@ local function inPlayfield(x, y)
     local w = lstg.world
     return w and player and x >= w.scrl and x <= w.scrr and y >= w.scrb and y <= w.scrt
 end
+local function clock() return lstg.AndroidClock and lstg.AndroidClock() or os.clock() end
+local function tapInterval()
+    return math.max(50,math.min(500,tonumber(setting and setting.touchBombInterval) or 100))/1000
+end
 local function rebuild()
     local old, keys = I.keys, {}
     I.mouse.down = false
@@ -80,6 +84,10 @@ end
 function I.touch(id, x, y, event)
     if event == 'ended' or event == 'cancelled' then
         local old = I.touches[id]
+        if event=='ended' and old and old.drag and old.tapTime and not old.tapMoved and not old.bombTap
+            and (x-old.tapX)^2+(y-old.tapY)^2<=144 and clock()-old.tapTime<=tapInterval() and not I.menuMode() then
+            I.lastTap={time=old.tapTime,player=old.player}
+        elseif event=='cancelled' then I.lastTap=nil end
         if I.trace and old and old.drag and player and lstg.SystemLog then
             lstg.SystemLog(string.format('BOSSRUSH_DRAG_END: target=%.3f,%.3f player=%.3f,%.3f',old.targetX,old.targetY,player.x,player.y))
         end
@@ -110,15 +118,29 @@ function I.touch(id, x, y, event)
                 if inPlayfield(x, y) then
                     t.drag = true; t.player = player
                     t.targetX, t.targetY = player.x, player.y
+                    if event=='began' then t.tapTime=clock();t.tapX,t.tapY=x,y end
                     if I.trace and lstg.SystemLog then lstg.SystemLog(string.format('BOSSRUSH_DRAG_BEGIN: player=%.3f,%.3f target=%.3f,%.3f',player.x,player.y,t.targetX,t.targetY)) end
                 elseif x < 235 and y < 255 then t.joystick = true end
                 if t.joystick or t.drag then
                     if I.movementId then t.joystick, t.drag, t.ignored = nil, nil, true
-                    else I.movementId = id end
+                    else
+                        I.movementId = id
+                        if t.drag and t.tapTime then
+                            local last=I.lastTap
+                            if last and last.player==player and t.tapTime-last.time<=tapInterval()
+                                and not player.lock and not player.dialog and (player.death or 0)==0
+                                and not (GameRevive and GameRevive.active()) then
+                                I.pulse(binding('spell',88));t.bombTap=true
+                            end
+                            I.lastTap=nil
+                        end
+                    end
                 end
             end
+            if t.button or t.joystick then I.lastTap=nil end
             I.touches[id] = t
         elseif t.drag and t.player == player then
+            if t.tapX and (x-t.tapX)^2+(y-t.tapY)^2>144 then t.tapMoved=true end
             local w, offset = lstg.world, lstg.worldoffset or {}
             local sx = (w.r-w.l)/(w.scrr-w.scrl)/(offset.hscale or 1)
             local sy = (w.t-w.b)/(w.scrt-w.scrb)/(offset.vscale or 1)
@@ -130,15 +152,17 @@ function I.touch(id, x, y, event)
     rebuild()
 end
 function I.reset(keepToggles)
-    I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.targetX, I.targetY = nil, nil
+    I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.lastTap=nil; I.targetX, I.targetY = nil, nil
     if not keepToggles then I.toggles={} end
 end
 -- 以 1/16 世界单位记录目标，触控、录像与联机使用相同的确定性坐标。
 function I.readMovement(out)
-    out.touch_x, out.touch_y = nil, nil
+    out.touch_x, out.touch_y, out.touch_unlimited = nil, nil, nil
     if I.targetX and not I.menuMode() then
         out.touch_x = math.floor(I.targetX*16+0.5)/16
         out.touch_y = math.floor(I.targetY*16+0.5)/16
+        if GameNet and GameNet.client() then out.touch_unlimited=setting.touchUnlimited==true
+        else out.touch_unlimited=lstg.var and lstg.var.__touch_unlimited==true end
     end
 end
 local previousMode, previousStage, previousPlayer

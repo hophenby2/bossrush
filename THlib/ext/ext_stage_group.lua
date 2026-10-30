@@ -235,7 +235,9 @@ end
 function stg.Start(group)
     lstg.var.__input_version=2;lstg.var.__drops_version=2;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
-    lstg.var.__revive_version=1;lstg.var.revive=nil
+    -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
+    lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
+    lstg.var.__revive_version=2;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
@@ -259,7 +261,8 @@ end
 function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__input_version=2;lstg.var.__drops_version=2;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
-    lstg.var.__revive_version=1;lstg.var.revive=nil
+    lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
+    lstg.var.__revive_version=2;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = true
     lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像

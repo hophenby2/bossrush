@@ -82,6 +82,17 @@ check(q.result==true,'倒计时结束也按所在答案区判定')
 reset(80);stage.current_stage.revive_miss_limit=10;step();answer(true)
 check(V.misses()==10 and lstg.var.dead==80,'主线关卡超额失误也能复活通过门槛，真实统计不回退')
 reset();lstg.var.__revive_version=nil;check(not step(),'旧录像没有新版本标记时不插入答题')
+-- 新规则每次答对后有完整五次失误余量，前三次作答机会仍保持原上限。
+reset();lstg.var.__revive_version=2;step();answer(true)
+check(lstg.var.dead==10 and V.misses()==5 and lstg.var.revive.credits==5,'新版复活补五条命，真实死亡数不回退')
+for revive=2,3 do
+    for _=1,4 do lstg.var.dead=lstg.var.dead+1;check(not step() and not V.active(),'复活后的前四次失误不再答题') end
+    lstg.var.dead=lstg.var.dead+1;check(step() and V.active(),'第五次失误触发下一次答题')
+    answer(true);check(lstg.var.revive.used==revive and V.misses()==5,'每次复活均恢复五条命')
+end
+lstg.var.dead=lstg.var.dead+5;check(not step() and not V.active(),'三次复活后耗尽五条命仍结束')
+reset(80);lstg.var.__revive_version=2;stage.current_stage.revive_miss_limit=0;step();answer(true)
+check(V.misses()==-4 and lstg.var.dead==80,'低容错关卡与超额累计失误同样恢复五条命')
 -- 执行实际 DoFrame 入口，确保冻结不消耗 Boss/弹幕协程或物理帧，而输入与续玩仍记录。
 reset();local calls={input=0,world=0,save=0,task=0}
 SaveResume={beforeLogic=function() return true end,afterLogic=function() calls.save=calls.save+1 end}
