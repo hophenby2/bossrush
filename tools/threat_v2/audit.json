@@ -1,0 +1,1574 @@
+{
+  "version": "0.1",
+  "parameters": {
+    "player_radius": 0.75,
+    "y": -176,
+    "x_step": 2,
+    "speed": 4,
+    "horizon": 120,
+    "reaction": 12,
+    "decision": 12,
+    "comfort": 3,
+    "timing_error": 3,
+    "reading_span": 28,
+    "kinetic_range": 16,
+    "kinetic_weight": 1.5
+  },
+  "frames_requested": 1800,
+  "seeds": [
+    424242,
+    271828,
+    161803
+  ],
+  "runs": [
+    [
+      {
+        "card": 391,
+        "name": "非符八",
+        "frames": 1800,
+        "active_from": 410,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 398.50067177253675,
+            "base_pressure": 2.463689082186771,
+            "cadence": 0.7781082143886484,
+            "flow": 2.5222543150816614,
+            "overlap": 1.4147563912028946,
+            "collision_fraction": 0.0618705035971223,
+            "clearance_p10": 1.3304387877561707,
+            "gap_p10": 26.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 332.4236893345588,
+            "base_pressure": 2.026494687680556,
+            "cadence": 0.6709557249391679,
+            "flow": 2.1928751802021127,
+            "overlap": 1.3452408250655628,
+            "collision_fraction": 0.0,
+            "clearance_p10": 8.024439959906976,
+            "gap_p10": 30.80000000000001,
+            "movement_per_second": 82.6,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 267.19528862821375,
+            "base_pressure": 1.5449827306128165,
+            "cadence": 0.6032525885876991,
+            "flow": 1.7172664192962268,
+            "overlap": 0.8422396816876214,
+            "collision_fraction": 0.0,
+            "clearance_p10": 6.12807181763489,
+            "gap_p10": 18.0,
+            "movement_per_second": 57.733333333333334,
+            "large_relocations": 1
+          }
+        },
+        "scatter": 4.025000095367432,
+        "reading_factor": 1.1437500034059798
+      },
+      {
+        "card": 3607,
+        "name": "「無双風神」",
+        "frames": 1080,
+        "active_from": 278,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 465.3896220559579,
+            "base_pressure": 1.1443698493911518,
+            "cadence": 0.182511168450786,
+            "flow": 0.9725477005753594,
+            "overlap": 0.5219647757556565,
+            "collision_fraction": 0.08728179551122195,
+            "clearance_p10": 0.43071692781341575,
+            "gap_p10": 16.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 248.57776428751131,
+            "base_pressure": 0.5927750769022135,
+            "cadence": 0.1446020880765154,
+            "flow": 0.6416683966364621,
+            "overlap": 0.3345580954613511,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.229619732859838,
+            "gap_p10": 34.0,
+            "movement_per_second": 48.0,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 215.9471664960952,
+            "base_pressure": 0.5107104859625946,
+            "cadence": 0.13646882605225666,
+            "flow": 0.555829033673917,
+            "overlap": 0.28740076436960926,
+            "collision_fraction": 0.0,
+            "clearance_p10": 7.310853151990061,
+            "gap_p10": 38.0,
+            "movement_per_second": 74.88888888888889,
+            "large_relocations": 4
+          }
+        },
+        "scatter": 79.17131805419922,
+        "reading_factor": 3.827547073364258
+      },
+      {
+        "card": 3601,
+        "name": "光学「ハイドロカモフラージュ」",
+        "frames": 1800,
+        "active_from": 484,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 312.9863445894174,
+            "base_pressure": 2.752237915623056,
+            "cadence": 0.2176652479135519,
+            "flow": 2.117852970535183,
+            "overlap": 1.5357347640012016,
+            "collision_fraction": 0.22644376899696048,
+            "clearance_p10": -1.8477033733012143,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 191.74619684400335,
+            "base_pressure": 1.5896301374873214,
+            "cadence": 0.19886777078942325,
+            "flow": 1.5655735197086584,
+            "overlap": 1.1846299564182703,
+            "collision_fraction": 0.0,
+            "clearance_p10": 2.7534255953373727,
+            "gap_p10": 14.0,
+            "movement_per_second": 34.06666666666667,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 111.32894935414551,
+            "base_pressure": 0.836047743232021,
+            "cadence": 0.1744737956661584,
+            "flow": 0.8461732395082254,
+            "overlap": 0.5379930300323225,
+            "collision_fraction": 0.0,
+            "clearance_p10": 4.241513277464225,
+            "gap_p10": 22.0,
+            "movement_per_second": 59.266666666666666,
+            "large_relocations": 3
+          }
+        },
+        "scatter": 0.5201492309570312,
+        "reading_factor": 1.0185767582484655
+      },
+      {
+        "card": 3606,
+        "name": "風神「二百十日」",
+        "frames": 1800,
+        "active_from": 338,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 175.6232628941171,
+            "base_pressure": 1.438014873557926,
+            "cadence": 0.21214517025549662,
+            "flow": 1.2661302947216952,
+            "overlap": 0.826263474930633,
+            "collision_fraction": 0.07797537619699042,
+            "clearance_p10": 1.151658195638488,
+            "gap_p10": 14.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 88.52499908569212,
+            "base_pressure": 0.6519971929848892,
+            "cadence": 0.1555018652480213,
+            "flow": 0.6836607060338881,
+            "overlap": 0.4206544965505439,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.938148347431786,
+            "gap_p10": 34.0,
+            "movement_per_second": 32.4,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 43.30345703705051,
+            "base_pressure": 0.3007778154964635,
+            "cadence": 0.0881711699160277,
+            "flow": 0.3188945647962255,
+            "overlap": 0.1687023270870897,
+            "collision_fraction": 0.0,
+            "clearance_p10": 10.090041375327987,
+            "gap_p10": 44.0,
+            "movement_per_second": 48.266666666666666,
+            "large_relocations": 4
+          }
+        },
+        "scatter": 0.0,
+        "reading_factor": 1.0
+      },
+      {
+        "card": 3600,
+        "name": "「風神様の神徳」",
+        "frames": 1800,
+        "active_from": 378,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 207.86007829797003,
+            "base_pressure": 1.466119420187327,
+            "cadence": 0.25165033587758884,
+            "flow": 1.3310414225632534,
+            "overlap": 0.822159506707257,
+            "collision_fraction": 0.0759493670886076,
+            "clearance_p10": 0.7872461746108614,
+            "gap_p10": 8.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 82.42290067732124,
+            "base_pressure": 0.5502424780659346,
+            "cadence": 0.1238583799991259,
+            "flow": 0.6007358499324416,
+            "overlap": 0.3456803376585338,
+            "collision_fraction": 0.0,
+            "clearance_p10": 9.128723364041514,
+            "gap_p10": 64.0,
+            "movement_per_second": 48.266666666666666,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 37.88507501771238,
+            "base_pressure": 0.2655374993962781,
+            "cadence": 0.04716663957480472,
+            "flow": 0.2929817343362973,
+            "overlap": 0.14664448559677337,
+            "collision_fraction": 0.0,
+            "clearance_p10": 15.630545364889095,
+            "gap_p10": 70.0,
+            "movement_per_second": 80.86666666666666,
+            "large_relocations": 9
+          }
+        },
+        "scatter": 4.488150119781494,
+        "reading_factor": 1.160291075706482
+      }
+    ],
+    [
+      {
+        "card": 391,
+        "name": "非符八",
+        "frames": 1800,
+        "active_from": 430,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 398.1005686538824,
+            "base_pressure": 2.4721644238577136,
+            "cadence": 0.768978412220948,
+            "flow": 2.5291108502034727,
+            "overlap": 1.4386660874027262,
+            "collision_fraction": 0.059854014598540145,
+            "clearance_p10": 1.7373400989639383,
+            "gap_p10": 24.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 328.4562960193761,
+            "base_pressure": 2.0430209582150174,
+            "cadence": 0.6319051548512312,
+            "flow": 2.209587764832363,
+            "overlap": 1.357012245275975,
+            "collision_fraction": 0.0,
+            "clearance_p10": 7.288003461195685,
+            "gap_p10": 32.0,
+            "movement_per_second": 84.53333333333333,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 264.9479019257411,
+            "base_pressure": 1.5314313536717723,
+            "cadence": 0.5986029355195317,
+            "flow": 1.695277763015927,
+            "overlap": 0.8574689897261883,
+            "collision_fraction": 0.0,
+            "clearance_p10": 7.596667841341441,
+            "gap_p10": 22.0,
+            "movement_per_second": 54.8,
+            "large_relocations": 2
+          }
+        },
+        "scatter": 4.025000095367432,
+        "reading_factor": 1.1437500034059798
+      },
+      {
+        "card": 3607,
+        "name": "「無双風神」",
+        "frames": 1080,
+        "active_from": 314,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 468.9518906308548,
+            "base_pressure": 1.1001217611873713,
+            "cadence": 0.19268790770604155,
+            "flow": 0.8908747675970601,
+            "overlap": 0.4566347433732144,
+            "collision_fraction": 0.09921671018276762,
+            "clearance_p10": 0.049895625825171826,
+            "gap_p10": 10.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 236.91726775114685,
+            "base_pressure": 0.5308528749152924,
+            "cadence": 0.1638407852335325,
+            "flow": 0.5832498374215956,
+            "overlap": 0.2815584263021641,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.366260323560641,
+            "gap_p10": 38.0,
+            "movement_per_second": 48.0,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 194.66237316700452,
+            "base_pressure": 0.43938144424871006,
+            "cadence": 0.1260653031168034,
+            "flow": 0.47353469657900504,
+            "overlap": 0.2244834298376303,
+            "collision_fraction": 0.0,
+            "clearance_p10": 6.513921271993619,
+            "gap_p10": 36.0,
+            "movement_per_second": 73.44444444444444,
+            "large_relocations": 5
+          }
+        },
+        "scatter": 84.6916732788086,
+        "reading_factor": 4
+      },
+      {
+        "card": 3601,
+        "name": "光学「ハイドロカモフラージュ」",
+        "frames": 1800,
+        "active_from": 758,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 282.0366369258327,
+            "base_pressure": 2.4373499756209283,
+            "cadence": 0.22507200199903316,
+            "flow": 2.0698408666357087,
+            "overlap": 1.4994042617855383,
+            "collision_fraction": 0.1324376199616123,
+            "clearance_p10": -0.7649674347228945,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 196.57138177860773,
+            "base_pressure": 1.6307900980610204,
+            "cadence": 0.20302781674317344,
+            "flow": 1.6114045264339505,
+            "overlap": 1.2180297641933604,
+            "collision_fraction": 0.0,
+            "clearance_p10": 2.7798201722614584,
+            "gap_p10": 16.0,
+            "movement_per_second": 31.866666666666667,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 94.62253000326145,
+            "base_pressure": 0.6869016935962132,
+            "cadence": 0.16435097993106623,
+            "flow": 0.692160075589976,
+            "overlap": 0.4215393442893646,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.650678835276011,
+            "gap_p10": 24.0,
+            "movement_per_second": 36.53333333333333,
+            "large_relocations": 2
+          }
+        },
+        "scatter": 0.5216464400291443,
+        "reading_factor": 1.0186302300010408
+      },
+      {
+        "card": 3606,
+        "name": "風神「二百十日」",
+        "frames": 1800,
+        "active_from": 344,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 180.8054694053218,
+            "base_pressure": 1.506232473289883,
+            "cadence": 0.20121481384222323,
+            "flow": 1.2265305283838843,
+            "overlap": 0.7513293834700232,
+            "collision_fraction": 0.12087912087912088,
+            "clearance_p10": -0.594038677308001,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 80.76159275525096,
+            "base_pressure": 0.5782310690433319,
+            "cadence": 0.15292323900611846,
+            "flow": 0.6092038369467792,
+            "overlap": 0.36127899137913777,
+            "collision_fraction": 0.0,
+            "clearance_p10": 6.966642332556805,
+            "gap_p10": 38.0,
+            "movement_per_second": 29.666666666666668,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 50.288711534552334,
+            "base_pressure": 0.34754929279361263,
+            "cadence": 0.10355854836794046,
+            "flow": 0.36605401662684856,
+            "overlap": 0.18983978186031367,
+            "collision_fraction": 0.0,
+            "clearance_p10": 9.457334127009362,
+            "gap_p10": 36.0,
+            "movement_per_second": 57.8,
+            "large_relocations": 7
+          }
+        },
+        "scatter": 0.0,
+        "reading_factor": 1.0
+      },
+      {
+        "card": 3600,
+        "name": "「風神様の神徳」",
+        "frames": 1800,
+        "active_from": 378,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 267.39460156973183,
+            "base_pressure": 1.941230718370877,
+            "cadence": 0.281035514110922,
+            "flow": 1.6610837598270347,
+            "overlap": 1.0798888820033445,
+            "collision_fraction": 0.1279887482419128,
+            "clearance_p10": -0.5236801856190829,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 107.16703129271559,
+            "base_pressure": 0.7266363650490731,
+            "cadence": 0.15237373235188792,
+            "flow": 0.7767460043646232,
+            "overlap": 0.45763916515638575,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.593066081960586,
+            "gap_p10": 62.0,
+            "movement_per_second": 47.333333333333336,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 47.98575851636065,
+            "base_pressure": 0.3248813156602324,
+            "cadence": 0.06860045524924449,
+            "flow": 0.35276673225370686,
+            "overlap": 0.17945460972705776,
+            "collision_fraction": 0.0,
+            "clearance_p10": 13.403852249967972,
+            "gap_p10": 52.0,
+            "movement_per_second": 86.0,
+            "large_relocations": 9
+          }
+        },
+        "scatter": 4.4881510734558105,
+        "reading_factor": 1.160291109766279
+      }
+    ],
+    [
+      {
+        "card": 391,
+        "name": "非符八",
+        "frames": 1800,
+        "active_from": 424,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 390.4091817386593,
+            "base_pressure": 2.4376879571007803,
+            "cadence": 0.74399080543324,
+            "flow": 2.473151933731458,
+            "overlap": 1.423927365577109,
+            "collision_fraction": 0.06395348837209303,
+            "clearance_p10": 1.8678951191372457,
+            "gap_p10": 26.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 319.21398690645265,
+            "base_pressure": 1.9932682716179206,
+            "cadence": 0.608226184408332,
+            "flow": 2.15319809005584,
+            "overlap": 1.334435342814028,
+            "collision_fraction": 0.0,
+            "clearance_p10": 8.384077635525014,
+            "gap_p10": 32.0,
+            "movement_per_second": 85.66666666666667,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 242.13522901162335,
+            "base_pressure": 1.4054603168166577,
+            "cadence": 0.5425713653134745,
+            "flow": 1.571694702197455,
+            "overlap": 0.7532545729193056,
+            "collision_fraction": 0.0,
+            "clearance_p10": 6.861556071870906,
+            "gap_p10": 23.400000000000006,
+            "movement_per_second": 64.33333333333333,
+            "large_relocations": 1
+          }
+        },
+        "scatter": 4.025000095367432,
+        "reading_factor": 1.1437500034059798
+      },
+      {
+        "card": 3607,
+        "name": "「無双風神」",
+        "frames": 1080,
+        "active_from": 330,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 570.3555148771246,
+            "base_pressure": 1.3517984501875866,
+            "cadence": 0.23145327206452687,
+            "flow": 1.1012617909213864,
+            "overlap": 0.5470619087072559,
+            "collision_fraction": 0.12266666666666666,
+            "clearance_p10": -1.0482621414648012,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 274.7539675049037,
+            "base_pressure": 0.6331771785749466,
+            "cadence": 0.15908945214748382,
+            "flow": 0.6947703329424576,
+            "overlap": 0.34017415066821066,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.369395378726243,
+            "gap_p10": 36.0,
+            "movement_per_second": 50.888888888888886,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 217.04963932062776,
+            "base_pressure": 0.5039911896927087,
+            "cadence": 0.11565221647421518,
+            "flow": 0.5491017419455305,
+            "overlap": 0.2730987231912963,
+            "collision_fraction": 0.0,
+            "clearance_p10": 7.022239497237813,
+            "gap_p10": 42.0,
+            "movement_per_second": 69.22222222222223,
+            "large_relocations": 4
+          }
+        },
+        "scatter": 82.9473876953125,
+        "reading_factor": 3.962406703404018
+      },
+      {
+        "card": 3601,
+        "name": "光学「ハイドロカモフラージュ」",
+        "frames": 1800,
+        "active_from": 608,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 241.91264329660046,
+            "base_pressure": 2.044646429040037,
+            "cadence": 0.2241463900962532,
+            "flow": 1.74221474583943,
+            "overlap": 1.2062047108041747,
+            "collision_fraction": 0.11241610738255034,
+            "clearance_p10": -0.49728917857903454,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 154.49153204836082,
+            "base_pressure": 1.2158173694308763,
+            "cadence": 0.20423132326178903,
+            "flow": 1.2173183755166044,
+            "overlap": 0.87312582869002,
+            "collision_fraction": 0.0,
+            "clearance_p10": 4.298594725836068,
+            "gap_p10": 22.0,
+            "movement_per_second": 32.46666666666667,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 101.79066638871943,
+            "base_pressure": 0.7767916678867457,
+            "cadence": 0.15105286158071268,
+            "flow": 0.7623697465053632,
+            "overlap": 0.4947851683413038,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.086073023664841,
+            "gap_p10": 18.0,
+            "movement_per_second": 40.8,
+            "large_relocations": 2
+          }
+        },
+        "scatter": 0.5239496231079102,
+        "reading_factor": 1.0187124865395683
+      },
+      {
+        "card": 3606,
+        "name": "風神「二百十日」",
+        "frames": 1800,
+        "active_from": 336,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 215.8538127663474,
+            "base_pressure": 1.7967297657198462,
+            "cadence": 0.24120557462908532,
+            "flow": 1.4529914138019668,
+            "overlap": 0.9099966068016911,
+            "collision_fraction": 0.14754098360655737,
+            "clearance_p10": -1.1186502104963965,
+            "gap_p10": 0.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 92.28927610334449,
+            "base_pressure": 0.68195398579207,
+            "cadence": 0.16062585016091666,
+            "flow": 0.7190783359530526,
+            "overlap": 0.4350683902282055,
+            "collision_fraction": 0.0,
+            "clearance_p10": 5.537943890150869,
+            "gap_p10": 36.0,
+            "movement_per_second": 33.06666666666667,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 52.04618874044352,
+            "base_pressure": 0.36517245082079897,
+            "cadence": 0.10352629105575749,
+            "flow": 0.389263898459375,
+            "overlap": 0.20384557624526045,
+            "collision_fraction": 0.0,
+            "clearance_p10": 8.675287891762908,
+            "gap_p10": 42.0,
+            "movement_per_second": 59.6,
+            "large_relocations": 5
+          }
+        },
+        "scatter": 0.0,
+        "reading_factor": 1.0
+      },
+      {
+        "card": 3600,
+        "name": "「風神様の神徳」",
+        "frames": 1800,
+        "active_from": 378,
+        "radius_coverage": 1.0,
+        "policies": {
+          "fixed_centre": {
+            "score": 232.45107534687693,
+            "base_pressure": 1.665658539462617,
+            "cadence": 0.2612413527593331,
+            "flow": 1.4921956367799565,
+            "overlap": 0.9618399389256922,
+            "collision_fraction": 0.090014064697609,
+            "clearance_p10": 0.19974191764077975,
+            "gap_p10": 6.0,
+            "movement_per_second": 0.0,
+            "large_relocations": 0
+          },
+          "centre_micro": {
+            "score": 92.61695410602516,
+            "base_pressure": 0.6105431148677053,
+            "cadence": 0.14517454582930617,
+            "flow": 0.6622551791753201,
+            "overlap": 0.379030658180716,
+            "collision_fraction": 0.0,
+            "clearance_p10": 7.854511804749897,
+            "gap_p10": 60.0,
+            "movement_per_second": 38.266666666666666,
+            "large_relocations": 0
+          },
+          "sparse_route": {
+            "score": 47.409848923991134,
+            "base_pressure": 0.3230322620300125,
+            "cadence": 0.06619136079454221,
+            "flow": 0.35311304753426387,
+            "overlap": 0.1856014408157864,
+            "collision_fraction": 0.0,
+            "clearance_p10": 13.922239223643246,
+            "gap_p10": 62.0,
+            "movement_per_second": 82.66666666666667,
+            "large_relocations": 12
+          }
+        },
+        "scatter": 4.488149881362915,
+        "reading_factor": 1.1602910671915327
+      }
+    ]
+  ],
+  "summary": [
+    {
+      "card": 391,
+      "name": "妹红八非",
+      "policies": {
+        "fixed_centre": {
+          "score": {
+            "median": 398.1005686538824,
+            "min": 390.4091817386593,
+            "max": 398.50067177253675
+          },
+          "base_pressure": {
+            "median": 2.463689082186771,
+            "min": 2.4376879571007803,
+            "max": 2.4721644238577136
+          },
+          "cadence": {
+            "median": 0.768978412220948,
+            "min": 0.74399080543324,
+            "max": 0.7781082143886484
+          },
+          "flow": {
+            "median": 2.5222543150816614,
+            "min": 2.473151933731458,
+            "max": 2.5291108502034727
+          },
+          "overlap": {
+            "median": 1.423927365577109,
+            "min": 1.4147563912028946,
+            "max": 1.4386660874027262
+          },
+          "collision_fraction": {
+            "median": 0.0618705035971223,
+            "min": 0.059854014598540145,
+            "max": 0.06395348837209303
+          },
+          "clearance_p10": {
+            "median": 1.7373400989639383,
+            "min": 1.3304387877561707,
+            "max": 1.8678951191372457
+          },
+          "gap_p10": {
+            "median": 26.0,
+            "min": 24.0,
+            "max": 26.0
+          },
+          "movement_per_second": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "centre_micro": {
+          "score": {
+            "median": 328.4562960193761,
+            "min": 319.21398690645265,
+            "max": 332.4236893345588
+          },
+          "base_pressure": {
+            "median": 2.026494687680556,
+            "min": 1.9932682716179206,
+            "max": 2.0430209582150174
+          },
+          "cadence": {
+            "median": 0.6319051548512312,
+            "min": 0.608226184408332,
+            "max": 0.6709557249391679
+          },
+          "flow": {
+            "median": 2.1928751802021127,
+            "min": 2.15319809005584,
+            "max": 2.209587764832363
+          },
+          "overlap": {
+            "median": 1.3452408250655628,
+            "min": 1.334435342814028,
+            "max": 1.357012245275975
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 8.024439959906976,
+            "min": 7.288003461195685,
+            "max": 8.384077635525014
+          },
+          "gap_p10": {
+            "median": 32.0,
+            "min": 30.80000000000001,
+            "max": 32.0
+          },
+          "movement_per_second": {
+            "median": 84.53333333333333,
+            "min": 82.6,
+            "max": 85.66666666666667
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "sparse_route": {
+          "score": {
+            "median": 264.9479019257411,
+            "min": 242.13522901162335,
+            "max": 267.19528862821375
+          },
+          "base_pressure": {
+            "median": 1.5314313536717723,
+            "min": 1.4054603168166577,
+            "max": 1.5449827306128165
+          },
+          "cadence": {
+            "median": 0.5986029355195317,
+            "min": 0.5425713653134745,
+            "max": 0.6032525885876991
+          },
+          "flow": {
+            "median": 1.695277763015927,
+            "min": 1.571694702197455,
+            "max": 1.7172664192962268
+          },
+          "overlap": {
+            "median": 0.8422396816876214,
+            "min": 0.7532545729193056,
+            "max": 0.8574689897261883
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 6.861556071870906,
+            "min": 6.12807181763489,
+            "max": 7.596667841341441
+          },
+          "gap_p10": {
+            "median": 22.0,
+            "min": 18.0,
+            "max": 23.400000000000006
+          },
+          "movement_per_second": {
+            "median": 57.733333333333334,
+            "min": 54.8,
+            "max": 64.33333333333333
+          },
+          "large_relocations": {
+            "median": 1.0,
+            "min": 1.0,
+            "max": 2.0
+          }
+        }
+      }
+    },
+    {
+      "card": 3607,
+      "name": "無双風神",
+      "policies": {
+        "fixed_centre": {
+          "score": {
+            "median": 468.9518906308548,
+            "min": 465.3896220559579,
+            "max": 570.3555148771246
+          },
+          "base_pressure": {
+            "median": 1.1443698493911518,
+            "min": 1.1001217611873713,
+            "max": 1.3517984501875866
+          },
+          "cadence": {
+            "median": 0.19268790770604155,
+            "min": 0.182511168450786,
+            "max": 0.23145327206452687
+          },
+          "flow": {
+            "median": 0.9725477005753594,
+            "min": 0.8908747675970601,
+            "max": 1.1012617909213864
+          },
+          "overlap": {
+            "median": 0.5219647757556565,
+            "min": 0.4566347433732144,
+            "max": 0.5470619087072559
+          },
+          "collision_fraction": {
+            "median": 0.09921671018276762,
+            "min": 0.08728179551122195,
+            "max": 0.12266666666666666
+          },
+          "clearance_p10": {
+            "median": 0.049895625825171826,
+            "min": -1.0482621414648012,
+            "max": 0.43071692781341575
+          },
+          "gap_p10": {
+            "median": 10.0,
+            "min": 0.0,
+            "max": 16.0
+          },
+          "movement_per_second": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "centre_micro": {
+          "score": {
+            "median": 248.57776428751131,
+            "min": 236.91726775114685,
+            "max": 274.7539675049037
+          },
+          "base_pressure": {
+            "median": 0.5927750769022135,
+            "min": 0.5308528749152924,
+            "max": 0.6331771785749466
+          },
+          "cadence": {
+            "median": 0.15908945214748382,
+            "min": 0.1446020880765154,
+            "max": 0.1638407852335325
+          },
+          "flow": {
+            "median": 0.6416683966364621,
+            "min": 0.5832498374215956,
+            "max": 0.6947703329424576
+          },
+          "overlap": {
+            "median": 0.3345580954613511,
+            "min": 0.2815584263021641,
+            "max": 0.34017415066821066
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 5.366260323560641,
+            "min": 5.229619732859838,
+            "max": 5.369395378726243
+          },
+          "gap_p10": {
+            "median": 36.0,
+            "min": 34.0,
+            "max": 38.0
+          },
+          "movement_per_second": {
+            "median": 48.0,
+            "min": 48.0,
+            "max": 50.888888888888886
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "sparse_route": {
+          "score": {
+            "median": 215.9471664960952,
+            "min": 194.66237316700452,
+            "max": 217.04963932062776
+          },
+          "base_pressure": {
+            "median": 0.5039911896927087,
+            "min": 0.43938144424871006,
+            "max": 0.5107104859625946
+          },
+          "cadence": {
+            "median": 0.1260653031168034,
+            "min": 0.11565221647421518,
+            "max": 0.13646882605225666
+          },
+          "flow": {
+            "median": 0.5491017419455305,
+            "min": 0.47353469657900504,
+            "max": 0.555829033673917
+          },
+          "overlap": {
+            "median": 0.2730987231912963,
+            "min": 0.2244834298376303,
+            "max": 0.28740076436960926
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 7.022239497237813,
+            "min": 6.513921271993619,
+            "max": 7.310853151990061
+          },
+          "gap_p10": {
+            "median": 38.0,
+            "min": 36.0,
+            "max": 42.0
+          },
+          "movement_per_second": {
+            "median": 73.44444444444444,
+            "min": 69.22222222222223,
+            "max": 74.88888888888889
+          },
+          "large_relocations": {
+            "median": 4.0,
+            "min": 4.0,
+            "max": 5.0
+          }
+        }
+      }
+    },
+    {
+      "card": 3601,
+      "name": "ハイドロカモフラージュ",
+      "policies": {
+        "fixed_centre": {
+          "score": {
+            "median": 282.0366369258327,
+            "min": 241.91264329660046,
+            "max": 312.9863445894174
+          },
+          "base_pressure": {
+            "median": 2.4373499756209283,
+            "min": 2.044646429040037,
+            "max": 2.752237915623056
+          },
+          "cadence": {
+            "median": 0.2241463900962532,
+            "min": 0.2176652479135519,
+            "max": 0.22507200199903316
+          },
+          "flow": {
+            "median": 2.0698408666357087,
+            "min": 1.74221474583943,
+            "max": 2.117852970535183
+          },
+          "overlap": {
+            "median": 1.4994042617855383,
+            "min": 1.2062047108041747,
+            "max": 1.5357347640012016
+          },
+          "collision_fraction": {
+            "median": 0.1324376199616123,
+            "min": 0.11241610738255034,
+            "max": 0.22644376899696048
+          },
+          "clearance_p10": {
+            "median": -0.7649674347228945,
+            "min": -1.8477033733012143,
+            "max": -0.49728917857903454
+          },
+          "gap_p10": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "movement_per_second": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "centre_micro": {
+          "score": {
+            "median": 191.74619684400335,
+            "min": 154.49153204836082,
+            "max": 196.57138177860773
+          },
+          "base_pressure": {
+            "median": 1.5896301374873214,
+            "min": 1.2158173694308763,
+            "max": 1.6307900980610204
+          },
+          "cadence": {
+            "median": 0.20302781674317344,
+            "min": 0.19886777078942325,
+            "max": 0.20423132326178903
+          },
+          "flow": {
+            "median": 1.5655735197086584,
+            "min": 1.2173183755166044,
+            "max": 1.6114045264339505
+          },
+          "overlap": {
+            "median": 1.1846299564182703,
+            "min": 0.87312582869002,
+            "max": 1.2180297641933604
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 2.7798201722614584,
+            "min": 2.7534255953373727,
+            "max": 4.298594725836068
+          },
+          "gap_p10": {
+            "median": 16.0,
+            "min": 14.0,
+            "max": 22.0
+          },
+          "movement_per_second": {
+            "median": 32.46666666666667,
+            "min": 31.866666666666667,
+            "max": 34.06666666666667
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "sparse_route": {
+          "score": {
+            "median": 101.79066638871943,
+            "min": 94.62253000326145,
+            "max": 111.32894935414551
+          },
+          "base_pressure": {
+            "median": 0.7767916678867457,
+            "min": 0.6869016935962132,
+            "max": 0.836047743232021
+          },
+          "cadence": {
+            "median": 0.16435097993106623,
+            "min": 0.15105286158071268,
+            "max": 0.1744737956661584
+          },
+          "flow": {
+            "median": 0.7623697465053632,
+            "min": 0.692160075589976,
+            "max": 0.8461732395082254
+          },
+          "overlap": {
+            "median": 0.4947851683413038,
+            "min": 0.4215393442893646,
+            "max": 0.5379930300323225
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 5.086073023664841,
+            "min": 4.241513277464225,
+            "max": 5.650678835276011
+          },
+          "gap_p10": {
+            "median": 22.0,
+            "min": 18.0,
+            "max": 24.0
+          },
+          "movement_per_second": {
+            "median": 40.8,
+            "min": 36.53333333333333,
+            "max": 59.266666666666666
+          },
+          "large_relocations": {
+            "median": 2.0,
+            "min": 2.0,
+            "max": 3.0
+          }
+        }
+      }
+    },
+    {
+      "card": 3606,
+      "name": "二百十日",
+      "policies": {
+        "fixed_centre": {
+          "score": {
+            "median": 180.8054694053218,
+            "min": 175.6232628941171,
+            "max": 215.8538127663474
+          },
+          "base_pressure": {
+            "median": 1.506232473289883,
+            "min": 1.438014873557926,
+            "max": 1.7967297657198462
+          },
+          "cadence": {
+            "median": 0.21214517025549662,
+            "min": 0.20121481384222323,
+            "max": 0.24120557462908532
+          },
+          "flow": {
+            "median": 1.2661302947216952,
+            "min": 1.2265305283838843,
+            "max": 1.4529914138019668
+          },
+          "overlap": {
+            "median": 0.826263474930633,
+            "min": 0.7513293834700232,
+            "max": 0.9099966068016911
+          },
+          "collision_fraction": {
+            "median": 0.12087912087912088,
+            "min": 0.07797537619699042,
+            "max": 0.14754098360655737
+          },
+          "clearance_p10": {
+            "median": -0.594038677308001,
+            "min": -1.1186502104963965,
+            "max": 1.151658195638488
+          },
+          "gap_p10": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 14.0
+          },
+          "movement_per_second": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "centre_micro": {
+          "score": {
+            "median": 88.52499908569212,
+            "min": 80.76159275525096,
+            "max": 92.28927610334449
+          },
+          "base_pressure": {
+            "median": 0.6519971929848892,
+            "min": 0.5782310690433319,
+            "max": 0.68195398579207
+          },
+          "cadence": {
+            "median": 0.1555018652480213,
+            "min": 0.15292323900611846,
+            "max": 0.16062585016091666
+          },
+          "flow": {
+            "median": 0.6836607060338881,
+            "min": 0.6092038369467792,
+            "max": 0.7190783359530526
+          },
+          "overlap": {
+            "median": 0.4206544965505439,
+            "min": 0.36127899137913777,
+            "max": 0.4350683902282055
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 5.938148347431786,
+            "min": 5.537943890150869,
+            "max": 6.966642332556805
+          },
+          "gap_p10": {
+            "median": 36.0,
+            "min": 34.0,
+            "max": 38.0
+          },
+          "movement_per_second": {
+            "median": 32.4,
+            "min": 29.666666666666668,
+            "max": 33.06666666666667
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "sparse_route": {
+          "score": {
+            "median": 50.288711534552334,
+            "min": 43.30345703705051,
+            "max": 52.04618874044352
+          },
+          "base_pressure": {
+            "median": 0.34754929279361263,
+            "min": 0.3007778154964635,
+            "max": 0.36517245082079897
+          },
+          "cadence": {
+            "median": 0.10352629105575749,
+            "min": 0.0881711699160277,
+            "max": 0.10355854836794046
+          },
+          "flow": {
+            "median": 0.36605401662684856,
+            "min": 0.3188945647962255,
+            "max": 0.389263898459375
+          },
+          "overlap": {
+            "median": 0.18983978186031367,
+            "min": 0.1687023270870897,
+            "max": 0.20384557624526045
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 9.457334127009362,
+            "min": 8.675287891762908,
+            "max": 10.090041375327987
+          },
+          "gap_p10": {
+            "median": 42.0,
+            "min": 36.0,
+            "max": 44.0
+          },
+          "movement_per_second": {
+            "median": 57.8,
+            "min": 48.266666666666666,
+            "max": 59.6
+          },
+          "large_relocations": {
+            "median": 5.0,
+            "min": 4.0,
+            "max": 7.0
+          }
+        }
+      }
+    },
+    {
+      "card": 3600,
+      "name": "風神様の神徳",
+      "policies": {
+        "fixed_centre": {
+          "score": {
+            "median": 232.45107534687693,
+            "min": 207.86007829797003,
+            "max": 267.39460156973183
+          },
+          "base_pressure": {
+            "median": 1.665658539462617,
+            "min": 1.466119420187327,
+            "max": 1.941230718370877
+          },
+          "cadence": {
+            "median": 0.2612413527593331,
+            "min": 0.25165033587758884,
+            "max": 0.281035514110922
+          },
+          "flow": {
+            "median": 1.4921956367799565,
+            "min": 1.3310414225632534,
+            "max": 1.6610837598270347
+          },
+          "overlap": {
+            "median": 0.9618399389256922,
+            "min": 0.822159506707257,
+            "max": 1.0798888820033445
+          },
+          "collision_fraction": {
+            "median": 0.090014064697609,
+            "min": 0.0759493670886076,
+            "max": 0.1279887482419128
+          },
+          "clearance_p10": {
+            "median": 0.19974191764077975,
+            "min": -0.5236801856190829,
+            "max": 0.7872461746108614
+          },
+          "gap_p10": {
+            "median": 6.0,
+            "min": 0.0,
+            "max": 8.0
+          },
+          "movement_per_second": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "centre_micro": {
+          "score": {
+            "median": 92.61695410602516,
+            "min": 82.42290067732124,
+            "max": 107.16703129271559
+          },
+          "base_pressure": {
+            "median": 0.6105431148677053,
+            "min": 0.5502424780659346,
+            "max": 0.7266363650490731
+          },
+          "cadence": {
+            "median": 0.14517454582930617,
+            "min": 0.1238583799991259,
+            "max": 0.15237373235188792
+          },
+          "flow": {
+            "median": 0.6622551791753201,
+            "min": 0.6007358499324416,
+            "max": 0.7767460043646232
+          },
+          "overlap": {
+            "median": 0.379030658180716,
+            "min": 0.3456803376585338,
+            "max": 0.45763916515638575
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 7.854511804749897,
+            "min": 5.593066081960586,
+            "max": 9.128723364041514
+          },
+          "gap_p10": {
+            "median": 62.0,
+            "min": 60.0,
+            "max": 64.0
+          },
+          "movement_per_second": {
+            "median": 47.333333333333336,
+            "min": 38.266666666666666,
+            "max": 48.266666666666666
+          },
+          "large_relocations": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "sparse_route": {
+          "score": {
+            "median": 47.409848923991134,
+            "min": 37.88507501771238,
+            "max": 47.98575851636065
+          },
+          "base_pressure": {
+            "median": 0.3230322620300125,
+            "min": 0.2655374993962781,
+            "max": 0.3248813156602324
+          },
+          "cadence": {
+            "median": 0.06619136079454221,
+            "min": 0.04716663957480472,
+            "max": 0.06860045524924449
+          },
+          "flow": {
+            "median": 0.35276673225370686,
+            "min": 0.2929817343362973,
+            "max": 0.35311304753426387
+          },
+          "overlap": {
+            "median": 0.17945460972705776,
+            "min": 0.14664448559677337,
+            "max": 0.1856014408157864
+          },
+          "collision_fraction": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "clearance_p10": {
+            "median": 13.922239223643246,
+            "min": 13.403852249967972,
+            "max": 15.630545364889095
+          },
+          "gap_p10": {
+            "median": 62.0,
+            "min": 52.0,
+            "max": 70.0
+          },
+          "movement_per_second": {
+            "median": 82.66666666666667,
+            "min": 80.86666666666666,
+            "max": 86.0
+          },
+          "large_relocations": {
+            "median": 9.0,
+            "min": 9.0,
+            "max": 12.0
+          }
+        }
+      }
+    }
+  ],
+  "reference_order_each_seed": [
+    true,
+    true,
+    true
+  ],
+  "all_mobile_order_each_seed": [
+    true,
+    true,
+    true
+  ],
+  "notes": [
+    "公式不读取卡号或名称。卡号仅用于采样和检验给定顺序。",
+    "前视读取已出现子弹的未来轨迹，不读未来新生弹；是离线理想预测原型。",
+    "固定参考弹场来自板底中央，自机相关发弹的跨站位结果需要闭环复测。"
+  ],
+  "reference_order_medians": true,
+  "source_hashes": {
+    "mod/GAME/th31.lua": "1d5c402d82994e974eaf5c7e9509dbe49a0bb13dbc099957880765768f409b4c",
+    "mod/GAME/th35.lua": "11d19cdfece08e57869ef22d122822ae3f86b436b862a159a6548d77f460f3f4",
+    "THlib/bullet/bulletStyle.lua": "e2b07bd1e2c555fedea251c90d47799ba0dbfa39313e459033dffa6dfc6ef6ee",
+    "THlib/bullet/visual_match.lua": "3bbd10f9833e58dc9292dc744ed9808ac55fe442456c037c908912e32fc73325",
+    "tools/check_stage.lua": "b2e25d16a5931c1c2c75bf388137519ccea1909ec93e2e53488863b0656d29a6",
+    "tools/threat_v2/trace.lua": "a77ef5ebe5cf0f65a8ebae24fb5e84aa771f125b0dd4c06cb30f8d7a7fa3b24f",
+    "tools/threat_v2/model.py": "17c74e59670c993f6d20df9b2b4283a190169675001bd16b3e9c9f7fbeb69c06"
+  },
+  "rescored_from_sha256": "381834a60156a3b2c7645b7ef99768086cf7f5e4fe52047f34fabcb249fdaae6"
+}

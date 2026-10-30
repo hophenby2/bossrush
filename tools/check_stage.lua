@@ -1789,7 +1789,8 @@ print("=== 逐卡模拟（每张 " .. FRAMES .. " 帧）===")
 -- HOOK.cards 指定只跑哪几张（`tools/threat.lua` 用，省时间）
 local run_list = {}
 for i, e in ipairs(registered) do
-    if not (HOOK and HOOK.cards) or HOOK.cards[i] then
+    if (not (HOOK and HOOK.cards) or HOOK.cards[i])
+            and (not (HOOK and HOOK.select_card) or HOOK.select_card(i,e)) then
         run_list[#run_list + 1] = { idx = i, entry = e }
     end
 end
@@ -1911,7 +1912,8 @@ for _, __item in ipairs(run_list) do
                 end
             end
         end
-        for f = 1, FRAMES do
+        local frameLimit=HOOK and HOOK.frame_limit and HOOK.frame_limit(idx,entry,FRAMES) or FRAMES
+        for f = 1, frameLimit do
             -- ★ 外部工具钩子（`tools/threat.lua` 用）：
             --   `set_player(idx, f)` 决定这一帧自机站哪 —— 有了它才能把自机
             --   **钉在一个固定参考点**上量「站在这里会怎样」（文档《什么是好的弹设》
