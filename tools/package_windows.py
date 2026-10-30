@@ -40,6 +40,11 @@ def package(version):
 请保持 launch、Lua 脚本与各素材文件夹位于 exe 同级，勿在压缩包内直接启动。
 使用 Windows 10 / 11 x64 及支持 Direct3D 11 的显卡。
 
+TH32「猩红测试」现含红魔乡 Lunatic / Extra 的全部 Boss 战与道中。
+帕秋莉四条机体路线展开为 54 条符卡、37 段非符；七面道中按中 Boss 分为 14 张载体卡。
+道中敌机具有原作血量、移动、发弹与镜像行为，使用现成素材及道具代理；六面后半为原作入场等待。
+这些内容位于关卡练习 / 符卡练习中的 TH32。原测试卡继续保留。
+
 主菜单：随机十战 / 接续模式 / 双Boss随机十战。
 接续模式在当前 Boss 剩余 HP ≤15% 或剩余时间 <3秒时推进；旧 Boss 继续存活，下一张先用 GHOST 碰撞组等旧 Boss 退出。接续模式不掉落强化选项，Boss 死亡 / 击破结算也不自动全屏消弹。
 双模式每步同时运行两张不同卡，十步共二十张，允许同角色。
@@ -80,7 +85,7 @@ Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.11.0')
+    parser.add_argument('--version',default='0.12.0')
     parser.add_argument('--game-root',type=Path,help='只从指定源码快照读取游戏脚本与素材')
     parser.add_argument('--engine-root',type=Path,default=ENGINE_ROOT,help='Windows 引擎、DLL 及其相邻许可证目录')
     parser.add_argument('--output-dir',type=Path,default=OUTPUT)

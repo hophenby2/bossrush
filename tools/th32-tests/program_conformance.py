@@ -4,15 +4,17 @@ import argparse
 import subprocess
 import tempfile
 from pathlib import Path
-from source import Source
+from source import Source,road_catalogue
 from expand import lit
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('data',type=Path);p.add_argument('--frames',type=int,default=1800);p.add_argument('--card',type=int);p.add_argument('--dump',type=Path)
     args=p.parse_args();source=Source(args.data)
     data={stage:{sub:[[r['pos'],r['t'],r['op'],r['a']] for r in source.active(stage,sub)] for sub in subs} for stage,subs in source.stages.items()}
+    data['roads']=road_catalogue(source)
     def lua(value):
-        if isinstance(value,dict):return '{'+','.join(f'[{key}]={lua(v)}' for key,v in value.items())+'}'
+        if isinstance(value,dict):return '{'+','.join(f'[{lit(key)}]={lua(v)}' for key,v in value.items())+'}'
+        if isinstance(value,tuple):return '{'+','.join(lua(v) for v in value)+'}'
         if isinstance(value,list):return '{'+','.join(lua(v) for v in value)+'}'
         return lit(value)
     with tempfile.TemporaryDirectory(prefix='th32-ecl-') as folder:

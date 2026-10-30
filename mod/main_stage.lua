@@ -1204,7 +1204,7 @@ end)--29
 NewStage("TH32", "猩红测试", 30, function(self)
     self:Option(TH06_bg, "TH06_0")
     self:Task(function()
-        -- 一至六面、中 Boss、帕秋莉四条机体路线，再进入 Extra。
+        -- 各面道中前半 → 中 Boss → 道中后半 → 主 Boss；帕秋莉保留四条机体路线。
         for _, group in ipairs(_editor_class["TH32"].boss_order) do
             boss.CreateGroup(group, self.level)
             task.Wait(120)

@@ -20,11 +20,12 @@ def prepare(output):
     (output/'manifest.json').write_text(json.dumps({'app':str(app),'prepared':time.time()},indent=2)+'\n')
     print('已准备临时应用：'+str(app),flush=True)
 
-def run(output,frames,speed,card):
+def run(output,frames,speed,card,shoot=False):
     manifest=json.loads((output/'manifest.json').read_text());app=Path(manifest['app'])
     with tempfile.TemporaryDirectory(prefix='th32-engine-data-') as sandbox:
         env=dict(os.environ,BOSSRUSH_MAC_DATA=sandbox,BOSSRUSH_MAC_TEST='th32',TH32_ENGINE_FRAMES=str(frames),TH32_ENGINE_SPEED=str(speed))
         if card:env['TH32_ENGINE_CARD']=str(card)
+        if shoot:env['TH32_ENGINE_SHOOT']='1'
         logfile=output/('run-'+str(card or 'all')+'.log')
         with logfile.open('w') as log:
             p=subprocess.Popen([str(app/'Contents/MacOS/BossRushHD')],cwd=sandbox,env=env,stdout=log,stderr=subprocess.STDOUT)
@@ -46,11 +47,15 @@ def run(output,frames,speed,card):
         summary={k:result[k] for k in ('count','expected','renderer','version')}
         summary['peak']=max(row['peak'] for row in result['records'])
         summary['frames']=sum(row['frames'] for row in result['records'])
+        summary['defeats']=sum(row.get('defeats',0) for row in result['records'])
+        summary['drops']=sum(row.get('drops',0) for row in result['records'])
+        if shoot:assert summary['defeats']>0,'原生射击没有击破道中敌机'
         print('原生 Metal 验证通过：'+json.dumps(summary,ensure_ascii=False),flush=True)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--prepare',action='store_true');parser.add_argument('--run',action='store_true');parser.add_argument('--stop',action='store_true');parser.add_argument('--frames',type=int,default=600);parser.add_argument('--speed',type=int,default=12);parser.add_argument('--card',type=int)
+    parser.add_argument('--shoot',action='store_true',help='在原生测试中持续射击，检查普通敌机击破与掉落')
     args=parser.parse_args();output=args.output.resolve()
     if args.prepare:prepare(output)
     if args.stop:
@@ -58,6 +63,6 @@ def main():
         for line in subprocess.check_output(['ps','-axo','pid=,command='],text=True).splitlines():
             fields=line.strip().split(None,1)
             if len(fields)==2 and fields[1].startswith(binary):os.kill(int(fields[0]),signal.SIGTERM)
-    if args.run:run(output,args.frames,args.speed,args.card)
+    if args.run:run(output,args.frames,args.speed,args.card,args.shoot)
     assert args.prepare or args.run or args.stop
 if __name__=='__main__':main()

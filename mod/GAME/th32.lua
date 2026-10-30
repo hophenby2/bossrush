@@ -1,5 +1,5 @@
 ---=====================================
----TH32 猩红测试：红魔乡 Lunatic / Extra 全部 Boss 符卡及非符（含中 Boss）。
+---TH32 猩红测试：红魔乡 Lunatic / Extra 全部 Boss 战和道中（含中 Boss）。
 ---原生 ecldata1..7.ecl：47 个不同符卡名；四条帕秋莉路线展开为 54 条符卡、37 段非符。
 ---证据：th06/src/{EclManager,EnemyEclInstr,BulletManager,EnemyManager}.cpp；数据哈希见下方。
 ---使用 LuaSTG bullet / laser / enemy / object 和协程。离线展开后只执行直接 Lua 调用，
@@ -12,6 +12,10 @@
 ---本文件的原作弹体使用 rank_speed=false，Boss 使用原始 HP，保证上述固定 ECL rank 口径。
 ---差异 3：自机、Bomb、擦弹和伤害结算走本项目系统；弹体使用原作矩形判定尺寸，
 ---激光包含原作预热/收束阶段「仅中点有判定」的行为。击破血量与时限取原生 ECL。
+---14 张场外道中载体按原始时间轴分前后半；六面后半是无敌机的入场等待。
+---非冻结轴在中 Boss 战期间继续推进；后半整关衔接会扣除中 Boss 的原生攻击帧。
+---差异 4：切卡按项目框架清场，框架入场/结算帧不推进原作道中轴；单卡练习从完整段重放。
+---原作 P/大P/满P 用信仰道具代理，Bomb 用蓄力道具代理，残机用增失误额度道具代理。
 ---=====================================
 _editor_class["TH32"] = {}
 local class = _editor_class["TH32"]
@@ -530,6 +534,7 @@ end
 local H, P = {}, { {}, {}, {}, {}, {}, {}, {} }
 local STOP = {}
 local enemy = enemy
+H.road_clocks={}
 local function trunc(x) return x < 0 and math.ceil(x) or floor(x) end
 function H.random_int(n) return n>0 and ran:Int(0,n-1) or 0 end
 function H.reset_rank(a)
@@ -755,15 +760,27 @@ function H.new_actor(s,b,stage,sub,main,meta)
     a.co=coroutine.create(function() P[stage][sub](b,a.context) end)
     return a
 end
-function H.run_actor(a)
+function H.run_actor(a,initial)
     if a.dead or coroutine.status(a.co)=="dead" then return end
+    local tick=a.object.th06.tick or 0
+    if not initial and a.resume_tick==tick then return end
+    if not initial then a.resume_tick=tick end
     local ok,err=coroutine.resume(a.co)
     if not ok and err~=STOP then error(err,0) end
 end
 function H.kill_actor(a)
     if a.dead then return end
+    if a.object.th06.road then
+        if a.death_mode==3 then
+            a.object.hp=1;a.damageable=false;a.death_mode=0
+            return
+        end
+        H.enemy_drop(a)
+        if (a.death_mode or 0)==0 then a.dead=true;object.RawDel(a.object);return end
+    end
     if a.death then
         local fn=a.death;a.death=nil;a.object.hp=max(1,a.object.hp)
+        a.interactable=false;a.damageable=false;a.resume_tick=nil
         local prior=a.context;a.context={}
         for k,value in pairs(prior) do a.context[k]=value end
         a.context.time,a.context.epoch=0,0;a.death_life=0
@@ -772,12 +789,12 @@ function H.kill_actor(a)
     else a.dead=true;object.RawDel(a.object) end
 end
 class["原作使魔"] = Class(enemy, {
-    init=function(b,s,stage,sub,x,y,z,hp)
+    init=function(b,s,stage,sub,x,y,z,hp,drop,score)
         enemy.init(b,15,max(1,hp),false,false,false)
         b.bound=false;b.x,b.y=x-192,224-y
         local a=H.new_actor(s,b,stage,sub,false,{epoch=0,threshold=0})
-        a.z=z;a.initial_life=hp
-        H.run_actor(a)
+        a.z=z;a.initial_life=hp;a.drop=drop;a.score=score
+        H.run_actor(a,true)
         if not a.dead then H.actor_post(a,false) end
         if hp>=0 then b.hp=hp end -- SpawnEnemy 在首次 RunEcl 之后再次覆盖正生命值。
     end,
@@ -795,16 +812,17 @@ class["原作使魔"] = Class(enemy, {
     kill=function(b) object.Preserve(b);H.kill_actor(b.th06_actor) end,
     del=function(b) b.th06_actor.dead=true end,
 })
-function H.spawn(b,stage,sub,x,y,z,hp)
+function H.spawn(b,stage,sub,x,y,z,hp,drop,score)
     local s=b.th06;local count=0
     for _,a in ipairs(s.actors) do if not a.dead then count=count+1 end end
     if count>=256 then return end
     H.trace(b,"spawn",stage,sub,x,y,z,hp)
-    return New(class["原作使魔"],s,stage,sub,x,y,z,hp)
+    return New(class["原作使魔"],s,stage,sub,x,y,z,hp,drop,score)
 end
 function H.actor_motion(a)
     local b=a.object
-    b.x,b.y=b.x+a.axisx,b.y-a.axisy
+    -- Enemy::Move 的镜像只反射最终 x 位移，不修改极坐标角度或绝对插值目标。
+    b.x,b.y=b.x+(a.mirrored and -a.axisx or a.axisx),b.y-a.axisy
     H.clamp(b)
     if not a.main then
         local inside=b.x>=-224 and b.x<=224 and b.y>=-256 and b.y<=256
@@ -833,7 +851,10 @@ function H.actor_post(a,count_phase)
     end
     local v=a.context
     if v.repeat_func then H.extra(b,v,v.repeat_func,0,true) end
-    if count_phase~=false then a.phase=a.phase+1 end
+    if count_phase~=false then
+        a.phase=a.phase+1
+        if a.main and not a.meta.road then H.road_mid_tick(a) end
+    end
     local visible=not a.invisible and a.interactable
     b._a=(a.invisible or (a.bat_timer or 0)>0) and 0 or 255
     b.DMG_factor=a.damageable and visible and 1 or 0
@@ -849,6 +870,7 @@ class["原作流程控制"] = Class(object, {
     frame=function(o)
         local s=o.s
         if s.closed or not IsValid(o.owner) then object.RawDel(o);return end
+        s.tick=(s.tick or 0)+1
         -- EnemyManager 按槽顺序：先移动，再执行脚本，最后更新下帧速度。
         for i=1,256 do
             local a=s.actors[i]
@@ -913,6 +935,15 @@ function H.sprite(b,id)
         b._wisys=BossWalkImageSystem(b)
         b._wisys:SetImageInList("Flandre")
         b.a,b.b,b.rect=a0,b0,rect
+    elseif not a.main and b.th06.road and id<128 and b._wisys then
+        -- 原作姿态脚本共用一组妖精图；用现成颜色/体型代理，不按姿态号反复重建。
+        local family=math.floor(id/6)
+        local style=({1,2,3,4,10,11,12,13,14,15,16,17,18})[family%13+1]
+        if a.road_style~=style and b._wisys.SetImage then
+            local aa,bb,rect=b.a,b.b,b.rect
+            b._wisys:SetImage(style,8);a.road_style=style
+            b.a,b.b,b.rect=aa,bb,rect
+        end
     end
 end
 function H.set_velocity(p,a,v)
@@ -1067,6 +1098,94 @@ function H.extra(b,v,id,arg,repeated)
     else error("未实现的原作特殊攻击 "..tostring(id)) end
 end
 
+-- 道中空载体：普通敌机共用上面的原生敌机/弹池；宿主在场外、无判定、无血条。
+local ROAD_MID_GROUP={2,4,6,8,10,12,13}
+local RANDOM_DROPS={0,0,1,0,1,0,0,1,1,1,0,0,0,1,1,1,1,1,0,0,1,0,0,1,0,0,0,1,1,0,0,2}
+function H.road_scene()
+    local st=rawget(_G,"stage")
+    return st and st.current_stage or false
+end
+function H.road_mid_tick(a)
+    local clock=H.road_clocks[a.stage]
+    if clock and clock.owner==H.road_scene() and clock.phase=="mid" and not clock.frozen
+        and a.meta.group==ROAD_MID_GROUP[a.stage] then
+        clock.ticks=clock.ticks+1
+    end
+end
+function H.road_init(b,meta)
+    local scene=H.road_scene();local clock=H.road_clocks[meta.stage]
+    if meta.part=="before" then
+        clock={owner=scene,phase="pre",ticks=0,frozen=meta.frozen,drops={count=0,index=1}}
+        H.road_clocks[meta.stage]=clock
+    end
+    local seek=0
+    if meta.part=="after" and clock and clock.owner==scene then
+        if not meta.frozen then seek=min(meta.timeout,clock.ticks) end
+        clock.phase="post"
+    end
+    local runtime={}
+    for k,value in pairs(meta) do runtime[k]=value end
+    runtime.epoch=seek
+    b.th06_previous_context=nil
+    H.card_init(b,runtime)
+    local s,a=b.th06,b.th06_actor
+    s.road=true;s.road_drop_state=(clock and clock.owner==scene and clock.drops) or {count=0,index=1}
+    a.damageable,a.collidable,a.interactable,a.invisible=false,false,false,true
+    a.timeout=max(1,meta.timeout-seek)
+    b.x,b.y,b._colli,b.colli,b._a=0,400,false,false,0
+    b.no_hp_render,b.NotPlayTimeOutSound=true,true
+    -- 卡表保存完整段时长；整关内后半按实际中 Boss 时钟缩短，单卡练习从完整段起点重放。
+    b.t1,b.t2,b.t3=a.timeout,a.timeout,a.timeout
+    H.trace(b,"road_begin",meta.id,meta.base,meta.ending,seek)
+end
+function H.road_del(b)
+    local meta=b.th06_meta
+    if meta and meta.part=="before" then
+        local clock=H.road_clocks[meta.stage]
+        if clock and clock.owner==H.road_scene() then clock.phase="mid";clock.ticks=0 end
+    end
+    H.card_del(b)
+end
+function H.timeline_spawn(b,op,sub,x,y,z,hp,drop,score)
+    -- 随机创建按 GameManager 的自机活动区尺寸取值；原作这里没有加活动区左上偏移。
+    if op>=4 then
+        if x<=-990 then x=ran:Float(0,368) end
+        if y<=-990 then y=ran:Float(0,416) end
+        if z<=-990 then z=ran:Float(0,800) end
+    end
+    local mirrored=op==2 or op==3 or op==6 or op==7
+    H.trace(b,"timeline_spawn",op,sub,x,y,z,hp,drop,score,mirrored)
+    local obj=H.spawn(b,b.th06_actor.stage,sub,x,y,z,hp,drop,score)
+    -- SpawnEnemy 的首次 RunEcl 先发生，主时间轴随后才置 mirrored。
+    if obj and IsValid(obj) then obj.th06_actor.mirrored=mirrored end
+    return obj
+end
+function H.drop_item(b,id)
+    if not b.th06.road then return end
+    local lib=rawget(_G,"item")
+    local objects=lib and lib.obj
+    if not objects then return end
+    local proxy={ [0]=objects.faith,[1]=objects.point,[2]=objects.faith,[3]=objects.addcharge,
+        [4]=objects.faith,[5]=objects.addmisscount,[6]=objects.faith_minor }
+    if proxy[id] then New(proxy[id],b.x,b.y) end
+    H.trace(b,"drop",id,b.x,b.y)
+end
+function H.enemy_drop(a)
+    if a.loot_done or not a.object.th06.road then return end
+    a.loot_done=true
+    H.trace(a.object,"enemy_defeat",a.sub,a.initial_life or 1)
+    if a.score and a.score>=0 and lstg and lstg.var and lstg.var.score then lstg.var.score=lstg.var.score+a.score end
+    local id=a.drop or -2
+    if id==-1 then
+        local state=a.object.th06.road_drop_state
+        if state.count%3==0 then
+            id=RANDOM_DROPS[state.index];state.index=state.index%#RANDOM_DROPS+1
+        else id=-2 end
+        state.count=state.count+1
+    end
+    if id>=0 then H.drop_item(a.object,id) end
+end
+
 -- TH06_KERNEL_END
 
 
@@ -1087,6 +1206,106 @@ end
 -- ecldata6.ecl SHA-256：4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5
 
 -- ecldata7.ecl SHA-256：fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392
+
+-- 第 1 面，原生 Sub0，起始 0x70。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,1,1,3.0,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,120,true)
+        H.wait(b,v,40)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,120)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,220)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[1][0]=B.part1
+end
+
+-- 第 1 面，原生 Sub1，起始 0x15c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,1,1,3.0,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,120,true)
+        H.wait(b,v,100)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,200)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[1][1]=B.part1
+end
+
+-- 第 1 面，原生 Sub2，起始 0x238。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,1,2,11,2,1.399999976158142,0.5,0.0,0.15707963705062866,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.05235987901687622;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[1][2]=B.part1
+end
+
+-- 第 1 面，原生 Sub3，起始 0x3b8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,1,2,5,1,1.399999976158142,0.0,0.0,0.2617993950843811,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.05235987901687622;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[1][3]=B.part1
+end
 
 -- 第 1 面，原生 Sub4，起始 0x4b4。
 do
@@ -1169,6 +1388,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=false
+        a.death_mode=1
         a.collidable=false
         a.death=P[1][6]
         a.life_threshold=500
@@ -1324,6 +1544,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         a.collidable=true
         a.death=P[1][16]
         H.sprite(b,134)
@@ -1502,6 +1723,7 @@ do
         H.wait(b,v,0)
         a.damageable=false
         H.trace(b,"spell_end")
+        a.death_mode=3
         a.collidable=true
         a.death=P[1][17]
         H.sprite(b,134)
@@ -1921,6 +2143,263 @@ do
     P[1][23]=B.part1
 end
 
+-- 第 2 面，原生 Sub0，起始 0x94。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[2][5]
+        a.angle,a.speed=0.7853981852531433,3.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,180,true)
+        a.accel=-0.014999999664723873;a.mode="velocity"
+        H.wait(b,v,180)
+        H.interval(b,0,false)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][0]=B.part1
+end
+
+-- 第 2 面，原生 Sub1，起始 0x1e8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.1780972480773926,3.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,180,true)
+        a.accel=-0.014999999664723873;a.mode="velocity"
+        H.wait(b,v,200)
+        H.interval(b,0,false)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][1]=B.part1
+end
+
+-- 第 2 面，原生 Sub2，起始 0x31c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[2][5]
+        a.angle,a.speed=1.5707963705062866,3.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,180,true)
+        a.accel=-0.014999999664723873;a.mode="velocity"
+        H.wait(b,v,200)
+        H.interval(b,0,false)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][2]=B.part1
+end
+
+-- 第 2 面，原生 Sub3，起始 0x470。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.9634953737258911,3.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,180,true)
+        a.accel=-0.014999999664723873;a.mode="velocity"
+        H.wait(b,v,200)
+        H.interval(b,0,false)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][3]=B.part1
+end
+
+-- 第 2 面，原生 Sub4，起始 0x5a4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[2][5]
+        a.angle,a.speed=2.356194496154785,3.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,180,true)
+        a.accel=-0.014999999664723873;a.mode="velocity"
+        H.wait(b,v,200)
+        H.interval(b,0,false)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][4]=B.part1
+end
+
+-- 第 2 面，原生 Sub5，起始 0x77c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,1)
+        H.pattern(b,5,2,2,10,1,2.0,0.0,0.0,0.0,4)
+        H.erase(b)
+    end
+    P[2][5]=B.part1
+end
+
+-- 第 2 面，原生 Sub6，起始 0x7c4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle=H.player_angle(b)+(0.0);a.speed=2.4000000953674316;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,3,1,2.5,0.0,0.0,0.19634954631328583,4)
+        a.muted=false
+        H.interval(b,120,true)
+        H.wait(b,v,180)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,280)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][6]=B.part1
+end
+
+-- 第 2 面，原生 Sub7，起始 0x8a0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(16.0)/2,(16.0)/2,true
+        H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
+        a.speed=3.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][7]=B.part1
+end
+
+-- 第 2 面，原生 Sub8，起始 0x918。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
+        a.speed=5.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][8]=B.part1
+end
+
+-- 第 2 面，原生 Sub9，起始 0x9a0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,9)
+        b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
+        a.speed=5.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][9]=B.part1
+end
+
+-- 第 2 面，原生 Sub10，起始 0xa28。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
+        a.speed=5.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][10]=B.part1
+end
+
+-- 第 2 面，原生 Sub11，起始 0xab0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,11)
+        b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
+        a.speed=5.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][11]=B.part1
+end
+
+-- 第 2 面，原生 Sub12，起始 0xb38。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,1,1,11,5,2.4000000953674316,0.800000011920929,0.0,0.2617993950843811,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.05235987901687622;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[2][12]=B.part1
+end
+
 -- 第 2 面，原生 Sub14，起始 0xdb4。
 do
     local B={}
@@ -2080,6 +2559,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.drop_item(b,3)
         H.erase(b)
     end
     P[2][18]=B.part1
@@ -2106,6 +2586,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=false
+        a.death_mode=1
         a.death=P[2][18]
         b.a,b.b,b.rect=(45.0)/2,(56.0)/2,true
         a.timeout=1920;a.phase=0
@@ -2268,6 +2749,7 @@ do
         H.trace(b,"spell_end")
         a.damageable=false
         a.collidable=true
+        a.death_mode=3
         a.death=P[2][28]
         if not a.main then b.hp=13000 end
         a.phase=0
@@ -2646,6 +3128,286 @@ do
     P[2][32]=B.part1
 end
 
+-- 第 3 面，原生 Sub0，起始 0x9c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,3,4,6,10,2,3.0,1.0,0.0,0.13089969754219055,4)
+        a.muted=false
+        H.interval(b,200,true)
+        a.angle,a.speed=0.5235987901687622,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,115)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][0]=B.part1
+end
+
+-- 第 3 面，原生 Sub1，起始 0x1b4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,3,4,6,10,2,3.0,1.0,0.0,0.13089969754219055,4)
+        a.muted=false
+        H.interval(b,200,true)
+        a.angle,a.speed=0.5235987901687622,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,115)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][1]=B.part1
+end
+
+-- 第 3 面，原生 Sub2，起始 0x2cc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,3,4,6,10,2,3.0,1.0,0.0,0.13089969754219055,4)
+        a.muted=false
+        H.interval(b,200,true)
+        a.angle,a.speed=-1.0471975803375244,4.0;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.03490658476948738;a.mode="velocity"
+        H.wait(b,v,90)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][2]=B.part1
+end
+
+-- 第 3 面，原生 Sub3，起始 0x3e4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,3,4,6,10,2,3.0,1.0,0.0,0.13089969754219055,4)
+        a.muted=false
+        H.interval(b,200,true)
+        a.angle,a.speed=-1.0471975803375244,4.0;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.03490658476948738;a.mode="velocity"
+        H.wait(b,v,90)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][3]=B.part1
+end
+
+-- 第 3 面，原生 Sub4，起始 0x4fc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,15)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,1.5;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.05000000074505806;a.mode="velocity"
+        H.wait(b,v,70)
+        v.f0=(H.player_angle(b))+(0.0)
+        v.f1=1.600000023841858
+        v.c0=30
+        a.accel=0.0;a.mode="velocity"
+        H.pattern(b,3,3,6,16,1,1.600000023841858,0.0,v.f0,0.39269909262657166,4)
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,2,4,6,5,1,v.f1,0.0,v.f0,0.2617993950843811,4)
+        v.f1=(v.f1)+(0.20999999344348907)
+        v.i0=math.fmod(v.c0,3)
+        v.cmp=(v.i0)-(0)
+        if v.cmp~=0 then v.time=70;return B.part4(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,72)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,72)
+        v.f2=ran:Float(0,1.5707963705062866)
+        v.f2=(v.f2)+(0.7853981852531433)
+        a.angle,a.speed=v.f2,1.5;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][4]=B.part1
+end
+
+-- 第 3 面，原生 Sub5，起始 0x764。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,16)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,1.5;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.05000000074505806;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        v.f1=ran:Float(0,1.0)
+        v.f1=(v.f1)+(1.0)
+        H.pattern(b,1,1,2,24,3,v.f1,1.0,0.0,0.22439947724342346,4)
+        v.f2=ran:Float(0,1.5707963705062866)
+        v.f2=(v.f2)+(0.7853981852531433)
+        H.wait(b,v,100)
+        a.angle,a.speed=v.f2,-1.5;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][5]=B.part1
+end
+
+-- 第 3 面，原生 Sub6，起始 0x908。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,1,7,1,2.5,0.0,0.0,0.03490658476948738,4)
+        a.muted=false
+        H.interval(b,90,true)
+        H.wait(b,v,40)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,120)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,220)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][6]=B.part1
+end
+
+-- 第 3 面，原生 Sub7，起始 0xab8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,15)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,1.5;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.05000000074505806;a.mode="velocity"
+        H.wait(b,v,70)
+        v.f0=1.5707963705062866
+        v.f1=1.600000023841858
+        v.c0=16
+        a.accel=0.0;a.mode="velocity"
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,2,4,6,5,1,v.f1,0.0,v.f0,0.5235987901687622,4)
+        v.f1=(v.f1)+(0.30000001192092896)
+        v.i0=math.fmod(v.c0,3)
+        v.cmp=(v.i0)-(0)
+        if v.cmp~=0 then v.time=70;return B.part4(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,72)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,72)
+        v.f2=ran:Float(0,1.5707963705062866)
+        v.f2=(v.f2)+(0.7853981852531433)
+        a.angle,a.speed=v.f2,-1.5;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][7]=B.part1
+end
+
+-- 第 3 面，原生 Sub8，起始 0xd1c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,15)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.5;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.0833333358168602;a.mode="velocity"
+        H.wait(b,v,70)
+        v.f0=1.5707963705062866
+        v.f1=1.600000023841858
+        v.c0=16
+        a.accel=0.0;a.mode="velocity"
+        a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
+        H.pattern(b,9,3,15,22,1,2.0,0.30000001192092896,0.0,-3.1415927410125732,25)
+        v.f2=ran:Float(0,1.5707963705062866)
+        v.f2=(v.f2)+(0.7853981852531433)
+        a.angle,a.speed=v.f2,1.5;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[3][8]=B.part1
+end
+
 -- 第 3 面，原生 Sub9，起始 0xefc。
 do
     local B={}
@@ -2654,6 +3416,7 @@ do
         H.wait(b,v,0)
         a.damageable=false
         a.interactable=false
+        a.death_mode=1
         a.death=P[3][15]
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.life_threshold=1300
@@ -2885,6 +3648,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.drop_item(b,5)
         H.call(b,v,P[3][16],0,0.0)
     end
     P[3][15]=B.part1
@@ -3113,14 +3877,14 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
-        H.spawn(b,3,25,32.0,-32.0,0.0,2000)
-        H.spawn(b,3,25,352.0,-32.0,0.0,1000)
+        H.spawn(b,3,25,32.0,-32.0,0.0,2000,1,2000)
+        H.spawn(b,3,25,352.0,-32.0,0.0,1000,1,2000)
         H.wait(b,v,30)
-        H.spawn(b,3,25,96.0,-32.0,0.0,500)
-        H.spawn(b,3,25,288.0,-32.0,0.0,2000)
+        H.spawn(b,3,25,96.0,-32.0,0.0,500,1,2000)
+        H.spawn(b,3,25,288.0,-32.0,0.0,2000,1,2000)
         H.wait(b,v,60)
-        H.spawn(b,3,25,160.0,-32.0,0.0,1000)
-        H.spawn(b,3,25,224.0,-32.0,0.0,500)
+        H.spawn(b,3,25,160.0,-32.0,0.0,1000,1,2000)
+        H.spawn(b,3,25,224.0,-32.0,0.0,500,1,2000)
         return
     end
     P[3][21]=B.part1
@@ -3264,6 +4028,7 @@ do
         a.timeout_fn=P[3][32]
         a.death=P[3][34]
         H.interval(b,0,false)
+        a.death_mode=3
         v.repeat_func=nil
         a.damageable=true
         a.interactable=true
@@ -3742,6 +4507,28 @@ do
     P[3][34]=B.part1
 end
 
+-- 第 4 面，原生 Sub0，起始 0x104。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000,0,10)
+        a.accel=0.0;a.mode="velocity"
+        v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
+        a.angle,a.speed=v.f0,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][0]=B.part1
+end
+
 -- 第 4 面，原生 Sub1，起始 0x1cc。
 do
     local B={}
@@ -3778,6 +4565,566 @@ do
     P[4][1]=B.part1
 end
 
+-- 第 4 面，原生 Sub2，起始 0x38c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,8,2,1.7999999523162842,1.0,0.0,0.2617993950843811,4)
+        a.muted=false
+        H.interval(b,50,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=0.0,4.199999809265137;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,70)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][2]=B.part1
+end
+
+-- 第 4 面，原生 Sub3，起始 0x50c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,9,2,1.7999999523162842,1.0,0.0,0.2617993950843811,4)
+        a.muted=false
+        H.interval(b,50,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=-1.0471975803375244,4.199999809265137;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,70)
+        a.angular=-0.13089969754219055;a.mode="velocity"
+        H.wait(b,v,150)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][3]=B.part1
+end
+
+-- 第 4 面，原生 Sub4，起始 0x69c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,5,3,1.5,0.699999988079071,0.0,0.2617993950843811,4)
+        a.muted=false
+        H.interval(b,128,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=0.0,4.199999809265137;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,70)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][4]=B.part1
+end
+
+-- 第 4 面，原生 Sub5，起始 0x81c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,5,3,1.5,0.699999988079071,0.0,0.2617993950843811,4)
+        a.muted=false
+        H.interval(b,128,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=-1.0471975803375244,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,70)
+        a.angular=-0.13089969754219055;a.mode="velocity"
+        H.wait(b,v,150)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][5]=B.part1
+end
+
+-- 第 4 面，原生 Sub6，起始 0x9ac。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.collidable=false
+        a.angle,a.speed=0.0,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,70)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][6]=B.part1
+end
+
+-- 第 4 面，原生 Sub7，起始 0xa44。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.collidable=false
+        a.angle,a.speed=-1.0471975803375244,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,110)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][7]=B.part1
+end
+
+-- 第 4 面，原生 Sub8，起始 0xadc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,9,2,2.299999952316284,1.2000000476837158,0.0,0.1745329201221466,4)
+        a.muted=false
+        H.interval(b,50,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=1.5707963705062866,4.5;a.mode="velocity"
+        H.wait(b,v,100)
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][8]=B.part1
+end
+
+-- 第 4 面，原生 Sub9，起始 0xc3c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,1,2,6,9,2,2.299999952316284,1.2000000476837158,0.0,0.1745329201221466,4)
+        a.muted=false
+        H.interval(b,50,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.collidable=false
+        a.angle,a.speed=0.0,4.5;a.mode="velocity"
+        H.wait(b,v,100)
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][9]=B.part1
+end
+
+-- 第 4 面，原生 Sub10，起始 0xd9c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000,0,10)
+        a.accel=0.0;a.mode="velocity"
+        v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
+        a.angle,a.speed=v.f0,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][10]=B.part1
+end
+
+-- 第 4 面，原生 Sub11，起始 0xe64。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[4][12]
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        v.c0=64
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.i0=H.random_int(2)
+        v.cmp=(v.i0)-(0)
+        if v.cmp~=0 then v.time=70;return B.part3(b,v) end
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.f1=0.2416609674692154
+        v.time=70;return B.part4(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.f1=-0.2416609674692154
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,4,2,6,9,3,3.200000047683716,1.7999999523162842,v.f0,0.0,4)
+        v.f0=(v.f0)+(v.f1)
+        H.wait(b,v,78)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,78)
+        a.angle,a.speed=-1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][11]=B.part1
+end
+
+-- 第 4 面，原生 Sub12，起始 0x10a4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.cancel(b)
+        H.erase(b)
+    end
+    P[4][12]=B.part1
+end
+
+-- 第 4 面，原生 Sub13，起始 0x10dc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.0;a.mode="velocity"
+        a.death_mode=1
+        a.death=P[4][12]
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        v.c0=64
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.i0=H.random_int(2)
+        v.cmp=(v.i0)-(0)
+        if v.cmp~=0 then v.time=70;return B.part3(b,v) end
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.f1=0.2416609674692154
+        v.time=70;return B.part4(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.f1=-0.2416609674692154
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,4,2,6,3,2,2.0999999046325684,1.399999976158142,v.f0,0.0,4)
+        v.f0=(v.f0)+(v.f1)
+        H.wait(b,v,78)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,78)
+        a.angle,a.speed=-1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][13]=B.part1
+end
+
+-- 第 4 面，原生 Sub14，起始 0x1298。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[4][15]
+        H.wait(b,v,30)
+        a.interactable=true
+        v.c0=60
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.cmp=((a.stage==7 and 4 or 3))-(0)
+        if v.cmp~=0 then v.time=30;return B.part4(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,3,0,10,7,1,1.2000000476837158,1.0,v.f0,0.0,5)
+        v.f1=(v.f0)+(0.4487989544868469)
+        H.pattern(b,3,3,10,7,1,1.2000000476837158,1.0,v.f1,0.0,5)
+        v.time=30;return B.part10(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.cmp=((a.stage==7 and 4 or 3))-(1)
+        if v.cmp~=0 then v.time=30;return B.part6(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,3,0,10,11,1,1.2000000476837158,1.0,v.f0,0.0,5)
+        v.f1=(v.f0)+(0.28559932112693787)
+        H.pattern(b,3,3,10,11,1,1.2000000476837158,1.0,v.f1,0.0,5)
+        v.time=30;return B.part10(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.cmp=((a.stage==7 and 4 or 3))-(2)
+        if v.cmp~=0 then v.time=30;return B.part8(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,3,0,10,12,2,1.600000023841858,1.0,v.f0,0.0,5)
+        v.f1=(v.f0)+(0.28559932112693787)
+        H.pattern(b,3,3,10,12,1,1.600000023841858,1.0,v.f1,0.0,5)
+        v.time=30;return B.part10(b,v)
+    end
+    function B.part8(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.cmp=((a.stage==7 and 4 or 3))-(3)
+        if v.cmp~=0 then v.time=30;return B.part10(b,v) end
+        return B.part9(b,v)
+    end
+    function B.part9(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,3,0,10,15,2,2.5,1.0,v.f0,0.0,5)
+        v.f1=(v.f0)+(0.28559932112693787)
+        H.pattern(b,3,3,10,15,2,2.5,1.0,v.f1,0.0,5)
+        return B.part10(b,v)
+    end
+    function B.part10(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part11(b,v)
+    end
+    function B.part11(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        a.interactable=false
+        H.wait(b,v,110)
+        H.erase(b)
+    end
+    P[4][14]=B.part1
+end
+
+-- 第 4 面，原生 Sub15，起始 0x169c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.wait(b,v,30)
+        H.erase(b)
+    end
+    P[4][15]=B.part1
+end
+
+-- 第 4 面，原生 Sub16，起始 0x16dc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[4][15]
+        H.wait(b,v,30)
+        a.interactable=true
+        v.c0=10
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        H.pattern(b,3,3,6,32,3,3.0,1.0,0.0,0.0,5)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        a.interactable=false
+        H.wait(b,v,110)
+        H.erase(b)
+    end
+    P[4][16]=B.part1
+end
+
+-- 第 4 面，原生 Sub17，起始 0x1894。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,13)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_mode=1
+        a.death=P[4][15]
+        H.wait(b,v,30)
+        a.interactable=true
+        v.c0=6
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        H.pattern(b,5,0,10,11,1,1.2000000476837158,1.0,0.0,0.0,5)
+        H.pattern(b,3,3,10,11,1,1.2000000476837158,1.0,v.f1,0.0,5)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        a.interactable=false
+        H.wait(b,v,110)
+        H.erase(b)
+    end
+    P[4][17]=B.part1
+end
+
+-- 第 4 面，原生 Sub18，起始 0x19f4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        H.spawn(b,4,20,(b.x+192),(224-b.y),a.z,1000,0,10)
+        a.accel=0.0;a.mode="velocity"
+        v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
+        a.angle,a.speed=v.f0,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[4][18]=B.part1
+end
+
+-- 第 4 面，原生 Sub20，起始 0x1c7c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,16)
+        a.damageable=false
+        a.interactable=false
+        H.wait(b,v,120)
+        H.laser(b,false,0,6,1.5707963705062866,0.0,0.0,500.0,500.0,32.0,90,120,16,70,14,0)
+        H.pattern(b,3,4,6,32,2,1.2000000476837158,0.0,0.0,0.09817477315664291,4)
+        H.wait(b,v,320)
+        H.wait(b,v,440)
+        H.erase(b)
+    end
+    P[4][20]=B.part1
+end
+
 -- 第 4 面，原生 Sub21，起始 0x1d80。
 do
     local B={}
@@ -3792,6 +5139,7 @@ do
         a.bounds={32.0,48.0,352.0,176.0}
         a.timeout=2400;a.phase=0
         a.timeout_fn=P[4][25]
+        a.death_mode=1
         a.death=P[4][24]
         H.position(b,192.0,128.0,0.0);H.clamp(b)
         H.wait(b,v,30)
@@ -3855,9 +5203,9 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
-        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000)
+        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000,0,10)
         H.wait(b,v,30)
-        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000)
+        H.spawn(b,4,1,(b.x+192),(224-b.y),a.z,1000,0,10)
         return
     end
     P[4][23]=B.part1
@@ -3872,6 +5220,7 @@ do
         a.speed=0.0;a.mode="velocity"
         a.interactable=false
         H.trace(b,"spell_end")
+        H.drop_item(b,3)
         H.erase(b)
     end
     P[4][24]=B.part1
@@ -3898,6 +5247,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         a.collidable=true
         if not a.main then b.hp=17000 end
         a.phase=0
@@ -4046,6 +5396,7 @@ do
     function B.part19(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        a.death_mode=2
         a.death=P[4][37]
         H.wait(b,v,10)
         H.wait(b,v,20)
@@ -5459,6 +6810,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         v.i3=1
         a.damageable=true
+        a.death_mode=2
         a.collidable=true
         if not a.main then b.hp=16000 end
         a.phase=0
@@ -5655,6 +7007,7 @@ do
     function B.part25(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        a.death_mode=2
         a.death=P[4][39]
         H.wait(b,v,120)
         v.c3=0
@@ -5777,6 +7130,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.life_threshold=3400
         a.life_fn=P[4][40]
+        a.death_mode=2
         a.death=P[4][40]
         H.extra(b,v,3,0,false)
         H.wait(b,v,120)
@@ -5802,11 +7156,13 @@ do
         a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
+        a.death_mode=2
         a.collidable=true
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.life_threshold=1700
         a.life_fn=P[4][41]
+        a.death_mode=2
         a.death=P[4][41]
         H.wait(b,v,120)
         a.damageable=true
@@ -5831,9 +7187,11 @@ do
         a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
+        a.death_mode=2
         a.collidable=true
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
+        a.death_mode=3
         a.death=P[4][60]
         H.wait(b,v,120)
         a.damageable=true
@@ -7034,6 +8392,439 @@ do
     P[4][60]=B.part1
 end
 
+-- 第 5 面，原生 Sub0，起始 0xe0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.c0=8
+        v.f0=1.5
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,3,3,6,40,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.3799999952316284)
+        v.f0=(v.f0)+(0.10000000149011612)
+        H.wait(b,v,75)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,75)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][0]=B.part1
+end
+
+-- 第 5 面，原生 Sub1，起始 0x29c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.5;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,9,2,6,5,2,1.7999999523162842,0.800000011920929,3.1415927410125732,0.0,516)
+        a.muted=false
+        H.interval(b,30,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][1]=B.part1
+end
+
+-- 第 5 面，原生 Sub2，起始 0x40c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.death_mode=1
+        a.death=P[5][7]
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.c0=5
+        v.f0=1.5
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,3,3,6,32,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.550000011920929)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,74)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][2]=B.part1
+end
+
+-- 第 5 面，原生 Sub3，起始 0x5e8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        a.death_mode=1
+        a.death=P[5][8]
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.f0=1.5
+        v.cmp=((a.stage==7 and 4 or 3))-(0)
+        if v.cmp~=0 then v.time=70;return B.part3(b,v) end
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.time=80;return B.part5(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=4
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,3,3,6,24,2,v.f0,1.0,0.13089969754219055,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,75)
+        H.pattern(b,3,3,6,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        v.c0=3
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        H.pattern(b,3,3,6,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.25)
+        H.wait(b,v,85)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=80;return B.part6(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,85)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][3]=B.part1
+end
+
+-- 第 5 面，原生 Sub4，起始 0x8a8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        a.death_mode=1
+        a.death=P[5][8]
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.f0=1.5
+        v.cmp=((a.stage==7 and 4 or 3))-(0)
+        if v.cmp~=0 then v.time=70;return B.part3(b,v) end
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.time=80;return B.part5(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=4
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,3,3,2,24,2,v.f0,1.0,0.13089969754219055,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,75)
+        H.pattern(b,3,3,2,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        v.c0=3
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        H.pattern(b,3,3,2,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.25)
+        H.wait(b,v,85)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=80;return B.part6(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,85)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][4]=B.part1
+end
+
+-- 第 5 面，原生 Sub5，起始 0xb68。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        a.death_mode=1
+        a.death=P[5][8]
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.f0=1.5
+        v.cmp=((a.stage==7 and 4 or 3))-(0)
+        if v.cmp~=0 then v.time=70;return B.part3(b,v) end
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.time=80;return B.part5(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=4
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,3,3,10,24,2,v.f0,1.0,0.13089969754219055,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,75)
+        H.pattern(b,3,3,10,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.20000000298023224)
+        H.wait(b,v,80)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        v.c0=3
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,80)
+        H.pattern(b,3,3,10,24,1,v.f0,1.0,0.0,0.0,516)
+        v.f0=(v.f0)+(0.25)
+        H.wait(b,v,85)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=80;return B.part6(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,85)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][5]=B.part1
+end
+
+-- 第 5 面，原生 Sub6，起始 0xe28。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,11)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.c0=40
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.f0=ran:Float(0,3.9269907474517822)+-0.39269909262657166
+        v.f1=ran:Float(0,2.0)+1.0
+        H.pattern(b,2,1,6,7,2,v.f1,1.0,v.f0,0.039269909262657166,516)
+        H.wait(b,v,73)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,73)
+        a.angle,a.speed=1.5707963705062866,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][6]=B.part1
+end
+
+-- 第 5 面，原生 Sub7，起始 0xfb8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.erase(b)
+    end
+    P[5][7]=B.part1
+end
+
+-- 第 5 面，原生 Sub8，起始 0xfe4。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.erase(b)
+    end
+    P[5][8]=B.part1
+end
+
+-- 第 5 面，原生 Sub9，起始 0x1010。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.5;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,6,1,1.5,0.800000011920929,0.0,0.19634954631328583,516)
+        a.muted=false
+        H.interval(b,40,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][9]=B.part1
+end
+
+-- 第 5 面，原生 Sub10，起始 0x10cc。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,11)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.5;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,4,2,4,1,1.5,0.800000011920929,0.0,0.2617993950843811,516)
+        a.muted=false
+        H.interval(b,30,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][10]=B.part1
+end
+
+-- 第 5 面，原生 Sub11，起始 0x1188。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.5;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,9,3,2,4,1,1.5,0.800000011920929,3.1415927410125732,-3.1415927410125732,516)
+        a.muted=false
+        H.interval(b,10,true)
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[5][11]=B.part1
+end
+
 -- 第 5 面，原生 Sub13，起始 0x1370。
 do
     local B={}
@@ -7050,6 +8841,7 @@ do
         a.damageable=true
         a.timeout=2400;a.phase=0
         a.timeout_fn=P[5][17]
+        a.death_mode=1
         a.death=P[5][16]
         a.life_threshold=710
         a.life_fn=P[5][18]
@@ -7145,6 +8937,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.drop_item(b,5)
         H.call(b,v,P[5][17],0,0.0)
     end
     P[5][16]=B.part1
@@ -7315,6 +9108,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         a.collidable=true
         if not a.main then b.hp=19000 end
         a.phase=0
@@ -7327,6 +9121,7 @@ do
         a.life_fn=P[5][44]
         a.timeout_fn=P[5][45]
         a.life_fn=P[5][45]
+        a.death_mode=2
         a.death=P[5][34]
         H.wait(b,v,10)
         H.wait(b,v,20)
@@ -7377,14 +9172,14 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
-        H.spawn(b,5,25,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,26,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,27,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,28,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,31,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,32,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,29,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,30,(b.x+192),(224-b.y),a.z,100)
+        H.spawn(b,5,25,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,26,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,27,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,28,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,31,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,32,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,29,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,30,(b.x+192),(224-b.y),a.z,100,0,0)
         H.wait(b,v,60)
         return
     end
@@ -7431,6 +9226,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.7853981852531433,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7469,6 +9265,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.0,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7507,6 +9304,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.356194496154785,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7545,6 +9343,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,3.1415927410125732,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7583,6 +9382,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,1.1780972480773926,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7621,6 +9421,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,1.9634953737258911,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7659,6 +9460,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.39269909262657166,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7697,6 +9499,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.7488934993743896,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         H.wait(b,v,50)
@@ -7743,6 +9546,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=17000 end
@@ -7754,6 +9558,7 @@ do
         a.timeout_fn=P[5][46]
         a.life_threshold=1400
         a.life_fn=P[5][46]
+        a.death_mode=2
         a.death=P[5][41]
         a.timeout_fn=P[5][47]
         a.life_fn=P[5][47]
@@ -7802,10 +9607,10 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
-        H.spawn(b,5,36,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,37,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,38,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,5,39,(b.x+192),(224-b.y),a.z,100)
+        H.spawn(b,5,36,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,37,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,38,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,5,39,(b.x+192),(224-b.y),a.z,100,0,0)
         H.wait(b,v,60)
         return
     end
@@ -7823,6 +9628,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.7853981852531433,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         a.extra={2,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
@@ -7861,6 +9667,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.0,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         a.extra={2,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
@@ -7899,6 +9706,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.356194496154785,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         a.extra={2,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
@@ -7937,6 +9745,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,3.1415927410125732,0.800000011920929,1)
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
         a.extra={2,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
@@ -7987,6 +9796,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=16000 end
@@ -7998,6 +9808,7 @@ do
         a.timeout_fn=P[5][50]
         a.life_threshold=1700
         a.life_fn=P[5][50]
+        a.death_mode=3
         a.death=P[5][51]
         H.wait(b,v,60)
         v.c3=0
@@ -8513,6 +10324,196 @@ do
     P[5][51]=B.part1
 end
 
+-- 第 6 面，原生 Sub0，起始 0xc8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        a.invisible=true
+        a.interactable=false
+        v.c0=18
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,40)
+        b.x=(ran:Float(0,384.0))-192
+        b.y=224-(ran:Float(0,224.0)+224.0)
+        H.wait(b,v,80)
+        b.x=(ran:Float(0,384.0))-192
+        b.y=224-(ran:Float(0,224.0)+224.0)
+        H.wait(b,v,120)
+        b.x=(ran:Float(0,384.0))-192
+        b.y=224-(ran:Float(0,224.0)+224.0)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=0;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,120)
+        H.erase(b)
+    end
+    P[6][0]=B.part1
+end
+
+-- 第 6 面，原生 Sub1，起始 0x20c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,9,2,6,6,2,1.600000023841858,1.0,3.1415927410125732,-3.1415927410125732,4)
+        a.muted=false
+        H.interval(b,30,true)
+        a.angle,a.speed=0.5235987901687622,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,115)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][1]=B.part1
+end
+
+-- 第 6 面，原生 Sub2，起始 0x318。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,9)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,9,2,6,6,2,1.600000023841858,1.0,3.1415927410125732,-3.1415927410125732,4)
+        a.muted=false
+        H.interval(b,30,true)
+        a.angle,a.speed=0.5235987901687622,4.5;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=-0.06544984877109528;a.mode="velocity"
+        H.wait(b,v,115)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][2]=B.part1
+end
+
+-- 第 6 面，原生 Sub3，起始 0x424。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,8)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,9,2,2,9,1,2.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        a.muted=false
+        H.interval(b,30,true)
+        a.angle,a.speed=-1.0471975803375244,4.0;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.03490658476948738;a.mode="velocity"
+        H.wait(b,v,90)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][3]=B.part1
+end
+
+-- 第 6 面，原生 Sub4，起始 0x530。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,9)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.muted=true
+        H.pattern(b,9,2,2,9,1,2.0,1.0,3.1415927410125732,-3.1415927410125732,4)
+        a.muted=false
+        H.interval(b,30,true)
+        a.angle,a.speed=-1.0471975803375244,4.0;a.mode="velocity"
+        H.wait(b,v,30)
+        a.angular=0.03490658476948738;a.mode="velocity"
+        H.wait(b,v,90)
+        a.angular=0.0;a.mode="velocity"
+        H.interval(b,0,true)
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][4]=B.part1
+end
+
+-- 第 6 面，原生 Sub5，起始 0x63c。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,11)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=0.0,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        a.death_mode=1
+        a.death=P[6][6]
+        H.pattern(b,3,2,6,60,2,3.200000047683716,1.0,0.0,0.0,4)
+        a.accel=0.0;a.mode="velocity"
+        v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
+        a.angle,a.speed=v.f0,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][5]=B.part1
+end
+
+-- 第 6 面，原生 Sub6，起始 0x7d8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.erase(b)
+    end
+    P[6][6]=B.part1
+end
+
+-- 第 6 面，原生 Sub7，起始 0x804。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,11)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        a.death_mode=1
+        a.death=P[6][6]
+        H.pattern(b,3,2,6,60,1,1.600000023841858,1.0,0.0,0.0,4)
+        a.accel=0.0;a.mode="velocity"
+        v.f0=ran:Float(0,1.5707963705062866)+0.7853981852531433
+        a.angle,a.speed=v.f0,1.7999999523162842;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[6][7]=B.part1
+end
+
 -- 第 6 面，原生 Sub9，起始 0xa48。
 do
     local B={}
@@ -8529,6 +10530,7 @@ do
         a.damageable=true
         a.timeout=1020;a.phase=0
         a.timeout_fn=P[6][13]
+        a.death_mode=1
         a.death=P[6][12]
         v.cmp=((a.meta.shot or 0))-(0)
         if v.cmp~=0 then v.time=0;return B.part3(b,v) end
@@ -8678,6 +10680,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.speed=0.0;a.mode="velocity"
+        H.drop_item(b,3)
         H.call(b,v,P[6][13],0,0.0)
     end
     P[6][12]=B.part1
@@ -8738,6 +10741,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         a.collidable=true
         if not a.main then b.hp=13000 end
         a.phase=0
@@ -8748,6 +10752,7 @@ do
         a.timeout_fn=P[6][31]
         a.life_threshold=1200
         a.life_fn=P[6][31]
+        a.death_mode=2
         a.death=P[6][19]
         H.wait(b,v,10)
         H.wait(b,v,20)
@@ -8823,6 +10828,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=3
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=15500 end
@@ -8834,6 +10840,7 @@ do
         a.timeout_fn=P[6][33]
         a.life_threshold=1600
         a.life_fn=P[6][33]
+        a.death_mode=2
         a.death=P[6][23]
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.800000011920929,0,0,0,0
         H.wait(b,v,60)
@@ -9100,6 +11107,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=11000 end
@@ -9111,6 +11119,7 @@ do
         a.timeout_fn=P[6][35]
         a.life_threshold=1600
         a.life_fn=P[6][35]
+        a.death_mode=2
         a.death=P[6][26]
         H.wait(b,v,60)
         v.c3=0
@@ -9203,6 +11212,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=13000 end
@@ -9214,6 +11224,7 @@ do
         a.timeout_fn=P[6][39]
         a.life_threshold=1300
         a.life_fn=P[6][39]
+        a.death_mode=2
         a.death=P[6][43]
         H.wait(b,v,60)
         v.c3=0
@@ -9294,8 +11305,8 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,5)
-        H.spawn(b,6,29,(b.x+192),(224-b.y),a.z,100)
-        H.spawn(b,6,29,(b.x+192),(224-b.y),a.z,100)
+        H.spawn(b,6,29,(b.x+192),(224-b.y),a.z,100,0,0)
+        H.spawn(b,6,29,(b.x+192),(224-b.y),a.z,100,0,0)
         H.wait(b,v,6)
         v.c0=v.c0-1
         if v.c0>0 then v.time=5;return B.part4(b,v) end
@@ -9640,6 +11651,7 @@ do
         H.clear_helpers(b)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
         a.phase=0
+        a.death_mode=2
         a.death=P[6][44]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[6][44]
@@ -9818,6 +11830,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=4700 end
@@ -9825,6 +11838,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=10
+        a.death_mode=3
         a.death=P[6][45]
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",45)
@@ -9900,6 +11914,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=true
+        a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
         if not a.main then b.hp=5300 end
@@ -9907,6 +11922,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=10
+        a.death_mode=3
         a.death=P[6][45]
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",50)
@@ -10005,6 +12021,659 @@ do
         H.erase(b)
     end
     P[6][45]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub0，起始 0x128。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,1,1,4.0,0.0,0.0,0.0,4)
+        a.muted=false
+        H.interval(b,60,true)
+        H.wait(b,v,40)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,120)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,220)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][0]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub1，起始 0x214。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        a.death_mode=1
+        a.death=P[7][15]
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.damageable=false
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.damageable=true
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,4,3,6,16,1,v.f1,1.0,v.f0,0.0,516)
+        v.f0=(v.f0)+(0.039269909262657166)
+        v.f1=(v.f1)+(0.30000001192092896)
+        H.wait(b,v,74)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        H.pattern(b,4,3,6,16,1,4.0,1.0,v.f0,0.0,516)
+        v.f0=(v.f0)+(-0.039269909262657166)
+        v.f1=(v.f1)+(0.30000001192092896)
+        H.wait(b,v,78)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=74;return B.part4(b,v) end
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,78)
+        a.angle,a.speed=1.5707963705062866,1.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][1]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub2，起始 0x458。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,12)
+        a.death_mode=1
+        a.death=P[7][15]
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.damageable=false
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.damageable=true
+        v.c1=2
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,4,3,6,13,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)+(0.06544984877109528)
+        v.f1=(v.f1)+(0.18000000715255737)
+        H.wait(b,v,74)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part3(b,v) end
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        H.pattern(b,4,3,6,13,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)-(0.06544984877109528)
+        v.f1=(v.f1)+(0.18000000715255737)
+        H.wait(b,v,78)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=74;return B.part5(b,v) end
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,82)
+        v.c1=v.c1-1
+        if v.c1>0 then v.time=70;return B.part2(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,82)
+        a.angle,a.speed=1.5707963705062866,1.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][2]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub3，起始 0x6c8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        a.death_mode=1
+        a.death=P[7][15]
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.damageable=false
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.damageable=true
+        v.c1=2
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        H.pattern(b,4,3,2,13,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)-(0.06544984877109528)
+        v.f1=(v.f1)+(0.18000000715255737)
+        H.wait(b,v,74)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part3(b,v) end
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=0.5
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,74)
+        H.pattern(b,4,3,2,13,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)+(0.06544984877109528)
+        v.f1=(v.f1)+(0.18000000715255737)
+        H.wait(b,v,78)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=74;return B.part5(b,v) end
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,82)
+        v.c1=v.c1-1
+        if v.c1>0 then v.time=70;return B.part2(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,82)
+        a.angle,a.speed=1.5707963705062866,1.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][3]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub4，起始 0x938。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,10)
+        a.death_mode=1
+        a.death=P[7][15]
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.damageable=false
+        H.wait(b,v,40)
+        a.accel=-0.06666667014360428;a.mode="velocity"
+        H.wait(b,v,70)
+        a.accel=0.0;a.mode="velocity"
+        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        v.i0=4
+        v.c1=6
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.c0=14
+        v.f1=0.5
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,70)
+        v.i1=(v.i0)+(2)
+        H.pattern(b,4,2,2,v.i1,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)-(0.09817477315664291)
+        v.f1=(v.f1)+(0.20000000298023224)
+        H.wait(b,v,73)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=70;return B.part3(b,v) end
+        return B.part4(b,v)
+    end
+    function B.part4(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,73)
+        v.c0=8
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        v.f1=2.0
+        return B.part5(b,v)
+    end
+    function B.part5(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,73)
+        H.pattern(b,4,2,6,v.i0,1,v.f1,1.0,v.f0,0.0,513)
+        v.f0=(v.f0)+(0.03141592815518379)
+        v.f1=(v.f1)+(0.15000000596046448)
+        H.wait(b,v,77)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=73;return B.part5(b,v) end
+        return B.part6(b,v)
+    end
+    function B.part6(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,77)
+        v.i0=(v.i0)+(3)
+        H.wait(b,v,81)
+        v.c1=v.c1-1
+        if v.c1>0 then v.time=70;return B.part2(b,v) end
+        return B.part7(b,v)
+    end
+    function B.part7(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,81)
+        a.damageable=true
+        a.angle,a.speed=1.5707963705062866,1.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][4]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub5，起始 0xbec。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,1,2,11,3,4.0,3.0,0.0,0.4487989544868469,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.05235987901687622;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,1000)
+        H.erase(b)
+    end
+    P[7][5]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub6，起始 0xcf8。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,1,2,3,4,6.0,2.0,0.0,0.06544984877109528,3)
+        H.pattern(b,1,1,2,2,3,6.599999904632568,2.0999999046325684,0.0,0.06544984877109528,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.009817477315664291;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        a.accel=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][6]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub7，起始 0xe40。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,3)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.angle,a.speed=0.0,2.0;a.mode="velocity"
+        H.wait(b,v,60)
+        H.sprite(b,5)
+        a.speed=0.0;a.mode="velocity"
+        H.wait(b,v,70)
+        H.pattern(b,1,3,2,7,4,5.0,1.0,0.0,0.06544984877109528,3)
+        H.pattern(b,1,3,2,6,3,4.599999904632568,1.100000023841858,0.0,0.06544984877109528,3)
+        H.wait(b,v,130)
+        a.accel=0.05000000074505806;a.mode="velocity"
+        a.angular=0.009817477315664291;a.mode="velocity"
+        H.wait(b,v,190)
+        a.angular=0.0;a.mode="velocity"
+        a.accel=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][7]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub8，起始 0xf88。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,3,1,4.0,0.0,0.0,0.19634954631328583,4)
+        a.muted=false
+        H.interval(b,90,true)
+        H.wait(b,v,40)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,120)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,220)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][8]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub9，起始 0x1074。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,0)
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
+        a.muted=true
+        H.pattern(b,1,0,6,3,1,4.0,0.0,0.0,0.39269909262657166,4)
+        a.muted=false
+        H.interval(b,70,true)
+        H.wait(b,v,40)
+        a.angular=-0.02454369328916073;a.mode="velocity"
+        H.wait(b,v,120)
+        a.angular=0.019634954631328583;a.mode="velocity"
+        H.wait(b,v,220)
+        a.angular=0.0;a.mode="velocity"
+        H.wait(b,v,10000)
+        H.erase(b)
+    end
+    P[7][9]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub10，起始 0x1160。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
+        a.death=P[7][30]
+        H.wait(b,v,30)
+        v.c3=0
+        a.interactable=true
+        v.c0=8
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,4,0,2,16,1,1.2000000476837158,1.0,v.f0,0.0,3)
+        H.wait(b,v,41)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,41)
+        a.interactable=false
+        H.wait(b,v,71)
+        H.erase(b)
+    end
+    P[7][10]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub11，起始 0x12d0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
+        a.death=P[7][30]
+        H.wait(b,v,30)
+        v.c3=0
+        a.interactable=true
+        v.c0=7
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,9,0,2,20,1,1.7999999523162842,0.6000000238418579,3.1415927410125732,-3.1415927410125732,3)
+        H.wait(b,v,42)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,42)
+        a.interactable=false
+        H.wait(b,v,72)
+        H.erase(b)
+    end
+    P[7][11]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub12，起始 0x1440。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
+        a.death=P[7][30]
+        H.wait(b,v,30)
+        v.c3=0
+        a.interactable=true
+        v.c0=6
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,1,0,6,9,1,1.600000023841858,0.6000000238418579,0.0,0.3141592741012573,3)
+        H.wait(b,v,50)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,50)
+        a.interactable=false
+        H.wait(b,v,80)
+        H.erase(b)
+    end
+    P[7][12]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub13，起始 0x15c0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
+        a.death=P[7][30]
+        H.wait(b,v,30)
+        v.c3=0
+        a.interactable=true
+        v.c0=6
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,1,0,6,1,4,2.5,1.0,0.0,0.0,3)
+        H.wait(b,v,50)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,50)
+        a.interactable=false
+        H.wait(b,v,80)
+        H.erase(b)
+    end
+    P[7][13]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub14，起始 0x1730。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.sprite(b,14)
+        a.interactable=false
+        b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
+        a.death=P[7][30]
+        H.wait(b,v,30)
+        v.c3=0
+        a.interactable=true
+        v.c0=4
+        return B.part2(b,v)
+    end
+    function B.part2(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,30)
+        v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
+        H.pattern(b,4,0,2,10,3,2.200000047683716,0.6000000238418579,v.f0,0.0,3)
+        H.wait(b,v,60)
+        v.c0=v.c0-1
+        if v.c0>0 then v.time=30;return B.part2(b,v) end
+        return B.part3(b,v)
+    end
+    function B.part3(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,60)
+        a.interactable=false
+        H.wait(b,v,90)
+        H.erase(b)
+    end
+    P[7][14]=B.part1
+end
+
+-- 第 Extra 面，原生 Sub15，起始 0x18a0。
+do
+    local B={}
+    function B.part1(b,v)
+        local a=b.th06_actor
+        H.wait(b,v,0)
+        H.erase(b)
+    end
+    P[7][15]=B.part1
 end
 
 -- 第 Extra 面，原生 Sub22，起始 0x1ed0。
@@ -10238,11 +12907,11 @@ do
         a.damageable=true
         v.i3=0
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
-        H.spawn(b,7,25,192.0,144.0,0.0,-5536)
-        H.spawn(b,7,26,64.0,112.0,0.0,-5536)
-        H.spawn(b,7,27,256.0,96.0,0.0,-5536)
-        H.spawn(b,7,28,320.0,112.0,0.0,-5536)
-        H.spawn(b,7,29,128.0,96.0,0.0,-5536)
+        H.spawn(b,7,25,192.0,144.0,0.0,-5536,-2,10)
+        H.spawn(b,7,26,64.0,112.0,0.0,-5536,-2,10)
+        H.spawn(b,7,27,256.0,96.0,0.0,-5536,-2,10)
+        H.spawn(b,7,28,320.0,112.0,0.0,-5536,-2,10)
+        H.spawn(b,7,29,128.0,96.0,0.0,-5536,-2,10)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -10263,6 +12932,7 @@ do
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,32)
         v.c3=0
@@ -10293,6 +12963,7 @@ do
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,64)
         v.c3=0
@@ -10320,6 +12991,7 @@ do
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,16)
         v.c3=0
@@ -10347,6 +13019,7 @@ do
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,48)
         v.c3=0
@@ -10375,6 +13048,7 @@ do
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,16)
         v.c3=0
@@ -10435,6 +13109,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][35]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][33]
@@ -10504,39 +13179,39 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
-        H.spawn(b,7,34,v.f0,0.0,0.0,20)
-        H.spawn(b,7,34,v.f0,0.0,0.0,22)
+        H.spawn(b,7,34,v.f0,0.0,0.0,20,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,22,-2,10)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,280)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1121)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1123)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1121,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1123,-2,10)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,440)
-        H.spawn(b,7,34,v.f0,0.0,0.0,20)
-        H.spawn(b,7,34,v.f0,0.0,0.0,22)
+        H.spawn(b,7,34,v.f0,0.0,0.0,20,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,22,-2,10)
         H.wait(b,v,520)
-        H.spawn(b,7,34,v.f0,0.0,0.0,111)
-        H.spawn(b,7,34,v.f0,0.0,0.0,113)
+        H.spawn(b,7,34,v.f0,0.0,0.0,111,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,113,-2,10)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,720)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1111)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1113)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1010)
-        H.spawn(b,7,34,v.f0,0.0,0.0,1012)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1111,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1113,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1010,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,1012,-2,10)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,920)
-        H.spawn(b,7,34,v.f0,0.0,0.0,111)
-        H.spawn(b,7,34,v.f0,0.0,0.0,123)
-        H.spawn(b,7,34,v.f0,0.0,0.0,10)
-        H.spawn(b,7,34,v.f0,0.0,0.0,22)
+        H.spawn(b,7,34,v.f0,0.0,0.0,111,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,123,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,10,-2,10)
+        H.spawn(b,7,34,v.f0,0.0,0.0,22,-2,10)
         v.c3=v.c3 + 1
         H.wait(b,v,927)
         v.time=120;return B.part2(b,v)
@@ -10819,6 +13494,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][38]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][36]
@@ -11036,6 +13712,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][43]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][39]
@@ -11111,9 +13788,9 @@ do
         local a=b.th06_actor
         H.wait(b,v,123)
         H.move_to(b,60,128.0,96.0,0.0,1)
-        H.spawn(b,7,40,0.0,0.0,0.0,1200)
-        H.spawn(b,7,41,0.0,0.0,0.0,1200)
-        H.spawn(b,7,42,0.0,0.0,0.0,1200)
+        H.spawn(b,7,40,0.0,0.0,0.0,1200,2,10)
+        H.spawn(b,7,41,0.0,0.0,0.0,1200,2,10)
+        H.spawn(b,7,42,0.0,0.0,0.0,1200,2,10)
         H.wait(b,v,183)
         v.c3=0
         a.muted=true
@@ -11353,6 +14030,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][47]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][44]
@@ -11427,25 +14105,25 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,123)
-        H.spawn(b,7,45,64.0,0.0,1.5707963705062866,1200)
+        H.spawn(b,7,45,64.0,0.0,1.5707963705062866,1200,-2,10)
         H.wait(b,v,133)
-        H.spawn(b,7,45,400.0,320.0,3.1415927410125732,1200)
+        H.spawn(b,7,45,400.0,320.0,3.1415927410125732,1200,2,10)
         H.wait(b,v,143)
-        H.spawn(b,7,45,-16.0,160.0,0.0,1200)
+        H.spawn(b,7,45,-16.0,160.0,0.0,1200,2,10)
         H.wait(b,v,153)
-        H.spawn(b,7,45,320.0,464.0,-1.5707963705062866,1200)
+        H.spawn(b,7,45,320.0,464.0,-1.5707963705062866,1200,2,10)
         H.wait(b,v,163)
-        H.spawn(b,7,45,128.0,0.0,1.5707963705062866,1200)
+        H.spawn(b,7,45,128.0,0.0,1.5707963705062866,1200,-2,10)
         H.wait(b,v,173)
-        H.spawn(b,7,45,400.0,256.0,3.1415927410125732,1200)
+        H.spawn(b,7,45,400.0,256.0,3.1415927410125732,1200,2,10)
         H.wait(b,v,183)
-        H.spawn(b,7,45,-16.0,192.0,0.0,1200)
+        H.spawn(b,7,45,-16.0,192.0,0.0,1200,2,10)
         H.wait(b,v,193)
-        H.spawn(b,7,45,256.0,464.0,-1.5707963705062866,1200)
+        H.spawn(b,7,45,256.0,464.0,-1.5707963705062866,1200,2,10)
         H.wait(b,v,203)
-        H.spawn(b,7,45,400.0,64.0,3.1415927410125732,1200)
+        H.spawn(b,7,45,400.0,64.0,3.1415927410125732,1200,2,10)
         H.wait(b,v,213)
-        H.spawn(b,7,45,-16.0,128.0,0.0,1200)
+        H.spawn(b,7,45,-16.0,128.0,0.0,1200,2,10)
         H.wait(b,v,373)
         v.f0=ran:Float(0,1.5707963705062866)+-0.7853981852531433
         H.pattern(b,1,9,3,1,1,3.5999999046325684,0.0,v.f0,0.0,516)
@@ -11456,11 +14134,11 @@ do
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,473)
-        H.spawn(b,7,45,400.0,0.0,2.356194496154785,1200)
+        H.spawn(b,7,45,400.0,0.0,2.356194496154785,1200,-2,10)
         H.wait(b,v,488)
-        H.spawn(b,7,45,400.0,128.0,2.356194496154785,1200)
+        H.spawn(b,7,45,400.0,128.0,2.356194496154785,1200,-2,10)
         H.wait(b,v,503)
-        H.spawn(b,7,45,400.0,256.0,2.356194496154785,1200)
+        H.spawn(b,7,45,400.0,256.0,2.356194496154785,1200,-2,10)
         H.wait(b,v,563)
         v.f0=ran:Float(0,1.5707963705062866)+-0.7853981852531433
         H.pattern(b,1,9,3,1,1,3.5999999046325684,0.0,v.f0,0.0,516)
@@ -11468,11 +14146,11 @@ do
         v.f0=ran:Float(0,1.5707963705062866)+-0.7853981852531433
         H.pattern(b,1,9,3,3,1,3.5999999046325684,0.0,0.0,1.0471975803375244,516)
         H.wait(b,v,633)
-        H.spawn(b,7,45,-16.0,0.0,0.7853981852531433,1200)
+        H.spawn(b,7,45,-16.0,0.0,0.7853981852531433,1200,-2,10)
         H.wait(b,v,648)
-        H.spawn(b,7,45,-16.0,128.0,0.7853981852531433,1200)
+        H.spawn(b,7,45,-16.0,128.0,0.7853981852531433,1200,-2,10)
         H.wait(b,v,663)
-        H.spawn(b,7,45,-16.0,256.0,0.7853981852531433,1200)
+        H.spawn(b,7,45,-16.0,256.0,0.7853981852531433,1200,-2,10)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
@@ -11507,6 +14185,7 @@ do
         a.angle,a.speed=v.f0,3.200000047683716;a.mode="velocity"
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
+        a.death_mode=1
         a.death=P[7][46]
         return B.part2(b,v)
     end
@@ -11546,6 +14225,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][49]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][48]
@@ -11737,6 +14417,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][53]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][50]
@@ -11816,12 +14497,12 @@ do
     function B.part4(b,v)
         local a=b.th06_actor
         H.wait(b,v,122)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),2.356194496154785,102)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),2.7488934993743896,114)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),3.1415927410125732,113)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),0.7853981852531433,104)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),0.39269909262657166,108)
-        H.spawn(b,7,51,(b.x+192),(224-b.y),0.0,111)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),2.356194496154785,102,-2,10)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),2.7488934993743896,114,-2,10)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),3.1415927410125732,113,-2,10)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),0.7853981852531433,104,-2,10)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),0.39269909262657166,108,-2,10)
+        H.spawn(b,7,51,(b.x+192),(224-b.y),0.0,111,-2,10)
         H.wait(b,v,182)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
@@ -11840,51 +14521,51 @@ do
     function B.part6(b,v)
         local a=b.th06_actor
         H.wait(b,v,184)
-        H.spawn(b,7,51,-32.0,336.0,-0.5890486240386963,104)
+        H.spawn(b,7,51,-32.0,336.0,-0.5890486240386963,104,-2,10)
         H.wait(b,v,194)
-        H.spawn(b,7,52,-32.0,304.0,-0.5890486240386963,106)
+        H.spawn(b,7,52,-32.0,304.0,-0.5890486240386963,106,-2,10)
         H.wait(b,v,204)
-        H.spawn(b,7,51,-32.0,272.0,-0.5890486240386963,108)
+        H.spawn(b,7,51,-32.0,272.0,-0.5890486240386963,108,-2,10)
         H.wait(b,v,214)
-        H.spawn(b,7,52,-32.0,240.0,-0.5890486240386963,111)
+        H.spawn(b,7,52,-32.0,240.0,-0.5890486240386963,111,-2,10)
         H.wait(b,v,224)
-        H.spawn(b,7,51,-32.0,208.0,-0.5890486240386963,113)
+        H.spawn(b,7,51,-32.0,208.0,-0.5890486240386963,113,-2,10)
         H.wait(b,v,234)
-        H.spawn(b,7,52,-32.0,176.0,-0.5890486240386963,114)
+        H.spawn(b,7,52,-32.0,176.0,-0.5890486240386963,114,-2,10)
         H.wait(b,v,244)
-        H.spawn(b,7,51,-32.0,144.0,-0.5890486240386963,102)
+        H.spawn(b,7,51,-32.0,144.0,-0.5890486240386963,102,-2,10)
         H.wait(b,v,334)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=2.5;a.mode="velocity"
         H.move_dir(b,90,a.angle,a.speed,1)
         H.wait(b,v,394)
-        H.spawn(b,7,51,416.0,336.0,3.337942123413086,104)
+        H.spawn(b,7,51,416.0,336.0,3.337942123413086,104,-2,10)
         H.wait(b,v,404)
-        H.spawn(b,7,52,416.0,304.0,3.337942123413086,106)
+        H.spawn(b,7,52,416.0,304.0,3.337942123413086,106,-2,10)
         H.wait(b,v,414)
-        H.spawn(b,7,51,416.0,272.0,3.337942123413086,108)
+        H.spawn(b,7,51,416.0,272.0,3.337942123413086,108,-2,10)
         H.wait(b,v,424)
-        H.spawn(b,7,52,416.0,240.0,3.337942123413086,111)
+        H.spawn(b,7,52,416.0,240.0,3.337942123413086,111,-2,10)
         H.wait(b,v,434)
-        H.spawn(b,7,51,416.0,208.0,3.337942123413086,113)
+        H.spawn(b,7,51,416.0,208.0,3.337942123413086,113,-2,10)
         H.wait(b,v,444)
-        H.spawn(b,7,52,416.0,176.0,3.337942123413086,114)
+        H.spawn(b,7,52,416.0,176.0,3.337942123413086,114,-2,10)
         H.wait(b,v,454)
-        H.spawn(b,7,51,416.0,144.0,3.337942123413086,102)
+        H.spawn(b,7,51,416.0,144.0,3.337942123413086,102,-2,10)
         H.wait(b,v,594)
-        H.spawn(b,7,51,-32.0,336.0,0.0,104)
+        H.spawn(b,7,51,-32.0,336.0,0.0,104,-2,10)
         H.wait(b,v,604)
-        H.spawn(b,7,51,416.0,304.0,3.1415927410125732,106)
+        H.spawn(b,7,51,416.0,304.0,3.1415927410125732,106,-2,10)
         H.wait(b,v,614)
-        H.spawn(b,7,51,-32.0,272.0,0.0,108)
+        H.spawn(b,7,51,-32.0,272.0,0.0,108,-2,10)
         H.wait(b,v,624)
-        H.spawn(b,7,51,416.0,240.0,3.1415927410125732,111)
+        H.spawn(b,7,51,416.0,240.0,3.1415927410125732,111,-2,10)
         H.wait(b,v,634)
-        H.spawn(b,7,51,-32.0,208.0,0.0,113)
+        H.spawn(b,7,51,-32.0,208.0,0.0,113,-2,10)
         H.wait(b,v,644)
-        H.spawn(b,7,51,416.0,176.0,3.1415927410125732,114)
+        H.spawn(b,7,51,416.0,176.0,3.1415927410125732,114,-2,10)
         H.wait(b,v,654)
-        H.spawn(b,7,51,-32.0,144.0,0.0,102)
+        H.spawn(b,7,51,-32.0,144.0,0.0,102,-2,10)
         H.move_to(b,60,192.0,224.0,0.0,1)
         H.wait(b,v,714)
         v.c3=v.c3 + 1
@@ -11913,6 +14594,7 @@ do
         a.angle,a.speed=v.f0,5.800000190734863;a.mode="velocity"
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
+        a.death_mode=1
         a.death=P[7][46]
         v.c3=0
         v.c1=50
@@ -11959,6 +14641,7 @@ do
         a.angle,a.speed=v.f0,5.0;a.mode="velocity"
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
+        a.death_mode=1
         a.death=P[7][46]
         v.c3=0
         v.c1=50
@@ -12003,6 +14686,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][56]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][54]
@@ -12219,6 +14903,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][59]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][57]
@@ -12284,8 +14969,8 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
-        H.spawn(b,7,58,64.0,288.0,288.0,10)
-        H.spawn(b,7,58,320.0,160.0,160.0,10)
+        H.spawn(b,7,58,64.0,288.0,288.0,10,-2,10)
+        H.spawn(b,7,58,320.0,160.0,160.0,10,-2,10)
         H.wait(b,v,210)
         v.c0=240
         v.i0=0
@@ -12332,8 +15017,8 @@ do
     function B.part8(b,v)
         local a=b.th06_actor
         H.wait(b,v,231)
-        H.spawn(b,7,58,64.0,160.0,160.0,10)
-        H.spawn(b,7,58,320.0,288.0,288.0,10)
+        H.spawn(b,7,58,64.0,160.0,160.0,10,-2,10)
+        H.spawn(b,7,58,320.0,288.0,288.0,10,-2,10)
         H.wait(b,v,321)
         v.c0=250
         v.i0=0
@@ -12380,8 +15065,8 @@ do
     function B.part14(b,v)
         local a=b.th06_actor
         H.wait(b,v,332)
-        H.spawn(b,7,58,64.0,128.0,288.0,10)
-        H.spawn(b,7,58,320.0,128.0,288.0,10)
+        H.spawn(b,7,58,64.0,128.0,288.0,10,-2,10)
+        H.spawn(b,7,58,320.0,128.0,288.0,10,-2,10)
         H.wait(b,v,422)
         v.c0=250
         v.i0=0
@@ -12454,6 +15139,7 @@ do
         a.angle,a.speed=v.f0,0.0;a.mode="velocity"
         a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
+        a.death_mode=1
         a.death=P[7][46]
         H.wait(b,v,30)
         a.laser_index=0
@@ -12578,6 +15264,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=2
         a.death=P[7][67]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][60]
@@ -12645,17 +15332,17 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
-        H.spawn(b,7,66,192.0,96.0,0.0,4)
+        H.spawn(b,7,66,192.0,96.0,0.0,4,-2,10)
         H.wait(b,v,920)
-        H.spawn(b,7,66,192.0,96.0,0.0,4)
+        H.spawn(b,7,66,192.0,96.0,0.0,4,-2,10)
         H.wait(b,v,984)
-        H.spawn(b,7,66,0.0,0.0,0.0,4)
+        H.spawn(b,7,66,0.0,0.0,0.0,4,-2,10)
         H.wait(b,v,1048)
-        H.spawn(b,7,66,384.0,0.0,0.0,3)
+        H.spawn(b,7,66,384.0,0.0,0.0,3,-2,10)
         H.wait(b,v,1112)
-        H.spawn(b,7,66,0.0,448.0,0.0,3)
+        H.spawn(b,7,66,0.0,448.0,0.0,3,-2,10)
         H.wait(b,v,1176)
-        H.spawn(b,7,66,384.0,448.0,0.0,2)
+        H.spawn(b,7,66,384.0,448.0,0.0,2,-2,10)
         H.wait(b,v,1976)
         H.call(b,v,P[7][61],0,0.0)
         H.wait(b,v,2296)
@@ -13328,6 +16015,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
+        a.death_mode=1
         a.death=P[7][46]
         v.c3=0
         a.sound=27;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -13372,6 +16060,7 @@ do
         v.repeat_func=6
         H.clear_helpers(b)
         H.interval(b,0,false)
+        a.death_mode=3
         a.death=P[7][69]
         a.timeout=1800;a.phase=0
         a.timeout_fn=P[7][68]
@@ -13514,6 +16203,7838 @@ do
         H.erase(b)
     end
     P[7][69]=B.part1
+end
+
+-- 一面道中·前半：原时间轴 0..2008，96 次创建。
+P[1]["road_before"]=function(b,v)
+    if v.epoch<=128 then
+        H.wait(b,v,128)
+        H.timeline_spawn(b,0,0,60.0,-32.0,0.0,8,-1,300)
+    end
+    if v.epoch<=144 then
+        H.wait(b,v,144)
+        H.timeline_spawn(b,0,0,68.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=160 then
+        H.wait(b,v,160)
+        H.timeline_spawn(b,0,0,76.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=176 then
+        H.wait(b,v,176)
+        H.timeline_spawn(b,0,0,84.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=192 then
+        H.wait(b,v,192)
+        H.timeline_spawn(b,0,0,92.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=256 then
+        H.wait(b,v,256)
+        H.timeline_spawn(b,2,0,324.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=272 then
+        H.wait(b,v,272)
+        H.timeline_spawn(b,2,0,316.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=288 then
+        H.wait(b,v,288)
+        H.timeline_spawn(b,2,0,308.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=304 then
+        H.wait(b,v,304)
+        H.timeline_spawn(b,2,0,300.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=320 then
+        H.wait(b,v,320)
+        H.timeline_spawn(b,2,0,292.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=336 then
+        H.wait(b,v,336)
+        H.timeline_spawn(b,2,0,284.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=352 then
+        H.wait(b,v,352)
+        H.timeline_spawn(b,2,0,276.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=368 then
+        H.wait(b,v,368)
+        H.timeline_spawn(b,2,0,268.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=432 then
+        H.wait(b,v,432)
+        H.timeline_spawn(b,0,1,32.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,352.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=448 then
+        H.wait(b,v,448)
+        H.timeline_spawn(b,0,1,48.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,336.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=464 then
+        H.wait(b,v,464)
+        H.timeline_spawn(b,0,1,64.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,320.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=480 then
+        H.wait(b,v,480)
+        H.timeline_spawn(b,0,1,80.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,304.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=496 then
+        H.wait(b,v,496)
+        H.timeline_spawn(b,0,1,96.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,288.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=512 then
+        H.wait(b,v,512)
+        H.timeline_spawn(b,0,1,112.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,272.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=528 then
+        H.wait(b,v,528)
+        H.timeline_spawn(b,0,1,128.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,256.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=544 then
+        H.wait(b,v,544)
+        H.timeline_spawn(b,0,1,144.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,240.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=560 then
+        H.wait(b,v,560)
+        H.timeline_spawn(b,0,1,160.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,224.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=576 then
+        H.wait(b,v,576)
+        H.timeline_spawn(b,0,1,176.0,-32.0,0.0,32,-1,300)
+        H.timeline_spawn(b,2,1,208.0,-32.0,0.0,8,-1,300)
+    end
+    if v.epoch<=640 then
+        H.wait(b,v,640)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=700 then
+        H.wait(b,v,700)
+        H.timeline_spawn(b,2,3,256.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=750 then
+        H.wait(b,v,750)
+        H.timeline_spawn(b,0,3,128.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=800 then
+        H.wait(b,v,800)
+        H.timeline_spawn(b,2,2,352.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=890 then
+        H.wait(b,v,890)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=930 then
+        H.wait(b,v,930)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=960 then
+        H.wait(b,v,960)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=990 then
+        H.wait(b,v,990)
+        H.timeline_spawn(b,0,3,32.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1020 then
+        H.wait(b,v,1020)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1060 then
+        H.wait(b,v,1060)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1090 then
+        H.wait(b,v,1090)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1100 then
+        H.wait(b,v,1100)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1110 then
+        H.wait(b,v,1110)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,0,700)
+    end
+    if v.epoch<=1220 then
+        H.wait(b,v,1220)
+        H.timeline_spawn(b,6,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1230 then
+        H.wait(b,v,1230)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1240 then
+        H.wait(b,v,1240)
+        H.timeline_spawn(b,6,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1250 then
+        H.wait(b,v,1250)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1260 then
+        H.wait(b,v,1260)
+        H.timeline_spawn(b,6,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1270 then
+        H.wait(b,v,1270)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1280 then
+        H.wait(b,v,1280)
+        H.timeline_spawn(b,6,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1290 then
+        H.wait(b,v,1290)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1300 then
+        H.wait(b,v,1300)
+        H.timeline_spawn(b,6,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1310 then
+        H.wait(b,v,1310)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1320 then
+        H.wait(b,v,1320)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1330 then
+        H.wait(b,v,1330)
+        H.timeline_spawn(b,6,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1340 then
+        H.wait(b,v,1340)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1350 then
+        H.wait(b,v,1350)
+        H.timeline_spawn(b,6,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1360 then
+        H.wait(b,v,1360)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1370 then
+        H.wait(b,v,1370)
+        H.timeline_spawn(b,6,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1380 then
+        H.wait(b,v,1380)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1390 then
+        H.wait(b,v,1390)
+        H.timeline_spawn(b,6,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1400 then
+        H.wait(b,v,1400)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,32,-1,300)
+    end
+    if v.epoch<=1600 then
+        H.wait(b,v,1600)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,352.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1616 then
+        H.wait(b,v,1616)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,344.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1632 then
+        H.wait(b,v,1632)
+        H.timeline_spawn(b,2,0,304.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,336.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1648 then
+        H.wait(b,v,1648)
+        H.timeline_spawn(b,2,0,296.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,328.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1664 then
+        H.wait(b,v,1664)
+        H.timeline_spawn(b,2,0,288.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1680 then
+        H.wait(b,v,1680)
+        H.timeline_spawn(b,2,0,280.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1696 then
+        H.wait(b,v,1696)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,96.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1712 then
+        H.wait(b,v,1712)
+        H.timeline_spawn(b,0,0,72.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,104.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1728 then
+        H.wait(b,v,1728)
+        H.timeline_spawn(b,0,0,80.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,112.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1744 then
+        H.wait(b,v,1744)
+        H.timeline_spawn(b,0,0,88.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,120.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1760 then
+        H.wait(b,v,1760)
+        H.timeline_spawn(b,0,0,96.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,128.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1776 then
+        H.wait(b,v,1776)
+        H.timeline_spawn(b,0,0,104.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,136.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1792 then
+        H.wait(b,v,1792)
+        H.timeline_spawn(b,0,0,112.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,144.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=1808 then
+        H.wait(b,v,1808)
+        H.timeline_spawn(b,0,0,120.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,152.0,-32.0,0.0,3,-1,300)
+    end
+    H.wait(b,v,2008)
+    H.erase(b)
+end
+
+-- 一面道中·后半：原时间轴 2008..5278，126 次创建。
+P[1]["road_after"]=function(b,v)
+    if v.epoch<=400 then
+        H.wait(b,v,400)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=430 then
+        H.wait(b,v,430)
+        H.timeline_spawn(b,2,3,256.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=460 then
+        H.wait(b,v,460)
+        H.timeline_spawn(b,0,3,128.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=490 then
+        H.wait(b,v,490)
+        H.timeline_spawn(b,2,2,352.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=520 then
+        H.wait(b,v,520)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=550 then
+        H.wait(b,v,550)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=580 then
+        H.wait(b,v,580)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=610 then
+        H.wait(b,v,610)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=640 then
+        H.wait(b,v,640)
+        H.timeline_spawn(b,0,3,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=670 then
+        H.wait(b,v,670)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=700 then
+        H.wait(b,v,700)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=730 then
+        H.wait(b,v,730)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=760 then
+        H.wait(b,v,760)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=790 then
+        H.wait(b,v,790)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=820 then
+        H.wait(b,v,820)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=880 then
+        H.wait(b,v,880)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=910 then
+        H.wait(b,v,910)
+        H.timeline_spawn(b,2,3,256.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=940 then
+        H.wait(b,v,940)
+        H.timeline_spawn(b,0,3,128.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=970 then
+        H.wait(b,v,970)
+        H.timeline_spawn(b,2,2,352.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1030 then
+        H.wait(b,v,1030)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1060 then
+        H.wait(b,v,1060)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1090 then
+        H.wait(b,v,1090)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,0,3,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1150 then
+        H.wait(b,v,1150)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1180 then
+        H.wait(b,v,1180)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1210 then
+        H.wait(b,v,1210)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1240 then
+        H.wait(b,v,1240)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1270 then
+        H.wait(b,v,1270)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1300 then
+        H.wait(b,v,1300)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1330 then
+        H.wait(b,v,1330)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1360 then
+        H.wait(b,v,1360)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1390 then
+        H.wait(b,v,1390)
+        H.timeline_spawn(b,2,3,256.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1420 then
+        H.wait(b,v,1420)
+        H.timeline_spawn(b,0,3,128.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1450 then
+        H.wait(b,v,1450)
+        H.timeline_spawn(b,2,2,352.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1480 then
+        H.wait(b,v,1480)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1510 then
+        H.wait(b,v,1510)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1540 then
+        H.wait(b,v,1540)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1570 then
+        H.wait(b,v,1570)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1600 then
+        H.wait(b,v,1600)
+        H.timeline_spawn(b,0,3,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1630 then
+        H.wait(b,v,1630)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1660 then
+        H.wait(b,v,1660)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1690 then
+        H.wait(b,v,1690)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1720 then
+        H.wait(b,v,1720)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1750 then
+        H.wait(b,v,1750)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1780 then
+        H.wait(b,v,1780)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1810 then
+        H.wait(b,v,1810)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1840 then
+        H.wait(b,v,1840)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1870 then
+        H.wait(b,v,1870)
+        H.timeline_spawn(b,2,3,256.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1900 then
+        H.wait(b,v,1900)
+        H.timeline_spawn(b,0,3,128.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1930 then
+        H.wait(b,v,1930)
+        H.timeline_spawn(b,2,2,352.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1960 then
+        H.wait(b,v,1960)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=1990 then
+        H.wait(b,v,1990)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2020 then
+        H.wait(b,v,2020)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2050 then
+        H.wait(b,v,2050)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2080 then
+        H.wait(b,v,2080)
+        H.timeline_spawn(b,0,3,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2110 then
+        H.wait(b,v,2110)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2140 then
+        H.wait(b,v,2140)
+        H.timeline_spawn(b,0,3,24.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2170 then
+        H.wait(b,v,2170)
+        H.timeline_spawn(b,2,3,304.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2200 then
+        H.wait(b,v,2200)
+        H.timeline_spawn(b,0,2,144.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2230 then
+        H.wait(b,v,2230)
+        H.timeline_spawn(b,2,3,344.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2260 then
+        H.wait(b,v,2260)
+        H.timeline_spawn(b,0,2,32.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2290 then
+        H.wait(b,v,2290)
+        H.timeline_spawn(b,2,2,240.0,-32.0,0.0,80,-1,700)
+    end
+    if v.epoch<=2490 then
+        H.wait(b,v,2490)
+        H.timeline_spawn(b,0,0,32.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2506 then
+        H.wait(b,v,2506)
+        H.timeline_spawn(b,0,0,40.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,72.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2522 then
+        H.wait(b,v,2522)
+        H.timeline_spawn(b,0,0,48.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,80.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2538 then
+        H.wait(b,v,2538)
+        H.timeline_spawn(b,0,0,56.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,88.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2554 then
+        H.wait(b,v,2554)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,96.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2570 then
+        H.wait(b,v,2570)
+        H.timeline_spawn(b,0,0,72.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,104.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2586 then
+        H.wait(b,v,2586)
+        H.timeline_spawn(b,0,0,80.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,112.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2602 then
+        H.wait(b,v,2602)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,352.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2618 then
+        H.wait(b,v,2618)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,344.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2634 then
+        H.wait(b,v,2634)
+        H.timeline_spawn(b,2,0,304.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,336.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2650 then
+        H.wait(b,v,2650)
+        H.timeline_spawn(b,2,0,296.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,328.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2666 then
+        H.wait(b,v,2666)
+        H.timeline_spawn(b,2,0,288.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2682 then
+        H.wait(b,v,2682)
+        H.timeline_spawn(b,2,0,280.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2698 then
+        H.wait(b,v,2698)
+        H.timeline_spawn(b,2,0,272.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,304.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2714 then
+        H.wait(b,v,2714)
+        H.timeline_spawn(b,2,0,264.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,296.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2730 then
+        H.wait(b,v,2730)
+        H.timeline_spawn(b,0,0,32.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2746 then
+        H.wait(b,v,2746)
+        H.timeline_spawn(b,0,0,40.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,72.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2762 then
+        H.wait(b,v,2762)
+        H.timeline_spawn(b,0,0,48.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,80.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2778 then
+        H.wait(b,v,2778)
+        H.timeline_spawn(b,0,0,56.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,88.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2794 then
+        H.wait(b,v,2794)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,96.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2810 then
+        H.wait(b,v,2810)
+        H.timeline_spawn(b,0,0,72.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,104.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2826 then
+        H.wait(b,v,2826)
+        H.timeline_spawn(b,0,0,80.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,112.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2842 then
+        H.wait(b,v,2842)
+        H.timeline_spawn(b,0,0,88.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,0,0,120.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2858 then
+        H.wait(b,v,2858)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,352.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2874 then
+        H.wait(b,v,2874)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,344.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2890 then
+        H.wait(b,v,2890)
+        H.timeline_spawn(b,2,0,304.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,336.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2906 then
+        H.wait(b,v,2906)
+        H.timeline_spawn(b,2,0,296.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,328.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2922 then
+        H.wait(b,v,2922)
+        H.timeline_spawn(b,2,0,288.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,320.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2938 then
+        H.wait(b,v,2938)
+        H.timeline_spawn(b,2,0,280.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,312.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2954 then
+        H.wait(b,v,2954)
+        H.timeline_spawn(b,2,0,272.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,304.0,-32.0,0.0,3,-1,300)
+    end
+    if v.epoch<=2970 then
+        H.wait(b,v,2970)
+        H.timeline_spawn(b,2,0,264.0,-32.0,0.0,3,-1,300)
+        H.timeline_spawn(b,2,0,296.0,-32.0,0.0,3,-1,300)
+    end
+    H.wait(b,v,3270)
+    H.erase(b)
+end
+
+-- 二面道中·前半：原时间轴 0..2588，162 次创建。
+P[2]["road_before"]=function(b,v)
+    if v.epoch<=330 then
+        H.wait(b,v,330)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=336 then
+        H.wait(b,v,336)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=342 then
+        H.wait(b,v,342)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=348 then
+        H.wait(b,v,348)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=354 then
+        H.wait(b,v,354)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=360 then
+        H.wait(b,v,360)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=366 then
+        H.wait(b,v,366)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=372 then
+        H.wait(b,v,372)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=378 then
+        H.wait(b,v,378)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=384 then
+        H.wait(b,v,384)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=390 then
+        H.wait(b,v,390)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=396 then
+        H.wait(b,v,396)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=402 then
+        H.wait(b,v,402)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=408 then
+        H.wait(b,v,408)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=414 then
+        H.wait(b,v,414)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=420 then
+        H.wait(b,v,420)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=426 then
+        H.wait(b,v,426)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=432 then
+        H.wait(b,v,432)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=438 then
+        H.wait(b,v,438)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=444 then
+        H.wait(b,v,444)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=450 then
+        H.wait(b,v,450)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=456 then
+        H.wait(b,v,456)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=462 then
+        H.wait(b,v,462)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=468 then
+        H.wait(b,v,468)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=474 then
+        H.wait(b,v,474)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=480 then
+        H.wait(b,v,480)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=486 then
+        H.wait(b,v,486)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=492 then
+        H.wait(b,v,492)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=498 then
+        H.wait(b,v,498)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=504 then
+        H.wait(b,v,504)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=510 then
+        H.wait(b,v,510)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=516 then
+        H.wait(b,v,516)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=522 then
+        H.wait(b,v,522)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=528 then
+        H.wait(b,v,528)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=534 then
+        H.wait(b,v,534)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=540 then
+        H.wait(b,v,540)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=546 then
+        H.wait(b,v,546)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=552 then
+        H.wait(b,v,552)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=558 then
+        H.wait(b,v,558)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=564 then
+        H.wait(b,v,564)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=570 then
+        H.wait(b,v,570)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=576 then
+        H.wait(b,v,576)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=582 then
+        H.wait(b,v,582)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=588 then
+        H.wait(b,v,588)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=594 then
+        H.wait(b,v,594)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=600 then
+        H.wait(b,v,600)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=606 then
+        H.wait(b,v,606)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=612 then
+        H.wait(b,v,612)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=618 then
+        H.wait(b,v,618)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=624 then
+        H.wait(b,v,624)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=630 then
+        H.wait(b,v,630)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=636 then
+        H.wait(b,v,636)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=642 then
+        H.wait(b,v,642)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=648 then
+        H.wait(b,v,648)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=654 then
+        H.wait(b,v,654)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=660 then
+        H.wait(b,v,660)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=666 then
+        H.wait(b,v,666)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=672 then
+        H.wait(b,v,672)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=678 then
+        H.wait(b,v,678)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=684 then
+        H.wait(b,v,684)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=690 then
+        H.wait(b,v,690)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=696 then
+        H.wait(b,v,696)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=702 then
+        H.wait(b,v,702)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=708 then
+        H.wait(b,v,708)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=714 then
+        H.wait(b,v,714)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=720 then
+        H.wait(b,v,720)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=726 then
+        H.wait(b,v,726)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=732 then
+        H.wait(b,v,732)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=738 then
+        H.wait(b,v,738)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,0,700)
+    end
+    if v.epoch<=744 then
+        H.wait(b,v,744)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=984 then
+        H.wait(b,v,984)
+        H.timeline_spawn(b,0,6,32.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,0,6,48.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1006 then
+        H.wait(b,v,1006)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1016 then
+        H.wait(b,v,1016)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1032 then
+        H.wait(b,v,1032)
+        H.timeline_spawn(b,0,6,80.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1048 then
+        H.wait(b,v,1048)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1064 then
+        H.wait(b,v,1064)
+        H.timeline_spawn(b,0,6,112.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1070 then
+        H.wait(b,v,1070)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,0,6,128.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1096 then
+        H.wait(b,v,1096)
+        H.timeline_spawn(b,0,6,144.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1112 then
+        H.wait(b,v,1112)
+        H.timeline_spawn(b,0,6,160.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1128 then
+        H.wait(b,v,1128)
+        H.timeline_spawn(b,0,6,176.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1144 then
+        H.wait(b,v,1144)
+        H.timeline_spawn(b,0,6,192.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,0,6,208.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1166 then
+        H.wait(b,v,1166)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1176 then
+        H.wait(b,v,1176)
+        H.timeline_spawn(b,0,6,224.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1192 then
+        H.wait(b,v,1192)
+        H.timeline_spawn(b,0,6,256.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1198 then
+        H.wait(b,v,1198)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1208 then
+        H.wait(b,v,1208)
+        H.timeline_spawn(b,0,6,272.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1214 then
+        H.wait(b,v,1214)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1224 then
+        H.wait(b,v,1224)
+        H.timeline_spawn(b,0,6,288.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1230 then
+        H.wait(b,v,1230)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1240 then
+        H.wait(b,v,1240)
+        H.timeline_spawn(b,0,6,304.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1340 then
+        H.wait(b,v,1340)
+        H.timeline_spawn(b,0,6,352.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1356 then
+        H.wait(b,v,1356)
+        H.timeline_spawn(b,0,6,336.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1362 then
+        H.wait(b,v,1362)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1372 then
+        H.wait(b,v,1372)
+        H.timeline_spawn(b,0,6,320.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1388 then
+        H.wait(b,v,1388)
+        H.timeline_spawn(b,0,6,304.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1404 then
+        H.wait(b,v,1404)
+        H.timeline_spawn(b,0,6,288.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1420 then
+        H.wait(b,v,1420)
+        H.timeline_spawn(b,0,6,272.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1426 then
+        H.wait(b,v,1426)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1436 then
+        H.wait(b,v,1436)
+        H.timeline_spawn(b,0,6,256.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1452 then
+        H.wait(b,v,1452)
+        H.timeline_spawn(b,0,6,240.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1468 then
+        H.wait(b,v,1468)
+        H.timeline_spawn(b,0,6,224.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1484 then
+        H.wait(b,v,1484)
+        H.timeline_spawn(b,0,6,208.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1500 then
+        H.wait(b,v,1500)
+        H.timeline_spawn(b,0,6,192.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1516 then
+        H.wait(b,v,1516)
+        H.timeline_spawn(b,0,6,176.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1522 then
+        H.wait(b,v,1522)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1532 then
+        H.wait(b,v,1532)
+        H.timeline_spawn(b,0,6,160.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1548 then
+        H.wait(b,v,1548)
+        H.timeline_spawn(b,0,6,128.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1554 then
+        H.wait(b,v,1554)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1564 then
+        H.wait(b,v,1564)
+        H.timeline_spawn(b,0,6,112.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1570 then
+        H.wait(b,v,1570)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1580 then
+        H.wait(b,v,1580)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1586 then
+        H.wait(b,v,1586)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1596 then
+        H.wait(b,v,1596)
+        H.timeline_spawn(b,0,6,80.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1696 then
+        H.wait(b,v,1696)
+        H.timeline_spawn(b,0,6,32.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1712 then
+        H.wait(b,v,1712)
+        H.timeline_spawn(b,0,6,48.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1718 then
+        H.wait(b,v,1718)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1728 then
+        H.wait(b,v,1728)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1744 then
+        H.wait(b,v,1744)
+        H.timeline_spawn(b,0,6,80.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1760 then
+        H.wait(b,v,1760)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1776 then
+        H.wait(b,v,1776)
+        H.timeline_spawn(b,0,6,112.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1782 then
+        H.wait(b,v,1782)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1792 then
+        H.wait(b,v,1792)
+        H.timeline_spawn(b,0,6,128.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1808 then
+        H.wait(b,v,1808)
+        H.timeline_spawn(b,0,6,144.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1824 then
+        H.wait(b,v,1824)
+        H.timeline_spawn(b,0,6,160.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1840 then
+        H.wait(b,v,1840)
+        H.timeline_spawn(b,0,6,176.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1856 then
+        H.wait(b,v,1856)
+        H.timeline_spawn(b,0,6,192.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1872 then
+        H.wait(b,v,1872)
+        H.timeline_spawn(b,0,6,208.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1878 then
+        H.wait(b,v,1878)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1888 then
+        H.wait(b,v,1888)
+        H.timeline_spawn(b,0,6,224.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1904 then
+        H.wait(b,v,1904)
+        H.timeline_spawn(b,0,6,256.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1910 then
+        H.wait(b,v,1910)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1920 then
+        H.wait(b,v,1920)
+        H.timeline_spawn(b,0,6,272.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1926 then
+        H.wait(b,v,1926)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1936 then
+        H.wait(b,v,1936)
+        H.timeline_spawn(b,0,6,288.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=1942 then
+        H.wait(b,v,1942)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=1952 then
+        H.wait(b,v,1952)
+        H.timeline_spawn(b,0,6,304.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2052 then
+        H.wait(b,v,2052)
+        H.timeline_spawn(b,0,6,352.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2068 then
+        H.wait(b,v,2068)
+        H.timeline_spawn(b,0,6,336.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2074 then
+        H.wait(b,v,2074)
+        H.timeline_spawn(b,4,4,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2084 then
+        H.wait(b,v,2084)
+        H.timeline_spawn(b,0,6,320.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2100 then
+        H.wait(b,v,2100)
+        H.timeline_spawn(b,0,6,304.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2116 then
+        H.wait(b,v,2116)
+        H.timeline_spawn(b,0,6,288.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2132 then
+        H.wait(b,v,2132)
+        H.timeline_spawn(b,0,6,272.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2138 then
+        H.wait(b,v,2138)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2148 then
+        H.wait(b,v,2148)
+        H.timeline_spawn(b,0,6,256.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2164 then
+        H.wait(b,v,2164)
+        H.timeline_spawn(b,0,6,240.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2180 then
+        H.wait(b,v,2180)
+        H.timeline_spawn(b,0,6,224.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2196 then
+        H.wait(b,v,2196)
+        H.timeline_spawn(b,0,6,208.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2212 then
+        H.wait(b,v,2212)
+        H.timeline_spawn(b,0,6,192.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2228 then
+        H.wait(b,v,2228)
+        H.timeline_spawn(b,0,6,176.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2234 then
+        H.wait(b,v,2234)
+        H.timeline_spawn(b,4,1,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2244 then
+        H.wait(b,v,2244)
+        H.timeline_spawn(b,0,6,160.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2260 then
+        H.wait(b,v,2260)
+        H.timeline_spawn(b,0,6,128.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2266 then
+        H.wait(b,v,2266)
+        H.timeline_spawn(b,4,2,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2276 then
+        H.wait(b,v,2276)
+        H.timeline_spawn(b,0,6,112.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2282 then
+        H.wait(b,v,2282)
+        H.timeline_spawn(b,4,3,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2292 then
+        H.wait(b,v,2292)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,60,-1,500)
+    end
+    if v.epoch<=2298 then
+        H.wait(b,v,2298)
+        H.timeline_spawn(b,4,0,-999.0,-32.0,0.0,70,1,700)
+    end
+    if v.epoch<=2308 then
+        H.wait(b,v,2308)
+        H.timeline_spawn(b,0,6,80.0,-32.0,0.0,60,-1,500)
+    end
+    H.wait(b,v,2588)
+    H.erase(b)
+end
+
+-- 二面道中·后半：原时间轴 2588..5983，302 次创建。
+P[2]["road_after"]=function(b,v)
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1005 then
+        H.wait(b,v,1005)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1010 then
+        H.wait(b,v,1010)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1015 then
+        H.wait(b,v,1015)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1020 then
+        H.wait(b,v,1020)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1025 then
+        H.wait(b,v,1025)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1030 then
+        H.wait(b,v,1030)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1035 then
+        H.wait(b,v,1035)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1045 then
+        H.wait(b,v,1045)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1050 then
+        H.wait(b,v,1050)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1055 then
+        H.wait(b,v,1055)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1060 then
+        H.wait(b,v,1060)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1065 then
+        H.wait(b,v,1065)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1070 then
+        H.wait(b,v,1070)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1075 then
+        H.wait(b,v,1075)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1085 then
+        H.wait(b,v,1085)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1090 then
+        H.wait(b,v,1090)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1095 then
+        H.wait(b,v,1095)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1100 then
+        H.wait(b,v,1100)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1105 then
+        H.wait(b,v,1105)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1110 then
+        H.wait(b,v,1110)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1115 then
+        H.wait(b,v,1115)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1125 then
+        H.wait(b,v,1125)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1130 then
+        H.wait(b,v,1130)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1135 then
+        H.wait(b,v,1135)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1140 then
+        H.wait(b,v,1140)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1145 then
+        H.wait(b,v,1145)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1150 then
+        H.wait(b,v,1150)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1155 then
+        H.wait(b,v,1155)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1165 then
+        H.wait(b,v,1165)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1170 then
+        H.wait(b,v,1170)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1175 then
+        H.wait(b,v,1175)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1180 then
+        H.wait(b,v,1180)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1185 then
+        H.wait(b,v,1185)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1190 then
+        H.wait(b,v,1190)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1195 then
+        H.wait(b,v,1195)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1200 then
+        H.wait(b,v,1200)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1205 then
+        H.wait(b,v,1205)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1210 then
+        H.wait(b,v,1210)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1215 then
+        H.wait(b,v,1215)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1220 then
+        H.wait(b,v,1220)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1225 then
+        H.wait(b,v,1225)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1230 then
+        H.wait(b,v,1230)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1235 then
+        H.wait(b,v,1235)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1240 then
+        H.wait(b,v,1240)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1245 then
+        H.wait(b,v,1245)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1250 then
+        H.wait(b,v,1250)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1255 then
+        H.wait(b,v,1255)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1260 then
+        H.wait(b,v,1260)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1265 then
+        H.wait(b,v,1265)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1270 then
+        H.wait(b,v,1270)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1275 then
+        H.wait(b,v,1275)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1280 then
+        H.wait(b,v,1280)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1285 then
+        H.wait(b,v,1285)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1290 then
+        H.wait(b,v,1290)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1295 then
+        H.wait(b,v,1295)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1300 then
+        H.wait(b,v,1300)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1305 then
+        H.wait(b,v,1305)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1310 then
+        H.wait(b,v,1310)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1315 then
+        H.wait(b,v,1315)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1320 then
+        H.wait(b,v,1320)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1325 then
+        H.wait(b,v,1325)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1330 then
+        H.wait(b,v,1330)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1335 then
+        H.wait(b,v,1335)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1340 then
+        H.wait(b,v,1340)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1345 then
+        H.wait(b,v,1345)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1350 then
+        H.wait(b,v,1350)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1355 then
+        H.wait(b,v,1355)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1360 then
+        H.wait(b,v,1360)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1365 then
+        H.wait(b,v,1365)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1370 then
+        H.wait(b,v,1370)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1375 then
+        H.wait(b,v,1375)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1380 then
+        H.wait(b,v,1380)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1385 then
+        H.wait(b,v,1385)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1390 then
+        H.wait(b,v,1390)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1395 then
+        H.wait(b,v,1395)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1400 then
+        H.wait(b,v,1400)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1405 then
+        H.wait(b,v,1405)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1410 then
+        H.wait(b,v,1410)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1415 then
+        H.wait(b,v,1415)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1420 then
+        H.wait(b,v,1420)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1425 then
+        H.wait(b,v,1425)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1430 then
+        H.wait(b,v,1430)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1435 then
+        H.wait(b,v,1435)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1440 then
+        H.wait(b,v,1440)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1445 then
+        H.wait(b,v,1445)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1450 then
+        H.wait(b,v,1450)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1455 then
+        H.wait(b,v,1455)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1460 then
+        H.wait(b,v,1460)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1465 then
+        H.wait(b,v,1465)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1470 then
+        H.wait(b,v,1470)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1475 then
+        H.wait(b,v,1475)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1480 then
+        H.wait(b,v,1480)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1485 then
+        H.wait(b,v,1485)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1490 then
+        H.wait(b,v,1490)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1495 then
+        H.wait(b,v,1495)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1500 then
+        H.wait(b,v,1500)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1505 then
+        H.wait(b,v,1505)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1510 then
+        H.wait(b,v,1510)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1515 then
+        H.wait(b,v,1515)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1520 then
+        H.wait(b,v,1520)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1525 then
+        H.wait(b,v,1525)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1530 then
+        H.wait(b,v,1530)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1535 then
+        H.wait(b,v,1535)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1540 then
+        H.wait(b,v,1540)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1545 then
+        H.wait(b,v,1545)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1550 then
+        H.wait(b,v,1550)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1555 then
+        H.wait(b,v,1555)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1560 then
+        H.wait(b,v,1560)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1565 then
+        H.wait(b,v,1565)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1570 then
+        H.wait(b,v,1570)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1575 then
+        H.wait(b,v,1575)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1580 then
+        H.wait(b,v,1580)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1585 then
+        H.wait(b,v,1585)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1590 then
+        H.wait(b,v,1590)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1595 then
+        H.wait(b,v,1595)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1600 then
+        H.wait(b,v,1600)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1605 then
+        H.wait(b,v,1605)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1610 then
+        H.wait(b,v,1610)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1615 then
+        H.wait(b,v,1615)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1620 then
+        H.wait(b,v,1620)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1625 then
+        H.wait(b,v,1625)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1630 then
+        H.wait(b,v,1630)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1635 then
+        H.wait(b,v,1635)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1640 then
+        H.wait(b,v,1640)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1645 then
+        H.wait(b,v,1645)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1650 then
+        H.wait(b,v,1650)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1655 then
+        H.wait(b,v,1655)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1660 then
+        H.wait(b,v,1660)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1665 then
+        H.wait(b,v,1665)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1670 then
+        H.wait(b,v,1670)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1675 then
+        H.wait(b,v,1675)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1680 then
+        H.wait(b,v,1680)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1685 then
+        H.wait(b,v,1685)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1690 then
+        H.wait(b,v,1690)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1695 then
+        H.wait(b,v,1695)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1700 then
+        H.wait(b,v,1700)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1705 then
+        H.wait(b,v,1705)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1710 then
+        H.wait(b,v,1710)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1715 then
+        H.wait(b,v,1715)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1720 then
+        H.wait(b,v,1720)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1725 then
+        H.wait(b,v,1725)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1730 then
+        H.wait(b,v,1730)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1735 then
+        H.wait(b,v,1735)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1740 then
+        H.wait(b,v,1740)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1745 then
+        H.wait(b,v,1745)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1750 then
+        H.wait(b,v,1750)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1755 then
+        H.wait(b,v,1755)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1760 then
+        H.wait(b,v,1760)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1765 then
+        H.wait(b,v,1765)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1770 then
+        H.wait(b,v,1770)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1775 then
+        H.wait(b,v,1775)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1780 then
+        H.wait(b,v,1780)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1785 then
+        H.wait(b,v,1785)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1790 then
+        H.wait(b,v,1790)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1795 then
+        H.wait(b,v,1795)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1800 then
+        H.wait(b,v,1800)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1805 then
+        H.wait(b,v,1805)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1810 then
+        H.wait(b,v,1810)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1815 then
+        H.wait(b,v,1815)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1820 then
+        H.wait(b,v,1820)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1825 then
+        H.wait(b,v,1825)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1830 then
+        H.wait(b,v,1830)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1835 then
+        H.wait(b,v,1835)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1840 then
+        H.wait(b,v,1840)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1845 then
+        H.wait(b,v,1845)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1850 then
+        H.wait(b,v,1850)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1855 then
+        H.wait(b,v,1855)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1860 then
+        H.wait(b,v,1860)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1865 then
+        H.wait(b,v,1865)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1870 then
+        H.wait(b,v,1870)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1875 then
+        H.wait(b,v,1875)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1880 then
+        H.wait(b,v,1880)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1885 then
+        H.wait(b,v,1885)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1890 then
+        H.wait(b,v,1890)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1895 then
+        H.wait(b,v,1895)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1900 then
+        H.wait(b,v,1900)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1905 then
+        H.wait(b,v,1905)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1910 then
+        H.wait(b,v,1910)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=1915 then
+        H.wait(b,v,1915)
+        H.timeline_spawn(b,4,7,-999.0,-32.0,0.0,30,-1,350)
+    end
+    if v.epoch<=2035 then
+        H.wait(b,v,2035)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2045 then
+        H.wait(b,v,2045)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2055 then
+        H.wait(b,v,2055)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2065 then
+        H.wait(b,v,2065)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2075 then
+        H.wait(b,v,2075)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2085 then
+        H.wait(b,v,2085)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2095 then
+        H.wait(b,v,2095)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2105 then
+        H.wait(b,v,2105)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,32.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2115 then
+        H.wait(b,v,2115)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2125 then
+        H.wait(b,v,2125)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2135 then
+        H.wait(b,v,2135)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2145 then
+        H.wait(b,v,2145)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,64.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2155 then
+        H.wait(b,v,2155)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2165 then
+        H.wait(b,v,2165)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2175 then
+        H.wait(b,v,2175)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2185 then
+        H.wait(b,v,2185)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,96.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2195 then
+        H.wait(b,v,2195)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2205 then
+        H.wait(b,v,2205)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2215 then
+        H.wait(b,v,2215)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2225 then
+        H.wait(b,v,2225)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,128.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2235 then
+        H.wait(b,v,2235)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2245 then
+        H.wait(b,v,2245)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2255 then
+        H.wait(b,v,2255)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2265 then
+        H.wait(b,v,2265)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,160.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2275 then
+        H.wait(b,v,2275)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2285 then
+        H.wait(b,v,2285)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2295 then
+        H.wait(b,v,2295)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2305 then
+        H.wait(b,v,2305)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,192.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2315 then
+        H.wait(b,v,2315)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2325 then
+        H.wait(b,v,2325)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2335 then
+        H.wait(b,v,2335)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2345 then
+        H.wait(b,v,2345)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,224.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2355 then
+        H.wait(b,v,2355)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2365 then
+        H.wait(b,v,2365)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2375 then
+        H.wait(b,v,2375)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2385 then
+        H.wait(b,v,2385)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,256.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2395 then
+        H.wait(b,v,2395)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2405 then
+        H.wait(b,v,2405)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2415 then
+        H.wait(b,v,2415)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2425 then
+        H.wait(b,v,2425)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,288.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2435 then
+        H.wait(b,v,2435)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2445 then
+        H.wait(b,v,2445)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2455 then
+        H.wait(b,v,2455)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2465 then
+        H.wait(b,v,2465)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,320.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2475 then
+        H.wait(b,v,2475)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2485 then
+        H.wait(b,v,2485)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2495 then
+        H.wait(b,v,2495)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2505 then
+        H.wait(b,v,2505)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,352.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2625 then
+        H.wait(b,v,2625)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2635 then
+        H.wait(b,v,2635)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2645 then
+        H.wait(b,v,2645)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2655 then
+        H.wait(b,v,2655)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2665 then
+        H.wait(b,v,2665)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2675 then
+        H.wait(b,v,2675)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2685 then
+        H.wait(b,v,2685)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2695 then
+        H.wait(b,v,2695)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,352.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2705 then
+        H.wait(b,v,2705)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2715 then
+        H.wait(b,v,2715)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2725 then
+        H.wait(b,v,2725)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2735 then
+        H.wait(b,v,2735)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,320.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2745 then
+        H.wait(b,v,2745)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2755 then
+        H.wait(b,v,2755)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2765 then
+        H.wait(b,v,2765)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2775 then
+        H.wait(b,v,2775)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,288.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2785 then
+        H.wait(b,v,2785)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2795 then
+        H.wait(b,v,2795)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2805 then
+        H.wait(b,v,2805)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2815 then
+        H.wait(b,v,2815)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,256.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2825 then
+        H.wait(b,v,2825)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2835 then
+        H.wait(b,v,2835)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2845 then
+        H.wait(b,v,2845)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2855 then
+        H.wait(b,v,2855)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,224.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2865 then
+        H.wait(b,v,2865)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2875 then
+        H.wait(b,v,2875)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2885 then
+        H.wait(b,v,2885)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2895 then
+        H.wait(b,v,2895)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,192.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2905 then
+        H.wait(b,v,2905)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2915 then
+        H.wait(b,v,2915)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2925 then
+        H.wait(b,v,2925)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2935 then
+        H.wait(b,v,2935)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,160.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2945 then
+        H.wait(b,v,2945)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2955 then
+        H.wait(b,v,2955)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2965 then
+        H.wait(b,v,2965)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2975 then
+        H.wait(b,v,2975)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,128.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=2985 then
+        H.wait(b,v,2985)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=2995 then
+        H.wait(b,v,2995)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3005 then
+        H.wait(b,v,3005)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3015 then
+        H.wait(b,v,3015)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,96.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=3025 then
+        H.wait(b,v,3025)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3035 then
+        H.wait(b,v,3035)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3045 then
+        H.wait(b,v,3045)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3055 then
+        H.wait(b,v,3055)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,64.0,-32.0,0.0,80,-1,600)
+    end
+    if v.epoch<=3065 then
+        H.wait(b,v,3065)
+        H.timeline_spawn(b,4,8,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3075 then
+        H.wait(b,v,3075)
+        H.timeline_spawn(b,4,9,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3085 then
+        H.wait(b,v,3085)
+        H.timeline_spawn(b,4,10,-999.0,-32.0,0.0,50,-1,350)
+    end
+    if v.epoch<=3095 then
+        H.wait(b,v,3095)
+        H.timeline_spawn(b,4,11,-999.0,-32.0,0.0,50,-1,350)
+        H.timeline_spawn(b,0,12,32.0,-32.0,0.0,80,-1,600)
+    end
+    H.wait(b,v,3395)
+    H.erase(b)
+end
+
+-- 三面道中·前半：原时间轴 0..3804，220 次创建。
+P[3]["road_before"]=function(b,v)
+    if v.epoch<=400 then
+        H.wait(b,v,400)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=408 then
+        H.wait(b,v,408)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=416 then
+        H.wait(b,v,416)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=424 then
+        H.wait(b,v,424)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=432 then
+        H.wait(b,v,432)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=448 then
+        H.wait(b,v,448)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=456 then
+        H.wait(b,v,456)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=464 then
+        H.wait(b,v,464)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=472 then
+        H.wait(b,v,472)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=480 then
+        H.wait(b,v,480)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=488 then
+        H.wait(b,v,488)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=496 then
+        H.wait(b,v,496)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=504 then
+        H.wait(b,v,504)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=512 then
+        H.wait(b,v,512)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=520 then
+        H.wait(b,v,520)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=528 then
+        H.wait(b,v,528)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=536 then
+        H.wait(b,v,536)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=544 then
+        H.wait(b,v,544)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=552 then
+        H.wait(b,v,552)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=560 then
+        H.wait(b,v,560)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=568 then
+        H.wait(b,v,568)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=576 then
+        H.wait(b,v,576)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=584 then
+        H.wait(b,v,584)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=592 then
+        H.wait(b,v,592)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=600 then
+        H.wait(b,v,600)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=608 then
+        H.wait(b,v,608)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=616 then
+        H.wait(b,v,616)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=706 then
+        H.wait(b,v,706)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=714 then
+        H.wait(b,v,714)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=722 then
+        H.wait(b,v,722)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=730 then
+        H.wait(b,v,730)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=738 then
+        H.wait(b,v,738)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=746 then
+        H.wait(b,v,746)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=754 then
+        H.wait(b,v,754)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=762 then
+        H.wait(b,v,762)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=770 then
+        H.wait(b,v,770)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=778 then
+        H.wait(b,v,778)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=786 then
+        H.wait(b,v,786)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=794 then
+        H.wait(b,v,794)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=802 then
+        H.wait(b,v,802)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=810 then
+        H.wait(b,v,810)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=818 then
+        H.wait(b,v,818)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=826 then
+        H.wait(b,v,826)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=834 then
+        H.wait(b,v,834)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=842 then
+        H.wait(b,v,842)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=858 then
+        H.wait(b,v,858)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=866 then
+        H.wait(b,v,866)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=874 then
+        H.wait(b,v,874)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=882 then
+        H.wait(b,v,882)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=890 then
+        H.wait(b,v,890)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1110 then
+        H.wait(b,v,1110)
+        H.timeline_spawn(b,0,4,320.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,64.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1170 then
+        H.wait(b,v,1170)
+        H.timeline_spawn(b,0,4,288.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,96.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1230 then
+        H.wait(b,v,1230)
+        H.timeline_spawn(b,0,4,256.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,128.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1290 then
+        H.wait(b,v,1290)
+        H.timeline_spawn(b,0,4,224.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,160.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1470 then
+        H.wait(b,v,1470)
+        H.timeline_spawn(b,0,4,256.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,128.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1490 then
+        H.wait(b,v,1490)
+        H.timeline_spawn(b,0,4,288.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,96.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1510 then
+        H.wait(b,v,1510)
+        H.timeline_spawn(b,0,4,320.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,64.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1730 then
+        H.wait(b,v,1730)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1750 then
+        H.wait(b,v,1750)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1770 then
+        H.wait(b,v,1770)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1790 then
+        H.wait(b,v,1790)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1810 then
+        H.wait(b,v,1810)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1816 then
+        H.wait(b,v,1816)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1828 then
+        H.wait(b,v,1828)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1840 then
+        H.wait(b,v,1840)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1852 then
+        H.wait(b,v,1852)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1864 then
+        H.wait(b,v,1864)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1876 then
+        H.wait(b,v,1876)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1888 then
+        H.wait(b,v,1888)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=1908 then
+        H.wait(b,v,1908)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1928 then
+        H.wait(b,v,1928)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1948 then
+        H.wait(b,v,1948)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1968 then
+        H.wait(b,v,1968)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1988 then
+        H.wait(b,v,1988)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=1994 then
+        H.wait(b,v,1994)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2006 then
+        H.wait(b,v,2006)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2018 then
+        H.wait(b,v,2018)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2030 then
+        H.wait(b,v,2030)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2042 then
+        H.wait(b,v,2042)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2054 then
+        H.wait(b,v,2054)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2066 then
+        H.wait(b,v,2066)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2186 then
+        H.wait(b,v,2186)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2206 then
+        H.wait(b,v,2206)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2226 then
+        H.wait(b,v,2226)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2246 then
+        H.wait(b,v,2246)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2266 then
+        H.wait(b,v,2266)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2272 then
+        H.wait(b,v,2272)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2284 then
+        H.wait(b,v,2284)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2296 then
+        H.wait(b,v,2296)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2308 then
+        H.wait(b,v,2308)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2320 then
+        H.wait(b,v,2320)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2332 then
+        H.wait(b,v,2332)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2344 then
+        H.wait(b,v,2344)
+        H.timeline_spawn(b,0,6,64.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,0,6,96.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2364 then
+        H.wait(b,v,2364)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2384 then
+        H.wait(b,v,2384)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2404 then
+        H.wait(b,v,2404)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2424 then
+        H.wait(b,v,2424)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2444 then
+        H.wait(b,v,2444)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2450 then
+        H.wait(b,v,2450)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2462 then
+        H.wait(b,v,2462)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2474 then
+        H.wait(b,v,2474)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2486 then
+        H.wait(b,v,2486)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2498 then
+        H.wait(b,v,2498)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2510 then
+        H.wait(b,v,2510)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2522 then
+        H.wait(b,v,2522)
+        H.timeline_spawn(b,2,6,320.0,-32.0,0.0,30,-1,300)
+        H.timeline_spawn(b,2,6,288.0,-32.0,0.0,30,-1,300)
+    end
+    if v.epoch<=2822 then
+        H.wait(b,v,2822)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2830 then
+        H.wait(b,v,2830)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2838 then
+        H.wait(b,v,2838)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2846 then
+        H.wait(b,v,2846)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2854 then
+        H.wait(b,v,2854)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2862 then
+        H.wait(b,v,2862)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2870 then
+        H.wait(b,v,2870)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2878 then
+        H.wait(b,v,2878)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2886 then
+        H.wait(b,v,2886)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2894 then
+        H.wait(b,v,2894)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2902 then
+        H.wait(b,v,2902)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2910 then
+        H.wait(b,v,2910)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2918 then
+        H.wait(b,v,2918)
+        H.timeline_spawn(b,0,0,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2926 then
+        H.wait(b,v,2926)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2936 then
+        H.wait(b,v,2936)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2946 then
+        H.wait(b,v,2946)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2956 then
+        H.wait(b,v,2956)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2966 then
+        H.wait(b,v,2966)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2976 then
+        H.wait(b,v,2976)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=2984 then
+        H.wait(b,v,2984)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=2992 then
+        H.wait(b,v,2992)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3000 then
+        H.wait(b,v,3000)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3008 then
+        H.wait(b,v,3008)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3016 then
+        H.wait(b,v,3016)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3024 then
+        H.wait(b,v,3024)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3032 then
+        H.wait(b,v,3032)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3040 then
+        H.wait(b,v,3040)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3048 then
+        H.wait(b,v,3048)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3056 then
+        H.wait(b,v,3056)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3064 then
+        H.wait(b,v,3064)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3072 then
+        H.wait(b,v,3072)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3080 then
+        H.wait(b,v,3080)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3088 then
+        H.wait(b,v,3088)
+        H.timeline_spawn(b,2,0,416.0,64.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3098 then
+        H.wait(b,v,3098)
+        H.timeline_spawn(b,0,4,256.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,128.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3108 then
+        H.wait(b,v,3108)
+        H.timeline_spawn(b,0,4,288.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,96.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3118 then
+        H.wait(b,v,3118)
+        H.timeline_spawn(b,0,4,320.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,64.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3208 then
+        H.wait(b,v,3208)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3216 then
+        H.wait(b,v,3216)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3224 then
+        H.wait(b,v,3224)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3232 then
+        H.wait(b,v,3232)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3240 then
+        H.wait(b,v,3240)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3248 then
+        H.wait(b,v,3248)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3256 then
+        H.wait(b,v,3256)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3264 then
+        H.wait(b,v,3264)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3272 then
+        H.wait(b,v,3272)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3280 then
+        H.wait(b,v,3280)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3288 then
+        H.wait(b,v,3288)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3296 then
+        H.wait(b,v,3296)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3304 then
+        H.wait(b,v,3304)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3312 then
+        H.wait(b,v,3312)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3322 then
+        H.wait(b,v,3322)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3332 then
+        H.wait(b,v,3332)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3342 then
+        H.wait(b,v,3342)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3352 then
+        H.wait(b,v,3352)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3362 then
+        H.wait(b,v,3362)
+        H.timeline_spawn(b,4,5,-999.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3370 then
+        H.wait(b,v,3370)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3378 then
+        H.wait(b,v,3378)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3386 then
+        H.wait(b,v,3386)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3394 then
+        H.wait(b,v,3394)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3402 then
+        H.wait(b,v,3402)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3410 then
+        H.wait(b,v,3410)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3418 then
+        H.wait(b,v,3418)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3426 then
+        H.wait(b,v,3426)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3434 then
+        H.wait(b,v,3434)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3442 then
+        H.wait(b,v,3442)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3450 then
+        H.wait(b,v,3450)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3458 then
+        H.wait(b,v,3458)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3466 then
+        H.wait(b,v,3466)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3474 then
+        H.wait(b,v,3474)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=3484 then
+        H.wait(b,v,3484)
+        H.timeline_spawn(b,0,4,256.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,128.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3494 then
+        H.wait(b,v,3494)
+        H.timeline_spawn(b,0,4,288.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,96.0,-32.0,0.0,400,1,1000)
+    end
+    if v.epoch<=3504 then
+        H.wait(b,v,3504)
+        H.timeline_spawn(b,0,4,320.0,-32.0,0.0,400,1,1000)
+        H.timeline_spawn(b,0,4,64.0,-32.0,0.0,400,1,1000)
+    end
+    H.wait(b,v,3804)
+    H.erase(b)
+end
+
+-- 三面道中·后半：原时间轴 3805..5854，187 次创建。
+P[3]["road_after"]=function(b,v)
+    if v.epoch<=11 then
+        H.wait(b,v,11)
+        H.timeline_spawn(b,0,7,64.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,320.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=41 then
+        H.wait(b,v,41)
+        H.timeline_spawn(b,0,7,128.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,256.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=71 then
+        H.wait(b,v,71)
+        H.timeline_spawn(b,0,7,192.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,192.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=79 then
+        H.wait(b,v,79)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=87 then
+        H.wait(b,v,87)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=95 then
+        H.wait(b,v,95)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=103 then
+        H.wait(b,v,103)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=111 then
+        H.wait(b,v,111)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=119 then
+        H.wait(b,v,119)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=127 then
+        H.wait(b,v,127)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=135 then
+        H.wait(b,v,135)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=143 then
+        H.wait(b,v,143)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=151 then
+        H.wait(b,v,151)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=159 then
+        H.wait(b,v,159)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=167 then
+        H.wait(b,v,167)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=175 then
+        H.wait(b,v,175)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=185 then
+        H.wait(b,v,185)
+        H.timeline_spawn(b,0,7,32.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,352.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=215 then
+        H.wait(b,v,215)
+        H.timeline_spawn(b,0,7,96.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,288.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=245 then
+        H.wait(b,v,245)
+        H.timeline_spawn(b,0,7,160.0,-32.0,0.0,450,-1,1000)
+        H.timeline_spawn(b,2,7,224.0,-32.0,0.0,450,-1,1000)
+    end
+    if v.epoch<=373 then
+        H.wait(b,v,373)
+        H.timeline_spawn(b,0,8,64.0,-32.0,0.0,350,-1,1000)
+        H.timeline_spawn(b,2,8,320.0,-32.0,0.0,350,-1,1000)
+    end
+    if v.epoch<=403 then
+        H.wait(b,v,403)
+        H.timeline_spawn(b,0,8,128.0,-32.0,0.0,350,-1,1000)
+        H.timeline_spawn(b,2,8,256.0,-32.0,0.0,350,-1,1000)
+    end
+    if v.epoch<=433 then
+        H.wait(b,v,433)
+        H.timeline_spawn(b,0,8,192.0,-32.0,0.0,350,-1,1000)
+        H.timeline_spawn(b,2,8,192.0,-32.0,0.0,350,-1,1000)
+    end
+    if v.epoch<=437 then
+        H.wait(b,v,437)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=441 then
+        H.wait(b,v,441)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=445 then
+        H.wait(b,v,445)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=449 then
+        H.wait(b,v,449)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=453 then
+        H.wait(b,v,453)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=457 then
+        H.wait(b,v,457)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=461 then
+        H.wait(b,v,461)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=465 then
+        H.wait(b,v,465)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=469 then
+        H.wait(b,v,469)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=473 then
+        H.wait(b,v,473)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=477 then
+        H.wait(b,v,477)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=481 then
+        H.wait(b,v,481)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=485 then
+        H.wait(b,v,485)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=489 then
+        H.wait(b,v,489)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=493 then
+        H.wait(b,v,493)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=497 then
+        H.wait(b,v,497)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=501 then
+        H.wait(b,v,501)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=505 then
+        H.wait(b,v,505)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=509 then
+        H.wait(b,v,509)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=513 then
+        H.wait(b,v,513)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=517 then
+        H.wait(b,v,517)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=521 then
+        H.wait(b,v,521)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=525 then
+        H.wait(b,v,525)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=529 then
+        H.wait(b,v,529)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=533 then
+        H.wait(b,v,533)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=537 then
+        H.wait(b,v,537)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=665 then
+        H.wait(b,v,665)
+        H.timeline_spawn(b,0,8,60.0,-32.0,0.0,350,1,1000)
+        H.timeline_spawn(b,2,8,324.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=695 then
+        H.wait(b,v,695)
+        H.timeline_spawn(b,0,8,124.0,-32.0,0.0,350,1,1000)
+        H.timeline_spawn(b,2,8,260.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=725 then
+        H.wait(b,v,725)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,350,1,1000)
+        H.timeline_spawn(b,2,8,196.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=755 then
+        H.wait(b,v,755)
+        H.timeline_spawn(b,0,7,80.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,304.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=785 then
+        H.wait(b,v,785)
+        H.timeline_spawn(b,0,7,144.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,240.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=815 then
+        H.wait(b,v,815)
+        H.timeline_spawn(b,0,7,208.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,176.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=845 then
+        H.wait(b,v,845)
+        H.timeline_spawn(b,0,8,60.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=875 then
+        H.wait(b,v,875)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=879 then
+        H.wait(b,v,879)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=883 then
+        H.wait(b,v,883)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=887 then
+        H.wait(b,v,887)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=891 then
+        H.wait(b,v,891)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=895 then
+        H.wait(b,v,895)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=899 then
+        H.wait(b,v,899)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=903 then
+        H.wait(b,v,903)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=907 then
+        H.wait(b,v,907)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=911 then
+        H.wait(b,v,911)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=915 then
+        H.wait(b,v,915)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=919 then
+        H.wait(b,v,919)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=923 then
+        H.wait(b,v,923)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=927 then
+        H.wait(b,v,927)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=931 then
+        H.wait(b,v,931)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=935 then
+        H.wait(b,v,935)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=939 then
+        H.wait(b,v,939)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=943 then
+        H.wait(b,v,943)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=947 then
+        H.wait(b,v,947)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=951 then
+        H.wait(b,v,951)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=955 then
+        H.wait(b,v,955)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=959 then
+        H.wait(b,v,959)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=963 then
+        H.wait(b,v,963)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=967 then
+        H.wait(b,v,967)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=971 then
+        H.wait(b,v,971)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=975 then
+        H.wait(b,v,975)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=979 then
+        H.wait(b,v,979)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1009 then
+        H.wait(b,v,1009)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1013 then
+        H.wait(b,v,1013)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1017 then
+        H.wait(b,v,1017)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1021 then
+        H.wait(b,v,1021)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1025 then
+        H.wait(b,v,1025)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1029 then
+        H.wait(b,v,1029)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1033 then
+        H.wait(b,v,1033)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1037 then
+        H.wait(b,v,1037)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1041 then
+        H.wait(b,v,1041)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1045 then
+        H.wait(b,v,1045)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1049 then
+        H.wait(b,v,1049)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1053 then
+        H.wait(b,v,1053)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1057 then
+        H.wait(b,v,1057)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1061 then
+        H.wait(b,v,1061)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1065 then
+        H.wait(b,v,1065)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1069 then
+        H.wait(b,v,1069)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1073 then
+        H.wait(b,v,1073)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1077 then
+        H.wait(b,v,1077)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1081 then
+        H.wait(b,v,1081)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1085 then
+        H.wait(b,v,1085)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1089 then
+        H.wait(b,v,1089)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1093 then
+        H.wait(b,v,1093)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1097 then
+        H.wait(b,v,1097)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1101 then
+        H.wait(b,v,1101)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1105 then
+        H.wait(b,v,1105)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1109 then
+        H.wait(b,v,1109)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1139 then
+        H.wait(b,v,1139)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1143 then
+        H.wait(b,v,1143)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1147 then
+        H.wait(b,v,1147)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1151 then
+        H.wait(b,v,1151)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1155 then
+        H.wait(b,v,1155)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1159 then
+        H.wait(b,v,1159)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1163 then
+        H.wait(b,v,1163)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1167 then
+        H.wait(b,v,1167)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1171 then
+        H.wait(b,v,1171)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1175 then
+        H.wait(b,v,1175)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1179 then
+        H.wait(b,v,1179)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1183 then
+        H.wait(b,v,1183)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1187 then
+        H.wait(b,v,1187)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1191 then
+        H.wait(b,v,1191)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1195 then
+        H.wait(b,v,1195)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1199 then
+        H.wait(b,v,1199)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1203 then
+        H.wait(b,v,1203)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1207 then
+        H.wait(b,v,1207)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1211 then
+        H.wait(b,v,1211)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1215 then
+        H.wait(b,v,1215)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1219 then
+        H.wait(b,v,1219)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1223 then
+        H.wait(b,v,1223)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1227 then
+        H.wait(b,v,1227)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1231 then
+        H.wait(b,v,1231)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1235 then
+        H.wait(b,v,1235)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1239 then
+        H.wait(b,v,1239)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1269 then
+        H.wait(b,v,1269)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1273 then
+        H.wait(b,v,1273)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1277 then
+        H.wait(b,v,1277)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1281 then
+        H.wait(b,v,1281)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1285 then
+        H.wait(b,v,1285)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1289 then
+        H.wait(b,v,1289)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1293 then
+        H.wait(b,v,1293)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1297 then
+        H.wait(b,v,1297)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1301 then
+        H.wait(b,v,1301)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1305 then
+        H.wait(b,v,1305)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1309 then
+        H.wait(b,v,1309)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1313 then
+        H.wait(b,v,1313)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1317 then
+        H.wait(b,v,1317)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1321 then
+        H.wait(b,v,1321)
+        H.timeline_spawn(b,2,2,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1325 then
+        H.wait(b,v,1325)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1329 then
+        H.wait(b,v,1329)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1333 then
+        H.wait(b,v,1333)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1337 then
+        H.wait(b,v,1337)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1341 then
+        H.wait(b,v,1341)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1345 then
+        H.wait(b,v,1345)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1349 then
+        H.wait(b,v,1349)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1353 then
+        H.wait(b,v,1353)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1357 then
+        H.wait(b,v,1357)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1361 then
+        H.wait(b,v,1361)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1365 then
+        H.wait(b,v,1365)
+        H.timeline_spawn(b,0,2,-32.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1369 then
+        H.wait(b,v,1369)
+        H.timeline_spawn(b,2,3,416.0,192.0,0.0,30,-1,500)
+    end
+    if v.epoch<=1529 then
+        H.wait(b,v,1529)
+        H.timeline_spawn(b,0,8,60.0,-32.0,0.0,350,1,1000)
+        H.timeline_spawn(b,2,8,324.0,-32.0,0.0,350,1,1000)
+    end
+    if v.epoch<=1609 then
+        H.wait(b,v,1609)
+        H.timeline_spawn(b,0,7,32.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,352.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=1619 then
+        H.wait(b,v,1619)
+        H.timeline_spawn(b,0,7,80.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,304.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=1629 then
+        H.wait(b,v,1629)
+        H.timeline_spawn(b,0,7,128.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,256.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=1639 then
+        H.wait(b,v,1639)
+        H.timeline_spawn(b,0,7,176.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,208.0,-32.0,0.0,450,1,1000)
+    end
+    if v.epoch<=1649 then
+        H.wait(b,v,1649)
+        H.timeline_spawn(b,0,7,224.0,-32.0,0.0,450,1,1000)
+        H.timeline_spawn(b,2,7,160.0,-32.0,0.0,450,1,1000)
+    end
+    H.wait(b,v,2049)
+    H.erase(b)
+end
+
+-- 四面道中·前半：原时间轴 0..4132，116 次创建。
+P[4]["road_before"]=function(b,v)
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,0,352.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=472 then
+        H.wait(b,v,472)
+        H.timeline_spawn(b,0,0,64.0,-32.0,0.0,400,0,2000)
+        H.timeline_spawn(b,0,0,320.0,-32.0,0.0,400,0,2000)
+    end
+    if v.epoch<=504 then
+        H.wait(b,v,504)
+        H.timeline_spawn(b,0,0,128.0,-16.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,0,256.0,-16.0,0.0,400,1,2000)
+    end
+    if v.epoch<=1004 then
+        H.wait(b,v,1004)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1014 then
+        H.wait(b,v,1014)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1024 then
+        H.wait(b,v,1024)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1034 then
+        H.wait(b,v,1034)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1044 then
+        H.wait(b,v,1044)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1054 then
+        H.wait(b,v,1054)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1064 then
+        H.wait(b,v,1064)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1074 then
+        H.wait(b,v,1074)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1084 then
+        H.wait(b,v,1084)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1094 then
+        H.wait(b,v,1094)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1104 then
+        H.wait(b,v,1104)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1114 then
+        H.wait(b,v,1114)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1124 then
+        H.wait(b,v,1124)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1134 then
+        H.wait(b,v,1134)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1234 then
+        H.wait(b,v,1234)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1244 then
+        H.wait(b,v,1244)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1254 then
+        H.wait(b,v,1254)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1264 then
+        H.wait(b,v,1264)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1274 then
+        H.wait(b,v,1274)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1284 then
+        H.wait(b,v,1284)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1294 then
+        H.wait(b,v,1294)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1304 then
+        H.wait(b,v,1304)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1314 then
+        H.wait(b,v,1314)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1324 then
+        H.wait(b,v,1324)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1334 then
+        H.wait(b,v,1334)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1344 then
+        H.wait(b,v,1344)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1354 then
+        H.wait(b,v,1354)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1364 then
+        H.wait(b,v,1364)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,-1,500)
+    end
+    if v.epoch<=1514 then
+        H.wait(b,v,1514)
+        H.timeline_spawn(b,0,10,-32.0,48.0,0.0,400,2,2000)
+        H.timeline_spawn(b,2,10,416.0,48.0,0.0,400,2,2000)
+    end
+    if v.epoch<=1546 then
+        H.wait(b,v,1546)
+        H.timeline_spawn(b,0,10,-32.0,96.0,0.0,400,2,2000)
+        H.timeline_spawn(b,2,10,416.0,96.0,0.0,400,2,2000)
+    end
+    if v.epoch<=1578 then
+        H.wait(b,v,1578)
+        H.timeline_spawn(b,0,10,-32.0,160.0,0.0,400,2,2000)
+        H.timeline_spawn(b,2,10,416.0,160.0,0.0,400,2,2000)
+    end
+    if v.epoch<=1878 then
+        H.wait(b,v,1878)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1888 then
+        H.wait(b,v,1888)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1898 then
+        H.wait(b,v,1898)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1908 then
+        H.wait(b,v,1908)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1918 then
+        H.wait(b,v,1918)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1928 then
+        H.wait(b,v,1928)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1938 then
+        H.wait(b,v,1938)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1948 then
+        H.wait(b,v,1948)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1958 then
+        H.wait(b,v,1958)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1968 then
+        H.wait(b,v,1968)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1978 then
+        H.wait(b,v,1978)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1988 then
+        H.wait(b,v,1988)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1998 then
+        H.wait(b,v,1998)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2008 then
+        H.wait(b,v,2008)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2108 then
+        H.wait(b,v,2108)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2118 then
+        H.wait(b,v,2118)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2128 then
+        H.wait(b,v,2128)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2138 then
+        H.wait(b,v,2138)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2148 then
+        H.wait(b,v,2148)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2158 then
+        H.wait(b,v,2158)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2168 then
+        H.wait(b,v,2168)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2178 then
+        H.wait(b,v,2178)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2188 then
+        H.wait(b,v,2188)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2198 then
+        H.wait(b,v,2198)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2208 then
+        H.wait(b,v,2208)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2218 then
+        H.wait(b,v,2218)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2228 then
+        H.wait(b,v,2228)
+        H.timeline_spawn(b,0,2,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2238 then
+        H.wait(b,v,2238)
+        H.timeline_spawn(b,2,2,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2388 then
+        H.wait(b,v,2388)
+        H.timeline_spawn(b,0,11,96.0,-32.0,0.0,2000,2,2000)
+        H.timeline_spawn(b,2,11,288.0,-32.0,0.0,2000,2,2000)
+    end
+    if v.epoch<=2412 then
+        H.wait(b,v,2412)
+        H.timeline_spawn(b,0,13,-32.0,96.0,0.0,2000,2,2000)
+        H.timeline_spawn(b,2,13,416.0,96.0,0.0,2000,2,2000)
+    end
+    if v.epoch<=2712 then
+        H.wait(b,v,2712)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2722 then
+        H.wait(b,v,2722)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2732 then
+        H.wait(b,v,2732)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2742 then
+        H.wait(b,v,2742)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2752 then
+        H.wait(b,v,2752)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2762 then
+        H.wait(b,v,2762)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2772 then
+        H.wait(b,v,2772)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2782 then
+        H.wait(b,v,2782)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2792 then
+        H.wait(b,v,2792)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2802 then
+        H.wait(b,v,2802)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2812 then
+        H.wait(b,v,2812)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2822 then
+        H.wait(b,v,2822)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2832 then
+        H.wait(b,v,2832)
+        H.timeline_spawn(b,0,5,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2842 then
+        H.wait(b,v,2842)
+        H.timeline_spawn(b,2,5,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2942 then
+        H.wait(b,v,2942)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2952 then
+        H.wait(b,v,2952)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2962 then
+        H.wait(b,v,2962)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2972 then
+        H.wait(b,v,2972)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2982 then
+        H.wait(b,v,2982)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2992 then
+        H.wait(b,v,2992)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3002 then
+        H.wait(b,v,3002)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3012 then
+        H.wait(b,v,3012)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3022 then
+        H.wait(b,v,3022)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3032 then
+        H.wait(b,v,3032)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3042 then
+        H.wait(b,v,3042)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3052 then
+        H.wait(b,v,3052)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3062 then
+        H.wait(b,v,3062)
+        H.timeline_spawn(b,0,4,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3072 then
+        H.wait(b,v,3072)
+        H.timeline_spawn(b,2,4,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3172 then
+        H.wait(b,v,3172)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3182 then
+        H.wait(b,v,3182)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3192 then
+        H.wait(b,v,3192)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3202 then
+        H.wait(b,v,3202)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3212 then
+        H.wait(b,v,3212)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3222 then
+        H.wait(b,v,3222)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3232 then
+        H.wait(b,v,3232)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3242 then
+        H.wait(b,v,3242)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3252 then
+        H.wait(b,v,3252)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3262 then
+        H.wait(b,v,3262)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3452 then
+        H.wait(b,v,3452)
+        H.timeline_spawn(b,4,14,-999.0,32.0,0.0,3500,1,2000)
+    end
+    if v.epoch<=3492 then
+        H.wait(b,v,3492)
+        H.timeline_spawn(b,4,14,-999.0,128.0,0.0,3500,1,2000)
+    end
+    if v.epoch<=3532 then
+        H.wait(b,v,3532)
+        H.timeline_spawn(b,4,14,-999.0,144.0,0.0,3500,1,2000)
+    end
+    if v.epoch<=3582 then
+        H.wait(b,v,3582)
+        H.timeline_spawn(b,4,14,-999.0,64.0,0.0,4500,1,2000)
+    end
+    if v.epoch<=3632 then
+        H.wait(b,v,3632)
+        H.timeline_spawn(b,4,14,-999.0,80.0,0.0,4500,1,2000)
+    end
+    if v.epoch<=3692 then
+        H.wait(b,v,3692)
+        H.timeline_spawn(b,4,14,-999.0,96.0,0.0,4500,1,2000)
+    end
+    H.wait(b,v,4132)
+    H.erase(b)
+end
+
+-- 四面道中·后半：原时间轴 4132..10694，279 次创建。
+P[4]["road_after"]=function(b,v)
+    if v.epoch<=800 then
+        H.wait(b,v,800)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=810 then
+        H.wait(b,v,810)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=820 then
+        H.wait(b,v,820)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=830 then
+        H.wait(b,v,830)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=840 then
+        H.wait(b,v,840)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=860 then
+        H.wait(b,v,860)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=870 then
+        H.wait(b,v,870)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=880 then
+        H.wait(b,v,880)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=890 then
+        H.wait(b,v,890)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=900 then
+        H.wait(b,v,900)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=910 then
+        H.wait(b,v,910)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=920 then
+        H.wait(b,v,920)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=930 then
+        H.wait(b,v,930)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1090 then
+        H.wait(b,v,1090)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1100 then
+        H.wait(b,v,1100)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1110 then
+        H.wait(b,v,1110)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1130 then
+        H.wait(b,v,1130)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1140 then
+        H.wait(b,v,1140)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1150 then
+        H.wait(b,v,1150)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1170 then
+        H.wait(b,v,1170)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1180 then
+        H.wait(b,v,1180)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1190 then
+        H.wait(b,v,1190)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1200 then
+        H.wait(b,v,1200)
+        H.timeline_spawn(b,0,6,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1210 then
+        H.wait(b,v,1210)
+        H.timeline_spawn(b,2,6,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1360 then
+        H.wait(b,v,1360)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1370 then
+        H.wait(b,v,1370)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1380 then
+        H.wait(b,v,1380)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1390 then
+        H.wait(b,v,1390)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1400 then
+        H.wait(b,v,1400)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1410 then
+        H.wait(b,v,1410)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1420 then
+        H.wait(b,v,1420)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1430 then
+        H.wait(b,v,1430)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1440 then
+        H.wait(b,v,1440)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1450 then
+        H.wait(b,v,1450)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1460 then
+        H.wait(b,v,1460)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1470 then
+        H.wait(b,v,1470)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1480 then
+        H.wait(b,v,1480)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1490 then
+        H.wait(b,v,1490)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1640 then
+        H.wait(b,v,1640)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1650 then
+        H.wait(b,v,1650)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1660 then
+        H.wait(b,v,1660)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1670 then
+        H.wait(b,v,1670)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1680 then
+        H.wait(b,v,1680)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1690 then
+        H.wait(b,v,1690)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1700 then
+        H.wait(b,v,1700)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1710 then
+        H.wait(b,v,1710)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1720 then
+        H.wait(b,v,1720)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1730 then
+        H.wait(b,v,1730)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1740 then
+        H.wait(b,v,1740)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1750 then
+        H.wait(b,v,1750)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=1760 then
+        H.wait(b,v,1760)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1770 then
+        H.wait(b,v,1770)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=1830 then
+        H.wait(b,v,1830)
+        H.timeline_spawn(b,0,16,48.0,96.0,0.0,1500,2,2000)
+        H.timeline_spawn(b,0,16,336.0,96.0,0.0,1500,2,2000)
+    end
+    if v.epoch<=1890 then
+        H.wait(b,v,1890)
+        H.timeline_spawn(b,0,18,32.0,-48.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,18,352.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=1922 then
+        H.wait(b,v,1922)
+        H.timeline_spawn(b,0,18,64.0,-32.0,0.0,400,0,2000)
+        H.timeline_spawn(b,0,18,320.0,-32.0,0.0,400,0,2000)
+    end
+    if v.epoch<=1954 then
+        H.wait(b,v,1954)
+        H.timeline_spawn(b,0,18,128.0,-16.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,18,256.0,-16.0,0.0,400,1,2000)
+    end
+    if v.epoch<=2454 then
+        H.wait(b,v,2454)
+        H.timeline_spawn(b,0,16,48.0,96.0,0.0,1500,2,2000)
+        H.timeline_spawn(b,0,16,336.0,96.0,0.0,1500,2,2000)
+    end
+    if v.epoch<=2514 then
+        H.wait(b,v,2514)
+        H.timeline_spawn(b,0,18,48.0,-48.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,18,336.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=2546 then
+        H.wait(b,v,2546)
+        H.timeline_spawn(b,0,18,128.0,-32.0,0.0,400,0,2000)
+        H.timeline_spawn(b,0,18,256.0,-32.0,0.0,400,0,2000)
+    end
+    if v.epoch<=2578 then
+        H.wait(b,v,2578)
+        H.timeline_spawn(b,0,18,160.0,-16.0,0.0,400,2,2000)
+        H.timeline_spawn(b,0,18,224.0,-16.0,0.0,400,2,2000)
+    end
+    if v.epoch<=2638 then
+        H.wait(b,v,2638)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2648 then
+        H.wait(b,v,2648)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2658 then
+        H.wait(b,v,2658)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2668 then
+        H.wait(b,v,2668)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2678 then
+        H.wait(b,v,2678)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2688 then
+        H.wait(b,v,2688)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2698 then
+        H.wait(b,v,2698)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2708 then
+        H.wait(b,v,2708)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2718 then
+        H.wait(b,v,2718)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2728 then
+        H.wait(b,v,2728)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2738 then
+        H.wait(b,v,2738)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2748 then
+        H.wait(b,v,2748)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=2758 then
+        H.wait(b,v,2758)
+        H.timeline_spawn(b,0,7,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2768 then
+        H.wait(b,v,2768)
+        H.timeline_spawn(b,2,7,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=2778 then
+        H.wait(b,v,2778)
+        H.timeline_spawn(b,0,18,24.0,-48.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,18,360.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=2810 then
+        H.wait(b,v,2810)
+        H.timeline_spawn(b,0,18,96.0,-32.0,0.0,400,0,2000)
+        H.timeline_spawn(b,0,18,288.0,-32.0,0.0,400,0,2000)
+    end
+    if v.epoch<=2842 then
+        H.wait(b,v,2842)
+        H.timeline_spawn(b,0,18,144.0,-16.0,0.0,400,1,2000)
+        H.timeline_spawn(b,0,18,240.0,-16.0,0.0,400,1,2000)
+    end
+    if v.epoch<=3362 then
+        H.wait(b,v,3362)
+        H.timeline_spawn(b,0,11,96.0,-32.0,0.0,2500,2,2000)
+        H.timeline_spawn(b,0,17,286.0,48.0,0.0,1500,1,2000)
+        H.timeline_spawn(b,0,17,254.0,48.0,0.0,1500,1,2000)
+    end
+    if v.epoch<=3512 then
+        H.wait(b,v,3512)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3522 then
+        H.wait(b,v,3522)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3532 then
+        H.wait(b,v,3532)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3542 then
+        H.wait(b,v,3542)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3552 then
+        H.wait(b,v,3552)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3562 then
+        H.wait(b,v,3562)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3572 then
+        H.wait(b,v,3572)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3582 then
+        H.wait(b,v,3582)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3592 then
+        H.wait(b,v,3592)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3602 then
+        H.wait(b,v,3602)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3612 then
+        H.wait(b,v,3612)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3622 then
+        H.wait(b,v,3622)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3632 then
+        H.wait(b,v,3632)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3642 then
+        H.wait(b,v,3642)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3652 then
+        H.wait(b,v,3652)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3662 then
+        H.wait(b,v,3662)
+        H.timeline_spawn(b,2,3,416.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3762 then
+        H.wait(b,v,3762)
+        H.timeline_spawn(b,0,11,288.0,-32.0,0.0,2500,2,2000)
+        H.timeline_spawn(b,0,17,96.0,48.0,0.0,1500,1,2000)
+        H.timeline_spawn(b,0,17,128.0,48.0,0.0,1500,1,2000)
+    end
+    if v.epoch<=3912 then
+        H.wait(b,v,3912)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3922 then
+        H.wait(b,v,3922)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3932 then
+        H.wait(b,v,3932)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3942 then
+        H.wait(b,v,3942)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3952 then
+        H.wait(b,v,3952)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3962 then
+        H.wait(b,v,3962)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3972 then
+        H.wait(b,v,3972)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=3982 then
+        H.wait(b,v,3982)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=3992 then
+        H.wait(b,v,3992)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=4002 then
+        H.wait(b,v,4002)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=4012 then
+        H.wait(b,v,4012)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=4022 then
+        H.wait(b,v,4022)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=4032 then
+        H.wait(b,v,4032)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=4042 then
+        H.wait(b,v,4042)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=4052 then
+        H.wait(b,v,4052)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,0,500)
+    end
+    if v.epoch<=4062 then
+        H.wait(b,v,4062)
+        H.timeline_spawn(b,0,3,-32.0,170.0,0.0,40,1,500)
+    end
+    if v.epoch<=4282 then
+        H.wait(b,v,4282)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4292 then
+        H.wait(b,v,4292)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4302 then
+        H.wait(b,v,4302)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4312 then
+        H.wait(b,v,4312)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4322 then
+        H.wait(b,v,4322)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4332 then
+        H.wait(b,v,4332)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4342 then
+        H.wait(b,v,4342)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4352 then
+        H.wait(b,v,4352)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4362 then
+        H.wait(b,v,4362)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4372 then
+        H.wait(b,v,4372)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4382 then
+        H.wait(b,v,4382)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4392 then
+        H.wait(b,v,4392)
+        H.timeline_spawn(b,0,8,96.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4442 then
+        H.wait(b,v,4442)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4452 then
+        H.wait(b,v,4452)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4462 then
+        H.wait(b,v,4462)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4472 then
+        H.wait(b,v,4472)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4482 then
+        H.wait(b,v,4482)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4492 then
+        H.wait(b,v,4492)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4502 then
+        H.wait(b,v,4502)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4512 then
+        H.wait(b,v,4512)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4522 then
+        H.wait(b,v,4522)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4532 then
+        H.wait(b,v,4532)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4542 then
+        H.wait(b,v,4542)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4552 then
+        H.wait(b,v,4552)
+        H.timeline_spawn(b,0,8,196.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4602 then
+        H.wait(b,v,4602)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4612 then
+        H.wait(b,v,4612)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4622 then
+        H.wait(b,v,4622)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4632 then
+        H.wait(b,v,4632)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4642 then
+        H.wait(b,v,4642)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4652 then
+        H.wait(b,v,4652)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4662 then
+        H.wait(b,v,4662)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4672 then
+        H.wait(b,v,4672)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4682 then
+        H.wait(b,v,4682)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4692 then
+        H.wait(b,v,4692)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4702 then
+        H.wait(b,v,4702)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=4712 then
+        H.wait(b,v,4712)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=4762 then
+        H.wait(b,v,4762)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4772 then
+        H.wait(b,v,4772)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4782 then
+        H.wait(b,v,4782)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4792 then
+        H.wait(b,v,4792)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4802 then
+        H.wait(b,v,4802)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4812 then
+        H.wait(b,v,4812)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4822 then
+        H.wait(b,v,4822)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4832 then
+        H.wait(b,v,4832)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4842 then
+        H.wait(b,v,4842)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4852 then
+        H.wait(b,v,4852)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4862 then
+        H.wait(b,v,4862)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,1,500)
+    end
+    if v.epoch<=4872 then
+        H.wait(b,v,4872)
+        H.timeline_spawn(b,2,9,416.0,128.0,0.0,40,0,500)
+    end
+    if v.epoch<=4922 then
+        H.wait(b,v,4922)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4932 then
+        H.wait(b,v,4932)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4942 then
+        H.wait(b,v,4942)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4952 then
+        H.wait(b,v,4952)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4962 then
+        H.wait(b,v,4962)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4972 then
+        H.wait(b,v,4972)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=4982 then
+        H.wait(b,v,4982)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=4992 then
+        H.wait(b,v,4992)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5002 then
+        H.wait(b,v,5002)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5012 then
+        H.wait(b,v,5012)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5022 then
+        H.wait(b,v,5022)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5032 then
+        H.wait(b,v,5032)
+        H.timeline_spawn(b,0,8,288.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5082 then
+        H.wait(b,v,5082)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5092 then
+        H.wait(b,v,5092)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5102 then
+        H.wait(b,v,5102)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5112 then
+        H.wait(b,v,5112)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5122 then
+        H.wait(b,v,5122)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5132 then
+        H.wait(b,v,5132)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5142 then
+        H.wait(b,v,5142)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5152 then
+        H.wait(b,v,5152)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5162 then
+        H.wait(b,v,5162)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5172 then
+        H.wait(b,v,5172)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5182 then
+        H.wait(b,v,5182)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,1,500)
+    end
+    if v.epoch<=5192 then
+        H.wait(b,v,5192)
+        H.timeline_spawn(b,0,8,188.0,-32.0,0.0,40,0,500)
+    end
+    if v.epoch<=5242 then
+        H.wait(b,v,5242)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5252 then
+        H.wait(b,v,5252)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5262 then
+        H.wait(b,v,5262)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5272 then
+        H.wait(b,v,5272)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5282 then
+        H.wait(b,v,5282)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5292 then
+        H.wait(b,v,5292)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5302 then
+        H.wait(b,v,5302)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5312 then
+        H.wait(b,v,5312)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5322 then
+        H.wait(b,v,5322)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5332 then
+        H.wait(b,v,5332)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5342 then
+        H.wait(b,v,5342)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,1,500)
+    end
+    if v.epoch<=5352 then
+        H.wait(b,v,5352)
+        H.timeline_spawn(b,2,9,416.0,48.0,0.0,40,0,500)
+    end
+    if v.epoch<=5402 then
+        H.wait(b,v,5402)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5412 then
+        H.wait(b,v,5412)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5422 then
+        H.wait(b,v,5422)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5432 then
+        H.wait(b,v,5432)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5442 then
+        H.wait(b,v,5442)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5452 then
+        H.wait(b,v,5452)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5462 then
+        H.wait(b,v,5462)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5472 then
+        H.wait(b,v,5472)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5482 then
+        H.wait(b,v,5482)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5492 then
+        H.wait(b,v,5492)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5502 then
+        H.wait(b,v,5502)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5512 then
+        H.wait(b,v,5512)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5712 then
+        H.wait(b,v,5712)
+        H.timeline_spawn(b,0,11,192.0,-32.0,0.0,2000,2,2000)
+    end
+    if v.epoch<=5722 then
+        H.wait(b,v,5722)
+        H.timeline_spawn(b,0,11,64.0,-32.0,0.0,1200,2,2000)
+    end
+    if v.epoch<=5732 then
+        H.wait(b,v,5732)
+        H.timeline_spawn(b,0,11,320.0,-32.0,0.0,1200,2,2000)
+    end
+    if v.epoch<=5822 then
+        H.wait(b,v,5822)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5832 then
+        H.wait(b,v,5832)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5842 then
+        H.wait(b,v,5842)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5852 then
+        H.wait(b,v,5852)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5862 then
+        H.wait(b,v,5862)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5872 then
+        H.wait(b,v,5872)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5882 then
+        H.wait(b,v,5882)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5892 then
+        H.wait(b,v,5892)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5902 then
+        H.wait(b,v,5902)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5912 then
+        H.wait(b,v,5912)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5922 then
+        H.wait(b,v,5922)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5932 then
+        H.wait(b,v,5932)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5942 then
+        H.wait(b,v,5942)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=5952 then
+        H.wait(b,v,5952)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5962 then
+        H.wait(b,v,5962)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5972 then
+        H.wait(b,v,5972)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5982 then
+        H.wait(b,v,5982)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=5992 then
+        H.wait(b,v,5992)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=6002 then
+        H.wait(b,v,6002)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=6012 then
+        H.wait(b,v,6012)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=6022 then
+        H.wait(b,v,6022)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=6032 then
+        H.wait(b,v,6032)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=6042 then
+        H.wait(b,v,6042)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,1,500)
+    end
+    if v.epoch<=6052 then
+        H.wait(b,v,6052)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,0,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    if v.epoch<=6062 then
+        H.wait(b,v,6062)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,40,1,500)
+        H.timeline_spawn(b,2,9,352.0,96.0,0.0,40,0,500)
+    end
+    H.wait(b,v,6562)
+    H.erase(b)
+end
+
+-- 五面道中·前半：原时间轴 0..3372，66 次创建。
+P[5]["road_before"]=function(b,v)
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,0,160.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,0,224.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=690 then
+        H.wait(b,v,690)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,200,1,2000)
+    end
+    if v.epoch<=710 then
+        H.wait(b,v,710)
+        H.timeline_spawn(b,0,1,-32.0,136.0,0.0,200,1,2000)
+    end
+    if v.epoch<=730 then
+        H.wait(b,v,730)
+        H.timeline_spawn(b,0,1,-32.0,144.0,0.0,200,1,2000)
+    end
+    if v.epoch<=750 then
+        H.wait(b,v,750)
+        H.timeline_spawn(b,0,1,-32.0,152.0,0.0,200,1,2000)
+    end
+    if v.epoch<=770 then
+        H.wait(b,v,770)
+        H.timeline_spawn(b,0,1,-32.0,160.0,0.0,200,1,2000)
+    end
+    if v.epoch<=790 then
+        H.wait(b,v,790)
+        H.timeline_spawn(b,0,1,-32.0,168.0,0.0,200,1,2000)
+    end
+    if v.epoch<=810 then
+        H.wait(b,v,810)
+        H.timeline_spawn(b,0,1,-32.0,176.0,0.0,200,1,2000)
+    end
+    if v.epoch<=830 then
+        H.wait(b,v,830)
+        H.timeline_spawn(b,0,1,-32.0,184.0,0.0,200,1,2000)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,0,2,32.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,2,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1042 then
+        H.wait(b,v,1042)
+        H.timeline_spawn(b,2,1,352.0,128.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1062 then
+        H.wait(b,v,1062)
+        H.timeline_spawn(b,2,1,352.0,136.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1082 then
+        H.wait(b,v,1082)
+        H.timeline_spawn(b,2,1,352.0,144.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1102 then
+        H.wait(b,v,1102)
+        H.timeline_spawn(b,2,1,352.0,152.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1122 then
+        H.wait(b,v,1122)
+        H.timeline_spawn(b,2,1,352.0,160.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1142 then
+        H.wait(b,v,1142)
+        H.timeline_spawn(b,2,1,352.0,168.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1162 then
+        H.wait(b,v,1162)
+        H.timeline_spawn(b,2,1,352.0,176.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1182 then
+        H.wait(b,v,1182)
+        H.timeline_spawn(b,2,1,352.0,184.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1442 then
+        H.wait(b,v,1442)
+        H.timeline_spawn(b,0,0,128.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,0,256.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1462 then
+        H.wait(b,v,1462)
+        H.timeline_spawn(b,0,1,-32.0,160.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1482 then
+        H.wait(b,v,1482)
+        H.timeline_spawn(b,0,1,-32.0,168.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1502 then
+        H.wait(b,v,1502)
+        H.timeline_spawn(b,0,1,-32.0,176.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1522 then
+        H.wait(b,v,1522)
+        H.timeline_spawn(b,0,1,-32.0,184.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1542 then
+        H.wait(b,v,1542)
+        H.timeline_spawn(b,0,1,-32.0,192.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1562 then
+        H.wait(b,v,1562)
+        H.timeline_spawn(b,0,1,-32.0,200.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1582 then
+        H.wait(b,v,1582)
+        H.timeline_spawn(b,0,1,-32.0,208.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1602 then
+        H.wait(b,v,1602)
+        H.timeline_spawn(b,0,1,-32.0,216.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1622 then
+        H.wait(b,v,1622)
+        H.timeline_spawn(b,2,1,352.0,64.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1642 then
+        H.wait(b,v,1642)
+        H.timeline_spawn(b,2,1,352.0,72.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1662 then
+        H.wait(b,v,1662)
+        H.timeline_spawn(b,2,1,352.0,80.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1682 then
+        H.wait(b,v,1682)
+        H.timeline_spawn(b,2,1,352.0,88.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1702 then
+        H.wait(b,v,1702)
+        H.timeline_spawn(b,2,1,352.0,96.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1722 then
+        H.wait(b,v,1722)
+        H.timeline_spawn(b,2,1,352.0,104.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1742 then
+        H.wait(b,v,1742)
+        H.timeline_spawn(b,2,1,352.0,112.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1762 then
+        H.wait(b,v,1762)
+        H.timeline_spawn(b,2,1,352.0,120.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1782 then
+        H.wait(b,v,1782)
+        H.timeline_spawn(b,0,2,32.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,2,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1802 then
+        H.wait(b,v,1802)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1822 then
+        H.wait(b,v,1822)
+        H.timeline_spawn(b,0,1,-32.0,72.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1842 then
+        H.wait(b,v,1842)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1862 then
+        H.wait(b,v,1862)
+        H.timeline_spawn(b,0,1,-32.0,88.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1882 then
+        H.wait(b,v,1882)
+        H.timeline_spawn(b,0,1,-32.0,96.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1902 then
+        H.wait(b,v,1902)
+        H.timeline_spawn(b,0,1,-32.0,104.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1922 then
+        H.wait(b,v,1922)
+        H.timeline_spawn(b,0,1,-32.0,112.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1942 then
+        H.wait(b,v,1942)
+        H.timeline_spawn(b,0,1,-32.0,120.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1962 then
+        H.wait(b,v,1962)
+        H.timeline_spawn(b,2,1,352.0,208.0,0.0,200,1,2000)
+    end
+    if v.epoch<=1982 then
+        H.wait(b,v,1982)
+        H.timeline_spawn(b,2,1,352.0,216.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2002 then
+        H.wait(b,v,2002)
+        H.timeline_spawn(b,2,1,352.0,224.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2022 then
+        H.wait(b,v,2022)
+        H.timeline_spawn(b,2,1,352.0,232.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2042 then
+        H.wait(b,v,2042)
+        H.timeline_spawn(b,2,1,352.0,240.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2062 then
+        H.wait(b,v,2062)
+        H.timeline_spawn(b,2,1,352.0,248.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2082 then
+        H.wait(b,v,2082)
+        H.timeline_spawn(b,2,1,352.0,256.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2102 then
+        H.wait(b,v,2102)
+        H.timeline_spawn(b,2,1,352.0,264.0,0.0,200,1,2000)
+    end
+    if v.epoch<=2352 then
+        H.wait(b,v,2352)
+        H.timeline_spawn(b,0,3,32.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,3,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2442 then
+        H.wait(b,v,2442)
+        H.timeline_spawn(b,0,4,128.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,4,256.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2532 then
+        H.wait(b,v,2532)
+        H.timeline_spawn(b,0,5,160.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,5,224.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2652 then
+        H.wait(b,v,2652)
+        H.timeline_spawn(b,0,6,192.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2762 then
+        H.wait(b,v,2762)
+        H.timeline_spawn(b,0,6,32.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2872 then
+        H.wait(b,v,2872)
+        H.timeline_spawn(b,0,6,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=2972 then
+        H.wait(b,v,2972)
+        H.timeline_spawn(b,0,6,160.0,-48.0,0.0,900,2,2000)
+    end
+    H.wait(b,v,3372)
+    H.erase(b)
+end
+
+-- 五面道中·后半：原时间轴 3374..7704，161 次创建。
+P[5]["road_after"]=function(b,v)
+    if v.epoch<=500 then
+        H.wait(b,v,500)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=515 then
+        H.wait(b,v,515)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=530 then
+        H.wait(b,v,530)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=545 then
+        H.wait(b,v,545)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=560 then
+        H.wait(b,v,560)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=575 then
+        H.wait(b,v,575)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=590 then
+        H.wait(b,v,590)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=605 then
+        H.wait(b,v,605)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=620 then
+        H.wait(b,v,620)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=635 then
+        H.wait(b,v,635)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=650 then
+        H.wait(b,v,650)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=665 then
+        H.wait(b,v,665)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,1,2000)
+    end
+    if v.epoch<=680 then
+        H.wait(b,v,680)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=695 then
+        H.wait(b,v,695)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=710 then
+        H.wait(b,v,710)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=725 then
+        H.wait(b,v,725)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=740 then
+        H.wait(b,v,740)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,1,2000)
+    end
+    if v.epoch<=830 then
+        H.wait(b,v,830)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=845 then
+        H.wait(b,v,845)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=860 then
+        H.wait(b,v,860)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=875 then
+        H.wait(b,v,875)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=890 then
+        H.wait(b,v,890)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=905 then
+        H.wait(b,v,905)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=920 then
+        H.wait(b,v,920)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=935 then
+        H.wait(b,v,935)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=950 then
+        H.wait(b,v,950)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=965 then
+        H.wait(b,v,965)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=980 then
+        H.wait(b,v,980)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=995 then
+        H.wait(b,v,995)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1010 then
+        H.wait(b,v,1010)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1025 then
+        H.wait(b,v,1025)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1055 then
+        H.wait(b,v,1055)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1145 then
+        H.wait(b,v,1145)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1175 then
+        H.wait(b,v,1175)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1190 then
+        H.wait(b,v,1190)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1205 then
+        H.wait(b,v,1205)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1220 then
+        H.wait(b,v,1220)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1235 then
+        H.wait(b,v,1235)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1250 then
+        H.wait(b,v,1250)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1265 then
+        H.wait(b,v,1265)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1280 then
+        H.wait(b,v,1280)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1295 then
+        H.wait(b,v,1295)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1310 then
+        H.wait(b,v,1310)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1325 then
+        H.wait(b,v,1325)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1340 then
+        H.wait(b,v,1340)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1355 then
+        H.wait(b,v,1355)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1370 then
+        H.wait(b,v,1370)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1460 then
+        H.wait(b,v,1460)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1475 then
+        H.wait(b,v,1475)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1490 then
+        H.wait(b,v,1490)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1505 then
+        H.wait(b,v,1505)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1520 then
+        H.wait(b,v,1520)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1535 then
+        H.wait(b,v,1535)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1550 then
+        H.wait(b,v,1550)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1565 then
+        H.wait(b,v,1565)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1580 then
+        H.wait(b,v,1580)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1595 then
+        H.wait(b,v,1595)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1610 then
+        H.wait(b,v,1610)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1625 then
+        H.wait(b,v,1625)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1640 then
+        H.wait(b,v,1640)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1655 then
+        H.wait(b,v,1655)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1670 then
+        H.wait(b,v,1670)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1685 then
+        H.wait(b,v,1685)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1775 then
+        H.wait(b,v,1775)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1790 then
+        H.wait(b,v,1790)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1805 then
+        H.wait(b,v,1805)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1820 then
+        H.wait(b,v,1820)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1835 then
+        H.wait(b,v,1835)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1850 then
+        H.wait(b,v,1850)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1865 then
+        H.wait(b,v,1865)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1880 then
+        H.wait(b,v,1880)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1895 then
+        H.wait(b,v,1895)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1910 then
+        H.wait(b,v,1910)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1925 then
+        H.wait(b,v,1925)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1940 then
+        H.wait(b,v,1940)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=1955 then
+        H.wait(b,v,1955)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1970 then
+        H.wait(b,v,1970)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=1985 then
+        H.wait(b,v,1985)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2000 then
+        H.wait(b,v,2000)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2090 then
+        H.wait(b,v,2090)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2105 then
+        H.wait(b,v,2105)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2120 then
+        H.wait(b,v,2120)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2135 then
+        H.wait(b,v,2135)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2150 then
+        H.wait(b,v,2150)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2165 then
+        H.wait(b,v,2165)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2180 then
+        H.wait(b,v,2180)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2195 then
+        H.wait(b,v,2195)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2210 then
+        H.wait(b,v,2210)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2225 then
+        H.wait(b,v,2225)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2240 then
+        H.wait(b,v,2240)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2255 then
+        H.wait(b,v,2255)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2270 then
+        H.wait(b,v,2270)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2285 then
+        H.wait(b,v,2285)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2300 then
+        H.wait(b,v,2300)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2315 then
+        H.wait(b,v,2315)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2405 then
+        H.wait(b,v,2405)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2420 then
+        H.wait(b,v,2420)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2435 then
+        H.wait(b,v,2435)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2450 then
+        H.wait(b,v,2450)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2465 then
+        H.wait(b,v,2465)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2480 then
+        H.wait(b,v,2480)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2495 then
+        H.wait(b,v,2495)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2510 then
+        H.wait(b,v,2510)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2525 then
+        H.wait(b,v,2525)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2540 then
+        H.wait(b,v,2540)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2555 then
+        H.wait(b,v,2555)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2570 then
+        H.wait(b,v,2570)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2585 then
+        H.wait(b,v,2585)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2600 then
+        H.wait(b,v,2600)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2615 then
+        H.wait(b,v,2615)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2630 then
+        H.wait(b,v,2630)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2720 then
+        H.wait(b,v,2720)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2735 then
+        H.wait(b,v,2735)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2750 then
+        H.wait(b,v,2750)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2765 then
+        H.wait(b,v,2765)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2780 then
+        H.wait(b,v,2780)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2795 then
+        H.wait(b,v,2795)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2810 then
+        H.wait(b,v,2810)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2825 then
+        H.wait(b,v,2825)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2840 then
+        H.wait(b,v,2840)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2855 then
+        H.wait(b,v,2855)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2870 then
+        H.wait(b,v,2870)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2885 then
+        H.wait(b,v,2885)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2900 then
+        H.wait(b,v,2900)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2915 then
+        H.wait(b,v,2915)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=2930 then
+        H.wait(b,v,2930)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=2945 then
+        H.wait(b,v,2945)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3035 then
+        H.wait(b,v,3035)
+        H.timeline_spawn(b,2,1,416.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3050 then
+        H.wait(b,v,3050)
+        H.timeline_spawn(b,0,9,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3065 then
+        H.wait(b,v,3065)
+        H.timeline_spawn(b,2,10,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3080 then
+        H.wait(b,v,3080)
+        H.timeline_spawn(b,0,11,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3095 then
+        H.wait(b,v,3095)
+        H.timeline_spawn(b,2,9,416.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3110 then
+        H.wait(b,v,3110)
+        H.timeline_spawn(b,0,10,-32.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3125 then
+        H.wait(b,v,3125)
+        H.timeline_spawn(b,2,11,416.0,96.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3140 then
+        H.wait(b,v,3140)
+        H.timeline_spawn(b,0,1,-32.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3155 then
+        H.wait(b,v,3155)
+        H.timeline_spawn(b,2,1,416.0,64.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3170 then
+        H.wait(b,v,3170)
+        H.timeline_spawn(b,0,11,-32.0,96.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3185 then
+        H.wait(b,v,3185)
+        H.timeline_spawn(b,2,9,416.0,72.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3200 then
+        H.wait(b,v,3200)
+        H.timeline_spawn(b,0,10,-32.0,80.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3215 then
+        H.wait(b,v,3215)
+        H.timeline_spawn(b,2,9,416.0,32.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3230 then
+        H.wait(b,v,3230)
+        H.timeline_spawn(b,0,1,-32.0,80.0,0.0,150,1,2000)
+    end
+    if v.epoch<=3245 then
+        H.wait(b,v,3245)
+        H.timeline_spawn(b,2,11,416.0,64.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3260 then
+        H.wait(b,v,3260)
+        H.timeline_spawn(b,0,10,-32.0,128.0,0.0,150,0,2000)
+    end
+    if v.epoch<=3460 then
+        H.wait(b,v,3460)
+        H.timeline_spawn(b,0,2,32.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,2,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3550 then
+        H.wait(b,v,3550)
+        H.timeline_spawn(b,0,2,64.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,2,320.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3640 then
+        H.wait(b,v,3640)
+        H.timeline_spawn(b,0,2,96.0,-48.0,0.0,900,2,2000)
+        H.timeline_spawn(b,0,2,288.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3840 then
+        H.wait(b,v,3840)
+        H.timeline_spawn(b,0,2,32.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3850 then
+        H.wait(b,v,3850)
+        H.timeline_spawn(b,0,2,352.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3860 then
+        H.wait(b,v,3860)
+        H.timeline_spawn(b,0,2,64.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3870 then
+        H.wait(b,v,3870)
+        H.timeline_spawn(b,0,2,320.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3880 then
+        H.wait(b,v,3880)
+        H.timeline_spawn(b,0,2,96.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3890 then
+        H.wait(b,v,3890)
+        H.timeline_spawn(b,0,2,288.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3900 then
+        H.wait(b,v,3900)
+        H.timeline_spawn(b,0,2,128.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3910 then
+        H.wait(b,v,3910)
+        H.timeline_spawn(b,0,2,256.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3920 then
+        H.wait(b,v,3920)
+        H.timeline_spawn(b,0,2,144.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=3930 then
+        H.wait(b,v,3930)
+        H.timeline_spawn(b,0,2,240.0,-48.0,0.0,900,2,2000)
+    end
+    H.wait(b,v,4330)
+    H.erase(b)
+end
+
+-- 六面道中·前半：原时间轴 0..2564，124 次创建。
+P[6]["road_before"]=function(b,v)
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=448 then
+        H.wait(b,v,448)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=456 then
+        H.wait(b,v,456)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=464 then
+        H.wait(b,v,464)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=472 then
+        H.wait(b,v,472)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=480 then
+        H.wait(b,v,480)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=488 then
+        H.wait(b,v,488)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=496 then
+        H.wait(b,v,496)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=504 then
+        H.wait(b,v,504)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=512 then
+        H.wait(b,v,512)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=520 then
+        H.wait(b,v,520)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=528 then
+        H.wait(b,v,528)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=536 then
+        H.wait(b,v,536)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=544 then
+        H.wait(b,v,544)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=552 then
+        H.wait(b,v,552)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=560 then
+        H.wait(b,v,560)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=568 then
+        H.wait(b,v,568)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=576 then
+        H.wait(b,v,576)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=584 then
+        H.wait(b,v,584)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=592 then
+        H.wait(b,v,592)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=600 then
+        H.wait(b,v,600)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=608 then
+        H.wait(b,v,608)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=616 then
+        H.wait(b,v,616)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=624 then
+        H.wait(b,v,624)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=632 then
+        H.wait(b,v,632)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=640 then
+        H.wait(b,v,640)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=648 then
+        H.wait(b,v,648)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=656 then
+        H.wait(b,v,656)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=664 then
+        H.wait(b,v,664)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=672 then
+        H.wait(b,v,672)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=680 then
+        H.wait(b,v,680)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=688 then
+        H.wait(b,v,688)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=696 then
+        H.wait(b,v,696)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=704 then
+        H.wait(b,v,704)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=712 then
+        H.wait(b,v,712)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=720 then
+        H.wait(b,v,720)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=728 then
+        H.wait(b,v,728)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=736 then
+        H.wait(b,v,736)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=744 then
+        H.wait(b,v,744)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=752 then
+        H.wait(b,v,752)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=760 then
+        H.wait(b,v,760)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=768 then
+        H.wait(b,v,768)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=776 then
+        H.wait(b,v,776)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=784 then
+        H.wait(b,v,784)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=792 then
+        H.wait(b,v,792)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=800 then
+        H.wait(b,v,800)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=808 then
+        H.wait(b,v,808)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=816 then
+        H.wait(b,v,816)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=824 then
+        H.wait(b,v,824)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=832 then
+        H.wait(b,v,832)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=840 then
+        H.wait(b,v,840)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=848 then
+        H.wait(b,v,848)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=856 then
+        H.wait(b,v,856)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=864 then
+        H.wait(b,v,864)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=872 then
+        H.wait(b,v,872)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=880 then
+        H.wait(b,v,880)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=888 then
+        H.wait(b,v,888)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=896 then
+        H.wait(b,v,896)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=904 then
+        H.wait(b,v,904)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=912 then
+        H.wait(b,v,912)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=920 then
+        H.wait(b,v,920)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=928 then
+        H.wait(b,v,928)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=936 then
+        H.wait(b,v,936)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=944 then
+        H.wait(b,v,944)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=952 then
+        H.wait(b,v,952)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=960 then
+        H.wait(b,v,960)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=968 then
+        H.wait(b,v,968)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=976 then
+        H.wait(b,v,976)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=984 then
+        H.wait(b,v,984)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=992 then
+        H.wait(b,v,992)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1008 then
+        H.wait(b,v,1008)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1016 then
+        H.wait(b,v,1016)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1024 then
+        H.wait(b,v,1024)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1032 then
+        H.wait(b,v,1032)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1048 then
+        H.wait(b,v,1048)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1056 then
+        H.wait(b,v,1056)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1064 then
+        H.wait(b,v,1064)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1072 then
+        H.wait(b,v,1072)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1088 then
+        H.wait(b,v,1088)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1096 then
+        H.wait(b,v,1096)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1104 then
+        H.wait(b,v,1104)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1112 then
+        H.wait(b,v,1112)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1128 then
+        H.wait(b,v,1128)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1136 then
+        H.wait(b,v,1136)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1144 then
+        H.wait(b,v,1144)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1152 then
+        H.wait(b,v,1152)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1168 then
+        H.wait(b,v,1168)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1176 then
+        H.wait(b,v,1176)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1184 then
+        H.wait(b,v,1184)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1192 then
+        H.wait(b,v,1192)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1200 then
+        H.wait(b,v,1200)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1208 then
+        H.wait(b,v,1208)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1216 then
+        H.wait(b,v,1216)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1224 then
+        H.wait(b,v,1224)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1232 then
+        H.wait(b,v,1232)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1240 then
+        H.wait(b,v,1240)
+        H.timeline_spawn(b,0,1,-32.0,128.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1248 then
+        H.wait(b,v,1248)
+        H.timeline_spawn(b,0,3,-32.0,192.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1256 then
+        H.wait(b,v,1256)
+        H.timeline_spawn(b,2,2,416.0,128.0,0.0,80,1,1000)
+    end
+    if v.epoch<=1264 then
+        H.wait(b,v,1264)
+        H.timeline_spawn(b,2,4,416.0,192.0,0.0,80,0,1000)
+    end
+    if v.epoch<=1274 then
+        H.wait(b,v,1274)
+        H.timeline_spawn(b,0,0,160.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1284 then
+        H.wait(b,v,1284)
+        H.timeline_spawn(b,0,0,160.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1294 then
+        H.wait(b,v,1294)
+        H.timeline_spawn(b,0,0,160.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1304 then
+        H.wait(b,v,1304)
+        H.timeline_spawn(b,0,0,160.0,-48.0,0.0,900,2,2000)
+    end
+    if v.epoch<=1544 then
+        H.wait(b,v,1544)
+        H.timeline_spawn(b,2,5,416.0,92.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,92.0,0.0,500,2,1000)
+    end
+    if v.epoch<=1664 then
+        H.wait(b,v,1664)
+        H.timeline_spawn(b,0,7,128.0,-32.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,7,256.0,-32.0,0.0,500,2,1000)
+    end
+    if v.epoch<=1784 then
+        H.wait(b,v,1784)
+        H.timeline_spawn(b,2,5,416.0,144.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,144.0,0.0,500,2,1000)
+    end
+    if v.epoch<=2084 then
+        H.wait(b,v,2084)
+        H.timeline_spawn(b,2,5,416.0,92.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,92.0,0.0,500,2,1000)
+    end
+    if v.epoch<=2104 then
+        H.wait(b,v,2104)
+        H.timeline_spawn(b,2,5,416.0,192.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,192.0,0.0,500,2,1000)
+    end
+    if v.epoch<=2124 then
+        H.wait(b,v,2124)
+        H.timeline_spawn(b,2,5,416.0,128.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,128.0,0.0,500,2,1000)
+    end
+    if v.epoch<=2144 then
+        H.wait(b,v,2144)
+        H.timeline_spawn(b,2,5,416.0,64.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,64.0,0.0,500,2,1000)
+    end
+    if v.epoch<=2164 then
+        H.wait(b,v,2164)
+        H.timeline_spawn(b,2,5,416.0,48.0,0.0,500,2,1000)
+        H.timeline_spawn(b,0,5,-32.0,48.0,0.0,500,2,1000)
+    end
+    H.wait(b,v,2564)
+    H.erase(b)
+end
+
+-- 六面道中·后半（入场等待）：原时间轴 2567..3167，0 次创建。
+P[6]["road_after"]=function(b,v)
+    H.wait(b,v,600)
+    H.erase(b)
+end
+
+-- Extra道中·前半：原时间轴 0..4740，132 次创建。
+P[7]["road_before"]=function(b,v)
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=460 then
+        H.wait(b,v,460)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=480 then
+        H.wait(b,v,480)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=500 then
+        H.wait(b,v,500)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=520 then
+        H.wait(b,v,520)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=540 then
+        H.wait(b,v,540)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=560 then
+        H.wait(b,v,560)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=580 then
+        H.wait(b,v,580)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=600 then
+        H.wait(b,v,600)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,2,2000)
+    end
+    if v.epoch<=640 then
+        H.wait(b,v,640)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=660 then
+        H.wait(b,v,660)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=680 then
+        H.wait(b,v,680)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=700 then
+        H.wait(b,v,700)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=720 then
+        H.wait(b,v,720)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=740 then
+        H.wait(b,v,740)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=760 then
+        H.wait(b,v,760)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=780 then
+        H.wait(b,v,780)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=800 then
+        H.wait(b,v,800)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,2,2000)
+    end
+    if v.epoch<=840 then
+        H.wait(b,v,840)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=860 then
+        H.wait(b,v,860)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=880 then
+        H.wait(b,v,880)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=900 then
+        H.wait(b,v,900)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=920 then
+        H.wait(b,v,920)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=940 then
+        H.wait(b,v,940)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=960 then
+        H.wait(b,v,960)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=980 then
+        H.wait(b,v,980)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,0,0,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,0,64.0,-48.0,0.0,20,2,2000)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1060 then
+        H.wait(b,v,1060)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1100 then
+        H.wait(b,v,1100)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1140 then
+        H.wait(b,v,1140)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1160 then
+        H.wait(b,v,1160)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1180 then
+        H.wait(b,v,1180)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1200 then
+        H.wait(b,v,1200)
+        H.timeline_spawn(b,2,0,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,0,352.0,-48.0,0.0,20,2,2000)
+    end
+    if v.epoch<=1360 then
+        H.wait(b,v,1360)
+        H.timeline_spawn(b,0,5,368.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1380 then
+        H.wait(b,v,1380)
+        H.timeline_spawn(b,0,5,336.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1400 then
+        H.wait(b,v,1400)
+        H.timeline_spawn(b,0,5,304.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1420 then
+        H.wait(b,v,1420)
+        H.timeline_spawn(b,0,5,272.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1440 then
+        H.wait(b,v,1440)
+        H.timeline_spawn(b,0,5,240.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1460 then
+        H.wait(b,v,1460)
+        H.timeline_spawn(b,0,5,208.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1480 then
+        H.wait(b,v,1480)
+        H.timeline_spawn(b,0,5,176.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1500 then
+        H.wait(b,v,1500)
+        H.timeline_spawn(b,0,5,144.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1520 then
+        H.wait(b,v,1520)
+        H.timeline_spawn(b,0,5,112.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1540 then
+        H.wait(b,v,1540)
+        H.timeline_spawn(b,0,5,80.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1560 then
+        H.wait(b,v,1560)
+        H.timeline_spawn(b,0,5,48.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1580 then
+        H.wait(b,v,1580)
+        H.timeline_spawn(b,0,5,16.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1600 then
+        H.wait(b,v,1600)
+        H.timeline_spawn(b,0,5,-16.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1630 then
+        H.wait(b,v,1630)
+        H.timeline_spawn(b,0,5,368.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1650 then
+        H.wait(b,v,1650)
+        H.timeline_spawn(b,0,5,336.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1670 then
+        H.wait(b,v,1670)
+        H.timeline_spawn(b,0,5,304.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1690 then
+        H.wait(b,v,1690)
+        H.timeline_spawn(b,0,5,272.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1710 then
+        H.wait(b,v,1710)
+        H.timeline_spawn(b,0,5,240.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1730 then
+        H.wait(b,v,1730)
+        H.timeline_spawn(b,0,5,208.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1750 then
+        H.wait(b,v,1750)
+        H.timeline_spawn(b,0,5,176.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1770 then
+        H.wait(b,v,1770)
+        H.timeline_spawn(b,0,5,144.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1790 then
+        H.wait(b,v,1790)
+        H.timeline_spawn(b,0,5,112.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1810 then
+        H.wait(b,v,1810)
+        H.timeline_spawn(b,0,5,80.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1830 then
+        H.wait(b,v,1830)
+        H.timeline_spawn(b,0,5,48.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1850 then
+        H.wait(b,v,1850)
+        H.timeline_spawn(b,0,5,16.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1870 then
+        H.wait(b,v,1870)
+        H.timeline_spawn(b,0,5,-16.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=1950 then
+        H.wait(b,v,1950)
+        H.timeline_spawn(b,0,5,16.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1970 then
+        H.wait(b,v,1970)
+        H.timeline_spawn(b,0,5,48.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=1990 then
+        H.wait(b,v,1990)
+        H.timeline_spawn(b,0,5,80.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2010 then
+        H.wait(b,v,2010)
+        H.timeline_spawn(b,0,5,112.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2030 then
+        H.wait(b,v,2030)
+        H.timeline_spawn(b,0,5,144.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2050 then
+        H.wait(b,v,2050)
+        H.timeline_spawn(b,0,5,176.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2070 then
+        H.wait(b,v,2070)
+        H.timeline_spawn(b,0,5,208.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2090 then
+        H.wait(b,v,2090)
+        H.timeline_spawn(b,0,5,240.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2110 then
+        H.wait(b,v,2110)
+        H.timeline_spawn(b,0,5,272.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2130 then
+        H.wait(b,v,2130)
+        H.timeline_spawn(b,0,5,304.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2150 then
+        H.wait(b,v,2150)
+        H.timeline_spawn(b,0,5,336.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2170 then
+        H.wait(b,v,2170)
+        H.timeline_spawn(b,0,5,368.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2190 then
+        H.wait(b,v,2190)
+        H.timeline_spawn(b,0,5,400.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2220 then
+        H.wait(b,v,2220)
+        H.timeline_spawn(b,0,5,16.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2240 then
+        H.wait(b,v,2240)
+        H.timeline_spawn(b,0,5,48.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2260 then
+        H.wait(b,v,2260)
+        H.timeline_spawn(b,0,5,80.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2280 then
+        H.wait(b,v,2280)
+        H.timeline_spawn(b,0,5,112.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2300 then
+        H.wait(b,v,2300)
+        H.timeline_spawn(b,0,5,144.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2320 then
+        H.wait(b,v,2320)
+        H.timeline_spawn(b,0,5,176.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2340 then
+        H.wait(b,v,2340)
+        H.timeline_spawn(b,0,5,208.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2360 then
+        H.wait(b,v,2360)
+        H.timeline_spawn(b,0,5,240.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2380 then
+        H.wait(b,v,2380)
+        H.timeline_spawn(b,0,5,272.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2400 then
+        H.wait(b,v,2400)
+        H.timeline_spawn(b,0,5,304.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2420 then
+        H.wait(b,v,2420)
+        H.timeline_spawn(b,0,5,336.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2440 then
+        H.wait(b,v,2440)
+        H.timeline_spawn(b,0,5,368.0,-48.0,0.0,100,1,2000)
+    end
+    if v.epoch<=2460 then
+        H.wait(b,v,2460)
+        H.timeline_spawn(b,0,5,400.0,-48.0,0.0,100,2,2000)
+    end
+    if v.epoch<=2660 then
+        H.wait(b,v,2660)
+        H.timeline_spawn(b,0,1,192.0,-48.0,0.0,800,2,2000)
+    end
+    if v.epoch<=2780 then
+        H.wait(b,v,2780)
+        H.timeline_spawn(b,0,1,32.0,-48.0,0.0,600,2,2000)
+        H.timeline_spawn(b,0,1,352.0,-48.0,0.0,600,2,2000)
+    end
+    if v.epoch<=2900 then
+        H.wait(b,v,2900)
+        H.timeline_spawn(b,0,2,192.0,-48.0,0.0,800,2,2000)
+    end
+    if v.epoch<=3020 then
+        H.wait(b,v,3020)
+        H.timeline_spawn(b,0,3,128.0,-48.0,0.0,800,2,2000)
+    end
+    if v.epoch<=3140 then
+        H.wait(b,v,3140)
+        H.timeline_spawn(b,0,2,256.0,-48.0,0.0,800,2,2000)
+    end
+    if v.epoch<=3260 then
+        H.wait(b,v,3260)
+        H.timeline_spawn(b,0,3,192.0,-48.0,0.0,800,2,2000)
+    end
+    if v.epoch<=3740 then
+        H.wait(b,v,3740)
+        H.timeline_spawn(b,0,4,192.0,-16.0,0.0,500,2,2000)
+    end
+    H.wait(b,v,4740)
+    H.erase(b)
+end
+
+-- Extra道中·后半：原时间轴 4743..8593，206 次创建。
+P[7]["road_after"]=function(b,v)
+    if v.epoch<=120 then
+        H.wait(b,v,120)
+        H.timeline_spawn(b,0,6,64.0,-48.0,0.0,400,2,2000)
+    end
+    if v.epoch<=150 then
+        H.wait(b,v,150)
+        H.timeline_spawn(b,2,6,320.0,-48.0,0.0,400,2,2000)
+    end
+    if v.epoch<=180 then
+        H.wait(b,v,180)
+        H.timeline_spawn(b,0,6,192.0,-48.0,0.0,400,2,2000)
+    end
+    if v.epoch<=270 then
+        H.wait(b,v,270)
+        H.timeline_spawn(b,0,7,-32.0,96.0,0.0,400,1,2000)
+    end
+    if v.epoch<=280 then
+        H.wait(b,v,280)
+        H.timeline_spawn(b,2,7,416.0,96.0,0.0,400,1,2000)
+    end
+    if v.epoch<=290 then
+        H.wait(b,v,290)
+        H.timeline_spawn(b,2,6,256.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=300 then
+        H.wait(b,v,300)
+        H.timeline_spawn(b,0,6,128.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=390 then
+        H.wait(b,v,390)
+        H.timeline_spawn(b,2,7,416.0,128.0,0.0,400,1,2000)
+    end
+    if v.epoch<=400 then
+        H.wait(b,v,400)
+        H.timeline_spawn(b,0,7,-32.0,128.0,0.0,400,1,2000)
+    end
+    if v.epoch<=410 then
+        H.wait(b,v,410)
+        H.timeline_spawn(b,2,7,416.0,64.0,0.0,400,1,2000)
+    end
+    if v.epoch<=420 then
+        H.wait(b,v,420)
+        H.timeline_spawn(b,0,7,-32.0,64.0,0.0,400,1,2000)
+    end
+    if v.epoch<=430 then
+        H.wait(b,v,430)
+        H.timeline_spawn(b,2,6,240.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=440 then
+        H.wait(b,v,440)
+        H.timeline_spawn(b,0,6,144.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=500 then
+        H.wait(b,v,500)
+        H.timeline_spawn(b,2,6,224.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=505 then
+        H.wait(b,v,505)
+        H.timeline_spawn(b,0,6,160.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=510 then
+        H.wait(b,v,510)
+        H.timeline_spawn(b,2,6,256.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=515 then
+        H.wait(b,v,515)
+        H.timeline_spawn(b,0,6,128.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=520 then
+        H.wait(b,v,520)
+        H.timeline_spawn(b,2,6,288.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=525 then
+        H.wait(b,v,525)
+        H.timeline_spawn(b,0,6,96.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=530 then
+        H.wait(b,v,530)
+        H.timeline_spawn(b,2,6,320.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=535 then
+        H.wait(b,v,535)
+        H.timeline_spawn(b,0,6,64.0,-48.0,0.0,400,1,2000)
+    end
+    if v.epoch<=565 then
+        H.wait(b,v,565)
+        H.timeline_spawn(b,2,7,416.0,96.0,0.0,400,1,2000)
+    end
+    if v.epoch<=570 then
+        H.wait(b,v,570)
+        H.timeline_spawn(b,0,7,-32.0,96.0,0.0,400,1,2000)
+    end
+    if v.epoch<=575 then
+        H.wait(b,v,575)
+        H.timeline_spawn(b,2,7,416.0,128.0,0.0,400,1,2000)
+    end
+    if v.epoch<=580 then
+        H.wait(b,v,580)
+        H.timeline_spawn(b,0,7,-32.0,128.0,0.0,400,1,2000)
+    end
+    if v.epoch<=585 then
+        H.wait(b,v,585)
+        H.timeline_spawn(b,2,7,416.0,160.0,0.0,400,1,2000)
+    end
+    if v.epoch<=590 then
+        H.wait(b,v,590)
+        H.timeline_spawn(b,0,7,-32.0,160.0,0.0,400,1,2000)
+    end
+    if v.epoch<=595 then
+        H.wait(b,v,595)
+        H.timeline_spawn(b,2,7,416.0,192.0,0.0,400,1,2000)
+    end
+    if v.epoch<=600 then
+        H.wait(b,v,600)
+        H.timeline_spawn(b,0,7,-32.0,192.0,0.0,400,1,2000)
+    end
+    if v.epoch<=605 then
+        H.wait(b,v,605)
+        H.timeline_spawn(b,2,7,416.0,224.0,0.0,400,1,2000)
+    end
+    if v.epoch<=610 then
+        H.wait(b,v,610)
+        H.timeline_spawn(b,0,7,-32.0,224.0,0.0,400,1,2000)
+    end
+    if v.epoch<=730 then
+        H.wait(b,v,730)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=745 then
+        H.wait(b,v,745)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=760 then
+        H.wait(b,v,760)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=775 then
+        H.wait(b,v,775)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=790 then
+        H.wait(b,v,790)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=805 then
+        H.wait(b,v,805)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=820 then
+        H.wait(b,v,820)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=835 then
+        H.wait(b,v,835)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=850 then
+        H.wait(b,v,850)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=865 then
+        H.wait(b,v,865)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=880 then
+        H.wait(b,v,880)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=895 then
+        H.wait(b,v,895)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=910 then
+        H.wait(b,v,910)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=925 then
+        H.wait(b,v,925)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=940 then
+        H.wait(b,v,940)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=955 then
+        H.wait(b,v,955)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=970 then
+        H.wait(b,v,970)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=980 then
+        H.wait(b,v,980)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=990 then
+        H.wait(b,v,990)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1000 then
+        H.wait(b,v,1000)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1010 then
+        H.wait(b,v,1010)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1020 then
+        H.wait(b,v,1020)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1030 then
+        H.wait(b,v,1030)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1040 then
+        H.wait(b,v,1040)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1050 then
+        H.wait(b,v,1050)
+        H.timeline_spawn(b,0,8,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,8,64.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1060 then
+        H.wait(b,v,1060)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1070 then
+        H.wait(b,v,1070)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1080 then
+        H.wait(b,v,1080)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1090 then
+        H.wait(b,v,1090)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1100 then
+        H.wait(b,v,1100)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1110 then
+        H.wait(b,v,1110)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=1120 then
+        H.wait(b,v,1120)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=1130 then
+        H.wait(b,v,1130)
+        H.timeline_spawn(b,2,8,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,8,352.0,-48.0,0.0,20,2,2000)
+    end
+    if v.epoch<=1250 then
+        H.wait(b,v,1250)
+        H.timeline_spawn(b,4,10,-999.0,32.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1310 then
+        H.wait(b,v,1310)
+        H.timeline_spawn(b,4,11,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1370 then
+        H.wait(b,v,1370)
+        H.timeline_spawn(b,4,12,-999.0,80.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1430 then
+        H.wait(b,v,1430)
+        H.timeline_spawn(b,4,13,-999.0,48.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1490 then
+        H.wait(b,v,1490)
+        H.timeline_spawn(b,4,14,-999.0,128.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1610 then
+        H.wait(b,v,1610)
+        H.timeline_spawn(b,4,10,-999.0,96.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1660 then
+        H.wait(b,v,1660)
+        H.timeline_spawn(b,4,11,-999.0,80.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1710 then
+        H.wait(b,v,1710)
+        H.timeline_spawn(b,4,12,-999.0,32.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1760 then
+        H.wait(b,v,1760)
+        H.timeline_spawn(b,4,13,-999.0,48.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1810 then
+        H.wait(b,v,1810)
+        H.timeline_spawn(b,4,14,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1930 then
+        H.wait(b,v,1930)
+        H.timeline_spawn(b,4,10,-999.0,32.0,0.0,800,1,2000)
+    end
+    if v.epoch<=1970 then
+        H.wait(b,v,1970)
+        H.timeline_spawn(b,4,11,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2010 then
+        H.wait(b,v,2010)
+        H.timeline_spawn(b,4,12,-999.0,80.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2050 then
+        H.wait(b,v,2050)
+        H.timeline_spawn(b,4,13,-999.0,128.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2090 then
+        H.wait(b,v,2090)
+        H.timeline_spawn(b,4,14,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2210 then
+        H.wait(b,v,2210)
+        H.timeline_spawn(b,4,10,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2240 then
+        H.wait(b,v,2240)
+        H.timeline_spawn(b,4,11,-999.0,128.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2270 then
+        H.wait(b,v,2270)
+        H.timeline_spawn(b,4,12,-999.0,96.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2300 then
+        H.wait(b,v,2300)
+        H.timeline_spawn(b,4,13,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2330 then
+        H.wait(b,v,2330)
+        H.timeline_spawn(b,4,14,-999.0,32.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2630 then
+        H.wait(b,v,2630)
+        H.timeline_spawn(b,4,10,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2640 then
+        H.wait(b,v,2640)
+        H.timeline_spawn(b,4,11,-999.0,128.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2650 then
+        H.wait(b,v,2650)
+        H.timeline_spawn(b,4,12,-999.0,96.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2660 then
+        H.wait(b,v,2660)
+        H.timeline_spawn(b,4,13,-999.0,64.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2670 then
+        H.wait(b,v,2670)
+        H.timeline_spawn(b,4,14,-999.0,32.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2680 then
+        H.wait(b,v,2680)
+        H.timeline_spawn(b,4,10,-999.0,128.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2690 then
+        H.wait(b,v,2690)
+        H.timeline_spawn(b,4,13,-999.0,80.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2700 then
+        H.wait(b,v,2700)
+        H.timeline_spawn(b,4,14,-999.0,70.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2710 then
+        H.wait(b,v,2710)
+        H.timeline_spawn(b,4,10,-999.0,16.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2720 then
+        H.wait(b,v,2720)
+        H.timeline_spawn(b,4,11,-999.0,96.0,0.0,800,1,2000)
+    end
+    if v.epoch<=2730 then
+        H.wait(b,v,2730)
+        H.timeline_spawn(b,4,12,-999.0,80.0,0.0,800,1,2000)
+    end
+    if v.epoch<=3050 then
+        H.wait(b,v,3050)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3065 then
+        H.wait(b,v,3065)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3080 then
+        H.wait(b,v,3080)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3095 then
+        H.wait(b,v,3095)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3110 then
+        H.wait(b,v,3110)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3125 then
+        H.wait(b,v,3125)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3140 then
+        H.wait(b,v,3140)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3155 then
+        H.wait(b,v,3155)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3170 then
+        H.wait(b,v,3170)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3185 then
+        H.wait(b,v,3185)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3200 then
+        H.wait(b,v,3200)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3215 then
+        H.wait(b,v,3215)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3230 then
+        H.wait(b,v,3230)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3245 then
+        H.wait(b,v,3245)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3260 then
+        H.wait(b,v,3260)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3275 then
+        H.wait(b,v,3275)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3290 then
+        H.wait(b,v,3290)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3300 then
+        H.wait(b,v,3300)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3310 then
+        H.wait(b,v,3310)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3320 then
+        H.wait(b,v,3320)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3330 then
+        H.wait(b,v,3330)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3340 then
+        H.wait(b,v,3340)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3350 then
+        H.wait(b,v,3350)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3360 then
+        H.wait(b,v,3360)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3370 then
+        H.wait(b,v,3370)
+        H.timeline_spawn(b,0,9,32.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,0,9,64.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3380 then
+        H.wait(b,v,3380)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3390 then
+        H.wait(b,v,3390)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3400 then
+        H.wait(b,v,3400)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3410 then
+        H.wait(b,v,3410)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3420 then
+        H.wait(b,v,3420)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3430 then
+        H.wait(b,v,3430)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,0,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,0,2000)
+    end
+    if v.epoch<=3440 then
+        H.wait(b,v,3440)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,1,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,1,2000)
+    end
+    if v.epoch<=3450 then
+        H.wait(b,v,3450)
+        H.timeline_spawn(b,2,9,320.0,-48.0,0.0,20,2,2000)
+        H.timeline_spawn(b,2,9,352.0,-48.0,0.0,20,5,2000)
+    end
+    H.wait(b,v,3850)
+    H.erase(b)
 end
 
 -- 卡表只注册实际 L / Extra 分支；保留帕秋莉四条机体路线的完整原作顺序。
@@ -15100,6 +25621,286 @@ end
 
 do
 
+    local meta={id=4000,group=18,stage=1,sub="road_before",road=true,part="before",frozen=false,base=0,ending=2008,timeout=2008,epoch=0,invul=2008,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=2}
+
+    boss.Define("18a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("一面道中·前半",33.46666666666667,33.46666666666667,33.46666666666667,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"18a"}},LEVEL,"一面道中·前半",4000)
+
+end
+
+do
+
+    local meta={id=4001,group=19,stage=1,sub="road_after",road=true,part="after",frozen=false,base=2008,ending=5278,timeout=3270,epoch=0,invul=3270,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=2}
+
+    boss.Define("19a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("一面道中·后半",54.5,54.5,54.5,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"19a"}},LEVEL,"一面道中·后半",4001)
+
+end
+
+do
+
+    local meta={id=4002,group=20,stage=2,sub="road_before",road=true,part="before",frozen=false,base=0,ending=2588,timeout=2588,epoch=0,invul=2588,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=4}
+
+    boss.Define("20a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("二面道中·前半",43.13333333333333,43.13333333333333,43.13333333333333,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"20a"}},LEVEL,"二面道中·前半",4002)
+
+end
+
+do
+
+    local meta={id=4003,group=21,stage=2,sub="road_after",road=true,part="after",frozen=false,base=2588,ending=5983,timeout=3395,epoch=0,invul=3395,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=4}
+
+    boss.Define("21a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("二面道中·后半",56.583333333333336,56.583333333333336,56.583333333333336,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"21a"}},LEVEL,"二面道中·后半",4003)
+
+end
+
+do
+
+    local meta={id=4004,group=22,stage=3,sub="road_before",road=true,part="before",frozen=true,base=0,ending=3804,timeout=3804,epoch=0,invul=3804,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=6}
+
+    boss.Define("22a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("三面道中·前半",63.4,63.4,63.4,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"22a"}},LEVEL,"三面道中·前半",4004)
+
+end
+
+do
+
+    local meta={id=4005,group=23,stage=3,sub="road_after",road=true,part="after",frozen=true,base=3805,ending=5854,timeout=2049,epoch=0,invul=2049,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=6}
+
+    boss.Define("23a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("三面道中·后半",34.15,34.15,34.15,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"23a"}},LEVEL,"三面道中·后半",4005)
+
+end
+
+do
+
+    local meta={id=4006,group=24,stage=4,sub="road_before",road=true,part="before",frozen=false,base=0,ending=4132,timeout=4132,epoch=0,invul=4132,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=8}
+
+    boss.Define("24a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("四面道中·前半",68.86666666666666,68.86666666666666,68.86666666666666,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"24a"}},LEVEL,"四面道中·前半",4006)
+
+end
+
+do
+
+    local meta={id=4007,group=25,stage=4,sub="road_after",road=true,part="after",frozen=false,base=4132,ending=10694,timeout=6562,epoch=0,invul=6562,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=8}
+
+    boss.Define("25a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("四面道中·后半",109.36666666666666,109.36666666666666,109.36666666666666,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"25a"}},LEVEL,"四面道中·后半",4007)
+
+end
+
+do
+
+    local meta={id=4008,group=26,stage=5,sub="road_before",road=true,part="before",frozen=false,base=0,ending=3372,timeout=3372,epoch=0,invul=3372,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=10}
+
+    boss.Define("26a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("五面道中·前半",56.2,56.2,56.2,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"26a"}},LEVEL,"五面道中·前半",4008)
+
+end
+
+do
+
+    local meta={id=4009,group=27,stage=5,sub="road_after",road=true,part="after",frozen=false,base=3374,ending=7704,timeout=4330,epoch=0,invul=4330,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=10}
+
+    boss.Define("27a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("五面道中·后半",72.16666666666667,72.16666666666667,72.16666666666667,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"27a"}},LEVEL,"五面道中·后半",4009)
+
+end
+
+do
+
+    local meta={id=4010,group=28,stage=6,sub="road_before",road=true,part="before",frozen=true,base=0,ending=2564,timeout=2564,epoch=0,invul=2564,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=12}
+
+    boss.Define("28a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("六面道中·前半",42.733333333333334,42.733333333333334,42.733333333333334,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"28a"}},LEVEL,"六面道中·前半",4010)
+
+end
+
+do
+
+    local meta={id=4011,group=29,stage=6,sub="road_after",road=true,part="after",frozen=true,base=2567,ending=3167,timeout=600,epoch=0,invul=600,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=12}
+
+    boss.Define("29a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("六面道中·后半（入场等待）",10.0,10.0,10.0,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"29a"}},LEVEL,"六面道中·后半（入场等待）",4011)
+
+end
+
+do
+
+    local meta={id=4012,group=30,stage=7,sub="road_before",road=true,part="before",frozen=true,base=0,ending=4740,timeout=4740,epoch=0,invul=4740,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=13}
+
+    boss.Define("30a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("Extra道中·前半",79.0,79.0,79.0,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"30a"}},LEVEL,"Extra道中·前半",4012)
+
+end
+
+do
+
+    local meta={id=4013,group=31,stage=7,sub="road_after",road=true,part="after",frozen=true,base=4743,ending=8593,timeout=3850,epoch=0,invul=3850,hp=10000000,threshold=0,bounds=nil,entry_x=0,entry_y=400,hitbox={0,0},mid_group=13}
+
+    boss.Define("31a","道中","TH06_0",TH06_bg,{0,400},nil,"img_void",LEVEL)
+
+    local card=boss.card.New("Extra道中·后半",64.16666666666667,64.16666666666667,64.16666666666667,10000000)
+
+    card.th06_source=meta
+
+    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end
+
+    function card:init() H.road_init(self,meta) end
+
+    function card:del() H.road_del(self) end
+
+    boss.card.add({{card,"31a"}},LEVEL,"Extra道中·后半",4013)
+
+end
+
+do
+
     local remilia=_editor_boss["1a"..LEVEL]
 
     if remilia and remilia.cards then
@@ -15114,7 +25915,7 @@ do
 
 end
 
-class.boss_order={2,3,4,5,6,7,8,9,15,16,17,10,11,12,1,13,14}
+class.boss_order={18,2,19,3,20,4,21,5,22,6,23,7,24,8,25,9,15,16,17,26,10,27,11,28,12,29,1,30,13,31,14}
 
 -- TH06_EXPANDED_END
 

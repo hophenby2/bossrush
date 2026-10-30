@@ -81,12 +81,13 @@ return function(H,P,data)
             elseif op==92 then H.laser_cancel(b,get(x[1]))
             elseif op==93 then H.cancel(b);H.reset_rank(a);H.trace(b,'spell',x[2])
             elseif op==94 then H.trace(b,'spell_end')
-            elseif op==95 then H.spawn(b,stage,get(x[1]),get(x[2]),get(x[3]),get(x[4]),get(x[5]))
+            elseif op==95 then H.spawn(b,stage,get(x[1]),get(x[2]),get(x[3]),get(x[4]),get(x[5]),get(x[6]),get(x[7]))
             elseif op==96 then H.clear_helpers(b)
             elseif op==97 then H.sprite(b,get(x[1]))
             elseif op==103 then b.a,b.b,b.rect=get(x[1])/2,get(x[2])/2,true
             elseif op==104 then a.collidable=x[1]~=0
             elseif op==105 then a.damageable=x[1]~=0
+            elseif op==107 then a.death_mode=get(x[1])
             elseif op==108 then a.death=P[stage][x[1]]
             elseif op==111 then if not a.main then b.hp=get(x[1]) end
             elseif op==112 then a.phase=get(x[1])
@@ -97,6 +98,7 @@ return function(H,P,data)
             elseif op==117 then a.interactable=x[1]~=0
             elseif op==121 then H.extra(b,v,x[1],get(x[2]),false)
             elseif op==122 then v.repeat_func=x[1]>=0 and x[1] or nil
+            elseif op==124 then H.drop_item(b,get(x[1]))
             elseif op==131 then a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=get(x[1]),get(x[2]),get(x[3]),get(x[4]),get(x[5]),get(x[6])
             elseif op==132 then a.invisible=x[1]~=0
             elseif op==133 then a.phase=0
@@ -106,9 +108,25 @@ return function(H,P,data)
         end
     end
     for stage,subs in pairs(data) do
+      if type(stage)=='number' then
         for sub in pairs(subs) do
             local st,ss=stage,sub
             P[stage][sub]=function(b,v) return run(st,ss,b,v) end
+        end
+      end
+    end
+    for _,road in ipairs(data.roads or {}) do
+        local r=road
+        P[r.stage][r.sub]=function(b,v)
+            for _,event in ipairs(r.spawns) do
+                local time=event.t-r.base
+                if time>=v.epoch then
+                    H.wait(b,v,time)
+                    H.timeline_spawn(b,event.op,event.sub,unpack(event.a))
+                end
+            end
+            H.wait(b,v,r.timeout)
+            H.erase(b)
         end
     end
 end

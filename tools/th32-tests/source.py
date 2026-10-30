@@ -10,7 +10,7 @@ for start,end,fmt in [(10,12,'i'),(13,17,'iii'),(18,19,'i'),(20,24,'iff'),(29,34
 
 class Source:
     def __init__(self,root):
-        self.stages={};self.hashes={};self.timeline={}
+        self.stages={};self.hashes={};self.timeline={};self.timeline_records={}
         for stage in range(1,8):
             data=(Path(root)/f'ecldata{stage}.ecl').read_bytes()
             self.hashes[stage]=hashlib.sha256(data).hexdigest()
@@ -31,13 +31,19 @@ class Source:
                     pos+=size
                 subs[sub]=rows
             self.stages[stage]=subs
-            pos=struct.unpack_from('<I',data,4)[0];entries=[]
+            pos=struct.unpack_from('<I',data,4)[0];entries=[];records=[]
             while pos+8<=len(data):
                 t,sub,op,size=struct.unpack_from('<4h',data,pos)
                 if t<0 or size<8:break
-                if op in (0,2,4,6):entries.append((t,sub,struct.unpack_from('<fffhhI',data,pos+8)))
+                if op<8:
+                    if op%2==0:args=list(struct.unpack_from('<fffhhI',data,pos+8))
+                    else:args=[*struct.unpack_from('<fff',data,pos+8),-1,-1,-1]
+                    entries.append((t,sub,tuple(args)))
+                else:args=list(struct.unpack_from('<'+'i'*((size-8)//4),data,pos+8))
+                records.append(dict(t=t,sub=sub,op=op,a=args,pos=pos,size=size))
                 pos+=size
             self.timeline[stage]=entries
+            self.timeline_records[stage]=records
     def active(self,stage,sub):
         return [r for r in self.stages[stage][sub] if r['mask']&(16 if stage==7 else 8)]
 
@@ -147,3 +153,36 @@ def catalogue(source):
         if c['stage']==6 and c['sub'] in preserved:c['id']=preserved[c['sub']];c['manual']=True
         else:c['id']=new;new+=1
     return cards
+
+
+MID_BOSS={1:8,2:20,3:9,4:21,5:12,6:8,7:16}
+MAIN_BOSS={1:10,2:21,3:17,4:26,5:21,6:15,7:31}
+MID_GROUP={1:2,2:4,3:6,4:8,5:10,6:12,7:13}
+
+def road_catalogue(source):
+    """按主时间轴的中 Boss 出生/等待边界拆分；不把 Boss 宿主混入普通敌机。"""
+    roads=[]
+    for stage in range(1,8):
+        rows=source.timeline_records[stage]
+        middle=next(r for r in rows if r['op']<8 and r['sub']==MID_BOSS[stage])
+        boss=next(r for r in rows if r['op']<8 and r['sub']==MAIN_BOSS[stage])
+        gates=[r for r in rows if middle['t']<=r['t']<boss['t'] and r['op']==12]
+        # 三、六、Extra 面明确 WAIT_FOR_BOSS；其余轴在中 Boss 期间仍推进并抑制生成。
+        frozen=bool(gates)
+        base=gates[0]['t'] if frozen else middle['t']
+        # 五面先等对话再用 IRQ 启动 Sub13，原生攻击时钟从此帧开始。
+        if not frozen:
+            interrupts=[r for r in rows if middle['t']<=r['t']<middle['t']+20 and r['op']==10]
+            if interrupts:base=interrupts[-1]['t']
+        ending=min([boss['t']]+[r['t'] for r in rows if r['op']==8 and r['a']==[] and r['sub']==0 and r['t']>base])
+        for part,start,end in [('before',0,middle['t']),('after',base,ending)]:
+            spawns=[dict(r) for r in rows if r['op']<8 and start<=r['t']<end and r['sub'] not in (MID_BOSS[stage],MAIN_BOSS[stage])]
+            index=(stage-1)*2+(part=='after')
+            label=('Extra' if stage==7 else ('一','二','三','四','五','六')[stage-1]+'面')+'道中·'+('前半' if part=='before' else '后半')
+            if not spawns:label+='（入场等待）'
+            roads.append(dict(id=4000+index,group=18+index,stage=stage,sub='road_'+part,road=True,part=part,
+                frozen=frozen,base=start,ending=end,timeout=end-start,epoch=0,invul=end-start,hp=10000000,
+                threshold=0,bounds=None,entry_x=0,entry_y=400,hitbox=(0,0),name=label,label=label,
+                mid_group=MID_GROUP[stage],spawns=spawns))
+    assert len(roads)==14 and sum(len(r['spawns']) for r in roads)==2177
+    return roads

@@ -5,14 +5,20 @@ function T.install()
     scoredata.version=ui.version
     local expected={369,3802,3805,3808,3811}
     for id=3900,3985 do expected[#expected+1]=id end
+    for id=4000,4013 do expected[#expected+1]=id end
     local wanted={};for _,id in ipairs(expected) do wanted[id]=true end
     local limit=tonumber(os.getenv('TH32_ENGINE_FRAMES')) or 600
     local speed=tonumber(os.getenv('TH32_ENGINE_SPEED')) or 12
     local selected=tonumber(os.getenv('TH32_ENGINE_CARD') or '')
+    local shoot=os.getenv('TH32_ENGINE_SHOOT')=='1'
     if selected then wanted={[selected]=true};expected={selected} end
     local screenshots={[3901]=true,[3910]=true,[3917]=true,[3922]=true,[3955]=true,[3970]=true,[3972]=true,[3974]=true,[3982]=true,[3984]=true,[3985]=true}
     local seen,records,captured={},{},{}
     local current,frames,peak,actors,lasers=nil,0,0,0,0
+    local defeats,drops=0,0
+    TH32_NATIVE_TRACE=function(b,kind)
+        if kind=='enemy_defeat' then defeats=defeats+1 elseif kind=='drop' then drops=drops+1 end
+    end
     local started,complete,settle=false,false,0
     local original=FrameFunc
     local function save()
@@ -22,7 +28,7 @@ function T.install()
     local function finish_current()
         if current and not seen[current] then
             seen[current]=true
-            records[#records+1]={id=current,frames=frames,peak=peak,actors=actors,lasers=lasers}
+            records[#records+1]={id=current,frames=frames,peak=peak,actors=actors,lasers=lasers,defeats=defeats,drops=drops}
             lstg.SystemLog(string.format('TH32_ENGINE_CARD: id=%d frames=%d peak=%d actors=%d lasers=%d',current,frames,peak,actors,lasers))
             save()
             if #records==#expected then complete=true end
@@ -40,10 +46,10 @@ function T.install()
             return false
         end
         for _=1,speed do
-            if player and IsValid(player) then player.protect=600;player.lock=true end
+            if player and IsValid(player) then player.protect=600;player.lock=not shoot end
             if AndroidInput then
-                AndroidInput.keys[setting.keys.shoot]=false
-                if AndroidInput.toggles then AndroidInput.toggles.shoot=false end
+                AndroidInput.keys[setting.keys.shoot]=shoot
+                if AndroidInput.toggles then AndroidInput.toggles.shoot=shoot end
             end
             local quit=original()
             local scene=stage.current_stage
@@ -72,7 +78,7 @@ function T.install()
             if started and b and IsValid(b) and b.current_card and b.is_combat then
                 local id=b.current_card.card_id
                 if id~=current then
-                    finish_current();current=nil;frames,peak,actors,lasers=0,0,0,0
+                    finish_current();current=nil;frames,peak,actors,lasers=0,0,0,0;defeats,drops=0,0
                     if wanted[id] then current=id end
                 end
                 if wanted[id] and b.th06 then

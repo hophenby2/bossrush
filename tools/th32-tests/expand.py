@@ -4,7 +4,7 @@ import argparse
 import bisect
 import json
 from pathlib import Path
-from source import Source,catalogue
+from source import Source,catalogue,road_catalogue
 
 REG={-10001:'v.i0',-10002:'v.i1',-10003:'v.i2',-10004:'v.i3',-10005:'v.f0',-10006:'v.f1',-10007:'v.f2',-10008:'v.f3',-10009:'v.c0',-10010:'v.c1',-10011:'v.c2',-10012:'v.c3',-10013:'(a.stage==7 and 4 or 3)',-10014:'a.rank',-10015:'(b.x+192)',-10016:'(224-b.y)',-10017:'a.z',-10018:'(player.x+192)',-10019:'(224-player.y)',-10020:'0',-10021:'H.player_angle(b)',-10022:'a.phase',-10023:'H.distance(b)',-10024:'H.life(b)',-10025:'(a.meta.shot or 0)'}
 COND={29:'<',30:'<=',31:'==',32:'>',33:'>=',34:'~='}
@@ -33,9 +33,11 @@ def assignment(target,expr):
     if target==-10024:return f'if not a.main then b.hp={expr} end'
     return f'{dst(target)}={expr}'
 
-def reachable(source,cards):
+def reachable(source,cards,roads=None):
     needed={st:set() for st in range(1,8)}
     for c in cards:needed[c['stage']].add(c['sub'])
+    for road in roads or []:
+        for spawn in road['spawns']:needed[road['stage']].add(spawn['sub'])
     changed=True
     while changed:
         changed=False
@@ -98,7 +100,8 @@ def statement(stage,r,target):
     if op==92:return [f'H.laser_cancel(b,{value(x[0])})'],False
     if op==93:return [f'H.cancel(b);H.reset_rank(a);H.trace(b,"spell",{x[1]})'],False
     if op==94:return ['H.trace(b,"spell_end")'],False
-    if op==95:return [f'H.spawn(b,{stage},{vals(x[:5])})'],False
+    if op==95:return [f'H.spawn(b,{stage},{vals(x)})'],False
+    if op==107:return [f'a.death_mode={value(x[0])}'],False
     if op==96:return ['H.clear_helpers(b)'],False
     if op==97:return [f'H.sprite(b,{value(x[0])})'],False
     if op==103:return [f'b.a,b.b,b.rect=({value(x[0])})/2,({value(x[1])})/2,true'],False
@@ -112,6 +115,7 @@ def statement(stage,r,target):
     if op==116:return [f'a.timeout_fn=P[{stage}][{x[0]}]'],False
     if op==121:return [f'H.extra(b,v,{x[0]},{value(x[1])},false)'],False
     if op==122:return [f'v.repeat_func={lit(x[0]) if x[0]>=0 else "nil"}'],False
+    if op==124:return [f'H.drop_item(b,{value(x[0])})'],False
     if op==131:return [f'a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi={vals(x)}'],False
     if op==133:return ['a.phase=0'],False
     if op==134:return ['a.lasers={}'],False
@@ -152,12 +156,26 @@ def routine(source,stage,sub):
 BOSSES={2:('露米娅·中 Boss','Rumia'),3:('露米娅','Rumia'),4:('大妖精','Daiyousei'),5:('琪露诺','Chiruno'),6:('红美铃·中 Boss','Meirin'),7:('红美铃','Meirin'),8:('小恶魔','Daiyousei'),9:('帕秋莉·灵梦Ａ路线','Knowledge'),15:('帕秋莉·灵梦Ｂ路线','Knowledge'),16:('帕秋莉·魔理沙Ａ路线','Knowledge'),17:('帕秋莉·魔理沙Ｂ路线','Knowledge'),10:('咲夜·五面中 Boss','Sakuya'),11:('十六夜咲夜','Sakuya'),12:('咲夜·六面中 Boss','Sakuya'),13:('帕秋莉·Extra','Knowledge'),14:('芙兰朵露·斯卡蕾特','Flandre')}
 ROUTES={9:'灵梦Ａ',15:'灵梦Ｂ',16:'魔理沙Ａ',17:'魔理沙Ｂ'}
 
+def road_routine(road):
+    out=[f'-- {road["label"]}：原时间轴 {road["base"]}..{road["ending"]}，{len(road["spawns"])} 次创建。',
+         f'P[{road["stage"]}][{lit(road["sub"])}]=function(b,v)']
+    groups={}
+    for row in road['spawns']:groups.setdefault(row['t']-road['base'],[]).append(row)
+    for time,rows in groups.items():
+        out += [f'    if v.epoch<={time} then',f'        H.wait(b,v,{time})']
+        for r in rows:out.append(f'        H.timeline_spawn(b,{r["op"]},{r["sub"]},{",".join(lit(x) for x in r["a"])})')
+        out.append('    end')
+    out += [f'    H.wait(b,v,{road["timeout"]})','    H.erase(b)','end']
+    return '\n'.join(out)
+
 def generate(source,cards):
     out=['-- TH06_EXPANDED_START','-- 此段由 tools/th32-tests/expand.py 从原生二进制离线展开；不要在游戏里载入原始 ECL。']
     for stage,digest in source.hashes.items():out.append(f'-- ecldata{stage}.ecl SHA-256：{digest}')
-    needed=reachable(source,cards)
+    roads=road_catalogue(source)
+    needed=reachable(source,cards,roads)
     for stage,subs in needed.items():
         for sub in sorted(subs):out.append(routine(source,stage,sub))
+    for road in roads:out.append(road_routine(road))
     out.append('-- 卡表只注册实际 L / Extra 分支；保留帕秋莉四条机体路线的完整原作顺序。')
     for group,(name,img) in BOSSES.items():
         bg='TH06_bg'
@@ -173,11 +191,21 @@ def generate(source,cards):
         '    card.th06_source=meta;card.th06_order=meta.order',
         '    function card:before() self.th06=nil end','    function card:init() H.card_init(self,meta) end','    function card:del() H.card_del(self) end',
         f'    boss.card.add({{{{card,"{c["group"]}a"}}}},LEVEL,{lit(label)},{c["id"]})','end']
+    for road in roads:
+        meta={k:v for k,v in road.items() if k not in('spawns','name','label')}
+        t=road['timeout']/60
+        out += ['do',f'    local meta={lit(meta)}',
+                f'    boss.Define("{road["group"]}a","道中","TH06_0",TH06_bg,{{0,400}},nil,"img_void",LEVEL)',
+                f'    local card=boss.card.New({lit(road["name"])},{t},{t},{t},10000000)',
+                '    card.th06_source=meta',
+                '    function card:before() self.th06=nil;self.NotPlayTimeOutSound=true;self.colli=false;self.no_hp_render=true end',
+                '    function card:init() H.road_init(self,meta) end','    function card:del() H.road_del(self) end',
+                f'    boss.card.add({{{{card,"{road["group"]}a"}}}},LEVEL,{lit(road["label"])},{road["id"]})','end']
     out += ['do','    local remilia=_editor_boss["1a"..LEVEL]','    if remilia and remilia.cards then',
             '        local order={'+','.join(f'[{c["id"]}]={c["order"]}' for c in cards if c['group']==1)+'}',
             '        for _,card in ipairs(remilia.cards) do card.th06_order=order[card.card_id] or 100 end',
             '        table.sort(remilia.cards,function(a,b) return a.th06_order<b.th06_order end)','    end','end',
-            'class.boss_order={2,3,4,5,6,7,8,9,15,16,17,10,11,12,1,13,14}',
+            'class.boss_order={18,2,19,3,20,4,21,5,22,6,23,7,24,8,25,9,15,16,17,26,10,27,11,28,12,29,1,30,13,31,14}',
             '-- TH06_EXPANDED_END']
     return '\n\n'.join(out)
 
@@ -194,6 +222,6 @@ def main():
             marker='\nend\n\nlocal function NewText('
             text=text.replace(marker,'\n'+out+'\n'+marker,1)
         path.write_text(text)
-    print(f'离线展开：{len(cards)} 段，{sum(bool(c["name"]) for c in cards)} 条符卡路线，{sum(not c["name"] for c in cards)} 段非符，{len(out.splitlines())} 行直接 Lua 代码')
+    print(f'离线展开：{len(cards)} 段 Boss 战、{len(road_catalogue(source))} 段道中，{len(out.splitlines())} 行直接 Lua 代码')
 
 if __name__=='__main__':main()

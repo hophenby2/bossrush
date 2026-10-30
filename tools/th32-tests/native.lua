@@ -9,6 +9,10 @@ _G.GROUP={GHOST=0,ENEMY=2,LASER=10};_G.LAYER={ENEMY=0,ENEMY_BULLET=0}
 _G.SetAttr=function(b,k,v) rawset(b,k,v) end
 _G.BossWalkImageSystem=function() return {SetImageInList=noop,frame=noop,render=noop} end
 _G.enemy={init=function(b,style,hp) b.hp=hp;b.maxhp=hp;b._wisys={frame=noop,render=noop};b._a=255;b._r=255;b._g=255;b._b=255 end,render=noop}
+_G.item={obj={}}
+for _,name in ipairs({'faith','point','addcharge','addmisscount','faith_minor'}) do
+    item.obj[name]={init=function(b,x,y) b.x,b.y=x,y end}
+end
 _G.object = {Preserve=noop,RawDel=function(b) b._live=false end, Del=function(b) b._live=false end}
 _G.IsValid = function(b) return b and b._live ~= false end
 _G.PlaySound = noop
@@ -51,7 +55,7 @@ _G.boss = {Define=function(key,name,bgm,bg,xy,sc,img,level) _editor_boss[key..le
     add=function(group,level,name,id) local c=group[1][1];c.card_id=id;cards[#cards+1]={card=c,id=id};table.insert(_editor_boss[group[1][2]..level].cards,c) end,
 }}
 dofile('mod/GAME/th32.lua')
-assert(#cards==92,'必须是 91 段 L/Extra 原作流程加原有自制卡')
+assert(#cards==106,'必须是 91 段 Boss 战、14 段道中和原有自制卡')
 
 if mode=='program' then
     local function up(fn,name)
@@ -78,6 +82,7 @@ if mode=='program' then
         local c=item.card
         if c.th06_source and (not selected or item.id==selected) then
             current=item.id;tasks,objects={},{};count,hash=0,5381
+            _G.stage={current_stage={}}
             math.randomseed(seed+item.id*7919)
             local b={x=0,y=384,hp=c.hp,maxhp=c.hp,_live=true,a=16,b=16,DMG_factor=1,_a=255}
             if c.frame then c.frame(b) end;c.before(b);c.init(b)
@@ -100,10 +105,10 @@ if mode=='program' then
                 for j=#objects,1,-1 do
                     local o=objects[j]
                     if not IsValid(o) then table.remove(objects,j)
-                    elseif o.th06_sprite then bullets=bullets+1 elseif o.th06_origin_x then lasers=lasers+1 elseif o.th06_actor then actors=actors+1 end
+                    elseif o.th06_origin_x then lasers=lasers+1 elseif o.th06_sprite then bullets=bullets+1 elseif o.th06_actor then actors=actors+1 end
                 end
                 peak,peaklasers,peakactors=math.max(peak,bullets),math.max(peaklasers,lasers),math.max(peakactors,actors)
-                assert(bullets<=640 and lasers<=64 and actors<=255,'对象池上限失效')
+                assert(bullets<=640 and lasers<=64 and actors<=256,string.format('对象池上限失效：卡 %d，弹 %d / 光 %d / 敌机 %d',item.id,bullets,lasers,actors))
                 if b.hp<=0 then break end
             end
             c.del(b)
@@ -298,6 +303,36 @@ if mode=='unit' then
     a.phase=0;H.extra(b,a.context,16,1,false);approx(a.context.f2,112);approx(a.context.f3,64)
     ran.Float=saved
     assert(frozen.rank_speed==false,'原作弹体不能叠加第二套全局弹速倍率')
+    local programs=getup(H.new_actor,'P')
+    local saved_program=programs[7][0]
+    local mirrored_at_birth
+    programs[7][0]=function(obj)
+        mirrored_at_birth=obj.th06_actor.mirrored
+        obj.th06_actor.axisx,obj.th06_actor.axisy=3,-2
+    end
+    b,a,s=actor();s.road=true;s.road_drop_state={count=0,index=1}
+    local child=H.timeline_spawn(b,6,0,-999,-999,-999,30,1,300)
+    assert(not mirrored_at_birth and child.th06_actor.mirrored)
+    approx(child.x,-8);approx(child.y,16);approx(child.th06_actor.z,400)
+    H.actor_motion(child.th06_actor);approx(child.x,-11);approx(child.y,18)
+    child.hp=0;H.kill_actor(child.th06_actor)
+    assert(child.th06_actor.loot_done and child.th06_actor.dead and not IsValid(child))
+    programs[7][0]=saved_program
+    local road={}
+    for _,entry in ipairs(cards) do if entry.card.th06_source and entry.card.th06_source.road then road[entry.id]=entry.card.th06_source end end
+    local function carrier() return {x=0,y=400,hp=10000000,maxhp=10000000,_live=true,a=0,b=0,DMG_factor=1,_a=255} end
+    _G.stage={current_stage={}}
+    local front=carrier();H.road_init(front,road[4000]);H.road_del(front)
+    for _=1,600 do H.road_mid_tick({stage=1,meta={group=2}}) end
+    local back=carrier();H.road_init(back,road[4001])
+    assert(back.th06_actor.context.epoch==600 and back.t3==2670 and not back._colli and back._a==0)
+    H.road_del(back)
+    _G.stage.current_stage={}
+    back=carrier();H.road_init(back,road[4001]);assert(back.th06_actor.context.epoch==0 and back.t3==3270);H.road_del(back)
+    front=carrier();H.road_init(front,road[4004]);H.road_del(front)
+    for _=1,600 do H.road_mid_tick({stage=3,meta={group=6}}) end
+    back=carrier();H.road_init(back,road[4005]);assert(back.th06_actor.context.epoch==0 and back.t3==2049);H.road_del(back)
+    print('通过：道中随机范围、首次执行后镜像、可击破和掉落、非冻结轴追时、冻结轴续接及独立练习')
     print('通过：连续转向、三次反弹、时停、冻结解冻、五角星、皇家烈焰、激光衍生、笼中鸟唤醒和最终符 HP/时间狂暴')
     print('通过：原生对象、24/32 帧出场、向量加速、曲率、全池衍生/唤醒、640 弹上限、一次反弹、48 段激光及清理')
     return
