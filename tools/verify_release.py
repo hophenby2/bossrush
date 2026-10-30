@@ -6,7 +6,7 @@ import argparse,hashlib,io,json,wave,zipfile
 GAME_PATHS=('THlib','Resources','mod','music','BadApple','shader','core.lua','launch','launch.lua','manual','Update.txt')
 
 def same(source,packed):
-    if source.suffix=='.lua':return source.read_text(encoding='utf-8-sig')==packed.decode('utf-8-sig')
+    if source.suffix=='.lua':return source.read_text(encoding='utf-8-sig')==packed.decode('utf-8-sig').replace('\r\n','\n').replace('\r','\n')
     if source.suffix.lower()=='.wav':
         with wave.open(str(source),'rb') as a,wave.open(io.BytesIO(packed),'rb') as b:
             return a.getparams()==b.getparams() and a.readframes(a.getnframes())==b.readframes(b.getnframes())
