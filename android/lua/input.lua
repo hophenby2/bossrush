@@ -15,7 +15,7 @@ end
 local buttons = {
     { key = 90, action = 'shoot', x = 853, y = 90, radius = 48, label = '射击', toggle = true },
     { key = 16, action = 'slow', x = 750, y = 92, radius = 40, label = '低速', toggle = true },
-    { key = 88, action = 'spell', x = 853, y = 200, radius = 40, label = '符卡' },
+    { key = 88, action = 'spell', x = 853, y = 200, radius = 40, label = 'Bomb' },
     { key = 67, action = 'special', x = 750, y = 200, radius = 40, label = '特殊' },
     { key = 27, x = 874, y = 488, radius = 30, label = '暂停' },
 }
@@ -40,6 +40,7 @@ end
 local function rebuild()
     local old, keys = I.keys, {}
     I.mouse.down = false
+    I.targetX, I.targetY = nil, nil
     if not I.menuMode() then
         for _,b in ipairs(buttons) do if b.toggle and I.toggles[b.action] then keys[buttonKey(b)]=true end end
     end
@@ -58,16 +59,19 @@ local function rebuild()
             if dy < -18 then move(keys, 'down', 40) end
             if dy > 18 then move(keys, 'up', 38) end
         elseif t.drag and t.player == player then
-            -- 相对拖拽只产生原有方向键，保留角色移速、碰撞、低速和录像的确定性。
-            local slow = keys[binding('slow', 16)] or (player.slow == 1)
-            local speed = slow and (player.lspeed or 2) or (player.hspeed or 4)
-            local dx, dy = t.targetX-player.x, t.targetY-player.y
-            local threshold = speed*0.5
-            if math.abs(dx) > threshold and math.abs(dy) > threshold then threshold = threshold*0.70710678 end
-            if dx < -threshold then move(keys, 'left', 37) end
-            if dx > threshold then move(keys, 'right', 39) end
-            if dy < -threshold then move(keys, 'down', 40) end
-            if dy > threshold then move(keys, 'up', 38) end
+            -- 目标单独写入逻辑输入，不再将任意拖拽方向量化为八方向按键。
+            I.targetX, I.targetY = t.targetX, t.targetY
+            -- 已有的一字节录像 / 关卡检查点仍沿用方向键，避免继续后改变帧格式。
+            if lstg.var and lstg.var.__input_version~=2 and not (GameNet and GameNet.client()) then
+                local slow=keys[binding('slow',16)] or player.slow==1
+                local threshold=(slow and (player.lspeed or 2) or (player.hspeed or 4))*.5
+                local dx,dy=t.targetX-player.x,t.targetY-player.y
+                if math.abs(dx)>threshold and math.abs(dy)>threshold then threshold=threshold*.70710678 end
+                if dx < -threshold then move(keys,'left',37) end
+                if dx > threshold then move(keys,'right',39) end
+                if dy < -threshold then move(keys,'down',40) end
+                if dy > threshold then move(keys,'up',38) end
+            end
         end
     end
     for key in pairs(keys) do if not old[key] then I.last = key end end
@@ -103,12 +107,11 @@ function I.touch(id, x, y, event)
                 end
             end
             if not t.button and not I.menuMode() then
-                if x < 235 and y < 255 then t.joystick = true
-                elseif inPlayfield(x, y) then
+                if inPlayfield(x, y) then
                     t.drag = true; t.player = player
                     t.targetX, t.targetY = player.x, player.y
                     if I.trace and lstg.SystemLog then lstg.SystemLog(string.format('BOSSRUSH_DRAG_BEGIN: player=%.3f,%.3f target=%.3f,%.3f',player.x,player.y,t.targetX,t.targetY)) end
-                end
+                elseif x < 235 and y < 255 then t.joystick = true end
                 if t.joystick or t.drag then
                     if I.movementId then t.joystick, t.drag, t.ignored = nil, nil, true
                     else I.movementId = id end
@@ -127,15 +130,30 @@ function I.touch(id, x, y, event)
     rebuild()
 end
 function I.reset(keepToggles)
-    I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil
+    I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.targetX, I.targetY = nil, nil
     if not keepToggles then I.toggles={} end
 end
-local previousMode
+-- 以 1/16 世界单位记录目标，触控、录像与联机使用相同的确定性坐标。
+function I.readMovement(out)
+    out.touch_x, out.touch_y = nil, nil
+    if I.targetX and not I.menuMode() then
+        out.touch_x = math.floor(I.targetX*16+0.5)/16
+        out.touch_y = math.floor(I.targetY*16+0.5)/16
+    end
+end
+local previousMode, previousStage, previousPlayer
 function I.beginFrame()
     local mode = I.menuMode()
     -- 普通暂停只释放触点并暂时屏蔽开关，继续时沿用；回标题 / 切后台则清除开关。
     if previousMode ~= nil and previousMode ~= mode then I.reset(true) end
-    if ext and ext.StageIsMenu() then I.toggles={} end
+    if ext and ext.StageIsMenu() then I.toggles={};previousStage,previousPlayer=nil,nil end
+    local currentStage = stage and stage.current_stage
+    -- 每次进入新关卡（含直接启动）默认低速、射击；暂停回来沿用玩家的开关。
+    if not mode and (previousStage ~= currentStage or previousPlayer ~= player) then
+        I.reset(true)
+        I.toggles.shoot, I.toggles.slow = true, true
+    end
+    if not mode then previousStage, previousPlayer = currentStage, player end
     previousMode = mode
     local t = I.movementId and I.touches[I.movementId]
     if t and t.drag then

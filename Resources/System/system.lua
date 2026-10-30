@@ -292,10 +292,12 @@ local achievement = ext.achievement
 local system = { }
 function system:init()
     self.frame4_ChargeAction = {
-        function()
+        function(owner,free)
+            local player=owner or player
+            local player_name=owner and (owner.class==reimu_player and 'reimu_player' or owner.class==marisa_player and 'marisa_player' or '') or self.player_name
             local y = player.y
             local rot = 0
-            if self.player_name == 'reimu_player' then
+            if player_name == 'reimu_player' then
                 local b = reimu_player.bullets.trail
                 local p = (lstg.var.man >= 80) and { 2, 0.7 } or { 1, 0.6 }
                 for _ = 1, 30 do
@@ -308,7 +310,7 @@ function system:init()
                     y = y + 384 / 29
                     rot = rot + 270 / 29
                 end
-            elseif self.player_name == 'marisa_player' then
+            elseif player_name == 'marisa_player' then
                 local b = marisa_player.bullets.missile
                 local p = (lstg.var.man >= 80) and { 1, 7, 1.9 } or { 0.5, 10, 1.8 }
                 for _ = 1, 40 do
@@ -324,11 +326,13 @@ function system:init()
             end
 
         end,
-        function()
-            lstg.var.charge = lstg.var.charge - 1
-            New(Circle_Attack, player.x, player.y, 80, { 255, 255, 255 }, 60, 0, true)
+        function(owner,free)
+            local player=owner or player
+            local player_name=owner and (owner.class==reimu_player and 'reimu_player' or owner.class==marisa_player and 'marisa_player' or '') or self.player_name
+            if not free then lstg.var.charge = lstg.var.charge - 1 end
+            New(Circle_Attack, player.x, player.y, 80, { 255, 255, 255 }, 60, 0, true, owner)
             local a
-            if self.player_name == 'reimu_player' then
+            if player_name == 'reimu_player' then
                 local b = reimu_player.bullets.trail
                 local p = (lstg.var.man >= 80) and { 6, 4, 0.8 } or { 4, 8, 0.6 }
                 for v = 3, 3 + p[1] - 1 do
@@ -339,7 +343,7 @@ function system:init()
                     end
                     task.Wait(p[2])
                 end
-            elseif self.player_name == 'marisa_player' then
+            elseif player_name == 'marisa_player' then
                 local b = marisa_player.bullets.missile
                 local p = (lstg.var.man >= 80) and { 4, 1.5 } or { 2, 1.7 }
                 for v = 6, 6 + p[1] - 1 do
@@ -446,6 +450,16 @@ function system:init()
     self.playerIDs = { reimu_player = 1, chiruno_player = 2, aya_player = 3, marisa_player = 4 }
     self.addtime = scoredata.Player_playtime
     self:init_value()
+end
+-- 新 Bomb 直接复用花映冢四段：一、二段角色弹幕与 300 帧大范围清弹。
+-- 任务显式捕获所属自机，双人模式不会在协程恢复后借用另一位玩家。
+function system:castCharge4(p)
+    PlaySound('hyz_charge00',1,p.x/256,false)
+    for i=1,2 do
+        local action=self.frame4_ChargeAction[i]
+        task.New(p,function() action(p,true) end)
+    end
+    New(Circle_Attack,p.x,p.y,250,{255,255,255},300,1,false,p)
 end
 function system:frame()
     self.timer = stage.current_stage.timer
@@ -630,6 +644,7 @@ system.DoFrame = {
         end
     end,
     [3] = function(self)
+        if GameDrops and GameDrops.bombsEnabled() then return end
         local c = self.charge
         if KeyIsPressed("spell") then
             PlaySound("hyz_charge00", 1, player.x / 256, false)
@@ -1110,7 +1125,7 @@ function Sakura_bonus:render()
 end
 
 Circle_Attack = Class(object)
-function Circle_Attack:init(x, y, radius, color, time, dmg, nocbn)
+function Circle_Attack:init(x, y, radius, color, time, dmg, nocbn, owner)
     self.dmg = dmg
     self.x, self.y = x, y
     self.vy = 1
@@ -1128,7 +1143,9 @@ function Circle_Attack:init(x, y, radius, color, time, dmg, nocbn)
     self.killflag = true
     self.alpha = 1
     self.leaf = {}
-    player.protect = time
+    local p=owner or player
+    p.protect=owner and max(p.protect or 0,time) or time
+    if owner then self._drop_owner=GameDrops.slot(owner) end
     task.New(self, function()
         for i = 1, time / 2 do
             self.r = self.radius * sin(i / (time / 4 * 3) * 90)

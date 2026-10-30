@@ -203,7 +203,7 @@ function stage.Set(mode, path, stageName)
             lstg.var = DeSerialize(saveinfo.stages[i].stageExtendInfo)
             if SaveResume and i==#saveinfo.stages then
                 lstg.var.__resume_version=1;lstg.var.__resume_run=lstg.var.__resume_run or SaveCodec.id()
-                lstg.var.__revive_version=1;lstg.var.__rank_version=1;lstg.var.__drops_version=1;lstg.var.__touch_toggle_version=1
+                lstg.var.__revive_version=1;lstg.var.__rank_version=1;lstg.var.__drops_version=lstg.var.__drops_version or 2;lstg.var.__touch_toggle_version=1
             end
             if i == #saveinfo.stages and i ~= STAGE_COUNT + 1 then
                 local v = lstg.var
@@ -226,8 +226,7 @@ function stage.Set(mode, path, stageName)
             replayWriter = plus.ReplayFrameWriter()
             replayReader = plus.ReplayFrameReader(SaveProfiles.path("saving1.file"), saveinfo.stages[i].frameDataPosition, saveinfo.stages[i].frameCount)
             for _ = 1, replayReader._count do
-                replayWriter._count = replayWriter._count + 1
-                replayWriter._data[replayWriter._count] = replayReader._fs:ReadByte()
+                local input={};assert(replayReader:Next(input));replayWriter:Record(input)
             end
             replayReader:Close()
             replayReader = nil
@@ -263,16 +262,17 @@ function stage.Set(mode, path, stageName)
             for _,record in ipairs(info.stages) do
                 if record.stageName==data.stage then break end
                 if matching then
-                    local writer=plus.ReplayFrameWriter()
-                    local reader=plus.ReplayFrameReader(SaveProfiles.path("saving1.file"),record.frameDataPosition,record.frameCount)
-                    for _=1,record.frameCount do writer._count=writer._count+1;writer._data[writer._count]=reader._fs:ReadByte() end
+                    local version=DeSerialize(record.stageExtendInfo).__input_version or 1
+                    local writer=plus.ReplayFrameWriter(version)
+                    local reader=plus.ReplayFrameReader(SaveProfiles.path("saving1.file"),record.frameDataPosition,record.frameCount,version)
+                    for _=1,record.frameCount do local input={};assert(reader:Next(input));writer:Record(input) end
                     reader:Close();record.frameData=writer;replayStages[record.stageName]=record;names[#names+1]=record.stageName
                 end
             end
         end
         local target=assert(stage.stages[data.stage])
         if not initial.is_practice then assert(#names==(target.number or 1)-1,"缺少此前关卡记录，请使用关卡检查点继续") end
-        replayWriter=plus.ReplayFrameWriter()
+        replayWriter=plus.ReplayFrameWriter(initial.__input_version or 1)
         replayStages[data.stage]={stageName=data.stage,score=0,randomSeed=initial.ran_seed,stageTime=os.time(),stageDate=os.time(),
             stagePlayer=initial.rep_player,frameData=replayWriter,stageExtendInfo=data.start.var}
         names[#names+1]=data.stage;stage.stages[target.group.title].save_replay=names
@@ -301,7 +301,7 @@ function stage.Set(mode, path, stageName)
 
         --加载数据
         local nextRecordStage = replayInfo.stages[replayStageIdx]
-        replayReader = plus.ReplayFrameReader(path, nextRecordStage.frameDataPosition, nextRecordStage.frameCount)
+        replayReader = plus.ReplayFrameReader(path, nextRecordStage.frameDataPosition, nextRecordStage.frameCount, DeSerialize(nextRecordStage.stageExtendInfo).__input_version or 1)
 
         --加载数据
         --lstg.var = DeSerialize(nextRecordStage.stageExtendInfo)--不能这么加载，因为场景里还有东西，在下一帧加载

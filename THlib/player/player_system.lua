@@ -190,6 +190,10 @@ local defaultFrameEvent = {
             end
             dx = v * dx
             dy = v * dy
+            if TouchInputMovement then
+                local tx,ty=TouchInputMovement(self,self.key or KeyState,self.slow==1 and self.lspeed or self.hspeed)
+                if tx then dx,dy=tx,ty end
+            end
             local w = lstg.world
             self.x = Forbid(self.x + dx, w.pl + 8, w.pr - 8)
             self.y = Forbid(self.y + dy, w.pb + 16, w.pt - 32)
@@ -374,6 +378,7 @@ function system:frame()
     else
         if GameDrops then GameDrops.playerStep(p) end
         self:updateKeyState() --更新自机按键状态（之后应改为外部调用）
+        if GameDrops then GameDrops.bombInput(p,self.keyState,self.keyStatePre) end
         self:findTarget() --更新target目标
         self:doFrameEvent() --执行帧逻辑事件
     end

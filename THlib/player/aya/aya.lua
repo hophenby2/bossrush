@@ -104,6 +104,11 @@ local defaultFrameEvent = {
             end
             dx = v * dx
             dy = v * dy
+            if TouchInputMovement then
+                local speed=self.slow==2 and self.llspeed or self.slow==1 and self.lspeed or self.hspeed
+                local tx,ty=TouchInputMovement(self,self.key or KeyState,speed)
+                if tx then dx,dy=tx,ty end
+            end
             self.x = self.x + dx
             self.y = self.y + dy
             self.x = math.max(math.min(self.x, lstg.world.pr - 8), lstg.world.pl + 8)

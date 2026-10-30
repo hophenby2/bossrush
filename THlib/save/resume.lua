@@ -162,7 +162,7 @@ function R.validate(data)
         local known=false;for _,name in ipairs(contextGlobals) do if key==name then known=true end end
         assert(known and (type(value)=='boolean' or type(value)=='string' or numeric(value)),'续玩上下文字段无效')
     end
-    for key,value in pairs(data.start.input) do assert(type(key)=='string' and #key<=64 and type(value)=='boolean','续玩初始按键无效') end
+    for key,value in pairs(data.start.input) do assert(type(key)=='string' and #key<=64 and (type(value)=='boolean' or ((key=='touch_x' or key=='touch_y') and numeric(value) and math.abs(value)<2048)),'续玩初始按键无效') end
     statsValid(data.start.stats);statsValid(data.target.stats)
     assert(type(data.target.var)=='string','续玩终态无效')
     local target=DeSerialize(data.target.var)
@@ -181,7 +181,7 @@ function R.validate(data)
     local position=1
     for _=1,data.frames do
         assert(position+2<=#bytes,'续玩输入不完整');local count=bytes:byte(position+2)
-        position=position+3+count;assert(position<=#bytes+1,'续玩按键记录不完整')
+        position=position+3+count+(var.__input_version==2 and 4 or 0);assert(position<=#bytes+1,'续玩按键记录不完整')
     end
     assert(position==#bytes+1,'续玩输入数量不匹配');return data,bytes
 end
@@ -253,12 +253,18 @@ function R.beforeLogic()
         local count=assert(bytes:byte(p+2),'续玩输入已结束')
         for i=p+3,p+2+count do R.inputDown[bytes:byte(i)]=true end
         R.position=p+3+count
+        R.touchInput=nil
+        if lstg.var.__input_version==2 then
+            R.touchInput=bytes:sub(R.position,R.position+3);R.position=R.position+4
+        end
     end
     return true
 end
 function R.readInput(state)
     if not R.recovering then return false end
-    Byte2KeyState(state,R.actionByte);if replayWriter then replayWriter:Record(state) end;return true
+    Byte2KeyState(state,R.actionByte);state.touch_x,state.touch_y=nil,nil
+    if R.touchInput then UnpackTouchInput(state,R.touchInput) end
+    if replayWriter then replayWriter:Record(state) end;return true
 end
 function R.afterLogic()
     if not R.enabled then return end
@@ -269,6 +275,7 @@ function R.afterLogic()
     local keys={};for key in pairs(R.inputDown) do keys[#keys+1]=key end;table.sort(keys)
     local packet=string.char(R.recovering and R.actionByte or KeyState2Byte(KeyState),math.max(0,math.min(255,R.inputLast)),#keys)
     for _,key in ipairs(keys) do packet=packet..string.char(key) end
+    if lstg.var.__input_version==2 then packet=packet..PackTouchInput(KeyState) end
     session.packets[#session.packets+1]=packet;session.size=session.size+#packet
     if R.recovering then
         if session.frames==R.pending.frames then R.complete() end

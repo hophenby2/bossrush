@@ -321,4 +321,143 @@ check(pcall(D.frame,stage.current_stage),'私有诊断能在测试槽写出状�
 local df=assert(io.open(R.P.userRoot()..'/drops-check.json','rb'));local data=DeSerialize(df:read('*a'));df:close()
 check(data.phase=='battle' and data.red==100 and data.blue==100,'真实诊断输出包含初始数值')
 
+
+-- 新版：红蓝选项独立、匀速掉落和自然恢复 Bomb；旧版回归继续保留在上文。
+local function modernReset()
+    reset();lstg.var.__drops_version=2;lstg.var.__input_version=2;D.reset();stage.current_stage={is_menu=false,timer=0}
+end
+modernReset()
+check(D.bombState(1)==3 and D.recoveryRate(1)==1 and D.rate(1)==1,'新版开局三枚 Bomb，蓝字不改变射速')
+for seed=1,250 do
+    local pair=D.draw(seed*7919,7)
+    check(pair[1]%2==1 and pair[2]%2==0,'左红右蓝随机池')
+    local beforeRed,beforeBlue=D.values(1)
+    D.apply(1,pair[1]);local red,blue=D.values(1);check(blue==beforeBlue,'红色选项不改蓝值')
+    D.apply(1,pair[2]);local r,b=D.values(1);check(r==red,'蓝色选项不改红值')
+end
+local function modernShots(class,blue)
+    modernReset();local p=New(class);lstg.var.upgrades.players[1].blue=blue*100;KeyState={shoot=true}
+    for i=0,239 do p.timer=i;p._playersys:frame() end
+    local n=0;for _,o in ipairs(objects) do if o.group==3 then n=n+1 end end;return n,p.shots
+end
+for _,hero in ipairs({reimu_player,chiruno_player,cooldown}) do
+    local base,n=modernShots(hero,100);local blue,m=modernShots(hero,250)
+    check(base==blue and n==m,'蓝字提高后角色实际发弹和冷却保持原速')
+end
+modernReset();local p=New(reimu_player);local p2=New(reimu_player);p2._net_slot=2
+local state=lstg.var.upgrades;state.players[1].bombs=0;state.players[2].bombs=0;state.players[2].blue=20000
+for i=1,D.BOMB_FRAMES/2-1 do D.playerStep(p);D.playerStep(p2) end
+check(D.bombState(p)==0 and D.bombState(p2)==0,'恢复完成前没有整数 Bomb')
+D.playerStep(p);D.playerStep(p2)
+check(D.bombState(p)==0 and D.bombState(p2)==1,'200 蓝值十五秒恢复一枚，双方独立')
+for i=1,D.BOMB_FRAMES/2 do D.playerStep(p) end
+check(D.bombState(p)==1,'100 蓝值三十秒恢复一枚')
+state.players[1].bombs=3;state.players[1].bomb_fraction=77;D.playerStep(p)
+local bombs,progress=D.bombState(p);check(bombs==3 and progress==0,'库存上限三枚且满库存不预存恢复量')
+local casts=0;lstg.system={castCharge4=function(_,owner) check(owner==p,'Bomb 使用正确自机');casts=casts+1 end}
+p.death=0;p.dialog=false;p.hide=false;p.lock=false
+check(D.bombInput(p,{spell=true},{spell=false}) and D.bombState(p)==2 and casts==1,'X 按下消耗一枚并立即释放')
+check(not D.bombInput(p,{spell=true},{spell=true}) and casts==1,'长按不连续消耗 Bomb')
+state.players[1].bombs=0;check(not D.bombInput(p,{spell=true},{}) and casts==1,'没有 Bomb 不能释放')
+state.players[1].bombs=1;p.death=90;check(not D.bombInput(p,{spell=true},{}),'死亡期间不释放');p.death=0
+p.dialog=true;check(not D.bombInput(p,{spell=true},{}),'对话期间不释放');p.dialog=false
+local sig=D.signature();state.players[1].bomb_fraction=1;check(sig~=D.signature(),'Bomb 恢复进度参与确定性签名')
+modernReset();p=New(reimu_player);p.x=-96;p.y=-100;player=p
+check(D.award(boss(101)),'新版击破产生选项');local row=lstg.var.upgrades.queue[1]
+check(row.duration==120 and row.linear and row.colorMask,'新版两秒匀速红蓝遮罩')
+local last=Q.offset(0,row.duration,row.linear)
+for i=1,120 do
+    local current=Q.offset(i,row.duration,row.linear);check(near(current-last,460/120),'每帧下降距离恒定');last=current
+end
+row.age=36;local board=Q.selection('modern',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
+check(board.mask and IsValid(board.mask) and near(board.mask.y,330-460*36/120),'遮罩跟随选项一起下落')
+local rects={};RenderRect=function(_,l,r,b,t) rects[#rects+1]={l,r,b,t} end;board.mask.class[4](board.mask)
+check(#rects==2 and rects[1][1]==-192 and rects[1][2]==0 and rects[2][1]==0 and rects[2][2]==192,'遮罩分别覆盖左半和右半')
+Q.setSelectionVisible('modern',false);check(board.mask.hide and board.labels[1].hide,'复活时同时隐藏遮罩与文字')
+Q.clearSelection('modern');check(not IsValid(board.mask),'选取结束清理遮罩')
+local top=Q.top(70,120,true)
+check(Q.contact({x=-90,y=top+5},{x=-90,y=top-1,A=3},69,70,2,120,true)==1,'接取扫掠与显示使用同一匀速轨迹')
+
+-- 复用正式花映冢效果与协程，而非复制一套近似 Bomb。
+modernReset();p=New(reimu_player);player=p
+LoadSound=noop;LoadImageSetCenter=noop;LoadAniFromFile=noop;DoFile=noop
+scoredata={Player_playtime={0,0,0,0}};load('THlib/lib/Ltask.lua');load('Resources/System/system.lua');InitAllClass()
+check(D.bombInput(p,{spell=true},{}) and D.bombState(p)==2,'正式四段效果可直接释放')
+local large
+for _,o in ipairs(objects) do if o.class==Circle_Attack and o.radius==250 then large=o end end
+check(large and large.dmg==1 and p.protect==300,'四段大圈半径、伤害和保护时间沿用原效果')
+local other=New(marisa_player);other.x=99;other.protect=8;player=other;task.Do(p)
+check(p.protect==300 and other.protect==8 and lstg.var.charge==0,'二段小圈不缩短保护、不扣旧蓄力、协程不串到另一自机')
+local small
+for _,o in ipairs(objects) do if o.class==Circle_Attack and o.radius==80 then small=o end end
+check(small and small.x==p.x,'四段包含原二段小圈')
+
+-- 真触控模块 + 正式自机移动：任意位置相对拖拽、任意角度和抬手停止。
+package.preload.keycode=function()
+    return setmetatable({},{__index=function(t,k) local v=#k==1 and k:byte() or 1000+#k;t[k]=v;return v end})
+end
+lstg.GetKeyState=function() return false end;lstg.GetLastKey=function() return 0 end
+setting={keys={up=38,down=40,left=37,right=39,slow=16,shoot=90,spell=88,special=67}}
+local menuMode,paused=true,false
+ext.StageIsMenu=function() return menuMode end;ext.pause_menu={IsKilled=function() return not paused end}
+KEY={CTRL=17};load('THlib/lib/Linput.lua')
+AndroidInput=load('android/lua/input.lua');local I=AndroidInput
+modernReset();p=New(cooldown);p.x=0;p.y=-100;player=p
+lstg.world.scrl=288;lstg.world.scrr=672;lstg.world.scrb=46;lstg.world.scrt=494
+I.beginFrame();menuMode=false;I.beginFrame()
+check(I.toggles.shoot and I.toggles.slow,'手机进关卡默认开启低速和射击')
+local function mobileFrame()
+    I.beginFrame();KeyState={shoot=I.keys[90] or false,slow=I.keys[16] or false};I.readMovement(KeyState)
+    p._playersys:frame()
+end
+I.touch(1,350,300,'began');mobileFrame();check(p.x==0 and p.y==-100,'屏幕任意位置按下不会瞬移')
+I.touch(1,382,324,'moved');mobileFrame()
+check(near(p.x,1.6) and near(p.y,-98.8),'3:4 拖拽按原低速沿精确角度移动')
+I.touch(1,310,360,'moved');local beforeX,beforeY=p.x,p.y;mobileFrame()
+check(p.x<beforeX and p.y>beforeY and near(((p.x-beforeX)^2+(p.y-beforeY)^2)^0.5,p.lspeed),'拖动途中改位置立即改变终点，速度保持一致')
+I.touch(1,310,360,'ended');beforeX,beforeY=p.x,p.y;mobileFrame();check(p.x==beforeX and p.y==beforeY and KeyState.touch_x==nil,'抬手当帧停止移动')
+I.touch(2,853,200,'began');check(I.movementId==nil and I.keys[88],'右侧 Bomb 按钮不抢移动');I.touch(2,853,200,'ended')
+I.touch(3,750,92,'began');I.touch(3,750,92,'ended');check(not I.toggles.slow,'低速开关可手动关闭')
+paused=true;I.beginFrame();paused=false;I.beginFrame();check(not I.toggles.slow and I.toggles.shoot,'暂停回来保持手动开关')
+stage.current_stage={is_menu=false,timer=0};I.beginFrame();check(I.toggles.slow and I.toggles.shoot,'下一关重新默认低速和射击')
+-- 默认场地所有中心区域均可起拖，边缘 UI 不产生拖拽。
+for _,point in ipairs({{289,47},{480,270},{671,493}}) do
+    I.touch(4,point[1],point[2],'began');check(I.touches[4].drag,'战斗区任意位置可起拖');I.touch(4,point[1],point[2],'cancelled')
+end
+local dx,dy=TouchInputMovement(p,{touch_x=p.x+.2,touch_y=p.y+.1},2)
+check(near(dx,.2) and near(dy,.1),'末帧截断到终点，不抖动也不越过目标')
+
+
+-- 文文独立的移动回调也使用拖拽目标，并保留拍照蓄力时的超低速。
+local oldInclude=Include;Include=noop;CreateRenderTarget=noop;load('THlib/player/aya/aya.lua');Include=oldInclude
+AyaWalkImageSystem=PlayerWalkImageSystem;TenguCamera=function() return {photoing=false,frame=noop} end;GetSoundState=function() return 'playing' end;StopSound=noop;InitAllClass()
+modernReset();p=New(aya_player);p.x=0;p.y=-100;player=p
+for _,case in ipairs({{true,true,.5},{true,false,2},{false,false,6.5}}) do
+    local x,y=p.x,p.y;KeyState={slow=case[1],shoot=case[2],touch_x=x+30,touch_y=y+40};p._playersys:frame()
+    check(near(((p.x-x)^2+(p.y-y)^2)^.5,case[3]),'文文高速、低速与蓄力超低速均保持设定速度')
+end
+
+-- 真实自机选择菜单：随机模式不接受系统键盘、滚轮或鼠标输入。
+local f=assert(io.open(root..'/THlib/UI/menu.lua','rb'));local source=f:read('*a'):gsub('\r\n','\n');f:close()
+local section=assert(source:match('(player_system_select = Class%(object%).-)\nlocal valid'))
+assert(loadstring(section,'@THlib/UI/menu.lua:player_system_select'))()
+scoredata={UnlockSystem={true,true,true},system_selectid={true,false,true},player_select=1}
+SystemList={};player_list={{'灵梦','reimu_player','Reimu'}}
+sp={math={PointBoundCheck=function() return false end},CopyTable=function(_,v) local out={};for k,item in pairs(v) do out[k]=item end;return out end,TweakValue=function(_,v) return v end}
+local oldDist=Dist;Dist=function(a,b,c,d) if type(a)=='table' then return oldDist(a,b) end;return ((a-c)^2+(b-d)^2)^.5 end
+menu={ControlExit=noop,Updatekey=noop,keyYes=function() return false end,keyNo=function() return false end,keyLeft=function() return false end,keyRight=function() return false end,keyUp=function() return false end,keyDown=function() return false end}
+GetLastKey=function() return setting.keys.special end
+ext.mouse={x=800,y=270,_wheel=1,isDown=function() return true end}
+local started=false;InitAllClass();local select=New(player_system_select,function() started=true end)
+for _,mode in ipairs({'roguelike','rogue_dual','rogue_chain'}) do
+    select:fresh(mode);select.locked=false
+    check(select.simple_mode and select.simple_title,'三个随机模式入口直接禁用系统选择')
+    select:setsystem();select:addpos2(1);select.class[3](select)
+    GetLastKey=function() return 0 end;select.class[3](select);GetLastKey=function() return setting.keys.special end
+    check(select.pos2==1 and select.system_selectid[1] and select.system_selectid[3],'特殊键、滚轮和列表点击不能修改随机模式系统')
+    lstg.var.current_system='ABC';select:yes()
+    check(started and lstg.var.current_system=='' and scoredata.system_selectid[1] and scoredata.system_selectid[3],'随机模式开始时清空系统，不覆盖普通模式配置')
+end
+select:fresh();check(not select.simple_mode,'返回普通模式恢复系统选择')
+
 print('阶段掉落回归通过：'..count..' 项。')

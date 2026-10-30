@@ -1,5 +1,5 @@
 -- 击破阶段后的弹幕二选一。成长和选择过程都保存在 var 中，供录像与关内恢复重建。
-local D={VERSION=1,UNIT=100,TIME=2*60,MIN=100,MAX=100000}
+local D={VERSION=2,UNIT=100,TIME=2*60,MIN=100,MAX=100000,BOMB_FRAMES=30*60,BOMB_MAX=3}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -7,14 +7,26 @@ D.pool={
     {{'red','add',15},{'blue','add',-10}},{{'red','add',-10},{'blue','add',15}},
     {{'red','mul',6,5},{'blue','mul',9,10}},{{'red','mul',9,10},{'blue','mul',6,5}},
 }
-local function fresh() return {red=10000,blue=10000,clock=-1,fraction=0} end
+-- 新版左列只抽红色，右列只抽蓝色；保留旧表供既有录像恢复。
+D.colorPool={
+    {{'red','add',5}},{{'blue','add',5}},{{'red','add',10}},{{'blue','add',10}},
+    {{'red','add',15}},{{'blue','add',15}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
+    {{'red','mul',6,5}},{{'blue','mul',6,5}},
+}
+local function modern() return lstg.var.__drops_version==D.VERSION end
+local function fresh()
+    local p={red=10000,blue=10000,clock=-1,fraction=0}
+    if modern() then p.bombs=D.BOMB_MAX;p.bomb_fraction=0 end
+    return p
+end
 local function allowDrops(scene)
     scene=scene or (stage and stage.current_stage)
     return not (scene and scene.group and scene.group._name=='RogueChain')
 end
-function D.enabled() return lstg.var.__drops_version==D.VERSION end
+function D.enabled() return modern() or lstg.var.__drops_version==1 end
+D.bombsEnabled=modern
 function D.reset()
-    lstg.var.upgrades=D.enabled() and {version=D.VERSION,seed=lstg.var.ran_seed or 1,count=0,players={fresh(),fresh()},queue={}} or nil
+    lstg.var.upgrades=D.enabled() and {version=lstg.var.__drops_version,seed=lstg.var.ran_seed or 1,count=0,players={fresh(),fresh()},queue={}} or nil
 end
 local function peek() return D.enabled() and lstg.var.upgrades end
 function D.active()
@@ -38,7 +50,12 @@ function D.values(o)
     return p and p.red/100 or 100,p and p.blue/100 or 100
 end
 function D.power(o) local red=D.values(o);return D.enabled() and red/100 or 1 end
-function D.rate(o) local _,blue=D.values(o);return D.enabled() and blue/100 or 1 end
+function D.rate(o) local _,blue=D.values(o);return D.enabled() and not modern() and blue/100 or 1 end
+function D.recoveryRate(o) local _,blue=D.values(o);return modern() and blue/100 or 1 end
+function D.bombState(o)
+    local s=peek();local p=s and s.players[D.slot(o)]
+    return p and p.bombs or 0,p and (p.bomb_fraction or 0)/(D.BOMB_FRAMES*10000) or 0
+end
 function D.damage(amount,o) return amount*D.power(o) end
 function D.renderBullet(o)
     local factor=D.power(o)
@@ -58,12 +75,22 @@ function D.playerStep(p)
     local s=ensure();if not s then return end
     local c=s.players[D.slot(p)]
     if p._drop_first_frame then c.clock=(p.timer or 0)-1;p._drop_first_frame=false end
+    if modern() then
+        -- 满库存不积攒额外恢复量；恢复使用整数，蓝色只参与 Bomb 计时。
+        if c.bombs<D.BOMB_MAX then
+            c.bomb_fraction=c.bomb_fraction+c.blue
+            local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
+            c.bombs=math.min(D.BOMB_MAX,c.bombs+restored)
+            c.bomb_fraction=c.bombs==D.BOMB_MAX and 0 or c.bomb_fraction-restored*unit
+        else c.bomb_fraction=0 end
+        return
+    end
     c.fraction=c.fraction+c.blue
     local steps=math.floor(c.fraction/10000);c.fraction=c.fraction-steps*10000
     p._drop_shot_first=c.clock+1;c.clock=c.clock+steps;p._drop_shot_last=c.clock;p._drop_shot_steps=steps;p._drop_cooldown_done=false
 end
 function D.shoot(p,fn)
-    if not D.enabled() then return fn(p) end
+    if not D.enabled() or modern() then return fn(p) end
     local timer=p.timer;p._drop_cooldown_done=true
     local ok,err=pcall(function()
         for t=p._drop_shot_first or timer,p._drop_shot_last or timer do
@@ -76,8 +103,17 @@ function D.shoot(p,fn)
     if not ok then error(err,0) end
 end
 function D.cooldownStep(p)
-    if not D.enabled() then return 1 end
+    if not D.enabled() or modern() then return 1 end
     return p._drop_cooldown_done and 0 or (p._drop_shot_steps or 1)
+end
+function D.bombInput(p,key,previous)
+    if not modern() or not key.spell or previous.spell then return false end
+    if p.lock or p.dialog or p.realrealreal_lock or p.hide or (p.death or 0)~=0 then return false end
+    local s=ensure();local c=s.players[D.slot(p)]
+    if c.bombs<1 then return false end
+    c.bombs=c.bombs-1
+    lstg.system:castCharge4(p)
+    return true
 end
 function D.beginCard(b,card)
     b._drop_awarded=false;b._drop_card_id=card.card_id
@@ -86,6 +122,7 @@ function D.beginCard(b,card)
 end
 function D.draw(seed,index)
     local gen=Rand();gen:Seed((seed+index*104729)%2147483647)
+    if modern() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2} end
     local a=gen:Int(1,#D.pool);local b=gen:Int(1,#D.pool-1);if b>=a then b=b+1 end
     return {a,b}
 end
@@ -103,12 +140,12 @@ function D.award(b)
         local seen=rawget(other,'_drop_awards') or {};seen[id]=math.max(seen[id] or 0,phase);rawset(other,'_drop_awards',seen)
     end
     mark(b);for _,other in ipairs(b.otherboss or {}) do mark(other) end
-    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(s.seed,s.count),age=0,duration=D.TIME,picks={false,false}}
+    s.count=s.count+1;s.queue[#s.queue+1]={id=s.count,options=D.draw(s.seed,s.count),age=0,duration=D.TIME,linear=modern() or nil,colorMask=modern() or nil,picks={false,false}}
     return true
 end
 function D.apply(slot,option)
     local s=assert(ensure());local p=s.players[D.slot(slot)]
-    for _,op in ipairs(assert(D.pool[option])) do
+    for _,op in ipairs(assert((modern() and D.colorPool or D.pool)[option])) do
         local value=p[op[1]]
         if op[2]=='add' then value=value+op[3]*100 else value=math.floor(value*op[3]/op[4]+0.5) end
         p[op[1]]=math.max(D.MIN,math.min(D.MAX,value))
@@ -121,7 +158,7 @@ end
 local function controllable(p)
     return p and IsValid(p) and not p.lock and not p.dialog and not p.realrealreal_lock and not p.hide and (p.death or 0)==0
 end
-function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age,row.duration or D.TIME) end
+function D.rowY(row) return GameQuiz.CHOICE_Y-GameQuiz.offset(row.age,row.duration or D.TIME,row.linear) end
 function D.suspend()
     local s=peek();local row=s and s.active
     if not row then return end
@@ -157,7 +194,7 @@ function D.frame(scene)
         if controllable(p) then
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
-                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2,row.duration)
+                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2,row.duration,row.linear)
                 if choice then
                     row.picks[i]=choice;D.apply(i,row.options[choice]);p.protect=math.max(p.protect or 0,60)
                     PlaySound('item00',0.5)
@@ -176,7 +213,7 @@ local function number(value)
 end
 function D.optionLines(id)
     local out={}
-    for _,op in ipairs(D.pool[id]) do
+    for _,op in ipairs((modern() and D.colorPool or D.pool)[id]) do
         local text=op[2]=='add' and string.format('%+d',op[3]) or ('×'..number(op[3]/op[4]))
         out[#out+1]={color=op[1],text=(op[1]=='red' and '红 ' or '蓝 ')..text}
     end
@@ -189,15 +226,19 @@ function D.renderHUD(scrr,scrt,alpha)
     if not D.enabled() then return end
     local count=(GameNet and GameNet.host()) and 2 or 1
     for i=1,count do
-        local red,blue=D.values(i);local y=scrt-240-(i-1)*24;local label=count==2 and ('P'..i..' ') or ''
+        local red,blue=D.values(i);local y=scrt-240-(i-1)*(modern() and 44 or 24);local label=count==2 and ('P'..i..' ') or ''
         ui:RenderText('title',label..'火力 '..number(red),scrr+6,y,0.65,Color(alpha,255,120,125),'left','bottom')
-        ui:RenderText('title','射速 '..number(blue),scrr+150,y,0.65,Color(alpha,110,190,255),'left','bottom')
+        ui:RenderText('title',(modern() and 'Bomb恢复 ' or '射速 ')..number(blue),scrr+150,y,0.65,Color(alpha,110,190,255),'left','bottom')
+        if modern() then
+            local bombs,progress=D.bombState(i)
+            ui:RenderText('title',string.format('Bomb %d/%d  %.0f%%  [X]',bombs,D.BOMB_MAX,progress*100),scrr+6,y-20,0.6,Color(alpha,110,190,255),'left','bottom')
+        end
     end
 end
 function D.signature()
     local s=peek();if not s then return 'drops=none' end
     local out={'drops',s.seed,s.count}
-    for _,p in ipairs(s.players) do out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',') end
+    for _,p in ipairs(s.players) do out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',');if modern() then out[#out+1]=table.concat({p.bombs,p.bomb_fraction},',') end end
     local function row(r)
         out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],tostring(r.picks[1]),tostring(r.picks[2]),r.duration or D.TIME},',')
         for _,p in ipairs(r.previous or {}) do out[#out+1]=string.format('%.6f,%.6f',p.x,p.y) end

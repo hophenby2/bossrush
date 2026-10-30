@@ -593,11 +593,12 @@ LoadImageFromFile("weapon_arrow", "THlib\\UI\\weapon_arrow.png")
 LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 
 player_system_select = Class(object)
-function player_system_select:fresh()
-    self.simple_mode = false
+function player_system_select:fresh(mode)
+    -- 随机模式只选择自机；入口一次性设置，避免沿用普通流程的系统选择状态。
+    self.simple_mode = mode=='roguelike' or mode=='rogue_dual' or mode=='rogue_chain'
     self.simple_dual = false
     self.simple_chain = false
-    self.simple_title = nil
+    self.simple_title = self.simple_mode and "选择玩家 · 随机十战" or nil
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
     for i, p in ipairs(scoredata.UnlockSystem) do
@@ -745,15 +746,15 @@ function player_system_select:frame()
             if mouse:isDown(1) then
                 self:addpos1(-1)
             end
-        elseif Dist(mouse.x, mouse.y, 880, 420) < 30 then
+        elseif not self.simple_mode and Dist(mouse.x, mouse.y, 880, 420) < 30 then
             if mouse:isDown(1) then
                 self:addpos2(-1)
             end
-        elseif Dist(mouse.x, mouse.y, 880, 120) < 30 then
+        elseif not self.simple_mode and Dist(mouse.x, mouse.y, 880, 120) < 30 then
             if mouse:isDown(1) then
                 self:addpos2(1)
             end
-        else
+        elseif not self.simple_mode then
             if mouse._wheel ~= 0 then
                 self:addpos2(-sign(mouse._wheel))
             end

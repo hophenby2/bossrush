@@ -26,6 +26,21 @@ function Byte2KeyState(state, b)
     end
 end
 
+-- 新录像每帧多存四字节拖拽目标；旧版仍是一字节按键，按关卡初态区分。
+function PackTouchInput(state)
+    if state.touch_x == nil or state.touch_y == nil then return string.char(255,255,255,255) end
+    local function coord(v) return math.max(0,math.min(65534,math.floor(v*16+0.5)+32768)) end
+    local x,y=coord(state.touch_x),coord(state.touch_y)
+    return string.char(x%256,math.floor(x/256),y%256,math.floor(y/256))
+end
+function UnpackTouchInput(state,bytes)
+    local a,b,c,d=bytes:byte(1,4);assert(d,'拖拽输入不完整')
+    local x,y=a+b*256,c+d*256
+    state.touch_x,state.touch_y=nil,nil
+    if x~=65535 and y~=65535 then state.touch_x=(x-32768)/16;state.touch_y=(y-32768)/16 end
+end
+local function touchFormat() return lstg and lstg.var and lstg.var.__input_version==2 end
+
 -------------------------------------------------- ReplayFrameReader
 
 ---@class ReplayFrameReader
@@ -36,11 +51,12 @@ plus.ReplayFrameReader = ReplayFrameReader
 ---@param path string@文件路径
 ---@param offset number@录像数据偏移
 ---@param count number@录像帧数量
-function ReplayFrameReader:init(path, offset, count)
+function ReplayFrameReader:init(path, offset, count, inputVersion)
     self._fs = plus.FileStream(__UTF8ToANSI(path), "rb")
 
     self._fs:Seek(offset)-- 定位到录像数据开始位置
     self._offset = offset
+    self._touch = inputVersion==2 or (inputVersion==nil and touchFormat())
     self._read = 0  -- 已读取数量
     self._count = count  -- 帧数量
 end
@@ -54,6 +70,11 @@ function ReplayFrameReader:Next(state)
         local ret = self._fs:ReadByte()
         self._read = self._read + 1
         Byte2KeyState(state, ret)
+        state.touch_x,state.touch_y=nil,nil
+        if self._touch then
+            local bytes={};for i=1,4 do bytes[i]=string.char(assert(self._fs:ReadByte())) end
+            UnpackTouchInput(state,table.concat(bytes))
+        end
         return true
     end
 end
@@ -76,8 +97,10 @@ local ReplayFrameWriter = plus.Class()
 plus.ReplayFrameWriter = ReplayFrameWriter
 
 ---构造ReplayFrameWriter
-function ReplayFrameWriter:init()
+function ReplayFrameWriter:init(inputVersion)
     self._data = {}
+    self._touch = inputVersion==2 or (inputVersion==nil and touchFormat())
+    self._targets = {}
     self._count = 0
 end
 
@@ -86,6 +109,7 @@ function ReplayFrameWriter:Record(state)
     local b = KeyState2Byte(state)
     self._count = self._count + 1
     self._data[self._count] = b
+    if self._touch then self._targets[self._count]=PackTouchInput(state) end
 end
 
 ---将数据写成字节
@@ -93,6 +117,9 @@ end
 function ReplayFrameWriter:Write(fs)
     for i = 1, self._count do
         fs:WriteByte(self._data[i])
+        if self._touch then
+            local target=self._targets[i];for j=1,4 do fs:WriteByte(target:byte(j)) end
+        end
     end
 end
 
@@ -196,7 +223,8 @@ function ReplayManager.ReadReplayInfo(path)
                 -- 录像数据
                 stage.frameCount = r:ReadUInt()  -- 帧数
                 stage.frameDataPosition = f:GetPosition()  -- 数据起始位置
-                f:Seek(stage.frameCount)  -- 跳过帧数据
+                local initial=stage.stageExtendInfo~='' and DeSerialize(stage.stageExtendInfo) or {}
+                f:Seek(stage.frameCount*(initial.__input_version==2 and 5 or 1))  -- 跳过帧数据
                 table.insert(ret.stages, stage)
             end
         end,

@@ -153,7 +153,7 @@ function stage_menu:init()
         { "随机十战", function()
             local function enter()
                 practice='roguelike';last_menu=menu_title
-                menu_player_system_select:fresh();menu_player_system_select.simple_mode=true
+                menu_player_system_select:fresh(practice)
                 menu_player_system_select.state="stage"
                 menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
             end
@@ -164,7 +164,7 @@ function stage_menu:init()
         { "接续模式", function()
             local function enter()
                 practice='rogue_chain';last_menu=menu_title
-                menu_player_system_select:fresh();menu_player_system_select.simple_mode=true
+                menu_player_system_select:fresh(practice)
                 menu_player_system_select.simple_chain=true
                 menu_player_system_select.simple_title="选择玩家 · 接续模式"
                 menu_player_system_select.state="stage"
@@ -177,7 +177,7 @@ function stage_menu:init()
         { "双Boss随机十战", function()
             local function enter()
                 practice='rogue_dual';last_menu=menu_title
-                menu_player_system_select:fresh();menu_player_system_select.simple_mode=true
+                menu_player_system_select:fresh(practice)
                 menu_player_system_select.simple_dual=true
                 menu_player_system_select.simple_title="选择玩家 · 双Boss随机十战"
                 menu_player_system_select.state="stage"

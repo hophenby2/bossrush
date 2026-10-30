@@ -259,7 +259,7 @@ function C.finish()
     if not C.active then return end
     C.active=false
     local players={}
-    for i,p in ipairs(N.players) do if IsValid(p) then players[i]={x=p.x,y=p.y,hspeed=p.hspeed,lspeed=p.lspeed,slow=p.slow,death=p.death,protect=p.protect,lock=p.lock,dialog=p.dialog} end end
+    for i,p in ipairs(N.players) do if IsValid(p) then players[i]={x=p.x,y=p.y,hspeed=p.hspeed,lspeed=p.lspeed,llspeed=p.llspeed,slow=p.slow,death=p.death,protect=p.protect,lock=p.lock,dialog=p.dialog} end end
     local sounds={};for _,a in pairs(C.audio) do if #sounds<32 then sounds[#sounds+1]=a end end;C.audio={}
     local value={tick=N.tick,time=SaveTransport.now()-N.epoch,players=players,calls=C.calls,world=copy(lstg.world),paused=N.pause,ack=N.inputSeq or 0,sounds=sounds,music=C.music,team={score=lstg.var.score or 0,misses=lstg.var.dead or 0,captures=lstg.var.getsc or 0}}
     local ok,bytes=pcall(W.encode,value)

@@ -44,10 +44,12 @@ local function keys(value)
     for i,k in ipairs(actions) do out[k]=math.floor(value/2^(i-1))%2==1 end;return out
 end
 function N.localKeys()
-    local out={};for _,k in ipairs(actions) do out[k]=GetKeyState(setting.keys[k])==true end;return out
+    local out={};for _,k in ipairs(actions) do out[k]=GetKeyState(setting.keys[k])==true end
+    if AndroidInput then AndroidInput.readMovement(out) end;return out
 end
 function N.readKeys(out)
     local localKeys=N.localKeys();for _,k in ipairs(actions) do out[k]=localKeys[k] end
+    out.touch_x,out.touch_y=localKeys.touch_x,localKeys.touch_y
 end
 local function clearPeer(reason)
     N.connected=false;N.ready=false;N.keys[2]={};N.lastInput=0
@@ -95,7 +97,12 @@ local function control(v,connection)
     elseif v.t=='input' then
         assert(N.role=='host' and N.match and finite(v.seq,2^31) and v.seq>=0 and v.seq%1==0,'输入序号无效')
         if v.seq>(N.inputSeq or -1) then
-            N.inputSeq=v.seq;N.keys[2]=keys(v.keys);N.keys[2].touch_shoot=v.touch==true;N.lastInput=T.now()
+            local input=keys(v.keys)
+            if v.x~=nil or v.y~=nil then
+                assert(finite(v.x,2048) and finite(v.y,2048),'联机拖拽目标无效')
+                input.touch_x=math.floor(v.x*16+0.5)/16;input.touch_y=math.floor(v.y*16+0.5)/16
+            end
+            N.inputSeq=v.seq;N.keys[2]=input;N.keys[2].touch_shoot=v.touch==true;N.lastInput=T.now()
         end
     elseif v.t=='pause' then
         assert(type(v.value)=='boolean','暂停消息无效')
@@ -247,7 +254,7 @@ function N.poll()
     end
     if N.connected and N.peer and not N.peer.closed and now-(N.lastPing or 0)>1 then N.lastPing=now;send({t='ping',clock=now-N.epoch}) end
     if N.client() and N.connected and now-(N.lastSent or 0)>1/60 then
-        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;send({t='input',seq=N.clientSeq,keys=mask(N.localKeys()),touch=AndroidPlatform~=nil})
+        N.lastSent=now;N.clientSeq=(N.clientSeq or 0)+1;local input=N.localKeys();send({t='input',seq=N.clientSeq,keys=mask(input),touch=AndroidPlatform~=nil,x=input.touch_x,y=input.touch_y})
     end
 end
 function N.readyForLogic()
@@ -367,8 +374,14 @@ function N.clientFrame()
     local p,w=N.predict,lstg.world
     if p and N.connected and not N.pause[1] and not N.pause[2] and not p.lock and not p.dialog and (p.death or 0)==0 then
         local k=N.localKeys();local x=(k.right and 1 or 0)-(k.left and 1 or 0);local y=(k.up and 1 or 0)-(k.down and 1 or 0)
-        local v=(k.slow and p.lspeed or p.hspeed) or 4;if x*y~=0 then v=v*0.70710678 end
-        p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+x*v*60*dt));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+y*v*60*dt))
+        local speed=(k.slow and (k.shoot and p.llspeed or p.lspeed) or p.hspeed) or 4
+        local v=speed;if x*y~=0 then v=v*0.70710678 end
+        x,y=x*v*60*dt,y*v*60*dt
+        if TouchInputMovement then
+            local tx,ty=TouchInputMovement(p,k,speed*60*dt)
+            if tx then x,y=tx,ty end
+        end
+        p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+x));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+y))
     end
     N.Capture.updateParticles()
 end

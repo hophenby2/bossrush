@@ -26,8 +26,11 @@ function Q.answer(x,count)
     return math.max(1,math.min(count,1+math.floor((x+192)/(384/count))))
 end
 function Q.fall(n) return n<0.5 and n*1.3 or -1.2*n*n+2.5*n-0.3 end
-function Q.offset(age,duration) return Q.FALL*Q.fall(math.max(0,math.min(1,age/(duration or Q.TIME)))) end
-function Q.top(age,duration) return Q.TOP-Q.offset(age,duration) end
+function Q.offset(age,duration,linear)
+    local n=math.max(0,math.min(1,age/(duration or Q.TIME)))
+    return Q.FALL*(linear and n or Q.fall(n))
+end
+function Q.top(age,duration,linear) return Q.TOP-Q.offset(age,duration,linear) end
 function Q.wrap(text,width)
     local lines,row,length={},'',0
     for char in text:gmatch('[%z\1-\127\194-\244][\128-\191]*') do
@@ -42,7 +45,7 @@ function Q.wrap(text,width)
     return lines
 end
 -- 实例不查类表上的自定义方法；所有操作均由模块函数显式传入对象。
-local Question,Choice
+local Question,Choice,Mask
 local function descend(o,manual)
     o.bound=false;o.colli=false;o.layer=0;o.alpha=1
     if manual then o.group=GROUP.GHOST;return end
@@ -79,6 +82,15 @@ local function classes()
             if previous then SetViewMode(previous) end
         end,
     },true)
+    Mask=Class(object,{
+        init=function(o) descend(o,true);o.layer=-0.1;o.y=Q.TOP end,
+        render=function(o)
+            local previous=lstg.viewmode;SetViewMode('world')
+            SetImageState('white','',Color(o.alpha*65,255,40,55));RenderRect('white',-192,0,o.y-Q.DEPTH,o.y)
+            SetImageState('white','',Color(o.alpha*65,35,110,255));RenderRect('white',0,192,o.y-Q.DEPTH,o.y)
+            if previous then SetViewMode(previous) end
+        end,
+    },true)
 end
 function Q.wall(x,y,manual)
     local o=NewObject(bullet)
@@ -109,7 +121,7 @@ function Q.setSelectionVisible(key,visible)
     cached.visible=visible
     local board=cached.board
     local function show(o) if o and IsValid(o) then o.hide=not visible end end
-    show(board.question);for _,o in ipairs(board.labels) do show(o) end
+    show(board.mask);show(board.question);for _,o in ipairs(board.labels) do show(o) end
     for _,o in ipairs(board.walls) do show(o) end
 end
 function Q.selection(key,state,text,choices,alpha)
@@ -122,7 +134,11 @@ function Q.selection(key,state,text,choices,alpha)
         if not ok then error(board,0) end
         cached={state=state,board=board};selections[key]=cached
     end
-    local board=cached.board;local offset=Q.offset(state.age,state.duration);alpha=alpha or 1
+    local board=cached.board;local offset=Q.offset(state.age,state.duration,state.linear);alpha=alpha or 1
+    if state.colorMask then
+        if not board.mask or not IsValid(board.mask) then board.mask=New(Mask) end
+        board.mask.y=Q.TOP-offset;board.mask.alpha=alpha
+    end
     if board.question then board.question.y=Q.QUESTION_Y-offset;board.question.alpha=alpha end
     for _,o in ipairs(board.labels) do o.y=Q.CHOICE_Y-offset;o.alpha=alpha end
     for i,o in ipairs(board.walls) do
@@ -137,22 +153,27 @@ function Q.clearSelection(key,fading)
     for _,o in ipairs(board.walls) do if IsValid(o) then if fading then Del(o) else object.RawDel(o) end end end
     -- 结束时一起移除文字，避免与下一组下落选项重叠。
     local function remove(o) if o and IsValid(o) then object.RawDel(o) end end
-    remove(board.question);for _,o in ipairs(board.labels) do remove(o) end
+    remove(board.mask);remove(board.question);for _,o in ipairs(board.labels) do remove(o) end
 end
 function Q.move(p,key)
     local w=lstg.world or {pl=-192,pr=192,pb=-224,pt=224}
     local dx=(key.right and 1 or 0)-(key.left and 1 or 0);local dy=(key.up and 1 or 0)-(key.down and 1 or 0)
     local speed=key.slow and (p.lspeed or 2) or (p.hspeed or 4)
     if dx*dy~=0 then speed=speed*0.70710678118655 end
+    dx,dy=dx*speed,dy*speed
+    if TouchInputMovement then
+        local tx,ty=TouchInputMovement(p,key,key.slow and (p.lspeed or 2) or (p.hspeed or 4))
+        if tx then dx,dy=tx,ty end
+    end
     local x,y=p.x,p.y
-    p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+dx*speed));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+dy*speed))
+    p.x=math.max(w.pl+8,math.min(w.pr-8,p.x+dx));p.y=math.max(w.pb+16,math.min(w.pt-32,p.y+dy))
     if p.grazer and IsValid(p.grazer) then p.grazer.x=p.x;p.grazer.y=p.y end
     if p.sp then for _,v in ipairs(p.sp) do v[1]=v[1]+p.x-x;v[2]=v[2]+p.y-y end end
     p.supportx=(p.supportx or x)+p.x-x;p.supporty=(p.supporty or y)+p.y-y
 end
-function Q.contact(previous,p,oldAge,age,count,duration)
+function Q.contact(previous,p,oldAge,age,count,duration,linear)
     local radius=6+math.max(p.A or 0,p.B or 0,3)
-    local a,b=previous.y-Q.top(oldAge,duration),p.y-Q.top(age,duration)
+    local a,b=previous.y-Q.top(oldAge,duration,linear),p.y-Q.top(age,duration,linear)
     if math.min(a,b)<=radius and math.max(a,b)>=-radius then
         local t=b~=a and math.max(0,math.min(1,(-radius-a)/(b-a))) or 1
         return Q.answer(previous.x+(p.x-previous.x)*t,count)

@@ -40,6 +40,8 @@ function GetInput()
         if not GetKeyState(keys.shoot) and GetKeyState(KEY.CTRL) then
             KeyState["shoot"] = not KeyStatePre["shoot"]
         end
+        KeyState.touch_x,KeyState.touch_y=nil,nil
+        if AndroidInput and lstg.var.__input_version==2 then AndroidInput.readMovement(KeyState) end
         -- 记录当前帧的按键
         replayWriter:Record(KeyState)
     elseif rep.IsReplay() then
@@ -77,4 +79,13 @@ function KeyCodeToName()
         key2name[i] = key2name[i] or '?'
     end
     return key2name
+end
+
+-- 返回自机追随拖拽目标的一帧位移；末帧截断到目标，手指抬起后不保留惯性。
+function TouchInputMovement(p,key,speed)
+    if not key or type(key.touch_x)~='number' or type(key.touch_y)~='number' then return end
+    local dx,dy=key.touch_x-p.x,key.touch_y-p.y
+    local distance=math.sqrt(dx*dx+dy*dy)
+    if distance>speed and distance>0 then dx=dx*speed/distance;dy=dy*speed/distance end
+    return dx,dy
 end

@@ -32,7 +32,7 @@ stage={stages={},groups={}}
 local group={title='menu',number=1,[1]='TH06@BossRush'};stage.groups.BossRush=group
 stage.stages.menu={is_menu=true,stage_name='menu',save_replay={}}
 local objects,hero,worker={}
-local withRevive,withRank,skipRankInit,withDrops=false,false,false,false
+local withRevive,withRank,skipRankInit,withDrops,withTouch,withBomb=false,false,false,false,false,false
 local stageObject={is_menu=false,stage_name='TH06@BossRush',number=1,group=group,timer=0}
 stage.stages[stageObject.stage_name]=stageObject;stage.current_stage=stage.stages.menu
 ObjList=function(g)
@@ -78,6 +78,7 @@ local function step()
             GameDrops.beginCard(b,card);GameDrops.award(b)
         end
         GameDrops.playerStep(hero)
+        if withBomb then GameDrops.bombInput(hero,KeyState,KeyStatePre) end
         GameDrops.shoot(hero,function(p)
             if p.timer%4==0 then objects[#objects+1]={_live=true,group=3,x=p.x,y=p.y,vx=0,vy=3,rot=0,timer=0,hp=1} end
         end)
@@ -90,7 +91,9 @@ local function step()
         GameRank.beforeObjects()
     end
     stage.current_stage.timer=stage.current_stage.timer+1
-    hero.vx=(KeyState.right and 2 or 0)-(KeyState.left and 2 or 0);hero.x=hero.x+hero.vx
+    if withTouch then
+        local dx,dy=TouchInputMovement(hero,KeyState,KeyState.slow and 2 or 4);hero.vx=dx or 0;hero.x=hero.x+hero.vx;hero.y=hero.y+(dy or 0)
+    else hero.vx=(KeyState.right and 2 or 0)-(KeyState.left and 2 or 0);hero.x=hero.x+hero.vx end
     if GetKeyState(65) then hero.y=hero.y+1 end
     if GetLastKey()==13 then hero.y=hero.y-1 end
     local ok,err=coroutine.resume(worker);assert(ok,err)
@@ -168,8 +171,9 @@ local quiz=Serialize(lstg.var.revive.quiz);local quizSignature=R.signature()
 local function coldRestore()
     R.memo=nil;R.session=nil;R.pauseAfterRender=nil;R.recoveryStopped=nil
     stage.current_stage=stage.stages.menu;stage.next_stage=nil;keys={};last=0
+    if withTouch then replayWriter=nil;lstg.var={} end
     R.request();for _=1,1000 do if not R.recovering then break end;R.pump(step) end
-    check(not R.recovering and not R.failure and R.session,'复活状态冷重建完成')
+    check(not R.recovering and not R.failure and R.session,'复活状态冷重建完成：'..tostring(R.failure or R.message))
     R.afterRender()
 end
 coldRestore()
@@ -234,3 +238,71 @@ coldRestore();check(R.signature()==pickedSignature and Serialize(lstg.var.upgrad
 for i=1,30 do step() end;check(R.flush('drops-shoot'),'成长后的发弹过程保存')
 local shootSignature=R.signature();coldRestore();check(R.signature()==shootSignature,'成长后真实弹数与射击节拍重新构建一致')
 print('含掉落与火力 / 射速的续玩回归通过：'..total..' 项。')
+
+
+-- 新版拖拽输入、Bomb 自然恢复和红蓝掉落的完整冷重建。
+withTouch,withBomb=true,true;skipRankInit=false;replayWriter=nil;R.session=nil;R.recoveryStopped=nil;R.inLogic=false
+R.pauseAfterRender=nil;R.memo=nil;R.enabled=false;LoadSaveInputState({})
+stage.current_stage=stage.stages.menu;stage.next_stage=nil
+lstg.var={player_name='reimu',rep_player='reimu',score=0,dead=0,getsc=0,graze=0,saving=0,current_system='',is_practice=false,
+    __revive_version=1,__rank_version=1,__drops_version=2,__input_version=2}
+local liveTouch={};AndroidInput={reset=function() end,readMovement=function(out) out.touch_x,out.touch_y=liveTouch.x,liveTouch.y end}
+lstg.system={castCharge4=function(_,p) p.protect=300;objects[#objects+1]={_live=true,group=3,x=p.x,y=p.y,vx=0,vy=1,rot=0,timer=0,hp=1} end}
+keys={};last=0;stage.Set('save',stageObject.stage_name)
+for i=1,180 do
+    liveTouch=i<150 and {x=math.floor(math.sin(i/18)*100*16)/16,y=math.floor((-100+math.cos(i/21)*40)*16)/16} or {}
+    keys={[16]=true,[88]=i==5 or i==35};step()
+end
+local bombCount,progress=GameDrops.bombState(hero)
+check(bombCount==1 and progress>0 and KeyState.touch_x==nil,'新版实际输入释放两次 Bomb，抬手后目标清空且恢复持续推进')
+check(R.flush('touch-bomb'),'新版拖拽与 Bomb 恢复进度保存')
+local touchSignature=R.signature();local savedHeroX,savedHeroY=hero.x,hero.y;local growth=Serialize(lstg.var.upgrades)
+local checkpoint=assert(R.peek());local changed=DeSerialize(Serialize(checkpoint))
+changed.inputs=C.base64(C.unbase64(changed.inputs):sub(1,-2))
+check(not pcall(R.validate,changed),'拒绝缺失拖拽字节的续玩输入')
+coldRestore()
+check(R.signature()==touchSignature and hero.x==savedHeroX and hero.y==savedHeroY,'任意角度拖拽与抬手后的实际移动完整重建')
+check(Serialize(lstg.var.upgrades)==growth and GameDrops.bombState(hero)==1,'红蓝成长、Bomb 数量和恢复余量完整重建')
+print('含精确拖拽和 Bomb 的续玩回归通过：'..total..' 项。')
+
+-- 真二进制录像：新旧格式混排，按帧数而非字节数定位下一关。
+local inputs={{shoot=true,touch_x=-16.25,touch_y=-173.0625},{slow=true,touch_x=100.125,touch_y=9.5},{spell=true}}
+local records={}
+for _,version in ipairs({1,2,1,2}) do
+    lstg.var.__input_version=version;local writer=plus.ReplayFrameWriter()
+    for _,input in ipairs(inputs) do writer:Record(input) end
+    records[#records+1]={stageName='test'..#records,stagePlayer='reimu',stageExtendInfo=Serialize({__input_version=version}),
+        frameData=writer,score=0,randomSeed=1,stageDate=0}
+end
+local replayPath=P.userRoot()..'/touch-test.rep'
+plus.ReplayManager.SaveReplayInfo(replayPath,{gameName='Boss Rush HD',gameVersion=1,group_finish=0,userName='test',stages=records})
+local info=plus.ReplayManager.ReadReplayInfo(replayPath)
+check(#info.stages==4,'新旧帧格式混排可读取所有关卡')
+for i,record in ipairs(info.stages) do
+    local version=DeSerialize(record.stageExtendInfo).__input_version
+    -- 故意使当前游戏版本与录像相反，验证读取不依赖菜单的旧 var。
+    lstg.var.__input_version=version==2 and 1 or 2
+    local reader=plus.ReplayFrameReader(replayPath,record.frameDataPosition,record.frameCount,version);local out={}
+    for frame,input in ipairs(inputs) do
+        check(reader:Next(out) and KeyState2Byte(out)==KeyState2Byte(input),'新旧录像按键准确读取')
+        check(out.touch_x==(version==2 and input.touch_x or nil) and out.touch_y==(version==2 and input.touch_y or nil),'新录像恢复目标，旧录像和抬手帧清除目标')
+    end
+    check(not reader:Next(out),'帧数不被扩展输入字节改变');reader:Close()
+end
+print('新旧二进制录像回归通过：'..total..' 项。')
+
+local previous=records[2];previous.stageName='previous@BossRush'
+local current=records[4];current.stageName=checkpoint.stage;current.stageExtendInfo=checkpoint.start.var
+plus.ReplayManager.SaveReplayInfo(P.path('saving1.file'),{gameName='Boss Rush HD',gameVersion=1,group_finish=0,userName='test',stages={previous,current}})
+stageObject.number=2;replayWriter=nil;replayReader=nil;lstg.var={};stage.current_stage=stage.stages.menu;stage.next_stage=nil
+R.pending=checkpoint;R.recovering=true;stage.Set('resume',checkpoint.stage)
+check(replayWriter._touch,'冷启动续玩按保存初态创建扩展帧写入器')
+R.recovering=false;R.pending=nil
+local names=stage.stages[group.title].save_replay
+check(#names==2 and names[1]==previous.stageName,'续玩保留此前关卡顺序')
+ext.saving.Save({previous.stageName})
+local copied=plus.ReplayManager.ReadReplayInfo(P.path('saving1.file')).stages[1]
+local reader=plus.ReplayFrameReader(P.path('saving1.file'),copied.frameDataPosition,copied.frameCount,2);local out={}
+check(reader:Next(out) and out.touch_x==inputs[1].touch_x and out.touch_y==inputs[1].touch_y,'续玩复制此前关卡时保留拖拽坐标，不按单字节截断')
+reader:Close()
+print('含跨关卡扩展帧复制的回归通过：'..total..' 项。')
