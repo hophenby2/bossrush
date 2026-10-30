@@ -1202,10 +1202,13 @@ NewStage("TH31", "永夜LastWord", 29, function(self)
 end)--29
 
 NewStage("TH32", "猩红测试", 30, function(self)
-    self:Option(TH08_bg, "TH08_NEW_3")
+    self:Option(TH06_bg, "TH06_0")
     self:Task(function()
-        boss.CreateGroup(1, self.level)
-        task.Wait(120)
+        -- 一至六面、中 Boss、帕秋莉四条机体路线，再进入 Extra。
+        for _, group in ipairs(_editor_class["TH32"].boss_order) do
+            boss.CreateGroup(group, self.level)
+            task.Wait(120)
+        end
     end)
     self:Next(52)
 end)--30
