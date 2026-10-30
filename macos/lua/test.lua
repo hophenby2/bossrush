@@ -3,6 +3,11 @@ local T={}
 function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if not mode then return end
+    local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
+    if fixedSeed then
+        local time=os.time
+        os.time=function(value) if value then return time(value) end;return fixedSeed end
+    end
     scoredata.PlayerBrand=scoredata.PlayerBrand or 'Mac测试'
     scoredata.version=ui.version
     if mode=='interactive' or mode=='interactive-battle' then
@@ -28,17 +33,40 @@ function T.install()
     local started,captured,finished=false,false,false
     local frames,afterCapture,maxBullets=0,0,0
     local beforeCaptureFPS
+    local checkpoint,checkpointAt
+    local logicalTarget=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LOGIC_FRAMES') or '')
+    local benchmarkStart
+    local audioCalls,audioChecked,audioMusic=0,false,nil
     local inputTick,inputStart,inputStopped,inputChecked=0,nil,nil,false
     local timings={}
     for _,name in ipairs({'ObjFrame','CollisionCheck','UpdateXY','AfterFrame'}) do
         local fn=_G[name]
         if fn then _G[name]=function(...) local started=lstg.AndroidClock();local values={fn(...)};timings[name]=(timings[name] or 0)+lstg.AndroidClock()-started;return unpack(values) end end
     end
+    if logicalTarget then
+        local after=AfterFrame
+        function AfterFrame(...)
+            after(...)
+            local scene=stage.current_stage
+            if scene and scene.stage_name=='RogueTen@RogueTen' and scene.timer==logicalTarget and not checkpoint then
+                local rows={}
+                for _,group in ipairs({1,2,3,4,5,7,8,10}) do
+                    for _,o in ObjList(group) do
+                        rows[#rows+1]=string.format('%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d',group,o.x,o.y,o.vx,o.vy,o.rot,o.a,o.b,o.timer)
+                    end
+                end
+                table.sort(rows)
+                checkpoint=SaveCodec.sha256(table.concat(rows,';'))
+                checkpointAt=scene.timer
+                beforeCaptureFPS=lstg.GetFPS()
+            end
+        end
+    end
     local original=FrameFunc
     function FrameFunc()
         if player and IsValid(player) then
             player.protect=120
-            if mode~='menu' then AndroidInput.keys[setting.keys.shoot]=true end
+            if mode=='battle' or mode=='input' then AndroidInput.keys[setting.keys.shoot]=true end
         end
         local p=player and IsValid(player) and player
         local canInput=mode=='input' and p and not p.lock and not p.dialog and (p.death or 0)==0
@@ -54,7 +82,8 @@ function T.install()
             end
         end
         local beforeX,beforeY=p and p.x,p and p.y
-        local quit=original()
+        local quit=false
+        if not (logicalTarget and captured) then quit=original() end
         if canInput and inputTick>=11 and inputTick<=20 then
             local distance=math.sqrt((p.x-beforeX)^2+(p.y-beforeY)^2)
             assert(math.abs(distance-p.lspeed)<.001,'Mac 逐帧拖拽移速不符')
@@ -66,7 +95,7 @@ function T.install()
         end
         local scene=stage.current_stage
         if scene and scene.stage_name=='menu' and scene.timer>=90 and not started then
-            started=true;frames=0
+            started=true;frames=0;benchmarkStart=lstg.AndroidClock()
             if mode=='battle' or mode=='input' then
                 local draw=RogueTen.draw
                 RogueTen.draw=function(seed,width)
@@ -85,13 +114,29 @@ function T.install()
         end
         if started then
             frames=frames+1
+            if mode=='audio' and frames<=120 then
+                if not audioMusic then for _,name in ipairs(EnumRes2('bgm')) do if GetMusicState(name)=='playing' then audioMusic=name;break end end end
+                for i=1,16 do lstg.PlaySound('damage00',.05,.25);audioCalls=audioCalls+1 end
+                assert(GetSoundState('damage00')=='playing','高频音效未正常播放')
+                if frames==60 then
+                    PauseSound('damage00');assert(GetSoundState('damage00')=='paused','音效暂停状态不符')
+                    ResumeSound('damage00');assert(GetSoundState('damage00')=='playing','音效恢复状态不符')
+                elseif frames==61 then
+                    -- x 引擎把已释放的音源也归入 paused；这里只验证停止后不再播放。
+                    StopSound('damage00');assert(GetSoundState('damage00')~='playing','音效未停止播放')
+                elseif frames==120 then
+                    assert(audioMusic and GetMusicState(audioMusic)=='playing','高频音效打断了 BGM')
+                    audioChecked=true;StopSound('damage00')
+                end
+            end
             local count=0
             for _,o in ObjList(GROUP.ENEMY_BULLET) do count=count+1 end
             for _,o in ObjList(GROUP.INDESTRUCTIBLE or GROUP.INDES) do count=count+1 end
             for _,o in ObjList(GROUP.LASER) do count=count+1 end
             maxBullets=math.max(maxBullets,count)
-            if frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')) and not captured then
-                beforeCaptureFPS=lstg.GetFPS()
+            local ready=logicalTarget and checkpoint or (not logicalTarget and frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')))
+            if ready and not captured then
+                beforeCaptureFPS=beforeCaptureFPS or lstg.GetFPS()
                 plus.CreateDirectory('snapshot');Snapshot('snapshot/mac-'..mode..'.png');captured=true
             end
             if captured then
@@ -99,7 +144,7 @@ function T.install()
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
                     f:write(Serialize({mode=mode,stage=scene.stage_name,frames=frames,peak=maxBullets,
-                        renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
+                        audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true
                     lstg.SystemLog('BOSSRUSH_MAC_TEST: '..mode..' 通过')

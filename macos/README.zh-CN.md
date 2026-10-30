@@ -52,9 +52,28 @@ python3 macos/verify.py
 python3 macos/verify.py --smoke
 ```
 
-后者启动真实 Metal 应用，依次检查菜单、TH35「客星」、2D / RenderTarget / 平铺 / 3D，以及逐帧拖拽与松手停止。渲染包含 30 项像素检查，测试使用临时存档，截图与日志输出至 `macos/dist/test/`。
+后者启动真实 Metal 应用，依次检查菜单、TH35「客星」、2D / RenderTarget / 平铺 / 3D、逐帧拖拽与松手停止，以及 1920 次高频音效请求、暂停 / 恢复 / 停止和 BGM 连续播放。渲染包含 30 项像素检查，测试使用临时存档，截图与日志输出至 `macos/dist/test/`。
 
-当前 Apple M4 Max 实测菜单与基础渲染约 60 FPS；「客星」密集激光约 15–25 FPS，碰撞计算仍需继续优化。
+Mac 与 Android 一样只链接随包的 OpenAL Soft。旧 Mac 可执行文件同时链接系统 OpenAL，导致音效重播时主线程阻塞在系统 `alBufferData`；这些等待发生在命中回调中，之前被误计为碰撞计算耗时。构建校验现在禁止系统 OpenAL 依赖，并在真实运行中检查 AL 符号归属。
+
+2026-10-30 在 Apple M4 Max 上，以相同脚本、种子 20261030、TH35「客星」900 个逻辑帧对照旧版与优化版：
+
+| 指标 | 旧版 | 优化版 |
+|---|---:|---:|
+| 结束前 FPS | 17.3 | 59.1 |
+| 测试耗时（含截图等待，不含启动） | 46.26 秒 | 15.56 秒 |
+| 碰撞及其回调累计耗时 | 31.45 秒 | 0.062 秒 |
+| 峰值弹幕数 | 249 | 249 |
+
+两次运行在第 900 逻辑帧的战斗对象状态 SHA-256 均为 `306a3ceeaa7d07e3713745bef08cb8d85559bc127b44a0415f03d729aac4ba93`。该校验比较对象分组、位置、速度、角度、判定尺寸和计时器；优化未修改弹幕逻辑。这个结果针对该测试场景，不代表全部符卡的性能。
+
+可用以下命令复测；每次运行使用独立临时存档：
+
+```sh
+python3 macos/tests/benchmark.py --app 'macos/dist/Boss Rush HD.app' --output macos/build/performance/current
+```
+
+传入 `--compare /path/to/old/result.json` 可校验两次运行的逻辑帧、弹幕峰值、对象数和状态哈希一致，并生成耗时对照。种子和帧数分别用 `--seed`、`--frames` 指定。
 
 Mac 与 Android 共用 `android/lua/main.lua`、`compat.lua`、`platform.lua` 等移植逻辑；`macos/lua/` 提供窗口、键鼠输入和私有诊断差异。Mac 精确续玩包含平台、LuaJIT 版本、入口和原生适配源码指纹。
 

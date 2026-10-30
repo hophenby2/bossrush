@@ -7,7 +7,7 @@ APP=ROOT/'dist/Boss Rush HD.app'
 BINARY=APP/'Contents/MacOS/BossRushHD'
 def run(*args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','input']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','input','audio']);args=parser.parse_args()
  run('luajit',ROOT/'tests/input.lua',ROOT.parent)
  run('codesign','--verify','--deep','--strict',APP)
  info=plistlib.loads((APP/'Contents/Info.plist').read_bytes())
@@ -17,13 +17,14 @@ def main():
   for line in subprocess.check_output(['otool','-L',str(file)],text=True).splitlines()[1:]:
    name=line.strip().split(' (',1)[0]
    assert name.startswith(('/System/Library/','/usr/lib/','@')), '存在构建机依赖：'+name
+   assert '/OpenAL.framework/' not in name,'系统 OpenAL 会覆盖随包后端，造成高频音效重填阻塞'
  resources=APP/'Contents/Resources'
  assert (resources/'game/macos/main.lua').is_file()
  assert not (resources/'game/User').exists() and not (resources/'game/replay').exists()
  print('Mac 应用结构、Apple Silicon 架构、签名、动态库隔离校验通过',flush=True)
  if not args.smoke:return
  out=ROOT/'dist/test';out.mkdir(exist_ok=True);reports=[]
- for mode in ([args.mode] if args.mode else ('menu','battle','graphics','input')):
+ for mode in ([args.mode] if args.mode else ('menu','battle','graphics','input','audio')):
   with tempfile.TemporaryDirectory(prefix='bossrush-mac-'+mode+'-') as sandbox:
    data=Path(sandbox)
    env=dict(os.environ,BOSSRUSH_MAC_DATA=sandbox,BOSSRUSH_MAC_TEST=mode)
@@ -40,8 +41,10 @@ def main():
    report=data/'bossrush/User/mac-test.json'
    assert report.exists(),mode+' 未完成测试，见 '+str(logfile)
    result=json.loads(report.read_text());assert 'Metal' in result['version']
+   assert result['audio']['renderer']=='OpenAL Soft' and '/Frameworks/soft_oal' in result['audio']['library'],'AL 符号未绑定到打包的 OpenAL Soft'
    assert mode!='battle' or result['peak']>0,'战斗测试没有生成弹幕'
    assert mode!='input' or (result['input_checked'] and result['paused']),'Mac 逐帧拖拽 / 暂停未完成验证'
+   assert mode!='audio' or (result['audio_checked'] and result['audio_calls']==1920),'高频音效 / BGM 状态回归未完成'
    screenshot=data/('bossrush/snapshot/mac-'+mode+'.png')
    assert screenshot.is_file(),'未生成画面截图'
    shutil.copy2(screenshot,out/(mode+'.png'));reports.append(result)

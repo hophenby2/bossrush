@@ -186,3 +186,8 @@ replace('frameworks/LSTG/RenderMode.cpp','CC_SAFE_RETAIN(_program);',"""CC_SAFE_
     defaultLayout=backend::VertexLayout();
     SetDefaultVertexLayout(_program,&defaultLayout);
 #endif""")
+
+# Android 显式链接打包的 OpenAL Soft；Mac 也只保留它，防止同名 AL 符号先绑定到系统旧后端。
+replace('frameworks/cocos2d-x/cmake/Modules/CocosConfigDepend.cmake',
+        'find_library(OPENAL_LIBRARY OpenAL)',
+        'set(OPENAL_LIBRARY "") # Boss Rush HD: use bundled OpenAL Soft target')

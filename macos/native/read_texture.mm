@@ -1,7 +1,13 @@
 #include "read_texture.h"
+#include "Audio/AudioCommon.h"
+#include "Classes/XLuaModuleRegistry.h"
+#include "LSTG/LuaWrapper/LuaWrapper.h"
+#include "platform/desktop/CCGLViewImpl-desktop.h"
 #include "renderer/backend/metal/DeviceMTL.h"
 #import <Metal/Metal.h>
 #include <cstring>
+#include <dlfcn.h>
+#include <utility>
 #include <vector>
 
 // 原生 Metal 纹理通过有序 blit 读回，不借用 Android GLES 的 getBytes。
@@ -28,12 +34,20 @@ bool bossrushMacReadTexture(cocos2d::Texture2D* source,size_t x,size_t y,size_t 
     [buffer release];return ok;
 }
 
-#include "Classes/XLuaModuleRegistry.h"
-#include "LSTG/LuaWrapper/LuaWrapper.h"
-#include "platform/desktop/CCGLViewImpl-desktop.h"
 LUA_REGISTER_FUNC_DEF(lstg, MacConfigureDisplay) {
     auto* view=static_cast<cocos2d::GLViewImpl*>(cocos2d::Director::getInstance()->getOpenGLView());
     int width,height;glfwGetFramebufferSize(view->getWindow(),&width,&height);
     view->enableRetina(true);view->setFrameSize(width,height);
     lua_pushinteger(L,width);lua_pushinteger(L,height);return 2;
+}
+
+// 同时报告 AL 符号归属，避免版本字符串正确但实际调用落入系统旧后端。
+LUA_REGISTER_FUNC_DEF(lstg, MacAudioInfo) {
+    Dl_info image={};dladdr(reinterpret_cast<void*>(&alBufferData),&image);
+    lua_createtable(L,0,4);
+    for(auto field : {std::make_pair("vendor",AL_VENDOR),std::make_pair("renderer",AL_RENDERER),std::make_pair("version",AL_VERSION)}) {
+        const auto* text=alGetString(field.second);
+        lua_pushstring(L,text?text:"");lua_setfield(L,-2,field.first);
+    }
+    lua_pushstring(L,image.dli_fname?image.dli_fname:"");lua_setfield(L,-2,"library");return 1;
 }
