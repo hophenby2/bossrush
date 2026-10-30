@@ -127,7 +127,7 @@ end)
 local textureVertices = { {}, {}, {}, {} }
 expose('RenderTexture', function(name, blend, ...)
     local target = FindResRenderTarget(name)
-    if not target then return native.RenderTexture(name, blend, ...) end
+    if not target or P.flipRenderTargets==false then return native.RenderTexture(name, blend, ...) end
     local height = target:getTexture():getPixelsHigh()
     local input = { ... }
     for i = 1, 4 do

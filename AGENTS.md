@@ -42,8 +42,8 @@
 
 | 事实 | 含义 |
 |---|---|
-| **没有构建步骤** | Lua 是引擎解释执行的，改完脚本直接生效，没有编译/打包 |
-| **本机跑不起游戏** | `LuaSTGSub.exe` 是 Windows 的，macOS 上没有构建产物。**别假设你能"跑一下看看"** |
+| **Windows 发行目录无需构建** | 散装 Lua 由引擎解释执行；Mac 原生测试版使用 `macos/build.py` 构建，Lua 更新用 `--update-assets` |
+| **Mac 可运行原生测试版** | `macos/dist/Boss Rush HD.app` 使用 Android 同版本 LuaSTG-x 与 Metal；支持 Apple Silicon / macOS 15+。启动和真实引擎测试见 [`macos/README.zh-CN.md`](macos/README.zh-CN.md)，不能把 Mac 测试等同于 Windows Sub 引擎验证 |
 | **没有 `.dat` 资源包** | `launch` 会优先加载 `mod.dat`/`core.dat`/`res.dat`/`shader.dat`；当前都不存在，所以散装文件直接生效。**若哪天出现了 `.dat`，它会盖住散装文件** |
 | **别动 `User/`、`replay/`** | 玩家存档与录像，已在 `.gitignore` 里忽略 |
 | **改动要能被验证** | 见第 10 节。跑不起游戏不代表可以不验证 |

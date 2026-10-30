@@ -6,8 +6,8 @@
 房屋风格、踩过的坑、加新关卡的清单、以及验证方式。这里只重复三条最容易出事的：
 
 1. **没有构建步骤**——Lua 由引擎解释执行，改完直接生效。
-2. **本机跑不起游戏**（引擎是 Windows 的 `LuaSTGSub.exe`，macOS 上没有构建产物）。
-   改完必须用静态自检代替：
+2. **本机可运行 Mac 原生测试版**，构建、更新资源与启动见 [`macos/README.zh-CN.md`](macos/README.zh-CN.md)。
+   Windows 的 `LuaSTGSub.exe` 仍不能直接原生运行；脚本改完仍须执行静态自检：
    ```bash
    luajit tools/check_stage.lua mod/GAME/th04.lua     # 单关：注册检查 + 逐卡逐帧模拟
    luajit tools/check_stage.lua --all                 # 全项目：按引擎顺序载入检查

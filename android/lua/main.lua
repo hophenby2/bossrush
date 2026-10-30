@@ -1,4 +1,5 @@
--- 从 Cocos 的 Android 入口启动原游戏，不加载 x 自带启动器或桌面 DLL。
+-- Android 与 macOS 共用的 Sub 启动链，不加载 Windows DLL。
+local desktop = rawget(_G, 'BossRushDesktop')
 cc, ccb, ccui, ccexp = cc or ax, ccb or axb, ccui or axui, ccexp or axexp
 __G__TRACKBACK__ = function(message)
     local text = debug.traceback(tostring(message), 2)
@@ -8,7 +9,7 @@ __G__TRACKBACK__ = function(message)
 end
 local bootError = __G__TRACKBACK__
 local function bootstrap()
-lstg.SystemLog('BOSSRUSH_BOOT: Android 入口')
+lstg.SystemLog('BOSSRUSH_BOOT: '..(desktop and 'macOS' or 'Android')..' 入口')
 local fu = cc.FileUtils:getInstance()
 fu:addSearchPath('src/')
 fu:addSearchPath('res/')
@@ -37,7 +38,7 @@ director:runWithScene(scene)
 local function fail(message)
     local text = debug.traceback(tostring(message), 2)
     lstg.SystemLog('BOSSRUSH_ERROR: ' .. text)
-    local label = cc.Label:createWithSystemFont('Boss Rush HD Android\n' .. text, 'sans-serif', 16*frameSize.height/540)
+    local label = cc.Label:createWithSystemFont('Boss Rush HD '..(desktop and 'macOS' or 'Android')..'\n' .. text, 'sans-serif', 16*frameSize.height/540)
     label:setDimensions(frameSize.width-80, frameSize.height-80)
     label:setPosition(frameSize.width/2, frameSize.height/2); label:setTextColor({ r=255,g=150,b=150,a=255 })
     scene:addChild(label, 10000)
@@ -51,8 +52,10 @@ local function start()
     local displayedFPS, uiFpsStart, uiFpsFrames = 60, lstg.AndroidClock(), 0
     lstg.GetFPS = function() return displayedFPS end
     lstg.SystemLog('BOSSRUSH_GPU: ' .. lstg.AndroidRendererInfo())
-    assert(lstg.AndroidVerifyGraphics())
-    lstg.SystemLog('BOSSRUSH_GRAPHICS: NPOT sampler 切换与 UBO 零值/分段/重复/覆盖的 GPU 校验通过')
+    if lstg.AndroidVerifyGraphics then
+        assert(lstg.AndroidVerifyGraphics())
+        lstg.SystemLog('BOSSRUSH_GRAPHICS: NPOT sampler 切换与 UBO 零值/分段/重复/覆盖的 GPU 校验通过')
+    end
     for k, v in pairs(lstg) do _G[k] = v end
     FileTaskWrapper = function(_, _, task) return task() end
     FileTaskAsyncWrapper = function(_, _, task) return task() end
@@ -64,12 +67,13 @@ local function start()
         ccb.BlendFactor.ZERO, lstg.RenderMode:getByName(''):getProgram())
     AndroidPlatform = load('game/android/platform.lua')
     load('game/android/compat.lua')
+    if desktop then load('game/macos/compat.lua') end
     load('game/android/lazy_textures.lua')
     args = {}; start_game = true; cjson = cjson or json
     lstg.DoFile('launch.lua')
     local originalLoadConfigure = loadConfigure
     local function mobileSetting(s)
-        s.mod = 'Boss Rush HD'; s.resx, s.resy, s.windowed = frameSize.width, frameSize.height, false
+        s.mod = 'Boss Rush HD'; s.resx, s.resy, s.windowed = frameSize.width, frameSize.height, desktop==true
         s.vsync, s.nosplash = true, true
     end
     mobileSetting(default_setting)
@@ -84,11 +88,11 @@ local function start()
         local f = assert(io.open('User/setting', 'w')); f:write(format_json(Serialize(cur_setting))); f:close()
     end
     setting.mod = 'Boss Rush HD'
-    setting.resx, setting.resy, setting.windowed = frameSize.width, frameSize.height, false
+    setting.resx, setting.resy, setting.windowed = frameSize.width, frameSize.height, desktop==true
     setting.vsync, setting.nosplash = true, true
     setting.allowsnapshot = true
     cur_setting = DeSerialize(Serialize(setting))
-    AndroidInput = load('game/android/input.lua')
+    AndroidInput = load(desktop and 'game/macos/input.lua' or 'game/android/input.lua')
     lstg.DoFile('core.lua')
     -- Sub 的辅助函数仅返回内容区坐标；Android 超宽屏 RT 使用完整物理画布。
     local worldToScreen = WorldToScreen
@@ -113,6 +117,7 @@ local function start()
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 开始')
     GameInit()
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 完成')
+    if desktop then load('game/macos/test.lua').install() end
     if diagnosticsMode and diagnosticsMode:match('combat') then load('game/android/combat_check.lua').install(diagnosticsMode) end
     if diagnosticsMode and diagnosticsMode:match('drops') then load('game/android/drops_check.lua').install(diagnosticsMode) end
     local pauseCache = load('game/android/pause_cache.lua')
@@ -198,7 +203,7 @@ local function start()
         end, fail)
         if not ok then scene:unscheduleUpdate() end
     end, 0)
-    lstg.SystemLog('BOSSRUSH_READY: Android 游戏循环已启动')
+    lstg.SystemLog('BOSSRUSH_READY: '..(desktop and 'macOS' or 'Android')..' 游戏循环已启动')
 end
 xpcall(start, fail)
 end

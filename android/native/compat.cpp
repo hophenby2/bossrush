@@ -3,6 +3,9 @@
 #include "LSTG/Util/UtilLuaRes.h"
 #include "LSTG/Renderer.h"
 #include "Classes/XLuaModuleRegistry.h"
+#include "renderer/backend/Device.h"
+#include "renderer/backend/DeviceInfo.h"
+#ifdef CC_USE_GFX
 #include "glad/gl.h"
 #include "renderer/backend/gfx/TextureGFX.h"
 #include "renderer/backend/gfx/BufferGFX.h"
@@ -10,6 +13,7 @@
 #include "gfx/backend/gfx-gles3/GLES3Device.h"
 #include "gfx/backend/gfx-gles3/GLES3GPUObjects.h"
 #include "gfx/backend/gfx-agent/BufferAgent.h"
+#endif
 #include <chrono>
 #include <cstring>
 
@@ -25,9 +29,14 @@ double androidNow() {
 using namespace lstg;
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
+#ifdef CC_USE_GFX
     std::string info = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     info += " / "; info += reinterpret_cast<const char*>(glGetString(GL_RENDERER));
     info += " / GL error=" + std::to_string(glGetError());
+#else
+    auto* device = cocos2d::backend::Device::getInstance()->getDeviceInfo();
+    std::string info = std::string(device->getVersion()) + " / " + device->getRenderer();
+#endif
     lua_pushlstring(L, info.data(), info.size()); return 1;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidClock) {
@@ -44,6 +53,7 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidTextProfile) {
     lua_pushinteger(L, androidTextCalls); androidTextCalls = 0;
     return 4;
 }
+#ifdef CC_USE_GFX
 LUA_REGISTER_FUNC_DEF(lstg, AndroidVerifyGraphics) {
     using namespace cocos2d;
     using namespace cocos2d::backend;
@@ -97,6 +107,7 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidVerifyGraphics) {
     if (!ok) return luaL_error(L, "UBO 合并提交的 GPU 读取校验失败");
     lua_pushboolean(L, true); return 1;
 }
+#endif
 LUA_REGISTER_FUNC_DEF(lstg, AndroidSetFrameBufferEnabled) {
     lstg::XRenderer::getInstance()->setUseFrameBuffer(lua_toboolean(L, 1)); return 0;
 }
