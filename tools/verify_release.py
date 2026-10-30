@@ -21,7 +21,8 @@ def inputs(root):
     return result
 
 def verify(path,root,kind):
-    with zipfile.ZipFile(path) as archive:
+    # ditto 的 ZIP 保留 UTF-8 名字但不总置 UTF-8 标志；显式解码，避免中文资源被当作 CP437。
+    with zipfile.ZipFile(path,metadata_encoding='utf-8') as archive:
         assert archive.testzip() is None,('CRC 失败',path)
         names=archive.namelist()
         assert not any('/User/' in '/'+n or '/replay/' in '/'+n for n in names),('混入用户数据',path)
