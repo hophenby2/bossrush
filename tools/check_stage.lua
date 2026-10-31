@@ -604,7 +604,7 @@ _G.lstg = { world = { l = -192, r = 192, b = -224, t = 224,
                       boundl = -224, boundr = 224, boundb = -256, boundt = 256,
                       pl = -192, pr = 192, pb = -224, pt = 224 },
             tmpvar = {}, var = {}, view3d = { eye = {0,0,0}, at = {0,0,0}, up = {0,1,0} } }
-_G.player = { x = 0, y = 0, name = "Reimu" }
+_G.player = { x = 0, y = 0, name = "Reimu", class = {colli=function() end} }
 _G.player_list = { { "Reimu", 1 } }
 -- ★ 随机数桩件必须是**真的随机**。
 --   原来写成 `Float = function(self, a, b) return (a or 0) end` —— 返回下界，

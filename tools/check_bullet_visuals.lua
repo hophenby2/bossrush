@@ -61,7 +61,7 @@ local function check(v,label) assert(v,label); checks=checks+1 end
 local function near(a,b) return math.abs(a-b)<1e-7 end
 local roots, actual_lasers = {}, {}
 boss.card.add=function(parts) for _,p in ipairs(parts) do roots[#roots+1]=p[1] end end
-local function find(name)
+local function find(name,root)
     local seen={}
     local function visit(v)
         if (type(v)~='function' and type(v)~='table') or seen[v] then return end
@@ -76,7 +76,7 @@ local function find(name)
             for _,u in pairs(v) do local found=visit(u);if found then return found end end
         end
     end
-    return assert(visit(roots),name)
+    return assert(visit(root or roots),name)
 end
 local expected={
     th31={[2]=grain_a,[4]=arrow_small,[5]=grain_b,[6]=arrow_big_c,[8]=butterfly,[9]=knife,[16]=grain_b,[17]=grain_c,[18]=gun_bullet,[19]=water_drop,[20]=knife},
@@ -87,7 +87,28 @@ local expected={
 local mapper_names={th31='style_of',th33='sg_style',th34='th07_style',th35='t10_style'}
 for _,game in ipairs({'th31','th33','th34','th35'}) do
     roots={};dofile('mod/GAME/'..game..'.lua');local mapper=find(mapper_names[game])
-    if game=='th31' then actual_lasers.th08=find('lw209_laser') end
+    if game=='th31' then
+        actual_lasers.th08=find('lw209_laser')
+        -- 真正执行构造并验证资源名，单纯载入卡片抓不到 ellipse/ellipse16 混用。
+        local orb=New(find('c452_orb'),45,117,0,1)
+        check(resources[orb.img] and orb.img=='ellipse16','Final Master Spark的大玉使用已注册图片资源')
+        for _,name in ipairs({'bullet_cls_23a','bullet_cls_23b','bullet_cls_4','bullet_cls_7'}) do
+            local cls=find(name)
+            local shot=New(cls,45,117,0.3,1.2,0.16,0)
+            check(near(shot.x,45) and near(shot.y,117),'无余涅槃各发弹分支从Boss坐标出生：'..name)
+            check(shot.class==cls,'无SPAWN位的LW弹出生即进入飞行状态')
+        end
+        local cls=find('emitter_neg_cls')
+        local emitter=New(cls,45,117,4)
+        calls={};cls.render(emitter)
+        check(emitter.img==nil and #calls==0,'无余涅槃逻辑发射器不绘制占位黑框')
+        cls.frame(emitter)
+        local beam=assert(emitter.lw_slots[1])
+        local before=beam.rot
+        for _=1,20 do cls.frame(emitter);beam.class.frame(beam) end
+        check(beam.rot~=before and near(beam.x,45+64*cos(beam.rot))
+            and near(beam.y,117+64*sin(beam.rot)),'LW激光旋转围绕原始发射点保持64px偏移')
+    end
     if game=='th35' then actual_lasers.th10=find('th10_laser') end
     if game=='th33' then
         local fixed=find('sg_visual')

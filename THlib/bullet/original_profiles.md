@@ -22,4 +22,18 @@
 - TH08 `BulletManager.cpp:856..900`：与TH07相同的128帧计数规则。TH095 `BulletManager.cpp:761..769,1504..1514` 按精灵全宽高作边界余量，不能套用TH07规则。
 - TH10 `BulletRuntime.cpp:140..159`：先积分/穿墙，再检查边界，最后递减出屏延迟。原始全局边界位于 `0x470B40/3C/5C/38`，值分别为 `-192/192/-64/448`。`BulletManager.cpp:413..472` 的穿墙移动量为场地宽高加精灵宽高；每穿过一侧扣一次次数，耗尽后关闭变换。
 
-验证入口：`tools/check_original_ecl_fidelity.lua` 验证原作时序、回程、穿墙和陪战清场；`tools/check_bullet_visuals.lua` 验证实际绘制角；`tools/check_th35_patterns.lua` 用真实子弹/样式和协程对点名的四张卡各运行7200帧，检查弹池容量。
+验证入口：`tools/check_original_ecl_fidelity.lua` 验证原作时序、回程、穿墙和陪战清场；`tools/check_bullet_visuals.lua` 验证实际绘制角；`tools/check_th35_patterns.lua` 用真实子弹/样式和协程对点名及同类缺口的15张卡各运行7200帧，检查实际发弹与弹池容量；可用PATTERN_LONG_CARDS筛选。
+
+妖妖梦补充核对（2026-10-31）：
+
+- `ecldata4/Sub121`的首张骚符还同时运行`Sub122/123→125/126`：左右陪战在原作(96,96)/(288,96)，首轮六只幽灵在墙钟354帧生成，之后间隔60/60/60/100帧。
+- `ecldata8/Sub101`与`ecldata7/Sub98`都有slot1、flag1、200帧的0x2000。只恢复公共128帧宽限而漏这条命令，仍会提前回收。幽曲、墨染、反魂蝶、人形、键灵等缺失记录也按原槽位补回；ExIns6的分裂延迟为130帧，末级没有延迟，不能统一套用母弹999帧。
+- `BulletManager.cpp:1068..1094`的出生阶段不运行命令或离屏检查，也不递减spawnDelay。出场先退velocity×4，再按2/2.5/3的除数运动，最后一帧落入NORMAL。ANM时长为10/16/32帧，大弹32帧，泡弹24帧。负spawnDelay按`!=0`继续递减。
+- 华灵蝶妄想的`ecldata6/Sub53`使用`stg6enm/script12`、`SET_TRAIL(25,48,16,1)`：48帧带状拖尾、宽32、隐藏头部；这不是BulletManager里的直线激光。`EnemyManager.cpp:758..773`在头部及历史1/7/13帧节点检查8×8接触框，框除以1.5后再取半宽；`1221..1351`负责原作纹理带。ex16/17/18只处理仍激活的蝶弹，已回收弹的最后坐标不能继续生成弹源。
+- 动静均衡`Sub94`、梦现`Sub91/92`、弹幕结界`Sub130..134`、式神驻点`Sub116`使用ANM31。EX同型驻点`Sub112`的精灵像素与PH一致。保留法阵到原生敌机脚本结束；驻点法阵持续120帧。
+- 两套段式激光共用`mod/GAME/th34_visual.lua`：flags1按原作全宽淡入/收束；startTime/endTime为0时走原始分支；startOffset≥640释放。原生生命周期结束时直接删除，不能再继承THlib额外30帧的del收束。消弹仍保留原生类并从当前宽度进入原作endTime。
+- `Resources/System/th34_native.png`仅裁切原始精灵：etama/script10/11的两种激光及源点光球、stg6enm/sprite42的曲线带、stg8enm/sprite64的法阵。未缩放原像素。取自本机th07.dat，用thdat提取、thanm解出PNG；下面给出原ANM的SHA-256。
+
+- stg6enm.anm：`d1224e65d644fc95cd7e3e3e2e068e97e6d0fdffa9974b3a98940d427f4ba40b`
+- stg7enm.anm：`c85745c03d10080137e967b68650b7d9c170403772232be276c7dabd8d3416d7`
+- stg8enm.anm：`9a5242bd1823008df620c3c5a6446b54d2787b0ea461da0ee0c777b6bebfa69c`

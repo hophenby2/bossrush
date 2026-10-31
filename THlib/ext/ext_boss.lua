@@ -471,6 +471,12 @@ local blend = "mul+add"
 
 SaoqiMain = Class(object)
 function SaoqiMain:frame()
+    -- 换卡击破可能已在上一帧释放宿主，不能先恢复读取宿主的协程。
+    if not IsValid(self.master) then
+        task.Clear(self)
+        del(self)
+        return
+    end
     task.Do(self)
     if IsValid(self.master) then
         self.y = self.y + (self.master.y - self.bossy)

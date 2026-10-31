@@ -25,9 +25,24 @@ SetImageScale = function() end
 SetAnimationScale = function() end
 SetAnimationCenter = function() end
 dofile('THlib/lib/Ltask.lua')
+-- PSCRIPT继承enemy.frame来推进自己的协程；静态桩的空回调会漏掉整条子机发弹分支。
+enemy.frame=task.Do
 dofile('THlib/bullet/bullet.lua')
 dofile('THlib/bullet/bulletStyle.lua')
 dofile('THlib/laser/laser.lua')
+BoxCheck=function(o,l,r,b,t) return o.x>=l and o.x<=r and o.y>=b and o.y<=t end
+-- 弹体转换会调用框架的雾化退场；保留该效果的寿命，图像不参与本项运动验收。
+bubble2=Class(object,{
+    init=function(o) o.bound=false;o.group=GROUP.GHOST end,
+    frame=function(o) if o.timer>=11 then object.RawDel(o) end end,
+})
+-- 反魂蝶的独立掉落线程也要执行；本测试只镜像道具离场，不验收收集/计分。
+for _,name in ipairs({'sakura','faith','point'}) do
+    item.obj[name]=Class(object,{
+        init=function(o,x,y) o.x,o.y,o.group,o.vy=x,y,GROUP.ITEM,-2 end,
+        frame=function() end,
+    })
+end
 player.class = { colli = function() end }
 player.grazer = { a = 16, class = { colli = function() end } }
 local objects, shots, cards, laser_births = {}, {}, {}, {}
@@ -344,8 +359,13 @@ end
 check(fan ~= nil, '共用接口的亡我乡五连激光正常生成')
 for _, o in ipairs(fan) do check(near(o.pl_ang, math.pi), '五连激光初始角为 π 弧度，不重复换算') end
 exile.current_card.del(exile); task.Clear(exile); object.RawDel(exile)
--- 本次点名的四张卡用实际bullet/style/协程长跑；屏外回程弹也计入池容量。
-for _,case in ipairs({{4476,1024},{3444,1024},{3606,2000},{3624,2000}}) do
+-- 点名卡及同类缺失命令的卡用实际bullet/style/协程长跑；屏外回程弹也计入池容量。
+-- 可用PATTERN_LONG_CARDS=4441,4397筛选长测；未设置时覆盖全部列表。
+local long_filter=os.getenv('PATTERN_LONG_CARDS')
+for _,case in ipairs({{4476,1024},{3444,1024},{3606,2000},{3624,2000},
+    {4441,1024},{3447,1024},{3449,1024},{4397,1024},{4399,1024},
+    {4400,1024},{4401,1024},{4445,1024},{4433,1024},{4434,1024},{4435,1024},{3460,1024}}) do
+    if not long_filter or (','..long_filter..','):find(','..case[1]..',',1,true) then
     for _,o in ipairs(objects) do if IsValid(o) then
         if o.imgclass then OriginalBulletVisual.retire(o) else object.RawDel(o) end
     end end
@@ -362,10 +382,12 @@ for _,case in ipairs({{4476,1024},{3444,1024},{3606,2000},{3624,2000}}) do
         for _,o in ipairs(objects) do if IsValid(o) and not o._pending_delete and o.imgclass then alive=alive+1 end end
         if t<=3600 then peak1=math.max(peak1,alive) else peak2=math.max(peak2,alive) end
     end
+    check(peak1>0,'长测确实执行了实际发弹分支：'..case[1])
     check(peak1<=case[2] and peak2<=case[2],'原生弹池不因屏外保留失控：'..case[1])
     print(('生命周期长测 %d：前3600帧峰值%d，后3600帧峰值%d，上限%d'):format(case[1],peak1,peak2,case[2]))
     local before=#objects
     card.del(host);task.Clear(host);object.RawDel(host);step(1)
     check(#objects<=before,'卡片清理没有产生超大血量死亡特效：'..case[1])
+    end
 end
 print(('通过：TH34/TH35 原版弹幕与跨卡清场 %d 项回归检查'):format(checks))

@@ -1,0 +1,157 @@
+-- 妖妖梦原生发弹源和段式激光。尺寸/动画来自etama、stg6enm、stg8enm的ANM，
+-- 状态切换照BulletManager.cpp:1124..1248；拖尾绘制/碰撞照EnemyManager，不改变发弹参数。
+local N = {}
+local tex = 'th34_native'
+LoadTexture(tex, 'Resources/System/th34_native.png')
+for i=0,15 do
+    LoadImage('th34_laser0_'..i,tex,i*16,0,16,14)
+    LoadImage('th34_laser1_'..i,tex,i*16,16,16,16)
+end
+for i=0,4 do LoadImage('th34_orb_'..i,tex,i*32,32,30,30) end
+LoadImage('th34_source_circle',tex,192,32,64,64)
+LoadImage('th34_source_spirit',tex,0,80,48,16)
+local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
+function N.source(o,kind)
+    o.th07_source_kind,o.th07_source_start=kind,o.ani
+    if kind=='spirit' then
+        o.th07_source_history={}
+        o._inf_graze=true -- 原作isProjectile在每6帧的接触检查中可再次擦弹
+    end
+end
+function N.circle_script(o)
+    N.source(o,'circle')
+    task.Wait(120)
+end
+function N.record_source(o)
+    if o.th07_source_kind~='spirit' then return end
+    local h=o.th07_source_history
+    table.insert(h,1,{x=o.x,y=o.y,a=(o.th07_source_angle or 0)*math.pi/180})
+    if #h>48 then h[49]=nil end
+    -- sub53的hitbox为8×8；原作除以1.5后当全宽高使用。拖尾在1/7/13帧前各查一次。
+    local function collide(p)
+        local function node(v)
+            local dx,dy=math.abs(p.x-v.x),math.abs(p.y-v.y)
+            if dx<=8/3+(p.A or p.a or 0) and dy<=8/3+(p.B or p.b or 0) then
+                p.class.colli(p,o)
+            end
+            if o.timer%6==0 and p.grazer and dx<=8/1.4+20 and dy<=8/1.4+20 then
+                p.grazer.class.colli(p.grazer,o)
+            end
+        end
+        node(h[1])
+        for j=2,14,6 do if h[j] then node(h[j]) end end
+    end
+    if GameNet then GameNet.forEachPlayer(collide) else collide(player) end
+end
+function N.render_source(o)
+    local t=o.ani-(o.th07_source_start or 0)
+    if o.th07_source_kind=='circle' then
+        SetImageState('th34_source_circle','mul+add',255,255,255,255)
+        Render('th34_source_circle',o.x,o.y,-(t+1)*3)
+    elseif o.th07_source_kind=='spirit' then
+        -- SET_TRAIL(25,48,16,1)：48帧宽32的带状拖尾，flag16隐藏头部，不能只画一个灵体。
+        local h=o.th07_source_history
+        local n=#h
+        local color=Color(255,255,255,255)
+        local function vertex(i)
+            local p=h[i]
+            local a=p.a
+            if i>1 then
+                local d=(p.a-h[i-1].a+math.pi)%(2*math.pi)-math.pi
+                a=h[i-1].a+d/2
+            end
+            local nx,ny=-math.sin(a)*16,math.cos(a)*16
+            local u=48*(1-(i-1)/(n-1))
+            return {p.x+nx,p.y+ny,0.5,u,80,color},{p.x-nx,p.y-ny,0.5,u,96,color}
+        end
+        for i=1,n-1 do
+            local a,b=vertex(i)
+            local c,d=vertex(i+1)
+            RenderTexture(tex,'',a,c,d,b)
+        end
+    end
+end
+function N.sync_laser(o)
+    local a,d=o.pl_ang,o.pl_eOff-o.pl_sOff
+    o.x,o.y=o.pl_x+math.cos(a)*o.pl_sOff,o.pl_y+math.sin(a)*o.pl_sOff
+    o.rot=a*180/math.pi
+    o.l1,o.l2,o.l3=0,math.max(0,d),0
+    o.w0,o.w=o.pl_lw,o.pl_w
+end
+function N.init_laser(o,s)
+    o.pl_sprite,o.pl_color=s.sprite or 0,s.color or s.spr or 4
+    o.pl_hide=s.hide and true or false
+    o.pl_alpha=255
+    o.pl_state=o.pl_tStart==0 and 1 or 0
+    o.pl_w=o.pl_lw
+    if o.pl_state==0 then
+        if o.pl_flags%2==1 then o.pl_alpha=0 else o.pl_w=1.2 end
+    end
+    N.sync_laser(o)
+end
+function N.step_laser(o)
+    o.pl_eOff=o.pl_eOff+o.pl_spd
+    if o.pl_sLen<o.pl_eOff-o.pl_sOff then o.pl_sOff=o.pl_eOff-o.pl_sLen end
+    o.pl_sOff=math.max(0,o.pl_sOff)
+    local t,full=o.pl_t,o.pl_lw
+    local fade=o.pl_flags%2==1
+    local entered=o.pl_state
+    o.pl_w=full
+    if o.pl_state==0 then
+        if fade then o.pl_alpha=math.min(255,t*255/math.max(1,o.pl_tStart))
+        else
+            o.pl_w=o.pl_tStart-math.min(o.pl_tStart,30)<t and t*full/math.max(1,o.pl_tStart) or 1.2
+        end
+        o.colli=t>=o.pl_hbStart
+        if t>=o.pl_tStart then o.pl_state,t=1,0 end
+    end
+    if o.pl_state==1 then
+        o.colli=true
+        if t>=o.pl_dur then
+            o.pl_state,t=2,0
+            if o.pl_tEnd==0 then object.RawDel(o);return false end
+        end
+    end
+    if o.pl_state==2 then
+        -- 原作flags&1的收束分支仍使用startTime作除数，且alpha从0上升，照实保留。
+        if fade then o.pl_alpha=math.min(255,t*255/math.max(1,o.pl_tStart))
+        else o.pl_w=full*math.max(0,1-t/math.max(1,o.pl_tEnd)) end
+        o.colli=t<o.pl_hbEnd
+        if t>=o.pl_tEnd then object.RawDel(o);return false end
+    end
+    if o.pl_sOff>=640 then object.RawDel(o);return false end
+    o.pl_t=t+1
+    N.sync_laser(o)
+    -- 展开末帧落入ACTIVE时，原作仍沿用本帧已算好的短判定长度。
+    local phase=entered==0 and o.pl_state==1 and 1 or o.pl_state+1
+    OriginalBulletVisual.native_laser(o,phase,t,full,o.pl_hbEnd,o.pl_flags,o.pl_sOff)
+    return true
+end
+function N.cancel_laser(o)
+    -- RemoveAllBullets使用当前targetWidth开始原作收束，取消判定；保留原生角度与源点。
+    if o.pl_state<2 then
+        o.pl_lw,o.pl_state,o.pl_t=o.pl_w,2,0
+    end
+    o.pl_hbEnd,o.colli=0,false
+    object.Preserve(o)
+end
+function N.render_laser(o)
+    local len=o.pl_eOff-o.pl_sOff
+    local color=math.max(0,math.min(15,o.pl_color))
+    local image='th34_laser'..o.pl_sprite..'_'..color
+    local h=o.pl_sprite==0 and 14 or 16
+    if len>0 and o.pl_w>0 then
+        SetImageState(image,'mul+add',o.pl_alpha,255,255,255)
+        local mid=(o.pl_sOff+o.pl_eOff)/2
+        Render(image,o.pl_x+math.cos(o.pl_ang)*mid,o.pl_y+math.sin(o.pl_ang)*mid,
+            o.rot-90,o.pl_w/16,len/h)
+    end
+    if (o.pl_sOff<16 or o.pl_spd==0) and (not o.pl_hide or o.pl_state~=0) then
+        local image='th34_orb_'..orb_index[color+1]
+        local scale=o.pl_lw/10*(16-o.pl_sOff)/16
+        if scale<=0 then scale=o.pl_lw/10 end
+        SetImageState(image,'mul+add',255,255,255,255)
+        Render(image,o.x,o.y,0,scale)
+    end
+end
+return N

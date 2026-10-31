@@ -313,4 +313,159 @@ check(spawn(0,0,0,0,160,2)==nil,'第2001发必须被原作弹池拒绝')
 object.RawDel(objects[100]);if native then native.AfterFrame() end
 check(spawn(0,0,0,0,160,2)~=nil,'释放槽位后可以复用')
 reset()
+-- 消弹也走原作收束，不能换成THlib的另一个激光类导致位置/贴图丢失。
+local laser_factory=upvalue(cards[4476],'plaser')
+local cancelled=laser_factory(0,0,0,{tStart=10,dur=100,tEnd=4,w=16,hbEnd=3})
+tick();tick()
+local original=cancelled.class
+cancelled.class.kill(cancelled)
+check(cancelled.class==original and cancelled.pl_state==2 and not cancelled.colli,
+    '激光消弹保留原生类、坐标和纹理，从当前宽度进入收束')
+for _=1,5 do tick() end
+check(not IsValid(cancelled),'激光消弹按原作endTime释放')
+reset()
+-- 出生阶段与NORMAL分开；场外出生也要等动画结束才进入原生回收判断。
+local delayed_spawn=New(C.TH34_cmdbullet,ball_small,2,500,0,2,180,
+    {flags=0x2002,list={{type=0x2000,dur=20}}})
+check(near(delayed_spawn.x,508),'原作SPAWN_FAST出生点先退四帧位移')
+for _=1,9 do tick() end
+check(IsValid(delayed_spawn) and delayed_spawn.c_spawn_delay==20
+    and not delayed_spawn.colli,'出生动画期间不倒数spawnDelay，也不回收或开启判定')
+tick()
+check(delayed_spawn.c_spawn_left==0 and delayed_spawn.c_spawn_delay==19
+    and near(delayed_spawn.x,496),'出生末帧先走半速，再落入NORMAL走全速')
+reset()
+local negative=New(C.TH34_cmdbullet,ball_small,2,500,0,0,0,
+    {flags=0x2000,list={{type=0x2000,dur=-1}}})
+tick()
+check(IsValid(negative) and negative.c_spawn_delay==-2,'负spawnDelay按原作!=0继续递减，不钳为0')
+reset()
+-- 首张骚符也同时运行Sub122/123；子机在354帧起各放六只幽灵，不能只有主Boss。
+local trio,trio_card=start(4441)
+for _=1,121 do tick(trio,trio_card) end
+local sides={}
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_prism_side then
+    sides[o.th07_prism_side]=o
+end end
+check(sides[-1] and sides[1],'首张骚符同时生成梅露兰与莉莉卡')
+check(near(sides[-1].x,-96) and near(sides[1].x,96)
+    and near(sides[-1].y,128) and near(sides[1].y,128),'Sub122/123按原作移动到96/288,96')
+for _=122,356 do tick(trio,trio_card) end
+local ghosts=0
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_prism_emitter then ghosts=ghosts+1 end end
+check(ghosts==12,'Sub125的第一拍左右各生成六只发弹幽灵')
+trio_card.del(trio);task.Clear(trio);reset()
+for _,id in ipairs({3447,3465}) do
+    local owner,spell=start(id)
+    for _=1,240 do tick(owner,spell) end
+    local b
+    for _,o in ipairs(objects) do if IsValid(o) and o.c_list and #o.c_list==2
+        and o.c_list[1].type==0x40 and o.c_list[2].dur==200 then b=o;break end end
+    check(b and b.c_spawn_delay>0,'实际曲线枪保留原作slot1/allow1/200帧命令：'..id)
+    b.x,b.y,b.vx,b.vy=500,0,0,0
+    for _=1,90 do tick() end
+    check(IsValid(b) and b.c_spawn_delay>0,'折向完成后场外弹仍等原作延迟：'..id)
+    spell.del(owner);task.Clear(owner);reset()
+end
+-- 检查实际PLASER的flags&1、零收束和原始纹理，不以THlib代理光柱代替。
+local plaser=upvalue(cards[4476],'plaser')
+local fade=plaser(0,0,0,{sprite=1,color=6,w=16,sOff=0,eOff=100,sLen=100,
+    tStart=10,dur=3,tEnd=4,hbStart=5,hbEnd=2,flags=1})
+check(fade.pl_alpha==0,'淡入激光刚出生时透明，不能先闪一帧满亮光柱')
+for _=1,6 do tick() end
+check(near(fade.pl_w,16) and near(fade.pl_alpha,127.5),'flags1展开以完整宽度淡入，不套用细线变粗')
+for _=1,8 do tick() end
+check(fade.pl_state==2 and fade.pl_alpha==0,'flags1收束保留原作从零渐亮的行为')
+for _=1,4 do tick() end
+check(not IsValid(fade),'原生激光计时结束立即释放，不再触发THlib额外30帧收束')
+reset()
+local instant=plaser(0,0,0,{tStart=0,dur=2,tEnd=0,w=8})
+check(instant.pl_state==1,'startTime0从ACTIVE状态出生')
+for _=1,3 do tick() end
+check(not IsValid(instant),'endTime0在ACTIVE结束当帧释放')
+reset()
+local visual=upvalue(cards[4397],'NativeVisual')
+local owner,spell=start(3449)
+for _=1,311 do tick(owner,spell) end
+local circle
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_source_kind=='circle' then circle=o;break end end
+check(circle and circle.timer>=80,'动与静的法阵到达目的地后继续保留并发弹')
+local render_saved,texture_saved=Render,RenderTexture
+local draws,quads={},{}
+Render=function(name,x,y,rot,hs,vs) draws[#draws+1]={name=name,x=x,y=y,rot=rot,hs=hs,vs=vs} end
+RenderTexture=function(tex,blend,a,b,c,d) quads[#quads+1]={tex=tex,a=a,b=b,c=c,d=d} end
+visual.render_source(circle)
+check(draws[1].name=='th34_source_circle' and near(draws[1].x,circle.x),'法阵从真实发弹源坐标绘制原作64px精灵')
+spell.del(owner);task.Clear(owner);reset()
+local owner,spell=start(4397)
+for _=1,320 do tick(owner,spell) end
+local ribbon
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_source_kind=='spirit' then ribbon=o;break end end
+check(ribbon and #ribbon.th07_source_history==48,'蝶妄想实际Sub53保留48帧拖尾，不能是空渲染控制器')
+quads={};visual.render_source(ribbon)
+check(#quads==47 and quads[1].tex=='th34_native','蝶妄想绘制47段原作纹理带')
+local q=quads[1]
+check(near(math.sqrt((q.a[1]-q.d[1])^2+(q.a[2]-q.d[2])^2),32),'拖尾宽度按48×16精灵的scaleY2保持32px')
+spell.del(owner);task.Clear(owner);reset()
+local owner,spell=start(4397)
+for _=1,200 do tick(owner,spell) end
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_sprite==8 and o.th07_color==4 then
+    OriginalBulletVisual.retire(o)
+end end
+for _=201,270 do tick(owner,spell) end
+local stale_sources=0
+for _,o in ipairs(objects) do if IsValid(o) and o.th07_source_kind=='spirit' then stale_sources=stale_sources+1 end end
+check(stale_sources==0,'ex17不能从已回收蝶弹的最后位置创建幽灵发射源')
+spell.del(owner);task.Clear(owner);reset()
+local hits=0
+local saved_player=player
+player={x=0,y=0,A=1,B=1,class={colli=function() hits=hits+1 end}}
+local source={x=0,y=0,ani=0,timer=1}
+visual.source(source,'spirit')
+for i=1,48 do source.x=i*10;visual.record_source(source) end
+player.x=420;hits=0
+visual.record_source(source)
+check(hits>0,'拖尾历史第7帧节点也有原作接触判定')
+player.x=source.x;player.y=4;hits=0;visual.record_source(source)
+check(hits==0,'原作8/1.5全宽判定不能误作半宽扩大一倍')
+player=saved_player
+Render,RenderTexture=render_saved,texture_saved
+-- 青鬼赤鬼的ExIns22：只在大玉折向结束且原坐标y<320时撒弹。
+reset()
+local oni_owner,oni_card=start(3460)
+local oni_pool=upvalue(C.th07_oni_emit,'pool4')
+local large=New(C.TH34_cmdbullet,ball_huge,2,20,30,0,0,
+    {flags=0,list={}})
+large.th07_sprite,large.th07_color=10,1;oni_pool[#oni_pool+1]=large
+large.c_exf=0x40
+check(C.th07_oni_emit(oni_owner,211)==0,'大玉的0x40折向尚未结束时不撒小弹')
+large.c_exf=0
+check(C.th07_oni_emit(oni_owner,213)==0,'每3帧跳过一次ExIns22')
+large.y=-96
+check(C.th07_oni_emit(oni_owner,211)==0,'原作y=320边界严格排除，翻转后y=-96')
+large.y=30
+check(C.th07_oni_emit(oni_owner,211)==1,'奇数帧从每颗大玉生成一发小弹')
+local child=oni_pool[#oni_pool]
+check(child.th07_sprite==1 and child.th07_color==6 and child.c_flags==0x248
+    and child.c_spawn_left==32 and child.c_list[1].speed==3.1,
+    '青鬼奇数帧使用精灵1色6、慢出生及60帧后同向3.1速命令')
+large.th07_color=0
+check(C.th07_oni_emit(oni_owner,212)==2,'偶数帧从大玉生成两发，不递归从小弹生成')
+local a,b=oni_pool[#oni_pool-1],oni_pool[#oni_pool]
+check(a.th07_sprite==3 and a.th07_color==2 and a.c_flags==0x208
+    and near(a.vx,-b.vx) and near(a.vy,-b.vy),'赤鬼偶数帧精灵3色2，两发0.8速反向直线弹')
+oni_card.del(oni_owner);task.Clear(oni_owner);reset()
+local oni_owner,oni_card=start(3460)
+for _=1,121 do tick(oni_owner,oni_card) end
+check(near(oni_owner.y,160) and oni_owner._box==nil,'青鬼赤鬼进场120帧后按原作解除活动框')
+for _=122,400 do tick(oni_owner,oni_card) end
+local small,huge=false,false
+for _,o in ipairs(objects) do if IsValid(o) then
+    if o.th07_sprite==1 or o.th07_sprite==3 then small=true end
+    if o.th07_sprite==10 then huge=true end
+end end
+check(small and huge and oni_owner.th07_oni_active,'实际符卡时间轴同时出现鬼玉与撒出的两种小弹')
+oni_card.del(oni_owner);task.Clear(oni_owner)
+check(not oni_owner.th07_oni_active,'换卡停止ExIns22回调')
+reset()
 print(('原作切割、变速、伴奏激光与文花帖回归通过：%d 项'):format(checks))

@@ -9833,6 +9833,7 @@ local function make_bullet(style, color, half)
         init = function(self, x, y, angle, speed, mag, angle_delta)
             ---`bullet.init(self, imgclass, index, stay, destroyable)`（THlib/bullet/bullet.lua:79-89）
             bullet.init(self, style, color, false, true)
+            self.x, self.y = x, y
             self.lw_ang = angle                 -- 自身角（TH08 口径、弧度）
             self.lw_spd = speed
             self.lw_pd = angle_delta or 0       -- records[0] 的 angleDelta = cf1
@@ -9843,6 +9844,8 @@ local function make_bullet(style, color, half)
             self.lw_half = half
             ---没有 SPAWN_FAST/NORMAL/SLOW ⇒ 出生就是 FIRED：位置不退、当帧就走一次
             ---velocity（BulletManager.cpp:172-186、215-235）。
+            self.class = self.logclass or self.class
+            self.layer = (self._layer or LAYER.ENEMY_BULLET) - style.size * 0.001 + color * 0.00001
             self.vx = math.cos(angle) * speed
             self.vy = -math.sin(angle) * speed
             self.bound = false                  -- 出屏回收自己按 IsWithinPlayfield 判
@@ -9906,6 +9909,9 @@ laser_cls = Class(laser, {
         ---第一位在 THlib 里就是**颜色**（贴图组 1..16）；rot 要**角度制** ⇒ 唯一的换算点。
         laser.init(self, color, x, y, ang * RAD,
                    LASER_TAIL, LASER_BODY, LASER_TAIL, LASER_W0, 0, 0)
+        -- 原作旋转的是发射方向，64px 的起始偏移也要绕同一个发射点转。
+        self.lw_source_x = x - LASER_X0 * math.cos(ang)
+        self.lw_source_y = y - LASER_X0 * math.sin(ang)
         self.lw_state, self.lw_t = 1, 0
         self.alpha = 1
         self.colli = false            -- 判定要等 hitboxStartTime（90）才开
@@ -9916,6 +9922,8 @@ laser_cls = Class(laser, {
     end,
     frame = function(self)
         local t = self.lw_t
+        self.x = self.lw_source_x + LASER_X0 * cos(self.rot)
+        self.y = self.lw_source_y + LASER_X0 * sin(self.rot)
         if self.lw_state == 1 then
             ---STARTING：前 90 帧一根 1.2 宽的细线，最后 30 帧胀到满宽（:1082-1097）
             local ramp = LASER_START > LASER_RAMP and LASER_RAMP or LASER_START
@@ -10030,8 +10038,6 @@ local function make_emitter(dir, color)
         init = function(self, x, y, xi0)
             self.x, self.y = x, y
             self.group, self.layer = GROUP.INDES, LAYER.ENEMY_BULLET
-            self.img = "white"
-            self._blend, self._a = "", 0   -- 不可见（占位）
             self.colli = false
             self.bound = false
             self.navi = false
@@ -10053,6 +10059,8 @@ local function make_emitter(dir, color)
                 end
             end
         end,
+        -- ins_94 的独立逻辑发射器没有 ANM；默认渲染不读取对象的 _a。
+        render = function(self) end,
     })
 end
 
@@ -36132,7 +36140,7 @@ end
 ---    ⇒ 同一时刻只有一批（下一批在 422 帧后）。
 ---  ★ 出弹位置 = 宿主的 worldPosition + shootOffset(0,0)（EclDependencies.cpp:718-721）
 ---    ⇒ 环是从 BOSS 身上发出的，大玉只是绕圈 + 原作的旋转判定盒（ex 指令 11，不做）。
----  ★ 占位贴图：大玉用 "ellipse"。
+---  ★ 差异：大玉用白色 ellipse16 染色代理原作 anm alt 18..21。
 ---------------------------------------------------------------------
 do
 local PI = 3.141592653589793
@@ -36326,7 +36334,7 @@ c452_orb = class.th08_combat.actor("ecldata4b:70", {
     init = function(self, x, y, ang, color)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
-        self.img = "ellipse"                -- 占位：原作 4 只大玉（anm alt 18..21）
+        self.img = "ellipse16"              -- 白色底图供 ORB_TINT 染色；ellipse 是弹型名
         self.hscale, self.vscale = 0.85, 0.85
         self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
