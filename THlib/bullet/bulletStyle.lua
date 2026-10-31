@@ -36,11 +36,25 @@ function bulletStyle:render()
 end
 
 local path = "THlib\\bullet\\img\\"
-LoadTexture("bullet1", path .. "bullet1.png", true)
 LoadTexture("bullet2", path .. "bullet2.png", true)
 LoadTexture("bullet3", path .. "bullet3.png", true)
 LoadTexture("bullet4", path .. "bullet4.png", true)
 LoadTexture("bullet5", path .. "bullet5.png", true)
+
+-- 旧版图集的坐标和原生像素尺寸按 v3.10 注册；扩展弹型继续使用原有高清图集。
+-- 部分旧版弹型只有八色，同一色的深浅编号共用原图，避免把后半色号切到空白区域。
+local classic_path = path .. "v3_10\\"
+for _, name in ipairs({ "bullet1", "bullet2", "bullet3", "bullet4", "bullet5", "bullet6",
+        "bullet_ball_huge", "bullet_music", "bullet_water_drop" }) do
+    LoadTexture("v310_" .. name, classic_path .. name .. ".png", true)
+end
+local function LoadImageGroup16(prefix, tex, x, y, w, h, cols, rows, a, b)
+    for i = 0, 15 do
+        local index = int(i * cols * rows / 16)
+        LoadImage(prefix .. (i + 1), tex, x + w * (index % cols), y + h * int(index / cols),
+                w, h, a, b)
+    end
+end
 
 do
     local other_class = {}
@@ -107,11 +121,8 @@ do
     end)
 
     local FormerImg = EnumRes2("img")
-    for i = 1, 8 do
-        LoadImage('preimg' .. (i * 2 - 1), 'bullet1', 160, 64 * (i - 1), 64, 64)
-        LoadImage('preimg' .. (i * 2), 'bullet1', 160 + 64, 64 * (i - 1), 64, 64)
-    end
-    LoadImageGroup('arrow_big', 'bullet2', 160, 0, 32, 32, 1, 16, 2.5, 2.5)
+    LoadImageGroup16('preimg', 'v310_bullet1', 80, 0, 32, 32, 1, 8)
+    LoadImageGroup('arrow_big', 'v310_bullet1', 0, 0, 16, 16, 1, 16, 2.5, 2.5)
     LoadImageGroup('arrow_big_b', 'bullet2', 192, 0, 32, 32, 1, 16, 2.5, 2.5)
     LoadImageGroup('arrow_big_c', 'bullet3', 0, 0, 50, 36, 1, 16, 2.5, 2.5)
     for i = 1, 16 do
@@ -121,13 +132,13 @@ do
     arrow_big_b = DeFineBulletStyle(0.61, false, nil, "arrow_big_b", true)
     arrow_big_c = DeFineBulletStyle(0.59, false, nil, "arrow_big_c", true)
 
-    LoadImageGroup('arrow_mid', 'bullet3', 50, 0, 82, 36, 1, 16, 2.5, 2.5)
+    LoadImageGroup16('arrow_mid', 'v310_bullet4', 96, 0, 32, 32, 1, 8, 2.5, 2.5)
     for i = 1, 16 do
-        SetImageCenter('arrow_mid' .. i, 66, 18)
+        SetImageCenter('arrow_mid' .. i, 24, 16)
     end
     arrow_mid = DeFineBulletStyle(0.61, false, nil, "arrow_mid", true)
 
-    LoadImageGroup('arrow_small', 'bullet2', 32, 0, 32, 32, 1, 16, 2.5, 2.5)
+    LoadImageGroup('arrow_small', 'v310_bullet3', 80, 0, 16, 16, 1, 16, 2.5, 2.5)
     LoadImageGroup('arrow_small_b', 'bullet3', 133, 0, 56, 36, 1, 16, 2.5, 2.5)
     for i = 1, 16 do
         SetImageCenter('arrow_small_b' .. i, 32, 18)
@@ -135,105 +146,96 @@ do
     arrow_small = DeFineBulletStyle(0.407, false, nil, "arrow_small", true)
     arrow_small_b = DeFineBulletStyle(0.406, false, nil, "arrow_small_b", true)
 
-    LoadTexture("gun", path .. "gun.png", true)
     for i = 1, 16 do
-        LoadAnimation("gun_bullet" .. i, "gun", 0, (i - 1) * 48, 48, 48, 3, 1, 4, 2.5, 2.5)
-        SetAnimationScale("gun_bullet" .. i, 0.5)
+        -- 保留动画资源类型，灰色拖影仍走 RenderAnimation；旧版铳弹本身只有一帧。
+        LoadAnimation("gun_bullet" .. i, "v310_bullet1", 24, (i - 1) * 16, 16, 16, 1, 1, 4, 2.5, 2.5)
+        SetAnimationScale("gun_bullet" .. i, 1)
     end
     gun_bullet = DeFineBulletStyle(0.4, true, nil, "gun_bullet", true)
 
-    LoadImageGroup('butterfly', 'bullet4', 832, 0, 32, 32, 1, 8, 4, 4)
+    LoadImageGroup('butterfly', 'v310_bullet1', 112, 0, 32, 32, 1, 8, 4, 4)
     butterfly = DeFineBulletStyle(0.7, false, nil, "butterfly")
 
-    LoadImageGroup('square', 'bullet2', 0, 0, 32, 32, 1, 16, 3, 3)
+    LoadImageGroup('square', 'v310_bullet1', 152, 0, 16, 16, 1, 16, 3, 3)
     square = DeFineBulletStyle(0.8, false, nil, "square", true)
 
-    LoadImageGroup('mildew', 'bullet1', 131, 0, 32, 32, 1, 16, 2, 2)
+    LoadImageGroup('mildew', 'v310_bullet1', 208, 0, 16, 16, 1, 16, 2, 2)
     mildew = DeFineBulletStyle(0.401, false, nil, "mildew", true)
 
-    LoadImageGroup('ellipse', 'bullet1', 81, 0, 48, 32, 1, 16, 4.5, 4.5)
+    LoadImageGroup16('ellipse', 'v310_bullet1', 224, 0, 32, 32, 1, 8, 4.5, 4.5)
     ellipse = DeFineBulletStyle(0.701, false, nil, "ellipse", true)
 
-    LoadImageGroup('star_small', 'bullet3', 581, 0, 36, 36, 1, 16, 3, 3)
+    LoadImageGroup('star_small', 'v310_bullet2', 96, 0, 16, 16, 1, 16, 3, 3)
     star_small = DeFineBulletStyle(0.5, false, nil, "star_small", true)
-    LoadImageGroup('star_big', 'bullet5', 1025, 190, 64, 64, 16, 1, 5.5, 5.5)
+    LoadImageGroup16('star_big', 'v310_bullet2', 224, 0, 32, 32, 1, 8, 5.5, 5.5)
+    for i = 1, 16 do SetImageCenter('star_big' .. i, 15.5, 16) end
     star_big = DeFineBulletStyle(0.998, false, nil, "star_big", true)
 
-    LoadImageGroup('ball_small', 'bullet1', 0, 0, 32, 32, 1, 16, 2, 2)
+    LoadImageGroup('ball_small', 'v310_bullet2', 176, 0, 16, 16, 1, 16, 2, 2)
     ball_small = DeFineBulletStyle(0.402, false, nil, "ball_small", true)
 
-    LoadImageGroup('ball_mid', 'bullet3', 191, 0, 36, 36, 1, 16, 4, 4)
-    LoadImageGroup('ball_mid_c', 'bullet3', 239, 0, 40, 36, 1, 16, 4, 4)
+    LoadImageGroup('ball_mid', 'v310_bullet1', 184, 0, 16, 16, 1, 16, 4, 4)
+    LoadImageGroup('ball_mid_c', 'v310_bullet4', 232, 0, 16, 16, 1, 16, 4, 4)
     ball_mid = DeFineBulletStyle(0.75, false, nil, "ball_mid", true)
     ball_mid_c = DeFineBulletStyle(0.752, false, nil, "ball_mid_c", true)
 
-    LoadImageGroup('ball_big', 'bullet5', 0, 190, 64, 64, 16, 1, 8, 8)
+    LoadImageGroup16('ball_big', 'v310_bullet2', 192, 0, 32, 32, 1, 8, 8, 8)
+    for i = 1, 16 do SetImageCenter('ball_big' .. i, 16, 16.5) end
     ball_big = DeFineBulletStyle(1, false, nil, "ball_big", true)
 
-    for i = 1, 8 do
-        LoadImage('ball_huge' .. (i * 2 - 1), 'bullet3', 768, 128 * (i - 1), 128, 128, 13.5, 13.5)
-        LoadImage('ball_huge' .. (i * 2), 'bullet3', 768 + 128, 128 * (i - 1), 128, 128, 13.5, 13.5)
-    end
+    LoadImageGroup16('ball_huge', 'v310_bullet_ball_huge', 0, 0, 64, 64, 4, 2, 13.5, 13.5)
     for i = 1, 16 do
         CopyImage("fade_ball_huge" .. i, "ball_huge" .. i)
     end
     ball_huge = DeFineBulletStyle(2, false, nil, "ball_huge", true, "mul+add", true)
 
-    LoadImageGroupFromFile("ball_light", path .. "ball_light.png", true, 4, 4, 11.5, 11.5)
+    LoadImageGroup16('ball_light', 'v310_bullet5', 0, 0, 64, 64, 4, 2, 11.5, 11.5)
     for i = 1, 16 do
         CopyImage("fade_ball_light" .. i, "ball_light" .. i)
     end
     ball_light = DeFineBulletStyle(2, false, nil, "ball_light", true, "mul+add", true)
 
-    LoadImageGroup('grain_a', 'bullet2', 128, 0, 32, 32, 1, 16, 2.5, 2.5)
-    LoadImageGroup('grain_b', 'bullet2', 224, 0, 32, 32, 1, 16, 2.5, 2.5)
-    LoadImageGroup('grain_c', 'bullet2', 96, 0, 32, 32, 1, 16, 2.5, 2.5)
+    LoadImageGroup('grain_a', 'v310_bullet2', 160, 0, 16, 16, 1, 16, 2.5, 2.5)
+    LoadImageGroup('grain_b', 'v310_bullet2', 128, 0, 16, 16, 1, 16, 2.5, 2.5)
+    LoadImageGroup('grain_c', 'v310_bullet3', 48, 0, 16, 16, 1, 16, 2.5, 2.5)
     LoadImageGroup('grain_d', 'bullet2', 64, 0, 32, 32, 1, 16, 2.5, 2.5)
     grain_a = DeFineBulletStyle(0.403, false, nil, "grain_a", true)
     grain_b = DeFineBulletStyle(0.404, false, nil, "grain_b", true)
     grain_c = DeFineBulletStyle(0.405, false, nil, "grain_c", true)
     grain_d = DeFineBulletStyle(0.406, false, nil, "grain_d", true)
 
-    LoadImageGroupFromFile("knife", path .. "knife.png", true, 1, 16, 4, 4)
-    LoadImageGroup('knife_b', 'bullet5', 0, 392, 102, 44, 16, 1, 3.5, 3.5)
+    LoadImageGroup16('knife', 'v310_bullet3', 0, 0, 32, 32, 1, 8, 4, 4)
+    LoadImageGroup16('knife_b', 'v310_bullet4', 192, 0, 32, 32, 1, 8, 3.5, 3.5)
     knife = DeFineBulletStyle(0.754, false, nil, "knife", true)
     knife_b = DeFineBulletStyle(0.755, false, nil, "knife_b", true)
 
     for i = 1, 8 do
-        LoadAnimation("music" .. i, "bullet4", (i - 1) * 102, 480,
-                96, 64, 1, 3, 8, 4, 4)
-        SetAnimationCenter("music" .. i, 51, 32)
-        SetAnimationScale("music" .. i, 0.5)
+        LoadAnimation("music" .. i, "v310_bullet_music", (i - 1) * 60, 0,
+                60, 32, 1, 3, 8, 4, 4)
+        SetAnimationScale("music" .. i, 1)
     end
     music = DeFineBulletStyle(0.8, true, nil, "music")
 
     for i = 1, 8 do
-        LoadAnimation("water_drop" .. (-1 + i * 2), "bullet4", (i - 1) * 96, 0,
-                96, 60, 1, 4, 4, 4, 4)
-        SetAnimationCenter("water_drop" .. (-1 + i * 2), 60, 30)
-        SetAnimationScale("water_drop" .. (-1 + i * 2), 0.5)
-        LoadAnimation("water_drop" .. (i * 2), "bullet4", (i - 1) * 96, 60 * 4,
-                96, 60, 1, 4, 4, 4, 4)
-        SetAnimationCenter("water_drop" .. (i * 2), 60, 30)
-        SetAnimationScale("water_drop" .. (i * 2), 0.5)
+        LoadAnimation("water_drop" .. (-1 + i * 2), "v310_bullet_water_drop", (i - 1) * 48, 0,
+                48, 32, 1, 4, 4, 4, 4)
+        SetAnimationScale("water_drop" .. (-1 + i * 2), 1)
+        LoadAnimation("water_drop" .. (i * 2), "v310_bullet_water_drop", (i - 1) * 48, 0,
+                48, 32, 1, 4, 4, 4, 4)
+        SetAnimationScale("water_drop" .. (i * 2), 1)
     end
     water_drop = DeFineBulletStyle(0.702, true, nil, "water_drop", true, "mul+add")
 
     LoadImageGroup('diamond', 'bullet5', 1056, 0, 45, 30, 16, 1, 2.5, 2.5)
     diamond = DeFineBulletStyle(0.406, false, nil, "diamond", true)
 
-    LoadImageGroup('silence', 'bullet5', 0, 446, 78, 40, 16, 1, 4.5, 4.5)
+    LoadImageGroup16('silence', 'v310_bullet6', 192, 0, 32, 32, 1, 8, 4.5, 4.5)
     silence = DeFineBulletStyle(0.8, false, nil, "silence", true)
 
-    LoadImageGroup('heart', 'bullet5', 0, 66, 64, 64, 16, 1, 9, 9)
+    LoadImageGroup16('heart', 'v310_bullet4', 128, 0, 32, 32, 1, 8, 9, 9)
     heart = DeFineBulletStyle(1, false, nil, "heart", true)
 
-    LoadImage("money11", "bullet4", 404, 676, 42, 42, 4, 4)
-    LoadImage("money15", "bullet4", 404 + 50, 676, 42, 42, 4, 4)
-    LoadImage("money13", "bullet4", 404 + 100, 676, 42, 42, 4, 4)
-    LoadImage("money12", "bullet4", 404, 676 + 50, 42, 42, 4, 4)
-    LoadImage("money16", "bullet4", 404 + 50, 676 + 50, 42, 42, 4, 4)
-    LoadImage("money14", "bullet4", 404 + 100, 676 + 50, 42, 42, 4, 4)
+    LoadImageGroup16('money', 'v310_bullet4', 168, 0, 16, 16, 1, 8, 4, 4)
     LoadImage("money_big11", "bullet4", 7, 679, 86, 86, 8, 8)
     LoadImage("money_big15", "bullet4", 7 + 100, 679, 86, 86, 8, 8)
     LoadImage("money_big13", "bullet4", 7 + 200, 679, 86, 86, 8, 8)
@@ -241,7 +243,6 @@ do
     LoadImage("money_big16", "bullet4", 7 + 100, 679 + 100, 86, 86, 8, 8)
     LoadImage("money_big14", "bullet4", 7 + 200, 679 + 100, 86, 86, 8, 8)
 
-    ---注意有些颜色是不存在的
     money = DeFineBulletStyle(0.753, false, nil, "money", true)
     ---注意有些颜色是不存在的
     money_big = DeFineBulletStyle(0.743, false, nil, "money_big", true)
@@ -253,13 +254,15 @@ do
     for i = 1, 8 do
         SetImageScale("butterfly" .. i, 1)
     end
-    for i = 1, 16 do
-        SetImageScale("ellipse" .. i, 0.75)
-        SetImageScale("knife_b" .. i, 0.375)
-        SetImageScale("arrow_mid" .. i, 0.375)
-    end
     for _, img in ipairs(FormerImg) do
         SetImageScale(img, 1)
+    end
+    -- 旧版资源已经是游戏内使用的像素尺寸，不能再次套用高清图集的 0.5 倍缩放。
+    for _, prefix in ipairs({ 'preimg', 'arrow_big', 'arrow_mid', 'arrow_small', 'square', 'mildew',
+            'ellipse', 'star_small', 'star_big', 'ball_small', 'ball_mid', 'ball_mid_c', 'ball_big',
+            'ball_huge', 'fade_ball_huge', 'ball_light', 'fade_ball_light', 'grain_a', 'grain_b',
+            'grain_c', 'knife', 'knife_b', 'silence', 'heart', 'money' }) do
+        for i = 1, 16 do SetImageScale(prefix .. i, 1) end
     end
 end
 ---bullet_style

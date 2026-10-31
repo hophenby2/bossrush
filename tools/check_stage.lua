@@ -351,10 +351,10 @@ do
     if f then
         local src = f:read("*a")
         f:close()
-        for nm, _a, _b in src:gmatch("LoadImageGroup%s*%(%s*'([%w_]+)'.-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)") do
+        for nm, _a, _b in src:gmatch("LoadImageGroup%d*%s*%(%s*'([%w_]+)'.-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)") do
             _styleRadius[nm] = math.max(tonumber(_a) or 4, tonumber(_b) or 4)
         end
-        for nm, _a, _b in src:gmatch('LoadImageGroup%s*%(%s*"([%w_]+)".-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)') do
+        for nm, _a, _b in src:gmatch('LoadImageGroup%d*%s*%(%s*"([%w_]+)".-,%s*([%d%.]+)%s*,%s*([%d%.]+)%s*%)') do
             _styleRadius[nm] = math.max(tonumber(_a) or 4, tonumber(_b) or 4)
         end
     end
