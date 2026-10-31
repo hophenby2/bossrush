@@ -235,7 +235,8 @@ local function shoot(owner, mode, sprite, c, n, layers, v1, v2, a, step, flags, 
 end
 
 local function move_to(b, x, y, frames)
-    b.th06.move = { x = b.x, y = b.y, dx = x - b.x, dy = y - b.y, t = 0, n = frames }
+    b.th06.move = { x = b.x, y = b.y, dx = x - b.x, dy = y - b.y, t = 0, n = frames, ease = 1 }
+    b.th06.angle = atan2(-(y-b.y),x-b.x)
 end
 local function drift(b, speed, frames)
     -- ins_50 对原坐标逐次反射角度；上下反射都要执行，窄框中可能互相抵消。
@@ -366,6 +367,10 @@ local function begin(b, y, rank_speed)
     b.th06 = { pool = {}, next_slot = 1, lasers = {},
         rank_speed = rank_speed or 0 }
     b.colli, b.no_hp_render, b.NotPlayTimeOutSound = true, false, false
+    if not b.th06_previous_motion or b.th06_previous_motion.stage~=6 then
+        -- 六面宿主 Sub15 已走到 (192,96)，不能拿框架的场外出生点代替符卡起点。
+        b.x,b.y=0,128
+    end
     -- 独立练习从场外生成 Boss；原作在进入符卡前已经启用同一组移动边界。
     b.x, b.y = min(160, max(-160, b.x)), min(176, max(104, b.y))
     move_to(b, 0, 224 - y, 120)
@@ -373,6 +378,9 @@ local function begin(b, y, rank_speed)
 end
 local function cleanup(b)
     if not b.th06 then return end
+    local m=b.th06.move
+    b.th06_previous_motion={stage=6,group=1,x=b.x,y=b.y,mode=m and "interp" or "axis",move=m,angle=b.th06.angle or 0,
+        speed=0,angular=0,accel=0,axisx=0,axisy=0,bounds={32,48,352,120}}
     for _, o in pairs(b.th06.pool) do if alive(o) then object.Del(o) end end
     for _, o in ipairs(b.th06.lasers) do if alive(o) then object.Del(o) end end
     b.th06 = nil
@@ -575,6 +583,8 @@ function H.distance(b) return sqrt((player.x-b.x)^2+(player.y-b.y)^2) end
 function H.position(b,x,y,z)
     b.x,b.y=x-192,224-y
     b.th06_actor.z=z or 0
+    -- MOVE_POSITION 在同一条指令内 ClampPos；后续插值必须从夹框后的点取快照。
+    H.clamp(b)
 end
 function H.clamp(b)
     local box=b.th06_actor.bounds
@@ -753,6 +763,13 @@ function H.new_actor(s,b,stage,sub,main,meta)
     if main and b.th06_previous_context then
         for k,value in pairs(b.th06_previous_context) do if k~="time" and k~="epoch" then a.context[k]=value end end
     end
+    local previous=main and b.th06_previous_motion
+    if previous and previous.stage==stage and previous.group==meta.group then
+        -- CallEclSub 只换脚本上下文；不把正走到一半的移动、速度和活动框重置为零。
+        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds"}) do
+            a[key]=previous[key]
+        end
+    end
     b.th06,b.th06_actor=s,a;b.vx,b.vy=0,0
     for i=1,256 do
         if not s.actors[i] or s.actors[i].dead or not IsValid(s.actors[i].object) then s.actors[i]=a;a.slot=i;break end
@@ -903,7 +920,11 @@ class["原作流程控制"] = Class(object, {
 function H.card_init(b,meta)
     b.th06={pool={},next_slot=1,lasers={},laser_pool={},actors={},rank_speed=0}
     b.th06_meta=meta;b.no_hp_render=false;b.NotPlayTimeOutSound=false
-    if not b.th06_previous_context then
+    local previous=b.th06_previous_motion
+    if previous and previous.stage==meta.stage and previous.group==meta.group then
+        b.x,b.y=previous.x or b.x,previous.y or b.y
+    else
+        b.th06_previous_context,b.th06_previous_motion=nil,nil
         b.x,b.y=meta.entry_x or 0,meta.entry_y or 128
     end
     b.th06_saved={a=b.a,b=b.b,rect=b.rect,DMG_factor=b.DMG_factor,_a=b._a}
@@ -917,6 +938,10 @@ function H.card_del(b)
     if b.th06_actor then
         b.th06_previous_context={}
         for k,value in pairs(b.th06_actor.context) do b.th06_previous_context[k]=value end
+        b.th06_previous_motion={stage=b.th06_actor.stage,group=b.th06_actor.meta.group,x=b.x,y=b.y}
+        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds"}) do
+            b.th06_previous_motion[key]=b.th06_actor[key]
+        end
     end
     s.closed=true;s.time_stopped=false
     for _,a in ipairs(s.actors) do if not a.main and IsValid(a.object) then a.dead=true;object.RawDel(a.object) end end
@@ -1126,7 +1151,7 @@ function H.road_init(b,meta)
     local runtime={}
     for k,value in pairs(meta) do runtime[k]=value end
     runtime.epoch=seek
-    b.th06_previous_context=nil
+    b.th06_previous_context,b.th06_previous_motion=nil,nil
     H.card_init(b,runtime)
     local s,a=b.th06,b.th06_actor
     s.road=true;s.road_drop_state=(clock and clock.owner==scene and clock.drops) or {count=0,index=1}

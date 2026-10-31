@@ -11347,7 +11347,7 @@ local function card_init(owner)
     owner.s3a_fams = {}
     owner.s3a_ang = 0
     owner.s3a_move = nil
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -11712,7 +11712,7 @@ local function card_init(owner)
     owner.s3b_fams = {}
     owner.s3b_ang = 0
     owner.s3b_move = nil
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -12392,7 +12392,7 @@ local function card_init(owner)
     owner.s3b_fams = {}
     owner.s3b_ang = 0
     owner.s3b_move = nil
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -13373,7 +13373,7 @@ local function card_init(owner)
     owner.lw191_flip = false            -- 两批使魔交替的开关
     owner.lw191_fams = {}
     ---落位：BOSS 是**原地**出现的（Sub5 的 ins_64 与 Sub116 的 ins_63 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -13592,7 +13592,7 @@ local function card_init(owner)
     owner.lw192_ang = 0                       -- movementAngle 初值（EnemyManager.cpp:145-160）
     owner.lw192_org = { x = BOSS_X, y = BOSS_Y }
     ---落位：BOSS **原地**出现（Sub10 t=0 的 ins_64 与 Sub116 的 ins_63 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -13882,7 +13882,7 @@ local function card_init(owner)
     EX.pool_clear()
     owner.lw193_t = 0
     owner.lw193_fams = {}
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -14107,7 +14107,7 @@ local function card_init(owner)
     owner.lw194_a0, owner.lw194_a1 = 0, 0
     owner.lw194_fams = {}
     ---落位：BOSS **原地**出现（Sub47 #11 的 ins_64 与 Sub116 #28 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -14540,7 +14540,7 @@ local function card_init(owner)
     owner.lw195_move = nil
     owner.lw195_mv_angle = 0
     ---落位：跟助手 Sub116 #28 的 `ins_63(192, 128)` 同一个点（Sub51 的 ins_64 是原地插值）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -14865,7 +14865,7 @@ local function card_init(owner)
     owner.lw196_move = nil
     owner.lw196_mv_angle = 0
     ---落位：跟助手 Sub116 #28 的 `ins_63(192, 128)` 同一个点（Sub54 的 ins_64 是原地插值）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -15212,8 +15212,8 @@ local function card_init(owner)
     owner.lw197_ctx = { t = 0, i = 1, gun_on = false, gun_t = 0 }
     owner.lw197_fams = {}
     ---落位 + MOVE_TO（Sub57 #12）：从助手给的 (0, 96) 向下 64 px 漂到 (0, 32)。
-    owner.x, owner.y = BOSS_X, BOSS_Y
-    owner.lw197_mv = { x0 = BOSS_X, y0 = BOSS_Y, dx = 0, dy = MOVE_DEST_Y - BOSS_Y,
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
+    owner.lw197_mv = { x0 = owner.x, y0 = owner.y, dx = BOSS_X-owner.x, dy = MOVE_DEST_Y-owner.y,
                        n = MOVE_FRAMES, t = 0 }
 end
 
@@ -15542,7 +15542,7 @@ local function card_init(owner)
     }
     owner.lw198_fams = {}
     owner.lw198_lasers = {}
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -15833,7 +15833,7 @@ local function card_init(owner)
     owner.lw199_crows = {}
     owner.lw199_mv = nil
     ---落位：BOSS **原地**出现（Sub116 的 ins_63 与 Sub67 的 ins_64 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -16143,7 +16143,7 @@ local function card_init(owner)
     }
     owner.lw200_phx = {}
     ---落位：BOSS **原地**出现（Sub116 的 ins_63 与 Sub72 的 ins_64 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -16615,7 +16615,7 @@ local function card_init(owner)
     owner.lw201_mv = nil
     owner.lw201_mv_ang = 0
     ---落位：BOSS **原地**出现（Sub116 的 `ins_63` 与 Sub80 的 `ins_64` 同一个点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -17130,11 +17130,11 @@ local function card_init(owner)
     owner.lw202_fams = {}
     owner.lw202_self = nil
     owner.lw202_mv = {
-        x0 = BOSS_X, y0 = BOSS_Y,
-        dx = MOVE_TX - BOSS_X, dy = MOVE_TY - BOSS_Y,
+        x0 = owner.x, y0 = owner.y,
+        dx = MOVE_TX - owner.x, dy = MOVE_TY - owner.y,
         n = MOVE_FRAMES, t = 0, ease = MOVE_EASE,
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -17510,7 +17510,7 @@ local function card_init(owner)
     EX.pool_clear()
     owner.lw203_ctx = { t = 0, c0 = nil, c1 = nil }
     owner.lw203_fams = {}
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -18068,7 +18068,7 @@ local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
     owner.lw204 = { t = 0, mv = nil, lf0 = 0, v107 = nil, gun0 = nil, gun1 = nil }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -18493,7 +18493,7 @@ local function card66_init(owner)
     owner.lwns_r1, owner.lwns_r2 = 0.15, 0.075   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
     ---Sub65 #8/#9：登场点 TH08 (−32,−32) = 我们 (−224, 256)，60 帧插值到 (0, 96)。
-    owner.x, owner.y = -224, 256
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     start_move_to(owner, BOSS_X, BOSS_Y)
 end
 
@@ -19314,7 +19314,7 @@ local function make_ls(guns)
         EX.clear_records(owner)
         EX.pool_clear()
         owner.ls6 = { t = 0, guns = nil }
-        owner.x, owner.y = BOSS_X, BOSS_Y
+        -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     end
 
     local function card_frame(owner)
@@ -19681,7 +19681,7 @@ local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
     owner.lw170 = { t = 0, fams = nil, gun = nil }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -23195,7 +23195,7 @@ local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
     ---Sub26 `#8 SET_POSITION 192 128`：辉夜瞬移到场心。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.lw27 = { t = 0, mang = 0, aim = 0, move = nil }
 end
 
@@ -23604,7 +23604,7 @@ local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
     ---Sub15 没有 SET_POSITION ⇒ 永琳停在 Sub14 那条 `MOVE_TO(60, 4, 192, 128)` 的落点。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.lw15 = { t = 0, fams = {}, mang = 0, move = nil }
 end
 
@@ -24606,7 +24606,7 @@ local function card_init(owner)
     owner.lw146 = { acc = 0, tick = 0, frame = 0 }
     ---落位：生成助手 Sub48 的 `ins_63 SET_POSITION(192, 224)` ⇒ 我们 (0, 0)。
     ---根第一条 `ins_64(110, 4, 192, 224)` 的目标也是同一个点 ⇒ **原地出现**（没有夹框）。
-    owner.x, owner.y = 0, 0
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -25155,7 +25155,7 @@ local function card_init(owner)
     EX.fm = 1
     EX.suppress = 0
     ---Sub72 t=0 的夹框当帧就生效：出生点 (192,224) = 我们 (0,0) 被夹到 **(0, 96)**。
-    owner.x, owner.y = 0, 96
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.lw142 = {
         t = 0, li7 = 5, fams = {}, fam_next = 1,
         mang = 0, move = nil,
@@ -25379,7 +25379,7 @@ local function card_init(owner)
     EX.fm = 1
     EX.suppress = 0
     ---Sub68 t=0 的 `ins_64(90, 4, 192, 128)` 就是助手给的那个点 ⇒ 原地出现。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.lw138 = { t = 0, mang = 0, move = nil }
 end
 
@@ -25800,7 +25800,7 @@ local function card_init(owner)
     EX.suppress = 0
     lasers = {}
     ---BOSS 停在 Sub16 容器留给它的位置上，`ins_64(90,4,192,128)` 就是原地不动。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.lw134 = { t = 0, exI3 = 0, lf1 = 0, gun = nil, brains = {} }
 end
 
@@ -26244,7 +26244,7 @@ local function card_init(owner)
     EX.suppress = 0
     cells, fams = {}, {}
     ---`ins_64(90, 4, 192, 128)` 的目标（我们口径就是助手给的出生点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     ---BOSS 的 gun 状态：三条子 context 在 f350 一次挂上，之后一直跟着 BOSS。
     owner.lw130 = { t = 0, mang = 0, move = nil, guns = nil }
 end
@@ -26736,7 +26736,7 @@ local function card_init(owner)
     EX.suppress = 0
     nodes, dots, lasers = {}, {}, {}
     ---`ins_64(90, 4, 192, 128)` 的目标（我们口径就是助手给的出生点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     ---`st.mang` = 过渡到本卡时 BOSS 的 movementAngle：原作那条 ins_64 是从随机点滑过来的，
     ---最后一步的方向无法复现 ⇒ 取 0（只影响右边界那条笔误分支的取值）。
     owner.lw126 = { t = 0, mang = 0, move = nil }
@@ -27164,7 +27164,7 @@ local function card_init(owner)
     EX.suppress = 0
     fams = {}
     ---`ins_64(90, 4, 192, 128)` 的目标（我们口径就是助手给的出生点）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     ---`st.mang` = 过渡到本卡时 BOSS 的 movementAngle：原作那条 ins_64 是从随机点滑过来的，
     ---最后一步的方向无法复现 ⇒ 取 0（只影响右边界那条笔误分支的取值，跟卡 126 一样）。
     owner.lw122 = { t = 0, fx = 0, fy = 0, mang = 0, move = nil }
@@ -27538,7 +27538,7 @@ local function card_init(owner)
     EX.suppress = 0
     fams = {}
     ---`ins_63(32, −32)`：时间轴给的出生点 (192, −16) 当场被盖掉。
-    owner.x, owner.y = BOSS_X0, BOSS_Y0
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     ---`ins_64(60, 4, 192, 128)` 的插值槽（换 context 之后还活着，见卡头）。
     owner.lw16 = {
         t = 0,
@@ -28958,7 +28958,7 @@ local function card_init(owner)
     owner.s4a_ang = 0
     owner.s4a_move = nil
     owner.s4a_fam_ang = SPAWN_ANG0[1]
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -32650,7 +32650,7 @@ local function card_init(owner)
     owner.c443_mangle = 0     -- 上一段移动的方向（TH08 口径）
     owner.c443_g19 = nil      -- Sub19 子 context 的时间（t=60 才挂上）
     owner.c443_clamp = false
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -33022,7 +33022,7 @@ local function card_init(owner)
     owner.c444_t = 0
     owner.c444_fams = {}
     owner.c444_ring0 = 0
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -34784,7 +34784,7 @@ local function card_init(owner)
     owner.c448_fams_b = {}
     ---`ins_75` 的夹框把上一卡收尾的 (0,0) 钳到 (0,96)；`ins_64(90, 4, 192, 160)` 的目标
     ---也在框外 ⇒ 之后一直停在 (0,96)。
-    owner.x, owner.y = 0, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -36865,7 +36865,7 @@ local function card_init(owner)
     owner.c453_clamped = false                    -- t=60 的 `ins_75` 才置 CLAMP_POSITION
     owner.c453_gun = nil
     ---宿主 Sub48 的位置：TH08 (192,128) = 我们 (0,96)（原地出现，不做入场）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -37566,7 +37566,7 @@ local function card_init(owner)
     owner.c455_clamped = false                    -- t=0 的 `ins_75` 才置 CLAMP_POSITION
     owner.c455_fams = {}
     ---落位：TH08 (192,112) = 我们 (0,112)（原地出现，不做入场）。
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -40688,7 +40688,7 @@ local function card_init(owner)
     owner.c461_clamped = false
     owner.c461_gun = {}
     owner.c461_fams = {}
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -41064,7 +41064,7 @@ local function card_init(owner)
     owner.c462_gun = {}
     owner.c462_move = nil
     owner.c462_mangle = 0
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -41507,7 +41507,7 @@ local function card_init(owner)
     owner.c463_move = nil
     owner.c463_mangle = 0
     owner.c463_clamped = false
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -42099,7 +42099,7 @@ local function card_init(owner)
     owner.c464_fams = {}
     owner.c464_move = nil
     owner.c464_mangle = 0
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -42598,7 +42598,7 @@ local function card_init(owner)
     owner.c465_move = nil
     owner.c465_mangle = 0
     owner.c465_clamped = false
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -43247,7 +43247,7 @@ local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
     owner.c467_main = true
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -43701,7 +43701,7 @@ end
 local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.c468_main = { t = 0, pc = 1 }
     owner.c468_move = nil
     owner.c468_mangle = 0               -- BOSS 的 movementAngle（我们口径）
@@ -44203,7 +44203,7 @@ end
 local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.c469_main = { t = 0, pc = 1, pause = 0 }
     owner.c469_move = nil
     owner.c469_child = nil
@@ -44605,7 +44605,7 @@ local function card_init(owner)
     EX.fm = 1
     owner.c470_main = { t = 0, pc = 1, fan_ang = 0, fam_radvel = 0, fams = {}, child = false, child_t = 0 }
     owner.c470_move = nil
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -45007,7 +45007,7 @@ local function card_init(owner)
     owner.c471_main = { t = 0, pc = 1, fams = {}, child_on = false, ct = 0 }
     owner.c471_move = nil
     owner.c471_mangle = 0
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -45581,7 +45581,7 @@ local function card_init(owner)
         mang = 0,               -- TH08 口径的 movementAngle
         fams = {},
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -46000,7 +46000,7 @@ local function card_init(owner)
         lf_init = false, lf7 = 0, lf6 = 0,
         rep_left = 0, rep_ang = 0,
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -46475,7 +46475,7 @@ local function card_init(owner)
         t = 0, pc = 1, fams = {}, mang = 0, move = nil,
         lf4 = 0, burst = nil,
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -47015,7 +47015,7 @@ local function card_init(owner)
         cF0 = 0, cF1 = 0, cI0 = 0,
         s47 = nil, fam = nil, ret_frame = nil,
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -47484,7 +47484,7 @@ local function card_init(owner)
         cF0 = 0, cF1 = 0, cI0 = 0, sF0 = 0,
         s49 = nil, ret_frame = nil,
     }
-    owner.x, owner.y = BOSS_X, BOSS_Y
+    -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
 
 local function card_frame(owner)
@@ -57493,6 +57493,117 @@ for _, c in ipairs(EXTRA_CHARS) do
             scbg_of(c[4]), c[5], 29, c[6])
 end
 
+-- 从原生 ECL 的宿主落位与 75/76 指令取入场上下文。TH08 全场 384×448，
+-- (192,128) 换算为 (0,96)；后两项为边界端点，不能按 TH10 的中心/尺寸解释。
+-- 有后续改框指令的卡仍由各自的原生实现推进，公共层不覆盖其动态活动框。
+local TH08_BOSS_MOTION = {
+    [15] = { key="5:ecldata6", file="ecldata6", sub=15, bounds={32,48,352,128}, dynamic=false },
+    [16] = { key="5:ecldata6", file="ecldata6", sub=16, bounds={32,48,352,128}, dynamic=true, pos={32.0,-32.0}, intro={60,4,192,128} },
+    [17] = { key="10:ecldata4a", file="ecldata4a", sub=17, bounds={32,48,352,128}, dynamic=true },
+    [19] = { key="10:ecldata4a", file="ecldata4a", sub=19, bounds={32,48,352,128}, dynamic=true },
+    [25] = { key="10:ecldata4a", file="ecldata4a", sub=25, bounds={-128,48,512,164}, dynamic=false, intro={90,4,288,128} },
+    [26] = { key="10:ecldata4a", file="ecldata4a", sub=26, bounds={-128,48,512,164}, dynamic=false, intro={90,4,288,128} },
+    [27] = { key="6:ecldata7", file="ecldata7", sub=27, bounds={32,48,352,128}, dynamic=true },
+    [28] = { key="10:ecldata4a", file="ecldata4a", sub=28, bounds={32,48,352,416}, dynamic=false, intro={90,4,192,208} },
+    [30] = { key="10:ecldata4a", file="ecldata4a", sub=30, bounds={-128,48,512,128}, dynamic=false, intro={90,4,192,160} },
+    [31] = { key="6:ecldata7", file="ecldata7", sub=31, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [33] = { key="10:ecldata4a", file="ecldata4a", sub=33, bounds={-128,48,512,128}, dynamic=false, intro={90,4,192,160} },
+    [34] = { key="6:ecldata7", file="ecldata7", sub=34, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [35] = { key="3:ecldata3:mid", file="ecldata3", sub=35, bounds={32,48,352,128}, dynamic=true },
+    [36] = { key="5:ecldata6", file="ecldata6", sub=36, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [38] = { key="6:ecldata7", file="ecldata7", sub=38, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [40] = { key="5:ecldata6", file="ecldata6", sub=40, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [41] = { key="10:ecldata4a", file="ecldata4a", sub=41, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,160} },
+    [44] = { key="5:ecldata6", file="ecldata6", sub=44, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [47] = { key="3:ecldata3", file="ecldata3", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [62] = { key="3:ecldata3", file="ecldata3", sub=62, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [66] = { key="7:ecldata8", file="ecldata8", sub=66, bounds={32,48,352,128}, dynamic=true, pos={-32,-32} },
+    [67] = { key="3:ecldata3", file="ecldata3", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [68] = { key="7:ecldata8", file="ecldata8", sub=68, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [70] = { key="7:ecldata8", file="ecldata8", sub=70, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [72] = { key="7:ecldata8", file="ecldata8", sub=72, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [73] = { key="10:ecldata4a", file="ecldata4a", sub=46, bounds=false, dynamic=true, intro={90,4,192,224} },
+    [74] = { key="7:ecldata8", file="ecldata8", sub=74, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [76] = { key="7:ecldata8", file="ecldata8", sub=76, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [78] = { key="7:ecldata8", file="ecldata8", sub=78, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [80] = { key="7:ecldata8", file="ecldata8", sub=80, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,128} },
+    [122] = { key="5:ecldata6", file="ecldata6", sub=21, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [126] = { key="5:ecldata6", file="ecldata6", sub=52, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [130] = { key="5:ecldata6", file="ecldata6", sub=56, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [134] = { key="5:ecldata6", file="ecldata6", sub=63, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [138] = { key="5:ecldata6", file="ecldata6", sub=68, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [142] = { key="5:ecldata6", file="ecldata6", sub=73, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [146] = { key="5:ecldata6", file="ecldata6", sub=78, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
+    [150] = { key="5:ecldata7", file="ecldata7", sub=19, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [154] = { key="6:ecldata7", file="ecldata7", sub=50, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [158] = { key="6:ecldata7", file="ecldata7", sub=55, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [162] = { key="6:ecldata7", file="ecldata7", sub=61, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [166] = { key="6:ecldata7", file="ecldata7", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [170] = { key="6:ecldata7", file="ecldata7", sub=71, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [174] = { key="6:ecldata7", file="ecldata7", sub=77, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
+    [178] = { key="6:ecldata7", file="ecldata7", sub=80, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
+    [182] = { key="6:ecldata7", file="ecldata7", sub=82, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
+    [186] = { key="6:ecldata7", file="ecldata7", sub=84, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
+    [190] = { key="6:ecldata7", file="ecldata7", sub=87, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,144} },
+    [191] = { key="19:ecldata8", file="ecldata8", sub=51, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [192] = { key="19:ecldata8", file="ecldata8", sub=56, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [193] = { key="19:ecldata8", file="ecldata8", sub=60, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [194] = { key="7:ecldata8", file="ecldata8", sub=93, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [195] = { key="7:ecldata8", file="ecldata8", sub=97, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [196] = { key="7:ecldata8", file="ecldata8", sub=100, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [197] = { key="7:ecldata8", file="ecldata8", sub=103, bounds=false, dynamic=false, intro={110,4,192,192} },
+    [198] = { key="7:ecldata8", file="ecldata8", sub=108, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [199] = { key="7:ecldata8", file="ecldata8", sub=113, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [200] = { key="7:ecldata8", file="ecldata8", sub=118, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [201] = { key="7:ecldata8", file="ecldata8", sub=126, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [202] = { key="7:ecldata8", file="ecldata8", sub=131, bounds={96,32,288,448}, dynamic=false, intro={90,4,192,224} },
+    [203] = { key="7:ecldata8", file="ecldata8", sub=143, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+    [204] = { key="7:ecldata8", file="ecldata8", sub=149, bounds=false, dynamic=false, intro={90,4,192,192} },
+    [442] = { key="10:ecldata4a", file="ecldata4a", sub=54, bounds=false, dynamic=false, intro={90,4,192,160} },
+    [443] = { key="11:ecldata4b", file="ecldata4b", sub=17, bounds={32,48,352,128}, dynamic=true },
+    [444] = { key="11:ecldata4b", file="ecldata4b", sub=36, bounds={32,48,352,192}, dynamic=false, intro={90,4,192,128} },
+    [445] = { key="11:ecldata4b", file="ecldata4b", sub=22, bounds={32,48,352,160}, dynamic=false },
+    [446] = { key="11:ecldata4b", file="ecldata4b", sub=41, bounds={32,48,352,256}, dynamic=false, intro={90,4,192,224} },
+    [447] = { key="11:ecldata4b", file="ecldata4b", sub=28, bounds={32,48,352,160}, dynamic=false },
+    [448] = { key="11:ecldata4b", file="ecldata4b", sub=47, bounds={-128,48,512,128}, dynamic=false, intro={90,4,192,160} },
+    [449] = { key="11:ecldata4b", file="ecldata4b", sub=31, bounds={32,48,352,160}, dynamic=false },
+    [450] = { key="11:ecldata4b", file="ecldata4b", sub=55, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,160} },
+    [451] = { key="11:ecldata4b", file="ecldata4b", sub=62, bounds=false, dynamic=true, intro={90,4,192,128} },
+    [452] = { key="11:ecldata4b", file="ecldata4b", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,160} },
+    [453] = { key="4:ecldata5", file="ecldata5", sub=51, bounds={32,48,352,128}, dynamic=true },
+    [454] = { key="4:ecldata5", file="ecldata5", sub=62, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [455] = { key="4:ecldata5", file="ecldata5", sub=53, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,112} },
+    [456] = { key="4:ecldata5", file="ecldata5", sub=66, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [457] = { key="4:ecldata5", file="ecldata5", sub=56, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,112} },
+    [458] = { key="4:ecldata5", file="ecldata5", sub=63, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [459] = { key="4:ecldata5", file="ecldata5", sub=75, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [460] = { key="4:ecldata5", file="ecldata5", sub=78, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [461] = { key="2:ecldata2:mid", file="ecldata2", sub=17, bounds={32,48,352,128}, dynamic=true, pos={-32.0,256.0}, intro={60,4,192,128} },
+    [462] = { key="2:ecldata2", file="ecldata2", sub=44, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [463] = { key="2:ecldata2:mid", file="ecldata2", sub=27, bounds={32,48,352,128}, dynamic=true },
+    [464] = { key="2:ecldata2", file="ecldata2", sub=38, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [465] = { key="2:ecldata2", file="ecldata2", sub=29, bounds={32,48,352,128}, dynamic=true },
+    [466] = { key="2:ecldata2", file="ecldata2", sub=44, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [467] = { key="2:ecldata2", file="ecldata2", sub=51, bounds={32,48,352,128}, dynamic=false },
+    [468] = { key="2:ecldata2", file="ecldata2", sub=52, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [469] = { key="2:ecldata2", file="ecldata2", sub=58, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [470] = { key="1:ecldata1:mid", file="ecldata1", sub=15, bounds={32,48,352,128}, dynamic=true, pos={96.0,-48.0}, intro={60,4,192,128} },
+    [471] = { key="1:ecldata1:mid", file="ecldata1", sub=22, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,144} },
+    [472] = { key="1:ecldata1", file="ecldata1", sub=26, bounds={32,48,352,128}, dynamic=true },
+    [473] = { key="1:ecldata1", file="ecldata1", sub=33, bounds={32,48,352,128}, dynamic=true },
+    [474] = { key="1:ecldata1", file="ecldata1", sub=38, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [475] = { key="1:ecldata1", file="ecldata1", sub=44, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [476] = { key="1:ecldata1", file="ecldata1", sub=48, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
+    [3038] = { key="3:ecldata3", file="ecldata3", sub=38, bounds={32,48,352,128}, dynamic=true },
+    [3044] = { key="3:ecldata3", file="ecldata3", sub=54, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
+}
+
+local function th08_clamp_boss(o, bounds)
+    if not bounds then return end
+    o.x = math.min(bounds[3] - 192, math.max(bounds[1] - 192, o.x))
+    o.y = math.min(224 - bounds[2], math.max(224 - bounds[4], o.y))
+end
+
 for k, e in ipairs(LIST) do
     local cardnum, name, id, seconds = e[1], e[2], e[3], e[4]
     ---★ 第 8 项 = CARD 表的键：默认就是第 1 项（子程序号），只有「不同关卡
@@ -57538,10 +57649,55 @@ for k, e in ipairs(LIST) do
     ---  会把它**覆盖成 nil**，下一帧 `boss_system.lua:197` 无条件调
     ---  `current_card.render(self.boss)` → `attempt to call field 'render' (a nil value)`（踩过）。
     if impl then
-        if impl.init then card.init = impl.init end
-        if impl.frame then card.frame = impl.frame end
+        local motion = TH08_BOSS_MOTION[cardnum]
+        if motion then
+            card.th08_motion_source = motion
+            card.init = function(o)
+                local previous = o.th08_motion_carry
+                if previous and previous.key == motion.key then
+                    o.x, o.y = previous.x, previous.y
+                else
+                    -- 单卡练习没有宿主演出，采用原生宿主完成 MOVE_TO(192,128) 后的落位。
+                    o.x, o.y = 0, 96
+                end
+                if motion.pos then o.x, o.y = motion.pos[1]-192, 224-motion.pos[2] end
+                local m = motion.intro
+                o.th08_intro = m and { x=o.x, y=o.y, dx=m[3]-192-o.x,
+                    dy=224-m[4]-o.y, t=0, n=m[1], ease=m[2] } or nil
+                o.th08_motion_live = card
+                if impl.init then impl.init(o) end
+            end
+            card.frame = function(o)
+                if o.th08_motion_live ~= card then return end
+                if not motion.dynamic then th08_clamp_boss(o, motion.bounds) end
+                if impl.frame then impl.frame(o) end
+                -- MOVE_TO 的首帧取 1/n；固定落位不能代替从上一卡位置出发的插值。
+                local m = o.th08_intro
+                if m then
+                    m.t = m.t + 1
+                    local u = min(1, m.t/m.n)
+                    if m.ease >= 1 and m.ease <= 3 then u = u^(m.ease+1)
+                    elseif m.ease >= 4 and m.ease <= 6 then u = 1-(1-u)^(m.ease-2) end
+                    o.x, o.y = m.x+m.dx*u, m.y+m.dy*u
+                    if not motion.pos then th08_clamp_boss(o, motion.bounds) end
+                    if m.t >= m.n then o.th08_intro = nil end
+                end
+                if not motion.dynamic then th08_clamp_boss(o, motion.bounds) end
+            end
+            card.del = function(o)
+                o.th08_motion_carry = { key=motion.key, x=o.x, y=o.y }
+                o.th08_motion_live = nil
+                if impl.del then impl.del(o) end
+            end
+        else
+            card.init = function(o)
+                o.th08_motion_carry = nil
+                if impl.init then impl.init(o) end
+            end
+        end
+        if not motion and impl.frame then card.frame = impl.frame end
         if impl.render then card.render = impl.render end
-        if impl.del then card.del = impl.del end
+        if not motion and impl.del then card.del = impl.del end
     else
         ---TODO：这张卡还没移植（init/frame/del 走 boss_card.lua:66 的空函数）。
         card.init = placeholder_init

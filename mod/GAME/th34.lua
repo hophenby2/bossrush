@@ -5775,6 +5775,149 @@ local TH34_REIMU_HP = {
     [ 4471] =  374, [ 4475] =  561, [ 4476] =  749,
 }
 
+-- 阶段入口来自已提取的 TH07 二进制 ECL；sub 是原作回调，不是生成弹幕的子机。
+-- 原作换卡只换脚本上下文，位置、运动和活动框仍属于同一敌机。单卡练习从宿主
+-- 进场完成的位置起步；只有阶段自身的 SET_POS 才能瞬移（4430 的道中爱丽丝）。
+class.th07_motion_source = {
+    [3408] = { key="8mid", file="ecldata8.ecl", sub=57, y=128, box={32,48,352,128} },
+    [3488] = { key="7mid", file="ecldata7.ecl", sub=55, y=128, box={32,48,352,128} },
+    [3411] = { key="8main", file="ecldata8.ecl", sub=70, y=128, box={32,48,352,128} },
+    [3413] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=72, y=128, box={64,48,320,128} },
+    [3415] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=73, y=128, box={64,48,320,128} },
+    [3417] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=75, y=128, box={64,48,320,128} },
+    [3419] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=77, y=128, box={64,48,320,128} },
+    [3421] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=79, y=128, box={64,48,320,128} },
+    [3423] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=81, y=128, box={64,48,320,128} },
+    [3425] = { entry_box={64,48,320,128}, key="8main", file="ecldata8.ecl", sub=83, y=128, box={64,48,320,128} },
+    [3440] = { clear_box=true, key="8main", file="ecldata8.ecl", sub=129, y=128, move={120,4,192,128} },
+    [3441] = { key="8main", file="ecldata8.ecl", sub=127, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3442] = { clear_box=true, key="8main", file="ecldata8.ecl", sub=119, y=128, move={120,4,192,128} },
+    [3443] = { key="8main", file="ecldata8.ecl", sub=114, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3444] = { key="8main", file="ecldata8.ecl", sub=109, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3445] = { clear_box=true, key="8main", file="ecldata8.ecl", sub=104, y=128, move={120,4,192,224} },
+    [3446] = { key="8main", file="ecldata8.ecl", sub=102, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3447] = { key="8main", file="ecldata8.ecl", sub=100, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [3448] = { key="8main", file="ecldata8.ecl", sub=97, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [3449] = { key="8main", file="ecldata8.ecl", sub=93, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3450] = { key="8main", file="ecldata8.ecl", sub=88, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3451] = { key="8mid", file="ecldata8.ecl", sub=63, y=128, box={32,48,352,128}, move={60,4,64,128} },
+    [3452] = { key="8mid", file="ecldata8.ecl", sub=60, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3460] = { key="7mid", file="ecldata7.ecl", sub=58, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [3461] = { key="7mid", file="ecldata7.ecl", sub=61, y=128, box={32,48,352,128}, move={60,4,64,128} },
+    [3462] = { key="7main", file="ecldata7.ecl", sub=85, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3463] = { key="7main", file="ecldata7.ecl", sub=88, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3464] = { key="7main", file="ecldata7.ecl", sub=94, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [3465] = { key="7main", file="ecldata7.ecl", sub=97, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [3466] = { key="7main", file="ecldata7.ecl", sub=99, y=128, box={32,48,352,128}, move={120,4,192,96} },
+    [3467] = { clear_box=true, key="7main", file="ecldata7.ecl", sub=101, y=128, move={120,4,192,224} },
+    [3468] = { key="7main", file="ecldata7.ecl", sub=106, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3469] = { key="7main", file="ecldata7.ecl", sub=110, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3470] = { clear_box=true, key="7main", file="ecldata7.ecl", sub=115, y=128, move={120,4,192,128} },
+    [3471] = { key="7main", file="ecldata7.ecl", sub=123, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [3480] = { key="7main", file="ecldata7.ecl", sub=68, y=128, box={32,48,352,128} },
+    [3481] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=70, y=128, box={64,48,320,128} },
+    [3482] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=71, y=128, box={64,48,320,128} },
+    [3483] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=73, y=128, box={64,48,320,128} },
+    [3484] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=75, y=128, box={64,48,320,128} },
+    [3485] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=77, y=128, box={64,48,320,128} },
+    [3486] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=79, y=128, box={64,48,320,128} },
+    [3487] = { entry_box={64,48,320,128}, key="7main", file="ecldata7.ecl", sub=81, y=128, box={64,48,320,128} },
+    [4390] = { key="6mid", file="ecldata6.ecl", sub=19, y=128, box={32,48,352,128} },
+    [4391] = { entry_box={64,48,320,256}, key="6mid", file="ecldata6.ecl", sub=23, y=128, box={64,48,320,256}, move={120,4,192,180} },
+    [4392] = { key="6main", file="ecldata6.ecl", sub=29, y=112, box={32,48,352,128} },
+    [4393] = { key="6main", file="ecldata6.ecl", sub=43, y=112, box={32,48,352,128}, move={120,4,192,64} },
+    [4394] = { entry_box={32,48,352,128}, key="6main", file="ecldata6.ecl", sub=34, y=112, box={32,48,352,128}, move={60,4,192,112} },
+    [4395] = { entry_box={32,48,352,128}, key="6main", file="ecldata6.ecl", sub=36, y=112, box={32,48,352,128}, move={60,4,192,112} },
+    [4396] = { key="6main", file="ecldata6.ecl", sub=50, y=112, box={32,48,352,128}, move={120,4,192,112} },
+    [4397] = { key="6main", file="ecldata6.ecl", sub=52, y=112, box={32,48,352,128}, move={120,4,192,112} },
+    [4398] = { entry_box={32,48,352,128}, key="6main", file="ecldata6.ecl", sub=38, y=112, box={32,48,352,128}, move={60,4,192,112} },
+    [4399] = { key="6main", file="ecldata6.ecl", sub=55, y=112, box={32,48,352,128}, move={120,4,192,112} },
+    [4400] = { key="6main", file="ecldata6.ecl", sub=58, y=112, box={32,48,352,128} },
+    [4401] = { key="6main", file="ecldata6.ecl", sub=62, y=112, box={32,48,352,128} },
+    [4402] = { key="5main", file="ecldata5.ecl", sub=38, y=128, box={32,48,352,128} },
+    [4403] = { clear_box=true, key="5main", file="ecldata5.ecl", sub=42, y=128, move={120,4,320,256} },
+    [4404] = { key="5main", file="ecldata5.ecl", sub=48, y=128, box={32,48,352,128} },
+    [4405] = { key="5main", file="ecldata5.ecl", sub=57, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [4406] = { key="5main", file="ecldata5.ecl", sub=52, y=128, box={32,48,352,128} },
+    [4407] = { key="5main", file="ecldata5.ecl", sub=62, y=128, box={32,48,352,128}, move={120,4,192,64} },
+    [4408] = { clear_box=true, key="5main", file="ecldata5.ecl", sub=66, difficulty=1, y=128, move={120,4,320,224} },
+    [4409] = { clear_box=true, key="5main", file="ecldata5.ecl", sub=70, y=128, move={120,4,352,416} },
+    [4410] = { key="5main", file="ecldata5.ecl", sub=75, y=128, box={32,48,352,128} },
+    [4430] = { key="3mid", file="ecldata3.ecl", sub=22, y=128, pos={-32,128}, move={60,4,192,128} },
+    [4431] = { key="3mid", file="ecldata3.ecl", sub=27, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4432] = { key="3main", file="ecldata3.ecl", sub=32, y=128, box={32,48,352,128} },
+    [4433] = { key="3main", file="ecldata3.ecl", sub=42, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4434] = { key="3main", file="ecldata3.ecl", sub=36, y=128, box={32,48,352,128} },
+    [4435] = { key="3main", file="ecldata3.ecl", sub=48, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4436] = { entry_box={32,48,352,128}, key="3main", file="ecldata3.ecl", sub=37, y=128, box={32,48,352,128} },
+    [4437] = { key="3main", file="ecldata3.ecl", sub=54, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4438] = { key="3main", file="ecldata3.ecl", sub=56, y=128, box={32,48,352,128} },
+    [4439] = { key="3main", file="ecldata3.ecl", sub=46, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4440] = { key="4lunasa", file="ecldata4.ecl", sub=59, y=112, box={32,48,352,128} },
+    [4441] = { key="4lunasa", file="ecldata4.ecl", sub=121, y=128, box={32,48,352,128}, move={120,4,192,128} },
+    [4442] = { entry_box={32,48,352,128}, key="4merlin", file="ecldata4.ecl", sub=76, y=96, box={32,48,352,128} },
+    [4443] = { key="4merlin", file="ecldata4.ecl", sub=138, y=128, box={32,48,352,128}, move={120,4,192,104} },
+    [4444] = { entry_box={32,48,352,128}, key="4lyrica", file="ecldata4.ecl", sub=95, y=112, box={32,48,352,128} },
+    [4445] = { key="4lyrica", file="ecldata4.ecl", sub=145, y=128, box={32,48,352,128}, move={120,4,192,104} },
+    [4446] = { key="4lunasa", file="ecldata4.ecl", sub=128, y=128, box={32,48,352,128}, move={120,4,192,104} },
+    [4447] = { key="4lunasa", file="ecldata4.ecl", sub=133, y=128, box={32,48,352,128} },
+    [4448] = { clear_box=true, key="4lunasa", file="ecldata4.ecl", sub=135, y=128, move={120,4,192,96} },
+    [4450] = { key="1main", file="ecldata1.ecl", sub=26, y=128, box={32,48,352,128} },
+    [4451] = { key="1main", file="ecldata1.ecl", sub=29, y=128, box={32,48,352,128}, move={120,4,192,140} },
+    [4452] = { key="1main", file="ecldata1.ecl", sub=38, y=128, box={32,48,352,128} },
+    [4453] = { key="1main", file="ecldata1.ecl", sub=42, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4454] = { key="1main", file="ecldata1.ecl", sub=39, y=128, box={32,48,352,128} },
+    [4455] = { key="1main", file="ecldata1.ecl", sub=52, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4456] = { key="1main", file="ecldata1.ecl", sub=55, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4457] = { key="1main", file="ecldata1.ecl", sub=48, difficulty=1, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4460] = { key="2main", file="ecldata2.ecl", sub=43, y=128, box={32,48,352,128} },
+    [4461] = { key="2main", file="ecldata2.ecl", sub=45, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4462] = { key="2main", file="ecldata2.ecl", sub=49, y=128, box={32,48,352,128} },
+    [4463] = { key="2main", file="ecldata2.ecl", sub=56, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4464] = { key="2main", file="ecldata2.ecl", sub=58, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4465] = { entry_box={32,48,352,128}, key="2main", file="ecldata2.ecl", sub=53, y=128, box={32,48,352,128} },
+    [4466] = { key="2main", file="ecldata2.ecl", sub=64, y=128, box={32,48,352,128}, move={120,4,336,112} },
+    [4467] = { key="2main", file="ecldata2.ecl", sub=66, y=128, box={32,48,352,128}, move={120,4,336,112} },
+    [4468] = { key="2main", file="ecldata2.ecl", sub=68, y=128 },
+    [4469] = { key="2main", file="ecldata2.ecl", sub=75, y=128 },
+    [4470] = { key="2main", file="ecldata2.ecl", sub=44, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4471] = { key="2main", file="ecldata2.ecl", sub=70, y=128 },
+    [4472] = { key="3main", file="ecldata3.ecl", sub=50, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4473] = { key="3main", file="ecldata3.ecl", sub=52, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4475] = { key="4lunasa", file="ecldata4.ecl", sub=127, y=128, box={32,48,352,128}, move={120,4,192,80} },
+    [4476] = { key="4lunasa", file="ecldata4.ecl", sub=132, y=128, box={32,48,352,128} },
+}
+function class.th07_motion_begin(self, id, move)
+    local cfg = assert(class.th07_motion_source[id])
+    local old = self.th07_previous_motion
+    if old and old.key == cfg.key then
+        self.x, self.y = old.x, old.y
+        self._mv, self._orb, self._box = old.mv, old.orb, old.box
+        self.angle, self._angdir = old.angle, old.angdir
+    else
+        self.x, self.y = 0, 224 - cfg.y
+        self._mv, self._orb = nil, nil
+        self.angle, self._angdir = 0, 0
+        local b = cfg.box
+        self._box = b and { b[1]-192, b[3]-192, 224-b[4], 224-b[2] } or nil
+    end
+    if cfg.pos then self.x, self.y = cfg.pos[1]-192, 224-cfg.pos[2] end
+    -- 入口显式写入的活动框优先于继承值；其余时刻的开关仍走各卡原有时间轴。
+    if cfg.entry_box then
+        local b = cfg.entry_box
+        self._box = { b[1]-192, b[3]-192, 224-b[4], 224-b[2] }
+    elseif cfg.clear_box then self._box = nil end
+    local m = cfg.move
+    if m then move(self, m[1], m[2], m[3]-192, 224-m[4]) end
+    self.th07_motion_live, self.th07_motion_key = id, cfg.key
+end
+function class.th07_motion_end(self)
+    if not self.th07_motion_live then return end
+    self.th07_previous_motion = { key=self.th07_motion_key, x=self.x, y=self.y,
+        mv=self._mv, orb=self._orb, box=self._box, angle=self.angle, angdir=self._angdir }
+    self.th07_motion_live = nil
+end
+
 local function TH34_add_stage78_boss()
     local LEVEL = 32
     local RAD = 180 / PI
@@ -5793,6 +5936,7 @@ local function TH34_add_stage78_boss()
     ---ease 4 = ease-out-quad；原作那些 8 落在引擎 switch 之外 ⇒ 线性，这里照做。
     local function bmove(self, t, ease, x, y)
         if RogueInitialTarget then x=RogueInitialTarget(self,x) end
+        self._orb = nil
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
     end
@@ -5815,7 +5959,9 @@ local function TH34_add_stage78_boss()
         elseif m.ease == 6 then
             local v = 1 - u; e = 1 - v * v * v * v
         end
-        self.x, self.y = m.x0 + m.dx * e, m.y0 + m.dy * e
+        local x, y = m.x0 + m.dx * e, m.y0 + m.dy * e
+        self._angdir = math.deg(atan2(y - self.y, x - self.x))
+        self.x, self.y = x, y
         if m.n >= m.t then self._mv = nil end
     end
 
@@ -5823,6 +5969,7 @@ local function TH34_add_stage78_boss()
     ---每帧 角 += ω、半径 += rw，位置直接放到 圆心 + 半径·(cos,sin)（引擎先算 velocity
     ---再积分，净效果就是瞬移到位）。半径/角速度和角度一样要取反。
     local function borbit(self, cx, cy, deg, w, r, rw)
+        self._mv = nil
         self._orb = { cx = cx, cy = cy, a = deg, w = w, r = r, rw = rw }
     end
     local function borbstep(self)
@@ -5941,7 +6088,7 @@ local function TH34_add_stage78_boss()
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
-            enter(self)
+            class.th07_motion_begin(self, id, bmove)
             local t0 = opt.t0 or 60
             local ease = opt.ease or 4
             local f = (type(fire) == "table") and fire.make() or fire
@@ -5969,8 +6116,10 @@ local function TH34_add_stage78_boss()
                 end
             end)
         end
-        card.frame = bframe
-        card.del = function() end
+        card.frame = function(self)
+            if self.th07_motion_live == id then bframe(self) end
+        end
+        card.del = class.th07_motion_end
         boss.card.add({ { card, "1a" } }, LEVEL, menu, id)
     end
 
@@ -6011,7 +6160,7 @@ local function TH34_add_stage78_boss()
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
-            enter(self)
+            class.th07_motion_begin(self, 3408, bmove)
             self._box = { -160, 160, 96, 176 }
             ---原作 sub58：18 组 7 发×2 层瞄准扇，每 2 帧一组（共 36 帧）。
             ---SUB_CALL 是**同步**的：这 36 帧里母体原地不动，之后才轮到最后那一段
@@ -6040,8 +6189,10 @@ local function TH34_add_stage78_boss()
                 end
             end)
         end
-        card.frame = bframe
-        card.del = function() end
+        card.frame = function(self)
+            if self.th07_motion_live == 3408 then bframe(self) end
+        end
+        card.del = class.th07_motion_end
         boss.card.add({ { card, "1a" } }, LEVEL, "藍 非符 0", 3408)
     end
 
@@ -6319,11 +6470,14 @@ local function TH34_add_stage78_boss()
             sound_tick4, sound_stamp4 = 0, -1
             live = {}
             spell_live = live
-            enter(self)
+            class.th07_motion_begin(self, id, bmove)
             initfn(self)
         end
-        card.frame = bframe
-        card.del = function()
+        card.frame = function(self)
+            if self.th07_motion_live == id then bframe(self) end
+        end
+        card.del = function(self)
+            class.th07_motion_end(self)
             for i = #live, 1, -1 do
                 if IsValid(live[i]) then object.RawDel(live[i]) end
             end
@@ -8694,7 +8848,7 @@ local function TH34_add_stage78_boss()
         card.init = function(self)
             pool4 = {}
             sound_tick4, sound_stamp4 = 0, -1
-            enter(self)
+            class.th07_motion_begin(self, 3488, bmove)
             self._box = { -160, 160, 96, 176 }
             ---原作 sub56：18 组 7 发×2 层瞄准扇，每 2 帧一组（共 36 帧）——SUB_CALL 同步，
             ---母体在打完这 36 帧后才走 MOVE_DIR_TIME（所以这里直接 task.Wait，不并发）。
@@ -8725,8 +8879,10 @@ local function TH34_add_stage78_boss()
                 end
             end)
         end
-        card.frame = bframe
-        card.del = function() end
+        card.frame = function(self)
+            if self.th07_motion_live == 3488 then bframe(self) end
+        end
+        card.del = class.th07_motion_end
         boss.card.add({ { card, "1a" } }, LEVEL, "EX 橙 非符 0", 3488)
     end
 end
@@ -8785,16 +8941,7 @@ local function TH34_add_stage56_boss()
         if RogueInitialTarget then x=RogueInitialTarget(self,x) end
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
-        ---★ 原作 `MOVE_POS_TIME`/`MOVE_DIR_TIME` 走的是 ENEMY_MOVE_INTERP：
-        ---  每帧 `enemy->angle = atan2(velocity.y, velocity.x)`（直线位移 ⇒ 方向恒定），
-        ---  走完后速度清零、angle 留在最后那个值。`GET_EXIT_ANGLE` 的「贴右壁」
-        ---  折返读的就是它（EclManager.cpp:1615 `exitAngle = PI - enemy->angle`）——
-        ---  不记的话那一支永远按 angle=0 算：4447 的 t=440 档实测整段漂移从
-        ---  竖直向下 24px 变成水平向左 24px，此后每个环都歪。
-        ---  （存 TH07 口径的**度**，y 朝下；与 exang 内部的 a 同一套。）
-        if x ~= self.x or y ~= self.y then
-            self.angle = atan2(-(y - self.y), x - self.x) * RAD2DEG
-        end
+
     end
     local function bstep(self)
         local m = self._mv
@@ -8808,7 +8955,11 @@ local function TH34_add_stage56_boss()
         elseif m.ease == 3 then e = u * u * u * u
         elseif m.ease == 5 then local v = 1 - u; e = 1 - v * v * v
         elseif m.ease == 6 then local v = 1 - u; e = 1 - v * v * v * v end
-        self.x, self.y = m.x0 + m.dx * e, m.y0 + m.dy * e
+        local x, y = m.x0 + m.dx * e, m.y0 + m.dy * e
+        -- EclManager::RunEcl 在夹框以前用本帧目标减当前位置更新 angle。
+        -- 贴边时它不等于整段插值的初始方向；GET_EXIT_ANGLE 的右边界分支会读取它。
+        self.angle = atan2(-(y - self.y), x - self.x) * RAD2DEG
+        self.x, self.y = x, y
         if m.n >= m.t then self._mv = nil end
     end
     local function bframe(self)
@@ -8823,8 +8974,7 @@ local function TH34_add_stage56_boss()
     ---原作 `GET_EXIT_ANGLE`（EclManager.cpp:1592-1638）。返回值是**我们口径**的
     ---角度（度）：th07 的 `exitAngle` 取反即我们这边绕行方向。
     ---th07 抽的是 rand(0,π/2) 的 ±45°/±135° 扇区，再按上下左右限位折返四次。
-    ---`self.angle`（`enemy->angle`）本文件只在极坐标移动里才会变，这里不追；
-    ---只在「贴右壁」那一支用到它，而它此时恒为 0（同原作 sub29 的移动方式）。
+    ---`self.angle`（`enemy->angle`）由 bstep 按夹框以前的本帧位移更新。
     local function exang(self)
         local a
         if player.x < self.x then
@@ -9017,12 +9167,14 @@ local function TH34_add_stage56_boss()
             ---和符卡一样登记，卡片结束时统一清场，否则子机协程会活过卡尾继续发弹。
             live = {}
             spell_live = live
-            local go = opt.enter or enter6
-            go(self)
+            class.th07_motion_begin(self, id, bmove)
             initfn(self)
         end
-        card.frame = bframe
-        card.del = function()
+        card.frame = function(self)
+            if self.th07_motion_live == id then bframe(self) end
+        end
+        card.del = function(self)
+            class.th07_motion_end(self)
             for i = #live, 1, -1 do
                 if IsValid(live[i]) then object.RawDel(live[i]) end
             end
@@ -9045,12 +9197,14 @@ local function TH34_add_stage56_boss()
             sound_tick4, sound_stamp4 = 0, -1
             live = {}
             spell_live = live
-            local go = opt.enter or enter6
-            go(self)
+            class.th07_motion_begin(self, id, bmove)
             initfn(self)
         end
-        card.frame = bframe
-        card.del = function()
+        card.frame = function(self)
+            if self.th07_motion_live == id then bframe(self) end
+        end
+        card.del = function(self)
+            class.th07_motion_end(self)
             for i = #live, 1, -1 do
                 if IsValid(live[i]) then object.RawDel(live[i]) end
             end

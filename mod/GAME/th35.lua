@@ -383,8 +383,14 @@ function card:before()
     ---本仓库 boss.Define 的 y 只是"出生点"（doCard 跑到 before 时 BOSS 在屏幕上方 y=300），
     ---所以这里先把 BOSS 摆到上一张卡留下的高度 80（原作是"本来就在那儿"，不出现位移），
     ---再走那 90 帧降到 64。
-    self.y = 80
-    task.MoveTo(self.x, 64, 90, VALUE_SET.DECEL)              -- 差异 1
+    local previous = self.th10_motion
+    if previous and previous.key == "s6boss" then
+        self.x, self.y = previous.ecs.wx, 224 - previous.ecs.wy
+    else
+        self.x, self.y = 0, 80
+    end
+    -- 原指令的 x 目标同样是 0；保留 self.x 会让斜向归位被错误改成竖直移动。
+    task.MoveTo(0, 64, 90, VALUE_SET.DECEL)
 end
 
 function card:init()
@@ -931,19 +937,56 @@ end
 --- 三、敌机两路 motion（Enemy.cpp EnemyRuntimeUpdate + EnemyEclDispatcher move*）
 ---   · 世界位置 = base + offset；写出时 engine.y = 224 - world.y
 ---   · 通道 ch 的字段：位置 x/y、速度 (vx,vy)、极坐标 (ang,spd)、
----     圆运动 (circle, cx/cy 圆心, r 半径, rv 半径速, cav 角速)、
+---     圆运动 (circle, vx/vy 圆心, r 半径, rv 半径速，角速共用 spd)、
 ---     位置插值 interp、极坐标插值 scal
 ---=====================================
 local function ch_new()
     return { x = 0, y = 0, vx = 0, vy = 0, ang = 0, spd = 0,
-             circle = false, cx = 0, cy = 0, r = 0, rv = 0, cav = 0,
+             circle = false, r = 0, rv = 0,
              interp = nil, scal = nil }
+end
+
+-- TH10 AnmManager.cpp:255 / EnemyScalarInterpolationView::Evaluate：
+-- 位置和极坐标共用同一组缓动编号，不能把脚本中的 mode 1/4 当成线性。
+function class.t10_motion_ease(mode, n)
+    if mode == 1 then return n * n end
+    if mode == 2 then return n ^ 3 end
+    if mode == 3 then return n ^ 4 end
+    if mode == 4 then return 1 - (1 - n) ^ 2 end
+    if mode == 5 then return 1 - (1 - n) ^ 3 end
+    if mode == 6 then return 1 - (1 - n) ^ 4 end
+    if mode >= 9 and mode <= 14 then
+        local power = ((mode - 9) % 3) + 2
+        if mode <= 11 then
+            return n < 0.5 and (2 * n) ^ power / 2 or 1 - (2 - 2 * n) ^ power / 2
+        end
+        return n < 0.5 and (1 - (1 - 2 * n) ^ power) / 2 or ((2 * n - 1) ^ power + 1) / 2
+    end
+    if mode == 15 then return 0 end
+    if mode == 16 then return 1 end
+    return n
+end
+
+-- EnemyAdvanceMotion 的乘法和存储都是 float32；直接在 Lua double 上 floor
+-- 会让某些静止小数坐标每帧再掉 0.01。先恢复单精度舍入，再按原作取整。
+function class.t10_motion_f32(x)
+    if x == 0 then return x end
+    local m, e = math.frexp(x)
+    local v = math.abs(m) * 16777216
+    local n = math.floor(v)
+    local fraction = v - n
+    if fraction > 0.5 or (fraction == 0.5 and n % 2 == 1) then n = n + 1 end
+    return math.ldexp((m < 0 and -n or n) / 16777216, e)
+end
+function class.t10_motion_quantize(x)
+    return class.t10_motion_f32(math.floor(class.t10_motion_f32(class.t10_motion_f32(x) * 100)) * class.t10_motion_f32(0.01))
 end
 
 local function ch_step(ch)
     if ch.scal then
         local s = ch.scal
         local n = (s.dur <= 0) and 1 or math.min(1, s.t / s.dur)
+        n = class.t10_motion_ease(s.mode or 0, n)
         ---%s.a1 存在时角也一起插值（moveVelTime：原作对「角, 速度」两条都插值）
         if s.a1 ~= nil then ch.ang = s.a0 + (s.a1 - s.a0) * n else ch.ang = s.a0 end
         ch.spd = s.s0 + (s.s1 - s.s0) * n
@@ -953,6 +996,7 @@ local function ch_step(ch)
     if ch.interp then
         local it = ch.interp
         local n = (it.dur <= 0) and 1 or math.min(1, it.t / it.dur)
+        n = class.t10_motion_ease(it.mode or 0, n)
         local tx = it.x0 + (it.x1 - it.x0) * n
         local ty = it.y0 + (it.y1 - it.y0) * n
         ch.vx, ch.vy = tx - ch.x, ty - ch.y
@@ -960,18 +1004,21 @@ local function ch_step(ch)
         if it.t > it.dur then ch.interp = nil end
     elseif ch.circle then
         ch.r = ch.r + ch.rv
-        ch.ang = t10_wrap(ch.ang + ch.cav)
-        ch.vx = (ch.cx + ch.r * math.cos(ch.ang)) - ch.x
-        ch.vy = (ch.cy + ch.r * math.sin(ch.ang)) - ch.y
+        ch.ang = t10_wrap(ch.ang + ch.spd)
     else
         ch.vx, ch.vy = math.cos(ch.ang) * ch.spd, math.sin(ch.ang) * ch.spd
     end
-    ch.x = ch.x + ch.vx
-    ch.y = ch.y + ch.vy
+    -- EnemyAdvanceMotion 对负坐标同样向下取整；基准、偏移、世界三路分别取整。
+    local x, y = ch.x + ch.vx, ch.y + ch.vy
+    if ch.circle then
+        x, y = ch.vx + ch.r * math.cos(ch.ang), ch.vy + ch.r * math.sin(ch.ang)
+    end
+    ch.x = class.t10_motion_quantize(x)
+    ch.y = class.t10_motion_quantize(y)
 end
 
 local function ecs_attach(o, x, y)
-    o.ecs = { base = ch_new(), off = ch_new(), wx = x, wy = y, lim = nil }
+    o.ecs = { base = ch_new(), off = ch_new(), wx = x, wy = y, vx = 0, vy = 0, lim = nil }
     ---★ 原作 EnemySpawn 把出生点写进 **offsetMotion.position**（Enemy.cpp:1402），
     ---base 保持 (0,0)；世界位置 = base + offset。之后 movePos/movePosTime
     ---（SET/INTERPOLATE_OFFSET_*）改的也是这一路，movePosRel* 才改 base。
@@ -996,7 +1043,10 @@ local function ecs_step(o)
     local w = o.ecs
     ch_step(w.base)
     ch_step(w.off)
-    local wx, wy = w.base.x + w.off.x, w.base.y + w.off.y
+    local wx = class.t10_motion_quantize(w.base.x + w.off.x)
+    local wy = class.t10_motion_quantize(w.base.y + w.off.y)
+    -- 世界位移先由两路新位置减上一帧世界位置求出，再执行活动框夹取。
+    w.vx, w.vy = w.base.x+w.off.x-w.wx, w.base.y+w.off.y-w.wy
     local L = w.lim
     if L then
         local minx, maxx = L.cx - L.w * 0.5, L.cx + L.w * 0.5
@@ -1017,7 +1067,8 @@ local function m_pos(o, w, x, y)
     local ch = M(o, w)
     if x > -999999 then ch.x = x end
     if y > -999999 then ch.y = y end
-    ch.circle, ch.interp, ch.scal = false, nil, nil
+    -- SET_POSITION 不清除已安装的插值槽；下一帧仍可能由该槽覆盖位置。
+    ch.circle = false
     ecs_sync(o)
 end
 
@@ -1026,15 +1077,19 @@ local function m_pos_time(o, w, dur, mode, x, y)
     local ch = M(o, w)
     ch.interp = { t = 0, dur = dur, mode = mode, x0 = ch.x, y0 = ch.y,
                   x1 = (x > -999999) and x or ch.x, y1 = (y > -999999) and y or ch.y }
-    ch.circle, ch.scal = false, nil
+    if dur <= 0 then ch.interp = nil end
+    ch.circle = false
 end
 
 ---moveCircle / moveCircleRel：第一次调用时把当前位置存成圆心
 local function m_circle(o, w, a, av, r, rv)
     local ch = M(o, w)
-    if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
-    ch.circle, ch.interp, ch.scal = true, nil, nil
-    ch.ang, ch.cav, ch.r, ch.rv = a, av, r, rv
+    if not ch.circle then ch.vx, ch.vy = ch.x, ch.y end
+    ch.circle = true
+    if a > -999999 then ch.ang = t10_wrap(a) end
+    if av > -999999 then ch.spd = av end
+    if r > -999999 then ch.r = r end
+    if rv > -999999 then ch.rv = rv end
 end
 
 ---moveVel / moveVelRel：SET_OFFSET_POLAR / SET_BASE_POLAR —— 只设（角, 速度），
@@ -1044,11 +1099,11 @@ local function m_vel(o, w, ang, spd)
     local ch = M(o, w)
     if ang > -999999 then ch.ang = ang end
     if spd > -999999 then ch.spd = spd end
-    ch.circle, ch.interp, ch.scal = false, nil, nil
+    ch.circle = false
 end
 
 ---moveVelTime / moveVelRelTime：INTERPOLATE_OFFSET_POLAR —— 对（角, 速度）插值
----（EnemyEclDispatcher.cpp:1735；角差先折进 ±π，与原作一致）。本仓库 mode 一律按线性近似。
+---（EnemyEclDispatcher.cpp:1735；角差先折进 ±π，缓动由同一组原作插值器求值）。
 local function m_vel_time(o, w, dur, mode, ang, spd)
     local ch = M(o, w)
     local a0, a1 = ch.ang, ch.ang
@@ -1061,44 +1116,48 @@ local function m_vel_time(o, w, dur, mode, ang, spd)
     local s0 = ch.spd
     local s1 = (spd > -999999) and spd or ch.spd
     ch.scal = { t = 0, dur = dur, mode = mode, a0 = a0, a1 = a1, s0 = s0, s1 = s1 }
-    ch.circle, ch.interp = false, nil
+    if dur <= 0 then ch.scal = nil end
+    ch.circle = false
 end
 
 local function m_add(o, w, x, y, z)
     local ch = M(o, w)
-    ch.x = ch.x + x
-    ch.y = ch.y + y
-    ecs_sync(o)
+    -- ADD_*_POSITION 实际写 velocity：圆运动时该字段保存圆心，不能改瞬时圆周位置。
+    ch.vx, ch.vy = ch.vx + x, ch.vy + y
 end
 
----moveRand：按「离边框远近」选随机方向，然后速度线性降到 0（EnemyEclDispatcher:1946）
+---moveRand：判断世界位置相对当前活动框的位置，再按指定缓动把速度降到 0。
 local function m_rand(o, w, dur, mode, speed)
     local ch = M(o, w)
-    local cx, cy, bw, bh = 0, 224, 384, 448
+    local L = o.ecs.bounds or o.ecs.lim
+    local cx, cy, bw, bh = 0, 0, 0, 0
+    if L then cx, cy, bw, bh = L.cx, L.cy, L.w, L.h end
+    local wx, wy = o.ecs.wx, o.ecs.wy
     local a
-    if ch.x >= cx - bw * 0.25 and ch.x <= cx + bw * 0.25 then
-        if ch.x < player.x then
+    if wx >= cx - bw * 0.25 and wx <= cx + bw * 0.25 then
+        if wx < player.x then
             a = t10_rand01() * (PI / 2)
         else
             a = t10_wrap(t10_rand01() * (PI / 2) + PI)
         end
-    elseif ch.x > cx + bw * 0.25 then
+    elseif wx > cx + bw * 0.25 then
         a = t10_wrap(t10_rand01() * (PI / 3) + PI)
     else
         a = t10_rand01() * (PI / 3)
     end
-    if ch.y >= cy - bh * 0.25 then
-        if ch.y > cy + bh * 0.25 then a = -math.abs(a) end
+    if wy >= cy - bh * 0.25 then
+        if wy > cy + bh * 0.25 then a = -math.abs(a) end
     else
         a = math.abs(a)
     end
-    ch.scal = { t = 0, dur = dur, a0 = a, s0 = speed, s1 = 0 }
-    ch.circle, ch.interp = false, nil
-    ch.ang, ch.spd = a, speed
+    ch.scal = { t = 0, dur = dur, mode = mode, a0 = a, s0 = speed, s1 = 0 }
+    if dur <= 0 then ch.scal = nil end
+    ch.circle = false
 end
 
 local function m_limit(o, cx, cy, sx, sy)
     o.ecs.lim = { cx = cx, cy = cy, w = sx, h = sy }
+    o.ecs.bounds = o.ecs.lim
 end
 local function m_limit_clear(o) o.ecs.lim = nil end
 
@@ -1431,18 +1490,56 @@ end
 ---moveLimit：把世界位置夹进 [center ± size/2]（原作 moveLimit）
 ---（已有的 m_limit/m_limit_clear 即此）
 
----BOSS 载体：给 BOSS 挂 ecs 并起一个协程跑主 ECL。
-local function t10_boss_start(b, main)
+-- 宿主 Boss()/MBoss() 在切进攻击子程序前设置的位置和活动框。
+-- 来源：stage01..07.ecl 的 280/281/324；框的后两项是全宽/全高，不是最大坐标。
+class.t10_boss_entry = {}
+do
+local function t10_entry(key, x, y, bounds, ids)
+    for _, id in ipairs(ids) do class.t10_boss_entry[id] = { key=key, x=x, y=y, bounds=bounds } end
+end
+t10_entry("s1mid", -64, -16, nil, {3642})
+t10_entry("s1mid", 0, 144, nil, {3630})
+t10_entry("s1boss", 0, 112, {0,96,280,100}, {3643,3631,3644,3632})
+t10_entry("s2mid", 0, 0, {0,96,280,100}, {3633})
+t10_entry("s2boss", 0, 112, {0,96,280,100}, {3645,3634,3646,3635,3636})
+t10_entry("s3mid", 0, 128, {0,96,280,100}, {3601})
+t10_entry("s3boss", 0, 112, {0,96,280,64}, {3660,3602,3661,3603,3662,3604})
+t10_entry("s4mid", 0, -16, nil, {3670})
+t10_entry("s4boss", 0, 112, {0,96,280,64}, {3663,3605,3664,3606,3665,3607,3608})
+t10_entry("s5mid", -64, -32, nil, {3647})
+t10_entry("s5mid", 0, 128, {0,96,280,100}, {3637})
+t10_entry("s5boss", 0, 112, {0,96,280,64}, {3648,3638,3649,3639,3650,3640,3641})
+t10_entry("s6boss", 0, 128, {0,128,280,96}, {3666,3622,3667,3623,3668,3624,3669,3625})
+t10_entry("s7mid", 0, 128, {0,128,280,96}, {3651,3609,3610,3611})
+t10_entry("s7boss", 0, 112, {0,96,280,64},
+    {3652,3612,3653,3613,3654,3614,3655,3615,3656,3616,3657,3617,3658,3618,3659,3619,3620,3621})
+end
+
+---同一原作敌机换子程序时，位置、两路运动、活动框均保留；不同宿主重新取出生上下文。
+local function t10_boss_start(b, main, id)
     local p = New(class["th10_ecs_pod"], nil, 0, 0, main)
     p.th10_boss = b
-    ---BOSS 出生点 = 当前的屏幕位置（原作出生时也把位置写进 offsetMotion）。
-    ---y 从本仓库坐标换回原作坐标（224 − engine.y）。
-    p.ecs.off.x, p.ecs.off.y = b.x, 224 - b.y
+    local entry = assert(class.t10_boss_entry[id], "缺少 TH10 Boss 入场上下文")
+    local previous = b.th10_motion
+    p.th10_motion_key = entry.key
+    if previous and previous.key == entry.key then
+        p.ecs = previous.ecs
+    else
+        p.ecs.off.x, p.ecs.off.y = entry.x, entry.y
+        if entry.bounds then m_limit(p, unpack(entry.bounds)) end
+    end
     if RogueInitialCarrier then RogueInitialCarrier(p) end
     ecs_sync(p)
+    b.x, b.y = p.x, p.y
     b.th10carrier = p
     t10_track(p)
     return p
+end
+
+function class.t10_boss_end(b)
+    local p = b.th10carrier
+    if p and p.ecs then b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs } end
+    t10_clear_pods(p)
 end
 
 ---callAsync：在**同一敌机**上另起一个线程（共享 pattern 与全局变量）。
@@ -1456,13 +1553,12 @@ end
 local function t10_kill_async(o) task.Clear(o, true) end
 
 ---%ANGLE_PLAYER：从 **offsetMotion.position** 到自机的角度（Enemy.cpp:620）。
-local function t10_angle_player(o) return t10_aim(o.ecs.wx, o.ecs.wy) end
+local function t10_angle_player(o) return t10_aim(o.ecs.off.x, o.ecs.off.y) end
 
----%FINAL_ANGLE：本帧的**世界位移角**（Enemy.cpp:615 取 base.v + offset.v 的 atan2）。
+---%FINAL_ANGLE：本帧的**世界位移角**（Enemy.cpp:591；:856 在夹框前求世界位置差）。
 ---★ 不是极坐标速度角：movePos/moveCircle 走插值时两者会不同，stage07 BossCard9 用它定弹向。
 local function t10_final_angle(o)
-    local b, f = o.ecs.base, o.ecs.off
-    return math.atan2(b.vy + f.vy, b.vx + f.vx)
+    return math.atan2(o.ecs.vy or 0, o.ecs.vx or 0)
 end
 
 ---ECL 时钟辅助：对应 VM 的「if 指令时间 > clock then task.Wait(指令时间 - clock)」。
@@ -4252,11 +4348,11 @@ for _, e in ipairs(T10_CARDS) do
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
-        local p = t10_boss_start(self, main)
+        local p = t10_boss_start(self, main, id)
         p.t10_bossref = p
     end
     ---卡片结束时把本卡生成的枪/使魔载体一起清掉（原作靠 killAllAsync/enmKillAll + 敌机回收）。
-    c.del = function(self) t10_clear_pods(self.th10carrier) end
+    c.del = function(self) class.t10_boss_end(self) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 
@@ -4309,10 +4405,10 @@ for _, e in ipairs(T10_CARDS_EX) do
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
-        local p = t10_boss_start(self, main)
+        local p = t10_boss_start(self, main, id)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods(self.th10carrier) end
+    c.del = function(self) class.t10_boss_end(self) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 
@@ -5060,10 +5156,10 @@ for _, e in ipairs(s6.cards) do
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
-        local p = t10_boss_start(self, main)
+        local p = t10_boss_start(self, main, id)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods(self.th10carrier) end
+    c.del = function(self) class.t10_boss_end(self) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end
 --=====================================
@@ -5105,13 +5201,7 @@ end
 ---moveCircle / moveCircleRel：第一次调用把当前位置存成圆心；−999999 = 保持原值。
 ---圆运动**不**受镜像影响（原作只镜像极坐标运动的角）。
 function t10mid.circle(f, w, a, av, r, rv)
-    local ch = (w == "base") and f.ecs.base or f.ecs.off
-    if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
-    ch.circle, ch.interp, ch.scal = true, nil, nil
-    if a  > -999999 then ch.ang = a  end
-    if av > -999999 then ch.cav = av end
-    if r  > -999999 then ch.r   = r  end
-    if rv > -999999 then ch.rv  = rv end
+    m_circle(f, w, a, av, r, rv)
 end
 
 class["th10_midfairy"] = Class(enemy, {
@@ -5237,7 +5327,7 @@ function s6mid.vel(f, ang, spd)
     m_vel(f, "off", ang, spd)
 end
 
----moveVelTime：INTERPOLATE OFFSET POLAR（−999999 = 不改；mode 照本仓库线性近似）。
+---moveVelTime：INTERPOLATE OFFSET POLAR（−999999 = 不改；保留原作缓动）。
 function s6mid.vel_time(f, dur, mode, ang, spd)
     if f.t10_mir and ang > -999999 then ang = s6_mirror(ang) end
     m_vel_time(f, "off", dur, mode, ang, spd)
@@ -5246,13 +5336,7 @@ end
 ---moveCircleRel：第一次调用把当前位置存成圆心；−999999 = 保持原值。
 ---圆运动**不**受镜像影响（原作只镜像极坐标运动的角）。
 function s6mid.circle(f, a, av, r, rv)
-    local ch = f.ecs.off
-    if not ch.circle then ch.cx, ch.cy = ch.x, ch.y end
-    ch.circle, ch.interp, ch.scal = true, nil, nil
-    if a  > -999999 then ch.ang = a  end
-    if av > -999999 then ch.cav = av end
-    if r  > -999999 then ch.r   = r  end
-    if rv > -999999 then ch.rv  = rv end
+    m_circle(f, "off", a, av, r, rv)
 end
 
 ---当前世界位置（原作坐标系）：frame 与子程序都用它，避免静态字段审计把
@@ -10324,7 +10408,7 @@ end
 --    ECL_VM_SPAWN_THREAD 走 SpawnThread(−1, 0)），只有 callAsyncId(0, …) 才注册 id 0。
 --    Boss1 循环尾那条 killAsync(0) 因此什么都不杀，这里也不写。
 --  ★ 三个 Boss 的 moveLimit(0,96,280,64) 写在 Boss() 里（原作的「上一相残留状态」），
---    ECL 反汇编里看不到、也不属于任何一张卡的子程序 ⇒ 与 stage01/02 非符同样不搬。
+--    ECL 反汇编里看不到、也不属于任何一张卡的子程序 ⇒ 必须由 t10_boss_start 恢复宿主上下文，不能因为本相没有该指令就漏掉。
 --=====================================
 
 ---非符 3647　早苗（中 BOSS 非符）
@@ -10793,9 +10877,9 @@ for _, e in ipairs(T10_CARDS_S125) do
     local menu = e[9] or name
     local c = boss.card.New(name, t1, t2, t3, hp)
     c.init = function(self)
-        local p = t10_boss_start(self, main)
+        local p = t10_boss_start(self, main, id)
         p.t10_bossref = p
     end
-    c.del = function(self) t10_clear_pods(self.th10carrier) end
+    c.del = function(self) class.t10_boss_end(self) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
 end

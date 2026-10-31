@@ -4649,6 +4649,7 @@ end
 ---本仓库 task.MoveTo 的 mode 允许直接给函数（Ltask.lua:163 的 __index）⇒ 原样构造，
 ---对 ins_64/66/67 的缓动就与原作逐帧一致（原作 progress = 1 − timer/duration = s/n）。
 local function sg_ease(k)
+    if type(k) == "function" then return k end
     if k == 1 then return function(n) return n * n end end
     if k == 2 then return function(n) return n * n * n end end
     if k == 3 then return function(n) return n * n * n * n end end
@@ -4664,7 +4665,7 @@ end
 
 ---非阻塞的插值移动（ins_64/66/67 都是逐帧积分、不阻塞 ECL）。同一时间只留一条，
 ---新的会打断旧的（原作里 movementMode = 2 会被后一条指令整个覆盖）。
-local function sg_move(owner, st, tx, ty, n, easing)
+local function sg_move(owner, st, tx, ty, n, easing, box)
     if st.mv then st.mv.alive = false end
     local t = { alive = true }
     st.mv = t
@@ -4675,7 +4676,14 @@ local function sg_move(owner, st, tx, ty, n, easing)
         for s = 1, n do
             if not t.alive or st.dead then return end
             local p = f(s / n)
-            owner.x, owner.y = x0 + p * dx, y0 + p * dy
+            local x, y = x0 + p * dx, y0 + p * dy
+            -- UpdateMovement 先用未夹框的位移更新 movementAngle，再由敌机管理器夹框。
+            st.mv_angle = math.atan2(-(y - owner.y), x - owner.x)
+            if box then
+                x = max(box[1], min(box[3], x))
+                y = max(field_y(box[4]), min(field_y(box[2]), y))
+            end
+            owner.x, owner.y = x, y
             task.Wait(1)
         end
     end)
@@ -4691,6 +4699,7 @@ local function sg_bmove(owner, st, n, easing, speed, box)
     local a
     if player.x < x then
         a = ran:Float(0, math.pi / 2) + 2.3561945     -- rand[0,π/2) + 3π/4
+        if a > math.pi then a = a - 2 * math.pi end
     else
         a = ran:Float(0, math.pi / 2) - 0.78539819    -- rand[0,π/2) − π/4
     end
@@ -4706,9 +4715,8 @@ local function sg_bmove(owner, st, n, easing, speed, box)
     end
     if y < box[2] + 48 and a < 0 then a = -a end
     if y > box[4] - 48 and a > 0 then a = -a end
-    st.mv_angle = a
     local d = speed * n
-    sg_move(owner, st, x + d * math.cos(a), owner.y - d * math.sin(a), max(1, n), easing)
+    sg_move(owner, st, x + d * math.cos(a), owner.y - d * math.sin(a), max(1, n), easing, box)
 end
 
 ---ins_145 直线激光（PhotoStraightLaserView::Update，PhotoEffect.cpp:208-230）：
