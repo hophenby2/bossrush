@@ -2888,6 +2888,7 @@ lw207_laser = Class(laser, {
             end
         end
         self.lw207_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw207_state,t,LASER_WIDTH,LASER_HITBOX_DELAY)
         laser.frame(self)
     end,
 })
@@ -3816,6 +3817,7 @@ lw209_laser = Class(laser, {
             end
         end
         self.lw209_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw209_state,t,2*LASER_W,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -5460,6 +5462,7 @@ lw212_laser = Class(laser, {
             end
         end
         self.lw212_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw212_state,t,2*LASER_W,LASER_HITBOX_DELAY)
         laser.frame(self)
     end,
 })
@@ -9984,6 +9987,7 @@ laser_cls = Class(laser, {
             end
         end
         self.lw_t = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw_state,t,2*LASER_W,LASER_HIT_DELAY)
         laser.frame(self)
     end,
 })
@@ -15414,6 +15418,7 @@ local laser198 = Class(laser, {
             end
         end
         self.l198_t = t + 1
+        OriginalBulletVisual.native_laser(self,self.l198_state,t,LG_WIDTH,LG_HITBOX_DELAY)
         laser.frame(self)
     end,
 })
@@ -20003,6 +20008,7 @@ local lw166_laser = Class(laser, {
             end
         end
         self.lw166_t = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw166_state,t,LASER_WIDTH,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -21360,6 +21366,7 @@ local lw154_laser = Class(laser, {
         end
         self.lw154_t = t + 1
         self._native_laser_start = self.lw154_start
+        OriginalBulletVisual.native_laser(self,self.lw154_state,t,p.width,p.hbEnd)
         laser.frame(self)
     end,
 })
@@ -21898,6 +21905,7 @@ local lw158_laser = Class(laser, {
         end
         self.lw158_t = t + 1
         self._native_laser_start = self.lw158_start
+        OriginalBulletVisual.native_laser(self,self.lw158_state,t,p.width,p.hbEnd)
         laser.frame(self)
     end,
 })
@@ -22403,6 +22411,7 @@ local lw162_laser = Class(laser, {
         end
         self.lw162_t = t + 1
         self._native_laser_start = self.lw162_start
+        OriginalBulletVisual.native_laser(self,self.lw162_state,t,p.width,p.hbEnd)
         laser.frame(self)
     end,
 })
@@ -24470,6 +24479,7 @@ lw146_laser = Class(laser, {
             end
         end
         self.lw146_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw146_state,t,2*LASER_W,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -24928,7 +24938,7 @@ local lw142_familiar = Class(object, {
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）、plan = FAM_PLAN 的一条。
     init = function(self, x, y, plan)
         self.x, self.y = x, y
-        self.group, self.layer = GROUP.INDIES, LAYER.ENEMY
+        self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"                -- 占位贴图（`#0 SET_MAIN_ANM 54`）
         self.hscale, self.vscale = 0.7, 0.7
         self.colli = false                  -- 原作 250 血可击破；本文件口径不给判定
@@ -25637,6 +25647,7 @@ local lw134_laser = Class(laser, {
             end
         end
         self.lw134_t = t + 1
+        OriginalBulletVisual.native_laser(self,self.lw134_state,t,2*LASER_W,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -26583,6 +26594,7 @@ lw126_laser = Class(laser, {
             end
         end
         self.l_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.l_state,t,2*LASER_W,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -34618,6 +34630,7 @@ lw448_laser = Class(laser, {
             end
         end
         self.l448_timer = t + 1
+        OriginalBulletVisual.native_laser(self,self.l448_state,t,LASER_WIDTH,LASER_DESPAWN)
         laser.frame(self)
     end,
 })
@@ -35869,6 +35882,7 @@ lw451_laser = Class(laser, {
         end
         self.l451_timer = t + 1
         self._native_laser_start = start
+        OriginalBulletVisual.native_laser(self,self.l451_state,t,LASER_WIDTH,LASER_HITBOX_END_DELAY)
         laser.frame(self)
     end,
 })

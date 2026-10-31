@@ -168,7 +168,11 @@ local wide95=ray(95,64)
 player.x,player.y=50,23.9;hits=0;wide95.class.frame(wide95);check(hits==1,'TH095 大于32的宽激光使用 width−16 的判定全宽')
 player.y=24.1;hits=0;wide95.class.frame(wide95);check(hits==0,'TH095 宽光束外点不命中')
 local box=ray(7,32);box._native_laser_box=true
-player.x,player.y=10,12;hits=0;box.class.frame(box);check(hits==1,'敌人矩形斩击不套用激光的半宽或中点裁剪')
+player.x,player.y=50,10.5;hits=0;box.class.frame(box);check(hits==1,'横斩按敌人接触框除以1.5，框内命中')
+player.y=10.8;hits=0;box.class.frame(box);check(hits==0,'横斩接触框外不命中')
+player.x,player.y=10,0;hits=0;box.class.frame(box);check(hits==0,'横斩的长度同样除以1.5，围绕原框中心裁剪')
+OriginalBulletVisual.native_laser(box,3,0,32,4)
+player.x=50;hits=0;box.class.frame(box);check(hits==0,'横斩实体寿命结束后不增加激光消散期伤害')
 local live=New(actual_lasers.th08,0,0,0)
 player.x,player.y=300,2.4
 for _=1,111 do live.class.frame(live) end

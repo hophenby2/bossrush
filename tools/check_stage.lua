@@ -698,6 +698,12 @@ local function New(class, ...)
     --   （`can't find resource 'X'`）。静态扫源码扫不到 `self.img = o.img or "Ghost1"`
     --   这种「字面量在 fallback 位置」的写法，所以必须在赋值这一刻拦。
     local function assignField(t, k, v)
+        -- 分组常量拼错会得到 nil；真机的 group 属性只接受数字，普通表却会静默吞掉。
+        -- th31「天文密葬法」曾把 INDES 写成 INDIES，直到第一只使魔出生才崩。
+        if k == "group" and type(v) ~= "number" then
+            error(("group 必须是数字，实际为 %s（%s）—— 检查 GROUP 常量是否拼错")
+                    :format(tostring(v), type(v)), 2)
+        end
         if k == "img" and type(v) == "string" and not RES[v] then
             error(("img = %q 不在资源池里 —— 真机上会崩 `can't find resource '%s'`"):format(v, v), 2)
         end
@@ -1258,17 +1264,17 @@ local function step_objects()
     for i = 1, n do
         local o = objects[i]
         if o._live ~= false then
-            o.timer = o.timer + 1
-            o.ani = o.ani + 1
-            -- 引擎每帧会替所有对象积分速度与自转（不是只有 bullet 才走）
+            -- GameObjectPool::updateMovementsLegacy 先回调 frame，再执行 Update。
+            -- 先积分会让变速弹整体晚一帧，也会误导关卡加入真机上不需要的补偿。
+            if o.frame then o.frame(o) end
+        end
+        if o._live ~= false then
             o.x = o.x + (o.vx or 0)
             o.y = o.y + (o.vy or 0)
             o.rot = o.rot + (o.omiga or 0)
+            o.timer = o.timer + 1
+            o.ani = o.ani + 1
         end
-    end
-    for i = 1, n do
-        local o = objects[i]
-        if o._live ~= false and o.frame then o.frame(o) end
     end
     -- ★ 引擎每帧 frame 之后必然 render。原来这里**只调 frame 不调 render**，
     --   于是所有 `Class(object, {...})` 子类里 render 段的 nil 错误
@@ -1286,6 +1292,7 @@ local function step_objects()
                 and (o.x < -224 or o.x > 224 or o.y < -256 or o.y > 256) then
             -- bound 在引擎里的默认值是 true（「离开边界自动回收」），
             -- 所以没显式关掉它的自绘物件飞出边界也会被收掉
+            o._live = false
             table.remove(objects, i)
         end
     end
@@ -1310,6 +1317,7 @@ local function step_objects()
             b.x = b.x + b.vx
             b.y = b.y + b.vy
             if b.bound and (b.x < -224 or b.x > 224 or b.y < -256 or b.y > 256) then
+                b._live = false
                 table.remove(bullets, i)
             end
         end
@@ -1798,6 +1806,9 @@ for _, __item in ipairs(run_list) do
     local idx, entry = __item.idx, __item.entry
     if HOOK and HOOK.on_card then HOOK.on_card(idx, entry) end
     local card = entry.card
+    -- 独立开卡等同引擎清场；旧句柄失效后，共用原作弹池才能释放槽位。
+    for _,o in ipairs(objects) do o._live=false end
+    for _,b in ipairs(bullets) do b._live=false end
     objects, bullets, tasks = {}, {}, {}
     local boss_obj = {
         x = 0, y = 300, timer = 0, ani = 0, hscale = 1, vscale = 1,

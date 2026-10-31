@@ -65,9 +65,8 @@
 ---     起点 = 上一张卡把 BOSS 留在的高度（原作 y=144 ⇒ 我们 80），终点 = 原作 y=160 ⇒ 我们 64。
 ---  2  弹样式用本仓库最接近的原生贴图代理：原作 `etSprite(0, 6, $I0)` 的 type 6
 ---     对应 `square`。轮廓与颜色组对齐，但不是逐像素相同（见 `T10_STYLE`）。
----  3  弹池上限不建模：原作 TH10 全游戏共用 2000 个弹槽（BulletManager.cpp 的
----     SpawnSingleBullet 从指针起环形扫 2000 槽；满槽 ⇒ 整波不生、生到一半见底 ⇒ 丢剩下的）。
----     本卡一轮要往外挤近 2000 发，真机上会顶到上限 —— 移植版交给引擎自己按边界回收。
+---  3  全关共用原作的2000个点弹槽（BulletManager.cpp:SpawnSingleBullet）；
+---     从游标环形找空槽，满槽即停止当前波，不能靠无限发弹改变原作图案。
 ---  4  出膛动画（flags 带 SPAWN_FAST/SLOW 的 10/15/30 帧定格）不建模：本卡出膛速度 0.001，
 ---     那几帧的位移可以忽略，弹在出膛帧就能被看见。
 ---  5  弹的 etEx 程序里 slot0（kind=2，TH10 复原源码的 kind 表里没有这一项）与 slot1
@@ -97,6 +96,19 @@ local class = _editor_class["TH35"]
 local RAD = 180 / math.pi           -- 弧度 → 角度（引擎的 rot / SetV 是角度制）
 local PI = math.pi
 local bullet = bullet
+
+-- 神德的手写枪与其余 ECL 枪共用弹池；在抽随机数之前检查容量，满槽不能消耗随机流。
+class.t10_bullet_slots, class.t10_bullet_cursor = {}, 1
+function class.t10_free_bullet_slot()
+    for scanned=0,1999 do
+        local i=(class.t10_bullet_cursor+scanned-1)%2000+1
+        if not class.t10_bullet_slots[i] or not IsValid(class.t10_bullet_slots[i]) then return i end
+    end
+end
+function class.t10_use_bullet_slot(slot,b)
+    class.t10_bullet_slots[slot]=b
+    class.t10_bullet_cursor=slot%2000+1
+end
 
 ---TH10 `etSprite(type, color)` → 本项目原生弹样式。type 是原作 bullet type，
 ---color 是在该 type 的连续精灵帧里的色号。依据是 bullet.anm 的脚本起点
@@ -243,6 +255,8 @@ local function th35_bullet_frame(self)
 end
 
 local function spawn_bullet(x, y, angle_deg, delta, wait, color)
+    local slot=class.t10_free_bullet_slot()
+    if not slot then return end
     local b = NewSimpleBullet(t10_style(BULLET_TYPE), t10_color(color, BULLET_TYPE), x, y,
             BULLET_INIT_SPEED, angle_deg, false, 0, false, true, nil, nil,
             th35_bullet_frame)
@@ -250,6 +264,7 @@ local function spawn_bullet(x, y, angle_deg, delta, wait, color)
     b.th_delta = delta
     b.th_left = BULLET_ACCEL_FRAMES
     b.th_speed = BULLET_INIT_SPEED
+    class.t10_use_bullet_slot(slot,b)
     return b
 end
 
@@ -746,6 +761,9 @@ local function t10_bullet_frame(self)
     b.hit = false
     t10_tp_advance(b)
     if next(b.af) ~= nil then t10_tp_tick(b) end
+    -- 原作检查出屏后才递减延迟；etEx 0x2000 不能只写字段而不改变回收。
+    self.bound = b.cull <= 0
+    b.cull = math.max(0,b.cull-1)
     if b.hit then self.x, self.y = b.px, t10_oy(b.py) end
     if b.dead then object.RawDel(self) return end
     local mag = math.sqrt(b.vx * b.vx + b.vy * b.vy)
@@ -814,6 +832,8 @@ end
 
 ---生成一发弹（SpawnSingleBullet）
 local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
+    local slot=class.t10_free_bullet_slot()
+    if not slot then return false end
     local speed
     if p.c2 > 1 then
         speed = p.s1 - (p.s1 - p.s2) * i2 / p.c2
@@ -867,6 +887,8 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
     b.t10_type = p.type
     -- 原作在生成当帧就 AdvanceTransformProgram 一次（BulletManager.cpp:767）
     t10_tp_advance(b.tb)
+    b.bound = b.tb.cull <= 0
+    class.t10_use_bullet_slot(slot,b)
     return true
 end
 
@@ -877,7 +899,7 @@ local function et_on(e, slot)
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do
-            t10_spawn_one(p, sx, sy, i1, i2, a2p)
+            if not t10_spawn_one(p, sx, sy, i1, i2, a2p) then return end
         end
     end
 end
@@ -907,7 +929,7 @@ local function fire_slot(o, slot)
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do
-            t10_spawn_one(p, sx, sy, i1, i2, a2p)
+            if not t10_spawn_one(p, sx, sy, i1, i2, a2p) then return end
         end
     end
 end

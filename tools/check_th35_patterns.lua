@@ -156,6 +156,8 @@ check(count_shots(inheritor.th10carrier) == 1500, '二进制 stage05.ecl：三�
 local live = 0
 for _, b in ipairs(shots) do if b.test_owner == inheritor.th10carrier and IsValid(b) and b.img then live = live + 1 end end
 check(live > 0, '真实子弹样式完成出膛，屏幕中有可绘制的弹')
+-- 释放首轮点弹，单独验收第二轮时序；满池丢弹由 check_original_ecl_fidelity 验收。
+for _,b in ipairs(shots) do if IsValid(b) then b._live=false end end
 step(420)
 check(count_shots(inheritor.th10carrier) == 3000, '后续 420 帧仍按原 ECL 周期再发 1500 发')
 stop(inheritor)

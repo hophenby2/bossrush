@@ -1,5 +1,5 @@
 ---=====================================
----TH33  文花帖（TH095）全关 —— 原作 84 幕逐幕移植
+---TH33  文花帖（TH095）全关 —— 原作 85 幕逐幕移植
 ---
 ---本关把原作 world08 的 7 张符卡 + Stage EX 的 8 张符卡 + Stage 9（world10）的 8 张
 ---+ Stage 8（world09）的 8 张 + Stage 7（world07）的 8 张 + Stage 6（world06）的 8 张
@@ -11,7 +11,7 @@
 ---  72 ecl16_b 妖梦   密符「御大師様の秘鍵」  76 ecl16_d 妖梦   超人「飛翔役小角」
 ---  73 ecl17_b 幽幽子 蝶符「鳳蝶紋の死槍」    77 ecl17_d 幽幽子 「死蝶浮月」
 ---  74 ecl16_c 妖梦   行符「八千万枚護摩」
----（同表里的 scene 70 = ecl16_a 是**非符**、没有 ins_104 亮卡名，不在本关这 7 张里。）
+---同表的 scene70=ecl16_a 是非符，现已补入妖梦组第一张；不显示符卡名。
 ---7 幕共用同一份场景资源（world08.std / enm16,17.anm / bgm th095_04.wav），所以两班人马
 ---共用 BGM 与背景：BGM = "TH07_1"（幽雅に咲かせ、墨染の桜）、背景 = TH095_bg。
 ---每个数值都标了它在反汇编里的出处：`/tmp/B_ecl16_{b,c,d}.txt` 与 `/tmp/B_ecl17_{a,b,c,d}.txt`
@@ -1233,6 +1233,18 @@ boss.Define("24a", "リグル・ナイトバグ", "TH09_5_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg24, "Nightbug", LEVEL)
 boss.Define("25a", "ルーミア", "TH09_5_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg25, "Rumia", LEVEL)
+
+-- 场景70 是原作 world08 的第一幕非符；文件原先从71开始，漏掉了这一幕。
+-- 回调晚绑定，使它按原作排在妖梦组第一张，出弹工具仍复用下面的 TH095 原语。
+do
+    local card=boss.card.New("",0,0,60,150)
+    card.th095_source={file="ecl16_a.ecl",scene=70,sub=2}
+    function card:before() self.colli=true;self.no_hp_render=false;self.NotPlayTimeOutSound=false end
+    function card:init() class.th095_scene70_init(self) end
+    function card:frame() end
+    function card:del() class.th095_scene70_del(self) end
+    boss.card.add({{card,"2a"}},LEVEL,"妖梦 非符（场景70）",4480)
+end
 
 do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 张）
     ---原作是「蛾扑向灯」：本体从场外落到中轴，**一条**发弹上下文每 8 帧甩出**两组**
@@ -6516,11 +6528,9 @@ local function sg_tr_hook(recs, flags, start)
             if not sg_has(flags, r.kind) then
                 st.i = st.i + 1
             elseif r.kind == SG_SET_SPRITE then
-                ---0x4000 SET_SPRITE：把弹的贴图/色号换成 payload.int0/int1
-                ---（BulletManager.cpp:617-622）。**立即执行、不占 active**，执行完
-                ---接着找下一条（C 里的 `goto nextRecord`）。本仓库的弹在 New 出来之后
-                ---没有「半路换贴图」的接口，ecl14_a 的 Sub9 又只是把型 14 的色 3 换成
-                ---色 5（同型同尺寸，只有颜色差），所以这里**不实现**，只按原样跳过。
+                -- BulletManager.cpp:617-622：即时换型/换色，不占 active，也不重启运动。
+                local image,kind=sg_parts(sg_style(r.i0))
+                bullet.ChangeImage(self,image,ex_color(r.i1,kind or r.i0))
                 st.i = st.i + 1
             elseif r.kind == SG_CULL or r.kind == SG_SND_T then
                 ---0x2000 SET_CULL_DELAY / 0x20000 PLAY_SOUND：都是**即时**记录
@@ -16516,3 +16526,77 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
 end--夜符「ミッドナイトバード」（ecl2_c）
 
 end  -- Stage 1
+
+-- ecl16_a：Sub2 入场；Sub3 每次先开移动子机 Sub7，再阻塞调用 Sub4（45帧），
+-- 然后开启120帧的 Sub5 单发枪。子机的 Sub6 从40帧开始，每4帧打一圈32发。
+-- 坐标 x 原本居中，只翻 y；副本速度读取已拍张数，不能套用 TH06/07 的 x-192。
+do
+    local BOX={-140,128,140,192}
+    local Ghost=Class(object,{
+        init=function(self,owner,st,angle,speed)
+            self.x,self.y=owner.x,owner.y
+            self.group,self.layer,self.bound,self.colli=GROUP.GHOST,LAYER.ENEMY,false,false
+            self.vx,self.vy=speed*math.cos(angle),-speed*math.sin(angle)
+            self.scene70=st
+            task.New(self,function()
+                task.Wait(40)
+                local photos=photo_index(6)
+                local color,velocity=photos>=5 and 2 or photos>=3 and 4 or 6,
+                    photos>=5 and 3 or photos>=3 and 2.5 or 2
+                local base=-Angle(self,player)
+                for _=1,20 do
+                    if st.dead then return end
+                    sg_shot(89,sg_style(6),color,self.x,self.y,32,1,velocity,1.5,
+                        base,0.18479957*180/math.pi,false,514)
+                    base=base+0.09817477*180/math.pi
+                    task.Wait(4)
+                end
+                task.Wait(14)
+                object.RawDel(self)
+            end)
+        end,
+        frame=function(self) task.Do(self) end,
+        del=function(self) task.Clear(self) end,
+        render=function() end,
+    })
+    function class.th095_scene70_init(owner)
+        local st={dead=false,children={},gun=0}
+        owner.th095_scene70=st
+        owner.x,owner.y=-128,field_y(-64)
+        photo_damage_on(owner,6)
+        task.New(owner,function()
+            task.Wait(100)
+            task.MoveTo(0,field_y(128),30,VALUE_SET.DECEL)
+            while not st.dead do
+                st.gun=st.gun+1                     -- ins_117(1,-1) 终止上一把枪
+                local angle=ran:Float(0,1)*0.3926991-0.19634955
+                if owner.x>0 then angle=angle+math.pi end
+                local o=New(Ghost,owner,st,angle,photo_index(6)*0.2)
+                st.children[#st.children+1]=o
+                task.Wait(15)                      -- Sub4 的 t=15
+                sg_bmove(owner,st,30,4,4,BOX)
+                task.Wait(30)                      -- Sub4 的 t=45 RETURN
+                local generation=st.gun
+                task.New(owner,function()
+                    local base=-Angle(owner,player) -- Sub5 入口快照，不每发重瞄
+                    while not st.dead and generation==st.gun do
+                        sg_shot(87,sg_style(12),6,owner.x,owner.y,1,1,4.5,1.5,
+                            base,0.032724924*180/math.pi,false,514)
+                        task.Wait(4)
+                    end
+                end)
+                task.Wait(120)
+            end
+        end)
+    end
+    function class.th095_scene70_del(owner)
+        local st=owner.th095_scene70
+        if st then
+            st.dead=true
+            for _,o in ipairs(st.children) do if IsValid(o) then object.RawDel(o) end end
+            if st.mv then st.mv.alive=false end
+        end
+        photo_damage_off(owner)
+        owner.th095_scene70=nil
+    end
+end
