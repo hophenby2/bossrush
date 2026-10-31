@@ -344,4 +344,28 @@ end
 check(fan ~= nil, '共用接口的亡我乡五连激光正常生成')
 for _, o in ipairs(fan) do check(near(o.pl_ang, math.pi), '五连激光初始角为 π 弧度，不重复换算') end
 exile.current_card.del(exile); task.Clear(exile); object.RawDel(exile)
+-- 本次点名的四张卡用实际bullet/style/协程长跑；屏外回程弹也计入池容量。
+for _,case in ipairs({{4476,1024},{3444,1024},{3606,2000},{3624,2000}}) do
+    for _,o in ipairs(objects) do if IsValid(o) then
+        if o.imgclass then OriginalBulletVisual.retire(o) else object.RawDel(o) end
+    end end
+    step(1)
+    local card=assert(cards[case[1]])
+    local host=New({
+        init=function(o) o.bound=false;o.hp,o.maxhp=100000,100000;o.current_card=card;card.init(o) end,
+        frame=function(o) card.frame(o);task.Do(o) end,
+    })
+    local peak1,peak2=0,0
+    for t=1,7200 do
+        step(1)
+        local alive=0
+        for _,o in ipairs(objects) do if IsValid(o) and not o._pending_delete and o.imgclass then alive=alive+1 end end
+        if t<=3600 then peak1=math.max(peak1,alive) else peak2=math.max(peak2,alive) end
+    end
+    check(peak1<=case[2] and peak2<=case[2],'原生弹池不因屏外保留失控：'..case[1])
+    print(('生命周期长测 %d：前3600帧峰值%d，后3600帧峰值%d，上限%d'):format(case[1],peak1,peak2,case[2]))
+    local before=#objects
+    card.del(host);task.Clear(host);object.RawDel(host);step(1)
+    check(#objects<=before,'卡片清理没有产生超大血量死亡特效：'..case[1])
+end
 print(('通过：TH34/TH35 原版弹幕与跨卡清场 %d 项回归检查'):format(checks))

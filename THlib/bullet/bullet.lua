@@ -5,6 +5,7 @@ local table = table
 local ChangeImage
 -- 朝向仅用于绘制；部分 ECL 用 rot 计算下一帧位移，不能让引擎 navi 回写破坏弹道。
 local function follows(style)
+    style=style.visual_style or style
     return style~=star_small and style~=star_big and style~=music
 end
 local function motion_angle(self)
@@ -13,6 +14,19 @@ local function motion_angle(self)
     if x*x+y*y>=1e-12 then return math.deg(math.atan2(y,x)) end
 end
 local function render_rotation(self)
+    local p=self.imgclass.native_profile
+    if p then
+        if p.spin~=0 then return -(self.ani-(self._native_visual_start or 0)+1)*p.spin*180/math.pi end
+        if not p.follow then return 0 end
+        -- 原生逻辑角与贴图角分开，不能为了自转改rot而改变下一帧的弹道。
+        if self.th06_angle then return -self.th06_angle*180/math.pi end
+        if self.ex_angle then return self.ex_angle*180/math.pi end
+        if self.tb then return -self.tb.angle*180/math.pi end
+        if self.th07_cull_managed then return self.rot end
+        local vx,vy=self.vx or 0,self.vy or 0
+        if vx*vx+vy*vy>=1e-12 then return math.deg(math.atan2(vy,vx)) end
+        return motion_angle(self) or self._motion_rot or self.rot
+    end
     local follow=self.auto_rotate
     if follow==nil then follow=self._follow_motion and (self.omiga or 0)==0 end
     if follow then return motion_angle(self) or self._motion_rot or self.rot end
@@ -58,6 +72,7 @@ function bullet:kill()
     end
 end
 function bullet:del()
+    if self._original_silent_remove then return end
     --	self.imgclass.del(self)
     local w = lstg.world
     if self.imgclass.size == 2.0 then
@@ -115,6 +130,8 @@ function bullet:init(imgclass, index, stay, destroyable, fogtime)
         self.index = int((index + 1) / 2)
     end
     imgclass.init(self, index)
+    self._native_visual_start=self.ani
+    if imgclass.native_game==7 or imgclass.native_game==95 or imgclass.native_game==10 then self.bound=false end
     self._follow_motion=follows(imgclass)
     self._motion_rot=self.rot
 end
@@ -146,7 +163,11 @@ function bullet:ChangeImage(imgclass, index, fake)
     end
     self._index = index
     imgclass.init(self, self._index)
-    if changed then self._follow_motion=follows(imgclass) end
+    if changed then
+        self._follow_motion=follows(imgclass)
+        -- etSprite重开ANM脚本：自转从新弹型的首帧开始，灰化换色不重开。
+        self._native_visual_start=self.ani
+    end
 end
 ChangeImage = bullet.ChangeImage
 bullet.GetRenderRotation=render_rotation
@@ -168,8 +189,10 @@ bullet.Shuttle = object.Shuttle
 ---自动根据style设置角度
 ---并返回设置速度时是否要设置朝向
 function bullet:GetNavi()
-    self.rot = (self.imgclass == music) and -90 or self.rot
-    return (self.imgclass ~= star_small and self.imgclass ~= star_big and self.imgclass ~= music) and true
+    if self.imgclass.native_profile then return self.imgclass.native_profile.follow end
+    local style=self.imgclass.visual_style or self.imgclass
+    self.rot = (style == music) and -90 or self.rot
+    return follows(style)
 end
 ----------------------------------------------------------------
 
@@ -275,6 +298,7 @@ local straight_bullet = Class(bullet, {
         if self.frame_other then
             self.frame_other(self)
         end
+        if OriginalBulletVisual and self.imgclass.native_profile then OriginalBulletVisual.finish_bullet(self) end
     end,
     render = function(self)
         bullet.render(self)

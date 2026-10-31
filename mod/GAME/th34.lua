@@ -491,6 +491,7 @@ local TH07_STYLE = {
     [6] = arrow_big_c,[7] = ball_big,    [8] = butterfly,
     [9] = OriginalBulletVisual.style(knife_b, knife),     [10] = ball_huge,
 }
+for kind,style in pairs(TH07_STYLE) do TH07_STYLE[kind]=OriginalBulletVisual.native_style(7,kind,style) end
 local function th07_style(spr)
     return TH07_STYLE[math.floor(tonumber(spr) or 0)] or ball_small
 end
@@ -603,32 +604,14 @@ local TRAIL_SPRITE = "enemy_aura1"
 local POOL_SIZE = 1024
 local pool = {}
 
----★ 「还在场」的判据必须是**原作 TH07 的回收线**，不是 LuaSTG 的。
----   原作 `GameManager::IsInBounds(x,y,w,h)`（GameManager.cpp:40）判的是**384x448 的
----   场地**再各让出半个贴图：x ∈ [-192-w/2, 192+w/2]、y ∈ [-224-h/2, 224+h/2]
----   （TH07 左上原点 0..384/0..448 换到我们坐标就是 ±192/±224，见文件头）。
----   LuaSTG 自己的 `bound*` 是 **±224/±256**（`THlib/lib/Lscreen.lua:90`）——
----   比原作的回收线各宽 32 px，用它当判据会让弹在「原作早就回收了」的地方
----   还占着槽位，池子提前灌满、无谓地丢后面的波。
----   （贴图半宽无从逐颗取得，这里取场地本身；比原作只紧不松，而在会顶到上限的
----    那几张卡上实测两种口径都远未回到 1024，故对发弹条数无影响。）
-local function in_bound(unit)
-    return IsValid(unit)
-            and unit.x >= lstg.world.l and unit.x <= lstg.world.r
-            and unit.y >= lstg.world.b and unit.y <= lstg.world.t
-end
-
+-- 原生弹自己按精灵尺寸、spawnDelay和出屏宽限释放对象；弹池只登记仍有效的槽位。
 ---还占着槽位的弹有几颗。原作每帧边扫边数（`BulletManager.cpp:942` 那段），
 ---这里只在出弹帧数一次 —— 出弹帧之外池子不会变。
 local function pool_used()
     for i = #pool, 1, -1 do
-        ---★ 本帧刚生出来（timer == 0）的弹还没被引擎积分 —— 出生点在界外就等于还没出界，
-        ---   收掉槽位会让这一帧后面的几波把「其实还在场的弹」当成已消失（见 pool4_used）。
         local u = pool[i]
         if not IsValid(u) then
             ---同上：死引用先移出池，避免读 u.timer 抛 'invalid lstg object'。
-            table.remove(pool, i)
-        elseif u.timer > 0 and not in_bound(u) then
             table.remove(pool, i)
         end
     end
@@ -967,21 +950,8 @@ local function pool4_used()
             table.remove(pool4, i)
         end
     end
-    ---★ 「同屏弹数」只数**此刻在场内**的弹：本帧刚生出来的（timer == 0）还
-    ---   没被引擎积分、也没判过界，出生点可能在界外（悬在屏幕外的小怪开火），
-    ---   下一帧就飞回界内，所以照样算；已飞出屏外的要等引擎回收才让出槽位
-    ---   （原作 `BulletManager.cpp:994-1022` 是**先 `pos += velocity`、后 `IsInBounds`**）。
-    ---★ 但池子本身必须留住**所有还活着的槽位** —— 包括这一刻刚飞出屏、之后还会
-    ---   飞回来的减速/回头弹。旧实现把这些槽位直接从池里 `table.remove`，于是清屏
-    ---   （`pclear` / 原作 REMOVE_ALL_BULLETS）扫不到它们，屏外弹会变成永不消失的
-    ---   幽灵弹（3445/3467「罔両」就栽在这 5 颗上：VM 清 92 发、移植版只清 87 发）。
-    ---   所以这里只按「在场内」计数，不摘槽位；真正的回收交给 `IsValid` 那一支。
-    local n = 0
-    for i = 1, #pool4 do
-        local u = pool4[i]
-        if u.timer == 0 or (u.c_spawn_delay or 0) > 0 or in_bound(u) then n = n + 1 end
-    end
-    return n
+    -- 原作bulletCount包含仍活着的屏外回程弹；不能提前让出它们占用的槽位。
+    return #pool4
 end
 
 ---同一帧里同一种音效只响一声（原作 SoundPlayer 的队列按 idx 去重）。
@@ -1059,7 +1029,7 @@ end
 ---       朝向 = 自机方向 + cmd.angle、速度 = cmd.speed，重复 loopCount 次
 ---       （跟 0x40 同一套字段；原作的「ZUN 交换」只发生在指令字段
 ---        cmd.speed→commandStates[3].angle 那一层，见帧循环里 0x40 的注释）。
----本仓库没有对应 API，所以逐帧自己算（差异 21）。bound 留默认 true ⇒ 出屏照常回收。
+---本仓库没有对应 API，所以逐帧自己算（差异 21）。回收另按原生spawnDelay及128帧宽限执行。
 ---（★ 角度/角速度都按「我们」的口径传进来：TH07 的弧度已经转成度、并且取过反，
 ---  见第 3 面/第 5 面那两段代码里的 `rad2our`。）
 ---一发弹可以挂**一串**指令：`cmd.stages = { 段1, 段2, ... }` 会按顺序逐段跑
@@ -1242,7 +1212,10 @@ end
 -- 原作 Bullet::OnUpdate 在 RunCommands 以后递减 spawnDelay，随后才进行出屏回收。
 local function cmdbullet_finish(self)
     self.c_spawn_delay = max(0, (self.c_spawn_delay or 0) - 1)
-    self.bound = self.c_spawn_delay == 0
+    local flags=self.c_list and self.c_exf or self.c_type
+    local active=cmdbullet_hasbit(flags,0x40) or cmdbullet_hasbit(flags,0x80)
+        or cmdbullet_hasbit(flags,0x100) or cmdbullet_hasbit(flags,0x400) or cmdbullet_hasbit(flags,0x800)
+    OriginalBulletVisual.th07_cull(self,self.c_spawn_delay,active)
     bullet.frame(self)
 end
 
@@ -1269,6 +1242,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
         self.c_exf, self.c_cur = 0, 1
         self.c_flags, self.c_list = 0, nil
         self.c_spawn_delay = 0
+        self.th07_cull_managed = true
         self.th07_sprite = TH07_SPRITE[style] or 0
         if cmd.list then
             self.cs = {}                 -- 每段激活后的运行时状态（未激活为 nil）
@@ -4533,6 +4507,7 @@ class["TH34_exbigbullet78"] = Class(bullet, {
                 local spd = self.spd - self.t1 * self.spd / 60
                 self.t1 = self.t1 + 1
                 self.vx, self.vy = spd * cos(self.rot), spd * sin(self.rot)
+                OriginalBulletVisual.th07_cull(self,0,self.t1<61)
                 bullet.frame(self)
                 return
             elseif self.t1 == 60 then
@@ -4544,6 +4519,7 @@ class["TH34_exbigbullet78"] = Class(bullet, {
             self.t1 = 0                   -- 第 2 帧起步
         end
         self.vx, self.vy = self.spd * cos(self.rot), self.spd * sin(self.rot)
+        OriginalBulletVisual.th07_cull(self,0,self.t1<61)
         bullet.frame(self)
     end,
 })
@@ -7141,11 +7117,13 @@ local function TH34_add_stage78_boss()
                 local v = ran:Float(2, 7)
                 ---*RNGRAD 是 TH07 口径的弧度角（y 朝下），本仓库角度取反 ⇒ 取负。
                 local a0 = -rngdeg()
-                local cmd = { stages = {
+                -- Sub110..113有两条即时0x2000，后一条覆盖前一条：折向结束后保留180帧。
+                local cmd = cmds4(8816,
                     { type = 0x40, dur = 120, loop = 1, angle = 0, speed = 0 },
-                    { type = 0x20, dur = 180, loop = -1, angle = curve, speed = 0.0111111 },
-                    { type = 0x10, dur = 120, loop = -1, accel = 0.00666667 },
-                } }
+                    { type = 0x2000, dur = 60 },
+                    { type = 0x2000, dur = 180 },
+                    { type = 0x20, flag = 1, dur = 180, loop = -1, angle = curve, speed = 0.011111111 },
+                    { type = 0x10, dur = 120, loop = -1, accel = 0.006666667 })
                 for k = 0, 3 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(spr), th07_color(col, spr),
                                             self.x, self.y, v, a0 + k * 90, cmd)
@@ -9820,6 +9798,8 @@ local function TH34_add_stage56_boss()
             object.Connect(owner,self,1,true)
         end,
         render = enemy.render,
+        -- 换卡会KillServants；999999是共享血槽占位，不能喂给hp/20个圆环的杂鱼死亡特效。
+        kill = function(self) task.Clear(self) end,
     })
     local function prism_companions(owner, phase)
         local function script(o, side)

@@ -170,14 +170,10 @@
 ---     存的是**直径**、命中框取 ±size/2，见同文件 :1155）区分二十几种弹。本关按作者
 ---     指定把小玉换成 **butterfly（幽幽子系）与 water_drop（妖梦系）**两种贴图；
 ---     原作的大玉（type 17，直径 28 ⇒ 半径 14）用本仓库最大的一档 **ball_huge**。
----  3) 回收边界：原作是**弹心一越过场地边就回收**（PhotoBulletIsOutsidePlayfield，
----     th095/src/BulletManager.cpp:759-765，判据是「弹心 ± 半宽」出 384x448 的框），
----     而且全游戏共用 640 个弹槽、扫不到空槽就不发（同文件 :310-345）。
----     我们的回收边界是引擎全局的 ±224/±256（= 场地外 32 px，THlib/lib/Lscreen.lua:90-97，
----     bullet.lua:36 用的是 `lstg.world.bound*`，**弹不能单独设**）。后果：同一颗弹多活
----     ~10%，稳态同屏弹数比原作多一点。**屏幕上看不出区别** —— 两种回收都发生在屏幕外
----     （场地是 x±192 / y±224，边界都在它外面），差的只是场外那几十颗的寿命，
----     所以没有为它去改引擎的全局边界。
+---  3) 回收边界：PhotoBulletIsOutsidePlayfield（th095/src/BulletManager.cpp:761-769）
+---     用主弹精灵的全宽/高作场地余量。本关关闭引擎自动回收，由 visual_match.finish_bullet
+---     按原始 ANM 尺寸检查积分后的坐标。原作全游戏共用640弹槽（同文件:310-345），
+---     不应把这条回收规则误写成弹心越界立即消失，也不能套用TH07的128帧回程宽限。
 ---  4) 判定框：Sub2 的 `ins_77(24,24)`（子机是 `77(8,8)`）设的是敌人判定框
 ---     （EclRunLow.inl:663-670 → hitboxDimensions）。TH095 没有自机子弹（th095/src 里
 ---     没有 PlayerBullet 一类文件，「射击键」就是快门），这个框在拍照关里读不出用处；
@@ -222,15 +218,8 @@
 ---  5) 原作的 104/105（拍照会话）、143（拍照标记）、118(0)（死亡照片 VM）、
 ---     149（分数倍率 1.9）、114（10208 帧的卡计时）都是 TH095 的相机 / 计分机制，
 ---     我们没有对应系统；卡时限改用本仓库的惯例秒数（见 CARD_TIME）。
----  6) 回收边界：原作是**弹心一越过场地边就回收**（PhotoBulletIsOutsidePlayfield，
----     th095/src/BulletManager.cpp:759-765，判据是「弹心 ± 半宽」出 384x448 的框），
----     而且全游戏共用 640 个弹槽、扫不到空槽就不发（同文件 :310-345）。
----     我们的回收边界是引擎全局的 ±224/±256（= 场地外 32 px，THlib/lib/Lscreen.lua:90-97，
----     bullet.lua:36 用的是 `lstg.world.bound*`，**弹不能单独设**）。后果：同一颗弹多活
----     ~10%，稳态同屏弹数比原作的 640 槽多一点（本关最挤的一张 = 死符，
----     7200 帧实测峰值 527）。**屏幕上看不出区别** ——
----     两种回收都发生在屏幕外（场地是 x±192 / y±224，边界都在它外面），差的只是场外
----     那几十颗的寿命，所以没有为它去改引擎的全局边界。
+---  6) 回收边界已按原作主弹精灵全宽/高执行，见上方公共说明第3条；本卡两种代理贴图
+---     各自保留原作弹型资料，不能拿代理图的尺寸决定寿命。
 ---  7) 判定框：Sub2 的 `ins_77(24,24)`（Sub4 的寄生敌机是 `77(8,8)`）设的是敌人判定框
 ---     （EclRunLow.inl:663-670 → hitboxDimensions）。TH095 没有自机子弹（th095/src 里
 ---     没有 PlayerBullet 一类文件，「射击键」就是快门），这个框在拍照关里读不出用处；
@@ -519,9 +508,10 @@ local SG_STYLE = {
     [18] = OriginalBulletVisual.style(ball_light, water_drop),  [19] = ball_big,    [20] = ellipse,
     [21] = OriginalBulletVisual.style(ellipse, knife),     [22] = butterfly,   [23] = square,
 }
+for kind,style in pairs(SG_STYLE) do SG_STYLE[kind]=OriginalBulletVisual.native_style(95,kind,style) end
 -- 固定弹型调用点仍保留各自旧判定，只换成该 type 的新显示样式。
 local function sg_visual(previous, t)
-    return OriginalBulletVisual.style(previous, SG_STYLE[t])
+    return OriginalBulletVisual.native_style(95,t,OriginalBulletVisual.style(previous, SG_STYLE[t]))
 end
 local SG_DESC = {}
 local function sg_style(t)

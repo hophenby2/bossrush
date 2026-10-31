@@ -51,7 +51,7 @@
 ---  · 208「幻胧月睨」（铃仙）            —— 平均 4.8 / 死局 1.7% / 峰值 784 发有判定 353
 ---  · 209「天网蛛网捕蝶之法」（永琳）    —— 平均 9.4 / 死局 0.0% / 峰值 1449 发有判定 98
 ---  · 210「蓬莱之树海」（辉夜）          —— 平均 17.6 / 死局 7.5% / 峰值 679 发有判定 477
----      ★ 7 棵树在移植版里打不掉（原作有 life 1000..4000），密度比原作高一档；
+---      ★ 以下是旧版不可击破占位实现的读数；现已恢复树的1000..4000血量。
 ---        安全角度 10.4/24（同屏最密的卡 205 是 6.8/24）。
 ---  · 211「不死鸟再诞」（妹红）          —— 平均 5.2 / 死局 0.6% / 峰值 815 发有判定 295
 ---  · 212「远古的欺骗者」（因幡帝）      —— 平均 5.6 / 死局 0.1% / 峰值 1090 发有判定 504
@@ -398,39 +398,10 @@ local CARD = {}
 ---    · 过渡期间 `isYoukai` 保持**上一次提交**的值（不是立刻翻转；中途松手/再按会重新计时）。
 ---  提交后把敌机的难度掩码 override 成 `妖怪 ? 0x40 : 0x20`（EnemyManager.cpp:871-903）
 ---  ⇒ ECL 里 0x4x/0x5x 段的「妖怪那一支」只在（低速满 7 帧后）执行。
----  移植版原来按人类那一支写死，这里给出**带 7 帧过渡**的每帧形态信号。
----  低速信号 = `player.slow`（THlib 每帧刷新，player_system.lua:133-137；1 = 按住 focus）。
----★ 过渡必须**每帧只推进一次**（原作在自机 update 里跑一次），而本函数会被同帧的
----  多发弹调用多次 —— 用关卡帧号 `stage.current_stage.timer`（ext.lua:156 清 0、
----  :191 每帧 +1，且早于 ObjFrame()，整个对象帧期间不变）当时间戳去重，
----  同帧内重复调用直接返回已提交值。
----  取不到**数值**帧号时（离线自检桩件里 `stage` 是 stub）退化成「每次调用都推进」：
----  桩件里 `player.slow` 恒非 1 ⇒ 永远提交 false，与旧的写死人类支逐字节一致。
----★ **必须声明在 `local EX = {}` 那个 `do` 块的外面**（块里的 local 出了块就没了，
----  后面所有卡都会解析成全局 nil）。`player` 只在函数体里取（顶层取会拿到 nil）。
-local pform_stamp = nil         --- 上次推进时的关卡帧号（同帧去重）
-local pform_mode = nil          --- 上一帧观察到的 focus 状态（true = 低速/妖怪）
-local pform_frames = 0          --- = 原作 focusTransitionFrames
-local pform_youkai = false      --- 已提交的 isYoukai
-local function player_is_youkai()
-    local stamp = stage and stage.current_stage and stage.current_stage.timer
-    if type(stamp) == "number" then
-        if stamp == pform_stamp then
-            return pform_youkai
-        end
-        pform_stamp = stamp
-    end
-    local focus = (player ~= nil and player.slow == 1)
-    if focus ~= pform_mode then
-        pform_mode = focus
-        pform_frames = 0
-    else
-        pform_frames = pform_frames + 1
-    end
-    if pform_frames >= 7 then
-        pform_youkai = focus
-    end
-    return pform_youkai
+--- 形态在每张卡的frame里推进，发弹和碰撞共用原作7帧过渡。
+class.th08_combat = dofile("mod/GAME/th31_combat.lua")()
+local function player_is_youkai(who)
+    return class.th08_combat.youkai(who)
 end
 ---bulletType → 默认显示尺寸接近的现成样式 + 原作出屏半宽。
 ---依据二进制 etama.anm 的主弹矩形和可见纹理，见 th31_bullet_sprite_map.md 表2。
@@ -438,7 +409,7 @@ end
 ---只换图、不写 hscale/vscale；代理样式在换图后恢复旧判定 A/B。
 ---出屏 half、弹道、速度与发数不随显示映射改变。
 ---定义必须在 EX 块外，各卡自定义弹类与飞行中换图也使用同一映射。
-local function style_of(t)
+local function raw_style_of(t)
     if t == 0  then return ball_small,  4  end
     if t == 1  then return ball_mid,    8  end
     if t == 2  then return OriginalBulletVisual.style(ellipse, grain_a),     8  end
@@ -459,6 +430,11 @@ local function style_of(t)
     if t == 19 then return OriginalBulletVisual.style(ball_huge, water_drop),   16 end
     if t == 20 then return OriginalBulletVisual.style(knife_b, knife),     16 end
     return ball_small, 8
+end
+
+local function style_of(t)
+    local style,half=raw_style_of(t)
+    return OriginalBulletVisual.native_style(8,t,style),half
 end
 
 ---★ 颜色换算（表 3）：原作 color（0..15）→ 本项目**该弹样式**的帧号。
@@ -1158,15 +1134,7 @@ end
 ---  op 只支持 96..99（FAN_AIMED / FAN / CIRCLE_AIMED / CIRCLE）—— EX 14 张卡
 ---  扫过一遍，这四种之外一条都没有；这四种正好一一对上 aimMode 0..3。
 function EX.shoot(who, x, y, a)
-    ---ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
-    ---EclDependencies.cpp:703-711）：原作按敌机的 `youkaiAligned` 位（使魔每帧刷成
-    ---`g_Player.IsYoukai()`，EnemyManager.cpp:871-903）筛。移植版改成**实时**判自机形态：
-    ---低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-    if player_is_youkai() then
-        if bit_hit(a.flags, K_ONLY_HUMAN) then return end
-    else
-        if bit_hit(a.flags, K_ONLY_YOUKAI) then return end
-    end
+    if not class.th08_combat.shot_allowed(who, a.flags) then return end
     spawn_pattern(x, y, {
         aimMode = a.op - 96, btype = a.type, color = a.color,
         count1 = a.count1 or 1, count2 = a.count2 or 1,
@@ -1385,9 +1353,9 @@ local function gun_step(owner)
 end
 
 ---娃娃（Sub2）。占位贴图 "servant"；原作它有 24×24 判定与 life=9000，
----这里不给判定（99 秒内本来就打不死，给判定的意义只有干扰玩家）。
----（要改成可击破的实体就换 Class(enemy, ...) + object.Connect，见 AGENTS §7.4。）
-local alice_doll = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+---使魔使用独立受击回调，避免 enemy 基类额外推进其脚本协程。
+local alice_doll = class.th08_combat.actor("ecldata_al:2", {
     init = function(self, x, y, angle, info)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -1592,8 +1560,7 @@ local function card_init(owner)
     --   ins_105(0) 关自动射击、ins_110(0,0) 射击偏移归零、ins_113(-1,-1) 弹音效、
     --   ins_80(4) 关可伤害、ins_134(5940, 6) 设 99 秒时限、ins_122 START_SPELL、
     --   ins_95 清掉场上非 BOSS 敌机。
-    --   移植版这些都由 boss 系统管（这张卡 t1 = t2 = t3，本来就打不动），
-    --   t=110 的 ins_81(4) 开可伤害同理 —— 不另写。
+    --   110帧开可伤害与随后120帧九倍防御由 th31_combat 统一接回。
 end
 
 local function card_del(owner)
@@ -2765,9 +2732,8 @@ local function gun_step(owner, gt)
 end
 
 ---使魔（Sub58）。占位贴图 "servant"。
----原作它有 24×24 判定、life 1200（中间那 4 只是 500）、可被击破；移植版不给判定、
----也不做击破（跟卡 218 的娃娃一个处理口径：这只是占位实现，判定交给后面的统一收敛）。
-lw207_familiar = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+lw207_familiar = class.th08_combat.actor("ecldata3sp:58", {
     init = function(self, x, y, angle, omega, group)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -3300,9 +3266,9 @@ local function fire_gun(owner)
 end
 
 ---使魔（Sub42）。24 只一批，朝向 = AIM_TO_PL + k·15°、速度 4.0（ins_65）。
----占位贴图 "servant"；原作 life 200、判定 24×24，移植版不给判定
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（跟卡 218 的娃娃、卡 207 的使魔同一个口径）。飞出场地就回收（EnemyManagerUpdate.cpp:240-262）。
-lw208_familiar = Class(object, {
+lw208_familiar = class.th08_combat.actor("ecldata5sp:42", {
     init = function(self, x, y, angle)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -4412,8 +4378,8 @@ local function tree_gun(owner, t)
 end
 
 ---樹（Sub80）。占位贴图 "servant"；原作它有 24×24 判定与 life（1000..4000），可被击破，
----移植版不给判定（占位口径，见文件头）。
-lw210_tree = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+lw210_tree = class.th08_combat.actor("ecldata7sp:80", {
     init = function(self, x, y, k)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -5468,12 +5434,12 @@ lw212_laser = Class(laser, {
 })
 
 ---使魔（Sub48）。占位贴图 "servant"；原作它有 24×24 判定与 life，
----但 `ins_80(16)` 关掉了与自机的判定（移植版照抄：不给判定）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---  ox/oy   = 圆心相对生成点的偏移（我们坐标，= 继承来的 xf0/xf1 换过来）
 ---  angle0  = 起始轨道角（我们坐标）
 ---  omega   = 轨道角速度（我们坐标，正 = 逆时针）
 ---  radius  = 轨道半径（lf3）
-lw212_familiar = Class(object, {
+lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
     init = function(self, x, y, ox, oy, angle0, omega, radius)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -6761,11 +6727,11 @@ local function fan_shot(owner)
 end
 
 ---使魔（Sub44 + 子 context Sub45/Sub46）。占位贴图 "servant"；原作它有 24×24 判定与 life 500/300，
----但移植版没有「敌机受伤」这套系统（卡 205..213 同款），所以打不掉、也不会被打死。
+---该卡使魔保持原作关闭受击；本体为耐久，不能批量开启使魔判定。
 ---  x, y   = 出生点（= 生成那一刻 BOSS 的位置，也是公转圆心）
 ---  theta0 = 起始轨道角（我们坐标 = TH08 的 −lf0）
 ---  li1    = 子 context 1 的起始相位（= 6k，决定 8 只的错开量）
-lw214_familiar = Class(object, {
+lw214_familiar = class.th08_combat.actor("ecldata4asp:44", {
     init = function(self, x, y, theta0, li1)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -7391,13 +7357,13 @@ lw215_beam = Class(laser, {
 ---彗星头（Sub63..66 + 子 context Sub62）。占位贴图 "servant"。
 ---  theta = 本轮的瞄准角（= TH08 的 xF0，我们坐标）；4 个都在 BOSS 前方 295 px。
 ---  end_t = 各自的 `ins_1` 时间（Sub63 是 240、其余 370）。
-lw215_head = Class(object, {
+lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
     init = function(self, owner, theta, anm, end_t)
         self.x, self.y = owner.x, owner.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.5, 0.5
-        self.colli = false                  -- `ins_80(3)` 关判定 → 纯观感
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- 会跑到场地外，不能自动回收
         self.rot = -theta * RAD             -- `ins_165(xF0)`：立绘转到瞄准角（我们取反）
@@ -11225,7 +11191,7 @@ local WANDER_PHASES = { 200, 300, 400, 500, 600 }
 
 ---6 只使魔的参数。dx/dy 已经是我们坐标的偏移（TH08 的 dy 取反）；
 ---li1 = 枪的第二发色、li2 = 第一发色；d = 继承给枪的 lf1（TH08 口径，用的时候取反）。
----life 只用来解释原件里哪几只是硬的（移植版不给判定）。
+---life 的原生数值由 th31_combat 交互表恢复为可击破血量。
 local FAM_BATCH = {
     { dx =  16, dy = -32, li1 = 6, li2 = 2, d =  0.15707964, life = 1000 },
     { dx = -16, dy = -32, li1 = 6, li2 = 2, d = -0.15707964, life = 1000 },
@@ -11255,12 +11221,12 @@ local GUN_FLAGS = 514               -- 0x202 = SPAWN_FAST | PLAY_SPAWN_SOUND
 local GUN_TYPE = 3
 
 ---使魔（Sub37）。占位贴图 "servant"；原作有 24×24 判定与 life，移植版按本文件
----191..204 的惯例做成纯观感（不给判定）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。
 ---  同一个坑见本文件卡 218 的长注。）
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata3:37", {
     init = function(self, x, y, li1, li2, d, dx, dy)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -11323,7 +11289,7 @@ familiar = Class(object, {
     ---  EnemyManager.cpp:903）⇒ **同帧只有一条执行**：高速（人类）走 0x3f 那支、
     ---  低速（妖怪）走 0x5f 那支（★ 这不是「一拍两发」）。
     fire = function(self)
-        if player_is_youkai() then
+        if player_is_youkai(self) then
             ---0x5f：色 li1 / 速度 lf7。
             EX.shoot(self, self.x, self.y, {
                 op = 99, type = GUN_TYPE, color = EX.color(self.li1),
@@ -11631,12 +11597,12 @@ local SUB45_L, SUB45_R = -176, 176
 local SUB45_B, SUB45_T = -208, 208
 
 ---使魔（Sub45）。占位贴图 "servant"；原作有 24×24 判定，移植版按本文件的惯例
----做成纯观感（不给判定）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.burst`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。
 ---  同一个坑见本文件卡 218 / 卡 427 的长注。）
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata3:45", {
     ---ang_th08 = 继承来的 lf0（TH08 口径）、spd = lf1、color = 继承来的 li0。
     init = function(self, x, y, ang_th08, spd, color)
         self.x, self.y = x, y
@@ -11943,10 +11909,10 @@ local GUN_POLAR = 40                      -- 槽 2 的 POLAR 帧数
 local GUN_DS = 0.0125                     -- 槽 2 的 speedDelta（lf7）[f8]
 local GUN_SPRITE_TYPE, GUN_SPRITE_COLOR = 6, 2   -- 槽 1 的 SET_SPRITE（f8 那一条）
 
----使魔（Sub48）。占位贴图 "servant"；原作 24×24 判定、移植版按本文件惯例做成纯观感。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---  ★ 必须先声明、再赋值（同卡 427/428 的坑）。
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata3:48", {
     ---ang_th08 = 出生时父机的 lf0、w_th08 = 父机的 lf1。
     init = function(self, x, y, ang_th08, w_th08)
         self.x, self.y = x, y
@@ -12281,7 +12247,7 @@ local FAM_LIFE_42 = 580                 -- Sub42 的 t=580 TERMINATE
 
 ---两批使魔。dx/dy 已经是我们坐标的偏移（TH08 的 y 取反）；
 ---li1 = 枪的第二发色号（li2 恒为 2）、d = 继承给枪的 lf1（TH08 口径，用的时候取反）。
----life 只用来解释原件里哪几只是硬的（移植版不给判定）。
+---life 的原生数值由 th31_combat 交互表恢复为可击破血量。
 local FAM_SPAWN_40 = {
     { dx =  16, dy = -32, li1 = 6, d =  0.15707964 },
     { dx = -16, dy = -32, li1 = 6, d = -0.15707964 },
@@ -12300,11 +12266,11 @@ local FAM_SPAWN_42 = {
 }
 
 ---使魔（Sub40 / Sub42）。占位贴图 "servant"；原作有 24×24 判定与 life，移植版按本文件
----的惯例做成纯观感（不给判定）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.fire`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。）
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata3:40", {
     init = function(self, x, y, off_dx, off_dy, li1, li2, d, gun, life)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -12371,7 +12337,7 @@ familiar = Class(object, {
     ---  EnemyManager.cpp:903）⇒ **同帧只有一条执行**：高速（人类）走 0x3f、
     ---  低速（妖怪）走 0x5f（色 li1 / 速度 spd_b）。
     fire = function(self)
-        if player_is_youkai() then
+        if player_is_youkai(self) then
             EX.shoot(self, self.x, self.y, {
                 op = 99, type = GUN_TYPE, color = EX.color(self.fam_li1),
                 count1 = self.fam_gun.count1, count2 = 1,
@@ -12658,7 +12624,7 @@ local FAM_B_ANG0, FAM_B_ANGSTEP, FAM_B_ANGVEL, FAM_B_COLOR = PI / 2, -PI / 8, PI
 ---使魔（Sub64）。圆心 = 出生那一刻的 BOSS 位置（`ins_91` 的 offset 是 (0,0)，
 ---而且这种 spawn **不继承**父机位移）；出生后按 ORBIT 模式螺旋外扩到半径 40。
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata3:64", {
     init = function(self, x, y, ang, angvel, li0, life)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -12677,7 +12643,7 @@ familiar = Class(object, {
         self.fam_rad = 0                     -- orbitRadius
         self.fam_radvel = FAM_RADVEL         -- radialVelocity
         self.fam_li0 = li0                   -- 枪的色号
-        self.fam_life = life                 -- life（只影响能不能被打死；移植版不给判定）
+        self.fam_life = life                 -- 原作可击破血量，由交互层读取
         self.gun_on = false
         self.gun_t = 0
     end,
@@ -13026,8 +12992,8 @@ s3e_laser = Class(laser, {
 })
 
 ---使魔（Sub69）。占位贴图 "servant"；原作有 24×24 判定 + life 1200/500/300、可击破，
----移植版按本文件惯例做成纯观感（不给判定）——出弹统计只看 EX.shoot 出来的弹。
-familiar = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+familiar = class.th08_combat.actor("ecldata3:69", {
     init = function(self, x, y, angle, omega, group)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13238,7 +13204,7 @@ end
 local BOSS_X, BOSS_Y = 0, 96
 
 ---使魔的两批（ins_90 的绝对坐标 + 它前面那条 ins_7 写的 lf1；角度取反后是我们坐标）。
----life 只用来说明原件里哪几只是硬的 —— 移植版不给判定、不结算。
+---不同生成点的1350/750生命值由 th31_combat 按原作分配。
 local FAM_BATCH = {
     {
         { x = 64,  y = 128, life = 1350, d =  0.1570796 },
@@ -13303,8 +13269,8 @@ local GUN_SHOTS = {
 }
 
 ---使魔（Sub8）。占位贴图 "servant"；原作它有 24×24 判定与 life，移植版按
----205..216 的惯例做成纯观感（不给判定）。
-local familiar = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+local familiar = class.th08_combat.actor("ecldata8sp:8", {
     init = function(self, x, y, delta)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13332,7 +13298,7 @@ local familiar = Class(object, {
             ---★ 两条同帧并列的 ins_99：0x5f（色 6 / lf7 = 2.0）只在**妖怪**（低速）时执行，
             ---  0x3f（色 8 / lf6 = 2.5）只在**人类**（高速）时执行（EclRun.cpp:69-73 +
             ---  EnemyManager.cpp:903 的 `override = 人类 ? 0x20 : 0x40`）。
-            if player_is_youkai() then
+            if player_is_youkai(self) then
                 EX.shoot(self, self.x, self.y, {
                     op = 99, type = FG_TYPE, color = EX.color(FG_COLOR_B),
                     count1 = 4, count2 = 1, speed1 = FG_SPEED_B, speed2 = FG_SPEED2,
@@ -13818,7 +13784,7 @@ local GUN_SHOTS = {
 }
 
 ---使魔（Sub17）。占位贴图 "servant"；原件里它没有判定（ins_90 会清掉 COLLISION）。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:17", {
     init = function(self, x, y, delta)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13844,7 +13810,7 @@ local familiar = Class(object, {
         if g >= 0 and g < FG_END and g % FG_STEP == 0 then
             ---★ 两条同帧并列的 ins_99：0x5f（色 6 / lf7 = 0.8）只在**妖怪**（低速）时执行，
             ---  0x3f（色 8 / lf6 = 1.2）只在**人类**（高速）时执行。
-            if player_is_youkai() then
+            if player_is_youkai(self) then
                 EX.shoot(self, self.x, self.y, {
                     op = 99, type = FG_TYPE, color = EX.color(FG_COLOR_B),
                     count1 = 4, count2 = 1, speed1 = FG_SPEED_B, speed2 = FG_SPEED2,
@@ -14050,9 +14016,9 @@ local FAM_GROUPS = {
     { x =  96, y = 96, omega =  FAM_OMEGA },
 }
 
----使魔（Sub50）。占位贴图 "servant"；原件里它有 24×24 的判定，移植版不参与伤害
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（跟本文件其它卡的使魔一致）。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:50", {
     init = function(self, cx, cy, ang0, omega)
         self.x, self.y = cx, cy
         self.fam_cx, self.fam_cy = cx, cy
@@ -14777,7 +14743,7 @@ local function fam_fire(self)
 end
 
 ---使魔（Sub55）。占位贴图 "servant"（原件是 anm 57 的使魔立绘，最后统一换素材）。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:55", {
     init = function(self, x, y, dir)
         self.x, self.y = x, y
         self.fam_dir = dir              -- 飞行方向（我们坐标 = Sub55 #6 的 lf0 取反）
@@ -15073,7 +15039,7 @@ local function fam_fire(self)
 end
 
 ---使魔（Sub58）。占位贴图 "servant"。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:58", {
     init = function(self, x, y, dir, turn, aim, color)
         self.x, self.y = x, y
         self.fam_dir  = dir             -- 我们坐标（= TH08 lf0 取反）
@@ -15438,7 +15404,7 @@ local function fam_fire(self)
 end
 
 ---使魔（Sub63）。占位贴图 "servant"。整卡不动，只当枪架子。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:63", {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.fam_frame = 1              -- 使魔自己的帧计数（t=1 那一帧 = 出生帧）
@@ -15647,7 +15613,7 @@ end
 ---      flags = 131600 = WAIT | PLAY_SPAWN_SOUND | ACCELERATE_VECTOR。
 ---      ⇒ 弹先以 0.05 爬 120 帧（WAIT 没走完、后一条记录进不来），再沿自己的角加速 60 帧；
 ---        两发相对「自机方向 + 随机角」对称张开 ±随机角/2。
----  ★ 乌鸦按 205..216 的惯例做成**纯观感**（原作有 24×24 判定与 COLLISION 位，移植版不给判定）。
+---  ★ 乌鸦的24×24受击框、出生免伤和伤害传递由 th31_combat 恢复。
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
@@ -15720,11 +15686,11 @@ local GUN_FLAGS     = 131600    -- 0x20210 = WAIT | PLAY_SPAWN_SOUND | ACCELERAT
 ---  （EnemyManagerUpdate.cpp:126-160）⇒ 它在**出生那一帧要跑两遍 RunEcl**：
 ---  `SpawnEnemy2` 当场先跑一遍（t=0；EnemyTimeline.cpp:80-96），同一帧稍后的敌机扫描
 ---  又跑到它一次（t=1）—— 跟本文件其余 `fresh` 卡（:8033 的刀、:8720 的卫星）是同一条规则。
----  本卡 t=0 只有主 ANM / 判定 / 伤减，全是观感（移植版也不给判定）⇒ 直接跳过它，
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---  `cw_t` 从 **1** 起、`frame` 第一次进来处理的就是 t=1（挂钩 + 起步 + 第一轮），
 ---  时间轴与原件逐帧对齐。
 ---  ★ 旧实现从 0 起（只跑一遍 RunEcl）⇒ 起步、挂钩、t=61 的加速、每发弹全部晚一帧。
-local crow = Class(object, {
+local crow = class.th08_combat.actor("ecldata8sp:68", {
     init = function(self, x, y, dir, color)
         self.x, self.y = x, y
         self.cw_dir = dir               -- 飞行方向（我们坐标 = TH08 的 lf1 取反）
@@ -15737,7 +15703,7 @@ local crow = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false              -- ★ 纯观感（见头注）
+        self.colli = false              -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self.rot = 0
@@ -16034,8 +16000,8 @@ local function gun_fire(self, which)
     })
 end
 
----Sub73（凤凰本体）。占位贴图 "servant"；★ 纯观感（见头注）。
-local phoenix = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+local phoenix = class.th08_combat.actor("ecldata8sp:73", {
     init = function(self, x, y, dir, av)
         self.x, self.y = x, y
         self.px_dir = dir               -- 继承来的 lf1（已取反）；t=1 才生效
@@ -16366,7 +16332,7 @@ end
 ---Sub81（使魔）。★ 时间轴：子机在**出生那一帧**就跑第一次 RunEcl（= t=0），
 ---所以 fm_t 从 0 起、frame 第一次进来处理的就是 t=0（那一帧只有主 ANM / 判定 / 形变与两条
 ---装插值槽，全是观感 + 下面每帧跑的插值本身）—— 与原件逐帧对齐。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:81", {
     init = function(self, x, y, dir)
         self.x, self.y = x, y
         self.fm_dir = dir                   -- 继承来的 lf7（已取反到我们坐标）
@@ -16385,7 +16351,7 @@ local familiar = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false                  -- ★ 纯观感
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self.rot = 0
@@ -16868,7 +16834,7 @@ local build_records
 ---  `dir` 是**我们坐标**下的朝向：93/94 用不到（开火角是 RANDOM 或自机狙），
 ---  95 是继承来的 lf7（大玉就沿这个方向飞）。
 ---  `lf6` 是继承来的「大玉初速」（Sub90 每轮 +0.1、Sub91 每轮 +0.1）。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:93", {
     init = function(self, kind, x, y, dir, lf6)
         self.x, self.y = x, y
         self.fam_kind = kind
@@ -16883,7 +16849,7 @@ local familiar = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false                  -- ★ 纯观感（原作 24×24 判定，按本文件惯例不给）
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- 出屏不回收：它只在自己 TERMINATE 时消失
         self.rot = -self.fam_dir * RAD      -- 观感：朝自己飞的方向（rot 是角度制）
@@ -17247,7 +17213,7 @@ end
 ---        （EclRunLow.inl:239-243、:234-243 用 RawInt 直接加），反汇编里已还原成目标指令号。
 ---      ★ Sub102 的 `ins_97 SHOOT_FAN` 只发 1 发、瞄准靠 `lf0 = AIM_TO_PL`（#3 每轮重设）。
 ---  · 占位贴图：人形 = "servant"、弹 = ball_small / ball_mid（全部实现完再统一换素材）。
----  ★ 人形按本文件惯例**不给判定**（原作 24×24 判定、life 13500）：它是背景装饰性的弹源，
+---  ★ 人形保留原作24×24受击框与13500生命值，贴图仍用现有代理，
 ---    移植版只保它的位置、出弹与轨迹（`DISABLE_INTERACTION_FLAGS 16` = ALLOW_OFFSCREEN
 ---    ⇒ 出屏不回收，所以 bound = false）。
 ---------------------------------------------------------------
@@ -17458,7 +17424,7 @@ local S102 = {
 }
 
 ---人形（Sub98 + 两把枪）。位置由两条 MOVE_TO 腿（见 S98）推着走。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata8sp:98", {
     init = function(self, spec)
         self.x, self.y = scr_x(spec.x), scr_y(spec.y)
         self.fam_ex0, self.fam_ex1 = spec.x, spec.y   -- exF0 / exF1（TH08 口径）
@@ -17471,7 +17437,7 @@ local familiar = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false                  -- ★ 纯观感（原作 24×24 判定 + life 13500）
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- `DISABLE_INTERACTION_FLAGS 16` = ALLOW_OFFSCREEN
         self.rot = 0
@@ -19610,14 +19576,14 @@ local function sweep_tick(fam, g)
 end
 
 ---使魔（Sub72）。占位贴图 "servant"；原作它有 24×24 判定与 life 1000..4000、可被击破，
----移植版不给判定（占位口径，见卡 210 的樹 / 卡 218 的娃娃）。
-local familiar = Class(object, {
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+local familiar = class.th08_combat.actor("ecldata7:72", {
     init = function(self, k, x, y)
         self.x, self.y = x, y                   -- 出生点 = BOSS 的位置（ins_91 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false                      -- 移植版不给使魔判定
+        self.colli = false                      -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                      -- DISABLE_INTERACTION_FLAGS 16 = ALLOW_OFFSCREEN
         self.rot = 0
@@ -20069,7 +20035,7 @@ local function fire_lasers(self)
 end
 
 ---使魔（Sub68）。占位贴图 "servant"。
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:68", {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -20754,7 +20720,7 @@ local gun0, gun1
 ---  a = 环角（我们的口径，= −lf2 的 TH08 值）、wait = xi1、x/y = 出生点（= BOSS 当前位置）、
 ---  cx/cy = 环心（= 夹过的自机点，我们的口径）。
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:23", {
     init = function(self, a, wait, x, y, cx, cy)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -21436,7 +21402,7 @@ end
 ---------------------------------------------------------------------
 ---使魔本体（Sub51）
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:51", {
     init = function(self, dir, omega, speed, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_91 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -21918,10 +21884,10 @@ end
 
 ---------------------------------------------------------------------
 ---使魔（Sub56）。占位贴图 "servant"。
----原作有 `SET_HITBOX 24 24`、life 3500、可被击破；移植版按本文件既有口径不给判定
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（同卡 162 的使魔 / 卡 210 的樹），只保位置、移动与它那一条光柱枪。
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:56", {
     init = function(self, dir, speed, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_92 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -22424,10 +22390,10 @@ end
 
 ---------------------------------------------------------------------
 ---使魔（Sub64）。占位贴图 "servant"。
----原作有 `SET_HITBOX 24 24`、life 500、可被击破；移植版按本文件既有口径不给判定
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（同卡 210 的樹 / 卡 218 的娃娃），只保位置、移动与它那两条枪。
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:64", {
     init = function(self, dir, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_92 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -22798,13 +22764,13 @@ end
 ---------------------------------------------------------------------
 ---使魔（Sub33）。占位贴图 "servant"。
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:33", {
     init = function(self, dir, speed, drift, drift_d, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（`ins_92` 的偏移是 (0,0)）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false                  -- 原作可被击破，移植版按本文件口径不给判定
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self.rot = dir * RAD                -- `SET_ANM_ROTATION_ENABLED 1`：dir 是弧度
@@ -23542,13 +23508,13 @@ end
 ---------------------------------------------------------------------
 ---使魔（Sub17 + 它的子 context Sub18）。占位贴图 "servant"。
 ---------------------------------------------------------------------
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:17", {
     init = function(self, dir, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（`ins_91` 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false                  -- 原作 300 血可击破；本文件口径不给判定
+        self.colli = false                  -- 300血及受击开关在构造结束后按原作设置
         self.navi = false
         self.bound = false                  -- 不夹框，一路飞出场地（见卡头注释）
         self.rot = dir * RAD                -- `REPLACE_ALIGNMENT_EFFECT 1`：贴图朝飞行方向
@@ -23580,7 +23546,7 @@ local familiar = Class(object, {
                 ---`#4`：闸②按**每一发**判（原作每条 SHOOT_FAN 各自查一次近身距离）。
                 if not too_close(self.x, self.y) then
                     ---★ `#4`(0x3f，色 2 速 1.5) / `#5`(0x5f，色 6 速 3.0) 形态二选一。
-                    if player_is_youkai() then
+                    if player_is_youkai(self) then
                         EX.shoot(self, self.x, self.y, {
                             op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR_B),
                             count1 = 1, count2 = 1,
@@ -23945,7 +23911,7 @@ local function fam_volley(self, idx)
     end
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata7:37", {
     ---x, y = 出生点（= BOSS 位置，`ins_91` 的偏移是 0,0）、ang = `ins_72` 的初角（我们口径）、
     ---omega = `ins_72` 的角速度（我们口径）、off = lf2 取反（弹的基准角相对公转角的偏移）、
     ---colors = li0/li1/li2（三发弹的色号）。
@@ -23954,7 +23920,7 @@ local familiar = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"                -- 占位贴图（`#0 SET_MAIN_ANM 53`）
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false                  -- 原作 1500 血可击破；本文件口径不给判定
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- 出屏回收自己判（见卡头 Sub37 的 t=210）
         self._blend, self._a = "", 255
@@ -24934,14 +24900,14 @@ end
 ---------------------------------------------------------------------
 ---使魔（Sub77）。占位贴图 "servant"。
 ---------------------------------------------------------------------
-local lw142_familiar = Class(object, {
+local lw142_familiar = class.th08_combat.actor("ecldata6:77", {
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）、plan = FAM_PLAN 的一条。
     init = function(self, x, y, plan)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"                -- 占位贴图（`#0 SET_MAIN_ANM 54`）
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false                  -- 原作 250 血可击破；本文件口径不给判定
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- ALLOW_OFFSCREEN 是亮的 ⇒ 出屏不回收
         self._blend, self._a = "", 255
@@ -25755,7 +25721,7 @@ local function brain_step(self)
     return true
 end
 
-lw134_brain = Class(object, {
+lw134_brain = class.th08_combat.actor("ecldata6:65", {
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）；
     ---spin = **我们口径**的角速度（= 出生那一刻 BOSS 的 lf1 取反）。
     init = function(self, x, y, spin)
@@ -25763,7 +25729,7 @@ lw134_brain = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false              -- 原作 24×24 判定可击破；本文件口径不给判定
+        self.colli = false              -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false              -- 出屏回收自己判（原作 IsWithinPlayfield）
         self.rot = 0
@@ -26137,13 +26103,13 @@ local function fam_begin_move(self, speed)
     }
 end
 
-lw130_familiar = Class(object, {
+lw130_familiar = class.th08_combat.actor("ecldata6:60", {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.7, 0.7
-        self.colli = false              -- 原作 24×24 可击破；本文件口径不给判定
+        self.colli = false              -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false              -- 出屏回收自己判（原作 allowOffscreen = 0）
         self.rot = 0
@@ -27083,7 +27049,7 @@ local function fam_drift(self)
     self.p8x, self.p8y = self.p8x + dx, self.p8y + dy
 end
 
-local lw122_fam = Class(object, {
+local lw122_fam = class.th08_combat.actor("ecldata6:25", {
     ---bx/by = 出生点（BOSS 的 TH08 坐标）、lf2 = 这只要用的发射方向（TH08 弧度）、
     ---tx/ty = 目标点（TH08）、fx/fy = 轮头那个夹取点（TH08）、pause = 继承到的 exI1。
     init = function(self, bx, by, lf2, tx, ty, fx, fy, pause)
@@ -27296,7 +27262,7 @@ end
 ---      低速（妖怪）发色 6 速 3.0 那一发（带 AIMED，会拐向自机）。
 ---    `ins_5(0, //20, 10)` 一共 10 组，第 200 帧 RETURN（子 context 回收）。
 ---  ★ 已知差异：原作使魔 `ins_81(3)` 开 ACCEPTS_DAMAGE|COLLISION、life 300 ⇒ 打得掉；
----    移植版跟其它卡的使魔一样**不给判定**（占位做法），所以 20 只使魔会一直留到换卡
+---    现按原作300生命值受击；没有被击破的使魔由原脚本或换卡清理
 ---    （原作里换相位时 EnemyManager 的 HandleTimerCallback 会把非 BOSS 敌机全清掉，
 ---    移植版这一步由 card_del 代劳）。
 ---  ★ rank 缩放：本卡是**非符**（Sub16/17/18/19/20 里都没有 `ins_122 START_SPELL`）
@@ -27436,7 +27402,7 @@ local function f16_gun_volley(self)
     local ang = -self.f_gun_dir      -- 我们口径
     ---★ 0x5f（妖怪 / 低速，色 6 速 3.0 / flags 0x282）与 0x3f（人类 / 高速，色 2 速 1.5 /
     ---  flags 0x202）同帧并列，只有一条执行（EclRun.cpp:69-73 + EnemyManager.cpp:903）。
-    if player_is_youkai() then
+    if player_is_youkai(self) then
         EX.shoot(self, self.x, self.y, {
             op = 97, type = 3, color = EX.color(6),
             count1 = 1, count2 = 1, speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
@@ -27451,7 +27417,7 @@ local function f16_gun_volley(self)
     end
 end
 
-local lw16_fam = Class(object, {
+local lw16_fam = class.th08_combat.actor("ecldata6:19", {
     ---x, y = 出生点（BOSS 此刻的位置）、dir = 出生时从父继承的 lf0（TH08 口径）、
     ---sp = 继承的 lf1 = 1.0。
     init = function(self, x, y, dir, sp)
@@ -27873,7 +27839,7 @@ local function f36_gun_volley(self)
     })
 end
 
-local lw36_fam = Class(object, {
+local lw36_fam = class.th08_combat.actor("ecldata6:39", {
     ---x, y = 出生点（BOSS 此刻的位置）、dir = 出生时从父继承的 lf0（TH08 口径）、sp = lf1。
     init = function(self, x, y, dir, sp)
         self.x, self.y = x, y
@@ -28278,7 +28244,7 @@ local function f40_gun_volley(self)
     })
 end
 
-local lw40_fam = Class(object, {
+local lw40_fam = class.th08_combat.actor("ecldata6:43", {
     ---x, y = 出生点（BOSS 此刻的位置）、ang = 继承的 lf0（起始公转角）、
     ---angvel = 继承的 lf1（公转角速度）、color = 继承的 li0（弹色）、base = 继承的 lf2（弹的基准角）。
     init = function(self, x, y, ang, angvel, color, base)
@@ -28880,12 +28846,12 @@ local FAM_VMAX = 5.5                -- lf7（TH08 的 y 朝下；3.2 < 5.5 ⇒ �
 local FAM_LIFE = 600                -- `ins_91(..., 600, -2, 100)` 的 life
 local FAM_HALF = 16                 -- 出屏回收用的半张图（原作 24×24 判定，占位图按 32 算）
 
----使魔（Sub18）。占位贴图 "servant"；不给判定（本文件自绘对象的惯例）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.orb_bounce`，而 `local x = Class(...)`
 ---  的局部变量要到**这条语句之后**才进作用域 —— 写在表构造里拿到的是全局的 nil。
 ---  同一个坑见本文件卡 218 / 卡 427 的长注。）
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata4a:18", {
     init = function(self, x, y, ang_th08)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -28942,9 +28908,7 @@ familiar = Class(object, {
         self.y = 224 - self.fam_thy
         ---寿命到 / 出屏（无 ALLOW_OFFSCREEN）→ 回收。
         self.fam_t = self.fam_t + 1
-        self.fam_life = self.fam_life - 1
-        if self.fam_life <= 0
-                or self.fam_thx + FAM_HALF < 0 or self.fam_thx - FAM_HALF > 384
+        if self.fam_thx + FAM_HALF < 0 or self.fam_thx - FAM_HALF > 384
                 or self.fam_thy + FAM_HALF < 0 or self.fam_thy - FAM_HALF > 448 then
             object.RawDel(self)
         end
@@ -29461,10 +29425,10 @@ local function wrap_step(owner, st)
     end
 end
 
----使魔（Sub20）。占位贴图 "servant"；不给判定（本文件自绘对象的惯例）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar20.bounce`，见卡 433 的长注。）
 local familiar20
-familiar20 = Class(object, {
+familiar20 = class.th08_combat.actor("ecldata4a:20", {
     init = function(self, x, y, ang_th08, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -29520,9 +29484,7 @@ familiar20 = Class(object, {
         self.y = 224 - self.fm_thy
         ---寿命到 / 出屏（没有 ALLOW_OFFSCREEN）→ 回收。
         self.fm_t = self.fm_t + 1
-        self.fm_life = self.fm_life - 1
-        if self.fm_life <= 0
-                or self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
+        if self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
                 or self.fm_thy + FAM_HALF < 0 or self.fm_thy - FAM_HALF > 448 then
             object.RawDel(self)
         end
@@ -29831,7 +29793,7 @@ end
 ---使魔（Sub32）= 一枚「封印」：`ins_65(lf0, lf1)` = SET_DIR_AND_SPEED ⇒ POLAR 直线。
 ---（★ 必须**先声明、再赋值**：`frame` 里要调 `familiar32.step`，见卡 433 的长注。）
 local familiar32
-familiar32 = Class(object, {
+familiar32 = class.th08_combat.actor("ecldata4a:32", {
     init = function(self, x, y, ang, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -30464,10 +30426,10 @@ local function wrap_step(owner, st)
     end
 end
 
----使魔（Sub38）。占位贴图 "servant"；不给判定（本文件自绘对象的惯例）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar38.step`，见卡 433 的长注。）
 local familiar38
-familiar38 = Class(object, {
+familiar38 = class.th08_combat.actor("ecldata4a:38", {
     init = function(self, x, y, ang_th08, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -30522,9 +30484,7 @@ familiar38 = Class(object, {
         self.y = 224 - self.fm_thy
         ---寿命到 / 出屏（`ins_80(16)` 关掉了 ALLOW_OFFSCREEN）→ 回收。
         self.fm_t = self.fm_t + 1
-        self.fm_life = self.fm_life - 1
-        if self.fm_life <= 0
-                or self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
+        if self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
                 or self.fm_thy + FAM_HALF < 0 or self.fm_thy - FAM_HALF > 448 then
             object.RawDel(self)
         end
@@ -30867,11 +30827,11 @@ local function move_to(owner, tx_th08, ty_th08, dur, ease)
     }
 end
 
----使魔（Sub18）。占位贴图 "servant"；不给判定（本文件自绘对象的惯例）。
+---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar.step` —— 写在表构造里拿到的是
 ---  外层那个还是 nil 的 local，见卡 433 的长注。）
 local familiar
-familiar = Class(object, {
+familiar = class.th08_combat.actor("ecldata4a:18", {
     init = function(self, x, y, ang_th08)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -30927,9 +30887,7 @@ familiar = Class(object, {
         self.y = 224 - self.fm_thy
         ---寿命到 / 出屏（无 ALLOW_OFFSCREEN）→ 回收。
         self.fm_t = self.fm_t + 1
-        self.fm_life = self.fm_life - 1
-        if self.fm_life <= 0
-                or self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
+        if self.fm_thx + FAM_HALF < 0 or self.fm_thx - FAM_HALF > 384
                 or self.fm_thy + FAM_HALF < 0 or self.fm_thy - FAM_HALF > 448 then
             object.RawDel(self)
         end
@@ -31372,13 +31330,13 @@ end
 ---因为圆心是「自己的局部位置」= (0,0)），世界坐标 = BOSS + 局部坐标（局部 y 取反）。
 ---（★ 必须先声明、再赋值：frame 里要调 `familiar69.step`，见卡 433 的长注。）
 local familiar69
-familiar69 = Class(object, {
+familiar69 = class.th08_combat.actor("ecldata4a:42", {
     init = function(self, boss, ang, li1, life)
         self.x, self.y = boss.x, boss.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false                -- 移植版不给使魔判定（原作有 24×24 的判定）
+        self.colli = false                -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self.rot = 0
@@ -31866,13 +31824,13 @@ end
 ---内部一切按 TH08 口径算：局部坐标 = (cos(ang)·r, sin(ang)·r)，世界坐标 = 出生点 +
 ---(lx, −ly)（TH08 的 y 朝下）。★ 必须先声明、再赋值：frame 里要调 `familiar73.step`。
 local familiar73
-familiar73 = Class(object, {
+familiar73 = class.th08_combat.actor("ecldata4a:47", {
     init = function(self, side, lf0, cx, cy)
         self.x, self.y = cx, cy
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.hscale, self.vscale = 0.75, 0.75
-        self.colli = false                -- 移植版不给使魔判定（原作有 24×24 的判定）
+        self.colli = false                -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self.rot = 0
@@ -32325,7 +32283,7 @@ end
 ---        由 SpawnEnemy2（EnemyTimeline.cpp:64-110）按 0x78 字节整块抄给子 context，
 ---        连 exI2（`ins_6([10038], 0)` 设的）一起带过去 ⇒ 全部使魔同组。
 ---      ★ 寿命：原作第 4 个操作数是 HP（700 / 900）、使魔有 24×24 判定，能被自机打死；
----        移植版不给判定（colli = false），按本文件惯例（卡 218/427 的使魔同口径）
+---        受击与击破已按原作接回，见 th31_combat.lua
 ---        把 HP 当帧数用。
 ---  · 枪 Sub20（Lunatic 那一支：li7 = 2、li6 = 2、lf7 = 2.1、lf6 = 1.6、lf3 = 2π/3）：
 ---      每 7 帧一组（`ins_5(0, Sub20_360, li36=15)` 跑 15 组后进 Sub20_860 的无限循环），
@@ -32530,7 +32488,7 @@ local function fire_gun20(fam, k)
     })
 end
 
----使魔 Sub21 的本体（占位贴图 "servant"；不给判定）。
+---使魔 Sub21 的本体；现有贴图，按原作血量可受击/击破。
 ---★ `ins_92` = SPAWN_FAMILIAR_INHERITING_POSITION（EclRunLow.inl:879-958，
 ---  SpawnChildAtScriptPosition = EclDependencies.cpp:592-616）：子机的 `position`
 ---  是脚本里写的 (0, 0)（局部坐标），而 `positionOffset` 每帧被写成父机的 `position`
@@ -32583,14 +32541,11 @@ local function familiar_body(self)
     self.x = boss.x + self.fam_lx
     self.y = boss.y - self.fam_ly
 
-    ---⑥ 寿命（原作是 HP；移植版不给判定 ⇒ 当帧数用）。
-    self.fam_life = self.fam_life - 1
-    if self.fam_life <= 0 then
-        object.RawDel(self)
-    end
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+    -- 原作 life 是可击破血量；结束由受击、出屏或卡片清场处理。
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:21", {
     init = function(self, boss, color, life, list)
         self.fam_boss = boss                          -- 父机（worldPosition 的基准）
         self.fam_lx, self.fam_ly = 0, 0               -- 局部极坐标（TH08 口径）
@@ -32951,14 +32906,11 @@ local function familiar_body(self)
     self.x = boss.x + self.fam_lx
     self.y = boss.y - self.fam_ly
 
-    ---⑥ 寿命（原作是 HP；移植版不给判定 ⇒ 当帧数用）。
-    self.fam_life = self.fam_life - 1
-    if self.fam_life <= 0 then
-        object.RawDel(self)
-    end
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+    -- 原作 life 是可击破血量；结束由受击、出屏或卡片清场处理。
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:40", {
     init = function(self, boss, color, life, list)
         self.fam_boss = boss
         self.fam_lx, self.fam_ly = 0, 0
@@ -33367,14 +33319,11 @@ local function familiar_body(self)
     self.fam_wx, self.fam_wy = bx + self.fam_lx, by + self.fam_ly
     self.x, self.y = self.fam_wx - 192, 224 - self.fam_wy
 
-    ---⑥ 寿命（原作是 HP；移植版不给判定 ⇒ 当帧数用）。
-    self.fam_life = self.fam_life - 1
-    if self.fam_life <= 0 then
-        object.RawDel(self)
-    end
+---受击与击破由 th31_combat.lua 的原作交互表控制。
+    -- 原作 life 是可击破血量；结束由受击、出屏或卡片清场处理。
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:24", {
     init = function(self, boss, list, ang0, angvel, radial, life, color)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -33848,7 +33797,7 @@ local function familiar_body(self)
     self.x, self.y = wx, wy
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:46", {
     init = function(self, boss, list, lf0, lf1, lf2, li1, li2)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -34237,7 +34186,7 @@ local function familiar_body(self)
     self.x, self.y = wx - 192, 224 - wy
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:30", {
     init = function(self, boss, list, ang0, angvel, radial, color, life)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -34753,7 +34702,7 @@ local function familiar_body(self)
     self.x, self.y = wx - 192, 224 - wy
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:52", {
     init = function(self, boss, list, ang0, angvel, li4, color)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -35147,7 +35096,7 @@ local function familiar_body(self)
     self.x, self.y = wx - 192, 224 - wy
 end
 
-local familiar = Class(object, {
+local familiar = class.th08_combat.actor("ecldata4b:33", {
     init = function(self, boss, list, ang0, angvel, color)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -35924,7 +35873,7 @@ local function familiar_body(self)
     end
 end
 
-c451_familiar = Class(object, {
+c451_familiar = class.th08_combat.actor("ecldata4b:65", {
     init = function(self, boss, list, li0, li1, lf0, bx, by, tx, ty)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.f_boss = boss
@@ -36371,7 +36320,7 @@ local function orb_used()
 end
 
 local c452_orb
-c452_orb = Class(object, {
+c452_orb = class.th08_combat.actor("ecldata4b:70", {
     ---x, y = 出生点（我们坐标）；ang = 初始公转角（我们坐标的「朝自机」方位）；
     ---color = 1..4（对应原作的 anm alt 18/19/20/21）。
     init = function(self, x, y, ang, color)
@@ -36379,7 +36328,7 @@ c452_orb = Class(object, {
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "ellipse"                -- 占位：原作 4 只大玉（anm alt 18..21）
         self.hscale, self.vscale = 0.85, 0.85
-        self.colli = false                  -- 自绘对象不给判定（原作的判定是 ex 指令 11 的旋转盒）
+        self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false
         self._blend, self._a = "", 255
@@ -37434,7 +37383,7 @@ end
 ---★ `frame` 故意留空：使魔的 ECL 与位置全部由 card_frame 按「BOSS → 使魔」的固定
 ---  顺序驱动，保证与原作「敌人按 slot 顺序跑」一致（引擎自己的对象顺序不好保证）。
 ---------------------------------------------------------------------
-local familiar_cls = Class(object, {
+local familiar_cls = class.th08_combat.actor("ecldata5:55", {
     init = function(self, x, y, dx, dy, base, step)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -37946,7 +37895,7 @@ end
 ---  的固定顺序驱动，保证与原作「敌人按 slot 顺序跑」一致。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata5:68", {
     init = function(self, x, y, ang, color, fast_flags)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -38427,7 +38376,7 @@ end
 ---  「BOSS → 使魔」的固定顺序驱动（= 原作敌机按 slot 顺序跑）。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata5:59", {
     init = function(self, x, y, dx, dy)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -38951,7 +38900,7 @@ end
 ---  （= 原作敌机按 slot 顺序跑）。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata5:64", {
     init = function(self, x, y, color)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -39495,7 +39444,7 @@ end
 ---  驱动（= 原作敌机按 slot 顺序跑）。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata5:77", {
     init = function(self, x, y, angle, speed)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -40008,7 +39957,7 @@ end
 ---★ `frame` 故意留空：ECL / 枪由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata5:81", {
     init = function(self, x, y, angle, speed, gun)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -40550,7 +40499,7 @@ end
 ---★ `frame` 留空：ECL / 出弹由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata2:20", {
     init = function(self, x, y, ang)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -41391,7 +41340,7 @@ end
 ---★ frame 留空：ECL / 出弹由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata2:28", {
     init = function(self, x, y, ang)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -41956,7 +41905,7 @@ end
 ---★ frame 留空：ECL / 出弹由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata2:43", {
     ---side = +1 表示「出生在左半」（TH08 的 posX < 192）。
     init = function(self, x, y, side)
         self.x, self.y = x, y
@@ -42465,7 +42414,7 @@ end
 ---★ frame 留空：ECL / 出弹由卡片的 frame 按「BOSS → 使魔」的固定顺序驱动。
 ---------------------------------------------------------------------
 local familiar_cls
-familiar_cls = Class(object, {
+familiar_cls = class.th08_combat.actor("ecldata2:30", {
     init = function(self, x, y, ang)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -42988,7 +42937,7 @@ local function hawk_gun(h, mag_a, mag_b)
 end
 
 local hawk_cls
-hawk_cls = Class(object, {
+hawk_cls = class.th08_combat.actor("ecldata2:47", {
     ---x, y = 出生位置；ang = lf0（我们的口径）；angvel = `ins_70` 的角速度（已取反）。
     init = function(self, x, y, ang, angvel, kind)
         self.x, self.y = x, y
@@ -43543,7 +43492,7 @@ local GUN_54 = { type = 7, color = 4, mag_a = 0.02, mag_b = 0.013333334 }
 local GUNS = { [48] = GUN_48, [54] = GUN_54 }
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata2:49", {
     ---x, y = 出生位置；ang = lf0（我们的口径）；gun = 挂的子程序号（48 / 54）。
     init = function(self, x, y, ang, gun)
         self.x, self.y = x, y
@@ -44063,7 +44012,7 @@ local GUN_VEC_MAG = 0.033333335
 local GUN_INTERVAL = 9                    -- `ins_106(11)` 经 rank 32 缩放：11 − ⌊11/5⌋
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata2:59", {
     ---x, y = 出生点（母机位置）；ang = lf0 = 自机方向 + 母机传来的偏角（我们的口径）。
     init = function(self, x, y, ang)
         self.x, self.y = x, y
@@ -44488,7 +44437,7 @@ local FAM_S1, FAM_S2 = 2.0, 1.0
 local FAM_HALF = 16
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:19", {
     init = function(self, boss, ang, omega, radvel, color)
         self.c470_boss = boss
         self.c470_ang = ang             -- 我们的口径
@@ -44848,7 +44797,7 @@ local FAM_WAIT_FRAMES = 120             -- 记录 1 的 WAIT
 local FAM_CULL_FRAMES = 400             -- 记录 0 的 CULL
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:24", {
     init = function(self, boss, ang, omega, base)
         ---ang / omega 都是**我们的口径**（TH08 取反后的值）。
         self.c471_ang = ang
@@ -45493,7 +45442,7 @@ local function fam_gun_fire(fam)
     end
 end
 
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:32", {
     init = function(self, boss, f0, f1, f2, f3)
         self.c472_f0, self.c472_f1 = f0, f1
         self.c472_f2, self.c472_f3 = f2, f3
@@ -45849,7 +45798,7 @@ local GUN_TYPE, GUN_COLOR = 3, 14   -- TH08 色 13 → 我们 14
 local GUN_OFF = 16              -- lf = rndUnit·32 − 16
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:36", {
     init = function(self, boss, ang, dist, dur)
         ---ang 是**我们**口径的方向角；dist = 飞出距离；dur = 插值时长 = cI0。
         self.c473_dur = dur
@@ -46259,7 +46208,7 @@ local function fam_gun_fire(fam, wave)
 end
 local function fam_gun_volley(fam)
     ---★ 形态二选一：#13（妖怪 / 低速）或 #12/#15（人类 / 高速），不是两发。
-    if player_is_youkai() then
+    if player_is_youkai(fam) then
         fam_gun_fire(fam, GUN_B)
     else
         fam_gun_fire(fam, GUN_A)
@@ -46272,7 +46221,7 @@ end
 local FAM_TERMINATE_CT = 960    -- `#11 TERMINATE`
 local FAM_HALF = 16
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:43", {
     init = function(self, boss, dur, ang, angvel, radvel)
         ---全部是**我们**口径：ang = 极角、angvel = 极角速度、radvel = 半径速度。
         ---★ Sub39 走的是 `ins_92 SPAWN_FAM_INHERIT_POS`（不是卡 471/472/473 的
@@ -46738,7 +46687,7 @@ local GUN_COLOR = 8        -- op104 的色号（TH08 口径 → EX.color +1）
 local GUN_FLAGS = 0x208    -- SLOW(0x8) | SPAWN_SND(0x200)
 
 local fam_cls
-fam_cls = Class(object, {
+fam_cls = class.th08_combat.actor("ecldata1:46", {
     init = function(self, p)
         self.f475 = p
         self.x, self.y = p.ox, p.oy
@@ -47839,7 +47788,7 @@ end
 local function dispatch_shot(u, a)
     ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
     ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-    if player_is_youkai() then
+    if player_is_youkai(u) then
         if is_bit(a.flags, K_ONLY_HUMAN) then return end
     else
         if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -48186,6 +48135,7 @@ local function u_step(u)
     ---⑧ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
     ---   （→ 触发上面的 kill 掉道具）。
     enemybase.frame(u)
+    class.th08_combat.unit_collision(u)
     if u.hp <= 0 then u.alive = false return end
     ---⑨ 出屏回收（EnemyManagerUpdate.cpp:223-260）：先记「进过场」，
     ---   之后出屏就收（ALLOW_OFFSCREEN 的除外）。
@@ -48196,7 +48146,7 @@ local function u_step(u)
     end
 end
 
-unit = Class(enemy, {
+unit = class.th08_combat.unit({
     ---@param sub number     敌机子程序号
     ---@param x number       局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
     ---@param y number       同上
@@ -48795,7 +48745,7 @@ end
 local function dispatch_shot(u, a)
     ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
     ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-    if player_is_youkai() then
+    if player_is_youkai(u) then
         if is_bit(a.flags, K_ONLY_HUMAN) then return end
     else
         if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -49187,7 +49137,7 @@ local function u_shot_tick(u)
     end
 end
 
-unit = Class(enemy, {
+unit = class.th08_combat.unit({
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -49317,6 +49267,7 @@ local function u_step(u)
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
     ---  （→ 触发上面的 kill 掉道具）。
     enemybase.frame(u)
+    class.th08_combat.unit_collision(u)
     if u.hp <= 0 then u.alive = false return end
     ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
     ---  （ALLOW_OFFSCREEN 的除外）。
@@ -49865,7 +49816,7 @@ end
 local function dispatch_shot(u, a)
     ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
     ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-    if player_is_youkai() then
+    if player_is_youkai(u) then
         if is_bit(a.flags, K_ONLY_HUMAN) then return end
     else
         if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -50322,7 +50273,7 @@ local function u_shot_tick(u)
     end
 end
 
-unit = Class(enemy, {
+unit = class.th08_combat.unit({
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（使魔传 0,0 / 操作数）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -50444,6 +50395,7 @@ local function u_step(u)
     u.x, u.y = u.wx, u.wy
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
     enemybase.frame(u)
+    class.th08_combat.unit_collision(u)
     if u.hp <= 0 then u.alive = false return end
     ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
     ---  （ALLOW_OFFSCREEN 的除外）。
@@ -50884,7 +50836,7 @@ local function dispatch_shot(u, a)
     if u.hp <= 0 then return end
     ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
     ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-    if player_is_youkai() then
+    if player_is_youkai(u) then
         if is_bit(a.flags, K_ONLY_HUMAN) then return end
     else
         if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -51080,7 +51032,7 @@ local DROP_COUNTS = {
 ---------------------------------------------------------------------
 ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
 ---------------------------------------------------------------------
-unit = Class(enemy, {
+unit = class.th08_combat.unit({
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（op92 使魔传父机 world，其它传时间轴坐标）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -51203,6 +51155,7 @@ local function u_step(u)
     u.x, u.y = u.wx, u.wy
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
     enemybase.frame(u)
+    class.th08_combat.unit_collision(u)
     if u.hp <= 0 then u.alive = false return end
     ---⑧ UpdateShotAndAnm 的间隔段。
     u_shot_tick(u)
@@ -52218,7 +52171,7 @@ local function make_card(build)
         if u.hp <= 0 then return end
         ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
         ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-        if player_is_youkai() then
+        if player_is_youkai(u) then
             if is_bit(a.flags, K_ONLY_HUMAN) then return end
         else
             if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -52437,7 +52390,7 @@ local function make_card(build)
     ---------------------------------------------------------------------
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
-    unit = Class(enemy, {
+    unit = class.th08_combat.unit({
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -52561,6 +52514,7 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
+        class.th08_combat.unit_collision(u)
         if u.hp <= 0 then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
@@ -53208,7 +53162,7 @@ local function make_card(build)
         if u.hp <= 0 then return end
         ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
         ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-        if player_is_youkai() then
+        if player_is_youkai(u) then
             if is_bit(a.flags, K_ONLY_HUMAN) then return end
         else
             if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -53427,7 +53381,7 @@ local function make_card(build)
     ---------------------------------------------------------------------
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
-    unit = Class(enemy, {
+    unit = class.th08_combat.unit({
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -53551,6 +53505,7 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
+        class.th08_combat.unit_collision(u)
         if u.hp <= 0 then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
@@ -54240,7 +54195,7 @@ local function make_card(build)
         if u.hp <= 0 then return end
         ---★ ONLY_WHEN_PLAYER_YOUKAI / HUMAN（BulletManager.hpp:147-148；判据
         ---  EclDependencies.cpp:703-711）：低速（妖怪）不发人类专属弹、高速（人类）不发妖怪专属弹。
-        if player_is_youkai() then
+        if player_is_youkai(u) then
             if is_bit(a.flags, K_ONLY_HUMAN) then return end
         else
             if is_bit(a.flags, K_ONLY_YOUKAI) then return end
@@ -54524,7 +54479,7 @@ local function make_card(build)
     ---------------------------------------------------------------------
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
-    unit = Class(enemy, {
+    unit = class.th08_combat.unit({
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -54671,6 +54626,7 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
+        class.th08_combat.unit_collision(u)
         if u.hp <= 0 then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
@@ -55960,14 +55916,14 @@ do
     ---  紧挨着的 #15/#18/#22/#26 是 0x3f / 0x2e（色 8、速度 lf6）——只有**人类**才跑。
     ---  两行同帧并列 ⇒ 每对里只有一圈真的出弹（二选一）。
     local function skipped_side(u)                           ---#14 / #17 / #21 / #25（色 6，妖怪侧）
-        if player_is_youkai() then
+        if player_is_youkai(u) then
             E.shoot(u, { op = 99, type = 3, color = 6, count1 = 4, count2 = 1,
                          speed1 = u.lf7, speed2 = 0.5, angle = u.lf0,
                          step = 0.2617994, flags = 0x202 })
         end
     end
     local function shot(u)                                   ---#15 / #18 / #22 / #26（色 8，人类侧）
-        if not player_is_youkai() then
+        if not player_is_youkai(u) then
             E.shoot(u, { op = 99, type = 3, color = 8, count1 = 4, count2 = 1,
                          speed1 = u.lf6, speed2 = 0.5, angle = u.lf0,
                          step = 0.2617994, flags = 0x202 })
@@ -56948,8 +56904,8 @@ local EXTRA_CHARS = {
 ---  ""，因为 boss.card.New（boss_card.lua:59）用 `name ~= ""` 定 `is_sc`，
 ---  非符不算符卡（不显示符卡名 / 不结算符卡分），但练习菜单里总得有个名字。
 ---秒数 = ins_134 的 threshold/60：5940/60=99、2220/60=37、2160/60=36、7860/60=131。
----★ EX 卡（带血量）是**普通符卡**，不是 Last Word 那种耐久卡：有 HP、能被击破、
----  超时算失败；Last Word 用 hp = 10000000 让血条永远打不掉（t1 = t2 = t3 ⇒ 伤害恒 0）。
+---★ 有限血量卡超时算失败；Last Word 中仅214/215/221沿用原作耐久。
+---  其余14张的生命值、110帧入场无敌与后续九倍防御见 th31_combat.lua。
 --- 有限血量卡按“原作所有自机形态中最快的活跃 TTK × 移植版灵梦 DPS(115.5)”重算；
 --- 保护窗口仍由 t1/t2 单独实现，不重复扣进 HP。耐久卡不在此表。
 --- 表键与附录 A 的 ID 一致：一般取 LIST 第 1 项（cardnum）；不同关卡撞号时取第 8 项。
@@ -57487,7 +57443,7 @@ local LIST = {
 }
 
 ---每张卡共用的 before：不打超时音、关掉 BOSS 的判定与血量条渲染。
----Last Word 全是耐久卡（t1 = t2 = t3，伤害恒 0），所以判定本来也没用。
+---仅用于原作三张耐久 Last Word 与道中；其余14张按原生生命值可击破。
 local function lw_before(self)
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -57625,7 +57581,8 @@ for k, e in ipairs(LIST) do
     cardnum = e[8] or cardnum
     local group = e[5] or k              -- 第 5 项 = 挂到哪个角色组（EX 卡才给）
     local hp_key = e[8] or cardnum       -- 附录 A 的 ID；撞号卡由第 8 项覆盖
-    local hp = TH31_REIMU_HP[hp_key] or e[6] -- 有限血量卡按灵梦口径覆盖
+    local lw = class.th08_combat.lastwords[cardnum]
+    local hp = lw and lw[1] or TH31_REIMU_HP[hp_key] or e[6]
     ---★ 第 7 项 = 符卡练习菜单里的名字。非符的卡名必须是 ""（is_sc = false），
     ---  但菜单里还得有个名字 ⇒ 这两个字符串在非符上不是同一个。
     local menu_name = e[7] or name
@@ -57634,10 +57591,10 @@ for k, e in ipairs(LIST) do
     if hp then
         ---Stage EX 的普通符卡：`card.New(name, t1, t2, t3, hp)`，t1/t2 = 1 秒
         ---（跟本文件其它 TH08 卡 th08-boss1.lua:22 一样的写法：1 秒无敌、1 秒防御）。
-        card = boss.card.New(name, 1, 1, seconds, hp)
+        local invulnerable = lw and lw[2]/60 or 1
+        card = boss.card.New(name, invulnerable, invulnerable, seconds, hp)
     else
-        ---Last Word：t1 = t2 = t3 ⇒ boss_system.lua:161 判成耐久卡、伤害恒 0；
-        ---hp 给一个打不掉的大数（boss_system.lua:126 用它决定血条长度）。
+        -- 原作 ins_155(1) 的三张 Last Word，以及道中流程，保留耐久。
         card = boss.card.New(name, seconds, seconds, seconds, 10000000)
     end
     ---boss.card.add(sc_group, level, CardName, data_id)：level 29 = TH31 的关卡号。
@@ -57718,6 +57675,7 @@ for k, e in ipairs(LIST) do
         card.frame = placeholder_frame
         card.del = placeholder_del
     end
+    class.th08_combat.bind(card,cardnum)
 end
 
 class["SCBG1"].init = function(self)

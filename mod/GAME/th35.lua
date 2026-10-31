@@ -125,6 +125,7 @@ local T10_STYLE = {
     [24] = ball_small,  [25] = OriginalBulletVisual.style(ball_light, water_drop),  [26] = OriginalBulletVisual.style(ellipse, grain_a),
 }
 
+for kind,style in pairs(T10_STYLE) do T10_STYLE[kind]=OriginalBulletVisual.native_style(10,kind,style) end
 ---本项目贴图统一是 16 行；这三张表把原作各色组的色号换成本项目行号。
 local T10_C16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
 local T10_C8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
@@ -548,13 +549,14 @@ local TK_CULL    = 0x2000
 local TK_SPRITE  = 0x4000
 local TK_WAIT    = 0x8000
 local TK_DESPAWN = 0x10000
+local TK_WRAP_X, TK_WRAP_Y = 0x100000, 0x200000
 local TK_STATE8  = 0x4000000
 local TK_SKIP    = 0x80000000
 ---边界反弹（BulletManager.hpp 的 BOUNCE_ALL_EDGES / _EXCEPT_BOTTOM / _VARIANT）
 local TK_BOUNCE_ALL = 0x400
 local TK_BOUNCE_NB  = 0x800          -- 除下边界都反弹
 local TK_BOUNCE_VAR = 0x8000000
----其余 kind（2/4/8/0x100000/0x200000/0x400000/0x2000000/0x20000…）
+---其余 kind（2/4/8/0x400000/0x2000000/0x20000…）
 ---在复原源码的 switch 里落到 default（空操作），本文件按空操作处理。
 
 ---子弹 transform 程序最多 18 条（BulletTransform.cpp:44 `transformIndex >= 18`）
@@ -607,6 +609,10 @@ local function t10_tp_advance(b)
             b.cancel = r.i0
         elseif k == TK_CULL then
             b.cull = r.i0
+        elseif k == TK_WRAP_X or k == TK_WRAP_Y then
+            local key=k==TK_WRAP_X and 'wrap_x' or 'wrap_y'
+            b.af[key]=true
+            b.st[key]={left=r.i0}
         elseif k == TK_SPRITE then
             -- 原作飞行中 etSprite 换 type/color：形状和颜色都要跟随。
             b.color = r.i1
@@ -755,23 +761,49 @@ end
 
 ---弹本体每帧钩子：跑 TH10 的 transform 程序，然后把速度写回引擎
 ---（引擎在本钩子之后做 pos += vel，与原作「先更新各 transform、再 pos += vel」一致）
+local function t10_wrap_outside(x,y,p)
+    return x+p.w/2<=-192 or x-p.w/2>=192 or y+p.h/2<=0 or y-p.h/2>=448
+end
 local function t10_bullet_frame(self)
     local b = self.tb
     b.px, b.py = self.x, t10_oy(self.y)
     b.hit = false
-    t10_tp_advance(b)
-    if next(b.af) ~= nil then t10_tp_tick(b) end
-    -- 原作检查出屏后才递减延迟；etEx 0x2000 不能只写字段而不改变回收。
-    self.bound = b.cull <= 0
-    b.cull = math.max(0,b.cull-1)
-    if b.hit then self.x, self.y = b.px, t10_oy(b.py) end
-    if b.dead then object.RawDel(self) return end
-    local mag = math.sqrt(b.vx * b.vx + b.vy * b.vy)
-    if mag > 0.0001 then
-        object.SetV(self, mag, -math.atan2(b.vy, b.vx) * RAD, bullet.GetNavi(self))
-    else
-        object.SetV(self, 0, 0, false)
+    local sx,sy=0,0
+    if b.spawn>0 then
+        sx,sy=b.vx*0.5,b.vy*0.5
+        b.px,b.py=b.px+sx,b.py+sy
+        b.spawn=b.spawn-1
     end
+    local active=b.spawn==0
+    self.colli=active
+    local vx,vy=sx,sy
+    if active then
+        t10_tp_advance(b)
+        if next(b.af) ~= nil then t10_tp_tick(b) end
+        vx,vy=vx+b.vx,vy+b.vy
+    end
+    if b.dead then object.RawDel(self) return end
+    -- 原作先积分，再按精灵尺寸穿墙，最后出屏回收。wrap的int0是穿墙次数，不是帧数。
+    local x,y=b.px+(active and b.vx or 0),b.py+(active and b.vy or 0)
+    local p=self.imgclass.native_profile
+    if b.af.wrap_x and t10_wrap_outside(x,y,p) then
+        if x < -192 then x=x+384+p.w;b.st.wrap_x.left=b.st.wrap_x.left-1
+        elseif x > 192 then x=x-384-p.w;b.st.wrap_x.left=b.st.wrap_x.left-1 end
+        if b.st.wrap_x.left<=0 then b.af.wrap_x=nil end
+    end
+    if b.af.wrap_y and t10_wrap_outside(x,y,p) then
+        if y < 0 then y=y+448+p.h;b.st.wrap_y.left=b.st.wrap_y.left-1
+        elseif y > 448 then y=y-448-p.h;b.st.wrap_y.left=b.st.wrap_y.left-1 end
+        if b.st.wrap_y.left<=0 then b.af.wrap_y=nil end
+    end
+    if OriginalBulletVisual.th10_cull(self,b.cull,x,t10_oy(y)) then return end
+    b.cull=math.max(0,b.cull-1)
+    if b.cancel~=0 then b.cancel=b.cancel-1 end
+    -- LuaSTG在本钩子后积分：反推帧首坐标，保留原作穿墙后的帧末坐标。
+    self.x,self.y=x-vx,t10_oy(y-vy)
+    self.vx,self.vy=vx,-vy
+    self.rot=-b.angle*RAD
+    self.navi=false
 end
 
 ---=====================================
@@ -881,13 +913,20 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
         px = sx, py = sy, angle = angle, speed = speed,
         vx = math.cos(angle) * speed, vy = math.sin(angle) * speed,
         tp = tp, ti = 0, af = {}, st = {}, cull = 10, cancel = 0,
-        eb = b,
+        eb = b, type=p.type,
+        spawn=math.floor((p.tf or 0)/2)%2==1 and 8 or (math.floor((p.tf or 0)/4)%2==1 and 15 or (math.floor((p.tf or 0)/8)%2==1 and 25 or 0)),
     }
     b.t10_color = t10_color(p.color, p.type)
     b.t10_type = p.type
+    b.rot=-angle*RAD
     -- 原作在生成当帧就 AdvanceTransformProgram 一次（BulletManager.cpp:767）
     t10_tp_advance(b.tb)
-    b.bound = b.tb.cull <= 0
+    if b.tb.spawn>0 then
+        b.x,b.y=sx-b.tb.vx*4,t10_oy(sy-b.tb.vy*4)
+        b.fogtime=b.tb.spawn
+        b.colli=false
+    end
+    b.bound = false
     class.t10_use_bullet_slot(slot,b)
     return true
 end

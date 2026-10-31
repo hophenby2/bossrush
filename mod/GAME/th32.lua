@@ -40,6 +40,11 @@ local SHAPES = {
     [6] = { ball_big, 32, 32, 16 }, [8] = { knife, 32, 32, 9 },
     [9] = { ball_huge, 64, 64, 32 },
 }
+for kind,shape in pairs(SHAPES) do
+    shape[1]=OriginalBulletVisual.native_style(6,kind,shape[1])
+    local p=OriginalBulletVisual.profiles[6][kind]
+    shape[2],shape[3]=p.w,p.h
+end
 local COLOUR16={16,1,2,3,4,5,6,7,8,9,10,11,12,12,14,16}
 local COLOUR8={15,2,4,6,8,10,12,16}
 local COLOUR4={2,6,10,12}

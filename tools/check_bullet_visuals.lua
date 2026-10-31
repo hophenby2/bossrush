@@ -184,4 +184,34 @@ player.x=300;hits=0;live.class.frame(live);check(hits==1,'真实 TH31 卡209 收
 local wide10=New(actual_lasers.th10,0,0,13,1,0,128,128,0,0,46)
 player.x,player.y=64,7.4;hits=0;wide10.class.frame(wide10);check(hits==1,'TH35 原作宽46激光命中半宽7.5px')
 player.y=7.6;hits=0;wide10.class.frame(wide10);check(hits==0,'TH35 宽激光碰撞公式保持原版')
-print(('子弹映射与激光尺寸回归通过：%d 项'):format(checks))
+-- 原生ANM的朝向不随代理图样改变；自转只影响绘制，不能反过来驱动物理rot。
+for _,case in ipairs({{6,2,grain_a},{7,9,knife},{8,11,square},{95,16,star_big},{10,16,star_big}}) do
+    local style=OriginalBulletVisual.native_style(case[1],case[2],case[3])
+    local o=NewSimpleBullet(style,2,0,0,2,90,false,0,false)
+    o.dx,o.dy,o.vx,o.vy=2,0,0,2
+    check(near(bullet.GetRenderRotation(o),90),'原生ANM随当前弹道旋转，忽略上一帧dx及代理星弹默认值')
+    calls={};bullet.render(o)
+    check(near(calls[#calls].rot,90),'绘制入口实际使用原作随动朝向')
+end
+for _,case in ipairs({{8,12,star_small,0.05235988},{8,13,star_small,-0.05235988},
+    {8,14,star_big,0.03141593},{8,15,star_big,-0.03141593},
+    {95,17,ball_huge,0.7853982},{10,17,ball_huge,0.7853982},
+    {10,24,ball_small,0.19634955},{10,26,grain_a,0.10471976}}) do
+    local o=NewSimpleBullet(OriginalBulletVisual.native_style(case[1],case[2],case[3]),2,0,0,2,13,false,0,false)
+    o.ani=30
+    local before={o.rot,o.vx,o.vy}
+    calls={};bullet.render(o)
+    check(near(calls[#calls].rot,-31*case[4]*180/math.pi),'ANM自转角速度及Y轴翻转与原作一致')
+    check(o.rot==before[1] and o.vx==before[2] and o.vy==before[3],'贴图自转不改变逻辑角和弹道')
+end
+local changing=NewSimpleBullet(OriginalBulletVisual.native_style(8,12,star_small),2,0,0,2,0,false,0,false)
+bullet.ChangeImage(changing,OriginalBulletVisual.native_style(8,2,grain_a),2)
+changing.vx,changing.vy=0,2
+check(near(bullet.GetRenderRotation(changing),90),'飞行中换弹型时同步切换ANM朝向策略')
+changing.ani=90
+bullet.ChangeImage(changing,OriginalBulletVisual.native_style(8,12,star_small),2)
+check(near(bullet.GetRenderRotation(changing),-0.05235988*180/math.pi),'飞行中换成自转弹时从新ANM首帧开始')
+changing.ani=91
+bullet.ChangeImage(changing,changing.imgclass,16,true)
+check(near(bullet.GetRenderRotation(changing),-2*0.05235988*180/math.pi),'缓时灰化换色不重置ANM自转相位')
+print(('子弹映射、旋转与激光尺寸回归通过：%d 项'):format(checks))

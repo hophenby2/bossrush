@@ -1,5 +1,65 @@
--- 原作移植的显示映射：只替换现成样式，不缩放弹体，不改变既有碰撞尺寸。
+-- 原作移植的显示与回收：保留代理图样尺寸/判定，原ANM朝向和出屏规则单独登记。
 local V = {}
+V.profiles = dofile('THlib/bullet/original_profiles.lua')
+local native_styles = {}
+function V.retire(o)
+    o._original_silent_remove=true
+    object.RawDel(o)
+end
+function V.native_style(game, kind, style)
+    native_styles[game] = native_styles[game] or {}
+    local bykind = native_styles[game]
+    bykind[kind] = bykind[kind] or {}
+    if bykind[kind][style] then return bykind[kind][style] end
+    local mapped = Class(style, {native_profile=assert(V.profiles[game][kind]), native_game=game,
+        native_type=kind, visual_style=style.visual_style or style,
+        collision_style=style.collision_style or style, size=style.size,
+        RenderFunc=style.RenderFunc, SetColorFunc=style.SetColorFunc}, true)
+    bykind[kind][style]=mapped
+    return mapped
+end
+
+-- TH07在折向/反弹期间允许连续出屏128帧；命令结束后倒数已积累的出屏帧。
+-- 用原始精灵尺寸检查本帧积分后的坐标，关闭LuaSTG默认边界，避免它提前截断回程。
+function V.th07_cull(o, delay, active)
+    o.bound=false
+    if delay~=0 then return end
+    local p=o.imgclass.native_profile or V.profiles[7][o.th07_sprite or 0]
+    local x,y=o.x+o.vx,o.y+o.vy
+    local outside=x+p.w/2 < -192 or x-p.w/2 > 192 or y+p.h/2 < -224 or y-p.h/2 > 224
+    if not outside then o.th07_out=0;return end
+    local off=o.th07_out or 0
+    if active then
+        off=off+1
+        if off>=128 then V.retire(o) end
+    elseif off==0 then V.retire(o)
+    else off=off-1 end
+    o.th07_out=off
+end
+function V.finish_bullet(o)
+    local game=o.imgclass.native_game
+    local p=o.imgclass.native_profile
+    if game==7 and not o.th07_cull_managed then
+        V.th07_cull(o,0,false)
+    elseif game==95 then
+        -- 文花帖的helper用精灵全宽/高作余量，没有TH07的128帧宽限。
+        local x,y=o.x+o.vx,o.y+o.vy
+        if x+p.w<=-192 or x-p.w>=192 or y+p.h<=-224 or y-p.h>=224 then V.retire(o) end
+    elseif game==10 and not o.tb then
+        local left=o.th10_cull_delay or 10
+        V.th10_cull(o,left,o.x+o.vx,o.y+o.vy)
+        o.th10_cull_delay=math.max(0,left-1)
+    end
+end
+function V.th10_cull(o,delay,x,y)
+    o.bound=false
+    local p=o.imgclass.native_profile
+    -- TH10原始g_BulletCullTop=-64，另外三边为-192/192/448。
+    if delay<=0 and (x+p.w/2<=-192 or x-p.w/2>=192 or y+p.h/2<=-224 or y-p.h/2>=288) then
+        V.retire(o)
+        return true
+    end
+end
 local styles = {}
 function V.style(original, visual)
     visual = visual.visual_style or visual

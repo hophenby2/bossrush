@@ -22,6 +22,7 @@ function bulletStyle:frame()
     end
 end
 function bulletStyle:del()
+    if self._original_silent_remove then return end
     New(bubble2, 'preimg' .. self._index, self.x, self.y, self.dx, self.dy, 11, self.imgclass.size, 0,
             Color(0xFFFFFFFF), Color(0xFFFFFFFF), self.layer, 'mul+add')
 end
@@ -61,11 +62,12 @@ do
     function other_class.render(blend)
         return function(self)
             SetImageState('fade_' .. self.img, blend, 255 * self.timer / 11, 255, 255, 255)
-            Render('fade_' .. self.img, self.x, self.y, self.rot, (11 - self.timer) / 11 + 1)
+            Render('fade_' .. self.img, self.x, self.y, bullet.GetRenderRotation(self), (11 - self.timer) / 11 + 1)
         end
     end
     function other_class.del(blend)
         return function(self)
+            if self._original_silent_remove then return end
             New(bubble2, 'fade_' .. self.img, self.x, self.y, self.dx, self.dy, 11, 1, 0, Color(0xFFFFFFFF), Color(0x00FFFFFF), self.layer, blend)
         end
     end

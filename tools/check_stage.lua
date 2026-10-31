@@ -466,7 +466,8 @@ _G.NewSimpleBullet = function(style, col, x, y, v, a, aim, omiga, stay, destroya
     local b = { x = x, y = y, rot = rot,
                 vx = (v or 0) * math.cos(av), vy = (v or 0) * math.sin(av),
                 _index = Forbid(col or 1, 1, 16), timer = 0, ani = 0,
-                group = 1, _live = true, bound = true, style = style,
+                group = 1, _live = true, bound = not (style and (style.native_game==7 or style.native_game==95 or style.native_game==10)),
+                style = style, imgclass = style,
                 _sx = x, _sy = y, _sf = (_G.__frame or 0), _v0 = v or 0, _a0 = a or 0, _aim = aim and true or false,
                 r = _styleRadius[_styleNames[style and (style.collision_style or style)] or ""] or 4 }
     markAimed(b, x, y, b.vx, b.vy, aim)
@@ -490,6 +491,9 @@ _G.Newcharge_in = function() end
 _G.Newcharge_out = function() end
 _G.ToBigScreen = function() end
 _G.DefaultRenderFunc = function() end
+-- 引擎属性入口绕过对象的Lua元表（enemybase用它改本帧colli而保留_colli）。
+_G.SetAttr = function(o,k,v) rawset(o,k,v) end
+_G.GetAttr = function(o,k) return rawget(o,k) end
 _G.SetViewMode = function() end
 
 -- 引擎里 status='del' 之后，manager 会回调该对象的 del（LuaBinding/modern/GameObject.cpp
@@ -1311,6 +1315,8 @@ local function step_objects()
             --   `attempt to compare nil with number`）自检一个都抓不到。
             --   th20 的 `freeze_layer` 就是这么在真机上崩的。
             if b.frame_other then b.frame_other(b) end
+            -- 原生弹型的回收在frame_other以后执行，保留真实框架的字段与调用顺序。
+            if b.imgclass and b.imgclass.native_profile and IsValid(b) then OriginalBulletVisual.finish_bullet(b) end
             if b.render_other then b.render_other(b) end
             -- BulletManager 先推进 transform / frame_other，再积分位置；
             -- 原顺序会让动态弹滞后一帧。

@@ -135,11 +135,36 @@ local b=New(C.TH34_cmdbullet,ball_small,2,0,0,2,0,
 for _=1,3 do tick() end
 check(near(b.x,12) and near(b.vx,5),'0x20 三帧位移必须是3+4+5')
 reset()
-local delayed=New(C.TH34_cmdbullet,ball_small,2,0,0,2,0,
+local delayed=New(C.TH34_cmdbullet,ball_small,2,300,0,0,0,
     {flags=0x2000,list={{type=0x2000,dur=3}}})
 check(not delayed.bound,'spawnDelay 在出生时关闭出屏回收')
 tick();tick();check(not delayed.bound,'spawnDelay 计时未满时仍保留槽位')
-tick();check(delayed.bound,'spawnDelay 到点恢复出屏回收')
+tick();check(not IsValid(delayed),'spawnDelay 到点按原生边界释放场外弹')
+reset()
+local returning=New(C.TH34_cmdbullet,ball_small,2,230,0,1,180,
+    {type=0x40,dur=300,loop=1,angle=0,speed=1})
+tick()
+check(IsValid(returning) and not returning.bound and returning.th07_out==1,
+    'TH07折向中屏外弹保留原槽位，不受LuaSTG的224边界提前回收')
+for _=1,40 do tick() end
+check(IsValid(returning) and returning.x<192 and returning.th07_out==0,'TH07回程弹重新入屏后清零出屏计数')
+reset()
+local timeout=New(C.TH34_cmdbullet,ball_small,2,300,0,0,0,
+    {type=0x40,dur=300,loop=1,angle=0,speed=0})
+for _=1,127 do tick() end
+check(IsValid(timeout) and timeout.th07_out==127,'TH07连续屏外第127帧仍存活')
+tick();check(not IsValid(timeout),'TH07连续屏外第128帧释放')
+reset()
+local boss,card=start(3444)
+for _=1,212 do tick(boss,card) end
+local black
+for _,o in ipairs(objects) do if IsValid(o) and o.c_list and #o.c_list==5 then black=o;break end end
+check(black and black.c_list[2].dur==60 and black.c_list[3].dur==180,
+    '二重黑死蝶保留Sub110..113两条原生0x2000记录')
+black.x,black.y,black.vx,black.vy=300,0,0,0
+for _=1,121 do if IsValid(black) then black.class.frame(black) end end
+check(IsValid(black) and black.c_spawn_delay>0,'二重黑死蝶折向后仍保留屏外180帧延迟')
+card.del(boss);task.Clear(boss)
 reset()
 local pool=upvalue(C.th07_cut_bullets,'pool4')
 local function add(kind,x,y,v)
@@ -197,6 +222,15 @@ for _,case in ipairs({{4476,416},{4447,346},{4448,466}}) do
     end
     check(hasLeft and hasRight,'三姐妹必须同时运行另外两人的实体分支：'..case[1])
     check(first and math.abs(first-case[2])<=1,'第一条伴奏激光的源ECL时点：'..case[1]..'/'..tostring(first))
+    if case[1]==4476 then
+        check(near(boss.x,0) and near(boss.y,128),'合葬主机按Sub132移到(192,96)后停驻，不能凭观感添加游走')
+        local before=#objects
+        for _,o in ipairs(objects) do if IsValid(o) and o.hp==999999 then
+            o.class.kill(o)
+            check(o.task==nil,'陪战Boss结束时立即清除协程')
+        end end
+        check(#objects==before,'999999占位血量不再生成十万个死亡圆环')
+    end
     for _=1,320 do tick(boss,card) end
     if case[1]==4448 then
         check(#C.th07_lasers==6,'大合葬的三人各两条旋转激光')
@@ -241,6 +275,36 @@ for _=1,3 do tick() end
 check(IsValid(delayed) and not delayed.bound,'TH10 0x2000在第三帧仍保留场外弹')
 tick()
 check(not IsValid(delayed) or delayed.bound,'TH10 检查完出屏再递减延迟')
+reset()
+local wrapped={aim=1,c1=1,c2=1,s1=2,s2=0,astep=0,angle=0,type=14,color=2,
+    ex={[0]={a=1,k=0x100000,i0=4,i1=0,f0=0,f1=0}}}
+emit(wrapped,206,224,0,0,0)
+local torus=objects[#objects]
+tick()
+check(near(torus.x,-206) and torus.tb.st.wrap_x.left==3,'TH10穿过右边后平移384+30像素，扣一次穿墙次数')
+for _=1,3 do torus.x=206;tick() end
+check(torus.tb.af.wrap_x==nil and torus.tb.st.wrap_x.left==0,'TH10四次穿墙耗尽后关闭变换，不能当四帧定时器')
+torus.x=206;tick()
+check(torus.x>192,'TH10穿墙次数耗尽后不再传送')
+reset()
+wrapped.s1=0;wrapped.ex[0].k=0x200000;wrapped.ex[0].i0=2
+emit(wrapped,0,-16,0,0,0)
+local vertical=objects[#objects];tick()
+check(near(vertical.y,-238) and vertical.tb.st.wrap_y.left==1,'TH10纵向穿墙使用448+精灵高，并翻转Y坐标')
+reset()
+local plain={aim=1,c1=1,c2=1,s1=0,s2=0,astep=0,angle=0,type=3,color=2,ex={}}
+emit(plain,0,-46,0,0,0)
+local top=objects[#objects]
+for _=1,12 do tick() end
+check(IsValid(top) and near(top.y,270) and not top.bound,'TH10顶部原生-64余量保留越过LuaSTG256边界的弹')
+top.y=300;tick();check(not IsValid(top),'TH10超过原生顶部余量才静默回收')
+reset()
+local torus_boss,torus_card=start(3624)
+for _=1,90 do tick(torus_boss,torus_card) end
+local active_wrap=false
+for _,o in ipairs(objects) do if IsValid(o) and o.tb and o.tb.af.wrap_x then active_wrap=true end end
+check(active_wrap,'神秘「ヤマトトーラス」的实际枪接通横向四次穿墙')
+torus_card.del(torus_boss);task.Clear(torus_boss)
 reset()
 local spawn=upvalue(cards[3600],'spawn_bullet')
 local filled=0;for _=1,2000 do if spawn(0,0,0,0,160,2) then filled=filled+1 end end
