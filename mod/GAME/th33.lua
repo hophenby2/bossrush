@@ -8,10 +8,10 @@
 ---world08 的 7 幕数据来源是
 ---th095/src/SceneSelect.cpp:138-145 的 TH095_SCENE 表（scoreIndex, 关卡组, 幕, ECL, BGM）：
 ---  71 ecl17_a 幽幽子 幽雅「死出の誘蛾灯」    75 ecl17_c 幽幽子 死符「酔人の生、死の夢幻」
----  72 ecl16_b 妖梦   密符「御大師様の秘鍵」  76 ecl16_d 妖梦   超人「飛翔役小角」
+---  72 ecl16_b 八云蓝   密符「御大師様の秘鍵」  76 ecl16_d 八云蓝   超人「飛翔役小角」
 ---  73 ecl17_b 幽幽子 蝶符「鳳蝶紋の死槍」    77 ecl17_d 幽幽子 「死蝶浮月」
----  74 ecl16_c 妖梦   行符「八千万枚護摩」
----同表的 scene70=ecl16_a 是非符，现已补入妖梦组第一张；不显示符卡名。
+---  74 ecl16_c 八云蓝   行符「八千万枚護摩」
+---同表的 scene70=ecl16_a 是非符，现已补入八云蓝组第一张；不显示符卡名。
 ---7 幕共用同一份场景资源（world08.std / enm16,17.anm / bgm th095_04.wav），所以两班人马
 ---共用 BGM 与背景：BGM = "TH07_1"（幽雅に咲かせ、墨染の桜）、背景 = TH095_bg。
 ---每个数值都标了它在反汇编里的出处：`/tmp/B_ecl16_{b,c,d}.txt` 与 `/tmp/B_ecl17_{a,b,c,d}.txt`
@@ -68,10 +68,10 @@
 ---= world06）—— 公共工具" 往下），数据来源同样是 SceneSelect.cpp:120-127 的 TH095_SCENE
 ---表（scene 50..57；同表里这一组第 1 幕（橙）是**非符**，按原作不亮卡名 ——
 ---它的 t=130 是 id=0，opcode 0 在 EclRunLow.inl 的 switch 里没有分支 ⇒ NOP）：
----  50 ecl12_a 橙 非符（不亮卡名）              51 ecl13_a 八云蓝 人智剣「天女返し」
----  52 ecl12_b 橙 星符「飛び重ね鱗」             53 ecl13_b 八云蓝 妄執剣「修羅の血」
----  54 ecl12_c 橙 鬼神「鳴動持国天」             55 ecl13_c 八云蓝 天星剣「涅槃寂静の如し」
----  56 ecl12_d 橙 化猫「橙」                     57 ecl13_d 八云蓝 四生剣「衆生無情の響き」
+---  50 ecl12_a 橙 非符（不亮卡名）              51 ecl13_a 妖梦 人智剣「天女返し」
+---  52 ecl12_b 橙 星符「飛び重ね鱗」             53 ecl13_b 妖梦 妄執剣「修羅の血」
+---  54 ecl12_c 橙 鬼神「鳴動持国天」             55 ecl13_c 妖梦 天星剣「涅槃寂静の如し」
+---  56 ecl12_d 橙 化猫「橙」                     57 ecl13_d 妖梦 四生剣「衆生無情の響き」
 ---八幕共用 world06 与 enm12/13.anm；整组 BGM 沿用 "TH07_1"、背景 TH095_bg。
 ---每个数值都标了它在反汇编里的出处：`/tmp/W6d_ecl1{2,3}_{a..d}.txt`
 ---（脚本 /tmp/d95d.py 不入库；数据在 `[th095] …/data/ecl1{2,3}_{a..d}.ecl`）。
@@ -114,7 +114,7 @@
 ---  原作 85 幕全是**自由选关**、本来没有先后；这里按角色归成二十五个 boss 组
 ---  （AGENTS.md §8 与 th31.lua 的教训：**一个角色一个组**，boss.CreateGroup 一次建一组）：
 ---      world08：组 1 = 西行寺幽幽子：71 → 73 → 75 → 77（4 张）
----              组 2 = 魂魄妖梦：  72 → 74 → 76（3 张）
+---              组 2 = 八云蓝：  72 → 74 → 76（3 张）
 ---      Stage EX：组 3 = 芙兰朵露：100 → 101（2 张）
 ---                组 4 = 八云紫：  102 → 103（2 张）
 ---                组 5 = 藤原妹红：104 → 105（2 张）
@@ -126,7 +126,7 @@
 ---      Stage 7： 组 11 = 十六夜咲夜：60 → 62 → 64 → 66（4 张）
 ---                组 12 = レミリア・スカーレット：61 → 63 → 65 → 67（4 张）
 ---      Stage 6： 组 13 = 橙：50 → 52 → 54 → 56（4 张）
----                组 14 = 八云蓝：51 → 53 → 55 → 57（4 张）
+---                组 14 = 妖梦：51 → 53 → 55 → 57（4 张）
 ---      Stage 5： 组 15 = 红美铃：40 → 42 → 44 → 46（4 张，第 1 张非符）
 ---                组 16 = 帕秋莉・ノーレッジ：41 → 43 → 45 → 47（4 张）
 ---      Stage 4： 组 17 = メディスン・メランコリー：30 → 33 → 35 → 38（4 张，第 1 张非符）
@@ -168,21 +168,20 @@
 ---     ★ 例外：拿到快门数之后**怎么算伤害**这一头按作者要求改了 —— 见差异 9。
 ---  2) 弹型：原作靠 g_PhotoBulletCollisionSizes（th095/src/BulletManager.cpp:118-122，
 ---     存的是**直径**、命中框取 ±size/2，见同文件 :1155）区分二十几种弹。本关按作者
----     指定把小玉换成 **butterfly（幽幽子系）与 water_drop（妖梦系）**两种贴图；
+---     指定把小玉换成 **butterfly（幽幽子系）与 water_drop（八云蓝系）**两种贴图；
 ---     原作的大玉（type 17，直径 28 ⇒ 半径 14）用本仓库最大的一档 **ball_huge**。
 ---  3) 回收边界：PhotoBulletIsOutsidePlayfield（th095/src/BulletManager.cpp:761-769）
 ---     用主弹精灵的全宽/高作场地余量。本关关闭引擎自动回收，由 visual_match.finish_bullet
----     按原始 ANM 尺寸检查积分后的坐标。原作全游戏共用640弹槽（同文件:310-345），
+---     按原始 ANM 尺寸检查积分后的坐标。原作全游戏共用0x640（1600）弹槽，
 ---     不应把这条回收规则误写成弹心越界立即消失，也不能套用TH07的128帧回程宽限。
 ---  4) 判定框：Sub2 的 `ins_77(24,24)`（子机是 `77(8,8)`）设的是敌人判定框
 ---     （EclRunLow.inl:663-670 → hitboxDimensions）。TH095 没有自机子弹（th095/src 里
 ---     没有 PlayerBullet 一类文件，「射击键」就是快门），这个框在拍照关里读不出用处；
 ---     我们这边本体是要用子弹打掉的 HP Boss，判定框交给 boss_system 的默认值
 ---     —— 全仓库没有任何一张卡自己设过判定框，为一张卡破例反而不一致。
----  5) 子机：原作用 ins_83 / ins_84 生成**真的子敌机**（各自跑自己的 ECL 子程序、
----     有自己的生命），它们会一直累积、由 640 弹槽兜底。本仓库没有「无限累积的子机」
----     这种写法（§7.3 的装饰层都是自绘或真弹），所以每一幕都把它改成
----     **数量受限、有明确寿命、淡出离场**的自绘 object 或真弹（逐卡注释里写明）。
+---  5) 子机：ins_83/84的第一个参数是子程序编号，不能当数量。敌机另有128槽
+---     （EnemyManagerUpdate.cpp:380），与1600个点弹槽分开。Sub4/Sub5的独立发弹源
+---     和Sub8的实际速度/精灵边界由各卡维护，不能因为代理贴图而改变发弹位置与寿命。
 ---
 ---──────────────────── 第 5 幕（死符「酔人の生、死の夢幻」） ────────────────────
 ---形状（三句话）
@@ -245,21 +244,14 @@
 --- 10) 原作每一发的弹数 = ins_86..94 的 `count1 × count2`（th095/src/BulletManager.cpp
 ---     的 SpawnBulletPattern :699-726），速度公式是 count2 > 1 时
 ---     speed1 − (speed1−speed2)×index2/count2、否则 speed1（同文件 :340-346）。
----     本文件**不再打折**：各卡一律按操作数里的 count1/count2 原样发，装饰（子机 /
----     蛾 / 蝶）才做数量与寿命上的近似；原作靠全游戏 640 弹槽 + 拍照清屏兜底，
----     我们两条都没有，同屏弹数会落在原作的量级上（实测见文末）。
----     另一处刻意不做的近似：原作的 SPAWN_FAST / SPAWN_SLOW（flags 的 0x2 / 0x8）会把弹
----     先退到 velocity×4 的位置、再用几帧滑回出膛点（BulletManager.cpp:445-478）；
----     本文件没有这层出场滑动，弹一出生就按最终速度飞 —— 弹数、角度、速度曲线都不变，
----     只是每颗弹在它自己那条轨迹上比原作早几帧到位。
---- 11) 全局游戏速度（慢放）：Stage 6 的 51/53/55/57（八云蓝四张，CARD_ID 495/497/499/501）
+---     各卡按count1/count2原样发。th33_native统一维护1600槽、出生退四帧速度、
+---     8/15/25帧半速过渡，出生当帧认领变换但不推进计时；清屏进入原生退场ANM。
+--- 11) 全局游戏速度（慢放）：Stage 6 的 51/53/55/57（妖梦四张，CARD_ID 495/497/499/501）
 ---     在 Sub3 里用 `ins_119(11)` 触发扩展回调 11（EclExtended.cpp 的
 ---     PublishGameSpeed：把 g_AnmGameSpeed 设成 floatV7，卡里写 0.25 或 0.5），
 ---     再配 `ins_118(12)/(13)` 切背景 VM 状态，做出「慢镜头 + 换色」的演出；
----     ins_119(-1) 收掉。本仓库没有「把整个游戏减速」的接口（改了会连自机、自机弹、
----     背景一起慢下来，和本仓库的帧驱动不符）⇒ **这四张一律不实现慢放**，
----     弹幕本身的时间轴仍按原作帧数跑。**屏幕上的弹幕形状不变**，只是少了那层慢镜。
----     同理 ins_118(12)/(13)/(15)/(16)（背景 VM 状态）也不实现。
+---     ins_119(-1)收掉。这里用CYFPS分数逻辑帧还原0.25/0.24/0.5速，换卡恢复旧时钟。
+---     背景VM换色仍由本项目符卡背景代理。
 ---     （同组橙的四张 494/496/498 用的是 `ins_119(8)` = SpawnEnemyMarkerVm，
 ---     那是给本体挂一个标记 VM 的装饰，与慢放无关，同样不实现。）
 ---=====================================
@@ -466,7 +458,32 @@
 local object, boss = object, boss
 local enemybase = enemybase
 local task, ran = task, ran
-local New, NewSimpleBullet = New, NewSimpleBullet
+local New, rawSimpleBullet = New, NewSimpleBullet
+local PhotoNative=dofile('mod/GAME/th33_native.lua')
+local PhotoSources=dofile('mod/GAME/th33_sources.lua')
+local function register_photo_card(group,level,title,id,...)
+    local source=assert(PhotoSources[id],'缺少文花帖原版ECL来源：'..tostring(id))
+    for _,unit in ipairs(group) do
+        local card=unit[1]
+        -- ins114在进场途中才开始倒数，不能把85幕统一截成50秒。
+        card.t3=source.timeout_start+source.timeout
+        card.original_ecl=source
+    end
+    return boss.card.add(group,level,title,id,...)
+end
+local PHOTO_HOOKS=setmetatable({},{__mode='k'})
+local function NewSimpleBullet(style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,frame,render,flags)
+    if not PhotoNative.reserve() then return nil end
+    local meta=frame and PHOTO_HOOKS[frame]
+    local o=rawSimpleBullet(style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,
+        function(b) PhotoNative.step(b,frame) end,render)
+    PhotoNative.begin(o,flags or (meta and meta.flags) or 0,meta and frame)
+    return o
+end
+-- 固定枪也显式传入二进制ECL的flags，不能统一假定FAST或无出生过渡。
+local function SpawnPhoto(flags,style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,frame,render)
+    return NewSimpleBullet(style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,frame,render,flags)
+end
 local PlaySound, IsValid = PlaySound, IsValid
 local SetImageState, Render, RenderRect = SetImageState, Render, RenderRect
 local Class = Class
@@ -550,7 +567,7 @@ do  -- 符卡背景
     end
 end
 
-do  -- 妖梦的符卡背景
+do  -- 八云蓝的符卡背景
     ---同一套白玉楼贴图，但**层数、转速、缩放、配色**全换一组：幽幽子那套压在紫里，
     ---这一套压成青白（刀光 / 半灵），换人了一眼就看得出来（§7.6）。
     class.scbg2 = Class(_SC_BG)
@@ -682,7 +699,7 @@ end
 
 do  -- Stage 7：咲夜的符卡背景（银白 / 时停）
     ---TH095 的 world07 是「红魔馆」那一幕（咲夜与レミリア）。原作那张 world07.std 的贴图
-    ---本仓库没有，改用 TH07（妖妖梦）与 TH09 的银白/冰蓝系贴图（th07_9 / th09_5 /
+    ---本仓库没有，改用 TH07（妖八云蓝）与 TH09 的银白/冰蓝系贴图（th07_9 / th09_5 /
     ---th08_15 都已在上面几套背景里用过），配色压成月白。理由同上面几套：换人换背景（§7.6）。
     class.scbg11 = Class(_SC_BG)
     function class.scbg11:init()
@@ -726,7 +743,7 @@ do  -- Stage 6：橙的符卡背景（橙黄 / 猫）
     end
 end
 
-do  -- Stage 6：八云蓝的符卡背景（靛蓝 / 星）
+do  -- Stage 6：妖梦的符卡背景（靛蓝 / 星）
     ---同一幕的另一位主角：底换成 TH07 的星纹贴图（th07_6 + th07_9），配色压成靛蓝。
     ---和 th095.lua:29-39 的 ran_bg 是同一套贴图的不同配法（那张是她 Stage 2 的背景）。
     class.scbg14 = Class(_SC_BG)
@@ -962,6 +979,7 @@ if not boss.photo_damage_patch then
             ---本关卡没标记过的 boss：原样交给原函数（THlib/enemy/boss.lua:66）。
             return boss_take_damage2(self, dmg)
         end
+        if self.protect then return end
         ---拍中本体：本卡计数 +1（photo_index 靠它；见上面那一节）。
         self.photo_hit_count = (self.photo_hit_count or 0) + 1
         photo_hits = photo_hits + 1
@@ -997,6 +1015,7 @@ local function photo_damage_on(boss_obj, limit)
 end
 
 local function photo_damage_off(boss_obj)
+    PhotoNative.restore_rate(boss_obj)
     boss_obj.photo_damage_limit = nil
 end
 
@@ -1006,7 +1025,7 @@ end
 ---    boss.CreateGroup(1/2, 31) 按「组号 + 字母 + 关卡号」枚举，正好各建一个。
 ---  · ⚠ Define 必须**先于** card.add：add 会当场按 "<字母><关卡号>" 查 _editor_boss，
 ---    晚一行就报「找不到 boss」（boss_card.lua:119；th31.lua 那边踩过）。
----  · img = Resources/BossImage 下的行走图名，幽幽子 "Yuyuko"、妖梦 "Youmu"
+---  · img = Resources/BossImage 下的行走图名，幽幽子 "Yuyuko"、八云蓝 "Ran"
 ---    （BossImageList.lua 里两个都登记过）。
 ---  · 两人共用 BGM 与背景：原作 world08 的 7 幕本来就是同一份场景资源
 ---    （SceneSelect.cpp:138-145 全是 world08.std + bgm/th095_04.wav）。
@@ -1027,8 +1046,8 @@ end
 local LEVEL = 31
 boss.Define("1a", "西行寺幽幽子", "TH07_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg, "Yuyuko", LEVEL)
-boss.Define("2a", "魂魄妖梦", "TH07_1", TH095_bg,
-        { 128, field_y(-64) }, class.scbg2, "Youmu", LEVEL)
+boss.Define("2a", "八云蓝", "TH07_1", TH095_bg,
+        { 128, field_y(-64) }, class.scbg2, "Ran", LEVEL)
 
 ---──────────────────── Stage EX（scene group 10）的四个 boss 组 ────────────────────
 ---TH095 的 Stage EX 是 scene group 10 = scene 100..107（SceneSelect.cpp:165-172），
@@ -1117,21 +1136,21 @@ boss.Define("12a", "レミリア・スカーレット", "TH07_1", TH095_bg,
 ---──────────────────── Stage 6（scene group 5 = world06）的两个 boss 组 ────────────────────
 ---TH095 的 scene group 5 是 scene 50..57（SceneSelect.cpp:120-127），八幕分属两位角色、
 ---同一张场地 world06，BGM 全部是 bgm/th095_03.wav（= music.lua 的 "TH07_1"）：
----  50 ecl12_a 橙 非符                     51 ecl13_a 八云蓝 人智剣「天女返し」
----  52 ecl12_b 橙 星符「飛び重ね鱗」          53 ecl13_b 八云蓝 妄執剣「修羅の血」
----  54 ecl12_c 橙 鬼神「鳴動持国天」          55 ecl13_c 八云蓝 天星剣「涅槃寂静の如し」
----  56 ecl12_d 橙 化猫「橙」                 57 ecl13_d 八云蓝 四生剣「衆生無情の響き」
----按「一个角色一个组」拆：组 13 = 橙（50/52/54/56）、组 14 = 八云蓝（51/53/55/57）。
+---  50 ecl12_a 橙 非符                     51 ecl13_a 妖梦 人智剣「天女返し」
+---  52 ecl12_b 橙 星符「飛び重ね鱗」          53 ecl13_b 妖梦 妄執剣「修羅の血」
+---  54 ecl12_c 橙 鬼神「鳴動持国天」          55 ecl13_c 妖梦 天星剣「涅槃寂静の如し」
+---  56 ecl12_d 橙 化猫「橙」                 57 ecl13_d 妖梦 四生剣「衆生無情の響き」
+---按「一个角色一个组」拆：组 13 = 橙（50/52/54/56）、组 14 = 妖梦（51/53/55/57）。
 ---★ 别把两人塞进同一个组的 a、b：CreateGroup 会把 a、b 一起建出来（两人同时上场）。
 ---出生点（ins_63 的第一个参数）：50/51/53/55 是 (-128, 288)、52 是 (128, 288)、
 ---56/57 是 (-2, 288)；Define 里只能给一个，所以八张卡各自的 init 会照 Sub2 的 ins_63
 ---把本体摆回原位（和 Stage 7 的 ins_63 一样）。
----立绘：橙 "Chen"、八云蓝 "Ran"（BossImageList.lua:24/32 都登记过，
+---立绘：橙 "Chen"、妖梦 "Youmu"（BossImageList.lua:24/32 都登记过，
 ---和 mod/GAME/th07.lua:223/833/1018 用的是同一对）。
 boss.Define("13a", "橙", "TH07_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg13, "Chen", LEVEL)
-boss.Define("14a", "八云蓝", "TH07_1", TH095_bg,
-        { -128, field_y(-64) }, class.scbg14, "Ran", LEVEL)
+boss.Define("14a", "魂魄妖梦", "TH07_1", TH095_bg,
+        { -128, field_y(-64) }, class.scbg14, "Youmu", LEVEL)
 
 ---──────────────────── Stage 5（scene group 4 = world05）的两个 boss 组 ────────────────────
 ---TH095 的 scene group 4 是 scene 40..47（SceneSelect.cpp:110-118），八幕分属两位角色、
@@ -1225,7 +1244,7 @@ boss.Define("25a", "ルーミア", "TH09_5_1", TH095_bg,
         { -128, field_y(-64) }, class.scbg25, "Rumia", LEVEL)
 
 -- 场景70 是原作 world08 的第一幕非符；文件原先从71开始，漏掉了这一幕。
--- 回调晚绑定，使它按原作排在妖梦组第一张，出弹工具仍复用下面的 TH095 原语。
+-- 回调晚绑定，使它按原作排在八云蓝组第一张，出弹工具仍复用下面的 TH095 原语。
 do
     local card=boss.card.New("",0,0,60,150)
     card.th095_source={file="ecl16_a.ecl",scene=70,sub=2}
@@ -1233,7 +1252,7 @@ do
     function card:init() class.th095_scene70_init(self) end
     function card:frame() end
     function card:del() class.th095_scene70_del(self) end
-    boss.card.add({{card,"2a"}},LEVEL,"妖梦 非符（场景70）",4480)
+    register_photo_card({{card,"2a"}},LEVEL,"八云蓝 非符（场景70）",4480)
 end
 
 do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 张）
@@ -1287,7 +1306,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     ---0.75°，越拉越开 —— 这就是「两组蝶弹」在屏幕上分成两圈的原因。换算到我们这边
     ---（TH095 正角 = 顺时针 ⇒ 取反）：floatV0 那组每轮 −BASE_STEP、floatV1 那组 +BASE_STEP。
     local BASE_STEP = 0.75
-    local RING_STYLE = butterfly
+    local RING_STYLE = sg_visual(butterfly,15)
     ---色号照原作：两组分别是 color 4 与 color 5。butterfly 不是 colorful 样式 ⇒
     ---贴图下标 = ceil(色号/2)（Lresources.lua:208 的 LoadImageGroup + bulletStyle.lua:64
     ---的 init），于是两组正好落在 butterfly2 / butterfly3 **两张不同的贴图**上。
@@ -1332,7 +1351,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     ---（AGENTS §9 A2 会当场报错）⇒ 取同色系的紫 4，和上面两组蝶弹同一族。
     local AIM_COUNT = 8
     local AIM_SPEED = 0.8
-    local AIM_STYLE = ball_huge
+    local AIM_STYLE = sg_visual(ball_huge,17)
     local AIM_COLOR = ex_color(0, 17)
     local AIM_GAP_BASE, AIM_GAP_STEP, AIM_GAP_MIN = 120, 10, 50
     local AIM_LIMIT = 7                     -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
@@ -1424,10 +1443,10 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
 ---spin = 这一圈的自转角速度（度/帧），两组取相反符号。
     local function fire_ring(owner, base, color, spin)
         for i = 0, RING_COUNT - 1 do
-            local b = NewSimpleBullet(RING_STYLE, color, owner.x, owner.y, RING_SPEED,
+            local b = SpawnPhoto(546,RING_STYLE, color, owner.x, owner.y, RING_SPEED,
                     base + i * 360 / RING_COUNT, false, 0, false,
                     nil, nil, nil, ring_frame)
-            b.ring_spin = spin
+            if b then b.ring_spin = spin end
         end
         -- transformFlags 的 0x200 = PLAY_SPAWN_SOUND：一整圈只响一声（BulletManager.cpp:717-723）。
         PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -1466,7 +1485,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
         task.New(owner, function()
             while true do
                 for i = 0, AIM_COUNT - 1 do
-                    NewSimpleBullet(AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED,
+                    SpawnPhoto(514,AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED,
                             i * 360 / AIM_COUNT, true, 0, false)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -1554,7 +1573,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     end
 
     local LEVEL = 31
-    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--幽雅「死出の誘蛾灯」
 
 do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 张）
@@ -1589,7 +1608,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         { delay = 90, x = 64, y = -64, volley_color = 10, spear_color = 5 },
     }
 
----子机（Sub5）在 t=60 那一帧一次做四件事：
+---子机（Sub5）在t=60同时发光、放乱枪、挂子上下文并开始移动：
 ---  ins_145(12, intV7, 8, playerAngle, 256, 24) —— 直激光（色号 = intV7）
 ---  ins_94(1, intV6, **64**, 4.0, 0.5, playerAngle+80°/+280°, 512) —— 64 发的 RANDOM 乱枪
 ---  ins_117(0,4) —— 起 Sub4 子上下文（下面那个每 2 帧一发单发直弹的「死槍」）
@@ -1598,9 +1617,6 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local DRONE_DASH = 8
     local LASER_SPEED = 8                   -- ins_145 第 3 个操作数
     local LASER_LEN = 256                   -- 第 5 个：最大长度
-    local LASER_GROW = LASER_LEN / LASER_SPEED  -- 32 帧长满
-    local LASER_W = 10                      -- 我们 laser 的 w（命中半宽 = w/2，见 laser.lua）
-    local LASER_SUSTAIN, LASER_FADE = 40, 20
 
 ---Sub4（子上下文）：ins_87(15, intV7, 1, 1, 0.02, 1.5, playerAngle, 0.0327249, 536)。
 ---★ 对着 ShotArgs 读一遍：**count1 = 1**、intV7 是**色号**（旧注释把它当成发数，错）。
@@ -1618,7 +1634,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local FAN_SPEED = 0.02
     local FAN_ACCEL = 1 / 120
     local FAN_ACCEL_FRAMES = 120
-    local FAN_STYLE = butterfly
+    local FAN_STYLE = sg_visual(butterfly,15)
     local FAN_COLOR = ex_color(3, 15)
 
 ---乱枪（ins_94，aimMode 8 = RANDOM）：angle = random(angle ∓ angleStep)、
@@ -1635,7 +1651,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local VOLLEY_ARC = 100
     local VOLLEY_COUNT = 64                 -- ins_94 的 count1
     local VOLLEY_SPEED1, VOLLEY_SPEED2 = 4.0, 0.5
-    local VOLLEY_STYLE = ball_mid_c
+    local VOLLEY_STYLE = sg_visual(ball_mid_c,1)
 
     ---子机的淡入 / 淡出（它在原作里靠「飞出屏幕就回收」，我们照做）。
     local DRONE_FADE_IN = 15
@@ -1666,7 +1682,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local sub3tok = nil
 
     local CARD_NAME = "蝶符「鳳蝶紋の死槍」"
-    ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900（同卡 71/75）。
     local CARD_HP = 900
@@ -1678,36 +1694,20 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     ---本卡放出的激光（卡结束时统一 RawDel，§7.9 第 9 条）。
     local lasers = {}
 
-    ---一条「死槍」激光：CyGrow 以 8 px/帧 长到 256（32 帧）→ 维持 40 帧 → 收 20 帧。
-    ---⚠ 计时**不能挂在 laser 自己身上**：laser:frame 只在真机里调 task.Do
-    ---（THlib/laser/laser.lua:65），而 tools/check_stage.lua 的 laser 桩件不调 ——
-    ---挂上去自检里永远不收，7200 帧会攒下上百条激光、看着像泄漏。
-    ---所以计时挂在 boss 身上（boss_system 每帧 task.Do），换卡时被 task.Clear 清掉。
+    ---ins145的宽24直线光没有维持/收束时限，头尾均出场地才回收。
     local function fire_spear_laser(drone, x, y, a, color)
-        local owner = drone.owner
-        local l = New(laser, color, x, y, a, 0, 0, 0, LASER_W, LASER_W, 0)
-        l._native_laser_straight = true
-        laser.CyGrow(l, LASER_SPEED, LASER_GROW, 3, a, true)
-        lasers[#lasers + 1] = l
-        drone.my_lasers[#drone.my_lasers + 1] = l
-        task.New(owner, function()
-            task.Wait(LASER_GROW + LASER_SUSTAIN)
-            if IsValid(l) then
-                laser._TurnOff(l, LASER_FADE, true)
-                task.Wait(LASER_FADE)
-                if IsValid(l) then
-                    object.Del(l)
-                end
-            end
-        end)
+        -- ins145生成独立移动激光；长满后整根前进，子机出界不结束它的寿命。
+        local l=New(laser,color,x,y,a,0,0,0,24,0,0)
+        PhotoNative.straight(l,LASER_LEN,24,LASER_SPEED)
+        lasers[#lasers+1]=l
     end
 
     ---窄扇里每一颗的逐帧钩子：只在前 120 帧沿自身方向加速，之后保持末速直飞。
     ---（frame 钩子只收一个参数，§5.2；和卡 71 的 ring_frame 一样**必须停**，
     ---否则一直加速的弹永远出不了回收边界。）
     ---★ ins_87 的 flags 536 里还有 0x8 = SPAWN_SLOW（出场时先退到 velocity×4 再滑回来，
-    ---BulletManager.cpp:445-478）；本文件统一不做这层出场滑动（见文件头差异 10），
-    ---速度曲线与弹数不变，只是这发「死槍」早几帧到位。
+    ---BulletManager.cpp:445-478）；由th33_native按flags还原这层出生过渡，
+    ---速度曲线与弹数不变，出生结束当帧再执行完整ACTIVE位移。
     local function spear_frame(unit)
         if unit.accel_left == nil then
             unit.accel_left = FAN_ACCEL_FRAMES
@@ -1727,7 +1727,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         local base = Angle(x, y, player.x, player.y)
         local pa = ran:Float(0, 360)
         local pr = FAN_OFFSET_R * ran:Float(0, 1)
-        NewSimpleBullet(FAN_STYLE, ex_color(color, 15),
+        SpawnPhoto(536,FAN_STYLE, ex_color(color, 15),
                 x + cos(pa) * pr, y + sin(pa) * pr,
                 FAN_SPEED, base, false, 0, false,
                 nil, nil, nil, spear_frame)
@@ -1738,7 +1738,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_volley(x, y, color)
         local center = Angle(x, y, player.x, player.y) + 180
         for _ = 1, VOLLEY_COUNT do
-            NewSimpleBullet(VOLLEY_STYLE, ex_color(color, 1), x, y,
+            SpawnPhoto(512,VOLLEY_STYLE, ex_color(color, 1), x, y,
                     ran:Float(VOLLEY_SPEED2, VOLLEY_SPEED1),
                     center + ran:Float(-VOLLEY_ARC, VOLLEY_ARC), false, 0, false)
         end
@@ -1758,7 +1758,8 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
             self.x, self.y = x, y
             self.rot = 0
             self._a = 0
-            self.my_lasers = {}
+            -- enm17.anm/script8把alpha置0；这只发弹体不是额外可见的蝶形敌机。
+            self.hide=true
             ---一条协程干完整个 Sub5（★ 不要在里面再 task.New 一条常驻循环：
             ---tools/check_stage.lua 的协程表是全局摊平的，挂在对象名下的 while true
             ---在对象被 RawDel 之后照样会被 resume —— 自检会报「卡结束后还在发弹」。）
@@ -1780,37 +1781,20 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
                 ---Sub4 的死槍：每 FAN_INTERVAL 帧一发单发直弹，直到自己飞出场地为止
                 ---（原作靠敌人的 offscreen 检查收掉，这里照做；原作没有「贴脸停火」，
                 ---这里也不加 —— 距离由子机自己冲过来决定，玩家有 20 帧按快门）。
-                local w = lstg.world
-                while self.x > w.l - 64 and self.x < w.r + 64
-                        and self.y > w.b - 64 and self.y < w.t + 64 do
+                while true do
                     fire_fan(self.x, self.y, self.spear_color)
                     task.Wait(FAN_INTERVAL)
                 end
-                ---冲出场地：淡出、把自己那几条激光一起收掉。
-                for _ = 1, 20 do
-                    self._a = max(0, self._a - DRONE_ALPHA / 20)
-                    task.Wait()
-                end
-                for i = #self.my_lasers, 1, -1 do
-                    if IsValid(self.my_lasers[i]) then
-                        object.RawDel(self.my_lasers[i])
-                    end
-                end
-                self.my_lasers = {}
-                object.RawDel(self)
             end)
         end,
         frame = function(self)
             task.Do(self)
-            self.rot = self.rot + 4          -- 自转，让蝶看起来在扑翅
+            -- EnemyManagerUpdate按loadedSprite的全宽/高回收，script8的精灵是48×80。
+            local x,y=self.x+self.vx,self.y+self.vy
+            if x+48<=-192 or x-48>=192 or y+80<=-224 or y-80>=224 then object.RawDel(self) end
         end,
-        render = function(self)
-            SetImageState("butterfly2", "mul+add", self._a, 224, 186, 252)
-            Render("butterfly2", self.x, self.y, self.rot, 1.15)
-            SetImageState("butterfly6", "mul+add", self._a * 0.7, 196, 156, 244)
-            Render("butterfly6", self.x - cos(self.rot) * 12, self.y - sin(self.rot) * 12,
-                    self.rot + 40, 0.85)
-        end,
+        del=function(self) task.Clear(self) end,
+        render=function() end,
     })
 
     ---──────────────────────── 符卡本体 ────────────────────────
@@ -1951,7 +1935,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         lasers = {}
     end
 
-    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--蝶符「鳳蝶紋の死槍」
 
 do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a 第 3 张）
@@ -2028,7 +2012,7 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
         local base = ran:Float(0, 360)      -- 原作 ins_89 的 angle = random(−π,π)
         local x, y = owner.x, owner.y
         for i = 0, count - 1 do
-            NewSimpleBullet(style, color, x, y, RING_SPEED,
+            SpawnPhoto(514,style, color, x, y, RING_SPEED,
                     base + i * 360 / count, false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723），
@@ -2085,12 +2069,12 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--死符「酔人の生、死の夢幻」
 
 do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
-    ---「死蝶浮月」= 一群死蝶绕着浮在空中的月亮打转。原作（/tmp/B_ecl17_d.txt）的骨架是四层：
-    ---  · Sub4 + Sub3：本体在 320x64 的框里慢慢晃（ins_75 划框、ins_67 边界感知走位），
+    ---原作ecl17_d的本体、隐藏发弹体、直线弹与激光各自维护时间轴：
+    ---  · Sub4：隐藏发弹体在320×64框里慢移；Sub3本体用320帧上升到y128（ins_75 划框、ins_67 边界感知走位），
     ---  · Sub5：**两股反向自转的双色整圈**（ins_89 发弹 + ins_101 的 0x20 极坐标加速），
     ---  · Sub7：每 30 帧一圈 12 发的自机狙大玉（ins_88，type17 = 半径 14 的大玉），
     ---  · Sub6：48 根放射状激光（ins_153）—— 这张卡的招牌。
@@ -2121,7 +2105,6 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local BOX_B, BOX_T = field_y(256), field_y(192)     -- -32 / 32
     local LEG_TIME = 91
     local SWEEP_SPEED = 0.3
-    local SWEEP_SPREAD = 40                  -- 方向相对「自机方向」的散角（度）
 
     ---双色环（Sub5）：整圈 16 发（ins_89(22, 4, 16, 1, 1.0, 1.5, floatV0, 0.0327249)，
     ---type22 = 半径 4、color 4；t=20 再发一圈 color 5）、速 1.0；
@@ -2139,7 +2122,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local RING_SPEED = 1.0
     local RING_SPIN = 1.5                    -- ±1.5°/帧
     local RING_SPIN_FRAMES = 600
-    local RING_STYLE_A, RING_STYLE_B = butterfly, butterfly
+    local RING_STYLE_A, RING_STYLE_B = sg_visual(butterfly,22), sg_visual(butterfly,22)
     ---颜色下标是照贴图挑的（LoadImageGroup('butterfly','bullet4',832,0,32,32,1,8) 的
     ---8 行；非 colorful ⇒ 贴图号 = ceil(色号/2)）：
     ---色号 4 → butterfly2 = (228,201,237) 淡紫；色号 5 → butterfly3 = (190,190,242) 蓝紫。
@@ -2160,7 +2143,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local TICK_PERIOD = 30
     local TICK_COUNT = 12
     local TICK_SPEED = 2.5
-    local TICK_STYLE = ball_huge
+    local TICK_STYLE = sg_visual(ball_huge,17)
     local TICK_COLOR = ex_color(1, 17)      -- 型 17、色 1
     ---★ 自检偶尔会报这张「贴脸狙」（最多 8 发/1200 帧、最短 0 帧）：小环是 ins_88
     ---的 CIRCLE_AIMED、出膛点就是**本体所在点**，所以自机贴在本体身上时那颗是瞬发。
@@ -2190,16 +2173,12 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local LASER_INDEX = 3                    -- 原作的 color 3（laser 的颜色下标 1..16）
     local LASER_W = 16                       -- 命中半宽 = 8
     local LASER_LEN = 512                    -- ins_153 的最大长度
-    ---laser1 的贴图是 64+128+64 = 256 px 三段，按 LASER_LEN 的比例切 ⇒ 拉长 1.56 倍。
-    local LASER_SEG1, LASER_SEG2 = LASER_LEN * 0.25, LASER_LEN * 0.5
 
     ---死蝶（Sub3 的 ins_83(4) + t=380 的 ins_83(8)）：原作放出来的是敌机
     ---（ins_83 的 TH095 分支见 EclRunTargetHigh.inl:271-281），这里按 §7.4 的 C 类
     ---做成**不出判定的蝶形装饰**绕本体飞 —— 正好接住「死蝶」这层意思。
     ---第一组 4 只在 Sub3 的 t=0（= 出场后的第 130 帧）立刻放，第二组 8 只在 t=380。
     local MOTH_MORE = 380                   -- Sub3 的 t=380 ⇒ 第 510 帧
-    local MOTH_COUNT1, MOTH_COUNT2 = 4, 8
-    local MOTH_ALPHA = 165                   -- §7.6：装饰层 alpha 压在 120~180
 
     ---Sub2 的 ins_141(4)（dump 的 @468）：相机快门上限，也就是**原作要求拍中的张数**。
     ---这张卡的弹幕不读 photoIndex（原作四层都是定死的），所以它只用在「拍几张过关」上
@@ -2207,7 +2186,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local PHOTO_LIMIT = 4
 
     local CARD_NAME = "「死蝶浮月」"
-    ---原作卡计时 ins_114(8408) ≈ 140 秒（拍照关留给玩家取景用）；沿用本仓库的 55 秒。
+    ---原作卡计时 ins_114(8408) ≈ 140 秒（拍照关留给玩家取景用）；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 55
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 1000（本卡四层同时压）。
     local CARD_HP = 1000
@@ -2239,10 +2218,10 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local function fire_ring(owner, base, color, spin)
         local x, y = owner.x, owner.y
         for i = 0, RING_COUNT - 1 do
-            local b = NewSimpleBullet(RING_STYLE_A, color, x, y, RING_SPEED,
+            local b = SpawnPhoto(16777762,RING_STYLE_A, color, x, y, RING_SPEED,
                     base + i * 360 / RING_COUNT, false, 0, false,
                     nil, nil, nil, swirl_frame)
-            b.spin = spin
+            if b then b.spin,b.sg_tag=spin,1 end
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723）。
         PlaySound("tan00", 0.1, x / 256, false)
@@ -2257,11 +2236,12 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
 ---换算到我们这边（TH095 的正角 = 顺时针 ⇒ 取反）：色号 4 那圈用 −RING_SPIN、
 ---色号 5 那圈用 +RING_SPIN。
     local function swirl_stream(owner)
+        local base=Angle(owner.x,owner.y,player.x,player.y)
         task.New(owner, function()
             while true do
-                fire_ring(owner, 0, RING_COLOR_A, -RING_SPIN)
+                fire_ring(owner, base, RING_COLOR_A, -RING_SPIN)
                 task.Wait(RING_PHASE)
-                fire_ring(owner, 0, RING_COLOR_B, RING_SPIN)
+                fire_ring(owner, base, RING_COLOR_B, RING_SPIN)
                 task.Wait(RING_PERIOD - RING_PHASE)
             end
         end)
@@ -2272,7 +2252,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local function fire_tick(owner)
         local base = Angle(owner.x, owner.y, player.x, player.y)
         for i = 0, TICK_COUNT - 1 do
-            NewSimpleBullet(TICK_STYLE, TICK_COLOR, owner.x, owner.y, TICK_SPEED,
+            SpawnPhoto(514,TICK_STYLE, TICK_COLOR, owner.x, owner.y, TICK_SPEED,
                     base + i * 360 / TICK_COUNT, false, 0, false)
         end
         PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -2284,145 +2264,53 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     ---tools/check_stage.lua 的 laser 桩件既不调 task.Do、`_TurnOn` 也是空函数，
     ---挂 laser 自己的话自检里既不会亮也不会收 —— 卡 73 踩过这个坑。
     class.fan_laser = Class(laser, {
-        init = function(self, x, y, a)
-            laser.init(self, LASER_INDEX, x, y, a,
-                    LASER_SEG1, LASER_SEG2, LASER_SEG1, LASER_W, 0, 0)
-            self.warn = FAN_WARN
-        end,
-        frame = function(self)
-            laser.frame(self)
-            if self.warn > 0 then
-                ---前摇期间把宽度和亮度按死在 0：**不能有判定**（§7.8 第 4 条：
-                ---预警不是墙）。laser:frame 里 alpha > 0.999 才判命中，所以 w/alpha 归零即可。
-                self.warn = self.warn - 1
-                self.w, self.alpha = 0, 0
-            end
-        end,
-        render = function(self)
-            if self.warn > 0 then
-                ---细白线：全长的预警，粗细按像素给（§C4）—— white 是 16x16，
-                ---Render 的 hscale 是「倍数」⇒ LASER_LEN/16 才是全长，0.125 = 原作 2px 预警。
-                ---亮度恒正（§C4）：120 + 60*sin(...) ∈ [60,180]。
-                local k = 1 - self.warn / FAN_WARN
-                SetImageState("white", "mul+add", 120 + 60 * sin(self.timer * 8), 255, 235, 255)
-                Render("white", self.x + cos(self.rot) * LASER_LEN * 0.5,
-                        self.y + sin(self.rot) * LASER_LEN * 0.5,
-                        self.rot, LASER_LEN / 16, 0.125)
-            else
-                laser.render(self)
-            end
+        init=function(self,owner,x,y,a)
+            laser.init(self,LASER_INDEX,x,y,a,0,0,0,LASER_W,0,0)
+            PhotoNative.rotating(self,owner,LASER_LEN,LASER_W,8,
+                FAN_WARN,FAN_GROW,FAN_HOLD,FAN_FADE,FAN_SPIN,0,0,true)
         end,
     })
 
-    ---一轮激光扇（Sub6）：FAN_COUNT 根、角距 360/FAN_COUNT，锚在本体上跟着本体走
-    ---（原作 followPhotoTarget 的等价物），扇面自己慢转 FAN_SPIN 度/帧。
     local function fire_fan(owner)
-        local base = ran:Float(0, 360)          -- 原作 ins_153 的 angle = random(-π,π)
-        local fan = {}
-        for i = 0, FAN_COUNT - 1 do
-            local l = New(class.fan_laser, owner.x, owner.y, base + i * 360 / FAN_COUNT)
-            fan[#fan + 1] = l
-            lasers[#lasers + 1] = l
+        local base=ran:Float(0,360)
+        for i=0,FAN_COUNT-1 do
+            lasers[#lasers+1]=New(class.fan_laser,owner,owner.x,owner.y,base+i*360/FAN_COUNT)
         end
-        ---一条协程干完这一轮（★ 不要再在 laser 名下开 task：见 fan_laser 的注释）。
-        task.New(owner, function()
-            ---前摇：预警线跟着本体+扇面转
-            for _ = 1, FAN_WARN do
-                for i = 1, #fan do
-                    local l = fan[i]
-                    if IsValid(l) then
-                        l.rot = l.rot + FAN_SPIN
-                        l.x, l.y = owner.x, owner.y
-                    end
-                end
-                task.Wait()
-            end
-            PlaySound("lazer00", 0.25, owner.x / 200)
-            for i = 1, #fan do
-                laser._TurnOn(fan[i], FAN_GROW, false)
-            end
-            for _ = 1, FAN_GROW + FAN_HOLD do
-                for i = 1, #fan do
-                    local l = fan[i]
-                    if IsValid(l) then
-                        l.rot = l.rot + FAN_SPIN
-                        l.x, l.y = owner.x, owner.y
-                    end
-                end
-                task.Wait()
-            end
-            for i = 1, #fan do
-                laser._TurnOff(fan[i], FAN_FADE)
-            end
-            for _ = 1, FAN_FADE do
-                task.Wait()
-            end
-            for i = #fan, 1, -1 do
-                if IsValid(fan[i]) then
-                    object.RawDel(fan[i])
-                end
-            end
+        task.New(owner,function()
+            task.Wait(FAN_WARN)
+            PhotoNative.reset_owned(1)
         end)
     end
 
-    ---本体在框里慢慢晃（Sub4）：先朝自机方向 ±SWEEP_SPREAD 度挑一个角度走 LEG_TIME 帧
-    ---（缓动 1 = 二次加速），再沿同一方向走 LEG_TIME 帧（缓动 4 = 二次减速）。
-    ---框是凸的 ⇒ 在框内的两点之间直线插值不会跑出框，所以直接把目标点夹进框里就行
-    ---（原作的 ins_75 夹取是引擎行为：TH095_ECL_ENEMY_FLAG_CLAMP_TO_MOVEMENT_BOUNDS）。
-    local function sweep(owner)
-        task.New(owner, function()
-            while true do
-                local a = Angle(owner.x, owner.y, player.x, player.y)
-                        + ran:Float(-SWEEP_SPREAD, SWEEP_SPREAD)
-                local step = SWEEP_SPEED * LEG_TIME
-                local tx = max(BOX_L, min(BOX_R, owner.x + step * cos(a)))
-                local ty = max(BOX_B, min(BOX_T, owner.y + step * sin(a)))
-                task.MoveTo(tx, ty, LEG_TIME, VALUE_SET.ACCEL)
-                tx = max(BOX_L, min(BOX_R, tx + step * cos(a)))
-                ty = max(BOX_B, min(BOX_T, ty + step * sin(a)))
-                task.MoveTo(tx, ty, LEG_TIME, EASE_OUT)
+    ---Sub4按原生边界取角，先做91帧加速位移，t90覆盖为同向91帧减速位移。
+    ---插值保留未夹框的终点，每帧积分后才夹活动框。
+    -- ins83(4)的4是子程序编号，不是四只装饰蝶。Sub4隐藏，独立低速游走并运行Sub5发弹。
+    class.dead_moth=Class(object,{
+        init=function(self,owner)
+            self.owner,self.x,self.y=owner,owner.x,owner.y
+            self.group,self.colli,self.bound,self.hide=GROUP.GHOST,false,false,true
+            self.p_t,self.p_angle=0,0
+            swirl_stream(self)
+        end,
+        frame=function(self)
+            if not IsValid(self.owner) then object.RawDel(self);return end
+            task.Do(self)
+            local t=self.p_t%180
+            if t==0 or t==90 then
+                local a=self.p_angle
+                if t==0 then a=PhotoNative.boundary_angle(self.x,field_y(self.y),{-160,192,160,256},a) end
+                self.p_angle=a
+                self.p_x,self.p_y,self.p_start=self.x,self.y,t
+                self.p_dx,self.p_dy=math.cos(a)*SWEEP_SPEED*LEG_TIME,-math.sin(a)*SWEEP_SPEED*LEG_TIME
             end
-        end)
-    end
-
-    ---一只死蝶：绕本体转一个小椭圆（母题：绕着月亮飞的蝶），半径各有不同（§7.7 第 2 条）。
-    ---纯装饰（§7.4 的 C 类无害实体）：不出判定、不撞自机，只在 render 里画贴图。
-    class.dead_moth = Class(object, {
-        init = function(self, owner, phase, radius)
-            self.owner, self.phase, self.t = owner, phase, 0
-            self.radius = radius
-            self.group = GROUP.GHOST
-            self.layer = LAYER.ENEMY_BULLET_EF
-            self.colli = false
-            self.bound = false
-            self.rot = 0
-            self._a = 0
-            self.x, self.y = owner.x, owner.y
-            task.New(self, function()
-                for _ = 1, 30 do
-                    self._a = min(MOTH_ALPHA, self._a + MOTH_ALPHA / 30)
-                    task.Wait()
-                end
-            end)
+            local u=(t-self.p_start+1)/LEG_TIME
+            u=t<90 and u*u or (1-(1-u)*(1-u))
+            self.x=max(BOX_L,min(BOX_R,self.p_x+self.p_dx*u))
+            self.y=max(BOX_B,min(BOX_T,self.p_y+self.p_dy*u))
+            self.p_t=self.p_t+1
         end,
-        frame = function(self)
-            task.Do(self)                                  -- ★ 驱动 init 里的淡入协程
-            if not IsValid(self.owner) then
-                object.RawDel(self)
-                return
-            end
-            self.t = self.t + 1
-            local a = self.phase + self.t * (1.1 + self.radius / 200)
-            local tx = self.owner.x + cos(a) * self.radius
-            local ty = self.owner.y + sin(a) * self.radius * 0.55
-            self.x = self.x + (tx - self.x) * 0.06
-            self.y = self.y + (ty - self.y) * 0.06
-            self.rot = self.rot + 3
-        end,
-        render = function(self)
-            SetImageState("butterfly2", "mul+add", self._a, 226, 200, 245)
-            Render("butterfly2", self.x, self.y, self.rot, 0.9)
-        end,
+        del=function(self) task.Clear(self) end,
+        render=function() end,
     })
 
     ---──────────────────────── 符卡本体 ────────────────────────
@@ -2443,22 +2331,14 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             ---到这里是原作第 130 帧：Sub2 的 t=130 同时 ins_52(3)（Sub3 本体脚本，含
             ---ins_83(4) 放 4 只死蝶）和 Sub4（扫动 + Sub5 的双色环）。
             PlaySound("tan00", 0.1, self.x / 256, false)
-            for i = 1, MOTH_COUNT1 do
-                moths[#moths + 1] = New(class.dead_moth, self, (i - 1) * 360 / MOTH_COUNT1,
-                        46 + i * 6)
-            end
-            swirl_stream(self)
-            sweep(self)
+            moths[#moths+1]=New(class.dead_moth,self)
             ---Sub3 的 t=320（第 450 帧）：起 Sub6，第一轮 48 根激光扇。
             ---（Sub6 的 t=0 就摆好 ins_153、开始 120 帧前摇 ⇒ 「起扇」就是这一帧。）
-            task.Wait(FAN_FIRST)
+            task.MoveTo(0,field_y(128),FAN_FIRST,VALUE_SET.ACCEL)
             fire_fan(self)
-            ---Sub3 的 t=380（第 510 帧）：亮卡名 + 再放 8 只死蝶（ins_83(8)）。
+            ---Sub3的t=380（第510帧）：亮卡名，生成一个运行Sub8/9的跟随扇面。
             task.Wait(MOTH_MORE - FAN_FIRST)
-            for i = 1, MOTH_COUNT2 do
-                moths[#moths + 1] = New(class.dead_moth, self, (i - 1) * 360 / MOTH_COUNT2,
-                        64 + i * 5)
-            end
+            moths[#moths+1]=New(PhotoNative.fan,self)
             ---下一轮激光扇在 Sub3 的 t=910（= 这里再等 FAN_INTERVAL 帧），之后每 530 帧一轮。
             task.Wait(FAN_INTERVAL)
             while true do
@@ -2468,7 +2348,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         end)
         ---Sub7 的小环：原作 t=470 起到卡结束。
         task.New(self, function()
-            task.Wait(TICK_FIRST)
+            task.Wait(ENTRY_WAIT+ENTRY_TIME+TICK_FIRST)
             while true do
                 fire_tick(self)
                 task.Wait(TICK_PERIOD)
@@ -2497,10 +2377,10 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         moths = {}
     end
 
-    boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--「死蝶浮月」
 
-do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 张）
+do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1 张）
     ---「御大師様の秘鍵」= 空海（御大師）传下来的密教法器。原作的骨架（/tmp/B_ecl16_b.txt）：
     ---  · Sub2/Sub6：本体在一条**很扁的横带**里（ins_75(-160,128,160,144) ⇒ 我们的 y∈[80,96]）
     ---    每 60 帧做一次 ins_67(30,4,4) 的边界感知走位（30 帧、4 px/帧 ⇒ 一次挪 120 px），
@@ -2519,12 +2399,12 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---    floatV0 那条 +5.625° 是没人读的死指令），一共 n 发；n ≤ 15 时 30 帧一轮、
     ---    n ≥ 16 时越过外层 t=40 就此停摆（理由见 burst_cycle）。
 ---我们这边的一处差异 / 两条形状上的照抄：
----  ① 「钥匙」做成**不出判定的法器装饰**（§7.4 的 C 类）—— 原作的子敌机本体能撞死人，
----     跟卡 71 的蛾 / 卡 73 的蝶子机一样，威胁全交给弹。
+---  ① Sub8只用ins81(16)开启出屏回收，没有开启碰撞；保持模板的无判定状态。
+---     外观用原版enm16/script8的128×144精灵，出生即以2速移动。
 ---  ② 三连的**节拍与发数照原作**：每 2 帧一发、n = 12..27 发（不再截断到 15，
 ---     见 burst_cycle）；方向**不旋转**（旧版按那条死指令转了 5.625°/轮，是从没发生过的形状）。
 ---     **不做距离闸** —— 原作这张卡没有 ins_82，贴着也照发（见常量段）。
----  ③ 钥匙飞出场地就淡出收掉（原作挂到 t=2000 才退役）。
+---  ③ 原版敌机管理器按缩放后的精灵全宽/高回收，可早于t2000的TERMINATE。
     ---──────────────────────── 常量（改手感只动这一段） ────────────────────────
     ---入场：Sub2 t=0 的 ins_63(-128,-64)、t=100 的 ins_64(30,4,0,160)。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)     -- 288（场地外）
@@ -2536,7 +2416,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---ins_75 划的是 x∈[-160,160]、y∈[128,144]（TH095）⇒ 我们的 y∈[field_y(144), field_y(128)]。
     local BAND_L, BAND_R = -160, 160
     local BAND_B, BAND_T = field_y(144), field_y(128)   -- 80 / 96
-    local SCOOT_PERIOD, SCOOT_TIME = 60, 30
+    local SCOOT_PERIOD, SCOOT_TIME = 60, 30  -- 60是Sub5放钥匙的周期；Sub6本体移动周期是45。
     local SCOOT_SPEED = 4
 
     ---钥匙（Sub5 的 ins_84 + Sub8）：
@@ -2548,10 +2428,6 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local KEY_GAP = 30
     local KEY_SPEED = 2
     local KEY_DOWN = -90
-    ---淡入 10 帧：原作的 key 在 Sub8 的 t=0 定完速度就开工，Sub7 的 t=10 甩第一轮三连
-    ---⇒ 淡入只占这 10 帧（§7.8：不许突然出现 / 突然消失，所以留着这一段）。
-    local KEY_FADE_IN, KEY_FADE_OUT = 10, 25
-    local KEY_ALPHA = 170                   -- §7.6：装饰层 alpha 压在 120~180
     ---Sub7 的 ins_4(10,-152)：t=40 跳回 t=10 ⇒ **一轮 30 帧**（跳转同帧派发，见卡 71）。
     local KEY_BURST_PERIOD = 30
     local KEY_BURST_GAP = 2                 -- ins_5(10,-64,n) 每轮占 2 帧 ⇒ 2 帧一发三连
@@ -2572,7 +2448,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local KEY_STEP = 90                     -- ins_87 的 angleStep = π/2
     local KEY_AIM0 = 90                     -- ins_87 的 angle = -π/2（TH095 朝上）⇒ 我们的 +90°
     local KEY_BULLET_SPEED = 2.0
-    local KEY_STYLE = square
+    local KEY_STYLE = sg_visual(square,6)
     ---颜色：butterfly 非 colorful ⇒ 贴图号 = ceil(色号/2)；色号 8 → butterfly4 = (193,216,235) 冰蓝。
     local KEY_COLOR = ex_color(4, 6)
 
@@ -2583,13 +2459,13 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local AIM_PERIOD = 45
     local AIM_FROM_PHOTO = 3
     local AIM_SPEED = 1.5
-    local AIM_STYLE = ball_big
+    local AIM_STYLE = sg_visual(ball_big,12)
     local AIM_COLOR = ex_color(1, 12)
 
     local PHOTO_LIMIT = 6                   -- Sub2 的 ins_141(6)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "密符「御大師様の秘鍵」"
-    ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；沿用本仓库的 55 秒。
+    ---原作卡计时 ins_114(6608) ≈ 110 秒（拍照关留给玩家取景用）；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 55
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900。
     local CARD_HP = 900
@@ -2605,7 +2481,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
 ---FAN 的奇数 count1 分支，和卡 74 的 fan_angle 同一条公式），不旋转（理由见常量段）。
     local function fire_burst(key)
         for _, off in ipairs({ 0, KEY_STEP, -KEY_STEP }) do
-            NewSimpleBullet(KEY_STYLE, KEY_COLOR, key.x, key.y, KEY_BULLET_SPEED,
+            SpawnPhoto(514,KEY_STYLE, KEY_COLOR, key.x, key.y, KEY_BULLET_SPEED,
                     KEY_AIM0 + off, false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：一次只响一声（BulletManager.cpp:717-723）。
@@ -2642,45 +2518,42 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     ---★ 一条协程干完整个生命周期（不要在对象名下再开 `while true`）：
     ---  tools/check_stage.lua 的协程表不认「对象已死」，被 RawDel 之后还会接着被 resume
     ---  —— 卡 73 的蝶子机踩过，自检会报「卡结束后还在发弹」。
-    class.key = Class(object, {
-        init = function(self, x, y)
-            self.group = GROUP.GHOST
-            self.layer = LAYER.ENEMY_BULLET_EF
-            self.colli = false
-            self.bound = false
-            self.x, self.y = x, y
-            self.rot, self._a = 0, 0
-            task.New(self, function()
-                for _ = 1, KEY_FADE_IN do
-                    self._a = min(KEY_ALPHA, self._a + KEY_ALPHA / KEY_FADE_IN)
-                    task.Wait()
-                end
-                object.SetV(self, KEY_SPEED, KEY_DOWN, true)
-                local w = lstg.world
-                ---firing 变 false = Sub7 停摆（n ≥ 16）⇒ 之后只往下飘，不再发弹。
-                local firing = true
-                while self.y > w.b - 64 do
-                    if firing then
-                        firing = burst_cycle(self)
-                    else
-                        task.Wait()
-                    end
-                end
-                ---冲出场地：淡出再收（§7.8 第 4 条：不许突然消失）。
-                for _ = 1, KEY_FADE_OUT do
-                    self._a = max(0, self._a - KEY_ALPHA / KEY_FADE_OUT)
-                    task.Wait()
-                end
-                object.RawDel(self)
+    class.key=Class(object,{
+        init=function(self,x,y)
+            self.group,self.colli,self.bound=GROUP.GHOST,false,false
+            self.layer=LAYER.ENEMY_BULLET_EF
+            self.x,self.y,self.rot=x,y,0
+            self.img='th33_key';self.key_t=0;self.key_entered=false
+            self.hscale,self.vscale=0,0
+            object.SetV(self,KEY_SPEED,KEY_DOWN,true)
+            task.New(self,function()
+                task.Wait(10)
+                while burst_cycle(self) do end
             end)
         end,
-        frame = function(self)
+        frame=function(self)
             task.Do(self)
-            self.rot = self.rot - 2.5        -- 和卡 73 的蝶子机反着转（§7.7 第 2 条）
+            self.key_t=self.key_t+1
+            local scale=1-(1-min(1,self.key_t/15))^2
+            self.hscale,self.vscale=scale,scale
+            local x,y=self.x+self.vx,self.y+self.vy
+            local w,h=128*scale,144*scale
+            local outside=x+w<=-192 or x-w>=192 or y+h<=-224 or y-h>=224
+            if not outside then self.key_entered=true end
+            if self.key_t>=2000 or (outside and self.key_entered) then object.RawDel(self) end
         end,
-        render = function(self)
-            SetImageState("servant", "mul+add", self._a, 175, 240, 240)
-            Render("servant", self.x, self.y, self.rot, 1.05)
+        del=function(self) task.Clear(self) end,
+        render=function(self)
+            local t=self.key_t%32
+            local alpha
+            if t<8 then
+                local from=self.key_t<32 and 255 or 128
+                alpha=from+(192-from)*(1-(1-t/8)^2)
+            elseif t<16 then alpha=192-64*((t-8)/8)^2
+            elseif t<24 then alpha=128-64*(1-(1-(t-16)/8)^2)
+            else alpha=64+64*((t-24)/8)^2 end
+            SetImageState(self.img,'',alpha,255,255,255)
+            Render(self.img,self.x,self.y,0,self.hscale,self.vscale)
         end,
     })
 
@@ -2695,14 +2568,11 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
     local function scoot(owner)
         task.New(owner, function()
             task.Wait(SUB3_START)
+            local st={dead=false,mv_angle=0}
             while true do
-                local a = Angle(owner.x, owner.y, player.x, player.y)
-                        + ran:Float(-60, 60)
-                local step = SCOOT_SPEED * SCOOT_TIME
-                local tx = max(BAND_L, min(BAND_R, owner.x + step * cos(a)))
-                local ty = max(BAND_B, min(BAND_T, owner.y + step * sin(a)))
-                task.MoveTo(tx, ty, SCOOT_TIME, VALUE_SET.NORMAL)
-                task.Wait(SCOOT_PERIOD - SCOOT_TIME)
+                task.Wait(15)
+                PhotoNative.bmove(owner,st,SCOOT_TIME,4,SCOOT_SPEED,{-160,128,160,144})
+                task.Wait(SCOOT_TIME)
             end
         end)
     end
@@ -2729,7 +2599,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
             while true do
                 if photo_index(PHOTO_LIMIT) >= AIM_FROM_PHOTO then
                     local a = Angle(owner.x, owner.y, player.x, player.y)
-                    NewSimpleBullet(AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED, a,
+                    SpawnPhoto(514,AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED, a,
                             false, 0, false)
                 end
                 task.Wait(AIM_PERIOD)
@@ -2777,10 +2647,10 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，妖梦，组 2a 第 1 �
         keys = {}
     end
 
-    boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--密符「御大師様の秘鍵」
 
-do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张）
+do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 张）
     ---「護摩」是密教用火烧护摩木的修行，八千万枚 = 烧掉的木条数。原作的骨架
     ---（/tmp/B_ecl16_c.txt）：
     ---  · Sub5（主体脚本）：t=0 一记 **128 根的整扇**（ins_87，count1=128 ⇒ 每根差 1.875°、
@@ -2832,7 +2702,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local FAN_COUNT = 128
     local FAN_STEP = 1.875
     local FAN_SPEED = 1.4
-    local FAN_STYLE = square
+    local FAN_STYLE = sg_visual(square,6)
     local FAN_COLOR = ex_color(4, 6)
 
     ---小圈（Sub6）：ins_89(18, 1, intV0, 1, 2.0, 1.5, rand(-π,π), 0.1848, 514)。
@@ -2851,7 +2721,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local PHOTO_LIMIT = 7                   -- Sub2 的 ins_141(7)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "行符「八千万枚護摩」"
-    ---原作卡计时 ins_114(8408) ≈ 140 秒；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(8408) ≈ 140 秒；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900。
     local CARD_HP = 900
@@ -2883,7 +2753,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
     local function fire_fan(owner, base)
         local x, y = owner.x, owner.y
         for i = 0, FAN_COUNT - 1 do
-            NewSimpleBullet(FAN_STYLE, FAN_COLOR, x, y, FAN_SPEED,
+            SpawnPhoto(514,FAN_STYLE, FAN_COLOR, x, y, FAN_SPEED,
                     fan_angle(base, i, FAN_COUNT, FAN_STEP), false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整扇只响一声（BulletManager.cpp:717-723）。
@@ -2895,7 +2765,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
         local count = RING_BASE_COUNT + int(photo_index(PHOTO_LIMIT) / 3)
         local base = ran:Float(0, 360)
         for i = 0, count - 1 do
-            NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y, RING_SPEED,
+            SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y, RING_SPEED,
                     base + i * 360 / count, false, 0, false)
         end
     end
@@ -2969,10 +2839,10 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，妖梦，组 2a 第 2 张�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--行符「八千万枚護摩」
 
-do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
+do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张）
     ---「飛翔役小角」= 会飞的役小角（修验道的祖师，传说能在空中飞行）。原作的骨架
     ---（/tmp/B_ecl16_d.txt）不是「站在原地放弹」，而是**本体自己在飞**：
     ---  · Sub3 的 t=0：ins_65(playerAngle, 0.5) + ins_71(0.1) ⇒ 朝自机方向起步、
@@ -3034,7 +2904,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     local CLOUD_WAIT = 60
     local CLOUD_ACCEL = 1 / 60
     local CLOUD_ACCEL_FRAMES = 60
-    local CLOUD_STYLE = butterfly
+    local CLOUD_STYLE = sg_visual(butterfly,15)
     ---原作四发轮着用 color 3/4/5/6（t=0..3 各一发）；butterfly 非 colorful ⇒
     ---贴图号 = ceil(色号/2)，3/4 都是 butterfly2、5/6 都是 butterfly3 —— 两种贴图。
     ---照抄原作四个色号（不再自己挑两个色）。
@@ -3043,7 +2913,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
     local PHOTO_LIMIT = 8                   -- Sub2 的 ins_141(8)：相机快门上限（photo_index 的截断值）
 
     local CARD_NAME = "超人「飛翔役小角」"
-    ---原作卡计时 ins_114(7208) ≈ 120 秒；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(7208) ≈ 120 秒；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900。
     local CARD_HP = 900
@@ -3084,7 +2954,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
                 for k = 1, CLOUD_BURST do
                     local pa = ran:Float(0, 360)
                     local pr = CLOUD_RADIUS * ran:Float(0, 1)
-                    NewSimpleBullet(CLOUD_STYLE, ex_color(CLOUD_COLORS[k], 15),
+                    SpawnPhoto(33304,CLOUD_STYLE, ex_color(CLOUD_COLORS[k], 15),
                             owner.x + cos(pa) * pr, owner.y + sin(pa) * pr,
                             CLOUD_SPEED0, ran:Float(0, 360), false, 0, false,
                             nil, nil, nil, cloud_frame)
@@ -3148,7 +3018,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，妖梦，组 2a 第 3 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "2a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--超人「飛翔役小角」
 
 ---──────────────────── Stage EX ── 两件公共工具 ────────────────────
@@ -3161,7 +3031,7 @@ end--超人「飛翔役小角」
 ---所以 TH095 的「顺时针为正」取反之后方向集合不变，直接用 base + i×360/count。
 local function ex_ring(style, color, x, y, count, speed, base, frame)
     for i = 0, count - 1 do
-        NewSimpleBullet(style, color, x, y, speed,
+        SpawnPhoto(512,style, color, x, y, speed,
                 base + i * 360 / count, false, 0, false, nil, nil, nil, frame)
     end
 end
@@ -3208,44 +3078,7 @@ local EX_LASER_WARN_W = 2                 -- STARTUP 的预警线宽（原作初
 ---把一根 EX 激光跑完四段，到点自己 RawDel。len0 已在 l.l2 里。
 local function run_ex_laser(owner, l, max_len, width, speed, startup, grow, sustain, fade,
         ang_vel, vx, vy, follow)
-    task.New(owner, function()
-        local len = l.l2
-        local phase, timer = 1, 0
-        while IsValid(l) do
-            if len < max_len then
-                len = min(max_len, len + speed)
-            end
-            l.rot = l.rot + ang_vel
-            if follow then
-                l.x, l.y = owner.x, owner.y
-            end
-            l.x, l.y = l.x + vx, l.y + vy
-            timer = timer + 1
-            if phase == 1 then                     -- STARTUP：细线、无判定
-                l.w = EX_LASER_WARN_W
-                l.colli = false
-                if timer >= startup then phase, timer = 2, 0 end
-            elseif phase == 2 then                 -- GROWING：宽度线性长到 width
-                l.w = width * timer / grow
-                l.colli = len > 16
-                if timer >= grow then phase, timer = 3, 0 end
-            elseif phase == 3 then                 -- ACTIVE
-                l.w = width
-                l.colli = len > 16
-                if timer >= sustain then phase, timer = 4, 0 end
-            else                                   -- FADING：无判定
-                l.w = width - width * timer / fade
-                l.colli = false
-                if timer >= fade then break end
-            end
-            l.l1, l.l2, l.l3 = 0, len, 0
-            l.alpha = 1
-            task.Wait()
-        end
-        if IsValid(l) then
-            object.RawDel(l)
-        end
-    end)
+    PhotoNative.rotating(l,owner,max_len,width,speed,startup,grow,sustain,fade,ang_vel,vx,vy,follow)
 end
 
 ---生成一根 EX 激光。index = 贴图行（1..16，见各卡注释里挑行的理由）；
@@ -3284,7 +3117,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---  · 弹型 18 用本项目 ball_light；ins_89 的 aimMode = CIRCLE
     ---    （angle = 操作数 angle + index1×2π/count1 + index2×angleStep，而 count2 = 1 ⇒
     ---    angleStep = 0.1848 不参与，BulletManager.cpp:369-372）。
-    ---    flags 514 = 0x202 = PLAY_SPAWN_SOUND + SPAWN_FAST；出场滑动我们统一不做（文件头差异 3），
+    ---    flags 514 = 0x202 = PLAY_SPAWN_SOUND + SPAWN_FAST；出生滑动交由th33_native统一执行，
     ---    出膛音每条弹幕响一次（原作也是整波响一次，BulletManager.cpp:717-723）。
     ---  · 色号：原作两色是 1 与 0，按 type 18 的 8 色表换算。
     ---  · Sub8（106(5)+150(10) 每帧）是整屏装饰 ANM，Sub4/Sub5 在 Sub3 里从来没被调用过
@@ -3298,7 +3131,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     local PHOTO_LIMIT = 6
 
     local CARD_NAME = "禁忌「フォービドゥンフルーツ」"
-    ---原作卡计时 ins_114(7208) ≈ 120 秒；沿用本仓库的 50 秒（同前七张）。
+    ---原作卡计时 ins_114(7208) ≈ 120 秒；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     ---原作 Timeline0 给的生命是 150；这里按本仓库的量级抬到 900。
     local CARD_HP = 900
@@ -3333,7 +3166,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     local function fire_ring(x, y, color, count, speed)
         local base = ran:Float(0, 360)
         for i = 0, count - 1 do
-            NewSimpleBullet(STYLE, color, x, y, speed,
+            SpawnPhoto(514,STYLE, color, x, y, speed,
                     base + i * 360 / count, false, 0, false)
         end
     end
@@ -3396,7 +3229,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "3a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "3a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--禁忌「フォービドゥンフルーツ」
 
 do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 张）
@@ -3466,7 +3299,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     }
     local WAVE_GAP = 120
     local RING_BASE = { 90, 45, 90, 45 }                -- 每波大玉圈的基准角（TH095 度）
-    local BIG_STYLE = ball_huge
+    local BIG_STYLE = sg_visual(ball_huge,17)
     local BIG_COLOR = ex_color(0, 17)                   -- 89(17, 0, …)
     local BIG_COUNT, BIG_SPEED = 4, 1.0
     ---组内 4 根的指向角（TH095 度）：十字。
@@ -3565,7 +3398,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
         end
     end
 
-    boss.card.add({ { card, "3a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "3a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--禁忌「禁じられた遊び」
 
 do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
@@ -3598,7 +3431,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
     ---    （EclRunTargetHigh.inl:206-240）⇒ 四条各自从不同的初值出发、之后互不影响。
     ---    （旧摘要把这条读成「float 不复制、从 0 起」，那是把 0x80 当成了 intVariables[8] 的大小。）
     ---  · 弹型 0 → ball_small（半径 2）。色 6 走 ex_color()。
-    ---  · 原作的弹槽上限 640（BulletManager.cpp:310-345）：这张卡在原作里是**打满弹槽**的。
+    ---  · 原作的弹槽上限 1600（BulletManager.cpp:310-345）：这张卡在原作里是**打满弹槽**的。
     ---    本仓库没有弹槽上限 ⇒ 稳态同屏弹数比原作高（实测里能看到），图案不变，见文件头差异 3。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
     local HOME_X, HOME_Y = 0, field_y(192)              -- 0 / 32
@@ -3661,7 +3494,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
 
     ---Sub7 / Sub8：4 条子上下文，初值 floatV0 = π/2、−π/2、0、π（见卡头注释）。
     local SPAWN_R = 32                                   -- ins_38 的 magnitude
-    local FAN_STYLE, FAN_COLOR = ball_small, ex_color(6, 0)
+    local FAN_STYLE, FAN_COLOR = sg_visual(ball_small,0), ex_color(6, 0)
     local FAN_COUNT, FAN_SPEED, FAN_STEP_DEG = 8, 2.5, 10
     local FAN_OFFSETS = ex_fan_offsets(FAN_COUNT, FAN_STEP_DEG)
     local RND_STYLE, RND_COLOR = FAN_STYLE, FAN_COLOR
@@ -3693,13 +3526,13 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                             local a_th = (fv2 - math.rad(RND_HALF))
                                     + math.rad(RND_HALF * 2) * r
                             local v = RND_SPEED2 + (RND_SPEED1 - RND_SPEED2) * ran:Float(0, 1)
-                            NewSimpleBullet(RND_STYLE, RND_COLOR,
+                            SpawnPhoto(514,RND_STYLE, RND_COLOR,
                                     owner.x + ox, owner.y + oy, v, -math.deg(a_th), false, 0, false)
                         end
                         fv0 = fv0 - math.rad(FAN_STEP)
                     else
                         for k = 1, #FAN_OFFSETS do
-                            NewSimpleBullet(FAN_STYLE, FAN_COLOR,
+                            SpawnPhoto(514,FAN_STYLE, FAN_COLOR,
                                     owner.x + ox, owner.y + oy, FAN_SPEED,
                                     -math.deg(fv2) - FAN_OFFSETS[k], false, 0, false)
                         end
@@ -3772,7 +3605,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
         end
     end
 
-    boss.card.add({ { card, "4a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "4a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--境符「色と空の境界」
 
 do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
@@ -3793,7 +3626,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
     ---    ins_117(·,5)** —— 是死代码，原作里从来没跑过（自己在文件里搜过一遍字节确认），
     ---    所以「加速度反向」这件事不会发生，不实现。
     ---  · 弹型 3 → ellipse；色 4 走 ex_color()。flags 514 = 0x202（出场音 + SPAWN_FAST，
-    ---    出场滑动我们统一不做，见文件头差异 3）。
+    ---    出生滑动交由th33_native统一执行）。
     ---  · 角度：OFFSET_CIRCLE 的一圈是对称的，但整圈的**相位** floatV0 会被取反，
     ---    所以照常按 −(π/5 + i×2π/5 + floatV0) 发。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
@@ -3827,7 +3660,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
                     local a = math.pi / RING_COUNT + i * step + fv0
                     ---原作的 a 是 TH095 弧度（floatV0 初值 π/2、每帧 += π/4800）
                     ---⇒ 取反并转度后再交给角度制的 NewSimpleBullet。
-                    NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y,
+                    SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
                             speed, -math.deg(a), false, 0, false)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -3863,7 +3696,7 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "4a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "4a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--境符「波と粒の境界」
 
 do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5a 第 1 张）
@@ -3905,7 +3738,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
 
     local PHOTO_LIMIT = 10                              -- ins_141(10)
     local CARD_NAME = "貴人「サンジェルマンの忠告」"
-    ---原作卡计时 ins_114(10808)；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(10808)；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     local CARD_HP = 900
     local CARD_ID = 457
@@ -3924,9 +3757,9 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
         local v2 = RING_SPEED1 - (RING_SPEED1 - RING_SPEED2) / 2
         for i = 0, count - 1 do
             local a = base + i * step
-            NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y,
+            SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
                     RING_SPEED1, a, false, 0, false)
-            NewSimpleBullet(RING_STYLE, RING_COLOR, owner.x, owner.y,
+            SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
                     v2, a, false, 0, false)
         end
     end
@@ -4016,7 +3849,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "5a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "5a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--貴人「サンジェルマンの忠告」
 
 do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，组 5a 第 2 张）
@@ -4058,7 +3891,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
 
     local PHOTO_LIMIT = 5                               -- ins_141(5)
     local CARD_NAME = "蓬莱「瑞江浦嶋子と五色の瑞亀」"
-    ---原作卡计时 ins_114(7208)；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(7208)；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     local CARD_HP = 900
     local CARD_ID = 458
@@ -4079,7 +3912,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
             local style = SG_STYLE[st] or ball_small
             local b = pa - SUB4_STEP * (pi + k)
             for i = 0, 2 do
-                NewSimpleBullet(style, ex_color(co, st), x, y, SUB4_SPEED,
+                SpawnPhoto(514,style, ex_color(co, st), x, y, SUB4_SPEED,
                         b - 120 * i, false, 0, false)
             end
         end
@@ -4090,7 +3923,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
         for k = 0, 4 do
             local b = pa - SUB5_STEP * (pi + k)
             for i = 0, 1 do
-                NewSimpleBullet(ball_mid_c, ex_color(TURTLE5_COLOR[k + 1], 1), x, y,
+                SpawnPhoto(514,sg_visual(ball_mid_c,1), ex_color(TURTLE5_COLOR[k + 1], 1), x, y,
                         SUB5_SPEED, b - 180 * i, false, 0, false)
             end
         end
@@ -4196,7 +4029,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "5a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "5a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--蓬莱「瑞江浦嶋子と五色の瑞亀」
 
 do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
@@ -4233,7 +4066,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
 
     local PHOTO_LIMIT = 3                               -- ins_141(3)
     local CARD_NAME = "鬼気「濛々迷霧」"
-    ---原作卡计时 ins_114(12608)；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(12608)；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     local CARD_HP = 900
     local CARD_ID = 459
@@ -4244,7 +4077,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local DASH_FRAMES, DASH_SPEED = 60, 2               -- ins_66(60,1,pa,2) ⇒ 120 px
     local MIST_R, MIST_SPEED = 64, 0.05                 -- Sub4：偏移半径 / 弹速
     local MIST_STYLE, MIST_COLOR = sg_visual(ellipse, 3), ex_color(6, 3)
-    local BIG_STYLE, BIG_COLOR = ball_huge, ex_color(1, 17)
+    local BIG_STYLE, BIG_COLOR = sg_visual(ball_huge,17), ex_color(1, 17)
     local BIG_COUNT, BIG_SPEED = 12, 1                  -- Sub7 的 ins_89
     local BIG_GAP = 60                                  -- Sub7 的 ins_4(0,-80)
     local ACCEL_STEP, ACCEL_FRAMES = 0.025, 120         -- ins_101 的 f0 / int0
@@ -4256,7 +4089,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
                 local m = ran:Float(-MIST_R, MIST_R)
                 local th = ran:Float(-math.pi, math.pi)
                 local ba = ran:Float(-math.pi, math.pi)
-                NewSimpleBullet(MIST_STYLE, MIST_COLOR,
+                SpawnPhoto(520,MIST_STYLE, MIST_COLOR,
                         owner.x + m * math.cos(th), owner.y - m * math.sin(th),
                         MIST_SPEED, -math.deg(ba), false, 0, false)
                 task.Wait(1)
@@ -4281,7 +4114,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
             while tok.alive do
                 local base = ran:Float(0, 360)
                 for i = 0, BIG_COUNT - 1 do
-                    NewSimpleBullet(BIG_STYLE, BIG_COLOR, owner.x, owner.y, BIG_SPEED,
+                    SpawnPhoto(536,BIG_STYLE, BIG_COLOR, owner.x, owner.y, BIG_SPEED,
                             base + i * 360 / BIG_COUNT, false, 0, false,
                             nil, nil, nil, big_accel_frame)
                 end
@@ -4356,7 +4189,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
         if tok7 then tok7.alive = false end
     end
 
-    boss.card.add({ { card, "6a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "6a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--鬼気「濛々迷霧」
 
 do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
@@ -4398,7 +4231,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
 
     local PHOTO_LIMIT = 10                              -- ins_141(10)
     local CARD_NAME = "「百万鬼夜行」"
-    ---原作卡计时 ins_114(12008)；沿用本仓库的 50 秒。
+    ---原作卡计时 ins_114(12008)；登记时按th33_sources的原版起算帧及计时值覆盖。
     local CARD_TIME = 50
     local CARD_HP = 900
     local CARD_ID = 460
@@ -4424,7 +4257,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     ---一次 ins_89「count1=3、count2=1」：3 发 120° 等分环。
     local function fire_three(style, color, speed, x, y, base_deg)
         for i = 0, 2 do
-            NewSimpleBullet(style, color, x, y, speed, base_deg - 120 * i, false, 0, false)
+            SpawnPhoto(514,style, color, x, y, speed, base_deg - 120 * i, false, 0, false)
         end
     end
 
@@ -4461,7 +4294,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
                     local base = aimed and Angle(owner.x, owner.y, player.x, player.y) or 0
                     for i = 0, RING_N - 1 do
                         local ph = aimed and 0 or OFFSET_PHASE
-                        NewSimpleBullet(style, color, owner.x, owner.y, speed,
+                        SpawnPhoto(514,style, color, owner.x, owner.y, speed,
                                 base + ph + i * RING_STEP, false, 0, false)
                     end
                     PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -4562,7 +4395,7 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
         end
     end
 
-    boss.card.add({ { card, "6a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "6a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--「百万鬼夜行」
 ---──────────────────── Stage 9（scene group 9 = world10）── 公共工具 ────────────────────
 ---下面八张卡（scene 90..97）共用 world10（三途の川 / 彼岸）与 enm20/21.anm。
@@ -4589,11 +4422,13 @@ end
 
 ---ins_86..94 的一发。th_deg 是 TH095 空间的**度**（顺时针为正、y 朝下）；
 ---本仓库的角度 = −th_deg（见文件头「坐标系与角度」）。
-local function sg_bullet(style, color, x, y, speed, th_deg, frame)
+local function sg_bullet(style, color, x, y, speed, th_deg, frame,flags)
     local img, t = sg_parts(style)
     local c = t and ex_color(color, t) or color
-    NewSimpleBullet(img, c, x, y, speed, -th_deg, false, 0, false,
-            nil, nil, nil, frame)
+    local b=NewSimpleBullet(img, c, x, y, speed, -th_deg, false, 0, false,
+            nil, nil, nil, frame,nil,flags)
+    if b then b.th095_color=color end
+    return b
 end
 
 ---自机在 TH095 空间的角度（度）：本仓库 Angle 返回我们的角度（度、逆时针为正）⇒ 取反。
@@ -4640,7 +4475,10 @@ local function sg_shot(mode, style, color, x, y, c1, c2, sp1, sp2, base, step, a
                 a = step + ran:Float(0, 1) * (base - step)
                 sp = sp2 + ran:Float(0, 1) * (sp1 - sp2)
             end
-            sg_bullet(style, color, x, y, sp, a, frame)
+            if not sg_bullet(style, color, x, y, sp, a, frame,flags) then
+                sg_snd(x,flags)
+                return
+            end
         end
     end
     sg_snd(x, flags)
@@ -4697,26 +4535,8 @@ end
 ---坐标取目标点）。box = { x0, y0, x1, y1 }（TH095 坐标，y0 < y1 表示 y0 在上方）。
 local function sg_bmove(owner, st, n, easing, speed, box)
     local x = owner.x
-    local y = FIELD_HALF_H - owner.y                 -- 本体位置的 TH095 y
-    local a
-    if player.x < x then
-        a = ran:Float(0, math.pi / 2) + 2.3561945     -- rand[0,π/2) + 3π/4
-        if a > math.pi then a = a - 2 * math.pi end
-    else
-        a = ran:Float(0, math.pi / 2) - 0.78539819    -- rand[0,π/2) − π/4
-    end
-    if x < box[1] + 96 then
-        if a > 1.5707964 then a = 3.1415927 - a
-        elseif a < -1.5707964 then a = -3.1415927 - a end
-    end
-    if x > box[3] - 96 then
-        ---★ 原作右边界这一支用的是**上一次的** movementAngle（不是刚算出的 angle）——
-        ---EclDependencies.cpp:139 的 `3.1415927 - enemy->movementAngle`。照抄。
-        if a < 1.5707964 and a >= 0 then a = 3.1415927 - (st.mv_angle or a)
-        elseif a > -1.5707964 and a <= 0 then a = -3.1415927 - a end
-    end
-    if y < box[2] + 48 and a < 0 then a = -a end
-    if y > box[4] - 48 and a > 0 then a = -a end
+    local y = FIELD_HALF_H - owner.y
+    local a=PhotoNative.boundary_angle(x,y,box,st.mv_angle)
     local d = speed * n
     sg_move(owner, st, x + d * math.cos(a), owner.y - d * math.sin(a), max(1, n), easing, box)
 end
@@ -4727,29 +4547,7 @@ end
 ---原作 145 只在 width > 40 时判定（同文件:252），visual_match 已恢复这个闸；
 ---小于该宽度的直线光只显示，不额外添加原作没有的碰撞。
 local function run_ex_laser_straight(owner, l, max_len, width, speed)
-    ---★ 旧写法漏了这一步：laser:init 把 self.w 置 0、只有 counter > 0 时才长宽，
-    ---  于是 145 生成的激光**宽度恒为 0** —— 既不显示也不判定（laser.lua:52 与 :76）。
-    ---  这里按 ins_145 的 width 直接给上（w0/w 一起写，收尾的淡出才除得动）。
-    l.w0, l.w = width, width
-    task.New(owner, function()
-        local len, full = 0, false
-        while IsValid(l) do
-            if not full then
-                len = min(max_len, len + speed)
-                full = len >= max_len
-            else
-                l.x = l.x + speed * cos(l.rot)
-                l.y = l.y + speed * sin(l.rot)
-            end
-            l.colli = len > 16
-            l.l1, l.l2, l.l3 = 0, len, 0
-            l.alpha = 1
-            task.Wait()
-        end
-        if IsValid(l) then
-            object.RawDel(l)
-        end
-    end)
+    PhotoNative.straight(l,max_len,width,speed)
 end
 
 ---生成一根 ins_145 直线激光。
@@ -4764,7 +4562,10 @@ end
 
 ---ins_102（清屏）：DespawnAllBullets + 清掉本卡自己放出的激光（EclRunTargetHigh.inl:470）。
 local function sg_clear(lasers)
-    object.BulletDo(function(b) object.RawDel(b) end)
+    object.BulletDo(function(b)
+        if b.imgclass and b.imgclass.native_game==95 then PhotoNative.despawn(b)
+        else object.RawDel(b) end
+    end)
     for i = #lasers, 1, -1 do
         if IsValid(lasers[i]) then
             object.RawDel(lasers[i])
@@ -5008,7 +4809,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--小町 非符（ecl20_a）
 
 do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a 第 1 张）
@@ -5151,7 +4952,7 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--嘘言「タン・オブ・ウルフ」
 
 do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张）
@@ -5298,7 +5099,7 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--死歌「八重霧の渡し」
 
 do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
@@ -5600,7 +5401,7 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--審判「十王裁判」
 
 do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3 张）
@@ -5770,7 +5571,7 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--古雨「黄泉中有の旅の雨」
 
 do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，映姬，组 8a 第 3 张）
@@ -5904,7 +5705,7 @@ do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--審判「ギルティ・オワ・ノットギルティ」
 
 do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组 7a 第 4 张）
@@ -5988,13 +5789,13 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 local sx = player.x + RING_SPAWN_GAP * cos(-base)
                 local sy = player.y + RING_SPAWN_GAP * sin(-base)
                 local color = (base0 > 0) and 2 or 1
-                NewSimpleBullet(square, ex_color(color, 23), sx, sy, BULLET_SPEED0,
+                SpawnPhoto(33298,sg_visual(square,23), ex_color(color, 23), sx, sy, BULLET_SPEED0,
                         -base, false, 0, false, nil, nil, nil, accel_hook)
                 PlaySound("tan00", 0.1, sx / 256, false)     -- flags 的 0x200
                 if photo_index(PHOTO_LIMIT) >= BIG_AT and n >= BIG_EVERY then
                     local a0 = ran:Float(-math.pi, math.pi)
                     for i = 0, BIG_COUNT - 1 do
-                        NewSimpleBullet(square, ex_color(1, 23), sx, sy, BIG_SPEED,
+                        SpawnPhoto(514,sg_visual(square,23), ex_color(1, 23), sx, sy, BIG_SPEED,
                                 -math.deg(a0 + i * math.pi / 5), false, 0, false)
                     end
                     PlaySound("tan00", 0.1, sx / 256, false)
@@ -6016,9 +5817,9 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 if photo_index(PHOTO_LIMIT) >= BOUNCE_AT then
                     local a0 = ran:Float(-math.pi, math.pi)
                     for i = 0, BOUNCE_COUNT - 1 do
-                        NewSimpleBullet(square, ex_color(0, 23), owner.x, owner.y,
+                        SpawnPhoto(514,sg_visual(square,23), ex_color(0, 23), owner.x, owner.y,
                                 BOUNCE_SPEED, -math.deg(a0 + i * math.pi / 8),
-                                false, 0, false, nil, true)      -- rebound = BOUNCE_ALL
+                                false, 0, false) -- 原作flags514未开启反弹记录
                     end
                     PlaySound("tan00", 0.1, owner.x / 256, false)
                 end
@@ -6068,7 +5869,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "7a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--死価「プライス・オブ・ライフ」
 
 do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 8a 第 4 张）
@@ -6213,7 +6014,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 local f0 = math.deg(ran:Float(-math.pi, math.pi) * 16)
                 local a0 = sg_aim(owner.x, owner.y) + 180
                 for i = 0, SUB4_BACK_COUNT - 1 do
-                    NewSimpleBullet(arrow_big_c, ex_color(2, 7), owner.x, owner.y,
+                    SpawnPhoto(642,sg_visual(arrow_big_c,7), ex_color(2, 7), owner.x, owner.y,
                             SUB4_BACK_SPEED, -(a0 + i * (360 / SUB4_BACK_COUNT)),
                             false, 0, false, nil, nil, nil, chdir_hook(f0))
                 end
@@ -6392,7 +6193,7 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "8a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--審判「浄頗梨審判　-射命丸文-」
 
 ---──────────────────── Stage 8（scene group 8 = world09）── 公共工具 ────────────────────
@@ -6443,7 +6244,7 @@ local SG_TAG = 0x1000000
 ---Stage 2/1 的 ins_101 表头几乎都是这一条。
 local SG_DECEL = 0x1
 ---0x2000 SET_CULL_DELAY（同文件 :607-612）：即时记录，只改「弹出屏后延迟几帧回收」。
----本仓库的回收边界由引擎统一管（文件头差异 3）⇒ 认掉即走，什么都不做。
+---原版只写offscreenCullDelayFrames，Update/Deactivate没有读取它；保留赋值而不编造宽限。
 local SG_CULL = 0x2000
 ---0x20000 PLAY_SOUND（同文件 :625-631）：即时记录，按 payload.soundIndex 在弹的位置
 ---响一声。本仓库的音效都是各卡自己的 sg_snd / PlaySound 口径，没有「按 TH095 音效
@@ -6486,7 +6287,7 @@ end
 ---recs 里的角度/角增量一律用**我们的口径**（度、逆时针为正），由 sg_deg / sg_rec 换算好。
 local function sg_tr_hook(recs, flags, start)
     local n = #recs
-    return function(self)
+    local function hook(self,birth)
         local st = self.sg_tr
         if not st then
             ---start = 第几条记录起跑（0-based 的 transformStartIndex + 1）。生下来的
@@ -6525,6 +6326,7 @@ local function sg_tr_hook(recs, flags, start)
             elseif r.kind == SG_CULL or r.kind == SG_SND_T then
                 ---0x2000 SET_CULL_DELAY / 0x20000 PLAY_SOUND：都是**即时**记录
                 ---（认领完 `goto nextRecord` 接着找下一条），不占 active。
+                if r.kind==SG_CULL then self.sg_cull_delay=r.i0 end
                 st.i = st.i + 1
             elseif r.kind == SG_TAG then
                 ---0x1000000 SET_OWNER_TAG：把这颗弹的 ownerTag 记下来（payload.int0）。
@@ -6541,7 +6343,7 @@ local function sg_tr_hook(recs, flags, start)
                 ---0x400000 SPAWN_CHILD_PATTERN（BulletManager.cpp:639-675）：**这一条
                 ---要连着吃掉后面一条**（第二条的 payload 是 secondary：count2 /
                 ---transformFlags / angle / angleStep）。第一条的 packedPattern 位域：
-                ---   bit31    fadeParent（放完就自己淡出 —— 见下面的 object.RawDel）
+                ---   bit31    fadeParent（放完进入原生退场状态，保留8/12帧弹槽）
                 ---   bit30..24 aimMode（0..8，就是 ins_86..94 的 86+aimMode）
                 ---   bit23..16 bulletType
                 ---   bit15..8  color
@@ -6564,9 +6366,10 @@ local function sg_tr_hook(recs, flags, start)
                         false, cflags, hook)
                 st.i = st.i + 2
                 ---bit31 fadeParent：BulletManager.cpp:661-664 放完子弹出后
-                ---BeginDespawn 自己（lua 侧就是 object.RawDel，和原作一致）。
+                ---BeginDespawn自己；下一帧起半速运动，ANM结束后才释放。
                 if math.floor(u / 0x80000000) % 2 == 1 then
-                    object.RawDel(self)
+                    PhotoNative.despawn(self)
+                    break
                 end
             else
                 ---要吃时间的记录：先记进 acts（本帧就按 ② 跑一次）。
@@ -6618,6 +6421,7 @@ local function sg_tr_hook(recs, flags, start)
                 break
             end
         end
+        if birth then return end
         ---② 逐条跑生效中的记录（和 C 一样：认领的同帧就跑一次）。
         ---★ 必须**从前往后**（1 → #acts），顺序已在 ① 里按 flag 位排好。
         local dirty = false
@@ -6725,6 +6529,8 @@ local function sg_tr_hook(recs, flags, start)
             for k = j + 1, #st.acts do st.acts[k] = nil end
         end
     end
+    PHOTO_HOOKS[hook]={flags=flags}
+    return hook
 end
 
 do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
@@ -6820,7 +6626,7 @@ do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--永琳 非符（ecl18_a）
 
 do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a 第 1 张）
@@ -6929,7 +6735,7 @@ do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--新難題「月のイルメナイト」
 
 do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a 第 2 张）
@@ -7032,7 +6838,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
                     local m = EMIT_R * ran:Float(0, 1)
                     local oa = sg_deg(ran:Float(-math.pi, math.pi))
                     local sx, sy = self.x + m * cos(oa), self.y + m * sin(oa)
-                    NewSimpleBullet(sg_visual(ellipse, 3), ex_color(color, 3), sx, sy, EMIT_SPEED,
+                    SpawnPhoto(536,sg_visual(ellipse, 3), ex_color(color, 3), sx, sy, EMIT_SPEED,
                             sg_deg(ran:Float(-math.pi, math.pi)), false, 0, false)
                     PlaySound("tan00", 0.1, sx / 256, false)   -- flags 536 的 0x200
                     task.Wait(gap)
@@ -7124,7 +6930,7 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
         drones = {}
     end
 
-    boss.card.add({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--薬符「胡蝶夢丸ナイトメア」
 
 do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 2 张）
@@ -7272,7 +7078,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--新難題「エイジャの赤石」
 
 do  -- 84 錬丹「水銀の海」（ecl18_c，永琳，组 9a 第 3 张）
@@ -7398,7 +7204,7 @@ do  -- 84 錬丹「水銀の海」（ecl18_c，永琳，组 9a 第 3 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--錬丹「水銀の海」
 
 do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a 第 3 张）
@@ -7534,7 +7340,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--新難題「金閣寺の一枚天井」
 
 do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
@@ -7568,7 +7374,7 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
     ---    48-70 的 args.speed = 8.0f），angle **不加**自机角（那是 148）。
     ---  · ★ 这些大玉在原作里是**永久留存**的：bounceLimit 999、四壁反射发生在 384×448 的
     ---    场地边上（BulletManager.cpp:959-1001 的 PhotoBulletIsOutsidePlayfield(…,0,0)），
-    ---    比「出屏回收」的判据更靠内 ⇒ 弹心永远出不了屏、不会被回收；原作靠全局 640 个弹槽
+    ---    比「出屏回收」的判据更靠内 ⇒ 弹心永远出不了屏、不会被回收；原作靠全局1600个弹槽
     ---    封顶。本仓库没有这个槽位上限，所以这张卡的峰值会随时长线性爬到卡结束
     ---    （每 90 帧 4 颗）—— 这是**原作行为**，不是移植泄漏，泄漏扫描里单独记一笔。
     local BOSS_X, BOSS_START_Y = -128, field_y(-64)
@@ -7668,7 +7474,7 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "9a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--秘薬「仙香玉兎」
 
 do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 张）
@@ -7822,7 +7628,7 @@ do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "10a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--新難題「ミステリウム」
 
 ---──────────────────── Stage 7（scene group 6 = world07）── 公共工具 ────────────────────
@@ -8116,7 +7922,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
         drones = {}
     end
 
-    boss.card.add({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--咲夜 非符（ecl14_a）
 
 ---──────────────────── Stage 7 魔符「全世界ナイトメア」（ecl15_a，组 12a 第 1 张） ────────────────────
@@ -8300,7 +8106,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
         bats = {}
     end
 
-    boss.card.add({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--魔符「全世界ナイトメア」
 
 ---──────────────────── Stage 7 時符「トンネルエフェクト」（ecl14_b，组 11a 第 2 张） ────────────────────
@@ -8420,7 +8226,7 @@ do  -- 62 咲夜 時符「トンネルエフェクト」（ecl14_b，组 11a 第
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--時符「トンネルエフェクト」
 
 ---──────────────────── Stage 7 紅符「ブラッディマジックスクウェア」（ecl15_b，组 12a 第 2 张） ────────────────────
@@ -8523,7 +8329,7 @@ do  -- 63 レミリア 紅符「ブラッディマジックスクウェア」（
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--紅符「ブラッディマジックスクウェア」
 
 ---──────────────────── Stage 7 空虚「インフレーションスクウェア」（ecl14_c，组 11a 第 3 张） ────────────────────
@@ -8641,7 +8447,7 @@ do  -- 64 咲夜 空虚「インフレーションスクウェア」（ecl14_c�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--空虚「インフレーションスクウェア」
 
 ---──────────────────── Stage 7 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_c，组 12a 第 3 张） ────────────────────
@@ -8776,7 +8582,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
         bats = {}
     end
 
-    boss.card.add({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--紅蝙蝠「ヴァンピリッシュナイト」
 
 ---──────────────────── Stage 7 銀符「パーフェクトメイド」（ecl14_d，组 11a 第 4 张） ────────────────────
@@ -8864,7 +8670,7 @@ do  -- 66 咲夜 銀符「パーフェクトメイド」（ecl14_d，组 11a 第
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "11a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--銀符「パーフェクトメイド」
 
 ---──────────────────── Stage 7 神鬼「レミリアストーカー」（ecl15_d，组 12a 第 4 张） ────────────────────
@@ -9003,7 +8809,7 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "12a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--神鬼「レミリアストーカー」
 ---──────────────────── Stage 6 橙 非符（ecl12_a，组 13a 第 1 张） ────────────────────
 do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
@@ -9104,11 +8910,11 @@ do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--橙 非符
 
----──────────────────── Stage 6 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张） ────────────────────
-do  -- 51 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
+---──────────────────── Stage 6 妖梦 人智剣「天女返し」（ecl13_a，组 14a 第 1 张） ────────────────────
+do  -- 51 妖梦 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
     ---原作是「天女回头甩出的两条交叠光带」：本体在 ±128 之间来回瞬移，每次瞬移前先甩
     ---一根满长激光、瞬移到位再甩第二根；同时 slot0 的整圈弹从**本体挪走后的位置 + 一个
     ---固定偏移**处一圈一圈地放。半个月亮一轮，共两根 × 两轮 = 四根激光。
@@ -9213,17 +9019,18 @@ do  -- 51 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            ---t=30 的第一段（ins_117(0,4) / ins_118(12) / ins_119(11)）都不实现，
-            ---直接等到 t=70 的半 A。
-            task.Wait(70)
+            task.Wait(30)
             while not st.dead do
+                -- Sub3 t30..70与t130..170分别发布0.25/0.24倍速。
+                PhotoNative.rate(self,0.25);task.Wait(40);PhotoNative.rate(self,1)
                 -- 半 A：world.x = 128 → 本体挪到 -128
                 half(self, self.x - 256, -64, 2.09439516, 0.52359879)
-                task.Wait(HALF)                          -- t=170
+                task.Wait(HALF-40)
+                PhotoNative.rate(self,0.24);task.Wait(40);PhotoNative.rate(self,1)
                 if st.dead then return end
                 -- 半 B：world.x = -128 → 本体挪到 128
                 half(self, self.x + 256, 64, 1.04719758, 2.61799383)
-                task.Wait(CYCLE - HALF)                  -- t=270 = 下一轮的 t=70
+                task.Wait(CYCLE-HALF-40)                 -- t230跳回t30
             end
         end)
     end
@@ -9237,7 +9044,7 @@ do  -- 51 八云蓝 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--人智剣「天女返し」
 
 ---──────────────────── Stage 6 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张） ────────────────────
@@ -9382,11 +9189,11 @@ do  -- 52 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--星符「飛び重ね鱗」
 
----──────────────────── Stage 6 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张） ────────────────────
-do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
+---──────────────────── Stage 6 妖梦 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张） ────────────────────
+do  -- 53 妖梦 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
     ---原作是「阿修罗的血柱」：本体先沉到场地**下方**、两根 576 长的巨柱一上一下地
     ---贯穿场地，同时从两条竖直的「血线」（本体所在那一列上下的随机点）往全屏撒
     ---加速弹。拍中本体到第 3 张后（ins_141(3)）这一张就结束。
@@ -9503,9 +9310,8 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            ---入场到 t=130 是 Sub2 的 ins_52(3)；Sub3 的 t=0 从这里起算，
-            ---t=30/50/65 只有装饰 ⇒ 第一件事是 t=70 的第一根柱。一轮 252 帧。
-            task.Wait(70)
+            task.Wait(30)
+            PhotoNative.rate(self,0.5);task.Wait(40);PhotoNative.rate(self,1)
             while not st.dead do
                 fire_laser(self, sg_deg(1.57079637), LASER_SUSTAIN_LONG)   -- 朝下
                 sg_move(self, st, self.x, field_y(512), 10, EASE_LIN)
@@ -9519,7 +9325,9 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
                 spin5.alive = false
                 if st.dead then return end
                 self.x = player.x                           -- ins_63(player.x, world.y)
+                PhotoNative.rate(self,0.5)
                 task.Wait(40)                               -- t=121
+                PhotoNative.rate(self,1)
                 if st.dead then return end
                 fire_laser(self, sg_deg(-1.57079637), LASER_SUSTAIN_LONG)  -- 朝上
                 sg_move(self, st, self.x, field_y(-64), 10, EASE_LIN)
@@ -9532,7 +9340,9 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
                 task.Wait(SUB6_FRAMES)
                 spin6.alive = false
                 if st.dead then return end
-                task.Wait(40)                               -- t=132 空转完 → t=30 的 40 帧后
+                PhotoNative.rate(self,0.5)
+                task.Wait(40)                               -- t=132空转完→t30的40帧后
+                PhotoNative.rate(self,1)
             end
         end)
     end
@@ -9548,7 +9358,7 @@ do  -- 53 八云蓝 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--妄執剣「修羅の血」
 
 ---──────────────────── Stage 6 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张） ────────────────────
@@ -9751,11 +9561,11 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--鬼神「鳴動持国天」
 
----──────────────────── Stage 6 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张） ────────────────────
-do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张）
+---──────────────────── Stage 6 妖梦 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张） ────────────────────
+do  -- 55 妖梦 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 张）
     ---原作是「流星雨」：本体在活动框里慢慢漂，场地**上半部**随机点上不断生出
     ---朝下的小玉 —— 它们出生速度 1 ~ 1+0.3×拍照数、在 120 帧里再加速 +1.3，
     ---所以拍得越多这一层越凶；中段换一条更密的子上下文（每 2 帧一发）并在
@@ -9858,10 +9668,12 @@ do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第
                 run_stars(self, 4, 1, 0x202)                -- t=0：Sub4
                 task.Wait(60)
                 if st.dead then return end
+                PhotoNative.rate(self,0.5)
                 run_stars(self, 5, 2, 0x2)                  -- t=60：Sub5 顶掉 Sub4
                 run_snipe(self)                             -- t=60：Sub6
                 task.Wait(100)                              -- t=160
                 if st.dead then return end
+                PhotoNative.rate(self,1)
                 if sub5 then sub5.alive = false; sub5 = nil end     -- ins_117(0,-1)
                 task.Wait(10)                               -- t=170
                 if st.dead then return end
@@ -9886,7 +9698,7 @@ do  -- 55 八云蓝 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--天星剣「涅槃寂静の如し」
 
 ---──────────────────── Stage 6 橙 化猫「橙」（ecl12_d，组 13a 第 4 张） ────────────────────
@@ -10006,11 +9818,11 @@ do  -- 56 橙 化猫「橙」（ecl12_d，组 13a 第 4 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "13a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--化猫「橙」
 
----──────────────────── Stage 6 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张） ────────────────────
-do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张）
+---──────────────────── Stage 6 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张） ────────────────────
+do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 张）
     ---原作是「四生的无情回响」：本体在两段镜像的「曲」里各放一根横贯场地的巨柱
     ---（先瞬移到一侧边线、朝场地内甩 384 长的大柱、再瞬移回场外），插在两根柱子之间的
     ---是沿四条对角线泼出去的小玉雨 —— 拍中本体不足 4 张时是稀疏版（每次 4 发、
@@ -10128,7 +9940,9 @@ do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第
 
     ---t=310 → t=470（photoIndex ≥ 4 且 world.x < 0 时由 @812 的 ins_4(310,524) 从 t=60 跳进来）。
     local function tail310(self, tok)
+        PhotoNative.rate(self,0.5)
         if not step(tok, 40) then return false end            -- t=350
+        PhotoNative.rate(self,1)
         side_laser(self, -192, OFF_FIELD, sg_deg(0), LASER_SUSTAIN_B)  -- ins_118(10)：左边线、朝 +x
         run_sub5(self)                                        -- ins_117(0,5)
         if not step(tok, 60) then return false end            -- t=410
@@ -10139,7 +9953,9 @@ do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第
 
     ---t=150 → t=470：一轮 320 帧（t=470 的 ins_4(150,-836) 把时间轴拉回 t=150）。
     local function cyc150(self, tok)
+        PhotoNative.rate(self,0.5)
         if not step(tok, 40) then return false end            -- t=190
+        PhotoNative.rate(self,1)
         side_laser(self, 192, -OFF_FIELD, sg_deg(math.pi), LASER_SUSTAIN_A)  -- ins_118(17)：右边线、朝 −x
         run_sub5(self)                                        -- ins_117(0,5)
         if not step(tok, 60) then return false end            -- t=250
@@ -10214,7 +10030,7 @@ do  -- 57 八云蓝 四生剣「衆生無情の響き」（ecl13_d，组 14a 第
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "14a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--四生剣「衆生無情の響き」
 
 ---──────────────────── Stage 5（scene group 4 = world05）── 公共工具 / 八张卡 ────────────────────
@@ -10377,7 +10193,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--红美铃 非符（ecl10_a）
 
 do  -- 41 日＆水符「ハイドロジェナスプロミネンス」（ecl11_a，帕秋莉，组 16a 第 1 张）
@@ -10520,7 +10336,7 @@ do  -- 41 日＆水符「ハイドロジェナスプロミネンス」（ecl11_a
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--日＆水符「ハイドロジェナスプロミネンス」
 
 do  -- 42 華符「彩光蓮華掌」（ecl10_b，红美铃，组 15a 第 2 张）
@@ -10675,7 +10491,7 @@ do  -- 42 華符「彩光蓮華掌」（ecl10_b，红美铃，组 15a 第 2 张�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--華符「彩光蓮華掌」
 
 do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋莉，组 16a 第 2 张）
@@ -10803,7 +10619,7 @@ do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--水＆火符「フロギスティックレイン」
 
 do  -- 44 彩翔「飛花落葉」（ecl10_c，红美铃，组 15a 第 3 张）
@@ -10929,7 +10745,7 @@ do  -- 44 彩翔「飛花落葉」（ecl10_c，红美铃，组 15a 第 3 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--彩翔「飛花落葉」
 
 do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，组 16a 第 3 张）
@@ -11051,7 +10867,7 @@ do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--月＆木符「サテライトヒマワリ」
 
 do  -- 46 彩華「虹色太極拳」（ecl10_d，红美铃，组 15a 第 4 张）
@@ -11153,7 +10969,7 @@ do  -- 46 彩華「虹色太極拳」（ecl10_d，红美铃，组 15a 第 4 张�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "15a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--彩華「虹色太極拳」
 
 do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，帕秋莉，组 16a 第 4 张）
@@ -11349,7 +11165,7 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "16a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--日＆月符「ロイヤルダイアモンドリング」
 
 end  -- Stage 5
@@ -11561,7 +11377,7 @@ do  -- 30 メディスン 非符（ecl7_a，组 17a 第 1 张）
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--メディスン 非符（ecl7_a）
 
 do  -- 31 霧符「ガシングガーデン」（ecl9_a，铃仙，组 18a 第 1 张）
@@ -11677,7 +11493,7 @@ do  -- 31 霧符「ガシングガーデン」（ecl9_a，铃仙，组 18a 第 1
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--霧符「ガシングガーデン」
 
 do  -- 32 脱兎「フラスターエスケープ」（ecl8_a，帝，组 19a 第 1 张）
@@ -11795,7 +11611,7 @@ do  -- 32 脱兎「フラスターエスケープ」（ecl8_a，帝，组 19a �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "19a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "19a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--脱兎「フラスターエスケープ」
 
 do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7_b，メディスン，组 17a 第 2 张）
@@ -11950,7 +11766,7 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--散符「朧月花栞（ロケット・イン・ミスト）」
 
 do  -- 34 毒符「ポイズンブレス」（ecl9_b，铃仙，组 18a 第 2 张）
@@ -12060,7 +11876,7 @@ do  -- 34 毒符「ポイズンブレス」（ecl9_b，铃仙，组 18a 第 2 �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--毒符「ポイズンブレス」
 
 do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7_c，メディスン，组 17a 第 3 张）
@@ -12190,7 +12006,7 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--波符「幻の月（インビジブルハーフムーン）」
 
 do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，铃仙，组 18a 第 3 张）
@@ -12305,7 +12121,7 @@ do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，铃仙，组 18a �
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "18a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--譫妄「イントゥデリリウム」
 
 do  -- 37 借符「大穴牟遅様の薬」（ecl8_b，帝，组 19a 第 2 张）
@@ -12427,7 +12243,7 @@ do  -- 37 借符「大穴牟遅様の薬」（ecl8_b，帝，组 19a 第 2 张�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "19a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "19a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--借符「大穴牟遅様の薬」
 
 do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，メディスン，组 17a 第 4 张）
@@ -12561,7 +12377,7 @@ do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，メ�
         photo_damage_off(self)
     end
 
-    boss.card.add({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "17a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--狂夢「風狂の夢（ドリームワールド）」
 
 end  -- Stage 4
@@ -12852,7 +12668,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
         dolls = {}
     end
 
-    boss.card.add({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--アリス 非符（ecl6_a）
 
 do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 2 张）
@@ -13062,7 +12878,7 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
         dolls = {}
     end
 
-    boss.card.add({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--操符「ドールズインシー」（ecl6_b）
 
 do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组 20a 第 3 张）
@@ -13346,7 +13162,7 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--呪符「ストロードールカミカゼ」（ecl6_c）
 
 do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 4 张）
@@ -13556,7 +13372,7 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
         dolls = {}
     end
 
-    boss.card.add({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "20a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--赤符「ドールミラセティ」（ecl6_d）
 
 do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 张）
@@ -13688,7 +13504,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--光符「アマテラス」（ecl5_a）
 
 do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张）
@@ -13822,7 +13638,7 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--包符「昭和の雨」（ecl5_b）
 
 do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 张）
@@ -13981,7 +13797,7 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
         orbs = {}
     end
 
-    boss.card.add({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--葵符「水戸の光圀」（ecl5_c）
 
 do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 张）
@@ -14124,7 +13940,7 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "21a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--倭符「邪馬台の国」（ecl5_d）
 
 
@@ -14356,7 +14172,7 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--チルノ 非符（ecl3_a）
 do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组 22a 第 2 张）
     ---原作是「把冰晶撒满屏」：本体每 200 帧一轮 —— t=0 起两条发弹上下文，每 15 帧各放一圈
@@ -14516,7 +14332,7 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--雪符「ダイアモンドブリザード」（ecl3_b）
 do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
     ---原作是「大玉飞到一半冻结、再炸成冰尘」：本体每 160 帧一轮，一轮里朝自机方向、
@@ -14719,7 +14535,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "22a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--凍符「マイナスＫ」（ecl3_c）
 ---レティ三张符卡（ecl4_a/b/c）公用的「霜精」子机与「冰雨」装饰。
 ---★ 这些是 Stage 2 外层（do ... end）的 local，三张卡共用；每张卡把自己的
@@ -15022,7 +14838,7 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
         rain_obj = nil
     end
 
-    boss.card.add({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--レティ 非符（ecl4_a）
 
 do  -- 13 レティ 寒符「コールドスナップ」（ecl4_b，组 23a 第 2 张）
@@ -15134,7 +14950,7 @@ do  -- 13 レティ 寒符「コールドスナップ」（ecl4_b，组 23a 第 
         clear_shards(shards)
     end
 
-    boss.card.add({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--寒符「コールドスナップ」（ecl4_b）
 
 do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 3 张）
@@ -15233,7 +15049,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--冬符「ノーザンウイナー」（ecl4_c）
 
 end  -- Stage 2
@@ -15474,7 +15290,7 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--リグル 非符（ecl1_a）
 
 do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
@@ -15722,7 +15538,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
         end
     end
 
-    boss.card.add({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--蛍符「地上の恒星」（ecl1_b）
 
 do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 第 3 张）
@@ -15992,7 +15808,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
         clear_bf_emitters(bf_ems)
     end
 
-    boss.card.add({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "24a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--蝶符「バタフライストーム」（ecl1_c）
 
 do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
@@ -16211,7 +16027,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--ルーミア 非符（ecl2_a）
 
 do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_b，组 25a 第 2 张）
@@ -16336,7 +16152,7 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--闇符「ダークサイドオブザムーン」（ecl2_b）
 
 do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 25a 第 3 张）
@@ -16512,7 +16328,7 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
         sg_clear(lasers)
     end
 
-    boss.card.add({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
+    register_photo_card({ { card, "25a" } }, LEVEL, CARD_NAME, CARD_ID)
 end--夜符「ミッドナイトバード」（ecl2_c）
 
 end  -- Stage 1

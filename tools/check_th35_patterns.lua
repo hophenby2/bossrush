@@ -288,10 +288,8 @@ object.RawDel(wide); step(1)
 check(not IsValid(wide), '原版出界/清理直接释放激光槽，不被 THlib del 保留 30 帧')
 local fading = New(line_class, 1000, 1000, 3, 6, 0, 128, 128, 2, 0, 16)
 fading.class.kill(fading)
-check(fading.group == GROUP.GHOST, '消弹特效移出激光碰撞组，不继续占用发射槽')
-check_laser_quad(fading, 16, '消散特效继续使用原版精灵与宽度，不切回 THlib 放大贴图')
-step(31)
-check(not IsValid(fading), '消散特效按框架原有 30 帧淡出并释放')
+step(1)
+check(not IsValid(fading), '风神录LaserClear直接退休，不追加框架的30帧激光对象')
 -- stage02.ecl 的 BossTrace/op294 复制 specialEnemySlots[0]，不取玩家坐标。
 player.x, player.y = 123, -176
 local dolls = start(3636); step(140)

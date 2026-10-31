@@ -91,7 +91,7 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
         actual_lasers.th08=find('lw209_laser')
         -- 真正执行构造并验证资源名，单纯载入卡片抓不到 ellipse/ellipse16 混用。
         local orb=New(find('c452_orb'),45,117,0,1)
-        check(resources[orb.img] and orb.img=='ellipse16','Final Master Spark的大玉使用已注册图片资源')
+        check(resources[orb.img] and orb.img=='th31_master_spark','Final Master Spark使用原作火花图片资源')
         for _,name in ipairs({'bullet_cls_23a','bullet_cls_23b','bullet_cls_4','bullet_cls_7'}) do
             local cls=find(name)
             local shot=New(cls,45,117,0.3,1.2,0.16,0)
@@ -235,4 +235,62 @@ check(near(bullet.GetRenderRotation(changing),-0.05235988*180/math.pi),'飞行�
 changing.ani=91
 bullet.ChangeImage(changing,changing.imgclass,16,true)
 check(near(bullet.GetRenderRotation(changing),-2*0.05235988*180/math.pi),'缓时灰化换色不重置ANM自转相位')
+check(changing.rank_speed==false,'原作弹不会被全局Rank叠加第二段位移')
+-- 使用实际消弹圈和实际TH31激光，防止清场复制无寿命的代理光束、耗尽对象池。
+dofile('THlib/bullet/clearbullet.lua')
+local beam=New(actual_lasers.th08,0,0,0)
+beam.lw209_state,beam.lw209_timer,beam.w,beam.colli=2,40,5,true
+laser.CutOnUnit(beam,{x=30,y=0})
+check(beam.lw209_state==2 and beam.l2==600,'无敌自机接触不能截出脱离原作弹池的激光片段')
+local old_lasers=object.LaserDo
+object.LaserDo=function(fn) fn(beam) end
+local drops=0
+cutLasersByCircle(0,0,800,function() drops=drops+1 end)
+check(drops==19 and beam.lw209_state==3 and beam.lw209_timer==0,
+    '600px原作激光只按32px采样19个掉落，并进入自身的消散状态')
+check(beam.class==actual_lasers.th08 and not beam.colli,'消原作激光不替换成失去寿命的THlib片段')
+cutLasersByCircle(0,0,800,function() drops=drops+1 end)
+check(drops==19,'同一个消弹圈后续帧不重复转换原作激光')
+local natural=New(actual_lasers.th08,0,0,0)
+natural.lw209_state=3
+local fade_drops=0
+OriginalBulletVisual.laser_drops(natural,function() fade_drops=fade_drops+1 end)
+check(fade_drops==0,'原本已在DESPAWNING的激光不再次转成道具')
+object.LaserDo=old_lasers
+local beam10=New(actual_lasers.th10,0,0,3,1,0,128,128,0,0,16)
+local count10=0
+OriginalBulletVisual.laser_drops(beam10,function() count10=count10+1 end)
+check(count10==10,'TH10消激光从6px起每12px采样，末端留6px，不能套用TH08的32px')
+local length10=beam10.l2
+laser.CutOnUnit(beam10,{x=64,y=0})
+check(beam10.l2==length10,'TH10无敌自机接触也不能生成丢失ECL变换程序的THlib光段')
+local protected=ray(7,16)
+protected.pl_flags=4
+local protected_drops=0
+OriginalBulletVisual.laser_drops(protected,function() protected_drops=protected_drops+1 end)
+OriginalBulletVisual.cancel_laser(protected)
+check(protected_drops==0 and not protected._native_cancelled,'TH07 flags4激光保留普通消弹免疫')
+OriginalBulletVisual.cancel_laser(protected,false,true)
+check(protected._native_cancelled,'TH07强制结算清场仍可回收flags4激光')
+local cleaned=New(actual_lasers.th08,0,0,0)
+cleaned.lw209_state,cleaned.lw209_timer,cleaned.w,cleaned.colli=2,40,5,true
+local old_bullets=object.BulletDo
+local old_dist=Dist
+Dist=function(a,b,...)
+    if type(a)=='table' and type(b)=='table' then return math.sqrt((a.x-b.x)^2+(a.y-b.y)^2) end
+    return old_dist(a,b,...)
+end
+object.BulletDo=function() end
+object.LaserDo=function(fn) fn(cleaned) end
+local cleaner=New(bullet_cleaner,0,0,800,0,30,false,true,0,0)
+cleaner.class.frame(cleaner)
+check(IsValid(cleaned) and cleaned.lw209_state==3 and cleaned.class==actual_lasers.th08,
+    '完整消弹圈的第二轮扫描不再次Del已进入原生退场状态的光柱')
+local corner=New(actual_lasers.th08,700,700,0)
+corner.lw209_state,corner.w,corner.colli=2,5,true
+object.LaserDo=function(fn) fn(corner) end
+cutLasersByCircle(0,0,800)
+check(not corner._native_cancelled,'原生激光在消弹圈外的角落不能被投影包围盒误清除')
+object.BulletDo,object.LaserDo=old_bullets,old_lasers
+Dist=old_dist
 print(('子弹映射、旋转与激光尺寸回归通过：%d 项'):format(checks))

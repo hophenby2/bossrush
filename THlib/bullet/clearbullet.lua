@@ -1,7 +1,7 @@
 ---clear_bullet
 ---用消弹圈切割直线激光
 ---@param drop object|fun(x:number, y:number)@掉落的道具
-local function cutLasersByCircle(x1, y1, r, drop)
+local function cutLasersByCircle(x1, y1, r, drop, force)
     local drop_func
     if type(drop) == "function" then
         drop_func = drop
@@ -11,8 +11,9 @@ local function cutLasersByCircle(x1, y1, r, drop)
         end
     end
     object.LaserDo(function(self)
-        if not self.IsBentLaser and IsValid(self) then
-            if self.colli and self.alpha > 0.999 and self.protect == 0 then
+        if not self.IsBentLaser and IsValid(self) and self.status~='del' and self.status~='kill' then
+            local native=self._native_laser_game or self._native_laser_managed or self.th06_width
+            if (native or (self.colli and self.alpha > 0.999)) and self.protect == 0 then
                 --用尽毕生所学
                 local lx, ly = self.x, self.y
                 local len = self.l1 + self.l2 + self.l3
@@ -21,6 +22,18 @@ local function cutLasersByCircle(x1, y1, r, drop)
                 local a, b, c = sinr, -cosr, cosr * ly - sinr * lx
                 local dist = abs(a * x1 + b * y1 + c) / sqrt(a * a + b * b)
                 if dist < r then
+                    if native then
+                        -- 各作按自己的采样间隔消整条光，不复制缺少ECL寿命状态的THlib片段。
+                        local along=dx*cosr+dy*sinr
+                        local half=sqrt(r*r-dist*dist)
+                        if along+half>=0 and along-half<=len and not self._native_cancelled then
+                            if drop then
+                                OriginalBulletVisual.laser_drops(self,drop_func,force)
+                            end
+                            OriginalBulletVisual.cancel_laser(self,nil,force)
+                        end
+                        return
+                    end
                     local d = sqrt(r * r - dist * dist)
                     local l = sign(dx * cosr + dy * sinr) * sqrt(dx * dx + dy * dy - dist * dist)
                     local cut, _l1, _l2
@@ -85,16 +98,18 @@ function bullet_cleaner:frame()
     if self.timer > self.time2 then
         object.RawDel(self)
     end
-    cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor)
+    cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes)
     object.BulletDo(function(o)
         if Dist(self, o) < self.a then
             object[self.into](o)
         end
     end)
     object.LaserDo(function(o)
-        if Dist(self, o) < self.a then
+        if IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
             if self.indes or not (o.Isradial or o.Isgrowing) then
-                object[self.into](o)
+                if o._native_laser_game or o._native_laser_managed or o.th06_width then
+                    OriginalBulletVisual.cancel_laser(o,self.into=='Kill',self.indes)
+                else object[self.into](o) end
             end
         end
     end)
@@ -122,16 +137,18 @@ function bomb_bullet_killer:frame()
     if self.timer == 1 then
         Del(self)
     end
-    cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor)
+    cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor,self.kill_indes)
     object.BulletDo(function(o)
         if Dist(self, o) < self.a then
             object.Kill(o)
         end
     end)
     object.LaserDo(function(o)
-        if Dist(self, o) < self.a then
+        if IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
             if self.kill_indes or not (o.Isradial or o.Isgrowing) then
-                object.Kill(o)
+                if o._native_laser_game or o._native_laser_managed or o.th06_width then
+                    OriginalBulletVisual.cancel_laser(o,true,self.kill_indes)
+                else object.Kill(o) end
             end
         end
     end)

@@ -2005,15 +2005,15 @@ class["TH34_walker3"] = Class(enemy, {
         self.A, self.B = 24, 24           -- SET_HITBOX_SIZE 24,24,32
         self.kind, self.mirror = sub, mirror or 0
         ---先给默认值：真机第一帧 frame 就会读这四个（分支里再覆盖）。
-        self.dx, self.dy, self.x0, self.y0 = 0, 0, x, y
+        self.rise_dx, self.rise_dy, self.x0, self.y0 = 0, 0, x, y
         object.SetV(self, 0, 0, false)
         local th = (sub == 3) and (PI / 2) or w3_theta()
         if sub == 6 then
             ---MOVE_DIR_TIME(60,4,θ,3)：ease-out-quad 直线，总位移 3×60 px；
             ---mirror 只把 x 分量取反（Enemy::Move / MoveDirTime 的两处镜像）。
             local sx = (self.mirror == 1) and -1 or 1
-            self.dx = sx * cos(th * RAD2DEG) * W3_RISE_D
-            self.dy = -sin(th * RAD2DEG) * W3_RISE_D
+            self.rise_dx = sx * cos(th * RAD2DEG) * W3_RISE_D
+            self.rise_dy = -sin(th * RAD2DEG) * W3_RISE_D
             self.x0, self.y0 = x, y
             self.rise = false
         else
@@ -2051,8 +2051,8 @@ class["TH34_walker3"] = Class(enemy, {
         if self.kind == 6 and not self.rise then
             local u = min(self.timer, W3_RISE_T) / W3_RISE_T
             local e = 1 - (1 - u) * (1 - u)
-            self.x = self.x0 + self.dx * e
-            self.y = self.y0 + self.dy * e
+            self.x = self.x0 + self.rise_dx * e
+            self.y = self.y0 + self.rise_dy * e
         end
         ---SET_SHOOT_INTERVAL_RAND 的复刻：每帧 ++，到 n 就把**上一轮**重打一次
         if self.interval > 0 then
@@ -11685,8 +11685,8 @@ local function TH34_add_stage56_boss()
     ---  · 原作 BEGIN_SPELLCARD 的 Easy/Normal/Hard 行一律不用，只取 Lunatic 行的名字与数值；
     ---    蒼符在 L 上是「博愛のオルレアン人形」、白符是「-Lunatic-」、雅符「春の京人形」、
     ---    咒詛是「首吊り蓬莱人形」——都是原作 L 行的原名。
-    ---  · 爱丽丝本体在符卡里会「瞬移换位」（原作 MOVE_POS_TIME / SET_POS），移植版只搬弹幕
-    ---    与子机，本体留在原地（同 stage5/6 各卡）。
+    ---  · 爱丽丝本体的MOVE_POS_TIME/SET_POS与子机分别执行；th07_motion_begin保存
+    ---    当前卡的原版入口与活动框，不能用子机运动代替本体运动。
     ---  · 原作 3 面本体 sub36/sub37 的「非符」其实很短（sub36 的 SET_LIFE 只有 2000），
     ---    这里是把它按一般非符的规模补成可独立挑战的一张卡（血量沿用非符1 的口径）。
     ---════════════════════════════════════════════════════════════════════

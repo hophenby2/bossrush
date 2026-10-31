@@ -400,6 +400,7 @@ local CARD = {}
 ---  ⇒ ECL 里 0x4x/0x5x 段的「妖怪那一支」只在（低速满 7 帧后）执行。
 --- 形态在每张卡的frame里推进，发弹和碰撞共用原作7帧过渡。
 class.th08_combat = dofile("mod/GAME/th31_combat.lua")()
+class.th08_native = dofile("mod/GAME/th31_native.lua")
 local function player_is_youkai(who)
     return class.th08_combat.youkai(who)
 end
@@ -7342,6 +7343,7 @@ lw215_beam = Class(laser, {
         ---rot 是角度制（AGENTS.md C1）：我们坐标的 θ（弧度）×RAD。
         laser.init(self, 1, boss.x, boss.y, theta * RAD, 0, BEAM_LEN, 0, BEAM_W, 0, 0)
         self.h_boss = boss
+        self.bound = false
         self.alpha = 1          -- THlib 的判定条件：alpha > 0.999（laser.lua:85）
         self.w = BEAM_W
         self._a = 0             -- 原作这个判定盒没有立绘 → 隐藏
@@ -7349,9 +7351,11 @@ lw215_beam = Class(laser, {
     end,
     frame = function(self)
         ---判定盒原点 = BOSS 的位置（头每帧钉在 BOSS + 295·(cos/sin θ)，所以原点就是 BOSS）。
+        if not IsValid(self.h_boss) then object.RawDel(self);return end
         self.x, self.y = self.h_boss.x, self.h_boss.y
-        laser.frame(self)
+        class.th08_native.spark_hit(self,self.x,self.y,288,224,self.timer)
     end,
+    render = function(self) end,
 })
 
 ---彗星头（Sub63..66 + 子 context Sub62）。占位贴图 "servant"。
@@ -7361,12 +7365,11 @@ lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
     init = function(self, owner, theta, anm, end_t)
         self.x, self.y = owner.x, owner.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
-        self.img = "servant"
-        self.hscale, self.vscale = 0.5, 0.5
+        class.th08_native.spark(self,anm)
         self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- 会跑到场地外，不能自动回收
-        self.rot = -theta * RAD             -- `ins_165(xF0)`：立绘转到瞄准角（我们取反）
+        self.rot = theta * RAD              -- theta已经是翻转后的我方角度
         self._blend, self._a = "", 255
         self.h_boss = owner
         self.h_theta = theta
@@ -7415,6 +7418,7 @@ lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
         end
         self.h_t = t + 1
     end,
+    render = class.th08_native.render_spark,
 })
 
 ---一次出弹（ins_99 = SHOOT_CIRCLE）。池满 → 整波不生；波中途生不出来就丢掉剩下的
@@ -35384,7 +35388,7 @@ local function spawn_sparks(owner, ang_th08)
     local ty = by + math.sin(ang_th08) * SPARK_DIST
     local list = owner.c450_sparks
     for i = 1, SPARK_PIECES do
-        local s = New(spark, owner, bx - 192, 224 - by, tx - 192, 224 - ty, ang_th08)
+        local s = New(spark, owner, bx - 192, 224 - by, tx - 192, 224 - ty, ang_th08,i)
         list[#list + 1] = s
         ---★ 与 ins_92 同理：SpawnEnemy2 当场跑一遍 + 同帧敌人扫描再跑一遍。
         spark_body(s)
@@ -35425,7 +35429,10 @@ spark_body = function(self)
     local t = self.sp_t
     self.sp_t = t + 1
 
-    ---Sub58/59/60 只有 `ins_64`；Sub57 多一段 ex9（旋转激光判定，本卡没有激光 ⇒ 空转）。
+    -- ExIns9直接判定矩形，不需要先生成laser对象；仅Sub57携带此回调。
+    if self.th08_spark_script==6 and t>=120 and t<310 then
+        class.th08_native.spark_hit(self,self.x-self.sp_dx,self.y-self.sp_dy,160,128,t)
+    end
     ---MOVE_TO 的 INTERPOLATED 更新（EnemyManager.cpp:80-121）：
     ---  movementTimer--；progress = 1 − timer/duration；easing 1 = IN_QUADRATIC；
     ---  位置 = origin + delta·progress（最后一帧直接落在终点）。
@@ -35445,15 +35452,14 @@ spark_body = function(self)
 end
 
 spark = Class(object, {
-    init = function(self, boss, x0, y0, tx, ty, ang_th08)
+    init = function(self, boss, x0, y0, tx, ty, ang_th08,piece)
         self.sp_boss = boss
         self.sp_t = 0
         self.sp_x0, self.sp_y0 = x0, y0
         self.sp_dx, self.sp_dy = tx - x0, ty - y0
         self.x, self.y = x0, y0
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
-        self.img = "servant"
-        self.hscale, self.vscale = 1.6, 1.6
+        class.th08_native.spark(self,5+piece)
         self.colli = false
         self.navi = false
         self.bound = false
@@ -35463,6 +35469,7 @@ spark = Class(object, {
     frame = function(self)
         spark_body(self)
     end,
+    render = class.th08_native.render_spark,
 })
 
 ---------------------------------------------------------------------
@@ -36138,9 +36145,8 @@ end
 ---      f=996  t=120 → f=1026 t=150 …
 ---  ★ 枪活 360 帧（18×20 的 `ins_5 JUMP_DEC` 循环跑完 `ins_53 RETURN`）、大玉活 300 帧
 ---    ⇒ 同一时刻只有一批（下一批在 422 帧后）。
----  ★ 出弹位置 = 宿主的 worldPosition + shootOffset(0,0)（EclDependencies.cpp:718-721）
----    ⇒ 环是从 BOSS 身上发出的，大玉只是绕圈 + 原作的旋转判定盒（ex 指令 11，不做）。
----  ★ 差异：大玉用白色 ellipse16 染色代理原作 anm alt 18..21。
+---  ★ 出弹位置 = 宿主的 worldPosition + shootOffset(0,0)（EclDependencies.cpp:718-721）。
+---    Sub70的ExIns11另执行590×240的旋转判定，四层火花使用原作ANM精灵和展开/收束。
 ---------------------------------------------------------------------
 do
 local PI = 3.141592653589793
@@ -36334,7 +36340,7 @@ c452_orb = class.th08_combat.actor("ecldata4b:70", {
     init = function(self, x, y, ang, color)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
-        self.img = "ellipse16"              -- 白色底图供 ORB_TINT 染色；ellipse 是弹型名
+        class.th08_native.spark(self,17+color)
         self.hscale, self.vscale = 0.85, 0.85
         self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
@@ -36349,6 +36355,7 @@ c452_orb = class.th08_combat.actor("ecldata4b:70", {
         self.o_dy = math.sin(ang) * ORB_RADIUS
         self.o_mv = { n = ORB_MOVE_FRAMES, t = 0 }
         self.rot = ang * RAD                -- `ins_165 SET_MAIN_ANM_ROTATION`（观感）
+        self.o_color = color
         ---`ins_64(60, 1, lf2, lf3)` 的插值在**出生那一帧的帧尾**就走了第 1 步。
         self.o_mv.t = 1
         orb_set_move(self, 1)
@@ -36375,9 +36382,14 @@ c452_orb = class.th08_combat.actor("ecldata4b:70", {
             self.y = self.o_cy + math.sin(self.o_ang) * ORB_RADIUS
             self.rot = self.o_ang * RAD
         end
+        if self.o_color==1 and self.o_t>=120 and self.o_t<=239 then
+            -- ExIns11使用position-lf0/lf1为原点，lf0/lf1随本帧公转更新。
+            class.th08_native.spark_hit(self,self.o_cx,self.o_cy,240,192,self.o_t)
+        end
         ---③ `+181: ins_1 TERMINATE`（循环把 time 卡在 120，走完 li6 = 120 轮后再过 60 帧）。
         if self.o_t >= ORB_END_FRAME then object.RawDel(self) end
     end,
+    render = class.th08_native.render_spark,
 })
 
 ---t=150 / t=210 的 4 条 `ins_94 SPAWN_ENEMY_RELATIVE`（EnemyTimeline.cpp:79-125）：

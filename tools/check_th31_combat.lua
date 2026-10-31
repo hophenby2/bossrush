@@ -182,8 +182,8 @@ local function find(root,key)
 end
 owner=boss_owner(452)
 local orb=New(find(cards[452],'c452_orb'),45,117,0,1)
-check(orb.img=='ellipse16' and orb.th08_source=='ecldata4b:70',
-    'Final Master Spark实际构造原生使魔，图片资源使用已注册的ellipse16')
+check(orb.img=='th31_master_spark' and orb.th08_source=='ecldata4b:70',
+    'Final Master Spark实际构造原生使魔，图片资源使用原作火花精灵')
 owner=boss_owner(443)
 local Familiar=find(cards[443].init,'familiar')
 local fam=New(Familiar,owner,2,700,{})

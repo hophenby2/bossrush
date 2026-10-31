@@ -332,6 +332,7 @@ class["大卫之星激光"] = Class(laser, {
         l.x, l.y = l.th06_x + math.cos(l.rot / DEG) * shift, l.th06_y + math.sin(l.rot / DEG) * shift
         l.l1, l.l2, l.l3, l.w, l.alpha = 0, length, 0, l.th06_width / 2, 1
         l.colli = t >= 50
+        if l._native_cancelled then l.colli=false end
         laser.frame(l)
         l.th06_age = t + 1
     end,
@@ -342,6 +343,8 @@ class["大卫之星激光"] = Class(laser, {
         laser.render(l)
         l.x, l.y, l.l2, l.w = x, y, length, w
     end,
+    del=function() end,
+    kill=function(l) OriginalBulletVisual.cancel_laser(l,true) end,
 })
 local function star(b)
     local phase = ran:Float(0, 2 * PI)
@@ -726,6 +729,8 @@ class["原作直线激光"] = Class(laser, {
         laser.render(l)
         l.x,l.y,l.l2,l.w,l.alpha=x,y,len,w,alpha
     end,
+    del=function() end,
+    kill=function(l) OriginalBulletVisual.cancel_laser(l,true) end,
 })
 function H.fade_laser(l,collide)
     if alive(l) and l.th06_state<2 then l.th06_state,l.th06_timer=2,0 end

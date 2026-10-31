@@ -12,6 +12,8 @@ function V.native_style(game, kind, style)
     bykind[kind] = bykind[kind] or {}
     if bykind[kind][style] then return bykind[kind][style] end
     local mapped = Class(style, {native_profile=assert(V.profiles[game][kind]), native_game=game,
+        -- 原作弹的逐帧速度由ECL负责，不能再被本项目Rank追加一段位移。
+        init=function(o,...) style.init(o,...);o.rank_speed=false end,
         native_type=kind, visual_style=style.visual_style or style,
         collision_style=style.collision_style or style, size=style.size,
         RenderFunc=style.RenderFunc, SetColorFunc=style.SetColorFunc}, true)
@@ -137,6 +139,7 @@ function V.laser_collision(o, callback)
         end
     end
     if not o._native_laser_box and game ~= 95 and p.phase == 3 then o.colli = p.timer < p.hitend end
+    if o._native_cancelled then o.colli=false end
     o.x,o.y = x+cos(o.rot)*start,y+sin(o.rot)*start
     o.l1,o.l2,o.l3,o.alpha = 0,length,0,1
     callback(o)
@@ -150,16 +153,19 @@ function V.laser(base, game)
         -- laser.render 在画图时读取 laser_render_width；不改写碰撞字段。
         base.render(o)
     end
-    local fading = Class(base, { frame = task.Do, render = render,
-        del = function() end, kill = function() end }, true)
     local mapped = Class(base, {
         init = function(o, ...)
             base.init(o, ...)
             o._native_laser_game = game
         end,
         render = render,
-        kill = function(o) base.kill(o); o.class = fading end,
-        del = function(o) base.del(o); o.class = fading end,
+        frame=function(o)
+            if o._native_cancel_scale then o.w=o.w*o._native_cancel_scale end
+            base.frame(o)
+        end,
+        kill = function(o) V.cancel_laser(o,true) end,
+        -- 原生状态机计时结束后的RawDel直接释放槽位，不追加THlib的30帧退场。
+        del = function() end,
     }, true)
     -- Class 只继承六个回调。CyGrow 等协程入口仍从 class 表显式调用。
     for k,v in pairs(base) do
@@ -167,6 +173,57 @@ function V.laser(base, game)
     end
     lasers[base][key] = mapped
     return mapped
+end
+function V.laser_protected(o)
+    return o._native_laser_game==7 and math.floor((o.pl_flags or 0)/4)%2==1
+end
+function V.laser_drops(o,drop,force)
+    if not force and V.laser_protected(o) then return end
+    local game=o._native_laser_game or o._native_laser_managed
+    local phase=o._native_laser_phase
+    if (phase and game==8 and o[phase[1]]>=3) or (game==7 and o.pl_state and o.pl_state>=2)
+        or (o.th06_state and o.th06_state>=2) or (o.th06_age and o.th06_age>=150) then return end
+    local length=o.l1+o.l2+o.l3
+    local first,step,last=0,32,length-0.001
+    if game==95 or game==10 then first,step,last=6,12,length-6-0.001 end
+    for r=first,last,step do
+        local x,y=o.x+cos(o.rot)*r,o.y+sin(o.rot)*r
+        -- TH10 LaserClear/Type1Clear只在场地外32px内产生道具。
+        if game~=10 or (x+32>-192 and x-32<192 and y+32>-224 and y-32<224) then drop(x,y) end
+    end
+end
+-- 原作消激光不拆成缺少寿命的新laser对象。TH08保留原类，直接进入自己的DESPAWNING。
+function V.cancel_laser(o,drop,force)
+    if o._native_cancelled then return end
+    -- TH07 RemoveAllBullets保留flags4的光；符卡结算的强制清场另走force。
+    if not force and V.laser_protected(o) then object.Preserve(o);return end
+    o._native_cancelled=true
+    if drop and item and item.obj and item.obj.faith_minor then
+        V.laser_drops(o,function(x,y) New(item.obj.faith_minor,x,y) end,force)
+    end
+    local phase=o._native_laser_phase
+    if phase and o._native_laser_game==8 then
+        if o[phase[1]]<3 then
+            local full=phase[4]/(o._visual_width_factor or 1)
+            o._native_cancel_scale=full>0 and math.min(1,o.w/full) or 0
+            o[phase[1]],o[phase[2]]=3,0
+        end
+        o.colli=false
+        object.Preserve(o)
+    elseif o.th06_state then
+        if o.th06_state<2 then
+            o.th06_width=o.th06_draw_width or o.th06_width
+            o.th06_state,o.th06_timer=2,0
+        end
+        o.th06_hitend,o.colli=0,false
+        object.Preserve(o)
+    elseif o.th06_age then
+        o.th06_age=math.max(150,o.th06_age)
+        o.colli=false
+        object.Preserve(o)
+    else
+        object.Del(o)
+    end
 end
 OriginalBulletVisual = V
 return V

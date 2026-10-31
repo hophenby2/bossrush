@@ -31,6 +31,9 @@ _G.bullet = {
     ChangeImage=function(b,style,index) b.imgclass,b._index,b.real_index=style,index,index end,
     frame=noop,render=noop,
 }
+-- 显示映射由单独的真实资源/引擎测试验证；本参照器保留原始ANM尺寸参与几何回收。
+_G.OriginalBulletVisual={profiles=dofile('THlib/bullet/original_profiles.lua'),
+    native_style=function(_,_,style) return style end}
 _G.laser = {
     init=function(b,index,x,y,rot,l1,l2,l3,w)
         b.index,b.x,b.y,b.rot,b.l1,b.l2,b.l3,b.w0=index,x,y,rot,l1,l2,l3,w

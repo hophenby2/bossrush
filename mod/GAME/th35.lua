@@ -67,8 +67,8 @@
 ---     对应 `square`。轮廓与颜色组对齐，但不是逐像素相同（见 `T10_STYLE`）。
 ---  3  全关共用原作的2000个点弹槽（BulletManager.cpp:SpawnSingleBullet）；
 ---     从游标环形找空槽，满槽即停止当前波，不能靠无限发弹改变原作图案。
----  4  出膛动画（flags 带 SPAWN_FAST/SLOW 的 10/15/30 帧定格）不建模：本卡出膛速度 0.001，
----     那几帧的位移可以忽略，弹在出膛帧就能被看见。
+---  4  出生过渡按bullet.anm的8/15/25帧半速推进，结束当帧再走完整ACTIVE步；
+---     原作初始化认领变换与出生后逐帧更新分开，不能沿用框架11帧雾化。
 ---  5  弹的 etEx 程序里 slot0（kind=2，TH10 复原源码的 kind 表里没有这一项）与 slot1
 ---     （kind=0x1000 SET_CANCEL_BEHAVIOR=10000）都只影响消弹表现，本文件按无效果处理；
 ---     真正决定画面的是 slot2（WAIT=I2，每发重新装填）与 slot3（ACCELERATE_POLAR）。
@@ -1382,15 +1382,9 @@ local function t10_laser_render(self)
         self.w / self.t10_sprite_w, len / self.t10_sprite_h)
 end
 
-local th10_laser_fade = Class(laser, {
-    frame = task.Do,
-    render = t10_laser_render,
-    del = function() end,
-    kill = function() end,
-})
 local function t10_laser_kill(self)
-    laser.kill(self)
-    self.class = th10_laser_fade
+    -- LaserClear把状态置为退休，不能追加THlib淡出或复制失去变换程序的光段。
+    OriginalBulletVisual.cancel_laser(self,true)
 end
 
 local function t10_new_laser(owner, cls, ...)
@@ -1425,6 +1419,7 @@ end
 local th10_laser = Class(laser, {
     init = function(self, x, y, kind, color, ang, initlen, maxlen, speed, term, width, program)
         laser.init(self, t10_color(color, kind), x, y, -ang * RAD, 0, initlen, 0, width, 0, 0)
+        self._native_laser_managed=10
         self.w0 = width
         self.t10_len, self.t10_max, self.t10_initial = initlen, maxlen, initlen
         self.t10_ang, self.t10_spd, self.t10_term = ang, speed, term
@@ -1514,6 +1509,7 @@ end
 local th10_st_laser = Class(laser, {
     init = function(self, x, y, kind, color, ang, initlen, maxlen, wait, grow, hold, shrink, width)
         laser.init(self, t10_color(color, kind), x, y, -ang * RAD, 0, initlen, 0, width, 0, 0)
+        self._native_laser_managed=10
         self.t10_sprite, self.t10_sprite_w, self.t10_sprite_h = t10_laser_sprite(kind, color)
         self.t10_ang, self.t10_len, self.t10_max = ang, initlen, maxlen
         self.t10_wait, self.t10_grow, self.t10_hold, self.t10_shrink = wait, grow, hold, shrink

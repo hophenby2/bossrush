@@ -85,6 +85,9 @@ end
 boss.card.add=function(parts,level,_,id)
     cards[id]=parts[1][1]
 end
+-- check_stage把未知字段补成空函数；显式启用真实TH095拍照包装，避免把补丁本身跳过。
+boss.photo_damage_patch=false
+boss.take_damage2=function() end
 for _,n in ipairs({33,34,35}) do dofile('mod/GAME/th'..n..'.lua') end
 local C=_editor_class.TH34
 local function upvalue(root,name)
@@ -467,5 +470,128 @@ end end
 check(small and huge and oni_owner.th07_oni_active,'实际符卡时间轴同时出现鬼玉与撒出的两种小弹')
 oni_card.del(oni_owner);task.Clear(oni_owner)
 check(not oni_owner.th07_oni_active,'换卡停止ExIns22回调')
+reset()
+-- TH095出生状态与变换认领在实际sg_shot出口验证，不以框架默认11帧雾化代替。
+local photo_shot=upvalue(cards[478],'sg_shot')
+local photo_style=upvalue(cards[478],'sg_style')
+local photo_hook=upvalue(cards[478],'sg_tr_hook')
+local callback_steps=0
+photo_shot(87,photo_style(1),1,0,0,1,1,2,0,0,0,false,0x202,
+    function(o) callback_steps=callback_steps+1 end)
+local spawned=objects[#objects]
+check(near(spawned.x,-8) and spawned.th095_spawn_left==8,'TH095 FAST出生点先退四帧速度')
+for _=1,7 do tick() end
+check(callback_steps==0 and near(spawned.x,-1) and not spawned.colli,
+    'TH095出生阶段只走半速，不推进发弹记录或碰撞')
+tick()
+check(callback_steps==1 and near(spawned.x,2) and spawned.colli,
+    'TH095出生末帧执行半步与完整ACTIVE步')
+reset()
+local hook=photo_hook({{kind=0x2000,allow=0,i0=99,i1=0,f0=0,f1=0},
+    {kind=0x20,allow=0,i0=3,i1=-1,f0=1,f1=0}},0x2020)
+photo_shot(87,photo_style(1),1,0,0,1,1,2,0,0,0,false,0x2020,hook)
+local active=objects[#objects]
+check(active.sg_cull_delay==99 and active.sg_tr.acts[1].timer==0,
+    'TH095出生当帧执行即时记录并认领首条运动记录，暂不推进计时')
+tick()
+check(near(active.x,3) and near(active.vx,3),'无SPAWN的TH095弹首帧立即执行原生加速')
+reset()
+local native95=upvalue(cards[495],'PhotoNative')
+check(_editor_boss['2a31'].name=='八云蓝' and _editor_boss['2a31'].img=='Ran',
+    'enm16的原版素材是八云蓝，不能把这组卡挂到妖梦行走图上')
+check(_editor_boss['14a31'].name=='魂魄妖梦' and _editor_boss['14a31'].img=='Youmu',
+    'enm13的四张剑符与缓时对应妖梦')
+local owner,spell=start(412)
+for _=1,450 do tick(owner,spell) end
+check(near(owner.x,0) and near(owner.y,96),'死蝶浮月本体按Sub3的320帧插值升到原作y128后停留')
+local sources=0
+for _,o in ipairs(objects) do
+    if IsValid(o) and o.class==_editor_class.TH33.dead_moth then
+        sources=sources+1
+        check(o.hide and o.y>=-32 and o.y<=32,'死蝶浮月的Sub4是下方活动带内的隐藏独立发弹源')
+    end
+end
+check(sources==1,'ins83(4)生成一个Sub4，不是四个装饰蝶')
+for _=451,590 do tick(owner,spell) end
+local released=false
+for _,o in ipairs(objects) do
+    if IsValid(o) and o.sg_tag==1 and o.th095_motion_reset then
+        check(near(math.sqrt(o.vx*o.vx+o.vy*o.vy),4.5),'ExIns21让被标记的旋转蝶以4.5速直飞')
+        released=true;break
+    end
+end
+check(released,'死蝶浮月第一轮激光预热结束执行原版ExIns21')
+spell.del(owner);task.Clear(owner);reset()
+local key=New(_editor_class.TH33.key,-128,256)
+for _=1,10 do tick() end
+check(near(key.y,236),'秘鍵子发弹体出生即以2速下行，不能等淡入完才开始移动')
+check(key.img=='th33_key' and near(key.hscale,1-(1-10/15)^2),
+    '秘鍵使用原版enm16/script8的128×144法阵及15帧生长')
+for _=11,315 do tick() end
+check(not IsValid(key),'秘鍵按128×144精灵出场回收，不额外停留25帧淡出')
+reset()
+local old_float,old_px=ran.Float,player.x
+ran.Float=function(_,a) return a end;player.x=200
+local angle=native95.boundary_angle(100,224,{-160,0,160,448},-0.2)
+check(near(angle,-3.1415927+0.2),'TH095右边界负角分支同样读取上一帧movementAngle')
+ran.Float=old_float;player.x=old_px
+local line=New(laser,3,0,0,0,0,0,0,24,0,0)
+native95.straight(line,256,24,8)
+for _=1,32 do tick() end
+check(near(line.l2,256) and near(line.x,0),'文花帖145先长满256px，不能在生长时移动尾端')
+tick()
+check(near(line.x,8) and IsValid(line),'文花帖145长满后整根每帧前进8px，没有虚构的维持40帧')
+reset()
+local target={x=10,y=20,_live=true}
+local ray=New(laser,3,0,0,0,0,0,0,16,0,0)
+native95.rotating(ray,target,32,16,8,3,2,3,2,1,2,0,true)
+for _=1,3 do tick() end
+check(near(ray.w,2) and not ray.colli and near(ray.l2,24) and near(ray.x,12),
+    '文花帖旋转光预热保持2px并逐帧增长，锚点跟随本体后再加速度')
+tick();check(ray.th095_laser_state==4 and near(ray.w,2) and ray.colli,
+    '文花帖预热转生长的当帧保持2px，而非直接画满宽或透明渐入')
+tick();check(near(ray.w,8),'文花帖生长阶段按本段计时器线性长宽')
+tick();check(ray.th095_laser_state==2 and near(ray.w,16),'文花帖生长结束当帧进入满宽维持')
+for _=1,3 do tick() end
+check(ray.th095_laser_state==5 and not ray.colli and near(ray.w,16),'文花帖维持到点直接进入无判定收束')
+tick();check(near(ray.w,8),'文花帖收束按原作计时缩宽')
+tick();check(not IsValid(ray),'文花帖旋转光收束结束直接释放，不追加框架淡出')
+reset()
+local source_count=0
+for id,source in pairs(dofile('mod/GAME/th33_sources.lua')) do
+    source_count=source_count+1
+    check(cards[id].t3==source.timeout_start+source.timeout and #source.sha256==64,
+        '文花帖每幕时限来自原版ECL的ins114及赋值时刻：'..id)
+    local owner,spell=start(id)
+    check(owner.photo_damage_limit==source.photos,'文花帖逐幕快门上限与原版ins141一致：'..id)
+    owner.protect=true
+    _G.boss.take_damage2(owner,1)
+    check(owner.photo_hit_count==0,'受保护目标不能推进有效拍照张数：'..id)
+    spell.del(owner);task.Clear(owner);reset()
+end
+check(source_count==85 and cards[495].t3==7908,'文花帖85幕齐全，天女返し不是统一50秒')
+for _=1,1601 do photo_shot(87,photo_style(1),1,0,0,1,1,0,0,0,0,false,0) end
+check(#objects==1600,'文花帖0x640个弹槽即1600，不是十进制640或无限生成')
+reset()
+photo_shot(87,photo_style(1),1,0,0,1,1,2,0,0,0,false,0)
+local fading=objects[#objects]
+native95.despawn(fading)
+check(IsValid(fading) and not fading.colli and fading.th095_despawn_duration==8,
+    '文花帖小弹退场保留原对象8帧并立即关闭判定')
+for _=1,7 do tick() end
+check(IsValid(fading) and near(fading.x,7),'文花帖小弹退场期间以原速度一半前进')
+tick();check(not IsValid(fading),'文花帖小弹ANM结束才释放弹槽')
+reset()
+local owner,spell=start(495)
+local rates={}
+for i=1,400 do
+    tick(owner,spell)
+    local value=lstg.var.CYFPS
+    if value and rates[#rates]~=value then rates[#rates+1]=value end
+end
+check(rates[1]==15 and rates[2]==60 and near(rates[3],14.4) and rates[4]==60,
+    '天女返し逐轮保留原版0.25与0.24两个缓时窗口及其恢复')
+spell.del(owner);task.Clear(owner)
+check(lstg.var.CYFPS==nil,'文花帖换卡恢复进入缓时之前的全局时钟')
 reset()
 print(('原作切割、变速、伴奏激光与文花帖回归通过：%d 项'):format(checks))

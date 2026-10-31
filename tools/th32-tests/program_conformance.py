@@ -3,6 +3,7 @@
 import argparse
 import subprocess
 import tempfile
+import shutil
 from pathlib import Path
 from source import Source,road_catalogue
 from expand import lit
@@ -18,13 +19,23 @@ def main():
         if isinstance(value,list):return '{'+','.join(lua(v) for v in value)+'}'
         return lit(value)
     with tempfile.TemporaryDirectory(prefix='th32-ecl-') as folder:
-        path=Path(folder)/'source.lua';path.write_text('return '+lua(data))
+        path=Path(folder)/'source.lua';path.write_text('return '+lua(data),encoding='utf-8')
         outputs=[]
         for variant in ('native','oracle'):
             command=['luajit','tools/th32-tests/native.lua','program',str(args.frames),variant,str(path)]
             if args.card or args.dump:command.append(str(args.card or 0))
             if args.dump:command.append(str(args.dump)+'.'+variant)
-            outputs.append(subprocess.check_output(command,text=True))
+            if shutil.which('luajit'):
+                outputs.append(subprocess.check_output(command,text=True))
+            else:
+                # Windows测试机已安装的Lupa提供原版LuaJIT 2.1/5.1语义，不使用Lua5.4。
+                from lupa.luajit21 import LuaRuntime
+                runtime=LuaRuntime(unpack_returned_tuples=True)
+                rows=[]
+                runtime.globals().print=lambda *items: rows.append('\t'.join(map(str,items)))
+                runtime.globals().arg=runtime.table_from(command[2:])
+                runtime.execute(Path(command[1]).read_text(encoding='utf-8-sig'))
+                outputs.append('\n'.join(rows))
         native,oracle=map(str.splitlines,outputs)
         assert len(native)==len(oracle),(len(native),len(oracle))
         for a,b in zip(native,oracle):
