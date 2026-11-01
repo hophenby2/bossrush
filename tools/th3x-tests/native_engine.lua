@@ -57,6 +57,15 @@ function T.install()
         for _,group in ipairs({GROUP.ENEMY,GROUP.NONTJT}) do
             for _,o in ObjList(group) do if o~=host then counts.actors=counts.actors+1 end end
         end
+        current.unmapped_visuals=current.unmapped_visuals or {}
+        for _,group in ipairs({GROUP.ENEMY,GROUP.NONTJT,GROUP.INDES,GROUP.GHOST}) do
+            for _,o in ObjList(group) do
+                if o.img=='servant' and not o._original_actor and not o._original_no_sprite then
+                    local info=debug.getinfo(o.class.init,'Sl')
+                    current.unmapped_visuals[info.short_src..':'..info.linedefined]=true
+                end
+            end
+        end
         local kinds={}
         for _,o in ObjList(GROUP.LASER) do
             counts.lasers=counts.lasers+1
@@ -84,6 +93,7 @@ function T.install()
             rendered=current.rendered or 0,ended=current.ended,phase=current.phase,laser_kinds=current.laser_kinds,
             min_rate=current.min_rate,max_photos=current.max_photos,damage_attempts=current.damage_attempts or 0,
             cleanup=remaining,original_ecl=current.original_ecl}
+        row.unmapped_visuals=current.unmapped_visuals
         records[#records+1]=row;write('card',row);save(false)
     end
     local function launch()
@@ -145,6 +155,7 @@ function T.install()
         if complete then return true end
         local ok,err=xpcall(function()
             for _=1,speed do
+                local completed_before=#records
                 -- 与DoFrameEx相同的分数帧累计，缓时窗口要改变实际推进量。
                 accumulator=accumulator+ext.GetFakeFPS()
                 if accumulator>=1 then
@@ -180,6 +191,11 @@ function T.install()
                     settle=settle+1
                     if settle>=120 then complete=true;save(true);break end
                 end
+                -- 大批推进只改变验证的墙钟时间；在首帧、两个截图点和换卡边界交还真实渲染。
+                -- 避免隐藏窗口的后台限帧让完整513卡验证花在等待窗口上。
+                if #records~=completed_before or (current and current.phase=='combat' and
+                    ((frames>=1 and (current.rendered or 0)==0) or
+                     (frames>=300 and not current.captured) or (frames>=900 and not current.captured_late))) then break end
                 end
             end
         end,debug.traceback)

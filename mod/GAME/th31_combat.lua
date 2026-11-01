@@ -127,7 +127,7 @@ return function()
     end
     -- 道中使用手动调度的enemy类，形态判定须包住它自己的伤害分发入口。
     function M.unit(define)
-        local init,render=define.init,define.render or DefaultRenderFunc
+        local init,frame,render=define.init,define.frame,define.render or DefaultRenderFunc
         local unitbase=Class(enemy,{
             take_damage=function(o,amount)
                 if M.youkai(o) then return end
@@ -141,11 +141,21 @@ return function()
         })
         define.init=function(o,sub,x,y,mirror,parent,...)
             init(o,sub,x,y,mirror,parent,...)
+            if OriginalStageVisual and define.source_file then
+                OriginalStageVisual.bind_source(o,8,define.source_file..':'..sub)
+            end
             o.th08_parent,o.th08_attached=parent,parent~=nil
             if parent then o.group=GROUP.NONTJT end
             M.unit_collision(o)
         end
-        define.render=function(o) M.render(o,render) end
+        define.frame=function(o)
+            if OriginalStageVisual then OriginalStageVisual.source_frame(o,o.timer) end
+            frame(o)
+            if IsValid(o) and OriginalStageVisual then OriginalStageVisual.tick(o) end
+        end
+        define.render=function(o) M.render(o,function(unit)
+            if not OriginalStageVisual or not OriginalStageVisual.draw(unit) then render(unit) end
+        end) end
         return Class(unitbase,define)
     end
     local function event(o,e)
@@ -237,7 +247,9 @@ return function()
         local cfg=assert(profiles[key],key)
         local init,frame,kill,del=define.init,define.frame,define.kill,define.del
         local render=define.render or DefaultRenderFunc
-        define.render=function(o) M.render(o,render) end
+        define.render=function(o) M.render(o,function(unit)
+            if not OriginalStageVisual or not OriginalStageVisual.draw(unit) then render(unit) end
+        end) end
         define.init=function(o,...)
             local args={...};local parent=parent_for(args)
             init(o,...)
@@ -246,6 +258,7 @@ return function()
             -- 大凤凰在第120帧变成隐藏枪架；另两种凤凰始终使用普通使魔交互。
             if key=='ecldata8sp:93' and args[1]==95 then profile=profiles['ecldata8sp:95'] end
             o.th08_source,o.th08_profile=key,profile
+            if OriginalStageVisual then OriginalStageVisual.bind_source(o,8,key) end
             o.th08_parent,o.th08_attached=parent,profile.attached
             local n=1
             if parent then
@@ -273,12 +286,14 @@ return function()
                 return
             end
             local profile=o.th08_profile
+            if OriginalStageVisual then OriginalStageVisual.source_frame(o,o.th08_clock) end
             while profile.events[o.th08_event] and profile.events[o.th08_event][1]<=o.th08_clock do
                 event(o,profile.events[o.th08_event]);o.th08_event=o.th08_event+1
             end
             refresh(o)
             if frame then frame(o) end
             if IsValid(o) then
+                if OriginalStageVisual then OriginalStageVisual.tick(o) end
                 o.th08_guard=math.max(0,o.th08_guard-1)
                 o.th08_clock=o.th08_clock+1
             end

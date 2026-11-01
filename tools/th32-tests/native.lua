@@ -8,6 +8,8 @@ _G.ball_small, _G.arrow_small, _G.ball_big, _G.knife, _G.ball_huge = {}, {}, {},
 _G.GROUP={GHOST=0,ENEMY=2,LASER=10};_G.LAYER={ENEMY=0,ENEMY_BULLET=0}
 _G.SetAttr=function(b,k,v) rawset(b,k,v) end
 _G.BossWalkImageSystem=function() return {SetImageInList=noop,frame=noop,render=noop} end
+-- 本测试对照 ECL 的运动/发弹事件；ANM 另由真实播放器与 Windows 引擎验证。
+_G.OriginalStageVisual={th06_script=function(o) o._original_actor={vm={}} end,poses=noop,slot=noop}
 _G.enemy={init=function(b,style,hp) b.hp=hp;b.maxhp=hp;b._wisys={frame=noop,render=noop};b._a=255;b._r=255;b._g=255;b._b=255 end,render=noop}
 _G.item={obj={}}
 for _,name in ipairs({'faith','point','addcharge','addmisscount','faith_minor'}) do

@@ -39,9 +39,12 @@ end
 local bullet = Class(object)
 _G.bullet = bullet
 function bullet:frame()
+    if self._native_anm then OriginalBulletVisual.step_anm(self) end
     if GameRank then GameRank.observe(self) end
     self._motion_rot=motion_angle(self) or self._motion_rot
     task.Do(self)
+    -- 原作弹的换色/消弹由自己的 ECL/ANM 决定；通用 gray 会把八色精灵索引换到消散图上。
+    if self._native_anm then return end
     if (lstg.var.gray or self.own_gray) and (not self._no_gray) then
         if self._index ~= 16 then
             ChangeImage(self, self.imgclass, 16, true)
@@ -83,6 +86,7 @@ function bullet:del()
     end
 end
 function bullet:render()
+    if self._native_anm and OriginalBulletVisual.render_anm(self) then return end
     local c = self.imgclass
     local drawrot=render_rotation(self)
     for _, s in ipairs(self.graysmear) do
@@ -130,6 +134,7 @@ function bullet:init(imgclass, index, stay, destroyable, fogtime)
         self.index = int((index + 1) / 2)
     end
     imgclass.init(self, index)
+    if imgclass.native_game then self.class=self.logclass end
     self._native_visual_start=self.ani
     if imgclass.native_game==7 or imgclass.native_game==95 or imgclass.native_game==10 then self.bound=false end
     self._follow_motion=follows(imgclass)

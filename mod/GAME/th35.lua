@@ -148,17 +148,11 @@ end
 
 local function t10_color(i, t)
     t = math.floor(tonumber(t) or 0)
-    local fixed = T10_FIXED_COLOR[t]
-    if fixed then return fixed end
     i = math.floor(tonumber(i) or 0)
     if i < 0 then i = 0 end
     local n = T10_COLOR_COUNT[t] or 16
     if i >= n then i = n - 1 end
-    local map = T10_C16
-    if n == 8 then map = T10_C8
-    elseif n == 4 then map = T10_C4
-    elseif n == 3 then map = T10_C3 end
-    return map[i + 1]
+    return i+1
 end
 
 ---===== 原作常量（stage06.ecl BossCard5，Lunatic 行）=====
@@ -1314,6 +1308,9 @@ class["th10_ecs_pod"] = Class(object, {
         ---（Enemy.cpp:1039），所以本帧 ECL 读到的还是上一帧末的值 ⇒ 计数器在 task.Do
         ---之后才加。stage07 的祟符「ミシャグジさま」用 %TIME 分阶段，必须照抄。
         self.__t10frames = (self.__t10frames or 0) + 1
+        local visual=self.th10_boss or self
+        if visual._original_source then OriginalStageVisual.source_frame(visual,self.timer);OriginalStageVisual.tick(visual) end
+
         ---BOSS 载体：把 BOSS 本体钉在 ECL 位置上。
         ---（守卫直接写在 self.th10_boss 上：T10 载体是可选绑定，字段审计据此判定 init 无赋值也安全。）
         if self.th10_boss and IsValid(self.th10_boss) then
@@ -1589,6 +1586,11 @@ local function t10_boss_start(b, main, id)
     ecs_sync(p)
     b.x, b.y = p.x, p.y
     b.th10carrier = p
+    local visual_key=OriginalStageVisual.functions[main]
+    if visual_key then
+        OriginalStageVisual.bind_source(b,10,visual_key,true)
+    end
+
     t10_track(p)
     return p
 end
@@ -5307,8 +5309,8 @@ class["th10_midfairy"] = Class(enemy, {
 })
 
 ---造一只妖精。`beh` = 行为子程序（函数）；`src`（可选）把创建者的 $I/%F 拷给子机。
-function t10mid.spawn(hp, x, y, mirror, drop, beh, src, inv)
-    local f = New(class["th10_midfairy"], hp, x, y, mirror, drop, beh, src, inv)
+function t10mid.spawn(hp, x, y, mirror, drop, beh, src, inv, visual_key)
+    local f = New(class["th10_midfairy"], hp, x, y, mirror, drop, beh, src, inv, visual_key)
     t10mid.units[#t10mid.units + 1] = f
     return f
 end
@@ -6743,8 +6745,11 @@ t10mid.s04.mkgirl = function(f, hp, behs, inv)
     local i0 = f.I0 or 0
     local x, y = t10mid.pos(f)
     local drop = (i0 == 1 or i0 == 2) and t10mid.s04.D2 or t10mid.s04.D1
-    return t10mid.spawn(hp, x, y, false, drop, behs[i0 % 4 + 1],
-                        { I0 = i0, I1 = f.I1 or 0, F0 = f.F0 or 0, F1 = f.F1 or 0 }, inv)
+    local beh=behs[i0 % 4 + 1]
+    local key=OriginalStageVisual.functions[beh]
+    if key then key=key:gsub(':B?Girl',':'..({'R','B','G','Y'})[i0%4+1]..'Girl') end
+    return t10mid.spawn(hp, x, y, false, drop, beh,
+                        { I0 = i0, I1 = f.I1 or 0, F0 = f.F0 or 0, F1 = f.F1 or 0 }, inv, key)
 end
 
 ---========================= 乌鸦（Crow 系） =========================
@@ -7701,7 +7706,7 @@ t10mid.s05.one = function(name, x, y, mirror, src)
     local S = t10mid.s05
     local base, col = name, "R"
     if not S.BEH[name] then col = name:sub(1, 1); base = name:sub(2) end
-    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0)
+    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0,'stage05:'..name)
 end
 
 ---色序串 → 敌人名表：S.n("BBBRR", "Girl02") = { "BGirl02","BGirl02","BGirl02","RGirl02","RGirl02" }。
@@ -8359,7 +8364,7 @@ t10mid.s07.one = function(name, x, y, mirror, src)
     local S = t10mid.s07
     local base, col = name, "R"
     if not S.BEH[name] then col = name:sub(1, 1); base = name:sub(2) end
-    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0)
+    t10mid.spawn(S.HP[base], x, y, mirror, S.DROP[col], S.BEH[base], src, S.INV[base] or 0,'stage07:'..name)
 end
 
 ---第 1 只立即出、以后每 gap 帧一只，共 n 只（对应原作里「+10:」连排的 enmCreate）。
@@ -10939,4 +10944,55 @@ for _, e in ipairs(T10_CARDS_S125) do
     end
     c.del = function(self) class.t10_boss_end(self) end
     boss.card.add({ { c, band } }, LEVEL, menu, id)
+end
+
+-- 风神录敌机的 ANM 文件、姿态和附属动画来自同名 ECL 子程序。
+do
+    local V=OriginalStageVisual
+    for _,entry in ipairs({{1,s1},{2,s2},{3,s3n},{4,s4n},{5,s5},{6,s6},{7,s7}}) do
+        V.register_functions(10,('stage%02d'):format(entry[1]),entry[2])
+    end
+    for stage=1,7 do
+        local tab=t10mid[('s%02d'):format(stage)]
+        V.register_functions(10,('stage%02d'):format(stage),tab,{eclg='Ecl_Girl00',bsp='BSpCir00',rsp='RSpCir00',gsp='GSpCir00',g1='Girl01'})
+    end
+    V.wrap_actor(class.th10_midfairy,10,function(o,hp,x,y,mirror,drop,beh,src,inv,visual_key)
+        return visual_key or V.functions[beh]
+    end)
+    V.wrap_actor(class.th10_s6fairy,10,function(o,hp,x,y,mirror,drop,sub)
+        local name=({cir00='BCir00',cir01='BCir01',cir01b='BCir01b',girl00='Girl00',girl01='Girl01',girl02='Girl02'})[sub]
+        return name and 'stage06:'..name
+    end)
+    V.wrap_actor(class.th10_ecs_pod,10,function(o,origin,x,y,sub)
+        -- 主机载体由 Boss 绘制；子机只有原作设置过 ANM 时才显示本体。
+        if origin then return V.functions[sub] end
+    end)
+end
+
+do
+    local V=OriginalStageVisual
+    V.register_function(s3_BossCard1AtH_,10,'stage03:BossCard1AtH_')
+    V.register_function(s3_BossCard1AtH,10,'stage03:BossCard1AtH')
+    V.register_function(s3_BossCard1AtH2,10,'stage03:BossCard1AtH2')
+    V.register_function(s3_BossCard1,10,'stage03:BossCard1')
+    V.register_function(s3_Boss2Et_at2h,10,'stage03:Boss2Et_at2h')
+    V.register_function(s3_BossCard2,10,'stage03:BossCard2')
+    V.register_function(s3_BossCard3L_at,10,'stage03:BossCard3L_at')
+    V.register_function(s3_BossCard3L_at2,10,'stage03:BossCard3L_at2')
+    V.register_function(s3_BossCard3L,10,'stage03:BossCard3L')
+    V.register_function(s4_BossChargeP,10,'stage04:BossChargeP')
+    V.register_function(s4_BossCharge,10,'stage04:BossCharge')
+    V.register_function(s4_BossCard1,10,'stage04:BossCard1')
+    V.register_function(s4_BossCard2,10,'stage04:BossCard2')
+    V.register_function(s4_BossCard3_at,10,'stage04:BossCard3_at')
+    V.register_function(s4_BossCard3_side,10,'stage04:BossCard3_side')
+    V.register_function(s4_BossCard3_at2,10,'stage04:BossCard3_at2')
+    V.register_function(s4_BossCard3_at3,10,'stage04:BossCard3_at3')
+    V.register_function(s4_BossCard3_hop,10,'stage04:BossCard3_hop')
+    V.register_function(s4_BossCard3,10,'stage04:BossCard3')
+    V.register_function(s4_BossCard4_at,10,'stage04:BossCard4_at')
+    V.register_function(s4_BossCard4_spin,10,'stage04:BossCard4_spin')
+    V.register_function(s4_BossCard4_at2,10,'stage04:BossCard4_at2')
+    V.register_function(s4_BossCard4_at3,10,'stage04:BossCard4_at3')
+    V.register_function(s4_BossCard4,10,'stage04:BossCard4')
 end

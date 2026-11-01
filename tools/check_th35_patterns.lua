@@ -189,7 +189,7 @@ for _, l in ipairs(rays) do
     if near(l.x, -128) then left = left or l end
 end
 check(right and left, '左右发射点分别为 Boss X±128，不能把额外参数静默丢掉')
-check(right.index == 6 and right.l1 == 0 and right.l3 == 0, '按原作色号画整段光柱，不能用白色三角判定代替')
+check(right.index == 7 and right.l1 == 0 and right.l3 == 0, '原作色号6直接使用索引7，不再走代理色表')
 local first, x, y = right, right.x, right.y
 while first.t10_age < 64 do step(1) end
 check(near(first.x, x) and near(first.y, y) and near(first.l2, 128), '增长阶段固定尾端，64 帧达到原作长度')

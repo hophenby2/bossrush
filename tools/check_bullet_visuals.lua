@@ -125,21 +125,24 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
         local mapped=mapper(t);if game=='th33' then mapped=mapped[1] end
         check(mapped.visual_style==visual,game..' type'..t..' 选用默认大小接近的样式')
         local old=assert(mapped.collision_style)
-        for color=1,16 do
+        for color=1,OriginalBulletVisual.color_count(mapped.native_game,t) do
             local original=NewSimpleBullet(old,color,0,0,1,0,false,0,false)
             local changed=NewSimpleBullet(mapped,color,0,0,1,0,false,0,false)
             check(near(changed.a,original.a) and near(changed.b,original.b) and changed.rect==original.rect,
                 game..' 保留既有碰撞尺寸及形状')
             check(changed.hscale==1 and changed.vscale==1,game..' 不额外缩放子弹')
             calls={};bullet.render(changed)
-            check(#calls==1 and calls[1].name==changed.img and calls[1].h==1 and calls[1].v==1,game..' 使用样式默认渲染尺寸')
+            local vm=changed._native_anm
+            local native=vm.data.sprites[vm.sprite]
+            check(#calls==1 and calls[1].name==native.img and calls[1].h==vm.scale[1] and calls[1].v==vm.scale[2],game..' 使用原作精灵与ANM缩放')
             if visual==water_drop or visual==gun_bullet then
                 changed.graysmear={{img=changed.img,x=0,y=0,rot=0,hscale=1,vscale=1,alpha=80}}
                 calls={};bullet.render(changed)
-                check(#calls==2 and calls[1].h==1 and calls[1].v==1,game..' 动画样式的灰色拖影也使用默认尺寸和正确帧号')
+                check(#calls==1 and calls[1].name==native.img,game..' 原作弹不叠项目的代理灰色拖影')
             end
-            bullet.ChangeImage(changed,mapped,16)
-            local gray=NewSimpleBullet(old,16,0,0,1,0,false,0,false)
+            local white=OriginalBulletVisual.color_count(mapped.native_game,t)
+            bullet.ChangeImage(changed,mapped,white)
+            local gray=NewSimpleBullet(old,white,0,0,1,0,false,0,false)
             check(near(changed.a,gray.a) and near(changed.b,gray.b),game..' 飞行中换色/换图仍保留原判定')
         end
     end
@@ -161,8 +164,8 @@ for _,game in ipairs({7,8,95}) do
     player.x,player.y=50,3.9;hits=0;o.class.frame(o);check(hits==1,'原作 16px 光束命中半宽 4px：内点命中')
     player.y=4.1;hits=0;o.class.frame(o);check(hits==0,'原作光束判定外点不命中')
     calls={};o.class.render(o)
-    local middle=calls[2];local g=resources[middle.name]
-    check(near(g.h*g.scale*middle.v,16),'激光显示全宽 16px')
+    local middle=calls[game==8 and 1 or 2];local g=resources[middle.name]
+    check(near((game==8 and g.w*middle.h or g.h*middle.v)*g.scale,16),'激光显示全宽 16px')
     check(o.w==16 and o.w0==16,'渲染后不污染碰撞宽度和最大宽度')
 end
 local half=ray(8,16,2)
@@ -212,17 +215,19 @@ for _,case in ipairs({{6,2,grain_a},{7,9,knife},{8,11,square},{95,16,star_big},{
     o.dx,o.dy,o.vx,o.vy=2,0,0,2
     check(near(bullet.GetRenderRotation(o),90),'原生ANM随当前弹道旋转，忽略上一帧dx及代理星弹默认值')
     calls={};bullet.render(o)
-    check(near(calls[#calls].rot,90),'绘制入口实际使用原作随动朝向')
+    check(near(calls[#calls].rot,0),'原作贴图朝上，弹道90度对应绘制角0度')
 end
 for _,case in ipairs({{8,12,star_small,0.05235988},{8,13,star_small,-0.05235988},
     {8,14,star_big,0.03141593},{8,15,star_big,-0.03141593},
     {95,17,ball_huge,0.7853982},{10,17,ball_huge,0.7853982},
     {10,24,ball_small,0.19634955},{10,26,grain_a,0.10471976}}) do
     local o=NewSimpleBullet(OriginalBulletVisual.native_style(case[1],case[2],case[3]),2,0,0,2,13,false,0,false)
-    o.ani=30
+    for frame=1,30 do o.ani=frame;OriginalBulletVisual.step_anm(o) end
     local before={o.rot,o.vx,o.vy}
     calls={};bullet.render(o)
-    check(near(calls[#calls].rot,-31*case[4]*180/math.pi),'ANM自转角速度及Y轴翻转与原作一致')
+    local ticks=(((case[1]==95 or case[1]==10) and case[2]==17) or (case[1]==10 and case[2]==26)) and 32 or 31
+    -- 大玉在脚本前导段就设置自转，其余旋转弹在主弹段开始设置或重置旋转。
+    check(near(calls[#calls].rot,-ticks*case[4]*180/math.pi),('ANM自转角速度：TH%d type%d 实测%.9f 预期%.9f'):format(case[1],case[2],calls[#calls].rot,-ticks*case[4]*180/math.pi))
     check(o.rot==before[1] and o.vx==before[2] and o.vy==before[3],'贴图自转不改变逻辑角和弹道')
 end
 local changing=NewSimpleBullet(OriginalBulletVisual.native_style(8,12,star_small),2,0,0,2,0,false,0,false)

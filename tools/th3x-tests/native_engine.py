@@ -60,8 +60,11 @@ def run(args):
         path=output/name
         if path.exists(): path.unlink()
     sources=list((ROOT/'mod/GAME').glob('th3[12345]*.lua'))
-    for folder in ('THlib/bullet','THlib/laser','THlib/enemy','THlib/lib'):
+    for folder in ('THlib/bullet','THlib/laser','THlib/enemy','THlib/lib','THlib/anm','mod/GAME/original'):
         sources.extend((ROOT/folder).glob('*.lua'))
+    sources.extend((ROOT/'mod/GAME/original').glob('*/*.lua'))
+    sources.extend((ROOT/'Resources/Original').glob('*/*.png'))
+    sources.extend((ROOT/'THlib/WalkImageSystem.lua',ROOT/'tools/th3x-tests/native_engine.lua',ROOT/'mod/GAME/original/manifest.json'))
     (output/'native-run.json').write_text(json.dumps({
         'seed':args.seed,'mode':args.mode,'flow':args.flow,'frames':args.frames,'games':args.games,
         'hashes':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}

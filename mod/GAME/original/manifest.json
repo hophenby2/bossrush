@@ -1,0 +1,1752 @@
+{
+  "6": {
+    "etama3": {
+      "source": "紅魔郷CM.DAT",
+      "sha256": "1bbbbea06778111585c33223a9376e76299db746fbed627908d09807b114cd4c",
+      "sprites": 154,
+      "scripts": 28
+    },
+    "etama4": {
+      "source": "紅魔郷CM.DAT",
+      "sha256": "edf59b5ddab4b19026938a3831185b1e16fb6ff905cfa62340ffeca471687b04",
+      "sprites": 25,
+      "scripts": 21
+    },
+    "eff00": {
+      "source": "紅魔郷CM.DAT",
+      "sha256": "39a3ea9aaeef1e86e54b35cfd31e66b4e1d66b53d984eaa61335bf887c324223",
+      "sprites": 36,
+      "scripts": 16
+    },
+    "loading": {
+      "source": "紅魔郷CM.DAT",
+      "sha256": "94831d8205f3e8b15e5f5a48de744479919856584cd7150f0dbbb959b35c374a",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "capture": {
+      "source": "紅魔郷IN.DAT",
+      "sha256": "67491653ca1ff7bac2a7eec8c056a006af4fc8d2cf6bd0acca71ca6d912e581a",
+      "sprites": 0,
+      "scripts": 1
+    },
+    "stg1bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "df6677c5b183f89e057266a9481ca94556584aeeeddbd523b3c543cf7bf3aaa5",
+      "sprites": 28,
+      "scripts": 34
+    },
+    "stg1enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "0dfbe29b1011723493bcf50e17d7ea74f25a6b73b5b704a97d703005b3117062",
+      "sprites": 24,
+      "scripts": 8
+    },
+    "stg1enm2": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "618bc0a7b18a74a3704a744d22253ce5d2d5bfdb3590d8c4aa7360380ec1fc32",
+      "sprites": 11,
+      "scripts": 9
+    },
+    "eff01": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "d5bea705fdf5f77ff27706f94702143133a6eb7fd717c140a6f9bf0d00cd1c99",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg2bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "ce54047da50512e895f1ee3fdca52925906eab8d1a1c80fcfb7a49f23222ee33",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "stg2enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "13c15f1af2bf3bec90c68b2a333989f7e8659be654ed05d12c28bc0fa2e1764a",
+      "sprites": 34,
+      "scripts": 21
+    },
+    "stg2enm2": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "33b8875db1635167a4e5ccaaf18d5e89c6a6327ab83b8bf363adb91e76942177",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "eff02": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "34cfb5a130b30510877944dae3d84b2456858fd289612bbd65cec1543b5c5a18",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg3bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "21a113e5a38558f44d4a90692c1470d907ad12c534c7ba15645165d718843520",
+      "sprites": 12,
+      "scripts": 12
+    },
+    "stg3enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "de2aae459477a5dd009913fca4a80767e589e6e57a3b719c8ec5bbcb34633f96",
+      "sprites": 45,
+      "scripts": 20
+    },
+    "eff03": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "444e159dee63fe76013702ec46d4a04db14c91821bd05e90010efeaa046fa92b",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg4bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "309c4ac7e080673585ab0faae7d5bf9849198d9665f3bed93ba56930ce838db9",
+      "sprites": 3,
+      "scripts": 7
+    },
+    "stg4enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "53541ad90a156e0e4277bc7c97fd8e2c72d099d7c6611197d719a22ba175ef55",
+      "sprites": 47,
+      "scripts": 25
+    },
+    "eff04": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "9a355238ef24bff655cbe2a1d92e3e7b92186202b017e6250b0fdc1fba955587",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg5bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "230e75fa266a5b6cecc8c8638a39141c06be8762a918890976b7b65199f27948",
+      "sprites": 3,
+      "scripts": 4
+    },
+    "stg5enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "974339b679ed879bdfa128251b49406e6aed49b35b7d721572ab034420a47c1e",
+      "sprites": 47,
+      "scripts": 18
+    },
+    "stg5enm2": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "4b08d81485cfccf9715d0864c583c2c41e1211a1a5f53b94ff2b657e85602d95",
+      "sprites": 7,
+      "scripts": 11
+    },
+    "eff05": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "408fb5c338ae7b3e888e2dc2547311d20a4a456b5e400d360961ae4b3bd1dc48",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg6bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "a0ed4cbcc678648cac4e39a4c0e540faf9365626641fa53e84282639de1ddfe6",
+      "sprites": 4,
+      "scripts": 8
+    },
+    "stg6enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "7b8de5a8967750681a771050e3ddd622ed72fe3a5d4ac32c0973be7282455ca5",
+      "sprites": 54,
+      "scripts": 30
+    },
+    "stg6enm2": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "ddebddd6949ca03360a30257eed8653ed435399d42f589e7ae5640694286fc27",
+      "sprites": 7,
+      "scripts": 6
+    },
+    "eff06": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "35fb8e2d4d10f216a4e335619e9903836fbc704a9d9cbf661a5d257a72a8f605",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg7bg": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "867bd8905a9141e6ee1674a431938071b964a66b51b0fc68c70632cca5ce4816",
+      "sprites": 3,
+      "scripts": 4
+    },
+    "stg7enm": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "1893c5e8a75bfc7ba8243b3f6e9dd815acbbd422e15d197fd69ce6a3f92bce01",
+      "sprites": 47,
+      "scripts": 26
+    },
+    "stg7enm2": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "4abe273e3c298cac90ebd900fe8cf037e19347c11417cca3ba480841d0edf00b",
+      "sprites": 12,
+      "scripts": 6
+    },
+    "eff07": {
+      "source": "紅魔郷ST.DAT",
+      "sha256": "e703d5f8b8e5269cb2bb9f02b7c6ce0bedd2c77052d3c67dfb05f059142885f8",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "replay00": {
+      "source": "紅魔郷TL.DAT",
+      "sha256": "40de4069f690e6fff3918e0388a8a2dc3d7762ac4d22fcda76fb649cf112de06",
+      "sprites": 10,
+      "scripts": 26
+    }
+  },
+  "7": {
+    "capture": {
+      "source": "th07.dat",
+      "sha256": "aaeabb961efbcc38213e3ff107c9447bd14b0c368de6bffa0526faea121e9ae9",
+      "sprites": 0,
+      "scripts": 4
+    },
+    "eff01": {
+      "source": "th07.dat",
+      "sha256": "cdf97b0b17bc3517b8b3e4de19e474bb34cd1cf491019eaf867c801a96f0fe7a",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "eff02": {
+      "source": "th07.dat",
+      "sha256": "b65e1e8726f4eb8bdb9ddf7d5c97d00bef1e87df9a1bc169c7963a47df51cd74",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "eff03": {
+      "source": "th07.dat",
+      "sha256": "00510d382d7ebc2b895920363c741427d3faa5910022d31a968f54d57807416b",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "eff04": {
+      "source": "th07.dat",
+      "sha256": "208511b22913d9beb1041eff3a1c82993e8732a702e76560de0fba4f6ff4d239",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "eff04b": {
+      "source": "th07.dat",
+      "sha256": "4cb5b60516da601e065ec6d307234e1d5c2874f802cf89f8d9076a77d1231a55",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "eff05": {
+      "source": "th07.dat",
+      "sha256": "d8a86f35725f14cbbf15c5c02a5eaed3b6d8bd1255d2974456c1a64714358139",
+      "sprites": 1,
+      "scripts": 2
+    },
+    "eff06": {
+      "source": "th07.dat",
+      "sha256": "bf40de537eaa87fd16b6b871ffda0d80c4c1f088149cda89ef1f778fdc3e9bdb",
+      "sprites": 1,
+      "scripts": 2
+    },
+    "eff07": {
+      "source": "th07.dat",
+      "sha256": "b309d2e0aa792d27b825592906960c0254b52a6356c147f4ba7ae614c39a9964",
+      "sprites": 1,
+      "scripts": 2
+    },
+    "eff08": {
+      "source": "th07.dat",
+      "sha256": "940fe920eac8c43c972c573cdd78149c7dcd23628b9d1431021c2a0c24e6a86a",
+      "sprites": 1,
+      "scripts": 2
+    },
+    "etama": {
+      "source": "th07.dat",
+      "sha256": "4fe2cda06dfa2bab28a5a9f4e65e06257b928e663b5b37691aa5598aa8132533",
+      "sprites": 168,
+      "scripts": 65
+    },
+    "loading2": {
+      "source": "th07.dat",
+      "sha256": "4430ea23fafdf3b007687d61553424bc63395d858758aca2f2d8a46b406b2721",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading3": {
+      "source": "th07.dat",
+      "sha256": "ba5d5ce9aae4c3a97520a0a9deb572a0940da5692f7ffd5cd6c871c6f041d413",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading": {
+      "source": "th07.dat",
+      "sha256": "2dde716b9ac5e539f47859f246f1473f01cbeb28e0e933f416cad076105cb0e8",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "std1txt": {
+      "source": "th07.dat",
+      "sha256": "6ff7c87a30133370c9eccc38bf33e6d4ffd293d714b8f3b7ec8e332c098bb2ec",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std2txt": {
+      "source": "th07.dat",
+      "sha256": "11f48b0064699b9f0d8f47574e71b75f4f8a373b40a3ba32c9a11cdddc9fffee",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std3txt": {
+      "source": "th07.dat",
+      "sha256": "24b7e586a296c6278679ea1cc14ff5c0d37fb2ab89c17236706bdbd689d9cafc",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std4txt": {
+      "source": "th07.dat",
+      "sha256": "c7ab7fc78a0f9f137a8e75cd2717fb52888990c902c4eb7e744d667daf1ee463",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std5txt": {
+      "source": "th07.dat",
+      "sha256": "788d179bc7b4cef44379c71f018d1465df489976c821f9a892f20a824b234db3",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std6txt": {
+      "source": "th07.dat",
+      "sha256": "047b3abd04d36c35e34dbfd03add7614a6d6fa62c439b624f5cc7d3761a45274",
+      "sprites": 6,
+      "scripts": 6
+    },
+    "std7txt": {
+      "source": "th07.dat",
+      "sha256": "bad6ba382846cd9cb7173fcb23a38aa1e631bdbeb5e2e274e836d3c9891b67c7",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "std8txt": {
+      "source": "th07.dat",
+      "sha256": "284fd6ba80b7374c35e4c4c7694d0619074a73869d9401d2b9a97b6b84aef9a9",
+      "sprites": 6,
+      "scripts": 5
+    },
+    "stg1bg": {
+      "source": "th07.dat",
+      "sha256": "e6d63ccd69bd841d15a2a0fec923ce5f54e086896760d258d3a7dbb412f12019",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "stg1enm": {
+      "source": "th07.dat",
+      "sha256": "450cd1abcca4417f9ed5fcb1be988add5f9a7763ece4ecbe7993c9fc0212e199",
+      "sprites": 48,
+      "scripts": 24
+    },
+    "stg2bg": {
+      "source": "th07.dat",
+      "sha256": "5e9155993e96233ea599469917e112ffaa8d3709bd2bac03ff0b43ec9ed711da",
+      "sprites": 7,
+      "scripts": 9
+    },
+    "stg2enm": {
+      "source": "th07.dat",
+      "sha256": "2d856142efa8dc3569cc2528e89de86e320151ca4c884df9612c96834ce6b55c",
+      "sprites": 40,
+      "scripts": 20
+    },
+    "stg3bg": {
+      "source": "th07.dat",
+      "sha256": "1451e8a3b00b9be414f7be5fb1443cc35bf76a2e6b58e353db76efb815ad39b8",
+      "sprites": 6,
+      "scripts": 6
+    },
+    "stg3enm": {
+      "source": "th07.dat",
+      "sha256": "3a3a72b476ca02d94d5403fb0ff69309f3e0a2c18b32377d90e6e3d9e17edb63",
+      "sprites": 52,
+      "scripts": 31
+    },
+    "stg4bg2": {
+      "source": "th07.dat",
+      "sha256": "8825fed959ca2566e059fc418ecb9b9915000bedc6a8eabb6abaf9652cb99b2c",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg4bg3": {
+      "source": "th07.dat",
+      "sha256": "58d3dcc7c9d651d0daceeba9dc4801f1172f82c601eba103ed56455a8dd751ba",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg4bg4": {
+      "source": "th07.dat",
+      "sha256": "129e5862b8df5b8264ec432a5beafa8a0ef3d61ce1e26172af99499734ebf278",
+      "sprites": 3,
+      "scripts": 5
+    },
+    "stg4bg5": {
+      "source": "th07.dat",
+      "sha256": "fea1118ba56ec5f30cb2dcf64b8164a39144c466f8d9f30ad0218e97021df8b9",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "stg4bg": {
+      "source": "th07.dat",
+      "sha256": "4f11d511c80c167427bf929d388bbb75df88fea52caa1d321074293928de4397",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "stg4enm": {
+      "source": "th07.dat",
+      "sha256": "fe204cdeeb0d7672a7396288a4a991ee1457b323910fb90c254d4bb81e521e66",
+      "sprites": 87,
+      "scripts": 68
+    },
+    "stg5bg": {
+      "source": "th07.dat",
+      "sha256": "cfe1fc5935fc7a094641b31dee4d103f2f104436c4ae413c6250b96137486909",
+      "sprites": 15,
+      "scripts": 26
+    },
+    "stg5enm": {
+      "source": "th07.dat",
+      "sha256": "99d3747994b3164c7de4fe8104df19c9659600dfa9e4f70b4364263f722bc54a",
+      "sprites": 80,
+      "scripts": 53
+    },
+    "stg6bg": {
+      "source": "th07.dat",
+      "sha256": "db4bee61211c6562f480c1725a95ab894e84359d0911df63fee55b49cd3977c5",
+      "sprites": 5,
+      "scripts": 10
+    },
+    "stg6enm": {
+      "source": "th07.dat",
+      "sha256": "d1224e65d644fc95cd7e3e3e2e068e97e6d0fdffa9974b3a98940d427f4ba40b",
+      "sprites": 79,
+      "scripts": 60
+    },
+    "stg7bg": {
+      "source": "th07.dat",
+      "sha256": "80ae2c6236d1a662987e93d3ec1422ded978e17951e06d67a0516c51ddd4ac9b",
+      "sprites": 15,
+      "scripts": 26
+    },
+    "stg7enm": {
+      "source": "th07.dat",
+      "sha256": "c85745c03d10080137e967b68650b7d9c170403772232be276c7dabd8d3416d7",
+      "sprites": 79,
+      "scripts": 46
+    },
+    "stg8bg": {
+      "source": "th07.dat",
+      "sha256": "9e7a1ffd0f3598a7bd33d1a6ded39d3cb4a3cf29ad383745393cf24d79176efe",
+      "sprites": 15,
+      "scripts": 26
+    },
+    "stg8enm": {
+      "source": "th07.dat",
+      "sha256": "9a5242bd1823008df620c3c5a6446b54d2787b0ea461da0ee0c777b6bebfa69c",
+      "sprites": 75,
+      "scripts": 48
+    }
+  },
+  "8": {
+    "capture": {
+      "source": "th08.dat",
+      "sha256": "952bfb3280e7482c63e3e3ef95116181af96efb157bfca0d137111e92ef0df99",
+      "sprites": 0,
+      "scripts": 5
+    },
+    "eff01": {
+      "source": "th08.dat",
+      "sha256": "bd8285e1e242ff3c58beb48d8c37225bc910ee1902dc088bf76df93a9f89b87b",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff02": {
+      "source": "th08.dat",
+      "sha256": "104b1ac19082b815000cec8d5715c5db14b4f9101b4d605c6715d059de91e9d9",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff03": {
+      "source": "th08.dat",
+      "sha256": "5ff42b0d5ea49d047b68a5274032bc6ac2ff69a48ea44a5ccd2c6200308232cb",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff04a": {
+      "source": "th08.dat",
+      "sha256": "de30efb46de7370d663e612632862fe248259749c1a384ec2e1b907ca743f6aa",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff04b": {
+      "source": "th08.dat",
+      "sha256": "39eee91c4d0138e9f3be7d20171dfef247f5a4111503cbcaedfb509c1d12171e",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff05": {
+      "source": "th08.dat",
+      "sha256": "e53bcb93879affc4785dd361a0e61df386d731cd677c573edacd4ad8ab996541",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff06": {
+      "source": "th08.dat",
+      "sha256": "b0da5f083cf405995824d64f65867578df25915fd4dafc4c3066d6444fff2740",
+      "sprites": 4,
+      "scripts": 4
+    },
+    "eff07": {
+      "source": "th08.dat",
+      "sha256": "1187265c4b15becd342974fb9f4a7d10aface990c8ef2e416b770db8d68fbf0b",
+      "sprites": 4,
+      "scripts": 4
+    },
+    "eff08": {
+      "source": "th08.dat",
+      "sha256": "298d650379e6fef56372e5bd394b8504744514964671c4c81c011ac4cb8b7084",
+      "sprites": 4,
+      "scripts": 4
+    },
+    "eff09al": {
+      "source": "th08.dat",
+      "sha256": "e9284375951d90b689225cd32956e6a6f565f1b15d83df2b8d2bc2f63ec8f720",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff09rm": {
+      "source": "th08.dat",
+      "sha256": "4e470f30e10dcd2dca23a9f6eb677eeb8b60772ad1fd21ee9190ba9eb0cc259a",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff09sk": {
+      "source": "th08.dat",
+      "sha256": "4cdaacd68775b439dc164384fc7b4faf9bf29579cd57b52553179fb27694a42d",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff09yk": {
+      "source": "th08.dat",
+      "sha256": "d6d45d1ea50d5418107ad93028d7a5198f2dcb74fc3f21f2c9dc932d2e38f54f",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff09ym": {
+      "source": "th08.dat",
+      "sha256": "c739f76e2462400dbd09fd0013de2c9668b801589939330996a8e7bb23b115a1",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "eff09yy": {
+      "source": "th08.dat",
+      "sha256": "adb230fb549d748de2c8e497a4bda3028ed9236621005704dc503bddeb867880",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "enemy": {
+      "source": "th08.dat",
+      "sha256": "203902359e0d9f741356f48f5ea451f3ec5e95750542861012483a6d80483cb6",
+      "sprites": 157,
+      "scripts": 101
+    },
+    "etama": {
+      "source": "th08.dat",
+      "sha256": "c3d19370bcbbc2f9b320f437ab5493834c9a6cd2b7bb9f866a4ed4df1d59f3de",
+      "sprites": 338,
+      "scripts": 116
+    },
+    "loading00": {
+      "source": "th08.dat",
+      "sha256": "e041ade525048a726d52f7a9fa3324fe369acf1f3703b558cd31151498507b93",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading00a": {
+      "source": "th08.dat",
+      "sha256": "ee1af9bc61c6fd808f5dbf5e8ac2146797d0b5b107b11bef6f1e2f51cd3ec7b2",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading00h": {
+      "source": "th08.dat",
+      "sha256": "c2cf89b63aab1267c1f6309e2e621148f15cde2fbb633941a5331bcb4f1a1771",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading01": {
+      "source": "th08.dat",
+      "sha256": "8b7859ee08ba4acbe18f7967d774aa71695a58bc13976aa5d672082d24465f9a",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading01a": {
+      "source": "th08.dat",
+      "sha256": "3023fa017f5691dd7fafee10c910329cd590a6d2c34626a51d2156bcbae00f19",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading01h": {
+      "source": "th08.dat",
+      "sha256": "bfaf3b357d90e42a608a87cc75b10e7afa3c54b7474bcfa2a3dc93c40d0ba20f",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading02": {
+      "source": "th08.dat",
+      "sha256": "b9f83b370f10e1d9e10c1f785a48a1e0d0c379c04a7348e8179026721739a5ef",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading02a": {
+      "source": "th08.dat",
+      "sha256": "2ab15ddc867affea96de6fe2bc80ed45e49280b999436be4706a6473413ba22b",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading02h": {
+      "source": "th08.dat",
+      "sha256": "08d7c32c716a58519188fa9a820a2f243edbb65535a9eb8d500e4d6d7af235c2",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading03": {
+      "source": "th08.dat",
+      "sha256": "a0d4c25afddee5c2eea0ccc392458f9f26cff55a3d2f9dd34ef987b571ca30c9",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading03a": {
+      "source": "th08.dat",
+      "sha256": "d1c67682627c3db36874304fb45f44ca2a0cc1d2a7eb4cc4353dfdb3ce6d428c",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "loading03h": {
+      "source": "th08.dat",
+      "sha256": "a112736c8a0055f9d7678f9b278c594b9c28ba4f5a0914a03d0be2d76d320f7f",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "nowloading": {
+      "source": "th08.dat",
+      "sha256": "c56699172ed4b0432d2f4db2c91d397594748a083872033c54f635e2f826be2f",
+      "sprites": 4,
+      "scripts": 3
+    },
+    "stg1bg": {
+      "source": "th08.dat",
+      "sha256": "07684736b6c9e982fed2215f0d00e8e4401cb57a273aa71795885dd6cc892318",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "stg1enm": {
+      "source": "th08.dat",
+      "sha256": "ddfdbe49e6b9886f21807c4326aac4af6cca1c8ae8208d6e477fb65a417a98d5",
+      "sprites": 11,
+      "scripts": 6
+    },
+    "stg1txt": {
+      "source": "th08.dat",
+      "sha256": "91d28e98663103522a17868c1c0f8a6f5d46d06b266295d3df5b44439f139a9f",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg2bg": {
+      "source": "th08.dat",
+      "sha256": "43da222fe85fbd5b5ae9d8f220a371cb6ec9331d97faaac0e1902146999e4537",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "stg2enm": {
+      "source": "th08.dat",
+      "sha256": "a310e0d095d65551623e29a23deb06fcf4d4ede490832fbd886943a315c72f05",
+      "sprites": 12,
+      "scripts": 6
+    },
+    "stg2txt": {
+      "source": "th08.dat",
+      "sha256": "20cbe0610b86d9057574d5813f0137f2b56a15c7a9945faaadc4ac18648da650",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg3bg": {
+      "source": "th08.dat",
+      "sha256": "5561eb051e8f5811e538bbd8da1ea6028362c1d33f1cbd797dc89d7329fb9597",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "stg3enm": {
+      "source": "th08.dat",
+      "sha256": "c02471726b8c000e45f2f5d327aed374721b88e60882019914f8085f33ff3ad0",
+      "sprites": 12,
+      "scripts": 6
+    },
+    "stg3txt": {
+      "source": "th08.dat",
+      "sha256": "348cbd80161076b57ad41cf360cffaae2411d84b0dac26692787ad0286b7f28f",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg4abg": {
+      "source": "th08.dat",
+      "sha256": "5ee2986279d79f83d342cc54723d76362f6cbbdd086b54f1cb19babae5e038ca",
+      "sprites": 5,
+      "scripts": 8
+    },
+    "stg4aenm": {
+      "source": "th08.dat",
+      "sha256": "c3b223546da63ba40abc2d48b91fe8e9bedb2db6164e23cc87ff081a6760b410",
+      "sprites": 24,
+      "scripts": 12
+    },
+    "stg4atxt": {
+      "source": "th08.dat",
+      "sha256": "ae2bb0ae8a23b10af7e843e3b3adcdd0adba96bbf21bd68e8e5d60446f596f41",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg4benm": {
+      "source": "th08.dat",
+      "sha256": "1ecad6b6ab9c4549eba1e97dbf17bf5c2d38ff0f5c1605639345a1226adc30ad",
+      "sprites": 13,
+      "scripts": 26
+    },
+    "stg4btxt": {
+      "source": "th08.dat",
+      "sha256": "92f121144a6acea5c91aed0e21a0867c5b7e543b7edde6a502da4c58a7d698e8",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg5bg": {
+      "source": "th08.dat",
+      "sha256": "888aea10804f26aa19e350736e46b5706ad996dac44897603c9c1ad21824ccaf",
+      "sprites": 7,
+      "scripts": 9
+    },
+    "stg5enm": {
+      "source": "th08.dat",
+      "sha256": "c73a6e7a3660b23105005413a59aa715d59a490cb473defb7a998bcdadb59987",
+      "sprites": 29,
+      "scripts": 18
+    },
+    "stg5txt": {
+      "source": "th08.dat",
+      "sha256": "0054f33b0fbbf476aeb8ded608b50cb7dd53bd6527c87b0a953338b363c9c0e7",
+      "sprites": 6,
+      "scripts": 4
+    },
+    "stg6bg": {
+      "source": "th08.dat",
+      "sha256": "7077ccc6344911de705eebcd9d2164fe37ceae80bbf69bcdd019b9010417610e",
+      "sprites": 11,
+      "scripts": 18
+    },
+    "stg6enm": {
+      "source": "th08.dat",
+      "sha256": "10926e34d2cf7a3dc5dfcf83df174b7e3c94145a359911ec8826622a5227267a",
+      "sprites": 13,
+      "scripts": 7
+    },
+    "stg6txt": {
+      "source": "th08.dat",
+      "sha256": "34adae2afc42244f44b4c75096ae99b966e9571bf9a466b5079c4769d80c13e1",
+      "sprites": 7,
+      "scripts": 4
+    },
+    "stg7bg": {
+      "source": "th08.dat",
+      "sha256": "23ebc407c66b7e1878beec23cd424a8a1d9365ae425759c640aabc0862763281",
+      "sprites": 10,
+      "scripts": 13
+    },
+    "stg7enm": {
+      "source": "th08.dat",
+      "sha256": "6f13728ee1e557b28040777de21aeb9cbba291f3fde8874b92b7f69df581403c",
+      "sprites": 25,
+      "scripts": 13
+    },
+    "stg7txt": {
+      "source": "th08.dat",
+      "sha256": "cb6acdc4c973f76b56fda9ac8ea2ccfe53947db5641ad1e13a69f44d39f41ea9",
+      "sprites": 7,
+      "scripts": 4
+    },
+    "stg8bg": {
+      "source": "th08.dat",
+      "sha256": "83e54196ed4850c15e110706d864073363277dc9babfa070b7ce6560ada96325",
+      "sprites": 5,
+      "scripts": 8
+    },
+    "stg8enm": {
+      "source": "th08.dat",
+      "sha256": "23bf662eec969b7f284cd75a174b8dfe02044df8125cfd124d3bbe21527ea898",
+      "sprites": 25,
+      "scripts": 19
+    },
+    "stg8txt": {
+      "source": "th08.dat",
+      "sha256": "19d77222da8078a1741bea1a7e7ddd8927851d660b23d7a69e5ce98840235300",
+      "sprites": 7,
+      "scripts": 4
+    },
+    "stgenm_al": {
+      "source": "th08.dat",
+      "sha256": "d9936ec83ea78488c9edd0bb1b6868bbc505698cea353f68adf61bdbaf3c1fce",
+      "sprites": 13,
+      "scripts": 6
+    },
+    "stgenm_rm": {
+      "source": "th08.dat",
+      "sha256": "27b8aa42d3b922dfaccfc0372bfd9547625a21111199bdc438c7251282a9d52f",
+      "sprites": 3,
+      "scripts": 6
+    },
+    "stgenm_sk": {
+      "source": "th08.dat",
+      "sha256": "20131ace3454c4a7ef9a92828bc5ac92012b776b2e03f28511f67654016cab21",
+      "sprites": 12,
+      "scripts": 6
+    },
+    "stgenm_yk": {
+      "source": "th08.dat",
+      "sha256": "eb8a0a921277e01bc75a9f91a5d67dd05418e8510b515343158307369d8570b4",
+      "sprites": 20,
+      "scripts": 17
+    },
+    "stgenm_ym": {
+      "source": "th08.dat",
+      "sha256": "a105f9190a63fae82a7147e8947b4204128eadbe94351ff3e62b7fa589172e15",
+      "sprites": 18,
+      "scripts": 8
+    },
+    "stgenm_yy": {
+      "source": "th08.dat",
+      "sha256": "bfd34397a172166cacb206bb046a819226dc7eb98953a868721105ab44b972d5",
+      "sprites": 9,
+      "scripts": 9
+    },
+    "times": {
+      "source": "th08.dat",
+      "sha256": "4843ad5f2c2f6ae9ce16e602cca29d5ca8d0bd96f80fb85654780dc843b96ca2",
+      "sprites": 16,
+      "scripts": 3
+    }
+  },
+  "95": {
+    "world01": {
+      "source": "th095.dat",
+      "sha256": "ad8f2a834c2a6c893e511b2c330e31b4db2d4ea39094b19c142f1f97ec5be1d5",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "enm1": {
+      "source": "th095.dat",
+      "sha256": "a777bbd1cb9ab705899053db802f661d85de29c07f432c6de0b8b143b0a3fa29",
+      "sprites": 13,
+      "scripts": 8
+    },
+    "enm2": {
+      "source": "th095.dat",
+      "sha256": "8e49b575e8e0e605fd2ebf17911bfa4ab957fb56753e1ae85ec1a2d707be2cbc",
+      "sprites": 16,
+      "scripts": 9
+    },
+    "world02": {
+      "source": "th095.dat",
+      "sha256": "e3c184b721b1a91576b6420841d775c1895c2e6ce63d2c2f54e364c8ab1352ab",
+      "sprites": 4,
+      "scripts": 3
+    },
+    "enm3": {
+      "source": "th095.dat",
+      "sha256": "acf339639dc268dfe9694570e63b13a87418ffb6407794c7b17d720e63f7e341",
+      "sprites": 14,
+      "scripts": 8
+    },
+    "enm4": {
+      "source": "th095.dat",
+      "sha256": "5e648e32d0c63e029b2469dc798e32af02f37628e701766fccb464cef4222b95",
+      "sprites": 18,
+      "scripts": 9
+    },
+    "world03": {
+      "source": "th095.dat",
+      "sha256": "0b48c74637726ffb94324dbf07b566e821ff1a46583ecdacaf9c51522c0f6206",
+      "sprites": 4,
+      "scripts": 13
+    },
+    "enm5": {
+      "source": "th095.dat",
+      "sha256": "41085c30de9cd30813e548f6318defddbf42b3ef05a63620f0d082acaa17e1d1",
+      "sprites": 14,
+      "scripts": 8
+    },
+    "enm6": {
+      "source": "th095.dat",
+      "sha256": "4d6a0bd0f9ba3dcefc4d0338b4c9e103fba41e90c42ae83f0188030534ba04ed",
+      "sprites": 46,
+      "scripts": 44
+    },
+    "world04": {
+      "source": "th095.dat",
+      "sha256": "a7cbf133863f432b1c731cc092c91408f90cbe7096091463a224ce0bb6012b2f",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "enm7": {
+      "source": "th095.dat",
+      "sha256": "fafdbc536436c893d5da22f5ae9dfb1a2b4347b41d8ecd3983fabb6fff323d48",
+      "sprites": 27,
+      "scripts": 15
+    },
+    "enm8": {
+      "source": "th095.dat",
+      "sha256": "acc44ffcf1e8cc5f4991570ea1ae20822f9ee8c06bc3f3a80e3b9902be297eff",
+      "sprites": 14,
+      "scripts": 8
+    },
+    "enm9": {
+      "source": "th095.dat",
+      "sha256": "be06fe54b3b2d7764dc9e952443f3bf132b084ef5aad71f9a28c6a2ce651d12a",
+      "sprites": 15,
+      "scripts": 10
+    },
+    "world05": {
+      "source": "th095.dat",
+      "sha256": "13c89868d4d4b329d9b11a5454053f376f4d5c8a8255fcfc2704225302953698",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "enm10": {
+      "source": "th095.dat",
+      "sha256": "b12de9a1e38046f71b4617b8fde8777dbb9ca4df118c7530f5a36c7a5d5e54af",
+      "sprites": 16,
+      "scripts": 10
+    },
+    "enm11": {
+      "source": "th095.dat",
+      "sha256": "b6bc4994885fefeaeaf490866ff34f10bf4b0411e92147df2214da6f21202d58",
+      "sprites": 11,
+      "scripts": 8
+    },
+    "world06": {
+      "source": "th095.dat",
+      "sha256": "c60d7e85efb5a6dcfb84023e04a0f4552e6aa12a06123548c9dc9060da2f62f4",
+      "sprites": 15,
+      "scripts": 26
+    },
+    "enm12": {
+      "source": "th095.dat",
+      "sha256": "6bdf377bf560039ddb09b853a7438378b26e7d9804092bd54a18ecd3e98b8181",
+      "sprites": 16,
+      "scripts": 9
+    },
+    "enm13": {
+      "source": "th095.dat",
+      "sha256": "8ba741beca184647f4b1183b9f3960f5727d23448e34ea571d78ae10ba1f0d46",
+      "sprites": 29,
+      "scripts": 15
+    },
+    "world07": {
+      "source": "th095.dat",
+      "sha256": "2f62330286dc30686a5626d5ae0fbb48a3d61d4c7a21941ae6f6a518c5334f21",
+      "sprites": 2,
+      "scripts": 3
+    },
+    "enm14": {
+      "source": "th095.dat",
+      "sha256": "f45c3a2ba3c3c2fab8278afabe2bac3b7c3a729f83c9da4864441d4aac01cc58",
+      "sprites": 12,
+      "scripts": 12
+    },
+    "enm15": {
+      "source": "th095.dat",
+      "sha256": "5c78e375c2de029060a0e8b9b1fe20312b74b36af60654e4b8a3bf283a7dd57d",
+      "sprites": 12,
+      "scripts": 12
+    },
+    "world08": {
+      "source": "th095.dat",
+      "sha256": "af54f5805b31bedc9eca6d5af3206ebbcd27f3696db75238ecfa200a54a0aa66",
+      "sprites": 5,
+      "scripts": 10
+    },
+    "enm16": {
+      "source": "th095.dat",
+      "sha256": "d73ad525ed214841e2fe70fc8c12027936d9f6af02dbc2888101d2b3e2ca5caf",
+      "sprites": 12,
+      "scripts": 10
+    },
+    "enm17": {
+      "source": "th095.dat",
+      "sha256": "9f2f652dff35652b3bb5a8a96609a85d0efa3feebdde559b01559522af3490a7",
+      "sprites": 12,
+      "scripts": 13
+    },
+    "world09": {
+      "source": "th095.dat",
+      "sha256": "5f89c6719299a7b6e6a5500b25edd8471e1d004b39d1b634de57d3979b3f5947",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "enm18": {
+      "source": "th095.dat",
+      "sha256": "390152165418c365c16d9454f77ee9f0ebd8aa3f3aeba36eee14c36e36f5286e",
+      "sprites": 16,
+      "scripts": 11
+    },
+    "enm19": {
+      "source": "th095.dat",
+      "sha256": "36fbdb882781aa36f7a0d2ba1e1e1569e8bf393644125d45046c5c3311dfd02a",
+      "sprites": 15,
+      "scripts": 10
+    },
+    "world10": {
+      "source": "th095.dat",
+      "sha256": "8e1e4ab6fe81d1f0081bbed67e1c44aac5deef6d9cdc8cf35c2982100014cd2d",
+      "sprites": 4,
+      "scripts": 7
+    },
+    "enm20": {
+      "source": "th095.dat",
+      "sha256": "1b5ee68800d83c8d4a54f536c8e7403415fff25cbda46f57c1b36531f6042bb1",
+      "sprites": 16,
+      "scripts": 11
+    },
+    "enm21": {
+      "source": "th095.dat",
+      "sha256": "cc97dc47e1dc2b1e3f112e9106c7c7abf0dc28c0a99a34eb200c3f831be2d4f1",
+      "sprites": 28,
+      "scripts": 18
+    },
+    "enm22": {
+      "source": "th095.dat",
+      "sha256": "59a5a2fe21aec54d8a461877acbf17dc6f1fabf92624e6feb698345d68e602bb",
+      "sprites": 18,
+      "scripts": 13
+    },
+    "enm23": {
+      "source": "th095.dat",
+      "sha256": "ec3989c64e24fc0f0aabb8d7d430178367cd953505dc62d2f06944836fe5e3a0",
+      "sprites": 22,
+      "scripts": 13
+    },
+    "enm24": {
+      "source": "th095.dat",
+      "sha256": "3c03e696af73c57fda4f2e3adcac9ad87182e05c1835b43ec897cd042c0f4328",
+      "sprites": 15,
+      "scripts": 14
+    },
+    "enm25": {
+      "source": "th095.dat",
+      "sha256": "60b73d2dc8aec93ff482931034a96a9f8dd5d88d3ff46f3780ef377aecea7b25",
+      "sprites": 15,
+      "scripts": 19
+    },
+    "nowloading": {
+      "source": "th095.dat",
+      "sha256": "948080ec7ceda3d73bf4dd91d2fd29e8ae1364151ddb66561afbf30d0a048239",
+      "sprites": 4,
+      "scripts": 3
+    },
+    "photo": {
+      "source": "th095.dat",
+      "sha256": "3d6d15f3254927c8a65dfcecfac3640e8af3d34f353d8342d29d5eeb55079bb2",
+      "sprites": 42,
+      "scripts": 40
+    },
+    "bullet": {
+      "source": "th095.dat",
+      "sha256": "a789b1528844c7df87d8e74e64c1ff02c77f3fbfd1d14fb05b8e7088bf8d5a34",
+      "sprites": 318,
+      "scripts": 298
+    },
+    "pause": {
+      "source": "th095.dat",
+      "sha256": "eafd6969db406a7ca7db56850f6a61473172585d8a75b2d421cfb4863b022cf4",
+      "sprites": 12,
+      "scripts": 21
+    },
+    "capture": {
+      "source": "th095.dat",
+      "sha256": "a314692c6e6c694e57053aa0ad68757d799dab493506b72556ebcee5960c41c1",
+      "sprites": 0,
+      "scripts": 0
+    },
+    "fc00": {
+      "source": "th095.dat",
+      "sha256": "475383020f41782780989596c89297c5dec35e0b7b2d5a619edc40358586a123",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc00b": {
+      "source": "th095.dat",
+      "sha256": "5dd884bd6661c99924aa555dd76661a51605f60107a38ceb2b9d236a3944d2a5",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc01": {
+      "source": "th095.dat",
+      "sha256": "892900961c2b27328feda4ad4b2146cc83f4752da5e68f99e47b8a865cb82866",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc01b": {
+      "source": "th095.dat",
+      "sha256": "c9efc234a67ad92a1d78e8cba2dc33844febe3f773b1e636fb85e2bf424007d1",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc02": {
+      "source": "th095.dat",
+      "sha256": "5a964cde6ff77fa6b17e6fb9e1c1c0311844e5f6db2e85ebb0ed0fa0dddf116d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc02b": {
+      "source": "th095.dat",
+      "sha256": "9a01470c67a409af8e4be30a2b6168f90ed7386a34868deeb5393b0bc4aaa82d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc03": {
+      "source": "th095.dat",
+      "sha256": "ecb94bfacf1e2844be86f3ceac341603be1961ef267ffb2be051b8dc10973f24",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc03b": {
+      "source": "th095.dat",
+      "sha256": "1a70b39e4585500b5938818af489100fa76d29176b253e10ffde15d5c7f0e5ba",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc04": {
+      "source": "th095.dat",
+      "sha256": "d28cf7ad833bd38069b9566b1b894b206074ed4687477ad382ab433ed4584e73",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc04b": {
+      "source": "th095.dat",
+      "sha256": "481752b605ae9b677098f66fbcc74c3d730cedd1231636f17f95196b6e482ea2",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc05": {
+      "source": "th095.dat",
+      "sha256": "46ec5143143b2a843c322e04d919b4e11701edb54c2953508bd10019b4b5d327",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc05b": {
+      "source": "th095.dat",
+      "sha256": "8d7e8ea67d7881a35b9fa5f3c9869bf2f9bb1f2530c46bc72bbcdd3998fb18e9",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc06": {
+      "source": "th095.dat",
+      "sha256": "0c03f3f0e1261b16cb1c59c659da6d0ff79e652898136f91dfecb699c522388d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc06b": {
+      "source": "th095.dat",
+      "sha256": "68922598360d545d53c1f54706863cc53427b89552842d1c20757649469e23b7",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc07": {
+      "source": "th095.dat",
+      "sha256": "1d14cfdf97db41daa4b025352a746bd5a712164ba17e3400e6a25d399c1b2e2c",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc07b": {
+      "source": "th095.dat",
+      "sha256": "4398fca05c4fa057c3a482fa2d98c662bd20561848211d70326bdc90e3145610",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc08": {
+      "source": "th095.dat",
+      "sha256": "9eae593d9fb73b5d5cc6b6c1be6c34157bd135da7591d6bbd135c3210c9dc3db",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "fc08b": {
+      "source": "th095.dat",
+      "sha256": "3cb10e8b3e1a72a4fbc5a95a5bbac44bea5152d41682377a6cb1d69f79914666",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_00": {
+      "source": "th095.dat",
+      "sha256": "29b43a5a2cc96d65e1c689ef33adc927f1c920e33f0b0a6663b988f7e6c0d064",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_01": {
+      "source": "th095.dat",
+      "sha256": "43d8a5fcdb10cfc2e5da94f022cfc7841181ced72db05d65f2fa7fd9c71ce561",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_02": {
+      "source": "th095.dat",
+      "sha256": "8cddfbcd6af603ed9d94daee9d45f9c1bb56a145eb659d9517adaa38c9409234",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_03": {
+      "source": "th095.dat",
+      "sha256": "fe92665da503b00580e28126fa038e763d4a2b25ddd0241a59a9064f98a503b8",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_04": {
+      "source": "th095.dat",
+      "sha256": "cc79164e6c85615e3db99b686cd6fb2282b60df8b2b2cc5b8b5bfaecc8371d72",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_05": {
+      "source": "th095.dat",
+      "sha256": "8c44b09b78c3b89920293488c3dfffbfd63664f8697fff08f36c4192491f5a89",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_06": {
+      "source": "th095.dat",
+      "sha256": "c97c95c860b9ac72692711731f43eed44328981439df1f3d276a946d18690409",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_07": {
+      "source": "th095.dat",
+      "sha256": "3287f23dc9ce489de4606b6c34ecfcf4cfc9569cce91bc8d5dee126be7b93d5e",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "help_08": {
+      "source": "th095.dat",
+      "sha256": "99deaaf246d78c73d9c354e23108c7ae45476760bf50bfb58aa3ab67a734c3c3",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_02": {
+      "source": "th095.dat",
+      "sha256": "e208498717bd9ae3e8dfcce30c8597d965da8071e3539561d337dec5bb3f8012",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_03": {
+      "source": "th095.dat",
+      "sha256": "0c707c595acace9f95c5dcac7768eb7275ccacde38aaf555cdffe8bb2bcd1222",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_04": {
+      "source": "th095.dat",
+      "sha256": "f22bb91715c549559a31c426ae51fc5541c5273c9a6ddfb9e8ff6e33a4c2b291",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_05": {
+      "source": "th095.dat",
+      "sha256": "4020ec5b1da1210a45a0856514704f2b48f9fb7a1db4eabd118eb95ee71ca9c2",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_06": {
+      "source": "th095.dat",
+      "sha256": "22c9a9eb191374177a64d3a4061b5f23b2cdbf7bfb1e8680642f09ae2d751d7c",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_07": {
+      "source": "th095.dat",
+      "sha256": "456e30058a7b16db9b7e58463b1490ed473785bdf2be9a1ffce51e45376cb9f4",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_08": {
+      "source": "th095.dat",
+      "sha256": "864eddc0598898fd806923ac0139a4a5685580cd4fa729b56daa6340c0770aa5",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_09": {
+      "source": "th095.dat",
+      "sha256": "950df9b74552b93ed758b34c392a0c0f900dd7d5fe80a2b09895b6b152ec666d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_10": {
+      "source": "th095.dat",
+      "sha256": "1ae8bf970d696130952d2ecb380b49d691e57d368888b2d111298a4ec1cda05e",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_11": {
+      "source": "th095.dat",
+      "sha256": "f06e3197f810721ef391a0264858daf269d1eace4a6b4af8cf2e06a439a39e62",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission000": {
+      "source": "th095.dat",
+      "sha256": "89e36b13b9498500ef03fc0481d3a106de2bfbb9afa5622ca3faf875d7249db7",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission001": {
+      "source": "th095.dat",
+      "sha256": "56e0e9d702e8e7a9f25c264097cf82a9a25a1ddea9d803737cf3d0db5569993d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission002": {
+      "source": "th095.dat",
+      "sha256": "78ca0795eaffe68074cbf341ee4aa5dcda827c431ab2ca6ffeb4aa97e17b5a6b",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission003": {
+      "source": "th095.dat",
+      "sha256": "bdbaf91ab0b2f3c371001a9e274e9a839687a0e87dfa2e486fd5969f370e0fa2",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission004": {
+      "source": "th095.dat",
+      "sha256": "96285852c44ceeb97ad22c17e32319217bff26d0891c202a0e1eba958b9ec500",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission005": {
+      "source": "th095.dat",
+      "sha256": "44225fc9e389098c46acc7ad8c1b0d17804866651600bc4f15186eb418270177",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission006": {
+      "source": "th095.dat",
+      "sha256": "fe3f679d74f6a9043c456123935b9476518b0e4cb6991c996037eef96a4a151c",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission007": {
+      "source": "th095.dat",
+      "sha256": "97bfdabc8c63395f81bedc18b59a427c6da00cac6cf8b67eaeae4ecc335e684b",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission008": {
+      "source": "th095.dat",
+      "sha256": "7d1e05e3c2dd8ebb6f8a5d058fb3b568a24d99639791a776c4add3da1acba605",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission009": {
+      "source": "th095.dat",
+      "sha256": "39b68001e7480f9c02c7f4552fa1cfda7e14ab7110555e96488a50a69413f290",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission010": {
+      "source": "th095.dat",
+      "sha256": "34308c5c4f32abd13c2677c6ab7c69ca24f9960ffc4689422a1ad90dbbfa1a07",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission011": {
+      "source": "th095.dat",
+      "sha256": "ea5142e54ee8bba60f10ec23d5a2f19decb84054ee2af3336c8d8ef74afdcfda",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission012": {
+      "source": "th095.dat",
+      "sha256": "cd6b52a02764114ac5c650c012f84d05c715ea28803e1895b10e1176bf598e02",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission013": {
+      "source": "th095.dat",
+      "sha256": "b09f1aae1b77313fe12be6be7fbaf972e7e2ce99e5fe6cbfac4e06c5b165925a",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission014": {
+      "source": "th095.dat",
+      "sha256": "a3bd07b49be9b297db9ed137f1722ddd2d6ac1853fb1841d9b7253d6a8b610d0",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission015": {
+      "source": "th095.dat",
+      "sha256": "a02df8e349a5274f58dbb679ac8d1c536a6e2ae44927c281e86b2272ac749a15",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission016": {
+      "source": "th095.dat",
+      "sha256": "4311c52d522f6fc122ca706a3cae415d4668660803e45b5f04f610ab08ec95d6",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission017": {
+      "source": "th095.dat",
+      "sha256": "6347b993218f2e3d088c4aa64a3428b80139f0d0a7a00b589f5f6a0960b0415d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission018": {
+      "source": "th095.dat",
+      "sha256": "8ba7d330dbd1f0d9768db9e1e0d4b9e66c80ba5e55ffcf110d0ae477eb26f5b3",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission019": {
+      "source": "th095.dat",
+      "sha256": "738fe2490f4c5670a1d5bc2793850d89a60f309bbba0c4be6e3d6c72b1cb6ac6",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission020": {
+      "source": "th095.dat",
+      "sha256": "4542cee6645f742a1c035c8d907e95ab7d3daf2db3362a7fdd8ee741fcadb89a",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission021": {
+      "source": "th095.dat",
+      "sha256": "9b050618a91f7d12af94b18596ed3031120026e648f8f1d3a81575f08d6f8800",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission022": {
+      "source": "th095.dat",
+      "sha256": "0c748b7b2090305698ea817e6be5ac11211a040cd44ba3cdc555a5ec7c52301f",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission023": {
+      "source": "th095.dat",
+      "sha256": "7d62ebfd2e7200a5543028beff21ef682fc8544c0e3a19a6fdf5e61e49f2e539",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission024": {
+      "source": "th095.dat",
+      "sha256": "b8c1a475cb7420049095ac6ae68bc5228b06f8aae7106b523bb66a4758effcb6",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission025": {
+      "source": "th095.dat",
+      "sha256": "dd2a6a277768a5fb76d2803131ad0d56b19659923b7df436f1646f2222695e24",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission101": {
+      "source": "th095.dat",
+      "sha256": "19958ed6e6aa4e297d5d3396eba0903f73378f6c8e69912b484da4b13b299428",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission102": {
+      "source": "th095.dat",
+      "sha256": "fb6a181f9298f54d946dd87b2038777a3d7f7edf33ddd84dda2b27145b43d803",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission103": {
+      "source": "th095.dat",
+      "sha256": "1f2f7e35c6d14c3b5d1f44ea47ce5ebe51a76ae48085ae499b2ae232b23c43a4",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission104": {
+      "source": "th095.dat",
+      "sha256": "5bb09aa00727b18ae37b1a2d60c974af291890ac225b2f0899914c004e7e2b0f",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission105": {
+      "source": "th095.dat",
+      "sha256": "a7e866c812c0676f699a6b1f875cf985b5084274a9e5a8bfbc35da83f0a5ab6d",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission106": {
+      "source": "th095.dat",
+      "sha256": "3f709d2c47b04fc8b3602017d0ded0ba23f55bc2aae8441279c83d44eaa11550",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission107": {
+      "source": "th095.dat",
+      "sha256": "addabfad59ab67e41d18b0d9e39ef1dedc7ce8cdbfa06eafe40c055dfd447ded",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission108": {
+      "source": "th095.dat",
+      "sha256": "75a67d865b87927d3f55ef7e6bc7ce3efb22bd2c992075bfab64dd5e792f8c5e",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission109": {
+      "source": "th095.dat",
+      "sha256": "5dd05f519ceea9d939b5bb3f737603a33c109ff125130eb16b3831454b9d855f",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission110": {
+      "source": "th095.dat",
+      "sha256": "8500509418de8cb63caf066ee11c2fdbd594cdb239e84a6964276c85e23de6c3",
+      "sprites": 1,
+      "scripts": 1
+    },
+    "mission_12": {
+      "source": "th095.dat",
+      "sha256": "ecb3ae3649d21a4236989f875c42d26681505304fa747c2b3fd8e7c09b3484fb",
+      "sprites": 1,
+      "scripts": 1
+    }
+  },
+  "10": {
+    "bullet": {
+      "source": "th10.dat",
+      "sha256": "5e2f7076ba11f577849c7c1d114deeb190511d922ec6a6aa5e99e637ef60a2d9",
+      "sprites": 366,
+      "scripts": 445
+    },
+    "capture": {
+      "source": "th10.dat",
+      "sha256": "fd87396932a610412c9977ad114621bf3daac0581f2a80cc3dd3133d684edd72",
+      "sprites": 0,
+      "scripts": 5
+    },
+    "enemy": {
+      "source": "th10.dat",
+      "sha256": "66a13046bcc4402d99254446550f48eba98e11613873f5f513c85f8f8029b9b5",
+      "sprites": 124,
+      "scripts": 63
+    },
+    "nowloading": {
+      "source": "th10.dat",
+      "sha256": "31dc70aa63c3a3540ac62e5c1b1f1c1c976061defd16192e513636dfc1fc5ab6",
+      "sprites": 3,
+      "scripts": 4
+    },
+    "sig": {
+      "source": "th10.dat",
+      "sha256": "db0a75dde907d0d265bd4b5e6882e6f15e6239ec0339fa2742537138bff34649",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "st01logo": {
+      "source": "th10.dat",
+      "sha256": "68b49585ca6d88361239e196be77a920bd6fffadf4d9ef0420a4f2ca98fa0883",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage01": {
+      "source": "th10.dat",
+      "sha256": "4a60daea1fe181cc160df520de5c2174831e6cbbc72f06c918b82da908330d6b",
+      "sprites": 5,
+      "scripts": 7
+    },
+    "stgenm01": {
+      "source": "th10.dat",
+      "sha256": "30ec33de494230d1839a12bc94ce6008c4ce02d039a2d9ccb8a3c70edddf0890",
+      "sprites": 36,
+      "scripts": 16
+    },
+    "st02logo": {
+      "source": "th10.dat",
+      "sha256": "7fd713f67227c3ddf9eb42f1d6a43cef5e77e3184de0679c5f8a0209f571661a",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage02": {
+      "source": "th10.dat",
+      "sha256": "7e07331fe840bbe8a5fa1756cfa0d2580a030cd9e3a060756fd6e3bd25fab810",
+      "sprites": 3,
+      "scripts": 3
+    },
+    "stgenm02": {
+      "source": "th10.dat",
+      "sha256": "383d093144ff3749dfc96f4111497b270aa9f1feeca464e9c38e04426b95bccd",
+      "sprites": 43,
+      "scripts": 18
+    },
+    "st03logo": {
+      "source": "th10.dat",
+      "sha256": "91d842e15e6bca61fd94442fa1a9f4f3fc0ca81e1dc83339b4a5769f923fc70c",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage03": {
+      "source": "th10.dat",
+      "sha256": "48ff8e90fc3542d9173ab0d28805b5cd74600c55050e6273204c1c9bf0d40da2",
+      "sprites": 7,
+      "scripts": 9
+    },
+    "stgenm03": {
+      "source": "th10.dat",
+      "sha256": "a25bbbbd439c946ab7afe0cb37eba6f2d9a773c8114c4c60346cd4d5da710c43",
+      "sprites": 56,
+      "scripts": 22
+    },
+    "st04logo": {
+      "source": "th10.dat",
+      "sha256": "77698519cae9801206aec8b2c3e7b118a13def468a21359a26255c604021c829",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage04": {
+      "source": "th10.dat",
+      "sha256": "f85ca6bfd94d82f6db90d628bcc1a042f9bdc530e9dd5929442e4d426cf4a490",
+      "sprites": 5,
+      "scripts": 5
+    },
+    "stgenm04": {
+      "source": "th10.dat",
+      "sha256": "eb08ab3b2263305a3033f5a4a0839331c2b69f1e1708e5c4e950bacb2f67e0a0",
+      "sprites": 59,
+      "scripts": 23
+    },
+    "st05logo": {
+      "source": "th10.dat",
+      "sha256": "d671e05f96e9d32149a5b14bafc9605dd75b7ba5d3489c85c65de2182e8e1aca",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage05": {
+      "source": "th10.dat",
+      "sha256": "49b2c3223a36d3775d8357650eedbd05698881f0794196c960226cf3e1afddf9",
+      "sprites": 4,
+      "scripts": 7
+    },
+    "stgenm05": {
+      "source": "th10.dat",
+      "sha256": "a06e21ba51d3b6b525e579a9b778f3575c152995f22e7e63cef9001b034925e7",
+      "sprites": 44,
+      "scripts": 16
+    },
+    "st06logo": {
+      "source": "th10.dat",
+      "sha256": "36403fbcae7e4ad8d4c00bf4e184830bb7d2299f10988304855f606752f579c6",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage06": {
+      "source": "th10.dat",
+      "sha256": "33393e1a95f654fd9e12a84adeac47f9ad2438a63b8f88c34c3a3cf6e94dd82c",
+      "sprites": 5,
+      "scripts": 14
+    },
+    "stgenm06": {
+      "source": "th10.dat",
+      "sha256": "947cb38708ce1cfe25229057bf9c73ccbbf6c85901d4a48f4643e6d72266275b",
+      "sprites": 70,
+      "scripts": 37
+    },
+    "st07logo": {
+      "source": "th10.dat",
+      "sha256": "978b6245ba06f8db79f20307bb38b1f8530073e445d0246fc8be3f9e96bf898b",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage07": {
+      "source": "th10.dat",
+      "sha256": "928a0d5ceaf340881a6ef2412ccf43258581858db05facaf0e2cdd18409ebce4",
+      "sprites": 3,
+      "scripts": 10
+    },
+    "stgenm07": {
+      "source": "th10.dat",
+      "sha256": "603c97b6fdfef9de06359f64be146ff59b79353bbb686c71898aa3771d00422d",
+      "sprites": 89,
+      "scripts": 41
+    },
+    "e00": {
+      "source": "th10.dat",
+      "sha256": "f1483a40ea9e52b55647bd90c54a2a688858fe63336d5d7599ca660c943b031c",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e01": {
+      "source": "th10.dat",
+      "sha256": "68935a6b61de38dad4e921648226ae2be9287ac8768165022a8150ce2ea2cd4e",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e02": {
+      "source": "th10.dat",
+      "sha256": "7b32618b9bb1c32ef0ee1f97459445073064abb8cb25bb35a45b94e833361ff3",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e03": {
+      "source": "th10.dat",
+      "sha256": "f91ed9c897da7b6d5729612c1964e39818fd0e73634bd2b9405f30227226f4fc",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e04": {
+      "source": "th10.dat",
+      "sha256": "b021ecd0031cdc9eba9c38eb72af941189c6e78be00686a7d44bdbacf73a9ee5",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e05": {
+      "source": "th10.dat",
+      "sha256": "eaf0bc5acceae96d7c62e9d18d784c606805a6ebad5ae5e27f37e7f0916266a4",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e06": {
+      "source": "th10.dat",
+      "sha256": "d020c9a34f7096b0bb6e59eb3f385c6c6cbb333e49334cf2b0fe7dc41e56fb64",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e07": {
+      "source": "th10.dat",
+      "sha256": "985bacb7369e6ce147e5bcedd109c557dd1dd1efa3eec8f3f7904397f2e71194",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e08": {
+      "source": "th10.dat",
+      "sha256": "f96d23c6fbb223ca9c1fd5aabc39e6f1a5c1877be16ffebf920cba1af5cc857d",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e09": {
+      "source": "th10.dat",
+      "sha256": "438d436f4cf79ceebbc0609df9c7ab2664c0b3ce5ccb93cf70a3dcc18e188aba",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e10": {
+      "source": "th10.dat",
+      "sha256": "d615741de601467ac9eb64e62a298a4473360fd70f8e942b5d322ecf36a27dfc",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e11": {
+      "source": "th10.dat",
+      "sha256": "2e9566170ad836b5a6155263e06ad920ae6c5a3a354b4fe37117b86a8216fb9c",
+      "sprites": 6,
+      "scripts": 9
+    }
+  }
+}

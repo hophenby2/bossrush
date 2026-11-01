@@ -1,6 +1,88 @@
--- 原作移植的显示与回收：保留代理图样尺寸/判定，原ANM朝向和出屏规则单独登记。
+-- 原作移植的显示与回收：精灵、调色板和动画取原作 ANM；判定和运动独立维护。
 local V = {}
+if not OriginalANM then dofile('THlib/anm/original.lua') end
+if not OriginalStageVisual then dofile('THlib/anm/stage_visual.lua') end
 V.profiles = dofile('THlib/bullet/original_profiles.lua')
+local A=OriginalANM
+local body8={ [0]=0,1,2,3,4,5,6,7,8,9,25,106,107,108,109,110,111,112,113,114,115 }
+local body95={ [0]=0,16,32,48,64,80,96,111,127,143,159,175,211,219,227,235,243,283,296,251,259,267,275,191 }
+-- TH10.exe 0x72d70 的 27 项脚本表；type24 的脚本48与type1的脚本64不能互换。
+local body10={ [0]=0,64,80,96,112,128,144,160,176,192,208,224,275,283,291,299,307,347,373,315,323,331,339,240,48,374,243 }
+function V.color_count(game,kind)
+    if game==6 then return kind==9 and 4 or kind>=6 and 8 or 16 end
+    if game==7 then return kind==10 and 4 or kind>=7 and 8 or 16 end
+    if game==8 then return kind==10 and 4 or ((kind>=7 and kind<=9) or kind==14 or kind==15 or kind>=18) and 8 or 16 end
+    return kind==17 and 4 or (kind==18 or (game==10 and kind==25)) and 1 or kind==23 and 3
+        or (kind>=12 and kind<=22) and 8 or 16
+end
+local function body_vm(game,kind,color)
+    local archive=game==6 and (kind==9 and 'etama4' or 'etama3') or ((game==7 or game==8) and 'etama' or 'bullet')
+    local id=game==6 and (kind==9 and 0 or kind) or game==7 and (kind==10 and 25 or kind) or game==8 and body8[kind]
+        or game==95 and body95[kind]+color or game==10 and body10[kind]+color
+    local v=A.new(game,archive,assert(id,'原作弹型缺失'))
+    if game==6 or game==7 or game==8 then
+        if not (game==6 and kind==7) then v.sprite=v.sprite+color end
+    else A.interrupt(v,2);A.step(v) end
+    return v
+end
+function V.reset_anm(o,game,kind,index)
+    o._native_color=(index or 1)-1
+    o._native_anm=body_vm(game,kind,o._native_color)
+    o._native_spawn_started=false;o._native_anm_tick=nil
+end
+local function spawn_left(o,game)
+    if game==6 then return o.th06_spawn or 0
+    elseif game==7 then return o.c_spawn_left or 0
+    elseif game==8 then return o.ex_spawn or o.alice_spawn_left or o.spawn_left or 0
+    elseif game==95 then return o.th095_spawn_left or 0
+    elseif game==10 then return o.tb and o.tb.spawn or 0 end
+    return 0
+end
+function V.step_anm(o)
+    local c=o.imgclass
+    if not c.native_game or o._native_anm_tick==o.ani then return end
+    o._native_anm_tick=o.ani
+    local v=o._native_anm
+    local left=spawn_left(o,c.native_game)
+    if left>0 and not o._native_spawn_started then
+        o._native_spawn_started=true
+        if c.native_game==95 or c.native_game==10 then
+            local phase=left<=8 and 7 or left<=15 and 8 or 9
+            v=A.new(c.native_game,'bullet',(c.native_game==95 and body95 or body10)[c.native_type]+o._native_color)
+            A.interrupt(v,phase);o._native_anm=v
+        else
+            local kind=c.native_type
+            local id
+            if c.native_game==6 then id=kind==9 and 2 or kind>=6 and 20 or (left<=10 and 17 or left<=16 and 18 or 19)
+            else id=kind==(c.native_game==7 and 10 or 10) and 27 or kind>=7 and kind<=9 and 24
+                    or (left<=10 and 21 or left<=16 and 22 or 23)
+                if kind==0 then id=left<=10 and 18 or left<=16 and 19 or 20 end
+                if c.native_game==8 and kind>=14 and (kind==14 or kind==15 or kind>=18) then id=24 end
+            end
+            v=A.new(c.native_game,v.data.archive,id)
+            local col=o._native_color
+            local small={ [0]=0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0 }
+            local medium={ [0]=0,1,1,2,2,3,4,0 }
+            v.sprite=v.sprite+(c.native_profile.h<=16 and small[col] or c.native_profile.h<=32 and medium[col] or col)
+            o._native_anm=v
+        end
+    elseif left==0 and o._native_spawn_started then
+        o._native_spawn_started=false
+        if c.native_game==95 or c.native_game==10 then A.interrupt(v,2)
+        else v=body_vm(c.native_game,c.native_type,o._native_color);o._native_anm=v end
+    end
+    A.step(v)
+end
+function V.render_anm(o)
+    if not o._native_anm then return false end
+    local v=o._native_anm
+    -- 运动角由弹体状态机提供；不能使用引擎自动 navi 去改写 ECL 的逻辑角。
+    local follow=o.imgclass.native_profile.follow
+    v.follow=follow
+    -- 原作随弹道绘制的角是 angle+π/2；原图朝上，换成向上的 Y 轴后需再减90度。
+    A.draw(v,o.x,o.y,bullet.GetRenderRotation(o)-90,o.hscale,o.vscale,(o._a or 255)/255)
+    return true
+end
 local native_styles = {}
 function V.retire(o)
     o._original_silent_remove=true
@@ -13,7 +95,10 @@ function V.native_style(game, kind, style)
     if bykind[kind][style] then return bykind[kind][style] end
     local mapped = Class(style, {native_profile=assert(V.profiles[game][kind]), native_game=game,
         -- 原作弹的逐帧速度由ECL负责，不能再被本项目Rank追加一段位移。
-        init=function(o,...) style.init(o,...);o.rank_speed=false end,
+        init=function(o,index)
+            style.init(o,index);o.rank_speed=false
+            V.reset_anm(o,game,kind,index)
+        end,
         native_type=kind, visual_style=style.visual_style or style,
         collision_style=style.collision_style or style, size=style.size,
         RenderFunc=style.RenderFunc, SetColorFunc=style.SetColorFunc}, true)
@@ -102,6 +187,42 @@ local function laser_width(o)
 end
 function V.laser_render_width(o)
     return laser_width(o)*7/16
+end
+function V.render_laser_anm(o)
+    local game=o._native_laser_game or ((o.th06_state or o.th06_age) and 6)
+    if game~=6 and game~=8 then return false end
+    local len=o.l1+o.l2+o.l3
+    if len<=0 or o.w<=0 then return true end
+    local color=(o.index or 1)-1
+    local kind=o.th06_sprite or o._native_laser_type or 0
+    local key=game..':'..kind..':'..color
+    if o._native_beam_key~=key then
+        local archive=game==6 and 'etama3' or 'etama'
+        local v=A.new(game,archive,(game==6 and 9 or 10)+kind)
+        v.sprite=v.sprite+color;v.follow=true
+        o._native_beam,o._native_beam_key=v,key
+        local cap=A.new(game,archive,game==6 and 20 or 24)
+        local colors={ [0]=0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0 }
+        cap.sprite=(game==6 and 140 or 146)+(colors[color] or 0)
+        cap.scale={1,1};cap.alpha={255};cap.interps={};cap.blend='mul+add'
+        o._native_beam_cap=cap
+    end
+    local v=o._native_beam
+    local spr=v.data.sprites[v.sprite]
+    local width=game==6 and o.w*16/7 or laser_width(o)
+    A.draw(v,o.x+cos(o.rot)*len/2,o.y+sin(o.rot)*len/2,o.rot-90,width/spr[4],len/spr[5],o.alpha)
+    local offset=o.th06_startoff or o._native_laser_start or 0
+    local speed=o.th06_speed or o._native_laser_speed or 0
+    local phase=o._native_laser_geometry
+    local flags=o.th06_flags or phase and phase.flags or 0
+    local state=o.th06_state or phase and phase.phase or 1
+    if (offset<16 or speed==0) and not (math.floor(flags/2)%2==1 and state==0) then
+        local full=o.th06_width or o._native_laser_phase and o._native_laser_phase[3] or width
+        local scale=full/10*(16-offset)/16
+        if scale<=0 then scale=full/10 end
+        A.draw(o._native_beam_cap,o.x,o.y,0,scale,scale)
+    end
+    return true
 end
 function V.laser_collision(o, callback)
     local p = o._native_laser_geometry

@@ -3,6 +3,25 @@ from pathlib import Path
 import argparse
 import json
 from collections import Counter
+import hashlib
+
+ROOT=Path(__file__).resolve().parents[2]
+
+def fingerprints(folder):
+    config=json.loads((folder/'native-run.json').read_text(encoding='utf-8'))
+    ending_only=[]
+    for name,expected in config['hashes'].items():
+        source=ROOT/name
+        current=source.read_bytes()
+        if hashlib.sha256(current).hexdigest()!=expected:
+            lf=current.replace(b'\r\n',b'\n')
+            if source.suffix in ('.lua','.py') and expected in {
+                    hashlib.sha256(lf).hexdigest(),hashlib.sha256(lf.replace(b'\n',b'\r\n')).hexdigest()}:
+                ending_only.append(name)
+            else:
+                raise AssertionError(('验证后代码或素材改变，必须重跑受影响的批次',folder,name))
+    return config,ending_only
+
 
 def report(runs,output,visual_runs=()):
     cases={};sources=[]
@@ -13,11 +32,12 @@ def report(runs,output,visual_runs=()):
         assert not data['errors'],(folder,data['errors'])
         assert data['completed']==data['expected']==len(data['records']),folder
         assert data.get('limit',0)==0,'冒烟截断结果不能计入整卡时限覆盖'
-        config=json.loads((folder/'native-run.json').read_text(encoding='utf-8'))
+        config,ending_only=fingerprints(folder)
         sources.append({'path':str(folder.resolve()),'engine':data['version'],
+                        'engine_sha256':hashlib.sha256((folder/'LuaSTGSub.exe').read_bytes()).hexdigest(),
                         'mode':data['mode'],'flow':data.get('flow','single'),
                         'seed':data['seed'],'completed':data['completed'],
-                        'hashes':config['hashes']})
+                        'hashes':config['hashes'],'line_endings_only':ending_only})
         for row in data['records']:
             key=(row['level'],row['id'])
             case=cases.setdefault(key,{'game':row['level']+2,'id':row['id'],'name':row['name'],'runs':{}})
@@ -26,7 +46,7 @@ def report(runs,output,visual_runs=()):
                 'target':row.get('target'),
                 'rendered':row.get('rendered',0),'peak':row['peak'],
                 'min_rate':row.get('min_rate',1),'max_photos':row.get('max_photos',0),
-                'cleanup':row.get('cleanup'),'run':len(sources)-1}
+                'cleanup':row.get('cleanup'),'unmapped_visuals':row.get('unmapped_visuals',{}),'run':len(sources)-1}
             if row.get('original_ecl'):case['original_ecl']=row['original_ecl']
     coverage=Counter(kind for case in cases.values() for kind in case['runs'])
     assert Counter(c['game'] for c in cases.values())=={31:133,32:106,33:85,34:115,35:74}
@@ -49,7 +69,10 @@ def report(runs,output,visual_runs=()):
     for folder in visual_runs:
         data=json.loads((folder/'native-result.json').read_text(encoding='utf-8'))
         assert not data['errors'] and data['completed']==data['expected']
+        config,ending_only=fingerprints(folder)
+        assert config['frames']>0 and len(data['records'])>0
         result['normal_rate_visual_checks'].append({'path':str(folder.resolve()),
+            'hashes':config['hashes'],'line_endings_only':ending_only,
             'records':[{k:v for k,v in row.items() if k in ('id','level','frames','rendered','ended')} for row in data['records']],
             'screenshots':[str(p.resolve()) for p in (folder/'snapshot').glob('*.png')]})
     output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

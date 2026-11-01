@@ -453,12 +453,8 @@ local function color_is_8(t)
 end
 ---frame（1..16）→ 本项目帧号；t 只用来决定查 16 色表还是 8 色表。
 local function color_of(t, frame)
-    local raw = math.floor((frame or 1) - 1)
-    if raw < 0 then raw = 0 end
-    if color_is_8(t) then
-        return C_RAW8[(raw % 8) + 1]
-    end
-    return C_RAW16[(raw % 16) + 1]
+    -- 原作 ANM 直接使用色号；不能再经过会合并深浅色的代理调色板。
+    return math.max(0, math.floor((frame or 1)-1)) % (color_is_8(t) and 8 or 16) + 1
 end
 
 local EX = {}
@@ -1964,7 +1960,7 @@ do
 end
 
 ---子机（Sub38）。占位贴图 "servant"；不移动、不给判定。
-local familiar = Class(object, {
+local familiar = OriginalStageVisual.actor_class(object, 8, 'ecldata1sp:38', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -3303,7 +3299,7 @@ lw208_familiar = class.th08_combat.actor("ecldata5sp:42", {
 
 ---Sub39 的「月亮」：Sub38 的 t=0 用 `ins_93(39, xf0, xf1, 0, 10, −2, 10)` 生成，
 ---绝对坐标 TH08 (192, 244) = 我们 (0, −20)，`ins_1` 在 t=60 收掉。占位贴图 "eyeL"。
-lw208_eye = Class(object, {
+lw208_eye = OriginalStageVisual.actor_class(object, 8, 'ecldata5sp:39', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -4763,7 +4759,7 @@ local PHOENIX_LIFE = 51                 -- t=51 的 ins_1 TERMINATE
 local PHOENIX_SPEED_0 = 0.3             -- ins_65 的 speed
 local PHOENIX_ACCEL_0 = 0.025           -- ins_71 的参数
 local PHOENIX_ACCEL_AT = 20             -- ins_71 在 t=20
-lw211_phoenix = Class(object, {
+lw211_phoenix = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:112', {
     init = function(self, x, y, angle)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -6067,13 +6063,12 @@ lw213_bullet = Class(bullet, {
     end,
 })
 
----小怪（Sub114 + 子 context Sub115）。占位贴图 "servant"；原作它有 24×24 判定与 life 1000，
----但移植版没有「敌机受伤」这套系统（卡 205..212 同款），所以打不掉、也不会被打死。
+---小怪（Sub114 + 子 context Sub115）；本体可见性由原作 ECL 的动画和 NO_SPRITE 指令决定。
 ---  x, y    = 出生点（= BOSS 在 t=110 的位置，也是公转圆心）
 ---  theta0  = 组的随机起始角（我们坐标）
 ---  omega   = 轨道角速度（我们坐标，也是扇形角累加量 lf1 —— 原作 lf0 += lf1 用的是同一个）
 ---  color   = 弹色（= li0：组长 6、组员 4。count1 恒为 1）
-lw213_minion = Class(object, {
+lw213_minion = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:114', {
     init = function(self, x, y, theta0, omega, count1, color)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -8762,9 +8757,8 @@ local function sat_fire(owner, adelta)
     end
 end
 
----卫星（Sub5）。life 10、item −2 → 死时不掉东西。占位贴图 "servant"
----（原作 `ins_80(8)` 是 NO_SPRITE = 隐形，这里画出来才看得见弹是从哪儿来的）。
-lw217_sat = Class(object, {
+---卫星（Sub5）。原作 ins_58(7) 设置动画，但 ins_80(8) 禁止绘制本体。
+lw217_sat = OriginalStageVisual.actor_class(object, 8, 'ecldata_ym:5', {
     init = function(self, x, y, dir_th08, lf5)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -10800,8 +10794,10 @@ local function servant_body(self)
     self.lf3 = self.lf3 + self.lf4
 end
 
----使魔（Sub5..Sub15 共用一个类，靠 cfg 区分）。占位贴图 "servant"。
-local servant_cls = Class(object, {
+---使魔（Sub5..Sub15 共用一个类，靠 cfg 区分）；原作动画从各子程序读取。
+local servant_cls = OriginalStageVisual.actor_class(object, 8, function(o, x, y, cfg)
+    return 'ecldata_yk:' .. cfg.source_sub
+end, {
     init = function(self, x, y, cfg, li0, li1, li2, lf0, lf1, lf2, lf3, lf4)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY_BULLET
@@ -10949,6 +10945,7 @@ end
 ---生成一台使魔：位置 = BOSS 的 worldPosition + 偏移（本卡偏移恒 (0,0)，ins_94/EclRunHigh.inl:812-838）。
 local function spawn_servant(owner, sub, li0, li1, li2, lf0, lf1, lf2, lf3, lf4)
     local sx, sy = to_th08_x(owner.x), to_th08_y(owner.y)
+    SUB[sub].source_sub = sub
     local s = New(servant_cls, sx - 192, 224 - sy, SUB[sub],
                   li0, li1, li2, lf0, lf1, lf2, lf3, lf4)
     servants[#servants + 1] = s
@@ -16918,8 +16915,8 @@ local familiar = class.th08_combat.actor("ecldata8sp:93", {
 ---原作它没有判定（`DISABLE_INTERACTION_FLAGS 3` = 关 ACCEPTS_DAMAGE | COLLISION）、
 ---`SET_MAIN_ANM 13`、`SET_EXTRA_ANM_SCRIPT_ALT 1 14`，之后每帧 `selfX/Y = plX/Y`，
 ---并被 `SET_MOVEMENT_BOUNDS(96, 0, 288, 448)` 夹住（⇒ 我们 x∈[−96,96]、y 几乎不夹）。
----★ 贴图未知，占位 "servant"。
-local phoenix_self = Class(object, {
+---本体使用原作 stg8enm.anm 的脚本 13，附加动画使用脚本 14。
+local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:92', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -37045,7 +37042,7 @@ end
 ---红眼小怪（Sub86）：占位贴图 "eyeL"、原地不动、`ins_80(3)` 关判定 ⇒ **纯观感**
 ---（跟卡 215 的 Sub39「月亮」同一副骨架）。活 60 帧（`ins_1` 在 t=60）。
 local eye454
-eye454 = Class(object, {
+eye454 = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -37851,7 +37848,7 @@ end
 ---活 60 帧（`ins_1` 在 t=60）。
 ---------------------------------------------------------------------
 local eye_cls
-eye_cls = Class(object, {
+eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -38855,7 +38852,7 @@ end
 ---活 60 帧（`ins_1` 在 t=60）。
 ---------------------------------------------------------------------
 local eye_cls
-eye_cls = Class(object, {
+eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -39399,7 +39396,7 @@ end
 ---活 60 帧（`ins_1` 在 t=60）。
 ---------------------------------------------------------------------
 local eye_cls
-eye_cls = Class(object, {
+eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -39917,7 +39914,7 @@ end
 ---活 60 帧（`ins_1` 在 t=60）。
 ---------------------------------------------------------------------
 local eye_cls
-eye_cls = Class(object, {
+eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -48167,6 +48164,7 @@ local function u_step(u)
 end
 
 unit = class.th08_combat.unit({
+    source_file='ecldata1',
     ---@param sub number     敌机子程序号
     ---@param x number       局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
     ---@param y number       同上
@@ -49158,6 +49156,7 @@ local function u_shot_tick(u)
 end
 
 unit = class.th08_combat.unit({
+    source_file='ecldata4a',
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -50294,6 +50293,7 @@ local function u_shot_tick(u)
 end
 
 unit = class.th08_combat.unit({
+    source_file='ecldata3',
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（使魔传 0,0 / 操作数）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -51053,6 +51053,7 @@ local DROP_COUNTS = {
 ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
 ---------------------------------------------------------------------
 unit = class.th08_combat.unit({
+    source_file='ecldata2',
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（op92 使魔传父机 world，其它传时间轴坐标）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -52411,6 +52412,7 @@ local function make_card(build)
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
     unit = class.th08_combat.unit({
+    source_file='ecldata6',
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -53402,6 +53404,7 @@ local function make_card(build)
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
     unit = class.th08_combat.unit({
+    source_file='ecldata7',
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -54500,6 +54503,7 @@ local function make_card(build)
     ---敌人本体（Class(enemy, …)：判定 / 伤害 / 血量 / 碰撞组全走引擎那一套）。
     ---------------------------------------------------------------------
     unit = class.th08_combat.unit({
+    source_file=cfg.FILE or 'ecldata5',
         ---@param sub number 敌机子程序号
         ---@param x number   局部位置（我们的口径）
         ---@param parent table 父机（nil = 时间轴直接生成）
@@ -55800,6 +55804,7 @@ elseif part == "back" then
 end
 
 return {
+    FILE = "ecldata5",
     TL_START = TL_START,
     HOST_WATCH = HOST_WATCH,
     SAVE_POS = SAVE_POS,
@@ -56056,6 +56061,7 @@ do
 end
 
 return {
+    FILE = "ecldata3",
     SUB = SUB,
     GUN = GUN,
     TIMELINE = { { 0, 20, 0, 240, 13900, 0, -2 } },
@@ -56844,6 +56850,7 @@ local TIMELINE = {
 }
 
 return {
+    FILE = "ecldata8",
     SUB = SUB,
     GUN = GUN,
     TIMELINE = TIMELINE,

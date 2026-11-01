@@ -104,6 +104,8 @@ def statement(stage,r,target):
     if op==107:return [f'a.death_mode={value(x[0])}'],False
     if op==96:return ['H.clear_helpers(b)'],False
     if op==97:return [f'H.sprite(b,{value(x[0])})'],False
+    if op==98:return [f'H.poses(b,{vals(x[:5])})'],False
+    if op==99:return [f'H.anm_slot(b,{vals(x)})'],False
     if op==103:return [f'b.a,b.b,b.rect=({value(x[0])})/2,({value(x[1])})/2,true'],False
     if op in(104,105,117,132):return [f'a.{ {104:"collidable",105:"damageable",117:"interactable",132:"invisible"}[op]}={lit(bool(x[0]))}'],False
     if op==108:return [f'a.death=P[{stage}][{x[0]}]'],False
@@ -212,16 +214,16 @@ def generate(source,cards):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('data',type=Path);p.add_argument('--write',action='store_true');p.add_argument('--output',type=Path)
     args=p.parse_args();source=Source(args.data);cards=catalogue(source);out=generate(source,cards)
-    if args.output:args.output.write_text(out+'\n')
+    if args.output:args.output.write_text(out+'\n',encoding='utf-8')
     if args.write:
-        path=Path('mod/GAME/th32.lua');text=path.read_text()
+        path=Path('mod/GAME/th32.lua');text=path.read_text(encoding='utf-8-sig')
         if '-- TH06_EXPANDED_START' in text:
             start=text.index('-- TH06_EXPANDED_START');end=text.index('-- TH06_EXPANDED_END',start)+len('-- TH06_EXPANDED_END')
             text=text[:start]+out+text[end:]
         else:
             marker='\nend\n\nlocal function NewText('
             text=text.replace(marker,'\n'+out+'\n'+marker,1)
-        path.write_text(text)
+        path.write_text(text,encoding='utf-8')
     print(f'离线展开：{len(cards)} 段 Boss 战、{len(road_catalogue(source))} 段道中，{len(out.splitlines())} 行直接 Lua 代码')
 
 if __name__=='__main__':main()

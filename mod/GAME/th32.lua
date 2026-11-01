@@ -49,10 +49,7 @@ local COLOUR16={16,1,2,3,4,5,6,7,8,9,10,11,12,12,14,16}
 local COLOUR8={15,2,4,6,8,10,12,16}
 local COLOUR4={2,6,10,12}
 local function colour(sprite, c)
-    local palette=(sprite==9 or sprite==7) and COLOUR4 or (sprite>=6 and COLOUR8 or COLOUR16)
-    -- Func4 会把所有大弹改为 GREEN8=5，Func0 会把全池改为 WHITE=15，
-    -- 包括原来只有四/八色的弹种；代理素材按这些变色语义补齐颜色。
-    return palette[c+1] or COLOUR8[c+1] or COLOUR16[c+1] or 16
+    return c+1
 end
 local function normal_angle(a)
     while a > PI do a = a - 2 * PI end
@@ -85,7 +82,6 @@ class["原作弹"] = Class(bullet, {
         b.th06_owner, b.th06_sprite = s, sprite
         b.rank_speed=false
         b.th06_w, b.th06_h = shape[2], shape[3]
-        if sprite==0 then b.hscale,b.vscale=.5,.5 elseif sprite==1 then b.hscale,b.vscale=.8,8/9 elseif sprite==7 then b.hscale,b.vscale=.625,1 end
         b.a, b.b, b.rect, b.rot = shape[4] / 2, shape[4] / 2, true, 0
         b.th06_flags, b.th06_tick, b.th06_out = flags, 0, 0
         b.th06_colour=c
@@ -187,11 +183,7 @@ class["原作弹"] = Class(bullet, {
         end
     end,
     render = function(b)
-        -- 出场图只是替代视觉，运动和判定仍由原作状态机控制。
-        local a = b._a
-        if b.th06_spawn > 0 then b._a = 255 * (1 - b.th06_spawn / b.th06_spawn_total) end
         bullet.render(b)
-        b._a = a
     end,
 })
 
@@ -964,6 +956,7 @@ function H.card_del(b)
 end
 function H.sprite(b,id)
     local a=b.th06_actor;a.sprite=id
+    OriginalStageVisual.th06_script(b,a.stage,id)
     if not a.main and a.stage==7 and id>=160 and id<=164 and not a.clone then
         a.clone=true
         local a0,b0,rect=b.a,b.b,b.rect
@@ -980,6 +973,24 @@ function H.sprite(b,id)
             b.a,b.b,b.rect=aa,bb,rect
         end
     end
+end
+function H.poses(b,...)
+    local p={...}
+    if p[1]<0 then
+        if b._original_actor then b._original_actor.poses=nil end
+        return
+    end
+    if not b._original_actor then OriginalStageVisual.th06_script(b,b.th06_actor.stage,p[1]) end
+    -- ECL98 的顺序是默认、左回正、右回正、左移、右移。
+    OriginalStageVisual.poses(b,{p[1],p[4],p[5],p[2],p[3]})
+end
+function H.anm_slot(b,index,id)
+    if not b._original_actor then
+        if id<0 then return end
+        OriginalStageVisual.th06_script(b,b.th06_actor.stage,0)
+        b._original_actor.vm.visible,b._original_actor.vm.finished=false,true
+    end
+    OriginalStageVisual.slot(b,index,id)
 end
 function H.set_velocity(p,a,v)
     velocity(p,a,v)
@@ -1426,6 +1437,7 @@ do
         a.death_mode=1
         a.collidable=false
         a.death=P[1][6]
+        H.poses(b,128,131,132,129,130)
         a.life_threshold=500
         a.life_fn=P[1][9]
         a.timeout=1440;a.phase=0
@@ -3520,6 +3532,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.anm_slot(b,4,66)
         H.sprite(b,64)
         return
     end
@@ -3844,6 +3857,7 @@ do
     function B.part13(b,v)
         local a=b.th06_actor
         H.wait(b,v,6)
+        H.anm_slot(b,4,66)
         H.sprite(b,64)
         return
     end
@@ -4945,6 +4959,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
@@ -5055,6 +5070,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
@@ -5090,6 +5106,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
@@ -5168,6 +5185,7 @@ do
         H.wait(b,v,0)
         a.interactable=false
         H.sprite(b,64)
+        H.anm_slot(b,0,16)
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
@@ -5284,6 +5302,7 @@ do
         a.damageable=true
         a.death_mode=2
         a.collidable=true
+        H.anm_slot(b,0,17)
         if not a.main then b.hp=17000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -8868,6 +8887,7 @@ do
         H.wait(b,v,0)
         a.interactable=false
         H.sprite(b,128)
+        H.anm_slot(b,0,16)
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
@@ -9142,6 +9162,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.anm_slot(b,0,17)
         a.damageable=true
         a.death_mode=2
         a.collidable=true
@@ -10557,6 +10578,7 @@ do
         H.wait(b,v,0)
         a.interactable=false
         H.sprite(b,128)
+        H.anm_slot(b,0,16)
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
@@ -11261,6 +11283,7 @@ do
         a.life_fn=P[6][39]
         a.death_mode=2
         a.death=P[6][43]
+        H.poses(b,160,163,164,161,162)
         H.wait(b,v,60)
         v.c3=0
         return B.part2(b,v)
@@ -11332,6 +11355,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,5)
+        H.poses(b,-1,-1,-1,-1,-1)
         H.sprite(b,165)
         a.interactable=false
         v.c0=30
@@ -11409,6 +11433,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.poses(b,160,163,164,161,162)
         H.sprite(b,160)
         H.interval(b,0,false)
         a.interactable=true
@@ -11677,6 +11702,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.poses(b,160,163,164,161,162)
         H.sprite(b,160)
         a.interactable=true
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",49)
@@ -12517,6 +12543,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12555,6 +12582,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12593,6 +12621,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12631,6 +12660,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12669,6 +12699,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,14)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12964,6 +12995,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -12995,6 +13027,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -13023,6 +13056,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -13051,6 +13085,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -13080,6 +13115,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.sprite(b,13)
+        H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
@@ -13142,6 +13178,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -13527,6 +13564,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -13745,6 +13783,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -13877,6 +13916,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=false
+        H.poses(b,160,163,164,161,162)
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -13937,6 +13977,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=false
+        H.poses(b,160,163,164,161,162)
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -13997,6 +14038,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.damageable=false
+        H.poses(b,160,163,164,161,162)
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -14063,6 +14105,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -14258,6 +14301,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -14450,6 +14494,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -14719,6 +14764,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -14936,6 +14982,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -15297,6 +15344,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=2
@@ -16093,6 +16141,7 @@ do
         a.interactable=true
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
+        H.poses(b,160,163,164,161,162)
         H.clear_helpers(b)
         H.interval(b,0,false)
         a.death_mode=3

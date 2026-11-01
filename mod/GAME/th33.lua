@@ -500,17 +500,8 @@ local EX_COLOR16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
 local EX_COLOR8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
 local EX_COLOR4  = { 2, 6, 10, 12 }
 local function ex_color(i, t)
-    i = math.floor(tonumber(i) or 0)
-    if i < 0 then i = 0 elseif i > 15 then i = 15 end
-    local map = EX_COLOR16
-    if t == 17 then
-        map = EX_COLOR4
-    elseif t and t >= 12 then
-        map = EX_COLOR8
-    end
-    local k = i + 1
-    if k > #map then k = #map end
-    return map[k]
+    local count=t==17 and 4 or t==18 and 1 or t==23 and 3 or t and t>=12 and 8 or 16
+    return math.max(0,math.min(count-1,math.floor(tonumber(i) or 0)))+1
 end
 
 ---TH095 bulletType → 本项目最接近的弹样式。颜色和样式分开处理：sg_style()
@@ -1370,9 +1361,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     ---  所以 Sub3 的 t=600 = 第 730 帧。旧版写成 `MOTH_WAIT - ENTRY_WAIT - ENTRY_TIME`
     ---（= 第 600 帧）早了 130 帧，这里按原文改成「入场之后再等 600 帧」。
     local MOTH_WAIT = 600                   -- Sub3 的 t=600（第 730 帧）
-    local MOTH_COUNT = 2
-    local MOTH_RADIUS_X, MOTH_RADIUS_Y = 58, 30
-    local MOTH_ALPHA = 170                  -- §7.6：装饰层 alpha 压在 120~180
+    local MOTH_COUNT = 1                   -- ins_83(6) 只生成一个子对象，Sub7跟随拍照目标0。
 
     local CARD_NAME = "幽雅「死出の誘蛾灯」"
     local CARD_TIME = 60
@@ -1393,31 +1382,15 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             self.colli = false
             self.bound = false
             self.rot = 0
-            self._a = 0
+            self._a = 255
             self.x, self.y = boss.x, boss.y
-            task.New(self, function()
-                while self._a < MOTH_ALPHA do
-                    self._a = min(MOTH_ALPHA, self._a + 5)
-                    task.Wait()
-                end
-            end)
         end,
         frame = function(self)
-            ---★ 真机只有 `_object`（THlib/misc/misc.lua:13）和 bullet 的 frame 才带 task.Do；
-            ---  `Class(object, {...})` 的子类得**自己驱动** init 里 task.New 出来的协程 ——
-            ---  否则它永远不 resume（淡入不跑 ⇒ _a 恒 0 ⇒ 不可见；发弹循环与自灭也都不跑）。
-            task.Do(self)
-            self.t = self.t + 1
-            local a = self.phase + self.t * 1.7
-            local tx = player.x + cos(a) * MOTH_RADIUS_X
-            local ty = player.y + sin(a) * MOTH_RADIUS_Y + sin(self.t * 2.3) * 10
-            self.x = self.x + (tx - self.x) * 0.05
-            self.y = self.y + (ty - self.y) * 0.05
-            self.rot = self.rot + 2.5
+            if not IsValid(self.boss) then object.RawDel(self);return end
+            self.x,self.y=self.boss.x,self.boss.y
         end,
         render = function(self)
-            SetImageState("butterfly2", "mul+add", self._a, 235, 205, 255)
-            Render("butterfly2", self.x, self.y, self.rot, 0.85)
+            OriginalStageVisual.draw(self)
         end,
     })
 
@@ -16405,4 +16378,15 @@ do
         photo_damage_off(owner)
         owner.th095_scene70=nil
     end
+end
+
+-- 使魔的主动画直接执行对应 ECL 的 54..62 指令，避免把人偶、分身和扇子统一画成蝶弹。
+do
+    local sources={moth='ecl17_a:6',nightmare_drone='ecl18_b:11',s7b_bat='ecl15_a:8',
+        s7c_bat='ecl15_c:6',diamond_child='ecl11_d:5',alice_doll='ecl6_a:5',
+        s3b_doll='ecl6_b:6',s3c_doll='ecl6_c:6',s3d_doll='ecl6_d:6',k_orb='ecl5_c:4'}
+    for name,key in pairs(sources) do OriginalStageVisual.wrap_actor(class[name],95,key) end
+    OriginalStageVisual.wrap_actor(class.s7a_drone,95,function(o,owner,mode)
+        return 'ecl14_a:'..({6,10,14})[mode]
+    end)
 end

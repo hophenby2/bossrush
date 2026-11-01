@@ -423,6 +423,12 @@ function system:updateBG()
         return
     end
     if b.bg then
+        if IsValid(b.bg) and b.bg._original_background then
+            if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then
+                lstg.tmpvar.bg.hide=b.bg.active and b.bg.age>=60
+            end
+            return
+        end
         if IsValid(b.bg) then
             if b.__show_scbg then
                 b.bg.alpha = min(b.bg.alpha + 0.025, 1)

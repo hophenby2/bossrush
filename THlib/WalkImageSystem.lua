@@ -91,6 +91,7 @@ function BossWalkImageSystem:init(obj, img, nRow, nCol, imgs, anis, intv, a, b)
 end
 function BossWalkImageSystem:frame()
     local obj = self.obj
+    if self.original then OriginalStageVisual.tick(obj);return end
     WalkImageSystem.frame(self, obj.dx)
     if obj.img4 then
         self.mode = 4
@@ -125,6 +126,7 @@ function BossWalkImageSystem:frame()
     end
 end
 function BossWalkImageSystem:render(dmgt, dmgmaxt)
+    if self.original then OriginalStageVisual.draw(self.obj);return end
     if self.mode ~= 0 then
         WalkImageSystem.render(self, dmgt, dmgmaxt)
     end
@@ -252,6 +254,7 @@ local WalkImage = WalkImage
 local unpack = unpack
 function BossWalkImageSystem:SetImageInList(img)
     local b = self.obj
+    if OriginalStageVisual and OriginalStageVisual.bind_boss(self,img) then return end
     if boss and boss.UpdateSpellBackground then boss.UpdateSpellBackground(b,img) end
     if WalkImage.imglist[img] then
         WalkImage.LoadFunc[img]()
@@ -304,6 +307,7 @@ function EnemyWalkImageSystem:init(obj, style, intv)
 end
 function EnemyWalkImageSystem:frame()
     local obj = self.obj
+    if obj._original_actor then OriginalStageVisual.tick(obj);return end
     WalkImageSystem.frame(self, obj.dx)
     if obj.style <= 18 then
         EnemyWalkImageSystem.UpdateImage(obj)
@@ -315,6 +319,7 @@ function EnemyWalkImageSystem:frame()
 end
 function EnemyWalkImageSystem:render(dmgt, dmgmaxt)
     local obj = self.obj
+    if obj._original_actor then OriginalStageVisual.draw(obj);return end
     local c = 0
     if dmgt and dmgmaxt then
         c = dmgt / dmgmaxt

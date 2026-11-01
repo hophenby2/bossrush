@@ -502,11 +502,7 @@ end
 local TH07_C16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
 local TH07_C8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
 local function th07_color(off, spr)
-    off = math.floor(tonumber(off) or 0)
-    if off < 0 then off = 0 end
-    local map = (spr == 7 or spr == 8 or spr == 9) and TH07_C8 or TH07_C16
-    if off >= #map then off = #map - 1 end
-    return map[off + 1]
+    return math.max(0,math.floor(tonumber(off) or 0))+1
 end
 
 ---把已有的“样式变量”还原成 bulletType，给只拿到 style 的通用发弹函数取颜色。
@@ -4959,6 +4955,10 @@ local function mk78(ph)
         W[54] = { cls = "TH34_exbig78", cfg = G[54] }
         W[55] = { cls = "TH34_exbig78", cfg = G[55] }
     end
+    -- 共享配置仍保留原子程序号，给原版 ANM 换姿态与附加动画取源。
+    for _,tab in ipairs({B,M,R,K,G}) do
+        for sub,cfg in pairs(tab) do cfg._anm_file='ecldata'..(ph and 8 or 7);cfg._anm_sub=sub end
+    end
     return W
 end
 
@@ -5902,6 +5902,8 @@ class.th07_motion_source = {
 }
 function class.th07_motion_begin(self, id, move)
     local cfg = assert(class.th07_motion_source[id])
+    self.th07_visual_file=cfg.file
+    if self._wisys and self.WALKIMGID then OriginalStageVisual.bind_boss(self._wisys,self.WALKIMGID) end
     class.th07_lasers = {}
     self.th07_laser_interaction, self.th07_laser_tick = nil, 0
     self.th07_oni_active, self.th07_oni_tick = false, -1
@@ -16086,3 +16088,33 @@ TH34_add_stage12()
 TH34_add_stage78()
 TH34_add_stage78_boss()
 TH34_add_stage56_boss()
+
+-- 道中敌机的外形由原 ECL 的95/96/97指令决定；不再按发弹种类挑代理敌机。
+do
+    local V=OriginalStageVisual
+    local function subkey(stage)
+        return function(o,x,y,life,sub) return 'ecldata'..stage..':'..sub end
+    end
+    for name,stage in pairs({TH34_turret4=4,TH34_walker3=3,TH34_bigghost3=3,TH34_mid5=5,
+        TH34_fairy1=1,TH34_ring1=1,TH34_bigfairy1=1,TH34_wisp2=2,TH34_shoot2=2,TH34_fairy2=2}) do
+        V.wrap_actor(class[name],7,subkey(stage))
+    end
+    V.wrap_actor(class.TH34_ghost,7,function(o)
+        return o.timer<80 and 'ecldata6:8' or 'ecldata6:10'
+    end)
+    V.wrap_actor(class.TH34_flame,7,'ecldata6:4')
+    V.wrap_actor(class.TH34_ghost4,7,'ecldata4:9')
+    V.wrap_actor(class.TH34_tank4,7,function(o,x,y,life,kind)
+        return 'ecldata4:'..(kind=='l' and 13 or 14)
+    end)
+    V.wrap_actor(class.TH34_fairy4,7,function(o,x,y,life,kind)
+        return 'ecldata4:'..({a=17,b=19,c=21})[kind]
+    end)
+    local function cfgkey(o,x,y,life,cfg) return cfg._anm_file..':'..cfg._anm_sub end
+    for _,name in ipairs({'TH34_exbody78','TH34_exmid78','TH34_exring78','TH34_exbomb78','TH34_exbig78'}) do
+        V.wrap_actor(class[name],7,cfgkey)
+    end
+    V.wrap_actor(class.TH34_excarrier78,7,function(o,x,y,life,sub,mirror,drop,puff,body_cls,cfg)
+        return cfg._anm_file..':9'
+    end)
+end

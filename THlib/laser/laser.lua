@@ -131,6 +131,7 @@ local SetImageState = SetImageState
 local Render = Render
 local Color = Color
 function laser:render()
+    if OriginalBulletVisual and OriginalBulletVisual.render_laser_anm(self) then return end
     local b = self._blend
     local draw_w = self.w
     if self._native_laser_game then draw_w = OriginalBulletVisual.laser_render_width(self) end
