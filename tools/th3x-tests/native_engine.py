@@ -7,7 +7,6 @@ import shutil
 import subprocess
 import sys
 import time
-import hashlib
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.stdout.reconfigure(encoding='utf-8')
@@ -54,24 +53,10 @@ def prepare(output):
 
 def run(args):
     output = args.output.resolve()
-    assert output!=ROOT and not output.is_relative_to(ROOT), '测试目录必须位于发行目录之外'
     prepare(output)
-    for name in ('native-result.json','native-result.retry.json','native-progress.json'):
-        path=output/name
-        if path.exists(): path.unlink()
-    sources=list((ROOT/'mod/GAME').glob('th3[12345]*.lua'))
-    for folder in ('THlib/bullet','THlib/laser','THlib/enemy','THlib/lib','THlib/anm','mod/GAME/original'):
-        sources.extend((ROOT/folder).glob('*.lua'))
-    sources.extend((ROOT/'mod/GAME/original').glob('*/*.lua'))
-    sources.extend((ROOT/'Resources/Original').glob('*/*.png'))
-    sources.extend((ROOT/'THlib/WalkImageSystem.lua',ROOT/'tools/th3x-tests/native_engine.lua',ROOT/'mod/GAME/original/manifest.json'))
-    (output/'native-run.json').write_text(json.dumps({
-        'seed':args.seed,'mode':args.mode,'flow':args.flow,'frames':args.frames,'games':args.games,
-        'hashes':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
-    },ensure_ascii=False,indent=2),encoding='utf-8')
     env = dict(os.environ, TH3X_GAMES=args.games, TH3X_FRAMES=str(args.frames),
                TH3X_SPEED=str(args.speed), TH3X_MODE=args.mode,
-               TH3X_SEED=str(args.seed), TH3X_CASES=args.cases,TH3X_FLOW=args.flow)
+               TH3X_SEED=str(args.seed), TH3X_CASES=args.cases)
     # 不创建可见交互窗口；用户自己的游戏进程不会被触碰。
     startup = subprocess.STARTUPINFO()
     startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -94,7 +79,6 @@ def run(args):
                 print(text, flush=True)
                 last_text = text
     result = output / 'native-result.json'
-    if not result.exists(): result=output/'native-result.retry.json'
     if not result.exists():
         print((output / 'native-boot.log').read_text(encoding='utf-8'), flush=True)
         raise SystemExit('引擎没有生成结果；请检查 engine.log 与 native-boot.log')
@@ -110,7 +94,6 @@ if __name__ == '__main__':
     parser.add_argument('--cases', default='', help='按卡ID筛选，逗号分隔')
     parser.add_argument('--frames', type=int, default=0, help='0跑完整时限；其他值只用于冒烟排错')
     parser.add_argument('--speed', type=int, default=60, help='一次显示帧执行的真实逻辑帧数')
-    parser.add_argument('--mode', choices=['timeout', 'defeat', 'photo'], default='timeout')
-    parser.add_argument('--flow',choices=['single','grouped'],default='single',help='grouped在同一个Boss对象上依次换卡')
+    parser.add_argument('--mode', choices=['timeout', 'defeat'], default='timeout')
     parser.add_argument('--seed', type=int, default=20261031)
     run(parser.parse_args())

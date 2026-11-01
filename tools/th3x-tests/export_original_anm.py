@@ -122,18 +122,25 @@ def entries(decl):
 
 def parse(decl, assetdir, dest, game, archive):
     data = {'sprites': {}, 'scripts': {}, 'ids': {}}
+    old_base = 0
+    script_id = -1
+    def sprite_id(value):
+        value = int(value)
+        return value - 0x100000000 if game == 7 and value >= 0x80000000 else value
     for index, entry in enumerate(entries(decl)):
         def prop(name, default=None):
             m = re.search(r'^    '+name+r': ([^,\r\n]+)', entry, re.M)
             return m.group(1) if m else default
         name = json.loads(prop('name'))
-        if name.startswith('@'):
-            continue
         texture = f'{archive}_{index}.png'
         source = assetdir / name
         if not source.exists():
             source = next((p for p in assetdir.rglob('*') if p.name.lower() == Path(name).name.lower()), source)
-        if source.exists():
+        if name.startswith('@'):
+            # 原作先创建空纹理，之后才由画面捕获填充；不能连同动画脚本一起跳过。
+            png(dest / texture, int(prop('width')), int(prop('height')),
+                bytes(int(prop('width')) * int(prop('height')) * 4))
+        elif source.exists():
             alpha_name = prop('name2')
             alpha = next((p for p in assetdir.rglob('*') if p.name.lower() == Path(json.loads(alpha_name)).name.lower()), None) if alpha_name else None
             convert(source, dest / texture, int(prop('THTXWidth', prop('width'))),
@@ -143,35 +150,41 @@ def parse(decl, assetdir, dest, game, archive):
             raise FileNotFoundError(source)
         data.setdefault('textures', []).append(texture)
         for m in re.finditer(r'sprite(\d+): \{ x: ([\d.-]+), y: ([\d.-]+), w: ([\d.-]+), h: ([\d.-]+)', entry):
-            data['sprites'][int(m[1])] = [index, *[float(m[n]) for n in range(2, 6)]]
-    # 脚本位于 entry 外层，thtk 使用 script scriptN。
-    script_id = -1
-    for m in re.finditer(r'script (?:(-?\d+) )?script(\d+)\s*\{([^}]+)\}', decl):
-        script_id = int(m[1]) if m[1] is not None else script_id+1
-        data['ids'][script_id] = int(m[2])
-        commands, labels, t = [], {}, 0
-        for line in m[3].splitlines():
-            line = line.strip()
-            time = re.fullmatch(r'([+-]?\d+):(?:\s*//.*)?', line)
-            if time:
-                t = t + int(time[1]) if time[1].startswith('+') else int(time[1]); continue
-            if line.endswith(':'): labels[line[:-1]] = len(commands) + 1; continue
-            ins = re.fullmatch(r'ins_?(-?\d+)\((.*)\);', line)
-            if ins:
-                args = []
-                for a in ins[2].split(',') if ins[2] else []:
-                    a = a.strip()
-                    if a.startswith('['): args.append({'var': int(float(a[1:-1].rstrip('f')))})
-                    elif re.fullmatch(r'sprite\d+', a): args.append(int(a[6:]))
-                    elif re.fullmatch(r'script\d+', a): args.append(int(a[6:]))
-                    elif a.startswith('0x'): args.append(int(a, 16))
-                    elif re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?f?', a): args.append(float(a.rstrip('f')) if any(c in a for c in '.eEf') else int(a))
-                    else: args.append(a)
-                commands.append([t, int(ins[1]), *args])
-        for cmd in commands:
-            for i, arg in enumerate(cmd):
-                if isinstance(arg, str) and arg in labels: cmd[i] = labels[arg]
-        data['scripts'][int(m[2])] = commands
+            sid = sprite_id(m[1]) + (old_base if game == 7 else 0)
+            data['sprites'][sid] = [index, *[float(m[n]) for n in range(2, 6)]]
+        # TH07 每个 entry 的编号独立，LoadAnm 返回 max(spriteId,scriptId)+1 供下一层累加。
+        if game == 7: script_id = -1
+        entry_max = max([0, *[sprite_id(v) for v in re.findall(r'sprite(\d+):', entry)]])
+        for m in re.finditer(r'script (?:(-?\d+) )?script(\d+)\s*\{([^}]+)\}', entry):
+            script_id = int(m[1]) if m[1] is not None else script_id+1
+            data['ids'][script_id + (old_base if game == 7 else 0)] = int(m[2])
+            if game == 7 and old_base:
+                data.setdefault('sprite_bases', {})[int(m[2])] = old_base
+            entry_max = max(entry_max, script_id)
+            commands, labels, t = [], {}, 0
+            for line in m[3].splitlines():
+                line = line.strip()
+                time = re.fullmatch(r'([+-]?\d+):(?:\s*//.*)?', line)
+                if time:
+                    t = t + int(time[1]) if time[1].startswith('+') else int(time[1]); continue
+                if line.endswith(':'): labels[line[:-1]] = len(commands) + 1; continue
+                ins = re.fullmatch(r'ins_?(-?\d+)\((.*)\);', line)
+                if ins:
+                    args = []
+                    for a in ins[2].split(',') if ins[2] else []:
+                        a = a.strip()
+                        if a.startswith('['): args.append({'var': int(float(a[1:-1].rstrip('f')))})
+                        elif re.fullmatch(r'sprite\d+', a): args.append(sprite_id(a[6:]))
+                        elif re.fullmatch(r'script\d+', a): args.append(int(a[6:]))
+                        elif a.startswith('0x'): args.append(int(a, 16))
+                        elif re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?f?', a): args.append(float(a.rstrip('f')) if any(c in a for c in '.eEf') else int(a))
+                        else: args.append(a)
+                    commands.append([t, int(ins[1]), *args])
+            for cmd in commands:
+                for i, arg in enumerate(cmd):
+                    if isinstance(arg, str) and arg in labels: cmd[i] = labels[arg]
+            data['scripts'][int(m[2])] = commands
+        if game == 7: old_base += entry_max + 1
     return data
 
 def main():

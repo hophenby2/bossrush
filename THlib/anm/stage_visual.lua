@@ -93,9 +93,9 @@ function S.draw(o)
     if o._original_hidden then return true end
     local s=o._original_actor
     if not s then return o._original_no_sprite or false end
-    local alpha=o._original_source and 1 or (o._a or 255)/255
+    local alpha=(o._original_source or o._original_explicit) and 1 or (o._a or 255)/255
     if o._original_source and s.game==8 and o._r==32 and o._b==192 then alpha=.5 end
-    local tint={o._r or 255,o._g or 255,o._b or 255}
+    local tint=not o._original_explicit and {o._r or 255,o._g or 255,o._b or 255} or nil
     for _,vm in pairs(s.slots) do A.draw(vm,o.x,o.y,o.rot,1,1,alpha,tint) end
     A.draw(s.vm,o.x,o.y,o.rot,1,1,alpha,tint)
     return true
@@ -285,7 +285,7 @@ local function background_class(game,archive,name)
             if active and (not o.active or o.card~=card) then
                 o.vms={};o.card=card
                 o.age=0
-                local count=game==6 and 1 or (game==7 and (archive=='eff01' or archive=='eff02' or archive=='eff03' or archive=='eff07') and 1 or 2)
+                local count=game==6 and 1 or (game==7 and (archive=='eff01' or archive=='eff02' or archive=='eff03') and 1 or 2)
                 local base=0
                 if game==8 and (archive=='eff06' or archive=='eff07' or archive=='eff08') then
                     -- 原作中 Boss 与本体共用同一份 ANM 的两对背景。
@@ -344,9 +344,10 @@ function S.bind_boss(wisys,name)
     local bgarchive=cfg[3] or archive
     if game==7 then
         if name=='Chen' and o.th07_visual_file=='ecldata7.ecl' then
-            archive,base,bgarchive='stg7enm',128,'eff07'
+            -- EX入场先加载eff02，蓝的Boss对话才将背景索引改到eff07的两层。
+            archive,base,bgarchive='stg7enm',128,'eff02'
         elseif name=='Ran' and o.th07_visual_file=='ecldata8.ecl' then
-            archive,base,bgarchive='stg8enm',134,'eff08'
+            archive,base,bgarchive='stg8enm',134,'eff07'
         end
     end
     local poses

@@ -27,6 +27,21 @@ lstg.SetTextureSamplerState=function() end
 stage={current_stage={}}
 dofile('THlib/anm/original.lua');dofile('THlib/anm/stage_visual.lua')
 local A,V=OriginalANM,OriginalStageVisual
+local pellet=A.new(7,'etama',0)
+local ps=pellet.data.sprites[pellet.sprite]
+check(pellet.sprite==0 and ps[1]==0 and ps[4]==8 and ps[5]==8,
+    '妖妖梦小弹必须取第一页8×8，不能被后续页的同名sprite0覆盖')
+local bubble=A.new(7,'etama',25)
+local bs=bubble.data.sprites[bubble.sprite]
+check(bubble.sprite==168 and bs[1]==1 and bs[4]==64 and bs[5]==64,
+    '妖妖梦大玉取第二页局部sprite0，累计基址168')
+local bg0,bg1=A.new(7,'eff05',0),A.new(7,'eff05',1)
+check(bg0.sprite==0 and bg1.sprite==1 and bg0.data.sprites[0][1]==0 and bg1.data.sprites[1][1]==1,
+    '妖梦符卡背景的两个同名sprite0属于两份纹理')
+local ghostpage=A.load(7,'stg6enm')
+local g=A.new(7,'stg6enm',ghostpage.ids[149])
+check(g.sprite==151 and g.data.sprites[g.sprite][1]==1,
+    '幽幽子的附属动画累计基址由原始脚本最大编号决定，不能只加精灵个数')
 local fire=A.new(6,'etama3',7)
 check(fire.sprite==118,'红魔乡火弹起帧118')
 for _=1,5 do A.step(fire) end
@@ -95,6 +110,16 @@ check(hidden._original_actor.slots[1] and #draws>=2,'妹红第二个自己保留
 local ran={class={StageLevel=32},ani=0,timer=0,x=0,y=96,th07_visual_file='ecldata8.ecl'}
 V.bind_boss({obj=ran},'Ran')
 check(ran._original_actor.archive=='stg8enm' and ran._original_actor.vm.id==A.load(7,'stg8enm').ids[134], 'PH藍使用八面脚本134')
+for _,entry in ipairs({{'Chen','ecldata7.ecl','eff02',1},{'Ran','ecldata7.ecl','eff07',2},
+    {'Ran','ecldata8.ecl','eff07',2},{'Yukari','ecldata8.ecl','eff08',2}}) do
+    local b={class={StageLevel=32},ani=0,timer=0,x=0,y=96,th07_visual_file=entry[2],
+        __show_scbg=true,current_card={is_sc=true}}
+    V.bind_boss({obj=b},entry[1])
+    local bg={};b._bg.init(bg)
+    boss_group={b};b._bg.frame(bg)
+    check(#bg.vms==entry[4] and bg.vms[1].data.archive==entry[3],
+        'EffectManager/Gui切换决定EX/PH背景文件与层数：'..entry[1]..'/'..entry[2])
+end
 local sanae={class={StageLevel=33},ani=0,timer=0,x=0,y=96}
 V.bind_boss({obj=sanae},'Sanae')
 check(sanae._original_actor.special==11,'单卡入口也恢复早苗构造时的施法动画编号')
@@ -120,4 +145,20 @@ check(V.functions[worker]=='stage05:BGirl02','无颜色名的旧工作者入口�
 local fairy={ani=0,timer=0,x=0,y=0,I0=80}
 V.bind_source(fairy,10,'stage05:RGirl02')
 check(fairy._original_actor.archive=='enemy' and fairy._original_actor.vm.id==25,'红色包装的动画实参25不受敌机I0=80影响')
+local spark=dofile('mod/GAME/th31_native.lua')
+for _,base in ipairs({6,18,22}) do
+    local heights=base==6 and {2,1.5,1,.5} or {3,2.5,2,1.5}
+    for layer=0,3 do
+        local beam={ani=0,timer=0,x=0,y=0,rot=45,_r=1,_g=1,_b=1,_a=1}
+        spark.spark(beam,base+layer)
+        check(beam._original_actor.archive=='stg4benm' and beam._original_actor.vm.id==base+layer,
+            '火花四层分别选择调用方传入的ANM编号')
+        for t=1,120 do beam.ani=t;V.tick(beam) end
+        local vm=beam._original_actor.vm
+        check(near(vm.scale[2],heights[layer+1]),'火花宽度使用各层原始ANM插值端点')
+        draws={};spark.render_spark(beam)
+        check(#draws==1 and near(draws[1].rot,45),'火花沿ECL设定方向绘制一次')
+        check(draws[1].img.color.r==math.floor(vm.color[1]),'火花不叠旧代理渲染的缩放、染色和透明度')
+    end
+end
 print(('原作ANM与资源回归通过：%d 项，%d 个作品/角色组合'):format(checks,role_count))

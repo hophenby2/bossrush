@@ -197,7 +197,7 @@
     "capture": {
       "source": "th07.dat",
       "sha256": "aaeabb961efbcc38213e3ff107c9447bd14b0c368de6bffa0526faea121e9ae9",
-      "sprites": 0,
+      "sprites": 3,
       "scripts": 4
     },
     "eff01": {
@@ -233,31 +233,31 @@
     "eff05": {
       "source": "th07.dat",
       "sha256": "d8a86f35725f14cbbf15c5c02a5eaed3b6d8bd1255d2974456c1a64714358139",
-      "sprites": 1,
+      "sprites": 2,
       "scripts": 2
     },
     "eff06": {
       "source": "th07.dat",
       "sha256": "bf40de537eaa87fd16b6b871ffda0d80c4c1f088149cda89ef1f778fdc3e9bdb",
-      "sprites": 1,
+      "sprites": 2,
       "scripts": 2
     },
     "eff07": {
       "source": "th07.dat",
       "sha256": "b309d2e0aa792d27b825592906960c0254b52a6356c147f4ba7ae614c39a9964",
-      "sprites": 1,
+      "sprites": 2,
       "scripts": 2
     },
     "eff08": {
       "source": "th07.dat",
       "sha256": "940fe920eac8c43c972c573cdd78149c7dcd23628b9d1431021c2a0c24e6a86a",
-      "sprites": 1,
+      "sprites": 2,
       "scripts": 2
     },
     "etama": {
       "source": "th07.dat",
       "sha256": "4fe2cda06dfa2bab28a5a9f4e65e06257b928e663b5b37691aa5598aa8132533",
-      "sprites": 168,
+      "sprites": 220,
       "scripts": 65
     },
     "loading2": {
@@ -419,7 +419,7 @@
     "stg6enm": {
       "source": "th07.dat",
       "sha256": "d1224e65d644fc95cd7e3e3e2e068e97e6d0fdffa9974b3a98940d427f4ba40b",
-      "sprites": 79,
+      "sprites": 88,
       "scripts": 60
     },
     "stg7bg": {

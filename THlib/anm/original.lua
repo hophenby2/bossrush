@@ -95,7 +95,7 @@ local function execute(v)
         v.pc=v.pc+1
         if op=='delete' then v.visible=false;v.finished=true;return
         elseif op=='static' then v.finished=true;return
-        elseif op=='sprite' then v.sprite=a;v.visible=true
+        elseif op=='sprite' then v.sprite=a+v.sprite_base;v.visible=true
         elseif op=='sprite_random' then v.sprite=a+ran:Int(0,b-1);v.visible=true
         elseif op=='jump' then jump(v,a,b)
         elseif op=='jump_dec' then
@@ -202,6 +202,7 @@ function A.new(game,archive,id)
     local data=A.load(game,archive)
     local script=assert(data.scripts[id], '原作ANM脚本缺失：'..data.key..'/'..id)
     local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
+        sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}

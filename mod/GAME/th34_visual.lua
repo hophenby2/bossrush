@@ -23,6 +23,7 @@ function N.circle_script(o)
     task.Wait(120)
 end
 function N.record_source(o)
+    if o._original_actor then OriginalStageVisual.tick(o) end
     if o.th07_source_kind~='spirit' then return end
     local h=o.th07_source_history
     table.insert(h,1,{x=o.x,y=o.y,a=(o.th07_source_angle or 0)*math.pi/180})
@@ -44,6 +45,7 @@ function N.record_source(o)
     if GameNet then GameNet.forEachPlayer(collide) else collide(player) end
 end
 function N.render_source(o)
+    if OriginalStageVisual.draw(o) then return end
     local t=o.ani-(o.th07_source_start or 0)
     if o.th07_source_kind=='circle' then
         SetImageState('th34_source_circle','mul+add',255,255,255,255)

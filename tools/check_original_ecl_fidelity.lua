@@ -343,7 +343,7 @@ local negative=New(C.TH34_cmdbullet,ball_small,2,500,0,0,0,
 tick()
 check(IsValid(negative) and negative.c_spawn_delay==-2,'负spawnDelay按原作!=0继续递减，不钳为0')
 reset()
--- 首张骚符也同时运行Sub122/123；子机在354帧起各放六只幽灵，不能只有主Boss。
+-- 首张骚符同时运行Sub122/123；首拍共享gI0由4改6，左10只、右12只。
 local trio,trio_card=start(4441)
 for _=1,121 do tick(trio,trio_card) end
 local sides={}
@@ -355,8 +355,8 @@ check(near(sides[-1].x,-96) and near(sides[1].x,96)
     and near(sides[-1].y,128) and near(sides[1].y,128),'Sub122/123按原作移动到96/288,96')
 for _=122,356 do tick(trio,trio_card) end
 local ghosts=0
-for _,o in ipairs(objects) do if IsValid(o) and o.th07_prism_emitter then ghosts=ghosts+1 end end
-check(ghosts==12,'Sub125的第一拍左右各生成六只发弹幽灵')
+for _,o in ipairs(objects) do if IsValid(o) and o.pg_partner then ghosts=ghosts+1 end end
+check(ghosts==22,'Sub125首拍两次同步调用，左4+6、右6+6只幽灵')
 trio_card.del(trio);task.Clear(trio);reset()
 for _,id in ipairs({3447,3465}) do
     local owner,spell=start(id)

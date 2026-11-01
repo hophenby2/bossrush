@@ -6495,6 +6495,10 @@ local function TH34_add_stage78_boss()
         ---对象一删协程就没了；桩件的对象表不清 task，所以要在这里显式清一次，
         ---否则「卡片结束时轮子/魂还在打」会被泄漏扫描判成 FAIL（id=4408/4410）。
         del = function(self) task.Clear(self) end,
+        frame = function(self)
+            enemy.frame(self)
+            NativeVisual.record_source(self)
+        end,
         render = NativeVisual.render_source,
     })
 
@@ -12909,101 +12913,162 @@ local function TH34_add_stage56_boss()
         end)
     end, { skin = skin4L, enter = enter4 })
 
-    ---──────────────────── 騒符「ライブポルターガイスト -Lunatic-」 ────────────────────
-    ---原作 sub121 → sub124 → sub126，Lunatic 行逐条照抄：
-    ---  · sub121：t=0 MOVE_POS_TIME(120,4,192,128)（= 我们 (0,96)，与 enter4 同点）；
-    ---    t=120 SET_MOVEMENT_BOUNDS(32,48,352,128) 后 SUB_CALL 2（16 帧粒子）；
-    ---    t=190 同帧连做 4 组 SUB_CALL 124，参数依次
-    ---      k=0: i0=0 i2=3 f4=2.5 f5=1.5 f3=0        gF0=0  gF1= 3π/2
-    ---      k=1: i0=1 i2=3 f4=3   f5=1.5 f3=0        gF0=π  gF1=−3π/2
-    ---      k=2: i0=2 i2=3 f4=3.4 f5=1.6 f3=0        gF0=0  gF1= 3π/2
-    ---      k=3: i0=3 i2=3 f4=3.6 f5=1.7 f3=0.19635  gF0=π  gF1=−2π
-    ---    之后 SET_WAIT_TIMER 40、JUMP 回 t=150（再走 40 帧到 t=190）
-    ---    ⇒ 一轮 = 4×108 + 40 + 40 = 512 帧。
-    ---  · sub124（108 帧）：36 次「生成 sub126」，每 3 帧一次；每次把 f0 沿 gF1/36
-    ---    推进并叠一个 ±0.0490874 的随机相位（这条 f0 只喂非 Lunatic 行的
-    ---    SPREAD_ABS，L 行的 SPREAD_AIMED 用不到）。
-    ---  · sub126（幽灵，静止）：MOVE_DIR_TIME 的时间参数是 0，所以它一步都不走；
-    ---    按传入的 i0 选一套 ANM 并把 i0 换成色档（0→2、1→10、2→6、3→13）；
-    ---    120 帧后打一扇 SPREAD_AIMED（sprite6、count1=i1=1、count2=i2=3、
-    ---    v: f4→f5、瞄准自机、半张角 f3、flags 0x204），随即 UNIMP 自毁 ——
-    ---    L 行那条 RING_ABS 排在 JUMP 之后，原作根本不会执行。
-    ---sub126 的 i0 分支 → 弹色档。
-    local PG_I0 = { [0] = 2, [1] = 10, [2] = 6, [3] = 13 }
-    ---原作 sub126：t=0 `MOVE_DIR_TIME 0 0 *f0 *f1` —— **timer=0 ⇒ 极坐标持续飞行**
-    ---（EclManager.cpp:1537-1547：angle = normalize(*f0)、speed = *f1，不是「不动」）；
-    ---t=60 `SET_ANGULAR_VEL *f2` 起转向；t=120 原地一扇 SPREAD_AIMED 后自毁。
-    ---a = { 色档, count2, v1, v2, 半张角, 初角(TH07 rad), 速度, 自转角速度 }。
-    local function pg_ghost(self, a)
-        self.th07_prism_emitter=a[10]
-        local col, c2, v1, v2, a2th, f0, f1, av = a[1], a[2], a[3], a[4], a[5],
-                                                  a[6], a[7], a[8]
-        local ang = f0
-        for i = 1, 120 do
-            if i > 60 then ang = ang + av end          -- t=60 起每帧 += *f2
-            self.x, self.y = self.x + math.cos(ang) * f1, self.y - math.sin(ang) * f1
-            task.Wait(1)
+    ---原作 ecldata4 Sub121–126，Lunatic。三位演奏者和幽灵各自是 Lua 对象。
+    ---主奏：206 帧起每 3 帧一只，共四组 36 只，周期 512；伴奏：354 帧起，
+    ---每 280 帧在 0/60/120/180 各调用两次 Sub125。第一次读到共享 gI0=4，
+    ---随后写成 6；所以首轮左侧是 4+6，右侧是 6+6，不能合并成一次六只。
+    do
+        local V = OriginalStageVisual
+        local GHOST_COLORS = {2,10,6,13,2,10,6,13}
+        local MAIN_WAVES = {
+            {speed=2.5, slow=1.5, spread=0,           phase=0,          curve=0,           sweep=4.712389},
+            {speed=3.0, slow=1.5, spread=0,           phase=3.1415927,  curve=0,           sweep=-4.712389},
+            {speed=3.4, slow=1.6, spread=0,           phase=0,          curve=0.003926991, sweep=4.712389},
+            {speed=3.6, slow=1.7, spread=0.19634955,  phase=3.1415927,  curve=0.015707964, sweep=-6.2831855},
+        }
+        local function keep(o)
+            spell_live[#spell_live+1] = o
+            return o
         end
-        shoot6(self, 0, 0, 64, 6, col, a[9] or 1, c2, v1, v2, 0, a2th, cmds4(516), true)
-    end
-    -- sub122/123在首张骚符始终在场，sub125每次同时生成六只sub126，不属于露娜萨的sub124。
-    local function prism_first(o,side)
-        bmove(o,120,4,side*96,128)
-        task.Wait(354) -- MOVE120 + Sub2的16帧 + t158..338的218帧
-        local function wave(offset,n)
+        local function norm(a)
+            while a > PI do a=a-2*PI end
+            while a < -PI do a=a+2*PI end
+            return a
+        end
+        -- Sub2的粒子17：etama第二页原始脚本7（载入编号175），向出生点收拢60帧。
+        -- 效果系统先初始化ANM的两次随机值，再抽运动角，保持原作的取随机数顺序。
+        class.TH34_poltergeist_charge = Class(object, {
+            init = function(o,x,y)
+                o.x,o.y,o.pg_x,o.pg_y,o.age=x,y,x,y,0
+                o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY+.1,false,false
+                o.live=spell_live
+                local actor=V.actor(o,7,'etama',175)
+                actor.tick=nil;actor.vm.color={128,128,255}
+                o.angle=rngrad()
+            end,
+            frame = function(o)
+                if spell_live~=o.live then object.RawDel(o);return end
+                local r=256-o.age*256/60
+                o.x,o.y=o.pg_x+f32cos(o.angle)*r,o.pg_y-f32sin(o.angle)*r
+                V.tick(o);o.age=o.age+1
+                if o._original_actor.vm.finished then object.RawDel(o) end
+            end,
+            render = function(o) V.draw(o) end,
+        })
+        -- Sub126 的 MOVE_DIR_TIME(0,0,angle,speed) 是持续极坐标运动。
+        -- SpawnEnemyEx 已执行出生帧 ECL；敌机槽第一次更新执行 t=1，故 t=120 发弹前
+        -- 实际走 119 次。t=60 开始转弯，共走 60 次曲线位移，不能多走最后一步。
+        class.TH34_poltergeist_ghost = Class(object, {
+            init = function(o,x,y,variant,angle,curve,partner,wave)
+                o.x,o.y,o.rot=x,y,0
+                o.group,o.layer,o.bound,o.colli=GROUP.ENEMY_BULLET,LAYER.ENEMY,false,true
+                o.a,o.b,o.rect=4,4,true       -- 原作接触框 12 / 1.5 / 2
+                o._graze,o._inf_graze=true,false
+                o.pg_age,o.pg_variant,o.pg_partner=1,variant,partner
+                o.pg_live=spell_live
+                o.pg_angle,o.pg_initial_angle,o.pg_curve=norm(angle),norm(angle),curve
+                o.pg_speed,o.pg_wave=partner and 0.2 or 1.2,wave
+                V.actor(o,7,'stg4enm',149+variant).tick=nil
+            end,
+            frame = function(o)
+                if spell_live~=o.pg_live then object.RawDel(o);return end
+                local t=o.pg_age
+                if t==120 then
+                    local color=GHOST_COLORS[o.pg_variant+1]
+                    if o.pg_partner then
+                        -- i3!=0 走另一分支：sprite1 九发绝对圆环，速度全为 1。
+                        shoot6(o,0,0,67,1,color,9,1,1,1,
+                            o.pg_initial_angle+o.pg_curve*60,0.19634955,cmds4(516),true)
+                    else
+                        local w=o.pg_wave
+                        shoot6(o,0,0,64,6,color,1,3,w.speed,w.slow,0,w.spread,cmds4(516),true)
+                    end
+                    object.RawDel(o)
+                    return
+                end
+                if t>=60 then o.pg_angle=norm(tof32(o.pg_angle+o.pg_curve)) end
+                o.x=tof32(o.x+f32cos(o.pg_angle)*o.pg_speed)
+                o.y=tof32(o.y-f32sin(o.pg_angle)*o.pg_speed)
+                o._inf_graze=t%6==0
+                o.pg_age=t+1
+                V.tick(o)
+            end,
+            render = function(o) V.draw(o) end,
+            kill = function(o) object.RawDel(o) end,
+        })
+        local function ghost(o,variant,angle,curve,partner,wave,x,y)
+            return keep(New(class.TH34_poltergeist_ghost,x or o.x,y or o.y,
+                variant,angle,curve,partner,wave))
+        end
+        -- Sub125 每次单独抽取起始角；两次同步调用不消耗帧，也不共用随机角。
+        local function accompaniment(o,count,offset)
             local a=rngrad()
-            for _=1,6 do
-                pspawn(o.x+math.cos(a)*64,o.y-math.sin(a)*64,pg_ghost,
-                    {2,7,3,1.2,0.19634955,a+offset,0.2,0,n,o})
-                a=a+PI/4
+            for i=1,count do
+                ghost(o,4,a+offset,0,true,nil,o.x+f32cos(a)*64,o.y-f32sin(a)*64)
+                a=norm(tof32(a+0.7853982))
             end
         end
-        while true do
-            wave(PI/2,side<0 and 4 or 3);task.Wait(60)
-            wave(-PI/2,side<0 and 4 or 3);task.Wait(60)
-            wave(0,3);task.Wait(60)
-            wave(0,3);task.Wait(100)
-        end
+        class.TH34_poltergeist = Class(object, {
+            init = function(o,owner,left,right)
+                o.owner,o.players,o.age,o.partner_count=owner,{owner,left,right},0,4
+                o.live=spell_live
+                o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY,false,false
+            end,
+            frame = function(o)
+                -- RawDel只写待删除标志；换卡当帧更新链仍可能访问本对象，须先核对卡片归属。
+                if spell_live~=o.live or not IsValid(o.owner) then object.RawDel(o);return end
+                local t=o.age
+                if t==120 then
+                    for _,p in ipairs(o.players) do p._box=box5(32,48,352,128) end
+                    PlaySound('power0',0.35,o.owner.x/256)
+                elseif t==166 then V.main_script(o.owner,7,'stg4enm',129)
+                elseif t==354 then
+                    V.main_script(o.players[2],7,'stg4enm',135)
+                    V.main_script(o.players[3],7,'stg4enm',141)
+                end
+                if t>=120 and t<=132 and (t-120)%4==0 then
+                    for i,p in ipairs(o.players) do
+                        for _=1,(i==1 and 32 or 16) do
+                            keep(New(class.TH34_poltergeist_charge,p.x,p.y))
+                        end
+                    end
+                end
+                if t>=206 then
+                    local cycle=(t-206)%512
+                    if cycle<432 and cycle%3==0 then
+                        local variant=int(cycle/108)
+                        local w=MAIN_WAVES[variant+1]
+                        if cycle%108==0 then
+                            o.phase=ran:Float(0,0.09817477)-0.049087387+w.phase
+                        end
+                        local curve=ran:Float(0,w.curve)-w.curve/2
+                        ghost(o.owner,variant,o.phase,curve,false,w)
+                        o.phase=tof32(norm(o.phase)+w.sweep/36)
+                    end
+                end
+                if t>=354 then
+                    local cycle=(t-354)%280
+                    if cycle==0 or cycle==60 or cycle==120 or cycle==180 then
+                        local offset=cycle==0 and 1.5707964 or cycle==60 and -1.5707964 or 0
+                        for i=2,3 do
+                            accompaniment(o.players[i],o.partner_count,offset)
+                            o.partner_count=6
+                            accompaniment(o.players[i],6,offset)
+                        end
+                    end
+                end
+                o.age=t+1
+            end,
+        })
+        scard("騒符「ライブポルターガイスト -Lunatic-」",4441,60,3000,false,function(self)
+            bmove(self,120,4,0,96)
+            local function idle(o) while true do task.Wait(1) end end
+            local left=keep(New(PRISM_COMPANION,self,-1,idle))
+            local right=keep(New(PRISM_COMPANION,self,1,idle))
+            bmove(left,120,4,-96,128);bmove(right,120,4,96,128)
+            keep(New(class.TH34_poltergeist,self,left,right))
+        end,{skin=skin4L,wallskin=skin4Lw,enter=enter4})
     end
-    ---原作 sub124：36 只幽灵、每 3 帧一只（共 108 帧）。每只：
-    ---  f0 = rand(0.0981748) − 0.0490874 + gF0（NORMALIZE_ANGLE 只影响符号，角函数同值）、
-    ---  f2 = rand(父 f2) − 父 f2/2（每只独立的自转角速度）。
-    local function pg_wave(self, i0, c2, v1, v2, a2th, gf0, f2, gf1)
-        ---原作 sub124 的 `DEC_JUMP 0 -104 *i2_0` 跳回 instr@136
-        ---（`RAND_FLOAT_ADD *f2 *f7 *f6`）——循环体是 [6..9]，所以 `*f0` 的随机初值
-        ---**只在循环外抽一次**，循环里每只只重掷自转角速度 f2，`*f0` 按
-        ---`*f3_1 = *gF1 / 36` 逐只累加（36 只跨 3π/2 或 2π 扫过一圈）。
-        local f0 = ran:Float(0, 0.0981748) - 0.0490874 + gf0
-        local step = gf1 / 36
-        for _ = 1, 36 do
-            local av = ran:Float(0, f2) - f2 / 2
-            pspawn(self.x, self.y, pg_ghost,
-                   { PG_I0[i0], c2, v1, v2, a2th, f0, 1.2, av })
-            f0 = f0 + step
-            task.Wait(3)
-        end
-    end
-    scard("騒符「ライブポルターガイスト -Lunatic-」", 4441, 60, 3000, false, function(self)
-        prism_companions(self,"first",prism_first)
-        task.New(self, function()
-            bmove(self, 120, 4, 0, 96)                  -- t=0 MOVE_POS_TIME(120,4,192,128)
-            task.Wait(120)                              -- t=120
-            self._box = box5(32, 48, 352, 128)
-            task.Wait(16)                               -- SUB_CALL 2：16 帧
-            ---SUB_CALL 是阻塞的：sub2 吃掉 16 帧，本体的 t 被整体顶后，
-            ---所以 t=150 落在第 166 帧、t=190 落在第 206 帧。
-            task.Wait(30)                               -- t=150（SET_ANM 演出）
-            task.Wait(40)                               -- t=190 → 第一波在 206
-            while true do
-                pg_wave(self, 0, 3, 2.5, 1.5, 0,       0, 0,        4.71239)   -- 108 帧
-                pg_wave(self, 1, 3, 3.0, 1.5, 0,   3.14159, 0,       -4.71239)   -- 108 帧
-                pg_wave(self, 2, 3, 3.4, 1.6, 0,       0, 0.00392699, 4.71239)   -- 108 帧
-                pg_wave(self, 3, 3, 3.6, 1.7, 0.19635, 3.14159, 0.015708,-6.28319) -- 108 帧
-                task.Wait(40)                               -- SET_WAIT_TIMER 40
-                task.Wait(40)                               -- JUMP t=150 → t=190
-            end
-        end)
-    end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
 
     ---──────────────────── 梅露兰 非符 1（原作 sub76 → sub77 / sub60） ────────────────────
     ---逐条照抄 `ecldata4.ecl` 的 Lunatic 行：
@@ -13366,11 +13431,14 @@ local function TH34_add_stage56_boss()
         { i0 = 0, f0 = -1.5708, av = -0.015708, da = -0.785398, a2 =  0.261799, f2 =  1.5708  },
     }
     local N4466 = { [0] = 2, [2] = 6 }
+    -- Sub129 的i0=0/2分别选择161/163；发弹色档2/6是分支执行后的结果。
+    local PRISM_NOTE_ANM = { [2]=161, [6]=163 }
     scard("偽弦「スードストラディヴァリウス」", 4446, 66, 3600, false, function(self)
         local B = self                      -- sub129 的 GET_BOSS_FLOAT 读的就是这只 boss
         ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad), 速度 }）。
         local function note(me, a)
             local col, f0, spd = a[1], a[2], a[3]
+            OriginalStageVisual.actor(me,7,'stg4enm',assert(PRISM_NOTE_ANM[col]))
             for _ = 1, 60 do
                 me.x, me.y = me.x + cos(f0 * RAD2DEG) * spd,
                              me.y - sin(f0 * RAD2DEG) * spd
@@ -15971,6 +16039,7 @@ local function TH34_add_stage56_boss()
         ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad) }）。
         local function note(me, a)
             local col, th = a[1], a[2]
+            OriginalStageVisual.actor(me,7,'stg4enm',assert(PRISM_NOTE_ANM[col]))
             local bx, by
             for i = 1, 120 do
                 me.x, me.y = me.x + cos(th * RAD2DEG) * 0.5,

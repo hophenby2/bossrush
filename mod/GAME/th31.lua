@@ -35465,6 +35465,7 @@ spark = Class(object, {
     end,
     frame = function(self)
         spark_body(self)
+        OriginalStageVisual.tick(self)
     end,
     render = class.th08_native.render_spark,
 })

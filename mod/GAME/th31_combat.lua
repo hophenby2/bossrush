@@ -258,7 +258,9 @@ return function()
             -- 大凤凰在第120帧变成隐藏枪架；另两种凤凰始终使用普通使魔交互。
             if key=='ecldata8sp:93' and args[1]==95 then profile=profiles['ecldata8sp:95'] end
             o.th08_source,o.th08_profile=key,profile
-            if OriginalStageVisual then OriginalStageVisual.bind_source(o,8,key) end
+            if OriginalStageVisual and not o._original_explicit then
+                OriginalStageVisual.bind_source(o,8,key)
+            end
             o.th08_parent,o.th08_attached=parent,profile.attached
             local n=1
             if parent then
