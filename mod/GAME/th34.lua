@@ -6411,7 +6411,7 @@ local function TH34_add_stage78_boss()
     ---通用「子机」：原作 SPAWN_ENEMY_REL/ABS 出来的辅助单位（不可打、无体术、不画立绘）。
     ---script(self, a) 是协程体（可 task.Wait / 发弹），跑完自毁。
     local PSCRIPT = Class(enemy, {
-        init = function(self, x, y, fn, a)
+        init = function(self, x, y, fn, a, source)
             enemy.init(self, 12, 1, false, true, true)
             self.x, self.y = x, y
             ---★ 原作这些「会飞出屏幕的发射体」（sub62 炮台、sub126 幽灵、sub130 音符串…）
@@ -6423,6 +6423,10 @@ local function TH34_add_stage78_boss()
             self.auto_delete, self.bound = false, false
             self.colli, self.protect = false, true
             self.A, self.B = 8, 8
+            if source then
+                OriginalStageVisual.bind_source(self,7,source)
+                self._original_visual_origin=self.timer
+            end
             task.New(self, function()
                 fn(self, a)
                 object.RawDel(self)
@@ -6434,6 +6438,14 @@ local function TH34_add_stage78_boss()
         ---否则「卡片结束时轮子/魂还在打」会被泄漏扫描判成 FAIL（id=4408/4410）。
         del = function(self) task.Clear(self) end,
         frame = function(self)
+            if self._original_source then
+                OriginalStageVisual.source_frame(self,self.timer-(self._original_visual_origin or 0))
+            end
+            local owner=self._original_follow_owner or false
+            if owner and IsValid(owner) then
+                self.x,self.y=owner.x,owner.y
+                self.rot=owner._angdir or owner.rot
+            elseif self._orb then borbstep(self) else bstep(self) end
             enemy.frame(self)
             NativeVisual.record_source(self)
         end,
@@ -6442,8 +6454,8 @@ local function TH34_add_stage78_boss()
 
     ---当前符卡登记的子机（del 时统一清场）。
     local spell_live
-    local function pspawn(x, y, fn, a)
-        local o = New(PSCRIPT, x, y, fn, a)
+    local function pspawn(x, y, fn, a, source)
+        local o = New(PSCRIPT, x, y, fn, a, source)
         if spell_live then spell_live[#spell_live + 1] = o end
         return o
     end
@@ -7077,7 +7089,7 @@ local function TH34_add_stage78_boss()
                 PlaySound("power0", 0.35, self.x / 256)   -- 同上
                 task.Wait(60)
                 task.Wait(70)                             -- 母体 t=280
-                pspawn(self.x, self.y, ran_you)           -- 原作 #29 SPAWN_ENEMY_REL 115
+                pspawn(self.x, self.y, ran_you,nil,'ecldata8:118') -- 原作115阻塞调用118
                 local gap = 90
                 while true do
                     gring(self, bs(2), 6, 24, 1, 1.8, 1, Angle(self, player), 0, true)
@@ -7920,7 +7932,8 @@ local function TH34_add_stage78_boss()
             end)
             task.New(self, function()
                 task.Wait(320)
-                pspawn(0, -160, shiki)
+                local spirit=pspawn(0,-160,shiki,nil,'ecldata8:65')
+                spirit._original_follow_owner=self -- ExIns0：每帧复制Boss坐标，而非静止的隐藏枪。
             end)
             task.New(self, function()
                 task.Wait(327)
@@ -8281,7 +8294,7 @@ local function TH34_add_stage78_boss()
                 PlaySound("power0", 0.35, self.x / 256)     -- 原作 SUB_CALL 2（gI0=15 ⇒ 冻结 60 帧）
                 task.Wait(60)
                 task.Wait(70)                               -- 冻结结束后再从 t=210 走到 t=280
-                pspawn(self.x, self.y, orange)              -- 原作 #29 SPAWN_ENEMY_REL sub111
+                pspawn(self.x, self.y, orange,nil,'ecldata7:114')              -- 原作 #29 SPAWN_ENEMY_REL sub111
                 bmove(self, 60, 4, 0, 160)                  -- 原作 MOVE_POS_TIME(60,4,192,64)
                 local gap = 90
                 while true do
@@ -8901,7 +8914,8 @@ local function TH34_add_stage78_boss()
             end)
             task.New(self, function()
                 task.Wait(320)
-                pspawn(0, -160, shiki)
+                local spirit=pspawn(0,-160,shiki,nil,'ecldata7:63')
+                spirit._original_follow_owner=self
             end)
             task.New(self, function()
                 task.Wait(327)
@@ -9295,7 +9309,7 @@ local function TH34_add_stage56_boss()
     ---符卡登记的子机（卡片结束时统一清场）；fn(self, a) 是协程体。
     local spell_live
     local PSCRIPT = Class(enemy, {
-        init = function(self, x, y, fn, a)
+        init = function(self, x, y, fn, a, source)
             enemy.init(self, 12, 1, false, true, true)
             self.x, self.y = x, y
             ---★ 原作这些「会飞出屏幕的发射体」（sub62 炮台、sub126 幽灵、sub130 音符串…）
@@ -9307,6 +9321,10 @@ local function TH34_add_stage56_boss()
             self.auto_delete, self.bound = false, false
             self.colli, self.protect = false, true
             self.A, self.B = 8, 8
+            if source then
+                OriginalStageVisual.bind_source(self,7,source)
+                self._original_visual_origin=self.timer
+            end
             task.New(self, function()
                 fn(self, a)
                 object.RawDel(self)
@@ -9328,6 +9346,9 @@ local function TH34_add_stage56_boss()
         ---`card.frame`，子机没有。不补这一帧钩子 `bmove` 永远不动（原作 sub76 的
         ---魂是 `MOVE_DIR_TIME t=0 spd=4.2` 的匀速直线，必须真的走）。
         frame = function(self)
+            if self._original_source then
+                OriginalStageVisual.source_frame(self,self.timer-(self._original_visual_origin or 0))
+            end
             local orbit = self.th07_orbit
             if orbit then
                 orbit.a, orbit.r = orbit.a+orbit.av, orbit.r+orbit.rv
@@ -9338,8 +9359,8 @@ local function TH34_add_stage56_boss()
         end,
         render = NativeVisual.render_source,
     })
-    local function pspawn(x, y, fn, a)
-        local o = New(PSCRIPT, x, y, fn, a)
+    local function pspawn(x, y, fn, a, source)
+        local o = New(PSCRIPT, x, y, fn, a, source)
         if spell_live then spell_live[#spell_live + 1] = o end
         return o
     end
@@ -13113,7 +13134,7 @@ local function TH34_add_stage56_boss()
     ---  · sub77（乐器灵）：MOVE_ORBIT 120 帧绕出生点公转（半径 0.8/帧 → 96 px、
     ---    角速度 ±0.0392699、起始角 π/2）；t=119 朝自机打一扇 sprite1 48×4
     ---    （v:2.5→1、flags 0x200），随即 JUMP 回 t=119 —— 只发这一发，
-    ---    之后纯属自转演出（SET_AXIS_SPEED 那段不产弹）。
+    ---    此后以4px/帧背向自机推进，同时振幅每帧+0.4地摆动；只停止发弹，不停止移动。
     ---原作 sub77：一只「乐器灵」，公转 120 帧后朝自机打一发 48×4 环。
     local function merlin_orb(self, i0)
         local cx, cy = self.x, self.y
@@ -13126,8 +13147,21 @@ local function TH34_add_stage56_boss()
                 task.Wait(1)
             end
             shoot6(o, 0, 0, 66, 1, 2, 48, 4, 2.5, 1, 0, 0, cmds4(0x200), false)
-            while true do task.Wait(1) end
-        end)
+            -- Sub77的t=119..120回跳：先冻结瞄准角与起点，再逐帧计算轴向速度。
+            local aim=atan2(o.y-player.y,player.x-o.x)
+            local ca,sa=math.cos(aim),math.sin(aim)
+            local sx,sy=o.x,o.y
+            local phase,amplitude,index=0,0,1
+            local phase_step=i0==0 and 0.07853982 or -0.07853982
+            while true do
+                index=index+1;phase=phase+phase_step
+                local wave=amplitude*math.sin(phase)
+                o.x,o.y=sx-ca*(index*4)-sa*wave,sy+sa*(index*4)-ca*wave
+                amplitude=amplitude+0.4
+                if NativeVisual.trail_outside(o) then return end
+                task.Wait(1)
+            end
+        end,nil,'ecldata4:77')
     end
     ncard("梅露兰 非符 1", 4442, 17000, 0, 3600, function(self)
         self._box = box5(32, 48, 352, 128)
@@ -13243,7 +13277,7 @@ local function TH34_add_stage56_boss()
                         shoot6(o, 0, 0, 64, 6, 2, 1, 4, 2.2, 0.5, 0, 0.392699, nil, false)
                         f3 = f3 + f4
                     end
-                end)
+                end,nil,'ecldata4:140')
             end
             local W3 = { 1.5708, 1.37445, 0.589049, 0.392699, 0 }
             local W4 = { 1.5708, 1.76715, 2.55254, 2.74889, 3.14159 }

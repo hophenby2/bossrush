@@ -225,13 +225,13 @@ function A.sprite_resource(v)
     end
     return s
 end
-function A.draw(v,x,y,angle,sx,sy,alpha,tint)
-    for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint) end
+function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
+    for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
-    local color=v.secondary and v.color2 or v.color
+    local color=override and override.color or (v.secondary and v.color2 or v.color)
     if tint then color={color[1]*tint[1]/255,color[2]*tint[2]/255,color[3]*tint[3]/255} end
-    local a=(v.secondary and v.alpha2[1] or v.alpha[1])*(alpha or 1)
+    local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img
     SetImageState(image,v.blend,Color(max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])))
     sx,sy=(sx or 1)*v.scale[1],(sy or sx or 1)*v.scale[2]

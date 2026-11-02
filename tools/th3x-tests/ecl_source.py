@@ -68,7 +68,7 @@ class Source:
                 assert next_address is None or address == next_address, (self.binary, name, '子程序中漏读指令', hex(address), hex(next_address))
                 assert size >= (16 if game == 10 else 12), (self.binary, name, address, size)
                 next_address = address + size
-                tokens = re.findall(r'"(?:\\.|[^"\\])*"|[^,]+', ins[3])
+                tokens = re.findall(r'\s*("(?:\\.|[^"\\])*"|[^,]+)', ins[3])
                 args = []
                 for token in tokens:
                     token = re.sub(r'^_[SFDsfd]{2}\s+', '', token.strip())
@@ -76,6 +76,9 @@ class Source:
                         args.append(Variable(int(float(token[1:-1].removesuffix('f')))))
                     elif token.startswith('"') or re.fullmatch(r'\w+_\d+', token):
                         args.append(token)
+                    elif token.startswith('#'):
+                        value = int(token[1:], 16)
+                        args.append(value - 0x100000000 if value >= 0x80000000 else value)
                     elif token:
                         args.append(f32(float(token[:-1])) if token.endswith('f') else int(token))
                 row = Instruction(address, time, op, mask, args)

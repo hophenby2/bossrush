@@ -214,7 +214,7 @@ function main:init(x, y, v, a, dmg)
 end
 function main:kill()
     player.pre = min(player.maxpre, player.pre + 0.3)
-    New(bullets.main_ef, self.x, self.y, self.rot)
+    New(bullets.main_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
 end
 bullets.main = main
 local main_ef = Class(object)

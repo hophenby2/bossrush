@@ -17,6 +17,10 @@ local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
 function N.source(o,kind)
     o.th07_source_kind,o.th07_source_start=kind,o.ani
     if kind=='spirit' then
+        if not o._original_actor then
+            OriginalStageVisual.bind_source(o,7,'ecldata6:53')
+            o._original_visual_origin=o.timer
+        end
         o.th07_source_history={}
         o._inf_graze=true -- 原作isProjectile在每6帧的接触检查中可再次擦弹
     end
@@ -63,6 +67,8 @@ function N.trail_outside(o)
 end
 local function record_trail(o)
     local tr=o.th07_trail
+    if tr.tick==o.ani then return end
+    tr.tick=o.ani
     local dx,dy=o.x-o.th07_trail_x,o.y-o.th07_trail_y
     o.th07_trail_x,o.th07_trail_y=o.x,o.y
     local angle=tr.angle or 0
@@ -110,6 +116,26 @@ local function draw_trail(o)
         RenderTexture(s.tex,v.blend,a,c,d,b)
     end
 end
+-- ECL138必须独立于主ANM选择保留；不能只给少数手写发射器补拖尾。
+OriginalStageVisual.adapters[7]={
+    event=function(o,c)
+        if c[2]==138 then
+            if c[3]==0 then o.th07_trail=nil;return end
+            local box=o._original_contact_box or o._original_damage_box or {8,8}
+            o.th07_trail={history={},flags=c[3],count=c[4],collision_count=c[5],step=c[6],
+                width=box[1],height=box[2]}
+            o._original_trail_source=true
+            o.th07_trail_x,o.th07_trail_y=o.x,o.y
+            o._inf_graze=true
+        elseif c[2]==120 then o._original_rotate_with_movement=c[3]~=0
+        elseif c[2]==150 and o._original_actor then o._original_actor.vm.rotation[3]=c[3] end
+    end,
+    tick=function(o) if o.th07_trail then record_trail(o) end end,
+    draw=function(o)
+        if not o.th07_trail then return false end
+        draw_trail(o);return true
+    end,
+}
 function N.record_source(o)
     if o._original_actor then OriginalStageVisual.tick(o) end
     if o.th07_trail then record_trail(o);return end

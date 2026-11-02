@@ -176,7 +176,7 @@ function main:init(x, y, v, a, dmg)
 end
 function main:kill()
     for _, v in ipairs({ 3, 4, 5 }) do
-        New(bullets.main_ef, self.x, self.y, self.rot, v)
+        New(bullets.main_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self), v)
     end
 end
 bullets.main = main

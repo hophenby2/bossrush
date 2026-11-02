@@ -563,4 +563,30 @@ for _,game in ipairs({6,7,8,95,10}) do
         check(effect.vm.finished,'原作消散ANM能正常结束：'..game..'/'..kind)
     end
 end
+-- 真实命中入口必须在C.shots把rot暂时归零时仍生成正确朝向的特效。
+do
+    local f=assert(io.open('THlib/player/player.lua','rb'));local code=f:read('*a');f:close()
+    local first=assert(code:find('player_bullet_straight = Class(object)',1,true))
+    local last=assert(code:find('player_death_ef = Class(object)',first,true))
+    assert(loadstring(code:sub(first,last-1)))()
+    player_class=Class(object);grazer=Class(object)
+    LoadPS=function() end
+    dofile('THlib/player/reimu/reimu.lua');dofile('THlib/player/marisa/marisa.lua');dofile('THlib/player/chiruno/chiruno.lua')
+    local savedList=ObjList
+    local target={_live=true,colli=true,rot=0,rect=true,a=12,b=12,_original_collision_game=8}
+    local oldPre,oldMax=player.pre,player.maxpre;player.pre,player.maxpre=0,100
+    for _,cls in ipairs({reimu_player.bullets.square,reimu_player.bullets.needle,reimu_player.bullets.trail,
+                         marisa_player.bullets.main,chiruno_player.bullets.main}) do
+        for _,angle in ipairs({-90,0,37,90}) do
+            local shot=New(cls,0,0,10,angle,1,1);shot.colli=true
+            ObjList=function(group) return ipairs(group==GROUP.ENEMY and {target} or group==GROUP.PLAYER_BULLET and {shot} or {}) end
+            C.begin();C.shots();check(shot.rot==0,'原作受击框仍使用AABB角度')
+            local effects=emitted(function() cls.kill(shot) end)
+            check(#effects>0,'命中回调实际生成特效')
+            for _,effect in ipairs(effects) do check(near(effect.rot,angle),'三种自机命中特效保留碰撞前方向') end
+            C.finish();check(near(shot.rot,angle),'命中演出不干扰碰撞阶段的角度恢复')
+        end
+    end
+    ObjList=savedList;player.pre,player.maxpre=oldPre,oldMax
+end
 print(('子弹映射、旋转与激光尺寸回归通过：%d 项'):format(checks))

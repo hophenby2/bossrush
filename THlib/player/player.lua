@@ -268,6 +268,10 @@ end
 ---一些自机组件
 
 player_bullet_straight = Class(object)
+-- 原作AABB检测会暂时把rot归零；命中演出必须沿用碰撞前的弹道角。
+function player_bullet_straight.GetEffectRotation(o)
+    return o._original_collision_rot or o.rot
+end
 function player_bullet_straight:render()
     if GameDrops then GameDrops.renderBullet(self) else DefaultRenderFunc(self) end
 end

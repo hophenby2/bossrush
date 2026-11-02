@@ -4,6 +4,24 @@ function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if not mode then return end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
+    local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
+    local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
+    local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
+    local visuals
+    if os.getenv('BOSSRUSH_MAC_TEST_VISUAL')=='1' then
+        visuals={trails=0,halos=0,low_primary=0}
+        local textureDraw=RenderTexture
+        RenderTexture=function(name,...)
+            if name:match('^original/7/stg%d+enm/') then visuals.trails=visuals.trails+1 end
+            return textureDraw(name,...)
+        end
+        local draw=OriginalANM.draw
+        OriginalANM.draw=function(vm,...)
+            if vm.data.key=='8/etama' and vm.id>=48 and vm.id<=50 then visuals.halos=visuals.halos+1 end
+            local args={...};if args[8] then visuals.low_primary=visuals.low_primary+1 end
+            return draw(vm,...)
+        end
+    end
     if fixedSeed then
         local time=os.time
         os.time=function(value) if value then return time(value) end;return fixedSeed end
@@ -69,6 +87,8 @@ function T.install()
         if player and IsValid(player) then
             player.protect=120
             if mode=='battle' or mode=='input' then AndroidInput.keys[setting.keys.shoot]=true end
+            if mode=='battle' and not battleShoot then AndroidInput.keys[setting.keys.shoot]=false;AndroidInput.toggles.shoot=false end
+            if fixedFocus then AndroidInput.keys[setting.keys.slow]=true;AndroidInput.toggles.slow=true end
         end
         local p=player and IsValid(player) and player
         local canInput=mode=='input' and p and not p.lock and not p.dialog and (p.death or 0)==0
@@ -113,10 +133,10 @@ function T.install()
                 RogueTen.draw=function(seed,width)
                     local plan=draw(seed,width);local chosen
                     for _,bucket in ipairs(RogueTen.buildPool()) do for _,entry in ipairs(bucket.cards) do
-                        if entry.cardId==3638 then chosen=entry end
+                        if entry.cardId==battleCard then chosen=entry end
                     end end
-                    assert(chosen,'缺少客星测试卡');local out={chosen}
-                    for _,entry in ipairs(plan) do if entry.cardId~=3638 and #out<10 then out[#out+1]=entry end end
+                    assert(chosen,'缺少测试卡：'..battleCard);local out={chosen}
+                    for _,entry in ipairs(plan) do if entry.cardId~=battleCard and #out<10 then out[#out+1]=entry end end
                     return out
                 end
                 setting.touchUnlimited=unlimited
@@ -170,7 +190,7 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,stage=scene.stage_name,frames=frames,peak=maxBullets,
+                    f:write(Serialize({mode=mode,card=battleCard,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true

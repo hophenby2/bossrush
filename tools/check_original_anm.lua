@@ -176,4 +176,53 @@ for _,base in ipairs({6,18,22}) do
         check(draws[1].img.color.r==math.floor(vm.color[1]),'火花不叠旧代理渲染的缩放、染色和透明度')
     end
 end
+-- 形态光环是etama里的独立VM，不是给enemy主精灵简单改色。
+local familiar={x=0,y=96,rot=0,timer=0,ani=0,th08_attached=true,th08_youkai=false}
+V.bind_source(familiar,8,'ecldata3:37')
+check(familiar._original_actor.archive=='enemy' and familiar._original_actor.vm.id==53,'慧音使魔主图来自原版enemy脚本53')
+check(familiar._original_alignment and familiar._original_alignment.vm.data.archive=='etama'
+    and familiar._original_alignment.vm.id==49,'ECL174(1)选择etama脚本49，而非默认光环48')
+for i=1,8 do familiar.ani=i;V.tick(familiar) end
+local halo=familiar._original_alignment.vm
+check(near(halo.scale[1],.5),'高速形态按原ANM展开半径')
+familiar.th08_youkai=true;V.familiar(familiar,true)
+for i=9,16 do familiar.ani=i;V.tick(familiar) end
+check(near(halo.scale[1],.8),'低速形态执行原作interrupt2的贴图缩放')
+V.slot(familiar,0,48)
+familiar._original_enemy_color={32,32,192}
+draws={};V.draw(familiar)
+local body
+local bodyImage=A.sprite_resource(familiar._original_actor.vm).img
+for _,call in ipairs(draws) do if call.name==bodyImage then body=call;break end end
+check(body~=nil,'低速实际绘制原使魔主精灵')
+check(body.img.color.r==32 and body.img.color.g==32 and body.img.color.b==192,'低速主VM覆写颜色，不乘原图色')
+check(draws[1].img.color.r~=32 or draws[1].img.color.b~=192,'低速不把附属动画一起染蓝')
+local previous=familiar._original_alignment.vm
+V.familiar(familiar,true,1)
+check(familiar._original_alignment.vm~=previous,'再次执行同号174也替换VM，不能复用旧动画时间轴')
+familiar._original_hidden=true;draws={};V.draw(familiar)
+check(#draws>0,'NO_SPRITE不抹掉独立的使魔形态光环')
+familiar._original_hidden=false;V.familiar(familiar,false)
+for i=17,136 do familiar.ani=i;V.tick(familiar) end
+check(#familiar._original_alignment.particles<=10,'形态粒子按原ANM结束回收，长时间显示不堆积')
+local mixed={x=0,y=0,rot=0,timer=0,ani=0}
+V.bind_source(mixed,8,'ecldata4b:21')
+mixed._original_source.cfg={events={{0,54,0},{0,61,0,0}}};mixed._original_source.index=1
+V.source_frame(mixed,0)
+check(mixed._original_actor.archive=='enemy' and mixed._original_actor.slots[0].data.archive=='stg4benm',
+    '61指令的附属动画使用角色ANM库，不能误取主动画的公共enemy库')
+-- ECL138自动接入带状绘制；以梅露兰乐器灵和管灵验证长度、判定段及每帧只采样一次。
+local native=dofile('mod/GAME/th34_visual.lua')
+for _,case in ipairs({{'ecldata4:77',32,16},{'ecldata4:140',64,48},{'ecldata6:4',48,16}}) do
+    local o={x=0,y=96,rot=0,timer=0,ani=0}
+    V.bind_source(o,7,case[1])
+    check(o.th07_trail and o.th07_trail.count==case[2] and o.th07_trail.collision_count==case[3],
+        '原作带状伪激光配置完整：'..case[1])
+    for t=1,8 do o.x=t*4;o.timer,o.ani=t,t;V.tick(o);native.record_source(o) end
+    check(#o.th07_trail.history==8,'同帧原作动画与发射器不重复采样拖尾')
+    draws={};V.draw(o);check(#draws>0 and draws[1].texture~=nil,'伪激光实际绘制纹理带，不能只画头部')
+end
+local immortal={x=0,y=0,rot=0,timer=0,ani=0}
+V.bind_source(immortal,7,'ecldata8:65');V.source_frame(immortal,900)
+check(not immortal._original_actor.vm.finished,'无条件回跳后的800帧消失指令不能提前截断伪激光')
 print(('原作ANM与资源回归通过：%d 项，%d 个作品/角色组合'):format(checks,role_count))

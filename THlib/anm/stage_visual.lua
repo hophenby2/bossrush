@@ -4,6 +4,7 @@ OriginalStageVisual = {}
 local S,A=OriginalStageVisual,OriginalANM
 local games={ [29]=8,[30]=6,[31]=95,[32]=7,[33]=10 }
 local roles={}
+S.adapters={}
 roles[8]={Nightbug={'stg1enm',0,'eff01'},Lorelei={'stg2enm',0,'eff02'},
     Kamishirasawa={'stg3enm',0,'eff03'},Kamishirasawa2={'stg8enm',0,'eff08'},
     Reisen={'stg5enm',12,'eff05'},Tewi={'stg5enm',0,'eff05'},Yagokoro={'stg6enm',0,'eff06'},
@@ -50,8 +51,9 @@ function S.actor(o,game,archive,id,poses)
     o.hide=false
     return o._original_actor
 end
-function S.set_script(o,id)
+function S.set_script(o,id,archive)
     local state=assert(o._original_actor)
+    state.archive=archive or state.archive
     state.vm=new_script(state.game,state.archive,id)
 end
 function S.main_script(o,game,archive,id)
@@ -66,9 +68,47 @@ function S.poses(o,poses)
     local state=assert(o._original_actor)
     state.poses=poses;state.direction=255
 end
-function S.slot(o,index,id)
+function S.slot(o,index,id,archive)
     local s=assert(o._original_actor)
-    s.slots[index]=id>=0 and new_script(s.game,s.archive,id) or nil
+    s.slots[index]=id>=0 and new_script(s.game,archive or s.archive,id) or nil
+end
+-- 附着使魔的光环取etama.anm，独立于enemy.anm的主动画及附属槽。
+function S.familiar(o,youkai,variant)
+    local state=o._original_alignment
+    if not state or variant~=nil then
+        variant=variant or 0
+        assert(variant>=0 and variant<=2,'未支持的原作使魔光环变体')
+        state={vm=A.new(8,'etama',48+variant),variant=variant,tick=o.ani,particles=state and state.particles or {}}
+        o._original_alignment=state
+    end
+    if state.youkai~=youkai then
+        A.interrupt(state.vm,youkai and 2 or 1)
+        state.youkai=youkai
+    end
+    state.vm.secondary=o._original_familiar_collision or false
+    return state
+end
+local alignment_fade=Class(object,{
+    init=function(o,source,vm)
+        o.x,o.y,o.vm,o.layer=source.x,source.y,vm,source.layer or LAYER.ENEMY
+        o.group,o.bound,o.colli=GROUP.GHOST,false,false
+    end,
+    frame=function(o) A.step(o.vm);if o.vm.finished then object.RawDel(o) end end,
+    render=function(o) A.draw(o.vm,o.x,o.y) end,
+},true)
+function S.release_familiar(o)
+    local state=o._original_alignment
+    if not state then return end
+    o._original_alignment=nil
+    for _,p in ipairs(state.particles) do New(alignment_fade,p,p.vm) end
+    A.interrupt(state.vm,3)
+    New(alignment_fade,o,state.vm)
+end
+local function draw_alignment(o)
+    local state=o._original_alignment
+    if not state then return end
+    for _,p in ipairs(state.particles) do A.draw(p.vm,p.x,p.y) end
+    A.draw(state.vm,o.x,o.y)
 end
 function S.tick(o,vx)
     local s=o._original_actor
@@ -88,16 +128,37 @@ function S.tick(o,vx)
     end
     A.step(s.vm)
     for _,vm in pairs(s.slots) do A.step(vm) end
+    local alignment=o._original_alignment
+    if alignment and alignment.tick~=o.ani then
+        alignment.tick=o.ani;A.step(alignment.vm)
+        for i=#alignment.particles,1,-1 do
+            local p=alignment.particles[i];A.step(p.vm)
+            if p.vm.finished then table.remove(alignment.particles,i) end
+        end
+        if o.th08_attached and o._original_form_effect_enabled and not alignment.youkai and o.ani%2==0 then
+            alignment.particles[#alignment.particles+1]={vm=A.new(8,'etama',71),x=o.x,y=o.y,layer=o.layer}
+        end
+    end
+    local adapter=S.adapters[s.game]
+    if adapter and adapter.tick then adapter.tick(o) end
 end
 function S.draw(o)
-    if o._original_hidden then return true end
+    if o._original_hidden then draw_alignment(o);return true end
     local s=o._original_actor
-    if not s then return o._original_no_sprite or false end
+    if not s then draw_alignment(o);return o._original_alignment~=nil or o._original_no_sprite or false end
+    local adapter=S.adapters[s.game]
+    if adapter and adapter.draw and adapter.draw(o) then return true end
+    if o._original_rotate_with_movement then
+        local x,y=o.dx or 0,o.dy or 0
+        local angle=o._angdir or ((x~=0 or y~=0) and math.deg(math.atan2(y,x))) or o._original_collision_rot or o.rot
+        s.vm.rotation[3]=-angle*math.pi/180
+    end
     local alpha=(o._original_source or o._original_explicit) and 1 or (o._a or 255)/255
-    if o._original_source and s.game==8 and o._r==32 and o._b==192 then alpha=.5 end
-    local tint=not o._original_explicit and {o._r or 255,o._g or 255,o._b or 255} or nil
+    local tint=not (o._original_source or o._original_explicit) and {o._r or 255,o._g or 255,o._b or 255} or nil
     for _,vm in pairs(s.slots) do A.draw(vm,o.x,o.y,o.rot,1,1,alpha,tint) end
-    A.draw(s.vm,o.x,o.y,o.rot,1,1,alpha,tint)
+    local override=o._original_enemy_color and {color=o._original_enemy_color,alpha=s.vm.alpha[1]/2}
+    A.draw(s.vm,o.x,o.y,o.rot,1,1,alpha,tint,override)
+    draw_alignment(o)
     return true
 end
 local source_data
@@ -112,9 +173,18 @@ local function source_archive(game,file,alternate)
 end
 local function animation_event(o,game,file,c)
     local op=c[2]
+    if game==8 and op==83 then o._original_form_effect_enabled=c[3]~=0;return end
+    if game==8 and op==174 then
+        S.familiar(o,o.th08_youkai or false,c[3]);return
+    end
     if (game==8 or game==95) and op>=79 and op<=81 then
         -- NO_SPRITE 仍会播放动画、执行发弹，只禁止绘制本体。
         local hidden=math.floor(c[3]/8)%2==1
+        if game==8 then
+            local collision=math.floor(c[3]/2)%2==1
+            if op==79 then o._original_familiar_collision=not collision
+            elseif collision then o._original_familiar_collision=op==81 end
+        end
         if op==79 then o._original_hidden=hidden
         elseif hidden then o._original_hidden=op==80 end
         return
@@ -149,7 +219,9 @@ local function animation_event(o,game,file,c)
         end
         return
     end
-    local alternate=op>=58 and op<=61
+    local source=o._original_source
+    -- 57先按当前库创建附属VM，再清alternate标志；61先切到角色库再创建。
+    local alternate=(op>=58 and op<=61) or (op==57 and source and source.alternate)
     local archive=source_archive(game,file,alternate)
     if game==7 then
         if op==95 then
@@ -159,7 +231,11 @@ local function animation_event(o,game,file,c)
             if c[3]<0 then if o._original_actor then o._original_actor.poses=nil end;return end
             local p={c[3],c[6],c[7],c[4],c[5]}
             if not o._original_actor then S.actor(o,game,archive,p[1],p) else S.poses(o,p) end
-        elseif op==97 and o._original_actor then S.slot(o,c[3],c[4]) end
+        elseif op==97 and o._original_actor then S.slot(o,c[3],c[4])
+        elseif op==128 and o._original_actor then A.interrupt(o._original_actor.vm,c[3])
+        elseif op==129 and o._original_actor and o._original_actor.slots[c[3]] then A.interrupt(o._original_actor.slots[c[3]],c[4])
+        elseif op==132 then o._original_hidden=c[3]~=0
+        elseif S.adapters[7] and S.adapters[7].event then S.adapters[7].event(o,c) end
         return
     end
     if op==54 or op==58 then
@@ -175,8 +251,9 @@ local function animation_event(o,game,file,c)
         s.slots[c[3]]=c[4]>=0 and new_script(game,archive,c[4]) or nil
     elseif op==62 and o._original_actor then
         local s=o._original_actor
-        if s.poses and s.poses[6] then S.set_script(o,s.poses[6]) end
+        if s.poses and s.poses[6] then S.set_script(o,s.poses[6],source_archive(game,file,source and source.alternate)) end
     end
+    if source and op>=54 and op<=61 then source.alternate=op>=58 end
 end
 function S.bind_source(o,game,key,preserve)
     if OriginalCollision then OriginalCollision.unit(o,game,key) end
@@ -195,7 +272,10 @@ function S.bind_source(o,game,key,preserve)
     end
     o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank}
     if game==95 then o.layer=LAYER.ENEMY-.1 end
-    if not preserve then o._original_actor=nil;o._original_no_sprite=true end
+    if not preserve then
+        o._original_actor=nil;o._original_no_sprite=true;o._original_hidden=false
+        if o._original_trail_source then o.th07_trail=nil;o._original_trail_source=nil end
+    end
     S.source_frame(o,0)
 end
 function S.source_frame(o,clock)
@@ -203,7 +283,23 @@ function S.source_frame(o,clock)
     if not state or not state.cfg then return end
     local events=state.cfg.events
     while events[state.index] and events[state.index][1]<=clock do
-        animation_event(o,state.game,state.file,events[state.index]);state.index=state.index+1
+        local c=events[state.index]
+        local mask=state.cfg.masks and state.cfg.masks[state.index]
+        local combat=_editor_class and _editor_class.TH31 and _editor_class.TH31.th08_combat
+        local youkai=o.th08_attached and combat and combat.youkai(o) or false
+        local enabled=not mask or math.floor(mask/(youkai and 64 or 32))%2==1
+        local resolved={c[1],c[2]}
+        for i=3,#c do
+            local v=c[i]
+            if type(v)=='table' and v.var then
+                local n=v.var-10000
+                v=o['li'..n] or o['I'..n]
+                if v==nil then enabled=false end
+            end
+            resolved[i]=v
+        end
+        if enabled then animation_event(o,state.game,state.file,resolved) end
+        state.index=state.index+1
     end
 end
 function S.wrap_actor(cls,game,key)

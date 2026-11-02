@@ -388,4 +388,41 @@ for _,case in ipairs({{4476,1024},{3444,1024},{3606,2000},{3624,2000},
     check(#objects<=before,'卡片清理没有产生超大血量死亡特效：'..case[1])
     end
 end
+-- 以真实pspawn入口验收，防止只更新一套工厂、另一套仍丢掉原作ANM/拖尾参数。
+for _,case in ipairs({{4442,'ecldata4:77',32,16,130},{4443,'ecldata4:140',64,48,190}}) do
+    for _,o in ipairs(objects) do if IsValid(o) then object.RawDel(o) end end
+    step(1)
+    local card=assert(cards[case[1]])
+    local host=New({
+        init=function(o) o.bound=false;o.hp,o.maxhp=100000,100000;o.current_card=card;card.init(o) end,
+        frame=function(o) card.frame(o);task.Do(o) end,
+    })
+    local found,moved=false,false
+    local seen,origins={},{}
+    for _=1,900 do
+        step(1)
+        for _,o in ipairs(objects) do
+            if IsValid(o) and o._original_source and o._original_source.key==case[2] then
+                local tr=o.th07_trail
+                if not seen[o] then
+                    check(tr and tr.count==case[3] and tr.collision_count==case[4],'真实发射器保留完整伪激光配置')
+                    seen[o]=true
+                end
+                found=true
+                local h=tr.history
+                if case[1]==4442 and o.timer==119 then origins[o]={o.x,o.y,math.atan2(o.y-player.y,player.x-o.x)} end
+                if case[1]==4442 and o.timer==120 and origins[o] then
+                    local p=origins[o]
+                    check(near(o.x,p[1]-8*math.cos(p[3])) and near(o.y,p[2]+8*math.sin(p[3])),
+                        'Sub77发弹同帧执行首个反向8px轴向步，与原始ECL计数器一致')
+                    origins[o]=nil
+                end
+                if o.timer>=case[5] and h[2] and ((h[1].x-h[2].x)^2+(h[1].y-h[2].y)^2)>.01 then moved=true end
+            end
+        end
+    end
+    check(found,'实际符卡生成原作伪激光发射器：'..case[2])
+    check(moved,'发射后仍按原作移动，不能退化为零长度拖尾：'..case[2])
+    card.del(host);task.Clear(host);object.RawDel(host);step(1)
+end
 print(('通过：TH34/TH35 原版弹幕与跨卡清场 %d 项回归检查'):format(checks))

@@ -90,7 +90,7 @@ function square:init(x, y, v, a, dmg)
     player_bullet_straight.init(self, "reimu_bullet_red", x, y, v, a, dmg)
 end
 function square:kill()
-    New(bullets.square_ef, self.x, self.y, self.rot)
+    New(bullets.square_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
 end
 bullets.square = square
 -------------------------------------------------------
@@ -119,7 +119,7 @@ function needle:init(x, y, v, a, dmg)
     player_bullet_straight.init(self, "reimu_bullet_orange", x, y, v, a, dmg)
 end
 function needle:kill()
-    New(bullets.needle_ef, self.x, self.y, self.rot)
+    New(bullets.needle_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
 end
 bullets.needle = needle
 -------------------------------------------------------
@@ -179,7 +179,7 @@ function trail:render()
     player_bullet_trail.render(self)
 end
 function trail:kill()
-    New(bullets.trail_ef, self.x, self.y, self.rot)
+    New(bullets.trail_ef, self.x, self.y, player_bullet_straight.GetEffectRotation(self))
 end
 bullets.trail = trail
 -------------------------------------------------------

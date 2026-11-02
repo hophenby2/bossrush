@@ -144,18 +144,24 @@ return function()
     function M.render(o,render)
         if not M.youkai(o) then return render(o) end
         local r,g,b,a=o._r,o._g,o._b,o._a
+        local color=o._original_enemy_color
+        -- EnemyManager覆写主VM的color2；不能把原精灵色再乘一次蓝色，更不能染附属VM。
+        o._original_enemy_color={32,32,192}
         o._r,o._g,o._b,o._a=32,32,192,(a or 255)/2
         render(o)
         o._r,o._g,o._b,o._a=r,g,b,a
+        o._original_enemy_color=color
     end
     function M.unit_collision(o)
         o.th08_youkai=M.youkai(o)
+        if o.th08_attached and OriginalStageVisual then OriginalStageVisual.familiar(o,o.th08_youkai) end
         -- enemybase把Lua的colli赋值记作持久_colli开关；形态只改本帧引擎判定，不能关死它。
         if o.th08_youkai then SetAttr(o,'colli',false) end
     end
     -- 道中使用手动调度的enemy类，形态判定须包住它自己的伤害分发入口。
     function M.unit(define)
         local init,frame,render=define.init,define.frame,define.render or DefaultRenderFunc
+        local kill,del=define.kill or enemy.kill,define.del or enemy.del
         local unitbase=Class(enemy,{
             take_damage=function(o,amount)
                 if M.youkai(o) then return end
@@ -172,10 +178,11 @@ return function()
         })
         define.init=function(o,sub,x,y,mirror,parent,...)
             init(o,sub,x,y,mirror,parent,...)
+            o.th08_parent,o.th08_attached=parent,parent~=nil
             if OriginalStageVisual and define.source_file then
                 OriginalStageVisual.bind_source(o,8,define.source_file..':'..sub)
             end
-            o.th08_parent,o.th08_attached=parent,parent~=nil
+            if parent then o._original_familiar_collision=false end
             if OriginalBalance then OriginalBalance.unit(o,8,parent and parent.current_card and parent.current_card.is_sc) end
             if parent then o.group=GROUP.NONTJT end
             M.unit_collision(o)
@@ -188,6 +195,14 @@ return function()
         define.render=function(o) M.render(o,function(unit)
             if not OriginalStageVisual or not OriginalStageVisual.draw(unit) then render(unit) end
         end) end
+        define.kill=function(o)
+            if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
+            if kill then kill(o) end
+        end
+        define.del=function(o)
+            if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
+            if del then del(o) end
+        end
         return Class(unitbase,define)
     end
     local function event(o,e)
@@ -216,6 +231,7 @@ return function()
         o.group=not bit(f,2) and human and not bit(f,8) and GROUP.ENEMY or GROUP.NONTJT
         o.colli=o.th08_accept or (o.group==GROUP.ENEMY)
         o.th08_guard_active=(o.th08_guard or 0)>0
+        if o.th08_attached and OriginalStageVisual then OriginalStageVisual.familiar(o,o.th08_youkai) end
     end
     local function alive(o) return IsValid(o) and not o.th08_dead end
     local function damage(o,amount)
@@ -295,11 +311,12 @@ return function()
             -- 大凤凰在第120帧变成隐藏枪架；另两种凤凰始终使用普通使魔交互。
             if key=='ecldata8sp:93' and args[1]==95 then profile=profiles['ecldata8sp:95'] end
             o.th08_source,o.th08_profile=key,profile
+            o.th08_parent,o.th08_attached=parent,profile.attached
             if OriginalStageVisual and not o._original_explicit then
                 -- 变量选择的ANM由对象构造函数按生成参数设置；固定事件不能清掉它。
                 OriginalStageVisual.bind_source(o,8,key,o._original_actor~=nil)
             end
-            o.th08_parent,o.th08_attached=parent,profile.attached
+            if profile.attached then o._original_familiar_collision=false end
             local n=1
             if parent then
                 parent.th08_actor_counts=parent.th08_actor_counts or {}
@@ -341,10 +358,12 @@ return function()
             end
         end
         define.kill=function(o)
+            if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             o.th08_dead=true;task.Clear(o)
             if kill then kill(o) end
         end
         define.del=function(o)
+            if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             o.th08_dead=true;task.Clear(o)
             if del then del(o) end
         end
