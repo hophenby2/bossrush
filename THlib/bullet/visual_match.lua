@@ -35,7 +35,10 @@ local native_despawn=Class(object,{
     init=function(o,source)
         local angle=bullet.GetRenderRotation(source)-90
         o.x,o.y,o.layer=source.x,source.y,source.layer
-        o.group,o.bound,o.colli=GROUP.GHOST,false,false
+        -- 消弹可能来自碰撞回调；此时改group会破坏LuaSTG-x正在遍历的碰撞链表。
+        -- 立即关判定即可实现无害消散，分组在下个对象更新时再切换。
+        o.bound,o.colli=false,false
+        o._native_despawn_group_pending=true
         o.vm=despawn_vm(source)
         local vx,vy=source.vx or 0,source.vy or 0
         if source.ex_vx then vx,vy=source.ex_vx,source.ex_vy
@@ -46,7 +49,12 @@ local native_despawn=Class(object,{
         o.omiga,o.ax,o.ay,o.ag=0,0,0,0
         o._original_despawning=true
     end,
-    frame=function(o) A.step(o.vm);if o.vm.finished then object.RawDel(o) end end,
+    frame=function(o)
+        if o._native_despawn_group_pending then
+            o.group=GROUP.GHOST;o._native_despawn_group_pending=nil
+        end
+        A.step(o.vm);if o.vm.finished then object.RawDel(o) end
+    end,
     render=function(o) A.draw(o.vm,o.x,o.y,o.angle) end,
 },true)
 function V.emit_despawn(o,drop)
@@ -93,7 +101,7 @@ local function spawn_left(o,game)
         or o.lw209_spawn or o.lw210_spawn or o.lw211_spawn or o.lw212_spawn
         or o.lw213_spawn or o.b_spawn or o.spawn or 0
     elseif game==95 then return o.th095_spawn_left or 0
-    elseif game==10 then return o.tb and o.tb.spawn or 0 end
+    elseif game==10 then return o.tb and o.tb.spawn or o.th10_spawn_left or 0 end
     return 0
 end
 function V.can_cancel(o,force)

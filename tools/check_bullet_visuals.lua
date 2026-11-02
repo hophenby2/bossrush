@@ -38,6 +38,7 @@ RenderAnimation = function(name,ani,x,y,rot,h,v)
 end
 CheckRes = function(kind,name) return kind=='img' and resources[name]~=nil end
 local fields={class=true,img=true,x=true,y=true,rot=true,hscale=true,vscale=true,a=true,b=true,rect=true,vx=true,vy=true,dx=true,dy=true,ani=true,timer=true,omiga=true}
+local collecting
 New = function(class,...)
     local attrs={class=class,x=0,y=0,rot=0,hscale=1,vscale=1,a=0,b=0,rect=false,vx=0,vy=0,dx=0,dy=0,timer=0,ani=0,omiga=0}
     local o=setmetatable({_live=true},{
@@ -49,7 +50,9 @@ New = function(class,...)
             else rawset(t,k,v) end
         end,
     })
-    class.init(o,...); return o
+    class.init(o,...)
+    if collecting then collecting[#collecting+1]=o end
+    return o
 end
 IsValid=function(o) return o~=nil and rawget(o,'_live')~=false end
 object.RawDel=function(o) o._live=false end
@@ -85,8 +88,100 @@ local expected={
     th35={[3]=grain_a,[10]=grain_c,[14]=knife,[18]=water_drop,[21]=knife,[25]=water_drop,[26]=grain_a},
 }
 local mapper_names={th31='style_of',th33='sg_style',th34='th07_style',th35='t10_style'}
+-- 从真正的发弹入口收集对象；只给渲染器手填spawn计时，会漏掉枪与弹体之间的断链。
+local function emitted(fn)
+    local saved,made=collecting,{}
+    collecting=made
+    local ok,err=xpcall(fn,debug.traceback)
+    collecting=saved
+    assert(ok,err)
+    return made
+end
+local function step_native(o)
+    o.class.frame(o)
+    o.x,o.y=o.x+o.vx,o.y+o.vy
+    o.ani,o.timer=o.ani+1,o.timer+1
+end
 for _,game in ipairs({'th31','th33','th34','th35'}) do
     roots={};dofile('mod/GAME/'..game..'.lua');local mapper=find(mapper_names[game])
+    if game=='th34' then
+        local owner={x=0,y=112,dir=1}
+        local made=emitted(function() find('volley',_editor_class.TH34.TH34_ghost)(owner) end)
+        check(#made==10,'六面道中齐射保留原始10发')
+        for _,o in ipairs(made) do
+            OriginalBulletVisual.sync_spawn(o)
+            check(o.c_spawn_left==10 and not o.colli and o._native_spawn_started,
+                '六面道中真实齐射进入快速弹雾')
+            o._live=false
+        end
+        local shot=emitted(function()
+            find('volley3')(owner,1,function() return mapper(1),2,2,0 end,false)
+        end)[1]
+        OriginalBulletVisual.sync_spawn(shot)
+        check(near(shot.x,-8) and shot.c_spawn_left==10 and not shot.colli,'普通弹出生退四倍速度')
+        for t=1,9 do
+            step_native(shot)
+            check(not shot.colli and near(shot.x,-8+t),'快速弹雾逐帧半速移动且无判定')
+        end
+        step_native(shot);check(shot.colli and near(shot.x,4),'出生结束当帧执行半步及完整飞行步')
+        step_native(shot);check(near(shot.x,6),'末帧额外半步不能残留到下一帧')
+        made=emitted(function() find('gh3_fire11a')(owner,0) end)
+        for _,o in ipairs(made) do
+            OriginalBulletVisual.sync_spawn(o)
+            check(o.c_spawn_left==0 and o.colli and not o._native_spawn_started,
+                '原作flags0x200的慢环保持直接出弹')
+            o._live=false
+        end
+        local spread=find('w5_spread')
+        shot=emitted(function() spread(owner,6,2,1,1,2,1,0,0,0,0,nil,0x205) end)[1]
+        check(shot.c_spawn_left==16 and near(shot.x,-8) and not shot.colli,'五面0x205进入普通出生而非快速出生')
+        shot=New(_editor_class.TH34.TH34_exbigbullet78,mapper(0),2,0,112,2,0,6,3)
+        for _=1,31 do step_native(shot) end
+        check(not shot.colli and shot.t0==0 and shot.t1==-1,'EX慢速出生期间不提前执行两段运动命令')
+        step_native(shot);check(shot.colli and shot.t0==1,'EX慢速出生结束后才开始转向')
+        local shoot=find('shoot6')
+        for _,flags in ipairs({0x200,0x204}) do
+            shot=emitted(function() shoot(owner,0,0,65,1,2,1,1,2,1,0,0,{list={},flags=flags},false) end)[1]
+            check(shot.c_spawn_left==(flags==0x200 and 0 or 16),'Boss普通发弹保留明确的无出生/普通出生旗标')
+        end
+    elseif game=='th35' then
+        local fire=find('fire')
+        for _,kind in ipairs({2,4,8}) do
+            local o=emitted(function()
+                fire({pat={},ecs={wx=0,wy=112}},{sprite={1,0},count={1,1},aim=3,speed={2,1},
+                    steps={{allow=1,kind=kind},{allow=0,kind=0x8000,i0=3}}})
+            end)[1]
+            OriginalBulletVisual.sync_spawn(o)
+            check(o.tb.spawn==8 and not o.colli and o._native_spawn_started,
+                'TH10真实fire入口采用etNew默认0x203，空操作kind不能改出生模式')
+            for t=1,7 do
+                step_native(o)
+                check(not o.colli and o.tb.st.wait.t==3 and near(o.x,-8+t),'TH10出生期不消耗WAIT并逐帧半速移动')
+            end
+            step_native(o)
+            check(o.tb.spawn==0 and o.colli and o.tb.st.wait.t==2 and near(o.x,2),
+                'TH10出生结束同帧推进WAIT与完整飞行步')
+            o._live=false
+        end
+        local owner={pat={},ecs={wx=0,wy=112}}
+        find('et_new')(owner,0);find('et_ex')(owner,0,0,1,4,-999999,-999999,-999999,-999999)
+        local o=emitted(function() find('fire_slot')(owner,0) end)[1]
+        check(o.tb.spawn==8 and not o.colli,'etNew/etEx/fire_slot链路保留原作默认快速出生')
+        o=emitted(function() find('spawn_bullet')(0,112,0,.02,20,2) end)[1]
+        OriginalBulletVisual.sync_spawn(o)
+        check(o.th10_spawn_left==8 and not o.colli and o._native_spawn_started,'神德专用发弹入口同样播放出生动画')
+        for _=1,7 do step_native(o) end
+        check(o.th_wait==20 and not o.colli,'神德出生期不提前消耗等待时间')
+        step_native(o);check(o.th_wait==19 and o.colli,'神德出生结束当帧开始WAIT')
+    elseif game=='th33' then
+        for _,flags in ipairs({512,514}) do
+            local o=emitted(function() find('SpawnPhoto')(flags,mapper(1)[1],2,0,112,2,0,false,0,false) end)[1]
+            OriginalBulletVisual.sync_spawn(o)
+            check((o.th095_spawn_left or 0)==(flags==514 and 8 or 0)
+                and o.colli==(flags==512),'文花帖真实发弹入口区分出生旗标与单独音效旗标')
+            o._live=false
+        end
+    end
     if game=='th31' then
         actual_lasers.th08=find('lw209_laser')
         -- 真正执行构造并验证资源名，单纯载入卡片抓不到 ellipse/ellipse16 混用。
@@ -461,6 +556,9 @@ for _,game in ipairs({6,7,8,95,10}) do
         check(visual.emit_despawn(o,false) and effect.vm~=nil and IsValid(o),
             '原作消散保留同一对象占槽，不提前释放弹池位置')
         check(effect.vx==2 and effect.vy==1 and not effect.colli,'消散按半速移动且无判定')
+        check(effect.group~=GROUP.GHOST,'碰撞回调中的消散保留原分组到遍历结束')
+        effect.class.frame(effect)
+        check(effect.group==GROUP.GHOST,'消散在下一次对象更新切入无害分组')
         for _=1,90 do if not effect.vm.finished then effect.class.frame(effect) end end
         check(effect.vm.finished,'原作消散ANM能正常结束：'..game..'/'..kind)
     end

@@ -70,9 +70,8 @@ OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 ---     从游标环形找空槽，满槽即停止当前波，不能靠无限发弹改变原作图案。
 ---  4  出生过渡按bullet.anm的8/15/25帧半速推进，结束当帧再走完整ACTIVE步；
 ---     原作初始化认领变换与出生后逐帧更新分开，不能沿用框架11帧雾化。
----  5  弹的 etEx 程序里 slot0（kind=2，TH10 复原源码的 kind 表里没有这一项）与 slot1
----     （kind=0x1000 SET_CANCEL_BEHAVIOR=10000）都只影响消弹表现，本文件按无效果处理；
----     真正决定画面的是 slot2（WAIT=I2，每发重新装填）与 slot3（ACCELERATE_POLAR）。
+---  5  etNew 默认 flags=0x203，先播8帧快速出生，再推进 WAIT/ACCELERATE_POLAR。
+---     kind=2 在变换执行器里为空操作；出生模式由枪的 flags 决定，不能由记录号推断。
 ---  6  卫星是代理：原作是 TH10 的 anm 15/16/17 圆环（红/绿/蓝）+ flagSet(7)，无判定；
 ---     这里用一颗小光球（ball_light 2/7/5）画，bound/colli 都关掉。
 ---  7  BossDead 的演出（gameSpeed 0.5 → 0.25、etClearAll、贴图切换、之后 40 帧 flagSet(16)）
@@ -221,6 +220,14 @@ end
 ---    th_wait  = $I2：先挂多少帧不动（etEx kind=0x8000）
 ---    th_delta = F  ：挂完之后每帧加多少速度、持续 BULLET_ACCEL_FRAMES 帧（etEx kind=0x20）
 local function th35_bullet_frame(self)
+    if self.th10_spawn_left > 0 then
+        self.x,self.y=self.x+self.th_spawn_vx/2,self.y+self.th_spawn_vy/2
+        self.th10_spawn_left=self.th10_spawn_left-1
+        self.vx,self.vy=0,0
+        if self.th10_spawn_left>0 then return end
+        self.vx,self.vy=self.th_spawn_vx,self.th_spawn_vy
+        self.colli=true
+    end
     ---引擎每帧「先跑 frame、再按 vx/vy 积分」，所以这里改速度 == 原作的
     ---「先 velocity += 加速度、再 pos += velocity」。
     if self.th_wait > 0 then
@@ -242,6 +249,10 @@ local function spawn_bullet(x, y, angle_deg, delta, wait, color)
     b.th_delta = delta
     b.th_left = BULLET_ACCEL_FRAMES
     b.th_speed = BULLET_INIT_SPEED
+    b.th10_spawn_left=8
+    b.th_spawn_vx,b.th_spawn_vy=b.vx,b.vy
+    b.x,b.y=b.x-b.vx*4,b.y-b.vy*4
+    b.colli=false
     class.t10_use_bullet_slot(slot,b)
     return b
 end
@@ -515,7 +526,7 @@ local function t10_rand01() return ran:Float(0, 1) end
 ---=====================================
 --- 一、子弹 transform 程序（BulletTransform.cpp / BulletManager.hpp 的 kind 表）
 ---=====================================
----kind 值（0x40000000 是 etNew 写进 transformFlags 的初值，不是 kind）
+---kind 值；出生旗标来自 etNew 的0x203，而非变换执行器中的空操作2/4/8。
 local TK_DECEL   = 0x1
 local TK_VECTOR  = 0x10
 local TK_POLAR   = 0x20
@@ -793,7 +804,8 @@ local function pat_new()
         type = 1, color = 1,
         angle = 0, astep = 0, s1 = 1, s2 = 1,
         c1 = 1, c2 = 1, aim = 0,
-        tf = 0x40000000, ox = 0, oy = 0,
+        -- EnemyEclDispatcher::etNew：+0x4c0写0x203；+0x2dc的0x40000000是速度2.0。
+        tf = 0x203, ox = 0, oy = 0,
         ex = {},
     }
 end

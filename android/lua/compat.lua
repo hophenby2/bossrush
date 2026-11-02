@@ -30,6 +30,8 @@ expose('DoFile', function(path)
     native.SystemLog('BOSSRUSH_LOAD: ' .. normalized)
     return chunk()
 end)
+-- 原作ANM/弹幕模块用dofile返回数据表；同样从只读打包资源读取，不能访问进程工作目录。
+dofile = lstg.DoFile
 expose('LoadTextFile', function(path) return fu:getStringFromFile(P.resolve(path)) end)
 lstg.FileManager = {
     FileExist = P.exists,

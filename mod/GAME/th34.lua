@@ -72,9 +72,8 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---     **Lunatic 那一行**（count1=5、count2=2 ⇒ 每轮 10 发）；Easy/Normal/Hard 是 5 发。
 ---  4  道具是近似：原作 itemdrop 0/1/2 = 小能量/点/大能量，而本仓库 item.obj 里没有
 ---     「能量(power)」类道具 ⇒ 0/2 折成信仰道具（小能量 1 个、大能量 2 个）。
----  5  不做 SPAWN_FAST：原作这四条 op67 的 flags = 0x203 都带 0x2（出生位置先退
----     `velocity*4`、再播 10 帧塞弹动画，BulletManager.cpp:297-302）；移植版弹直接以
----     全速出膛，观感差别只是「少了那 10 帧的出生动画」。
+---  5  原作这四条 op67 的 flags=0x203：先退velocity*4，再按弹型播放快速出生。
+---     普通弹与命令弹共用出生状态机，动画结束前不执行运动命令、不启用判定。
 ---  6  SUB_CALL 8 是**阻塞**调用 ⇒ 原作小怪比时间轴晚 80 帧出生（载体已经死了）。
 ---     移植版同一帧生载体、第 80 帧变幽灵（就是差异 2 的那个合成对象）。
 ---  7  插值按引擎的「初始化那一刻快照 + 逐帧递推」实现：INIT_INTERP
@@ -471,7 +470,6 @@ local ball_small, ball_mid_c, ellipse, ball_mid = ball_small, ball_mid_c, ellips
 local arrow_small, grain_b, arrow_big_c = arrow_small, grain_b, arrow_big_c
 local ball_big, butterfly, knife_b, ball_huge = ball_big, butterfly, knife_b, ball_huge
 local COLOR = COLOR
-local NewSimpleBullet = NewSimpleBullet
 local boss, TH07_bg = boss, TH07_bg
 local IsValid, lstg = IsValid, lstg
 
@@ -503,6 +501,11 @@ local TH07_SPRITE = {
     [knife_b] = 9, [ball_huge] = 10,
 }
 for spr, style in pairs(TH07_STYLE) do TH07_SPRITE[style] = spr end
+-- 普通弹也要传原作出生旗标；不能依赖已被原生ANM绕过的THlib默认雾化。
+function class.th07_simple(style,col,x,y,v,a,flags)
+    style=TH07_STYLE[TH07_SPRITE[style] or 0]
+    return New(class.TH34_cmdbullet,style,col,x,y,v,a,{type=0,flags=flags})
+end
 local function th07_color_for(off, style)
     return th07_color(off, TH07_SPRITE[style] or 0)
 end
@@ -645,7 +648,7 @@ local function volley(self)
             local ring = k % VOL_COUNT
             local spd = (layer == 0) and v or v - (v - VOL_SPEED2) * layer / VOL_LAYER
             local a = base + layer * VOL_LAYER_DEG + ring * step
-            pool[#pool + 1] = NewSimpleBullet(th07_style(1), col, self.x, self.y, spd, a, false, 0, false)
+            pool[#pool + 1] = class.th07_simple(th07_style(1), col, self.x, self.y, spd, a, 0x203)
             room, k = room - 1, k + 1
         end
     end
@@ -941,12 +944,12 @@ local function sound4(self)
 end
 
 ---一次「波」：gen(i) 依次给出发射参数。
-local function volley4(self, total, gen)
+local function volley4(self, total, gen, flags)
     local room = POOL4_SIZE - pool4_used()
     local i = 1
     while i <= total and room > 0 do
         local style, col, v, a = gen(i)
-        pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x, self.y, v, a, false, 0, false)
+        pool4[#pool4 + 1] = class.th07_simple(style, col, self.x, self.y, v, a, flags or 0x202)
         room, i = room - 1, i + 1
     end
     sound4(self)
@@ -1228,6 +1231,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
         self.th07_cull_managed = true
         self.th07_sprite = TH07_SPRITE[style] or 0
         local flags=cmd.flags or 0
+        self.c_flags=flags
         local mode=cmdbullet_hasbit(flags,2) and 2 or (cmdbullet_hasbit(flags,4) and 4 or (cmdbullet_hasbit(flags,8) and 8 or 0))
         if mode~=0 then
             -- etama.anm:18..24为10/16/32帧；大弹三种出场都32帧，泡弹用24帧的script27。
@@ -1878,12 +1882,12 @@ local ball_big = ball_big
 
 ---一次「波」（照 volley4，但带一个 plays 开关：flags 0x200 才响音效，
 ---第 3 面小怪的 flags=0x2 是**无声**的 spawn-fast）。
-local function volley3(self, total, gen, plays)
+local function volley3(self, total, gen, plays, flags)
     local room = POOL4_SIZE - pool4_used()
     local i = 1
     while i <= total and room > 0 do
         local style, col, v, a = gen(i)
-        pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x, self.y, v, a, false, 0, false)
+        pool4[#pool4 + 1] = class.th07_simple(style, col, self.x, self.y, v, a, flags or 2)
         room, i = room - 1, i + 1
     end
     if plays then sound4(self) end
@@ -1897,7 +1901,7 @@ end
 
 ---把一条 SPREAD 打出去（sprite/offset/count/speed/angle 全照 Lunatic 行）。
 ---a1/a2 传 th07 的**弧度**，函数里换算成我们的角度制并取反。
-local function w3_spread(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays)
+local function w3_spread(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays, flags)
     local base = (aim and Angle(self, player) or 0) - a1_th * RAD2DEG
     local offs = spread3(c1, a2_th * RAD2DEG)
     volley3(self, c1 * c2, function(i)
@@ -1905,12 +1909,12 @@ local function w3_spread(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, pl
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
         return style, th07_color_for(off, style), v, base + offs[ring + 1]
-    end, plays)
+    end, plays, flags)
 end
 
 ---RING（op66/op67）：th07 angle = ±(x·2π/c1 + y·a2 + a1)；取反后 x 那一项还是整圈，
 ---于是我们的角 = base + x·360/c1 + y·(−a2)，base 里带 (−a1) 或自机角。
-local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays)
+local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays, flags)
     local base = (aim and Angle(self, player) or 0) - a1_th * RAD2DEG
     local step = 360 / c1
     local a2 = -a2_th * RAD2DEG
@@ -1919,7 +1923,7 @@ local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, play
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
         return style, th07_color_for(off, style), v, base + ring * step + layer * a2
-    end, plays)
+    end, plays, flags)
 end
 
 ---RANDOM（op72）：th07 angle = rand[0, a1−a2) + a2、speed = rand[0, v1−v2) + v2。
@@ -2078,7 +2082,7 @@ end
 
 ---sub 11：t=120 一轮无声慢环（0x200）、t=150 一轮 32×2（0x202）
 local function gh3_fire11a(self, a1_our)
-    w3_ring(self, th07_style(3), 6, 24, 1, 0.8, 0.8, -a1_our / RAD2DEG, 0, false, false)
+    w3_ring(self, th07_style(3), 6, 24, 1, 0.8, 0.8, -a1_our / RAD2DEG, 0, false, false, 0x200)
 end
 local function gh3_fire11b(self, a1_our)
     w3_ring(self, th07_style(3), 6, 32, 2, 2.8, 2, -a1_our / RAD2DEG, 0, false, true)
@@ -2511,13 +2515,13 @@ local P5_ACCEL = 0.02             -- 原作 SET_MOVE_ACCEL 0.02（匀加速，�
 ---所以 sub 11/13 的 22 轮、sub 26/28/30 的 32 轮**每一轮**都带 Burst。
 ---sub 32/34/36 的 flags 是 0x205（不含 bit 1）⇒ `RunCommands` 当场跳过（差异 33），
 ---所以那一族干脆不挂命令。
-local P5_BURST = { type = 1 }
+local P5_BURST = { type = 1, flags = 0x203 }
 
 ---0x20 TargetAngle（`BulletManager.cpp:759-777`）：每帧 angle += cmd.angle、speed += cmd.speed，
 ---重新按（朝向, 速度）算 velocity，够 duration(60) 帧清位。传进来的是 th07 的
 ---弧度/帧 ⇒ 取反并换成度/帧（y 翻转，角速度跟着反号）。
 local function spin5(rate_th)
-    return { type = 0x20, dur = 60, loop = -1, speed = 0, angle = -rate_th * RAD2DEG }
+    return { type = 0x20, dur = 60, loop = -1, speed = 0, angle = -rate_th * RAD2DEG, flags = 0x222 }
 end
 
 ---th07 的极坐标偏移 (R·sin a, R·cos a)（y 朝下）⇒ 我们的 (R·sin a, −R·cos a)。
@@ -2534,7 +2538,7 @@ end
 
 ---本卡的一次「波」：把弹登记进 pool4（丢弹规则与上一张卡一致：池满整波不生、
 ---半途见底丢剩下的、两条路径都响音效）。`cmd` 非空 ⇒ 走 TH34_cmdbullet。
-local function volley5(self, ox, oy, total, gen)
+local function volley5(self, ox, oy, total, gen, flags)
     local room = POOL4_SIZE - pool4_used()
     local i = 1
     while i <= total and room > 0 do
@@ -2543,8 +2547,8 @@ local function volley5(self, ox, oy, total, gen)
             pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], style, col,
                                     self.x + ox, self.y + oy, v, a, cmd)
         else
-            pool4[#pool4 + 1] = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
-                                                v, a, false, 0, false)
+            pool4[#pool4 + 1] = class.th07_simple(style, col, self.x + ox, self.y + oy,
+                                                v, a, flags or 0x202)
         end
         room, i = room - 1, i + 1
     end
@@ -2553,14 +2557,14 @@ end
 
 ---SPREAD（op64/65，`BulletManager.cpp:180-202`）：base 是**我们**的基准角（度），
 ---a2_th 是 th07 的弧度（spread3 内部取反）。层序只改速度、不改角度（与 RING 不同）。
-local function w5_spread(self, spr, off, c1, c2, v1, v2, base, a2_th, ox, oy, cmd)
+local function w5_spread(self, spr, off, c1, c2, v1, v2, base, a2_th, ox, oy, cmd, flags)
     local offs = spread3(c1, a2_th * RAD2DEG)
     volley5(self, ox, oy, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = (c2 == 1) and v1 or (v1 - (v1 - v2) * layer / c2)
         return th07_style(spr), th07_color(off, spr), v, base + offs[ring + 1], cmd
-    end)
+    end, flags)
 end
 
 ---RING_ABS（op67）：angle = 环序·2π/c1 + 层序·a2 + a1（a1 是绝对值，不瞄自机）。
@@ -2660,7 +2664,7 @@ local function p5_f32(self, off)
     for _ = 1, 32 do
         a = a - 0.19635
         local ox, oy = off5(a, 32)
-        w5_spread(self, 6, off, 4, 1, 1.2, 1, a5(a), 0.785398, ox, oy, nil)
+        w5_spread(self, 6, off, 4, 1, 1.2, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
         task.Wait(1)
     end
 end
@@ -2672,11 +2676,11 @@ local function p5_f36(self)
     for _ = 1, 16 do
         a = a - 0.19635
         local ox, oy = off5(a, 64)
-        w5_spread(self, 3, 2, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil)
+        w5_spread(self, 3, 2, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
         task.Wait(1)
         b = b + 0.19635
         ox, oy = off5(b, 64)
-        w5_spread(self, 3, 6, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil)
+        w5_spread(self, 3, 6, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
         task.Wait(1)
     end
 end
@@ -3759,7 +3763,7 @@ local function w2_random19(self, c1, v1, v2)
         local a = ran:Float(-180, 180)
         local v = ran:Float(v2, v1)
         return New(class["TH34_cmdbullet"], th07_style(1), th07_color(6, 1),
-                   self.x, self.y, v, a, { type = 1 })
+                   self.x, self.y, v, a, { type = 1, flags = 0x203 })
     end)
 end
 
@@ -4425,13 +4429,13 @@ end
 local bs78 = th07_style
 
 ---一条 SPREAD（base 用我们的角度制；a2_th 是 th07 的弧度，交给 spread3 取反）。
-local function spread78(self, style, off, c1, c2, v1, v2, base, a2_th, plays)
+local function spread78(self, style, off, c1, c2, v1, v2, base, a2_th, plays, flags)
     local offs = spread3(c1, a2_th * RAD2DEG)
     volley3(self, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         return style, th07_color_for(off, style), v1 - (v1 - v2) * layer / c2, base + offs[ring + 1]
-    end, plays)
+    end, plays, flags)
 end
 
 ---一条 RING（base 用我们的角度制；层间偏移 −a2_th·RAD2DEG，见差异 20 的取反规则）。
@@ -4472,8 +4476,21 @@ class["TH34_exbigbullet78"] = Class(bullet, {
         self.turn, self.reaim = turn, reaim
         self.t0, self.t1 = 0, -1        -- t1 = −1 ⇒ 0x80 还没起步
         self.vx, self.vy = v * cos(a), v * sin(a)
+        self.c_flags=0x2a8
+        self.c_spawn_left=self.imgclass.native_type==10 and 24 or 32
+        self.c_spawn_vx,self.c_spawn_vy=self.vx,self.vy
+        self.x,self.y=x-self.vx*4,y-self.vy*4
+        self.bound,self.colli,self.th07_cull_managed=false,false,true
     end,
     frame = function(self)
+        if self.c_spawn_left>0 then
+            self.x,self.y=self.x+self.c_spawn_vx/3,self.y+self.c_spawn_vy/3
+            self.c_spawn_left=self.c_spawn_left-1
+            self.vx,self.vy=0,0
+            if self.c_spawn_left>0 then bullet.frame(self);return end
+            self.vx,self.vy=self.c_spawn_vx,self.c_spawn_vy
+            self.colli=true
+        end
         if self.t0 < 30 then
             self.rot = self.rot + self.turn
             self.t0 = self.t0 + 1
@@ -4765,7 +4782,7 @@ class["TH34_exbig78"] = Class(enemy, {
             task.Wait(90)
             ---t=90 的 SPREAD_AIMED（flags 0x200 不含 0x20/0x80 ⇒ 不带命令）
             spread78(self, bs78(0), 6, cfg.c1, 3, cfg.v1, cfg.v2,
-                     Angle(self, player), 0.03927, true)
+                     Angle(self, player), 0.03927, true, 0x200)
             object.RawDel(self)                              -- t=90 的 UNIMP
         end)
     end,
@@ -7259,7 +7276,7 @@ local function TH34_add_stage78_boss()
                 local th = -rngdeg()
                 local v = ran:Float(1, 4)
                 return New(class["TH34_cmdbullet"], th07_style(8), th07_color(3, 8), self.x, self.y,
-                           v, th, { stages = {
+                           v, th, { flags=8802, stages = {
                                { type = 0x40, dur = 120, loop = 1, angle = 0, speed = 0.1 },
                                { type = 0x20, dur = 60, loop = -1, angle = 0, speed = -0.00666667 },
                            } })
@@ -7283,7 +7300,7 @@ local function TH34_add_stage78_boss()
                 for k = 0, 4 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(8), th07_color(1, 8),
                                             self.x, self.y, 4, aim + k * 72,
-                                            { stages = {
+                                            { flags=0x2222, stages = {
                                                 { type = 0x20, dur = 60, loop = -1,
                                                   angle = dth, speed = 0 },
                                                 { type = 0x20, dur = 60, loop = -1,
@@ -8511,7 +8528,7 @@ local function TH34_add_stage78_boss()
             for k = 0, 11 do
                 pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(10), th07_color(0, 10),
                                         self.x, self.y, 2, base + k * 30,
-                                        { type = 0x20, dur = 60, loop = -1,
+                                        { type = 0x20, dur = 60, loop = -1, flags=0x2242,
                                           angle = dth, speed = -0.00833333 })
             end
             sound4(self)
@@ -8796,7 +8813,7 @@ local function TH34_add_stage78_boss()
                                 local th = a + n * 45
                                 pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(6), col,
                                                         self.x, self.y, 0.5, th,
-                                                        { type = 0x10, dur = 120, loop = -1,
+                                                        { type = 0x10, dur = 120, loop = -1, flags=0x212,
                                                           vec_x = cos(th) * 0.0166667,
                                                           vec_y = sin(th) * 0.0166667 })
                             end
@@ -9428,8 +9445,7 @@ local function TH34_add_stage56_boss()
                 o = New(class["TH34_cmdbullet"], style, col,
                         self.x + ox, self.y + oy, v, a, cmd)
             else
-                o = NewSimpleBullet(style, col, self.x + ox, self.y + oy,
-                                    v, a, false, 0, false)
+                o = class.th07_simple(style, col, self.x + ox, self.y + oy, v, a, 2)
             end
             o.th07_sprite, o.th07_color = spr, off
             pool4[#pool4 + 1] = o
@@ -10055,7 +10071,7 @@ local function TH34_add_stage56_boss()
                 ---＝ 80 帧空转；commands[1] 才是 `… 1 32 0 60 -1 0.01 ∓0.0261799`
                 ---（注意 cmd.speed = **+0.01 = 每帧加速**，早年写成 spin6(...,0.01,…) 被 spin6 的
                 ---「传减速量」口径篡改成了 −0.01；角也要按「我们的角 = −TH07 角」换算）。
-                shoot6(self, ox, oy, 64, 3, 4, 3, 1, 1, 1, 0, 0.523599, nil, true)
+                shoot6(self, ox, oy, 64, 3, 4, 3, 1, 1, 1, 0, 0.523599, cmds4(0x204), true)
                 shoot6(self, ox, oy, 64, 3, 1, 3, 1, 1, 1, 0, 0.523599,
                        cmds4(36, { type = 0x20, dur = 80, loop = -1, speed = 0, angle = 0 },
                                  { type = 0x20, dur = 60, loop = -1, speed = 0.01,
@@ -10479,7 +10495,7 @@ local function TH34_add_stage56_boss()
                 for i = 1, 4 do
                     drift(self, 1.5, 60)
                     shoot6(self, 0, 0, 67, 8, 5, 32, 3, 2.8, 1,
-                           ran:Float(-PI, PI), 0, nil, true)
+                           ran:Float(-PI, PI), 0, cmds4(0x200), true)
                     task.Wait((i == 4) and 100 or 80)
                 end
             end
@@ -11718,8 +11734,8 @@ local function TH34_add_stage56_boss()
                 pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(spr), th07_color(col, spr),
                                         self.x, self.y, v, -a * RAD2DEG, cmd)
             else
-                pool4[#pool4 + 1] = NewSimpleBullet(th07_style(spr), th07_color(col, spr), self.x, self.y,
-                                                    v, -a * RAD2DEG, false, 0, false)
+                pool4[#pool4 + 1] = class.th07_simple(th07_style(spr), th07_color(col, spr), self.x, self.y,
+                                                    v, -a * RAD2DEG, 2)
             end
             room, i = room - 1, i + 1
         end
@@ -12746,8 +12762,7 @@ local function TH34_add_stage56_boss()
             b = New(class["TH34_cmdbullet"], th07_style(spr), th07_color(col, spr), ax, ay, v,
                     -th * RAD2DEG, cmd)
         else
-            b = NewSimpleBullet(th07_style(spr), th07_color(col, spr), ax, ay, v, -th * RAD2DEG,
-                                false, 0, false)
+            b = class.th07_simple(th07_style(spr), th07_color(col, spr), ax, ay, v, -th * RAD2DEG, 2)
         end
         pool4[#pool4 + 1] = b
     end
@@ -12849,7 +12864,7 @@ local function TH34_add_stage56_boss()
                 ---沿弹自身朝向）会在每发上激活，做 160 帧的线性减速。
                 o = New(class["TH34_cmdbullet"], style, col, self.x, self.y, v, a, cmd)
             else
-                o = NewSimpleBullet(style, col, self.x, self.y, v, a, false, 0, false)
+                o = class.th07_simple(style, col, self.x, self.y, v, a, 2)
             end
             pool4[#pool4 + 1] = o
         end
@@ -12864,7 +12879,7 @@ local function TH34_add_stage56_boss()
               self.y + sin(dir * RAD2DEG) * 480)
         for _ = 1, 15 do
             shoot6(self, 0, 0, 65, 0, off0, 5, 1, 3, 0.5,
-                   ang + PI, 0.19635, nil, true)
+                   ang + PI, 0.19635, cmds4(0x204), true)
             task.Wait(8)
         end
         bmove(self, 120, 0, self.x - cos(dir * RAD2DEG) * 480,
@@ -12874,7 +12889,7 @@ local function TH34_add_stage56_boss()
             ---（`-0.015` 是每帧速率增量、`-999` 表示方向沿用弹自身朝向）。
             rnd4(self, 3, off1, cnt, 0.8, 0.2, ang + PI / 2, ang - PI / 2,
                  { type = 0x10, dur = 160, loop = -1, speed = 0, angle = -999,
-                   accel = -0.015 }, true)
+                   accel = -0.015, flags=0x214 }, true)
             task.Wait(4)
         end
     end
@@ -12886,7 +12901,7 @@ local function TH34_add_stage56_boss()
         ---瞄点：f0>0 ⇒ PX−128，否则 PX+128（原作 sub59 t=31 的 JLEQ_F 分支）。
         local aimx = player.x + ((f0 > 0) and -128 or 128)
         local th = atan2(self.y - player.y, aimx - (self.x + f0))
-        shoot6(self, f0, 0, 65, 10, off0, 1, 1, 4, 0.5, th, 0, nil, true)
+        shoot6(self, f0, 0, 65, 10, off0, 1, 1, 4, 0.5, th, 0, cmds4(0x3204), true)
         pspawn(self.x + f0, self.y, luna_turret, { th, gi1, gi2, gi3 })
     end
     ncard("露娜萨 非符 1", 4440, 19000, 0, 3600, function(self)
@@ -13110,7 +13125,7 @@ local function TH34_add_stage56_boss()
                 o.x, o.y = cx + math.cos(ang) * r, cy - math.sin(ang) * r
                 task.Wait(1)
             end
-            shoot6(o, 0, 0, 66, 1, 2, 48, 4, 2.5, 1, 0, 0, nil, false)
+            shoot6(o, 0, 0, 66, 1, 2, 48, 4, 2.5, 1, 0, 0, cmds4(0x200), false)
             while true do task.Wait(1) end
         end)
     end
@@ -13548,7 +13563,7 @@ local function TH34_add_stage56_boss()
         task.New(self, function()                          -- sub134（周期回调）
             task.Wait(266)                                 -- t=240 设回调后第 10 帧首触发（ECL t=266）
             while true do
-                shoot6(self, 0, 0, 66, 2, i0, 8, 3, 1.5, 0.5, f0, 0, nil, true)
+                shoot6(self, 0, 0, 66, 2, i0, 8, 3, 1.5, 0.5, f0, 0, cmds4(513), true)
                 f0 = f0 + f1
                 task.Wait(10)
             end
@@ -14266,7 +14281,7 @@ local function TH34_add_stage56_boss()
                      cmds4(517, { type = 1, flag = 0, dur = -1, loop = -1,
                                   speed = -1, angle = -1 }))
                 f0 = f0 + g
-                shoot6(self, 0, 0, 65, 3, 6, 1, 5, 4.0, 1.0, f1, 0, nil, false)
+                shoot6(self, 0, 0, 65, 3, 6, 1, 5, 4.0, 1.0, f1, 0, cmds4(0x205), false)
                 f1 = f1 - g
                 task.Wait(8)
             end
@@ -15219,11 +15234,11 @@ local function TH34_add_stage56_boss()
             local function jump(sx, sy) self.x, self.y = sx, sy end
             ---本体一次 10 连渐开扇：pk=0x20001、v1=1、v2=0.5、c2=1、flags 512（响音效）。
             local function spread(a1, a2)
-                shoot6(self, 0, 0, 65, 1, 2, 10, 1, 1.0, 0.5, a1, a2, nil, true)
+                shoot6(self, 0, 0, 65, 1, 2, 10, 1, 1.0, 0.5, a1, a2, cmds4(512), true)
             end
             ---本体一圈 10 连：pk=0x20001、a1 = RAND_FLOAT_ADD(6.28319,-3.14159)、a2=0.1309。
             local function ring()
-                shoot6(self, 0, 0, 67, 1, 2, 10, 1, 1.0, 0.5, rngrad(), 0.1309, nil, true)
+                shoot6(self, 0, 0, 67, 1, 2, 10, 1, 1.0, 0.5, rngrad(), 0.1309, cmds4(512), true)
             end
             ---「天童」（sub65）：跟住本体；t=140 UNIMP ⇒ 活 140 帧。
             local function tendou()
@@ -15355,7 +15370,7 @@ local function TH34_add_stage56_boss()
             local function volley(col)
                 local a1 = -ma + PI + ran:Float(0, 0.1309) - 0.0654498
                 shoot6(self, 0, 0, 65, 6, col, 10, 1, 1.3, 0.5, a1, 0.523599,
-                       nil, true)
+                       cmds4(512), true)
             end
             ---n 拍、每拍 5 帧；第一拍之后才把 ma 刷成这一段的移动方向（见上）。
             local function burst(n, col)
@@ -15368,7 +15383,7 @@ local function TH34_add_stage56_boss()
             end
             ---本体一盘 16 连整圈（pk=0xE0006、flags 中含 0x200 ⇒ 响音效）。
             local function ring16(a1, v)
-                shoot6(self, 0, 0, 67, 6, 14, 16, 1, v, 0.5, a1, 0.1309, nil, true)
+                shoot6(self, 0, 0, 67, 6, 14, 16, 1, v, 0.5, a1, 0.1309, cmds4(512), true)
             end
             while true do
                 sub2()                          -- 原作循环头 t=240 SUB_CALL 2（120 帧）
@@ -15486,11 +15501,11 @@ local function TH34_add_stage56_boss()
                 local v = 3.4 + ran:Float(0, 0.5)
                 local da, dv = PI / 22, 3 / 11
                 for _ = 1, 11 do
-                    shoot6(self, 0, 0, 67, 6, col, 2, 1, v, 0.5, a, 0.1309, nil, true)
+                    shoot6(self, 0, 0, 67, 6, col, 2, 1, v, 0.5, a, 0.1309, cmds4(512), true)
                     a, v = a + da, v - dv
                 end
                 for _ = 1, 11 do
-                    shoot6(self, 0, 0, 67, 6, col, 2, 1, v, 0.5, a, 0.1309, nil, true)
+                    shoot6(self, 0, 0, 67, 6, col, 2, 1, v, 0.5, a, 0.1309, cmds4(512), true)
                     a, v = a + da, v + dv
                 end
             end
@@ -15825,7 +15840,7 @@ local function TH34_add_stage56_boss()
     ---                  段 2/4 flags 0x203 ⇒ 挂 `0x1` 起爆（+5 → +0.3125 /17 帧后回自身速度）；
     ---      廻符 sub53：spr6、偏 10/6/11/8；四段 flags 都是 0x222 ⇒ 每段都挂 `0x20` 自旋
     ---                  （30 帧、±0.0523599 rad/帧，段 1/3 正、段 2/4 负）。
-    ---    其余 flags 位（`0x2` 快速出屏动画等）本仓库没有对应表现。
+    ---    出生flags交给共用弹体处理，不能因省略装饰而跳过出生动画。
     local function kyodoll(boss, a0_th, spr, spin, kick)
         pspawn(boss.x, boss.y, function(o)
             OriginalStageVisual.actor(o,7,'stg3enm',16)
@@ -16114,11 +16129,11 @@ local function TH34_add_stage56_boss()
                 while true do
                     local a, v = base, ran:Float(0, 0.5) + 2.8
                     for _ = 1, 9 do
-                        shoot6(o, 0, 0, 67, 6, off, 2, 1, v, 0.5, a, 0.1309, nil, true)
+                        shoot6(o, 0, 0, 67, 6, off, 2, 1, v, 0.5, a, 0.1309, cmds4(512), true)
                         a, v = a + 0.174533, v - 0.222222
                     end
                     for _ = 1, 9 do
-                        shoot6(o, 0, 0, 67, 6, off, 2, 1, v, 0.5, a, 0.1309, nil, true)
+                        shoot6(o, 0, 0, 67, 6, off, 2, 1, v, 0.5, a, 0.1309, cmds4(512), true)
                         a, v = a + 0.174533, v + 0.222222
                     end
                     base = base + sgn * (ran:Float(0, 0.0981748) + 0.392699)
