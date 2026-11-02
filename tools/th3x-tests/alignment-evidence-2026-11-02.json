@@ -1,0 +1,602 @@
+{
+  "说明": "未修复差异的审计快照；离线桩不替代Windows/Mac实机画面验证。",
+  "game_commit_at_capture": "c986862cd3d920897cbed8f8c0802691bf03be8f",
+  "game_sources_sha256": {
+    "mod/GAME/th31.lua": "48329b4df2c02d5a0af3d255d3b3ade3e1ef4a090b0e2fe038350e522834faad",
+    "mod/GAME/th31_combat.lua": "6a523a7afe539582eff1b1ed6f0d51142fc7cf1d7c284ea53260df1bd0f9a40b",
+    "mod/GAME/th34.lua": "a63c699dd96b314a7dff3428cb1ea1f12fbabeb3df7b550cd5c25fabc276e35c",
+    "mod/GAME/th35.lua": "7ec5d4fdaed620f97769aa825ddc75631691ce36940114d8f7415c9b6403e7d6",
+    "THlib/anm/stage_visual.lua": "a3a810810cb866344191ecc4ba1fdb1bac2cb0cf591fee4650ff7439bf1d3342",
+    "THlib/bullet/visual_match.lua": "1eec590d3e70d994fde8def750acada14f41848425dd5d2427867d18fd0c7f5e",
+    "THlib/lib/LObjectEvents.lua": "2ef99beed84172c7bdaeaa51683c902206f5a5a9b74da8d647dbeadd9f0d1433"
+  },
+  "reconstruction_commits": {
+    "th08": "08c7f00f81e35db8206d917b14f47883930beef6",
+    "th10": "44dbc59c18d87001dfcb7fe66e17296161fedbbb"
+  },
+  "ecl_inputs": [
+    {
+      "game": 10,
+      "file": "stage06.ecl",
+      "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803"
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b"
+    },
+    {
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sha256": "c7ad6b6eefb4e3597991faf60c99b3354ef91156fcaab4e725baa6152cb679c7"
+    },
+    {
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sha256": "fc669292ee41f99c9eed4e72b644c591a522deaa255ed106224f656d5431e4a8"
+    }
+  ],
+  "ecl_records": [
+    {
+      "address": "0xb4ac",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        1,
+        0,
+        4096,
+        10000,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_atN",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff08000000000000000001000000000000000010000010270000c1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xb4dc",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        3,
+        0,
+        32,
+        120,
+        -999999,
+        {
+          "index": 20
+        },
+        0.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_atN",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130004000ff08000000000000000003000000000000002000000078000000c1bdf0ff0000a04100000000"
+    },
+    {
+      "address": "0xb7cc",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        2,
+        0,
+        32768,
+        {
+          "index": -9983
+        },
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_atN",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130001000ff08000000000000000002000000000000000080000001d9ffffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xa9e8",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        1,
+        0,
+        4096,
+        10000,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_at2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff08000000000000000001000000000000000010000010270000c1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xaa18",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        3,
+        0,
+        32,
+        120,
+        -999999,
+        {
+          "index": 20
+        },
+        0.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_at2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130004000ff08000000000000000003000000000000002000000078000000c1bdf0ff0000a04100000000"
+    },
+    {
+      "address": "0xadfc",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        2,
+        0,
+        32768,
+        {
+          "index": -9983
+        },
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_at2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130001000ff08000000000000000002000000000000000080000001d9ffffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0x8cd4",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        4,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard5_at",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff080000000000000000040000000000000000000100c1bdf0ffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0x9158",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        4,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard5_at2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff080000000000000000040000000000000000000100c1bdf0ffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xaf18",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        7,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard8_at",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff080000000000000000070000000000000000000100c1bdf0ffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xc694",
+      "time": 0,
+      "op": 409,
+      "mask": 255,
+      "args": [
+        0,
+        5,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ],
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard9_at",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000990130000000ff080000000000000000050000000000000000000100c1bdf0ffc1bdf0fff02374c9f02374c9"
+    },
+    {
+      "address": "0xd9a4",
+      "time": 85,
+      "op": 95,
+      "mask": 255,
+      "args": [
+        135
+      ],
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sub": "Sub76",
+      "operand_bytes_verified": true,
+      "instruction_hex": "550000005f00100000ff000087000000"
+    },
+    {
+      "address": "0xdabc",
+      "time": 205,
+      "op": 95,
+      "mask": 255,
+      "args": [
+        135
+      ],
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sub": "Sub76",
+      "operand_bytes_verified": true,
+      "instruction_hex": "cd0000005f00100000ff000087000000"
+    },
+    {
+      "address": "0x3f8",
+      "time": 110,
+      "op": 92,
+      "mask": 255,
+      "args": [
+        "\"Sub2\"",
+        0.0,
+        0.0,
+        9000,
+        -2,
+        10
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub1",
+      "operand_bytes_verified": false,
+      "instruction_hex": "6e0000005c00240000ff000002000000000000000000000028230000feffffff0a000000"
+    },
+    {
+      "address": "0x4ac",
+      "time": 110,
+      "op": 92,
+      "mask": 255,
+      "args": [
+        "\"Sub2\"",
+        0.0,
+        0.0,
+        9000,
+        -2,
+        10
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub1",
+      "operand_bytes_verified": false,
+      "instruction_hex": "6e0000005c00240000ff000002000000000000000000000028230000feffffff0a000000"
+    },
+    {
+      "address": "0x5b0",
+      "time": 0,
+      "op": 55,
+      "mask": 255,
+      "args": [
+        12
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "000000003700100000ff00000c000000"
+    },
+    {
+      "address": "0x5c0",
+      "time": 0,
+      "op": 80,
+      "mask": 255,
+      "args": [
+        16
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "000000005000100000ff000010000000"
+    },
+    {
+      "address": "0x5d0",
+      "time": 0,
+      "op": 77,
+      "mask": 255,
+      "args": [
+        24.0,
+        24.0
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "000000004d00140000ff00000000c0410000c041"
+    },
+    {
+      "address": "0x5e4",
+      "time": 0,
+      "op": 160,
+      "mask": 255,
+      "args": [
+        30
+      ],
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sub": "Sub2",
+      "operand_bytes_verified": true,
+      "instruction_hex": "00000000a000100000ff00001e000000"
+    }
+  ],
+  "runtime": {
+    "cards": [
+      {
+        "active": {
+          "age": 8,
+          "can_cancel": true,
+          "card_frame": 158,
+          "delta": 0.01976,
+          "has_tb": false,
+          "speed": 0.001,
+          "wait": 159
+        },
+        "cancel_probe_age": 190,
+        "first_bullet_birth": 150,
+        "id": 3600,
+        "initial_wait": 160,
+        "ordinary_cancel_reaches_Kill": true,
+        "wait_trace": [
+          {
+            "age": 166,
+            "card_frame": 316,
+            "expected_speed": 0.001,
+            "speed": 0.001,
+            "wait": 1
+          },
+          {
+            "age": 167,
+            "card_frame": 317,
+            "expected_speed": 0.001,
+            "speed": 0.001,
+            "wait": 0
+          },
+          {
+            "age": 168,
+            "card_frame": 318,
+            "expected_speed": 0.001,
+            "speed": 0.02076,
+            "wait": 0
+          },
+          {
+            "age": 169,
+            "card_frame": 319,
+            "expected_speed": 0.02076,
+            "speed": 0.04052,
+            "wait": 0
+          },
+          {
+            "age": 170,
+            "card_frame": 320,
+            "expected_speed": 0.04052,
+            "speed": 0.06028,
+            "wait": 0
+          }
+        ]
+      },
+      {
+        "first_infield_despawn": {
+          "age": 167,
+          "alive_at_frame_end": false,
+          "card_frame": 288,
+          "despawning": false,
+          "in_playfield": true,
+          "native_death_effect": false,
+          "pool_slot": 2,
+          "pool_slot_reusable": true,
+          "speed": 0.01,
+          "transform_index": 5,
+          "type": 3,
+          "x": -43.759418516318,
+          "y": -69.446917648099
+        },
+        "id": 3616
+      },
+      {
+        "first_infield_despawn": {
+          "age": 448,
+          "alive_at_frame_end": false,
+          "card_frame": 529,
+          "color": 15,
+          "despawning": false,
+          "in_playfield": true,
+          "native_death_effect": false,
+          "pool_slot": 2,
+          "pool_slot_reusable": true,
+          "speed": 0.01,
+          "transform_index": 8,
+          "type": 3,
+          "x": -92.653089816941,
+          "y": -3.816039702855
+        },
+        "id": 3619
+      },
+      {
+        "first_infield_despawn": {
+          "age": 327,
+          "alive_at_frame_end": false,
+          "card_frame": 712,
+          "color": 4,
+          "despawning": false,
+          "in_playfield": true,
+          "native_death_effect": false,
+          "pool_slot": 332,
+          "pool_slot_reusable": true,
+          "speed": 0.901,
+          "transform_index": 6,
+          "type": 3,
+          "x": -128.00000955906,
+          "y": 18.030999999998
+        },
+        "id": 3620
+      },
+      {
+        "checkpoints": [
+          {
+            "card_frame": 85,
+            "vm": 37
+          },
+          {
+            "card_frame": 205,
+            "vm": 42
+          },
+          {
+            "card_frame": 235,
+            "vm": 42
+          }
+        ],
+        "child_birth_frames": [
+          85,
+          85,
+          205,
+          205
+        ],
+        "expected_script": 135,
+        "expected_vm": 38,
+        "id": 4442,
+        "seen_vm_ids": [
+          37,
+          39,
+          40,
+          41,
+          42
+        ],
+        "set_script_calls": [
+          {
+            "card_frame": 0,
+            "script": 134
+          },
+          {
+            "card_frame": 145,
+            "script": 137
+          },
+          {
+            "card_frame": 175,
+            "script": 139
+          },
+          {
+            "card_frame": 405,
+            "script": 136
+          },
+          {
+            "card_frame": 435,
+            "script": 138
+          }
+        ]
+      }
+    ],
+    "clock": "card.init后，第一次task.Do记作卡内t=0；age是弹体frame调用次数"
+  },
+  "familiar_runtime": {
+    "doll_count": 16,
+    "form_trace": [
+      {
+        "halo_youkai": true,
+        "layer": -600,
+        "slow": 1,
+        "youkai": true
+      },
+      {
+        "halo_youkai": false,
+        "layer": -600,
+        "slow": 0,
+        "youkai": false
+      }
+    ],
+    "halo_omega_z": [
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988,
+      -0.05235988
+    ],
+    "hide_script_60": 0,
+    "human_hit": {
+      "color2": [
+        255,
+        255,
+        255
+      ],
+      "damage": 10,
+      "guard": false,
+      "secondary": false
+    },
+    "id": 364,
+    "layer_before": -600,
+    "original_spell_number": 218,
+    "sound_count_during_form_change": 0,
+    "sounds_during_form_change": {},
+    "unhide_script_59": 0
+  }
+}
