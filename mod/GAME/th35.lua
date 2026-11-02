@@ -1,3 +1,4 @@
+OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 ---=====================================
 ---TH35  东方风神录（TH10）六面 BOSS 八坂神奈子 —— 最后一张符卡
 ---  原作 = `[th10] 东方风神录/data/stage06.ecl`（本机在 thtkGUI-th20tr 包里）。
@@ -31,8 +32,8 @@
 ---
 ---这张卡在干什么（自然语言版）
 ---  · 开场 90 帧：BOSS 从上一张卡的高度降到本卡高度（原作 movePosTime(90, 4, 0, 160)）。
----    t=90 亮符卡（setChapter(47) + spell(93,…)），t=150 开始出弹 ⇒ 本文件 init 从原作
----    t=90 起算，init 内 t=60 = 原作 t=150。
+---    t=90 亮符卡（setChapter(47) + spell(93,…)），t=150 开始出弹；本文件 init 从原作
+---    t=0 起算，移动、无敌窗口、发弹和9000帧时限共用同一个起点。
 ---  · t=150：生成 6 颗**装饰卫星**。每颗 = 两路圆运动叠加（偏移圆 + 基准圆），两个圆心
 ---    都跟着 BOSS（卫星线程每帧 `moveAdd(BOSS_X, BOSS_Y)` 把偏移圆的圆心钉在 BOSS 上），
 ---    半径从 0 每帧 +2（4 号那三颗 +1），角速度 0.0052359877 / 0.05235988 弧度/帧
@@ -59,9 +60,9 @@
 ---  位置 `m.y − r·sin θ`，方向 `−θ × RAD`（引擎的 rot / SetV 是角度制、y 朝上）。
 ---
 ---与原作的不同（代码里按「差异 N」引用）
----  1  BOSS 入场用 task.MoveTo + VALUE_SET.DECEL 代理原作 movePosTime(90, 4, 0, 160)：
----     原作 mode 4 的曲线本仓库没有反编译（EnemyEvaluatePositionInterpolation 未复原），
----     DECEL 是同类入场曲线里最接近的（th30/th32 的 BOSS 入场也用 DECEL）。
+---  1  BOSS 入场用 task.MoveTo + VALUE_SET.DECEL 实现原作 movePosTime(90, 4, 0, 160)：
+---     th10/src/AnmManager.cpp 的 CalculateAnmInterpolation(mode=4) 为1-(1-u)^2，
+---     与 Ltask.lua 的 DECEL（2u-u²）相同；不再把它记为未知曲线的代理。
 ---     起点 = 上一张卡把 BOSS 留在的高度（原作 y=144 ⇒ 我们 80），终点 = 原作 y=160 ⇒ 我们 64。
 ---  2  弹样式用本仓库最接近的原生贴图代理：原作 `etSprite(0, 6, $I0)` 的 type 6
 ---     对应 `square`。轮廓与颜色组对齐，但不是逐像素相同（见 `T10_STYLE`）。
@@ -80,8 +81,8 @@
 ---  8  道具掉落（原作 t=0 的 dropClear / dropExtra(1,46) / dropExtra(2,20) /
 ---     dropArea(48,48) / dropItems）不建模，沿用引擎默认。
 ---  9  符卡计时：t1 = t2 = 2.5 s = 原作 150 帧的无敌窗口（setInvuln(90) + setInvuln(60)）；
----     t3 = 151.5 s = 原作 150 s 时限 + 入场的 1.5 s。注意本仓库 t1/t2/t3 从 init 起算，
----     而入场（90 帧）在 before 里，这里按「从 BOSS 开始下降算起」计时。
+---     t3 = 150 s；移动、发弹与符卡计时从同一个init起点开始。
+---     前90帧下降，再等待60帧；第150帧生成卫星和第一组枪。
 --- 10  难度：原作用 spell / spell3（难度掩码 !EN / !HL）把 E/N/H/L 四行串在同一个子程序里
 ---     （F = 0.007/0.013/0.014/0.017 与 0.007/0.014/0.016/0.019；$B = 140/120/100/50；
 ---     I3 = 0/4/8/12；Easy 另有分支（只在 at2：$G 减半、每发多等 1 帧、$I2 每发多减 1、
@@ -165,27 +166,9 @@ local LEVEL = 33                    -- = core.lua 的 STAGE_COUNT + 1，见文�
 local CARD_ID = 3600
 local MAX_LIFE = 8200               -- 原作 lifeSet(8200)（差异 9）
 
---- 有限血量卡按“原作所有自机形态中最快的活跃 TTK × 移植版灵梦 DPS(115.5)”重算；
---- 保护窗口仍由 t1/t2 单独实现，不重复扣进 HP。耐久卡不在此表。
-local TH35_REIMU_HP = {
-    [ 3601] =  941, [ 3660] =  549, [ 3602] =  984, [ 3661] =  549,
-    [ 3603] =  898, [ 3662] =  549, [ 3604] =  984, [ 3670] =  844,
-    [ 3663] =  591, [ 3605] = 1069, [ 3664] =  591, [ 3606] = 1069,
-    [ 3665] =  591, [ 3608] =  984, [ 3651] =  591, [ 3609] =  984,
-    [ 3610] =  984, [ 3611] =  984, [ 3652] =  675, [ 3612] = 1198,
-    [ 3653] =  675, [ 3613] = 1540, [ 3654] =  675, [ 3614] = 1198,
-    [ 3655] =  675, [ 3615] = 1540, [ 3656] =  675, [ 3616] = 1497,
-    [ 3657] =  675, [ 3617] = 1497, [ 3658] =  675, [ 3618] = 1925,
-    [ 3659] =  675, [ 3666] =  760, [ 3667] =  760, [ 3668] =  844,
-    [ 3669] =  760, [ 3622] = 1069, [ 3623] = 1069, [ 3624] = 1241,
-    [ 3625] = 1369, [ 3642] =  355, [ 3630] =  706, [ 3643] =  507,
-    [ 3631] =  941, [ 3644] =  507, [ 3632] =  941, [ 3633] =  984,
-    [ 3645] =  532, [ 3634] = 1155, [ 3646] =  675, [ 3635] = 1155,
-    [ 3636] = 1155, [ 3647] =  844, [ 3637] = 1241, [ 3648] =  844,
-    [ 3638] = 1027, [ 3649] =  675, [ 3639] = 1027, [ 3650] =  675,
-    [ 3640] = 1027, [ 3641] = 1283, [ 3619] = 4278, [ 3620] = 4278,
-    [ 3621] = 4278, [ 3600] = 3508,
-}
+--- 有限血量卡按“原作各机体低速形态的活跃 TTK 中位数 × 移植版灵梦 DPS(115.5)”重算；
+--- 全免和 1/9 减伤由 OriginalBalance.factor 独立执行，不重复扣进 HP。耐久卡不在此表。
+local TH35_REIMU_HP = OriginalBalance.cards[10]
 
 ---弹（BossCard5_atN / at2 共用）
 local BULLET_TYPE = 6               -- 原作 etSprite(0, 6, $I0) 的 type 6 → `square`
@@ -384,7 +367,7 @@ class["th35_sat"] = Class(object, {
 ---=====================================
 boss.Define("1a", "八坂神奈子", "TH10_2", TH10_bg, { 0, 80 }, nil, "Kanako", LEVEL)
 
-local card = boss.card.New(CARD_NAME, 2.5, 2.5, 151.5,
+local card = boss.card.New(CARD_NAME, 2.5, 2.5, 150,
                            TH35_REIMU_HP[CARD_ID] or MAX_LIFE)
 
 function card:before()
@@ -399,13 +382,14 @@ function card:before()
     else
         self.x, self.y = 0, 80
     end
-    -- 原指令的 x 目标同样是 0；保留 self.x 会让斜向归位被错误改成竖直移动。
-    task.MoveTo(0, 64, 90, VALUE_SET.DECEL)
 end
 
 function card:init()
     local boss_obj = self
     task.New(self, function()
+        -- BossCard5的9000帧计时包含t=0的90帧移动。
+        -- before中提前移动会让发弹时序、全免时间与超时各自错开。
+        task.MoveTo(0,64,90,VALUE_SET.DECEL)
         ---原作 t=90 → t=150：亮符卡（setChapter(47) + spell(93,…) + anmPlay(0,409)）
         ---与 setInvuln(60) 由本仓库的符卡流程 / 差异 9 的计时参数接管，这里只等 60 帧。
         task.Wait(60)
@@ -2280,7 +2264,7 @@ local function s4_BossCard4_at3(o) return s4_BossCard4_spin(o, 2, -1) end
 
 local function s4_BossCard4(o)
     t10_enm_kill_all(o)                        -- enmKillAll()
-    -- 原作 $DIFF≥1 的分支：enmCreate("Ecl_EtBreak", …)（「清弹载体」，本版没有）。
+    -- jmpEq 只在栈值为0时跳转；Lunatic的$DIFF≥1为真，走90帧入场而不走清弹载体分支。
     -- 入场：movePos(−216,160) → movePosTime(90,4,0,128) → wait(90)（90 帧滑到 (0,128)）；
     -- _476 组的 movePosTime(60,4,0,128) 起点已是终点，纯属重复。
     m_pos(o, "off", -216.0, 160.0)              -- movePos(−216, 160)：从左侧入场
@@ -4373,7 +4357,7 @@ local T10_CARDS = {
     ---stage03 BOSS 河城荷取（L 行的相序）：非符一 → 漂溺 → 非符二 → 水符 → 非符三 → 河童。
     ---  非符的 HP = 该相 lifeSet − setInterrupt 阈值（Boss1 8800−2300、Boss2 8600−2100、
     ---  Boss3 8800−2300，一律 6500）；非符的 t1/t2 = setInvuln/60（Boss1 走 Boss() 的 60 ⇒ 1）。
-    { s3n.Boss1,     "",                                        "3a", 3660, 1,       1,       3600 / 60, 6500, "stage03 非符一" },
+    { s3n.Boss1,     "",                                        "3a", 3660, 0,       0,       3600 / 60, 6500, "stage03 非符一" },
     { s3_BossCard1,  "漂溺「光り輝く水底のトラウマ」",           "3a", 3602, 1,       1,       3600 / 60, 8800 },
     { s3n.Boss2,     "",                                        "3a", 3661, 1,       1,       3600 / 60, 6500, "stage03 非符二" },
     { s3_BossCard2,  "水符「河童の幻想大瀑布」",                 "3a", 3603, 1,       1,       3600 / 60, 8600 },
@@ -4386,13 +4370,13 @@ local T10_CARDS = {
     ---stage04 BOSS 射命丸文（L 行的相序）：非符一 → 岐符 → 非符二 → 風神 → 非符三 → 無双風神 → 塞符。
     ---  非符的 HP = Boss() 的 lifeSet 9500 − setInterrupt 阈值 2500 = 7000（Boss3 是
     ---  lifeSet 7000 − 阈值 0 = 7000）；Boss3 的 setInvuln(120) ⇒ t1 = t2 = 2。
-    { s4n.Boss1,     "",                                        "4a", 3663, 1,       1,       3600 / 60, 7000, "stage04 非符一" },
+    { s4n.Boss1,     "",                                        "4a", 3663, 0,       0,       3600 / 60, 7000, "stage04 非符一" },
     { s4_BossCard1,  "岐符「サルタクロス」",                     "4a", 3605, 1,       1,       3600 / 60, 9500 },
     { s4n.Boss2,     "",                                        "4a", 3664, 1,       1,       3600 / 60, 7000, "stage04 非符二" },
     { s4_BossCard2,  "風神「二百十日」",                         "4a", 3606, 5,       5,       3600 / 60, 9500 },
     { s4n.Boss3,     "",                                        "4a", 3665, 2,       2,       3600 / 60, 7000, "stage04 非符三" },
     { s4_BossCard3,  "「無双風神」",                             "4a", 3607, 18,      18,      1080 / 60, 2301 },
-    { s4_BossCard4,  "塞符「天上天下の照國」",                   "4a", 3608, 8,       8,       4200 / 60, 2300 },
+    { s4_BossCard4,  "塞符「天上天下の照國」",                   "4a", 3608, 390 / 60, 390 / 60, 4200 / 60, 2300 },
 }
 
 ---主协程跑在 BOSS 的载体（th10_ecs_pod）上：每帧把 BOSS 钉在原作 ECL 的位置上。
@@ -5265,7 +5249,7 @@ end
 
 class["th10_midfairy"] = Class(enemy, {
     init = function(self, hp, x, y, mirror, drop, beh, src, inv)
-        enemybase.init(self, hp, true)          -- nontaijutsu ⇒ GROUP.NONTJT：能打、撞自机不掉血
+        enemybase.init(self, hp, false)         -- 原作普通妖精同时有受弹框和体术框；具体脚本可关体术。
         self.img = "servant"
         self.hscale, self.vscale = 0.6, 0.6
         self.colli = true
@@ -5295,7 +5279,7 @@ class["th10_midfairy"] = Class(enemy, {
         local wx, wy = t10mid.pos(self)
         if not self.seen then                   -- 进过场才算「出屏」基准
             if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
-        elseif wx < -240 or wx > 240 or wy < -280 or wy > 280 then
+        elseif not self.t10_no_oob and (wx < -240 or wx > 240 or wy < -280 or wy > 280) then
             t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
             return
         end
@@ -5450,7 +5434,7 @@ end
 ---的行走图系统，所以自己写 frame/render（对照 th31.lua 的「道中搬运卡」）。
 class["th10_s6fairy"] = Class(enemy, {
     init = function(self, hp, x, y, mirror, drop, sub, src)
-        enemybase.init(self, hp, true)          -- nontaijutsu ⇒ GROUP.NONTJT：能打、撞自机不掉血
+        enemybase.init(self, hp, false)         -- 原作普通妖精同时有受弹框和体术框。
         self.img = "servant"
         self.hscale, self.vscale = 0.6, 0.6
         self.colli = true
@@ -5480,7 +5464,7 @@ class["th10_s6fairy"] = Class(enemy, {
         local wx, wy = s6mid.pos(self)
         if not self.seen then                   -- 进过场才算「出屏」基准
             if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
-        elseif wx < -240 or wx > 240 or wy < -280 or wy > 280 then
+        elseif not self.t10_no_oob and (wx < -240 or wx > 240 or wy < -280 or wy > 280) then
             t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
             return
         end
@@ -5601,13 +5585,15 @@ end
 ---Girl00 / BGirl00：纯占位妖精（**不出弹**）。
 ---moveCircleRel(%F0, %F1, 0, 1.5) 起旋 → +40 半径冻结 → +100 朝自机 → +160 减速到 2。
 s6mid.BEH.girl00 = function(f)
+    f.t10_no_oob=true                           -- flagSet(36) 中的位4暂缓出屏回收。
     s6mid.circle(f, f.F0, f.F1, 0.0, 1.5)
     task.Wait(40)                                   -- +40
     s6mid.circle(f, -999999, f.F1, -999999, 0.0)    -- 半径冻结（角速度继续）
     task.Wait(60)                                   -- +60 → //100
     s6mid.vel(f, t10_angle_player(f), 0.0)          -- moveVel(%ABS_ANGLE_PLAYER, 0)
     s6mid.vel_time(f, 60, 0, -999999, 2.0)
-    -- +60 flagClear(4)：无效果。
+    task.Wait(60)
+    f.t10_no_oob=false                          -- t=160 flagClear(4)。
 end
 
 ---Girl02：MainSub5 末尾在锚点 (0,0) 处 enmCreate ⇒ 落点 (0,−24)。
@@ -6424,12 +6410,17 @@ end
 ---Girl00C：−3π/8 方向斜插、速度 8；+20 起 120 帧转到正下方、同时起 RGirl00C_at；
 ---+140 起 60 帧（ease-in）转到 π/4、速度 1.0。入场 100 帧无敌。
 t10mid.s03.g00c = function(f)
+    f.group=GROUP.NONTJT                       -- flagSet(6) 的位2先关闭体术，不关闭受弹。
+    f.t10_no_oob=true                          -- 同时保留位4的离屏保护至t=460。
     t10mid.vel(f, -1.1780972, 8.0)
     task.Wait(20)
     t10mid.vel_time(f, 120, 4, 1.5707964, 0.0)
     task.New(f, function() t10mid.s03.rg00c_at(f) end)
     task.Wait(120)
+    f.group=GROUP.ENEMY                        -- t=140 flagClear(2)。
     t10mid.vel_time(f, 60, 1, 0.7853982, 1.0)
+    task.Wait(320)
+    f.t10_no_oob=false
     while true do task.Wait(6000) end
 end
 
@@ -7989,12 +7980,14 @@ end
 
 ---Cir00：t=30 朝下速 4.0；t=60 起 60 帧内把角转到 0（速度保持 4.0）。
 t10mid.s07.cir00 = function(f)
+    f.t10_no_oob=true
     task.New(f, function() t10mid.s07.cir00_at(f) end)
     task.Wait(30)
     t10mid.vel(f, 1.5707964, 4.0)
     task.Wait(30)
     t10mid.vel_time(f, 60, 0, 0.0, 4.0)
     task.Wait(60)
+    f.t10_no_oob=false                          -- t=120 flagClear(4)。
 end
 
 ---Cir00b_at：先等 10 帧（整个 pattern 都在这一刻配好）；之后每 15 帧一发：
@@ -8016,11 +8009,13 @@ end
 
 ---Cir00b：朝左速 2.0；+120 起 60 帧内把角转到 0。
 t10mid.s07.cir00b = function(f)
+    f.t10_no_oob=true
     task.New(f, function() t10mid.s07.cir00b_at(f) end)
     t10mid.vel(f, -1.5707964, 2.0)
     task.Wait(120)
     t10mid.vel_time(f, 60, 0, 0.0, 2.0)
     task.Wait(60)
+    f.t10_no_oob=false                          -- t=180 flagClear(4)。
 end
 
 ---Cir00c_at：与 Cir00b_at 同一条，唯每发间隔 20 帧。
@@ -8041,11 +8036,13 @@ end
 
 ---Cir00c：朝左速 2.0；+120 起 60 帧内把角转到 −π/4。
 t10mid.s07.cir00c = function(f)
+    f.t10_no_oob=true
     task.New(f, function() t10mid.s07.cir00c_at(f) end)
     t10mid.vel(f, -1.5707964, 2.0)
     task.Wait(120)
     t10mid.vel_time(f, 60, 0, -0.7853982, 2.0)
     task.Wait(60)
+    f.t10_no_oob=false                          -- t=180 flagClear(4)。
 end
 
 ---========================= Girl 系（俯冲妖精） =========================
@@ -9008,7 +9005,8 @@ function s1.BossCard2At1b(o)
     local step = 6.2831855 / cnt
     for _ = 1, cnt do
         et_offset(o, 0, 0.0, 0.0)
-        t10_laser_on(o, 3, 2, ang, 20.0, 0.0, 180.0, 0.0, 14.0)
+        -- [20.0f] 是局部变量地址；diffF([20],1.4,1.4,2,2.5) 的 L 行为 2.5。
+        t10_laser_on(o, 3, 2, ang, 2.5, 0.0, 180.0, 0.0, 14.0)
         ang = t10_wrap(ang + step)
     end
 end
@@ -10374,7 +10372,8 @@ function s5.BossCard3Dummy4(o) s5_boss3_dummy(o, 5, 2, 2, 48.0, 3, -1, 0.1309) e
 
 ---=====================================
 ---卡 3641　大奇跡「八坂の神風」（BOSS 東風谷早苗 - 4；卡内 lifeSet(3000)）
----  原作 BossCard4 / _at / _at2。t=150 起：一只 at2 常态弹幕 + 每轮两发 at 旋臂。
+---  原作 BossCard4 / _at / _at2：t=0无敌90帧，t=90再写60帧，合计到t=150。
+---  t=150 起：一只 at2 常态弹幕 + 每轮两发 at 旋臂。
 function s5.BossCard4(o)
     t10_kill_async(o)
     t10_enm_kill_all(o)
@@ -10895,15 +10894,15 @@ boss.Define("9a", "東風谷早苗", "TH10_2", TH10_bg, { 0, 80 }, nil, "Sanae",
 local T10_CARDS_S125 = {
     ---stage01：静葉中 BOSS = 非符(4200)→葉符(1650)；穣子 = 非符1(6000)→秋符(2200)→
     ---  非符2(6000)→豊作(2200)。血量一律按原作「进场 life − 收尾阈值」。
-    { s1.MBoss,      "",                              "6a", 3642, 1, 1, 1560 / 60, 4200, "stage01 中BOSS 非符" },
+    { s1.MBoss,      "",                              "6a", 3642, 2 / 60, 2 / 60, 1560 / 60, 4200, "stage01 中BOSS 非符" },
     { s1.MBossCard1, "葉符「狂いの落葉」",            "6a", 3630, 1, 1, 2160 / 60, 1650 },
-    { s1.Boss1,      "",                              "7a", 3643, 1, 1, 2700 / 60, 6000, "stage01 非符一" },
+    { s1.Boss1,      "",                              "7a", 3643, 0, 0, 2700 / 60, 6000, "stage01 非符一" },
     { s1.BossCard1,  "秋符「秋の空と乙女の心」",      "7a", 3631, 1, 1, 2700 / 60, 2200 },
     { s1.Boss2,      "",                              "7a", 3644, 1, 1, 2700 / 60, 6000, "stage01 非符二" },
     { s1.BossCard2,  "豊作「穀物神の約束」",          "7a", 3632, 1, 1, 2700 / 60, 2200 },
     { s2.MBossCard1, "厄符「厄神様のバイオリズム」", "8a", 3633, 1, 1, 2400 / 60, 2300 },
     ---Boss1 非符：进场 life 9000（Boss() 的 lifeSet）− 收尾阈值 2700 = 6300。
-    { s2.Boss1,      "",                              "8a", 3645, 1, 1, 2700 / 60, 6300, "stage02 非符一" },
+    { s2.Boss1,      "",                              "8a", 3645, 0, 0, 2700 / 60, 6300, "stage02 非符一" },
     ---疵痕、悲運、創符三张符卡的血量原写成 13400（= Boss2 的 lifeSet），按换卡规则
     ---  「进场 life − 收尾阈值」应为 2700 / 2700 / 2700。
     { s2.BossCard1,  "疵痕「壊されたお守り」",       "8a", 3634, 1, 1, 2700 / 60, 2700 },
@@ -10927,7 +10926,7 @@ local T10_CARDS_S125 = {
     { s5.BossCard2,  "開海「モーゼの奇跡」",         "9a", 3639, 60 / 60,  60 / 60,  4200 / 60, 2400 },
     { s5.Boss3,      "",                              "9a", 3650, 100 / 60, 100 / 60, 4200 / 60, 8000,  "stage05 非符三" },
     { s5.BossCard3,  "準備「サモンタケミナカタ」",   "9a", 3640, 60 / 60,  60 / 60,  4200 / 60, 2400 },
-    { s5.BossCard4,  "大奇跡「八坂の神風」",         "9a", 3641, 90 / 60,  90 / 60,  4200 / 60, 3000 },}
+    { s5.BossCard4,  "大奇跡「八坂の神風」",         "9a", 3641, 150 / 60,  150 / 60,  4200 / 60, 3000 },}
 
 ---★ 子机的 %BOSS_X / %BOSS_Y（原作 specialEnemySlots[0] 的世界坐标）走 t10_bossref：
 ---  主 BOSS 的载体在这里登记，s_pod 再把它复制给每一只子机。

@@ -89,6 +89,7 @@ function R.draw(seed,width)
     return cards
 end
 function R.start(variant)
+    StopMusic('SCORE')
     variant=variant or 'single';local config=assert(R.modes[variant]);lstg.var.rogue_variant=variant
     lstg.var.current_system=''
     stage.group.Start(stage.groups[config.name])
@@ -267,6 +268,10 @@ local function register(variant,config)
         local again=menu:keyYes() or (mouse:isDown(1) and overButton(mouse.x,mouse.y,495,660))
         if back then stage.group.ReturnToTitle(true,self.run.won and 1 or 0)
         elseif again then R.start(self.run.mode) end
+    end
+    -- SCORE 是全局资源，切场景不会卸载它；返回标题、重开和外部切场都须停播。
+    function result:del()
+        StopMusic('SCORE')
     end
     function result:render()
         SetViewMode('ui');RenderClear(Color(255,12,21,36))

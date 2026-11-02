@@ -1,3 +1,5 @@
+OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
+TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---=====================================
 ---TH34  东方妖妖梦（TH07）第 6 关道中 —— 成群亡灵
 ---
@@ -44,7 +46,7 @@
 ---    · 两层的 v 与基准角是**同一个**（都由那一条 op67 读一次）
 ---  子弹是**直线弹**：从出生点算起固定角度、飞出去就不管自机了（不瞄自机）。
 ---  颜色按漂移方向分：**向右的蓝、向左的红**（原作 spriteOffset 6 / 2 两种箭头色）。
----  小怪血 16（原作 80，但那是原作的伤害口径，见下面 GHOST_HP 的换算）、
+---  小怪原作 life 为 80，初始化后按低速中位数口径换算、
 ---  无体术判定（碰到自机不掉血，原作 HAS_CONTACT_HITBOX 0）。
 ---  被击破时原地留一团**残火**（120 帧，向上飘 150 px 后消失），掉 1~2 个道具
 ---  （原作 itemdrop 0=小能量 1=点 2=大能量；本仓库没有能量类道具，见差异 4）。
@@ -93,9 +95,8 @@
 --- 14  原作一条 op67 一次生完「5 + 5」两层，移植版按引擎的双重循环顺序生（层先、环后）——
 ---     同一轮的弹共用一个基准角/速度，看不出差别。
 --- 15  时间轴 t 从**卡开始**算（原作 t=720 映射成 0）。
---- 16  小怪血量按**本仓库的伤害口径**重新折算成 16（原作 80）—— 原作的 80 是
----     第 5/6 面「非 boss 伤害 ÷2 + 单帧上限 70」口径下的值，本仓库的灵梦输出只有它
----     的约 1/5。推导写在 `GHOST_HP` 那里。
+--- 16  小怪保留原始 life=80，按各低速机体活跃 TTK 中位数换算到本项目灵梦。
+---     原作道中分面减伤只作用于高速灵梦 A，不用于此次低速取样。
 ---
 ---本卡的弹幕、时间轴、掉道具与丢弹规则都照 ECL 原样；同屏对象/弹数由引擎的
 ---对象池与 1024 弹槽上限自然决定。
@@ -165,10 +166,7 @@
 ---  最后一只在 t=6622 出现，它的那一圈在 t=6756 打完。
 ---
 ---与原作的不同（承上面那张卡的编号继续排）
----  17  血量按**这一关的伤害系数**重算：原作第 4 面非 boss 是 ×(1−1/4−1/16) = 0.6875
----      （EnemyManager.cpp:820-845；只有第 5/6 面才是 ÷2），按灵梦 DPS 比
----      （本仓库 106.4 / 原作 744.6）折 life × 0.1429 ⇒ 10→1、100→14、300→43、
----      400→57、500→71（见 `hp4`）。
+---  17  血量按各低速机体的活跃 TTK 中位数统一换算，见 original/low_speed_hp.lua。
 ---  18  不做 rank 缩放：原作 `SET_SHOOT_INTERVAL_RAND` 会按 rank 加减 `shootInterval/5`
 ---      （Lunatic 的 rank 在 10..32 之间漂，间隔会在 16~24 之间抖），本仓库没有 rank，
 ---      固定用时间轴里的值 20 帧；count/speed 的 rank 分支本来就被符卡阶段跳过。
@@ -235,10 +233,7 @@
 ---    · sub 12 t=120/180/240 三连 RANDOM（角 = 自机角 + rand(−c,+c)、速 = rand[v2,v1)）。
 ---
 ---与原作的不同（接着上面第 4 面卡的编号继续排）
----  31  血量按**这一关的伤害系数**重算。原作非 boss 的伤害折扣只给第 4/5/6 面
----      （EnemyManager.cpp:820-845），第 3 面**没有**减伤 ⇒ 同样 life 的杂鱼要比
----      第 4/5 面多折一半血：life × 0.09825（= hp5 的 0.1965 × 0.5），保底 1 点，
----      见 `hp3`。⇒ 30→3、50→5、80→8、150→15。
+---  31  血量按各低速机体的活跃 TTK 中位数统一换算，见 original/low_speed_hp.lua。
 ---  其余（不做 rank、色档/弹型代理、弹池 1024、道具折叠、贴图代理、不清理）都沿用
 ---  上面的差异 3/18/19/20/23/25。
 ---==================== 第 5 面道中（第四张「道中搬运卡」，2026-09-29 增补） ====================
@@ -282,10 +277,7 @@
 ---  最后一只（载体 35）在 t=5713 出生、本体 t=5793 起用 122 帧飞走。
 ---
 ---与原作的不同（接着上面第 3 面卡的编号继续排）
----  32  血量按**这一关的伤害系数**重算。原作第 5/6 面非 boss 的伤害是 ÷2
----      （EnemyManager.cpp:820-845），按灵梦 DPS 比 106.4 / 541.5 折 life × 0.1965，
----      保底 1 点 ⇒ 80→16、110→22、160→31、200→39，见 `hp5`。第 3 面的 hp3、
----      第 4 面的 hp4 都从这同一个 0.1965 再乘各自系数。
+---  32  血量按各低速机体的活跃 TTK 中位数统一换算，见 original/low_speed_hp.lua。
 ---  33  INIT_BULLET_CMD 的**命令门控**。原作 enemy 的 `bulletProps.commands[]` **只在
 ---      出生时重置一次**（EnemyManager.cpp:401，另一次在 callbacks 前 :1033），所以
 ---      INIT_BULLET_CMD 写进 commands[0] 的东西会**一直留着**，后续每一轮齐射都带
@@ -360,7 +352,7 @@
 ---  画面上方斜插进来，先 60 帧下滑，再按 `MOVE_DIR_TIME(40, eas 4, θ, 0.8)` 折两次
 ---  （各位移 32 px），最后 `MOVE_DIR_TIME(0,0,θ,2)` 直线飞出；t=60 打一轮 2×n 或 1×1 的
 ---  自机狙扇（张角 45° 或 5.625°、速度∈[1.2,4.4]）。13/14/15 没有折线，只有 t=110 的收尾。
----  t=4162/4322/4482/4642 的是**大妖精**（sub 16/17，life 300、score 2000）：80 帧下滑
+---  t=4162/4322/5485/4642 的是**大妖精**（sub 16/17，life 300、score 2000）：80 帧下滑
 ---  200 px，t=90 起朝自机方向打 8 轮旋转扇（每轮 2×5 = 10 发、每 2 帧一轮），t=142 收尾
 ---  向下；两条 sub 的扇股转法相反（一条 SUB_FLOAT、一条 ADD_FLOAT）。
 ---
@@ -368,9 +360,7 @@
 ---  life 1、score 300），x 从 32 扫到 352 再扫回来 —— 纯过场小怪、不出弹，出生后 2000 帧自毁。
 ---
 ---与原作的不同（接着上面第 5 面卡的编号继续排）
----  37  血量按**这一关的伤害系数**重算（同差异 31/32 的口径）。原作第 1..3 面非 boss 没有
----      减伤（EnemyManager.cpp:820-845），按灵梦自机的 DPS 比 106.4 / 744.6 × 0.6875 折
----      `life × 0.09825`、保底 1 点 ⇒ 10→1、30→3、80→8、100→10、300→29，见 `hp1`。
+---  37  血量按各低速机体的活跃 TTK 中位数统一换算，见 original/low_speed_hp.lua。
 ---  38  贴图代理：原作 SET_ANM 0/5 是 stg1enm.anm 的两种妖精、10 是环妖精/长龙；移植版用
 ---      本仓库的 enemy1（32×32 小妖精）/ enemy5（48×32 妖精）两套 sprite（W1_STYLE_S = 1 /
 ---      W1_STYLE = 5），弹型统一用 grain_a 加色档代理（col16）。
@@ -437,8 +427,8 @@
 ---  ±0.05236 的本体角速度画弧，到 t=180 停（37/39 同帧把间隔置 0 停火），2180 帧后自毁。
 ---
 ---与原作的不同（接着上面第 1 面卡的编号继续排）
----  43  血量同第 1 面口径（差异 37 的 0.09825），见 `hp2` —— 第 2 面原作也没有非 boss 减伤。
----      种子的 life 一律 1（不可打，血量无意义）；打弹子体的 life 80 ⇒ 8 点血。
+---  43  血量沿用低速中位数口径，构造器保留原作 life，初始化包装器只换算一次。
+---      种子的 life 一律 1（不可打，血量无意义）；发弹子体的原始 life 为80。
 ---  44  贴图代理：原作 SET_ANM 13 = 会飘的种子、10 = 妖精、0/5 = 更小的杂鱼；移植版用本仓库
 ---      的 enemy_orb1（23，带光环的光球）/ enemy5（5，48×32 妖精）/ enemy1（1，32×32）当代理。
 ---  45  时间轴的 life 位是**随机位置的信号**：`JUMP_IF_EQ $10027(=LIFE), 9999` 命中时跳过
@@ -553,14 +543,9 @@ end
 ---所以：**本体**要能看见 ⇒ 幽灵用 31（红焰 + Ghost1，还自带一圈光环 aura1）；
 ---纯火焰（烟尘阶段、残火）用 27（只有焰、没身体）。两边都是红焰 ⇒ 一张卡一个色系。
 local GHOST_STYLE, PUFF_STYLE, FLAME_STYLE = 31, 27, 27
----★ 原作时间轴的 life 是 80（`EnemyManager.cpp:885` 里 life 就是血），但**不能直接搬**：
----原作对第 5/6 面的**非 boss** 敌人伤害要 ÷2（`EnemyManager.cpp:822-828`），
----且单帧伤害上限 70（`:836-839`）。按这个口径，原作满 P 的灵梦打这段杂鱼只有
----420（灵梦A）~714（灵梦B）DPS（TH07 `data/ply00*.sht` 的 128 档），而本仓库的灵梦
----是 96~117 DPS（`reimu.lua:43-62`，2 / 0.3 / 0.65）。等比折算
----80 × 106.4 / 541.5 ≈ 15.7 ⇒ 取 16，击杀耗时与原作一致（约 9 帧 / 0.15 秒）。
----不改的话是 50 帧（0.83 秒）才打死一只，手感上就是「打不死」。
-local GHOST_HP = 16
+---保留时间轴的原始 life；OriginalStageVisual.wrap_actor 在初始化后统一换算一次。
+---原作 4/5/6 面道中减伤分支仅限高速灵梦 A，不能混入这次低速机体取样。
+local GHOST_HP = 80
 local GHOST_INVUL = 10          -- 原作 ECL_SET_INVINCIBILITY_TIMER 10
 local PUFF_FRAMES = 80          -- 原作 sub 8 的 SUB_RET 落在 t=80
 local DRIFT_ACCEL = 0.02        -- 原作 ECL_SET_MOVE_ACCEL 0.02（匀加速，不是匀速）
@@ -927,10 +912,6 @@ local PI = math.pi
 ---整段只用「弧度 → 角度」这一个换算；方向（取反）按角度**集合**处理（见文件头差异 20）。
 local RAD2DEG = 180 / PI
 
----第 4 面非 boss 的血量折算（文件头差异 17）：life × 0.1429，保底 1 点。
-local function hp4(life)
-    return max(1, int(life * 0.1429 + 0.5))
-end
 
 ---原作同屏弹幕上限 1024（TH07 `BulletManager.hpp` 的 MAX_BULLETS）。
 ---丢弹规则与上一张卡一致：池满 ⇒ 整波不生；生到一半见底 ⇒ 丢剩下的；两条路径都响音效。
@@ -1274,7 +1255,9 @@ class["TH34_cmdbullet"] = Class(bullet, {
         cmdbullet_enter(self, self.c_stages and self.c_stages[1] or cmd)
     end,
     frame = function(self)
-        -- 真机在 frame 返回后统一积分；关卡只更新速度，不能为桩件挪动弹体。
+        -- 真机在 frame 返回后统一积分；弹雾末帧的额外半步只能保留一帧。
+        -- 没有激活运动命令时下一帧不会重算速度，必须先扣掉上一帧的额外量。
+        self.vx,self.vy=self.vx-self.c_spawn_extra_x,self.vy-self.c_spawn_extra_y
         self.c_spawn_extra_x,self.c_spawn_extra_y=0,0
         if self.c_spawn_left>0 then
             local sx,sy=self.c_spawn_vx/self.c_spawn_divisor,self.c_spawn_vy/self.c_spawn_divisor
@@ -1446,7 +1429,7 @@ end
 class["TH34_turret4"] = Class(enemy, {
     ---@param sub number 原作的子程序号 5/6/7/8（决定 sprite 0/3 与层间偏移角的符号）
     init = function(self, x, y, life, sub)
-        enemy.init(self, TUR4_STYLE, hp4(life), false, true, true)
+        enemy.init(self, TUR4_STYLE, life, false, true, true)
         self.x, self.y = x, y
         self.kind = sub
         self.a2 = TUR4_A2[sub]
@@ -1507,7 +1490,7 @@ end
 
 class["TH34_ghost4"] = Class(enemy, {
     init = function(self, x, y, life)
-        enemy.init(self, GH4_STYLE, hp4(life), false, true, false)
+        enemy.init(self, GH4_STYLE, life, false, true, false)
         self.x, self.y = x, y
         self.protect = true
         self.drop = { 0, 0, 1 }              -- itemdrop 1 = 点道具
@@ -1570,7 +1553,7 @@ end
 class["TH34_tank4"] = Class(enemy, {
     ---@param kind string "l"（sub13，spriteOffset 10）/ "r"（sub14，spriteOffset 13）
     init = function(self, x, y, life, kind)
-        enemy.init(self, TANK4_STYLE, hp4(life), false, true, true)
+        enemy.init(self, TANK4_STYLE, life, false, true, true)
         self.x, self.y = x, y
         self.y0 = y
         self.kind = kind
@@ -1701,7 +1684,7 @@ class["TH34_fairy4"] = Class(enemy, {
     ---@param kind string "a"（sub17）/ "b"（sub19）/ "c"（sub21）
     ---@param drop number 原作时间轴的 itemdrop（0 = 小能量 / 1 = 点）
     init = function(self, x, y, life, kind, drop)
-        enemy.init(self, FA4_STYLE, hp4(life), false, true, true)
+        enemy.init(self, FA4_STYLE, life, false, true, true)
         self.x, self.y = x, y
         self.kind = kind
         self.protect = true
@@ -1892,13 +1875,6 @@ end
 ---`ecldata3.ecl` 时间轴 0 的 t=450..3023 搬进来（子程序号 3/4/5/6=小怪、7..12=大幽灵）。
 local ball_big = ball_big
 
----第 3 面非 boss 的血量折算（文件头差异 31）：life × 0.09825，保底 1 点。
----0.09825 = 0.1965 × 0.5 / 1.0 —— 第 5/6 面非 boss 是 ÷2、第 3 面**没有**减伤
----（EnemyManager.cpp:820-845 只给 STAGE4 和 STAGE5/6 打折），所以同样 life 的杂鱼
----在第 3 面要多折一半血，击杀耗时才与原作一致（照 hp4 = 0.1965 × 0.5 / 0.6875 同一套折算）。
-local function hp3(life)
-    return max(1, int(life * 0.09825 + 0.5))
-end
 
 ---一次「波」（照 volley4，但带一个 plays 开关：flags 0x200 才响音效，
 ---第 3 面小怪的 flags=0x2 是**无声**的 spawn-fast）。
@@ -1996,7 +1972,7 @@ class["TH34_walker3"] = Class(enemy, {
     ---@param sub number 原作的子程序号 3/4/5/6
     ---@param mirror number 时间轴的 mirror 位（1 = 速度的 x 分量取反，原作 Enemy::Move）
     init = function(self, x, y, life, sub, mirror)
-        enemy.init(self, W3_STYLE, hp3(life), false, true, false)
+        enemy.init(self, W3_STYLE, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24           -- SET_HITBOX_SIZE 24,24,32
         self.kind, self.mirror = sub, mirror or 0
@@ -2116,7 +2092,7 @@ end
 class["TH34_bigghost3"] = Class(enemy, {
     ---@param sub number 原作的子程序号 7/8/9/11/12
     init = function(self, x, y, life, sub)
-        enemy.init(self, GH3_STYLE, hp3(life), false, true, false)
+        enemy.init(self, GH3_STYLE, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.kind = sub
@@ -2508,14 +2484,6 @@ end
 ---（第 80 帧换贴图、开判定，差异 34）。时间轴直接放的 sub 22/23/24 没有载体、
 ---也不带烟尘，照做。
 
----第 5 面非 boss 的血量折算（差异 32）：life × 0.1965，保底 1 点。
----0.1965 = 灵梦 DPS 比 106.4 / 541.5，也就是「第 5/6 面非 boss 的伤害 ÷2」那一档
----（EnemyManager.cpp:820-845）；第 3/4 面在同一套折算里再乘各自系数
----（hp3 = 0.1965 × 0.5/1.0、hp4 = 0.1965 × 0.5/0.6875）。
----⇒ 80→16、110→22、160→31、200→39。
-local function hp5(life)
-    return max(1, int(life * 0.1965 + 0.5))
-end
 
 ---th07 的角度（弧度、y 朝下）折成我们的角度制（y 朝上）：取反即可。
 local function a5(th)
@@ -2724,7 +2692,7 @@ class["TH34_mid5"] = Class(enemy, {
     init = function(self, x, y, life, sub, mirror, drop)
         local dust = (sub ~= 22 and sub ~= 23 and sub ~= 24)
         ---nontaijutsu = true（原作 SET_HAS_CONTACT_HITBOX 0）：能被打、碰到自机不掉血。
-        enemy.init(self, dust and P5_DUST_STYLE or P5_BODY_STYLE, hp5(life), false, true, true)
+        enemy.init(self, dust and P5_DUST_STYLE or P5_BODY_STYLE, life, false, true, true)
         self.x, self.y = x, y
         self.hx, self.hy = x, y
         self.sub, self.mirror, self.dr = sub, mirror or 0, drop
@@ -3026,15 +2994,7 @@ end
 ---工具函数 + 波表再摊在顶层就编不过（"main function has more than 200 local
 ---variables"）。这样主 chunk 只多一个 local。
 local function TH34_add_stage12()
----==================== 第 1 面道中：代码 ====================
----自然语言说明与逐条差异在文件头的「第 1 面道中」单元里。
----代码按「文件里 6 → 4 → 3 → 5 → 1 → 2」的顺序排在最后：这一段直接借用第 3 面那段
----定义的工具（col16 / spread3 / volley3 / pool4），放在它们之后最省事。
----第 1 面非 boss 的血量折算（文件头差异 37）：life × 0.09825，保底 1 点 ——
----和 hp3 同一口径（第 1..3 面原作都没有非 boss 减伤，EnemyManager.cpp:820-845）。
-local function hp1(life)
-    return max(1, int(life * 0.09825 + 0.5))
-end
+---第1/2面构造器使用原作 life，文件末尾的初始化包装器统一换算。
 
 ---贴图代理（差异 38）：原作 SET_ANM 0/5 是 stg1enm.anm 里的两种妖精，移植版用本仓库
 ---的 enemy1（32×32 的小妖精）/ enemy5（48×32 的妖精）两套 sprite 当代理。
@@ -3141,7 +3101,7 @@ class["TH34_fairy1"] = Class(enemy, {
     ---@param mirror number 时间轴的 mirror 位（1 = 速度的 x 分量取反）
     init = function(self, x, y, life, sub, mirror, drop)
         local style = (sub == 3 or sub == 19) and W1_STYLE_S or W1_STYLE
-        enemy.init(self, style, hp1(life), false, true, false)
+        enemy.init(self, style, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.kind, self.mirror = sub, mirror or 0
@@ -3205,7 +3165,7 @@ class["TH34_fairy1"] = Class(enemy, {
 ---自动重发读的是那份快照（EclManager.cpp:1276-1289 与 :2095-2105），所以 24 圈同一个角。
 class["TH34_ring1"] = Class(enemy, {
     init = function(self, x, y, life, sub, mirror, drop)
-        enemy.init(self, W1_STYLE_S, hp1(life), false, true, false)
+        enemy.init(self, W1_STYLE_S, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.kind, self.mirror = sub, mirror or 0
@@ -3260,7 +3220,7 @@ local W1_BIG_LIFE = 2142
 
 class["TH34_bigfairy1"] = Class(enemy, {
     init = function(self, x, y, life, sub, mirror, drop)
-        enemy.init(self, W1_STYLE, hp1(life), false, true, false)
+        enemy.init(self, W1_STYLE, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 48, 48          -- SET_HITBOX_SIZE 48,48,32
         self.kind, self.mirror = sub, mirror or 0
@@ -3600,8 +3560,8 @@ do
         {    10,  19,   96.00,  256.00,   -1,     1, 0 },  -- t=4448
         {    10,  19,  128.00,  256.00,   -1,     1, 0 },  -- t=4458
         {    10,  19,  160.00,  256.00,   -1,     1, 1 },  -- t=4468
-        {    10,  19,  128.00,  256.00,   -1,     1, 1 },  -- t=4478
-        {     4,  16,  -96.00,  272.00,    0,   300, 0 },  -- t=4482
+        {    10,  19,  128.00,  256.00,   -1,     1, 1 },  -- t=5481
+        {     4,  16,  -96.00,  272.00,    0,   300, 0 },  -- t=5485
         {     6,  19,   96.00,  256.00,   -1,     1, 1 },  -- t=4488
         {    10,  19,   64.00,  256.00,   -1,     1, 1 },  -- t=4498
         {    10,  19,   32.00,  256.00,   -1,     1, 1 },  -- t=4508
@@ -3655,11 +3615,6 @@ end
 ---自然语言说明与逐条差异在文件头的「第 2 面道中」单元里。
 ---按 `ecldata2.ecl` 的三条时间轴（tl0 = 道中、tl1/tl2 = 左右镜像的一对）把
 ---t=600..7260 整段搬进来。
----★ 血量口径与第 1 面完全相同（差异 37/43）：第 2 面原作也没有非 boss 减伤，
----所以还是 life × 0.09825、保底 1 点。
-local function hp2(life)
-    return hp1(life)
-end
 
 ---贴图代理（差异 44）：原作 SET_ANM 13 = 会飘的「种子」、SET_ANM 10 = 妖精、
 ---SET_ANM 0/5 = 更小的杂鱼；移植版用 enemy_orb1（23，带光环的光球）/ enemy5（5，
@@ -3763,7 +3718,7 @@ class["TH34_wisp2"] = Class(enemy, {
 })
 
 ---──────────── 打弹的子体（原作 sub 18..23） ────────────
----能打（SPAWN_ENEMY_REL 给的 life 80 ⇒ hp2(80) = 8），出生即按各自脚本打一轮弹，
+---能打（SPAWN_ENEMY_REL 给的原始 life 为 80），出生即按各自脚本打一轮弹，
 ---然后 t=80/110/130 转头朝自机、速度用 90 帧从 0 ease-out-quad 加到 2.5
 ---（`SET_MOVE_INTERP_TIMER_POLAR 61` ⇒ 61 帧后 moveMode 转 AXIS、速度冻结在
 ---2.5×(1−(1−61/90)²) ≈ 2.244 上直线飞向自机）。
@@ -3810,7 +3765,7 @@ end
 
 class["TH34_shoot2"] = Class(enemy, {
     init = function(self, x, y, life, sub, mirror, drop)
-        enemy.init(self, W2_BODY_STYLE, hp2(life), false, true, false)
+        enemy.init(self, W2_BODY_STYLE, life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.kind, self.mirror = sub, mirror or 0
@@ -3892,7 +3847,7 @@ local W2_FAIRY = {
 class["TH34_fairy2"] = Class(enemy, {
     init = function(self, x, y, life, sub, mirror, drop)
         enemy.init(self, (sub == 38) and W2_BODY_STYLE or W2_FAIRY_STYLE,
-                   hp2(life), false, true, false)
+                   life, false, true, false)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.kind, self.mirror = sub, mirror or 0
@@ -4386,11 +4341,9 @@ end
 ---      $10041/$10042/$10043 是另外的变量、而且是只写不读）⇒ 真机上这 8 发
 ---      **完全重叠**在 (0,0)、角 0、速度 2（等于 1 发）。移植版照抄这个运行时行为，
 ---      不「修正」成真机看不到的八方向（差异 60）。
----  · 血量：EX/PH 面原作对非 boss **不减伤**（EnemyManager.cpp:820-845 只管 4/5/6 面）
----    ⇒ 一律 life × 0.09825、保底 1（同 hp1）。本体出生时继承载体的 LIFE
----    （SPAWN_ENEMY_REL 的第 5 参就是 $10027）⇒ 前半段小妖精 1 HP（life 10）、
----    sub 46/48/50 的载体 life=400 ⇒ 39 HP；而 SPAWN_ENEMY_REL 的子体**不继承 mirror**
----    （SpawnEnemyEx 拿的是模板）⇒ 本体的朝向完全由自己的 θ 决定。
+---  · 血量：构造器保留载体的原始 LIFE，初始化后统一按低速中位数换算。
+---    SPAWN_ENEMY_REL 的子体不继承 mirror（SpawnEnemyEx 拿的是模板），
+---    本体的朝向完全由自己的 θ 决定。
 ---  · itemdrop：−2 = 不掉（`DROP_FAITH[−2]`/`DROP_POINT[−2]` 都是 nil ⇒ 写成 {0,0,0}）、
 ---    0/1/2 = 信仰/点/双信仰、7 = 樱点、−1 = 1/3 概率信仰（同 1/2 面）。
 ---
@@ -4412,10 +4365,6 @@ end
 
 local function TH34_add_stage78()
 
----EX/PH 面非 boss 不减伤 ⇒ life × 0.09825、保底 1（同 hp1/hp2/hp3）。
-local function hp78(life)
-    return max(1, int(life * 0.09825 + 0.5))
-end
 
 ---th07 弧度（y 朝下）+ 时间轴的 mirror 位 → 我们的角度制（同 w1_dir）。
 local function d78(self, th)
@@ -4597,7 +4546,7 @@ class["TH34_excarrier78"] = Class(enemy, {
 ---cfg = { th, off, c1, c2, a2, spr, plays, rounds }。
 class["TH34_exbody78"] = Class(enemy, {
     init = function(self, x, y, life, cfg, mirror, drop)
-        enemy.init(self, 1, hp78(life), false, true, true)
+        enemy.init(self, 1, life, false, true, true)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = 0
@@ -4648,7 +4597,7 @@ end
 
 class["TH34_exmid78"] = Class(enemy, {
     init = function(self, x, y, life, cfg, mirror, drop)
-        enemy.init(self, 24, hp78(life), false, true, true)
+        enemy.init(self, 24, life, false, true, true)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = mirror or 0
@@ -4698,7 +4647,7 @@ class["TH34_exmid78"] = Class(enemy, {
 ---速度 = base_v + 累计 inc + rand(rnd)（原作 RAND_FLOAT_ADD 是**加**）。死时掉 6 信仰 + 3 点（DEATH_CALLBACK_SUB 0）。
 class["TH34_exring78"] = Class(enemy, {
     init = function(self, x, y, life, cfg, mirror, drop)
-        enemy.init(self, 24, hp78(life), false, true, true)
+        enemy.init(self, 24, life, false, true, true)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = mirror or 0
@@ -4746,7 +4695,7 @@ class["TH34_exring78"] = Class(enemy, {
 ---循环打完 MOVE_DIR_TIME(0,0,−π/2,0) + SET_MOVE_ACCEL 0.02（转头向上）。
 class["TH34_exbomb78"] = Class(enemy, {
     init = function(self, x, y, life, cfg, mirror, drop)
-        enemy.init(self, 1, hp78(life), false, true, true)
+        enemy.init(self, 1, life, false, true, true)
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = 0
@@ -5737,56 +5686,17 @@ end
 ---    `HandleLifeCallback` 夹到的那个阈值（2000~2800）。只有 PH 的 85/86/87 与 EX 的
 ---    83/84 这种「先 SET_LIFE、再 SUB_CALL 一张符卡 sub」的包壳才自带 life
 ---    （3000 / 8000 / 8000）。移植版每张符卡都按**开卡时的那个 life**折算。
----  · **开卡后的「打不动」窗口**：原作每张符卡先 120 帧 `SET_CAN_BE_DAMAGED 0`
----    （就是进场动画），紧接着 `SET_INVINCIBILITY_TIMER 240` 把伤害再 ÷9（boss 专属，
----    EnemyManager.cpp:872-880）⇒ 等效再少 213 帧。移植版用一段等长的**全程免伤**
----    顶上（框架只有 t1/t2 两档，见 `CARD_FREEZE`），总击杀时长与原作一致。
+---  · 保护窗口分别执行：SET_CAN_BE_DAMAGED 0 期间全免；之后原作 boss 的
+---    SET_INVINCIBILITY_TIMER 期间只承受 1/9 伤害，不折成额外全免时间。
 ---  · 移植版不串这条链：每张卡自带进场、漂移/弹幕、时限。Boss Rush 与符卡练习里
 ---    每张卡本来就是**独立挑战**的（`boss.card.add` 的 data_id 就是练习解锁号）。
 ---
 ---坐标（同道中）：TH07 384×448、左上原点、y 朝下 ⇒ 我们 x−192 / 224−y、角度取反。
----血量：按**本仓库的伤害口径**重算（文件头差异 16 的同一套推导）——
----  · 非符：原作 boss 吃满伤害（第 4/5/6 面对**非 boss** 的那两级减伤都不适用，
----    EnemyManager.cpp:820-845）⇒ 用「无折扣」系数 0.09825（= hp1/hp3 同口径）；
----    例：life 20000、阈值 2600 ⇒ 17400 × 0.09825 ≈ 1709。
----  · 符卡：原作符卡期间**伤害 ÷7**（EnemyManager.cpp:838-845 的 `damage/7`）⇒
----    系数 0.09825 × 7 ≈ 0.6878；输入是**符卡实际持有的 life**（见上面那条：多数
----    符卡 = 上一张非符的阈值 2000~2800，包壳卡用 3000 / 8000），例：阈值 2600 ⇒
----    hpS(2600) = 1788（与 th07.lua 的 600~1500 同档）。
----  · 耐久卡（原作无 SET_LIFE 或 SET_IS_SURVIVAL_SPELLCARD）给 10000000、关判定。
----弹型/色档是代理（同差异 62/63）：sprite 4/5/6/8 → ball_small、10 → grain_a、
----  7/9 → arrow_small、2 → 米弹；色档走 col16（同号近似）。
---- 有限血量卡按“原作所有自机形态中最快的活跃 TTK × 移植版灵梦 DPS(115.5)”重算；
---- 保护窗口仍由 t1/t2 单独实现，不重复扣进 HP。耐久卡不在此表。
---- 原作 life / hpB / hpS 的注释与其余换卡逻辑保持不变。
-local TH34_REIMU_HP = {
-    [ 3408] =  412, [ 3411] =  623, [ 3413] =  584, [ 3415] =  631,
-    [ 3417] =  616, [ 3419] =  666, [ 3421] =  620, [ 3423] =  620,
-    [ 3425] =  645, [ 3441] = 2139, [ 3443] =  535, [ 3444] =  722,
-    [ 3445] =  722, [ 3446] =  374, [ 3447] =  749, [ 3448] =  642,
-    [ 3449] =  455, [ 3450] =  695, [ 3451] =  267, [ 3452] =  535,
-    [ 3471] = 2139, [ 3469] =  802, [ 3468] =  722, [ 3467] =  722,
-    [ 3466] =  374, [ 3465] =  749, [ 3464] =  535, [ 3463] =  642,
-    [ 3462] =  695, [ 3461] =  422, [ 3460] =  535, [ 3480] =  623,
-    [ 3481] =  631, [ 3482] =  645, [ 3483] =  616, [ 3484] =  666,
-    [ 3485] =  620, [ 3486] =  620, [ 3487] =  609, [ 3488] =  412,
-    [ 4390] =  484, [ 4391] =  401, [ 4392] =  677, [ 4393] =  561,
-    [ 4394] = 1039, [ 4395] = 1039, [ 4396] =  802, [ 4397] =  802,
-    [ 4398] =  709, [ 4399] =  588, [ 4400] = 1604, [ 4402] =  484,
-    [ 4403] =  401, [ 4404] =  609, [ 4405] =  535, [ 4406] =  466,
-    [ 4407] =  535, [ 4408] =  535, [ 4409] =  642, [ 4410] =  535,
-    [ 4430] =  351, [ 4431] =  321, [ 4432] =  609, [ 4433] =  535,
-    [ 4434] =   72, [ 4435] =  535, [ 4436] =  777, [ 4437] =  642,
-    [ 4438] =  535, [ 4440] =  645, [ 4441] =  655, [ 4442] =  593,
-    [ 4443] =  561, [ 4444] =  641, [ 4445] =  561, [ 4446] =  561,
-    [ 4447] =  749, [ 4448] =  642, [ 4450] =  516, [ 4451] =  321,
-    [ 4452] =  516, [ 4453] =  455, [ 4454] =  484, [ 4455] =  535,
-    [ 4456] =  535, [ 4460] =  484, [ 4461] =  561, [ 4462] =  548,
-    [ 4463] =  401, [ 4464] =  401, [ 4465] =  419, [ 4466] =  401,
-    [ 4467] =  401, [ 4468] =  374, [ 4469] =  374, [ 4457] =  535,
-    [ 4439] =  535, [ 4472] =  642, [ 4473] =  642, [ 4470] =  561,
-    [ 4471] =  374, [ 4475] =  561, [ 4476] =  749,
-}
+---血量：原作各机体低速形态的活跃 TTK 中位数 × 移植版灵梦 DPS（115.5）。
+---非符系数约 0.077114，符卡系数约 0.571838；逐帧伤害取整和上限在离线模型中计算，
+---不能直接把非符系数乘 7 当成符卡系数。数据与限制见原作血量审计文档。
+---全免和 1/9 减伤由 OriginalBalance.factor 独立执行，不重复扣进 HP。
+local TH34_REIMU_HP = OriginalBalance.cards[7]
 
 -- 阶段入口来自已提取的 TH07 二进制 ECL；sub 是原作回调，不是生成弹幕的子机。
 -- 原作换卡只换脚本上下文，位置、运动和活动框仍属于同一敌机。单卡练习从宿主
@@ -5866,7 +5776,13 @@ class.th07_motion_source = {
     [4437] = { key="3main", file="ecldata3.ecl", sub=54, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4438] = { key="3main", file="ecldata3.ecl", sub=56, y=128, box={32,48,352,128} },
     [4439] = { key="3main", file="ecldata3.ecl", sub=46, y=128, box={32,48,352,128}, move={120,4,192,112} },
-    [4440] = { key="4lunasa", file="ecldata4.ecl", sub=59, y=112, box={32,48,352,128} },
+    [5480] = { entry_box={32,48,352,128}, key="4lunasa", file="ecldata4.ecl", sub=64, y=112, box={32,48,352,128} },
+    [5481] = { entry_box={32,48,352,128}, key="4merlin", file="ecldata4.ecl", sub=80, y=96, box={32,48,352,128} },
+    [5482] = { entry_box={32,48,352,128}, key="4lyrica", file="ecldata4.ecl", sub=98, y=112, box={32,48,352,128} },
+    [5483] = { entry_box={32,48,352,128}, key="4lunasa", file="ecldata4.ecl", sub=68, y=128, box={32,48,352,128} },
+    [5484] = { entry_box={32,48,352,128}, key="4merlin", file="ecldata4.ecl", sub=83, y=128, box={32,48,352,128} },
+    [5485] = { entry_box={32,48,352,128}, key="4lyrica", file="ecldata4.ecl", sub=103, y=128, box={32,48,352,128} },
+    [4440] = { key="4lunasa", file="ecldata4.ecl", sub=58, y=112, box={32,48,352,128} },
     [4441] = { key="4lunasa", file="ecldata4.ecl", sub=121, y=128, box={32,48,352,128}, move={120,4,192,128} },
     [4442] = { entry_box={32,48,352,128}, key="4merlin", file="ecldata4.ecl", sub=76, y=96, box={32,48,352,128} },
     [4443] = { key="4merlin", file="ecldata4.ecl", sub=138, y=128, box={32,48,352,128}, move={120,4,192,104} },
@@ -5875,15 +5791,15 @@ class.th07_motion_source = {
     [4446] = { key="4lunasa", file="ecldata4.ecl", sub=128, y=128, box={32,48,352,128}, move={120,4,192,104} },
     [4447] = { key="4lunasa", file="ecldata4.ecl", sub=133, y=128, box={32,48,352,128} },
     [4448] = { clear_box=true, key="4lunasa", file="ecldata4.ecl", sub=135, y=128, move={120,4,192,96} },
-    [4450] = { key="1main", file="ecldata1.ecl", sub=26, y=128, box={32,48,352,128} },
-    [4451] = { key="1main", file="ecldata1.ecl", sub=29, y=128, box={32,48,352,128}, move={120,4,192,140} },
+    [4450] = { key="1mid", file="ecldata1.ecl", sub=20, y=128, pos={-32,32}, clear_box=true, move={60,4,192,128} },
+    [4451] = { key="1mid", file="ecldata1.ecl", sub=29, y=128, box={32,48,352,128}, move={120,4,192,140} },
     [4452] = { key="1main", file="ecldata1.ecl", sub=38, y=128, box={32,48,352,128} },
     [4453] = { key="1main", file="ecldata1.ecl", sub=42, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4454] = { key="1main", file="ecldata1.ecl", sub=39, y=128, box={32,48,352,128} },
     [4455] = { key="1main", file="ecldata1.ecl", sub=52, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4456] = { key="1main", file="ecldata1.ecl", sub=55, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4457] = { key="1main", file="ecldata1.ecl", sub=48, difficulty=1, y=128, box={32,48,352,128}, move={120,4,192,112} },
-    [4460] = { key="2main", file="ecldata2.ecl", sub=43, y=128, box={32,48,352,128} },
+    [4460] = { key="2main", file="ecldata2.ecl", sub=40, y=128, pos={416,128}, clear_box=true, move={60,4,192,128} },
     [4461] = { key="2main", file="ecldata2.ecl", sub=45, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4462] = { key="2main", file="ecldata2.ecl", sub=49, y=128, box={32,48,352,128} },
     [4463] = { key="2main", file="ecldata2.ecl", sub=56, y=128, box={32,48,352,128}, move={120,4,192,112} },
@@ -5901,7 +5817,11 @@ class.th07_motion_source = {
     [4476] = { key="4lunasa", file="ecldata4.ecl", sub=132, y=128, box={32,48,352,128} },
 }
 function class.th07_motion_begin(self, id, move)
+    TH34Prism.begin(self, id)
+    -- 上一张卡关闭体术时会放入NONTJT；新卡恢复原作默认，再由本卡协程改变。
+    self.group = GROUP.ENEMY
     local cfg = assert(class.th07_motion_source[id])
+    if OriginalCollision then OriginalCollision.unit(self,7,cfg.file:gsub('%.ecl$','')..':'..cfg.sub,true) end
     self.th07_visual_file=cfg.file
     if self._wisys and self.WALKIMGID then OriginalStageVisual.bind_boss(self._wisys,self.WALKIMGID) end
     class.th07_lasers = {}
@@ -6136,6 +6056,7 @@ function class.th07_oni_interact(owner)
 end
 
 function class.th07_motion_end(self)
+    TH34Prism.finish(self)
     self.th07_oni_active = false
     class.th07_restore_speed(self)
     if not self.th07_motion_live then return end
@@ -6151,8 +6072,8 @@ local function TH34_add_stage78_boss()
     local bs = th07_style
 
     ---非符/符卡的血量折算（见文件头的推导）。
-    local function hpB(x) return max(1, int(x * 0.09825 + 0.5)) end
-    local function hpS(x) return max(1, int(x * 0.6878 + 0.5)) end
+    local function hpB(x) return max(1, int(x * OriginalBalance.scale[7].normal + 0.5)) end
+    local function hpS(x) return max(1, int(x * OriginalBalance.scale[7].spell + 0.5)) end
 
     ---ECL_VAR_RNG_RADIAN（$10060）：每读一次重掷一个 [−π,π) 的角（EclManager.cpp:466）。
     local function rngrad() return ran:Float(-PI, PI) end
@@ -6813,6 +6734,11 @@ local function TH34_add_stage78_boss()
                      { ang0 =  0, w =  0.0314159, rmax = 224, c = 6, f3 = -1.5708, f4 = -0.00448799, step = 2, n = 260, c1 = 2, v1 = 2, c2 = 2, v2 = 1, i0dec = 3, d4 = 90, d4v = 0.0266667 } } },
         }
         spellcard(NAME, 3440, 74, nil, true, function(self)
+            self.colli = true
+            task.New(self, function()
+                task.Wait(120)
+                self.colli = false -- Sub129在120帧同时关闭体术和受弹，不是从出生起就没有判定。
+            end)
             task.New(self, function()
                 task.Wait(210)
                 bmove(self, 60, 4, 0, 0)
@@ -6978,9 +6904,11 @@ local function TH34_add_stage78_boss()
             end
         end
         spellcard(NAME, 3442, 76, nil, true, function(self)
+            self.colli = true
             ---本体轨迹（原作 sub119）。
             task.New(self, function()
                 task.Wait(210)
+                self.colli = false -- Sub119的hasNoCollision覆盖此后的贴身运动。
                 local px, py = player.x, player.y
                 bmove(self, 120, 1, px, py)          -- 原作 #28：120 帧 ease-in 到自机位置
                 task.Wait(120)                       -- 原作 #29..#31：空转 120 帧
@@ -7451,6 +7379,7 @@ local function TH34_add_stage78_boss()
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)
+                self.group = GROUP.NONTJT
                 local gap = 100
                 while true do
                     PlaySound("power0", 0.35, self.x / 256)  -- 原作 SUB_CALL 2（gI0=4 ⇒ 16 帧）
@@ -7469,15 +7398,19 @@ local function TH34_add_stage78_boss()
                             tStart = 60, dur = 60, tEnd = 30, hbStart = 60, hbEnd = 30 })
                     end
                     task.Wait(3)                             -- t=243
+                    self.group = GROUP.ENEMY -- 三次Sub103返回后，仅这3帧恢复体术。
                     task.Wait(3)                             -- t=246
+                    self.group = GROUP.NONTJT
                     gring(self, bs(8), 2, 28, 4, 3, 1, Angle(self, player), 0, true)
                     task.Wait(20)                            -- t=266
                     self.hide = true                         -- SET_HAS_NO_COLLISION 1（隐身）
+                    self.colli = false
                     task.Wait(gap)                           -- 等 l2i1 帧
                     self.x, self.y = player.x, player.y       -- 神隐：瞬移到自机身上
                     PlaySound("power0", 0.35, self.x / 256)  -- SUB_CALL 2（gI0=10 ⇒ 40 帧）
                     task.Wait(40)
                     self.hide = false                        -- 原作 #56：爆闪结束后才现身
+                    self.colli = true
                     if gap > 40 then gap = gap - 6 end
                 end
             end)
@@ -7940,7 +7873,7 @@ local function TH34_add_stage78_boss()
     ---lf1 从 1.8 起每次 +0.005。
     do
         local NAME = "式神「憑依荼吉尼天」"
-        spellcard(NAME, 3451, 55, 1000, false, function(self)
+        spellcard(NAME, 3451, 3410/60, 1000, false, function(self)
             ---进场：原作 t=0 的 MOVE_POS_TIME(60, ease4, 64, 128)（我们 (−128,96)）。
             bmove(self, 60, 4, -128, 96)
             ---原作 t=320..1280 的 8 段 MOVE_ORBIT：{ 起始角, 角速度, 半径, 半径速度 }，
@@ -8180,9 +8113,11 @@ local function TH34_add_stage78_boss()
             end
         end
         spellcard(NAME, 3470, 76, nil, true, function(self)
+            self.colli = true
             ---本体轨迹（原作 sub115）。
             task.New(self, function()
                 task.Wait(210)
+                self.colli = false -- Sub115的hasNoCollision，贴住自机时不能发生体术。
                 local px, py = player.x, player.y
                 bmove(self, 120, 1, px, py)          -- 原作 #28：120 帧 ease-in 到自机位置
                 task.Wait(120)                       -- 原作 #29..#31：空转 120 帧
@@ -8529,6 +8464,7 @@ local function TH34_add_stage78_boss()
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)                               -- 母体 t=210（循环回跳的落点是 #28）
+                self.group = GROUP.NONTJT
                 local wait, flash = 100, 16
                 while true do
                     PlaySound("power0", 0.35, self.x / 256)      -- 原作 #28 SUB_CALL 2（gI0；首轮 4 ⇒ 16 帧）
@@ -8537,11 +8473,13 @@ local function TH34_add_stage78_boss()
                     volley(self)                                 -- 原作 SUB_CALL 100（14 帧，不推进母体时间）
                     task.Wait(20)                                -- 母体 t 仍停在 240 ⇒ 等到 t=260
                     self.hide = true                             -- 原作 #32 SET_HAS_NO_COLLISION 1
+                    self.colli = false
                     task.Wait(wait)                              -- 原作 #33 SET_WAIT_TIMER(l2i1)
                     self.x, self.y = player.x, player.y          -- 原作 #34 SET_POS(plX, plY)
                     PlaySound("power0", 0.35, self.x / 256)      -- 原作 #37 SUB_CALL 2（gI0=10 ⇒ 40 帧）
                     task.Wait(40)
                     self.hide = false                            -- 原作 #38 SET_HAS_NO_COLLISION 0
+                    self.colli = true
                     ---原作 JUMP 落点是 #28（`SET_INT *gi0 4` 之前），所以每轮 flash 恒为 16 帧。
                     if wait > 10 then wait = wait - 10 end
                 end
@@ -8924,11 +8862,15 @@ local function TH34_add_stage78_boss()
             { -1.5708, -0.0261799,   0,  1.33333 },
             {  1.5708, -0.0261799, 160,  0 },
         }
-        spellcard(NAME, 3461, 55, 1580, false, function(self)
+        spellcard(NAME, 3461, 3410/60, 1580, false, function(self)
             ---进场：原作 t=0 的 MOVE_POS_TIME(60, ease4, 64, 128)（我们 (−128,96)）。
             bmove(self, 60, 4, -128, 96)
             task.New(self, function()
                 task.Wait(110)
+                -- Sub61扩大的是受弹框；体术开关另行关闭，不能把96×96当成撞人范围。
+                self.group = GROUP.NONTJT
+                self._original_damage_box = {96,96}
+                self.a, self.b, self.rect = 48, 48, true
                 bmove(self, 120, 4, 0, -160)
             end)
             task.New(self, function()
@@ -9131,8 +9073,8 @@ local function TH34_add_stage56_boss()
     local LEVEL = 32
     local RAD = 180 / PI
     local bs = th07_style
-    local function hpB(x) return max(1, int(x * 0.09825 + 0.5)) end
-    local function hpS(x) return max(1, int(x * 0.6878 + 0.5)) end
+    local function hpB(x) return max(1, int(x * OriginalBalance.scale[7].normal + 0.5)) end
+    local function hpS(x) return max(1, int(x * OriginalBalance.scale[7].spell + 0.5)) end
     local function rngrad() return ran:Float(-PI, PI) end
     ---自机方向，TH07 口径的弧度（y 朝下）。
     local function aimth(self) return -Angle(self, player) * PI / 180 end
@@ -9357,6 +9299,14 @@ local function TH34_add_stage56_boss()
         ---桩件的对象表不清 task，所以要显式清一次，否则「卡片结束时轮子/魂还在打」
         ---会被泄漏扫描判成 FAIL（id=4408 的轮子、4410 的魂）。
         del = function(self) task.Clear(self) end,
+        kill = function(self)
+            task.Clear(self)
+            if self.th07_doll then
+                -- Sub29 的死亡回调 Sub30 关闭它的激光；击破后协程不能继续发弹。
+                if IsValid(self.th07_doll_laser) then NativeVisual.cancel_laser(self.th07_doll_laser) end
+                PlaySound('enep00',0.3,self.x/200,true)
+            else enemy.kill(self) end
+        end,
         ---子机的自绘运动（`bmove`/`bstep`）没有别的地方驱动：挂在 boss 上的卡有
         ---`card.frame`，子机没有。不补这一帧钩子 `bmove` 永远不动（原作 sub76 的
         ---魂是 `MOVE_DIR_TIME t=0 spd=4.2` 的匀速直线，必须真的走）。
@@ -9382,10 +9332,10 @@ local function TH34_add_stage56_boss()
     local CARD_FREEZE = {}
 
     ---非符骨架：initfn(self) 自己起协程逐帧演。
-    local function ncard(name, id, life, thr, initfn, opt)
+    local function ncard(name, id, life, thr, frames, initfn, opt)
         opt = opt or {}
         local live = {}
-        local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[id] or hpB(life - thr))
+        local card = boss.card.New("", 1, 1, frames/60, TH34_REIMU_HP[id] or hpB(life - thr))
         card.before = opt.skin or skin6
         card.init = function(self)
             pool4 = {}
@@ -9536,7 +9486,7 @@ local function TH34_add_stage56_boss()
     ---sub21/22（左右屏外齐射）：x = rand(0,32) + 368（右）/ −16（左），y = rand(0,128) − 64，
     ---每 2 帧一发、共 16 发：x 每次 −24、y 每次 −(y0/8)；SPREAD_AIMED c1=1 / c2=2、
     ---速度 5→1、瞄准自机；右用 spr6/col6/张角 π/8，左用 spr6/col2/张角 π/6。
-    ncard("幽々子 非符 1", 4390, 15000, 1500, function(self)
+    ncard("幽々子 非符 1", 4390, 15000, 1500, 3600, function(self)
       task.New(self, function()
         local function spiral(radius, colA, colB)
             local a1 = aimth(self)
@@ -9690,7 +9640,7 @@ local function TH34_add_stage56_boss()
     ---两条反向自转的螺旋臂：从自机角 ±90° 的偏移点（半径 32/64 或 64/16 或 24/96）
     ---打「扇 + 环」，每 4 帧一拍；自机会在 64px 内时额外补一圈 16 发。
     ---速度基准 = 2.1/3.0 + 0.2×(第几轮)，每轮 l2i3 递增。
-    ncard("幽々子 非符 2", 4392, 21000, 2100, function(self)
+    ncard("幽々子 非符 2", 4392, 21000, 2100, 3600, function(self)
       task.New(self, function()
         ---原作 sub29 的时间轴（L 行）：
         ---  t=60 SUB_CALL 30（15 拍）→ t=160 MOVE_DIR_TIME(1.5)＋SUB_CALL 31（15 拍）
@@ -9820,15 +9770,25 @@ local function TH34_add_stage56_boss()
     end
     -- 三姐妹合奏的另外两条原生 ECL 分支。132/133/135 只控制露娜萨；
     -- 141/142/143（梅露兰）及150/151/152（莉莉卡）仍同时运行，不能只搬主卡。
-    local PRISM_COMPANION = Class(PSCRIPT, {
+    -- Damage使用class.base.take_damage；独立父类把每个演奏者的受击交给共享控制器。
+    local PRISM_DAMAGE = Class(PSCRIPT, {
+        take_damage = function(self, damage)
+            enemybase.take_damage(self, damage)
+            TH34Prism.receive(self, damage)
+        end,
+    })
+    local PRISM_COMPANION = Class(PRISM_DAMAGE, {
         init = function(self, owner, side, fn)
             PSCRIPT.init(self, side*128, 96, fn, side)
             self.group, self.colli, self.protect = GROUP.ENEMY, true, false
             self.th07_prism_side=side
             self.hp, self.maxhp, self.a, self.b = 999999, 999999, 24, 24
+            self.th07_shared_damage = owner.th07_shared_damage
+            self.rect, self._original_collision_game, self._original_damage_box = true, 7, {48,48}
             self._wisys = BossWalkImageSystem(self)
             self._wisys:SetImageInList(side < 0 and "Merlin" or "Lyrica")
-            object.Connect(owner,self,1,true)
+            object.Connect(owner,self,0,true)
+            self._dmg_transfer = nil
         end,
         render = enemy.render,
         -- 换卡会KillServants；999999是共享血槽占位，不能喂给hp/20个圆环的杂鱼死亡特效。
@@ -10073,7 +10033,7 @@ local function TH34_add_stage56_boss()
     ---──────────────────── 幽々子 非符 3（原作 sub34/35） ────────────────────
     ---本体每 13 帧从随机点打一组 3 发自机狙（带「自旋 + 加速」两条指令），
     ---同时主时间轴从「13 发自机狙扇」开始、间隔由 120 帧一路缩到 65 帧（越打越快）。
-    ncard("幽々子 非符 3", 4394, 32000, 3000, function(self)
+    ncard("幽々子 非符 3", 4394, 32000, 3000, 3600, function(self)
         ---★ 原作 `SET_SHOOT_OFFSET` 是**敌人的常驻属性**：sub35 每拍写入后，
         ---本体主时间轴的 SPREAD_AIMED 也吃同一份 `enemy->pos + shootOffset`
         ---（EclManager.cpp:1283）。而且 TH07 的 periodic callback 在同一帧里
@@ -10138,7 +10098,7 @@ local function TH34_add_stage56_boss()
     ---并给它挂 `INIT_BULLET_CMD 0 32 0 80 -1 -0 *fN`（type0x20：每帧转 fN）、duration=80。
     ---A/D 口的 count 按难度另存三份（E 3 / N 3 / H 5 / L 7，L 只保留 skip=8 的那条）。
     ---拍末按 i1 的区间给 8 个 f 加减 0.000490874，i1>120 后回 1（原作 SET_INT i1 0 + INC）。
-    ncard("幽々子 非符 4", 4395, 32000, 3000, function(self)
+    ncard("幽々子 非符 4", 4395, 32000, 3000, 3600, function(self)
         task.New(self, function()
             ---★ 原作 sub36 进场：t=0 的 MOVE_POS_TIME(60,4,192,112) 走满 60 帧后才到
             ---t=60（LuaSTG 落点 (0,112)）。原先只等 60 帧却没真的位移，本体停在
@@ -10468,7 +10428,7 @@ local function TH34_add_stage56_boss()
     ---`INIT_BULLET_CMD 1 16 0 80 -1 0.038 -999`（0x10＝沿当前朝向每帧 +0.038 加速 80 帧）。
     ---两条 flag 都是 0 ⇒ 按 `RunCommands` 的门控，0x80 跑满 60 帧清位后 0x10 才接上；
     ---扇各自的 flags（0x292 / 0x92）都含 0x80|0x10 位，所以每条扇的弹都吃得到这两条指令。
-    ncard("幽々子 非符 5", 4398, 22000, 2200, function(self)
+    ncard("幽々子 非符 5", 4398, 22000, 2200, 3600, function(self)
         task.New(self, function()
             ---★ 原作 sub38 t=0 `MOVE_POS_TIME 60 4 192 112`（LuaSTG 落点 (0,112)）。
             bmove(self, 60, 4, 0, 112)
@@ -10644,7 +10604,7 @@ local function TH34_add_stage56_boss()
     ---sub61（原作 sub61，周期回调）：随机位置（TH07 x∈[0,384)、y∈[64,224) ⇒ 我们
     ---x∈[−192,192)、y∈(0,160]）打一对上下直飞的弹（angle1=π/2、count1=2、flags=36，
     ---速度 rand(0.7)+0.4）。
-    scard("桜符「完全なる墨染の桜 -開花-」", 4400, 99, 6000, false, function(self)
+    scard("桜符「完全なる墨染の桜 -開花-」", 4400, 6060/60, 6000, false, function(self)
         ---sub60：整圈 count1=n 的两段指令弹。
         local function ring60(n, acc)
             sound4(self)                                  -- 原作 sub60 的 PLAY_SOUND 7
@@ -11122,7 +11082,7 @@ local function TH34_add_stage56_boss()
     ---之后四段「屏幕外的点爆发」（sub40 从右半 / sub41 从左半）：各 16 个随机点，
     ---每个点打 4 层自机狙（sub40 每层 1 发、sub41 每层 2 发、张角 18°/22.5°），
     ---点沿屏幕横向滑 24px、纵向每步收 lf2/8。
-    ncard("妖夢 非符 1", 4402, 15000, 1500, function(self)
+    ncard("妖夢 非符 1", 4402, 15000, 1500, 3600, function(self)
       task.New(self, function()
         ---原作 sub39：半径 l3f0、双色档（gI0/gI1）的收缩螺旋 + 自机狙扇。
         local function spiral(radius, colA, colB)
@@ -11254,7 +11214,7 @@ local function TH34_add_stage56_boss()
     ---每拍弹数 +1，上限由调用方的 gI2 给（L 取 15 / 18）；爆发段速度 5.2。
     ---第二段（sub48 在 t=160 置 l2i3=1 之后）每个子拍多 `SET_WAIT_TIMER 2`，
     ---所以 sub49 的时长第一段 32×6、第二段 32×8 帧。
-    ncard("妖夢 非符 2", 4404, 19000, 2000, function(self)
+    ncard("妖夢 非符 2", 4404, 19000, 2000, 3600, function(self)
       task.New(self, function()
         ---原作 sub49：起始半径 144、每子拍收 6，li0 上限 = l3i2（L 取 15 / 18）；
         ---切向摆动在 X 方向额外乘 1.4（#8），Y 方向不乘 —— 照抄这个不对称。
@@ -11390,7 +11350,7 @@ local function TH34_add_stage56_boss()
     ---（0x01/0x02/0x04 的三档低难度指令在 Lunatic 被跳过，只剩 0x08 那一档）。
     ---sub54：先跑 sub2 等 4×4=16 帧，再自 −32 偏移**每帧 1 发**连射 8 发
     ---（速度 1.2+0.25k），然后自 +32 偏移**每 2 帧 1 发**连射 8 发，最后归零偏移。
-    ncard("妖夢 非符 3", 4406, 15000, 2000, function(self)
+    ncard("妖夢 非符 3", 4406, 15000, 2000, 3600, function(self)
       task.New(self, function()
         ---原作 sub53：两侧各一串「逐渐长大的扇」+ 背后 16 发环。
         local function fan(colA, colB)
@@ -11544,6 +11504,11 @@ local function TH34_add_stage56_boss()
     ---再有一组 sub73：从 t=720 起每 42 帧一次（32 帧 16 拍 + 10 帧空档），
     ---每拍「3 发 + 6 发」，速度 0.5 起每拍 +0.3（L）、张角每拍 −0.0272708。
     scard("人神剣「俗諦常住」", 4409, 66, 4400, false, function(self)
+        self.group = GROUP.NONTJT
+        task.New(self, function()
+            task.Wait(120) -- L分支同帧跳过三段120帧；脚本480对应实际120。
+            self.group = GROUP.ENEMY
+        end)
         task.New(self, function()
             ---L 行：t=480 落在第 120 帧；t=540 SUB_CALL 71（126 帧）**阻塞**，
             ---所以 t=540 剩下的 MOVE_POS_TIME / SPAWN_ENEMY_ABS 72 都在第 306 帧才执行
@@ -11622,7 +11587,7 @@ local function TH34_add_stage56_boss()
     ---  同时每帧一发：`i2` 先取 3−i2 再发射，所以层数从 2 起在 2/1 之间跳；
     ---  出膛点在「半径 f4（60 起每帧 −0.5）× 随机角」上，弹沿该随机角 +π、速度 1→0.4，
     ---  0x20 段 spd=+0.025（原作slot0先设置60帧离屏延迟，再激活0x20）。
-    scard("天神剣「三魂七魄」", 4410, 66, 2000, false, function(self)
+    scard("天神剣「三魂七魄」", 4410, 4020/60, 2000, false, function(self)
         task.New(self, function()
             task.Wait(60)                           -- 原作 t=420 的装填（同帧跳完）
             bmove(self, 120, 4, 0, 128)             -- 原作 MOVE_POS_TIME 120 4 *f3_0 *f3_1
@@ -11774,9 +11739,11 @@ local function TH34_add_stage56_boss()
     ---  · 第 1→2 段之间无停顿；第 2 段后空 60 帧、再「GET_EXIT_ANGLE 漂 60 帧（速度 1）」；
     ---    第 3 段后同样漂 60 帧；第 4 段后 MOVE_POS_TIME(60,4,192,128) 回场地中心。
     ---差异 3：GET_EXIT_ANGLE 沿用本文件既有的 `drift`（exang 代理）近似（同其它卡）。
-    ncard("アリス 非符 1", 4430, 11000, 1200, function(self)
+    ncard("アリス 非符 1", 4430, 11000, 1200, 2400, function(self)
+        self.group = GROUP.NONTJT
         task.New(self, function()
             task.Wait(60)                        -- 原作 sub22 的 60 帧进场
+            self.group = GROUP.ENEMY -- Sub23在同步调用的第一帧开启体术。
             self._box = box5(32, 48, 352, 128)   -- sub22 t=60 的 SET_MOVEMENT_BOUNDS
             ---sub24 #19/#20 的两条 INIT_BULLET_CMD（只在 t=3 那一轮生效）。
             local BURST = { stages = { { type = 1 },
@@ -11846,9 +11813,7 @@ local function TH34_add_stage56_boss()
     ---      · **L 行**的 RANDOM（op72）：14 发，角度 rand(−π,π)、速度 rand(0.2,1.4)，
     ---        挂 [type1 起爆 17 帧 → type0x10 之后 120 帧 +0.02/帧²]（flags 0x213）；
     ---    t=270 起人形不再有判定，t=330 的 UNIMP 自毁。
-    ---差异 3：GET_EXIT_ANGLE 沿用 `drift`（exang 代理）；激光贴图与「人形被打死」暂缺
-    ---（原作每只人形 hp=10、可打，死亡回调 sub30 只是停激光 —— 本文件的 `pspawn` 子机
-    ---一律无判定，见 4433/4435 同一口径）。
+    ---Sub29 的10点原始生命值按低速口径换算；受击/体术随 ECL 开关，死亡执行 Sub30 停光。
     scard("操符「乙女文楽　-Lunatic-」", 4431, 50, 2000, false, function(self)
         task.New(self, function()
             ---大玉：sprite 10 / 色档 1 / 速度 7，方向 90°±11.25°。
@@ -11875,16 +11840,22 @@ local function TH34_add_stage56_boss()
                 local t = int(9 * v)                 -- lf2 = (int)(9·lf1)
                 local dist = t * v                   -- MOVE_DIR_TIME：速度 × 帧数
                 pspawn(ox, oy, function(o)
+                    NativeVisual.doll(o,14,10,true,false,false)
                     bmove(o, t, 4, o.x + cos(a * RAD2DEG) * dist,
                           o.y - sin(a * RAD2DEG) * dist)
                     task.Wait(t)                 -- SET_WAIT_TIMER t：人形出生后冻 t 帧，t=0 组开火
+                    NativeVisual.interrupt(o,1)
+                    NativeVisual.doll_interaction(o,true,true)
                     shoot6(o, 0, 0, 65, 1, 6, 3, 8, 3, 1.2, -a, 1.5708, nil, true)  -- L 行 SPREAD（t=0）
-                    plaser(o.x, o.y, -a, { spr = 4, w = 16, sOff = 0, eOff = 500,
+                    o.th07_doll_laser=plaser(o.x, o.y, -a, { spr = 4, w = 16, sOff = 0, eOff = 500,
                                           sLen = 500, tStart = 90, dur = 60, tEnd = 16,
                                           hbStart = 70, hbEnd = 16 })             -- SPAWN_LASER
                     task.Wait(20)                -- t=0 → t=20
                     rand3(o, 1, 2, 14, 1.4, 0.2, PI, -PI, DOLLCMD, true)            -- L 行 RANDOM（t=20）
-                    task.Wait(310)               -- t=20 → t=270 → t=330 的 UNIMP
+                    task.Wait(250)               -- t=20 → t=270
+                    NativeVisual.interrupt(o,2)
+                    NativeVisual.doll_interaction(o,false,false)
+                    task.Wait(60)                -- t=330 的 UNIMP
                 end)
             end
             task.Wait(120)                       -- MOVE_POS_TIME(120,4,192,112)
@@ -11928,7 +11899,7 @@ local function TH34_add_stage56_boss()
     ---            再「角度 += π、速度恢复成出膛速度」；
     ---      cmd1 = `1 32 0 60 -1 0 ±0.0261799`：0x20 段接着 60 帧 ×(±1.5°/帧) 自旋。
     ---    L 行两圈的 a2 与 cmd1 的旋向都是「左圈负、右圈正」。
-    ncard("アリス 非符 1", 4432, 19000, 2000, function(self)
+    ncard("アリス 非符 1", 4432, 19000, 2000, 2700, function(self)
         task.New(self, function()
             task.Wait(60)                        -- 原作 sub32 t=0..50 进场特效 / t=60 起
             self._box = box5(32, 48, 352, 128)   -- sub32 t=60 的 SET_MOVEMENT_BOUNDS
@@ -11937,6 +11908,7 @@ local function TH34_add_stage56_boss()
             ---`ENEMY_MOVE_POLAR` 那一支（EclManager.cpp:1537-1547：angle=arg2、speed=arg3），
             ---并不是「原地不动」；一路飞到 t=3090 的 UNIMP 才自毁。
             local function puppet(o, a0)
+                NativeVisual.doll(o,14,10,false,false,false)
                 ---`ENEMY_MOVE_POLAR` 在 TH07 里是**逐帧 pos += speed·(cos θ, sin θ)**（θ 朝下）；
                 ---翻到我们坐标（y 取反）就是沿 a0（已取反的度数）以 2 px/帧 直飞。
                 bmove(o, 3090, 0, o.x + cos(a0) * 2 * 3090,
@@ -12063,6 +12035,7 @@ local function TH34_add_stage56_boss()
         ---    `ang` 也是度，喂 math.cos/sin 前必须 ×π/180 —— 之前漏了这步，等于把「度」
         ---    当「弧度」用，8 只人形的落点全是错的。
         local function puppet(o, a)
+            NativeVisual.doll(o,16,30000,true,true,false)
             local host, a0_th = a.host, a.a0
             ---初值要含子机自己的 f3_1（本体 t=480 写的 **+0.0523599**）：
             ---第 1 帧 `SET_EX_INS 5` 还没生效，走的是 `MOVE_ORBIT` 的角速度。
@@ -12223,7 +12196,7 @@ local function TH34_add_stage56_boss()
     ---    （0x40 刹停 60 帧 → 掉头 π → 用自身速率续飞），
     ---    再 `INIT_BULLET_CMD 1 32 0 60 -1 0.005 -0.0261799`（0x20 每帧 −1.5°、+0.005 加速）。
     ---  两圈的 a1 都是同一个随机角；cmd 的角度按本仓库口径取反。
-    ncard("アリス 非符 2", 4434, 2000, 0, function(self)
+    ncard("アリス 非符 2", 4434, 2000, 0, 340, function(self)
         ---sub39 的 spr6 圈：0x40 掉头 + 0x20 自旋。
         local C40 = { type = 0x40, dur = 60, loop = 1, angle = -180, resume_own = true }
         local SPIN6 = { type = 0x20, dur = 60, loop = -1, speed = 0.005, angle = 1.5 }
@@ -12267,19 +12240,24 @@ local function TH34_add_stage56_boss()
     ---  · t=60 起步进 1 帧、共 6 圈：RING_ABS spr2、色档 = l3i0、c1=6、c2=1、a2=0（整圆 60°），
     ---    速度**每圈重新** rand(0.3)+0.9（= rand 0.9..1.2）、v2=1.5，圈心角 lf0 初值 0、每圈 += l3f3；
     ---  · t=161 换死亡动画，t=221 自毁。
-    ---差异：本文件的 `pspawn` 子机无判定（原作人形可被打死），同 4431/4433 口径。
+    ---Sub49 使用 ANM20；前60帧不受弹，随后开放24×24受弹框和体术框。
     scard("白符「白亜の露西亜人形 -Lunatic-」", 4435, 60, 3600, false, function(self)
         ---一只人形（原作 sub49）：t=60 起 1 帧一圈、共 6 圈。
         local function puppet(px, py, col, step)
             pspawn(px, py, function(o)
+                NativeVisual.doll(o,20,20,true,false,false)
                 task.Wait(60)
+                NativeVisual.doll_interaction(o,true,true)
                 local a = 0
                 for _ = 1, 6 do
                     ring3(o, 0, 0, 2, col, 6, 1, ran:Float(0.9, 1.2), 1.5, a)
                     a = a + step
                     task.Wait(1)
                 end
-                task.Wait(160)                  -- t=61 → t=221 自毁
+                -- DEC_JUMP 的末轮没有回跳：下一段从局部t=61数100帧，墙钟为166。
+                task.Wait(100)
+                NativeVisual.interrupt(o,2)
+                task.Wait(60)
             end)
         end
         task.New(self, function()
@@ -12349,7 +12327,7 @@ local function TH34_add_stage56_boss()
     ---  sub38 的 spr3 用 cmd −0.0261799 / spr6 用 +0.0261799，
     ---  sub39 相反（spr3 +0.0261799 / spr6 −0.0261799）。
     ---原作sub38/39的本体旋转圈保留120帧延迟；掉头圈的flags不带0x2000。
-    ncard("アリス 非符 3", 4436, 25000, 3300, function(self)
+    ncard("アリス 非符 3", 4436, 25000, 3300, 3300, function(self)
         local function nrm(a) return (a + PI) % (2 * PI) - PI end
         ---sub40 的一次投放。base/total 是角度区间两端，col 是色档（l3i0）。
         ---★ 每「拍」原作是 7 条 SPREAD_ABS，其中 #8/#9/#10/#11 是 **E/N/H/L 四行**
@@ -12445,6 +12423,7 @@ local function TH34_add_stage56_boss()
         ---四段 20 拍，打完从 ① 重新来。
         local function doll(a0)
             pspawn(self.x, self.y, function(o)
+                NativeVisual.doll(o,16,30000,true,true,false)
                 ---★ 第 1 帧 `SET_EX_INS 5` 还没生效：走子机自己的 `MOVE_ORBIT` 角速度
                 ---  f3_1（sub54 t=120 写的 **−0.0523599**）⇒ θ 先转一拍、ang = −(θ0+f3_1)。
                 local ang = -(a0 + (-0.0523599))    -- 我们的弧度（TH07 角取反）
@@ -12575,7 +12554,7 @@ local function TH34_add_stage56_boss()
     ---  （`*f3_0` / `*f3_1` 是 sub56 在 t=80 设、随 SPAWN_ENEMY_REL 继承下来的：
     ---    f3_0 = 该人形的出生角，f3_1 = −0.0523599。sub58 里 `SET_FLOAT *gf0 *ANG` /
     ---    `*gf1 ±2.51327` 在 sub59 里没有被读，原作里是死代码。）
-    scard("咒詛「首吊り蓬莱人形」", 4438, 55, 3300, false, function(self)
+    scard("咒詛「首吊り蓬莱人形」", 4438, 3380/60, 3300, false, function(self)
         ---本体 `commands[0]`（t=714 L 行写的 0x20）。
         ---★ 角度一律按「TH07 弧度 → 本仓角度」取反（本仓 angle = −TH07 angle），
         ---  原作 cmd.angle = +0.0261799 ⇒ 我们 −0.0261799·RAD2DEG。
@@ -12598,6 +12577,7 @@ local function TH34_add_stage56_boss()
         ---原作 sub58 + sub59（L 行）。a0 = 该人形继承到的 f3_0（出生角）。
         local function doll(a0)
             pspawn(self.x, self.y, function(o)
+                NativeVisual.doll(o,16,30000,true,true,false)
                 ---★ 第 1 帧 `SET_EX_INS 5` 还没生效：走子机自己的 `MOVE_ORBIT` 角速度
                 ---  f3_1（sub56 t=560 写的 **−0.0523599**）⇒ ang = −(θ0+f3_1)。
                 local ang = -(a0 + (-0.0523599))      -- 我们的弧度（TH07 角取反）
@@ -12795,6 +12775,34 @@ local function TH34_add_stage56_boss()
         return { type = 0x40, dur = dur or 60, loop = loop or 3,
                  angle = -rate_th * RAD2DEG, speed = speed }
     end
+    -- 二非/三非的弹幕以普通协程执行；共用已有原作弹体和激光对象。
+    local prism_nonspells=dofile('mod/GAME/th34_prism_nonspells.lua')({
+        shoot=shoot6,move=bmove,drift=drift,random_angle=rngrad,aim=aimth,f32=tof32,
+        normalize=function(a)
+            local pi=tof32(PI)
+            while a>pi do a=tof32(a-2*pi) end
+            while a< -pi do a=tof32(a+2*pi) end
+            return a
+        end,
+        laser=function(x,y,a,s)
+            local used=0
+            for _,o in pairs(class.th07_lasers or {}) do if IsValid(o) then used=used+1 end end
+            if used<64 then return plaser(x,y,a,s) end
+        end,
+        charge=function(o,count)
+            for _=1,count do
+                local effect=New(class.TH34_poltergeist_charge,o.x,o.y)
+                if spell_live then spell_live[#spell_live+1]=effect end
+            end
+        end,
+    })
+    local function prism_nonspell(name,id,fn,skin,third)
+        ncard(name,id,third and 20000 or 19000,third and 2100 or 2450,3600,function(self)
+            self._box=box5(32,48,352,128)
+            self.prism_command=nil
+            task.New(self,function() fn(self) end)
+        end,{skin=skin})
+    end
     ---──────────────────── 露娜萨 非符 1（原作 sub58 → sub59 / sub60 / sub62） ────────────────────
     ---逐条照抄 `ecldata4.ecl` 的 Lunatic 行（不做任何密度/手感调整）：
     ---  · sub58（本体，一轮 1580 帧）：SET_MOVEMENT_BOUNDS(32,48,352,128)；
@@ -12881,7 +12889,7 @@ local function TH34_add_stage56_boss()
         shoot6(self, f0, 0, 65, 10, off0, 1, 1, 4, 0.5, th, 0, nil, true)
         pspawn(self.x + f0, self.y, luna_turret, { th, gi1, gi2, gi3 })
     end
-    ncard("露娜萨 非符 1", 4440, 16000, 1600, function(self)
+    ncard("露娜萨 非符 1", 4440, 19000, 0, 3600, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             local function c59(f0, off0, gi1, gi2, gi3)
@@ -12912,6 +12920,9 @@ local function TH34_add_stage56_boss()
             end
         end)
     end, { skin = skin4L, enter = enter4 })
+
+    prism_nonspell("露娜萨 非符 2",5480,prism_nonspells.luna2,skin4L,false)
+    prism_nonspell("露娜萨 非符 3",5483,prism_nonspells.luna3,skin4L,true)
 
     ---原作 ecldata4 Sub121–126，Lunatic。三位演奏者和幽灵各自是 Lua 对象。
     ---主奏：206 帧起每 3 帧一只，共四组 36 只，周期 512；伴奏：354 帧起，
@@ -13103,7 +13114,7 @@ local function TH34_add_stage56_boss()
             while true do task.Wait(1) end
         end)
     end
-    ncard("梅露兰 非符 1", 4442, 16000, 1600, function(self)
+    ncard("梅露兰 非符 1", 4442, 17000, 0, 3600, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             task.Wait(85)                               -- t=0..85（含六发 SPAWN_EFFECT）
@@ -13135,6 +13146,9 @@ local function TH34_add_stage56_boss()
             end
         end)
     end, { skin = skin4M, enter = enter4 })
+
+    prism_nonspell("梅露兰 非符 2",5481,prism_nonspells.merlin2,skin4M,false)
+    prism_nonspell("梅露兰 非符 3",5484,prism_nonspells.merlin3,skin4M,true)
 
     ---──────────────────── 管霊「ゴーストクリフォード -Lunatic-」 ────────────────────
     ---逐条照抄 `ecldata4.ecl` 的 Lunatic 行（sub138 → sub139 → sub140）：
@@ -13280,7 +13294,7 @@ local function TH34_add_stage56_boss()
     ---    88 走到 188 共 100 帧，再加 t=50 的 SUB_CALL 2 十六帧与 t=80 前的三十帧）。
     ---0x40 = `BulletManager.cpp:779` UpdateBulletDirChangeAndResume；ECL 里速度参数写
     ---−999 ⇒ 走 `cmd.angle > -999 ? cmd.angle : this->speed` 的「沿用自身速率」分支。
-    ncard("莉莉卡 非符 1", 4444, 16000, 1600, function(self)
+    ncard("莉莉卡 非符 1", 4444, 18000, 0, 3600, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             local function cmd40(rot_th, dur, loop, spd, own)
@@ -13313,6 +13327,9 @@ local function TH34_add_stage56_boss()
             end
         end)
     end, { skin = skin4R, enter = enter4 })
+
+    prism_nonspell("莉莉卡 非符 2",5482,prism_nonspells.lyrica2,skin4R,false)
+    prism_nonspell("莉莉卡 非符 3",5485,prism_nonspells.lyrica3,skin4R,true)
 
     ---──────────────────── 鍵霊「ベーゼンドルファー神奏 -Lunatic-」 ────────────────────
     ---逐条照抄 `ecldata4.ecl` sub145 的 Lunatic 行（本体 + sub148/sub149）：
@@ -13433,7 +13450,7 @@ local function TH34_add_stage56_boss()
     local N4466 = { [0] = 2, [2] = 6 }
     -- Sub129 的i0=0/2分别选择161/163；发弹色档2/6是分支执行后的结果。
     local PRISM_NOTE_ANM = { [2]=161, [6]=163 }
-    scard("偽弦「スードストラディヴァリウス」", 4446, 66, 3600, false, function(self)
+    scard("偽弦「スードストラディヴァリウス」", 4446, 60, 3600, false, function(self)
         local B = self                      -- sub129 的 GET_BOSS_FLOAT 读的就是这只 boss
         ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad), 速度 }）。
         local function note(me, a)
@@ -13759,8 +13776,9 @@ local function TH34_add_stage56_boss()
     ---  · sub24：8×3（2.5→1）＋ 10×3（2→1）＋ 14×3（3.5→1）＋ 16×3（3→1）＋ 两圈 4×5。
     ---四段 MOVE_POS_TIME 都是**绝对**坐标：(256,160)/(128,160)/(192,128)
     ---⇒ 我们 (64,64)/(−64,64)/(0,96)。
-    ncard("レティ 非符 1", 4450, 16000, 1600, function(self)
-        self._box = box5(32, 48, 352, 128)
+    ncard("レティ 非符 1", 4450, 16000, 1600, 1680, function(self)
+        self.group = GROUP.NONTJT
+        self._box = nil
         ---INIT_BULLET_CMD 的三段原型（角度一律换成我们的度数口径 = TH07 取反）。
         local function CLR() return { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 } end
         local function SP20(rate_th, flag)                 -- 0x20 TargetAngle
@@ -13772,6 +13790,10 @@ local function TH34_add_stage56_boss()
                      angle = -rot_th * RAD2DEG, speed = 0, resume_own = own }
         end
         task.New(self, function()
+            -- 生成入口t=60才CALL发弹循环；此前允许从场外进场。
+            task.Wait(60)
+            self.group = GROUP.ENEMY
+            self._box = box5(32,48,352,128)
             while true do
                 ---①sub25：SUB_CALL 2（120 帧）＋ 4 组环 ＋ SUB_RET 前的 60 帧
                 PlaySound("power0", 0.35, self.x / 256)
@@ -13906,10 +13928,12 @@ local function TH34_add_stage56_boss()
     ---    2 发窄扇（半张角 0.448799、速度 rand(1.2)+1），弹挂 0x10（沿自身朝向加速 π/120、120 帧）；
     ---  · sub34：同 sub32，但第二扇速度 2.2；`i2_0 % 4 == 0`（第 1/5/9/13 拍）时再补一圈
     ---    16 发自机狙（1 px/帧、基准角 = 第二扇的 f1）。
-    ncard("レティ 非符 2", 4452, 16000, 1600, function(self)
+    ncard("レティ 非符 2", 4452, 16000, 1600, 2400, function(self)
         self._box = box5(32, 48, 352, 128)
         ---原作 sub35：雪点本体。等 wait 帧后打 2 发窄扇，再活 40 帧自毁（UNIMP）。
         local function snowbody(o, a0, spd, wait)
+            OriginalStageVisual.actor(o,7,"stg1enm",11)
+            o._original_explicit=true
             local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
             for _ = 1, wait do
                 o.x, o.y = o.x + vx, o.y + vy
@@ -13926,7 +13950,11 @@ local function TH34_add_stage56_boss()
                          { type = 0x10, flag = 0, dur = 120, loop = -1,
                            speed = 0.00833333, angle = -999 }),
                    false)
-            for _ = 1, 40 do task.Wait(1) end
+            NativeVisual.interrupt(o,1)
+            for _ = 1, 40 do
+                o.x,o.y=o.x+vx,o.y+vy
+                task.Wait(1)
+            end
         end
         ---★ 原作 sub32/34 的 `INIT_BULLET_CMD 0 1 0 -1 -1 -1 -1`（爆速段）是否生效
         ---看**每条波自己的 flags**（`moreFlags & cmd->type`）：
@@ -14047,6 +14075,8 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub36：雪点。`th0`/`spd` 是 MOVE_DIR_TIME 的方向与速度，`fan0` 是 f3_2（散射基准角）。
         local function snow(o, th0, spd, fan0)
+            OriginalStageVisual.actor(o,7,"stg1enm",11)
+            o._original_explicit=true
             local vx, vy = math.cos(th0) * spd, -math.sin(th0) * spd
             for _ = 1, 80 do
                 o.x, o.y = o.x + vx, o.y + vy
@@ -14076,7 +14106,11 @@ local function TH34_add_stage56_boss()
                 end
                 shoot6(o, 0, 0, 65, 3, off, 3, 1, v, 0.5, fan0, 0.0245437, cmd, false)
             end
-            for _ = 1, 40 do task.Wait(1) end
+            NativeVisual.interrupt(o,1)
+            for _ = 1, 40 do
+                o.x,o.y=o.x+vx,o.y+vy
+                task.Wait(1)
+            end
         end
         ---原作 sub43：冰晶。
         ---`MOVE_ORBIT 180 X Y Z f3_0 f3_1 0 0.78`：以**生成点**为心、f3_0 为初角、
@@ -14087,6 +14121,8 @@ local function TH34_add_stage56_boss()
         local function ice(a0, av)
             local cx, cy = self.x, self.y
             pspawn(cx, cy, function(o)
+                OriginalStageVisual.actor(o,7,"stg1enm",11)
+                o._original_explicit=true
                 local fan0 = 1.5708
                 local th, r = a0, 0
                 local vx, vy = 0, 0
@@ -14113,7 +14149,10 @@ local function TH34_add_stage56_boss()
                         task.Wait(1)
                     end
                 end
-                for _ = 1, 4000 do task.Wait(1) end
+                for _ = 1, 4000 do
+                    o.x,o.y=o.x+vx,o.y+vy
+                    task.Wait(1)
+                end
             end)
         end
         task.New(self, function()
@@ -14168,10 +14207,12 @@ local function TH34_add_stage56_boss()
     ---    （速度 rand(0.8)+0.2、方向 [−π,π)、sprite 1，挂 0x10 沿自身加速 π/75、120 帧），
     ---    共 60 组后自毁。原作那条 `i2_0 % 2` 的奇偶判断因为 JNEQ 跳进了「难度组」中间，
     ---    在四个难度上都不起作用，所以这里照抄成「每组都打」。
-    ncard("レティ 非符 3", 4454, 15000, 1500, function(self)
+    ncard("レティ 非符 3", 4454, 15000, 1500, 2400, function(self)
         self._box = box5(32, 48, 352, 128)
         ---原作 sub35 的雪点（sub33 生）：匀速漂 wait 帧后朝外打 2 发窄扇。
         local function snowbody(o, a0, spd, wait)
+            OriginalStageVisual.actor(o,7,"stg1enm",11)
+            o._original_explicit=true
             local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
             for _ = 1, wait do
                 o.x, o.y = o.x + vx, o.y + vy
@@ -14188,7 +14229,11 @@ local function TH34_add_stage56_boss()
                          { type = 0x10, flag = 0, dur = 120, loop = -1,
                            speed = 0.00833333, angle = -999 }),
                    false)
-            for _ = 1, 40 do task.Wait(1) end
+            NativeVisual.interrupt(o,1)
+            for _ = 1, 40 do
+                o.x,o.y=o.x+vx,o.y+vy
+                task.Wait(1)
+            end
         end
         ---原作 sub33：SUB_CALL 2（120 帧）＋ 60 拍、每 2 帧一个雪点。
         local function sub33(g)
@@ -14228,6 +14273,7 @@ local function TH34_add_stage56_boss()
         end
         ---原作 sub41：绕本体外旋的冰桌。
         local function orbit41(o, cx, cy, a0, av, rv)
+            NativeVisual.trail(o,"stg1enm",12,32,16,1)
             local ang, r = a0, 0
             for _ = 1, 120 do
                 ang, r = ang + av, r + rv
@@ -14251,10 +14297,15 @@ local function TH34_add_stage56_boss()
                 for _ = 1, 3 do
                     ang = ang + avv
                     o.x, o.y = cx + math.cos(ang) * r, cy - math.sin(ang) * r
+                    task.Wait(1)
                 end
-                task.Wait(3)
             end
-            for _ = 1, 40 do task.Wait(1) end
+            NativeVisual.interrupt(o,1)
+            for _ = 1, 40 do
+                ang=ang+avv
+                o.x,o.y=cx+math.cos(ang)*r,cy-math.sin(ang)*r
+                task.Wait(1)
+            end
         end
         ---原作 sub40：SUB_CALL 2（120 帧）后放 3 个冰桌，再漂 90 帧 ×0.6（t=240 返回）。
         local function sub40(g0, g1, g2)
@@ -14330,23 +14381,35 @@ local function TH34_add_stage56_boss()
             ---出生当帧先打一组（ANG 还是模板初值 0），再走 8 帧轨道；如此 12 次。
             local function ripple(cx, cy, th0, w, rv)
                 pspawn(cx, cy, function(o)
+                    NativeVisual.trail(o,"stg1enm",12,32,16,1)
                     local a, rad, px, py, ang = th0, 0, 0, 0, 0
-                    for _ = 1, 12 do
-                        fan4(o, o.x, o.y, 5, 6, 3, 2, 1.8, 0.5, ang + PI, 0.785398)
-                        for _ = 1, 8 do
-                            a, rad = a + w, rad + rv
-                            local nx, ny = math.cos(a) * rad, math.sin(a) * rad
-                            local vx, vy = nx - px, ny - py
-                            if vx ~= 0 or vy ~= 0 then ang = atan2(vy, vx) end
-                            px, py = nx, ny
-                            o.x, o.y = cx + nx, cy - ny
+                    local vx,vy,n=0,0,0
+                    local function step(count)
+                        for _=1,count do
+                            n=n+1
+                            if n<=120 then
+                                a,rad=a+w,rad+rv
+                                local nx,ny=math.cos(a)*rad,math.sin(a)*rad
+                                vx,vy=nx-px,ny-py
+                                if vx~=0 or vy~=0 then ang=atan2(vy,vx) end
+                                px,py=nx,ny
+                                o.x,o.y=cx+nx,cy-ny
+                            else o.x,o.y=o.x+vx,o.y-vy end
                             task.Wait(1)
                         end
                     end
+                    for _=1,12 do
+                        fan4(o,o.x,o.y,5,6,3,2,1.8,0.5,ang+PI,0.785398)
+                        step(8)
+                    end
+                    -- sub54 发弹结束后继续运动；156 帧起只有头尾都出屏才回收。
+                    step(60)
+                    for _=1,2000 do
+                        if NativeVisual.trail_outside(o) then return end
+                        step(1)
+                    end
                 end)
             end
-            ---原作 sub53：一次 SUB_CALL 53。charge（gI1==1）⇒ 48 帧蓄力；随后在**这一刻的
-            ---本体位置**放出 n 只涟漪点，角速度逐只 +f3。
             local function wave(w, f3, n, charge)
                 if charge then
                     PlaySound("power0", 0.35, self.x / 256)
@@ -14399,15 +14462,16 @@ local function TH34_add_stage56_boss()
     ---    里发两圈（t=0 与 t=12），共 15 拍：
     ---      第 1 圈 `RING_ABS 6:6 c1=5 1.8→0.5 a1=−ANG a2=π`（flags 512）
     ---      第 2 圈 `RING_ABS 6:5 c1=5 0.5→0.5 a1=−ANG a2=π`（flags 529）
-    ---    ⇒ 30 圈、每圈 5 发；360 帧后 `SET_DESPAWN_ON_OOB 0`。
+    ---    ⇒ 30 圈、每圈 5 发；420 帧后 `SET_DESPAWN_ON_OOB 0`。
     ---  · ANG 同 4455：MOVE_ORBIT 的**运动方向**（离散差分），a1 = −ANG。
-    ---差异 64/65 同 4455（`DIV_FLOAT ANGVEL ANGVEL 1.4` 是恒等；pspawn 无判定无贴图）。
+    ---使魔的 ANM12、32 帧带状拖尾和碰撞由 NativeVisual.trail 随对象逐帧维护。
     scard("怪符「テーブルターニング」", 4456, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             ---原作 sub57：一只冰齿轮。th0 = orbitAngle、w = orbitAngleVel、rv = 径速。
             local function gear(cx, cy, th0, w, rv)
                 pspawn(cx, cy, function(o)
+                    NativeVisual.trail(o,"stg1enm",12,32,16,1)
                     local a, rad, px, py, ang = th0, 0, 0, 0, 0
                     local vx, vy, n = 0, 0, 0
                     local function step(cnt)
@@ -14441,6 +14505,11 @@ local function TH34_add_stage56_boss()
                               cmds4(529, { type = 1 },
                                         { type = 0x10, dur = 60, loop = -1, speed = 0.0166667 }))
                         step(12)
+                    end
+                    step(60)
+                    for _=1,2000 do
+                        if NativeVisual.trail_outside(o) then return end
+                        step(1)
                     end
                 end)
             end
@@ -14503,8 +14572,13 @@ local function TH34_add_stage56_boss()
         self.x, self.y = 224, 96
         bmove(self, 60, 4, 0, 96)
     end
-    ncard("橙 非符 1", 4460, 15000, 1500, function(self)
-        self._box = box5(32, 48, 352, 128)
+    ncard("橙 非符 1", 4460, 15000, 1500, 2400, function(self)
+        self.group = GROUP.NONTJT
+        task.New(self, function()
+            task.Wait(60) -- Sub40同步调用Sub41时同时开启受击和体术。
+            self.group = GROUP.ENEMY
+        end)
+        self._box = nil
         task.New(self, function()
             ---原作 sub43（Lunatic 行）：22 组 `3:10` 自机狙扇。
             local function volley()
@@ -14537,12 +14611,15 @@ local function TH34_add_stage56_boss()
                 local ty = 224 - ran:Float(32, 192)
                 local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
                 pspawn(x0, y0, function(o)
+                    OriginalStageVisual.actor(o,7,'stg2enm',13)
+                    NativeVisual.interrupt(o,2)
                     task.Wait(1)
                     for k = 1, 180 do
                         local u = k / 180
                         o.x = hermite(u, x0, tx, mx0, mx1)
                         o.y = hermite(u, y0, ty, my0, my1)
                         if k == 180 then
+                            NativeVisual.interrupt(o,1)
                             local a = rngrad()
                             ---★原作 sub28/sub29 的四条 RING_ABS 是**四选一**难度掩码
                             ---（0x01/0x02/0x04/0x08），Lunatic 只出最后那一条：
@@ -14561,8 +14638,12 @@ local function TH34_add_stage56_boss()
                         end
                         task.Wait(1)
                     end
+                    task.Wait(29) -- sub34/35 的爆裂动画保留到出生后第210帧。
                 end)
             end
+            -- 生成入口t=60才CALL发弹循环；此前允许从场外进场。
+            task.Wait(60)
+            self._box = box5(32,48,352,128)
             while true do
                 ---t=0..30：MOVE_DIR 30 帧、速度 1.0（`GET_EXIT_ANGLE` 的随机方向）
                 drift(self, 1.0, 30)
@@ -14626,6 +14707,8 @@ local function TH34_add_stage56_boss()
                 local ty = 224 - ran:Float(32, 192)
                 local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
                 pspawn(x0, y0, function(o)
+                    OriginalStageVisual.actor(o,7,'stg2enm',13)
+                    NativeVisual.interrupt(o,2)
                     task.Wait(1)
                     for k = 1, 180 do
                         local u = k / 180
@@ -14634,6 +14717,7 @@ local function TH34_add_stage56_boss()
                         if k == 180 then break end
                         task.Wait(1)
                     end
+                    NativeVisual.interrupt(o,1)
                     local a = rngrad()
                     local G = { { 1.5708, 2.0 }, { 1.66897, 1.9 }, { 1.76715, 1.8 },
                                 { 1.86532, 1.7 }, { 1.9635, 1.6 } }
@@ -14652,6 +14736,7 @@ local function TH34_add_stage56_boss()
                             ring4(o, o.x, o.y, 6, 10, n, 1, v1, 1.5, a, 0, cmd)
                         end
                     end
+                    task.Wait(30) -- sub32/33：爆裂以后继续播放动画，t=210 删除。
                 end)
             end
             ---原作 t=120 的 MOVE_POS_TIME 120 4 192 112（= enter1b）走完 120 帧，
@@ -14702,7 +14787,7 @@ local function TH34_add_stage56_boss()
     ---    基准角每圈 ±0.0654498；每圈带一条 0x40（120 帧刹停→拐一次→复速
     ---    2.0/1.7/1.4/1.1 或 ±2.24399），前八圈另带一条 0x20 自旋（±0.0261799 /
     ---    ∓0.0392699 / ±0.0523599 / ∓0.0314159）。
-    ncard("橙 非符 2", 4462, 17000, 1700, function(self)
+    ncard("橙 非符 2", 4462, 17000, 1700, 2100, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             ---原作 sub51 的一整段（含 80 帧粒子），共 164 帧。
@@ -14921,6 +15006,7 @@ local function TH34_add_stage56_boss()
                 end
                 for k = 0, 1 do
                     pspawn(cx, cy, function(o)
+                        NativeVisual.trail(o,'stg2enm',12,32,16,1,16,16)
                         local th, r, avv = a0 + k * PI, 0, av
                         for _ = 1, 120 do                  -- MOVE_ORBIT：半径 +1、角 +av
                             r = r + 1
@@ -14945,6 +15031,12 @@ local function TH34_add_stage56_boss()
                                 o.x, o.y = cx + math.cos(th) * r, cy - math.sin(th) * r
                                 task.Wait(1)
                             end
+                        end
+                        NativeVisual.interrupt(o,1)
+                        for _=1,40 do
+                            th=th+avv
+                            o.x,o.y=cx+math.cos(th)*r,cy-math.sin(th)*r
+                            task.Wait(1)
                         end
                     end)
                 end
@@ -14995,7 +15087,7 @@ local function TH34_add_stage56_boss()
     ---    1.5708 弧度加速 0.016/帧）后一发 `RANDOM`（op72）弹云：贴图 `1:gi0`、
     ---    count1 = gi1+22（sub55 里先 −16 再 +16、再 +22）、方向 rand[−π,π)、
     ---    速度 rand[0.2,1.4]，flags 531（响一声）。三次 gi0/gi1 = (12,16) / (13,40) / (14,52)。
-    ncard("橙 非符 3", 4465, 13000, 1300, function(self)
+    ncard("橙 非符 3", 4465, 13000, 1300, 2700, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             ---原作 sub54 的一整段（84 帧）。
@@ -15136,10 +15228,14 @@ local function TH34_add_stage56_boss()
             ---「天童」（sub65）：跟住本体；t=140 UNIMP ⇒ 活 140 帧。
             local function tendou()
                 pspawn(self.x, self.y, function(o)
-                    for _ = 1, 140 do
+                    NativeVisual.trail(o,'stg2enm',12,64,32,1,16,16)
+                    for _ = 1, 100 do
                         o.x, o.y = self.x, self.y
                         task.Wait(1)
                     end
+                    -- 取消ExIns跟随后，拖尾留在最后位置消散40帧。
+                    NativeVisual.interrupt(o,1)
+                    task.Wait(40)
                 end)
             end
             while true do
@@ -15235,10 +15331,14 @@ local function TH34_add_stage56_boss()
             ---「天童」（sub67）：跟住本体；t=100 UNIMP ⇒ 活 100 帧。
             local function tendou()
                 pspawn(self.x, self.y, function(o)
-                    for _ = 1, 100 do
+                    NativeVisual.trail(o,'stg2enm',12,64,32,1,16,16)
+                    for _ = 1, 60 do
                         o.x, o.y = self.x, self.y
                         task.Wait(1)
                     end
+                    -- 取消ExIns跟随后，拖尾留在最后位置消散40帧。
+                    NativeVisual.interrupt(o,1)
+                    task.Wait(40)
                 end)
             end
             ---本体一拍 = 一条 op65 SPREAD_ABS（Lunatic 行；Hard 的那条见下）。
@@ -15373,7 +15473,7 @@ local function TH34_add_stage56_boss()
     ---（RING_ABS count1=2、相隔 180°）」：基准角每拍 +π/22、速度每拍 −3/11；再 **11 次**：
     ---基准角继续 +π/22、速度每拍 +3/11 加回来（DEC_JUMP 先减后跳、计数到 0 不跳 ⇒ 恰好
     ---li1 次）。弹型 spr 6、flags 512 ⇒ 每帧响一次音效（sound4 去重）。
-    scard("仙符「屍解永遠」", 4468, 45, 3200, false, function(self)
+    scard("仙符「屍解永遠」", 4468, 2710/60, 3200, false, function(self)
         task.New(self, function()
             self._box = nil                  -- 原作承接 sub64 的 DISABLE_MOVEMENT_BOUNDS
             task.Wait(10)                    -- 原作 sub68 t=130 那一支在墙钟 10 执行
@@ -15437,7 +15537,7 @@ local function TH34_add_stage56_boss()
     ---**整个覆盖**成自己的 arg7（EclManager.cpp:1313），所以只有 sub74 那些
     ---flags 带 0x10（528=0x210）的弹会激活这条指令；sub73 的 flags=0x200
     ---在 `RunCommands` 里 `moreFlags & type == 0` 直接跳过 ⇒ **不吃加速**。
-    scard("方符「奇門遁甲」", 4469, 45, 3600, false, function(self)
+    scard("方符「奇門遁甲」", 4469, 2710/60, 3600, false, function(self)
         ---★ sub66（妖蝶？）在 t=240 已经 `DISABLE_MOVEMENT_BOUNDS`，而
         ---`SET_LIFE_CALLBACK_SUB 75` 接在同一条链上（sub75 自己从不重开边界）
         ---⇒ 本卡全程 **没有**移动边界（`HandleLifeCallback` 不重置它）。
@@ -15555,7 +15655,7 @@ local function TH34_add_stage56_boss()
     ---差异 66：`0x40` 的 `cmd.angle = −999` ⇒ 停下后「沿用**弹此刻**的速率」，本仓库的
     ---  TH34_cmdbullet 用 `resume_own = true` 表达。B/C 出生后以当前速率沿原方向匀减到 0
     ---  （60 帧），再拐 ±135°、以原速继续。
-    ---差异 65：花是 `SET_IS_PROJECTILE 1` 的实体；pspawn 子机无判定无贴图。
+    ---花按 sub50 的 SET_TRAIL(25,64,32,2) 保留带状精灵和历史节点判定。
     scard("冬符「フラワーウィザラウェイ」", 4457, 50, 3000, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
@@ -15568,6 +15668,7 @@ local function TH34_add_stage56_boss()
             ---的恢复速度）。每帧 angle += av、speed += accel、pos += dir(angle)·speed。
             local function flower(cx, cy, th0, av, v)
                 pspawn(cx, cy, function(o)
+                    NativeVisual.trail(o,'stg1enm',12,64,32,2)
                     local th, spd, acc = th0, v, -v / 180
                     local function step(n)
                         for _ = 1, n do
@@ -15592,6 +15693,12 @@ local function TH34_add_stage56_boss()
                         shoot6(o, 0, 0, 65, 2, 6, 1, 1, 0.8, 0.8,
                                f + 0.785398 - 1.5708, 1.5708, CC, false)
                         step(5)
+                    end
+                    acc=0
+                    step(10) -- ins50(0) 后十帧，ins137(0) 才允许出屏回收。
+                    for _=1,4000 do
+                        if NativeVisual.trail_outside(o) then return end
+                        step(1)
                     end
                 end)
             end
@@ -15642,8 +15749,7 @@ local function TH34_add_stage56_boss()
     ---sub47（人形）：t=60 起可打（原作 life=20、itemdrop −1、score 100）并打一圈音效；
     ---  随后 6 帧各打两圈 RING_ABS（spr2，c1 = 4 与 7、速度 = rand(0.3)+0.9、
     ---  基准角从 0 起每帧 += l3f3）；t=161 换死亡动画、t=221 自毁。
-    ---差异：`pspawn` 子机无判定（原作人形可被打死），同 4431/4433/4435 口径；
-    ---  原作 flags 0x3 的出生特效略。
+    ---Sub47 使用 ANM22；前60帧不受弹，之后可击破，退场由 ANM 中断2控制。
     scard("紅符「紅毛の和蘭人形」", 4439, 60, 3600, false, function(self)
         ---一只人形（原作 sub47）。col = l3i0、step = l3f3（±0.0218166）。
         ---★ 原作的两条 `RING_ABS` 是 E 行（c1=4）/ N 行（c1=7）**二选一**，
@@ -15651,7 +15757,9 @@ local function TH34_add_stage56_boss()
         ---★ 原作 `RAND_FLOAT_ADD *f1` 在 `DEC_JUMP` 的回跳目标上 ⇒ **每帧重掷**。
         local function doll(px, py, col, step)
             pspawn(px, py, function(o)
+                NativeVisual.doll(o,22,20,true,false,false)
                 task.Wait(60)
+                NativeVisual.doll_interaction(o,true,true)
                 local a = 0
                 for _ = 1, 6 do
                     local v = 0.9 + ran:Float(0, 0.3)
@@ -15659,7 +15767,9 @@ local function TH34_add_stage56_boss()
                     a = a + step
                     task.Wait(1)
                 end
-                task.Wait(155)                  -- t=66 → t=221 自毁
+                task.Wait(100)                  -- 六轮 DEC_JUMP 后局部t=61，至t=161
+                NativeVisual.interrupt(o,2)
+                task.Wait(60)
             end)
         end
         task.New(self, function()
@@ -15718,6 +15828,11 @@ local function TH34_add_stage56_boss()
     ---    其余 flags 位（`0x2` 快速出屏动画等）本仓库没有对应表现。
     local function kyodoll(boss, a0_th, spr, spin, kick)
         pspawn(boss.x, boss.y, function(o)
+            OriginalStageVisual.actor(o,7,'stg3enm',16)
+            -- sub51/53：生命30000，isHittable=0、hasContactHitbox=1。
+            -- 接触判定单独计算，避免不可受击的人偶吸收自机弹。
+            o.hp=30000;OriginalBalance.unit(o,7,true)
+            o.th07_contact_box={24,24}
             ---★ 第 1 帧 `SET_EX_INS 5` 还没生效：子机自己的 `MOVE_ORBIT` 用 f3_1 当角速度
             ---  先转一拍（`orbitAngle += orbitAngleVel`）。TH07 里 θ 变成 θ0+f3_1，
             ---  本仓库角取反 ⇒ ang = −(θ0+f3_1) = −θ0 − kick。漏掉这 0.0523599 rad
@@ -15917,6 +16032,8 @@ local function TH34_add_stage56_boss()
             ---我们的 y 轴和 TH07 相反，切线要跟着取反（同 sub75 的移植口径）。
             local my0, my1 = -rnd_sign() * 144, -rnd_sign() * 144
             pspawn(x0, y0, function(o)
+                OriginalStageVisual.actor(o,7,'stg2enm',13)
+                NativeVisual.interrupt(o,2)
                 ---原作 sub30 在出生帧执行 t=0 的 INIT_INTERP，t=180 才 SPAWN_ENEMY_REL 24
                 ---⇒ 位移第 1 拍在出生帧、炸环在出生后第 180 帧（子程先空等 1 帧）。
                 task.Wait(1)
@@ -15924,9 +16041,10 @@ local function TH34_add_stage56_boss()
                     local u = k / 180
                     o.x = hermite(u, x0, tx, mx0, mx1)
                     o.y = hermite(u, y0, ty, my0, my1)
-                    if k == 180 then burst(o) end
+                    if k == 180 then NativeVisual.interrupt(o,1);burst(o) end
                     task.Wait(1)
                 end
+                task.Wait(29) -- sub30/31：末段动画不能随发弹协程提前删除。
             end)
         end
         ---sub24：spr6／色 2，两组「16 + 24 发」；0x40 先 +90°（1.0 复飞）再 −90°（1.8）。
@@ -15984,12 +16102,14 @@ local function TH34_add_stage56_boss()
     ---  速度走 H 行的掩码分支（skip=0x04）：`rand(0,0.5)+2.8` 起、每圈 −0.222222 连减 9 圈，
     ---  再 +0.222222 连加 9 圈；色档 = gI0（6 / 2）、flags = 0x200（响音效）。
     ---（18 圈在 `DEC_JUMP` 里**同一帧**打完 —— 原作 DEC_JUMP 不消耗帧。）
-    scard("鬼符「鬼門金神」", 4471, 45, 3600, false, function(self)
+    scard("鬼符「鬼門金神」", 4471, 2710/60, 3600, false, function(self)
         ---sub66 在 t=240 已经 `DISABLE_MOVEMENT_BOUNDS`（HandleLifeCallback 不重置）⇒ 无框。
         self._box = nil
         ---一只鬼火：每 30 帧按 sub73 打 18 圈（base 每轮按 sgn 推进一次）。
         local function onibi(off, sgn)
             pspawn(self.x, self.y, function(o)
+                OriginalStageVisual.actor(o,7,'stg2enm',12)
+                -- sub71/72 的 canDie=0、hasNoCollision=1，显示鬼火但不开放受击/体术。
                 local base = 0
                 while true do
                     local a, v = base, ran:Float(0, 0.5) + 2.8

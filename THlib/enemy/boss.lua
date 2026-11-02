@@ -41,6 +41,8 @@ function boss:ActiveDistortion(open)
 end
 function boss:frame()
     self.astral_dmg_factor = lstg.var.ON_astral and 2.5 or 1
+    -- 原作共享血槽先结算上一帧受击，再检查生命回调；不能等卡的frame之后才扣血。
+    if self.th07_shared_damage then TH34Prism.step(self) end
     self._bosssys:frame() --boss系统帧逻辑
     if GameRank then GameRank.verifyHealth(self) end
     self._wisys:frame() --行走图系统帧逻辑
@@ -65,6 +67,7 @@ function boss:take_damage(dmg)
     if self.dmgmaxt then
         self.dmgt = self.dmgmaxt
     end
+    if self.th07_shared_damage and TH34Prism.receive(self, dmg) then return end
     if not self.protect then
         local dmg0 = min(self.hp, dmg * self.dmg_factor * self.DMG_factor * self.astral_dmg_factor)
         self.spell_damage = self.spell_damage + dmg0
@@ -76,6 +79,7 @@ function boss:take_damage2(dmg)
     if self.dmgmaxt then
         self.dmgt = self.dmgmaxt
     end
+    if self.th07_shared_damage and TH34Prism.receive(self, dmg) then return end
     if not self.protect then
         local dmg0 = min(self.hp, dmg * self.DMG_factor * self.astral_dmg_factor)
         self.spell_damage = self.spell_damage + dmg0

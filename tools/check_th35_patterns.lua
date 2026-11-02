@@ -268,7 +268,7 @@ local wx, wy = wall.x, wall.y
 step(2); check(near(wall.x, wx) and near(wall.y, wy), 'laserStOn 保持固定位置')
 step(45); check(not IsValid(wall), '固定激光完成四段状态后回收')
 stop(moses)
--- 穀物：原先把 op413 误当移动激光，还把 op412 的 speed=20 写成 2.5。
+-- 穀物：op413 是固定激光；op412 读取局部地址20，ins356给L行赋值2.5。
 local harvest = start(3632); step(160)
 local warning = lasers(harvest.th10carrier, true)
 check(#warning == 64, '穀物的 Lunatic 行一轮生成 64 根固定预警激光')
@@ -278,7 +278,7 @@ step(72)
 check(preview.t10_state == 2 and preview.colli and near(preview.w, 16), '预警和变粗结束后进入全宽有效阶段')
 step(20)
 local mobile = lasers(harvest.th10carrier, false)
-check(#mobile > 0 and near(mobile[1].t10_spd, 20), '穀物的另一把枪按二进制 ECL 以 20 px/帧射出')
+check(#mobile > 0 and near(mobile[1].t10_spd, 2.5), '穀物的另一把枪读取局部变量的L行2.5，而非把地址20当速度')
 step(90); check(not IsValid(preview), '穀物的固定激光按 60/20/60/20 帧消散')
 stop(harvest)
 local wide = New(line_class, 0, 0, 13, 1, 0, 128, 512, 8, 0, 46)

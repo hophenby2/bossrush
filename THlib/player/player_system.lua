@@ -430,7 +430,8 @@ function system:colli(other)
             laser.CutOnUnit(other, p)
         end
         if other.group == 1 then
-            object.Del(other)
+            if OriginalBulletVisual then OriginalBulletVisual.cancel_bullet(other,'Del')
+            else object.Del(other) end
         end
     end
     self:doColliAfterEvent(other)

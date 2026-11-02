@@ -33,7 +33,8 @@ SaveResume={clear=function() cleared=cleared+1 end}
 SaveScoreData=function() saved=saved+1 end;SaveSpellCardData=function() end
 local musicEvents,backgroundEvents={},{}
 PlayMusic=function(name) musicEvents[#musicEvents+1]=name end
-StopMusic=function() error('随机十战不应在战斗中切换音乐') end
+local stopped={}
+StopMusic=function(name) check(name=='SCORE','只停止上局结算音乐');stopped[#stopped+1]=name end
 background.Create=function(class) backgroundEvents[#backgroundEvents+1]=class end
 mask_fader={Do=function() end};lstg={var={},tmpvar={}};scoredata={}
 GROUP={GHOST=0,ENEMY=2};LAYER={TOP=0}
@@ -57,7 +58,7 @@ end
 local R=dofile('mod/roguelike.lua');local pool=R.buildPool()
 local counts={};local original={};local spell,non=false,false
 -- 锁住会暴露“拿 Boss 资源 id 查标定表”的代表卡：三面非符、五面中 BOSS 非符、二面过渡非符。
-local calibrated={[427]=725,[3433]=774,[467]=227}
+local calibrated={[427]=1079,[3433]=1153,[467]=338}
 for _,bucket in ipairs(pool) do
     counts[bucket.code]=#bucket.cards
     for _,entry in ipairs(bucket.cards) do
@@ -120,7 +121,11 @@ for i,entry in ipairs(spawned) do local e=run.cards[i];check(entry.card==_sc_pr_
 check(cleared==1,'完成清理续玩点')
 stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
 check(scoredata.rogue10.played==1 and scoredata.rogue10.cleared==1 and saved==1,'独立模式记录，不记为主线通关')
+local beforeStop=#stopped
+stage.current_stage:del()
+check(#stopped==beforeStop+1,'离开结算页停止 SCORE，返回菜单和重开共用此生命周期')
 battle,run=simulate(333,3)
+check(#stopped==beforeStop+2,'新局入口也停止残留 SCORE')
 check(stage.next_stage==stage.stages[R.RESULT] and not run.won and run.completed<10,'十次失误结束，失败不算通关')
 stage.current_stage=stage.next_stage;stage.next_stage=nil;stage.current_stage:init()
 check(scoredata.rogue10.played==2 and scoredata.rogue10.cleared==1,'失败次数与通关次数分开')

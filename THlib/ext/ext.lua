@@ -228,12 +228,14 @@ local function DoFrame()
 
         local ck = CollisionCheck
         local GROUP = GROUP
+        if OriginalCollision then OriginalCollision.begin() end
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET)
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET2)
         ck(GROUP.PLAYER, GROUP.ENEMY)
         ck(GROUP.PLAYER, GROUP.INDES)
 
         ck(GROUP.PLAYER, GROUP.LASER)
+        if OriginalCollision then OriginalCollision.shots() end
         ck(GROUP.ENEMY, GROUP.PLAYER_BULLET)
         ck(GROUP.NONTJT, GROUP.PLAYER_BULLET)
         ck(GROUP.ITEM, GROUP.PLAYER)
@@ -244,6 +246,7 @@ local function DoFrame()
         ck(GROUP.SPELL, GROUP.ENEMY_BULLET2)
         ck(GROUP.SPELL, GROUP.INDES)
         ck(GROUP.SPELL, GROUP.LASER)
+        if OriginalCollision then OriginalCollision.finish() end
     end
     -- 使用本帧正常移动和碰撞后的自机位置接取，掉落不冻结关卡或额外移动自机。
     if nopause and GameDrops then GameDrops.frame(stage.current_stage) end

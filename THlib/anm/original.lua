@@ -209,9 +209,7 @@ function A.new(game,archive,id)
     A.step(v)
     return v
 end
-function A.draw(v,x,y,angle,sx,sy,alpha,tint)
-    for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint) end
-    if not v.visible or not v.sprite then return end
+function A.sprite_resource(v)
     local s=assert(v.data.sprites[v.sprite], '原作ANM精灵缺失：'..v.data.key..'/'..v.sprite)
     local scope=stage and stage.current_stage
     local timer=scope and scope.timer or 0
@@ -225,6 +223,12 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint)
         if not CheckRes('img',s.img) then LoadImage(s.img,s.tex,s[2],s[3],s[4],s[5]) end
         s.loaded,s.epoch=true,resource_epoch
     end
+    return s
+end
+function A.draw(v,x,y,angle,sx,sy,alpha,tint)
+    for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint) end
+    if not v.visible or not v.sprite then return end
+    local s=A.sprite_resource(v)
     local color=v.secondary and v.color2 or v.color
     if tint then color={color[1]*tint[1]/255,color[2]*tint[2]/255,color[3]*tint[3]/255} end
     local a=(v.secondary and v.alpha2[1] or v.alpha[1])*(alpha or 1)

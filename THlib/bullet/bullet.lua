@@ -22,10 +22,10 @@ local function render_rotation(self)
         if self.th06_angle then return -self.th06_angle*180/math.pi end
         if self.ex_angle then return self.ex_angle*180/math.pi end
         if self.tb then return -self.tb.angle*180/math.pi end
-        if self.th07_cull_managed then return self.rot end
+        if self.th07_cull_managed then return self._original_collision_rot or self.rot end
         local vx,vy=self.vx or 0,self.vy or 0
         if vx*vx+vy*vy>=1e-12 then return math.deg(math.atan2(vy,vx)) end
-        return motion_angle(self) or self._motion_rot or self.rot
+        return motion_angle(self) or self._motion_rot or self._original_collision_rot or self.rot
     end
     local follow=self.auto_rotate
     if follow==nil then follow=self._follow_motion and (self.omiga or 0)==0 end
@@ -65,6 +65,7 @@ function bullet:frame()
     end
 end
 function bullet:kill()
+    if self._native_anm and OriginalBulletVisual.emit_despawn(self,true) then return end
     local w = lstg.world
     New(item.obj.faith_minor, self.x, self.y)
     if self._index and BoxCheck(self, w.boundl, w.boundr, w.boundb, w.boundt) then
@@ -76,6 +77,7 @@ function bullet:kill()
 end
 function bullet:del()
     if self._original_silent_remove then return end
+    if self._native_anm and OriginalBulletVisual.emit_despawn(self,false) then return end
     --	self.imgclass.del(self)
     local w = lstg.world
     if self.imgclass.size == 2.0 then

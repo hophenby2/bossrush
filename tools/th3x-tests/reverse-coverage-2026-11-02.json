@@ -1,0 +1,7810 @@
+{
+  "scope": "反向扫描各作Lunatic静态掩码内的符卡指令；同子程序的运行期分支可能仍含其他难度。",
+  "full_original_frame_equivalence": false,
+  "limits": [
+    "有映射只证明源码定位，不能证明逐帧行为正确。",
+    "非符和道中没有符卡指令，需要另沿时间轴、生命回调、计时回调逐段检查。",
+    "TH07源文件为汉化版，本文不把其GBK说明按日文名称解码。",
+    "TH095按每场独立ECL文件核对，见entry-audit，不在本表的符卡编号集合中。"
+  ],
+  "instruction_headers_checked": {
+    "6": 8384,
+    "7": 19919,
+    "8": 36661,
+    "10": 18533
+  },
+  "spells": [
+    {
+      "game": 6,
+      "spell": 0,
+      "name": "月符「ムーンライトレイ」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+          "sub": "Sub9",
+          "address": "0x11ac",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3901
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3901
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 1,
+      "name": "夜符「ナイトバード」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+          "sub": "Sub22",
+          "address": "0x37fe",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3903
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3903
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 2,
+      "name": "闇符「ディマーケイション」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+          "sub": "Sub23",
+          "address": "0x3e6c",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3905
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3905
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 3,
+      "name": "氷符「アイシクルフォール」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "sub": "Sub29",
+          "address": "0x26c8",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 4,
+      "name": "雹符「ヘイルストーム」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "sub": "Sub30",
+          "address": "0x2b76",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3908
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3908
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 5,
+      "name": "凍符「パーフェクトフリーズ」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "sub": "Sub31",
+          "address": "0x2e8c",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3910
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3910
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 6,
+      "name": "雪符「ダイアモンドブリザード」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "sub": "Sub32",
+          "address": "0x33d2",
+          "time": 60,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3911
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3911
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 7,
+      "name": "華符「芳華絢爛」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub13",
+          "address": "0x163c",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 8,
+      "name": "華符「セラギネラ９」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub14",
+          "address": "0x19c2",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3913
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3913
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 9,
+      "name": "虹符「彩虹の風鈴」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub29",
+          "address": "0x3834",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3915
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3915
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 10,
+      "name": "幻符「華想夢葛」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub30",
+          "address": "0x3dba",
+          "time": 1,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3917
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3917
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 11,
+      "name": "彩符「彩雨」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub31",
+          "address": "0x40c4",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 12,
+      "name": "彩符「彩光乱舞」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub32",
+          "address": "0x453e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3919
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3919
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 13,
+      "name": "彩符「極彩颱風」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "sub": "Sub33",
+          "address": "0x4bf8",
+          "time": 60,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3920
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3920
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 14,
+      "name": "火符「アグニシャイン」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub42",
+          "address": "0x7fb0",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 15,
+      "name": "水符「プリンセスウンディネ」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub45",
+          "address": "0x8ad2",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 16,
+      "name": "木符「シルフィホルン」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub47",
+          "address": "0x933e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 17,
+      "name": "土符「レイジィトリリトン」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub50",
+          "address": "0xa044",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 18,
+      "name": "金符「メタルファティーグ」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub53",
+          "address": "0xa7ba",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 19,
+      "name": "火符「アグニシャイン上級」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub43",
+          "address": "0x836e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3923
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3923
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 20,
+      "name": "木符「シルフィホルン上級」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub48",
+          "address": "0x9748",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3937
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3937
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 21,
+      "name": "土符「レイジィトリリトン上級」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub51",
+          "address": "0xa27a",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3944
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3944
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 22,
+      "name": "火符「アグニレイディアンス」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub44",
+          "address": "0x8770",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3939
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3939
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 23,
+      "name": "水符「ベリーインレイク」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub46",
+          "address": "0x8f28",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3930
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3930
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 24,
+      "name": "木符「グリーンストーム」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub49",
+          "address": "0x9bfe",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3932
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3932
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 25,
+      "name": "土符「トリリトンシェイク」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub52",
+          "address": "0xa4dc",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3925
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3925
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 26,
+      "name": "金符「シルバードラゴン」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub54",
+          "address": "0xa9cc",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3946
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3946
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 27,
+      "name": "火＆土符「ラーヴァクロムレク」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub55",
+          "address": "0xabf2",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3926,
+            3942
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3926,
+        3942
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 28,
+      "name": "木＆火符「フォレストブレイズ」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub56",
+          "address": "0xb004",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3928,
+            3940
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3928,
+        3940
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 29,
+      "name": "水＆木符「ウォーターエルフ」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub57",
+          "address": "0xb4ea",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3933,
+            3948
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3933,
+        3948
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 30,
+      "name": "金＆水符「マーキュリポイズン」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub58",
+          "address": "0xb97c",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3927,
+            3934,
+            3949
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3927,
+        3934,
+        3949
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 31,
+      "name": "土＆金符「エメラルドメガリス」",
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+          "sub": "Sub59",
+          "address": "0xbc82",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3935,
+            3941,
+            3947
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3935,
+        3941,
+        3947
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 33,
+      "name": "奇術「幻惑ミスディレクション」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub18",
+          "address": "0x197a",
+          "time": 0,
+          "mask": 12,
+          "op": 93,
+          "mapped_cards": [
+            3951
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3951
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 34,
+      "name": "幻在「クロックコープス」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub44",
+          "address": "0x4bec",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 35,
+      "name": "幻象「ルナクロック」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub46",
+          "address": "0x5130",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 37,
+      "name": "幻幽「ジャック・ザ・ルドビレ」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub45",
+          "address": "0x4e8e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3953
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3953
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 38,
+      "name": "幻世「ザ・ワールド」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub47",
+          "address": "0x53ba",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3955
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3955
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 39,
+      "name": "メイド秘技「殺人ドール」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+          "sub": "Sub50",
+          "address": "0x5992",
+          "time": 0,
+          "mask": 12,
+          "op": 93,
+          "mapped_cards": [
+            3957
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3957
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 40,
+      "name": "奇術「エターナルミーク」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub14",
+          "address": "0x11ac",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3959
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3959
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 41,
+      "name": "天罰「スターオブダビデ」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub30",
+          "address": "0x372a",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 42,
+      "name": "冥符「紅色の冥界」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub32",
+          "address": "0x3d6a",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 43,
+      "name": "呪詛「ブラド・ツェペシュの呪い」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub34",
+          "address": "0x44de",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 44,
+      "name": "紅符「スカーレットシュート」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub38",
+          "address": "0x4ea6",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 45,
+      "name": "「レッドマジック」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub43",
+          "address": "0x5d6a",
+          "time": 60,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 6,
+      "spell": 46,
+      "name": "神罰「幼きデーモンロード」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub31",
+          "address": "0x3a38",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3802
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3802
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 47,
+      "name": "獄符「千本の針の山」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub33",
+          "address": "0x40d8",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3805
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3805
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 48,
+      "name": "神術「吸血鬼幻想」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub35",
+          "address": "0x4838",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3808
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3808
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 49,
+      "name": "紅符「スカーレットマイスタ」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub39",
+          "address": "0x5578",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3811
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3811
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 50,
+      "name": "「紅色の幻想郷」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+          "sub": "Sub44",
+          "address": "0x636c",
+          "time": 60,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            369
+          ]
+        }
+      ],
+      "mapped_cards": [
+        369
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 51,
+      "name": "月符「サイレントセレナ」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub22",
+          "address": "0x1ed0",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3964
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3964
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 52,
+      "name": "日符「ロイヤルフレア」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub23",
+          "address": "0x2206",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3965
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3965
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 53,
+      "name": "火水木金土符「賢者の石」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub24",
+          "address": "0x2880",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3966
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3966
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 54,
+      "name": "禁忌「クランベリートラップ」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub33",
+          "address": "0x352e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3968
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3968
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 55,
+      "name": "禁忌「レーヴァテイン」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub36",
+          "address": "0x42fc",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3970
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3970
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 56,
+      "name": "禁忌「フォーオブアカインド」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub39",
+          "address": "0x4d4e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3972
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3972
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 57,
+      "name": "禁忌「カゴメカゴメ」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub44",
+          "address": "0x5ab8",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3974
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3974
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 58,
+      "name": "禁忌「恋の迷路」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub48",
+          "address": "0x648e",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3976
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3976
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 59,
+      "name": "禁弾「スターボウブレイク」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub50",
+          "address": "0x6c08",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3978
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3978
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 60,
+      "name": "禁弾「カタディオプトリック」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub54",
+          "address": "0x7996",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3980
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3980
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 61,
+      "name": "禁弾「過去を刻む時計」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub57",
+          "address": "0x85f4",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3982
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3982
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 62,
+      "name": "秘弾「そして誰もいなくなるか？」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub60",
+          "address": "0x94ca",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3983,
+            3984
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3983,
+        3984
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 6,
+      "spell": 63,
+      "name": "ＱＥＤ「４９５年の波紋」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+          "sub": "Sub68",
+          "address": "0xc004",
+          "time": 0,
+          "mask": 255,
+          "op": 93,
+          "mapped_cards": [
+            3985
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3985
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 0,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub29",
+          "address": "0x3590",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4451
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4451
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 1,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub29",
+          "address": "0x36bc",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4451
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4451
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 2,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub42",
+          "address": "0x55d8",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4453
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4453
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 3,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub42",
+          "address": "0x5720",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4453
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4453
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 4,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub42",
+          "address": "0x5868",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4453
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4453
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 5,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub42",
+          "address": "0x59b0",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4453
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4453
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 6,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub48",
+          "address": "0x6cd8",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4457
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4457
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 7,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub48",
+          "address": "0x6e20",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4457
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4457
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 8,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub52",
+          "address": "0x7b10",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4455
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4455
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 9,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+          "sub": "Sub55",
+          "address": "0x832c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4456
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4456
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 10,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub44",
+          "address": "0x5ed4",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4470
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4470
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 11,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub44",
+          "address": "0x6000",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4470
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4470
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 12,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub45",
+          "address": "0x63a4",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4461
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4461
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 13,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub45",
+          "address": "0x64d0",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4461
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4461
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 14,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub56",
+          "address": "0x8a34",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4463
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4463
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 15,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub56",
+          "address": "0x8b60",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4463
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4463
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 16,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub58",
+          "address": "0x946c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4464
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4464
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 17,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub58",
+          "address": "0x9598",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4464
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4464
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 18,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub64",
+          "address": "0xa4b0",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4466
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4466
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 19,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub64",
+          "address": "0xa5dc",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4466
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4466
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 20,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub66",
+          "address": "0xb13c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4467
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4467
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 21,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub66",
+          "address": "0xb268",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4467
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4467
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 22,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub68",
+          "address": "0xc7b0",
+          "time": 10,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4468
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4468
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 23,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub68",
+          "address": "0xc8dc",
+          "time": 130,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4468
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4468
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 24,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub70",
+          "address": "0xcecc",
+          "time": 10,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4471
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4471
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 25,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+          "sub": "Sub75",
+          "address": "0xd5f8",
+          "time": 10,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4469
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4469
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 26,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub27",
+          "address": "0x39c4",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4431
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4431
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 27,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub27",
+          "address": "0x3af0",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4431
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4431
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 28,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub42",
+          "address": "0x6230",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4433
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4433
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 29,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub42",
+          "address": "0x6378",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4433
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4433
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 30,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub42",
+          "address": "0x64c0",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4433
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4433
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 31,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub42",
+          "address": "0x6608",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4433
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4433
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 32,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub46",
+          "address": "0x7080",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4434,
+            4439
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4434,
+        4439
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 33,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub46",
+          "address": "0x71ac",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4434,
+            4439
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4434,
+        4439
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 34,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub48",
+          "address": "0x7728",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4434,
+            4435
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4434,
+        4435
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 35,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub48",
+          "address": "0x7854",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4434,
+            4435
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4434,
+        4435
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 36,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub50",
+          "address": "0x7f94",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4472
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4472
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 37,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub50",
+          "address": "0x80c0",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4472
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4472
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 38,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub52",
+          "address": "0x8a28",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4473
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4473
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 39,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub54",
+          "address": "0x93bc",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4437
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4437
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 40,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub56",
+          "address": "0x9de0",
+          "time": 80,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4438
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4438
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 41,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub56",
+          "address": "0x9f28",
+          "time": 200,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4438
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4438
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 42,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub56",
+          "address": "0xa070",
+          "time": 320,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4438
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4438
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 43,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+          "sub": "Sub56",
+          "address": "0xa1b8",
+          "time": 440,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4438
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4438
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 47,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub121",
+          "address": "0x12768",
+          "time": 0,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4441
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4441
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 51,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub128",
+          "address": "0x14900",
+          "time": 0,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4446
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4446
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 55,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub138",
+          "address": "0x174b4",
+          "time": 0,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4443
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4443
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 59,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub145",
+          "address": "0x194f0",
+          "time": 0,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4445
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4445
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 63,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub133",
+          "address": "0x162f8",
+          "time": 120,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4447
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4447
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 67,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata4.ecl",
+          "sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+          "sub": "Sub135",
+          "address": "0x16a3c",
+          "time": 0,
+          "mask": 8,
+          "op": 90,
+          "mapped_cards": [
+            4448
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4448
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 68,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub42",
+          "address": "0x457c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4403
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4403
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 69,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub42",
+          "address": "0x46c4",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4403
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4403
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 70,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub42",
+          "address": "0x480c",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4403
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4403
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 71,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub42",
+          "address": "0x4938",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4403
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4403
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 72,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub57",
+          "address": "0x76cc",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4405
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4405
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 73,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub57",
+          "address": "0x7814",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4405
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4405
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 74,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub57",
+          "address": "0x795c",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4405
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4405
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 75,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub57",
+          "address": "0x7aa4",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4405
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4405
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 76,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub66",
+          "address": "0x8d1c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4408
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4408
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 77,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub66",
+          "address": "0x8e64",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4408
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4408
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 78,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub62",
+          "address": "0x8574",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4407
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4407
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 79,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub62",
+          "address": "0x86bc",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4407
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4407
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 80,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub70",
+          "address": "0x9604",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4409
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4409
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 81,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub70",
+          "address": "0x974c",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4409
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4409
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 82,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub70",
+          "address": "0x9894",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4409
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4409
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 83,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub70",
+          "address": "0x99dc",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4409
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4409
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 84,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub75",
+          "address": "0xa374",
+          "time": 60,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4410
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4410
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 85,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub75",
+          "address": "0xa4bc",
+          "time": 180,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4410
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4410
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 86,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub75",
+          "address": "0xa604",
+          "time": 300,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4410
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4410
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 87,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+          "sub": "Sub75",
+          "address": "0xa74c",
+          "time": 420,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4410
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4410
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 88,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub23",
+          "address": "0x2438",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4391
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4391
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 89,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub23",
+          "address": "0x2580",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4391
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4391
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 90,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub23",
+          "address": "0x26c8",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4391
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4391
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 91,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub23",
+          "address": "0x27f4",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4391
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4391
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 92,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub43",
+          "address": "0x6130",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4393
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4393
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 93,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub43",
+          "address": "0x6278",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4393
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4393
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 94,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub43",
+          "address": "0x63c0",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4393
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4393
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 95,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub43",
+          "address": "0x6508",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4393
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4393
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 96,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub50",
+          "address": "0x7a38",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4396
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4396
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 97,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub50",
+          "address": "0x7b80",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4396
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4396
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 98,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub50",
+          "address": "0x7cc8",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4396
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4396
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 99,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub50",
+          "address": "0x7e10",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4396
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4396
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 100,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub52",
+          "address": "0x8630",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4397
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4397
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 101,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub52",
+          "address": "0x8778",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4397
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4397
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 102,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub52",
+          "address": "0x88c0",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4397
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4397
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 103,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub52",
+          "address": "0x8a08",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4397
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4397
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 104,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub55",
+          "address": "0x93dc",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4399
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4399
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 105,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub55",
+          "address": "0x9524",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4399
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4399
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 106,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub55",
+          "address": "0x966c",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4399
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4399
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 107,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub55",
+          "address": "0x97b4",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4399
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4399
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 108,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub58",
+          "address": "0xa638",
+          "time": 120,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4400
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4400
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 109,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub58",
+          "address": "0xa780",
+          "time": 240,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4400
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4400
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 110,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub58",
+          "address": "0xa8c8",
+          "time": 360,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4400
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4400
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 111,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub58",
+          "address": "0xaa10",
+          "time": 480,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4400
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4400
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 112,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub62",
+          "address": "0xbbe8",
+          "time": 480,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4401
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4401
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 113,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub62",
+          "address": "0xbd20",
+          "time": 480,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4401
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4401
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 114,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub62",
+          "address": "0xbe58",
+          "time": 480,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4401
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4401
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 115,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+          "sub": "Sub62",
+          "address": "0xbf90",
+          "time": 480,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            4401
+          ]
+        }
+      ],
+      "mapped_cards": [
+        4401
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 116,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub58",
+          "address": "0x3e4c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3460
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3460
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 117,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub61",
+          "address": "0x43b0",
+          "time": 110,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3461
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3461
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 118,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub85",
+          "address": "0x6280",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3462
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3462
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 119,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub88",
+          "address": "0x7410",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3463
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3463
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 120,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub94",
+          "address": "0x8050",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3464
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3464
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 121,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub97",
+          "address": "0x8b70",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3465
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3465
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 122,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub99",
+          "address": "0x9288",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3466
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3466
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 123,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub101",
+          "address": "0x979c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3467
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3467
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 124,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub106",
+          "address": "0xa8dc",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3468
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3468
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 125,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub110",
+          "address": "0xb078",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3469
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3469
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 126,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub115",
+          "address": "0xb968",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3470
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3470
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 127,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+          "sub": "Sub123",
+          "address": "0xd108",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3471
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3471
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 128,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub60",
+          "address": "0x472c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3452
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3452
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 129,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub63",
+          "address": "0x4c68",
+          "time": 110,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3451
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3451
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 130,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub88",
+          "address": "0x6d0c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3450
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3450
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 131,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub93",
+          "address": "0x7cb0",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3449
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3449
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 132,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub97",
+          "address": "0x8260",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3448
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3448
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 133,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub100",
+          "address": "0x918c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3447
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3447
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 134,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub102",
+          "address": "0x99e0",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3446
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3446
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 135,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub104",
+          "address": "0xa05c",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3445
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3445
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 136,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub109",
+          "address": "0xb2e4",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3444
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3444
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 137,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub114",
+          "address": "0xbc60",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3443
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3443
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 138,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub119",
+          "address": "0xc6b4",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3442
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3442
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 139,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub127",
+          "address": "0xdeb0",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3441
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3441
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 7,
+      "spell": 140,
+      "name": null,
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+          "sub": "Sub129",
+          "address": "0xe994",
+          "time": 0,
+          "mask": 255,
+          "op": 90,
+          "mapped_cards": [
+            3440
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3440
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 1,
+      "name": "蛍符「地上の彗星」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "sub": "Sub22",
+          "address": "0x32b4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            471
+          ]
+        },
+        {
+          "file": "ecldata1sp.ecl",
+          "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+          "sub": "Sub8",
+          "address": "0x1f14",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        471
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 5,
+      "name": "灯符「ファイヤフライフェノメノン」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "sub": "Sub38",
+          "address": "0x5d40",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            474
+          ]
+        },
+        {
+          "file": "ecldata1sp.ecl",
+          "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+          "sub": "Sub24",
+          "address": "0x49a0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        474
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 9,
+      "name": "蠢符「ナイトバグトルネード」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "sub": "Sub44",
+          "address": "0x7134",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            475
+          ]
+        },
+        {
+          "file": "ecldata1sp.ecl",
+          "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+          "sub": "Sub30",
+          "address": "0x5d94",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        475
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 12,
+      "name": "隠蟲「永夜蟄居」",
+      "locations": [
+        {
+          "file": "ecldata1.ecl",
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "sub": "Sub48",
+          "address": "0x8310",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            476
+          ]
+        },
+        {
+          "file": "ecldata1sp.ecl",
+          "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+          "sub": "Sub34",
+          "address": "0x6f70",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        476
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 16,
+      "name": "声符「木菟咆哮」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub23",
+          "address": "0x2bdc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            462
+          ]
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub7",
+          "address": "0xffc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        462
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 20,
+      "name": "猛毒「毒蛾の暗闇演舞」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub33",
+          "address": "0x4e1c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub38",
+          "address": "0x5960",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            464
+          ]
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub17",
+          "address": "0x323c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub22",
+          "address": "0x3d80",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        464
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 24,
+      "name": "鷹符「イルスタードダイブ」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub44",
+          "address": "0x67b0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            466
+          ]
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub28",
+          "address": "0x4bd0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        466
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 28,
+      "name": "夜盲「夜雀の歌」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub52",
+          "address": "0x78d0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            467,
+            468
+          ]
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub36",
+          "address": "0x5cf0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        467,
+        468
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 31,
+      "name": "夜雀「真夜中のコーラスマスター」",
+      "locations": [
+        {
+          "file": "ecldata2.ecl",
+          "sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+          "sub": "Sub58",
+          "address": "0x87b8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            469
+          ]
+        },
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub42",
+          "address": "0x6bd8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        469
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 35,
+      "name": "産霊「ファーストピラミッド」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub30",
+          "address": "0x33a4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            3426
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub11",
+          "address": "0x1348",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        3426
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 38,
+      "name": "始符「エフェメラリティ137」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub44",
+          "address": "0x5854",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            428
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub25",
+          "address": "0x37f8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        428
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 42,
+      "name": "野符「GHQクライシス」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub47",
+          "address": "0x6594",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            429
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub28",
+          "address": "0x4538",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        429
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 43,
+      "name": "国符「三種の神器　剣」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub50",
+          "address": "0x7050",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub31",
+          "address": "0x4ff4",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 8,
+      "spell": 44,
+      "name": "国符「三種の神器　玉」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub54",
+          "address": "0x770c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub35",
+          "address": "0x56b0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 8,
+      "spell": 45,
+      "name": "国符「三種の神器　鏡」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub58",
+          "address": "0x801c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub39",
+          "address": "0x5fc0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [],
+      "status": "无静态映射，须检查路线可达性"
+    },
+    {
+      "game": 8,
+      "spell": 46,
+      "name": "国体「三種の神器　郷」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub62",
+          "address": "0x8784",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            431
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub43",
+          "address": "0x6728",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        431
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 50,
+      "name": "虚史「幻想郷伝説」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub67",
+          "address": "0x91a0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            432
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub48",
+          "address": "0x7144",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        432
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 53,
+      "name": "未来「高天原」",
+      "locations": [
+        {
+          "file": "ecldata3.ecl",
+          "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+          "sub": "Sub71",
+          "address": "0x9da4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            3427
+          ]
+        },
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub52",
+          "address": "0x7d48",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        3427
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 57,
+      "name": "夢境「二重大結界」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub28",
+          "address": "0x4610",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            434
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub13",
+          "address": "0x3228",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        434
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 61,
+      "name": "散霊「夢想封印　寂」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub30",
+          "address": "0x4f40",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            436
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub15",
+          "address": "0x3b58",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        436
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 65,
+      "name": "神技「八方龍殺陣」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub33",
+          "address": "0x5864",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            438
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub18",
+          "address": "0x447c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        438
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 69,
+      "name": "回霊「夢想封印　侘」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub41",
+          "address": "0x71e0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            440
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub26",
+          "address": "0x5df8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        440
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 73,
+      "name": "大結界「博麗弾幕結界」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub46",
+          "address": "0x80c8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            441
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub31",
+          "address": "0x6ce0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        441
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 76,
+      "name": "神霊「夢想封印　瞬」",
+      "locations": [
+        {
+          "file": "ecldata4a.ecl",
+          "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+          "sub": "Sub54",
+          "address": "0x8f2c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            442
+          ]
+        },
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub39",
+          "address": "0x7b44",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        442
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 80,
+      "name": "魔空「アステロイドベルト」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub36",
+          "address": "0x481c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            444
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub21",
+          "address": "0x3440",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        444
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 84,
+      "name": "黒魔「イベントホライズン」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub41",
+          "address": "0x578c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            446
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub26",
+          "address": "0x43b0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        446
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 88,
+      "name": "恋風「スターライトタイフーン」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub47",
+          "address": "0x67b8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            448
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub32",
+          "address": "0x53dc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        448
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 92,
+      "name": "恋心「ダブルスパーク」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub55",
+          "address": "0x7cd8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            450
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub40",
+          "address": "0x68fc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        450
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 96,
+      "name": "光撃「シュート・ザ・ムーン」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub62",
+          "address": "0x8f20",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            451
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub47",
+          "address": "0x7b44",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        451
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 99,
+      "name": "魔砲「ファイナルマスタースパーク」",
+      "locations": [
+        {
+          "file": "ecldata4b.ecl",
+          "sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+          "sub": "Sub67",
+          "address": "0xa190",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            452
+          ]
+        },
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub52",
+          "address": "0x8db4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        452
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 103,
+      "name": "幻波「赤眼催眠(マインドブローイング)」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+          "sub": "Sub62",
+          "address": "0x630c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            454
+          ]
+        },
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub15",
+          "address": "0x1958",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        454
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 107,
+      "name": "狂視「狂視調律(イリュージョンシーカー)」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+          "sub": "Sub66",
+          "address": "0x75bc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            456
+          ]
+        },
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub19",
+          "address": "0x2c08",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        456
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 111,
+      "name": "懶惰「生神停止(マインドストッパー)」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+          "sub": "Sub63",
+          "address": "0x6b5c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            458
+          ]
+        },
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub16",
+          "address": "0x21a8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        458
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 115,
+      "name": "散符「真実の月(インビジブルフルムーン)」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+          "sub": "Sub75",
+          "address": "0x828c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            459
+          ]
+        },
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub28",
+          "address": "0x38d8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        459
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 118,
+      "name": "月眼「月兎遠隔催眠術(テレメスメリズム)」",
+      "locations": [
+        {
+          "file": "ecldata5.ecl",
+          "sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+          "sub": "Sub78",
+          "address": "0x8be0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            460
+          ]
+        },
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub31",
+          "address": "0x422c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        460
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 122,
+      "name": "天丸「壺中の天地」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub21",
+          "address": "0x298c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            421
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub9",
+          "address": "0x1c10",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        421
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 126,
+      "name": "神符「天人の系譜」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub52",
+          "address": "0x68dc",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            420
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub40",
+          "address": "0x5b60",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        420
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 130,
+      "name": "蘇生「ライジングゲーム」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub56",
+          "address": "0x7454",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            419
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub44",
+          "address": "0x66d8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        419
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 134,
+      "name": "神脳「オモイカネブレイン」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub63",
+          "address": "0x8310",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            418
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub51",
+          "address": "0x7594",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        418
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 138,
+      "name": "天呪「アポロ１３」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub68",
+          "address": "0x908c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            417
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub56",
+          "address": "0x8310",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        417
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 142,
+      "name": "秘術「天文密葬法」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub73",
+          "address": "0x9e74",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            409
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub61",
+          "address": "0x90f8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        409
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 146,
+      "name": "禁薬「蓬莱の薬」",
+      "locations": [
+        {
+          "file": "ecldata6.ecl",
+          "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+          "sub": "Sub78",
+          "address": "0xaf9c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            408
+          ]
+        },
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub66",
+          "address": "0xa220",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        408
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 150,
+      "name": "薬符「壺中の大銀河」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub19",
+          "address": "0x27a4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            402
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub9",
+          "address": "0x1c1c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        402
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 154,
+      "name": "神宝「ブリリアントドラゴンバレッタ」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub50",
+          "address": "0x6e98",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            401
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub40",
+          "address": "0x6310",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        401
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 158,
+      "name": "神宝「ブディストダイアモンド」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub55",
+          "address": "0x80e4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            400
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub45",
+          "address": "0x755c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        400
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 162,
+      "name": "神宝「サラマンダーシールド」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub61",
+          "address": "0x918c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            399
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub51",
+          "address": "0x8604",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        399
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 166,
+      "name": "神宝「ライフスプリングインフィニティ」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub67",
+          "address": "0xa0d0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            398
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub57",
+          "address": "0x9548",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        398
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 170,
+      "name": "神宝「蓬莱の玉の枝  -夢色の郷-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub71",
+          "address": "0xad60",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            397
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub61",
+          "address": "0xa1d8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        397
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 174,
+      "name": "「永夜返し  -待宵-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub77",
+          "address": "0xdac4",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            392
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub67",
+          "address": "0xcf3c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        392
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 178,
+      "name": "「永夜返し  -子の四つ-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub80",
+          "address": "0xe1e8",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            393
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub70",
+          "address": "0xd660",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        393
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 182,
+      "name": "「永夜返し  -丑の四つ-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub82",
+          "address": "0xe978",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            394
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub72",
+          "address": "0xddf0",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        394
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 186,
+      "name": "「永夜返し  -寅の四つ-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub84",
+          "address": "0xf090",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            395
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub74",
+          "address": "0xe508",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        395
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 190,
+      "name": "「永夜返し  -世明け-」",
+      "locations": [
+        {
+          "file": "ecldata7.ecl",
+          "sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+          "sub": "Sub87",
+          "address": "0xf924",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": [
+            396
+          ]
+        },
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub77",
+          "address": "0xed9c",
+          "time": 0,
+          "mask": 248,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        396
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 191,
+      "name": "旧史「旧秘境史　-オールドヒストリー-」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub51",
+          "address": "0x3fa4",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            370
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub5",
+          "address": "0x1338",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        370
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 192,
+      "name": "転世「一条戻り橋」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub56",
+          "address": "0x4cbc",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            371
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub10",
+          "address": "0x2050",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        371
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 193,
+      "name": "新史「新幻想史　-ネクストヒストリー-」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub60",
+          "address": "0x55a0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            372
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub14",
+          "address": "0x2934",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        372
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 194,
+      "name": "時効「月のいはかさの呪い」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub93",
+          "address": "0x9fc4",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            373
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub47",
+          "address": "0x7358",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        373
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 195,
+      "name": "不死「火の鳥　-鳳翼天翔-」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub97",
+          "address": "0xa600",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            374
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub51",
+          "address": "0x7994",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        374
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 196,
+      "name": "藤原「滅罪寺院傷」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub100",
+          "address": "0xb7e0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            375
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub54",
+          "address": "0x8b74",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        375
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 197,
+      "name": "不死「徐福時空」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub103",
+          "address": "0xbc40",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            376
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub57",
+          "address": "0x8fd4",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        376
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 198,
+      "name": "滅罪「正直者の死」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub108",
+          "address": "0xc4c0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            377
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub62",
+          "address": "0x9854",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        377
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 199,
+      "name": "虚人「ウー」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub113",
+          "address": "0xcb88",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            378
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub67",
+          "address": "0x9f1c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        378
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 200,
+      "name": "不滅「フェニックスの尾」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub118",
+          "address": "0xd330",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            379
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub72",
+          "address": "0xa6c4",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        379
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 201,
+      "name": "蓬莱「凱風快晴　-フジヤマヴォルケイノ-」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub126",
+          "address": "0xdcc0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            380
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub80",
+          "address": "0xb054",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        380
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 202,
+      "name": "「パゼストバイフェニックス」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub131",
+          "address": "0xe764",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            381
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub85",
+          "address": "0xbaf8",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        381
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 203,
+      "name": "「蓬莱人形」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub143",
+          "address": "0xf5c8",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            382
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub97",
+          "address": "0xc95c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        382
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 204,
+      "name": "「インペリシャブルシューティング」",
+      "locations": [
+        {
+          "file": "ecldata8.ecl",
+          "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+          "sub": "Sub149",
+          "address": "0xfce8",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            383
+          ]
+        },
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub103",
+          "address": "0xd07c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": []
+        }
+      ],
+      "mapped_cards": [
+        383
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 205,
+      "name": "「季節外れのバタフライストーム」",
+      "locations": [
+        {
+          "file": "ecldata1sp.ecl",
+          "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+          "sub": "Sub36",
+          "address": "0x7c20",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            351
+          ]
+        }
+      ],
+      "mapped_cards": [
+        351
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 206,
+      "name": "「ブラインドナイトバード」",
+      "locations": [
+        {
+          "file": "ecldata2sp.ecl",
+          "sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+          "sub": "Sub46",
+          "address": "0x793c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            352
+          ]
+        }
+      ],
+      "mapped_cards": [
+        352
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 207,
+      "name": "「日出づる国の天子」",
+      "locations": [
+        {
+          "file": "ecldata3sp.ecl",
+          "sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+          "sub": "Sub56",
+          "address": "0x8584",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            353
+          ]
+        }
+      ],
+      "mapped_cards": [
+        353
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 208,
+      "name": "「幻朧月睨(ルナティックレッドアイズ)」",
+      "locations": [
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub40",
+          "address": "0x5068",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            354
+          ]
+        }
+      ],
+      "mapped_cards": [
+        354
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 209,
+      "name": "「天網蜘網捕蝶の法」",
+      "locations": [
+        {
+          "file": "ecldata6sp.ecl",
+          "sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+          "sub": "Sub76",
+          "address": "0xba4c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            355
+          ]
+        }
+      ],
+      "mapped_cards": [
+        355
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 210,
+      "name": "「蓬莱の樹海」",
+      "locations": [
+        {
+          "file": "ecldata7sp.ecl",
+          "sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+          "sub": "Sub79",
+          "address": "0xf870",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            356
+          ]
+        }
+      ],
+      "mapped_cards": [
+        356
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 211,
+      "name": "「フェニックス再誕」",
+      "locations": [
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub110",
+          "address": "0xf9ac",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            357
+          ]
+        }
+      ],
+      "mapped_cards": [
+        357
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 212,
+      "name": "「エンシェントデューパー」",
+      "locations": [
+        {
+          "file": "ecldata5sp.ecl",
+          "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+          "sub": "Sub43",
+          "address": "0x57b0",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            358
+          ]
+        }
+      ],
+      "mapped_cards": [
+        358
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 213,
+      "name": "「無何有浄化」",
+      "locations": [
+        {
+          "file": "ecldata8sp.ecl",
+          "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+          "sub": "Sub113",
+          "address": "0x10fcc",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            359
+          ]
+        }
+      ],
+      "mapped_cards": [
+        359
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 214,
+      "name": "「夢想天生」",
+      "locations": [
+        {
+          "file": "ecldata4asp.ecl",
+          "sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+          "sub": "Sub43",
+          "address": "0x8290",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            360
+          ]
+        }
+      ],
+      "mapped_cards": [
+        360
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 215,
+      "name": "「ブレイジングスター」",
+      "locations": [
+        {
+          "file": "ecldata4bsp.ecl",
+          "sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+          "sub": "Sub60",
+          "address": "0xa53c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            361
+          ]
+        }
+      ],
+      "mapped_cards": [
+        361
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 216,
+      "name": "「デフレーションワールド」",
+      "locations": [
+        {
+          "file": "ecldata_sk.ecl",
+          "sha256": "2ec1b8299d4c2a46b8fb59bfb61376d55a20fdae597ce4a05d4bb5e5ea061117",
+          "sub": "Sub1",
+          "address": "0x224",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            362
+          ]
+        }
+      ],
+      "mapped_cards": [
+        362
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 217,
+      "name": "「待宵反射衛星斬」",
+      "locations": [
+        {
+          "file": "ecldata_ym.ecl",
+          "sha256": "fc10e4aa40f2d10ab976416cb1ecc0fd773b9934b4cc6f531bfd93f3c1f8be19",
+          "sub": "Sub1",
+          "address": "0x21c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            363
+          ]
+        }
+      ],
+      "mapped_cards": [
+        363
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 218,
+      "name": "「グランギニョル座の怪人」",
+      "locations": [
+        {
+          "file": "ecldata_al.ecl",
+          "sha256": "fc669292ee41f99c9eed4e72b644c591a522deaa255ed106224f656d5431e4a8",
+          "sub": "Sub1",
+          "address": "0x204",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            364
+          ]
+        }
+      ],
+      "mapped_cards": [
+        364
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 219,
+      "name": "「スカーレットディスティニー」",
+      "locations": [
+        {
+          "file": "ecldata_rm.ecl",
+          "sha256": "7ed4ef732520461bee14e61f6f8747c1b65d48d7f20c3381eaf42d380efe36a1",
+          "sub": "Sub1",
+          "address": "0x204",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            365
+          ]
+        }
+      ],
+      "mapped_cards": [
+        365
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 220,
+      "name": "「西行寺無余涅槃」",
+      "locations": [
+        {
+          "file": "ecldata_yy.ecl",
+          "sha256": "967ac94f260108eb081c64ed5242debf78c10f4da205aec15de8c5ea2e1cbdda",
+          "sub": "Sub1",
+          "address": "0x210",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            366
+          ]
+        }
+      ],
+      "mapped_cards": [
+        366
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 8,
+      "spell": 221,
+      "name": "「深弾幕結界　-夢幻泡影-」",
+      "locations": [
+        {
+          "file": "ecldata_yk.ecl",
+          "sha256": "86037d70bb2dc44357f65eb5ee917b5a07834849fb2f528ef9930ceea71cff7a",
+          "sub": "Sub4",
+          "address": "0xf3c",
+          "time": 0,
+          "mask": 255,
+          "op": 122,
+          "mapped_cards": [
+            367
+          ]
+        }
+      ],
+      "mapped_cards": [
+        367
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 1,
+      "name": "葉符「狂いの落葉」",
+      "locations": [
+        {
+          "file": "stage01.ecl",
+          "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+          "sub": "MBossCard1",
+          "address": "0x7618",
+          "time": 0,
+          "mask": 255,
+          "op": 359,
+          "mapped_cards": [
+            3630
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3630
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 5,
+      "name": "秋符「秋の空と乙女の心」",
+      "locations": [
+        {
+          "file": "stage01.ecl",
+          "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+          "sub": "BossCard1",
+          "address": "0x2210",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3631
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3631
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 9,
+      "name": "豊作「穀物神の約束」",
+      "locations": [
+        {
+          "file": "stage01.ecl",
+          "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+          "sub": "BossCard2",
+          "address": "0x401c",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3632
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3632
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 13,
+      "name": "厄符「厄神様のバイオリズム」",
+      "locations": [
+        {
+          "file": "stage02.ecl",
+          "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+          "sub": "MBossCard1",
+          "address": "0x8b74",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3681,
+            3633
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3633,
+        3681
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 17,
+      "name": "疵痕「壊されたお守り」",
+      "locations": [
+        {
+          "file": "stage02.ecl",
+          "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+          "sub": "BossCard1",
+          "address": "0x4730",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3634
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3634
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 21,
+      "name": "悲運「大鐘婆の火」",
+      "locations": [
+        {
+          "file": "stage02.ecl",
+          "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+          "sub": "BossCard2",
+          "address": "0x4d88",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3635
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3635
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 25,
+      "name": "創符「流刑人形」",
+      "locations": [
+        {
+          "file": "stage02.ecl",
+          "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+          "sub": "BossCard3",
+          "address": "0x562c",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3636
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3636
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 29,
+      "name": "光学「ハイドロカモフラージュ」",
+      "locations": [
+        {
+          "file": "stage03.ecl",
+          "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+          "sub": "MBossCard1",
+          "address": "0x8654",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3601,
+            3682
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3601,
+        3682
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 33,
+      "name": "漂溺「光り輝く水底のトラウマ」",
+      "locations": [
+        {
+          "file": "stage03.ecl",
+          "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+          "sub": "BossCard1",
+          "address": "0x32e8",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3602
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3602
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 37,
+      "name": "水符「河童の幻想大瀑布」",
+      "locations": [
+        {
+          "file": "stage03.ecl",
+          "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+          "sub": "BossCard2",
+          "address": "0x4c0c",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3603
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3603
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 41,
+      "name": "河童「のびーるアーム」",
+      "locations": [
+        {
+          "file": "stage03.ecl",
+          "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+          "sub": "BossCard3",
+          "address": "0x50d4",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": []
+        },
+        {
+          "file": "stage03.ecl",
+          "sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+          "sub": "BossCard3L",
+          "address": "0x54ec",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3604
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3604
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 45,
+      "name": "岐符「サルタクロス」",
+      "locations": [
+        {
+          "file": "stage04.ecl",
+          "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+          "sub": "BossCard1",
+          "address": "0x32f8",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3605
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3605
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 49,
+      "name": "風神「二百十\\日」",
+      "locations": [
+        {
+          "file": "stage04.ecl",
+          "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+          "sub": "BossCard2",
+          "address": "0x3cb8",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3606
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3606
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 52,
+      "name": "「無双風神」",
+      "locations": [
+        {
+          "file": "stage04.ecl",
+          "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+          "sub": "BossCard3",
+          "address": "0x4768",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3607
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3607
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 56,
+      "name": "塞符「天上天下の照國」",
+      "locations": [
+        {
+          "file": "stage04.ecl",
+          "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+          "sub": "BossCard4",
+          "address": "0x6c88",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3608
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3608
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 60,
+      "name": "秘術「一子相伝の弾幕」",
+      "locations": [
+        {
+          "file": "stage05.ecl",
+          "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+          "sub": "MBossCard1",
+          "address": "0xc258",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3637
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3637
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 64,
+      "name": "奇跡「客星の明るすぎる夜」",
+      "locations": [
+        {
+          "file": "stage05.ecl",
+          "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+          "sub": "BossCard1",
+          "address": "0x39ac",
+          "time": 0,
+          "mask": 248,
+          "op": 359,
+          "mapped_cards": [
+            3638
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3638
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 68,
+      "name": "開海「モーゼの奇跡」",
+      "locations": [
+        {
+          "file": "stage05.ecl",
+          "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+          "sub": "BossCard2",
+          "address": "0x4910",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3639
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3639
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 72,
+      "name": "準備「サモンタケミナカタ」",
+      "locations": [
+        {
+          "file": "stage05.ecl",
+          "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+          "sub": "BossCard3",
+          "address": "0x55e8",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3640
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3640
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 76,
+      "name": "大奇跡「八坂の神風」",
+      "locations": [
+        {
+          "file": "stage05.ecl",
+          "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+          "sub": "BossCard4",
+          "address": "0x7c9c",
+          "time": 90,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3641
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3641
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 80,
+      "name": "奇祭「目処梃子乱舞」",
+      "locations": [
+        {
+          "file": "stage06.ecl",
+          "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+          "sub": "BossCard1",
+          "address": "0x40b4",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3622
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3622
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 84,
+      "name": "神穀「ディバイニングクロップ」",
+      "locations": [
+        {
+          "file": "stage06.ecl",
+          "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+          "sub": "BossCard2",
+          "address": "0x4fc0",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3623
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3623
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 88,
+      "name": "神秘「ヤマトトーラス」",
+      "locations": [
+        {
+          "file": "stage06.ecl",
+          "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+          "sub": "BossCard3H",
+          "address": "0x6944",
+          "time": 0,
+          "mask": 248,
+          "op": 342,
+          "mapped_cards": [
+            3624
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3624
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 92,
+      "name": "天竜「雨の源泉」",
+      "locations": [
+        {
+          "file": "stage06.ecl",
+          "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+          "sub": "BossCard4",
+          "address": "0x725c",
+          "time": 0,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3625
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3625
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 96,
+      "name": "「風神様の神徳」",
+      "locations": [
+        {
+          "file": "stage06.ecl",
+          "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+          "sub": "BossCard5",
+          "address": "0x8af8",
+          "time": 90,
+          "mask": 252,
+          "op": 359,
+          "mapped_cards": [
+            3600
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3600
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 97,
+      "name": "神符「水眼の如き美しき源泉」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "MBossCard1",
+          "address": "0x11500",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3609
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3609
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 98,
+      "name": "神符「杉で結ぶ古き縁」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "MBossCard2",
+          "address": "0x11944",
+          "time": 120,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3610
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3610
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 99,
+      "name": "神符「神が歩かれた御神渡り」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "MBossCard3",
+          "address": "0x12738",
+          "time": 90,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3611
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3611
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 100,
+      "name": "開宴「二拝二拍一拝」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard1",
+          "address": "0x3cc0",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3612
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3612
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 101,
+      "name": "土着神「手長足長さま」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard2",
+          "address": "0x657c",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3613
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3613
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 102,
+      "name": "神具「洩矢の鉄の輪」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard3",
+          "address": "0x7428",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3614
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3614
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 103,
+      "name": "源符「厭い川の翡翠」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard4",
+          "address": "0x7b20",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3615
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3615
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 104,
+      "name": "蛙狩「蛙は口ゆえ蛇に呑まるる」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard5",
+          "address": "0x8934",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3616
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3616
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 105,
+      "name": "土着神「七つの石と七つの木」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard6",
+          "address": "0x9458",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3617
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3617
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 106,
+      "name": "土着神「ケロちゃん風雨に負けず」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard7",
+          "address": "0xa2b4",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3618
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3618
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 107,
+      "name": "土着神「宝永四年の赤蛙」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard8",
+          "address": "0xaa68",
+          "time": 0,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3619
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3619
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 108,
+      "name": "「諏訪大戦　～ 土着神話 vs 中央神話」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard9",
+          "address": "0xb480",
+          "time": 80,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3620
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3620
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    },
+    {
+      "game": 10,
+      "spell": 109,
+      "name": "祟符「ミシャグジさま」",
+      "locations": [
+        {
+          "file": "stage07.ecl",
+          "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+          "sub": "BossCard10",
+          "address": "0x42b8",
+          "time": 80,
+          "mask": 255,
+          "op": 342,
+          "mapped_cards": [
+            3621
+          ]
+        }
+      ],
+      "mapped_cards": [
+        3621
+      ],
+      "status": "有静态子程序映射，行为仍待核对"
+    }
+  ],
+  "confirmed_gaps": [
+    {
+      "game": 34,
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub45"
+      ],
+      "name": "三姐妹第二段非符",
+      "evidence": [
+        "共享控制器Sub45，血量19000，下一阶段阈值2450",
+        "现有4440/4442/4444均为Sub44的不同机体主奏路线"
+      ],
+      "cards": [
+        5480,
+        5481,
+        5482
+      ],
+      "status": "主奏攻击已补入并核对；原作机体选路、另两人离场及跨阶段位置继承仍待对齐"
+    },
+    {
+      "game": 34,
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub47"
+      ],
+      "name": "三姐妹第三段非符",
+      "evidence": [
+        "共享控制器Sub47，血量20000，下一阶段阈值2100",
+        "现有4440/4442/4444均为Sub44的不同机体主奏路线"
+      ],
+      "cards": [
+        5483,
+        5484,
+        5485
+      ],
+      "status": "主奏攻击已补入并核对；上一阶段伤害选路、另两人离场及跨阶段位置继承仍待对齐"
+    }
+  ],
+  "restored_phases": [
+    {
+      "game": 31,
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub30"
+      ],
+      "name": "产灵「最初的金字塔」",
+      "evidence": [
+        "Sub20:ins_133(0,2100,29) / ins_134(2220,29)",
+        "Sub29:ins_126(30,1)",
+        "Timeline0:t=3083 ins_8(0,0,1)",
+        "Sub30:0x33a4 ins_122，Lunatic符卡35"
+      ],
+      "card": 3426,
+      "status": "已补入Lua对象实现；使魔运动/发弹与ECL比较见check_keine_sources.py"
+    },
+    {
+      "game": 31,
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub43",
+        "Sub71"
+      ],
+      "name": "未来「高天原」",
+      "evidence": [
+        "Timeline0:t=4663 !NHL生成Sub43",
+        "Sub43:ins_50([10098],2,0,Sub43_40)；未达刻符阈值则终止",
+        "Sub43:t=132 ins_52(71)",
+        "Sub71:0x9da4 ins_122，Lunatic符卡53"
+      ],
+      "card": 3427,
+      "status": "已补入Lua对象实现；Boss Rush不设刻符门槛，保留为独立战斗/练习条目"
+    }
+  ]
+}

@@ -101,6 +101,7 @@ GetCurrentSuperPause=function() return 0 end
 task.Do=function() calls.task=calls.task+1 end
 ObjFrame=function() calls.world=calls.world+1 end
 BoundCheck=function() end;CollisionCheck=function() end;UpdateXY=function() end;AfterFrame=function() end
+ObjList=function() return next,{} end -- 空场景仍返回引擎约定的迭代器，而非宽松桩件的表。
 ext={notUIdraw=false,GetPauseMenuOrder=function() end,boss_ui={frame=function() end}}
 local f=assert(io.open('THlib/ext/ext.lua','rb'));local code=f:read('*a');f:close()
 local first=assert(code:find('local function DoFrame()',1,true));local last=assert(code:find('_G.DoFrame = DoFrame',first,true))

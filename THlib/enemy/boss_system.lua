@@ -164,6 +164,11 @@ function system:frame()
             b.time_sc = false
         end
         --分数流失
+        local native=b.current_card and b.current_card._original_balance
+        if native and b.t1~=b.t3 and b.timer<b.t3 then
+            -- 原作两段保护：完全无敌，其后固定九倍防御，不是线性爬升或延长全免。
+            b.dmg_factor=OriginalBalance.factor(native,b.timer)
+        end
         if b.sc_bonus then
             b.sc_bonus = b.sc_bonus - b.__rescore
         end
@@ -319,7 +324,7 @@ function system:explode()
         b.vx = sign * v * cos(angle)
         b.vy = v * sin(angle)
         if not b.__NoCleanBullet then
-            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0)
+            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0, 0, true)
         end
         if not b.__dieinstantly then
             for _ = 1, 60 do
@@ -696,7 +701,7 @@ function system:popResult(continue)
         PlaySound('enep02', 0.4, 0)
         if not b.__NoCleanBullet then
             --New(bullet_killer, player.x, player.y, true)
-            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0)
+            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0, true)
         end
     end
     if b.is_final or not continue then

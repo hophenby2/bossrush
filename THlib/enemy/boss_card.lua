@@ -118,6 +118,12 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
     for _, u in ipairs(sc_group) do
         BOSS = _editor_boss[u[2] .. level]
         sc = u[1]
+        local game=({[32]=7,[33]=10})[level]
+        local balance=game and OriginalBalance and OriginalBalance.entries[game][data_id]
+        if balance and sc.t1<sc.t3 then
+            sc._original_balance=balance
+            sc.hp,sc.t1,sc.t2=balance.hp,balance.immune,balance.immune
+        end
         ---@class sc_group
         local s = { card = sc, boss = BOSS }
         table.insert(insert_sc_group, s)

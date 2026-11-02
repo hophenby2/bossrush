@@ -77,6 +77,20 @@ for _,n in ipairs({'arrow_big','arrow_big_b','arrow_big_c','arrow_mid','arrow_sm
     'flower2','sakura','sakura_big'}) do _G[n]=Class(object,_G[n],true) end
 -- 桩件的 enemy.frame 不执行协程，真实框架在此执行一次。
 enemy.frame=task.Do
+-- enemy.init 的首参是外形，第二参才是血量；不能用旧桩件把 style 当成 hp。
+enemy.init=function(o,style,hp,clear_bullet,auto_delete,nontaijutsu)
+    o.hp,o.maxhp,o.style=hp,hp,style
+    o.group=nontaijutsu and GROUP.NONTJT or GROUP.ENEMY
+    o.colli=true
+end
+enemybase=Class(object,{
+    init=function(o,hp,nontaijutsu)
+        o.hp,o.maxhp=hp,hp
+        o.group=nontaijutsu and GROUP.NONTJT or GROUP.ENEMY
+        o.colli=true
+    end,
+    frame=task.Do,
+})
 bullet.ChangeImage=function(o,style,col)
     if o.class==o.imgclass then o.class=style end
     o.imgclass,o.real_index,o._index=style,col,col
@@ -132,6 +146,17 @@ local function start(id)
     card.init(b)
     return b,card
 end
+-- 使用实际构造器，才能发现“道中旧系数 × 统一新系数”的重复换算。
+for _,case in ipairs({
+    {C.TH34_tank4,400,{0,0,400,'l'}},
+    {C.TH34_fairy1,100,{0,0,100,3,0,0}},
+    {C.TH34_ghost,80,{0,0,1,0,false}},
+}) do
+    local o=New(case[1],unpack(case[3]))
+    check(o._original_raw_hp==case[2],'妖妖梦道中对象保留 ECL 原始 life')
+    check(near(o.hp,case[2]*OriginalBalance.scale[7].normal),'妖妖梦道中血量只按低速中位数换算一次')
+end
+reset()
 -- 真机 frame 后积分：变速弹不能多走一段旧速度，也不能把位置回退。
 local b=New(C.TH34_cmdbullet,ball_small,2,0,0,2,0,
     {type=0x20,dur=3,angle=0,speed=1})
@@ -593,5 +618,95 @@ check(rates[1]==15 and rates[2]==60 and near(rates[3],14.4) and rates[4]==60,
     '天女返し逐轮保留原版0.25与0.24两个缓时窗口及其恢复')
 spell.del(owner);task.Clear(owner)
 check(lstg.var.CYFPS==nil,'文花帖换卡恢复进入缓时之前的全局时钟')
+reset()
+-- stage01/BossCard2At1b 的 [20.0f] 是局部变量地址，L 行值2.5；不是速度常量20。
+local grainBoss,grainCard=start(3632)
+for _=1,1000 do tick(grainBoss,grainCard) end
+local grainRays=0
+for _,o in ipairs(objects) do
+    if o.t10_kind==3 and o.t10_max==180 then
+        grainRays=grainRays+1
+        check(near(o.t10_spd,2.5),'谷物神实际生成的每根激光都使用原作L行2.5速度')
+        check(o.t10_len<=180,'谷物神激光只增长到原作180长度')
+    end
+end
+check(grainRays>=48,'谷物神实际卡片跑出完整一轮48根激光')
+grainCard.del(grainBoss);task.Clear(grainBoss);reset()
+-- 实际符卡协程必须生成带原作动画的使魔，单独验证资源存在不能发现漏绑动画。
+for _,case in ipairs({{4457,'stg1enm',12},{4461,'stg2enm',13},{4470,'stg2enm',13},
+    {4464,'stg2enm',12},{4466,'stg2enm',12},{4467,'stg2enm',12},
+    {4471,'stg2enm',12},{4472,'stg3enm',16},{4473,'stg3enm',16},
+    {4431,'stg3enm',14},{4432,'stg3enm',14},{4433,'stg3enm',16},{4435,'stg3enm',20},
+    {4437,'stg3enm',16},{4438,'stg3enm',16},{4439,'stg3enm',22}}) do
+    local b,card=start(case[1])
+    for _=1,650 do tick(b,card) end
+    local found=0
+    for _,o in ipairs(objects) do
+        local a=o._original_actor
+        if a and a.archive==case[2] then
+            local data=OriginalANM.load(7,case[2])
+            if a.vm.id==data.ids[case[3]] then
+                found=found+1
+                if case[1]==4457 then
+                    check(o.th07_trail.count==64 and o.th07_trail.collision_count==32
+                        and o.th07_trail.step==2,'冬符花形伪激光保留原作64/32/2的历史和判定参数')
+                    check(o.timer>180,'冬符发弹结束后仍移动，不能在180帧删掉发弹源')
+                elseif case[1]==4472 or case[1]==4473 then
+                    check(o.th07_contact_box[1]==24 and not o.colli and o.protect,
+                        '公转人偶有24像素接触框，不能受击或吸收自机弹')
+                elseif case[1]==4464 or case[1]==4466 or case[1]==4467 then
+                    check(o.th07_trail.width==16 and o.th07_trail.height==16,
+                        '橙的伪激光使用原作16×16判定，不套用一面8×8')
+                end
+            end
+        end
+    end
+    check(found>0,'实际卡片生成原作ANM使魔：'..case[1])
+    card.del(b);task.Clear(b);reset()
+end
+-- ECL Sub47/49 在60帧开放受弹，不能把整个人偶生命周期都设成不可打。
+for _,id in ipairs({4435,4439}) do
+    local b,card=start(id)
+    local doll
+    for _=1,300 do
+        tick(b,card)
+        for _,o in ipairs(objects) do if o.th07_doll then doll=doll or o end end
+        if doll then break end
+    end
+    check(doll and not doll.colli and doll.protect,'人偶出生的60帧保护：'..id)
+    while doll.timer<=60 do tick(b,card) end
+    check(doll.colli and not doll.protect and doll.th07_contact_box[1]==24,
+        '人偶60帧后接受射击并开启体术：'..id)
+    check(doll._original_raw_hp==20 and near(doll.hp,20*OriginalBalance.scale[7].spell),
+        '人偶20点原始血量按符卡低速中位数换算：'..id)
+    card.del(b);task.Clear(b);reset()
+end
+local b,card=start(4431)
+local doll
+for _=1,410 do
+    tick(b,card)
+    for _,o in ipairs(objects) do
+        if o.th07_doll_laser and IsValid(o.th07_doll_laser) and o.th07_doll_laser.pl_state<2 then doll=o;break end
+    end
+    if doll then break end
+end
+check(doll and doll.colli and doll._original_raw_hp==10,'乙女文乐突进结束后的人偶可以受击')
+doll.class.kill(doll)
+check(doll.th07_doll_laser.pl_state==2 and (not doll.task or next(doll.task)==nil),
+    '击破人偶执行Sub30停光并停止后续发弹')
+card.del(b);task.Clear(b);reset()
+local F=_editor_class.TH35
+local mid=t10mid
+local fairy=New(F.th10_midfairy,110,0,100,false,nil,mid.s03.g00c,nil,100,'stage03:Girl00C')
+check(fairy.group==GROUP.ENEMY and fairy._original_raw_hp==110,
+    '风神录普通妖精有体术，HP保存原始110后换算')
+tick()
+check(fairy.group==GROUP.NONTJT and fairy.t10_no_oob,'Girl00C出生flag6分别关闭体术和离屏回收')
+for _=1,139 do tick() end
+check(fairy.group==GROUP.NONTJT,'Girl00C在140帧前保持关闭体术')
+tick()
+check(fairy.group==GROUP.ENEMY and fairy.t10_no_oob,'Girl00C在140帧只恢复体术，仍保留离屏保护')
+for _=1,320 do tick() end
+check(IsValid(fairy) and not fairy.t10_no_oob,'Girl00C在460帧执行flagClear4后才允许离屏回收')
 reset()
 print(('原作切割、变速、伴奏激光与文花帖回归通过：%d 项'):format(checks))

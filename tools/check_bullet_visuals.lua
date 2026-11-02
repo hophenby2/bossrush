@@ -108,6 +108,78 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
         for _=1,20 do cls.frame(emitter);beam.class.frame(beam) end
         check(beam.rot~=before and near(beam.x,45+64*cos(beam.rot))
             and near(beam.y,117+64*sin(beam.rot)),'LW激光旋转围绕原始发射点保持64px偏移')
+        -- 原作模板执行过t=0；逐帧核对半速出生、最后一帧的双位移与无判定窗口。
+        local function step_shot(o)
+            o.class.frame(o);o.x,o.y=o.x+o.vx,o.y+o.vy;o.ani=o.ani+1;o.timer=o.timer+1
+        end
+        local cases={
+            {'storm_bullet',{0,0,0,2,{},1,0,15},15,.4,'bvx'},
+            {'lw206_bullet',{0,0,0,2,6,1,10},10,.5,'bvx'},
+            {'bullet_218',{0,0,0,2,1,1,2},10,.5,'alice_speed'},
+            {'lw209_bullet',{0,0,0,2},10,.5},
+            {'lw210_bullet',{0,0,0,2,1,false},10,.5,'lw210_bvx'},
+            {'lw211_bullet',{0,0,0,2,1,5,10,.5,0,0,0},10,.5,'lw211_bvx'},
+            {'lw211_bullet',{0,0,0,2,1,19,10,.5,0,0,0},30,.5,'lw211_bvx'},
+            {'lw211_bullet',{0,0,0,2,1,10,15,.4,0,0,0},24,.4,'lw211_bvx'},
+            {'lw212_aim_bullet',{0,0,0,2},10,.5},
+            {'lw213_bullet',{0,0,0,2,1,2,10,100},10,.5},
+            {'lw214_bullet',{0,0,0,2,1},10,.5},
+            {'lw215_bullet',{0,0,0,2,1,14,0},30,.5},
+            {'lw216_bullet',{0,0,0,2,1,30},30,.5},
+            {'BIG_CLS',{0,0,0,2},30,.5},
+            {'MID_CLS',{0,0,0,2},24,.5},
+        }
+        for _,case in ipairs(cases) do
+            local o=New(find(case[1]),unpack(case[2]))
+            check(not o.colli and near(o.x,-8),case[1]..'出生退四倍速度，关闭判定')
+            for t=1,case[3]-1 do
+                step_shot(o)
+                check(not o.colli and near(o.x,-8+t*2*case[4]),case[1]..'弹雾半速位移与无判定：'..t)
+            end
+            if o.alice_wait then check(o.alice_wait==120,'爱丽丝弹雾不消耗WAIT计时') end
+            local x=o.x;step_shot(o)
+            local fired=case[5] and o[case[5]] or o.vx
+            check(o.colli and near(o.x,x+2*case[4]+fired),case[1]..'结束当帧保留出生位移，再完整执行FIRED')
+            if o.lw213_wait then check(o.lw213_wait==99,'弹雾结束当帧推进WAIT') end
+        end
+        local direct=New(find('storm_bullet'),45,117,0,2,{},1,8,nil)
+        check(direct.colli and direct.x==45 and direct.y==117,'无出生旗标的蝶弹从发射器原点出现')
+        for _,name in ipairs({'lw207_bullet','lw208_bullet','lw208_gun_bullet'}) do
+            local cls=find(name)
+            local o=New(cls,45,117,0,2,1,0)
+            check(o.x==45 and o.y==117 and not o.bound,name..'必须记录发射器坐标并关闭引擎提前回收')
+            step_shot(o)
+            check(near(o.x,47) and near(o.y,117),name..'第一帧从发射器坐标积分')
+            local edge=New(cls,192,0,0,0,1,0)
+            edge.x=192+edge.imgclass.native_profile.w/2
+            step_shot(edge)
+            check(IsValid(edge),name..'精灵边缘仍接触场地时保留')
+            edge.x=edge.x+.01;step_shot(edge)
+            check(not IsValid(edge),name..'精灵整体出屏后回收')
+        end
+        local turning=New(find('bullet_218'),0,0,0,2,1,math.pi,2)
+        for _=1,10 do step_shot(turning) end
+        turning.alice_wait=0;turning.alice_turn_armed=true;turning.alice_turn_timer=1
+        turning.x=210;step_shot(turning)
+        check(IsValid(turning) and turning.alice_off==1,'转向变换执行时保留出屏子弹')
+        turning.alice_turn=nil;turning.alice_speed=0;step_shot(turning)
+        check(IsValid(turning) and turning.alice_off==0,'转向结束后消耗累计出屏帧数')
+        step_shot(turning);check(not IsValid(turning),'原作出屏宽限耗尽后回收')
+        local stopped=New(find('lw217_bullet'),0,0,0,.1)
+        for _=1,9 do step_shot(stopped) end
+        check(not stopped.colli,'小弹快速弹雾前9帧不碰撞')
+        step_shot(stopped);check(stopped.colli,'小弹快速弹雾第10帧进入FIRED')
+        local EX=find('EX')
+        for _,kind in ipairs({0,10}) do
+            local o=New(EX.bullet,{x=0,y=0,angle=0,speed=2,style=mapper(kind),color=1,
+                half=32,btype=kind,flags=0,recs={}})
+            local pool=EX.pool;EX.pool={o};EX.pool_cancel();EX.pool=pool
+            local duration=kind==10 and 16 or 12
+            check(o.ex_despawn==duration,'原生消散时限由弹型选择：'..kind)
+            for _=1,duration-1 do step_shot(o) end
+            check(IsValid(o) and not o.colli,'原生消散保留弹槽到ANM最后一帧：'..kind)
+            step_shot(o);check(not IsValid(o),'原生消散动画结束后释放：'..kind)
+        end
     end
     if game=='th35' then actual_lasers.th10=find('th10_laser') end
     if game=='th33' then
@@ -115,8 +187,8 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
         local mapped=fixed(butterfly,18)
         local old=NewSimpleBullet(butterfly,2,0,0,1,0,false,0,false)
         local changed=NewSimpleBullet(mapped,2,0,0,1,0,false,0,false)
-        check(mapped.visual_style==water_drop and changed.a==old.a and changed.b==old.b,
-            'TH33 固定调用点换图时，保留该调用原来的蝶形判定，不能误套全局 type18 判定')
+        check(mapped.visual_style==water_drop and changed.a==3 and changed.b==3 and changed.rect,
+            'TH33 type18 使用文花帖原生6×6方形判定')
         local parts=find('sg_parts')
         check(parts(mapped)==mapped,'TH33 样式类本身不能被误认为 type 描述数组')
         local body,t=parts(mapper(3));check(body.visual_style==grain_a and t==3,'TH33 描述数组仍只查一次色表')
@@ -128,8 +200,9 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
         for color=1,OriginalBulletVisual.color_count(mapped.native_game,t) do
             local original=NewSimpleBullet(old,color,0,0,1,0,false,0,false)
             local changed=NewSimpleBullet(mapped,color,0,0,1,0,false,0,false)
-            check(near(changed.a,original.a) and near(changed.b,original.b) and changed.rect==original.rect,
-                game..' 保留既有碰撞尺寸及形状')
+            local width=OriginalCollision.widths[mapped.native_game][t]
+            check(near(changed.a,width/2) and near(changed.b,width/2) and changed.rect,
+                game..' 使用原作的轴对齐方形判定')
             check(changed.hscale==1 and changed.vscale==1,game..' 不额外缩放子弹')
             calls={};bullet.render(changed)
             local vm=changed._native_anm
@@ -143,7 +216,7 @@ for _,game in ipairs({'th31','th33','th34','th35'}) do
             local white=OriginalBulletVisual.color_count(mapped.native_game,t)
             bullet.ChangeImage(changed,mapped,white)
             local gray=NewSimpleBullet(old,white,0,0,1,0,false,0,false)
-            check(near(changed.a,gray.a) and near(changed.b,gray.b),game..' 飞行中换色/换图仍保留原判定')
+            check(near(changed.a,width/2) and near(changed.b,width/2),game..' 飞行中换色/换图仍保留原判定')
         end
     end
 end
@@ -298,4 +371,98 @@ cutLasersByCircle(0,0,800)
 check(not corner._native_cancelled,'原生激光在消弹圈外的角落不能被投影包围盒误清除')
 object.BulletDo,object.LaserDo=old_bullets,old_lasers
 Dist=old_dist
+-- 对象自转不能把原作AABB旋成菱形；受弹框和接触框分别切换，随后完整恢复。
+local C=OriginalCollision
+local victim={rot=37,rect=false,a=24,b=32,colli=true,_live=true}
+C.unit(victim,7,'ecldata1:48',true)
+check(victim.a==24 and victim.b==32,'实际中断链继承蕾蒂48×64受弹框')
+local hero={rot=19,rect=false,a=2,b=3,colli=true,_live=true}
+local shot={rot=70,rect=false,a=3,b=8,colli=true,_live=true}
+local lists={[GROUP.ENEMY]={victim},[GROUP.PLAYER]={hero},[GROUP.PLAYER_BULLET]={shot}}
+local oldList=ObjList
+ObjList=function(group) return ipairs(lists[group] or {}) end
+C.begin()
+check(victim.rot==0 and victim.rect and near(victim.a,16) and near(victim.b,64/3),'接触阶段除以1.5，取消精灵自转')
+check(hero.rect and hero.rot==0,'自机角落参与原作矩形碰撞')
+C.shots();check(victim.a==24 and victim.b==32 and shot.rot==0 and shot.rect,'自机弹阶段恢复完整受弹框')
+C.finish();check(victim.rot==37 and victim.a==24 and hero.rot==19 and not hero.rect and shot.rot==70 and not shot.rect,'碰撞结束恢复运动角、原判定形状与尺寸')
+victim.a,victim.b=48,48 -- 模拟行走图切换覆盖资源默认半径。
+C.begin()
+check(near(victim.a,16) and near(victim.b,64/3),'换图覆盖a/b之后，体术仍使用ECL判定尺寸')
+C.shots();check(victim.a==24 and victim.b==32,'换图覆盖a/b之后，受弹仍使用ECL判定尺寸')
+C.finish()
+local inherited={}
+C.unit(inherited,8,'ecldata2:44',true)
+check(inherited.a==24 and inherited.b==24,'二面普通战斗沿时间轴Sub17继承48×48，不混入未生成的Sub25')
+C.unit(inherited,8,'ecldata2:58',true)
+check(inherited.a==12 and inherited.b==12,'另生的Last Spell从24×24模板初始化，不能沿用中Boss判定')
+C.unit(inherited,8,'ecldata8:65',true)
+check(inherited.a==24 and inherited.b==40,'Extra普通战斗构造入口的48×80判定')
+C.unit(inherited,8,'ecldata8:84',true)
+check(inherited.a==12 and inherited.b==12,'Extra Last Spell的独立构造入口重置判定')
+local collisionArrow=NewSimpleBullet(OriginalBulletVisual.native_style(7,4,arrow_mid),2,0,0,0,37,false,0,false)
+collisionArrow.th07_cull_managed=true;collisionArrow.rot=37
+lists[GROUP.ENEMY_BULLET]={collisionArrow}
+C.begin()
+check(collisionArrow.rot==0 and bullet.GetRenderRotation(collisionArrow)==37,'碰撞期间分离零角AABB和真实弹道朝向')
+OriginalBulletVisual.emit_despawn(collisionArrow,false)
+check(near(collisionArrow.angle,-53),'碰撞触发的消散特效保留弹道角，不能跟着判定框归零')
+C.finish()
+check(collisionArrow._original_collision_rot==nil,'碰撞结束清除临时角度记录')
+ObjList=oldList
+local visual=OriginalBulletVisual
+local slowArrow=NewSimpleBullet(visual.native_style(7,4,arrow_mid),2,0,0,2,0,false,0,false)
+local arrowVM,arrowSprite=slowArrow._native_anm,slowArrow._native_anm.sprite
+slowArrow.own_gray=true;visual.render_anm(slowArrow)
+check(calls[#calls].name==arrowVM.data.sprites[arrowSprite-slowArrow._native_color+15].img,
+    '妖梦缓时使用原作白色箭头精灵')
+check(slowArrow._native_anm==arrowVM and arrowVM.sprite==arrowSprite,'缓时换色不重开动画或污染弹型状态')
+slowArrow.own_gray=false;visual.render_anm(slowArrow)
+check(calls[#calls].name==arrowVM.data.sprites[arrowSprite].img,'恢复速度同时恢复原箭头颜色')
+local smoke=NewSimpleBullet(visual.native_style(6,0,ball_small),2,0,0,0,0,false,0,false)
+smoke.th06_spawn=10;visual.sync_spawn(smoke)
+check(smoke._native_anm.id==14,'红魔乡小颗粒出生使用14，不误取大一号弹雾17')
+check(not visual.can_cancel(smoke,false) and visual.can_cancel(smoke,true),'红魔乡出生期不接受玩家消弹，换卡强制清场仍有效')
+for _,game in ipairs({6,7,8,95,10}) do
+    local a=NewSimpleBullet(visual.native_style(game,0,ball_small),2,0,0,0,0,false,0,false)
+    local b=NewSimpleBullet(visual.native_style(game,0,ball_small),2,0,0,0,0,false,0,false)
+    local key=({[6]='th06_spawn',[7]='c_spawn_left',[8]='ex_spawn',[95]='th095_spawn_left'})[game]
+    local function remaining(o,n) if key then o[key]=n else o.tb={spawn=n,cancel=0,angle=0} end end
+    remaining(a,8);remaining(b,8)
+    visual.render_anm(a) -- 比较出生当帧绘制过与从未绘制过的两条路径。
+    local ref=OriginalANM.new(game,a._native_anm.data.archive,a._native_anm.id)
+    if game==95 or game==10 then OriginalANM.interrupt(ref,7) end
+    for t=1,7 do
+        remaining(a,8-t);remaining(b,8-t);a.ani,b.ani=t,t
+        visual.step_anm(a);visual.step_anm(b);OriginalANM.step(ref)
+        check(near(a._native_anm.time,b._native_anm.time) and near(a._native_anm.time,ref.time)
+            and near(a._native_anm.scale[1],ref.scale[1]),'弹雾ANM每逻辑帧执行一次，不依赖是否绘制：'..game..'/'..t)
+    end
+end
+local immune=NewSimpleBullet(visual.native_style(8,3,ball_small),2,0,0,0,0,false,0,false)
+immune.ex_flags=4096
+check(not visual.can_cancel(immune,false) and visual.can_cancel(immune,true),'永夜抄 CANCEL_IMMUNE 与强制清场区分')
+immune.ex_flags=0;immune.ex_spawn=4
+visual.cancel_bullet(immune,'Del')
+check(immune._original_cancel_pending=='Del' and IsValid(immune),'永夜抄出生期只记录取消标志')
+immune.ex_spawn=0;immune.ani=immune.ani+1;visual.step_anm(immune)
+check(not immune._original_cancel_pending and IsValid(immune),'永夜抄出生结束的activateBullet保留弹体，不能误做延迟删除')
+local protected=NewSimpleBullet(visual.native_style(10,3,ball_small),2,0,0,0,0,false,0,false)
+protected.tb={cancel=20}
+check(not visual.can_cancel(protected,false),'风神录消弹保护计时未结束时保留子弹')
+protected.tb.cancel=0;check(visual.can_cancel(protected,false),'风神录消弹保护到点恢复')
+-- 所有原生弹型的消散都实际推进至ANM结束，避免新增无期限的无判定对象。
+for _,game in ipairs({6,7,8,95,10}) do
+    for kind in pairs(visual.profiles[game]) do
+        local o=NewSimpleBullet(visual.native_style(game,kind,ball_small),math.min(2,visual.color_count(game,kind)),0,0,2,0,false,0,false)
+        -- 不依赖simple_bullet参数口径，明确物理字段供退场验证。
+        o.vx,o.vy=4,2
+        local effect=o
+        check(visual.emit_despawn(o,false) and effect.vm~=nil and IsValid(o),
+            '原作消散保留同一对象占槽，不提前释放弹池位置')
+        check(effect.vx==2 and effect.vy==1 and not effect.colli,'消散按半速移动且无判定')
+        for _=1,90 do if not effect.vm.finished then effect.class.frame(effect) end end
+        check(effect.vm.finished,'原作消散ANM能正常结束：'..game..'/'..kind)
+    end
+end
 print(('子弹映射、旋转与激光尺寸回归通过：%d 项'):format(checks))

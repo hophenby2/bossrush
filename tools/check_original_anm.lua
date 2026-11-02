@@ -14,7 +14,7 @@ LoadTexture=function(name,path)
 end
 LoadImage=function(name,tex,x,y,w,h) images[name]={tex=tex,x=x,y=y,w=w,h=h} end
 CheckRes=function(kind,name) return (kind=='tex' and textures[name]) or (kind=='img' and images[name]) end
-GetTextureSize=function(name) return unpack(assert(textures[name],name)) end
+GetTextureSize=function(name) return unpack((assert(textures[name],name))) end
 Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
 SetImageState=function(name,blend,color) local i=assert(images[name],name);i.blend,i.color=blend,color end
 Render=function(name,x,y,rot,hs,vs) draws[#draws+1]={img=assert(images[name],name),name=name,x=x,y=y,rot=rot,hs=hs,vs=vs} end
@@ -121,6 +121,21 @@ for _,entry in ipairs({{'Chen','ecldata7.ecl','eff02',1},{'Ran','ecldata7.ecl','
         'EffectManager/Gui切换决定EX/PH背景文件与层数：'..entry[1]..'/'..entry[2])
 end
 local sanae={class={StageLevel=33},ani=0,timer=0,x=0,y=96}
+-- 三种不同的背景 ANM 锚点都落在同一384×448游戏场地，不能重复叠加屏幕中心。
+for _,case in ipairs({{29,'Nightbug'},{30,'Rumia'},{31,'Nightbug'},{32,'Whiterock'},{33,'Minoriko'}}) do
+    local b={class={StageLevel=case[1]},ani=0,timer=0,x=0,y=96,__show_scbg=true,current_card={is_sc=true}}
+    V.bind_boss({obj=b},case[2]);local bg={};b._bg.init(bg);boss_group={b}
+    for _=1,65 do b._bg.frame(bg) end
+    draws={};b._bg.render(bg)
+    check(#draws>0,'符卡背景可见：'..case[2])
+    for _,d in ipairs(draws) do
+        if d.vertices then
+            local x,y=0,0
+            for _,p in ipairs(d.vertices) do x,y=x+p[1],y+p[2] end
+            check(near(x/4,0) and near(y/4,0),'UV滚动背景中心不偏移：'..case[2])
+        else check(near(d.x,0) and near(d.y,0),'原作背景锚点只换算一次：'..case[2]) end
+    end
+end
 V.bind_boss({obj=sanae},'Sanae')
 check(sanae._original_actor.special==11,'单卡入口也恢复早苗构造时的施法动画编号')
 V.bind_source(sanae,10,'stage05:BossCard1',true);V.source_frame(sanae,100)

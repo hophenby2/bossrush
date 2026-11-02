@@ -8,6 +8,7 @@ function T.install()
     local speed=tonumber(os.getenv('TH3X_SPEED')) or 60
     local seed=tonumber(os.getenv('TH3X_SEED')) or 20261031
     local mode=os.getenv('TH3X_MODE') or 'timeout'
+    local run_id=os.getenv('TH3X_RUN_ID') or 'manual'
     local flow=os.getenv('TH3X_FLOW') or 'single'
     local games=','..(os.getenv('TH3X_GAMES') or '31,32,33,34,35')..','
     local selection=','..(os.getenv('TH3X_CASES') or '')..','
@@ -17,6 +18,10 @@ function T.install()
     local accumulator=0
     local original_render=RenderFunc
     local original_input=GetInput
+    -- 正常游戏每逻辑帧渲染一次；加速验证也要按逻辑帧推进开场遮罩，
+    -- 否则900帧截图仍停在第几帧的转场，不能用来判断ANM是否正确。
+    local mask_frame=mask_fader.frame
+    mask_fader.frame=function() end
     function GetInput()
         original_input()
         if started and current then
@@ -33,7 +38,7 @@ function T.install()
     local function state()
         return {expected=#entries,completed=#records,records=records,errors=errors,
             current=current and {id=current.cardId,level=current.level,frames=frames,phase=current.phase,peak=current.peak},
-            seed=seed,mode=mode,flow=flow,version=lstg.GetVersionName(),limit=limit}
+            seed=seed,mode=mode,flow=flow,version=lstg.GetVersionName(),limit=limit,run_id=run_id}
     end
     local function save(final)
         local f=io.open(final and 'native-result.json' or 'native-progress.json','w')
@@ -166,6 +171,7 @@ function T.install()
                     -- 实际player.frame仍决定形态、位置和碰撞；通过正常输入切换高低速。
                 end
                 DoFrame()
+                mask_frame(mask_fader)
                 ext.achievement:frame();ext.MusicChange:frame()
                 if not started and stage.current_stage and stage.current_stage.stage_name=='menu' then launch() end
                 if current and host and IsValid(host) and host.is_combat and current.phase=='combat' then
@@ -174,6 +180,9 @@ function T.install()
                     if frames%1200==0 then save(false) end
                     if mode=='photo' and host.photo_damage_limit and frames%480==0 then
                         boss.take_damage2(host,1)
+                    elseif mode=='cancel' and frames%240==0 then
+                        -- 普通消弹走可消性和出生状态，不使用换卡的强制清场入口。
+                        New(bullet_cleaner,0,0,640,0,1,true,true,0,0)
                     elseif mode=='defeat' and not current.survival and frames>=current.damage_at and frames%60==0 then
                         current.damage_attempts=(current.damage_attempts or 0)+1
                         Damage(host,host.hp*1000000)

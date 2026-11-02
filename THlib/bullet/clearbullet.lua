@@ -68,7 +68,8 @@ end
 _G.cutLasersByCircle = cutLasersByCircle
 
 bullet_cleaner = Class(object)
-function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx)
+function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx, native_force)
+    self.native_force=native_force
     self.x = x
     self.y = y
     if time == 0 then
@@ -101,7 +102,7 @@ function bullet_cleaner:frame()
     cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes)
     object.BulletDo(function(o)
         if Dist(self, o) < self.a then
-            object[self.into](o)
+            OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
         end
     end)
     object.LaserDo(function(o)
@@ -116,7 +117,7 @@ function bullet_cleaner:frame()
     if self.indes then
         object.IndesDo(function(o)
             if Dist(self, o) < self.a then
-                object[self.into](o)
+                OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
             end
         end)
     end
@@ -140,7 +141,7 @@ function bomb_bullet_killer:frame()
     cutLasersByCircle(self.x, self.y, self.a, item.obj.faith_minor,self.kill_indes)
     object.BulletDo(function(o)
         if Dist(self, o) < self.a then
-            object.Kill(o)
+            OriginalBulletVisual.cancel_bullet(o,'Kill',false)
         end
     end)
     object.LaserDo(function(o)
@@ -155,7 +156,7 @@ function bomb_bullet_killer:frame()
     if self.kill_indes then
         object.IndesDo(function(o)
             if Dist(self, o) < self.a then
-                object.Kill(o)
+                OriginalBulletVisual.cancel_bullet(o,'Kill',false)
             end
         end)
     end

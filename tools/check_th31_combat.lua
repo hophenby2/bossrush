@@ -81,11 +81,18 @@ local BossClass=Class(BossBase,{init=function(o)
     o.StageLevel=29
 end},true)
 boss.card.add=function(parts,_,_,id) cards[id]=parts[1][1] end
+-- check_stage 的展示桩保存秒；战斗回归必须使用与 boss.card.New 相同的帧单位。
+local newCard=boss.card.New
+boss.card.New=function(...)
+    local c=newCard(...);c.t1,c.t2,c.t3=c.t1*60,c.t2*60,c.t3*60;return c
+end
 dofile('mod/GAME/th31.lua')
 local M=_editor_class.TH31.th08_combat
+local H=OriginalBalance
+local familiarScale=H.scale[8].familiar_normal
 local function boss_owner(id)
     local o=New(BossClass);o.th08_combat_card=id or 218
-    o.th08_actors,o.th08_actor_counts={},{};M.owner=o;return o
+    o.th08_actors,o.th08_actor_counts={},{};o._original_hp_scale=.5;M.owner=o;return o
 end
 local function step(o,n)
     for _=1,n do o.class.frame(o) end
@@ -95,13 +102,15 @@ local definition={init=function(o,x,y) o.x,o.y=x or 0,y or 0 end,
 local owner=boss_owner()
 local Doll=M.actor('ecldata_al:2',definition)
 local doll=New(Doll,0,96)
-check(doll.hp==9000 and doll.maxhp==9000 and doll.a==12 and doll.b==12 and doll.rect,
-    '爱丽丝人偶使用原生9000血与24×24受弹框')
+local dollHP=9000*familiarScale
+check(near(doll.hp,dollHP) and near(doll.maxhp,dollHP) and doll.a==12 and doll.b==12 and doll.rect,
+    '爱丽丝人偶以原生9000血换算低速中位数，保留24×24受弹框')
 check(doll.group==GROUP.NONTJT and doll.colli,'生成使魔只关闭接触判定，仍能成为自机弹目标')
-Damage(doll,200);check(doll.hp==9000,'30帧出生免伤')
-step(doll,30);Damage(doll,200);check(doll.hp==9000,'第30帧仍不吃伤害')
+Damage(doll,200);check(near(doll.hp,dollHP),'30帧出生免伤')
+step(doll,30);Damage(doll,200);check(near(doll.hp,dollHP),'第30帧仍不吃伤害')
 step(doll,1);Damage(doll,200)
-check(doll.hp==8800 and owner.hp==99900,'免伤结束后受击，并将实受伤害的一半传给父Boss')
+local parentHP=100000-math.floor(100/familiarScale)*.5
+check(near(doll.hp,dollHP-200) and near(owner.hp,parentHP),'先还原使魔伤害口径，再将原生一半伤害换算到父Boss')
 local before=doll.test_steps
 if native then
     GameDrops=false
@@ -111,7 +120,7 @@ if native then
     end},true)
     local shot=New(Shot)
     native.CollisionCheck(GROUP.NONTJT,GROUP.PLAYER_BULLET)
-    check(doll.hp==8780 and owner.hp==99890,'真实引擎碰撞矩阵调用使魔的受击回调')
+    check(near(doll.hp,dollHP-220) and near(owner.hp,parentHP-math.floor(10/familiarScale)*.5),'真实引擎碰撞矩阵调用使魔的受击回调')
     native.AfterFrame()
     check(not IsValid(shot),'真实碰撞后消耗自机弹')
 end
@@ -133,10 +142,10 @@ check(target.colli and target.th08_accept,'回到人类形态后恢复受击')
 owner=boss_owner(210)
 local Tree=M.actor('ecldata7sp:80',{init=function(o) o.x,o.y=0,96 end})
 local tree=New(Tree,0,96,0)
-check(tree.hp==4000 and not tree.colli,'蓬莱之树海的第一棵树4000血，飞行前120帧关闭受击')
-step(tree,119);Damage(tree,100);check(tree.hp==4000,'树在第119帧仍不可受击')
+check(near(tree.hp,4000*familiarScale) and not tree.colli,'蓬莱之树海原生4000血换算，飞行前120帧关闭受击')
+step(tree,119);Damage(tree,100);check(near(tree.hp,4000*familiarScale),'树在第119帧仍不可受击')
 step(tree,1);check(tree.colli and tree.group==GROUP.ENEMY,'第120帧按 ENABLE_INTERACTION_FLAGS 3 恢复受击与接触')
-Damage(tree,100);check(tree.hp==3900,'树落位后可打掉')
+Damage(tree,100);check(near(tree.hp,4000*familiarScale-100),'树落位后可打掉')
 local invulnerable=M.actor('ecldata4asp:44',{init=function() end})
 local hidden=New(invulnerable,0,96,0,1);step(hidden,60)
 local hp=hidden.hp;Damage(hidden,99999)
@@ -150,17 +159,19 @@ for n=205,221 do
     local card=assert(cards[351+n-205])
     if M.lastwords[n] then
         local p=M.lastwords[n];finite=finite+1
-        check(card.hp==source_life[n-204] and near(card.t1,p[2]/60) and card.t1<card.t3,
-            'Last Word '..n..'保留原始life与110帧入场无敌')
+        check(card.hp==math.floor(source_life[n-204]*H.scale[8].spell+.5) and near(card.t1,p[2]) and card.t1<card.t3,
+            'Last Word '..n..'按原始life换算，保留110帧入场无敌')
     else check(card.t1==card.t3,'原作耐久Last Word：'..n) end
 end
 check(finite==14,'14张可击破，3张原生耐久')
 local card=cards[364];owner=boss_owner(218);card.init(owner)
 check(owner.colli and not owner.no_hp_render and not owner.NotPlayTimeOutSound,'可击破LW显示血条，超时按普通符卡结算')
 for _=1,110 do card.frame(owner) end
-card.frame(owner);check(near(owner.DMG_factor,1/9),'LW开启受伤后原生120帧九倍防御')
+card.frame(owner)
+check(owner.DMG_factor==1 and H.factor(card._original_balance,109)==0 and near(H.factor(card._original_balance,110),1/9),
+    '全免边界110帧后进入九倍防御，只由Boss状态机应用一次')
 for _=1,120 do card.frame(owner) end
-check(owner.DMG_factor==1,'原生保护结束后恢复全伤害')
+check(owner.DMG_factor==1 and H.factor(card._original_balance,229)==1/9 and H.factor(card._original_balance,230)==1,'原生保护结束后恢复全伤害')
 local actors=owner.th08_actors
 card.del(owner)
 check(owner.DMG_factor==1 and owner.th08_combat_card==nil,'换卡恢复伤害因子与阶段上下文')
@@ -186,9 +197,9 @@ check(orb.img=='th31_master_spark' and orb.th08_source=='ecldata4b:70',
     'Final Master Spark实际构造原生使魔，图片资源使用原作火花精灵')
 owner=boss_owner(443)
 local Familiar=find(cards[443].init,'familiar')
-local fam=New(Familiar,owner,2,700,{})
+local fam=New(Familiar,owner,2,700,{},69)
 for _=1,701 do if IsValid(fam) then fam.class.frame(fam) end end
-check(IsValid(fam) and fam.hp==700,'原作HP不再每帧递减，也不自动当寿命回收')
+check(IsValid(fam) and near(fam.hp,700*familiarScale),'换算HP不每帧递减，也不自动当寿命回收')
 -- 7帧过渡由卡片每帧推进；没有使魔、长时间没有射击也不能停计时。
 local noop=function() end
 local idle={t1=0,t3=1,init=noop,frame=noop,del=noop}
@@ -232,6 +243,19 @@ M.render(emitter,function(o) color_seen={o._r,o._g,o._b,o._a} end)
 check(color_seen[1]==32 and color_seen[2]==32 and color_seen[3]==192 and color_seen[4]==127.5,
     '妖怪使魔沿用原作蓝色半透明显示')
 EX.shoot=shoot
+-- Sub58 的 ins99 是绝对圆环，换自机位置不能改变钻石的下落基准角。
+local diamond=find(cards[400].frame,'gun58')
+local oldFloat=ran.Float
+ran.Float=function(_,a,b) return a+(b-a)*.75 end
+local diamondShot
+EX.shoot=function(_,x,y,p) diamondShot={x=x,y=y,p=p} end
+local dx,dy=player.x,player.y
+player.x,player.y=-150,-180;diamond({x=0,y=96},200)
+local first=diamondShot
+player.x,player.y=150,180;diamond({x=0,y=96},200)
+check(first and diamondShot and near(first.p.angle,diamondShot.p.angle),'神宝钻石的绝对发射角不叠加自机角')
+check(first.p.angle < -math.pi/2 and first.p.count1==2 and first.p.count2==1,'原作正角抖动经过Y轴转换后为负，保持2发对径圆环')
+EX.shoot,ran.Float=shoot,oldFloat;player.x,player.y=dx,dy
 -- 七套道中调度都通过同一unit入口；实际enemybase在每帧重新计算colli。
 local Unit=M.unit({init=function(o,sub,x,y,mirror,parent)
     enemybase.init(o,600,false)
@@ -243,11 +267,28 @@ local hp=linked.hp
 M.unit_collision(linked)
 check(not linked.colli and linked._colli,'低速只关本帧判定，保留enemybase持久_colli')
 Damage(linked,100);check(linked.hp==hp,'道中使魔低速时直调Damage也不受伤')
-Damage(independent,100);check(independent.hp==500,'独立道中敌机在低速时正常受击')
+Damage(independent,10);check(near(independent.hp,600*H.scale[8].normal-10),'独立道中敌机在低速时正常受击')
 for t=29,36 do tick(t,0) end
 enemybase.frame(linked);M.unit_collision(linked)
 check(linked.colli and linked._colli,'回到高速后恢复真实enemybase受弹判定')
-Damage(linked,100)
-check(linked.hp==500 and independent.hp==450,'高速道中使魔受击，并将一半实伤传给父机')
+Damage(linked,10)
+check(near(linked.hp,600*familiarScale-10) and near(independent.hp,600*H.scale[8].normal-10-math.floor(5/familiarScale)*H.scale[8].normal),
+    '高速道中使魔受击，父子按各自换算比例传递原生伤害')
 idle.del(owner)
+-- Sub149前90帧仍有体术，之后与永夜返五连一样关闭；耐久不能再被HP表改回普通卡。
+for _,id in ipairs({383,392,393,394,395,396}) do
+    local c=cards[id]
+    check(c.t1==c.t2 and c.t2==c.t3 and not c._original_balance,'原作关闭受击的卡保留耐久：'..id)
+end
+for _,cfg in ipairs({{204,90},{174,0},{178,0},{182,0},{186,0},{190,0}}) do
+    local c={t1=600,t2=600,t3=600,init=function() end,frame=function() end,del=function() end}
+    M.bind(c,cfg[1])
+    local b={x=0,y=96,colli=true,ani=0,timer=0}
+    c.init(b)
+    for t=0,100 do
+        c.frame(b)
+        check(b.colli==(t<cfg[2]),'耐久本体接触判定按指令时刻切换')
+    end
+    c.del(b)
+end
 print(('TH31 Last Word 与使魔受击回归通过：%d 项'):format(checks))

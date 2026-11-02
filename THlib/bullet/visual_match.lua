@@ -1,5 +1,7 @@
 -- 原作移植的显示与回收：精灵、调色板和动画取原作 ANM；判定和运动独立维护。
 local V = {}
+OriginalCollision=dofile('THlib/bullet/original_collision.lua')
+OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 if not OriginalANM then dofile('THlib/anm/original.lua') end
 if not OriginalStageVisual then dofile('THlib/anm/stage_visual.lua') end
 V.profiles = dofile('THlib/bullet/original_profiles.lua')
@@ -8,6 +10,58 @@ local body8={ [0]=0,1,2,3,4,5,6,7,8,9,25,106,107,108,109,110,111,112,113,114,115
 local body95={ [0]=0,16,32,48,64,80,96,111,127,143,159,175,211,219,227,235,243,283,296,251,259,267,275,191 }
 -- TH10.exe 0x72d70 的 27 项脚本表；type24 的脚本48与type1的脚本64不能互换。
 local body10={ [0]=0,64,80,96,112,128,144,160,176,192,208,224,275,283,291,299,307,347,373,315,323,331,339,240,48,374,243 }
+local small_colors={ [0]=0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0 }
+local medium_colors={ [0]=0,1,1,2,2,3,4,0 }
+local function effect_color(v,o)
+    local h,col=o.imgclass.native_profile.h,o._native_color
+    v.sprite=v.sprite+(h<=16 and small_colors[col] or h<=32 and medium_colors[col] or col)
+end
+local function despawn_vm(o)
+    local game,kind=o.imgclass.native_game,o.imgclass.native_type
+    if game==95 or game==10 then
+        local v=o._native_anm
+        A.interrupt(v,1);A.step(v)
+        return v
+    end
+    local archive,id
+    if game==6 then archive=kind==9 and 'etama4' or 'etama3';id=kind==9 and 1 or kind==0 and 11 or kind<6 and 12 or 13
+    else archive='etama';id=kind==10 and 26 or kind==0 and 15 or o.imgclass.native_profile.h<=16 and 16 or 17 end
+    local v=A.new(game,archive,id)
+    effect_color(v,o)
+    return v
+end
+-- 原对象转入无判定消散，仍占弹池槽位；不能另造特效后提前释放原弹槽。
+local native_despawn=Class(object,{
+    init=function(o,source)
+        local angle=bullet.GetRenderRotation(source)-90
+        o.x,o.y,o.layer=source.x,source.y,source.layer
+        o.group,o.bound,o.colli=GROUP.GHOST,false,false
+        o.vm=despawn_vm(source)
+        local vx,vy=source.vx or 0,source.vy or 0
+        if source.ex_vx then vx,vy=source.ex_vx,source.ex_vy
+        elseif source.tb then vx,vy=source.tb.vx,-source.tb.vy
+        elseif vx==0 and vy==0 then vx,vy=source.dx or 0,source.dy or 0 end
+        o.vx,o.vy=vx/2,vy/2
+        o.angle=angle
+        o.omiga,o.ax,o.ay,o.ag=0,0,0,0
+        o._original_despawning=true
+    end,
+    frame=function(o) A.step(o.vm);if o.vm.finished then object.RawDel(o) end end,
+    render=function(o) A.draw(o.vm,o.x,o.y,o.angle) end,
+},true)
+function V.emit_despawn(o,drop)
+    if not o._native_anm then return false end
+    if o._native_death_effect or o._original_silent_remove then return true end
+    o._native_death_effect=true
+    if not o._original_global_cancel then
+        object.Preserve(o)
+        task.Clear(o)
+        o.class=native_despawn
+        native_despawn.init(o,o)
+    end
+    if drop then New(item.obj.faith_minor,o.x,o.y) end
+    return true
+end
 function V.color_count(game,kind)
     if game==6 then return kind==9 and 4 or kind>=6 and 8 or 16 end
     if game==7 then return kind==10 and 4 or kind>=7 and 8 or 16 end
@@ -26,25 +80,55 @@ local function body_vm(game,kind,color)
     return v
 end
 function V.reset_anm(o,game,kind,index)
+    OriginalCollision.bullet(o,game,kind)
     o._native_color=(index or 1)-1
     o._native_anm=body_vm(game,kind,o._native_color)
+    o._native_animation_vm=o._native_anm
     o._native_spawn_started=false;o._native_anm_tick=nil
 end
 local function spawn_left(o,game)
     if game==6 then return o.th06_spawn or 0
     elseif game==7 then return o.c_spawn_left or 0
-    elseif game==8 then return o.ex_spawn or o.alice_spawn_left or o.spawn_left or 0
+    elseif game==8 then return o.ex_spawn or o.alice_spawn_left or o.spawn_left or o.tf_spawn
+        or o.lw209_spawn or o.lw210_spawn or o.lw211_spawn or o.lw212_spawn
+        or o.lw213_spawn or o.b_spawn or o.spawn or 0
     elseif game==95 then return o.th095_spawn_left or 0
     elseif game==10 then return o.tb and o.tb.spawn or 0 end
     return 0
 end
-function V.step_anm(o)
+function V.can_cancel(o,force)
     local c=o.imgclass
-    if not c.native_game or o._native_anm_tick==o.ani then return end
-    o._native_anm_tick=o.ani
+    if not c or not c.native_game then return true end
+    if force then return true end
+    local flags=c.native_game==8 and o.ex_flags or c.native_game==7 and o.c_flags or 0
+    if math.floor((flags or 0)/4096)%2==1 then return false end
+    if c.native_game==10 and o.tb and o.tb.cancel~=0 then return false end
+    -- 红/妖的出生分支不执行自机消弹检测；关卡整体清场仍可强制消除。
+    if (c.native_game==6 or c.native_game==7) and spawn_left(o,c.native_game)>0 then return false end
+    return true
+end
+function V.cancel_bullet(o,into,force)
+    if not V.can_cancel(o,force) then return end
+    local c=o.imgclass
+    -- 永夜抄在弹雾中只记标志；动画结束时掉落，随后仍进入 FIRED。
+    -- BulletManager.cpp:967..980 的 goto activateBullet 会覆盖 DESPAWNING。
+    if not force and c and c.native_game==8 and spawn_left(o,8)>0 then
+        o._original_cancel_pending=into
+        return
+    end
+    o._original_global_cancel=force
+    object[into](o)
+end
+function V.sync_spawn(o)
+    local c=o.imgclass
+    if not c.native_game then return false end
     local v=o._native_anm
     local left=spawn_left(o,c.native_game)
-    if left>0 and not o._native_spawn_started then
+    if (o.ex_despawn or 0)>0 then
+        if not o._native_despawn_started then
+            o._native_anm=despawn_vm(o);o._native_despawn_started=true
+        end
+    elseif left>0 and not o._native_spawn_started then
         o._native_spawn_started=true
         if c.native_game==95 or c.native_game==10 then
             local phase=left<=8 and 7 or left<=15 and 8 or 9
@@ -53,17 +137,16 @@ function V.step_anm(o)
         else
             local kind=c.native_type
             local id
-            if c.native_game==6 then id=kind==9 and 2 or kind>=6 and 20 or (left<=10 and 17 or left<=16 and 18 or 19)
+            if c.native_game==6 then
+                id=kind==9 and 2 or kind>=6 and 20 or (left<=10 and 17 or left<=16 and 18 or 19)
+                if kind==0 then id=id-3 end
             else id=kind==(c.native_game==7 and 10 or 10) and 27 or kind>=7 and kind<=9 and 24
                     or (left<=10 and 21 or left<=16 and 22 or 23)
                 if kind==0 then id=left<=10 and 18 or left<=16 and 19 or 20 end
                 if c.native_game==8 and kind>=14 and (kind==14 or kind==15 or kind>=18) then id=24 end
             end
             v=A.new(c.native_game,v.data.archive,id)
-            local col=o._native_color
-            local small={ [0]=0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0 }
-            local medium={ [0]=0,1,1,2,2,3,4,0 }
-            v.sprite=v.sprite+(c.native_profile.h<=16 and small[col] or c.native_profile.h<=32 and medium[col] or col)
+            effect_color(v,o)
             o._native_anm=v
         end
     elseif left==0 and o._native_spawn_started then
@@ -71,16 +154,42 @@ function V.step_anm(o)
         if c.native_game==95 or c.native_game==10 then A.interrupt(v,2)
         else v=body_vm(c.native_game,c.native_type,o._native_color);o._native_anm=v end
     end
-    A.step(v)
+    -- 保存当前动画身份；绘制前的惰性初始化不能代替逻辑帧的 ExecuteScript。
+    if o._native_animation_vm~=o._native_anm then
+        o._native_animation_vm=o._native_anm
+        return true
+    end
+    return false
+end
+function V.step_anm(o)
+    if o._native_anm_tick==o.ani then return end
+    o._native_anm_tick=o.ani
+    -- 模板已执行t=0，但BulletManager每次更新仍ExecuteScript一次；
+    -- 出生结束的goto activateBullet也会在同帧推进主弹VM。
+    V.sync_spawn(o)
+    -- TH08的transform在FIRED分支把state设为DESPAWNING；当帧仍更新主弹，
+    -- 消散VM要等下一次进入DESPAWNING分支（计数已经减一）才执行。
+    local entering_despawn=o.ex_despawn==(o.imgclass.native_type==10 and 16 or 12)
+    if not entering_despawn then A.step(o._native_anm) end
+    if o._original_cancel_pending and spawn_left(o,o.imgclass.native_game)==0 then
+        local into=o._original_cancel_pending
+        o._original_cancel_pending=nil
+        if into=='Kill' then New(item.obj.faith_minor,o.x,o.y) end
+    end
 end
 function V.render_anm(o)
     if not o._native_anm then return false end
+    V.sync_spawn(o) -- 新生成对象本帧可能先 render 后 frame，也必须先画弹雾。
     local v=o._native_anm
+    local sprite=v.sprite
+    -- ExInsYoumuSetGameSpeed只替换箭头的主弹精灵，不重启ANM或给弹雾换色。
+    if o.own_gray and o.imgclass.native_game==7 and o.imgclass.native_type==4 and not o._native_spawn_started then
+        v.sprite=sprite-o._native_color+15
+    end
     -- 运动角由弹体状态机提供；不能使用引擎自动 navi 去改写 ECL 的逻辑角。
-    local follow=o.imgclass.native_profile.follow
-    v.follow=follow
     -- 原作随弹道绘制的角是 angle+π/2；原图朝上，换成向上的 Y 轴后需再减90度。
     A.draw(v,o.x,o.y,bullet.GetRenderRotation(o)-90,o.hscale,o.vscale,(o._a or 255)/255)
+    v.sprite=sprite
     return true
 end
 local native_styles = {}

@@ -179,6 +179,7 @@ local function animation_event(o,game,file,c)
     end
 end
 function S.bind_source(o,game,key,preserve)
+    if OriginalCollision then OriginalCollision.unit(o,game,key) end
     source_data=source_data or dofile('mod/GAME/original/visual_ecl.lua')
     local file=key:match('^([^:]+)')
     local cfg=source_data[game] and source_data[game][key]
@@ -214,6 +215,7 @@ function S.wrap_actor(cls,game,key)
         local resolved=key
         if type(key)=='function' then resolved=key(o,...) end
         if resolved then S.bind_source(o,game,resolved) end
+        if OriginalBalance and not o._bosssys then OriginalBalance.unit(o,game,false) end
         o._original_visual_origin=o.timer
     end
     cls.frame=function(o)
@@ -321,8 +323,9 @@ local function background_class(game,archive,name)
             if not o.active then return end
             SetViewMode('world')
             for _,vm in ipairs(o.vms) do
-                if game==6 or game==7 or game==8 then A.draw(vm,-224,240)
-                else A.draw(vm,0,224) end
+                -- 红/妖/永/风使用640×480屏幕坐标；文花帖则是场地上沿中心(0,0)。
+                -- 必须分别换算，不能把风神录的(224,240)再当局部坐标叠加一次。
+                if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240) end
             end
         end,
     },true)
@@ -362,8 +365,15 @@ function S.bind_boss(wisys,name)
         elseif name=='Lunasa' or name=='Merlin' or name=='Lyrica' then poses={base,base+2,base+3,base+4,base+5} end
     else poses={base,base+1,base+2,base+3,base+4} end
     local actor=S.actor(o,game,archive,base,poses)
-    if game==10 then actor.special=base+5 end
+    if game==10 then
+        actor.special=base+5
+        if OriginalCollision then OriginalCollision.unit(o,10,archive:gsub('stgenm','stage')..':Boss') end
+    end
+    local a,b=o.a,o.b
     o.WALKIMGID=name;o.img='img_void'
+    -- 只替换绘制资源；img_void 的零判定不能覆盖 ECL 的受击框。
+    local box=o._original_damage_box
+    o.a,o.b,o.rect=box and box[1]/2 or a,box and box[2]/2 or b,true
     o._bg=background_class(game,bgarchive,name)
     return true
 end

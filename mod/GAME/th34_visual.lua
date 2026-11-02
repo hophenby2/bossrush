@@ -6,6 +6,9 @@ LoadTexture(tex, 'Resources/System/th34_native.png')
 for i=0,15 do
     LoadImage('th34_laser0_'..i,tex,i*16,0,16,14)
     LoadImage('th34_laser1_'..i,tex,i*16,16,16,16)
+    -- etama脚本12/13与10/11使用同一精灵，但保持普通混合；梅露兰非符使用这两种。
+    LoadImage('th34_laser2_'..i,tex,i*16,0,16,14)
+    LoadImage('th34_laser3_'..i,tex,i*16,16,16,16)
 end
 for i=0,4 do LoadImage('th34_orb_'..i,tex,i*32,32,30,30) end
 LoadImage('th34_source_circle',tex,192,32,64,64)
@@ -22,8 +25,105 @@ function N.circle_script(o)
     N.source(o,'circle')
     task.Wait(120)
 end
+-- SET_TRAIL 的历史长度、判定长度和采样间隔分别独立；不借用激光对象的直线判定。
+function N.trail(o,archive,script,count,collision_count,step,width,height)
+    OriginalStageVisual.actor(o,7,archive,script)
+    o._original_explicit=true
+    o.th07_trail={history={},count=count,collision_count=collision_count,step=step or 1,
+        width=width or 8,height=height or width or 8}
+    o._inf_graze=true
+    o.th07_trail_x,o.th07_trail_y=o.x,o.y
+end
+function N.interrupt(o,label)
+    OriginalANM.interrupt(o._original_actor.vm,label)
+end
+-- 爱丽丝的人偶把体术和受弹开关分开：不可受弹的人偶仍可能撞到自机。
+-- 对象仍走 enemy 的受击入口；手动体术沿用原作24×24框及碰撞扣10点原始血量。
+function N.doll_interaction(o,contact,hittable)
+    o.group,o.colli,o.protect=GROUP.NONTJT,hittable,not hittable
+    o.th07_contact_box=contact and {24,24} or nil
+end
+function N.doll(o,script,life,spell,contact,hittable)
+    OriginalStageVisual.actor(o,7,'stg3enm',script)
+    o._original_explicit,o.th07_doll=true,true
+    o._original_collision_game,o._original_damage_box=7,{24,24}
+    o.a,o.b,o.rect=12,12,true
+    o.hp=life
+    OriginalBalance.unit(o,7,spell)
+    N.doll_interaction(o,contact,hittable)
+end
+function N.trail_outside(o)
+    local h=o.th07_trail.history
+    local tail=h[#h]
+    local s=OriginalANM.sprite_resource(o._original_actor.vm)
+    -- GameManager::IsInBounds 使用未缩放的精灵全宽高，场地为384×448。
+    local hw,hh=s[4]/2,s[5]/2
+    local function outside(p) return p.x < -192-hw or p.x > 192+hw or p.y < -224-hh or p.y > 224+hh end
+    return tail and outside(o) and outside(tail)
+end
+local function record_trail(o)
+    local tr=o.th07_trail
+    local dx,dy=o.x-o.th07_trail_x,o.y-o.th07_trail_y
+    o.th07_trail_x,o.th07_trail_y=o.x,o.y
+    local angle=tr.angle or 0
+    if dx~=0 or dy~=0 then angle=math.atan2(dy,dx) end
+    tr.angle=angle
+    table.insert(tr.history,1,{x=o.x,y=o.y,a=angle})
+    tr.history[tr.count+1]=nil
+    local function check(p)
+        if not p or not IsValid(p) then return end
+        local function node(v)
+            local dx,dy=math.abs(p.x-v.x),math.abs(p.y-v.y)
+            if dx<=tr.width/3+(p.A or p.a or 0) and dy<=tr.height/3+(p.B or p.b or 0) then p.class.colli(p,o) end
+            if o.timer%6==0 and p.grazer and dx<=tr.width/1.4+20 and dy<=tr.height/1.4+20 then
+                p.grazer.class.colli(p.grazer,o)
+            end
+        end
+        node(tr.history[1])
+        for j=2,tr.collision_count,6 do if tr.history[j] then node(tr.history[j]) end end
+    end
+    if GameNet then GameNet.forEachPlayer(check) else check(player) end
+end
+local function draw_trail(o)
+    local tr,v=o.th07_trail,o._original_actor.vm
+    if not v.visible or not v.sprite then return end
+    local s=OriginalANM.sprite_resource(v)
+    if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
+    local tw,th=GetTextureSize(s.tex)
+    local h,n=tr.history,#tr.history
+    local count=math.floor((n-1)/tr.step)+1
+    if count<2 then return end
+    local color=Color(v.alpha[1],v.color[1],v.color[2],v.color[3])
+    local function vertex(k)
+        local i=1+k*tr.step
+        local p,a=h[i],h[i].a
+        if i>1 then a=h[i-1].a+((a-h[i-1].a+math.pi)%(2*math.pi)-math.pi)/2 end
+        local half=v.scale[2]*s[5]/2
+        local nx,ny=-math.sin(a)*half,math.cos(a)*half
+        local u=s[2]+s[4]*(1-k/(count-1))+v.u*tw
+        local y=s[3]+v.v*th
+        return {p.x+nx,p.y+ny,.5,u,y,color},{p.x-nx,p.y-ny,.5,u,y+s[5],color}
+    end
+    for k=0,count-2 do
+        local a,b=vertex(k)
+        local c,d=vertex(k+1)
+        RenderTexture(s.tex,v.blend,a,c,d,b)
+    end
+end
 function N.record_source(o)
     if o._original_actor then OriginalStageVisual.tick(o) end
+    if o.th07_trail then record_trail(o);return end
+    if o.th07_contact_box then
+        -- Enemy::CheckBulletPlayerCollision 将敌机全宽高除以1.5，再与自机方框相交。
+        local box=o.th07_contact_box
+        local function contact(p)
+            if p and IsValid(p) and math.abs(p.x-o.x)<=box[1]/3+(p.A or p.a or 0)
+                and math.abs(p.y-o.y)<=box[2]/3+(p.B or p.b or 0) then
+                if p.class.colli(p,o) then o.hp=o.hp-10*(o._original_hp_scale or 1) end
+            end
+        end
+        if GameNet then GameNet.forEachPlayer(contact) else contact(player) end
+    end
     if o.th07_source_kind~='spirit' then return end
     local h=o.th07_source_history
     table.insert(h,1,{x=o.x,y=o.y,a=(o.th07_source_angle or 0)*math.pi/180})
@@ -45,6 +145,7 @@ function N.record_source(o)
     if GameNet then GameNet.forEachPlayer(collide) else collide(player) end
 end
 function N.render_source(o)
+    if o.th07_trail then draw_trail(o);return end
     if OriginalStageVisual.draw(o) then return end
     local t=o.ani-(o.th07_source_start or 0)
     if o.th07_source_kind=='circle' then
@@ -141,9 +242,9 @@ function N.render_laser(o)
     local len=o.pl_eOff-o.pl_sOff
     local color=math.max(0,math.min(15,o.pl_color))
     local image='th34_laser'..o.pl_sprite..'_'..color
-    local h=o.pl_sprite==0 and 14 or 16
+    local h=o.pl_sprite%2==0 and 14 or 16
     if len>0 and o.pl_w>0 then
-        SetImageState(image,'mul+add',o.pl_alpha,255,255,255)
+        SetImageState(image,o.pl_sprite<2 and 'mul+add' or '',o.pl_alpha,255,255,255)
         local mid=(o.pl_sOff+o.pl_eOff)/2
         Render(image,o.pl_x+math.cos(o.pl_ang)*mid,o.pl_y+math.sin(o.pl_ang)*mid,
             o.rot-90,o.pl_w/16,len/h)
