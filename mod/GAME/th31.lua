@@ -729,14 +729,15 @@ end
 ---`speed + (5 − timer·5/16)`（原作就这么写的 —— 它其实是先**加速**到 +5 再掉回来），
 ---超过 16 帧把位清掉。
 local function upd_decel(self)
-    if self.ex_decel_t <= 16 then
+    -- ZunTimer的整数比较读current，插值读current+subFrame；半速的16.5仍在此段。
+    if math.floor(self.ex_decel_t) <= 16 then
         local m = 5 - self.ex_decel_t * 5 / 16
         self.ex_vx = math.cos(self.ex_angle) * (m + self.ex_speed) * EX.fm
         self.ex_vy = math.sin(self.ex_angle) * (m + self.ex_speed) * EX.fm
     else
         self.ex_act = self.ex_act - K_DECEL
     end
-    self.ex_decel_t = self.ex_decel_t + 1
+    self.ex_decel_t = self.ex_decel_t + EX.fm
 end
 
 ---UpdateVectorAcceleration（:1204-1226）：每帧 velocity += 固定向量，然后
@@ -751,7 +752,7 @@ local function upd_vec(self)
             self.ex_angle = math.atan2(self.ex_vy, self.ex_vx)
         end
     end
-    self.ex_vec_t = self.ex_vec_t + 1
+    self.ex_vec_t = self.ex_vec_t + EX.fm
 end
 
 ---UpdatePolarAcceleration（:1228-1251）：极坐标加速（角速度 + 速度增量）。
@@ -765,7 +766,7 @@ local function upd_polar(self)
         self.ex_vx = math.cos(self.ex_angle) * self.ex_speed * EX.fm
         self.ex_vy = math.sin(self.ex_angle) * self.ex_speed * EX.fm
     end
-    self.ex_pol_t = self.ex_pol_t + 1
+    self.ex_pol_t = self.ex_pol_t + EX.fm
 end
 
 ---三种折向（UpdateRelative/Absolute/AimedDirectionChange，:1253-1374）。
@@ -795,7 +796,7 @@ local function upd_dir(self, k)
     end
     self.ex_vx = math.cos(self.ex_angle) * m * EX.fm
     self.ex_vy = math.sin(self.ex_angle) * m * EX.fm
-    self.ex_dir_t = self.ex_dir_t + 1
+    self.ex_dir_t = self.ex_dir_t + EX.fm
 end
 
 ---UpdateBoundaryBounce（:1376-1420）：出界就反射（x 面 = π − 角、y 面 = −角），
@@ -821,8 +822,8 @@ end
 local function upd_wrap_x(self)
     if self.x < FIELD_L then self.x = self.x + 384
     elseif self.x > FIELD_R then self.x = self.x - 384 end
-    if self.ex_wrap_t <= 0 then self.ex_act = self.ex_act - K_WRAP_X
-    else self.ex_wrap_t = self.ex_wrap_t - 1 end
+    if math.floor(self.ex_wrap_t) <= 0 then self.ex_act = self.ex_act - K_WRAP_X
+    else self.ex_wrap_t = self.ex_wrap_t - EX.fm end
 end
 
 local function wrap_y_check(self)
@@ -832,8 +833,8 @@ end
 
 local function upd_wrap_y(self)
     wrap_y_check(self)
-    if self.ex_wrap_t <= 0 then self.ex_act = self.ex_act - K_WRAP_Y
-    else self.ex_wrap_t = self.ex_wrap_t - 1 end
+    if math.floor(self.ex_wrap_t) <= 0 then self.ex_act = self.ex_act - K_WRAP_Y
+    else self.ex_wrap_t = self.ex_wrap_t - EX.fm end
 end
 
 ---弹本体。位移全部自己在 frame 里算（引擎的自动积分保持 vx = vy = 0）。
@@ -845,6 +846,7 @@ EX.bullet = Class(bullet, {
         self.bound = false                  -- 出屏回收自己判（原作 IsWithinPlayfield）
         self.vx, self.vy = 0, 0
         self.ex_angle, self.ex_speed = p.angle, p.speed
+        self._native_rate_source = EX
         self.ex_flags = p.flags
         self.ex_recs = p.recs
         self.ex_idx = p.start or 1
@@ -857,10 +859,8 @@ EX.bullet = Class(bullet, {
         ---`zoneTransitionCooldownFrames`（BulletManager.hpp 的 Bullet 字段；只有灵梦 A
         ---的「二重大結界」那张卡的 ex 指令 21 会写它，见下面卡 434 的 warp_barrier）。
         self.ex_zone_cd = 0
-        ---`bulletVm.type`（AnmVm 构造 memset 0）：ex 指令 12 / 14 都按它分岔。
-        ---★ 卡 454 / 456 / 458 的 ex12 用布尔近似（`ex_frz`）；卡 459 的 ex14 是
-        ---  「0 → 2 → 1 → 0」三相位，必须存 0/1/2，所以另开一个字段、不动 ex_frz。
-        self.ex_phase = 0
+        -- 主弹ANM的ins25会写type；例如type16/script111在t=0写1，不能只看构造清零。
+        self.ex_phase = self._native_body_anm.follow and 1 or 0
         ---出生速度乘 fm（BulletManager.cpp:170-173 的 `FromAngleMagnitude(angle, speed*fm)`）；
         ---`ex_speed` 记的仍是**未缩放**的 speed（UpdateDeceleration/Polar/Direction 都用它）。
         self.ex_vx = math.cos(p.angle) * p.speed * EX.fm
@@ -907,11 +907,12 @@ EX.bullet = Class(bullet, {
         if self.ex_spawn > 0 then
             self.x = self.x + self.ex_vx / self.ex_div
             self.y = self.y + self.ex_vy / self.ex_div
-            self.ex_spawn = self.ex_spawn - 1
-            if self.ex_spawn > 0 then
-                bullet.frame(self)
-                return
-            end
+            -- 原作用ANM完成标志进入FIRED；固定真帧倒数会使半速阶段提前启动。
+            OriginalBulletVisual.step_anm(self)
+            if not self._native_anm.finished then return end
+            self.ex_spawn = 0
+            -- goto activateBullet在同帧另执行一次主弹VM，不能被每帧去重挡掉。
+            self._native_anm_tick = nil
             ---★ 出生动画结束**不无条件开判定**：原作 `activateBullet`（BulletManager.cpp:819-822）
             ---  不碰 collisionDisabled —— 出生动画期间被 reisen_ex12（卡 454/456/458）冻住的弹
             ---  出来时仍然是无判定的（collisionDisabled = 1），要等下一次 ex12 解冻才恢复。
@@ -922,9 +923,9 @@ EX.bullet = Class(bullet, {
             self.colli = false
             self.x = self.x + self.ex_vx / 2
             self.y = self.y + self.ex_vy / 2
-            self.ex_despawn = self.ex_despawn - 1
-            if self.ex_despawn == 0 then object.RawDel(self) end
+            self._native_despawn_updating = true
             bullet.frame(self)
+            if self._native_anm.finished then OriginalBulletVisual.retire(self) end
             return
         end
         ---③ transform 推进 + 各状态更新（:825-854）
@@ -941,8 +942,8 @@ EX.bullet = Class(bullet, {
         if bit_hit(self.ex_act, K_WRAP_X) then upd_wrap_x(self) end
         if bit_hit(self.ex_act, K_WRAP_Y) then upd_wrap_y(self) end
         if bit_hit(self.ex_act, K_WAIT) then
-            if self.ex_wait_t <= 0 then self.ex_act = self.ex_act - K_WAIT
-            else self.ex_wait_t = self.ex_wait_t - 1 end
+            if math.floor(self.ex_wait_t) <= 0 then self.ex_act = self.ex_act - K_WAIT
+            else self.ex_wait_t = self.ex_wait_t - EX.fm end
         end
         ---④ 出屏宽限计时（:856-857）
         if self.ex_cull > 0 then self.ex_cull = self.ex_cull - 1 end
@@ -6634,7 +6635,8 @@ local function advance_program(b)
             b.b_cull = r.frames                     -- offscreenCullDelayFrames（:419-422）
             b.b_prog = b.b_prog + 1
         elseif r.k == K_SPRITE then
-            b.b_sprite = r                          -- 占位：只记一笔（:424-430）
+            b.b_sprite = r
+            bullet.ChangeImage(b,style_of(r.bullet_type),color_of(r.bullet_type,r.color+1))
             b.b_prog = b.b_prog + 1
         elseif r.k == K_SOUND then
             b.b_prog = b.b_prog + 1                 -- PLAY_SOUND（:436-441）
@@ -6685,7 +6687,7 @@ local function fired_transform(b)
 end
 
 ---本卡的弹（bulletType 11 → style_of(11) = square；颜色走 color_of(11, …)）。
----★ 飞行途中的 SET_SPRITE 记录（bulletType 3 / 11）移植版只记一笔、尚未真正换贴图。
+---飞行中的SET_SPRITE（bulletType3/11）在即时记录处换图，再于同帧认领后续WAIT/CD。
 lw214_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color)
         bullet.init(self, style_of(11), color_of(11, color), false, true)
@@ -8367,9 +8369,8 @@ local function boss_frame(owner)
     else
         owner.lw216_t = t + 1
     end
-    if freeze_left > 0 then
-        freeze_left = freeze_left - 1
-    end
+    -- scriptedUpdateFreeze由t=260/360的ExIns26显式切换。
+    -- 这里先倒数会使弹在t=359恢复，比自机解锁和原作早一帧。
 end
 
 local function card_init(owner)
@@ -8614,6 +8615,16 @@ local slashes = {}
 
 ---慢动作状态（≡ 原作的全局 framerateMultiplier 与所有 ZunTimer 的 subFrame）。
 local fm = 1
+local animation_clock = {fm=1}
+-- ZunTimer的subFrame是float32；1/3的加减必须在每一步舍入，整数比较才不偏一帧。
+local function timer_f32(x)
+    local m,e=math.frexp(x)
+    local scaled=m*16777216
+    local n=math.floor(scaled)
+    local rest=scaled-n
+    if rest>0.5 or (rest==0.5 and n%2==1) then n=n+1 end
+    return math.ldexp(n/16777216,e)
+end
 local sub_acc = 0
 local tick_frame = true
 
@@ -8672,7 +8683,7 @@ end
 local function set_slow(on)
     local k
     if on then
-        k = 1 / SLOW_DIV
+        k = timer_f32(1 / SLOW_DIV)
     else
         k = SLOW_DIV
     end
@@ -8681,9 +8692,12 @@ local function set_slow(on)
         if IsValid(b) then
             b.b_vx = b.b_vx * k
             b.b_vy = b.b_vy * k
+            b.th08_scaled_color = on
+            if b._original_despawning then b.vx,b.vy=b.vx*k,b.vy*k end
         end
     end
-    fm = on and (1 / SLOW_DIV) or 1
+    fm = on and timer_f32(1 / SLOW_DIV) or 1
+    animation_clock.fm = fm
 end
 
 ---`ins_65(lf0, 10)`：把移动方向设成 lf0（TH08 → 我们取反），速度 10、无限期。
@@ -8703,6 +8717,7 @@ local function load_record(b)
     b.b_rec = b.b_rec + 1
     if b.b_rec == 1 then
         b.b_wait = WAIT_FRAMES                                   -- :418-420
+        b.b_wait_sub = 0
     elseif b.b_rec == 2 or b.b_rec == 4 then
         ---f1 = −999 < −990 → 用弹**当前**的角（:346-350）；装载时先 ×fm（:353-356）。
         local mag = fm * ACCEL_MAG
@@ -8711,6 +8726,15 @@ local function load_record(b)
     elseif b.b_rec == 3 then
         b.b_pol = { timer = 0, dur = POLAR_DUR,
                     sdelta = ACCEL_MAG, adelta = b.b_delta }     -- :358-370
+    end
+end
+
+-- 每条变换有自己的ZunTimer余量，不能借用Boss的全局tick_frame相位。
+local function motion_timer_step(s)
+    s.subframe = timer_f32((s.subframe or 0) + fm)
+    if s.subframe >= 1 then
+        s.timer = s.timer + 1
+        s.subframe = s.subframe - 1
     end
 end
 
@@ -8726,9 +8750,7 @@ local function vec_step(b)
             b.b_angle = math.atan2(b.b_vy, b.b_vx)
         end
     end
-    if tick_frame then
-        v.timer = v.timer + 1
-    end
+    motion_timer_step(v)
 end
 
 ---UpdatePolarAcceleration（BulletManager.cpp:1228-1252）：每帧用 speed 重建 velocity。
@@ -8742,9 +8764,7 @@ local function pol_step(b)
         b.b_vx = math.cos(b.b_angle) * (fm * b.b_speed)
         b.b_vy = math.sin(b.b_angle) * (fm * b.b_speed)
     end
-    if tick_frame then
-        p.timer = p.timer + 1
-    end
+    motion_timer_step(p)
 end
 
 ---本卡的弹（bulletType 6 → style_of(6) = arrow_small；颜色走 color_of(6, …)）。
@@ -8755,6 +8775,7 @@ lw217_bullet = Class(bullet, {
         ---（THlib/bullet/bullet.lua:85-89）。
         bullet.init(self, style_of(6), color_of(6, th08_color(BULLET_COLOR)), false, true)
         self.b_angle = -angle_th08
+        self._native_rate_source = animation_clock
         self.b_speed = 0                     -- speed1 = 0、count2 = 1 → 出膛速度恒 0
         self.b_vx, self.b_vy = 0, 0
         self.b_spawn = BULLET_SPAWN_FRAMES   -- SPAWN_FAST
@@ -8767,12 +8788,11 @@ lw217_bullet = Class(bullet, {
     frame = function(self)
         ---① 出生动画（BulletManager.cpp:950-975）。本卡的弹都在慢动作结束后出生 → fm = 1。
         if self.b_spawn > 0 then
-            self.b_spawn = self.b_spawn - 1
             self.vx, self.vy = self.b_vx / 2, self.b_vy / 2
-            if self.b_spawn > 0 then
-                bullet.frame(self)
-                return
-            end
+            OriginalBulletVisual.step_anm(self)
+            if not self._native_anm.finished then return end
+            self.b_spawn = 0
+            self._native_anm_tick = nil
             ---动画播完那一帧直接落到 FIRED 分支（`:966 goto activateBullet`），
             ---于是这一帧既走了 velocity/2 又补一次完整的 FIRED。
             self.colli = true
@@ -8790,8 +8810,12 @@ lw217_bullet = Class(bullet, {
         if self.b_wait ~= nil then
             if self.b_wait <= 0 then
                 self.b_wait = nil
-            elseif tick_frame then
-                self.b_wait = self.b_wait - 1
+            else
+                self.b_wait_sub = timer_f32(self.b_wait_sub - fm)
+                if self.b_wait_sub < 0 then
+                    self.b_wait = self.b_wait - 1
+                    self.b_wait_sub = timer_f32(self.b_wait_sub + 1)
+                end
             end
         end
         ---③ position += velocity（velocity 里已经含 ×fm），交给引擎积分。
@@ -9099,6 +9123,7 @@ local function card_init(owner)
                          dx = initial_target(owner,0) - owner.x, dy = ENTER_Y - owner.y,
                          n = ENTER_FRAMES, t = 0, easing = EASING_OUT_QUAD }
     fm, sub_acc, tick_frame = 1, 0, true
+    animation_clock.fm = 1
     sat, sub4_pc = nil, nil
 end
 
@@ -9110,6 +9135,7 @@ local function card_del(owner)
     owner.lw217_lf5 = nil
     owner.lw217_sub6 = nil
     fm, sub_acc, tick_frame = 1, 0, true
+    animation_clock.fm = 1
     sat, sub4_pc = nil, nil
     for i = #sats, 1, -1 do
         if IsValid(sats[i]) then
@@ -10611,6 +10637,7 @@ local function make_bullet(style, color, hw, hh)
             bullet.init(self, style, color, false, true)
             self.rot = -angle * RAD          -- 贴图朝向（角度制）
             self.ang = angle                 -- 自身角（TH08 口径、弧度）
+            self.spd = speed                 -- REL减速用当前逻辑speed，不能提前用恢复速度0
             self.flags = p.flags
             self.rec = {
                 { kind = T_CULL, allow = 0, frames = p.cull },
@@ -10676,11 +10703,12 @@ local function make_bullet(style, color, hw, hh)
                         self.af_d = false
                     end
                     self.ang = self.ang + self.dc_ang
+                    self.spd = self.dc_spd
                     self.dc_t = 0
                     self.vx = math.cos(self.ang) * self.dc_spd
                     self.vy = -math.sin(self.ang) * self.dc_spd
                 else
-                    local sp = self.dc_spd > -999 and self.dc_spd or 0
+                    local sp = self.spd
                     local mag = sp - self.dc_t * sp / self.dc_iv
                     self.vx = math.cos(self.ang) * mag
                     self.vy = -math.sin(self.ang) * mag
@@ -24208,8 +24236,8 @@ end
 ---  ★ 时间轴：context time 是 ZunTimer（每真帧 += framerateMultiplier，Supervisor.cpp:1165-
 ---    1185）⇒ tick 1578 之后「两真帧一 tick」；但 `SET_SECONDARY_TIME` 的等待与插值槽
 ---    （ins_64）都是**每真帧记 1**（EclRun.cpp:60-66、EclRun.cpp:135-145），不乘 fm；
----    位移积分、弹的 stateTimer / WAIT 计时、光柱 timer 同样不乘 fm
----    （BulletManager.cpp:848-859、1040-1150）。
+---    出屏宽限是i32真帧计数；弹的变换计时和ANM使用ZunTimer，按fm累加
+---    （Supervisor.hpp的ZunTimer及Supervisor.cpp:1187-1232）。
 ---  ★ 同屏上限：全游戏共用 1536 个弹槽（BulletManager.hpp:455），池满整波不生、波中间
 ---    生不出来就丢掉这一波剩下的（BulletManager.cpp:686-712）—— 由 EX 引擎照抄。
 ---    光柱槽 256 个（BulletManager.hpp:313-339），CLEAR_BULLETS 不清带 SPAWN_NORMAL 的光柱
@@ -37102,13 +37130,13 @@ local function reisen_ex12(marker, dir_th08)
     for i = #EX.pool, 1, -1 do
         local b = EX.pool[i]
         if IsValid(b) and has_bit(b.ex_flags, marker) then
-            if b.ex_frz then
-                b.ex_frz = nil
+            if b.ex_phase ~= 1 then
+                OriginalBulletVisual.reisen_phase(b,1)
                 b.colli = true
                 b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
             else
-                b.ex_frz = true
+                OriginalBulletVisual.reisen_phase(b,0)
                 b.colli = false
                 b.ex_vx = vx * FREEZE_SPEED * EX.fm
                 b.ex_vy = vy * FREEZE_SPEED * EX.fm
@@ -37905,13 +37933,13 @@ local function reisen_ex12(marker, dir_th08)
     for i = #EX.pool, 1, -1 do
         local b = EX.pool[i]
         if IsValid(b) and has_bit(b.ex_flags, marker) then
-            if b.ex_frz then
-                b.ex_frz = nil
+            if b.ex_phase ~= 1 then
+                OriginalBulletVisual.reisen_phase(b,1)
                 b.colli = true
                 b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
             else
-                b.ex_frz = true
+                OriginalBulletVisual.reisen_phase(b,0)
                 b.colli = false
                 b.ex_vx = ux * FREEZE_SPEED * EX.fm
                 b.ex_vy = uy * FREEZE_SPEED * EX.fm
@@ -38908,13 +38936,13 @@ local function reisen_ex12(marker)
     for i = #EX.pool, 1, -1 do
         local b = EX.pool[i]
         if IsValid(b) and has_bit(b.ex_flags, marker) then
-            if b.ex_frz then
-                b.ex_frz = nil
+            if b.ex_phase ~= 1 then
+                OriginalBulletVisual.reisen_phase(b,1)
                 b.colli = true
                 b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
             else
-                b.ex_frz = true
+                OriginalBulletVisual.reisen_phase(b,0)
                 b.colli = false
                 b.ex_vx = ux * FREEZE_SPEED * EX.fm
                 b.ex_vy = uy * FREEZE_SPEED * EX.fm
@@ -39319,12 +39347,12 @@ end
 ---      t=300 `ins_4(90, Sub75_1220)`：time 拨回 90、跳回 t=90 那条 SET_FLOAT（同帧重跑）。
 ---  · ex 指令 14 = AdvanceReisenBulletPhase（EclExIns.cpp:669-728）：
 ---      遍历全池 bullets[0x600]，凡 `transformFlags & li0` 有那一位的弹按
----      `bulletVm.type` 走三支（出生时 type = 0 —— AnmVm() 构造 memset）：
+---      `bulletVm.type`走三支（type16/script111的ins25在t=0将type设为1）：
 ---        type 1 → 0：加色 + alpha 0 + **collisionDisabled = 1** + 速度 = fm·lf1
 ---        type 0 → 2：alpha 从 0 插值到 255（**纯观感**，判定与速度都不动）
 ---        type 2 → 1：普通混合 + **collisionDisabled = 0** + 速度 = fm·bullet->speed
 ---      ⇒ 这就是「现形 → 隐形 → 现形」的周期（本卡的核心机制）。移植版把**相位**与
----      **判定**分开：`ex_phase` 记 `bulletVm.type`（0/1/2，出生 0），`colli` 由
+---      **判定**分开：`ex_phase` 记 `bulletVm.type`（0/1/2，本卡主弹出生为1），`colli` 由
 ---      reisen_ex14 在 1→0（关）/ 2→1（开）两支里直接写 —— 0→2 **不动判定**，
 ---      原作也一样（collisionDisabled 出生时就是 0）。
 ---  · Sub77（使魔；`ins_91` = SPAWN_FAM_AT_OFFSET，落点 = **父位置 + (0,0)** = BOSS 身上）：
@@ -39437,8 +39465,8 @@ end
 ---`ins_136(14, 0)` = AdvanceReisenBulletPhase（EclExIns.cpp:669-728）。
 ---★ **全池扫描**：遍历 g_BulletManager.bullets[0x600]，只看 `transformFlags & li0`
 ---  有没有那一位（与发射源无关）。
----★ 三支的分支判据是 `bulletVm.type`，出生时恒 0 ⇒ 每颗弹固定走
----  `0 → 2 → 1 → 0 → 2 → …`（每被扫到一次推一格）。
+---★ 三支的分支判据是 `bulletVm.type`，本卡出生时为1 ⇒ 每颗弹固定走
+---  `1 → 0 → 2 → 1 → 0 → …`（每被扫到一次推一格）。
 ---★ `colli`（= collisionDisabled 的反）只在 1→0 与 2→1 两支里改：
 ---    1→0：关判定、速度 = fm·lf1（本卡 0.3）；
 ---    0→2：只做 alpha 插值（观感），判定与速度都不动；
@@ -39450,14 +39478,14 @@ local function reisen_ex14(marker, slow)
         if IsValid(b) and has_bit(b.ex_flags, marker) then
             local ph = b.ex_phase
             if ph == 1 then
-                b.ex_phase = 0
+                OriginalBulletVisual.reisen_phase(b,0,0)
                 b.colli = false
                 b.ex_vx = math.cos(b.ex_angle) * slow * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * slow * EX.fm
             elseif ph == 0 then
-                b.ex_phase = 2
+                OriginalBulletVisual.reisen_phase(b,2,15)
             else
-                b.ex_phase = 1
+                OriginalBulletVisual.reisen_phase(b,1)
                 b.colli = true
                 b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
@@ -39968,13 +39996,13 @@ local function reisen_ex12(marker, dir_th08, speed)
     for i = #EX.pool, 1, -1 do
         local b = EX.pool[i]
         if IsValid(b) and has_bit(b.ex_flags, marker) then
-            if b.ex_frz then
-                b.ex_frz = nil
+            if b.ex_phase ~= 1 then
+                OriginalBulletVisual.reisen_phase(b,1)
                 b.colli = true
                 b.ex_vx = math.cos(b.ex_angle) * b.ex_speed * EX.fm
                 b.ex_vy = math.sin(b.ex_angle) * b.ex_speed * EX.fm
             else
-                b.ex_frz = true
+                OriginalBulletVisual.reisen_phase(b,0)
                 b.colli = false
                 b.ex_vx = ux * speed * EX.fm
                 b.ex_vy = uy * speed * EX.fm
@@ -57538,7 +57566,7 @@ end
 local TH08_BOSS_MOTION = {
     [3426] = { key="3:ecldata3:mid", file="ecldata3", origin=20, sub=30, bounds={32,48,352,224}, dynamic=false, intro={90,4,192,192} },
     [3427] = { key="3:ecldata3:last", file="ecldata3", origin=43, sub=71, bounds={32,48,352,128}, dynamic=false, pos={192,128}, intro={90,4,192,128} },
-    [15] = { key="5:ecldata6", file="ecldata6", sub=15, bounds={32,48,352,128}, dynamic=false },
+    [15] = { key="5:ecldata7", file="ecldata7", origin=14, sub=15, bounds={32,48,352,128}, dynamic=false },
     [16] = { key="5:ecldata6", file="ecldata6", sub=16, bounds={32,48,352,128}, dynamic=true, pos={32.0,-32.0}, intro={60,4,192,128} },
     [17] = { key="10:ecldata4a", file="ecldata4a", sub=17, bounds={32,48,352,128}, dynamic=true },
     [19] = { key="10:ecldata4a", file="ecldata4a", sub=19, bounds={32,48,352,128}, dynamic=true },

@@ -616,7 +616,7 @@ local function t10_tp_advance(b)
             local color = t10_color(r.i1, r.i0)
             if b.eb then
                 b.eb.th10_color = color
-                bullet.ChangeImage(b.eb, style, color)
+                OriginalBulletVisual.transform_sprite(b.eb, style, color)
             end
         elseif k == TK_WAIT then
             b.af.wait = true

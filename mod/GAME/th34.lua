@@ -506,6 +506,27 @@ function class.th07_simple(style,col,x,y,v,a,flags)
     style=TH07_STYLE[TH07_SPRITE[style] or 0]
     return New(class.TH34_cmdbullet,style,col,x,y,v,a,{type=0,flags=flags})
 end
+-- ExIns13按原作弹槽号的奇偶决定旋向，压缩后的pool4下标不能代替弹槽。
+function class.th07_claim_slot(b)
+    local scene=stage and stage.current_stage
+    local time=scene and scene.timer or 0
+    if class.th07_slot_scene~=scene or time<(class.th07_slot_time or -1) then
+        class.th07_slots,class.th07_slot_cursor={},1
+    end
+    class.th07_slot_scene,class.th07_slot_time=scene,time
+    class.th07_slots=class.th07_slots or {}
+    for _=1,1024 do
+        local i=class.th07_slot_cursor or 1
+        class.th07_slot_cursor=i%1024+1
+        local old=class.th07_slots[i]
+        if not old or not IsValid(old) or old.status=='del' or old.status=='kill' then
+            class.th07_slots[i]=b
+            b.th07_slot=i-1
+            return true
+        end
+    end
+    return false
+end
 local function th07_color_for(off, style)
     return th07_color(off, TH07_SPRITE[style] or 0)
 end
@@ -1210,6 +1231,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
     ---冻结一个加速度向量（原作 `FromAngleMagnitude(this->angle, cmd.speed)`）。
     init = function(self, style, col, x, y, v, a, cmd)
         bullet.init(self, style, col, false, true)
+        if not class.th07_claim_slot(self) then OriginalBulletVisual.retire(self);return end
         self.x, self.y = x, y
         self.rot = a
         self.vx, self.vy = v * cos(a), v * sin(a)
@@ -5914,9 +5936,19 @@ end
 function class.th07_special_step(b)
     if not b.th07_special_program then return false end
     local p = b.th07_special_motion
+    if p and p.t>=p.n then
+        -- 本次更新只清旧活动位；下一次RunCommands才能认领待执行的VEC。
+        b.th07_special_motion=nil
+        return true
+    end
+    if not p and b.th07_special_pending then
+        p=b.th07_special_pending
+        b.th07_special_motion,b.th07_special_pending=p,nil
+    end
     if p and p.t < p.n then
         if p.kind == 0x20 then
             p.angle, p.speed = p.angle+p.turn, p.speed+p.accel
+            b.spd=p.speed
             b.rot = p.angle
             b.vx, b.vy = p.speed*cos(p.angle), p.speed*sin(p.angle)
         else
@@ -5928,13 +5960,13 @@ function class.th07_special_step(b)
     return true
 end
 function class.th07_curve_bullets(owner)
-    for i, b in ipairs(pool4) do
+    for _, b in ipairs(pool4) do
         if IsValid(b) and not b.th07_cut_removed and (b.th07_special_state or 0) == 0 and b.y < owner.y
             and b.y > -128 and abs(b.x-owner.x) < 16 then
-            local v = sqrt(b.vx*b.vx+b.vy*b.vy)
+            local v = b.spd
             b.th07_special_state, b.th07_special_program = 1, true
             b.th07_special_motion = {kind=0x20,t=0,n=160,angle=b.rot,speed=v,
-                turn=i%2==0 and -3 or 3,accel=-v/180}
+                turn=b.th07_slot%2==1 and -3 or 3,accel=-v/180}
             b.frame_other = class.th07_special_step
         end
     end
@@ -5944,7 +5976,8 @@ function class.th07_redirect_bullets(owner)
         if IsValid(b) and not b.th07_cut_removed and b.th07_special_state == 1 then
             local a = Angle(b,player)
             b.th07_special_state, b.th07_special_program = 2, true
-            b.th07_special_motion = {kind=0x10,t=0,n=90,ax=2/75*cos(a),ay=2/75*sin(a)}
+            -- AddTargetVelocityCommand不会清掉仍在进行的POLAR，先排入原命令槽。
+            b.th07_special_pending = {kind=0x10,t=0,n=90,ax=2/75*cos(a),ay=2/75*sin(a)}
             b.frame_other = class.th07_special_step
         end
     end

@@ -205,6 +205,7 @@ function N.reset_owned(tag)
         if IsValid(o) and o.status~='del' and o.status~='kill' and o.sg_tag==tag then
             -- ExIns21只清运动程序，保留当前角度和ANM，再以4.5速直飞。
             o.th095_motion_reset=true
+            o.th095_angle,o.th095_speed=o.rot,4.5
             o.vx,o.vy=4.5*cos(o.rot),4.5*sin(o.rot)
             o.th095_spawn_vx,o.th095_spawn_vy=o.vx,o.vy
             o.th095_despawn_vx,o.th095_despawn_vy=o.vx,o.vy
@@ -244,6 +245,7 @@ function N.restore_rate(owner)
 end
 function N.begin(o,flags,birth)
     pool[#pool+1]=o
+    o.th095_angle,o.th095_speed=o.rot,GetV(o)
     o.class=o.logclass or o.class
     if o._layer and o.imgclass.size then
         o.layer=o._layer-o.imgclass.size*0.001+(o._index or 1)*0.00001
@@ -268,8 +270,46 @@ function N.step(o,frame)
         -- 原作同帧先走SPAWNING的半步，再落入ACTIVE走完整步。
         o.x,o.y=o.x+vx/2,o.y+vy/2
         o.vx,o.vy=vx,vy
-        o.colli=true;o._native_visual_start=o.ani
+        o.colli=not o.th095_capture_disabled;o._native_visual_start=o.ani
     end
     if frame and not o.th095_motion_reset then frame(o) end
+end
+-- 回调只改velocity，不改逻辑angle/speed；ExIns3要用后两者恢复运动。
+function N.capture_tag(mode,tag,angle,speed)
+    for _,o in ipairs(pool) do
+        if IsValid(o) and o.status~='del' and o.status~='kill' and o.sg_tag==tag then
+            local a=mode==2 and angle or angle+o.th095_angle
+            local v=speed>-999 and speed or o.th095_speed
+            o.vx,o.vy=v*cos(a),v*sin(a)
+            o.th095_capture_disabled,o.colli=true,false
+            if (o.th095_spawn_left or 0)>0 then
+                o.th095_spawn_vx,o.th095_spawn_vy=o.vx,o.vy
+                -- ExIns2的pendingInterrupt等本次弹更新末尾执行；4则已在ECL里执行。
+                o.th095_spawn_left=mode==4 and 1 or 2
+            end
+            OriginalBulletVisual.photo_phase(o,true,mode==4)
+        end
+    end
+end
+function N.fade_tag(tag)
+    for _,o in ipairs(pool) do
+        if IsValid(o) and o.status~='del' and o.status~='kill' and o.sg_tag==tag and o.th095_capture_disabled then
+            o._native_anm.interps.alpha={time=0,duration=30,mode=0,from={64},target={255}}
+        end
+    end
+end
+function N.restore_motion()
+    for _,o in ipairs(pool) do
+        if IsValid(o) and o.status~='del' and o.status~='kill' then
+            o.vx,o.vy=o.th095_speed*cos(o.th095_angle),o.th095_speed*sin(o.th095_angle)
+            o.th095_capture_disabled=false
+            o.colli=not (o.th095_despawn_age or o._original_despawning)
+            if (o.th095_spawn_left or 0)>0 then
+                o.th095_spawn_vx,o.th095_spawn_vy=o.vx,o.vy
+                o.th095_spawn_left=2;o.colli=false
+            end
+            OriginalBulletVisual.photo_phase(o,false,false)
+        end
+    end
 end
 return N

@@ -5708,7 +5708,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
     ---    然后 ins_89 CIRCLE（型23、色 intV0、1 发、速 0.2、基角 extraFloatV2、步长 π/2）。
     ---    弹上挂着两条 ins_101（@1068 是 slot0 kind 0x8000 = WAIT、i0 = 20；
     ---    @1108 是 slot1 kind 0x10 = VEC_ACCEL、i0 = 60、f0 = −0.05、f1 = −999）
-    ---    ⇒ 前 20 帧不动，随后 60 帧每帧 speed −= 0.05（0.2 → −2.8），弹会**先停住再倒着飘**。
+    ---    ⇒ WAIT保持0.2的出膛速度，清位后接60次固定向量加速（0.2→−2.8）。
     ---    flags 33298 = 0x8212 = 0x8000 + 0x200(出场音) + 0x10 + 0x2。
     ---    @1328/@1356 两个 CMPlt 闸：photoIndex ≥ 4 且 intV1 ≥ 50（即每 100 帧一次）时，
     ---    在同一个出膛点再甩一圈 10 发（型23、色1、速0.8、基角 rand(−π,π)、步长 π/2）
@@ -5744,16 +5744,18 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
     local lasers = {}
     local st = { dead = false }
 
-    ---Sub4 的逐帧钩子：前 20 帧不动，之后 60 帧每帧 speed −= 0.05（方向仍取弹自己的 rot）。
+    ---WAIT不改变出膛速度；减至0后另用一帧清活动位，下一次Advance才接VEC。
     local function accel_hook(self)
         local n = (self.ex_wait or 0) + 1
         self.ex_wait = n
-        if n <= BULLET_WAIT then return end
+        if n <= BULLET_WAIT + 1 then return end
         if (self.ex_accel or 0) >= BULLET_ACCEL_FRAMES then return end
+        -- VEC方向在认领时冻结；速度过零后不能跟着新的rot反转加速度。
+        if not self.ex_accel_angle then self.ex_accel_angle = self.rot end
         self.ex_accel = (self.ex_accel or 0) + 1
         local v = (self.ex_v or BULLET_SPEED0) - BULLET_ACCEL_STEP
         self.ex_v = v
-        object.SetV(self, v, self.rot, true)
+        object.SetV(self, v, self.ex_accel_angle, true)
     end
 
     ---Sub4：每 2 帧从「自机 ± 方向 base 上 80 px」处吐一颗倒着飘的慢弹。
@@ -6298,7 +6300,7 @@ local function sg_tr_hook(recs, flags, start)
             elseif r.kind == SG_SET_SPRITE then
                 -- BulletManager.cpp:617-622：即时换型/换色，不占 active，也不重启运动。
                 local image,kind=sg_parts(sg_style(r.i0))
-                bullet.ChangeImage(self,image,ex_color(r.i1,kind or r.i0))
+                OriginalBulletVisual.transform_sprite(self,image,ex_color(r.i1,kind or r.i0))
                 st.i = st.i + 1
             elseif r.kind == SG_CULL or r.kind == SG_SND_T then
                 ---0x2000 SET_CULL_DELAY / 0x20000 PLAY_SOUND：都是**即时**记录
@@ -6355,8 +6357,8 @@ local function sg_tr_hook(recs, flags, start)
                     ---BulletManager.cpp:780-796 用的是弹自己的 `speed` 字段（出生速度）
                     ---⇒ 认领那一刻记下当前速度与方向（DECEL 总是表头第一条，此刻两者就是
                     ---出生值）；payload 不参与。
-                    a.spd = GetV(self)
-                    a.ang = self.rot
+                    a.spd = self.th095_speed
+                    a.ang = self.th095_angle
                 elseif r.kind == SG_WAIT then
                     a.timer = r.i0
                 elseif r.kind == SG_CHDIR_A or r.kind == SG_CHDIR_R then
@@ -6366,9 +6368,10 @@ local function sg_tr_hook(recs, flags, start)
                     ---  把速度设成多少 ⇒ 应用这条时先存当前速、到点那一帧才用 f1 覆盖。
                     ---  （旧写法把 st.spd 直接设成 f1，等于把 8 的初速当 1 去减，
                     ---  整条减速轨迹会缩成 1/8。）
-                    a.spd = GetV(self)
+                    a.spd = self.th095_speed
+                    a.resume = r.f1 > -999 and r.f1 or self.th095_speed
                 elseif r.kind == SG_POLAR then
-                    a.spd = GetV(self)
+                    a.spd = self.th095_speed
                 elseif r.kind == SG_VEC then
                     ---★ 0x10 的加速度方向取**这条记录被应用那一刻**的弹角
                     ---  （BulletManager.cpp:543-546：accelerationAngle ≤ −990 时存下当时的
@@ -6377,10 +6380,10 @@ local function sg_tr_hook(recs, flags, start)
                     ---  过零、开始倒退时它不会跟着弹角翻向；若每帧现读 self.rot，弹一
                     ---  倒退就把加速度也翻 180°，会在原地来回抖（卡 494 的 −1/24×120
                     ---  正好让 4→−1，第一次踩到这个坑）。
-                    a.vecA = (r.f1 > -990) and r.f1 or self.rot
+                    a.vecA = (r.f1 > -990) and r.f1 or self.th095_angle
                 elseif r.kind == SG_BOUNCE or r.kind == SG_BOUNCE_EB then
                     a.hits = 0
-                    a.bounce_speed = r.f0 >= 0 and r.f0 or GetV(self)
+                    a.bounce_speed = r.f0 >= 0 and r.f0 or self.th095_speed
                 end
                 ---★ C 里各条变换的更新顺序是**按 flag 位**（0x1 → 0x10 → 0x20 → 0x40 →
                 ---  0x80 → 0x100 → 0x400/0x800 → 0x8000，见 :1448-1473），与认领顺序无关
@@ -6422,8 +6425,9 @@ local function sg_tr_hook(recs, flags, start)
                 else
                     -- 原作POLAR累加到弹的当前angle；反弹后的方向必须参与下一帧。
                     -- 缓存在记录中的角度会在下一帧把反射方向覆盖回去（脱兔/大穴牟迟）。
-                    a.ang = self.rot + r.f1
-                    a.spd = a.spd + r.f0
+                    a.ang = self.th095_angle + r.f1
+                    a.spd = self.th095_speed + r.f0
+                    self.th095_angle,self.th095_speed=a.ang,a.spd
                     object.SetV(self, a.spd, a.ang, true)
                 end
                 a.timer = a.timer + 1
@@ -6436,24 +6440,28 @@ local function sg_tr_hook(recs, flags, start)
                     local aa = a.vecA
                     self.vx = self.vx + r.f0 * cos(aa)
                     self.vy = self.vy + r.f0 * sin(aa)
-                    self.rot = Angle(0, 0, self.vx, self.vy)
+                    if math.abs(self.vx)>0.0001 or math.abs(self.vy)>0.0001 then
+                        self.rot = Angle(0, 0, self.vx, self.vy)
+                        self.th095_angle = self.rot
+                    end
                 end
                 a.timer = a.timer + 1
             elseif a.kind == SG_CHDIR_A or a.kind == SG_CHDIR_R then
                 if a.timer >= r.i0 then
                     a.left = a.left - 1
                     if a.left <= 0 then done = true end
-                    a.spd = (r.f1 > -999) and r.f1 or a.spd
+                    a.spd = a.resume
                     ---0x100 CHDIR_ABS 把角**设成** f0；0x40 CHDIR_REL 则是**加上** f0
                     ---（UpdateAbsoluteDirectionChange :895 / UpdateRelativeDirectionChange :849）。
                     ---f0 已经是我们的度数（sg_rec 的调用方用 sg_deg 换过，取反了）。
-                    self.rot = (a.kind == SG_CHDIR_R) and (self.rot + r.f0) or r.f0
+                    self.rot = (a.kind == SG_CHDIR_R) and (self.th095_angle + r.f0) or r.f0
+                    self.th095_angle,self.th095_speed=self.rot,a.spd
                     object.SetV(self, a.spd, self.rot, true)
                     a.timer = 0
                 else
                     ---BulletManager.cpp:864-869 / :908-914：间隔内速度从当前值线性减到 0
                     ---（方向不变，所以看起来像「滑到几乎停住、再拐弯重新加速」）。
-                    object.SetV(self, a.spd * (1 - a.timer / r.i0), self.rot, true)
+                    object.SetV(self, self.th095_speed * (1 - a.timer / r.i0), self.th095_angle, true)
                 end
                 a.timer = a.timer + 1
             elseif a.kind == SG_WAIT then
@@ -6472,12 +6480,13 @@ local function sg_tr_hook(recs, flags, start)
                 ---  所以吃 BOUNCE 的弹一律**不传** rebound 参数。
                 local w = lstg.world
                 if self.x <= w.l or self.x >= w.r or self.y >= w.t or self.y <= w.b then
-                    local angle = self.rot
+                    local angle = self.th095_angle
                     if self.x < w.l or self.x >= w.r then angle = 180-angle end
                     if self.y > w.t or (self.y <= w.b and a.kind == SG_BOUNCE) then angle = -angle end
                     -- TH095只改角度和速度，不像TH10那样镜像出屏坐标。
                     -- NOBOT走到底边仍计一次尝试，只是不翻转y速度。
                     object.SetV(self,a.bounce_speed,angle,true)
+                    self.th095_angle = angle
                     a.hits = a.hits + 1
                     -- 原作在反弹当帧清活动位，下一帧即可执行后续换色。
                     if a.hits >= r.i0 then done = true end
@@ -7645,7 +7654,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
     ---    t=70 ins_4(60,…) 自循环。子机本体 Sub6 @88：t=120 收掉 slot1、t=134 ins_1
     ---    ⇒ 发 t=60..110 共 **6 轮 × 32 发**。
     ---  · B 的发弹器 Sub9 @133：t=60 写 ins_101(slot0 = 0x800 BOUNCE_EXCEPT_BOTTOM、int0 = 1
-    ---    ⇒ 只弹一次；slot1 = 0x4000 SET_SPRITE 型 14 色 3→色 5，纯换色、本仓库不实现) +
+    ---    ⇒ 只弹一次；slot1=SET_SPRITE型14色3→色5，在下一次Advance执行) +
     ---    ins_7(floatV0, playerAngle)；循环体（t=70 跳回 t=60）：ins_89 CIRCLE(型 14、色 3、
     ---    4 发、速 2、基角 floatV0、flags 18946) 后 ins_15(floatV0, floatV1) ⇒ **每轮基角
     ---    += 自己的转角**。子机本体 Sub10 @148：t=180 收掉 slot1、t=194 ins_1
@@ -11205,20 +11214,9 @@ end
 ---  mode 2 = Callback02：新角 = angle（**绝对角**）；速率 = speed。
 ---  mode 4 = Callback04：新角 = angle + 弹当前角（**相对角**）；speed ≤ −999 时保持原速。
 ---angle 与 speed 都换算成**我们的口径**（度、逆时针为正；见文件头「坐标系与角度」）。
----原作这两个回调还会把弹的贴图转向关掉（REINITIALIZE_SHIFTED）并把
----captureDisabled 置 1（本仓库的相机是独立系统，没有这两个概念，不实现）。
+---偏移脚本、关闭判定、后续淡入和全池恢复由th33_native维护。
 local function sg_callback(mode, tag, angle, speed)
-    object.BulletDo(function(b)
-        if b.sg_tag ~= tag then return end
-        local spd, ang
-        if mode == 2 then
-            spd, ang = speed, angle
-        else
-            spd = (speed > -999) and speed or GetV(b)
-            ang = angle + b.rot
-        end
-        object.SetV(b, spd, ang, true)
-    end)
+    PhotoNative.capture_tag(mode,tag,angle,speed)
 end
 
 do  -- 30 铃仙 非符（ecl7_a，组 17a 第 1 张）
@@ -11667,6 +11665,8 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
     ---跳转目标之前，只跑一次）。
     local function main_loop(owner, tok, t_loop, t_move, t_end, clear)
         task.New(owner, function()
+            -- Sub8的t=0先执行ExIns3，然后才等t=30清屏与重新发弹。
+            if clear then PhotoNative.restore_motion() end
             local t = 0
             local function goto_t(target)
                 while t < target do
@@ -11694,6 +11694,7 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
                     sg_callback(2, k, sg_norm(base + 90 * k), AIM_SPEED)
                 end
                 if not goto_t(t_end) then return end
+                PhotoNative.restore_motion()             -- Sub7：ExIns3恢复原逻辑角/速度
                 t = t_loop                              -- ins_4(t_loop,−580)：time 置 t_loop、跳回 t_loop
             end
         end)
@@ -11938,12 +11939,18 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
             end
             while not st.dead do
                 if st.sub5 then st.sub5.alive = false end
+                local photo_before = photo_index(PHOTO_LIMIT)
                 sub4(owner)                             -- ins_117(0,4)
                 if not goto_t(80) then return end
-                ---ins_52(6) 两组：tag 1 相对 +90°、tag 2 相对 −90°（速率不变）
-                sg_callback(4, 1, sg_deg(-math.pi / 2), KEEP_SPEED)
-                sg_callback(4, 2, sg_deg(math.pi / 2), KEEP_SPEED)
+                -- 拍摄计数在本轮改变时，原作直接跳到t=170，不执行捕获与淡入。
+                if photo_index(PHOTO_LIMIT) == photo_before then
+                    sg_callback(4, 1, sg_deg(-math.pi / 2), KEEP_SPEED)
+                    sg_callback(4, 2, sg_deg(math.pi / 2), KEEP_SPEED)
+                    if not goto_t(140) then return end
+                    PhotoNative.fade_tag(1);PhotoNative.fade_tag(2)
+                end
                 if not goto_t(170) then return end
+                PhotoNative.restore_motion()             -- Sub9的ExIns3
                 sg_bmove(owner, st, 60, 4, 2, BOX)      -- ins_67(60,4,2)
                 st.sub5 = sub5(owner)                   -- ins_117(0,5)
                 if not goto_t(230) then return end
@@ -12314,7 +12321,10 @@ do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，铃�
                 sg_callback(4, 2, 0, KEEP_SPEED)
                 local d = 100 - 10 * photo_index(PHOTO_LIMIT)
                 if d > 0 and not freeze(d) then return end
+                if not goto_t(100) then return end
+                PhotoNative.fade_tag(1);PhotoNative.fade_tag(2)
                 if not goto_t(130) then return end
+                PhotoNative.restore_motion()             -- Sub8的ExIns3
                 sg_bmove(owner, st, 60, 4, 1.3, BOX)    -- ins_67(60,4,1.3)
                 if not goto_t(190) then return end
                 t = 0                                   -- ins_4(0,−312)：time 置 0、跳回 @772(t=15)
@@ -12865,10 +12875,10 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
     ---飞出框那一帧（x≤−192 / x≥192 / y<0）Sub8 走 Sub8_164：ins_65(aimAngle, 3.5/5.5)
     ---把移动方向改成「当场记下的自机角」并 ins_117(1,"Sub7") 开始发弹。
     ---⇒ 人偶是**先直线飞出场外、再掉头以 3.5/5.5 撞向自机**，一边撞一边撒弹。
-    ---发弹（Sub7）：ins_101 写 WAIT 60 → VEC 120 两条记录、发弹角 = Sub7 起跑那一帧的
+    ---发弹（Sub7）：WAIT60被同槽VEC120覆盖，发弹角=Sub7起跑那一帧的
     ---playerAngle（整支 Sub7 fixed）；时间轴是「t=0 发 1 发（型 1 色 13）→ t=2 发 1 发
     ---（型 0 色 12）→ t=4 的 ins_4(0,Sub7_292) 跳回 t=0」⇒ **每 2 帧一发、两型交替**。
-    ---弹无初速：先靠 WAIT 定住 60 帧，再用 VEC 加速 120 帧
+    ---弹无初速，出生结束即由VEC加速120帧，实际槽表中没有WAIT段。
     ---（拍中 <3 张：1/48 每帧 ⇒ 末速 2.5；≥3 张：0.0375 每帧 ⇒ 末速 4.5）。
     ---人偶寿命 290 帧，之后走 Sub9 退场（停发弹、换 ANM、向下 64 px 落 60 帧后消失）。
     ---拍中第 3 张起本体换成 Sub11：清一次屏 + 重置敌人，之后每 160 帧重开 Sub10
@@ -12912,7 +12922,6 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
     ---Sub8 的场地框（TH095 坐标，见 PhotoBulletIsOutsidePlayfield 用的同四个边界）：
     ---x≤−192 / x≥192 / y<0 任一成立就飞出去了 ⇒ 换冲刺方向、起 Sub7。
     local FIELD_L, FIELD_R, FIELD_T = -192, 192, 0
-    local WAIT_FRAMES = 60                              -- Sub7 的 WAIT 记录
     local VEC_FRAMES = 120
     local VEC_ACC_SLOW, VEC_ACC_FAST = 0.020833334, 0.0375
     local FIRE_FLAGS = 0x8212                           -- FAST | VEC | SND | WAIT
@@ -12969,12 +12978,11 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
                             fire_a = sg_aim(self.x, self.y)
                             dash_vx = dash * math.cos(math.rad(fire_a))
                             dash_vy = -dash * math.sin(math.rad(fire_a))
-                            ---Sub7 的 ins_101：WAIT 60 帧 → VEC 120 帧
-                            ---（拍中 ≥3 张改用 0.0375/帧）。
+                            -- Sub7的WAIT和VEC都写slot0；发弹前WAIT已被覆盖。
+                            -- 出生结束即执行VEC120，拍中≥3张取0.0375/帧。
                             local acc = dash_fast and VEC_ACC_FAST or VEC_ACC_SLOW
                             hook = sg_tr_hook({
-                                sg_rec(SG_WAIT, 0, WAIT_FRAMES, -1, -1, -1),
-                                sg_rec(SG_VEC, 0, VEC_FRAMES, -1, acc, -999.99),
+                                sg_rec(SG_VEC, 0, VEC_FRAMES, -1, acc, -999),
                             }, FIRE_FLAGS)
                             self.rot = -fire_a + 90
                             firing, sub7 = true, 0

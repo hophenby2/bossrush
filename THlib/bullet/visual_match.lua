@@ -6,6 +6,9 @@ if not OriginalANM then dofile('THlib/anm/original.lua') end
 if not OriginalStageVisual then dofile('THlib/anm/stage_visual.lua') end
 V.profiles = dofile('THlib/bullet/original_profiles.lua')
 local A=OriginalANM
+local function animation_rate(o)
+    return o._native_rate_source and o._native_rate_source.fm or o._native_animation_rate
+end
 local body8={ [0]=0,1,2,3,4,5,6,7,8,9,25,106,107,108,109,110,111,112,113,114,115 }
 local body95={ [0]=0,16,32,48,64,80,96,111,127,143,159,175,211,219,227,235,243,283,296,251,259,267,275,191 }
 -- TH10.exe 0x72d70 的 27 项脚本表；type24 的脚本48与type1的脚本64不能互换。
@@ -53,7 +56,7 @@ local native_despawn=Class(object,{
         if o._native_despawn_group_pending then
             o.group=GROUP.GHOST;o._native_despawn_group_pending=nil
         end
-        A.step(o.vm);if o.vm.finished then object.RawDel(o) end
+        A.step(o.vm,animation_rate(o));if o.vm.finished then object.RawDel(o) end
     end,
     render=function(o) A.draw(o.vm,o.x,o.y,o.angle) end,
 },true)
@@ -98,8 +101,54 @@ function V.reset_anm(o,game,kind,index)
     OriginalCollision.bullet(o,game,kind)
     o._native_color=(index or 1)-1
     o._native_anm=body_vm(game,kind,o._native_color)
+    if game==8 then
+        -- TH08主弹VM与出生VM分开保存；冻结/相位指令在出生中也会改主弹VM。
+        o._native_body_anm=o._native_anm
+        o.ex_phase=o._native_anm.follow and 1 or 0
+    end
     o._native_animation_vm=o._native_anm
     o._native_spawn_started=false;o._native_anm_tick=nil
+end
+function V.transform_sprite(o,style,index)
+    bullet.ChangeImage(o,style,index)
+    local game=style.native_game
+    if game==95 or game==10 then
+        -- etSprite只InitializeVm，未设置interrupt2；要保留新脚本自身的显现阶段。
+        -- 这两作的运动钩子在bullet.frame之后，本帧末的ExecuteScript在此补上。
+        local bases=game==95 and body95 or body10
+        o._native_anm=A.new(game,'bullet',bases[style.native_type]+o._native_color)
+        o._native_animation_vm=o._native_anm
+        A.step(o._native_anm)
+    end
+end
+-- EclExIns.cpp:601/669：相位属于主弹VM，换精灵不重启出生动画或运动计时。
+function V.reisen_phase(o,phase,fade)
+    local v=o._native_body_anm
+    local previous=o.ex_phase
+    if previous==1 and phase~=1 then v.sprite=v.sprite+16
+    elseif previous~=1 and phase==1 then v.sprite=v.sprite-16 end
+    o.ex_phase,o.ex_frz=phase,phase~=1
+    v.follow=phase==1
+    v.blend=phase==1 and '' or 'mul+add'
+    if fade==0 then v.alpha[1]=0
+    elseif fade then
+        v.alpha[1]=0
+        v.interps.alpha={time=0,duration=fade,mode=0,from={0},target={255}}
+    end
+end
+-- TH095 ExIns2/3/4重开普通/偏移脚本；ExIns4还在ECL内立即执行一次VM。
+function V.photo_phase(o,shifted,immediate)
+    local old=o._native_anm
+    local v=A.new(95,'bullet',body95[o.imgclass.native_type]+o._native_color+(shifted and 16 or 0))
+    A.interrupt(v,2)
+    if shifted then v.rotation[3]=old.rotation[3];v.follow=false end
+    if immediate then
+        A.step(v)
+        v.interps.alpha={time=0,duration=1,mode=0,from={255},target={64}}
+    end
+    o._native_anm,o._native_animation_vm=v,v
+    o._native_spawn_started=(o.th095_spawn_left or 0)>0
+    o.th095_phase_animation=true
 end
 local function spawn_left(o,game)
     if game==6 then return o.th06_spawn or 0
@@ -169,8 +218,13 @@ function V.sync_spawn(o)
         end
     elseif left==0 and o._native_spawn_started then
         o._native_spawn_started=false
-        if c.native_game==95 or c.native_game==10 then A.interrupt(v,2)
-        else v=body_vm(c.native_game,c.native_type,o._native_color);o._native_anm=v end
+        if c.native_game==95 and o.th095_phase_animation then
+            -- 相位回调已重开主弹脚本，出生结束不能再次覆盖它的淡入计时。
+        elseif c.native_game==95 or c.native_game==10 then A.interrupt(v,2)
+        else
+            v=c.native_game==8 and o._native_body_anm or body_vm(c.native_game,c.native_type,o._native_color)
+            o._native_anm=v
+        end
     end
     -- 保存当前动画身份；绘制前的惰性初始化不能代替逻辑帧的 ExecuteScript。
     if o._native_animation_vm~=o._native_anm then
@@ -186,9 +240,10 @@ function V.step_anm(o)
     -- 出生结束的goto activateBullet也会在同帧推进主弹VM。
     V.sync_spawn(o)
     -- TH08的transform在FIRED分支把state设为DESPAWNING；当帧仍更新主弹，
-    -- 消散VM要等下一次进入DESPAWNING分支（计数已经减一）才执行。
+    -- 消散VM要等下一次进入DESPAWNING分支才执行。
     local entering_despawn=o.ex_despawn==(o.imgclass.native_type==10 and 16 or 12)
-    if not entering_despawn then A.step(o._native_anm) end
+        and not o._native_despawn_updating
+    if not entering_despawn then A.step(o._native_anm,animation_rate(o)) end
     if o._original_cancel_pending and spawn_left(o,o.imgclass.native_game)==0 then
         local into=o._original_cancel_pending
         o._original_cancel_pending=nil
@@ -203,6 +258,9 @@ function V.render_anm(o)
     -- ExInsYoumuSetGameSpeed只替换箭头的主弹精灵，不重启ANM或给弹雾换色。
     if o.own_gray and o.imgclass.native_game==7 and o.imgclass.native_type==4 and not o._native_spawn_started then
         v.sprite=sprite-o._native_color+15
+    elseif o.th08_scaled_color and o.imgclass.native_game==8 and sprite>=96 and sprite<=111
+            and not o._native_spawn_started then
+        v.sprite=111
     end
     -- 运动角由弹体状态机提供；不能使用引擎自动 navi 去改写 ECL 的逻辑角。
     -- 原作随弹道绘制的角是 angle+π/2；原图朝上，换成向上的 Y 轴后需再减90度。
