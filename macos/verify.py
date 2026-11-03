@@ -7,7 +7,7 @@ APP=ROOT/'dist/Boss Rush HD.app'
 BINARY=APP/'Contents/MacOS/BossRushHD'
 def run(*args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','input','audio','settings']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','fog','input','audio','settings']);args=parser.parse_args()
  run('luajit',ROOT/'tests/input.lua',ROOT.parent)
  run('codesign','--verify','--deep','--strict',APP)
  info=plistlib.loads((APP/'Contents/Info.plist').read_bytes())
@@ -24,7 +24,7 @@ def main():
  print('Mac 应用结构、Apple Silicon 架构、签名、动态库隔离校验通过',flush=True)
  if not args.smoke:return
  out=ROOT/'dist/test';out.mkdir(exist_ok=True);reports=[]
- for mode in ([args.mode] if args.mode else ('menu','battle','graphics','input','audio','settings')):
+ for mode in ([args.mode] if args.mode else ('menu','battle','graphics','fog','input','audio','settings')):
   with tempfile.TemporaryDirectory(prefix='bossrush-mac-'+mode+'-') as sandbox:
    data=Path(sandbox)
    env=dict(os.environ,BOSSRUSH_MAC_DATA=sandbox,BOSSRUSH_MAC_TEST=mode)
@@ -64,6 +64,9 @@ def main():
     assert sum(min(p)>180 for p in region.getdata())>100,'TTF 标题未正确显示'
     result['pixel_checks']=30
 
+   if mode=='fog':
+    run('python3',ROOT.parent/'android/tests/check_fog.py',screenshot)
+    result['pixel_checks']=32
    print(mode+' 原生运行通过：'+json.dumps(result,ensure_ascii=False),flush=True)
  (out/'results.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2))
 if __name__=='__main__':main()

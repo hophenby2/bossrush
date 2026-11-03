@@ -143,6 +143,8 @@ function T.install()
                 lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';RogueTen.start()
             elseif mode=='graphics' then
                 assert(loadstring(cc.FileUtils:getInstance():getStringFromFile('game/android/graphics_check.lua')))().run()
+            elseif mode=='fog' then
+                assert(loadstring(cc.FileUtils:getInstance():getStringFromFile('game/android/fog_check.lua')))().run()
             elseif mode=='audio' then
                 -- 自动化运行不因切回编辑器而暂停；使用固定循环曲，避免菜单曲切换影响断言。
                 AndroidFocus=function() end
@@ -182,6 +184,7 @@ function T.install()
             for _,o in ObjList(GROUP.LASER) do count=count+1 end
             maxBullets=math.max(maxBullets,count)
             local ready=logicalTarget and checkpoint or (not logicalTarget and frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')))
+            if mode=='fog' then ready=scene.stage_name=='android_fog' and scene.timer>=181 end
             if ready and not captured then
                 beforeCaptureFPS=beforeCaptureFPS or lstg.GetFPS()
                 plus.CreateDirectory('snapshot');Snapshot('snapshot/mac-'..mode..'.png');captured=true

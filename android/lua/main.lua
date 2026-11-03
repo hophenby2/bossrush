@@ -173,7 +173,7 @@ local function start()
             if diagnosticsMode and diagnosticsMode:match('graphics') and not graphicsStarted and
                 stage.current_stage and stage.current_stage.stage_name == 'menu' then
                 graphicsStarted = true
-                load('game/android/graphics_check.lua').run()
+                load(diagnosticsMode:match('fog') and 'game/android/fog_check.lua' or 'game/android/graphics_check.lua').run()
             end
             if stage.current_stage ~= previousStage then
                 previousStage = stage.current_stage

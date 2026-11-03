@@ -68,6 +68,11 @@ with zipfile.ZipFile(apk) as archive:
                     assert header[-1] >= 16384, f'自编译库未按 16KB 对齐：{name}'
     for shader in ['alpha', 'screen_save', 'gray', 'color_set', 'gaussian_blur', 'texture_BoxBlur49']:
         assert 'assets/game/android/shaders/' + shader + '.frag' in names
+    for shader in ('ColorAdd.frag', 'ColorAdd_Fog.frag'):
+        text = archive.read('assets/src/shader/' + shader).decode()
+        for output in ('cc_FragColor', 'gl_FragColor'):
+            assert f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));' in text, '加色未在混合前饱和：' + shader
+            assert f'{output}.a = tex.a * v_fragmentColor.a;' in text, '加色忽略顶点透明度：' + shader
     assert 'assets/licenses/SOURCE.txt' in names
 digest = hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest()
 saved = (ROOT / 'dist' / (apk.name+'.sha256')).read_text().split()[0]

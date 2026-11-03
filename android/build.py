@@ -93,12 +93,38 @@ def prepare_engine(archive=None):
         run(sys.executable, patcher, ENGINE)
 
 
+def prepare_sprite_shaders(target):
+    """补齐Sub的加色混合语义；Mac Metal和Android GLES使用同一份资源修正。"""
+    for filename in ('ColorAdd.frag', 'ColorAdd_Fog.frag'):
+        path = target / filename
+        text = path.read_text()
+        for output, sample in [('cc_FragColor', 'texture'), ('gl_FragColor', 'texture2D')]:
+            if filename == 'ColorAdd_Fog.frag':
+                before = (f'    {output} = v_fragmentColor + {sample}(u_texture, v_texCoord);\n'
+                          f'\t{output}.w = {output}.w - v_fragmentColor.w;')
+                after = (f'    vec4 tex = {sample}(u_texture, v_texCoord);\n'
+                         f'    {output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));\n'
+                         f'    {output}.a = tex.a * v_fragmentColor.a;')
+            else:
+                before = f'{output}.rgb = v_fragmentColor.rgb + tex.rgb;'
+                after = f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));'
+            # 明确检查固定引擎上下文；同时允许对已更新的资源重复执行。
+            if after in text:
+                continue
+            if text.count(before) != 1:
+                raise RuntimeError(f'加色shader上下文不匹配：{filename}/{output}')
+            text = text.replace(before, after)
+        path.write_text(text)
+
+
 def prepare_assets():
     assets = BUILD / 'assets'
     if assets.exists():
         shutil.rmtree(assets)
     assets.mkdir(parents=True, exist_ok=True)
     copy_tree(ENGINE / 'src', assets / 'src')
+    # 只修改入包资源，不依赖手动改过的引擎缓存，也不需要重编译原生库。
+    prepare_sprite_shaders(assets / 'src' / 'shader')
     copy_tree(ENGINE / 'res', assets / 'res')
     destination = assets / 'game'
     destination.mkdir(exist_ok=True)
@@ -326,6 +352,11 @@ def main():
                 if entry.file_size != path.stat().st_size or entry.CRC != crc:
                     changed.append(name)
         if changed:
+            # macOS的系统zip可能不写UTF-8文件名标志，中文路径会被Android当成乱码。
+            # 这类更新沿用Python完整打包路径，避免清单正确、APK内实际文件名却错误。
+            if any(not name.isascii() for name in changed):
+                package_apk(sdk, ndk, assets)
+                return
             run('zip', '-q', unsigned, *changed, cwd=BUILD)
         tools = max((sdk / 'build-tools').iterdir(), key=lambda p: tuple(map(int, p.name.split('.'))))
         java_home = os.environ.get('JAVA_HOME')
