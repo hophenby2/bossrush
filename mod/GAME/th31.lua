@@ -5493,16 +5493,19 @@ lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
         self.bound = false                  -- 圆心会漂到场地外，不能自动回收
         self.rot = 0
         self._blend, self._a = "", 255
-        self.lw212_t = 0
+        self.lw212_t = 1                    -- SpawnEnemy2已运行主、子context的t=0。
         self.lw212_shot_wait = PELLET_WAIT
         self.lw212_ox, self.lw212_oy = ox, oy
         self.lw212_cx, self.lw212_cy = x + ox, y + oy
-        self.lw212_angle = angle0
+        self.lw212_angle0 = angle0          -- 每次ins_72都重读未改写的lf0。
+        self.lw212_angle = angle0 + omega   -- 出生RunEcl已执行一次UpdateMovement。
         self.lw212_omega = omega
         self.lw212_radius = radius
-        self.lw212_orbit = 0                -- ORBIT 的 movementTimer
-        self.lw212_mangle = 0               -- movementAngle（我们坐标）
-        self.lw212_rot = angle0
+        self.lw212_orbit = ORBIT_FRAMES - 1 -- 出生只计算velocity，不积分position。
+        local dx = ox + math.cos(self.lw212_angle) * radius
+        local dy = oy + math.sin(self.lw212_angle) * radius
+        self.lw212_mangle = math.atan2(dy, dx)
+        self.lw212_rot = self.lw212_mangle
     end,
     frame = function(self)
         local t = self.lw212_t
@@ -5519,6 +5522,7 @@ lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
             ---四条 `ins_15`：圆心 += 2×xf（我们坐标里就是 2×(ox, oy)）
             self.lw212_cx = self.lw212_cx + 2 * self.lw212_ox
             self.lw212_cy = self.lw212_cy + 2 * self.lw212_oy
+            self.lw212_angle = self.lw212_angle0
             self.lw212_orbit = ORBIT_FRAMES
         end
         ---② 子 context Sub46（主 context 先跑、子 context 后跑）：每 2 帧一发。
@@ -5580,7 +5584,7 @@ local function call_44(owner, dir)
             local spec = CALL44[(blk - 1) * 2 + k]
             local ca = dir + spec[2]        -- xf 的方向（我们坐标）
             spawn_familiar(sx, sy, math.cos(ca) * r, math.sin(ca) * r,
-                    dir + PI, spec[3] * FAM_SPIN, r)
+                    dir + PI - spec[2], spec[3] * FAM_SPIN, r)
         end
     end
 end
@@ -11339,7 +11343,7 @@ familiar = class.th08_combat.actor("ecldata3:37", {
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.fam_t = 0                          -- Sub37 的时间轴
+        self.fam_t = 1                          -- SpawnEnemy2已执行t=0，首次更新从t=1继续。
         self.gun_t = 0                          -- Sub36 的时间轴（Sub37 t=60 才起算）
         self.li1, self.li2 = li1, li2           -- 继承来的两个色号
         self.gun_ang = -PI / 2                  -- Sub36 的 lf0 = π/2（TH08）→ 我们 −π/2
@@ -12026,16 +12030,16 @@ familiar = class.th08_combat.actor("ecldata3:48", {
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.fam_t = 0
+        self.fam_t = 1                      -- Sub48出生已跑完t=0与第一次ORBIT更新。
         ---`ins_72 ORBIT_AROUND_POINT(41, posX, posY, lf0, lf1, 0, lf2)`（我们坐标取反）。
         self.fam_bx, self.fam_by = x, y     -- 圆心 = 出生点（= exF0/exF1）
         self.fam_w = w_th08                 -- 父机的 lf1（t=100 那一步要 /7）
-        self.fam_ang = -ang_th08
+        self.fam_ang = add_norm(-ang_th08 - w_th08)
         self.fam_angvel = -w_th08
-        self.fam_rad = 0
+        self.fam_rad = ORBIT_RADIAL
         self.fam_radvel = ORBIT_RADIAL
         self.fam_vx, self.fam_vy = 0, 0
-        self.fam_mv_t = ORBIT_FRAMES
+        self.fam_mv_t = ORBIT_FRAMES - 1
         self.fam_orbit = true
         self.fam_gun = false                -- 子 context 0 是否已挂上（t=40）
         self.fam_da = 0                     -- 枪的 POLAR angleDelta（我们坐标）
@@ -12383,7 +12387,7 @@ familiar = class.th08_combat.actor("ecldata3:40", {
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.fam_t = 0                          -- 子机自己的时间轴（Sub40/Sub42）
+        self.fam_t = 1                          -- Sub40/Sub42出生已执行t=0，不能再多等一帧。
         self.gun_t = 0                          -- 枪的时间轴（子机 t=60 才起算）
         self.fam_li1, self.fam_li2 = li1, li2   -- 继承来的两个色号
         self.fam_gun = gun                      -- Sub39（4 向）或 Sub41（8 向）
@@ -12737,11 +12741,11 @@ familiar = class.th08_combat.actor("ecldata3:64", {
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.fam_t = 0
+        self.fam_t = 1                      -- Sub64出生RunEcl已推进一次轨道和时钟。
         self.fam_bx, self.fam_by = x, y      -- 公转圆心（= 出生点）
-        self.fam_ang = ang                   -- orbitAngle（我们口径）
+        self.fam_ang = wrap_pi(ang + angvel) -- 只更新轨道状态，出生位置尚不积分。
         self.fam_angvel = angvel             -- lf1 → 取反
-        self.fam_rad = 0                     -- orbitRadius
+        self.fam_rad = FAM_RADVEL            -- 出生UpdateMovement累加过一次半径。
         self.fam_radvel = FAM_RADVEL         -- radialVelocity
         self.fam_li0 = li0                   -- 枪的色号
         self.fam_life = life                 -- 原作可击破血量，由交互层读取

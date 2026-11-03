@@ -6444,9 +6444,10 @@ local function TH34_add_stage78_boss()
     ---通用「子机」：原作 SPAWN_ENEMY_REL/ABS 出来的辅助单位（不可打、无体术、不画立绘）。
     ---script(self, a) 是协程体（可 task.Wait / 发弹），跑完自毁。
     local PSCRIPT = Class(enemy, {
-        init = function(self, x, y, fn, a, source)
+        init = function(self, x, y, fn, a, source, ecl_first)
             enemy.init(self, 12, 1, false, true, true)
             self.x, self.y = x, y
+            self.th07_ecl_first=ecl_first
             ---★ 原作这些「会飞出屏幕的发射体」（sub62 炮台、sub126 幽灵、sub130 音符串…）
             ---都带 `SET_HAS_NO_COLLISION 1`。TH07 的 OOB 回收要求 `hasNoCollision == 0`
             ---（EnemyManager.cpp:700-722），所以它们**飞出屏外也不会被回收**、照常发弹。
@@ -6464,6 +6465,11 @@ local function TH34_add_stage78_boss()
                 fn(self, a)
                 object.RawDel(self)
             end)
+            if ecl_first then
+                local birth_x,birth_y=self.x,self.y
+                task.Do(self) -- SpawnEnemy先RunEcl(0)，再由正常更新阶段积分。
+                if ecl_first=='inline_polar' then self.x,self.y=birth_x,birth_y end
+            end
         end,
         ---引擎在 RawDel 时会回调 del（GameObject::dispatchOnQueueToDestroy）。
         ---派生物自己的协程是挂在**派生物**名下的（THlib Ltask 的 task 表在对象上），
@@ -6474,12 +6480,16 @@ local function TH34_add_stage78_boss()
             if self._original_source then
                 OriginalStageVisual.source_frame(self,self.timer-(self._original_visual_origin or 0))
             end
+            if self.th07_ecl_first then
+                enemy.frame(self)
+                if self.status=='del' or self.status=='kill' then return end
+            end
             local owner=self._original_follow_owner or false
             if owner and IsValid(owner) then
                 self.x,self.y=owner.x,owner.y
                 self.rot=owner._angdir or owner.rot
             elseif self._orb then borbstep(self) else bstep(self) end
-            enemy.frame(self)
+            if not self.th07_ecl_first then enemy.frame(self) end
             NativeVisual.record_source(self)
         end,
         render = NativeVisual.render_source,
@@ -6487,8 +6497,8 @@ local function TH34_add_stage78_boss()
 
     ---当前符卡登记的子机（del 时统一清场）。
     local spell_live
-    local function pspawn(x, y, fn, a, source)
-        local o = New(PSCRIPT, x, y, fn, a, source)
+    local function pspawn(x, y, fn, a, source, ecl_first)
+        local o = New(PSCRIPT, x, y, fn, a, source, ecl_first)
         if spell_live then spell_live[#spell_live + 1] = o end
         return o
     end
@@ -7600,8 +7610,8 @@ local function TH34_add_stage78_boss()
     ---  · 等 l2i1 帧（每半轮 −7、降到 130 后固定）后进入下一半轮。
     ---四段弹幕的基准角依次是「自机角+30°、−30°、−30°、+30°」再循环（原作 #31/#44/#66/#79）；
     ---sprite/色档固定「光 = 10/1、7/3、3/6」「暗 = 10/0、7/1、3/2」。
-    ---子机（原作 sub98/99；SET_HAS_NO_COLLISION ⇒ 隐形；MOVE_DIR_TIME(0,0,lf0,4) 的 t=0
-    ---⇒ 位移 = spd×t = 0，所以子机**原地不动**）：每 16 帧一轮共 8 轮（活 128 帧），
+    ---子机（原作 sub98/99；SET_HAS_NO_COLLISION ⇒ 隐形）：duration0直接启用速度4的POLAR，
+    ---出生先RunEcl(0)、正常更新先发弹再移动；每16帧一轮共8轮（活128tick），
     ---每轮先朝「lf0+90°±lf5/2」放一条激光（w=wA）并打 2 发扇（速 1.5、±5.625°），
     ---8 帧后再朝「lf0−90°±lf5/2」放一条（w=wB）并打 2 发扇。激光 90 帧展开、200 帧
     ---满宽、30 帧收束，判定从第 80 帧起。
@@ -7636,8 +7646,7 @@ local function TH34_add_stage78_boss()
                     L + 0.785398 * RAD2DEG, -1.570796 * RAD2DEG, true)
         end
         ---「網目」子机（原作 sub98/99）。a = { ang0(原作弧度), lf5, spr, col, wA, wB }。
-        ---原作用 MOVE_DIR_TIME(0,0,ang0,4) 起手：t=0 ⇒ 位移 0（引擎把 moveInterp 算成
-        ---方向×速度×t），子机只是原地当隐形发射台。
+        ---MOVE_DIR_TIME(0,0,ang0,4)直接设置POLAR；发弹后沿ang0移动4px。
         local function node(self, a)
             local offs = spread_offsets(2, -0.19635 * RAD2DEG)
             local function fire(sign, w)
@@ -7683,13 +7692,15 @@ local function TH34_add_stage78_boss()
                     web(self, lf0, false)
                     task.Wait(20)                      -- 相对 4 → 24
                     pspawn(self.x, self.y, node,
-                           { ang0 = lf0, lf5 = lf5, spr = 6, col = 6, wA = 16, wB = 14 })
+                           { ang0 = lf0, lf5 = lf5, spr = 6, col = 6, wA = 16, wB = 14 },
+                           'ecldata8:98', 'inline_polar')
                     task.Wait(10)                      -- 相对 24 → 34
                     local lf0b = -Angle(self, player) / RAD2DEG - sgn * 0.523599
                     web(self, lf0b, true)
                     task.Wait(20)                      -- 相对 38 → 58
                     pspawn(self.x, self.y, node,
-                           { ang0 = lf0b, lf5 = lf5, spr = 2, col = 2, wA = 14, wB = 16 })
+                           { ang0 = lf0b, lf5 = lf5, spr = 2, col = 2, wA = 14, wB = 16 },
+                           'ecldata8:99', 'inline_polar')
                     exdrift(self, 1, 0)
                     lf5 = lf5 + 0.0628319
                     task.Wait(wait)
@@ -8730,7 +8741,8 @@ local function TH34_add_stage78_boss()
                     task.Wait(20)                -- → t=234
                     ---sub95：继承本轮 t=210 的 *f0 = A2P。
                     pspawn(self.x, self.y, sweeper,
-                           { dir = aim1, lf5 = lf5, col = 6, spr = 6 })
+                           { dir = aim1, lf5 = lf5, col = 6, spr = 6 },
+                           'ecldata7:95', 'inline_polar')
                     local d1 = exang(self)
                     bmove(self, 60, 0, self.x + cos(d1) * 60, self.y + sin(d1) * 60)
                     task.Wait(wait)              -- 原作 #44 SET_WAIT_TIMER(l2i1)；#44 执行完本帧即止
@@ -8741,7 +8753,8 @@ local function TH34_add_stage78_boss()
                     task.Wait(20)                -- → t=258
                     ---sub96：继承本轮 t=234 的 *f0 = A2P。
                     pspawn(self.x, self.y, sweeper,
-                           { dir = aim2, lf5 = lf5, col = 2, spr = 2 })
+                           { dir = aim2, lf5 = lf5, col = 2, spr = 2 },
+                           'ecldata7:96', 'inline_polar')
                     local d2 = exang(self)
                     bmove(self, 60, 0, self.x + cos(d2) * 60, self.y + sin(d2) * 60)
                     task.Wait(wait)              -- 原作 #62 SET_WAIT_TIMER(l2i1)

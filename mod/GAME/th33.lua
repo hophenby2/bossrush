@@ -12493,7 +12493,6 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
             self.rot = 0
             self._a = 0
             self.x, self.y = owner.x, owner.y
-            local mv = { dead = false }
             task.New(self, function()
                 local v = v0
                 local vfire = v0
@@ -12511,7 +12510,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
                     local rp = min(1, life / ORBIT_FRAMES)
                     local r = ORBIT_R * (1 - (1 - rp) * (1 - rp))
                     local ox, oy = sg_off(r, v)
-                    sg_move(self, mv, owner.x + ox, owner.y + oy, 6, 0)
+                    local tx, ty = owner.x + ox, owner.y + oy
                     v = v + v7
                     ---Sub7：每 4 帧一发小玉（首帧即发），角度每发 -= 1.3×floatV7。
                     if tick % FIRE_GAP == 0 then
@@ -12522,6 +12521,9 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
                                 false, 0x212, hook)
                         vfire = vfire - v7f
                     end
+                    -- 子上下文先重设目标、发弹，UpdateMovement再走插值的1/6。
+                    -- 不另建运动协程，避免task.Do遍历中新插入任务改变执行顺序。
+                    self.x, self.y = self.x + (tx - self.x) / 6, self.y + (ty - self.y) / 6
                     tick = tick + 1
                     life = life + 1
                     self._a = min(DOLL_ALPHA, self._a + 11)
@@ -12539,6 +12541,10 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
                 end
                 object.RawDel(self)
             end)
+            -- SpawnWithContext当场运行t=0；出生阶段只计算运动，尚未积分位置。
+            local birth_x, birth_y = self.x, self.y
+            task.Do(self)
+            self.x, self.y = birth_x, birth_y
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
@@ -12732,7 +12738,6 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
             self.rot = 0
             self._a = 0
             self.x, self.y = owner.x, owner.y
-            local mv = { dead = false }
             task.New(self, function()
                 local life = 0
                 local orbit, fire = v0, v0
@@ -12753,7 +12758,7 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
                     local p = min(1, life / ORBIT_FRAMES)
                     local r = radius * (1 - (1 - p) * (1 - p))
                     local ox, oy = sg_off(r, orbit)
-                    sg_move(self, mv, owner.x + ox, owner.y + oy, GLIDE_FRAMES, 0)
+                    local tx, ty = owner.x + ox, owner.y + oy
                     orbit = sg_norm(orbit + v7)
                     ---Sub8：每 (10 − 拍中张数) 帧两发（相隔 180°）；共 拍中数×3 + 10 轮。
                     ---发完一发先记下「下一发在第几帧」= 本帧 + ins_2 的帧数（每轮按当前
@@ -12769,6 +12774,9 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
                         fired = fired + 1
                         next_fire = life + max(0, FIRE_GAP0 - pi_now)
                     end
+                    -- 与原作相同：本帧先发弹，随后积分刚重设的六帧线性插值。
+                    self.x, self.y = self.x + (tx - self.x) / GLIDE_FRAMES,
+                            self.y + (ty - self.y) / GLIDE_FRAMES
                     life = life + 1
                     self._a = min(DOLL_ALPHA, self._a + 30)
                     task.Wait(1)
@@ -12787,6 +12795,9 @@ do  -- 22 アリス 操符「ドールズインシー」（ecl6_b，组 20a 第 
                     object.RawDel(self)
                 end
             end)
+            local birth_x, birth_y = self.x, self.y
+            task.Do(self) -- SpawnWithContext先运行t=0，各子上下文从t=1继续。
+            self.x, self.y = birth_x, birth_y
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程

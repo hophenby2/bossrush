@@ -1,0 +1,6337 @@
+{
+  "date": "2026-11-03",
+  "baseline_commit": "10c8bbc",
+  "method": "只静态读取原始ECL、复原源码及项目Lua；未运行游戏、探针、模拟、测试、编译或构建。",
+  "scope": "本批9个条目的具体修正与另6个条目的激光专项复核；并非521条目的全部ECL验收。上批8b4e6d4及更早报告的专项结论不扩写成整卡通过。",
+  "fixed_cards": [
+    [
+      31,
+      358
+    ],
+    [
+      31,
+      427
+    ],
+    [
+      31,
+      429
+    ],
+    [
+      31,
+      430
+    ],
+    [
+      31,
+      431
+    ],
+    [
+      33,
+      519
+    ],
+    [
+      33,
+      520
+    ],
+    [
+      34,
+      3448
+    ],
+    [
+      34,
+      3464
+    ]
+  ],
+  "fixes": [
+    {
+      "key": "M08",
+      "cards": [
+        [
+          34,
+          3448
+        ],
+        [
+          34,
+          3464
+        ]
+      ],
+      "problem": "飞行激光发射体未执行出生RunEcl(0)，8tick后的发射晚一次对象更新，枪口多移动4px。",
+      "fix": "只为Sub98/99和Sub95/96启用构造时脚本及ECL优先顺序；撤回协程代做的出生位置积分，每根仍为速度4、8tick间隔、16次发射。",
+      "code": [
+        "mod/GAME/th34.lua::TH34_add_stage78_boss PSCRIPT/pspawn",
+        "mod/GAME/th34.lua::node/sweeper"
+      ],
+      "refs": [
+        "7/ecldata8.ecl/Sub98/8c40",
+        "7/ecldata8.ecl/Sub98/8c5c",
+        "7/ecldata8.ecl/Sub98/8ce0",
+        "7/ecldata8.ecl/Sub98/8d20",
+        "7/ecldata8.ecl/Sub98/8da4",
+        "7/ecldata8.ecl/Sub98/8de4",
+        "7/ecldata8.ecl/Sub98/8e10",
+        "7/ecldata8.ecl/Sub98/8e28",
+        "7/ecldata8.ecl/Sub99/8e88",
+        "7/ecldata8.ecl/Sub99/8ea4",
+        "7/ecldata8.ecl/Sub99/8f28",
+        "7/ecldata8.ecl/Sub99/8f68",
+        "7/ecldata8.ecl/Sub99/8fec",
+        "7/ecldata8.ecl/Sub99/902c",
+        "7/ecldata8.ecl/Sub99/9058",
+        "7/ecldata8.ecl/Sub99/9070",
+        "7/ecldata7.ecl/Sub95/8624",
+        "7/ecldata7.ecl/Sub95/8640",
+        "7/ecldata7.ecl/Sub95/86c4",
+        "7/ecldata7.ecl/Sub95/8704",
+        "7/ecldata7.ecl/Sub95/8788",
+        "7/ecldata7.ecl/Sub95/87c8",
+        "7/ecldata7.ecl/Sub95/87f4",
+        "7/ecldata7.ecl/Sub95/880c",
+        "7/ecldata7.ecl/Sub96/886c",
+        "7/ecldata7.ecl/Sub96/8888",
+        "7/ecldata7.ecl/Sub96/890c",
+        "7/ecldata7.ecl/Sub96/894c",
+        "7/ecldata7.ecl/Sub96/89d0",
+        "7/ecldata7.ecl/Sub96/8a10",
+        "7/ecldata7.ecl/Sub96/8a3c",
+        "7/ecldata7.ecl/Sub96/8a54"
+      ],
+      "names": [
+        "結界「光と闇の網目」",
+        "式輝「狐狸妖怪レーザー」"
+      ]
+    },
+    {
+      "key": "M09",
+      "cards": [
+        [
+          33,
+          519
+        ],
+        [
+          33,
+          520
+        ]
+      ],
+      "problem": "人偶将出生t=0推迟到frame；首发、后续枪时钟及190/160tick退场均晚一次对象更新。六帧追随还依赖task.Do遍历中追加运动任务。",
+      "fix": "构造时先执行主/子上下文的t=0，保留出生位置；每帧明确先发弹、再积分目标差的1/6。保留独立轨道角/发弹角、原间隔与原发数。",
+      "code": [
+        "mod/GAME/th33.lua::alice_doll",
+        "mod/GAME/th33.lua::s3b_doll"
+      ],
+      "refs": [
+        "95/ecl6_a.ecl/Sub5/48c",
+        "95/ecl6_a.ecl/Sub5/49c",
+        "95/ecl6_a.ecl/Sub5/4ac",
+        "95/ecl6_a.ecl/Sub5/4c0",
+        "95/ecl6_a.ecl/Sub5/4d0",
+        "95/ecl6_a.ecl/Sub5/4e4",
+        "95/ecl6_a.ecl/Sub5/4f8",
+        "95/ecl6_a.ecl/Sub5/50c",
+        "95/ecl6_a.ecl/Sub6/528",
+        "95/ecl6_a.ecl/Sub6/554",
+        "95/ecl6_a.ecl/Sub6/570",
+        "95/ecl6_a.ecl/Sub6/584",
+        "95/ecl6_a.ecl/Sub6/598",
+        "95/ecl6_a.ecl/Sub6/5b4",
+        "95/ecl6_a.ecl/Sub6/5c8",
+        "95/ecl6_a.ecl/Sub6/5d8",
+        "95/ecl6_a.ecl/Sub7/5f8",
+        "95/ecl6_a.ecl/Sub7/60c",
+        "95/ecl6_a.ecl/Sub7/620",
+        "95/ecl6_a.ecl/Sub7/634",
+        "95/ecl6_a.ecl/Sub7/648",
+        "95/ecl6_a.ecl/Sub7/670",
+        "95/ecl6_a.ecl/Sub7/69c",
+        "95/ecl6_a.ecl/Sub7/6b0",
+        "95/ecl6_a.ecl/Sub8/6d0",
+        "95/ecl6_a.ecl/Sub8/6e4",
+        "95/ecl6_a.ecl/Sub8/6f8",
+        "95/ecl6_a.ecl/Sub8/708",
+        "95/ecl6_a.ecl/Sub8/72c",
+        "95/ecl6_a.ecl/Sub8/73c",
+        "95/ecl6_a.ecl/Sub8/754",
+        "95/ecl6_a.ecl/Sub8/770",
+        "95/ecl6_b.ecl/Sub6/908",
+        "95/ecl6_b.ecl/Sub6/918",
+        "95/ecl6_b.ecl/Sub6/928",
+        "95/ecl6_b.ecl/Sub6/93c",
+        "95/ecl6_b.ecl/Sub6/94c",
+        "95/ecl6_b.ecl/Sub6/960",
+        "95/ecl6_b.ecl/Sub6/974",
+        "95/ecl6_b.ecl/Sub6/988",
+        "95/ecl6_b.ecl/Sub7/9a4",
+        "95/ecl6_b.ecl/Sub7/9d0",
+        "95/ecl6_b.ecl/Sub7/9ec",
+        "95/ecl6_b.ecl/Sub7/a00",
+        "95/ecl6_b.ecl/Sub7/a14",
+        "95/ecl6_b.ecl/Sub7/a30",
+        "95/ecl6_b.ecl/Sub7/a44",
+        "95/ecl6_b.ecl/Sub7/a54",
+        "95/ecl6_b.ecl/Sub8/a74",
+        "95/ecl6_b.ecl/Sub8/a88",
+        "95/ecl6_b.ecl/Sub8/a9c",
+        "95/ecl6_b.ecl/Sub8/ab4",
+        "95/ecl6_b.ecl/Sub8/ac8",
+        "95/ecl6_b.ecl/Sub8/adc",
+        "95/ecl6_b.ecl/Sub8/b04",
+        "95/ecl6_b.ecl/Sub8/b1c",
+        "95/ecl6_b.ecl/Sub8/b30",
+        "95/ecl6_b.ecl/Sub8/b48",
+        "95/ecl6_b.ecl/Sub8/b5c",
+        "95/ecl6_b.ecl/Sub8/b88",
+        "95/ecl6_b.ecl/Sub8/b9c",
+        "95/ecl6_b.ecl/Sub8/bb4",
+        "95/ecl6_b.ecl/Sub8/bc4",
+        "95/ecl6_b.ecl/Sub9/be8",
+        "95/ecl6_b.ecl/Sub9/bfc",
+        "95/ecl6_b.ecl/Sub9/c10",
+        "95/ecl6_b.ecl/Sub9/c20",
+        "95/ecl6_b.ecl/Sub9/c44",
+        "95/ecl6_b.ecl/Sub9/c54",
+        "95/ecl6_b.ecl/Sub9/c6c",
+        "95/ecl6_b.ecl/Sub9/c88"
+      ],
+      "names": [
+        "爱丽丝 非符",
+        "操符「ドールズインシー」"
+      ]
+    },
+    {
+      "key": "M10",
+      "cards": [
+        [
+          31,
+          427
+        ],
+        [
+          31,
+          430
+        ]
+      ],
+      "problem": "Sub37、Sub40/42的t=0已在init完成，fam_t仍为0，首次挂枪和定时退场晚一次更新。",
+      "fix": "这三支无出生运动/发弹的主上下文从t=1继续，t=60挂枪的子上下文仍从0开始；10/15tick枪间隔不改。",
+      "code": [
+        "mod/GAME/th31.lua::ecldata3:37 familiar",
+        "mod/GAME/th31.lua::ecldata3:40 familiar"
+      ],
+      "refs": [
+        "8/ecldata3.ecl/Sub37/451c",
+        "8/ecldata3.ecl/Sub37/4580",
+        "8/ecldata3.ecl/Sub37/4594",
+        "8/ecldata3.ecl/Sub40/4f58",
+        "8/ecldata3.ecl/Sub40/4fbc",
+        "8/ecldata3.ecl/Sub40/4fd0",
+        "8/ecldata3.ecl/Sub42/536c",
+        "8/ecldata3.ecl/Sub42/53d0",
+        "8/ecldata3.ecl/Sub42/53e4",
+        "8/ecldata3.ecl/Sub36/42ec",
+        "8/ecldata3.ecl/Sub36/4318",
+        "8/ecldata3.ecl/Sub36/4344",
+        "8/ecldata3.ecl/Sub36/4354",
+        "8/ecldata3.ecl/Sub36/4380",
+        "8/ecldata3.ecl/Sub36/43ac",
+        "8/ecldata3.ecl/Sub36/43d4",
+        "8/ecldata3.ecl/Sub36/4400",
+        "8/ecldata3.ecl/Sub36/4440",
+        "8/ecldata3.ecl/Sub36/4450",
+        "8/ecldata3.ecl/Sub36/447c",
+        "8/ecldata3.ecl/Sub36/44e0",
+        "8/ecldata3.ecl/Sub39/4d28",
+        "8/ecldata3.ecl/Sub39/4d54",
+        "8/ecldata3.ecl/Sub39/4d80",
+        "8/ecldata3.ecl/Sub39/4d90",
+        "8/ecldata3.ecl/Sub39/4dbc",
+        "8/ecldata3.ecl/Sub39/4de8",
+        "8/ecldata3.ecl/Sub39/4e10",
+        "8/ecldata3.ecl/Sub39/4e3c",
+        "8/ecldata3.ecl/Sub39/4e7c",
+        "8/ecldata3.ecl/Sub39/4e8c",
+        "8/ecldata3.ecl/Sub39/4eb8",
+        "8/ecldata3.ecl/Sub39/4f1c",
+        "8/ecldata3.ecl/Sub41/513c",
+        "8/ecldata3.ecl/Sub41/5168",
+        "8/ecldata3.ecl/Sub41/5194",
+        "8/ecldata3.ecl/Sub41/51a4",
+        "8/ecldata3.ecl/Sub41/51d0",
+        "8/ecldata3.ecl/Sub41/51fc",
+        "8/ecldata3.ecl/Sub41/5224",
+        "8/ecldata3.ecl/Sub41/5250",
+        "8/ecldata3.ecl/Sub41/5290",
+        "8/ecldata3.ecl/Sub41/52a0",
+        "8/ecldata3.ecl/Sub41/52cc",
+        "8/ecldata3.ecl/Sub41/5330"
+      ],
+      "names": [
+        "非符一",
+        "非符二"
+      ]
+    },
+    {
+      "key": "M11",
+      "cards": [
+        [
+          31,
+          429
+        ],
+        [
+          31,
+          431
+        ]
+      ],
+      "problem": "Sub48/Sub64漏掉出生RunEcl尾部的ORBIT更新：首个正常更新的半径/角度少一步，t=40/50挂枪晚一次更新。",
+      "fix": "出生只推进轨道角、半径和运动计时，保留出生坐标，主上下文从t=1继续；半径仍按0.8增长，冻结和挂枪仍取原40/50tick。",
+      "code": [
+        "mod/GAME/th31.lua::ecldata3:48 familiar",
+        "mod/GAME/th31.lua::ecldata3:64 familiar"
+      ],
+      "refs": [
+        "8/ecldata3.ecl/Sub48/6b58",
+        "8/ecldata3.ecl/Sub48/6b80",
+        "8/ecldata3.ecl/Sub48/6b94",
+        "8/ecldata3.ecl/Sub48/6bc0",
+        "8/ecldata3.ecl/Sub48/6bd8",
+        "8/ecldata3.ecl/Sub64/8c64",
+        "8/ecldata3.ecl/Sub64/8c8c",
+        "8/ecldata3.ecl/Sub64/8ca0",
+        "8/ecldata3.ecl/Sub64/8cb8"
+      ],
+      "names": [
+        "野符「GHQクライシス」",
+        "国体「三種の神器　郷」"
+      ]
+    },
+    {
+      "key": "M12",
+      "cards": [
+        [
+          31,
+          358
+        ]
+      ],
+      "problem": "Sub48使魔的ORBIT与主/枪上下文都漏掉出生步；t=2首发、60tick重设轨道及240tick终止晚一次更新。",
+      "fix": "构造时保留ORBIT第一次计算后的角度、剩余59tick和movementAngle，坐标留在出生点，主/枪时钟从t=1继续。",
+      "code": [
+        "mod/GAME/th31.lua::lw212_familiar.init"
+      ],
+      "refs": [
+        "8/ecldata5sp.ecl/Sub48/6468",
+        "8/ecldata5sp.ecl/Sub48/6490",
+        "8/ecldata5sp.ecl/Sub48/64a4",
+        "8/ecldata5sp.ecl/Sub48/6510",
+        "8/ecldata5sp.ecl/Sub48/6594",
+        "8/ecldata5sp.ecl/Sub48/6618",
+        "8/ecldata5sp.ecl/Sub48/669c",
+        "8/ecldata5sp.ecl/Sub48/66c4",
+        "8/ecldata5sp.ecl/Sub46/628c",
+        "8/ecldata5sp.ecl/Sub46/62e8"
+      ],
+      "names": [
+        "「远古的欺骗者」"
+      ]
+    },
+    {
+      "key": "M13",
+      "cards": [
+        [
+          31,
+          358
+        ]
+      ],
+      "problem": "Sub44每对第二只使魔复用了第一只的lf0+π；原作第二只重写lf0为cf0，对应反侧圆心。",
+      "fix": "第二只按cf0生成，第一只仍为cf0+π；不改随机半径、圆心偏移、角速度或生成数量。",
+      "code": [
+        "mod/GAME/th31.lua::call_44"
+      ],
+      "refs": [
+        "8/ecldata5sp.ecl/Sub44/5bd4",
+        "8/ecldata5sp.ecl/Sub44/5be8",
+        "8/ecldata5sp.ecl/Sub44/5c04",
+        "8/ecldata5sp.ecl/Sub44/5c2c",
+        "8/ecldata5sp.ecl/Sub44/5c48",
+        "8/ecldata5sp.ecl/Sub44/5c70",
+        "8/ecldata5sp.ecl/Sub44/5c84",
+        "8/ecldata5sp.ecl/Sub44/5ca8",
+        "8/ecldata5sp.ecl/Sub44/5cbc",
+        "8/ecldata5sp.ecl/Sub44/5ce4",
+        "8/ecldata5sp.ecl/Sub44/5d00",
+        "8/ecldata5sp.ecl/Sub44/5d14",
+        "8/ecldata5sp.ecl/Sub44/5d64",
+        "8/ecldata5sp.ecl/Sub44/5d78",
+        "8/ecldata5sp.ecl/Sub44/5d94",
+        "8/ecldata5sp.ecl/Sub44/5dbc",
+        "8/ecldata5sp.ecl/Sub44/5dd8",
+        "8/ecldata5sp.ecl/Sub44/5e00",
+        "8/ecldata5sp.ecl/Sub44/5e14",
+        "8/ecldata5sp.ecl/Sub44/5e38",
+        "8/ecldata5sp.ecl/Sub44/5e4c",
+        "8/ecldata5sp.ecl/Sub44/5e74",
+        "8/ecldata5sp.ecl/Sub44/5e90",
+        "8/ecldata5sp.ecl/Sub44/5ea4"
+      ],
+      "names": [
+        "「远古的欺骗者」"
+      ]
+    },
+    {
+      "key": "M14",
+      "cards": [
+        [
+          31,
+          358
+        ]
+      ],
+      "problem": "t=60/120/180重发ins_72时只平移圆心和重置timer，漏写原作不变的lf0，使魔接续圆弧跳到另一侧。",
+      "fix": "保存出生lf0，每次ins_72先重置轨道角再做本帧ORBIT步，保留圆心每次2×xf的平移。",
+      "code": [
+        "mod/GAME/th31.lua::lw212_familiar.frame"
+      ],
+      "refs": [
+        "8/ecldata5sp.ecl/Sub48/6468",
+        "8/ecldata5sp.ecl/Sub48/64c0",
+        "8/ecldata5sp.ecl/Sub48/64d4",
+        "8/ecldata5sp.ecl/Sub48/64e8",
+        "8/ecldata5sp.ecl/Sub48/64fc",
+        "8/ecldata5sp.ecl/Sub48/6510",
+        "8/ecldata5sp.ecl/Sub48/6544",
+        "8/ecldata5sp.ecl/Sub48/6558",
+        "8/ecldata5sp.ecl/Sub48/656c",
+        "8/ecldata5sp.ecl/Sub48/6580",
+        "8/ecldata5sp.ecl/Sub48/6594",
+        "8/ecldata5sp.ecl/Sub48/65c8",
+        "8/ecldata5sp.ecl/Sub48/65dc",
+        "8/ecldata5sp.ecl/Sub48/65f0",
+        "8/ecldata5sp.ecl/Sub48/6604",
+        "8/ecldata5sp.ecl/Sub48/6618",
+        "8/ecldata5sp.ecl/Sub48/664c",
+        "8/ecldata5sp.ecl/Sub48/6660",
+        "8/ecldata5sp.ecl/Sub48/6674",
+        "8/ecldata5sp.ecl/Sub48/6688",
+        "8/ecldata5sp.ecl/Sub48/669c"
+      ],
+      "names": [
+        "「远古的欺骗者」"
+      ]
+    }
+  ],
+  "reviewed_without_new_issue": [
+    {
+      "cards": [
+        [
+          32,
+          3901
+        ]
+      ],
+      "scope": "Sub9的两激光t=120创建、t=151起每tick反向旋转；参数及H.rotate_laser的增量语义。未发现本项新差异。",
+      "refs": [
+        "6/ecldata1.ecl/Sub9/12f6",
+        "6/ecldata1.ecl/Sub9/1306",
+        "6/ecldata1.ecl/Sub9/1346",
+        "6/ecldata1.ecl/Sub9/1356",
+        "6/ecldata1.ecl/Sub9/13ba",
+        "6/ecldata1.ecl/Sub9/13ce"
+      ],
+      "names": [
+        "月符「月光」（Lunatic）"
+      ]
+    },
+    {
+      "cards": [
+        [
+          32,
+          3904
+        ]
+      ],
+      "scope": "Sub18的t=20/28/36/44/52/60自机狙激光和120/60/16三阶段参数。未发现本项新差异。",
+      "refs": [
+        "6/ecldata1.ecl/Sub18/2bf2",
+        "6/ecldata1.ecl/Sub18/2c42",
+        "6/ecldata1.ecl/Sub18/2c92",
+        "6/ecldata1.ecl/Sub18/2ce2",
+        "6/ecldata1.ecl/Sub18/2d32",
+        "6/ecldata1.ecl/Sub18/2d82"
+      ],
+      "names": [
+        "露米娅 非符二（Lunatic）"
+      ]
+    },
+    {
+      "cards": [
+        [
+          32,
+          3970
+        ]
+      ],
+      "scope": "Sub36/37持有的激光索引、旋转、相对位置更新及取消路径；未发现这些指令到H接口的新遗漏，不表示整卡通过。",
+      "refs": [
+        "6/ecldata7.ecl/Sub36/442a",
+        "6/ecldata7.ecl/Sub36/443a",
+        "6/ecldata7.ecl/Sub36/450e",
+        "6/ecldata7.ecl/Sub36/451e",
+        "6/ecldata7.ecl/Sub36/4582",
+        "6/ecldata7.ecl/Sub36/466a",
+        "6/ecldata7.ecl/Sub36/469e",
+        "6/ecldata7.ecl/Sub36/46ae",
+        "6/ecldata7.ecl/Sub36/479e",
+        "6/ecldata7.ecl/Sub36/47ae",
+        "6/ecldata7.ecl/Sub37/48aa",
+        "6/ecldata7.ecl/Sub37/48ba",
+        "6/ecldata7.ecl/Sub37/48fa",
+        "6/ecldata7.ecl/Sub37/490e",
+        "6/ecldata7.ecl/Sub37/4a9e"
+      ],
+      "names": [
+        "禁忌「莱瓦汀」（Extra）"
+      ]
+    },
+    {
+      "cards": [
+        [
+          32,
+          3982
+        ]
+      ],
+      "scope": "Sub58的四向激光、同帧位置/角度更新、激光等待/取消接口。未发现本项新差异。",
+      "refs": [
+        "6/ecldata7.ecl/Sub58/8d12",
+        "6/ecldata7.ecl/Sub58/8d22",
+        "6/ecldata7.ecl/Sub58/8d62",
+        "6/ecldata7.ecl/Sub58/8d72",
+        "6/ecldata7.ecl/Sub58/8db2",
+        "6/ecldata7.ecl/Sub58/8dc2",
+        "6/ecldata7.ecl/Sub58/8e02",
+        "6/ecldata7.ecl/Sub58/8e12",
+        "6/ecldata7.ecl/Sub58/8f06",
+        "6/ecldata7.ecl/Sub58/8f22",
+        "6/ecldata7.ecl/Sub58/8f3e",
+        "6/ecldata7.ecl/Sub58/8f5a",
+        "6/ecldata7.ecl/Sub58/8f76",
+        "6/ecldata7.ecl/Sub58/8f8a",
+        "6/ecldata7.ecl/Sub58/8f9e",
+        "6/ecldata7.ecl/Sub58/8fb2",
+        "6/ecldata7.ecl/Sub58/9026",
+        "6/ecldata7.ecl/Sub58/9042",
+        "6/ecldata7.ecl/Sub58/905e",
+        "6/ecldata7.ecl/Sub58/907a",
+        "6/ecldata7.ecl/Sub58/9096",
+        "6/ecldata7.ecl/Sub58/90aa",
+        "6/ecldata7.ecl/Sub58/90be",
+        "6/ecldata7.ecl/Sub58/90d2",
+        "6/ecldata7.ecl/Sub58/9116",
+        "6/ecldata7.ecl/Sub58/9126",
+        "6/ecldata7.ecl/Sub58/9136",
+        "6/ecldata7.ecl/Sub58/9146",
+        "6/ecldata7.ecl/Sub58/917a",
+        "6/ecldata7.ecl/Sub58/9196",
+        "6/ecldata7.ecl/Sub58/91b2",
+        "6/ecldata7.ecl/Sub58/91ce",
+        "6/ecldata7.ecl/Sub58/91ea",
+        "6/ecldata7.ecl/Sub58/91fe",
+        "6/ecldata7.ecl/Sub58/9212",
+        "6/ecldata7.ecl/Sub58/9226"
+      ],
+      "names": [
+        "禁弹「刻着过去的钟表」（Extra）"
+      ]
+    },
+    {
+      "cards": [
+        [
+          35,
+          3632
+        ],
+        [
+          35,
+          3639
+        ]
+      ],
+      "scope": "定点激光STARTUP到GROWING的边界：切换当次不执行GROWING宽度计算；GROWING完成则当次检查HOLD/SHRINK。Lua分支与原作相符。仅核对这一边界。",
+      "refs": [
+        "10/stage01.ecl/BossCard2At1/44bc",
+        "10/stage05.ecl/Boss2Et_at/26ac",
+        "10/stage05.ecl/Boss2Et_at/27c8"
+      ],
+      "names": [
+        "豊作「穀物神の約束」",
+        "開海「モーゼの奇跡」"
+      ]
+    }
+  ],
+  "excluded_candidates": [
+    {
+      "topic": "TH35 offset圆运动插值op291",
+      "reason": "stage02/MBossDummyMoveB属于本项目道中主动跳过的中Boss桥接载体，不能因main静态闭包含它而记成实际道中卡缺失；本批未改未使用的辅助函数。",
+      "refs": [
+        "10/stage02.ecl/MBossDummyMoveB/981c",
+        "10/stage02.ecl/MBossDummyMoveB/983c"
+      ]
+    }
+  ],
+  "evidence": {
+    "7/ecldata8.ecl/Sub98/8c40": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8c40",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        0,
+        0,
+        {
+          "variable": 10004
+        },
+        4.0
+      ],
+      "raw_bytes": "0000000036001c0000ff0400000000000000000000501c4600008040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8c5c": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8c5c",
+      "time": 0,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10012
+        },
+        8
+      ],
+      "raw_bytes": "000000000400140000ff01001c27000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8ce0": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8ce0",
+      "time": 0,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "000000005200400000ff04000000060000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8d20": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8d20",
+      "time": 0,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        6,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0000000041002c0000ff40000300060002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8da4": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8da4",
+      "time": 8,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        14.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "080000005200400000ff04000000060000541c4600000000000000000000204400002044000060415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8de4": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8de4",
+      "time": 8,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        6,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0800000041002c0000ff40000300060002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8e10": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8e10",
+      "time": 16,
+      "opcode": 3,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub98_120",
+        {
+          "variable": 10012
+        }
+      ],
+      "raw_bytes": "100000000300180000ff04000000000060feffff1c270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub98/8e28": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub98",
+      "address": "0x8e28",
+      "time": 16,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "1000000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/8e88": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x8e88",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        0,
+        0,
+        {
+          "variable": 10004
+        },
+        4.0
+      ],
+      "raw_bytes": "0000000036001c0000ff0400000000000000000000501c4600008040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/8ea4": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x8ea4",
+      "time": 0,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10012
+        },
+        8
+      ],
+      "raw_bytes": "000000000400140000ff01001c27000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/8f28": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x8f28",
+      "time": 0,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        2,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        14.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "000000005200400000ff04000000020000541c4600000000000000000000204400002044000060415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/8f68": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x8f68",
+      "time": 0,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        2,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0000000041002c0000ff40000300020002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/8fec": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x8fec",
+      "time": 8,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        2,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "080000005200400000ff04000000020000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/902c": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x902c",
+      "time": 8,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        2,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0800000041002c0000ff40000300020002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/9058": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x9058",
+      "time": 16,
+      "opcode": 3,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub99_120",
+        {
+          "variable": 10012
+        }
+      ],
+      "raw_bytes": "100000000300180000ff04000000000060feffff1c270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata8.ecl/Sub99/9070": {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sub": "Sub99",
+      "address": "0x9070",
+      "time": 16,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "1000000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/8624": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x8624",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        0,
+        0,
+        {
+          "variable": 10004
+        },
+        4.0
+      ],
+      "raw_bytes": "0000000036001c0000ff0400000000000000000000501c4600008040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/8640": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x8640",
+      "time": 0,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10012
+        },
+        8
+      ],
+      "raw_bytes": "000000000400140000ff01001c27000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/86c4": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x86c4",
+      "time": 0,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "000000005200400000ff04000000060000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/8704": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x8704",
+      "time": 0,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        6,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0000000041002c0000ff40000300060002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/8788": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x8788",
+      "time": 8,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "080000005200400000ff04000000060000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/87c8": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x87c8",
+      "time": 8,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        6,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0800000041002c0000ff40000300060002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/87f4": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x87f4",
+      "time": 16,
+      "opcode": 3,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub95_120",
+        {
+          "variable": 10012
+        }
+      ],
+      "raw_bytes": "100000000300180000ff04000000000060feffff1c270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub95/880c": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub95",
+      "address": "0x880c",
+      "time": 16,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "1000000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/886c": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x886c",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        0,
+        0,
+        {
+          "variable": 10004
+        },
+        4.0
+      ],
+      "raw_bytes": "0000000036001c0000ff0400000000000000000000501c4600008040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/8888": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x8888",
+      "time": 0,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10012
+        },
+        8
+      ],
+      "raw_bytes": "000000000400140000ff01001c27000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/890c": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x890c",
+      "time": 0,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        2,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "000000005200400000ff04000000020000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/894c": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x894c",
+      "time": 0,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        2,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0000000041002c0000ff40000300020002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/89d0": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x89d0",
+      "time": 8,
+      "opcode": 82,
+      "mask": "0xff",
+      "args": [
+        0,
+        2,
+        {
+          "variable": 10005
+        },
+        0.0,
+        0.0,
+        640.0,
+        640.0,
+        16.0,
+        90,
+        200,
+        30,
+        80,
+        30,
+        0
+      ],
+      "raw_bytes": "080000005200400000ff04000000020000541c4600000000000000000000204400002044000080415a000000c80000001e000000500000001e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/8a10": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x8a10",
+      "time": 8,
+      "opcode": 65,
+      "mask": "0xff",
+      "args": [
+        3,
+        2,
+        2,
+        1,
+        1.5,
+        1.0,
+        {
+          "variable": 10004
+        },
+        0.19634954631328583,
+        516
+      ],
+      "raw_bytes": "0800000041002c0000ff40000300020002000000010000000000c03f0000803f00501c46db0f493e04020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/8a3c": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x8a3c",
+      "time": 16,
+      "opcode": 3,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub96_120",
+        {
+          "variable": 10012
+        }
+      ],
+      "raw_bytes": "100000000300180000ff04000000000060feffff1c270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "7/ecldata7.ecl/Sub96/8a54": {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sub": "Sub96",
+      "address": "0x8a54",
+      "time": 16,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "1000000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/48c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x48c",
+      "time": 0,
+      "opcode": 55,
+      "mask": "0xff",
+      "args": [
+        17
+      ],
+      "raw_bytes": "000000003700100000ff000011000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/49c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x49c",
+      "time": 0,
+      "opcode": 81,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "000000005100100000ff000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/4ac": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x4ac",
+      "time": 0,
+      "opcode": 77,
+      "mask": "0xff",
+      "args": [
+        8.0,
+        8.0
+      ],
+      "raw_bytes": "000000004d00140000ff00000000004100000041",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/4c0": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x4c0",
+      "time": 0,
+      "opcode": 112,
+      "mask": "0xff",
+      "args": [
+        "\"Sub8\""
+      ],
+      "raw_bytes": "000000007000100000ff000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/4d0": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x4d0",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        0.0
+      ],
+      "raw_bytes": "000000000700140000ff010000641c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/4e4": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x4e4",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub6\""
+      ],
+      "raw_bytes": "000000007500140000ff00000000000006000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/4f8": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x4f8",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        1,
+        "\"Sub7\""
+      ],
+      "raw_bytes": "000000007500140000ff00000100000007000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub5/50c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub5",
+      "address": "0x50c",
+      "time": 190,
+      "opcode": 52,
+      "mask": "0xff",
+      "args": [
+        "\"Sub8\""
+      ],
+      "raw_bytes": "be0000003400100000ff000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/528": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x528",
+      "time": 0,
+      "opcode": 36,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        30,
+        4,
+        4,
+        0.0,
+        60.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "0000000024002c0000ff010000641c461e000000040000000400000000000000000070420000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/554": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x554",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10078
+        },
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10009
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000741d4600781d4600601c4600641c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/570": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x570",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10082
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000741d4600881d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/584": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x584",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10078
+        },
+        {
+          "variable": 10083
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000781d46008c1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/598": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x598",
+      "time": 0,
+      "opcode": 64,
+      "mask": "0xff",
+      "args": [
+        6,
+        0,
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10078
+        }
+      ],
+      "raw_bytes": "0000000040001c0000ff0c00060000000000000000741d4600781d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/5b4": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x5b4",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10015
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000601c46007c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/5c8": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x5c8",
+      "time": 0,
+      "opcode": 37,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        }
+      ],
+      "raw_bytes": "000000002500100000ff010000601c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub6/5d8": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub6",
+      "address": "0x5d8",
+      "time": 1,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub6_44"
+      ],
+      "raw_bytes": "010000000400140000ff0000000000007cffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/5f8": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x5f8",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10011
+        },
+        0.20000000298023224
+      ],
+      "raw_bytes": "000000000700140000ff0100006c1c46cdcc4c3e",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/60c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x60c",
+      "time": 0,
+      "opcode": 17,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10015
+        },
+        1.2999999523162842
+      ],
+      "raw_bytes": "000000001100140000ff0100007c1c466666a63f",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/620": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x620",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10014
+        },
+        2.0
+      ],
+      "raw_bytes": "000000000f00140000ff010000781c4600000040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/634": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x634",
+      "time": 0,
+      "opcode": 18,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10014
+        },
+        60.0
+      ],
+      "raw_bytes": "000000001200140000ff010000781c4600007042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/648": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x648",
+      "time": 0,
+      "opcode": 101,
+      "mask": "0xff",
+      "args": [
+        0,
+        16,
+        0,
+        60,
+        -1,
+        {
+          "variable": 10014
+        },
+        -999.0
+      ],
+      "raw_bytes": "000000006500280000ff20000000000010000000000000003c000000ffffffff00781c4600c079c4",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/670": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x670",
+      "time": 0,
+      "opcode": 89,
+      "mask": "0xff",
+      "args": [
+        7,
+        2,
+        1,
+        1,
+        {
+          "variable": 10011
+        },
+        1.0,
+        {
+          "variable": 10008
+        },
+        0.19634954631328583,
+        530
+      ],
+      "raw_bytes": "0000000059002c0000ff5000070002000100000001000000006c1c460000803f00601c46db0f493e12020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/69c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x69c",
+      "time": 0,
+      "opcode": 16,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10015
+        }
+      ],
+      "raw_bytes": "000000001000140000ff030000601c46007c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub7/6b0": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub7",
+      "address": "0x6b0",
+      "time": 4,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub7_120"
+      ],
+      "raw_bytes": "040000000400140000ff000000000000c0ffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/6d0": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x6d0",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        0,
+        -1
+      ],
+      "raw_bytes": "000000007500140000ff000000000000ffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/6e4": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x6e4",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        1,
+        -1
+      ],
+      "raw_bytes": "000000007500140000ff000001000000ffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/6f8": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x6f8",
+      "time": 0,
+      "opcode": 80,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "000000005000100000ff000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/708": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x708",
+      "time": 0,
+      "opcode": 56,
+      "mask": "0xff",
+      "args": [
+        17,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "raw_bytes": "000000003800240000ff000011000000ffffffffffffffffffffffffffffffffffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/72c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x72c",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        23
+      ],
+      "raw_bytes": "000000003600100000ff000017000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/73c": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x73c",
+      "time": 0,
+      "opcode": 25,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10027
+        },
+        64.0
+      ],
+      "raw_bytes": "000000001900180000ff030000601c4600ac1c4600008042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/754": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x754",
+      "time": 0,
+      "opcode": 64,
+      "mask": "0xff",
+      "args": [
+        60,
+        1,
+        {
+          "variable": 10026
+        },
+        {
+          "variable": 10008
+        }
+      ],
+      "raw_bytes": "0000000040001c0000ff0c003c0000000100000000a81c4600601c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_a.ecl/Sub8/770": {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sub": "Sub8",
+      "address": "0x770",
+      "time": 60,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "3c00000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/908": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x908",
+      "time": 0,
+      "opcode": 55,
+      "mask": "0xff",
+      "args": [
+        8
+      ],
+      "raw_bytes": "000000003700100000ff000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/918": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x918",
+      "time": 0,
+      "opcode": 81,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "000000005100100000ff000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/928": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x928",
+      "time": 0,
+      "opcode": 77,
+      "mask": "0xff",
+      "args": [
+        8.0,
+        8.0
+      ],
+      "raw_bytes": "000000004d00140000ff00000000004100000041",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/93c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x93c",
+      "time": 0,
+      "opcode": 112,
+      "mask": "0xff",
+      "args": [
+        "\"Sub9\""
+      ],
+      "raw_bytes": "000000007000100000ff000009000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/94c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x94c",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        0.0
+      ],
+      "raw_bytes": "000000000700140000ff010000641c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/960": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x960",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub7\""
+      ],
+      "raw_bytes": "000000007500140000ff00000000000007000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/974": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x974",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        1,
+        "\"Sub8\""
+      ],
+      "raw_bytes": "000000007500140000ff00000100000008000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub6/988": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub6",
+      "address": "0x988",
+      "time": 160,
+      "opcode": 52,
+      "mask": "0xff",
+      "args": [
+        "\"Sub9\""
+      ],
+      "raw_bytes": "a00000003400100000ff000009000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/9a4": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0x9a4",
+      "time": 0,
+      "opcode": 36,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        30,
+        4,
+        4,
+        0.0,
+        {
+          "variable": 10010
+        },
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "0000000024002c0000ff210000641c461e00000004000000040000000000000000681c460000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/9d0": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0x9d0",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10078
+        },
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10009
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000741d4600781d4600601c4600641c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/9ec": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0x9ec",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10082
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000741d4600881d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/a00": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0xa00",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10078
+        },
+        {
+          "variable": 10083
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000781d46008c1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/a14": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0xa14",
+      "time": 0,
+      "opcode": 64,
+      "mask": "0xff",
+      "args": [
+        6,
+        0,
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10078
+        }
+      ],
+      "raw_bytes": "0000000040001c0000ff0c00060000000000000000741d4600781d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/a30": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0xa30",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10015
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000601c46007c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/a44": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0xa44",
+      "time": 0,
+      "opcode": 37,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        }
+      ],
+      "raw_bytes": "000000002500100000ff010000601c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub7/a54": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub7",
+      "address": "0xa54",
+      "time": 1,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub7_44"
+      ],
+      "raw_bytes": "010000000400140000ff0000000000007cffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/a74": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xa74",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10011
+        },
+        0.20000000298023224
+      ],
+      "raw_bytes": "000000000700140000ff0100006c1c46cdcc4c3e",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/a88": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xa88",
+      "time": 0,
+      "opcode": 17,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10015
+        },
+        1.2999999523162842
+      ],
+      "raw_bytes": "000000001100140000ff0100007c1c466666a63f",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/a9c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xa9c",
+      "time": 0,
+      "opcode": 27,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10014
+        },
+        {
+          "variable": 10081
+        },
+        0.30000001192092896
+      ],
+      "raw_bytes": "000000001b00180000ff030000781c4600841d469a99993e",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/ab4": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xab4",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10014
+        },
+        2.0
+      ],
+      "raw_bytes": "000000000f00140000ff010000781c4600000040",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/ac8": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xac8",
+      "time": 0,
+      "opcode": 18,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10014
+        },
+        60.0
+      ],
+      "raw_bytes": "000000001200140000ff010000781c4600007042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/adc": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xadc",
+      "time": 0,
+      "opcode": 101,
+      "mask": "0xff",
+      "args": [
+        0,
+        16,
+        0,
+        60,
+        -1,
+        {
+          "variable": 10014
+        },
+        -999.0
+      ],
+      "raw_bytes": "000000006500280000ff20000000000010000000000000003c000000ffffffff00781c4600c079c4",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b04": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb04",
+      "time": 0,
+      "opcode": 22,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10020
+        },
+        {
+          "variable": 10081
+        },
+        3
+      ],
+      "raw_bytes": "000000001600180000ff0300242700006127000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b1c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb1c",
+      "time": 0,
+      "opcode": 10,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10020
+        },
+        10
+      ],
+      "raw_bytes": "000000000a00140000ff0100242700000a000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b30": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb30",
+      "time": 0,
+      "opcode": 27,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        {
+          "variable": 10081
+        },
+        0.05000000074505806
+      ],
+      "raw_bytes": "000000001b00180000ff030000641c4600841d46cdcc4c3d",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b48": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb48",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10009
+        },
+        0.800000011920929
+      ],
+      "raw_bytes": "000000000f00140000ff010000641c46cdcc4c3f",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b5c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb5c",
+      "time": 0,
+      "opcode": 89,
+      "mask": "0xff",
+      "args": [
+        3,
+        6,
+        2,
+        1,
+        {
+          "variable": 10009
+        },
+        1.0,
+        {
+          "variable": 10008
+        },
+        0.19634954631328583,
+        514
+      ],
+      "raw_bytes": "0000000059002c0000ff500003000600020000000100000000641c460000803f00601c46db0f493e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b88": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb88",
+      "time": 0,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10015
+        }
+      ],
+      "raw_bytes": "000000000f00140000ff030000601c46007c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/b9c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xb9c",
+      "time": 0,
+      "opcode": 21,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10021
+        },
+        10,
+        {
+          "variable": 10081
+        }
+      ],
+      "raw_bytes": "000000001500180000ff0500252700000a00000061270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/bb4": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xbb4",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10021
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010025270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub8/bc4": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub8",
+      "address": "0xbc4",
+      "time": 0,
+      "opcode": 5,
+      "mask": "0xff",
+      "args": [
+        0,
+        "Sub8_188",
+        {
+          "variable": 10020
+        }
+      ],
+      "raw_bytes": "000000000500180000ff0400000000006cffffff24270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/be8": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xbe8",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        0,
+        -1
+      ],
+      "raw_bytes": "000000007500140000ff000000000000ffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/bfc": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xbfc",
+      "time": 0,
+      "opcode": 117,
+      "mask": "0xff",
+      "args": [
+        1,
+        -1
+      ],
+      "raw_bytes": "000000007500140000ff000001000000ffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c10": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc10",
+      "time": 0,
+      "opcode": 80,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "000000005000100000ff000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c20": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc20",
+      "time": 0,
+      "opcode": 56,
+      "mask": "0xff",
+      "args": [
+        8,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "raw_bytes": "000000003800240000ff000008000000ffffffffffffffffffffffffffffffffffffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c44": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc44",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        14
+      ],
+      "raw_bytes": "000000003600100000ff00000e000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c54": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc54",
+      "time": 0,
+      "opcode": 25,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10008
+        },
+        {
+          "variable": 10027
+        },
+        64.0
+      ],
+      "raw_bytes": "000000001900180000ff030000601c4600ac1c4600008042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c6c": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc6c",
+      "time": 0,
+      "opcode": 64,
+      "mask": "0xff",
+      "args": [
+        60,
+        1,
+        {
+          "variable": 10026
+        },
+        {
+          "variable": 10008
+        }
+      ],
+      "raw_bytes": "0000000040001c0000ff0c003c0000000100000000a81c4600601c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "95/ecl6_b.ecl/Sub9/c88": {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sub": "Sub9",
+      "address": "0xc88",
+      "time": 60,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "3c00000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub37/451c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub37",
+      "address": "0x451c",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        53
+      ],
+      "raw_bytes": "000000003600100000ff000035000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub37/4580": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub37",
+      "address": "0x4580",
+      "time": 60,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub36\""
+      ],
+      "raw_bytes": "3c0000008700140000ff00000000000024000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub37/4594": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub37",
+      "address": "0x4594",
+      "time": 720,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "d002000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub40/4f58": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub40",
+      "address": "0x4f58",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        53
+      ],
+      "raw_bytes": "000000003600100000ff000035000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub40/4fbc": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub40",
+      "address": "0x4fbc",
+      "time": 60,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub39\""
+      ],
+      "raw_bytes": "3c0000008700140000ff00000000000027000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub40/4fd0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub40",
+      "address": "0x4fd0",
+      "time": 680,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "a802000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub42/536c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub42",
+      "address": "0x536c",
+      "time": 0,
+      "opcode": 54,
+      "mask": "0xff",
+      "args": [
+        53
+      ],
+      "raw_bytes": "000000003600100000ff000035000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub42/53d0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub42",
+      "address": "0x53d0",
+      "time": 60,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub41\""
+      ],
+      "raw_bytes": "3c0000008700140000ff00000000000029000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub42/53e4": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub42",
+      "address": "0x53e4",
+      "time": 580,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "4402000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/42ec": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x42ec",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4318": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4318",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4344": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4344",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10000
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010010270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4354": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4354",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4380": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4380",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/43ac": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x43ac",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10000
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010010270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/43d4": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x43d4",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4400": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4400",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4440": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4440",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10000
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010010270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/4450": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x4450",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/447c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x447c",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub36/44e0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub36",
+      "address": "0x44e0",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10000
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010010270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4d28": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4d28",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        4,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227040000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4d54": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4d54",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        4,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270400000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4d80": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4d80",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4d90": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4d90",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        4,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227040000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4dbc": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4dbc",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        4,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270400000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4de8": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4de8",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4e10": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4e10",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        4,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227040000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4e3c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4e3c",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        4,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270400000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4e7c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4e7c",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4e8c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4e8c",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        4,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227040000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4eb8": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4eb8",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        4,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270400000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub39/4f1c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub39",
+      "address": "0x4f1c",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/513c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x513c",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5168": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5168",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5194": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5194",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/51a4": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x51a4",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/51d0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x51d0",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/51fc": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x51fc",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5224": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5224",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5250": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5250",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5290": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5290",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/52a0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x52a0",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x3f",
+      "args": [
+        3,
+        {
+          "variable": 10002
+        },
+        8,
+        1,
+        {
+          "variable": 10022
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00003f520003001227080000000100000000981c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/52cc": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x52cc",
+      "time": 0,
+      "opcode": 99,
+      "mask": "0x5f",
+      "args": [
+        3,
+        {
+          "variable": 10001
+        },
+        8,
+        1,
+        {
+          "variable": 10023
+        },
+        0.5,
+        {
+          "variable": 10016
+        },
+        0.2617993950843811,
+        514
+      ],
+      "raw_bytes": "0000000063002c00005f5200030011270800000001000000009c1c460000003f00801c46920a863e02020000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub41/5330": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub41",
+      "address": "0x5330",
+      "time": 0,
+      "opcode": 2,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10007
+        }
+      ],
+      "raw_bytes": "000000000200100000ff010017270000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub48/6b58": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub48",
+      "address": "0x6b58",
+      "time": 0,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        41,
+        {
+          "variable": 10042
+        },
+        {
+          "variable": 10043
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        0.0,
+        {
+          "variable": 10018
+        }
+      ],
+      "raw_bytes": "000000004800280000ff5e002900000000e81c4600ec1c4600801c4600841c460000000000881c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub48/6b80": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub48",
+      "address": "0x6b80",
+      "time": 40,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub49\""
+      ],
+      "raw_bytes": "280000008700140000ff00000000000031000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub48/6b94": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub48",
+      "address": "0x6b94",
+      "time": 40,
+      "opcode": 74,
+      "mask": "0xff",
+      "args": [
+        3600,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "280000004a00180000ff0000100e00000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub48/6bc0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub48",
+      "address": "0x6bc0",
+      "time": 100,
+      "opcode": 74,
+      "mask": "0xff",
+      "args": [
+        3600,
+        {
+          "variable": 10017
+        },
+        0.0
+      ],
+      "raw_bytes": "640000004a00180000ff0200100e000000841c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub48/6bd8": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub48",
+      "address": "0x6bd8",
+      "time": 3700,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "740e000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub64/8c64": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub64",
+      "address": "0x8c64",
+      "time": 0,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        51,
+        {
+          "variable": 10042
+        },
+        {
+          "variable": 10043
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        0.0,
+        {
+          "variable": 10018
+        }
+      ],
+      "raw_bytes": "000000004800280000ff5e003300000000e81c4600ec1c4600801c4600841c460000000000881c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub64/8c8c": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub64",
+      "address": "0x8c8c",
+      "time": 50,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub65\""
+      ],
+      "raw_bytes": "320000008700140000ff00000000000041000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub64/8ca0": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub64",
+      "address": "0x8ca0",
+      "time": 50,
+      "opcode": 74,
+      "mask": "0xff",
+      "args": [
+        180,
+        {
+          "variable": 10017
+        },
+        0.0
+      ],
+      "raw_bytes": "320000004a00180000ff0200b400000000841c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata3.ecl/Sub64/8cb8": {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sub": "Sub64",
+      "address": "0x8cb8",
+      "time": 230,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "e600000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6468": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6468",
+      "time": 0,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        60,
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        {
+          "variable": 10019
+        },
+        0.0
+      ],
+      "raw_bytes": "000000004800280000ff3e003c000000009c1c4600981c4600801c4600841c46008c1c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6490": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6490",
+      "time": 0,
+      "opcode": 135,
+      "mask": "0xff",
+      "args": [
+        0,
+        "\"Sub46\""
+      ],
+      "raw_bytes": "000000008700140000ff0000000000002e000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/64a4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x64a4",
+      "time": 1,
+      "opcode": 81,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "010000005100100000ff000003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6510": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6510",
+      "time": 60,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        60,
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        {
+          "variable": 10019
+        },
+        0.0
+      ],
+      "raw_bytes": "3c0000004800280000ff3e003c000000009c1c4600981c4600801c4600841c46008c1c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6594": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6594",
+      "time": 120,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        60,
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        {
+          "variable": 10019
+        },
+        0.0
+      ],
+      "raw_bytes": "780000004800280000ff3e003c000000009c1c4600981c4600801c4600841c46008c1c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6618": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6618",
+      "time": 180,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        60,
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        {
+          "variable": 10019
+        },
+        0.0
+      ],
+      "raw_bytes": "b40000004800280000ff3e003c000000009c1c4600981c4600801c4600841c46008c1c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/669c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x669c",
+      "time": 240,
+      "opcode": 72,
+      "mask": "0xff",
+      "args": [
+        60,
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10017
+        },
+        {
+          "variable": 10019
+        },
+        0.0
+      ],
+      "raw_bytes": "f00000004800280000ff3e003c000000009c1c4600981c4600801c4600841c46008c1c4600000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/66c4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x66c4",
+      "time": 240,
+      "opcode": 1,
+      "mask": "0xff",
+      "args": [],
+      "raw_bytes": "f000000001000c0000ff0000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub46/628c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x628c",
+      "time": 2,
+      "opcode": 99,
+      "mask": "0xff",
+      "args": [
+        2,
+        1,
+        1,
+        1,
+        0.0,
+        0.0,
+        {
+          "variable": 10069
+        },
+        0.09817477315664291,
+        147986
+      ],
+      "raw_bytes": "0200000063002c0000ff4000020001000100000001000000000000000000000000541d46db0fc93d12420200",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub46/62e8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x62e8",
+      "time": 4,
+      "opcode": 4,
+      "mask": "0xff",
+      "args": [
+        2,
+        "Sub46_20"
+      ],
+      "raw_bytes": "040000000400140000ff0000020000002cffffff",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5bd4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5bd4",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10021
+        },
+        {
+          "variable": 10057
+        }
+      ],
+      "raw_bytes": "000000000700140000ff030000941c4600241d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5be8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5be8",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10094
+        },
+        {
+          "variable": 10095
+        },
+        {
+          "variable": 10021
+        },
+        {
+          "variable": 10019
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000b81d4600bc1d4600941c46008c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5c04": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5c04",
+      "time": 0,
+      "opcode": 25,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        },
+        1.5707963705062866
+      ],
+      "raw_bytes": "000000001900180000ff030000801c4600941c46db0fc93f",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5c2c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5c2c",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        64.0
+      ],
+      "raw_bytes": "0000000026001c0000ff0700009c1c4600981c4600801c4600008042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5c48": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5c48",
+      "time": 0,
+      "opcode": 26,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        },
+        3.1415927410125732
+      ],
+      "raw_bytes": "000000001a00180000ff030000801c4600941c46db0f4940",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5c70": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5c70",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10017
+        },
+        -0.05235987901687622
+      ],
+      "raw_bytes": "000000000700140000ff010000841c46507756bd",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5c84": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5c84",
+      "time": 0,
+      "opcode": 91,
+      "mask": "0xff",
+      "args": [
+        "\"Sub48\"",
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        2000,
+        -2,
+        100
+      ],
+      "raw_bytes": "000000005b00240000ff060030000000009c1c4600981c46d0070000feffffff64000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5ca8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5ca8",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        }
+      ],
+      "raw_bytes": "000000000700140000ff030000801c4600941c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5cbc": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5cbc",
+      "time": 0,
+      "opcode": 25,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10020
+        },
+        {
+          "variable": 10021
+        },
+        3.1415927410125732
+      ],
+      "raw_bytes": "000000001900180000ff030000901c4600941c46db0f4940",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5ce4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5ce4",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10094
+        },
+        {
+          "variable": 10095
+        },
+        {
+          "variable": 10020
+        },
+        {
+          "variable": 10019
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000b81d4600bc1d4600901c46008c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5d00": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5d00",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10017
+        },
+        0.05235987901687622
+      ],
+      "raw_bytes": "000000000700140000ff010000841c465077563d",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5d14": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5d14",
+      "time": 0,
+      "opcode": 91,
+      "mask": "0xff",
+      "args": [
+        "\"Sub48\"",
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        2000,
+        -2,
+        100
+      ],
+      "raw_bytes": "000000005b00240000ff060030000000009c1c4600981c46d0070000feffffff64000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5d64": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5d64",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10021
+        },
+        {
+          "variable": 10057
+        }
+      ],
+      "raw_bytes": "000000000700140000ff030000941c4600241d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5d78": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5d78",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10094
+        },
+        {
+          "variable": 10095
+        },
+        {
+          "variable": 10021
+        },
+        {
+          "variable": 10019
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000b81d4600bc1d4600941c46008c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5d94": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5d94",
+      "time": 0,
+      "opcode": 26,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        },
+        1.5707963705062866
+      ],
+      "raw_bytes": "000000001a00180000ff030000801c4600941c46db0fc93f",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5dbc": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5dbc",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10016
+        },
+        64.0
+      ],
+      "raw_bytes": "0000000026001c0000ff0700009c1c4600981c4600801c4600008042",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5dd8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5dd8",
+      "time": 0,
+      "opcode": 26,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        },
+        3.1415927410125732
+      ],
+      "raw_bytes": "000000001a00180000ff030000801c4600941c46db0f4940",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e00": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e00",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10017
+        },
+        0.05235987901687622
+      ],
+      "raw_bytes": "000000000700140000ff010000841c465077563d",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e14": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e14",
+      "time": 0,
+      "opcode": 91,
+      "mask": "0xff",
+      "args": [
+        "\"Sub48\"",
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        2000,
+        -2,
+        100
+      ],
+      "raw_bytes": "000000005b00240000ff060030000000009c1c4600981c46d0070000feffffff64000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e38": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e38",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10016
+        },
+        {
+          "variable": 10021
+        }
+      ],
+      "raw_bytes": "000000000700140000ff030000801c4600941c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e4c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e4c",
+      "time": 0,
+      "opcode": 25,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10020
+        },
+        {
+          "variable": 10021
+        },
+        3.1415927410125732
+      ],
+      "raw_bytes": "000000001900180000ff030000901c4600941c46db0f4940",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e74": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e74",
+      "time": 0,
+      "opcode": 38,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10094
+        },
+        {
+          "variable": 10095
+        },
+        {
+          "variable": 10020
+        },
+        {
+          "variable": 10019
+        }
+      ],
+      "raw_bytes": "0000000026001c0000ff0f0000b81d4600bc1d4600901c46008c1c46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5e90": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5e90",
+      "time": 0,
+      "opcode": 7,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10017
+        },
+        -0.05235987901687622
+      ],
+      "raw_bytes": "000000000700140000ff010000841c46507756bd",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub44/5ea4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub44",
+      "address": "0x5ea4",
+      "time": 0,
+      "opcode": 91,
+      "mask": "0xff",
+      "args": [
+        "\"Sub48\"",
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10022
+        },
+        2000,
+        -2,
+        100
+      ],
+      "raw_bytes": "000000005b00240000ff060030000000009c1c4600981c46d0070000feffffff64000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/64c0": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x64c0",
+      "time": 60,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "3c0000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/64d4": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x64d4",
+      "time": 60,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "3c0000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/64e8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x64e8",
+      "time": 60,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "3c0000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/64fc": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x64fc",
+      "time": 60,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "3c0000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6544": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6544",
+      "time": 120,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "780000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6558": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6558",
+      "time": 120,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "780000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/656c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x656c",
+      "time": 120,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "780000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6580": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6580",
+      "time": 120,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "780000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/65c8": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x65c8",
+      "time": 180,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "b40000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/65dc": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x65dc",
+      "time": 180,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "b40000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/65f0": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x65f0",
+      "time": 180,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "b40000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6604": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6604",
+      "time": 180,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "b40000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/664c": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x664c",
+      "time": 240,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "f00000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6660": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6660",
+      "time": 240,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "f00000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6674": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6674",
+      "time": 240,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10023
+        },
+        {
+          "variable": 10094
+        }
+      ],
+      "raw_bytes": "f00000000f00140000ff0300009c1c4600b81d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "8/ecldata5sp.ecl/Sub48/6688": {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub48",
+      "address": "0x6688",
+      "time": 240,
+      "opcode": 15,
+      "mask": "0xff",
+      "args": [
+        {
+          "variable": 10022
+        },
+        {
+          "variable": 10095
+        }
+      ],
+      "raw_bytes": "f00000000f00140000ff030000981c4600bc1d46",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/12f6": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x12f6",
+      "time": 120,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "780000005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/1306": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x1306",
+      "time": 120,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.39269909262657166,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        32.0,
+        30,
+        120,
+        16,
+        30,
+        14,
+        0
+      ],
+      "raw_bytes": "780000005500400000ffff0000000600db0fc93e00000000000000000000fa430000fa43000000421e00000078000000100000001e0000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/1346": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x1346",
+      "time": 120,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        1
+      ],
+      "raw_bytes": "780000005700100000ffff0001000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/1356": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x1356",
+      "time": 120,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        2.7488934993743896,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        32.0,
+        30,
+        120,
+        16,
+        30,
+        14,
+        0
+      ],
+      "raw_bytes": "780000005500400000ffff0000000600dfed2f4000000000000000000000fa430000fa43000000421e00000078000000100000001e0000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/13ba": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x13ba",
+      "time": 151,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.008267348632216454
+      ],
+      "raw_bytes": "970000005800140000ffff0000000000c673073c",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub9/13ce": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub9",
+      "address": "0x13ce",
+      "time": 151,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        1,
+        -0.008267348632216454
+      ],
+      "raw_bytes": "970000005800140000ffff0001000000c67307bc",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2bf2": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2bf2",
+      "time": 20,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "140000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2c42": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2c42",
+      "time": 28,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "1c0000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2c92": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2c92",
+      "time": 36,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "240000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2ce2": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2ce2",
+      "time": 44,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "2c0000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2d32": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2d32",
+      "time": 52,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "340000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata1.ecl/Sub18/2d82": {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sub": "Sub18",
+      "address": "0x2d82",
+      "time": 60,
+      "opcode": 86,
+      "mask": "0xff",
+      "args": [
+        0,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        500.0,
+        500.0,
+        16.0,
+        120,
+        60,
+        16,
+        120,
+        14,
+        0
+      ],
+      "raw_bytes": "3c0000005600400000ffff00000006000000000000000000000000000000fa430000fa4300008041780000003c00000010000000780000000e00000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/442a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x442a",
+      "time": 120,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "780000005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/443a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x443a",
+      "time": 120,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        2,
+        -2.9845130443573,
+        0.0,
+        32.0,
+        420.0,
+        388.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "780000005500400000ffff000100020043023fc000000000000000420000d2430000c2430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/450e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x450e",
+      "time": 240,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "f00000005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/451e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x451e",
+      "time": 240,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        2,
+        1.5707963705062866,
+        0.0,
+        32.0,
+        400.0,
+        368.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "f00000005500400000ffff0001000200db0fc93f00000000000000420000c8430000b8430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/4582": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x4582",
+      "time": 240,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "f00000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/466a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x466a",
+      "time": 241,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "f10000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/469e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x469e",
+      "time": 242,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "f20000005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/46ae": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x46ae",
+      "time": 242,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        2,
+        1.5707963705062866,
+        0.0,
+        32.0,
+        400.0,
+        368.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "f20000005500400000ffff0001000200db0fc93f00000000000000420000c8430000b8430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/479e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x479e",
+      "time": 302,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "2e0100005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub36/47ae": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub36",
+      "address": "0x47ae",
+      "time": 302,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        2,
+        -0.15707963705062866,
+        0.0,
+        32.0,
+        400.0,
+        368.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "2e0100005500400000ffff00010002007cd920be00000000000000420000c8430000b8430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub37/48aa": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub37",
+      "address": "0x48aa",
+      "time": 0,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        1
+      ],
+      "raw_bytes": "000000005700100000ffff0001000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub37/48ba": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub37",
+      "address": "0x48ba",
+      "time": 0,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        2,
+        -10008.0,
+        0.0,
+        32.0,
+        420.0,
+        388.0,
+        12.0,
+        1,
+        6,
+        1,
+        1,
+        8,
+        0
+      ],
+      "raw_bytes": "000000005500400000ffff000100020000601cc600000000000000420000d2430000c24300004041010000000600000001000000010000000800000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub37/48fa": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub37",
+      "address": "0x48fa",
+      "time": 0,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        0,
+        -10006.0
+      ],
+      "raw_bytes": "000000005800140000ffff000000000000581cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub37/490e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub37",
+      "address": "0x490e",
+      "time": 0,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "000000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub37/4a9e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub37",
+      "address": "0x4a9e",
+      "time": 1,
+      "opcode": 92,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "010000005c00100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8d12": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8d12",
+      "time": 30,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "1e0000005700100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8d22": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8d22",
+      "time": 30,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        6,
+        -1.5707963705062866,
+        0.0,
+        0.0,
+        216.0,
+        216.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "1e0000005500400000ffff0001000600db0fc9bf000000000000000000005843000058430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8d62": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8d62",
+      "time": 30,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        1
+      ],
+      "raw_bytes": "1e0000005700100000ffff0001000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8d72": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8d72",
+      "time": 30,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        6,
+        0.0,
+        0.0,
+        0.0,
+        216.0,
+        216.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "1e0000005500400000ffff000100060000000000000000000000000000005843000058430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8db2": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8db2",
+      "time": 30,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        2
+      ],
+      "raw_bytes": "1e0000005700100000ffff0002000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8dc2": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8dc2",
+      "time": 30,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        6,
+        1.5707963705062866,
+        0.0,
+        0.0,
+        216.0,
+        216.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "1e0000005500400000ffff0001000600db0fc93f000000000000000000005843000058430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8e02": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8e02",
+      "time": 30,
+      "opcode": 87,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "1e0000005700100000ffff0003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8e12": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8e12",
+      "time": 30,
+      "opcode": 85,
+      "mask": "0xff",
+      "args": [
+        1,
+        6,
+        3.1415927410125732,
+        0.0,
+        0.0,
+        216.0,
+        216.0,
+        24.0,
+        60,
+        800,
+        20,
+        60,
+        18,
+        0
+      ],
+      "raw_bytes": "1e0000005500400000ffff0001000600db0f4940000000000000000000005843000058430000c0413c00000020030000140000003c0000001200000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f06": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f06",
+      "time": 30,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1e0000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f22": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f22",
+      "time": 30,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        1,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1e0000005a001c0000ffff0001000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f3e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f3e",
+      "time": 30,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1e0000005a001c0000ffff0002000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f5a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f5a",
+      "time": 30,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        3,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1e0000005a001c0000ffff0003000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f76": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f76",
+      "time": 30,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        0,
+        -10008.0
+      ],
+      "raw_bytes": "1e0000005800140000ffff000000000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f8a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f8a",
+      "time": 30,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        1,
+        -10008.0
+      ],
+      "raw_bytes": "1e0000005800140000ffff000100000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8f9e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8f9e",
+      "time": 30,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        2,
+        -10008.0
+      ],
+      "raw_bytes": "1e0000005800140000ffff000200000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/8fb2": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x8fb2",
+      "time": 30,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        3,
+        -10008.0
+      ],
+      "raw_bytes": "1e0000005800140000ffff000300000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9026": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9026",
+      "time": 31,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1f0000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9042": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9042",
+      "time": 31,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        1,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1f0000005a001c0000ffff0001000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/905e": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x905e",
+      "time": 31,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1f0000005a001c0000ffff0002000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/907a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x907a",
+      "time": 31,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        3,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "1f0000005a001c0000ffff0003000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9096": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9096",
+      "time": 31,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        0,
+        -10008.0
+      ],
+      "raw_bytes": "1f0000005800140000ffff000000000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/90aa": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x90aa",
+      "time": 31,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        1,
+        -10008.0
+      ],
+      "raw_bytes": "1f0000005800140000ffff000100000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/90be": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x90be",
+      "time": 31,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        2,
+        -10008.0
+      ],
+      "raw_bytes": "1f0000005800140000ffff000200000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/90d2": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x90d2",
+      "time": 31,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        3,
+        -10008.0
+      ],
+      "raw_bytes": "1f0000005800140000ffff000300000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9116": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9116",
+      "time": 32,
+      "opcode": 92,
+      "mask": "0xff",
+      "args": [
+        0
+      ],
+      "raw_bytes": "200000005c00100000ffff0000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9126": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9126",
+      "time": 32,
+      "opcode": 92,
+      "mask": "0xff",
+      "args": [
+        1
+      ],
+      "raw_bytes": "200000005c00100000ffff0001000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9136": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9136",
+      "time": 32,
+      "opcode": 92,
+      "mask": "0xff",
+      "args": [
+        2
+      ],
+      "raw_bytes": "200000005c00100000ffff0002000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9146": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9146",
+      "time": 32,
+      "opcode": 92,
+      "mask": "0xff",
+      "args": [
+        3
+      ],
+      "raw_bytes": "200000005c00100000ffff0003000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/917a": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x917a",
+      "time": 32,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "200000005a001c0000ffff0000000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9196": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9196",
+      "time": 32,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        1,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "200000005a001c0000ffff0001000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/91b2": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x91b2",
+      "time": 32,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "200000005a001c0000ffff0002000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/91ce": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x91ce",
+      "time": 32,
+      "opcode": 90,
+      "mask": "0xff",
+      "args": [
+        3,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "200000005a001c0000ffff0003000000000000000000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/91ea": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x91ea",
+      "time": 32,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        0,
+        -10008.0
+      ],
+      "raw_bytes": "200000005800140000ffff000000000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/91fe": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x91fe",
+      "time": 32,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        1,
+        -10008.0
+      ],
+      "raw_bytes": "200000005800140000ffff000100000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9212": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9212",
+      "time": 32,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        2,
+        -10008.0
+      ],
+      "raw_bytes": "200000005800140000ffff000200000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "6/ecldata7.ecl/Sub58/9226": {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "address": "0x9226",
+      "time": 32,
+      "opcode": 88,
+      "mask": "0xff",
+      "args": [
+        3,
+        -10008.0
+      ],
+      "raw_bytes": "200000005800140000ffff000300000000601cc6",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "10/stage01.ecl/BossCard2At1/44bc": {
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "BossCard2At1",
+      "address": "0x44bc",
+      "time": 0,
+      "opcode": 413,
+      "mask": "0xfc",
+      "args": [
+        0,
+        3,
+        13,
+        {
+          "variable": 4
+        },
+        0.0,
+        512.0,
+        60,
+        20,
+        60,
+        20,
+        16.0,
+        0
+      ],
+      "raw_bytes": "000000009d0140000800fc0c0000000000000000030000000d0000000000804000000000000000443c000000140000003c000000140000000000804100000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "10/stage05.ecl/Boss2Et_at/26ac": {
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "Boss2Et_at",
+      "address": "0x26ac",
+      "time": 0,
+      "opcode": 413,
+      "mask": "0xff",
+      "args": [
+        0,
+        8,
+        6,
+        0.0,
+        {
+          "variable": 12
+        },
+        {
+          "variable": 12
+        },
+        1,
+        10,
+        30,
+        1,
+        32.0,
+        0
+      ],
+      "raw_bytes": "000000009d0140003000ff0c00000000000000000800000006000000000000000000404100004041010000000a0000001e000000010000000000004200000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "10/stage05.ecl/Boss2Et_at/27c8": {
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "Boss2Et_at",
+      "address": "0x27c8",
+      "time": 0,
+      "opcode": 413,
+      "mask": "0xff",
+      "args": [
+        0,
+        8,
+        6,
+        3.1415927410125732,
+        {
+          "variable": 12
+        },
+        {
+          "variable": 12
+        },
+        1,
+        10,
+        30,
+        1,
+        32.0,
+        0
+      ],
+      "raw_bytes": "000000009d0140003000ff0c00000000000000000800000006000000db0f49400000404100004041010000000a0000001e000000010000000000004200000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "10/stage02.ecl/MBossDummyMoveB/981c": {
+      "game": 10,
+      "file": "stage02.ecl",
+      "sub": "MBossDummyMoveB",
+      "address": "0x981c",
+      "time": 0,
+      "opcode": 290,
+      "mask": "0xff",
+      "args": [
+        3.1415927410125732,
+        0.02617993950843811,
+        0.0,
+        0.0
+      ],
+      "raw_bytes": "00000000220120000000ff0400000000db0f49405077d63c0000000000000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    },
+    "10/stage02.ecl/MBossDummyMoveB/983c": {
+      "game": 10,
+      "file": "stage02.ecl",
+      "sub": "MBossDummyMoveB",
+      "address": "0x983c",
+      "time": 0,
+      "opcode": 291,
+      "mask": "0xff",
+      "args": [
+        120,
+        0,
+        -999999.0,
+        -999999.0,
+        32.0,
+        0
+      ],
+      "raw_bytes": "00000000230128000000ff06000000007800000000000000f02374c9f02374c90000004200000000",
+      "header_checked_against_binary": true,
+      "operands_note": "数值和目标名取带地址反汇编；保留完整原始指令字节供复核，未另行解码全部操作数字段。"
+    }
+  },
+  "original_files": [
+    {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7"
+    },
+    {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392"
+    },
+    {
+      "game": 7,
+      "file": "ecldata7.ecl",
+      "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747"
+    },
+    {
+      "game": 7,
+      "file": "ecldata8.ecl",
+      "sha256": "ad5e15ee4f268e9d47d1763d3cceb11fe4022d848946b6fa1c6a4fc33ec16a0b"
+    },
+    {
+      "game": 8,
+      "file": "ecldata3.ecl",
+      "sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8"
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b"
+    },
+    {
+      "game": 10,
+      "file": "stage01.ecl",
+      "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c"
+    },
+    {
+      "game": 10,
+      "file": "stage02.ecl",
+      "sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c"
+    },
+    {
+      "game": 10,
+      "file": "stage05.ecl",
+      "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b"
+    },
+    {
+      "game": 95,
+      "file": "ecl6_a.ecl",
+      "sha256": "5db2274bed00677f1a8bbdeaeb275547d9e425254ebe31610487a59b030862e5"
+    },
+    {
+      "game": 95,
+      "file": "ecl6_b.ecl",
+      "sha256": "e042cdc7c741952ace8503ca0e22e49e25f1a73c084d57f9d98359a52445daae"
+    }
+  ],
+  "reconstruction_sha256": {
+    "th08/src/EnemyTimeline.cpp": "920ee34725aa6aad9f113d43454731acadab456abddac73256b2ba9a29e8e94b",
+    "th08/src/EnemyManager.cpp": "50299761eee35bc83cade3f98721df2a5a9585e4fd100084e1723353c975e4fb",
+    "th08/src/EnemyManagerUpdate.cpp": "fd6eeae2b912e29d759b2622d4f367c19ef4bcf7a5f89ad9548a1c1e4982bba7",
+    "th08/src/EclRun.cpp": "2b7ef40d2414d85122d9bd4f26f0e9f2e677c027b1528af6c83cd128d955d6ce",
+    "th08/src/EclRunLow.inl": "8c6d23bf4e9daf8f96dbd344f4a03d3ed32d1d200483959682e962cd41ec0045",
+    "th07/src/th07/EnemyManager.cpp": "85a10bba18b4bdb6e1181ee9502fc05632d0dde0ee04afe106d9a9f33e88d04d",
+    "th07/src/th07/EclManager.cpp": "027b65d265857a6612f665e104a8be6af2b15eb8f4a1ed63dad75541b766a4a4",
+    "th095/src/EnemyManagerUpdate.cpp": "2b75ac18a1a2eb7b838487252ca0d6e89bcc98c24ff810ca6aa4bbf6f3e53e0d",
+    "th095/src/EnemyMovement.cpp": "6d7009a6523a334b2da95389252b3ec05e6e935b5eded3061af1f7a5e2e3e57a",
+    "th095/src/EclHelpers.cpp": "5b5af8a275b6b16936a153fceb0ec11c6a8d278025fe9eb139d1a60ab3c421af",
+    "th095/src/ecl/EclRun.cpp": "e16ffb5a1eca560ee096a7bc7dc36dc740d9ef2c6097527b2ce4cede4c3d0fd5",
+    "th095/src/ecl/EclRunLow.inl": "99af98f074ebbd54a059f049e84706903d911bbd271dd3db850b904757229529",
+    "th095/src/ecl/EclRunTargetHigh.inl": "48841e140321b82979e296e8e59f694a697fc67d7581bbf66c450b962ac3df5b",
+    "th06/src/EclManager.cpp": "73035a8f4799c9d3cef329e1b1738c2554339a49237c27352fda547c8052f79a",
+    "th06/src/BulletManager.cpp": "c8f9cc62544d911440ece29a81c1daa01149a0476ec2750d858312e3331103d3",
+    "th10/src/LaserType1.cpp": "d9bdf8cff128fd6f368c32cc7023e8013d7da16acf0fe4d0de66115b2a83ae18",
+    "th10/src/LaserLine.cpp": "2b185eba87d57e6349be9947ac297301500cca66d75f06b762f2a86f1fe272ce"
+  },
+  "implementation_sha256": {
+    "mod/GAME/th31.lua": "cc9ff763fbd63f616bf9f36d2c9ee4c00342f07d7e90e7bf1f70aaa4b8956966",
+    "mod/GAME/th33.lua": "7bc867838f04cc4ef4a500b27427f9890a1f88320a0264b8313ef6457dd19a89",
+    "mod/GAME/th34.lua": "0264f40892601abb90cfe22d72d817253d54d73f84f757d2449d61c1a5c5f086"
+  },
+  "baseline_implementation_sha256": {
+    "mod/GAME/th31.lua": "144b1fddfe2d2c3393ae561e8c43371f9df4980cd5edfe29311e46f28448f0c5",
+    "mod/GAME/th33.lua": "f9b2a670cdc1901739d5651040f0fe9c3e3cb27ac9b2e3114e3f866d5f5957f0",
+    "mod/GAME/th34.lua": "a17915e504b5640b84e8caf497a656676d5d20dd5ee972cc1162865443673feb"
+  }
+}
