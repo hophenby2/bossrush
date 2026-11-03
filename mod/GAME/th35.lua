@@ -230,8 +230,11 @@ local function th35_bullet_frame(self)
     end
     ---引擎每帧「先跑 frame、再按 vx/vy 积分」，所以这里改速度 == 原作的
     ---「先 velocity += 加速度、再 pos += velocity」。
-    if self.th_wait > 0 then
-        self.th_wait = self.th_wait - 1
+    if self.th_wait_active then
+        -- 原作先AdvanceTransformProgram，再更新WAIT；清活动位的这一帧仍不能加速。
+        -- 0帧/负帧WAIT也要经历这一步，下一帧才认领POLAR。
+        if self.th_wait <= 0 then self.th_wait_active = nil
+        else self.th_wait = self.th_wait - 1 end
     elseif self.th_left > 0 then
         self.th_left = self.th_left - 1
         self.th_speed = self.th_speed + self.th_delta
@@ -246,6 +249,7 @@ local function spawn_bullet(x, y, angle_deg, delta, wait, color)
             BULLET_INIT_SPEED, angle_deg, false, 0, false, true, nil, nil,
             th35_bullet_frame)
     b.th_wait = wait
+    b.th_wait_active = true
     b.th_delta = delta
     b.th_left = BULLET_ACCEL_FRAMES
     b.th_speed = BULLET_INIT_SPEED

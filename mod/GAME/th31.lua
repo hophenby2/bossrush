@@ -30344,7 +30344,7 @@ end
 ---      5 条环**出膛角完全相同**，靠记录里的 POLAR 转角分成 5 支（±2π/3、±π/3、0，
 ---      色 2/13/2/13/2），每条环 8 颗 ⇒ 一发 40 颗（同屏上限 1536 会自然截断）。
 ---  · ★ Sub37（BOSS 的枪，`ins_52` 同步调用、整段当帧跑完）：15 轮，每轮写记录 1
----    （WAIT `li0` = 50−3k 帧）与记录 5（REL 1 帧、角 0、末速 `lf3` = 1.8−0.0533k），
+---    （WAIT `li0` = 50+3k 帧）与记录 5（REL 1 帧、角 0、末速 `lf3` = 1.8−0.0533k），
 ---    再打两条 `ins_99(0, 15, 2, 1, lf5, 0.9, lf0/lf1, −π, 671810)` ⇒ 每轮 4 颗
 ---    （count1 = 2 是**对穿**的两颗）、15 轮 = 60 颗全在同一帧生。
 ---    记录程序（kind 位表见 BulletManager.hpp:129-155、载荷布局见 :11-58）：
@@ -30390,7 +30390,7 @@ local ROUND0_PH, ROUND_STEP, ROUND_N = 29, 5, 6
 ---Sub37（BOSS 的枪）。
 local S37_LV_SPD = { 7.0, 6.5, 6.0, 5.5, 5.0, 4.5 }   -- 每轮的 lf5（Lunatic 行的 ins_7）
 local S37_ITER = 15
-local S37_WAIT0, S37_WAIT_D = 50, 3                    -- 记录 1 的 WAIT（li0 每次 −3）
+local S37_WAIT0, S37_WAIT_STEP = 50, 3                 -- ins_10是INT_ADD_ASSIGN：50,53,…,92
 local S37_F3, S37_F3_D = 1.8, 0.053333335              -- 记录 5 的末速 lf3
 local S37_WAIT_MID = 60                                -- 记录 3 的 WAIT（难度分支恒走 60）
 local S37_TURN0, S37_TURN_D = 0.05235988, 0.10471976   -- 3° / 6°
@@ -30575,7 +30575,8 @@ local function boss_gun(owner, spd)
             })
         end
         ---`ins_10([10000], 3)`、`ins_15/ins_16`（两条角各向外 ±6°）。
-        wait = wait - S37_WAIT_D
+        -- 原作0x6b2c：ins_10(li0,3)递增等待；外侧组应更晚换色/启动。
+        wait = wait + S37_WAIT_STEP
         f3 = f3 - S37_F3_D
         a0 = a0 + S37_TURN_D
         a1 = a1 - S37_TURN_D
@@ -30585,22 +30586,25 @@ end
 ---子 context 0（Sub36）的一发：Lunatic 走 Sub35 的 5 条环（每发 40 颗）。
 local function child_shot(owner, st)
     local c = st.c36
-    c.ang = wrap_pi(c.ang + C36_SEG_DANG[c.seg])   -- `ins_15(lf0, lf1)` + `ins_37`
-    if too_close(owner) then return end
-    for k = 1, 5 do
-        EX.set_record(owner, 4, EX.K.SND, 0, 25, -1, -1, -1)
-        EX.set_record(owner, 0, EX.K.WAIT, 0, C36_WAIT, -1, -1, -1)
-        EX.set_record(owner, 1, EX.K.POLAR, 0, 1, -1, C36_DS, -C36_TURN[k])
-        EX.set_record(owner, 2, EX.K.WAIT, 0, C36_WAIT, -1, -1, -1)
-        EX.set_record(owner, 3, EX.K.POLAR, 0, 1, -1, C36_DS, -C36_TURN[k])
-        EX.shoot(owner, owner.x, owner.y, {
-            op = 99, type = 11, color = EX.color(C36_COLOR[k]),
-            count1 = C36_SHOOT_N, count2 = 1,
-            speed1 = C36_SPD, speed2 = C36_SPD2,
-            angle = -c.ang, step = 0,
-            flags = (k == 1) and C36_FLAGS_SND or C36_FLAGS,
-        })
+    -- Sub36先CALL Sub35出弹，返回后才ins_15/ins_37推进枪口。
+    -- 即使近距离闸门跳过射击，后面的角度更新仍要执行。
+    if not too_close(owner) then
+        for k = 1, 5 do
+            EX.set_record(owner, 4, EX.K.SND, 0, 25, -1, -1, -1)
+            EX.set_record(owner, 0, EX.K.WAIT, 0, C36_WAIT, -1, -1, -1)
+            EX.set_record(owner, 1, EX.K.POLAR, 0, 1, -1, C36_DS, -C36_TURN[k])
+            EX.set_record(owner, 2, EX.K.WAIT, 0, C36_WAIT, -1, -1, -1)
+            EX.set_record(owner, 3, EX.K.POLAR, 0, 1, -1, C36_DS, -C36_TURN[k])
+            EX.shoot(owner, owner.x, owner.y, {
+                op = 99, type = 11, color = EX.color(C36_COLOR[k]),
+                count1 = C36_SHOOT_N, count2 = 1,
+                speed1 = C36_SPD, speed2 = C36_SPD2,
+                angle = -c.ang, step = 0,
+                flags = (k == 1) and C36_FLAGS_SND or C36_FLAGS,
+            })
+        end
     end
+    c.ang = wrap_pi(c.ang + C36_SEG_DANG[c.seg])
 end
 
 local function card_init(owner)

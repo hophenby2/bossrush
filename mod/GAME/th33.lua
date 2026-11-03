@@ -2901,11 +2901,14 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
     local function cloud_frame(unit)
         if unit.wait_left == nil then
             unit.wait_left = CLOUD_WAIT
+            unit.wait_active = true
             unit.accel_left = CLOUD_ACCEL_FRAMES
-            unit.cur_v = 0
+            unit.cur_v = CLOUD_SPEED0
         end
-        if unit.wait_left > 0 then
-            unit.wait_left = unit.wait_left - 1
+        if unit.wait_active then
+            -- BulletRuntime先Advance再更新WAIT；归零后的清位帧仍保持初速。
+            if unit.wait_left <= 0 then unit.wait_active = nil
+            else unit.wait_left = unit.wait_left - 1 end
             ---悬停期间原作也是拿 speed = 0.02 在飘（不是 0）：60 帧只挪 1.2 px，
             ---肉眼看不见，但照抄就是了。
             object.SetV(unit, CLOUD_SPEED0, unit.rot, true)
@@ -2915,6 +2918,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
             return
         end
         unit.accel_left = unit.accel_left - 1
+        -- VEC累加到出生速度上，不能在衔接时丢弃原来的0.02。
         unit.cur_v = unit.cur_v + CLOUD_ACCEL
         object.SetV(unit, unit.cur_v, unit.rot, true)
     end
