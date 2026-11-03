@@ -159,6 +159,14 @@ LUA_REGISTER_FUNC_DEF(lstg, ClearZBuffer) {
     return 0;
 }
 
+// 改相机或同一种雾的参数前提交旧批次，下一批重新取得uniform快照。
+LUA_REGISTER_FUNC_DEF(lstg, AndroidFlushRenderState) {
+    auto* renderer = lstg::XRenderer::getInstance();
+    renderer->flushTriangles();
+    renderer->setProgramStateDirty();
+    return 0;
+}
+
 LUA_REGISTER_FUNC_DEF(lstg, SetZBufferEnable) {
     const bool enabled = lua_isboolean(L, 1) ? lua_toboolean(L, 1) : luaL_checkinteger(L, 1) != 0;
     auto* renderer = cocos2d::Director::getInstance()->getRenderer();

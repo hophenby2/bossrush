@@ -3,8 +3,8 @@ attribute vec4 a_position;
 attribute vec4 a_color;
 attribute vec2 a_texCoord;
 uniform mat4 u_MVPMatrix;
-varying mediump vec2 v_texCoord;
-varying lowp vec4 v_fragmentColor;
+varying highp vec2 v_texCoord;
+varying highp vec4 v_fragmentColor;
 void main() {
     gl_Position = u_MVPMatrix * a_position;
     v_texCoord = a_texCoord;

@@ -47,30 +47,47 @@ def copy_tree(source, target):
 
 def prepare_shaders(target):
     # GFX 通过 glslang 生成 SPIR-V，再转换为设备的 GLES shader；必须显式声明位置和 uniform 块。
-    for source in (ROOT / 'shaders').glob('*.frag'):
+    for source in target.glob('*.frag'):
         text = source.read_text()
         uniforms = re.findall(r'^uniform vec4 (\w+);$', text, re.MULTILINE)
         text = re.sub(r'^uniform vec4 \w+;\n', '', text, flags=re.MULTILINE)
         text = text.replace('uniform sampler2D u_texture;', 'layout(binding=2) uniform sampler2D u_texture;')
-        text = text.replace('varying vec2 v_texCoord;', 'layout(location=1) in mediump vec2 v_texCoord;')
+        text = text.replace('varying vec2 v_texCoord;', 'layout(location=1) in highp vec2 v_texCoord;')
         text = text.replace('gl_FragColor', 'cc_FragColor').replace('texture2D(', 'texture(')
         block = 'layout(std140, binding=1) uniform FSBlock {\n' + ''.join(
             '    vec4 ' + name + ';\n' for name in uniforms) + '};\n' if uniforms else ''
-        prefix = 'precision mediump float;\nlayout(location=0) out vec4 cc_FragColor;\n' + block
+        prefix = 'precision highp float;\nlayout(location=0) out vec4 cc_FragColor;\n' + block
         (target / source.name).write_text(prefix + text)
     (target / 'common.vert').write_text('''precision highp float;
 layout(location=0) in vec4 a_position;
 layout(location=1) in vec4 a_color;
 layout(location=2) in vec2 a_texCoord;
 layout(std140, binding=0) uniform VSBlock { mat4 u_MVPMatrix; };
-layout(location=0) out lowp vec4 v_fragmentColor;
-layout(location=1) out mediump vec2 v_texCoord;
+layout(location=0) out highp vec4 v_fragmentColor;
+layout(location=1) out highp vec2 v_texCoord;
 void main() {
     gl_Position = u_MVPMatrix * a_position;
     v_texCoord = a_texCoord;
     v_fragmentColor = a_color;
 }
 ''')
+
+
+def prepare_posteffect_shaders(target):
+    """两个后端都先注入Sub采样口径，再由Android转换GLSL版本。"""
+    helper = (target / 'sampling.glsl').read_text()
+    for path in target.glob('*.frag'):
+        text = path.read_text()
+        text = text.replace('precision highp float;', 'precision highp float;\nprecision highp sampler2D;')
+        # 此时只替换效果正文；公共采样函数保留真正的纹理读取。
+        text = text.replace('texture2D(u_texture,', 'subSampleScreen(')
+        if 'uniform vec4 SCREENSIZE;' not in text:
+            text = text.replace('uniform sampler2D u_texture;',
+                                'uniform sampler2D u_texture;\nuniform vec4 SCREENSIZE;')
+        anchor = 'varying vec2 v_texCoord;'
+        if anchor not in text:
+            raise RuntimeError(f'后处理shader上下文不匹配：{path.name}')
+        path.write_text(text.replace(anchor, anchor + '\n' + helper))
 
 
 def prepare_engine(archive=None):
@@ -94,27 +111,30 @@ def prepare_engine(archive=None):
 
 
 def prepare_sprite_shaders(target):
-    """补齐Sub的加色混合语义；Mac Metal和Android GLES使用同一份资源修正。"""
-    for filename in ('ColorAdd.frag', 'ColorAdd_Fog.frag'):
+    """Sub v0.21.129的顶点色与逐像素雾效；两平台共用相同公式。"""
+    path = target / 'ColorAdd.frag'
+    text = path.read_text()
+    for output in ('cc_FragColor', 'gl_FragColor'):
+        before = f'{output}.rgb = v_fragmentColor.rgb + tex.rgb;'
+        after = f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));'
+        if after in text:
+            continue
+        if text.count(before) != 1:
+            raise RuntimeError(f'加色shader上下文不匹配：ColorAdd.frag/{output}')
+        text = text.replace(before, after)
+    path.write_text(text)
+    for filename in ('ColorAdd.frag', 'ColorMulti.frag', 'Common.vert'):
         path = target / filename
-        text = path.read_text()
-        for output, sample in [('cc_FragColor', 'texture'), ('gl_FragColor', 'texture2D')]:
-            if filename == 'ColorAdd_Fog.frag':
-                before = (f'    {output} = v_fragmentColor + {sample}(u_texture, v_texCoord);\n'
-                          f'\t{output}.w = {output}.w - v_fragmentColor.w;')
-                after = (f'    vec4 tex = {sample}(u_texture, v_texCoord);\n'
-                         f'    {output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));\n'
-                         f'    {output}.a = tex.a * v_fragmentColor.a;')
-            else:
-                before = f'{output}.rgb = v_fragmentColor.rgb + tex.rgb;'
-                after = f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));'
-            # 明确检查固定引擎上下文；同时允许对已更新的资源重复执行。
-            if after in text:
-                continue
-            if text.count(before) != 1:
-                raise RuntimeError(f'加色shader上下文不匹配：{filename}/{output}')
-            text = text.replace(before, after)
+        text = re.sub(r'\b(?:lowp|mediump)\b', 'highp', path.read_text())
+        if filename.endswith('.frag'):
+            text = text.replace('precision highp float;', 'precision highp float;\nprecision highp sampler2D;')
         path.write_text(text)
+    vertex = (ROOT / 'sprite_shaders' / 'fog.vert').read_text()
+    fragment = (ROOT / 'sprite_shaders' / 'fog.frag').read_text()
+    for filename in ('Fog_Liner.vert', 'Fog_Exp1.vert', 'Fog_Exp2.vert'):
+        (target / filename).write_text(vertex)
+    (target / 'ColorMulti_Fog.frag').write_text(fragment)
+    (target / 'ColorAdd_Fog.frag').write_text(fragment.replace('#define SUB_COLOR_ADD 0', '#define SUB_COLOR_ADD 1'))
 
 
 def prepare_assets():
@@ -172,6 +192,11 @@ def prepare_assets():
         for p, size in sorted(dimensions.items())) + '}\n')
     copy_tree(ROOT / 'lua', destination / 'android')
     copy_tree(ROOT / 'shaders', destination / 'android' / 'shaders')
+    expected_shaders = {p.stem for p in (GAME / 'shader').glob('*.hlsl')}
+    ported_shaders = {p.stem for p in (destination / 'android' / 'shaders').glob('*.frag')}
+    if expected_shaders != ported_shaders:
+        raise RuntimeError(f'后处理移植清单未对齐：缺少{expected_shaders-ported_shaders}，多出{ported_shaders-expected_shaders}')
+    prepare_posteffect_shaders(destination / 'android' / 'shaders')
     prepare_shaders(destination / 'android' / 'shaders')
     modes = (ENGINE / 'src/core/corefunc.lua').read_text()
     modes = modes.split('local shader_path = ', 1)[1].split('local _capture = {}', 1)[0]

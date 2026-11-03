@@ -17,18 +17,18 @@ function Q.run()
                     for _, blend in ipairs({'add+alpha', 'add+add'}) do
                         for _, alpha in ipairs({0, 64, 128, 255}) do
                             local x = 16 + index * 29
+                            -- 当前雾在世界坐标逐像素求距；样本中心距相机10单位。
+                            SetPerspective(x+12.5,20,10.5,x+12.5,20,0.5,0,1,0,1,1,0.1,100)
+                            SetViewMode('ui')
                             SetFog()
                             SetImageState('white', '', Color(255, 20, 40, 60))
                             RenderRect('white', x, x + 25, 8, 32)
                             local color = Color(255, 32, 64, 96)
-                            -- w=1；加色四边形靠近UI远裁面，使GL与Metal的|clip.z|也接近1。
-                            -- 三种雾模型均取约50%的雾化比例，避免后端的深度区间转换影响样本。
-                            if fog == 1 then SetFog(0, 2, color)
-                            elseif fog == 2 then SetFog(-1, math.log(2), color)
-                            elseif fog == 3 then SetFog(-2, math.sqrt(math.log(2)), color) end
+                            if fog == 1 then SetFog(0, 20, color)
+                            elseif fog == 2 then SetFog(-1, math.log(2)/10, color)
+                            elseif fog == 3 then SetFog(-2, math.sqrt(math.log(2))/10, color) end
                             SetImageState('white', blend, Color(alpha, 64, 128, 192))
-                            Render4V('white', x, 32, -1023, x + 25, 32, -1023,
-                                x + 25, 8, -1023, x, 8, -1023)
+                            RenderRect('white', x, x + 25, 8, 32)
                             index = index + 1
                         end
                     end

@@ -149,6 +149,11 @@ replace('frameworks/Classes/LabelPool.cpp', '''			auto ret = it->second.back();
             }
             it->second.eraseObject(ret);''')
 replace('frameworks/LSTG/Renderer.cpp', '#include "Renderer.h"', '#include "Renderer.h"\n#include "compat.h"')
+replace('frameworks/LSTG/RenderMode.cpp',
+        'desc.destinationAlphaBlendFactor = backend::BlendFactor::ONE_MINUS_SRC_ALPHA;',
+        '''desc.destinationAlphaBlendFactor =
+        funcSrc == backend::BlendFactor::ONE && funcDst == backend::BlendFactor::ZERO
+            ? backend::BlendFactor::ZERO : backend::BlendFactor::ONE_MINUS_SRC_ALPHA;''')
 replace('frameworks/LSTG/Renderer.cpp', 'auto label = labelPool.getWithResFont(p, str);',
         '''const auto textT0 = androidProfileText ? androidNow() : 0.;
     auto label = labelPool.getWithResFont(p, str);

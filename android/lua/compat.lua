@@ -119,12 +119,33 @@ expose('LoadFX', function(name, path)
     assert(stem, '未适配的 shader：' .. path)
     return native.LoadFX(name, 'game/android/shaders/' .. stem .. '.frag', 'game/android/shaders/common.vert')
 end)
-expose('PostEffect', function(fx, target, sampler, blend, constants)
+local postEffectModes={}
+local function postEffectBlend(blend)
+    if type(blend)~='string' then return blend end
+    if postEffectModes[blend] then return postEffectModes[blend] end
+    local original=assert(lstg.RenderMode:getByName(blend),blend)
+    local desc=original:getBlendDescriptor()
+    -- Sub后处理直接使用HLSL输出；源RGB系数为ONE，不能再乘一次输出alpha。
+    local mode=lstg.RenderMode:create('sub:postfx:'..blend,desc.rgbBlendOperation,
+        ccb.BlendFactor.ONE,desc.destinationRGBBlendFactor,original:getProgram())
+    postEffectModes[blend]=assert(mode)
+    return mode
+end
+expose('PostEffect', function(fx, target, sampler, blend, constants, textures)
     local effect = assert(FindResFX(fx), fx)
-    for i, value in ipairs(constants or {}) do
+    sampler = sampler or 6
+    assert(type(sampler)=='number' and sampler>=0 and sampler<=7 and sampler%1==0, '无效后处理采样器')
+    effect:setVec4('POSTFX_SAMPLER', {x=sampler,y=0,z=0,w=0})
+    -- Sub每次提交8个清零后的常量槽；少传参数时不能沿用上一帧的值。
+    for i = 1, 8 do
+        local value = constants and constants[i] or {}
         effect:setVec4('user_data_' .. (i - 1), { x = value[1] or 0, y = value[2] or 0, z = value[3] or 0, w = value[4] or 0 })
     end
-    return native.PostEffect(target, fx, blend, {})
+    for i, value in ipairs(textures or {}) do
+        if i>4 then break end
+        effect:setTexture('texture'..(i-1), assert(FindTexture2D(value[1]), value[1]), i-1)
+    end
+    return native.PostEffect(target, fx, postEffectBlend(blend or ''), {})
 end)
 local textureVertices = { {}, {}, {}, {} }
 expose('RenderTexture', function(name, blend, ...)
@@ -166,9 +187,35 @@ expose('EnumResolutions', function() return { { 960, 540 } } end)
 expose('EnumGPUs', function() return { 'Android OpenGL ES' } end)
 expose('GetVersionName', function() return 'Boss Rush HD Android / LuaSTG-x 20260913' end)
 expose('GetVersionNumber', function() return 0x1000 end)
-expose('SetFog', function(...)
-    native.SetFog(...)
+local fogCamera={x=0,y=0,z=0,w=0}
+local fogMode,fogNear,fogFar,fogColor=0,0,0,Color(0xFF000000)
+local fogBlends={'','add+add','add+alpha','add+sub','add+rev','mul+add','mul+alpha','mul+sub','mul+rev'}
+local function syncFogCamera()
+    if fogMode==0 then return end
+    local function sync(mode)
+        mode:setVec4('u_fogCamera',fogCamera)
+        mode:setColor('u_fogColor',fogColor)
+        mode:setFloat('u_fogMode',fogMode)
+        mode:setFloat('u_fogStart',fogNear)
+        mode:setFloat('u_fogEnd',fogFar)
+        mode:setFloat('u_fogDensity',fogFar)
+    end
+    for _,name in ipairs(fogBlends) do sync(assert(lstg.RenderMode:getByName(name))) end
+    sync(lstg.RenderMode:getDefault())
+end
+expose('SetPerspective', function(x,y,z,...)
+    if native.AndroidFlushRenderState then native.AndroidFlushRenderState() end
+    native.SetPerspective(x,y,z,...)
+    fogCamera={x=x,y=y,z=z,w=0}
+    syncFogCamera()
+end)
+expose('SetFog', function(near,far,color)
+    if native.AndroidFlushRenderState then native.AndroidFlushRenderState() end
+    native.SetFog(near,far,color)
+    fogNear,fogFar,fogColor=near or 0,far or 0,color or Color(0xFF000000)
+    fogMode=(not near or near==far) and 0 or near==-1 and 2 or near==-2 and 3 or 1
     lstg.RenderMode:getDefault():setProgram(lstg.RenderMode:getByName(''):getProgram())
+    syncFogCamera()
 end)
 expose('Log', function(_, text) return native.SystemLog(tostring(text)) end)
 expose('CacheTTFString', empty)

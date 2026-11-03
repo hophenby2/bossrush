@@ -66,16 +66,21 @@ with zipfile.ZipFile(apk) as archive:
                 header = struct.unpack_from('<IIQQQQQQ', data, offset+i*entry_size)
                 if header[0] == 1:
                     assert header[-1] >= 16384, f'自编译库未按 16KB 对齐：{name}'
-    for shader in ['alpha', 'screen_save', 'gray', 'color_set', 'gaussian_blur', 'texture_BoxBlur49']:
-        assert 'assets/game/android/shaders/' + shader + '.frag' in names
-    for shader in ('ColorAdd.frag', 'ColorAdd_Fog.frag'):
+    shaders = sorted(p.stem for p in (GAME / 'shader').glob('*.hlsl'))
+    for shader in shaders:
+        text = archive.read('assets/game/android/shaders/' + shader + '.frag').decode()
+        assert 'subSampleScreen' in text and 'POSTFX_SAMPLER' in text, '后处理未接Sub采样器：' + shader
+    text = archive.read('assets/src/shader/ColorAdd.frag').decode()
+    for output in ('cc_FragColor', 'gl_FragColor'):
+        assert f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));' in text, '加色未在混合前饱和'
+        assert f'{output}.a = tex.a * v_fragmentColor.a;' in text, '加色忽略顶点透明度'
+    for shader in ('ColorAdd_Fog.frag', 'ColorMulti_Fog.frag'):
         text = archive.read('assets/src/shader/' + shader).decode()
-        for output in ('cc_FragColor', 'gl_FragColor'):
-            assert f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));' in text, '加色未在混合前饱和：' + shader
-            assert f'{output}.a = tex.a * v_fragmentColor.a;' in text, '加色忽略顶点透明度：' + shader
+        assert 'distance(u_fogCamera.xyz, v_worldPosition)' in text, '雾效未按世界坐标逐像素计算：' + shader
+        assert 'u_fogColor.a*c.a' in text, '雾颜色透明度未参与混合：' + shader
     assert 'assets/licenses/SOURCE.txt' in names
 digest = hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest()
 saved = (ROOT / 'dist' / (apk.name+'.sha256')).read_text().split()[0]
 assert digest == saved, 'APK SHA-256 不匹配'
-print(f'APK 校验通过：{len(paths)} 个游戏资源，{wav_count} 个 WAV 无损重封装，{len(libraries)} 个 ARM64 库，6 个 shader；不含用户存档。')
+print(f'APK 校验通过：{len(paths)} 个游戏资源，{wav_count} 个 WAV 无损重封装，{len(libraries)} 个 ARM64 库，{len(shaders)} 个后处理shader；不含用户存档。')
 print(f'大小：{apk.stat().st_size/1024/1024:.1f} MiB；SHA-256：{digest}')

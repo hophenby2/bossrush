@@ -36,10 +36,10 @@ cbuffer user_data : register(b0)
 float4 multiply(float4 base, float4 blend, float powerRatio, float waveRadius_Circle)
 {
 	float4 c = float4(
-		base.r *(1.0f - (1.0f - blend.r) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f);
-		base.g *(1.0f - (1.0f - blend.g) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f);
-		base.b *(1.0f - (1.0f - blend.b) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f);
-		base.a; // 1.0-(1.0-base.a)*(1.0-blend.a);
+		base.r *(1.0f - (1.0f - blend.r) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f),
+		base.g *(1.0f - (1.0f - blend.g) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f),
+		base.b *(1.0f - (1.0f - blend.b) * 2.0f * powerRatio - waveRadius_Circle*powerRatio / 32.0f),
+		base.a // 1.0-(1.0-base.a)*(1.0-blend.a);
 	);
 	return c;
 }
@@ -59,6 +59,7 @@ struct PS_Output
 
 PS_Output main(PS_Input input)
 {
+	float2 uv = input.uv;
 	float2 xy = uv * screenSize;
 	if (xy.x < viewport.x || xy.x > viewport.z || xy.y < viewport.y || xy.y > viewport.w)
 	{
@@ -89,7 +90,8 @@ PS_Output main(PS_Input input)
 	float powerRatio2 = ( size2 - dist) / size2;
 	powerRatio2 = clamp(powerRatio2, 0.0f, 1.0f);
 	
-	float waveRadius_Circle = pow(powerRatio, 0.5f) * 1.2f + sin(angle2) + exp(pow((1.5f, dist) * 5.0f, 2.0f) * (-3.14f));
+	// 原逗号表达式(1.5f, dist)取右值dist，显式展开以便各后端一致处理。
+	float waveRadius_Circle = pow(powerRatio, 0.5f) * 1.2f + sin(angle2) + exp(pow(dist * 5.0f, 2.0f) * (-3.14f));
 	
 	float waveRadius = size * waveRadius_Circle;
 	

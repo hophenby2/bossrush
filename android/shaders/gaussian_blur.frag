@@ -1,5 +1,5 @@
 // 原版此 shader 实际执行矩形摄影区域遮罩，保留该行为。
-precision mediump float;
+precision highp float;
 uniform sampler2D u_texture;
 uniform vec4 SCREENSIZE;
 uniform vec4 user_data_1;

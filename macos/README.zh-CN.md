@@ -82,3 +82,5 @@ python3 macos/tests/benchmark.py --app 'macos/dist/Boss Rush HD.app' --output ma
 Mac 与 Android 共用 `android/lua/main.lua`、`compat.lua`、`platform.lua` 等移植逻辑；`macos/lua/` 提供窗口、键鼠输入和私有诊断差异。Mac 精确续玩包含平台、LuaJIT 版本、入口和原生适配源码指纹。
 
 发布构建可用 `--game-root /absolute/source/snapshot` 指定已提交的游戏内容快照，避免混入并行修改。
+
+Mac／安卓共用shader的完整对应、雾效、采样和混合口径见 [shader对齐说明](../android/SHADER_ALIGNMENT.zh-CN.md)。涉及新增原生接口的对齐提交首次需要完整构建。
