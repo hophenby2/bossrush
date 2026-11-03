@@ -9342,9 +9342,10 @@ local function TH34_add_stage56_boss()
     ---符卡登记的子机（卡片结束时统一清场）；fn(self, a) 是协程体。
     local spell_live
     local PSCRIPT = Class(enemy, {
-        init = function(self, x, y, fn, a, source)
+        init = function(self, x, y, fn, a, source, ecl_first)
             enemy.init(self, 12, 1, false, true, true)
             self.x, self.y = x, y
+            self.th07_ecl_first = ecl_first
             ---★ 原作这些「会飞出屏幕的发射体」（sub62 炮台、sub126 幽灵、sub130 音符串…）
             ---都带 `SET_HAS_NO_COLLISION 1`。TH07 的 OOB 回收要求 `hasNoCollision == 0`
             ---（EnemyManager.cpp:700-722），所以它们**飞出屏外也不会被回收**、照常发弹。
@@ -9362,6 +9363,8 @@ local function TH34_add_stage56_boss()
                 fn(self, a)
                 object.RawDel(self)
             end)
+            -- 已逐条核对的POLAR子机：出生先执行ECL(0)，运动积分留到frame。
+            if ecl_first then task.Do(self) end
         end,
         ---子机自己的协程挂在**子机**名下；THlib 的 task 表在对象上，对象一删协程就没了。
         ---桩件的对象表不清 task，所以要显式清一次，否则「卡片结束时轮子/魂还在打」
@@ -9382,18 +9385,22 @@ local function TH34_add_stage56_boss()
             if self._original_source then
                 OriginalStageVisual.source_frame(self,self.timer-(self._original_visual_origin or 0))
             end
+            if self.th07_ecl_first then
+                enemy.frame(self)
+                if self.status=='del' or self.status=='kill' then return end
+            end
             local orbit = self.th07_orbit
             if orbit then
                 orbit.a, orbit.r = orbit.a+orbit.av, orbit.r+orbit.rv
                 self.x, self.y = math.cos(orbit.a)*orbit.r, 64-math.sin(orbit.a)*orbit.r
             else bstep(self) end
-            enemy.frame(self)
+            if not self.th07_ecl_first then enemy.frame(self) end
             NativeVisual.record_source(self)
         end,
         render = NativeVisual.render_source,
     })
-    local function pspawn(x, y, fn, a, source)
-        local o = New(PSCRIPT, x, y, fn, a, source)
+    local function pspawn(x, y, fn, a, source, ecl_first)
+        local o = New(PSCRIPT, x, y, fn, a, source, ecl_first)
         if spell_live then spell_live[#spell_live + 1] = o end
         return o
     end
@@ -11696,7 +11703,8 @@ local function TH34_add_stage56_boss()
                 local a0 = aimth(self)
                 for i = 1, 8 do
                     local a, col = a0 + ANG[i], COL[i]
-                    pspawn(self.x, self.y, function(o) spirit(o, a, col) end)
+                    pspawn(self.x, self.y, function(o) spirit(o, a, col) end,
+                        nil, 'ecldata5:76', true)
                 end
                 ---原作 L 的最后一段：3×2 自机狙。
                 shoot6(self, 0, 0, 64, 10, 0, 3, 2, 3.5, 1, 0, 0.628319, nil, true)

@@ -13028,6 +13028,11 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
                     object.RawDel(self)
                 end
             end)
+            -- SpawnWithContext出生时先RunEcl(0)，但位置要等敌机更新阶段才积分。
+            -- 先推进一次脚本，再撤回协程中代做的位移；首个frame从t=1继续。
+            local birth_x,birth_y=self.x,self.y
+            task.Do(self)
+            self.x,self.y=birth_x,birth_y
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程
@@ -13255,6 +13260,11 @@ do  -- 26 アリス 赤符「ドールミラセティ」（ecl6_d，组 20a 第 
                     object.RawDel(self)
                 end
             end)
+            -- SpawnWithContext出生时先RunEcl(0)，但位置要等敌机更新阶段才积分。
+            -- 先推进一次脚本，再撤回协程中代做的位移；首个frame从t=1继续。
+            local birth_x,birth_y=self.x,self.y
+            task.Do(self)
+            self.x,self.y=birth_x,birth_y
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动环绕 / 发弹 / 退场协程

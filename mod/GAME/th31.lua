@@ -24234,9 +24234,8 @@ end
 ---      Sub85（tick 4531..）：与 Sub80 同骨架（每 20 tick 两圈、6 → 30 钉住），只是
 ---              VEC(60, 0.026666667) / VEC(90, 0.028333334)。
 ---  ★ 时间轴：context time 是 ZunTimer（每真帧 += framerateMultiplier，Supervisor.cpp:1165-
----    1185）⇒ tick 1578 之后「两真帧一 tick」；但 `SET_SECONDARY_TIME` 的等待与插值槽
----    （ins_64）都是**每真帧记 1**（EclRun.cpp:60-66、EclRun.cpp:135-145），不乘 fm；
----    出屏宽限是i32真帧计数；弹的变换计时和ANM使用ZunTimer，按fm累加
+---    1185）⇒ tick1578后两真帧一tick；SET_SECONDARY_TIME和出屏宽限是i32真帧计数。
+---    MOVE_TO的movementTimer、光柱timer、弹体变换计时和ANM均用ZunTimer，按fm推进
 ---    （Supervisor.hpp的ZunTimer及Supervisor.cpp:1187-1232）。
 ---  ★ 同屏上限：全游戏共用 1536 个弹槽（BulletManager.hpp:455），池满整波不生、波中间
 ---    生不出来就丢掉这一波剩下的（BulletManager.cpp:686-712）—— 由 EX 引擎照抄。
@@ -24510,7 +24509,7 @@ lw146_laser = Class(laser, {
     frame = function(self)
         local t = self.lw146_timer
         if self.lw146_state == 1 then
-            if LASER_START_TIME - LASER_RAMP < t then
+            if LASER_START_TIME - LASER_RAMP < math.floor(t) then
                 self.w = t * LASER_W / LASER_START_TIME
             else
                 self.w = LASER_W0
@@ -24532,9 +24531,7 @@ lw146_laser = Class(laser, {
             end
         end
         if self.lw146_state == 3 then
-            ---消散段：原作把那 10 帧的判定盒**长度**改写成 currentWidth/2、盒心却还钉在
-            ---光段中心（BulletManager.cpp:1121-1130）⇒ 只剩中间一小块。跟卡 209 一样按
-            ---「消散段没有判定」处理，只留宽度收细的观感。
+            -- 原生几何入口保留消散时中心短段的判定，绘制宽度按ZunTimer浮点值收细。
             self.colli = false
             self.w = LASER_W - t * LASER_W / LASER_DESPAWN
             if t >= LASER_DESPAWN then
@@ -24542,7 +24539,7 @@ lw146_laser = Class(laser, {
                 return
             end
         end
-        self.lw146_timer = t + 1
+        self.lw146_timer = t + EX.fm
         OriginalBulletVisual.native_laser(self,self.lw146_state,t,2*LASER_W,LASER_DESPAWN)
         laser.frame(self)
     end,
@@ -24562,10 +24559,11 @@ lw146_laser = Class(laser, {
 ---  把方法抄到实例上（`self.other_frame = grazer.other_frame`）。
 ---  ⚠ 桩件 tools/check_stage.lua 的 New 用 `__index = class`（宽松版），**测不出**这个错。
 local function web_step(self)
-    ---EnemyManager.cpp:80-121 的 INTERPOLATED 分支（缓动 0 = 线性）：每**真帧**走 1/16。
-    self.w146_rt = self.w146_rt + 1
-    local u = self.w146_rt / NODE_STEPS
-    if u > 1 then u = 1 end
+    if not self.w146_moving then return end
+    -- movementTimer是ZunTimer。半速时每次减0.5，整数current到0时直接吸附终点。
+    self.w146_rt = self.w146_rt - EX.fm
+    local u = 1 - self.w146_rt / NODE_STEPS
+    if math.floor(self.w146_rt) <= 0 then u=1;self.w146_moving=false end
     self.x = self.w146_x0 + self.w146_dx * u
     self.y = self.w146_y0 + self.w146_dy * u
 end
@@ -24616,7 +24614,8 @@ lw146_web = Class(object, {
         self.w146_dx = math.cos(dir) * NODE_SEG
         self.w146_dy = math.sin(dir) * NODE_SEG
         self.w146_t = 0
-        self.w146_rt = 0
+        self.w146_rt = NODE_STEPS
+        self.w146_moving = true
         self.w146_acc = 0
         EX.set_record(self, 0, EX.K.DESPAWN, 0, -1, -1, -1, -1)
         ---出生帧：RunEcl（tick 0）先跑，位移后跑 —— 这里手动补一次位移（见下）。

@@ -712,6 +712,8 @@ class["原作直线激光"] = Class(laser, {
         l.l1,l.l2,l.l3,l.w,l.alpha,l.colli=0,len,0,l.th06_width/2,1,hit
         laser.frame(l)
         l.th06_state,l.th06_timer=state,t+1
+        -- 原作独立于duration按尾偏移回收；Cirno的9999帧移动光柱不能一直占64槽。
+        if l.th06_startoff>=640 then retire(l) end
     end,
     render=function(l)
         local x,y,len,w,alpha=l.x,l.y,l.l2,l.w,l.alpha

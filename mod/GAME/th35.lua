@@ -1045,30 +1045,49 @@ end
 function class.t10_motion_quantize(x)
     return class.t10_motion_f32(math.floor(class.t10_motion_f32(class.t10_motion_f32(x) * 100)) * class.t10_motion_f32(0.01))
 end
+function class.t10_motion_angle(a)
+    -- EnemyWrapAngle使用单精度π/2π；double的π会把原作+π误判成越界。
+    local pi,tau=3.1415927410125732,6.2831854820251465
+    a=class.t10_motion_f32(a)
+    local n=0
+    while a>pi do a=class.t10_motion_f32(a-tau);n=n+1;if n>33 then break end end
+    while a< -pi do a=class.t10_motion_f32(a+tau);n=n+1;if n>33 then break end end
+    return a
+end
 
 local function ch_step(ch)
     if ch.scal then
         local s = ch.scal
-        local n = (s.dur <= 0) and 1 or math.min(1, s.t / s.dur)
-        n = class.t10_motion_ease(s.mode or 0, n)
-        ---%s.a1 存在时角也一起插值（moveVelTime：原作对「角, 速度」两条都插值）
-        if s.a1 ~= nil then ch.ang = s.a0 + (s.a1 - s.a0) * n else ch.ang = s.a0 end
-        ch.spd = s.s0 + (s.s1 - s.s0) * n
-        s.t = s.t + 1
-        if s.t > s.dur then ch.scal = nil end
+        -- Evaluate先Tick再取值；安装指令在ECL中执行，下一次运动更新从1/dur起算。
+        if s.dur > 0 then s.t = s.t + 1 end
+        if s.mode == 7 then
+            -- ADD把final当每次增量。负duration持续累加；正duration的结束帧不再加一次。
+            if s.dur > 0 and s.t >= s.dur then ch.scal = nil
+            else
+                s.a0=class.t10_motion_f32(s.a0+s.a1)
+                s.s0=class.t10_motion_f32(s.s0+s.s1)
+            end
+            ch.ang, ch.spd = class.t10_motion_angle(s.a0), s.s0
+        else
+            local n = s.dur > 0 and math.min(1, s.t / s.dur) or 0
+            n = class.t10_motion_ease(s.mode or 0, n)
+            if s.a1 ~= nil then ch.ang = class.t10_motion_angle(s.a0 + (s.a1 - s.a0) * n) else ch.ang = s.a0 end
+            ch.spd = s.s0 + (s.s1 - s.s0) * n
+            if s.dur > 0 and s.t >= s.dur then ch.scal = nil end
+        end
     end
     if ch.interp then
         local it = ch.interp
+        it.t = it.t + 1
         local n = (it.dur <= 0) and 1 or math.min(1, it.t / it.dur)
         n = class.t10_motion_ease(it.mode or 0, n)
         local tx = it.x0 + (it.x1 - it.x0) * n
         local ty = it.y0 + (it.y1 - it.y0) * n
         ch.vx, ch.vy = tx - ch.x, ty - ch.y
-        it.t = it.t + 1
-        if it.t > it.dur then ch.interp = nil end
+        if it.t >= it.dur then ch.interp = nil end
     elseif ch.circle then
         ch.r = ch.r + ch.rv
-        ch.ang = t10_wrap(ch.ang + ch.spd)
+        ch.ang = class.t10_motion_angle(ch.ang + ch.spd)
     else
         ch.vx, ch.vy = math.cos(ch.ang) * ch.spd, math.sin(ch.ang) * ch.spd
     end
@@ -1150,7 +1169,7 @@ local function m_circle(o, w, a, av, r, rv)
     local ch = M(o, w)
     if not ch.circle then ch.vx, ch.vy = ch.x, ch.y end
     ch.circle = true
-    if a > -999999 then ch.ang = t10_wrap(a) end
+    if a > -999999 then ch.ang = class.t10_motion_angle(a) end
     if av > -999999 then ch.spd = av end
     if r > -999999 then ch.r = r end
     if rv > -999999 then ch.rv = rv end
@@ -1161,7 +1180,7 @@ end
 ---参数 > -999999 才写入，否则保持原值（原作 -999999 表示「不改」）。
 local function m_vel(o, w, ang, spd)
     local ch = M(o, w)
-    if ang > -999999 then ch.ang = ang end
+    if ang > -999999 then ch.ang = class.t10_motion_angle(ang) end
     if spd > -999999 then ch.spd = spd end
     ch.circle = false
 end
@@ -1170,17 +1189,27 @@ end
 ---（EnemyEclDispatcher.cpp:1735；角差先折进 ±π，缓动由同一组原作插值器求值）。
 local function m_vel_time(o, w, dur, mode, ang, spd)
     local ch = M(o, w)
+    ang,spd=class.t10_motion_f32(ang),class.t10_motion_f32(spd)
+    if mode == 7 then
+        ch.scal = { t=0, dur=dur, mode=7, a0=ch.ang, s0=ch.spd,
+            a1=ang>-999999 and ang or 0, s1=spd>-999999 and spd or 0 }
+        if dur == 0 then ch.scal = nil end
+        ch.circle = false
+        return
+    end
     local a0, a1 = ch.ang, ch.ang
     if ang > -999999 then
         a1 = ang
-        if math.abs(a0 - a1) >= PI then
-            if a1 <= a0 then a1 = a1 + 2.0 * PI else a0 = a0 + 2.0 * PI end
+        local pi,tau=class.t10_motion_f32(PI),class.t10_motion_f32(2*PI)
+        if math.abs(a0 - a1) >= pi then
+            if a1 <= a0 then a1 = class.t10_motion_f32(a1+tau)
+            else a0 = class.t10_motion_f32(a0+tau) end
         end
     end
     local s0 = ch.spd
     local s1 = (spd > -999999) and spd or ch.spd
     ch.scal = { t = 0, dur = dur, mode = mode, a0 = a0, a1 = a1, s0 = s0, s1 = s1 }
-    if dur <= 0 then ch.scal = nil end
+    if dur == 0 then ch.scal = nil end
     ch.circle = false
 end
 
@@ -5262,7 +5291,8 @@ function t10mid.vel(f, ang, spd)
     m_vel(f, "off", ang, spd)
 end
 function t10mid.vel_time(f, dur, mode, ang, spd)
-    if f.t10_mir and ang > -999999 then ang = t10mid.mirror(ang) end
+    -- 原作ADD分支不镜像角增量，0不能被镜像成π。
+    if mode~=7 and f.t10_mir and ang > -999999 then ang = t10mid.mirror(ang) end
     m_vel_time(f, "off", dur, mode, ang, spd)
 end
 

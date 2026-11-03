@@ -1,0 +1,1072 @@
+{
+  "date": "2026-11-03",
+  "baseline_commit": "a3ff37f",
+  "method": "只读取原始ECL、复原源码与Lua/引擎源码并复核差异；未执行游戏、Lua探针、模拟、测试、编译或打包。",
+  "scope": "本批使魔运动、发弹节奏与激光的7类具体修正，直接列出8个条目。共用运动入口还有其他调用者，本报告不把它们自动记为已逐帧验收，也不声称其他全部ECL行为已对齐。",
+  "affected_cards": [
+    [
+      31,
+      408
+    ],
+    [
+      32,
+      3909
+    ],
+    [
+      33,
+      521
+    ],
+    [
+      33,
+      522
+    ],
+    [
+      34,
+      4410
+    ],
+    [
+      35,
+      3607
+    ],
+    [
+      35,
+      3637
+    ],
+    [
+      35,
+      3680
+    ]
+  ],
+  "fixes": [
+    {
+      "key": "M01",
+      "cards": [
+        [
+          35,
+          3607
+        ],
+        [
+          35,
+          3637
+        ]
+      ],
+      "names": [
+        "「無双風神」",
+        "秘術「一子相伝の弾幕」"
+      ],
+      "problem": "位置/极坐标插值用旧timer计算0/duration，并到duration+1才释放；使魔多停一次更新，在旧位置发弹。",
+      "fix": "先推进timer再求值，正duration的第duration次更新写终点并结束；运动角按原作单精度π及共享循环上限归一化。",
+      "code": [
+        "mod/GAME/th35.lua::ch_step",
+        "class.t10_motion_angle",
+        "m_vel_time"
+      ],
+      "native": [
+        "th10/src/Enemy.cpp::EnemyScalarInterpolationView::Evaluate",
+        "th10/src/AnmManager.cpp::AnmVmFloat3InterpolationView::Evaluate",
+        "th10/src/EnemyEclDispatcher.cpp::EnemyInitialize*Interpolation/EnemyWrapAngle"
+      ],
+      "ecl": [
+        "10/stage04.ecl/BossCard3_at2/5e84",
+        "10/stage04.ecl/BossCard3_at3/64dc",
+        "10/stage05.ecl/MBossCard1Dummy/c918",
+        "10/stage05.ecl/MBossCard1Dummy/cae4",
+        "10/stage05.ecl/MBossCard1Dummy2/cf30",
+        "10/stage05.ecl/MBossCard1Dummy2/d0fc",
+        "10/stage05.ecl/MBossCard1Dummy3/d548",
+        "10/stage05.ecl/MBossCard1Dummy3/d7ac"
+      ]
+    },
+    {
+      "key": "M02",
+      "cards": [
+        [
+          35,
+          3680
+        ]
+      ],
+      "names": [
+        "一道中「初雪之妖精」"
+      ],
+      "problem": "ADD模式7被当作普通缓动；duration=-1的持续加速直接丢弃，duration=180的加速也未按每次增量运行。镜像包装还会把角增量0变成π。",
+      "fix": "单独实现ADD：负duration持续累加、正duration结束帧不额外累加，0时长不安装；保留原角/速增量与单精度存储，ADD不镜像角增量。",
+      "code": [
+        "mod/GAME/th35.lua::m_vel_time/ch_step",
+        "t10mid.vel_time"
+      ],
+      "native": [
+        "th10/src/Enemy.cpp::EnemyScalarInterpolationView::Evaluate",
+        "th10/src/EnemyEclDispatcher.cpp::INTERPOLATE_OFFSET_POLAR的mode7分支"
+      ],
+      "ecl": [
+        "10/stage01.ecl/Ecl_Girl00/50f4",
+        "10/stage01.ecl/Ecl_Girl00/510c",
+        "10/stage01.ecl/Ecl_Girl00/51a8",
+        "10/stage01.ecl/Ecl_Girl00/51c0",
+        "10/stage01.ecl/Girl00C/5fc0",
+        "10/stage01.ecl/Girl00C/5fd8",
+        "10/stage01.ecl/Girl00C/61f8",
+        "10/stage01.ecl/Girl00C/6210",
+        "10/stage01.ecl/Girl01/65b0",
+        "10/stage01.ecl/Girl01/65c8",
+        "10/stage01.ecl/Girl01/660c",
+        "10/stage01.ecl/Girl01/6624"
+      ]
+    },
+    {
+      "key": "M03",
+      "cards": [
+        [
+          31,
+          408
+        ]
+      ],
+      "names": [
+        "禁薬「蓬莱の薬」"
+      ],
+      "problem": "蛛网节点的16帧MOVE_TO按真帧移动，却按ECL时间等待16tick才生成下一段。半速后节点先走完、再停在终点，移动/火花/接续位置不一致。",
+      "fix": "movementTimer按EX.fm递减，以浮点余量计算进度、整数current<=0时吸附终点；保留原16、109及节点出生步骤。",
+      "code": [
+        "mod/GAME/th31.lua::web_step/lw146_web"
+      ],
+      "native": [
+        "th08/src/EnemyManager.hpp::Enemy::movementTimer为ZunTimer",
+        "th08/src/EnemyManager.cpp::UpdateMovement INTERPOLATED",
+        "th08/src/Supervisor.cpp::ZunTimer::Decrement"
+      ],
+      "ecl": [
+        "8/ecldata6.ecl/Sub79/b420"
+      ]
+    },
+    {
+      "key": "M04",
+      "cards": [
+        [
+          31,
+          408
+        ]
+      ],
+      "names": [
+        "禁薬「蓬莱の薬」"
+      ],
+      "problem": "同卡蛛网光段仍每真帧timer+1；原作光柱timer为ZunTimer，切半速后预热/维持/收束均应同步减速。",
+      "fix": "光段timer按EX.fm增加；预热闸门用整数current，粗细用浮点时间；保留原10/16/10三段参数与原生短段消散判定。",
+      "code": [
+        "mod/GAME/th31.lua::lw146_laser.frame"
+      ],
+      "native": [
+        "th08/src/BulletManager.hpp::Laser::timer",
+        "th08/src/BulletManager.cpp::OnUpdate激光分支"
+      ],
+      "ecl": [
+        "8/ecldata6.ecl/Sub79/b354",
+        "8/ecldata6.ecl/Sub84/c23c"
+      ]
+    },
+    {
+      "key": "M05",
+      "cards": [
+        [
+          32,
+          3909
+        ]
+      ],
+      "names": [
+        "琪露诺 非符二（Lunatic）"
+      ],
+      "problem": "速度4、初始endOffset0、长度192、持续9999的移动激光漏掉尾偏移>=640的独立回收，一直占据64槽中的位置。",
+      "fix": "先保留本帧原生激光更新，再在startOffset>=640时静默释放；此组未被其他偏移指令改写时，第208次更新满足回收条件。",
+      "code": [
+        "mod/GAME/th32.lua::原作直线激光.frame"
+      ],
+      "native": [
+        "th06/src/BulletManager.cpp::BulletManager_OnUpdate 激光startOffset>=640分支"
+      ],
+      "ecl": [
+        "6/ecldata2.ecl/Sub27/23a4",
+        "6/ecldata2.ecl/Sub27/23e4",
+        "6/ecldata2.ecl/Sub27/2424"
+      ]
+    },
+    {
+      "key": "M06",
+      "cards": [
+        [
+          33,
+          521
+        ],
+        [
+          33,
+          522
+        ]
+      ],
+      "names": [
+        "呪符「ストロードールカミカゼ」",
+        "赤符「ドールミラセティ」"
+      ],
+      "problem": "人偶未保留SpawnWithContext当场RunEcl(0)，上下文起点与290帧定时退场落后一帧；522的t=20首发也受影响，521首发仍由出框条件决定。",
+      "fix": "构造时推进一次脚本，把协程代做的位置积分撤回；首个frame从t=1继续，保留原发弹间隔、移动终点和290/60的寿命/退场参数。",
+      "code": [
+        "mod/GAME/th33.lua::s3c_doll.init",
+        "mod/GAME/th33.lua::s3d_doll.init"
+      ],
+      "native": [
+        "th095/src/EnemyManagerUpdate.cpp::PhotoEnemyManagerView::SpawnWithContext/OnUpdate",
+        "th095/src/ecl/EclRun.cpp::RunEcl末尾UpdateMovement",
+        "th095/src/EnemyManagerUpdate.cpp::PhotoEnemyMovementPhase"
+      ],
+      "ecl": [
+        "95/ecl6_c.ecl/Sub6/6fc",
+        "95/ecl6_c.ecl/Sub6/72c",
+        "95/ecl6_c.ecl/Sub6/754",
+        "95/ecl6_c.ecl/Sub6/768",
+        "95/ecl6_d.ecl/Sub6/6c0",
+        "95/ecl6_d.ecl/Sub6/6d4",
+        "95/ecl6_d.ecl/Sub6/6f0",
+        "95/ecl6_d.ecl/Sub7/774"
+      ]
+    },
+    {
+      "key": "M07",
+      "cards": [
+        [
+          34,
+          4410
+        ]
+      ],
+      "names": [
+        "天神剣「三魂七魄」"
+      ],
+      "problem": "Sub76魂发射体缺出生ECL(0)，且frame先bstep再发弹；原作出生先RunEcl，正常更新也先ECL发弹、再积分位置。",
+      "fix": "为这个已逐条核对的POLAR子机启用出生脚本及ECL优先顺序；加上终止后不再移动的守卫，保留8方向、每只45次发射、2/1层交替和4.2速度。",
+      "code": [
+        "mod/GAME/th34.lua::TH34_add_stage56_boss PSCRIPT/pspawn",
+        "mod/GAME/th34.lua::4410 spirit"
+      ],
+      "native": [
+        "th07/src/th07/EnemyManager.cpp::SpawnEnemyWithContext/OnUpdate",
+        "th07/src/th07/EclManager.cpp::MOVE_DIR_TIME duration<=0/POLAR"
+      ],
+      "ecl": [
+        "7/ecldata5.ecl/Sub76/a8fc",
+        "7/ecldata5.ecl/Sub76/a92c",
+        "7/ecldata5.ecl/Sub76/a954",
+        "7/ecldata5.ecl/Sub76/a968",
+        "7/ecldata5.ecl/Sub76/a97c",
+        "7/ecldata5.ecl/Sub76/a9b8",
+        "7/ecldata5.ecl/Sub76/aaac",
+        "7/ecldata5.ecl/Sub76/aad8",
+        "7/ecldata5.ecl/Sub76/aaf0"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "key": "10/stage04.ecl/BossCard3_at2/5e84",
+      "game": 10,
+      "file": "stage04.ecl",
+      "sub": "BossCard3_at2",
+      "address": "0x5e84",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 281,
+      "args": [
+        {
+          "variable": 4
+        },
+        0,
+        -192.0,
+        {
+          "variable": -1
+        }
+      ]
+    },
+    {
+      "key": "10/stage04.ecl/BossCard3_at3/64dc",
+      "game": 10,
+      "file": "stage04.ecl",
+      "sub": "BossCard3_at3",
+      "address": "0x64dc",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 281,
+      "args": [
+        {
+          "variable": 4
+        },
+        0,
+        192.0,
+        {
+          "variable": -1
+        }
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy/c918",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy",
+      "address": "0xc918",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 281,
+      "args": [
+        20,
+        0,
+        {
+          "variable": -1
+        },
+        {
+          "variable": -1
+        }
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy/cae4",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy",
+      "address": "0xcae4",
+      "time": 1,
+      "mask": "0xff",
+      "opcode": 401,
+      "args": [
+        0
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy2/cf30",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy2",
+      "address": "0xcf30",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 281,
+      "args": [
+        20,
+        0,
+        {
+          "variable": -1
+        },
+        {
+          "variable": -1
+        }
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy2/d0fc",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy2",
+      "address": "0xd0fc",
+      "time": 1,
+      "mask": "0xff",
+      "opcode": 401,
+      "args": [
+        0
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy3/d548",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy3",
+      "address": "0xd548",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 281,
+      "args": [
+        20,
+        0,
+        {
+          "variable": -1
+        },
+        {
+          "variable": -1
+        }
+      ]
+    },
+    {
+      "key": "10/stage05.ecl/MBossCard1Dummy3/d7ac",
+      "game": 10,
+      "file": "stage05.ecl",
+      "sub": "MBossCard1Dummy3",
+      "address": "0xd7ac",
+      "time": 1,
+      "mask": "0xff",
+      "opcode": 401,
+      "args": [
+        0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Ecl_Girl00/50f4",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Ecl_Girl00",
+      "address": "0x50f4",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        {
+          "variable": -9989
+        },
+        7.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Ecl_Girl00/510c",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Ecl_Girl00",
+      "address": "0x510c",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        60,
+        4,
+        {
+          "variable": -9989
+        },
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Ecl_Girl00/51a8",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Ecl_Girl00",
+      "address": "0x51a8",
+      "time": 280,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        {
+          "variable": -1
+        },
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Ecl_Girl00/51c0",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Ecl_Girl00",
+      "address": "0x51c0",
+      "time": 280,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        -1,
+        7,
+        0.0,
+        0.029999999329447746
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl00C/5fc0",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl00C",
+      "address": "0x5fc0",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        1.5707963705062866,
+        7.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl00C/5fd8",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl00C",
+      "address": "0x5fd8",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        60,
+        4,
+        -999999.0,
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl00C/61f8",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl00C",
+      "address": "0x61f8",
+      "time": 200,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        {
+          "variable": -1
+        },
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl00C/6210",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl00C",
+      "address": "0x6210",
+      "time": 200,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        -1,
+        7,
+        0.0,
+        0.029999999329447746
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl01/65b0",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl01",
+      "address": "0x65b0",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        1.5707963705062866,
+        5.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl01/65c8",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl01",
+      "address": "0x65c8",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        60,
+        4,
+        -999999.0,
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl01/660c",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl01",
+      "address": "0x660c",
+      "time": 60,
+      "mask": "0xff",
+      "opcode": 284,
+      "args": [
+        2.7488934993743896,
+        0.0
+      ]
+    },
+    {
+      "key": "10/stage01.ecl/Girl01/6624",
+      "game": 10,
+      "file": "stage01.ecl",
+      "sub": "Girl01",
+      "address": "0x6624",
+      "time": 60,
+      "mask": "0xff",
+      "opcode": 285,
+      "args": [
+        180,
+        7,
+        0.0,
+        0.004999999888241291
+      ]
+    },
+    {
+      "key": "8/ecldata6.ecl/Sub79/b420",
+      "game": 8,
+      "file": "ecldata6.ecl",
+      "sub": "Sub79",
+      "address": "0xb420",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 64,
+      "args": [
+        16,
+        0,
+        {
+          "variable": 10094
+        },
+        {
+          "variable": 10095
+        }
+      ]
+    },
+    {
+      "key": "8/ecldata6.ecl/Sub79/b354",
+      "game": 8,
+      "file": "ecldata6.ecl",
+      "sub": "Sub79",
+      "address": "0xb354",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 114,
+      "args": [
+        1,
+        6,
+        {
+          "variable": 10016
+        },
+        0.0,
+        0.0,
+        109.0,
+        109.0,
+        16.0,
+        10,
+        16,
+        10,
+        10,
+        10,
+        4
+      ]
+    },
+    {
+      "key": "8/ecldata6.ecl/Sub84/c23c",
+      "game": 8,
+      "file": "ecldata6.ecl",
+      "sub": "Sub84",
+      "address": "0xc23c",
+      "time": 460,
+      "mask": "0xff",
+      "opcode": 136,
+      "args": [
+        18,
+        2
+      ]
+    },
+    {
+      "key": "6/ecldata2.ecl/Sub27/23a4",
+      "game": 6,
+      "file": "ecldata2.ecl",
+      "sub": "Sub27",
+      "address": "0x23a4",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 86,
+      "args": [
+        0,
+        6,
+        0.0,
+        4.0,
+        0.0,
+        0.0,
+        192.0,
+        6.0,
+        0,
+        9999,
+        30,
+        0,
+        30,
+        0
+      ]
+    },
+    {
+      "key": "6/ecldata2.ecl/Sub27/23e4",
+      "game": 6,
+      "file": "ecldata2.ecl",
+      "sub": "Sub27",
+      "address": "0x23e4",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 86,
+      "args": [
+        0,
+        5,
+        0.39269909262657166,
+        4.0,
+        0.0,
+        0.0,
+        192.0,
+        6.0,
+        0,
+        9999,
+        30,
+        0,
+        30,
+        0
+      ]
+    },
+    {
+      "key": "6/ecldata2.ecl/Sub27/2424",
+      "game": 6,
+      "file": "ecldata2.ecl",
+      "sub": "Sub27",
+      "address": "0x2424",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 86,
+      "args": [
+        0,
+        5,
+        -0.39269909262657166,
+        4.0,
+        0.0,
+        0.0,
+        192.0,
+        6.0,
+        0,
+        9999,
+        30,
+        0,
+        30,
+        0
+      ]
+    },
+    {
+      "key": "95/ecl6_c.ecl/Sub6/6fc",
+      "game": 95,
+      "file": "ecl6_c.ecl",
+      "sub": "Sub6",
+      "address": "0x6fc",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 117,
+      "args": [
+        0,
+        "\"Sub8\""
+      ]
+    },
+    {
+      "key": "95/ecl6_c.ecl/Sub6/72c",
+      "game": 95,
+      "file": "ecl6_c.ecl",
+      "sub": "Sub6",
+      "address": "0x72c",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 65,
+      "args": [
+        {
+          "variable": 10008
+        },
+        4.0
+      ]
+    },
+    {
+      "key": "95/ecl6_c.ecl/Sub6/754",
+      "game": 95,
+      "file": "ecl6_c.ecl",
+      "sub": "Sub6",
+      "address": "0x754",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 65,
+      "args": [
+        {
+          "variable": 10008
+        },
+        6.0
+      ]
+    },
+    {
+      "key": "95/ecl6_c.ecl/Sub6/768",
+      "game": 95,
+      "file": "ecl6_c.ecl",
+      "sub": "Sub6",
+      "address": "0x768",
+      "time": 290,
+      "mask": "0xff",
+      "opcode": 52,
+      "args": [
+        "\"Sub9\""
+      ]
+    },
+    {
+      "key": "95/ecl6_d.ecl/Sub6/6c0",
+      "game": 95,
+      "file": "ecl6_d.ecl",
+      "sub": "Sub6",
+      "address": "0x6c0",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 117,
+      "args": [
+        1,
+        "\"Sub7\""
+      ]
+    },
+    {
+      "key": "95/ecl6_d.ecl/Sub6/6d4",
+      "game": 95,
+      "file": "ecl6_d.ecl",
+      "sub": "Sub6",
+      "address": "0x6d4",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 64,
+      "args": [
+        30,
+        0,
+        {
+          "variable": 10077
+        },
+        {
+          "variable": 10078
+        }
+      ]
+    },
+    {
+      "key": "95/ecl6_d.ecl/Sub6/6f0",
+      "game": 95,
+      "file": "ecl6_d.ecl",
+      "sub": "Sub6",
+      "address": "0x6f0",
+      "time": 290,
+      "mask": "0xff",
+      "opcode": 52,
+      "args": [
+        "\"Sub8\""
+      ]
+    },
+    {
+      "key": "95/ecl6_d.ecl/Sub7/774",
+      "game": 95,
+      "file": "ecl6_d.ecl",
+      "sub": "Sub7",
+      "address": "0x774",
+      "time": 20,
+      "mask": "0xff",
+      "opcode": 88,
+      "args": [
+        17,
+        0,
+        1,
+        1,
+        4.0,
+        1.0,
+        0.0,
+        0.19634954631328583,
+        514
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a8fc",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa8fc",
+      "time": 0,
+      "mask": "0xe",
+      "opcode": 54,
+      "args": [
+        0,
+        0,
+        {
+          "variable": 10004
+        },
+        4.199999809265137
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a92c",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa92c",
+      "time": 0,
+      "mask": "0xe",
+      "opcode": 4,
+      "args": [
+        {
+          "variable": 10012
+        },
+        45
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a954",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa954",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 4,
+      "args": [
+        {
+          "variable": 10002
+        },
+        1
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a968",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa968",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 4,
+      "args": [
+        {
+          "variable": 10003
+        },
+        {
+          "variable": 10008
+        }
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a97c",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa97c",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 79,
+      "args": [
+        0,
+        8192,
+        0,
+        {
+          "variable": 10003
+        },
+        -1,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/a9b8",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xa9b8",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 79,
+      "args": [
+        1,
+        32,
+        0,
+        60,
+        -1,
+        0.02500000037252903,
+        0.0
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/aaac",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xaaac",
+      "time": 0,
+      "mask": "0xff",
+      "opcode": 65,
+      "args": [
+        6,
+        {
+          "variable": 10000
+        },
+        1,
+        {
+          "variable": 10002
+        },
+        1.0,
+        0.4000000059604645,
+        {
+          "variable": 10005
+        },
+        0.0,
+        8740
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/aad8",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xaad8",
+      "time": 1,
+      "mask": "0xff",
+      "opcode": 3,
+      "args": [
+        0,
+        "Sub76_240",
+        {
+          "variable": 10012
+        }
+      ]
+    },
+    {
+      "key": "7/ecldata5.ecl/Sub76/aaf0",
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sub": "Sub76",
+      "address": "0xaaf0",
+      "time": 1,
+      "mask": "0xff",
+      "opcode": 1,
+      "args": []
+    }
+  ],
+  "original_files": [
+    {
+      "game": 6,
+      "file": "ecldata2.ecl",
+      "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e"
+    },
+    {
+      "game": 7,
+      "file": "ecldata5.ecl",
+      "sha256": "4abdf06440ef145471dd5390fa29edf50f80e41b708db5ee43e5672db582188a"
+    },
+    {
+      "game": 8,
+      "file": "ecldata6.ecl",
+      "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72"
+    },
+    {
+      "game": 10,
+      "file": "stage01.ecl",
+      "sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c"
+    },
+    {
+      "game": 10,
+      "file": "stage04.ecl",
+      "sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8"
+    },
+    {
+      "game": 10,
+      "file": "stage05.ecl",
+      "sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b"
+    },
+    {
+      "game": 95,
+      "file": "ecl6_c.ecl",
+      "sha256": "c37a4480848d0800d6d0c09bab062b2afefa0541b7f401a41cb673d9ddcdf42e"
+    },
+    {
+      "game": 95,
+      "file": "ecl6_d.ecl",
+      "sha256": "7287aacd42ece71d707133ab84d527f1491adfc92ba44d5c7701b534ed07fd35"
+    }
+  ],
+  "implementation_sha256": {
+    "mod/GAME/th31.lua": "144b1fddfe2d2c3393ae561e8c43371f9df4980cd5edfe29311e46f28448f0c5",
+    "mod/GAME/th32.lua": "1e7b92a367ed9edc63ad0e6c4b8e3f8a090b734530424f83a07d27907faf0e8a",
+    "mod/GAME/th33.lua": "f9b2a670cdc1901739d5651040f0fe9c3e3cb27ac9b2e3114e3f866d5f5957f0",
+    "mod/GAME/th34.lua": "a17915e504b5640b84e8caf497a656676d5d20dd5ee972cc1162865443673feb",
+    "mod/GAME/th35.lua": "eaa978d4606b7190d81c291d6c8d277ee5683ac2085c6aac42daaba0723cd66f"
+  },
+  "source_order_note": "出生脚本和正常更新顺序依据原作Spawn/RunEcl/IntegrateMovement；未以运行测试反推时序。TH34只为已核对的Sub76启用新顺序。"
+}
