@@ -13169,6 +13169,8 @@ local function TH34_add_stage56_boss()
             task.Wait(85)                               -- t=0..85（含六发 SPAWN_EFFECT）
             local i1 = 100
             while true do
+                -- Sub76 t=85的SET_ANM135；回跳后同样执行。
+                if self._original_actor then OriginalStageVisual.set_script(self,135,'stg4enm') end
                 merlin_orb(self, 0)                     -- t=85
                 merlin_orb(self, 1)
                 task.Wait(60)                           -- t=145
@@ -13176,6 +13178,8 @@ local function TH34_add_stage56_boss()
                 drift(self, 1, 30)                      -- SUB_CALL 60
                 task.Wait(60)                           -- t=205
                 shoot6(self, 0, 0, 64, 6, 6, 3, 8, 5, 0.5, 0, 0.0785398, nil, true)
+                -- Sub76 t=205的第二次SET_ANM135。
+                if self._original_actor then OriginalStageVisual.set_script(self,135,'stg4enm') end
                 merlin_orb(self, 0)                     -- t=205
                 merlin_orb(self, 1)
                 if i1 > 0 then task.Wait(i1) end        -- SET_WAIT_TIMER *i1

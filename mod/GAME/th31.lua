@@ -5129,12 +5129,11 @@ end
 ---        的位移方向。圆心每 60 帧外移 2×lf3（≈128..160 px）→ 使魔「边公转边一段段往外跳」。
 ---
 ---  · Sub46（使魔的枪）：`ins_6(xi2, 200)` + 三条 `ins_111` + 一发 1 颗的 `ins_99`
----    + `ins_46(xi2, 2, …)` + `ins_6(xi2, −2)` + `ins_4(2, −212)`。
----      ★ `ins_4` 的落点是 t=2 的**第一条**（又是 `ins_6(xi2, 200)`）→ 每轮都把计数器
----        重置回 200，`xi2 <= 2` 那个出口**永远走不到**。实际节奏（同帧重跑换来的）：
----        子 context time 2 打一发、之后每 2 帧一发，直到使魔 TERMINATE。
+---    + `ins_46(xi2, 2, …)` + `ins_11(xi2, 2)` + `ins_4(2, −212)`。
+---      ★ 回跳落点0x6214越过0x6200的SET_INT：xi2只初始化一次，逐发200、198…2。
+---        子context在time2打第一发，之后每2帧一发；等待抵消发射间隔，使前100发集中苏醒。
 ---      ★ 三条 `ins_111` 记录（BulletTransformInstructionArgs，EclRunHigh.inl:78-92）：
----        记录 0 = WAIT(0x20000)，frames = payload.int0 = intPayload0 = xi2 = 200；
+---        记录0=WAIT(0x20000)，frames取每发快照的xi2；
 ---        记录 1 = SET_SPRITE(0x4000)，bulletType/color = intPayload0/intPayload1 = 2/2；
 ---        记录 2 = ACCELERATE_VECTOR(0x10)，magnitude = floatPayload0 = 0.0666667、
 ---          angle = floatPayload1 = −999（< −990 → 取弹自己的角）、durationFrames
@@ -5147,7 +5146,7 @@ end
 ---        **没有** SET_CULL_DELAY）；count1 = count2 = 1、speed1 = speed2 = 0、
 ---        angle = MOVE_ANGLE（子弹角度 = **使魔当前移动方向**，即 ORBIT 上一步的位移方向，
 ---        用的是上一帧末的值）、bulletType 2 / color 1。
----        → 使魔每 2 帧在自己位置上留一颗**不动**的弹（speed = 0），200 帧后沿它出生时的
+---        → 使魔每2帧在自己位置上留一颗不动的弹，等该发xi2帧并清WAIT位后换色，沿出生时的
 ---        方向以 0.0666667/帧 加速满 60 帧（末速 4）飞出去。
 ---      ★ SPAWN_FAST：出生瞬间位置退 velocity·4（速度 0 → 不动），之后每帧走 velocity/2。
 ---
@@ -5269,12 +5268,14 @@ local FAM_LIFE = 240                        -- Sub48 t=240 的 `ins_1`
 ---Sub46（使魔的枪）。
 local PELLET_FIRST = 2                      -- 子 context time 2 的第一发
 local PELLET_PERIOD = 2                     -- 之后每 2 帧一发（`ins_4(2, −212)` 同帧绕回）
-local PELLET_WAIT = 200                     -- 记录 0（WAIT）的 frames = intPayload0 = xi2
+local PELLET_WAIT = 200                     -- Sub46仅在首次进入t=2时设置xi2
+local PELLET_WAIT_STEP, PELLET_WAIT_MIN = 2, 2 -- 每发之后ins_11(xi2,2)，不低于2
 local PELLET_ACCEL = 0.06666667              -- 记录 2 的 magnitude
 local PELLET_ACCEL_FRAMES = 60              -- 记录 2 的 durationFrames
 local SPAWN_FAST_FRAMES = 10                -- etama.anm script21 的长度
 local SPAWN_FAST_STEP = 0.5                 -- 出生期每帧走 velocity/2
 local COLOR_PELLET = 2                      -- Sub46 打包字的 color 1 → 我们 2
+local COLOR_PELLET_ACTIVE = 3               -- WAIT后slot1换成type2、原作色号2
 local COLOR_AIMED = 7                       -- Sub47 打包字的 color 6 → 我们 7
 
 local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
@@ -5360,9 +5361,9 @@ lw212_aim_bullet = Class(bullet, {
     end,
 })
 
----使魔留在原地的弹（Sub46）：speed = 0，200 帧 WAIT 之后沿出生时的角度加速 60 帧。
+---使魔留在原地的弹（Sub46）：speed=0，按该发的xi2等待，换色后沿出生角加速60帧。
 lw212_bullet = Class(bullet, {
-    init = function(self, x, y, angle)
+    init = function(self, x, y, angle, wait)
         bullet.init(self, style_of(2), color_of(2, COLOR_PELLET), false, true)
         self.bound = false
         self.x, self.y = x, y
@@ -5371,8 +5372,8 @@ lw212_bullet = Class(bullet, {
         self.lw212_spawn = SPAWN_FAST_FRAMES
         self.colli = false
         ---出生当帧 SpawnSingleBullet 末尾就调一次 AdvanceTransformProgram
-        ---（BulletManager.cpp:233）→ WAIT 记录立刻激活、计时 = 200。
-        self.lw212_wait = PELLET_WAIT
+        ---（BulletManager.cpp:233）→ WAIT记录立刻激活，保存本次发弹的xi2。
+        self.lw212_wait = wait
         self.lw212_accel = false
         self.lw212_accel_t = 0
     end,
@@ -5395,6 +5396,10 @@ lw212_bullet = Class(bullet, {
             ---accelerationAngle = angle > −990 ? angle : 弹自己的角（:337-352），
             ---本卡记录里写的是 −999 → 取弹自己出生时的角度。
         elseif self.lw212_accel_t < PELLET_ACCEL_FRAMES then
+            if self.lw212_accel_t == 0 then
+                -- 原作0x623c的SET_SPRITE为即时记录，和后面的VEC同帧执行。
+                bullet.ChangeImage(self, style_of(2), color_of(2, COLOR_PELLET_ACTIVE))
+            end
             self.vx = self.vx + math.cos(self.lw212_angle) * PELLET_ACCEL
             self.vy = self.vy + math.sin(self.lw212_angle) * PELLET_ACCEL
             self.lw212_accel_t = self.lw212_accel_t + 1
@@ -5488,6 +5493,7 @@ lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
         self.rot = 0
         self._blend, self._a = "", 255
         self.lw212_t = 0
+        self.lw212_shot_wait = PELLET_WAIT
         self.lw212_ox, self.lw212_oy = ox, oy
         self.lw212_cx, self.lw212_cy = x + ox, y + oy
         self.lw212_angle = angle0
@@ -5518,9 +5524,12 @@ lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
         ---   出弹位置用的是**上一帧末**的位置（RunEcl 在 UpdateMovement 之前）。
         if t >= PELLET_FIRST and t % PELLET_PERIOD == 0 then
             local mx, my, ma = self.x, self.y, self.lw212_mangle
+            local wait = self.lw212_shot_wait
             spawn_one(function()
-                return New(lw212_bullet, mx, my, ma)
+                return New(lw212_bullet, mx, my, ma, wait)
             end)
+            -- Sub46_20回跳越过SET_INT；即使弹池已满，本次INT_SUB仍须执行。
+            if wait > PELLET_WAIT_MIN then self.lw212_shot_wait = wait - PELLET_WAIT_STEP end
         end
         ---③ ORBIT 位移（EnemyManager.cpp:36-58）：ω 先加到角度，位置直接落在圆周点上。
         if self.lw212_orbit > 0 then
@@ -6072,6 +6081,9 @@ lw213_bullet = Class(bullet, {
         self.vx, self.vy = self.lw213_bvx / 2, self.lw213_bvy / 2
         self.lw213_spawn = spawn_frames
         self.lw213_wait = life              -- WAIT 记录的 frames（0 = 没有这条记录）
+        self.lw213_wait_active = life > 0
+        self.lw213_despawn_pending = false
+        self.lw213_cull = life
         self.colli = false                  -- 出生动画期间没有判定
     end,
     frame = function(self)
@@ -6084,17 +6096,22 @@ lw213_bullet = Class(bullet, {
             self.vx, self.vy = self.lw213_bvx, self.lw213_bvy
             self.colli = true
         end
-        if self.lw213_wait > 0 then
-            ---② 小怪弹：WAIT 记录的 timer 每帧减 1（BulletManager.cpp:848-854），减到 0 的
-            ---   下一帧轮到 DESPAWN（:437-439）→ 出生 li6 帧后自己消失，永远飞不出屏。
-            self.lw213_wait = self.lw213_wait - 1
-            if self.lw213_wait == 0 then
-                object.RawDel(self)
-                return
-            end
-        elseif outside_field(self.x, self.y) then
-            ---③ BOSS 弹：没有 SET_CULL_DELAY → 一出屏就回收（BulletManager.cpp:856-899）。
-            object.RawDel(self)
+        local despawn = self.lw213_despawn_pending
+        if self.lw213_wait_active then
+            if self.lw213_wait <= 0 then
+                self.lw213_wait_active = false
+                self.lw213_despawn_pending = true
+            else self.lw213_wait = self.lw213_wait - 1 end
+        end
+        -- CULL和WAIT是两个独立计数；宽限结束后先按积分后的原生精灵范围判出屏。
+        if self.lw213_cull > 0 then self.lw213_cull = self.lw213_cull - 1 end
+        if self.lw213_cull == 0 and EX.outside(self,self.x+self.vx,self.y+self.vy) then
+            OriginalBulletVisual.retire(self)
+            return
+        end
+        if despawn then
+            -- 清WAIT的下一次Advance才执行DESPAWN，保留原对象走消散动画。
+            OriginalBulletVisual.transform_despawn(self,self.vx,self.vy)
             return
         end
         bullet.frame(self)

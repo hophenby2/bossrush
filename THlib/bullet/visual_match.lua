@@ -70,6 +70,13 @@ function V.emit_despawn(o,drop)
     if drop then New(item.obj.faith_minor,o.x,o.y) end
     return true
 end
+-- 变换在ACTIVE更新中触发退场：触发帧仍走完整步，后续帧才走消散半速。
+-- 原对象、弹槽和ANM都保留；不能另造特效后RawDel原弹。
+function V.transform_despawn(o,dx,dy)
+    local x,y=o.x,o.y
+    if not V.emit_despawn(o,false) then V.retire(o);return end
+    o.x,o.y=x+dx-o.vx,y+dy-o.vy
+end
 function V.color_count(game,kind)
     if game==6 then return kind==9 and 4 or kind>=6 and 8 or 16 end
     if game==7 then return kind==10 and 4 or kind>=7 and 8 or 16 end
@@ -110,7 +117,10 @@ function V.can_cancel(o,force)
     if force then return true end
     local flags=c.native_game==8 and o.ex_flags or c.native_game==7 and o.c_flags or 0
     if math.floor((flags or 0)/4096)%2==1 then return false end
-    if c.native_game==10 and o.tb and o.tb.cancel~=0 then return false end
+    if c.native_game==10 then
+        local cancel=o.tb and o.tb.cancel or o.th10_cancel or 0
+        if cancel~=0 then return false end
+    end
     -- 红/妖的出生分支不执行自机消弹检测；关卡整体清场仍可强制消除。
     if (c.native_game==6 or c.native_game==7) and spawn_left(o,c.native_game)>0 then return false end
     return true

@@ -220,6 +220,7 @@ end
 ---    th_wait  = $I2：先挂多少帧不动（etEx kind=0x8000）
 ---    th_delta = F  ：挂完之后每帧加多少速度、持续 BULLET_ACCEL_FRAMES 帧（etEx kind=0x20）
 local function th35_bullet_frame(self)
+    if self.th10_cancel ~= 0 then self.th10_cancel = self.th10_cancel - 1 end
     if self.th10_spawn_left > 0 then
         self.x,self.y=self.x+self.th_spawn_vx/2,self.y+self.th_spawn_vy/2
         self.th10_spawn_left=self.th10_spawn_left-1
@@ -250,6 +251,7 @@ local function spawn_bullet(x, y, angle_deg, delta, wait, color)
             th35_bullet_frame)
     b.th_wait = wait
     b.th_wait_active = true
+    b.th10_cancel = 10000                 -- BossCard5_atN/at2的SET_CANCEL_BEHAVIOR
     b.th_delta = delta
     b.th_left = BULLET_ACCEL_FRAMES
     b.th_speed = BULLET_INIT_SPEED
@@ -775,7 +777,14 @@ local function t10_bullet_frame(self)
         if next(b.af) ~= nil then t10_tp_tick(b) end
         vx,vy=vx+b.vx,vy+b.vy
     end
-    if b.dead then object.RawDel(self) return end
+    if b.dead then
+        -- EnemyCancelBulletRecord：场内进入state3并interrupt1，屏外走静默快速回收。
+        if self.x+8 > -192 and self.x-8 < 192 and self.y+8 > -224 and self.y-8 < 224 then
+            local step=active and 1 or 0.5
+            OriginalBulletVisual.transform_despawn(self,b.vx*step,-b.vy*step)
+        else OriginalBulletVisual.retire(self) end
+        return
+    end
     -- 原作先积分，再按精灵尺寸穿墙，最后出屏回收。wrap的int0是穿墙次数，不是帧数。
     local x,y=b.px+(active and b.vx or 0),b.py+(active and b.vy or 0)
     local p=self.imgclass.native_profile

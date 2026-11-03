@@ -1,0 +1,1368 @@
+{
+  "date": "2026-11-03",
+  "baseline_commit": "75c886f",
+  "method": "仅静态读取ECL/复原源码/Lua并核对目标字段；未执行游戏、模拟器、Lua探针或测试套件",
+  "registered_cards": 521,
+  "listed_cards": 44,
+  "status_counts": {
+    "目标字段未见新增差异": 30,
+    "已修复": 9,
+    "共用修复覆盖": 4,
+    "部分核对/不扩大缺陷范围": 1
+  },
+  "scope_note": "每条结论仅覆盖scope所述行为，不表示整张卡或剩余条目逐帧一致；原索引含全部难度/死分支，未将静态闭包当作运行可达证明。",
+  "cards": [
+    {
+      "game": 31,
+      "id": 351,
+      "name": "「季节外调的蝴蝶风暴」",
+      "status": "目标字段未见新增差异",
+      "scope": "WAIT与后续折向的活动位衔接；仅核对正常倍率分支",
+      "file": "ecldata1sp.ecl",
+      "roots": [
+        "Sub36"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 358,
+      "name": "「远古的欺骗者」",
+      "status": "已修复",
+      "scope": "Sub46逐发WAIT快照200,198…2，以及WAIT后即时换色/VEC同帧认领",
+      "file": "ecldata5sp.ecl",
+      "roots": [
+        "Sub43"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 359,
+      "name": "「无何有净化」",
+      "status": "已修复",
+      "scope": "WAIT清位、下一次Advance退场、原生消散及独立CULL宽限",
+      "file": "ecldata8sp.ecl",
+      "roots": [
+        "Sub113"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 364,
+      "name": "「格兰吉纽尔剧场的怪人」",
+      "status": "目标字段未见新增差异",
+      "scope": "WAIT与后续折向的活动位衔接；仅核对正常倍率分支",
+      "file": "ecldata_al.ecl",
+      "roots": [
+        "Sub1"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 371,
+      "name": "转世「一条归桥」",
+      "status": "目标字段未见新增差异",
+      "scope": "逐轮等待加8、上限200，以及WAIT和后续运动的活动位衔接",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub56"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 417,
+      "name": "天呪「アポロ１３」",
+      "status": "目标字段未见新增差异",
+      "scope": "两段等待逐发分别减2/加2，以及WAIT和后续运动的活动位衔接",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub68"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 438,
+      "name": "神技「八方龍殺陣」",
+      "status": "目标字段未见新增差异",
+      "scope": "上批修正的白色小弹等待50+3k、清WAIT位后换色并恢复运动，本批保留该实现",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub33"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 475,
+      "name": "蠢符「ナイトバグトルネード」",
+      "status": "目标字段未见新增差异",
+      "scope": "Sub47/49两段循环的发射时点、末段颜色13/11/10及快照隔离；未出现文花帖535的最终固定色问题",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub44"
+      ]
+    },
+    {
+      "game": 31,
+      "id": 476,
+      "name": "隠蟲「永夜蟄居」",
+      "status": "目标字段未见新增差异",
+      "scope": "Sub47/49两段循环的发射时点、末段颜色13/11/10及快照隔离；未出现文花帖535的最终固定色问题",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub48"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3905,
+      "name": "暗符「境界线」（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub23"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3906,
+      "name": "大妖精 非符（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub20"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3907,
+      "name": "琪露诺 非符一（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub22"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3908,
+      "name": "雹符「冰雹暴风」（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub30"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3913,
+      "name": "华符「绚烂华灵」（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub14"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3918,
+      "name": "红美铃 非符三（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub26"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3925,
+      "name": "土符「三石塔的震动」（Lunatic·灵梦Ａ）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub52"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3926,
+      "name": "火＆土符「熔岩巨石」（Lunatic·灵梦Ａ）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub55"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3942,
+      "name": "火＆土符「熔岩巨石」（Lunatic·魔理沙Ａ）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub55"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3944,
+      "name": "土符「三石塔上级」（Lunatic·魔理沙Ｂ）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub51"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3946,
+      "name": "金符「银龙」（Lunatic·魔理沙Ｂ）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub54"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3958,
+      "name": "六面中 Boss 非符（Lunatic）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub9"
+      ]
+    },
+    {
+      "game": 32,
+      "id": 3966,
+      "name": "火水木金土符「贤者之石」（Extra）",
+      "status": "目标字段未见新增差异",
+      "scope": "正间隔参数、转向次数和方向/恢复速度；仅核对原作弹类的这些字段与正常倍率流程",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub24"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 410,
+      "name": "幽雅「死出の誘蛾灯」",
+      "status": "目标字段未见新增差异",
+      "scope": "ring_frame在首次ACTIVE更新初始化自旋计数，不使用出生timer；本批仅核对活动计时边界",
+      "file": "ecl17_a.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 411,
+      "name": "蝶符「鳳蝶紋の死槍」",
+      "status": "目标字段未见新增差异",
+      "scope": "spear_frame在首次ACTIVE更新初始化加速计数；本批仅核对活动计时边界",
+      "file": "ecl17_b.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 414,
+      "name": "行符「八千万枚護摩」",
+      "status": "目标字段未见新增差异",
+      "scope": "swirl_frame活动阶段自旋计数及出生sg_tag1，不混用对象出生计时",
+      "file": "ecl16_c.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 415,
+      "name": "超人「飛翔役小角」",
+      "status": "目标字段未见新增差异",
+      "scope": "上批已修正的WAIT/VEC交接，本批不重复修改",
+      "file": "ecl16_d.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 476,
+      "name": "死価「プライス・オブ・ライフ」",
+      "status": "目标字段未见新增差异",
+      "scope": "Sub6虽写BOUNCE但发弹flags514未启用；不计入共用反弹修复的命中条目",
+      "file": "ecl20_d.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 477,
+      "name": "審判「浄頗梨審判　-射命丸文-」",
+      "status": "目标字段未见新增差异",
+      "scope": "AIMED实际走私有chdir_hook：30次减速更新，第31次恢复速度6；不把共用钩子缺0x80当成此卡缺陷",
+      "file": "ecl21_d.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 482,
+      "name": "錬丹「水銀の海」",
+      "status": "共用修复覆盖",
+      "scope": "BOUNCE按原作修改方向/速度，不镜像坐标；边界尝试计数与当帧清位",
+      "file": "ecl18_c.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 484,
+      "name": "秘薬「仙香玉兎」",
+      "status": "共用修复覆盖",
+      "scope": "BOUNCE按原作修改方向/速度，不镜像坐标；边界尝试计数与当帧清位",
+      "file": "ecl18_d.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 485,
+      "name": "新難題「ミステリウム」",
+      "status": "目标字段未见新增差异",
+      "scope": "WAIT/POLAR交接；被WAIT覆盖的BOUNCE不在发弹flags0x8222中，不执行反弹",
+      "file": "ecl19_d.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 486,
+      "name": "咲夜 非符（文花帖scene60）",
+      "status": "已修复",
+      "scope": "Sub5/9/13弹型、Sub9反弹速度0.8、反弹完成清位与后续换色",
+      "file": "ecl14_a.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 489,
+      "name": "紅符「ブラッディマジックスクウェア」",
+      "status": "目标字段未见新增差异",
+      "scope": "父弹与子弹程序分开：子弹从记录8执行WAIT120后接VEC240，不把父POLAR与子VEC算成同弹并发",
+      "file": "ecl15_b.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 517,
+      "name": "脱兎「フラスターエスケープ」",
+      "status": "共用修复覆盖",
+      "scope": "BOUNCE按原作修改方向/速度，不镜像坐标；边界尝试计数与当帧清位；POLAR从当前反射角继续，避免下一帧覆盖反弹方向",
+      "file": "ecl8_a.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 518,
+      "name": "借符「大穴牟遅様の薬」",
+      "status": "共用修复覆盖",
+      "scope": "BOUNCE按原作修改方向/速度，不镜像坐标；边界尝试计数与当帧清位；POLAR从当前反射角继续，避免下一帧覆盖反弹方向",
+      "file": "ecl8_b.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 529,
+      "name": "凍符「マイナスＫ」",
+      "status": "目标字段未见新增差异",
+      "scope": "换型换色记录由共用钩子处理；原代码的跳过注释已过时，不据此列出伪缺陷",
+      "file": "ecl3_c.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 33,
+      "id": 535,
+      "name": "蝶符「バタフライストーム」",
+      "status": "已修复",
+      "scope": "Sub9最后一次换色按13/10/8循环，保留原有等待与折向时长",
+      "file": "ecl1_c.ecl",
+      "roots": [
+        "Sub2"
+      ]
+    },
+    {
+      "game": 34,
+      "id": 4442,
+      "name": "梅露兰 非符 1",
+      "status": "已修复",
+      "scope": "Sub76第85/205帧SET_ANM135及循环重复触发",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub76"
+      ]
+    },
+    {
+      "game": 34,
+      "id": 4444,
+      "name": "莉莉卡 非符 1",
+      "status": "目标字段未见新增差异",
+      "scope": "0x40重复减速/转向计时、抬速帧更新与下一条命令交接",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub95"
+      ]
+    },
+    {
+      "game": 35,
+      "id": 3600,
+      "name": "「風神様の神徳」",
+      "status": "已修复",
+      "scope": "两支专用枪SET_CANCEL_BEHAVIOR10000，避免常规消弹中断等待/加速",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard5"
+      ]
+    },
+    {
+      "game": 35,
+      "id": 3615,
+      "name": "源符「厭い川の翡翠」",
+      "status": "部分核对/不扩大缺陷范围",
+      "scope": "原作BossCard4_at2含退场记录，但当前BossCard4主入口未证实该子程序可达；不计入0x10000修复条目",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard4"
+      ]
+    },
+    {
+      "game": 35,
+      "id": 3616,
+      "name": "蛙狩「蛙は口ゆえ蛇に呑まるる」",
+      "status": "已修复",
+      "scope": "场内0x10000退场进入原生消散，触发帧完整步、后续半速、保留弹槽",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard5"
+      ]
+    },
+    {
+      "game": 35,
+      "id": 3619,
+      "name": "土着神「宝永四年の赤蛙」",
+      "status": "已修复",
+      "scope": "场内0x10000退场进入原生消散，触发帧完整步、后续半速、保留弹槽",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard8"
+      ]
+    },
+    {
+      "game": 35,
+      "id": 3620,
+      "name": "「諏訪大戦　～ 土着神話 vs 中央神話」",
+      "status": "已修复",
+      "scope": "场内0x10000退场进入原生消散，触发帧完整步、后续半速、保留弹槽",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard9"
+      ]
+    }
+  ],
+  "ecl_inputs": [
+    {
+      "game": 6,
+      "file": "ecldata1.ecl",
+      "sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7"
+    },
+    {
+      "game": 6,
+      "file": "ecldata2.ecl",
+      "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e"
+    },
+    {
+      "game": 6,
+      "file": "ecldata3.ecl",
+      "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6"
+    },
+    {
+      "game": 6,
+      "file": "ecldata4.ecl",
+      "sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60"
+    },
+    {
+      "game": 6,
+      "file": "ecldata6.ecl",
+      "sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5"
+    },
+    {
+      "game": 6,
+      "file": "ecldata7.ecl",
+      "sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392"
+    },
+    {
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sha256": "c7ad6b6eefb4e3597991faf60c99b3354ef91156fcaab4e725baa6152cb679c7"
+    },
+    {
+      "game": 8,
+      "file": "ecldata1.ecl",
+      "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea"
+    },
+    {
+      "game": 8,
+      "file": "ecldata1sp.ecl",
+      "sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e"
+    },
+    {
+      "game": 8,
+      "file": "ecldata4a.ecl",
+      "sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf"
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b"
+    },
+    {
+      "game": 8,
+      "file": "ecldata6.ecl",
+      "sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72"
+    },
+    {
+      "game": 8,
+      "file": "ecldata8.ecl",
+      "sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741"
+    },
+    {
+      "game": 8,
+      "file": "ecldata8sp.ecl",
+      "sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660"
+    },
+    {
+      "game": 8,
+      "file": "ecldata_al.ecl",
+      "sha256": "fc669292ee41f99c9eed4e72b644c591a522deaa255ed106224f656d5431e4a8"
+    },
+    {
+      "game": 10,
+      "file": "stage06.ecl",
+      "sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803"
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b"
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sha256": "ea562b8a8902d61cba395e18cdd830f7bca3ddcf467be9573898de268094c865"
+    },
+    {
+      "game": 95,
+      "file": "ecl15_b.ecl",
+      "sha256": "2b39fa47b821131d067977165e52b7f2d0c87b62aa255adf9c2a60fa0948f663"
+    },
+    {
+      "game": 95,
+      "file": "ecl16_c.ecl",
+      "sha256": "372617c93342f7a8655a30123b52e40fd7e578bd1a59a3b85d6cce62ec9b5a8f"
+    },
+    {
+      "game": 95,
+      "file": "ecl16_d.ecl",
+      "sha256": "beafc98b4970bfa5678fc16c71720061087a00e1d2d1ae9a986d5e4876289c2d"
+    },
+    {
+      "game": 95,
+      "file": "ecl17_a.ecl",
+      "sha256": "f9d9918aa9d169b27aad95abc573a0214605be62f2de2044843b6780539739cd"
+    },
+    {
+      "game": 95,
+      "file": "ecl17_b.ecl",
+      "sha256": "826fe5f9e48173965273294a34eb5c90c495c21b510f74500ae84742f89f0738"
+    },
+    {
+      "game": 95,
+      "file": "ecl18_c.ecl",
+      "sha256": "d987c97259d86a62a2261cee6c72c8ab55ccf1cbd10aadf9972993c4b3ff89a3"
+    },
+    {
+      "game": 95,
+      "file": "ecl18_d.ecl",
+      "sha256": "1f6a1df83a0f1b15e1f99bfb78d87c8ee866853a540bfc6c8cff54c66b0133a5"
+    },
+    {
+      "game": 95,
+      "file": "ecl19_d.ecl",
+      "sha256": "1b245fd89b71577a7e6ae8855ce282bd91d53149cc208c6ee6a958987d01bc5d"
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sha256": "66ce379a415d4856fcdb232292865523528a5b6edb5d3030d4d547f763119e24"
+    },
+    {
+      "game": 95,
+      "file": "ecl20_d.ecl",
+      "sha256": "c900d010a8f07bac0fc0c1ec4d9eb3b5ff58a7e8e2aa33a48e0f85f94406aa38"
+    },
+    {
+      "game": 95,
+      "file": "ecl21_d.ecl",
+      "sha256": "27438568ee249b05cced19fe0a8f20eb3d0cd80b9f55b75212b543d09e085046"
+    },
+    {
+      "game": 95,
+      "file": "ecl3_c.ecl",
+      "sha256": "400d642bc76d84d23d9c1a838970ddd3b24caef2ce18448d8faed80252850cdf"
+    },
+    {
+      "game": 95,
+      "file": "ecl8_a.ecl",
+      "sha256": "4bb9dd210e4fe4d511c0357bed6df486724b1a08376059b070ee68388b7024df"
+    },
+    {
+      "game": 95,
+      "file": "ecl8_b.ecl",
+      "sha256": "3c12577af6c6df5c7d1bcc746b2c276984e02ed41a16d237c6063c38726f3239"
+    }
+  ],
+  "evidence": [
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x6200",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 6,
+      "args": [
+        {
+          "variable": 10038
+        },
+        200
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x6214",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        0,
+        131072,
+        0,
+        {
+          "variable": 10038
+        },
+        -1,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x623c",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        1,
+        16384,
+        0,
+        2,
+        2,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x6264",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        2,
+        16,
+        0,
+        60,
+        -1,
+        0.06666667014360428,
+        -999.0
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x62b8",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 46,
+      "args": [
+        {
+          "variable": 10038
+        },
+        2,
+        2,
+        "Sub46_232"
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x62d4",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 11,
+      "args": [
+        {
+          "variable": 10038
+        },
+        2
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata5sp.ecl",
+      "sub": "Sub46",
+      "address": "0x62e8",
+      "script_time": 4,
+      "mask": 255,
+      "opcode": 4,
+      "args": [
+        2,
+        "Sub46_20"
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata8sp.ecl",
+      "sub": "Sub114",
+      "address": "0x115d0",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        0,
+        8192,
+        0,
+        {
+          "variable": 10006
+        },
+        -1,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata8sp.ecl",
+      "sub": "Sub114",
+      "address": "0x115f8",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        1,
+        131072,
+        1,
+        {
+          "variable": 10006
+        },
+        -1,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 8,
+      "file": "ecldata8sp.ecl",
+      "sub": "Sub114",
+      "address": "0x11620",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 111,
+      "args": [
+        2,
+        262144,
+        0,
+        -1,
+        -1,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sub": "Sub5",
+      "address": "0x448",
+      "script_time": 60,
+      "mask": 255,
+      "opcode": 89,
+      "args": [
+        4,
+        6,
+        32,
+        1,
+        3.0,
+        1.5,
+        {
+          "variable": 10008
+        },
+        0.18479956686496735,
+        514
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sub": "Sub9",
+      "address": "0x6c0",
+      "script_time": 60,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        2048,
+        0,
+        1,
+        -1,
+        0.800000011920929,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sub": "Sub9",
+      "address": "0x6e8",
+      "script_time": 60,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        1,
+        16384,
+        0,
+        14,
+        5,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sub": "Sub9",
+      "address": "0x724",
+      "script_time": 60,
+      "mask": 255,
+      "opcode": 89,
+      "args": [
+        14,
+        3,
+        4,
+        1,
+        2.0,
+        1.5,
+        {
+          "variable": 10008
+        },
+        0.18479956686496735,
+        18946
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl14_a.ecl",
+      "sub": "Sub13",
+      "address": "0xadc",
+      "script_time": 30,
+      "mask": 255,
+      "opcode": 89,
+      "args": [
+        14,
+        2,
+        8,
+        1,
+        4.0,
+        1.5,
+        {
+          "variable": 10008
+        },
+        0.18479956686496735,
+        33346
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0xfa0",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        13,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0x1044",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        10,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0x10e8",
+      "script_time": 4,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        8,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0x11cc",
+      "script_time": 12,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        13,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0x1270",
+      "script_time": 12,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        10,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl1_c.ecl",
+      "sub": "Sub9",
+      "address": "0x1314",
+      "script_time": 16,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        8,
+        16384,
+        0,
+        3,
+        8,
+        -1.0,
+        -1.0
+      ]
+    },
+    {
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sub": "Sub76",
+      "address": "0xd9a4",
+      "script_time": 85,
+      "mask": 255,
+      "opcode": 95,
+      "args": [
+        135
+      ]
+    },
+    {
+      "game": 7,
+      "file": "ecldata4.ecl",
+      "sub": "Sub76",
+      "address": "0xdabc",
+      "script_time": 205,
+      "mask": 255,
+      "opcode": 95,
+      "args": [
+        135
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_atN",
+      "address": "0xb4ac",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        1,
+        0,
+        4096,
+        10000,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage06.ecl",
+      "sub": "BossCard5_at2",
+      "address": "0xa9e8",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        1,
+        0,
+        4096,
+        10000,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard5_at",
+      "address": "0x8cd4",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        4,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard5_at2",
+      "address": "0x9158",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        4,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard8_at",
+      "address": "0xaf18",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        7,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 10,
+      "file": "stage07.ecl",
+      "sub": "BossCard9_at",
+      "address": "0xc694",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 409,
+      "args": [
+        0,
+        5,
+        0,
+        65536,
+        -999999,
+        -999999,
+        -999999.0,
+        -999999.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_a.ecl",
+      "sub": "Sub4",
+      "address": "0x3ac",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        2048,
+        0,
+        4,
+        -1,
+        -999.0,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_a.ecl",
+      "sub": "Sub4",
+      "address": "0x3d4",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        1,
+        32,
+        1,
+        6000,
+        -1,
+        0.0,
+        0.015707964077591896
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_a.ecl",
+      "sub": "Sub4",
+      "address": "0x43c",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        2048,
+        0,
+        4,
+        -1,
+        -999.0,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_a.ecl",
+      "sub": "Sub4",
+      "address": "0x464",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        1,
+        32,
+        1,
+        6000,
+        -1,
+        0.0,
+        -0.015707964077591896
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_b.ecl",
+      "sub": "Sub4",
+      "address": "0x3c4",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        2048,
+        0,
+        4,
+        -1,
+        -999.0,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_b.ecl",
+      "sub": "Sub4",
+      "address": "0x3ec",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        1,
+        32,
+        1,
+        6000,
+        -1,
+        0.0,
+        0.012566370889544487
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_b.ecl",
+      "sub": "Sub4",
+      "address": "0x44c",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        2048,
+        0,
+        4,
+        -1,
+        -999.0,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl8_b.ecl",
+      "sub": "Sub4",
+      "address": "0x474",
+      "script_time": 2,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        1,
+        32,
+        1,
+        6000,
+        -1,
+        0.0,
+        -0.012566370889544487
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl18_c.ecl",
+      "sub": "Sub6",
+      "address": "0x49c",
+      "script_time": 14,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        1024,
+        0,
+        4,
+        -1,
+        -999.0,
+        0.0
+      ]
+    },
+    {
+      "game": 95,
+      "file": "ecl18_d.ecl",
+      "sub": "Sub7",
+      "address": "0x590",
+      "script_time": 0,
+      "mask": 255,
+      "opcode": 101,
+      "args": [
+        0,
+        1024,
+        0,
+        999,
+        -1,
+        -999.0,
+        0.0
+      ]
+    }
+  ],
+  "index_fix": "TH095静态调用边补入opcode83，后续索引包含独立子敌机；本批不重写历史全量核对状态。",
+  "evidence_count": 39
+}

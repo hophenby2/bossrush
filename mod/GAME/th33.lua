@@ -6380,6 +6380,7 @@ local function sg_tr_hook(recs, flags, start)
                     a.vecA = (r.f1 > -990) and r.f1 or self.rot
                 elseif r.kind == SG_BOUNCE or r.kind == SG_BOUNCE_EB then
                     a.hits = 0
+                    a.bounce_speed = r.f0 >= 0 and r.f0 or GetV(self)
                 end
                 ---★ C 里各条变换的更新顺序是**按 flag 位**（0x1 → 0x10 → 0x20 → 0x40 →
                 ---  0x80 → 0x100 → 0x400/0x800 → 0x8000，见 :1448-1473），与认领顺序无关
@@ -6419,7 +6420,9 @@ local function sg_tr_hook(recs, flags, start)
                 if a.timer >= r.i0 then
                     done = true
                 else
-                    a.ang = (a.ang or self.rot) + r.f1
+                    -- 原作POLAR累加到弹的当前angle；反弹后的方向必须参与下一帧。
+                    -- 缓存在记录中的角度会在下一帧把反射方向覆盖回去（脱兔/大穴牟迟）。
+                    a.ang = self.rot + r.f1
                     a.spd = a.spd + r.f0
                     object.SetV(self, a.spd, a.ang, true)
                 end
@@ -6467,30 +6470,17 @@ local function sg_tr_hook(recs, flags, start)
                 ---  只反弹左/右/上三面、且次数无限），只能表达原作的 0x800
                 ---  （BOUNCE_EXCEPT_BOTTOM）；0x400 多出来的下边界与次数上限在这里自己写，
                 ---  所以吃 BOUNCE 的弹一律**不传** rebound 参数。
-                if a.hits >= r.i0 then
-                    done = true
-                else
-                    local w = lstg.world
-                    local hit = false
-                    if self.x < w.l or self.x > w.r then
-                        self.vx = -self.vx
-                        self.x = (self.x < w.l) and (2 * w.l - self.x) or (2 * w.r - self.x)
-                        hit = true
-                    end
-                    ---0x400 四条边都反射；0x800 BOUNCE_EXCEPT_BOTTOM 少了「下边界那一条」
-                    ---（BulletManager.cpp:963-978 里 y 那支会检查 activeTransformFlags 是否含
-                    --- BOUNCE_ALL_EDGES）。TH095 的「下边界」= 我们的 y ≤ −224（y 轴翻过来），
-                    ---跳过的正是这一条。
-                    if (a.kind == SG_BOUNCE or self.y > w.b) and
-                            (self.y > w.t or self.y < w.b) then
-                        self.vy = -self.vy
-                        self.y = (self.y > w.t) and (2 * w.t - self.y) or (2 * w.b - self.y)
-                        hit = true
-                    end
-                    if hit then
-                        self.rot = Angle(0, 0, self.vx, self.vy)
-                        a.hits = a.hits + 1
-                    end
+                local w = lstg.world
+                if self.x <= w.l or self.x >= w.r or self.y >= w.t or self.y <= w.b then
+                    local angle = self.rot
+                    if self.x < w.l or self.x >= w.r then angle = 180-angle end
+                    if self.y > w.t or (self.y <= w.b and a.kind == SG_BOUNCE) then angle = -angle end
+                    -- TH095只改角度和速度，不像TH10那样镜像出屏坐标。
+                    -- NOBOT走到底边仍计一次尝试，只是不翻转y速度。
+                    object.SetV(self,a.bounce_speed,angle,true)
+                    a.hits = a.hits + 1
+                    -- 原作在反弹当帧清活动位，下一帧即可执行后续换色。
+                    if a.hits >= r.i0 then done = true end
                 end
             end
             if done then a.dead = true; dirty = true end
@@ -7713,9 +7703,12 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
 
     ---Sub9 的 ins_101 表（B 分支）：slot0 = 0x800 BOUNCE_EXCEPT_BOTTOM，int0 = 1 ⇒ 弹到
     ---左右/上边界各反弹一次就把这条变换收掉（BulletManager.cpp:959-1001）；slot1 的
-    ---0x4000 SET_SPRITE（型 14 色 3→色 5）是纯换色，本仓库没法半路换贴图 ⇒ 不实现。
+    ---0x4000 SET_SPRITE在反弹完成后的下一次Advance中执行（型14、色3→色5）。
     local function bounce_once()
-        return sg_tr_hook({ sg_rec(SG_BOUNCE_EB, 0, 1, -1, -1, -1) }, FLAGS_RING4)
+        return sg_tr_hook({
+            sg_rec(SG_BOUNCE_EB,0,1,-1,0.8,0),
+            sg_rec(SG_SET_SPRITE,0,14,5,-1,-1),
+        }, FLAGS_RING4)
     end
 
     ---小刀子机（原作是真子敌机；这里按文件头差异 5 改成**有寿命的自绘 object**）。
@@ -7754,7 +7747,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local base = -Angle(self.x, self.y, player.x, player.y)
                     for k = 0, 5 do                          -- t=60,70,…,110（6 轮）
                         skip_to(60 + 10 * k)
-                        sg_shot(89, sg_style(15), 6, self.x, self.y,
+                        sg_shot(89, sg_style(4), 6, self.x, self.y,
                                 32, 1, 3, 1.5, base, DRONE_STEP, false, FLAGS_FAN32)
                     end
                     skip_to(120)                             -- Sub6 收掉 slot1
@@ -7765,7 +7758,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local hook = bounce_once()
                     for k = 0, 11 do                         -- t=60,70,…,170（12 轮）
                         skip_to(60 + 10 * k)
-                        sg_shot(89, sg_style(15), 3, self.x, self.y,
+                        sg_shot(89, sg_style(14), 3, self.x, self.y,
                                 4, 1, 2, 1.5, base, DRONE_STEP, false,
                                 FLAGS_RING4, hook)
                         base = base + math.deg(th_turn)      -- ins_15(floatV0, floatV1)
@@ -7777,7 +7770,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     local hook = zigzag(-math.deg(th_turn))
                     for k = 0, 32 do                         -- t=30,34,…,158（33 轮）
                         skip_to(30 + 4 * k)
-                        sg_shot(89, sg_style(15), 2, self.x, self.y,
+                        sg_shot(89, sg_style(14), 2, self.x, self.y,
                                 8, 1, 4, 1.5, base, DRONE_STEP, false,
                                 FLAGS_RING8, hook)
                     end
@@ -15573,14 +15566,14 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
 
     ---每波弹的变换表（ins_101 slot0..slot9 的槽序就是程序序）：
     ---  slot0 CULL 400（allow=1，即时）
-    ---  slot1 WAIT 20（allow=1）→ 卡住后面 allow=0 的槽 ⇒ 「先原地停 20 帧」
+    ---  slot1 WAIT 20（allow=1）→ 卡住后面allow=0的槽；本段保留出膛速度，不会自行停弹。
     ---  slot2 CHDIR_REL i0=25 i1=1 f0=±90° f1=−999（角按 callFloat0 的正负选方向、速度不变）
-    ---  slot3/5/8 SET_SPRITE（换贴图，本仓库没有半路换图的接口 ⇒ sg_tr_hook 认掉即走）
+    ---  slot3/5/8 SET_SPRITE即时换型换色；slot8的原作色号按13/10/8循环。
     ---  slot4 CHDIR_REL i0=45 i1=1 f0=180° f1=0 ⇒ 边减速到 0 边转半圈（到点后速度 0）
     ---  slot6 WAIT 10（allow=1）
     ---  slot7 CHDIR_REL i0=10 i1=1 f0=+120°/180°/−120° f1=floatV6/floatV5
     ---  slot9 PLAY_SOUND（认掉即走）
-    local function bf_hook(callf0, slot7_ang, slot7_spd)
+    local function bf_hook(callf0, slot7_ang, slot7_spd, final_color)
         return sg_tr_hook({
             sg_rec(SG_CULL, 1, 400, -1, -1, -1),
             sg_rec(SG_WAIT, 1, 20, -1, -1, -1),
@@ -15591,7 +15584,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
             sg_rec(SG_SET_SPRITE, 0, 0, 13, -1, -1),
             sg_rec(SG_WAIT, 1, 10, -1, -1, -1),
             sg_rec(SG_CHDIR_R, 0, 10, 1, slot7_ang, slot7_spd),
-            sg_rec(SG_SET_SPRITE, 0, 3, 13, -1, -1),
+            sg_rec(SG_SET_SPRITE, 0, 3, final_color, -1, -1),
             sg_rec(SG_SND_T, 0, 26, -1, -1, -1),
         }, BF_FLAGS)
     end
@@ -15681,11 +15674,11 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
             local variant = n % 3
             local hook
             if variant == 0 then
-                hook = bf_hook(callf0, sg_deg(math.rad(120)), v6)
+                hook = bf_hook(callf0, sg_deg(math.rad(120)), v6, 13)
             elseif variant == 1 then
-                hook = bf_hook(callf0, sg_deg(math.pi), v5)
+                hook = bf_hook(callf0, sg_deg(math.pi), v5, 10)
             else
-                hook = bf_hook(callf0, sg_deg(math.rad(-120)), v6)
+                hook = bf_hook(callf0, sg_deg(math.rad(-120)), v6, 8)
             end
             sg_shot(89, sg_style(0), 0, owner.x, owner.y,
                     ring, 1, v7, 0.7, math.deg(v0), math.deg(BF_STEP), false,
