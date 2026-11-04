@@ -3,6 +3,13 @@
 -- 激光状态机来自PhotoEffect.cpp；秘鍵来自enm16/script8/sprite11，幽幽子的扇面来自
 -- enm17/script12/sprite11。原始THTX只经texture_png.py封装成PNG，没有重画。
 local N={}
+function N.pose(o,base)
+    if o._original_actor then OriginalStageVisual.poses(o,{base,base+1,base+2,base+3,base+4,base+5}) end
+end
+function N.special(o)
+    local actor=o._original_actor
+    if actor and actor.poses and actor.poses[6] then OriginalStageVisual.set_script(o,actor.poses[6]) end
+end
 -- SpawnWithContext先RunEcl(0)，保留协程及运动状态，位置仍待管理器积分。
 function N.enemy_birth(o,step)
     local x,y=o.x,o.y

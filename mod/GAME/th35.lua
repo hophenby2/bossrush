@@ -1277,7 +1277,8 @@ local function t10_enm_kill_all(keep)
         local o = T10_PODS[i]
         if not IsValid(o) then
             table.remove(T10_PODS, i)
-        elseif o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser then
+        elseif o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser
+            and class.t10_interaction.kill_all_target(o) then
             t10_kill_pod(o)
             table.remove(T10_PODS, i)
         end
@@ -1325,6 +1326,7 @@ end
 
 -- Native RuntimeUpdate先按可视范围判出屏，再跑ECL。这里使用原作坐标和ANM设置时的快照。
 class.t10_no_oob_sources=dofile('mod/GAME/th35_no_oob.lua')
+class.t10_interaction=dofile('mod/GAME/th35_interaction.lua')
 function class.t10_enemy_inside(o)
     local source=o._original_source
     if o.th10_boss or o.t10_road_owner or not source then return true end
@@ -1347,6 +1349,7 @@ function class.t10_enemy_frame(o)
     if o.hp<=0 then object.Kill(o);return end
     o.astral_dmg_factor=lstg.var.ON_astral and 2.5 or 1
     class.t10_run_tasks(o)
+    if IsValid(o) then class.t10_interaction.frame(o) end
 end
 
 class["th10_ecs_pod"] = Class(object, {
@@ -1391,6 +1394,7 @@ class["th10_ecs_pod"] = Class(object, {
         if self.th10_boss and IsValid(self.th10_boss) then
             self.th10_boss.x, self.th10_boss.y = self.x, self.y
         end
+        class.t10_interaction.frame(self)
     end,
 })
 
@@ -1660,6 +1664,7 @@ local function t10_boss_start(b, main, id)
     local entry = assert(class.t10_boss_entry[id], "缺少 TH10 Boss 入场上下文")
     local previous = b.th10_motion
     p.th10_motion_key = entry.key
+    p.t10_flags=(previous and previous.key==entry.key and previous.flags) or 0
     if previous and previous.key == entry.key then
         p.ecs = previous.ecs
     else
@@ -1673,6 +1678,7 @@ local function t10_boss_start(b, main, id)
     local visual_key=OriginalStageVisual.functions[main]
     if visual_key then
         OriginalStageVisual.bind_source(b,10,visual_key,true)
+        class.t10_interaction.init(p,visual_key)
     end
 
     -- 这是既有Boss切换攻击入口：本体先在链表中，t0生成的使魔排在它后面。
@@ -1740,8 +1746,9 @@ end
 
 function class.t10_boss_end(b)
     local p = b.th10carrier
-    if p and p.ecs then b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs } end
+    if p and p.ecs then b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs, flags=p.t10_flags } end
     t10_clear_pods(p)
+    class.t10_interaction.release(b)
 end
 
 ---callAsync：在**同一敌机**上另起一个线程（共享 pattern 与全局变量）。
@@ -3198,7 +3205,7 @@ function s7.BossCard7(o)
     end
 end
 
----卡 3619　土着神「宝永四年の赤蛙」（可击破；spellTimeout 不是无敌）
+---卡 3619　土着神「宝永四年の赤蛙」（t80关闭交互；入场无敌覆盖此前，全程耐久）
 ---  原作 BossCard8 / _at / _at2。t=80 放第一只使魔，+1260 帧后再放第二只（原作 ECL 的
 ---  循环只回到 `wait(2400)` —— 那之后不再生成，本移植版照抄，不擅自改成「循环生成」）。
 ---  使魔：先绕半径 0→0.8 的圆转，再横移到自机 x、按极速度冲一段、速度衰减到 0，之后
@@ -3250,6 +3257,7 @@ function s7.BossCard8(o)
     m_pos_time(o, "off", 60, 4, 0.0, 224.0)
     t10_enm_kill_all(o)
     task.Wait(80)
+    class.t10_interaction.flags(o,3,true)
     spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
     task.Wait(1200)
     task.Wait(60)                        -- //1340
@@ -3259,7 +3267,7 @@ function s7.BossCard8(o)
     end
 end
 
----卡 3620　「諏訪大戦　～ 土着神話 vs 中央神話」（可击破；spellTimeout 不是无敌）
+---卡 3620　「諏訪大戦　～ 土着神話 vs 中央神話」（t100关闭交互；入场无敌覆盖此前，全程耐久）
 ---  原作 BossCard9 / _at / _at2 / _MoveSin。上半拍自下缘（y=448）升起六只「石」使魔
 ---  （x = −192,−128,−64,64,128,192，跳过 0；%F0 在两值间交替），下半拍自上缘（y=0）
 ---  落七只（中间那只在 $I1 ≥ 5 时不再生成）。两半拍之间各等 $C 帧，$C 从 460 每次 −50 到 60 为止。
@@ -3357,6 +3365,7 @@ function s7.BossCard9(o)
     m_pos_time(o, "off", 60, 4, 0.0, 224.0)
     task.Wait(80)                        -- //80：原作在此 setInterrupt/spellEx/spellTimeout
     task.Wait(20)                        -- //100
+    class.t10_interaction.flags(o,3,true)
     local c = 460
     o.I0 = 0
     o.I1 = 0
@@ -4565,9 +4574,8 @@ end
 ---    中 BOSS 三张挂回 1a 是刻意的：原作 stage07 的中 BOSS 也是神奈子，
 ---    用 5a 会让它们顶着諏訪子的立绘出场（原作的 BOSS 是諏訪子，中 BOSS 不是）。
 ---  t1/t2 = setInvuln(n)/60；t3 = spell*(…, 时间, …) 的帧数 / 60。
----    3619「宝永四年の赤蛙」/ 3620「諏訪大戦」/ 3621「祟符」虽然带 spellTimeout()，
----    但 spellTimeout 只影响超时表现，**不是无敌**；它们各有 10,000 可伤 HP。
----    真正挡伤害的只有 setInvuln(90/180/120)，所以 t1 = t2 = 1.5/3/2 秒。
+---    3619/3620分别在t80/t100 SET_FLAGS(3)，入场无敌90/180覆盖此前，故为耐久。
+---    3621「祟符」没有同样的关闭受弹条件，仍保留原10000生命的可击破阶段。
 ---    3607「無双風神」则被 setInvuln(1080) 覆盖整张卡，仍按耐久卡处理。
 ---  HP = 该卡开始时 BOSS 的 lifeSet（中 BOSS 三张 2300；3619/3620/3621 是 10000），
 ---    再由 TH35_REIMU_HP 换算成移植版灵梦口径。
@@ -4597,8 +4605,8 @@ local T10_CARDS_EX = {
     { s7.Boss7,      "",                                          "5a", 3658, 60 / 60,  60 / 60,  3600 / 60, 8000, "stage07 非符七" },
     { s7.BossCard7,  "土着神「ケロちゃん風雨に負けず」",          "5a", 3618, 60 / 60,  60 / 60,  6300 / 60, 4500 },
     { s7.Boss8,      "",                                          "5a", 3659, 90 / 60,  90 / 60,  3600 / 60, 8000, "stage07 非符八" },
-    { s7.BossCard8,  "土着神「宝永四年の赤蛙」",                  "5a", 3619, 90 / 60,  90 / 60,  2400 / 60, 10000 },
-    { s7.BossCard9,  "「諏訪大戦　～ 土着神話 vs 中央神話」",     "5a", 3620, 180 / 60, 180 / 60, 5040 / 60, 10000 },
+    { s7.BossCard8,  "土着神「宝永四年の赤蛙」",                  "5a", 3619, 2400 / 60,2400 / 60,2400 / 60, 10000 },
+    { s7.BossCard9,  "「諏訪大戦　～ 土着神話 vs 中央神話」",     "5a", 3620, 5040 / 60,5040 / 60, 5040 / 60, 10000 },
     { s7.BossCard10, "祟符「ミシャグジさま」",                    "5a", 3621, 120 / 60, 120 / 60, 9600 / 60, 10000 },
 }
 
@@ -4892,12 +4900,15 @@ function s6.Boss4(o)
     ct = s_wait(ct, 30)                         -- +30: //30
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)     -- movePosTime(60, 4, 0, 128)
     ct = s_wait(ct, 90)                         -- +60: //90
+    class.t10_interaction.flags(o,3,false)
     m_limit(o, 0.0, 112.0, 128.0, 64.0)         -- moveLimit(0, 112, 128, 64)
     ct = 1050                                   -- jmp(Boss4_2932, 1050)
     while true do                               -- _2932：pushi(1); jmpNeq(_920, 90)
         ct = 90                                 -- jmpNeq(_920, 90)：时钟拨回 90
+        class.t10_interaction.flags(o,3,false)
         ct = s_wait(ct, 150)                    -- +60: //150（空转）
         ct = s_wait(ct, 210)                    -- +60: //210
+        class.t10_interaction.flags(o,3,true)
         t10_enm_kill_all(o)                     -- enmKillAll()
         s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])   -- BossCirR4/G4/B4
         ct = ct - 60                            -- wait(60)
@@ -4906,9 +4917,11 @@ function s6.Boss4(o)
         ct = s_wait(ct, 330)                    -- +120: //330
         m_rand(o, "off", 120, 0, 1.0)           -- moveRand(120, 0, 1.0)
         ct = s_wait(ct, 450)                    -- +120: //450
+        class.t10_interaction.flags(o,3,false)
         t10_enm_kill_all(o)                     -- enmKillAll()
         ct = s_wait(ct, 510)                    -- +60: //510（空转）
         ct = s_wait(ct, 570)                    -- +60: //570
+        class.t10_interaction.flags(o,3,true)
         s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
         ct = ct - 60                            -- wait(60)
         ct = s_wait(ct, 570)                    -- callAsync("Boss4_at2")（等满 60）
@@ -4916,9 +4929,11 @@ function s6.Boss4(o)
         ct = s_wait(ct, 630)                    -- +60: //630
         m_rand(o, "off", 120, 0, 1.0)           -- moveRand(120, 0, 1.0)
         ct = s_wait(ct, 750)                    -- +120: //750
+        class.t10_interaction.flags(o,3,false)
         t10_enm_kill_all(o)                     -- enmKillAll()
         ct = s_wait(ct, 810)                    -- +60: //810（空转）
         ct = s_wait(ct, 870)                    -- +60: //870
+        class.t10_interaction.flags(o,3,true)
         s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
         ct = ct - 60                            -- wait(60)
         ct = s_wait(ct, 870)                    -- callAsync("Boss4_at3")（等满 60）
@@ -5460,12 +5475,11 @@ class["th10_midfairy"] = Class(enemy, {
     end,
     frame = function(self)
         ecs_step(self)                          -- 原作 EnemyRuntimeUpdate：先解两路 motion
-        if self.invuln > 0 then                 -- setInvuln 计时
-            self.invuln = self.invuln - 1
-            if self.invuln <= 0 then self.protect = false end
-        end
+        -- 原作在伤害/接触之后递减计时；LuaSTG碰撞稍后执行，保留本帧保护快照。
+        self.protect=self.invuln>0
         if not class.t10_enemy_inside(self) then return end
         class.t10_enemy_frame(self)
+        if IsValid(self) then self.invuln=math.max(0,self.invuln-1) end
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)
@@ -5655,12 +5669,11 @@ class["th10_s6fairy"] = Class(enemy, {
     end,
     frame = function(self)
         ecs_step(self)                          -- 原作 EnemyRuntimeUpdate：先解两路 motion
-        if self.invuln > 0 then                 -- setInvuln 计时
-            self.invuln = self.invuln - 1
-            if self.invuln <= 0 then self.protect = false end
-        end
+        -- 原作在伤害/接触之后递减计时；LuaSTG碰撞稍后执行，保留本帧保护快照。
+        self.protect=self.invuln>0
         if not class.t10_enemy_inside(self) then return end
         class.t10_enemy_frame(self)
+        if IsValid(self) then self.invuln=math.max(0,self.invuln-1) end
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)
@@ -5789,7 +5802,7 @@ s6mid.BEH.girl00 = function(f)
     s6mid.vel(f, t10_angle_player(f), 0.0)          -- moveVel(%ABS_ANGLE_PLAYER, 0)
     s6mid.vel_time(f, 60, 0, -999999, 2.0)
     task.Wait(60)
-    f.t10_no_oob=false                          -- t=160 flagClear(4)。
+    class.t10_interaction.flags(f,4,false)                          -- t=160 flagClear(4)。
 end
 
 ---Girl02：MainSub5 末尾在锚点 (0,0) 处 enmCreate ⇒ 落点 (0,−24)。
@@ -6613,10 +6626,10 @@ t10mid.s03.g00c = function(f)
     t10mid.vel_time(f, 120, 4, 1.5707964, 0.0)
     task.New(f, function() t10mid.s03.rg00c_at(f) end)
     task.Wait(120)
-    f.group=GROUP.ENEMY                        -- t=140 flagClear(2)。
+    class.t10_interaction.flags(f,2,false)       -- t=140 flagClear(2)。
     t10mid.vel_time(f, 60, 1, 0.7853982, 1.0)
     task.Wait(320)
-    f.t10_no_oob=false
+    class.t10_interaction.flags(f,4,false)
     while true do task.Wait(6000) end
 end
 
@@ -8183,7 +8196,7 @@ t10mid.s07.cir00 = function(f)
     task.Wait(30)
     t10mid.vel_time(f, 60, 0, 0.0, 4.0)
     task.Wait(60)
-    f.t10_no_oob=false                          -- t=120 flagClear(4)。
+    class.t10_interaction.flags(f,4,false)                          -- t=120 flagClear(4)。
 end
 
 ---Cir00b_at：先等 10 帧（整个 pattern 都在这一刻配好）；之后每 15 帧一发：
@@ -8211,7 +8224,7 @@ t10mid.s07.cir00b = function(f)
     task.Wait(120)
     t10mid.vel_time(f, 60, 0, 0.0, 2.0)
     task.Wait(60)
-    f.t10_no_oob=false                          -- t=180 flagClear(4)。
+    class.t10_interaction.flags(f,4,false)                          -- t=180 flagClear(4)。
 end
 
 ---Cir00c_at：与 Cir00b_at 同一条，唯每发间隔 20 帧。
@@ -8238,7 +8251,7 @@ t10mid.s07.cir00c = function(f)
     task.Wait(120)
     t10mid.vel_time(f, 60, 0, -0.7853982, 2.0)
     task.Wait(60)
-    f.t10_no_oob=false                          -- t=180 flagClear(4)。
+    class.t10_interaction.flags(f,4,false)                          -- t=180 flagClear(4)。
 end
 
 ---========================= Girl 系（俯冲妖精） =========================
@@ -11162,6 +11175,9 @@ do
         -- 主机载体由 Boss 绘制；子机只有原作设置过 ANM 时才显示本体。
         if origin then return V.functions[sub] end
     end)
+    class.t10_interaction.wrap(class.th10_midfairy)
+    class.t10_interaction.wrap(class.th10_s6fairy)
+    class.t10_interaction.wrap(class.th10_ecs_pod)
 end
 
 do

@@ -238,6 +238,7 @@ local function DoFrame()
         if OriginalCollision then OriginalCollision.shots() end
         ck(GROUP.ENEMY, GROUP.PLAYER_BULLET)
         ck(GROUP.NONTJT, GROUP.PLAYER_BULLET)
+        if OriginalCollision then OriginalCollision.secondary() end
         ck(GROUP.ITEM, GROUP.PLAYER)
         ck(GROUP.ITEM2, GROUP.PLAYER)
         ck(GROUP.SPELL, GROUP.ENEMY)

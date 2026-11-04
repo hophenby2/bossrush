@@ -895,7 +895,9 @@ function H.actor_post(a,count_phase)
     local visible=not a.invisible and a.interactable
     b._a=(a.invisible or (a.bat_timer or 0)>0) and 0 or 255
     b.DMG_factor=a.damageable and visible and 1 or 0
-    b._colli=a.collidable and visible
+    -- ECL104只关体术；ECL117才关交互。不能因不可碰撞而漏掉自机弹受击。
+    b.group=a.collidable and GROUP.ENEMY or GROUP.NONTJT
+    b._colli=visible and (a.main or a.entered==true)
     SetAttr(b,"colli",b._colli and b.x>=-224 and b.x<=224 and b.y>=-256 and b.y<=256)
 end
 class["原作流程控制"] = Class(object, {

@@ -5936,6 +5936,8 @@ function class.th07_motion_begin(self, id, move)
     local m = cfg.move
     if m then move(self, m[1], m[2], m[3]-192, 224-m[4]) end
     self.th07_motion_live, self.th07_motion_key = id, cfg.key
+    OriginalStageVisual.bind_source(self,7,cfg.file:gsub('%.ecl$','')..':'..cfg.sub,true)
+    self.th07_visual_clock,self.th07_visual_stamp=0,nil
 end
 -- 缓时复用 TH07 的斩击背景回调和框架 timeslow。原作 ExIns 10/11 以 1/factor
 -- 推进计时与运动；这里由统一逻辑帧减速，不能再把弹速除一次，否则会双重减速。
@@ -6163,6 +6165,7 @@ function class.th07_motion_end(self)
         mv=self._mv, orb=self._orb, box=self._box, angle=self.angle, angdir=self._angdir,
         exit_box=self.th07_exit_box }
     self.th07_motion_live = nil
+    self.th07_visual_clock=nil
     self.th07_orbit_step=nil
 end
 

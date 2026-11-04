@@ -188,7 +188,7 @@ return function()
     end
     function M.unit_collision(o)
         o.th08_youkai=M.youkai(o)
-        local human=not o.th08_youkai and not o._original_hidden
+        local human=not o.th08_youkai and not o._original_hidden and o.seen==true and o.alive~=false
         local collision=human and o._original_familiar_collision~=false
         o.group=collision and GROUP.ENEMY or GROUP.NONTJT
         SetAttr(o,'colli',human and (o._original_accepts_damage~=false or collision))
@@ -288,7 +288,7 @@ return function()
     local function refresh(o)
         local f=o.th08_flags
         o.th08_youkai=M.youkai(o)
-        local human=not o.th08_youkai
+        local human=not o.th08_youkai and o.th08_seen==true
         o.th08_accept=human and not bit(f,1) and not bit(f,8)
         o.th08_damageable=not bit(f,4)
         o.th08_no_death=bit(f,32)
@@ -437,6 +437,8 @@ return function()
             refresh(o)
             if frame then frame(o) end
             if IsValid(o) then
+                if M.actor_inside(o,o.x,o.y,true) then o.th08_seen=true end
+                refresh(o) -- 本次运动后入场的对象，本帧即可参与判定。
                 if OriginalStageVisual then OriginalStageVisual.tick(o) end
                 o.th08_guard=math.max(0,o.th08_guard-1)
                 o.th08_clock=o.th08_clock+1
@@ -503,7 +505,18 @@ return function()
             o.th08_actors,o.th08_actor_counts={},{}
             if card.t1<card.t3 then o.no_hp_render,o.NotPlayTimeOutSound=false,false end
             if lw then o.colli=true end
+            -- 每个阶段独立推进ECL显示与判定事件，不能只绑定角色默认行走图。
+            o._original_secondary_box=nil
+            o._original_no_damage_during_bomb=false
+            o._original_accepts_damage,o._original_damageable=true,true
+            o._original_familiar_collision=true
+            o._original_hidden=false
             init(o)
+            local source=card.th08_motion_source or card.th08_lastword_source
+            if source then
+                OriginalStageVisual.bind_source(o,8,source.file..':'..source.sub,true)
+                o.th08_source_clock=0
+            else o.th08_source_clock=nil end
             local contact_until=M.survival_contact_until[id]
             if contact_until then o.colli=contact_until>0 end
             if card.th08_lastword_source then
@@ -519,6 +532,15 @@ return function()
             M.form()
             if o.th08_combat_card==id then
                 M.owner=o
+                if o.th08_source_clock then
+                    OriginalStageVisual.source_frame(o,o.th08_source_clock)
+                    o.th08_source_clock=o.th08_source_clock+1
+                    local visible=not o._original_hidden
+                    o.group=o._original_familiar_collision and GROUP.ENEMY or GROUP.NONTJT
+                    o._colli=visible and (o._original_accepts_damage or o._original_familiar_collision)
+                    SetAttr(o,'colli',o._colli)
+                    o.DMG_factor=o._original_damageable and 1 or 0
+                end
                 local contact_until=M.survival_contact_until[id]
                 if contact_until then
                     o.colli=o.th08_combat_time<contact_until
@@ -535,7 +557,8 @@ return function()
         card.del=function(o)
             del(o)
             for _,a in ipairs(o.th08_actors or {}) do if alive(a) then object.RawDel(a) end end
-            o.th08_actors,o.th08_combat_card=nil,nil
+            o.th08_actors,o.th08_combat_card,o.th08_source_clock=nil,nil,nil
+            o._original_secondary_box,o._original_no_damage_during_bomb=nil,nil
             o.DMG_factor=1
             if M.owner==o then M.owner=nil end
         end

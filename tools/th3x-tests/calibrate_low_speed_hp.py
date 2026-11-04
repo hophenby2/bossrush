@@ -82,7 +82,7 @@ def ecl_rows():
             columns = [c.strip() for c in line.split('|')[1:-1]]
             key = int(columns[0].strip('`'))
             raw = columns[3].replace(',', '')
-            if not raw.isdigit() or (section == 10 and key == 3607):
+            if not raw.isdigit() or (section == 10 and key in (3607,3619,3620)):
                 continue
             immune = re.search(r'(\d+)f 全免', columns[5])
             guard = re.search(r'(\d+)f /9', columns[5])

@@ -23,7 +23,8 @@ def export(declarations,binaries):
         decl=(declarations/(name+'.decl')).read_text(encoding='utf-8',errors='replace')
         frame=0;timer=None;photos=None
         for line in decl.splitlines():
-            if line.startswith('sub '): frame=0
+            if line.startswith('sub '):
+                frame=0;current_sub=int(re.match(r'sub Sub(\d+)',line)[1])
             timestamp=re.match(r'\+\d+:\s*//\s*(\d+)',line)
             if timestamp: frame=int(timestamp[1])
             value=re.search(r'ins_114\((\d+)\)',line)
@@ -31,10 +32,10 @@ def export(declarations,binaries):
                 assert timer is None,name
                 timer=(frame,int(value[1]))
             value=re.search(r'ins_141\((\d+)\)',line)
-            if value: photos=int(value[1])
+            if value: photos=int(value[1]);root=current_sub
         assert timer and photos,(name,timer,photos)
         digest=hashlib.sha256((binaries/(name+'.ecl')).read_bytes()).hexdigest()
-        lines.append(f"    [{card_id}]={{file='{name}.ecl',timeout_start={timer[0]},timeout={timer[1]},photos={photos},sha256='{digest}'}},")
+        lines.append(f"    [{card_id}]={{root={root},file='{name}.ecl',timeout_start={timer[0]},timeout={timer[1]},photos={photos},sha256='{digest}'}},")
     lines.append('}')
     target=ROOT/'mod/GAME/th33_sources.lua'
     target.write_text('\n'.join(lines)+'\n',encoding='utf-8')

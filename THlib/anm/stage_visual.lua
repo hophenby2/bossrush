@@ -121,12 +121,20 @@ local function draw_alignment(o)
 end
 function S.tick(o,vx)
     local s=o._original_actor
-    if not s or s.tick==o.ani then return end
+    if not s then return end
+    if o.th07_visual_clock and o.th07_visual_stamp~=o.ani then
+        S.source_frame(o,o.th07_visual_clock)
+        o.th07_visual_clock=o.th07_visual_clock+1
+        o.th07_visual_stamp=o.ani
+        s=o._original_actor
+    end
+    if s.tick==o.ani then return end
     s.tick=o.ani
     local p=s.poses
     if p and p[2] and p[2]>=0 then
         vx=vx or o.dx or 0
-        local dir=vx<-.01 and 1 or vx>.01 and 2 or 0
+        local limit=s.game==6 and 0 or s.game==10 and .1 or .01
+        local dir=vx< -limit and 1 or vx>limit and 2 or 0
         if dir~=s.direction then
             local id=dir==1 and p[2] or dir==2 and p[3]
                 or s.direction==1 and p[4] or s.direction==2 and p[5] or p[1]
@@ -171,6 +179,7 @@ function S.draw(o)
     return true
 end
 local source_data
+local visual_loops=dofile('mod/GAME/original/visual_loops.lua')
 local function source_archive(game,file,alternate)
     if game==10 then return 'stgenm'..assert(file:match('stage(%d+)')) end
     if game==95 then return 'enm'..assert(file:match('ecl(%d+)_')) end
@@ -251,8 +260,17 @@ local function animation_event(o,game,file,c)
             local old=o._original_actor
             if old then S.set_script(o,c[3]) else S.actor(o,game,archive,c[3]) end
         elseif op==96 then
-            if c[3]<0 then if o._original_actor then o._original_actor.poses=nil end;return end
-            local p={c[3],c[6],c[7],c[4],c[5]}
+            local p
+            if c[6]~=nil then p={c[3],c[6],c[7],c[4],c[5]}
+            else
+                -- TH07原始96的五个姿态是short，导出表保留了三项32位原始字。
+                local function short(word,high)
+                    local n=math.floor(word/(high and 65536 or 1))%65536
+                    return n>=32768 and n-65536 or n
+                end
+                p={short(c[3]),short(c[4],true),short(c[5]),short(c[3],true),short(c[4])}
+            end
+            if p[1]<0 then if o._original_actor then o._original_actor.poses=nil end;return end
             if not o._original_actor then S.actor(o,game,archive,p[1],p) else S.poses(o,p) end
         elseif op==97 and o._original_actor then S.slot(o,c[3],c[4])
         elseif op==128 and o._original_actor then A.interrupt(o._original_actor.vm,c[3])
@@ -278,11 +296,12 @@ local function animation_event(o,game,file,c)
     end
     if source and op>=54 and op<=61 then source.alternate=op>=58 end
 end
-function S.bind_source(o,game,key,preserve)
+function S.bind_source(o,game,key,preserve,events_override)
     if OriginalCollision then OriginalCollision.unit(o,game,key) end
+    if OriginalCollision then OriginalCollision.bind_events(o,game,key) end
     source_data=source_data or dofile('mod/GAME/original/visual_ecl.lua')
     local file=key:match('^([^:]+)')
-    local cfg=source_data[game] and source_data[game][key]
+    local cfg=events_override or source_data[game] and source_data[game][key]
     local bank=game==10 and 0 or 2
     if game==10 and preserve then
         local old=o._original_source
@@ -301,10 +320,27 @@ function S.bind_source(o,game,key,preserve)
     end
     S.source_frame(o,0)
 end
-function S.source_frame(o,clock)
-    local state=o._original_source
+function S.visual_program(game,key)
+    source_data=source_data or dofile('mod/GAME/original/visual_ecl.lua')
+    return {game=game,key=key,file=key:match('^([^:]+)'),cfg=source_data[game][key],index=1}
+end
+function S.source_frame(o,clock,program)
+    if not program and OriginalCollision then OriginalCollision.events(o,clock) end
+    local state=program or o._original_source
     if not state or not state.cfg then return end
     local events=state.cfg.events
+    local loop=state.game==95 and visual_loops[state.key]
+    local resume_clock
+    if loop and clock>=loop[2] then
+        local cycle=math.floor((clock-loop[1])/(loop[2]-loop[1]))
+        local local_clock=loop[1]+(clock-loop[1])%(loop[2]-loop[1])
+        if cycle>(state.visual_cycle or 0) then
+            -- 先执行回跳前的末帧事件，再恢复到跳转标签之后；不重播入口姿态。
+            resume_clock=local_clock;clock=loop[2]
+            state.visual_cycle=cycle
+        else clock=local_clock end
+    end
+    repeat
     while events[state.index] and events[state.index][1]<=clock do
         local c=events[state.index]
         local mask=state.cfg.masks and state.cfg.masks[state.index]
@@ -324,6 +360,10 @@ function S.source_frame(o,clock)
         if enabled then animation_event(o,state.game,state.file,resolved) end
         state.index=state.index+1
     end
+    if resume_clock then
+        state.index=loop[3];clock=resume_clock;resume_clock=nil
+    else break end
+    until false
 end
 function S.wrap_actor(cls,game,key)
     local init,frame,render=cls.init,cls.frame,cls.render

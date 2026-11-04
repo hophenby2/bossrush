@@ -250,8 +250,6 @@ H.entries[10]={
     [3616]={raw=3500,hp=2074,immune=60,guard=0,spell=true},
     [3617]={raw=3500,hp=2074,immune=60,guard=0,spell=true},
     [3618]={raw=4500,hp=2667,immune=60,guard=0,spell=true},
-    [3619]={raw=10000,hp=5927,immune=90,guard=0,spell=true},
-    [3620]={raw=10000,hp=5927,immune=180,guard=0,spell=true},
     [3621]={raw=10000,hp=5927,immune=120,guard=0,spell=true},
     [3622]={raw=2500,hp=1482,immune=90,guard=0,spell=true},
     [3623]={raw=2500,hp=1482,immune=60,guard=0,spell=true},

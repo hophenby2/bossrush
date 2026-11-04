@@ -461,6 +461,8 @@ local task, ran = task, ran
 local New, rawSimpleBullet = New, NewSimpleBullet
 local PhotoNative=dofile('mod/GAME/th33_native.lua')
 local PhotoSources=dofile('mod/GAME/th33_sources.lua')
+local PhotoBossVisual=dofile('mod/GAME/th33_boss_visual_sources.lua')
+local PhotoVisualPrograms=dofile('mod/GAME/th33_visual_programs.lua')
 task=PhotoNative.task_api(task)
 local function register_photo_card(group,level,title,id,...)
     local source=assert(PhotoSources[id],'缺少文花帖原版ECL来源：'..tostring(id))
@@ -473,12 +475,27 @@ local function register_photo_card(group,level,title,id,...)
         card.init=function(o)
             PhotoNative.clear_move(o)
             if init then init(o) end
+            OriginalStageVisual.bind_source(o,95,source.file:gsub('%.ecl$','')..':'..source.root,true,PhotoBossVisual[id])
+            o.th095_visual_clock=0;o.th095_visual_card=card
+            o.th095_visual_programs={}
+            for _,entry in ipairs(PhotoVisualPrograms[id] or {}) do
+                o.th095_visual_programs[#o.th095_visual_programs+1]={entry[1],OriginalStageVisual.visual_program(95,entry[2])}
+            end
         end
         card.frame=function(o)
+            if o.th095_visual_card==card then
+                local clock=o.th095_visual_clock or 0
+                OriginalStageVisual.source_frame(o,clock)
+                for _,program in ipairs(o.th095_visual_programs or {}) do
+                    if clock>=program[1] then OriginalStageVisual.source_frame(o,clock-program[1],program[2]) end
+                end
+                o.th095_visual_clock=clock+1
+            end
             if frame then frame(o) end -- 私有逐帧枪也是ECL的一部分，仍从积分前位置发弹。
             PhotoNative.flush_move(o)
         end
         card.del=function(o)
+            o.th095_visual_card,o.th095_visual_programs=nil,nil
             PhotoNative.clear_move(o)
             if del then del(o) end
         end
@@ -3947,6 +3964,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     local function main_script(owner)
         task.New(owner, function()
             while true do
+                PhotoNative.special(owner)
                 local tok = { alive = true }
                 sub6(owner, tok)
                 task.Wait(320)
@@ -11236,20 +11254,31 @@ do  -- 30 铃仙 非符（ecl7_a，组 17a 第 1 张）
             --- 目标 ins_117 的 time 字段正是 15（EclRun.cpp:293 的 time == instruction->time
             --- 在同一次 redispatch 里立刻成立）⇒ 不等待，Sub4 在 Sub3 的第 0 帧就起。
             t = 15
+            PhotoNative.pose(owner,2)
             sub4(owner)
+            if not goto_t(30) then return end
+            PhotoNative.pose(owner,8)
             if not goto_t(75) then return end
             sg_bmove(owner, st, 60, 4, 2, BOX)
             if not goto_t(135) then return end
+            PhotoNative.pose(owner,2)
             while not st.dead do
                 --- ins_4(0,−272)：time 置 0、跳回 @708（@708..@772 的冻结段每轮都跑）
                 t = 0
                 local d = FREEZE0 - FREEZE_STEP * photo_index(PHOTO_LIMIT)
                 if d > 0 and not freeze(d) then return end
-                if not goto_t(15) then return end
+                PhotoNative.pose(owner,8)
+                for _,event in ipairs({{1,2},{9,8},{10,2},{14,8},{15,2}}) do
+                    if not goto_t(event[1]) then return end
+                    PhotoNative.pose(owner,event[2])
+                end
                 sub4(owner)
+                if not goto_t(30) then return end
+                PhotoNative.pose(owner,8)
                 if not goto_t(75) then return end
                 sg_bmove(owner, st, 60, 4, 2, BOX)
                 if not goto_t(135) then return end
+                PhotoNative.pose(owner,2)
             end
         end)
     end
@@ -11998,6 +12027,7 @@ do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，梅蒂欣，组 18a
                 if st.sub5 then st.sub5.alive = false end
                 st.sub5 = sub5(owner)                   -- ins_117(1,5)
                 if not goto_t(40) then return end
+                PhotoNative.special(owner)
                 local d = 100 - 10 * photo_index(PHOTO_LIMIT)
                 if d > 0 and not freeze(d) then return end
                 sg_bmove(owner, st, 60, 4, 2, BOX)      -- ins_67(60,4,2)
@@ -12257,6 +12287,7 @@ do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，铃�
                 if not goto_t(100) then return end
                 PhotoNative.fade_tag(1);PhotoNative.fade_tag(2)
                 if not goto_t(130) then return end
+                PhotoNative.special(owner)
                 PhotoNative.restore_motion()             -- Sub8的ExIns3
                 sg_bmove(owner, st, 60, 4, 1.3, BOX)    -- ins_67(60,4,1.3)
                 if not goto_t(190) then return end
@@ -14942,6 +14973,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
         local g = gen
         task.New(owner, function()
             while not st.dead and g == gen do
+                PhotoNative.special(owner)
                 sub5(owner)
                 sg_polar_move(owner, st, MOVE_IN, 4, th_aim(owner.x, owner.y), MOVE_IN_SPEED)
                 task.Wait(BMOVE_AT)

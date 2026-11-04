@@ -48306,7 +48306,6 @@ local function u_step(u)
     ---⑧ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
     ---   （→ 触发上面的 kill 掉道具）。
     enemybase.frame(u)
-    class.th08_combat.unit_collision(u)
     if u.hp <= 0 and not u._original_no_death then u.alive = false return end
     ---⑨ 出屏回收（EnemyManagerUpdate.cpp:223-260）：先记「进过场」，
     ---   之后出屏就收（ALLOW_OFFSCREEN 的除外）。
@@ -48315,6 +48314,7 @@ local function u_step(u)
     elseif not u.allow_off then
         if not in_field(u,u.wx,u.wy) then u.alive = false end
     end
+    class.th08_combat.unit_collision(u)
 end
 
 unit = class.th08_combat.unit({
@@ -49516,7 +49516,6 @@ local function u_step(u)
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill
     ---  （→ 触发上面的 kill 掉道具）。
     enemybase.frame(u)
-    class.th08_combat.unit_collision(u)
     if u.hp <= 0 and not u._original_no_death then u.alive = false return end
     ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
     ---  （ALLOW_OFFSCREEN 的除外）。
@@ -49525,6 +49524,7 @@ local function u_step(u)
     elseif not u.allow_off then
         if not in_field(u,u.wx,u.wy) then u.alive = false end
     end
+    class.th08_combat.unit_collision(u)
 end
 
 ---------------------------------------------------------------------
@@ -50815,7 +50815,6 @@ local function u_step(u)
     u.x, u.y = u.wx, u.wy
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
     enemybase.frame(u)
-    class.th08_combat.unit_collision(u)
     if u.hp <= 0 and not u._original_no_death then u.alive = false return end
     ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收
     ---  （ALLOW_OFFSCREEN 的除外）。
@@ -50824,6 +50823,7 @@ local function u_step(u)
     elseif not u.allow_off then
         if not in_field(u,u.wx,u.wy) then u.alive = false end
     end
+    class.th08_combat.unit_collision(u)
 end
 
 ---------------------------------------------------------------------
@@ -51653,7 +51653,6 @@ local function u_step(u)
     u.x, u.y = u.wx, u.wy
     ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
     enemybase.frame(u)
-    class.th08_combat.unit_collision(u)
     if u.hp <= 0 and not u._original_no_death then u.alive = false return end
     ---⑧ UpdateShotAndAnm 的间隔段。
     u_shot_tick(u)
@@ -51663,6 +51662,7 @@ local function u_step(u)
     else
         if not in_field(u,u.wx,u.wy) then u.alive = false end
     end
+    class.th08_combat.unit_collision(u)
 end
 
 ---------------------------------------------------------------------
@@ -53069,15 +53069,15 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
-        class.th08_combat.unit_collision(u)
-        if u.hp <= 0 and not u._original_no_death then u.alive = false return end
+            if u.hp <= 0 and not u._original_no_death then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
             if in_field(u,u.wx,u.wy,true) then u.seen = true end
         elseif not u.allow_off then
             if not in_field(u,u.wx,u.wy) then u.alive = false end
         end
-    end
+        class.th08_combat.unit_collision(u)
+end
 
     local function card_init(owner)
         units = {}
@@ -54063,15 +54063,15 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
-        class.th08_combat.unit_collision(u)
-        if u.hp <= 0 and not u._original_no_death then u.alive = false return end
+            if u.hp <= 0 and not u._original_no_death then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
             if in_field(u,u.wx,u.wy,true) then u.seen = true end
         elseif not u.allow_off then
             if not in_field(u,u.wx,u.wy) then u.alive = false end
         end
-    end
+        class.th08_combat.unit_collision(u)
+end
 
     local function card_init(owner)
         units = {}
@@ -55189,15 +55189,15 @@ local function make_card(build)
         u.x, u.y = u.wx, u.wy
         ---⑦ 引擎那一套：刷新 colli（出屏不可打）+ 血空自动 object.Kill（→ 触发 kill 掉道具）。
         enemybase.frame(u)
-        class.th08_combat.unit_collision(u)
-        if u.hp <= 0 and not u._original_no_death then u.alive = false return end
+            if u.hp <= 0 and not u._original_no_death then u.alive = false return end
         ---⑧ 出屏回收（EnemyManagerUpdate.cpp:223-266）；ALLOW_OFFSCREEN 的不收。
         if not u.seen then
             if in_field(u,u.wx,u.wy,true) then u.seen = true end
         elseif not u.allow_off then
             if not in_field(u,u.wx,u.wy) then u.alive = false end
         end
-    end
+        class.th08_combat.unit_collision(u)
+end
 
     local function card_init(owner)
         units = {}
