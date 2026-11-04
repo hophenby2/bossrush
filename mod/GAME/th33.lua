@@ -1671,8 +1671,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_spear_laser(drone, x, y, a, color)
         -- ins145生成独立移动激光；长满后整根前进，子机出界不结束它的寿命。
         local l=New(laser,color,x,y,a,0,0,0,24,0,0)
-        PhotoNative.straight(l,LASER_LEN,24,LASER_SPEED)
-        lasers[#lasers+1]=l
+        if PhotoNative.straight(l,LASER_LEN,24,LASER_SPEED) then lasers[#lasers+1]=l end
     end
 
     ---窄扇里每一颗的逐帧钩子：只在前 120 帧沿自身方向加速，之后保持末速直飞。
@@ -2248,7 +2247,8 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     local function fire_fan(owner)
         local base=ran:Float(0,360)
         for i=0,FAN_COUNT-1 do
-            lasers[#lasers+1]=New(class.fan_laser,owner,owner.x,owner.y,base+i*360/FAN_COUNT)
+            local l=New(class.fan_laser,owner,owner.x,owner.y,base+i*360/FAN_COUNT)
+            if IsValid(l) and l.status~='del' then lasers[#lasers+1]=l end
         end
         task.New(owner,function()
             task.Wait(FAN_WARN)
@@ -2265,6 +2265,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             self.group,self.colli,self.bound,self.hide=GROUP.GHOST,false,false,true
             self.p_t,self.p_angle=0,0
             swirl_stream(self)
+            PhotoNative.enemy_birth(self,class.dead_moth.frame)
         end,
         frame=function(self)
             if not IsValid(self.owner) then object.RawDel(self);return end
@@ -2370,8 +2371,8 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
     ---      ins_52 ⇒ 立刻再来一次）。
     ---  · Sub7 = 钥匙的炮口（Sub8 在 t=0 用 ins_117(1,7) 起它）：t=10 抽 n = 12 + rand(0..15)，
     ---    再**每 2 帧**甩一发**定角**三连（ins_87 九个操作数全是字面量 ⇒ 上/左/右三个死方向，
-    ---    floatV0 那条 +5.625° 是没人读的死指令），一共 n 发；n ≤ 15 时 30 帧一轮、
-    ---    n ≥ 16 时越过外层 t=40 就此停摆（理由见 burst_cycle）。
+    ---    floatV0 那条 +5.625° 是没人读的死指令），一共 n 发；每次DEC_JUMP把time重设为10，
+    ---    末发到下轮首发相隔30帧，整轮周期为2(n−1)+30帧。
 ---我们这边的一处差异 / 两条形状上的照抄：
 ---  ① Sub8只用ins81(16)开启出屏回收，没有开启碰撞；保持模板的无判定状态。
 ---     外观用原版enm16/script8的128×144精灵，出生即以2速移动。
@@ -2402,10 +2403,9 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
     local KEY_GAP = 30
     local KEY_SPEED = 2
     local KEY_DOWN = -90
-    ---Sub7 的 ins_4(10,-152)：t=40 跳回 t=10 ⇒ **一轮 30 帧**（跳转同帧派发，见卡 71）。
+    -- Sub7退出内层循环时time=12，末发到t40回跳并重发共30帧。
     local KEY_BURST_PERIOD = 30
     local KEY_BURST_GAP = 2                 -- ins_5(10,-64,n) 每轮占 2 帧 ⇒ 2 帧一发三连
-    local KEY_BURST_HOLD = KEY_BURST_PERIOD / KEY_BURST_GAP  -- 30 帧里塞得下的三连发数 = 15
     local KEY_BURST_BASE = 12               -- ins_6(extraIntV0, 12)
     local KEY_BURST_RAND = 16               -- ins_24(extraIntV1, randU31, 16) ⇒ 0..15
     ---★ 不要在这里加「贴脸停火」：TH095 的 minimumPlayerDistanceSquared 出生默认是 **0**
@@ -2462,16 +2462,8 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
         PlaySound("tan00", 0.1, key.x / 256, false)
     end
 
----Sub7 的一轮：t=10 先抽 n = 12 + rand(0..15)（@1300 ins_6 → @1320 ins_24(randU31,16)
----→ @1344 ins_10 累加），然后**每 2 帧**一发三连、一共 n 发（@1428 的 ins_5(10,-64,n)
----把 time 拨回 10 再跳回 @1364 的 ins_87 ⇒ 一圈占 t=10→t=12 这 2 帧，计数器减到 0 才继续）。
----★ 这一轮占用 2n 帧的 ECL 时间，而外层的 @1452 ins_4 只在 **t=40** 才把 time 拨回 10：
----  · n ≤ 15（2n ≤ 30）⇒ 循环结束时 t ≤ 40，外循环照常重开、重抽 n；
----  · n ≥ 16（2n > 40）⇒ 循环结束时 ctx->time 已经越过 40，那条 ins_4 再也不会匹配
----    （EclRun.cpp:302 只在 `time == instruction->time` 时派发）⇒ **Sub7 就此停摆**，
----    这把钥匙发完这 n 轮三连之后不再发弹（这是原作本身的行为，不是我们加的闸；
----    旧版把 n 截断到 15 再重开，反而比原作多发了弹）。
----返回 true = 这一轮按时收工、等满 30 帧重抽；false = 已经停摆。
+    -- Sub7每次DEC_JUMP都把time重设为10，最后一轮在t12退出；
+    -- 再等至t40重开。因此抽到12..27轮都继续循环，末发到下轮首发固定相隔30帧。
     local function burst_cycle(key)
         local n = KEY_BURST_BASE + ran:Int(0, KEY_BURST_RAND - 1)   -- 12..27
         for k = 1, n do
@@ -2480,11 +2472,7 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
                 task.Wait(KEY_BURST_GAP)
             end
         end
-        if n > KEY_BURST_HOLD then
-            return false
-        end
-        task.Wait(KEY_BURST_PERIOD - KEY_BURST_GAP * (n - 1))
-        return true
+        task.Wait(KEY_BURST_PERIOD)
     end
 
     ---一把「秘鍵」（原作 Sub8）：场地外飘进来 → 一边往下走一边甩三连 → 出场地淡出。
@@ -2502,8 +2490,9 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
             object.SetV(self,KEY_SPEED,KEY_DOWN,true)
             task.New(self,function()
                 task.Wait(10)
-                while burst_cycle(self) do end
+                while true do burst_cycle(self) end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame=function(self)
             task.Do(self)
@@ -3045,7 +3034,7 @@ end
 ---  · 判定只在 GROWING/ACTIVE 且 length > 16 时存在（PhotoEffect.cpp:437-451）。
 ---  · followPhotoTarget 的激光每帧把位置拉回拍照目标（原作 ins_109 指的 boss），
 ---    我们这边就是本体（见各卡注释）。
----  · 原作的 g_AnmGameSpeed = 1；同时最多 256 条（PhotoEffect.cpp:1165），移植不设上限。
+---  · 原作的g_AnmGameSpeed=1；两种激光共用256槽，PhotoNative统一管理。
 ---显示使用原作全宽，命中时由 visual_match 按 CalcLaserHitbox 的 width/2 再换算。
 ---两端各留 8px，判定盒为直矩形；不再用默认两头收窄的六边形。
 ---★ 四段计时必须**挂在 owner（boss）的 task 上**：check_stage.lua 的 laser 桩件里
@@ -3056,7 +3045,7 @@ local EX_LASER_WARN_W = 2                 -- STARTUP 的预警线宽（原作初
 ---把一根 EX 激光跑完四段，到点自己 RawDel。len0 已在 l.l2 里。
 local function run_ex_laser(owner, l, max_len, width, speed, startup, grow, sustain, fade,
         ang_vel, vx, vy, follow)
-    PhotoNative.rotating(l,owner,max_len,width,speed,startup,grow,sustain,fade,ang_vel,vx,vy,follow)
+    return PhotoNative.rotating(l,owner,max_len,width,speed,startup,grow,sustain,fade,ang_vel,vx,vy,follow)
 end
 
 ---生成一根 EX 激光。index = 贴图行（1..16，见各卡注释里挑行的理由）；
@@ -3066,9 +3055,9 @@ local function spawn_ex_laser(owner, lasers, index, x, y, angle, max_len, width,
     local len0 = start_full and max_len or 0
     local l = New(laser, index, x, y, angle, 0, len0, 0, 0, 0, 0)
     l.colli = false
+    if not run_ex_laser(owner, l, max_len, width, speed, startup, grow, sustain, fade,
+            ang_vel, vx, vy, follow) then return end
     lasers[#lasers + 1] = l
-    run_ex_laser(owner, l, max_len, width, speed, startup, grow, sustain, fade,
-            ang_vel, vx, vy, follow)
     return l
 end
 
@@ -4525,7 +4514,7 @@ end
 ---原作 145 只在 width > 40 时判定（同文件:252），visual_match 已恢复这个闸；
 ---小于该宽度的直线光只显示，不额外添加原作没有的碰撞。
 local function run_ex_laser_straight(owner, l, max_len, width, speed)
-    PhotoNative.straight(l,max_len,width,speed)
+    return PhotoNative.straight(l,max_len,width,speed)
 end
 
 ---生成一根 ins_145 直线激光。
@@ -4533,8 +4522,8 @@ local function spawn_ex_laser_straight(owner, lasers, index, x, y, angle, max_le
     local l = New(laser, index, x, y, angle, 0, 0, 0, 0, 0, 0)
     l._native_laser_straight = true
     l.colli = false
+    if not run_ex_laser_straight(owner, l, max_len, width, speed) then return end
     lasers[#lasers + 1] = l
-    run_ex_laser_straight(owner, l, max_len, width, speed)
     return l
 end
 
@@ -14583,15 +14572,11 @@ class.frost_shard = Class(object, {
                 ---★ 没有 task.Wait：Sub9/Sub10 的 ins_5 的 time 操作数 = 60 = 标签处指令的
                 ---  time ⇒ 跳转后**同帧**继续，fire_n 发在一帧里打完（Sub10 的 3 连发）。
             end
-            for i = 1, 10 do
-                if st.dead then break end
-                self._a = max(0, 200 * (10 - i) / 10)
-                task.Wait(1)
-            end
             if IsValid(self) then
                 object.RawDel(self)
             end
         end)
+        PhotoNative.enemy_birth(self)
     end,
     frame = function(self)
         task.Do(self)                                      -- ★ 驱动飞行 / 炸裂协程
@@ -14648,13 +14633,14 @@ class.ice_rain = Class(object, {
             while IsValid(self) and not st.dead do
                 local x = ran:Float(-RAIN_X, RAIN_X)
                 local y = field_y(ran:Float(0, RAIN_Y))
-                local a = ran:Float(-1, 1) * RAIN_ANG1 + RAIN_ANG0   -- ins_27(rnd_f32s)×0.0982+π/2
-                local sp = ran:Float(0, 1) + 0.5
+                local sp = ran:Float(0, 1) + (opt.speed_base or 0.5)
+                local a = ran:Float(-1, 1) * RAIN_ANG1 + RAIN_ANG0 -- 先速度、再角度，与原作取数顺序一致。
                 sg_shot(87, sg_style(0), 15, x, y,
                         1, 1, sp, 0.5, math.deg(a), 0, false, DECEL_FLAGS)
                 task.Wait(RAIN_GAP)
             end
         end)
+        PhotoNative.enemy_birth(self)
     end,
     frame = function(self)
         task.Do(self)                                      -- ★ 驱动撒冰尘的循环协程
@@ -14729,12 +14715,12 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
                 flags = DECEL_FLAGS, recs = SHARD_RECS, gap = 2 })
     end
 
-    local function set_rain(owner)
+    local function set_rain(owner, speed_base)
         if IsValid(rain_obj) then
             task.Clear(rain_obj)
             object.RawDel(rain_obj)
         end
-        rain_obj = spawn_rain(owner, { st = st })
+        rain_obj = spawn_rain(owner, { st = st, speed_base = speed_base or 0.5 })
     end
 
     ---Sub3（@728）：350 帧一轮。
@@ -14766,7 +14752,7 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
             if st.dead or g ~= gen then return end
             sg_clear(lasers)                                -- ins_102
             clear_shards(shards)                            -- ins_85
-            set_rain(owner)                                 -- ins_83(13)
+            set_rain(owner,1.2)                             -- Sub13将速度改为rand+1.2。
             while not st.dead and g == gen do
                 arc(owner, th_aim(owner.x, owner.y) + math.pi / 2, STEP_D, 3)
                 task.Wait(70)
@@ -16351,6 +16337,7 @@ do
                 task.Wait(14)
                 object.RawDel(self)
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame=function(self) task.Do(self) end,
         del=function(self) task.Clear(self) end,

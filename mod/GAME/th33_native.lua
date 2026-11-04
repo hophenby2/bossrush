@@ -4,10 +4,13 @@
 -- enm17/script12/sprite11。原始THTX只经texture_png.py封装成PNG，没有重画。
 local N={}
 -- SpawnWithContext先RunEcl(0)，保留协程及运动状态，位置仍待管理器积分。
-function N.enemy_birth(o)
+function N.enemy_birth(o,step)
     local x,y=o.x,o.y
-    task.Do(o)
+    local run=step or task.Do
+    run(o)
+    if not IsValid(o) or o.status=='del' or o.status=='kill' then return false end
     o.x,o.y=x,y
+    return true
 end
 function N.boundary_angle(x,y,box,previous)
     local a
@@ -91,6 +94,19 @@ N.fan=Class(object,{
     end,
 })
 local native_laser=OriginalBulletVisual.laser(laser,95)
+-- PhotoEffectManager::Spawn只有共用的256槽；两种激光共用，满槽整根不生成。
+local laser_slots={}
+local function reserve_laser(o)
+    local free
+    for i=1,256 do
+        local current=laser_slots[i]
+        if current==o then return true end
+        if (not current or not IsValid(current)) and not free then free=i end
+    end
+    if not free then object.RawDel(o);return false end
+    laser_slots[free]=o
+    return true
+end
 local straight_laser=Class(native_laser,{
     frame=function(o)
         local length=o.th095_length
@@ -114,12 +130,14 @@ local straight_laser=Class(native_laser,{
     end,
 })
 function N.straight(o,max_length,width,speed,initial,terminal)
+    if not reserve_laser(o) then return false end
     o.class,o._native_laser_straight=straight_laser,true
     o.th095_length,o.th095_max_length=initial or 0,max_length
     o.th095_tail=(initial or 0)>0 and 0.01 or 0
     o.th095_terminal,o.th095_laser_speed=terminal or 0,speed
     o.l1,o.l2,o.l3,o.w0,o.w,o.alpha=0,initial or 0,0,width,width,1
     o.bound,o.colli=false,false
+    return true
 end
 local rotating_laser=Class(native_laser,{
     frame=function(o)
@@ -146,6 +164,7 @@ local rotating_laser=Class(native_laser,{
     end,
 })
 function N.rotating(o,target,max_length,width,speed,startup,growth,sustain,fade,angular_speed,vx,vy,follow)
+    if not reserve_laser(o) then return false end
     o.class,o.bound=rotating_laser,false
     o.th095_laser_state,o.th095_laser_time=3,0
     o.th095_target,o.th095_follow=target,follow
@@ -154,6 +173,7 @@ function N.rotating(o,target,max_length,width,speed,startup,growth,sustain,fade,
     o.th095_startup,o.th095_growth,o.th095_sustain,o.th095_fade=startup,growth,sustain,fade
     o.th095_max_length,o.w0,o.w,o.alpha=max_length,width,2,1
     o.counter,o.colli=0,false
+    return true
 end
 LoadTexture('th33_transition','Resources/System/th33_transition.png')
 for i=0,4 do

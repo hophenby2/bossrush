@@ -1995,8 +1995,9 @@ local familiar = OriginalStageVisual.actor_class(object, 8, 'ecldata1sp:38', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 190, 255, 175
-        self.fam_t = 0
+        self.fam_t = 1 -- Sub38出生已完成t=0的初始化。
         self.fam_aim = 0
+        self.th08_shot_distance2=1024
     end,
     frame = function(self)
         local t = self.fam_t
@@ -2007,7 +2008,7 @@ local familiar = OriginalStageVisual.actor_class(object, 8, 'ecldata1sp:38', {
                 ---（y 翻转之后用我们自己的坐标直接算 atan2 就是同一个角。）
                 self.fam_aim = math.atan2(player.y - self.y, player.x - self.x)
             end
-            if pool_used() < POOL_SIZE then
+            if pool_used() < POOL_SIZE and class.th08_combat.can_shoot(self) then
                 local first = (k % FAM_CYCLE) < FAM_SWAP     -- 前 13 发一个方向、后 13 发反过来
                 local color = first and FAM_COLOR_PLUS or FAM_COLOR_MINUS
                 local program = FAM_PROGRAM[color]
@@ -3352,7 +3353,7 @@ lw208_eye = OriginalStageVisual.actor_class(object, 8, 'ecldata5sp:39', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.lw208_t = 0
+        self.lw208_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.lw208_t = self.lw208_t + 1
@@ -3862,9 +3863,14 @@ lw209_web = Class(object, {
         self.lw209_dx = math.cos(dir) * MOVE_DIST
         self.lw209_dy = math.sin(dir) * MOVE_DIST
         self.lw209_extra = false
+        self.th08_shot_distance2=1024 -- NO_SPRITE不清除原作32px近身停火。
+        class.th08_combat.birth_step(self,lw209_web.ecl_step)
     end,
     render = function() end,
     frame = function(self)
+        lw209_web.ecl_step(self)
+    end,
+    ecl_step = function(self)
         local t = self.lw209_t
         if t == 0 then
             ---ins_114：光柱生成在**移动前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
@@ -3875,9 +3881,10 @@ lw209_web = Class(object, {
         end
         ---7 发火花：t = 0,2,4,…,12 各一发（RANDOM_ANGLE 在 TH08 口径下均匀，
         ---取反后仍均匀，直接把我们的角写成就行）。
-        if t <= SPARK_LAST and t % SPARK_INTERVAL == 0 then
+        if t <= SPARK_LAST and t % SPARK_INTERVAL == 0 and class.th08_combat.can_shoot(self) then
+            local angle=ran:Float(-PI,PI) -- DispatchShot先取操作数，之后才检查弹池空槽。
             spawn_by_pool(function()
-                return New(lw209_spark, self.x, self.y, ran:Float(-PI, PI))
+                return New(lw209_spark, self.x, self.y, angle)
             end)
         end
         if t == CHILD_FRAME then
@@ -3906,7 +3913,7 @@ lw209_web = Class(object, {
             end
         end
         if t == EXTRA_FRAME then
-            if self.lw209_extra then
+            if self.lw209_extra and class.th08_combat.can_shoot(self) then
                 spawn_by_pool(function()
                     return New(lw209_bullet, self.x, self.y, EXTRA_ANGLE, EXTRA_SPEED)
                 end)
@@ -4815,7 +4822,7 @@ lw211_phoenix = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:112', {
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.lw211_t = 0
+        self.lw211_t = 1 -- Sub112出生已设置速度，t=20加速不能再延后一帧。
         self.lw211_dir = angle          -- 我们坐标（= lf0 取反）
         self.lw211_spd = PHOENIX_SPEED_0
     end,
@@ -6154,8 +6161,13 @@ lw213_minion = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:114', {
         self.lw213_color = color
         self.lw213_cull = MINION_CULL_INIT  -- li6
         self.lw213_acc = 0                  -- lf0（出弹角累加量）
+        self.th08_shot_distance2=1024
+        class.th08_combat.birth_step(self,lw213_minion.ecl_step)
     end,
     frame = function(self)
+        lw213_minion.ecl_step(self)
+    end,
+    ecl_step = function(self)
         local t = self.lw213_t
         ---① 主 context Sub114：每 2 帧一次扇形（见卡头注释的节拍推导）。
         if t % MINION_VOLLEY_PERIOD == 0 then
@@ -6170,8 +6182,10 @@ lw213_minion = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:114', {
             ---`ins_25/15/37`：角度 = normalize(ORBIT_ANGLE + π + lf0)。
             ---出弹位置用的是**上一帧末**的位置（RunEcl 在 UpdateMovement 之前）。
             local ang = self.lw213_theta + PI + self.lw213_acc
-            fan_shot(self.x, self.y, ang, self.lw213_count1, MINION_FAN_SPEED,
-                    self.lw213_color, 2, MINION_FAN_STEP, MINION_SPAWN_FRAMES, self.lw213_cull)
+            if class.th08_combat.can_shoot(self) then
+                fan_shot(self.x, self.y, ang, self.lw213_count1, MINION_FAN_SPEED,
+                        self.lw213_color, 2, MINION_FAN_STEP, MINION_SPAWN_FRAMES, self.lw213_cull)
+            end
             self.lw213_acc = self.lw213_acc + self.lw213_omega
         end
         ---② 子 context Sub115（t=120）：半径跳到 380、径向速度归零、角度复位成组的随机角。
@@ -8841,6 +8855,8 @@ lw217_bullet = Class(bullet, {
 ---一次出弹（`ins_99` = SHOOT_CIRCLE）。池满 → 整波不生；波中途生不出来就丢掉剩下的
 ---（BulletManager.cpp:685-712）。count1 = 2、angle = π/2（TH08）→ 正下/正上一对。
 local function sat_fire(owner, adelta)
+    -- 独立子机没有SET_BOSS清除出生默认的32px近身停火距离。
+    if (player.x-owner.x)^2+(player.y-owner.y)^2<1024 then return end
     local used = pool_used()
     for i = 0, RING_COUNT - 1 do
         if used >= POOL_SIZE then
@@ -8853,6 +8869,29 @@ local function sat_fire(owner, adelta)
 end
 
 ---卫星（Sub5）。原作 ins_58(7) 设置动画，但 ins_80(8) 禁止绘制本体。
+local function sat_ecl_step(self)
+    local time = self.s_t
+    while true do
+        local ins = SUB5[self.s_pc]
+        if ins == nil or ins.t ~= math.floor(time) then break end
+        if ins.op == OP_FIRE then
+            -- ins_28每拍重抽出弹偏角；出生的移动方向仍保持不变。
+            self.s_cur = ran:Float(-PI, PI) / self.s_lf5
+            sat_fire(self, self.s_cur)
+            self.s_pc = self.s_pc + 1
+        elseif ins.op == OP_DECJMP then
+            self.s_cnt = self.s_cnt - 1
+            if self.s_cnt <= 0 then self.s_pc = self.s_pc + 1
+            else time,self.s_pc = 0,ins.target end
+        else
+            object.RawDel(self)
+            return false
+        end
+    end
+    self.s_t = timer_f32(time + fm)
+    return true
+end
+
 lw217_sat = OriginalStageVisual.actor_class(object, 8, 'ecldata_ym:5', {
     init = function(self, x, y, dir_th08, lf5)
         self.x, self.y = x, y
@@ -8870,56 +8909,14 @@ lw217_sat = OriginalStageVisual.actor_class(object, 8, 'ecldata_ym:5', {
         self.s_pc = 1
         self.s_t = 0
         self.s_vx, self.s_vy = 0, 0
-        ---★ 出生帧要跑两遍 RunEcl（见 frame 里的注释）。
-        self.s_fresh = true
         sat_set_dir(self)
+        sat_ecl_step(self) -- 出生先跑ECL(0)，保留出生位置。
     end,
     frame = function(self)
-        ---POLAR 移动模式的位移（×fm）。
+        if not sat_ecl_step(self) then return end
+        -- 每只卫星有独立的ZunTimer相位；ECL先发弹，再积分POLAR位移。
         self.x = self.x + self.s_vx * fm
         self.y = self.y + self.s_vy * fm
-        if not tick_frame then
-            return
-        end
-        ---★ 卫星是 `ins_93` 生成的**独立敌机**：SpawnEnemy2 在父机自己的 RunEcl 里
-        ---  当场先跑一次子机的 RunEcl（EnemyTimeline.cpp:86-95），同一帧稍后的敌机扫描
-        ---  （EnemyManagerUpdate.cpp:114-174 的 `for enemyIndex < 480`，新机槽号更大）
-        ---  还会再跑到它一次 ⇒ **出生帧跑 2 遍 RunEcl（t=0 与 t=1）**，时间轴从 t=2 起。
-        ---  差异就在出弹节拍上：原作第 2 拍在出生后第 5 帧（t=6 在出生帧已经是 2），
-        ---  少跑一遍就晚 1 帧、整段 10 拍也跟着晚。
-        local passes = self.s_fresh and 2 or 1
-        self.s_fresh = nil
-        for _ = 1, passes do
-            ---子 context 的 ECL：只在 tick 时推进（帧末才 time++，跳转落点跟在本轮第一条上）。
-            local time = self.s_t
-            while true do
-                local ins = SUB5[self.s_pc]
-                if ins == nil or ins.t ~= time then
-                    break
-                end
-                if ins.op == OP_FIRE then
-                    ---★ `ins_65(lf0, 10)` 只在**出生那一次**跑（Sub3 的 JUMP_DEC 跳回的是
-                    ---  @1912 = 第 2 条 `ins_111`，跳过了 ins_65 与 ins_6）⇒ 卫星的
-                    ---  movementAngle 一辈子不变，直线飞出去；这里绝不能再调 sat_set_dir。
-                    ---  `ins_28` 则每拍重抽：lf0 = rndAngle / lf5。
-                    self.s_cur = ran:Float(-PI, PI) / self.s_lf5
-                    sat_fire(self, self.s_cur)                          -- `ins_99`
-                    self.s_pc = self.s_pc + 1
-                elseif ins.op == OP_DECJMP then
-                    self.s_cnt = self.s_cnt - 1
-                    if self.s_cnt <= 0 then
-                        self.s_pc = self.s_pc + 1
-                    else
-                        time = 0
-                        self.s_pc = ins.target
-                    end
-                else
-                    object.RawDel(self)                                 -- `ins_1`
-                    return
-                end
-            end
-            self.s_t = time + 1
-        end
     end,
 })
 
@@ -10839,17 +10836,17 @@ local function servant_move(self)
     if self.mode == 0 then
         ---轨道模式已经结束（`movementDuration > 0` 且计时归零）：velocity 不再重算，
         ---但 IntegrateVelocity 照加 ⇒ 继续按上一次的 velocity 漂（:50-53、EnemyManagerUpdate.cpp:164-168）。
-        self.sx = self.sx + self.vx
-        self.sy = self.sy + self.vy
+        self.sx = self.sx + self.move_vx
+        self.sy = self.sy + self.move_vy
     else
         self.oa = norm_angle(self.oa + self.oav)
         self.orad = self.orad + self.orv
         local px, py = math.cos(self.oa) * self.orad, math.sin(self.oa) * self.orad
-        self.vx = px + self.ox - self.sx
-        self.vy = py + self.oy - self.sy
-        self.move_ang = math.atan2(self.vy, self.vx)
-        self.sx = self.sx + self.vx
-        self.sy = self.sy + self.vy
+        self.move_vx = px + self.ox - self.sx
+        self.move_vy = py + self.oy - self.sy
+        self.move_ang = math.atan2(self.move_vy, self.move_vx)
+        self.sx = self.sx + self.move_vx
+        self.sy = self.sy + self.move_vy
         if self.mdur > 0 then
             self.mtimer = self.mtimer - 1
             if self.mtimer <= 0 then self.mode = 0 end
@@ -10909,7 +10906,7 @@ end, {
         self.cfg = cfg
         self.li0, self.li1, self.li2 = li0, li1, li2
         self.lf3, self.lf4 = lf3, lf4
-        self.t, self.xi0, self.xi1 = 0, 0, 0
+        self.t, self.xi0, self.xi1 = 1, 0, 0 -- Born RunEcl(0)之后从t=1继续。
         ---t=0 的 `FLOAT_DIV2 lf7 = lf2/120` 只喂给 #6 的 radialVelocity（下面直接用
         ---lf2/120）；随后 `lf7 = lf1*120 + lf0` 再归一化，t=120 的永久轨道用的就是它 ——
         ---数值上等于初始轨道绕 120 帧后累积到的 oa。
@@ -10919,9 +10916,13 @@ end, {
         ---t=0 的三条：lf5 = selfX、lf6 = selfY、
         ---#6 ORBIT(120, selfX, selfY, lf0, lf1, radius 0, radialVelocity lf2/120)
         self.ox, self.oy = self.sx, self.sy
-        self.oa, self.oav, self.orad, self.orv = lf0, lf1, 0, lf2 / 120
-        self.mdur, self.mtimer, self.mode = 120, 120, 1
-        self.move_ang, self.vx, self.vy = 0, 0, 0
+        self.oa, self.oav = norm_angle(lf0 + lf1), lf1
+        self.orad, self.orv = lf2 / 120, lf2 / 120
+        self.mdur, self.mtimer, self.mode = 120, 119, 1
+        self.move_vx = math.cos(self.oa) * self.orad
+        self.move_vy = math.sin(self.oa) * self.orad
+        self.move_ang = math.atan2(self.move_vy,self.move_vx)
+        self.vx,self.vy=0,0 -- 世界坐标由servant_move唯一一次积分，引擎不能再加一次。
         self.lf1, self.lf2 = lf1, lf2
     end,
     frame = function(self)
@@ -14415,6 +14416,7 @@ end
 ---RANDOM_ANGLE 每取一次都重摇（EclOperandsFloat.cpp:56 = 均匀分布在 [−π, π)）。
 local function sat_fire(self)
     local th = ran:Float(-PI, PI)
+    if not class.th08_combat.can_shoot(self) then return end
     EX.shoot(self, self.x + math.cos(th) * self.sat_r,
             self.y + math.sin(th) * self.sat_r, {
         op = 97, type = SAT_TYPE, color = EX.color(SAT_COLOR),
@@ -14446,8 +14448,8 @@ local satellite = Class(object, {
         EX.set_record(self, 0, EX.K.CULL, 0, 120, -1, -1, -1)
         EX.set_record(self, 1, EX.K.WAIT, 0, 120, -1, -1, -1)
         EX.set_record(self, 2, EX.K.VEC, 0, 120, -1, SAT_VEC_ACCEL, -999.9)
-        ---t=0 那一帧先走一步（原作 RunEcl 末尾的 UpdateMovement + IntegrateVelocity）。
-        sat_move(self)
+        -- RunEcl(0)只计算速度，正常更新阶段才积分位置；t20才开始加速。
+        self.th08_shot_distance2=1024
         self.sat_t = 1
     end,
     frame = function(self)
@@ -14883,8 +14885,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:55", {
         EX.clear_records(self)
         EX.set_record(self, 0, EX.K.BOUNCE_ALL, 0, GUN_BOUNCE_LIMIT, -1, GUN_BOUNCE_SPEED, -1)
         EX.set_record(self, 1, EX.K.SPRITE, 0, GUN_TYPE, GUN_SPRITE_COLOR, -1, -1)
-        ---t=0 那一帧：SET_DIR_AND_SPEED 跑完，RunEcl 末尾的 UpdateMovement 先走一步。
-        fam_step(self)
+        ---出生RunEcl只计算velocity，位置仍在出生点；首次积分在正常frame。
     end,
     frame = function(self)
         ---① 使魔自己的 ECL：t=1 挂枪（#7/#8），之后没有别的指令。
@@ -17021,7 +17022,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:93", {
 ---本体使用原作 stg8enm.anm 的脚本 13，附加动画使用脚本 14。
 local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:92', {
     init = function(self, x, y)
-        self.x, self.y = x, y
+        self.x, self.y = player.x, player.y -- 出生ECL(0)就写入自机坐标，夹框留给正常更新。
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
         self.colli = false
@@ -17030,7 +17031,7 @@ local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:92',
         self.rot = 0
         self._blend = ""
         self._a = 255
-        self.ps_t = 0
+        self.ps_t = 1
     end,
     frame = function(self)
         ---#5/#6 `selfX = plX` / `selfY = plY`（每帧）。
@@ -24604,11 +24605,13 @@ local function web_tick(self, t)
     end
     ---8 发火花：tick 0,2,…,14 各一发（xi1 = 8 的 JUMP_DEC 循环，`time := 0` 每轮 2 tick）。
     if t <= 2 * (NODE_SPARKS - 1) and t % 2 == 0 then
-        EX.shoot(self, self.x, self.y, {
-            op = 99, type = SPARK_TYPE, color = EX.color(SPARK_COLOR),
-            count1 = 1, count2 = 1, speed1 = SPARK_SPEED, speed2 = 1,
-            angle = ran:Float(-PI, PI), step = SPARK_STEP, flags = SPARK_FLAGS,
-        })
+        if class.th08_combat.can_shoot(self) then
+            EX.shoot(self, self.x, self.y, {
+                op = 99, type = SPARK_TYPE, color = EX.color(SPARK_COLOR),
+                count1 = 1, count2 = 1, speed1 = SPARK_SPEED, speed2 = 1,
+                angle = ran:Float(-PI,PI), step = SPARK_STEP, flags = SPARK_FLAGS,
+            })
+        end
     end
     ---tick 16：`ins_94(Sub79)`。这一帧的 RunEcl 仍在位移之前，而 ins_64 的线性插值
     ---刚好在第 16 帧走满 109 px ⇒ 子节点正好生在光段的另一端（首尾相接的折线）。
@@ -24644,9 +24647,11 @@ lw146_web = Class(object, {
         self.w146_moving = true
         self.w146_acc = 0
         EX.set_record(self, 0, EX.K.DESPAWN, 0, -1, -1, -1, -1)
-        ---出生帧：RunEcl（tick 0）先跑，位移后跑 —— 这里手动补一次位移（见下）。
+        -- 出生先生成光段和首发火花，再推进插值计时；位置尚未积分。
+        self.th08_shot_distance2=1024
         web_tick(self, 0)
         web_step(self)
+        self.x,self.y=x,y
     end,
     render = function() end,
     frame = function(self)
@@ -26160,9 +26165,13 @@ lw130_cell = Class(object, {
         ---`ins_111` 的两条记录（出弹时整块拷给弹）：槽 0 = WAIT 120、槽 1 = DESPAWN。
         EX.set_record(self, 0, EX.K.WAIT, 0, 120, -1, -1, -1)
         EX.set_record(self, 1, EX.K.DESPAWN, 0, -1, -1, -1, -1)
+        class.th08_combat.birth_step(self,lw130_cell.ecl_step)
     end,
     render = function() end,           -- 原作 NO_SPRITE：整只不画
     frame = function(self)
+        lw130_cell.ecl_step(self)
+    end,
+    ecl_step = function(self)
         local t = self.c_t
         if t == 0 then
             ---`ins_99(3, 6, 1, 1, 0.0, 1.0, RANDOM_ANGLE, π/32, 393732)`：
@@ -26713,9 +26722,14 @@ lw126_node = Class(object, {
         self.n_x0, self.n_y0 = x, y
         self.n_dx = math.cos(dir) * NODE_MOVE_DIST
         self.n_dy = math.sin(dir) * NODE_MOVE_DIST
+        self.th08_shot_distance2=1024 -- NO_SPRITE不清除原作32px近身停火。
+        class.th08_combat.birth_step(self,lw126_node.ecl_step)
     end,
     render = function() end,           -- 原作 NO_SPRITE：整只不画
     frame = function(self)
+        lw126_node.ecl_step(self)
+    end,
+    ecl_step = function(self)
         local t = self.n_t
         if t == 0 then
             ---`ins_114`：光柱生成在**移动前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
@@ -26725,7 +26739,7 @@ lw126_node = Class(object, {
             end
         end
         ---7 颗光点：t = 0,2,…,12（JUMP_DEC 循环）⇒ 每 10 px 一颗。
-        if t % 2 == 0 and t <= NODE_SPLIT - 2 then
+        if t % 2 == 0 and t <= NODE_SPLIT - 2 and class.th08_combat.can_shoot(self) then
             local dot = New(lw126_dot, self.x, self.y, ran:Float(-PI, PI))
             dots[#dots + 1] = dot
             EX.pool[#EX.pool + 1] = dot     -- 占弹槽（见上面的 ★）
@@ -27559,9 +27573,7 @@ local lw16_fam = class.th08_combat.actor("ecldata6:19", {
         self.f_lf0 = dir
         self.f_gun_dir = nil
         EX.clear_records(self)
-        ---出生帧：RunEcl 跑完 t=0 之后引擎还会 UpdateMovement 一步
-        ---（EnemyManagerUpdate.cpp:159-192），所以这里也走一步。
-        f16_advance(self)
+        ---出生已设置POLAR速度，尚未进入管理器的IntegrateVelocity。
         self.f_culled = false           -- 「进过场地」的标志：出生点就在 BOSS 身上 ⇒ 成立
         self.f_t = 1                    -- 下一帧要跑 Sub19 的 t=1
     end,
@@ -27977,9 +27989,7 @@ local lw36_fam = class.th08_combat.actor("ecldata6:39", {
         self.f_sp = sp
         ---枪的记录表另起一份（`ins_152` 把它清零）。
         EX.clear_records(self)
-        ---出生帧：SpawnEnemy2 里出生当帧就跑一次 RunEcl，跑完引擎还会 UpdateMovement 一步
-        ---（EnemyManagerUpdate.cpp:236-262）⇒ 这里也走一步。
-        f36_advance(self)
+        ---SpawnEnemy2的出生RunEcl只计算速度，正常更新才积分位置。
         self.f_t = 1                    -- 下一帧要跑 Sub39 的 t=1
     end,
     frame = function(self)
@@ -28388,9 +28398,9 @@ local lw40_fam = class.th08_combat.actor("ecldata6:43", {
         self.f_base = base
         ---枪的记录表另起一份（`ins_152` 把它清零）。
         EX.clear_records(self)
-        ---出生帧：SpawnEnemy2 里出生当帧就跑一次 RunEcl，跑完引擎还会 UpdateMovement 一步
-        ---（EnemyManagerUpdate.cpp:183-190）⇒ 这里也走一步。
+        ---保留出生ORBIT的角、半径与timer变化，尚不积分世界坐标。
         f40_orbit_step(self)
+        self.x,self.y=x,y
         self.f_t = 1                    -- 下一帧要跑 Sub43 的 t=1
     end,
     frame = function(self)
@@ -35523,8 +35533,8 @@ local function spawn_sparks(owner, ang_th08)
     for i = 1, SPARK_PIECES do
         local s = New(spark, owner, bx - 192, 224 - by, tx - 192, 224 - ty, ang_th08,i)
         list[#list + 1] = s
-        ---★ 与 ins_92 同理：SpawnEnemy2 当场跑一遍 + 同帧敌人扫描再跑一遍。
-        spark_body(s)
+        -- SpawnEnemy2当场计算首帧插值；位置留给正常敌机更新阶段。
+        class.th08_combat.birth_step(s,spark_body)
     end
 end
 
@@ -35569,7 +35579,7 @@ spark_body = function(self)
     ---MOVE_TO 的 INTERPOLATED 更新（EnemyManager.cpp:80-121）：
     ---  movementTimer--；progress = 1 − timer/duration；easing 1 = IN_QUADRATIC；
     ---  位置 = origin + delta·progress（最后一帧直接落在终点）。
-    local timer = SPARK_MOVE_FRAMES - t
+    local timer = SPARK_MOVE_FRAMES - (t+1)
     if timer <= 0 then
         self.x, self.y = self.sp_x0 + self.sp_dx, self.sp_y0 + self.sp_dy
     else
@@ -37194,7 +37204,7 @@ eye454 = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.e454_t = 0
+        self.e454_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.e454_t = self.e454_t + 1
@@ -37999,7 +38009,7 @@ eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.e456_t = 0
+        self.e456_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.e456_t = self.e456_t + 1
@@ -39002,7 +39012,7 @@ eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.e458_t = 0
+        self.e458_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.e458_t = self.e458_t + 1
@@ -39545,7 +39555,7 @@ eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.e459_t = 0
+        self.e459_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.e459_t = self.e459_t + 1
@@ -40062,7 +40072,7 @@ eye_cls = OriginalStageVisual.actor_class(object, 8, 'ecldata5:86', {
         self.rot = 0
         self._blend, self._a = "", 255
         self._r, self._g, self._b = 255, 255, 255
-        self.e460_t = 0
+        self.e460_t = 1 -- 出生t=0已执行，t=60按原作回收。
     end,
     frame = function(self)
         self.e460_t = self.e460_t + 1

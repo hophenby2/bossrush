@@ -342,6 +342,7 @@ class["th35_sat"] = Class(object, {
         self.bound, self.colli = false, false
     end,
     frame = function(self)
+        if self.t10_managed and not self.t10_in_update then return end
         self.th_t = self.th_t + 1
         self.th_off_r = self.th_off_r + self.th_off_rv
         self.th_base_r = self.th_base_r + self.th_base_rv
@@ -1267,9 +1268,73 @@ local function circle_pos(angle, r) return math.cos(angle) * r, math.sin(angle) 
 ---本关所有 ECL 子机（含每个 BOSS 的载体）。卡片结束时统一清掉，
 ---否则枪/使魔会跨卡残留（原作靠 killAllAsync/enmKillAll + 敌机系统回收）。
 local T10_PODS = {}
+
+-- EnemySpawn在链入敌机表前当场RuntimeUpdate；管理器预存next，并清除0x400已更新位。
+-- LuaSTG会遍历当帧追加的对象，因此ECL敌机单独维护原作链表，自动frame只负责ANM。
+do
+local S={}
+class.th10_enemy_schedule=S
+local t10_enemy_head,t10_enemy_tail,t10_enemy_manager
+local function t10_enemy_alive(o)
+    return o and IsValid(o) and o.status~='del' and o.status~='kill'
+end
+local function t10_enemy_unlink(node)
+    if node.prev then node.prev.next=node.next else t10_enemy_head=node.next end
+    if node.next then node.next.prev=node.prev else t10_enemy_tail=node.prev end
+end
+class.th10_enemy_manager=Class(object,{
+    init=function(o)
+        o.group,o.hide,o.bound,o.colli=GROUP.GHOST,true,false,false
+    end,
+    frame=function()
+        local node=t10_enemy_head
+        while node do
+            local next_node=node.next -- 必须在ECL可能追加/删除敌机之前保存。
+            local o=node.enemy
+            if not t10_enemy_alive(o) then
+                t10_enemy_unlink(node)
+            else
+                if not o.t10_updated then
+                    o.t10_updated,o.t10_in_update=true,true
+                    local previous_root=S.current_root
+                    S.current_root=o.t10_root or o
+                    o.t10_update(o)
+                    S.current_root=previous_root
+                    if t10_enemy_alive(o) then o.t10_in_update=nil end
+                end
+                if t10_enemy_alive(o) then o.t10_updated=nil
+                else t10_enemy_unlink(node) end
+            end
+            node=next_node
+        end
+    end,
+})
+function S.ensure()
+    if not t10_enemy_alive(t10_enemy_manager) then
+        t10_enemy_head,t10_enemy_tail=nil,nil
+        t10_enemy_manager=New(class.th10_enemy_manager)
+    end
+end
+function S.append(o)
+    if not t10_enemy_alive(o) or not o.t10_update or o.t10_enemy_node then return end
+    local node={enemy=o,prev=t10_enemy_tail}
+    if t10_enemy_tail then t10_enemy_tail.next=node else t10_enemy_head=node end
+    t10_enemy_tail=node
+    o.t10_enemy_node=node
+end
+function S.birth(o)
+    o.t10_updated,o.t10_ecl_birth=true,true
+    local previous_root=S.current_root
+    S.current_root=o.t10_root or o
+    o.t10_update(o)
+    S.current_root=previous_root
+    if t10_enemy_alive(o) then o.t10_ecl_birth=nil end
+end
+end
 local function t10_track(o, owner)
     if owner then o.t10_root = owner.t10_root or owner end
     T10_PODS[#T10_PODS + 1] = o
+    class.th10_enemy_schedule.append(o)
 end
 
 ---停掉一个 ECL 载体：先清掉挂在它名下的协程，再删对象。
@@ -1311,7 +1376,9 @@ end
 ---spawn_pod / spawn_pod_rel：叫一个 ECL 子机（原名 enmCreateA / enmCreate）。
 ---参数是**原生 Lua 函数**（子机自己的协程体），不是指令表里的名字。
 local function spawn_pod(o, x, y, fn)
+    class.th10_enemy_schedule.ensure()
     local p = New(class["th10_ecs_pod"], o, x, y, fn)
+    class.th10_enemy_schedule.birth(p)
     t10_track(p)
     return p
 end
@@ -1357,6 +1424,8 @@ end
 class["th10_ecs_pod"] = Class(object, {
     init = function(self, origin, x, y, sub)
         self.t10_root = origin and origin.t10_root or self
+        self.t10_bossref = origin and origin.t10_bossref or self
+        self.t10_update = class.th10_ecs_pod.t10_update
         self.x, self.y = x, t10_oy(y)
         self.hide = true
         self.group, self.layer = GROUP.ENEMY, LAYER.ENEMY
@@ -1384,7 +1453,9 @@ class["th10_ecs_pod"] = Class(object, {
         ---之后才加。stage07 的祟符「ミシャグジさま」用 %TIME 分阶段，必须照抄。
         self.__t10frames = (self.__t10frames or 0) + 1
         local visual=self.th10_boss or self
-        if visual._original_source then OriginalStageVisual.source_frame(visual,self.timer);OriginalStageVisual.tick(visual) end
+        if not self.t10_ecl_birth and visual._original_source then
+            OriginalStageVisual.source_frame(visual,self.timer);OriginalStageVisual.tick(visual)
+        end
 
         ---BOSS 载体：把 BOSS 本体钉在 ECL 位置上。
         ---（守卫直接写在 self.th10_boss 上：T10 载体是可选绑定，字段审计据此判定 init 无赋值也安全。）
@@ -1393,6 +1464,11 @@ class["th10_ecs_pod"] = Class(object, {
         end
     end,
 })
+
+-- 保留原始更新函数供私有管理器调用，LuaSTG的frame不再重复推进ECL。
+class.th10_ecs_pod.t10_update=class.th10_ecs_pod.frame
+class.th10_ecs_pod.frame=function() end
+class.th10_ecs_pod[3]=class.th10_ecs_pod.frame
 
 ---=====================================
 --- 五、ECL 运行时辅助
@@ -1648,6 +1724,7 @@ end
 
 ---同一原作敌机换子程序时，位置、两路运动、活动框均保留；不同宿主重新取出生上下文。
 local function t10_boss_start(b, main, id)
+    class.th10_enemy_schedule.ensure()
     local p = New(class["th10_ecs_pod"], nil, 0, 0, main)
     p.th10_boss = b
     local entry = assert(class.t10_boss_entry[id], "缺少 TH10 Boss 入场上下文")
@@ -1668,7 +1745,19 @@ local function t10_boss_start(b, main, id)
         OriginalStageVisual.bind_source(b,10,visual_key,true)
     end
 
+    -- 这是既有Boss切换攻击入口：本体先在链表中，t0生成的使魔排在它后面。
     t10_track(p)
+    class.th10_enemy_schedule.birth(p)
+    return p
+end
+
+-- 道中main也是原生敌机的ECL；它的异步波次和新妖精必须参与同一更新链。
+function class.t10_start_road(owner,main)
+    class.th10_enemy_schedule.ensure()
+    local p=New(class.th10_ecs_pod,nil,0,0,main)
+    p.t10_road_owner=owner
+    t10_track(p)
+    class.th10_enemy_schedule.birth(p)
     return p
 end
 
@@ -4789,7 +4878,10 @@ end
 ---  钉在 BOSS 上），并登记进 T10_PODS——这样原作的 enmKillAll（清屏）会把上一段留下的
 ---  卫星收掉，不会随三段循环越积越多。参数见文件顶部的 SATS 表（R4/G4/B4 三条）。
 function s6.sat(master, e)
+    class.th10_enemy_schedule.ensure()
     local s = New(class["th35_sat"], master, e[2], e[3], e[4], e[5], e[6], e[7])
+    s.t10_update,s.t10_updated=class.th35_sat.frame,true
+    s.t10_managed=true
     t10_track(s, master)
     return s
 end
@@ -5313,6 +5405,10 @@ t10mid.ax, t10mid.ay = 0, 0        -- 道中锚点（enmCreate 相对创建用�
 
 ---卡结束 / 重开（符卡练习）时统一收拾本卡造出来的妖精。
 function t10mid.clear()
+    if t10mid.controller then
+        t10_clear_pods(t10mid.controller)
+        t10mid.controller=nil
+    end
     for i = 1, #t10mid.units do t10_kill_pod(t10mid.units[i]) end
     t10mid.units = {}
 end
@@ -5361,6 +5457,8 @@ class["th10_midfairy"] = Class(enemy, {
             self.I0, self.I1, self.I2, self.I3 = src.I0, src.I1, src.I2, src.I3
             self.F0, self.F1, self.F2, self.F3 = src.F0, src.F1, src.F2, src.F3
         end
+        self.t10_root=(src and src.t10_root) or class.th10_enemy_schedule.current_root or self
+        self.t10_update=class.th10_midfairy.t10_update
         self.seen = false
         ecs_sync(self)
         task.New(self, function() beh(self) end)
@@ -5386,10 +5484,17 @@ class["th10_midfairy"] = Class(enemy, {
     end,
     del = function(self) task.Clear(self) end,
 })
+class.th10_midfairy.t10_update=class.th10_midfairy.frame
+class.th10_midfairy.frame=function() end
+class.th10_midfairy[3]=class.th10_midfairy.frame
+
 
 ---造一只妖精。`beh` = 行为子程序（函数）；`src`（可选）把创建者的 $I/%F 拷给子机。
 function t10mid.spawn(hp, x, y, mirror, drop, beh, src, inv, visual_key)
+    class.th10_enemy_schedule.ensure()
     local f = New(class["th10_midfairy"], hp, x, y, mirror, drop, beh, src, inv, visual_key)
+    class.th10_enemy_schedule.birth(f)
+    t10_track(f)
     t10mid.units[#t10mid.units + 1] = f
     return f
 end
@@ -5455,6 +5560,10 @@ s6mid.DROP_G0  = { 0, 2, 2 }        -- BGirl00：dropExtra(2,2)
 ---本卡造出来的妖精：卡结束 / 重开（符卡练习）时统一收拾。
 s6mid.units = {}
 function s6mid.clear()
+    if s6mid.controller then
+        t10_clear_pods(s6mid.controller)
+        s6mid.controller=nil
+    end
     for i = 1, #s6mid.units do t10_kill_pod(s6mid.units[i]) end
     s6mid.units = {}
 end
@@ -5483,7 +5592,10 @@ function s6mid.pos(f) return f.ecs.wx, f.ecs.wy end
 
 ---造一只妖精。`src`（可选）把创建者的 $I/%F 整块拷给子机（原作 enmCreate 的行为）。
 function s6mid.spawn(hp, x, y, mirror, drop, sub, src)
+    class.th10_enemy_schedule.ensure()
     local f = New(class["th10_s6fairy"], hp, x, y, mirror, drop, sub, src)
+    class.th10_enemy_schedule.birth(f)
+    t10_track(f)
     s6mid.units[#s6mid.units + 1] = f
     return f
 end
@@ -5546,6 +5658,8 @@ class["th10_s6fairy"] = Class(enemy, {
             self.I0, self.I1, self.I2, self.I3 = src.I0, src.I1, src.I2, src.I3
             self.F0, self.F1, self.F2, self.F3 = src.F0, src.F1, src.F2, src.F3
         end
+        self.t10_root=(src and src.t10_root) or class.th10_enemy_schedule.current_root or self
+        self.t10_update=class.th10_s6fairy.t10_update
         self.seen = false
         ecs_sync(self)
         task.New(self, function() s6mid.BEH[sub](self) end)
@@ -5571,6 +5685,10 @@ class["th10_s6fairy"] = Class(enemy, {
     end,
     del = function(self) task.Clear(self) end,
 })
+class.th10_s6fairy.t10_update=class.th10_s6fairy.frame
+class.th10_s6fairy.frame=function() end
+class.th10_s6fairy[3]=class.th10_s6fairy.frame
+
 
 ---=====================================
 --- 妖精行为（每个 subtask 一条协程；对照同名 ECL 子程序，只取 Lunatic 行）
@@ -5855,7 +5973,7 @@ end
 function card:init()
     s6mid.clear()                                   -- 重开（符卡练习）时先清上一局残留
     s6mid.ax, s6mid.ay = 0, 0
-    s6mid.main(self)
+    s6mid.controller=class.t10_start_road(self,s6mid.main)
 end
 function card:frame() end
 function card:render() end
@@ -6131,7 +6249,7 @@ function t10mid.s01card:before()
 end
 function t10mid.s01card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s01.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s01.run)
 end
 function t10mid.s01card:frame() end
 function t10mid.s01card:render() end
@@ -6416,7 +6534,7 @@ function t10mid.s02card:before()
 end
 function t10mid.s02card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s02.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s02.run)
 end
 function t10mid.s02card:frame() end
 function t10mid.s02card:render() end
@@ -6797,7 +6915,7 @@ function t10mid.s03card:before()
 end
 function t10mid.s03card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s03.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s03.run)
 end
 function t10mid.s03card:frame() end
 function t10mid.s03card:render() end
@@ -7460,7 +7578,7 @@ function t10mid.s04card:before()
 end
 function t10mid.s04card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s04.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s04.run)
 end
 function t10mid.s04card:frame() end
 function t10mid.s04card:render() end
@@ -7984,7 +8102,7 @@ function t10mid.s05card:before()
 end
 function t10mid.s05card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s05.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s05.run)
 end
 function t10mid.s05card:frame() end
 function t10mid.s05card:render() end
@@ -8846,7 +8964,7 @@ function t10mid.s07card:before()
 end
 function t10mid.s07card:init()
     t10mid.clear(); t10mid.ax, t10mid.ay = 0, 0
-    task.New(self, function() t10mid.s07.run(self) end)
+    t10mid.controller=class.t10_start_road(self,t10mid.s07.run)
 end
 function t10mid.s07card:frame() end
 function t10mid.s07card:render() end

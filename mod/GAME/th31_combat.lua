@@ -306,9 +306,11 @@ return function()
         for i=1,#fields do saved[i]=o[fields[i]] end
         o.th08_ecl_birth=true
         step(o)
+        if not IsValid(o) or o.status=='del' or o.status=='kill' then return false end
         o.th08_ecl_birth=nil
         o.x,o.y=x,y
         for i=1,#fields do o[fields[i]]=saved[i] end
+        return true
     end
     function M.actor(key,define)
         local cfg=assert(profiles[key],key)
