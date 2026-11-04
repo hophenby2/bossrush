@@ -460,7 +460,7 @@ local laser = OriginalBulletVisual.laser(laser, 7)
 local class = {}
 _editor_class["TH34"] = class
 
-local task, object, enemy, New = task, object, enemy, New
+local task, object, enemy, New = NativeVisual.task_api(task), object, enemy, New
 local Class = Class
 local PlaySound, Render = PlaySound, Render
 local SetImageState = SetImageState
@@ -739,11 +739,11 @@ class["TH34_ghost"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        if self.timer <= PUFF_FRAMES then
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        if self.th07_road_age < PUFF_FRAMES then
             ---烟尘阶段：位置 = 出生点 + 插值（原作 INIT_INTERP 每帧往 POS_X/POS_Y 写值）
-            local t = self.timer / PUFF_FRAMES
-            self.x = self.hx + hermite(t, self.px0, self.px1, self.mx0, self.mx1)
-            self.y = self.hy + hermite(t, self.py0, self.py1, self.my0, self.my1)
+            local t = min(self.th07_road_age+1,PUFF_FRAMES) / PUFF_FRAMES
+            NativeVisual.road_position(self,self.hx + hermite(t, self.px0, self.px1, self.mx0, self.mx1),self.hy + hermite(t, self.py0, self.py1, self.my0, self.my1))
         else
             ---幽灵阶段：原作 MOVE_DIR_TIME(角度) + SET_MOVE_ACCEL 0.02 的匀加速直线
             self.spd = self.spd + DRIFT_ACCEL
@@ -766,6 +766,7 @@ class["TH34_ghost"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_ghost"])
 
 ---──────────────────── 残火（原作 sub 4）：120 帧，向上飘 150 px ────────────────────
 ---原作 SET_ANM 31 + CAN_DIE 0 + IS_HITTABLE 0：纯演出、打不掉、t=80 切 VM 中断、
@@ -784,15 +785,15 @@ class["TH34_flame"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        local t = min(self.timer, FLAME_FRAMES) / FLAME_FRAMES
-        self.x = self.hx + hermite(t, 0, FLAME_X1, self.fx0, self.fx1)
-        self.y = self.hy + hermite(t, 0, FLAME_Y1, FLAME_Y_M0, self.fy1)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        local t = min(self.th07_road_age+1, FLAME_FRAMES) / FLAME_FRAMES
+        NativeVisual.road_position(self,self.hx + hermite(t, 0, FLAME_X1, self.fx0, self.fx1),self.hy + hermite(t, 0, FLAME_Y1, FLAME_Y_M0, self.fy1))
         ---原作 t=80 切中断、t=120 直接销毁；这里用末 20 帧淡出代替「切图」
-        if self.timer > FLAME_FRAMES - FLAME_FADE then
-            self._a = max(0, 255 * (FLAME_FRAMES - self.timer) / FLAME_FADE)
+        if self.th07_road_age > FLAME_FRAMES - FLAME_FADE then
+            self._a = max(0, 255 * (FLAME_FRAMES - self.th07_road_age) / FLAME_FADE)
         end
         object.smear_frame(self, TRAIL_DECAY)
-        if self.timer >= FLAME_FRAMES then
+        if self.th07_road_age >= FLAME_FRAMES then
             object.RawDel(self)
         end
     end,
@@ -801,6 +802,7 @@ class["TH34_flame"] = Class(enemy, {
         enemy.render(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_flame"])
 
 ---==================== 挂到空 boss 的一张符卡上 ====================
 ---本卡是「道中搬运卡」：boss 本体什么都不做 —— `img_void` 是不显形的空图
@@ -1418,7 +1420,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
 })
 
 ---──────────────────── 炮台（原作 sub 5/6/7/8 → SUB_CALL 4） ────────────────────
----原地不动、t=50..114 自转、每 20 帧打一圈 25 发；sprite 0/3 的差别用弹型代理体现。
+-- 5速极坐标移动，t50起转向、t114停转并停自动枪；左右侧按原时间轴镜像。
 ---（下面这一大段 stage4 三姐妹的常量 / 发弹函数只在紧邻的类定义里用；
 --- 塞进 do..end 让它们出了块就失效，免得顶层 local 撞 Lua 的 200 上限。）
 do
@@ -1454,10 +1456,13 @@ end
 
 class["TH34_turret4"] = Class(enemy, {
     ---@param sub number 原作的子程序号 5/6/7/8（决定 sprite 0/3 与层间偏移角的符号）
-    init = function(self, x, y, life, sub)
+    init = function(self, x, y, life, sub,mirror)
         enemy.init(self, TUR4_STYLE, life, false, true, true)
         self.x, self.y = x, y
-        self.kind = sub
+        self.kind,self.mirror = sub,mirror or 0
+        self.road_angle=(self.mirror==1) and 180 or 0
+        self.road_iv=NativeVisual.road_interval(self,TUR4_GAP)
+        self.road_shoot_t=ran:Int(0,self.road_iv-1)
         self.a2 = TUR4_A2[sub]
         local btype = (sub >= 7) and 3 or 0
         self.bstyle = th07_style(btype)
@@ -1467,14 +1472,6 @@ class["TH34_turret4"] = Class(enemy, {
             task.Wait(TUR4_INVUL)
             self.protect = false
         end)
-        ---开火：首轮延迟 1..20 帧（SET_SHOOT_INTERVAL_RAND 的 0..n 随机初值），到 t=114 停。
-        task.New(self, function()
-            task.Wait(ran:Int(1, TUR4_GAP))
-            while self.timer < TUR4_STOP do
-                turret4_volley(self)
-                task.Wait(TUR4_GAP)
-            end
-        end)
         task.New(self, function()
             task.Wait(TUR4_LIFE)
             object.RawDel(self)
@@ -1482,8 +1479,16 @@ class["TH34_turret4"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        if self.timer > 50 and self.timer <= TUR4_STOP then
-            self.rot = self.rot + TUR4_SPIN
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        if self.th07_road_age>=50 and self.th07_road_age<TUR4_STOP then
+            self.road_angle=self.road_angle+(self.mirror==1 and TUR4_SPIN or -TUR4_SPIN)
+        end
+        object.SetV(self,5,self.road_angle,false)
+        if self.th07_road_age<TUR4_STOP then
+            self.road_shoot_t=self.road_shoot_t+1
+            if self.road_shoot_t>=self.road_iv then
+                self.road_shoot_t=0;turret4_volley(self)
+            end
         end
     end,
     kill = function(self)
@@ -1494,6 +1499,7 @@ class["TH34_turret4"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_turret4"])
 
 ---──────────────────── 大幽灵（原作 sub 9 + sub 10） ────────────────────
 ---出生 30 帧无敌、每 10 帧朝自机撒 14 发；半角从 11.25° 线性收到 0（差异 29）。
@@ -1507,7 +1513,7 @@ local GH4_LIFE = 2100
 
 local function ghost4_volley(self)
     local p = Angle(self, player)
-    local halo = GH4_HALO * (1 - min(self.timer, 100) / 100)
+    local halo = GH4_HALO * (1 - min(self.th07_road_age, 100) / 100)
     volley4(self, GH4_N, function()
         local a = p + ran:Float(-halo, halo)     -- RANDOM：角度先抽
         return th07_style(1), th07_color(6, 1), ran:Float(GH4_S2, GH4_S1), a
@@ -1515,9 +1521,11 @@ local function ghost4_volley(self)
 end
 
 class["TH34_ghost4"] = Class(enemy, {
-    init = function(self, x, y, life)
+    init = function(self, x, y, life,mirror)
         enemy.init(self, GH4_STYLE, life, false, true, false)
         self.x, self.y = x, y
+        self.mirror=mirror or 0
+        self.road_angle=-90
         self.protect = true
         self.drop = { 0, 0, 1 }              -- itemdrop 1 = 点道具
         task.New(self, function()
@@ -1537,11 +1545,14 @@ class["TH34_ghost4"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        if self.timer > 50 and self.timer <= 100 then
-            self.rot = self.rot - GH4_SPIN
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        if self.th07_road_age>=50 and self.th07_road_age<100 then
+            self.road_angle=self.road_angle+(self.mirror==1 and -GH4_SPIN or GH4_SPIN)
         end
+        object.SetV(self,2,self.road_angle,false)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_ghost4"])
 
 ---──────────────────── 厚血怪（原作 sub 13/14） ────────────────────
 ---60 帧 ease-out-quad 下滑 180 px ⇒ 到位后 20 轮 7 路扇，张角逐轮收窄；
@@ -1608,12 +1619,13 @@ class["TH34_tank4"] = Class(enemy, {
         end)
     end,
     frame = function(self)
-        ---位置先更新，再让 task 用新位置发弹（子弹必须从到位后的位置出去）。
-        if self.timer <= TANK4_RISE_T then
-            local u = self.timer / TANK4_RISE_T
-            self.y = self.y0 - TANK4_RISE * (1 - (1 - u) * (1 - u))
+        -- 先计算本帧目标，枪仍读积分前位置；帧尾由共用包装提交。
+        if self.th07_road_age < TANK4_RISE_T then
+            local u = min(self.th07_road_age+1,TANK4_RISE_T) / TANK4_RISE_T
+            NativeVisual.road_position(self,self.x,self.y0 - TANK4_RISE * (1 - (1 - u) * (1 - u)))
         end
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
     end,
     kill = function(self)
         ---sub 12：4 个随机道具 + 2 个点道具 + 消弹（差异 23）。
@@ -1623,9 +1635,10 @@ class["TH34_tank4"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_tank4"])
 
 ---──────────────────── 旋环妖精（原作 sub 17/19/21 → SUB_CALL 15） ────────────────────
----原地自转（三种速度）、出生第 134 帧打一圈 24 发；死亡弹按 sub 16/18/20 分三种。
+-- 5速极坐标移动，t50..113按三种角速转向，t134打一圈24发；死亡弹有三种。
 local FA4_STYLE = 5                          -- 用 kedama/enemy5 的蓝色小人当代理
 local FA4_INVUL = 10
 local FA4_LIFE = 2134
@@ -1709,10 +1722,12 @@ end
 class["TH34_fairy4"] = Class(enemy, {
     ---@param kind string "a"（sub17）/ "b"（sub19）/ "c"（sub21）
     ---@param drop number 原作时间轴的 itemdrop（0 = 小能量 / 1 = 点）
-    init = function(self, x, y, life, kind, drop)
+    init = function(self, x, y, life, kind, drop,mirror)
         enemy.init(self, FA4_STYLE, life, false, true, true)
         self.x, self.y = x, y
-        self.kind = kind
+        self.kind,self.mirror = kind,mirror or 0
+        self.road_angle=-(({a=0,b=-0.19634955,c=0.19634955})[kind])*RAD2DEG
+        if self.mirror==1 then self.road_angle=180-self.road_angle end
         self.protect = true
         self.drop = { 0, DROP_FAITH[drop], DROP_POINT[drop] }
         task.New(self, function()
@@ -1733,9 +1748,12 @@ class["TH34_fairy4"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        if self.timer > 50 and self.timer <= TUR4_STOP then
-            self.rot = self.rot + FA4_SPIN[self.kind]
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        if self.th07_road_age>=50 and self.th07_road_age<TUR4_STOP then
+            local av=FA4_SPIN[self.kind]
+            self.road_angle=self.road_angle+(self.mirror==1 and av or -av)
         end
+        object.SetV(self,5,self.road_angle,false)
     end,
     kill = function(self)
         if self.kind == "a" then
@@ -1748,6 +1766,7 @@ class["TH34_fairy4"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_fairy4"])
 
 ---==================== 挂到空 boss 的第二张符卡 ====================
 ---这一张和上面的「六面道中」共用同一个空 boss：`boss.Define` 只能调一次、且必须早于
@@ -1773,80 +1792,80 @@ do
     --- /tmp/eclwork 的解释器逐值对过时间轴 0，dt 也对过一遍。）
     ---子程序号决定挂哪个类：5..8=炮台、9=大幽灵、13/14=厚血怪、17/19/21=旋环妖精。
     local WAVE4 = {
-    {   0,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10},
-    {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10}, {   4,  5, -208,  144, -1,  10},
-    {   4,  5, -208,  144, -1,  10}, { 200,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10},
-    {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10},
-    {   4,  6,  208,  144, -1,  10}, {   4,  6,  208,  144, -1,  10}, {  80,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10},
-    {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10},
-    {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {   4,  5, -208,  160, -1,  10}, {  80,  6,  208,   96, -1,  10},
-    {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10},
-    {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10}, {   4,  6,  208,   96, -1,  10},
-    {  90,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
-    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
-    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
-    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10},
-    {   2,  6,  208,  160, -1,  10}, {   2,  5, -208,   96, -1,  10}, { 120,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
-    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
-    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
-    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
-    {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10}, {   2,  6,  208,  112, -1,  10}, {   2,  5, -208,  128, -1,  10},
-    { 120,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, { 120,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10},
-    {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144,  2,  10}, {   2,  7, -208,  144,  2,  10},
-    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
-    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
-    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10},
-    {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144, -1,  10}, {   2,  7, -208,  144, -1,  10}, {   2,  8,  208,  144,  2,  10},
-    {   2,  7, -208,  144,  2,  10}, { 700,  9,  176,  240,  1, 100}, {  60,  9, -176,  256,  1, 100}, {  60,  9,  -96,  272,  1, 100},
-    {  60,  9,   64,  240,  1, 100}, {  60,  9,    0,  256,  1, 100}, { 300,  9,  176,  240,  1, 100}, {  60,  9, -176,  256,  1, 100},
-    {  60,  9,  -96,  272,  1, 100}, {  60,  9,   64,  240,  1, 100}, {  60,  9,    0,  256,  1, 100}, { 300, 13, -160,  256,  1, 500},
-    { 100, 14,  160,  256,  1, 500}, { 100, 13, -128,  256,  1, 500}, { 100, 14,  128,  256,  1, 500}, {  90, 13,  -96,  256,  1, 500},
-    {  90, 14,   96,  256,  1, 500}, {  80, 13, -128,  256,  1, 500}, {  80, 14,  160,  256,  1, 500}, {  70, 13, -128,  256,  1, 500},
-    {  70, 14,  128,  256,  1, 400}, {  60, 13,  -96,  256,  1, 400}, {  60, 14,   96,  256,  1, 400}, {  60, 13, -128,  256,  1, 300},
-    {   0, 14,  128,  256,  1, 300}, { 300, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10},
-    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10},
-    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {  50, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10},
-    {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10},
-    {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {  50, 17,  208,  144,  1,  10},
-    {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10},
-    {   8, 17,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 17,  208,  144,  0,  10},
-    {  50, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10},
-    {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 17, -208,  144,  1,  10},
-    {   8, 17, -208,  144,  0,  10}, { 100, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10},
-    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10},
-    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {  50, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
-    {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10},
-    {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {  50, 19,  208,  144,  1,  10},
-    {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10},
-    {   8, 19,  208,  144,  0,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 19,  208,  144,  0,  10},
-    {  50, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10},
-    {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  0,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
-    {   8, 19, -208,  144,  0,  10}, { 100, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
-    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10},
-    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {  50, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10},
-    {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10},
-    {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, { 100, 21,  208,  144,  1,  10},
-    {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10},
-    {   8, 21,  208,  144,  0,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
-    {  50, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10},
-    {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 21, -208,  144,  1,  10}, {   8, 21, -208,  144,  1,  10},
-    {   8, 21, -208,  144,  0,  10}, { 300, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
-    {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10},
-    {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {  50, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
-    {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10},
-    {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, { 150, 17,  208,  144,  1,  10},
-    {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10},
-    {   8, 21,  208,  144,  0,  10}, {   8, 17,  208,  144,  1,  10}, {   8, 19,  208,  144,  1,  10}, {   8, 21,  208,  144,  0,  10},
-    {  50, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10},
-    {   8, 19, -208,  144,  1,  10}, {   8, 21, -208,  144,  0,  10}, {   8, 17, -208,  144,  1,  10}, {   8, 19, -208,  144,  1,  10},
-    {   8, 21, -208,  144,  0,  10},
+    {   0,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0},
+    {   4,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0}, {   4,  5, -208,  144, -1,  10, 0},
+    {   4,  5, -208,  144, -1,  10, 0}, { 200,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1},
+    {   4,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1},
+    {   4,  6,  208,  144, -1,  10, 1}, {   4,  6,  208,  144, -1,  10, 1}, {  80,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0},
+    {   4,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0},
+    {   4,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0}, {   4,  5, -208,  160, -1,  10, 0}, {  80,  6,  208,   96, -1,  10, 1},
+    {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1},
+    {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1}, {   4,  6,  208,   96, -1,  10, 1},
+    {  90,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0}, {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0},
+    {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0}, {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0},
+    {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0}, {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0},
+    {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0}, {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0},
+    {   2,  6,  208,  160, -1,  10, 1}, {   2,  5, -208,   96, -1,  10, 0}, { 120,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0},
+    {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0}, {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0},
+    {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0}, {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0},
+    {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0}, {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0},
+    {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0}, {   2,  6,  208,  112, -1,  10, 1}, {   2,  5, -208,  128, -1,  10, 0},
+    { 120,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, { 120,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0},
+    {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144,  2,  10, 1}, {   2,  7, -208,  144,  2,  10, 0},
+    {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1},
+    {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1},
+    {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1},
+    {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144, -1,  10, 1}, {   2,  7, -208,  144, -1,  10, 0}, {   2,  8,  208,  144,  2,  10, 1},
+    {   2,  7, -208,  144,  2,  10, 0}, { 700,  9,  176,  240,  1, 100, 1}, {  60,  9, -176,  256,  1, 100, 0}, {  60,  9,  -96,  272,  1, 100, 0},
+    {  60,  9,   64,  240,  1, 100, 1}, {  60,  9,    0,  256,  1, 100, 0}, { 300,  9,  176,  240,  1, 100, 1}, {  60,  9, -176,  256,  1, 100, 0},
+    {  60,  9,  -96,  272,  1, 100, 0}, {  60,  9,   64,  240,  1, 100, 1}, {  60,  9,    0,  256,  1, 100, 0}, { 300, 13, -160,  256,  1, 500, 0},
+    { 100, 14,  160,  256,  1, 500, 1}, { 100, 13, -128,  256,  1, 500, 0}, { 100, 14,  128,  256,  1, 500, 1}, {  90, 13,  -96,  256,  1, 500, 0},
+    {  90, 14,   96,  256,  1, 500, 1}, {  80, 13, -128,  256,  1, 500, 0}, {  80, 14,  160,  256,  1, 500, 1}, {  70, 13, -128,  256,  1, 500, 0},
+    {  70, 14,  128,  256,  1, 400, 1}, {  60, 13,  -96,  256,  1, 400, 0}, {  60, 14,   96,  256,  1, 400, 1}, {  60, 13, -128,  256,  1, 300, 0},
+    {   0, 14,  128,  256,  1, 300, 1}, { 300, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  0,  10, 1},
+    {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1},
+    {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  0,  10, 1}, {  50, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  1,  10, 0},
+    {   8, 17, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  0,  10, 0},
+    {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  0,  10, 0}, {  50, 17,  208,  144,  1,  10, 1},
+    {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  1,  10, 1},
+    {   8, 17,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 17,  208,  144,  0,  10, 1},
+    {  50, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0},
+    {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 17, -208,  144,  1,  10, 0},
+    {   8, 17, -208,  144,  0,  10, 0}, { 100, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  0,  10, 1},
+    {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  0,  10, 1}, {   8, 19,  208,  144,  1,  10, 1},
+    {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  0,  10, 1}, {  50, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0},
+    {   8, 19, -208,  144,  0,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  0,  10, 0},
+    {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  0,  10, 0}, {  50, 19,  208,  144,  1,  10, 1},
+    {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  0,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1},
+    {   8, 19,  208,  144,  0,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  0,  10, 1},
+    {  50, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  0,  10, 0}, {   8, 19, -208,  144,  1,  10, 0},
+    {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  0,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0},
+    {   8, 19, -208,  144,  0,  10, 0}, { 100, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1},
+    {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {   8, 21,  208,  144,  1,  10, 1},
+    {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {  50, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  1,  10, 0},
+    {   8, 21, -208,  144,  0,  10, 0}, {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0},
+    {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, { 100, 21,  208,  144,  1,  10, 1},
+    {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  1,  10, 1},
+    {   8, 21,  208,  144,  0,  10, 1}, {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1},
+    {  50, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, {   8, 21, -208,  144,  1,  10, 0},
+    {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, {   8, 21, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  1,  10, 0},
+    {   8, 21, -208,  144,  0,  10, 0}, { 300, 17,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1},
+    {   8, 17,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1},
+    {   8, 19,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {  50, 17, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0},
+    {   8, 21, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0},
+    {   8, 17, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, { 150, 17,  208,  144,  1,  10, 1},
+    {   8, 19,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1},
+    {   8, 21,  208,  144,  0,  10, 1}, {   8, 17,  208,  144,  1,  10, 1}, {   8, 19,  208,  144,  1,  10, 1}, {   8, 21,  208,  144,  0,  10, 1},
+    {  50, 17, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0},
+    {   8, 19, -208,  144,  1,  10, 0}, {   8, 21, -208,  144,  0,  10, 0}, {   8, 17, -208,  144,  1,  10, 0}, {   8, 19, -208,  144,  1,  10, 0},
+    {   8, 21, -208,  144,  0,  10, 0},
 
     }
 
@@ -1869,14 +1888,14 @@ do
                 task.Wait(w[1])
                 local sub = w[2]
                 if sub <= 8 then
-                    New(class["TH34_turret4"], w[3], w[4], w[6], sub)
+                    New(class["TH34_turret4"], w[3], w[4], w[6], sub,w[7])
                 elseif sub == 9 then
-                    New(class["TH34_ghost4"], w[3], w[4], w[6])
+                    New(class["TH34_ghost4"], w[3], w[4], w[6],w[7])
                 elseif sub <= 14 then
                     New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
                 else
                     New(class["TH34_fairy4"], w[3], w[4], w[6],
-                            (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5])
+                            (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5],w[7])
                 end
             end
         end)
@@ -1973,9 +1992,9 @@ local W3_LIFE6 = 2060                     -- sub 6 的 UNIMP
 local W3_RISE_T = 60                      -- sub 6 的 MOVE_DIR_TIME(60,4,…)
 local W3_RISE_D = 180                     -- 3 px/帧 × 60 帧
 
----RAND_FLOAT_ADD $10004, 0.0981748, 1.52171 ⇒ θ ∈ [0.0982, 1.62) 弧度
+-- RAND_FLOAT_ADD的第一个数是幅度、第二个数是基值：θ∈[1.52171,1.619885)弧度。
 local function w3_theta()
-    return ran:Float(0.0981748, 0.0981748 + 1.52171)
+    return ran:Float(1.52171, 1.52171 + 0.0981748)
 end
 
 ---每只小怪的固定齐射（Lunatic 行）：{ sprite, offset, c1, c2, v1, v2, a1, a2, aim }
@@ -2021,11 +2040,9 @@ class["TH34_walker3"] = Class(enemy, {
             object.SetV(self, spd, deg, false)
         end
         ---SET_SHOOT_INTERVAL_RAND n：初值 rand(0,n)（原作首轮延迟 1..n 帧）
-        self.interval = W3_INTERVAL[sub] or 0
-        self.itimer = (self.interval > 0) and ran:Int(0, self.interval) or 0
-        if sub ~= 6 then
-            w3_fire(self)                 -- t=0 那一轮（原作 spawn 当帧就打）
-        end
+        self.interval = NativeVisual.road_interval(self,W3_INTERVAL[sub] or 0)
+        self.itimer = (self.interval > 0) and ran:Int(0, self.interval-1) or 0
+        -- Sub3/4/5的t0 SHOOT被DISABLE_BULLETS抑制，自动枪可能在出生出口触发。
         task.New(self, function()
             if sub == 6 then
                 task.Wait(W3_RISE_T)
@@ -2044,13 +2061,13 @@ class["TH34_walker3"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         ---sub 6 的头 60 帧是脚本插值（原作 ENEMY_MOVE_INTERP 的 ease-out-quad；
         ---插值期间速度保持 0，别和后面的 POLAR 抢位置）
         if self.kind == 6 and not self.rise then
-            local u = min(self.timer, W3_RISE_T) / W3_RISE_T
+            local u = min(self.th07_road_age+1, W3_RISE_T) / W3_RISE_T
             local e = 1 - (1 - u) * (1 - u)
-            self.x = self.x0 + self.rise_dx * e
-            self.y = self.y0 + self.rise_dy * e
+            NativeVisual.road_position(self,self.x0 + self.rise_dx * e,self.y0 + self.rise_dy * e)
         end
         ---SET_SHOOT_INTERVAL_RAND 的复刻：每帧 ++，到 n 就把**上一轮**重打一次
         if self.interval > 0 then
@@ -2070,6 +2087,7 @@ class["TH34_walker3"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_walker3"])
 
 ---──────────────────── 大幽灵（原作 sub 7/8/9/11/12，sub 10 是 9 的子调用） ────────────────────
 ---出生在左右两条竖线的外侧（我们的 x=±208，th07 x=16/400），先用 120 帧 Hermite
@@ -2168,12 +2186,12 @@ class["TH34_bigghost3"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         if self.mode == 0 then
-            local u = min(self.timer, GH3_RISE) / GH3_RISE
+            local u = min(self.th07_road_age+1, GH3_RISE) / GH3_RISE
             local e = 1 - (1 - u) * (1 - u)
-            self.x = hermite(e, self.x0, self.x1, 0, self.m1x)
-            self.y = hermite(e, self.y0, GH3_Y1, GH3_Y_M0, GH3_Y_M1)
-            if self.timer >= GH3_RISE then
+            NativeVisual.road_position(self,hermite(e, self.x0, self.x1, 0, self.m1x),hermite(e, self.y0, GH3_Y1, GH3_Y_M0, GH3_Y_M1))
+            if self.th07_road_age >= GH3_RISE then
                 self.mode = 1
             end
         end
@@ -2186,6 +2204,7 @@ class["TH34_bigghost3"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_bigghost3"])
 
 ---==================== 挂到空 boss 的第三张符卡 ====================
 do
@@ -2821,23 +2840,22 @@ class["TH34_mid5"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         if self.phase == 0 then
             ---烟尘：位置直接由两条 Hermite 写（原作 INIT_INTERP 写 POS_X/POS_Y）。
-            local t = min(self.timer, P5_DUST_FRAMES) / P5_DUST_FRAMES
-            self.x = self.hx + hermite(t, self.px0, 0, self.pmx0, self.pmx1)
-            self.y = self.hy + hermite(t, self.py0, 0, self.pmy0, self.pmy1)
-            if self.timer > P5_DUST_FRAMES - P5_DUST_FADE then
-                self._a = max(0, 255 * (P5_DUST_FRAMES - self.timer) / P5_DUST_FADE)
+            local t = min(self.th07_road_age+1, P5_DUST_FRAMES) / P5_DUST_FRAMES
+            NativeVisual.road_position(self,self.hx + hermite(t, self.px0, 0, self.pmx0, self.pmx1),self.hy + hermite(t, self.py0, 0, self.pmy0, self.pmy1))
+            if self.th07_road_age > P5_DUST_FRAMES - P5_DUST_FADE then
+                self._a = max(0, 255 * (P5_DUST_FRAMES - self.th07_road_age) / P5_DUST_FADE)
             end
             object.smear_frame(self, TRAIL_DECAY)
         else
-            local bt = self.timer - self.delay
-            if self.dive_t > 0 and bt <= self.dive_t then
+            local bt = self.th07_road_age - self.delay
+            if self.dive_t > 0 and bt < self.dive_t then
                 ---ENEMY_MOVE_INTERP 的 ease-out-quad：pos = 出生点 + e(u)·位移
-                local u = min(bt, self.dive_t) / self.dive_t
+                local u = min(bt+1, self.dive_t) / self.dive_t
                 local e = 1 - (1 - u) * (1 - u)
-                self.x = self.hx + self.ddx * e
-                self.y = self.hy + self.ddy * e
+                NativeVisual.road_position(self,self.hx + self.ddx * e,self.hy + self.ddy * e)
             elseif bt >= self.t_move then
                 ---ENEMY_MOVE_POLAR：speed += accel 后 velocity = speed·(cosθ, sinθ)；
                 ---镜像位在 Enemy::Move 里把 velocity.x 取反（EnemyManager.hpp:79）。
@@ -2873,6 +2891,7 @@ class["TH34_mid5"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_mid5"])
 
 ---==================== 挂到空 boss 的第四张符卡 ====================
 do
@@ -3071,11 +3090,10 @@ end
 ---每帧推一段 Hermite（frame 里调用；位置写 x/y 就够，速度保持 0 免得两套系统打架）
 local function w1_advance(self)
     if self.mv_n > 0 then
+        self.mv_t = self.mv_t + 1
         local u = min(self.mv_t, self.mv_n) / self.mv_n
         local e = 1 - (1 - u) * (1 - u)
-        self.x = self.mv_x0 + self.mv_dx * e
-        self.y = self.mv_y0 + self.mv_dy * e
-        self.mv_t = self.mv_t + 1
+        NativeVisual.road_position(self,self.mv_x0+self.mv_dx*e,self.mv_y0+self.mv_dy*e)
     end
 end
 
@@ -3172,6 +3190,7 @@ class["TH34_fairy1"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         w1_advance(self)
     end,
     kill = function(self)
@@ -3179,6 +3198,7 @@ class["TH34_fairy1"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_fairy1"])
 
 ---──────────── 环妖精（原作 sub 18） ────────────
 ---出生后向右平移（MOVE_DIR_TIME(0,0,0,4) ⇒ POLAR：θ=0、速 4），t=0 打一圈 12 发
@@ -3202,8 +3222,8 @@ class["TH34_ring1"] = Class(enemy, {
         w1_move(self, 0, 0, 4)
         ---$10004 = ECL_VAR_RNG_RADIAN ∈ [−π, π)（RING_ABS 的 a1）
         self.ring_base = -ran:Float(-180, 180)
-        self.ring_t = ran:Int(0, 90)
-        w1_ring(self, th07_style(1), 9, 12, 1, 2, 1, self.ring_base, 0, true)
+        self.ring_iv = NativeVisual.road_interval(self,90)
+        self.ring_t = ran:Int(0,self.ring_iv-1)
         task.New(self, function()
             task.Wait(60)
             self.spin = -3
@@ -3217,6 +3237,7 @@ class["TH34_ring1"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         w1_advance(self)
         if self.spin ~= 0 then
             self.dir = self.dir + self.spin
@@ -3224,7 +3245,7 @@ class["TH34_ring1"] = Class(enemy, {
         end
         if self.ring_t >= 0 then
             self.ring_t = self.ring_t + 1
-            if self.ring_t >= 90 then
+            if self.ring_t >= self.ring_iv then
                 self.ring_t = 0
                 w1_ring(self, th07_style(1), 9, 12, 1, 2, 1, self.ring_base, 0, true)
             end
@@ -3235,6 +3256,7 @@ class["TH34_ring1"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_ring1"])
 
 ---──────────── 大妖精（原作 sub 16/17） ────────────
 ---80 帧下滑 200 px，t=90 起朝自机方向打 8 轮旋转扇（每轮 2×5 = 10 发），
@@ -3278,6 +3300,7 @@ class["TH34_bigfairy1"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         w1_advance(self)
     end,
     kill = function(self)
@@ -3285,6 +3308,7 @@ class["TH34_bigfairy1"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_bigfairy1"])
 
 ---==================== 挂到空 boss 的第五张符卡 ====================
 do
@@ -3733,15 +3757,16 @@ class["TH34_wisp2"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        local t = min(self.timer, W2_WISP_T) / W2_WISP_T
-        self.x = hermite(t, self.hx, self.tx, self.mx0, self.mx1)
-        self.y = hermite(t, self.hy, self.ty, self.my0, self.my1)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        local t = min(self.th07_road_age+1, W2_WISP_T) / W2_WISP_T
+        NativeVisual.road_position(self,hermite(t, self.hx, self.tx, self.mx0, self.mx1),hermite(t, self.hy, self.ty, self.my0, self.my1))
     end,
     kill = function(self)
         w1_drop(self)
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_wisp2"])
 
 ---──────────── 打弹的子体（原作 sub 18..23） ────────────
 ---能打（SPAWN_ENEMY_REL 给的原始 life 为 80），出生即按各自脚本打一轮弹，
@@ -3808,7 +3833,7 @@ class["TH34_shoot2"] = Class(enemy, {
         task.New(self, function()
             if sub == 22 or sub == 23 then
                 ---RAND $10012 + SET_WAIT_TIMER：0..3 帧的随机错开
-                task.Wait(ran:Int(0, 4))
+                task.Wait(ran:Int(0, 3))
                 if sub == 22 then
                     w2_aimed(self, W2_VOLLEY[22])
                     w2_aimed(self, W2_VOLLEY22B)
@@ -3839,6 +3864,7 @@ class["TH34_shoot2"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         if self.dive > 0 then
             self.dive = self.dive + 1
             if self.dive <= 62 then
@@ -3853,6 +3879,7 @@ class["TH34_shoot2"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_shoot2"])
 
 ---──────────── 左右对飞的两族妖精（原作 sub 36/37/39）与下落的杂鱼（sub 38） ────────────
 ---36/37 从画面左右两侧的 x=±208 进场（原作屏幕比场地宽 ⇒ 看得见，同差异 22），
@@ -3887,11 +3914,10 @@ class["TH34_fairy2"] = Class(enemy, {
         local p = W2_FAIRY[sub]
         if p then
             self.dir, self.spd = w1_dir(self, p.theta), p.spd
-            self.iv = p.iv
-            self.shoot_t = ran:Int(0, p.iv)
+            self.iv = NativeVisual.road_interval(self,p.iv)
+            self.shoot_t = ran:Int(0,self.iv-1)
             w1_move(self, 0, p.theta, p.spd)
-            ---t=0 的固定那一发（Interval 的自动重发会一直用这份快照）
-            w2_aimed(self, p)
+            -- t0只保存DISABLE_BULLETS中的描述符，正常出弹由自动间隔触发。
             task.New(self, function()
                 task.Wait(60)
                 self.spin = p.spin
@@ -3915,6 +3941,7 @@ class["TH34_fairy2"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         w1_advance(self)
         if self.spin ~= 0 then
             self.dir = self.dir + self.spin
@@ -3934,6 +3961,7 @@ class["TH34_fairy2"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_fairy2"])
 
 ---==================== 挂到空 boss 的第六张符卡 ====================
 do
@@ -4421,11 +4449,10 @@ end
 ---每帧推 Hermite；没有插值时按 SET_MOVE_ACCEL 给 POLAR 加速。
 local function adv78(self)
     if self.mv_n > 0 then
+        self.mv_t = self.mv_t + 1
         local u = min(self.mv_t, self.mv_n) / self.mv_n
         local e = 1 - (1 - u) * (1 - u)
-        self.x = self.mv_x0 + self.mv_dx * e
-        self.y = self.mv_y0 + self.mv_dy * e
-        self.mv_t = self.mv_t + 1
+        NativeVisual.road_position(self,self.mv_x0+self.mv_dx*e,self.mv_y0+self.mv_dy*e)
     elseif self.accel ~= 0 then
         self.spd = self.spd + self.accel
         object.SetV(self, self.spd, self.dir, false)
@@ -4567,9 +4594,9 @@ class["TH34_excarrier78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
-        local t = min(self.timer, 80) / 80
-        self.x = self.hx + hermite(t, self.px0, self.px1, self.mx0, self.mx1)
-        self.y = self.hy + hermite(t, self.py0, self.py1, self.my0, self.my1)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
+        local t = min(self.th07_road_age+1, 80) / 80
+        NativeVisual.road_position(self,self.hx + hermite(t, self.px0, self.px1, self.mx0, self.mx1),self.hy + hermite(t, self.py0, self.py1, self.my0, self.my1))
         object.smear_frame(self, TRAIL_DECAY)
     end,
     render = function(self)
@@ -4580,6 +4607,7 @@ class["TH34_excarrier78"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_excarrier78"])
 
 ---──────────────────── 打弹小精灵（原作 sub 11..29） ────────────────────
 ---cfg = { th, off, c1, c2, a2, spr, plays, rounds }。
@@ -4612,6 +4640,7 @@ class["TH34_exbody78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         adv78(self)
     end,
     kill = function(self)
@@ -4620,6 +4649,7 @@ class["TH34_exbody78"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_exbody78"])
 
 ---──────────────────── 中载体（原作 sub 30/33/36） ────────────────────
 ---cfg.kind == 30：t=fire_t 打一发 SPREAD_AIMED（a2=0）；33/36：每 interval 帧
@@ -4645,6 +4675,11 @@ class["TH34_exmid78"] = Class(enemy, {
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
         self.spd, self.accel, self.dir = 0, 0, 0
         self.protect = true
+        self.road_cfg=cfg
+        if cfg.kind~=30 then
+            self.road_iv=NativeVisual.road_interval(self,cfg.interval)
+            self.road_shoot_t=ran:Int(0,self.road_iv-1)
+        end
         move78(self, cfg.move_n, cfg.move_th, cfg.move_spd)
         task.New(self, function()
             task.Wait(10)
@@ -4657,14 +4692,6 @@ class["TH34_exmid78"] = Class(enemy, {
                 task.Wait(30)
                 move78(self, 0, cfg.then_th, cfg.then_spd)
             end)
-        else
-            task.New(self, function()
-                task.Wait(ran:Int(0, cfg.interval - 1))  -- SET_SHOOT_INTERVAL_RAND
-                while self.timer < cfg.stop_t do
-                    mid78_fire(self, cfg)
-                    task.Wait(cfg.interval)
-                end
-            end)
         end
         task.New(self, function()
             task.Wait(cfg.life)
@@ -4673,13 +4700,22 @@ class["TH34_exmid78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         adv78(self)
+        local cfg=self.road_cfg
+        if cfg.kind~=30 and self.th07_road_age<cfg.stop_t then
+            self.road_shoot_t=self.road_shoot_t+1
+            if self.road_shoot_t>=self.road_iv then
+                self.road_shoot_t=0;mid78_fire(self,cfg)
+            end
+        end
     end,
     kill = function(self)
         drop78(self)
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_exmid78"])
 
 ---──────────────────── 扫射载体（原作 sub 39/40，经 sub 41..44） ────────────────────
 ---t=t0 起每 4 帧一发 RING_ABS：a1 冻结成 t0 那一刻的自机角（原代码加的是 0），
@@ -4718,6 +4754,7 @@ class["TH34_exring78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         adv78(self)
     end,
     kill = function(self)
@@ -4727,6 +4764,7 @@ class["TH34_exring78"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_exring78"])
 
 ---──────────────────── 随机扫射本体（原作 sub 46/48/50） ────────────────────
 ---mode == "rand"：每 gap 帧一发 RING_ABS，v1 = rand(0,rnd)+base、a1 = rand[−π,π)；
@@ -4772,6 +4810,7 @@ class["TH34_exbomb78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         adv78(self)
     end,
     kill = function(self)
@@ -4782,6 +4821,7 @@ class["TH34_exbomb78"] = Class(enemy, {
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_exbomb78"])
 
 ---──────────────────── 开幕烟花（原作 sub 52/53/54/55） ────────────────────
 ---cfg = { turn, reaim, c1, v1, v2 }。
@@ -4810,11 +4850,13 @@ class["TH34_exbig78"] = Class(enemy, {
     end,
     frame = function(self)
         enemy.frame(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
     end,
     kill = function(self)
         enemy.kill(self)
     end,
 })
+NativeVisual.wrap_road_actor(class["TH34_exbig78"])
 
 ---==================== 每面的参数（EX / PH 的同构差异全部集中在这里） ====================
 ---`ph == false` 是 EX（第 7 面）、`true` 是 PH（第 8 面）。两个面共用**同一批子程序号**，

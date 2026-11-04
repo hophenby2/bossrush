@@ -97,7 +97,7 @@ local RAD = 180 / math.pi           -- 弧度 → 角度（引擎的 rot / SetV 
 local PI = math.pi
 local bullet = bullet
 
--- 神德的手写枪与其余 ECL 枪共用弹池；在抽随机数之前检查容量，满槽不能消耗随机流。
+-- 神德与其余 ECL 枪共用弹池；在抽随机数之前检查容量，满槽不能消耗随机流。
 class.t10_bullet_slots, class.t10_bullet_cursor = {}, 1
 function class.t10_free_bullet_slot()
     for scanned=0,1999 do
@@ -209,122 +209,31 @@ local I3_INIT = 12                  -- diffI($I3, 0, 4, 8, 12) 的 Lunatic 行
 local I2_INIT = 160                 -- $I2 = 160
 local F2_INIT = 96                  -- %F2 = _f(96)
 local B_INIT = 50                   -- diffI($B, 140, 120, 100, 50) 的 Lunatic 行
-local GUN_SPREAD = 2 * PI / 5       -- 原作 1.256637f：5 把枪彼此隔 72°
+local GUN_SPREAD = 1.256637       -- 原作 1.256637f：5 把枪彼此隔 72°
 
 local function rngrad()
     return ran:Float(-PI, PI)       -- %RANDRAD（-9998）
 end
 
----一颗弹（原作 atN / at2 共用那一套弹参数）
----  用本仓库的 NewSimpleBullet 造（这样弹会进引擎与自检工具的弹表），额外行为挂在 frame 钩子上：
----    th_wait  = $I2：先挂多少帧不动（etEx kind=0x8000）
----    th_delta = F  ：挂完之后每帧加多少速度、持续 BULLET_ACCEL_FRAMES 帧（etEx kind=0x20）
-local function th35_bullet_frame(self)
-    if self.th10_cancel ~= 0 then self.th10_cancel = self.th10_cancel - 1 end
-    if self.th10_spawn_left > 0 then
-        self.x,self.y=self.x+self.th_spawn_vx/2,self.y+self.th_spawn_vy/2
-        self.th10_spawn_left=self.th10_spawn_left-1
-        self.vx,self.vy=0,0
-        if self.th10_spawn_left>0 then return end
-        self.vx,self.vy=self.th_spawn_vx,self.th_spawn_vy
-        self.colli=true
-    end
-    ---引擎每帧「先跑 frame、再按 vx/vy 积分」，所以这里改速度 == 原作的
-    ---「先 velocity += 加速度、再 pos += velocity」。
-    if self.th_wait_active then
-        -- 原作先AdvanceTransformProgram，再更新WAIT；清活动位的这一帧仍不能加速。
-        -- 0帧/负帧WAIT也要经历这一步，下一帧才认领POLAR。
-        if self.th_wait <= 0 then self.th_wait_active = nil
-        else self.th_wait = self.th_wait - 1 end
-    elseif self.th_left > 0 then
-        self.th_left = self.th_left - 1
-        self.th_speed = self.th_speed + self.th_delta
-        object.SetV(self, self.th_speed, self.rot, true)
-    end
-end
-
-local function spawn_bullet(x, y, angle_deg, delta, wait, color)
-    local slot=class.t10_free_bullet_slot()
-    if not slot then return end
-    local b = NewSimpleBullet(t10_style(BULLET_TYPE), t10_color(color, BULLET_TYPE), x, y,
-            BULLET_INIT_SPEED, angle_deg, false, 0, false, true, nil, nil,
-            th35_bullet_frame)
-    b.th_wait = wait
-    b.th_wait_active = true
-    b.th10_cancel = 10000                 -- BossCard5_atN/at2的SET_CANCEL_BEHAVIOR
-    b.th_delta = delta
-    b.th_left = BULLET_ACCEL_FRAMES
-    b.th_speed = BULLET_INIT_SPEED
-    b.th10_spawn_left=8
-    b.th_spawn_vx,b.th_spawn_vy=b.vx,b.vy
-    b.x,b.y=b.x-b.vx*4,b.y-b.vy*4
-    b.colli=false
-    class.t10_use_bullet_slot(slot,b)
-    return b
-end
-
----一把枪（原作 sub BossCard5_atN / BossCard5_at2）
----  枪本身没有贴图（原作只有 flagSet(20)，没有 anm 脚本），所以直接用协程，不建对象。
----  圆心 = BOSS 位置 + 圆心偏移（原作靠 moveAddRel 把基准圆的圆心从 (0,0) 移到
----  circlePos(…, %F0, ∓偏移量)）；出弹半径 = 圆半径；每帧在圆上打 1 发。
----  kind = "N"（atN：圆心偏移 48、半径 48、60 发）
----  kind = "2"（at2：圆心偏移 0.809×F2、半径 0.588×F2、40 发）
-local function th35_gun(boss, kind, color, f0, f3, i1, i2, i3, f2)
-    local ang, center_r, radius, count, delta, theta
-    if kind == "N" then
-        ang = ATN_ANGVEL * f3
-        center_r = ATN_CENTER
-        radius = ATN_RADIUS
-        count = ATN_BULLETS
-        delta = F_ATN_BASE + i3 * F_I3_STEP
-        theta = f0 + 2 * PI / 10            -- moveCircleRel 的起始角 = %F0 + 2π/10
-    else
-        ang = (PI / i1) * f3                -- %E = π / $I1 × %F3
-        center_r = AT2_CENTER_K * f2
-        radius = AT2_RADIUS_K * f2
-        count = i1                          -- 原作 $G = $I1
-        delta = F_AT2_BASE + i3 * F_I3_STEP
-        theta = f0 + f3 * PI / 2            -- moveCircleRel 的起始角 = %F0 + %F3×π/2
-    end
-    local dir = ang * DIR_ANGVEL_K          -- 开火角每帧的推进量
-    ---圆心（相对 BOSS）：原作 y 朝下，circlePos 给的是 −半径·(cos %F0, sin %F0)；
-    ---换到我们 y 朝上 ⇒ y 分量取反。
-    local cx = boss.x - center_r * math.cos(f0)
-    local cy = boss.y + center_r * math.sin(f0)
-
-    task.New(boss, function()
-        local psi = theta - PI              -- 循环前的 %D = %D − π（朝圆心打）
-        local wait = i2                     -- 每发一个 $I2（第一发 = 160，之后每发 −1）
-        task.Wait(1)                        -- 原作循环先wait(1)，出生t=0不直接出第一发。
-        for k = 1, count do
-            ---圆运动：引擎在帧首推进「角 += 角速度」（半径速度 0 ⇒ 半径不变）
-            theta = theta + ang
-            ---开火角：原作循环里「%D += %E」；atN / 非 Easy at2 再判 $G % 4 == 3
-            psi = psi + dir
-            local g = count - k             -- 原作 $G 在进入循环体时的值（后缀自减之后）
-            if g % 4 == 3 then
-                psi = psi + 3 * dir         -- 原作 %D += %E × 3
-            end
-            local bx = cx + radius * math.cos(theta)
-            local by = cy - radius * math.sin(theta)
-            spawn_bullet(bx, by, -psi * RAD, delta, wait, color)
-            wait = wait - 1                 -- 原作 $I2 = $I2 − 1
-            task.Wait(1)                    -- 原作循环开头 wait(1)
-        end
-    end)
+-- 神德的两种枪也是真正的enmCreate敌机，使用下方TH10载体及同一弹体槽表。
+local function th35_gun(boss,kind,color,f0,f3,i1,i2,i3,f2)
+    class.t10_faith_gun(boss,kind,color,f0,f3,i1,i2,i3,f2)
 end
 
 ---一波 5 把枪（原作连着 5 条 enmCreate，每条之间 %F0 += 1.256637 并 validRad）
----返回推进后的 %F0（5 × 2π/5 = 2π，等价于不变）。
+-- 返回第五只枪的%F0；相邻枪之间推进四次，末条之后保持。
 local function gun_wave(boss, kind, color, f0, f3, i1, i2, i3, f2)
-    for _ = 1, 5 do
+    for k = 1, 5 do
         th35_gun(boss, kind, color, f0, f3, i1, i2, i3, f2)
-        f0 = f0 + GUN_SPREAD
+        -- 原作只在五条enmCreate之间加角，共四次；末条之后不加。
+        if k<5 then
+            f0=class.t10_motion_angle(class.t10_motion_f32(f0+class.t10_motion_f32(GUN_SPREAD)))
+        end
     end
     return f0
 end
 
----装饰卫星（原作 BossCirR2/G2/B2/R4/G4/B4）
+-- 装饰卫星的绘制壳；原生路径由s6.sat接入ECS，旧手算帧只保留未托管时的代理。
 ---  两路圆运动叠加，圆心都在 BOSS 身上（原作每条都挂着 BossCirR2_cir_cpos 线程：
 ---  每帧 moveAdd(BOSS_X, BOSS_Y) 把偏移圆的圆心钉在 BOSS 上）。
 ---  每帧：两路各自「半径 += 半径速度、角 += 角速度」，第 62 帧把两路半径速度清零。
@@ -404,22 +313,23 @@ function card:before()
 end
 
 function card:init()
-    local boss_obj = self
-    task.New(self, function()
+    class.t10_faith_start(self,function(boss_obj)
+        local f32=class.t10_motion_f32
         -- BossCard5的9000帧计时包含t=0的90帧移动。
         -- before中提前移动会让发弹时序、全免时间与超时各自错开。
-        task.MoveTo(0,64,90,VALUE_SET.DECEL)
+        class.t10_faith_entry(boss_obj)
+        task.Wait(90)
         ---原作 t=90 → t=150：亮符卡（setChapter(47) + spell(93,…) + anmPlay(0,409)）
         ---与 setInvuln(60) 由本仓库的符卡流程 / 差异 9 的计时参数接管，这里只等 60 帧。
         task.Wait(60)
 
         ---6 颗装饰卫星（原作 t=150 连着的 6 条 enmCreate，顺序 R2 G2 B2 R4 G4 B4）
         for _, s in ipairs(SATS) do
-            New(class["th35_sat"], boss_obj, s[2], s[3], s[4], s[5], s[6], s[7])
+            class.t10_faith_sat(boss_obj,s)
         end
 
         ---主循环初值（原作 %F0 = 1.570796、%F3 = 1.0、$I2 = 160、%F2 = 96、$B/$I3 见差异 10）
-        local f0 = F0_INIT
+        local f0 = f32(F0_INIT)
         local f3 = F3_INIT
         local i3 = I3_INIT
         local b = B_INIT
@@ -430,16 +340,16 @@ function card:init()
             f0 = gun_wave(boss_obj, "N", 2, f0, f3, AT2_BULLETS, i2, i3, F2_INIT)
             task.Wait(60)
             local f2 = F2_INIT                                   -- %F2 = 96
-            f0 = f0 + PI                                         -- %F0 += π
+            f0 = f32(f0 + f32(3.141593))                                         -- %F0 += π
             f0 = gun_wave(boss_obj, "2", 4, f0, f3, AT2_BULLETS, i2, i3, f2)
             task.Wait(40)
-            f2 = f2 * 0.809 + f2 * 0.588                         -- %F2 = 0.809·F2 + 0.588·F2
-            f0 = f0 + PI
+            f2 = f32(f32(f2*f32(0.809))+f32(f2*f32(0.588)))                         -- %F2 = 0.809·F2 + 0.588·F2
+            f0 = f32(f0 + f32(3.141593))
             f0 = gun_wave(boss_obj, "2", 6, f0, f3, AT2_BULLETS, i2, i3, f2)
             task.Wait(40)
             task.Wait(b)                                         -- 收尾的 $B 帧
             if b > 60 then b = b - 10 end                        -- 第 1 拍：$B > 60 才减
-            f0 = rngrad()                                        -- %F0 = %RANDRAD
+            f0 = f32(rngrad())                                        -- %F0 = %RANDRAD
             if i3 < 25 then i3 = i3 + 2 end                      -- unless (I3 < 25) I3 += 2
             f3 = -f3                                             -- %F3 *= −1
 
@@ -448,16 +358,16 @@ function card:init()
             f0 = gun_wave(boss_obj, "N", 9, f0, f3, AT2_BULLETS, i2, i3, F2_INIT)
             task.Wait(60)
             f2 = F2_INIT                                         -- %F2 = 96
-            f0 = f0 + PI
+            f0 = f32(f0 + f32(3.141593))
             f0 = gun_wave(boss_obj, "2", 10, f0, f3, AT2_BULLETS, i2, i3, f2)
             task.Wait(40)
-            f2 = f2 * 0.809 + f2 * 0.588
-            f0 = f0 + PI
+            f2 = f32(f32(f2*f32(0.809))+f32(f2*f32(0.588)))
+            f0 = f32(f0 + f32(3.141593))
             f0 = gun_wave(boss_obj, "2", 8, f0, f3, AT2_BULLETS, i2, i3, f2)
             task.Wait(40)
             task.Wait(b)
             if b > 10 then b = b - 10 end                        -- Hard/Lunatic 行：$B > 10 才减
-            f0 = rngrad()
+            f0 = f32(rngrad())
             if i3 < 25 then i3 = i3 + 2 end
             f3 = -f3
         end
@@ -471,6 +381,7 @@ function card:del()
     ---差异 7：原作 BossDead 的演出（gameSpeed、etClearAll、贴图切换、震屏、之后 40 帧
     ---flagSet(16)）大部分由本仓库的击破/换卡流程接管，这里只补一次震屏。
     misc.ShakeScreen(30, 1.5)
+    class.t10_boss_end(self)
 end
 
 boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -1717,6 +1628,7 @@ t10_entry("s5mid", -64, -32, nil, {3647})
 t10_entry("s5mid", 0, 128, {0,96,280,100}, {3637})
 t10_entry("s5boss", 0, 112, {0,96,280,64}, {3648,3638,3649,3639,3650,3640,3641})
 t10_entry("s6boss", 0, 128, {0,128,280,96}, {3666,3622,3667,3623,3668,3624,3669,3625})
+t10_entry("s6boss", 0, 144, {0,128,280,96}, {3600})
 t10_entry("s7mid", 0, 128, {0,128,280,96}, {3651,3609,3610,3611})
 t10_entry("s7boss", 0, 112, {0,96,280,64},
     {3652,3612,3653,3613,3654,3614,3655,3615,3656,3616,3657,3617,3658,3618,3659,3619,3620,3621})
@@ -1759,6 +1671,53 @@ function class.t10_start_road(owner,main)
     t10_track(p)
     class.th10_enemy_schedule.birth(p)
     return p
+end
+
+
+function class.t10_faith_start(b,main)
+    OriginalStageVisual.register_function(main,10,'stage06:BossCard5')
+    return t10_boss_start(b,main,3600)
+end
+function class.t10_faith_entry(o)
+    m_pos_time(o,"off",90,4,0,160)
+end
+function class.t10_faith_gun(boss,kind,color,f0,f3,i1,i2,i3,f2)
+    return spawn_pod_rel(boss,0,0,function(o)
+        local f=class.t10_motion_f32
+        local theta,av,radius,center,count,delta
+        if kind=="N" then
+            theta=f(f0+f(f(6.2831855)/10))
+            av=f(f(f(5.026548)*f3)/60)
+            radius,center,count=48,48,60
+            delta=f(f(0.017)+f(i3*f(0.00023)))
+        else
+            theta=f(f0+f(f3*f(f(3.1415927)/2)))
+            av=f(f(f(3.1415927)/i1)*f3)
+            radius,center,count=f(f2*f(0.588)),f(f2*f(0.809)),i1
+            delta=f(f(0.019)+f(i3*f(0.00023)))
+        end
+        m_circle(o,"base",theta,av,radius,0)
+        -- moveAddRel只写圆心；出生世界位置尚未按圆运动积分。
+        o.ecs.base.vx=f(-center*math.cos(f0))
+        o.ecs.base.vy=f(-center*math.sin(f0))
+        et_new(o,0);et_aim(o,0,3);et_sprite(o,0,6,color)
+        et_count(o,0,1,1);et_angle(o,0,0,f(0.3926991));et_speed(o,0,f(0.001),1.5)
+        o.pat[0].ex[0]=tp_record(1,2,-999999,-999999,-999999,-999999)
+        o.pat[0].ex[1]=tp_record(0,4096,10000,-999999,-999999,-999999)
+        o.pat[0].ex[3]=tp_record(0,32,120,-999999,delta,0)
+        local psi=f(theta-f(3.141593))
+        local turn=f(f(av*5)/8)
+        for k=1,count do
+            task.Wait(1) -- 原循环首条wait(1)，运动由管理器在ECL前推进。
+            o.pat[0].ex[2]=tp_record(0,32768,i2,-999999,-999999,-999999)
+            psi=f(psi+turn)
+            if (count-k)%4==3 then psi=f(psi+f(turn*3)) end
+            psi=class.t10_motion_angle(psi)
+            et_angle(o,0,psi,0);fire_slot(o,0)
+            i2=i2-1
+        end
+        t10_delete(o)
+    end)
 end
 
 function class.t10_boss_end(b)
@@ -4877,14 +4836,32 @@ end
 ---装饰卫星 BossCirR4/G4/B4：复用 stage06 BossCard5 那套 th35_sat 类（双圆叠加、每帧把圆心
 ---  钉在 BOSS 上），并登记进 T10_PODS——这样原作的 enmKillAll（清屏）会把上一段留下的
 ---  卫星收掉，不会随三段循环越积越多。参数见文件顶部的 SATS 表（R4/G4/B4 三条）。
-function s6.sat(master, e)
+function s6.sat(master,e)
     class.th10_enemy_schedule.ensure()
-    local s = New(class["th35_sat"], master, e[2], e[3], e[4], e[5], e[6], e[7])
-    s.t10_update,s.t10_updated=class.th35_sat.frame,true
+    local s=New(class.th35_sat,master,e[2],e[3],e[4],e[5],e[6],e[7])
+    s.t10_root,s.t10_bossref=master.t10_root or master,master.t10_bossref
     s.t10_managed=true
-    t10_track(s, master)
+    s.t10_update=class.th10_ecs_pod.t10_update
+    ecs_attach(s,master.ecs.wx,master.ecs.wy)
+    task.New(s,function()
+        m_circle(s,"off",e[2],e[3],0,e[4])
+        m_circle(s,"base",e[2],e[5],0,e[6])
+        -- callAsync(cir_cpos)在下一次敌机更新执行；它在运动之后抄圆心。
+        task.New(s,function()
+            while IsValid(master) do
+                s.ecs.off.vx,s.ecs.off.vy=master.ecs.wx,master.ecs.wy
+                task.Wait(1)
+            end
+        end)
+        task.Wait(62)
+        m_circle(s,"off",-999999,-999999,-999999,0)
+        m_circle(s,"base",-999999,-999999,-999999,0)
+    end)
+    class.th10_enemy_schedule.birth(s)
+    t10_track(s,master)
     return s
 end
+class.t10_faith_sat=s6.sat
 
 ---非符 3669　八坂神奈子（stage06 非符四，原作 Boss4）
 ---  lifeSet(12200) − 阈值 3200 = 9000；setInvuln(90) ⇒ t1 = t2 = 1.5；时限 5400 帧 = 90 s。

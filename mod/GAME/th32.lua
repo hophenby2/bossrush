@@ -316,7 +316,7 @@ class["大卫之星激光"] = Class(laser, {
         elseif t >= 150 then w = w * (1 - (t - 150) / 16) end
         l.th06_draw_width = w
         local length, shift = l.th06_length, 0
-        if t < start or t >= 150 then
+        if t <= start or t > 150 then
             -- 原作错误写到 laserSize.x：预热最后阶段和消退只有中点附近可碰撞。
             length = w / 2
             shift = (l.th06_length - length) / 2
@@ -681,6 +681,7 @@ class["原作直线激光"] = Class(laser, {
     frame=function(l)
         if l.th06_owner.time_stopped then return end
         local t,state=l.th06_timer,l.th06_state
+        local entered,remove_after=state,false
         l.th06_endoff=l.th06_endoff+l.th06_speed
         if l.th06_length<l.th06_endoff-l.th06_startoff then l.th06_startoff=l.th06_endoff-l.th06_length end
         l.th06_startoff=max(0,l.th06_startoff)
@@ -697,20 +698,23 @@ class["原作直线激光"] = Class(laser, {
             if t>=l.th06_active then state=2;t=0 end
         end
         if state==2 then
-            if l.th06_fade==0 or t>=l.th06_fade then retire(l);return end
-            w=l.th06_width*(1-t/l.th06_fade)
+            remove_after=l.th06_fade==0 or t>=l.th06_fade
+            w=l.th06_fade>0 and l.th06_width*(1-t/l.th06_fade) or l.th06_width
             hit=t<l.th06_hitend
+            if entered==1 then hit=true end -- ACTIVE在进入收束前已判过整段。
         end
         l.th06_draw_width,l.th06_draw_alpha=w,alpha
         l.th06_draw_length,l.th06_draw_start=len,l.th06_startoff
         -- 原作预热/收束阶段把宽度错写到长度，仅中点有很短的一段判定。
         local start=l.th06_startoff
-        if state~=1 and band(l.th06_flags,1)==0 then start=start+(len-w/2)/2;len=w/2 end
+        local short=entered==0 or (state~=1 and entered~=1)
+        if short and band(l.th06_flags,1)==0 then start=start+(len-w/2)/2;len=w/2 end
         l.rot=-l.th06_angle*DEG
         l.x=l.th06_origin_x+cos(l.th06_angle)*start
         l.y=l.th06_origin_y-sin(l.th06_angle)*start
         l.l1,l.l2,l.l3,l.w,l.alpha,l.colli=0,len,0,l.th06_width/2,1,hit
         laser.frame(l)
+        if remove_after then retire(l);return end
         l.th06_state,l.th06_timer=state,t+1
         -- 原作独立于duration按尾偏移回收；Cirno的9999帧移动光柱不能一直占64槽。
         if l.th06_startoff>=640 then retire(l) end

@@ -9,6 +9,7 @@ function N.enemy_birth(o,step)
     local run=step or task.Do
     run(o)
     if not IsValid(o) or o.status=='del' or o.status=='kill' then return false end
+    N.flush_move(o,true)
     o.x,o.y=x,y
     return true
 end
@@ -24,11 +25,54 @@ function N.boundary_angle(x,y,box,previous)
     end
     if x>box[3]-96 then
         if a<1.5707964 and a>=0 then a=3.1415927-(previous or 0)
-        elseif a> -1.5707964 and a<=0 then a= -3.1415927-(previous or 0) end
+        elseif a> -1.5707964 and a<=0 then a= -3.1415927-a end
     end
     if y<box[2]+48 and a<0 then a= -a end
     if y>box[4]-48 and a>0 then a= -a end
     return a
+end
+-- RunEcl处理完主/子上下文之后才UpdateMovement及积分；协程只能提交本帧目标。
+function N.begin_move(o)
+    o.th095_move_serial=(o.th095_move_serial or 0)+1
+    o.th095_pending_move=nil
+    return o.th095_move_serial
+end
+function N.queue_move(o,serial,x,y,state,angle)
+    if serial~=o.th095_move_serial then return end
+    o.th095_pending_move={serial=serial,x=x,y=y,state=state,angle=angle}
+end
+function N.flush_move(o,birth)
+    if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+    local move=o.th095_pending_move
+    o.th095_pending_move=nil
+    if not move or move.serial~=o.th095_move_serial then return end
+    if move.angle then
+        o.th095_move_angle=move.angle
+        if move.state then move.state.mv_angle=move.angle end
+    end
+    if not birth then o.x,o.y=move.x,move.y end
+end
+function N.clear_move(o)
+    N.begin_move(o)
+    o.th095_move_angle=nil
+end
+-- 仅TH33的显式MoveTo调用使用此代理；其他作品仍使用公共task。
+function N.task_api(scheduler)
+    return setmetatable({Wait=function(n)
+        if n~=nil and n<=0 then return end
+        return scheduler.Wait(n)
+    end,MoveTo=function(x,y,n,mode)
+        n=math.max(1,int(n))
+        local o=scheduler.GetSelf()
+        local x0,y0=o.x,o.y
+        local serial=N.begin_move(o)
+        for i=1,n do
+            local t=scheduler.SetMode[mode](i/n)
+            local nx,ny=x0+(x-x0)*t,y0+(y-y0)*t
+            N.queue_move(o,serial,nx,ny,nil,math.atan2(-(ny-o.y),nx-o.x))
+            coroutine.yield()
+        end
+    end},{__index=scheduler})
 end
 local function easing(t,mode)
     if mode>=1 and mode<=3 then return t^(mode+1) end
@@ -39,6 +83,7 @@ function N.move(owner,st,tx,ty,n,mode,box)
     mode=mode or 0
     if st.mv then st.mv.alive=false end
     local token={alive=true};st.mv=token
+    local serial=N.begin_move(owner)
     local x0,y0=owner.x,owner.y
     local dx,dy=tx-x0,ty-y0
     task.New(owner,function()
@@ -46,18 +91,18 @@ function N.move(owner,st,tx,ty,n,mode,box)
             if not token.alive or st.dead then return end
             local t=type(mode)=='function' and mode(s/n) or easing(s/n,mode)
             local x,y=x0+dx*t,y0+dy*t
-            st.mv_angle=math.atan2(-(y-owner.y),x-owner.x)
+            local angle=math.atan2(-(y-owner.y),x-owner.x)
             if box then
                 x=math.max(box[1],math.min(box[3],x))
                 y=math.max(224-box[4],math.min(224-box[2],y))
             end
-            owner.x,owner.y=x,y
+            N.queue_move(owner,serial,x,y,st,angle)
             task.Wait()
         end
     end)
 end
 function N.bmove(owner,st,n,mode,speed,box)
-    local a=N.boundary_angle(owner.x,224-owner.y,box,st.mv_angle)
+    local a=N.boundary_angle(owner.x,224-owner.y,box,owner.th095_move_angle or st.mv_angle)
     N.move(owner,st,owner.x+math.cos(a)*speed*n,owner.y-math.sin(a)*speed*n,n,mode,box)
 end
 LoadTexture('th33_enm16','Resources/System/th33_enm16.png')

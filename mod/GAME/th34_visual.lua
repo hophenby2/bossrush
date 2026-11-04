@@ -14,6 +14,46 @@ for i=0,4 do LoadImage('th34_orb_'..i,tex,i*32,32,30,30) end
 LoadImage('th34_source_circle',tex,192,32,64,64)
 LoadImage('th34_source_spirit',tex,0,80,48,16)
 local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
+-- ECL的零等待不让出一帧；例如同一时间轴位置连续生成的敌机。
+function N.task_api(scheduler)
+    return setmetatable({Wait=function(n)
+        if n~=nil and n<=0 then return end
+        return scheduler.Wait(n)
+    end},{__index=scheduler})
+end
+-- 道中敌机也先RunEcl(0)；独立年龄不借用LuaSTG尚未递增的timer。
+function N.wrap_road_actor(cls)
+    local init,frame=cls.init,cls.frame
+    cls.init=function(o,...)
+        o.th07_road_age=0
+        init(o,...)
+        if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+        local x,y=o.x,o.y
+        frame(o)
+        if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+        o.th07_road_position=nil
+        o.x,o.y=x,y
+        o.th07_road_age=1
+    end
+    cls.frame=function(o)
+        frame(o)
+        if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+        local p=o.th07_road_position
+        o.th07_road_position=nil
+        if p then o.x,o.y=p[1],p[2] end
+        o.th07_road_age=o.th07_road_age+1
+    end
+    cls[1],cls[3]=cls.init,cls.frame
+end
+function N.road_position(o,x,y)
+    o.th07_road_position={x,y}
+end
+function N.road_interval(o,n)
+    if n<=0 then return 0 end
+    local low=math.floor(n/5)
+    local scaled=(o.th07_rank or 16)*(-2*low)/32
+    return n+math.ceil(scaled)+low -- C++整数除法向零截断。
+end
 function N.source(o,kind)
     o.th07_source_kind,o.th07_source_start=kind,o.ani
     if kind=='spirit' then
@@ -224,7 +264,7 @@ function N.step_laser(o)
     o.pl_sOff=math.max(0,o.pl_sOff)
     local t,full=o.pl_t,o.pl_lw
     local fade=o.pl_flags%2==1
-    local entered=o.pl_state
+    local entered,remove_after=o.pl_state,false
     o.pl_w=full
     if o.pl_state==0 then
         if fade then o.pl_alpha=math.min(255,t*255/math.max(1,o.pl_tStart))
@@ -238,7 +278,7 @@ function N.step_laser(o)
         o.colli=true
         if t>=o.pl_dur then
             o.pl_state,t=2,0
-            if o.pl_tEnd==0 then object.RawDel(o);return false end
+            if o.pl_tEnd==0 then remove_after=true end
         end
     end
     if o.pl_state==2 then
@@ -246,14 +286,19 @@ function N.step_laser(o)
         if fade then o.pl_alpha=math.min(255,t*255/math.max(1,o.pl_tStart))
         else o.pl_w=full*math.max(0,1-t/math.max(1,o.pl_tEnd)) end
         o.colli=t<o.pl_hbEnd
-        if t>=o.pl_tEnd then object.RawDel(o);return false end
+        if t>=o.pl_tEnd then remove_after=true end
     end
-    if o.pl_sOff>=640 then object.RawDel(o);return false end
-    o.pl_t=t+1
+    if o.pl_sOff>=640 then remove_after=true end
     N.sync_laser(o)
     -- 展开末帧落入ACTIVE时，原作仍沿用本帧已算好的短判定长度。
-    local phase=entered==0 and o.pl_state==1 and 1 or o.pl_state+1
-    OriginalBulletVisual.native_laser(o,phase,t,full,o.pl_hbEnd,o.pl_flags,o.pl_sOff)
+    OriginalBulletVisual.native_laser(o,o.pl_state+1,t,full,o.pl_hbEnd,o.pl_flags,o.pl_sOff,entered+1)
+    if remove_after then
+        -- 原作先判定这一帧，再释放槽；零收束和尾偏移回收也走同一顺序。
+        laser.frame(o)
+        object.RawDel(o)
+        return false
+    end
+    o.pl_t=t+1
     return true
 end
 function N.cancel_laser(o)

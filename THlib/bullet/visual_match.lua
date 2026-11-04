@@ -361,7 +361,13 @@ end
 local lasers = {}
 -- 原生 TH06/07/08 在预热/消散阶段把宽度误写入长度，只有中点短段能命中。
 -- 参数单独登记，避免把这段判定画成整条有伤害光柱，或直接关掉消散段判定。
-function V.native_laser(o, phase, timer, width, hitend, flags, offset)
+function V.native_laser(o, phase, timer, width, hitend, flags, offset, entered)
+    -- 原生switch会落入下一状态，但判定盒已在前一分支计算。
+    -- STARTING→ACTIVE仍是中点短段；ACTIVE→DESPAWNING已经判过整段。
+    if not o._native_laser_box then
+        if entered==1 and phase>=2 then phase=1
+        elseif entered==2 and phase==3 then phase=2;o.colli=true end
+    end
     o._native_laser_geometry = { phase=phase, timer=timer, width=width,
         hitend=hitend or 0, flags=flags or 0, offset=offset or o._native_laser_start or 0 }
 end

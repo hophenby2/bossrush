@@ -2843,6 +2843,7 @@ lw207_laser = Class(laser, {
         self.colli = false        -- STARTING 段的判定要 hitboxStartTime 之后才开
     end,
     frame = function(self)
+        local native_entered=self.lw207_state
         local t = self.lw207_timer
         if self.lw207_state == 1 then
             local ramp = self.lw207_start_time > LASER_RAMP and LASER_RAMP
@@ -2878,7 +2879,7 @@ lw207_laser = Class(laser, {
             end
         end
         self.lw207_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw207_state,t,LASER_WIDTH,LASER_HITBOX_DELAY)
+        OriginalBulletVisual.native_laser(self,self.lw207_state,t,LASER_WIDTH,LASER_HITBOX_DELAY,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -3787,6 +3788,7 @@ lw209_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw209_state
         local t = self.lw209_timer
         if self.lw209_state == 1 then
             local ramp = LASER_START_TIME > LASER_RAMP and LASER_RAMP or LASER_START_TIME
@@ -3823,7 +3825,7 @@ lw209_laser = Class(laser, {
             end
         end
         self.lw209_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw209_state,t,2*LASER_W,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.lw209_state,t,2*LASER_W,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -5444,6 +5446,7 @@ lw212_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw212_state
         local t = self.lw212_timer
         if self.lw212_state == 1 then
             local ramp = LASER_START_TIME > LASER_RAMP and LASER_RAMP or LASER_START_TIME
@@ -5482,7 +5485,7 @@ lw212_laser = Class(laser, {
             end
         end
         self.lw212_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw212_state,t,2*LASER_W,LASER_HITBOX_DELAY)
+        OriginalBulletVisual.native_laser(self,self.lw212_state,t,2*LASER_W,LASER_HITBOX_DELAY,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -10014,6 +10017,7 @@ laser_cls = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw_state
         local t = self.lw_t
         self.x = self.lw_source_x + LASER_X0 * cos(self.rot)
         self.y = self.lw_source_y + LASER_X0 * sin(self.rot)
@@ -10054,7 +10058,7 @@ laser_cls = Class(laser, {
             end
         end
         self.lw_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw_state,t,2*LASER_W,LASER_HIT_DELAY)
+        OriginalBulletVisual.native_laser(self,self.lw_state,t,2*LASER_W,LASER_HIT_DELAY,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -11715,6 +11719,7 @@ local SUB45_B, SUB45_T = -208, 208
 ---  同一个坑见本文件卡 218 / 卡 427 的长注。）
 local familiar
 familiar = class.th08_combat.actor("ecldata3:45", {
+    ecl_birth=true,
     ---ang_th08 = 继承来的 lf0（TH08 口径）、spd = lf1、color = 继承来的 li0。
     init = function(self, x, y, ang_th08, spd, color)
         self.x, self.y = x, y
@@ -11734,8 +11739,8 @@ familiar = class.th08_combat.actor("ecldata3:45", {
     end,
     frame = function(self)
         ---① 边界判据（Sub45 t=1 的四条 `ins_51/ins_47`）。判的是「本帧移动前」的位置。
-        if self.x < SUB45_L or self.x > SUB45_R
-                or self.y < SUB45_B or self.y > SUB45_T then
+        if self.fam_t>0 and (self.x < SUB45_L or self.x > SUB45_R
+                or self.y < SUB45_B or self.y > SUB45_T) then
             familiar.burst(self)
             ---`ins_1 TERMINATE` ⇒ RunEcl 返回 −1 ⇒ 敌机 Despawn。
             object.RawDel(self)
@@ -15465,6 +15470,7 @@ local laser198 = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.l198_state
         local t = self.l198_t
         if self.l198_state == 1 then
             if LG_START_TIME - LG_RAMP_WINDOW < t then
@@ -15498,7 +15504,7 @@ local laser198 = Class(laser, {
             end
         end
         self.l198_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.l198_state,t,LG_WIDTH,LG_HITBOX_DELAY)
+        OriginalBulletVisual.native_laser(self,self.l198_state,t,LG_WIDTH,LG_HITBOX_DELAY,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -20056,6 +20062,7 @@ local lw166_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw166_state
         local t = self.lw166_t
         if self.lw166_state == 1 then
             ---VAR 那段宽度爬升：只有最后 LASER_RAMP 帧才长粗，之前恒 1.2。
@@ -20089,7 +20096,7 @@ local lw166_laser = Class(laser, {
             end
         end
         self.lw166_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw166_state,t,LASER_WIDTH,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.lw166_state,t,LASER_WIDTH,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -21393,6 +21400,7 @@ local lw154_laser = Class(laser, {
         end
     end,
     frame = function(self)
+        local native_entered=self.lw154_state
         local p = self.lw154_p
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw154_end = self.lw154_end + p.speed
@@ -21441,14 +21449,14 @@ local lw154_laser = Class(laser, {
             if t >= p.despawn then dead = true end
         end
         if self.lw154_start >= LASER_KILL_OFFSET then dead = true end
+        self._native_laser_start = self.lw154_start
+        OriginalBulletVisual.native_laser(self,self.lw154_state,t,p.width,p.hbEnd,0,nil,native_entered)
+        laser.frame(self)
         if dead then
             object.RawDel(self)
             return
         end
         self.lw154_t = t + 1
-        self._native_laser_start = self.lw154_start
-        OriginalBulletVisual.native_laser(self,self.lw154_state,t,p.width,p.hbEnd)
-        laser.frame(self)
     end,
 })
 
@@ -21933,6 +21941,7 @@ local lw158_laser = Class(laser, {
         end
     end,
     frame = function(self)
+        local native_entered=self.lw158_state
         local p = self.lw158_p
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw158_end = self.lw158_end + p.speed
@@ -21981,14 +21990,14 @@ local lw158_laser = Class(laser, {
             if t >= p.despawn then dead = true end
         end
         if self.lw158_start >= LASER_KILL_OFFSET then dead = true end
+        self._native_laser_start = self.lw158_start
+        OriginalBulletVisual.native_laser(self,self.lw158_state,t,p.width,p.hbEnd,0,nil,native_entered)
+        laser.frame(self)
         if dead then
             object.RawDel(self)
             return
         end
         self.lw158_t = t + 1
-        self._native_laser_start = self.lw158_start
-        OriginalBulletVisual.native_laser(self,self.lw158_state,t,p.width,p.hbEnd)
-        laser.frame(self)
     end,
 })
 
@@ -22445,6 +22454,7 @@ local lw162_laser = Class(laser, {
         end
     end,
     frame = function(self)
+        local native_entered=self.lw162_state
         local p = self.lw162_p
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw162_end = self.lw162_end + p.speed
@@ -22493,14 +22503,14 @@ local lw162_laser = Class(laser, {
             if t >= p.despawn then dead = true end
         end
         if self.lw162_start >= LASER_KILL_OFFSET then dead = true end
+        self._native_laser_start = self.lw162_start
+        OriginalBulletVisual.native_laser(self,self.lw162_state,t,p.width,p.hbEnd,0,nil,native_entered)
+        laser.frame(self)
         if dead then
             object.RawDel(self)
             return
         end
         self.lw162_t = t + 1
-        self._native_laser_start = self.lw162_start
-        OriginalBulletVisual.native_laser(self,self.lw162_state,t,p.width,p.hbEnd)
-        laser.frame(self)
     end,
 })
 
@@ -24534,6 +24544,7 @@ lw146_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw146_state
         local t = self.lw146_timer
         if self.lw146_state == 1 then
             if LASER_START_TIME - LASER_RAMP < math.floor(t) then
@@ -24567,7 +24578,7 @@ lw146_laser = Class(laser, {
             end
         end
         self.lw146_timer = t + EX.fm
-        OriginalBulletVisual.native_laser(self,self.lw146_state,t,2*LASER_W,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.lw146_state,t,2*LASER_W,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -25707,6 +25718,7 @@ local lw134_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.lw134_state
         local t = self.lw134_t
         if self.lw134_state == 1 then
             if LASER_START - LASER_RAMP < t then
@@ -25742,7 +25754,7 @@ local lw134_laser = Class(laser, {
             end
         end
         self.lw134_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw134_state,t,2*LASER_W,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.lw134_state,t,2*LASER_W,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -26662,6 +26674,7 @@ lw126_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.l_state
         local t = self.l_timer
         if self.l_state == 1 then
             local ramp = LASER_START_TIME > LASER_RAMP and LASER_RAMP or LASER_START_TIME
@@ -26694,7 +26707,7 @@ lw126_laser = Class(laser, {
             end
         end
         self.l_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.l_state,t,2*LASER_W,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.l_state,t,2*LASER_W,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -34696,6 +34709,7 @@ lw448_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.l448_state
         local t = self.l448_timer
         if self.l448_state == 1 then
             if LASER_START_TIME - LASER_RAMP < t then
@@ -34728,7 +34742,7 @@ lw448_laser = Class(laser, {
             end
         end
         self.l448_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.l448_state,t,LASER_WIDTH,LASER_DESPAWN)
+        OriginalBulletVisual.native_laser(self,self.l448_state,t,LASER_WIDTH,LASER_DESPAWN,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -35943,6 +35957,7 @@ lw451_laser = Class(laser, {
         self.bound = false
     end,
     frame = function(self)
+        local native_entered=self.l451_state
         ---① `endOffset += fm·speed`；`endOffset − startOffset > startLength` 时把
         ---   startOffset 顶成 `endOffset − startLength`，再钳 ≥ 0（BulletManager.cpp:1057-1062）。
         self.l451_end = self.l451_end + LASER_SPEED * EX.fm
@@ -35990,7 +36005,7 @@ lw451_laser = Class(laser, {
         end
         self.l451_timer = t + 1
         self._native_laser_start = start
-        OriginalBulletVisual.native_laser(self,self.l451_state,t,LASER_WIDTH,LASER_HITBOX_END_DELAY)
+        OriginalBulletVisual.native_laser(self,self.l451_state,t,LASER_WIDTH,LASER_HITBOX_END_DELAY,0,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -36503,9 +36518,8 @@ c452_orb = class.th08_combat.actor("ecldata4b:70", {
         self.o_mv = { n = ORB_MOVE_FRAMES, t = 0 }
         self.rot = ang * RAD                -- `ins_165 SET_MAIN_ANM_ROTATION`（观感）
         self.o_color = color
-        ---`ins_64(60, 1, lf2, lf3)` 的插值在**出生那一帧的帧尾**就走了第 1 步。
+        -- 出生只推进插值timer、计算velocity；世界位置尚未积分。
         self.o_mv.t = 1
-        orb_set_move(self, 1)
     end,
     frame = function(self)
         self.o_t = self.o_t + 1
@@ -49007,14 +49021,14 @@ local function gun_run(u)
     vars_load(u, u.gpv)
 end
 
----SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。`gticked` 让 u_step 的子
----context 那一拍**同一帧不再推第二拍**（引擎一帧只给每个 context 加一次 time）。
+-- SET_CHILD只拍变量快照；本次主context结束后，RunEcl才轮到子context。
 local function set_child(u, sub)
     u.gun = sub
     u.gctx = { t = 0, pc = 1 }
-    u.gticked = true
-    u.gvars, u.gpv = nil, nil
-    gun_run(u)
+
+    u.gvars,u.gpv={},{}
+    vars_save(u,u.gvars)
+
 end
 
 ---SPAWN_FAM_INHERIT_POS：子敌人局部位置 = (0,0)、positionOffset = 父的 worldPosition
@@ -49374,7 +49388,7 @@ unit = class.th08_combat.unit({
         self.ctx = { t = 0, pc = 1 }
         self.gun = nil
         self.gctx = nil
-        self.gticked, self.gvars, self.gpv = false, nil, nil
+        self.gvars, self.gpv = nil, nil
         self.wx, self.wy = x, y
         self.x, self.y = x, y
         units[#units + 1] = self
@@ -49382,8 +49396,8 @@ unit = class.th08_combat.unit({
         ---  并照 RunEcl 的尾巴再跑一次 UpdateMovement / UpdateShotAndAnm
         ---  （生成这一拍也算一拍；外面 card_frame 的循环还会再推一拍）。
         run_ctx(self.insns, self, self.ctx)
-        ---★ 走 set_child 挂的枪在 set_child 里已经推过 t=0（`gticked`）⇒ 这里只补内联挂枪。
-        if self.gun and not self.gticked then
+        -- 出生先跑完主context，再运行已经安装的子context。
+        if self.alive and self.gun then
             gun_run(self)
         end
         if self.alive then
@@ -49423,12 +49437,13 @@ local function u_step(u)
     ---② 主 context。
     run_ctx(u.insns, u, u.ctx)
     if not u.alive then return end
-    ---③ 子 context（枪）。挂上那一帧 set_child 已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-    if u.gun and not u.gticked then
+
+    -- 主context结束后运行枪；出生后的第一次正常更新也不能跳过。
+    if u.gun then
         gun_run(u)
         if not u.alive then return end
     end
-    u.gticked = false
+
     ---④ UpdateMovement。
     u_move_update(u)
     ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
@@ -50081,15 +50096,14 @@ local function gun_run(u)
     vars_load(u, u.gpv)
 end
 
----SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。`gticked` 让 u_step 的子
----context 那一步在**同一帧**不再推第二拍（引擎就是这么跑的：EclRun.cpp:180-196）。
+-- SET_CHILD只拍变量快照；本次主context结束后，RunEcl才轮到子context。
 local function set_child(u, sub)
     u.gun = sub
     u.gctx = { t = 0, pc = 1, stall = 0 }
-    u.gticked = true
+
     u.gvars, u.gpv = {}, {}
     vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
-    gun_run(u)
+
 end
 
 ---op92 SPAWN_FAM_INHERIT_POS：子敌人局部位置 = 操作数、positionOffset = 父机的 world
@@ -50510,17 +50524,18 @@ unit = class.th08_combat.unit({
         self.ctx = { t = 0, pc = 1, stall = 0 }
         self.gun = nil
         self.gctx = nil
-        self.gticked = false
+
         self.gvars, self.gpv = nil, nil
         self.gstall = 0
         self.wx, self.wy = x, y
         self.x, self.y = x, y
         units[#units + 1] = self
         ---★ 原作 SpawnEnemy1/2 里就立刻 RunEcl 一次（t=0 当帧生效）⇒ 这里照做。
-        ---  SET_CHILD_ECL 建的子 context 也在那一拍跑过 t=0（gticked 留给 u_step 判），
-        ---  所以 init 里**不要**再推子 context。
+        -- SET_CHILD安装的枪在主context之后执行t0。
         run_ctx(self.insns, self, self.ctx)
         if self.alive then
+            if self.gun then gun_run(self) end
+            if not self.alive then return end
             u_move_update(self)
             u_shot_tick(self)
         end
@@ -50553,12 +50568,13 @@ local function u_step(u)
     ---② 主 context。
     run_ctx(u.insns, u, u.ctx)
     if not u.alive then return end
-    ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-    if u.gun and not u.gticked then
+
+    -- 主context结束后运行枪；出生后的第一次正常更新也不能跳过。
+    if u.gun then
         gun_run(u)
         if not u.alive then return end
     end
-    u.gticked = false
+
     ---④ UpdateMovement。
     u_move_update(u)
     ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
@@ -51134,15 +51150,14 @@ local function gun_run(u)
     vars_load(u, u.gpv)
 end
 
----SET_CHILD_ECL：新子 context 当帧跑一遍 t=0（差异 1）。`gticked` 让 u_step 的子
----context 那一步在**同一帧**不再推第二拍（引擎就是这么跑的：EclRun.cpp:180-196）。
+-- SET_CHILD只拍变量快照；本次主context结束后，RunEcl才轮到子context。
 local function set_child(u, sub)
     u.gun = sub
     u.gctx = { t = 0, pc = 1, stall = 0 }
-    u.gticked = true
+
     u.gvars, u.gpv = {}, {}
     vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
-    gun_run(u)
+
 end
 
 ---op92 SPAWN_FAM_INHERIT_POS：子敌人局部位置 = 操作数（本卡全是 0,0）、
@@ -51272,7 +51287,7 @@ unit = class.th08_combat.unit({
         self.ctx = { t = 0, pc = 1, stall = 0 }
         self.gun = nil
         self.gctx = nil
-        self.gticked = false
+
         self.gvars, self.gpv = nil, nil
         self.wx, self.wy = x, y
         self.x, self.y = x, y
@@ -51282,6 +51297,8 @@ unit = class.th08_combat.unit({
         ---  外面 card_frame 的循环还会再推一拍 ⇒ 出生帧共两拍，跟原作一模一样）。
         run_ctx(self.insns, self, self.ctx)
         if self.alive then
+            if self.gun then gun_run(self) end
+            if not self.alive then return end
             u_move_update(self)
             u_shot_tick(self)
         end
@@ -51314,12 +51331,13 @@ local function u_step(u)
     ---② 主 context。
     run_ctx(u.insns, u, u.ctx)
     if not u.alive then return end
-    ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-    if u.gun and not u.gticked then
+
+    -- 主context结束后运行枪；出生后的第一次正常更新也不能跳过。
+    if u.gun then
         gun_run(u)
         if not u.alive then return end
     end
-    u.gticked = false
+
     ---④ UpdateMovement。
     u_move_update(u)
     ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
@@ -52492,14 +52510,14 @@ local function make_card(build)
         vars_load(u, u.gpv)
     end
 
-    ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
+    -- SET_CHILD_ECL（op135）只安装子context；主context结束后按槽号运行。
     local function set_child(u, sub)
         u.gun = sub
         u.gctx = { t = 0, pc = 1, stall = 0 }
-        u.gticked = true
+
         u.gvars, u.gpv = {}, {}
         vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
-        gun_run(u)
+
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -52632,7 +52650,7 @@ local function make_card(build)
             self.ctx = { t = 0, pc = 1, stall = 0 }
             self.gun = nil
             self.gctx = nil
-            self.gticked = false
+
             self.wx, self.wy = x, y
             self.x, self.y = x, y
             units[#units + 1] = self
@@ -52640,6 +52658,8 @@ local function make_card(build)
             ---  再跑一次 UpdateMovement / UpdateShotAndAnm（EclRun.cpp:208-209）。
             run_ctx(self.insns, self, self.ctx)
             if self.alive then
+                if self.gun then gun_run(self) end
+                if not self.alive then return end
                 u_move_update(self)
                 u_shot_tick(self)
             end
@@ -52671,12 +52691,13 @@ local function make_card(build)
         ---② 主 context。
         run_ctx(u.insns, u, u.ctx)
         if not u.alive then return end
-        ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-        if u.gun and not u.gticked then
+
+    -- 主context结束后运行枪；出生后的第一次正常更新也不能跳过。
+        if u.gun then
             gun_run(u)
             if not u.alive then return end
         end
-        u.gticked = false
+
         ---④ UpdateMovement + UpdateShotAndAnm（EclRun.cpp:208-209）。
         u_move_update(u)
         u_shot_tick(u)
@@ -53484,14 +53505,14 @@ local function make_card(build)
         vars_load(u, u.gpv)
     end
 
-    ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
+    -- SET_CHILD_ECL（op135）只安装子context；主context结束后按槽号运行。
     local function set_child(u, sub)
         u.gun = sub
         u.gctx = { t = 0, pc = 1, stall = 0 }
-        u.gticked = true
+
         u.gvars, u.gpv = {}, {}
         vars_save(u, u.gvars)                   ---★ 初次 memcpy 本体变量
-        gun_run(u)
+
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -53624,7 +53645,7 @@ local function make_card(build)
             self.ctx = { t = 0, pc = 1, stall = 0 }
             self.gun = nil
             self.gctx = nil
-            self.gticked = false
+
             self.wx, self.wy = x, y
             self.x, self.y = x, y
             units[#units + 1] = self
@@ -53632,6 +53653,8 @@ local function make_card(build)
             ---  再跑一次 UpdateMovement / UpdateShotAndAnm（EclRun.cpp:208-209）。
             run_ctx(self.insns, self, self.ctx)
             if self.alive then
+                if self.gun then gun_run(self) end
+                if not self.alive then return end
                 u_move_update(self)
                 u_shot_tick(self)
             end
@@ -53663,12 +53686,13 @@ local function make_card(build)
         ---② 主 context。
         run_ctx(u.insns, u, u.ctx)
         if not u.alive then return end
-        ---③ 子 context（枪）。挂上那一帧已经推过 t=0 ⇒ 用 gticked 跳过这一拍。
-        if u.gun and not u.gticked then
+
+    -- 主context结束后运行枪；出生后的第一次正常更新也不能跳过。
+        if u.gun then
             gun_run(u)
             if not u.alive then return end
         end
-        u.gticked = false
+
         ---④ UpdateMovement + UpdateShotAndAnm（EclRun.cpp:208-209）。
         u_move_update(u)
         u_shot_tick(u)
@@ -54386,7 +54410,7 @@ local function make_card(build)
         end
         ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
         local dx, dy = u.wx - player.x, u.wy - player.y
-        if dx * dx + dy * dy < 1024.0 then return end
+        if not u.is_boss and dx * dx + dy * dy < 1024.0 then return end
         local c1, c2 = a.count1 or 1, a.count2 or 1
         if c1 <= 0 then c1 = 1 end
         if c2 <= 0 then c2 = 1 end
@@ -54572,15 +54596,15 @@ local function make_card(build)
         vars_load(u, g.pv)
     end
 
-    ---SET_CHILD_ECL（op135）：新子 context 当帧跑一遍 t=0（EclRun.cpp:180-196）。
+    -- SET_CHILD_ECL（op135）只安装子context；主context结束后按槽号运行。
     ---多槽（原作 childEclBlocks[0..3]）：Sub45 同时挂 46（槽 0）/ 47（槽 1）两把枪。
     local function set_child(u, sub, slot)
         slot = (slot or 0) + 1                  ---槽号 0 基 → 表下标 1 基
-        local g = { sub = sub, ctx = { t = 0, pc = 1, stall = 0 }, ticked = true,
+        local g = { sub = sub, ctx = { t = 0, pc = 1, stall = 0 },
                     vars = {}, pv = {} }
         u.guns[slot] = g
         vars_save(u, g.vars)                    ---★ 初次 memcpy 本体变量（EclRunHigh.inl:671）
-        gun_run(u, g)
+
     end
 
     ---子敌人继承父机的整块变量（差异 7）。
@@ -54741,6 +54765,11 @@ local function make_card(build)
             ---  再跑一次 UpdateMovement / UpdateShotAndAnm（EclRun.cpp:208-209）。
             run_ctx(self.insns, self, self.ctx)
             if self.alive then
+                for slot=1,4 do
+                    local g=self.guns[slot]
+                    if g and self.alive then gun_run(self,g) end
+                end
+                if not self.alive then return end
                 u_move_update(self)
                 u_shot_tick(self)
             end
@@ -54780,15 +54809,12 @@ local function make_card(build)
         ---② 主 context（可被 CALL / RETURN 换进换出）。
         run_ctx(u.insns, u, u.ctx, true)
         if not u.alive then return end
-        ---③ 子 context（枪，按槽号顺序）。挂上那一帧已经推过 t=0 ⇒ 用 ticked 跳过这一拍。
-        for slot = 1, #u.guns do
+        -- 主context结束后按原生四槽顺序运行；稀疏槽也不能用数组长度截断。
+        for slot = 1, 4 do
             local g = u.guns[slot]
             if g then
-                if not g.ticked then
-                    gun_run(u, g)
-                    if not u.alive then return end
-                end
-                g.ticked = false
+                gun_run(u,g)
+                if not u.alive then return end
             end
         end
         ---④ UpdateMovement + UpdateShotAndAnm（EclRun.cpp:208-209）。

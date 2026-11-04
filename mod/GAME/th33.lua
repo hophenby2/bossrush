@@ -461,6 +461,7 @@ local task, ran = task, ran
 local New, rawSimpleBullet = New, NewSimpleBullet
 local PhotoNative=dofile('mod/GAME/th33_native.lua')
 local PhotoSources=dofile('mod/GAME/th33_sources.lua')
+task=PhotoNative.task_api(task)
 local function register_photo_card(group,level,title,id,...)
     local source=assert(PhotoSources[id],'缺少文花帖原版ECL来源：'..tostring(id))
     for _,unit in ipairs(group) do
@@ -468,6 +469,19 @@ local function register_photo_card(group,level,title,id,...)
         -- ins114在进场途中才开始倒数，不能把85幕统一截成50秒。
         card.t3=source.timeout_start+source.timeout
         card.original_ecl=source
+        local init,frame,del=card.init,card.frame,card.del
+        card.init=function(o)
+            PhotoNative.clear_move(o)
+            if init then init(o) end
+        end
+        card.frame=function(o)
+            if frame then frame(o) end -- 私有逐帧枪也是ECL的一部分，仍从积分前位置发弹。
+            PhotoNative.flush_move(o)
+        end
+        card.del=function(o)
+            PhotoNative.clear_move(o)
+            if del then del(o) end
+        end
     end
     return boss.card.add(group,level,title,id,...)
 end
@@ -3923,36 +3937,8 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     ---规则修正，最后 40 帧走 speed×duration = 40 px、缓动 4（= 我们的 DECEL）。
     ---活动框只有 32 px 高 ⇒ 两条 y 规则**恒成立**，净效果是把角度强制成负的（朝屏幕上方）。
     local function boundary_move(owner)
-        local a
-        if player.x < owner.x then
-            a = ran:Float(0, math.pi / 2) + 3 * math.pi / 4
-        else
-            a = ran:Float(0, math.pi / 2) - math.pi / 4
-        end
-        ---原代码在 x 右边界那一条里用的是 enemy->movementAngle（不是 angle）——照抄。
-        local ma = owner.ex_move_angle or 0
-        if owner.x < BOX_L + 96 then
-            if a > math.pi / 2 then
-                a = math.pi - a
-            elseif a < -math.pi / 2 then
-                a = -math.pi - a
-            end
-        end
-        if owner.x > BOX_R - 96 then
-            if a < math.pi / 2 and a >= 0 then
-                a = math.pi - ma
-            elseif a > -math.pi / 2 and a <= 0 then
-                a = -math.pi - a
-            end
-        end
-        local yth = field_y(owner.y)
-        if yth < BOX_LO + 48 and a < 0 then
-            a = -a
-        end
-        if yth > BOX_HI - 48 and a > 0 then
-            a = -a
-        end
-        owner.ex_move_angle = a
+        local a=PhotoNative.boundary_angle(owner.x,field_y(owner.y),
+                {BOX_L,BOX_LO,BOX_R,BOX_HI},owner.th095_move_angle)
         local deg = -math.deg(a)                        -- 我们坐标的角度（度）
         task.MoveTo(owner.x + 40 * cos(deg), owner.y + 40 * sin(deg), 40, VALUE_SET.DECEL)
     end
@@ -4274,36 +4260,8 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     ---ins_67(60,4,0.8) = BeginBoundaryAwareMove（EclDependencies.cpp:108）：
     ---先挑「背离自机」的随机方向（TH095 弧度），再按活动框边界修正，60 帧走 48 px、缓动 4。
     local function boundary_move(owner)
-        local a
-        if player.x < owner.x then
-            a = ran:Float(0, math.pi / 2) + 3 * math.pi / 4
-        else
-            a = ran:Float(0, math.pi / 2) - math.pi / 4
-        end
-        ---原代码在 x 右边界那一条里用的是 enemy->movementAngle（不是 angle）——照抄。
-        local ma = owner.ex_move_angle or 0
-        if owner.x < BOX_L + 96 then
-            if a > math.pi / 2 then
-                a = math.pi - a
-            elseif a < -math.pi / 2 then
-                a = -math.pi - a
-            end
-        end
-        if owner.x > BOX_R - 96 then
-            if a < math.pi / 2 and a >= 0 then
-                a = math.pi - ma
-            elseif a > -math.pi / 2 and a <= 0 then
-                a = -math.pi - a
-            end
-        end
-        local yth = field_y(owner.y)
-        if yth < BOX_LO + 48 and a < 0 then
-            a = -a
-        end
-        if yth > BOX_HI - 48 and a > 0 then
-            a = -a
-        end
-        owner.ex_move_angle = a
+        local a=PhotoNative.boundary_angle(owner.x,field_y(owner.y),
+                {BOX_L,BOX_LO,BOX_R,BOX_HI},owner.th095_move_angle)
         local deg = -math.deg(a)
         task.MoveTo(owner.x + MOVE_FRAMES * MOVE_SPEED * cos(deg),
                 owner.y + MOVE_FRAMES * MOVE_SPEED * sin(deg), MOVE_FRAMES, VALUE_SET.DECEL)
@@ -4473,27 +4431,7 @@ end
 ---非阻塞的插值移动（ins_64/66/67 都是逐帧积分、不阻塞 ECL）。同一时间只留一条，
 ---新的会打断旧的（原作里 movementMode = 2 会被后一条指令整个覆盖）。
 local function sg_move(owner, st, tx, ty, n, easing, box)
-    if st.mv then st.mv.alive = false end
-    local t = { alive = true }
-    st.mv = t
-    local x0, y0 = owner.x, owner.y
-    local dx, dy = tx - x0, ty - y0
-    local f = sg_ease(easing)
-    task.New(owner, function()
-        for s = 1, n do
-            if not t.alive or st.dead then return end
-            local p = f(s / n)
-            local x, y = x0 + p * dx, y0 + p * dy
-            -- UpdateMovement 先用未夹框的位移更新 movementAngle，再由敌机管理器夹框。
-            st.mv_angle = math.atan2(-(y - owner.y), x - owner.x)
-            if box then
-                x = max(box[1], min(box[3], x))
-                y = max(field_y(box[4]), min(field_y(box[2]), y))
-            end
-            owner.x, owner.y = x, y
-            task.Wait(1)
-        end
-    end)
+    return PhotoNative.move(owner,st,tx,ty,n,easing,box)
 end
 
 ---ins_67（BeginBoundaryAwareMove，EclDependencies.cpp:108-158）：先按自机位置随机取一个
@@ -4503,7 +4441,7 @@ end
 local function sg_bmove(owner, st, n, easing, speed, box)
     local x = owner.x
     local y = FIELD_HALF_H - owner.y
-    local a=PhotoNative.boundary_angle(x,y,box,st.mv_angle)
+    local a=PhotoNative.boundary_angle(x,y,box,owner.th095_move_angle or st.mv_angle)
     local d = speed * n
     sg_move(owner, st, x + d * math.cos(a), owner.y - d * math.sin(a), max(1, n), easing, box)
 end
@@ -8475,6 +8413,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
         end,
         frame = function(self)
             task.Do(self)
+            PhotoNative.flush_move(self)
             if self._a < 220 then
                 self._a = min(220, self._a + 28)         -- 出生 8 帧内淡入（旧写法多占 8 帧）
             end
@@ -10023,11 +9962,15 @@ end
 ---box = { x0, y0, x1, y1 }（TH095 坐标，y0 < y1）。
 local function sg_move_clamped(owner, box, st, tok, tx, ty, n)
     local x0, y0 = owner.x, owner.y
+    local serial=PhotoNative.begin_move(owner)
     for s = 1, n do
         if not tok.alive or st.dead then return end
         local p = s / n
-        owner.x = max(box[1], min(box[3], x0 + p * (tx - x0)))
-        owner.y = max(field_y(box[4]), min(field_y(box[2]), y0 + p * (ty - y0)))
+        local x,y=x0+p*(tx-x0),y0+p*(ty-y0)
+        local angle=math.atan2(-(y-owner.y),x-owner.x)
+        x=max(box[1],min(box[3],x))
+        y=max(field_y(box[4]),min(field_y(box[2]),y))
+        PhotoNative.queue_move(owner,serial,x,y,st,angle)
         task.Wait(1)
     end
 end
@@ -10080,7 +10023,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
     local function sub5(owner)
         task.New(owner, function()
             local f2 = math.deg(SPREAD0 + SPREAD_PER * photo_index(PHOTO_LIMIT))
-            local mA = st.mv_angle
+            local mA = math.deg(st.mv_angle)
             for i = 1, #COLORS do
                 sg_shot(94, sg_style(3), COLORS[i], owner.x, owner.y,
                         24, 1, 6, 0.5, mA + f2, mA - f2, false, 0x200)
@@ -10105,7 +10048,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
                     task.Wait(1)
                 end
                 local a_th = sg_aim(owner.x, owner.y)       -- TH095 度
-                st.mv_angle = a_th
+                st.mv_angle = math.rad(a_th)
                 local a = math.rad(-a_th)                   -- 我们的弧度
                 sg_move_clamped(owner, BOX, st, tok,
                         owner.x + PUNCE_FRAMES * PUNCE_SPEED * cos(math.deg(a)),
@@ -10129,7 +10072,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             local a_th = sg_aim(self.x, self.y)
-            st.mv_angle = a_th
+            st.mv_angle = math.rad(a_th)
             local a = math.rad(-a_th)
             ---★ 入场这一段的 ins_75 还没执行（活动框在 t=130 才设、ins_75 才开夹取），
             ---所以入场是**不夹**的自由直线（EclRunLow.inl:75 的 case 75 才置
@@ -11183,11 +11126,15 @@ end
 ---box = { x0, y0, x1, y1 }（TH095 坐标，y0 < y1）。
 local function sg_move_clamped(owner, box, st, tok, tx, ty, n)
     local x0, y0 = owner.x, owner.y
+    local serial=PhotoNative.begin_move(owner)
     for s = 1, n do
         if not tok.alive or st.dead then return end
         local p = s / n
-        owner.x = max(box[1], min(box[3], x0 + p * (tx - x0)))
-        owner.y = max(field_y(box[4]), min(field_y(box[2]), y0 + p * (ty - y0)))
+        local x,y=x0+p*(tx-x0),y0+p*(ty-y0)
+        local angle=math.atan2(-(y-owner.y),x-owner.x)
+        x=max(box[1],min(box[3],x))
+        y=max(field_y(box[4]),min(field_y(box[2]),y))
+        PhotoNative.queue_move(owner,serial,x,y,st,angle)
         task.Wait(1)
     end
 end
@@ -12395,11 +12342,15 @@ end
 ---一帧一帧地把本体挪到 (tx,ty)（线性缓动），**每帧**夹进 ins_75 的活动框。
 local function sg_move_clamped(owner, box, st, tok, tx, ty, n)
     local x0, y0 = owner.x, owner.y
+    local serial=PhotoNative.begin_move(owner)
     for s = 1, n do
         if not tok.alive or st.dead then return end
         local p = s / n
-        owner.x = max(box[1], min(box[3], x0 + p * (tx - x0)))
-        owner.y = max(field_y(box[4]), min(field_y(box[2]), y0 + p * (ty - y0)))
+        local x,y=x0+p*(tx-x0),y0+p*(ty-y0)
+        local angle=math.atan2(-(y-owner.y),x-owner.x)
+        x=max(box[1],min(box[3],x))
+        y=max(field_y(box[4]),min(field_y(box[2]),y))
+        PhotoNative.queue_move(owner,serial,x,y,st,angle)
         task.Wait(1)
     end
 end

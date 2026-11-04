@@ -40,6 +40,7 @@ return function(class, EX, laser)
             o.bound,o.colli,o.alpha=false,false,1
         end,
         frame=function(o)
+            local entered=o.keine_phase
             local t=o.keine_timer
             if o.keine_phase==1 then
                 o.w=t>LASER_START-30 and t*LASER_WIDTH/LASER_START or 1.2
@@ -54,7 +55,7 @@ return function(class, EX, laser)
                 if t>=LASER_END then object.RawDel(o);return end
                 o.w,o.colli=LASER_WIDTH*(1-t/LASER_END),t<LASER_END
             end
-            OriginalBulletVisual.native_laser(o,o.keine_phase,t,LASER_WIDTH,LASER_END)
+            OriginalBulletVisual.native_laser(o,o.keine_phase,t,LASER_WIDTH,LASER_END,0,nil,entered)
             laser.frame(o)
             o.keine_timer=t+1
         end,
@@ -63,6 +64,7 @@ return function(class, EX, laser)
 
     local function actor(key,kind)
         return M.actor(key,{
+            ecl_birth=true,
             init=function(o,x,y,angle,omega,radial,hp,owner)
                 o.x,o.y=x,y
                 o.img,o.layer,o.group='servant',LAYER.ENEMY,GROUP.NONTJT
