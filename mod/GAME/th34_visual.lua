@@ -54,6 +54,32 @@ function N.road_interval(o,n)
     local scaled=(o.th07_rank or 16)*(-2*low)/32
     return n+math.ceil(scaled)+low -- C++整数除法向零截断。
 end
+-- GET_EXIT_ANGLE无论夹框开关都读保存的上下界；正角的右边界分支读旧运动角。
+function N.capture_exit_box(o)
+    local b=o._box
+    if b then o.th07_exit_box={b[1],b[2],b[3],b[4]} end
+end
+function N.exit_angle(o,native_angle)
+    N.capture_exit_box(o)
+    local a
+    if player.x<o.x then
+        a=ran:Float(135,225)
+        if a>180 then a=a-360 end
+    else a=ran:Float(-45,45) end
+    local b=o.th07_exit_box
+    if b then
+        if o.x<b[1]+96 then
+            if a>90 then a=180-a elseif a< -90 then a= -180-a end
+        end
+        if o.x>b[2]-96 then
+            if a>=0 and a<90 then a=180-(native_angle or 0)
+            elseif a<=0 and a> -90 then a= -180-a end
+        end
+        if o.y>b[4]-48 and a<0 then a= -a end
+        if o.y<b[3]+48 and a>0 then a= -a end
+    end
+    return -a -- TH07弧度口径取反后返回本工程的度。
+end
 function N.source(o,kind)
     o.th07_source_kind,o.th07_source_start=kind,o.ani
     if kind=='spirit' then

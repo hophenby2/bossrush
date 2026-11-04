@@ -5913,19 +5913,23 @@ function class.th07_motion_begin(self, id, move)
         self.x, self.y = old.x, old.y
         self._mv, self._orb, self._box = old.mv, old.orb, old.box
         self.angle, self._angdir = old.angle, old.angdir
+        self.th07_exit_box=old.exit_box
     else
         self.x, self.y = 0, 224 - cfg.y
         self._mv, self._orb = nil, nil
         self.angle, self._angdir = 0, 0
+        self.th07_exit_box=nil
         local b = cfg.box
         self._box = b and { b[1]-192, b[3]-192, 224-b[4], 224-b[2] } or nil
     end
+    NativeVisual.capture_exit_box(self)
     if cfg.pos then self.x, self.y = cfg.pos[1]-192, 224-cfg.pos[2] end
     -- 入口显式写入的活动框优先于继承值；其余时刻的开关仍走各卡原有时间轴。
     if cfg.entry_box then
         local b = cfg.entry_box
         self._box = { b[1]-192, b[3]-192, 224-b[4], 224-b[2] }
     elseif cfg.clear_box then self._box = nil end
+    NativeVisual.capture_exit_box(self)
     local m = cfg.move
     if m then move(self, m[1], m[2], m[3]-192, 224-m[4]) end
     self.th07_motion_live, self.th07_motion_key = id, cfg.key
@@ -6153,7 +6157,8 @@ function class.th07_motion_end(self)
     class.th07_restore_speed(self)
     if not self.th07_motion_live then return end
     self.th07_previous_motion = { key=self.th07_motion_key, x=self.x, y=self.y,
-        mv=self._mv, orb=self._orb, box=self._box, angle=self.angle, angdir=self._angdir }
+        mv=self._mv, orb=self._orb, box=self._box, angle=self.angle, angdir=self._angdir,
+        exit_box=self.th07_exit_box }
     self.th07_motion_live = nil
 end
 
@@ -9250,6 +9255,7 @@ local function TH34_add_stage56_boss()
         if m.n >= m.t then self._mv = nil end
     end
     local function bframe(self)
+        NativeVisual.capture_exit_box(self)
         sound_tick4 = sound_tick4 + 1
         class.th07_laser_interact(self)
         bstep(self)
@@ -9264,34 +9270,7 @@ local function TH34_add_stage56_boss()
     ---th07 抽的是 rand(0,π/2) 的 ±45°/±135° 扇区，再按上下左右限位折返四次。
     ---`self.angle`（`enemy->angle`）由 bstep 按夹框以前的本帧位移更新。
     local function exang(self)
-        local a
-        if player.x < self.x then
-            a = ran:Float(135, 225)                 -- rand(0,π/2) + 3π/4
-            ---★ 原作这一支外面套了 `AddNormalizeAngle(·,0)`（EclManager.cpp:1592）：
-            ---抽到的角先归一化到 (−180,180] 再进下面的限位折返。漏掉归一化时
-            ---a∈(180,225] 会带着 +180 的余量去比限位，折返结果与原作差 180°
-            ---（整段漂移的 y 方向反掉）。
-            if a > 180 then a = a - 360 end
-        else
-            a = ran:Float(-45, 45)                  -- rand(0,π/2) − π/4
-        end
-        local bx2, by2 = self._box and self._box[2], self._box and self._box[4]
-        local bx1, by1 = self._box and self._box[1], self._box and self._box[3]
-        if bx1 then
-            if self.x < bx1 + 96 then
-                if a > 90 then a = 180 - a
-                elseif a < -90 then a = -180 - a end
-            end
-            if bx2 - 96 < self.x then
-                if a >= 0 and a < 90 then a = 180 - (self.angle or 0)
-                elseif a <= 0 and a > -90 then a = -180 - a end
-            end
-            ---y 限位在我们这边是翻过号的：th07 的 (下界+48, 上界−48) 折返，
-            ---对应我们坐标里的 (box[4]−48, box[3]+48)（box[3] 是 y 上界）。
-            if by2 - 48 < self.y and a < 0 then a = -a end
-            if self.y < by1 + 48 and a > 0 then a = -a end
-        end
-        return -a
+        return NativeVisual.exit_angle(self,self.angle or 0)
     end
     local function exdrift(self, spd, ease)
         local a = exang(self)
@@ -10812,38 +10791,10 @@ local function TH34_add_stage56_boss()
                 acc = acc - 0.01
             end
         end
-        ---GET_EXIT_ANGLE（`EclManager.cpp:1592`）：按自机相对位置随机挑一个飞行角，再按
-        ---移动边界（我们这里的 `self._box`）修正；返回**我们的**角度制。原作
-        ---「enemy->angle」取的是上一段移动的朝向（移植版用 _mv 的 dx/dy；`_mv` 已跑完
-        ---时退回 0）。乱数用本仓 RNG，相位与原作不同（差异 68）。
+        -- GET_EXIT_ANGLE读取帧尾保存的未夹框运动角；插值结束后也保留该值。
+        -- 与其他幽幽子卡共用原作的四边折返，不能用当前_mv推回方向。
         local function exit_angle(self)
-            local a
-            if player.x < self.x then
-                a = (ran:Float(0, PI / 2) + 3 * PI / 4 + PI) % (2 * PI) - PI
-            else
-                a = ran:Float(0, PI / 2) - PI / 4
-            end
-            local b = self._box
-            local ea = 0
-            local mv = self._mv
-            if mv and (mv.dx ~= 0 or mv.dy ~= 0) then
-                ea = atan2(mv.dy, mv.dx) / RAD2DEG      -- 我们的角度制 → TH07 弧度
-            end
-            if self.x < b[1] + 96 then
-                if a > PI / 2 then a = PI - a
-                elseif a < -PI / 2 then a = -PI - a end
-            end
-            if b[2] - 96 < self.x then
-                if a < PI / 2 and a >= 0 then a = PI - ea
-                elseif a > -PI / 2 and a <= 0 then a = -PI - a end
-            end
-            ---★ y 限位折返的符号按 EC 原文（`EclManager.cpp:1592-1638`）：
-            ---  `lowerMoveLimit.y + 48 > pos.y && exitAngle < 0` → 折返；
-            ---  `upperMoveLimit.y - 48 < pos.y && exitAngle > 0` → 折返。
-            ---  换到本仓坐标：lower.y 对应 box[4]、upper.y 对应 box[3]。
-            if b[4] - 48 < self.y and a < 0 then a = -a end
-            if b[3] + 48 > self.y and a > 0 then a = -a end
-            return -a * RAD2DEG
+            return NativeVisual.exit_angle(self,self.angle or 0)
         end
         ---sub61：一次周期回调 = 一对随机位置的上下直飞弹（TH07 x=rand(384)、
         ---y=rand(160)+64、speed=rand(0.7)+0.4，随机数顺序 i0→f6/f7→x→y→speed）。
@@ -10954,33 +10905,7 @@ local function TH34_add_stage56_boss()
         ---GET_EXIT_ANGLE（`EclManager.cpp:1592`）：同 4400 的移植（差异 68：乱数用本仓 RNG，
         ---相位与原作不同）。
         local function exit_angle(self)
-            local a
-            if player.x < self.x then
-                a = (ran:Float(0, PI / 2) + 3 * PI / 4 + PI) % (2 * PI) - PI
-            else
-                a = ran:Float(0, PI / 2) - PI / 4
-            end
-            local b = self._box
-            local ea = 0
-            local mv = self._mv
-            if mv and (mv.dx ~= 0 or mv.dy ~= 0) then
-                ea = atan2(mv.dy, mv.dx) / RAD2DEG
-            end
-            if self.x < b[1] + 96 then
-                if a > PI / 2 then a = PI - a
-                elseif a < -PI / 2 then a = -PI - a end
-            end
-            if b[2] - 96 < self.x then
-                if a < PI / 2 and a >= 0 then a = PI - ea
-                elseif a > -PI / 2 and a <= 0 then a = -PI - a end
-            end
-            ---★ y 限位折返的符号按 EC 原文（`EclManager.cpp:1592-1638`）：
-            ---  `lowerMoveLimit.y + 48 > pos.y && exitAngle < 0` → 折返；
-            ---  `upperMoveLimit.y - 48 < pos.y && exitAngle > 0` → 折返。
-            ---  换到本仓坐标：lower.y 对应 box[4]、upper.y 对应 box[3]。
-            if b[4] - 48 < self.y and a < 0 then a = -a end
-            if b[3] + 48 > self.y and a > 0 then a = -a end
-            return -a * RAD2DEG
+            return NativeVisual.exit_angle(self,self.angle or 0)
         end
 
         ---sub64/65/66/69 的三条 INIT_BULLET_CMD（含slot1的200帧离屏延迟）。

@@ -1525,7 +1525,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.alice_movement_angle = angle
     owner.alice_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -1549,6 +1548,7 @@ local function boss_frame(owner)
     end
     if move then
         local x, y, done = move_step(move)
+        owner.alice_movement_angle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.alice_move = nil
@@ -3444,7 +3444,6 @@ end
 ---所以是「120 帧走完 (cos,sin)(angle)·0.5·120 px」的插值，不是匀速极坐标。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw208_movement_angle = angle
     owner.lw208_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -3496,6 +3495,7 @@ local function boss_frame(owner)
     local move = owner.lw208_move
     if move then
         local x, y, done = move_step(move)
+        owner.lw208_movement_angle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.lw208_move = nil
@@ -3989,7 +3989,6 @@ end
 ---「60 帧走完 (cos,sin)(angle)·1.0·60 = 60 px」的插值，缓动 4 = OUT_QUADRATIC。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw209_movement_angle = angle
     owner.lw209_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -4032,6 +4031,7 @@ local function boss_frame(owner)
     local move = owner.lw209_move
     if move then
         local x, y, done = move_step(move)
+        owner.lw209_movement_angle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.lw209_move = nil
@@ -4899,7 +4899,6 @@ end
 ---开始一次 60 帧的随机飘（TH08 口径的角度 → 我们坐标整体取反）。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw211_mangle = angle          -- 下一段 ins_67 的怪癖要用它
     owner.lw211_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -4965,8 +4964,9 @@ local function step_move(owner)
     local u = mv.t / mv.n
     if u > 1 then u = 1 end
     local e = 1 - (1 - u) * (1 - u)
-    owner.x = mv.x0 + mv.dx * e
-    owner.y = mv.y0 + mv.dy * e
+    local nx,ny=mv.x0 + mv.dx * e,mv.y0 + mv.dy * e
+    owner.lw211_mangle=math.atan2(-(ny-owner.y),nx-owner.x)
+    owner.x,owner.y=nx,ny
     if mv.t >= mv.n then
         owner.lw211_move = nil
     end
@@ -5754,7 +5754,6 @@ end
 ---（StartTimedPolarDisplacement，EclDependencies.cpp:104-126）。
 local function begin_wander(owner, frames)
     local angle = wander_angle(owner)
-    owner.lw212_mangle = angle            -- 下一段 ins_67 的怪癖要用它（TH08 口径）
     owner.lw212_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * frames,
@@ -5830,6 +5829,7 @@ local function boss_frame(owner)
     local mv = owner.lw212_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.lw212_mangle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw212_move = nil
@@ -6288,7 +6288,6 @@ end
 ---开始一次随机飘：delta = polar(角, 1.0 × 60)、时长 60、缓动 4、origin = 当前 worldPosition。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw213_mangle = angle            -- 下一段 ins_67 的怪癖要用它（TH08 口径）
     owner.lw213_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -6339,6 +6338,7 @@ local function boss_frame(owner)
     local mv = owner.lw213_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.lw213_mangle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw213_move = nil
@@ -6981,7 +6981,6 @@ end
 ---origin = 当前 worldPosition、时长 120、缓动 0（LINEAR）。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw214_mangle = angle            -- 下一段 ins_67 的怪癖要用它（TH08 口径）
     owner.lw214_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -7032,6 +7031,7 @@ local function boss_frame(owner)
     local mv = owner.lw214_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.lw214_mangle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw214_move = nil
@@ -8285,7 +8285,6 @@ end
 ---origin = 当前 worldPosition、时长 60/120、缓动 4。
 local function begin_wander(owner, frames)
     local angle = wander_angle(owner)
-    owner.lw216_mangle = angle             -- 下一段 ins_67 的怪癖要用它（TH08 口径）
     owner.lw216_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * frames,
@@ -8381,6 +8380,7 @@ local function boss_frame(owner)
     ---位移（RunEcl 之后）。
     if owner.lw216_move then
         local nx, ny, done = move_step(owner.lw216_move)
+        owner.lw216_mangle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw216_move = nil
@@ -9248,8 +9248,7 @@ end
 ---    **主体精灵**、不是出生动画的精灵：32×32 → 半宽高 16，64×64 → 半宽高 32。
 ---  ★ 同屏上限：1536 槽（BulletManager.hpp:455）。本卡一轮 (64+64+16) 拍 × 4 发 = 576 发，
 ---    但弹速 ≤ 10、场地只有 384×448，绝大多数 100 帧内出屏 → 池不会满。
----  ★ `minimumPlayerDistanceSquared` = 1024（EnemyManager.cpp:187 的出生默认值）：
----    出弹前若 BOSS 离自机 < 32 px 则**整条 `ins_99` 被跳过**（EclDependencies.cpp:707-712）。
+-- 生成助手Sub8的SET_BOSS(0)已清除32px默认停火距离；本体近身仍发弹。
 ---  ★ 符卡期间 rank 缩放整段被 `if (!g_Spellcard.IsActive())` 挡住
 ---    （EclDependencies.cpp:735-761）→ count1/count2/speed 都不随 rank 变。
 ---  ★ 占位贴图：bulletType 20 → ball_big、bulletType 10 → ball_mid。最后统一换素材。
@@ -9314,7 +9313,6 @@ local BIG_COLOR, MID_COLOR = 2, 1            -- TH08 色号 1 / 0 → 我们 +1
 ---同屏弹幕上限与出屏判据（见卡头注释）。
 local POOL_SIZE = 1536                       -- BulletManager.hpp:455
 local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
-local AIM_MIN2 = 1024.0                      -- minimumPlayerDistanceSquared（32 px）²
 ---`ins_75(32, 48, 352, 128)` = SET_MOVEMENT_BOUNDS（Sub8 的 t=0）→ 我们坐标的夹框。
 local BW_L, BW_R, BW_B, BW_T = 32, 352, 48, 128        -- TH08 口径（判据用）
 local CLAMP_L, CLAMP_R = -160, 160                     -- 我们口径 = x − 192
@@ -9454,8 +9452,7 @@ local function child_step(owner, c)
             ---发射点 = worldPosition + shootOffset = BOSS + polar(lf0, lf1)（TH08 口径）。
             local ox = owner.x + math.cos(c.a) * c.r
             local oy = owner.y - math.sin(c.a) * c.r
-            local pdx, pdy = player.x - owner.x, player.y - owner.y
-            if pdx * pdx + pdy * pdy >= AIM_MIN2 then
+            if class.th08_combat.can_shoot(owner) then
                 local used = pool_used()
                 local j = 0
                 while j < BURST_N and used < POOL_SIZE do
@@ -9525,15 +9522,13 @@ local function wander_angle(owner)
     return a
 end
 
----开一段漂移（StartTimedPolarDisplacement）。同时记下 UpdateMovement 会得到的
----movementAngle（TH08 口径）= atan2(dy, dx)，供下一次 `π − movementAngle` 那条怪癖用。
+-- 安装漂移；movementAngle由帧尾未夹框目标减当前位置得出。
 local function begin_move(owner, dx, dy, n, easing)
     owner.lw219_move = { x0 = owner.x, y0 = owner.y, dx = dx, dy = dy,
                          n = n, t = 0, easing = easing }
     ---位移恒 0（speed = 0 的 ins_67）时，UpdateMovement 每帧算出的 velocity 都是 0，
     ---movementAngle = VectorAngle(0, 0) = atan2(0,0) = **0**（ZunMath 里没有 0 向量守卫，
     ---那条约占守卫只在 Player::AngleToPoint，Player.cpp:974-977）。
-    owner.lw219_mv_angle = math.atan2(-dy, dx)
 end
 
 local function begin_wander(owner)
@@ -9598,6 +9593,7 @@ local function boss_frame(owner)
     local mv = owner.lw219_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.lw219_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw219_move = nil
@@ -9730,11 +9726,7 @@ end
 ---    `time.current = operand0` + `time == instruction->time` 判据），每圈只差
 ---    records[2] 的 magnitude：lf0 从 0.16 起每拍 −0.0816667（Sub4 是 −0.054、
 ---    Sub7 是 −0.0825）⇒ 同心的四层环，后两层会减速、停住、再往回倒飞。
----  ★ `minimumPlayerDistanceSquared`（出生默认 1024 = (32 px)²，EnemyManager.cpp:187-189）：
----    出弹闸在 DispatchShotInstruction 的**最前面**（EclDependencies.cpp:707-716）——
----    跑这条 context 的敌机离自机 < 32 px 时**整条 `ins_96..104` 被跳过**（连随机数都不抽）。
----    Sub2/3/4/7 都是 CALL 到 BOSS 上 ⇒ 判据里的敌机 = BOSS；距离是平移不变的
----    （我们坐标的 x−192 / y 翻转都不改平方和），所以直接用我们坐标的差值判。
+-- Sub11的SET_BOSS(0)已清除默认近身停火；Sub2/3/4/7都在本体执行，沿用零限制。
 ---  ★ 同屏上限 1536（全游戏共用，BulletManager.hpp:455）：`activeBulletCount >= 0x600`
 ---    整条 ins_99 不生（BulletManager.cpp:692），波中间空槽用完就**放弃这一波剩下的**
 ---    （:698-712）。本卡一轮就要 1632 发（车轮 6 组 × 4 圈 × li2=20 = 480、扇 5 拍 ×
@@ -10145,38 +10137,23 @@ local function make_emitter(dir, color)
             self.lw_f0, self.lw_f1 = 0, 0  -- lf0 / lf1
             self.lw_slots = {}             -- ≡ 原作的 `laserSlots[16]`
             self.lw_interp = nil
-            self.lw_fresh = true           -- 出生帧跑两遍 RunEcl（见 emitter_pass 的注释）
+            emitter_pass(self) -- SpawnEnemy2当场RunEcl(0)，之后正常frame只推一次。
         end,
         frame = function(self)
-            local passes = self.lw_fresh and 2 or 1
-            self.lw_fresh = nil
-            for _ = 1, passes do
-                if not emitter_pass(self) then
-                    return
-                end
-            end
+            emitter_pass(self)
         end,
         -- ins_94 的独立逻辑发射器没有 ANM；默认渲染不读取对象的 _a。
         render = function(self) end,
     })
 end
 
----★ `minimumPlayerDistanceSquared`（出生默认 1024 = (32 px)²，EnemyManager.cpp:187-189）：
----  出弹闸在 DispatchShotInstruction 的**最前面**（EclDependencies.cpp:707-716）：
----  跑这条 context 的敌机离自机 < 32 px 时**整条 ins_96..104 被跳过**。
----  Sub2/3/4/7 都是 CALL 到 BOSS 上 ⇒ 判据里的敌机 = BOSS。距离是平移不变的
----  （x−192 与 y 翻转都不改平方和），直接用我们坐标的差值判。
-local AIM_MIN2 = 1024.0                    -- minimumPlayerDistanceSquared（32 px）²
-
+-- Sub11生成助手已SET_BOSS(0)；Sub2/3/4/7都在同一本体上执行，不能回到默认32px门。
 ---一次 `ins_99` / `ins_101`（BulletManager.cpp:685-790）：
 ---角度按 aimMode 算、速度按 count2 插值、创建顺序 j 在外 i 在内。
 ---  offset_circle = true 时按 OFFSET_CIRCLE（π/count1 + i·2π/count1 + angle，**不吃** angleStep）
 local function spawn_shot(owner, cls, count1, count2, speed1, speed2,
                           angle, angle_step, angle_delta, offset_circle, mag)
-    local pdx, pdy = player.x - owner.x, player.y - owner.y
-    if pdx * pdx + pdy * pdy < AIM_MIN2 then
-        return                          -- 离自机太近：整条 ins_99 不生（EclDependencies.cpp:710-716）
-    end
+    if not class.th08_combat.can_shoot(owner) then return end
     local used = pool_used()
     if used >= POOL_SIZE then
         return                          -- 池满：整条 ins_99 不生（BulletManager.cpp:692）
@@ -10292,14 +10269,12 @@ local function wander_angle(owner)
     return a
 end
 
----开一段插值位移（StartTimedPolarDisplacement）。同时记下 UpdateMovement 每帧会算出的
----movementAngle（TH08 口径）= atan2(dy, dx)，供下一次 `π − movementAngle` 那条怪癖用。
+-- 安装插值；movementAngle在实际更新时计算，夹框时不一定等于初始delta方向。
 local function begin_move(owner, dx, dy, n, easing)
     owner.lw220_move = { x0 = owner.x, y0 = owner.y, dx = dx, dy = dy,
                          n = n, t = 0, easing = easing }
     ---位移恒 0（t=110 之前那条 ins_64）时 velocity 每帧都是 0，
     ---movementAngle = VectorAngle(0, 0) = atan2(0,0) = **0**（ZunMath 里没有 0 向量守卫）。
-    owner.lw220_mv_angle = math.atan2(-dy, dx)
 end
 
 local function begin_wander(owner)
@@ -10387,6 +10362,7 @@ local function boss_frame(owner)
     local mv = owner.lw220_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.lw220_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then
             owner.lw220_move = nil
@@ -11275,7 +11251,6 @@ end
 ---⇒「60 帧走完 (cos,sin)(angle)·1.0·60 px」的插值（缓动 4 = ECL_EASING_OUT_QUADRATIC）。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.s3a_ang = angle
     owner.s3a_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -11369,12 +11344,6 @@ familiar = class.th08_combat.actor("ecldata3:37", {
             object.RawDel(self)
             return
         end
-        ---inheritParentPosition（EnemyManagerUpdate.cpp:171-175）：
-        ---worldPosition = position + positionOffset，而 positionOffset 每帧 = 父机 position。
-        if self.owner_ref and IsValid(self.owner_ref) then
-            self.x = self.owner_ref.x + self.off_dx
-            self.y = self.owner_ref.y + self.off_dy
-        end
         ---枪（Sub36）：从挂上那一刻起按自己的时间轴走。
         if t >= FAM_GUN_AT then
             local g = self.gun_t
@@ -11394,6 +11363,11 @@ familiar = class.th08_combat.actor("ecldata3:37", {
                 end
             end
             self.gun_t = g + 1
+        end
+        -- 发弹仍读上帧世界坐标；继承父机位置在RunEcl结束后刷新。
+        if self.owner_ref and IsValid(self.owner_ref) then
+            self.x = self.owner_ref.x + self.off_dx
+            self.y = self.owner_ref.y + self.off_dy
         end
         self.fam_t = t + 1
     end,
@@ -11467,6 +11441,7 @@ local function card_frame(owner)
     local move = owner.s3a_move
     if move then
         local x, y, done = move_step(move)
+        owner.s3a_ang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.s3a_move = nil
@@ -11649,7 +11624,6 @@ end
 ---⇒「60 帧走完 (cos,sin)(angle)·1.3·60 px」的插值（缓动 4 = ECL_EASING_OUT_QUADRATIC）。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.s3b_ang = angle
     owner.s3b_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -11826,6 +11800,7 @@ local function card_frame(owner)
     local move = owner.s3b_move
     if move then
         local x, y, done = move_step(move)
+        owner.s3b_ang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.s3b_move = nil
@@ -12307,7 +12282,6 @@ end
 ---⇒「60 帧走完 (cos,sin)(angle)·speed·60 px」的插值（缓动 4 = ECL_EASING_OUT_QUADRATIC）。
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.s3b_ang = angle
     owner.s3b_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * speed * WANDER_FRAMES,
@@ -12416,12 +12390,6 @@ familiar = class.th08_combat.actor("ecldata3:40", {
             object.RawDel(self)
             return
         end
-        ---inheritParentPosition（EnemyManagerUpdate.cpp:171-175）：
-        ---worldPosition = position + positionOffset，而 positionOffset 每帧 = 父机 position。
-        if self.fam_owner and IsValid(self.fam_owner) then
-            self.x = self.fam_owner.x + self.fam_dx
-            self.y = self.fam_owner.y + self.fam_dy
-        end
         ---枪（Sub39 / Sub41）：从挂上那一刻起按自己的时间轴走。
         if t >= FAM_GUN_AT then
             local g = self.gun_t
@@ -12443,6 +12411,11 @@ familiar = class.th08_combat.actor("ecldata3:40", {
                 end
             end
             self.gun_t = g + 1
+        end
+        -- 发弹仍读上帧世界坐标；继承父机位置在RunEcl结束后刷新。
+        if self.fam_owner and IsValid(self.fam_owner) then
+            self.x = self.fam_owner.x + self.fam_dx
+            self.y = self.fam_owner.y + self.fam_dy
         end
         self.fam_t = t + 1
     end,
@@ -12524,6 +12497,7 @@ local function card_frame(owner)
     local mv = owner.s3b_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.s3b_ang=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then owner.s3b_move = nil end
     end
@@ -12677,7 +12651,6 @@ end
 ---⇒「60 帧走完 (cos,sin)(angle)·speed·60 px」的插值（缓动 4 = OUT_QUADRATIC）。
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.s3d_ang = angle
     owner.s3d_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * speed * WANDER_FRAMES,
@@ -12879,6 +12852,7 @@ local function card_frame(owner)
     local mv = owner.s3d_move
     if mv then
         local nx, ny, done = move_step(mv)
+        owner.s3d_ang=math.atan2(-(ny-owner.y),nx-owner.x)
         owner.x, owner.y = nx, ny
         if done then owner.s3d_move = nil end
     end
@@ -13654,7 +13628,6 @@ end
 ---角度是 TH08 口径（y 朝下）⇒ 我们的位移要取反。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw192_ang = angle
     owner.lw192_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * MOVE_SPEED * MOVE_DUR,
@@ -13749,6 +13722,7 @@ local function card_frame(owner)
         local move = owner.lw192_move
         if move then
             local x, y, done = move_step(move)
+            owner.lw192_ang=math.atan2(-(y-owner.y),x-owner.x)
             owner.x, owner.y = x, y
             if done then
                 owner.lw192_move = nil
@@ -14546,7 +14520,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)               -- TH08 口径
-    owner.lw195_mv_angle = angle                    -- = enemy->movementAngle（#47 用得上）
     owner.lw195_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,   -- 我们坐标系 = 角取反
@@ -14563,14 +14536,17 @@ local function step_move(owner)
     if mv == nil then return end
     mv.t = mv.t + 1
     if mv.t >= mv.n then
-        owner.x, owner.y = mv.x0 + mv.dx, mv.y0 + mv.dy
+        local nx,ny=mv.x0 + mv.dx,mv.y0 + mv.dy
+        owner.lw195_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+        owner.x,owner.y=nx,ny
         owner.lw195_move = nil
         return
     end
     local u = mv.t / mv.n
     local e = 1 - (1 - u) * (1 - u)
-    owner.x = mv.x0 + mv.dx * e
-    owner.y = mv.y0 + mv.dy * e
+    local nx,ny=mv.x0 + mv.dx * e,mv.y0 + mv.dy * e
+    owner.lw195_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+    owner.x,owner.y=nx,ny
 end
 
 ---Sub51 的节拍（每项 = {ECL 时间, 这一帧要做的事}）。
@@ -14821,7 +14797,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)               -- TH08 口径
-    owner.lw196_mv_angle = angle                    -- = enemy->movementAngle（边界修正要用）
     owner.lw196_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,   -- 我们坐标系 = 角取反
@@ -14838,14 +14813,17 @@ local function step_move(owner)
     if mv == nil then return end
     mv.t = mv.t + 1
     if mv.t >= mv.n then
-        owner.x, owner.y = mv.x0 + mv.dx, mv.y0 + mv.dy
+        local nx,ny=mv.x0 + mv.dx,mv.y0 + mv.dy
+        owner.lw196_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+        owner.x,owner.y=nx,ny
         owner.lw196_move = nil
         return
     end
     local u = mv.t / mv.n
     local e = 1 - (1 - u) * (1 - u)
-    owner.x = mv.x0 + mv.dx * e
-    owner.y = mv.y0 + mv.dy * e
+    local nx,ny=mv.x0 + mv.dx * e,mv.y0 + mv.dy * e
+    owner.lw196_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+    owner.x,owner.y=nx,ny
 end
 
 ---使魔（Sub55）的一步位移（SET_DIR_AND_SPEED 定速直飞，没有加速度）。
@@ -16639,7 +16617,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.lw201_mv_ang = angle
     ---TH08 的 (cos, sin) 到我们坐标就是 (cos, −sin)。
     owner.lw201_mv = {
         x0 = owner.x, y0 = owner.y,
@@ -16719,7 +16696,12 @@ local function card_frame(owner)
     local ch = c.child
     if ch and not ch.dead then child_step(owner, ch) end
     ---③ RunEcl 末尾的 UpdateMovement（`ins_64` 的插值 / `ins_67` 的定时位移）
-    if owner.lw201_mv and move_step(owner.lw201_mv, owner) then owner.lw201_mv = nil end
+    if owner.lw201_mv then
+        local oldx,oldy=owner.x,owner.y
+        local finished=move_step(owner.lw201_mv,owner)
+        owner.lw201_mv_ang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then owner.lw201_mv=nil end
+    end
     ---④ ClampPosition（EnemyManagerUpdate.cpp:172-174 位移前后各钳一次）
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
@@ -18340,7 +18322,6 @@ end
 ---ins_67 的一段位移：方向 = wander_angle、位移 = 1.0 px/帧 × 60 帧、缓动 4。
 local function begin_wander(owner)
     local angle = wander_angle(owner)                       -- TH08 口径
-    owner.lwns_mv_angle = angle                             -- = enemy->movementAngle
     owner.lwns_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,   -- 我们坐标系 = 角取反
@@ -18367,14 +18348,17 @@ local function step_move(owner)
     if mv == nil then return end
     mv.t = mv.t + 1
     if mv.t >= mv.n then
-        owner.x, owner.y = mv.x0 + mv.dx, mv.y0 + mv.dy
+        local nx,ny=mv.x0 + mv.dx,mv.y0 + mv.dy
+        owner.lwns_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+        owner.x,owner.y=nx,ny
         owner.lwns_move = nil
         return
     end
     local u = mv.t / mv.n
     local e = 1 - (1 - u) * (1 - u)
-    owner.x = mv.x0 + mv.dx * e
-    owner.y = mv.y0 + mv.dy * e
+    local nx,ny=mv.x0 + mv.dx * e,mv.y0 + mv.dy * e
+    owner.lwns_mv_angle=math.atan2(-(ny-owner.y),nx-owner.x)
+    owner.x,owner.y=nx,ny
 end
 
 ---------------------------------------------------------------
@@ -20289,7 +20273,6 @@ end
 
 local function begin_wander(owner, c)
     local angle = wander_angle(owner)
-    owner.lw166_angle = angle                 -- = 原作的 movementAngle（TH08 口径）
     c.move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -20335,7 +20318,10 @@ local function card_frame(owner)
     ---② UpdateMovement + IntegrateVelocity：位移插值（ins_64 的落位与 ins_67 的走动
     ---   共用原作同一个 movementInterpolation 槽，两者时间上不重叠）。
     if c.move then
-        if step_interp(c.move, owner) then
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(c.move, owner)
+        owner.lw166_angle=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -21016,7 +21002,7 @@ local function begin_boundary_move(owner)
     owner.lw150.move = mv
     ---movementAngle 每次位移都会被重写成速度方向（EnemyManager.cpp:110-116）⇒ 记一份
     ---TH08 口径的，给上面那条边界用。
-    owner.lw150.mang = wrap_pi(math.atan2(-mv.dy, mv.dx))
+
 end
 
 ---`#28..#56`：招**第 k 只**使魔（k = 0..15）。环角 = π/2 + k·π/8、等待帧数 = 68 − 4k。
@@ -21077,8 +21063,11 @@ local function card_frame(owner)
     if c.move then
         local mv = c.move
         ---movementAngle = 速度方向（EnemyManager.cpp:110-116）⇒ 记 TH08 口径的一份。
-        c.mang = wrap_pi(math.atan2(-mv.dy, mv.dx))
-        if step_interp(mv, owner) then
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(mv, owner)
+        owner.lw150.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -21303,7 +21292,7 @@ local function begin_boundary_move(owner)
         elseif a < -1.5707964 then a = -3.1415927 - a end
     end
     if X > BND_TX_R - 96 then
-        if a < 1.5707964 and a >= 0 then a = 3.1415927 - owner.lw154_mang
+        if a < 1.5707964 and a >= 0 then a = 3.1415927 - owner.lw154.mang
         elseif a > -1.5707964 and a <= 0 then a = -3.1415927 - a end
     end
     if Y < BND_TY_L + 48 and a < 0 then a = -a end
@@ -21320,7 +21309,7 @@ local function begin_boundary_move(owner)
     owner.lw154.move = mv
     ---movementAngle 每次位移都会被重写成速度方向（EnemyManager.cpp:110-116）⇒ 记一份
     ---TH08 口径的，给上面那条边界用。
-    owner.lw154_mang = wrap_pi(math.atan2(-mv.dy, mv.dx))
+
 end
 
 ---------------------------------------------------------------------
@@ -21640,8 +21629,11 @@ local function card_frame(owner)
     if c.move then
         local mv = c.move
         ---movementAngle = 速度方向（EnemyManager.cpp:110-116）⇒ 记 TH08 口径的一份。
-        c.mang = wrap_pi(math.atan2(-mv.dy, mv.dx))
-        if step_interp(mv, owner) then
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(mv, owner)
+        c.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -23249,7 +23241,7 @@ local function begin_boundary_move(owner, c)
     }
     ---movementAngle 每次位移都会被重写成速度方向（EnemyManager.cpp:110-116）⇒ 记一份
     ---TH08 口径的，给上面那条边界用。
-    c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
+
 end
 
 ---------------------------------------------------------------------
@@ -23334,8 +23326,11 @@ local function card_frame(owner)
 
     ---③ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
     if c.move then
-        c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
-        if step_interp(c.move, owner) then
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(c.move, owner)
+        c.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -23396,8 +23391,7 @@ end
 ---      ⇒ 实际加成只有 +0.0375~+0.056 —— 本文件统一按用户口径取 rank = 32，偏差备查。）
 ---  ★ 出弹前的两道闸（EclDependencies.cpp:704-716）：① ONLY_WHEN_PLAYER_YOUKAI/HUMAN
 ---    （本卡旗标 0x6242 / 0x202 都没有这两位）；② `minimumPlayerDistanceSquared` ——
----    出生默认 1024（EnemyManager.cpp:189），Sub15/16/18 里都没有
----    `ins_82 SET_MIN_PLAYER_DISTANCE 0` ⇒ **离发射源不足 32 px 时整条出弹指令跳过**。
+--    本体已由SET_BOSS清零；新生Sub17使魔保留默认32px停火距离。
 ---
 ---  本卡的根节奏（Sub15 自己的时钟；`#13 CALL 16` 起算）：
 ---    t=0    `#13 ins_52 CALL 16` 跑一次 Sub16 的「枪」，**当帧跑完**（见下）。
@@ -23555,12 +23549,11 @@ local FAM_B_FLAGS_B = 642
 local FAM_B_AIM_INTERVAL, FAM_B_AIM_SPEED = 60, 1.5
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）。
-local MIN_DIST2 = 1024.0
 
 ---出弹闸②：离发射源（BOSS / 使魔）不足 32 px 就整条出弹指令跳过。
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
@@ -23599,7 +23592,7 @@ local function begin_boundary_move(owner, c)
     }
     ---movementAngle 每次位移都会被重写成速度方向（EnemyManager.cpp:110-116）⇒ 记一份
     ---TH08 口径的，给上面那条边界用。
-    c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
+
 end
 
 ---------------------------------------------------------------------
@@ -23612,7 +23605,7 @@ local function gun_burst(owner)
     ---（−RANDOM_ANGLE 与 RANDOM_ANGLE 同分布），i 越大角越**小**（原作是 += 0.19635）。
     local base = ran:Float(-PI, PI)
     for i = 0, GUN_FANS - 1 do
-        if not too_close(owner.x, owner.y) then
+        if not too_close(owner) then
             ---`#11..#15`：出弹点 = BOSS + 64·(cos, sin)(lf2) —— 用**加之前**的 lf2。
             local off = base - i * GUN_ANGLE_STEP
             ---`#22/#23`：lf2 += 0.19635 再归一化 ⇒ 扇面的基准角是**加之后**的那个。
@@ -23679,7 +23672,7 @@ local familiar = class.th08_combat.actor("ecldata7:17", {
                 ---`#0/#1`：lf0 += π（背离自己的飞行方向、朝 BOSS 那侧打）。
                 local ang = wrap_pi(self.lw15_dir + PI)
                 ---`#4`：闸②按**每一发**判（原作每条 SHOOT_FAN 各自查一次近身距离）。
-                if not too_close(self.x, self.y) then
+                if not too_close(self) then
                     ---★ `#4`(0x3f，色 2 速 1.5) / `#5`(0x5f，色 6 速 3.0) 形态二选一。
                     if player_is_youkai(self) then
                         EX.shoot(self, self.x, self.y, {
@@ -23748,8 +23741,11 @@ local function card_frame(owner)
 
     ---④ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
     if c.move then
-        c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
-        if step_interp(c.move, owner) then
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(c.move, owner)
+        c.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -23851,9 +23847,7 @@ end
 ---    出生动画（type 10 = 24 帧、type 3 = 10 帧、type 7 = 30 帧，BulletManager.cpp:298-310
 ---    的脚本表）＋ 槽 1 的 WAIT 30 帧期间**完全不动**（SPAWNING_* 状态既不推 transform、
 ---    也不减 WAIT 计时，BulletManager.cpp:951-1013）。
----  ★ 出弹闸：`minimumPlayerDistanceSquared` 出生默认 1024（EnemyManager.cpp:189）⇒
----    离发射源不足 32 px 就整条出弹指令跳过（EclDependencies.cpp:710-716）；
----    BOSS 的环与使魔的 18 发都照此实现。
+-- 本体SET_BOSS已清除近身停火；使魔的18发仍按自身默认32px限制。
 ---  ★ 同屏弹数：一轮 12 只 × 18 发 = 216 发，每 220 帧来一轮；子弹的飞行时长
 ---    （最长的一档 24 + 30 + 240 ≈ 294 帧）比一轮长 ⇒ 场上长期同时有两轮使魔的弹。
 ---    本文件没有全局弹池，EX 的 1536 个槽（BulletManager.hpp:455）由 EX.pool 管。
@@ -23953,10 +23947,9 @@ end
 
 ---出弹闸：离发射源不足 32 px 就整条出弹指令跳过（EclDependencies.cpp:710-716 +
 ---`minimumPlayerDistanceSquared` 的出生默认 1024，EnemyManager.cpp:189）。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---`ins_67` = MOVE_RANDOM_IN_BOUNDS → BeginBoundaryAwareMove（EclDependencies.cpp:128-191）：
@@ -23995,7 +23988,7 @@ local function begin_boundary_move(owner, c)
     }
     ---movementAngle 每次位移都会被重写成速度方向（EnemyManager.cpp:110-116）⇒ 记一份
     ---TH08 口径的，给上面那条边界用。
-    c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
+
 end
 
 ---------------------------------------------------------------------
@@ -24005,7 +23998,7 @@ end
 ---speed1 = 1（本卡 rank 影响量是 0 ⇒ 不叠缩放），flags 里没有 CULL ⇒ 出屏当帧回收。
 ---------------------------------------------------------------------
 local function gun_ring(owner)
-    if too_close(owner.x, owner.y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT, count2 = 1,
@@ -24035,7 +24028,7 @@ local function fam_volley(self, idx)
     ---我们口径 y 翻转 ⇒ 第二项取负（两边都是对称分布，但绝不重抽）。
     local ox, oy = rnd_sgn() * SHOT_JITTER, rnd_sgn() * SHOT_JITTER
     ---`#17`（`#21`、`#26`）：一发**静止**的弹（speed1 = 0），角用 u=50 那一份。
-    if not too_close(self.x, self.y) then
+    if not too_close(self) then
         EX.shoot(self, self.x + ox, self.y - oy, {
             op = 99, type = VOL_SHOTS[idx].type, color = EX.color(self.f_colors[idx]),
             count1 = 1, count2 = 1,
@@ -24178,8 +24171,11 @@ local function card_frame(owner)
     end
     ---④ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
     if c.move then
-        c.mang = wrap_pi(math.atan2(-c.move.dy, c.move.dx))
-        if step_interp(c.move, owner) then
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(c.move, owner)
+        c.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then
             c.move = nil
         end
     end
@@ -24868,10 +24864,9 @@ local BW_B, BW_T = 96, 176
 ---    （曾经把这一档错当成 100 px：那个 100 是 `ins_91` 的第 6 个操作数 = score，
 ---      不是距离。子机 spawn 的操作数是 (subId, offX, offY, life, dropType, score)。）
 ---  · 用 d² 比较，别开方。
-local MIN_DIST2 = 1024.0        -- = 32²
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---BULLET_TRANSFORM_ECL_EX_TRIGGER_MARKER（BulletManager.hpp:152）。
@@ -25033,7 +25028,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0, ease = 4,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---------------------------------------------------------------------
@@ -25102,7 +25097,7 @@ local lw142_familiar = class.th08_combat.actor("ecldata6:77", {
                     ---（原作在距离判据之前就算好了）。
                     local spd = self.f_spd + rnd_sgn() * 0.5
                     ---距离判据用的是**挪过去以后**的 worldPosition（EclDependencies.cpp:711）。
-                    if not too_close(self.x, self.y) then
+                    if not too_close(self) then
                         EX.shoot(self, self.x, self.y, {
                             op = 97, type = FAM_TYPE, color = EX.color(self.f_li7),
                             count1 = 1, count2 = 1, speed1 = spd, speed2 = FAM_SPEED2,
@@ -25251,8 +25246,11 @@ local function card_frame(owner)
 
     ---⑥ 位移插值（ins_64 的线性与 ins_67 的定时极坐标共用同一个槽位）。
     if st.move then
-        st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
-        if step_interp(st.move, owner) then st.move = nil end
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
 
     ---⑦ ClampPosition（EnemyManagerUpdate.cpp:159-200 每帧两次里的那一次）。
@@ -25471,7 +25469,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0, ease = 4,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧先 `--movementTimer` 再算 progress，
@@ -25517,8 +25515,11 @@ local function card_frame(owner)
 
     ---③ 位移插值（`ins_67` 的 OUT_QUADRATIC）。
     if st.move then
-        st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
-        if step_interp(st.move, owner) then st.move = nil end
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
 
     ---④ ClampPosition（EnemyManagerUpdate.cpp:172-174：位移前后各钳一次里的那一次）。
@@ -26331,7 +26332,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:82-108）：每帧先 `--timer` 再算 progress = 1 − timer/duration，
@@ -26410,8 +26411,11 @@ local function card_frame(owner)
 
     ---③ 位移插值（`ins_67`，缓动 0 = 线性）。
     if st.move then
-        st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
-        if step_interp(st.move, owner) then st.move = nil end
+
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_interp(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
 
     ---④ ClampPosition（EnemyManagerUpdate.cpp:172-174 位移前后各一次的第二次）。
@@ -26814,7 +26818,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧 timer-- 再算 progress = 1 − timer/duration，
@@ -26895,7 +26899,10 @@ local function card_frame(owner)
     end
     ---④ 位移插值（缓动 4 = OUT_QUADRATIC）。
     if st.move then
-        if step_out_quad(st.move, owner) then st.move = nil end
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_out_quad(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
     ---⑤ ClampPosition（EnemyManagerUpdate.cpp:172-174 位移前后各一次的第二次）。
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
@@ -27116,7 +27123,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧 timer-- 再算 progress = 1 − timer/duration，
@@ -27328,7 +27335,10 @@ local function card_frame(owner)
     end
     ---④ 位移插值。
     if st.move then
-        if step_out_quad(st.move, owner) then st.move = nil end
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_out_quad(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
     ---⑤ ClampPosition（EnemyManagerUpdate.cpp:172-174 位移前后各一次的第二次）。
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
@@ -27480,12 +27490,11 @@ local GUN_AIM_INTERVAL, GUN_AIM_SPEED = 60, 1.5
 local GUN_FLAGS_A, GUN_FLAGS_B = 0x202, 0x282     -- FAST|SPAWN_SND / ＋AIMED
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（使魔；EnemyManager.cpp:189）。
-local MIN_DIST2 = 1024.0
 
 ---出弹闸（EclDependencies.cpp:704-716）：离发射源不足 32 px 就整条出弹指令跳过。
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---使魔登记表（card_del 里清）。
@@ -27546,7 +27555,7 @@ local function f16_gun_volley(self)
         EX.set_record(self, 0, EX.K.AIMED, 0, GUN_AIM_INTERVAL, 1, 0, GUN_AIM_SPEED)
     end
     ---使魔是 `ins_91` 新生的敌机 ⇒ 出生默认 1024（32 px）的闸照吃（见卡头）。
-    if too_close(self.x, self.y) then return end
+    if too_close(self) then return end
     local ang = -self.f_gun_dir      -- 我们口径
     ---★ 0x5f（妖怪 / 低速，色 6 速 3.0 / flags 0x282）与 0x3f（人类 / 高速，色 2 速 1.5 /
     ---  flags 0x202）同帧并列，只有一条执行（EclRun.cpp:69-73 + EnemyManager.cpp:903）。
@@ -27637,7 +27646,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧 timer++ 再算 progress = timer/duration，
@@ -27698,7 +27707,10 @@ local function card_frame(owner)
     end
     ---② 位移（插值槽在 ECL 之后、UpdateMovement 之前，EnemyManagerUpdate.cpp:159-192）。
     if st.move then
-        if step_out_quad(st.move, owner) then st.move = nil end
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_out_quad(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
     ---③ 夹框：Sub17 的 `ins_75` 才开 CLAMP_POSITION ⇒ 前 21 帧不能夹
     ---   （那 21 帧 BOSS 正从我们 (−160, 256) 往场里滑）。
@@ -27869,12 +27881,11 @@ local REC_WAIT = 120                    -- 槽 0：WAIT 120 帧（`ins_111(0, 13
 local REC_SND = 27                      -- 槽 1：PLAY_SOUND 27（`ins_111(1, 524288, 0, 27, …)`）
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（使魔；EnemyManager.cpp:189）。
-local MIN_DIST2 = 1024.0
 
 ---出弹闸（EclDependencies.cpp:704-716）：离发射源不足 32 px 就整条出弹指令跳过。
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
@@ -27929,7 +27940,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧 timer++ 再算 progress = timer/duration、
@@ -27967,7 +27978,7 @@ local function f36_gun_volley(self)
     local sx, sy = self.x + 192, 224 - self.y
     local rx, ry = rnd_sgn(), rnd_sgn()
     ---使魔继承出生默认 1024（32 px）的闸（见卡头）。
-    if too_close(self.x, self.y) then return end
+    if too_close(self) then return end
     local gx = grid16(sx + 16 + rx * FGUN_SCALE)
     local gy = grid16(sy + 16 + ry * FGUN_SCALE)
     ---三条 `ins_111`（EclRunHigh.inl:243-262）——本子程序的循环体每遍都重写。
@@ -28083,7 +28094,10 @@ local function card_frame(owner)
     end
     ---④ 位移插值（`ins_64` 的槽；换 context 之后还活着）。
     if st.move then
-        if step_out_quad(st.move, owner) then st.move = nil end
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_out_quad(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
     ---⑤ ClampPosition：`ins_75` 从 t=0 就生效（EnemyManagerUpdate.cpp:172-174）。
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
@@ -28327,7 +28341,7 @@ local function begin_boundary_move(owner, st)
         dy = math.sin(dir) * WANDER_SPEED * WANDER_FRAMES,
         n = WANDER_FRAMES, t = 0,
     }
-    st.mang = wrap_pi(math.atan2(-st.move.dy, st.move.dx))
+
 end
 
 ---位移插值槽（EnemyManager.cpp:80-121）：每帧 timer++ 再算 progress = timer/duration，
@@ -28502,7 +28516,10 @@ local function card_frame(owner)
     end
     ---③ 位移插值（`ins_64` 的槽；换 context 之后还活着）。
     if st.move then
-        if step_out_quad(st.move, owner) then st.move = nil end
+        local oldx,oldy=owner.x,owner.y
+        local finished=step_out_quad(st.move, owner)
+        st.mang=math.atan2(-(owner.y-oldy),owner.x-oldx)
+        if finished then st.move = nil end
     end
     ---④ ClampPosition：`ins_75` 从 t=0 就生效（EnemyManagerUpdate.cpp:172-174）。
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
@@ -28913,7 +28930,6 @@ end
 ---⇒「80 帧走完 (cos,sin)(angle)·1.0·80 px」的插值（缓动 4 = ECL_EASING_OUT_QUADRATIC）。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.s4a_ang = angle
     owner.s4a_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -29122,6 +29138,7 @@ local function card_frame(owner)
     local move = owner.s4a_move
     if move then
         local x, y, done = move_step(move)
+        owner.s4a_ang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then
             owner.s4a_move = nil
@@ -29904,7 +29921,6 @@ end
 local WANDER_FRAMES, WANDER_EASE = 80, 4
 local function begin_wander(owner, st)
     local angle = wander_angle(st, owner)
-    st.mang = angle
     st.move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -30073,6 +30089,7 @@ local function card_frame(owner)
     local move = st.move
     if move then
         local x, y, done = move_step(move)
+        st.mang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then st.move = nil end
     end
@@ -30145,8 +30162,7 @@ end
 ---    `Enemy::ResetBulletRankInfluence()`（Spellcard.cpp:893-901）⇒ rank = 32 时
 ---    **speed1 +0.5、speed2 +0.25**（`ScaleFloatBasedOnRank(−0.5, 0.5)`，
 ---    AsciiManagerBossMarker.cpp:13-16）。
----  · ★ 出弹闸（EclDependencies.cpp:704-716）：`minimumPlayerDistanceSquared` 出生默认 1024
----    （EnemyManager.cpp:189），Sub25 没写 `ins_82` ⇒ **离 BOSS 不足 32 px 时整条 ins_98 跳过**。
+-- 本体已执行SET_BOSS，minimumPlayerDistanceSquared为0；Sub25不再另加32px停火。
 ---  · Sub21（子 context 3）= 与卡 435 同一份横向绕回：posX ≤ −32 → +448（连
 ---    movementInterpolationOrigin.x 一起挪）、posX ≥ 416 → −448、绕完 `ins_2(4)` 歇 4 帧
 ---    ⇒ 我们坐标 x ≤ −224 → +448、x ≥ 224 → −448。
@@ -30186,7 +30202,6 @@ local T7_STEP = 0.007853982             -- π/400：type 7 那条 5 速链的 an
 ---rank 缩放（见头注）：相位由回调拉起 ⇒ 影响量 ∓0.5 ⇒ rank = 32 时 speed1 +0.5、speed2 +0.25。
 local RANK_SPD, RANK_SPD2 = 0.5, 0.25
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）。
-local AIM_MIN2 = 1024.0
 
 local function to_th08_x(x) return x + 192 end
 local function to_th08_y(y) return y and (224 - y) or 0 end
@@ -30222,9 +30237,9 @@ end
 
 ---出弹闸（EclDependencies.cpp:704-716）：整条 `ins_98` 在离 BOSS 不足 32 px 时被跳过
 ---（注意：它跳的是**出弹**，不跳 lf5/lf6 那两条累加指令）。
-local function too_close(owner)
-    local dx, dy = owner.x - player.x, owner.y - player.y
-    return dx * dx + dy * dy < AIM_MIN2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---「基础三连」（每个出弹帧开头那三条 `ins_98`）。
@@ -30461,8 +30476,7 @@ end
 ---      （EnemyManagerUpdate.cpp:240-262）。
 ---  · rank：本卡是符卡 ⇒ DispatchShotInstruction 的 rank 缩放整段被
 ---    `if (!g_Spellcard.IsActive())` 挡住（EclDependencies.cpp:750-775），count/speed 全原值。
----    出弹闸 = 出生默认 `minimumPlayerDistanceSquared` = 1024（EnemyManager.cpp:189）
----    ⇒ 自机离 BOSS 不足 32 px 时**那一条** `ins_99` 被跳过（角度累加照跑）。
+--    本体SET_BOSS已清除默认近身停火，ins_99近身仍执行。
 ---  · 贴图占位：type 0 / 6 / 11 → ball_small（style_of）、使魔 = "servant"。全部做完再换素材。
 ---------------------------------------------------------------
 do
@@ -30513,7 +30527,6 @@ local FAM_GRAV, FAM_VMAX = 0.038333334, 4.0
 local FAM_LIFE = 6000                       -- 原作 t=6001 TERMINATE（见头注）
 
 ---出弹闸（EnemyManager.cpp:189 的出生默认值）。
-local AIM_MIN2 = 1024.0
 
 ---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）。
 local function wrap_pi(a)
@@ -30522,9 +30535,9 @@ local function wrap_pi(a)
 end
 
 ---出弹闸（EclDependencies.cpp:704-716）：整条 `ins_99` 在离 BOSS 不足 32 px 时被跳过。
-local function too_close(owner)
-    local dx, dy = owner.x - player.x, owner.y - player.y
-    return dx * dx + dy * dy < AIM_MIN2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---自机方向（Player::AngleToPoint，Player.cpp:967-981；换算到我们坐标就是普通 atan2）。
@@ -30861,8 +30874,7 @@ end
 ---    （EclDependencies.cpp:750-777）⇒ count 不变；影响量是**回调重置后的 ∓0.5**
 ---    （前一相位符卡 438 的 death/timer/life 回调 → `ResetBulletRankInfluence`，见卡 437 的头注）
 ---    ⇒ rank = 32 时 **speed1 +0.5、speed2 +0.25**。
----  · ★ 出弹闸：Sub26 没写 `ins_82` ⇒ 出生默认 `minimumPlayerDistanceSquared` = 1024
----    （EnemyManager.cpp:189）⇒ **离 BOSS 不足 32 px 时整条出弹指令跳过**（同卡 437）。
+-- Sub26沿用本体SET_BOSS清零后的距离限制，近身仍执行出弹。
 ---  · ★ 使魔 Sub18（`ins_91("Sub18", 0, 0, 300, −2, 100)`，第 4 操作数 = life、出生点 =
 ---    BOSS 当前位置）：`ins_54(61)` / `ins_77(24,24)` / `ins_160(30)` / `ins_80(16)`、
 ---    `lf6 = 0.033333335`（重力）、`lf7 = 5.5`（重力上限）、`ins_65(lf0, 3.2)`
@@ -30932,7 +30944,6 @@ local FAM_LIFE = 6000                   -- 子程序自己的 t=6001 TERMINATE
 local FAM_N, FAM_DANG = 12, PI / 6      -- 12 只、每只 +30°
 
 ---出弹闸（EnemyManager.cpp:189 的出生默认值）。
-local AIM_MIN2 = 1024.0
 
 local function to_th08_x(x) return x + 192 end
 local function to_th08_y(y) return 224 - y end
@@ -30948,9 +30959,9 @@ end
 local function rnd_sgn() return ran:Float(0, 1) * 2 - 1 end
 
 ---出弹闸（EclDependencies.cpp:704-716）：整条出弹指令在离 BOSS 不足 32 px 时被跳过。
-local function too_close(owner)
-    local dx, dy = owner.x - player.x, owner.y - player.y
-    return dx * dx + dy * dy < AIM_MIN2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---`ins_66` = MOVE_IN_DIR（EclRunLow.inl:514-529 → StartTimedPolarDisplacement，
@@ -31444,7 +31455,6 @@ end
 ---出弹角整体取反 ⇒ 位移也按 −angle 展开。
 local function begin_wander(owner, st)
     local angle = wander_angle(st, owner)
-    st.mang = angle
     st.move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -31637,6 +31647,7 @@ local function card_frame(owner)
     local move = st.move
     if move then
         local x, y, done = move_step(move)
+        st.mang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then st.move = nil end
     end
@@ -31916,7 +31927,6 @@ end
 ---位移也按 −angle 展开。
 local function begin_wander(owner, st)
     local angle = wander_angle(st, owner)
-    st.mang = angle
     st.move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPD * WANDER_N,
@@ -32093,10 +32103,7 @@ local function card_frame(owner)
     local move = st.move
     if move then
         local x, y, done = move_step(move)
-        if x ~= owner.x or y ~= owner.y then
-            ---movementAngle 是 TH08 口径（y 取反）。
-            st.mang = math.atan2(-(y - owner.y), x - owner.x)
-        end
+        st.mang=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then st.move = nil end
     end
@@ -32511,7 +32518,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c443_mangle = angle
     owner.c443_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -32807,6 +32813,7 @@ local function card_frame(owner)
     local move = owner.c443_move
     if move then
         local x, y, done = move_step(move)
+        owner.c443_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c443_move = nil end
     end
@@ -32916,7 +32923,6 @@ local BW_B, BW_T = 32, 176
 local BOSS_X, BOSS_Y = 0, 96
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）= 32² 。
-local AIM_MIN2 = 1024.0
 
 ---------------------------------------------------------------------
 ---Sub37：旋转大环
@@ -32959,9 +32965,9 @@ local GUN_STEP = 0.04908738657832146     -- angleStep（0x3d490fdb）
 local GUN_FLAGS = 514
 
 ---「离自机不足 32 px → 整条出弹指令跳过」（EclDependencies.cpp:704-716）。
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < AIM_MIN2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---每帧的 ex 指令 8 `SynchronizeOrbitingChildFormation`（EclExIns.cpp:444-510）。
@@ -33000,7 +33006,7 @@ end
 
 ---枪 Sub39 的一轮（3 路扇、基准角 = 使魔的公转角）。
 local function fire_gun39(fam)
-    if too_close(fam.x, fam.y) then return end
+    if too_close(fam) then return end
     EX.shoot(fam, fam.x, fam.y, {
         op = 97, type = GUN_TYPE, color = EX.color(fam.fam_color),
         count1 = GUN_WAYS, count2 = 1, speed1 = GUN_SPD, speed2 = GUN_SPD2,
@@ -33124,7 +33130,7 @@ local function fire_asteroid(owner, block)
     ---出弹点 = BOSS 的 worldPosition + offset，而 offset = (x − BOSS.posX, y − BOSS.posY)
     ---⇒ 实际落在 TH08 的 (x, y)（`ins_110 SET_SHOOT_OFFSET`，EclRunHigh.inl）。
     ---★ 闸判的是 **BOSS 的 worldPosition**、不是出弹点（EclDependencies.cpp:704-716）。
-    if too_close(owner.x, owner.y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x - 192, 224 - y, {
         op = 97, type = (block < 2) and 12 or 13,
         color = EX.color((block < 2) and 13 or 10),
@@ -33166,7 +33172,7 @@ local function card_frame(owner)
     if g37 >= 0 and g37 % RING_PERIOD == 0 then
         local k = g37 / RING_PERIOD
         local even = (k % 2 == 0)
-        if not too_close(owner.x, owner.y) then
+        if not too_close(owner) then
             EX.shoot(owner, owner.x, owner.y, {
                 op = 99, type = even and 14 or 15,
                 color = EX.color(even and 1 or 3),
@@ -33335,7 +33341,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c445_mangle = angle
     owner.c445_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -33570,6 +33575,7 @@ local function card_frame(owner)
     local move = owner.c445_move
     if move then
         local x, y, done = move_step(move)
+        owner.c445_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c445_move = nil end
     end
@@ -34197,7 +34203,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c447_mangle = angle
     owner.c447_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -34434,6 +34439,7 @@ local function card_frame(owner)
     local move = owner.c447_move
     if move then
         local x, y, done = move_step(move)
+        owner.c447_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c447_move = nil end
     end
@@ -34536,9 +34542,7 @@ end
 ---        timer < 60 时速度**线性刹到 0**（方向不变 ⇒ 先沿出生角飞出去），到点那一帧转成
 ---        「朝自机 + record.angle」、速度换成 record.speed，随后 repeatCount 用尽清位
 ---        ⇒ 那次 0.9/3.5 的速度此后一直保持（等于「停住再扑向自机」）。
----  · 出弹闸：宿主没设 `ins_82` ⇒ `minimumPlayerDistanceSquared` 保持出生默认 1024
----      （EnemyManager.cpp:189）⇒ 离宿主不足 32 px 时**整条出弹指令跳过**；使魔
----      `ins_82(0)` 清零 ⇒ 使魔无闸（EclDependencies.cpp:704-716）。
+-- 本体SET_BOSS与使魔ins_82(0)分别清除距离限制，两类发射源都不另加32px停火。
 ---  · rank：本卡全是符卡 ⇒ `if (!g_Spellcard.IsActive())` 那段整段豁免
 ---      （EclDependencies.cpp:726-772）⇒ 上面所有 speed 都不用加 rank 增量。
 ---  · 贴图占位：使魔 "servant"、光柱 = THlib 的 laser 类、弹 13/14/15 走 style_of 的
@@ -34561,10 +34565,9 @@ end
 
 ---「离自机不足 32 px → 整条出弹指令跳过」（EclDependencies.cpp:704-716）。
 ---使魔 `ins_82(0)` 清零 ⇒ 只有宿主的枪走这条。
-local AIM_MIN2 = 1024.0                  -- minimumPlayerDistanceSquared（EnemyManager.cpp:189）
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < AIM_MIN2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---`ins_75(-128, 48, 512, 128)` 的夹框（TH08 口径）与我们的坐标。
@@ -34662,7 +34665,7 @@ end
 
 ---Sub51 的一整轮：`ins_111` + `ins_7(lf0, rndAngle)` + 6 发 `ins_99`。
 local function fire_boss_gun(owner)
-    if too_close(owner.x, owner.y) then return end
+    if too_close(owner) then return end
     ---`ins_111(0, 0x80, 0, 60, 1, 0, lf0)`：angle = 0、speed = lf0。
     EX.set_record(owner, 0, EX.K.AIMED, 0, BOSS_REC_INTERVAL, BOSS_REC_REPEAT, 0, boss_charge())
     local ang = ran:Float(-PI, PI)       -- `ins_7(lf0, rndAngle)`
@@ -35118,7 +35121,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c449_mangle = angle
     owner.c449_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -35355,6 +35357,7 @@ local function card_frame(owner)
     local move = owner.c449_move
     if move then
         local x, y, done = move_step(move)
+        owner.c449_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c449_move = nil end
     end
@@ -35498,7 +35501,6 @@ end
 
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.c450_mangle = angle
     owner.c450_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * speed * WANDER_FRAMES,
@@ -35713,6 +35715,7 @@ local function card_frame(owner)
     local move = owner.c450_move
     if move then
         local x, y, done = move_step(move, WANDER_FRAMES)
+        owner.c450_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c450_move = nil end
     end
@@ -35843,10 +35846,9 @@ local GUN_TYPE_A, GUN_TYPE_B, GUN_COLOR = 12, 13, 13
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）：离自机不足
 ---32 px 就整条出弹指令跳过（EclDependencies.cpp:710-716）。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 
 ---------------------------------------------------------------------
@@ -35889,7 +35891,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c451_mangle = angle
     ---TH08 角 → 我们角取反（见文件头），所以位移用 (cos(−a), sin(−a))。
     owner.c451_move = {
         x0 = owner.x, y0 = owner.y,
@@ -36096,7 +36097,7 @@ end
 ---  ang 0、astep π/6、tf 0x202）；t=20 同样两发但 13 型；t=40 `ins_4(0,…)` 跳回第一发。
 ---------------------------------------------------------------------
 local function fire_fan(owner, btype)
-    if too_close(owner.x, owner.y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, owner.x, owner.y, {
         op = 96, type = btype, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT1, count2 = GUN_COUNT2,
@@ -36236,6 +36237,7 @@ local function card_frame(owner)
     local move = owner.c451_move
     if move then
         local x, y, done = move_step(move)
+        owner.c451_mangle=math.atan2(-(y-owner.y),x-owner.x)
         owner.x, owner.y = x, y
         if done then owner.c451_move = nil end
     end
@@ -36434,7 +36436,6 @@ end
 ---  结束后枪还在开火，所以这里照抄缓动。
 local function begin_wander(owner, speed, easing)
     local angle = wander_angle(owner)
-    owner.c452_mangle = angle
     ---TH08 角 → 我们角取反（见文件头），所以位移用 (cos(−a), sin(−a))。
     owner.c452_move = {
         x0 = owner.x, y0 = owner.y,
@@ -36694,6 +36695,7 @@ local function card_frame(owner)
         end
         gun_step(owner)
         local mx, my, done = move_step(owner.c452_move)
+        owner.c452_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c452_move = nil end
         return
@@ -36724,6 +36726,7 @@ local function card_frame(owner)
     local move = owner.c452_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c452_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c452_move = nil end
     end
@@ -36889,7 +36892,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c453_mangle = angle
     ---TH08 角 → 我们角取反（见文件头），所以位移用 (cos(−a), sin(−a))。
     owner.c453_move = {
         x0 = owner.x, y0 = owner.y,
@@ -37033,6 +37035,7 @@ local function card_frame(owner)
     local move = owner.c453_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c453_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c453_move = nil end
     end
@@ -37633,7 +37636,6 @@ end
 
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c455_mangle = angle
     ---TH08 角 → 我们角取反（见文件头），所以位移用 (cos(−a), sin(−a))。
     owner.c455_move = {
         x0 = owner.x, y0 = owner.y,
@@ -37730,6 +37732,7 @@ local function card_frame(owner)
     local move = owner.c455_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c455_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c455_move = nil end
     end
@@ -38256,7 +38259,6 @@ end
 ---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
 local function begin_wander(owner)
     local angle = wander_angle(owner)              -- TH08 角
-    owner.c456_mangle = angle                      -- 给下一次「右边界」那一支用
     owner.c456_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -38368,6 +38370,7 @@ local function card_frame(owner)
     local move = owner.c456_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c456_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c456_move = nil end
     end
@@ -38678,7 +38681,6 @@ end
 ---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
 local function begin_wander(owner)
     local angle = wander_angle(owner)              -- TH08 角
-    owner.c457_mangle = angle                      -- 给下一次「右边界」那一支用
     owner.c457_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -38780,6 +38782,7 @@ local function card_frame(owner)
     local move = owner.c457_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c457_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c457_move = nil end
     end
@@ -39206,7 +39209,6 @@ end
 ---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
 local function begin_wander(owner)
     local angle = wander_angle(owner)              -- TH08 角
-    owner.c458_mangle = angle                      -- 给下一次「右边界」那一支用
     owner.c458_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -39314,6 +39316,7 @@ local function card_frame(owner)
     local move = owner.c458_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c458_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c458_move = nil end
     end
@@ -40276,7 +40279,6 @@ end
 ---★ 原作的 UpdateMovement 在同一帧的 RunEcl 尾巴上跑 ⇒ `ins_67` 那一帧就走第 1 步。
 local function begin_wander(owner)
     local angle = wander_angle(owner)              -- TH08 角
-    owner.c460_mangle = angle
     owner.c460_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-angle) * WANDER_SPEED * WANDER_FRAMES,
@@ -40388,6 +40390,7 @@ local function card_frame(owner)
     local move = owner.c460_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c460_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c460_move = nil end
     end
@@ -40598,7 +40601,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c461_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c461_move = {
         x0 = owner.x, y0 = owner.y,
@@ -40857,6 +40859,7 @@ local function card_frame(owner)
     local move = owner.c461_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c461_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c461_move = nil end
     end
@@ -41058,7 +41061,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c462_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c462_move = {
         x0 = owner.x, y0 = owner.y,
@@ -41221,6 +41223,7 @@ local function card_frame(owner)
     local move = owner.c462_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c462_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c462_move = nil end
     end
@@ -41422,7 +41425,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c463_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c463_move = {
         x0 = owner.x, y0 = owner.y,
@@ -41662,6 +41664,7 @@ local function card_frame(owner)
     local move = owner.c463_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c463_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c463_move = nil end
     end
@@ -41917,7 +41920,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c464_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c464_move = {
         x0 = owner.x, y0 = owner.y,
@@ -42256,6 +42258,7 @@ local function card_frame(owner)
     local move = owner.c464_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c464_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c464_move = nil end
     end
@@ -42492,7 +42495,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.c465_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c465_move = {
         x0 = owner.x, y0 = owner.y,
@@ -42751,6 +42753,7 @@ local function card_frame(owner)
     local move = owner.c465_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c465_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c465_move = nil end
     end
@@ -42951,7 +42954,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.c466_mangle = angle
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c466_move = {
         x0 = owner.x, y0 = owner.y,
@@ -43301,6 +43303,7 @@ local function card_frame(owner)
     local move = owner.c466_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c466_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c466_move = nil end
     end
@@ -43581,13 +43584,10 @@ local function wander_angle(owner)
     return angle
 end
 
----StartTimedPolarDisplacement（EclDependencies.cpp:105-125）+ `movementAngle` 的记录。
----★ 漂移结束后敌机的 `movementAngle` 就是这条位移的方向 ⇒ 也存一份给扇形当基准角
----  （`ins_96` 的角操作数是 0x2755 = MOVEMENT_ANGLE）。
+-- 安装位移时不改movementAngle；帧尾按未夹框目标更新，扇形直接读取该字段。
+-- ins_96的角操作数0x2755即MOVEMENT_ANGLE，不能使用安装漂移时的目标方向。
 local function begin_wander(owner, speed)
     local angle = wander_angle(owner)
-    owner.c468_mangle_th = angle            -- TH08 口径（下一次边界判据要用）
-    owner.c468_mangle = -angle              -- 我们口径（扇形用）
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c468_move = {
         x0 = owner.x, y0 = owner.y,
@@ -43637,7 +43637,7 @@ local function boss_fan(owner, count1, count2)
         op = 96, type = FAN_TYPE, color = EX.color(FAN_COLOR),
         count1 = count1, count2 = count2,
         speed1 = FAN_SPEED1, speed2 = FAN_SPEED2,
-        angle = owner.c468_mangle, step = FAN_ASTEP, flags = FAN_FLAGS,
+        angle = -owner.c468_mangle_th, step = FAN_ASTEP, flags = FAN_FLAGS,
     })
 end
 
@@ -43847,7 +43847,6 @@ local function card_init(owner)
     -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     owner.c468_main = { t = 0, pc = 1 }
     owner.c468_move = nil
-    owner.c468_mangle = 0               -- BOSS 的 movementAngle（我们口径）
     owner.c468_mangle_th = 0            -- TH08 口径（边界判据用）
     owner.c468_fams = {}
 end
@@ -43863,6 +43862,7 @@ local function card_frame(owner)
     local move = owner.c468_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c468_mangle_th=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c468_move = nil end
     end
@@ -44079,7 +44079,6 @@ end
 ---StartTimedPolarDisplacement（EclDependencies.cpp:105-125）：60 帧的插值位移。
 local function begin_wander(owner)
     local angle = wander_angle(owner)
-    owner.c469_mangle_th = angle            -- TH08 口径（下一次边界判据要用）
     ---TH08 角 → 我们角取反 ⇒ 位移用 (cos(−a), sin(−a))。
     owner.c469_move = {
         x0 = owner.x, y0 = owner.y,
@@ -44370,6 +44369,7 @@ local function card_frame(owner)
     local move = owner.c469_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c469_mangle_th=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c469_move = nil end
     end
@@ -44495,13 +44495,12 @@ local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 local RANK_SPD, RANK_SPD2 = 0.15, 0.075
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:187）＝ 32 px ²。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 local function shoot(owner, x, y, a)
-    if too_close(x, y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x, y, a)
 end
 
@@ -44881,13 +44880,12 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 出生默认 1024（EnemyManager.cpp:187）。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 local function shoot(owner, x, y, a)
-    if too_close(x, y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x, y, a)
 end
 
@@ -44960,7 +44958,6 @@ end
 local WANDER_FRAMES, WANDER_EASING, WANDER_SPEED = 60, 4, 1.0
 local function begin_wander(owner)
     local a = wander_angle(owner)
-    owner.c471_mangle = a
     owner.c471_move = {
         x0 = owner.x, y0 = owner.y,
         dx = math.cos(-a) * WANDER_SPEED * WANDER_FRAMES,
@@ -45175,6 +45172,7 @@ local function card_frame(owner)
     local move = owner.c471_move
     if move then
         local mx, my, done = move_step(move)
+        owner.c471_mangle=math.atan2(-(my-owner.y),mx-owner.x)
         owner.x, owner.y = mx, my
         if done then owner.c471_move = nil end
     end
@@ -45290,13 +45288,12 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）＝ 32 px²。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 local function shoot(owner, x, y, a)
-    if too_close(x, y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x, y, a)
 end
 
@@ -45871,13 +45868,12 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）＝ 32 px²。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 local function shoot(owner, x, y, a)
-    if too_close(x, y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x, y, a)
 end
 
@@ -46025,7 +46021,7 @@ local function fam_gun_fire(fam)
     local oy = rnd_unit() * 32 - GUN_OFF
     fam.c473_offx, fam.c473_offy = ox, oy
     ---最小自机距离闸看的是 enemy->worldPosition（EclDependencies.cpp:710-717）。
-    if too_close(fam.x, fam.y) then return end
+    if too_close(fam) then return end
     EX.shoot(fam, fam.x + ox, fam.y - oy, {
         op = 104, type = GUN_TYPE, color = GUN_COLOR,
         count1 = GUN_COUNT, count2 = 1,
@@ -46289,13 +46285,12 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）＝ 32 px²。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 local function shoot(owner, x, y, a)
-    if too_close(x, y) then return end
+    if too_close(owner) then return end
     EX.shoot(owner, x, y, a)
 end
 
@@ -46754,15 +46749,14 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）＝ 32 px²。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 ---★ 闸看的是**发射源**（原作 `enemy->worldPosition`，EclDependencies.cpp:705-716），
 ---  不是加了 shootOffset 的出弹点。
 local function shoot(who, x, y, a)
-    if too_close(who.x, who.y) then return end
+    if too_close(who) then return end
     EX.shoot(who, x, y, a)
 end
 
@@ -47318,15 +47312,14 @@ local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128
 local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 
 ---`minimumPlayerDistanceSquared` 的出生默认值（EnemyManager.cpp:189）＝ 1024 px²（32 px）。
-local MIN_DIST2 = 1024.0
-local function too_close(x, y)
-    local dx, dy = x - player.x, y - player.y
-    return dx * dx + dy * dy < MIN_DIST2
+local function too_close(who)
+    -- SET_BOSS清零；普通使魔和ins_82覆盖值由各自的ECL交互层维护。
+    return not class.th08_combat.can_shoot(who)
 end
 ---★ 闸看的是**发射源**（原作 `enemy->worldPosition`，EclDependencies.cpp:705-716），
 ---  不是加了 shootOffset 的出弹点（本卡 `ins_110(0,0)` ⇒ 两者相同）。
 local function shoot(who, x, y, a)
-    if too_close(who.x, who.y) then return end
+    if too_close(who) then return end
     EX.shoot(who, x, y, a)
 end
 
