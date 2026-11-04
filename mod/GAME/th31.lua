@@ -1374,6 +1374,7 @@ end
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---使魔使用独立受击回调，避免 enemy 基类额外推进其脚本协程。
 local alice_doll = class.th08_combat.actor("ecldata_al:2", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, angle, info)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -2755,6 +2756,7 @@ end
 ---使魔（Sub58）。占位贴图 "servant"。
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 lw207_familiar = class.th08_combat.actor("ecldata3sp:58", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, angle, omega, group)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -3304,6 +3306,7 @@ end
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（跟卡 218 的娃娃、卡 207 的使魔同一个口径）。飞出场地就回收（EnemyManagerUpdate.cpp:240-262）。
 lw208_familiar = class.th08_combat.actor("ecldata5sp:42", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, angle)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -4416,6 +4419,7 @@ end
 ---樹（Sub80）。占位贴图 "servant"；原作它有 24×24 判定与 life（1000..4000），可被击破，
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 lw210_tree = class.th08_combat.actor("ecldata7sp:80", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, k)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -6791,6 +6795,7 @@ end
 ---  theta0 = 起始轨道角（我们坐标 = TH08 的 −lf0）
 ---  li1    = 子 context 1 的起始相位（= 6k，决定 8 只的错开量）
 lw214_familiar = class.th08_combat.actor("ecldata4asp:44", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, theta0, li1)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -7423,6 +7428,7 @@ lw215_beam = Class(laser, {
 ---  theta = 本轮的瞄准角（= TH08 的 xF0，我们坐标）；4 个都在 BOSS 前方 295 px。
 ---  end_t = 各自的 `ins_1` 时间（Sub63 是 240、其余 370）。
 lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, owner, theta, anm, end_t)
         self.x, self.y = owner.x, owner.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13099,6 +13105,7 @@ s3e_laser = Class(laser, {
 ---使魔（Sub69）。占位贴图 "servant"；原作有 24×24 判定 + life 1200/500/300、可击破，
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 familiar = class.th08_combat.actor("ecldata3:69", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, angle, omega, group)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13376,6 +13383,7 @@ local GUN_SHOTS = {
 ---使魔（Sub8）。占位贴图 "servant"；原作它有 24×24 判定与 life，移植版按
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 local familiar = class.th08_combat.actor("ecldata8sp:8", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, delta)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -13890,6 +13898,7 @@ local GUN_SHOTS = {
 
 ---使魔（Sub17）。占位贴图 "servant"；原件里它没有判定（ins_90 会清掉 COLLISION）。
 local familiar = class.th08_combat.actor("ecldata8sp:17", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, delta)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -14124,6 +14133,7 @@ local FAM_GROUPS = {
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（跟本文件其它卡的使魔一致）。
 local familiar = class.th08_combat.actor("ecldata8sp:50", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, cx, cy, ang0, omega)
         self.x, self.y = cx, cy
         self.fam_cx, self.fam_cy = cx, cy
@@ -16433,6 +16443,7 @@ end
 ---所以 fm_t 从 0 起、frame 第一次进来处理的就是 t=0（那一帧只有主 ANM / 判定 / 形变与两条
 ---装插值槽，全是观感 + 下面每帧跑的插值本身）—— 与原件逐帧对齐。
 local familiar = class.th08_combat.actor("ecldata8sp:81", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, dir)
         self.x, self.y = x, y
         self.fm_dir = dir                   -- 继承来的 lf7（已取反到我们坐标）
@@ -16935,6 +16946,7 @@ local build_records
 ---  95 是继承来的 lf7（大玉就沿这个方向飞）。
 ---  `lf6` 是继承来的「大玉初速」（Sub90 每轮 +0.1、Sub91 每轮 +0.1）。
 local familiar = class.th08_combat.actor("ecldata8sp:93", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, kind, x, y, dir, lf6)
         self.x, self.y = x, y
         self.fam_kind = kind
@@ -17525,6 +17537,7 @@ local S102 = {
 
 ---人形（Sub98 + 两把枪）。位置由两条 MOVE_TO 腿（见 S98）推着走。
 local familiar = class.th08_combat.actor("ecldata8sp:98", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, spec)
         self.x, self.y = scr_x(spec.x), scr_y(spec.y)
         self.fam_ex0, self.fam_ex1 = spec.x, spec.y   -- exF0 / exF1（TH08 口径）
@@ -19678,6 +19691,7 @@ end
 ---使魔（Sub72）。占位贴图 "servant"；原作它有 24×24 判定与 life 1000..4000、可被击破，
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 local familiar = class.th08_combat.actor("ecldata7:72", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, k, x, y)
         self.x, self.y = x, y                   -- 出生点 = BOSS 的位置（ins_91 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -20136,6 +20150,7 @@ end
 
 ---使魔（Sub68）。占位贴图 "servant"。
 local familiar = class.th08_combat.actor("ecldata7:68", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -20820,6 +20835,7 @@ local gun0, gun1
 ---  cx/cy = 环心（= 夹过的自机点，我们的口径）。
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:23", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, a, wait, x, y, cx, cy)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -21501,6 +21517,7 @@ end
 ---使魔本体（Sub51）
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:51", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, dir, omega, speed, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_91 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -21986,6 +22003,7 @@ end
 ---（同卡 162 的使魔 / 卡 210 的樹），只保位置、移动与它那一条光柱枪。
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:56", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, dir, speed, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_92 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -22497,6 +22515,7 @@ end
 ---（同卡 210 的樹 / 卡 218 的娃娃），只保位置、移动与它那两条枪。
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:64", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, dir, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（ins_92 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -22868,6 +22887,7 @@ end
 ---使魔（Sub33）。占位贴图 "servant"。
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:33", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, dir, speed, drift, drift_d, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（`ins_92` 的偏移是 (0,0)）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -23612,6 +23632,7 @@ end
 ---使魔（Sub17 + 它的子 context Sub18）。占位贴图 "servant"。
 ---------------------------------------------------------------------
 local familiar = class.th08_combat.actor("ecldata7:17", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, dir, x, y)
         self.x, self.y = x, y               -- 出生点 = BOSS 的位置（`ins_91` 的偏移是 0,0）
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -24014,6 +24035,7 @@ local function fam_volley(self, idx)
 end
 
 local familiar = class.th08_combat.actor("ecldata7:37", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     ---x, y = 出生点（= BOSS 位置，`ins_91` 的偏移是 0,0）、ang = `ins_72` 的初角（我们口径）、
     ---omega = `ins_72` 的角速度（我们口径）、off = lf2 取反（弹的基准角相对公转角的偏移）、
     ---colors = li0/li1/li2（三发弹的色号）。
@@ -25002,6 +25024,7 @@ end
 ---使魔（Sub77）。占位贴图 "servant"。
 ---------------------------------------------------------------------
 local lw142_familiar = class.th08_combat.actor("ecldata6:77", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）、plan = FAM_PLAN 的一条。
     init = function(self, x, y, plan)
         self.x, self.y = x, y
@@ -25754,7 +25777,7 @@ local function brain_tick(self, t)
         ---`ins_64(60, 4, 192, 320)`：从出生点插值到我们 (0,−96)。
         ---（`ConfigureRelativeMotion` 的 delta = target − worldPosition、origin = position。）
         self.b_x0, self.b_y0 = self.x, self.y
-        self.b_dx, self.b_dy = 0, B_ENDY - self.y
+        self.b_dx, self.b_dy = -self.x, B_ENDY - self.y
         self.b_timer = B_FRAMES
         self.b_mode = 2
     elseif t == B_FRAMES then
@@ -25815,7 +25838,7 @@ local function brain_step(self)
         self.y = self.y + math.sin(self.b_ang) * self.b_speed
     end
     ---出屏回收（EnemyManagerUpdate.cpp:243-262）：进场之后再出界就整只消失。
-    if outside_field(self.x, self.y, B_HALF) then
+    if not self.th08_ecl_birth and outside_field(self.x, self.y, B_HALF) then
         object.RawDel(self)
         return false
     end
@@ -25823,6 +25846,7 @@ local function brain_step(self)
 end
 
 lw134_brain = class.th08_combat.actor("ecldata6:65", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     ---x, y = 出生点（= BOSS 当时的位置，`ins_91` 的偏移是 0,0）；
     ---spin = **我们口径**的角速度（= 出生那一刻 BOSS 的 lf1 取反）。
     init = function(self, x, y, spin)
@@ -25839,7 +25863,7 @@ lw134_brain = class.th08_combat.actor("ecldata6:65", {
         self.b_spin = spin
         self.b_mode = 0                 -- 0 = 不动、1 = POLAR、2 = 插值（`ins_64`）
         self.b_ang, self.b_speed, self.b_av, self.b_accel = 0, 0, 0, 0
-        self.b_gun = 0                  -- 子 context 0（Sub66）自己的时间；nil = 还没挂
+        self.b_gun = nil                -- Sub66由主context在t=120挂上，出生不发扇。
         self.b_lasers = nil             -- 子 context 1（Sub67）的 4 条光柱
     end,
     frame = function(self)
@@ -26204,6 +26228,7 @@ local function fam_begin_move(self, speed)
 end
 
 lw130_familiar = class.th08_combat.actor("ecldata6:60", {
+    ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -27175,10 +27200,9 @@ local lw122_fam = class.th08_combat.actor("ecldata6:25", {
         self.f_lf2 = lf2                              -- lf4 = −lf2（公转起始角）
         self.f_pause = pause
         self.f_orb = nil
-        self.f_t = 0
+        self.f_t = 1 -- 出生已推进Hermite的timer；正常更新从第二步继续。
         self.p8x, self.p8y = bx, by                   -- TH08 口径的位置
-        ---槽装上那一帧就跑第 1 步（RunEcl 帧尾，EclRun.cpp:113-180）。
-        fam_hermite(self, 1 / HERM_FRAMES)
+        ---出生只计算第一步velocity，位置尚不积分；这里保留出生坐标。
         self.x, self.y = scr_x(self.p8x), scr_y(self.p8y)
     end,
     frame = function(self)
@@ -28946,6 +28970,7 @@ local FAM_LIFE = 600                -- `ins_91(..., 600, -2, 100)` 的 life
 ---  同一个坑见本文件卡 218 / 卡 427 的长注。）
 local familiar
 familiar = class.th08_combat.actor("ecldata4a:18", {
+    ecl_birth = { 'fam_thx', 'fam_thy' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, x, y, ang_th08)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -29523,6 +29548,7 @@ end
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar20.bounce`，见卡 433 的长注。）
 local familiar20
 familiar20 = class.th08_combat.actor("ecldata4a:20", {
+    ecl_birth = { 'fm_thx', 'fm_thy' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, x, y, ang_th08, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -29888,6 +29914,7 @@ end
 ---（★ 必须**先声明、再赋值**：`frame` 里要调 `familiar32.step`，见卡 433 的长注。）
 local familiar32
 familiar32 = class.th08_combat.actor("ecldata4a:32", {
+    ecl_birth = { 'fm_thx', 'fm_thy', 'fm_in' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, x, y, ang, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -29911,6 +29938,7 @@ familiar32 = class.th08_combat.actor("ecldata4a:32", {
         familiar32.step(self)
     end,
     step = function(self)
+        if self.fm_t >= FAM_LIFE then object.RawDel(self);return end
         self.fm_thx = self.fm_thx + self.fm_vx
         self.fm_thy = self.fm_thy + self.fm_vy
         self.x = self.fm_thx - 192
@@ -29924,7 +29952,6 @@ familiar32 = class.th08_combat.actor("ecldata4a:32", {
             return
         end
         self.fm_t = self.fm_t + 1
-        if self.fm_t >= FAM_LIFE then object.RawDel(self) end
     end,
 })
 
@@ -30522,6 +30549,7 @@ end
 ---（★ 必须先声明、再赋值：`frame` 里要调 `familiar38.step`，见卡 433 的长注。）
 local familiar38
 familiar38 = class.th08_combat.actor("ecldata4a:38", {
+    ecl_birth = { 'fm_thx', 'fm_thy' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, x, y, ang_th08, spd)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -30929,6 +30957,7 @@ end
 ---  外层那个还是 nil 的 local，见卡 433 的长注。）
 local familiar
 familiar = class.th08_combat.actor("ecldata4a:18", {
+    ecl_birth = { 'fm_thx', 'fm_thy' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, x, y, ang_th08)
         self.x, self.y = x, y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -31300,7 +31329,7 @@ local RING_SPD1, RING_SPD2 = 2.5, 0.800000011920929
 
 ---使魔（Sub42）。
 local FAM_N = 8
-local FAM_LIFE = 6000                          -- Sub42 t=6100 TERMINATE
+local FAM_LIFE = 6100                          -- Sub42主context的终止时刻。
 local FAM_LIVES = { 5000, 3000, 5000, 3000, 5000, 3000, 5000, 3000 }
 local FAM_SPAWN_T = 210                        -- 8 只在同一帧生完
 local FAM_STAGGER = 20                         -- `ins_10(li1, li2)`，Lunatic li2 = 20
@@ -31428,6 +31457,7 @@ end
 ---（★ 必须先声明、再赋值：frame 里要调 `familiar69.step`，见卡 433 的长注。）
 local familiar69
 familiar69 = class.th08_combat.actor("ecldata4a:42", {
+    ecl_birth = { 'fm_lx', 'fm_ly', 'fm_in' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, ang, li1, life)
         self.x, self.y = boss.x, boss.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -31459,6 +31489,7 @@ familiar69 = class.th08_combat.actor("ecldata4a:42", {
     step = function(self)
         local boss = self.fm_boss
         local t = self.fm_t
+        if t >= FAM_LIFE then object.RawDel(self);return end
         ---worldPosition = 父机当前 position + 自己的局部坐标。
         self.x = boss.x + self.fm_lx
         self.y = boss.y - self.fm_ly
@@ -31518,10 +31549,6 @@ familiar69 = class.th08_combat.actor("ecldata4a:42", {
         ---③ 回收：Sub42 自己的寿命 + 「进过场之后出屏就回收」
         ---   （EnemyManagerUpdate.cpp:229-260；判定 24×24）。
         self.fm_t = t + 1
-        if self.fm_t >= FAM_LIFE then
-            object.RawDel(self)
-            return
-        end
         local thx, thy = self.x + 192, 224 - self.y
         local inside = not class.th08_combat.actor_outside(self)
         if not self.fm_in then
@@ -31923,6 +31950,7 @@ end
 ---(lx, −ly)（TH08 的 y 朝下）。★ 必须先声明、再赋值：frame 里要调 `familiar73.step`。
 local familiar73
 familiar73 = class.th08_combat.actor("ecldata4a:47", {
+    ecl_birth = true, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, side, lf0, cx, cy, anm)
         self.x, self.y = cx, cy
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -31950,10 +31978,7 @@ familiar73 = class.th08_combat.actor("ecldata4a:47", {
     end,
     step = function(self)
         local t = self.fm_t
-        ---① 两条子 context 先跑 —— 原作的 RunEcl 是「主 context → 子 context 0..3 →
-        ---   UpdateMovement」，子 context 读到的 ORBIT_ANGLE 是**上一帧末**的值。
-        if self.fm_g1 then gun_step(self, self.fm_g1) end
-        if self.fm_g2 then gun_step(self, self.fm_g2) end
+        if t >= FAM_LIFE[self.fm_side] then object.RawDel(self);return end
 
         ---② 主 context（Sub47 / Sub48）的指令。
         if t == GUN1_T then
@@ -31967,11 +31992,9 @@ familiar73 = class.th08_combat.actor("ecldata4a:47", {
                     GUN2_PERIOD[self.fm_side], GUN2_CULL)
         end
 
-        ---③ `ins_1` TERMINATE（Sub47 t=6280 / Sub48 t=6380）。
-        if t >= FAM_LIFE[self.fm_side] then
-            object.RawDel(self)
-            return
-        end
+        ---③ 主context挂枪后，同一次RunEcl立即推进新子context的t=0。
+        if self.fm_g1 then gun_step(self, self.fm_g1) end
+        if self.fm_g2 then gun_step(self, self.fm_g2) end
 
         ---④ UpdateMovement（EnemyManager.cpp:33-60 的 ORBIT 分支）。
         self.fm_ang = self.fm_ang + self.fm_w
@@ -32616,7 +32639,7 @@ local function familiar_body(self)
     ---   就在 `low_select_next_context` **之前**，而它是**每个 context 跑完自己那
     ---   一步就跑一次**：主 context → 主 context 的帧尾回调 → 子 context 0..3。
     ---   所以 ex8 跑在枪**之前**（也在 UpdateMovement 之前）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 子 context 0（枪 Sub20）：在 UpdateMovement **之前**跑（RunEcl 最后才
     ---   调 UpdateMovement）⇒ 基准角 `orbitAngle` / lf1 / lf2 是**本帧 ex8 修正后**
@@ -32647,6 +32670,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:21", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, color, life, list, anm)
         self.fam_boss = boss                          -- 父机（worldPosition 的基准）
         self.fam_lx, self.fam_ly = 0, 0               -- 局部极坐标（TH08 口径）
@@ -32987,7 +33011,7 @@ local function familiar_body(self)
     ---   所以 ex8 跑在枪之前（也在 UpdateMovement 之前）。
     ---   （踩过：一度把枪放在 ex8 之前 ⇒ 枪的基准角 `orbitAngle` 读的是
     ---   未经本帧摊环修正的旧值。与卡 443 / 445 的写法保持一致。）
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---④ 子 context 0（枪 Sub39）：在 UpdateMovement **之前**跑 ⇒ 基准角
     ---   `orbitAngle` 是**本帧 ex8 修正后**的值，而出弹点用的是上一帧末算好的
@@ -33014,6 +33038,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:40", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, color, life, list)
         self.fam_boss = boss
         self.fam_lx, self.fam_ly = 0, 0
@@ -33398,7 +33423,7 @@ local function familiar_body(self)
     end
 
     ---② 帧尾的 ex 指令 8（原作顺序：主 context → 帧尾回调 → 子 context → UpdateMovement）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 子 context 0（枪 Sub23）：`ins_2(exI1)` 净冻 10 帧 ⇒ 每 10 帧一发，
     ---   挂枪那一帧先打一发。读的还是**上一帧**的公转角与位置。
@@ -33429,6 +33454,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:24", {
+    ecl_birth = { 'fam_lx', 'fam_ly', 'fam_wx', 'fam_wy' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, ang0, angvel, radial, life, color, anm)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -33855,7 +33881,7 @@ local function familiar_body(self)
     end
 
     ---② 帧尾的 ex 指令 8（剥环）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 插值（RunEcl 的帧尾，EclRun.cpp:120-170）：把 orbitAngularVelocity
     ---   按 InterpolateLinear 从 params[0] 写到 params[1]（easing 0 = 线性）。
@@ -33905,6 +33931,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:46", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, lf0, lf1, lf2, li1, li2)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -34268,7 +34295,7 @@ local function familiar_body(self)
     end
 
     ---② 帧尾的 ex 指令 8（原作顺序：主 context → 帧尾回调 → 子 context → UpdateMovement）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 子 context 0（枪 Sub29）：`ins_2(exI1 = 6)` 净冻 6 帧 ⇒ 每 6 帧一发、
     ---   挂枪那一帧先打一发；读的还是**上一帧**的 orbitAngle 与位置。
@@ -34296,6 +34323,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:30", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, ang0, angvel, radial, color, life, anm)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -34770,7 +34798,7 @@ local function familiar_body(self)
     end
 
     ---② 帧尾的 ex 指令 8（原作顺序：主 context → 帧尾回调 → 子 context → UpdateMovement）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 子 context 0（光柱螺旋枪 Sub48）：**一双使魔同时只有一根光柱**。
     ---   ★ 原作 Sub48 的循环体是 `{ins_167 SET_LASER_ANGLE(0, orbitAngle);
@@ -34814,6 +34842,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:52", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, ang0, angvel, li4, color, anm)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -35181,7 +35210,7 @@ local function familiar_body(self)
     end
 
     ---② 帧尾的 ex 指令 8（原作顺序：主 context → 帧尾回调 → 子 context → UpdateMovement）。
-    sync_formation(self.fam_list, self)
+    if not self.th08_ecl_birth then sync_formation(self.fam_list, self) end
 
     ---③ 子 context 0（枪 Sub32）：挂枪那一帧先打一发，之后每 5 帧一发；
     ---   读的是**上一帧末**的 orbitAngle 与位置。
@@ -35210,6 +35239,7 @@ local function familiar_body(self)
 end
 
 local familiar = class.th08_combat.actor("ecldata4b:33", {
+    ecl_birth = { 'fam_lx', 'fam_ly' }, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, ang0, angvel, color)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.fam_boss = boss
@@ -35993,6 +36023,7 @@ local function familiar_body(self)
 end
 
 c451_familiar = class.th08_combat.actor("ecldata4b:65", {
+    ecl_birth = true, -- 出生只推进ECL与运动状态，保留世界/局部坐标。
     init = function(self, boss, list, li0, li1, lf0, bx, by, tx, ty)
         ---内部一律保持 TH08 口径，画出去的那一刻才换算。
         self.f_boss = boss
@@ -37522,7 +37553,7 @@ local familiar_cls = class.th08_combat.actor("ecldata5:55", {
         self._blend, self._a = "", 255
         self.c455_dx, self.c455_dy = dx, dy
         self.c455_base, self.c455_step = base, step
-        self.c455_t = 0                            -- 主 context（Sub55）的 time
+        self.c455_t = 1                            -- Sub55出生t=0已完成，正常更新从1开始。
         self.c455_gun = nil                        -- 子 context 0（Sub54）
     end,
     frame = function(self) end,
@@ -43120,6 +43151,10 @@ local function spawn_hawk(owner, dir)
     local h = New(hawk_cls, owner.x, owner.y, aim_our(owner) - dir[1], dir[2],
             owner.c466_hawk_kind)
     owner.c466_hawks[#owner.c466_hawks + 1] = h
+    hawk_ecl_step(h)
+    hawk_shot_tick(h)
+    h.c466_ang = add_norm(h.c466_ang + h.c466_angvel)
+    h.c466_speed = h.c466_speed + h.c466_accel
     return h
 end
 
@@ -43691,6 +43726,10 @@ end
 local function spawn_fam(owner, gun, lf1)
     local f = New(fam_cls, owner.x, owner.y, aim_our(owner) - lf1, gun)
     owner.c468_fams[#owner.c468_fams + 1] = f
+    fam_ecl_step(f)
+    fam_gun_tick(f) -- 原作子context在出生t=0就发第一轮。
+    f.c468_ang = add_norm(f.c468_ang + f.c468_angvel)
+    f.c468_speed = f.c468_speed + f.c468_accel
     return f
 end
 
@@ -44189,6 +44228,9 @@ end
 local function spawn_fam(owner, f1)
     local f = New(fam_cls, owner.x, owner.y, aim_our(owner) - f1)
     owner.c469_fams[#owner.c469_fams + 1] = f
+    fam_ecl_step(f)
+    f.c469_speed = f.c469_speed + f.c469_accel
+    fam_gun_tick(f) -- 出生UpdateShotAndAnm也推进随机初值的发弹timer。
     return f
 end
 
@@ -44597,9 +44639,9 @@ local function fam_step(fam)
     fam.c470_r = fam.c470_r + fam.c470_radvel
     fam.c470_ang = fam.c470_ang + fam.c470_omega
     local px, py = fam.x, fam.y
-    fam.x = boss.x + math.cos(fam.c470_ang) * fam.c470_r
-    fam.y = boss.y + math.sin(fam.c470_ang) * fam.c470_r
-    fam.c470_mang = math.atan2(fam.y - py, fam.x - px)
+    local nx = boss.x + math.cos(fam.c470_ang) * fam.c470_r
+    local ny = boss.y + math.sin(fam.c470_ang) * fam.c470_r
+    fam.c470_mang = math.atan2(ny - py, nx - px)
     ---UpdateShotAndAnm（延迟重发 pendingShotInstruction）。
     if fam.c470_armed then
         fam.c470_iv = fam.c470_iv + 1
@@ -44613,8 +44655,15 @@ local function fam_step(fam)
             })
         end
     end
+    fam.x, fam.y = nx, ny -- UpdateShotAndAnm之后才积分位置。
     fam.c470_px, fam.c470_py = px, py
     fam.c470_t = t + 1
+end
+
+local function new_familiar(...)
+    local fam = New(fam_cls, ...)
+    class.th08_combat.birth_step(fam, fam_step)
+    return fam
 end
 
 ---四只使魔的初始角（我们口径；ECL 是 lf0 = 0 / π / π/2 / −π/2）。
@@ -44651,14 +44700,14 @@ local SUB16 = {
     end },
     { 600, function(owner, s)
         for i = 1, 4 do
-            s.fams[#s.fams + 1] = New(fam_cls, owner, FAN_DIRS[i], FAM_OMEGA_A,
+            s.fams[#s.fams + 1] = new_familiar(owner, FAN_DIRS[i], FAM_OMEGA_A,
                     s.fam_radvel, 6)
         end
         s.fam_radvel = 128
     end },
     { 680, function(owner, s)
         for i = 1, 4 do
-            s.fams[#s.fams + 1] = New(fam_cls, owner, FAN_DIRS[i], FAM_OMEGA_B,
+            s.fams[#s.fams + 1] = new_familiar(owner, FAN_DIRS[i], FAM_OMEGA_B,
                     s.fam_radvel, 2)
         end
         s.child = true
@@ -44990,6 +45039,12 @@ local function fam_step(fam)
     fam.c471_ftime = ft + 1
 end
 
+local function new_familiar(...)
+    local fam = New(fam_cls, ...)
+    class.th08_combat.birth_step(fam, fam_step)
+    return fam
+end
+
 ---------------------------------------------------------------------
 ---BOSS 的子 context 0（Sub21）。
 ---------------------------------------------------------------------
@@ -45023,7 +45078,7 @@ local CYCLE_END = 690                   -- 跳到 t=90 的那一帧
 local function spawn_batch(owner, s, count, step, base, omega)
     local ang = base
     for _ = 1, count do
-        s.fams[#s.fams + 1] = New(fam_cls, owner, -ang, omega, 0)
+        s.fams[#s.fams + 1] = new_familiar(owner, -ang, omega, 0)
         ---lf7 的初值 = `SET_FLOAT lf7 rndAngle` + 循环头的 `FLOAT_ADD lf7 0.5235988`
         ---（TH08 口径；只进 sin，分布等价，仍按 rndAngle = [−π,π) 写以对齐原作）。
         s.fams[#s.fams].c471_gun_ang = ran:Float(-PI, PI) + 0.5235988
@@ -45348,7 +45403,7 @@ local fam_cls
 local SUB28 = {
     { 0, nil, function(owner, s, c)
         local a = c.args
-        s.fams[#s.fams + 1] = New(fam_cls, owner, a[1], a[2], a[3], a[4])
+        s.fams[#s.fams + 1] = new_familiar(owner, a[1], a[2], a[3], a[4])
     end },
     { 0, "ret" },
 }
@@ -45563,15 +45618,16 @@ fam_cls = class.th08_combat.actor("ecldata1:32", {
         ---TH08 口径的位置（唯一真相）。
         self.c472_sx, self.c472_sy = boss.x + 192, 224 - boss.y
         self.c472_ox, self.c472_oy = self.c472_sx, self.c472_sy
-        self.c472_t = 0
-        self.c472_mode = 0              -- 0 = 无、1 = ORBIT
-        self.c472_oa, self.c472_oav = f0, f1
-        self.c472_orad, self.c472_orv = 0, FAM_ORBIT_RADVEL
-        self.c472_mtimer = 0
+        self.c472_t = 1                 -- 出生RunEcl已安装并推进一次ORBIT。
+        self.c472_mode = 1
+        self.c472_oa, self.c472_oav = add_norm(f0 + f1), f1
+        self.c472_orad, self.c472_orv = FAM_ORBIT_RADVEL, FAM_ORBIT_RADVEL
+        self.c472_mtimer = FAM_ORBIT_FRAMES - 1
         self.c472_ix, self.c472_iy, self.c472_it = nil, nil, 0
         self.c472_gt = nil              -- 枪的子 context clock
         self.c472_px, self.c472_py = self.c472_sx, self.c472_sy
-        self.c472_dx, self.c472_dy = 0, 0
+        self.c472_dx = math.cos(self.c472_oa) * self.c472_orad
+        self.c472_dy = math.sin(self.c472_oa) * self.c472_orad
         self.x, self.y = to_our_x(self.c472_sx), to_our_y(self.c472_sy)
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
@@ -45915,12 +45971,12 @@ fam_cls = class.th08_combat.actor("ecldata1:36", {
     init = function(self, boss, ang, dist, dur)
         ---ang 是**我们**口径的方向角；dist = 飞出距离；dur = 插值时长 = cI0。
         self.c473_dur = dur
-        self.c473_freeze = dur          -- `SET_SECONDARY_TIME cI0` 的剩余冻结帧
+        self.c473_freeze = dur - 1      -- 出生RunEcl已扣除一次冻结。
         self.c473_ct = 0                -- 主 context time（冻结期间净不变）
         self.c473_gun = false
         self.c473_gct = 0               -- 子 context 0 的 time
         self.c473_pass = 0              -- 子 context 0 的 li0（枪轮数）
-        self.c473_it = 0
+        self.c473_it = 1                -- 出生插值timer已推进，坐标仍在出生点。
         self.c473_ix = { p0 = boss.x, p1 = boss.x + math.cos(ang) * dist,
                          p2 = rnd_sign() * 40, p3 = rnd_sign() * 40 }
         self.c473_iy = { p0 = boss.y, p1 = boss.y + math.sin(ang) * dist,
@@ -46346,10 +46402,10 @@ fam_cls = class.th08_combat.actor("ecldata1:43", {
         self.c474_freeze = dur
         self.c474_fresh = true           -- 出生帧要**跑两遍** RunEcl（见 step ①）
         self.c474_ct = 0                 -- 主 context time
-        self.c474_ang = ang
+        self.c474_ang = add_norm(ang + angvel) -- 出生UpdateMovement的轨道状态。
         self.c474_av = angvel
         self.c474_rv = radvel
-        self.c474_r = 0
+        self.c474_r = radvel
         self.c474_gun = false
         self.c474_gct = 0
         self.x, self.y = boss.x, boss.y
@@ -46858,7 +46914,7 @@ local function fam475_spawn(owner, s)
     local jy1 = rnd_sign() * FAM_JIT     -- `#11`
     local jy2 = rnd_sign() * FAM_JIT     -- `#12`
     s.fams[#s.fams + 1] = New(fam_cls, {
-        age = 0, gun = GUN_N,
+        age = 1, gun = GUN_N, -- 出生已执行Hermite/冻结的第一步，坐标留在出生点。
         ox = owner.x, oy = owner.y,
         px0 = bx, px1 = tx, px2 = jx1, px3 = jx2,
         py0 = by, py1 = ty, py2 = jy1, py3 = jy2,

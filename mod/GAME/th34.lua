@@ -12038,7 +12038,7 @@ local function TH34_add_stage56_boss()
                 task.Wait(120)                      -- sub33 开头的 SUB_CALL 2（gi0=30 ⇒ 120 帧）
                 for i = 1, 6 do
                     if i > 1 then task.Wait(10) end     -- SPAWN 间隔 10 帧
-                    pspawn(self.x, self.y, puppet, -ANG[i] * RAD2DEG)
+                    pspawn(self.x, self.y, puppet, -ANG[i] * RAD2DEG, 'ecldata3:35', true)
                 end
                 task.Wait(120)                      -- 调用方 t=60 → t=180
                 drift(self, 0.7, 100)               -- t=180 的 MOVE_DIR_TIME 100
@@ -12349,7 +12349,7 @@ local function TH34_add_stage56_boss()
                 task.Wait(100)
                 NativeVisual.interrupt(o,2)
                 task.Wait(60)
-            end)
+            end,nil,'ecldata3:49',true)
         end
         task.New(self, function()
             ---★ t<240 仍是父程（sub32）留下的 (32,48,352,128)；原作 sub48 的 L 行

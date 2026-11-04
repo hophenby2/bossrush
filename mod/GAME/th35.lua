@@ -295,6 +295,7 @@ local function th35_gun(boss, kind, color, f0, f3, i1, i2, i3, f2)
     task.New(boss, function()
         local psi = theta - PI              -- 循环前的 %D = %D − π（朝圆心打）
         local wait = i2                     -- 每发一个 $I2（第一发 = 160，之后每发 −1）
+        task.Wait(1)                        -- 原作循环先wait(1)，出生t=0不直接出第一发。
         for k = 1, count do
             ---圆运动：引擎在帧首推进「角 += 角速度」（半径速度 0 ⇒ 半径不变）
             theta = theta + ang
@@ -1318,6 +1319,41 @@ local function spawn_pod_rel(o, dx, dy, fn)
     return spawn_pod(o, o.ecs.wx + dx, o.ecs.wy + dy, fn)
 end
 
+-- EclVmHost::Run先保存next，再运行当前线程；SpawnThread插在主线程之后。
+-- 因此本帧新建线程下帧才跑，已有异步线程按后建先跑；被停止的旧线程不能再发弹。
+function class.t10_run_tasks(o)
+    local tasks=o.task
+    if not tasks then return end
+    local snapshot={tasks[1]}
+    for i=#tasks,2,-1 do snapshot[#snapshot+1]=tasks[i] end
+    local live_table,live
+    for i=1,#snapshot do
+        if not IsValid(o) or o.status=='del' or o.status=='kill' then break end
+        if live_table~=o.task then
+            live_table,live=o.task,{}
+            for _,co in ipairs(live_table or {}) do live[co]=true end
+        end
+        local co=snapshot[i]
+        if live[co] and coroutine.status(co)~='dead' then
+            task.stack[#task.stack+1]=o
+            task.co[#task.co+1]=co
+            local ok,err=coroutine.resume(co)
+            task.stack[#task.stack]=nil
+            task.co[#task.co]=nil
+            if not ok then error(tostring(err)..'\n'..debug.traceback(co)) end
+        end
+    end
+end
+
+-- 道中保留enemybase的碰撞/伤害处理，行为协程使用TH10自己的线程顺序。
+function class.t10_enemy_frame(o)
+    SetAttr(o,'colli',BoxCheck(o,lstg.world.boundl,lstg.world.boundr,
+        lstg.world.boundb,lstg.world.boundt) and o._colli)
+    if o.hp<=0 then object.Kill(o);return end
+    o.astral_dmg_factor=lstg.var.ON_astral and 2.5 or 1
+    class.t10_run_tasks(o)
+end
+
 class["th10_ecs_pod"] = Class(object, {
     init = function(self, origin, x, y, sub)
         self.t10_root = origin and origin.t10_root or self
@@ -1341,7 +1377,8 @@ class["th10_ecs_pod"] = Class(object, {
         --- task.Do；ECL 里的 etOn 才会用在**本帧已推进**的位置出弹。反过来做会整体
         --- 差一帧（子机刚 movePos 就出弹、以及 moveRand 的起始位置都会错）。
         ecs_step(self)
-        task.Do(self)
+        class.t10_run_tasks(self)
+        if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         ---%TIME = runtime.updateTimer.current：原作在 EnemyRuntimeUpdate 的**末尾**自增
         ---（Enemy.cpp:1039），所以本帧 ECL 读到的还是上一帧末的值 ⇒ 计数器在 task.Do
         ---之后才加。stage07 的祟符「ミシャグジさま」用 %TIME 分阶段，必须照抄。
@@ -1486,17 +1523,19 @@ local th10_laser = Class(laser, {
         if bounce then
             local hx = m.px + math.cos(m.angle) * self.t10_len
             local hy = m.py + math.sin(m.angle) * self.t10_len
-            local reflected
-            if hx < -192 or hx >= 192 then reflected = t10_wrap(-m.angle - PI)
-            elseif bounce ~= TK_BOUNCE_VAR and (hy < 0 or (hy >= 448 and bounce == TK_BOUNCE_ALL)) then
-                reflected = -m.angle
-            end
-            if reflected then
+            local reflected=false
+            local function reflect(ang)
                 local spd = m.st.bounce.v0 >= 0 and m.st.bounce.v0 or m.speed
                 t10_new_laser(self, self.class, hx, t10_oy(hy), self.t10_kind, self.t10_color,
-                    reflected, self.t10_initial, self.t10_max, spd, self.t10_term, self.w0, self.t10_program)
-                m.af.bounce = nil
+                    ang, self.t10_initial, self.t10_max, spd, self.t10_term, self.w0, self.t10_program)
+                reflected=true
             end
+            -- 原版Bounce(0x41CFD0)分别检查X/Y；墙角同次更新会生成两段。
+            if hx < -192 or hx >= 192 then reflect(t10_wrap(-m.angle - PI)) end
+            if bounce ~= TK_BOUNCE_VAR and (hy < 0 or (hy >= 448 and bounce == TK_BOUNCE_ALL)) then
+                reflect(-m.angle)
+            end
+            if reflected then m.af.bounce = nil end
         end
         if self.t10_len < self.t10_max then
             self.t10_len = math.min(self.t10_max, self.t10_len + self.t10_spd)
@@ -1640,13 +1679,14 @@ function class.t10_boss_end(b)
 end
 
 ---callAsync：在**同一敌机**上另起一个线程（共享 pattern 与全局变量）。
+---新线程从下一次载体更新开始执行，见t10_run_tasks的原作链表快照顺序。
 ---参数是**原生 Lua 函数**（跟 spawn_pod 一样，不是指令表里的名字）。
 local function t10_call_async(o, fn)
     task.New(o, function() fn(o) end)
 end
 
 ---killAllAsync：原作 ECL_VM_STOP_ALL_THREADS 停掉本敌机的其它线程（保留当前）。
----THlib 的 task.Clear(o, true) 正好是「除当前协程外全部丢掉」。
+---这里的调用点均在主程序；Clear(o,true)保留主协程，移除异步协程。
 local function t10_kill_async(o) task.Clear(o, true) end
 
 ---%ANGLE_PLAYER：从 **offsetMotion.position** 到自机的角度（Enemy.cpp:620）。
@@ -2673,6 +2713,7 @@ end
 ---  同时刻在 0.436332 幅度内扫）、一条 112 发慢速环（每 360 帧一波）、一条 144 发环（每 60 帧一波）。
 function s7.BossCard2_at(o, kind, phase)
     et_new(o, 0)
+    o.pat[0].ex[0] = tp_record(0, TK_BOUNCE_ALL, 1, -999999, -999.0, -999999.0)
     local c = 0.436332
     local e = 2.356194
     while true do
@@ -2689,6 +2730,7 @@ end
 
 function s7.BossCard2_at2(o, kind, phase)
     et_new(o, 0)
+    o.pat[0].ex[0] = tp_record(0, TK_BOUNCE_ALL, 1, -999999, -999.0, -999999.0)
     local c = 0.436332
     local e = 0.785398
     while true do
@@ -3830,9 +3872,7 @@ local function t10_async_id(o, id, fn)
 end
 
 ---killAsync(id)：停掉 id 号线程（找不到就是 no-op）。
----★ 用「换一张 o.task 表」而不是表内 table.remove：真引擎 task:Do 用 pairs 遍历 o.task，
----  遍历中间挪数组是未定义行为（会漏跑挨着的线程）；换表与 task:Clear 同款写法。
----  自检桩件按「协程还在不在 o.task 里」判存活，两边语义一致。
+---更换task表移除id；专用调度在每次恢复前检查当前表，已截取的旧枪也不能继续发弹。
 local function t10_kill_id(o, id)
     local m = o.t10_tid
     local co = m and m[id]
@@ -5338,7 +5378,7 @@ class["th10_midfairy"] = Class(enemy, {
             t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
             return
         end
-        enemybase.frame(self)                   -- 判定箱 + hp<=0→Kill + task.Do（跑行为协程）
+        class.t10_enemy_frame(self)
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)
@@ -5523,7 +5563,7 @@ class["th10_s6fairy"] = Class(enemy, {
             t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
             return
         end
-        enemybase.frame(self)                   -- 判定箱 + hp<=0→Kill + task.Do（跑行为协程）
+        class.t10_enemy_frame(self)
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)

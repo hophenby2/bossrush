@@ -1698,8 +1698,8 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
 ---color = intV7（三档 3/4/5）。
     local function fire_fan(x, y, color)
         local base = Angle(x, y, player.x, player.y)
-        local pa = ran:Float(0, 360)
         local pr = FAN_OFFSET_R * ran:Float(0, 1)
+        local pa = sg_deg(ran:Float(-math.pi, math.pi)) -- ins_27先抽半径，ins_38再抽原作角。
         SpawnPhoto(536,FAN_STYLE, ex_color(color, 15),
                 x + cos(pa) * pr, y + sin(pa) * pr,
                 FAN_SPEED, base, false, 0, false,
@@ -1759,6 +1759,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
                     task.Wait(FAN_INTERVAL)
                 end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)
@@ -6804,10 +6805,6 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
             object.SetV(self, DRONE_SPEED, angle_deg, true)
             local w = lstg.world
             task.New(self, function()
-                for _ = 1, DRONE_FADE_IN do
-                    self._a = min(DRONE_ALPHA, self._a + DRONE_ALPHA / DRONE_FADE_IN)
-                    task.Wait()
-                end
                 ---Sub8/9/10 的循环：每 gap 帧一发（出膛点在 48 px 内随机、方向随机）。
                 while self.x > w.l - 64 and self.x < w.r + 64
                         and self.y > w.b - 64 and self.y < w.t + 64 do
@@ -6819,14 +6816,12 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
                     PlaySound("tan00", 0.1, sx / 256, false)   -- flags 536 的 0x200
                     task.Wait(gap)
                 end
-                for _ = 1, DRONE_FADE_OUT do
-                    self._a = max(0, self._a - DRONE_ALPHA / DRONE_FADE_OUT)
-                    task.Wait()
-                end
                 object.RawDel(self)
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
+            self._a = min(DRONE_ALPHA, self._a + DRONE_ALPHA / DRONE_FADE_IN)
             task.Do(self)                                  -- ★ 驱动淡入 / 撒弹 / 自灭协程
         end,
         render = function(self)
@@ -7792,6 +7787,7 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                 end
                 object.RawDel(self)
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)
@@ -7950,25 +7946,19 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
             self._sp = ran:Float(0, 2)
             object.SetV(self, self._sp, self._dir, true)
             task.New(self, function()
-                for _ = 1, 8 do
-                    self._a = min(210, self._a + 26)
-                    task.Wait()
-                end
                 ---ins_71(0.0666667)：每帧 speed += 1/15，方向不变（加速直线）。
                 for _ = 1, BAT_LIFE do
                     self._sp = self._sp + BAT_ACC
                     object.SetV(self, self._sp, self._dir, true)
                     task.Wait()
                 end
-                for _ = 1, 15 do
-                    self._a = max(0, self._a - 210 / 15)
-                    task.Wait()
-                end
                 object.RawDel(self)
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)
+            self._a = min(210, self._a + 26) -- ANM淡入不冻结ECL加速计时。
             self.rot = self.rot + 8
         end,
         render = function(self)
@@ -8481,16 +8471,18 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
                 ---跳过（不实现成清屏）。
                 local gap = 60 - 7 * photo_index(PHOTO_LIMIT)   -- ins_22 + ins_21
                 local n = math.floor(BAT_FIRE_LIFE / max(1, gap))
-                local sp = 1 + 0.1 * photo_index(PHOTO_LIMIT)
                 for _ = 1, n do
+                    local sp = 1 + 0.1 * photo_index(PHOTO_LIMIT)
                     sg_shot(86, sg_style(14), 1, self.x, self.y,
                             1, 1, sp, 1.5,
                             sg_deg(ran:Float(-math.pi, math.pi)), 36, true, 514, nil)
                     if st.dead then return end
-                    task.Wait(gap)                       -- ins_2(gap) + ins_5 的组合节拍
+                    gap = 60 - 7 * photo_index(PHOTO_LIMIT) -- 回跳点内每轮重取；总轮数仍取初值。
+                    task.Wait(gap)
                 end
                 object.RawDel(self)
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)
@@ -11040,13 +11032,6 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
                 for f = 1, CHILD_LIFE do
                     if st.dead then break end
                     ---Sub5 的 ins_65/70/71：极坐标运动。
-                    self.dir = self.dir + self.turn
-                    self.spd = self.spd + self.acc
-                    ---self.dir 是 TH095 的**弧度**，这里必须用 math.cos/math.sin
-                    ---（本文件全局的 cos/sin 是引擎的角度制版本，见 Lapi.lua:110）。
-                    self.x = self.x + self.spd * math.cos(self.dir)
-                    self.y = self.y - self.spd * math.sin(self.dir)
-                    self.rot = -math.deg(self.dir) + 90
                     ---Sub6：满长 147 激光 + 一颗反方向小玉（每 4 帧，第 0 帧就放）。
                     if (f - 1) % FIRE_GAP == 0 then
                         local a = -math.deg(self.dir)               -- 我们的度
@@ -11057,7 +11042,15 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
                                 1, 1, REV_SPEED, 1.5, sg_norm(math.deg(self.dir) + 180),
                                 REV_STEP, false, FLAGS, hook)
                     end
-                    ---最后 12 帧淡出（文件头差异 5 的窗口）。
+                    -- 主/子ECL先发射，UpdateMovement再计算新角、速和位置。
+                    self.dir = self.dir + self.turn
+                    self.spd = self.spd + self.acc
+                    ---self.dir 是 TH095 的**弧度**，这里必须用 math.cos/math.sin
+                    ---（本文件全局的 cos/sin 是引擎的角度制版本，见 Lapi.lua:110）。
+                    self.x = self.x + self.spd * math.cos(self.dir)
+                    self.y = self.y - self.spd * math.sin(self.dir)
+                    self.rot = -math.deg(self.dir) + 90
+                    ---最后12帧的显示透明度独立于ECL运动/发弹计时。
                     self._a = (f > CHILD_LIFE - 12)
                             and max(0, 200 * (CHILD_LIFE - f) / 12) or 200
                     task.Wait(1)
@@ -11066,6 +11059,7 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
                     object.RawDel(self)
                 end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动极坐标飞行 + 一路发激光/小玉
@@ -13720,6 +13714,7 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
                     task.Wait(ORB_FIRE_GAP)
                 end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动光球转圈 + 每 4 帧甩激光
@@ -15391,7 +15386,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                             and { { kinds[1], kinds[2] } }
                             or { { kinds[3], kinds[4] } }
                 end
-                for f = 0, FF_LIFE do
+                for f = 0, FF_LIFE - 1 do
                     if st.dead then break end
                     local p = plan[f]
                     if p then
@@ -15410,15 +15405,11 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                     self.y = self.y - spd * math.sin(ang)
                     self.rot = -math.deg(ang)
                     self._a = min(200, self._a + 40)
-                    if f < FF_LIFE then task.Wait(1) end
-                end
-                for _ = 1, 8 do                          -- 原作脚本一结束子敌机就消失
-                    if not IsValid(self) then return end
-                    self._a = max(0, self._a - 25)
                     task.Wait(1)
-                end
+                end -- t=56的TERMINATE不再额外移动或等待淡出。
                 if IsValid(self) then object.RawDel(self) end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
             task.Do(self)                                  -- ★ 驱动极坐标飞行 + 发弹协程
@@ -15666,6 +15657,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
                     end
                 end
             end)
+            PhotoNative.enemy_birth(self)
         end,
         frame = function(self) task.Do(self) end,
         render = function(self) end,

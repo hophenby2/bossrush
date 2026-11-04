@@ -3,6 +3,12 @@
 -- 激光状态机来自PhotoEffect.cpp；秘鍵来自enm16/script8/sprite11，幽幽子的扇面来自
 -- enm17/script12/sprite11。原始THTX只经texture_png.py封装成PNG，没有重画。
 local N={}
+-- SpawnWithContext先RunEcl(0)，保留协程及运动状态，位置仍待管理器积分。
+function N.enemy_birth(o)
+    local x,y=o.x,o.y
+    task.Do(o)
+    o.x,o.y=x,y
+end
 function N.boundary_angle(x,y,box,previous)
     local a
     if player.x<x then

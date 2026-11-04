@@ -86,6 +86,8 @@ return function()
     -- EnemyManagerUpdate.cpp:228..262 用当前主ANM的精灵宽高判出屏。
     -- 受击框、对象缩放、附属动画都不参与 GameManager::IsWithinPlayfield。
     function M.actor_outside(o,x,y)
+        -- SpawnEnemy2的出生RunEcl不经过管理器的出屏回收阶段。
+        if o.th08_ecl_birth then return false end
         local actor=o._original_actor
         local vm=actor and actor.vm
         local sprite=vm and vm.data.sprites[vm.sprite]
@@ -296,9 +298,23 @@ return function()
         end
         return assert(found,'无法匹配原作使魔生命值')
     end
+    -- 只接收已逐支核对的原生Lua更新函数；不读取ECL、不推进正常管理器阶段。
+    function M.birth_step(o,step,fields)
+        local x,y=o.x,o.y
+        fields=fields or {}
+        local saved={}
+        for i=1,#fields do saved[i]=o[fields[i]] end
+        o.th08_ecl_birth=true
+        step(o)
+        o.th08_ecl_birth=nil
+        o.x,o.y=x,y
+        for i=1,#fields do o[fields[i]]=saved[i] end
+    end
     function M.actor(key,define)
         local cfg=assert(profiles[key],key)
         local init,frame,kill,del=define.init,define.frame,define.kill,define.del
+        local birth=define.ecl_birth
+        define.ecl_birth=nil
         local render=define.render or DefaultRenderFunc
         define.render=function(o) M.render(o,function(unit)
             if not OriginalStageVisual or not OriginalStageVisual.draw(unit) then render(unit) end
@@ -334,6 +350,11 @@ return function()
             -- 90..92 在新敌机跑完 t=0 后才清 COLLISION；保留 ACCEPTS_DAMAGE。
             if profile.attached and not bit(o.th08_flags,2) then o.th08_flags=o.th08_flags+2 end
             refresh(o)
+            if birth then
+                -- 只对逐支核对过的使魔启用：出生先跑主/子ECL及UpdateMovement，
+                -- 保留角、半径、速度和插值timer，但坐标尚未IntegrateVelocity。
+                M.birth_step(o,frame,type(birth)=='table' and birth or nil)
+            end
         end
         define.frame=function(o)
             if o.th08_dead then return end
