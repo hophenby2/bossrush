@@ -5907,6 +5907,7 @@ function class.th07_motion_begin(self, id, move)
     if self._wisys and self.WALKIMGID then OriginalStageVisual.bind_boss(self._wisys,self.WALKIMGID) end
     class.th07_lasers = {}
     self.th07_laser_interaction, self.th07_laser_tick = nil, 0
+    self.th07_orbit_step=nil
     self.th07_oni_active, self.th07_oni_tick = false, -1
     local old = self.th07_previous_motion
     if old and old.key == cfg.key then
@@ -6041,7 +6042,7 @@ function class.th07_laser_interact(owner)
             local cx, sy = math.cos(a), math.sin(a)
             local half = l.pl_lw*(mode == 8 and 0.75 or 0.5)
             for _, b in ipairs(pool4) do
-                if IsValid(b) and not b.th07_cut_removed then
+                if IsValid(b) and not b.th07_cut_removed and not b._native_death_effect then
                     local dx, dy = b.x-l.pl_x, b.y-l.pl_y
                     local along, normal = dx*cx+dy*sy, -dx*sy+dy*cx
                     local state = b.th07_special_state or 0
@@ -6160,6 +6161,7 @@ function class.th07_motion_end(self)
         mv=self._mv, orb=self._orb, box=self._box, angle=self.angle, angdir=self._angdir,
         exit_box=self.th07_exit_box }
     self.th07_motion_live = nil
+    self.th07_orbit_step=nil
 end
 
 local function TH34_add_stage78_boss()
@@ -9230,6 +9232,7 @@ local function TH34_add_stage56_boss()
     local function f32sin(rad) return tof32(math.sin(tof32(rad))) end
 
     local function bmove(self, t, ease, x, y)
+        self.th07_orbit_step=nil -- 新MOVE指令替换此前ORBIT。
         if RogueInitialTarget then x=RogueInitialTarget(self,x) end
         self._mv = { t = max(1, t), n = 0, x0 = self.x, y0 = self.y,
                      dx = x - self.x, dy = y - self.y, ease = ease }
@@ -9258,7 +9261,11 @@ local function TH34_add_stage56_boss()
         NativeVisual.capture_exit_box(self)
         sound_tick4 = sound_tick4 + 1
         class.th07_laser_interact(self)
-        bstep(self)
+        if self.th07_orbit_step then
+            local x,y=self.th07_orbit_step(self)
+            self.angle=atan2(-(y-self.y),x-self.x)*RAD2DEG
+            self.x,self.y=x,y
+        else bstep(self) end
         local b = self._box
         if b then
             self.x = min(max(self.x, b[1]), b[2])
@@ -12104,7 +12111,7 @@ local function TH34_add_stage56_boss()
             local nextg = {}
             for i = 1, #parents do
                 local p = parents[i]
-                if IsValid(p.b) then
+                if IsValid(p.b) and not p.b._native_death_effect then
                     local px, py, v = p.b.x, p.b.y, p.v
                     local a1_th = -p.a * PI / 180 + PI    -- TH07 角 = −我们的角，再 +π
                     object.RawDel(p.b)
@@ -13660,33 +13667,33 @@ local function TH34_add_stage56_boss()
             task.Wait(30)                                  -- time 120 → 150（墙钟 166）
             self.th07_laser_interaction = 8
             f0, i0 = rngrad(), 0                           -- t=150 设定
-            ---公转（原作 MOVE_ORBIT；t=450 之后半径停在 128、角速度不变）
-            local ang, r, orbav, accel_ticks = -PI / 2, 64, 0.010471975, 0
-            task.New(self, function()
-                self._orb, self._mv = nil, nil
-                while true do
-                    ang = ang + orbav
-                    r = min(128, r + 0.213333)
-                    self.x, self.y = math.cos(ang) * r, 64 - math.sin(ang) * r
-                    task.Wait(1)
-                end
-            end)
+            -- 公转在第二条MOVE_ORBIT重设为128半径；第二条激光出生后角速度递增1200次。
+            local ang,r,orbav,radial,accel_ticks=-1.5707963705062866,64,0.010471975430846214,0.21333333849906921,0
+            self._orb,self._mv=nil,nil
+            -- ORBIT在全部主/子ECL之后更新，读取本帧刚写入的角速度。
+            self.th07_orbit_step=function(o)
+                ang=ang+orbav
+                if ang>PI then ang=ang-2*PI elseif ang< -PI then ang=ang+2*PI end
+                r=r+radial
+                return math.cos(ang)*r,64-math.sin(ang)*r
+            end
             ---两条长激光（原作 LASER_FIXED；SET_LASER_POS_REL 每帧把激光原点拉回本体）
             local L = { spr = 1, w = 16, sOff = 16, eOff = 224, sLen = 224,
                         tStart = 120, dur = 252000, tEnd = 16, hbStart = 16, hbEnd = 16 }
             local l1, l2
             task.New(self, function()
                 task.Wait(300)                             -- 从墙钟166等到466，即原作 t=450
-                l1 = plaser(self.x, self.y, -4.18879, L)
+                ang,r,radial=1.5707963705062866,128,0 -- 第二条MOVE_ORBIT显式重设角/半径。
+                l1 = plaser(self.x, self.y, norms6(-4.188790321350098), L)
                 for _ = 1, 300 do                          -- ADD_LASER_ANGLE 0 0.010472 ×300
-                    l1.pl_ang, l1.pl_x, l1.pl_y = l1.pl_ang - 0.010472, self.x, self.y
+                    l1.pl_ang, l1.pl_x, l1.pl_y = norms6(l1.pl_ang - 0.010471975430846214), self.x, self.y
                     task.Wait(1)
                 end
-                l2 = plaser(self.x, self.y, -6.70206, L)   -- t=451
+                l2 = plaser(self.x, self.y, norms6(-6.702064514160156), L) -- 原t451；计数回跳后墙钟766
                 while true do
-                    if accel_ticks < 1200 then orbav=orbav+0.00002617994;accel_ticks=accel_ticks+1 end
-                    l1.pl_ang, l1.pl_x, l1.pl_y = l1.pl_ang - orbav, self.x, self.y
-                    l2.pl_ang, l2.pl_x, l2.pl_y = l2.pl_ang - orbav, self.x, self.y
+                    if accel_ticks < 1200 then orbav=orbav+2.6179939595749602e-05;accel_ticks=accel_ticks+1 end
+                    l1.pl_ang, l1.pl_x, l1.pl_y = norms6(l1.pl_ang - orbav), self.x, self.y
+                    l2.pl_ang, l2.pl_x, l2.pl_y = norms6(l2.pl_ang - orbav), self.x, self.y
                     task.Wait(1)
                 end
             end)

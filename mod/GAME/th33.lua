@@ -5751,12 +5751,15 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
             sub4(self, tok, -90)                            -- slot0
             sub4(self, tok, 90)                             -- slot1
             sub6(self, tok)                                 -- slot2
+            local chase_serial=PhotoNative.begin_move(self)
             while tok.alive and not st.dead do
                 if photo_index(PHOTO_LIMIT) >= CHASE_AT then
-                    for _ = 1, 2 do                         -- ins_65 每 2 帧重取一次方向
-                        local a = Angle(self.x, self.y, player.x, player.y)
-                        self.x = self.x + CHASE_SPEED * cos(a)
-                        self.y = self.y + CHASE_SPEED * sin(a)
+                    -- ins_65只在t61、63…重瞄，中间一帧沿同一速度运动。
+                    local a=Angle(self.x,self.y,player.x,player.y)
+                    local dx,dy=CHASE_SPEED*cos(a),CHASE_SPEED*sin(a)
+                    for _ = 1, 2 do
+                        -- 主/子ECL都从积分前位置发弹，运动由注册入口在帧尾提交。
+                        PhotoNative.queue_move(self,chase_serial,self.x+dx,self.y+dy,nil,-math.rad(a))
                         task.Wait(1)
                         if not tok.alive or st.dead then return end
                     end

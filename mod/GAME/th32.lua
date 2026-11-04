@@ -59,6 +59,10 @@ end
 local function alive(b)
     return b and IsValid(b) and not b.th06_dead
 end
+-- 消散阶段仍占槽位，但原作这些ExIns扫描会跳过DESPAWNING。
+local function active_bullet(b)
+    return alive(b) and not b._native_death_effect
+end
 local function in_screen(b)
     return b.x >= -192 - b.th06_w / 2 and b.x <= 192 + b.th06_w / 2
         and b.y >= -224 - b.th06_h / 2 and b.y <= 224 + b.th06_h / 2
@@ -265,7 +269,7 @@ local function seed_small(b)
     local s, count = b.th06, 0
     for i = 1, POOL_SIZE do
         local big = s.pool[i]
-        if alive(big) and big.th06_h >= 30 then
+        if active_bullet(big) and big.th06_h >= 30 then
             single(s, 3, 1, big.x, big.y, ran:Float(-PI, PI), 0, 8)
             count = count + 1
         end
@@ -277,7 +281,7 @@ local function awaken(b, random_each)
     local shared = ran:Float(-PI, PI) -- Func11 也会先消耗这一次随机数。
     for i = 1, POOL_SIZE do
         local small = s.pool[i]
-        if alive(small) and small.th06_h < 30 and small.th06_speed == 0 then
+        if active_bullet(small) and small.th06_h < 30 and small.th06_speed == 0 then
             local dx, dy = small.x - b.x, small.y - b.y
             local distance2 = dx * dx + dy * dy
             local distance = distance2 > .1 and sqrt(distance2) or 0
@@ -850,7 +854,13 @@ function H.actor_motion(a)
     b.x,b.y=b.x+(a.mirrored and -a.axisx or a.axisx),b.y-a.axisy
     H.clamp(b)
     if not a.main then
-        local inside=b.x>=-224 and b.x<=224 and b.y>=-256 and b.y<=256
+        -- EnemyManager先按主ANM精灵全宽高判出屏，再执行本帧ECL；缩放和受击框不参与。
+        local actor=b._original_actor
+        local vm=actor and actor.vm
+        local sprite=vm and vm.data.sprites[vm.sprite]
+        local hw,hh=32,32
+        if sprite then hw,hh=sprite[4]/2,sprite[5]/2 end
+        local inside=b.x+hw>=-192 and b.x-hw<=192 and b.y+hh>=-224 and b.y-hh<=224
         if inside then a.entered=true elseif a.entered then a.dead=true;object.RawDel(b);return end
     end
 end
@@ -1016,7 +1026,7 @@ function H.extra(b,v,id,arg,repeated)
     if id==0 then
         for i=1,POOL_SIZE do
             local p=s.pool[i]
-            if alive(p) then
+            if active_bullet(p) then
                 H.change_colour(p,15)
                 if arg==0 then p.th06_speed=0;p.vx,p.vy=0,0;p.th06_vx,p.th06_vy=0,0
                 else
@@ -1059,7 +1069,7 @@ function H.extra(b,v,id,arg,repeated)
             local count=0
             for i=1,POOL_SIZE do
                 local p=s.pool[i]
-                if alive(p) and p.th06_h>=30 and p.th06_colour~=5 and ran:Int(0,3)==0 then
+                if active_bullet(p) and p.th06_h>=30 and p.th06_colour~=5 and ran:Int(0,3)==0 then
                     H.change_colour(p,5)
                     local dx,dy=p.x-player.x,p.y-player.y
                     local dir=ran:Float(0,2*PI)
@@ -1096,14 +1106,16 @@ function H.extra(b,v,id,arg,repeated)
     elseif id==12 then
         for i=0,7 do
             local l=a.lasers[i]
-            if alive(l) then H.fire(b,b.x+cos(l.th06_angle)*64,b.y+sin(l.th06_angle)*64) end
+            if alive(l) then H.fire(b,b.x+cos(l.th06_angle)*64,b.y-sin(l.th06_angle)*64) end
         end
     elseif id==13 then
         if v.i3%6==0 and a.pattern then
-            local p=a.pattern;local angle=v.f2
+            -- Func13复制EnemyShooter，扇心不能回写自动枪的原描述符。
+            local p={};for key,value in pairs(a.pattern) do p[key]=value end
+            local angle=v.f2
             for _=1,arg do
                 p.angle=angle+v.f1
-                H.fire(b,cos(angle)*v.f3,-sin(angle)*v.f3)
+                H.fire(b,cos(angle)*v.f3,-sin(angle)*v.f3,p)
                 angle=angle+2*PI/arg
             end
         end
@@ -1125,12 +1137,12 @@ function H.extra(b,v,id,arg,repeated)
         local count=0
         for i=1,POOL_SIZE do
             local large=s.pool[i]
-            if alive(large) and large.th06_h>=30 then
+            if active_bullet(large) and large.th06_h>=30 then
                 count=count+1
                 local biga=atan2(-(large.y-b.y),large.x-b.x)
                 for j=1,POOL_SIZE do
                     local p=s.pool[j]
-                    if alive(p) and p.th06_h<30 and p.th06_speed==0 and (p.x-large.x)^2+(p.y-large.y)^2<64^2 then
+                    if active_bullet(p) and p.th06_h<30 and p.th06_speed==0 and (p.x-large.x)^2+(p.y-large.y)^2<64^2 then
                         local angle=(atan2(-(p.y-b.y),p.x-b.x)-biga)*2.2+biga
                         p.th06_flags=bit.bor(p.th06_flags,16);p.th06_tick=0;p.th06_ex={120,.01,angle}
                         p.th06_speed=.01;p.th06_angle=angle;p.th06_ax,p.th06_ay=cos(angle)*.01,-sin(angle)*.01

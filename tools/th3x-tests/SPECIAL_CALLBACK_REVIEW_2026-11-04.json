@@ -1,0 +1,1273 @@
+{
+  "date": "2026-11-04",
+  "baseline": "b3a097c43b76e637acab3e93c4ae784c7e51288f",
+  "method": "原始ECL、复原源码及Python词法/块结构静态审阅；未执行测试、游戏、模拟、探针、Lua、编译或构建。",
+  "finding_count": 7,
+  "affected_registration_count": 33,
+  "findings": [
+    {
+      "id": "S01",
+      "game": 32,
+      "cards": [
+        3922,
+        3924,
+        3929,
+        3931,
+        3936,
+        3938,
+        3943,
+        3945
+      ],
+      "title": "帕秋莉八段非符：激光联动发弹纵向偏移",
+      "before": "Func12沿激光方向偏移64px时使用b.y+sin(angle)*64，纵轴翻转漏取负号，弹口落在激光的镜像方向。",
+      "after": "按原作旋转向量换算为b.y-sin(angle)*64。八段非符共用同一Func12出口，不改旋转、发数与间隔。",
+      "evidence": [
+        "th06/src/EnemyEclInstr.cpp:ExInsStage4Func12，Rotate((64,0),laser.angle)+enemy.position",
+        "ecldata4/Sub28..Sub35：ins_121(12,0)，地址0x3248、0x3a74、0x42a0、0x4acc、0x52f8、0x5b24、0x6350、0x6b7c"
+      ]
+    },
+    {
+      "id": "S02",
+      "game": 32,
+      "cards": [
+        3974,
+        4000,
+        4001,
+        4002,
+        4003,
+        4004,
+        4005,
+        4006,
+        4007,
+        4008,
+        4009,
+        4010,
+        4012,
+        4013
+      ],
+      "title": "普通敌机与笼中鸟使魔：出屏回收使用错误尺寸",
+      "before": "H.actor_motion固定按屏外32px延伸框判进入/出屏。原作使用当前主ANM精灵全宽高的一半：普通妖精常为30×30；笼中鸟Sub45的芙兰图为64×80。会推迟普通敌机停火，或提前结束纵向飞出的使魔。",
+      "after": "从当前ANM主精灵取半宽/半高，保留先Move/Clamp、再出屏回收、再运行ECL的顺序以及hasBeenInBounds守卫。不使用受击框或显示缩放。无主精灵时保留旧兜底，未据此声称未绑定图的路径通过。",
+      "evidence": [
+        "th06/src/EnemyManager.cpp:EnemyManager_OnUpdate，Move→Clamp→IsInBounds(primaryVm.sprite宽高)→RunEcl",
+        "th06/src/GameManager.cpp:IsInBounds，width/2、height/2，严格越界后才离场",
+        "ecldata7/Sub44 @0x5c1e、0x5c42、0x5c66、0x5c8a生成Sub45；Sub45 @0x60ce设ANM160、@0x6136启动3.2速移动",
+        "mod/GAME/original/6/stg7enm2.lua:sprite160=64×80；stg1enm.lua:sprite0=30×30",
+        "4000..4013道中共用该出口；4011是六面入场等待，无敌机，不计入修正卡数"
+      ]
+    },
+    {
+      "id": "S03",
+      "game": 32,
+      "cards": [
+        3965
+      ],
+      "title": "皇家烈焰：特殊发弹意外回写本体描述符",
+      "before": "Func13用a.pattern原表设置每路angle，改变了本体保存的发弹描述符。原作先复制EnemyShooter，只改局部副本。",
+      "after": "在该次特殊发弹中复制描述符，并将副本显式传给H.fire。本体描述符、每六帧触发及3/5/6/5路顺序保持。",
+      "evidence": [
+        "th06/src/EnemyEclInstr.cpp:ExInsStageXFunc13开头EnemyShooter bulletProps=enemy->bulletProps",
+        "ecldata7/Sub23 @0x2470 t120、0x2594 t121、0x26b8 t122、0x27dc t123：ins_121(13,3/5/6/5)；回跳展开后才是实际周期"
+      ]
+    },
+    {
+      "id": "S04",
+      "game": 32,
+      "cards": [
+        369,
+        3808,
+        3910,
+        3955,
+        3957,
+        3974
+      ],
+      "title": "完美冻结、时停、吸血鬼幻想、红色幻想乡、笼中鸟：消散弹仍参与特殊回调",
+      "before": "消弹后对象在原弹槽中继续播无判定消散动画，IsValid仍为真。Func0/4/8/9/11/15把它们当活弹，继续换色、抽随机数、转向或从消散大玉生成小玉。",
+      "after": "另设active_bullet用于这些原作明确排除DESPAWNING的扫描；保留alive作为槽占用判断。消散对象仍占槽，不提前增加可发弹容量。",
+      "evidence": [
+        "th06/src/EnemyEclInstr.cpp:ExInsCirnoRainbowBallJank、ExInsStage56Func4、ExInsStage6Func8/9/11、ExInsStageXFunc15均排除INACTIVE和DESPAWNING",
+        "THlib/bullet/visual_match.lua:emit_despawn设置_native_death_effect并Preserve原对象，native_despawn继续占槽",
+        "H.extra15的大玉和小玉两层扫描分别过滤；seed_small/awaken同时用于手写蕾米莉亚路径"
+      ]
+    },
+    {
+      "id": "S05",
+      "game": 33,
+      "cards": [
+        476
+      ],
+      "title": "死价：追踪重瞄周期及发弹前运动",
+      "before": "循环虽写两帧，却在两次迭代内各取一次自机角，变成每帧重瞄；主context还直接改xy，使后续子context枪读取积分后位置。",
+      "after": "两帧共用一次方向和速度快照；每帧只提交运动目标，由既有注册出口在全部枪执行后积分。",
+      "evidence": [
+        "ecl20_d/Sub3 @0x3a0 t60：photoIndex<2守卫；@0x3bc跳t61",
+        "@0x3e4 t61：ins_65(PLAYER_ANGLE,0.30000001)；@0x3f8 t63跳回t61，只隔两帧重取一次角",
+        "th095/src/ecl/EclRun.cpp:主/子context之后UpdateMovement；EnemyManagerUpdate.cpp随后PhotoEnemyMovementPhase",
+        "mod/GAME/th33.lua:register_photo_card在frame末PhotoNative.flush_move"
+      ]
+    },
+    {
+      "id": "S06",
+      "game": 34,
+      "cards": [
+        4448
+      ],
+      "title": "灵车协奏曲怪：公转与激光跟随顺序",
+      "before": "公转协程先改xy再运行激光控制，激光从本帧移动后位置跟随；加速协程随后才增加角速度，公转晚一帧使用新角速度。第二条MOVE_ORBIT的角度/半径重设也被连续近似替代。",
+      "after": "将公转求值放到bframe的运动阶段，全部ECL枪与激光控制完成后才写xy并记录movementAngle。第二条MOVE_ORBIT显式重设角/半径/径向速度；本帧写入的角速度立即参与同帧公转。激光角按原值和归一规则更新。",
+      "evidence": [
+        "ecldata4/Sub135 @0x16b7c t150：MOVE_ORBIT(300,...,-π/2,0.01047197543,64,0.2133333385)",
+        "@0x16c48 t450：MOVE_ORBIT(0,...,+π/2,0.01047197543,128,0)",
+        "@0x16ca8/0x16d78：两根激光；@0x16d2c计数回跳300轮，第二根实际在卡内墙钟766出生，保留现有等待，不能把ECL的t451当墙钟451",
+        "@0x16dcc起将ORBIT_ANGULAR_VELOCITY增加2.6179939595749602e-05，共1200次；随后ADD_LASER_ANGLE/SET_LASER_POS_REL",
+        "th07/src/th07/EclManager.cpp:RunEcl出口才ORBIT角+=角速、半径+=径向速、求velocity；EnemyManager随后积分"
+      ]
+    },
+    {
+      "id": "S07",
+      "game": 34,
+      "cards": [
+        4433,
+        4447,
+        4448,
+        4476
+      ],
+      "title": "奥尔良人形分裂与激光改向：消散对象状态过滤",
+      "before": "分裂回调与激光反射/沿激光改向回调只用IsValid判断，继续拆分或反射正在消散的弹；原作ExIns6/7/8明确跳过DESPAWN。",
+      "after": "仅为ExIns6分裂以及ExIns7/8的弹扫描加消散过滤；不修改弹槽容量或生命周期。妖梦和幽幽子其他只排除INACTIVE的回调保留原规则。",
+      "evidence": [
+        "th07/src/th07/EnemyEclInstr.cpp:ExInsSplitBulletsOrShootBackwards、ExInsReflectBulletsFromLasers、ExInsShootBulletsAlongLaser",
+        "ecldata3/Sub45 @0x6f00 t50、0x6f24 t100、0x6f48 t150：RUN_EX_INS6",
+        "ecldata4/Sub133 @0x16374 t240：SET_EX_INS7；Sub135 @0x16b68 t150：SET_EX_INS8；Sub132 @0x15b40 t240：SET_EX_INS7",
+        "同文件ExInsYoumuCurveBulletsBelow/RedirectBulletsToPlayer仅排除INACTIVE，不套用此过滤"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "game": 32,
+      "id": 369,
+      "name": "「红色的幻想乡」（Lunatic）",
+      "fixes": [
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata6.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub44"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3808,
+      "name": "神术「吸血鬼幻想」（Lunatic）",
+      "fixes": [
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata6.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub35"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3910,
+      "name": "冻符「完美冻结」（Lunatic）",
+      "fixes": [
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata2.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub31"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3922,
+      "name": "帕秋莉 非符一（Lunatic·灵梦Ａ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub27"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3924,
+      "name": "帕秋莉 非符二（Lunatic·灵梦Ａ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub37"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3929,
+      "name": "帕秋莉 非符一（Lunatic·灵梦Ｂ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub27"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3931,
+      "name": "帕秋莉 非符二（Lunatic·灵梦Ｂ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub37"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3936,
+      "name": "帕秋莉 非符一（Lunatic·魔理沙Ａ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub27"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3938,
+      "name": "帕秋莉 非符二（Lunatic·魔理沙Ａ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub37"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3943,
+      "name": "帕秋莉 非符一（Lunatic·魔理沙Ｂ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub27"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3945,
+      "name": "帕秋莉 非符二（Lunatic·魔理沙Ｂ）",
+      "fixes": [
+        "S01"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub37"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3955,
+      "name": "幻世「世界」（Lunatic）",
+      "fixes": [
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata5.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub47"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3957,
+      "name": "女仆秘技「杀人玩偶」（Lunatic）",
+      "fixes": [
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata5.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub50"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3965,
+      "name": "日符「皇家烈焰」（Extra）",
+      "fixes": [
+        "S03"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata7.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub23"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 3974,
+      "name": "禁忌「笼中鸟」（Extra）",
+      "fixes": [
+        "S02",
+        "S04"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata7.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub44"
+        ]
+      }
+    },
+    {
+      "game": 32,
+      "id": 4000,
+      "name": "一面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata1.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4001,
+      "name": "一面道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata1.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4002,
+      "name": "二面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata2.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4003,
+      "name": "二面道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata2.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4004,
+      "name": "三面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata3.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4005,
+      "name": "三面道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata3.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4006,
+      "name": "四面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4007,
+      "name": "四面道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata4.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4008,
+      "name": "五面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata5.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4009,
+      "name": "五面道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata5.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4010,
+      "name": "六面道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata6.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4012,
+      "name": "Extra道中·前半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata7.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 32,
+      "id": 4013,
+      "name": "Extra道中·后半",
+      "fixes": [
+        "S02"
+      ],
+      "source": {
+        "game": 6,
+        "file": "ecldata7.ecl",
+        "kind": "时间轴",
+        "roots": []
+      }
+    },
+    {
+      "game": 33,
+      "id": 476,
+      "name": "死価「プライス・オブ・ライフ」",
+      "fixes": [
+        "S05"
+      ],
+      "source": {
+        "game": 95,
+        "file": "ecl20_d.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub2"
+        ]
+      }
+    },
+    {
+      "game": 34,
+      "id": 4433,
+      "name": "蒼符「博愛のオルレアン人形」",
+      "fixes": [
+        "S07"
+      ],
+      "source": {
+        "game": 7,
+        "file": "ecldata3.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub42"
+        ]
+      }
+    },
+    {
+      "game": 34,
+      "id": 4447,
+      "name": "騒葬「スティジャンリバーサイド -Lunatic-」",
+      "fixes": [
+        "S07"
+      ],
+      "source": {
+        "game": 7,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub133"
+        ]
+      }
+    },
+    {
+      "game": 34,
+      "id": 4448,
+      "name": "大合葬「霊車コンチェルトグロッソ怪」",
+      "fixes": [
+        "S06",
+        "S07"
+      ],
+      "source": {
+        "game": 7,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub135"
+        ]
+      }
+    },
+    {
+      "game": 34,
+      "id": 4476,
+      "name": "合葬「プリズムコンチェルト」",
+      "fixes": [
+        "S07"
+      ],
+      "source": {
+        "game": 7,
+        "file": "ecldata4.ecl",
+        "kind": "子程序",
+        "roots": [
+          "Sub132"
+        ]
+      }
+    }
+  ],
+  "th06_spawn_birth_anm": [
+    {
+      "file": "ecldata3.ecl",
+      "sub": "Sub25",
+      "birth_main_anm": [
+        {
+          "address": "0x2e88",
+          "script": "15"
+        }
+      ]
+    },
+    {
+      "file": "ecldata4.ecl",
+      "sub": "Sub1",
+      "birth_main_anm": [
+        {
+          "address": "0x1cc",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata4.ecl",
+      "sub": "Sub20",
+      "birth_main_anm": [
+        {
+          "address": "0x1c7c",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub25",
+      "birth_main_anm": [
+        {
+          "address": "0x2810",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub26",
+      "birth_main_anm": [
+        {
+          "address": "0x29f8",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub27",
+      "birth_main_anm": [
+        {
+          "address": "0x2be0",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub28",
+      "birth_main_anm": [
+        {
+          "address": "0x2dc8",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub29",
+      "birth_main_anm": [
+        {
+          "address": "0x2fb0",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub30",
+      "birth_main_anm": [
+        {
+          "address": "0x3198",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub31",
+      "birth_main_anm": [
+        {
+          "address": "0x3380",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub32",
+      "birth_main_anm": [
+        {
+          "address": "0x3568",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub36",
+      "birth_main_anm": [
+        {
+          "address": "0x3bc0",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub37",
+      "birth_main_anm": [
+        {
+          "address": "0x3e40",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub38",
+      "birth_main_anm": [
+        {
+          "address": "0x40c0",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata5.ecl",
+      "sub": "Sub39",
+      "birth_main_anm": [
+        {
+          "address": "0x4340",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata6.ecl",
+      "sub": "Sub29",
+      "birth_main_anm": [
+        {
+          "address": "0x3646",
+          "script": "165"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub25",
+      "birth_main_anm": [
+        {
+          "address": "0x2a7a",
+          "script": "13"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub26",
+      "birth_main_anm": [
+        {
+          "address": "0x2bc2",
+          "script": "13"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub27",
+      "birth_main_anm": [
+        {
+          "address": "0x2cc6",
+          "script": "13"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub28",
+      "birth_main_anm": [
+        {
+          "address": "0x2dde",
+          "script": "13"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub29",
+      "birth_main_anm": [
+        {
+          "address": "0x2f0a",
+          "script": "13"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub34",
+      "birth_main_anm": [
+        {
+          "address": "0x3994",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub40",
+      "birth_main_anm": [
+        {
+          "address": "0x516c",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub41",
+      "birth_main_anm": [
+        {
+          "address": "0x53d0",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub42",
+      "birth_main_anm": [
+        {
+          "address": "0x5634",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub45",
+      "birth_main_anm": [
+        {
+          "address": "0x60ce",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub51",
+      "birth_main_anm": [
+        {
+          "address": "0x72c2",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub52",
+      "birth_main_anm": [
+        {
+          "address": "0x74f2",
+          "script": "160"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub58",
+      "birth_main_anm": [
+        {
+          "address": "0x8c42",
+          "script": "16"
+        }
+      ]
+    },
+    {
+      "file": "ecldata7.ecl",
+      "sub": "Sub66",
+      "birth_main_anm": [
+        {
+          "address": "0xbb94",
+          "script": "16"
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "6/ecldata6.ecl": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+    "6/ecldata1.ecl": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+    "6/ecldata2.ecl": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+    "6/ecldata3.ecl": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+    "6/ecldata4.ecl": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+    "6/ecldata5.ecl": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+    "6/ecldata7.ecl": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+    "7/ecldata6.ecl": "b5fc1512351d8e357ab4e5784b4d54e42cfa782f70ca78c3f36b81c30b3b9288",
+    "7/ecldata4.ecl": "c7ad6b6eefb4e3597991faf60c99b3354ef91156fcaab4e725baa6152cb679c7",
+    "7/ecldata3.ecl": "d6dd7f616db1313f2a9eafcf7b5846775ef943e148f3a15da2ff07b134b4babe",
+    "7/ecldata5.ecl": "4abdf06440ef145471dd5390fa29edf50f80e41b708db5ee43e5672db582188a",
+    "7/ecldata1.ecl": "c443e28b86cb20eeb7613d786c7ff667c2bd39726bf7ffbb38a3c0e354db1b40",
+    "7/ecldata2.ecl": "69e69afbae924d59e409acd6cb9604244d159a7f6af65892aa49cb0c7dd35119",
+    "7/ecldata7.ecl": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+    "7/ecldata8.ecl": "ad5e15ee4f268e9d47d1763d3cceb11fe4022d848946b6fa1c6a4fc33ec16a0b",
+    "95/ecl20_d.ecl": "c900d010a8f07bac0fc0c1ec4d9eb3b5ff58a7e8e2aa33a48e0f85f94406aa38"
+  },
+  "reconstruction_sha256": {
+    "th06/EnemyEclInstr.cpp": "8980c1ee4586adaf04be13ef05144a32f7fccc6655a2d281873c1cc697d69106",
+    "th06/EnemyManager.cpp": "470ce20c1924ddb45cb4a5277e99035f6e93c3e35d4e8ae7522f2d1b93ca2d67",
+    "th06/GameManager.cpp": "9dced9ac1a0af298dc0261010ef5b8e7a02e3a766d66a78b379601959eb7313f",
+    "th07/EclManager.cpp": "027b65d265857a6612f665e104a8be6af2b15eb8f4a1ed63dad75541b766a4a4",
+    "th07/EnemyEclInstr.cpp": "f76d2ae0af857eb6fa66d41597ffa93c1b4aa4386d1841b76fa15d9536693c0d",
+    "th095/EclRun.cpp": "e16ffb5a1eca560ee096a7bc7dc36dc740d9ef2c6097527b2ce4cede4c3d0fd5",
+    "th095/EnemyManagerUpdate.cpp": "2b75ac18a1a2eb7b838487252ca0d6e89bcc98c24ff810ca6aa4bbf6f3e53e0d",
+    "th10/Enemy.cpp": "8143d2adcfb900dae71ad502696fa98c5da934d97b4686643b433554a937cbe8"
+  },
+  "implementation_sha256": {
+    "mod/GAME/th32.lua": "c7dcf6508a98334e094d68e11a74f7a951ad9cf912bdadef889e6af0ca7f2d56",
+    "mod/GAME/th33.lua": "a67e68349b785f9a3dff514fef17e4078c8aac73b125461bfa8295ba0da6feb9",
+    "mod/GAME/th34.lua": "4a64c87ea02e164a64e246415c78ee226392328eb99d751e6e671c4791683085"
+  },
+  "static_structure": [
+    {
+      "file": "th31.lua",
+      "functions": 3310,
+      "max_explicit_local_upper_bound": 171
+    },
+    {
+      "file": "th31_combat.lua",
+      "functions": 56,
+      "max_explicit_local_upper_bound": 15
+    },
+    {
+      "file": "th32.lua",
+      "functions": 1629,
+      "max_explicit_local_upper_bound": 59
+    },
+    {
+      "file": "th33.lua",
+      "functions": 1180,
+      "max_explicit_local_upper_bound": 144
+    },
+    {
+      "file": "th33_native.lua",
+      "functions": 38,
+      "max_explicit_local_upper_bound": 14
+    },
+    {
+      "file": "th34.lua",
+      "functions": 955,
+      "max_explicit_local_upper_bound": 175
+    },
+    {
+      "file": "th34_visual.lua",
+      "functions": 36,
+      "max_explicit_local_upper_bound": 15
+    },
+    {
+      "file": "th35.lua",
+      "functions": 768,
+      "max_explicit_local_upper_bound": 192
+    }
+  ],
+  "continued_report": "MOTION_LASER_REVIEW_EDGE_CASES_2026-11-04",
+  "not_changed": [
+    "TH07 Sub135的第一根激光后确有300次计数回跳，第二根出生为墙钟766；本轮没有把这段等待错误缩成一帧。",
+    "TH06的Func2/5/14/16逐项回看，未确认本轮新增行为差异；Func13的描述符快照单独修正，不改发弹路数。",
+    "TH06所有30个显式op95生成目标都在t0直接设置主ANM，出生指令地址单列；道中时间轴普通敌机同样由原始SET_SPRITE绑定。",
+    "TH095出屏函数直接使用精灵全宽/高乘ANM缩放，TH10使用visibilityExtent/2和flags4；不能把TH06的半精灵尺寸规则机械套到它们。",
+    "TH07妖梦斩弹、幽幽子蝶弹等回调仅排除INACTIVE；保留它们原作的状态筛选，不因消散画面无判定就改变原指令行为。",
+    "TH31接续前批主/子context及附着位置证据；TH35继续检查原生载体、两路motion、可视范围字段和固定/移动激光，本轮未确认新的具体差异，未修改这两作。",
+    "TH32的294段离线展开程序文本未改；本轮修正其共用出口及特殊回调，不将生成文本相同当成出口语义一致。"
+  ],
+  "limits": [
+    "本轮明确完成上述7组机制的静态核对，33条目是共用修复关联范围，不报成33处独立缺陷。",
+    "521项注册总目录与前批逐卡记录继续保留；本轮特殊指令候选仍不等于所有ECL、道中窗口、输入和死亡/超时中断的完整执行轨迹。",
+    "未运行测试或实机；不将本次静态修正表述为全部521条目已经逐帧完全对齐。"
+  ],
+  "special_callback_candidates": [
+    {"game":32,"id":3802,"name":"神罚「年幼的恶魔之王」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub31"]},"callbacks":[{"sub":"Sub31","address":"0x3b6e","time":124,"op":121,"args":["7","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3805,"name":"狱符「千根针的针山」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub33"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3808,"name":"神术「吸血鬼幻想」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub35"]},"callbacks":[{"sub":"Sub35","address":"0x49e6","time":120,"op":121,"args":["8","0"]},{"sub":"Sub35","address":"0x4a76","time":124,"op":121,"args":["9","0"]}],"new_fixes":["S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3811,"name":"红符「绯红之主」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub39"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":369,"name":"「红色的幻想乡」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub44"]},"callbacks":[{"sub":"Sub41","address":"0x5b2e","time":0,"op":121,"args":["8","0"]},{"sub":"Sub44","address":"0x633c","time":0,"op":122,"args":["10"]},{"sub":"Sub44","address":"0x657e","time":180,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x667a","time":180,"op":121,"args":["9","0"]},{"sub":"Sub44","address":"0x6742","time":260,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x683e","time":260,"op":121,"args":["9","0"]}],"new_fixes":["S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3900,"name":"一面中 Boss 非符（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub8"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3901,"name":"月符「月光」（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub9"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3902,"name":"露米娅 非符一（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub11"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3903,"name":"夜符「夜雀」（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub22"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3904,"name":"露米娅 非符二（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub16"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3905,"name":"暗符「境界线」（Lunatic）","source":{"game":6,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub23"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3906,"name":"大妖精 非符（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub20"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3907,"name":"琪露诺 非符一（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub22"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3908,"name":"雹符「冰雹暴风」（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub30"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3909,"name":"琪露诺 非符二（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub25"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3910,"name":"冻符「完美冻结」（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub31"]},"callbacks":[{"sub":"Sub31","address":"0x317e","time":205,"op":121,"args":["0","0"]},{"sub":"Sub31","address":"0x32fe","time":415,"op":121,"args":["0","1"]}],"new_fixes":["S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3911,"name":"雪符「钻石风暴」（Lunatic）","source":{"game":6,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub32"]},"callbacks":[{"sub":"Sub32","address":"0x3550","time":190,"op":121,"args":["1","128"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3912,"name":"三面中 Boss 非符（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub9"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3913,"name":"华符「绚烂华灵」（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub14"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3914,"name":"红美铃 非符一（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub18"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3915,"name":"虹符「彩虹的风铃」（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub29"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3916,"name":"红美铃 非符二（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub20"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3917,"name":"幻符「华想梦葛」（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub30"]},"callbacks":[{"sub":"Sub30","address":"0x3fb0","time":1,"op":122,"args":["2"]},{"sub":"Sub30","address":"0x4058","time":181,"op":122,"args":["2"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3918,"name":"红美铃 非符三（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub26"]},"callbacks":[{"sub":"Sub26","address":"0x3208","time":0,"op":122,"args":["-1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3919,"name":"彩符「彩光乱舞」（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub32"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3920,"name":"彩符「极彩台风」（Lunatic）","source":{"game":6,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub33"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3921,"name":"小恶魔 非符（Lunatic）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub21"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3922,"name":"帕秋莉 非符一（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub27"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3923,"name":"火符「火神之光上级」（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub43"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3924,"name":"帕秋莉 非符二（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub37"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3925,"name":"土符「三石塔的震动」（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub52"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3926,"name":"火＆土符「熔岩巨石」（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub55"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3927,"name":"金＆水符「水银之毒」（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3928,"name":"木＆火符「森林大火」（Lunatic·灵梦Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub56"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3929,"name":"帕秋莉 非符一（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub27"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3930,"name":"水符「湖葬」（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub46"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3931,"name":"帕秋莉 非符二（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub37"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3932,"name":"木符「翠绿风暴」（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub49"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3933,"name":"水＆木符「水精灵」（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub57"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3934,"name":"金＆水符「水银之毒」（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3935,"name":"土＆金符「翡翠巨石」（Lunatic·灵梦Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub59"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3936,"name":"帕秋莉 非符一（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub27"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3937,"name":"木符「风灵角笛上级」（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub48"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3938,"name":"帕秋莉 非符二（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub37"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3939,"name":"火符「火神之光辉」（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub44"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3940,"name":"木＆火符「森林大火」（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub56"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3941,"name":"土＆金符「翡翠巨石」（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub59"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3942,"name":"火＆土符「熔岩巨石」（Lunatic·魔理沙Ａ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub55"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3943,"name":"帕秋莉 非符一（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub27"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3944,"name":"土符「三石塔上级」（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub51"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3945,"name":"帕秋莉 非符二（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub37"]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]}],"new_fixes":["S01"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3946,"name":"金符「银龙」（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub54"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3947,"name":"土＆金符「翡翠巨石」（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub59"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3948,"name":"水＆木符「水精灵」（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub57"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3949,"name":"金＆水符「水银之毒」（Lunatic·魔理沙Ｂ）","source":{"game":6,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3950,"name":"五面中 Boss 非符（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub13"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3951,"name":"奇术「迷惑误导」（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub18"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3952,"name":"咲夜 非符一（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub22"]},"callbacks":[{"sub":"Sub22","address":"0x2214","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3953,"name":"幻幽「夜雾幻影杀人鬼」（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub45"]},"callbacks":[{"sub":"Sub45","address":"0x500c","time":194,"op":121,"args":["4","1"]},{"sub":"Sub45","address":"0x5044","time":194,"op":122,"args":["5"]},{"sub":"Sub45","address":"0x509c","time":284,"op":122,"args":["-1"]},{"sub":"Sub45","address":"0x50ec","time":318,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3954,"name":"咲夜 非符二（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub34"]},"callbacks":[{"sub":"Sub34","address":"0x3824","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3955,"name":"幻世「世界」（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub47"]},"callbacks":[{"sub":"Sub47","address":"0x5538","time":194,"op":121,"args":["4","1"]},{"sub":"Sub47","address":"0x5570","time":194,"op":122,"args":["5"]},{"sub":"Sub47","address":"0x55c8","time":254,"op":122,"args":["-1"]},{"sub":"Sub47","address":"0x5600","time":254,"op":121,"args":["4","2"]},{"sub":"Sub47","address":"0x562c","time":289,"op":121,"args":["4","0"]}],"new_fixes":["S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3956,"name":"咲夜 非符三（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub41"]},"callbacks":[{"sub":"Sub41","address":"0x46e4","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3957,"name":"女仆秘技「杀人玩偶」（Lunatic）","source":{"game":6,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub50"]},"callbacks":[{"sub":"Sub50","address":"0x5aa4","time":120,"op":121,"args":["4","1"]},{"sub":"Sub50","address":"0x5b4c","time":140,"op":121,"args":["4","2"]},{"sub":"Sub50","address":"0x5b78","time":174,"op":121,"args":["4","0"]}],"new_fixes":["S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3958,"name":"六面中 Boss 非符（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub9"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3959,"name":"奇术「永恒的温柔」（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub14"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3960,"name":"蕾米莉亚 非符一（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub17"]},"callbacks":[{"sub":"Sub17","address":"0x15d2","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3961,"name":"蕾米莉亚 非符二（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub19"]},"callbacks":[{"sub":"Sub19","address":"0x1c3a","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3962,"name":"蕾米莉亚 非符三（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub23"]},"callbacks":[{"sub":"Sub23","address":"0x298e","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3963,"name":"蕾米莉亚 非符四（Lunatic）","source":{"game":6,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub26"]},"callbacks":[{"sub":"Sub26","address":"0x2e3a","time":0,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3964,"name":"月符「沉默的月神」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub22"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3965,"name":"日符「皇家烈焰」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub23"]},"callbacks":[{"sub":"Sub23","address":"0x2470","time":120,"op":121,"args":["13","3"]},{"sub":"Sub23","address":"0x2594","time":121,"op":121,"args":["13","5"]},{"sub":"Sub23","address":"0x26b8","time":122,"op":121,"args":["13","6"]},{"sub":"Sub23","address":"0x27dc","time":123,"op":121,"args":["13","5"]}],"new_fixes":["S03"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3966,"name":"火水木金土符「贤者之石」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub24"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3967,"name":"芙兰朵露 非符一（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub32"]},"callbacks":[{"sub":"Sub32","address":"0x329e","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3968,"name":"禁忌「红莓陷阱」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub33"]},"callbacks":[{"sub":"Sub33","address":"0x3630","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3969,"name":"芙兰朵露 非符二（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub35"]},"callbacks":[{"sub":"Sub35","address":"0x40fc","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3970,"name":"禁忌「莱瓦汀」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub36"]},"callbacks":[{"sub":"Sub36","address":"0x43fe","time":120,"op":122,"args":["10"]},{"sub":"Sub37","address":"0x4a26","time":0,"op":121,"args":["14","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3971,"name":"芙兰朵露 非符三（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub38"]},"callbacks":[{"sub":"Sub38","address":"0x4b4e","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3972,"name":"禁忌「四重存在」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub39"]},"callbacks":[{"sub":"Sub39","address":"0x4e50","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3973,"name":"芙兰朵露 非符四（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub43"]},"callbacks":[{"sub":"Sub43","address":"0x58b8","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3974,"name":"禁忌「笼中鸟」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub44"]},"callbacks":[{"sub":"Sub44","address":"0x5bba","time":120,"op":122,"args":["15"]}],"new_fixes":["S02","S04"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3975,"name":"芙兰朵露 非符五（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub47"]},"callbacks":[{"sub":"Sub47","address":"0x628e","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3976,"name":"禁忌「恋之迷宫」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub48"]},"callbacks":[{"sub":"Sub48","address":"0x6590","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3977,"name":"芙兰朵露 非符六（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub49"]},"callbacks":[{"sub":"Sub49","address":"0x6a08","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3978,"name":"禁弹「星弧破碎」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub50"]},"callbacks":[{"sub":"Sub50","address":"0x6d0a","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3979,"name":"芙兰朵露 非符七（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub53"]},"callbacks":[{"sub":"Sub53","address":"0x7796","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3980,"name":"禁弹「折反射」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub54"]},"callbacks":[{"sub":"Sub54","address":"0x7a98","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3981,"name":"芙兰朵露 非符八（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub56"]},"callbacks":[{"sub":"Sub56","address":"0x83f4","time":0,"op":122,"args":["6"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3982,"name":"禁弹「刻着过去的钟表」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub57"]},"callbacks":[{"sub":"Sub57","address":"0x86f6","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3983,"name":"芙兰朵露 非符九（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub59"]},"callbacks":[{"sub":"Sub59","address":"0x92f6","time":0,"op":122,"args":["6"]},{"sub":"Sub60","address":"0x95cc","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3984,"name":"秘弹「之后就一个人都没有了吗？」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub60"]},"callbacks":[{"sub":"Sub60","address":"0x95cc","time":120,"op":122,"args":["10"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":3985,"name":"ＱＥＤ「４９５年的波纹」（Extra）","source":{"game":6,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub68"]},"callbacks":[{"sub":"Sub68","address":"0xc106","time":120,"op":122,"args":["10"]},{"sub":"Sub68","address":"0xc1a6","time":122,"op":121,"args":["16","0"]},{"sub":"Sub68","address":"0xc1fe","time":122,"op":121,"args":["16","1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4000,"name":"一面道中·前半","source":{"game":6,"file":"ecldata1.ecl","kind":"时间轴","roots":[]},"callbacks":[],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4001,"name":"一面道中·后半","source":{"game":6,"file":"ecldata1.ecl","kind":"时间轴","roots":[]},"callbacks":[],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4002,"name":"二面道中·前半","source":{"game":6,"file":"ecldata2.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub31","address":"0x317e","time":205,"op":121,"args":["0","0"]},{"sub":"Sub31","address":"0x32fe","time":415,"op":121,"args":["0","1"]},{"sub":"Sub32","address":"0x3550","time":190,"op":121,"args":["1","128"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4003,"name":"二面道中·后半","source":{"game":6,"file":"ecldata2.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub31","address":"0x317e","time":205,"op":121,"args":["0","0"]},{"sub":"Sub31","address":"0x32fe","time":415,"op":121,"args":["0","1"]},{"sub":"Sub32","address":"0x3550","time":190,"op":121,"args":["1","128"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4004,"name":"三面道中·前半","source":{"game":6,"file":"ecldata3.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub26","address":"0x3208","time":0,"op":122,"args":["-1"]},{"sub":"Sub30","address":"0x3fb0","time":1,"op":122,"args":["2"]},{"sub":"Sub30","address":"0x4058","time":181,"op":122,"args":["2"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4005,"name":"三面道中·后半","source":{"game":6,"file":"ecldata3.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub26","address":"0x3208","time":0,"op":122,"args":["-1"]},{"sub":"Sub30","address":"0x3fb0","time":1,"op":122,"args":["2"]},{"sub":"Sub30","address":"0x4058","time":181,"op":122,"args":["2"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4006,"name":"四面道中·前半","source":{"game":6,"file":"ecldata4.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]},{"sub":"Sub39","address":"0x7ab8","time":0,"op":121,"args":["3","0"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4007,"name":"四面道中·后半","source":{"game":6,"file":"ecldata4.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub28","address":"0x3248","time":0,"op":121,"args":["12","0"]},{"sub":"Sub29","address":"0x3a74","time":0,"op":121,"args":["12","0"]},{"sub":"Sub30","address":"0x42a0","time":0,"op":121,"args":["12","0"]},{"sub":"Sub31","address":"0x4acc","time":0,"op":121,"args":["12","0"]},{"sub":"Sub32","address":"0x52f8","time":0,"op":121,"args":["12","0"]},{"sub":"Sub33","address":"0x5b24","time":0,"op":121,"args":["12","0"]},{"sub":"Sub34","address":"0x6350","time":0,"op":121,"args":["12","0"]},{"sub":"Sub35","address":"0x6b7c","time":0,"op":121,"args":["12","0"]},{"sub":"Sub39","address":"0x7ab8","time":0,"op":121,"args":["3","0"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4008,"name":"五面道中·前半","source":{"game":6,"file":"ecldata5.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub22","address":"0x2214","time":0,"op":121,"args":["4","0"]},{"sub":"Sub34","address":"0x3824","time":0,"op":121,"args":["4","0"]},{"sub":"Sub41","address":"0x46e4","time":0,"op":121,"args":["4","0"]},{"sub":"Sub44","address":"0x4d6a","time":214,"op":121,"args":["4","1"]},{"sub":"Sub44","address":"0x4da2","time":214,"op":122,"args":["5"]},{"sub":"Sub44","address":"0x4dfa","time":304,"op":122,"args":["-1"]},{"sub":"Sub44","address":"0x4e4a","time":338,"op":121,"args":["4","0"]},{"sub":"Sub45","address":"0x500c","time":194,"op":121,"args":["4","1"]},{"sub":"Sub45","address":"0x5044","time":194,"op":122,"args":["5"]},{"sub":"Sub45","address":"0x509c","time":284,"op":122,"args":["-1"]},{"sub":"Sub45","address":"0x50ec","time":318,"op":121,"args":["4","0"]},{"sub":"Sub46","address":"0x5282","time":194,"op":121,"args":["4","1"]},{"sub":"Sub46","address":"0x52ba","time":194,"op":122,"args":["5"]},{"sub":"Sub46","address":"0x5312","time":254,"op":122,"args":["-1"]},{"sub":"Sub46","address":"0x534a","time":254,"op":121,"args":["4","2"]},{"sub":"Sub46","address":"0x5376","time":289,"op":121,"args":["4","0"]},{"sub":"Sub47","address":"0x5538","time":194,"op":121,"args":["4","1"]},{"sub":"Sub47","address":"0x5570","time":194,"op":122,"args":["5"]},{"sub":"Sub47","address":"0x55c8","time":254,"op":122,"args":["-1"]},{"sub":"Sub47","address":"0x5600","time":254,"op":121,"args":["4","2"]},{"sub":"Sub47","address":"0x562c","time":289,"op":121,"args":["4","0"]},{"sub":"Sub50","address":"0x5aa4","time":120,"op":121,"args":["4","1"]},{"sub":"Sub50","address":"0x5b4c","time":140,"op":121,"args":["4","2"]},{"sub":"Sub50","address":"0x5b78","time":174,"op":121,"args":["4","0"]},{"sub":"Sub51","address":"0x5c40","time":0,"op":121,"args":["4","0"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4009,"name":"五面道中·后半","source":{"game":6,"file":"ecldata5.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub22","address":"0x2214","time":0,"op":121,"args":["4","0"]},{"sub":"Sub34","address":"0x3824","time":0,"op":121,"args":["4","0"]},{"sub":"Sub41","address":"0x46e4","time":0,"op":121,"args":["4","0"]},{"sub":"Sub44","address":"0x4d6a","time":214,"op":121,"args":["4","1"]},{"sub":"Sub44","address":"0x4da2","time":214,"op":122,"args":["5"]},{"sub":"Sub44","address":"0x4dfa","time":304,"op":122,"args":["-1"]},{"sub":"Sub44","address":"0x4e4a","time":338,"op":121,"args":["4","0"]},{"sub":"Sub45","address":"0x500c","time":194,"op":121,"args":["4","1"]},{"sub":"Sub45","address":"0x5044","time":194,"op":122,"args":["5"]},{"sub":"Sub45","address":"0x509c","time":284,"op":122,"args":["-1"]},{"sub":"Sub45","address":"0x50ec","time":318,"op":121,"args":["4","0"]},{"sub":"Sub46","address":"0x5282","time":194,"op":121,"args":["4","1"]},{"sub":"Sub46","address":"0x52ba","time":194,"op":122,"args":["5"]},{"sub":"Sub46","address":"0x5312","time":254,"op":122,"args":["-1"]},{"sub":"Sub46","address":"0x534a","time":254,"op":121,"args":["4","2"]},{"sub":"Sub46","address":"0x5376","time":289,"op":121,"args":["4","0"]},{"sub":"Sub47","address":"0x5538","time":194,"op":121,"args":["4","1"]},{"sub":"Sub47","address":"0x5570","time":194,"op":122,"args":["5"]},{"sub":"Sub47","address":"0x55c8","time":254,"op":122,"args":["-1"]},{"sub":"Sub47","address":"0x5600","time":254,"op":121,"args":["4","2"]},{"sub":"Sub47","address":"0x562c","time":289,"op":121,"args":["4","0"]},{"sub":"Sub50","address":"0x5aa4","time":120,"op":121,"args":["4","1"]},{"sub":"Sub50","address":"0x5b4c","time":140,"op":121,"args":["4","2"]},{"sub":"Sub50","address":"0x5b78","time":174,"op":121,"args":["4","0"]},{"sub":"Sub51","address":"0x5c40","time":0,"op":121,"args":["4","0"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4010,"name":"六面道中·前半","source":{"game":6,"file":"ecldata6.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub16","address":"0x14fe","time":0,"op":122,"args":["6"]},{"sub":"Sub17","address":"0x15d2","time":0,"op":121,"args":["4","0"]},{"sub":"Sub19","address":"0x1c3a","time":0,"op":121,"args":["4","0"]},{"sub":"Sub23","address":"0x298e","time":0,"op":121,"args":["4","0"]},{"sub":"Sub26","address":"0x2e3a","time":0,"op":121,"args":["4","0"]},{"sub":"Sub30","address":"0x3874","time":124,"op":121,"args":["7","0"]},{"sub":"Sub30","address":"0x39c0","time":184,"op":121,"args":["7","1"]},{"sub":"Sub31","address":"0x3b6e","time":124,"op":121,"args":["7","0"]},{"sub":"Sub34","address":"0x4748","time":120,"op":121,"args":["8","0"]},{"sub":"Sub34","address":"0x47b0","time":134,"op":121,"args":["9","0"]},{"sub":"Sub35","address":"0x49e6","time":120,"op":121,"args":["8","0"]},{"sub":"Sub35","address":"0x4a76","time":124,"op":121,"args":["9","0"]},{"sub":"Sub40","address":"0x5a9a","time":0,"op":121,"args":["8","0"]},{"sub":"Sub41","address":"0x5b2e","time":0,"op":121,"args":["8","0"]},{"sub":"Sub43","address":"0x5d3a","time":0,"op":122,"args":["10"]},{"sub":"Sub43","address":"0x5f50","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6054","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x60f0","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6194","time":246,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6238","time":286,"op":121,"args":["9","0"]},{"sub":"Sub44","address":"0x633c","time":0,"op":122,"args":["10"]},{"sub":"Sub44","address":"0x657e","time":180,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x667a","time":180,"op":121,"args":["9","0"]},{"sub":"Sub44","address":"0x6742","time":260,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x683e","time":260,"op":121,"args":["9","0"]},{"sub":"Sub45","address":"0x693a","time":0,"op":122,"args":["-1"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4011,"name":"六面道中·后半（入场等待）","source":{"game":6,"file":"ecldata6.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub16","address":"0x14fe","time":0,"op":122,"args":["6"]},{"sub":"Sub17","address":"0x15d2","time":0,"op":121,"args":["4","0"]},{"sub":"Sub19","address":"0x1c3a","time":0,"op":121,"args":["4","0"]},{"sub":"Sub23","address":"0x298e","time":0,"op":121,"args":["4","0"]},{"sub":"Sub26","address":"0x2e3a","time":0,"op":121,"args":["4","0"]},{"sub":"Sub30","address":"0x3874","time":124,"op":121,"args":["7","0"]},{"sub":"Sub30","address":"0x39c0","time":184,"op":121,"args":["7","1"]},{"sub":"Sub31","address":"0x3b6e","time":124,"op":121,"args":["7","0"]},{"sub":"Sub34","address":"0x4748","time":120,"op":121,"args":["8","0"]},{"sub":"Sub34","address":"0x47b0","time":134,"op":121,"args":["9","0"]},{"sub":"Sub35","address":"0x49e6","time":120,"op":121,"args":["8","0"]},{"sub":"Sub35","address":"0x4a76","time":124,"op":121,"args":["9","0"]},{"sub":"Sub40","address":"0x5a9a","time":0,"op":121,"args":["8","0"]},{"sub":"Sub41","address":"0x5b2e","time":0,"op":121,"args":["8","0"]},{"sub":"Sub43","address":"0x5d3a","time":0,"op":122,"args":["10"]},{"sub":"Sub43","address":"0x5f50","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6054","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x60f0","time":196,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6194","time":246,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x6238","time":286,"op":121,"args":["9","0"]},{"sub":"Sub44","address":"0x633c","time":0,"op":122,"args":["10"]},{"sub":"Sub44","address":"0x657e","time":180,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x667a","time":180,"op":121,"args":["9","0"]},{"sub":"Sub44","address":"0x6742","time":260,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x683e","time":260,"op":121,"args":["9","0"]},{"sub":"Sub45","address":"0x693a","time":0,"op":122,"args":["-1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4012,"name":"Extra道中·前半","source":{"game":6,"file":"ecldata7.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub23","address":"0x2470","time":120,"op":121,"args":["13","3"]},{"sub":"Sub23","address":"0x2594","time":121,"op":121,"args":["13","5"]},{"sub":"Sub23","address":"0x26b8","time":122,"op":121,"args":["13","6"]},{"sub":"Sub23","address":"0x27dc","time":123,"op":121,"args":["13","5"]},{"sub":"Sub32","address":"0x329e","time":0,"op":122,"args":["6"]},{"sub":"Sub33","address":"0x3630","time":120,"op":122,"args":["10"]},{"sub":"Sub35","address":"0x40fc","time":0,"op":122,"args":["6"]},{"sub":"Sub36","address":"0x43fe","time":120,"op":122,"args":["10"]},{"sub":"Sub37","address":"0x4a26","time":0,"op":121,"args":["14","0"]},{"sub":"Sub38","address":"0x4b4e","time":0,"op":122,"args":["6"]},{"sub":"Sub39","address":"0x4e50","time":120,"op":122,"args":["10"]},{"sub":"Sub43","address":"0x58b8","time":0,"op":122,"args":["6"]},{"sub":"Sub44","address":"0x5bba","time":120,"op":122,"args":["15"]},{"sub":"Sub47","address":"0x628e","time":0,"op":122,"args":["6"]},{"sub":"Sub48","address":"0x6590","time":120,"op":122,"args":["10"]},{"sub":"Sub49","address":"0x6a08","time":0,"op":122,"args":["6"]},{"sub":"Sub50","address":"0x6d0a","time":120,"op":122,"args":["10"]},{"sub":"Sub53","address":"0x7796","time":0,"op":122,"args":["6"]},{"sub":"Sub54","address":"0x7a98","time":120,"op":122,"args":["10"]},{"sub":"Sub56","address":"0x83f4","time":0,"op":122,"args":["6"]},{"sub":"Sub57","address":"0x86f6","time":120,"op":122,"args":["10"]},{"sub":"Sub59","address":"0x92f6","time":0,"op":122,"args":["6"]},{"sub":"Sub60","address":"0x95cc","time":120,"op":122,"args":["10"]},{"sub":"Sub67","address":"0xbd90","time":0,"op":122,"args":["6"]},{"sub":"Sub68","address":"0xc106","time":120,"op":122,"args":["10"]},{"sub":"Sub68","address":"0xc1a6","time":122,"op":121,"args":["16","0"]},{"sub":"Sub68","address":"0xc1fe","time":122,"op":121,"args":["16","1"]},{"sub":"Sub69","address":"0xc34a","time":0,"op":122,"args":["-1"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":4013,"name":"Extra道中·后半","source":{"game":6,"file":"ecldata7.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub23","address":"0x2470","time":120,"op":121,"args":["13","3"]},{"sub":"Sub23","address":"0x2594","time":121,"op":121,"args":["13","5"]},{"sub":"Sub23","address":"0x26b8","time":122,"op":121,"args":["13","6"]},{"sub":"Sub23","address":"0x27dc","time":123,"op":121,"args":["13","5"]},{"sub":"Sub32","address":"0x329e","time":0,"op":122,"args":["6"]},{"sub":"Sub33","address":"0x3630","time":120,"op":122,"args":["10"]},{"sub":"Sub35","address":"0x40fc","time":0,"op":122,"args":["6"]},{"sub":"Sub36","address":"0x43fe","time":120,"op":122,"args":["10"]},{"sub":"Sub37","address":"0x4a26","time":0,"op":121,"args":["14","0"]},{"sub":"Sub38","address":"0x4b4e","time":0,"op":122,"args":["6"]},{"sub":"Sub39","address":"0x4e50","time":120,"op":122,"args":["10"]},{"sub":"Sub43","address":"0x58b8","time":0,"op":122,"args":["6"]},{"sub":"Sub44","address":"0x5bba","time":120,"op":122,"args":["15"]},{"sub":"Sub47","address":"0x628e","time":0,"op":122,"args":["6"]},{"sub":"Sub48","address":"0x6590","time":120,"op":122,"args":["10"]},{"sub":"Sub49","address":"0x6a08","time":0,"op":122,"args":["6"]},{"sub":"Sub50","address":"0x6d0a","time":120,"op":122,"args":["10"]},{"sub":"Sub53","address":"0x7796","time":0,"op":122,"args":["6"]},{"sub":"Sub54","address":"0x7a98","time":120,"op":122,"args":["10"]},{"sub":"Sub56","address":"0x83f4","time":0,"op":122,"args":["6"]},{"sub":"Sub57","address":"0x86f6","time":120,"op":122,"args":["10"]},{"sub":"Sub59","address":"0x92f6","time":0,"op":122,"args":["6"]},{"sub":"Sub60","address":"0x95cc","time":120,"op":122,"args":["10"]},{"sub":"Sub67","address":"0xbd90","time":0,"op":122,"args":["6"]},{"sub":"Sub68","address":"0xc106","time":120,"op":122,"args":["10"]},{"sub":"Sub68","address":"0xc1a6","time":122,"op":121,"args":["16","0"]},{"sub":"Sub68","address":"0xc1fe","time":122,"op":121,"args":["16","1"]},{"sub":"Sub69","address":"0xc34a","time":0,"op":122,"args":["-1"]}],"new_fixes":["S02"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":32,"id":368,"name":"「克罗里·尤斯福德」","source":{"kind":"自制条目"},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3405,"name":"六面道中「成群的亡灵」","source":{"game":7,"file":"ecldata6.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub24","address":"0x29ac","time":0,"op":121,"args":["10","1"]},{"sub":"Sub24","address":"0x2a04","time":50,"op":121,"args":["11","0"]},{"sub":"Sub26","address":"0x2e78","time":0,"op":121,"args":["11","0"]},{"sub":"Sub27","address":"0x2f38","time":0,"op":121,"args":["11","0"]},{"sub":"Sub34","address":"0x4420","time":45,"op":121,"args":["15","60"]},{"sub":"Sub52","address":"0x8be8","time":540,"op":121,"args":["16","0"]},{"sub":"Sub52","address":"0x8c14","time":550,"op":121,"args":["17","0"]},{"sub":"Sub52","address":"0x8c8c","time":550,"op":121,"args":["18","0"]},{"sub":"Sub52","address":"0x8d00","time":560,"op":121,"args":["18","0"]},{"sub":"Sub52","address":"0x8d5c","time":570,"op":121,"args":["17","0"]},{"sub":"Sub62","address":"0xba34","time":0,"op":121,"args":["19","0"]},{"sub":"Sub62","address":"0xbb00","time":480,"op":121,"args":["20","0"]},{"sub":"Sub73","address":"0xdc18","time":0,"op":121,"args":["10","2"]},{"sub":"Sub73","address":"0xdf9c","time":10,"op":121,"args":["11","0"]},{"sub":"Sub73","address":"0xdfb0","time":10,"op":121,"args":["10","4"]},{"sub":"Sub73","address":"0xe004","time":70,"op":121,"args":["11","1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3403,"name":"四面道中「骚灵们的合奏」","source":{"game":7,"file":"ecldata4.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub132","address":"0x15b40","time":240,"op":122,"args":["7","0"]},{"sub":"Sub133","address":"0x16374","time":240,"op":122,"args":["7","0"]},{"sub":"Sub135","address":"0x16b68","time":150,"op":122,"args":["8","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3402,"name":"三道中「青之骚灵」","source":{"game":7,"file":"ecldata3.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub28","address":"0x3cec","time":60,"op":121,"args":["4","0"]},{"sub":"Sub43","address":"0x6b7c","time":0,"op":122,"args":["5","0"]},{"sub":"Sub44","address":"0x6e4c","time":90,"op":121,"args":["6","0"]},{"sub":"Sub44","address":"0x6e70","time":180,"op":121,"args":["6","1"]},{"sub":"Sub45","address":"0x6f00","time":50,"op":121,"args":["6","0"]},{"sub":"Sub45","address":"0x6f24","time":100,"op":121,"args":["6","1"]},{"sub":"Sub45","address":"0x6f48","time":150,"op":121,"args":["6","2"]},{"sub":"Sub51","address":"0x8628","time":0,"op":122,"args":["5","0"]},{"sub":"Sub53","address":"0x8f44","time":0,"op":122,"args":["5","0"]},{"sub":"Sub55","address":"0x98d8","time":0,"op":122,"args":["5","0"]},{"sub":"Sub56","address":"0x9c70","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub58","address":"0xab7c","time":0,"op":122,"args":["5","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3404,"name":"五道中「幽明之径」","source":{"game":7,"file":"ecldata5.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub1","address":"0x374","time":12,"op":121,"args":["9","0"]},{"sub":"Sub43","address":"0x4b10","time":0,"op":121,"args":["10","3"]},{"sub":"Sub43","address":"0x4ba0","time":50,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x4fcc","time":0,"op":121,"args":["10","3"]},{"sub":"Sub44","address":"0x505c","time":50,"op":121,"args":["11","0"]},{"sub":"Sub45","address":"0x5450","time":0,"op":121,"args":["11","0"]},{"sub":"Sub46","address":"0x5510","time":0,"op":121,"args":["11","0"]},{"sub":"Sub48","address":"0x5718","time":0,"op":121,"args":["11","0"]},{"sub":"Sub52","address":"0x67b0","time":0,"op":121,"args":["11","0"]},{"sub":"Sub55","address":"0x6fc0","time":0,"op":121,"args":["11","0"]},{"sub":"Sub55","address":"0x6fd4","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub56","address":"0x7580","time":10,"op":121,"args":["11","0"]},{"sub":"Sub59","address":"0x7e44","time":0,"op":121,"args":["10","3"]},{"sub":"Sub59","address":"0x7ed4","time":50,"op":121,"args":["11","0"]},{"sub":"Sub59","address":"0x80a8","time":110,"op":121,"args":["12","0"]},{"sub":"Sub59","address":"0x80bc","time":110,"op":121,"args":["21","0"]},{"sub":"Sub60","address":"0x8130","time":0,"op":121,"args":["10","3"]},{"sub":"Sub60","address":"0x81c0","time":50,"op":121,"args":["11","0"]},{"sub":"Sub60","address":"0x8394","time":110,"op":121,"args":["12","1"]},{"sub":"Sub60","address":"0x83a8","time":110,"op":121,"args":["21","1"]},{"sub":"Sub64","address":"0x8a6c","time":0,"op":122,"args":["13","1"]},{"sub":"Sub64","address":"0x8abc","time":10,"op":121,"args":["10","2"]},{"sub":"Sub64","address":"0x8b0c","time":20,"op":121,"args":["11","0"]},{"sub":"Sub64","address":"0x8b20","time":20,"op":121,"args":["14","1"]},{"sub":"Sub64","address":"0x8b34","time":20,"op":122,"args":["-1","1"]},{"sub":"Sub69","address":"0x929c","time":0,"op":121,"args":["10","3"]},{"sub":"Sub69","address":"0x9398","time":50,"op":121,"args":["11","0"]},{"sub":"Sub71","address":"0x9bf0","time":0,"op":121,"args":["10","2"]},{"sub":"Sub71","address":"0x9c80","time":50,"op":121,"args":["11","0"]},{"sub":"Sub71","address":"0x9cd4","time":110,"op":121,"args":["12","0"]},{"sub":"Sub77","address":"0xab18","time":12,"op":121,"args":["10","3"]},{"sub":"Sub77","address":"0xab94","time":20,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3400,"name":"一道中「初雪之妖精」","source":{"game":7,"file":"ecldata1.ecl","kind":"时间轴","roots":[]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3401,"name":"二道中「雪之回廊」","source":{"game":7,"file":"ecldata2.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub56","address":"0x9170","time":400,"op":121,"args":["1","0"]},{"sub":"Sub58","address":"0x994c","time":340,"op":121,"args":["1","1"]},{"sub":"Sub58","address":"0x9c50","time":480,"op":121,"args":["1","2"]},{"sub":"Sub62","address":"0xa32c","time":0,"op":122,"args":["0","0"]},{"sub":"Sub62","address":"0xa350","time":100,"op":122,"args":["-1","0"]},{"sub":"Sub64","address":"0xaa6c","time":370,"op":121,"args":["2","0"]},{"sub":"Sub64","address":"0xaa80","time":374,"op":121,"args":["2","1"]},{"sub":"Sub64","address":"0xaa94","time":378,"op":121,"args":["2","2"]},{"sub":"Sub64","address":"0xaaa8","time":382,"op":121,"args":["2","3"]},{"sub":"Sub64","address":"0xae9c","time":672,"op":121,"args":["2","0"]},{"sub":"Sub64","address":"0xaeb0","time":676,"op":121,"args":["2","1"]},{"sub":"Sub64","address":"0xaec4","time":680,"op":121,"args":["2","2"]},{"sub":"Sub64","address":"0xaed8","time":684,"op":121,"args":["2","3"]},{"sub":"Sub65","address":"0xaff0","time":0,"op":122,"args":["0","0"]},{"sub":"Sub65","address":"0xb014","time":100,"op":122,"args":["-1","0"]},{"sub":"Sub66","address":"0xba64","time":290,"op":122,"args":["-1","0"]},{"sub":"Sub66","address":"0xbb64","time":295,"op":122,"args":["3","0"]},{"sub":"Sub66","address":"0xc3f8","time":375,"op":122,"args":["-1","0"]},{"sub":"Sub67","address":"0xc624","time":0,"op":122,"args":["0","0"]},{"sub":"Sub67","address":"0xc648","time":60,"op":122,"args":["-1","0"]},{"sub":"Sub68","address":"0xc674","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub70","address":"0xcdac","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub75","address":"0xd4c8","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3406,"name":"EX 道中「妖妖梦・Extra」","source":{"game":7,"file":"ecldata7.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub114","address":"0xb7e8","time":0,"op":122,"args":["0","5"]},{"sub":"Sub114","address":"0xb82c","time":800,"op":122,"args":["-1","0"]},{"sub":"Sub121","address":"0xcb38","time":0,"op":122,"args":["0","0"]},{"sub":"Sub121","address":"0xce3c","time":103,"op":122,"args":["-1","0"]},{"sub":"Sub125","address":"0xd9e0","time":0,"op":121,"args":["10","2"]},{"sub":"Sub125","address":"0xdd64","time":10,"op":121,"args":["11","0"]},{"sub":"Sub125","address":"0xdd78","time":10,"op":121,"args":["10","4"]},{"sub":"Sub125","address":"0xddcc","time":70,"op":121,"args":["11","1"]},{"sub":"Sub58","address":"0x3f20","time":210,"op":122,"args":["22","0"]},{"sub":"Sub61","address":"0x41d0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub63","address":"0x47dc","time":0,"op":122,"args":["0","0"]},{"sub":"Sub63","address":"0x485c","time":800,"op":122,"args":["-1","0"]},{"sub":"Sub66","address":"0x494c","time":0,"op":121,"args":["11","0"]},{"sub":"Sub70","address":"0x4dd4","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub71","address":"0x4fb0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub73","address":"0x51ec","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub75","address":"0x540c","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub77","address":"0x56c0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub79","address":"0x5940","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub81","address":"0x5c04","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub83","address":"0x5e98","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub84","address":"0x600c","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub86","address":"0x654c","time":40,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3407,"name":"PH 道中「妖妖梦・Phantasm」","source":{"game":7,"file":"ecldata8.ecl","kind":"时间轴","roots":[]},"callbacks":[{"sub":"Sub118","address":"0xc534","time":0,"op":122,"args":["0","5"]},{"sub":"Sub118","address":"0xc578","time":800,"op":122,"args":["-1","0"]},{"sub":"Sub125","address":"0xd8e0","time":0,"op":122,"args":["0","0"]},{"sub":"Sub125","address":"0xdbe4","time":103,"op":122,"args":["-1","0"]},{"sub":"Sub135","address":"0x10dfc","time":0,"op":121,"args":["10","2"]},{"sub":"Sub135","address":"0x11180","time":10,"op":121,"args":["11","0"]},{"sub":"Sub135","address":"0x11194","time":10,"op":121,"args":["10","4"]},{"sub":"Sub135","address":"0x111e8","time":70,"op":121,"args":["11","1"]},{"sub":"Sub60","address":"0x4800","time":210,"op":122,"args":["23","0"]},{"sub":"Sub63","address":"0x4ab0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub65","address":"0x50e8","time":0,"op":122,"args":["0","0"]},{"sub":"Sub65","address":"0x5168","time":800,"op":122,"args":["-1","0"]},{"sub":"Sub68","address":"0x5258","time":0,"op":121,"args":["11","0"]},{"sub":"Sub72","address":"0x56e0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub73","address":"0x58bc","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub75","address":"0x5af8","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub77","address":"0x5d18","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub79","address":"0x5fcc","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub81","address":"0x624c","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub83","address":"0x6510","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub85","address":"0x67a4","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub86","address":"0x6918","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub87","address":"0x6a98","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub89","address":"0x70ac","time":40,"op":121,"args":["4","0"]},{"sub":"Sub89","address":"0x7110","time":40,"op":121,"args":["4","0"]},{"sub":"Sub90","address":"0x7244","time":40,"op":121,"args":["4","0"]},{"sub":"Sub90","address":"0x72a8","time":40,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3408,"name":"藍 非符 0","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub57"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3411,"name":"紫 非符 1","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub70"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3413,"name":"紫 非符 2","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub72"]},"callbacks":[{"sub":"Sub72","address":"0x56e0","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3415,"name":"紫 非符 3","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub73"]},"callbacks":[{"sub":"Sub73","address":"0x58bc","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3417,"name":"紫 非符 4","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub75"]},"callbacks":[{"sub":"Sub75","address":"0x5af8","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3419,"name":"紫 非符 5","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub77"]},"callbacks":[{"sub":"Sub77","address":"0x5d18","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3421,"name":"紫 非符 6","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub79"]},"callbacks":[{"sub":"Sub79","address":"0x5fcc","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3423,"name":"紫 非符 7","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub81"]},"callbacks":[{"sub":"Sub81","address":"0x624c","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3425,"name":"紫 非符 8","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub83"]},"callbacks":[{"sub":"Sub83","address":"0x6510","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3440,"name":"紫奥義「弾幕結界」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub129"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3441,"name":"結界「生と死の境界」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub127"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3442,"name":"「人間と妖怪の境界」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub119"]},"callbacks":[{"sub":"Sub125","address":"0xd8e0","time":0,"op":122,"args":["0","0"]},{"sub":"Sub125","address":"0xdbe4","time":103,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3443,"name":"式神「八雲藍」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub114"]},"callbacks":[{"sub":"Sub118","address":"0xc534","time":0,"op":122,"args":["0","5"]},{"sub":"Sub118","address":"0xc578","time":800,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3444,"name":"魍魎「二重黒死蝶」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub109"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3445,"name":"罔両「禅寺に棲む妖蝶」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub104"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3446,"name":"罔両「八雲紫の神隠し」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub102"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3447,"name":"罔両「ストレートとカーブの夢郷」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub100"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3448,"name":"結界「光と闇の網目」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub97"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3449,"name":"結界「動と静の均衡」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub93"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3450,"name":"結界「夢と現の呪」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub88"]},"callbacks":[{"sub":"Sub89","address":"0x70ac","time":40,"op":121,"args":["4","0"]},{"sub":"Sub89","address":"0x7110","time":40,"op":121,"args":["4","0"]},{"sub":"Sub90","address":"0x7244","time":40,"op":121,"args":["4","0"]},{"sub":"Sub90","address":"0x72a8","time":40,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3451,"name":"式神「憑依荼吉尼天」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub63"]},"callbacks":[{"sub":"Sub63","address":"0x4ab0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub65","address":"0x50e8","time":0,"op":122,"args":["0","0"]},{"sub":"Sub65","address":"0x5168","time":800,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3452,"name":"式神「前鬼後鬼の守護」","source":{"game":7,"file":"ecldata8.ecl","kind":"子程序","roots":["Sub60"]},"callbacks":[{"sub":"Sub60","address":"0x4800","time":210,"op":122,"args":["23","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3471,"name":"幻神「飯綱権現降臨」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub123"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3470,"name":"「狐狗狸さんの契約」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub115"]},"callbacks":[{"sub":"Sub121","address":"0xcb38","time":0,"op":122,"args":["0","0"]},{"sub":"Sub121","address":"0xce3c","time":103,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3469,"name":"式神「橙」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub110"]},"callbacks":[{"sub":"Sub114","address":"0xb7e8","time":0,"op":122,"args":["0","5"]},{"sub":"Sub114","address":"0xb82c","time":800,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3468,"name":"式弾「ユーニラタルコンタクト」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub106"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3467,"name":"式弾「アルティメットブディスト」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub101"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3466,"name":"式輝「プリンセス天狐　-Illusion-」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub99"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3465,"name":"式輝「四面楚歌チャーミング」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub97"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3464,"name":"式輝「狐狸妖怪レーザー」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub94"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3463,"name":"式神「十二神将の宴」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub88"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3462,"name":"式神「仙狐思念」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub85"]},"callbacks":[{"sub":"Sub86","address":"0x654c","time":40,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3461,"name":"鬼神「飛翔毘沙門天」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub61"]},"callbacks":[{"sub":"Sub61","address":"0x41d0","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub63","address":"0x47dc","time":0,"op":122,"args":["0","0"]},{"sub":"Sub63","address":"0x485c","time":800,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3460,"name":"鬼符「青鬼赤鬼」","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[{"sub":"Sub58","address":"0x3f20","time":210,"op":122,"args":["22","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3480,"name":"EX 非符 1","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub68"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3481,"name":"EX 非符 2","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub70"]},"callbacks":[{"sub":"Sub70","address":"0x4dd4","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3482,"name":"EX 非符 3","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub71"]},"callbacks":[{"sub":"Sub71","address":"0x4fb0","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3483,"name":"EX 非符 4","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub73"]},"callbacks":[{"sub":"Sub73","address":"0x51ec","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3484,"name":"EX 非符 5","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub75"]},"callbacks":[{"sub":"Sub75","address":"0x540c","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3485,"name":"EX 非符 6","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub77"]},"callbacks":[{"sub":"Sub77","address":"0x56c0","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3486,"name":"EX 非符 7","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub79"]},"callbacks":[{"sub":"Sub79","address":"0x5940","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3487,"name":"EX 非符 8","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub81"]},"callbacks":[{"sub":"Sub81","address":"0x5c04","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":3488,"name":"EX 橙 非符 0","source":{"game":7,"file":"ecldata7.ecl","kind":"子程序","roots":["Sub55"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4390,"name":"幽々子 非符 1","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub19"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4391,"name":"六道剣「一念無量劫 -Lunatic-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub23"]},"callbacks":[{"sub":"Sub24","address":"0x29ac","time":0,"op":121,"args":["10","1"]},{"sub":"Sub24","address":"0x2a04","time":50,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4392,"name":"幽々子 非符 2","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub29"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4393,"name":"亡郷「亡我郷 -自尽-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub43"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4394,"name":"幽々子 非符 3","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub34"]},"callbacks":[{"sub":"Sub34","address":"0x4420","time":45,"op":121,"args":["15","60"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4395,"name":"幽々子 非符 4","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub36"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4396,"name":"亡舞「生者必滅の理 -魔境-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub50"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4397,"name":"華霊「バタフライディルージョン」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub52"]},"callbacks":[{"sub":"Sub52","address":"0x8be8","time":540,"op":121,"args":["16","0"]},{"sub":"Sub52","address":"0x8c14","time":550,"op":121,"args":["17","0"]},{"sub":"Sub52","address":"0x8c8c","time":550,"op":121,"args":["18","0"]},{"sub":"Sub52","address":"0x8d00","time":560,"op":121,"args":["18","0"]},{"sub":"Sub52","address":"0x8d5c","time":570,"op":121,"args":["17","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4398,"name":"幽々子 非符 5","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub38"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4399,"name":"幽曲「リポジトリ・オブ・ヒロカワ -神霊-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub55"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4400,"name":"桜符「完全なる墨染の桜 -開花-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4401,"name":"「反魂蝶 -八分咲-」","source":{"game":7,"file":"ecldata6.ecl","kind":"子程序","roots":["Sub62"]},"callbacks":[{"sub":"Sub62","address":"0xba34","time":0,"op":121,"args":["19","0"]},{"sub":"Sub62","address":"0xbb00","time":480,"op":121,"args":["20","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4402,"name":"妖夢 非符 1","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub38"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4403,"name":"餓王剣「餓鬼十王の報い」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub42"]},"callbacks":[{"sub":"Sub43","address":"0x4b10","time":0,"op":121,"args":["10","3"]},{"sub":"Sub43","address":"0x4ba0","time":50,"op":121,"args":["11","0"]},{"sub":"Sub44","address":"0x4fcc","time":0,"op":121,"args":["10","3"]},{"sub":"Sub44","address":"0x505c","time":50,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4404,"name":"妖夢 非符 2","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub48"]},"callbacks":[{"sub":"Sub48","address":"0x5718","time":0,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4405,"name":"獄神剣「業風神閃斬」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub57"]},"callbacks":[{"sub":"Sub59","address":"0x7e44","time":0,"op":121,"args":["10","3"]},{"sub":"Sub59","address":"0x7ed4","time":50,"op":121,"args":["11","0"]},{"sub":"Sub59","address":"0x80a8","time":110,"op":121,"args":["12","0"]},{"sub":"Sub59","address":"0x80bc","time":110,"op":121,"args":["21","0"]},{"sub":"Sub60","address":"0x8130","time":0,"op":121,"args":["10","3"]},{"sub":"Sub60","address":"0x81c0","time":50,"op":121,"args":["11","0"]},{"sub":"Sub60","address":"0x8394","time":110,"op":121,"args":["12","1"]},{"sub":"Sub60","address":"0x83a8","time":110,"op":121,"args":["21","1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4406,"name":"妖夢 非符 3","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub52"]},"callbacks":[{"sub":"Sub52","address":"0x67b0","time":0,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4407,"name":"修羅剣「現世妄執 -Lunatic-」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub62"]},"callbacks":[{"sub":"Sub64","address":"0x8a6c","time":0,"op":122,"args":["13","1"]},{"sub":"Sub64","address":"0x8abc","time":10,"op":121,"args":["10","2"]},{"sub":"Sub64","address":"0x8b0c","time":20,"op":121,"args":["11","0"]},{"sub":"Sub64","address":"0x8b20","time":20,"op":121,"args":["14","1"]},{"sub":"Sub64","address":"0x8b34","time":20,"op":122,"args":["-1","1"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4408,"name":"畜趣剣「無為無策の冥罰」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub66"]},"callbacks":[{"sub":"Sub69","address":"0x929c","time":0,"op":121,"args":["10","3"]},{"sub":"Sub69","address":"0x9398","time":50,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4409,"name":"人神剣「俗諦常住」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub70"]},"callbacks":[{"sub":"Sub71","address":"0x9bf0","time":0,"op":121,"args":["10","2"]},{"sub":"Sub71","address":"0x9c80","time":50,"op":121,"args":["11","0"]},{"sub":"Sub71","address":"0x9cd4","time":110,"op":121,"args":["12","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4410,"name":"天神剣「三魂七魄」","source":{"game":7,"file":"ecldata5.ecl","kind":"子程序","roots":["Sub75"]},"callbacks":[{"sub":"Sub77","address":"0xab18","time":12,"op":121,"args":["10","3"]},{"sub":"Sub77","address":"0xab94","time":20,"op":121,"args":["11","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4430,"name":"アリス 非符 1","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub22"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4431,"name":"操符「乙女文楽　-Lunatic-」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub27"]},"callbacks":[{"sub":"Sub28","address":"0x3cec","time":60,"op":121,"args":["4","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4432,"name":"アリス 非符 1","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub32"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4433,"name":"蒼符「博愛のオルレアン人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub42"]},"callbacks":[{"sub":"Sub43","address":"0x6b7c","time":0,"op":122,"args":["5","0"]},{"sub":"Sub45","address":"0x6f00","time":50,"op":121,"args":["6","0"]},{"sub":"Sub45","address":"0x6f24","time":100,"op":121,"args":["6","1"]},{"sub":"Sub45","address":"0x6f48","time":150,"op":121,"args":["6","2"]}],"new_fixes":["S07"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4434,"name":"アリス 非符 2","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub36"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4435,"name":"白符「白亜の露西亜人形 -Lunatic-」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub48"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4436,"name":"アリス 非符 3","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub37"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4437,"name":"雅符「春の京人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub54"]},"callbacks":[{"sub":"Sub55","address":"0x98d8","time":0,"op":122,"args":["5","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4438,"name":"咒詛「首吊り蓬莱人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub56"]},"callbacks":[{"sub":"Sub56","address":"0x9c70","time":0,"op":122,"args":["-1","0"]},{"sub":"Sub58","address":"0xab7c","time":0,"op":122,"args":["5","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4440,"name":"露娜萨 非符 1","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5480,"name":"露娜萨 非符 2","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub64"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5483,"name":"露娜萨 非符 3","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub68"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4441,"name":"騒符「ライブポルターガイスト -Lunatic-」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub121"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4442,"name":"梅露兰 非符 1","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub76"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5481,"name":"梅露兰 非符 2","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub80"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5484,"name":"梅露兰 非符 3","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub83"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4443,"name":"管霊「ゴーストクリフォード -Lunatic-」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub138"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4444,"name":"莉莉卡 非符 1","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub95"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5482,"name":"莉莉卡 非符 2","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub98"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":5485,"name":"莉莉卡 非符 3","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub103"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4445,"name":"鍵霊「ベーゼンドルファー神奏 -Lunatic-」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub145"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4446,"name":"偽弦「スードストラディヴァリウス」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub128"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4447,"name":"騒葬「スティジャンリバーサイド -Lunatic-」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub133"]},"callbacks":[{"sub":"Sub133","address":"0x16374","time":240,"op":122,"args":["7","0"]}],"new_fixes":["S07"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4448,"name":"大合葬「霊車コンチェルトグロッソ怪」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub135"]},"callbacks":[{"sub":"Sub135","address":"0x16b68","time":150,"op":122,"args":["8","0"]}],"new_fixes":["S06","S07"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4450,"name":"レティ 非符 1","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub20"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4451,"name":"霜符「フロストコラムス -Lunatic-」","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub29"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4452,"name":"レティ 非符 2","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub38"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4453,"name":"寒符「リンガリングコールド -Lunatic-」","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub42"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4454,"name":"レティ 非符 3","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub39"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4455,"name":"白符「アンデュレイションレイ」","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub52"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4456,"name":"怪符「テーブルターニング」","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub55"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4460,"name":"橙 非符 1","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub40"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4461,"name":"仙符「鳳凰展翅　-Lunatic-」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub45"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4462,"name":"橙 非符 2","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub49"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4463,"name":"式符「飛翔晴明」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub56"]},"callbacks":[{"sub":"Sub56","address":"0x9170","time":400,"op":121,"args":["1","0"]},{"sub":"Sub62","address":"0xa32c","time":0,"op":122,"args":["0","0"]},{"sub":"Sub62","address":"0xa350","time":100,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4464,"name":"陰陽「晴明大紋」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub58"]},"callbacks":[{"sub":"Sub58","address":"0x994c","time":340,"op":121,"args":["1","1"]},{"sub":"Sub58","address":"0x9c50","time":480,"op":121,"args":["1","2"]},{"sub":"Sub62","address":"0xa32c","time":0,"op":122,"args":["0","0"]},{"sub":"Sub62","address":"0xa350","time":100,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4465,"name":"橙 非符 3","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub53"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4466,"name":"天符「天仙鳴動」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub64"]},"callbacks":[{"sub":"Sub64","address":"0xaa6c","time":370,"op":121,"args":["2","0"]},{"sub":"Sub64","address":"0xaa80","time":374,"op":121,"args":["2","1"]},{"sub":"Sub64","address":"0xaa94","time":378,"op":121,"args":["2","2"]},{"sub":"Sub64","address":"0xaaa8","time":382,"op":121,"args":["2","3"]},{"sub":"Sub64","address":"0xae9c","time":672,"op":121,"args":["2","0"]},{"sub":"Sub64","address":"0xaeb0","time":676,"op":121,"args":["2","1"]},{"sub":"Sub64","address":"0xaec4","time":680,"op":121,"args":["2","2"]},{"sub":"Sub64","address":"0xaed8","time":684,"op":121,"args":["2","3"]},{"sub":"Sub65","address":"0xaff0","time":0,"op":122,"args":["0","0"]},{"sub":"Sub65","address":"0xb014","time":100,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4467,"name":"童符「護法天童乱舞」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub66"]},"callbacks":[{"sub":"Sub66","address":"0xba64","time":290,"op":122,"args":["-1","0"]},{"sub":"Sub66","address":"0xbb64","time":295,"op":122,"args":["3","0"]},{"sub":"Sub66","address":"0xc3f8","time":375,"op":122,"args":["-1","0"]},{"sub":"Sub67","address":"0xc624","time":0,"op":122,"args":["0","0"]},{"sub":"Sub67","address":"0xc648","time":60,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4468,"name":"仙符「屍解永遠」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub68"]},"callbacks":[{"sub":"Sub68","address":"0xc674","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4469,"name":"方符「奇門遁甲」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub75"]},"callbacks":[{"sub":"Sub75","address":"0xd4c8","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4457,"name":"冬符「フラワーウィザラウェイ」","source":{"game":7,"file":"ecldata1.ecl","kind":"子程序","roots":["Sub48"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4439,"name":"紅符「紅毛の和蘭人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub46"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4472,"name":"闇符「霧の倫敦人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub50"]},"callbacks":[{"sub":"Sub51","address":"0x8628","time":0,"op":122,"args":["5","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4473,"name":"廻符「輪廻の西蔵人形」","source":{"game":7,"file":"ecldata3.ecl","kind":"子程序","roots":["Sub52"]},"callbacks":[{"sub":"Sub53","address":"0x8f44","time":0,"op":122,"args":["5","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4470,"name":"仙符「鳳凰卵」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub44"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4471,"name":"鬼符「鬼門金神」","source":{"game":7,"file":"ecldata2.ecl","kind":"子程序","roots":["Sub70"]},"callbacks":[{"sub":"Sub70","address":"0xcdac","time":0,"op":122,"args":["-1","0"]}],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4475,"name":"弦奏「グァルネリ・デル・ジェス」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub127"]},"callbacks":[],"new_fixes":[],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"},
+    {"game":34,"id":4476,"name":"合葬「プリズムコンチェルト」","source":{"game":7,"file":"ecldata4.ecl","kind":"子程序","roots":["Sub132"]},"callbacks":[{"sub":"Sub132","address":"0x15b40","time":240,"op":122,"args":["7","0"]}],"new_fixes":["S07"],"scope":"原始入口与静态调用候选；不将回调/后续阶段自动当作该条目实际执行。"}
+  ]
+}
