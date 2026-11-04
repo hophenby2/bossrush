@@ -38,6 +38,15 @@ function N.wrap_road_actor(cls)
     cls.frame=function(o)
         frame(o)
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+        if o.th07_body_birth_pending then
+            -- 合并显示的载体在此原本生成另一只敌机：先RunEcl(0)，本帧再正常RunEcl(1)。
+            -- 第一次只保留速度/插值状态，不积分；第二次才提交本体运动和下一拍枪。
+            o.th07_body_birth_pending=nil
+            o.th07_body_tick_offset=1
+            o.th07_road_position=nil
+            frame(o)
+            if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+        end
         local p=o.th07_road_position
         o.th07_road_position=nil
         if p then o.x,o.y=p[1],p[2] end

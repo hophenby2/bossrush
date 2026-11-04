@@ -56,6 +56,15 @@ function S.set_script(o,id,archive)
     state.archive=archive or state.archive
     state.vm=new_script(state.game,state.archive,id)
 end
+-- TH10的ECL设置主ANM时保存可视范围，之后的动画缩放不持续改写此快照。
+function S.capture_visibility(o)
+    local actor=o._original_actor
+    local v=actor and actor.vm
+    local sprite=v and v.data.sprites[v.sprite]
+    if not sprite then return end
+    -- 原码+0x13a4=VM.spriteHeight*scaleY，+0x13a8=VM.spriteWidth*scaleX，保留交换。
+    o._original_visibility={sprite[5]*v.scale[2],sprite[4]*v.scale[1]}
+end
 function S.main_script(o,game,archive,id)
     local old=o._original_actor
     if old and old.game==game and old.archive==archive then S.set_script(o,id);return end
@@ -181,6 +190,18 @@ local function animation_event(o,game,file,c)
         -- NO_SPRITE 仍会播放动画、执行发弹，只禁止绘制本体。
         local hidden=math.floor(c[3]/8)%2==1
         if game==8 then
+            local accepts=math.floor(c[3])%2==1
+            local damageable=math.floor(c[3]/4)%2==1
+            local no_death=math.floor(c[3]/32)%2==1
+            if op==79 then
+                o._original_accepts_damage=not accepts
+                o._original_damageable=not damageable
+                o._original_no_death=no_death
+            else
+                if accepts then o._original_accepts_damage=op==81 end
+                if damageable then o._original_damageable=op==81 end
+                if no_death then o._original_no_death=op==80 end
+            end
             local collision=math.floor(c[3]/2)%2==1
             if op==79 then o._original_familiar_collision=not collision
             elseif collision then o._original_familiar_collision=op==81 end
@@ -210,12 +231,14 @@ local function animation_event(o,game,file,c)
             if slot==0 then
                 S.main_script(o,game,archive,id)
                 if op==262 then S.poses(o,{id,id+1,id+2,id+3,id+4});o._original_actor.special=id+5 end
+                S.capture_visibility(o)
             else
                 if not o._original_actor then S.actor(o,game,archive,id);o._original_actor.vm.visible=false end
                 o._original_actor.slots[slot]=A.new(game,archive,id)
             end
         elseif op==269 and o._original_actor and o._original_actor.special then
             S.set_script(o,o._original_actor.special)
+            S.capture_visibility(o)
         end
         return
     end

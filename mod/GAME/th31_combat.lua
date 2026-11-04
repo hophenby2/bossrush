@@ -96,6 +96,29 @@ return function()
         x,y=x or o.x,y or o.y
         return x+hw < -192 or x-hw > 192 or y+hh < -224 or y-hh > 224
     end
+    -- 道中同样使用主ANM精灵范围；NO_SPRITE不能首次置hasBeenInBounds。
+    function M.actor_inside(o,x,y,entering)
+        local actor=o._original_actor
+        local vm=actor and actor.vm
+        if not vm or not vm.data.sprites[vm.sprite] then return false end
+        if entering and o._original_hidden then return false end
+        return not M.actor_outside(o,x,y)
+    end
+    function M.unit_begin(o)
+        local age=o.th08_unit_age or 1
+        if OriginalStageVisual then OriginalStageVisual.source_frame(o,age) end
+        o.th08_unit_age=age+1
+    end
+    -- 敌机型斩击使用轴对齐接触框，原作CheckPlayerCollision先把全宽高除以1.5。
+    function M.contact_box(o,x,y,width,height)
+        local function contact(p)
+            if p and IsValid(p) and math.abs(p.x-x)<=width/3+(p.A or p.a or 0)
+                and math.abs(p.y-y)<=height/3+(p.B or p.b or 0) then
+                p.class.colli(p,o)
+            end
+        end
+        if GameNet then GameNet.forEachPlayer(contact) else contact(player) end
+    end
     -- 原作死亡时立即摘除附着链；Lua数组长度不能代表仍存活的使魔数。
     function M.actor_count(list)
         local n=0
@@ -154,11 +177,35 @@ return function()
         o._r,o._g,o._b,o._a=r,g,b,a
         o._original_enemy_color=color
     end
+    -- 手写ECL分支也必须改判定字段；CALL后的开关不一定在宿主的静态ANM事件表中。
+    function M.unit_flags(o,enabled,flags)
+        if bit(flags,1) then o._original_accepts_damage=enabled end
+        if bit(flags,2) then o._original_familiar_collision=enabled end
+        if bit(flags,4) then o._original_damageable=enabled end
+        if bit(flags,8) then o._original_hidden=not enabled end
+        if bit(flags,16) then o.allow_off=not enabled end
+        if bit(flags,32) then o._original_no_death=not enabled end
+    end
     function M.unit_collision(o)
         o.th08_youkai=M.youkai(o)
+        local human=not o.th08_youkai and not o._original_hidden
+        local collision=human and o._original_familiar_collision~=false
+        o.group=collision and GROUP.ENEMY or GROUP.NONTJT
+        SetAttr(o,'colli',human and (o._original_accepts_damage~=false or collision))
         if o.th08_attached and OriginalStageVisual then OriginalStageVisual.familiar(o,o.th08_youkai) end
-        -- enemybase把Lua的colli赋值记作持久_colli开关；形态只改本帧引擎判定，不能关死它。
-        if o.th08_youkai then SetAttr(o,'colli',false) end
+    end
+    -- 91的附着关系与92的逐帧坐标继承不同；不能用u.parent同时表示两件事。
+    function M.link_marker(parent) return {th08_link_parent=parent} end
+    function M.detach_children(o)
+        for _,child in ipairs(o.th08_actors or {}) do
+            if IsValid(child) then
+                child.th08_dead,child.alive=true,false
+                SetAttr(child,'colli',false)
+                task.Clear(child)
+                object.RawDel(child)
+            end
+        end
+        o.th08_actors=nil
     end
     -- 道中使用手动调度的enemy类，形态判定须包住它自己的伤害分发入口。
     function M.unit(define)
@@ -166,7 +213,8 @@ return function()
         local kill,del=define.kill or enemy.kill,define.del or enemy.del
         local unitbase=Class(enemy,{
             take_damage=function(o,amount)
-                if M.youkai(o) then return end
+                if o.th08_dead or o.alive==false or M.youkai(o) or o._original_hidden or o._original_accepts_damage==false
+                    or o._original_damageable==false then return end
                 local hp=o.hp
                 enemy.take_damage(o,amount)
                 if o.th08_attached and IsValid(o.th08_parent) then
@@ -179,14 +227,25 @@ return function()
             end,
         })
         define.init=function(o,sub,x,y,mirror,parent,...)
+            local linked=parent
+            for i=1,select('#',...) do
+                local arg=select(i,...)
+                if type(arg)=='table' and arg.th08_link_parent then linked=arg.th08_link_parent end
+            end
+            o.th08_parent,o.th08_attached=linked,linked~=nil
+            o._original_accepts_damage,o._original_damageable,o._original_no_death=true,true,false
+            o._original_familiar_collision=true
             init(o,sub,x,y,mirror,parent,...)
-            o.th08_parent,o.th08_attached=parent,parent~=nil
+            o.th08_unit_age=1 -- 构造器已完成出生ECL；手动敌机循环从t1继续。
             if OriginalStageVisual and define.source_file then
                 OriginalStageVisual.bind_source(o,8,define.source_file..':'..sub)
             end
-            if parent then o._original_familiar_collision=false end
-            if OriginalBalance then OriginalBalance.unit(o,8,parent and parent.current_card and parent.current_card.is_sc) end
-            if parent then o.group=GROUP.NONTJT end
+            if linked then
+                o._original_familiar_collision=false -- Spawn90..92在出生RunEcl后清除COLLISION。
+                linked.th08_actors=linked.th08_actors or {}
+                linked.th08_actors[#linked.th08_actors+1]=o
+            end
+            if OriginalBalance then OriginalBalance.unit(o,8,linked and linked.current_card and linked.current_card.is_sc) end
             M.unit_collision(o)
         end
         define.frame=function(o)
@@ -198,10 +257,13 @@ return function()
             if not OriginalStageVisual or not OriginalStageVisual.draw(unit) then render(unit) end
         end) end
         define.kill=function(o)
+            if o._original_no_death then object.Preserve(o);return end
+            M.detach_children(o)
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             if kill then kill(o) end
         end
         define.del=function(o)
+            M.detach_children(o)
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             if del then del(o) end
         end
@@ -383,11 +445,13 @@ return function()
         define.kill=function(o)
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             o.th08_dead=true;task.Clear(o)
+            M.detach_children(o)
             if kill then kill(o) end
         end
         define.del=function(o)
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             o.th08_dead=true;task.Clear(o)
+            M.detach_children(o)
             if del then del(o) end
         end
         return Class(base,define)

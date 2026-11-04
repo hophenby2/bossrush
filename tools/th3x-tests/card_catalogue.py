@@ -97,7 +97,7 @@ def catalogue():
         end
     ''')
     rows = [plain(lua.globals().audit_describe(entry)) for _, entry in lua.globals().audit_cards.items()]
-    assert len(rows) == 521, len(rows)
+    assert len(rows) == 522, len(rows)
     assert len({(r['game'], r['id']) for r in rows}) == len(rows)
     for new_id in range(5480,5486):
         assert sum(r['id']==new_id for r in rows)==1, ('新增卡ID与其他作品冲突',new_id)

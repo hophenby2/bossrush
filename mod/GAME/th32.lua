@@ -879,14 +879,16 @@ function H.actor_post(a,count_phase)
             a.mode="axis";b.x,b.y=m.x+m.dx,m.y+m.dy;a.axisx,a.axisy=0,0
         end
     end
-    H.clamp(b)
-    if a.interval>0 then
+    -- RunEcl先自动发弹/重复ExIns；管理器的第二次夹框在它们之后。
+    local living=H.life(b)>0
+    if living and a.interval>0 then
         a.interval_tick=a.interval_tick+1
         if a.interval_tick>=a.interval then H.fire(b);a.interval_tick=0 end
     end
     local v=a.context
-    if v.repeat_func then H.extra(b,v,v.repeat_func,0,true) end
+    if living and v.repeat_func then H.extra(b,v,v.repeat_func,0,true) end
     if count_phase~=false then
+        H.clamp(b) -- SpawnEnemy的出生RunEcl没有管理器的帧尾夹框。
         a.phase=a.phase+1
         if a.main and not a.meta.road then H.road_mid_tick(a) end
     end

@@ -1323,6 +1323,23 @@ function class.t10_run_tasks(o)
     end
 end
 
+-- Native RuntimeUpdate先按可视范围判出屏，再跑ECL。这里使用原作坐标和ANM设置时的快照。
+class.t10_no_oob_sources=dofile('mod/GAME/th35_no_oob.lua')
+function class.t10_enemy_inside(o)
+    local source=o._original_source
+    if o.th10_boss or o.t10_road_owner or not source then return true end
+    local size=not o.t10_ecl_birth and o._original_visibility
+    local hw,hh=size and size[1]/2 or 0,size and size[2]/2 or 0
+    local x,y=o.ecs.wx,o.ecs.wy
+    local outside=x+hw< -192 or x-hw>192 or y+hh<0 or y-hh>448
+    if not outside then o.seen=true
+    elseif o.seen and not o.t10_no_oob and not class.t10_no_oob_sources[source.key] then
+        t10_kill_pod(o)
+        return false
+    end
+    return true
+end
+
 -- 道中保留enemybase的碰撞/伤害处理，行为协程使用TH10自己的线程顺序。
 function class.t10_enemy_frame(o)
     SetAttr(o,'colli',BoxCheck(o,lstg.world.boundl,lstg.world.boundr,
@@ -1357,6 +1374,7 @@ class["th10_ecs_pod"] = Class(object, {
         --- task.Do；ECL 里的 etOn 才会用在**本帧已推进**的位置出弹。反过来做会整体
         --- 差一帧（子机刚 movePos 就出弹、以及 moveRand 的起始位置都会错）。
         ecs_step(self)
+        if not class.t10_enemy_inside(self) then return end
         class.t10_run_tasks(self)
         if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         ---%TIME = runtime.updateTimer.current：原作在 EnemyRuntimeUpdate 的**末尾**自增
@@ -5446,13 +5464,7 @@ class["th10_midfairy"] = Class(enemy, {
             self.invuln = self.invuln - 1
             if self.invuln <= 0 then self.protect = false end
         end
-        local wx, wy = t10mid.pos(self)
-        if not self.seen then                   -- 进过场才算「出屏」基准
-            if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
-        elseif not self.t10_no_oob and (wx < -240 or wx > 240 or wy < -280 or wy > 280) then
-            t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
-            return
-        end
+        if not class.t10_enemy_inside(self) then return end
         class.t10_enemy_frame(self)
     end,
     render = function(self) DefaultRenderFunc(self) end,
@@ -5647,13 +5659,7 @@ class["th10_s6fairy"] = Class(enemy, {
             self.invuln = self.invuln - 1
             if self.invuln <= 0 then self.protect = false end
         end
-        local wx, wy = s6mid.pos(self)
-        if not self.seen then                   -- 进过场才算「出屏」基准
-            if wx > -192 and wx < 192 and wy > -224 and wy < 224 then self.seen = true end
-        elseif not self.t10_no_oob and (wx < -240 or wx > 240 or wy < -280 or wy > 280) then
-            t10_kill_pod(self)                  -- 出屏回收（原作 EnemyManagerUpdate）
-            return
-        end
+        if not class.t10_enemy_inside(self) then return end
         class.t10_enemy_frame(self)
     end,
     render = function(self) DefaultRenderFunc(self) end,
