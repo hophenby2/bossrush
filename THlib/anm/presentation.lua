@@ -93,6 +93,13 @@ local function effect(s,c,op,a)
         elseif op==77 then
             o._original_damage_box={a[1],a[2]}
             if o._bosssys then o.a,o.b,o.rect=a[1]/2,a[2]/2,true end
+        elseif op==85 then
+            -- TH095 ResetNonPhotoTargets：纯演出使魔也属于同一敌机池。
+            for _,carrier in ipairs(T.carriers) do
+                if carrier~=o and carrier.phase==s.phase and IsValid(carrier) and not carrier.th095_photo_target then
+                    object.RawDel(carrier)
+                end
+            end
         elseif op==106 and a[1] and s.bank.sound_scripts[c.sub] then T.sound.play(95,a[1],s.x)
         elseif op==118 and (a[1]==12 or a[1]==13) then OriginalStageVisual.interrupt_background(95,a[1]-10)
         elseif op==118 and a[1]==0 then
@@ -278,7 +285,7 @@ function T.advance(o,clock)
             end
         end
         run(s,s.root)
-        for slot=0,7 do
+        for slot=0,(s.game==95 and 15 or 7) do
             if s.terminated then break end
             if s.children[slot] then run(s,s.children[slot]) end
         end

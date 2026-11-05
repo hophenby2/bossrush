@@ -71,9 +71,15 @@ function N.boundary_angle(x,y,box,previous)
     return a
 end
 -- RunEcl处理完主/子上下文之后才UpdateMovement及积分；协程只能提交本帧目标。
+local function easing(t,mode)
+    if type(mode)=="function" then return mode(t) end
+    if mode>=1 and mode<=3 then return t^(mode+1) end
+    if mode>=4 and mode<=6 then return 1-(1-t)^(mode-2) end
+    return t
+end
 function N.begin_move(o)
     o.th095_move_serial=(o.th095_move_serial or 0)+1
-    o.th095_pending_move=nil
+    o.th095_pending_move,o.th095_active_move,o.th095_motion_snapshot=nil,nil,nil
     return o.th095_move_serial
 end
 function N.queue_move(o,serial,x,y,state,angle)
@@ -83,6 +89,26 @@ function N.queue_move(o,serial,x,y,state,angle)
 end
 function N.flush_move(o,birth)
     if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
+    local m=o.th095_active_move
+    if m then
+        if m.serial~=o.th095_move_serial or not m.token.alive or m.state.dead then
+            o.th095_active_move=nil
+        else
+            -- 原生RunEcl执行完全部context之后，仅推进一次UpdateMovement。
+            m.age=m.age+1
+            local u=easing(math.min(1,m.age/m.n),m.mode)
+            local x,y=m.x+m.dx*u,m.y+m.dy*u
+            local angle=math.atan2(-(y-o.y),x-o.x)
+            local box=m.box
+            if box then
+                x=math.max(box[1],math.min(box[3],x))
+                y=math.max(224-box[4],math.min(224-box[2],y))
+            end
+            o.th095_motion_snapshot={x=m.x,y=m.y,dx=m.dx,dy=m.dy,n=m.n,mode=m.mode,age=m.age}
+            N.queue_move(o,m.serial,x,y,m.state,angle)
+            if m.age>=m.n then o.th095_active_move=nil end
+        end
+    end
     local move=o.th095_pending_move
     o.th095_pending_move=nil
     if not move or move.serial~=o.th095_move_serial then return end
@@ -94,6 +120,7 @@ function N.flush_move(o,birth)
 end
 function N.clear_move(o)
     N.begin_move(o)
+    o.vx,o.vy=0,0
     o.th095_move_angle=nil
 end
 -- 仅TH33的显式MoveTo调用使用此代理；其他作品仍使用公共task。
@@ -114,34 +141,15 @@ function N.task_api(scheduler)
         end
     end},{__index=scheduler})
 end
-local function easing(t,mode)
-    if mode>=1 and mode<=3 then return t^(mode+1) end
-    if mode>=4 and mode<=6 then return 1-(1-t)^(mode-2) end
-    return t
-end
 function N.move(owner,st,tx,ty,n,mode,box)
-    mode=mode or 0
     if st.mv then st.mv.alive=false end
     local token={alive=true};st.mv=token
     local serial=N.begin_move(owner)
-    local x0,y0=owner.x,owner.y
-    local dx,dy=tx-x0,ty-y0
-    task.New(owner,function()
-        for s=1,n do
-            if not token.alive or st.dead then return end
-            local t=type(mode)=='function' and mode(s/n) or easing(s/n,mode)
-            owner.th095_motion_snapshot={x=x0,y=y0,dx=dx,dy=dy,n=n,mode=mode,age=s}
-            local x,y=x0+dx*t,y0+dy*t
-            local angle=math.atan2(-(y-owner.y),x-owner.x)
-            if box then
-                x=math.max(box[1],math.min(box[3],x))
-                y=math.max(224-box[4],math.min(224-box[2],y))
-            end
-            N.queue_move(owner,serial,x,y,st,angle)
-            task.Wait()
-        end
-    end)
+    owner.vx,owner.vy=0,0
+    owner.th095_active_move={serial=serial,token=token,state=st,
+        x=owner.x,y=owner.y,dx=tx-owner.x,dy=ty-owner.y,n=math.max(1,n),age=0,mode=mode or 0,box=box}
 end
+
 function N.bmove(owner,st,n,mode,speed,box)
     local a=N.boundary_angle(owner.x,224-owner.y,box,owner.th095_move_angle or st.mv_angle)
     N.move(owner,st,owner.x+math.cos(a)*speed*n,owner.y-math.sin(a)*speed*n,n,mode,box)
@@ -330,6 +338,14 @@ local function refresh()
         if IsValid(o) and o.status~='del' and o.status~='kill' then list[#list+1]=o end
     end
     pool,used=list,#list
+end
+function N.has_space()
+    local s=stage and stage.current_stage
+    local t=s and s.timer
+    if not t or t~=stamp or s~=scene or used>=1600 then
+        refresh();stamp,scene=t,s
+    end
+    return used<1600
 end
 function N.reserve()
     local s=stage and stage.current_stage

@@ -571,6 +571,9 @@ _editor_class["TH33"] = class
 
 ---TH095 的世界 y → 我们的 y。理由见文件头「坐标系与角度」。
 local FIELD_HALF_H = 224
+local function sg_deg(th_rad)
+    return -math.deg(th_rad)
+end
 local function field_y(y)
     return FIELD_HALF_H - y
 end
@@ -1450,6 +1453,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
         unit.spin_left = unit.spin_left - 1
         unit.ring_v = max(RING_MIN_SPEED, unit.ring_v + RING_DRAG)
         object.SetV(unit, unit.ring_v, unit.rot + unit.ring_spin, true)
+        unit.th095_angle,unit.th095_speed=unit.rot,unit.ring_v
     end
 
 ---一整圈 16 发（圈里每一颗自己还要转 + 减速，见 ring_frame）；
@@ -1457,7 +1461,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
     local function fire_ring(owner, base, color, spin)
         for i = 0, RING_COUNT - 1 do
             local b = SpawnPhoto(546,RING_STYLE, color, owner.x, owner.y, RING_SPEED,
-                    base + i * 360 / RING_COUNT, false, 0, false,
+                    base - i * 360 / RING_COUNT, false, 0, false,
                     nil, nil, nil, ring_frame)
             if b then b.ring_spin = spin end
         end
@@ -1499,7 +1503,7 @@ do  -- 71 幽雅「死出の誘蛾灯」（ecl17_a，幽幽子，组 1a 第 1 �
             while true do
                 for i = 0, AIM_COUNT - 1 do
                     SpawnPhoto(514,AIM_STYLE, AIM_COLOR, owner.x, owner.y, AIM_SPEED,
-                            i * 360 / AIM_COUNT, true, 0, false)
+                            -i * 360 / AIM_COUNT, true, 0, false)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
                 task.Wait(max(AIM_GAP_MIN,
@@ -1731,6 +1735,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         unit.accel_left = unit.accel_left - 1
         unit.cur_v = unit.cur_v + FAN_ACCEL
         object.SetV(unit, unit.cur_v, unit.rot, true)
+        unit.th095_angle,unit.th095_speed=unit.rot,unit.cur_v
     end
 
 ---Sub4 的一发「死槍」：**单发**朝自机；出膛点每发在子机周围 24 px 内重抽。
@@ -1750,9 +1755,10 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_volley(x, y, color)
         local center = Angle(x, y, player.x, player.y) + 180
         for _ = 1, VOLLEY_COUNT do
-            SpawnPhoto(512,VOLLEY_STYLE, ex_color(color, 1), x, y,
-                    ran:Float(VOLLEY_SPEED2, VOLLEY_SPEED1),
-                    center + ran:Float(-VOLLEY_ARC, VOLLEY_ARC), false, 0, false)
+            if not PhotoNative.has_space() then break end
+            local angle=center+ran:Float(-VOLLEY_ARC,VOLLEY_ARC)
+            local speed=ran:Float(VOLLEY_SPEED2,VOLLEY_SPEED1)
+            SpawnPhoto(512,VOLLEY_STYLE, ex_color(color, 1), x, y,speed,angle,false,0,false)
         end
         PlaySound("tan00", 0.1, x / 256, false)
     end
@@ -1894,6 +1900,14 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         photo_damage_on(self, PHOTO_LIMIT)  -- 拍照扣血：拍够 PHOTO_LIMIT 张 = 清空血条
         self.x, self.y = BOSS_X, BOSS_START_Y
         task.New(self, function()
+            while not st.dead and photo_index(PHOTO_LIMIT) < SUB9_AT do
+                task.Wait(1)
+            end
+            if st.dead then return end
+            if sub3tok then sub3tok.alive = false; sub3tok = nil end
+            run_sub9(self)
+        end)
+        task.New(self, function()
             local tok = { alive = true }
             sub3tok = tok
             ---可被 ins_115 的重开打断的 task.Wait（原作那一刻主上下文被整个换掉）。
@@ -1914,24 +1928,15 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
                     if not step(w.delay) then return end
                     for _, sx in ipairs({ -1, 1 }) do
                         drones[#drones + 1] = New(class.spear_drone, self,
-                                sx * w.x, field_y(w.y), w.spear_color, w.volley_color)
+                                self.x + sx*w.x, self.y-w.y, w.spear_color, w.volley_color)
                     end
                 end
             end
         end)
         ---ins_115(0,3,"Sub9")：拍中本体第 3 张时把主上下文整个换掉 —— 释放全部子上下文
         ---（EnemyManagerUpdate.cpp:1281-1310）⇒ Sub3 的撒子机循环当场停下。
-        task.New(self, function()
-            while not st.dead and photo_index(PHOTO_LIMIT) < SUB9_AT do
-                task.Wait(1)
-            end
-            if st.dead then return end
-            if sub3tok then sub3tok.alive = false; sub3tok = nil end
-            run_sub9(self)
-        end)
     end
 
-    ---本体的逐帧逻辑：**原作没有**（移动与发弹都在 ECL 上下文里）。frame 留空是刻意的。
     function card:frame()
     end
 
@@ -2022,11 +2027,11 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
     ---所以每圈都在发弹那一刻重读一次 —— 两条上下文读的是同一个值，永远一致。
     local function fire_ring(owner, style, color)
         local count = RING_BASE_COUNT + photo_index(PHOTO_LIMIT)
-        local base = ran:Float(0, 360)      -- 原作 ins_89 的 angle = random(−π,π)
+        local base = sg_deg(ran:Float(-math.pi,math.pi)) -- 原作10065
         local x, y = owner.x, owner.y
         for i = 0, count - 1 do
             SpawnPhoto(514,style, color, x, y, RING_SPEED,
-                    base + i * 360 / count, false, 0, false)
+                    base - i * 360 / count, false, 0, false)
         end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整圈只响一声（BulletManager.cpp:717-723），
         -- 与逐发的出场音不同。
@@ -2061,8 +2066,8 @@ do  -- 75 死符「酔人の生、死の夢幻」（ecl17_c，幽幽子，组 1a
             ---到这里是原作第 130 帧：Sub2 在 t=130 CALL Sub3，而 Sub3 的 t=0 同时
             ---起两股整圈弹、开扫动循环、响一声（ins_106(5)，一个定位置的音效）。
             PlaySound("tan00", 0.1, self.x / 256, false)
-            ring_stream(self, 0, RING_STYLE_A, RING_COLOR_A)
-            ring_stream(self, RING_PHASE, RING_STYLE_B, RING_COLOR_B)
+            ring_stream(self, RING_PHASE, RING_STYLE_A, RING_COLOR_A)
+            ring_stream(self, 0, RING_STYLE_B, RING_COLOR_B)
             while true do
                 task.MoveTo(0, SWEEP_MID, LEG_TIME, EASE_IN)
                 task.MoveTo(0, SWEEP_BOTTOM, LEG_TIME, EASE_OUT)
@@ -2224,6 +2229,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         end
         unit.spin_left = unit.spin_left - 1
         object.SetV(unit, RING_SPEED, unit.rot + unit.spin, true)
+        unit.th095_angle,unit.th095_speed=unit.rot,RING_SPEED
     end
 
     ---一整圈 RING_COUNT 发（原作 ins_89：CIRCLE，count2 = 1 ⇒ 操作数里的 angleStep 不参与）。
@@ -2232,7 +2238,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         local x, y = owner.x, owner.y
         for i = 0, RING_COUNT - 1 do
             local b = SpawnPhoto(16777762,RING_STYLE_A, color, x, y, RING_SPEED,
-                    base + i * 360 / RING_COUNT, false, 0, false,
+                    base - i * 360 / RING_COUNT, false, 0, false,
                     nil, nil, nil, swirl_frame)
             if b then b.spin,b.sg_tag=spin,1 end
         end
@@ -2266,7 +2272,7 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
         local base = Angle(owner.x, owner.y, player.x, player.y)
         for i = 0, TICK_COUNT - 1 do
             SpawnPhoto(514,TICK_STYLE, TICK_COLOR, owner.x, owner.y, TICK_SPEED,
-                    base + i * 360 / TICK_COUNT, false, 0, false)
+                    base - i * 360 / TICK_COUNT, false, 0, false)
         end
         PlaySound("tan00", 0.1, owner.x / 256, false)
     end
@@ -2285,9 +2291,9 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     })
 
     local function fire_fan(owner)
-        local base=ran:Float(0,360)
+        local base=sg_deg(ran:Float(-math.pi,math.pi))
         for i=0,FAN_COUNT-1 do
-            local l=New(class.fan_laser,owner,owner.x,owner.y,base+i*360/FAN_COUNT)
+            local l=New(class.fan_laser,owner,owner.x,owner.y,base-i*360/FAN_COUNT)
             if IsValid(l) and l.status~='del' then lasers[#lasers+1]=l end
         end
         task.New(owner,function()
@@ -2304,24 +2310,23 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
             self.owner,self.x,self.y=owner,owner.x,owner.y
             self.group,self.colli,self.bound,self.hide=GROUP.GHOST,false,false,true
             self.p_t,self.p_angle=0,0
+            self._mv={dead=false,mv_angle=0}
             swirl_stream(self)
             PhotoNative.enemy_birth(self,class.dead_moth.frame)
         end,
         frame=function(self)
             if not IsValid(self.owner) then object.RawDel(self);return end
-            task.Do(self)
             local t=self.p_t%180
-            if t==0 or t==90 then
-                local a=self.p_angle
-                if t==0 then a=PhotoNative.boundary_angle(self.x,field_y(self.y),{-160,192,160,256},a) end
-                self.p_angle=a
-                self.p_x,self.p_y,self.p_start=self.x,self.y,t
-                self.p_dx,self.p_dy=math.cos(a)*SWEEP_SPEED*LEG_TIME,-math.sin(a)*SWEEP_SPEED*LEG_TIME
+            local mv=self._mv
+            if t==0 then
+                PhotoNative.bmove(self,mv,LEG_TIME,1,SWEEP_SPEED,{-160,192,160,256})
+            elseif t==90 then
+                local angle=self.th095_move_angle or 0
+                PhotoNative.move(self,mv,self.x+math.cos(angle)*SWEEP_SPEED*LEG_TIME,
+                    self.y-math.sin(angle)*SWEEP_SPEED*LEG_TIME,LEG_TIME,4,{-160,192,160,256})
             end
-            local u=(t-self.p_start+1)/LEG_TIME
-            u=t<90 and u*u or (1-(1-u)*(1-u))
-            self.x=max(BOX_L,min(BOX_R,self.p_x+self.p_dx*u))
-            self.y=max(BOX_B,min(BOX_T,self.p_y+self.p_dy*u))
+            task.Do(self)
+            if not self._original_visual_birth then PhotoNative.flush_move(self) end
             self.p_t=self.p_t+1
         end,
         del=function(self) task.Clear(self) end,
@@ -2742,12 +2747,12 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
         if count1 % 2 == 1 then
             k = int((index1 + 1) / 2)
         else
-            k = index1 / 2 + 0.5
+            k = math.floor(index1 / 2) + 0.5
         end
         if index1 % 2 == 1 then
             k = -k
         end
-        return base + k * step
+        return base - k * step
     end
 
     ---一记整扇（Sub5）：128 根、以自机方向为中心铺开 ±119°（奇数/偶数公式见 fan_angle）。
@@ -2766,10 +2771,10 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
     ---一小圈（Sub6）：圈数 = 1 + photoIndex/3，相位每圈重抽（原作 angle = rand(-π,π)）。
     local function fire_ring(owner)
         local count = RING_BASE_COUNT + int(photo_index(PHOTO_LIMIT) / 3)
-        local base = ran:Float(0, 360)
+        local base = sg_deg(ran:Float(-math.pi,math.pi))
         for i = 0, count - 1 do
             SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y, RING_SPEED,
-                    base + i * 360 / count, false, 0, false)
+                    base - i * 360 / count, false, 0, false)
         end
     end
 
@@ -2781,6 +2786,7 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
     ---  ⇒ 同一轮 4 次整扇用**同一个**基准角，下一轮开头才重读自机方向。
     local function fan_stream(owner)
         task.New(owner, function()
+            local mv={dead=false}
             while true do
                 ---@988 ins_7：本轮的自机方向，只在**这里**读一次（4 次整扇共用）。
                 local base = Angle(owner.x, owner.y, player.x, player.y)
@@ -2794,11 +2800,8 @@ do  -- 74 行符「八千万枚護摩」（ecl16_c，八云蓝，组 2a 第 2 �
                 task.Wait(FAN_CALL)             -- 到 t=85（调 Sub4 的那一帧）
                 task.Wait(SCOOT_DELAY)          -- Sub4 自己的 t=15 才起步
                 ---Sub4：朝自机方向 ±60° 挑一个角度、4 px/帧 走 20 帧（= 80 px），夹进框里。
-                local a = Angle(owner.x, owner.y, player.x, player.y) + ran:Float(-60, 60)
-                local step = SCOOT_SPEED * SCOOT_TIME
-                task.MoveTo(max(BAND_L, min(BAND_R, owner.x + step * cos(a))),
-                        max(BAND_B, min(BAND_T, owner.y + step * sin(a))),
-                        SCOOT_TIME, VALUE_SET.DECEL)
+                PhotoNative.bmove(owner,mv,SCOOT_TIME,4,SCOOT_SPEED,{-128,192,128,256})
+                task.Wait(SCOOT_TIME)
             end
         end)
     end
@@ -2956,49 +2959,51 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
     ---蝶云（Sub4）：每帧 1 发、4 帧一轮（ins_4(0,-756) 在 t=4 跳回 t=0 ⇒ 一轮 4 帧）；
     ---每发在出膛点 24 px 内重抽位置、方向各自随机，颜色按 CLOUD_COLORS 逐发轮换。
     local function cloud_stream(owner)
-        task.New(owner, function()
-            while true do
-                for k = 1, CLOUD_BURST do
-                    local pa = ran:Float(0, 360)
-                    local pr = CLOUD_RADIUS * ran:Float(0, 1)
-                    SpawnPhoto(33304,CLOUD_STYLE, ex_color(CLOUD_COLORS[k], 15),
-                            owner.x + cos(pa) * pr, owner.y + sin(pa) * pr,
-                            CLOUD_SPEED0, ran:Float(0, 360), false, 0, false,
-                            nil, nil, nil, cloud_frame)
+        owner.th095_cloud_generation=(owner.th095_cloud_generation or 0)+1
+        local generation=owner.th095_cloud_generation
+        task.New(owner,function()
+            local previous=photo_index(PHOTO_LIMIT)
+            while owner.th095_cloud_generation==generation do
+                for k=1,CLOUD_BURST do
+                    if previous~=photo_index(PHOTO_LIMIT) then
+                        task.Wait(200)
+                        if owner.th095_cloud_generation~=generation then return end
+                        previous=photo_index(PHOTO_LIMIT)
+                    end
+                    local radius=CLOUD_RADIUS*ran:Float(0,1)
+                    local offset=sg_deg(ran:Float(-math.pi,math.pi))
+                    local angle=sg_deg(ran:Float(-math.pi,math.pi))
+                    SpawnPhoto(33304,CLOUD_STYLE,ex_color(CLOUD_COLORS[k],15),
+                        owner.x+cos(offset)*radius,owner.y+sin(offset)*radius,
+                        CLOUD_SPEED0,angle,false,0,false,nil,nil,nil,cloud_frame)
                     task.Wait()
+                    if owner.th095_cloud_generation~=generation then return end
                 end
             end
         end)
     end
-
-    ---主体脚本（Sub3）：起飞 → 每帧累加速度 → 出场地就回顶上改成「俯冲」。
     local function flight(owner)
-        task.New(owner, function()
-            local a = Angle(owner.x, owner.y, player.x, player.y)
-            local speed, accel = DIVE_SPEED0, DIVE_ACCEL0
-            object.SetV(owner, speed, a, true)
-            local w = lstg.world
+        task.New(owner,function()
+            local angle=Angle(owner.x,owner.y,player.x,player.y)
+            local speed,accel=DIVE_SPEED0,DIVE_ACCEL0
             while true do
-                speed = speed + accel
-                object.SetV(owner, speed, a, true)
-                ---出界判据照抄原作（TH095 的 x = ±224、y = 480 ⇒ 我们的 boundl/r/b）。
-                if owner.x > w.boundr or owner.x < w.boundl or owner.y < w.boundb then
-                    local nx = ran:Float(-DIVE_X_RANGE, DIVE_X_RANGE)
-                    owner.x, owner.y = nx, DIVE_SPAWN_Y
-                    a = Angle(nx, DIVE_SPAWN_Y, player.x, player.y)
-                    speed = photo_index(PHOTO_LIMIT) * DIVE_SPEED_MUL
-                    accel = DIVE_ACCEL
-                    object.SetV(owner, speed, a, true)
-                    -- 定位置音效：原作的 ins_106(16)（一个与发弹无关的提示音）
-                    PlaySound("tan00", 0.1, owner.x / 256, false)
+                if owner.x>=224 or owner.x<=-224 or owner.y<=field_y(480) then
+                    local x=ran:Float(-DIVE_X_RANGE,DIVE_X_RANGE)
+                    if x==player.x then x=x+1 end
+                    owner.x,owner.y=x,DIVE_SPAWN_Y
+                    angle=Angle(x,DIVE_SPAWN_Y,player.x,player.y)
+                    speed=photo_index(PHOTO_LIMIT)*DIVE_SPEED_MUL
+                    accel=DIVE_ACCEL
+                    cloud_stream(owner)
+                    PlaySound("tan00",0.1,owner.x/256,false)
                 end
+                -- ECL检查/传送之后UpdateMovement同帧加速并积分。
+                speed=speed+accel
+                object.SetV(owner,speed,angle,true)
                 task.Wait()
             end
         end)
     end
-
-    ---──────────────────────── 符卡本体 ────────────────────────
-
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
@@ -3012,7 +3017,6 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
             task.MoveTo(BOSS_HOME_X, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
             ---到这里是原作第 130 帧：Sub2 的 t=130 是 ins_104（亮卡名）+ ins_52(3)。
             PlaySound("tan00", 0.1, self.x / 256, false)
-            cloud_stream(self)
             flight(self)
         end)
     end
@@ -3022,6 +3026,7 @@ do  -- 76 超人「飛翔役小角」（ecl16_d，八云蓝，组 2a 第 3 张�
     end
 
     function card:del()
+        self.th095_cloud_generation=(self.th095_cloud_generation or 0)+1
         photo_damage_off(self)
     end
 
@@ -4411,6 +4416,8 @@ local function sg_shot(mode, style, color, x, y, c1, c2, sp1, sp2, base, step, a
     for i2 = 0, c2 - 1 do
         local sp = c2 > 1 and (sp1 - (sp1 - sp2) * i2 / c2) or sp1
         for i1 = 0, c1 - 1 do
+            -- SpawnSingleBullet先找1600槽空位，池满不抽单弹随机角/速。
+            if not PhotoNative.has_space() then sg_snd(x,flags);return end
             local a
             if mode == 86 or mode == 87 then
                 a = ad + base + off[i1 + 1]
@@ -6208,10 +6215,7 @@ local function sg_has(flags, kind)
     return math.floor(flags / kind) % 2 == 1
 end
 
----TH095 的弧度角（或角增量）→ 我们的度，取反（见文件头「坐标系与角度」）。
-local function sg_deg(th_rad)
-    return -math.deg(th_rad)
-end
+---角度换算sg_deg在公共入口声明，供前面的场景和本段共同使用。
 
 ---TH095 的弹变换程序（PhotoBulletView::AdvanceTransformProgram + 每帧 Update*，
 ---BulletManager.cpp:512-693 与 :1447-1470）。三条要点：
