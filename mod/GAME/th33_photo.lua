@@ -43,6 +43,8 @@ function P.target_contains(camera,o)
 end
 function P.bind(o,key)
     if o._bosssys then return end
+    if P.reserve and not P.reserve(o) then object.RawDel(o);return false end
+    if o.th095_skip_offscreen==nil then o.th095_skip_offscreen=true end -- 模板flags1默认置0x04000000。
     o.th095_photo_source=key
     o.th095_collidable=false
     o.th095_photo_cfg=sources[key] or {box={24,24},life=0}
@@ -53,7 +55,23 @@ function P.flags(o,c)
     local contains=math.floor(c[3]/2)%2==1
     if c[2]==79 then o.th095_collidable=not contains
     elseif contains then o.th095_collidable=c[2]==81 end
+    local skip=math.floor(c[3]/16)%2==1
+    if c[2]==79 then o.th095_skip_offscreen=skip
+    elseif skip then o.th095_skip_offscreen=c[2]==81 end
     if o._bosssys then o.colli=o.th095_collidable end
+end
+function P.cull(o)
+    if o._bosssys or o.th095_skip_offscreen~=false then return false end
+    local actor=o._original_actor
+    local vm=actor and actor.vm
+    local sprite=vm and vm.data.sprites[vm.sprite]
+    local w,h=0,0
+    if sprite then w,h=sprite[4]*vm.scale[1],sprite[5]*vm.scale[2] end
+    local x,y=o.x+(o.vx or 0),o.y+(o.vy or 0)
+    local outside=x+w<=-192 or x-w>=192 or y+h<=-224 or y-h>=224
+    if not outside then o.th095_entered=true
+    elseif o.th095_entered then object.RawDel(o);return true end
+    return false
 end
 function P.contact(o)
     if not valid(o) or o._bosssys or not o.th095_collidable or o.th095_contact_stamp==o.ani then return end
@@ -170,6 +188,7 @@ function P.owner_frame(owner)
 end
 P.cloud=Class(object,{
     init=function(o,owner,kind,angle)
+        if P.reserve and not P.reserve(o) then object.RawDel(o);return end
         local speed=kind=='b' and 2 or kind=='c' and 1 or 0.8
         o.x,o.y=owner.x+60*math.cos(angle),owner.y-60*math.sin(angle)
         o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY,false,false

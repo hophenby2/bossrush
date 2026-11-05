@@ -1812,8 +1812,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
         frame = function(self)
             task.Do(self)
             -- EnemyManagerUpdate按loadedSprite的全宽/高回收，script8的精灵是48×80。
-            local x,y=self.x+self.vx,self.y+self.vy
-            if x+48<=-192 or x-48>=192 or y+80<=-224 or y-80>=224 then object.RawDel(self) end
+            -- 原81(16)禁用离屏回收；直到拍摄/85清敌机/场景结束才释放。
         end,
         del=function(self) task.Clear(self) end,
         render=function() end,
@@ -2546,15 +2545,12 @@ do  -- 72 密符「御大師様の秘鍵」（ecl16_b，八云蓝，组 2a 第 1
             PhotoNative.enemy_birth(self)
         end,
         frame=function(self)
-            task.Do(self)
             self.key_t=self.key_t+1
+            if self.key_t>=2000 then object.RawDel(self);return end
+            task.Do(self)
             local scale=1-(1-min(1,self.key_t/15))^2
             self.hscale,self.vscale=scale,scale
-            local x,y=self.x+self.vx,self.y+self.vy
-            local w,h=128*scale,144*scale
-            local outside=x+w<=-192 or x-w>=192 or y+h<=-224 or y-h>=224
-            if not outside then self.key_entered=true end
-            if self.key_t>=2000 or (outside and self.key_entered) then object.RawDel(self) end
+            -- 81(16)禁止离屏回收，按主程序2000帧到期删除。
         end,
         del=function(self) task.Clear(self) end,
         render=function(self)
@@ -6550,8 +6546,8 @@ do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
     local RING_COUNT, RING_SPEED = 15, 5                -- ins_89 的 c1 / sp1
     local FIRE_GAP = 5                                  -- 两圈相隔 5 帧（@920 t=0 / @1040 t=5）
     local START_AT = 60                                 -- Sub3 的 t=60
-    local SPEED_DELTA, DUR = -0.0614286, 70             -- ins_101 的 f0 / i0
-    local ANGLE_DELTA = 0.6                             -- = 0.010472 rad（我们的度/帧）
+    local SPEED_DELTA, DUR = -0.06142857298254967, 70             -- ins_101 的 f0 / i0
+    local ANGLE_DELTA = -0.6                             -- = 0.010472 rad（我们的度/帧）
 
     local hook_ccw = sg_tr_hook(
             { sg_rec(SG_POLAR, 0, DUR, -1, SPEED_DELTA, ANGLE_DELTA) }, SG_POLAR)
@@ -6564,8 +6560,9 @@ do  -- 80 永琳 非符（ecl18_a，永琳，组 9a 第 1 张）
     ---基准角在 TH095 空间里是 rand(−π,π)；整圈取反后方向集合不变，所以直接抽我们的度。
     local function run_sub4(owner)
         task.New(owner, function()
+            ran:Float(-math.pi,math.pi) -- 原334入口读取一次，随后348覆盖。
             while not st.dead do
-                local base = sg_deg(ran:Float(-math.pi, math.pi))
+                local base=math.deg(ran:Float(-math.pi,math.pi))
                 sg_shot(89, sg_style(13), 2, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1.5, base, 0, false, 546, hook_ccw)
                 task.Wait(FIRE_GAP)
@@ -6661,6 +6658,7 @@ do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a �
     ---Sub4：每 5 帧一整圈。
     local function run_sub4(owner)
         task.New(owner, function()
+            ran:Float(-math.pi,math.pi) -- 原34c入口读取，循环内另取发弹相位。
             while not st.dead do
                 ---shootOffset：本体周围 80 px 内的随机一点（ins_27 + ins_38 + ins_100）。
                 local m = SPAWN_R * ran:Float(0, 1)
@@ -6671,7 +6669,7 @@ do  -- 81 新難題「月のイルメナイト」（ecl19_a，辉夜，组 10a �
                 local acc = Angle(owner.x, owner.y, player.x, player.y)
                 local hook = sg_tr_hook(
                         { sg_rec(SG_VEC, 0, ACCEL_FRAMES, -1, ACCEL_MAG, acc) }, SG_VEC)
-                local base = sg_deg(ran:Float(-math.pi, math.pi))
+                local base=math.deg(ran:Float(-math.pi,math.pi))
                 local count = photo_index(PHOTO_LIMIT) + RING_EXTRA
                 local color = ran:Int(0, COLOR_SPAN - 1) + 1
                 sg_shot(89, sg_style(0), color, sx, sy, count, 1, RING_SPEED, 1.5,
@@ -6777,11 +6775,11 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
     local MOVE_AT = 130                                 -- Sub3 的 ins_67
     local MOVE_FRAMES, MOVE_EASE, MOVE_SPEED = 60, 0, 1.6
 
-    local BURST_LAYERS = 11                             -- ins_5 的 n = 10 ⇒ 11 层
+    local BURST_LAYERS = 10                             -- ins_5 的 n = 10 ⇒ 11 层
     local BURST_COUNT = 24                              -- ins_90 的 c1
     local BURST_STEP, BURST_FRAMES = 1 / 60, 60         -- floatV0 的初值 / 步长、ins_101 的 i0
 
-    local DRONE_N, DRONE_SPEED = 9, 4                   -- ins_83 的遍数 / extraFloatV3
+    local DRONE_N, DRONE_SPEED = 8, 4                   -- ins_83 的遍数 / extraFloatV3
     local DRONE_A0, DRONE_DA = 22.5, 45                 -- 0.392699 rad / 0.785398 rad
     local EMIT_R, EMIT_SPEED = 48, 1                    -- ins_27 的半径 / ins_89 的 sp1
     ---三档撒弹器（Sub8/9/10）：色号与周期（4/3/2 帧 —— Sub8/9/10 的 ins_4 分别在
@@ -6803,12 +6801,12 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
             self.x, self.y = owner.x, owner.y
             self.rot = 0
             self._a = 0
+            self.th095_enemy_age=0
             object.SetV(self, DRONE_SPEED, angle_deg, true)
             local w = lstg.world
             task.New(self, function()
                 ---Sub8/9/10 的循环：每 gap 帧一发（出膛点在 48 px 内随机、方向随机）。
-                while self.x > w.l - 64 and self.x < w.r + 64
-                        and self.y > w.b - 64 and self.y < w.t + 64 do
+                while true do
                     local m = EMIT_R * ran:Float(0, 1)
                     local oa = sg_deg(ran:Float(-math.pi, math.pi))
                     local sx, sy = self.x + m * cos(oa), self.y + m * sin(oa)
@@ -6822,6 +6820,8 @@ do  -- 82 薬符「胡蝶夢丸ナイトメア」（ecl18_b，永琳，组 9a �
             PhotoNative.enemy_birth(self)
         end,
         frame = function(self)
+            self.th095_enemy_age=self.th095_enemy_age+1
+            if self.th095_enemy_age>=9999 then object.RawDel(self);return end
             self._a = min(DRONE_ALPHA, self._a + DRONE_ALPHA / DRONE_FADE_IN)
             task.Do(self)                                  -- ★ 驱动淡入 / 撒弹 / 自灭协程
         end,
@@ -6960,10 +6960,10 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
     local BIG_COLOR = 0                                 -- 原作色号 0（灰）
     ---四组 FAN_AIMED 的 (count1, speed1, angleStep)，见上面的字节核对。
     local BIG = {
-        { 1, 12, 0.1848 },
-        { 2, 8, 0.1848 },
-        { 2, 6, 0.369599 },
-        { 2, 4, 0.554399 },
+        { 1, 12, math.deg(0.18479957) },
+        { 2, 8, math.deg(0.18479957) },
+        { 2, 6, math.deg(0.36959913) },
+        { 2, 4, math.deg(0.55439872) },
     }
 
     local SUB5_N = 5                                    -- slot 2..6，共 5 份
@@ -6983,7 +6983,7 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
                 task.Wait(SUB4_FIRE)
                 if st.dead then return end
                 spawn_ex_laser_straight(owner, lasers, BEAM_INDEX, owner.x, owner.y,
-                        -sg_aim(owner.x, owner.y), BEAM_LEN, BEAM_W, BEAM_SPEED)
+                        -sg_aim(owner.x,owner.y),BEAM_LEN,BEAM_W,BEAM_SPEED,12,1)
                 for i = 1, #BIG do
                     local b = BIG[i]
                     sg_shot(86, sg_style(17), BIG_COLOR, owner.x, owner.y,
@@ -6999,9 +6999,10 @@ do  -- 83 新難題「エイジャの赤石」（ecl19_b，辉夜，组 10a 第 
     local function run_sub5(owner)
         task.New(owner, function()
             while not st.dead do
+                ran:Float(-math.pi,math.pi) -- 原528每次被实际射角覆盖前仍读取。
                 spawn_ex_laser_straight(owner, lasers, SUB5_INDEX, owner.x, owner.y,
                         -math.deg(ran:Float(-math.pi, math.pi)),
-                        SUB5_LEN, SUB5_W, SUB5_SPEED)
+                        SUB5_LEN,SUB5_W,SUB5_SPEED,1,2)
                 PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106(24)
                 local gap = SUB5_GAP_BASE - SUB5_GAP_STEP * photo_index(PHOTO_LIMIT)
                 if gap < 1 then gap = 1 end
@@ -7132,8 +7133,8 @@ do  -- 84 錬丹「水銀の海」（ecl18_c，永琳，组 9a 第 3 张）
                             1, 1, EMIT_SPEED, 0.5, math.deg(a1), 90, false,
                             EMIT_FLAGS, hook_bounce)
                 end
-                a0 = a0 - EMIT_STEP
-                a1 = a1 + EMIT_STEP
+                a0=(a0-EMIT_STEP+math.pi)%(2*math.pi)-math.pi
+                a1=(a1+EMIT_STEP+math.pi)%(2*math.pi)-math.pi
                 task.Wait(EMIT_GAP)
             end
         end)
@@ -7238,6 +7239,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
     local st = { dead = false }
 
     ---Sub4：每 60 帧两波「同射线 16 连・减速转向」。
+    local offset_x,offset_y=0,0
     local function run_sub4(owner)
         task.New(owner, function()
             while not st.dead do
@@ -7247,11 +7249,11 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
                 local f0 = (player.y <= owner.y) and -CEIL_TURN or CEIL_TURN
                 local hook = sg_tr_hook(
                         { sg_rec(SG_CHDIR_A, 0, CEIL_WAIT, 1, f0, 1) }, SG_CHDIR_A)
-                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
+                sg_shot(89, sg_style(1),13,owner.x+offset_x,owner.y+offset_y,
                         1, CEIL_COUNT, CEIL_SP1, CEIL_SP2, 0, 0, false, CEIL_FLAGS, hook)
                 task.Wait(CEIL_DELTA)
                 if st.dead then return end
-                sg_shot(89, sg_style(1), 13, owner.x, owner.y,
+                sg_shot(89, sg_style(1),13,owner.x+offset_x,owner.y+offset_y,
                         1, CEIL_COUNT, CEIL_SP1, CEIL_SP2, 180, 0, false, CEIL_FLAGS, hook)
                 task.Wait(CEIL_WAIT - CEIL_DELTA)
             end
@@ -7261,6 +7263,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
     ---Sub5：每 3 帧一组「随机出膛点 + 自转十字」。
     local function run_sub5(owner)
         task.New(owner, function()
+            task.Wait(14)
             local a = {}
             for i = 1, #CROSS do
                 a[i] = CROSS[i][5]
@@ -7268,14 +7271,15 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
             while not st.dead do
                 local m = CROSS_R * ran:Float(0, 1)
                 local oa = sg_deg(ran:Float(-math.pi, math.pi))
-                local sx, sy = owner.x + m * cos(oa), owner.y + m * sin(oa)
+                offset_x,offset_y=m*cos(oa),m*sin(oa)
+                local sx,sy=owner.x+offset_x,owner.y+offset_y
                 local n = photo_index(PHOTO_LIMIT)
                 for i = 1, #CROSS do
                     local c = CROSS[i]
                     if n >= c[3] then
-                        sg_shot(89, sg_style(3), c[1], sx, sy,
+                        sg_shot(89, sg_style(1), c[1], sx, sy,
                                 4, 1, c[2], 0.5, math.deg(a[i]), 0, false, CROSS_FLAGS)
-                        a[i] = a[i] + c[4]
+                        a[i]=(a[i]+c[4]+math.pi)%(2*math.pi)-math.pi
                     end
                 end
                 task.Wait(CROSS_GAP)
@@ -7291,7 +7295,7 @@ do  -- 85 新難題「金閣寺の一枚天井」（ecl19_c，辉夜，组 10a �
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        st.dead = false
+        st.dead=false;offset_x,offset_y=0,0
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
@@ -7360,7 +7364,7 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
     local CARD_ID = 484
 
     ---Sub4 的 25 点 × 2 根 147。
-    local BURST_N = 25                                  -- ins_5 的 n = 24 ⇒ 25 遍
+    local BURST_N = 24                                  -- ins_5 的 n = 24 ⇒ 25 遍
     local BURST_R = 32                                  -- ins_38 的半径
     local BURST_STEP = 0.261799                         -- 15°（弧度）
     local BURST_A0 = 0                                  -- floatV0 初值（偏移角）
@@ -7392,10 +7396,10 @@ do  -- 86 秘薬「仙香玉兎」（ecl18_d，永琳，组 9a 第 4 张）
                 local sy = owner.y + BURST_R * sin(oa)
                 spawn_ex_laser(owner, lasers, LASER_INDEX, sx, sy, sg_deg(a),
                         LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW,
-                        LASER_SUSTAIN, LASER_FADE, 0, 0, 0, false, true)
+                        LASER_SUSTAIN,LASER_FADE,0,0,0,false,true,12,6)
                 spawn_ex_laser(owner, lasers, LASER_INDEX, sx, sy, sg_deg(b),
                         LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW,
-                        LASER_SUSTAIN, LASER_FADE, 0, 0, 0, false, true)
+                        LASER_SUSTAIN,LASER_FADE,0,0,0,false,true,12,6)
                 o = o + BURST_STEP
                 a = a + BURST_STEP
                 b = b + BURST_STEP
@@ -7555,8 +7559,8 @@ do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 �
     ---但每轮的漂移方向要跟着取反 ⇒ a6 每轮 −1.5°、a8 每轮 +2°。
     local function run_sub6(owner)
         task.New(owner, function()
-            local a6 = sg_deg(ran:Float(-math.pi, math.pi))     -- floatV0（只抽一次）
-            local a8 = sg_deg(ran:Float(-math.pi, math.pi))     -- floatV1（只抽一次）
+            local a6 = math.deg(ran:Float(-math.pi,math.pi))     -- floatV0（只抽一次）
+            local a8 = math.deg(ran:Float(-math.pi,math.pi))     -- floatV1（只抽一次）
             while not st.dead do
                 local n = RING_BASE + RING_STEP * photo_index(PHOTO_LIMIT)
                 sg_shot(89, sg_style(3), 6, owner.x, owner.y,
@@ -7566,8 +7570,8 @@ do  -- 87 新難題「ミステリウム」（ecl19_d，辉夜，组 10a 第 4 �
                 sg_shot(89, sg_style(3), 8, owner.x, owner.y,
                         n, 1, RING_SPEED, 0, a8, 90, false, RING_FLAGS, hook_b)
                 task.Wait(RING_GAP)
-                a6 = a6 - RING_DRIFT_A
-                a8 = a8 + RING_DRIFT_B
+                a6=(a6+RING_DRIFT_A+180)%360-180
+                a8=(a8-RING_DRIFT_B+180)%360-180
             end
         end)
     end

@@ -340,6 +340,8 @@ T.carrier=Class(object,{
         o.attached=attached
         o.th08_card_owner=game==8 and o.phase or nil
         o.th095_photo_owner=game==95 and o.phase or nil
+        local adapter=OriginalStageVisual.adapters[game]
+        if adapter and adapter.reserve and not adapter.reserve(o) then object.RawDel(o);return end
         o._original_presentation_seed_vars=vars
         if game==95 then OriginalStageVisual.bind_source(o,game,key)
         else T.bind(o,game,key) end

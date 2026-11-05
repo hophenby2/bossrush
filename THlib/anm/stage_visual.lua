@@ -337,7 +337,7 @@ function S.bind_source(o,game,key,preserve,events_override)
     end
     o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank}
     local adapter=S.adapters[game]
-    if adapter and adapter.bind then adapter.bind(o,key) end
+    if adapter and adapter.bind and adapter.bind(o,key)==false then return false end
     S.presentation.bind(o,game,key)
     if game==95 then o.layer=LAYER.ENEMY-.1 end
     if not preserve then
@@ -398,6 +398,8 @@ function S.wrap_actor(cls,game,key)
     local init,frame,render=cls.init,cls.frame,cls.render
     cls.init=function(o,...)
         o._original_visual_birth=true
+        local adapter=S.adapters[game]
+        if adapter and adapter.reserve and not adapter.reserve(o) then object.RawDel(o);return end
         init(o,...)
         o._original_visual_birth=nil
         if not IsValid(o) then return end
@@ -412,6 +414,7 @@ function S.wrap_actor(cls,game,key)
         if o._original_visual_birth then frame(o);return end
         local adapter=S.adapters[game]
         if adapter and adapter.frame and adapter.frame(o) then
+            if IsValid(o) and adapter.cull and adapter.cull(o) then return end
             if IsValid(o) then S.tick(o) end
             return
         end
@@ -424,6 +427,7 @@ function S.wrap_actor(cls,game,key)
         S.source_frame(o,o.timer-o._original_visual_origin)
         local x=o.x
         frame(o)
+        if IsValid(o) and adapter and adapter.cull and adapter.cull(o) then return end
         local presentation=o._original_presentation
         if game==95 and presentation and presentation.motion_active and o.th095_animation_stamp~=o.ani then
             o.th095_animation_vx,o.th095_animation_stamp,o.th095_animation_queue=o.x-x,o.ani,false

@@ -5,6 +5,22 @@
 local N={}
 N.photo=dofile('mod/GAME/th33_photo.lua')
 OriginalStageVisual.adapters[95]={bind=N.photo.bind,frame=N.photo.frame_actor,event=N.photo.flags,tick=N.photo.contact}
+-- PhotoEnemyManager::Spawn/SpawnWithContext共用128槽，先找空槽再运行出生ECL。
+function N.reserve_enemy(o)
+    N.enemy_pool=N.enemy_pool or {}
+    for i=1,128 do if N.enemy_pool[i]==o then return true end end
+    for i=1,128 do
+        local old=N.enemy_pool[i]
+        if not old or not IsValid(old) or old.status=='del' or old.status=='kill' then
+            N.enemy_pool[i]=o;o.th095_enemy_slot=i-1
+            return true
+        end
+    end
+    return false
+end
+N.photo.reserve=N.reserve_enemy
+OriginalStageVisual.adapters[95].reserve=N.reserve_enemy
+OriginalStageVisual.adapters[95].cull=N.photo.cull
 -- 0x2761是有效目标照片数，0x2764才是含拍空的实际快门数。
 -- 只包当前相机的完成快门事件；不读存档统计，重放也经过相同入口。
 function N.end_photo_count(owner)
@@ -19,6 +35,7 @@ function N.end_photo_count(owner)
 end
 function N.begin_photo_count(owner,camera)
     N.end_photo_count(owner)
+    N.enemy_pool={owner};owner.th095_enemy_slot=0
     owner.th095_photos_taken=0
     if not camera or type(camera.NewShotBonus)~='function' then return end
     if camera.th095_photo_owner then N.end_photo_count(camera.th095_photo_owner) end
