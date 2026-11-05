@@ -33046,18 +33046,11 @@ end
 
 ---每帧的 ex 指令 8 `SynchronizeOrbitingChildFormation`（EclExIns.cpp:444-510）。
 local function sync_formation(fams, self_fam)
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     local first = fams[1]
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -33084,7 +33077,7 @@ local function fire_gun39(fam)
     EX.shoot(fam, fam.x, fam.y, {
         op = 97, type = GUN_TYPE, color = EX.color(fam.fam_color),
         count1 = GUN_WAYS, count2 = 1, speed1 = GUN_SPD, speed2 = GUN_SPD2,
-        angle = -fam.fam_oa, step = GUN_STEP, flags = GUN_FLAGS,
+        angle = -fam.fam_oa, step = -GUN_STEP, flags = GUN_FLAGS,
     })
 end
 
@@ -33252,7 +33245,7 @@ local function card_frame(owner)
                 color = EX.color(even and 1 or 3),
                 count1 = RING_WAYS, count2 = 1,
                 speed1 = RING_SPD, speed2 = 0.9,
-                angle = -(owner.c444_ring0 + k * RING_SPIN), step = RING_STEP,
+                angle = -(owner.c444_ring0 + k * RING_SPIN), step = -RING_STEP,
                 flags = RING_FLAGS,
             })
         end
@@ -33792,7 +33785,7 @@ local FAM_LF2 = 0.800000011920929       -- Sub41 的 lf2（0x3f4ccccd）
 local FAM_SPEEDUP = 4.0             -- Sub46 t=0 的 `ins_27(lf3, lf1, 4)`
 local FAM_ORBIT_FRAMES = 120        -- `ins_73` 的时长
 local FAM_GROW = 0.5333333611488342     -- t=180 的径向速（0x3f088889）
-local FAM_SHRINK = -0.949999988079071   -- t=720 的径向速（0xbf733333）
+local FAM_SHRINK = -0.8999999761581421   -- t=720 的径向速（0xbf733333）
 local FAM_BLOOM = 1.7999999523162842    -- t=1020 的径向速（0x3fe66666）
 local FAM_MUL_A = 1.399999976158142     -- t=420 的 `ins_27(lf3, lf1, 1.4)`（0x3fb33333）
 local FAM_MUL_B = 1.0399999618530273    -- t=1140 的 `ins_27(lf4, lf1, 1.04)`（0x3f851eb8）
@@ -33808,7 +33801,7 @@ local FAM_LIST = {
 }
 
 ---枪的常数。
-local GUN_FIRE_A = 10               -- Sub42/43/44：`ins_2(9)` ⇒ 10 帧一发
+local GUN_FIRE_A = 9                -- SET_SECONDARY_TIME(9)当帧扣一次，周期9拍。
 local GUN_FIRE_45 = 4               -- Sub45：`ins_4(0, …)` 每 4 帧一发
 local WAIT_A, WAIT_BC = 280, 200    -- 0 号记录 WAIT 的帧数
 local ACC_A, ACC_BC = 60, 90        -- 1 号记录 ACCELERATE_VECTOR 的时长
@@ -33824,20 +33817,12 @@ local FAN45_FLAGS = 514             -- SPAWN_FAST | PLAY_SPAWN_SOUND
 ---ex 指令 8 SynchronizeOrbitingChildFormation（EclExIns.cpp:444-510）。
 ---  移植版把「同 exI2 组」写死成整张列表（本卡 10 只使魔的 exI2 全是 0）。
 local function sync_formation(list, self_fam)
-    local count = 0
-    local first
-    for i = 1, #list do
-        local f = list[i]
-        if IsValid(f) then
-            count = count + 1
-            list[count] = f
-            f.fam_exI1 = count - 1
-            if count == 1 then first = f end
-        end
-    end
-    for i = #list, count + 1, -1 do list[i] = nil end
+    local count=class.th08_combat.actor_count(list)
+    for i=1,count do list[i].fam_exI1=i-1 end
+    local first=list[1]
     if count == 0 then return end
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -33874,7 +33859,7 @@ local function gun_fire(self, g)
             op = 97, type = self.fam_li2, color = EX.color(self.fam_li1),
             count1 = FAN45_WAYS, count2 = 1,
             speed1 = FAN45_SPEED, speed2 = SHOT_SPEED2,
-            angle = -self.fam_oa, step = FAN45_STEP, flags = FAN45_FLAGS,
+            angle = -self.fam_oa, step = -FAN45_STEP, flags = FAN45_FLAGS,
         })
         return
     end
@@ -33888,7 +33873,7 @@ local function gun_fire(self, g)
         op = 97, type = self.fam_li2, color = EX.color(self.fam_li1),
         count1 = 1, count2 = 1,
         speed1 = 0.0, speed2 = SHOT_SPEED2,
-        angle = -self.fam_mangle, step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = -self.fam_mangle, step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
 end
 
@@ -34091,10 +34076,11 @@ local function card_frame(owner)
     if t == FAM_SPAWN_FRAME then
         ---`ins_7([10016], [10082])`：lf0 = 随机角（10 只共用同一个）。
         local lf0 = ran:Float(-PI, PI)
+        ran:Int(0,2147483647) -- 原作即使两个分支都写相同角速度，仍读取RANDOM_NONNEGATIVE_INT。
         local list = owner.c446_fams
         for i = 1, #FAM_LIST do
             local f = New(familiar, owner, list, lf0, FAM_LF1, FAM_LF2,
-                    FAM_LIST[i][1], FAM_LIST[i][2])
+                    FAM_LIST[i][1], FAM_LIST[i][2],({600,1000,600,600,1000,600,600,1000,600,600})[i])
             list[#list + 1] = f
         end
     end
@@ -34716,7 +34702,7 @@ local function boss_shot(owner, ang, ty, col)
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = ty, color = EX.color(col),
         count1 = 1, count2 = 1, speed1 = BOSS_GUN_SPEED, speed2 = BOSS_CHARGE_HIGH,
-        angle = -ang, step = BOSS_SHOT_ANGSTEP, flags = BOSS_SHOT_FLAGS,
+        angle = -ang, step = -BOSS_SHOT_ANGSTEP, flags = BOSS_SHOT_FLAGS,
     })
 end
 
@@ -34726,6 +34712,7 @@ local function fire_boss_gun(owner)
     ---`ins_111(0, 0x80, 0, 60, 1, 0, lf0)`：angle = 0、speed = lf0。
     EX.set_record(owner, 0, EX.K.AIMED, 0, BOSS_REC_INTERVAL, BOSS_REC_REPEAT, 0, boss_charge())
     local ang = ran:Float(-PI, PI)       -- `ins_7(lf0, rndAngle)`
+    if too_close(owner) then return end
     for i = 1, 6 do
         local s = BOSS_GUN_SHOTS[i]
         boss_shot(owner, ang, s[1], s[2])
@@ -34757,6 +34744,7 @@ local lw448_laser
 lw448_laser = Class(laser, {
     init = function(self, x, y, angle, color)
         self._native_laser_phase = { "l448_state", "l448_timer", 10, 16 }
+        self._native_laser_type,self._native_laser_flags=1,6
         self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 320 的身部。
@@ -34823,18 +34811,11 @@ end
 ---    第 0 号总是先跑完本帧回调、两者 li7 恒等）⇒ 移植版照此不实现（与卡 447 同）。
 ---------------------------------------------------------------------
 local function sync_formation(fams, self_fam)
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -34844,6 +34825,9 @@ local function sync_formation(fams, self_fam)
     if k ~= 0 then
         local first = fams[1]
         local target = wrap_pi(first.fam_oa + k * 2 * PI / count)
+        if first.fam_li7 ~= self_fam.fam_li7 then
+            target=wrap_pi(target+first.fam_oav)
+        end
         local delta = wrap_pi(self_fam.fam_oa + self_fam.fam_oav)
         delta = target - delta
         if math.abs(delta) > PI then
@@ -34860,7 +34844,7 @@ local function fire_gun50(fam, k)
     EX.shoot(fam, fam.x, fam.y, {
         op = 99, type = s[1], color = EX.color(s[2]),
         count1 = 1, count2 = 1, speed1 = CIR_SPEED, speed2 = CIR_SPEED2,
-        angle = -(fam.fam_oa + PI), step = CIR_STEP, flags = CIR_FLAGS,
+        angle = -(fam.fam_oa + PI), step = -CIR_STEP, flags = CIR_FLAGS,
     })
 end
 
@@ -34993,7 +34977,6 @@ local function card_frame(owner)
                 ---  （EnemyTimeline.cpp:86-95），同一帧稍后的敌人扫描还会再跑一遍
                 ---  ⇒ 出生帧使魔要跑 2 遍（t=0 与 t=1，各含一次 UpdateMovement）。
                 ---  移植版手工补第一遍；第二遍由引擎「新对象 append 到更新链尾」天然完成。
-                familiar_body(f)
             end
         end
     end
@@ -35509,11 +35492,11 @@ local BW_B, BW_T = 96, 176
 ---乱走（`ins_67(80, 0, 速度)`，easing 0 = LINEAR）。
 local WANDER_FRAMES = 80
 local WANDER_FIRST, WANDER_FIRST_SPEED = 90, 1.0
-local WANDER_PERIOD, WANDER_PERIOD_SPEED = 460, 0.5
+local WANDER_PERIOD, WANDER_PERIOD_SPEED = 492, 0.5
 ---★ 周期乱走的锚点是 t=550（`ecldata4b.ecl` Sub55 的循环头 @32980），
 ---  由 `@33644 t=1010 JUMP(550, −664)` 跳回；火花出生晚 60 帧（t=610），
 ---  所以两者**共用 460 的周期但锚点差 60**（旧版把乱走也挂到 610，晚了 60 帧）。
-local WANDER_CYCLE_FIRST = 550
+local WANDER_CYCLE_FIRST = 582
 
 ---「x > upper.x − 96」那条把角度改写成 `π − movementAngle`（原作怪癖，照抄）。
 local function wander_angle(owner)
@@ -35572,9 +35555,9 @@ end
 ---------------------------------------------------------------------
 ---火花 Sub57/58/59/60（一整朵火花 = 4 片，行为相同、贴图不同）
 ---------------------------------------------------------------------
-local SPARK_SPAWN_FRAME = 150    -- 宿主 t=150（固定角那两朵）
-local SPARK_CYCLE_FIRST = 610    -- 之后每 460 帧一朵（±7.5° 自机狙）
-local SPARK_CYCLE = 460
+local SPARK_SPAWN_FRAME = 182    -- 宿主 t=150（固定角那两朵）
+local SPARK_CYCLE_FIRST = 674    -- 之后每 460 帧一朵（±7.5° 自机狙）
+local SPARK_CYCLE = 492
 local SPARK_DIST = 295           -- lf0/lf1 = cos/sin(exF0)·295
 local SPARK_MOVE_FRAMES = 60     -- `ins_64(60, 1, …)`
 ---★ exF0 原件（float32）：`@32340` = 0x3fafeddf、`@32648/32668` = 0x3fe231d6。
@@ -35604,9 +35587,9 @@ local function spawn_sparks(owner, ang_th08)
 end
 
 ---Sub56（宿主子 context 0）：一轮 6 组环弹。
-local GUN_FRAME = 250            -- 宿主 t=250 `ins_135(0, "Sub56")`
-local GUN_PAIR_INTERVAL = 25     -- `ins_2(exI1)`：净冻 24 帧 ⇒ 每组占 25 帧
-local GUN_CYCLE = 150            -- 6 组
+local GUN_FRAME = 282            -- 宿主 t=250 `ins_135(0, "Sub56")`
+local GUN_PAIR_INTERVAL = 24     -- SET_SECONDARY_TIME(24)包含当前拍，周期24。
+local GUN_CYCLE = 144            -- 6 组
 local GUN_COUNT = 15             -- li0（Lunatic）
 local GUN_SPEED_FAST = 2.0
 local GUN_SPEED_SLOW = 1.0
@@ -35691,14 +35674,14 @@ local function fire_gun56(owner, pair)
         op = 99, type = P.fast, color = EX.color(P.color),
         count1 = GUN_COUNT, count2 = 1,
         speed1 = P.fspd, speed2 = GUN_SPEED2,
-        angle = a1, step = GUN_STEP, flags = GUN_FAST_FLAGS,
+        angle = -a1, step = -GUN_STEP, flags = GUN_FAST_FLAGS,
     })
     local a2 = ran:Float(-PI, PI)          -- 慢弹的 rndAngle（另抽一次）
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = P.slow, color = EX.color(P.color),
         count1 = GUN_COUNT, count2 = 1,
         speed1 = GUN_SPEED_SLOW, speed2 = GUN_SPEED2,
-        angle = a2, step = GUN_STEP, flags = GUN_SLOW_FLAGS,
+        angle = -a2, step = -GUN_STEP, flags = GUN_SLOW_FLAGS,
     })
 end
 
@@ -35993,6 +35976,7 @@ local lw451_laser
 lw451_laser = Class(laser, {
     init = function(self, x, y, angle_our, color)
         self._native_laser_phase = { "l451_state", "l451_timer", 20, 16 }
+        self._native_laser_type,self._native_laser_flags=1,6
         self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是角度制 ⇒ 这里乘 RAD。
@@ -36105,6 +36089,7 @@ c451_familiar = class.th08_combat.actor("ecldata4b:65", {
         self.f_list = list
         self.f_anm = li0            -- li0 = 原作主ANM编号
         self.f_color = li1          -- li1 = 光柱色号
+        self._original_presentation_seed_vars={[10016]=lf0}
         self.f_lf0 = lf0            -- 光柱角（TH08 口径）
         self.f_t = 0
         ---出生点 = 父机 worldPosition（`ins_91` 的偏移是 0,0）；终点 (exF0, 448)。
@@ -36137,7 +36122,6 @@ local function spawn_familiar(owner, li0, li1, exF0, lf0)
     ---★ 与原作 `SpawnEnemy2`（EnemyTimeline.cpp:64-113：先 CallEclSub + 拷变量块，
     ---  再当场 RunEcl 一次）同理：出生帧使魔要跑一遍；同一帧稍后的敌人扫描再跑一遍
     ---  ⇒ 移植版手工补第一遍，第二遍由引擎「新对象当帧也走一次 frame」天然完成。
-    familiar_body(f)
 end
 
 ---------------------------------------------------------------------
@@ -36151,13 +36135,13 @@ local function fire_fan(owner, btype)
         op = 96, type = btype, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT1, count2 = GUN_COUNT2,
         speed1 = GUN_SPEED_A, speed2 = GUN_SPEED2,
-        angle = 0, step = GUN_STEP, flags = GUN_FLAGS,
+        angle = 0, step = -GUN_STEP, flags = GUN_FLAGS,
     })
     EX.shoot(owner, owner.x, owner.y, {
         op = 96, type = btype, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT1, count2 = GUN_COUNT2,
         speed1 = GUN_SPEED_B, speed2 = GUN_SPEED2,
-        angle = 0, step = GUN_STEP, flags = GUN_FLAGS,
+        angle = 0, step = -GUN_STEP, flags = GUN_FLAGS,
     })
 end
 
@@ -36260,7 +36244,7 @@ local function card_frame(owner)
         if b.left == b.n then
             ---★ `FLOAT_MUL2 lf7 rndSgn 28`：rndSgn = `GetRandomF32Signed()`
             ---  （EclOperandsFloat.cpp:55）⇒ 恰好 ±28，不是连续均匀（旧版用了 ran:Float）。
-            b.cur = b.base + (ran:Int(0, 1) * 2 - 1) * 28
+            b.cur = b.base + ran:Float(-1,1) * 28
         else
             b.cur = b.cur + b.step
         end
@@ -36398,7 +36382,7 @@ local WANDER_SPEED_150 = 2.5
 local FREEZE_L = 330
 
 ---Sub74：连被 CALL 的那一帧算起共 33 帧（li6 = 32 的循环，最后一帧走 `ins_53 RETURN`）。
-local FX_FRAMES = 33
+local FX_FRAMES = 32
 
 ---大玉（Sub70..73）。
 local ORB_MOVE_FRAMES = 60        -- `ins_64(60, 1, lf2, lf3)`：easing 1 = IN_QUADRATIC
@@ -36436,7 +36420,7 @@ local GUN_END_T = GUN_ROUNDS * GUN_HALF * 2   -- 子 context 的 time 360（ins_
 ---     （`:1203-1226`）；float1 = −999.9 ⇒ 「用弹当时的角度」。
 local function set_gun_records(who)
     EX.clear_records(who)
-    EX.set_record(who, 0, EX.K.REL, 0, 60, 1, 999.9, 0)
+    EX.set_record(who, 0, EX.K.REL, 0, 60, 1, 999.9000244140625, 0)
     EX.set_record(who, 1, EX.K.WAIT, 0, 180, -1, -1, -1)
     EX.set_record(who, 2, EX.K.VEC, 0, 240, -1, 0.018333333, -999.9)
 end
@@ -36632,7 +36616,7 @@ local function gun_step(owner)
             color = EX.color((wave == 0) and GUN_COLOR_A or GUN_COLOR_B),
             count1 = GUN_COUNT1, count2 = GUN_COUNT2,
             speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-            angle = g.ang, step = GUN_ASTEP, flags = GUN_FLAGS,
+            angle = g.ang, step = -GUN_ASTEP, flags = GUN_FLAGS,
         })
         ---Sub68 是 `ins_16 lf0 -= 7.5°`（TH08）⇒ 我们的基准角 **加**；
         ---Sub69 是 `ins_15 lf0 += 7.5°` ⇒ 我们的基准角 **减**。
@@ -36671,7 +36655,7 @@ local function mount_gun(owner, dir)
     set_gun_records(owner)
     ---子 context 的 t=0：`ins_7([10016], [10082])` ⇒ lf0 = rndAngle ∈ [−π, π)。
     ---我们的基准角 = −lf0，分布一样 ⇒ 直接抽一个。
-    owner.c452_gun = { t = 0, ang = ran:Float(-PI, PI), dir = dir }
+    owner.c452_gun = { t = 0, ang = -ran:Float(-PI, PI), dir = dir }
 end
 
 local PROG = {
@@ -36734,26 +36718,19 @@ local function card_frame(owner)
 
     ---① Sub74 在跑：主 context 被 CALL 换掉（time / 冻帧都停），
     ---   但帧尾的 UpdateMovement 与子 context 照跑（EclRun.cpp:140-190）。
+    local fx_waiting=false
     if owner.c452_fx > 0 then
         owner.c452_fx = owner.c452_fx - 1
         if owner.c452_fx == 0 then
-            ---`ins_53 RETURN`：PopEclContext 把整个 context 还原回来。
             owner.c452_t = owner.c452_ret_t
             owner.c452_freeze = owner.c452_ret_sec
             owner.c452_pc = owner.c452_ret_pc
-        end
-        gun_step(owner)
-        local mx, my, done = move_step(owner.c452_move)
-        owner.c452_mangle=math.atan2(-(my-owner.y),mx-owner.x)
-        owner.x, owner.y = mx, my
-        if done then owner.c452_move = nil end
-        return
+            -- RETURN与外层后续指令同帧执行，不能多空转一拍。
+        else fx_waiting=true end
     end
 
-    ---② 分派循环（EclRun.cpp:57-96）：冻帧检查在最前面，**每条指令之后重来一遍**。
-    ---   ⇒ 冻帧里 time 净不变；`ins_2` 设下的冻帧会当场挡住同帧剩下的指令。
-    local halted = false
-    while true do
+    local halted = fx_waiting
+    while not fx_waiting do
         if owner.c452_freeze > 0 then
             owner.c452_freeze = owner.c452_freeze - 1
             halted = true
