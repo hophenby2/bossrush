@@ -666,6 +666,13 @@ function H.pattern(b,mode,sprite,c,n,l,v1,v2,angle,step,flags)
     H.trace(b,"pattern",mode,sprite,c,n,l,v1,v2,normal_angle(angle),step,flags)
     if not a.muted then H.fire(b) end
 end
+function H.set_sound(b,id)
+    local a=b.th06_actor;a.sound=id
+    if a.pattern then
+        if id>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512)
+        else a.pattern.flags=bit.band(a.pattern.flags,bit.bnot(512)) end
+    end
+end
 function H.fire(b,x,y,pattern)
     local a=b.th06_actor
     local p=pattern or a.pattern
@@ -938,12 +945,12 @@ function H.actor_post(a,count_phase)
         a.phase=a.phase+1
         if a.main and not a.meta.road then H.road_mid_tick(a) end
     end
-    local visible=not a.invisible and a.interactable
+    local visible=not a.invisible
     b._a=(a.invisible or (a.bat_timer or 0)>0) and 0 or 255
-    b.DMG_factor=a.damageable and visible and 1 or 0
+    b.DMG_factor=a.damageable and a.interactable and visible and 1 or 0
     -- ECL104只关体术；ECL117才关交互。不能因不可碰撞而漏掉自机弹受击。
     b.group=a.collidable and GROUP.ENEMY or GROUP.NONTJT
-    b._colli=visible and (a.main or a.entered==true)
+    b._colli=visible and a.interactable and (a.main or a.entered==true)
     SetAttr(b,"colli",b._colli and b.x>=-224 and b.x<=224 and b.y>=-256 and b.y<=256)
 end
 class["原作流程控制"] = Class(object, {
@@ -4705,7 +4712,7 @@ do
         H.pattern(b,1,2,6,8,2,1.7999999523162842,1.0,0.0,0.2617993950843811,4)
         a.muted=false
         H.interval(b,50,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=0.0,4.199999809265137;a.mode="velocity"
         H.wait(b,v,30)
@@ -4731,7 +4738,7 @@ do
         H.pattern(b,1,2,6,9,2,1.7999999523162842,1.0,0.0,0.2617993950843811,4)
         a.muted=false
         H.interval(b,50,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=-1.0471975803375244,4.199999809265137;a.mode="velocity"
         H.wait(b,v,30)
@@ -4759,7 +4766,7 @@ do
         H.pattern(b,1,2,6,5,3,1.5,0.699999988079071,0.0,0.2617993950843811,4)
         a.muted=false
         H.interval(b,128,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=0.0,4.199999809265137;a.mode="velocity"
         H.wait(b,v,30)
@@ -4785,7 +4792,7 @@ do
         H.pattern(b,1,2,6,5,3,1.5,0.699999988079071,0.0,0.2617993950843811,4)
         a.muted=false
         H.interval(b,128,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=-1.0471975803375244,4.5;a.mode="velocity"
         H.wait(b,v,30)
@@ -4855,7 +4862,7 @@ do
         H.pattern(b,1,2,6,9,2,2.299999952316284,1.2000000476837158,0.0,0.1745329201221466,4)
         a.muted=false
         H.interval(b,50,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=1.5707963705062866,4.5;a.mode="velocity"
         H.wait(b,v,100)
@@ -4878,7 +4885,7 @@ do
         H.pattern(b,1,2,6,9,2,2.299999952316284,1.2000000476837158,0.0,0.1745329201221466,4)
         a.muted=false
         H.interval(b,50,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.collidable=false
         a.angle,a.speed=0.0,4.5;a.mode="velocity"
         H.wait(b,v,100)
@@ -6919,7 +6926,7 @@ do
         a.muted=true
         H.pattern(b,3,3,2,v.i0,4,3.5,1.2000000476837158,0.0,0.0,4)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,40,false)
         H.wait(b,v,90)
         H.move_to(b,90,192.0,128.0,0.0,1)
@@ -6939,7 +6946,7 @@ do
         H.trace(b,"spell_end")
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         v.i3=1
         a.damageable=true
@@ -7231,7 +7238,7 @@ do
         a.muted=true
         H.pattern(b,3,3,6,v.i0,5,5.5,1.5,0.0,0.0,4)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,10,false)
         H.wait(b,v,90)
         H.move_to(b,90,192.0,128.0,0.0,1)
@@ -7254,7 +7261,7 @@ do
         H.trace(b,"spell_end")
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
         a.collidable=true
@@ -7286,7 +7293,7 @@ do
         H.trace(b,"spell_end")
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
         a.death_mode=2
@@ -7317,7 +7324,7 @@ do
         H.trace(b,"spell_end")
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
         a.death_mode=2
@@ -7346,7 +7353,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",14)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=1800;a.phase=0
@@ -7402,7 +7409,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",19)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=1800;a.phase=0
@@ -7459,7 +7466,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",22)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=1800;a.phase=0
@@ -7517,7 +7524,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",15)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7537,7 +7544,7 @@ do
         a.muted=true
         H.pattern(b,1,3,6,16,2,3.5,1.2000000476837158,3.1415927410125732,0.3490658402442932,4)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,22,false)
         v.f0=(3.1415927410125732)/(8.0)
         return B.part3(b,v)
@@ -7599,7 +7606,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",23)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7619,7 +7626,7 @@ do
         a.muted=true
         H.pattern(b,3,3,6,30,2,3.0,1.7999999523162842,0.0,0.3490658402442932,4)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,22,false)
         v.f0=(3.1415927410125732)/(8.0)
         return B.part3(b,v)
@@ -7680,7 +7687,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",16)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7760,7 +7767,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",20)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7844,7 +7851,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",24)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7924,7 +7931,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",17)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -7970,7 +7977,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",21)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -8017,7 +8024,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",25)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -8080,7 +8087,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",18)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -8130,7 +8137,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",26)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2100;a.phase=0
@@ -8167,7 +8174,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",27)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2400;a.phase=0
@@ -8236,7 +8243,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",28)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2400;a.phase=0
@@ -8317,7 +8324,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",29)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2400;a.phase=0
@@ -8330,7 +8337,7 @@ do
         H.sprite(b,66)
         a.muted=true
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,20,false)
         v.i0=0
         v.f0=0.0
@@ -8347,7 +8354,7 @@ do
         a.muted=true
         H.pattern(b,3,3,10,24,2,2.799999952316284,1.2000000476837158,3.1415927410125732,0.3490658402442932,4)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,20,false)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=1.5;a.mode="velocity"
@@ -8381,7 +8388,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",30)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2400;a.phase=0
@@ -8439,7 +8446,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",31)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.timeout=2400;a.phase=0
@@ -8538,7 +8545,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.c0=8
         v.f0=1.5
         return B.part2(b,v)
@@ -8577,7 +8584,7 @@ do
         H.pattern(b,9,2,6,5,2,1.7999999523162842,0.800000011920929,3.1415927410125732,0.0,516)
         a.muted=false
         H.interval(b,30,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -8599,7 +8606,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.c0=5
         v.f0=1.5
         return B.part2(b,v)
@@ -8640,7 +8647,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.f0=1.5
         v.cmp=((a.stage==7 and 4 or 3))-(0)
         if v.cmp~=0 then v.time=70;return B.part3(b,v) end
@@ -8711,7 +8718,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.f0=1.5
         v.cmp=((a.stage==7 and 4 or 3))-(0)
         if v.cmp~=0 then v.time=70;return B.part3(b,v) end
@@ -8782,7 +8789,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.f0=1.5
         v.cmp=((a.stage==7 and 4 or 3))-(0)
         if v.cmp~=0 then v.time=70;return B.part3(b,v) end
@@ -8851,7 +8858,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.c0=40
         return B.part2(b,v)
     end
@@ -8911,7 +8918,7 @@ do
         H.pattern(b,1,0,6,6,1,1.5,0.800000011920929,0.0,0.19634954631328583,516)
         a.muted=false
         H.interval(b,40,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -8931,7 +8938,7 @@ do
         H.pattern(b,1,4,2,4,1,1.5,0.800000011920929,0.0,0.2617993950843811,516)
         a.muted=false
         H.interval(b,30,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -8951,7 +8958,7 @@ do
         H.pattern(b,9,3,2,4,1,1.5,0.800000011920929,3.1415927410125732,-3.1415927410125732,516)
         a.muted=false
         H.interval(b,10,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -9156,7 +9163,7 @@ do
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
         H.pattern(b,3,4,2,19,2,1.5,0.800000011920929,0.0,0.0,2052)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,6,false)
         H.wait(b,v,30)
         H.sprite(b,135)
@@ -9201,7 +9208,7 @@ do
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
         H.pattern(b,3,4,2,16,2,1.5,0.800000011920929,0.0,0.0,2052)
         a.muted=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.interval(b,6,false)
         H.wait(b,v,30)
         H.sprite(b,137)
@@ -9274,7 +9281,7 @@ do
         H.pattern(b,3,8,3,16,2,3.0,1.0,0.0,0.15707963705062866,516)
         a.muted=false
         H.interval(b,40,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=1.7000000476837158;a.mode="velocity"
         H.move_dir(b,60,a.angle,a.speed,1)
@@ -9329,7 +9336,7 @@ do
         H.wait(b,v,170)
         v.c0=12
         v.f0=0.04908738657832146
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -9360,7 +9367,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.7853981852531433,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9399,7 +9406,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.0,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9438,7 +9445,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.356194496154785,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9477,7 +9484,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,3.1415927410125732,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9516,7 +9523,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,1.1780972480773926,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9555,7 +9562,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,1.9634953737258911,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9594,7 +9601,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.39269909262657166,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9633,7 +9640,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.7488934993743896,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9709,7 +9716,7 @@ do
         H.pattern(b,3,8,3,16,2,2.5,1.0,0.0,0.15707963705062866,516)
         a.muted=false
         H.interval(b,40,true)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         H.rand_angle(b,-3.1415927410125732,3.1415927410125732,true)
         a.speed=1.5;a.mode="velocity"
         H.move_dir(b,60,a.angle,a.speed,1)
@@ -9762,7 +9769,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.7853981852531433,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9801,7 +9808,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,0.0,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9840,7 +9847,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,2.356194496154785,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9879,7 +9886,7 @@ do
         H.sprite(b,16)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.move_dir(b,370,3.1415927410125732,0.800000011920929,1)
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.death_mode=0
         a.death=P[5][33]
         a.interactable=false
@@ -9916,7 +9923,7 @@ do
         H.wait(b,v,100)
         v.c0=12
         v.f0=0.04908738657832146
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.pattern(b,4,8,3,24,1,2.0,1.2000000476837158,1.5707963705062866,v.f0,512)
         H.wait(b,v,160)
         return
@@ -10929,7 +10936,7 @@ do
         v.f0=0.04908738657832146
         v.f1=-1.5707963705062866
         v.f2=ran:Float(0,6.2831854820251465)+-3.1415927410125732
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -11461,7 +11468,7 @@ do
     function B.part6(b,v)
         local a=b.th06_actor
         H.wait(b,v,6)
-        a.sound=25;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,25)
         a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
         a.muted=true
         H.pattern(b,9,2,2,20,1,2.5,1.0,3.1415927410125732,-3.1415927410125732,528)
@@ -11479,7 +11486,7 @@ do
     function B.part8(b,v)
         local a=b.th06_actor
         H.wait(b,v,6)
-        a.sound=25;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,25)
         a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
         a.muted=true
         H.pattern(b,1,9,0,13,1,8.0,1.0,0.0,0.19634954631328583,528)
@@ -11490,7 +11497,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,6)
-        a.sound=25;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,25)
         a.extra={-1,-1,-1,-1,0.02500000037252903,1.5707963705062866,-1.0,-1.0}
         a.muted=true
         H.pattern(b,3,7,1,20,2,6.0,2.0,0.0,0.0,528)
@@ -11630,7 +11637,7 @@ do
         H.move_to(b,120,192.0,144.0,0.0,1)
         H.wait(b,v,120)
         a.damageable=true
-        a.sound=23;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,23)
         return B.part2(b,v)
     end
     function B.part2(b,v)
@@ -12204,7 +12211,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.damageable=true
         v.c0=8
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
@@ -12267,7 +12274,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.damageable=true
         v.c1=2
         return B.part2(b,v)
@@ -12343,7 +12350,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.damageable=true
         v.c1=2
         return B.part2(b,v)
@@ -12419,7 +12426,7 @@ do
         a.accel=-0.06666667014360428;a.mode="velocity"
         H.wait(b,v,70)
         a.accel=0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         v.i0=4
         v.c1=6
         v.f0=ran:Float(0,6.2831854820251465)+-3.1415927410125732
@@ -12625,7 +12632,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,30)
@@ -12664,7 +12671,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,30)
@@ -12703,7 +12710,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,30)
@@ -12742,7 +12749,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,30)
@@ -12781,7 +12788,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,30)
@@ -12830,7 +12837,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",51)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -12903,7 +12910,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",52)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -12915,7 +12922,7 @@ do
         H.wait(b,v,120)
         a.damageable=true
         v.i3=0
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.f0=0.20000000298023224
         a.muted=true
         a.extra={100,-1,-1,-1,0.014999999664723873,-999.0,-1.0,-1.0}
@@ -13039,7 +13046,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",53)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -13051,7 +13058,7 @@ do
         H.wait(b,v,120)
         a.damageable=true
         v.i3=0
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         H.spawn(b,7,25,192.0,144.0,0.0,-5536,-2,10)
         H.spawn(b,7,26,64.0,112.0,0.0,-5536,-2,10)
         H.spawn(b,7,27,256.0,96.0,0.0,-5536,-2,10)
@@ -13077,7 +13084,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,32)
@@ -13109,7 +13116,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,64)
@@ -13138,7 +13145,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,16)
@@ -13167,7 +13174,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,48)
@@ -13197,7 +13204,7 @@ do
         H.anm_slot(b,0,16)
         a.interactable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.death_mode=1
         a.death=P[7][30]
         H.wait(b,v,16)
@@ -13269,7 +13276,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -13312,7 +13319,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",54)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -13381,7 +13388,7 @@ do
         a.collidable=false
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         H.wait(b,v,60)
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.f2=(b.x+192)
         v.i0=math.fmod(H.life(b),10)
         v.cmp=(v.i0)-(0)
@@ -13655,7 +13662,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -13695,7 +13702,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",55)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -13874,7 +13881,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -13914,7 +13921,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",56)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -14004,7 +14011,7 @@ do
         H.wait(b,v,60)
         a.damageable=true
         a.bounds={32.0,48.0,352.0,120.0}
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         return B.part2(b,v)
     end
@@ -14065,7 +14072,7 @@ do
         H.wait(b,v,60)
         a.damageable=true
         a.bounds={32.0,48.0,352.0,120.0}
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         return B.part2(b,v)
     end
@@ -14126,7 +14133,7 @@ do
         H.wait(b,v,60)
         a.damageable=true
         a.bounds={32.0,48.0,352.0,120.0}
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         return B.part2(b,v)
     end
@@ -14196,7 +14203,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -14236,7 +14243,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",57)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -14340,7 +14347,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.angle,a.speed=v.f0,3.200000047683716;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
         a.death_mode=1
         a.death=P[7][46]
@@ -14392,7 +14399,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -14432,7 +14439,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",58)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -14585,7 +14592,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -14625,7 +14632,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",59)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -14751,7 +14758,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.angle,a.speed=v.f0,5.800000190734863;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
         a.death_mode=1
         a.death=P[7][46]
@@ -14798,7 +14805,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.angle,a.speed=v.f0,5.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
         a.death_mode=1
         a.death=P[7][46]
@@ -14855,7 +14862,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -14895,7 +14902,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",60)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -15073,7 +15080,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -15113,7 +15120,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",61)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -15298,7 +15305,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.angle,a.speed=v.f0,0.0;a.mode="velocity"
-        a.sound=22;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,22)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=0.0,0.0,0,0,0,0
         a.death_mode=1
         a.death=P[7][46]
@@ -15435,7 +15442,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -15472,7 +15479,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",62)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -16180,7 +16187,7 @@ do
         a.death_mode=1
         a.death=P[7][46]
         v.c3=0
-        a.sound=27;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,27)
         a.muted=true
         H.pattern(b,1,3,6,3,1,0.5,0.0,0.0,1.0471975803375244,514)
         a.muted=false
@@ -16232,7 +16239,7 @@ do
         a.survival=false
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.damageable=false
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         v.c3=0
         H.wait(b,v,30)
         a.damageable=true
@@ -16268,7 +16275,7 @@ do
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",63)
         H.interval(b,0,false)
         H.clear_helpers(b)
-        a.sound=-1;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,-1)
         a.damageable=false
         a.collidable=true
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -16294,7 +16301,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,122)
-        a.sound=7;if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end
+        H.set_sound(b,7)
         a.extra={1,-1,-1,-1,-1.0,-1.0,-1.0,-1.0}
         return B.part4(b,v)
     end

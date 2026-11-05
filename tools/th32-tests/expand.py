@@ -91,7 +91,7 @@ def statement(stage,r,target):
     if op==81:return [f'a.offsetx,a.offsety,a.offsetz={vals(x)}'],False
     if op==82:return [f'a.extra={{{vals(x)}}}'],False
     if op==83:return ['H.cancel(b)'],False
-    if op==84:return [f'a.sound={value(x[0])};if a.pattern and a.sound>=0 then a.pattern.flags=bit.bor(a.pattern.flags,512) end'],False
+    if op==84:return [f'H.set_sound(b,{value(x[0])})'],False
     if op in(85,86):return [f'H.laser(b,{lit(op==86)},{vals(x)})'],False
     if op==87:return [f'a.laser_index={value(x[0])}'],False
     if op in(88,89):return [f'H.rotate_laser(b,{value(x[0])},{value(x[1])},{lit(op==89)})'],False
