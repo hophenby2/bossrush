@@ -37195,7 +37195,7 @@ local function ring(owner, ang, count1, count2, sp1, sp2, color, flags)
         op = 99, type = 16, color = EX.color(color),
         count1 = count1, count2 = count2,
         speed1 = sp1, speed2 = sp2,
-        angle = ang, step = RING_STEP, flags = flags,
+        angle = -ang, step = -RING_STEP, flags = flags,
     })
 end
 
@@ -38166,6 +38166,7 @@ local function familiar_step(fam)
         fam.c456_dead = true                       -- `ins_1()`（t=4200）
         return
     end
+    if fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c456_ang end
     fam.c456_t = fam.c456_t + 1
     local guns = fam.c456_guns
     if guns ~= nil then
@@ -38408,8 +38409,7 @@ local function card_frame(owner)
     ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们：RunEcl（ECL + 两把枪）→ IntegrateVelocity
     ---   → 出屏回收。FORCE_PAUSE 的敌机整段跳过（EnemyManagerUpdate.cpp:156-162）。
     local fams = owner.c456_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             if not fam.c456_paused then
                 familiar_step(fam)
@@ -38423,12 +38423,12 @@ local function card_frame(owner)
             end
             if fam.c456_dead then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
@@ -38821,8 +38821,7 @@ local function card_frame(owner)
     ---   `inheritParentPosition`（EnemyManagerUpdate.cpp:171-176）让它们每帧贴到 BOSS 身上
     ---   —— 注意用的是**跑完 ECL 之后**才更新的 BOSS 位置，所以先 step 再挪位置。
     local fams = owner.c457_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             familiar_step(fam)
             fam.x = owner.x + fam.c457_dx
@@ -38832,12 +38831,12 @@ local function card_frame(owner)
             end
             if fam.c457_dead then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
@@ -38988,7 +38987,7 @@ local GUN_RING_SPEED = 1.2         -- 循环里那一发
 local GUN_FAN_COLOR = 3
 local GUN_FAN_SPEED = 2.2
 local GUN_FAN_STEP = PI / 3
-local GUN_CYCLE = 260              -- 一轮 = 450 − 260 + 50 = 260 帧
+local GUN_CYCLE = 190              -- 尾跳450→260，下一条t310：两次满圈之间为190拍。
 local GUN_FIRST_RING_T = 310       -- 循环里第一发满圈的时刻
 local GUN_FAN_T0, GUN_FAN_N, GUN_FAN_GAP = 60, 8, 10   -- 相对 310 的自机狙节拍
 
@@ -39138,7 +39137,7 @@ local function gun_circle(fam, speed)
         op = 99, type = GUN_TYPE, color = EX.color(fam.c458_color),
         count1 = GUN_RING_COUNT, count2 = 1,
         speed1 = speed, speed2 = 0.5,
-        angle = -base, step = GUN_RING_STEP, flags = GUN_FLAGS,
+        angle = -base, step = -GUN_RING_STEP, flags = GUN_FLAGS,
     })
 end
 
@@ -39148,7 +39147,7 @@ local function gun_fan(fam)
         op = 96, type = GUN_TYPE, color = EX.color(GUN_FAN_COLOR),
         count1 = 1, count2 = 1,
         speed1 = GUN_FAN_SPEED, speed2 = 0.5,
-        angle = 0.0, step = GUN_FAN_STEP, flags = GUN_FLAGS,
+        angle = 0.0, step = -GUN_FAN_STEP, flags = GUN_FLAGS,
     })
 end
 
@@ -39354,20 +39353,19 @@ local function card_frame(owner)
     ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（12 只位置固定，所以只有 ECL + 枪）。
     ---   FORCE_PAUSE 的整段跳过（EnemyManagerUpdate.cpp:156-162）。
     local fams = owner.c458_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             if not fam.c458_paused then
                 familiar_step(fam)
             end
             if fam.c458_dead then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
@@ -39682,7 +39680,7 @@ local function gun_step(fam)
             op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
             count1 = 1, count2 = 1,
             speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-            angle = fam.c459_angle, step = GUN_STEP, flags = GUN_FLAGS,
+            angle = fam.c459_angle, step = -GUN_STEP, flags = GUN_FLAGS,
         })
     end
     g.f = g.f + 1
@@ -39704,6 +39702,7 @@ local function familiar_step(fam)
         fam.c459_dead = true                       -- `ins_1()`（t=30000，够不着）
         return
     end
+    if fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c459_angle end
     fam.c459_t = fam.c459_t + 1
     if fam.c459_gun then gun_step(fam) end
 end
@@ -39753,7 +39752,7 @@ local PROG = {
             op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
             count1 = RING1_COUNT, count2 = 1,
             speed1 = RING1_SPEED, speed2 = RING1_SPEED,
-            angle = rnd_angle(), step = RING_STEP, flags = FLAGS_A,
+            angle = rnd_angle(), step = -RING_STEP, flags = FLAGS_A,
         })
     end },
     { PHASE1_T, function(owner)
@@ -39779,13 +39778,13 @@ local PROG = {
             op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
             count1 = RING2_COUNT, count2 = 2,
             speed1 = RING26_SPEED1, speed2 = RING26_SPEED2,
-            angle = base, step = RING_STEP, flags = FLAGS_A,
+            angle = base, step = -RING_STEP, flags = FLAGS_A,
         })
         EX.shoot(owner, owner.x, owner.y, {
             op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_1),
             count1 = RING2_COUNT, count2 = 2,
             speed1 = RING26_SPEED1, speed2 = RING26_SPEED2,
-            angle = base - RING_HALF_STEP, step = RING_STEP, flags = FLAGS_B,
+            angle = base - RING_HALF_STEP, step = -RING_STEP, flags = FLAGS_B,
         })
     end },
     { RING28_T, function(owner)
@@ -39795,13 +39794,13 @@ local PROG = {
             op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_3),
             count1 = RING2_COUNT, count2 = 2,
             speed1 = RING28_SPEED1, speed2 = RING28_SPEED2,
-            angle = base, step = RING_STEP, flags = FLAGS_A,
+            angle = base, step = -RING_STEP, flags = FLAGS_A,
         })
         EX.shoot(owner, owner.x, owner.y, {
             op = 99, type = RING_TYPE, color = EX.color(RING_COLOR_3),
             count1 = RING2_COUNT, count2 = 2,
             speed1 = RING28_SPEED1, speed2 = RING28_SPEED2,
-            angle = base - RING_HALF_STEP, step = RING_STEP, flags = FLAGS_B,
+            angle = base - RING_HALF_STEP, step = -RING_STEP, flags = FLAGS_B,
         })
         ---[10036] = 16；lf0 = RANDOM_ANGLE、lf1 = 2.0；Sub75_2192 的生成循环。
         local a = rnd_angle()
@@ -39864,25 +39863,24 @@ local function card_frame(owner)
 
     ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（RunEcl + IntegrateVelocity + 出屏回收）。
     local fams = owner.c459_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             familiar_step(fam)
             if fam.c459_dead then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             else
                 fam.x = fam.x + math.cos(fam.c459_angle) * fam.c459_speed
                 fam.y = fam.y + math.sin(fam.c459_angle) * fam.c459_speed
                 if class.th08_combat.actor_outside(fam) then
                     object.RawDel(fam)
-                    table.remove(fams, i)
+
                 end
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
@@ -40180,6 +40178,7 @@ familiar_cls = class.th08_combat.actor("ecldata5:81", {
         self.c460_gun_kind = gun         -- 82 / 84
         self.c460_t = 0                  -- 主 context（Sub81/83）的 time
         self.c460_gun = nil              -- 子 context 槽 0
+        self.c460_paused = false
         self.c460_dead = false
     end,
     frame = function(self) end,
@@ -40224,6 +40223,7 @@ local function familiar_step(fam)
         fam.c460_dead = true                       -- `ins_1()`（t=4200，够不着）
         return
     end
+    if fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c460_angle end
     fam.c460_t = fam.c460_t + 1
     if fam.c460_gun then gun_step(fam) end
 end
@@ -40246,17 +40246,17 @@ local function gen_step(owner)
     local k = g.t % GEN_PERIOD
     if k == GEN_FIRST then
         ---t=0：往下的那只（color 6 / 枪 82）；Sub79 在左边缘、Sub80 在右边缘。
+        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
         local x = ran:Float(-GEN_X_JITTER, GEN_X_JITTER)
         if g.sub == 80 then x = x + GEN_FIELD_X end
-        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
         spawn_familiar(owner, from_th08_x(x), from_th08_y(0),
                        -GEN_DIR_DOWN, speed, GUN_DOWN)
     elseif k == GEN_SECOND then
         ---t=10：往上的那只（color 2 / 枪 84）；Sub79 在右边缘、Sub80 在左边缘。
+        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
         local jit = (g.sub == 79) and GEN_X_JITTER2 or GEN_X_JITTER
         local x = ran:Float(-jit, jit)
         if g.sub == 79 then x = x + GEN_FIELD_X end
-        local speed = GEN_SPEED_BASE + ran:Float(0, 1)
         spawn_familiar(owner, from_th08_x(x), from_th08_y(GEN_FIELD_Y),
                        -GEN_DIR_UP, speed, GUN_UP)
     end
@@ -40344,24 +40344,28 @@ local PROG = {
         owner.c460_gen = { sub = 79, t = 0 }        -- `ins_135(0, 79)`
     end },
     { FREEZE1_T, function(owner)
+        for _,fam in ipairs(owner.c460_fams) do if IsValid(fam) then fam.c460_paused=true end end
         owner.c460_gen = nil                        -- `ins_135(0, −1)`
         owner.c460_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
         reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
         reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
     end },
     { THAW1_T, function(owner)
+        for _,fam in ipairs(owner.c460_fams) do if IsValid(fam) then fam.c460_paused=false end end
         owner.c460_gen = { sub = 80, t = 0 }        -- `ins_135(0, 80)`
         reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
         reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
         begin_wander(owner)                         -- `ins_67(60, 0, 1.0)`
     end },
     { FREEZE2_T, function(owner)
+        for _,fam in ipairs(owner.c460_fams) do if IsValid(fam) then fam.c460_paused=true end end
         owner.c460_gen = nil
         owner.c460_eyes = { t = 0, pc = 1, i0 = EYE_QUOTA }
         reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
         reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
     end },
     { THAW2_T, function(owner)
+        for _,fam in ipairs(owner.c460_fams) do if IsValid(fam) then fam.c460_paused=false end end
         owner.c460_gen = { sub = 79, t = 0 }
         reisen_ex12(MARK_A, FREEZE_A_DIR_TH08, FREEZE_SPEED)
         reisen_ex12(MARK_B, FREEZE_B_DIR_TH08, FREEZE_SPEED)
@@ -40427,25 +40431,24 @@ local function card_frame(owner)
 
     ---⑤ 使魔 = 敌机循环按 slot 顺序走到它们（RunEcl + IntegrateVelocity + 出屏回收）。
     local fams = owner.c460_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
-        if IsValid(fam) then
+    class.th08_combat.step_actors(fams,function(fam)
+        if IsValid(fam) and not fam.c460_paused then
             familiar_step(fam)
             if fam.c460_dead then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             else
                 fam.x = fam.x + math.cos(fam.c460_angle) * fam.c460_speed
                 fam.y = fam.y + math.sin(fam.c460_angle) * fam.c460_speed
                 if class.th08_combat.actor_outside(fam) then
                     object.RawDel(fam)
-                    table.remove(fams, i)
+
                 end
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)

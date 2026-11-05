@@ -62,11 +62,13 @@ local profiles = {
     ["ecldata4b:65"]={spawns={{91,5000,0,0}},events={{0,77,24,24},{0,160,30},{0,80,18}},attached=true},
     ["ecldata4b:70"]={spawns={{94,500,0,0}},events={{0,77,24,24},{0,160,30},{0,80,16},{0,80,3}},attached=false},
     ["ecldata5:55"]={spawns={{92,3000,56,56},{92,3000,-56,56},{92,8000,56,-56},{92,8000,-56,-56}},events={{0,77,24,24},{0,160,30}},attached=true},
-    ["ecldata5:68"]={spawns={{90,200,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
+    ["ecldata5:71"]={spawns={{90,200,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
+    ["ecldata5:68"]={source_for=function(o,a) return a[5]==6296066 and "ecldata5:71" or "ecldata5:68" end,spawns={{90,200,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata5:59"]={spawns={{92,3000,24,32},{92,3000,8,32},{92,3000,-8,32},{92,3000,-24,32},{92,8000,40,32},{92,8000,-40,32}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata5:64"]={spawns={{90,1200,16,368},{90,1200,16,432},{90,1200,80,432},{90,1200,368,368},{90,1200,368,432},{90,1200,304,432},{90,1200,16,80},{90,1200,16,16},{90,1200,80,16},{90,1200,368,80},{90,1200,368,16},{90,1200,304,16}},events={{0,77,24,24},{0,160,30},{0,80,8192}},attached=true},
     ["ecldata5:77"]={spawns={{91,200,0,0}},events={{0,77,24,24},{0,160,30}},attached=true},
-    ["ecldata5:81"]={spawns={{90,300,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
+    ["ecldata5:83"]={spawns={{90,300,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
+    ["ecldata5:81"]={source_for=function(o,a) return a[5]==84 and "ecldata5:83" or "ecldata5:81" end,spawns={{90,300,false,false}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata2:20"]={spawns={{91,400,0,0}},events={{0,77,24,24},{0,160,30},{0,80,1},{60,81,2},{60,81,1}},attached=true},
     ["ecldata2:28"]={spawns={{91,600,0,0}},events={{0,77,24,24},{0,160,30},{0,80,1},{60,81,2},{60,81,1}},attached=true},
     ["ecldata2:43"]={spawns={{90,50,false,false}},events={{0,77,24,24},{0,160,30},{0,80,1},{60,81,2},{60,81,1}},attached=true},
@@ -137,6 +139,11 @@ return function()
         end
         for i=#list,n+1,-1 do list[i]=nil end
         return n
+    end
+    function M.step_actors(list,step)
+        local n=M.actor_count(list)
+        for i=1,n do step(list[i]) end
+        M.actor_count(list)
     end
     local form_stage,form_player,form_stamp,form_focus,form_frames,form_youkai
     form_frames,form_youkai=0,false
@@ -456,7 +463,7 @@ return function()
             if o.status=='del' or o.status=='kill' then M.discard(o);return end
             local profile=cfg
             -- 同一个Lua类的不同ECL变体必须连同显示源一起切换，不能只换交互表。
-            local source_key=cfg.variants and cfg.variants[args[1]] or key
+            local source_key=cfg.source_for and cfg.source_for(o,args,parent) or cfg.variants and cfg.variants[args[1]] or key
             if source_key~=key then profile=assert(profiles[source_key]) end
             if profile.events_for then
                 local instance={}
@@ -497,7 +504,7 @@ return function()
             if o.th08_dead then return end
             if not M.parent_alive(o) then M.discard(o);return end
             -- 铃仙 ExIns 冻结附着链时，原作跳过 ECL 与受击。
-            if o.c456_paused or o.c458_paused then
+            if o.c456_paused or o.c458_paused or o.c460_paused then
                 o.colli,o.th08_accept=false,false
                 o.th08_guard=math.max(0,o.th08_guard-1)
                 if frame then frame(o) end
