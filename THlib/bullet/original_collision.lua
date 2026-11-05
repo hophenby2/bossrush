@@ -20,12 +20,14 @@ function C.events(o,clock)
     local events=o._original_interaction_events
     if not events then return end
     local index=o._original_interaction_index
+    o._original_interaction_clock=clock
     while events[index] and events[index][1]<=clock do
         local e=events[index]
         if e[2]==77 then
             o._original_damage_box={e[3],e[4]}
             o.a,o.b,o.rect=e[3]/2,e[4]/2,true
         elseif e[2]==78 then o._original_secondary_box={e[3],e[4]}
+        elseif e[2]==160 then o._original_reduction_until=e[1]+e[3]
         elseif e[2]==183 then o._original_no_damage_during_bomb=e[3]~=0 end
         index=index+1
     end

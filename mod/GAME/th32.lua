@@ -2790,11 +2790,14 @@ do
         a.extra={60,1,-1,-1,0.0,4.0,-1.0,-1.0}
         H.pattern(b,3,1,6,24,2,2.0,1.0,0.0,0.0,4)
         v.i0=(v.c3)*(3)
+        v.time=v.time+(v.i0)
         H.wait(b,v,41)
         H.pattern(b,3,5,15,32,1,5.0,1.0,0.0,0.0,132)
+        v.time=v.time+(v.i0)
         H.wait(b,v,61)
         H.pattern(b,3,1,6,16,2,2.0,1.0,0.0,0.0,4)
         v.i0=(v.c3)*(5)
+        v.time=v.time+(v.i0)
         H.wait(b,v,101)
         v.c0=v.c0-1
         if v.c0>0 then v.time=1;return B.part2(b,v) end

@@ -3,6 +3,35 @@
 -- 激光状态机来自PhotoEffect.cpp；秘鍵来自enm16/script8/sprite11，幽幽子的扇面来自
 -- enm17/script12/sprite11。原始THTX只经texture_png.py封装成PNG，没有重画。
 local N={}
+-- 0x2761是有效目标照片数，0x2764才是含拍空的实际快门数。
+-- 只包当前相机的完成快门事件；不读存档统计，重放也经过相同入口。
+function N.end_photo_count(owner)
+    local camera=owner.th095_photo_camera
+    if camera and camera.th095_photo_owner==owner then
+        if camera.NewShotBonus==owner.th095_photo_bonus then
+            camera.NewShotBonus=owner.th095_photo_original
+        end
+        camera.th095_photo_owner=nil
+    end
+    owner.th095_photo_camera,owner.th095_photo_bonus,owner.th095_photo_original=nil,nil,nil
+end
+function N.begin_photo_count(owner,camera)
+    N.end_photo_count(owner)
+    owner.th095_photos_taken=0
+    if not camera or type(camera.NewShotBonus)~='function' then return end
+    if camera.th095_photo_owner then N.end_photo_count(camera.th095_photo_owner) end
+    local previous=camera.NewShotBonus
+    owner.th095_photo_camera,owner.th095_photo_original=camera,rawget(camera,'NewShotBonus')
+    owner.th095_photo_bonus=function(self,bonus,...)
+        if bonus=='base score' and IsValid(owner) and owner.photo_damage_limit then
+            owner.th095_photos_taken=owner.th095_photos_taken+1
+        end
+        return previous(self,bonus,...)
+    end
+    camera.th095_photo_owner=owner
+    camera.NewShotBonus=owner.th095_photo_bonus
+end
+function N.photos_taken(owner) return owner.th095_photos_taken or 0 end
 function N.pose(o,base)
     if o._original_actor then OriginalStageVisual.poses(o,{base,base+1,base+2,base+3,base+4,base+5}) end
 end

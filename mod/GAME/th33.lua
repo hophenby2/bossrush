@@ -942,13 +942,11 @@ end
 ---本仓库**不实现拍照** —— 项目自带拍照自机射命丸文：THlib/player/aya/aya.lua:191 给
 ---player 挂了 player.camera，快门由玩家自己按（aya.lua:59-62 → aya_system.lua 的
 ---TenguCamera:GetPhoto）。
----原作的 photoIndex 是**这一关里按过快门的张数**（按了就加、拍空也算，见
----PhotoCamera.cpp:503 附近的计数）；按作者要求这里换成**拍中本体的张数**：只有先过
----取景框判定、真的打到本体的那一下才算（记在下面 take_damage2 的包装里），按空枪不加。
----⇒ 每波弹的密度只跟着「打中本体几次」涨，拍空的快门不该让下一波更密。
----⚠ 一处口径差异：原作 photoIndex 是**关卡内累计**的；这里改成「本卡内、拍中本体才加」，
----  老存档的 scoredata.total_photocount 不再影响密度。每张卡在自己的 init
----  （photo_damage_on）里把计数清零 —— 原作 7 幕本来就是各自独立的选关、各自从 0 开始。
+---原作photoIndex只在CountPhotoTargets命中有效目标、设置alternateCapture时递增
+---（PhotoCamera.cpp:625-631、481-497）；拍空只增加photosTaken，不推进Boss。
+---这里用拍中本体的张数对应photoIndex；两个ECL计数不能混用。
+---photoIndex和photosTaken每幕从0开始，不读存档scoredata.total_photocount。
+---photo_damage_on重置两者，photosTaken由当前相机实际完成的快门事件推进。
 ---  各卡按自己的 ins_141 上限截断（例如卡 71 的 0..7）。
 local photo_hits = 0
 
@@ -1034,9 +1032,11 @@ local function photo_damage_on(boss_obj, limit)
     boss_obj.photo_damage_limit = limit
     boss_obj.photo_hit_count = 0
     photo_hits = 0
+    PhotoNative.begin_photo_count(boss_obj,player and player.camera)
 end
 
 local function photo_damage_off(boss_obj)
+    PhotoNative.end_photo_count(boss_obj)
     PhotoNative.restore_rate(boss_obj)
     boss_obj.photo_damage_limit = nil
 end
@@ -7850,10 +7850,9 @@ end--咲夜 非符（ecl14_a）
 
 ---──────────────────── Stage 7 魔符「全世界ナイトメア」（ecl15_a，组 12a 第 1 张） ────────────────────
 do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 第 1 张）
-    ---原作是「满世界的蝙蝠」：本体在框里漂，**每 96 帧**放一只蝙蝠（子机）到处飞，
-    ---蝙蝠越飞越快；另外两条发弹上下文（Sub5 窄扇 / Sub6 整圈）的弹数都写成
-    ---`int(photosTaken/7)` 与 `int(photosTaken/15)` —— 这一关的快门上限只有 3（ins_141(3)），
-    ---**永远算得出 0 发**，所以这一张的威胁全在蝙蝠身上（这正是原作的样子）。
+    ---原作是「满世界的蝙蝠」：本体在框里漂，t60起连续96拍、每拍放一只蝙蝠，
+    ---蝙蝠越飞越快；Sub5窄扇/Sub6整圈的弹数分别为photosTaken+7/+15。
+    ---photosTaken含拍空，且不被有效照片上限3截断；拍空不推进Boss的photoIndex。
     ---骨架（/tmp/N_ecl15_a.txt）：
     ---  · Sub2：t=130 ins_104 亮卡名 + ins_75(-160,96,160,192) + ins_149(2)。
     ---  · Sub3 @684：t=0 起装饰 Sub7；t=60 起 Sub4（蝙蝠发生器）+ 音效；t=90 起 Sub5（slot1）/
@@ -7921,14 +7920,14 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
     ---Sub5（slot1）：每 4 帧一轮、一轮 3 把扇（每把再 +120°）；弹数 = photosTaken + 7
     ---（intV0 = photosTaken + 7，ins_20(+, 10084, 7)）。8 轮（ins_6(extraInt0,8)）之后
     ---ins_4(0, Sub5_0) 从头重来、重读一次自机角 ⇒ 每 32 帧重瞄准一次。
-    ---本移植按用户口径用「拍中本体」的张数（photo_index）当 photosTaken。
+    ---读10084实际快门数，不能用10081有效照片数替代。
     local FAN5_COUNT, FAN5_ROUNDS = 7, 8
     local function run_fan5(owner)
         task.New(owner, function()
             while not st.dead do
                 local a = sg_aim(owner.x, owner.y)      -- Sub5_0 的 ins_7(floatV0, playerAngle)
                 for _ = 1, FAN5_ROUNDS do
-                    local n = photo_index(PHOTO_LIMIT) + FAN5_COUNT
+                    local n = PhotoNative.photos_taken(owner) + FAN5_COUNT
                     for _ = 1, 3 do
                         sg_shot(87, sg_style(4), 2, owner.x, owner.y,
                                 n, 1, 4, 1.5, a, 5.625, false, 514, nil)
@@ -7948,7 +7947,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
             while not st.dead do
                 local a = sg_aim(owner.x, owner.y)
                 for _ = 1, FAN6_ROUNDS do
-                    local n = photo_index(PHOTO_LIMIT) + FAN6_COUNT
+                    local n = PhotoNative.photos_taken(owner) + FAN6_COUNT
                     sg_shot(88, sg_style(12), 1, owner.x, owner.y,
                             n, 1, 1, 1.5, a, 5.625, true, 514, nil)
                     task.Wait(60)

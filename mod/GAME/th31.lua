@@ -67,7 +67,7 @@ OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 ---      ★ BOSS 带 4 层彗星头俯冲，沿途撒的弹**先减速停住、原地等 180 帧、
 ---        再朝转向后的方向加速 200 帧飞出**—— 两段式，所以被打频率很低。
 ---  · 216「紧缩世界」（十六夜咲夜）       —— 平均 8.5 / 死局 0.0% / 峰值 980 发有判定 347
----      ★ 每 270 帧一轮：扇形弹飞出去 60 帧减速停住、再折 90°；第 150 帧**冻结 100 帧**
+---      ★ 每300真帧一轮（含CALL效果的30拍）：第180拍冻结，100拍后恢复
 ---        （弹不位移、自机 lock），并把场上所有带标记的弹就地变成隐形发射源
 ---        （每 3 帧一发 5.5、朝源弹角度与它的反方向各一条弹流）；
 ---        解冻那一帧 BOSS 朝自机打一发扇形，弹数逐轮 +1（5、6、7…）。
@@ -401,6 +401,7 @@ local CARD = {}
 ---  ⇒ ECL 里 0x4x/0x5x 段的「妖怪那一支」只在（低速满 7 帧后）执行。
 --- 形态在每张卡的frame里推进，发弹和碰撞共用原作7帧过渡。
 class.th08_combat = dofile("mod/GAME/th31_combat.lua")()
+class.th08_nightblind=dofile('mod/GAME/th31_nightblind.lua')
 class.th08_native = dofile("mod/GAME/th31_native.lua")
 local function player_is_youkai(who)
     return class.th08_combat.youkai(who)
@@ -2233,14 +2234,6 @@ local POOL_SIZE = 1536
 ---TH08 的场地（GameManager.cpp:132-155 的 IsWithinPlayfield：0..384 / 0..448）。
 local FIELD_L, FIELD_R, FIELD_B, FIELD_T = -192, 192, -224, 224
 
----夜盲症的三条 ins_36。INSTALL_INTERPOLATION 的操作数是
----[目标 float 变量, 时长, 回调号, 缓动, p0, p1, p2, p3]（EclDependencies.cpp:356-383），
----回调 0..6 全是 InterpolateLinear（EclGlobals.cpp:16-25），缓动 0 = 线性。
-local BLIND_R0, BLIND_R1, BLIND_R_FRAMES = 320, 96, 120
-local BLIND_R2, BLIND_R2_FRAMES = 64, 1800
-local BLIND_A_FRAMES = 10
-local BLIND_LOOP = 125                  -- 循环 125 次之后换第二条半径插值
-
 ---本卡自己的池子（= 原作那 1536 个弹槽）。
 local pool = {}
 
@@ -2306,52 +2299,8 @@ lw206_bullet = Class(bullet, {
 
 ---Sub47 的夜盲症。原作是纯画面效果（写在 AsciiManager 里），这里做成一个跟着自机走的
 ---object：洞内画 Blindness 贴图、洞外补四块黑。alpha/半径的插值口径照抄 Sub47。
-local lw206_blind = Class(object, {
-    init = function(self)
-        self.img = "Blindness"
-        self.layer = LAYER.ENEMY_BULLET_EF + 1
-        self.group = GROUP.INDES
-        self.hide, self.bound, self.navi, self.colli = false, false, false, false
-        self._blend, self._a, self._r, self._g, self._b = "", 255, 255, 255, 255
-        self.bl = 0
-        self.alpha = 0
-        self.radius = BLIND_R0
-    end,
-    frame = function(self)
-        local bl = self.bl
-        self.bl = bl + 1
-        self.x, self.y = player.x, player.y
-        ---alpha：lf1 的 10 帧插值。li0 = (int)lf1 只在头 10 帧里被读，之后固定 255。
-        local a = bl * 255 / BLIND_A_FRAMES
-        if a > 255 then a = 255 end
-        self.alpha = a
-        ---半径：LF0 的 320→96（120 帧），第 125 帧换成 96→64（1800 帧）。
-        if bl < BLIND_LOOP then
-            local u = bl
-            if u > BLIND_R_FRAMES then u = BLIND_R_FRAMES end
-            self.radius = BLIND_R0 + (BLIND_R1 - BLIND_R0) * u / BLIND_R_FRAMES
-        else
-            local u = bl - (BLIND_LOOP - 1)
-            if u > BLIND_R2_FRAMES then u = BLIND_R2_FRAMES end
-            self.radius = BLIND_R1 - (BLIND_R1 - BLIND_R2) * u / BLIND_R2_FRAMES
-        end
-    end,
-    render = function(self)
-        local a = self.alpha
-        if a <= 0 then return end
-        local r = self.radius
-        local w = lstg.world
-        ---洞外四块黑（AsciiManager.cpp:1630-1676 的四个 DrawSquare；参数序是 l, r, b, t）。
-        SetImageState("white", "", a, 0, 0, 0)
-        if self.x - r > w.l then RenderRect("white", w.l, self.x - r, w.b, w.t) end
-        if self.x + r < w.r then RenderRect("white", self.x + r, w.r, w.b, w.t) end
-        if self.y - r > w.b then RenderRect("white", w.l, w.r, w.b, self.y - r) end
-        if self.y + r < w.t then RenderRect("white", w.l, w.r, self.y + r, w.t) end
-        ---洞本身：原作把 128×128 的贴图缩放成半径/63（≈ 直径 2r）。
-        SetImageState("Blindness", "", a, 255, 255, 255)
-        Render("Blindness", self.x, self.y, 0, r / 64, r / 64)
-    end,
-})
+local lw206_blind=class.th08_nightblind.effect
+
 
 ---一条 ins_97（SHOOT_FAN）：count1 = 1、count2 = 8。
 ---角度只跟 index1 走（count1=1 → 偏移 0），index2 只改速度：
@@ -4193,7 +4142,7 @@ local function to_th08_y(y) return 224 - y end
 ---Sub79（BOSS 根）的节拍。
 local FIRST_Y = 96                      -- ins_64(110, 4, 192, 128)：TH08 y=128 → 我们 96
 local FIRST_FRAMES = 110
-local SPAWN_FRAME = 130                 -- t=130：7 棵树 + 挂上环 + 开始上移
+local SPAWN_FRAME = 162                 -- 原t130 + CALL Sub33占32拍：7棵树、挂环和上移
 local BOSS_END_Y = 160                  -- ins_64(240, 0, selfX, 64)：TH08 y=64 → 我们 160
 local BOSS_MOVE_FRAMES = 240
 
@@ -6518,8 +6467,8 @@ local BOSS_MOVE_FRAMES = 90                 -- ins_64(90, 4, 192, 224) 的时长
 local BOSS_END_X, BOSS_END_Y = 0, 0         -- TH08 (192,224) → 我们 (0,0)：场地正中
 local BOSS_START_Y = 96                     -- 生成时的 SET_POSITION(192, 128) → 我们 96
 local MOVE_EASING = 4                       -- 4 = OUT_QUADRATIC（EnemyManager.cpp:100-121）
-local FAMILIAR_T = 170                      -- 8 只使魔都在这一帧生成
-local WANDER_FIRST = 170                    -- 第一条 ins_67（跟使魔同一帧）
+local FAMILIAR_T = 202                      -- 原t170 + CALL Sub16占32拍：8只使魔生成
+local WANDER_FIRST = 202                    -- 第一条ins_67与使魔同拍，之后间隔仍60
 local WANDER_PERIOD = 60                    -- t=230 的 ins_4(170, …) → 每 60 帧重来一次
 local WANDER_FRAMES = 120                   -- ins_67(120, 0, 0.5) 的时长
 local WANDER_SPEED = 0.5                    -- … 的速度
@@ -7746,7 +7695,7 @@ end
 ---  Sub5 = Sub1 用 `ins_52(5)` 调的一次性子程序（只生成观感特效，跳过）、
 ---  Sub3 = 「被标记的弹」原地变成的敌机、Sub4 = Sub3 在 t=0 再生的同伴。
 ---
----  内容：咲夜在自己的符卡里**把时间定住**。BOSS 每 270 帧一轮：先挂上子 context
+---  内容：咲夜在自己的符卡里**把时间定住**。BOSS每300真帧一轮（含CALL等待30拍）：先挂上子context
 ---  打一轮扇形弹（每发弹飞出去 60 帧减速停住、再朝侧向折 90° 匀速飞出），
 ---  然后在第 150 帧**冻结整个世界 100 帧**（弹不位移、自机完全不能动），
 ---  冻结开始的那一帧把场上所有「带标记的弹」原地变成隐形敌机（Sub3/Sub4）——
@@ -7781,7 +7730,7 @@ end
 ---      t=360  `ins_136(26, 0)` 解冻；`ins_96(20, 6, [10039], 2, 0.8, 0.4, 0, 0.19634955, 514)`
 ---             = SHOOT_FAN_AIMED：朝自机打 count1 = 计数器、两档速度（0.8 / 0.6）的扇形，
 ---             每 11.25° 一发；`ins_30([10039])` 计数器 +1。
----      t=380  `ins_4(110, Sub1_504)` 拨回标签 → **一轮 270 帧**（jump 的落点就是标签，
+---      t=380  `ins_4(110, Sub1_504)` 拨回标签 → 加CALL的30拍后一轮300真帧（jump落在标签，
 ---             所以拨回去那一帧只跳过 ins_6，其余照跑）。
 ---    ★ 冻结只挡三件事：弹的位移（BulletManager.cpp:858-860）、自机整个 OnUpdate
 ---      （Player.cpp:1027-1038：位置、射击、碰撞判定都不更新）、Gui 与符卡计时
@@ -7860,12 +7809,12 @@ end
 ---Sub1（根）的节拍。括号里的 t 是 TH08 的时间戳。
 local ENTER_FRAMES, ENTER_Y = 110, 96        -- ins_64(110, 4, 192, 128) → 我们 (0,96)
 local CYCLE_START = 110                      -- 标签 Sub1_504
-local DRIFT1_T, DRIFT1_FRAMES = 200, 60      -- ins_67(60, 4, 1.0)
-local FREEZE_T, UNFREEZE_T = 260, 360        -- ins_136(26, 1) / ins_136(26, 0)
-local DRIFT2_T, DRIFT2_FRAMES = 260, 120     -- ins_67(120, 4, 1.0)
-local JUMP_T = 380                           -- ins_4(110, Sub1_504)
-local CYCLE = JUMP_T - CYCLE_START           -- 270
-local FAN_T = 360                            -- ins_96(...)
+local DRIFT1_T, DRIFT1_FRAMES = 230, 60      -- ins_67(60, 4, 1.0)
+local FREEZE_T, UNFREEZE_T = 290, 390        -- ins_136(26, 1) / ins_136(26, 0)
+local DRIFT2_T, DRIFT2_FRAMES = 290, 120     -- ins_67(120, 4, 1.0)
+local JUMP_T = 410                           -- ins_4(110, Sub1_504)
+local CYCLE = JUMP_T - CYCLE_START           -- 原270 + 每轮CALL Sub5占30拍 = 300
+local FAN_T = 390                            -- ins_96(...)
 local FAN_COUNT_START = 5                    -- ins_6([10039], 5)
 local FAN_COUNT2 = 2                         -- ins_96 的 count2
 local FAN_SPEED1, FAN_SPEED2 = 0.8, 0.4
@@ -7891,7 +7840,7 @@ local S2_CD_SPEED = 2.5
 local S2_AIM_COUNT = 50                      -- ins_6([10036], 50)
 local S2_AIM_SPEED = 3.0
 local S2_AIM_COLOR = 3
-local S2_KILL_T = FREEZE_T - CYCLE_START     -- 父在 cycle 相位 150 卸子 context
+local S2_KILL_T = FREEZE_T - CYCLE_START     -- 实际相位180卸子context；CALL期间子context照常跑
 
 ---Sub3 / Sub4（隐形发射源）。
 local KNIFE_SPEED = 4.1                      -- ins_65 的第二个操作数
@@ -8390,14 +8339,14 @@ local function boss_frame(owner)
     ---★ t=380 的 `ins_4(110, Sub1_504)`：把 context 时间拨回 110 并**同帧**跳回标签
     ---（EnemyManagerUpdate 里 RunEcl 的 HANDLE_JUMP：context->time = op0 后原地下发）。
     ---上面那一帧已经跑过标签那一段，所以这里只把**下一帧**的时间设成 111
-    ---（= 110 经过帧末 time++ 之后的真实值）→ 一轮 = t=380 到下一个 t=380 = 270 帧。
+    ---（= 110 经过帧末 time++ 之后的真实值）；这里用含CALL等待的相位，循环长300真帧。
     if t == JUMP_T then
         owner.lw216_t = CYCLE_START + 1
     else
         owner.lw216_t = t + 1
     end
-    -- scriptedUpdateFreeze由t=260/360的ExIns26显式切换。
-    -- 这里先倒数会使弹在t=359恢复，比自机解锁和原作早一帧。
+    -- ExIns26在原局部t260/360、实际相位180/280显式切换冻结。
+    -- 恢复严格沿ECL事件，不在帧首另减冻结计时。
 end
 
 local function card_init(owner)
@@ -15655,7 +15604,7 @@ end
 ---卡 199「虚人「乌」」（藤原妹红）
 ---  ecldata8sp.ecl：Sub67 = BOSS 根、Sub71 = BOSS 0 号子 context（整卡的节拍）、
 ---  Sub70 = 「一次放 3 只乌鸦」的生成助手、Sub68 = 乌鸦、Sub69 = 乌鸦的枪。
----  （根 t=110 的 `ins_52(39)` = 32 发纯观感火花 —— 按本文件惯例跳过。）
+---  根t110的CALL等待32拍，后续挂枪在真帧202；不能把CALL当作零时长。
 ---
 ---  · Sub67（根；`ins_134(4200, …)` = 70 秒、Sub118 #77 的 SET_LIFE 3000）：
 ---      t=0    `ins_64(110, 4, 192, 128)` 的目标就是**当前位置** ⇒ BOSS 原地（我们 (0, 96)）。
@@ -15877,8 +15826,8 @@ local function step_show(owner)
 end
 
 ---Sub67（BOSS 根）。
-local ROOT_CHILD_AT = 170
-local ROOT_WRAP = 350
+local ROOT_CHILD_AT = 202
+local ROOT_WRAP = 382
 
 local function card_init(owner)
     EX.clear_records(owner)
@@ -15937,7 +15886,7 @@ end
 ---  ecldata8sp.ecl：Sub72 = BOSS 根、Sub78 = 0 号子 context（重挂计时）、
 ---  Sub79 = 1 号子 context（BOSS 自己的枪）、Sub76 / Sub77 = 两条「一次放 5 只凤凰」的
 ---  生成助手、Sub73 = 凤凰本体、Sub74 / Sub75 = 凤凰身上的两把枪。
----  （根 t=110 的 `ins_52(39)` = 32 发纯观感火花，按本文件惯例跳过。）
+---  根t110的CALL等待32拍，后续挂枪在真帧202。
 ---
 ---  · Sub72（根；Sub116 的 `CALL 72` 带 life 3000 = 我们的卡血、`ins_134(4200, …)` = 70 秒）：
 ---      t=0    `ins_64(110, 4, 192, 128)` 的目标就是**当前位置** ⇒ BOSS 原地（我们 (0, 96)）。
@@ -16179,8 +16128,8 @@ local function boss_gun_step(owner, c)
 end
 
 ---Sub72（BOSS 根）。
-local ROOT_CHILD_AT = 170               -- t=170 建 0 / 1 号子 context
-local ROOT_WRAP = 350                   -- t=350 的 JUMP 落点就是它自己
+local ROOT_CHILD_AT = 202               -- 原t170 + CALL Sub85的32拍：建0/1号context
+local ROOT_WRAP = 382                   -- 原t350的自跳；此前CALL已占32拍
 local CYCLE = 180                       -- Sub78 在 t=180 `JUMP 0 -> #0`
 
 local function card_init(owner)
@@ -16255,7 +16204,7 @@ end
 ---卡 201「蓬莱「凯风快晴 -富士山火山-」」（藤原妹红）
 ---  ecldata8sp.ecl：Sub80 = BOSS 根、Sub84 = 「24 发环 + 10 只使魔」的 CALL 子程序、
 ---  Sub82 / Sub83 = 0 号子 context（自机狙扇 / 42 发环）、Sub81 = 使魔（火山弹的发射台）。
----  （根 t=110 的 `CALL 39` = 32 发纯观感火花，按本文件惯例跳过。）
+---  根t110的CALL等待32拍；事件时钟从-32起步保留这段等待。
 ---
 ---  · Sub80（根；Sub116 #106 的 `CALL 80` 带 life 2500 = 我们的卡血、`ins_134(4200, …)` = 70 秒）：
 ---      t=0    `ins_64(110, 4, 192, 128)` 的目标就是**当前位置** ⇒ BOSS 原地（我们 (0, 96)）。
@@ -16662,7 +16611,7 @@ local ROOT = {
 local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
-    owner.lw201_ctx = { t = 0, child = nil }
+    owner.lw201_ctx = { t = -32, child = nil }
     owner.lw201_fams = {}
     owner.lw201_mv = nil
     owner.lw201_mv_ang = 0
@@ -17273,7 +17222,7 @@ end
 ---      t=110  `ins_81 ENABLE_INTERACTION_FLAGS 4`（恢复可受伤）、
 ---             `ins_160 SET_DAMAGE_REDUCTION_TIMER 420`（原作入场后 420 帧砍不出伤害；
 ---               移植版的伤害走 boss_system，不另做）、`ins_183 SET_NO_DAMAGE_DURING_STOP 1`、
----             `ins_182/61/61` 换 EXTRA 图层、`ins_52 CALL 39`（火花，纯观感 ⇒ 跳过）、
+---             `ins_182/61/61`换EXTRA图层、CALL效果并等待32拍、
 ---             `ins_6 SET_INT li7 6` → `ins_90 SPAWN_FAMILIAR_AT_POSITION(sub98, 0, 448, …)`
 ---             （TH08 左下角）、`li7 = 2` → 同样的调用 (384, 0)（右上角）、
 ---             `ins_135 SET_CHILD_ECL(0, 101)` / `(1, 102)`（BOSS 的两把枪）。
@@ -17348,7 +17297,7 @@ end
 local BOSS_X, BOSS_Y = 0, 96
 
 ---Sub97 的节拍：`ins_64(110, 4, 192, 128)` 之后第一条指令的 time = 110。
-local T_SPAWN = 110
+local T_SPAWN = 142                     -- 原t110 + CALL Sub85的32拍
 
 ---人形的出生点（TH08 口径）与色号（`ins_6 SET_INT li7`，SPAWN_ENEMY 拷给新敌机的那个 int）。
 local FAM_SPAWN = {
@@ -17389,6 +17338,10 @@ local S102_TYPE, S102_COLOR, S102_SPD1, S102_SPD2, S102_FLAGS = 6, 2, 2.0, 0.5, 
 ---★ act 的返回值：无返回 = 正常执行（pc + 1）；返回 (新pc, 新time) = 跳转；
 ---  返回 'stop' = 本帧到此为止（二级计时器冻结，EclRun.cpp:60-65）。
 local function run_ctx(ins, owner, c)
+    if (c.call_wait or 0)>0 then
+        c.call_wait=c.call_wait-1
+        if c.call_wait>0 then return end
+    end
     while true do
         local i = ins[c.pc]
         if i == nil then return end     -- 指令表跑完（这张卡的子程序都不会 RETURN）
@@ -17473,10 +17426,10 @@ local S100 = {
     [3] = { t = S100_RESTART, act = function() return 0, 0 end },  -- `ins_4 JUMP 0 -> #0`
 }
 
----Sub101：BOSS 0 号枪（自己的 time 900 起；子 context 是根 t=110 挂上去的 ⇒ 实际在真帧 1010）。
+---Sub101：根在真帧142挂枪；枪在局部900 CALL效果，真帧1074才开始环弹。
 local S101 = {
     [0] = { t = S101_T, act = function() end },     -- `op0`（跳转表占位）
-    [1] = { t = S101_T, act = function() end },     -- `ins_52 CALL 39`（火花，纯观感）
+    [1] = { t = S101_T, act = function(o,c) c.pc=2;c.call_wait=32;return 'stop' end },     -- `ins_52 CALL 39`（火花，纯观感）
     [2] = { t = S101_T, act = function(o, c) c.lf0 = ran:Float(0, 1) * S101_SPD_SPAN end },
     [3] = { t = S101_T, act = function(o, c) c.lf0 = c.lf0 + S101_SPD_MIN end },
     [4] = { t = S101_T, act = function(o, c)    -- `ins_99 SHOOT_CIRCLE(type2, col13, 32 发)`
@@ -17489,10 +17442,10 @@ local S101 = {
     [5] = { t = S101_T + S101_PERIOD, act = function() return 2, S101_T end },  -- `JUMP 900 -> #2`
 }
 
----Sub102：BOSS 1 号枪（自己的 time 1800 起 ⇒ 实际在真帧 1910）。
+---Sub102：根在真帧142挂枪；枪在局部1800 CALL效果，真帧1974才开始扇弹。
 local S102 = {
     [0] = { t = S102_T, act = function() end },     -- `op0`
-    [1] = { t = S102_T, act = function() end },     -- `ins_52 CALL 39`
+    [1] = { t = S102_T, act = function(o,c) c.pc=2;c.call_wait=32;return 'stop' end },     -- `ins_52 CALL 39`
     [2] = { t = S102_T, act = function(o, c) c.xi0 = S102_BURST end },
     [3] = { t = S102_T, act = function(o, c) c.lf0 = aim_our(o.x, o.y) end },
     [4] = { t = S102_T, act = function(o, c)    -- `ins_97 SHOOT_FAN(type6, col2, 1 发, speed 2.0)`
@@ -27754,7 +27707,7 @@ end
 ---             压进 callStack、CallEclSub 把它的 time 归 0（EclDependencies.cpp:472-500 ＋
 ---             EclManager.cpp:69-80），RETURN 时 PopEclContext 再把整份 context 还原
 ---             （EclDependencies.cpp:505-540）。Sub49 自己的时间走到 t=1、跨 **33 真帧**，
----             ⇒ **父 time ≥ 80 的指令全部后移 33 真帧**：t=190 的轮头落在真帧 223。
+---             ⇒ 父time≥80的指令后移32真帧（调用拍共用）：t190轮头在真帧222。
 ---      t=160  `ins_136(15, 0)`（ECL-Ex 15 = 抖屏）＋ `ins_93(15, 0, 0, 0, 1000, −2, 10)`
 ---             （在 TH08 (0,0) 生一只 Sub15：它只是每 20 帧放一批 `ins_139(63, 16, 0)` ——
 ---             效果 63 = EFFECT_RISING_BOSS_TRACKING_PARTICLE，纯观感）。两条都只占真帧数。
@@ -27800,7 +27753,7 @@ end
 ---  ★ 移植版的占位口径（跟本文件其它卡一致）：
 ---    · 纯观感一律不做：t=80 的 Sub49 火花、t=160 的抖屏与 Sub15、`ins_54/ins_62/ins_83/
 ---      ins_145/ins_147/ins_152/ins_160`。**但 t=80 那 33 真帧的时间偏移照留**（它决定轮头
----      落在第 223 真帧）。
+---      落在第222真帧，CALL共占32个额外更新）。
 ---    · 使魔用 `Class(object)`：不吃弹、不撞自机（原作 Sub39 没开 `ins_81`，只开了形态特效）。
 ---    · 使魔出屏回收（EnemyManagerUpdate.cpp:221-262）：出生点在 BOSS 身上 ⇒ 一出生就算
 ---      「进过场地」，此后整只出屏就消失。
@@ -27829,8 +27782,8 @@ local PI = 3.141592653589793
 ---Sub36：落位与夹框。
 local BOSS_X, BOSS_Y = 0, 96            -- `ins_64(60, 4, 192, 128)` 的目标（TH08 → 我们）
 local BOSS_MOVE_FRAMES = 60
-local CALL_SHIFT = 33                   -- `ins_52(49)` 占掉的真帧数（见卡头）
-local T_WAVE0 = 190 + CALL_SHIFT        -- 轮头（父 time 190 ⇒ 真帧 223）
+local CALL_SHIFT = 32                   -- `ins_52(49)` 占掉的真帧数（见卡头）
+local T_WAVE0 = 190 + CALL_SHIFT        -- 轮头（父time190 ⇒ 真帧222）
 local CYCLE = 210                       -- `ins_4(190, Sub36_452)`
 local T_WANDER = 180                    -- 轮内 +180（父 time 370）
 local BW_TH_L, BW_TH_R, BW_TH_B, BW_TH_T = 32, 352, 48, 128   -- `ins_75(32, 48, 352, 128)`（换算来源）
@@ -43190,11 +43143,13 @@ local function ins_mount_a(owner, s)
     owner.c466_slot0 = { cd = 0 }
     owner.c466_hawk_kind = 46
     for i = 1, #HAWK_A do spawn_hawk(owner, HAWK_A[i]) end
+    s.call_wait=32
 end
 
----第一圈的 t=150：`ins_135(0, 50)`（Sub50 是纯视觉的夜盲效果 ⇒ 只卸载）。
+---第一圈原t150、真帧182：Sub50替换发弹子context并开始夜盲滤镜。
 local function ins_unmount(owner, s)
     owner.c466_slot0 = nil
+    class.th08_nightblind.install(owner,50)
 end
 
 ---第二圈起回跳到 #24 之后只跑 `ins_62` + 6 条 `ins_91(47, …)`（Sub45 不重挂）。
@@ -43247,6 +43202,10 @@ local SUB466 = {
 
 local function sub466_step(owner)
     local s = owner.c466_main
+    if (s.call_wait or 0)>0 then
+        s.call_wait=s.call_wait-1
+        if s.call_wait>0 then return end
+    end
     ---`ins_2` 的停帧：这一帧什么都不做。
     if s.pause > 0 then
         s.pause = s.pause - 1
@@ -43257,6 +43216,7 @@ local function sub466_step(owner)
         if ins == nil or ins[1] ~= s.t then break end
         s.pc = s.pc + 1
         ins[2](owner, s)
+        if (s.call_wait or 0)>0 then return end
         ---★ `ins_2` 之后原作是**当帧**就 break ⇒ 这一帧后面的指令留到解冻后再跑。
         if s.pause > 0 then return end
         ---★ `ins_4` 把 s.t / s.pc 拨回去之后 while 会**继续扫**（同帧继续跑）。
@@ -43783,6 +43743,7 @@ end
 local function ins_wave_b(owner, s)
     spawn_wave(owner, 48, WAVE_LF1_B)
     boss_fan(owner, 4, 2)
+    s.call_wait=32
 end
 
 local function ins_wave_c(owner, s)
@@ -43802,13 +43763,16 @@ end
 ---`ins_4(330, → t330)`：把 time 拨回 330 并**同帧继续扫** t=330 那一整段。
 local function ins_loop(owner, s)
     s.t = T_WAVE_C
-    s.pc = 4
+    s.pc = 5
 end
+
+local function ins_blind(owner,s) class.th08_nightblind.install(owner,56) end
 
 local SUB468 = {
     { 0,          ins_enter },
     { T_WAVE_A,   ins_wave_a },
     { T_WAVE_B,   ins_wave_b },
+    { 210,        ins_blind },
     { T_WAVE_C,   ins_wave_c },
     { T_WAVE_D,   ins_wave_d },
     { T_WANDER,   ins_wander },
@@ -43817,11 +43781,16 @@ local SUB468 = {
 
 local function sub468_step(owner)
     local s = owner.c468_main
+    if (s.call_wait or 0)>0 then
+        s.call_wait=s.call_wait-1
+        if s.call_wait>0 then return end
+    end
     while true do
         local ins = SUB468[s.pc]
         if ins == nil or ins[1] ~= s.t then break end
         s.pc = s.pc + 1
         ins[2](owner, s)
+        if (s.call_wait or 0)>0 then return end
         ---★ `ins_4` 把 s.t / s.pc 拨回去之后 while 会**继续扫**（原作 low_redispatch）。
     end
     s.t = s.t + 1
@@ -44261,6 +44230,10 @@ end
 ---回跳点 Sub58_1080：`ins_25(F0, ANGLE_PLAYER, π/2)` / `ins_7(F2, −0.12083)` /
 ---`ins_135(0, 61)`（t=240 与 t=120 同一支）。
 local function ins_loop_point(owner, s)
+    if not owner.c469_blind_started then
+        class.th08_nightblind.install(owner,60)
+        owner.c469_blind_started=true
+    end
     owner.c469_f0 = aim_th08(owner) + PI / 2
     owner.c469_f2 = -0.120830484
     child_install(owner)
@@ -44331,6 +44304,7 @@ local function sub469_step(owner)
 end
 
 local function card_init(owner)
+    owner.c469_blind_started=false
     EX.clear_records(owner)
     EX.pool_clear()
     -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
@@ -48268,7 +48242,7 @@ local function gun_run(u)
 end
 
 local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
     ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤
     ---   （enemy:take_damage 见 protect 就整段跳过，THlib/enemy/enemy.lua:221-227）。
     if u.invuln > 0 then
@@ -48667,7 +48641,7 @@ local function card_frame(owner)
             units[j] = u
             j = j + 1
         elseif IsValid(u) then
-            object.RawDel(u)
+            class.th08_combat.discard(u)
         end
     end
     for k = #units, j, -1 do units[k] = nil end
@@ -49479,7 +49453,7 @@ unit = class.th08_combat.unit({
 })
 
 local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
     ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
     if u.invuln > 0 then
         u.invuln = u.invuln - 1
@@ -49861,7 +49835,7 @@ local function card_frame(owner)
             units[j] = u
             j = j + 1
         elseif IsValid(u) then
-            object.RawDel(u)
+            class.th08_combat.discard(u)
         end
     end
     for k = #units, j, -1 do units[k] = nil end
@@ -50779,7 +50753,7 @@ unit = class.th08_combat.unit({
 })
 
 local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
     ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
     if u.invuln > 0 then
         u.invuln = u.invuln - 1
@@ -51016,7 +50990,7 @@ local function card_frame(owner)
             units[j] = u
             j = j + 1
         elseif IsValid(u) then
-            object.RawDel(u)
+            class.th08_combat.discard(u)
         end
     end
     for k = #units, j, -1 do units[k] = nil end
@@ -51618,7 +51592,7 @@ unit = class.th08_combat.unit({
 })
 
 local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
     ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
     if u.invuln > 0 then
         u.invuln = u.invuln - 1
@@ -52423,7 +52397,7 @@ local function card_frame(owner)
             units[j] = u
             j = j + 1
         elseif IsValid(u) then
-            object.RawDel(u)
+            class.th08_combat.discard(u)
         end
     end
     for k = #units, j, -1 do units[k] = nil end
@@ -53031,7 +53005,7 @@ local function make_card(build)
     })
 
     local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
         ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
         if u.invuln > 0 then
             u.invuln = u.invuln - 1
@@ -53121,7 +53095,7 @@ end
                 units[j] = u
                 j = j + 1
             elseif IsValid(u) then
-                object.RawDel(u)
+                class.th08_combat.discard(u)
             end
         end
         for k = #units, j, -1 do units[k] = nil end
@@ -54025,7 +53999,7 @@ local function make_card(build)
     })
 
     local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
         ---① SET_DAMAGE_REDUCTION_TIMER：出生后若干帧完全免伤。
         if u.invuln > 0 then
             u.invuln = u.invuln - 1
@@ -54115,7 +54089,7 @@ end
                 units[j] = u
                 j = j + 1
             elseif IsValid(u) then
-                object.RawDel(u)
+                class.th08_combat.discard(u)
             end
         end
         for k = #units, j, -1 do units[k] = nil end
@@ -55142,7 +55116,7 @@ local function make_card(build)
     })
 
     local function u_step(u)
-    class.th08_combat.unit_begin(u)
+    if not class.th08_combat.unit_begin(u) then return end
         ---① SET_DAMAGE_REDUCTION_TIMER（EnemyManagerUpdate.cpp:391-398 + Enemy::TakeDamage）：
         ---   非 BOSS 完全免伤；BOSS 只吃 1/9。DISABLE/ENABLE_INTERACTION_FLAGS 的
         ---   DAMAGEABLE(4) 另算（u.not_damageable）。
@@ -55260,7 +55234,7 @@ end
                 units[j] = u
                 j = j + 1
             elseif IsValid(u) then
-                object.RawDel(u)
+                class.th08_combat.discard(u)
             end
         end
         for k = #units, j, -1 do units[k] = nil end

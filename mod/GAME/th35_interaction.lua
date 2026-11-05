@@ -3,6 +3,7 @@
 local H={}
 local bit=bit or require('bit')
 local entries=dofile('mod/GAME/th35_interaction_sources.lua')
+local default_birth_guard=dofile('mod/GAME/th35_birth_guard.lua')
 function H.flags(o,value,on)
     o.t10_flags=on and bit.bor(o.t10_flags or 0,value) or bit.band(o.t10_flags or 0,bit.bnot(value))
     o.t10_no_oob=bit.band(o.t10_flags,4)~=0
@@ -12,6 +13,9 @@ function H.init(o,key)
     o.t10_interaction_key=key
     o.t10_flags=o.t10_flags or 0
     o.t10_contact_timer=0
+    if o.invuln~=nil and default_birth_guard[key] then
+        o.invuln=2;o.protect=true
+    end
     for _,event in ipairs(entries[key] or {}) do
         if event[1]==361 then o.t10_contact_timer=event[2]
         else H.flags(o,event[2],event[1]==322) end

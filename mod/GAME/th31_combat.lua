@@ -105,9 +105,11 @@ return function()
         return not M.actor_outside(o,x,y)
     end
     function M.unit_begin(o)
+        if not M.parent_alive(o) then M.discard(o);return false end
         local age=o.th08_unit_age or 1
         if OriginalStageVisual then OriginalStageVisual.source_frame(o,age) end
         o.th08_unit_age=age+1
+        return true
     end
     -- 敌机型斩击使用轴对齐接触框，原作CheckPlayerCollision先把全宽高除以1.5。
     function M.contact_box(o,x,y,width,height)
@@ -124,7 +126,7 @@ return function()
         local n=0
         for i=1,#list do
             local o=list[i]
-            if IsValid(o) and not o.th08_dead then n=n+1;list[n]=o end
+            if IsValid(o) and not o.th08_dead and o.status~='del' and o.status~='kill' then n=n+1;list[n]=o end
         end
         for i=#list,n+1,-1 do list[i]=nil end
         return n
@@ -196,16 +198,71 @@ return function()
     end
     -- 91的附着关系与92的逐帧坐标继承不同；不能用u.parent同时表示两件事。
     function M.link_marker(parent) return {th08_link_parent=parent} end
+    function M.parent_alive(o)
+        if not o.th08_attached then return true end
+        local parent=o.th08_parent
+        return parent and IsValid(parent) and parent.status~='del' and parent.status~='kill'
+            and not parent.th08_dead and parent.alive~=false
+    end
     function M.detach_children(o)
-        for _,child in ipairs(o.th08_actors or {}) do
-            if IsValid(child) then
-                child.th08_dead,child.alive=true,false
-                SetAttr(child,'colli',false)
-                task.Clear(child)
-                object.RawDel(child)
-            end
+        local children=o.th08_children
+        o.th08_children=nil
+        for _,child in ipairs(children or {}) do M.discard(child) end
+    end
+    -- RawDel绕过del回调；所有原生删除出口先收回附着链，独立93/94不进入该链。
+    function M.discard(o)
+        if not o or not IsValid(o) then return end
+        M.detach_children(o)
+        if not o.th08_dead then
+            o.th08_dead,o.alive=true,false
+            SetAttr(o,'colli',false)
+            task.Clear(o)
+            if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
         end
-        o.th08_actors=nil
+        object.RawDel(o)
+    end
+    local function card_owner(parent)
+        if parent and parent.th08_card_owner then return parent.th08_card_owner end
+        if parent and parent.th08_combat_card then return parent end
+        return M.owner
+    end
+    local function spell_context(owner)
+        local card=owner and owner.current_card
+        return not not (card and card.is_sc and (card.th08_motion_source or card.th08_lastword_source or card._original_balance))
+    end
+    local function attach(o,parent,linked)
+        o.th08_parent,o.th08_attached=parent,linked and parent~=nil
+        local owner=card_owner(parent)
+        o.th08_card_owner=owner
+        if owner then
+            owner.th08_actors=owner.th08_actors or {}
+            owner.th08_actors[#owner.th08_actors+1]=o
+        end
+        if o.th08_attached then
+            parent.th08_children=parent.th08_children or {}
+            parent.th08_children[#parent.th08_children+1]=o
+        end
+        return owner
+    end
+    -- ApplyDamageToParent不经父机的ACCEPTS_DAMAGE/DAMAGEABLE，且不重复计分、掉落。
+    function M.transfer_damage(o,amount)
+        if not o.th08_attached or not M.parent_alive(o) or (player and (player.nextspell or 0)>0) then return end
+        local parent=o.th08_parent
+        local damage=math.floor(amount/(o._original_hp_scale or 1)/2)
+        local clock=parent._original_interaction_clock or 0
+        local balance=parent.current_card and parent.current_card._original_balance
+        local t=math.max(0,(parent.th08_source_clock or 1)-1)
+        local inherited_guard=balance and (balance.guard or 0)>0 and t>=balance.immune and t<balance.immune+balance.guard
+        local reduced=inherited_guard or parent.th08_guard_active or parent.protect
+            or (parent.reduction or parent.invuln or 0)>0
+            or (parent._original_reduction_until or 0)>clock
+        if reduced then
+            if parent._bosssys or parent.is_boss then damage=math.floor(damage/9) else return end
+        end
+        if damage<=0 then return end
+        local before=parent.hp
+        parent.hp=math.max(0,parent.hp-damage*(parent._original_hp_scale or 1))
+        if parent.spell_damage then parent.spell_damage=parent.spell_damage+before-parent.hp end
     end
     -- 道中使用手动调度的enemy类，形态判定须包住它自己的伤害分发入口。
     function M.unit(define)
@@ -215,15 +272,9 @@ return function()
             take_damage=function(o,amount)
                 if o.th08_dead or o.alive==false or M.youkai(o) or o._original_hidden or o._original_accepts_damage==false
                     or o._original_damageable==false then return end
-                local hp=o.hp
+                local effective=not o.protect and amount*(o.dmg_factor or 1)*(o.DMG_factor or 1)*(o.astral_dmg_factor or 1) or 0
                 enemy.take_damage(o,amount)
-                if o.th08_attached and IsValid(o.th08_parent) then
-                    local dealt=hp-o.hp
-                    local scale=o._original_hp_scale or 1
-                    if dealt/scale>=2 then
-                        Damage(o.th08_parent,math.floor(dealt/scale/2)*(o.th08_parent._original_hp_scale or 1))
-                    end
-                end
+                M.transfer_damage(o,effective)
             end,
         })
         define.init=function(o,sub,x,y,mirror,parent,...)
@@ -232,25 +283,30 @@ return function()
                 local arg=select(i,...)
                 if type(arg)=='table' and arg.th08_link_parent then linked=arg.th08_link_parent end
             end
-            o.th08_parent,o.th08_attached=linked,linked~=nil
+            o.th08_parent,o.th08_attached=linked,false
+            o.th08_card_owner=card_owner(linked)
             o._original_accepts_damage,o._original_damageable,o._original_no_death=true,true,false
             o._original_familiar_collision=true
+            local previous=M.current_enemy;M.current_enemy=o
             init(o,sub,x,y,mirror,parent,...)
+            M.current_enemy=previous
+            if not IsValid(o) then return end
+            if o.status=='del' or o.status=='kill' then M.discard(o);return end
             o.th08_unit_age=1 -- 构造器已完成出生ECL；手动敌机循环从t1继续。
             if OriginalStageVisual and define.source_file then
                 OriginalStageVisual.bind_source(o,8,define.source_file..':'..sub)
             end
-            if linked then
-                o._original_familiar_collision=false -- Spawn90..92在出生RunEcl后清除COLLISION。
-                linked.th08_actors=linked.th08_actors or {}
-                linked.th08_actors[#linked.th08_actors+1]=o
-            end
-            if OriginalBalance then OriginalBalance.unit(o,8,linked and linked.current_card and linked.current_card.is_sc) end
+            local owner=attach(o,linked,linked~=nil)
+            if linked then o._original_familiar_collision=false end
+            if OriginalBalance then OriginalBalance.unit(o,8,spell_context(owner)) end
             M.unit_collision(o)
         end
         define.frame=function(o)
+            if not M.parent_alive(o) then M.discard(o);return end
             if OriginalStageVisual then OriginalStageVisual.source_frame(o,o.timer) end
+            local previous=M.current_enemy;M.current_enemy=o
             frame(o)
+            M.current_enemy=previous
             if IsValid(o) and OriginalStageVisual then OriginalStageVisual.tick(o) end
         end
         define.render=function(o) M.render(o,function(unit)
@@ -303,13 +359,7 @@ return function()
         amount=amount*(o.dmg_factor or 1)*(o.DMG_factor or 1)*(o.astral_dmg_factor or 1)
         if amount<=0 then return end
         o.hp=o.hp-amount
-        -- Enemy::ApplyDamageToParent：使魔实受伤害的一半传给父机；没有额外击破伤害。
-        local parent=o.th08_parent
-        local scale=o._original_hp_scale or 1
-        if o.th08_attached and parent and IsValid(parent) and amount/scale>=2 then
-            local parentScale=parent._original_hp_scale or 1
-            Damage(parent,math.floor(amount/scale/2)*parentScale)
-        end
+        M.transfer_damage(o,amount)
         if o.hp<=0 and not o.th08_no_death then
             o.th08_dead=true
             task.Clear(o)
@@ -328,12 +378,13 @@ return function()
     },true)
     M.base=base
     local function parent_for(args)
-        if type(args[1])=='table' and args[1].th08_combat_card then return args[1] end
+        if M.current_enemy then return M.current_enemy end
         if task.stack and #task.stack>0 then
             local o=task.GetSelf()
-            if o.th08_combat_card then return o end
-            if o.th08_parent then return o.th08_parent end
+            if o.th08_combat_card or o.th08_profile or o.th08_unit_age then return o end
         end
+        local o=args[1]
+        if type(o)=='table' and (o.th08_combat_card or o.th08_profile or o.th08_unit_age) then return o end
         return M.owner
     end
     local function life(cfg,o,args,parent,n)
@@ -367,7 +418,10 @@ return function()
         local saved={}
         for i=1,#fields do saved[i]=o[fields[i]] end
         o.th08_ecl_birth=true
+        local linked,previous=o.th08_attached,M.current_enemy
+        o.th08_attached=false;M.current_enemy=o
         step(o)
+        o.th08_attached=linked;M.current_enemy=previous
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return false end
         o.th08_ecl_birth=nil
         o.x,o.y=x,y
@@ -385,13 +439,18 @@ return function()
         end) end
         define.init=function(o,...)
             local args={...};local parent=parent_for(args)
+            o.th08_source,o.th08_profile=key,cfg
+            o.th08_card_owner=card_owner(parent)
+            local previous=M.current_enemy;M.current_enemy=o
             init(o,...)
+            M.current_enemy=previous
             if not IsValid(o) then return end
+            if o.status=='del' or o.status=='kill' then M.discard(o);return end
             local profile=cfg
             -- 大凤凰在第120帧变成隐藏枪架；另两种凤凰始终使用普通使魔交互。
             if key=='ecldata8sp:93' and args[1]==95 then profile=profiles['ecldata8sp:95'] end
             o.th08_source,o.th08_profile=key,profile
-            o.th08_parent,o.th08_attached=parent,profile.attached
+            local owner=attach(o,parent,profile.attached)
             if OriginalStageVisual and not o._original_explicit then
                 -- 变量选择的ANM由对象构造函数按生成参数设置；固定事件不能清掉它。
                 OriginalStageVisual.bind_source(o,8,key,o._original_actor~=nil)
@@ -401,10 +460,9 @@ return function()
             if parent then
                 parent.th08_actor_counts=parent.th08_actor_counts or {}
                 n=(parent.th08_actor_counts[key] or 0)+1;parent.th08_actor_counts[key]=n
-                parent.th08_actors=parent.th08_actors or {};table.insert(parent.th08_actors,o)
             end
             o.hp=life(profile,o,args,parent,n);o.maxhp=o.hp
-            if OriginalBalance then OriginalBalance.unit(o,8,parent and parent.current_card and parent.current_card.is_sc) end
+            if OriginalBalance then OriginalBalance.unit(o,8,spell_context(owner)) end
             o.th08_flags,o.th08_guard,o.th08_clock,o.th08_event=0,0,1,1
             o.th08_shot_distance2=1024
             o.dmg_factor,o.DMG_factor,o.astral_dmg_factor=1,1,1
@@ -422,6 +480,7 @@ return function()
         end
         define.frame=function(o)
             if o.th08_dead then return end
+            if not M.parent_alive(o) then M.discard(o);return end
             -- 铃仙 ExIns 冻结附着链时，原作跳过 ECL 与受击。
             if o.c456_paused or o.c458_paused then
                 o.colli,o.th08_accept=false,false
@@ -435,7 +494,10 @@ return function()
                 event(o,profile.events[o.th08_event]);o.th08_event=o.th08_event+1
             end
             refresh(o)
+            local previous=M.current_enemy;M.current_enemy=o
             if frame then frame(o) end
+            M.current_enemy=previous
+            if IsValid(o) and (o.status=='del' or o.status=='kill') then M.discard(o);return end
             if IsValid(o) then
                 if M.actor_inside(o,o.x,o.y,true) then o.th08_seen=true end
                 refresh(o) -- 本次运动后入场的对象，本帧即可参与判定。
@@ -502,16 +564,23 @@ return function()
             o.DMG_factor=1
             local balance=card._original_balance
             o._original_hp_scale=balance and OriginalBalance.scale[8][balance.spell and 'spell' or 'normal'] or nil
-            o.th08_actors,o.th08_actor_counts={},{}
+            o.th08_actors,o.th08_actor_counts,o.th08_children={},{},{}
             if card.t1<card.t3 then o.no_hp_render,o.NotPlayTimeOutSound=false,false end
             if lw then o.colli=true end
             -- 每个阶段独立推进ECL显示与判定事件，不能只绑定角色默认行走图。
             o._original_secondary_box=nil
             o._original_no_damage_during_bomb=false
+            o._original_reduction_until=nil
             o._original_accepts_damage,o._original_damageable=true,true
             o._original_familiar_collision=true
             o._original_hidden=false
             init(o)
+            if id==467 or id==468 then
+                _editor_class.TH31.th08_nightblind.install(o,57)
+            elseif id==469 then
+                local carry=o.th08_blind_carry or {255,48}
+                _editor_class.TH31.th08_nightblind.hold(o,carry[1],carry[2])
+            end
             local source=card.th08_motion_source or card.th08_lastword_source
             if source then
                 OriginalStageVisual.bind_source(o,8,source.file..':'..source.sub,true)
@@ -555,8 +624,9 @@ return function()
             frame(o)
         end
         card.del=function(o)
+            _editor_class.TH31.th08_nightblind.release(o)
             del(o)
-            for _,a in ipairs(o.th08_actors or {}) do if alive(a) then object.RawDel(a) end end
+            for _,a in ipairs(o.th08_actors or {}) do if alive(a) then M.discard(a) end end
             o.th08_actors,o.th08_combat_card,o.th08_source_clock=nil,nil,nil
             o._original_secondary_box,o._original_no_damage_during_bomb=nil,nil
             o.DMG_factor=1

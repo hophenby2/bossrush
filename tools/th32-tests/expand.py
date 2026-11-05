@@ -9,7 +9,7 @@ from source import Source,catalogue,road_catalogue
 REG={-10001:'v.i0',-10002:'v.i1',-10003:'v.i2',-10004:'v.i3',-10005:'v.f0',-10006:'v.f1',-10007:'v.f2',-10008:'v.f3',-10009:'v.c0',-10010:'v.c1',-10011:'v.c2',-10012:'v.c3',-10013:'(a.stage==7 and 4 or 3)',-10014:'a.rank',-10015:'(b.x+192)',-10016:'(224-b.y)',-10017:'a.z',-10018:'(player.x+192)',-10019:'(224-player.y)',-10020:'0',-10021:'H.player_angle(b)',-10022:'a.phase',-10023:'H.distance(b)',-10024:'H.life(b)',-10025:'(a.meta.shot or 0)'}
 COND={29:'<',30:'<=',31:'==',32:'>',33:'>=',34:'~='}
 CALLCOND={37:'<',38:'<=',39:'==',40:'>',41:'>=',42:'~='}
-VISUAL={0,97,98,99,100,101,102,106,107,109,110,117,118,119,120,123,124,125,126,127,128,129,130,136}
+VISUAL={0,97,98,99,100,101,102,106,107,109,110,117,118,119,120,124,125,126,127,128,129,130,136}
 
 def lit(v):
     if v is None:return 'nil'
@@ -117,6 +117,7 @@ def statement(stage,r,target):
     if op==116:return [f'a.timeout_fn=P[{stage}][{x[0]}]'],False
     if op==121:return [f'H.extra(b,v,{x[0]},{value(x[1])},false)'],False
     if op==122:return [f'v.repeat_func={lit(x[0]) if x[0]>=0 else "nil"}'],False
+    if op==123:return [f'v.time=v.time+({value(x[0])})'],False
     if op==124:return [f'H.drop_item(b,{value(x[0])})'],False
     if op==131:return [f'a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi={vals(x)}'],False
     if op==133:return ['a.phase=0'],False
