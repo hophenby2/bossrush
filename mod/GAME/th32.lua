@@ -281,6 +281,33 @@ local function particles(b,kind,count,argb)
         OriginalStageVisual.presentation.new_effect(6,'etama4',script,b.x,b.y,b,kind,argb)
     end
 end
+-- ExIns6 是敌机独立计时，不随 CALL/换卡重置；保留两侧拖影及随机数消费。
+local function bat_wings(b)
+    local a=b.th06_actor
+    if a and a.invisible then return end
+    local state=b.th06_wings
+    if not state then state={timer=0,angle=0};b.th06_wings=state end
+    local t=state.timer
+    state.angle=state.angle+PI/180
+    if state.angle>=PI/4 then state.angle=state.angle-PI/2 end
+    if t>120 or (t>60 and t%2==0) or (t>30 and t%4==0) or t%8==0 then
+        local half=floor((t%16)/2)
+        local k=half+(half>0 and ran:Int(0,half-1) or 0)
+        local distance=k*10+32
+        local angle=state.angle-k*PI/40
+        for side=1,2 do
+            local x=b.x+(side==1 and 1 or -1)*cos(angle)*distance
+            local y=b.y-sin(angle)*distance
+            local effect=OriginalStageVisual.presentation.new_effect(6,'etama4',19,x,y,b,19,0xff3030ff)
+            local vx=ran:Float(-20,20)/60
+            local vy=-(8*k/60-4/15)
+            if effect then
+                effect.effect_velocity={vx,vy};effect.effect_acceleration={-vx/120,-vy/120}
+            end
+        end
+    end
+    state.timer=t+1
+end
 local function charge(b)
     PlaySound("tan00",.1,b.x/256,false) -- 原作106号指令的蓄力提示沿用现有音效接口。
     for _=1,16 do
@@ -399,7 +426,7 @@ local function begin(b, y, rank_speed, start_effect)
     b.colli, b.no_hp_render, b.NotPlayTimeOutSound = true, false, false
     if not b.th06_previous_motion or b.th06_previous_motion.stage~=6 then
         -- 六面宿主 Sub15 已走到 (192,96)，不能拿框架的场外出生点代替符卡起点。
-        b.x,b.y=0,128
+        b.x,b.y=0,128;b.th06_wings=nil
     end
     -- 独立练习从场外生成 Boss；原作在进入符卡前已经启用同一组移动边界。
     b.x, b.y = min(160, max(-160, b.x)), min(176, max(104, b.y))
@@ -424,7 +451,7 @@ local function new_card(name, timeout, hp, run)
         self.hp,self.maxhp,self._rank_hp_proxy=c.hp,c.hp,true
         task.New(self, function() run(self) end)
     end
-    function c:frame() if self.th06 then move_step(self) end end
+    function c:frame() if self.th06 then move_step(self);bat_wings(self) end end
     function c:del() cleanup(self) end
     return c
 end
@@ -517,7 +544,7 @@ local function aimed_shot(b)
 end
 
 -- Sub39 @0x5528：五次逐次狙击；17×3 帧正转；两次狙击；17×3 帧反转。
--- CALL 的 Sub37 当帧返回；循环跳转时重设 ECL 时钟，整个周期 468 帧。
+-- CALL 的 Sub37 当帧返回；循环跳转时重设 ECL 时钟，整个周期 368 帧。
 do
     local NAME, ID, TIME, HP = "红符「绯红之主」", 3811, 30, 1300
     local function run(b)
@@ -826,6 +853,7 @@ function H.new_actor(s,b,stage,sub,main,meta)
         rank=stage==7 and 18 or 32,rank_lo=-.5,rank_hi=.5,rank_n1_lo=0,rank_n1_hi=0,rank_n2_lo=0,rank_n2_hi=0,
         extra={0,0,0,0,0,0,0,0},lasers={},laser_index=0,damageable=true,collidable=true,interactable=true,
         context=H.ctx(main and meta.epoch or 0),bounds=main and not meta.entry_unbounded and meta.bounds or nil}
+    if main then a.context.repeat_func=meta.repeat_func end
     if main and b.th06_previous_context then
         for k,value in pairs(b.th06_previous_context) do if k~="time" and k~="epoch" then a.context[k]=value end end
     end
@@ -1013,7 +1041,7 @@ function H.card_init(b,meta)
     if previous and previous.stage==meta.stage and previous.group==meta.group then
         b.x,b.y=previous.x or b.x,previous.y or b.y
     else
-        b.th06_previous_context,b.th06_previous_motion=nil,nil
+        b.th06_previous_context,b.th06_previous_motion,b.th06_wings=nil,nil,nil
         b.x,b.y=meta.entry_x or 0,meta.entry_y or 128
     end
     b.th06_saved={a=b.a,b=b.b,rect=b.rect,DMG_factor=b.DMG_factor,_a=b._a}
@@ -1183,7 +1211,7 @@ function H.extra(b,v,id,arg,repeated)
         end
         v.i2=v.i2+1
     elseif id==6 then
-        -- 蝙蝠翼是无判定的 ANM 粒子；行走图仍由 LuaSTG 的角色图系统绘制。
+        bat_wings(b)
     elseif id==7 then star(b)
     elseif id==8 then v.i3=seed_small(b)
     elseif id==9 or id==11 then awaken(b,id==11)
@@ -25411,7 +25439,7 @@ end
 
 do
 
-    local meta={stage=6,sub=17,group=1,life=13000,threshold=1200,hp=11800,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=1,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3960}
+    local meta={stage=6,sub=17,group=1,repeat_func=6,life=13000,threshold=1200,hp=11800,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=1,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3960}
 
     local card=boss.card.New("",0.0,0.0,45.0,11800,nil,false)
 
@@ -25429,7 +25457,7 @@ end
 
 do
 
-    local meta={stage=6,sub=19,group=1,life=15500,threshold=1600,hp=13900,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=3,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3961}
+    local meta={stage=6,sub=19,group=1,repeat_func=6,life=15500,threshold=1600,hp=13900,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=3,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3961}
 
     local card=boss.card.New("",0.0,0.0,45.0,13900,nil,false)
 
@@ -25447,7 +25475,7 @@ end
 
 do
 
-    local meta={stage=6,sub=23,group=1,life=11000,threshold=1600,hp=9400,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=5,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3962}
+    local meta={stage=6,sub=23,group=1,repeat_func=6,life=11000,threshold=1600,hp=9400,shot=0,timeout=2700,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=5,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3962}
 
     local card=boss.card.New("",0.0,0.0,45.0,9400,nil,false)
 
@@ -25465,7 +25493,7 @@ end
 
 do
 
-    local meta={stage=6,sub=26,group=1,life=13000,threshold=1300,hp=11700,shot=0,timeout=3600,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=7,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3963}
+    local meta={stage=6,sub=26,group=1,repeat_func=6,life=13000,threshold=1300,hp=11700,shot=0,timeout=3600,epoch=0,invul=0,bounds={32.0,48.0,352.0,120.0},order=7,entry_x=0.0,entry_y=128.0,hitbox={56.0,56.0},id=3963}
 
     local card=boss.card.New("",0.0,0.0,60.0,11700,nil,false)
 

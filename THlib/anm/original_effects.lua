@@ -98,6 +98,10 @@ F.effect=Class(object,{
             local v,a=o.effect_velocity,o.effect_acceleration
             o.x,o.y=o.x+v[1],o.y+v[2]
             v[1],v[2]=v[1]+a[1],v[2]+a[2]
+        elseif o.game==6 and o.kind==19 and o.effect_velocity then
+            local v,a=o.effect_velocity,o.effect_acceleration
+            o.x,o.y=o.x+v[1],o.y+v[2]
+            v[1],v[2]=v[1]+a[1],v[2]+a[2]
         elseif o.game==6 and (o.kind==17 or o.kind==18) then
             -- TH06 Effect_Attract第一次回调才取随机角；不是SpawnParticles构造时取。
             if o.dir==nil then o.dir=ran:Float(-math.pi,math.pi) end
