@@ -11430,7 +11430,7 @@ do  -- 31 霧符「ガシングガーデン」（ecl9_a，梅蒂欣，组 18a �
                 for i = 1, 4 do
                     if not tok.alive or st.dead then return end
                     sg_shot(94, sg_style(3), SPRAY_COLOR[i],
-                            owner.x, owner.y, SPRAY[i], 1, hi, lo, 180, -180, false, 0x202)
+                            owner.x, owner.y, SPRAY[i],1,lo,hi,-180,180, false, 0x202)
                     if i < 4 then
                         task.Wait(1)
                     end
@@ -11723,7 +11723,7 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
                 if st.sub4 then st.sub4.alive = false end
                 ---四组 ins_52(5)：sharedInt0 = k、sharedFloat0 = 自机角 + k·90°、sharedFloat1 = 1
                 for k = 0, 3 do
-                    sg_callback(2, k, sg_norm(base + 90 * k), AIM_SPEED)
+                    sg_callback(2,k,-sg_norm(base+90*k),AIM_SPEED)
                 end
                 if not goto_t(t_end) then return end
                 PhotoNative.restore_motion()             -- Sub7：ExIns3恢复原逻辑角/速度
@@ -11751,7 +11751,6 @@ do  -- 33 散符「朧月花栞（ロケット・イン・ミスト）」（ecl7
                 if photo_index(PHOTO_LIMIT) >= SWITCH_AT then
                     sub3.alive = false
                     if st.sub4 then st.sub4.alive = false end
-                    if st.mv then st.mv.alive = false end
                     st.sub4 = nil
                     main_loop(self, { alive = true }, 30, 105, 165, true)
                     return
@@ -11812,7 +11811,7 @@ do  -- 34 毒符「ポイズンブレス」（ecl9_b，梅蒂欣，组 18a 第 2
         local tok = { alive = true }
         task.New(owner, function()
             ---sg_deg(π/2)=−90、sg_deg(π)=−180、sg_deg(−π/2)=+90、0
-            local dir = { -90, -180, 90, 0 }
+            local dir={90,180,-90,0}
             while tok.alive and not st.dead do
                 local count = photo_index(PHOTO_LIMIT) + 1
                 for k = 1, 4 do
@@ -11820,7 +11819,7 @@ do  -- 34 毒符「ポイズンブレス」（ecl9_b，梅蒂欣，组 18a 第 2
                             count, 1, FAN_SP1, FAN_SP2, dir[k], FAN_STEP, false, FAN_FLAGS)
                 end
                 for k = 1, 4 do
-                    dir[k] = dir[k] + TURN          -- ins_16 = 减 3°（取反后是 +3）
+                    dir[k]=dir[k]-TURN          -- ins_16 = 减 3°（取反后是 +3）
                 end
                 dir[1] = sg_norm(dir[1])            -- ins_37：只归一化 V0
                 for _ = 1, 3 do
@@ -11944,8 +11943,8 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
     local function sub5(owner)
         local tok = { alive = true }
         task.New(owner, function()
+            local count=photo_index(PHOTO_LIMIT)*2+10
             while tok.alive and not st.dead do
-                local count = photo_index(PHOTO_LIMIT) * 2 + 10
                 local hook = sg_tr_hook({ sg_rec(SG_TAG, 0, 0, -1, 0, 0) }, RING_FLAGS)
                 sg_shot(88, sg_style(13), 3, owner.x, owner.y,
                         count, 1, AIM_SPEED, 0.6, 0, AIM_STEP, true, RING_FLAGS, hook)
@@ -11970,9 +11969,9 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
                 end
                 return true
             end
+            local photo_before=photo_index(PHOTO_LIMIT) -- 原入口写一次，170处再更新。
             while not st.dead do
                 if st.sub5 then st.sub5.alive = false end
-                local photo_before = photo_index(PHOTO_LIMIT)
                 sub4(owner)                             -- ins_117(0,4)
                 if not goto_t(80) then return end
                 -- 拍摄计数在本轮改变时，原作直接跳到t=170，不执行捕获与淡入。
@@ -11981,9 +11980,12 @@ do  -- 35 波符「幻の月（インビジブルハーフムーン）」（ecl7
                     sg_callback(4, 2, sg_deg(math.pi / 2), KEEP_SPEED)
                     if not goto_t(140) then return end
                     PhotoNative.fade_tag(1);PhotoNative.fade_tag(2)
+                    if not goto_t(170) then return end
+                    PhotoNative.restore_motion() -- 只有照片未改变支路经过Sub9。
+                else
+                    t=170 -- 原JUMP直接改time170并跳过Sub9，不再等待90帧。
                 end
-                if not goto_t(170) then return end
-                PhotoNative.restore_motion()             -- Sub9的ExIns3
+                photo_before=photo_index(PHOTO_LIMIT)
                 sg_bmove(owner, st, 60, 4, 2, BOX)      -- ins_67(60,4,2)
                 st.sub5 = sub5(owner)                   -- ins_117(0,5)
                 if not goto_t(230) then return end
@@ -12064,11 +12066,11 @@ do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，梅蒂欣，组 18a
                 local dx, dy = sg_off(OFFSET_R, ran:Float(-math.pi, math.pi))
                 local sp = ran:Float(0, 1) * 2 + 1
                 sg_shot(87, sg_style(17), 2, owner.x + dx, owner.y + dy,
-                        1, 1, sp, 1.5, ran:Float(0, 360), FAN_STEP, false, FAN_FLAGS)
+                        1, 1, sp, 1.5, math.deg(ran:Float(-math.pi,math.pi)),FAN_STEP, false, FAN_FLAGS)
                 local dx2, dy2 = sg_off(OFFSET_R, ran:Float(-math.pi, math.pi))
                 local sp2 = ran:Float(0, 1) * 2 + 1
                 sg_shot(87, sg_style(12), 6, owner.x + dx2, owner.y + dy2,
-                        1, 1, sp2, 1.5, ran:Float(0, 360), FAN_STEP, false, FAN_FLAGS)
+                        1, 1, sp2, 1.5, math.deg(ran:Float(-math.pi,math.pi)),FAN_STEP, false, FAN_FLAGS)
                 task.Wait(1)
             end
         end)
@@ -12347,9 +12349,8 @@ do  -- 38 狂夢「風狂の夢（ドリームワールド）」（ecl7_d，铃�
                 end
                 return true
             end
+            st.sub4=sub4(owner) -- 根117位于回跳目标前，只执行一次。
             while not st.dead do
-                if st.sub4 then st.sub4.alive = false end
-                st.sub4 = sub4(owner)                   -- ins_117(0,4)
                 if not goto_t(80) then return end
                 ---ins_52(5) 两组：tag 1 / tag 2 相对转 0°、速率不变
                 sg_callback(4, 1, 0, KEEP_SPEED)
