@@ -1028,7 +1028,7 @@ end
 ---**当帧 memset 掉**（不掉道具、不淡出），并把 `spawnSuppressionFrames` 置 10。
 ---★ 光柱不同命：`(laser->flags & 4) != 0`（transformFlags 带 SPAWN_NORMAL）的光柱在
 ---  mode ≠ 4 时**跳过**（:524-532）⇒ 卡 146 的药柱不会被清场清掉。
----★ spawnSuppressionFrames 每真帧减 1（:1152-1153），由卡片自己调 `EX.suppress_step()`。
+---★ spawnSuppressionFrames每真帧减1，由全部注册卡的共同frame出口推进，不能漏掉或重复。
 EX.suppress = 0
 function EX.pool_wipe()
     for i = #EX.pool, 1, -1 do
@@ -1040,6 +1040,11 @@ function EX.pool_wipe()
     EX.suppress = 10
 end
 function EX.suppress_step()
+    local current=stage and stage.current_stage
+    if current and type(current.timer)=='number' then
+        if EX.suppress_stage==current and EX.suppress_stamp==current.timer then return end
+        EX.suppress_stage,EX.suppress_stamp=current,current.timer
+    end
     if EX.suppress > 0 then EX.suppress = EX.suppress - 1 end
 end
 
@@ -24809,7 +24814,7 @@ local function card_frame(owner)
     local st=owner.lw146
     if not st then return end
     owner._original_ecl_timer=st.ecl_time
-    EX.suppress_step()
+
     st.frame=st.frame+1
     -- 本拍先执行当前整数时间，再按指令可能刚改写的fm推进；半速不推迟当前已到期的指令。
     local t=math.floor(st.ecl_time)
@@ -45100,7 +45105,7 @@ fam_cls = class.th08_combat.actor("ecldata1:24", {
         self.c471_ang = ang
         self.c471_mang = ang            -- moveAngle（第一帧未走 UpdateMovement 前 = 出生方向）
         self.c471_omega = omega
-        self.c471_gun_ang = base       -- lf7（仍按 TH08 口径跑，因为它只进 sin）
+        self.c471_gun_ang = ran:Float(-PI,PI)+PI/6       -- lf7（仍按 TH08 口径跑，因为它只进 sin）
         self.c471_ftime = 0            -- 主 context（Sub24）的 time
         self.c471_ct = 0               -- 子 context 0（Sub23）的 time
         self.c471_first = true
@@ -45210,12 +45215,12 @@ local LOOP_T = 90                       -- `ins_4` 跳回的时间
 local CYCLE_END = 690                   -- 跳到 t=90 的那一帧
 
 local function spawn_batch(owner, s, count, step, base, omega)
+    OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
     local ang = base
     for _ = 1, count do
         s.fams[#s.fams + 1] = new_familiar(owner, -ang, omega, 0)
         ---lf7 的初值 = `SET_FLOAT lf7 rndAngle` + 循环头的 `FLOAT_ADD lf7 0.5235988`
         ---（TH08 口径；只进 sin，分布等价，仍按 rndAngle = [−π,π) 写以对齐原作）。
-        s.fams[#s.fams].c471_gun_ang = ran:Float(-PI, PI) + 0.5235988
         ang = ang + step
     end
 end
@@ -45267,6 +45272,7 @@ local function sub22_step(owner)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -45292,8 +45298,7 @@ local function card_frame(owner)
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
 
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
+    class.th08_combat.step_actors(s.fams,function(fam)
         if IsValid(fam) then
             fam_step(fam)
             ---★ Sub24 t=0 的 `ins_80 DISABLE_INTERACTION_FLAGS 3` / t=100 的
@@ -45305,15 +45310,16 @@ local function card_frame(owner)
             ---  hasBeenInBounds 当帧就置上）。
             if class.th08_combat.actor_outside(fam) then
                 object.RawDel(fam)
-                table.remove(s.fams, i)
+
             end
         else
-            table.remove(s.fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c471_main
     if s and s.fams then
         for i = 1, #s.fams do
@@ -46521,17 +46527,11 @@ local function fam_gun_fire(fam, wave)
     })
 end
 local function fam_gun_volley(fam)
-    ---★ 形态二选一：#13（妖怪 / 低速）或 #12/#15（人类 / 高速），不是两发。
-    if player_is_youkai(fam) then
-        fam_gun_fire(fam, GUN_B)
-    else
-        fam_gun_fire(fam, GUN_A)
-    end
+    -- Sub42先A+B、等20拍后再A，随后回头；不按自机形态选择其中一路。
+    fam_gun_fire(fam,GUN_A)
+    if fam.c474_gct%40==0 then fam_gun_fire(fam,GUN_B) end
 end
 
----------------------------------------------------------------------
----Sub43：使魔。
----------------------------------------------------------------------
 local FAM_TERMINATE_CT = 960    -- `#11 TERMINATE`
 local fam_cls
 fam_cls = class.th08_combat.actor("ecldata1:43", {
@@ -46544,8 +46544,7 @@ fam_cls = class.th08_combat.actor("ecldata1:43", {
         ---  BOSS 在 t=210/390 的 `ins_67` 漂移时使魔跟着走。
         ---  （踩过：一开始按「圆心钉死在出生点」写，使魔会越飘越偏。）
         self.c474_boss = boss
-        self.c474_freeze = dur
-        self.c474_fresh = true           -- 出生帧要**跑两遍** RunEcl（见 step ①）
+        self.c474_freeze = dur-1
         self.c474_ct = 0                 -- 主 context time
         self.c474_ang = add_norm(ang + angvel) -- 出生UpdateMovement的轨道状态。
         self.c474_av = angvel
@@ -46587,16 +46586,6 @@ local function fam474_step(fam)
     ---  槽位）又在同一帧的敌人循环里再跑一遍（EnemyManagerUpdate.cpp:163-166）
     ---  ⇒ 冻帧计数一帧减 2。踩过：只减 1 会让解冻（半径冻结 + 挂枪）晚 1 帧，
     ---  公转半径多长 `rv = lf4/120`（圈数越大越明显）。
-    if fam.c474_fresh then
-        fam.c474_fresh = false
-        if fam.c474_freeze > 0 then fam.c474_freeze = fam.c474_freeze - 1 end
-    end
-    ---② 子 context 0（Sub42）：每 20 帧一条自机狙直线 —— 高速（人类）发 bt3 色6 的
-    ---  5 连、低速（妖怪）发 `#13`（0x5f）的 bt1 色5 2 连（不是「A+B/A 交替」）。
-    ---  ★ 原作帧序 =「主 context → 子 context → UpdateMovement」（EclRun.cpp 的
-    ---  frame tail 先跑 child context，EnemyManagerUpdate.cpp:163-177 之后才
-    ---  IntegrateVelocity）⇒ 枪的位置/角度用的是**上一帧末**的值。
-    ---  （踩过：卡 471/472/473 都栽在这个顺序上。）
     if not dead and fam.c474_gun then
         if fam.c474_gct % GUN_PERIOD == 0 then fam_gun_volley(fam) end
         fam.c474_gct = fam.c474_gct + 1
@@ -46642,7 +46631,7 @@ local function burst_volley(owner, b)
     })
     ---第三条记录：ECL 的 allowWhileActive 写的是 **0**（不是 1）——`1 64 0 90 2 1.570796 -999`。
     ---对本卡的弹等价（出生时没有活动 transform），但照抄原文。
-    EX.set_record(owner, 1, EX.K.REL, 0, 90, 2, -PI / 2, -999)
+    EX.set_record(owner, 1, EX.K.REL, b.acc==2 and 1 or 0, 90, 2, -PI / 2, -999)
     shoot(owner, owner.x, owner.y, {
         op = 97, type = 2, color = 9,
         count1 = 2, count2 = 1, speed1 = 1.8, speed2 = 0.5,
@@ -46699,21 +46688,27 @@ local SUB38 = {
     { 0, function(owner, s)
         begin_move_to(owner, s, 90, 4, BOSS_X, BOSS_Y)
     end },
-    { LOOP_T, function(owner, s) s.lf4 = 64 end },
+    { LOOP_T, function(owner, s)
+        s.lf4=64
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
+    end },
     { 150, function(owner, s) spawn_fams(owner, s, PI) end },
     { 210, function(owner, s) burst_start(owner, s, 1) end },
     { 210, function(owner, s)
         s.lf4 = s.lf4 + 24
         begin_wander(owner, s, 60, 4, 2)
     end },
-    { 270, function(owner, s) end },
+    { 270, function(owner, s) OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62}) end },
     { 330, function(owner, s) spawn_fams(owner, s, -PI) end },
     { 390, function(owner, s) burst_start(owner, s, 2) end },
     { 390, function(owner, s)
         s.lf4 = s.lf4 + 24
         begin_wander(owner, s, 60, 4, 1.5)
     end },
-    { 450, function(owner, s) s.t = LOOP_T; s.pc = T90 end },
+    { 450, function(owner, s)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
+        s.t=LOOP_T;s.pc=T90
+    end },
 }
 
 local function sub38_step(owner, s)
@@ -46744,6 +46739,7 @@ local function sub38_step(owner, s)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -46776,20 +46772,20 @@ local function card_frame(owner)
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
 
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
+    class.th08_combat.step_actors(s.fams,function(fam)
         if IsValid(fam) then
             if fam474_step(fam) then
                 object.RawDel(fam)
-                table.remove(s.fams, i)
+
             end
         else
-            table.remove(s.fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c474_main
     if s and s.fams then
         for i = 1, #s.fams do
@@ -47048,6 +47044,7 @@ end
 
 ---生成一只使魔：`#5..#7` 算出目标点（TH08 口径），`#8..#13` 四个 ±40 的抖动。
 local function fam475_spawn(owner, s)
+    OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
     local bx = to_th08_x(owner.x)
     local by = to_th08_y(owner.y)
     ---`ins_38 POLAR_TO_CARTESIAN(lf0, lf1, cF0, cF1)` + `#6/#7 lf0 += posX / lf1 += posY`。
@@ -47087,6 +47084,18 @@ local function s47_shot(o, s, count2)
         speed1 = s.lf7, speed2 = 0.5,
         angle = REV * s.lf0, step = REV * 0.2617994, flags = 0xA6244,
     })
+end
+
+local CALL_FIELDS={"exI0","exI1","exI2","exI3","lf0","lf1","lf2","lf3","lf4","lf5","lf6","lf7",
+    "cI0","cI1","cI2","cI3","cF0","cF1","cF2","cF3"}
+local function save_call(s)
+    local v={}
+    for i,k in ipairs(CALL_FIELDS) do v[i]=s[k] end
+    s.call_saved=v
+end
+local function restore_call(s)
+    for i,k in ipairs(CALL_FIELDS) do s[k]=s.call_saved[i] end
+    s.call_saved=nil
 end
 
 local SUB47 = {
@@ -47207,6 +47216,8 @@ local SUB44 = {
     ---  `#3 lf1 = cF0·0.1` 读到的就是 lf4。踩过：漏掉这条 ⇒ lf2 = lf1 = 0，
     ---  整张「龙卷风」每波的基准角不转（不旋），第二周期起 cF0 还残留使魔极角。
     { 90, function(o, s)
+        OriginalStageVisual.source_event(o,8,"ecldata1",{0,62})
+        save_call(s)
         s.cF0 = s.lf4
         s.s47 = { pc = 1, t = 0 }
         sub47_frame(o, s)
@@ -47258,6 +47269,7 @@ local function sub44_step(o, s)
     if s.s47 then
         if sub47_frame(o, s) then
             s.s47 = nil
+            restore_call(s)
             ---★ RETURN 那一帧主 clock **不 ++**（EclRun.cpp:187-190 的 time++ 被
             ---  `goto low_select_next_context` 跳过）⇒ 下一帧还是 t=90。
             s.ret_frame = true
@@ -47272,14 +47284,12 @@ local function sub44_step(o, s)
         ins[2](o, s)
         if s.s47 or s.fam then return end
     end
-    if s.ret_frame then
-        s.ret_frame = nil
-    else
-        s.t = s.t + 1
-    end
+    s.ret_frame=nil
+    s.t=s.t+1
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -47316,20 +47326,20 @@ local function card_frame(owner)
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
 
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
+    class.th08_combat.step_actors(s.fams,function(fam)
         if IsValid(fam) then
             if fam475_step(fam) then
                 object.RawDel(fam)
-                table.remove(s.fams, i)
+
             end
         else
-            table.remove(s.fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c475_main
     if s and s.fams then
         for i = 1, #s.fams do
@@ -47605,6 +47615,18 @@ end
 ---`#69 JUMP_DEC` 回跳到 #44 = pc23，都直接写 q.pc / q.t，照原作回跳后**同帧**重派发）。
 ---JUMP / JUMP_DEC / 条件跳转与 ECL 一一对应；纯演出类（PLAY_SPECIAL_ANM 之类）本卡没有。
 ---------------------------------------------------------------------
+local CALL_FIELDS={"exI0","exI1","exI2","exI3","lf0","lf1","lf2","lf3","lf4","lf5","lf6","lf7",
+    "cI0","cI1","cI2","cI3","cF0","cF1","cF2","cF3"}
+local function save_call(s)
+    local v={}
+    for i,k in ipairs(CALL_FIELDS) do v[i]=s[k] end
+    s.call_saved=v
+end
+local function restore_call(s)
+    for i,k in ipairs(CALL_FIELDS) do s[k]=s.call_saved[i] end
+    s.call_saved=nil
+end
+
 local SUB49 = {
     { 0, function(o, s) s.exI0 = 8 end },                              -- pc1  #0
     { 0, function(o, s) s.lf0 = -PI / 2 end },                         -- pc2  #1
@@ -47692,7 +47714,10 @@ local SUB48 = {
         s.lf6 = s.lf7 / 2.5
     end },
     ---`#19..#20`（t=90）：PLAY_SPECIAL_ANM（演出）+ `SET_FLOAT sF0 lf4` —— `#32 JUMP 90` 的落点。
-    { 90, function(o, s) s.sF0 = s.lf4 end },
+    { 90, function(o, s)
+        OriginalStageVisual.source_event(o,8,"ecldata1",{0,62})
+        s.sF0=s.lf4
+    end },
     ---`#21`（t=90）：`CALL 49`（子程序与主 context 共用变量；主 clock 冻结到返回帧）。
     ---★ CALL 时 `CallSubOnEnemy` 把**共享调用参数** g_EclCallParameters（`SET_FLOAT sF0`
     ---  写的就是它）整块抄进本 context 的 callParameterInts[0]（= cF0..cF3，
@@ -47701,12 +47726,14 @@ local SUB48 = {
     ---  漏掉这步 ⇒ 第一轮 lf2 = lf1 = 0（基准角根本不旋），第二轮起 cF0 还残留
     ---  t=220 写的 angToPl + lf7。
     { 90, function(o, s)
+        save_call(s)
         s.cF0 = s.sF0
         s.s49 = { pc = 1, t = 0 }
         sub49_frame(o, s)
     end },
     ---`#22..#31`（t=220）：漂移 + 写 cI0/cF1/cF0/exI0（本卡不用）+ 三个量取反 + exI3 + 1。
     { 220, function(o, s)
+        OriginalStageVisual.source_event(o,8,"ecldata1",{0,62})
         begin_wander(o, s, 60, 4, 1.3)
         s.cI0 = 130
         s.cF1 = 128
@@ -47726,6 +47753,7 @@ local function sub48_step(o, s)
     if s.s49 then
         if sub49_frame(o, s) then
             s.s49 = nil
+            restore_call(s)
             ---★ RETURN 那一帧主 clock **不 ++**（EclRun.cpp:187-190 的 time++ 被
             ---  `goto low_select_next_context` 跳过）⇒ 下一帧还是 t=90。
             s.ret_frame = true
@@ -47740,14 +47768,12 @@ local function sub48_step(o, s)
         ins[2](o, s)
         if s.s49 then return end
     end
-    if s.ret_frame then
-        s.ret_frame = nil
-    else
-        s.t = s.t + 1
-    end
+    s.ret_frame=nil
+    s.t=s.t+1
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -47786,6 +47812,7 @@ local function card_frame(owner)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     owner.c476_main = nil
     EX.clear_records(owner)
     EX.pool_clear()
@@ -48804,7 +48831,6 @@ local function card_frame(owner)
     end
 
     ---③ 收尸。
-    EX.suppress_step()
 
     local j = 1
     for k = 1, #units do
@@ -50003,7 +50029,6 @@ local function card_frame(owner)
         local u = units[i]
         if IsValid(u) and u.alive then u_step(u) end
     end
-    EX.suppress_step()
 
     ---③ 收尸。
     local j = 1
@@ -51163,7 +51188,6 @@ local function card_frame(owner)
         local u = units[i]
         if IsValid(u) and u.alive then u_step(u) end
     end
-    EX.suppress_step()
 
     ---③ 收尸。
     local j = 1
@@ -52575,7 +52599,6 @@ local function card_frame(owner)
         local u = units[i]
         if IsValid(u) and u.alive then u_step(u) end
     end
-    EX.suppress_step()
 
     ---③ 收尸。
     local j = 1
@@ -53276,7 +53299,7 @@ end
             local u = units[i]
             if IsValid(u) and u.alive then u_step(u) end
         end
-        EX.suppress_step()
+
         ---③ 收尸。
         local j = 1
         for k = 1, #units do
@@ -54273,7 +54296,7 @@ end
             local u = units[i]
             if IsValid(u) and u.alive then u_step(u) end
         end
-        EX.suppress_step()
+
         ---③ 收尸。
         local j = 1
         for k = 1, #units do
@@ -55418,7 +55441,7 @@ end
             local u = units[i]
             if IsValid(u) and u.alive then u_step(u) end
         end
-        EX.suppress_step()
+
         ---★ HOST_WATCH：把中 BOSS 的位置 / 血量镜像到卡片 boss 上（血条与指针都跟它走）；
         ---  那一只消失（打死或按原作时间表离场）⇒ 卡片 boss 血量置 0 ⇒ 本卡结束。
         if HOST_WATCH then
@@ -58789,6 +58812,11 @@ for k, e in ipairs(LIST) do
     end
     card.th08_registered_id=id
     class.th08_combat.bind(card,cardnum)
+    local native_frame=card.frame
+    card.frame=function(o)
+        native_frame(o)
+        EX.suppress_step()
+    end
 end
 
 class["SCBG1"].init = function(self)
