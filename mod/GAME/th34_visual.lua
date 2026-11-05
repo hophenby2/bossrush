@@ -353,6 +353,10 @@ function N.step_laser(o)
     o.pl_t=t+1
     return true
 end
+function N.stop_laser(o)
+    -- ECL89只进入收束，保留hitboxEndTime；普通消弹另走cancel_laser。
+    if o.pl_state<2 then o.pl_lw,o.pl_state,o.pl_t=o.pl_w,2,0 end
+end
 function N.cancel_laser(o)
     -- RemoveAllBullets使用当前targetWidth开始原作收束，取消判定；保留原生角度与源点。
     if o.pl_state<2 then
