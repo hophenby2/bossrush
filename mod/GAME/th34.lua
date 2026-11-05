@@ -7385,11 +7385,13 @@ local function TH34_add_stage78_boss()
                 live[#live + 1] = plaser(0, 0, arm, {
                     sprite=1,color=2,flags=4,hide=true,w=24, sOff = 16, eOff = 152, sLen = 152,
                     tStart = 430, dur = 538, tEnd = 32, hbStart = 600, hbEnd = 32 })
-                local o = plaser(math.cos(arm) * R, math.sin(arm) * R, arm + PI / 2, {
-                    sprite=1,color=2,flags=4,hide=true,w=24, sOff = 0, eOff = 320, sLen = 320,
-                    tStart = 430, dur = 538, tEnd = 32, hbStart = 600, hbEnd = 32 })
-                o._tang = true
-                live[#live + 1] = o
+            end
+            for k=0,3 do
+                local arm=BASE-k*PI/2
+                local o=plaser(math.cos(arm)*R,math.sin(arm)*R,arm+PI/2,{
+                    sprite=1,color=2,flags=4,hide=true,w=24,sOff=0,eOff=320,sLen=320,
+                    tStart=430,dur=538,tEnd=32,hbStart=600,hbEnd=32})
+                o._tang=true;live[#live+1]=o
             end
             for _ = 0, 999 do
                 for i = 1, #live do
@@ -7429,10 +7431,8 @@ local function TH34_add_stage78_boss()
                 local th = -rngdeg()
                 local v = ran:Float(1, 4)
                 return New(class["TH34_cmdbullet"], th07_style(8), th07_color(3, 8), self.x, self.y,
-                           v, th, { flags=8802, stages = {
-                               { type = 0x40, dur = 120, loop = 1, angle = 0, speed = 0.1 },
-                               { type = 0x20, dur = 60, loop = -1, angle = 0, speed = -0.00666667 },
-                           } })
+                           v,th,cmds4(8802,{type=64,dur=120,loop=1,angle=0,speed=.1},
+                               {type=8192,dur=30},{type=32,dur=60,angle=0,speed=-.006666666828095913}))
             end)
         end
         ---瞄准环（原作 sub106 的 RING_AIMED pk=(8,1) c1=5）：三组同帧、朝自机、速度 4。
@@ -7452,13 +7452,9 @@ local function TH34_add_stage78_boss()
             for _, dth in ipairs({ -0.9, 0.9 }) do
                 for k = 0, 4 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(8), th07_color(1, 8),
-                                            self.x, self.y, 4, aim + k * 72,
-                                            { flags=0x2222, stages = {
-                                                { type = 0x20, dur = 60, loop = -1,
-                                                  angle = dth, speed = 0 },
-                                                { type = 0x20, dur = 60, loop = -1,
-                                                  angle = 0, speed = -0.00666667 },
-                                            } })
+                                            self.x, self.y, 4,aim-k*72,cmds4(8738,{type=8192,dur=30},
+                                                {type=32,dur=60,angle=dth,speed=0},
+                                                {type=32,dur=60,angle=0,speed=-.006666666828095913}))
                 end
             end
             sound4(self)
@@ -7471,41 +7467,33 @@ local function TH34_add_stage78_boss()
             ---计数器清零（EclManager.cpp:1740），所以 set_duty 也要重置 counter。
             local duty, fire, counter = 0, nil, 0
             local function set_duty(d, f) duty, fire, counter = d, f, 0 end
-            task.New(self, function()
-                while true do
-                    task.Wait(1)
-                    if duty > 0 then
-                        counter = counter + 1
-                        if counter >= duty then counter = 0; fire() end
-                    end
-                end
-            end)
+            local function advance()
+                if duty>0 then counter=counter+1;if counter>=duty then fire();counter=1 end end
+            end
+            task.New(self,function() while true do task.Wait(1);advance() end end)
             task.New(self, function()
                 task.Wait(210)
                 ---★ 原作 sub104 的 JUMP 是 `JUMP 210 -280`：落点是 **#31 `SET_PERIODIC_CALLBACK 8 105`**
                 ---（off 41448），**跳过** #22..#30 的 OP0/SET_INT/SUB_CALL 2/SPAWN 107/108。
                 ---所以只有第一轮才做 SUB_CALL 2 的 64 帧冻结与两台激光台出生；
                 ---之后每轮从 `SET_PERIODIC 8 105` 直接续上（本轮起再从头跑一遍是错的）。
-                PlaySound("power0", 0.35, self.x / 256)       -- 原作 SUB_CALL 2（gI0=16 ⇒ 64 帧）
-                task.Wait(64)
-                pspawn(0, 0, laser_rig107, nil, nil, true)                   -- 原作 sub107
-                pspawn(0, 0, laser_rig108, nil, nil, true)                   -- 原作 sub108
+                class.th07_charge6(self,16,10)
+                pspawn(0,0,laser_rig107,nil,'ecldata8:107',true)                   -- 原作 sub107
+                pspawn(0,0,laser_rig108,nil,'ecldata8:108',true)                   -- 原作 sub108
                 set_duty(8, function() volley105(self) end)
                 while true do
                     task.Wait(270)                           -- 真实 274 → 544（原作 t=480）
-                    PlaySound("nep00", 0.5, self.x / 256)    -- 原作 #32 PLAY_SOUND 0x13（se_nep00）
-                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 #35 SUB_CALL 2（gI0=25 ⇒ 100 帧）
-                    task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 #36 PLAY_SOUND 0xf
+                    OriginalStageVisual.presentation.sound.play(7,19,self.x)    -- 原作 #32 PLAY_SOUND 0x13（se_nep00）
+                    advance();class.th07_charge6(self,25,4);advance()  -- 原作 #35 SUB_CALL 2（gI0=25 ⇒ 100 帧）
+                    OriginalStageVisual.presentation.sound.play(7,15,self.x)    -- 原作 #36 PLAY_SOUND 0xf
                     pclear()
                     set_duty(0, nil)
                     task.Wait(60)                            -- 真实 644 → 704（原作 t=540）
                     set_duty(10, function() ring106(self) end)
                     task.Wait(440)                           -- 真实 704 → 1144（原作 t=980）
-                    PlaySound("nep00", 0.5, self.x / 256)    -- 原作 #40 PLAY_SOUND 0x13（se_nep00）
-                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 #43 SUB_CALL 2（gI0=25 ⇒ 100 帧）
-                    task.Wait(100)
-                    PlaySound("tan00", 0.1, self.x / 256)    -- 原作 #44 PLAY_SOUND 0xf
+                    OriginalStageVisual.presentation.sound.play(7,19,self.x)    -- 原作 #40 PLAY_SOUND 0x13（se_nep00）
+                    advance();class.th07_charge6(self,25,4);advance()  -- 原作 #43 SUB_CALL 2（gI0=25 ⇒ 100 帧）
+                    OriginalStageVisual.presentation.sound.play(7,15,self.x)    -- 原作 #44 PLAY_SOUND 0xf
                     pclear()
                     set_duty(20, function() volley105(self) end)
                     task.Wait(30)                            -- 真实 1244 → 1274（t=1010 的 JUMP）
@@ -7531,29 +7519,29 @@ local function TH34_add_stage78_boss()
         ---一次「定向散弹」（原作 sub103；由母体 SUB_CALL，耗 4 帧）：5 帧里朝 base 打 25 发
         ---（±5.625° 各 4+8 发、±22.5° 各 4+8 发，再用一发直的补满）。
         local function shotgun(self, base)
-            gspread(self, bs(10), 0, 1, 1, 4.5, 1, base, 0.19635, true)   -- t=0 SPREAD_ABS(1 发，无随机)
+            gspread(self, bs(10), 0, 1, 1, 4.5, 1, base,0.19634954631328583,true,4)   -- t=0 SPREAD_ABS(1 发，无随机)
             task.Wait(1)
             grandom(self, bs(7), 2, 4, 3.5, 2,
-                    base + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true)
+                    base + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG,true,4)
             task.Wait(1)
             grandom(self, bs(3), 4, 8, 4.5, 3,
-                    base + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true)
+                    base + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG,true,4)
             task.Wait(1)
             grandom(self, bs(7), 2, 4, 2, 1,
-                    base + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG, true)
+                    base + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG,true,0)
             task.Wait(1)
             grandom(self, bs(3), 4, 8, 2, 1,
-                    base + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG, true)
+                    base + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG,true,0)
         end
         spellcard(NAME, 3446, 75, 1400, false, function(self)
+            self.th07_manual_hidden=true
             bmove(self, 120, 4, 0, 128)
             task.New(self, function()
                 task.Wait(210)
                 self.group = GROUP.NONTJT
                 local gap = 100
                 while true do
-                    PlaySound("power0", 0.35, self.x / 256)  -- 原作 SUB_CALL 2（gI0=4 ⇒ 16 帧）
-                    task.Wait(16)
+                    class.th07_charge6(self,4,6)
                     task.Wait(30)                            -- 母体 t=240
                     local aim = Angle(self, player)
                     ---原作 #33/#36/#39：三次 SUB_CALL 103，f0 依次 = A2P → A2P+2.0944 → A2P−4.18879，
@@ -7561,26 +7549,27 @@ local function TH34_add_stage78_boss()
                     shotgun(self, aim)                       -- 原作 SUB_CALL 103（各 4 帧）
                     shotgun(self, aim - 120)
                     shotgun(self, aim + 120)
-                    PlaySound("lazer00", 0.13, self.x / 256)  -- 原作 sub102 #42 PLAY_SOUND 0xd
+                    aim=Angle(self,player) -- 原103返回后重新取A2P。
+                    OriginalStageVisual.presentation.sound.play(7,13,self.x)  -- 原作 sub102 #42 PLAY_SOUND 0xd
                     for k = 0, 5 do                          -- 6 条长激光（60° 间隔）
                         plaser(self.x, self.y, aim / RAD2DEG - k * PI / 3, {
-                            spr = 4, w = 8, sOff = 0, eOff = 640, sLen = 640,
+                            sprite=0,color=4,w = 8, sOff = 0, eOff = 640, sLen = 640,
                             tStart = 60, dur = 60, tEnd = 30, hbStart = 60, hbEnd = 30 })
                     end
                     task.Wait(3)                             -- t=243
                     self.group = GROUP.ENEMY -- 三次Sub103返回后，仅这3帧恢复体术。
                     task.Wait(3)                             -- t=246
                     self.group = GROUP.NONTJT
-                    gring(self, bs(8), 2, 28, 4, 3, 1, Angle(self, player), 0, true)
+                    gring(self, bs(8), 2, 28, 4, 3, 1, Angle(self, player),0,true,0)
                     task.Wait(20)                            -- t=266
-                    self.hide = true                         -- SET_HAS_NO_COLLISION 1（隐身）
-                    self.colli = false
+                    self._original_hidden=true                         -- SET_HAS_NO_COLLISION 1（隐身）
+                    self.colli=false
+                    local protected=self.protect;self.protect=true
                     task.Wait(gap)                           -- 等 l2i1 帧
                     self.x, self.y = player.x, player.y       -- 神隐：瞬移到自机身上
-                    PlaySound("power0", 0.35, self.x / 256)  -- SUB_CALL 2（gI0=10 ⇒ 40 帧）
-                    task.Wait(40)
-                    self.hide = false                        -- 原作 #56：爆闪结束后才现身
-                    self.colli = true
+                    class.th07_charge6(self,10,10)
+                    self._original_hidden=false                        -- 原作 #56：爆闪结束后才现身
+                    self.colli=true;self.protect=protected
                     if gap > 40 then gap = gap - 6 end
                 end
             end)
@@ -7623,8 +7612,7 @@ local function TH34_add_stage78_boss()
         local function fan(self, ang_our, dth_our)
             pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(10), th07_color(0, 10),
                                     self.x, self.y, 5, ang_our,
-                                    { type = 0x20, dur = 60, loop = -1,
-                                      angle = dth_our, speed = -0.055 })
+                                    cmds4(546,{type=32,dur=60,loop=-1,angle=dth_our,speed=-.055}))
         end
         spellcard(NAME, 3447, 65, 2800, false, function(self)
             self._box = { -128, 128, 128, 176 }
@@ -7656,7 +7644,7 @@ local function TH34_add_stage78_boss()
                     if li0 >= 30 then lf6 = lf6 + 0.00109083
                     else lf6 = lf6 - 0.00109083 end
                     li0 = (li0 + 1) % 60
-                    task.Wait(8)
+                    task.Wait(7)
                 end
             end)
             ---本体：漂移 + 每次换向后的那一对曲线扇和激光。
@@ -7718,7 +7706,7 @@ local function TH34_add_stage78_boss()
         ---一次「網目」弹幕（light/dark 只差 sprite 与色档）。lf0 传**原作口径的弧度**
         ---（基准角 = angToPl_TH07 ± 0.523599）。
         ---第 i 发的相对角：RANDOM 用 rand(a1−a2)+a2 ⇒ 我们的 rand(2θ)−θ 相对 L。
-        local function web(self, lf0, dark)
+        local function web(self, lf0, dark, flags)
             local L = -lf0 * RAD2DEG
             local S = dark and { { 10, 0 }, { 7, 1 }, { 3, 2 } }
                             or { { 10, 1 }, { 7, 3 }, { 3, 6 } }
@@ -7727,36 +7715,35 @@ local function TH34_add_stage78_boss()
             ---  会凭空多抽 2 个 float，此后整条随机流错位，四段扇的落点全对不上。
             volley3(self, 1, function()
                 return th07_style(S[1][1]), th07_color(S[1][2], S[1][1]), 4.5, L
-            end, true)
+            end, true,flags)
             task.Wait(1)
             ---原作 #35 RANDOM：角 = rand(f3−f4) + f4，f3 = f0+0.0981748、f4 = f0−0.0981748。
             ---我们的角度制 = 取负 ⇒ a1 = −f4 = L + 0.0981748、a2 = −(f3−f4) = −0.1963496。
             grandom(self, bs(S[2][1]), S[2][2], 8, 3.5, 2,
-                    L + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true)
+                    L + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true,flags)
             task.Wait(1)
             grandom(self, bs(S[3][1]), S[3][2], 16, 4.5, 3,
-                    L + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true)
+                    L + 0.0981748 * RAD2DEG, -0.1963496 * RAD2DEG, true,flags)
             task.Wait(1)
             grandom(self, bs(S[2][1]), S[2][2], 8, 2, 1,
-                    L + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG, true)
+                    L + 0.392699 * RAD2DEG, -0.785398 * RAD2DEG, true,flags)
             task.Wait(1)
             grandom(self, bs(S[3][1]), S[3][2], 56, 3, 1,
-                    L + 0.785398 * RAD2DEG, -1.570796 * RAD2DEG, true)
+                    L + 0.785398 * RAD2DEG, -1.570796 * RAD2DEG, true,flags)
         end
         ---「網目」子机（原作 sub98/99）。a = { ang0(原作弧度), lf5, spr, col, wA, wB }。
         ---MOVE_DIR_TIME(0,0,ang0,4)直接设置POLAR；发弹后沿ang0移动4px。
         local function node(self, a)
             local offs = spread_offsets(2, -0.19635 * RAD2DEG)
             local function fire(sign, w)
-                plaser(self.x, self.y, -a.ang0 + sign * PI / 2
-                       + ran:Float(-a.lf5 / 2, a.lf5 / 2), {
-                    spr = a.spr, w = w, sOff = 0, eOff = 640, sLen = 640,
+                plaser(self.x, self.y, -a.ang0 + sign*(PI/2+ran:Float(-a.lf5/2,a.lf5/2)), {
+                    sprite=0,color=a.col,w = w, sOff = 0, eOff = 640, sLen = 640,
                     tStart = 90, dur = 200, tEnd = 30, hbStart = 80, hbEnd = 30 })
                 local base = -a.ang0 * RAD2DEG
                 for k = 1, 2 do
                     volley3(self, 1, function()
                         return th07_style(3), th07_color(a.col, 3), 1.5, base + offs[k]
-                    end, true)
+                    end,true,4)
                 end
             end
             ---★ 原作 sub98/99 #4 是 `MOVE_DIR_TIME 0 0 *f0 4`：t ≤ 0 时引擎直接
@@ -7784,17 +7771,16 @@ local function TH34_add_stage78_boss()
                 task.Wait(210)
                 local lf5, wait, sgn = 0.523599, 200, 1
                 while true do
-                    PlaySound("power0", 0.35, self.x / 256)   -- 原作 SUB_CALL 2（gI0=10 ⇒ 40 帧）
-                    task.Wait(40)
+                    class.th07_charge6(self,10,10)
                     local lf0 = -Angle(self, player) / RAD2DEG + sgn * 0.523599
-                    web(self, lf0, false)
+                    web(self,lf0,false,sgn>0 and 4 or 2)
                     task.Wait(20)                      -- 相对 4 → 24
                     pspawn(self.x, self.y, node,
                            { ang0 = lf0, lf5 = lf5, spr = 6, col = 6, wA = 16, wB = 14 },
                            'ecldata8:98', 'inline_polar')
                     task.Wait(10)                      -- 相对 24 → 34
                     local lf0b = -Angle(self, player) / RAD2DEG - sgn * 0.523599
-                    web(self, lf0b, true)
+                    web(self,lf0b,true,sgn>0 and 4 or 2)
                     task.Wait(20)                      -- 相对 38 → 58
                     pspawn(self.x, self.y, node,
                            { ang0 = lf0b, lf5 = lf5, spr = 2, col = 2, wA = 14, wB = 16 },
