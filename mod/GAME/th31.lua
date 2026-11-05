@@ -48151,7 +48151,7 @@ end
 ---Sub6/7/8/9 的枪（SHOOT_CIRCLE_AIMED，op98）。
 local function gun_shot(c1, s1)
     return { op = 98, type = 3, color = 6, count1 = c1, count2 = 1,
-             speed1 = s1, speed2 = 0.5, angle = 0, step = 0.184799567, flags = 0x3 }
+             speed1 = s1, speed2 = 0.5, angle = 0, step = -0.184799567, flags = 0x3 }
 end
 local SUB6 = {
     { 100, function(u) shoot(u, gun_shot(2, 1.3)) end },
@@ -48199,7 +48199,7 @@ local SUB0 = {
         if u.st.loop > 0 then return { t = 0, pc = 2 } end
         ---#25（0xf8）：一发自机狙，速度 2.2。
         shoot(u, { op = 96, type = 0, color = 6, count1 = 1, count2 = 1,
-                   speed1 = 2.2, speed2 = 0.5, angle = 0, step = 0.184799567,
+                   speed1 = 2.2, speed2 = 0.5, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         ---#26..#28：背对自机 + 初速 0.1 + 加速度 0.01。
         u_set_dir_speed(u, aim_at(u) + PI, 0.1)
@@ -48210,7 +48210,7 @@ local SUB0 = {
         ---间隔 30 → rank 缩放后 24 帧，起始相位随机（SET_SHOOT_INTERVAL_DELAYED）。
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 1,
-                   speed1 = 2.6, speed2 = 0.5, angle = 0, step = 0.184799567,
+                   speed1 = 2.6, speed2 = 0.5, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u.si_frames = scaled_interval(30)
@@ -48226,7 +48226,7 @@ local function make_med_a(fam_sub)
             ---#4..#9：延迟出弹记下 5 连自机狙扇（0xf8：c1=5 c2=3 速度 3.2→1.0）。
             u.defer = true
             shoot(u, { op = 96, type = 2, color = 2, count1 = 5, count2 = 3,
-                       speed1 = 3.2, speed2 = 1.0, angle = 0, step = 0.08975979,
+                       speed1 = 3.2, speed2 = 1.0, angle = 0, step = -0.08975979,
                        flags = 0x203 })
             u.defer = false
             ---#10：MOVE_IN_DIR(60, OUT_QUAD, 下, 2.2)。
@@ -48240,7 +48240,7 @@ local function make_med_a(fam_sub)
         { 30, function(u)
             ---#18（0xf8）：一圈 32×2，速度 2.1→0.5，基准角 0。
             shoot(u, { op = 99, type = 2, color = 2, count1 = 32, count2 = 2,
-                       speed1 = 2.1, speed2 = 0.5, angle = 0, step = 0.184799567,
+                       speed1 = 2.1, speed2 = 0.5, angle = 0, step = -0.184799567,
                        flags = 0x203 })
         end },
         { 60, function(u)
@@ -48268,7 +48268,7 @@ local function make_med_b(fam_sub, fam_frame, drift_frame, term_frame)
         { 30, function(u)
             ---#5..#7（0xf8）：一圈 32×2，**基准角 = 当时的 movementAngle**。
             shoot(u, { op = 99, type = 2, color = 6, count1 = 32, count2 = 2,
-                       speed1 = 2.1, speed2 = 0.5, angle = u.ma, step = 0.184799567,
+                       speed1 = 2.1, speed2 = 0.5, angle = u.ma, step = -0.184799567,
                        flags = 0x203 })
         end },
         { fam_frame, function(u)
@@ -48324,7 +48324,7 @@ local SUB13 = {
         ---间隔 100 → rank 缩放后 80 帧，起始相位随机。
         u.defer = true
         shoot(u, { op = 96, type = 3, color = 10, count1 = 1, count2 = 1,
-                   speed1 = 0.8, speed2 = 0.5, angle = 0, step = 0.184799567,
+                   speed1 = 0.8, speed2 = 0.5, angle = 0, step = -0.184799567,
                    flags = 0x208 })
         u.defer = false
         u.si_frames = scaled_interval(100)
@@ -48745,6 +48745,9 @@ local TIMELINE_S1BACK = {
 local function make_init(TL)
     return function(owner)
         units = {}
+        if TL==TIMELINE_S1BACK then
+            OriginalStageVisual.presentation.ambient_start(8,"ecldata1","ecldata1:14",-162,240,{pc=8,time=20})
+        end
         EX.clear_records(owner)
         EX.pool_clear()
         EX.fm = 1
@@ -48764,7 +48767,9 @@ local function card_frame(owner)
     while owner.tl_i <= #TL and TL[owner.tl_i][1] == t do
         local e = TL[owner.tl_i]
         owner.tl_i = owner.tl_i + 1
-        if e[2] ~= 14 then          ---差异 2：Sub14 是烟尘
+        if e[2] == 14 then
+            OriginalStageVisual.presentation.ambient_start(8,"ecldata1","ecldata1:14",e[3],e[4])
+        else
             New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0, e[5], e[7])
         end
     end
@@ -48780,6 +48785,8 @@ local function card_frame(owner)
     end
 
     ---③ 收尸。
+    EX.suppress_step()
+
     local j = 1
     for k = 1, #units do
         local u = units[k]

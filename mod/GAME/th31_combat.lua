@@ -600,9 +600,6 @@ return function()
             o._original_familiar_collision=true
             o._original_hidden=false
             init(o)
-            -- 时间轴t1的无判定效果实体此前被筛掉；战斗子机仍走原有实体实现。
-            local ambient=({[1000]='ecldata1:14'})[id]
-            if ambient then OriginalStageVisual.presentation.start(o,8,ambient,-162,240,1) end
             if id==467 or id==468 then
                 _editor_class.TH31.th08_nightblind.install(o,57)
             elseif id==469 then
@@ -614,6 +611,9 @@ return function()
                 local key=source.file..':'..source.sub
                 local events=phase_events[key]
                 -- Sub36 t192生成的NO_DEATH烟尘跨过后续阶段；单独练习缺少前段时从稳态循环开始。
+                if source.file=='ecldata1' then
+                    OriginalStageVisual.presentation.ambient_start(8,'ecldata1','ecldata1:14',-162,240,{pc=8,time=20})
+                end
                 if source.file=='ecldata2' then
                     OriginalStageVisual.presentation.ambient_start(8,'ecldata2','ecldata2:16',-162,240,{pc=8,time=20})
                 end
