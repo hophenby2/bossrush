@@ -766,10 +766,11 @@ function H.fade_laser(l,collide)
 end
 function H.laser(b,aim,sprite,c,angle,speed,startoff,endoff,length,width,prepare,active,fade,hitstart,hitend,flags)
     local a,s=b.th06_actor,b.th06
-    if aim then angle=angle+H.player_angle(b) end
+    local x,y=b.x+a.offsetx,b.y-a.offsety
+    if aim then angle=angle+atan2(-(player.y-y),player.x-x) end
     for i=1,64 do
         if not alive(s.laser_pool[i]) then
-            local l=New(class["原作直线激光"],s,sprite,c,b.x+a.offsetx,b.y-a.offsety,angle,speed,startoff,endoff,length,width,prepare,active,fade,hitstart,hitend,flags)
+            local l=New(class["原作直线激光"],s,sprite,c,x,y,angle,speed,startoff,endoff,length,width,prepare,active,fade,hitstart,hitend,flags)
             s.laser_pool[i]=l;a.lasers[a.laser_index]=l
             H.trace(b,"laser",aim,sprite,c,angle,speed,startoff,endoff,length,width,prepare,active,fade,hitstart,hitend,flags)
             return l
@@ -794,7 +795,7 @@ end
 function H.new_actor(s,b,stage,sub,main,meta)
     if not main then meta.shot=(s.actors[1] and s.actors[1].meta.shot) or 0 end
     local a={object=b,main=main,meta=meta,stage=stage,sub=sub,phase=0,interval=0,interval_tick=0,
-        offsetx=0,offsety=0,z=0,angle=0,speed=0,angular=0,accel=0,axisx=0,axisy=0,mode="axis",
+        offsetx=main and (meta.offsetx or 0) or 0,offsety=main and (meta.offsety or 0) or 0,offsetz=0,z=0,angle=0,speed=0,angular=0,accel=0,axisx=0,axisy=0,mode="axis",
         rank=stage==7 and 18 or 32,rank_lo=-.5,rank_hi=.5,rank_n1_lo=0,rank_n1_hi=0,rank_n2_lo=0,rank_n2_hi=0,
         extra={0,0,0,0,0,0,0,0},lasers={},laser_index=0,damageable=true,collidable=true,interactable=true,
         context=H.ctx(main and meta.epoch or 0),bounds=main and meta.bounds or nil}
@@ -804,7 +805,8 @@ function H.new_actor(s,b,stage,sub,main,meta)
     local previous=main and b.th06_previous_motion
     if previous and previous.stage==stage and previous.group==meta.group then
         -- CallEclSub 只换脚本上下文；不把正走到一半的移动、速度和活动框重置为零。
-        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds"}) do
+        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index"}) do
             a[key]=previous[key]
         end
     end
@@ -839,6 +841,7 @@ function H.kill_actor(a)
         local prior=a.context;a.context={}
         for k,value in pairs(prior) do a.context[k]=value end
         a.context.time,a.context.epoch=0,0;a.death_life=0
+        H.reset_rank(a)
         a.co=coroutine.create(function() fn(a.object,a.context) end)
         H.run_actor(a)
     else a.dead=true;object.RawDel(a.object) end
@@ -948,6 +951,7 @@ class["原作流程控制"] = Class(object, {
                         local prior=a.context;a.context={}
                         for k,value in pairs(prior) do a.context[k]=value end
                         a.context.time,a.context.epoch=0,0
+                        H.reset_rank(a)
                         a.co=coroutine.create(function() fn(a.object,a.context) end)
                     elseif not a.main and a.object.hp<=0 then H.kill_actor(a) end
                     if a.main and a.timeout and a.phase>=a.timeout then a.object.hp=0 end
@@ -956,6 +960,7 @@ class["原作流程控制"] = Class(object, {
                         local prior=a.context;a.context={}
                         for k,value in pairs(prior) do a.context[k]=value end
                         a.context.time,a.context.epoch=0,0
+                        H.reset_rank(a)
                         a.co=coroutine.create(function() fn(a.object,a.context) end)
                     end
                     H.run_actor(a)
@@ -987,7 +992,8 @@ function H.card_del(b)
         b.th06_previous_context={}
         for k,value in pairs(b.th06_actor.context) do b.th06_previous_context[k]=value end
         b.th06_previous_motion={stage=b.th06_actor.stage,group=b.th06_actor.meta.group,x=b.x,y=b.y}
-        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds"}) do
+        for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index"}) do
             b.th06_previous_motion[key]=b.th06_actor[key]
         end
     end
@@ -24208,7 +24214,7 @@ boss.Define("14a","芙兰朵露·斯卡蕾特","TH06_1",TH06_bg,{0,384},(_editor
 
 do
 
-    local meta={stage=1,sub=8,group=2,life=6000,threshold=500,hp=5500,shot=0,timeout=1440,epoch=0,invul=60,bounds=nil,order=1,entry_x=128.0,entry_y=96.0,hitbox={48.0,56.0},id=3900}
+    local meta={stage=1,sub=8,group=2,offsetx=0,offsety=-12,life=6000,threshold=500,hp=5500,shot=0,timeout=1440,epoch=0,invul=60,bounds=nil,order=1,entry_x=128.0,entry_y=96.0,hitbox={48.0,56.0},id=3900}
 
     local card=boss.card.New("",1.0,1.0,24.0,5500,nil,false)
 
@@ -24226,7 +24232,7 @@ end
 
 do
 
-    local meta={stage=1,sub=9,group=2,life=500,threshold=0,hp=500,shot=0,timeout=1320,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=2,entry_x=128.0,entry_y=96.0,hitbox={48.0,56.0},id=3901}
+    local meta={stage=1,sub=9,group=2,offsetx=0,offsety=-12,life=500,threshold=0,hp=500,shot=0,timeout=1320,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=2,entry_x=128.0,entry_y=96.0,hitbox={48.0,56.0},id=3901}
 
     local card=boss.card.New("月符「月光」",2.0,2.0,22.0,500,nil,false)
 
@@ -24244,7 +24250,7 @@ end
 
 do
 
-    local meta={stage=1,sub=11,group=3,life=7000,threshold=900,hp=6100,shot=0,timeout=2100,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=3,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3902}
+    local meta={stage=1,sub=11,group=3,offsetx=0,offsety=-12,life=7000,threshold=900,hp=6100,shot=0,timeout=2100,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=3,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3902}
 
     local card=boss.card.New("",0.0,0.0,35.0,6100,nil,false)
 
@@ -24262,7 +24268,7 @@ end
 
 do
 
-    local meta={stage=1,sub=22,group=3,life=900,threshold=0,hp=900,shot=0,timeout=1500,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=4,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3903}
+    local meta={stage=1,sub=22,group=3,offsetx=0,offsety=-12,life=900,threshold=0,hp=900,shot=0,timeout=1500,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=4,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3903}
 
     local card=boss.card.New("夜符「夜雀」",2.0,2.0,25.0,900,nil,false)
 
@@ -24280,7 +24286,7 @@ end
 
 do
 
-    local meta={stage=1,sub=16,group=3,life=7500,threshold=800,hp=6700,shot=0,timeout=1800,epoch=0,invul=200,bounds={32.0,48.0,352.0,144.0},order=5,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3904}
+    local meta={stage=1,sub=16,group=3,offsetx=0,offsety=-12,life=7500,threshold=800,hp=6700,shot=0,timeout=1800,epoch=0,invul=200,bounds={32.0,48.0,352.0,144.0},order=5,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3904}
 
     local card=boss.card.New("",3.3333333333333335,3.3333333333333335,30.0,6700,nil,false)
 
@@ -24298,7 +24304,7 @@ end
 
 do
 
-    local meta={stage=1,sub=23,group=3,life=800,threshold=0,hp=800,shot=0,timeout=1500,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=6,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3905}
+    local meta={stage=1,sub=23,group=3,offsetx=0,offsety=-12,life=800,threshold=0,hp=800,shot=0,timeout=1500,epoch=0,invul=120,bounds={32.0,48.0,352.0,144.0},order=6,entry_x=0.0,entry_y=128.0,hitbox={48.0,56.0},id=3905}
 
     local card=boss.card.New("暗符「境界线」",2.0,2.0,25.0,800,nil,false)
 
