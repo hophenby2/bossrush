@@ -14202,8 +14202,8 @@
       }
     },
     {
-      "t2": 3540,
-      "t3": 3540,
+      "t2": 3490,
+      "t3": 3490,
       "game": 31,
       "name": "六面道中B「月都回廊」",
       "hp": 10000000,
@@ -14358,7 +14358,7 @@
       "metadata": {
         "cardnum": 1005
       },
-      "t1": 3540,
+      "t1": 3490,
       "order": 55,
       "review": "使魔运动、发弹节奏和激光：2026-11-04静态审阅记录",
       "source": {
@@ -16606,14 +16606,14 @@
           ],
           "sub": 77,
           "key": "6:ecldata7",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata7",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 42,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 1200,
@@ -16778,14 +16778,14 @@
           ],
           "sub": 80,
           "key": "6:ecldata7",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata7",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 46,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 1200,
@@ -16941,14 +16941,14 @@
           ],
           "sub": 82,
           "key": "6:ecldata7",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata7",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 47,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 1200,
@@ -17104,14 +17104,14 @@
           ],
           "sub": 84,
           "key": "6:ecldata7",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata7",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 48,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 1200,
@@ -17276,14 +17276,14 @@
           ],
           "sub": 87,
           "key": "6:ecldata7",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata7",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 49,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 1800,
@@ -17341,8 +17341,8 @@
       }
     },
     {
-      "t2": 3420,
-      "t3": 3420,
+      "t2": 3400,
+      "t3": 3400,
       "game": 31,
       "name": "六面道中A「永远亭参道」",
       "hp": 10000000,
@@ -17497,7 +17497,7 @@
       "metadata": {
         "cardnum": 1004
       },
-      "t1": 3420,
+      "t1": 3400,
       "order": 70,
       "review": "使魔运动、发弹节奏和激光：2026-11-04静态审阅记录",
       "source": {
@@ -20012,14 +20012,14 @@
           ],
           "sub": 78,
           "key": "5:ecldata6",
-          "bounds": [
-            32,
-            48,
-            352,
-            128
-          ],
+          "bounds": false,
           "file": "ecldata6",
-          "dynamic": false
+          "dynamic": false,
+          "origin": 48,
+          "pos": [
+            192,
+            224
+          ]
         }
       },
       "t1": 110,

@@ -79,6 +79,9 @@ F.effect=Class(object,{
                 c.z+c.dz/2+ran:Float(0,100)-100}
             o.velocity={ran:Float(-0.001,0.001),ran:Float(-0.03,0.03)+(kind==63 and 0.4 or 0),-ran:Float(0,0.1)-0.3}
             o.acceleration={ran:Float(-0.0001,0.0001),ran:Float(-0.0001,0.0001),-0.0003}
+            -- Camera粒子只在初始化时乘fm；之后逐帧累加已缩放的速度/加速度。
+            local rate=o.rate_source and o.rate_source.fm or 1
+            for i=1,3 do o.velocity[i],o.acceleration[i]=o.velocity[i]*rate,o.acceleration[i]*rate end
             o.layer=LAYER.ENEMY-1
         end
         F.objects[#F.objects+1]=o
@@ -115,7 +118,8 @@ F.effect=Class(object,{
             o.geometry={count=math.max(3,math.floor(v.vars[10000] or 24)),wave=v.vars[10001] or 0,
                 radius=v.position[1],secondary=v.position[2],width=v.scale[1],angle=v.rotation[3],secondary_angle=v.rotation[2]}
         end
-        local rate=o.rate_source and o.rate_source.fm or 1
+        local source=o.rate_source or valid(o.phase) and o.phase._native_rate_source
+        local rate=source and source.fm or 1
         A.step(o.vm,rate)
         o.age=o.age+rate
         if o.vm.finished then object.RawDel(o) end

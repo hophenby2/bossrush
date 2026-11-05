@@ -36,7 +36,9 @@ local profiles = {
     ["ecldata7:64"]={spawns={{92,500,0,0}},events={{0,77,24,24},{0,160,30}},attached=true},
     ["ecldata7:33"]={spawns={{92,3500,0,0}},events={{0,77,24,24},{0,160,30}},attached=true},
     ["ecldata7:37"]={spawns={{91,1500,0,0}},events={{0,80,16},{0,77,24,24},{0,160,30},{210,81,16}},attached=true},
-    ["ecldata6:77"]={spawns={{91,250,0,0}},events={{0,77,24,24},{0,80,16},{0,80,3},{120,81,3}},attached=true},
+    ["ecldata6:77"]={spawns={{91,250,0,0}},events_for=function(o,a)
+        return {{0,77,24,24},{0,80,16},{0,80,3},{120+a[3].freeze,81,3}}
+    end,events={{0,77,24,24},{0,80,16},{0,80,3},{120,81,3}},attached=true},
     ["ecldata6:65"]={spawns={{91,4000,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata6:60"]={spawns={{91,400,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata6:25"]={spawns={{91,100,0,0}},events={{0,77,24,24},{0,80,16},{470,81,16}},attached=true},
@@ -454,6 +456,12 @@ return function()
             -- 同一个Lua类的不同ECL变体必须连同显示源一起切换，不能只换交互表。
             local source_key=cfg.variants and cfg.variants[args[1]] or key
             if source_key~=key then profile=assert(profiles[source_key]) end
+            if profile.events_for then
+                local instance={}
+                for k,v in pairs(profile) do instance[k]=v end
+                instance.events=profile.events_for(o,args,parent)
+                profile=instance
+            end
             o.th08_source,o.th08_profile=source_key,profile
             local owner=attach(o,parent,profile.attached)
             if OriginalStageVisual and not o._original_explicit then

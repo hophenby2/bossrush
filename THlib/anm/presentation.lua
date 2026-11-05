@@ -349,7 +349,12 @@ T.carrier=Class(object,{
             return
         end
         if not o.started then T.advance(o,0);o.started=true end
-        T.advance(o,o.age-o.delay+1)
+        local rate=IsValid(o.phase) and o.phase._native_rate_source
+        if rate or o.presentation_clock then
+            o.presentation_clock=o.presentation_clock or (o.age-o.delay+1)
+            T.advance(o,math.floor(o.presentation_clock))
+            o.presentation_clock=o.presentation_clock+(rate and rate.fm or 1)
+        else T.advance(o,o.age-o.delay+1) end
         local s=o._original_presentation
         if not s or s.terminated then object.RawDel(o);return end
         OriginalStageVisual.tick(o)
