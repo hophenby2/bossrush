@@ -84,6 +84,7 @@ function V.color_count(game,kind)
     if game==6 then return kind==9 and 4 or kind>=6 and 8 or 16 end
     if game==7 then return kind==10 and 4 or kind>=7 and 8 or 16 end
     if game==8 then return kind==10 and 4 or ((kind>=7 and kind<=9) or kind==14 or kind==15 or kind>=18) and 8 or 16 end
+    if game==95 and kind==18 then return 2 end -- bullet.anm 296/297是两种有效色，不可夹成296。
     return kind==17 and 4 or (kind==18 or (game==10 and kind==25)) and 1 or kind==23 and 3
         or (kind>=12 and kind<=22) and 8 or 16
 end
@@ -382,7 +383,36 @@ end
 function V.laser_render_width(o)
     return laser_width(o)*7/16
 end
+-- TH095 PhotoEffect：弹型选择主VM，颜色同时选择主图和0xc2起的光源VM。
+function V.laser_source(o,game,kind,color)
+    if game~=95 then return end
+    local body=A.new(95,'bullet',assert(body95[kind])+color)
+    local cap=A.new(95,'bullet',0xc2+color)
+    A.interrupt(body,2);A.step(body)
+    A.interrupt(cap,2);A.step(cap)
+    body.blend,cap.blend='mul+add','mul+add'
+    body.anchor,body.anchor_x,body.anchor_y=nil,nil,nil
+    o._native_laser_type,o._native_laser_color=kind,color
+    o._native_photo_beam,o._native_photo_cap=body,cap
+end
+function V.step_laser_anm(o)
+    local v=o._native_photo_beam
+    if not v then return end
+    local sprite=v.data.sprites[v.sprite]
+    if sprite then v.scale[1],v.scale[2]=laser_width(o)/sprite[4],(o.l1+o.l2+o.l3)/sprite[5] end
+    A.step(v)
+    if not o.th095_tail or o.th095_tail==0 then A.step(o._native_photo_cap) end
+end
 function V.render_laser_anm(o)
+    if o._native_photo_beam then
+        local length=o.l1+o.l2+o.l3
+        local v=o._native_photo_beam
+        -- PhotoEffect强制bottom锚点，转为居中矩形后保持源点/长度不变。
+        v.rotation[3]=-o.rot*math.pi/180+math.pi/2
+        A.draw(v,o.x+cos(o.rot)*length/2,o.y+sin(o.rot)*length/2,nil,1,1,o.alpha)
+        if not o.th095_tail or o.th095_tail==0 then A.draw(o._native_photo_cap,o.x,o.y,nil,1,1,o.alpha) end
+        return true
+    end
     local game=o._native_laser_game or ((o.th06_state or o.th06_age) and 6)
     if game~=6 and game~=8 then return false end
     local len=o.l1+o.l2+o.l3

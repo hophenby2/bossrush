@@ -534,7 +534,7 @@ local EX_COLOR16 = { 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 13, 16 }
 local EX_COLOR8  = { 16, 1, 3, 5, 7, 9, 11, 15 }
 local EX_COLOR4  = { 2, 6, 10, 12 }
 local function ex_color(i, t)
-    local count=t==17 and 4 or t==18 and 1 or t==23 and 3 or t and t>=12 and 8 or 16
+    local count=t==17 and 4 or t==18 and 2 or t==23 and 3 or t and t>=12 and 8 or 16
     return math.max(0,math.min(count-1,math.floor(tonumber(i) or 0)))+1
 end
 
@@ -1715,7 +1715,10 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
     local function fire_spear_laser(drone, x, y, a, color)
         -- ins145生成独立移动激光；长满后整根前进，子机出界不结束它的寿命。
         local l=New(laser,color,x,y,a,0,0,0,24,0,0)
-        if PhotoNative.straight(l,LASER_LEN,24,LASER_SPEED) then lasers[#lasers+1]=l end
+        if PhotoNative.straight(l,LASER_LEN,24,LASER_SPEED) then
+            OriginalBulletVisual.laser_source(l,95,12,color)
+            lasers[#lasers+1]=l
+        end
     end
 
     ---窄扇里每一颗的逐帧钩子：只在前 120 帧沿自身方向加速，之后保持末速直飞。
@@ -2285,8 +2288,10 @@ do  -- 77 「死蝶浮月」（ecl17_d，幽幽子，组 1a 第 4 张）
     class.fan_laser = Class(laser, {
         init=function(self,owner,x,y,a)
             laser.init(self,LASER_INDEX,x,y,a,0,0,0,LASER_W,0,0)
-            PhotoNative.rotating(self,owner,LASER_LEN,LASER_W,8,
-                FAN_WARN,FAN_GROW,FAN_HOLD,FAN_FADE,FAN_SPIN,0,0,true)
+            if PhotoNative.rotating(self,owner,LASER_LEN,LASER_W,8,
+                FAN_WARN,FAN_GROW,FAN_HOLD,FAN_FADE,FAN_SPIN,0,0,true) then
+                OriginalBulletVisual.laser_source(self,95,12,3)
+            end
         end,
     })
 
@@ -3096,12 +3101,13 @@ end
 ---生成一根 EX 激光。index = 贴图行（1..16，见各卡注释里挑行的理由）；
 ---start_full = true ⇒ 初始就是 max_len（147/148/155/156/157），false ⇒ 从 0 长（153/154）。
 local function spawn_ex_laser(owner, lasers, index, x, y, angle, max_len, width, speed,
-        startup, grow, sustain, fade, ang_vel, vx, vy, follow, start_full)
+        startup, grow, sustain, fade, ang_vel, vx, vy, follow, start_full,native_kind,native_color)
     local len0 = start_full and max_len or 0
     local l = New(laser, index, x, y, angle, 0, len0, 0, 0, 0, 0)
     l.colli = false
     if not run_ex_laser(owner, l, max_len, width, speed, startup, grow, sustain, fade,
             ang_vel, vx, vy, follow) then return end
+    if native_kind~=nil then OriginalBulletVisual.laser_source(l,95,native_kind,native_color) end
     lasers[#lasers + 1] = l
     return l
 end
@@ -3176,19 +3182,19 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
     ---从 (x,y) 甩出一整圈 count 发：基准角每圈重抽（原作的 ins_7(floatV0, rand(-π,π))）。
     ---整圈是对称的，TH095 的「顺时针为正」取反后方向集合不变 ⇒ 直接用 base + i*360/count。
     local function fire_ring(x, y, color, count, speed)
-        local base = ran:Float(0, 360)
+        local base = sg_deg(ran:Float(-math.pi,math.pi))
         for i = 0, count - 1 do
             SpawnPhoto(514,STYLE, color, x, y, speed,
-                    base + i * 360 / count, false, 0, false)
+                    base - i * 360 / count, false, 0, false)
         end
     end
 
     ---Sub6 / Sub7 的一轮：四个角各一圈 + 本体一圈（顺序、发数、速度全照 dump）。
-    local function fire_volley(owner, color, corner_count, body_count)
+    local function fire_volley(owner, color, corner_count, body_count,repeat_corners)
         for i = 1, #CORNERS do
             fire_ring(CORNERS[i][1], CORNERS[i][2], color, corner_count, CORNER_SPEED)
         end
-        fire_ring(owner.x, owner.y, color, body_count, BODY_SPEED)
+        if not repeat_corners then fire_ring(owner.x,owner.y,color,body_count,BODY_SPEED) end
         -- flags 的 0x200 = PLAY_SPAWN_SOUND：整波只响一声。
         PlaySound("tan00", 0.1, owner.x / 256, false)
     end
@@ -3202,7 +3208,7 @@ do  -- 100 禁忌「フォービドゥンフルーツ」（ecl22_a，芙兰，�
             for _ = 2, REPEAT_LIMIT do
                 task.Wait(REPEAT_GAP)
                 if photo_index(PHOTO_LIMIT) >= DENSITY_MIN_PHOTOS then
-                    fire_volley(owner, color, corner_count, body_count)
+                    fire_volley(owner,color,corner_count,body_count,true)
                 end
             end
         end)
@@ -3278,7 +3284,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     local MOVE_DELAY = 60                               -- Sub3 t=60 的第一次走位
     local MOVE_FRAMES = 60                              -- ins_66 的 N
     local MOVE_STEP = 30                                -- ins_66 的 speed × N = 0.5 × 60
-    local MOVE_IDLE = 30                                -- 一轮 90 帧 = 走 60 + 歇 30
+    local MOVE_IDLE = 60                                -- JUMP 120→0，下一次60帧MOVE前还经过60帧
 
     local PHOTO_LIMIT = 6                               -- ins_141(6)
     local CARD_NAME = "禁忌「禁じられた遊び」"
@@ -3295,7 +3301,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
     local LASER_INDEX = 12
     local LASER_LEN = 108
     local LASER_W = 16
-    local LASER_SPEED = 8
+    local LASER_SPEED = 2
     local LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE = 20, 20, 220, 10
     ---第 4 波那 8 根（长 96、维持 600）。
     local LASER2_LEN = 96
@@ -3327,7 +3333,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
                 spawn_ex_laser(owner, lasers, LASER_INDEX, owner.x, owner.y, -CROSS[i],
                         LASER_LEN, LASER_W, LASER_SPEED,
                         LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE,
-                        av, vx, vy, false, true)
+                        av, vx, vy, false, true,12,1)
             end
         end
         ex_ring(BIG_STYLE, BIG_COLOR, owner.x, owner.y, BIG_COUNT, BIG_SPEED, -ring_base)
@@ -3344,7 +3350,7 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
                 spawn_ex_laser(owner, lasers, LASER_INDEX, owner.x, owner.y, -CROSS[k],
                         LASER2_LEN, LASER_W, LASER_SPEED,
                         LASER_STARTUP, LASER_GROW, LASER2_SUSTAIN, LASER_FADE,
-                        av, vx, vy, false, true)
+                        av, vx, vy, false, true,12,3)
             end
         end
     end
@@ -3391,8 +3397,9 @@ do  -- 101 禁忌「禁じられた遊び」（ecl22_b，芙兰，组 3a 第 2 �
             while true do
                 ---ins_51：本体在自机右边就往左走，否则往右走（总是躲开自机）。
                 local dir = (self.x >= player.x) and 180 or 0
-                local tx = max(BOX_L, min(BOX_R, self.x + MOVE_STEP * cos(dir)))
-                task.MoveTo(tx, HOME_Y, MOVE_FRAMES, VALUE_SET.NORMAL)
+                local mv={dead=false}
+                PhotoNative.move(self,mv,self.x+MOVE_STEP*cos(dir),HOME_Y,MOVE_FRAMES,0,{-48,224,48,224})
+                task.Wait(MOVE_FRAMES)
                 task.Wait(MOVE_IDLE)
             end
         end)
@@ -3465,8 +3472,8 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
     local LASER_LEN, LASER_W = 512, 16
     local LASER_SPEED_147 = 8                            -- ins_147 每帧长 8
     local LASER_SPEED_157 = 5                            -- ins_157 每帧长 5
-    local AV_147 = -0.1758                               -- 0.00306796 rad/帧（TH095 顺时针为正）
-    local AV_157 = -0.3516                               -- 0.00613592 rad/帧
+    local AV_147 = -math.deg(0.003067961661145091)                               -- 0.00306796 rad/帧（TH095 顺时针为正）
+    local AV_157 = -math.deg(0.006135923322290182)                               -- 0.00613592 rad/帧
 
     ---一批 ins_147：count 根、从角度 (k + phase)×LASER_ROT 起、角速度 av。
     ---startup 要单独传：同一批里 type 7 是 30 帧、type 12 是 60 帧（见 lasers_4）。
@@ -3475,7 +3482,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
             local a = (k + phase) * LASER_ROT
             spawn_ex_laser(owner, lasers, index, owner.x, owner.y, -a,
                     LASER_LEN, LASER_W, LASER_SPEED_147, startup, 30, 30, 10,
-                    av, 0, 0, true, true)
+                    av,0,0,true,true,index,index==7 and 5 or 0)
         end
     end
 
@@ -3484,8 +3491,11 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
     ---  Sub4（sign = +1）原值 +0.1758 / −0.1758（type 7 / type 12）
     ---  Sub5（sign = −1）原值 −0.1758 / +0.1758  ⇒ 用 AV_147 = −0.1758 表达就是下表。
     local function lasers_4(owner, sign)
-        burst_147(owner, 64, 0, 7, AV_147 * sign, 30)
-        burst_147(owner, 64, 0.5, 12, -AV_147 * sign, 60)
+        burst_147(owner,64,0,7,AV_147*sign,30)
+        task.New(owner,function()
+            task.Wait(30) -- 第二批指令本身在子context的t=30，不能与首批同帧。
+            burst_147(owner,64,0.5,12,-AV_147*sign,60)
+        end)
     end
 
     ---Sub6：64 轮 × 2 根 ins_157（A 在 (k+0.5)×11.25°、B 在 (k+1)×11.25°）。
@@ -3496,11 +3506,11 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
             local a = (k + 0.5) * LASER_ROT
             spawn_ex_laser(owner, lasers, 12, owner.x, owner.y, -a,
                     LASER_LEN, LASER_W, LASER_SPEED_157, 50, 10, 10, 4,
-                    -AV_157, 0, 0, true, true)
+                    -AV_157, 0, 0, true, true,12,0)
             a = (k + 1) * LASER_ROT
             spawn_ex_laser(owner, lasers, 7, owner.x, owner.y, -a,
                     LASER_LEN, LASER_W, LASER_SPEED_157, 50, 10, 10, 4,
-                    AV_157, 0, 0, true, true)
+                    AV_157, 0, 0, true, true,7,5)
         end
     end
 
@@ -3534,9 +3544,10 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                     local oy = sin(-math.deg(fv0)) * SPAWN_R
                     if random then
                         for _ = 1, RND_COUNT do
+                            if not PhotoNative.has_space() then break end
                             local r = ran:Float(0, 1)
-                            local a_th = (fv2 - math.rad(RND_HALF))
-                                    + math.rad(RND_HALF * 2) * r
+                            local a_th = (fv2 + math.rad(RND_HALF))
+                                    - math.rad(RND_HALF * 2) * r
                             local v = RND_SPEED2 + (RND_SPEED1 - RND_SPEED2) * ran:Float(0, 1)
                             SpawnPhoto(514,RND_STYLE, RND_COLOR,
                                     owner.x + ox, owner.y + oy, v, -math.deg(a_th), false, 0, false)
@@ -3550,7 +3561,7 @@ do  -- 102 境符「色と空の境界」（ecl23_a，紫，组 4a 第 1 张）
                         end
                         fv0 = fv0 + math.rad(FAN_STEP)
                     end
-                    fv1 = fv1 - math.rad(FAN_STEP1)
+                    fv1 = fv1 + math.rad(random and -FAN_STEP1 or FAN_STEP1)
                     PlaySound("tan00", 0.1, owner.x / 256, false)
                     task.Wait(FAN_INTERVAL)
                 end
@@ -3676,8 +3687,8 @@ do  -- 103 境符「波と粒の境界」（ecl23_b，紫，组 4a 第 2 张）
                             speed, -math.deg(a), false, 0, false)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
-                fv0 = fv0 + fv1
-                fv1 = fv1 + ACCEL
+                fv0 = (fv0+fv1+math.pi)%(2*math.pi)-math.pi
+                fv1 = (fv1+ACCEL+math.pi)%(2*math.pi)-math.pi
                 task.Wait(1)
             end
         end)
@@ -3764,20 +3775,15 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
     local BLOCK = 90                                    -- Sub3 每 90 帧重开一次 Sub4
 
     ---一圈：count1 个方向 × 2 个速度（angleStep = 0 ⇒ 同一方向两颗），基准角 base。
-    local function fire_ring(owner, count, base)
-        local step = 360 / count
-        local v2 = RING_SPEED1 - (RING_SPEED1 - RING_SPEED2) / 2
-        for i = 0, count - 1 do
-            local a = base + i * step
-            SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
-                    RING_SPEED1, a, false, 0, false)
-            SpawnPhoto(514,RING_STYLE, RING_COLOR, owner.x, owner.y,
-                    v2, a, false, 0, false)
+    local function fire_ring(owner,count,base)
+        local step=360/count
+        local speeds={RING_SPEED1,RING_SPEED1-(RING_SPEED1-RING_SPEED2)/2}
+        for _,speed in ipairs(speeds) do
+            for i=0,count-1 do
+                SpawnPhoto(514,RING_STYLE,RING_COLOR,owner.x,owner.y,speed,base-i*step,false,0,false)
+            end
         end
     end
-
-    ---t=90 的瞬移：随机选左右一侧（clamp 之后落到 ±140）。
-    ---原作顺序是先抽 intV0 = randU31 % 2 决定方向、再抽两个 randF32 当坐标，照抄。
     local function teleport_side(owner)
         local side = (ran:Int(0, 1) == 0)
         local x = ran:Float(0, 64) + (side and -188 or 124)
@@ -3805,7 +3811,7 @@ do  -- 104 貴人「サンジェルマンの忠告」（ecl24_a，妹红，组 5
     local RING_DRIFT = 0.5
     local function ring_block(owner, base0, base1)
         local count = math.floor(photo_index(PHOTO_LIMIT) / 2) + RING_COUNT0
-        local use0 = (ran:Int(0, 1) == 0)
+        local use0 = (ran:Int(0, 1) ~= 0)
         local b0, b1 = base0, base1
         for _ = 1, BLOCK / RING_GAP do
             fire_ring(owner, count, use0 and b0 or b1)
@@ -3945,7 +3951,9 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     local function sub6(owner, tok)
         task.New(owner, function()
             while tok.alive do
-                local ox, oy = owner.x, owner.y + DISPLACE
+                local native_y=math.max(BOX_LO,math.min(BOX_HI,field_y(owner.y)-DISPLACE))
+                owner.y=field_y(native_y)
+                local ox,oy=owner.x,owner.y
                 local pa = Angle(ox, oy, player.x, player.y)
                 local pi = photo_index(PHOTO_LIMIT)
                 ---★ 原作是 **5 轮**（@1972/@2200/@2428/@2656 各一次 floatV0 += 72°，
@@ -3958,6 +3966,7 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
                     fire_sub5(ox + 72 * cx, oy + 72 * cy, pa, pi)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
+                owner.y=field_y(math.max(BOX_LO,math.min(BOX_HI,field_y(owner.y)+DISPLACE)))
                 task.Wait(30)
             end
         end)
@@ -3968,13 +3977,10 @@ do  -- 105 蓬莱「瑞江浦嶋子と五色の瑞亀」（ecl24_b，妹红，�
     ---规则修正，最后 40 帧走 speed×duration = 40 px、缓动 4（= 我们的 DECEL）。
     ---活动框只有 32 px 高 ⇒ 两条 y 规则**恒成立**，净效果是把角度强制成负的（朝屏幕上方）。
     local function boundary_move(owner)
-        local a=PhotoNative.boundary_angle(owner.x,field_y(owner.y),
-                {BOX_L,BOX_LO,BOX_R,BOX_HI},owner.th095_move_angle)
-        local deg = -math.deg(a)                        -- 我们坐标的角度（度）
-        task.MoveTo(owner.x + 40 * cos(deg), owner.y + 40 * sin(deg), 40, VALUE_SET.DECEL)
+        local mv={dead=false}
+        PhotoNative.bmove(owner,mv,40,4,1,{BOX_L,BOX_LO,BOX_R,BOX_HI})
+        task.Wait(40)
     end
-
-    ---Sub3：每 320 帧齐射 + 40 帧移动，一轮 360 帧。
     local function main_script(owner)
         task.New(owner, function()
             while true do
@@ -4097,10 +4103,10 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local function sub7(owner, tok)
         task.New(owner, function()
             while tok.alive do
-                local base = ran:Float(0, 360)
+                local base = sg_deg(ran:Float(-math.pi,math.pi))
                 for i = 0, BIG_COUNT - 1 do
                     SpawnPhoto(536,BIG_STYLE, BIG_COLOR, owner.x, owner.y, BIG_SPEED,
-                            base + i * 360 / BIG_COUNT, false, 0, false,
+                            base - i * 360 / BIG_COUNT, false, 0, false,
                             nil, nil, nil, big_accel_frame)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
@@ -4113,7 +4119,7 @@ do  -- 106 鬼気「濛々迷霧」（ecl25_a，萃香，组 6a 第 1 张）
     local function dash(owner)
         local a = Angle(owner.x, owner.y, player.x, player.y)
         task.MoveTo(owner.x + DASH_FRAMES * DASH_SPEED * cos(a),
-                owner.y + DASH_FRAMES * DASH_SPEED * sin(a), DASH_FRAMES, VALUE_SET.NORMAL)
+                owner.y + DASH_FRAMES * DASH_SPEED * sin(a), DASH_FRAMES, VALUE_SET.ACCEL)
     end
 
     ---Sub3：首轮 30 次突进；之后进入 1210 帧的外层循环。
@@ -4274,13 +4280,14 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
             if first > 0 then
                 task.Wait(first)
             end
+            ran:Float(-math.pi,math.pi) -- 各子程序入口原样保留未参与发弹的10065读取。
             while tok.alive do
                 if not gate or photo_index(PHOTO_LIMIT) >= gate then
                     local base = aimed and Angle(owner.x, owner.y, player.x, player.y) or 0
                     for i = 0, RING_N - 1 do
                         local ph = aimed and 0 or OFFSET_PHASE
                         SpawnPhoto(514,style, color, owner.x, owner.y, speed,
-                                base + ph + i * RING_STEP, false, 0, false)
+                                base - ph - i * RING_STEP, false, 0, false)
                     end
                     PlaySound("tan00", 0.1, owner.x / 256, false)
                 end
@@ -4292,25 +4299,22 @@ do  -- 107 「百万鬼夜行」（ecl25_b，萃香，组 6a 第 2 张）
     ---ins_67(60,4,0.8) = BeginBoundaryAwareMove（EclDependencies.cpp:108）：
     ---先挑「背离自机」的随机方向（TH095 弧度），再按活动框边界修正，60 帧走 48 px、缓动 4。
     local function boundary_move(owner)
-        local a=PhotoNative.boundary_angle(owner.x,field_y(owner.y),
-                {BOX_L,BOX_LO,BOX_R,BOX_HI},owner.th095_move_angle)
-        local deg = -math.deg(a)
-        task.MoveTo(owner.x + MOVE_FRAMES * MOVE_SPEED * cos(deg),
-                owner.y + MOVE_FRAMES * MOVE_SPEED * sin(deg), MOVE_FRAMES, VALUE_SET.DECEL)
+        local mv={dead=false}
+        PhotoNative.bmove(owner,mv,MOVE_FRAMES,4,MOVE_SPEED,{BOX_L,BOX_LO,BOX_R,BOX_HI})
+        task.Wait(MOVE_FRAMES)
     end
-
-    ---Sub3：起六条上下文；每 120 帧按拍照进度躲一次。
     local toks = {}
     local function main_script(owner)
         task.New(owner, function()
+            task.Wait(60)
             ---t=60：Sub4..Sub9。
             ---Sub4 **没有闸**（它的 @1032 之后没有 ins_44）⇒ 一直发，不传 gate。
-            toks[1] = { alive = true }; burst_stream(owner, toks[1], ball_big, ex_color(3, 19), 1, nil)
-            toks[2] = { alive = true }; ring_stream(owner, toks[2], ball_big, ex_color(3, 12), 1, 60, 90, true, nil)
+            toks[1] = { alive = true }; burst_stream(owner, toks[1], sg_visual(ball_big,19), ex_color(3, 19), 1, nil)
+            toks[2] = { alive = true }; ring_stream(owner, toks[2], sg_visual(ball_big,12), ex_color(3, 12), 1, 60, 90, true, nil)
             toks[3] = { alive = true }; ring_stream(owner, toks[3], sg_visual(ellipse, 3), ex_color(6, 3), 2, 20, 0, false, nil)
-            toks[4] = { alive = true }; burst_stream(owner, toks[4], ball_big, ex_color(1, 19), 2, DENSITY_A)
+            toks[4] = { alive = true }; burst_stream(owner, toks[4], sg_visual(ball_big,19), ex_color(1, 19), 2, DENSITY_A)
             toks[5] = { alive = true }; ring_stream(owner, toks[5], sg_visual(ellipse, 3), ex_color(2, 3), 2, 20, 10, false, DENSITY_B)
-            toks[6] = { alive = true }; ring_stream(owner, toks[6], ball_big, ex_color(1, 19), 2, 20, 120, true, DENSITY_C)
+            toks[6] = { alive = true }; ring_stream(owner, toks[6], sg_visual(ball_big,19), ex_color(1, 19), 2, 20, 120, true, DENSITY_C)
             while true do
                 if photo_index(PHOTO_LIMIT) >= MOVE_MIN_PHOTOS then
                     ---ins_67 的移动占一轮的头 60 帧（ins_4 在 t=180 才跳回）。

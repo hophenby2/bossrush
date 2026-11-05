@@ -220,6 +220,7 @@ local straight_laser=Class(native_laser,{
         local function outside(x,y) return x+w<=-192 or x-w>=192 or y+w<=-224 or y-w>=224 end
         if outside(o.x,o.y) and outside(hx,hy) then object.RawDel(o);return end
         o.l1,o.l2,o.l3,o.w,o.alpha,o.colli=0,length,0,w,1,length>16
+        OriginalBulletVisual.step_laser_anm(o)
         native_laser.frame(o)
     end,
 })
@@ -254,6 +255,7 @@ local rotating_laser=Class(native_laser,{
         o.th095_laser_state,o.th095_laser_time=state,t+1
         o.l1,o.l2,o.l3,o.w,o.alpha=0,length,0,w,1
         o.colli=(state==4 or state==2) and length>16
+        OriginalBulletVisual.step_laser_anm(o)
         native_laser.frame(o)
     end,
 })
