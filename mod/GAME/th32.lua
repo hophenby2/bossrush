@@ -111,7 +111,7 @@ class["原作弹"] = Class(bullet, {
     frame = function(b)
         if b.th06_owner.time_stopped then
             if not b.th06_paused then b.th06_pause_vx,b.th06_pause_vy=b.vx,b.vy;b.th06_paused=true end
-            b.vx,b.vy=0,0
+            b.vx,b.vy,b.colli=0,0,false
             return
         elseif b.th06_paused then
             b.vx,b.vy=b.th06_pause_vx,b.th06_pause_vy;b.th06_paused=false
@@ -274,7 +274,9 @@ end
 
 -- Func8：扫描所有高度 >=30 的活弹（包括刀和中玉），池满也计入 changedBullets。
 local function particles(b,kind,count,argb)
-    local script=kind==17 and 7 or 17
+    -- 原版 th06.exe 0x76298 模板表；复原源码在蓝粒子后多列了一项。
+    local script=({[3]=6,[4]=9,[12]=17,[17]=7,[18]=8})[kind]
+    assert(script,"未登记的TH06粒子模板 "..tostring(kind))
     for _=1,count do
         OriginalStageVisual.presentation.new_effect(6,'etama4',script,b.x,b.y,b,kind,argb)
     end
@@ -575,6 +577,7 @@ local enemy = enemy
 H.road_clocks={}
 local function trunc(x) return x < 0 and math.ceil(x) or floor(x) end
 function H.random_int(n) return n>0 and ran:Int(0,n-1) or 0 end
+function H.particles(b,kind,count,argb) particles(b,kind,count,argb) end
 function H.reset_rank(a)
     a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=-.5,.5,0,0,0,0
 end
@@ -942,8 +945,11 @@ function H.actor_post(a,count_phase)
     if living and v.repeat_func then H.extra(b,v,v.repeat_func,0,true) end
     if count_phase~=false then
         H.clamp(b) -- SpawnEnemy的出生RunEcl没有管理器的帧尾夹框。
-        a.phase=a.phase+1
-        if a.main and not a.meta.road then H.road_mid_tick(a) end
+        if not b.th06.time_stopped then a.phase=a.phase+1 end
+        if a.main and not a.meta.road then
+            b._original_ecl_timer=a.phase
+            H.road_mid_tick(a)
+        end
     end
     local visible=not a.invisible
     b._a=(a.invisible or (a.bat_timer or 0)>0) and 0 or 255
@@ -1002,6 +1008,7 @@ class["原作流程控制"] = Class(object, {
 function H.card_init(b,meta)
     b.th06={pool={},next_slot=1,lasers={},laser_pool={},actors={},rank_speed=0}
     b.th06_meta=meta;b.no_hp_render=false;b.NotPlayTimeOutSound=false
+    b._original_ecl_timer=0
     local previous=b.th06_previous_motion
     if previous and previous.stage==meta.stage and previous.group==meta.group then
         b.x,b.y=previous.x or b.x,previous.y or b.y
@@ -1026,14 +1033,15 @@ function H.card_del(b)
             b.th06_previous_motion[key]=b.th06_actor[key]
         end
     end
-    s.closed=true;s.time_stopped=false
+    H.time_stop(b,false)
+    s.closed=true
     for _,a in ipairs(s.actors) do if not a.main and IsValid(a.object) then a.dead=true;object.RawDel(a.object) end end
     for _,p in pairs(s.pool) do if alive(p) then object.Del(p) end end
     for _,l in pairs(s.laser_pool) do if alive(l) then object.Del(l) end end
     if b.th06_control and IsValid(b.th06_control) then object.RawDel(b.th06_control) end
     local saved=b.th06_saved
     if saved then b.a,b.b,b.rect,b.DMG_factor,b._a=saved.a,saved.b,saved.rect,saved.DMG_factor,saved._a end
-    b._colli=true;b.th06=nil;b.th06_actor=nil;b.th06_control=nil;b.th06_meta=nil
+    b._colli=true;b.th06=nil;b.th06_actor=nil;b.th06_control=nil;b.th06_meta=nil;b._original_ecl_timer=nil
 end
 function H.sprite(b,id)
     local a=b.th06_actor;a.sprite=id
@@ -1085,6 +1093,18 @@ function H.bat(b)
         if a.bat_timer==0 then a.interactable=true end
     end
 end
+function H.time_stop(b,on)
+    local s=b.th06
+    if not on then
+        local p=s.stopped_player
+        if p and IsValid(p) then p.lock,p.time_stop=s.player_lock,s.player_time_stop end
+        s.stopped_player=nil
+    elseif not s.stopped_player and player and IsValid(player) then
+        s.stopped_player=player;s.player_lock,s.player_time_stop=player.lock,player.time_stop
+        player.lock,player.time_stop=true,true
+    end
+    s.time_stopped=on
+end
 function H.extra(b,v,id,arg,repeated)
     local s,a=b.th06,b.th06_actor
     H.trace(b,repeated and "repeat_extra" or "extra",id,arg)
@@ -1130,7 +1150,7 @@ function H.extra(b,v,id,arg,repeated)
         local routes={{0,3,1},{2,3,4},{1,4,0},{4,2,3}}
         local r=routes[(a.meta.shot or 0)+1];v.i1,v.i2,v.i3=r[1],r[2],r[3]
     elseif id==4 then
-        if arg<2 then s.time_stopped=arg==1 else
+        if arg<2 then H.particles(b,12,1,0xffffffff);H.time_stop(b,arg==1) else
             local count=0
             for i=1,POOL_SIZE do
                 local p=s.pool[i]
@@ -1893,10 +1913,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -2999,10 +3024,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -3219,6 +3249,7 @@ do
         H.trace(b,"spell_end")
         a.damageable=false
         a.phase=0
+        H.particles(b,12,1,-8355585)
         a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi=-0.5,0.30000001192092896,0,4,0,0
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",6)
@@ -3610,6 +3641,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,4,2,1)
         H.wait(b,v,2)
         v.c1=v.c1-1
         if v.c1>0 then v.time=0;return B.part2(b,v) end
@@ -3913,6 +3945,7 @@ do
     function B.part9(b,v)
         local a=b.th06_actor
         H.wait(b,v,4)
+        H.particles(b,4,2,1)
         H.pattern(b,3,5,2,v.i0,1,v.f2,0.6000000238418579,v.f0,0.0,4)
         v.cmp=(v.i1)-(0)
         if v.cmp~=0 then v.time=4;return B.part11(b,v) end
@@ -4499,6 +4532,7 @@ do
         a.damageable=false
         v.c3=0
         a.phase=0
+        H.particles(b,12,1,-8355585)
         H.wait(b,v,60)
         H.cancel(b);H.reset_rank(a);H.trace(b,"spell",13)
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
@@ -4623,10 +4657,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -7304,6 +7343,7 @@ do
         a.life_fn=P[4][41]
         a.death_mode=2
         a.death=P[4][41]
+        H.particles(b,12,1,-8355585)
         H.wait(b,v,120)
         a.damageable=true
         if (v.i2)==(0) then H.call(b,v,P[4][55],0,0.0) end
@@ -7333,6 +7373,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.death_mode=3
         a.death=P[4][60]
+        H.particles(b,12,1,-8355585)
         H.wait(b,v,120)
         a.damageable=true
         if (v.i3)==(0) then H.call(b,v,P[4][55],0,0.0) end
@@ -8513,10 +8554,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -10067,6 +10113,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -10090,6 +10137,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,304)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,308)
         v.c0=v.c0-1
         if v.c0>0 then v.time=304;return B.part5(b,v) end
@@ -10134,6 +10182,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -10159,6 +10208,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,284)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,288)
         v.c0=v.c0-1
         if v.c0>0 then v.time=284;return B.part5(b,v) end
@@ -10203,6 +10253,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -10226,6 +10277,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,254)
+        H.particles(b,17,6,-8355585)
         H.extra(b,v,4,2,false)
         H.wait(b,v,259)
         v.c0=v.c0-1
@@ -10271,6 +10323,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -10297,6 +10350,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,254)
+        H.particles(b,17,6,-8355585)
         H.extra(b,v,4,2,false)
         H.wait(b,v,259)
         v.c0=v.c0-1
@@ -10409,6 +10463,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,140)
+        H.particles(b,17,6,-8355585)
         H.extra(b,v,4,2,false)
         H.wait(b,v,144)
         v.c0=v.c0-1
@@ -10447,10 +10502,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -10483,12 +10543,15 @@ do
         H.wait(b,v,40)
         b.x=(ran:Float(0,384.0))-192
         b.y=224-(ran:Float(0,224.0)+224.0)
+        H.particles(b,18,2,-32640)
         H.wait(b,v,80)
         b.x=(ran:Float(0,384.0))-192
         b.y=224-(ran:Float(0,224.0)+224.0)
+        H.particles(b,18,2,-8355585)
         H.wait(b,v,120)
         b.x=(ran:Float(0,384.0))-192
         b.y=224-(ran:Float(0,224.0)+224.0)
+        H.particles(b,18,2,-8323200)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -11037,6 +11100,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,5)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -11099,6 +11163,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,5)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -11178,6 +11243,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,5)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -11433,6 +11499,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,5)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
@@ -11519,6 +11586,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,12,1,-8355585)
         H.poses(b,160,163,164,161,162)
         H.sprite(b,160)
         H.interval(b,0,false)
@@ -11579,6 +11647,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -11788,6 +11857,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.particles(b,12,1,-8355585)
         H.poses(b,160,163,164,161,162)
         H.sprite(b,160)
         a.interactable=true
@@ -11817,6 +11887,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,124)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -12151,10 +12222,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -13939,6 +14015,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,123)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part2(b,v) end
@@ -14261,6 +14338,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,123)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part2(b,v) end
@@ -14655,6 +14733,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,122)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -14679,6 +14758,7 @@ do
     function B.part5(b,v)
         local a=b.th06_actor
         H.wait(b,v,182)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,184)
         v.c0=v.c0-1
         if v.c0>0 then v.time=182;return B.part5(b,v) end
@@ -14925,6 +15005,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,122)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -14999,6 +15080,7 @@ do
         H.move_to(b,60,192.0,128.0,0.0,1)
         H.wait(b,v,646)
         v.c0=30
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,648)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part3(b,v) end
@@ -15492,6 +15574,7 @@ do
         a.damageable=true
         v.repeat_func=10
         a.survival=true
+        H.particles(b,12,1,-32640)
         a.invisible=true
         a.interactable=false
         a.damageable=false
@@ -16293,6 +16376,7 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,120)
+        H.particles(b,17,6,-8355585)
         H.wait(b,v,122)
         v.c0=v.c0-1
         if v.c0>0 then v.time=120;return B.part2(b,v) end
@@ -16356,10 +16440,15 @@ do
     function B.part2(b,v)
         local a=b.th06_actor
         H.wait(b,v,2)
+        H.particles(b,3,2,-1)
         H.wait(b,v,4)
+        H.particles(b,3,2,-32640)
         H.wait(b,v,6)
+        H.particles(b,3,2,-8323200)
         H.wait(b,v,8)
+        H.particles(b,3,2,-8355585)
         H.wait(b,v,10)
+        H.particles(b,3,2,-128)
         v.c0=v.c0-1
         if v.c0>0 then v.time=0;return B.part2(b,v) end
         return B.part3(b,v)
@@ -16375,7 +16464,6 @@ do
     P[7][69]=B.part1
 end
 
--- 一面道中·前半：原时间轴 0..2008，96 次创建。
 P[1]["road_before"]=function(b,v)
     if v.epoch<=128 then
         H.wait(b,v,128)

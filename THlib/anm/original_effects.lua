@@ -87,10 +87,21 @@ F.effect=Class(object,{
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
-        if o.game==6 and o.kind==17 then
+        if o.game==6 and (o.kind==3 or o.kind==4) then
+            -- RandomSplash(Big) 首次 EffectManager 回调取两个随机速度，再逐帧减速。
+            if not o.effect_velocity then
+                local scale=o.kind==3 and 4/33 or 1/12
+                o.effect_velocity={ran:Float(-128,128)*scale,-ran:Float(-128,128)*scale}
+                local divisor=o.kind==3 and 20 or 19
+                o.effect_acceleration={-o.effect_velocity[1]/divisor,-o.effect_velocity[2]/divisor}
+            end
+            local v,a=o.effect_velocity,o.effect_acceleration
+            o.x,o.y=o.x+v[1],o.y+v[2]
+            v[1],v[2]=v[1]+a[1],v[2]+a[2]
+        elseif o.game==6 and (o.kind==17 or o.kind==18) then
             -- TH06 Effect_Attract第一次回调才取随机角；不是SpawnParticles构造时取。
             if o.dir==nil then o.dir=ran:Float(-math.pi,math.pi) end
-            local d=256-o.age*256/60
+            local d=256-o.age*256/(o.kind==18 and 240 or 60)
             o.x,o.y=o.origin_x+d*math.cos(o.dir),o.origin_y-d*math.sin(o.dir)
         elseif o.game==8 and o.kind==17 then
             local d=256-o.age*256/60
