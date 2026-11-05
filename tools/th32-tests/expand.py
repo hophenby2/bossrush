@@ -119,6 +119,9 @@ def statement(stage,r,target):
     if op==122:return [f'v.repeat_func={lit(x[0]) if x[0]>=0 else "nil"}'],False
     if op==123:return [f'v.time=v.time+({value(x[0])})'],False
     if op==118:return [f'H.particles(b,{vals(x)})'],False
+    if op==120:return [f'a.rotate_anm={lit(bool(x[0]))}'],False
+    if op==128:return [f'H.anm_interrupt(b,nil,{value(x[0])})'],False
+    if op==129:return [f'H.anm_interrupt(b,{vals(x)})'],False
     if op==124:return [f'H.drop_item(b,{value(x[0])})'],False
     if op==131:return [f'a.rank_lo,a.rank_hi,a.rank_n1_lo,a.rank_n1_hi,a.rank_n2_lo,a.rank_n2_hi={vals(x)}'],False
     if op==133:return ['a.phase=0'],False

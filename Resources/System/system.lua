@@ -459,7 +459,7 @@ function system:castCharge4(p)
         local action=self.frame4_ChargeAction[i]
         task.New(p,function() action(p,true) end)
     end
-    New(Circle_Attack,p.x,p.y,250,{255,255,255},300,1,false,p)
+    p._original_bomb=New(Circle_Attack,p.x,p.y,250,{255,255,255},300,1,false,p)
 end
 function system:frame()
     self.timer = stage.current_stage.timer

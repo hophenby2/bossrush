@@ -120,7 +120,8 @@ local function draw_alignment(o)
     for _,p in ipairs(state.particles) do A.draw(p.vm,p.x,p.y) end
     A.draw(state.vm,o.x,o.y)
 end
-function S.tick(o,vx)
+function S.tick(o,vx,from_th06)
+    if o.th06_actor and not from_th06 then return end
     local s=o._original_actor
     if not s then return end
     if o.th07_visual_clock and o.th07_visual_stamp~=o.ani then
@@ -595,4 +596,8 @@ function S.th06_script(o,stage,id)
     local archive=A.load(6,first).ids[id] and first or first..'2'
     local s=o._original_actor
     S.main_script(o,6,archive,id)
+    -- TH06姿态字段在Enemy中，主VM换到enm2不能把它们清掉。
+    if s and s.game==6 and s~=o._original_actor then
+        o._original_actor.poses,o._original_actor.direction=s.poses,s.direction
+    end
 end

@@ -861,11 +861,14 @@ function H.new_actor(s,b,stage,sub,main,meta)
     if previous and previous.stage==stage and previous.group==meta.group then
         -- CallEclSub 只换脚本上下文；不把正走到一半的移动、速度和活动框重置为零。
         for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
-            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index"}) do
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm"}) do
             a[key]=previous[key]
         end
     end
     b.th06,b.th06_actor=s,a;b.vx,b.vy=0,0
+    if main and stage==7 and meta.group==14 and not b._original_actor then
+        H.poses(b,160,163,164,161,162)
+    end
     for i=1,256 do
         if not s.actors[i] or s.actors[i].dead or not IsValid(s.actors[i].object) then s.actors[i]=a;a.slot=i;break end
     end
@@ -973,6 +976,12 @@ function H.actor_post(a,count_phase)
     if living and v.repeat_func then H.extra(b,v,v.repeat_func,0,true) end
     if count_phase~=false then
         H.clamp(b) -- SpawnEnemy的出生RunEcl没有管理器的帧尾夹框。
+        -- EnemyManager在本帧ECL/移动姿态更新之后执行主VM和附属VM。
+        if b._original_actor then
+            b._original_actor.tick=nil
+            OriginalStageVisual.tick(b,a.mirrored and -a.axisx or a.axisx,true)
+            if a.rotate_anm then b._original_actor.vm.rotation[3]=a.angle end
+        end
         if not b.th06.time_stopped then a.phase=a.phase+1 end
         if a.main and not a.meta.road then
             b._original_ecl_timer=a.phase
@@ -980,7 +989,7 @@ function H.actor_post(a,count_phase)
         end
     end
     local visible=not a.invisible
-    b._a=(a.invisible or (a.bat_timer or 0)>0) and 0 or 255
+    b._a=a.invisible and 0 or 255
     b.DMG_factor=a.damageable and a.interactable and visible and 1 or 0
     -- ECL104只关体术；ECL117才关交互。不能因不可碰撞而漏掉自机弹受击。
     b.group=a.collidable and GROUP.ENEMY or GROUP.NONTJT
@@ -1057,7 +1066,7 @@ function H.card_del(b)
         for k,value in pairs(b.th06_actor.context) do b.th06_previous_context[k]=value end
         b.th06_previous_motion={stage=b.th06_actor.stage,group=b.th06_actor.meta.group,x=b.x,y=b.y}
         for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
-            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index"}) do
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm"}) do
             b.th06_previous_motion[key]=b.th06_actor[key]
         end
     end
@@ -1109,16 +1118,35 @@ function H.anm_slot(b,index,id)
     end
     OriginalStageVisual.slot(b,index,id)
 end
+function H.anm_interrupt(b,slot,id)
+    local actor=b._original_actor
+    local vm=actor and (slot==nil and actor.vm or actor.slots[slot])
+    if vm then OriginalANM.interrupt(vm,id) end
+end
 function H.set_velocity(p,a,v)
     velocity(p,a,v)
     if band(p.th06_flags,16)~=0 then p.th06_vx,p.th06_vy=p.vx,p.vy else p.th06_vx,p.th06_vy=nil,nil end
 end
 function H.bat(b)
     local a=b.th06_actor
-    if (player.nextspell or 0)>0 then a.bat_timer=60;a.interactable=false
+    if H.life(b)<=0 then return end
+    bat_wings(b)
+    local bomb=player._original_bomb
+    if (bomb and IsValid(bomb) and bomb.colli) or (player.nextspell or 0)>0 then
+        local actor=b._original_actor
+        if actor and actor.poses then
+            H.sprite(b,165) -- ANM_SCRIPT_ENEMY_END(0x1a5)-ANM_OFFSET_ENEMY(0x100)
+            b._original_actor.poses=nil
+        end
+        a.bat_timer=60;a.interactable=false
     elseif (a.bat_timer or 0)>0 then
         a.bat_timer=a.bat_timer-1
-        if a.bat_timer==0 then a.interactable=true end
+        if a.bat_timer==0 then
+            if b._original_actor and not b._original_actor.poses then
+                H.sprite(b,160);H.poses(b,160,163,164,161,162)
+            end
+            a.interactable=true
+        end
     end
 end
 function H.time_stop(b,on)
@@ -2503,6 +2531,7 @@ do
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
+        a.rotate_anm=true
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -2519,6 +2548,7 @@ do
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
+        a.rotate_anm=true
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -2535,6 +2565,7 @@ do
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
+        a.rotate_anm=true
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -2551,6 +2582,7 @@ do
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
+        a.rotate_anm=true
         H.wait(b,v,10000)
         H.erase(b)
     end
@@ -3679,6 +3711,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,2)
         H.anm_slot(b,4,66)
+        a.rotate_anm=false
         H.sprite(b,64)
         return
     end
@@ -4761,6 +4794,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,36)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,156)
         H.erase(b)
     end
@@ -5198,6 +5232,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,80)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,110)
         H.erase(b)
     end
@@ -5210,6 +5246,8 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,30)
         H.erase(b)
     end
@@ -5246,6 +5284,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,80)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,110)
         H.erase(b)
     end
@@ -5283,6 +5323,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,80)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,110)
         H.erase(b)
     end
@@ -5324,6 +5366,7 @@ do
         H.laser(b,false,0,6,1.5707963705062866,0.0,0.0,500.0,500.0,32.0,90,120,16,70,14,0)
         H.pattern(b,3,4,6,32,2,1.2000000476837158,0.0,0.0,0.09817477315664291,4)
         H.wait(b,v,320)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,440)
         H.erase(b)
     end
@@ -9464,6 +9507,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9503,6 +9547,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9542,6 +9587,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9581,6 +9627,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9620,6 +9667,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9659,6 +9707,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9698,6 +9747,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9737,6 +9787,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,56)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,116)
         H.erase(b)
     end
@@ -9749,6 +9800,7 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,60)
         H.erase(b)
     end
@@ -9866,6 +9918,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,64)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,124)
         H.erase(b)
     end
@@ -9905,6 +9958,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,64)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,124)
         H.erase(b)
     end
@@ -9944,6 +9998,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,64)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,124)
         H.erase(b)
     end
@@ -9983,6 +10038,7 @@ do
     function B.part3(b,v)
         local a=b.th06_actor
         H.wait(b,v,64)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,124)
         H.erase(b)
     end
@@ -12759,6 +12815,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,41)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,71)
         H.erase(b)
     end
@@ -12798,6 +12856,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,42)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,72)
         H.erase(b)
     end
@@ -12837,6 +12897,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,50)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,80)
         H.erase(b)
     end
@@ -12876,6 +12938,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,50)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,80)
         H.erase(b)
     end
@@ -12915,6 +12979,8 @@ do
         local a=b.th06_actor
         H.wait(b,v,60)
         a.interactable=false
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,90)
         H.erase(b)
     end
@@ -13349,6 +13415,8 @@ do
     function B.part1(b,v)
         local a=b.th06_actor
         H.wait(b,v,0)
+        H.anm_interrupt(b,nil,1)
+        H.anm_interrupt(b,0,1)
         H.wait(b,v,30)
         H.erase(b)
     end
@@ -13735,6 +13803,7 @@ do
     function B.part36(b,v)
         local a=b.th06_actor
         H.wait(b,v,73)
+        H.anm_interrupt(b,nil,1)
         H.wait(b,v,103)
         H.erase(b)
     end
@@ -15500,6 +15569,7 @@ do
         H.laser_cancel(b,1)
         H.laser_cancel(b,2)
         H.laser_cancel(b,3)
+        H.anm_interrupt(b,nil,1)
         v.c1=60
         return B.part9(b,v)
     end
