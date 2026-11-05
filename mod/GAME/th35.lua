@@ -810,13 +810,13 @@ local function t10_spawn_one(p, sx, sy, i1, i2, a2p)
         angle = angle + i1 * 2 * PI / p.c1
         angle = angle + p.angle
     elseif m == 6 then
-        angle = ran:Float(p.angle - p.astep, 0) + p.astep
+        angle = ran:Float(0,p.angle-p.astep) + p.astep
     elseif m == 7 then
-        speed = ran:Float(p.s1 - p.s2, 0) + p.s2
+        speed = ran:Float(0,p.s1-p.s2) + p.s2
         angle = angle + i1 * 2 * PI / p.c1 + i2 * p.astep + p.angle
     elseif m == 8 then
-        angle = ran:Float(p.angle - p.astep, 0) + p.astep
-        speed = ran:Float(p.s1 - p.s2, 0) + p.s2
+        angle = ran:Float(0,p.angle-p.astep) + p.astep
+        speed = ran:Float(0,p.s1-p.s2) + p.s2
     end
     local b = NewSimpleBullet(t10_style(p.type), t10_color(p.color, p.type),
             sx, t10_oy(sy), 0, 0, false, 0, false, true, nil, nil, t10_bullet_frame)
@@ -2191,14 +2191,14 @@ end
 local function s4_BossCharge(o, dx)
     dx = dx or -16.0
     o.F0, o.F1, o.F2, o.F3, o.I0 = -2.356194, 0.05236, 128.0, -2, 60
-    for _ = 1, 4 do
+    for k = 1, 4 do
         spawn_pod_rel(o, dx, 16.0, s4_BossChargeP)
-        o.F0 = o.F0 + 1.570796
+        if k<4 then o.F0=o.F0+1.570796 end
     end
     o.F0, o.F1, o.F2, o.F3, o.I0 = -1.570796, -0.05236, 144.0, -3, 60
-    for _ = 1, 4 do
+    for k = 1, 4 do
         spawn_pod_rel(o, dx, 16.0, s4_BossChargeP)
-        o.F0 = o.F0 + 1.570796
+        if k<4 then o.F0=o.F0+1.570796 end
     end
 end
 
@@ -2207,6 +2207,7 @@ local function s4_BossCard1(o)
     class.t10_fx.fire(o,__anm,0x33cc)
     t10_enm_kill_all(o)                        -- enmKillAll()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
+    et_new(o,0)
     local p = o.pat[0]
     p.type, p.color = 1, 0             -- etSprite(0, 1, 0)
     p.aim, p.c1, p.c2 = 1, 1, 1        -- etAim(0, 1) / etCount(0, 1, 1)
@@ -2258,6 +2259,7 @@ local function s4_BossCard2(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_call_async(o, s4_BossCharge)
     task.Wait(120)                             -- +120: //120（原作在这之前不动作）
+    et_new(o,0)
     local p0, p1 = o.pat[0], o.pat[1]
     p0.type, p0.color = 3, 10          -- etSprite(0, 3, 10)
     p0.aim, p0.c1, p0.c2 = 3, 16, 1    -- etAim(0, 3) / etCount(0, 16(L), 1)
@@ -2326,6 +2328,7 @@ end
 
 ---at2 / at3：从 ±192 飞到 ∓192（6 帧）的使魔，一边飞一边乱射（各自 6 轮 × 1 帧）。
 local function s4_BossCard3_side(o, x0, x1)
+    et_new(o,1)
     local p = o.pat[1]
     -- 原作顺序：先 movePos / movePosTime（各吃一个 %RANDF2），再 etAngle(%RANDRAD)、
     -- etSpeed(%RANDF2) —— 随机数消耗顺序不能换。
@@ -2445,6 +2448,7 @@ end
 ---                  （原作 diffWait(22, 13, 11, 9)）。
 ---  主线程之后只每 100 帧空转，整张卡靠 4200 帧超时结束。
 local function s4_BossCard4_at(o)
+    et_new(o,0)
     local p = o.pat[0]
     p.aim, p.c1, p.c2 = 3, 64, 1        -- etAim(0, 3) / etCountD(0, …, 64(L), …)
     p.type, p.color = 3, 13             -- etSprite(0, 0, 10) 再 (0, 3, 13) ⇒ 最终 3/13
@@ -2461,6 +2465,7 @@ local function s4_BossCard4_at(o)
 end
 
 local function s4_BossCard4_spin(o, slot, dir)
+    et_new(o,slot)
     local p = o.pat[slot]
     local a = 1.570796                  -- [0] = 1.570796
     p.aim, p.c1, p.c2 = 5, 16, 1        -- etAim(·, 5) / etCountD(·, …, 16(L), …, 1)
@@ -2487,6 +2492,7 @@ local function s4_BossCard4(o)
     m_pos_time(o, "off", 90, 4, 0.0, 128.0)     -- movePosTime(90, 4, 0, 128)
     task.Wait(90)                              -- wait(90)（jmp 到 _476 时时钟才被设回 0）
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- _476 组再插值一次（此时已在终点）
+    t10_call_async(o,s4_BossCharge) -- 等90后仍有原作的开场八使魔。
     task.Wait(120)                             -- +120: //120
     t10_call_async(o, s4_BossCard4_at)
     t10_call_async(o, s4_BossCard4_at2)
