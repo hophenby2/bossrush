@@ -30736,6 +30736,7 @@ end
 local function boss_gun(owner, spd)
     ---`ins_7([10016], [10048])` = 自机角（TH08 口径）；`ins_27(lf1, rndSgn, 3°)`；
     ---`ins_15(lf0, lf1)`；`ins_7(lf1, lf0)`；`ins_15(lf0, 3°)`；`ins_16(lf1, 3°)`。
+    OriginalStageVisual.presentation.sound.play(8,15,owner.x)
     local aim = -aim_at_player(owner.x, owner.y)
     local jit = rnd_sgn() * S37_TURN0
     local a0 = aim + jit + S37_TURN0
@@ -30807,6 +30808,7 @@ local function card_init(owner)
         lf1 = 0,
         c36 = { on = false, ang = C36_ANG0, seg = 1, left = 0, next = 0 },
     }
+    owner.th08_manual_main_anm=true
     owner.c33 = st
     ---`ins_64(90, 4, 192, 160)`（缓动 4 = OUT_QUADRATIC）。
     st.move = {
@@ -30838,6 +30840,7 @@ local function card_frame(owner)
     if t >= LOOP_T then
         local ph = (t - LOOP_T) % CYCLE
         if ph == 0 then
+            OriginalStageVisual.source_event(owner,8,"ecldata4a",{0,62})
             st.lf0 = 0.0            -- `ins_7([10016], 0.0f)`（Sub33_1452 那一块）
             spawn_familiar(owner, st)
         elseif ph < FAM_N * FAM_STEP and ph % FAM_STEP == 0 then
@@ -30884,6 +30887,7 @@ end
 
 local function card_del(owner)
     local st = owner.c33
+    owner.th08_manual_main_anm=nil
     owner.c33 = nil
     if st and st.fams then
         for i = #st.fams, 1, -1 do
@@ -31620,7 +31624,7 @@ familiar69 = class.th08_combat.actor("ecldata4a:42", {
                     op = 97, type = SHOT_TYPE, color = EX.color(SHOT_COLOR),
                     count1 = SHOT_N1, count2 = SHOT_N2,
                     speed1 = SHOT_SPD1, speed2 = SHOT_SPD2,
-                    angle = self.fm_mang, step = SHOT_STEP, flags = SHOT_FLAGS,
+                    angle = self.fm_mang, step = -SHOT_STEP, flags = SHOT_FLAGS,
                 })
                 ---★ ins_2 设完 secondaryTime 后，**当帧**的 redispatch 就把它扣 1
                 ---  （EclRun.cpp:56-64）⇒ 射击帧收尾时是 li1 − 1；隔 li1 帧才是下一发。
@@ -32011,10 +32015,10 @@ local function begin_wander(owner, st)
 end
 
 ---一条子 context（枪）的初值。★ `ins_2(N)` 的冻结在**设置那一帧就先扣 1**
----（EclRun.cpp:56-64）⇒ 这里存 N−1，之后每帧「先判再减」，解冻那一帧才跑指令。
+---（EclRun.cpp:56-64）⇒ 创建后当帧立即调用gun_step，初值存N并在当帧先扣一次。
 local function new_gun(kind, side, wait, period, cull)
     return { kind = kind, side = side, period = period, cull = cull,
-             t = 0, freeze = wait - 1, armed = false }
+             t = 0, freeze = wait, armed = false }
 end
 
 ---一条子 context 的一帧。
@@ -32036,16 +32040,16 @@ local function gun_step(fam, g)
             EX.shoot(fam, fam.x, fam.y, {
                 op = 97, type = G1_TYPE, color = EX.color(G1_COLOR[g.side]),
                 count1 = G1_N[g.side], count2 = 1,
-                speed1 = G1_SPD, speed2 = G1_SPD,
-                angle = -(fam.fm_ang + PI), step = G1_STEP, flags = GUN_FLAGS,
+                speed1 = G1_SPD, speed2 = 0.800000011920929,
+                angle = -(fam.fm_ang + PI), step = -G1_STEP, flags = GUN_FLAGS,
             })
         else
             ---`[10082]` = RANDOM_ANGLE ⇒ 每轮现抽一个 [−π, π) 的角。
             EX.shoot(fam, fam.x, fam.y, {
                 op = 97, type = G2_TYPE, color = EX.color(G2_COLOR[g.side]),
                 count1 = G2_N, count2 = 1,
-                speed1 = G2_SPD[g.side], speed2 = G2_SPD[g.side],
-                angle = ran:Float(-PI, PI), step = G2_STEP, flags = GUN_FLAGS,
+                speed1 = G2_SPD[g.side], speed2 = 0.800000011920929,
+                angle = -ran:Float(-PI, PI), step = -G2_STEP, flags = GUN_FLAGS,
             })
         end
     end
@@ -32150,10 +32154,6 @@ local function card_frame(owner)
     st.t = t + 1
 
     ---① 结界折射（`ins_137(7, 0)` 每帧跑；t=90 的 `ins_136(6,0)`/`ins_137(7,0)` 才开）。
-    if t >= BARRIER_T then
-        warp_wide()
-    end
-
     ---② t=210：8 只使魔（原作在同一帧里把 `ins_91` ×8 塞完）。
     if t == FAM_SPAWN_T then
         spawn_familiars(owner, st)
@@ -32168,12 +32168,14 @@ local function card_frame(owner)
                 op = 96, type = NEAR_TYPE, color = EX.color(NEAR_COLOR),
                 count1 = NEAR_N1, count2 = NEAR_N2,
                 speed1 = NEAR_SPD1, speed2 = NEAR_SPD2,
-                angle = 0, step = NEAR_STEP, flags = NEAR_FLAGS,
+                angle = 0, step = -NEAR_STEP, flags = NEAR_FLAGS,
             })
         end
     end
 
     ---④ 位移插值 + 夹框（t≥210 才有夹框；位移前后各夹一次）。
+    if t >= BARRIER_T then warp_wide() end
+
     if t >= FAM_SPAWN_T then clamp_boss(owner) end
     local move = st.move
     if move then
@@ -32280,11 +32282,11 @@ end
 local OPEN_N, OPEN_EASE = 90, 4
 local BOSS_TX, BOSS_TY = 0, 64
 
----主循环：`ins_4(90, Sub54_1020)` 在 t=870 ⇒ 相位 p = t − 90、一轮 780 帧。
-local LOOP0, LOOP_N = 90, 780
+---主循环：t650的CALL Sub31耗32拍；末跳实际在902拍，回到90，一轮812拍。
+local LOOP0, LOOP_N = 90, 812
 local EV_DASH1, EV_DRIFT1 = 20, 220
 local EV_DASH2, EV_DRIFT2 = 280, 530
-local EV_AIM, EV_DRIFT3 = 580, 780
+local EV_AIM, EV_DRIFT3 = 612, 812
 
 ---枪：`ins_135(0, …)` 建枪那一帧先打一轮，之后 `ins_4(0, Sub5x_2xx)` 每 8 帧一轮。
 local GUN_PERIOD = 8
@@ -32323,7 +32325,7 @@ local function fire55(owner)
         op = 96, type = G55_TYPE, color = EX.color(G55_COLOR),
         count1 = G55_COUNT1, count2 = G55_COUNT2,
         speed1 = G55_SPD1, speed2 = G55_SPD2,
-        angle = -PI, step = G55_STEP, flags = G55_FLAGS,
+        angle = -PI, step = -G55_STEP, flags = G55_FLAGS,
     })
 end
 
@@ -32333,7 +32335,7 @@ local function fire56(owner)
         op = 96, type = G56_TYPE, color = EX.color(G56_COLOR),
         count1 = G56_COUNT1, count2 = G56_COUNT2,
         speed1 = G56_SPD1, speed2 = G56_SPD2,
-        angle = 0, step = G56_STEP, flags = G56_FLAGS,
+        angle = 0, step = -G56_STEP, flags = G56_FLAGS,
     })
 end
 
@@ -32347,39 +32349,43 @@ local WY_LO, WY_HI, WY_SHIFT = -32, 480, 512
 ---  绕回后的下一次完整检查在 4 帧之后。）
 local WRAP_FREEZE = 3
 
-local function do_wrap(owner, st)
-    if st.wrap_freeze > 0 then
-        st.wrap_freeze = st.wrap_freeze - 1
-        return
-    end
-    local freeze = false
-    ---x：posX > −32 时只在 posX >= 416 才 −448；posX <= −32 时 +448。
-    local bx = owner.x + 192
-    if bx > WX_LO then
-        if bx >= WX_HI then
-            owner.x = owner.x - WX_SHIFT
-            if st.move then st.move.x0 = st.move.x0 - WX_SHIFT end
-            freeze = true
+local function do_wrap(owner, st, t)
+    if t<st.wrap_next then return end
+    -- Sub57按X左、X右、Y上、Y下顺序执行；每次SET_SECONDARY_TIME(3)当帧即挂起。
+    while true do
+        local pc=st.wrap_pc
+        if pc==1 then
+            st.wrap_pc=2
+            if owner.x+192<=WX_LO then
+                owner.x=owner.x+WX_SHIFT
+                if st.move then st.move.x0=st.move.x0+WX_SHIFT end
+                st.wrap_pc=3;st.wrap_next=t+WRAP_FREEZE;return
+            end
+        elseif pc==2 then
+            st.wrap_pc=3
+            if owner.x+192>=WX_HI then
+                owner.x=owner.x-WX_SHIFT
+                if st.move then st.move.x0=st.move.x0-WX_SHIFT end
+                st.wrap_next=t+WRAP_FREEZE;return
+            end
+        elseif pc==3 then
+            st.wrap_pc=4
+            if 224-owner.y<=WY_LO then
+                owner.y=owner.y-WY_SHIFT
+                if st.move then st.move.y0=st.move.y0-WY_SHIFT end
+                st.wrap_next=t+WRAP_FREEZE;return
+            end
+        elseif pc==4 then
+            st.wrap_pc=5
+            if 224-owner.y>=WY_HI then
+                owner.y=owner.y+WY_SHIFT
+                if st.move then st.move.y0=st.move.y0+WY_SHIFT end
+                st.wrap_next=t+WRAP_FREEZE;return
+            end
+        else
+            st.wrap_pc=1;st.wrap_next=t+1;return
         end
-    else
-        owner.x = owner.x + WX_SHIFT
-        if st.move then st.move.x0 = st.move.x0 + WX_SHIFT end
-        freeze = true
     end
-    ---y：我们的 y = 224 − 原作的 y ⇒ 搬 512 时我们的 y 反向搬 512。
-    local by = 224 - owner.y
-    if by > WY_LO then
-        if by >= WY_HI then
-            owner.y = owner.y + WY_SHIFT
-            if st.move then st.move.y0 = st.move.y0 + WY_SHIFT end
-            freeze = true
-        end
-    else
-        owner.y = owner.y - WY_SHIFT
-        if st.move then st.move.y0 = st.move.y0 - WY_SHIFT end
-        freeze = true
-    end
-    if freeze then st.wrap_freeze = WRAP_FREEZE end
 end
 
 local function card_init(owner)
@@ -32389,7 +32395,7 @@ local function card_init(owner)
         t = 0,
         gun = nil,          -- "Sub55" / "Sub56"
         gun_t = 0,          -- 枪的年龄（建枪那一帧 = 0）
-        wrap_freeze = 0,    -- Sub57 的 ins_2(3) 冻结
+        wrap_pc=1,wrap_next=0, -- 子context单独挂起，不暂停Boss移动或槽0发弹。
         move = {
             x0 = owner.x, y0 = owner.y,
             dx = initial_target(owner,BOSS_TX) - owner.x, dy = BOSS_TY - owner.y,
@@ -32445,7 +32451,7 @@ local function card_frame(owner)
     end
 
     ---③ 子 context 3（Sub57）：绕回（用的是上一帧末的位置）。
-    do_wrap(owner, st)
+    do_wrap(owner, st, t)
 
     ---④ UpdateMovement：位移插值（绕回时 x0/y0 已一起搬走）。
     local move = st.move
