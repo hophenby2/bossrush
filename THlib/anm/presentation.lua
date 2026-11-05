@@ -225,6 +225,9 @@ local function run(s,c)
                 local key=s.file..':'..raw[1]:sub(4)
                 if not T.managed[95] or not T.managed[95][key] then
                     local x,y=s.x,s.y
+                    local origins=s.owner.th095_presentation_origins
+                    local origin=origins and origins[key]
+                    if origin and origin.clock==s.clock then x,y=origin.x,origin.y;origins[key]=nil end
                     if op==84 then x,y=x+a[2],y-a[3] end
                     T.start(s.owner,95,key,x,y,0,c.v)
                 end
@@ -280,8 +283,12 @@ function T.advance(o,clock)
             if o.th095_photo_marker==0 and s.marker and IsValid(s.marker) then object.RawDel(s.marker);s.marker=nil end
         end
         if s.game==95 then
-            for k,c in pairs(s.callbacks) do
-                if (o.photo_hit_count or 0)>=c.threshold then enter(s,s.root,c.sub);s.root.done=false;s.callbacks[k]=nil end
+            -- UpdateScheduledEclCalls按0..9处理，触发时释放全部16个子context。
+            for k=0,9 do
+                local c=s.callbacks[k]
+                if c and c.threshold>=0 and (o.photo_hit_count or 0)>=c.threshold then
+                    enter(s,s.root,c.sub);s.root.done=false;s.callbacks[k]=nil;s.children={}
+                end
             end
         end
         run(s,s.root)

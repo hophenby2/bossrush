@@ -1923,6 +1923,7 @@ do  -- 73 蝶符「鳳蝶紋の死槍」（ecl17_b，幽幽子，组 1a 第 2 �
             end
             if not step(ENTRY_WAIT) then return end
             task.MoveTo(0, BOSS_HOME_Y, ENTRY_TIME, EASE_OUT)
+            if not tok.alive or st.dead then return end
             ---到这里是原作第 130 帧：Sub2 的 ins_52(3) 调 Sub3，
             ---而 Sub3 的 t=0 就是 ins_106(5)（一个定位置的音效）。
             PlaySound("tan00", 0.1, self.x / 256, false)
@@ -4494,11 +4495,12 @@ local function run_ex_laser_straight(owner, l, max_len, width, speed)
 end
 
 ---生成一根 ins_145 直线激光。
-local function spawn_ex_laser_straight(owner, lasers, index, x, y, angle, max_len, width, speed)
+local function spawn_ex_laser_straight(owner,lasers,index,x,y,angle,max_len,width,speed,native_kind,native_color)
     local l = New(laser, index, x, y, angle, 0, 0, 0, 0, 0, 0)
     l._native_laser_straight = true
     l.colli = false
     if not run_ex_laser_straight(owner, l, max_len, width, speed) then return end
+    if native_kind~=nil then OriginalBulletVisual.laser_source(l,95,native_kind,native_color) end
     lasers[#lasers + 1] = l
     return l
 end
@@ -4522,11 +4524,11 @@ end
 do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
     ---原作这一关的第 1 幕**没有** ins_104（不亮卡名），是一个「前哨」：小町在活动框里
     ---随机游走，一边撒两组对称扇（Sub4）；拍到第 3 张后换成更密的整圈（Sub7），
-    ---拍到第 6 张后再换成「只游走、不再放弹」（Sub8）。
+    ---拍到第 6 张后再换成持续随机点发弹并游走（Sub8）。
     ---数据源 /tmp/S9_ecl20_a.txt（ECL …/data/ecl20_a.ecl）。骨架：
     ---  · Sub2：ins_63(-128,-64) 进场 → t=100 ins_64(30,4,0,128) 用 30 帧落到 (0,128)
     ---    （我们的 (0,96)）；ins_141(8) ⇒ 拍 8 张；t=130 的 `id=0`（**不是** ins_104 ——
-    ---    它把当前 ANM 脚本停掉）+ ins_75(-140,128,140,192) 设活动框 + ins_149(4.5)
+    ---    该条是NOP）+ ins_75(-140,128,140,192) 设活动框 + ins_149(4.5)
     ---    + ins_132(1) + ins_52(3) 起主脚本。t=0 的两条 ins_115 见下面「按张切换」。
     ---  · Sub3（默认主控，300 帧一轮）：t=0 起 Sub5（装饰）→ t=60 换成 Sub4（发弹）→
     ---    t=180 ins_67(120,4,0.5)：沿「背离自机」的随机方向插值 60 px（120 帧、缓动 4）→
@@ -4536,7 +4538,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
     ---    floatV1 每帧 −0.0448799 rad；第二段（t=31）把两个初值重置（各取当时的 playerAngle）。
     ---  · Sub6（拍中第 3 张起接管主脚本）：ins_102 清屏 → 起 Sub5 → t=60 换成 Sub7 →
     ---    t=180 再一次 ins_67(60,4,1.5) → t=240 收掉 Sub7 → 跳回 t=0（240 帧一轮）。
-    ---  · Sub7（真发弹，302 帧一轮）：floatV0 = 0.5、floatV1 = playerAngle、
+    ---  · Sub7（LOOP拨时后若未被父替换，一轮348帧）：floatV0 = 0.5、floatV1 = playerAngle、
     ---    intV0 = photoIndex − 2；两段各 24 帧的连发整圈 ins_89 CIRCLE(type 23、色 0/1、
     ---    count1 = 8、count2 = intV0、速 = floatV0、基角 floatV1、步长 0.392699)。
     ---    floatV0 每帧 +0.15；floatV1 第一段每帧 +0.0981748、第二段 −0.0981748（反着转）。
@@ -4590,7 +4592,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
     local function sub4(owner, g, tok)
         task.New(owner, function()
             while alive(g, tok) do
-                for _ = 0, 1 do
+                for pass = 0, 1 do
                     local sp = FAN_SPEED0
                     local ang = -math.rad(Angle(owner.x, owner.y, player.x, player.y))
                     for _ = 1, FAN_SEG do
@@ -4601,7 +4603,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
                                     math.deg(ang), FAN_STEP_DEG, false, 514)
                         end
                         sp = sp + FAN_SPEED_STEP
-                        ang = ang + FAN_SPIN
+                        ang = (ang+(pass==0 and FAN_SPIN or -FAN_SPIN)+math.pi)%(2*math.pi)-math.pi
                         task.Wait(1)
                     end
                     task.Wait(7)                        -- t=24 → t=31（或 t=55 → t=62）
@@ -4627,7 +4629,7 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
                         task.Wait(1)
                     end
                 end
-                task.Wait(254)                          -- 一轮 302 帧（前 48 帧在发弹）
+                task.Wait(300) -- 两段LOOP后time=2，等到302；未被父替换时实际348帧。
             end
         end)
     end
@@ -4712,14 +4714,10 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
         task.New(owner, function()
             while not st.dead do
                 local hits = photo_index(PHOTO_LIMIT)
-                if hits >= 3 and not fired[1] then
-                    fired[1] = true
-                    gen = gen + 1
-                    run_b(owner)
-                elseif hits >= 6 and not fired[2] then
-                    fired[2] = true
-                    gen = gen + 1
-                    run_c(owner)
+                if hits>=6 and not fired[2] then
+                    fired[1],fired[2]=true,true;gen=gen+1;run_c(owner)
+                elseif hits>=3 and not fired[1] then
+                    fired[1]=true;gen=gen+1;run_b(owner)
                 end
                 task.Wait(1)
             end
@@ -4734,12 +4732,17 @@ do  -- 90 小町 非符（ecl20_a，组 7a 第 1 张）
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        gen = gen + 1
-        task.New(self, function()
-            task.Wait(ENTRY_WAIT)
-            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            run_default(self)                           -- Sub3
-            watcher(self)
+        st={dead=false};fired={false,false};gen=gen+1
+        local entry=gen
+        watcher(self)
+        task.New(self,function()
+            for _=1,ENTRY_WAIT do
+                if not alive(entry) then return end
+                task.Wait()
+            end
+            if not alive(entry) then return end
+            task.MoveTo(HOME_X,HOME_Y,ENTRY_TIME,EASE_OUT)
+            if alive(entry) then run_default(self) end
         end)
     end
 
@@ -4805,13 +4808,19 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
     local fired = {}
 
     ---Sub4：每 4 帧一整圈，弹数 = 24 + 4×photoIndex（进上下文时算一次）。
+    local generation=0
+    local state={dead=false}
+    local gun
+    local function drop_gun()
+        if gun then gun.alive=false;gun=nil end
+    end
     local function sub4(owner, tok)
         task.New(owner, function()
             local count = RING_BASE + RING_PER_PHOTO * photo_index(PHOTO_LIMIT)
-            local spread = 0                            -- floatV1
+            local spread=0
+            local aim=sg_aim(owner.x,owner.y) -- f3在子context入口锁定，不能每轮重瞄。
             while tok.alive do
-                local base = sg_aim(owner.x, owner.y)
-                        + math.deg(ran:Float(-math.pi, math.pi) * spread)
+                local base=aim+math.deg(ran:Float(-math.pi,math.pi)*spread)
                 sg_shot(89, sg_style(18), 0, owner.x, owner.y,
                         count, 1, RING_SPEED, 1.5, base, RING_STEP, false, 514)
                 spread = spread + RING_SPREAD
@@ -4824,6 +4833,7 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
     local function sub5(owner, tok)
         task.New(owner, function()
             while tok.alive do
+                ran:Float(-math.pi,math.pi) -- 原27仍取随机数，结果未参与狙击角。
                 sg_shot(88, sg_style(18), 1, owner.x, owner.y,
                         1, AIM_COUNT, AIM_SPEED0, AIM_SPEED1, 0, 0, true, 514)
                 task.Wait(AIM_WAIT)
@@ -4832,65 +4842,73 @@ do  -- 91 嘘言「タン・オブ・ウルフ」（ecl21_a，映姬，组 8a �
     end
 
     ---Sub3（clear = false）/ Sub7（clear = true）：240 帧一轮。
-    local function cycle(owner, clear)
-        task.New(owner, function()
+    local function cycle(owner,clear)
+        generation=generation+1
+        local current=generation
+        drop_gun()
+        task.New(owner,function()
+            local function live() return not state.dead and current==generation end
+            local function wait(n)
+                for _=1,n do if not live() then return false end;task.Wait() end
+                return live()
+            end
+            if not live() then return end
             if clear then
                 sg_clear(lasers)
+                if not wait(50) then return end -- Sub7的第50帧才开新视觉context。
             end
-            local tok
-            local function drop()
-                if tok then tok.alive = false; tok = nil end
-            end
-            while true do
-                PlaySound("tan00", 0.1, owner.x / 256, false)   -- t=0 的 ins_106(5)
-                task.Wait(60)                                    -- t=0 → 60（Sub6 装饰不实现）
-                drop(); tok = { alive = true }; sub4(owner, tok)  -- t=60：ins_117(0,4)
-                task.Wait(120)                                   -- t=60 → 180
-                ---t=120 的 ins_67(120,4,0)：speed = 0 ⇒ 没有位移，只重取一次移动方向。
-                drop(); tok = { alive = true }; sub5(owner, tok)  -- t=180：ins_117(0,5)
-                task.Wait(60)                                    -- t=180 → 240
-                drop()
+            while live() do
+                drop_gun()
+                PlaySound('tan00',0.1,owner.x/256,false)
+                if not wait(60) then return end
+                gun={alive=true};sub4(owner,gun)
+                if not wait(60) then return end
+                sg_bmove(owner,state,120,4,0,{-140,128,140,192}) -- 0速度仍抽边界随机角。
+                if not wait(60) then return end
+                drop_gun();gun={alive=true};sub5(owner,gun)
+                if not wait(60) then return end
             end
         end)
     end
-
-    ---ins_115：拍中第 1..6 张各触发一次（清屏 + 主循环从 t=0 重开）。
     local function watcher(owner)
-        task.New(owner, function()
-            while true do
-                local hits = photo_index(PHOTO_LIMIT)
-                for k = 1, PHOTO_LIMIT do
-                    if hits >= k and not fired[k] then
-                        fired[k] = true
-                        cycle(owner, true)                  -- Sub7
-                    end
+        task.New(owner,function()
+            while not state.dead do
+                local hits=photo_index(PHOTO_LIMIT)
+                local changed=false
+                for k=1,PHOTO_LIMIT do
+                    if hits>=k and not fired[k] then fired[k]=true;changed=true end
                 end
-                task.Wait(1)
+                if changed then cycle(owner,true) end
+                task.Wait()
             end
         end)
     end
-
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
     end
 
     function card:init()
-        photo_damage_on(self, PHOTO_LIMIT)
-        self.x, self.y = BOSS_X, BOSS_START_Y
-        fired = {}
-        task.New(self, function()
-            task.Wait(ENTRY_WAIT)
-            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            cycle(self, false)                              -- Sub3
-            watcher(self)
+        photo_damage_on(self,PHOTO_LIMIT)
+        self.x,self.y=BOSS_X,BOSS_START_Y
+        state={dead=false};fired={};generation=generation+1;drop_gun()
+        local entry=generation
+        watcher(self)
+        task.New(self,function()
+            for _=1,ENTRY_WAIT do
+                if state.dead or entry~=generation then return end
+                task.Wait()
+            end
+            if state.dead or entry~=generation then return end
+            task.MoveTo(HOME_X,HOME_Y,ENTRY_TIME,EASE_OUT)
+            if not state.dead and entry==generation then cycle(self,false) end
         end)
     end
-
     function card:frame()
     end
 
     function card:del()
+        state.dead=true;generation=generation+1;drop_gun()
         photo_damage_off(self)
         sg_clear(lasers)
     end
@@ -4945,7 +4963,7 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
     ---Sub4 的 ins_147。
     local LASER_LEN, LASER_W = 160, 16
     local LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE = 70, 60, 30, 10
-    local LASER_AV = math.deg(0.0785398)                -- TH095 顺时针为正 ⇒ 我们取负
+    local LASER_AV = math.deg(0.07853981852531433)                -- TH095 顺时针为正 ⇒ 我们取负
     local LASER_WAIT = 180                              -- 两轮之间 180 帧
     local LASER_FIRST = 60                              -- 第一轮在 t=60
 
@@ -4960,35 +4978,35 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
     ---ins_65：把本体设成「每帧朝自机 speed 像素」，方向每 2 帧重取一次（见注释）。
     ---★ 这一步是 Sub3 **自己**的顺序流程（原作里 ins_5 循环就在同一个上下文里跑），
     ---  所以这里不能再开 task.New —— 直接在主任务的协程里 task.Wait 才有「等到走完」的语义。
-    local function drift(owner, tok, steps, speed0, step)
-        local sp = speed0
-        for _ = 1, steps do
+    local function drift(owner,tok,steps,speed0,step)
+        local speed=speed0
+        local serial=PhotoNative.begin_move(owner)
+        owner.vx,owner.vy=0,0
+        for _=1,steps do
             if not tok.alive then return end
-            local a = Angle(owner.x, owner.y, player.x, player.y)
-            owner.x = owner.x + sp * cos(a)
-            owner.y = owner.y + sp * sin(a)
-            task.Wait(1)
-            if not tok.alive then return end
-            owner.x = owner.x + sp * cos(a)
-            owner.y = owner.y + sp * sin(a)
-            task.Wait(1)
-            sp = sp + step
+            local angle=Angle(owner.x,owner.y,player.x,player.y)
+            local dx,dy=speed*cos(angle),speed*sin(angle)
+            for _=1,2 do
+                if not tok.alive then return end
+                PhotoNative.queue_move(owner,serial,owner.x+dx,owner.y+dy,nil,-math.rad(angle))
+                task.Wait()
+            end
+            speed=speed+step
         end
     end
-
-    ---Sub4：每 180 帧一批（60 帧预热 + 两批 8 根反向旋转的 147）。
     local function sub4(owner, tok)
         task.New(owner, function()
+            ran:Float(-math.pi,math.pi) -- 原430入口读取，结果未用于光柱。
             while tok.alive do
                 task.Wait(LASER_FIRST)
                 if not tok.alive then return end
-                for _, cfg in ipairs({ { 2, LASER_AV }, { 4, -LASER_AV } }) do
+                for _, cfg in ipairs({ { 2, -LASER_AV }, { 4, LASER_AV } }) do
                     local a0 = ran:Float(-math.pi, math.pi)
                     for k = 0, 7 do
                         spawn_ex_laser(owner, lasers, cfg[1], owner.x, owner.y,
                                 -math.deg(a0 + k * math.pi / 4), LASER_LEN, LASER_W, 8,
                                 LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE,
-                                cfg[2], 0, 0, true, true)
+                                cfg[2],0,0,true,true,1,cfg[1])
                     end
                 end
                 task.Wait(LASER_WAIT - LASER_FIRST)
@@ -5000,6 +5018,7 @@ do  -- 92 死歌「八重霧の渡し」（ecl20_b，小町，组 7a 第 2 张�
     local function sub5(owner, tok)
         task.New(owner, function()
             while tok.alive do
+                ran:Float(-math.pi,math.pi) -- 原5cc在每次回跳中仍读取未使用随机角。
                 local sp = FAN_SPEED0 + photo_index(PHOTO_LIMIT) * FAN_SPEED_STEP
                 sg_shot(86, sg_style(23), 0, owner.x, owner.y,
                         FAN_COUNT, 1, sp, 1.5, 0, FAN_STEP, true, 2)
@@ -5123,6 +5142,12 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     local lasers = {}
     local st = { dead = false }
     local fired = {}
+    local phase_generation=0
+    local active_guns={}
+    local function drop_guns()
+        for _,t in ipairs(active_guns) do t.alive=false end
+        active_guns={}
+    end
 
     local function alive(tok)
         return not st.dead and (tok == nil or tok.alive)
@@ -5132,9 +5157,10 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     local function laser_single(owner, tok, index, speed, jitter, period)
         task.New(owner, function()
             while alive(tok) do
-                local a = sg_aim(owner.x, owner.y) + (jitter or 0)
+                local a=sg_aim(owner.x,owner.y)
+                if jitter==true then a=a+ran:Float(-SPREAD,SPREAD) else a=a+(jitter or 0) end
                 spawn_ex_laser_straight(owner, lasers, index, owner.x, owner.y,
-                        -a, 96, 16, speed)
+                        -a,96,16,speed,12,index)
                 task.Wait(period)
             end
         end)
@@ -5148,7 +5174,7 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
                 for k = 0, 4 do
                     local a = sg_aim(owner.x, owner.y) - SPREAD + k * SPREAD / 2
                     spawn_ex_laser_straight(owner, lasers, 2, owner.x, owner.y,
-                            -a, 96, 16, speeds[k + 1])
+                            -a,96,16,speeds[k+1],12,2)
                 end
                 task.Wait(15)
             end
@@ -5156,14 +5182,25 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     end
 
     ---32 根 147（4 号波的 Sub16，型 12、色 1、长 512、宽 12、四段 20/10/30/10）。
+    local function laser_three(owner,tok)
+        task.New(owner,function()
+            while alive(tok) do
+                local base=sg_aim(owner.x,owner.y)
+                for k=-1,1 do
+                    spawn_ex_laser_straight(owner,lasers,5,owner.x,owner.y,-(base+k*11.25),96,16,6,12,5)
+                end
+                task.Wait(15)
+            end
+        end)
+    end
     local function laser_ring_147(owner, tok)
         task.New(owner, function()
             while alive(tok) do
                 local base = sg_aim(owner.x, owner.y)
                 for k = 0, 31 do
                     spawn_ex_laser(owner, lasers, 12, owner.x, owner.y,
-                            -math.rad(base + k * 11.25), 512, 12, 8, 20, 10, 30, 10,
-                            0, 0, 0, false, true)
+                            -(base + k * 11.25), 512, 12, 8, 20, 10, 30, 10,
+                            0,0,0,false,true,12,1)
                 end
                 task.Wait(30)
             end
@@ -5202,8 +5239,8 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
             while alive(tok) do
                 local a = sg_aim(owner.x, owner.y)
                 for _ = 1, n do
-                    local sp = 3.5 + ran:Float(0, 1) * dspread
-                    local ang = a - SPREAD + ran:Float(0, 1) * SPREAD * 2
+                    local ang=a-SPREAD+ran:Float(0,1)*SPREAD*2
+                    local sp=3.5+ran:Float(0,1)*dspread
                     sg_shot(87, sg_style(3), dcolor, owner.x, owner.y,
                             1, 1, sp, 1.5, ang, SPREAD, false, 514)
                 end
@@ -5218,12 +5255,13 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     ---start 是 floatV0 的初值（度），drift 是每轮的增量（度，可正可负）。
     local function fan_spin(owner, tok, color, count, sp, step, start, drift, big_color)
         task.New(owner, function()
-            local ang = start
+            local ang=start
+            local back=sg_aim(owner.x,owner.y)+180
             while alive(tok) do
                 sg_shot(87, sg_style(3), color, owner.x, owner.y,
                         count, 1, sp, 1.5, ang, step, false, 514)
                 sg_shot(87, sg_style(18), big_color, owner.x, owner.y,
-                        24, 1, 6, 1.5, sg_aim(owner.x, owner.y) + 180, FAN_STEP_B, false, 514)
+                        24, 1, 6, 1.5, back,FAN_STEP_B, false, 514)
                 ang = ang + drift
                 task.Wait(4)
             end
@@ -5234,69 +5272,49 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     local function noop_stream(owner, tok)
         task.New(owner, function()
             while alive(tok) do
+                sg_aim(owner.x,owner.y)
+                ran:Float(-SPREAD,SPREAD) -- 原Sub26/29/32准备角度，但没有145发射。
                 task.Wait(4)
             end
         end)
     end
 
     ---九号波的包装：清屏 → t=30 起一对弹幕 → t=150 走位 + 收尾 → 每 180 帧重来。
-    local function wave(owner, a, b)
-        task.New(owner, function()
-            sg_clear(lasers)
-            local ta, tb
-            local function spawn()
-                ta, tb = { alive = true }, { alive = true }
-                a(owner, ta)
-                b(owner, tb)
+    local function phase(owner,a,b,reset)
+        phase_generation=phase_generation+1
+        local generation=phase_generation
+        drop_guns()
+        task.New(owner,function()
+            local function live() return not st.dead and generation==phase_generation end
+            local function wait(n)
+                for _=1,n do if not live() then return false end;task.Wait() end
+                return live()
             end
-            local function drop()
-                if ta then ta.alive = false; ta = nil end
-                if tb then tb.alive = false; tb = nil end
-            end
-            task.Wait(30)
-            spawn()
-            while true do
-                task.Wait(120)                          -- t=30 → 150
-                sg_bmove(owner, st, 60, 0, 1, BOX)      -- t=150（60 帧、60 px）
-                drop()
-                task.Wait(60)                           -- t=150 → 210
-                spawn()                                 -- 跳回 t=30
-            end
-        end)
-    end
-
-    ---Sub3：默认主控（180 帧一轮，默认只用 Sub4/Sub5）。
-    local function main_script(owner)
-        task.New(owner, function()
-            PlaySound("tan00", 0.1, owner.x / 256, false)   -- t=0 的 ins_106(5)
-            local ta, tb = { alive = true }, { alive = true }
-            laser_single(owner, ta, 3, 4, 0, 30)            -- Sub4
-            fan_pair(owner, tb, 6, 3)                       -- Sub5
-            while true do
-                task.Wait(120)                              -- t=0 → 120
-                sg_bmove(owner, st, 60, 0, 1, BOX)
-                ta.alive = false; tb.alive = false
-                task.Wait(60)                               -- t=120 → 180
-                ta, tb = { alive = true }, { alive = true }
-                laser_single(owner, ta, 3, 4, 0, 30)
-                fan_pair(owner, tb, 6, 3)
+            if not live() then return end
+            if reset then sg_clear(lasers);if not wait(30) then return end end
+            PlaySound('tan00',0.1,owner.x/256,false)
+            while live() do
+                local ta,tb={alive=true},{alive=true}
+                active_guns={ta,tb};a(owner,ta);b(owner,tb)
+                if not wait(120) then return end
+                sg_bmove(owner,st,60,0,1,BOX)
+                drop_guns()
+                if not wait(60) then return end
             end
         end)
     end
-
-    ---九条 ins_115：第 k 张 → 第 k 号波（A, B 见文件头清单）。
     local WAVES = {
-        { function(o, t) laser_single(o, t, 3, 4, 0, 30) end,
-          function(o, t) fan_pair(o, t, 6, 3) end },
-        { function(o, t) laser_single(o, t, 4, 5, ran:Float(-SPREAD, SPREAD), 4) end,
+        { laser_three,
+          function(o,t) fan_pair(o,t,10,5) end },
+        { function(o, t) laser_single(o, t, 4, 5, true,4) end,
           function(o, t) fan_pair(o, t, 8, 4) end },
         { laser_five,
           function(o, t) fan_pair(o, t, 4, 2) end },
         { laser_ring_147,
           function(o, t) fan(o, t, sg_style(3), 2, 7, 5, 0, FAN_STEP_A, 10) end },
-        { function(o, t) laser_single(o, t, 6, 4, ran:Float(-SPREAD, SPREAD), 4) end,
+        { function(o, t) laser_single(o, t, 6, 4, true,4) end,
           function(o, t) fan_random(o, t, 3, 13, 1.5, 6) end },
-        { function(o, t) laser_single(o, t, 7, 5, ran:Float(-SPREAD, SPREAD), 4) end,
+        { function(o, t) laser_single(o, t, 7, 5, true,4) end,
           function(o, t) fan_random(o, t, 4, 15, 2.5, 7) end },
         { noop_stream,
           function(o, t) fan_spin(o, t, 2, 8, 3, FAN_STEP_C, 45, ROT_STEP, 0) end },
@@ -5312,34 +5330,39 @@ do  -- 93 審判「十王裁判」（ecl21_b，映姬，组 8a 第 2 张）
     end
 
     function card:init()
-        photo_damage_on(self, PHOTO_LIMIT)
-        self.x, self.y = BOSS_X, BOSS_START_Y
-        fired = {}
-        st.dead = false
-        task.New(self, function()
-            task.Wait(ENTRY_WAIT)
-            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            main_script(self)
-            task.New(self, function()                       -- ins_115 监视器
-                while not st.dead do
-                    local hits = photo_index(PHOTO_LIMIT)
-                    for k = 1, #WAVES do
-                        if hits >= k and not fired[k] then
-                            fired[k] = true
-                            wave(self, WAVES[k][1], WAVES[k][2])
-                        end
-                    end
-                    task.Wait(1)
+        photo_damage_on(self,PHOTO_LIMIT)
+        self.x,self.y=BOSS_X,BOSS_START_Y
+        fired={};st={dead=false};phase_generation=phase_generation+1;drop_guns()
+        local entry=phase_generation
+        task.New(self,function()
+            while not st.dead do
+                local hits=photo_index(PHOTO_LIMIT)
+                local selected
+                for k=1,#WAVES do
+                    if hits>=k and not fired[k] then fired[k]=true;selected=k end
                 end
-            end)
+                if selected then phase(self,WAVES[selected][1],WAVES[selected][2],true) end
+                task.Wait()
+            end
+        end)
+        task.New(self,function()
+            for _=1,ENTRY_WAIT do
+                if st.dead or entry~=phase_generation then return end
+                task.Wait()
+            end
+            if st.dead or entry~=phase_generation then return end
+            task.MoveTo(HOME_X,HOME_Y,ENTRY_TIME,EASE_OUT)
+            if not st.dead and entry==phase_generation then
+                phase(self,function(o,t) laser_single(o,t,3,4,0,30) end,
+                    function(o,t) fan_pair(o,t,6,3) end,false)
+            end
         end)
     end
-
     function card:frame()
     end
 
     function card:del()
-        st.dead = true
+        st.dead=true;phase_generation=phase_generation+1;drop_guns()
         photo_damage_off(self)
         sg_clear(lasers)
     end
@@ -5397,8 +5420,8 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
     local DROP2_SPEED_RND = 1.5                         -- 色 4（第 6 张起）：1 + rand×1.5
     local AIM_SPEED0, AIM_SPEED_RND = 2, 2              -- 色 8：2 + rand×2
     local RING_COUNT, RING_SPEED_STEP = 24, 0.15        -- Sub6
-    local RING_PERIOD = 121
-    local FAN_BURST, FAN_COUNT, FAN_PERIOD = 12, 3, 61  -- Sub7
+    local RING_PERIOD = 144
+    local FAN_BURST, FAN_COUNT, FAN_PERIOD = 12, 3, 72  -- Sub7
     local GATE_RING, GATE_FAN, GATE_DROP2 = 3, 5, 6     -- 各闸的 photoIndex 门槛
 
     local lasers = {}
@@ -5410,29 +5433,30 @@ do  -- 94 古雨「黄泉中有の旅の雨」（ecl20_c，小町，组 7a 第 3
     end
 
     ---Sub4：每 2 帧一颗斜落雨点；第 6 张起每轮再多一颗（色 4）。
-    local function sub4(owner, tok)
-        task.New(owner, function()
+    local function sub4(owner,tok)
+        task.New(owner,function()
             while not st.dead and tok.alive do
-                local x, y = rain_point()
-                sg_shot(87, sg_style(3), 6, x, y, 1, 1,
-                        DROP_SPEED0 + ran:Float(0, 1) * DROP_SPEED_RND, 0.5,
-                        math.deg(DROP_ANGLE0 + ran:Float(0, 1) * DROP_ANGLE_RND), 0, false, 514)
-                if photo_index(PHOTO_LIMIT) >= GATE_DROP2 then
-                    local x2, y2 = rain_point()
-                    sg_shot(87, sg_style(3), 4, x2, y2, 1, 1,
-                            DROP_SPEED0 + ran:Float(0, 1) * DROP2_SPEED_RND, 0.5,
-                            math.deg(DROP_ANGLE0 + ran:Float(0, 1) * DROP_ANGLE_RND), 0, false, 514)
+                local x,y=rain_point()
+                local angle=math.deg(DROP_ANGLE0+ran:Float(0,1)*DROP_ANGLE_RND)
+                local speed=DROP_SPEED0+ran:Float(0,1)*DROP_SPEED_RND
+                sg_shot(87,sg_style(3),6,x,y,1,1,speed,.5,angle,0,false,514)
+                task.Wait()
+                if st.dead or not tok.alive then return end
+                if photo_index(PHOTO_LIMIT)>=GATE_DROP2 then
+                    local x2,y2=rain_point()
+                    local a2=math.deg(DROP_ANGLE0+ran:Float(0,1)*DROP_ANGLE_RND)
+                    local v2=DROP_SPEED0+ran:Float(0,1)*DROP2_SPEED_RND
+                    sg_shot(87,sg_style(3),4,x2,y2,1,1,v2,.5,a2,0,false,514)
                 end
-                task.Wait(2)
+                task.Wait()
             end
         end)
     end
-
-    ---Sub5：每 4 帧一颗朝自机的雨点（色 8）。
     local function sub5(owner, tok)
         task.New(owner, function()
             while not st.dead and tok.alive do
                 local x, y = rain_point()
+                ran:Float(-math.pi,math.pi) -- 原6b0乘.314159的结果未用于狙击，但仍消费随机数。
                 sg_shot(86, sg_style(3), 8, x, y, 1, 1,
                         AIM_SPEED0 + ran:Float(0, 1) * AIM_SPEED_RND, 0.5, 0, 0, true, 514)
                 task.Wait(4)
@@ -5577,10 +5601,10 @@ do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，
                 local off = BEAM_OFF0 + k * BEAM_OFF_STEP
                 spawn_ex_laser(owner, lasers, 2, owner.x, owner.y, -(base + off),
                         BEAM_LEN, BEAM_W, 8, BEAM_STARTUP, BEAM_GROW, BEAM_SUSTAIN,
-                        BEAM_FADE, 0, 0, 0, true, true)
+                        BEAM_FADE,0,0,0,true,true,1,2)
                 spawn_ex_laser(owner, lasers, 6, owner.x, owner.y, -(base - off),
                         BEAM_LEN, BEAM_W, 8, BEAM_STARTUP, BEAM_GROW, BEAM_SUSTAIN,
-                        BEAM_FADE, 0, 0, 0, true, true)
+                        BEAM_FADE,0,0,0,true,true,1,6)
                 if k < 3 then
                     task.Wait(4)
                 end
@@ -5588,7 +5612,7 @@ do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，
             task.Wait(8)                                -- t=12 → t=20
             spawn_ex_laser(owner, lasers, 4, owner.x, owner.y, -base,
                     BEAM_LEN, BEAM_WIDE, 8, BEAM_STARTUP, BEAM_GROW, BEAM_SUSTAIN,
-                    BEAM_FADE, 0, 0, 0, true, true)
+                    BEAM_FADE,0,0,0,true,true,1,4)
         end)
     end
 
@@ -5608,7 +5632,7 @@ do  -- 95 審判「ギルティ・オワ・ノットギルティ」（ecl21_c，
                         n, 1, FAN_SPEED, 1.5, b + 180, FAN_STEP, true, 514)
                 sg_shot(86, sg_style(17), 0, owner.x, owner.y,
                         n, 1, FAN_SPEED, 1.5, -(b + 180), FAN_STEP, true, 514)
-                a = b + FAN_SPIN
+                a = (b+FAN_SPIN+180)%360-180
                 task.Wait(FAN_WAIT)
             end
         end)
@@ -5719,9 +5743,13 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
         -- VEC方向在认领时冻结；速度过零后不能跟着新的rot反转加速度。
         if not self.ex_accel_angle then self.ex_accel_angle = self.rot end
         self.ex_accel = (self.ex_accel or 0) + 1
-        local v = (self.ex_v or BULLET_SPEED0) - BULLET_ACCEL_STEP
-        self.ex_v = v
-        object.SetV(self, v, self.ex_accel_angle, true)
+        self.ex_v=(self.ex_v or BULLET_SPEED0)-BULLET_ACCEL_STEP
+        self.vx=self.vx-BULLET_ACCEL_STEP*cos(self.ex_accel_angle)
+        self.vy=self.vy-BULLET_ACCEL_STEP*sin(self.ex_accel_angle)
+        self.th095_speed=self.ex_v
+        if math.abs(self.vx)>.0001 or math.abs(self.vy)>.0001 then
+            self.rot=Angle(0,0,self.vx,self.vy);self.th095_angle=self.rot
+        end
     end
 
     ---Sub4：每 2 帧从「自机 ± 方向 base 上 80 px」处吐一颗倒着飘的慢弹。
@@ -5729,7 +5757,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
     local function sub4(owner, tok, base0)
         task.New(owner, function()
             local base = base0
-            local n = 0
+            local n = 50
             while tok.alive and not st.dead do
                 local sx = player.x + RING_SPAWN_GAP * cos(-base)
                 local sy = player.y + RING_SPAWN_GAP * sin(-base)
@@ -5737,16 +5765,18 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                 SpawnPhoto(33298,sg_visual(square,23), ex_color(color, 23), sx, sy, BULLET_SPEED0,
                         -base, false, 0, false, nil, nil, nil, accel_hook)
                 PlaySound("tan00", 0.1, sx / 256, false)     -- flags 的 0x200
-                if photo_index(PHOTO_LIMIT) >= BIG_AT and n >= BIG_EVERY then
-                    local a0 = ran:Float(-math.pi, math.pi)
-                    for i = 0, BIG_COUNT - 1 do
-                        SpawnPhoto(514,sg_visual(square,23), ex_color(1, 23), sx, sy, BIG_SPEED,
-                                -math.deg(a0 + i * math.pi / 5), false, 0, false)
+                if photo_index(PHOTO_LIMIT)>=BIG_AT then
+                    if n>=BIG_EVERY then
+                        local a0=ran:Float(-math.pi,math.pi)
+                        for i=0,BIG_COUNT-1 do
+                            SpawnPhoto(514,sg_visual(square,23),ex_color(1,23),sx,sy,BIG_SPEED,
+                                -math.deg(a0+i*math.pi/5),false,0,false)
+                        end
+                        PlaySound('tan00',.1,sx/256,false)
+                        n=0
                     end
-                    PlaySound("tan00", 0.1, sx / 256, false)
-                    n = 0
+                    n=n+1
                 end
-                n = n + 1
                 base = base + 3                              -- floatV2 = 0.0523599 rad
                 task.Wait(2)
             end
@@ -5756,8 +5786,9 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
     ---Sub6：每 100 帧（photoIndex ≥ 2 起）一圈 16 发**会撞墙**的弹。
     local function sub6(owner, tok)
         task.New(owner, function()
+            ran:Float(-math.pi,math.pi)
+            ran:Float(-math.pi,math.pi) -- 原67c/690入口读取，实际环角另取一次。
             while tok.alive and not st.dead do
-                task.Wait(BOUNCE_PERIOD)
                 if not tok.alive or st.dead then return end
                 if photo_index(PHOTO_LIMIT) >= BOUNCE_AT then
                     local a0 = ran:Float(-math.pi, math.pi)
@@ -5768,6 +5799,7 @@ do  -- 96 死価「プライス・オブ・ライフ」（ecl20_d，小町，组
                     end
                     PlaySound("tan00", 0.1, owner.x / 256, false)
                 end
+                task.Wait(BOUNCE_PERIOD)
             end
         end)
     end
@@ -5923,20 +5955,20 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
     end
 
     ---ins_64 的逐帧插值（非阻塞；这里和调用者在同一条协程里顺序走完）。
-    local function glide(owner, g, tx, ty, n)
-        local x0, y0 = owner.x, owner.y
-        local f = sg_ease(EASE_INOUT)
-        for s = 1, n do
+    local function glide(owner,g,tx,ty,n)
+        local x0,y0=owner.x,owner.y
+        local ease=sg_ease(EASE_INOUT)
+        local serial=PhotoNative.begin_move(owner)
+        owner.vx,owner.vy=0,0
+        for i=1,n do
             if not alive(g) then return false end
-            local p = f(s / n)
-            owner.x, owner.y = x0 + p * (tx - x0), y0 + p * (ty - y0)
-            task.Wait(1)
+            local p=ease(i/n)
+            local x,y=x0+p*(tx-x0),y0+p*(ty-y0)
+            PhotoNative.queue_move(owner,serial,x,y,nil,math.atan2(-(y-owner.y),x-owner.x))
+            task.Wait()
         end
-        return true
+        return alive(g)
     end
-
-    ---Sub4 c)：CHDIR_AIMED 的逐帧钩子。f0_deg 是 TH095 空间的角度（度）。
-    ---第 1..30 帧速度从 2 线性降到 0（方向不变），第 31 帧重新瞄准自机 + f0、速度 6。
     local function chdir_hook(f0_deg)
         return function(self)
             local n = (self.ex_chdir or 0) + 1
@@ -5954,12 +5986,12 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
     ---Sub4：每 2 帧一轮的两组点射（见块顶注释 a/b/c）。
     local function sub4(owner, g, tok)
         task.New(owner, function()
-            local aim = sg_aim(owner.x, owner.y)
-            while alive(g, tok) do
+            while alive(g,tok) do
+                local aim=sg_aim(owner.x,owner.y)
                 sg_shot(89, sg_style(7), 2, owner.x, owner.y,
                         1, SUB4_RAY_COUNT, SUB4_RAY_SPEED0, SUB4_RAY_SPEED1,
                         aim, 0, false, 514)
-                local f0 = math.deg(ran:Float(-math.pi, math.pi) * 16)
+                local f0 = math.deg(ran:Float(-math.pi,math.pi)/16)
                 local a0 = sg_aim(owner.x, owner.y) + 180
                 for i = 0, SUB4_BACK_COUNT - 1 do
                     SpawnPhoto(642,sg_visual(arrow_big_c,7), ex_color(2, 7), owner.x, owner.y,
@@ -5998,7 +6030,8 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
             sg_clear(lasers)
             if not glide(owner, g, 0, field_y(144), DASH_FRAMES) then return end
             task.Wait(20)                                   -- t=40 → t=60
-            local v0, v1 = 144, SWEEP_DELTA
+            local v0,v1=144,SWEEP_DELTA
+            local rounds=3
             while alive(g) do
                 v0 = v0 + ran:Float(0, 1) * v1
                 if v0 > SWEEP_MAX then v1 = -SWEEP_DELTA end
@@ -6015,7 +6048,9 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
                 PlaySound("tan00", 0.1, owner.x / 256, false)
                 burst(owner, SPRAY_B[1], SPRAY_B[2])
                 if not glide(owner, g, 192, field_y(v0), SWEEP_SPEED_FRAMES) then return end
-                task.Wait(12)                                   -- t=100 → t=142 → 回 t=60
+                task.Wait(10)
+                rounds=rounds-1
+                if rounds<=0 then task.Wait(2) end
             end
         end)
     end
@@ -6044,7 +6079,12 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
 
     ---Sub3：默认主循环（742 帧一轮，见块顶注释）。
     local function run_sub3(owner, g)
-        task.Wait(LOOP_AT)                                  -- Sub3 t=0 → t=90
+        for _=1,60 do if not alive(g) then return end;task.Wait() end
+        if not alive(g) then return end
+        owner.th095_presentation_origins=owner.th095_presentation_origins or {}
+        owner.th095_presentation_origins['ecl21_d:9']={clock=owner.th095_visual_clock,x=owner.x,y=owner.y}
+        owner.x,owner.y=-224,field_y(32)
+        if not glide(owner,g,0,field_y(144),30) then return end
         while alive(g) do
             local tok = { alive = true }
             task.Wait(60)                                   -- t=90 → t=150
@@ -6097,16 +6137,10 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
         task.New(owner, function()
             while not st.dead do
                 local hits = photo_index(PHOTO_LIMIT)
-                if hits >= 3 and not fired[1] then
-                    fired[1] = true
-                    kill_move()
-                    gen = gen + 1
-                    run_sub7(owner, gen)
-                elseif hits >= 6 and not fired[2] then
-                    fired[2] = true
-                    kill_move()
-                    gen = gen + 1
-                    run_sub8(owner, gen)
+                if hits>=6 and not fired[2] then
+                    fired[1],fired[2]=true,true;kill_move();gen=gen+1;run_sub8(owner,gen)
+                elseif hits>=3 and not fired[1] then
+                    fired[1]=true;kill_move();gen=gen+1;run_sub7(owner,gen)
                 end
                 task.Wait(1)
             end
@@ -6121,13 +6155,14 @@ do  -- 97 審判「浄頗梨審判　-射命丸文-」（ecl21_d，映姬，组 
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        gen = gen + 1
-        st.dead = false
+        gen=gen+1;st={dead=false};fired={false,false}
+        local entry=gen
         watch(self)
-        task.New(self, function()
-            task.Wait(ENTRY_WAIT)
-            task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            run_sub3(self, gen)
+        task.New(self,function()
+            for _=1,ENTRY_WAIT do if not alive(entry) then return end;task.Wait() end
+            if not alive(entry) then return end
+            task.MoveTo(HOME_X,HOME_Y,ENTRY_TIME,EASE_OUT)
+            if alive(entry) then run_sub3(self,entry) end
         end)
     end
 
@@ -6404,6 +6439,7 @@ local function sg_tr_hook(recs, flags, start)
                     ---BulletManager.cpp:543-546：f1 ≤ −990 时用**这条记录被应用那一刻**的弹角
                     ---（原作写 −999.99）⇒ 弹沿自己出生方向加速，各自成一条直线。
                     local aa = a.vecA
+                    self.th095_speed=self.th095_speed+r.f0
                     self.vx = self.vx + r.f0 * cos(aa)
                     self.vy = self.vy + r.f0 * sin(aa)
                     if math.abs(self.vx)>0.0001 or math.abs(self.vy)>0.0001 then

@@ -40,6 +40,17 @@ def timeline_rows(source, index, game):
     return rows
 
 
+def display_name(row):
+    if row['name']:
+        return row['name']
+    if row['game']==33:
+        number=int(row['source']['file'].split('_')[0][3:])
+        names={1:'莉格露',2:'露米娅',3:'琪露诺',4:'蕾蒂',6:'爱丽丝',7:'铃仙',
+               10:'红美铃',12:'橙',14:'咲夜',18:'永琳',20:'小町'}
+        return names.get(number,'')+' 非符'
+    return '非符'
+
+
 def render(workspace):
     folder = Path(__file__).parent
     index = json.loads((folder / 'card-audit-index.json').read_text())['cards']
@@ -65,12 +76,12 @@ def render(workspace):
             key = f"{game}/{row['id']}"
             source = row['source']
             if not source.get('game'):
-                lines += [f"- 自制：TH{key} {row['name']}（无原作ECL，不计入完成数）"]
+                lines += [f"- 自制：TH{key} {display_name(row)}（无原作ECL，不计入完成数）"]
                 continue
             checked = 'x' if key in completed else ' '
             roots = '/'.join(source['roots']) or ('时间轴窗口' if key in completed else '时间轴窗口待逐行核对')
             detail = f'；[核对记录](#{game}-{row["id"]})' if key in completed else ''
-            lines += [f"- [{checked}] TH{key} {row['name']} — `{source['file']}:{roots}`{detail}"]
+            lines += [f"- [{checked}] TH{key} {display_name(row)} — `{source['file']}:{roots}`{detail}"]
         lines.append('')
     for row in index:
         key = f"{row['game']}/{row['id']}"
@@ -78,7 +89,7 @@ def render(workspace):
             continue
         review = completed[key]
         lines += [f'<a id="{key.replace("/", "-")}"></a>',
-                  f"## TH{key} {row['name']}", '']
+                  f"## TH{key} {display_name(row)}", '']
         lines += [f'- {note}' for note in review['findings']]
         if review.get('boundaries'):
             lines += ['', '阶段接口：' + review['boundaries']]
