@@ -20678,10 +20678,10 @@ end
 ---            —— 移植版交给卡片系统（t1 = 1 秒无敌），不单独实现。
 ---            同帧 `#28..#44` 把环心定下来、`#45..#55` 招出**第 0 只**使魔（见下）。
 ---    t=94,98,…,150  `#56 JUMP_DEC(xi0) time:=90 -> #45`：**每 4 帧**再招一只（见下）。
----    t=214   `#57 MOVE_RANDOM_IN_BOUNDS(60, 4, 1)`：BOSS 自己走 60 px（begin_boundary_move）。
----    t=334   `#59 JUMP time := 90 → #28`：JUMP 把自己这条指令的「新时间」写成 90，
+---    脚本t=214（实帧274） `#57 MOVE_RANDOM_IN_BOUNDS(60, 4, 1)`：BOSS 自己走 60 px（begin_boundary_move）。
+---    脚本t=334（实帧394） `#59 JUMP time := 90 → #28`：JUMP 把自己这条指令的「新时间」写成 90，
 ---            而 `#28..#55` 的 time 也是 90 ⇒ **同一帧**从 `#28` 一路跑完（又是一整轮）
----            ⇒ 周期 = 334 − 90 = 244 帧；40 秒里 90/334/578/…/2286 共 **10 批**。
+---            ⇒ 每轮另有15次4拍回跳，周期 = 334−90+60 = 304 帧；40秒内8批。
 ---
 ---  ★ 16 只使魔**不是同帧出生**，而是**每 4 帧一只** —— 这是这张卡的时序关键：
 ---    循环尾 `#56 JUMP_DEC` 自己的 time 是 **94**，而循环体 `#45..#55` 的 time 都是 90，
@@ -20867,15 +20867,15 @@ local BND_L_Y, BND_U_Y = 96, 176
 local BND_TX_L, BND_TX_R, BND_TY_L, BND_TY_U = 32, 352, 48, 128
 
 local SPAWN_AT = 90                     -- 周期里第 0 只使魔的帧（= `#28..#55` 那一帧）
-local CYCLE = 244                       -- #59 JUMP time := 90（334 − 90）
+local CYCLE = 304                       -- 334−90，加上16只4拍生成循环的15次回跳共60拍
 local SPAWN_STEP = 4                    -- 每 4 帧一只（见文件头「16 只不同帧」那一段）
 local RING_COUNT = 16                   -- #28 xi0
 local SPAWN_OFF_LAST = SPAWN_STEP * (RING_COUNT - 1)         -- 60 = 批内最后一只的偏移（绝对帧 150）
-local WANDER_AT = 214                   -- #57 的 time
+local WANDER_AT = 274                   -- 原#57 t214，加上本轮生成回跳的60拍
 local WANDER_FRAMES = 60                -- ins_67 的时长（参数 0）
 local WANDER_DIST = 1.0                 -- ins_67 的速度（参数 2）⇒ 位移 = 60 px
 
-local RING_START = 1.5708               -- #29 lf2 = π/2
+local RING_START = 1.5707963705062866               -- #29 lf2 = π/2
 local RING_STEP = 0.39269909              -- #53 lf2 += π/8
 local RING_RADIUS = 80                  -- #47/#49 的 80（绕**环心**量）
 local RING_FAN = 400                    -- #30 lf3（= Hermite 两条切线的模）
@@ -20959,7 +20959,7 @@ local familiar = class.th08_combat.actor("ecldata7:23", {
             x0 = x, y0 = y,
             tx = cx + RING_RADIUS * math.cos(a), ty = cy + RING_RADIUS * math.sin(a),
             px0 = RING_FAN * math.cos(a), py0 = -RING_FAN * math.sin(a),
-            px1 = RING_FAN * rnd_pm(), py1 = RING_FAN * rnd_pm(),
+            px1 = RING_FAN * rnd_pm(), py1 = -RING_FAN * rnd_pm(),
         }
         self.lw150_g0, self.lw150_g1 = nil, nil
         self.lw150_n = nil
@@ -21035,21 +21035,21 @@ gun0 = function(fam, ct)
         op = 97, type = G0_TYPE, color = EX.color(G0_COLOR_TAN),
         count1 = G0_COUNT1, count2 = G0_COUNT2,
         speed1 = G0_SPEED1, speed2 = G0_SPEED2,
-        angle = wrap_pi(a - PI / 2), step = G0_STEP, flags = G0_FLAGS_SND,
+        angle = wrap_pi(a - PI / 2), step = -G0_STEP, flags = G0_FLAGS_SND,
     })
     ---`#4/#5/#6`：normalize(lf1 − π/2) → 反方向切向那一对（色 2）。
     EX.shoot(fam, fam.x, fam.y, {
         op = 97, type = G0_TYPE, color = EX.color(G0_COLOR_TAN2),
         count1 = G0_COUNT1, count2 = G0_COUNT2,
         speed1 = G0_SPEED1, speed2 = G0_SPEED2,
-        angle = wrap_pi(a + PI / 2), step = G0_STEP, flags = G0_FLAGS,
+        angle = wrap_pi(a + PI / 2), step = -G0_STEP, flags = G0_FLAGS,
     })
     ---`#7/#8/#9`：normalize(lf1) → 径向那一对（色 4）。
     EX.shoot(fam, fam.x, fam.y, {
         op = 97, type = G0_TYPE, color = EX.color(G0_COLOR_RAD),
         count1 = G0_COUNT1, count2 = G0_COUNT2,
         speed1 = G0_SPEED1, speed2 = G0_SPEED2,
-        angle = wrap_pi(a), step = G0_STEP, flags = G0_FLAGS,
+        angle = wrap_pi(a), step = -G0_STEP, flags = G0_FLAGS,
     })
 end
 
@@ -21063,7 +21063,7 @@ gun1 = function(fam, ct)
         op = 96, type = G1_TYPE, color = EX.color(G1_COLOR),
         count1 = G1_COUNT1, count2 = G1_COUNT2,
         speed1 = G1_SPEED1, speed2 = G1_SPEED2,
-        angle = wrap_pi(-rnd_sgn() * G1_JITTER), step = G1_STEP, flags = G1_FLAGS,
+        angle = wrap_pi(-rnd_sgn() * G1_JITTER), step = -G1_STEP, flags = G1_FLAGS,
     })
 end
 
@@ -21141,7 +21141,7 @@ local function card_frame(owner)
     if not c then return end
     local p = c.t
 
-    ---① 招使魔：**每 244 帧一批**、一批 16 只 —— 批内第 0 只在 t = 90+244j、
+    ---① 招使魔：**每 304 帧一批**、一批 16 只 —— 批内第 0 只在 t = 90+304j、
     ---   之后每 4 帧一只（90/94/…/150 都只是第 0 批的绝对帧）。
     ---   第 0 只那一帧先跑 `#28..#44`：`#33/#34` 取自机位置、`#35..#44` 夹进
     ---   [88,296]×[88,360]（TH08）⇒ 我们 clamp(∓104) / clamp(∓136)，整批共用。
@@ -21157,7 +21157,7 @@ local function card_frame(owner)
         end
     end
 
-    ---② t = 214 + 244j：`#57 MOVE_RANDOM_IN_BOUNDS(60, 4, 1)`。
+    ---② t = 274 + 304j：`#57 MOVE_RANDOM_IN_BOUNDS(60, 4, 1)`。
     if p >= WANDER_AT and (p - WANDER_AT) % CYCLE == 0 then
         begin_boundary_move(owner)
     end
@@ -23706,7 +23706,7 @@ local function gun_burst(owner)
     EX.set_record(owner, 0, EX.K.CULL, 0, REC_CULL, -1, -1, -1)
     ---`#0 lf2 = RANDOM_ANGLE`：一次 CALL 只抽一次；换成我们口径可以直接抽角
     ---（−RANDOM_ANGLE 与 RANDOM_ANGLE 同分布），i 越大角越**小**（原作是 += 0.19635）。
-    local base = ran:Float(-PI, PI)
+    local base = -ran:Float(-PI, PI)
     for i = 0, GUN_FANS - 1 do
         if not too_close(owner) then
             ---`#11..#15`：出弹点 = BOSS + 64·(cos, sin)(lf2) —— 用**加之前**的 lf2。
@@ -23729,7 +23729,7 @@ local function gun_burst(owner)
                 op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
                 count1 = GUN_COUNT, count2 = 1,
                 speed1 = GUN_SPEED, speed2 = GUN_SPEED2,
-                angle = fan, step = GUN_STEP, flags = GUN_FLAGS,
+                angle = fan, step = -GUN_STEP, flags = GUN_FLAGS,
             })
         end
     end
@@ -23756,6 +23756,7 @@ local familiar = class.th08_combat.actor("ecldata7:17", {
     end,
     frame = function(self)
         local t = self.lw15_t
+        if t>=5001 then object.RawDel(self);return end
         ---① 主 context（Sub17）：t=0 那一组只有 SET_DIR_AND_SPEED 影响运动（常速直飞）。
         ---    t=1：`#6 SET_CHILD_ECL 0 → Sub18` —— 子 context 挂上当帧就跑 ct=0。
         if t == FAM_CHILD_AT then
@@ -23799,6 +23800,9 @@ local familiar = class.th08_combat.actor("ecldata7:17", {
         ---③ 位移：`SET_DIR_AND_SPEED(lf0, lf1)` ⇒ 每帧沿 lf0 走 lf1 = 1 px。
         self.x = self.x + math.cos(self.lw15_dir) * FAM_SPEED
         self.y = self.y + math.sin(self.lw15_dir) * FAM_SPEED
+        if self.th08_seen and class.th08_combat.actor_outside(self) then
+            object.RawDel(self);return
+        end
         self.lw15_t = t + 1
     end,
 })
@@ -23829,7 +23833,7 @@ local function card_frame(owner)
     ---② 每轮的第 120 帧：`#22..#28` 同一帧招满 20 只使魔，方向绕一圈均分 18°。
     if p == FAM_AT then
         ---`#22 lf0 = RANDOM_ANGLE`：这一组使魔共用一个随机角（每轮重抽）。
-        local base = ran:Float(-PI, PI)
+        local base = -ran:Float(-PI, PI)
         for k = 0, FAM_COUNT - 1 do
             ---`#25` 归一化 → `#26` 生使魔（lf0 就是方向）→ `#27 lf0 += 0.314159`。
             c.fams[#c.fams + 1] = New(familiar, wrap_pi(base - k * FAM_STEP),
