@@ -8839,28 +8839,20 @@ do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
     local BURST_GAP = 20                                -- 每 20 帧一波
     local CYCLE = 40                                    -- t=40 的 ins_4(0,-72) 跳回 @680
     ---型 6 是方形符卡弹。
-    local BULLET_STYLE = square
+    local BULLET_STYLE = sg_visual(square,6)
     local BULLET_COLOR = ex_color(14, 6)                -- 型 6、色 14（黄）
     local RING_C1, RING_C2 = 6, 16
     local RING_SP1, RING_SP2 = 4, 1                     -- 4 → 1.1875
     local ACCEL_FRAMES, ACCEL_STEP = 120, -1 / 24       -- ins_101 的 i0 / f0
 
     local st = { dead = false }
-    local sub4 = nil
-
-    ---Sub4（t=15 的 ins_67(20,4,8)）：新的顶掉旧的。
     local function run_sub4(owner)
-        if sub4 then sub4.alive = false end
-        local tok = { alive = true }
-        sub4 = tok
-        task.New(owner, function()
-            task.Wait(15)
-            if not tok.alive or st.dead then return end
-            sg_bmove(owner, st, 20, 4, 8, BOX)
-        end)
+        -- 同步CALL暂停父context的time，Sub4到35返回后才创建发弹子context。
+        task.Wait(15)
+        if st.dead then return end
+        sg_bmove(owner,st,20,4,8,BOX)
+        task.Wait(20)
     end
-
-    ---Sub5 / Sub6：一波 = OCIRC_AIMED（带 VEC，减速）+ CIRC_AIMED（不带 VEC，匀速）。
     local function burst(owner)
         sg_shot(90, BULLET_STYLE, BULLET_COLOR, owner.x, owner.y,
                 RING_C1, RING_C2, RING_SP1, RING_SP2, 0, 0, true, 0x212,
@@ -8872,7 +8864,7 @@ do  -- 50 橙 非符（ecl12_a，组 13a 第 1 张）
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        sub4 = nil
+
     end
 
     function card:init()
@@ -8948,7 +8940,7 @@ do  -- 51 妖梦 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
     local LASER_W, LASER_SPEED = 16, 8
     local LASER_STARTUP, LASER_GROW, LASER_SUSTAIN, LASER_FADE = 1, 15, 40, 6
     local RING_ROUNDS, RING_GAP = 8, 5                  -- ins_5(0,-44,8)
-    local RING_STYLE = arrow_big_c                      -- 型 7（燕尾箭头）
+    local RING_STYLE = sg_visual(arrow_big_c,7)                      -- 型 7（燕尾箭头）
     local RING_COLOR = ex_color(6, 7)                   -- 型 7、色 6（蓝）
     local RING_SPEED, RING_STEP = 2, 0.1848
     local RING_ACCEL_FRAMES, RING_ACCEL_STEP = 60, 0.0333333351
@@ -8962,9 +8954,10 @@ do  -- 51 妖梦 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
 
     ---一根 ins_118(10)（Callback10）激光：满长、sustain 40、贴图行 13。
     local function spawn_laser(owner, x, y, th_rad)
-        spawn_ex_laser(owner, lasers, LASER_ROW, x, y, sg_deg(th_rad),
+        local l=spawn_ex_laser(owner, lasers, LASER_ROW, x, y, sg_deg(th_rad),
                 192, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, LASER_SUSTAIN,
-                LASER_FADE, 0, 0, 0, false, true)
+                LASER_FADE,0,0,0,false,true)
+        if l then OriginalBulletVisual.laser_enemy_source(l,95,'enm13',13) end
     end
 
     ---上半场一根 120°/192、下半场一根 30°/332.5536，第二根在挪位之后放。
@@ -8973,9 +8966,10 @@ do  -- 51 妖梦 人智剣「天女返し」（ecl13_a，组 14a 第 1 张）
         local wx = owner.x                              -- 这一半开头的 world.x
         spawn_laser(owner, wx, owner.y, th1)
         owner.x = target_x
-        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, sg_deg(th2),
+        local l=spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, sg_deg(th2),
                 332.553589, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, LASER_SUSTAIN,
-                LASER_FADE, 0, 0, 0, false, true)
+                LASER_FADE,0,0,0,false,true)
+        if l then OriginalBulletVisual.laser_enemy_source(l,95,'enm13',13) end
         if ring_tok then ring_tok.alive = false end
         local tok = { alive = true }
         ring_tok = tok
@@ -9133,9 +9127,9 @@ do  -- 52 橙 星符「飛び重ね鱗」（ecl12_b，组 13a 第 2 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            run_sub4(self) -- 原初次117位于回跳标签前，只执行一次。
             while not st.dead do
                 self.x, self.y = -224, field_y(64)          -- ins_63
-                run_sub4(self)                              -- ins_117(0,4)
                 sg_move(self, st, 224, field_y(192), 40, EASE_LIN)
                 task.Wait(60)                               -- t=60
                 if st.dead then return end
@@ -9244,9 +9238,10 @@ do  -- 53 妖梦 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
 
     ---一根 ins_118 回调激光：满长、宽 16、速 8、角速 0、follow 0。
     local function fire_laser(owner, our_angle, sustain)
-        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
+        local l=spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
                 LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, sustain,
-                LASER_FADE, 0, 0, 0, false, true)
+                LASER_FADE,0,0,0,false,true)
+        if l then OriginalBulletVisual.laser_enemy_source(l,95,'enm13',13) end
     end
 
     ---Sub5 / Sub6：每 2 帧 1 发、300 发；出膛点 = (colx, basey ∓ 448×rand)。
@@ -9270,7 +9265,7 @@ do  -- 53 妖梦 妄執剣「修羅の血」（ecl13_b，组 14a 第 2 张）
                 local y = basey + dir * 448 * ran:Float(0, 1)
                 sg_shot(89, DROP_STYLE, color, colx, y,
                         1, 1, DROP_SPEED_MIN + DROP_SPEED_STEP * ran:Float(0, 1), 0.3,
-                        sg_deg(ran:Float(-math.pi, math.pi)), math.deg(0.1848),
+                        math.deg(ran:Float(-math.pi,math.pi)),math.deg(0.18479957),
                         false, 0x202, nil)
                 task.Wait(BURST_PERIOD)
             end
@@ -9394,7 +9389,7 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
     local BOX = { -160, 96, 160, 256 }                  -- ins_75（本卡用不到）
     local CURTAIN_BURSTS, CURTAIN_PERIOD = 60, 2
     local CURTAIN_ACCEL_FRAMES, CURTAIN_ACCEL = 120, 0.00416666688
-    local BULLET_STYLE = ball_small                     -- 型 0：小玉
+    local BULLET_STYLE = sg_visual(ball_small,0)                     -- 型 0：小玉
     local BULLET_COLOR = ex_color(8, 0)                 -- 型 0、色 8
     local CURTAIN_FREEZE_BASE, CURTAIN_FREEZE_STEP = 180, 20
 
@@ -9470,6 +9465,7 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
                             1, 1, 0.5 * ran:Float(0, 1), 1.5,
                             math.deg(spec[3]), math.deg(0.0317333), false, 0x212, hook)
                     task.Wait(CURTAIN_PERIOD)
+                    if spec[1]=="x" and spec[2]==192 then ran:Float(0,0.5) end
                 end
                 local freeze = CURTAIN_FREEZE_BASE
                         - CURTAIN_FREEZE_STEP * photo_index(PHOTO_LIMIT)
@@ -9513,6 +9509,15 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
         self.x, self.y = BOSS_X, BOSS_START_Y
         st.dead = false
         task.New(self, function()
+            while not st.dead and photo_index(PHOTO_LIMIT) < SUB10_AT do
+                task.Wait(1)
+            end
+            if st.dead then return end
+            if sub3tok then sub3tok.alive = false; sub3tok = nil end
+            if sub4 then sub4.alive = false; sub4 = nil end
+            run_sub10(self)
+        end)
+        task.New(self, function()
             local tok = { alive = true }
             sub3tok = tok
             if not step(tok, ENTRY_WAIT) then return end
@@ -9529,15 +9534,6 @@ do  -- 54 橙 鬼神「鳴動持国天」（ecl12_c，组 13a 第 3 张）
         end)
         ---ins_115(0,3,10)：拍中本体第 3 张时主上下文被**立刻**重开成 Sub10，
         ---同时 16 个 slot 的子上下文全部释放（EnemyManagerUpdate.cpp:1293-1310）。
-        task.New(self, function()
-            while not st.dead and photo_index(PHOTO_LIMIT) < SUB10_AT do
-                task.Wait(1)
-            end
-            if st.dead then return end
-            if sub3tok then sub3tok.alive = false; sub3tok = nil end
-            if sub4 then sub4.alive = false; sub4 = nil end
-            run_sub10(self)
-        end)
     end
 
     function card:frame()
@@ -9602,13 +9598,11 @@ do  -- 55 妖梦 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 
     ---Sub4 / Sub5：流星雨。period = 1 / 2 帧；sound = 0x202 / 0x2。
     local function run_stars(owner, slot, period, flags)
         local tok = { alive = true }
-        if slot == 4 then
-            if sub4 then sub4.alive = false end
-            sub4 = tok
-        else
-            if sub5 then sub5.alive = false end
-            sub5 = tok
-        end
+        -- Sub4/5共占原生slot0，替换任何一个都必须释放旧context。
+        if sub4 then sub4.alive=false end
+        if sub5 then sub5.alive=false end
+        sub4,sub5=nil,nil
+        if slot==4 then sub4=tok else sub5=tok end
         local hook = sg_tr_hook({
             sg_rec(SG_VEC, 0, STAR_ACCEL_FRAMES, -1, STAR_ACCEL, -999.99),
         }, flags)
@@ -9636,7 +9630,7 @@ do  -- 55 妖梦 天星剣「涅槃寂静の如し」（ecl13_c，组 14a 第 3 
         task.New(owner, function()
             while tok.alive and not st.dead do
                 local px = 192 * ran:Float(-1, 1)
-                local py = 224 - 192 * ran:Float(0, 1)
+                local py=224-192*ran:Float(-1,1)
                 sg_shot(86, sg_style(7), 15, px, py,
                         1, 4, 4, 1.5, 0, math.deg(0.0317333), true, 0x2, nil)
                 task.Wait(1)
@@ -9798,7 +9792,6 @@ do  -- 56 橙 化猫「橙」（ecl12_d，组 13a 第 4 张）
                 sg_move(self, st, player.x, -224, 30, EASE_OUT)
                 task.Wait(30)                           -- t=462
                 call_sub4(self)
-                task.Wait(32)                           -- 下一轮 t=62
             end
         end)
     end
@@ -9902,8 +9895,8 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
                 local px = 192 * ran:Float(-1, 1)
                 local sp = dense and (1 + ran:Float(0, 1)) or (0.5 + 1.5 * ran:Float(0, 1))
                 for i = 1, 4 do
-                    sg_shot(89, sg_style(0), colors[i], px, sy,
-                            1, dense and 2 or 1, sp, 0.5, sg_deg(DIRS[i]),
+                    sg_shot(89, sg_style(3), colors[i], px, sy,
+                            1, dense and 2 or 1, sp,0.5,math.deg(DIRS[i]),
                             math.deg(0.1848), false, 0x202, hook)
                 end
                 task.Wait(dense and 1 or 2)
@@ -9925,9 +9918,10 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
     local function side_laser(owner, mx, off, our_angle, sustain)
         local wx, wy = owner.x, owner.y
         owner.x, owner.y = mx, wy
-        spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
+        local l=spawn_ex_laser(owner, lasers, LASER_ROW, owner.x, owner.y, our_angle,
                 LASER_LEN, LASER_W, LASER_SPEED, LASER_STARTUP, LASER_GROW, sustain,
-                LASER_FADE, 0, 0, 0, false, true)
+                LASER_FADE,0,0,0,false,true)
+        if l then OriginalBulletVisual.laser_enemy_source(l,95,'enm13',13) end
         owner.x, owner.y = wx + off, wy
     end
 
@@ -9988,6 +9982,17 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
         self.x, self.y = BOSS_X, BOSS_START_Y
         st.dead = false
         task.New(self, function()
+            while not st.dead and photo_index(PHOTO_LIMIT) < RESTART_AT do
+                task.Wait(1)
+            end
+            if st.dead then return end
+            if sub3tok then sub3tok.alive = false; sub3tok = nil end
+            if sub5 then sub5.alive = false; sub5 = nil end
+            local tok = { alive = true }
+            sub3tok = tok
+            run_sub3(self, tok)
+        end)
+        task.New(self, function()
             local tok = { alive = true }
             sub3tok = tok
             if not step(tok, ENTRY_WAIT) then return end
@@ -9999,17 +10004,6 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
         end)
         ---ins_115(0,4,3)：拍中本体第 4 张时主上下文被**立刻**重开成 Sub3（t=0），
         ---并把 16 个 slot 的子上下文全部释放（EnemyManagerUpdate.cpp:1293-1310）。
-        task.New(self, function()
-            while not st.dead and photo_index(PHOTO_LIMIT) < RESTART_AT do
-                task.Wait(1)
-            end
-            if st.dead then return end
-            if sub3tok then sub3tok.alive = false; sub3tok = nil end
-            if sub5 then sub5.alive = false; sub5 = nil end
-            local tok = { alive = true }
-            sub3tok = tok
-            run_sub3(self, tok)
-        end)
     end
 
     function card:frame()

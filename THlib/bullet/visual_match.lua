@@ -395,6 +395,13 @@ function V.laser_source(o,game,kind,color)
     o._native_laser_type,o._native_laser_color=kind,color
     o._native_photo_beam,o._native_photo_cap=body,cap
 end
+-- 文花帖ExIns10/14/17先生成type0/color0光柱，再用当前enemy ANM覆盖主VM。
+function V.laser_enemy_source(o,game,archive,id)
+    V.laser_source(o,game,0,0)
+    local body=A.new(game,archive,id)
+    body.anchor,body.anchor_x,body.anchor_y=nil,nil,nil
+    o._native_photo_beam=body
+end
 function V.step_laser_anm(o)
     local v=o._native_photo_beam
     if not v then return end
