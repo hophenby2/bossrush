@@ -9927,6 +9927,7 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
 
     ---t=310 → t=470（photoIndex ≥ 4 且 world.x < 0 时由 @812 的 ins_4(310,524) 从 t=60 跳进来）。
     local function tail310(self, tok)
+        if sub5 then sub5.alive=false;sub5=nil end -- 117(slot0,Sub4)先释放旧枪。
         PhotoNative.rate(self,0.5)
         if not step(tok, 40) then return false end            -- t=350
         PhotoNative.rate(self,1)
@@ -9940,6 +9941,7 @@ do  -- 57 妖梦 四生剣「衆生無情の響き」（ecl13_d，组 14a 第 4 
 
     ---t=150 → t=470：一轮 320 帧（t=470 的 ins_4(150,-836) 把时间轴拉回 t=150）。
     local function cyc150(self, tok)
+        if sub5 then sub5.alive=false;sub5=nil end -- 117(slot0,Sub4)先释放旧枪。
         PhotoNative.rate(self,0.5)
         if not step(tok, 40) then return false end            -- t=190
         PhotoNative.rate(self,1)
@@ -10114,7 +10116,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
             local mA = math.deg(st.mv_angle)
             for i = 1, #COLORS do
                 sg_shot(94, sg_style(3), COLORS[i], owner.x, owner.y,
-                        24, 1, 6, 0.5, mA + f2, mA - f2, false, 0x200)
+                        24, 1, 6, 0.5, mA-f2,mA+f2, false, 0x200)
             end
             task.Wait(1)
             if st.dead then return end
@@ -10122,7 +10124,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
             local hook = sg_tr_hook({ VEC }, SG_VEC)
             for i = 1, #COLORS do
                 sg_shot(94, sg_style(0), COLORS[i], owner.x, owner.y,
-                        12, 1, 3, 0.4, mA + far, mA - far, false, 0x210, hook)
+                        12, 1, 3, 0.4, mA-far,mA+far, false, 0x210, hook)
             end
         end)
     end
@@ -10155,7 +10157,7 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        st.dead = false
+        st.dead=false;tok={alive=true}
         st.mv_angle = 0
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
@@ -10171,6 +10173,8 @@ do  -- 40 红美铃 非符（ecl10_a，组 15a 第 1 张）
                     self.y + ENTRY_TIME * ENTRY_SPEED * sin(math.deg(a)),
                     ENTRY_TIME, 0)
             task.Wait(ENTRY_TIME)
+            self.x=max(BOX[1],min(BOX[3],self.x))
+            self.y=max(field_y(BOX[4]),min(field_y(BOX[2]),self.y))
             sub3(self)
         end)
     end
@@ -10249,7 +10253,7 @@ do  -- 41 日＆水符「ハイドロジェナスプロミネンス」（ecl11_a
                 if st.dead then return end
                 spawn_ex_laser(owner, lasers, WHEEL_ROW, owner.x, owner.y, -a,
                         WHEEL_LEN, WHEEL_W, 8, WHEEL_SEG[1], WHEEL_SEG[2],
-                        WHEEL_SEG[3], WHEEL_SEG[4], 0, 0, 0, true, false)
+                        WHEEL_SEG[3],WHEEL_SEG[4],0,0,0,true,false,5,6)
                 a = a + WHEEL_STEP
             end
         end)
@@ -10455,19 +10459,11 @@ do  -- 42 華符「彩光蓮華掌」（ecl10_b，红美铃，组 15a 第 2 张�
         self.x, self.y = BOSS_X, BOSS_START_Y
         st.dead = false
         sub5_tok = {}
-        local side = ran:Int(0, 1)                      -- ins_24(intV0, randU31, 2)
+        local side=ran:Int(0,1) -- 原随机取模，两支都在真实第100帧移动。
+        if side~=0 then self.x,self.y=256,field_y(-64) end
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
-            if side == 0 then
-                task.MoveTo(FALL[1], LAND_Y, ENTRY_TIME, 0)     -- t=100 → 130
-                task.Wait(100)                                  -- 到 t=230
-            else
-                self.x, self.y = 256, field_y(-64)              -- t=100 的 ins_63(256,-64)
-                task.Wait(100)                                  -- 到 t=200
-                task.MoveTo(FALL[2], LAND_Y, ENTRY_TIME, 0)     -- t=200 → 230
-                ---（两条路都是 t=230 亮卡名：A 是 100+30+100，B 是 100+100+30；
-                --- 原来 B 这里多等了一帧 ⇒ 会晚 1 帧起 Sub3。）
-            end
+            task.MoveTo(FALL[side+1],LAND_Y,ENTRY_TIME,0)
             if st.dead then return end
             sub3(self)
         end)
@@ -10529,13 +10525,13 @@ do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋
     local st = { dead = false }
 
     ---Sub4/Sub5：每帧一发的旋转流（th0 是 TH095 度）。
-    local function stream(owner, th0)
+    local function stream(owner, th0, delta)
         task.New(owner, function()
             local a = th0
             while not st.dead do
                 sg_shot(87, sg_style(18), 0, owner.x, owner.y,
                         1, 1, STREAM_SPEED, 1.5, a, 0, false, 0x202)
-                a = sg_norm(a - STREAM_TURN)
+                a=sg_norm(a+delta)
                 task.Wait(1)
             end
         end)
@@ -10564,8 +10560,8 @@ do  -- 43 水＆火符「フロギスティックレイン」（ecl11_b，帕秋
 
     local function sub3(owner)
         task.New(owner, function()
-            stream(owner, 180)                          -- floatV1 = −π（TH095 度 −180）
-            stream(owner, 0)
+            stream(owner,-180,-STREAM_TURN)                          -- floatV1 = −π（TH095 度 −180）
+            stream(owner,0,STREAM_TURN)
             while not st.dead do
                 fan(owner)                              -- t=0
                 for _ = 1, MOVE_AT do
@@ -10710,18 +10706,12 @@ do  -- 44 彩翔「飛花落葉」（ecl10_c，红美铃，组 15a 第 3 张）
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        st.dead = false
-        local side = ran:Int(0, 1)
+        st.dead=false;tok={alive=true}
+        local side=ran:Int(0,1) -- 原随机取模，两支都在真实第100帧移动。
+        if side~=0 then self.x,self.y=256,field_y(-64) end
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
-            if side == 0 then
-                task.MoveTo(FALL[1], LAND_Y, ENTRY_TIME, 0)
-                task.Wait(100)
-            else
-                self.x, self.y = 256, field_y(-64)
-                task.Wait(100)
-                task.MoveTo(FALL[2], LAND_Y, ENTRY_TIME, 0)
-            end
+            task.MoveTo(FALL[side+1],LAND_Y,ENTRY_TIME,0)
             if st.dead then return end
             sub3(self)
         end)
@@ -10778,7 +10768,7 @@ do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，
     local A_ACCS = { 1 / 15, 0.0466666669, 0.0233333334 }
     local A_SPIN, A_TILT = math.rad(3.6), math.rad(1.8)
     local A_STEP, A_GAP = math.deg(0.0317332596), 4
-    local B_WAIT, B_ACC = 120, 1 / 17.14                -- Sub5
+    local B_WAIT, B_ACC = 120, 0.05833333358168602                -- Sub5
     local B_SPIN, B_TILT = math.rad(0.9), math.rad(1.5)
     local B_STEP, B_GAP = math.deg(0.0209439509), 1
     local FLAGS = 0x8212                                -- FAST|VEC|SND|WAIT
@@ -10820,9 +10810,9 @@ do  -- 45 月＆木符「サテライトヒマワリ」（ecl11_c，帕秋莉，
                 local hook = sg_tr_hook({
                     sg_rec(SG_WAIT, 0, B_WAIT, -1, -1, -1),
                     sg_rec(SG_VEC, 0, 60, -1, B_ACC, -999.9),
-                }, FLAGS)
+                },0x8012)
                 sg_shot(87, sg_style(3), 10, owner.x + ox, owner.y + oy,
-                        2, 1, 0, 1, math.deg(tilt), B_STEP, false, FLAGS, hook)
+                        2, 1, 0, 1, math.deg(tilt), B_STEP, false,0x8012,hook)
                 off = off - B_SPIN                  -- ins_16(ef2, +0.9°)，同 Sub4
                 tilt = tilt + B_TILT
                 for _ = 1, B_GAP do
@@ -10930,12 +10920,24 @@ do  -- 46 彩華「虹色太極拳」（ecl10_d，红美铃，组 15a 第 4 张�
                     if st.dead then return end
                     task.Wait(1)
                 end
-                fv = sg_norm(fv - DRIFT - DRIFT_PER * photo_index(PHOTO_LIMIT))
+                fv=sg_norm(fv-sign*DRIFT-DRIFT_PER*photo_index(PHOTO_LIMIT))
                 round = round + 1
             end
         end)
     end
 
+    local function sub5(owner)
+        task.New(owner,function()
+            task.Wait(60)
+            while not st.dead do
+                local distance=Dist(owner.x,owner.y,player.x,player.y)
+                local speed=0.2+math.max(0,distance-64)/600
+                local angle=Angle(owner.x,owner.y,player.x,player.y)
+                sg_move(owner,st,owner.x+4*speed*cos(angle),owner.y+4*speed*sin(angle),4,0,BOX)
+                task.Wait(4)
+            end
+        end)
+    end
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
@@ -10949,6 +10951,7 @@ do  -- 46 彩華「虹色太極拳」（ecl10_d，红美铃，组 15a 第 4 张�
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             sub4(self)
+            sub5(self)
         end)
     end
 
@@ -11057,7 +11060,7 @@ do  -- 47 日＆月符「ロイヤルダイアモンドリング」（ecl11_d，
                         local a = -math.deg(self.dir)               -- 我们的度
                         spawn_ex_laser(self, lasers, LASER_ROW, self.x, self.y, a,
                                 LASER_LEN, LASER_W, 8, LASER_SEG[1], LASER_SEG[2],
-                                LASER_SEG[3], LASER_SEG[4], 0, 0, 0, false, true)
+                                LASER_SEG[3],LASER_SEG[4],0,0,0,false,true,3,13)
                         sg_shot(87, sg_style(1), 13, self.x, self.y,
                                 1, 1, REV_SPEED, 1.5, sg_norm(math.deg(self.dir) + 180),
                                 REV_STEP, false, FLAGS, hook)

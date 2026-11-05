@@ -57,7 +57,7 @@ function P.flags(o,c)
     elseif contains then o.th095_collidable=c[2]==81 end
     local skip=math.floor(c[3]/16)%2==1
     if c[2]==79 then o.th095_skip_offscreen=skip
-    elseif skip then o.th095_skip_offscreen=c[2]==81 end
+    elseif skip then o.th095_skip_offscreen=c[2]==80 end
     if o._bosssys then o.colli=o.th095_collidable end
 end
 function P.cull(o)
