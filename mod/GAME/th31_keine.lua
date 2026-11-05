@@ -97,8 +97,10 @@ return function(class, EX, laser)
                 if o.keine_angle>PI then o.keine_angle=o.keine_angle-2*PI
                 elseif o.keine_angle< -PI then o.keine_angle=o.keine_angle+2*PI end
                 o.keine_radius=o.keine_radius+o.keine_radial
-                o.x=o.keine_x+math.cos(o.keine_angle)*o.keine_radius
-                o.y=o.keine_y+math.sin(o.keine_angle)*o.keine_radius
+                local x=o.keine_x+math.cos(o.keine_angle)*o.keine_radius
+                local y=o.keine_y+math.sin(o.keine_angle)*o.keine_radius
+                if o._original_actor then o._original_actor.vm.rotation[3]=-math.atan2(y-o.y,x-o.x) end
+                o.x,o.y=x,y
                 o.keine_t=t+1
             end,
         })

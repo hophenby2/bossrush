@@ -19,15 +19,15 @@ local profiles = {
     ["ecldata8:57"]={spawns={{94,1000,0,0}},events={{0,80,8}},attached=false},
     ["ecldata8:54"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
     ["ecldata8:63"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
-    ["ecldata8sp:50"]={spawns={{90,13500,96,128},{90,13500,288,128}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
-    ["ecldata8sp:55"]={spawns={{91,13500,false,0}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
-    ["ecldata8sp:58"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0},{1,81,3}},attached=true},
-    ["ecldata8sp:63"]={spawns={{92,13500,-96,-16},{92,13500,96,-16},{92,13500,-64,32},{92,13500,64,32}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
-    ["ecldata8sp:68"]={spawns={{91,13500,false,false},{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{1,81,3},{61,82,0}},attached=true},
-    ["ecldata8sp:73"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{1,81,3},{1,82,0}},attached=true},
-    ["ecldata8sp:81"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,80,16},{0,82,0},{120,80,8}},attached=true},
-    ["ecldata8sp:93"]={spawns={{91,13500,88,-32},{91,13500,-88,-32}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
-    ["ecldata8sp:98"]={spawns={{90,13500,0,448},{90,13500,384,0}},events={{0,77,24,24},{0,80,16}},attached=true},
+    ["ecldata8:96"]={spawns={{90,13500,96,128},{90,13500,288,128}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
+    ["ecldata8:101"]={spawns={{91,13500,false,0}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
+    ["ecldata8:104"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0},{1,81,3}},attached=true},
+    ["ecldata8:109"]={spawns={{92,13500,-96,-16},{92,13500,96,-16},{92,13500,-64,32},{92,13500,64,32}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
+    ["ecldata8:114"]={spawns={{91,13500,false,false},{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{1,81,3},{61,82,0}},attached=true},
+    ["ecldata8:119"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{1,81,3},{1,82,0}},attached=true},
+    ["ecldata8:127"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,80,16},{0,82,0},{120,80,8}},attached=true},
+    ["ecldata8:139"]={variants={[94]="ecldata8:140",[95]="ecldata8:141"},spawns={{91,13500,88,-32},{91,13500,-88,-32}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
+    ["ecldata8:144"]={spawns={{90,13500,0,448},{90,13500,384,0}},events={{0,77,24,24},{0,80,16}},attached=true},
     ["ecldata7:72"]={spawns={{91,4000,0,0},{91,2100,0,0},{91,1000,0,0}},events={{0,77,24,24},{0,80,16},{0,80,3},{0,82,0},{120,81,3}},attached=true,life=function(o,a) return ({4000,2100,1000,1000,1000,2100,4000})[a[1]+1] end},
     ["ecldata7:68"]={spawns={{91,1500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0}},attached=true},
     ["ecldata7:23"]={spawns={{91,100,0,0}},events={{0,77,24,24},{0,80,16},{240,81,16}},attached=true},
@@ -77,12 +77,13 @@ local profiles = {
     ["ecldata1:36"]={spawns={{91,200,0,0},{91,160,0,0}},events={{0,77,24,24},{0,79,16},{0,160,10}},attached=true,life=function(o,a) return a[4]==120 and 160 or 200 end},
     ["ecldata1:43"]={spawns={},events={{0,77,24,24},{0,79,16},{0,160,10}},attached=true,life=function(o,a) return math.abs(math.cos(a[3]))>0.5 and 10 or 60 end},
     ["ecldata1:46"]={spawns={{91,20,0,0}},events={{0,77,24,24},{0,79,16},{0,160,60}},attached=true},
-    ["ecldata8sp:95"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0},{0,80,16},{120,80,8}},attached=true},
+    ["ecldata8:141"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0},{0,80,16},{120,80,8}},attached=true},
 }
 
 -- 形态只推进自机的7帧过渡，不暂停敌机ECL或重置发弹计时。
 return function()
     local M={profiles=profiles}
+    profiles["ecldata8:140"]=profiles["ecldata8:139"]
     local stage_sources=dofile('mod/GAME/th31_stage_sources.lua')
     local phase_events=dofile('mod/GAME/th31_phase_events.lua')
     local function bit(v,b) return math.floor(v/b)%2==1 end
@@ -450,13 +451,14 @@ return function()
             if not IsValid(o) then return end
             if o.status=='del' or o.status=='kill' then M.discard(o);return end
             local profile=cfg
-            -- 大凤凰在第120帧变成隐藏枪架；另两种凤凰始终使用普通使魔交互。
-            if key=='ecldata8sp:93' and args[1]==95 then profile=profiles['ecldata8sp:95'] end
-            o.th08_source,o.th08_profile=key,profile
+            -- 同一个Lua类的不同ECL变体必须连同显示源一起切换，不能只换交互表。
+            local source_key=cfg.variants and cfg.variants[args[1]] or key
+            if source_key~=key then profile=assert(profiles[source_key]) end
+            o.th08_source,o.th08_profile=source_key,profile
             local owner=attach(o,parent,profile.attached)
             if OriginalStageVisual and not o._original_explicit then
                 -- 变量选择的ANM由对象构造函数按生成参数设置；固定事件不能清掉它。
-                OriginalStageVisual.bind_source(o,8,key,o._original_actor~=nil)
+                OriginalStageVisual.bind_source(o,8,source_key,o._original_actor~=nil)
             end
             if profile.attached then o._original_familiar_collision=false end
             local n=1

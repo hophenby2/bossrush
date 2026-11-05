@@ -12117,6 +12117,9 @@ familiar = class.th08_combat.actor("ecldata3:48", {
             self.fam_mv_t = self.fam_mv_t - 1
             if self.fam_mv_t <= 0 then self.fam_orbit = false end
         end
+        if self._original_actor then
+            self._original_actor.vm.rotation[3]=-math.atan2(self.fam_vy,self.fam_vx)
+        end
         self.x = self.x + self.fam_vx
         self.y = self.y + self.fam_vy
         self.fam_t = t + 1
@@ -12796,8 +12799,10 @@ familiar = class.th08_combat.actor("ecldata3:64", {
         ---UpdateMovement 的 ORBIT 分支（EnemyManager.cpp:36-59）。
         self.fam_ang = wrap_pi(self.fam_ang + self.fam_angvel)
         self.fam_rad = self.fam_rad + self.fam_radvel
-        self.x = self.fam_bx + math.cos(self.fam_ang) * self.fam_rad
-        self.y = self.fam_by + math.sin(self.fam_ang) * self.fam_rad
+        local x=self.fam_bx+math.cos(self.fam_ang)*self.fam_rad
+        local y=self.fam_by+math.sin(self.fam_ang)*self.fam_rad
+        if self._original_actor then self._original_actor.vm.rotation[3]=-math.atan2(y-self.y,x-self.x) end
+        self.x,self.y=x,y
         self.fam_t = t + 1
     end,
     ---Sub65 的一拍：POINT_ANGLE（从自己指向圆心）+ `ins_97` 的 2 方向扇 ×2 速度。
@@ -13171,8 +13176,10 @@ familiar = class.th08_combat.actor("ecldata3:69", {
         ---UpdateMovement 的 ORBIT 分支（EnemyManager.cpp:36-59）。
         self.s3e_ang = add_norm(self.s3e_ang + self.s3e_omega)
         self.s3e_rad = self.s3e_rad + self.s3e_radvel
-        self.x = self.s3e_cx + math.cos(self.s3e_ang) * self.s3e_rad
-        self.y = self.s3e_cy + math.sin(self.s3e_ang) * self.s3e_rad
+        local x=self.s3e_cx+math.cos(self.s3e_ang)*self.s3e_rad
+        local y=self.s3e_cy+math.sin(self.s3e_ang)*self.s3e_rad
+        if self._original_actor then self._original_actor.vm.rotation[3]=-math.atan2(y-self.y,x-self.x) end
+        self.x,self.y=x,y
         self.rot = -self.s3e_ang * RAD      -- 观感近似：朝向自己所在的方向
         self.s3e_t = t + 1
     end,
@@ -14142,7 +14149,7 @@ local FAM_GROUPS = {
 
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
 ---（跟本文件其它卡的使魔一致）。
-local familiar = class.th08_combat.actor("ecldata8sp:50", {
+local familiar = class.th08_combat.actor("ecldata8:96", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, cx, cy, ang0, omega)
         self.x, self.y = cx, cy
@@ -14216,7 +14223,7 @@ local function card_frame(owner)
         ---发射源自己的描述符，两条枪共用同一份 —— 原件里也是同一个敌人）。
         EX.set_record(owner, 0, EX.K.AIMED, 0, G0_TURN_FRAMES, 1, 0, G0_TURN_SPEED)
         EX.set_record(owner, 1, EX.K.SPRITE, 0, G0_SPR_TYPE, G0_SPR_COLOR, -1, -1)
-        owner.lw194_a0 = ran:Float(-PI, PI)     -- Sub48 #0：lf0 = RANDOM_ANGLE
+        owner.lw194_a0 = -ran:Float(-PI, PI)     -- Sub48 #0：lf0 = RANDOM_ANGLE
         owner.lw194_a1 = G1_ANGLE0              -- Sub49 #0：lf0 = π/2（TH08）
         volley0(owner)
         volley1(owner)
@@ -14424,7 +14431,7 @@ end
 ---Sub53 #9..#11 的一发：位置 = 自己 + polar(RANDOM_ANGLE, lf1)、方向 = lf0、速度 0。
 ---RANDOM_ANGLE 每取一次都重摇（EclOperandsFloat.cpp:56 = 均匀分布在 [−π, π)）。
 local function sat_fire(self)
-    local th = ran:Float(-PI, PI)
+    local th = -ran:Float(-PI, PI)
     if not class.th08_combat.can_shoot(self) then return end
     EX.shoot(self, self.x + math.cos(th) * self.sat_r,
             self.y + math.sin(th) * self.sat_r, {
@@ -14506,7 +14513,7 @@ local function call_52(owner, lm0)
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = S52_RING_TYPE, color = EX.color(S52_COLOR),
         count1 = S52_RING_N, count2 = 1, speed1 = S52_RING_SPEED, speed2 = 0.5,
-        angle = ran:Float(-PI, PI), step = 0, flags = S52_RING_FLAGS,
+        angle = -ran:Float(-PI, PI), step = 0, flags = S52_RING_FLAGS,
     })
 end
 
@@ -14582,11 +14589,25 @@ end
 ---Sub51 的节拍（每项 = {ECL 时间, 这一帧要做的事}）。
 ---★ 时间从 0 起算（= Sub51 的 t=0，卡 195 开始那一帧），所以第一轮的第一个 CALL 在
 ---  ctx.t = 190 那一帧；#49 的 JUMP 170 落在 170（**不是 0**）—— 之后每轮从 #21 起跑。
+local function special(owner)
+    OriginalStageVisual.source_event(owner,8,'ecldata8',{0,62})
+end
 local PROG = {
+    { 110, function(owner)
+        OriginalStageVisual.source_event(owner,8,'ecldata8',{0,61,0,13})
+        OriginalStageVisual.source_event(owner,8,'ecldata8',{0,61,1,14})
+    end },
+    { 170, function(owner)
+        -- 这次随机数虽随后被自机角覆盖，原作仍消耗；每轮回跳都会执行。
+        owner.lw195_lf1=ran:Float(-1,1)*16
+        special(owner)
+    end },
     { 190, function(owner) call_52(owner, aim_to_player(owner.x, owner.y)) end },
     { 250, function(owner) begin_wander(owner) end },
+    { 310, special },
     { 330, function(owner) call_52(owner, aim_to_player(owner.x, owner.y)) end },
     { 390, function(owner) begin_wander(owner) end },
+    { 440, special },
     { 450, function(owner) call_52(owner, aim_to_player(owner.x, owner.y) + HALF_PI) end },
     { 460, function(owner) call_52(owner, aim_to_player(owner.x, owner.y) + 1.1780972) end },
     { 470, function(owner) call_52(owner, aim_to_player(owner.x, owner.y) + QUARTER_PI) end },
@@ -14633,6 +14654,7 @@ end
 local function card_init(owner)
     EX.clear_records(owner)
     EX.pool_clear()
+    owner.th08_manual_main_anm=true
     owner.lw195_ctx = { t = 0, freeze = 0, li7 = FREEZE_MAX, i = 1 }
     owner.lw195_sats = {}
     owner.lw195_move = nil
@@ -14656,6 +14678,8 @@ end
 local function card_del(owner)
     ---★ 帧计数器要清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw195_ctx = nil
+    owner.th08_manual_main_anm=nil
+    owner.lw195_lf1=nil
     owner.lw195_move = nil
     if owner.lw195_sats then
         for i = #owner.lw195_sats, 1, -1 do
@@ -14872,7 +14896,7 @@ local function fam_fire(self)
 end
 
 ---使魔（Sub55）。占位贴图 "servant"（原件是 anm 57 的使魔立绘，最后统一换素材）。
-local familiar = class.th08_combat.actor("ecldata8sp:55", {
+local familiar = class.th08_combat.actor("ecldata8:101", {
     init = function(self, x, y, dir)
         self.x, self.y = x, y
         self.fam_dir = dir              -- 飞行方向（我们坐标 = Sub55 #6 的 lf0 取反）
@@ -15103,7 +15127,7 @@ local FG_VEC_ACCEL = 0.025              -- 槽 1 的 float0（每帧速度增量
 
 ---Sub60 / Sub61（BOSS 的两把枪）。
 local FAN_TYPE, FAN_COLOR = 2, 2
-local FAN_COUNT, FAN_SPEED, FAN_STEP, FAN_FLAGS = 85, 1.6, 0.06544985, 512
+local FAN_COUNT, FAN_SPEED, FAN_STEP, FAN_FLAGS = 85, 1.6, -0.06544985, 512
 local FAN_FIRST, FAN_PERIOD = 180, 60
 local AIM_SPEED, AIM_FLAGS = 0.8, 514
 local AIM_FIRST, AIM_PERIOD = 180, 20
@@ -15166,7 +15190,7 @@ local function fam_fire(self)
 end
 
 ---使魔（Sub58）。占位贴图 "servant"。
-local familiar = class.th08_combat.actor("ecldata8sp:58", {
+local familiar = class.th08_combat.actor("ecldata8:104", {
     init = function(self, x, y, dir, turn, aim, color)
         self.x, self.y = x, y
         self.fam_dir  = dir             -- 我们坐标（= TH08 lf0 取反）
@@ -15466,6 +15490,7 @@ local LG_PAUSE_STEP   = 10
 local laser198 = Class(laser, {
     init = function(self, x, y, ang)
         self._native_laser_phase = { "l198_state", "l198_t", 20, 16 }
+        self._native_laser_flags=4
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）：
         ---第一位在 THlib 里就是**颜色组**；rot 是**角度制**的世界角（AGENTS.md C1）。
         ---l1/l2/l3 = 尾/身/头三段长度 —— 这里只有一段 512 的身部（起点 = 光柱原点）。
@@ -15512,7 +15537,7 @@ local laser198 = Class(laser, {
             end
         end
         self.l198_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.l198_state,t,LG_WIDTH,LG_HITBOX_DELAY,0,nil,native_entered)
+        OriginalBulletVisual.native_laser(self,self.l198_state,t,LG_WIDTH,LG_HITBOX_DELAY,4,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -15526,15 +15551,16 @@ local function fam_fire(self)
         op = 96, type = FG_TYPE, color = EX.color(FG_COLOR),
         count1 = FG_COUNT, count2 = 1, speed1 = FG_SPEED, speed2 = 0.5,
         angle = -self.fam_lf1,          -- #3 的角度操作数（TH08）→ 我们取反
-        step = FG_STEP, flags = FG_FLAGS,
+        step = -FG_STEP, flags = FG_FLAGS,
     })
     self.fam_lf0 = add_norm(self.fam_lf0 + FG_STEP)             -- #4/#5
 end
 
 ---使魔（Sub63）。占位贴图 "servant"。整卡不动，只当枪架子。
-local familiar = class.th08_combat.actor("ecldata8sp:63", {
-    init = function(self, x, y)
+local familiar = class.th08_combat.actor("ecldata8:109", {
+    init = function(self, x, y, dx, dy, owner)
         self.x, self.y = x, y
+        self.fam_dx,self.fam_dy,self.fam_owner=dx,dy,owner
         self.fam_frame = 1              -- 使魔自己的帧计数（t=1 那一帧 = 出生帧）
         self.fam_lf0 = ran:Float(-PI, PI)   -- Sub64 #0 的 RANDOM_ANGLE
         self.fam_lf1 = 0
@@ -15553,6 +15579,9 @@ local familiar = class.th08_combat.actor("ecldata8sp:63", {
         if (self.fam_frame - 1) % FG_PERIOD == 0 then
             fam_fire(self)
         end
+        if self.fam_owner and IsValid(self.fam_owner) then
+            self.x,self.y=self.fam_owner.x+self.fam_dx,self.fam_owner.y+self.fam_dy
+        end
         self.fam_frame = self.fam_frame + 1
     end,
 })
@@ -15565,12 +15594,17 @@ local function step_aim_gun(owner)
     local c = owner.lw198_ctx
     if not c.gun_on then return end
     if c.sg_t >= SG_FIRST and (c.sg_t - SG_FIRST) % SG_PERIOD == 0 then
+        if c.sg_t==SG_FIRST then c.sg_lf0=ran:Float(-PI,PI) end
+        c.sg_lf1=math.sin(c.sg_lf0)*FG_SWING
         EX.shoot(owner, owner.x, owner.y, {
             op = 96, type = SG_TYPE, color = EX.color(SG_COLOR),
             count1 = SG_COUNT, count2 = 1, speed1 = SG_SPEED, speed2 = 0.5,
             angle = 0,                  -- ★ 原作的角度操作数是常数 0（lf1 算了没用上）
-            step = SG_STEP, flags = SG_FLAGS,
+            step = -SG_STEP, flags = SG_FLAGS,
         })
+    end
+    if c.sg_t>=SG_FIRST and (c.sg_t-SG_FIRST)%SG_PERIOD==0 then
+        c.sg_lf0=add_norm(c.sg_lf0+FG_STEP)
     end
     c.sg_t = c.sg_t + 1
 end
@@ -15652,7 +15686,8 @@ local function card_frame(owner)
         c.spawned = true
         for i = 1, 4 do
             owner.lw198_fams[#owner.lw198_fams + 1] =
-                    New(familiar, owner.x + FAM_OFFS[i][1], owner.y + FAM_OFFS[i][2])
+                    New(familiar, owner.x + FAM_OFFS[i][1], owner.y + FAM_OFFS[i][2],
+                        FAM_OFFS[i][1],FAM_OFFS[i][2],owner)
         end
         c.gun_on, c.sg_t = true, 0      -- #24/#25：两把枪的子 context，当帧建、当帧跑 t=0
     end
@@ -15817,7 +15852,7 @@ local GUN_FLAGS     = 131600    -- 0x20210 = WAIT | PLAY_SPAWN_SOUND | ACCELERAT
 ---  `cw_t` 从 **1** 起、`frame` 第一次进来处理的就是 t=1（挂钩 + 起步 + 第一轮），
 ---  时间轴与原件逐帧对齐。
 ---  ★ 旧实现从 0 起（只跑一遍 RunEcl）⇒ 起步、挂钩、t=61 的加速、每发弹全部晚一帧。
-local crow = class.th08_combat.actor("ecldata8sp:68", {
+local crow = class.th08_combat.actor("ecldata8:114", {
     init = function(self, x, y, dir, color)
         self.x, self.y = x, y
         self.cw_dir = dir               -- 飞行方向（我们坐标 = TH08 的 lf1 取反）
@@ -15847,6 +15882,7 @@ local crow = class.th08_combat.actor("ecldata8sp:68", {
         ---① 乌鸦的 ECL（Sub68）。
         if t == 1 then
             self.cw_sp = CROW_SPEED          -- #7 `ins_65(lf1, 0.5)`
+            self.cw_lf0=ran:Float(-PI,PI) -- Sub115初始化即便不参与发弹，仍消费随机角。
             self.cw_gun = true               -- #8 `ins_135(0, 69)`
         elseif t == CROW_ACCEL_AT then
             self.cw_acc = CROW_ACCEL         -- #9 `ins_71(0.1166667)`
@@ -16103,6 +16139,10 @@ local PHX_FAST_UPTO = 3                 -- k = 0..2 用快角速度（t=20 那�
 ---  bulletSpawnDescriptor（DispatchShotInstruction 才把它整块拷进弹里）。两把枪相位差 6 帧、
 ---  每次都是「先写记录、再出弹」，所以共用一份不会串味。
 local function gun_fire(self, which)
+    if not self.px_seeded then self.px_seeded={} end
+    if not self.px_seeded[which] then
+        self.px_seeded[which]=ran:Float(-PI,PI) -- 每把枪只在初次进入时读取；随后回跳跳过。
+    end
     local mag = ran:Float(-1, 1) * GUN_MAG_K + GUN_MAG_B     -- #0..#2 算出的 lf0
     local rnd = ran:Float(-PI, PI) / 50                      -- #3 的 RANDOM_ANGLE / 50
     ---which = 0 是 Sub74（发射角 −π/2、槽 1 方向 RANDOM/50 + π/2）、
@@ -16127,7 +16167,7 @@ local function gun_fire(self, which)
 end
 
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
-local phoenix = class.th08_combat.actor("ecldata8sp:73", {
+local phoenix = class.th08_combat.actor("ecldata8:119", {
     init = function(self, x, y, dir, av)
         self.x, self.y = x, y
         self.px_dir = dir               -- 继承来的 lf1（已取反）；t=1 才生效
@@ -16174,7 +16214,11 @@ local phoenix = class.th08_combat.actor("ecldata8sp:73", {
         self.px_dir = add_norm(self.px_dir + self.px_av)
         self.x = self.x + math.cos(self.px_dir) * self.px_sp
         self.y = self.y + math.sin(self.px_dir) * self.px_sp
-        self.rot = -self.px_dir * RAD       -- 观感近似：`SET_ANM_ROTATION_ENABLED 1` 朝自己飞的方向
+        if self._original_actor then
+            -- ins145直接覆盖主ANM的Z角；主脚本53的type=0不能靠o.rot跟随。
+            self._original_actor.vm.rotation[3]=-self.px_dir
+        end
+        self.rot = self.px_dir * RAD       -- 观感近似：`SET_ANM_ROTATION_ENABLED 1` 朝自己飞的方向
         self.px_t = t + 1
         ---④ 「出场后再出屏就回收」（EnemyManagerUpdate.cpp:228-256）。
         if not self.px_seen then
@@ -16457,7 +16501,7 @@ end
 ---Sub81（使魔）。★ 时间轴：子机在**出生那一帧**就跑第一次 RunEcl（= t=0），
 ---所以 fm_t 从 0 起、frame 第一次进来处理的就是 t=0（那一帧只有主 ANM / 判定 / 形变与两条
 ---装插值槽，全是观感 + 下面每帧跑的插值本身）—— 与原件逐帧对齐。
-local familiar = class.th08_combat.actor("ecldata8sp:81", {
+local familiar = class.th08_combat.actor("ecldata8:127", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, dir)
         self.x, self.y = x, y
@@ -16489,6 +16533,9 @@ local familiar = class.th08_combat.actor("ecldata8sp:81", {
         local t = self.fm_t
         ---① 使魔自己的 ECL（Sub81）。t=120 那一批必须**按顺序**来：先改 lf0 / lf1，
         ---   再写 11 条记录（记录里存的就是改过之后的 lf0 / lf1），最后出大玉。
+        if t==FAM_SHOOT then OriginalStageVisual.presentation.sound.play(8,15,self.x)
+        elseif t==140 then OriginalStageVisual.presentation.sound.play(8,7,self.x)
+        elseif t==FAM_END then OriginalStageVisual.presentation.sound.play(8,8,self.x) end
         if t == FAM_SHOOT then
             build_records(self)
             self.fm_shot = true
@@ -16511,7 +16558,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:81", {
         ---④ RunEcl 末尾的插值回调（RunEcl.cpp:115-175）：timer 每帧 +1、到 duration 封顶，
         ---   progress = timer / duration、缓动 0 = 线性；**装上那一帧就已经跑过一次**
         ---   ⇒ 第 t 帧用的是 progress = (t + 1) / 120。
-        if t <= FAM_SHOOT then
+        if t < FAM_SHOOT then
             local u = (t + 1) / FAM_MOVE
             if u > 1 then u = 1 end
             local w0 = (1 - u) * (1 - u) * (2 * u + 1)
@@ -16531,7 +16578,7 @@ local function call_84(owner)
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = RING_TYPE, color = EX.color(RING_COLOR),
         count1 = RING_COUNT, count2 = 1, speed1 = RING_SPEED, speed2 = RING_SPEED2,
-        angle = ran:Float(-PI, PI), step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = -ran:Float(-PI, PI), step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
     ---先清一遍已经自己 TERMINATE（或卡结束时被删）的使魔，免得登记表无限长。
     local list = owner.lw201_fams
@@ -16549,7 +16596,7 @@ local function sub82_shot(owner, c)
     EX.shoot(owner, owner.x, owner.y, {
         op = 97, type = FAN_TYPE, color = EX.color(FAN_COLOR),
         count1 = FAN_COUNT, count2 = 1, speed1 = FAN_SPEED, speed2 = FAN_SPEED2,
-        angle = c.lf0, step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = c.lf0, step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
 end
 
@@ -16558,7 +16605,7 @@ local function sub83_shot(owner)
     EX.shoot(owner, owner.x, owner.y, {
         op = 99, type = BIG_TYPE, color = EX.color(BIG_COLOR),
         count1 = BIG_COUNT, count2 = 1, speed1 = BIG_SPEED, speed2 = BIG_SPEED2,
-        angle = ran:Float(-PI, PI), step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = -ran:Float(-PI, PI), step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
 end
 
@@ -16964,7 +17011,7 @@ local build_records
 ---  `dir` 是**我们坐标**下的朝向：93/94 用不到（开火角是 RANDOM 或自机狙），
 ---  95 是继承来的 lf7（大玉就沿这个方向飞）。
 ---  `lf6` 是继承来的「大玉初速」（Sub90 每轮 +0.1、Sub91 每轮 +0.1）。
-local familiar = class.th08_combat.actor("ecldata8sp:93", {
+local familiar = class.th08_combat.actor("ecldata8:139", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, kind, x, y, dir, lf6)
         self.x, self.y = x, y
@@ -16983,7 +17030,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:93", {
         self.colli = false                  -- 原作交互在构造结束后统一设置
         self.navi = false
         self.bound = false                  -- 出屏不回收：它只在自己 TERMINATE 时消失
-        self.rot = -self.fam_dir * RAD      -- 观感：朝自己飞的方向（rot 是角度制）
+        self.rot = a * RAD      -- 观感：朝自己飞的方向（rot 是角度制）
         self._blend = ""
         self._a = 255
         EX.clear_records(self)
@@ -17015,7 +17062,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:93", {
                         op = 99, type = F93_TYPE, color = EX.color(F93_COLOR),
                         count1 = F93_N1, count2 = F93_N2,
                         speed1 = F93_SPD1, speed2 = F93_SPD2,
-                        angle = ran:Float(-PI, PI), step = F93_STEP, flags = F_SMALL_FLAGS,
+                        angle = -ran:Float(-PI, PI), step = -F93_STEP, flags = F_SMALL_FLAGS,
                     })
                 else
                     EX.shoot(self, self.x, self.y, {
@@ -17038,7 +17085,7 @@ local familiar = class.th08_combat.actor("ecldata8sp:93", {
 ---`SET_MAIN_ANM 13`、`SET_EXTRA_ANM_SCRIPT_ALT 1 14`，之后每帧 `selfX/Y = plX/Y`，
 ---并被 `SET_MOVEMENT_BOUNDS(96, 0, 288, 448)` 夹住（⇒ 我们 x∈[−96,96]、y 几乎不夹）。
 ---本体使用原作 stg8enm.anm 的脚本 13，附加动画使用脚本 14。
-local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:92', {
+local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8:138', {
     init = function(self, x, y)
         self.x, self.y = player.x, player.y -- 出生ECL(0)就写入自机坐标，夹框留给正常更新。
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
@@ -17065,7 +17112,7 @@ local phoenix_self = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:92',
 ---  里均匀抽」（BulletManager.cpp:146-149）⇒ 子波在 lf7 ± 72° 的扇形里乱射。
 build_records = function(self)
     EX.clear_records(self)
-    local a0, a1 = self.fam_dir - CW_HALF, self.fam_dir + CW_HALF
+    local a0, a1 = self.fam_dir + CW_HALF, self.fam_dir - CW_HALF
     EX.set_record(self, 0, EX.K.WAIT, 0, 15, -1, -1, -1)
     EX.set_record(self, 1, EX.K.CHILD, 0, CHILD_1, 4, CW_CHILD1, self.fam_lf6)
     EX.set_record(self, 2, EX.K.CHILD2, 0, 1, L12_FLAGS, a0, a1)
@@ -17149,7 +17196,7 @@ local SUB90 = {
     [0] = { t = 0, act = function(o, c) c.xi0 = 120 end },
     [1] = { t = 0, act = function(o, c) c.lf6 = 2.5 end },
     [2] = { t = 0, act = function(o, c) c.li0 = 120 end },
-    [3] = { t = 0, act = function(o, c) end },                 -- 音效 5（跳过）
+    [3] = { t = 0, act = function(o, c) OriginalStageVisual.presentation.sound.play(8,5,o.x) end },
     [4] = { t = 0, act = function(o, c) c.scf0 = 88 end },
     [5] = { t = 0, act = function(o, c) call96(o, c) end },     -- CALL 96
     [6] = { t = 0, act = function(o, c) c.scf0 = -88 end },
@@ -17175,7 +17222,7 @@ local SUB90 = {
 local SUB91 = {
     [0] = { t = 0, act = function(o, c) c.xi0 = 12 end },
     [1] = { t = 0, act = function(o, c) c.lf6 = 1.5 end },
-    [2] = { t = 0, act = function(o, c) end },                 -- 音效 5（跳过）
+    [2] = { t = 0, act = function(o, c) OriginalStageVisual.presentation.sound.play(8,5,o.x) end },
     [3] = { t = 0, act = function(o, c) c.scf0 = 88 end },
     [4] = { t = 0, act = function(o, c) call96(o, c) end },     -- CALL 96
     [5] = { t = 0, act = function(o, c) c.scf0 = -88 end },
@@ -17202,6 +17249,7 @@ end
 ---根 context 的事件表：key = 真实帧号（= ECL 的 time + 31，见头注）。
 local ROOT = {
     [T_ATTACH] = function(o)
+        OriginalStageVisual.presentation.sound.play(8,15,o.x)
         ---`SPAWN_ENEMY_RELATIVE(sub92, 0, 0, 0, life 10000, …)`：偏移 (0,0) ⇒ 生在 BOSS 身上。
         o.lw202_self = New(phoenix_self, o.x, o.y)
         o.lw202_ctx.pin = true              -- `SET_CHILD_ECL(3, 86)`：之后交给 3 号子 context
@@ -17209,11 +17257,13 @@ local ROOT = {
     end,
     [T_FREE_A] = function(o) o.lw202_ctx.c0 = nil end,       -- `SET_CHILD_ECL(0, −1)`
     [T_SUB89] = function(o)
+        OriginalStageVisual.presentation.sound.play(8,15,o.x)
         EX.pool_cancel()                    -- `REMOVE_ALL_BULLETS`
         o.lw202_ctx.c0 = child_new(89)
     end,
     [T_FREE_B] = function(o) o.lw202_ctx.c0 = nil end,
     [T_SUB90] = function(o)
+        OriginalStageVisual.presentation.sound.play(8,15,o.x)
         EX.pool_cancel()
         o.lw202_ctx.c0 = child_new(90)
     end,
@@ -17531,7 +17581,7 @@ local S101 = {
         EX.shoot(o, o.x, o.y, {
             op = 99, type = S101_TYPE, color = EX.color(S101_COLOR),
             count1 = S101_N1, count2 = 1, speed1 = c.lf0, speed2 = S101_SPD2,
-            angle = ran:Float(-PI, PI), step = 0, flags = S101_FLAGS,
+            angle = -ran:Float(-PI, PI), step = 0, flags = S101_FLAGS,
         })
     end },
     [5] = { t = S101_T + S101_PERIOD, act = function() return 2, S101_T end },  -- `JUMP 900 -> #2`
@@ -17559,7 +17609,7 @@ local S102 = {
 }
 
 ---人形（Sub98 + 两把枪）。位置由两条 MOVE_TO 腿（见 S98）推着走。
-local familiar = class.th08_combat.actor("ecldata8sp:98", {
+local familiar = class.th08_combat.actor("ecldata8:144", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, spec)
         self.x, self.y = scr_x(spec.x), scr_y(spec.y)
@@ -17767,7 +17817,7 @@ local function volley_next(o, s)
     fire_wave(o, s, s.v.ang + s.k * s.v.da)
     local d = s.k < 8 and -A_STEP or A_STEP
     s.a1, s.a2 = s.a1 + d, s.a2 + d
-    if s.v.f5_fn then s.f5 = s.v.f5_fn() end
+    if s.v.f5_fn and s.k+1<N_WAVES then s.f5 = s.v.f5_fn() end
     s.k = s.k + 1
 end
 
@@ -17845,8 +17895,8 @@ local ROOT = {
     ---`#34 POLAR_TO_CARTESIAN(exF0, exF1, RANDOM_ANGLE, 8.0)` + `#35 SET_SHOOT_OFFSET`
     ---⇒ 出弹点离 BOSS 8 px、方向随机（`#34` 的 RANDOM_ANGLE 与 `#29` 是两次独立的掷）。
     [572] = function(o, c)
-        local a = ran:Float(-PI, PI)                        -- `#29 lf0 = RANDOM_ANGLE`
-        local b = ran:Float(-PI, PI)                        -- `#34` 的 RANDOM_ANGLE
+        local a = -ran:Float(-PI, PI)                        -- `#29 lf0 = RANDOM_ANGLE`
+        local b = -ran:Float(-PI, PI)                        -- `#34` 的 RANDOM_ANGLE
         c.lf0 = a
         call106(o, new_volley(o, {
             type = 2, col = 6, n1 = 10, spd = 5.0, xi1 = 60, xi2 = 70,
@@ -17859,7 +17909,7 @@ local ROOT = {
     ---xi2=10、li0=2；`#42` 的随机偏移半径是 12（`#35` 的 8 px 换成 12 px）。
     [632] = function(o, c)
         c.lf0 = c.lf0 - 0.3141593                           -- `#37 FLOAT_ADD_ASSIGN lf0 π/10`
-        local b = ran:Float(-PI, PI)
+        local b = -ran:Float(-PI, PI)
         call106(o, new_volley(o, {
             type = 2, col = 2, n1 = 10, spd = 3.0, xi1 = 60, xi2 = 10,
             ang = c.lf0, da = -2 * PI / 160, f5 = f5_turn(), rel_spd = 5.0,

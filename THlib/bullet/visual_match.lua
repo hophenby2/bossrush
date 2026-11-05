@@ -490,7 +490,9 @@ function V.laser(base, game)
     return mapped
 end
 function V.laser_protected(o)
+    local flags=o._native_laser_flags or o._native_laser_geometry and o._native_laser_geometry.flags or 0
     return o._native_laser_box or o._native_laser_game==7 and math.floor((o.pl_flags or 0)/4)%2==1
+        or o._native_laser_game==8 and math.floor(flags/4)%2==1
 end
 function V.laser_drops(o,drop,force)
     if o._native_laser_box then return end -- 借激光接口承载的敌机矩形不属于Laser/BulletManager。
