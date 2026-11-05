@@ -20513,7 +20513,7 @@ local BW_L, BW_R = -160, 160
 local BW_B, BW_T = 96, 176
 
 ---两条子 context 的挂载帧（`ins_135 SET_CHILD_ECL 0/1` 都在根子程序的 t=210）。
-local ACT_T = 210
+local ACT_T = 242
 
 ---Sub39（子 context 0）：6 发环、每 5 帧一轮、速度 3.4、基准角每轮 −12°（TH08 的 +12°）。
 local RING_TYPE, RING_COLOR = 18, 3
@@ -20561,7 +20561,7 @@ local function ring_tick(owner, g)
     ---`#9`：槽 0 的 REL 记录每轮**重摇** RANDOM_ANGLE（出弹时整块拷给弹，所以
     ---同一圈的 6 发共用这个角、下一圈换一个）。
     EX.set_record(owner, 0, EX.K.REL, 0, TURN_FRAMES, TURN_REPEAT,
-            ran:Float(-PI, PI), TURN_SPEED)
+            -ran:Float(-PI, PI), TURN_SPEED)
     ---`#10`：槽 1 的 SET_SPRITE(18, 1)——出生贴图换成 18 号弹的 1 号色。
     EX.set_record(owner, 1, EX.K.SPRITE, 0, RING_TYPE, 1, -1, -1)
     ---`#11`：以当轮的 lf0 为基准角打 6 发（aimMode 3 = CIRCLE，angleStep = 0）。
@@ -20573,7 +20573,7 @@ local function ring_tick(owner, g)
     })
     ---`#12..#15`：lf0 += 12° → lf0 += RANDOM_ANGLE/256 → 归一化。
     ---（两个增量在 TH08 坐标系里都是「加」，我们整体取反 ⇒ 减 12°、随机项对称。）
-    g.a = add_norm(g.a - RING_STEP + ran:Float(-PI, PI) / RING_JITTER)
+    g.a = add_norm(g.a - RING_STEP - ran:Float(-PI, PI) / RING_JITTER)
 end
 
 ---子 context 1 的一轮（Sub41 的循环体 #1..#2）。
@@ -20584,7 +20584,7 @@ local function repel_tick(owner, g)
             op = 99, type = REPEL_TYPE, color = EX.color(REPEL_COLOR),
             count1 = REPEL_COUNT, count2 = 1,
             speed1 = REPEL_SPEED, speed2 = REPEL_SPEED2,
-            angle = ran:Float(-PI, PI), step = 0, flags = REPEL_FLAGS,
+            angle = -ran:Float(-PI, PI), step = 0, flags = REPEL_FLAGS,
         })
     end
 end
@@ -20610,7 +20610,7 @@ local function card_frame(owner)
 
     ---① 主 context 的 t=210：`#24..#26` 挂两条枪（子 context 当帧就各走一格 time）。
     if t == ACT_T then
-        c.gun0 = { a = ran:Float(-PI, PI), t = 0 }   -- `#0 SET_FLOAT lf0 RANDOM_ANGLE`
+        c.gun0 = { a = -ran:Float(-PI, PI), t = 0 }   -- `#0 SET_FLOAT lf0 RANDOM_ANGLE`
         c.gun1 = { t = 0 }
     end
 
@@ -22888,7 +22888,7 @@ local RINGS = {
     { count = 9,  step = 0.3926991, speed = 1, tilt = 0.1047198 },   -- π/8  = 22.5°
     { count = 11, step = 0.3141593, speed = 2, tilt = 0.3141593 },   -- π/10 = 18°
 }
-local SPAWN_AT = 190            -- `#25..#55` 全在这一帧
+local SPAWN_AT = 222            -- `#25..#55` 全在这一帧
 
 ---使魔（Sub33）。
 local FAM_MOVE_FRAMES = 60      -- `#5 ins_66(60, 4, lf0, lf1)` 的时长
@@ -22983,7 +22983,7 @@ local function gun_tick(self)
         op = 99, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = 1, count2 = 1,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = wrap_pi(ry * GUN_ANGLE_SCALE), step = 0, flags = GUN_FLAGS,
+        angle = wrap_pi(-ry * GUN_ANGLE_SCALE), step = 0, flags = GUN_FLAGS,
     })
     ---`#31`：lf7 += lf6。（`#32` 的 NORMALIZE_ANGLE 原作写的是 lf0、是空转，见头部注释。）
     self.lw31_drift = wrap_pi(self.lw31_drift + self.lw31_drift_d)
@@ -23014,6 +23014,10 @@ local familiar = class.th08_combat.actor("ecldata7:33", {
     end,
     frame = function(self)
         local t = self.lw31_t
+        if t>=30070 then object.RawDel(self);return end
+        if self._original_actor then
+            self._original_actor.vm.rotation[3]=-(t<FAM_STOP_AT and self.lw31_dir or 0)
+        end
         ---① 自己的时间线（主 context 先跑）。
         if t == 0 then
             ---`#5`：`ins_66 MOVE_IN_DIR(60, 4, lf0, lf1)` —— 沿 lf0 走 speed × 60 px、
@@ -23047,6 +23051,7 @@ local familiar = class.th08_combat.actor("ecldata7:33", {
                 self.lw31_mv = nil
             end
         end
+        if self.th08_seen and class.th08_combat.actor_outside(self) then object.RawDel(self);return end
         self.lw31_t = t + 1
     end,
 })
@@ -23223,12 +23228,12 @@ local BW_L, BW_R = -160, 160
 local BW_B, BW_T = 96, 176
 ---`ins_67` 的边界判据拿的还是 TH08 口径的 position 与这四条边（EclDependencies.cpp:150-175）。
 local BT_L, BT_R, BT_B, BT_T = 32, 352, 48, 128
-local WANDER_AT = 270            -- `#25` 的 time
-local WANDER_PERIOD = 180        -- `#26 JUMP time := 90 -> #25` ⇒ 之后每 180 帧一次
+local WANDER_AT = 302            -- `#25` 的 time
+local WANDER_PERIOD = 240        -- `#26 JUMP time := 90 -> #25` ⇒ 之后每 180 帧一次
 local WANDER_FRAMES = 60         -- ins_67 的时长（参数 0）
 local WANDER_SPEED = 1.0         -- ins_67 的速度（参数 2）⇒ 位移 = 60 px
 
-local GUN_AT = 90                -- `#22..#24 SET_CHILD_ECL` 挂三条枪的那一帧（子时间 0）
+local GUN_AT = 122                -- `#22..#24 SET_CHILD_ECL` 挂三条枪的那一帧（子时间 0）
 
 ---★ rank 缩放（EclDependencies.cpp:750-777）。三条枪都是 **BOSS 自己的子 context**
 ---  （`ins_135`，不是使魔）⇒ 影响量跟 BOSS 走。辉夜本体的这个敌机是时间轴 t=4112 的
@@ -23355,7 +23360,7 @@ local function gun_spin(owner, gi)
     ---`#12`：出弹点的半径 = rndUnit·64（`#1` 先写的那次 RANDOM_ANGLE 是死读）。
     local r = rnd_unit() * SPIN_RADIUS
     ---`#13`：出弹点的方向 = RANDOM_ANGLE（TH08 的角；取反之后就是我们直接抽的角）。
-    local ang = ran:Float(-PI, PI)
+    local ang = -ran:Float(-PI, PI)
     ---`#20` 记录槽 1：REL —— 60 帧把速度线性刹到 0，到点那一帧转 ∓144°、速度换成 2。
     EX.set_record(owner, 1, EX.K.REL, 1, REL_FRAMES, REL_REPEAT, g.turn, REL_SPEED)
     ---`#21` 记录槽 2：SET_SPRITE —— 换弹种 2 / 色偏移（被 REL 挡着，转向之后才点亮）。
@@ -23367,7 +23372,7 @@ local function gun_spin(owner, gi)
         op = 97, type = FAN_TYPE, color = EX.color(g.color),
         count1 = FAN_COUNT, count2 = 1,
         speed1 = FAN_SPEED, speed2 = FAN_SPEED2,
-        angle = base, step = FAN_STEP, flags = FAN_FLAGS,
+        angle = base, step = -FAN_STEP, flags = FAN_FLAGS,
     })
 end
 
@@ -23380,6 +23385,8 @@ local function gun_aim(owner, c, u)
     if off >= AIM_SHOTS * AIM_GAP then return end
     if off % AIM_GAP ~= 0 then return end
     if off == 0 then
+        if u==AIM_AT then c.aim_unused=ran:Float(-PI,PI) end
+        OriginalStageVisual.presentation.sound.play(8,15,owner.x)
         ---`#3`：lf0 = AIM_TO_PL —— 一串 8 发只在开头解一次，全部共用。
         c.aim = aim_at_player(owner.x, owner.y)
     end
@@ -23410,24 +23417,27 @@ local function card_frame(owner)
     if not c then return end
     local p = c.t
 
-    ---① 三条枪（子 context 的 time = p − 90）。
+    ---① 三条枪（子 context 的 time = p − 122）。
     if p == GUN_AT then
+        OriginalStageVisual.source_event(owner,8,'ecldata7',{0,62})
+        c.gun0_unused=ran:Float(-PI,PI)
         ---`#3`：记录槽 0 = CULL（出屏后 120 帧宽限）；三条枪共用这一份。
         EX.set_record(owner, 0, EX.K.CULL, 0, REC_CULL, -1, -1, -1)
     end
-    if p >= GUN_AT then
-        local u = p - GUN_AT
-        ---枪 0 跑偶数帧、枪 1 跑奇数帧（Sub29 的每条指令都晚 1 帧）⇒ 每帧恰好一轮。
-        gun_spin(owner, u % 2 == 0 and 1 or 2)
-        gun_aim(owner, c, u)
-    end
-
-    ---② t = 270 + 180k：`#25 ins_67(60, 4, 1)`（在位移之前起跳，当帧就走第一步）。
     if p >= WANDER_AT and (p - WANDER_AT) % WANDER_PERIOD == 0 then
         begin_boundary_move(owner, c)
     end
 
-    ---③ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
+    ---② 根移动指令之后运行三条子枪，仍读取本拍积分前的位置。
+    if p >= GUN_AT then
+        local u = p - GUN_AT
+        ---枪 0 跑偶数帧、枪 1 跑奇数帧（Sub29 的每条指令都晚 1 帧）⇒ 每帧恰好一轮。
+        gun_spin(owner, u % 2 == 0 and 1 or 2)
+        if p==GUN_AT then c.gun1_unused=ran:Float(-PI,PI) end
+        gun_aim(owner, c, u)
+    end
+
+    ---③ 位移插值；随机移动总时点302+240k。
     if c.move then
 
         local oldx,oldy=owner.x,owner.y
@@ -23972,10 +23982,10 @@ local BT_L, BT_R, BT_B, BT_T = 32, 352, 48, 128
 
 ---BOSS 的节奏（Sub34）。
 local CYCLE = 220            -- `#60 JUMP time := 190 → #25`：190 → 410
-local WAVE_AT = 190          -- `#25..#56` 两段循环的 time
-local GUN_AT = 350           -- `#59 SET_CHILD_ECL 0 → 35`（子 context 的 t=0 = 这一帧）
+local WAVE_AT = 222          -- `#25..#56` 两段循环的 time
+local GUN_AT = 382           -- `#59 SET_CHILD_ECL 0 → 35`（子 context 的 t=0 = 这一帧）
 local GUN_PERIOD = 60        -- Sub35 `#5 JUMP time := 0 → #4`
-local WANDER_AT = 350        -- `#58 ins_67` 的 time
+local WANDER_AT = 382        -- `#58 ins_67` 的 time
 local WANDER_FRAMES = 60     -- ins_67 的时长（参数 0）
 local WANDER_SPEED = 1.0     -- ins_67 的速度（参数 2）⇒ 位移 = 60 px
 
@@ -24013,8 +24023,8 @@ local VOL_SHOTS = {
 }
 ---两组使魔的参数（我们口径：角速度与 lf2 都取反，见文件头）。
 local FAM_GROUPS = {
-    { omega = ORBIT_OMEGA,  off = -0.7853982, colors = { 1, 6, 3 } },   -- lf1 = +0.01047198、lf2 = +0.7853982
-    { omega = -ORBIT_OMEGA, off = 0.7853982,  colors = { 2, 10, 5 } },  -- lf1 = −0.01047198、lf2 = −0.7853982
+    { omega = -ORBIT_OMEGA,  off = -0.7853982, colors = { 1, 6, 3 } },   -- lf1 = +0.01047198、lf2 = +0.7853982
+    { omega = ORBIT_OMEGA, off = 0.7853982,  colors = { 2, 10, 5 } },  -- lf1 = −0.01047198、lf2 = −0.7853982
 }
 
 ---AddNormalizeAngle(a, 0)（Global.cpp:1231-1252）：卷进 (−π, π]。
@@ -24110,7 +24120,7 @@ local function gun_ring(owner)
         op = 99, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT, count2 = 1,
         speed1 = GUN_SPEED, speed2 = GUN_SPEED2,
-        angle = ran:Float(-PI, PI), step = 0, flags = GUN_FLAGS,
+        angle = -ran:Float(-PI, PI), step = 0, flags = GUN_FLAGS,
     })
 end
 
@@ -24225,7 +24235,7 @@ local function spawn_wave(owner, c)
         local g = FAM_GROUPS[gi]
         ---`#25`（`#41`）lf0 = RANDOM_ANGLE：这一组的 6 只共用一个随机基准角、每轮重抽。
         ---（我们口径的初角 = −lf0，与直接抽 RANDOM_ANGLE 同分布。）
-        local base = ran:Float(-PI, PI)
+        local base = -ran:Float(-PI, PI)
         for k = 0, FAM_PER_GROUP - 1 do
             ---`#36`（`#52`）SPAWN_FAMILIAR_AT_OFFSET：偏移 (0,0) ⇒ 出生点 = BOSS 位置；
             ---`#38`/`#39`（`#54`/`#55`）lf0 += 1.0472 再归一化 ⇒ 组内每只差 60°。
@@ -24266,6 +24276,10 @@ local function card_frame(owner)
     ---② p = 350+220k：`#59 SET_CHILD_ECL 0 → 35` 重挂 BOSS 的枪（子 context 的 time 归零）；
     ---   它自己每 60 帧一轮，而每 220 帧会被重挂一次 ⇒ 一个周期里的出弹帧是
     ---   +0 / +60 / +120 / +180（下一轮的 +220 就是重挂帧本身，间隔只有 40 帧）。
+    if p >= WANDER_AT and (p - WANDER_AT) % CYCLE == 0 then
+        begin_boundary_move(owner, c)
+    end
+    ---④ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
     if p >= GUN_AT then
         local u = (p - GUN_AT) % CYCLE
         if u % GUN_PERIOD == 0 then
@@ -24273,10 +24287,6 @@ local function card_frame(owner)
         end
     end
     ---③ p = 350+220k：`#58 ins_67(60, 4, 1)`（在位移之前起跳、当帧就走第一步）。
-    if p >= WANDER_AT and (p - WANDER_AT) % CYCLE == 0 then
-        begin_boundary_move(owner, c)
-    end
-    ---④ 位移插值（同时记 movementAngle，给下一次的右边界判据用）。
     if c.move then
 
         local oldx,oldy=owner.x,owner.y
@@ -53595,7 +53605,7 @@ end
 ---  把原作 `ecldata7.ecl` **时间轴 0** 里 t=260..3090 的那一段道中复刻成一张
 ---  **耐久卡**，挂在 Stage 6B（辉夜 · 组 6）那条链的最前面 —— 原作 t=3490 起是
 ---  中 BOSS 永琳、t=4112 起才是 BOSS 辉夜，都不属于本卡。
----  时长 = ceil(3490/60) = **59 秒**（同前五张道中卡的口径）。
+---  时长 = 3490/60 秒，在原时间轴中Boss生成点结束。
 ---
 ---  ★ 口径与 CARD[1000..1004] 完全一致：
 ---    x_我们 = x_原作 − 192、y_我们 = 224 − y_原作、**角度整体取反**；
@@ -58156,9 +58166,9 @@ local LIST = {
     ---  正好接上后面的「辉夜一非」。原作 t=3490 出现的中 BOSS 永琳、t=4112 出现的
     ---  BOSS 辉夜都不属于这一段。
     ---  卡 id 3431：3426..3439 全项目无引用（3428..3430 已给三面 / 二面 / 六面A道中）。
-    ---  时长 59 秒 = 原作 3490/60 = 58.2 向上取整（同其余五张道中卡的口径）。
+    ---  时长3490/60秒，不再向上取整多保留50帧道中。
     ---  ★ 卡名自选（原作道中无名）。
-    { 1005, "六面道中B「月都回廊」", 3431, 59, 6, nil, "六面道中B「月都回廊」", 1005 },
+    { 1005, "六面道中B「月都回廊」", 3431, 3490/60, 6, nil, "六面道中B「月都回廊」", 1005 },
     { 27,  "",                                   405, 60, 6, 15800, "非符一" },
     { 154, "神宝「龙颈之玉」", 401, 60, 6, 6000 },
     --- 31（辉夜的非符「154 与 158 之间那张」）：Sub31 的 `ins_134(3600, 55)` ⇒ 60 秒；

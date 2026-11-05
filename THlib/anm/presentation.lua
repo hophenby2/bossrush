@@ -82,6 +82,7 @@ local function effect(s,c,op,a)
             New(F.screen_pulse,s.phase,30,5,64)
             F.shake_envelope(s.phase)
         end
+        if op==136 and a[1]==15 then F.shake_envelope(s.phase,16,20,20,20) end
         if op==136 and a[1]==17 then New(F.screen_pulse,s.phase,180) end
         if op==137 then s.ex_callback=a[1]>=0 and a[1] or nil end
     else

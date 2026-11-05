@@ -158,8 +158,9 @@ F.screen_pulse=Class(object,{
         RenderRect('white',x-hw,x+hw,y-hh,y+hh)
     end,
 },true)
-function F.shake_envelope(phase)
-    F.shakes[#F.shakes+1]={phase=phase,born=stage.current_stage.timer,age=0}
+function F.shake_envelope(phase,amplitude,ramp,hold,down)
+    F.shakes[#F.shakes+1]={phase=phase,born=stage.current_stage.timer,age=0,
+        amplitude=amplitude or 4,ramp=ramp or 120,hold=hold or 190,down=down or 60}
 end
 local function release_shake()
     local p=lstg.worldoffset
@@ -172,12 +173,13 @@ function F.advance_shake()
     F.shake_scene,F.shake_clock=scene,clock
     local kept={}
     for _,s in ipairs(F.shakes) do
-        if valid(s.phase) and s.age<369 then
+        local total=s.ramp+s.hold+s.down
+        if valid(s.phase) and s.age<total-1 then
             kept[#kept+1]=s
             if clock~=s.born then
                 s.age=s.age+1
-                local envelope=s.age<120 and s.age/120 or s.age<310 and 1 or (370-s.age)/60
-                local a=4*envelope
+                local envelope=s.age<s.ramp and s.age/s.ramp or s.age<s.ramp+s.hold and 1 or (total-s.age)/s.down
+                local a=s.amplitude*envelope
                 local x=ran:Int(0,2)
                 local y=ran:Int(0,2)
                 -- 原ANM屏幕偏移向右/下；本项目worldoffset是摄像机偏移。
