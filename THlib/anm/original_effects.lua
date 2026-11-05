@@ -87,7 +87,12 @@ F.effect=Class(object,{
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
-        if o.game==8 and o.kind==17 then
+        if o.game==6 and o.kind==17 then
+            -- TH06 Effect_Attract第一次回调才取随机角；不是SpawnParticles构造时取。
+            if o.dir==nil then o.dir=ran:Float(-math.pi,math.pi) end
+            local d=256-o.age*256/60
+            o.x,o.y=o.origin_x+d*math.cos(o.dir),o.origin_y-d*math.sin(o.dir)
+        elseif o.game==8 and o.kind==17 then
             local d=256-o.age*256/60
             o.x,o.y=o.origin_x+d*math.cos(o.dir),o.origin_y-d*math.sin(o.dir)
         elseif o.game==8 and o.kind==26 then
@@ -206,9 +211,9 @@ function F.new(game,archive,script,x,y,phase,kind,argb,angle)
         for _,o in ipairs(F.objects) do if valid(o) then n=n+1;F.objects[n]=o end end
         for i=#F.objects,n+1,-1 do F.objects[i]=nil end
     end
-    if game==8 then
+    if game==6 or game==8 then
         local n=0
-        for _,o in ipairs(F.objects) do if valid(o) and o.game==8 then n=n+1 end end
+        for _,o in ipairs(F.objects) do if valid(o) and o.game==game then n=n+1 end end
         if n>=512 then return nil end -- EffectManager的普通效果池，不挤占弹幕槽。
     end
     return New(F.effect,game,archive,script,x,y,phase,kind,argb,angle)

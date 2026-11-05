@@ -409,7 +409,7 @@ function V.render_laser_anm(o)
     local speed=o.th06_speed or o._native_laser_speed or 0
     local phase=o._native_laser_geometry
     local flags=o.th06_flags or phase and phase.flags or 0
-    local state=o.th06_state or phase and phase.phase or 1
+    local state=o.th06_draw_state or o.th06_state or phase and phase.phase or 1
     if (offset<16 or speed==0) and not (math.floor(flags/2)%2==1 and state==0) then
         local full=o.th06_width or o._native_laser_phase and o._native_laser_phase[4] or width
         local scale=full/10*(16-offset)/16

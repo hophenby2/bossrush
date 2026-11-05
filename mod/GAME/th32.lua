@@ -74,6 +74,7 @@ end
 local function velocity(b, a, v)
     b.th06_angle, b.th06_speed = a, v
     b.vx, b.vy = cos(a) * v, -sin(a) * v
+    b.th06_vx,b.th06_vy=b.vx,b.vy
 end
 
 class["原作弹"] = Class(bullet, {
@@ -100,7 +101,7 @@ class["原作弹"] = Class(bullet, {
         if sprite >= 6 and b.th06_spawn > 0 then b.th06_spawn = sprite == 9 and 24 or 32 end
         b.th06_spawn_total = b.th06_spawn
         b.colli = b.th06_spawn == 0
-        velocity(b, a, v)
+        velocity(b, normal_angle(a), v)
         if band(flags, 16) ~= 0 then
             local dir = b.th06_ex[3]
             if dir == nil or dir <= -999 then dir = a end
@@ -131,6 +132,7 @@ class["原作弹"] = Class(bullet, {
         end
         do
             b.colli = true
+            b.vx,b.vy=b.th06_vx or b.vx,b.th06_vy or b.vy
             if band(flags, 1) ~= 0 then
                 if b.th06_tick <= 16 then
                     b.vx, b.vy = cos(b.th06_angle) * (b.th06_speed + 5 - b.th06_tick * 5 / 16),
@@ -138,23 +140,24 @@ class["原作弹"] = Class(bullet, {
                 else
                     b.th06_flags = flags - 1
                 end
-            elseif band(flags, 16) ~= 0 and b.th06_tick < ex[1] then
-                -- ex4 是向量加速，不能写成「速度标量递增」；醒弹时速度从零开始。
-                b.th06_vx = (b.th06_vx or cos(b.th06_angle) * b.th06_speed) + b.th06_ax
-                b.th06_vy = (b.th06_vy or -sin(b.th06_angle) * b.th06_speed) + b.th06_ay
-                b.vx, b.vy = b.th06_vx, b.th06_vy
-                b.th06_angle = atan2(-b.vy, b.vx)
-            elseif band(flags, 32) ~= 0 and b.th06_tick < ex[1] then
-                velocity(b, b.th06_angle + ex[3], b.th06_speed + ex[2])
-            else
-                -- 出场结束或加速结束后，保持最后一个速度向量。
-                b.vx = b.th06_vx or cos(b.th06_angle) * b.th06_speed
-                b.vy = b.th06_vy or -sin(b.th06_angle) * b.th06_speed
+            elseif band(flags,16)~=0 then
+                if b.th06_tick>=ex[1] then
+                    b.th06_flags=b.th06_flags-16
+                else
+                    b.vx,b.vy=b.vx+b.th06_ax,b.vy+b.th06_ay
+                    b.th06_angle=atan2(-b.vy,b.vx)
+                end
+            elseif band(flags,32)~=0 then
+                if b.th06_tick>=ex[1] then
+                    b.th06_flags=b.th06_flags-32
+                else
+                    velocity(b,normal_angle(b.th06_angle+ex[3]),b.th06_speed+ex[2])
+                end
             end
             -- 0x800 在「整颗精灵越界」后反弹一次；底边不反射，但仍会消耗次数。
             local turn_flag = band(flags, 64) ~= 0 and 64 or (band(flags, 256) ~= 0 and 256 or (band(flags, 128) ~= 0 and 128 or 0))
             if turn_flag ~= 0 then
-                local speed, interval = b.th06_speed, max(1, ex[1])
+                local speed, interval = b.th06_speed, ex[1] or 0
                 if b.th06_tick >= interval * (b.th06_turns + 1) then
                     b.th06_turns = b.th06_turns + 1
                     if b.th06_turns >= (ex[4] or 1) then b.th06_flags = b.th06_flags - turn_flag end
@@ -168,14 +171,16 @@ class["原作弹"] = Class(bullet, {
                 end
             elseif band(flags, 3072) ~= 0 and not in_screen(b) then
                 local a = b.th06_angle
-                if b.x < -192 or b.x >= 192 then a = -a - PI end
-                if b.y > 224 or (band(flags, 1024) ~= 0 and b.y <= -224) then a = -a end
+                local bounce=band(flags,1024)~=0 and 1024 or 2048
+                if b.x < -192 or b.x >= 192 then a = normal_angle(-a - PI) end
+                if b.y > 224 or (bounce==1024 and b.y <= -224) then a = -a end
                 velocity(b, a, ex[2] and ex[2] >= 0 and ex[2] or b.th06_speed)
                 b.th06_turns = b.th06_turns + 1
-                if b.th06_turns >= (ex[1] or 1) then b.th06_flags = flags - band(flags, 3072) end
+                if b.th06_turns >= (ex[1] or 1) then b.th06_flags = b.th06_flags - bounce end
             end
             b.th06_tick = b.th06_tick + 1
         end
+        b.th06_vx,b.th06_vy=b.vx,b.vy
         b.vx, b.vy = b.vx + spawn_dx, b.vy + spawn_dy
         -- 引擎在 frame 之后积分；按下一位置判断，保证衍生弹看不到已释放的弹槽。
         local nx, ny = b.x + b.vx, b.y + b.vy
@@ -191,16 +196,19 @@ class["原作弹"] = Class(bullet, {
     end,
 })
 
-local function single(s, sprite, c, x, y, a, v, flags, ex)
-    -- 保留原作环形槽位顺序：Func8/9 按槽号扫描，不能把新生弹插到一个无序集合里。
-    for _ = 1, POOL_SIZE do
-        local i = s.next_slot
-        s.next_slot = i % POOL_SIZE + 1
-        if not alive(s.pool[i]) then
-            local b = New(class["原作弹"], s, sprite, c, x, y, a, v, flags or 0, ex)
-            s.pool[i] = b
-            return b
-        end
+local function reserve_slot(s)
+    for _=1,POOL_SIZE do
+        local i=s.next_slot
+        s.next_slot=i%POOL_SIZE+1
+        if not alive(s.pool[i]) then return i end
+    end
+end
+local function single(s,sprite,c,x,y,a,v,flags,ex)
+    local i=reserve_slot(s)
+    if i then
+        local b=New(class["原作弹"],s,sprite,c,x,y,a,v,flags or 0,ex)
+        s.pool[i]=b
+        return b
     end
 end
 
@@ -217,6 +225,8 @@ local function shoot(owner, mode, sprite, c, n, layers, v1, v2, a, step, flags, 
     local full = false
     for layer = 0, layers - 1 do
         for i = 0, n - 1 do
+            local slot=reserve_slot(s)
+            if not slot then full=true;break end
             local angle = a
             if mode == "ring" or mode == "ring_aim" or mode == "random_speed" then angle = a + aimed + i * 2 * PI / n + layer * step
             elseif mode == "offset" or mode == "offset_aim" then angle = a + aimed + PI / n + i * 2 * PI / n
@@ -226,9 +236,7 @@ local function shoot(owner, mode, sprite, c, n, layers, v1, v2, a, step, flags, 
                 angle = a + aimed + (i % 2 == 1 and -1 or 1) * k * step
             end
             local speed = (mode == "random" or mode == "random_speed") and ran:Float(v2, v1) or v1 - (v1 - v2) * layer / layers
-            if not single(s, sprite, c, x, y, angle, speed, flags, ex) then
-                full = true; break
-            end
+            s.pool[slot]=New(class["原作弹"],s,sprite,c,x,y,angle,speed,flags or 0,ex)
         end
         if full then break end
     end
@@ -265,6 +273,19 @@ local function move_step(b)
 end
 
 -- Func8：扫描所有高度 >=30 的活弹（包括刀和中玉），池满也计入 changedBullets。
+local function particles(b,kind,count,argb)
+    local script=kind==17 and 7 or 17
+    for _=1,count do
+        OriginalStageVisual.presentation.new_effect(6,'etama4',script,b.x,b.y,b,kind,argb)
+    end
+end
+local function charge(b)
+    PlaySound("tan00",.1,b.x/256,false) -- 原作106号指令的蓄力提示沿用现有音效接口。
+    for _=1,16 do
+        particles(b,17,6,0xff8080ff)
+        task.Wait(4)
+    end
+end
 local function seed_small(b)
     local s, count = b.th06, 0
     for i = 1, POOL_SIZE do
@@ -279,6 +300,7 @@ end
 local function awaken(b, random_each)
     local s = b.th06
     local shared = ran:Float(-PI, PI) -- Func11 也会先消耗这一次随机数。
+    particles(b,12,1,0xffffffff)
     for i = 1, POOL_SIZE do
         local small = s.pool[i]
         if active_bullet(small) and small.th06_h < 30 and small.th06_speed == 0 then
@@ -307,6 +329,7 @@ end
 -- Func7 的 48 段激光采用原生 laser 的碰撞/擦弹；显示时换回完整线段。
 class["大卫之星激光"] = Class(laser, {
     init = function(l, x, y, a, length, width, start)
+        l._native_laser_type,l.th06_flags=1,2 -- 原作LASER_BEAM、UNUSED标志。
         laser.init(l, width == 20 and 8 or 2, x, y, -a * DEG, 0, length, 0, width, 0, 0)
         l.bound = false
         l.th06_x, l.th06_y, l.th06_length = x, y, length
@@ -314,6 +337,7 @@ class["大卫之星激光"] = Class(laser, {
     end,
     frame = function(l)
         local t, start = l.th06_age, l.th06_start
+        l.th06_draw_state=t<start and 0 or (t<150 and 1 or 2)
         if t >= 166 then retire(l); return end
         local w = l.th06_width
         if t < start then w = t > start - 30 and t * w / start or 1.2
@@ -367,7 +391,7 @@ local function star(b)
     end
 end
 
-local function begin(b, y, rank_speed)
+local function begin(b, y, rank_speed, start_effect)
     b.th06 = { pool = {}, next_slot = 1, lasers = {},
         rank_speed = rank_speed or 0 }
     b.colli, b.no_hp_render, b.NotPlayTimeOutSound = true, false, false
@@ -377,6 +401,7 @@ local function begin(b, y, rank_speed)
     end
     -- 独立练习从场外生成 Boss；原作在进入符卡前已经启用同一组移动边界。
     b.x, b.y = min(160, max(-160, b.x)), min(176, max(104, b.y))
+    if start_effect then particles(b,start_effect,1,0xff8080ff) end
     move_to(b, 0, 224 - y, 120)
     task.Wait(120)
 end
@@ -387,6 +412,7 @@ local function cleanup(b)
         speed=0,angular=0,accel=0,axisx=0,axisy=0,bounds={32,48,352,120}}
     for _, o in pairs(b.th06.pool) do if alive(o) then object.Del(o) end end
     for _, o in ipairs(b.th06.lasers) do if alive(o) then object.Del(o) end end
+    OriginalStageVisual.presentation.clear(b)
     b.th06 = nil
 end
 local function new_card(name, timeout, hp, run)
@@ -412,7 +438,7 @@ do
     local function run(b)
         begin(b, 112, RANK / 32 - .5)
         while true do
-            task.Wait(64)
+            charge(b)
             star(b)
             local a, a2 = ran:Float(-PI, PI), ran:Float(-PI, PI)
             for _ = 1, 4 do
@@ -493,9 +519,9 @@ end
 do
     local NAME, ID, TIME, HP = "红符「绯红之主」", 3811, 30, 1300
     local function run(b)
-        begin(b, 112)
+        begin(b, 112, 0, 12)
         while true do
-            task.Wait(64)
+            charge(b)
             for shot = 1, 5 do
                 aimed_shot(b)
                 if shot == 5 then drift(b, 2.5, 90) end
