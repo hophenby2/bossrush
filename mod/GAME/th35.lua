@@ -1732,7 +1732,7 @@ function class.t10_faith_start(b,main)
     return t10_boss_start(b,main,3600)
 end
 function class.t10_faith_entry(o)
-    t10_kill_async(o)
+    task.Clear(o,true)
     t10_enm_kill_all(o)
     m_limit_clear(o) -- BossCard5明确清除雨之源泉留下的活动框，允许下降至原y160。
     m_pos_time(o,"off",90,4,0,160)
@@ -2740,6 +2740,7 @@ function s7.MBossCard3(o)
     class.t10_fx.fire(o,__anm,0x127fc)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     task.Wait(90)                        -- //180
+    o.I0=60
     while true do                        -- //180 → //400 = 220 帧一轮
         spawn_pod_rel(o, 0.0, -128.0, s7.MBossCard3_at2)
         task.Wait(160)
@@ -3344,10 +3345,10 @@ function s7.BossCard8(o)
     m_pos_time(o, "off", 60, 4, 0.0, 224.0)
     t10_enm_kill_all(o)
     task.Wait(80)
-    class.t10_fx.fire(o,__anm,0xabfc)
     class.t10_interaction.flags(o,3,true)
     spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
     task.Wait(1200)
+    class.t10_fx.fire(o,__anm,0xabfc) -- 原80拍组的wait1200之后，即墙钟1280。
     task.Wait(60)                        -- //1340
     spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
     while true do                        -- 原作此处只回到 wait(2400)，不再生成
