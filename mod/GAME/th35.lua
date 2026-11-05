@@ -1145,7 +1145,10 @@ end
 local function m_add(o, w, x, y, z)
     local ch = M(o, w)
     -- ADD_*_POSITION 实际写 velocity：圆运动时该字段保存圆心，不能改瞬时圆周位置。
-    ch.vx, ch.vy = ch.vx + x, ch.vy + y
+    if x>-999999 then ch.vx=x end
+    if y>-999999 then ch.vy=y end
+    local boss=o.t10_bossref
+    if boss and IsValid(boss) then o.ecs.off.x,o.ecs.off.y=boss.ecs.wx,boss.ecs.wy end
 end
 
 ---moveRand：判断世界位置相对当前活动框的位置，再按指定缓动把速度降到 0。
@@ -1729,6 +1732,9 @@ function class.t10_faith_start(b,main)
     return t10_boss_start(b,main,3600)
 end
 function class.t10_faith_entry(o)
+    t10_kill_async(o)
+    t10_enm_kill_all(o)
+    m_limit_clear(o) -- BossCard5明确清除雨之源泉留下的活动框，允许下降至原y160。
     m_pos_time(o,"off",90,4,0,160)
 end
 function class.t10_faith_gun(boss,kind,color,f0,f3,i1,i2,i3,f2)
@@ -5003,6 +5009,7 @@ function s6.Boss4(o)
     while true do                               -- _2932：pushi(1); jmpNeq(_920, 90)
         ct = 90                                 -- jmpNeq(_920, 90)：时钟拨回 90
         class.t10_interaction.flags(o,3,false)
+        t10_enm_kill_all(o)
         ct = s_wait(ct, 150)                    -- +60: //150（空转）
         ct = s_wait(ct, 210)                    -- +60: //210
         class.t10_interaction.flags(o,3,true)
