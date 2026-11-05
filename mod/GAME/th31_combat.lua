@@ -82,6 +82,7 @@ local profiles = {
 -- 形态只推进自机的7帧过渡，不暂停敌机ECL或重置发弹计时。
 return function()
     local M={profiles=profiles}
+    local stage_sources=dofile('mod/GAME/th31_stage_sources.lua')
     local function bit(v,b) return math.floor(v/b)%2==1 end
     -- EnemyManagerUpdate.cpp:228..262 用当前主ANM的精灵宽高判出屏。
     -- 受击框、对象缩放、附属动画都不参与 GameManager::IsWithinPlayfield。
@@ -560,6 +561,8 @@ return function()
         local lw=M.lastwords[id]
         card.th08_lastword_source=M.lastword_sources[id]
         card.init=function(o)
+            local stage_key=stage_sources[card.th08_registered_id]
+            if stage_key then OriginalStageVisual.presentation.enter_stage(8,stage_key) end
             M.owner=o;o.th08_combat_card=id;o.th08_combat_time=0
             o.DMG_factor=1
             local balance=card._original_balance
@@ -577,7 +580,7 @@ return function()
             init(o)
             -- 时间轴t1的无判定效果实体此前被筛掉；战斗子机仍走原有实体实现。
             local ambient=({[1000]='ecldata1:14',[1001]='ecldata4a:15',
-                [1002]='ecldata3:19',[1003]='ecldata2:16'})[id]
+                [1003]='ecldata2:16'})[id]
             if ambient then OriginalStageVisual.presentation.start(o,8,ambient,-162,240,1) end
             if id==467 or id==468 then
                 _editor_class.TH31.th08_nightblind.install(o,57)

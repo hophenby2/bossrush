@@ -2,12 +2,32 @@
 import argparse
 import hashlib
 import json
+import struct
 from pathlib import Path
 
-from ecl_source import Source
+from ecl_source import Source, Instruction
 
 ROOT = Path(__file__).resolve().parents[2]
 STEM = 'ECL_LINE_REVIEW_2026-11-05'
+
+
+
+def timeline_rows(source, index, game):
+    """读取TH08原始时间轴的地址证据；不推进时间、不执行指令。"""
+    assert game == 8, ('尚未声明其他格式', game)
+    data = source.binary.read_bytes()
+    count = struct.unpack_from('<h', data, 6)[0]
+    assert 0 <= index < count <= 16
+    address = struct.unpack_from('<I', data, 8 + index * 4)[0]
+    rows = []
+    while True:
+        time, op, size, mask = struct.unpack_from('<ihBB', data, address)
+        if time < 0:
+            break
+        assert size >= 8 and address + size <= len(data), (source.binary, address, size)
+        rows.append(Instruction(address, time, op, mask, []))
+        address += size
+    return rows
 
 
 def render(workspace):
@@ -62,7 +82,8 @@ def render(workspace):
                     workspace / 'decompiled/ecl' / str(game) / (name + '.decl'),
                     workspace / 'original/ECL' / ('th095' if game == 95 else f'th{game:02}') / (name + '.ecl'), game)
             source = cache[source_key]
-            instructions = source.subs[sub]
+            instructions = (timeline_rows(source, int(sub[8:]), game)
+                            if sub.startswith('Timeline') else source.subs[sub])
             # 指令清单只是已人工审阅子程序的地址证据，不能替未审阅卡生成通过状态。
             addresses = ', '.join(f'`0x{i.address:x}`' for i in instructions)
             lines += [f"| `{filename}:{sub}` | {addresses} | {part['note']} |"]

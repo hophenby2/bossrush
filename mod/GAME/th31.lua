@@ -13084,6 +13084,9 @@ s3e_laser = Class(laser, {
         laser.init(self, LASER_COLOR, x, y, angle * RAD, 0, 0, 1, LASER_WIDTH, 0, 0)
         self.s3e_bx, self.s3e_by = x, y      -- 出生点（= 光柱的「原点」）
         self.s3e_ang = angle                 -- 光柱方向（子机 → 出生点）
+        self._native_laser_type,self._native_laser_speed=4,LASER_SPEED
+        self.s3e_phase,self.s3e_timer=2,0
+        self._native_laser_phase={'s3e_phase','s3e_timer',0,LASER_WIDTH}
         self.s3e_s, self.s3e_e = 0, 0        -- startOffset / endOffset
         self.w = 0                           -- 出生当帧还没长度，不画
         self.alpha = 1
@@ -13091,29 +13094,25 @@ s3e_laser = Class(laser, {
         self.bound = false                   -- 自己按 startOffset ≥ 640 回收
     end,
     frame = function(self)
-        ---BulletManager.cpp:1060-1066：endOffset 每帧 += speed，尾端跟随 150 px。
+        -- 原作duration=2560、despawnDuration=0；消除后在下一次激光更新立即释放。
+        if self.s3e_phase==3 then object.RawDel(self);return end
         self.s3e_e = self.s3e_e + LASER_SPEED
         if self.s3e_e - self.s3e_s > LASER_LENGTH then
             self.s3e_s = self.s3e_e - LASER_LENGTH
         end
         if self.s3e_s < 0 then self.s3e_s = 0 end
         local len = self.s3e_e - self.s3e_s
-        ---判定盒（:1064-1072）：startOffset > 0 时缩到 0.7 倍、中点仍在整根的中间。
-        local hlen = self.s3e_s > 0 and len * LASER_SHORTEN or len
-        local mid = self.s3e_s + (len - hlen) / 2
-        self.x = self.s3e_bx + math.cos(self.s3e_ang) * mid
-        self.y = self.s3e_by + math.sin(self.s3e_ang) * mid
-        self.l1, self.l2, self.l3 = 0, 0, hlen
-        self.w = LASER_WIDTH
-        self.colli = true
-        laser.frame(self)
-        ---渲染换回整根（原作 bodyVm 的 scale 用的就是 endOffset − startOffset）。
         self.x = self.s3e_bx + math.cos(self.s3e_ang) * self.s3e_s
         self.y = self.s3e_by + math.sin(self.s3e_ang) * self.s3e_s
-        self.l3 = len
-        if self.s3e_s >= LASER_RECYCLE then
-            object.RawDel(self)
+        self.l1,self.l2,self.l3=0,len,0
+        self.w,self.colli=LASER_WIDTH,true
+        self._native_laser_start=self.s3e_s
+        OriginalBulletVisual.native_laser(self,2,self.s3e_timer,LASER_WIDTH,0,0,self.s3e_s)
+        laser.frame(self)
+        if self.s3e_s >= LASER_RECYCLE or self.s3e_timer>=2560 then
+            object.RawDel(self);return
         end
+        self.s3e_timer=self.s3e_timer+1
     end,
 })
 
@@ -49974,11 +49973,9 @@ end
 
 ---------------------------------------------------------------------
 ---道中搬运卡：TH08 Stage 3 道中（三面 · 上白泽慧音 · 组 3）
----  2026-11-04：已合并全部四条时间轴；下方只描述Timeline0的旧条数不是全量范围。
----  把原作 `ecldata3.ecl` **时间轴 0** 里 t=620..2680 的那一段道中（24 只敌人；
----  t=1 的 Sub19 是开场烟尘，差异 2 跳过）复刻成一张**耐久卡**，挂在 Stage 3
----  （上白泽慧音 · 组 3）那条链的**最前面**，正好接上后面的「非符一」
----  （id 427 = 中 BOSS；原作 t=3080 的 `SPAWN_ENEMY sub=20 life=60000`）。
+---  四条原作时间轴合并为前段3428（t=0..3079）和后段3437（中Boss后t=3083起）。
+---  2026-11-05逐行核对：恢复opcode2的随机横向范围；Sub19烟尘改由阶段锚点持有，
+---  保留前段已有的开场爆发，且跨越中Boss/符卡/后段继续运行，不再在换卡时销毁。
 ---
 ---  ★ 原作这一段是**道中**（g_Spellcard.IsActive() 为假）⇒ 出弹要叠 rank 缩放
 ---    （EclDependencies.cpp:735-773）。rank 固定取 32 ⇒ speed1 += 0.15、
@@ -50037,7 +50034,7 @@ end
 ---     在**同一帧**的 `low_select_next_context` 里跑一次（EclRun.cpp:180-196），
 ---     所以一张卡一帧只推子 context 一次（⚠ 与四面道中卡不同：那张卡在挂枪那一帧
 ---     会把子 context 推两拍）。
----  2  开场烟尘（Sub19）不实现（纯观感）。
+---  2  后段独立练习无前段历史，烟尘从Sub19 t=20的4粒循环开始；连续流程保留实际时钟。
 ---  3  贴图是**占位**：敌人一律 `servant`，出弹走 EX 的 ball_small / ball_mid
 ---     （跟本文件其它搬运卡同口径，全部实现完再统一换）。
 ---  4  Anm / 演出指令（SET_MAIN_ANM / SET_FORM_EFFECT_ENABLED / …）只影响画面，忽略。
@@ -50908,6 +50905,7 @@ end
 ---原作 t=1 的 Sub19（开场烟尘）差异 2 跳过；t=3080 起是中 BOSS，不属于本卡。
 ---------------------------------------------------------------------
 local TIMELINE_FRONT = {
+    { 1, 19, -162, 240, 20, 0, -2 },
     { 400, 2, 0, 240, 200, 0, -2 },
     { 460, 4, 0, 240, 200, 0, -2 },
     { 460, 18, 0, 240, 10, 0, -1, { -160, -96 } },
@@ -51049,6 +51047,10 @@ local function make_init(TL)
         EX.pool_clear()
         EX.fm = 1
         owner.timeline = TL
+        if TL==TIMELINE_BACK then
+            -- 单独练习后段无前段实体历史，从持续循环开始，不重放开场爆发。
+            OriginalStageVisual.presentation.ambient_start(8,'ecldata3','ecldata3:19',-162,240,{pc=8,time=20})
+        end
         owner.tl_t = 0
         owner.tl_i = 1
         ---BOSS 本体放在场地外、不显形（照另两张道中卡）。
@@ -51065,9 +51067,11 @@ local function card_frame(owner)
         local e = TL[owner.tl_i]
         owner.tl_i = owner.tl_i + 1
         if e[2] == 19 then
-            ---差异 2：Sub19 是开场烟尘。
+            OriginalStageVisual.presentation.ambient_start(8,'ecldata3','ecldata3:19',e[3],e[4])
         else
-            New(unit, e[2], e[3], e[4], e[6] == 1, nil, 0, e[5], e[7], 0)
+            local x=e[3]
+            if e[8] then x=ran:Float(e[8][1],e[8][2]) end
+            New(unit, e[2], x, e[4], e[6] == 1, nil, 0, e[5], e[7], 0)
         end
     end
     owner.tl_t = t + 1
@@ -52762,14 +52766,16 @@ local function make_card(build)
         else
             angle = ran:Float(0, 1.5707964) - 0.78539819
         end
+        -- 随机角来自原作y向下坐标；此后所有边界与u.ma均为本地坐标。
+        angle = -angle
         if u.lx < b[1] + 96 then
             if angle > 1.5707964 then angle = 3.1415927 - angle
             elseif angle < -1.5707964 then angle = -3.1415927 - angle end
         end
         if u.lx > b[3] - 96 then
             ---★ 原作这里写的是 `3.1415927f − enemy->movementAngle`（用了**旧**角），照抄。
-            if angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - u.ma
-            elseif angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - angle end
+            if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
+            elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
         if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
         if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
@@ -53756,14 +53762,16 @@ local function make_card(build)
         else
             angle = ran:Float(0, 1.5707964) - 0.78539819
         end
+        -- 随机角来自原作y向下坐标；此后所有边界与u.ma均为本地坐标。
+        angle = -angle
         if u.lx < b[1] + 96 then
             if angle > 1.5707964 then angle = 3.1415927 - angle
             elseif angle < -1.5707964 then angle = -3.1415927 - angle end
         end
         if u.lx > b[3] - 96 then
             ---★ 原作这里写的是 `3.1415927f − enemy->movementAngle`（用了**旧**角），照抄。
-            if angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - u.ma
-            elseif angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - angle end
+            if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
+            elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
         if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
         if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
@@ -54792,14 +54800,16 @@ local function make_card(build)
         else
             angle = ran:Float(0, 1.5707964) - 0.78539819
         end
+        -- 随机角来自原作y向下坐标；此后所有边界与u.ma均为本地坐标。
+        angle = -angle
         if u.lx < b[1] + 96 then
             if angle > 1.5707964 then angle = 3.1415927 - angle
             elseif angle < -1.5707964 then angle = -3.1415927 - angle end
         end
         if u.lx > b[3] - 96 then
             ---★ 原作这里写的是 `3.1415927f − enemy->movementAngle`（用了**旧**角），照抄。
-            if angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - u.ma
-            elseif angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - angle end
+            if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
+            elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
         if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
         if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
@@ -58668,6 +58678,7 @@ for k, e in ipairs(LIST) do
         card.frame = placeholder_frame
         card.del = placeholder_del
     end
+    card.th08_registered_id=id
     class.th08_combat.bind(card,cardnum)
 end
 

@@ -1,6 +1,6 @@
 -- 离线导出的演出调度：只执行标量、CALL/等待/子context和独立ANM，不产生伤害或运动。
 -- 不把时间戳套到墙钟；效果子程序的30/32拍、动态等待及回跳沿各context自己的时间。
-local T={shared={[8]={},[95]={}},carriers={},managed={}}
+local T={shared={[8]={},[95]={}},carriers={},managed={},ambients={}}
 local data=dofile('mod/GAME/original/presentation_programs.lua')
 local F=dofile('THlib/anm/original_effects.lua')
 T.sound=dofile('THlib/anm/original_sounds.lua')
@@ -316,7 +316,7 @@ function T.handle(o,slot)
     return s and s.handles[slot]
 end
 T.carrier=Class(object,{
-    init=function(o,owner,game,key,x,y,delay,vars,attached)
+    init=function(o,owner,game,key,x,y,delay,vars,attached,entry)
         o.group,o.bound,o.colli=GROUP.GHOST,false,false
         o.layer=LAYER.ENEMY
         o._original_presentation_carrier=true
@@ -329,7 +329,10 @@ T.carrier=Class(object,{
         if game==95 then OriginalStageVisual.bind_source(o,game,key)
         else T.bind(o,game,key) end
         local s=o._original_presentation
-        if s then s.phase=o.phase end
+        if s then
+            s.phase=o.phase
+            if entry then s.root.pc,s.root.time=entry.pc,entry.time end
+        end
         o._original_presentation_seed_vars=nil
         if o.delay==0 then T.advance(o,0);o.started=true end
         T.carriers[#T.carriers+1]=o
@@ -352,8 +355,33 @@ T.carrier=Class(object,{
     end,
     render=function(o) OriginalStageVisual.draw(o) end,
 },true)
-function T.start(owner,game,key,x,y,delay,vars,attached)
-    return New(T.carrier,owner,game,key,x,y,delay,vars,attached)
+function T.start(owner,game,key,x,y,delay,vars,attached,entry)
+    return New(T.carrier,owner,game,key,x,y,delay,vars,attached,entry)
+end
+T.ambient_anchor=Class(object,{
+    init=function(o)
+        o.group,o.hide,o.bound,o.colli=GROUP.GHOST,true,false,false
+    end,
+},true)
+function T.enter_stage(game,key)
+    local a=T.ambients[game]
+    if not a then return end
+    local scene=stage.current_stage
+    if a.key~=key or a.scene~=scene or scene.timer<a.started or not IsValid(a.anchor) then
+        T.clear(a.anchor)
+        if IsValid(a.anchor) then object.RawDel(a.anchor) end
+        T.ambients[game]=nil
+    end
+end
+function T.ambient_start(game,key,script,x,y,entry)
+    T.enter_stage(game,key)
+    local a=T.ambients[game]
+    if a then return a.carrier end
+    local anchor=New(T.ambient_anchor)
+    a={key=key,scene=stage.current_stage,started=stage.current_stage.timer,anchor=anchor}
+    T.ambients[game]=a
+    a.carrier=T.start(anchor,game,script,x,y,0,nil,nil,entry)
+    return a.carrier
 end
 function T.manage(game,key)
     T.managed[game]=T.managed[game] or {}
