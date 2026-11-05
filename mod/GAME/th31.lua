@@ -48861,11 +48861,11 @@ end
 ---   Sub11 枪：朝 movementAngle 的 1 路 3 层扇（速度 3→1.2），间隔 16 帧起、
 ---         每轮 −1 降到 8 帧后固定（JMP_IF_INT_LE li0 8）。
 ---   Sub14 收尾：REMOVE_ALL_BULLETS + KILL_ALL_NON_BOSS。
----   Sub15 开场烟尘：差异 2，跳过。
+---   Sub15 开场烟尘：按原作独立存活，跨过中Boss及后半道中。
 ---
 ---与原作的不同（代码里按「差异 N」引用）：
 ---  1  子 context（枪）挂上的那一帧按「当帧跑 t=0」处理（同 Stage 1 道中卡）。
----  2  烟尘（Sub15）不实现（纯观感）。
+---  2  独立后半练习缺少前段历史时，从Sub15 t20稳态循环开始。
 ---  3  贴图是**占位**：所有敌人一律 `servant`，出弹走 EX 的 ball_small / ball_mid
 ---     （跟本文件其它搬运卡同口径，全部实现完再统一换）。
 ---  4  `SET_DAMAGE_REDUCTION_TIMER` 之外的 Anm / 演出指令（SET_MAIN_ANM /
@@ -48936,6 +48936,7 @@ end
 
 local unit            ---前置声明（SUBS 里的闭包要引用；类表在下面才建）
 local units           ---本卡活着的单位（card_init 里建表）
+local source_file = "ecldata4a"
 local GUN             ---子 context（枪）的表：SUB / set_child 都要用，前置声明
 
 ---------------------------------------------------------------------
@@ -49180,22 +49181,22 @@ end
 local SUB1 = {
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
-                   speed1 = 4.6, speed2 = 2, angle = 0, step = 0.2855993,
+                   speed1 = 4.6, speed2 = 2, angle = 0, step = -0.28559932,
                    flags = 0x203 })
     end },
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 1,
-                   speed1 = 2.4, speed2 = 1, angle = 0, step = 0.3926991,
+                   speed1 = 2.4, speed2 = 1, angle = 0, step = -0.3926991,
                    flags = 0x203 })
     end },
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 3, count2 = 1,
-                   speed1 = 2.2, speed2 = 1, angle = 0, step = 0.3926991,
+                   speed1 = 2.2, speed2 = 1, angle = 0, step = -0.3926991,
                    flags = 0x203 })
     end },
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 4, count2 = 1,
-                   speed1 = 1.8, speed2 = 1, angle = 0, step = 0.3926991,
+                   speed1 = 1.8, speed2 = 1, angle = 0, step = -0.3926991,
                    flags = 0x203 })
     end },
     { 18, function() return { t = 0, pc = 1 } end },
@@ -49206,17 +49207,17 @@ local SUB1 = {
 local SUB2 = {
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
-                   speed1 = 4.6, speed2 = 2, angle = 0, step = 0.2855993,
+                   speed1 = 4.6, speed2 = 2, angle = 0, step = -0.28559932,
                    flags = 0x203 })
     end },
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 1, count2 = 1,
-                   speed1 = 3, speed2 = 0.5, angle = PI, step = 0.2855993,
+                   speed1 = 3, speed2 = 0.5, angle = PI, step = -0.28559932,
                    flags = 0x203 })
     end },
     { 0, function(u)
         shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 1,
-                   speed1 = 2.5, speed2 = 0.5, angle = PI, step = 0.2855993,
+                   speed1 = 2.5, speed2 = 0.5, angle = PI, step = -0.28559932,
                    flags = 0x203 })
     end },
     { 10, function() return { t = 0, pc = 1 } end },
@@ -49226,7 +49227,7 @@ local SUB2 = {
 local SUB13 = {
     { 0, function(u)
         shoot(u, { op = 96, type = 2, color = 6, count1 = 10, count2 = 1,
-                   speed1 = 1.6, speed2 = 1, angle = 0, step = 0.448799,
+                   speed1 = 1.6, speed2 = 1, angle = 0, step = -0.44879895,
                    flags = 0x203 })
     end },
     { 15, function() return { t = 0, pc = 1 } end },
@@ -49277,9 +49278,9 @@ local SUB4 = {
     {0,function(u) u.exi0=3 end},
     {0,function(u)
         shoot(u,{op=96,type=6,color=6,count1=1,count2=1,
-            speed1=3,speed2=0.5,angle=0,step=0.28559932,flags=0x203})
+            speed1=3,speed2=0.5,angle=0,step=-0.28559932,flags=0x203})
         shoot(u,{op=96,type=6,color=6,count1=1,count2=1,
-            speed1=1.5,speed2=0.5,angle=-PI,step=0.28559932,flags=0x203})
+            speed1=1.5,speed2=0.5,angle=-PI,step=-0.28559932,flags=0x203})
     end},
     {4,function(u)
         u.exi0=u.exi0-1
@@ -49480,7 +49481,7 @@ local function u_shot_tick(u)
 end
 
 unit = class.th08_combat.unit({
-    source_file='ecldata4a',
+    source_file=function() return source_file end,
     ---@param sub number 敌机子程序号
     ---@param x number   局部位置（SPAWN_FAM_INHERIT_POS 的子敌人传 0,0）
     ---@param mirror boolean SPAWN_ENEMY_MIRRORED
@@ -49903,6 +49904,11 @@ local TIMELINE_S4BACK = {
 local function make_init(TL)
     return function(owner)
         units = {}
+        local registered=owner.current_card and owner.current_card.th08_registered_id
+        source_file=(registered==3414 or registered==3418) and "ecldata4b" or "ecldata4a"
+        if TL==TIMELINE_S4BACK then
+            OriginalStageVisual.presentation.ambient_start(8,source_file,source_file..":15",-162,240,{pc=8,time=20})
+        end
         EX.clear_records(owner)
         EX.pool_clear()
         EX.fm = 1
@@ -49923,7 +49929,7 @@ local function card_frame(owner)
         local e = TL[owner.tl_i]
         owner.tl_i = owner.tl_i + 1
         if e[2] == 15 then
-            ---差异 2：Sub15 是开场烟尘。
+            OriginalStageVisual.presentation.ambient_start(8,source_file,source_file..":15",e[3],e[4])
         elseif e[2] == 14 then
             ---Sub14：ins_162 REMOVE_ALL_BULLETS + ins_95 KILL_ALL_NON_BOSS。
             ---★ KILL_ALL_NON_BOSS（EnemyManager.cpp:1426-1450）是把每只非 BOSS 的 `life = 0`

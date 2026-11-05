@@ -300,7 +300,8 @@ return function()
             if o.status=='del' or o.status=='kill' then M.discard(o);return end
             o.th08_unit_age=1 -- 构造器已完成出生ECL；手动敌机循环从t1继续。
             if OriginalStageVisual and define.source_file then
-                OriginalStageVisual.bind_source(o,8,define.source_file..':'..sub)
+                local file=type(define.source_file)=='function' and define.source_file(o) or define.source_file
+                OriginalStageVisual.bind_source(o,8,file..':'..sub)
             end
             local owner=attach(o,linked,linked~=nil)
             if linked then o._original_familiar_collision=false end
@@ -591,7 +592,7 @@ return function()
             o._original_hidden=false
             init(o)
             -- 时间轴t1的无判定效果实体此前被筛掉；战斗子机仍走原有实体实现。
-            local ambient=({[1000]='ecldata1:14',[1001]='ecldata4a:15',
+            local ambient=({[1000]='ecldata1:14',
                 [1003]='ecldata2:16'})[id]
             if ambient then OriginalStageVisual.presentation.start(o,8,ambient,-162,240,1) end
             if id==467 or id==468 then
