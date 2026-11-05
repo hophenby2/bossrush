@@ -180,6 +180,17 @@ function S.draw(o)
     local tint=not (o._original_source or o._original_explicit) and {o._r or 255,o._g or 255,o._b or 255} or nil
     for _,vm in pairs(s.slots) do A.draw(vm,o.x,o.y,o.rot,1,1,alpha,tint) end
     local override=o._original_enemy_color and {color=o._original_enemy_color,alpha=s.vm.alpha[1]/2}
+    local trail=o.th08_trail
+    if trail then
+        -- TH08 flags5：按当前主VM画旧位置，alpha=原alpha-floor(alpha*k/count)。
+        -- history[1]是原槽0（本拍位置）；从count-1倒序按stride采样，不复制附属VM。
+        local a=s.vm.alpha[1]
+        for k=trail.count-1,1,-trail.step do
+            local p=trail.history[k+1]
+            if p then A.draw(s.vm,p[1],p[2],o.rot,1,1,alpha,tint,
+                {alpha=a-math.floor(a*k/trail.count)}) end
+        end
+    end
     A.draw(s.vm,o.x,o.y,o.rot,1,1,alpha,tint,override)
     draw_alignment(o)
     return true

@@ -13,7 +13,7 @@ EXTRA={8:{63,90,91,92,93,94,110,124,135,136,137,139,140},95:set(range(54,66))|{7
 FX={8:{136,137,139,140},95:set(range(54,63))|{77,79,80,81,118,119,124,143,144,150,151,152}}
 def has_effect(game, instruction):
  if game==8 and instruction.op in (136,137):
-  return instruction.args and instruction.args[0] == (1 if instruction.op==136 else 13)
+  return instruction.args and instruction.args[0] in ((1,10,17) if instruction.op==136 else (13,))
  return instruction.op in FX[game]
 def export(workspace):
  output={};evidence=[]

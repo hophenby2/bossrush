@@ -490,9 +490,10 @@ function V.laser(base, game)
     return mapped
 end
 function V.laser_protected(o)
-    return o._native_laser_game==7 and math.floor((o.pl_flags or 0)/4)%2==1
+    return o._native_laser_box or o._native_laser_game==7 and math.floor((o.pl_flags or 0)/4)%2==1
 end
 function V.laser_drops(o,drop,force)
+    if o._native_laser_box then return end -- 借激光接口承载的敌机矩形不属于Laser/BulletManager。
     if not force and V.laser_protected(o) then return end
     local game=o._native_laser_game or o._native_laser_managed
     local phase=o._native_laser_phase
@@ -509,6 +510,7 @@ function V.laser_drops(o,drop,force)
 end
 -- 原作消激光不拆成缺少寿命的新laser对象。TH08保留原类，直接进入自己的DESPAWNING。
 function V.cancel_laser(o,drop,force)
+    if o._native_laser_box then object.Preserve(o);return end
     if o._native_cancelled then return end
     -- TH07 RemoveAllBullets保留flags4的光；符卡结算的强制清场另走force。
     if not force and V.laser_protected(o) then object.Preserve(o);return end

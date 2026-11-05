@@ -1,5 +1,5 @@
 -- 原作ECL创建的独立ANM。效果17/26的径向位移与40的带状网格不能当普通精灵画。
-local F={objects={}}
+local F={objects={},shakes={}}
 local A=OriginalANM
 -- 渲染桥接使用100像素世界单位/背景场景单位；ECL位置与速度参数保持原值。
 local function camera()
@@ -128,28 +128,67 @@ F.effect=Class(object,{
         else A.draw(o.vm,o.x,o.y) end
     end,
 },true)
--- TH08 ExIns1：ScreenEffect::CalcArcadePulse，白色场地脉冲60帧、一次。
+-- TH08 ExIns1/10/17：ScreenEffect::CalcArcadePulse，保留时长、次数和原ARGB透明度。
 -- 原calc优先级3在敌机11之前；出生帧尚未计算alpha，下一帧从255开始。
 F.screen_pulse=Class(object,{
-    init=function(o,phase)
+    init=function(o,phase,duration,repeats,alpha)
         o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.TOP-.5,false,false
         o.phase,o.age,o.alpha=phase,0,0
+        o.duration,o.repeats,o.maximum=duration or 60,repeats or 1,alpha or 255
         o.born=stage.current_stage.timer
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
         if stage.current_stage.timer==o.born then return end
-        if o.age>=60 then object.RawDel(o);return end
-        o.alpha=255-math.floor(o.age*255/60)
+        if o.age>=o.duration then
+            o.alpha=0;o.repeats=o.repeats-1
+            if o.repeats<=0 then object.RawDel(o);return end
+            o.age=0
+        else o.alpha=o.maximum-math.floor(o.age*o.maximum/o.duration) end
         o.age=o.age+1
     end,
     render=function(o)
         SetViewMode('world')
         SetImageState('white','',o.alpha,255,255,255)
-        local w=lstg.world
-        RenderRect('white',w.l,w.r,w.b,w.t)
+        local w,p=lstg.world,lstg.worldoffset
+        local hw,hh=(w.r-w.l)/p.hscale/2,(w.t-w.b)/p.vscale/2
+        local x,y=p.centerx+p.dx/p.hscale,p.centery+p.dy/p.vscale
+        RenderRect('white',x-hw,x+hw,y-hh,y+hh)
     end,
 },true)
+function F.shake_envelope(phase)
+    F.shakes[#F.shakes+1]={phase=phase,born=stage.current_stage.timer,age=0}
+end
+local function release_shake()
+    local p=lstg.worldoffset
+    if F.shake_owned and p.dx==F.shake_x and p.dy==F.shake_y then p.dx,p.dy=0,0 end
+    F.shake_owned=nil
+end
+function F.advance_shake()
+    local scene,clock=stage.current_stage,stage.current_stage.timer
+    if F.shake_scene==scene and F.shake_clock==clock then return end
+    F.shake_scene,F.shake_clock=scene,clock
+    local kept={}
+    for _,s in ipairs(F.shakes) do
+        if valid(s.phase) and s.age<369 then
+            kept[#kept+1]=s
+            if clock~=s.born then
+                s.age=s.age+1
+                local envelope=s.age<120 and s.age/120 or s.age<310 and 1 or (370-s.age)/60
+                local a=4*envelope
+                local x=ran:Int(0,2)
+                local y=ran:Int(0,2)
+                -- 原ANM屏幕偏移向右/下；本项目worldoffset是摄像机偏移。
+                F.shake_x=-(x==1 and a or x==2 and -a or 0)
+                F.shake_y=y==1 and a or y==2 and -a or 0
+                lstg.worldoffset.dx,lstg.worldoffset.dy=F.shake_x,F.shake_y
+                F.shake_owned=true
+            end
+        end
+    end
+    F.shakes=kept
+    if #kept==0 then release_shake() end
+end
 function F.new(game,archive,script,x,y,phase,kind,argb,angle)
     local stage=stage and stage.current_stage
     local clock=stage and stage.timer
@@ -173,6 +212,8 @@ function F.spawn8(owner,phase,id,count,argb,angle)
     end
 end
 function F.clear(phase)
+    for i=#F.shakes,1,-1 do if F.shakes[i].phase==phase then table.remove(F.shakes,i) end end
+    if #F.shakes==0 then release_shake() end
     local n=0
     for _,o in ipairs(F.objects) do
         if valid(o) and o.phase==phase then object.RawDel(o)

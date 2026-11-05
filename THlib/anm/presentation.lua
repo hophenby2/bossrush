@@ -78,6 +78,11 @@ local function effect(s,c,op,a)
         if op==139 or op==140 then F.spawn8({x=s.x,y=s.y},s.phase,a[1],a[2],a[3],a[4]) end
         if op==124 and a[1] and s.bank.sound_scripts[c.sub] then T.sound.play(8,a[1],s.x) end
         if op==136 and a[1]==1 then New(F.screen_pulse,s.phase) end
+        if op==136 and a[1]==10 then
+            New(F.screen_pulse,s.phase,30,5,64)
+            F.shake_envelope(s.phase)
+        end
+        if op==136 and a[1]==17 then New(F.screen_pulse,s.phase,180) end
         if op==137 then s.ex_callback=a[1]>=0 and a[1] or nil end
     else
         if op>=54 and op<=62 and o._original_presentation_carrier then
@@ -364,4 +369,5 @@ function T.clear(phase)
     F.clear(phase)
 end
 T.new_effect=F.new
+T.advance_shake=F.advance_shake
 return T

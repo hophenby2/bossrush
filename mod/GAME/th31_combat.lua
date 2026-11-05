@@ -600,6 +600,8 @@ return function()
             end
         end
         card.frame=function(o)
+            -- 原ScreenEffect calc优先级3在EnemyManager 11之前，随机消费同样先于敌机。
+            OriginalStageVisual.presentation.advance_shake()
             -- 每帧推进，包括before入场期；不能等到下一次发弹/有使魔才开始数7帧。
             M.form_tick=M.form_tick+1
             M.form()

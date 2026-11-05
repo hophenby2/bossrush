@@ -4562,13 +4562,13 @@ end
 ---  ecldata8sp.ecl：Sub110 = BOSS 根、Sub111 = 一次「凤凰」出弹、Sub112 = 凤凰本体。
 ---
 ---  · 时间轴：t=0 `ins_64(110, 4, 192, 128)` 入场插值到 TH08 (192,128) = 我们 (0,96)。
----    之后是 **680 帧一轮**的循环：t=850 的 `ins_4(170, −1560)` 跳回 064324
+---    之后脚本时间差680拍，另有700处的5拍暂停，实际685拍一轮：850回170
 ---    （= t=170 的第 4 条 `SET_FLOAT [lf0, π]`）—— 不是跳回 t=170 的第一条，
 ---    所以前面的 `SET_SECONDARY_HITBOX [256,24]`（064264）、`SET_INT [li7, 20]`
 ---    （064284）、`SET_FLOAT [lf5, 3]`（064304）**只跑一次**；循环体每轮把
 ---    li7 重置成 2、li6 重置成 1（= SHOOT_CIRCLE 的两个色号）。
 ---  · 一轮里有五段 CALL 111（Sub111），段与段之间 BOSS 随机飘 60 px：
----      t=190..230 ×5   每段前 lf0 = AIM_TO_PL（li6/li7 = 1/2）
+---      t=190..230 ×5   只在190锁定自机角，后四次CALL保持该角（li6/li7 = 1/2）
 ---      t=260           ins_67 MOVE_RANDOM_IN_BOUNDS [60, 4, 1]（60 帧 · 1 px/帧）
 ---      t=340..380 ×5   lf0 = AIM_TO_PL
 ---      t=440           ins_67
@@ -4633,12 +4633,11 @@ local CYCLE_LAST = 850                  -- 循环体最后一条（那条 ins_4�
 local WANDER_1, WANDER_2 = 260, 440     -- 两次 ins_67
 local WANDER_FRAMES = 60                -- ins_67 的参数 0
 local WANDER_SPEED = 1.0                -- ins_67 的参数 2
-local SECONDARY_HOLD = 1                -- t=700 的 SET_SECONDARY_TIME
 
 ---Sub111（一次 CALL 111）的弹参数。
 local CULL_DELAY = 120                  -- op111 记录 0 的 frames
 local PHOENIX_SPEED = 0.5               -- ins_97 的 speed1 / speed2
-local PHOENIX_ACCEL = 0.141667          -- op111 记录 1 的 magnitude
+local PHOENIX_ACCEL = 0.14166666567325592 -- op111记录1的原始float32，不截成六位小数。
 local PHOENIX_ACCEL_FRAMES = 120        -- op111 记录 1 的 durationFrames
 local SPAWN_FAST_FRAMES = 10            -- etama.anm script21 的长度
 local SPAWN_NORMAL_FRAMES = 15          -- etama.anm script22 的长度
@@ -4654,12 +4653,12 @@ local POOL_SIZE = 1536                  -- BulletManager.hpp:455（0x600 个弹�
 ---24 个「凤凰」偏移（TH08 口径）：偏移角 = lf0 + δ、半径 = r。
 ---逐条对上 Sub111 的 24 组 ins_38 + ins_97（顺序就是原作的出生顺序）。
 local PHOENIX_OFFSETS = {
-    {  0,       32 }, {  3.14159, 32 }, {  2.0944,  32 }, { -2.0944,  32 },
-    {  0,       16 }, {  3.14159, 16 }, {  2.0944,  16 }, { -2.0944,  16 },
-    {  2.35619, 64 }, { -2.35619, 64 }, {  2.0944,  64 }, { -2.0944,  64 },
-    {  2.51327, 96 }, { -2.51327, 96 }, {  2.35619, 96 }, { -2.35619, 96 },
-    {  2.35619, 48 }, { -2.35619, 48 }, {  2.0944,  48 }, { -2.0944,  48 },
-    {  2.51327, 80 }, { -2.51327, 80 }, {  2.35619, 80 }, { -2.35619, 80 },
+    {0,32},{3.1415927410125732,32},{2.094395160675049,32},{-2.094395160675049,32},
+    {0,16},{3.1415927410125732,16},{2.094395160675049,16},{-2.094395160675049,16},
+    {2.356194496154785,64},{-2.356194496154785,64},{2.094395160675049,64},{-2.094395160675049,64},
+    {2.5132741928100586,96},{-2.5132741928100586,96},{2.356194496154785,96},{-2.356194496154785,96},
+    {2.356194496154785,48},{-2.356194496154785,48},{2.094395160675049,48},{-2.094395160675049,48},
+    {2.5132741928100586,80},{-2.5132741928100586,80},{2.356194496154785,80},{-2.356194496154785,80},
 }
 
 ---t → 这一次 CALL 111 写进 lf0 的偏移（TH08 口径：lf0 = AIM_TO_PL + shift）。
@@ -4688,13 +4687,7 @@ local phoenixes = {}
 local lw211_bullet
 local lw211_phoenix
 
----IsWithinPlayfield（GameManager.cpp:132-150）：加半个精灵宽高之后还在不在场地里。
----本卡四种弹的贴图都是占位 ball_small（16×16）→ 半宽高 8。
-local SPRITE_HALF = 8
-local function outside_field(x, y)
-    return x + SPRITE_HALF < FIELD_L or x - SPRITE_HALF > FIELD_R
-            or y + SPRITE_HALF < FIELD_B or y - SPRITE_HALF > FIELD_T
-end
+---type19/7的半宽16、type10的半宽32、type5的半宽8，回收须按各自原ANM尺寸。
 
 ---本卡的弹池计数：原作 activeBulletCount 数是**所有非空弹槽**（不看位置，
 ---BulletManager.cpp:810-816 每帧先清零再数一遍），所以这里只按「对象还活着」清表。
@@ -4730,6 +4723,7 @@ lw211_bullet = Class(bullet, {
                     spawn_frames, spawn_step, accel, accel_frames, cull)
         ---bullet:init(imgclass, index, stay, destroyable)（THlib/bullet/bullet.lua:75）
         bullet.init(self, style_of(btype), color_of(btype, color), false, true)
+        self.ex_angle=angle
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210 同款）
         self.lw211_bvx = math.cos(angle) * speed
         self.lw211_bvy = math.sin(angle) * speed
@@ -4776,7 +4770,7 @@ lw211_bullet = Class(bullet, {
         self.y = self.y + self.lw211_bvy
         ---⑤ 出屏回收（:857-899）：本卡没有 DIRECTION_CHANGE / BOUNCE 状态
         ---   → 延时一过，一出屏就消失。
-        if self.lw211_cull == 0 and outside_field(self.x, self.y) then
+        if self.lw211_cull == 0 and EX.outside(self,self.x,self.y) then
             object.RawDel(self)
             return
         end
@@ -4784,9 +4778,9 @@ lw211_bullet = Class(bullet, {
     end,
 })
 
----Sub112（凤凰本体）。占位贴图 "servant"；原作它有 life 1000 与判定，
----但 t=51 就 TERMINATE，移植版不给判定（占位口径，见文件头）。
-local PHOENIX_LIFE = 51                 -- t=51 的 ins_1 TERMINATE
+---Sub112是NO_SPRITE隐藏发射体。虽然没有真正发弹，仍保留200拍运动和
+---50..199的150次随机枪口偏移；51是循环内部的脚本时间，不是对象寿命。
+local PHOENIX_LIFE = 200                -- t50处循环150次，到真实200拍才执行t51的终止。
 local PHOENIX_SPEED_0 = 0.3             -- ins_65 的 speed
 local PHOENIX_ACCEL_0 = 0.025           -- ins_71 的参数
 local PHOENIX_ACCEL_AT = 20             -- ins_71 在 t=20
@@ -4805,10 +4799,11 @@ lw211_phoenix = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:112', {
         self.lw211_t = 1 -- Sub112出生已设置速度，t=20加速不能再延后一帧。
         self.lw211_dir = angle          -- 我们坐标（= lf0 取反）
         self.lw211_spd = PHOENIX_SPEED_0
+        self.lw211_radius = 32
     end,
     frame = function(self)
         local t = self.lw211_t
-        ---t=51 TERMINATE → RunEcl 返回 −1 → 敌机 Despawn（EnemyManagerUpdate.cpp:161-165）。
+        ---字面t51的DEC/JUMP回拨到50共150次，不能按字面时间提前删除。
         if t >= PHOENIX_LIFE then
             object.RawDel(self)
             return
@@ -4816,6 +4811,13 @@ lw211_phoenix = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:112', {
         ---先跑 ECL（t=20 才装上加速度），再 UpdateMovement（POLAR：speed += accel）。
         if t >= PHOENIX_ACCEL_AT then
             self.lw211_spd = self.lw211_spd + PHOENIX_ACCEL_0
+        end
+        if t>=50 then
+            -- Sub112没有发弹指令，但每轮仍抽RANDRAD并写枪口偏移；保留全部150次。
+            local a=ran:Float(-PI,PI)
+            self.lw211_offset_x=math.cos(a)*self.lw211_radius
+            self.lw211_offset_y=-math.sin(a)*self.lw211_radius
+            self.lw211_radius=math.min(64,self.lw211_radius+1)
         end
         self.x = self.x + math.cos(self.lw211_dir) * self.lw211_spd
         self.y = self.y + math.sin(self.lw211_dir) * self.lw211_spd
@@ -4888,9 +4890,9 @@ end
 ---一次 CALL 111（Sub111）。lf0（TH08）= AIM_TO_PL + shift；换算到我们坐标只差一个
 ---整体取反（见文件头），所以方向 = dir − shift，其中 dir 就是「BOSS → 自机」的
 ---我们的角度（给自机狙用同一个数）。
-local function call_111(owner, shift)
+local function call_111(owner, shift, locked_aim)
     local bx, by = owner.x, owner.y
-    local dir = math.atan2(player.y - by, player.x - bx) - shift
+    local dir = (locked_aim or math.atan2(player.y - by, player.x - bx)) - shift
     ---① ins_94：凤凰本体从此处起飞。
     phoenixes[#phoenixes + 1] = New(lw211_phoenix, bx, by, dir)
     ---② ins_97 ×24：凤凰轮廓。偏移角 = lf0 + δ（我们 = dir − δ），方向一律 lf0。
@@ -4959,12 +4961,18 @@ local function boss_frame(owner)
         owner.lw211_freeze = owner.lw211_freeze - 1
     else
         local t = owner.lw211_t
+        -- 每轮170的lf1=RANDF2*16即使后面没读，也必须消耗随机数；850回跳同拍重做。
+        if t==CYCLE_FIRST or t==CYCLE_LAST then ran:Float(-1,1) end
         if t == WANDER_1 or t == WANDER_2 then
             begin_wander(owner)
         end
         local shift = CALL_SHIFT[t]
         if shift then
-            call_111(owner, shift)
+            -- 仅190读自机角；200/210/220/230的CALL继承这个快照。
+            if t<200 or t>230 then
+                owner.lw211_aim=math.atan2(player.y-owner.y,player.x-owner.x)
+            end
+            call_111(owner, shift, owner.lw211_aim)
         end
         if t == 560 then
             owner.lw211_li7, owner.lw211_li6 = 4, 3
@@ -5004,6 +5012,7 @@ end
 
 local function card_init(owner)
     owner.lw211_t = 0
+    owner.lw211_aim = nil
     owner.lw211_freeze = 0
     owner.lw211_lf5 = 3                 -- 循环体第一条（**只跑一次**）：ins_7(lf5, 3)
     owner.lw211_li7 = 2
@@ -5083,10 +5092,9 @@ end
 ---               xi3/xi2/lf6 初值）只跑一次，落点起的 5 条（lf0 = AIM_TO_PL、
 ---               `ins_135(0,45)`、ei0 = 0、`ins_135(1,47)`、`ins_17(lf7,−1)`）**每轮**重跑。
 ---               加上 `ins_2(xi2)` 冻住的 xi2 帧，一轮的实际长度 = (500−170) + 60 + xi2 帧。
----             ★ `ins_46(xi3, 16, …)` 命中时直接跳到 `ins_4`：`ins_2` 的冻结、
----               `xi2 −= 3`、`lf6 += 0.4` 全被跳过 → 第 15 轮起 xi2 恒为 18、lf6 恒为 6。
----             ★ `lf6` 递增给**下一轮重挂的** Sub47 当 speed1（见下），CALL 44 仍被
----               RETURN 整块还原，所以 BOSS 自己的 lf6 只用于「拷给子 context」。
+---             ★ 0x5ae8命中跳到0x5b18的wait，只跳过xi3--；xi3下限16。
+---             等待结束后xi2>=30才减3，故下限27；lf6独立加0.4到至少6。
+---             新一轮的激光和环线程必须在等待后重建，不能在500同拍开始。
 ---
 ---  · Sub44（CALL 44，生 4 只使魔）：两个结构相同的块，每块**重新抽一次半径**
 ---    `lf3 = rndUnit × 16 + 64`，块内两只共用同一个 lf3：
@@ -5162,12 +5170,9 @@ end
 ---    两条在 cf0−π/2 那一边（`ins_110` 设 shootOffset、`ins_116` 选槽、`ins_114` 建）。
 ---    t=60 起 20 帧，每帧 `ins_117` ×4 转 ±4.5°（slot0 −、slot1 +、slot2 +、slot3 −，
 ---    TH08 口径）→ 合计 ±90°：两条扫到自机方向、两条扫到反方向。
----    之后 `ins_6(ei0, 0)` + `ins_42(ei0, 1, …)`/`ins_4(61, −48)` 组成的**等待循环**：
----    ★ 那个循环**每帧先把 ei0 清 0 再判 `ei0 != 1`**（@0x6150 `SET_INT ei0 0` →
----      @0x6164 `JMP_IF_INT_NE ei0 1`），所以判据永远成立、`ins_121` ×4 CANCEL_LASER
----      是**死代码** —— 光柱不会被 cancel，只能自己走完 6000 帧的 duration。
----      （ei0 = ENEMY_INT_0，enemy 级变量，主 context 与所有子 context 共用，
----      EclOperandsInt.cpp:38 走 `enemy->eclIntVariables[]`。）
+---    之后0x6150只清零一次；0x6194的回跳目标是0x6164比较指令。
+---    主线程500拍写ei0=1并进入wait，子context同拍通过等待、取消四条激光。
+---    ei0是敌机级共享变量；取消把state置DESPAWNING、timer归0并保留当前宽度。
 ---    ★ 光柱参数（ins_114 裸字节，LaserSpawnArgs 见 EclRunHigh.inl:53-76）：
 ---      bulletType 0 / color 2 / angle = lf2 或 lf1 / speed 0 / startOffset 0 /
 ---      endOffset 512 / startLength 512 / width 32 / startTime 60 / duration **6000** /
@@ -5176,11 +5181,8 @@ end
 ---      拿 `position ± size/2`，size[0] = endOffset − startOffset、size[1] = width/2
 ---      （Player.cpp:396-424）。★ 给 THlib 的 laser 类填 w = width/2 = 16
 ---      （laser:frame 的判定是 `dy < self.w / 2`）→ 有效半宽 8，两边一致。
----    ★ 光柱寿命：STARTING 60 帧 → ACTIVE **duration = 6000 帧**（BulletManager.cpp:1122-1127），
----      而那个 CANCEL 循环是死代码（见上）→ 这 4 条转完 ±90° 后一直停在
----      「两条指向自机方向、两条指向反方向」的姿态上，直到 6000 帧后自己消失。
----      又因为落点块**每轮重跑** `ins_135(0, 45)`，每轮都会新挂 4 条（BOSS 的
----      laserSlots 0..3 被覆盖，旧 4 条被孤立在全局槽里继续留着）→ 场上光柱会一轮轮叠加。
+---    ★ 光柱自然ACTIVE上限6000拍；本卡主线程在500处触发取消，随后消散60拍。
+---      下一组在wait结束后生成，旧组只在消散窗口内短暂重叠，不会逐轮无限堆积。
 ---    ★ STARTING 段没有多余的判定帧：原作在 `timer >= hitboxStartTime` 那一刻才开判定
 ---      （BulletManager.cpp:1101-1103），而 hitboxStartTime == startTime == 60，正好是转
 ---      ACTIVE 的那一帧 → `colli = (timer >= 60)` 与原作等价。
@@ -5217,7 +5219,7 @@ local CALL_T = { [170] = true, [200] = true, [230] = true, [260] = true }
 local XI3_INIT, XI2_INIT, LF6_INIT = 30, 60, 4
 local XI3_STOP = 16                         -- `ins_46(xi3, 16, …)`
 local XI2_MIN, XI2_STEP = 30, 3             -- `ins_44(xi2, 30, …)` / `ins_11(xi2, 3)`
-local LF6_MAX, LF6_STEP = 6, 0.4            -- `ins_51(lf6, 6, …)` / `ins_15(lf6, 0.4)`
+local LF6_MAX, LF6_STEP = 6, 0.4000000059604645            -- `ins_51(lf6, 6, …)` / `ins_15(lf6, 0.4)`
 local WANDER_SPEED = 1.5                    -- ins_67 的参数 2
 local WANDER_EASING = 4                     -- ins_67 的参数 1（OUT_QUADRATIC）
 ---ins_75(32, 112, 352, 192) 的钳制范围 → 我们坐标（y 是 224 − y）。
@@ -5226,7 +5228,7 @@ local BOUND_L, BOUND_R, BOUND_B, BOUND_T = -160, 160, 32, 112
 ---Sub45（4 条扫射光柱）。
 local S45_SPIN_FIRST = 60                   -- 子 context 自己的 time 60 开始转
 local S45_SPIN_FRAMES = 20                  -- `ins_6(xi0, 20)` 的 JUMP_DEC 循环
-local S45_SPIN_STEP = 0.0785398             -- `ins_117` 的字面量（4.5°）
+local S45_SPIN_STEP = 0.07853981852531433             -- `ins_117` 的字面量（4.5°）
 local S45_SPIN_DIR = { 1, -1, -1, 1 }        -- TH08 的 ∓ 取反后 = 我们坐标里的符号
 local LASER_LEN = 512                       -- endOffset − startOffset
 local LASER_W = 16                          -- TH08 的 width 32 → THlib 的 w = width/2
@@ -5243,14 +5245,14 @@ local COLOR_LASER = 3                       -- TH08 色号 2 → 我们的 3（�
 ---Sub47（自机狙五连弹环）。
 local S47_FIRST = 60                        -- 子 context time 60 起、每 `period` 帧一波
 local S47_COUNT1, S47_COUNT2 = 15, 5
-local S47_STEP = 0.0392699                  -- `ins_98` 的字面量（2.25°）
+local S47_STEP = 0.039269909262657166                  -- `ins_98` 的字面量（2.25°）
 ---★ 一波之间的间隔 = 子 context 里 `SET_SECONDARY_TIME [exI3]` 的帧数，
 ---  而 exI3 是**挂上那一刻**从 BOSS 拷的 → 每轮递减（30 → 16，见 round_restart）。
-local S47_SPEED2_RATIO = 0.7                -- 子 context t=60：lf5 = lf6 × 0.7
+local S47_SPEED2_RATIO = 0.699999988079071                -- 子 context t=60：lf5 = lf6 × 0.7
 
 ---Sub44 / Sub48（使魔）。
 local FAM_OFFSET_R = 64                     -- `ins_38(lf7, lf6, lf0, 64)`
-local FAM_SPIN = 0.052359879                  -- ±3°（lf1）
+local FAM_SPIN = 0.05235987901687622                  -- ±3°（lf1）
 local FAM_RADIUS_ADD = 16                   -- `ins_27(lf3, RANDOM_UNIT_FLOAT)` × 16
 local FAM_RADIUS_BASE = 64                  -- `ins_15(lf3, 64)`
 local ORBIT_FRAMES = 60                     -- `ins_72` 的时长（也是重发间隔）
@@ -5262,7 +5264,7 @@ local PELLET_FIRST = 2                      -- 子 context time 2 的第一发
 local PELLET_PERIOD = 2                     -- 之后每 2 帧一发（`ins_4(2, −212)` 同帧绕回）
 local PELLET_WAIT = 200                     -- Sub46仅在首次进入t=2时设置xi2
 local PELLET_WAIT_STEP, PELLET_WAIT_MIN = 2, 2 -- 每发之后ins_11(xi2,2)，不低于2
-local PELLET_ACCEL = 0.06666667              -- 记录 2 的 magnitude
+local PELLET_ACCEL = 0.06666667014360428              -- 记录 2 的 magnitude
 local PELLET_ACCEL_FRAMES = 60              -- 记录 2 的 durationFrames
 local SPAWN_FAST_FRAMES = 10                -- etama.anm script21 的长度
 local SPAWN_FAST_STEP = 0.5                 -- 出生期每帧走 velocity/2
@@ -5361,6 +5363,7 @@ lw212_bullet = Class(bullet, {
         self.x, self.y = x, y
         self.vx, self.vy = 0, 0             -- speed1 = speed2 = 0
         self.lw212_angle = angle            -- 出生那一刻的使魔移动方向（= MOVE_ANGLE）
+        self.ex_angle = angle -- 停弹时仍按出生逻辑角绘制，不能退回0度。
         self.lw212_spawn = SPAWN_FAST_FRAMES
         self.colli = false
         ---出生当帧 SpawnSingleBullet 末尾就调一次 AdvanceTransformProgram
@@ -5523,6 +5526,7 @@ lw212_familiar = class.th08_combat.actor("ecldata5sp:48", {
             local mx, my, ma = self.x, self.y, self.lw212_mangle
             local wait = self.lw212_shot_wait
             spawn_one(function()
+                OriginalStageVisual.presentation.sound.play(8,7,mx)
                 return New(lw212_bullet, mx, my, ma, wait)
             end)
             -- Sub46_20回跳越过SET_INT；即使弹池已满，本次INT_SUB仍须执行。
@@ -5584,6 +5588,7 @@ end
 ---Sub45 的 t=0：4 条光柱。两条在 cf0+π/2 那边（slot 0/1）、两条在 cf0−π/2 那边（slot 2/3）。
 local function spawn_lasers(owner)
     local d = owner.lw212_dir
+    OriginalStageVisual.presentation.sound.play(8,16,owner.x)
     local ls = {}
     for i = 1, 4 do
         local a = (i <= 2) and (d - PI / 2) or (d + PI / 2)
@@ -5624,8 +5629,8 @@ local function s45_step(owner)
             end
         end
     elseif k >= S45_SPIN_FIRST + S45_SPIN_FRAMES then
-        ---等待循环：原作那个循环每帧先把 ei0 清 0 再判据 → CANCEL 是死代码。
-        ---这里保留同款收尾（BOSS 在 t=500 置的 1 会被落点块立刻清回 0，所以永不触发）。
+        ---0x6194回跳到0x6164的比较，不会再执行0x6150的清零。
+        ---主线程500写ei0=1后，等待中的四条激光在同拍转入消散。
         if owner.lw212_ei0 == 1 then
             ---`ins_121` = CANCEL_LASER（EclRunHigh.inl:454-464）：state = DESPAWNING、
             ---timer = 0、width = currentWidth（`l.w` 本身就是 currentWidth，无需赋值）。
@@ -5761,6 +5766,13 @@ local function boss_frame(owner)
     if owner.lw212_freeze > 0 then
         ---冻结帧（`ins_2`）：ECL 不前进（原作 time-- 与帧末 time++ 相抵），位移照跑。
         owner.lw212_freeze = owner.lw212_freeze - 1
+    elseif owner.lw212_after_wait then
+        -- 0x5b18的wait之后，先更新下一轮参数，再同拍跳回110。
+        if owner.lw212_xi2 >= XI2_MIN then owner.lw212_xi2=owner.lw212_xi2-XI2_STEP end
+        if owner.lw212_lf6 < LF6_MAX then owner.lw212_lf6=owner.lw212_lf6+LF6_STEP end
+        owner.lw212_after_wait=nil
+        round_restart(owner)
+        owner.lw212_t=RESTART_T
     else
         local t = owner.lw212_t
         if t == SETUP_T then
@@ -5775,28 +5787,18 @@ local function boss_frame(owner)
         elseif CALL_T[t] then
             call_44(owner, owner.lw212_dir)
         elseif t == CYCLE_LAST then
-            owner.lw212_ei0 = 1                     -- ins_6(ei0, 1)：同帧又被落点块清回 0
+            owner.lw212_ei0 = 1                     -- 保留信号，让Sub45取消本轮激光。
             owner.lw212_s47 = nil                   -- ins_135(1, −1)
             begin_wander(owner, owner.lw212_xi2)    -- ins_67(xi2, 4, 1.5)
-            ---`ins_46(xi3, 16, …)` 命中就直接跳到 `ins_4`，下面整段（含 `ins_2`）全跳过
+            ---0x5ae8命中只跳过xi3--，目标0x5b18仍会执行wait。
             if owner.lw212_xi3 > XI3_STOP then
                 owner.lw212_xi3 = owner.lw212_xi3 - 1
-                owner.lw212_freeze = owner.lw212_xi2       -- ins_2(xi2)：下一帧起冻结
-                if owner.lw212_xi2 >= XI2_MIN then
-                    owner.lw212_xi2 = owner.lw212_xi2 - XI2_STEP
-                    if owner.lw212_lf6 < LF6_MAX then
-                        owner.lw212_lf6 = owner.lw212_lf6 + LF6_STEP
-                    end
-                end
             end
-            ---`ins_4(110, −600)`：time := 110、空间落点 = @0x5930（t=110 的
-            ---`SET_FLOAT lf0 angToPl`，**不是** t=170）→ 同帧把落点那 5 条重跑一遍
-            ---（重取自机角、重挂光柱、ei0 清 0、重挂五连弹环），帧末 time++ → 下一轮
-            ---从 111 起算（RESTART_T）。
-            round_restart(owner)
-            owner.lw212_t = RESTART_T
+            -- wait首拍在设置当帧已消耗；后续指令必须留到等待结束再执行。
+            owner.lw212_freeze=math.max(0,owner.lw212_xi2-1)
+            owner.lw212_after_wait=true
         end
-        if owner.lw212_t == t then
+        if owner.lw212_t == t and not owner.lw212_after_wait then
             owner.lw212_t = t + 1
         end
     end
@@ -5821,6 +5823,7 @@ end
 local function card_init(owner)
     owner.lw212_t = 0
     owner.lw212_freeze = 0
+    owner.lw212_after_wait = nil
     owner.lw212_xi3 = XI3_INIT
     owner.lw212_xi2 = XI2_INIT
     owner.lw212_lf6 = LF6_INIT
@@ -5847,6 +5850,7 @@ local function card_del(owner)
     ---★ 帧计数器必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw212_t = nil
     owner.lw212_freeze = nil
+    owner.lw212_after_wait = nil
     owner.lw212_move = nil
     owner.lw212_s45 = nil
     owner.lw212_s47 = nil
@@ -6164,6 +6168,7 @@ lw213_minion = OriginalStageVisual.actor_class(object, 8, 'ecldata8sp:114', {
             ---出弹位置用的是**上一帧末**的位置（RunEcl 在 UpdateMovement 之前）。
             local ang = self.lw213_theta + PI + self.lw213_acc
             if class.th08_combat.can_shoot(self) then
+                if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,self.x) end
                 fan_shot(self.x, self.y, ang, self.lw213_count1, MINION_FAN_SPEED,
                         self.lw213_color, 2, MINION_FAN_STEP, MINION_SPAWN_FRAMES, self.lw213_cull)
             end
@@ -6298,6 +6303,7 @@ local function boss_frame(owner)
         begin_wander(owner)                          -- `ins_67(60, 4, 1.0)`
     elseif t == FAN_FIRST_T then
         owner.lw213_aim = aim_to_player(owner)       -- `ins_7(lf0, ANGLE_TO_PLAYER)`
+        OriginalStageVisual.presentation.sound.play(8,15,owner.x)
     end
     local cnt = FAN_T[t]
     if cnt then
@@ -6519,11 +6525,11 @@ local FAM_ANM = { 61, 65, 64, 68, 63, 67, 62, 62 }   -- li0：ins_54 的 anm 编
 local FAM_LI1 = { 0, 20, 40, 60, 80, 100, 120, 140 }
 local FAM_LIFE = { 500, 300, 500, 300, 500, 300, 500, 300 }  -- ins_92 的操作数 3
 local ORBIT_DURATION = 100                  -- ins_73 的时长
-local ORBIT_RADIAL = 0.64                   -- … 的径向速度
-local ORBIT_SPIN = -0.15707964                 -- … 的角速度（TH08 口径，−9°/帧）
+local ORBIT_RADIAL = 0.6399999856948853                   -- … 的径向速度
+local ORBIT_SPIN = -0.15707963705062866                 -- … 的角速度（TH08 口径，−9°/帧）
 local ORBIT_DURATION2 = 6000                -- ins_74 的时长
-local ORBIT_SPIN2 = -0.0785398              -- … 的角速度（TH08 口径，−4.5°/帧）
-local SWING_STEP = 0.0130899                -- Sub45：lf1 每帧 +0.75°
+local ORBIT_SPIN2 = -0.07853981852531433              -- … 的角速度（TH08 口径，−4.5°/帧）
+local SWING_STEP = 0.013089969754219055                -- Sub45：lf1 每帧 +0.75°
 local SHOOT_T = 99                          -- ins_74 / ins_135 的时刻
 local FAM_TERMINATE_T = 6099                -- ins_1
 local FAM_HITBOX = 24                       -- ins_77(24, 24)
@@ -6532,8 +6538,8 @@ local FAM_HITBOX = 24                       -- ins_77(24, 24)
 local FAN_COUNT1 = 2
 local FAN_COUNT2 = 16
 local FAN_SPEED1 = 9.0
-local FAN_SPEED2 = 3.8
-local FAN_STEP = 0.02617994                  -- 1.5°
+local FAN_SPEED2 = 3.7999999523162842
+local FAN_STEP = 0.02617993950843811                  -- 1.5°
 local FAN_COLOR = 15                        -- ShotArgs 的 color（操作数 0 的高 16 位）
 local FAN_SPAWN_FRAMES = 10                 -- bulletType 11 → etama.decl script21
 local INTERVAL_START = 200                  -- #19 的 li1 = 200
@@ -6642,7 +6648,8 @@ local function advance_program(b)
             bullet.ChangeImage(b,style_of(r.bullet_type),color_of(r.bullet_type,r.color+1))
             b.b_prog = b.b_prog + 1
         elseif r.k == K_SOUND then
-            b.b_prog = b.b_prog + 1                 -- PLAY_SOUND（:436-441）
+            OriginalStageVisual.presentation.sound.play(8,r.sound,b.x)
+            b.b_prog = b.b_prog + 1
         elseif r.k == K_WAIT then
             b.b_wait = r.frames                     -- WAIT（:414-417）
             b.b_prog = b.b_prog + 1
@@ -6664,6 +6671,7 @@ local function fired_transform(b)
         local magnitude
         if c.timer >= c.interval then
             ---走完一次：朝向改成自机 + 记录里的偏角，速度改成记录里的速度（:1343-1360）。
+            OriginalStageVisual.presentation.sound.play(8,25,0)
             c.done = c.done + 1
             if c.done >= c.rep then
                 b.b_cd = nil
@@ -6696,6 +6704,7 @@ lw214_bullet = Class(bullet, {
         bullet.init(self, style_of(11), color_of(11, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209/210/211/212/213 同款）
         self.b_angle = angle
+        self.ex_angle = angle
         self.b_speed = speed
         self.b_vx = math.cos(angle) * speed
         self.b_vy = math.sin(angle) * speed
@@ -6726,6 +6735,7 @@ lw214_bullet = Class(bullet, {
         end
         ---② FIRED：先跑 transform 程序（含转向/等待状态机），再按新速度位移。
         fired_transform(self)
+        self.ex_angle = self.b_angle
         self.vx, self.vy = self.b_vx, self.b_vy
         bullet.frame(self)
         ---③ 出屏回收（BulletManager.cpp:856-899）。
@@ -6733,15 +6743,15 @@ lw214_bullet = Class(bullet, {
             self.b_cull = self.b_cull - 1
         end
         if self.b_cull == 0 then
-            if outside_field(self.x, self.y) then
+            if EX.outside(self,self.x+self.vx,self.y+self.vy) then
                 if self.b_cd then
                     ---还挂着转向状态 → 允许出屏 128 帧再回收。
                     self.b_off = self.b_off + 1
                     if self.b_off >= OFFSCREEN_GRACE then
-                        object.RawDel(self)
+                        OriginalBulletVisual.retire(self)
                     end
                 elseif self.b_off == 0 then
-                    object.RawDel(self)
+                    OriginalBulletVisual.retire(self)
                 else
                     self.b_off = self.b_off - 1
                 end
@@ -6762,6 +6772,7 @@ local function fan_shot(owner)
     if used >= POOL_SIZE then
         return
     end
+    OriginalStageVisual.presentation.sound.play(8,7,owner.x)
     for j = 0, FAN_COUNT2 - 1 do
         local speed = FAN_SPEED1 - (FAN_SPEED1 - FAN_SPEED2) * j / FAN_COUNT2
         for i = 0, FAN_COUNT1 - 1 do
@@ -6998,7 +7009,10 @@ local function boss_frame(owner)
         return
     end
     local t = owner.lw214_t
+    if t==90 then OriginalStageVisual.presentation.sound.play(8,13,owner.x) end
     if t == FAMILIAR_T then
+        -- Sub43@0x840c：flags5、历史90、判定长度0、stride6。
+        owner.th08_trail={history={},flags=5,count=90,collision_count=0,step=6}
         spawn_familiars(owner)                       -- `ins_92` ×8（8 条都在同一帧）
     end
     if t >= WANDER_FIRST and (t - WANDER_FIRST) % WANDER_PERIOD == 0 then
@@ -7016,10 +7030,16 @@ local function boss_frame(owner)
         end
     end
     clamp_boss(owner)
+    local trail=owner.th08_trail
+    if trail then
+        table.insert(trail.history,1,{owner.x,owner.y})
+        if #trail.history>trail.count then table.remove(trail.history) end
+    end
 end
 
 local function card_init(owner)
     owner.lw214_t = 0
+    owner.th08_trail = nil
     ---★ 落位：生成助手 Sub50 的 t=0 就 `ins_63 SET_POSITION(192, 128)` → 我们 (0, 96)
     ---  （= BOSS_START_Y；BOSS_END_Y 是下面那条 ins_64 的终点 (0)）。
     owner.x, owner.y = 0, BOSS_START_Y
@@ -7035,6 +7055,7 @@ end
 local function card_del(owner)
     ---★ 帧计数器必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw214_t = nil
+    owner.th08_trail = nil
     owner.lw214_move = nil
     for i = #familiars, 1, -1 do
         if IsValid(familiars[i]) then
@@ -7204,7 +7225,7 @@ local HEAD_PIN_T = 60                       -- 子 context Sub62 的第一条在
 
 ---环（ins_99）与它的节拍。
 local RING_START, RING_STEP = 4, 3          -- `ins_6(li0, 4)` / `ins_10(li0, 3)`
-local ACCEL_START, ACCEL_STEP = 0.008333334, 0.0025  -- `ins_7(lf6, …)` / `ins_15(lf6, …)`
+local ACCEL_START, ACCEL_STEP = 0.008333333767950535, 0.0024999999441206455  -- `ins_7(lf6, …)` / `ins_15(lf6, …)`
 local GUN_START = 60                        -- Sub61 的第一条出弹（子 context 的 time）
 local GUN_ROT_STEP = 0.1308997              -- `ins_16(lf0, 0.1308997)`
 local GUN_ROUNDS = 18                       -- `ins_6([10036], 18)`
@@ -7213,7 +7234,7 @@ local GUN_SPAWN_FRAMES = 30                 -- 模板已执行t=0；type14/15的
 
 ---弹的三条 transform 记录（Sub61 t=60 的 ins_111）。
 local CD_INTERVAL, CD_REPEAT = 60, 1
-local CD_ANGLE_OUR = 999.900024             -- TH08 记录里的 −999.9，我们坐标取反
+local CD_ANGLE_OUR = 999.9000244140625             -- TH08 记录里的 −999.9，我们坐标取反
 local WAIT_FRAMES = 180
 local ACCEL_FRAMES = 200
 
@@ -7226,11 +7247,9 @@ local SPRITE_HALF = 8                       -- 占位 ball_small 是 16×16
 ---本卡自己的弹池（= 原作那 1536 个弹槽）与彗星头登记表。
 local pool = {}
 local heads = {}
-local beams = {}
 
 local lw215_bullet
 local lw215_head
-local lw215_beam
 
 ---IsWithinPlayfield（GameManager.cpp:132-150）：加半个精灵宽高之后还在不在场地里。
 local function outside_field(x, y)
@@ -7325,6 +7344,7 @@ lw215_bullet = Class(bullet, {
         bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.bound = false                  -- 出屏回收自己判（卡 206/209..214 同款）
         self.b_angle = angle
+        self.ex_angle = angle
         self.b_speed = speed
         self.b_mag = mag
         self.b_vx = math.cos(angle) * speed
@@ -7357,6 +7377,7 @@ lw215_bullet = Class(bullet, {
         end
         ---② FIRED：先跑 transform 程序，再按新速度位移。
         fired_transform(self)
+        self.ex_angle = self.b_angle
         self.vx, self.vy = self.b_vx, self.b_vy
         bullet.frame(self)
         ---③ 出屏回收（BulletManager.cpp:856-899）。
@@ -7364,15 +7385,15 @@ lw215_bullet = Class(bullet, {
             self.b_cull = self.b_cull - 1
         end
         if self.b_cull == 0 then
-            if outside_field(self.x, self.y) then
+            if EX.outside(self,self.x+self.vx,self.y+self.vy) then
                 if self.b_cd then
                     ---还挂着转向状态 → 允许出屏 128 帧再回收。
                     self.b_off = self.b_off + 1
                     if self.b_off >= OFFSCREEN_GRACE then
-                        object.RawDel(self)
+                        OriginalBulletVisual.retire(self)
                     end
                 elseif self.b_off == 0 then
-                    object.RawDel(self)
+                    OriginalBulletVisual.retire(self)
                 else
                     self.b_off = self.b_off - 1
                 end
@@ -7390,34 +7411,9 @@ lw215_bullet = Class(bullet, {
 ---  外盒 = 590×288（沿 θ 长 590、横向 ±144），`CalcLaserHitbox(..., vm.rotation.z, 0)`
 ---         → graze = 0 ⇒ **碰到就死**（Player.cpp:396-451、lethalPath:445-451）；
 ---  内盒 = 590×224，`bossTimer.IsPeriodic(12)` 为真时才算、graze = 1（擦弹）。
----移植就用 THlib 的 laser 当碰撞载体（跟卡 207 的静止光柱同款）：l1 = 0、l2 = 590、l3 = 0
----→ 中段判定就是 `dy < w/2` 的干净矩形，w = 288 正好是 590×288 的半高 144 ×2。
----（内盒那一路的擦弹频率/范围跟原作有出入，这里只有 THlib laser 自带的擦弹；观感上隐藏。）
-local BEAM_LEN = 590                        -- outerSize.x
-local BEAM_W = 288                          -- outerSize.y
-local BEAM_T0, BEAM_T1 = 60, 180            -- `ins_137(25, 0)` / `ins_137(-1, 0)`
-
-lw215_beam = Class(laser, {
-    init = function(self, boss, theta)
-        self._native_laser_box = true
-        ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
-        ---rot 是角度制（AGENTS.md C1）：我们坐标的 θ（弧度）×RAD。
-        laser.init(self, 1, boss.x, boss.y, theta * RAD, 0, BEAM_LEN, 0, BEAM_W, 0, 0)
-        self.h_boss = boss
-        self.bound = false
-        self.alpha = 1          -- THlib 的判定条件：alpha > 0.999（laser.lua:85）
-        self.w = BEAM_W
-        self._a = 0             -- 原作这个判定盒没有立绘 → 隐藏
-        self.colli = true
-    end,
-    frame = function(self)
-        ---判定盒原点 = BOSS 的位置（头每帧钉在 BOSS + 295·(cos/sin θ)，所以原点就是 BOSS）。
-        if not IsValid(self.h_boss) then object.RawDel(self);return end
-        self.x, self.y = self.h_boss.x, self.h_boss.y
-        class.th08_native.spark_hit(self,self.x,self.y,288,224,self.timer)
-    end,
-    render = function(self) end,
-})
+---Ex25直接在敌机更新中判定，不创建可被消弹的激光代理。
+---主context回调先于Sub62跟随位置，所以原点必须读取跟随前的头位置减295偏移。
+local BEAM_T0, BEAM_T1 = 60, 180
 
 ---彗星头（Sub63..66 + 子 context Sub62）。占位贴图 "servant"。
 ---  theta = 本轮的瞄准角（= TH08 的 xF0，我们坐标）；4 个都在 BOSS 前方 295 px。
@@ -7440,7 +7436,6 @@ lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
         self.h_t = 0
         ---只有 Sub63（ANM 22）在 t=60..180 挂 ex 指令 25（那个致命矩形）。
         self.h_beam_carrier = (anm == HEAD_ANM[1])
-        self.h_beam = nil
         ---`ins_25` 的两条把落点算成「自己位置 + 295·(cos/sin θ)」（t=0 时的自己位置）。
         self.h_x0, self.h_y0 = self.x, self.y
         self.h_tx = self.x + math.cos(theta) * HEAD_DIST
@@ -7451,6 +7446,12 @@ lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
         if t >= self.h_end then
             object.RawDel(self)             -- `ins_1`（TERMINATE）
             return
+        end
+        if self.h_beam_carrier and t>=BEAM_T0 and t<BEAM_T1 then
+            -- bossTimer比ECL时间少1拍；在主context回调之后，子context才刷新跟随位置。
+            class.th08_native.spark_hit(self,
+                self.x-math.cos(self.h_theta)*HEAD_DIST,
+                self.y-math.sin(self.h_theta)*HEAD_DIST,288,224,t-1)
         end
         if t < HEAD_PIN_T then
             ---`ins_64(60, 1, lf2, lf3)`：60 帧 IN_QUADRATIC 插值（EnemyManager.cpp:90-121）。
@@ -7464,19 +7465,6 @@ lw215_head = class.th08_combat.actor("ecldata4bsp:63", {
             local b = self.h_boss
             self.x = b.x + math.cos(self.h_theta) * HEAD_DIST
             self.y = b.y + math.sin(self.h_theta) * HEAD_DIST
-        end
-        ---`ins_137(25, 0)` 在 t=60 登记 per-frame 回调、`ins_137(-1, 0)` 在 t=180 清掉
-        ---（EclRunHigh.inl:760-771、EclRun.cpp:126-128：登记当帧帧尾就跑一次）。
-        if self.h_beam_carrier then
-            if t == BEAM_T0 then
-                self.h_beam = New(lw215_beam, self.h_boss, self.h_theta)
-                beams[#beams + 1] = self.h_beam
-            elseif t == BEAM_T1 and self.h_beam ~= nil then
-                if IsValid(self.h_beam) then
-                    object.RawDel(self.h_beam)
-                end
-                self.h_beam = nil
-            end
         end
         self.h_t = t + 1
     end,
@@ -7569,6 +7557,8 @@ end
 
 ---t=150 / t=340 那一段：记下自机 x、算瞄准角、生成 4 个彗星头、挂上/换掉子 context 0。
 local function setup_dive(owner)
+    OriginalStageVisual.presentation.sound.play(8,16,owner.x)
+    OriginalStageVisual.presentation.sound.play(8,19,owner.x)
     local ax = player.x                     -- `ins_7(lf7, PLAYER_POSITION_X)`
     ---`ins_34(lf0, lf7, 640, ENEMY_X, ENEMY_Y)`：从 (自机 x, TH08 640) 指向 BOSS 的角。
     ---我们坐标里参考点就是 (自机 x, −416)，角度取反 → 直接用我们的 y 算。
@@ -7665,14 +7655,19 @@ local function boss_frame(owner)
             owner.lw215_move = nil
         end
     end
+    local trail=owner.th08_trail
+    if trail then
+        table.insert(trail.history,1,{owner.x,owner.y})
+        if #trail.history>trail.count then table.remove(trail.history) end
+    end
     owner.lw215_t = t + 1
 end
 
 local function card_init(owner)
     owner.lw215_t = 0
+    owner.th08_trail={history={},flags=5,count=15,collision_count=0,step=1}
     owner.lw215_ring = RING_START
     owner.lw215_accel = ACCEL_START
-    beams = {}
     ---★ 落位：生成助手（这个文件里没有独立的助手子程序，BOSS 由关卡脚本直接建）
     ---  的 `ins_63 SET_POSITION(192, 128)` → 我们 (0, 96)；下面是入场的 ins_64 到 ENTER_Y。
     owner.x, owner.y = 0, BOSS_START_Y
@@ -7687,6 +7682,7 @@ end
 local function card_del(owner)
     ---★ 帧计数器必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw215_t = nil
+    owner.th08_trail=nil
     owner.lw215_move = nil
     owner.g_t = nil
     for i = #heads, 1, -1 do
@@ -7694,12 +7690,6 @@ local function card_del(owner)
             object.RawDel(heads[i])
         end
         heads[i] = nil
-    end
-    for i = #beams, 1, -1 do
-        if IsValid(beams[i]) then
-            object.RawDel(beams[i])
-        end
-        beams[i] = nil
     end
     for i = #pool, 1, -1 do
         if IsValid(pool[i]) then
