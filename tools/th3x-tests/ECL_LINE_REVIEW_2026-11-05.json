@@ -5731,7 +5731,9 @@
         "补入旧调用闭包遗漏的两个姐妹Sub122/123及Sub125；核对主奏512拍周期、伴奏280拍周期，120拍发弹、60拍开始曲线运动及ANM149..156。",
         "补核乐器Sub108..120：三名演奏者分别关联乐器宿主，120时按原145重开三只乐器的游走；不把伴奏误关联到主奏位置。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "三姐妹共享受击/阶段结束仍接现有Boss Rush接口；音符是敌机弹，阶段结束由spell_live清理；普通BulletManager消弹不提前终止其ECL。",
       "implementation": [
@@ -8718,7 +8720,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54",
@@ -327125,7 +327127,9 @@
         "修复Sub21两条SHIFT环flags0被默认FAST2覆盖；Sub25/Sub24尾两圈flags4应NORMAL而不是FAST；Sub23自动连发继承flags517及DECEL1，不能用普通快速直线弹。",
         "逐行核对Sub20进场60/框与Sub26循环、Sub2的30×4帧同步暂停、禁弹夹住的Sub22/Sub23初发不出弹、Sub23七帧后每8帧共11次；Sub25/21/24全部L行及flags与三条并行变换、三段绝对移动。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -328108,7 +328112,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -328124,7 +328128,9 @@
         "修复Sub30两组弹的出生flags：8路为512无弹雾，4路为517普通弹雾，不能均走默认FAST2；使魔绑定原Sub30主ANM/132隐藏状态。",
         "逐行核对L分支在真实0开始120帧移动、真实120进入主240时钟、Sub2同步80；六只使魔60/0帧直线160位移、六个方向0/15/30/-45/-30/-15，十组6帧交替2.6/.8速度、主340+CALL80=420周期。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -328713,7 +328719,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -328730,7 +328736,9 @@
         "逐行核对Sub32/34十六轮8帧与同帧扇/五速度层、Sub34每四轮额外环；Sub33同步蓄力120+60次2帧，随机方向/速度/100..119等待/半径/颜色的原取数顺序，子机继续40帧退场。",
         "主程序最初Sub32仅执行一次，跳回60标签在其后；两次.8随机漂移、绝对(192,64)移动、后续Sub32/Sub34与调用暂停逐条对应。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -329585,7 +329593,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -329602,7 +329610,9 @@
         "修复Sub43误显示的轨道载体：132(1)原不加入可见敌机链且不标记isInBounds，137(0)仅取消禁止出界删除、不会清132。载体保持原320+4000寿命，不擅自按边界提前删。",
         "逐行核对L支120入场/480主时钟、两次Sub2同步120、510/600/770/800四组轨道载体与各80×4雪粒；Sub36四次随机闸门/三路速度、Sub47六层正负转角/50减速恢复、全部漂移与500父时钟回环。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -331061,7 +331071,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -331078,7 +331088,9 @@
         "逐行核对Sub40同步120蓄力、三只120帧长大的轨道使魔；120时固定半径、每3帧增加轨道角速初值/30并发三发，共60次，300后interrupt1再40帧结束。",
         "主Sub39两次Sub40、两次随机漂移、Sub33和Sub32顺序/同步暂停、f3每轮增加.15；10046是普通角速、10054才是轨道角速，不能把无效普通角速修改套到轨道运动。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -332145,7 +332157,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -332162,7 +332174,9 @@
         "子机ORBIT120后沿末速度直行，十二次8帧3×2层扇、156开放出界回收；10046普通角速除1.4不改10054轨道角速，原代码不加错误减旋。",
         "修复共用拖尾回收漏isInBounds历史：137保护期间仍记录头部入场，开放回收后需曾入场且头尾都离界；从未入场不能直接删。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -332805,7 +332819,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -332821,7 +332835,9 @@
         "修复Sub57第一圈flags512原无出生弹雾，不能默认FAST2；第二圈flags529的DECEL1/VEC60与无出生过渡保留。",
         "逐行核对Sub55/56/57：120/370/610三次蓄力，最后正反两组各3并同帧第二次不蓄力；子机ORBIT320、15×两次12帧环、每次以负运动方向为环角、420开放头尾离屏回收。普通角速修改不误作用于轨道角速。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -333416,7 +333432,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -333433,7 +333449,9 @@
         "逐行核对Sub48/49/50：Normal分支真实0开始120移动、六次各120同步蓄力、5/5/3/3/3/3花、五次未使用随机角也照消费、400双层16路环。",
         "花120前极坐标减速、之后+v/120加速，十二次5帧各将普通角速除1.4、反向三路与两条偏±45度的转向弹、180停加速/190开放出界，拖尾64/32/2与未入场判据保持。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机及退出接口；原故事、计分与道具不纳入攻击窗口。这里只声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -334184,7 +334202,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
@@ -334200,7 +334218,9 @@
         "修复Sub43两组向量加速扇漏FAST2，恢复原18/530出生语义及90/120帧加速；源第二组不同于第一组，分别保留.015555556与.00083333335。",
         "逐行核对60进场/框、三次30帧漂移和三个同步1帧Sub43、Sub42同步40蓄力和八只6帧相间凤凰头；180帧Hermite、180生成死亡环后210删、各dummy随机数/正负切线/两类环数量与flags513，后200父时钟回环。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -335410,7 +335430,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -335429,7 +335449,9 @@
         "逐行核对Sub45及32/33/26/27：120进场和120同步蓄力，八只凤凰头60/10/120/10/80/100/20/20帧节奏，含两次40帧CALL暂停。",
         "每头180帧双Hermite、五组共锁一次随机角，L左五组22路/3速/正90..112.5度，右前四22路/3速最后28路/3.2速与负向；60帧减速后1.6..2恢复、210删除。该卡未发现额外攻击差异。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -336453,7 +336475,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -336472,7 +336494,9 @@
         "修复Sub50的90帧向量加速扇漏FAST2，保留原18/530与.025555555。",
         "逐行核对Sub51两批4帧错开、120帧减速/转±90/恢复四档速、并行POLAR、24×4层附加环、80帧同步蓄力+84枪时长；Sub49开场Sub51只一次，后续跳转位于其后。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -337234,7 +337258,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -337254,7 +337278,9 @@
         "补回原121(1,0)全屏弯弹：按1024原槽扫描未标记弹，2/4色负角速、6/8色正角速，角幅π/(180+rand60)，L逻辑速度.3/240帧+.005263158，保留旧活动命令直到结束后再认领新命令。",
         "修复Sub57普通弹无雾flags0而非默认FAST2；逐行核对五点10帧顺/逆移动、两次120 CALL、第二次回中50期间的40 CALL、400弯弹和480回环。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -338124,7 +338150,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -338144,7 +338170,9 @@
         "修复Sub59不应快速出生，原8192/8704只设置300帧出界延迟；修复Sub60/61随机旋转弹漏FAST2，flags546与60帧POLAR正确。",
         "逐行核对五点移动、310/450各两只轨道式神120长半径/之后40×3帧角速递增与随机枪、280寿命；纯随机弹先找弹槽再消费单弹随机数。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -339312,7 +339340,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -339331,7 +339359,9 @@
         "修复非符RANDOM在Dispatch中speed2需由.2钳到.3，原强制下限不随rank偏移为0而省略；池满先拒绝再抽单弹角/速。",
         "逐行核对Sub54八组4帧相间，120减速转±90与狙击转向、32×5层附加环；Sub55三批16/40/52+22个向量加速随机弹，90/120时长、三次1帧同步CALL和跳回标签位置均保留。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -339881,7 +339911,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -339901,7 +339931,9 @@
         "两批四级回调各相隔4帧，补入原112帧空档中的0/4/8/12执行点，其余100帧等待保留。",
         "逐行核对两半段全部绝对跳点/100quad-in及60线性冲刺、各五扇/三扇/两批六环、Sub65跟随100后40删除/拖尾判定，以及所有120同步CALL和原原地空等。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -340787,7 +340819,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -340806,7 +340838,9 @@
         "逐行核对Sub66全部指令与L掩码：二十/十二/十二/八、二十/六/十二/六/十二/八组5帧扇，512不激活Hard的POLAR；按前一帧原运动角+π和随机±3.75度发射。",
         "分支自机左右选择两条垂直斜冲、绝对380自机角目标、两批五次16路环、100/60/30/40运动与Sub67跟随60/40退场、每个同步CALL及300父时钟回环；122(3)原NoOp不加效果。未发现额外攻击差异。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -342178,7 +342212,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -342197,7 +342231,9 @@
         "将来源难度明确为Normal：Sub69计数只在E/N初始化，现有11轮就是原Normal，不再用默认L元数据解释这张补充卡。",
         "逐行核对10开始120入场、130开始两轴180 Hermite并延续切线；每30调用Sub69共六次、正负π/8/按符号取色、两段各11×双路/速度下降3再上升3。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -342721,7 +342757,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -342740,7 +342776,9 @@
         "修复Sub74后六组速度继续下降而不是回升：原两段都SUB_FLOAT，形成连续减速层；Sub73则前减后加，不能套同一种变化。",
         "修复Sub73的无雾512误套默认FAST2；Sub74为528无雾VEC90，24/36发两类扇环、四个基角/颜色、130开始180帧双Hermite/每30调用四个子程序以及切线延续逐行核对。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -343296,7 +343334,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -343315,7 +343353,9 @@
         "明确采用原Normal来源，24/12路爆裂对应原Sub24/25的mask2；默认L时这些行不可执行，不能用L来源解释Normal补充卡。",
         "逐行核对Sub44八只10帧间隔与两次40帧同步CALL、210周期，Sub30/31两轴180 Hermite/所有被覆盖随机读取、180同位生成爆裂后210删；60减速±90后1/1.8恢复，原无出生雾保留。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -344195,7 +344235,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -344214,7 +344254,9 @@
         "明确采用原Hard来源，Sub73 2.8+rand.5与每层.22222222下降/回升均是Hard行，不能用L的1.5/ .11111111参数解释。",
         "修复两个发射体漏132(1)隐藏；逐行核对130/265各生成一个静止独立使魔、每30调两段各9×双路环、共锁随机初速和正负(22.5+rand5.625)相位，Root末尾只空转不重新生成。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP、自机和阶段退出接口；原剧情/计分/道具不属于攻击窗口。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -344682,7 +344724,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/original_effects.lua": "619393e9577649fea1832406e188e35805e92e996db43d9f5c722324c06d3806",
         "THlib/anm/presentation.lua": "bca2ebe2af88d7f679c41d2d865c6c47ab63c8896b52ae6ecf2c9d71c75f9652",
@@ -344701,7 +344743,9 @@
         "修复Sub24次轮环漏FAST2，恢复531的DECEL1→90帧VEC顺序及普通非符speed2最少.3的下限；原flag0等待DECEL结束再接加速，不额外并发。",
         "逐行核对Sub22六十进场、Sub23四次同步Sub24、12/12/8/8轮0/3帧两组偏移发弹、末尾30帧返回、count7/7/12/12每轮+2、60/120/180三次移动和240父时钟回环。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -345375,7 +345419,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -345393,7 +345437,9 @@
         "十六只人偶的9×速度截断等待、quad-out突进、受击/接触开启、3×8层扇、20帧随机弹两条并行记录、270关闭/330删除逐行核对。",
         "补独立ECL89停止激光原语：死亡Sub30只收束并保留hitboxEndTime，不能误用普通消弹的立即取消判定。原120入场+120同步蓄力、后续60 CALL+290父时钟周期保持。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -346053,7 +346099,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -346070,7 +346116,9 @@
         "修复Sub35三批人偶环漏FAST2，恢复flags515的出生与17帧DECEL。",
         "逐行核对Sub33同步120蓄力后六只10帧相间、30/60/90发环前各自提前抽相位、恒2速运动与3090寿命；Sub34 48×5普通环、两组40×4先60减速转180再POLAR，跳转/漂移/全部同步时间保持。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -346748,7 +346796,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -346766,7 +346814,9 @@
         "保留50/100/150回调点、每人偶同步CALL后1帧回主、m2取运动方向+π/2、m3原计算的减π/2未传入参数不擅自使用。共用运动/分裂和原音效7/25接回。",
         "去掉原作没有的第二段同点MOVE；逐行核对120入场+120 CALL、八人偶、半径/角速插值与ExIns5在更新后复制Boss参数、540/791/1052一帧mode闸门、漂移与绝对回中。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -347810,7 +347860,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -347827,7 +347877,9 @@
         "逐行核对本段只180帧调用一次Sub39、340转入下一符卡由Boss Rush阶段接口接管，不把下一张Sub48混进此非符。",
         "两组40×6、第一组60 POLAR与120出界延迟并行、第二组60帧减速转180后+.005/反向POLAR、原无出生雾保留。该段未发现额外攻击差异。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -349223,7 +349275,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -349240,7 +349292,9 @@
         "保留Sub49 flags3原值，模板无101时不凭标志位擅加DECEL；FAST2及六轮1帧随机速度环对应。",
         "逐行核对四边各七人偶、两轴随机坐标、正反角步、原60开始可受击/体术、六轮后等100再interrupt2/60删除，30母时钟回跳与两次60漂移；坐标不改为本体相对生成。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -349908,7 +349962,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -349925,7 +349979,9 @@
         "修复Sub40后十四轮双向扇的POLAR漏FAST2，恢复flags546；七轮12帧渐转扇与十四轮12帧渐变角速扇分开核对。",
         "两次同步Sub40、120/240/320/380/460/580父时钟与Sub38/39双40×6环、延迟出界/减速转向后POLAR加速均逐行对应，参数的正负角和分支保留。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -350733,7 +350789,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -350750,7 +350806,9 @@
         "按源补齐四段flags/记录：初始DECEL记录未被514启用；后面改32记录但flags515/514也不含32，不能凭表面记录加入POLAR或爆速。",
         "逐行核对十四个轨道人偶、1.1起速、20轮9/9/7/7帧和中间30空档、两段count2与count3、相位及速度增减；Boss复制圆心/半径/角速的时机和两次仅读随机出口角的死指令保持。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -351430,7 +351488,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -351448,7 +351506,9 @@
         "714/898两组11路针的POLAR与70帧-999加速保留原异常数值，不擅自当哨兵清零；774/898环flags514不含32，不套前一组针的运动程序。",
         "L专用GET_EXIT_ANGLE/60移动、半径/角速插值、有效count每轮+3与928→620回环逐行核对，保留已有f32运动/随机分支处理。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -352660,7 +352720,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -352677,7 +352737,9 @@
         "明确采用Normal的原mask2，子Sub47六轮各7路、20生命/ANM22，不能用默认L解释只有E/N的补充符卡。flags3模板无变换记录，保持FAST而不捏造DECEL。",
         "逐行核对七列十帧相间/第二组八帧、同一次CALL内角步翻号并传递到后半，随机纵坐标、两次漂移、六轮后100+60退场及240→528主回环。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -353225,7 +353287,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -353243,7 +353305,9 @@
         "Normal Sub51四段2路环、1起速、8/8/6/6间隔和30空档、第二/四段DECEL1需保留FAST2；修复原单段爆速漏FAST。",
         "Boss半径/角速变化、361/873各60漂移、421/933回中及883周期按Normal逐行对应；起始随机角只抽一次。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -354013,7 +354077,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -354030,7 +354094,9 @@
         "明确按原Hard来源；六人偶、四段各20×2路、30帧正负POLAR原flags546含FAST2，修复原单段POLAR漏出生雾。",
         "逐行核对Sub52/53全部角步/速度增减/归一化、Boss半径与角速插值、两次只消耗出口随机数的死指令、813回中与1003回跳；不把其他难度不存在的卡当L重建。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush阶段/HP和自机接口；阶段结束回调接入现有切卡，不拼入下一张独立符卡。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -354710,7 +354776,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/bullet/visual_match.lua": "b89fdad60d1950cd7e35ae4534297b72ff4b5ae6afbe465d39be24db3a2acd4b",
         "tools/th3x-tests/card-audit-index.json": "141e034ab1f5394ac5012dfc88ad4943d94d3d8ad0fcc993983244c69d85ea2d",
@@ -354728,7 +354794,9 @@
         "补Sub3的两个4帧/各16粒子及原随机消费；逐行核对十次39帧CALL、四段60/100漂移、每个f0偏移/颜色/数量、炮台20起15×8帧反向扇、140起30×4帧随机减速弹，活到260。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -358731,7 +358799,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -358750,7 +358818,9 @@
         "恢复Sub2音效，逐圈速差按原f32先舍入再累加；980→160的820父时钟加两次8 CALL=836周期。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -363013,7 +363083,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -363032,7 +363102,9 @@
         "四组各8帧同步蓄力、三段60帧漂移、1080→160父时钟+四次CALL共952周期；source145对4号乐器灵的中断保持。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -367199,7 +367271,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -367219,7 +367291,9 @@
         "补乐器灵公转期间的原生头尾离屏判据；逐行核对119帧一次48×4环、之后只自跳轴向运动不再射击、85/205两波各2使魔与145/205/265/285/305/325/345各层扇。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -369820,7 +369894,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -369839,7 +369913,9 @@
         "rank的-.5..0在16取-.25，只作用本卡非符弹速/第二层一半偏移；两条30 POLAR、五路附加扇的未启用记录保留；390→100加五CALL共690周期。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -371606,7 +371682,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -371625,7 +371701,9 @@
         "两次/四次连CALL、330的20帧原等待、380漂移后立即回跳，260父时钟+480 CALL=740周期；本卡不套二非的rank降速。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -373494,7 +373572,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -373513,7 +373591,9 @@
         "保存最后一次Enemy命令供下一非符的Sub99首环继承；逐行核对A/B各30×4帧、±60转向/3次循环或1次恢复1速、两次随机相位、146尾部实际100+CALL16+30，386周期。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -375804,7 +375884,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -375823,7 +375903,9 @@
         "逐行核对Sub98/99/100所有0帧同步突发、60减速/自机再瞄准、五种偏角/每次恢复速-.0375和扇角-π/40，三段漂移与560→90加16 CALL共486周期。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -377784,7 +377866,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -377803,7 +377885,9 @@
         "160入口/四次模式枪、三次.6漂移、820→160加16 CALL共676周期；保留原Sub103对4号而不是6号乐器灵的中断编号。",
         "补独立乐器Sub108..120/145中断：正常60帧双Hermite游走、四段50帧回宿主后隐藏、40帧向发射口移动并停留；保留各脚本未使用随机读取和中断只改对应乐器上下文。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "保留Boss Rush独立主奏条目、阶段/HP与自机接口，不重放原机体及前段累计伤害选路。连续同角色保留乐器/命令；单卡无前序历史时乐器从宿主入口新建，非主奏按已退场状态初始化，此初始化不冒充原作随机历史。仅声明静态源码核对，未运行测试、游戏、构建或ECL模拟，不声明实机等价。",
       "implementation": [
@@ -379776,7 +379860,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/th34_prism_nonspells.lua": "793ee173ef9dada419c81a799f325762d2aa9f11e9274c495a00901fec07b40f",
         "mod/GAME/th34_prism.lua": "94a084863adf4854bb31877acac81001d324a4bb6833c6821e2a082de0ef44ed",
@@ -379795,7 +379879,9 @@
         "恢复五次4×32蓄力粒子的真实随机消费、120帧点名6号乐器的中断、出界头尾共同回收；修复环弹/自机狙遗漏的512发射音。",
         "保留每只生成前的随机角，换为源float32常量，超时修正为3602帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -382443,7 +382529,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -382459,7 +382545,9 @@
         "修复148的首个POLAR flag=1丢失，恢复与160帧CULL保护并行；149保留flag=0，命令顺序不混用。",
         "恢复蓄力粒子和120帧6号乐器中断，移动使用同源float32三角计算，超时3602帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -384175,7 +384263,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -384192,7 +384280,9 @@
         "L行保留运动角取负的1×1 sprite3绝对弹，644的NORMAL弹雾/60帧刹停/狙自机速度1；近身环亦改为516。",
         "恢复6号乐器中断；超时3962帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -386488,7 +386578,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -386505,7 +386595,9 @@
         "修复误用Lunatic分支：Normal色2发7×1的sprite1绝对扇，色6发3×1的sprite6自机狙，均516；固定难度1。",
         "恢复6号乐器中断；超时3602帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -388801,7 +388893,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -388817,7 +388909,9 @@
         "修复周期计数：原RunEcl在SUB_RET后goto restart会再次++，首10后每9帧；Sub60的CALL和RET也分别推进，在重设144前按旧回调参数处理。",
         "恢复三位角色的4×32蓄力与乐器中断，实际伴奏坐标挂接乐器；超时3602帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -391069,7 +391163,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -391085,7 +391179,9 @@
         "修复标称10周期首10后9帧；保留0..29的514 FAST环，30后512无弹雾环，每4次补20×2 FAST自机环。",
         "恢复三角色蓄力、独立乐器靶点和中断，所有环弹保留512发射音，超时3602帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -393397,7 +393493,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -393413,7 +393509,9 @@
         "补回141/150在400和720登记的Sub144：首60后59帧，随机角7×2扇，660及841停回调；激光转角和移动仍并行。",
         "恢复三角色蓄力与乐器中断，主timer在120重设114(3602)，从独立卡入口共3722帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "登记、清场和转入下一非符接Boss Rush阶段接口；独立练习的非主奏乐器靶点使用已登记退场位置，连战保留乐器状态。超时采用114重设timer的帧数，不执行原作对话/计分。只做源码核对，未运行测试。",
       "implementation": [
@@ -395609,7 +395707,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -395624,7 +395722,9 @@
         "逐行核对19..22；两段16×10帧环，四次边缘扇的同步49帧CALL、随后的50/30/10/60移动及100末尾空档。",
         "修复Sub20的8706：恢复160帧CULL保护；21/22的520用SLOW出生，随机坐标改在粒子CALL之后读取；补回4×32的33号Gather60粒子真实随机消费。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -396688,7 +396788,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -396704,7 +396804,9 @@
         "修复壁的548 NORMAL出生及原146 ANM旋转；保留4次RAND_SIGN_FLOAT(0)，首弹用原角，之后42帧Hermite出膛点与角度共用同一插值。",
         "补回每波4×12 effect33粒子，保持ExIns10/11在CALL后的50帧窗口，子程总长168+3n、壁112帧UNIMP。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -397650,7 +397752,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -397666,7 +397768,9 @@
         "修复主扇517 NORMAL、附加环5 NORMAL、近身附加0无弹雾的不同标志，31近身改为7发自机狙扇；各点瞄准按真实出膛坐标计算。",
         "恢复260的8×12蓄力及随机消费，保留每轮全部运动、发弹偏移和初始自机角快照。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -398866,7 +398970,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -398882,7 +398986,9 @@
         "修复周期9的真实计数：子回调CALL/RET和本回调RET三次restart，正常续发间隔6帧；主程序CALL48/49及返回也推进计数，切换相位时重置。",
         "修复镜像相位的13/10色档交换；保留每拍速度随机、子回调角步的无效但实际消费，以及主回调角步；两激光组间隔450帧。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -400354,7 +400460,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -400369,7 +400475,9 @@
         "逐行核对34/35：恢复两次30×12蓄力共240帧，165主时标对应墙钟405；首回调416，返回restart后每10帧。",
         "保留回调随机出膛点供主泡弹使用，三组3发分别516及36；主13泡弹改为4 NORMAL出生，不添加FAST。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -400795,7 +400903,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -400810,7 +400918,9 @@
         "逐行核对36/37八炮口筛选、炮口初角、相位8和120回环、八角速度区间。",
         "修复11周期首11后10，补回546 FAST+POLAR标志；主11泡弹2不含512，保留原单独7号声音及200递减到80的间隔。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -401630,7 +401740,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -401645,7 +401755,9 @@
         "逐行核对50/51；修复周期3首次3后每2帧，保持四相位、16轮延迟及每8次跳过一泡、600次角步翻向。",
         "修复512和576不带出生弹雾，644用NORMAL；恢复120后额外60移动覆盖旧运动；保留100刹停再+/-90度或瞄准速度3的命令。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -402447,7 +402559,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -402462,7 +402574,9 @@
         "逐行核对38..42，修复按固定10发批次切换回调：原作在180/260/340/420重新登记周期8，各首8随后7帧；520回跳后重设第一相位。",
         "保留200/280/360/440时的漂移及32×3无弹雾环，末相位100帧，其余80；四组128恢复运动偏角和80帧向当前角的向量加速按原顺序。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "原作life阈值、清场、掉落和下一阶段调用接Boss Rush卡片入口/结束；不在当前条目执行下一张攻击。普通难度排除行保留源地址证据，运行参数固定L。只核对源码，未执行测试。",
       "implementation": [
@@ -403114,7 +403228,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -403130,7 +403244,9 @@
         "ExIns16/17/18改按原生1024弹槽顺序扫描蝶弹，恢复满池允许部分5连扇、生成前后释放旧弹的顺序及12帧原色脉冲。",
         "修复54的512无出生弹雾、回调返回时计数+1；保留8次ExIns16、120帧Hermite灵体和4种蝶弹命令。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "life/计分/掉落数值使用已声明的Boss Rush阶段接口；攻击时窗、CALL/WAIT、原生弹体和激光按L行；过场的螺旋粒子演出仍接现有阶段显示，不声明还原原作剧情。原始音频直接复制，不转码。未运行测试。",
       "implementation": [
@@ -404042,7 +404158,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54",
         "tools/th3x-tests/export_original_sounds.py": "ad2855912b3c755d893b4cba47a27942b329d36368672c348a3605d03c54b6ad",
@@ -404058,7 +404174,9 @@
         "核对8752/8880命令槽：120转速、200 CULL并行保护、1帧狙自机保留当前速度，再80向量加速；8次零帧DEC_JUMP保持同帧。",
         "补回每轮和四次57后的原5号提示声；原7号发弹及25号命令声映射现使用妖妖梦原音频。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "life/计分/掉落数值使用已声明的Boss Rush阶段接口；攻击时窗、CALL/WAIT、原生弹体和激光按L行；过场的螺旋粒子演出仍接现有阶段显示，不声明还原原作剧情。原始音频直接复制，不转码。未运行测试。",
       "implementation": [
@@ -405324,7 +405442,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54",
         "tools/th3x-tests/export_original_sounds.py": "ad2855912b3c755d893b4cba47a27942b329d36368672c348a3605d03c54b6ad",
@@ -405340,7 +405458,9 @@
         "修复61按固定周期列表调度的偏差：144重设9到4、首次period后period-1；所有同步59/60的进入和返回也推进同一个计数器，允许同帧追加回调。",
         "保留61的i0→f6/f7→X→Y→speed随机顺序和周期上下文的原k快照；可选60的五圈是一次CALL，不能各推进两次。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "life/计分/掉落数值使用已声明的Boss Rush阶段接口；攻击时窗、CALL/WAIT、原生弹体和激光按L行；过场的螺旋粒子演出仍接现有阶段显示，不声明还原原作剧情。原始音频直接复制，不转码。未运行测试。",
       "implementation": [
@@ -406812,7 +406932,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54",
         "tools/th3x-tests/export_original_sounds.py": "ad2855912b3c755d893b4cba47a27942b329d36368672c348a3605d03c54b6ad",
@@ -406830,7 +406950,9 @@
         "核对64/65/66/69的数量增长、三段命令、66的L列数减5、10帧轮间隔、415帧父循环及每轮速度+.08/列数+3/激光参数+2。",
         "共享修复：按TH07 SoundPlayer.cpp导入全部38个SoundIdx及30个原始PCM，原来7号表不存在导致蓄力等原声调用静音。",
         "后续共享执行器核对：限时ORBIT在120次更新后转AXIS并沿最后velocity直飞，已修复70/71在120后仍绕圈的实现；掉落计数和180/130自毁保持原样。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "life/计分/掉落数值使用已声明的Boss Rush阶段接口；攻击时窗、CALL/WAIT、原生弹体和激光按L行；过场的螺旋粒子演出仍接现有阶段显示，不声明还原原作剧情。原始音频直接复制，不转码。未运行测试。",
       "implementation": [
@@ -409638,7 +409760,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54",
         "tools/th3x-tests/export_original_sounds.py": "ad2855912b3c755d893b4cba47a27942b329d36368672c348a3605d03c54b6ad",
@@ -409652,7 +409774,9 @@
       "findings": [
         "逐行核对38..41；96帧双色扇、四次49帧边缘扇同步CALL及原漂移/父时间差。",
         "修复8706的160帧CULL保护和520的SLOW出生；恢复4×32粒子真实随机消费、135/136/133/134/128姿态及2号提示音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -410597,7 +410721,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -410611,7 +410735,9 @@
         "逐行核对42/43/44和斩61；恢复30×4蓄力、20/50动作与缓时，左右两段232帧同步CALL。",
         "修复12发环的POLAR flag1，使其与160 CULL并行；18发环8724不含32，保留原不激活POLAR的行为。",
         "横斩从直线激光改为ANM143的384×32敌机接触框，寿命56，1血斩接触扣10后回收；保留四次随机读取的原顺序。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -411754,7 +411880,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -411767,7 +411893,9 @@
       "findings": [
         "逐行核对48..51：两组32对螺旋的320/192帧差异来自额外WAIT2，父60重置i15=0，不能把第一组等待丢到下一轮。",
         "恢复8706 CULL160与边缘516 NORMAL；补回4×32粒子、原出膛点、姿态和2号声音。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -412964,7 +413092,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -412978,7 +413106,9 @@
         "逐行核对57..61及ExIns12/21；修复周期6首6后5，并计入59/60、粒子2的CALL和RET对同一计数的推进。",
         "恢复五条ANM143斩的原生敌机判定、30×4粒子、20/50动作和35/15原声；顶部大玉始终从绝对192,32发射。",
         "修复切弹按原1024弹槽顺序和实际sprite高度>48筛选；Ex12子弹奇数FAST偶数无雾，Ex21均无雾，生成后才释放旧大玉，补回8帧脉冲。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -414081,7 +414211,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -414095,7 +414225,9 @@
         "逐行核对52/53/54，40时按X半区移动、100后64/64/50/64帧CALL及60/120漂移等待。",
         "修复53/54的NORMAL出生标志；54恢复4×32粒子和t10后两串8发的1/2帧间隔，瞄准角始终按真实出膛点。",
         "补回135/142姿态和左右串15号提示音，原主角快照在每次53入口读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -414708,7 +414840,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -414722,7 +414854,9 @@
         "逐行核对62/63/64/65与ExIns13/14；侧面炮改为独立Sub63出生上下文，保留同帧X左/速度左/发弹/X右，2帧后才读右速度。",
         "恢复30×8蓄力、Sub65原144 ANM、160帧弯曲钩子、50帧缓时、转向脉冲及35/15声音；340帧CALL结束后移动60，一轮400。",
         "Ex13奇偶方向按原生弹槽，Ex14在POLAR完成后才接90帧冻结自机方向的向量加速，不提前清活动运动。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -415385,7 +415519,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -415398,7 +415532,9 @@
       "findings": [
         "逐行核对66/67/68/69的Normal2掩码，固定Normal1；两段290帧同步CALL，10个轮子各120后发五拍4×2扇。",
         "补回146/147轮子ANM、真实独立出生帧、30×4蓄力与20/50动作；保留上轮随机负范围张角和12帧拍长。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -416133,7 +416269,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -416147,7 +416283,9 @@
         "逐行核对70..74；恢复4412×32、30000帧的ANM145常驻斩敌机，宽条不使用激光起落/收束判定。",
         "恢复4×20蓄力、20/50动作、隐藏底部发射器的独立出生更新及i0+3间隔；保留两个被覆盖的随机数消费。",
         "修复73提前30帧锁定自机的问题，角在演出等待后读取；后方6发512无出生雾，正面3发514保留FAST。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -417226,7 +417364,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -417240,7 +417378,9 @@
         "逐行核对75/76/77，60前奏+120入场，12+40+8同步77、随后60/120父时间差，八个使魔原重复角保留。",
         "修复每发CULL持续时间：原int(半径)从60逐步降至38，不能全部固定60；命令串之后才进入60帧加速。",
         "恢复使魔出生预跑ECL和恒速4.2积分、10×8粒子、137/141姿态、35/15声音及末尾大玉516 NORMAL。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "按L行，畜趣剑按卡名对应Normal1；life、下一阶段与物品接Boss Rush接口。缓时使用已有逻辑帧timeslow而不重复缩放弹速。只核对源码，不运行测试。",
       "implementation": [
@@ -418177,7 +418317,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
@@ -418191,7 +418331,9 @@
         "逐行核对中Boss根程序和两种同步发弹子程，36/48帧CALL暂停父时钟，四段移动与100/100/100/60父等待。",
         "Phantasm为18组7×2，速度2+.5i；16组7×5环，速度2+.1875i。",
         "移动前三次原ease=0、最后4；补回原浮点角步，未改发数或速度。ECL100环绕本体效果和原色/半径共享目标现进入原生显示。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -418556,7 +418698,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -418570,7 +418712,9 @@
         "逐行核对中Boss根程序和两种同步发弹子程，36/48帧CALL暂停父时钟，四段移动与100/100/100/60父等待。",
         "Extra为18组7×2，速度4+.21428572i；16组8×3环，速度2+.1875i。",
         "移动前三次原ease=0、最后4；补回原浮点角步，未改发数或速度。ECL100环绕本体效果和原色/半径共享目标现进入原生显示。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -418935,7 +419079,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -418950,7 +419094,9 @@
         "修复周期28只按固定间隔等待：原SUB_RET再次restart，首次28后每27帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
         "恢复ECL100六个188号ANM环绕效果：最后一条共享半径目标、.3扩圈、四元数投影与16帧淡出。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -419169,7 +419315,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -419183,7 +419329,9 @@
         "逐行核对根72和回调71：同71发弹；入口160、框64..320。",
         "修复周期18只按固定间隔等待：原SUB_RET再次restart，首次18后每17帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -419396,7 +419544,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -419410,7 +419558,9 @@
         "逐行核对根73和回调74：32×2速度3.2色8、另32×1速度1.8色3。",
         "修复周期24只按固定间隔等待：原SUB_RET再次restart，首次24后每23帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -419617,7 +419767,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -419631,7 +419781,9 @@
         "逐行核对根75和回调76：64×2速度3.2色8。",
         "修复周期60只按固定间隔等待：原SUB_RET再次restart，首次60后每59帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -419838,7 +419990,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -419852,7 +420004,9 @@
         "逐行核对根77和回调78：两圈各8×2，速度3/2.5，角步+.056099869/-.078539819。",
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -420095,7 +420249,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -420109,7 +420263,9 @@
         "逐行核对根79和回调80：8×3速度3，角步+.0668424。",
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -420346,7 +420502,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -420360,7 +420516,9 @@
         "逐行核对根81和回调82：两圈8×1速度4/.8，角步-.095199779/+.1308997。",
         "修复周期8只按固定间隔等待：原SUB_RET再次restart，首次8后每7帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -420609,7 +420767,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -420624,7 +420782,9 @@
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
         "修复末非符“12组”误算：首10后9帧，120帧活动窗实际13组；280重设300计数、30帧后再登记10，每轮150帧。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -420867,7 +421027,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -420882,7 +421042,9 @@
         "修复周期28只按固定间隔等待：原SUB_RET再次restart，首次28后每27帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
         "恢复ECL100六个188号ANM环绕效果：最后一条共享半径目标、.3扩圈、四元数投影与16帧淡出。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -421101,7 +421263,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -421115,7 +421277,9 @@
         "逐行核对根70和回调69：同69发弹；入口160、框64..320。",
         "修复周期18只按固定间隔等待：原SUB_RET再次restart，首次18后每17帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -421328,7 +421492,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -421342,7 +421506,9 @@
         "逐行核对根71和回调72：28×2速度3.2色8、另28×1速度1.8色3。",
         "修复周期24只按固定间隔等待：原SUB_RET再次restart，首次24后每23帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -421549,7 +421715,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -421563,7 +421729,9 @@
         "逐行核对根73和回调74：52×2速度3.2色8。",
         "修复周期60只按固定间隔等待：原SUB_RET再次restart，首次60后每59帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -421770,7 +421938,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -421784,7 +421952,9 @@
         "逐行核对根75和回调76：两圈各8×2，速度3/2.5，角步+.06981317/-.098174773。",
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -422027,7 +422197,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -422041,7 +422211,9 @@
         "逐行核对根77和回调78：8×3速度3，角步+.080553658。",
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -422278,7 +422450,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -422292,7 +422464,9 @@
         "逐行核对根79和回调80：两圈8×1速度4/.8，角步-.095199779/+.1308997。",
         "修复周期8只按固定间隔等待：原SUB_RET再次restart，首次8后每7帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -422541,7 +422715,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
@@ -422556,7 +422730,9 @@
         "修复周期10只按固定间隔等待：原SUB_RET再次restart，首次10后每9帧；回调在本体漂移指令之前执行。",
         "恢复515字面旗标：FAST且无DECEL记录，不人为增加减速；回调角按原40归一化，原随机环角逐次读取。",
         "修复末非符“12组”误算：首10后9帧，120帧活动窗实际13组；280重设300计数、30帧后再登记10，每轮150帧。",
-        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。"
+        "共享显示补齐：ECL100按原始float字节导出，使用etama188、原默认色、最后一个effectDistance、.3扩圈/π100四元数与舞台相机投影；99退场及符卡死亡后16帧淡出。导出合并已改纯Python，不执行Lua。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
       ],
       "boundaries": "Extra使用0x10、Phantasm使用0x20；独立练习没有前一符卡局部寄存器历史时，回调浮点按现有零值入口初始化，不能冒充原作任意击破时刻的寄存器。原生Rank取既有基准16，Boss Rush HP/阶段切换不改。只做源码核对，不运行测试。",
       "implementation": [
@@ -422799,10 +422975,2152 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th34.lua": "388cdc1535b83cf0d2488461b5221c69d5da97e8302cb689c1d2e82e053021a0",
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
         "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "mod/GAME/original/visual_ecl.lua": "ec215d16e65e268be11f62bcb6147a1515662023c09d8670e4310ef89d67e67b",
         "tools/th3x-tests/refresh_visual_sources.py": "8a74eb0e19fdd24000d98f29425f089c4257f834aba8694fc6ea4eedce1ee6d0",
+        "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
+        "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
+        "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54"
+      }
+    },
+    "34/3460": {
+      "findings": [
+        "逐行核对58/59/60及ExIns22：两种大玉原578 FAST/60帧刹停转90度恢复4速，40/180等待逐轮到20/60，方向随机和速度随机按原顺序。",
+        "修复Ex22按原1024槽和实际sprite高>60筛选，保留y<320与活动64位条件、timer奇偶/模3；生成弹SLOW，奇帧60刹停后3.1，命令声25，发射声为默认描述器soundIdx0。",
+        "母弹满池时仍消费ECL速度随机但不创建失败对象；原角常量/归一化已恢复。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
+      ],
+      "boundaries": "Extra原0x10行；Boss Rush阶段结束接死亡/超时回调的清场和下一阶段。生命按既有原作HP换算，无额外难度/密度修改。只核对源码，未运行测试。",
+      "implementation": [
+        "mod/GAME/th34.lua",
+        "mod/GAME/th34_visual.lua",
+        "THlib/anm/stage_visual.lua",
+        "THlib/bullet/bullet.lua",
+        "mod/GAME/original/sounds.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub58",
+          "note": "120移动、210启22钩子；59/WAIT40/60/WAIT40/59/WAIT40/60/WAIT180，逐轮递减。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub59",
+          "note": "rand±.031415928角、rand1+3.2速、64 dur60转+π/2 speed4，578。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub60",
+          "note": "rand.052359879+3.1101768归一化、反向64，578。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub58",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x3d48",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3d5c",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3d70",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x3d94",
+              "time": 0,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x3da4",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x3db0",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x3dc4",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x3dd4",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x3dec",
+              "time": 0,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x3dfc",
+              "time": 0,
+              "op": 133,
+              "mask": 255
+            },
+            {
+              "address": "0x3e08",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x3e18",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3e2c",
+              "time": 0,
+              "op": 55,
+              "mask": 255
+            },
+            {
+              "address": "0x3e4c",
+              "time": 0,
+              "op": 90,
+              "mask": 255
+            },
+            {
+              "address": "0x3e8c",
+              "time": 120,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x3e9c",
+              "time": 120,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x3eac",
+              "time": 120,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x3ebc",
+              "time": 120,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x3ecc",
+              "time": 120,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x3ed8",
+              "time": 120,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3eec",
+              "time": 120,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3f00",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f14",
+              "time": 210,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x3f20",
+              "time": 210,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x3f34",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f48",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f5c",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f70",
+              "time": 210,
+              "op": 41,
+              "mask": 255
+            },
+            {
+              "address": "0x3f80",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x3f90",
+              "time": 210,
+              "op": 41,
+              "mask": 255
+            },
+            {
+              "address": "0x3fa0",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x3fb0",
+              "time": 210,
+              "op": 41,
+              "mask": 255
+            },
+            {
+              "address": "0x3fc0",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x3fd0",
+              "time": 210,
+              "op": 41,
+              "mask": 255
+            },
+            {
+              "address": "0x3fe0",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x3ff0",
+              "time": 210,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x4000",
+              "time": 210,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x401c",
+              "time": 210,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x4034",
+              "time": 210,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x4050",
+              "time": 210,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x4068",
+              "time": 210,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub59",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x4088",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x40a0",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x40b8",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x40e0",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x410c",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub60",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x4124",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x413c",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x4154",
+              "time": 0,
+              "op": 40,
+              "mask": 255
+            },
+            {
+              "address": "0x4164",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x418c",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x41b8",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
+        "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
+        "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
+        "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
+        "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54"
+      }
+    },
+    "34/3461": {
+      "findings": [
+        "逐行核对61/62/63及动态死亡64和超时66；110前奏后120移动、320八段ORBIT各120帧、半径扩缩及方向参数。",
+        "修复7周期只按7帧等待：首327后每6帧；本体方向读取上帧实际位移，.8起每次+.005和随机.5保持原顺序。",
+        "式神63复制本体位置/速度并保留64拖尾；600开始每100帧9发自机扇，700回600使800/840淡出为不可达行，不提前结束。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
+      ],
+      "boundaries": "Extra原0x10行；Boss Rush阶段结束接死亡/超时回调的清场和下一阶段。生命按既有原作HP换算，无额外难度/密度修改。只核对源码，未运行测试。",
+      "implementation": [
+        "mod/GAME/th34.lua",
+        "mod/GAME/th34_visual.lua",
+        "THlib/anm/stage_visual.lua",
+        "THlib/bullet/bullet.lua",
+        "mod/GAME/original/sounds.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub61",
+          "note": "0移动60到64,128；110重设3300，因此总3410；320生成63/挂7周期，八ORBIT后1280回320不重设回调。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub62",
+          "note": "rand.5+f1沿10045绝对7发，f1+.005，RET推进周期。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub63",
+          "note": "12 ANM、16接触框、64/32历史、projectile、Ex0跟随；600无声FAST扇+15声，100循环；死代码保留证据。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub64",
+          "note": "式神死亡ANM中断1/清弹，40帧后UNIMP。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub65",
+          "note": "本体死亡清场、99退场，无后续攻击。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub66",
+          "note": "超时恢复速度、清场、解除边界，UNIMP。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub61",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x41d0",
+              "time": 0,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x41e4",
+              "time": 0,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x41f0",
+              "time": 0,
+              "op": 55,
+              "mask": 255
+            },
+            {
+              "address": "0x4210",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x4220",
+              "time": 0,
+              "op": 154,
+              "mask": 255
+            },
+            {
+              "address": "0x4230",
+              "time": 0,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x4240",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x4250",
+              "time": 0,
+              "op": 110,
+              "mask": 255
+            },
+            {
+              "address": "0x4260",
+              "time": 0,
+              "op": 139,
+              "mask": 255
+            },
+            {
+              "address": "0x427c",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x428c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x429c",
+              "time": 110,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x42b0",
+              "time": 110,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x42c4",
+              "time": 110,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x42d0",
+              "time": 110,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x42e0",
+              "time": 110,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x42f8",
+              "time": 110,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x4308",
+              "time": 110,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x4314",
+              "time": 110,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x4328",
+              "time": 110,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x4338",
+              "time": 110,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x4350",
+              "time": 110,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x4360",
+              "time": 110,
+              "op": 133,
+              "mask": 255
+            },
+            {
+              "address": "0x436c",
+              "time": 110,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x437c",
+              "time": 110,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4390",
+              "time": 110,
+              "op": 55,
+              "mask": 255
+            },
+            {
+              "address": "0x43b0",
+              "time": 110,
+              "op": 90,
+              "mask": 255
+            },
+            {
+              "address": "0x43f0",
+              "time": 230,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x4400",
+              "time": 230,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x4410",
+              "time": 230,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x4420",
+              "time": 230,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x4430",
+              "time": 230,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x4440",
+              "time": 230,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4454",
+              "time": 230,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4468",
+              "time": 230,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x447c",
+              "time": 320,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x4488",
+              "time": 320,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x449c",
+              "time": 320,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x44b0",
+              "time": 320,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x44c4",
+              "time": 320,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x44ec",
+              "time": 320,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4500",
+              "time": 320,
+              "op": 144,
+              "mask": 255
+            },
+            {
+              "address": "0x4514",
+              "time": 320,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x4540",
+              "time": 440,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x456c",
+              "time": 560,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x4598",
+              "time": 680,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x45c4",
+              "time": 800,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x45f0",
+              "time": 920,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x461c",
+              "time": 1040,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x4648",
+              "time": 1160,
+              "op": 56,
+              "mask": 255
+            },
+            {
+              "address": "0x4674",
+              "time": 1160,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x4684",
+              "time": 1280,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub62",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x46a4",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x46bc",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x46e8",
+              "time": 0,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x4700",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub63",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x4718",
+              "time": 0,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x4728",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x4740",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x4750",
+              "time": 0,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x4760",
+              "time": 0,
+              "op": 137,
+              "mask": 255
+            },
+            {
+              "address": "0x4770",
+              "time": 0,
+              "op": 136,
+              "mask": 255
+            },
+            {
+              "address": "0x4780",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x4790",
+              "time": 0,
+              "op": 138,
+              "mask": 255
+            },
+            {
+              "address": "0x47ac",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x47bc",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x47cc",
+              "time": 0,
+              "op": 141,
+              "mask": 255
+            },
+            {
+              "address": "0x47dc",
+              "time": 0,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x47f0",
+              "time": 600,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x47fc",
+              "time": 600,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x4828",
+              "time": 600,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x4838",
+              "time": 700,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x484c",
+              "time": 800,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x485c",
+              "time": 800,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x4870",
+              "time": 840,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub64",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x4888",
+              "time": 0,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x4898",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x48a8",
+              "time": 40,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub65",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x48c0",
+              "time": 0,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x48cc",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x48d8",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x48e8",
+              "time": 0,
+              "op": 154,
+              "mask": 255
+            },
+            {
+              "address": "0x48f8",
+              "time": 0,
+              "op": 124,
+              "mask": 255
+            },
+            {
+              "address": "0x4908",
+              "time": 0,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x4918",
+              "time": 0,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x4924",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x4934",
+              "time": 0,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub66",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x494c",
+              "time": 0,
+              "op": 121,
+              "mask": 255
+            },
+            {
+              "address": "0x4960",
+              "time": 0,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x496c",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x4978",
+              "time": 0,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x4984",
+              "time": 0,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
+        "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
+        "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
+        "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
+        "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54"
+      }
+    },
+    "34/3462": {
+      "findings": [
+        "逐行核对85/86/87及ExIns4，修复首枚大玉漏掉4168的SLOW出生与4096清弹保护，20刹停命令在弹雾之后启动，40帧生成位置随之修正。",
+        "Ex4改查原生第一枚实际大弹，失败分支不访问无效句柄；成功才在真实弹位生成87并释放旧弹。",
+        "仙狐三层按原4/8/12点顺序和.3333/.6666插值构造，8发环的顺序保留原生槽位；530 FAST/VEC120，最后20帧同帧自毁。",
+        "共享发弹顺序修复：原BulletManager x序取+2π后再做Y翻转，因此本工程整圈逐发应为负角序；w1/w3/w5/ring78/gring/shoot6及错位环统一修正，保留原生槽号和满池截断。",
+        "共享声音修复：sound4改用TH07原SoundIdx；81的命令soundOverride按阶段/动态相位写入弹体，16/32非首槽激活及64/128/256恢复运动播放原25号声；原生Ex2新描述器显式保留-1。"
+      ],
+      "boundaries": "Extra原0x10行；Boss Rush阶段结束接死亡/超时回调的清场和下一阶段。生命按既有原作HP换算，无额外难度/密度修改。只核对源码，未运行测试。",
+      "implementation": [
+        "mod/GAME/th34.lua",
+        "mod/GAME/th34_visual.lua",
+        "THlib/anm/stage_visual.lua",
+        "THlib/bullet/bullet.lua",
+        "mod/GAME/original/sounds.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub85",
+          "note": "120入场、210每次86阻塞40；WAIT60逐轮减10到10；移动时长60逐轮减到20，等待使用减后的时长。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub86",
+          "note": "无条件先抽随机角，狭角内才覆盖A2P；4168 SLOW+64(20,1,0,0)，40 Ex4查找并条件生87。"
+        },
+        {
+          "game": 7,
+          "file": "ecldata7.ecl",
+          "sub": "Sub87",
+          "note": "32/64/96三壳，原正交轴点及.5/.3333/.6666插值顺序，530/VEC120 1/60，0/10/20三批后UNIMP。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub85",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x617c",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6190",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x61a4",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x61c8",
+              "time": 0,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x61d8",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x61e4",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x61f8",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x6208",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6220",
+              "time": 0,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x6230",
+              "time": 0,
+              "op": 133,
+              "mask": 255
+            },
+            {
+              "address": "0x623c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x624c",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x6260",
+              "time": 0,
+              "op": 55,
+              "mask": 255
+            },
+            {
+              "address": "0x6280",
+              "time": 0,
+              "op": 90,
+              "mask": 255
+            },
+            {
+              "address": "0x62c0",
+              "time": 120,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x62d0",
+              "time": 120,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x62e0",
+              "time": 120,
+              "op": 142,
+              "mask": 255
+            },
+            {
+              "address": "0x62f0",
+              "time": 120,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x6300",
+              "time": 120,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x631c",
+              "time": 120,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6330",
+              "time": 120,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6344",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x6358",
+              "time": 210,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x6364",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x6378",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x638c",
+              "time": 210,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x63a0",
+              "time": 210,
+              "op": 41,
+              "mask": 255
+            },
+            {
+              "address": "0x63b0",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x63c0",
+              "time": 210,
+              "op": 155,
+              "mask": 255
+            },
+            {
+              "address": "0x63d0",
+              "time": 210,
+              "op": 54,
+              "mask": 255
+            },
+            {
+              "address": "0x63ec",
+              "time": 210,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x63fc",
+              "time": 210,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x6418",
+              "time": 210,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x6430",
+              "time": 210,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x644c",
+              "time": 210,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x6464",
+              "time": 210,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x6474",
+              "time": 210,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub86",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x6494",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x64ac",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x64c8",
+              "time": 0,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x64e4",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x64f8",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x6520",
+              "time": 0,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x654c",
+              "time": 40,
+              "op": 121,
+              "mask": 255
+            },
+            {
+              "address": "0x6560",
+              "time": 40,
+              "op": 31,
+              "mask": 255
+            },
+            {
+              "address": "0x657c",
+              "time": 40,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x6588",
+              "time": 40,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x65b0",
+              "time": 40,
+              "op": 42,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata7.ecl",
+          "sub": "Sub87",
+          "game": 7,
+          "sha256": "a55cec0d1216edd0132ccd493b355a03531aab14520889a4887c77489f546747",
+          "instructions": [
+            {
+              "address": "0x65c8",
+              "time": 0,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x65d8",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x65f0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x6600",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x6610",
+              "time": 0,
+              "op": 137,
+              "mask": 255
+            },
+            {
+              "address": "0x6620",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x6630",
+              "time": 0,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x6640",
+              "time": 0,
+              "op": 132,
+              "mask": 255
+            },
+            {
+              "address": "0x6650",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x6664",
+              "time": 0,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x667c",
+              "time": 0,
+              "op": 40,
+              "mask": 255
+            },
+            {
+              "address": "0x668c",
+              "time": 0,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x66a0",
+              "time": 0,
+              "op": 24,
+              "mask": 255
+            },
+            {
+              "address": "0x66b4",
+              "time": 0,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x66c8",
+              "time": 0,
+              "op": 24,
+              "mask": 255
+            },
+            {
+              "address": "0x66dc",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x66f4",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x670c",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6724",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x673c",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6750",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6764",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x6778",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x678c",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x67b4",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x67cc",
+              "time": 0,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x67f8",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6810",
+              "time": 0,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x683c",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6854",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x686c",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6884",
+              "time": 0,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x68b0",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x68c8",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x68e0",
+              "time": 0,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x68f8",
+              "time": 0,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6924",
+              "time": 10,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x693c",
+              "time": 10,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6954",
+              "time": 10,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x696c",
+              "time": 10,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6984",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x699c",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x69c8",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x69e0",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6a0c",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6a24",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6a3c",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6a54",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6a80",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6a98",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6ab0",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6ac8",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6af4",
+              "time": 10,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6b10",
+              "time": 10,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6b2c",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6b44",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6b70",
+              "time": 10,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6b88",
+              "time": 10,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6ba0",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6bb8",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6be4",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6bfc",
+              "time": 10,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6c14",
+              "time": 10,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6c30",
+              "time": 10,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6c4c",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6c64",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6c90",
+              "time": 10,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6ca8",
+              "time": 10,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6cc0",
+              "time": 10,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6cd8",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6d04",
+              "time": 20,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6d1c",
+              "time": 20,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6d34",
+              "time": 20,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6d4c",
+              "time": 20,
+              "op": 19,
+              "mask": 255
+            },
+            {
+              "address": "0x6d64",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6d7c",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6da8",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6dc0",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6dec",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6e04",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6e1c",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6e34",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6e60",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6e78",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6e90",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6ea8",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6ed4",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6ef0",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x6f0c",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6f24",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6f50",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6f68",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x6f80",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x6f98",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x6fc4",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6fdc",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x6ff4",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x7010",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x702c",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x7044",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x7070",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x7088",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x70a0",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x70b8",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x70e4",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x7100",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x711c",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x7134",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x7160",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x7178",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x7190",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x71a8",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x71d4",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x71ec",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x7204",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x7220",
+              "time": 20,
+              "op": 159,
+              "mask": 255
+            },
+            {
+              "address": "0x723c",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x7254",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x7280",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x7298",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x72b0",
+              "time": 20,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x72c8",
+              "time": 20,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x72f4",
+              "time": 20,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th34.lua": "bb09c9694a3647b840fa72788de44452cede2b8f118dca13d1b7662e61e8551e",
+        "mod/GAME/th34_visual.lua": "9c6a1c0447b35a3b7e66e438608a33c56aaeffecb96d46a31e5ca1d38534c036",
         "THlib/anm/stage_visual.lua": "47243b6dab5a0bcb1699aa187e503813b5b551ea1611827ddb005dde5b9ba526",
         "THlib/bullet/bullet.lua": "868d2a7a50a9e7af8db56e6a5cba44cd60bcd3585db218020ba6874c42bd9c2d",
         "mod/GAME/original/sounds.lua": "5c78b2ec860c97269a6680721a315c3002148a1a0733928d4f8c01624e74ef54"
@@ -422812,10 +425130,10 @@
   "in_progress": {
     "35/3635": "同类etProtectRange已修复；尚未逐行读完，不勾选。",
     "35/3613": "与開宴共用激光接口；尚未逐行读完，不勾选。",
-    "34/3460": "Extra十二张符卡逐行核对，从Sub58鬼符开始。"
+    "34/3463": "Extra剩余九张逐行核对，从十二神将子程序89..93继续。"
   },
-  "completed": 418,
-  "pending": 104,
+  "completed": 421,
+  "pending": 101,
   "shared_fixes": [
     "Stage5逐行核对同时纠正同一原作MOVE_RANDOM_IN_BOUNDS原语在六面A/B道中工厂中的上下边界角度反射条件；不因此为未审阅卡新增勾选。",
     "TH31全部注册卡共同frame出口统一推进EX清弹生成压制计数，按场景/真实帧去重；移除散布于个别卡内的推进，匹配原作BulletManager.cpp帧尾一次递减。",

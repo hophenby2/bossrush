@@ -965,7 +965,7 @@ end
 local function sound4(self)
     if sound_stamp4 ~= sound_tick4 then
         sound_stamp4 = sound_tick4
-        PlaySound("tan00", 0.08, self.x / 256)
+        OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
     end
 end
 
@@ -1046,7 +1046,11 @@ end
 ---（原作 RunCommands 取 this->angle / this->speed 当各段的初值）。
 ---★ 必须写成模块级 local function：引擎的 Class 只把 init/frame/render/del 这些
 ---  回调挂到实例上，类表里的普通方法实例读不到（`self:_cmd_enter` 会 nil）。
+local function cmdbullet_sound(self)
+    if self.c_sound and self.c_sound>=0 then OriginalStageVisual.presentation.sound.play(7,self.c_sound,self.x) end
+end
 local function cmdbullet_enter(self, c)
+    if (c.type==16 or c.type==32) and (self.c_idx or 1)>1 then cmdbullet_sound(self) end
     self.c_type, self.c_dur, self.c_loop = c.type, c.dur, c.loop
     self.c_timer, self.c_done = 0, 0
     self.c_angle = c.angle
@@ -1131,6 +1135,7 @@ end
 
 ---一段并发指令的运行时状态（原作 Bullet::commandStates[i]）。
 cmdsub_new = function(self, c)
+    if (c.type==16 or c.type==32) and self.c_cur>1 then cmdbullet_sound(self) end
     local s = { type = c.type, dur = c.dur or 0, loop = c.loop or -1,
                 angle = c.angle or 0, speed = c.speed or 0, timer = 0, done = 0 }
     if c.type == 0x40 or c.type == 0x80 or c.type == 0x100 then
@@ -1178,6 +1183,7 @@ local function cmdsub_run(self, s)
     elseif t == 0x40 or t == 0x80 or t == 0x100 then
         local spd
         if s.timer >= s.dur then
+            cmdbullet_sound(self)
             s.done = s.done + 1
             if t == 0x100 then
                 self.rot = s.angle
@@ -1237,6 +1243,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
     init = function(self, style, col, x, y, v, a, cmd)
         bullet.init(self, style, col, false, true)
         if not class.th07_claim_slot(self) then OriginalBulletVisual.retire(self);return end
+        self.c_sound=cmd.sound~=nil and cmd.sound or (class.th07_command_sound or -1)
         self.x, self.y = x, y
         self.rot = a
         self.vx, self.vy = v * cos(a), v * sin(a)
@@ -1356,6 +1363,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
             ---共 loop 轮。原作 ph sub101 就是靠它做「直线→停→拐弯再飞」的曲线弹。
             local spd
             if self.c_timer >= self.c_dur then
+                cmdbullet_sound(self)
                 self.c_done = self.c_done + 1
                 self.c_ang = self.c_ang + self.c_angle
                 self.c_spd = self.c_speed
@@ -1379,6 +1387,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
         elseif self.c_type == 0x80 then
             local spd
             if self.c_timer >= self.c_dur then
+                cmdbullet_sound(self)
                 self.c_done = self.c_done + 1
                 self.c_ang = Angle(self, player) + self.c_angle
                 self.c_spd = self.c_speed
@@ -1402,6 +1411,7 @@ class["TH34_cmdbullet"] = Class(bullet, {
             ---就是靠它「刹停 → 瞬间转向自机方向再飞」。
             local spd
             if self.c_timer >= self.c_dur then
+                cmdbullet_sound(self)
                 self.c_done = self.c_done + 1
                 self.c_ang = self.c_angle
                 self.c_spd = self.c_speed
@@ -1956,8 +1966,8 @@ local function w3_spread(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, pl
     end, plays, flags)
 end
 
----RING（op66/op67）：th07 angle = ±(x·2π/c1 + y·a2 + a1)；取反后 x 那一项还是整圈，
----于是我们的角 = base + x·360/c1 + y·(−a2)，base 里带 (−a1) 或自机角。
+---RING（op66/op67）：th07 angle = ±(x·2π/c1 + y·a2 + a1)；为保留弹槽顺序，
+---我们的角 = base − x·360/c1 + y·(−a2)，base 里带 (−a1) 或自机角。
 local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, plays, flags)
     local base = (aim and Angle(self, player) or 0) - a1_th * RAD2DEG
     local step = 360 / c1
@@ -1966,7 +1976,7 @@ local function w3_ring(self, style, off, c1, c2, v1, v2, a1_th, a2_th, aim, play
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
-        return style, th07_color_for(off, style), v, base + ring * step + layer * a2
+        return style, th07_color_for(off, style), v, base - ring * step + layer * a2
     end, plays, flags)
 end
 
@@ -2612,7 +2622,7 @@ local function w5_spread(self, spr, off, c1, c2, v1, v2, base, a2_th, ox, oy, cm
 end
 
 ---RING_ABS（op67）：angle = 环序·2π/c1 + 层序·a2 + a1（a1 是绝对值，不瞄自机）。
----环序那一项是整圈，取反与否是同一个集合；层序那一项要取反。
+---逐发顺序也决定原生弹槽与满池截断：环序和层序均按Y翻转取负。
 local function w5_ring(self, spr, off, c1, c2, v1, v2, base, a2_th, cmd)
     local step = 360 / c1
     local a2 = -a2_th * RAD2DEG
@@ -2620,7 +2630,7 @@ local function w5_ring(self, spr, off, c1, c2, v1, v2, base, a2_th, cmd)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = (c2 == 1) and v1 or (v1 - (v1 - v2) * layer / c2)
-        return th07_style(spr), th07_color(off, spr), v, base + ring * step + layer * a2, cmd
+        return th07_style(spr), th07_color(off, spr), v, base - ring * step + layer * a2, cmd
     end)
 end
 
@@ -3067,7 +3077,7 @@ local function w1_ring(self, style, off, c1, c2, v1, v2, base, a2_deg, plays)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
-        return style, th07_color_for(off, style), v, base + ring * step + layer * a2_deg
+        return style, th07_color_for(off, style), v, base - ring * step + layer * a2_deg
     end, plays)
 end
 
@@ -4498,7 +4508,7 @@ local function ring78(self, style, off, c1, c2, v1, v2, base, a2_th, plays)
     volley3(self, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
-        return style, th07_color_for(off, style), v1 - (v1 - v2) * layer / c2, base + ring * step + layer * a2
+        return style, th07_color_for(off, style), v1 - (v1 - v2) * layer / c2, base - ring * step + layer * a2
     end, plays)
 end
 
@@ -5906,6 +5916,7 @@ function class.th07_motion_begin(self, id, move)
     self.th07_shoot_sound=({[4392]=25,[4394]=9})[id] or 7
     self.th07_manual_pose=false
     self.th07_ns_flags=nil
+    class.th07_command_sound=({[4450]=25,[4454]=25,[4455]=25,[4456]=25,[4457]=25,[4464]=25,[4399]=25,[4400]=25,[4401]=25})[id] or -1
     TH34Prism.begin(self, id)
     -- 上一张卡关闭体术时会放入NONTJT；新卡恢复原作默认，再由本卡协程改变。
     self.group = GROUP.ENEMY
@@ -6141,14 +6152,12 @@ function class.th07_oni_emit(owner, timer)
     local odd = timer%2 ~= 0
     local kind, speed, count = odd and 1 or 3, odd and 1.2 or 0.8, odd and 1 or 2
     local emitted, targets = 0, {}
-    for _, b in ipairs(pool4) do
-        if IsValid(b) and not b.th07_cut_removed then
-            local flags = b.c_list and b.c_exf or b.c_type or 0
-            local profile = b.imgclass and b.imgclass.native_profile
-            local height = profile and profile.h or ((b.th07_sprite == 10) and 64 or 0)
-            if not cmdbullet_hasbit(flags,0x40) and b.y > -96 and height > 60 then
-                targets[#targets+1] = b
-            end
+    for slot=1,1024 do
+        local b=class.th07_slots and class.th07_slots[slot]
+        if b and IsValid(b) and b.status~='del' and b.status~='kill' and not b.th07_cut_removed and not b._native_death_effect then
+            local flags=b.c_list and b.c_exf or b.c_type or 0
+            local vm=b._native_anm;local sprite=vm and vm.data.sprites[vm.sprite]
+            if not cmdbullet_hasbit(flags,64) and b.y> -96 and sprite and sprite[5]>60 then targets[#targets+1]=b end
         end
     end
     for _, b in ipairs(targets) do
@@ -6159,6 +6168,7 @@ function class.th07_oni_emit(owner, timer)
                 -- AddDirChangeCommand同时将0x40写进moreFlags；偶数帧没有命令。
                 local cmd = odd and cmds4(0x248,{type=0x40,dur=60,loop=1,angle=0,speed=3.1})
                     or cmds4(0x208)
+                cmd.sound=25
                 local o = New(class.TH34_cmdbullet,th07_style(kind),th07_color(off,kind),
                     b.x,b.y,speed,angle+i*180,cmd)
                 o.th07_sprite,o.th07_color = kind,off
@@ -6167,7 +6177,7 @@ function class.th07_oni_emit(owner, timer)
             end
         end
     end
-    if emitted > 0 then PlaySound("kira00",0.08,owner.x/256) end
+    if #targets>0 then OriginalStageVisual.presentation.sound.play(7,0,owner.x) end
     return emitted
 end
 function class.th07_oni_interact(owner)
@@ -6696,7 +6706,7 @@ local function TH34_add_stage78_boss()
             local k = i - 1
             local layer, ring = int(k / c1), k % c1
             local v = v1 - (v1 - v2) * layer / c2
-            return style, th07_color_for(off, style), v, a1 + ring * step + layer * a2
+            return style, th07_color_for(off, style), v, a1 - ring * step + layer * a2
         end, plays)
     end
     ---RANDOM（op70/71/72）：角度 = a1 + rand(0, a2)，速度 = rand(v2, v1)。
@@ -8017,7 +8027,7 @@ local function TH34_add_stage78_boss()
         task.Wait(600)
         while true do
             gspread(self, bs(7), 2, 9, 1, 1.5, 1, Angle(self, player), 30, false)
-            PlaySound("tan00", 0.1, self.x / 256)   -- 原作 #14 PLAY_SOUND 15
+            OriginalStageVisual.presentation.sound.play(7,15,self.x)   -- 原作 #14 PLAY_SOUND 15
             task.Wait(100)
         end
     end
@@ -8945,30 +8955,30 @@ local function TH34_add_stage78_boss()
         ---仙狐的一拍：在 |i|+|j| = shell 的所有格点上各打一圈 8 发，拍间停 10 帧。
         ---每发除初速 0.5 外还挂 INIT_BULLET_CMD 0x10（spd 0.0166667、dur 120、loop −1、
         ---flags 0x212 里含 0x10）：沿出生朝向每帧加速 1/60，120 帧后速度涨到 0.5+2.0 = 2.5。
-        local function shinko(self, a)
-            for shell = 1, 3 do
-                local col = th07_color(8 + shell, 6)
-                for i = -shell, shell do
-                    for j = -shell, shell do
-                        if abs(i) + abs(j) == shell then
-                            local ox = (i * cos(a) + j * cos(a + 90)) * 32
-                            local oy = (i * sin(a) + j * sin(a + 90)) * 32
-                            local ox0, oy0 = self.x, self.y
-                            self.x, self.y = ox0 + ox, oy0 + oy
-                            for n = 0, 7 do
-                                local th = a + n * 45
-                                pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], bs(6), col,
-                                                        self.x, self.y, 0.5, th,
-                                                        { type = 0x10, dur = 120, loop = -1, flags=0x212,
-                                                          vec_x = cos(th) * 0.0166667,
-                                                          vec_y = sin(th) * 0.0166667 })
-                            end
-                            sound4(self)
-                            self.x, self.y = ox0, oy0
-                        end
-                    end
+        local function shinko(o,a)
+            for shell=1,3 do
+                local r=shell*32
+                local ux,uy=cos(a)*r,sin(a)*r
+                local vx,vy=cos(a-90)*r,sin(a-90)*r
+                local points={{ux,uy},{vx,vy},{-ux,-uy},{-vx,-vy}}
+                local fractions=shell==1 and {} or shell==2 and {.5} or {.33329999446868896,.6665999889373779}
+                for _,u in ipairs(fractions) do
+                    local x,y=ux*(1-u)+vx*u,uy*(1-u)+vy*u
+                    points[#points+1]={x,y};points[#points+1]={-x,-y}
+                    x,y=ux*(1-u)-vx*u,uy*(1-u)-vy*u
+                    points[#points+1]={x,y};points[#points+1]={-x,-y}
                 end
-                task.Wait(10)
+                for _,point in ipairs(points) do
+                    for k=0,7 do
+                        if pool4_used()>=POOL4_SIZE then break end
+                        local angle=a-k*45
+                        local b=New(class.TH34_cmdbullet,bs(6),th07_color(8+shell,6),o.x+point[1],o.y+point[2],.5,angle,
+                            cmds4(530,{type=16,dur=120,speed=.01666666753590107,angle=-999}))
+                        b.th07_sprite,b.th07_color=6,8+shell;pool4[#pool4+1]=b
+                    end
+                    sound4(o) -- flags512即使满池也调用声音。
+                end
+                if shell<3 then task.Wait(10) end
             end
         end
         spellcard(NAME, 3462, 60, 2600, false, function(self)
@@ -8982,18 +8992,16 @@ local function TH34_add_stage78_boss()
                     ---sub86：一发速度 12 的大弹（0x40，20 帧刹停）。
                     local aim = Angle(self, player)
                     local th = -aim / RAD2DEG                 -- 原作 angToPl（弧度）
-                    ---原作 #0 无条件先掷（RAND_FLOAT_ADD f2 0.392699 1.37445），#3 才按 A2P 覆盖。
-                    local a = -(ran:Float(0, 0.392699) + 1.37445) * RAD2DEG
-                    if th > 0.392699 and th < 2.74889 then a = aim end
+                    ---原作 #0 无条件先掷（RAND_FLOAT_ADD f2 0.39269909262657166 1.3744467496871948），#3 才按 A2P 覆盖。
+                    local a = -(ran:Float(0, 0.39269909262657166) + 1.3744467496871948) * RAD2DEG
+                    if th > 0.39269909262657166 and th < 2.7488934993743896 then a = aim end
                     local b = New(class["TH34_cmdbullet"], th07_style(10), th07_color(1, 10),
                                   self.x, self.y, 12, a,
-                                  { type = 0x40, dur = 20, loop = 1, angle = 0, speed = 0 })
+                                  cmds4(4168,{type=64,dur=20,loop=1,angle=0,speed=0}))
                     pool4[#pool4 + 1] = b
-                    sound4(self)
                     task.Wait(40)                     -- 原作 SUB_CALL 86 同步占 40 帧（弹飞到点后生仙狐）
-                    local bx, by = b.x, b.y
-                    if IsValid(b) then object.RawDel(b) end
-                    pspawn(bx, by, shinko, a, nil, true)
+                    local bx,by=class.th07_ecl_find_large(self)
+                    if bx then pspawn(bx,by,shinko,a,'ecldata7:87',true) end
                     task.Wait(li1)
                     local d = exang(self)
                     bmove(self, li0, 4, self.x + cos(d) * li0 * 3.5, self.y + sin(d) * li0 * 3.5)
@@ -9016,14 +9024,14 @@ local function TH34_add_stage78_boss()
         local NAME = "鬼神「飛翔毘沙門天」"
         ---原作 sub61 的 8 段 MOVE_ORBIT（已取我们的口径：角度与角速度都取反，半径量不变）。
         local ORB = {
-            { -1.5708, -0.0261799, 160,  0 },
-            {  1.5708, -0.0261799, 160, -1.33333 },
-            {  1.5708,  0.0261799,   0,  1.33333 },
-            { -1.5708,  0.0261799, 160,  0 },
-            {  1.5708,  0.0261799, 160,  0 },
-            { -1.5708,  0.0261799, 160, -1.33333 },
-            { -1.5708, -0.0261799,   0,  1.33333 },
-            {  1.5708, -0.0261799, 160,  0 },
+            { -1.5707963705062866, -0.02617993950843811, 160,  0 },
+            {  1.5707963705062866, -0.02617993950843811, 160, -1.3333333730697632 },
+            {  1.5707963705062866,  0.02617993950843811,   0,  1.3333333730697632 },
+            { -1.5707963705062866,  0.02617993950843811, 160,  0 },
+            {  1.5707963705062866,  0.02617993950843811, 160,  0 },
+            { -1.5707963705062866,  0.02617993950843811, 160, -1.3333333730697632 },
+            { -1.5707963705062866, -0.02617993950843811,   0,  1.3333333730697632 },
+            {  1.5707963705062866, -0.02617993950843811, 160,  0 },
         }
         spellcard(NAME, 3461, 3410/60, 1580, false, function(self)
             ---进场：原作 t=0 的 MOVE_POS_TIME(60, ease4, 64, 128)（我们 (−128,96)）。
@@ -9057,7 +9065,7 @@ local function TH34_add_stage78_boss()
                     local lf2 = lf1 + ran:Float(0, 0.5)
                     gspread(self, bs(6), 6, 7, 1, lf2, 1, orbdir(self), 22.5, true)
                     lf1 = lf1 + 0.005
-                    task.Wait(7)
+                    task.Wait(6)
                 end
             end)
         end)
@@ -9079,8 +9087,11 @@ local function TH34_add_stage78_boss()
         ---一发「鬼弹」：a 是 TH07 初角（弧度）、dth 是 0x40 的角增量（我们的角度制）。
         local function oni(self, off, a, dth)
             local cmd = cmds4(578,{ type = 0x40, dur = 60, loop = 1, angle = dth, speed = 4 })
+            a=normalize_ns(a)
+            local speed=ran:Float(3.200000047683716,4.199999809265137)
+            if pool4_used()>=POOL4_SIZE then return end
             local o = New(class["TH34_cmdbullet"], th07_style(10), th07_color(off, 10),
-                                    self.x, self.y, ran:Float(3.2, 4.2), -a * RAD2DEG, cmd)
+                                    self.x, self.y, speed, -a * RAD2DEG, cmd)
             o.th07_sprite,o.th07_color = 10,off
             pool4[#pool4 + 1] = o
         end
@@ -9094,13 +9105,13 @@ local function TH34_add_stage78_boss()
                 self.th07_oni_active = true
                 local li0, li1 = 40, 180
                 while true do
-                    oni(self, 1, ran:Float(0, 0.0628319) - 0.0314159, -90)
+                    oni(self, 1, ran:Float(0, 0.06283185631036758) - 0.03141592815518379, -90)
                     task.Wait(li0)
-                    oni(self, 0, ran:Float(0, 0.0523599) + 3.11018, 90)
+                    oni(self, 0, ran:Float(0, 0.05235987901687622) + 3.1101768016815186, 90)
                     task.Wait(li0)
-                    oni(self, 1, ran:Float(0, 0.0628319) - 0.0314159, -90)
+                    oni(self, 1, ran:Float(0, 0.06283185631036758) - 0.03141592815518379, -90)
                     task.Wait(li0)
-                    oni(self, 0, ran:Float(0, 0.0523599) + 3.11018, 90)
+                    oni(self, 0, ran:Float(0, 0.05235987901687622) + 3.1101768016815186, 90)
                     task.Wait(li1)
                     if li0 > 20 then li0 = li0 - 2 end
                     if li1 > 60 then li1 = li1 - 20 end
@@ -9616,9 +9627,9 @@ local function TH34_add_stage56_boss()
                 a = base + spread_offsets(c1, -a2_th * RAD2DEG)[ring + 1]
             else
                 local base = ((op == 66 or op == 68) and aim or 0) - a1_th * RAD2DEG
-                a = base + ring * (360 / c1)
+                a = base - ring * (360 / c1)
                 if op == 66 or op == 67 then a = a - a2_th * RAD2DEG * layer
-                else a = a + 180 / c1 end
+                else a = a - 180 / c1 end
             end
             local o
             if cmd then
@@ -9685,8 +9696,8 @@ local function TH34_add_stage56_boss()
                 if pool4_used()>=POOL4_SIZE then break end
                 local angle=-math.pi+ran:Float(0,math.pi)
                 local o=New(class.TH34_cmdbullet,th07_style(0),th07_color(6,0),b.x,b.y,.7,
-                    -angle*RAD2DEG,cmds4(18,{type=0x10,flag=0,dur=180,loop=-1,
-                        speed=acceleration,accel_angle=-90,angle=math.pi/2}))
+                    -angle*RAD2DEG,{flags=18,sound=-1,list={{type=0x10,flag=0,dur=180,loop=-1,
+                        speed=acceleration,accel_angle=-90,angle=math.pi/2}}})
                 o.th07_sprite,o.th07_color=0,6;pool4[#pool4+1]=o
             end
             b.th07_cut_removed=true
@@ -10512,7 +10523,7 @@ local function TH34_add_stage56_boss()
                         li3 = li3 % 8
                         if li3 < 7 then
                             shoot6(self, 0, 0, 67, 10, 1, 1, 1, 3.7, 1, lf0, 1,
-                                   cmds4(644,brake_aim6(100,0,3,1)), true)
+                                   {flags=644,sound=25,list={brake_aim6(100,0,3,1)}}, true)
                         end
                     end
                 elseif ph == 2 then
