@@ -501,7 +501,7 @@ return function()
             if IsValid(o) then
                 if M.actor_inside(o,o.x,o.y,true) then o.th08_seen=true end
                 refresh(o) -- 本次运动后入场的对象，本帧即可参与判定。
-                if OriginalStageVisual then OriginalStageVisual.tick(o) end
+                if OriginalStageVisual then OriginalStageVisual.tick(o,o.th08_animation_vx) end
                 o.th08_guard=math.max(0,o.th08_guard-1)
                 o.th08_clock=o.th08_clock+1
             end

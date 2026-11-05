@@ -134,23 +134,25 @@ function system:frame()
     end
     --阶段逻辑
     if not (b.__is_waiting) and b.is_combat then
+        -- 原作停时/倍率按敌机计时，不改变引擎对象的真实帧timer。
+        local timer=b._original_ecl_timer or b.timer
         --高防时间计算
         b.sc_pro = max(b.sc_pro - 1, 0)
         local nsp = 0
         if player.nextspell > nsp then
             nsp = player.nextspell
         end
-        if nsp > 0 and b.timer <= 0 then
+        if nsp > 0 and timer <= 0 then
             b.sc_pro = nsp
         end
         --系统伤害比率运算
-        if b.timer < b.t1 then
+        if timer < b.t1 then
             b.dmg_factor = 0
         elseif b.sc_pro > 0 then
             b.dmg_factor = 0.1
-        elseif b.timer < b.t2 then
-            b.dmg_factor = (b.timer - b.t1) / (b.t2 - b.t1)
-        elseif b.timer < b.t3 then
+        elseif timer < b.t2 then
+            b.dmg_factor = (timer - b.t1) / (b.t2 - b.t1)
+        elseif timer < b.t3 then
             b.dmg_factor = 1
         else
             b.hp = 0
@@ -165,9 +167,9 @@ function system:frame()
         end
         --分数流失
         local native=b.current_card and b.current_card._original_balance
-        if native and b.t1~=b.t3 and b.timer<b.t3 then
+        if native and b.t1~=b.t3 and timer<b.t3 then
             -- 原作两段保护：完全无敌，其后固定九倍防御，不是线性爬升或延长全免。
-            b.dmg_factor=OriginalBalance.factor(native,b.timer)
+            b.dmg_factor=OriginalBalance.factor(native,timer)
         end
         if b.sc_bonus then
             b.sc_bonus = b.sc_bonus - b.__rescore
@@ -176,9 +178,9 @@ function system:frame()
         if b.is_extra and nsp > 0 then
             b.dmg_factor = 0
         end
-        b.countdown = (b.t3 - b.timer) / 60
+        b.countdown = (b.t3 - timer) / 60
         if IsValid(b.ui) then
-            b.ui.countdown = (b.t3 - b.timer) / 60
+            b.ui.countdown = (b.t3 - timer) / 60
         end
         self:checkBonus()
     else

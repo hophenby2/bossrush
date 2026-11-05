@@ -194,6 +194,8 @@ local defaultFrameEvent = {
                 local tx,ty=TouchInputMovement(self,self.key or KeyState,self.slow==1 and self.lspeed or self.hspeed)
                 if tx then dx,dy=tx,ty end
             end
+            local rate=self.th08_move_time_scale or 1
+            dx,dy=dx*rate,dy*rate
             local w = lstg.world
             self.x = Forbid(self.x + dx, w.pl + 8, w.pr - 8)
             self.y = Forbid(self.y + dy, w.pb + 16, w.pt - 32)

@@ -198,7 +198,7 @@ function A.step(v,dt)
     v.u=(v.u+v.us*dt)%1;v.v=(v.v+v.vs*dt)%1
     if not v.stopped and not v.wait then v.time=v.time+dt end
 end
-function A.new(game,archive,id)
+function A.new(game,archive,id,dt)
     local data=A.load(game,archive)
     local script=assert(data.scripts[id], '原作ANM脚本缺失：'..data.key..'/'..id)
     local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
@@ -206,7 +206,7 @@ function A.new(game,archive,id)
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}
-    A.step(v)
+    A.step(v,dt)
     return v
 end
 function A.sprite_resource(v)

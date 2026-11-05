@@ -369,5 +369,6 @@ function T.clear(phase)
     F.clear(phase)
 end
 T.new_effect=F.new
+T.spawn8=F.spawn8
 T.advance_shake=F.advance_shake
 return T

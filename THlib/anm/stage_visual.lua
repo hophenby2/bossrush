@@ -42,20 +42,20 @@ local function resolve_script(game,archive,id)
     end
     return archive,(game==6 or game==7) and assert(data.ids[id],archive..'/原始脚本'..id) or id
 end
-local function new_script(game,archive,id)
+local function new_script(game,archive,id,dt)
     local file,index=resolve_script(game,archive,id)
-    return A.new(game,file,index)
+    return A.new(game,file,index,dt)
 end
 function S.actor(o,game,archive,id,poses)
     o._original_actor={game=game,archive=archive,poses=poses,direction=255,
-        vm=new_script(game,archive,id),slots={},tick=o.ani}
+        vm=new_script(game,archive,id,o._native_rate_source and o._native_rate_source.fm),slots={},tick=o.ani}
     o.hide=false
     return o._original_actor
 end
 function S.set_script(o,id,archive)
     local state=assert(o._original_actor)
     state.archive=archive or state.archive
-    state.vm=new_script(state.game,state.archive,id)
+    state.vm=new_script(state.game,state.archive,id,o._native_rate_source and o._native_rate_source.fm)
 end
 -- TH10的ECL设置主ANM时保存可视范围，之后的动画缩放不持续改写此快照。
 function S.capture_visibility(o)
@@ -149,8 +149,9 @@ function S.tick(o,vx)
             if index and data.scripts[index] then S.set_script(o,id);s.direction=dir end
         end
     end
-    A.step(s.vm)
-    for _,vm in pairs(s.slots) do A.step(vm) end
+    local rate=o._native_rate_source and o._native_rate_source.fm
+    A.step(s.vm,rate)
+    for _,vm in pairs(s.slots) do A.step(vm,rate) end
     local alignment=o._original_alignment
     if alignment and alignment.tick~=o.ani then
         alignment.tick=o.ani;A.step(alignment.vm)
@@ -349,7 +350,7 @@ function S.visual_program(game,key)
     return {game=game,key=key,file=key:match('^([^:]+)'),cfg=source_data[game][key],index=1}
 end
 function S.source_frame(o,clock,program)
-    if not program then S.presentation.advance(o,clock) end
+    if not program and not o.th08_manual_presentation then S.presentation.advance(o,clock) end
     if o._original_presentation_carrier then return end
     if not program and OriginalCollision then OriginalCollision.events(o,clock) end
     local state=program or o._original_source
@@ -383,6 +384,7 @@ function S.source_frame(o,clock,program)
             end
             resolved[i]=v
         end
+        if o.th08_manual_main_anm and c[2]>=54 and c[2]<=62 then enabled=false end
         if enabled then animation_event(o,state.game,state.file,resolved) end
         state.index=state.index+1
     end
@@ -516,7 +518,8 @@ local function background_class(game,archive,name)
             if active then
                 -- 淡入已由原作 ANM 的 60 帧 alpha 控制，不能再乘本项目的 40 帧淡入。
                 o.age=o.age+1;o.alpha=math.min(1,o.age/60)
-                for _,vm in ipairs(o.vms) do A.step(vm) end
+                local rate=owner._native_rate_source and owner._native_rate_source.fm
+                for _,vm in ipairs(o.vms) do A.step(vm,rate) end
             else o.alpha=0 end
         end,
         render=function(o)

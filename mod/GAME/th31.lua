@@ -1199,9 +1199,9 @@ local GUN_CYCLE = 900
 ---转弯角同理：op51 判 `v10018 >= 0` 跳去 −2.5132742 那条（Sub3 偏移 0x88），
 ---所以第一批（v10018 > 0）用 −2.5132742、第二批用 +2.5132742；取反后就是下表。
 local DOLL_BATCHES = {
-    { color = COLOR.RED,    angle_speed = -ORBIT_ANGLE_SPEED,
+    { color = COLOR.DEEP_PURPLE,    angle_speed = -ORBIT_ANGLE_SPEED,
       shot_step = -0.10471975803375244,  turn_angle =  2.5132741928100586 },
-    { color = COLOR.PURPLE, angle_speed =  ORBIT_ANGLE_SPEED,
+    { color = COLOR.DEEP_BLUE, angle_speed =  ORBIT_ANGLE_SPEED,
       shot_step =  0.10471975803375244,  turn_angle = -2.5132741928100586 },
 }
 local DOLLS_PER_BATCH = 8                   -- v10036 = 8
@@ -1266,6 +1266,7 @@ bullet_218 = Class(bullet, {
     init = function(self, x, y, angle, speed, color, turn, btype)
         bullet.init(self, style_of(btype), color_of(btype, color), false, true)
         self.alice_angle = angle
+        self.ex_angle = angle
         self.alice_speed = speed
         self.alice_turn = turn
         self.alice_turn_timer = 0
@@ -1298,6 +1299,7 @@ bullet_218 = Class(bullet, {
         elseif self.alice_turn then
             if self.alice_turn_timer >= TURN_INTERVAL then
                 -- 拐弯：角度 += record.angle、速度 = record.speed，然后把位清掉
+                OriginalStageVisual.presentation.sound.play(8,25,0)
                 self.alice_angle = self.alice_angle + self.alice_turn
                 self.alice_speed = TURN_SPEED
                 self.alice_turn = nil
@@ -1321,6 +1323,7 @@ bullet_218 = Class(bullet, {
             elseif self.alice_off==0 then OriginalBulletVisual.retire(self);return
             else self.alice_off=self.alice_off-1 end
         else self.alice_off=0 end
+        self.ex_angle=self.alice_angle
         bullet.frame(self)
     end,
 })
@@ -1330,6 +1333,7 @@ bullet_218 = Class(bullet, {
 ---（EclManager.hpp:478）—— 也就是娃娃当前的轨道角，用的是**上一帧末**的值。
 ---发完才 `v10019 += v10018`（op15）。
 local function gun_shot(owner, turn)
+    if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,owner.x) end
     local angle = owner.alice_angle + owner.alice_gun_offset
     spawn_bullet(owner.x, owner.y, angle, GUN_SHOT_SPEED, owner.alice_color,
             turn and owner.alice_turn_angle or nil, 2)
@@ -1340,6 +1344,7 @@ end
 ---count1=3、count2=1、speed1=8.0、angle=0、angleStep=0.261799395、bulletType=6、flags=514。
 ---FAN_AIMED 的角 = 自机方向 + 扇形偏移（BulletManager.cpp:118-127）。
 local function gun_fan(owner)
+    if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,owner.x) end
     local aim = math.atan2(player.y - owner.y, player.x - owner.x)
     for i = 1, #FAN_OFFSETS do
         -- 生不出来 → 放弃整波剩下的（BulletManager.cpp:700-703）
@@ -1387,14 +1392,12 @@ local alice_doll = class.th08_combat.actor("ecldata_al:2", {
         self.bound = false
         self.rot = 0
         self._blend, self._a = "", 255
-        if info.color == COLOR.RED then
+        if info.color == COLOR.DEEP_PURPLE then
             self._r, self._g, self._b = 255, 150, 150
         else
             self._r, self._g, self._b = 190, 150, 255
         end
-        -- 公转圆心 = BOSS 生成娃娃时的位置（原作的 positionOffset 就写这一次，
-        -- 之后 BOSS 乱走跟娃娃无关：EnemyManagerUpdate.cpp:170-176 只在
-        -- inheritParentPosition 置位时才刷新，而这个位在 spawnTemplate 里是 0）
+        -- 92在EclRunLow.inl:937置inheritParentPosition，圆心每拍跟随父机。
         self.alice_center_x, self.alice_center_y = x, y
         self.alice_angle = angle
         self.alice_radius = 0
@@ -1425,6 +1428,7 @@ local alice_doll = class.th08_combat.actor("ecldata_al:2", {
             -- ins_135(0, 3)：切回 Sub3
             self.alice_gun_mode = 3
             self.alice_gun_time = 0
+            self.alice_gun_offset = 0 -- 135重装context拷贝父程序lf3=0，不保留旧枪偏角。
         end
         -- ② 子 context（枪）跟着跑；它用的世界坐标 / 轨道角都是**上一帧末**的值
         gun_step(self)
@@ -1441,8 +1445,12 @@ local alice_doll = class.th08_combat.actor("ecldata_al:2", {
             self.alice_radial = 0
         end
         self.alice_radius = self.alice_radius + self.alice_radial
-        self.x = self.alice_center_x + math.cos(self.alice_angle) * self.alice_radius
-        self.y = self.alice_center_y + math.sin(self.alice_angle) * self.alice_radius
+        local lx,ly=math.cos(self.alice_angle)*self.alice_radius,math.sin(self.alice_angle)*self.alice_radius
+        self.th08_animation_vx=lx-(self.x-self.alice_center_x)
+        -- 92在积分后刷新父机positionOffset；枪先读旧世界坐标，显示与运动再跟随本拍父机。
+        local parent=self.th08_parent
+        if parent then self.alice_center_x,self.alice_center_y=parent.x,parent.y end
+        self.x,self.y=self.alice_center_x+lx,self.alice_center_y+ly
         self.rot = -self.alice_angle * RAD     -- 观感近似：娃娃朝自己前进的方向
         self.alice_t = t + 1
     end,
@@ -1544,9 +1552,16 @@ local function boss_frame(owner)
         spawn_dolls(owner)
     end
     local move = owner.alice_move
-    if move == nil and f >= WANDER_FIRST and (f - WANDER_FIRST) % WANDER_PERIOD == 0 then
-        begin_wander(owner)
-        move = owner.alice_move
+    if f>=WANDER_FIRST then
+        local phase=(f-WANDER_FIRST)%900
+        if phase<=240 and phase%60==0 then
+            begin_wander(owner);move=owner.alice_move
+        elseif phase==300 then
+            -- 1010处回中60拍，再跳110等待到710；五次随机移动+回中，周期900。
+            owner.alice_move={x0=owner.x,y0=owner.y,dx=initial_target(owner,0)-owner.x,
+                dy=BOSS_END_Y-owner.y,n=60,t=0}
+            move=owner.alice_move
+        end
     end
     if move then
         local x, y, done = move_step(move)
@@ -6852,9 +6867,13 @@ lw214_familiar = class.th08_combat.actor("ecldata4asp:44", {
         ---④ ORBIT 位移（EnemyManager.cpp:36-72）+ IntegrateVelocity。
         self.fm_theta = self.fm_theta + self.fm_spin
         self.fm_radius = self.fm_radius + self.fm_radial
-        local nx = self.fm_cx + math.cos(self.fm_theta) * self.fm_radius
-        local ny = self.fm_cy + math.sin(self.fm_theta) * self.fm_radius
-        self.fm_mangle = math.atan2(ny - self.y, nx - self.x)   -- 这一帧的位移方向
+        local lx,ly=math.cos(self.fm_theta)*self.fm_radius,math.sin(self.fm_theta)*self.fm_radius
+        local dx,dy=lx-(self.x-self.fm_cx),ly-(self.y-self.fm_cy)
+        self.fm_mangle=math.atan2(dy,dx)
+        self.th08_animation_vx=dx
+        local parent=self.th08_parent
+        if parent then self.fm_cx,self.fm_cy=parent.x,parent.y end
+        local nx,ny=self.fm_cx+lx,self.fm_cy+ly   -- 这一帧的位移方向
         self.x, self.y = nx, ny
         self.rot = -self.fm_theta * RAD              -- 观感近似
         self.fm_t = t + 1
@@ -7882,6 +7901,7 @@ local knives = {}
 
 ---冻结计时（原作 `scriptedUpdateFreeze`，EclExIns.cpp:815-830）。
 local freeze_left = 0
+local freeze_lock_before
 
 local lw216_bullet
 
@@ -7975,13 +7995,15 @@ lw216_bullet = Class(bullet, {
         bullet.init(self, style_of(20), color_of(20, color), false, true)
         self.bound = false                   -- 出屏回收自己判（卡 206/209/210/211/212/213 同款）
         self.b_angle = angle
+        self.ex_angle = angle
         self.b_speed = speed
         self.b_vx = math.cos(angle) * speed
         self.b_vy = math.sin(angle) * speed
         ---SPAWN_FAST：出生瞬间位置先退 velocity·4（BulletManager.cpp:219-227）。
-        self.x = x - self.b_vx * 4
-        self.y = y - self.b_vy * 4
-        self.vx, self.vy = self.b_vx / 2, self.b_vy / 2
+        self.x = x - (spawn_frames>0 and self.b_vx*4 or 0)
+        self.y = y - (spawn_frames>0 and self.b_vy*4 or 0)
+        local rate=spawn_frames>0 and 0.5 or (freeze_left>0 and 0 or 1)
+        self.vx, self.vy = self.b_vx*rate, self.b_vy*rate
         self.b_spawn = spawn_frames
         self.b_mark = mark                   -- transformFlags 带 0x100000（可被 ins_136(27) 转化）
         self.b_off = 0                       -- offscreenFrames
@@ -8008,6 +8030,7 @@ lw216_bullet = Class(bullet, {
         end
         ---② FIRED：先跑 transform 状态机（冻结期也照跑），再按新速度位移。
         fired_transform(self)
+        self.ex_angle = self.b_angle
         self.vx, self.vy = self.b_vx, self.b_vy
         ---③ 冻结期弹不位移（BulletManager.cpp:858-860）。
         if freeze_left > 0 then
@@ -8015,15 +8038,15 @@ lw216_bullet = Class(bullet, {
         end
         bullet.frame(self)
         ---④ 出屏回收（BulletManager.cpp:856-899）。
-        if outside_field(self.x, self.y) then
+        if EX.outside(self,self.x+self.vx,self.y+self.vy) then
             if self.b_cd then
                 ---还挂着转向状态 → 允许出屏 128 帧再回收。
                 self.b_off = self.b_off + 1
                 if self.b_off >= OFFSCREEN_GRACE then
-                    object.RawDel(self)
+                    OriginalBulletVisual.retire(self)
                 end
             elseif self.b_off == 0 then
-                object.RawDel(self)
+                OriginalBulletVisual.retire(self)
             else
                 self.b_off = self.b_off - 1
             end
@@ -8181,6 +8204,7 @@ local function knife_step(k)
                 k.pc = k.pc + 1
             elseif ins.op == K_SHOT then
                 ---`ins_97(20, 1, 1, 1, 5.5, 1.0, lf0, 0.3926991, 512)`：没有出生动画、没有记录。
+                if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,k.x) end
                 fan_shot(k.x, k.y, 1, 1, KNIFE_BULLET_SPEED, KNIFE_BULLET_SPEED,
                         k.ang, KNIFE_BULLET_STEP, false, KNIFE_BULLET_COLOR, 0, nil, false)
                 k.pc = k.pc + 1
@@ -8291,12 +8315,16 @@ end
 ---（Player.cpp:1027-1038），移植版用 THlib 的 `player.lock`（th11_2/th14 同款写法）。
 local function freeze_on()
     freeze_left = FREEZE_FRAMES
+    freeze_lock_before=player.lock
     player.lock = true
+    OriginalStageVisual.interrupt_background(8,2)
 end
 
 local function freeze_off()
+    if freeze_left>0 then player.lock=freeze_lock_before end
     freeze_left = 0
-    player.lock = nil
+    freeze_lock_before=nil
+    OriginalStageVisual.interrupt_background(8,1)
 end
 
 ---BOSS 每帧。原作顺序：RunEcl（主 context → 子 context）→ ClampPosition →
@@ -8307,6 +8335,7 @@ local function boss_frame(owner)
         return
     end
     local t = owner.lw216_t
+    owner._original_ecl_timer=owner.lw216_phase_time
     ---★ 标签 Sub1_504 之前的 `ins_6([10039], 5)` 只有第一次会执行
     ---（t=380 的 jump 落在标签上，跳过它；拨回后帧末 time++ → 下一帧的 time 是 111，
     ---所以 time=110 **一轮里只出现一次**）→ 弹数只在第一次经过时被写成 5。
@@ -8316,6 +8345,7 @@ local function boss_frame(owner)
     if t >= CYCLE_START then
         local u = (t - CYCLE_START) % CYCLE          -- 本轮相位
         if u == 0 then
+            OriginalStageVisual.presentation.sound.play(8,5,owner.x)
             ---★ 相位 0 = 标签块：第一次经过 time=110 那一帧，以及之后**每一轮**
             ---t=380 的 `ins_4(110, Sub1_504)` 拨回后**同帧**重新分派到标签上的那一帧
             ---（拨回后的帧末 time++ → 下一帧是 111，所以 110 不再作为普通帧出现）。
@@ -8323,6 +8353,7 @@ local function boss_frame(owner)
         elseif u == DRIFT1_T - CYCLE_START then
             begin_wander(owner, DRIFT1_FRAMES)        -- `ins_67(60, 4, 1.0)`
         elseif u == FREEZE_T - CYCLE_START then
+            OriginalStageVisual.presentation.sound.play(8,33,owner.x)
             freeze_on()                              -- `ins_136(26, 1)`
             spawn_knives()                           -- `ins_136(27, 0)`
             begin_wander(owner, DRIFT2_FRAMES)        -- `ins_67(120, 4, 1.0)`
@@ -8355,6 +8386,7 @@ local function boss_frame(owner)
         end
     end
     clamp_pos(owner)
+    if freeze_left<=0 then owner.lw216_phase_time=owner.lw216_phase_time+1 end
     ---★ t=380 的 `ins_4(110, Sub1_504)`：把 context 时间拨回 110 并**同帧**跳回标签
     ---（EnemyManagerUpdate 里 RunEcl 的 HANDLE_JUMP：context->time = op0 后原地下发）。
     ---上面那一帧已经跑过标签那一段，所以这里只把**下一帧**的时间设成 111
@@ -8370,6 +8402,8 @@ end
 
 local function card_init(owner)
     owner.lw216_t = 0
+    owner.lw216_phase_time=0
+    owner._original_ecl_timer=0
     owner.lw216_fan_count = 0
     ---★ 落位：生成助手 Sub9 的 t=0 就 `ins_63 SET_POSITION(192, 128)` → 我们 (0, 96)。
     ---  根第一条 ins_64 的目标也是 (192,128) → 插值位移恒 0：原作 BOSS 是**原地出现**，
@@ -8388,11 +8422,12 @@ end
 local function card_del(owner)
     ---★ 帧计数器必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw216_t = nil
+    owner._original_ecl_timer=nil
+    owner.lw216_phase_time=nil
     owner.lw216_move = nil
     owner.g_t = nil
     ---冻结中途被打断也要把自机放开（否则自机永远动不了）。
-    freeze_left = 0
-    player.lock = nil
+    freeze_off()
     for i = #knives, 1, -1 do
         knives[i] = nil
     end
@@ -8608,6 +8643,7 @@ local slashes = {}
 ---慢动作状态（≡ 原作的全局 framerateMultiplier 与所有 ZunTimer 的 subFrame）。
 local fm = 1
 local animation_clock = {fm=1}
+local player_scale_before
 -- ZunTimer的subFrame是float32；1/3的加减必须在每一步舍入，整数比较才不偏一帧。
 local function timer_f32(x)
     local m,e=math.frexp(x)
@@ -8688,8 +8724,12 @@ local function set_slow(on)
             if b._original_despawning then b.vx,b.vy=b.vx*k,b.vy*k end
         end
     end
+    if on then player_scale_before=player.th08_move_time_scale end
     fm = on and timer_f32(1 / SLOW_DIV) or 1
     animation_clock.fm = fm
+    player.th08_move_time_scale=on and fm or player_scale_before
+    if not on then player_scale_before=nil end
+    OriginalStageVisual.interrupt_background(8,on and 2 or 1)
 end
 
 ---`ins_65(lf0, 10)`：把移动方向设成 lf0（TH08 → 我们取反），速度 10、无限期。
@@ -8767,6 +8807,7 @@ lw217_bullet = Class(bullet, {
         ---（THlib/bullet/bullet.lua:85-89）。
         bullet.init(self, style_of(6), color_of(6, th08_color(BULLET_COLOR)), false, true)
         self.b_angle = -angle_th08
+        self.ex_angle=self.b_angle
         self._native_rate_source = animation_clock
         self.b_speed = 0                     -- speed1 = 0、count2 = 1 → 出膛速度恒 0
         self.b_vx, self.b_vy = 0, 0
@@ -8811,11 +8852,12 @@ lw217_bullet = Class(bullet, {
             end
         end
         ---③ position += velocity（velocity 里已经含 ×fm），交给引擎积分。
+        self.ex_angle=self.b_angle
         self.vx, self.vy = self.b_vx, self.b_vy
         bullet.frame(self)
         ---④ 出屏回收（BulletManager.cpp:856-899）：本卡的弹没有转向/反弹状态 → 出屏即回收。
-        if outside_field(self.x, self.y) then
-            object.RawDel(self)
+        if EX.outside(self,self.x+self.vx,self.y+self.vy) then
+            OriginalBulletVisual.retire(self)
         end
     end,
 })
@@ -8826,6 +8868,7 @@ local function sat_fire(owner, adelta)
     -- 独立子机没有SET_BOSS清除出生默认的32px近身停火距离。
     if (player.x-owner.x)^2+(player.y-owner.y)^2<1024 then return end
     local used = pool_used()
+    if used<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,owner.x) end
     for i = 0, RING_COUNT - 1 do
         if used >= POOL_SIZE then
             return
@@ -8871,6 +8914,7 @@ lw217_sat = OriginalStageVisual.actor_class(object, 8, 'ecldata_ym:5', {
         self.bound = false                  -- 会飞出场地（原作 NO_SPRITE → 引擎不按出屏回收）
         self.rot = 0
         self._blend, self._a = "", 255
+        self._native_rate_source=animation_clock
         self.s_lf5 = lf5                    -- `ins_28` 的除数（= BOSS 那一刻的 lf5）
         self.s_cur = dir_th08               -- lf0：`ins_65` 先用它，`ins_28` 随后覆盖
         self.s_cnt = SAT_SHOTS              -- `ins_6([10038], 10)`
@@ -8894,6 +8938,7 @@ lw217_slash = OriginalStageVisual.actor_class(object,8,'ecldata_ym:2',{
     init=function(self,x)
         self.x,self.y=x,0
         self.group,self.layer,self.bound,self.colli=GROUP.GHOST,LAYER.ENEMY,false,false
+        self._native_rate_source=animation_clock
         self.sl_t=1 -- ins_94生成时已执行RunEcl(0)，正常更新从t1继续。
     end,
     frame=function(self)
@@ -8948,13 +8993,12 @@ local function attach_sat(owner)
     sat = { t = 0, pc = 1, counter = SAT_LINE_N, r = 0, lf5 = owner.lw217_lf5, sub4_t = 0 }
     sat.r = ran:Float(0, 1) * SAT_R0_MAX      -- `ins_27(extraFloat1, RANDOM_UNIT_FLOAT, 14)`
     sub4_pc = 1
+    owner.lw217_sub4_t=0
 end
 
 ---Sub3（子 context 0）的步进：tick 0..15 各出一对卫星，tick 16 RETURN。
 local function sat_step(owner, time)
     ---Sub4 比 Sub3 多活一 tick（两者都在自己的 tick 16 结束），所以先推它。
-    sub4_step(owner, sat.sub4_t)
-    sat.sub4_t = sat.sub4_t + 1
     while true do
         local ins = SUB3[sat.pc]
         if ins == nil or ins.t ~= time then
@@ -9000,17 +9044,23 @@ end
 ---BOSS 根时间轴的一条指令组。返回 true = 这一 tick 还要继续跑（`ins_4` 跳回循环体）。
 local function root_step(owner, t)
     if t == LOOP_T then
+        OriginalStageVisual.main_script(owner,8,'stgenm_ym',6)
+        owner._original_actor.poses=nil
         ---`ins_136(28, 3)`：开始慢动作。
         set_slow(true)
         ---★ `ins_52(6)` = CALL 子程序 Sub6（30 tick 的效果喷射）→ 根的时钟冻结 30 tick
         ---  （见 SLOW_SUB_TICKS 那段）。`ins_58(6)` 是换 ANM，纯观感，跳过。
         owner.lw217_sub6 = SLOW_SUB_TICKS
+        OriginalStageVisual.presentation.spawn8(owner,owner,17,4,-1)
     elseif t == SLOW_T1 then
         ---`ins_136(29, 1)`（退出慢动作）→ `ins_63(ENEMY_POSITION_X, 420)`（瞬移到场地底部）
         ---→ `ins_135(0, 3)`（挂上子 context 0）。
         set_slow(false)
         owner.lw217_move = nil
         owner.y = DROP_Y
+        OriginalStageVisual.main_script(owner,8,'stgenm_ym',5)
+        owner._original_actor.poses=nil
+        OriginalStageVisual.presentation.sound.play(8,42,owner.x)
         attach_sat(owner)
     elseif t == AIM_T then
         ---`ins_64(60, 4, PLAYER_POSITION_X, 128)`：朝自机**此刻**的 x 飞到中场 (x, 96)。
@@ -9038,7 +9088,8 @@ local function boss_frame(owner)
         return
     end
     ---① 亚帧累加（≡ Supervisor::TickTimer）：本真帧给所有「计时器」推一格吗？
-    sub_acc = sub_acc + fm
+    owner._original_ecl_timer=owner.lw217_phase_clock.timer+owner.lw217_phase_clock.subframe
+    sub_acc = timer_f32(sub_acc + fm)
     tick_frame = false
     if sub_acc >= 1 then
         sub_acc = sub_acc - 1
@@ -9050,6 +9101,7 @@ local function boss_frame(owner)
         ---  （此阶段 Sub3 还没挂上），只有场上的弹与自机照常按 fm 走。
         if (owner.lw217_sub6 or 0) > 0 then
             owner.lw217_sub6 = owner.lw217_sub6 - 1
+            if owner.lw217_sub6>0 then OriginalStageVisual.presentation.spawn8(owner,owner,17,4,-1) end
         else
             local guard = 0
             while root_step(owner, owner.lw217_t) do
@@ -9060,6 +9112,10 @@ local function boss_frame(owner)
             end
             if sat ~= nil then
                 sat_step(owner, sat.t)
+            end
+            if sub4_pc~=nil then
+                sub4_step(owner,owner.lw217_sub4_t)
+                owner.lw217_sub4_t=owner.lw217_sub4_t+1
             end
             owner.lw217_t = owner.lw217_t + 1
         end
@@ -9073,10 +9129,16 @@ local function boss_frame(owner)
             owner.lw217_move = nil
         end
     end
+    motion_timer_step(owner.lw217_phase_clock)
 end
 
 local function card_init(owner)
     owner.lw217_t = 0
+    owner.lw217_phase_clock={timer=0,subframe=0}
+    owner._original_ecl_timer=0
+    owner._native_rate_source=animation_clock
+    owner.th08_manual_presentation=true
+    owner.th08_manual_main_anm=true
     owner.lw217_lf5 = LF0
     owner.lw217_sub6 = 0
     ---★ 落位：生成助手 Sub10 的 t=0 就 `ins_63 SET_POSITION(192, 128)` → 我们 (0, 96)。
@@ -9095,6 +9157,12 @@ local function card_del(owner)
     ---★ 帧计数器与全局慢动作都必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑
     ---（`fm` 更是本卡**自己**的全局量，留着下一张卡会一直慢动作）。
     owner.lw217_t = nil
+    if fm~=1 then set_slow(false) end
+    owner._native_rate_source=nil
+    owner.lw217_phase_clock=nil
+    owner._original_ecl_timer=nil
+    owner.th08_manual_presentation=nil
+    owner.th08_manual_main_anm=nil
     owner.lw217_move = nil
     owner.lw217_lf5 = nil
     owner.lw217_sub6 = nil
@@ -9377,8 +9445,8 @@ local function make_bullet(style, color, spawn, half)
             self.vx, self.vy = self.b_vx, self.b_vy
             bullet.frame(self)
             ---③ 出屏回收（BulletManager.cpp:856-899）：没有转向/反弹状态 → 出屏即回收。
-            if outside_field(self.x, self.y, self.b_half, self.b_half) then
-                object.RawDel(self)
+            if EX.outside(self,self.x+self.vx,self.y+self.vy) then
+                OriginalBulletVisual.retire(self)
             end
         end,
     })
@@ -9860,6 +9928,7 @@ local function lw220_advance(self)
         if self.lw_polar or self.lw_vec then
             return
         end
+        OriginalStageVisual.presentation.sound.play(8,25,0)
         self.lw_vec, self.lw_t = true, 0
         ---`vector.FromAngleMagnitude(angle, magnitude)`：方向在**装上的那一刻**定死
         ---（record 的 angle = −999 < −990 ⇒ 用当时的自身角，:342-355）。
@@ -9931,7 +10000,7 @@ local function make_bullet(style, color, half)
             if self.lw_cull == 0
                     and outside_field(self.x + self.vx, self.y + self.vy,
                                       self.lw_half, self.lw_half) then
-                object.RawDel(self)
+                OriginalBulletVisual.retire(self)
                 return
             end
             bullet.frame(self)
@@ -10090,6 +10159,7 @@ local function make_emitter(dir, color)
             self.lw_t = 0
             self.lw_f0, self.lw_f1 = 0, 0  -- lf0 / lf1
             self.lw_slots = {}             -- ≡ 原作的 `laserSlots[16]`
+            OriginalStageVisual.presentation.sound.play(8,dir==1 and 13 or 16,x)
             self.lw_interp = nil
             emitter_pass(self) -- SpawnEnemy2当场RunEcl(0)，之后正常frame只推一次。
         end,
@@ -10112,6 +10182,7 @@ local function spawn_shot(owner, cls, count1, count2, speed1, speed2,
     if used >= POOL_SIZE then
         return                          -- 池满：整条 ins_99 不生（BulletManager.cpp:692）
     end
+    OriginalStageVisual.presentation.sound.play(8,7,owner.x)
     for j = 0, count2 - 1 do
         for i = 0, count1 - 1 do
             if used >= POOL_SIZE then
@@ -10245,6 +10316,7 @@ local function root_step(owner, t)
         return true
     end
     if t == MOVE_T then
+        OriginalStageVisual.presentation.sound.play(8,15,owner.x)
         ---#27 `ins_64(60, 4, 192, 112)`：从 (0,96) 60 帧 OUT_QUAD 走到 (0,112)
         begin_move(owner, 0, MOVE_Y - ENTER_Y, MOVE_FRAMES, EASING_OUT_QUAD)
         return false
@@ -10501,7 +10573,7 @@ end
 local T_VEC, T_DIR, T_CULL = 0x10, 0x40, 0x2000
 local TF_SPAWN_NORMAL = 4
 ---本卡大弹那两条 `ins_99` 的 transformFlags = 8788 = 0x2254（见卡头）。
-local TF_SPELL = TF_SPAWN_NORMAL + T_VEC + T_DIR + T_CULL
+local TF_SPELL = TF_SPAWN_NORMAL + T_VEC + T_DIR + T_CULL + 0x200
 ---etama.anm 的 script 22（= SPAWN_NORMAL）长 15 帧：出生位移走 velocity/2.5，
 ---第 15 帧动画播完 → activateBullet → **同一帧**再走一遍 FIRED 的更新（:944-957）。
 local SPAWN_NORMAL_FRAMES = 15
@@ -10552,6 +10624,7 @@ local function adv_bullet(self)
             self.va_ang = r.ang > -990 and r.ang or self.ang
             self.va_vx = math.cos(self.va_ang) * r.mag
             self.va_vy = -math.sin(self.va_ang) * r.mag
+            if self.transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.transform_sound,0) end
             self.ti = self.ti + 1
             return
         else
@@ -10580,6 +10653,8 @@ local function make_bullet(style, color, hw, hh)
             self.ang = angle                 -- 自身角（TH08 口径、弧度）
             self.spd = speed                 -- REL减速用当前逻辑speed，不能提前用恢复速度0
             self.flags = p.flags
+            self.transform_sound=p.sound or 25
+            self.offscreen=0
             self.rec = {
                 { kind = T_CULL, allow = 0, frames = p.cull },
                 { kind = T_VEC,  allow = 0, frames = p.w1, mag = 0, ang = -999 },
@@ -10643,6 +10718,7 @@ local function make_bullet(style, color, hw, hh)
                     if self.dc_n >= self.dc_re then
                         self.af_d = false
                     end
+                    if self.transform_sound>=0 then OriginalStageVisual.presentation.sound.play(8,self.transform_sound,0) end
                     self.ang = self.ang + self.dc_ang
                     self.spd = self.dc_spd
                     self.dc_t = 0
@@ -10663,11 +10739,14 @@ local function make_bullet(style, color, hw, hh)
             if self.cull ~= 0 then
                 self.cull = self.cull - 1
             end
-            if self.cull == 0
-                    and outside_field(self.x + self.vx, self.y + self.vy,
-                                      self.hw, self.hh) then
-                object.RawDel(self)
-                return
+            if self.cull==0 then
+                if EX.outside(self,self.x+self.vx,self.y+self.vy) then
+                    if self.af_d then
+                        self.offscreen=self.offscreen+1
+                        if self.offscreen>=128 then OriginalBulletVisual.retire(self);return end
+                    elseif self.offscreen==0 then OriginalBulletVisual.retire(self);return
+                    else self.offscreen=self.offscreen-1 end
+                else self.offscreen=0 end
             end
             bullet.frame(self)
         end,
@@ -10800,6 +10879,7 @@ local function servant_body(self)
     ---#21..#27：大弹只在 xi1 < ge 时打；xi1 > le 就归 −1；然后 ++xi1
     local fire_big = cfg.ge == nil or self.xi1 < cfg.ge
     if fire_big then
+        if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,self.x) end
         ---#22/#23：SET_SHOOT_OFFSET(0, 0) + 一发大弹
         shoot_fan(self.sx, self.sy, cfg.bt, self.li2, cfg.bc1, cfg.bc2,
                   cfg.bs1, cfg.bs2, self.lf7, 0, p)
@@ -10951,7 +11031,7 @@ local WAVE = {
 ---BOSS 根（Sub4）的时间轴。
 local ENTER_Y = 96                 -- Sub18 `ins_63(192, 128)` = SET_POSITION → 我们 (0, 96)
 local MOVE_T, MOVE_FRAMES, MOVE_Y = 90, 60, 0   -- `ins_64(60, 4, 192, 224)`
-local FINAL_T, FINAL_FRAMES = 7050, 220         -- `#290 xi1 = 220`
+local FINAL_T, FINAL_FRAMES = 7080, 220         -- `#290 xi1 = 220`
 local FINAL_COUNT = 6                           -- `#291 xi0 = 6`（内层循环，同帧 6 发）
 local FINAL_MIN_R2 = 1024                       -- `#302 lf0 = x²+y² < 1024` 就不打（离 BOSS 32 px）
 local FINAL_WAIT, FINAL_ACCEL_FRAMES, FINAL_ACCEL_MAG = 90, 90, 0.0011111111
@@ -10991,7 +11071,7 @@ end
 ---终盘：`#297..#306` 的内层循环，每真帧 6 发（`#307 JUMP_DEC` 把 xi1 从 220 数到 1）。
 local function final_step(owner)
     local bx, by = to_th08_x(owner.x), to_th08_y(owner.y)
-    local p = { flags = TF_SPELL, cull = 0, w1 = FINAL_WAIT, w2 = FINAL_WAIT,
+    local p = { flags = TF_SPELL, cull = 280, sound=-1, w1 = FINAL_WAIT, w2 = FINAL_WAIT,
                 f = FINAL_ACCEL_FRAMES, m = FINAL_ACCEL_MAG }
     for _ = 1, FINAL_COUNT do
         ---`#297/#298`：lf94 = rndSignedUnit*192、lf95 = rndSignedUnit*224
@@ -11014,6 +11094,7 @@ local function boss_frame(owner)
         return
     end
     local t = owner.lw221_t
+    if t==FINAL_T then OriginalStageVisual.presentation.sound.play(8,15,owner.x) end
     if t == MOVE_T then
         ---`#22 ins_76` 关夹框；`#27 ins_64(60, 4, 192, 224)`：60 帧 OUT_QUAD 下移到我们 (0, 0)
         owner.lw221_clamp = false

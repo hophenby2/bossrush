@@ -58,7 +58,8 @@ F.effect=Class(object,{
         o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY_BULLET_EF,false,false
         o.x,o.y,o.origin_x,o.origin_y=x,y,x,y
         o.game,o.phase,o.kind,o.age=game,phase,kind,0
-        o.vm=A.new(game,archive,script)
+        o.rate_source=phase and phase._native_rate_source
+        o.vm=A.new(game,archive,script,o.rate_source and o.rate_source.fm)
         if argb then color(o.vm,argb) end
         if game==8 and kind==17 then
             o.dir=ran:Float(-math.pi,math.pi)
@@ -114,8 +115,9 @@ F.effect=Class(object,{
             o.geometry={count=math.max(3,math.floor(v.vars[10000] or 24)),wave=v.vars[10001] or 0,
                 radius=v.position[1],secondary=v.position[2],width=v.scale[1],angle=v.rotation[3],secondary_angle=v.rotation[2]}
         end
-        A.step(o.vm)
-        o.age=o.age+1
+        local rate=o.rate_source and o.rate_source.fm or 1
+        A.step(o.vm,rate)
+        o.age=o.age+rate
         if o.vm.finished then object.RawDel(o) end
     end,
     render=function(o)
