@@ -111,12 +111,18 @@ end
 function system:frame()
     --执行自身task
     local b = self.boss
-    b.__card_timer = b.__card_timer + 1 --更新阶段计时器
-    if b.is_combat then
-        self:checkHP() --检查血量
+    local frozen=b._original_ecl_hold and b._original_ecl_hold(b) or false
+    b._original_ecl_frozen=frozen
+    if b._original_ecl_hold then
+        if frozen then b._original_ecl_held_frames=(b._original_ecl_held_frames or 0)+1 end
+        b._original_ecl_timer=b.timer-(b._original_ecl_held_frames or 0)
     end
-    self:checkAutoSPPoint() --检查auto阶段点
-    self:doTask() --执行task
+    if not frozen then
+        b.__card_timer=b.__card_timer+1
+        if b.is_combat then self:checkHP() end
+        self:checkAutoSPPoint()
+        self:doTask()
+    end
     self:updateHPFlags() --更新血条flag
     --出屏判定关闭
     SetAttr(b, 'colli', BoxCheck(b, lstg.world.boundl, lstg.world.boundr, lstg.world.boundb, lstg.world.boundt) and b._colli)
@@ -129,7 +135,7 @@ function system:frame()
         b.hpbarlen = 0
     end
     --符卡逻辑
-    if b.current_card then
+    if b.current_card and not frozen then
         b.current_card.frame(b)
     end
     --阶段逻辑

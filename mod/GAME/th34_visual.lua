@@ -15,6 +15,15 @@ LoadImage('th34_source_circle',tex,192,32,64,64)
 LoadImage('th34_source_spirit',tex,0,80,48,16)
 local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
 -- ECL的零等待不让出一帧；例如同一时间轴位置连续生成的敌机。
+function N.freeze_ecl_busy()
+    local held=false
+    local function check(p)
+        if p and IsValid(p) and ((p.death or 0)>0 or (p.protect or 0)>0
+            or p._original_bomb and IsValid(p._original_bomb)) then held=true end
+    end
+    if GameNet then GameNet.forEachPlayer(check) else check(player) end
+    return held
+end
 function N.task_api(scheduler)
     return setmetatable({Wait=function(n)
         if n~=nil and n<=0 then return end

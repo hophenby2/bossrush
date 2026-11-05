@@ -121,6 +121,7 @@ local function draw_alignment(o)
     A.draw(state.vm,o.x,o.y)
 end
 function S.tick(o,vx,from_th06)
+    if o._original_ecl_frozen then return end
     if o.th06_actor and not from_th06 then return end
     local s=o._original_actor
     if not s then return end
