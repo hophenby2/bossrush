@@ -137,7 +137,12 @@ local function effect(s,c,op,a)
             T.sound.play(95,45,s.x)
         elseif op==150 or op==151 then
             local id=op==150 and a[1] or a[2]
-            local v=F.new(95,'enm'..s.file:match('ecl(%d+)_'),id,s.x+(s.shot_x or 0),s.y-(s.shot_y or 0),s.phase)
+            local x,y=s.x+(s.shot_x or 0),s.y-(s.shot_y or 0)
+            local origins=o.th095_effect_origins
+            local key=s.file..':'..c.sub
+            local origin=origins and origins[key]
+            if origin and origin.clock==s.clock then x,y=origin.x,origin.y;origins[key]=nil end
+            local v=F.new(95,'enm'..s.file:match('ecl(%d+)_'),id,x,y,s.phase)
             if op==151 then s.handles[a[1]]=v end
         elseif op==152 then
             local v=s.handles[a[1]]

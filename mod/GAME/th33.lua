@@ -6303,7 +6303,8 @@ local function sg_tr_hook(recs, flags, start)
             elseif r.kind == SG_CULL or r.kind == SG_SND_T then
                 ---0x2000 SET_CULL_DELAY / 0x20000 PLAY_SOUND：都是**即时**记录
                 ---（认领完 `goto nextRecord` 接着找下一条），不占 active。
-                if r.kind==SG_CULL then self.sg_cull_delay=r.i0 end
+                if r.kind==SG_CULL then self.sg_cull_delay=r.i0
+                else OriginalStageVisual.presentation.sound.play(95,r.i0,self.x) end
                 st.i = st.i + 1
             elseif r.kind == SG_TAG then
                 ---0x1000000 SET_OWNER_TAG：把这颗弹的 ownerTag 记下来（payload.int0）。
@@ -15249,11 +15250,12 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
     ---Sub4/Sub5/Sub8/Sub9：shots 发 10 向环，每 A_GAP 帧一发，基准角固定成
     ---「子上下文 t=1 时刻的自机角」（原作 floatV3 只赋一次）。
     local function ring_shots(owner, hook, shots)
+        local g=gen
         task.New(owner, function()
             task.Wait(1)
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, shots do
-                if st.dead then return end
+                if st.dead or g~=gen then return end
                 sg_shot(89, sg_style(1), 13, owner.x, owner.y,
                         A_COUNT, 1, A_SPEED, 1.5, a, 0, false, 0x222, hook)
                 if i < shots then task.Wait(A_GAP) end
@@ -15263,11 +15265,12 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
 
     ---Sub7（@1596）：12 波 6 向 30° 扇，每 8 帧一波，基准角固定成 t=32 的自机角。
     local function fan_shots(owner)
+        local g=gen
         task.New(owner, function()
             task.Wait(32)
             local a = math.deg(th_aim(owner.x, owner.y))
             for i = 1, B_SHOTS do
-                if st.dead then return end
+                if st.dead or g~=gen then return end
                 sg_shot(89, sg_style(12), 6, owner.x, owner.y,
                         B_COUNT, 1, B_SPEED, 1.5, a, math.deg(B_STEP), false, 0x202)
                 if i < B_SHOTS then task.Wait(B_GAP) end
@@ -15290,7 +15293,7 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
                 task.Wait(MOVE_AT2 - SWITCH_AT)                 -- t=204
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
-                task.Wait(ROUND - MOVE_AT2 - MOVE_FRAMES)       -- t=264
+                task.Wait(ROUND-MOVE_AT2)       -- t=264
             end
         end)
     end
@@ -15335,7 +15338,6 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,2,6) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= S6_AT then
@@ -15346,6 +15348,7 @@ do  -- 533 リグル 非符（ecl1_a，组 24a 第 1 张）
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -15518,13 +15521,13 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                 task.Wait(S3_MOVE1)                          -- t=115
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
-                task.Wait(S3_SPAWN2 - S3_MOVE1 - MOVE_FRAMES)  -- t=175
+                task.Wait(S3_SPAWN2-S3_MOVE1)  -- t=175
                 if st.dead or g ~= gen then return end
                 spawn_wave(owner, th_aim(owner.x, owner.y), -FLY_TURN, 5)
                 task.Wait(S3_MOVE2 - S3_SPAWN2)              -- t=290
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
-                task.Wait(S3_ROUND - S3_MOVE2 - MOVE_FRAMES)  -- t=350
+                task.Wait(S3_ROUND-S3_MOVE2)  -- t=350
             end
         end)
     end
@@ -15552,7 +15555,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                 task.Wait(S4_MOVE2 - S4_MOVE1 - 60)          -- t=380
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
-                task.Wait(S4_ROUND - S4_MOVE2 - MOVE_FRAMES)  -- t=440 → 回到 t=90
+                task.Wait(S4_LEAD+S4_ROUND-S4_MOVE2)  -- t=440 → 回到 t=90
             end
         end)
     end
@@ -15572,7 +15575,6 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,4) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= SPAWN_AT then
@@ -15583,6 +15585,7 @@ do  -- 534 リグル 蛍符「地上の恒星」（ecl1_b，组 24a 第 2 张）
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -15756,7 +15759,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
     ---Sub9（@3340）：ring = 每波几发（调用者的 extraIntV3 = 6/7/7/8）。
     ---floatV0 = rand(−π,π) 起、每波 += floatV2（floatV2 每 3 波再 −= floatV1）；
     ---floatV7 从 2.2 起、每波 −0.006；slot7 的 f0 按 +120°/180°/−120° 循环。
-    local function sub9(owner, callf0, ring)
+    local function sub9(owner,callf0,ring,g)
         local v0 = ran:Float(-math.pi, math.pi)
         local v2 = callf0
         local v1 = callf0 * 0.1
@@ -15765,7 +15768,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
         local v6 = pi * 0.22 + 1.8
         local v5 = pi * 0.1 + 1.4
         for n = 0, BF_SHOTS - 1 do
-            if st.dead then return end
+            if st.dead or g~=gen then return end
             local variant = n % 3
             local hook
             if variant == 0 then
@@ -15795,7 +15798,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
     local function butterfly_loop(owner, ring, lead, tail)
         local g = gen
         task.New(owner, function()
-            local callf0 = 0                                -- 第一轮 callFloat0 = 初始 0
+            local callf0=0.04487989470362663                                -- 第一轮 callFloat0 = 初始 0
             local v7 = math.pi / 2                          -- Sub3/Sub5..Sub8 的 floatV7
             if lead > 0 then
                 clear_bf_emitters(bf_ems)                   -- ins_85：先清上一阶段的子机
@@ -15812,11 +15815,11 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
                 })
             end
             while not st.dead and g == gen do
-                sub9(owner, callf0, ring)                   -- ins_52(9)，阻塞 ~120 帧
+                sub9(owner,callf0,ring,g)                   -- ins_52(9)，阻塞 ~120 帧
                 if st.dead or g ~= gen then return end
                 task.Wait(tail)                             -- 到 ins_67 的 t
                 if st.dead or g ~= gen then return end
-                callf0 = th_aim(owner.x, owner.y) + v7      -- ins_25
+                callf0=-callf0 -- 原CALL取sharedFloat0=主floatV4，只按轮翻号。      -- ins_25
                 v7 = -v7                                    -- floatV7 ×(−1)
                 sg_bmove(owner, st, BF_MOVE_TAIL, 4, 0, BOX) -- ins_67(60,4,0)：只当计时器
                 task.Wait(BF_MOVE_TAIL)
@@ -15840,7 +15843,6 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            butterfly_loop(self, 6, 0, 240)                 -- Sub3
             task.New(self, function()                       -- ins_115(0..3,1..4,5..8) 的监视器
                 while not st.dead do
                     local p = photo_index(PHOTO_LIMIT)
@@ -15860,6 +15862,7 @@ do  -- 535 リグル 蝶符「バタフライストーム」（ecl1_c，组 24a 
                     task.Wait(1)
                 end
             end)
+            butterfly_loop(self, 6, 0, 240)                 -- Sub3
         end)
     end
 
@@ -15968,9 +15971,11 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
                 v1 = v1 - P_SPEED_STEP
                 if i < P_SHOTS then task.Wait(1) end
             end
-            task.Wait(P_AIM_DELAY)
+            task.Wait(1) -- 16发最后一发后，原LOOP下一帧才算收尾圈数。
             if st.dead then return end
-            local n = P_AIM_BASE + P_AIM_PER * photo_index(PHOTO_LIMIT)
+            local n=P_AIM_BASE+P_AIM_PER*photo_index(PHOTO_LIMIT)
+            task.Wait(P_AIM_DELAY-1)
+            if st.dead then return end
             sg_shot(88, sg_style(0), 10,
                     owner.x + P_AIM_OFF_X, owner.y + P_AIM_OFF_Y,
                     n, 1, P_AIM_SPEED, 0, 0, 0, true, 0x202)
@@ -16070,16 +16075,7 @@ do  -- 536 ルーミア 非符（ecl2_a，组 24a→25a 第 1 张）
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
             sub3(self)
-            task.New(self, function()                   -- ins_115(0,2,6) 的监视器
-                while not st.dead do
-                    if photo_index(PHOTO_LIMIT) >= S6_AT then
-                        gen = gen + 1
-                        sub6(self)
-                        return
-                    end
-                    task.Wait(1)
-                end
-            end)
+
         end)
     end
 
@@ -16157,7 +16153,7 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
                 for j = 1, 2 do
                     local ox = ran:Float(-PAIR_OFF, PAIR_OFF)
                     local oy = -ran:Float(-PAIR_OFF, PAIR_OFF)
-                    local a = -math.deg(ran:Float(-math.pi, math.pi))
+                    local a=math.deg(ran:Float(-math.pi,math.pi))
                     sg_shot(89, sg_style(PAIR_TYPES[j]), PAIR_COLORS[j],
                             owner.x + ox, owner.y + oy,
                             PAIR_COUNT, 1, PAIR_SPEEDS[j], 1.5, a, 0, false, RING_FLAGS)
@@ -16172,6 +16168,19 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
     end
 
     ---Sub3（@720）：180 帧一轮 —— 起槽 0、挪 114 帧、t=115 收槽 0 并放整圈、t=180 回到起点。
+    local function decorations(owner)
+        task.New(owner,function()
+            for _=1,25 do
+                if st.dead then return end
+                local ox=ran:Float(-32,32)
+                local oy=-ran:Float(-32,32)
+                owner.th095_effect_origins=owner.th095_effect_origins or {}
+                owner.th095_effect_origins['ecl2_b:Sub5']={clock=owner.th095_visual_clock,
+                    x=owner.x+ox,y=owner.y+oy}
+                task.Wait(4)
+            end
+        end)
+    end
     local function sub3(owner)
         local g = gen
         task.New(owner, function()
@@ -16179,10 +16188,11 @@ do  -- 537 ルーミア 闇符「ダークサイドオブザムーン」（ecl2_
                 local stop = { false }                  -- 每轮新开一张，等价 ins_117 先 Free 旧槽
                 sub4(owner, stop)                       -- ins_117(0,4)   t=0
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX) -- ins_67(114,4,1)
+                decorations(owner) -- slot1的25次随机偏移也消费原作游戏随机数。
                 task.Wait(RING_AT)                      -- t=115
                 if st.dead or g ~= gen then return end
                 stop[1] = true                          -- ins_117(0,-1)
-                local a = -math.deg(ran:Float(-math.pi, math.pi))
+                local a=math.deg(ran:Float(-math.pi,math.pi))
                 sg_shot(89, sg_style(12), 6, owner.x, owner.y,
                         RING_COUNT, 1, RING_SPEED, 1.5, a, 0, false, RING_FLAGS)
                 task.Wait(ROUND - RING_AT)              -- t=180 → 下一轮
@@ -16297,7 +16307,7 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
             for i = 1, MB_SHOTS do
                 if st.dead or g ~= gen then return end
                 sg_shot(89, sg_style(2), 10, owner.x, owner.y,
-                        1, 1, spd, spd / 2, -math.deg(ang), 0, false, 0x202)
+                        1, 1, spd,spd/2,math.deg(ang), 0, false, 0x202)
                 ang = ang - side * MB_TURN
                 spd = spd - MB_DECAY
                 if spd > -MB_CLAMP and spd < MB_CLAMP then spd = -MB_CLAMP end
@@ -16370,7 +16380,6 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,6) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= SWITCH_AT then
@@ -16381,6 +16390,7 @@ do  -- 538 ルーミア 夜符「ミッドナイトバード」（ecl2_c，组 2
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
