@@ -9167,7 +9167,6 @@ function s1.MBossCard1(o)
     class.t10_fx.fire(o,__anm,0x76ec)
     task.Wait(90)                          -- //150
     t10_call_async(o, s1.MBossCard1_at)
-    task.Wait(120)                         -- //150 → //270
     while true do                          -- 每 120 帧一轮
         m_rand(o, "off", 60, 4, 2.0)
         task.Wait(120)
@@ -9251,6 +9250,8 @@ function s1.BossCard1(o)
     local quad1 = { 1.570796, -1.047198, 0.897598, -1.256637 }
     -- 第二半段收尾（etEx 4..7）用的四支基准角
     local quad2 = { -1.5707964, 1.0471976, -0.8975979, 1.2566371 }
+    -- 初次JMP510先经过末尾callAsync，再跳回150；不能漏掉入卡的这一枪。
+    t10_call_async(o,s1.BossCard1_at)
     while true do                          -- //150 → … → //510，共 360 帧一轮
         -- 4448：槽 0..3
         base = rndrad()
@@ -9361,7 +9362,8 @@ function s1.BossCard2At2(o)
         et_offset(o, 0, x, y)
         task.Wait(1)                       -- +1: //1：etOn(0) 与 body 的 t=0 段之间差一帧
         fire_slot(o, 0)                    -- etOn(0)
-        b = t10_wrap(b + 0.15708)          -- etOn(1) 与 etOn(0) **同帧**（都是 t=1）
+        b = b + 0.15708
+        a = t10_wrap(a) -- 原作validRad写[16]，不是[20]。          -- etOn(1) 与 etOn(0) **同帧**（都是 t=1）
         local x2, y2 = circle_pos(b, r)
         et_speed(o, 1, rnd() * 0.7 + 1.0, 1.0)
         et_angle(o, 1, rndrad(), 1.0471976)

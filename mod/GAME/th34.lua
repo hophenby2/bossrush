@@ -4797,6 +4797,7 @@ class["TH34_exbig78"] = Class(enemy, {
         self.colli = false
         setdrop78(self, drop)
         -- 每次CALL都快照最新全局量，八发的偏移、角和颜色各自独立。
+        OriginalStageVisual.presentation.sound.play(7,5,self.x)
         local colors={6,4,2,14,13,11,10,8}
         local forward=cfg.turn>0
         for k=0,7 do
