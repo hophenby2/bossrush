@@ -584,11 +584,11 @@ local VOL_SPEED_MAX, VOL_SPEED_ADD = 3, 0.5   -- Lunatic 行 RAND_FLOAT_ADD 3, 0
 local VOL_SPEED2 = 0.5          -- 原作 speed2 = 0.5（第二层的落点速度）
 local PUFF_M = 144              -- 原作 RAND_SIGN_FLOAT 144（X 的 m0、m1 各掷一次）
 local PUFF_X0, PUFF_Y0 = 14, -161   -- p0 = (X₀+14, Y₀+161)（TH07 y 朝下 ⇒ 我们 −161）
-local PUFF_Y_M0, PUFF_Y_M1 = -16, 32  -- Y 的 m0 = +16（TH07）⇒ 我们 −16；m1 = ±32
+local PUFF_Y_M0, PUFF_Y_M1 = -18, 32  -- Y 的 m0 = +16（TH07）⇒ 我们 −16；m1 = ±32
 local FLAME_FRAMES = 120        -- 原作 t=120 的 UNIMP 就是销毁
 local FLAME_M = 144             -- X 的 m0、m1 各 ±144
 local FLAME_X1, FLAME_Y1 = -8, 150  -- p1 = (X₀−8, Y₀−150) ⇒ 我们 (−8, +150)
-local FLAME_Y_M0, FLAME_Y_M1 = -35, 32  -- Y 的 m0 = +35（TH07）⇒ 我们 −35；m1 = ±32
+local FLAME_Y_M0, FLAME_Y_M1 = -37, 32  -- Y 的 m0 = +35（TH07）⇒ 我们 −35；m1 = ±32
 local FLAME_FADE = 20           -- 原作是硬销毁；末 20 帧淡出，免得「啪」一下没了（差异 10）
 local TRAIL_DECAY = 13          -- 原作 SET_TRAIL 0x19,48,16,1 的代理（差异 1）
 ---拖影用的贴图**必须是精灵**。`smear_render`（LObjectEvents.lua:242）走的是
@@ -657,9 +657,9 @@ local DROP_POINT = { [0] = 0, [1] = 1, [2] = 0 }
 ---外层走 count2、内层走 count1）—— 池子见底时先被丢掉的正是靠后的层。
 local function volley(self)
     local v = ran:Float(0, VOL_SPEED_MAX) + VOL_SPEED_ADD
-    local base = ran:Float(0, 360)          -- ECL_VAR_RNG_RADIAN：每轮读一次就是新角
+    local base = -ran:Float(-180,180)        -- ECL_VAR_RNG_RADIAN：每轮读一次就是新角
     ---向右漂的用蓝弹、向左漂的用红弹（原作 bullet type 1、spriteOffset 6 / 2）。
-    local col = th07_color((self.dir > 0) and 6 or 2, 1)
+    local col = th07_color((self.dir > 0) and 6 or 2, 6)
     ---★ 掷随机数发生在 op9、出弹在 op67，而丢弹的判定在 SpawnBulletPattern **里面** ——
     ---  所以「整波不生」也照样把这一轮的 v 与 base 消耗掉了（顺序不能颠倒）。
     local room = POOL_SIZE - pool_used()
@@ -670,8 +670,8 @@ local function volley(self)
             local layer = int(k / VOL_COUNT)
             local ring = k % VOL_COUNT
             local spd = (layer == 0) and v or v - (v - VOL_SPEED2) * layer / VOL_LAYER
-            local a = base + layer * VOL_LAYER_DEG + ring * step
-            pool[#pool + 1] = class.th07_simple(th07_style(1), col, self.x, self.y, spd, a, 0x203)
+            local a = base + layer * VOL_LAYER_DEG - ring * step
+            pool[#pool + 1] = New(class.TH34_cmdbullet,th07_style(6),col,self.x,self.y,spd,a,{type=1,flags=515})
             room, k = room - 1, k + 1
         end
     end
@@ -776,10 +776,13 @@ NativeVisual.wrap_road_actor(class["TH34_ghost"])
 ---t=120 UNIMP 销毁。两条 Hermite 的常量同样是初始化时冻结的。
 ---（我们的代理是 style 27 = 只有红焰粒子、不叠幽灵本体 —— 残火就该是一团火，见差异 9。）
 class["TH34_flame"] = Class(enemy, {
-    init = function(self, x, y)
+    init = function(self, x, y, stage5)
         enemy.init(self, FLAME_STYLE, 1, false, false, true)
         self.x, self.y = x, y
         self.hx, self.hy = x, y
+        self.flame_stage=type(stage5)=='number' and stage5 or (stage5 and 5 or 6)
+        local cfg=({[5]={4,156,-61},[6]={-8,150,-37},[7]={-11,133,-48},[8]={10,186,-36}})[self.flame_stage]
+        self.fx_target,self.fy_target,self.fy0=unpack(cfg)
         self.fx0, self.fx1 = rnd_sign() * FLAME_M, rnd_sign() * FLAME_M
         self.fy1 = rnd_sign() * FLAME_Y_M1
         self.colli = false
@@ -790,7 +793,7 @@ class["TH34_flame"] = Class(enemy, {
         enemy.frame(self)
         if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
         local t = min(self.th07_road_age+1, FLAME_FRAMES) / FLAME_FRAMES
-        NativeVisual.road_position(self,self.hx + hermite(t, 0, FLAME_X1, self.fx0, self.fx1),self.hy + hermite(t, 0, FLAME_Y1, FLAME_Y_M0, self.fy1))
+        NativeVisual.road_position(self,self.hx + hermite(t, 0, self.fx_target, self.fx0, self.fx1),self.hy + hermite(t, 0, self.fy_target, self.fy0, self.fy1))
         ---原作 t=80 切中断、t=120 直接销毁；这里用末 20 帧淡出代替「切图」
         if self.th07_road_age > FLAME_FRAMES - FLAME_FADE then
             self._a = max(0, 255 * (FLAME_FRAMES - self.th07_road_age) / FLAME_FADE)
@@ -901,6 +904,8 @@ do
         ---弹池登记表与音效去重的帧号都是跨局的模块级状态：这卡可以被重打（符卡练习的
         ---重开），开卡时清一次，免得上一局的残留影响第一帧的判定。
         pool = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick, sound_stamp = 0, -1
         ---WAVE 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---时间轴从卡开始算（原作的 t=720 映射成 0）。
@@ -1464,8 +1469,8 @@ local function turret4_volley(self)
         local k = i - 1
         local layer, ring = int(k / TUR4_C1), k % TUR4_C1
         local v = TUR4_S1 - (TUR4_S1 - TUR4_S2) * layer / TUR4_C2
-        return self.bstyle, self.bcol, v, p + ring * step + layer * self.a2
-    end)
+        return self.bstyle, self.bcol, v, p - ring * step - layer * self.a2
+    end,0)
 end
 
 class["TH34_turret4"] = Class(enemy, {
@@ -1531,7 +1536,7 @@ local function ghost4_volley(self)
     volley4(self, GH4_N, function()
         local a = p + ran:Float(-halo, halo)     -- RANDOM：角度先抽
         return th07_style(1), th07_color(6, 1), ran:Float(GH4_S2, GH4_S1), a
-    end)
+    end,0)
 end
 
 class["TH34_ghost4"] = Class(enemy, {
@@ -1579,7 +1584,7 @@ local TANK4_C1, TANK4_C2 = 7, 2
 local TANK4_S1, TANK4_S2 = 4, 2
 local TANK4_ROUNDS = 20
 local TANK4_GAP = 9
-local TANK4_LIFE = 2129
+local TANK4_LIFE = 2300
 
 ---第 r 轮的张角：第 1 轮 $10005 还没被写过（=0），之后是 INIT_INTERP 的
 ---MathLerp(9(r−1)/180) —— 落点是第一条 op65，所以插值只注册一次、不重置（差异 27）。
@@ -1592,13 +1597,13 @@ local function tank4_a2(self, r)
 end
 
 local function tank4_volley(self, r)
-    local off = spread_offsets(TANK4_C1, tank4_a2(self, r))
+    local off = spread_offsets(TANK4_C1, -tank4_a2(self, r))
     volley4(self, TANK4_C1 * TANK4_C2, function(i)
         local k = i - 1
         local layer, ring = int(k / TANK4_C1), k % TANK4_C1
         local v = TANK4_S1 - (TANK4_S1 - TANK4_S2) * layer / TANK4_C2
         return th07_style(3), self.bcol, v, self.aim + off[ring + 1]
-    end)
+    end,0)
 end
 
 class["TH34_tank4"] = Class(enemy, {
@@ -1626,6 +1631,8 @@ class["TH34_tank4"] = Class(enemy, {
                 tank4_volley(self, r)
                 task.Wait(TANK4_GAP)
             end
+            task.Wait(60) -- DEC_JUMP重置脚本时间：最后69在墙钟240，129在300。
+            object.SetV(self,3,90,false)
         end)
         task.New(self, function()
             task.Wait(TANK4_LIFE)
@@ -1665,7 +1672,7 @@ local FA4_SPIN = { a = 0.0981748 * RAD2DEG, b = 0.0654498 * RAD2DEG, c = 0.06544
 local function fairy4_death_a(self)
     local p = Angle(self, player)
     ---① count1=3,count2=2,s1=2,s2=1,a1=π,a2=2.8125°，flags 0x210（0x10：每帧反向加速）
-    local off1 = spread_offsets(3, 0.0490874 * RAD2DEG)
+    local off1 = spread_offsets(3, -0.0490874 * RAD2DEG)
     local vx, vy = -0.1 * cos(p + 180), -0.1 * sin(p + 180)
     volley4_raw(self, 3 * 2, function(i)
         local k = i - 1
@@ -1674,10 +1681,10 @@ local function fairy4_death_a(self)
         local a = p + 180 + off1[ring + 1]
         return New(class["TH34_cmdbullet"], th07_style(1), th07_color(6, 1), self.x, self.y, v, a,
                    { type = 0x10, dur = 60, loop = 1, angle = 0, speed = -0.1,
-                     vec_x = cos(a) * -0.1, vec_y = sin(a) * -0.1 })
+                     vec_x = cos(a) * -0.1, vec_y = sin(a) * -0.1,flags=528 })
     end)
     ---⑤ count1=5,count2=2,s1=3.5,s2=1,a1=0,a2=6.43°
-    local off2 = spread_offsets(5, 0.1122 * RAD2DEG)
+    local off2 = spread_offsets(5, -0.1122 * RAD2DEG)
     volley4(self, 5 * 2, function(i)
         local k = i - 1
         local layer, ring = int(k / 5), k % 5
@@ -1685,8 +1692,8 @@ local function fairy4_death_a(self)
         return th07_style(1), th07_color(5, 1), v, p + off2[ring + 1]
     end)
     ---⑥⑦ 各 count1=3,count2=2,s1=2,s2=1,a2=5.625°，a1 = ±120°
-    for _, a1 in ipairs({ 120, -120 }) do
-        local off3 = spread_offsets(3, 0.0981748 * RAD2DEG)
+    for _, a1 in ipairs({ -120, 120 }) do
+        local off3 = spread_offsets(3, -0.0981748 * RAD2DEG)
         volley4(self, 3 * 2, function(i)
             local k = i - 1
             local layer, ring = int(k / 3), k % 3
@@ -1700,7 +1707,7 @@ end
 local function fairy4_death_b(self)
     local p = Angle(self, player)
     local s1 = Dist(self, player) / 128 + 0.8
-    local off = spread_offsets(7, 0.0628319 * RAD2DEG)
+    local off = spread_offsets(7, -0.0628319 * RAD2DEG)
     volley4(self, 7 * 3, function(i)
         local k = i - 1
         local layer, ring = int(k / 7), k % 7
@@ -1726,9 +1733,9 @@ local function fairy4_death_c(self)
         local a1 = (g * 0.174533) * RAD2DEG   -- Lunatic 行：0° / 10° / 20°
         local cmd = FAIRY4_C_CMD[g + 1]
         volley4_raw(self, 12, function(i)
-            local a = (i - 1) * (360 / 12) - a1
+            local a = -(i - 1) * (360 / 12) - a1
             return New(class["TH34_cmdbullet"], th07_style(2), th07_color(2, 2), self.x, self.y, 4.2, a,
-                       { type = 0x80, dur = 60, loop = 1, angle = cmd.off, speed = cmd.mag })
+                       { type = 0x80, dur = 60, loop = 1, angle = cmd.off, speed = cmd.mag,flags=640 })
         end)
     end
 end
@@ -1740,6 +1747,7 @@ class["TH34_fairy4"] = Class(enemy, {
         enemy.init(self, FA4_STYLE, life, false, true, true)
         self.x, self.y = x, y
         self.kind,self.mirror = kind,mirror or 0
+        self.death_enabled=true
         self.road_angle=-(({a=0,b=-0.19634955,c=0.19634955})[kind])*RAD2DEG
         if self.mirror==1 then self.road_angle=180-self.road_angle end
         self.protect = true
@@ -1752,8 +1760,9 @@ class["TH34_fairy4"] = Class(enemy, {
             task.Wait(FA4_SHOT_T)
             local p = Angle(self, player)
             volley4(self, FA4_N, function(i)
-                return th07_style(6), th07_color(10, 6), FA4_S, p + (i - 1) * (360 / FA4_N)
-            end)
+                return th07_style(6), th07_color(10, 6), FA4_S, p - (i - 1) * (360 / FA4_N)
+            end,0)
+            self.death_enabled=false -- ECL106(0)在同一t134关闭死亡回调。
         end)
         task.New(self, function()
             task.Wait(FA4_LIFE)
@@ -1770,6 +1779,7 @@ class["TH34_fairy4"] = Class(enemy, {
         object.SetV(self,5,self.road_angle,false)
     end,
     kill = function(self)
+        if not self.death_enabled then enemy.kill(self);return end
         if self.kind == "a" then
             fairy4_death_a(self)
         elseif self.kind == "b" then
@@ -1894,6 +1904,8 @@ do
         ---弹池登记表与音效去重的帧号都是跨局的模块级状态：重开这张卡（符卡练习）时清一次，
         ---免得上一局的残留影响第一帧的判定。
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         ---WAVE4 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---spawn 当帧就把子程序跑到第一条 time>0 的指令（原作同样如此，见文件头）。
@@ -1942,7 +1954,11 @@ local function volley3(self, total, gen, plays, flags)
     local i = 1
     while i <= total and room > 0 do
         local style, col, v, a = gen(i)
-        pool4[#pool4 + 1] = class.th07_simple(style, col, self.x, self.y, v, a, flags or 2)
+        if self.th07_road_burst then
+            pool4[#pool4+1]=New(class.TH34_cmdbullet,style,col,self.x,self.y,v,a,{type=1,flags=flags or 515})
+        else
+            pool4[#pool4 + 1] = class.th07_simple(style, col, self.x, self.y, v, a, flags or 2)
+        end
         room, i = room - 1, i + 1
     end
     if plays then sound4(self) end
@@ -1989,10 +2005,10 @@ local function w3_random(self, style, off, c1, v1, v2, c_th, plays)
     volley3(self, c1, function()
         ---★ 原作 op72 RANDOM 逐发**先抽角、后抽速**（BulletManager.cpp:215-231）；
         ---  顺序反了同一条 RNG 流就整段错位。
-        local a = base + ran:Float(-lim, lim)
+        local a = base - ran:Float(-lim, lim)
         local v = ran:Float(v2, v1)
         return style, th07_color_for(off, style), v, a
-    end, plays)
+    end, plays, 0)
 end
 
 ---──────────────────── 道中小怪（原作 sub 3/4/5/6） ────────────────────
@@ -2053,6 +2069,16 @@ class["TH34_walker3"] = Class(enemy, {
             local deg = (self.mirror == 1) and (180 + th * RAD2DEG) or (-th * RAD2DEG)
             object.SetV(self, spd, deg, false)
         end
+        self.road_angle=(self.mirror==1) and 180+th*RAD2DEG or -th*RAD2DEG
+        self.road_spin=0
+        if sub==3 then
+            task.New(self,function()
+                task.Wait(90)
+                local av=ran:Float(0,0.02617993950843811)*RAD2DEG
+                self.road_spin=self.mirror==1 and av or -av
+                task.Wait(60);self.road_spin=0
+            end)
+        end
         ---SET_SHOOT_INTERVAL_RAND n：初值 rand(0,n)（原作首轮延迟 1..n 帧）
         self.interval = NativeVisual.road_interval(self,W3_INTERVAL[sub] or 0)
         self.itimer = (self.interval > 0) and ran:Int(0, self.interval-1) or 0
@@ -2082,6 +2108,10 @@ class["TH34_walker3"] = Class(enemy, {
             local u = min(self.th07_road_age+1, W3_RISE_T) / W3_RISE_T
             local e = 1 - (1 - u) * (1 - u)
             NativeVisual.road_position(self,self.x0 + self.rise_dx * e,self.y0 + self.rise_dy * e)
+        end
+        if self.kind==3 then
+            self.road_angle=self.road_angle+self.road_spin
+            object.SetV(self,2,self.road_angle,false)
         end
         ---SET_SHOOT_INTERVAL_RAND 的复刻：每帧 ++，到 n 就把**上一轮**重打一次
         if self.interval > 0 then
@@ -2125,26 +2155,27 @@ end
 
 ---sub 8：24×4 的环（a2=$10004，但那条 RAND_SIGN 0 是无意义的 ±0，略去）
 local function gh3_fire8(self)
-    w3_ring(self, th07_style(3), 6, 24, 4, 3.5, 0.8, 0, 0, false, true)
+    rnd_sign() -- RAND_SIGN(0)虽得0，仍抽取原随机流。
+    w3_ring(self, th07_style(2), 6, 24, 4, 3.5, 0.8, 0, 0, false, true)
 end
 
 ---sub 9 → SUB_CALL 10：c1=1、c2=10 的 RING_AIMED —— 10 层共享同一个自机角、
 ---每层再转 $10004；4 次调用把 $10004 在 ±π/128 之间来回翻。
 local function gh3_ring10(self, a2_th)
-    w3_ring(self, th07_style(1), 2, 1, 10, 3, 0.8, 0, a2_th, true, true)
+    w3_ring(self, th07_style(6), 2, 1, 10, 3, 0.8, 0, a2_th, true, true)
 end
 
 ---sub 11：t=120 一轮无声慢环（0x200）、t=150 一轮 32×2（0x202）
 local function gh3_fire11a(self, a1_our)
-    w3_ring(self, th07_style(3), 6, 24, 1, 0.8, 0.8, -a1_our / RAD2DEG, 0, false, false, 0x200)
+    w3_ring(self, th07_style(2), 6, 24, 1, 0.8, 0.8, -a1_our / RAD2DEG, 0, false, true, 0x200)
 end
 local function gh3_fire11b(self, a1_our)
-    w3_ring(self, th07_style(3), 6, 32, 2, 2.8, 2, -a1_our / RAD2DEG, 0, false, true)
+    w3_ring(self, th07_style(2), 6, 32, 2, 2.8, 2, -a1_our / RAD2DEG, 0, false, true)
 end
 
 ---sub 12：t=120/180/240 三连 RANDOM（角 = 自机角 + rand(−c,+c)、速 = rand[v2,v1)）
 local function gh3_fire12(self, c_th, v1)
-    w3_random(self, th07_style(1), 2, 32, v1, 0.8, c_th, false)
+    w3_random(self, th07_style(4), 2, 32, v1, 0.8, c_th, true)
 end
 
 class["TH34_bigghost3"] = Class(enemy, {
@@ -2184,9 +2215,10 @@ class["TH34_bigghost3"] = Class(enemy, {
                 task.Wait(20); gh3_ring10(self, 0.0245437)
                 task.Wait(20); gh3_ring10(self, -0.0245437)
             elseif sub == 11 then
-                gh3_fire11a(self, ran:Float(-180, 180))
-                task.Wait(30)                -- t=150：重掷一次 $10004
-                gh3_fire11b(self, ran:Float(-180, 180))
+                gh3_fire11a(self, -ran:Float(-180,180))
+                local next_angle=-ran:Float(-180,180) -- 第二次抽样也在t120，t150只读取快照。
+                task.Wait(30)
+                gh3_fire11b(self,next_angle)
             elseif sub == 12 then
                 gh3_fire12(self, 0.19635, 2.5)   -- t=120
                 task.Wait(60); gh3_fire12(self, 0.314159, 3.5)
@@ -2510,6 +2542,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE3) do
@@ -2559,7 +2593,7 @@ local P5_DUST_FRAMES = 80
 ---y 偏移是 **−147**；X 的 m0/m1 各 ±144、Y 的 m0 = +1（⇒ −1）、m1 = ±32。
 local P5_DUST_X0, P5_DUST_Y0 = -3, -147
 local P5_DUST_M = 144
-local P5_DUST_Y_M0, P5_DUST_Y_M1 = -1, 32
+local P5_DUST_Y_M0, P5_DUST_Y_M1 = -3, 32
 local P5_DUST_FADE = 16
 local P5_ACCEL = 0.02             -- 原作 SET_MOVE_ACCEL 0.02（匀加速，不是匀速）
 
@@ -2717,9 +2751,9 @@ end
 local function p5_f32(self, off)
     local a = 1.5708
     for _ = 1, 32 do
-        a = a - 0.19635
+        a = a + ((off==6) and 0.19634954631328583 or -0.19634954631328583)
         local ox, oy = off5(a, 32)
-        w5_spread(self, 6, off, 4, 1, 1.2, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
+        w5_spread(self, 6, off, 4, 1, 1.2, 1, a5(a), 0.785398, ox, oy, {type=1,flags=517}, 517)
         task.Wait(1)
     end
 end
@@ -2731,11 +2765,11 @@ local function p5_f36(self)
     for _ = 1, 16 do
         a = a - 0.19635
         local ox, oy = off5(a, 64)
-        w5_spread(self, 3, 2, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
+        w5_spread(self, 3, 2, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, {type=1,flags=517}, 517)
         task.Wait(1)
         b = b + 0.19635
         ox, oy = off5(b, 64)
-        w5_spread(self, 3, 6, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, nil, 0x205)
+        w5_spread(self, 3, 6, 4, 1, 1, 1, a5(a), 0.785398, ox, oy, {type=1,flags=517}, 517)
         task.Wait(1)
     end
 end
@@ -2767,8 +2801,11 @@ class["TH34_mid5"] = Class(enemy, {
         self.cb = 6
         ---烟尘两条 Hermite 的常量（原作 t=0 求值一次后冻结）
         self.px0, self.py0 = P5_DUST_X0, P5_DUST_Y0
-        self.pmx0, self.pmx1 = rnd_sign() * P5_DUST_M, rnd_sign() * P5_DUST_M
-        self.pmy0, self.pmy1 = P5_DUST_Y_M0, rnd_sign() * P5_DUST_Y_M1
+        self.pmx0,self.pmx1,self.pmy0,self.pmy1=0,0,P5_DUST_Y_M0,0
+        if dust then
+            self.pmx0,self.pmx1=rnd_sign()*P5_DUST_M,rnd_sign()*P5_DUST_M
+            self.pmy1=rnd_sign()*P5_DUST_Y_M1
+        end
         ---按 sub 分派移动 / 无敌 / 掉落回调（数值逐条对过 ECL 的 Lunatic 行）
         if sub <= 21 then
             ---MOVE_DIR_TIME(0,0,θ,0) + SET_MOVE_ACCEL 0.02：spawn 当帧起沿 θ 匀加速
@@ -2789,7 +2826,7 @@ class["TH34_mid5"] = Class(enemy, {
             self.cb = 7
         else
             ---打完之后 t=4/61/122 的 MOVE_DIR_TIME(0,0,−π/2,0) + ACCEL 0.02 ⇒ 往上飞。
-            self.t_move = (sub == 36) and 122 or ((sub == 32 or sub == 34) and 61 or 4)
+            self.t_move = (sub==36) and 152 or ((sub==32 or sub==34) and 92 or (sub==30 and 64 or 128))
             self.dir = 90
             self.invul = ((sub == 26 or sub == 28) and 20)
                       or ((sub == 32 or sub == 34) and 4) or 10
@@ -2884,6 +2921,7 @@ class["TH34_mid5"] = Class(enemy, {
         enemy.render(self)
     end,
     kill = function(self)
+        New(class.TH34_flame,self.x,self.y,true) -- 死亡回调6/7/8全部生成Sub4。
         ---时间轴的 itemdrop 照掉（差异 35）：原作 SET_DEATH_TYPE 1（SCORE_ONLY）
         ---用 `goto END_BOSS` **落进** DROP_ITEMS 分支（EnemyManager.cpp:968-983），
         ---所以 SCORE_ONLY 一样会 SpawnItem。0=小能量→1 信仰、1=点→1 点、2=大能量→2 信仰。
@@ -2924,100 +2962,110 @@ do
     ---所以没有烟尘（见 init 里的 dust 判断）。时间轴的 sub 37（t=4820）和 sub 47
     ---（t=6114）是道中 boss 占位（SET_BOSS 0、score 200000、life 1），不搬（差异 36）。
     local WAVE5 = {
-        {    0, 11,   -128,     96,   0,   80, 0 },  -- t=500 载体 10
-        {   10, 11,   -112,    112,   0,   80, 0 },  -- t=510 载体 10
-        {   10, 11,    -96,    120,   1,   80, 0 },  -- t=520 载体 10
-        {  380, 13,    128,    112,   0,   80, 0 },  -- t=900 载体 12
-        {   10, 13,    112,    128,   0,   80, 0 },  -- t=910 载体 12
-        {   10, 13,     96,    144,   1,   80, 0 },  -- t=920 载体 12
-        {   10, 13,     64,    160,   1,   80, 0 },  -- t=930 载体 12
-        {  100, 11,   -160,     96,   2,   80, 0 },  -- t=1030 载体 10
-        {   10, 11,   -144,    112,   0,   80, 0 },  -- t=1040 载体 10
-        {   10, 11,   -128,    120,   0,   80, 0 },  -- t=1050 载体 10
-        {   10, 11,   -112,    128,   1,   80, 0 },  -- t=1060 载体 10
-        {   10, 11,    -96,    136,   1,   80, 0 },  -- t=1070 载体 10
-        {  200, 17,    128,    128,   1,   80, 0 },  -- t=1270 载体 16
-        {  100, 15,   -128,     96,   1,   80, 0 },  -- t=1370 载体 14
-        {  100, 15,    -96,    160,   1,   80, 0 },  -- t=1470 载体 14
-        {  100, 13,    128,    112,   1,   80, 0 },  -- t=1570 载体 12
-        {   10, 13,    112,    128,   1,   80, 0 },  -- t=1580 载体 12
-        {   10, 13,     96,    144,   1,   80, 0 },  -- t=1590 载体 12
-        {   10, 13,     64,    160,   1,   80, 0 },  -- t=1600 载体 12
-        {  200, 21,    128,    128,   1,   80, 0 },  -- t=1800 载体 20
-        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=1810 载体 10
-        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=1840 载体 18
-        {   10, 13,    112,    128,   0,   80, 0 },  -- t=1850 载体 12
-        {   30, 21,     96,    160,   1,   80, 0 },  -- t=1880 载体 20
-        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=1890 载体 10
-        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=1920 载体 18
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=1930 载体 12
-        {   60, 13,    128,    128,   1,   80, 0 },  -- t=1990 载体 12
-        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=2000 载体 10
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=2030 载体 10
-        {   10, 13,    112,    128,   0,   80, 0 },  -- t=2040 载体 12
-        {   30, 13,     96,    160,   1,   80, 0 },  -- t=2070 载体 12
-        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=2080 载体 10
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=2110 载体 10
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=2120 载体 12
-        {   60, 21,    128,    128,   1,   80, 0 },  -- t=2180 载体 20
-        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=2190 载体 10
-        {   30, 19,   -128,     96,   1,   80, 0 },  -- t=2220 载体 18
-        {   10, 13,    112,    128,   0,   80, 0 },  -- t=2230 载体 12
-        {   30, 17,     96,    160,   1,   80, 0 },  -- t=2260 载体 16
-        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=2270 载体 10
-        {   30, 15,   -128,     96,   1,   80, 0 },  -- t=2300 载体 14
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=2310 载体 12
-        {  300, 22,    128,    240,   1,  160, 1 },  -- t=2610 载体 22
-        {  100, 22,   -128,    240,   1,  160, 0 },  -- t=2710 载体 22
-        {  100, 22,    128,    240,   0,  160, 1 },  -- t=2810 载体 22
-        {  100, 22,   -128,    240,   0,  160, 0 },  -- t=2910 载体 22
-        {  100, 22,    128,    240,   0,  160, 1 },  -- t=3010 载体 22
-        {  100, 22,   -128,    240,   0,  160, 0 },  -- t=3110 载体 22
-        {  100, 22,     96,    240,   1,  160, 1 },  -- t=3210 载体 22
-        {    0, 22,    -96,    240,   1,  160, 0 },  -- t=3210 载体 22
-        {  300, 24,      0,    240,   2,  160, 0 },  -- t=3510 载体 24
-        {  100, 22,     96,    240,   1,  160, 1 },  -- t=3610 载体 22
-        {    0, 22,    -96,    240,   1,  160, 0 },  -- t=3610 载体 22
-        {  200, 13,    128,    128,   1,   80, 0 },  -- t=3810 载体 12
-        {   10, 11,   -128,    112,   0,   80, 0 },  -- t=3820 载体 10
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3850 载体 10
-        {   10, 13,    112,    128,   0,   80, 0 },  -- t=3860 载体 12
-        {   30, 13,     96,    160,   1,   80, 0 },  -- t=3890 载体 12
-        {   10, 11,    -96,    144,   0,   80, 0 },  -- t=3900 载体 10
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3930 载体 10
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=3940 载体 12
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=3970 载体 10
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=3980 载体 12
-        {   30, 11,   -128,     96,   1,   80, 0 },  -- t=4010 载体 10
-        {   10, 13,     64,    160,   0,   80, 0 },  -- t=4020 载体 12
-        {  300, 23,      0,    240,   1,  160, 0 },  -- t=4320 载体 23
-        {  100, 24,     64,    240,   2,  160, 0 },  -- t=4420 载体 24
-        {    0, 24,    -64,    240,   2,  160, 0 },  -- t=4420 载体 24
-        {  523, 26,   -128,    192,   1,  160, 0 },  -- t=4943 载体 25
-        {   30, 28,    -96,    160,   0,  160, 0 },  -- t=4973 载体 27
-        {   30, 26,    -64,    128,   1,  160, 0 },  -- t=5003 载体 25
-        {   30, 28,    -32,     96,   0,  160, 0 },  -- t=5033 载体 27
-        {   30, 26,      0,     64,   1,  160, 0 },  -- t=5063 载体 25
-        {   30, 28,     32,     32,   0,  160, 0 },  -- t=5093 载体 27
-        {   30, 26,     64,      0,   1,  160, 0 },  -- t=5123 载体 25
-        {   30, 30,     96,    -32,   0,  160, 0 },  -- t=5153 载体 29
-        {  240, 32,    128,    112,   0,  110, 0 },  -- t=5393 载体 31
-        {   20, 34, 110.86553955078125, 66.07798767089844,   1,  110, 0 },  -- t=5413 载体 33
-        {   20, 32, 79.19595336914062, 32.804046630859375,   0,  110, 0 },  -- t=5433 载体 31
-        {   20, 34, 39.799072265625, 15.916534423828125,   1,  110, 0 },  -- t=5453 载体 33
-        {   20, 32,      0,     16,   0,  110, 0 },  -- t=5473 载体 31
-        {   20, 34, -33.6761474609375, 30.6986083984375,   1,  110, 0 },  -- t=5493 载体 33
-        {   20, 32, -56.56854248046875, 55.43145751953125,   0,  110, 0 },  -- t=5513 载体 31
-        {   20, 34, -66.51932525634766, 84.44679260253906,   1,  110, 0 },  -- t=5533 载体 33
-        {   20, 32,    -64,    112,   0,  110, 0 },  -- t=5553 载体 31
-        {   20, 34, -51.73725891113281, 133.4302749633789,   1,  110, 0 },  -- t=5573 载体 33
-        {   20, 32, -33.941131591796875, 145.94112396240234,   0,  110, 0 },  -- t=5593 载体 31
-        {   20, 34, -15.307342529296875, 148.95518493652344,   1,  110, 0 },  -- t=5613 载体 33
-        {   20, 32,      0,    144,   0,  110, 0 },  -- t=5633 载体 31
-        {   20, 34, 9.184402465820312, 134.17311096191406,   1,  110, 0 },  -- t=5653 载体 33
-        {   20, 32, 11.313705444335938, 123.31370544433594,   0,  110, 0 },  -- t=5673 载体 31
-        {   20, 34, 7.3910369873046875, 115.06147003173828,   2,  110, 0 },  -- t=5693 载体 33
-        {   20, 36,      0,    112,   0,  200, 0 },  -- t=5713 载体 35
+        { 0, 11, -128.0, 96.0, 0, 80, 0 }, -- TL0 t=500 0xaea8
+        { 10, 11, -112.0, 112.0, 0, 80, 0 }, -- TL0 t=510 0xaec8
+        { 10, 11, -96.0, 120.0, 1, 80, 0 }, -- TL0 t=520 0xaee8
+        { 380, 13, 128.0, 112.0, 0, 80, 0 }, -- TL0 t=900 0xaf08
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL0 t=910 0xaf28
+        { 10, 13, 96.0, 144.0, 1, 80, 0 }, -- TL0 t=920 0xaf48
+        { 10, 13, 64.0, 160.0, 1, 80, 0 }, -- TL0 t=930 0xaf68
+        { 100, 11, -160.0, 96.0, 2, 80, 0 }, -- TL0 t=1030 0xaf88
+        { 10, 11, -144.0, 112.0, 0, 80, 0 }, -- TL0 t=1040 0xafa8
+        { 10, 11, -128.0, 120.0, 0, 80, 0 }, -- TL0 t=1050 0xafc8
+        { 10, 11, -112.0, 128.0, 1, 80, 0 }, -- TL0 t=1060 0xafe8
+        { 10, 11, -96.0, 136.0, 1, 80, 0 }, -- TL0 t=1070 0xb008
+        { 200, 17, 128.0, 128.0, 1, 80, 0 }, -- TL0 t=1270 0xb028
+        { 100, 15, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=1370 0xb048
+        { 100, 15, -96.0, 160.0, 1, 80, 0 }, -- TL0 t=1470 0xb068
+        { 100, 13, 128.0, 112.0, 1, 80, 0 }, -- TL0 t=1570 0xb088
+        { 10, 13, 112.0, 128.0, 1, 80, 0 }, -- TL0 t=1580 0xb0a8
+        { 10, 13, 96.0, 144.0, 1, 80, 0 }, -- TL0 t=1590 0xb0c8
+        { 10, 13, 64.0, 160.0, 1, 80, 0 }, -- TL0 t=1600 0xb0e8
+        { 200, 21, 128.0, 128.0, 1, 80, 0 }, -- TL0 t=1800 0xb108
+        { 10, 11, -128.0, 112.0, 0, 80, 0 }, -- TL0 t=1810 0xb128
+        { 30, 19, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=1840 0xb148
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL0 t=1850 0xb168
+        { 30, 21, 96.0, 160.0, 1, 80, 0 }, -- TL0 t=1880 0xb188
+        { 10, 11, -96.0, 144.0, 0, 80, 0 }, -- TL0 t=1890 0xb1a8
+        { 30, 19, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=1920 0xb1c8
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=1930 0xb1e8
+        { 60, 13, 128.0, 128.0, 1, 80, 0 }, -- TL0 t=1990 0xb208
+        { 10, 11, -128.0, 112.0, 0, 80, 0 }, -- TL0 t=2000 0xb228
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=2030 0xb248
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL0 t=2040 0xb268
+        { 30, 13, 96.0, 160.0, 1, 80, 0 }, -- TL0 t=2070 0xb288
+        { 10, 11, -96.0, 144.0, 0, 80, 0 }, -- TL0 t=2080 0xb2a8
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=2110 0xb2c8
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=2120 0xb2e8
+        { 60, 21, 128.0, 128.0, 1, 80, 0 }, -- TL0 t=2180 0xb308
+        { 10, 11, -128.0, 112.0, 0, 80, 0 }, -- TL0 t=2190 0xb328
+        { 30, 19, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=2220 0xb348
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL0 t=2230 0xb368
+        { 30, 17, 96.0, 160.0, 1, 80, 0 }, -- TL0 t=2260 0xb388
+        { 10, 11, -96.0, 144.0, 0, 80, 0 }, -- TL0 t=2270 0xb3a8
+        { 30, 15, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=2300 0xb3c8
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=2310 0xb3e8
+        { 300, 22, 128.0, 240.0, 1, 160, 1 }, -- TL0 t=2610 0xb408
+        { 91, 13, 128.0, 112.0, 0, 80, 0 }, -- TL1 t=2701 0xbb54
+        { 9, 22, -128.0, 240.0, 1, 160, 0 }, -- TL0 t=2710 0xb428
+        { 1, 13, 112.0, 128.0, 0, 80, 0 }, -- TL1 t=2711 0xbb74
+        { 99, 22, 128.0, 240.0, 0, 160, 1 }, -- TL0 t=2810 0xb448
+        { 100, 22, -128.0, 240.0, 0, 160, 0 }, -- TL0 t=2910 0xb468
+        { 1, 11, -128.0, 112.0, 0, 80, 0 }, -- TL1 t=2911 0xbb94
+        { 10, 11, -112.0, 128.0, 0, 80, 0 }, -- TL1 t=2921 0xbbb4
+        { 89, 22, 128.0, 240.0, 0, 160, 1 }, -- TL0 t=3010 0xb488
+        { 100, 22, -128.0, 240.0, 0, 160, 0 }, -- TL0 t=3110 0xb4a8
+        { 11, 13, 128.0, 112.0, 0, 80, 0 }, -- TL1 t=3121 0xbbd4
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL1 t=3131 0xbbf4
+        { 79, 22, 96.0, 240.0, 1, 160, 1 }, -- TL0 t=3210 0xb4c8
+        { 0, 22, -96.0, 240.0, 1, 160, 0 }, -- TL0 t=3210 0xb4e8
+        { 121, 11, -128.0, 112.0, 0, 80, 0 }, -- TL1 t=3331 0xbc14
+        { 10, 11, -112.0, 128.0, 0, 80, 0 }, -- TL1 t=3341 0xbc34
+        { 169, 24, 0.0, 240.0, 2, 160, 0 }, -- TL0 t=3510 0xb508
+        { 31, 13, 128.0, 112.0, 0, 80, 0 }, -- TL1 t=3541 0xbc54
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL1 t=3551 0xbc74
+        { 59, 22, 96.0, 240.0, 1, 160, 1 }, -- TL0 t=3610 0xb528
+        { 0, 22, -96.0, 240.0, 1, 160, 0 }, -- TL0 t=3610 0xb548
+        { 200, 13, 128.0, 128.0, 1, 80, 0 }, -- TL0 t=3810 0xb568
+        { 10, 11, -128.0, 112.0, 0, 80, 0 }, -- TL0 t=3820 0xb588
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=3850 0xb5a8
+        { 10, 13, 112.0, 128.0, 0, 80, 0 }, -- TL0 t=3860 0xb5c8
+        { 30, 13, 96.0, 160.0, 1, 80, 0 }, -- TL0 t=3890 0xb5e8
+        { 10, 11, -96.0, 144.0, 0, 80, 0 }, -- TL0 t=3900 0xb608
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=3930 0xb628
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=3940 0xb648
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=3970 0xb668
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=3980 0xb688
+        { 30, 11, -128.0, 96.0, 1, 80, 0 }, -- TL0 t=4010 0xb6a8
+        { 10, 13, 64.0, 160.0, 0, 80, 0 }, -- TL0 t=4020 0xb6c8
+        { 300, 23, 0.0, 240.0, 1, 160, 0 }, -- TL0 t=4320 0xb6e8
+        { 100, 24, 64.0, 240.0, 2, 160, 0 }, -- TL0 t=4420 0xb708
+        { 0, 24, -64.0, 240.0, 2, 160, 0 }, -- TL0 t=4420 0xb728
+        { 523, 26, -128.0, 192.0, 1, 160, 0 }, -- TL0 t=4943 0xb790
+        { 30, 28, -96.0, 160.0, 0, 160, 0 }, -- TL0 t=4973 0xb7b0
+        { 30, 26, -64.0, 128.0, 1, 160, 0 }, -- TL0 t=5003 0xb7d0
+        { 30, 28, -32.0, 96.0, 0, 160, 0 }, -- TL0 t=5033 0xb7f0
+        { 30, 26, 0.0, 64.0, 1, 160, 0 }, -- TL0 t=5063 0xb810
+        { 30, 28, 32.0, 32.0, 0, 160, 0 }, -- TL0 t=5093 0xb830
+        { 30, 26, 64.0, 0.0, 1, 160, 0 }, -- TL0 t=5123 0xb850
+        { 30, 30, 96.0, -32.0, 0, 160, 0 }, -- TL0 t=5153 0xb870
+        { 240, 32, 128.0, 112.0, 0, 110, 0 }, -- TL0 t=5393 0xb890
+        { 20, 34, 110.86553955078125, 66.07798767089844, 1, 110, 0 }, -- TL0 t=5413 0xb8b0
+        { 20, 32, 79.19595336914062, 32.804046630859375, 0, 110, 0 }, -- TL0 t=5433 0xb8d0
+        { 20, 34, 39.799072265625, 15.916534423828125, 1, 110, 0 }, -- TL0 t=5453 0xb8f0
+        { 20, 32, 0.0, 16.0, 0, 110, 0 }, -- TL0 t=5473 0xb910
+        { 20, 34, -33.6761474609375, 30.6986083984375, 1, 110, 0 }, -- TL0 t=5493 0xb930
+        { 20, 32, -56.56854248046875, 55.43145751953125, 0, 110, 0 }, -- TL0 t=5513 0xb950
+        { 20, 34, -66.51932525634766, 84.44679260253906, 1, 110, 0 }, -- TL0 t=5533 0xb970
+        { 20, 32, -64.0, 112.0, 0, 110, 0 }, -- TL0 t=5553 0xb990
+        { 20, 34, -51.73725891113281, 133.4302749633789, 1, 110, 0 }, -- TL0 t=5573 0xb9b0
+        { 20, 32, -33.941131591796875, 145.94112396240234, 0, 110, 0 }, -- TL0 t=5593 0xb9d0
+        { 20, 34, -15.307342529296875, 148.95518493652344, 1, 110, 0 }, -- TL0 t=5613 0xb9f0
+        { 20, 32, 0.0, 144.0, 0, 110, 0 }, -- TL0 t=5633 0xba10
+        { 20, 34, 9.184402465820312, 134.17311096191406, 1, 110, 0 }, -- TL0 t=5653 0xba30
+        { 20, 32, 11.313705444335938, 123.31370544433594, 0, 110, 0 }, -- TL0 t=5673 0xba50
+        { 20, 34, 7.3910369873046875, 115.06147003173828, 2, 110, 0 }, -- TL0 t=5693 0xba70
+        { 20, 36, 0.0, 112.0, 0, 200, 0 }, -- TL0 t=5713 0xba90
     }
 
     local card = boss.card.New(CARD_NAME, CARD_TIME, CARD_TIME, CARD_TIME, 10000000)
@@ -3029,6 +3077,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE5) do
@@ -3321,6 +3371,8 @@ class["TH34_bigfairy1"] = Class(enemy, {
     end,
     kill = function(self)
         w1_drop(self)
+        scatter_items(item.obj.faith,4,self.x,self.y)
+        scatter_items(item.obj.point,2,self.x,self.y)
         enemy.kill(self)
     end,
 })
@@ -3658,6 +3710,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE1) do
@@ -3748,6 +3802,7 @@ class["TH34_wisp2"] = Class(enemy, {
         enemy.init(self, W2_WISP_STYLE, 1, false, false, true)
         self.colli = false
         self.protect = true
+        self.th07_road_no_cull=true -- ECL137(1)
         self.x,self.y=x,y
         self.kind,self.mirror=sub,mirror or 0
         self.dropcode=drop
@@ -4338,6 +4393,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE2) do
@@ -4358,87 +4415,9 @@ do
 end
 end
 
----==================== 第 7 面（EX）/ 第 8 面（PH）道中：代码 ====================
----【自然语言说明 · 第 7/8 面道中】
----原作的 EX / PH 面没有「道中 3 条时间轴」的结构：`ecldata7.ecl` 与 `ecldata8.ecl`
----的 **tl0** 就是整段道中（偏移 0xDE18 / 0x11234），tl1 只是开局一个特效敌人
----（t=1 放 1 只），所以只搬 tl0。tl0 里除 spawn 外只有 boss 对话/中断（op 8/9/10/12），
----一并跳过。末尾各有一条**道中 boss 占位**要剔掉：EX 是 t=8799 的 sub 67、
----PH 是 t=9259 的 sub 69（`ecldata7` 的 sub 54 与 `ecldata8` 的 sub 56 也是）。
----
----    EX（面 7）  284 条 spawn，t=545..8799 ⇒ 取 282 条、最后一只 t=8298
----    PH（面 8）  374 条 spawn，t=545..9259 ⇒ 取 372 条、最后一只 t=8758
----
----道中的结构（两面高度同构，下面以 EX 的参数说，PH 的差异单列）：
----  · 前半段是**「载体 + 打弹小精灵」**：载体 sub 10/12/14/16/18/20/22/24/26/28 出生
----    后先当 80 帧烟尘（sub 9：贴图 29、不可打、碰到自机不掉血；沿一条 Hermite 从
----    「出生点下方 179 px、偏左 17 px」飘到出生点，X 的两条切线各 ±144、Y 的
----    m0=24、m1=±32），80 帧一到在原地生出**本体** sub 11/13/15/…/29 并自毁。
----    本体是**匀加速直线**（MOVE_DIR_TIME(0,0,θ,0) 定朝向 + SET_MOVE_ACCEL 0.02）：
----    sub 11/15/19/23/27 朝 +x、sub 13/17/21/25/29 朝 −x；出生后 10 帧无敌，之后
----    **每 4 帧一轮 SPREAD_AIMED**（v1=5、v2=1，a1=0 ⇒ 每轮重读自机角）：
----      sub 11/13 → 1 发；15/17 → 2 发（36°）；19/21 → 3 发（36°）；
----      23/25 → 1 发；27/29 → 2 发（36°）；轮数 $10012 = 32 / 32 / 12（后三条）。
----    本体打到循环结束**没有终止指令**（子程序末尾就是表尾）⇒ 真机上它带着 0.02 的
----    加速度一直飞；移植版靠 `enemy.init` 的 auto_delete（出屏即回收）收尾（差异 61）。
----  · 中段 sub 31/32/34/35/37/38（各 24/24/12/10/…只）：先 SET 一批
----    $10037/$10041/$10038 —— **写的是 GLOBAL_INT_1/GLOBAL_FLOAT_1，而 sub 30/33/36
----    读的是从没被赋值过的 $10029/$10030/$10033（LOCAL_INT3_1/2、LOCAL_FLOAT3_1）
----    ⇒ 运行时恒 0**，全是死代码 —— 然后 SUB_CALL 30/33/36（原地展开，不新开敌人）。
----      sub 30：60 帧 ease-out 插值位移 120 px（θ=1.76715），t=60 打一发 SPREAD_AIMED
----        （EX 5×3/v1=4、PH 5×3/v1=5；a2=0、off=0 ⇒ 只有速度分层的「速度墙」），
----        t=90 改 POLAR（θ=0.3927、速 3），t=2090 自毁。
----      sub 33/36：POLAR 沿 +x 速 5 平移、且不自转（SET_ANGULAR_VEL $10033=0）；
----        先 DISABLE_BULLETS 把 t=0 那一发吞掉（只留 bulletProps 快照），再用
----        SET_SHOOT_INTERVAL_RAND 5 ⇒ **每 5 帧重打同一轮 RING_AIMED**（每次重瞄自机），
----        t=120 停火，t=2120 自毁。33：EX 4×5/v1=4、PH 5×5/v1=6；36：都是 6×4，
----        EX v1=4、PH v1=6。（a2=0 ⇒ 每层 c1 发重叠的「速度墙」。）
----  · sub 41/42/43/44（各 16 只）→ SUB_CALL 39/40（同样原地展开）：
----    60 帧 ease-out 插值位移 120 px 后，t=60 起**每 4 帧一发 RING_ABS**，共 32 发；
----    每发的 a1 冻结在 t=60 那一刻的自机角（原代码 ADD $10004,$10004,$10033 加 0），
----    速度 = $10006 − rand(0.8)，$10006 从 1 起每发 +0.046875 ⇒ 一环环比一环快；
----    c1=6、spr=2。sub 40 同构但 c1=3、24 发、收尾 θ=0.3927。PH 把这一段整体提速：
----    40 帧走 80 px、t=40 起、无敌 30 帧、速度 = 2.5 − rand(1.5) 每发 +0.078125，
----    c1 = 6（39）/ 4（40）；死时掉 6 信仰 + 3 点（原作 DEATH_CALLBACK_SUB 0 + $10003=6）。
----  · sub 45/47/49（各 4/2/3 只）→ 又是载体（sub 9 的烟尘）生出 sub 46/48/50：
----      sub 46/50：**每 4（EX）/3（PH）帧一发 RING_ABS**，a1 = rand[−π,π)、
----        v1 = rand(0,2)+0.3（EX）/ rand(0,3)+2 或 +0.3（PH）、c1=5、off=14/12，
----        共 50/60 发；sub 48：每 60 帧一发 RING_AIMED（c1=6、v1=2（EX）/3（PH）），3 发。
----      三条打完都转头向上（MOVE_DIR_TIME(0,0,−π/2,0) + SET_MOVE_ACCEL 0.02），
----      t≈3004 自毁；被击破掉 4 信仰 + 3 点（原作 DEATH_CALLBACK_SUB 7）。
----  · sub 52/53（EX 各 26/41 只，PH 各 36/49 只）＋ PH 另有 sub 54/55（各 16/24 只）：
----    短命的「开幕烟花」：不可打、碰到自机不掉血，t=0 用 8 次 SUB_CALL 51 各打 1 发
----    （sub 51：SET_SHOOT_OFFSET($10034×32,$10035×32) + RING_ABS spr=0,off=$10029,
----    c1=1,c2=1,v1=2,v2=1,a1=$10033,a2=0.628319、flags=0x2a8），t=90 再打一发
----    SPREAD_AIMED（EX 5×3/v1=5、PH 4×3/v1=7）当场 UNIMP。这条弹挂着两条命令
----    （flags 0x2a8 含 bit 0x20/0x80）：cmd0 = 0x20 每帧转 ∓6°、30 帧转半圈；
----    cmd1 = 0x80 用 60 帧沿当前朝向把速度线性减到 0，然后**重新瞄准自机**、
----    以速 4（EX）/7（PH）再飞出去。
----    ★ 原作 sub 51 读的 $10033/$10034/$10035 从没被赋值（sub 52 写的
----      $10041/$10042/$10043 是另外的变量、而且是只写不读）⇒ 真机上这 8 发
----      **完全重叠**在 (0,0)、角 0、速度 2（等于 1 发）。移植版照抄这个运行时行为，
----      不「修正」成真机看不到的八方向（差异 60）。
----  · 血量：构造器保留载体的原始 LIFE，初始化后统一按低速中位数换算。
----    SPAWN_ENEMY_REL 的子体不继承 mirror（SpawnEnemyEx 拿的是模板），
----    本体的朝向完全由自己的 θ 决定。
----  · itemdrop：−2 = 不掉（`DROP_FAITH[−2]`/`DROP_POINT[−2]` 都是 nil ⇒ 写成 {0,0,0}）、
----    0/1/2 = 信仰/点/双信仰、7 = 樱点、−1 = 1/3 概率信仰（同 1/2 面）。
----
----与原作的不同（延续 1/2 面的编号，每条都写了为什么）
----  60  sub 51 的 8 发按运行时（读未赋值的局部量）**重叠成 1 发**，不臆改成八方向；
----      仍然生 8 个对象，好让弹池占用与原作一致。
----  61  本体（sub 11..29）循环打完后原作没有终止指令（子程序末尾就是表尾），真机上
----      它带着 SET_MOVE_ACCEL 一直飞、出屏也不注销（默认 DESPAWN_ON_OOB=0）。移植版
----      用 `enemy.init` 的 auto_delete 出屏回收，免得几百只永久滞留在更新列表里。
----  62  贴图代理沿用 1/2 面：ANM 29（烟尘）→ style 27 的 ghost_fire_r 粒子、
----      ANM 0/27（小妖精）→ style 1（enemy1，32×32）、ANM 24（中载体 / 39/40）→
----      style 24（enemy_orb2）、ANM 32（开幕）→ style 27。
----  63  弹型 sprite 0/1/2/3/7 与 spriteOffset 色档按 1/2 面近似（`col16`）：
----      0→ball_small、1/2→grain_a、3→ball_small、7→arrow_small。
----  64  SET_SHOOT_INTERVAL_RAND 的 rank 缩放（ShootInterval = ±20%）不做，直接用 n。
----  65  残火直接复用第一面的 `TH34_flame`（原作第 7/8 面 sub 4 的 Hermite 常量是
----      X−11、Y−133、m0=46，第 6 面是 X−8、Y−150、m0=35；差 11 px，纯演出）。
----  66  道具/音效沿用 1/2 面的折算（0/2→信仰、7→樱点、`tan00` 每帧去重）。
+---==================== Extra / Phantasm 道中 ====================
+---Timeline0的普通敌机；CALL会复制全局传参，不能将10029/10033当成恒0。
+---烟尘、双层运动、枪描述符、循环墙钟和原生弹命令的逐项依据见逐卡核对清单3406/3407。
 
 local function TH34_add_stage78()
 
@@ -4507,18 +4486,18 @@ local function spread78(self, style, off, c1, c2, v1, v2, base, a2_th, plays, fl
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         return style, th07_color_for(off, style), v1 - (v1 - v2) * layer / c2, base + offs[ring + 1]
-    end, plays, flags)
+    end, plays, flags or (self.th07_road_burst and 515 or 0))
 end
 
 ---一条 RING（base 用我们的角度制；层间偏移 −a2_th·RAD2DEG，见差异 20 的取反规则）。
-local function ring78(self, style, off, c1, c2, v1, v2, base, a2_th, plays)
+local function ring78(self, style, off, c1, c2, v1, v2, base, a2_th, plays, flags)
     local step = 360 / c1
     local a2 = -a2_th * RAD2DEG
     volley3(self, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         return style, th07_color_for(off, style), v1 - (v1 - v2) * layer / c2, base - ring * step + layer * a2
-    end, plays)
+    end, plays, flags or (self.th07_road_burst and 515 or 0))
 end
 
 ---同上，但由 gen 自己 New（给带 INIT_BULLET_CMD 的 TH34_exbigbullet78 用）。
@@ -4540,55 +4519,6 @@ end
 ---  cmd1 = 0x80 DirChangeAim：60 帧里把速度从原速线性降到 0（每帧都用**原速**算，
 ---        所以不会滚雪球），第 61 帧把朝向改成「自机方向 + 0」、
 ---        速度设为 reaim 直飞（BulletManager.cpp:843-878）。
-class["TH34_exbigbullet78"] = Class(bullet, {
-    init = function(self, style, col, x, y, v, a, turn, reaim)
-        bullet.init(self, style, col, false, true)
-        self.x, self.y = x, y
-        self.rot, self.spd = a, v
-        self.turn, self.reaim = turn, reaim
-        self.t0, self.t1 = 0, -1        -- t1 = −1 ⇒ 0x80 还没起步
-        self.vx, self.vy = v * cos(a), v * sin(a)
-        self.c_flags=0x2a8
-        self.c_spawn_left=self.imgclass.native_type==10 and 24 or 32
-        self.c_spawn_vx,self.c_spawn_vy=self.vx,self.vy
-        self.x,self.y=x-self.vx*4,y-self.vy*4
-        self.bound,self.colli,self.th07_cull_managed=false,false,true
-    end,
-    frame = function(self)
-        if self.c_spawn_left>0 then
-            self.x,self.y=self.x+self.c_spawn_vx/3,self.y+self.c_spawn_vy/3
-            self.c_spawn_left=self.c_spawn_left-1
-            self.vx,self.vy=0,0
-            if self.c_spawn_left>0 then bullet.frame(self);return end
-            self.vx,self.vy=self.c_spawn_vx,self.c_spawn_vy
-            self.colli=true
-        end
-        if self.t0 < 30 then
-            self.rot = self.rot + self.turn
-            self.t0 = self.t0 + 1
-        end
-        if self.t1 >= 0 then
-            if self.t1 < 60 then
-                local spd = self.spd - self.t1 * self.spd / 60
-                self.t1 = self.t1 + 1
-                self.vx, self.vy = spd * cos(self.rot), spd * sin(self.rot)
-                OriginalBulletVisual.th07_cull(self,0,self.t1<61)
-                bullet.frame(self)
-                return
-            elseif self.t1 == 60 then
-                self.t1 = 61
-                self.rot = Angle(self, player)
-                self.spd = self.reaim
-            end
-        else
-            self.t1 = 0                   -- 第 2 帧起步
-        end
-        self.vx, self.vy = self.spd * cos(self.rot), self.spd * sin(self.rot)
-        OriginalBulletVisual.th07_cull(self,0,self.t1<61)
-        bullet.frame(self)
-    end,
-})
-
 ---──────────────────── 载体 + 烟尘（原作 sub 10/12/…/28、45/47/49 → sub 9） ────────────────────
 ---`puff` = { x0 偏移, y0 偏移, y 的 m0 }（都已换算成我们的坐标与符号）；
 ---`body_cls`/`body_cfg` 决定 80 帧后生出来的本体。
@@ -4640,6 +4570,8 @@ class["TH34_exbody78"] = Class(enemy, {
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = 0
+        self.th07_road_burst=true
+        self.flame_stage=tonumber(cfg._anm_file:match('%d+'))
         setdrop78(self, drop)
         self.mv_n, self.mv_t = 0, 0
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
@@ -4657,7 +4589,7 @@ class["TH34_exbody78"] = Class(enemy, {
                     task.Wait(4)            -- DEC_JUMP 落在 t=4
                 end
                 spread78(self, bs78(cfg.spr), cfg.off, cfg.c1, cfg.c2,
-                         cfg.v1, cfg.v2, Angle(self, player), cfg.a2, cfg.plays)
+                         cfg.v1, cfg.v2, Angle(self, player), cfg.a2, cfg.plays,cfg.flags)
             end
         end)
     end,
@@ -4667,7 +4599,7 @@ class["TH34_exbody78"] = Class(enemy, {
         adv78(self)
     end,
     kill = function(self)
-        New(class["TH34_flame"], self.x, self.y)   -- 原作 DEATH_CALLBACK_SUB 6
+        New(class["TH34_flame"], self.x, self.y,self.flame_stage)   -- 原作 DEATH_CALLBACK_SUB 6
         drop78(self)
         enemy.kill(self)
     end,
@@ -4680,10 +4612,10 @@ NativeVisual.wrap_road_actor(class["TH34_exbody78"])
 local function mid78_fire(self, cfg)
     if cfg.kind == 30 then
         spread78(self, bs78(cfg.spr), cfg.off, cfg.c1, cfg.c2, cfg.v1, cfg.v2,
-                 Angle(self, player), 0, true)
+                 Angle(self, player), cfg.a2 or 0, true)
     else
         ring78(self, bs78(cfg.spr), cfg.off, cfg.c1, cfg.c2, cfg.v1, cfg.v2,
-               Angle(self, player), 0, true)
+               Angle(self, player), cfg.a2 or 0, true)
     end
 end
 
@@ -4717,15 +4649,19 @@ class["TH34_exmid78"] = Class(enemy, {
             end)
         end
         task.New(self, function()
-            task.Wait(cfg.life)
+            task.Wait(cfg.actual_life or cfg.life)
             object.RawDel(self)
         end)
     end,
     frame = function(self)
         enemy.frame(self)
         if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
-        adv78(self)
         local cfg=self.road_cfg
+        if cfg.kind~=30 and self.th07_road_age>=60 and self.th07_road_age<120 then
+            self.dir=self.dir+(self.mirror==1 and 1 or -1)*cfg.spin*RAD2DEG
+            object.SetV(self,self.spd,self.dir,false)
+        end
+        adv78(self)
         if cfg.kind~=30 and self.th07_road_age<cfg.stop_t then
             self.road_shoot_t=self.road_shoot_t+1
             if self.road_shoot_t>=self.road_iv then
@@ -4754,7 +4690,7 @@ class["TH34_exring78"] = Class(enemy, {
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
         self.spd, self.accel, self.dir = 0, 0, 0
         self.protect = true
-        move78(self, cfg.move_n, 0, cfg.move_spd)
+        move78(self, cfg.move_n, cfg.move_th, cfg.move_spd)
         task.New(self, function()
             task.Wait(cfg.invul)
             self.protect = false
@@ -4764,14 +4700,15 @@ class["TH34_exring78"] = Class(enemy, {
             local base = Angle(self, player)
             local v = cfg.base_v
             for _ = 1, cfg.rounds do
-                ring78(self, bs78(2), 0, cfg.c1, 1, v + ran:Float(0, cfg.rnd), 1, base, 0, true)
+                ring78(self, bs78(2), cfg.off, cfg.c1, 1, v + ran:Float(0, cfg.rnd), 1, base, 0, true)
                 v = v + cfg.inc
-                task.Wait(4)
+                base=base-cfg.da*RAD2DEG
+                task.Wait(cfg.gap)
             end
             move78(self, 0, cfg.then_th, cfg.then_spd)
         end)
         task.New(self, function()
-            task.Wait(cfg.life)
+            task.Wait(cfg.actual_life or cfg.life)
             object.RawDel(self)
         end)
     end,
@@ -4799,6 +4736,8 @@ class["TH34_exbomb78"] = Class(enemy, {
         self.x, self.y = x, y
         self.A, self.B = 24, 24
         self.mirror = 0
+        self.th07_road_burst=true
+        self.flame_stage=tonumber(cfg._anm_file:match('%d+'))
         setdrop78(self, drop)
         self.mv_n, self.mv_t = 0, 0
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
@@ -4816,7 +4755,7 @@ class["TH34_exbomb78"] = Class(enemy, {
                 if cfg.mode == "rand" then
                     ring78(self, bs78(3), cfg.off, cfg.c1, 1,
                            ran:Float(0, cfg.rnd) + cfg.base, 1,
-                           ran:Float(-180, 180), 0.628319, true)
+                           -ran:Float(-180, 180), 0.628319, true)
                 else
                     ring78(self, bs78(7), cfg.off, cfg.c1, 1, cfg.v1, 1,
                            Angle(self, player), 0.628319, true)
@@ -4827,7 +4766,7 @@ class["TH34_exbomb78"] = Class(enemy, {
             self.accel = 0.02
         end)
         task.New(self, function()
-            task.Wait(cfg.life)
+            task.Wait(cfg.actual_life or cfg.life)
             object.RawDel(self)
         end)
     end,
@@ -4837,7 +4776,7 @@ class["TH34_exbomb78"] = Class(enemy, {
         adv78(self)
     end,
     kill = function(self)
-        New(class["TH34_flame"], self.x, self.y)             -- DEATH_CALLBACK_SUB 7
+        New(class["TH34_flame"], self.x, self.y,self.flame_stage)             -- DEATH_CALLBACK_SUB 7
         scatter_items(item.obj.faith, 4, self.x, self.y)
         scatter_items(item.obj.point, 3, self.x, self.y)
         drop78(self)
@@ -4853,14 +4792,23 @@ class["TH34_exbig78"] = Class(enemy, {
         enemy.init(self, 27, 1, false, true, true)
         self.x, self.y = x, y
         self.A, self.B = 0, 0
+        self.th07_road_no_cull=true -- ECL137(1)
         self.mirror = mirror or 0
         self.colli = false
         setdrop78(self, drop)
-        ---t=0 的 8 次 SUB_CALL 51（差异 60：运行时八个偏移/角都是 0 ⇒ 八发重叠）
-        for _ = 1, 8 do
-            volley78(self, 1, function()
-                return New(class["TH34_exbigbullet78"], th07_style(0), th07_color(0, 0), self.x, self.y,
-                           2, 0, cfg.turn, cfg.reaim)
+        -- 每次CALL都快照最新全局量，八发的偏移、角和颜色各自独立。
+        local colors={6,4,2,14,13,11,10,8}
+        local forward=cfg.turn>0
+        for k=0,7 do
+            local th=-math.pi+k*math.pi/4
+            local ox,oy
+            if forward then ox,oy=-32*math.sin(th),-32*math.cos(th)
+            else ox,oy=32*math.sin(th),32*math.cos(th) end
+            volley78(self,1,function()
+                return New(class.TH34_cmdbullet,th07_style(0),th07_color(colors[k+1],0),
+                    self.x+ox,self.y+oy,2,-th*RAD2DEG,
+                    cmds4(680,{type=32,flag=1,dur=30,speed=0,angle=cfg.turn},
+                        {type=128,flag=1,dur=60,loop=1,angle=0,speed=cfg.reaim}))
             end)
         end
         task.New(self, function()
@@ -4888,7 +4836,7 @@ local function mk78(ph)
     ---烟尘（原作 sub 9 的两条 INIT_INTERP）的常量：{ X 的 p0、Y 的 p0、Y 的 m0 }。
     ---已换算成我们的坐标（th07 的 Y 取反；m0 是 25−1 / 17−1 ⇒ 24 / 16，同样取反）。
     ---X 的 m0/m1 一律 ±144（类里各掷一次），m1 的 Y 一律 ±32。
-    local puff = ph and { 28, -160, -16 } or { -17, -179, -24 }
+    local puff = ph and { 28, -160, -18 } or { -17, -179, -26 }
 
     ---打弹本体 sub 11..29：th07 的角度 θ（弧度）、spriteOffset、count1/2、a2。
     ---一律 v1=5、v2=1、a1=0（每轮重瞄自机）、间隔 4 帧、出生无敌 10 帧。
@@ -4909,7 +4857,7 @@ local function mk78(ph)
         B[19].off, B[19].c1, B[19].spr = 1, 5, 7
         B[21].off, B[21].c1, B[21].spr = 3, 5, 7
     end
-    for _, b in pairs(B) do b.v1, b.v2 = 5, 1 end
+    for sub,b in pairs(B) do b.plays=true;b.v1,b.v2,b.flags=5,1,(ph and (sub==19 or sub==21)) and 513 or 515 end
 
     ---中载体 sub 30/33/36（经 wrapper 31/32、34/35、37/38 **原地**展开，不新开敌人）。
     ---30：60 帧 ease-out 漂 120 px（θ=1.76715、速 2），t=60 打一发「速度墙」SPREAD，
@@ -4983,6 +4931,14 @@ local function mk78(ph)
         G[55] = { turn = -6, reaim = 7, c1 = 4, v1 = 7, v2 = 3 }
     end
 
+    R[39].gap,R[40].gap=4,2
+    for _,r in pairs(R) do r.actual_life=r.t0+r.rounds*r.gap+2000 end
+    for _,k in pairs(K) do k.actual_life=k.rounds*k.gap+3000 end
+    local function cfgcopy(src,extra)
+        local c={};for k,v in pairs(src) do c[k]=v end
+        for k,v in pairs(extra) do c[k]=v end
+        return c
+    end
     ---子程序号 → 类 + 配置：载体类多带一份 puff 和「80 帧后生出来的本体」。
     local W = {}
     for _, s in ipairs({ 10, 12, 14, 16, 18, 20, 22, 24, 26, 28 }) do
@@ -5008,9 +4964,26 @@ local function mk78(ph)
         W[54] = { cls = "TH34_exbig78", cfg = G[54] }
         W[55] = { cls = "TH34_exbig78", cfg = G[55] }
     end
+    -- SUB_CALL把刚写入的全局量复制到子context，不能按清零的局部量抹掉。
+    W[31].cfg=cfgcopy(M[30],{off=6,a2=ph and math.pi/4 or math.pi/6})
+    W[32].cfg=cfgcopy(M[30],{off=5,a2=math.pi/80})
+    for _,sub in ipairs({34,35,37,38}) do
+        W[sub].cfg=cfgcopy(sub<=35 and M[33] or M[36],
+            {off=sub%2==0 and 9 or 8,spin=sub%2==0 and math.pi/60 or -math.pi/60})
+    end
+    W[41].cfg=cfgcopy(R[39],{off=6,da=math.pi/80,move_th=1.7671458721160889})
+    W[42].cfg=cfgcopy(R[39],{off=9,da=-math.pi/80,move_th=1.3744467496871948})
+    W[43].cfg=cfgcopy(R[40],{off=6,da=math.pi/60,move_th=1.7671458721160889})
+    W[44].cfg=cfgcopy(R[40],{off=9,da=-math.pi/60,move_th=1.7671458721160889})
     -- 共享配置仍保留原子程序号，给原版 ANM 换姿态与附加动画取源。
     for _,tab in ipairs({B,M,R,K,G}) do
         for sub,cfg in pairs(tab) do cfg._anm_file='ecldata'..(ph and 8 or 7);cfg._anm_sub=sub end
+    end
+    for sub,e in pairs(W) do
+        if not e.cfg._anm_file then
+            e.cfg._anm_file='ecldata'..(ph and 8 or 7)
+            e.cfg._anm_sub=(sub<=32 and 30) or (sub<=35 and 33) or (sub<=38 and 36) or (sub<=42 and 39) or 40
+        end
     end
     return W
 end
@@ -5712,6 +5685,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(W7) do
@@ -5749,6 +5724,8 @@ do
     end
     function card:init()
         pool4 = {}
+        class.th07_spell_active,class.th07_command_sound=false,-1
+        self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(W8) do
@@ -16488,7 +16465,7 @@ do
     V.wrap_actor(class.TH34_ghost,7,function(o)
         return o.th07_road_age<80 and 'ecldata6:8' or (o.dir>0 and 'ecldata6:10' or 'ecldata6:12')
     end)
-    V.wrap_actor(class.TH34_flame,7,'ecldata6:4')
+    V.wrap_actor(class.TH34_flame,7,function(o) return 'ecldata'..o.flame_stage..':4' end)
     V.wrap_actor(class.TH34_ghost4,7,'ecldata4:9')
     V.wrap_actor(class.TH34_tank4,7,function(o,x,y,life,kind)
         return 'ecldata4:'..(kind=='l' and 13 or 14)

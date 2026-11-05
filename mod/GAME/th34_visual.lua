@@ -36,6 +36,7 @@ function N.wrap_road_actor(cls)
     cls.init=function(o,...)
         o.th07_road_age=0
         init(o,...)
+        o.auto_delete,o.bound=false,false
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
         local x,y=o.x,o.y
         frame(o)
@@ -60,6 +61,15 @@ function N.wrap_road_actor(cls)
         o.th07_road_position=nil
         if p then o.x,o.y=p[1],p[2] end
         o.th07_road_age=o.th07_road_age+1
+        if not o.th07_road_no_cull and o._original_actor then
+            -- 原EnemyManager在Move后检查本体和最远拖尾；LuaSTG尚未统一积分。
+            local x,y=o.x,o.y
+            o.x,o.y=x+(o.vx or 0),y+(o.vy or 0)
+            local outside
+            if o.th07_trail then outside=N.trail_outside(o) else outside=N.body_cull(o) end
+            o.x,o.y=x,y
+            if outside then object.RawDel(o) end
+        end
     end
     cls[1],cls[3]=cls.init,cls.frame
 end
