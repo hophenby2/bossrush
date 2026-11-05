@@ -7,15 +7,17 @@ spec=importlib.util.spec_from_file_location('serializer',Path(__file__).with_nam
 serializer=importlib.util.module_from_spec(spec);spec.loader.exec_module(serializer)
 def export(workspace,originals):
  table={};evidence=[]
- for game in (8,95):
-  root=workspace/'reconstructions'/('th095' if game==95 else 'th08')/'src'
+ for game in (7,8,95):
+  root=workspace/'reconstructions'/('th095' if game==95 else f'th{game:02}')/'src'
+  if game==7:root=root/'th07'
   code=(root/'SoundPlayer.cpp').read_text()
-  block=re.search(r'g_SoundBufferIdxVol[^=]*=\s*\{(.*?)\};',code,re.S)[1]
+  block=re.search(r'(?:g_SoundBufferIdxVol|SOUND_BUFFER_IDX_VOL)[^=]*=\s*\{(.*?)\};',code,re.S)[1]
   records=[list(map(int,m)) for m in re.findall(r'\{\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\}',block)]
   block=re.search(r'g_SFXList[^=]*=\s*\{(.*?)\};',code,re.S)[1]
   names=re.findall(r'"([^"]+\.wav)"',block)
-  needed={15,18,38,45} if game==95 else set()
-  for f in (workspace/'original/ECL'/('th095' if game==95 else 'th08')).glob('*.ecl'):
+  names=[Path(n).name for n in names]
+  needed=set(range(len(records))) if game==7 else {15,18,38,45} if game==95 else set()
+  for f in (workspace/'original/ECL'/('th095' if game==95 else f'th{game:02}')).glob('*.ecl'):
    src=Source(workspace/'decompiled/ecl'/str(game)/(f.stem+'.decl'),f,game)
    for body in src.subs.values():
     if game==8:
@@ -27,7 +29,7 @@ def export(workspace,originals):
     if any(i.op in (139,140) if game==8 else i.op==150 for i in body) and all(i.op<63 or i.op in (79,80,81,106,124,139,140,143,144,150,151,152) for i in body):
      needed.update(i.args[0] for i in body if i.op==(106 if game==95 else 124) and i.args and isinstance(i.args[0],int))
   dest=ROOT/'Resources/OriginalAudio'/str(game);dest.mkdir(parents=True,exist_ok=True)
-  prefix='[th095]' if game==95 else '[th08]'
+  prefix='[th095]' if game==95 else f'[th{game:02}]'
   origin=next(p/'data' for p in originals.iterdir() if p.name.startswith(prefix) and (p/'data').is_dir())
   result={}
   for i in sorted(needed):

@@ -681,7 +681,7 @@ local function volley(self)
     ---= buffer 5 = `se_tan00.wav`、音量 −15 dB（`SoundPlayer.cpp:11-15`）。
     if sound_stamp ~= sound_tick then
         sound_stamp = sound_tick
-        PlaySound("tan00", 0.08, self.x / 256)
+        OriginalStageVisual.presentation.sound.play(7,self.th07_shoot_sound or 7,self.x)
     end
 end
 
@@ -5903,6 +5903,7 @@ class.th07_motion_source = {
 }
 function class.th07_motion_begin(self, id, move)
     class.th07_spell_active=self.current_card and self.current_card.is_sc or false
+    self.th07_shoot_sound=({[4392]=25,[4394]=9})[id] or 7
     TH34Prism.begin(self, id)
     -- 上一张卡关闭体术时会放入NONTJT；新卡恢复原作默认，再由本卡协程改变。
     self.group = GROUP.ENEMY
@@ -10536,50 +10537,27 @@ local function TH34_add_stage56_boss()
     ---在延迟到期前飞出屏外也不回收）。这里只另记类型/色档供ex-ins扫描；对象实际释放后
     ---必须立即退出计数和转换，不能沿用最后位置生成幽灵发射源。
     scard("華霊「バタフライディルージョン」", 4397, 65, 3000, false, function(self)
-        local bd = {}                    -- 蝶弹：{ o = 弹对象, off = 色档, x, y, rot = 我们的角度 }
         local lf0, lf1, lf4 = 0, 0, 0    -- sub52 的 floatVars1[0]/[1]/[4]
         local lf4p = 0                   -- 周期子程 sub54 里那份 f4（arm 时从 lf4 复制一份）
         local li0, li2, li2_0 = 0, 0, 0  -- intVars1[0] / intVars1[2] / intVars2[0]
         ---周期回调（SET_PERIODIC_CALLBACK i2 54）的计数器；原作在**每帧 RunEcl 开头**检查。
         local ptim, pcnt, armed = 0, 0, false
 
-        local function bd_alive(e)
-            return IsValid(e.o) and not e.o._original_silent_remove
+        local function butterflies(fn)
+            native_bullets(function(o)
+                if o.th07_sprite==8 and (o.th07_special_state or 0)==0 then fn(o) end
+            end)
         end
-        ---原作只遍历仍激活的弹槽，回收后的记录不能再触发ex16/17/18。
-        local function bd_pos(e)
-            e.x,e.y,e.rot=e.o.x,e.o.y,e.o.rot
-            return e.x,e.y,e.rot
-        end
-        local function bd_add(o, off)
-            bd[#bd + 1] = { o = o, off = off, x = o.x, y = o.y, rot = o.rot }
-        end
-        local function bd_clear()
-            for i = 1, #bd do
-                if bd_alive(bd[i]) then OriginalBulletVisual.retire(bd[i].o) end
-            end
-            bd = {}
-        end
-
-        ---ex-ins 16 YuyukoTransformButterflyBullets：每颗蝶弹（色档 0..7）再炸 5 颗普通弹
-        ---（spr0/off6、v = 调用方 floatVars1[1] = f1、a1 = 原角+π、a2=22.5°、flags 2），
-        ---原蝶弹保留（留到 ex17 清）。
         local function ex16()
-            local style, col = th07_style(0), th07_color(6, 0)
-            local offs = spread_offsets(5, -22.5)
-            for i = 1, #bd do
-                if POOL4_SIZE - pool4_used() < 5 then break end
-                if bd_alive(bd[i]) then
-                    local x, y, rot = bd_pos(bd[i])
-                    local base = rot - 180
-                    for k = 1, 5 do
-                        pool4[#pool4 + 1] = New(class.TH34_cmdbullet,style,col,x,y,lf1,base+offs[k],cmds4(2))
-                    end
+            local offsets=spread_offsets(5,-22.5)
+            butterflies(function(o)
+                for k=1,5 do
+                    if pool4_used()>=POOL4_SIZE then break end
+                    local b=New(class.TH34_cmdbullet,th07_style(0),th07_color(6,0),o.x,o.y,lf1,o.rot-180+offsets[k],cmds4(2))
+                    b.th07_sprite,b.th07_color=0,6;pool4[#pool4+1]=b
                 end
-            end
+            end)
         end
-
-        ---sub53 蝶子机协程（ex17 用 pspawn 生；f0 = 原蝶弹的 TH07 角，ph = 相位）。
         local function butterfly6(self2, a)
             NativeVisual.source(self2,"spirit")
             local f0, ph = a.f0, a.ph
@@ -10605,8 +10583,7 @@ local function TH34_add_stage56_boss()
                 local cmd = cmds4(0x3224, spin6(spin, 0, 80),
                                   { type = 0x2000, flag = 1, dur = 300, loop = -1,
                                     speed = -1, angle = -1 })
-                local objs = shoot6(self2, 0, 0, op, spr, off, c1, c2, v, 1, ph, a2, cmd, true)
-                for i = 1, #objs do bd_add(objs[i], off) end
+                shoot6(self2, 0, 0, op, spr, off, c1, c2, v, 1, ph, a2, cmd, true)
             end
             volley(67, 8, 4, 1, 1, 0.8,  0.523599,  0.0785398)
             volley(67, 8, 3, 1, 1, 1.46, 0.523599, -0.0785398)
@@ -10617,29 +10594,23 @@ local function TH34_add_stage56_boss()
         ---ex-ins 17 YuyukoButterflySpawnEnemy：LBLUE（色档 4）蝶弹就地生一只 sub53 子机
         ---（floatVars1[0]=原弹角、[7]=相位，每只 +45°），然后清掉**全部**蝶弹。
         local function ex17()
-            local ph = -PI
-            for i = 1, #bd do
-                local e = bd[i]
-                if e.off == 4 and bd_alive(e) then
-                    local x, y, rot = bd_pos(e)
-                    pspawn(x, y, butterfly6, { f0 = -rot * PI / 180, ph = ph }, nil, 'inline_motion')
-                    ph = ph + PI / 4
+            local ph=-PI
+            OriginalStageVisual.presentation.native_pulse(self,12,1,0x80cfcfff)
+            butterflies(function(o)
+                if o.th07_color==4 then
+                    pspawn(o.x,o.y,butterfly6,{f0=-o.rot*PI/180,ph=ph},nil,'inline_motion')
+                    ph=ph+PI/4
                 end
-            end
-            bd_clear()
+                o.th07_cut_removed=true
+                OriginalBulletVisual.retire(o)
+            end)
         end
-
-        ---ex-ins 18 YuyukoCountButterflyBullets：数 LBLUE 蝶弹写 intVars1[0]（不产弹）。
         local function ex18()
-            li0 = 0
-            for i = 1, #bd do
-                if bd[i].off == 4 and bd_alive(bd[i]) then li0 = li0 + 1 end
-            end
+            li0=0
+            butterflies(function(o) if o.th07_color==4 then li0=li0+1 end end)
         end
-
-        ---周期子程 sub54（4 条 RING_ABS 按难度四选一，L 只跑第 4 条）。
         local function sub54()
-            shoot6(self, 0, 0, 67, 7, 3, 18, 3, 2.5, 0.8, lf4p, 0.19635, nil, true)
+            shoot6(self, 0, 0, 67, 7, 3, 18, 3, 2.5, 0.8, lf4p, .19634954631328583, cmds4(512), true)
             lf4p = lf4p + 0.0261799
         end
         ---SET_PERIODIC_CALLBACK（op144）：装表、计数清零、周期子程的局部变量取一份拷贝。
@@ -10651,16 +10622,15 @@ local function TH34_add_stage56_boss()
         local function tick()
             if armed then
                 pcnt = pcnt + 1
-                if pcnt >= ptim then pcnt = 0; sub54() end
+                if pcnt >= ptim then pcnt = 1; sub54() end
             end
         end
 
         ---环帧：RING_ABS `8:4` 8 发（v=0.5、a2=30°、a1=f0、flags 0x3204 + spawnDelay 300）。
         local function ring()
-            local objs = shoot6(self, 0, 0, 67, 8, 4, 8, 1, 0.5, 1, lf0, 0.523599,
+            shoot6(self, 0, 0, 67, 8, 4, 8, 1, 0.5, 1, lf0, 0.523599,
                                 cmds4(0x3204, { type = 0x2000, flag = 1, dur = 300,
                                                 loop = -1, speed = -1, angle = -1 }), true)
-            for i = 1, #objs do bd_add(objs[i], 4) end
         end
 
         ---从当前帧起推进 n 帧（每帧帧首先走周期回调），到第 n 帧执行 fn。
@@ -10678,10 +10648,11 @@ local function TH34_add_stage56_boss()
             li2_0 = 8                               -- idx89
             ex18()                                  -- idx90
             while true do
-                if li0 == 0 then return true end    -- idx91 → idx92（同帧 JUMP 回 idx75）
-                li2_0 = li2_0 - 1                   -- idx93 DEC_JUMP
-                if li2_0 <= 0 then break end        -- 落 idx94
-                ex18()                              -- idx90
+                if li0==0 then return true end
+                stepf(10,nil) -- 原DEC_JUMP在time570，不能在time560同帧递减8次。
+                li2_0=li2_0-1
+                if li2_0<=0 then break end
+                ex18()
             end
             ex17()                                  -- idx94
             if li2 > 40 then li2 = li2 - 4; arm(li2) end   -- idx95/96/97
@@ -10844,6 +10815,7 @@ local function TH34_add_stage56_boss()
             end
             task.Wait(60)                           -- 到原作 t=540
             while true do
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 sub56(14, 4, 0.0261799, 0, 0)       -- t=540
                 task.Wait(1)
                 sub56(14, 4, -0.0261799, 0, 0)      -- t=541
@@ -10860,14 +10832,18 @@ local function TH34_add_stage56_boss()
                 -- t=612：漂移 60 帧 + shootOffset 复位
                 drift(self, 1.5, 60); task.Wait(60)
                 sub57(10, 3, 0.0261799)             -- t=672
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(10)
                 drift(self, 1.5, 60); task.Wait(60)
                 sub57(12, 3, -0.0261799)            -- t=742
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 task.Wait(5)
                 drift(self, 1.5, 60); task.Wait(60)
                 sub57(18, 2, 0.0261799)             -- t=807
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 drift(self, 1.5, 60); task.Wait(60)
                 sub57(16, 3, -0.0261799)            -- t=867
+                OriginalStageVisual.presentation.sound.play(7,5,self.x)
                 bmove(self, 80, 4, 0, 112); task.Wait(80)
             end
         end)
@@ -10907,6 +10883,7 @@ local function TH34_add_stage56_boss()
     ---速度 rand(0.7)+0.4）。
     scard("桜符「完全なる墨染の桜 -開花-」", 4400, 6060/60, 6000, false, function(self)
         ---sub60：整圈 count1=n 的两段指令弹。
+        local periodic_advance=function() end
         local function ring60(n, acc)
             sound4(self)                                  -- 原作 sub60 的 PLAY_SOUND 7
             shoot6(self, 0, 0, 67, 10, 1, n, 1, 0.5, 1, 0, 0.785398,
@@ -10917,6 +10894,7 @@ local function TH34_add_stage56_boss()
         end
         ---sub59：4 层瞄准两连扇。base/rot 是 TH07 的弧度（rot = gf2）。
         local function fan59(off, base, rot)
+            periodic_advance()
             sound4(self)                                  -- 原作 sub59 的 PLAY_SOUND 7
             ---原作 sub59 的时间轴：每轮开始时 `SET_FLOAT *f1 *f3_1` **把 f1 复位成 gf1**，
             ---然后每发一炮就 `ADD_FLOAT *f1 *f1 *f2`（f2 = 8·gf2）——即 0x40 的转向量
@@ -10944,6 +10922,7 @@ local function TH34_add_stage56_boss()
                 end
                 acc = acc - 0.01
             end
+            periodic_advance()
         end
         -- GET_EXIT_ANGLE读取帧尾保存的未夹框运动角；插值结束后也保留该值。
         -- 与其他幽幽子卡共用原作的四边折返，不能用当前_mv推回方向。
@@ -10979,31 +10958,22 @@ local function TH34_add_stage56_boss()
         ---周期回调 sub61：第 k 轮周期 = max(4, 9−k)，从 t=660+320k 起每周期打一次；
         ---第 k 轮的 tick 只落在 (660+320k, 660+320(k+1)] 区间里（落在下一轮重设帧上的
         ---那一次仍按**旧**周期，因为原作在帧首先做周期判定再执行 SET_PERIODIC_CALLBACK）。
-        task.New(self, function()
-            local now = 0
-            local function at(t) task.Wait(t - now); now = t end
-            for k = 0, 4000 do
-                local F = 660 + 320 * k
-                local per = 9 - k
-                if per < 4 then per = 4 end
-                local M = int(320 / per)
-                for m = 1, M do
-                    at(F + per * m)
-                    tick61(k)
-                end
-            end
+        local pcnt,period,phase=0,nil,0
+        periodic_advance=function()
+            if not period then return end
+            pcnt=pcnt+1
+            if pcnt>=period then tick61(phase);pcnt=1 end
+        end
+        task.New(self,function()
+            while true do task.Wait(1);periodic_advance() end
         end)
-        ---★ 注意：cmp2 比的是**墙钟帧**。原作 t=120 处连跳三次难度分支（EclManager.cpp:944
-        ---的 JNEQ 链），一口气把 ctx.time 推到 481 —— 所以「t=660 的第一次发弹」实际发生在
-        ---第 300 帧（t − 360），「t=1020 的 SET_PERIODIC_CALLBACK」在第 660 帧。下面的
-        ---task.Wait 一律按墙钟帧写（t=120 之后的偏移 = t − 360）。
         task.New(self, function()
             task.Wait(120)
             bmove(self, 120, 4, 0, 128)           -- 原作 t=120 MOVE_POS_TIME(120,ease4,192,96)
-            task.Wait(119)                        -- → 墙钟第 239 帧（原作 t=600）
+            task.Wait(120)                        -- → 墙钟第 240 帧（原作 t=600）
             self._box = box5(64, 48, 320, 96)
             bmove(self, 60, 4, 0, 128)            -- 原作 t=600 MOVE_POS_TIME(60,ease4,192,96)
-            task.Wait(61)                         -- → 墙钟第 300 帧 = 原作 t=660 的第一次发弹
+            task.Wait(60)                         -- → 墙钟第 300 帧 = 原作 t=660 的第一次发弹
             do
                 local acc = 0.04
                 for _ = 1, 5 do ring60(42, acc); acc = acc - 0.012 end
@@ -11022,9 +10992,12 @@ local function TH34_add_stage56_boss()
                 fan59(4, -1.39626 + 2.0944, -0.0261799)
                 fan59(4, -1.39626 + 4.1888, -0.0261799)
                 if k % 2 == 1 then
+                    periodic_advance() -- 一次CALL60包含5圈，不是5次CALL。
                     local acc = 0.04
                     for _ = 1, 5 do ring60(20, acc); acc = acc - 0.012 end
+                    periodic_advance()
                 end
+                period,pcnt,phase=max(4,9-k),0,k
                 task.Wait(120)                    -- 墙钟 +320 = 下一轮 t=820
                 k = k + 1
             end
@@ -11055,7 +11028,7 @@ local function TH34_add_stage56_boss()
     ---  cmd2＝0x10：激活后每帧沿**激活时**的朝向加速 f0（`BulletManager.cpp:741`）。
     ---三段 flag 全 0、exFlags 初值 0 ⇒ cmd0 先生效；cmd0 清位后 cmd2 才被激活
     ---（`BulletManager.cpp:349` RunCommands）。flags=8752（0x2230）含 0x200 ⇒ 每波出生响一次。
-    scard("「反魂蝶 -八分咲-」", 4401, 67, nil, true, function(self)
+    scard("「反魂蝶 -八分咲-」", 4401, 4560/60, nil, true, function(self)
         ---GET_EXIT_ANGLE（`EclManager.cpp:1592`）：同 4400 的移植（差异 68：乱数用本仓 RNG，
         ---相位与原作不同）。
         local function exit_angle(self)
@@ -11133,9 +11106,9 @@ local function TH34_add_stage56_boss()
         ---LASER_FIXED 的固定参数（`EclManager.cpp:1378`）：speed 0、sOff 64、eOff/sLen 448、
         ---宽 16、展开 120 → 满 120 → 收 60 帧、判定 90..30。音：原作 sub67 PLAY_SOUND 13、
         ---sub68 PLAY_SOUND 16，都落在 se_lazer00 那一档（差异 71）。
-        local function slash_sword(mirror)
+        local function slash_sword(mirror,count)
             local live = {}
-            local i30 = 3
+            local i30 = count
             local f1 = PI / i30
             local f2 = f1 / 2
             local f0 = mirror and (PI / 2 - f2) or (f2 + PI / 2)
@@ -11144,11 +11117,11 @@ local function TH34_add_stage56_boss()
                 local ang = mirror and (f0 - PI / 3) or (f0 + PI / 3)
                 ang = norms6(ang)
                 live[k] = plaser(self.x, self.y, -ang, {
-                    spr = 1, w = 16, sOff = 64, eOff = 448, sLen = 448,
+                    spr = 1, color=mirror and 8 or 4, flags=0, w = 16, sOff = 64, eOff = 448, sLen = 448,
                     tStart = 120, dur = 120, tEnd = 60, hbStart = 90, hbEnd = 30 })
                 f0 = norms6(f0 + f1)
             end
-            PlaySound("lazer00", 0.13, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,mirror and 16 or 13,self.x)
             ---t=0 的 `INIT_INTERP`：dst f0、60 帧、fn0、easing 4、p0 = 0、p1 = ∓π/3。
             ---外圈共 60 轮（i2_1=60，DEC_JUMP 先减后跳）；第 0 轮的差分是 0
             ---（同帧 `SET_FLOAT *f0 0` 把 f0 压回 0，插值要到帧末才写回）。
@@ -11180,33 +11153,28 @@ local function TH34_add_stage56_boss()
             local it = (i0 == 8) and item.obj.sakura
                     or (i0 == 0) and item.obj.faith or item.obj.point
             local cx, cy = self.x, self.y
-            local da = f7 * RAD2DEG
-            pspawn(cx, cy, function(o)
-                local r, a = 0, f6 * RAD2DEG
-                for _ = 1, 30 do
-                    r = r + 1; a = a - da
-                    o.x, o.y = cx + cos(a) * r, cy + sin(a) * r
-                    task.Wait(1)
+            OriginalStageVisual.presentation.sound.play(7,5,self.x)
+            pspawn(cx,cy,function(o)
+                local r,a=0,f6
+                o.th07_native_step=function(me)
+                    r,a=r+1,a+f7
+                    me.x,me.y=cx+math.cos(a)*r,cy-math.sin(a)*r
                 end
-                for k = 1, n do
-                    New(it, o.x, o.y)
-                    if k < n then
-                        for _ = 1, 5 do
-                            r = r + 1; a = a - da
-                            o.x, o.y = cx + cos(a) * r, cy + sin(a) * r
-                            task.Wait(1)
-                        end
-                    end
-                end
-            end, nil, nil, 'inline_motion')
+                task.Wait(30)
+                local gap=i0==8 and 5 or 10
+                for _=1,n do New(it,o.x,o.y);task.Wait(gap) end
+            end,nil,i0==8 and 'ecldata6:70' or 'ecldata6:71','motion')
         end
-
-        ---主时间轴（墙钟 = 原作 t）。
         task.New(self, function()
             ---★ 原作 sub62 #2 `SUB_CALL 72` 的第一条就是 `RAND_FLOAT_ADD *f0 6.28319 -3.14159`
             ---  （接着 MOVE_DIR_TIME 60 4 *f0 0.15 让本体漂 9px）。粒子的演出无所谓，
             ---  但这枚角是真实消耗的，必须抽。
-            local _ = rngrad()
+            local a=rngrad()
+            bmove(self,60,4,self.x+f32cos(a)*60*.15000000596046448,self.y-f32sin(a)*60*.15000000596046448)
+            task.New(self,function()
+                task.Wait(180) -- CALL72共60帧，父t120生成绝对坐标的63。
+                pspawn(-192,224,function(o) task.Wait(600) end,nil,'ecldata6:63',true)
+            end)
             task.Wait(540)   -- 原作 sub62 先跑 t=0 的 SUB_CALL 72（60 帧演出）再等 480
             bmove(self, 120, 4, 0, 128)       -- 原作 t=480 MOVE_POS_TIME(120,4,192,96)
             task.Wait(120)                    -- → t=600
@@ -11217,8 +11185,8 @@ local function TH34_add_stage56_boss()
                 self._box = box5(128, 96, 256, 128)   -- 原作 t=660 SET_MOVEMENT_BOUNDS
                 local f0 = rngrad()
                 local f4 = PI / i2
-                slash_sword(false)            -- 原作 SPAWN_ENEMY_REL 67（左）
-                slash_sword(true)             -- 原作 SPAWN_ENEMY_REL 68（右）
+                slash_sword(false,int(i3/2))            -- 原作 SPAWN_ENEMY_REL 67（左）
+                slash_sword(true,int(i3/2))             -- 原作 SPAWN_ENEMY_REL 68（右）
                 sub64(i2, f0, f2)             -- t+0
                 task.Wait(10)
                 f0 = f0 + f4
