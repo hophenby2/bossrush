@@ -13,11 +13,15 @@ STEM = 'ECL_LINE_REVIEW_2026-11-05'
 
 
 def timeline_rows(source, index, game):
-    """读取TH06/08原始时间轴的地址证据；不推进时间、不执行指令。"""
+    """读取TH06/07/08原始时间轴的地址证据；不推进时间、不执行指令。"""
     data = source.binary.read_bytes()
     if game==6:
         assert index==0
         address=struct.unpack_from('<I',data,4)[0]
+    elif game==7:
+        count=struct.unpack_from('<h',data,2)[0]
+        assert 0<=index<count<=16
+        address=struct.unpack_from('<I',data,4+index*4)[0]
     else:
         assert game==8, ('尚未声明其他格式', game)
         count = struct.unpack_from('<h', data, 6)[0]
@@ -25,8 +29,8 @@ def timeline_rows(source, index, game):
         address = struct.unpack_from('<I', data, 8 + index * 4)[0]
     rows = []
     while True:
-        if game==6:
-            # TH06终止项仅4字节，先读time再决定是否读取8字节头。
+        if game in (6,7):
+            # TH06/07终止项仅4字节，先读time再决定是否读取8字节头。
             time=struct.unpack_from('<h',data,address)[0]
             if time<0:break
             time, _, op, size=struct.unpack_from('<4h',data,address);mask=255

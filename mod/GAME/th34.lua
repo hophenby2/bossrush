@@ -353,7 +353,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---  画面上方斜插进来，先 60 帧下滑，再按 `MOVE_DIR_TIME(40, eas 4, θ, 0.8)` 折两次
 ---  （各位移 32 px），最后 `MOVE_DIR_TIME(0,0,θ,2)` 直线飞出；t=60 打一轮 2×n 或 1×1 的
 ---  自机狙扇（张角 45° 或 5.625°、速度∈[1.2,4.4]）。13/14/15 没有折线，只有 t=110 的收尾。
----  t=4162/4322/5485/4642 的是**大妖精**（sub 16/17，life 300、score 2000）：80 帧下滑
+---  t=4162/4322/4482/4642 的是**大妖精**（sub 16/17，life 300、score 2000）：80 帧下滑
 ---  200 px，t=90 起朝自机方向打 8 轮旋转扇（每轮 2×5 = 10 发、每 2 帧一轮），t=142 收尾
 ---  向下；两条 sub 的扇股转法相反（一条 SUB_FLOAT、一条 ADD_FLOAT）。
 ---
@@ -982,14 +982,14 @@ local function volley4(self, total, gen, flags)
 end
 
 ---同上，但由 gen 自己 New（给带 INIT_BULLET_CMD 的 TH34_cmdbullet 用）。
-local function volley4_raw(self, total, gen)
+local function volley4_raw(self, total, gen, plays)
     local room = POOL4_SIZE - pool4_used()
     local i = 1
     while i <= total and room > 0 do
         pool4[#pool4 + 1] = gen(i)
         room, i = room - 1, i + 1
     end
-    sound4(self)
+    if plays~=false then sound4(self) end
 end
 
 ---op65 SPREAD 的展开（TH07 `BulletManager.cpp:180-202`）：count1 决定偏移、x 奇数取负。
@@ -3061,25 +3061,25 @@ local function TH34_add_stage12()
 local W1_STYLE_S, W1_STYLE = 1, 5
 
 ---一条 SPREAD（base 直接用**我们**的角度制；a2_deg 是 th07 的弧度换成角度后的值）
-local function w1_spread(self, style, off, c1, c2, v1, v2, base, a2_deg, plays)
+local function w1_spread(self, style, off, c1, c2, v1, v2, base, a2_deg, plays, flags)
     local offs = spread3(c1, a2_deg)
     volley3(self, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
         return style, th07_color_for(off, style), v, base + offs[ring + 1]
-    end, plays)
+    end, plays, flags or 4)
 end
 
 ---一条 RING（base 同样用我们的角度制；层间偏移 a2_deg 已经换成我们的符号）
-local function w1_ring(self, style, off, c1, c2, v1, v2, base, a2_deg, plays)
+local function w1_ring(self, style, off, c1, c2, v1, v2, base, a2_deg, plays, flags)
     local step = 360 / c1
     volley3(self, c1 * c2, function(i)
         local k = i - 1
         local layer, ring = int(k / c1), k % c1
         local v = v1 - (v1 - v2) * layer / c2
         return style, th07_color_for(off, style), v, base - ring * step + layer * a2_deg
-    end, plays)
+    end, plays, flags or 4)
 end
 
 ---MOVE_DIR_TIME 的一段（原作的 ENEMY_MOVE_INTERP）：
@@ -3191,7 +3191,7 @@ class["TH34_fairy1"] = Class(enemy, {
             task.New(self, function()
                 task.Wait(60)
                 ---MOVE_DIR_TIME(0,0,$10004,$10005)：θ、速度都是当场重掷的
-                w1_move(self, 0, ran:Float(0.1309, 0.1309 + 0.327249), ran:Float(0.8, 2.5))
+                w1_move(self, 0, ran:Float(0.3272492289543152,0.45814892649650574), ran:Float(1.7000000476837158,2.5000000596046448))
                 w1_spread(self, th07_style(1), 6, 2, 1, 2, 1,
                           Angle(self, player), 0.0981748 * RAD2DEG, true)
             end)
@@ -3232,16 +3232,17 @@ class["TH34_ring1"] = Class(enemy, {
         self.kind, self.mirror = sub, mirror or 0
         self.mv_n, self.mv_t = 0, 0
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
-        self.dir, self.spd, self.spin = 0, 4, 0
+        self.dir, self.spd, self.spin = self.mirror==1 and 180 or 0, 4, 0
         w1_setdrop(self, drop)
         w1_move(self, 0, 0, 4)
-        ---$10004 = ECL_VAR_RNG_RADIAN ∈ [−π, π)（RING_ABS 的 a1）
-        self.ring_base = -ran:Float(-180, 180)
+        -- $10004是清零的局部F0（RNGRAD是10060），描述符在t0固定角0。
+        self.ring_base = 0
         self.ring_iv = NativeVisual.road_interval(self,90)
         self.ring_t = ran:Int(0,self.ring_iv-1)
         task.New(self, function()
             task.Wait(60)
-            self.spin = -3
+            self.spin = self.mirror==1 and 3 or -3
+            ran:Float(-math.pi,-math.pi+2*math.pi) -- t60写F0，描述符仍读t0快照。
             task.Wait(120)
             self.spin = 0
         end)
@@ -3625,8 +3626,8 @@ do
         {    10,  19,   96.00,  256.00,   -1,     1, 0 },  -- t=4448
         {    10,  19,  128.00,  256.00,   -1,     1, 0 },  -- t=4458
         {    10,  19,  160.00,  256.00,   -1,     1, 1 },  -- t=4468
-        {    10,  19,  128.00,  256.00,   -1,     1, 1 },  -- t=5481
-        {     4,  16,  -96.00,  272.00,    0,   300, 0 },  -- t=5485
+        {    10,  19,  128.00,  256.00,   -1,     1, 1 },  -- t=4478
+        {     4,  16,  -96.00,  272.00,    0,   300, 0 },  -- t=4482
         {     6,  19,   96.00,  256.00,   -1,     1, 1 },  -- t=4488
         {    10,  19,   64.00,  256.00,   -1,     1, 1 },  -- t=4498
         {    10,  19,   32.00,  256.00,   -1,     1, 1 },  -- t=4508
@@ -3747,19 +3748,23 @@ class["TH34_wisp2"] = Class(enemy, {
         enemy.init(self, W2_WISP_STYLE, 1, false, false, true)
         self.colli = false
         self.protect = true
-        if life == 9999 then
-            self.x = ran:Float(64, 320) - 192
-            self.y = 224 - ran:Float(32, 192)
-        else
-            self.x, self.y = x, y
+        self.x,self.y=x,y
+        self.kind,self.mirror=sub,mirror or 0
+        self.dropcode=drop
+        -- 每轴依次抽p0/p1/m0/m1；Sub5把当前位置写入p1，其余4..9写入p0。
+        -- 即使随后被当前位置覆盖，原作的那次随机抽样也必须保留。
+        local function axis(pos,lo,hi,flip)
+            local p0=(sub<=9) and ran:Float(lo,hi) or pos
+            local p1=ran:Float(lo,hi)
+            if life~=9999 then
+                if sub==5 then p1=pos else p0=pos end
+            end
+            local m0,m1=rnd_sign()*144,rnd_sign()*144
+            if flip then return 224-p0,224-p1,-m0,-m1 end
+            return p0-192,p1-192,m0,m1
         end
-        self.kind, self.mirror = sub, mirror or 0
-        self.dropcode = drop
-        self.hx, self.hy = self.x, self.y
-        self.tx = ran:Float(64, 320) - 192
-        self.ty = 224 - ran:Float(32, 192)
-        self.mx0, self.mx1 = rnd_sign() * 144, rnd_sign() * 144
-        self.my0, self.my1 = rnd_sign() * 144, rnd_sign() * 144
+        self.hx,self.tx,self.mx0,self.mx1=axis(x+192,64,320,false)
+        self.hy,self.ty,self.my0,self.my1=axis(224-y,32,192,true)
         w1_setdrop(self, drop)
         task.New(self, function()
             task.Wait(W2_WISP_T)
@@ -3812,21 +3817,21 @@ local W2_VOLLEY23 = { spr = th07_style(6), off = 13, c1 = 13, c2 = 2, v1 = 1.7, 
                       a1 = 0, a2 = 0.0981748 }
 
 ---一条 SPREAD_AIMED（base 是自机角减 a1；a2 是我们口径的度）。
-local function w2_aimed(self, p)
+local function w2_aimed(self, p, flags)
     w1_spread(self, p.spr, p.off, p.c1, p.c2, p.v1, p.v2,
-              Angle(self, player) - p.a1 * RAD2DEG, p.a2 * RAD2DEG, true)
+              Angle(self, player) - p.a1 * RAD2DEG, p.a2 * RAD2DEG, flags~=1, flags or 2)
 end
 
 ---sub 19 的整圆随机：speed = rand[v2,v1)、角 = rand[−180,180)（th07 的
 ---rand(0, a1−a2)+a2 取反后是同一个集合）。flags 0x203 含 bit 1 ⇒ 每发都带 Burst。
-local function w2_random19(self, c1, v1, v2)
+local function w2_random19(self, c1, v1, v2, flags)
     volley4_raw(self, c1, function()
         ---★ 原作 sub19 的就是 op72 RANDOM：逐发**先抽角、后抽速**（BulletManager.cpp:215-231）。
-        local a = ran:Float(-180, 180)
+        local a = -ran:Float(-180, 180)
         local v = ran:Float(v2, v1)
         return New(class["TH34_cmdbullet"], th07_style(1), th07_color(6, 1),
-                   self.x, self.y, v, a, { type = 1, flags = 0x203 })
-    end)
+                   self.x, self.y, v, a, { type = 1, flags = flags })
+    end, flags>=512)
 end
 
 class["TH34_shoot2"] = Class(enemy, {
@@ -3838,27 +3843,28 @@ class["TH34_shoot2"] = Class(enemy, {
         self.dropcode = drop
         ---第一帧 frame 就会读这三个（dive 段），先在顶层给默认值。
         self.dir, self.spd = 0, 0
-        self.dive = 0
+        self.dive = -1
         self.mv_n, self.mv_t = 0, 0
         self.mv_x0, self.mv_y0, self.mv_dx, self.mv_dy = x, y, 0, 0
         object.SetV(self, 0, 0, false)
         w1_setdrop(self, drop)
         ---t=80/110/130 转头的时刻（sub 22/23/18 是 80、21 是 110、20 是 130）。
         local tdive = ({ [20] = 130, [21] = 110 })[sub] or 80
+        local wait0=(sub==22 or sub==23) and ran:Int(0,3) or 0
         task.New(self, function()
             if sub == 22 or sub == 23 then
                 ---RAND $10012 + SET_WAIT_TIMER：0..3 帧的随机错开
-                task.Wait(ran:Int(0, 3))
+                task.Wait(wait0)
                 if sub == 22 then
-                    w2_aimed(self, W2_VOLLEY[22])
+                    w2_aimed(self, W2_VOLLEY[22],1)
                     w2_aimed(self, W2_VOLLEY22B)
                 else
-                    w2_aimed(self, W2_VOLLEY23)
+                    w2_aimed(self, W2_VOLLEY23,1)
                 end
             elseif sub == 19 then
-                w2_random19(self, 24, 2.3, 0.8)
+                w2_random19(self, 24, 2.3, 0.8,515)
                 task.Wait(30)
-                w2_random19(self, 48, 2, 0.8)
+                w2_random19(self, 48, 2, 0.8,1)
             else
                 local p = W2_VOLLEY[sub]
                 task.Wait(p and (({ [20] = 50, [21] = 30 })[sub] or 0) or 0)
@@ -3868,25 +3874,26 @@ class["TH34_shoot2"] = Class(enemy, {
             end
         end)
         task.New(self, function()
-            task.Wait(tdive)
+            task.Wait(tdive+wait0)
             self.dir = Angle(self, player)
-            self.dive = 1
+            self.dive = 0
         end)
         task.New(self, function()
-            task.Wait(({ [20] = 2130, [21] = 2110 })[sub] or 2080)
+            task.Wait((({ [20] = 2130, [21] = 2110 })[sub] or 2080)+wait0)
             object.RawDel(self)
         end)
     end,
     frame = function(self)
         enemy.frame(self)
         if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
-        if self.dive > 0 then
-            self.dive = self.dive + 1
-            if self.dive <= 62 then
+        if self.dive >= 0 then
+            -- POLAR先读旧speed，帧尾标量插值才写入下一帧速度；61帧后冻结AXIS。
+            if self.dive <= 60 then
                 local u = min(self.dive, 90) / 90
                 self.spd = 2.5 * (1 - (1 - u) * (1 - u))
                 object.SetV(self, self.spd, self.dir, false)
             end
+            self.dive=self.dive+1
         end
     end,
     kill = function(self)
@@ -3935,7 +3942,8 @@ class["TH34_fairy2"] = Class(enemy, {
             -- t0只保存DISABLE_BULLETS中的描述符，正常出弹由自动间隔触发。
             task.New(self, function()
                 task.Wait(60)
-                self.spin = p.spin
+                self.spin = self.mirror==1 and -p.spin or p.spin
+                ran:Float(-math.pi,-math.pi+2*math.pi) -- 原作仍消耗这次死存储的随机数。
                 task.Wait(120)
                 self.spin = 0
                 if p.stop then
