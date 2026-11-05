@@ -131,19 +131,36 @@ function N.doll(o,script,life,spell,contact,hittable)
     OriginalBalance.unit(o,7,spell)
     N.doll_interaction(o,contact,hittable)
 end
+function N.body_outside(o)
+    local v=o._original_actor and o._original_actor.vm
+    local sprite=v and v.data.sprites[v.sprite]
+    if not sprite then return false end
+    local w,h=sprite[4]/2,sprite[5]/2
+    return o.x< -192-w or o.x>192+w or o.y< -224-h or o.y>224+h
+end
+function N.body_cull(o)
+    if o.th07_ecl_birth then return false end
+    if N.body_outside(o) then return o.th07_body_entered or false end
+    o.th07_body_entered=true
+    return false
+end
 function N.trail_outside(o)
     local h=o.th07_trail.history
     local tail=h[#h]
-    local s=OriginalANM.sprite_resource(o._original_actor.vm)
-    -- GameManager::IsInBounds 使用未缩放的精灵全宽高，场地为384×448。
-    local hw,hh=s[4]/2,s[5]/2
-    local function outside(p) return p.x < -192-hw or p.x > 192+hw or p.y < -224-hh or p.y > 224+hh end
-    return tail and outside(o) and outside(tail)
+    local v=o._original_actor and o._original_actor.vm
+    local sprite=v and v.data.sprites[v.sprite]
+    if not sprite then return false end
+    local w,h=sprite[4]/2,sprite[5]/2
+    local function outside(p) return p.x< -192-w or p.x>192+w or p.y< -224-h or p.y>224+h end
+    -- isInBounds在137保护期间也照常记录；从未入场的使魔不能提前删除。
+    if not outside(o) then o.th07_trail_entered=true end
+    return o.th07_trail_entered and tail and outside(o) and outside(tail)
 end
 local function record_trail(o)
     local tr=o.th07_trail
     if tr.tick==o.ani then return end
     tr.tick=o.ani
+    if not N.body_outside(o) then o.th07_trail_entered=true end
     local dx,dy=o.x-o.th07_trail_x,o.y-o.th07_trail_y
     o.th07_trail_x,o.th07_trail_y=o.x,o.y
     local angle=tr.angle or 0

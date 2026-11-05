@@ -13865,8 +13865,8 @@ local function TH34_add_stage56_boss()
                 rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0.19635, 0.19635,
                      cmds4(100, SP20(-0.0261799), T40(1.9635, true), SP20(0.01309, 0)))
                 ---最后两圈 flags=4（0x04）：type 位不含任何命令类型 ⇒ **不激活任何段**。
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049,0,cmds4(4))
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748,0,cmds4(4))
                 sound4(self)
                 task.Wait(60)
                 ---②MOVE_POS_TIME 60 4 (256,160) ＋ sub22（110 帧）
@@ -13884,8 +13884,8 @@ local function TH34_add_stage56_boss()
                 rabs(self, self.x, self.y, 3, 6, 32, 2, 2.0, 1.0, 0, 0, burst1)
                 rabs(self, self.x, self.y, 3, 6, 32, 2, 1.5, 1.0, 0.0490874, 0, burst1)
                 task.Wait(1)
-                shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.0, 1.0, 0, 0, nil, false)
-                shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.5, 1.0, 0.0490874, 0, nil, false)
+                shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.0,1.0,0,0,cmds4(0),false)
+                shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.5,1.0,0.049087387,0,cmds4(0),false)
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
                 sound4(self)
@@ -13896,7 +13896,7 @@ local function TH34_add_stage56_boss()
                 ---真正的射击由 SET_SHOOT_INTERVAL 8 的自动连发在 7 帧后打出（共 11 发）。
                 task.Wait(7)
                 for k = 1, 11 do
-                    shoot6(self, 0, 0, 66, 5, 6, 10, 1, 1.5, 1.0, 0, 0, nil, false)
+                    shoot6(self, 0, 0, 66, 5, 6, 10,1,1.5,1.0,0,0,cmds4(517,CLR()),false)
                     if k < 11 then task.Wait(8) end
                 end
                 task.Wait(3)
@@ -13912,8 +13912,8 @@ local function TH34_add_stage56_boss()
                      cmds4(5, CLR()))
                 rabs(self, self.x, self.y, 2, 6, 14, 3, 3.5, 1.0, 0.19635, 0)
                 rabs(self, self.x, self.y, 2, 6, 16, 3, 3.0, 1.0, 0.19635, 0)
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5,1.0,0.58904862,0,cmds4(4))
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5,1.0,0.98174769,0,cmds4(4))
                 sound4(self)
                 task.Wait(60)
                 ---MOVE_POS_TIME 60 4 (192,128) ⇒ (0,96)，再把 t 走到 120 跳回 t=0
@@ -13951,12 +13951,12 @@ local function TH34_add_stage56_boss()
                         local off = ran:Sign() * 0.224399
                         local v = 2.6
                         for _ = 1, 10 do
-                            ring4(o, o.x, o.y, 5, 6, 8, 1, v, 1, ang, 0, nil)
-                            ring4(o, o.x, o.y, 5, 15, 4, 1, v, 1, ang + off, 0, nil)
+                            ring4(o, o.x, o.y, 5,6,8,1,v,1,ang,0,cmds4(512))
+                            ring4(o, o.x, o.y, 5,15,4,1,v,1,ang+off,0,cmds4(517))
                             v = 3.4 - v
                             task.Wait(6)
                         end
-                    end, nil, nil, 'motion')
+                    end,nil,'ecldata1:30','motion')
                     if k == 6 then task.Wait(40) else task.Wait(60) end
                 end
             end
@@ -13985,6 +13985,7 @@ local function TH34_add_stage56_boss()
             local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
             for _ = 1, wait do
                 o.x, o.y = o.x + vx, o.y + vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
             local a = ran:Float(0, PI) - PI / 2 + a0
@@ -14001,6 +14002,7 @@ local function TH34_add_stage56_boss()
             NativeVisual.interrupt(o,1)
             for _ = 1, 40 do
                 o.x,o.y=o.x+vx,o.y+vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
         end
@@ -14128,6 +14130,7 @@ local function TH34_add_stage56_boss()
             local vx, vy = math.cos(th0) * spd, -math.sin(th0) * spd
             for _ = 1, 80 do
                 o.x, o.y = o.x + vx, o.y + vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
             ---原作 sub36 的 L 行判定链（六条 RAND **每条都必抽**、顺序固定，否则
@@ -14145,7 +14148,7 @@ local function TH34_add_stage56_boss()
             if ran:Int(0, 3) ~= 0 then
                 ---commands[0] = type1 爆速段（flag=0）、commands[1] = type0x10、
                 ---方向 -0.025/帧、120 帧；只在 instr16 的 rand2==0 时才挂。
-                local cmd = nil
+                local cmd=cmds4(533) -- 无101的分支仍保留原NORMAL出生标志。
                 if not skipcmd then
                     cmd = cmds4(533,
                           { type = 1, flag = 0, dur = -1, loop = -1, speed = -1, angle = -1 },
@@ -14157,6 +14160,7 @@ local function TH34_add_stage56_boss()
             NativeVisual.interrupt(o,1)
             for _ = 1, 40 do
                 o.x,o.y=o.x+vx,o.y+vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
         end
@@ -14171,6 +14175,7 @@ local function TH34_add_stage56_boss()
             pspawn(cx, cy, function(o)
                 OriginalStageVisual.actor(o,7,"stg1enm",11)
                 o._original_explicit=true
+                o._original_hidden=true -- 原132(1)同时不进入可见敌机链。
                 local fan0 = 1.5708
                 local th, r = a0, 0
                 local vx, vy = 0, 0
@@ -14264,6 +14269,7 @@ local function TH34_add_stage56_boss()
             local vx, vy = math.cos(a0) * spd, -math.sin(a0) * spd
             for _ = 1, wait do
                 o.x, o.y = o.x + vx, o.y + vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
             local a = ran:Float(0, PI) - PI / 2 + a0
@@ -14280,6 +14286,7 @@ local function TH34_add_stage56_boss()
             NativeVisual.interrupt(o,1)
             for _ = 1, 40 do
                 o.x,o.y=o.x+vx,o.y+vy
+                if NativeVisual.body_cull(o) then return end
                 task.Wait(1)
             end
         end
@@ -14334,13 +14341,12 @@ local function TH34_add_stage56_boss()
                 for _ = 1, 3 do
                     ---★ 原作 op72 `RANDOM`（BULLET_AIM_RANDOM）每发**先抽角度再抽速度**
                     ---（BulletManager.cpp:225-232），这里必须按同一顺序抽，否则随机流对不上。
-                    local th = ran:Float(0, 2 * PI) - PI
-                    local v = ran:Float(0, 0.8) + 0.2
-                    ---★ 这里走的是**单段**口径（cmd 表没有 `.list`）⇒ 0x10 的加速度必须
-                    ---写成 `accel`（`cmdbullet_enter` 只在 `c.accel` 分支里冻结 vec3）；
-                    ---只写 `speed` 会得到零向量 = 完全不加速。原作 sub41 的
-                    ---`INIT_BULLET_CMD 0 16 0 120 -1 0.0133333 -999` 是 120 帧 +1/75 速度。
-                    dot4(o.x, o.y, 1, 6, v, th, accel6(0.0133333, 120))
+                    if pool4_used()<POOL4_SIZE then -- 原RANDOM先找弹槽，再抽单弹角/速。
+                        local th=ran:Float(0,2*PI)-PI
+                        local v=ran:Float(0,.8)+.2
+                        dot4(o.x,o.y,1,6,v,th,cmds4(530,
+                            {type=0x10,flag=0,dur=120,loop=-1,speed=0.013333333656191826,angle=-999}))
+                    end
                 end
                 for _ = 1, 3 do
                     ang = ang + avv
@@ -14543,7 +14549,7 @@ local function TH34_add_stage56_boss()
                         end
                     end
                     for _ = 1, 15 do
-                        ring4(o, o.x, o.y, 6, 6, 5, 1, 1.8, 0.5, -ang, PI)
+                        ring4(o, o.x, o.y, 6, 6, 5,1,1.8,.5,-ang,PI,cmds4(512))
                         step(12)
                         ---★ 第二圈 flags=529=0x211（含 0x1 与 0x10）⇒ 挂两段 INIT_BULLET_CMD：
                         ---#0 `0 1 0 -1 -1 -1 -1`（type1 爆速：前 17 帧 speed = 5 − t·5/16 + 自身速率）、
@@ -15702,9 +15708,9 @@ local function TH34_add_stage56_boss()
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             ---差异 66 的两段 0x40 指令（角度已按 TH07 取反换成度数）。
-            local CB = { type = 0x40, dur = 60, loop = 1,
+            local CB = { flags=578,type = 0x40, dur = 60, loop = 1,
                          angle = 2.35619 * RAD2DEG, resume_own = true }
-            local CC = { type = 0x40, dur = 60, loop = 1,
+            local CC = { flags=578,type = 0x40, dur = 60, loop = 1,
                          angle = -2.35619 * RAD2DEG, resume_own = true }
             ---原作 sub50：一朵花。th0 = 出发朝向、av = 角速度、v = 初速（同时是 120 帧后
             ---的恢复速度）。每帧 angle += av、speed += accel、pos += dir(angle)·speed。
