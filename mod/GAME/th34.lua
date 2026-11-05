@@ -5898,8 +5898,8 @@ class.th07_motion_source = {
     [4471] = { difficulty=2, key="2main", file="ecldata2.ecl", sub=70, y=128 },
     [4472] = { difficulty=1, key="3main", file="ecldata3.ecl", sub=50, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4473] = { difficulty=2, key="3main", file="ecldata3.ecl", sub=52, y=128, box={32,48,352,128}, move={120,4,192,112} },
-    [4475] = { key="4lunasa", file="ecldata4.ecl", sub=127, y=128, box={32,48,352,128}, move={120,4,192,80} },
-    [4476] = { key="4lunasa", file="ecldata4.ecl", sub=132, y=128, box={32,48,352,128} },
+    [4475] = { difficulty=1, key="4lunasa", file="ecldata4.ecl", sub=127, y=128, box={32,48,352,128}, move={120,4,192,80} },
+    [4476] = { difficulty=1, key="4lunasa", file="ecldata4.ecl", sub=132, y=128, box={32,48,352,128} },
 }
 function class.th07_motion_begin(self, id, move)
     class.th07_spell_active=self.current_card and self.current_card.is_sc or false
@@ -9449,7 +9449,9 @@ local function TH34_add_stage56_boss()
                 self.th07_ecl_birth=true
                 task.Do(self)
                 if not IsValid(self) or self.status=='del' or self.status=='kill' then return end
-                if ecl_first=='motion' then bstep(self) end
+                if ecl_first=='motion' then
+                    if self.th07_native_step then self.th07_native_step(self) else bstep(self) end
+                end
                 if ecl_first=='inline_polar' or ecl_first=='inline_motion' or ecl_first=='motion' then
                     self.x,self.y=birth_x,birth_y
                 end
@@ -9483,8 +9485,10 @@ local function TH34_add_stage56_boss()
             if orbit then
                 orbit.a, orbit.r = orbit.a+orbit.av, orbit.r+orbit.rv
                 self.x, self.y = math.cos(orbit.a)*orbit.r, 64-math.sin(orbit.a)*orbit.r
+            elseif self.th07_native_step then self.th07_native_step(self)
             else bstep(self) end
             if not self.th07_ecl_first then enemy.frame(self) end
+            if self.th07_body_lifetime and NativeVisual.body_cull(self) then object.RawDel(self);return end
             NativeVisual.record_source(self)
         end,
         render = NativeVisual.render_source,
@@ -10068,6 +10072,8 @@ local function TH34_add_stage56_boss()
         local function script(o, side)
             if phase=="first" then firstscript(o,side);return end
             local left = side < 0
+            local role=left and 2 or 3
+            if phase~="final" then NativeVisual.instrument_signal(owner,role,"wander") end
             local home, away = side*128, -side*128
             local function move(t,e,x,y) bmove(o,t,e,x,224-y) end
             local function beam(a,len,dur,color)
@@ -10084,9 +10090,25 @@ local function TH34_add_stage56_boss()
                     task.Wait(1)
                 end
             end
+            local callback_generation=0
+            local function callback(enable,angle)
+                callback_generation=callback_generation+1
+                if not enable then return end
+                local generation=callback_generation
+                task.New(o,function()
+                    task.Wait(60)
+                    while callback_generation==generation do
+                        local a=angle+3.23976731300354+ran:Float(0,.19634954631328583)
+                        shoot6(o,0,0,65,1,6,7,2,1.5,1,a,.19634954631328583,cmds4(512),true)
+                        task.Wait(59) -- SUB_RET的restart本帧又推进一次计数。
+                    end
+                end)
+            end
             if phase == "final" then
                 move(120,4,left and 55.42563 or -55.42563,192)
-                task.Wait(166)                      -- 120 + Sub2 16 + 30
+                task.Wait(120)
+                NativeVisual.instrument_signal(owner,role,"wander")
+                class.th07_prism_charge(o,4,32);task.Wait(30)
                 o._mv = nil
                 local orbit={a=left and 0.5235988 or 2.6179938,r=64,av=0.010471975,rv=0.21333334}
                 o.th07_orbit=orbit
@@ -10106,19 +10128,22 @@ local function TH34_add_stage56_boss()
                 end
             end
             task.Wait(120);move(120,4,home,128);task.Wait(120)
-            task.Wait(16)                           -- Sub2，4×4 帧
+            NativeVisual.instrument_signal(owner,role,"wander")
+            class.th07_prism_charge(o,4,32)
             if phase == "normal" then
                 task.Wait(30)
                 while true do
                     move(120,4,away,320);task.Wait(130)
-                    beam(left and -PI or 0,256,200);task.Wait(260)
-                    move(60,4,home,288);task.Wait(60)
-                    local l=beam(left and -PI/4 or -3*PI/4,256,300)
+                    local base=left and -PI or 0
+                    beam(base,256,200);callback(true,base);task.Wait(260)
+                    move(60,4,home,288);callback(false);task.Wait(60)
+                    local base2=left and -PI/4 or -3*PI/4
+                    local l=beam(base2,256,300);callback(true,base2)
                     task.Wait(60);spin(l,286,left and 0.003051275 or -0.003051275,false)
                     task.Wait(30);move(30,4,home,224);task.Wait(30)
-                    move(230,0,away,160)
+                    move(230,0,away,160);callback(false)
                     l=beam(left and -PI/4 or -3*PI/4,160,200)
-                    spin(l,256,left and 0.03681554 or -0.03681554,true)
+                    spin(l,256,left and 0.03681553894281387 or -0.03681553894281387,true)
                     task.Wait(60)
                 end
             elseif left then                         -- Sub142
@@ -10147,6 +10172,10 @@ local function TH34_add_stage56_boss()
         for _,side in ipairs({-1,1}) do
             local o=New(PRISM_COMPANION,owner,side,script)
             if spell_live then spell_live[#spell_live+1]=o end
+            if owner.th07_instruments then
+                local roles=owner.th07_instruments.roles or {[1]=owner}
+                roles[side<0 and 2 or 3]=o;owner.th07_instruments.roles=roles
+            end
         end
     end
 
@@ -12883,7 +12912,7 @@ local function TH34_add_stage56_boss()
     ---以**绝对点** (ax, ay) 为心的整圈（op67 RING_ABS；a2 是逐层旋转量）。
     local function ring4(self, ax, ay, spr, col, n, c2, v1, v2, a1, a2, cmd)
         shoot6(self, ax - self.x, ay - self.y, 67, spr, col, n, c2 or 1, v1,
-               v2 or 0.5, a1 or 0, a2 or 0, cmd, false)
+               v2 or 0.5, a1 or 0, a2 or 0, cmd, cmd==nil or cmdbullet_hasbit(cmd.flags or 0,512))
     end
     ---INIT_BULLET_CMD 0x20 TargetAngle：每帧角度 += rate（TH07 弧度/帧 ⇒ 取反转度）。
     ---`flag` 是 ECL 的第 3 个参数：`RunCommands` 里 `flag == 0 && exFlags != 0` 会把
@@ -12962,6 +12991,7 @@ local function TH34_add_stage56_boss()
             task.Wait(4)
         end
     end
+    class.th07_prism_charge=prism_charge
     local function luna_jolt(self,dx)
         prism_charge(self,2,16,dx,0)
     end
@@ -13330,7 +13360,7 @@ local function TH34_add_stage56_boss()
     ---    每 32 帧一扇 SPREAD_AIMED（1×4、v:2.2→0.5、半张角 0.392699、
     ---    a1=f3 且每轮 f3 += f4，f4 = (f2<=0 ? +0.314159 : −0.314159)）——
     ---    **第一扇在 t=212**（先等 32 帧再打），扇上挂 0x80 指令（50 帧刹停、1.8 速重复）。
-    scard("管霊「ゴーストクリフォード -Lunatic-」", 4443, 60, 3200, false, function(self)
+    scard("管霊「ゴーストクリフォード -Lunatic-」", 4443, 3602/60, 3200, false, function(self)
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             bmove(self, 120, 4, 0, 120)             -- t=0 MOVE_POS_TIME(120,4,192,104)
@@ -13362,7 +13392,7 @@ local function TH34_add_stage56_boss()
                         task.Wait(1)
                     end
                     ---t=180：一发 16 环 + 转成「沿 f2 加速漂走」。
-                    ring4(o, o.x, o.y, 6, 2, 16, 1, 2, 0.5, 0, 0.0785398, nil)
+                    ring4(o, o.x, o.y, 6, 2, 16, 1, 2, 0.5, 0, 0.07853981852531433, nil)
                     ---★ 原作 sub140 的 `INIT_BULLET_CMD 0 128 0 50 1 0 1.8` 虽然写了，
                     ---但两条波（RING_ABS / SPREAD_AIMED）的 flags 都是 514=0x202，
                     ---**不含 0x80 位** ⇒ `RunCommands` 里 `moreFlags & 0x80 == 0` 直接跳过，
@@ -13371,65 +13401,68 @@ local function TH34_add_stage56_boss()
                     ---★ 原作 sub139 #4 的 `SET_FLOAT *f3 *RNGRAD` 在**生成管灵那一帧**就抽了；
                     ---  搬到这里补抽会把整条随机流往后拖 180 帧，从此全卡随机全错位。
                     ---原作 #26 `*f2 += π/2`→#27 归一化→#28 `JLEQ_F *f2 0` 跳 #31：
-                    ---f2<=0 取 −0.314159、否则 +0.314159（比较的是**加过 π/2 的值**）。
-                    local f4 = (((th + 1.5708) % (2 * PI) + PI) % (2 * PI) - PI) <= 0
-                            and -0.314159 or 0.314159
+                    ---f2<=0 取 −0.3141592741012573、否则 +0.3141592741012573（比较的是**加过 π/2 的值**）。
+                    local f4 = (((th + 1.5707963705062866) % (2 * PI) + PI) % (2 * PI) - PI) <= 0
+                            and -0.3141592741012573 or 0.3141592741012573
                     local dx, dy, spd = math.cos(th), -math.sin(th), 0
                     while true do
                         for _ = 1, 32 do
-                            spd = spd + 0.0333333
+                            if NativeVisual.trail_outside(o) then return end
+                            spd = spd + 0.03333333507180214
                             o.x, o.y = o.x + dx * spd, o.y + dy * spd
                             task.Wait(1)
                         end
                         ---原作 sub140 #43（L 行）SPREAD_AIMED 的 a1 = 0（#39 的 a1=*f3 是 N 行）。
-                        shoot6(o, 0, 0, 64, 6, 2, 1, 4, 2.2, 0.5, 0, 0.392699, nil, false)
+                        shoot6(o, 0, 0, 64, 6, 2, 1, 4, 2.2, 0.5, 0, 0.39269909170150757, nil, true)
                         f3 = f3 + f4
                     end
                 end,nil,'ecldata4:140', 'inline_motion')
             end
-            local W3 = { 1.5708, 1.37445, 0.589049, 0.392699, 0 }
-            local W4 = { 1.5708, 1.76715, 2.55254, 2.74889, 3.14159 }
-            task.Wait(150)                          -- t=150
+            local W3 = { 1.5707963705062866, 1.3744467496871948, 0.5890486240386963, 0.39269909170150757, 0 }
+            local W4 = { 1.5707963705062866, 1.7671458721160889, 2.552544116973877, 2.7488934993743896, 3.1415927410125732 }
+            task.Wait(120)
+            NativeVisual.instrument_signal(self,3,"wander")
+            task.Wait(30)                          -- t=150
             while true do
-                task.Wait(16)                       -- SUB_CALL 2（16 帧）
+                prism_charge(self,4,32)                       -- SUB_CALL 2（16 帧）
                 task.Wait(30)                       -- t=180（帧 196）
                 local a = rngrad()                  -- t=180 的 *f0 = *RNGRAD
                 for k = 0, 4 do                     -- 第一波：t=180..212（帧 196..228）
-                    ghost(a + k * 1.25664, 0.0523599, -128, 64 - 28 * k, -0.0981748, rngrad())
+                    ghost(a + k * 1.2566370964050293, 0.05235987901687622, -128, 64 - 28 * k, -0.09817477315664291, rngrad())
                     if k < 4 then task.Wait(8) end
                 end
                 task.Wait(100)                      -- t=312（帧 328）
                 drift(self, 1.5, 60)                -- SUB_CALL 60
                 task.Wait(60)                       -- t=372（帧 388）
-                task.Wait(16)                       -- SUB_CALL 2
+                prism_charge(self,4,32)                       -- SUB_CALL 2
                 task.Wait(30)                       -- t=402（帧 434）
                 a = rngrad()
                 for k = 0, 4 do                     -- 第二波：t=402..434（帧 434..466）
-                    ghost(a + k * 1.25664, -0.0523599, 160, -96 + 28 * k, -2.35619, rngrad())
+                    ghost(a + k * 1.2566370964050293, -0.05235987901687622, 160, -96 + 28 * k, -2.356194496154785, rngrad())
                     if k < 4 then task.Wait(8) end
                 end
                 task.Wait(100)                      -- t=534（帧 566）
                 drift(self, 1.5, 60)                -- SUB_CALL 60
                 task.Wait(60)                       -- t=594（帧 626）
-                task.Wait(16)                       -- SUB_CALL 2
+                prism_charge(self,4,32)                       -- SUB_CALL 2
                 task.Wait(30)                       -- t=624（帧 672）
                 a = rngrad()
                 for k = 0, 4 do                     -- 第三波：t=624..656（帧 672..704）
-                    ghost(a + k * 1.25664, 0.0523599, -160, 176 - 28 * k, W3[k + 1], rngrad())
+                    ghost(a + k * 1.2566370964050293, 0.05235987901687622, -160, 176 - 28 * k, W3[k + 1], rngrad())
                     if k < 4 then task.Wait(8) end
                 end
                 task.Wait(20)                       -- t=676（帧 724）
-                task.Wait(16)                       -- SUB_CALL 2
+                prism_charge(self,4,32)                       -- SUB_CALL 2
                 task.Wait(30)                       -- t=706（帧 770）
                 a = rngrad()
                 for k = 0, 4 do                     -- 第四波：t=706..738（帧 770..802）
-                    ghost(a + k * 1.25664, 0.0523599, 160, 176 - 28 * k, W4[k + 1], rngrad())
+                    ghost(a + k * 1.2566370964050293, 0.05235987901687622, 160, 176 - 28 * k, W4[k + 1], rngrad())
                     if k < 4 then task.Wait(8) end
                 end
                 task.Wait(100)                      -- t=838（帧 902）
                 drift(self, 1.5, 100)               -- SUB_CALL 60
                 task.Wait(100)                      -- t=938（帧 1002）
-                task.Wait(16)                       -- SUB_CALL 2 → 下一轮 t=150 组
+                prism_charge(self,4,32)                       -- SUB_CALL 2 → 下一轮 t=150 组
             end
         end)
     end, { skin = skin4M, wallskin = skin4Mw, enter = enter4 })
@@ -13444,7 +13477,7 @@ local function TH34_add_stage56_boss()
     ---    重复 3 轮）→ `RING_ABS 6:2 6 1 *f0 1.5 *f1 0`（6 发）；
     ---    `INIT_BULLET_CMD 0 64 0 50 1 1.0472 1`（0x40：刹停 50 帧 → angle += 1.0472、
     ---    速度 = cmd.angle = 1、1 轮）→ `RING_ABS 6:3 8 1 2.5 1 *f1 0`（L 行 8 发）；
-    ---    随后 `*f0 += 0.0333333`、`DEC_JUMP 80`（i2_0 从 30 递减到 0）。
+    ---    随后 `*f0 += 0.03333333507180214`、`DEC_JUMP 80`（i2_0 从 30 递减到 0）。
     ---  · t=84 的 B 段（30 轮、每轮 4 帧）：同 A 段但两条 0x40 的旋转量取 −1.0472、
     ---    `*f1 += 0.1848`、6 发环的色档换成 `6:1`；`DEC_JUMP 84`。
     ---  · t=188 `JUMP 50`（不消耗帧）⇒ 一轮 = 30×4 + 30×4 + 150 帧（JUMP 后时间轴要从
@@ -13471,7 +13504,7 @@ local function TH34_add_stage56_boss()
                     ring4(self, self.x, self.y, 6, 2, 6, 1, f0, 1.5, f1, 0, A6)
                     ring4(self, self.x, self.y, 6, 3, 8, 1, 2.5, 1, f1, 0, A8)
                     self.prism_command=A8
-                    f0, f1 = f0 + 0.0333333, f1 - 0.1848
+                    f0, f1 = f0 + 0.03333333507180214, f1 - 0.1848
                     task.Wait(4)
                 end
                 f0, f1 = 1.5, rngrad()                  -- B 段：*f0=1.5、*f1=*RNGRAD
@@ -13479,7 +13512,7 @@ local function TH34_add_stage56_boss()
                     ring4(self, self.x, self.y, 6, 1, 6, 1, f0, 1.5, f1, 0, B6)
                     ring4(self, self.x, self.y, 6, 3, 8, 1, 2.5, 1, f1, 0, B8)
                     self.prism_command=B8
-                    f0, f1 = f0 + 0.0333333, f1 + 0.1848
+                    f0, f1 = f0 + 0.03333333507180214, f1 + 0.1848
                     task.Wait(4)
                 end
                 task.Wait(100)
@@ -13506,7 +13539,7 @@ local function TH34_add_stage56_boss()
     ---    Lunatic 行**不跑**；本卡只剩 sub148/sub149 的 SPREAD_ABS（绝对角、不瞄自机，
     ---    每拍开头 `*f1 = *A2P` 读一次自机方向）。
     ---  · sub149：每拍两条对开扇（a1 = f1 与 f1 + π），各 12 发 × 1 层（v:2→1）、
-    ---    半张角 0.261799；f1 每拍 −0.1309（−7.5°）。
+    ---    半张角 0.2617993950843811；f1 每拍 −0.1309（−7.5°）。
     ---  · sub148：同形但 v:3.3→1、f1 每拍 +0.019635（+1.125°），色档由调用方给（2 / 6）。
     ---  · 两条扇的弹上各挂一份 0x20 链（原作 sub148/sub149 的 4 条 INIT_BULLET_CMD）：
     ---    cmd0 = `0x2000 160`（spawnDelay，先设置160帧离屏延迟）、
@@ -13518,47 +13551,48 @@ local function TH34_add_stage56_boss()
     ---总弹数 15282 = 原作（说明条数/节奏逐帧一致）；按原作 1024 上限跑时，从相对第
     ---1960 帧（绝对 2126）起因为池满开始自然少发 —— 原作同屏上限也是 1024（差异 25），
     ---VM 不建模这个上限，所以那之后的差额是工具口径而非移植误差。
-    scard("鍵霊「ベーゼンドルファー神奏 -Lunatic-」", 4445, 60, 3000, false, function(self)
+    scard("鍵霊「ベーゼンドルファー神奏 -Lunatic-」", 4445, 3602/60, 3000, false, function(self)
         ---原作 t=0 MOVE_POS_TIME 120 4 192 104 ⇒ 我们 (0,224) → (0,120)。
         bmove(self, 120, 4, 0, 120)
         ---一段 0x20（`angle` 按 TH07 弧度/帧给，内部取反并转度；`spd` = 每帧速度增量）。
-        local function spin3(ang, spd, dur)
-            return { type = 0x20, dur = dur, loop = -1, speed = spd,
+        local function spin3(ang, spd, dur, flag)
+            return { type = 0x20, dur = dur, loop = -1, speed = spd, flag=flag,
                      angle = -ang * RAD2DEG }
         end
-        local C149A = cmds4(0x2222, {type=0x2000,dur=160}, spin3(-0.10472, 0, 30),
-                            spin3(0.10472, -0.0175, 30), spin3(-0.10472, 0.005, 60))
-        local C149B = cmds4(0x2022, {type=0x2000,dur=160}, spin3(-0.10472, 0, 30),
-                            spin3(0.10472, -0.0175, 30), spin3(-0.10472, 0.005, 60))
-        local C148A = cmds4(0x2222, {type=0x2000,dur=160}, spin3(0.10472, 0, 30),
-                            spin3(-0.10472, -0.0175, 30), spin3(0.10472, 0.005, 60))
-        local C148B = cmds4(0x2022, {type=0x2000,dur=160}, spin3(0.10472, 0, 30),
-                            spin3(-0.10472, -0.0175, 30), spin3(0.10472, 0.005, 60))
+        local C149A = cmds4(0x2222, {type=0x2000,dur=160}, spin3(-0.10471975803375244, 0, 30),
+                            spin3(0.10471975803375244, -0.0175, 30), spin3(-0.10471975803375244, 0.005, 60))
+        local C149B = cmds4(0x2022, {type=0x2000,dur=160}, spin3(-0.10471975803375244, 0, 30),
+                            spin3(0.10471975803375244, -0.0175, 30), spin3(-0.10471975803375244, 0.005, 60))
+        local C148A = cmds4(0x2222, {type=0x2000,dur=160}, spin3(0.10471975803375244, 0, 30, 1),
+                            spin3(-0.10471975803375244, -0.0175, 30), spin3(0.10471975803375244, 0.005, 60))
+        local C148B = cmds4(0x2022, {type=0x2000,dur=160}, spin3(0.10471975803375244, 0, 30, 1),
+                            spin3(-0.10471975803375244, -0.0175, 30), spin3(0.10471975803375244, 0.005, 60))
         ---sub149（10 拍 × 每拍 n 发 × 2 扇）：a1 = 自机方向（整个子程只在 t=0 读一次），
-        ---每拍 −0.1309。n = 调用方 gi1 = *i0（12 起、每轮 +1，见下）。
+        ---每拍 −0.13089969754219055。n = 调用方 gi1 = *i0（12 起、每轮 +1，见下）。
         local function sub149(col, n)
             local f1 = aimth(self)
             for _ = 1, 10 do
-                shoot6(self, 0, 0, 65, 6, col, n, 1, 2, 1, f1, 0.261799, C149A, true)
-                shoot6(self, 0, 0, 65, 6, col, n, 1, 2, 1, f1 + PI, 0.261799, C149B, false)
-                f1 = f1 - 0.1309
+                shoot6(self, 0, 0, 65, 6, col, n, 1, 2, 1, f1, 0.2617993950843811, C149A, true)
+                shoot6(self, 0, 0, 65, 6, col, n, 1, 2, 1, f1 + PI, 0.2617993950843811, C149B, false)
+                f1 = f1 - 0.13089969754219055
                 task.Wait(5)
             end
         end
-        ---sub148（15 拍）：v:3.3→1，每拍 +0.019635。
+        ---sub148（15 拍）：v:3.3→1，每拍 +0.019634954631328583。
         local function sub148(col, n)
             local f1 = aimth(self)
             for _ = 1, 15 do
-                shoot6(self, 0, 0, 65, 6, col, n, 1, 3.3, 1, f1, 0.261799, C148A, true)
-                shoot6(self, 0, 0, 65, 6, col, n, 1, 3.3, 1, f1 + PI, 0.261799, C148B, false)
-                f1 = f1 + 0.019635
+                shoot6(self, 0, 0, 65, 6, col, n, 1, 3.3, 1, f1, 0.2617993950843811, C148A, true)
+                shoot6(self, 0, 0, 65, 6, col, n, 1, 3.3, 1, f1 + PI, 0.2617993950843811, C148B, false)
+                f1 = f1 + 0.019634954631328583
                 task.Wait(5)
             end
         end
         task.New(self, function()
             task.Wait(120)                            -- t=0..120（MOVE_POS_TIME）
+            NativeVisual.instrument_signal(self,3,"wander")
             self._box = box5(32, 48, 352, 128)        -- t=120 SET_MOVEMENT_BOUNDS
-            task.Wait(46)                             -- SUB_CALL 2（16 帧）+ 30 帧 → t=150（帧 166）
+            prism_charge(self,4,32);task.Wait(30)                             -- SUB_CALL 2（16 帧）+ 30 帧 → t=150（帧 166）
             ---★ t=270 的 `JUMP 150 -576` 落点是 instr@636（t=150 的 `SET_INT *gi0 2`），
             ---**不是** t=150 段的开头 —— 开头的 `SET_INT *i0 12` 只在第一轮执行一次，
             ---之后 `INC *i0` 每轮 +1 且不再被重置 ⇒ 每轮每扇的发数 12,13,14,…。
@@ -13569,12 +13603,12 @@ local function TH34_add_stage56_boss()
                 ---原作 t=150 的 `SET_INT *gi0 60` + `SET_FLOAT *gf0 1` + `SUB_CALL 60`：
                 ---sub60 = `GET_EXIT_ANGLE *f0` + `MOVE_DIR_TIME *i3_0 4 *f0 *f3_0`
                 ---⇒ 抽一次 exit 角、沿该方向 60 帧漂 1 px/帧（阻塞子程不额外占帧）。
-                exdrift(self, 1, 4)
+                drift(self, 1, 60, 4)
                 task.Wait(60)                         -- t=210（帧 351）
                 sub149(13, i0)
                 sub148(6, i0)
                 ---同上，t=210 的 `SET_FLOAT *gf0 1.3` ⇒ 这一轮漂 1.3 px/帧。
-                exdrift(self, 1.3, 4)
+                drift(self, 1.3, 60, 4)
                 task.Wait(60)                         -- t=270（帧 536）JUMP → t=150 中段
                 i0 = i0 + 1                           -- INC *i0
             end
@@ -13589,12 +13623,12 @@ local function TH34_add_stage56_boss()
     ---    i2_1 从 150 起每拍 −5、≤60 后不再变（`JUMP 150 -2080` 落到 instr@392，
     ---    跳过 `SET_INT *i2_1 150`，所以只有第一轮把它复位）。
     ---  · 每拍开头 `JGEQ_F *DIST 128` 跳过那一圈：自机离本体 <128 px 才打
-    ---    `RING_AIMED 3:2 32 3 2.8 0.5 0 0.261799 516`（32 发 × 3 层、半张角 15°、
+    ---    `RING_AIMED 3:2 32 3 2.8 0.5 0 0.2617993950843811 516`（32 发 × 3 层、半张角 15°、
     ---    sprite3／色档 2、flags 0x204）。四拍 a2 依次 +,+,−,+（只有第 3 拍是
-    ---    −0.261799，即内层反向转）。
+    ---    −0.2617993950843811，即内层反向转）。
     ---  · 同帧起 8 次 `SPAWN_ENEMY_REL 130`（每 3 帧一串，含末尾一次 = 24 帧）：
-    ---    f2 从「A2P ∓1.74533 / ∓1.5708」起、每串 ∓0.785398；四拍
-    ---    f0 = ±π/2、f4 = ±0.015708、i0 = 0/2/2/0（音符色档 2/6/6/2）。
+    ---    f2 从「A2P ∓1.7453292608261108 / ∓1.5707963705062866」起、每串 ∓0.7853981852531433；四拍
+    ---    f0 = ±π/2、f4 = ±0.015707964077591896、i0 = 0/2/2/0（音符色档 2/6/6/2）。
     ---  · sub130（音符串）：朝 f2 以 6 px/帧 飞出、同时自转 f4；i2_1 = 4,6,…,26，
     ---    每 i2_1 帧在**自己当前位置**放一只 sub129（共 12 只、180 帧），
     ---    并把 f0 叠成 f0_本体 + f2_串 传给音符。
@@ -13603,71 +13637,52 @@ local function TH34_add_stage56_boss()
     ---    flags 0x284），Lunatic 行把该角取反。i0=0→色档 2、i0=2→色档 6。
     local D4466 = {
         --  i0   f0        f4           f2 增量     环的 a2      f2 基准（A2P 之上）
-        { i0 = 0, f0 =  1.5708, av =  0.015708, da =  0.785398, a2 =  0.261799, f2 = -1.74533 },
-        { i0 = 2, f0 = -1.5708, av = -0.015708, da = -0.785398, a2 =  0.261799, f2 =  1.74533 },
-        { i0 = 2, f0 =  1.5708, av =  0.015708, da =  0.785398, a2 = -0.261799, f2 = -1.5708  },
-        { i0 = 0, f0 = -1.5708, av = -0.015708, da = -0.785398, a2 =  0.261799, f2 =  1.5708  },
+        { i0 = 0, f0 =  1.5707963705062866, av =  0.015707964077591896, da =  0.7853981852531433, a2 =  0.2617993950843811, f2 = -1.7453292608261108 },
+        { i0 = 2, f0 = -1.5707963705062866, av = -0.015707964077591896, da = -0.7853981852531433, a2 =  0.2617993950843811, f2 =  1.7453292608261108 },
+        { i0 = 2, f0 =  1.5707963705062866, av =  0.015707964077591896, da =  0.7853981852531433, a2 = -0.2617993950843811, f2 = -1.5707963705062866  },
+        { i0 = 0, f0 = -1.5707963705062866, av = -0.015707964077591896, da = -0.7853981852531433, a2 =  0.2617993950843811, f2 =  1.5707963705062866  },
     }
-    local N4466 = { [0] = 2, [2] = 6 }
-    -- Sub129 的i0=0/2分别选择161/163；发弹色档2/6是分支执行后的结果。
-    local PRISM_NOTE_ANM = { [2]=161, [6]=163 }
-    scard("偽弦「スードストラディヴァリウス」", 4446, 60, 3600, false, function(self)
-        local B = self                      -- sub129 的 GET_BOSS_FLOAT 读的就是这只 boss
-        ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad), 速度 }）。
-        local function note(me, a)
-            local col, f0, spd = a[1], a[2], a[3]
-            OriginalStageVisual.actor(me,7,'stg4enm',assert(PRISM_NOTE_ANM[col]))
-            for _ = 1, 60 do
-                me.x, me.y = me.x + cos(f0 * RAD2DEG) * spd,
-                             me.y - sin(f0 * RAD2DEG) * spd
-                task.Wait(1)
-            end
-            local bx, by = B.x, B.y          -- t=60 `GET_BOSS_FLOAT f6/f7`
-            for _ = 1, 60 do
-                me.x, me.y = me.x + cos(f0 * RAD2DEG) * spd,
-                             me.y - sin(f0 * RAD2DEG) * spd
-                task.Wait(1)
-            end
-            ---★ Lunatic 行**不执行** `ATAN2 *f0 *f6 *f7 *X *Y`：那条的 sd=0x07
-            ---（只给 Easy/Normal/Hard），Lunatic 只有下一条 `MUL_FLOAT *f0 *f0 -1`
-            ---（sd=0x08）。所以自机弹向 = **音符自身飞行方向取负**，与自机/boss 位置无关
-            ---（第 41/42 两条 GET_BOSS_FLOAT 仍照跑，只是值没人用）。
-            local th = -f0
-            ---★ 原作 sub129 在打这一发前有 `JLEQ_F *DIST 32`（sd=ALL）：自机距离
-            ---≤32 时直接跳去 UNIMP（音符消失、不发弹）。漏掉这道闸会多出几发
-            ---贴在自机身边的弹。
-            if sqrt((me.x - player.x) ^ 2 + (me.y - player.y) ^ 2) > 32 then
-                ---★ 这发弹带 `INIT_BULLET_CMD 0 128 0 60 1 0 1`（type 0x80、dur 60、loop 1、
-                ---cmd.speed=0、cmd.angle=1；波 flags=644=0x284 含 0x80 位）：60 帧内沿当前
-                ---朝向线性刹到 0，然后 rot = A2P + state.angle(=cmd.speed=0)、速度 =
-                ---state.speed(=cmd.angle=1)。漏掉 ⇒ 弹不刹车。
-                shoot6(me, 0, 0, 65, 3, col, 1, 1, 1.2, 0.5, th, 1.5708,
-                       brake_aim6(60, 0, 1, 1), true)
-            end
+    -- Sub129/130：ECL先发弹再积分，隐藏串保持存活，显形音符离场后回收。
+    local function prism_note(me,a)
+        local owner,col,angle,level=a[1],a[2],a[3],a[4]
+        OriginalStageVisual.actor(me,7,'stg4enm',col==2 and 161 or 163)
+        me._original_explicit,me.th07_body_lifetime=true,true
+        me.th07_native_step=function(o)
+            o.x,o.y=o.x+math.cos(angle)*.5,o.y-math.sin(angle)*.5
         end
-        ---原作 sub130：音符串（a = { 方向, 角速, 速度, 音符方向, 音符色档 }）。
-        local function chain(me, a)
-            local ang, av, spd, d, col = a[1], a[2], a[3], a[4], a[5]
-            local gap = 4
-            for _ = 1, 12 do
-                for _ = 1, gap do
-                    ---★ 原作 ENEMY_MOVE_POLAR 每帧是「先 angle += angleVel，再按 angle
-                    ---走 speed」（EclManager.cpp:2018-2026）。先走再转会让整条音符串
-                    ---的路径整整少转一步，末端偏移可达十几 px。
-                    ang = ang + av
-                    me.x, me.y = me.x + cos(ang * RAD2DEG) * spd,
-                                 me.y - sin(ang * RAD2DEG) * spd
-                    task.Wait(1)
-                end
-                pspawn(me.x, me.y, note, { col, d, 0.5 }, nil, 'inline_motion')
-                gap = gap + 2                -- SET_WAIT_TIMER *i2_1 → `ADD *i2_1 *i2_1 2`
-            end
+        for _=1,60 do if NativeVisual.body_cull(me) then return end;task.Wait(1) end
+        local bx,by=owner.x,owner.y -- 原t60读取Boss位置；L行不使用但仍保存。
+        for _=1,60 do if NativeVisual.body_cull(me) then return end;task.Wait(1) end
+        if pdist(me)<=32 then return end
+        if level==3 then
+            shoot6(me,0,0,65,3,col,1,1,1.2,.5,-angle,1.5707963705062866,
+                cmds4(644,brake_aim6(60,0,1,1)),true)
+        elseif col==6 then
+            shoot6(me,0,0,64,6,col,3,1,.800000011920929,.5,0,1.5707963705062866,cmds4(516),true)
+        else
+            local a0=math.atan2(-(me.y-by),me.x-bx)
+            shoot6(me,0,0,65,1,col,7,1,.800000011920929,.5,a0,.7853981852531433,cmds4(516),true)
         end
+    end
+    local function prism_chain(me,a)
+        local owner,angle,av,col,direction,level=a[1],a[2],a[3],a[4],a[5],a[6]
+        me._original_hidden=true
+        me.th07_native_step=function(o)
+            angle=angle+av
+            o.x,o.y=o.x+math.cos(angle)*6,o.y-math.sin(angle)*6
+        end
+        for gap=4,26,2 do
+            task.Wait(gap)
+            pspawn(me.x,me.y,prism_note,{owner,col,direction,level},'ecldata4:129','motion')
+        end
+    end
+    scard("偽弦「スードストラディヴァリウス」", 4446, 3962/60, 3600, false, function(self)
         task.New(self, function()
             bmove(self, 120, 4, 0, 120)                   -- t=0 MOVE_POS_TIME(120,4,192,104)
             task.Wait(120)                                -- t=120
+            NativeVisual.instrument_signal(self,3,"wander")
             self._box = box5(32, 48, 352, 128)            -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                                 -- SUB_CALL 2（16 帧）
+            prism_charge(self,4,32)                                 -- SUB_CALL 2（16 帧）
             task.Wait(30)                                 -- t=150 前的 OP0 空等（136→166）
             local i2_1 = 150
             while true do
@@ -13675,17 +13690,19 @@ local function TH34_add_stage56_boss()
                     local c = D4466[b]
                     local f2 = aimth(self) + c.f2
                     if pdist(self) < 128 then             -- JGEQ_F *DIST 128 → 跳过环
-                        shoot6(self, 0, 0, 66, 3, 2, 32, 3, 2.8, 0.5, 0, c.a2, nil, true)
+                        shoot6(self, 0, 0, 66, 3, 2, 32, 3, 2.8, 0.5, 0, c.a2, cmds4(516), true)
                     end
                     for _ = 1, 8 do                       -- DEC_JUMP *i2_0 8 次、每 3 帧
-                        pspawn(self.x, self.y, chain,
-                               { f2, c.av, 6, c.f0 + f2, N4466[c.i0] }, nil, 'inline_motion')
-                        f2 = f2 + c.da                    -- ADD/SUB_FLOAT *f2 0.785398
+                        pspawn(self.x, self.y, prism_chain,
+                               { self, f2, c.av, c.i0==0 and 2 or 6, c.f0+f2, 3 }, 'ecldata4:130', 'motion')
+                        f2 = f2 + c.da                    -- ADD/SUB_FLOAT *f2 0.7853981852531433
                         task.Wait(3)
                     end
                     local w = int(i2_1 / 2)               -- DIV *i0 *i2_1 2
                     task.Wait(w)                          -- SET_WAIT_TIMER *i0
+                    OriginalStageVisual.actor(self,7,"stg4enm",128)
                     task.Wait(w)                          -- SET_WAIT_TIMER *i0（第二段）
+                    OriginalStageVisual.actor(self,7,"stg4enm",129)
                     if i2_1 > 60 then i2_1 = i2_1 - 5 end -- JLEQ *i2_1 60 / SUB
                 end
             end
@@ -13696,49 +13713,60 @@ local function TH34_add_stage56_boss()
     ---原作 sub133 → sub134（周期回调，每 10 帧一次），Lunatic 行逐条照抄：
     ---  · sub133 本体：t=120 MOVE_POS_TIME(120,4,192,96)（我们 (0,96)→(0,128)）；
     ---    t=240 SET_MOVEMENT_BOUNDS(128,96,256,128)、SUB_CALL 2（16 帧粒子）、
-    ---    i0=13 / f0=*RNGRAD / f1=−0.0981748、SET_PERIODIC_CALLBACK 10 134。
+    ---    i0=13 / f0=*RNGRAD / f1=−0.09817477315664291、SET_PERIODIC_CALLBACK 10 134。
     ---    t=440/640/…/1640 每 200 帧一档：gi0/gf0 → SUB_CALL 60（GET_EXIT_ANGLE
     ---    + MOVE_DIR_TIME(30,4,θ,0.8)，**不冻结时间轴**，只是启动一段 30 帧位移）、
-    ---    更新 i0（色档 11/10/8/6/4/2/14）、f0=*RNGRAD、f1=±0.0981748、重设周期回调；
+    ---    更新 i0（色档 11/10/8/6/4/2/14）、f0=*RNGRAD、f1=±0.09817477315664291、重设周期回调；
     ---    t=1840 只漂移不更新；JUMP 回 t=240（时间轴重置）。
     ---  · sub134（每 10 帧一次）：RING_AIMED 2:色档 8 3 1.5 0.5 *f0 0 flags513
     ---    ——8 发 × 3 层（1.5→0.5 px/帧）、基准角 f0 朝自机；随后 f0 += f1。
-    scard("騒葬「スティジャンリバーサイド -Lunatic-」", 4447, 60, 3600, false, function(self)
+    scard("騒葬「スティジャンリバーサイド -Lunatic-」", 4447, 3602/60, 3600, false, function(self)
+        NativeVisual.instrument_signal(self,1,"wander")
         prism_companions(self,"hard")
         local i0, f0, f1
-        task.New(self, function()                          -- sub134（周期回调）
-            task.Wait(266)                                 -- t=240 设回调后第 10 帧首触发（ECL t=266）
-            while true do
-                shoot6(self, 0, 0, 66, 2, i0, 8, 3, 1.5, 0.5, f0, 0, cmds4(513), true)
-                f0 = f0 + f1
-                task.Wait(10)
-            end
+        local periodic_counter,periodic_enabled=0,false
+        local function periodic_advance()
+            if not periodic_enabled then return end
+            periodic_counter=periodic_counter+1
+            if periodic_counter<10 then return end
+            shoot6(self,0,0,66,2,i0,8,3,1.5,.5,f0,0,cmds4(513),true)
+            f0=norms6(f0+f1)
+            periodic_counter=1 -- 回调SUB_RET -> restart，在同帧重新推进计数。
+        end
+        task.New(self,function()
+            while true do task.Wait(1);periodic_advance() end
         end)
         task.New(self, function()                          -- sub133（本体时间轴）
             task.Wait(120)                                 -- t=0..120 前奏（SET_POS 等）
             bmove(self, 120, 4, 0, 128)                    -- t=120 MOVE_POS_TIME(120,4,192,96)
             task.Wait(120)                                 -- t=120 → t=240
             self._box = box5(128, 96, 256, 128)            -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                                  -- SUB_CALL 2
+            NativeVisual.instrument_signal(self,1,"wander")
+            prism_charge(self,4,32)                                  -- SUB_CALL 2
             self.th07_laser_interaction = 7
-            i0, f0, f1 = 13, rngrad(), -0.0981748          -- t=240 设定
+            periodic_counter,periodic_enabled=0,true
+            i0, f0, f1 = 13, rngrad(), -0.09817477315664291          -- t=240 设定
             local K = { 11, 10, 8, 6, 4, 2, 14 }           -- t=440…1640 的色档
             ---★ f1 的符号**逐档硬编码**（原作 #37/#44/#51/#58/#65/#72/#79）：
             ---  t=440 +、640 −、840 +、1040 −、1240 +、1440 −、**1640 −**（最后一档
-            ---  不换号）。原来按 `b % 2` 交替 ⇒ b=7 给成 +，f0 从此永久差 2×0.0981748
+            ---  不换号）。原来按 `b % 2` 交替 ⇒ b=7 给成 +，f0 从此永久差 2×0.09817477315664291
             ---  （≈11.25°）——实测 4447 的整圈瞄准环从真实帧 1676 起整体歪 11.25°。
             local SGN = { 1, -1, 1, -1, 1, -1, -1 }
             while true do
                 for b = 1, 7 do
                     task.Wait(200)
                     drift(self, 0.8, 30)                   -- SUB_CALL 60
+                    periodic_advance();periodic_advance() -- CALL Sub60/RET各一次restart。
+                    periodic_counter=0 -- 下一条144重新登记周期。
                     i0 = K[b]
                     f0 = rngrad()
-                    f1 = 0.0981748 * SGN[b]
+                    f1 = 0.09817477315664291 * SGN[b]
                 end
                 task.Wait(200)                             -- t=1640 → t=1840
                 drift(self, 0.8, 30)                       -- t=1840（只漂移）
-                i0, f0, f1 = 13, rngrad(), -0.0981748      -- JUMP 回 t=240
+                periodic_advance();periodic_advance()
+                periodic_counter=0
+                i0, f0, f1 = 13, rngrad(), -0.09817477315664291      -- JUMP 回 t=240
             end
         end)
     end, { skin = skin4L, wallskin = skin4Lw, enter = enter4 })
@@ -13754,9 +13782,9 @@ local function TH34_add_stage56_boss()
     ---    t=451 拉第二条（f0=6.70206），随后两条激光进入不断加速的转台循环。
     ---  · sub136（每 10 帧一次）：先把 shootOffset 定到 (192−X, 160−Y)（⇒ 弹从**固定的**
     ---    (192,160)=我们 (0,64) 打出），再按 i0 打 3 圈或 4 圈 RING_ABS 2:col 3 2 2 0.5
-    ---    f0 0.0785398（每圈 f0 += 0.0261799）；i0%4==0 时补一圈 RING_AIMED 2:13 20 2
-    ---    1.7 0.5 0 0.0785398；末尾 f0 += 3×0.0392699、i0 += 1。
-    scard("大合葬「霊車コンチェルトグロッソ怪」", 4448, 60, 3600, false, function(self)
+    ---    f0 0.07853981852531433（每圈 f0 += 0.02617993950843811）；i0%4==0 时补一圈 RING_AIMED 2:13 20 2
+    ---    1.7 0.5 0 0.07853981852531433；末尾 f0 += 3×0.039269909262657166、i0 += 1。
+    scard("大合葬「霊車コンチェルトグロッソ怪」", 4448, 3602/60, 3600, false, function(self)
         prism_companions(self,"final")
         local f0, i0
         local R3, R4 = { 1, 2, 4 }, { 1, 2, 4, 6 }
@@ -13764,25 +13792,26 @@ local function TH34_add_stage56_boss()
             task.Wait(176)                                 -- t=150 设回调后第 10 帧首触发
             while true do
                 local ring = (i0 < 30) and R3 or R4
-                ---★ 原作 sub136：每打一圈 `SUB_FLOAT *f0 *f0 0.0261799`（**减**），
+                ---★ 原作 sub136：每打一圈 `SUB_FLOAT *f0 *f0 0.02617993950843811`（**减**），
                 ---   而且**最后那圈后面不减**（idx5/7 只在第 1、2 圈后，idx9 直接 JUMP）。
                 for k = 1, #ring do
-                    ring4(self, 0, 64, 2, ring[k], 3, 2, 2, 0.5, f0, 0.0785398, nil)
-                    if k < #ring then f0 = f0 - 0.0261799 end
+                    ring4(self, 0, 64, 2, ring[k], 3, 2, 2, 0.5, f0, 0.07853981852531433, cmds4(i0<30 and 514 or 512))
+                    if k < #ring then f0 = f0 - 0.02617993950843811 end
                 end
                 if i0 % 4 == 0 then
                     shoot6(self, -self.x, 64 - self.y, 66, 2, 13, 20, 2, 1.7, 0.5,
-                           0, 0.0785398, nil, true)
+                           0, 0.07853981852531433, cmds4(514), true)
                 end
-                f0 = f0 - 0.0392699 * 3          -- idx31..33（三连 SUB_FLOAT）
+                f0 = f0 - 0.039269909262657166 * 3          -- idx31..33（三连 SUB_FLOAT）
                 i0 = i0 + 1
-                task.Wait(10)
+                task.Wait(9) -- 周期回调返回同帧已推进一次计数。
             end
         end)
         task.New(self, function()                          -- sub135（本体时间轴）
             bmove(self, 120, 4, 0, 128)                    -- t=0 MOVE_POS_TIME(120,4,192,96)
             task.Wait(120)                                 -- t=120
-            task.Wait(16)                                  -- SUB_CALL 2（墙钟 136，time 仍 120）
+            NativeVisual.instrument_signal(self,1,"wander")
+            prism_charge(self,4,32)                                  -- SUB_CALL 2（墙钟 136，time 仍 120）
             task.Wait(30)                                  -- time 120 → 150（墙钟 166）
             self.th07_laser_interaction = 8
             f0, i0 = rngrad(), 0                           -- t=150 设定
@@ -13926,7 +13955,7 @@ local function TH34_add_stage56_boss()
     ---    指令分别是 (a1=0, a2=−0.19635, 自旋 +π/60 ∞)、(a1=+0.19635, a2=−0.19635,
     ---    自旋 −π/60 ∞ ＋ 转 +157.5° 一轮)、(a1=0, a2=+0.19635, 转 −157.5° 一轮)、
     ---    (a1=+0.19635, a2=+0.19635, 自旋 +π/120)（后两组第三段 type0x20 的 flag=0，
-    ---    在已有一段激活时永远轮不到）；再补两圈 4 发 × 5 层（3.5→1，a1=0.589049 / 0.981748）；
+    ---    在已有一段激活时永远轮不到）；再补两圈 4 发 × 5 层（3.5→1，a1=0.5890486240386963 / 0.981748）；
     ---  · sub22：RANDOM 弹（L 行 16 发全向、速度 1~1.5）被同一帧的 DISABLE_BULLETS…
     ---    ENABLE_BULLETS 夹住 ⇒ 原作**不发**；只有 t=60 的 SET_SHOOT_INTERVAL 0；
     ---  · sub21：t=0 两圈 32 发 × 2 层（2 / 1.5 →1）；t=1 两圈 shifted 32 发 × 2 层
@@ -13967,18 +13996,18 @@ local function TH34_add_stage56_boss()
                 ---三条 INIT_BULLET_CMD（索引 3/4/5、10/11/12、17/18/19、24/25/26）都是 sk=ff
                 ---（全难度），照抄；`RING_ABS` 的 flags=101/100 决定哪几段被激活。
                 rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0, -0.19635,
-                     cmds4(101, CLR(), SP20(0.0523599), T40(2.74889, true)))
+                     cmds4(101, CLR(), SP20(0.05235987901687622), T40(2.7488934993743896, true)))
                 rabs(self, self.x, self.y, 6, 6, 12, 6, 3.2, 1.0, 0.19635, -0.19635,
-                     cmds4(100, SP20(-0.0523599), T40(-1.9635, true), SP20(0.0261799, 0)))
-                ---★ 第三环的 0x20 角度是 **+0.0261799**（idx18），
-                ---SP20 内部会取反 ⇒ 这里必须传正的 0.0261799（写反了整环会镜像）。
+                     cmds4(100, SP20(-0.05235987901687622), T40(-1.9635, true), SP20(0.02617993950843811, 0)))
+                ---★ 第三环的 0x20 角度是 **+0.02617993950843811**（idx18），
+                ---SP20 内部会取反 ⇒ 这里必须传正的 0.02617993950843811（写反了整环会镜像）。
                 rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0, 0.19635,
-                     cmds4(101, CLR(), SP20(0.0261799), T40(-2.74889, true)))
-                ---★ 第四环（idx24/26）：0x20 角度 **−0.0261799 / +0.01309**。
+                     cmds4(101, CLR(), SP20(0.02617993950843811), T40(-2.7488934993743896, true)))
+                ---★ 第四环（idx24/26）：0x20 角度 **−0.02617993950843811 / +0.01309**。
                 rabs(self, self.x, self.y, 6, 6, 12, 6, 2.0, 1.0, 0.19635, 0.19635,
-                     cmds4(100, SP20(-0.0261799), T40(1.9635, true), SP20(0.01309, 0)))
+                     cmds4(100, SP20(-0.02617993950843811), T40(1.9635, true), SP20(0.01309, 0)))
                 ---最后两圈 flags=4（0x04）：type 位不含任何命令类型 ⇒ **不激活任何段**。
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049,0,cmds4(4))
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.5890486240386963,0,cmds4(4))
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748,0,cmds4(4))
                 sound4(self)
                 task.Wait(60)
@@ -13999,7 +14028,7 @@ local function TH34_add_stage56_boss()
                 task.Wait(1)
                 shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.0,1.0,0,0,cmds4(0),false)
                 shoot6(self, 0, 0, 69, 3, 6, 32, 2, 3.5,1.0,0.049087387,0,cmds4(0),false)
-                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.589049, 0)
+                rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.5890486240386963, 0)
                 rabs(self, self.x, self.y, 3, 5, 4, 5, 3.5, 1.0, 0.981748, 0)
                 sound4(self)
                 task.Wait(60)
@@ -16304,82 +16333,39 @@ local function TH34_add_stage56_boss()
     ---  · sub129（音符）：以 f1=0.5 沿 f0 直线飞 120 帧；t=60 记下本体坐标、t=120
     ---    朝 ATAN2(本体→自己) 取反后打 1 发 SPREAD_ABS 3:col 1 1 1.2 0.5 f0 1.5708
     ---    （Lunatic 行；Hard 行是 8 发、E/N 行另走一支）；自机距离 ≤32 时自毁。
-    scard("弦奏「グァルネリ・デル・ジェス」", 4475, 60, 3600, false, function(self)
-        local B = self
-        ---原作 sub129：音符（a = { 色档, 飞行方向(TH07 rad) }）。
-        local function note(me, a)
-            local col, th = a[1], a[2]
-            OriginalStageVisual.actor(me,7,'stg4enm',assert(PRISM_NOTE_ANM[col]))
-            local bx, by
-            for i = 1, 120 do
-                me.x, me.y = me.x + cos(th * RAD2DEG) * 0.5,
-                             me.y - sin(th * RAD2DEG) * 0.5
-                task.Wait(1)
-                if i == 60 then bx, by = B.x, B.y end     -- t=60，先记录再进入下一次运动
-            end
-            ---★ Lunatic 行**不执行** `ATAN2 *f0 *f6 *f7 *X *Y`（sd=0111，只给 E/N/H），
-            ---只有下一条 `MUL_FLOAT *f0 *f0 -1`（sd=1000）⇒ 自机弹向 = 音符自身
-            ---飞行方向取负（GET_BOSS_FLOAT 仍照跑，只是值没人用）。
-            local f0 = -th
-            if sqrt((me.x - player.x) ^ 2 + (me.y - player.y) ^ 2) > 32 then
-                ---★ 原作的这发弹带 `INIT_BULLET_CMD 0 128 0 60 1 0 1`（type 0x80、
-                ---dur 60、loop 1、cmd.speed=0、cmd.angle=1；波 flags=644=0x284 含 0x80 位）：
-                ---先沿当前朝向 60 帧线性刹到 0，然后 rot = A2P + state.angle(=cmd.speed=0)、
-                ---速度 = state.speed(=cmd.angle=1)。漏掉 ⇒ 弹不刹车、一路 1.2 直飞。
-                shoot6(me, 0, 0, 65, 3, col, 1, 1, 1.2, 0.5, f0, 1.5708,
-                       brake_aim6(60, 0, 1, 1), true)
-            end
-        end
-        ---原作 sub130：音符串（a = { f2, f4, 色档, 音符方向 }）。
-        local function chain(me, a)
-            local ang, av = a[1], a[2]
-            local g = 4
-            for _ = 1, 12 do
-                for _ = 1, g do
-                    ---★ 原作 ENEMY_MOVE_POLAR 每帧「先转 angleVel、再按 angle 走」
-                    ---（EclManager.cpp:2018-2026），顺序反了整串轨迹会偏。
-                    ang = ang + av
-                    me.x, me.y = me.x + cos(ang * RAD2DEG) * 6,
-                                 me.y - sin(ang * RAD2DEG) * 6
-                    task.Wait(1)
-                end
-                pspawn(me.x, me.y, note, { a[3], a[4] }, nil, 'inline_motion')
-                g = g + 2                                   -- ADD *i2_1 *i2_1 2
-            end
-        end
-        ---原作 sub127 的四块：(f0, f2 的 A2P 偏移, f4, 色档)。
-        ---★ 第 5 个字段是**块内每只 sub130 的 f2 步进**：块1/3 的循环体是
-        ---`ADD_FLOAT *f2 *f2 0.785398`、块2/4 是 `SUB_FLOAT`（DEC_JUMP 回到
-        ---SPAWN 那条，所以步进在每只之后叠加、方向按块反号）。
-        local BLK = {
-            {  1.5708, -1.74533,  0.015708, 2,  0.785398 },
-            { -1.5708,  1.74533, -0.015708, 6, -0.785398 },
-            {  1.5708, -1.5708,   0.015708, 6,  0.785398 },
-            { -1.5708,  1.5708,  -0.015708, 2, -0.785398 },
+    scard("弦奏「グァルネリ・デル・ジェス」", 4475, 3602/60, 3600, false, function(self)
+        local BLK={
+            {1.5707963705062866,-1.7453292608261108,.015707964077591896,2,.7853981852531433},
+            {-1.5707963705062866,1.7453292608261108,-.015707964077591896,6,-.7853981852531433},
+            {1.5707963705062866,-1.5707963705062866,.015707964077591896,6,.7853981852531433},
+            {-1.5707963705062866,1.5707963705062866,-.015707964077591896,2,-.7853981852531433},
         }
         task.New(self, function()
             bmove(self, 120, 4, 0, 144)                 -- t=0 MOVE_POS_TIME(120,4,192,80)
             task.Wait(120)                              -- t=120
+            NativeVisual.instrument_signal(self,3,"wander")
             self._box = box5(32, 48, 352, 128)          -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                               -- SUB_CALL 2（墙钟 136，time 120）
+            prism_charge(self,4,32)                               -- SUB_CALL 2（墙钟 136，time 120）
             task.Wait(30)                               -- time 120 → 150（墙钟 166）
             local i2_1 = 150                            -- SET_INT *i2_1 150（每轮只在此设一次）
             while true do
                 for _, b in ipairs(BLK) do
                     if pdist(self) < 128 then           -- JGEQ_F *DIST 128 → 跳过
                         shoot6(self, 0, 0, 64, 3, 2, 6, 3, 3.2, 0.5,
-                               0, 0.392699, nil, true)
+                               0, 0.39269909170150757, cmds4(516), true)
                     end
                     local base = aimth(self) + b[2]
                     for k = 0, 2 do                     -- DEC_JUMP *i2_0 3 次、每 3 帧
                         local f2 = base + k * b[5]
-                        pspawn(self.x, self.y, chain,
-                               { f2, b[3], b[4], b[1] + f2 }, nil, 'inline_motion')
+                        pspawn(self.x, self.y, prism_chain,
+                               { self, f2, b[3], b[4], b[1]+f2, 1 }, 'ecldata4:130', 'motion')
                         task.Wait(3)
                     end
                     local w = int(i2_1 / 2)             -- DIV *i0 *i2_1 2
                     task.Wait(w)                        -- SET_WAIT_TIMER *i0
+                    OriginalStageVisual.actor(self,7,"stg4enm",128)
                     task.Wait(w)                        -- SET_WAIT_TIMER *i0
+                    OriginalStageVisual.actor(self,7,"stg4enm",129)
                     if i2_1 > 60 then i2_1 = i2_1 - 5 end
                 end
             end
@@ -16391,21 +16377,23 @@ local function TH34_add_stage56_boss()
     ---（-Lunatic- 不存在，实际用的是 Normal 行的排版），周期由 DEC_JUMP 控制：
     ---  · t=120 BEGIN / MOVE_POS_TIME(120,4,192,96)（我们 (0,224)→(0,128)）；
     ---  · t=240 限位框、SUB_CALL 2（16 帧）后 i2_0=2，连打 2 轮「正转五环 + 反转五环」：
-    ---      每轮 = f0=*RNGRAD、RING_AIMED 2:col 16 3 2 0.5 f0 ±0.0785398（每圈 f0+=0.0392699）
-    ---      五圈色档 1/2/4/6/5（+0.0785398）或 9/10/11/13/12（−0.0785398）；
+    ---      每轮 = f0=*RNGRAD、RING_AIMED 2:col 16 3 2 0.5 f0 ±0.07853981852531433（每圈 f0+=0.039269909262657166）
+    ---      五圈色档 1/2/4/6/5（+0.07853981852531433）或 9/10/11/13/12（−0.07853981852531433）；
     ---  · t=440 起同样结构（复用同一组正/反转五环），t=640 JUMP 回 t=240。
-    ---⇒ 实测：自机钉在 (0,0) 时每 100 帧打一组，+0.0785398 / −0.0785398 交替，
+    ---⇒ 实测：自机钉在 (0,0) 时每 100 帧打一组，+0.07853981852531433 / −0.07853981852531433 交替，
     ---  首组在墙钟 256（= t=240 + SUB_CALL 2 的 16 帧）。
-    scard("合葬「プリズムコンチェルト」", 4476, 60, 3600, false, function(self)
+    scard("合葬「プリズムコンチェルト」", 4476, 3722/60, 3600, false, function(self)
+        NativeVisual.instrument_signal(self,1,"wander")
         prism_companions(self,"normal")
-        local CA = { 1, 2, 4, 6, 5 }                 -- 正转组（a2 = +0.0785398）
-        local CB = { 9, 10, 11, 13, 12 }             -- 反转组（a2 = -0.0785398）
+        local CA = { 1, 2, 4, 6, 5 }                 -- 正转组（a2 = +0.07853981852531433）
+        local CB = { 9, 10, 11, 13, 12 }             -- 反转组（a2 = -0.07853981852531433）
         task.New(self, function()
             task.Wait(120)                           -- t=0..120 前奏
             bmove(self, 120, 4, 0, 128)              -- t=120 MOVE_POS_TIME(120,4,192,96)
             task.Wait(120)                           -- t=120 → t=240
             self._box = box5(32, 48, 352, 128)       -- SET_MOVEMENT_BOUNDS
-            task.Wait(16)                            -- SUB_CALL 2
+            NativeVisual.instrument_signal(self,1,"wander")
+            prism_charge(self,4,32)                            -- SUB_CALL 2
             self.th07_laser_interaction = 7
             local pos = true
             while true do
@@ -16413,8 +16401,8 @@ local function TH34_add_stage56_boss()
                 local cs = pos and CA or CB
                 for i = 1, 5 do
                     shoot6(self, 0, 0, 66, 2, cs[i], 16, 3, 2, 0.5, a0,
-                           (pos and 1 or -1) * 0.0785398, nil, true)
-                    a0 = a0 + 0.0392699
+                           (pos and 1 or -1) * 0.07853981852531433, cmds4(512), true)
+                    a0 = a0 + 0.039269909262657166
                 end
                 pos = not pos
                 task.Wait(100)

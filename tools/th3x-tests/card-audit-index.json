@@ -94916,7 +94916,8 @@
             4,
             192,
             80
-          ]
+          ],
+          "difficulty": 1
         }
       },
       "t1": 0,
@@ -95140,7 +95141,8 @@
           "sub": 132,
           "y": 128,
           "key": "4lunasa",
-          "file": "ecldata4.ecl"
+          "file": "ecldata4.ecl",
+          "difficulty": 1
         }
       },
       "t1": 0,
