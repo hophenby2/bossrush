@@ -9775,7 +9775,7 @@ local function TH34_add_stage56_boss()
                     if step == 1 then wob = -wob end
                     ph = ph + 0.0981748
                     shoot6(self, ox + wob * pa, -(oy + wob * ca), 67, 3,
-                           (step == 0) and colA or colB, c1, 1, 2, 1, a1, 0.261799, nil, true)
+                           (step == 0) and colA or colB, c1, 1, 2, 1, a1, 0.2617993950843811, cmds4(8706,{type=0x2000,dur=160}), true)
                     task.Wait(5)
                 end
                 if c1 < 24 then c1 = c1 + 5 end
@@ -9785,14 +9785,14 @@ local function TH34_add_stage56_boss()
             ---原作 sub21（右）/sub22（左）：t=0 先 SUB_CALL 2（gi0=4 → 16 帧阻塞），
             ---之后每 2 帧一发、共 16 发（自机狙 SPREAD_AIMED）；L 行 c1×c2 = 右 1×4 /
             ---左 2×4；打完 t=2 的空跳 + t=3 的 SUB_RET ⇒ 子程墙钟 49 帧。
+            class.th07_charge6(self,4,32)
             local x0 = ran:Float(0, 32) + (right and 368 or -16)
             local y0 = ran:Float(0, 128) - 64
             local dy = y0 / 8
-            task.Wait(16)
             for _ = 1, 16 do
                 shoot_abs6(self, x0 - 192, self.y - y0, 64, 6, right and 6 or 2,
                            right and 1 or 2, 4, 5, 1, 0,
-                           right and 0.392699 or 0.523599, nil, true)
+                           right and .39269909170150757 or .5235987901687622, cmds4(520), true)
                 x0 = x0 + (right and -24 or 24)
                 y0 = y0 - dy
                 task.Wait(2)
@@ -9863,6 +9863,7 @@ local function TH34_add_stage56_boss()
     ---        等 ctx.time 爬到 73 才执行 ⇒ 壁在 t=112 自毁（用 vm 实测）。
     local function six_wall(self, a)
       local f4, f5 = a[1], a[2]
+      if self._original_actor then self._original_actor.vm.rotation[3]=f4 end
       task.Wait(60)                    ---sub25 的 t=60 开打
       ---★ 原作 sub25 #20/#21/#23/#24：建两条 INIT_INTERP 之前各有两发
       ---  `RAND_SIGN_FLOAT *f6 0`（幅值 0 ⇒ 结果恒 0，切线 m0/m1 全 0），
@@ -9873,7 +9874,7 @@ local function TH34_add_stage56_boss()
       local f4t, f5t = f4, f5          ---第 1 发用生成时的原值
       for j = 1, 14 do
         ---弹从壁位置 + (f4, −f5) 出膛（TH07 → 我们：y 取反），角 = f4（取反成我们口径）。
-        shoot6(self, f4t, -f5t, 65, 6, 4, 4, 1, 1.8, 1, f4t, 0.3926990926265717, nil, true)
+        shoot6(self, f4t, -f5t, 65, 6, 4, 4, 1, 1.8, 1, f4t, 0.39269909170150757, cmds4(548), true)
         local u = (3 * j) / 42
         f4t, f5t = val(u, k4), val(u, k5)
         if j < 14 then task.Wait(3) end  ---每拍间隔 3 帧；打满 14 发
@@ -9888,14 +9889,14 @@ local function TH34_add_stage56_boss()
         while true do
             for _, w in ipairs(waves) do
                 local step, n = w[1], w[2]
-                task.Wait(16)                      ---sub24：SUB_CALL 2 的 4×4 帧
+                class.th07_charge6(self,4,12)                      ---sub24：SUB_CALL 2 的 4×4 帧
                 class.th07_set_speed(self, 1)
                 task.Wait(50)                      ---到 sub24 的 t=50
                 class.th07_restore_speed(self)
                 local f5, f4 = 0, 1.5707963705062866   ---f32(π/2)
                 for _ = 1, n do
                     local wx, wy = voff(f5, 112)
-                    pspawn(self.x + wx, self.y + wy, six_wall, { f4, f5 }, nil, true)
+                    pspawn(self.x + wx, self.y + wy, six_wall, { f4, f5 }, 'ecldata6:25', true)
                     f5 = norms6(f5 + step)         ---原作 NORMALIZE_ANGLE f5
                     f4 = norms6(f4 + step)         ---原作 NORMALIZE_ANGLE f4
                     task.Wait(3)                   ---sub24 的 DEC_JUMP：每只 3 帧
@@ -9946,14 +9947,14 @@ local function TH34_add_stage56_boss()
             for _ = 1, sp.iter do
                 local ox, oy = voff(ref(sp.o1, f0, f1), sp.m1)
                 shoot6(self, ox, oy, sp.op1, sp.s1, sp.off1, sp.c1, 1, v1, 1,
-                       ref(sp.a1, f0, f1), sp.a2_1, nil, true)
+                       ref(sp.a1, f0, f1), sp.a2_1, cmds4(517), true)
                 task.Wait(2)
                 ox, oy = voff(ref(sp.o2, f0, f1), sp.m2)
                 shoot6(self, ox, oy, sp.op2, sp.s2, sp.off2, sp.c2, 1, v2, 1,
-                       ref(sp.a2, f0, f1), sp.a2_2, nil, true)
+                       ref(sp.a2, f0, f1), sp.a2_2, cmds4(5), false)
                 if pdist(self) < 64 then
                     shoot6(self, 0, 0, sp.op3, sp.s3, sp.off3, sp.c3, 1, 4, 1,
-                           rngrad(), 0.0392699, nil, true)
+                           rngrad(), 0.039269909262657166, cmds4(0), false)
                 end
                 f0, f1 = f0 + 0.20944, f1 - 0.20944
                 task.Wait(2)
@@ -9992,7 +9993,7 @@ local function TH34_add_stage56_boss()
             arm(S31)
             task.Wait(100)                             -- t=260
             drift(self, 1.5, 60)
-            task.Wait(32)                              -- SUB_CALL 2（gi0=8 ⇒ 32 帧）
+            class.th07_charge6(self,8,12)                              -- SUB_CALL 2（gi0=8 ⇒ 32 帧）
             arm(S33); arm(S32); arm(S33); arm(S32)
             task.Wait(100); drift(self, 1.5, 60)       -- t=360
             task.Wait(100)                             -- t=460 jump 回 t=60
@@ -10198,17 +10199,17 @@ local function TH34_add_stage56_boss()
     ---    而 t=480 的 JUMP 落在 `INC` 之后的 `SET_FLOAT *f0 -1.5708` 上 ⇒ 它一轮一轮单调递增。
     local function laser5(self, i23, mirror)
         local ls = {}
-        local p0 = mirror and 0.0 or -PI
-        local f5 = i23 * (mirror and -0.0654498 or 0.0654498)
-                   + (mirror and (-4.71239 - 3.92699) or (1.5708 + 0.785398))
+        local p0 = mirror and 0.0 or -3.1415927410125732
+        local f5=i23*(mirror and -.06544984877109528 or .06544984877109528)
+            +(mirror and -4.71238899230957 or 1.5707963705062866)
         local p1 = {}
         for k = 0, 4 do
             p1[k + 1] = f5
-            f5 = f5 + 0.19635
+            f5 = f5 + (mirror and .19634954631328583 or -.19634954631328583)
         end
         for k = 0, 4 do
             ls[#ls + 1] = plaser(self.x, self.y, -p0, {
-                spr = 1, w = 32, sOff = 24, eOff = 540, sLen = 540,
+                spr = 1, color=mirror and 4 or 2, flags=4, w = 32, sOff = 24, eOff = 540, sLen = 540,
                 tStart = 120, dur = 270 + 10 * k, tEnd = 30, hbStart = 100, hbEnd = 20 })
         end
         PlaySound("lazer00", 0.13, self.x / 256)      -- 原作 sub48/sub49 的 PLAY_SOUND 13
@@ -10280,52 +10281,50 @@ local function TH34_add_stage56_boss()
             local lf0, lf3 = -1.5708, 0
             ---一拍：5 发扇心 a（周期子程的本体组，指令组 sA）＋ 3 发扇心 b（被调子程组，指令组 sB）。
             ---相 A 周期 = sub44（角 −）、被调 = sub47（角 +）；相 B 周期 = sub46（角 +）、被调 = sub45（角 −）。
-            local function beat(a, b, sA, sB)
+            local function beat(a, b, sA, sB, mirror)
                 local v5 = ran:Float(0, 0.3) + 4.2   -- 原作 RAND_FLOAT_ADD f2 0.3 4.2
                 shoot6(self, 0, 0, 65, 6, 8, 3, 1, v5, 1, a, 0.523599, sA, true)
-                shoot6(self, 0, 0, 65, 6, 13, 2, 1, v5, 1, a, 0.523599, sA, true)
+                shoot6(self, 0, 0, 65, 6, mirror and 10 or 13, 2, 1, v5, 1, a, 0.523599, sA, true)
                 local v3 = ran:Float(0, 0.3) + 3.7   -- 原作 RAND_FLOAT_ADD f2 0.3 3.7
                 shoot6(self, 0, 0, 65, 6, 8, 1, 1, v3, 1, b, 0.523599, sB, true)
-                shoot6(self, 0, 0, 65, 6, 10, 2, 1, v3, 1, b, 0.523599, sB, true)
+                shoot6(self, 0, 0, 65, 6, mirror and 13 or 10, 2, 1, v3, 1, b, 0.523599, sB, true)
                 ---★ 子程（sub47/sub45）末尾还有一条 `RAND_FLOAT_ADD *f1 0.0392699 0.0392699`
                 ---（把子程的扇心 += f1）。调用方下一拍会用 `3.14159 − f0` 重算子程扇心、
                 ---所以这条结果**没人读**，但必须照抽 —— 否则整条随机流每拍错 1 个 float。
                 ran:Float(0, 0.0392699)
             end
-            task.New(self, function()
-                while true do
-                    -- 相 A：sub44 挂 450 帧（SET_PERIODIC_CALLBACK 9 44 到切 9 46）
-                    lf0, lf3 = -1.5708, 0
-                    for _ = 1, 50 do
-                        task.Wait(9)
-                        lf3 = 3.14159 - lf0
-                        beat(lf0, lf3, spinA, spinB)
-                        lf0 = lf0 - (ran:Float(0, 0.0392699) + 0.0392699)
-                    end
-                    -- 相 B：sub46 镜像
-                    lf0, lf3 = 0, -1.5708
-                    for _ = 1, 50 do
-                        task.Wait(9)
-                        lf0 = 3.14159 - lf3
-                        beat(lf3, lf0, spinB, spinA)
-                        lf3 = lf3 + (ran:Float(0, 0.0392699) + 0.0392699)
-                    end
+            local periodic_counter,mirror=0,false
+            local function periodic_advance()
+                periodic_counter=periodic_counter+1
+                if periodic_counter<9 then return end
+                if mirror then
+                    lf0=norms6(3.1415927410125732-lf3)
+                    beat(lf3,lf0,spinB,spinA,true)
+                    lf3=lf3+(ran:Float(0,.039269909262657166)+.039269909262657166)
+                else
+                    lf3=norms6(3.1415927410125732-lf0)
+                    beat(lf0,lf3,spinA,spinB,false)
+                    lf0=lf0-(ran:Float(0,.039269909262657166)+.039269909262657166)
                 end
+                -- 周期子程CALL47/45、子程RET、本体回调RET各restart一次。
+                periodic_counter=3
+            end
+            task.New(self,function()
+                while true do task.Wait(1);periodic_advance() end
             end)
-            ---激光段：原作 t=510 起 `SUB_CALL 48`（420 帧）→ `INC i2_3` → t=540
-            ---`SUB_CALL 49`（420 帧）→ `INC i2_3` → t=480 的 JUMP 回 sub48，
-            ---所以两段交替、每段 420 帧、中间夹 30 帧空档（一轮 900 帧），i2_3 单调递增。
-            task.New(self, function()
-                task.Wait(30)                       -- ⇒ 原作 t=510（port 帧 150）
-                local i23, mirror = 0, false
-                while true do
-                    laser5(self, i23, mirror)       -- SUB_CALL 48（偶数拍）/ 49（奇数拍）
-                    task.Wait(420)                  -- 整段长度
-                    i23 = i23 + 1                   -- 原作 SUB_CALL 之后的 INC *i2_3
-                    task.Wait(30)                   -- t=510 → t=540 的空档
-                    mirror = not mirror
-                end
-            end)
+            task.Wait(30)
+            local i23=0
+            while true do
+                periodic_advance() -- CALL48/49进入restart；此时周期仍在运行。
+                laser5(self,i23,mirror)
+                task.Wait(420)
+                periodic_advance() -- 同步RET恢复主时间轴。
+                i23=i23+1
+                mirror=not mirror;periodic_counter=0
+                if mirror then lf0,lf3=0,-1.5707963705062866
+                else lf0,lf3=-1.5707963705062866,0 end
+                task.Wait(30)
+            end
         end)
     end)
 
@@ -10363,7 +10362,7 @@ local function TH34_add_stage56_boss()
                        cmds4(36, { type = 0x20, dur = 80, loop = -1, speed = 0, angle = 0 },
                                  { type = 0x20, dur = 60, loop = -1, speed = 0.01,
                                    angle = 0.0261799 * RAD2DEG }), true)
-                task.Wait(11)
+                task.Wait(10)
             end
         end)
         task.New(self, function()
@@ -10372,13 +10371,15 @@ local function TH34_add_stage56_boss()
             bmove(self, 60, 4, 0, 112)
             ---原作 sub34 进场：MOVE_POS_TIME(60) 与 2×SUB_CALL 2（各 120 帧粒子/音）
             ---＋t=30/45/105/165 的四段等待 = 405 帧后才设周期子程与主时间轴。
-            task.Wait(405)
+            class.th07_charge6(self,30,12)
+            class.th07_charge6(self,30,12)
+            task.Wait(165)
             ---主时间轴：i0 从 120 起，每拍 SET_WAIT_TIMER i0 → 打 13 发 → i0-=5；
             ---i0<=60 后不再递减（原作 JLEQ i0 60 跳过 SUB），但**继续开火**。
             local li0 = 120
             while true do
                 task.Wait(li0)
-                shoot6(self, ox, oy, 64, 10, 1, 13, 1, 3.2, 1, 0, 0.1848, nil, true)
+                shoot6(self, ox, oy, 64, 10, 1, 13, 1, 3.2, 1, 0, 0.18479956686496735, cmds4(4), true)
                 if li0 > 60 then li0 = li0 - 5 end
             end
         end)
@@ -10421,7 +10422,7 @@ local function TH34_add_stage56_boss()
                         if (li1 + K[k]) % 8 < 4 then
                             local o = OFFS[k]
                             shoot6(self, o[1], o[2], 67, 9, 4, o[4], 1, 2.5, 1,
-                                   o[3], 0.523599, spin6(f[k], 0, 80), true)
+                                   o[3], 0.523599, cmds4(546,spin6(f[k],0,80)), true)
                         end
                     end
                     ---原作拍末的 4 段区间（#61-68 / #73-76 / #79-84，其余区间空转）。
@@ -10438,7 +10439,7 @@ local function TH34_add_stage56_boss()
                     end
                     li1 = li1 + 1
                     if li1 > 120 then li1 = 1 end   -- 原作 #86 SET_INT i1 0 + #87 INC
-                    task.Wait(11)
+                    task.Wait(10)
                 end
             end)
             local li0 = 200
@@ -10446,7 +10447,7 @@ local function TH34_add_stage56_boss()
             ---所以墙钟上 i0=80 的那一拍也要打，且此后每 80 帧一拍打到卡结束。
             while true do
                 task.Wait(li0)
-                shoot6(self, 0, 0, 64, 10, 1, 11, 1, 1.2, 1, 0, 0.19635, nil, true)
+                shoot6(self, 0, 0, 64, 10, 1, 11, 1, 1.2, 1, 0, 0.19634954631328583, cmds4(2), true)
                 if li0 > 80 then li0 = li0 - 5 end
             end
             task.Wait(200)
@@ -10472,6 +10473,7 @@ local function TH34_add_stage56_boss()
             bmove(self, 120, 4, 0, 112)
             ---L 行从 t=360 沿 time:=480 的跳转只等满 120 帧（不是从 0 等到 480）。
             task.Wait(120)
+            bmove(self,60,4,0,112)
             self._box = box5(64, 48, 320, 128)
             ---`SET_PERIODIC_CALLBACK 3 51` 在 t=480 设下后，计数器当帧不增；
             ---第一次 sub51 落在 120+3 帧（= ECL 的 123），移植版把这 3 帧补上。
@@ -10481,7 +10483,7 @@ local function TH34_add_stage56_boss()
                 li0 = li0 + 1
                 local ph = li0 % 4
                 if ph == 0 then
-                    shoot6(self, 0, 0, 67, 8, 4, 4, 1, 1.4, 1, lf0, 0, nil, true)
+                    shoot6(self, 0, 0, 67, 8, 4, 4, 1, 1.4, 1, lf0, .5235987901687622, cmds4(512), true)
                 elseif ph == 1 then
                     li3 = li3 + 1
                     l2i1 = l2i1 + 1
@@ -10489,20 +10491,20 @@ local function TH34_add_stage56_boss()
                         li3 = li3 % 8
                         if li3 < 7 then
                             shoot6(self, 0, 0, 67, 10, 1, 1, 1, 3.7, 1, lf0, 1,
-                                   brake_aim6(100, 0, 3.0, 1), true)
+                                   cmds4(644,brake_aim6(100,0,3,1)), true)
                         end
                     end
                 elseif ph == 2 then
                     shoot6(self, 0, 0, 67, 8, 3, 2, 1, 3.2, 1, lf0, 2,
-                           { type = 0x40, dur = 100, loop = 1, angle = -90, speed = 1.1 }, true)
+                           cmds4(576,{type=0x40,dur=100,loop=1,angle=-90,speed=1.1}), true)
                 else
                     shoot6(self, 0, 0, 67, 8, 2, 2, 1, 3.0, 1, lf0, 3,
-                           { type = 0x40, dur = 100, loop = 1, angle = 90, speed = 1.1 }, true)
+                           cmds4(576,{type=0x40,dur=100,loop=1,angle=90,speed=1.1}), true)
                 end
                 li2 = li2 + 1
-                if (li2 % 600) >= 300 then lf0 = lf0 - 0.0475999
-                else lf0 = lf0 + 0.0475999 end
-                task.Wait(3)
+                if (li2 % 600) >= 300 then lf0 = norms6(lf0 - 0.04759988933801651)
+                else lf0 = norms6(lf0 + 0.04759988933801651) end
+                task.Wait(2)
             end
         end)
     end)
@@ -10735,7 +10737,7 @@ local function TH34_add_stage56_boss()
             local lf7 = 4.1                             -- 原作 f7（L 行 instr#34）
             ---0x10 在并发指令（cmds4）里走 `speed` 字段（cmdsub_new 用它冻结向量），
             ---不能用单指令口径的 accel6。
-            local function ac10(spd, dur) return { type = 0x10, dur = dur or 80, speed = spd } end
+            local function ac10(spd, dur) return { type = 0x10, dur = dur or 80, speed = spd, angle=-999 } end
             ---0x80 刹车后朝自机拐弯：off = 瞄准偏移（TH07 弧度）、恢复速度 0.1。
             local function brake80(off)
                 return { type = 0x80, dur = 60, loop = 1, angle = -off * RAD2DEG, speed = 0.1 }
@@ -10762,24 +10764,24 @@ local function TH34_add_stage56_boss()
             ---周期子程时间表：39 十拍 → 40 十拍 → 41 十拍 → 42 十二拍 → 回到 39。
             ---原作 t=520 的 `SET_PERIODIC_CALLBACK 8 39` 落在一个非拍点上（拍点 516/524），
             ---把 8 帧计数清零 ⇒ 下一拍从 524 推到 528（比常拍晚 4 帧）。
-            task.New(self, function()
-                task.Wait(188)      -- 原作 t=180 挂回调，第一拍在 +8 帧
+            local periodic_counter,callback_stage,enabled=0,0,false
+            task.New(self,function()
                 while true do
-                    for _ = 1, 10 do burst(0); task.Wait(8) end
-                    for _ = 1, 10 do burst(1); task.Wait(8) end
-                    for _ = 1, 10 do burst(2); task.Wait(8) end
-                    for _ = 1, 12 do burst(3); task.Wait(8) end
-                    task.Wait(4)
+                    task.Wait(1)
+                    if enabled then
+                        periodic_counter=periodic_counter+1
+                        if periodic_counter>=8 then burst(callback_stage);periodic_counter=1 end
+                    end
                 end
             end)
-            ---大环时间轴：t=200 起，每 80 帧一圈；第 4 圈后接 t=520 的回跳 ⇒ 间隔 100。
-            task.Wait(200)
+            task.Wait(180)
             while true do
-                for i = 1, 4 do
-                    drift(self, 1.5, 60)
-                    shoot6(self, 0, 0, 67, 8, 5, 32, 3, 2.8, 1,
-                           ran:Float(-PI, PI), 0, cmds4(0x200), true)
-                    task.Wait((i == 4) and 100 or 80)
+                for i=0,3 do
+                    callback_stage,periodic_counter,enabled=i,0,true
+                    task.Wait(20)
+                    drift(self,1.5,60)
+                    shoot6(self,0,0,67,8,5,32,3,2.8,1,rngrad(),0,cmds4(512),true)
+                    task.Wait(i==3 and 80 or 60)
                 end
             end
         end)
@@ -12992,6 +12994,16 @@ local function TH34_add_stage56_boss()
         end
     end
     class.th07_prism_charge=prism_charge
+    function class.th07_charge6(owner,n,count)
+        OriginalStageVisual.presentation.sound.play(7,5,owner.x)
+        for _=1,n do
+            for _=1,count do
+                local o=New(class.TH34_poltergeist_charge,owner.x,owner.y,177)
+                if spell_live then spell_live[#spell_live+1]=o end
+            end
+            task.Wait(4)
+        end
+    end
     local function luna_jolt(self,dx)
         prism_charge(self,2,16,dx,0)
     end
@@ -13118,11 +13130,11 @@ local function TH34_add_stage56_boss()
         -- Sub2的粒子17：etama第二页原始脚本7（载入编号175），向出生点收拢60帧。
         -- 效果系统先初始化ANM的两次随机值，再抽运动角，保持原作的取随机数顺序。
         class.TH34_poltergeist_charge = Class(object, {
-            init = function(o,x,y)
+            init = function(o,x,y,script)
                 o.x,o.y,o.pg_x,o.pg_y,o.age=x,y,x,y,0
                 o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY+.1,false,false
                 o.live=spell_live
-                local actor=V.actor(o,7,'etama',175)
+                local actor=V.actor(o,7,'etama',script or 175)
                 actor.tick=nil;actor.vm.color={128,128,255}
                 o.angle=rngrad()
             end,
