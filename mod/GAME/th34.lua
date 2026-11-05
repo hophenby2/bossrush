@@ -5921,6 +5921,7 @@ function class.th07_motion_begin(self, id, move)
         self.angle, self._angdir = old.angle, old.angdir
         self.th07_exit_box=old.exit_box
     else
+        self.prism_command=nil
         self.x, self.y = 0, 224 - cfg.y
         self._mv, self._orb = nil, nil
         self.angle, self._angdir = 0, 0
@@ -5941,6 +5942,10 @@ function class.th07_motion_begin(self, id, move)
     self.th07_motion_live, self.th07_motion_key = id, cfg.key
     OriginalStageVisual.bind_source(self,7,cfg.file:gsub('%.ecl$','')..':'..cfg.sub,true)
     self.th07_visual_clock,self.th07_visual_stamp=0,nil
+    if cfg.file=='ecldata4.ecl' then
+        local main=cfg.key=='4lunasa' and 1 or cfg.key=='4merlin' and 2 or 3
+        NativeVisual.instrument_phase(self,id,main)
+    else NativeVisual.end_instruments(self) end
 end
 -- 缓时复用 TH07 的斩击背景回调和框架 timeslow。原作 ExIns 10/11 以 1/factor
 -- 推进计时与运动；这里由统一逻辑帧减速，不能再把弹速除一次，否则会双重减速。
@@ -12908,6 +12913,7 @@ local function TH34_add_stage56_boss()
             for _,o in pairs(class.th07_lasers or {}) do if IsValid(o) then used=used+1 end end
             if used<64 then return plaser(x,y,a,s) end
         end,
+        sound=function(o,id) OriginalStageVisual.presentation.sound.play(7,id,o.x) end,
         charge=function(o,count)
             for _=1,count do
                 local effect=New(class.TH34_poltergeist_charge,o.x,o.y)
@@ -12918,7 +12924,6 @@ local function TH34_add_stage56_boss()
     local function prism_nonspell(name,id,fn,skin,third)
         ncard(name,id,third and 20000 or 19000,third and 2100 or 2450,3600,function(self)
             self._box=box5(32,48,352,128)
-            self.prism_command=nil
             task.New(self,function() fn(self) end)
         end,{skin=skin})
     end
@@ -12947,13 +12952,27 @@ local function TH34_add_stage56_boss()
     ---    −0.015/帧）共 30 轮，随后 UNIMP 自毁。
     ---
     ---原作 sub3：8 帧的位移抖动（净位移 0 ⇒ 这里只等 8 帧）。
-    local function luna_jolt(self)
-        task.Wait(8)
+    local function prism_charge(o,n,count,dx,dy)
+        OriginalStageVisual.presentation.sound.play(7,5,o.x)
+        for _=1,n do
+            for _=1,count do
+                local fx=New(class.TH34_poltergeist_charge,o.x+(dx or 0),o.y+(dy or 0))
+                if spell_live then spell_live[#spell_live+1]=fx end
+            end
+            task.Wait(4)
+        end
+    end
+    local function luna_jolt(self,dx)
+        prism_charge(self,2,16,dx,0)
     end
     ---原作 op72 RANDOM（`BulletManager.cpp:215`）：每发 angle=rand(a1−a2)+a2、
     ---speed=rand(v1−v2)+v2（逐发各抽两次随机数，与 vm 桩件同序）。
     local function rnd4(self, spr, off, n, v1, v2, a1_th, a2_th, cmd, plays)
-        local style, col = th07_style(spr), th07_color(off, spr)
+        local style,col=th07_style(spr),th07_color(off,spr)
+        if not class.th07_spell_active then
+            if v1~=0 then v1=max(.3,v1) end
+            v2=max(.3,v2)
+        end
         local room = POOL4_SIZE - pool4_used()
         for _ = 1, min(n, room) do
             ---★ 原作 op72 RANDOM 逐发**先抽角、后抽速**
@@ -12999,14 +13018,15 @@ local function TH34_add_stage56_boss()
     end
     ---原作 sub59（阻塞调用，共 39 帧）。参数 = (gF0, gI0, gI1, gI2, gI3)。
     local function luna_sub59(self, f0, off0, gi1, gi2, gi3)
+        NativeVisual.instrument_signal(self,1,'aim',{dx=f0})
         task.Wait(1)                           -- t=1
-        luna_jolt(self)                        -- SUB_CALL 3：8 帧
+        luna_jolt(self,f0) -- 原Sub3在偏移点生成32粒子并暂停8帧。
         task.Wait(30)                          -- t=31
         ---瞄点：f0>0 ⇒ PX−128，否则 PX+128（原作 sub59 t=31 的 JLEQ_F 分支）。
         local aimx = player.x + ((f0 > 0) and -128 or 128)
         local th = atan2(self.y - player.y, aimx - (self.x + f0))
-        shoot6(self, f0, 0, 65, 10, off0, 1, 1, 4, 0.5, th, 0, cmds4(0x3204), true)
-        pspawn(self.x + f0, self.y, luna_turret, { th, gi1, gi2, gi3 }, nil, true)
+        shoot6(self, f0, 0, 65, 10, off0, 1, 1, 4, 0.5, th, 0, cmds4(0x3204,{type=0x2000,flag=0,dur=120}),true)
+        pspawn(self.x + f0, self.y, luna_turret,{th,gi1,gi2,gi3},'ecldata4:62',true)
     end
     ncard("露娜萨 非符 1", 4440, 19000, 0, 3600, function(self)
         self._box = box5(32, 48, 352, 128)
@@ -13151,6 +13171,7 @@ local function TH34_add_stage56_boss()
                 local t=o.age
                 if t==120 then
                     for _,p in ipairs(o.players) do p._box=box5(32,48,352,128) end
+                    for role=1,3 do NativeVisual.instrument_signal(o.owner,role,'wander') end
                     PlaySound('power0',0.35,o.owner.x/256)
                 elseif t==166 then V.main_script(o.owner,7,'stg4enm',129)
                 elseif t==354 then
@@ -13194,6 +13215,7 @@ local function TH34_add_stage56_boss()
             local function idle(o) while true do task.Wait(1) end end
             local left=keep(New(PRISM_COMPANION,self,-1,idle))
             local right=keep(New(PRISM_COMPANION,self,1,idle))
+            self.th07_instruments.roles={self,left,right}
             bmove(left,120,4,-96,128);bmove(right,120,4,96,128)
             keep(New(class.TH34_poltergeist,self,left,right))
         end,{skin=skin4L,wallskin=skin4Lw,enter=enter4})
@@ -13225,7 +13247,8 @@ local function TH34_add_stage56_boss()
             local ang, r = math.pi / 2, 0
             for _ = 1, 119 do
                 ang, r = ang + av, r + 0.8
-                o.x, o.y = cx + math.cos(ang) * r, cy - math.sin(ang) * r
+                o.x,o.y=cx+math.cos(ang)*r,cy-math.sin(ang)*r
+                if NativeVisual.trail_outside(o) then return end
                 task.Wait(1)
             end
             shoot6(o, 0, 0, 66, 1, 2, 48, 4, 2.5, 1, 0, 0, cmds4(0x200), false)
@@ -13238,7 +13261,7 @@ local function TH34_add_stage56_boss()
             while true do
                 index=index+1;phase=phase+phase_step
                 local wave=amplitude*math.sin(phase)
-                o.x,o.y=sx-ca*(index*4)-sa*wave,sy+sa*(index*4)-ca*wave
+                o.x,o.y=sx+ca*(index*4)-sa*wave,sy-sa*(index*4)-ca*wave
                 amplitude=amplitude+0.4
                 if NativeVisual.trail_outside(o) then return end
                 task.Wait(1)
@@ -13256,27 +13279,26 @@ local function TH34_add_stage56_boss()
                 merlin_orb(self, 0)                     -- t=85
                 merlin_orb(self, 1)
                 task.Wait(60)                           -- t=145
-                shoot6(self, 0, 0, 64, 6, 6, 1, 8, 5, 0.5, 0, 0.0392699, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 1, 8, 5, 0.5, 0, 0.0392699, cmds4(516),true)
                 drift(self, 1, 30)                      -- SUB_CALL 60
                 task.Wait(60)                           -- t=205
-                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 5, 0.5, 0, 0.0785398, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 5, 0.5, 0, 0.0785398, cmds4(516),true)
                 -- Sub76 t=205的第二次SET_ANM135。
                 if self._original_actor then OriginalStageVisual.set_script(self,135,'stg4enm') end
                 merlin_orb(self, 0)                     -- t=205
                 merlin_orb(self, 1)
-                if i1 > 0 then task.Wait(i1) end        -- SET_WAIT_TIMER *i1
-                i1 = i1 - 20                            -- SUB *i1 *i1 20
+                if i1>0 then task.Wait(i1);i1=i1-20 end -- 原值归零后不再减成负数。
                 task.Wait(60)                           -- t=265
-                shoot6(self, 0, 0, 64, 6, 6, 1, 8, 4, 0.5, 0, 0.0392699, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 1, 8, 4, 0.5, 0, 0.0392699, cmds4(516),true)
                 task.Wait(20)                           -- t=285
-                shoot6(self, 0, 0, 64, 6, 6, 2, 8, 4.2, 0.5, 0, 0.0448799, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 2, 8, 4.2, 0.5, 0, 0.0448799, cmds4(516),true)
                 task.Wait(20)                           -- t=305
-                shoot6(self, 0, 0, 64, 6, 6, 2, 8, 4.4, 0.5, 0, 0.0523599, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 2, 8, 4.4, 0.5, 0, 0.0523599, cmds4(516),true)
                 drift(self, 1, 30)                      -- SUB_CALL 60
                 task.Wait(20)                           -- t=325
-                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 4.6, 0.5, 0, 0.0628319, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 4.6, 0.5, 0, 0.0628319, cmds4(516),true)
                 task.Wait(20)                           -- t=345
-                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 4.8, 0.5, 0, 0.0785398, nil, true)
+                shoot6(self, 0, 0, 64, 6, 6, 3, 8, 4.8, 0.5, 0, 0.0785398, cmds4(516),true)
                 task.Wait(60)                           -- t=405 JUMP → t=85
             end
         end)
@@ -13433,7 +13455,7 @@ local function TH34_add_stage56_boss()
         self._box = box5(32, 48, 352, 128)
         task.New(self, function()
             local function cmd40(rot_th, dur, loop, spd, own)
-                return { type = 0x40, flag = 0, dur = dur, loop = loop,
+                return { flags=578,type = 0x40, flag = 0, dur = dur, loop = loop,
                          angle = -rot_th * RAD2DEG, speed = spd, resume_own = own }
             end
             local A6 = cmd40(1.0472, 60, 3, 0, true)
@@ -13441,13 +13463,14 @@ local function TH34_add_stage56_boss()
             local B6 = cmd40(-1.0472, 60, 3, 0, true)
             local B8 = cmd40(-1.0472, 50, 1, 1, false)
             task.Wait(50)                               -- t=50
-            task.Wait(16)                               -- SUB_CALL 2（16 帧）
+            prism_charge(self,4,32) -- 原Sub2的粒子/随机消费。
             task.Wait(30)                               -- t=80（帧 96）
             while true do
                 local f0, f1 = 1.5, rngrad()            -- A 段：*f0=1.5、*f1=*RNGRAD
                 for _ = 1, 30 do
                     ring4(self, self.x, self.y, 6, 2, 6, 1, f0, 1.5, f1, 0, A6)
                     ring4(self, self.x, self.y, 6, 3, 8, 1, 2.5, 1, f1, 0, A8)
+                    self.prism_command=A8
                     f0, f1 = f0 + 0.0333333, f1 - 0.1848
                     task.Wait(4)
                 end
@@ -13455,10 +13478,13 @@ local function TH34_add_stage56_boss()
                 for _ = 1, 30 do
                     ring4(self, self.x, self.y, 6, 1, 6, 1, f0, 1.5, f1, 0, B6)
                     ring4(self, self.x, self.y, 6, 3, 8, 1, 2.5, 1, f1, 0, B8)
+                    self.prism_command=B8
                     f0, f1 = f0 + 0.0333333, f1 + 0.1848
                     task.Wait(4)
                 end
-                task.Wait(146)                          -- t=188 JUMP 回 t=50 → 下一轮
+                task.Wait(100)
+                prism_charge(self,4,32)
+                task.Wait(30)                          -- t=188 JUMP 回 t=50 → 下一轮
             end
         end)
     end, { skin = skin4R, enter = enter4 })

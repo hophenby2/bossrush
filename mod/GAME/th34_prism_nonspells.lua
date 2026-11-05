@@ -12,6 +12,7 @@ return function(api)
             angle=-angle*DEG,speed=speed}
     end
     local function charge(o,n,count)
+        api.sound(o,5)
         for _=1,n do api.charge(o,count);task.Wait(4) end
     end
     local function rank(o,low,high)
@@ -27,7 +28,7 @@ return function(api)
     local function rings(o,total,n,color,step,rotation,speed,resume,span)
         local count=total/n
         local angle=api.random_angle()
-        local delta=span/(count-1)
+        local delta=api.f32(api.f32(span)/(count-1))
         for _=1,count do
             fire(o,67,2,color,n,1,speed,.2,angle,0,turn(rotation,resume),66)
             angle=api.f32(angle+step);resume=api.f32(resume-delta)

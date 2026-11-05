@@ -89,6 +89,168 @@ function N.exit_angle(o,native_angle)
     end
     return -a -- TH07弧度口径取反后返回本工程的度。
 end
+-- ecldata4/Sub108..120：乐器灵独立于Boss游走，145中断只改各自上下文。
+local instrument_cards={
+    [4440]={1,1},[4442]={2,1},[4444]={3,1},
+    [5480]={1,2},[5481]={2,2},[5482]={3,2},
+    [5483]={1,3},[5484]={2,3},[5485]={3,3},
+}
+local function cubic(t,a,b,c,d)
+    return (2*t*t*t-3*t*t+1)*a+(-2*t*t*t+3*t*t)*b+(t*t*t-2*t*t+t)*c+(t*t*t-t*t)*d
+end
+local function instrument_target(bank,role)
+    local actor=bank.roles and bank.roles[role]
+    if actor and IsValid(actor) and actor.status~='del' and actor.status~='kill' then return actor.x,actor.y end
+    if role==bank.main then return bank.owner.x,bank.owner.y end
+    local p=bank.positions[role]
+    local m=bank.moves and bank.moves[role]
+    if m then
+        local u=math.min(1,(stage.current_stage.timer-bank.born+1)/m.n)
+        u=1-(1-u)^2
+        p.x,p.y=m.x+m.dx*u,m.y+m.dy*u
+    end
+    return p.x,p.y
+end
+local function instrument_motion(o,kind,payload)
+    local tx,ty=instrument_target(o.bank,o.role)
+    local m={x=o.x,y=o.y,age=0}
+    if kind=='aim' then
+        m.n=40
+        m.tx,m.ty=payload.x or tx+(payload.dx or 0),payload.y or ty+(payload.dy or 0)
+        m.mx,m.my=(o.ivx or 0)*5,(o.ivy or 0)*5
+        o.endx=ran:Float(0,120)-60
+        o.endy=-(ran:Float(0,120)-60)
+    elseif kind=='hide' then
+        m.n,m.mx,m.my=50,o.ivx or 0,o.ivy or 0
+        o.endx=ran:Float(0,120)-60
+        ran:Float(0,256) -- 原随后被当前位置覆盖，仍消费。
+        m.tx=tx
+        o.endy=-(ran:Float(0,120)-60)
+        ran:Float(0,256)
+        m.ty=ty
+    else
+        m.n,m.mx,m.my=60,o.endx,o.endy
+        o.endx=ran:Float(0,120)-60
+        m.tx=tx+ran:Float(0,96)-48
+        o.endy=-(ran:Float(0,120)-60)
+        m.ty=ty-(ran:Float(0,96)-48)
+    end
+    m.ex,m.ey=o.endx,o.endy
+    o.motion=m
+end
+local instrument=Class(object,{
+    init=function(o,bank,role)
+        o.bank,o.role=bank,role
+        o.group,o.bound,o.colli,o.layer=GROUP.GHOST,false,false,LAYER.ENEMY-.1
+        o.x,o.y=instrument_target(bank,role)
+        o.ivx,o.ivy=0,0
+        OriginalStageVisual.actor(o,7,'stg4enm',145+role)
+        o.endx=ran:Float(0,120)-60
+        o.endy=-(ran:Float(0,120)-60)
+        o.mode='wander';instrument_motion(o,'wander')
+        -- SpawnEnemy先RunEcl(0)，推进插值timer但不在管理器外积分位置。
+        o.motion.age=1
+        local m=o.motion
+        o.ivx=cubic(1/m.n,m.x,m.tx,m.mx,m.ex)-o.x
+        o.ivy=cubic(1/m.n,m.y,m.ty,m.my,m.ey)-o.y
+    end,
+    frame=function(o)
+        local bank=o.bank
+        if not IsValid(bank.owner) or bank.owner.th07_instruments~=bank then object.RawDel(o);return end
+        if bank.phase==3 and not bank.late and stage.current_stage.timer-bank.born>=120 then
+            bank.late=true
+            for role=1,3 do if role~=bank.main then bank.actors[role].pending={mode='hide'} end end
+        end
+        local pending=o.pending;o.pending=nil
+        if pending then
+            o.mode=pending.mode
+            if o.mode=='wander' then o._original_hidden=false
+            elseif o.mode=='hide' then o.hide_count=4 end
+            instrument_motion(o,o.mode,pending)
+        end
+        local m=o.motion
+        if m then
+            if m.age>=m.n then
+                if o.mode=='hide' then
+                    o.hide_count=o.hide_count-1
+                    if o.hide_count==0 then o._original_hidden=true;o.motion=nil
+                    else instrument_motion(o,'hide') end
+                elseif o.mode=='wander' then instrument_motion(o,'wander')
+                else o.motion=nil end
+                m=o.motion
+            end
+            if m then
+                m.age=m.age+1
+                local t=m.age/m.n
+                local x,y=cubic(t,m.x,m.tx,m.mx,m.ex),cubic(t,m.y,m.ty,m.my,m.ey)
+                o.ivx,o.ivy=x-o.x,y-o.y;o.x,o.y=x,y
+            else o.ivx,o.ivy=0,0 end
+        end
+        OriginalStageVisual.tick(o)
+    end,
+    render=function(o) OriginalStageVisual.draw(o) end,
+},true)
+function N.end_instruments(owner)
+    local bank=owner.th07_instruments
+    owner.th07_instruments=nil
+    if bank then for _,o in pairs(bank.actors) do if IsValid(o) then object.RawDel(o) end end end
+end
+function N.instrument_signal(owner,role,mode,payload)
+    local bank=owner.th07_instruments
+    local o=bank and bank.actors[role]
+    if not o or not IsValid(o) then return end
+    payload=payload or {};payload.mode=mode;o.pending=payload
+end
+function N.instrument_phase(owner,id,main)
+    local cfg=instrument_cards[id]
+    local bank=owner.th07_instruments
+    if bank and bank.main~=main then N.end_instruments(owner);bank=nil end
+    local fresh=not bank
+    if not bank then
+        bank={owner=owner,main=main,actors={},positions={}}
+        owner.th07_instruments=bank
+        for role=1,3 do bank.positions[role]={x=owner.x,y=owner.y} end
+        for role=1,3 do bank.actors[role]=New(instrument,bank,role) end
+    end
+    for role=1,3 do
+        local x,y=instrument_target(bank,role)
+        bank.positions[role].x,bank.positions[role].y=x,y
+    end
+    bank.roles=nil
+    bank.born,bank.late=stage.current_stage.timer,false
+    bank.phase=cfg and cfg[2] or 0
+    bank.moves={}
+    if fresh and (bank.phase==2 or bank.phase==3) then
+        -- 单卡没有上一非符历史时，非主奏乐器取已结束退场的已知状态。
+        for role=1,3 do
+            if role~=main then
+                local o=bank.actors[role]
+                o._original_hidden,o.motion,o.mode=true,nil,'hidden'
+                o.ivx,o.ivy=0,0
+            end
+        end
+    end
+    for role=1,3 do
+        if role~=main then
+            local x,y=instrument_target(bank,role)
+            local tx,ty,n
+            if bank.phase==3 then tx,ty,n=0,272,120
+            elseif role==1 then tx,ty,n=-320,112,120
+            elseif role==2 then tx,ty,n=320,112,90
+            else tx,ty,n=main==1 and -320 or 320,112,120 end
+            bank.moves[role]={x=x,y=y,dx=tx-x,dy=ty-y,n=n}
+        end
+    end
+    if bank.phase==1 then
+        for role=1,3 do if role~=main then N.instrument_signal(owner,role,'hide') end end
+    elseif bank.phase==2 then
+        if main==1 or main==2 then N.instrument_signal(owner,main,'wander') end
+    elseif bank.phase==3 then
+        -- Sub69/85/106与Lyrica/Sub103都点名4号乐器灵；保留原作目标编号。
+        N.instrument_signal(owner,1,'wander')
+        if main==2 then N.instrument_signal(owner,2,'wander') end
+    end
+end
 function N.source(o,kind)
     o.th07_source_kind,o.th07_source_start=kind,o.ani
     if kind=='spirit' then
@@ -145,8 +307,10 @@ function N.body_cull(o)
     return false
 end
 function N.trail_outside(o)
-    local h=o.th07_trail.history
-    local tail=h[#h]
+    if o.th07_ecl_birth then return false end
+    local tr=o.th07_trail
+    local h=tr.history
+    local tail=h[tr.tick==o.ani and tr.count or tr.count-1]
     local v=o._original_actor and o._original_actor.vm
     local sprite=v and v.data.sprites[v.sprite]
     if not sprite then return false end
@@ -154,7 +318,7 @@ function N.trail_outside(o)
     local function outside(p) return p.x< -192-w or p.x>192+w or p.y< -224-h or p.y>224+h end
     -- isInBounds在137保护期间也照常记录；从未入场的使魔不能提前删除。
     if not outside(o) then o.th07_trail_entered=true end
-    return o.th07_trail_entered and tail and outside(o) and outside(tail)
+    return o.th07_trail_entered and outside(o) and (not tail or outside(tail))
 end
 local function record_trail(o)
     local tr=o.th07_trail

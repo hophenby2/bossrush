@@ -125,7 +125,7 @@ function bullet:init(imgclass, index, stay, destroyable, fogtime)
     self.fogtime = fogtime or 11
     --绀珠传用的
     self.graze2 = 0
-    self.gzz_off = ran:Int(0, 60)
+    self.gzz_off = imgclass.native_game and 0 or ran:Int(0, 60)
     if tonumber(index) then
         self.colli = true
         self.stay = stay
