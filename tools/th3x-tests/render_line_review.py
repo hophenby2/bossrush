@@ -26,6 +26,9 @@ def timeline_rows(source, index, game):
     rows = []
     while True:
         if game==6:
+            # TH06终止项仅4字节，先读time再决定是否读取8字节头。
+            time=struct.unpack_from('<h',data,address)[0]
+            if time<0:break
             time, _, op, size=struct.unpack_from('<4h',data,address);mask=255
         else:
             time, op, size, mask = struct.unpack_from('<ihBB', data, address)
