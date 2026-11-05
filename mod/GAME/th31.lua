@@ -52771,8 +52771,8 @@ local function make_card(build)
             if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
             elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
-        if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
-        if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
+        if u.ly > b[4] - 48 and angle > 0 then angle = -angle end
+        if u.ly < b[2] + 48 and angle < 0 then angle = -angle end
         if dur <= 0 then
             u_set_dir_speed(u, angle, speed)
         else
@@ -53768,8 +53768,8 @@ local function make_card(build)
             if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
             elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
-        if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
-        if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
+        if u.ly > b[4] - 48 and angle > 0 then angle = -angle end
+        if u.ly < b[2] + 48 and angle < 0 then angle = -angle end
         if dur <= 0 then
             u_set_dir_speed(u, angle, speed)
         else
@@ -54806,8 +54806,8 @@ local function make_card(build)
             if angle > -1.5707964 and angle <= 0 then angle = -3.1415927 - u.ma
             elseif angle < 1.5707964 and angle >= 0 then angle = 3.1415927 - angle end
         end
-        if u.ly > b[4] - 48 and angle < 0 then angle = -angle end
-        if u.ly < b[2] + 48 and angle > 0 then angle = -angle end
+        if u.ly > b[4] - 48 and angle > 0 then angle = -angle end
+        if u.ly < b[2] + 48 and angle < 0 then angle = -angle end
         if dur <= 0 then
             u_set_dir_speed(u, angle, speed)
         else
@@ -54835,16 +54835,16 @@ local function make_card(build)
         end
         ---minimumPlayerDistanceSquared 的默认值是 1024（EnemyManager.cpp:189）。
         local dx, dy = u.wx - player.x, u.wy - player.y
-        if not u.is_boss and dx * dx + dy * dy < 1024.0 then return end
+        if dx * dx + dy * dy < 1024.0 then return end
         local c1, c2 = a.count1 or 1, a.count2 or 1
         if c1 <= 0 then c1 = 1 end
         if c2 <= 0 then c2 = 1 end
         local s1, s2 = a.speed1, a.speed2
         if s1 ~= 0 then
-            s1 = s1 + RANK_SPD
+            s1 = s1 + (u.rank_speed or RANK_SPD)
             if s1 < 0.3 then s1 = 0.3 end
         end
-        s2 = s2 + RANK_SPD2
+        s2 = s2 + (u.rank_speed and u.rank_speed/2 or RANK_SPD2)
         if s2 < 0.3 then s2 = 0.3 end
         ---发射点 = worldPosition + shootOffset（EclDependencies.cpp:724-726）。
         EX.shoot(u, u.wx + u.sx, u.wy + u.sy, {
@@ -55209,6 +55209,9 @@ local function make_card(build)
                 u_shot_tick(self)
             end
             ---★ 差异 8：op90/91/92 生成完子机后引擎会清掉 COLLISION。
+            if cfg.SOURCE_ORIGIN and cfg.SOURCE_ORIGIN[sub] then
+                OriginalStageVisual.bind_source(self,8,(cfg.FILE or "ecldata5")..":"..cfg.SOURCE_ORIGIN[sub])
+            end
             if parent ~= nil then self.group = GROUP.NONTJT end
         end,
         ---★ 引擎会对每个对象无条件调 frame。本卡的敌人**不用引擎驱动**：
@@ -55233,19 +55236,6 @@ local function make_card(build)
         ---① SET_DAMAGE_REDUCTION_TIMER（EnemyManagerUpdate.cpp:391-398 + Enemy::TakeDamage）：
         ---   非 BOSS 完全免伤；BOSS 只吃 1/9。DISABLE/ENABLE_INTERACTION_FLAGS 的
         ---   DAMAGEABLE(4) 另算（u.not_damageable）。
-        if u.not_damageable then
-            u.protect = true
-        elseif u.reduction > 0 then
-            u.reduction = u.reduction - 1
-            if u.is_boss then
-                u.protect, u.dmg_factor = false, 1 / 9
-            else
-                u.protect, u.dmg_factor = true, 1
-            end
-        else
-            u.protect, u.dmg_factor = false, 1
-        end
-        ---② 主 context（可被 CALL / RETURN 换进换出）。
         run_ctx(u.insns, u, u.ctx, true)
         if not u.alive then return end
         -- 主context结束后按原生四槽顺序运行；稀疏槽也不能用数组长度截断。
@@ -55257,6 +55247,18 @@ local function make_card(build)
             end
         end
         ---④ UpdateMovement + UpdateShotAndAnm（EclRun.cpp:208-209）。
+        if u.not_damageable then
+            u.protect = true
+        elseif u.reduction > 0 then
+            if u.is_boss then
+                u.protect, u.dmg_factor = false, 1 / 9
+            else
+                u.protect, u.dmg_factor = true, 1
+            end
+        else
+            u.protect, u.dmg_factor = false, 1
+        end
+        ---② 主 context（可被 CALL / RETURN 换进换出）。
         u_move_update(u)
         u_shot_tick(u)
         ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x），前后各夹一次位置（EnemyManagerUpdate:166-168）。
@@ -55283,6 +55285,7 @@ local function make_card(build)
         elseif not u.allow_off then
             if not in_field(u,u.wx,u.wy) then u.alive = false end
         end
+        u.reduction=math.max(0,u.reduction-1)
         class.th08_combat.unit_collision(u)
 end
 
@@ -55433,7 +55436,7 @@ do
     local head = #s + 1
     add(0, function(u)
         E.shoot(u, { op = 96, type = 2, color = 6, count1 = 1, count2 = 1,
-                     speed1 = 2, speed2 = 0.5, angle = 0, step = 0.2855993, flags = 0x203 })
+                     speed1 = 2, speed2 = 0.5, angle = 0, step = -0.28559932, flags = 0x203 })
     end)
     add(60, function() return { t = 0, pc = head } end)
     SUB1 = s
@@ -55766,14 +55769,14 @@ do
     end)
     local head = #s + 1
     add(0, function(u)
-        u.lf0 = rnd_sgn() * 0.7853982 + E.aim_at(u.wx, u.wy)
+        u.lf0 = -rnd_sgn() * 0.7853982 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = 1, count2 = 1,
                      speed1 = u.lf1, speed2 = 0.5, angle = u.lf0, step = 0, flags = 0x203 })
     end)
     add(0, function(u, c) c.stall = u.exi2 end)
     add(0, function(u)
-        u.lf0 = rnd_sgn() * 1.57079637 + E.aim_at(u.wx, u.wy)
+        u.lf0 = -rnd_sgn() * 1.57079637 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 4, count1 = 1, count2 = 1,
                      speed1 = u.lf1, speed2 = 0.5, angle = u.lf0, step = 0, flags = 0x203 })
@@ -55799,7 +55802,7 @@ do
     local head = #s + 1
     add(0, function(u)
         E.record(u, 0, K.AIMED, 0, 60, 1, 0, 1.4)   ---槽0：60 帧后转成自机狙、速度 1.4
-        u.lf0 = rnd_sgn() * 0.7853982
+        u.lf0 = -rnd_sgn() * 0.7853982
         u.lf0 = u.lf0 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = 1, count2 = 1,
@@ -55807,7 +55810,7 @@ do
     end)
     add(0, function(u, c) c.stall = u.exi2 end)
     add(0, function(u)
-        u.lf0 = rnd_sgn() * 1.57079637
+        u.lf0 = -rnd_sgn() * 1.57079637
         E.record(u, 0, K.AIMED, 0, 60, 1, 0, 2)     ---槽0：60 帧后转成自机狙、速度 2
         u.lf0 = u.lf0 + E.aim_at(u.wx, u.wy)
         u.lf1 = ran:Float(0, 1) + u.lf2
@@ -55978,7 +55981,7 @@ do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u)
-        u.lf2 = ran:Float(-PI, PI)              ---SET_FLOAT lf2 rndAngle（[−π,π)）
+        u.lf2 = -ran:Float(-PI, PI)              ---SET_FLOAT lf2 rndAngle（[−π,π)）
         u.exi0 = 64
         E.record(u, 0, K.CULL, 0, 120, -1, -1, -1)
     end)
@@ -55997,11 +56000,11 @@ do
         u.lf7 = 0.09817477                      ---SET_FLOAT lf7（Lunatic）
         u.li7 = 9                               ---SET_INT li7（Lunatic）
         E.shoot(u, { op = 97, type = 2, color = 2, count1 = u.li7, count2 = 1,
-                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x6242 })
         local dx, dy = player.x - u.wx, player.y - u.wy
         if dx * dx + dy * dy < 96 * 96 then
             E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
-                         speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x202 })
+                         speed1 = 3, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x202 })
         end
     end)
     add(1, function(u)
@@ -56019,7 +56022,7 @@ do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u)
-        u.lf2 = ran:Float(-PI, PI)
+        u.lf2 = -ran:Float(-PI, PI)
         u.exi0 = 64
         E.record(u, 0, K.CULL, 0, 120, -1, -1, -1)
     end)
@@ -56038,11 +56041,11 @@ do
         u.lf7 = 0.09817477
         u.li7 = 7
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = u.li7, count2 = 1,
-                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x6242 })
         local dx, dy = player.x - u.wx, player.y - u.wy
         if dx * dx + dy * dy < 96 * 96 then
             E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
-                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x202 })
+                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x202 })
         end
     end)
     add(1, function(u)
@@ -56086,6 +56089,10 @@ do
     local s = {}
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u)
+        E.boss(u)
+        E.allow_off(u)
+        E.set_bounds(u,-160,96,160,176)
+        u.rank_speed=0.5 -- 原作生命/超时回调先ResetBulletRankInfluence。
         E.enable_if(u, 4)                       ---ENABLE_INTERACTION_FLAGS 4
         E.drop_counts(u, 10, 5)                 ---SET_ITEM_DROP_COUNTS 10 5
         E.reduction(u, 320)                     ---SET_DAMAGE_REDUCTION_TIMER 320
@@ -56177,11 +56184,11 @@ do
         u.lf7 = 0.1308997                       ---SET_FLOAT lf7（Lunatic）
         u.li7 = 7                               ---SET_INT li7（Lunatic）
         E.shoot(u, { op = 97, type = 2, color = 2, count1 = u.li7, count2 = 1,
-                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x6242 })
         local dx, dy = player.x - u.wx, player.y - u.wy
         if dx * dx + dy * dy < 96 * 96 then
             E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
-                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = 0.09817477, flags = 0x202 })
+                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = -0.098174773, flags = 0x202 })
         end
         u.exi0 = u.exi0 + 1                     ---INT_INC exI0
     end)
@@ -56214,11 +56221,11 @@ do
         u.lf7 = 0.1308997
         u.li7 = 9
         E.shoot(u, { op = 97, type = 2, color = 6, count1 = u.li7, count2 = 1,
-                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = u.lf7, flags = 0x6242 })
+                     speed1 = 3, speed2 = 0.8, angle = u.lf2, step = -u.lf7, flags = 0x6242 })
         local dx, dy = player.x - u.wx, player.y - u.wy
         if dx * dx + dy * dy < 96 * 96 then
             E.shoot(u, { op = 96, type = 3, color = 6, count1 = 3, count2 = 1,
-                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = 0.09817477, flags = 0x202 })
+                         speed1 = 4, speed2 = 0.8, angle = u.lf2, step = -0.098174773, flags = 0x202 })
         end
         u.exi0 = u.exi0 + 1
     end)
@@ -56296,14 +56303,14 @@ local TIMELINE_ALL = {
     { 1580, 29, -144, 0, 200, 0, 0, { -144, -32 } },
     { 1590, 29, -144, -32, 200, 0, 0, { -144, -32 } },
     { 1590, 34, 0, 240, 500, 0, 1 },
-    { 1790, 29, -32, 192, 200, 1, 1, { -32, 144 } },
-    { 1800, 29, -32, 160, 200, 1, 1, { -32, 144 } },
-    { 1810, 29, -32, 128, 200, 1, 0, { -32, 144 } },
-    { 1820, 29, -32, 96, 200, 1, 0, { -32, 144 } },
-    { 1830, 29, -32, 64, 200, 1, 1, { -32, 144 } },
-    { 1840, 29, -32, 32, 200, 1, 1, { -32, 144 } },
-    { 1850, 29, -32, 0, 200, 1, 0, { -32, 144 } },
-    { 1860, 29, -32, -32, 200, 1, 0, { -32, 144 } },
+    { 1790, 29, -32, 192, 200, 1, 1, { 144, -32 } },
+    { 1800, 29, -32, 160, 200, 1, 1, { 144, -32 } },
+    { 1810, 29, -32, 128, 200, 1, 0, { 144, -32 } },
+    { 1820, 29, -32, 96, 200, 1, 0, { 144, -32 } },
+    { 1830, 29, -32, 64, 200, 1, 1, { 144, -32 } },
+    { 1840, 29, -32, 32, 200, 1, 1, { 144, -32 } },
+    { 1850, 29, -32, 0, 200, 1, 0, { 144, -32 } },
+    { 1860, 29, -32, -32, 200, 1, 0, { 144, -32 } },
     { 1860, 36, 0, 240, 500, 0, 1 },
     { 2040, 29, -144, 192, 200, 0, 1, { -144, -32 } },
     { 2050, 29, -144, 160, 200, 0, 1, { -144, -32 } },
@@ -56311,27 +56318,27 @@ local TIMELINE_ALL = {
     { 2070, 29, -144, 96, 200, 0, 0, { -144, -32 } },
     { 2080, 29, -144, 64, 200, 0, 1, { -144, -32 } },
     { 2080, 34, 0, 240, 500, 0, 1 },
-    { 2270, 29, -32, 192, 200, 1, 1, { -32, 144 } },
-    { 2280, 29, -32, 160, 200, 1, 1, { -32, 144 } },
-    { 2290, 29, -32, 128, 200, 1, 0, { -32, 144 } },
-    { 2300, 29, -32, 96, 200, 1, 0, { -32, 144 } },
-    { 2310, 29, -32, 64, 200, 1, 1, { -32, 144 } },
+    { 2270, 29, -32, 192, 200, 1, 1, { 144, -32 } },
+    { 2280, 29, -32, 160, 200, 1, 1, { 144, -32 } },
+    { 2290, 29, -32, 128, 200, 1, 0, { 144, -32 } },
+    { 2300, 29, -32, 96, 200, 1, 0, { 144, -32 } },
+    { 2310, 29, -32, 64, 200, 1, 1, { 144, -32 } },
     { 2310, 36, 0, 240, 500, 0, 1 },
     { 2500, 29, -144, 192, 200, 0, 1, { -144, 0 } },
-    { 2510, 29, 0, 192, 200, 1, 1, { 0, 144 } },
+    { 2510, 29, 0, 192, 200, 1, 1, { 144, 0 } },
     { 2520, 29, -144, 128, 200, 0, 0, { -144, 0 } },
-    { 2530, 29, 0, 128, 200, 1, 0, { 0, 144 } },
+    { 2530, 29, 0, 128, 200, 1, 0, { 144, 0 } },
     { 2540, 29, -144, 96, 200, 0, 1, { -144, 0 } },
-    { 2550, 29, 0, 96, 200, 1, 1, { 0, 144 } },
+    { 2550, 29, 0, 96, 200, 1, 1, { 144, 0 } },
     { 2560, 29, -144, 64, 200, 0, 0, { -144, 0 } },
-    { 2570, 29, 0, 64, 200, 1, 0, { 0, 144 } },
-    { 2580, 29, 0, 32, 200, 1, 1, { 0, 144 } },
+    { 2570, 29, 0, 64, 200, 1, 0, { 144, 0 } },
+    { 2580, 29, 0, 32, 200, 1, 1, { 144, 0 } },
     { 2590, 29, -144, 32, 200, 0, 0, { -144, 0 } },
-    { 2600, 29, 0, 0, 200, 1, 0, { 0, 144 } },
+    { 2600, 29, 0, 0, 200, 1, 0, { 144, 0 } },
     { 2610, 29, -144, 0, 200, 0, 1, { -144, 0 } },
-    { 2620, 29, 0, -32, 200, 1, 1, { 0, 144 } },
+    { 2620, 29, 0, -32, 200, 1, 1, { 144, 0 } },
     { 2630, 29, -144, -32, 200, 0, 0, { -144, 0 } },
-    { 2640, 29, 0, -64, 200, 1, 0, { 0, 144 } },
+    { 2640, 29, 0, -64, 200, 1, 0, { 144, 0 } },
     { 2650, 29, -144, -64, 200, 0, 0, { -144, 0 } },
     { 2790, 33, 0, 240, 500, 0, 1 },
     { 3050, 9, 0, 240, 1400, 0, -2 },
@@ -56351,14 +56358,14 @@ local TIMELINE_ALL = {
     { 4771, 31, -144, 0, 200, 0, 0, { -144, -32 } },
     { 4781, 31, -144, -32, 200, 0, 0, { -144, -32 } },
     { 4781, 34, 0, 240, 500, 0, 1 },
-    { 4981, 31, -32, 192, 200, 1, 1, { -32, 144 } },
-    { 4991, 31, -32, 160, 200, 1, 1, { -32, 144 } },
-    { 5001, 31, -32, 128, 200, 1, 0, { -32, 144 } },
-    { 5011, 31, -32, 96, 200, 1, 0, { -32, 144 } },
-    { 5021, 31, -32, 64, 200, 1, 1, { -32, 144 } },
-    { 5031, 31, -32, 32, 200, 1, 1, { -32, 144 } },
-    { 5041, 31, -32, 0, 200, 1, 0, { -32, 144 } },
-    { 5051, 31, -32, -32, 200, 1, 0, { -32, 144 } },
+    { 4981, 31, -32, 192, 200, 1, 1, { 144, -32 } },
+    { 4991, 31, -32, 160, 200, 1, 1, { 144, -32 } },
+    { 5001, 31, -32, 128, 200, 1, 0, { 144, -32 } },
+    { 5011, 31, -32, 96, 200, 1, 0, { 144, -32 } },
+    { 5021, 31, -32, 64, 200, 1, 1, { 144, -32 } },
+    { 5031, 31, -32, 32, 200, 1, 1, { 144, -32 } },
+    { 5041, 31, -32, 0, 200, 1, 0, { 144, -32 } },
+    { 5051, 31, -32, -32, 200, 1, 0, { 144, -32 } },
     { 5051, 34, -64, 240, 500, 0, 1 },
     { 5051, 34, 64, 240, 500, 1, 1 },
     { 5251, 31, -144, 192, 200, 0, 1, { -144, -32 } },
@@ -56371,14 +56378,14 @@ local TIMELINE_ALL = {
     { 5321, 31, -144, -32, 200, 0, 0, { -144, -32 } },
     { 5321, 34, -64, 240, 500, 0, 1 },
     { 5321, 34, 64, 240, 500, 1, 1 },
-    { 5521, 31, -32, 192, 200, 1, 1, { -32, 144 } },
-    { 5531, 31, -32, 160, 200, 1, 1, { -32, 144 } },
-    { 5541, 31, -32, 128, 200, 1, 0, { -32, 144 } },
-    { 5551, 31, -32, 96, 200, 1, 0, { -32, 144 } },
-    { 5561, 31, -32, 64, 200, 1, 1, { -32, 144 } },
-    { 5571, 31, -32, 32, 200, 1, 1, { -32, 144 } },
-    { 5581, 31, -32, 0, 200, 1, 0, { -32, 144 } },
-    { 5591, 31, -32, -32, 200, 1, 0, { -32, 144 } },
+    { 5521, 31, -32, 192, 200, 1, 1, { 144, -32 } },
+    { 5531, 31, -32, 160, 200, 1, 1, { 144, -32 } },
+    { 5541, 31, -32, 128, 200, 1, 0, { 144, -32 } },
+    { 5551, 31, -32, 96, 200, 1, 0, { 144, -32 } },
+    { 5561, 31, -32, 64, 200, 1, 1, { 144, -32 } },
+    { 5571, 31, -32, 32, 200, 1, 1, { 144, -32 } },
+    { 5581, 31, -32, 0, 200, 1, 0, { 144, -32 } },
+    { 5591, 31, -32, -32, 200, 1, 0, { 144, -32 } },
     { 5591, 34, -96, 240, 500, 0, 1 },
     { 5591, 34, 96, 240, 500, 1, 1 },
     { 6031, 15, 0, 240, 3000, 0, -2 },
@@ -56431,6 +56438,7 @@ end
 
 return {
     FILE = "ecldata5",
+    SOURCE_ORIGIN={[45]=38},
     TL_START = TL_START,
     HOST_WATCH = HOST_WATCH,
     SAVE_POS = SAVE_POS,

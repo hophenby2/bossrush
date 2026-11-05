@@ -302,7 +302,7 @@ return function()
             o.th08_unit_age=1 -- 构造器已完成出生ECL；手动敌机循环从t1继续。
             if OriginalStageVisual and define.source_file then
                 local file=type(define.source_file)=='function' and define.source_file(o) or define.source_file
-                OriginalStageVisual.bind_source(o,8,file..':'..sub)
+                OriginalStageVisual.bind_source(o,8,file..':'..sub,o._original_actor~=nil)
             end
             local owner=attach(o,linked,linked~=nil)
             if linked then o._original_familiar_collision=false end
