@@ -13396,7 +13396,7 @@ local GUN_SHOTS = {
 
 ---使魔（Sub8）。占位贴图 "servant"；原作它有 24×24 判定与 life，移植版按
 ---受击与击破由 th31_combat.lua 的原作交互表控制。
-local familiar = class.th08_combat.actor("ecldata8sp:8", {
+local familiar = class.th08_combat.actor("ecldata8:54", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, delta)
         self.x, self.y = x, y
@@ -13450,10 +13450,10 @@ local familiar = class.th08_combat.actor("ecldata8sp:8", {
 ---BOSS 的一轮连发（Sub6 #2..#36 那 9 条 ins_111 + ins_98）。
 local function boss_burst(owner)
     for i = 1, #GUN_SHOTS do
-        local off = GUN_SHOTS[i][1]
+        local off = -GUN_SHOTS[i][1]
         EX.set_record(owner, 0, EX.K.AIMED, 0, GUN_TURN_FRAMES, 1,
                 off, GUN_SHOTS[i][2])
-        local angle = ran:Float(-GUN_JITTER, GUN_JITTER) + off
+        local angle = -ran:Float(-GUN_JITTER, GUN_JITTER) + off
         EX.shoot(owner, owner.x, owner.y, {
             op = 98, type = GUN_TYPE, color = EX.color(GUN_COLOR),
             count1 = 1, count2 = 1, speed1 = GUN_SPEED, speed2 = 1.0,
@@ -13614,7 +13614,6 @@ local BOSS_FLAGS = 514                  -- 0x202 = SPAWN_FAST | PLAY_SPAWN_SOUND
 
 ---记录表持有者：8 台发射器的 li6 同步（同一帧生成、同相位），所以共用一份就够。
 ---（EX.shoot 出弹时会把记录**拷一份**，之后改这里不会动到已经在飞的弹。）
-local REC = {}
 
 ---AddNormalizeAngle(a, 0)：卷进 (−π, π]。
 local function wrap_pi(a)
@@ -13679,14 +13678,49 @@ local function move_step(move)
     return move.x0 + move.dx * e, move.y0 + move.dy * e, move.t >= MOVE_DUR
 end
 
+-- op94是独立的隐藏敌机。出生RunEcl执行主/子context后只更新运动状态，
+-- 正常敌机扫描从t1继续；主context先发弹，t120子context随后重设公转。
+local emitter=class.th08_combat.actor("ecldata8:57",{
+    ecl_birth=true,
+    init=function(o,x,y,angle,omega,color)
+        o.x,o.y=x,y
+        o.group,o.layer,o.img=GROUP.NONTJT,LAYER.ENEMY,'servant'
+        o.bound,o.colli,o.navi=false,false,false
+        o.emit_x,o.emit_y=x,y
+        o.emit_angle,o.emit_birth_angle=-angle,-angle
+        o.emit_omega,o.emit_delta=-omega,-omega/1.3
+        o.emit_radius,o.emit_radial,o.emit_t=0,EMIT_RADIAL,0
+        o.emit_color=color
+        EX.clear_records(o)
+    end,
+    frame=function(o)
+        local t=o.emit_t
+        if t%EMIT_SHOT_PERIOD==0 then
+            local cull=math.min(EMIT_CULL_MAX,EMIT_CULL0+EMIT_CULL_STEP*math.floor(t/EMIT_BURST))
+            EX.set_record(o,0,EX.K.CULL,0,cull,-1,-1,-1)
+            EX.set_record(o,1,EX.K.WAIT,1,cull,-1,-1,-1)
+            EX.set_record(o,2,EX.K.DESPAWN,0,-1,-1,-1,-1)
+            local shot=math.floor(t%EMIT_BURST/EMIT_SHOT_PERIOD)
+            EX.shoot(o,o.x,o.y,{op=97,type=EMIT_TYPE,color=EX.color(o.emit_color),
+                count1=1,count2=1,speed1=EMIT_SPEED,speed2=0.8,
+                angle=wrap_pi(o.emit_angle-PI+o.emit_delta*shot),step=-EMIT_STEP,flags=EMIT_FLAGS})
+        end
+        if t==EMIT_RESET then
+            o.emit_angle,o.emit_radius,o.emit_radial=o.emit_birth_angle,EMIT_RESET_RADIUS,0
+        end
+        o.emit_angle=wrap_pi(o.emit_angle+o.emit_omega)
+        o.emit_radius=o.emit_radius+o.emit_radial
+        o.x=o.emit_x+math.cos(o.emit_angle)*o.emit_radius
+        o.y=o.emit_y+math.sin(o.emit_angle)*o.emit_radius
+        o.emit_t=t+1
+    end,
+})
 local function card_init(owner)
-    EX.clear_records(REC)
     EX.pool_clear()
     owner.lw192_t = 0
-    owner.lw192_emit = nil
+    owner.lw192_emit = {}
     owner.lw192_move = nil
     owner.lw192_ang = 0                       -- movementAngle 初值（EnemyManager.cpp:145-160）
-    owner.lw192_org = { x = BOSS_X, y = BOSS_Y }
     ---落位：BOSS **原地**出现（Sub10 t=0 的 ins_64 与 Sub116 的 ins_63 同一个点）。
     -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
 end
@@ -13703,11 +13737,7 @@ local function card_frame(owner)
         for _ = 1, 4 do
             for v = 1, #EMIT_VARIANTS do
                 local e = EMIT_VARIANTS[v]
-                list[#list + 1] = {
-                    ang0 = th0, omega = e.omega,
-                    delta = e.omega / 1.3,    -- ins_18(lf1, 1.3)：只管每发之间的增量
-                    color = e.color,
-                }
+                list[#list + 1] = New(emitter,owner.x,owner.y,th0,e.omega,e.color)
             end
             th0 = wrap_pi(th0 + PI / 2)
         end
@@ -13715,39 +13745,6 @@ local function card_frame(owner)
     end
 
     ---② 发射器：每 2 帧 1 发、每 8 发 li6 += 8、出弹角一律朝生成点。
-    local list = owner.lw192_emit
-    if list then
-        local u = t - EMIT_AT                   -- 发射器自己的时间轴
-        if u >= 0 and u % EMIT_SHOT_PERIOD == 0 then
-            local li6 = EMIT_CULL0 + EMIT_CULL_STEP * math.floor(u / EMIT_BURST)
-            if li6 > EMIT_CULL_MAX then li6 = EMIT_CULL_MAX end
-            EX.set_record(REC, 0, EX.K.CULL, 0, li6, 0, 0, 0)
-            EX.set_record(REC, 1, EX.K.WAIT, 1, li6, 0, 0, 0)
-            EX.set_record(REC, 2, EX.K.DESPAWN, 0, 0, 0, 0, 0)
-            local i = math.floor(u % EMIT_BURST / EMIT_SHOT_PERIOD)
-            ---★ Sub12 在发射器 t=120 重设公转（半径 380、角度回初值）；那一帧本身
-            ---  已由主 context 出过弹（子 context 后跑）⇒ 用 `<=`。
-            local r, tu
-            if u <= EMIT_RESET then
-                r, tu = EMIT_RADIAL * u, u
-            else
-                r, tu = EMIT_RESET_RADIUS, u - EMIT_RESET
-            end
-            local ox, oy = owner.lw192_org.x, owner.lw192_org.y
-            for n = 1, #list do
-                local e = list[n]
-                local th = e.ang0 + e.omega * tu
-                ---TH08 位置 = 圆心 + polar(θ, r)；我们 = (x−192, 224−y)，角度整体取反。
-                EX.shoot(REC, ox + math.cos(th) * r, oy - math.sin(th) * r, {
-                    op = 97, type = EMIT_TYPE, color = EX.color(e.color),
-                    count1 = 1, count2 = 1, speed1 = EMIT_SPEED, speed2 = EMIT_SPEED,
-                    angle = -(th + PI + e.delta * i), step = EMIT_STEP, flags = EMIT_FLAGS,
-                })
-            end
-        end
-    end
-
-    ---③ t=510+180k 挪一次、t=570+180k 打一发自机狙（Sub10 #51/#52）。
     if t >= MOVE_FIRST then
         local u = (t - MOVE_FIRST) % MOVE_PERIOD
         if u == 0 then
@@ -13779,11 +13776,10 @@ end
 local function card_del(owner)
     ---★ 帧计数器要清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
     owner.lw192_t = nil
+    for _,o in ipairs(owner.lw192_emit or {}) do if IsValid(o) then object.RawDel(o) end end
     owner.lw192_emit = nil
     owner.lw192_move = nil
     owner.lw192_ang = nil
-    owner.lw192_org = nil
-    EX.clear_records(REC)
     EX.pool_clear()
 end
 
@@ -13911,7 +13907,7 @@ local GUN_SHOTS = {
 }
 
 ---使魔（Sub17）。占位贴图 "servant"；原件里它没有判定（ins_90 会清掉 COLLISION）。
-local familiar = class.th08_combat.actor("ecldata8sp:17", {
+local familiar = class.th08_combat.actor("ecldata8:63", {
     ecl_birth = true, -- 原作SpawnEnemy2当场执行t=0，坐标积分留给正常更新。
     init = function(self, x, y, delta)
         self.x, self.y = x, y
@@ -13963,10 +13959,10 @@ local familiar = class.th08_combat.actor("ecldata8sp:17", {
 ---BOSS 的一轮连发（Sub15 #2..#36 的 9 条 ins_111 + ins_98）。
 local function boss_burst(owner)
     for i = 1, #GUN_SHOTS do
-        local off = GUN_SHOTS[i][1]
+        local off = -GUN_SHOTS[i][1]
         EX.set_record(owner, 0, EX.K.AIMED, 0, GUN_TURN_FRAMES, 1,
                 off, GUN_SHOTS[i][2])
-        local angle = ran:Float(-GUN_JITTER, GUN_JITTER) + off
+        local angle = -ran:Float(-GUN_JITTER, GUN_JITTER) + off
         EX.shoot(owner, owner.x, owner.y, {
             op = 98, type = GUN_TYPE, color = EX.color(GUN_COLOR),
             count1 = 1, count2 = 1, speed1 = GUN_SPEED, speed2 = 1.0,
@@ -18440,7 +18436,7 @@ end
 ---★ 随机角取反后余弦不变、正弦取反，但它在**整个圆**上均匀 ⇒ 偏移点的分布是同一条
 ---  圆，直接按我们的角算即可（跟卡 194/195 的 RANDOM_ANGLE 同一个道理）。
 local function shot_offset(owner, color, n, speed, flags, angle)
-    local th = ran:Float(-PI, PI)
+    local th = -ran:Float(-PI, PI)
     EX.shoot(owner, owner.x + math.cos(th) * OFF_R, owner.y + math.sin(th) * OFF_R, {
         op = 99, type = NS_TYPE, color = EX.color(color),
         count1 = n, count2 = 1,
@@ -18563,16 +18559,28 @@ end
 
 ---8 张共用的 del：帧计数器与枪的状态必须清掉 —— boss 对象在 del 之后还活着、
 ---frame 还每帧在跑（跟本文件其它卡一样的坑）。
+-- Sub88的CALL内先执行6轮10拍，再经过30/80/112，返回调用者实际在162拍。
+local function begin_resurrection(owner)
+    local a=ran:Float(-PI,PI)
+    owner.lwns_resurrect=true
+    owner.lwns_move={x0=owner.x,y0=owner.y,dx=math.cos(-a)*0.15*60,
+        dy=math.sin(-a)*0.15*60,n=60,t=0}
+end
 local function ns_del(owner)
     owner.lwns_t = nil
     owner.lwns_gun = nil
     owner.lwns_move = nil
+    owner.lwns_resurrect=nil
     EX.clear_records(owner)
     EX.pool_clear()
 end
 
 ---8 张共用的一步：先跑 ECL、再积分位移、再夹框（EnemyManagerUpdate.cpp:159-192）。
 local function ns_step(owner)
+    if owner.lwns_resurrect and owner.lwns_t==81 then
+        owner.x,owner.y=BOSS_X,BOSS_Y
+        owner.lwns_move=nil
+    end
     step_move(owner)
     if owner.x < BW_L then owner.x = BW_L elseif owner.x > BW_R then owner.x = BW_R end
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
@@ -18661,6 +18669,7 @@ local function card68_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card68_frame(owner)
@@ -18706,6 +18715,7 @@ local function card70_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card70_frame(owner)
@@ -18755,6 +18765,7 @@ local function card72_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card72_frame(owner)
@@ -18799,6 +18810,7 @@ local function card74_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card74_frame(owner)
@@ -18852,6 +18864,7 @@ local function card76_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card76_frame(owner)
@@ -18896,6 +18909,7 @@ local function card78_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card78_frame(owner)
@@ -18947,6 +18961,7 @@ local function card80_init(owner)
     owner.lwns_gun = nil
     owner.lwns_r1, owner.lwns_r2 = 0.5, 0.25   -- 见 shot() 上面的 rank 注
     owner.lwns_mv_angle = 0
+    begin_resurrection(owner)
 end
 
 local function card80_frame(owner)
@@ -55085,6 +55100,11 @@ local function make_card(build)
     end
 
     ---喂给 build(E) 的 API 表。
+    -- op94拷贝父变量，但不进入90..92的附着链；父机死亡后仍须完成延迟出弹。
+    local function spawn_relative(parent,sub,ox,oy,hp,drop)
+        return New(unit,sub,parent.wx+ox,parent.wy+oy,false,parent,hp,drop,false,
+            class.th08_combat.link_marker(false))
+    end
     local E = {
         PI = PI, K = EX.K,
         aim_at = aim_at, norm = add_norm,
@@ -55095,7 +55115,7 @@ local function make_card(build)
         call = u_call,
         shoot = shoot, interval = u_interval, record = u_record,
         offset = u_set_shoot_offset, contact = u_contact, allow_off = u_allow_off,
-        spawn_inherit = spawn_inherit, spawn_offset = spawn_offset, spawn_at_pos = spawn_at_pos,
+        spawn_inherit = spawn_inherit, spawn_offset = spawn_offset, spawn_at_pos = spawn_at_pos, spawn_relative=spawn_relative,
         child = set_child,
         disable_if = u_disable_if, enable_if = u_enable_if,
         boss = u_boss,
@@ -55219,6 +55239,9 @@ local function make_card(build)
         end,
         ---击破：掉道具 + 一声击破音（RawDel 走的出屏 / 卡结束不掉，与原作一致）。
         kill = function(self)
+            if cfg.DEATH_DROP and cfg.DEATH_DROP[self.sub] then
+                item.Dropitem_PFP(self.x,self.y,cfg.DEATH_DROP[self.sub])
+            end
             if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
             if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
             PlaySound('enep00', 0.3, self.x / 200, true)
@@ -56730,7 +56753,8 @@ CARD[3436] = make_card(build_s3mid)
 ---    1 子 context（枪）挂上那一帧当帧跑 t=0（原作 EclRun.cpp:180-196 也是这么跑）。
 ---    2 Anm / 演出全部不实现；敌人占位贴图 servant、小弹 ball_small 等。
 ---    3 op95 KILL_ALL_NON_BOSS 只清本卡自己 spawn 出来的敌人（引擎没有全局敌机表）。
----    4 Sub14 的 NO_SPRITE（DISABLE_INTERACTION_FLAGS 8）引擎没实现 ⇒ 手动缩成 0 号。
+---    4 Sub29/Sub30的炸弹/残机奖励折为faith；Sub14依原作NO_SPRITE隐藏。
+---      2026-11-05：Sub13的op94延迟发射器独立于父机，击破Sub12不会提前删掉它。
 ---    5 Sub12 的 `ENABLE_INTERACTION_FLAGS 2` 照写（E.contact）；时间轴直接撒出来的
 ---      小妖精 Sub0/2/4/6 出生就带默认 COLLISION（原作撞上去会死）⇒ 由 CONTACT 表
 ---      放 GROUP.ENEMY；Sub10/11/15 自带 `DISABLE_INTERACTION_FLAGS 2` ⇒ NONTJT。
@@ -57058,7 +57082,7 @@ do
     add(0, function(u) u.exi0 = 7 end)              ---SET_INT exI0 7
     local head = #s + 1
     add(0, function(u)                              ---SPAWN_ENEMY_RELATIVE 14 0 0 0 100 −2 100
-        E.spawn_at_pos(u, 14, u.wx, u.wy, 100, -2)
+        E.spawn_relative(u, 14, 0, 0, 100, -2)
     end)
     add(0, function(u) u.li0 = u.li0 - 8 end)       ---INT_SUB li0 8
     add(10, function(u)                             ---JUMP_DEC 0 −60 exI0
@@ -57353,7 +57377,7 @@ local function back_gun(color,speed,sideways)
     return {
         {0,function(u) u.li0=6 end},
         {0,function(u)
-            local a=u.oa+(sideways and PI/2 or 0)
+            local a=u.oa-(sideways and PI/2 or 0)
             E.shoot(u,{op=99,type=2,color=color,count1=2,count2=1,
                 speed1=speed,speed2=0.8,angle=a,step=-0.098174773,flags=0x200})
         end},
@@ -57837,6 +57861,8 @@ local TIMELINE_EXBACK = {
 
 return {
     FILE = "ecldata8",
+    -- Sub29死亡调用Sub30/ExIns31的炸弹/残机奖励沿用本工程道具兼容映射为faith。
+    DEATH_DROP = {[29]={0,1,0}},
     SUB = SUB,
     GUN = GUN,
     TIMELINE = part=="back" and TIMELINE_EXBACK or TIMELINE,

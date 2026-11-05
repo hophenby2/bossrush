@@ -16,8 +16,9 @@ local profiles = {
     ["ecldata3:40"]={spawns={{92,1000,16,32},{92,1000,-16,32},{92,1900,32,0},{92,1900,-32,0},{92,1500,16,-32},{92,1500,-16,-32},{92,900,32,64},{92,900,-32,64},{92,1600,64,0},{92,1600,-64,0},{92,1600,32,-64},{92,1600,-32,-64}},events={{0,77,24,24},{0,160,30}},attached=true},
     ["ecldata3:64"]={spawns={{91,40,0,0}},events={{0,77,24,24},{0,160,30},{0,80,8192}},attached=true,life=function(o,a) return a[6] end},
     ["ecldata3:69"]={spawns={{90,1200,96,128},{90,1200,288,128},{90,500,192,224},{90,300,192,224}},events={{0,77,24,24},{0,160,30},{0,80,8192}},attached=true,life=function(o,a) return a[5]<3 and 1200 or a[4]>0 and 500 or 300 end},
-    ["ecldata8sp:8"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
-    ["ecldata8sp:17"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
+    ["ecldata8:57"]={spawns={{94,1000,0,0}},events={{0,80,8}},attached=false},
+    ["ecldata8:54"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
+    ["ecldata8:63"]={spawns={{90,1350,64,128},{90,1350,320,128},{90,750,152,220},{90,750,232,220},{90,1350,32,188},{90,1350,352,188},{90,750,162,150},{90,750,222,150}},events={{0,77,24,24},{0,160,30}},attached=true},
     ["ecldata8sp:50"]={spawns={{90,13500,96,128},{90,13500,288,128}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
     ["ecldata8sp:55"]={spawns={{91,13500,false,0}},events={{0,77,24,24},{0,160,30},{1,81,3}},attached=true},
     ["ecldata8sp:58"]={spawns={{91,13500,0,0}},events={{0,77,24,24},{0,160,30},{0,82,0},{1,81,3}},attached=true},
@@ -83,6 +84,7 @@ local profiles = {
 return function()
     local M={profiles=profiles}
     local stage_sources=dofile('mod/GAME/th31_stage_sources.lua')
+    local phase_events=dofile('mod/GAME/th31_phase_events.lua')
     local function bit(v,b) return math.floor(v/b)%2==1 end
     -- EnemyManagerUpdate.cpp:228..262 用当前主ANM的精灵宽高判出屏。
     -- 受击框、对象缩放、附属动画都不参与 GameManager::IsWithinPlayfield。
@@ -282,7 +284,7 @@ return function()
             local linked=parent
             for i=1,select('#',...) do
                 local arg=select(i,...)
-                if type(arg)=='table' and arg.th08_link_parent then linked=arg.th08_link_parent end
+                if type(arg)=='table' and arg.th08_link_parent~=nil then linked=arg.th08_link_parent or nil end
             end
             o.th08_parent,o.th08_attached=linked,false
             o.th08_card_owner=card_owner(linked)
@@ -590,7 +592,15 @@ return function()
             end
             local source=card.th08_motion_source or card.th08_lastword_source
             if source then
-                OriginalStageVisual.bind_source(o,8,source.file..':'..source.sub,true)
+                local key=source.file..':'..source.sub
+                local events=phase_events[key]
+                OriginalStageVisual.bind_source(o,8,key,true,events and events.visual)
+                if events then
+                    o._original_interaction_events=events.interaction
+                    o._original_interaction_index=1
+                    o._original_reduction_until=nil
+                    OriginalCollision.events(o,0)
+                end
                 o.th08_source_clock=0
             else o.th08_source_clock=nil end
             local contact_until=M.survival_contact_until[id]
