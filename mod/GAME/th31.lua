@@ -26752,58 +26752,12 @@ local function laser_used()
     return #lasers
 end
 
-local lw126_dot
 local lw126_laser
 local lw126_node
-
----------------------------------------------------------------------
----Sub55 的光点（t=0,2,…,12）。type 3、速度 0.1、flags 0x40204 = 0x40000(DESPAWN)|0x200(PLAY_SPAWN_SOUND)|0x4(SPAWN_NORMAL) 带 DESPAWN 位 ⇒ 出生当帧
----就进 DESPAWNING，只播 12 帧消失脚本、**全程没有判定**。
----是 `object` 而不是 `bullet`：它永远打不到自机，也不该进 tools 的威胁统计。
----★ 但它**照样占弹槽**（原作它就是 BulletManager 里的一颗弹，算进 activeBulletCount
----  的 0x600 上限，BulletManager.cpp:686-690）⇒ 出生时登记进 EX.pool（池满仍会生，
----  因为 ins_99 这波只有一颗、原作的池满检查在最外层，单颗波不会被挡）。
----------------------------------------------------------------------
-lw126_dot = Class(object, {
-    init = function(self, x, y, angle)
-        self.x, self.y = x, y
-        self.group, self.layer = GROUP.INDES, LAYER.ENEMY_BULLET
-        self.img = "ball_small" .. NODE_DOT_COLOR
-        self.hscale, self.vscale = 0.5, 0.5
-        self.colli = false
-        self.navi = false
-        self.bound = false
-        self.rot = 0
-        self._blend, self._a = "", 255
-        self.d_vx = math.cos(angle) * NODE_DOT_SPEED
-        self.d_vy = math.sin(angle) * NODE_DOT_SPEED
-        self.ex_despawn = 0
-        ---出生分支先把位置往后退 velocity·4（BulletManager.cpp:222-244 的 SPAWN_NORMAL 支）。
-        self.x = x - self.d_vx * 4
-        self.y = y - self.d_vy * 4
-        self.d_life = NODE_DOT_LIFE
-    end,
-    frame = function(self)
-        ---DESPAWNING：每帧 `position += velocity/2`，12 帧的消失脚本播完就回收。
-        self.x = self.x + self.d_vx / 2
-        self.y = self.y + self.d_vy / 2
-        self.d_life = self.d_life - 1
-        ---占位观感：原作那 12 帧是 etama.anm 的消失脚本（缩+淡），这里按剩余帧线性淡出。
-        self._a = math.floor(255 * self.d_life / NODE_DOT_LIFE)
-        if self.d_life <= 0 then
-            object.RawDel(self)
-        end
-    end,
-})
-
----------------------------------------------------------------------
----Sub55 的光柱（`ins_114`）。状态机照抄 BulletManager.cpp:1049-1150：
----STARTING 60 帧（前 30 帧只画 1.2 px 细线、后 30 帧按 timer·width/startTime 变粗）→
----ACTIVE 60 帧满宽 + 判定 → DESPAWNING 20 帧收细。总寿命 140 帧。
----------------------------------------------------------------------
 lw126_laser = Class(laser, {
     init = function(self, x, y, angle)
         self._native_laser_phase = { "l_state", "l_timer", 20, 10 }
+        self._native_laser_type,self._native_laser_flags=1,4
         self._visual_width_factor = 2
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 70 的身部。
@@ -26849,7 +26803,7 @@ lw126_laser = Class(laser, {
             end
         end
         self.l_timer = t + 1
-        OriginalBulletVisual.native_laser(self,self.l_state,t,2*LASER_W,LASER_DESPAWN,0,nil,native_entered)
+        OriginalBulletVisual.native_laser(self,self.l_state,t,2*LASER_W,LASER_DESPAWN,4,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -26895,9 +26849,9 @@ lw126_node = Class(object, {
         end
         ---7 颗光点：t = 0,2,…,12（JUMP_DEC 循环）⇒ 每 10 px 一颗。
         if t % 2 == 0 and t <= NODE_SPLIT - 2 and class.th08_combat.can_shoot(self) then
-            local dot = New(lw126_dot, self.x, self.y, ran:Float(-PI, PI))
-            dots[#dots + 1] = dot
-            EX.pool[#EX.pool + 1] = dot     -- 占弹槽（见上面的 ★）
+            EX.set_record(self,0,EX.K.DESPAWN,0,-1,-1,-1,-1)
+            EX.shoot(self,self.x,self.y,{op=99,type=3,color=EX.color(2),count1=1,count2=1,
+                speed1=NODE_DOT_SPEED,speed2=1,angle=-ran:Float(-PI,PI),step=-NODE_DOT_STEP,flags=262660})
         end
         if t == NODE_SPLIT then
             ---`ins_51/ins_47`：出场地就 `ins_1()` TERMINATE（不再分叉）。
@@ -26997,6 +26951,7 @@ end
 ---`ins_94(55, 0,0,0, 10, −2, 10)`：在 BOSS 当前位置生一个根节点，
 ---方向 = 生之前那句 `ins_7(lf0, ANGLE_TO_PLAYER)` 记下的当帧自机方位、exI0 = 0。
 local function spawn_root(owner)
+    OriginalStageVisual.presentation.sound.play(8,16,owner.x)
     local dir = math.atan2(player.y - owner.y, player.x - owner.x)
     nodes[#nodes + 1] = New(lw126_node, owner.x, owner.y, dir, 0)
 end
@@ -27026,16 +26981,16 @@ local function card_frame(owner)
         spawn_root(owner)
     end
     ---② 两条枪：挂上那一帧（t=90）算各自的 t=0，之后每 50 / 17 帧一发。
+    if T >= T_WANDER and (T - T_WANDER) % CYCLE == 0 then
+        begin_boundary_move(owner, st)
+    end
+    ---④ 位移插值（缓动 4 = OUT_QUADRATIC）。
     if T >= T_ROOT then
         local gt = T - T_ROOT
         if gt % GUN53_EVERY == 0 then gun53_shot(owner) end
         if gt % GUN54_EVERY == 0 then gun54_shot(owner) end
     end
     ---③ `ins_67(60, 4, 1.0)`：轮内 t=270（270 + 240k）。
-    if T >= T_WANDER and (T - T_WANDER) % CYCLE == 0 then
-        begin_boundary_move(owner, st)
-    end
-    ---④ 位移插值（缓动 4 = OUT_QUADRATIC）。
     if st.move then
         local oldx,oldy=owner.x,owner.y
         local finished=step_out_quad(st.move, owner)
@@ -28158,6 +28113,8 @@ local lw36_fam = class.th08_combat.actor("ecldata6:39", {
     end,
     frame = function(self)
         local t = self.f_t
+        if t>=30010 then object.RawDel(self);return end
+        if self._original_actor then self._original_actor.vm.rotation[3]=self.f_dir end
         ---① 子 context（枪）：挂上那一帧算它的 t=0 ⇒ t=10/14/18… 各一发，出弹用的是
         ---   **这一帧位移之前**的位置（RunEcl 先跑、UpdateMovement 后跑）。
         if t >= FAM_GUN_AT and (t - FAM_GUN_AT) % FGUN_PERIOD == 0 then
@@ -28199,6 +28156,9 @@ local function card_frame(owner)
     local st = owner.lw36
     if not st then return end
     local T = st.t
+    if T==192 then
+        OriginalStageVisual.presentation.ambient_start(8,'ecldata6','ecldata6:15',-192,224)
+    end
     ---① 轮头：12 只使魔**同一帧**全放出去（lf0 = rndAngle + k·π/6，TH08 口径）。
     if T >= T_WAVE0 and (T - T_WAVE0) % CYCLE == 0 then
         local lf0 = ran:Float(-PI, PI)
@@ -28531,7 +28491,7 @@ local function f40_gun_volley(self)
     ---出弹点：exF0 = rndSgn·32、exF1 = rndSgn·32，直接当 shootOffset（不减圆心、不截网格）。
     local rx, ry = rnd_sgn(), rnd_sgn()
     ---`ins_25(lf0, rndAngle, lf2)` + `ins_37`：TH08 口径 ⇒ 整体取反。
-    local ang = wrap_pi(-(ran:Float(-PI, PI) + self.f_base))
+    local ang = wrap_pi(-(self.f_ang + self.f_base))
     EX.shoot(self, self.x + rx * FGUN_OFFSCALE, self.y - ry * FGUN_OFFSCALE, {
         op = 99, type = FGUN_TYPE, color = EX.color(self.f_color),
         count1 = 1, count2 = 1,

@@ -596,6 +596,10 @@ return function()
             if source then
                 local key=source.file..':'..source.sub
                 local events=phase_events[key]
+                -- Sub36 t192生成的NO_DEATH烟尘跨过后续阶段；单独练习缺少前段时从稳态循环开始。
+                if source.file=='ecldata6' and ({[56]=true,[40]=true,[63]=true,[44]=true,[68]=true,[73]=true,[78]=true})[source.sub] then
+                    OriginalStageVisual.presentation.ambient_start(8,'ecldata6','ecldata6:15',-192,224,{pc=8,time=20})
+                end
                 OriginalStageVisual.bind_source(o,8,key,true,events and events.visual)
                 if events then
                     o._original_interaction_events=events.interaction
