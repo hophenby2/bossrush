@@ -29035,7 +29035,7 @@ local ANG_JITTER = 0.024543693      -- `ins_27([10017], [10035], 0.024543693)`�
 ---（全是 TH08 口径，出膛那一刻整体取反）。type 恒为 11（Lunatic 上这四条 ins 的操作数）。
 local SHOT_TYPE = 11
 local SHOT_FLAGS = 514              -- 0x202 = SPAWN_FAST | PLAY_SPAWN_SOUND
-local SHOT_STEP16 = PI / 16         -- 0.049087387（`ins_98/100` 的 angleStep）
+local SHOT_STEP16 = 0.049087387         -- 0.049087387（`ins_98/100` 的 angleStep）
 local SHOT_STEP250 = 0.012566371    -- −π/250（三发自机狙环的 angleStep）
 ---rank 缩放（见卡头）：刚出生后的第一相位 ⇒ 影响量 ∓0.15 ⇒ rank 32 时 +0.15 / +0.075。
 local RANK_SPD, RANK_SPD2 = 0.15, 0.075
@@ -29050,7 +29050,7 @@ local SHOT_PLAN = {
     ---然后 `!L lf0=4.0 / li0=32 / li1=4` 的 `ins_98` + `!NHL ins_100` 一对。
     [172] = { { 98, 2, 1, 16, 6.0, 1.2, 0, -SHOT_STEP250 },
               { 98, 2, 40, 4, 1.0, 0.8, 0, SHOT_STEP16 },
-              { 100, 15, 40, 4, 6.0, 1.3, 0, SHOT_STEP16 },
+              { 100, 15, 40, 4, 3.0, 1.3, 0, SHOT_STEP16 },
               { 98, 2, 32, 4, 2.0, 0.8, 0, SHOT_STEP16 },
               { 100, 15, 32, 4, 4.0, 1.3, 0, SHOT_STEP16 } },
     ---t=346 / 354 / 362：色号换成 15、步长反过来（= 前一段三发的镜像）。
@@ -29150,6 +29150,8 @@ local function card_init(owner)
     ---发射源自己的记录表（本卡不用记录，但清一下跟其它卡一致）。
     EX.clear_records(owner)
     EX.pool_clear()
+    owner.th08_manual_main_anm=true
+    OriginalStageVisual.source_event(owner,8,"ecldata4a",{0,59,0})
     owner.s4a_t = 0
     owner.s4a_fams = {}
     owner.s4a_ang = 0
@@ -29168,6 +29170,7 @@ local function card_frame(owner)
     if ph >= 0 then
         ph = ph % CYCLE
         ---出弹。
+        if ph==0 or ph==174 then OriginalStageVisual.source_event(owner,8,"ecldata4a",{0,62}) end
         local plan = SHOT_PLAN[ph]
         if plan then
             for i = 1, #plan do
@@ -29213,6 +29216,7 @@ end
 
 local function card_del(owner)
     ---★ 帧计数器必须一起清掉：boss 对象在 del 之后还活着、frame 还每帧在跑。
+    owner.th08_manual_main_anm=nil
     owner.s4a_t = nil
     owner.s4a_ang = nil
     owner.s4a_move = nil
@@ -29391,10 +29395,6 @@ local function card_frame(owner)
 
     ---① 结界折射。必须在出弹**之前**、且在 BOSS 自己的 frame 里做：
     ---   跟原作「EnemyManager chain(11) → BulletManager chain(14)」的顺序一致。
-    if t >= SHOT_WARP_FROM then
-        warp_barrier()
-    end
-
     ---② 出弹循环（t≥190 之后每真帧一圈 = 2 颗）。
     if t >= SHOT_DELAY then
         if owner.c28_n <= 0 then
@@ -29416,13 +29416,23 @@ local function card_frame(owner)
             speed1 = seg1 and SHOT_SPD1 or SHOT_SPD2,
             speed2 = 0.9,
             ---出弹角整体取反（本文件约定）；step 只在 count2 > 1 时用得上。
-            angle = -owner.c28_lf0, step = SHOT_STEP, flags = SHOT_FLAGS,
+            angle = -owner.c28_lf0, step = -SHOT_STEP, flags = SHOT_FLAGS,
         })
         owner.c28_lf0 = wrap_pi(owner.c28_lf0 + SHOT_DANG)
         owner.c28_n = owner.c28_n - 1
     end
 
     ---③ 位移插值（原作 RunEcl 之后才 UpdateMovement，本函数把两步放在一起）。
+    -- 主context的重复Ex回调位于主枪之后、子context之前。
+    if t >= SHOT_WARP_FROM then warp_barrier() end
+
+    if t>=590 and t<620 and (t-590)%3==0 then
+        if t==590 then OriginalStageVisual.presentation.sound.play(8,25,owner.x) end
+        local spread=ran:Float(0,1)*0.78539819+0.39269909
+        EX.shoot(owner,owner.x,owner.y,{op=96,type=11,color=EX.color(15),
+            count1=7,count2=1,speed1=2,speed2=0.9,angle=0,step=-spread,flags=2})
+    end
+
     local move = owner.c28_move
     if move then
         local x, y, done = move_step(move)
@@ -29539,20 +29549,20 @@ local RING_STEP = PI / 64
 ---`ins_98`(CIRCLE_AIMED) / `ins_100`(OFFCIRC_AIMED) 两轮大环。
 local RING_PLAN = {
     [0]  = { { 98, 2, 40, 4, 1.0, 0.8 }, { 100, 15, 40, 4, 3.0, 1.3 } },
-    [88] = { { 98, 15, 40, 2, 1.0, 0.8 }, { 100, 2, 40, 2, 3.0, 1.3 } },
+    [160] = { { 98, 15, 40, 2, 1.0, 0.8 }, { 100, 2, 40, 2, 3.0, 1.3 } },
 }
 ---`ins_178(持续帧, 缓动, 速度)` 的两次调用。
-local BIAS_PLAN = { [0] = { 80, 1.2 }, [88] = { 120, 1.0 } }
+local BIAS_PLAN = { [0] = { 80, 1.2 }, [160] = { 120, 1.0 } }
 
----主循环：起 ph = t − 120，一轮 208 帧；循环体每 8 帧一步。
-local LOOP_PH, LOOP_CYCLE = 120, 208
+---主循环：起 ph = t − 120，一轮 380 帧；循环体每 8 帧一步。
+local LOOP_PH, LOOP_CYCLE = 120, 380
 ---给一个相位，返回这一刻的 exI0（不是循环体就返回 nil）。
 local function loop_exi0(ph)
-    if ph >= 0 and ph < 88 and ph % 8 == 0 then
+    if ph >= 0 and ph < 80 and ph % 8 == 0 then
         return 10 - ph / 8
     end
-    if ph >= 88 and ph < LOOP_CYCLE and (ph - 88) % 8 == 0 then
-        return 15 - (ph - 88) / 8
+    if ph >= 160 and ph < 280 and (ph - 160) % 8 == 0 then
+        return 15 - (ph - 160) / 8
     end
     return nil
 end
@@ -29757,7 +29767,7 @@ local function card_frame(owner)
                     op = s[1], type = 11, color = EX.color(s[2]),
                     count1 = s[3], count2 = s[4],
                     speed1 = s[5] + RANK_SPD, speed2 = s[6] + RANK_SPD2,
-                    angle = 0, step = RING_STEP, flags = RING_FLAGS,
+                    angle = 0, step = -RING_STEP, flags = RING_FLAGS,
                 })
             end
         end
@@ -30100,6 +30110,7 @@ local function card_init(owner)
         exI3 = 0,
         mang = 0,             -- movementAngle（TH08 口径；只给 ins_67 的怪癖分支用）
     }
+    owner.th08_manual_main_anm=true
     owner.c30 = st
     ---`ins_64(90, 4, 192, 160)`（见常量注）。
     st.move = {
@@ -30127,6 +30138,7 @@ local function card_frame(owner)
     if t >= LOOP0 then
         local off = (t - LOOP0) % LOOP_CYCLE
         if off == 0 then
+            OriginalStageVisual.source_event(owner,8,"ecldata4a",{0,62})
             ---`ins_98`：CIRCLE_AIMED、40 向 × 4 层速环（160 发，整体瞄自机）。
             EX.shoot(owner, owner.x, owner.y, {
                 op = 98, type = RING_TYPE, color = EX.color(RING_COLOR),
@@ -30161,6 +30173,7 @@ end
 
 local function card_del(owner)
     local st = owner.c30
+    owner.th08_manual_main_anm=nil
     owner.c30 = nil
     if st and st.fams then
         for i = #st.fams, 1, -1 do
@@ -31223,8 +31236,8 @@ local function card_frame(owner)
             if st.top then
                 stream(owner, true, st.lf5, blocked)
                 st.top = false
+                st.exi3 = st.exi3 + EXI3_ADD
             end
-            st.exi3 = LV_EXI3                  -- `ins_6([10039], 36)`（t=180 那一组的复位）
             st.lf0 = rnd_sgn() * (PI / 12)     -- `ins_27([10016], [10035], π/12)`
             st.move = polar_move(owner, st.lf0, MOVE_SPEED, MOVE_N, 4)
         elseif ph == 90 then
