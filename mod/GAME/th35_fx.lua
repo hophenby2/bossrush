@@ -30,13 +30,14 @@ function H.fire(o,c,address)
     end
 end
 function H.context(key) return {key=key,seen={}} end
-function H.shadow(o,stage,bank,script,period,high)
+function H.shadow(o,stage,bank,script,period,high,initial_delay)
     local function draw()
         local id=type(script)=='function' and script(o) or script
         H.play(o,stage,bank,id,high)
     end
     -- TH10新异步线程不参与本拍快照，首个本地t0沿既有调度进入下一拍。
     task.New(o,function()
+        if initial_delay and initial_delay>0 then task.Wait(initial_delay) end
         while valid(o) do draw();task.Wait(period or 1) end
     end)
 end
