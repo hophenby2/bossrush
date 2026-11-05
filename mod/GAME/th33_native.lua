@@ -36,6 +36,7 @@ end
 function N.begin_photo_count(owner,camera)
     N.end_photo_count(owner)
     N.enemy_pool={owner};owner.th095_enemy_slot=0
+    N.bullet_slots,N.bullet_cursor,N.bullet_pending={},1,{}
     owner.th095_photos_taken=0
     if not camera or type(camera.NewShotBonus)~='function' then return end
     if camera.th095_photo_owner then N.end_photo_count(camera.th095_photo_owner) end
@@ -367,14 +368,28 @@ function N.has_space()
     return used<1600
 end
 function N.reserve()
-    local s=stage and stage.current_stage
-    local t=s and s.timer
-    if not t or t~=stamp or s~=scene or used>=1600 then
-        refresh();stamp,scene=t,s
+    if not N.has_space() then return false end
+    N.bullet_slots=N.bullet_slots or {}
+    N.bullet_pending=N.bullet_pending or {}
+    local first=N.bullet_cursor or 1
+    for offset=0,1599 do
+        local slot=(first+offset-1)%1600+1
+        local o=N.bullet_slots[slot]
+        if not N.bullet_pending[slot] and (not o or not IsValid(o) or o.status=='del' or o.status=='kill') then
+            N.bullet_pending[slot]=true
+            N.bullet_cursor=slot%1600+1
+            used=used+1
+            return slot
+        end
     end
-    if used>=1600 then return false end
-    used=used+1
-    return true
+    return false
+end
+-- ExIns1按原1600槽下标扫描，不按创建时间排序；敌机池满时出生ECL不运行。
+function N.for_bullets(fn)
+    for slot=1,1600 do
+        local o=N.bullet_slots and N.bullet_slots[slot]
+        if o and IsValid(o) and o.status~='del' and o.status~='kill' then fn(o) end
+    end
 end
 local function bit(v,n) return math.floor(v/n)%2==1 end
 function N.rate(owner,speed)
@@ -390,7 +405,8 @@ function N.restore_rate(owner)
         owner.th095_rate_active,owner.th095_saved_fps=nil,nil
     end
 end
-function N.begin(o,flags,birth)
+function N.begin(o,flags,birth,slot)
+    N.bullet_slots[slot]=o;N.bullet_pending[slot]=nil;o.th095_bullet_slot=slot-1
     pool[#pool+1]=o
     o.th095_angle,o.th095_speed=o.rot,GetV(o)
     o.class=o.logclass or o.class

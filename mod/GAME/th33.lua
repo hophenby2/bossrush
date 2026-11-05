@@ -507,11 +507,12 @@ local function register_photo_card(group,level,title,id,...)
 end
 local PHOTO_HOOKS=setmetatable({},{__mode='k'})
 local function NewSimpleBullet(style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,frame,render,flags)
-    if not PhotoNative.reserve() then return nil end
+    local slot=PhotoNative.reserve()
+    if not slot then return nil end
     local meta=frame and PHOTO_HOOKS[frame]
     local o=rawSimpleBullet(style,color,x,y,v,a,aim,omiga,stay,destroyable,rebound,through,
         function(b) PhotoNative.step(b,frame) end,render)
-    PhotoNative.begin(o,flags or (meta and meta.flags) or 0,meta and frame)
+    PhotoNative.begin(o,flags or (meta and meta.flags) or 0,meta and frame,slot)
     return o
 end
 -- 固定枪也显式传入二进制ECL的flags，不能统一假定FAST或无出生过渡。
@@ -14033,10 +14034,10 @@ end
 
 ---ins_66（ConfigurePolarMotion，EclHelpers.cpp:28-40）：用 duration 帧从当前位置沿
 ---TH095 方向 angle 线性插值移动 speed×duration（speed 可负 = 反向），缓动 easing。
-local function sg_polar_move(owner, st, duration, easing, th_angle, speed)
+local function sg_polar_move(owner,st,duration,easing,th_angle,speed,box)
     local d = speed * duration
     local dx, dy = sg_off(d, th_angle)
-    sg_move(owner, st, owner.x + dx, owner.y + dy, max(1, duration), easing)
+    sg_move(owner,st,owner.x+dx,owner.y+dy,max(1,duration),easing,box)
 end
 
 ---ins_67（BeginBoundaryAwareMove）见 Stage 9 段的 sg_bmove：先按自机位置随机取一个
@@ -14102,11 +14103,11 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
     local hook_decel = sg_tr_hook({ sg_rec(SG_DECEL, 0, -1, -1, -1, -1) }, 0x202)
 
     ---Sub4（@832）：连打 60 帧、每帧 2 发小弹（基准角只在进入时取一次）。
-    local function sub4(owner)
+    local function sub4(owner,g)
         local base_a = th_aim(owner.x, owner.y)             -- ins_7(f2, aimAngle)，只读一次
         local f1, f4 = 0.0, A4_SPREAD                       -- floatV1 / floatV4
         for _ = 1, A4_ITERS do
-            if st.dead then return end
+            if st.dead or g~=gen then return end
             for _ = 1, A4_SHOTS do                          -- ins_6(ei2,2) 的内层循环
                 local a = base_a + ran:Float(-math.pi, math.pi) * f4
                 sg_shot(87, sg_style(5), 6, owner.x, owner.y, 1, 1,
@@ -14120,11 +14121,11 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
     end
 
     ---Sub5（@1216）：沿开火时的自机方向、速度 1.0→3.2 的 12 连直线弹（每 8 帧一发）。
-    local function sub5(owner)
+    local function sub5(owner,g)
         local a = th_aim(owner.x, owner.y)
         local sp = A5_SPEED0
         for i = 1, A5_SHOTS do
-            if st.dead then return end
+            if st.dead or g~=gen then return end
             sg_shot(87, sg_style(1), 6, owner.x, owner.y, 1, 1,
                     sp, 1.5, math.deg(a), 0, false, 0x202, hook_decel)
             sp = sp + A5_SPEED_STEP
@@ -14133,10 +14134,10 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
     end
 
     ---Sub7（@1584）：每 8 帧一波 4 发 30° 扇（±15°/±45°）、速度 3，方向固定。
-    local function sub7(owner)
+    local function sub7(owner,g)
         local a = th_aim(owner.x, owner.y)
         for i = 1, A7_SHOTS do
-            if st.dead then return end
+            if st.dead or g~=gen then return end
             sg_shot(87, sg_style(12), 3, owner.x, owner.y, A7_COUNT, 1,
                     A7_SPEED, 1.5, math.deg(a), math.deg(A7_STEP), false, 0x202, hook_decel)
             if i < A7_SHOTS then task.Wait(A7_GAP) end
@@ -14148,8 +14149,8 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
         local g = gen
         task.New(owner, function()
             while not st.dead and g == gen do
-                task.New(owner, function() sub4(owner) end)
-                task.New(owner, function() sub5(owner) end)
+                task.New(owner, function() sub4(owner,g) end)
+                task.New(owner, function() sub5(owner,g) end)
                 task.Wait(MOVE_AT)
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
@@ -14166,8 +14167,8 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
             if st.dead or g ~= gen then return end
             sg_clear(lasers)                            -- ins_102
             while not st.dead and g == gen do
-                task.New(owner, function() sub4(owner) end)
-                task.New(owner, function() sub7(owner) end)
+                task.New(owner, function() sub4(owner,g) end)
+                task.New(owner, function() sub7(owner,g) end)
                 task.Wait(SUB6_MOVE_AT - SUB6_AT)
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
@@ -14190,7 +14191,6 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,6) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= SWITCH_AT then
@@ -14201,6 +14201,7 @@ do  -- 10 チルノ 非符（ecl3_a，组 22a 第 1 张）
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -14268,8 +14269,9 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
 
     ---Sub4/5/8/9/11/12/14/15 的统一形状：每 freeze 帧放一圈 count 发、随机基准角的环。
     local function ring(owner, seq, btype, bcolor, count, freeze)
+        local g=gen
         task.New(owner, function()
-            while not st.dead and seq == ring_seq and gen > 0 do
+            while not st.dead and seq==ring_seq and g==gen do
                 local r = ran:Float(-SCATTER, SCATTER)
                 local ox, oy = sg_off(r, ran:Float(-math.pi, math.pi))
                 local sp = ran:Float(-1, 1) + RING_SPEED_BIAS    -- ins_27(rnd_f32s)×1 + 1.7
@@ -14290,9 +14292,9 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
     ---Sub3（@756）：200 帧一轮。
     local function sub3(owner)
         local g = gen
-        ring_seq = ring_seq + 1
-        pair(owner, ring_seq, 5, 6, 0, 6, 6, 15)            -- t=0：Sub4/Sub5，只起一次
         task.New(owner, function()
+            ring_seq=ring_seq+1
+            pair(owner,ring_seq,5,6,0,6,6,15) -- 根先执行，再按slot顺序运行子枪。
             while not st.dead and g == gen do
                 task.Wait(120)                               -- 标签落在 t=120 的 ins_67 上
                 if st.dead or g ~= gen then return end
@@ -14346,7 +14348,6 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- 四条 ins_115 的监视器
                 local step = 0
                 while not st.dead and step < 4 do
@@ -14361,6 +14362,7 @@ do  -- 12 チルノ 雪符「ダイアモンドブリザード」（ecl3_b，组
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -14435,6 +14437,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
     local lasers = {}
 
     ---大玉的记录表（每次发射重建：floatV3/floatV4 随基角变）。
+    local offset_x,offset_y=0,0
     local function parent_recs(v3, v4)
         return {
             sg_rec(SG_WAIT, 0, WAIT_A, -1, -1, -1),          -- slot0
@@ -14452,8 +14455,10 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
 
     ---Sub4：发弹主上下文 —— 每次在自机方向起、三颗大玉（彼此 120°），然后冻结 freeze 帧。
     local function sub4(owner, seq, freeze)
+        local g=gen
         task.New(owner, function()
-            while not st.dead and slot0_seq == seq and gen > 0 do
+            while not st.dead and slot0_seq==seq and g==gen do
+                ran:Float(-64,64) -- 原4c4读取后被覆盖，仍须消费。
                 local base = th_aim(owner.x, owner.y)        -- floatV2（TH095 弧度）
                 for _ = 1, 3 do
                     if st.dead or slot0_seq ~= seq then return end
@@ -14461,7 +14466,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
                     local v4 = base - math.pi / 4            -- floatV4
                     local hook = sg_tr_hook(parent_recs(v3, v4), PARENT_FLAGS)
                     sg_shot(89, sg_style(PARENT_TYPE), PARENT_COLOR,
-                            owner.x, owner.y, 1, 1, PARENT_SPEED, 1.5,
+                            owner.x+offset_x,owner.y+offset_y,1,1,PARENT_SPEED, 1.5,
                             math.deg(base), math.deg(RING_STEP), false, PARENT_FLAGS, hook)
                     base = base + 2 * math.pi / 3
                 end
@@ -14472,11 +14477,13 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
 
     ---Sub8/Sub10：在本体附近 ≤16 px 的随机点放一整圈（型5/色6 c1=8 或 型12/色3 c1=6）。
     local function ring(owner, seq, btype, bcolor, count, freeze)
+        local g=gen
         task.New(owner, function()
-            while not st.dead and slot1_seq == seq and gen > 0 do
+            while not st.dead and slot1_seq==seq and g==gen do
                 local mag = ran:Float(-1, 1) * RING_SCATTER
                 local off = ran:Float(-math.pi, math.pi)
-                local ox, oy = sg_off(mag, off)
+                local ox,oy=sg_off(mag,off)
+                offset_x,offset_y=ox,oy -- 原Enemy共用shootOffset留给下一轮母弹。
                 local sp = ran:Float(0, 1) + 0.2
                 local a = ran:Float(-math.pi, math.pi)
                 sg_shot(89, sg_style(btype), bcolor, owner.x + ox, owner.y + oy,
@@ -14489,9 +14496,9 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
     ---Sub3（@848）：160 帧一轮。
     local function sub3(owner)
         local g = gen
-        slot0_seq = slot0_seq + 1
-        sub4(owner, slot0_seq, 60)
         task.New(owner, function()
+            slot0_seq=slot0_seq+1
+            sub4(owner,slot0_seq,60)
             while not st.dead and g == gen do
                 task.Wait(MOVE_AT)                          -- 标签落在 t=120 的 ins_67 上
                 if st.dead or g ~= gen then return end
@@ -14504,7 +14511,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
 
     ---Sub5/6/7/9（拍中第 k 张后的相位）：清屏 + 重起槽 0（± 槽 1），之后每 period 帧挪一次。
     ---phase = (freeze, ring_type, ring_color, ring_count, ring_freeze, wait, speed, period)
-    local function phase(owner, freeze, rtype, rcolor, rcount, rfreeze, wait, speed, period)
+    local function phase(owner,freeze,rtype,rcolor,rcount,rfreeze,wait,speed,period,move_frames)
         local g = gen
         task.New(owner, function()
             task.Wait(10)
@@ -14519,7 +14526,7 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
             while not st.dead and g == gen do
                 task.Wait(wait)                             -- 下一次 ins_67 之前
                 if st.dead or g ~= gen then return end
-                sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, speed, BOX)
+                sg_bmove(owner,st,move_frames,MOVE_EASE,speed,BOX)
                 task.Wait(period - wait)                    -- ins_4 的周期
             end
         end)
@@ -14528,10 +14535,10 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
     ---相位表：拍中第 k 张 → Sub5/6/7/9 的
     ---(freeze, 环型/色/数/freeze, 首次挪位前的等待, 速度, 周期)。
     local PHASE = {
-        { 15, nil, nil, nil, nil, 120, 1, 160 },            -- Sub5（拍 1）：t=130 挪、t=170 回
-        { 10, nil, nil, nil, nil,  90, 1, 130 },            -- Sub6（拍 2）：t=100 挪、t=140 回
-        { 10, 5, 6, 8, 60, 60, 1, 100 },                    -- Sub7（拍 3）：t=70 挪、t=110 回
-        { 10, 12, 3, 6, 30, 60, 1, 100 },                   -- Sub9（拍 4）：同上
+        { 15, nil, nil, nil, nil, 120,1,160,60 },            -- Sub5（拍 1）：t=130 挪、t=170 回
+        { 10, nil, nil, nil, nil,  90,1,130,40 },            -- Sub6（拍 2）：t=100 挪、t=140 回
+        { 10, 5, 6, 8, 60, 60,1,100,60 },                    -- Sub7（拍 3）：t=70 挪、t=110 回
+        { 10, 12, 3, 6, 30, 60,1,100,60 },                   -- Sub9（拍 4）：同上
     }
     local PHASE_AT = { 1, 2, 3, 4 }
 
@@ -14546,11 +14553,10 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.x, self.y = BOSS_X, BOSS_START_Y
-        st.dead = false
+        st.dead=false;offset_x,offset_y=0,0
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- 四条 ins_115 的监视器
                 local step = 0
                 while not st.dead and step < 4 do
@@ -14559,11 +14565,12 @@ do  -- 14 チルノ 凍符「マイナスＫ」（ecl3_c，组 22a 第 3 张）
                         step = step + 1
                         gen = gen + 1
                         local ph = PHASE[step]
-                        phase(self, ph[1], ph[2], ph[3], ph[4], ph[5], ph[6], ph[7], ph[8])
+                        phase(self, ph[1], ph[2], ph[3], ph[4], ph[5],ph[6],ph[7],ph[8],ph[9])
                     end
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -14594,15 +14601,15 @@ local RAIN_ANG0, RAIN_ANG1 = 1.5707964, 0.0981748
 ---         radius?, speed? }
 class.frost_shard = Class(object, {
     init = function(self, owner, opt)
-        local dir = opt.dir
+        local dir=opt.random_direction and ran:Float(-math.pi,math.pi) or opt.dir
         local radius = opt.radius or SHARD_R
         local st = opt.st
         self.group = GROUP.GHOST
         self.layer = LAYER.ENEMY_BULLET_EF
         self.colli = false
         self.bound = false
-        self.x = owner.x + radius * math.cos(dir)
-        self.y = owner.y - radius * math.sin(dir)
+        self.x=opt.spawn_x or owner.x+radius*math.cos(dir)
+        self.y=opt.spawn_y or owner.y-radius*math.sin(dir)
         self.rot = -math.deg(dir) + 90
         self.dir = dir
         self.spd = opt.speed or SHARD_SPEED
@@ -14621,7 +14628,7 @@ class.frost_shard = Class(object, {
                 if st.dead then break end
                 local v2 = self.dir + math.pi / 4
                 local v3 = self.dir - math.pi / 4
-                local v4 = ran:Float(-1, 1) * radius
+                local v4=ran:Float(-1,1)*(opt.scatter_radius or radius)
                 local off = ran:Float(-math.pi, math.pi)
                 local ox, oy = sg_off(v4, off)
                 sg_shot(94, sg_style(opt.btype), opt.bcolor, self.x + ox, self.y + oy,
@@ -14655,7 +14662,7 @@ local function spawn_arc(owner, dir0, step, opt)
         if opt.delay then task.Wait(opt.delay) end
         local d = dir0
         for i = 1, n do
-            if opt.st.dead then return end
+            if opt.st.dead or (opt.active and not opt.active()) then return end
             local o = {}
             for k, v in pairs(opt) do o[k] = v end
             o.dir = d
@@ -14768,7 +14775,8 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
 
     local SHARD_RECS = { sg_rec(SG_DECEL, 0, -1, -1, -1, -1) }
     local function arc(owner, dir, step, fire_n)
-        spawn_arc(owner, dir, step, { st = st, list = shards, fire_n = fire_n,
+        local g=gen
+        spawn_arc(owner,dir,step,{st=st,list=shards,fire_n=fire_n,active=function() return g==gen end,
                 btype = 1, bcolor = 6, sp1 = FIRE_SP1, sp2 = FIRE_SP2,
                 flags = DECEL_FLAGS, recs = SHARD_RECS, gap = 2 })
     end
@@ -14847,7 +14855,6 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,6) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= SWITCH_AT then
@@ -14858,6 +14865,7 @@ do  -- 11 レティ 非符（ecl4_a，组 23a 第 1 张）
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -15034,6 +15042,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
     local st = { dead = false }
     local gen = 0
     local lasers = {}
+    local shards={}
 
     ---Sub5（@1408）：自机狙的 3 连大玉（±60°、速 3.2）。
     local function sub5(owner)
@@ -15042,13 +15051,31 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
     end
 
     ---Sub4（@1172）：主循环 —— 每轮：大玉 → 远离自机 30 px → 挪位 → 冻结。
+    local function converted_shards(owner)
+        task.New(owner,function()
+            task.Wait(2)
+            while not st.dead do
+                PhotoNative.for_bullets(function(b)
+                    local vm=b._native_anm
+                    local sprite=vm and vm.data.sprites[vm.sprite]
+                    if sprite and sprite[4]>=64 then
+                        shards[#shards+1]=New(class.frost_shard,owner,{st=st,list=shards,
+                            random_direction=true,radius=0,scatter_radius=32,spawn_x=b.x,spawn_y=b.y,
+                            source_sub=0,fire_n=1,btype=1,bcolor=6,sp1=.2,sp2=.2,flags=33304,
+                            recs={sg_rec(SG_WAIT,0,60,-1,-1,-1),sg_rec(SG_VEC,0,120,-1,0.008333333767950535,-999)}})
+                    end
+                end)
+                task.Wait(5)
+            end
+        end)
+    end
     local function sub4(owner)
         local g = gen
         task.New(owner, function()
             while not st.dead and g == gen do
                 PhotoNative.special(owner)
                 sub5(owner)
-                sg_polar_move(owner, st, MOVE_IN, 4, th_aim(owner.x, owner.y), MOVE_IN_SPEED)
+                sg_polar_move(owner, st, MOVE_IN, 4, th_aim(owner.x, owner.y), MOVE_IN_SPEED,BOX)
                 task.Wait(BMOVE_AT)
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, BMOVE_FRAMES, 4, BMOVE_SPEED, BOX)
@@ -15064,8 +15091,8 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
-        gen = 1
-        lasers = {}
+        gen=1;shards={}
+        lasers={}
     end
 
     function card:init()
@@ -15075,6 +15102,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            converted_shards(self) -- 原slot1只在入口建立一次。
             sub4(self)
         end)
     end
@@ -15086,6 +15114,7 @@ do  -- 15 レティ 冬符「ノーザンウイナー」（ecl4_c，组 23a 第 
         st.dead = true
         photo_damage_off(self)
         sg_clear(lasers)
+        clear_shards(shards)
     end
 
     register_photo_card({ { card, "23a" } }, LEVEL, CARD_NAME, CARD_ID)
@@ -16464,8 +16493,9 @@ do
         local file=owner.current_card.original_ecl.file:gsub('%.ecl$','')
         return file..(file=='ecl4_a' and ':12' or ':14')
     end)
-    OriginalStageVisual.wrap_actor(class.frost_shard,95,function(o,owner)
+    OriginalStageVisual.wrap_actor(class.frost_shard,95,function(o,owner,opt)
         local file=owner.current_card.original_ecl.file:gsub('%.ecl$','')
+        if opt.source_sub then return file..':'..opt.source_sub end
         return file..(file=='ecl4_a' and ':9' or ':11')
     end)
     OriginalStageVisual.wrap_actor(class.s7a_drone,95,function(o,owner,mode)
