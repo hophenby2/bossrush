@@ -5930,6 +5930,7 @@ function class.th07_motion_begin(self, id, move)
     self.th07_laser_interaction, self.th07_laser_tick = nil, 0
     self.th07_orbit_step=nil
     self.th07_oni_active, self.th07_oni_tick = false, -1
+    self.th07_oni_mode=22
     local old = self.th07_previous_motion
     if old and old.key == cfg.key then
         self.x, self.y = old.x, old.y
@@ -6150,9 +6151,10 @@ end
 -- ecldata7/Sub58 的 ExIns22（EnemyEclInstr.cpp:941）：只从已完成折向、
 -- 原图高于60px且原坐标y<320的大玉发弹。Y轴翻转后条件为y>-96。
 function class.th07_oni_emit(owner, timer)
-    if timer%3 == 0 then return 0 end
-    local odd = timer%2 ~= 0
-    local kind, speed, count = odd and 1 or 3, odd and 1.2 or 0.8, odd and 1 or 2
+    local ph=owner.th07_oni_mode==23
+    if timer%3==(ph and 2 or 0) then return 0 end
+    local odd=ph and timer%3~=0 or (not ph and timer%2~=0)
+    local kind,speed,count=odd and 1 or 3,odd and 1.2 or .8,ph and 1 or (odd and 1 or 2)
     local emitted, targets = 0, {}
     for slot=1,1024 do
         local b=class.th07_slots and class.th07_slots[slot]
@@ -6163,12 +6165,12 @@ function class.th07_oni_emit(owner, timer)
         end
     end
     for _, b in ipairs(targets) do
-        local off = b.th07_color == 1 and 6 or 2
+        local off=ph and (b.th07_color==2 and 10 or 13) or (b.th07_color==1 and 6 or 2)
         local angle = -ran:Float(-180,180)
         for i = 0, count-1 do
             if pool4_used() < POOL4_SIZE then
                 -- AddDirChangeCommand同时将0x40写进moreFlags；偶数帧没有命令。
-                local cmd = odd and cmds4(0x248,{type=0x40,dur=60,loop=1,angle=0,speed=3.1})
+                local cmd = odd and cmds4(0x248,{type=0x40,dur=ph and 40 or 60,loop=1,angle=0,speed=ph and 2.9 or 3.1})
                     or cmds4(0x208)
                 cmd.sound=25
                 local o = New(class.TH34_cmdbullet,th07_style(kind),th07_color(off,kind),
@@ -7822,19 +7824,19 @@ local function TH34_add_stage78_boss()
         local function spirit(self, a)
             NativeVisual.source(self,"circle") -- stg8enm ANM31保留到sub95/96结束
             ---sub94：音效 + 两轮出场弹幕（都从出生点打出）。
-            PlaySound("tan00", 0.1, self.x / 256)
+            OriginalStageVisual.presentation.sound.play(7,15,self.x)
             local aim = Angle(self, player)
             local off3 = spread_offsets(3, -60)
             for k = 1, 3 do
                 volley3(self, 1, function()
                     return th07_style(10), th07_color(1, 10), 4, aim + off3[k]
-                end, false)
+                end, true,4)
             end
             local off8 = spread_offsets(8, -22.5)
             for k = 1, 8 do
                 volley3(self, 1, function()
                     return th07_style(7), th07_color(3, 7), 8, 90 + off8[k]
-                end, false)
+                end, true,4)
             end
             ---sub94 的 MOVE_POS_TIME(80, ease4) 飘到出生瞬间记下的自机位置。
             local x0, y0 = self.x, self.y
@@ -7845,12 +7847,12 @@ local function TH34_add_stage78_boss()
                 task.Wait(1)
             end
             ---33 发慢弹（原作 SPREAD_ABS c1=1、速度 0.8、角度每发 ±0.253/0.234 弧度）。
-            local th = 1.5708
+            local th = 1.5707963705062866
             for _ = 1, 33 do
                 local ang = -th * RAD2DEG
                 volley3(self, 1, function()
                     return th07_style(1), th07_color(a.col, 1), 0.8, ang
-                end, true)
+                end, true,4)
                 th = th + a.dth
                 task.Wait(6)
             end
@@ -7866,10 +7868,10 @@ local function TH34_add_stage78_boss()
                     ---「動」子机先出，等 l2i1 帧后「静」子机落在**那时**的自机位置；
                     ---母体的 JUMP 排在 t=250 ⇒ 「静」之后再等 40 帧才开始下一轮。
                     pspawn(self.x, self.y, spirit,
-                           { tx = player.x, ty = player.y, col = 6, dth = 0.253354 }, nil, 'inline_motion')
+                           { tx = player.x, ty = player.y, col = 6, dth = .2533542513847351 }, 'ecldata8:95', 'inline_motion')
                     task.Wait(wait)
                     pspawn(self.x, self.y, spirit,
-                           { tx = player.x, ty = player.y, col = 5, dth = -0.234447 }, nil, 'inline_motion')
+                           { tx = player.x, ty = player.y, col = 5, dth = -.23444721102714539 }, 'ecldata8:96', 'inline_motion')
                     task.Wait(40)
                     if wait > 60 then wait = wait - 2 end
                 end
@@ -7907,15 +7909,15 @@ local function TH34_add_stage78_boss()
             local aim = th_aim(self)
             ---原作 #0 无条件先掷一枚角（RAND_FLOAT_ADD f2 0.392699 1.37445），
             ---#1/#2 只在 A2P 落进 (0.392699, 2.74889) 时由 #3 覆盖成 A2P。掷数必须照抽。
-            local a1 = ran:Float(1.37445, 1.767149)
-            if aim > 0.392699 and aim < 2.74889 then a1 = aim end
+            local a1 = ran:Float(0,.39269909262657166)+1.3744467496871948
+            if aim > .39269909262657166 and aim < 2.7488934993743896 then a1 = aim end
             local base = -a1 * RAD2DEG
             local offs = spread_offsets(2, -PI / 2 * RAD2DEG)
             local out = {}
             for k = 1, 2 do
                 local ang = base + offs[k]
                 out[k] = New(class["TH34_cmdbullet"], th07_style(10), th07_color(1, 10), self.x, self.y, 12, ang,
-                             { type = 0x40, dur = 20, loop = 1, angle = 0, speed = 0 })
+                             cmds4(4168,{type=64,dur=20,loop=1,angle=0,speed=0}))
                 pool4[#pool4 + 1] = out[k]
             end
             return out
@@ -7935,9 +7937,7 @@ local function TH34_add_stage78_boss()
                     local ang = -th * RAD2DEG
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(6), th07_color(col, 6),
                                             self.x + cx, self.y - cy, 0.5, ang,
-                                            { type = 0x10, dur = 120, loop = -1,
-                                              vec_x = math.cos(th) * 0.00583333,
-                                              vec_y = -math.sin(th) * 0.00583333 })
+                                            cmds4(530,{type=16,dur=120,speed=.005833333358168602,angle=-999}))
                 end
                 sound4(self)
             end
@@ -7965,9 +7965,8 @@ local function TH34_add_stage78_boss()
                 local base = -rngdeg()
                 for k = 0, 3 do
                     pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(2), th07_color(8, 2),
-                                            self.x, self.y, 4, base + k * 90,
-                                            { type = 0x80, dur = 30, loop = 1,
-                                              angle = 0, speed = 2.2 })
+                                            self.x, self.y, 4, base - k * 90,
+                                            cmds4(642,{type=128,dur=30,loop=1,angle=0,speed=2.2}))
                 end
                 sound4(self)
                 task.Wait(5)
@@ -7976,17 +7975,13 @@ local function TH34_add_stage78_boss()
         ---SUB_CALL 89/90 的可阻塞版：打一对大弹 → 等 40 帧 → 依次换成一只大子机 + 一只
         ---小子机（first91=true 表示「先大后小」，false 表示「先小后大」）。
         local function freeze_to_dream(self, first91)
-            local b = freeze(self)
+            freeze(self)
             task.Wait(40)
-            for k = 1, 2 do
-                if IsValid(b[k]) then
-                    local bx, by = b[k].x, b[k].y
-                    object.RawDel(b[k])
-                    local fn
-                    if first91 then fn = (k == 1) and dream or dream92
-                    else fn = (k == 1) and dream92 or dream end
-                    pspawn(bx, by, fn, nil, nil, true)
-                end
+            for k=1,2 do
+                local x,y=class.th07_ecl_find_large(self)
+                if not x then return end -- 原第一枚失败直接RET，不再尝试第二枚。
+                local is91=first91 and k==1 or not first91 and k==2
+                pspawn(x,y,is91 and dream or dream92,nil,is91 and 'ecldata8:91' or 'ecldata8:92',true)
             end
         end
         spellcard(NAME, 3450, 60, 2600, false, function(self)
@@ -8048,17 +8043,18 @@ local function TH34_add_stage78_boss()
             ---原作 t=320..1280 的 8 段 MOVE_ORBIT：{ 起始角, 角速度, 半径, 半径速度 }，
             ---整组都已取到我们的口径（角度与角速度取反，半径量不变）。
             local ORB = {
-                { -1.5708,  0.0261799, 160,  0 },
-                {  1.5708,  0.0261799, 160, -1.33333 },
-                {  1.5708, -0.0261799,   0,  1.33333 },
-                { -1.5708, -0.0261799, 160,  0 },
-                {  1.5708, -0.0261799, 160,  0 },
-                { -1.5708, -0.0261799, 160, -1.33333 },
-                { -1.5708,  0.0261799,   0,  1.33333 },
-                {  1.5708,  0.0261799, 160,  0 },
+                { -1.5707963705062866,  0.02617993950843811, 160,  0 },
+                {  1.5707963705062866,  0.02617993950843811, 160, -1.3333333730697632 },
+                {  1.5707963705062866, -0.02617993950843811,   0,  1.3333333730697632 },
+                { -1.5707963705062866, -0.02617993950843811, 160,  0 },
+                {  1.5707963705062866, -0.02617993950843811, 160,  0 },
+                { -1.5707963705062866, -0.02617993950843811, 160, -1.3333333730697632 },
+                { -1.5707963705062866,  0.02617993950843811,   0,  1.3333333730697632 },
+                {  1.5707963705062866,  0.02617993950843811, 160,  0 },
             }
             task.New(self, function()
                 task.Wait(110)
+                self._box=nil
                 bmove(self, 120, 4, 0, -160)
                 ---原作 #40 的 MOVE_ORBIT 在 t=320 才生效：先等这 120 帧的进场插值走完
                 ---（t=110→230），再空转 90 帧才到 t=320。
@@ -8084,7 +8080,7 @@ local function TH34_add_stage78_boss()
                     gspread(self, bs(6), 6, 5, 1, lf2, 1, d, 15, true)
                     gspread(self, bs(6), 2, 5, 1, lf2, 1, d + 180, 15, true)
                     lf1 = lf1 + 0.005
-                    task.Wait(7)
+                    task.Wait(6)
                 end
             end)
         end)
@@ -8104,21 +8100,27 @@ local function TH34_add_stage78_boss()
         local function guard(self, back)
             ---TH07 初角 = rand(0,A)+B（A>0）；换成我们的口径整体取反、再转成角度制
             ---（TH34_cmdbullet 的朝向是 LuaSTG 角度）：
-            ---  前鬼 rand(0,0.0628319)−0.0314159（≈0°，向右）；後鬼 rand(0,0.0523599)+3.11018（≈π，向左）。
-            local a = back and -(ran:Float(0, 0.0523599) + 3.11018) * RAD2DEG
-                            or -(ran:Float(0, 0.0628319) - 0.0314159) * RAD2DEG
-            local cmd = { type = 0x80, dur = 60, loop = 1, angle = 0, speed = 3.5 }
+            ---  前鬼 rand(0,0.06283185631036758)−0.03141592815518379（≈0°，向右）；後鬼 rand(0,0.05235987901687622)+3.1101768016815186（≈π，向左）。
+            local a = back and -(ran:Float(0, 0.05235987901687622) + 3.1101768016815186) * RAD2DEG
+                            or -(ran:Float(0, 0.06283185631036758) - 0.03141592815518379) * RAD2DEG
+            local cmd=cmds4(642,{type=128,dur=60,loop=1,angle=0,speed=3.5})
             ---原作 t=0 就 SET_BULLET_SOUND 0xffffffff ⇒ 全程无声。
-            pool4[#pool4 + 1] = New(class["TH34_cmdbullet"], th07_style(10), th07_color(back and 2 or 3, 10),
-                                    self.x, self.y, ran:Float(3.2, 4.2), a, cmd)
+            local speed=ran:Float(3.200000047683716,4.199999809265137)
+            if pool4_used()>=POOL4_SIZE then return end
+            local o=New(class["TH34_cmdbullet"], th07_style(10), th07_color(back and 2 or 3, 10),
+                                    self.x,self.y,speed,a,cmd)
+            o.th07_sprite,o.th07_color=10,back and 2 or 3
+            pool4[#pool4+1]=o
         end
         spellcard(NAME, 3452, 60, 2000, false, function(self)
             ---本体进场：原作 t=0 移到 TH07(192,96)（我们 (0,128)）之后不再动。
             task.New(self, function()
-                bmove(self, 120, 4, 0, 128)
+                bmove(self,120,4,0,128)
+                task.Wait(120);self._box=nil
             end)
             task.New(self, function()
                 task.Wait(210)
+                self.th07_oni_active,self.th07_oni_mode=true,23
                 local li0, li1 = 50, 220
                 while true do
                     guard(self, false); task.Wait(li0)
@@ -9035,6 +9037,7 @@ local function TH34_add_stage78_boss()
             bmove(self, 60, 4, -128, 96)
             task.New(self, function()
                 task.Wait(110)
+                self._box=nil
                 -- Sub61扩大的是受弹框；体术开关另行关闭，不能把96×96当成撞人范围。
                 self.group = GROUP.NONTJT
                 self._original_damage_box = {96,96}
