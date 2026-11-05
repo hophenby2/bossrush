@@ -455,6 +455,8 @@
 ---518 → 513（38 铃仙）—— 号段连续但**卡序不是**（按角色归组的结果，别照号背）。
 ---=====================================
 
+-- 以下卡头的早期装饰差异已由统一演出调度、拍摄回调及原生ANM绑定接管；
+-- 当前处置清单见ECL_REMAINING_CLOSURE_2026-11-05.md，不以旧注释作为未实现判断。
 local object, boss = object, boss
 local enemybase = enemybase
 local task, ran = task, ran
@@ -484,6 +486,7 @@ local function register_photo_card(group,level,title,id,...)
         end
         card.frame=function(o)
             if o.th095_visual_card==card then
+                PhotoNative.photo.owner_frame(o)
                 local clock=o.th095_visual_clock or 0
                 OriginalStageVisual.source_frame(o,clock)
                 for _,program in ipairs(o.th095_visual_programs or {}) do
@@ -999,7 +1002,8 @@ if not boss.photo_damage_patch then
             ---本关卡没标记过的 boss：原样交给原函数（THlib/enemy/boss.lua:66）。
             return boss_take_damage2(self, dmg)
         end
-        if self.protect then return end
+        if self.protect or (self.th095_photo_marker or 0)>0 or self._original_hidden or self.th095_photo_target==false then return end
+        if self.th095_photo_camera and not PhotoNative.photo.target_contains(self.th095_photo_camera,self) then return end
         ---拍中本体：本卡计数 +1（photo_index 靠它；见上面那一节）。
         self.photo_hit_count = (self.photo_hit_count or 0) + 1
         photo_hits = photo_hits + 1
@@ -1032,10 +1036,15 @@ local function photo_damage_on(boss_obj, limit)
     boss_obj.photo_damage_limit = limit
     boss_obj.photo_hit_count = 0
     photo_hits = 0
+    boss_obj._original_hidden=false
+    boss_obj.th095_photo_marker,boss_obj.th095_photo_target,boss_obj.th095_collidable=0,nil,false
+    boss_obj.th095_transition_state=nil
+    PhotoNative.photo.begin(boss_obj)
     PhotoNative.begin_photo_count(boss_obj,player and player.camera)
 end
 
 local function photo_damage_off(boss_obj)
+    PhotoNative.photo.finish(boss_obj)
     PhotoNative.end_photo_count(boss_obj)
     PhotoNative.restore_rate(boss_obj)
     boss_obj.photo_damage_limit = nil
@@ -8414,8 +8423,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
             task.New(self, function()
                 task.Wait(BAT_ARRIVE)                    -- t=120（ins_64 那段跑完）
                 if not IsValid(self) then return end
-                ---ins_112(7) 只是「这个敌人被拍中时跑 Sub7」⇒ 本仓库不做小怪的拍照判定，
-                ---跳过（不实现成清屏）。
+                ---112的拍摄回调由共用实体入口切换到Sub7；不会当作清屏。
                 local gap = 60 - 7 * photo_index(PHOTO_LIMIT)   -- ins_22 + ins_21
                 local n = math.floor(BAT_FIRE_LIFE / max(1, gap))
                 for _ = 1, n do
@@ -8559,10 +8567,12 @@ do  -- 66 咲夜 銀符「パーフェクトメイド」（ecl14_d，组 11a 第
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
 
     function card:before()
+        st={dead=true,transition_on=false}
     end
 
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
+        self.th095_transition_state=st
         self.x, self.y = BOSS_X, BOSS_START_Y
         st.dead = false
         task.New(self, function()
@@ -8572,20 +8582,30 @@ do  -- 66 咲夜 銀符「パーフェクトメイド」（ecl14_d，组 11a 第
             ---ins_117(@756/@776) 在目标**之前** ⇒ 两条刀圈只起一次；循环里只有 ins_67 位移。
             ring(self, 6)                             -- Sub4
             ring(self, -9)                            -- Sub5
+            st.transition_on=true -- ins119(20)，Callback在主/子ECL之后执行。
             while not st.dead do
-                task.Wait(120)                            -- t=120
+                task.Wait(120)
                 if st.dead then return end
-                sg_bmove(self, st, 40, 4, 2.6, BOX)       -- ins_67(40,4,2.6)
-                task.Wait(40)                             -- t=160
+                -- ins42!=0直接跳到t160：跳过这次40拍漂移，下一次仍在120拍后检查。
+                if (st.th095_transition_left or 0)==0 then
+                    st.transition_on=false -- ins119(-1)
+                    sg_bmove(self, st, 40, 4, 2.6, BOX)
+                    task.Wait(40)
+                end
+                st.transition_on=true
             end
         end)
     end
 
     function card:frame()
+        if not st.transition_on then return end
+        PhotoNative.photo.transition(self,st)
+        PhotoNative.photo.transition_move(self,st,PhotoNative)
     end
 
     function card:del()
-        st.dead = true
+        st.dead,st.transition_on=true,false
+        st.th095_transition_motion=nil
         photo_damage_off(self)
     end
 
@@ -11386,7 +11406,7 @@ do  -- 31 霧符「ガシングガーデン」（ecl9_a，梅蒂欣，组 18a �
             while not st.dead do
                 if tok5 then tok5.alive = false end
                 tok5 = sub5(owner)                          -- ins_117(1,5)：固定槽位，先掐掉上一条
-                --- ins_117(0,4) 的 Sub4 只放装饰子敌机（不发弹），不实现
+                PhotoNative.photo.clouds(owner,'a') -- Sub4三只可拍摄、具有近身减速的毒雾
                 if not goto_t(75) then return end
                 sg_bmove(owner, st, 60, 4, 2, BOX)
                 if not goto_t(135) then return end
@@ -11773,6 +11793,7 @@ do  -- 34 毒符「ポイズンブレス」（ecl9_b，梅蒂欣，组 18a 第 2
                 end
                 return true
             end
+            PhotoNative.photo.clouds(owner,'b') -- Sub4每7拍一只，回跳不重设初始角
             sub5(owner)                                 -- ins_117(1,5)
             while not st.dead do
                 if not goto_t(120) then return end
@@ -12024,6 +12045,7 @@ do  -- 36 譫妄「イントゥデリリウム」（ecl9_c，梅蒂欣，组 18a
             end
             while not st.dead do
                 if st.sub5 then st.sub5.alive = false end
+                PhotoNative.photo.clouds(owner,'c') -- Sub4一拍内16只，沿原主context动态等待重启
                 st.sub5 = sub5(owner)                   -- ins_117(1,5)
                 if not goto_t(40) then return end
                 PhotoNative.special(owner)
@@ -16328,6 +16350,7 @@ do
         del=function(self) task.Clear(self) end,
         render=function() end,
     })
+    OriginalStageVisual.wrap_actor(Ghost,95,'ecl16_a:7')
     function class.th095_scene70_init(owner)
         local st={dead=false,children={},gun=0}
         owner.th095_scene70=st
@@ -16376,6 +16399,23 @@ do
         s7c_bat='ecl15_c:6',diamond_child='ecl11_d:5',alice_doll='ecl6_a:5',
         s3b_doll='ecl6_b:6',s3c_doll='ecl6_c:6',s3d_doll='ecl6_d:6',k_orb='ecl5_c:4'}
     for name,key in pairs(sources) do OriginalStageVisual.wrap_actor(class[name],95,key) end
+    OriginalStageVisual.wrap_actor(class.spear_drone,95,'ecl17_b:5')
+    OriginalStageVisual.wrap_actor(class.dead_moth,95,'ecl17_d:4')
+    OriginalStageVisual.wrap_actor(PhotoNative.fan,95,'ecl17_d:8')
+    OriginalStageVisual.wrap_actor(class.wriggle_firefly,95,function(o,owner,opt)
+        return 'ecl1_b:'..(opt.vaccel>0.03 and 5 or 6)
+    end)
+    OriginalStageVisual.wrap_actor(class.butterfly_emitter,95,function(o,owner,opt)
+        return 'ecl1_c:'..((opt.delay or 0)>0 and 10 or 11)
+    end)
+    OriginalStageVisual.wrap_actor(class.ice_rain,95,function(o,owner)
+        local file=owner.current_card.original_ecl.file:gsub('%.ecl$','')
+        return file..(file=='ecl4_a' and ':12' or ':14')
+    end)
+    OriginalStageVisual.wrap_actor(class.frost_shard,95,function(o,owner)
+        local file=owner.current_card.original_ecl.file:gsub('%.ecl$','')
+        return file..(file=='ecl4_a' and ':9' or ':11')
+    end)
     OriginalStageVisual.wrap_actor(class.s7a_drone,95,function(o,owner,mode)
         return 'ecl14_a:'..({6,10,14})[mode]
     end)

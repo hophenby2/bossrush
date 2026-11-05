@@ -5,6 +5,7 @@ local S,A=OriginalStageVisual,OriginalANM
 local games={ [29]=8,[30]=6,[31]=95,[32]=7,[33]=10 }
 local roles={}
 S.adapters={}
+S.presentation=dofile('THlib/anm/presentation.lua')
 roles[8]={Nightbug={'stg1enm',0,'eff01'},Lorelei={'stg2enm',0,'eff02'},
     Kamishirasawa={'stg3enm',0,'eff03'},Kamishirasawa2={'stg8enm',0,'eff08'},
     Reisen={'stg5enm',12,'eff05'},Tewi={'stg5enm',0,'eff05'},Yagokoro={'stg6enm',0,'eff06'},
@@ -132,7 +133,12 @@ function S.tick(o,vx)
     s.tick=o.ani
     local p=s.poses
     if p and p[2] and p[2]>=0 then
-        vx=vx or o.dx or 0
+        if s.game==95 then
+            if o.th095_animation_stamp==o.ani then vx=o.th095_animation_vx
+            else vx=o.vx or 0 end
+            if (o.vx or 0)~=0 and not (o.th095_animation_stamp==o.ani and o.th095_animation_queue) then vx=o.vx end
+        elseif s.game==8 and o._original_native_motion==false then vx=o.vx or 0
+        else vx=vx or o.dx or 0 end
         local limit=s.game==6 and 0 or s.game==10 and .1 or .01
         local dir=vx< -limit and 1 or vx>limit and 2 or 0
         if dir~=s.direction then
@@ -196,6 +202,7 @@ local function animation_event(o,game,file,c)
         S.familiar(o,o.th08_youkai or false,c[3]);return
     end
     if (game==8 or game==95) and op>=79 and op<=81 then
+        if game==95 and o._original_presentation then return end
         -- NO_SPRITE 仍会播放动画、执行发弹，只禁止绘制本体。
         local hidden=math.floor(c[3]/8)%2==1
         if game==8 then
@@ -217,6 +224,8 @@ local function animation_event(o,game,file,c)
         end
         if op==79 then o._original_hidden=hidden
         elseif hidden then o._original_hidden=op==80 end
+        local adapter=S.adapters[game]
+        if game==95 and adapter and adapter.event then adapter.event(o,c) end
         return
     end
     if game==10 then
@@ -296,6 +305,7 @@ local function animation_event(o,game,file,c)
     end
     if source and op>=54 and op<=61 then source.alternate=op>=58 end
 end
+S.source_event=animation_event
 function S.bind_source(o,game,key,preserve,events_override)
     if OriginalCollision then OriginalCollision.unit(o,game,key) end
     if OriginalCollision then OriginalCollision.bind_events(o,game,key) end
@@ -313,6 +323,9 @@ function S.bind_source(o,game,key,preserve,events_override)
         if sub=='Boss' or sub=='MBoss' then bank=0 end
     end
     o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank}
+    local adapter=S.adapters[game]
+    if adapter and adapter.bind then adapter.bind(o,key) end
+    S.presentation.bind(o,game,key)
     if game==95 then o.layer=LAYER.ENEMY-.1 end
     if not preserve then
         o._original_actor=nil;o._original_no_sprite=true;o._original_hidden=false
@@ -325,6 +338,8 @@ function S.visual_program(game,key)
     return {game=game,key=key,file=key:match('^([^:]+)'),cfg=source_data[game][key],index=1}
 end
 function S.source_frame(o,clock,program)
+    if not program then S.presentation.advance(o,clock) end
+    if o._original_presentation_carrier then return end
     if not program and OriginalCollision then OriginalCollision.events(o,clock) end
     local state=program or o._original_source
     if not state or not state.cfg then return end
@@ -368,16 +383,24 @@ end
 function S.wrap_actor(cls,game,key)
     local init,frame,render=cls.init,cls.frame,cls.render
     cls.init=function(o,...)
+        o._original_visual_birth=true
         init(o,...)
+        o._original_visual_birth=nil
         if not IsValid(o) then return end
         if type(key)=='function' then o._original_visual_args={...} end
         local resolved=key
         if type(key)=='function' then resolved=key(o,...) end
         if resolved then S.bind_source(o,game,resolved) end
         if OriginalBalance and not o._bosssys then OriginalBalance.unit(o,game,false) end
-        o._original_visual_origin=o.timer
+        o._original_visual_origin=o.timer-(game==95 and 1 or 0)
     end
     cls.frame=function(o)
+        if o._original_visual_birth then frame(o);return end
+        local adapter=S.adapters[game]
+        if adapter and adapter.frame and adapter.frame(o) then
+            if IsValid(o) then S.tick(o) end
+            return
+        end
         if type(key)=='function' then
             local resolved=key(o,unpack(o._original_visual_args))
             if resolved and (not o._original_source or resolved~=o._original_source.key) then
@@ -385,11 +408,17 @@ function S.wrap_actor(cls,game,key)
             end
         end
         S.source_frame(o,o.timer-o._original_visual_origin)
+        local x=o.x
         frame(o)
+        local presentation=o._original_presentation
+        if game==95 and presentation and presentation.motion_active and o.th095_animation_stamp~=o.ani then
+            o.th095_animation_vx,o.th095_animation_stamp,o.th095_animation_queue=o.x-x,o.ani,false
+        end
         if IsValid(o) then S.tick(o) end
     end
     cls.render=function(o) if not S.draw(o) then render(o) end end
     cls[1],cls[3],cls[4]=cls.init,cls.frame,cls.render
+    if type(key)=='string' then S.presentation.manage(game,key) end
 end
 function S.actor_class(base,game,key,definition)
     local cls=Class(base,definition)
@@ -437,6 +466,7 @@ local function background_class(game,archive,name)
             o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.BG+1,false,false
             o.alpha=0;o.vms={};o.active=false
             o._original_background=true;o.age=0
+            o._original_background_game=game
         end,
         frame=function(o)
             local owner=boss_group[1]
@@ -489,6 +519,13 @@ local function background_class(game,archive,name)
         end,
     },true)
     backgrounds[key]=bg;return bg
+end
+function S.interrupt_background(game,label)
+    for _,o in ObjList(GROUP.GHOST) do
+        if o._original_background and o._original_background_game==game then
+            for _,vm in ipairs(o.vms) do A.interrupt(vm,label) end
+        end
+    end
 end
 function S.bind_boss(wisys,name)
     local o=wisys.obj

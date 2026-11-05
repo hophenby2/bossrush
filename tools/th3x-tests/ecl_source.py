@@ -81,6 +81,11 @@ class Source:
                         args.append(value - 0x100000000 if value >= 0x80000000 else value)
                     elif token:
                         args.append(f32(float(token[:-1])) if token.endswith('f') else int(token))
+                # thecl的旧TH095格式表把106声明成无参数，但原指令长16字节，
+                # 第一个word是SoundIdx（如ecl15_a/Sub7为5）。必须读取原始操作数。
+                if ((game == 95 and op == 106) or (game == 8 and op == 124)) and size >= 16:
+                    value, = struct.unpack_from('<i', data, address + 12)
+                    args = [Variable(value) if flags & 1 else value]
                 row = Instruction(address, time, op, mask, args)
                 for label in labels:
                     self.labels[label] = address

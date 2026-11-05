@@ -319,6 +319,7 @@ function card:init()
         -- before中提前移动会让发弹时序、全免时间与超时各自错开。
         class.t10_faith_entry(boss_obj)
         task.Wait(90)
+        class.t10_fx.play(boss_obj,6,0,409)
         ---原作 t=90 → t=150：亮符卡（setChapter(47) + spell(93,…) + anmPlay(0,409)）
         ---与 setInvuln(60) 由本仓库的符卡流程 / 差异 9 的计时参数接管，这里只等 60 帧。
         task.Wait(60)
@@ -1325,6 +1326,7 @@ function class.t10_run_tasks(o)
 end
 
 -- Native RuntimeUpdate先按可视范围判出屏，再跑ECL。这里使用原作坐标和ANM设置时的快照。
+class.t10_fx=dofile('mod/GAME/th35_fx.lua')
 class.t10_no_oob_sources=dofile('mod/GAME/th35_no_oob.lua')
 class.t10_interaction=dofile('mod/GAME/th35_interaction.lua')
 function class.t10_enemy_inside(o)
@@ -1677,6 +1679,7 @@ local function t10_boss_start(b, main, id)
     b.th10carrier = p
     local visual_key=OriginalStageVisual.functions[main]
     if visual_key then
+        class.t10_fx.ensure(b,visual_key,false)
         OriginalStageVisual.bind_source(b,10,visual_key,true)
         class.t10_interaction.init(p,visual_key)
     end
@@ -1692,6 +1695,8 @@ function class.t10_start_road(owner,main)
     class.th10_enemy_schedule.ensure()
     local p=New(class.th10_ecs_pod,nil,0,0,main)
     p.t10_road_owner=owner
+    local fxkey=OriginalStageVisual.functions[main]
+    if fxkey then class.t10_fx.ensure(owner,fxkey,true) end
     t10_track(p)
     class.th10_enemy_schedule.birth(p)
     return p
@@ -1745,6 +1750,7 @@ function class.t10_faith_gun(boss,kind,color,f0,f3,i1,i2,i3,f2)
 end
 
 function class.t10_boss_end(b)
+    class.t10_fx.clear(b)
     local p = b.th10carrier
     if p and p.ecs then b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs, flags=p.t10_flags } end
     t10_clear_pods(p)
@@ -1930,9 +1936,15 @@ local function s3_MBossCard1_at2h(o)
 end
 
 local function s3_MBossCard1(o)
+    local __anm=class.t10_fx.context('stage03:MBossCard1')
     t10_enm_kill_all(o)                -- t=0：enmKillAll()（清掉上一张卡残留的子机）
-    -- 原作同帧还 callAsync("MBossOP")：只轮询动画状态喂 anmPlay，纯视觉，不建线程。
+    class.t10_fx.shadow(o,3,2,function(v)
+        local actor=(v.th10_boss or v)._original_actor
+        local id=actor and actor.vm.id
+        if id and id~=7 and id~=8 then return id+6 end
+    end,1) -- MBossOP的原始动画选择条件。
     task.Wait(80)                      -- +80: //80（anmPlay(0, 409) 也是视觉）
+    class.t10_fx.fire(o,__anm,0x872c)
     while true do                      -- 每轮 140 帧（//80 → //180 → //220 → 回 //80）
         t10_call_async(o, s3_MBossCard1_at2h)
         t10_call_async(o, s3_MBossCard1_at)
@@ -1973,6 +1985,8 @@ local function s3_BossCard1AtH(o)  return s3_BossCard1AtH_(o, 0) end
 local function s3_BossCard1AtH2(o) return s3_BossCard1AtH_(o, 1) end
 
 local function s3_BossCard1(o)
+    local __anm=class.t10_fx.context('stage03:BossCard1')
+    class.t10_fx.fire(o,__anm,0x33c4)
     t10_enm_kill_all(o)                        -- enmKillAll()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- movePosTime(60, 4, 0, 128)
     while true do                              -- +160: //2700 → 回 //668（每轮 462 帧）
@@ -1982,6 +1996,7 @@ local function s3_BossCard1(o)
             spawn_pod(o, 208.0, y, s3_BossCard1AtH)
             spawn_pod(o, 208.0, y, s3_BossCard1AtH2)
             y = y + 32                         -- [0] += 32（t=0）
+
             task.Wait(20)                      -- +20: //20
             o.F0 = 0.0                         -- %F0 = 0
             spawn_pod(o, -208.0, y, s3_BossCard1AtH)
@@ -2104,11 +2119,13 @@ local function s3_BossCard3L_at2(o)
 end
 
 local function s3_BossCard3L(o)
+    local __anm=class.t10_fx.context('stage03:BossCard3L')
     t10_enm_kill_all(o)                        -- enmKillAll()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     ---原作这一段的指令分两组（t=60 的 anmPlay 组、t=120 的配置组）；
     ---本仓库每个 task.Wait 都各计一帧，所以照原作的组数拆成两次 wait。
     task.Wait(60)                              -- +60: //60
+    class.t10_fx.fire(o,__anm,0x55ec)
     task.Wait(60)                              -- +60: //120
     o.F0, o.F1 = 0.0, 0.02618                  -- %F0 = 0、%F1 = 0.02618
     t10_call_async(o, s3_BossCard3L_at2)
@@ -2134,9 +2151,12 @@ end
 ---          时间都是 120），再 wait(180) 等下一轮。
 ---    ★ 内层 6 波的速度从 1.0 起每波 +1.0，外层 48 轮的基准角每轮 +5.497787/47。
 local function s4_BossChargeP(o)        -- 原作 BossChargeP / BossChargeP2（只转、不出弹）
+    local second=(o.F1 or 0)<0
+    local cue=class.t10_fx.context(second and 'stage04:BossChargeP2' or 'stage04:BossChargeP')
     m_circle(o, "base", o.F0, o.F1, o.F2, o.F3)   -- moveCircleRel(%F0, %F1, %F2, %F3)
     for _ = 1, math.floor((o.I0 or 0) / 2) do     -- $I0/2 次、每次 2 帧
         task.Wait(2)
+        class.t10_fx.fire(o,cue,second and 0x8470 or 0x834c)
     end
     t10_delete(o)
 end
@@ -2159,6 +2179,8 @@ local function s4_BossCharge(o, dx)
 end
 
 local function s4_BossCard1(o)
+    local __anm=class.t10_fx.context('stage04:BossCard1')
+    class.t10_fx.fire(o,__anm,0x33cc)
     t10_enm_kill_all(o)                        -- enmKillAll()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     local p = o.pat[0]
@@ -2179,6 +2201,7 @@ local function s4_BossCard1(o)
         t10_call_async(o, s4_BossCharge)
         local a = 1.963495                     -- [28] = 1.963495
         local astep = 5.497787 / (48 - 1)      -- [32] = 5.497787 / ([12] − 1)，[12] = 48(L)
+
         task.Wait(120)                         -- +120: //120
         for _ = 1, 48 do                       -- [12] = 48
             local spd = 1.0                    -- [24] = 1.0
@@ -2321,10 +2344,12 @@ local function s4_BossCard3_hop(o, x, dur)
 end
 
 local function s4_BossCard3(o)
+    local __anm=class.t10_fx.context('stage04:BossCard3')
     t10_enm_kill_all(o)                        -- enmKillAll()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- 入场（同帧还有一条 90 帧的，被这条覆盖）
     m_limit_clear(o)                           -- moveLimitReset()
     task.Wait(60)                              -- +60: //60
+    class.t10_fx.fire(o,__anm,0x4854)
     m_pos_time(o, "off", 40, 1, -448.0, 320.0) -- movePosTime(40, 1, −448, 320)
     task.Wait(90)                              -- +90: //150
     et_new(o, 1)                               -- etNew(1)
@@ -2516,9 +2541,12 @@ function s7.MBossCard_at(o)
 end
 
 function s7.MBossCard1(o)
+    local __anm=class.t10_fx.context('stage07:MBossCard1')
+    class.t10_fx.fire(o,__anm,0x115dc)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
+
     task.Wait(90)
     while true do                        -- //90 → //310 = 220 帧一轮
         t10_call_async(o, s7.MBossCard_at)
@@ -2603,10 +2631,12 @@ function s7.MBossCard2_at3(o)
 end
 
 function s7.MBossCard2(o)
+    local __anm=class.t10_fx.context('stage07:MBossCard2')
     t10_kill_async(o)
     t10_enm_kill_all(o)
     m_limit_clear(o)
     task.Wait(120)                       -- +120: //120
+    class.t10_fx.fire(o,__anm,0x11a14)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     task.Wait(90)                        -- //210
@@ -2661,10 +2691,12 @@ function s7.MBossCard3_at2(o)
 end
 
 function s7.MBossCard3(o)
+    local __anm=class.t10_fx.context('stage07:MBossCard3')
     t10_kill_async(o)
     t10_enm_kill_all(o)
     m_limit_clear(o)
     task.Wait(90)
+    class.t10_fx.fire(o,__anm,0x127fc)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     task.Wait(90)                        -- //180
     while true do                        -- //180 → //400 = 220 帧一轮
@@ -2758,12 +2790,15 @@ function s7.BossCard1_at3(o)
 end
 
 function s7.BossCard1(o)
+    local __anm=class.t10_fx.context('stage07:BossCard1')
+    class.t10_fx.fire(o,__anm,0x3dac)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
     ---原作 Boss1() 在 +20 帧记 `%F0 = %ANGLE_PLAYER`，但開宴的三个子程序
     ---（at/at2/at2b）都不读 %F0（at2 自己会覆盖它）⇒ 此处不插 wait 边界，
     ---保持与本卡 ECL 时间轴一致（多一个 wait 会整张卡晚 1 帧）。
+
     task.Wait(90)                        -- //90
     while true do                        -- //90 → //570 = 480 帧一轮
         t10_call_async(o, function(p) s7.BossCard1_at2(p, 2) end);  task.Wait(30)
@@ -2851,9 +2886,12 @@ function s7.BossCard2_at4(o)
 end
 
 function s7.BossCard2(o)
+    local __anm=class.t10_fx.context('stage07:BossCard2')
+    class.t10_fx.fire(o,__anm,0x6668)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
+
     task.Wait(90)
     et_offset(o, 0, 0.0, -8.0)
     t10_call_async(o, function(p) s7.BossCard2_at(p, 2, 0.0) end)
@@ -3123,6 +3161,7 @@ function s7.BossCard6_at2(o)
 end
 
 function s7.BossCard6_at(o)
+    local __anm=class.t10_fx.context('stage07:BossCard6_at')
     et_new(o, 0)
     local p = o.pat[0]
     p.ex[0] = tp_record(0, 64, 120, 1, 0.0, 0.01)
@@ -3130,6 +3169,7 @@ function s7.BossCard6_at(o)
     p.ex[2] = tp_record(0, 16, 120, -999999, 0.03, -999999.0)
     local b = o.I0
     while true do                        -- +360: //360（60 + 300）
+        class.t10_fx.fire(o,__anm,0x99c8)
         task.Wait(60)
         t10_laser_on(o, 3, b, 1.5707964, 8.0, 0, 320.0, 0.0, 16.0, true)
         task.Wait(300)
@@ -3220,6 +3260,7 @@ function s7.BossCard8_at2(o)
 end
 
 function s7.BossCard8_at(o)
+    local __anm=class.t10_fx.context('stage07:BossCard8_at')
     et_new(o, 0)
     local p = o.pat[0]
     p.aim, p.c1, p.c2 = 3, 3, 1
@@ -3238,25 +3279,30 @@ function s7.BossCard8_at(o)
     t10_call_async(o, s7.BossCard8_at2)
     m_pos_time(o, "off", 60, 4, o.ecs.wx, 128.0)   -- %FINAL_X = 生成时的世界 x
     task.Wait(60)                        -- //60：原作此处 anmPlay(0, 442)（纯视觉，但占一个时间组）
+    class.t10_fx.fire(o,__anm,0xafe4)
     task.Wait(20)                        -- //80
     m_vel(o, "off", t10_angle_player(o), 8.0)
     m_vel_time(o, "off", 100, 4, t10_angle_player(o), 0.0)
     task.Wait(100)                       -- //180：原作 anmPlay(0, 442)
+    class.t10_fx.fire(o,__anm,0xb06c)
     task.Wait(20)                        -- //200
     while true do                        -- //200 → //280 = 80 帧一轮
         m_vel(o, "off", t10_angle_player(o), 16.0)
         m_vel_time(o, "off", 60, 4, t10_angle_player(o), 0.0)
         task.Wait(60)                    -- //260：原作 anmPlay(0, 442)
+        class.t10_fx.fire(o,__anm,0xb10c)
         task.Wait(20)                    -- //280
     end
 end
 
 function s7.BossCard8(o)
+    local __anm=class.t10_fx.context('stage07:BossCard8')
     t10_kill_async(o)
     m_limit_clear(o)
     m_pos_time(o, "off", 60, 4, 0.0, 224.0)
     t10_enm_kill_all(o)
     task.Wait(80)
+    class.t10_fx.fire(o,__anm,0xabfc)
     class.t10_interaction.flags(o,3,true)
     spawn_pod_rel(o, 0.0, 0.0, s7.BossCard8_at)
     task.Wait(1200)
@@ -3285,6 +3331,8 @@ function s7.BossCard9_MoveSin(o)
 end
 
 function s7.BossCard9_at(o)
+    local __anm=class.t10_fx.context('stage07:BossCard9_at')
+    class.t10_fx.fire(o,__anm,0xc6c4)
     et_new(o, 0)
     local p = o.pat[0]
     p.aim, p.c1, p.c2 = 3, 1, 1
@@ -3295,6 +3343,7 @@ function s7.BossCard9_at(o)
     p.ex[1] = tp_record(0, 32768, 60, -999999, -999999.0, -999999.0)
     p.ex[2] = tp_record(0, 16384, 3, 4, -999999.0, -999999.0)
     p.ex[5] = tp_record(0, 65536, -999999, -999999, -999999.0, -999999.0)
+
     task.Wait(60)
     t10_call_async(o, s7.BossCard9_MoveSin)
     m_vel(o, "off", -1.5707964, 2.0)
@@ -3312,6 +3361,9 @@ function s7.BossCard9_at(o)
 end
 
 function s7.BossCard9_at2(o)
+    local __anm=class.t10_fx.context('stage07:BossCard9_at2')
+    class.t10_fx.fire(o,__anm,0xca30)
+
     task.Wait(60)
     et_new(o, 0)
     local p = o.pat[0]
@@ -3492,7 +3544,10 @@ end
 ---  时间轴：t=60 起叫一次 MBoss1_at（那是死循环，自己每 4 帧一轮），
 ---  之后主线程只按 60 帧节拍空转（jmp(_320,120) → jmpNeq(_304,60) 的时钟回拨）。
 function s7.MBoss1(o)
+    local __anm=class.t10_fx.context('stage07:MBoss1')
+    class.t10_fx.fire(o,__anm,0x10dd4)
     local ct = 0
+
     ct = s_wait(ct, 60)                     -- +60: //60
     t10_call_async(o, s7.MBoss1_at)         -- callAsync("MBoss1_at")
     while true do                           -- _320：pushi(1); jmpNeq(_304, 60)
@@ -4648,8 +4703,10 @@ local s6 = {}
 ---  时间轴：t=20 记 %F0 = %ANGLE_PLAYER；t=80 callAsync("Boss1_at") 之后主线程只在
 ---  「拨回 80 → 等 60 帧」的空转循环里（at 是死循环，卡片靠 4200 帧超时结束）。
 function s6.Boss1(o)
+    local __anm=class.t10_fx.context('stage06:Boss1')
     local ct = 0
     ct = s_wait(ct, 20)                 -- +20: //20
+    class.t10_fx.fire(o,__anm,0x9bc)
     o.F0 = t10_angle_player(o)          -- %F0 = %ANGLE_PLAYER
     ct = s_wait(ct, 80)                 -- +60: //80
     t10_call_async(o, s6.Boss1_at)      -- callAsync("Boss1_at")
@@ -4703,9 +4760,11 @@ function s6.BossCirB(o) s6.boss_cir(o, 2.6179938) end    --  5π/6
 ---  t=120 三颗装饰卫星 BossCirR/G/B；t=180 起 callAsync("Boss2_at") 与 callAsync("Boss2_at2")；
 ---  之后每 180 帧 moveRand(40,0,2.0)（_1260 的时钟回拨）。
 function s6.Boss2(o)
+    local __anm=class.t10_fx.context('stage06:Boss2')
     local ct = 0
     m_pos_time(o, "off", 60, 0, 0.0, 192.0)     -- movePosTime(60, 0, 0, 192)
     ct = s_wait(ct, 60)                         -- +60: //60
+    class.t10_fx.fire(o,__anm,0x1080)
     m_limit(o, 0.0, 128.0, 64.0, 96.0)          -- moveLimit(0, 128, 64, 96)
     ct = s_wait(ct, 120)                        -- +60: //120
     spawn_pod_rel(o, 0.0, 0.0, s6.BossCirR)     -- enmCreate("BossCirR", 0, 0)
@@ -4896,10 +4955,12 @@ class.t10_faith_sat=s6.sat
 ---  三段之间各 180 帧（moveRand(120,0,1.0) 的时钟回拨）；_2932 之外层死循环。
 ---  ★ 原作每段开头 enmKillAll：把上一段的卫星/残留子机清掉（保留自己）。
 function s6.Boss4(o)
+    local __anm=class.t10_fx.context('stage06:Boss4')
     local ct = 0
     ct = s_wait(ct, 30)                         -- +30: //30
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)     -- movePosTime(60, 4, 0, 128)
     ct = s_wait(ct, 90)                         -- +60: //90
+    class.t10_fx.fire(o,__anm,0x2ab4)
     class.t10_interaction.flags(o,3,false)
     m_limit(o, 0.0, 112.0, 128.0, 64.0)         -- moveLimit(0, 112, 128, 64)
     ct = 1050                                   -- jmp(Boss4_2932, 1050)
@@ -4920,6 +4981,7 @@ function s6.Boss4(o)
         class.t10_interaction.flags(o,3,false)
         t10_enm_kill_all(o)                     -- enmKillAll()
         ct = s_wait(ct, 510)                    -- +60: //510（空转）
+        class.t10_fx.fire(o,__anm,0x2e10)
         ct = s_wait(ct, 570)                    -- +60: //570
         class.t10_interaction.flags(o,3,true)
         s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
@@ -4932,6 +4994,7 @@ function s6.Boss4(o)
         class.t10_interaction.flags(o,3,false)
         t10_enm_kill_all(o)                     -- enmKillAll()
         ct = s_wait(ct, 810)                    -- +60: //810（空转）
+        class.t10_fx.fire(o,__anm,0x30a8)
         ct = s_wait(ct, 870)                    -- +60: //870
         class.t10_interaction.flags(o,3,true)
         s6.sat(o, SATS[4]); s6.sat(o, SATS[5]); s6.sat(o, SATS[6])
@@ -5055,11 +5118,14 @@ end
 ---    「每 400 帧」跑一次 _772：enmCreate("BossCard1_atH",0,0)（相对坐标、0 只在 !HL）
 ---    + callAsync("BossCard1_at2") + moveRand(50,0,3.0)（首轮与 t=90 同帧，之后 490、890…）。
 function s6.BossCard1(o)
+    local __anm=class.t10_fx.context('stage06:BossCard1')
+    class.t10_fx.fire(o,__anm,0x4188)
     local ct = 0
     t10_kill_async(o)                               -- killAllAsync()
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)         -- movePosTime(60, 4, 0, 128)
     t10_enm_kill_all(o)                             -- enmKillAll()
     for s = 0, 4 do et_offset(o, s, 0.0, 0.0) end   -- etOffset(0..4, 0, 0)
+
     ct = s_wait(ct, 90)                             -- +90: //90
     m_limit(o, 0.0, 96.0, 280.0, 32.0)              -- moveLimit(0, 96, 280, 32)
     ct = 490                                        -- jmp(BossCard1_984, 490)
@@ -5415,6 +5481,7 @@ t10mid.ax, t10mid.ay = 0, 0        -- 道中锚点（enmCreate 相对创建用�
 
 ---卡结束 / 重开（符卡练习）时统一收拾本卡造出来的妖精。
 function t10mid.clear()
+    if t10mid.controller and t10mid.controller.t10_road_owner then class.t10_fx.clear(t10mid.controller.t10_road_owner) end
     if t10mid.controller then
         t10_clear_pods(t10mid.controller)
         t10mid.controller=nil
@@ -5563,6 +5630,7 @@ s6mid.DROP_G0  = { 0, 2, 2 }        -- BGirl00：dropExtra(2,2)
 ---本卡造出来的妖精：卡结束 / 重开（符卡练习）时统一收拾。
 s6mid.units = {}
 function s6mid.clear()
+    if s6mid.controller and s6mid.controller.t10_road_owner then class.t10_fx.clear(s6mid.controller.t10_road_owner) end
     if s6mid.controller then
         t10_clear_pods(s6mid.controller)
         s6mid.controller=nil
@@ -7190,54 +7258,72 @@ end
 ---========================= Dive 系（下潜标记，到点生成 Girl 后自毁） =========================
 ---DiveEnemy00：−π/2 入 −4.8、40 帧减速；+80 生成 Girl00 系（$I0 选色）。
 t10mid.s04.de00 = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy00')
     t10mid.vel(f, -1.5707964, -4.8)
     task.Wait(40); t10mid.vel_time(f, 40, 4, -999999, 0.0)
     task.Wait(40)
+    class.t10_fx.fire(f,__anm,0x9430)
     t10mid.s04.mkgirl(f, 80, { t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00 }, 0)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy00B：同 00，减速改在 +80（40 帧）、+120 生成。
 t10mid.s04.de00b = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy00B')
     t10mid.vel(f, -1.5707964, -4.8)
     task.Wait(80); t10mid.vel_time(f, 40, 4, -999999, 0.0)
     task.Wait(40)
+    class.t10_fx.fire(f,__anm,0x9860)
     t10mid.s04.mkgirl(f, 80, { t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00, t10mid.s04.g00 }, 0)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy01：−π/2 入 −4.8、+40 起 70 帧减速；+110 生成 Girl01 系（入场 40 帧无敌）。
 t10mid.s04.de01 = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy01')
     t10mid.vel(f, -1.5707964, -4.8)
     task.Wait(40); t10mid.vel_time(f, 70, 4, -999999, 0.0)
     task.Wait(70)
+    class.t10_fx.fire(f,__anm,0x9c90)
     t10mid.s04.mkgirl(f, 80, { t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01 }, 40)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy01B：入场角 −π/2+%F1、速 −6.2；+100 起 70 帧减速；+170 生成 Girl01。
 t10mid.s04.de01b = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy01B')
     t10mid.vel(f, -1.5707964 + (f.F1 or 0), -6.2)
     task.Wait(100); t10mid.vel_time(f, 70, 4, -999999, 0.0)
     task.Wait(70)
+    class.t10_fx.fire(f,__anm,0xa0f8)
     t10mid.s04.mkgirl(f, 80, { t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01, t10mid.s04.g01 }, 40)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy02：−π/2 入 −1.8、+160 起 70 帧减速；+230 生成 Girl02（入场 160 帧无敌）。
 t10mid.s04.de02 = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy02')
     t10mid.vel(f, -1.5707964, -1.8)
     task.Wait(160); t10mid.vel_time(f, 70, 4, -999999, 0.0)
     task.Wait(70)
+    class.t10_fx.fire(f,__anm,0xa314)
     t10mid.s04.mkgirl(f, 1500, { t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02 }, 160)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy02B：−π/2 入 −3.4、+240 起 70 帧减速；+310 生成 Girl02。
 t10mid.s04.de02b = function(f)
+    class.t10_fx.shadow(f,4,2,14,4,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy02B')
     t10mid.vel(f, -1.5707964, -3.4)
     task.Wait(240); t10mid.vel_time(f, 70, 4, -999999, 0.0)
     task.Wait(70)
+    class.t10_fx.fire(f,__anm,0xa530)
     t10mid.s04.mkgirl(f, 1500, { t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02, t10mid.s04.g02 }, 160)
     t10_kill_pod(f)
 end
@@ -7245,17 +7331,21 @@ end
 ---DiveEnemy04：入场角 −π/2+%RANDRAD/16、速 −(3+%RANDF·0.5)（%RANDF 先、%RANDRAD 后）；
 ---+100 起 70 帧减速；+170 生成 Girl04 系（入场 20 帧无敌）。
 t10mid.s04.de04 = function(f)
+    class.t10_fx.shadow(f,4,2,17,1,true)
+    local __anm=class.t10_fx.context('stage04:DiveEnemy04')
     local sp = -3.0 + rnd() * 0.5
     local a  = -1.5707964 + rndrad() / 16
     t10mid.vel(f, a, sp)
     task.Wait(100); t10mid.vel_time(f, 70, 4, -999999, 0.0)
     task.Wait(70)
+    class.t10_fx.fire(f,__anm,0xaa18)
     t10mid.s04.mkgirl(f, 100, { t10mid.s04.g04, t10mid.s04.g04, t10mid.s04.g04, t10mid.s04.g04 }, 20)
     t10_kill_pod(f)
 end
 
 ---DiveEnemy04B：入场角 −π/2+%RANDRAD/16、速 −3.8，300 帧内插到 (角 −π/2, 速 −3.8)，然后自毁。
 t10mid.s04.de04b = function(f)
+    class.t10_fx.shadow(f,4,2,17,1,true)
     t10mid.vel(f, -1.5707964 + rndrad() / 16, -3.8)
     t10mid.vel_time(f, 300, 0, -1.5707964, -3.8)
     task.Wait(300)
@@ -9047,10 +9137,12 @@ function s1.MBossCard1_at(o)
 end
 
 function s1.MBossCard1(o)
+    local __anm=class.t10_fx.context('stage01:MBossCard1')
     t10_kill_async(o)
     m_limit(o, 0.0, 80.0, 280.0, 64.0)     -- moveLimit(0, 80, 280, 64)
     m_pos_time(o, "off", 60, 4, 0.0, 112.0)
     task.Wait(60)                          -- //60：anmPlay(0, 409)（纯视觉，但占一个时间边界）
+    class.t10_fx.fire(o,__anm,0x76ec)
     task.Wait(90)                          -- //150
     t10_call_async(o, s1.MBossCard1_at)
     task.Wait(120)                         -- //150 → //270
@@ -9089,12 +9181,14 @@ function s1.BossCard1_at(o)
 end
 
 function s1.BossCard1(o)
+    local __anm=class.t10_fx.context('stage01:BossCard1')
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     -- ★ 入场必须按 ECL 的**每个时间戳边界**各写一个 task.Wait：探针的 task.Wait(n)
     --   实际吃掉 n+1 帧，把 //60 / //120 / //150 三个边界并成一条 Wait(150) 会少 2 帧
     --   （真机引擎里只有总帧数有意义，但探针对拍必须逐边界对齐）。
     task.Wait(60)                          -- //60：anmPlay(0, 409)
+    class.t10_fx.fire(o,__anm,0x22ec)
     task.Wait(60)                          -- //120：anmSelectedPlay(0)
     task.Wait(30)                          -- //150：nop
     -- t=150 入场：8 个槽位整套建好。每槽 c1 = $I24 = 38（L 行）、初速 2.0/2.0、
@@ -9255,9 +9349,11 @@ function s1.BossCard2At2(o)
 end
 
 function s1.BossCard2(o)
+    local __anm=class.t10_fx.context('stage01:BossCard2')
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     task.Wait(60)                          -- //60：anmPlay(0, 409)
+    class.t10_fx.fire(o,__anm,0x4194)
     task.Wait(60)                          -- //120：anmSelectedPlay(0)
     task.Wait(30)                          -- //150：nop
     while true do                          -- 180 帧一轮（帧消耗 60+40+40+40）
@@ -9543,8 +9639,20 @@ end
 
 ---MBossDummyShadow / BossDummyShadow：t=0 起每帧 anmPlay 的死循环。
 ---（原作 jmp(L,1) → L: anmPlay → jmpNeq 回跳；anmPlay 是纯视觉，这里只占帧。）
-function s2.MBossDummyShadow(o) while true do task.Wait(1) end end
-function s2.BossDummyShadow(o)  while true do task.Wait(1) end end
+function s2.MBossDummyShadow(o)
+    local __anm=class.t10_fx.context('stage02:MBossDummyShadow')
+    while true do
+        class.t10_fx.fire(o,__anm,0x98b0)
+        task.Wait(1)
+    end
+end
+function s2.BossDummyShadow(o)
+    local __anm=class.t10_fx.context('stage02:BossDummyShadow')
+    while true do
+        class.t10_fx.fire(o,__anm,0x60ac)
+        task.Wait(1)
+    end
+end
 
 ---BossTrace：op294 / moveBoss 复制 specialEnemySlots[0] 的世界坐标。
 ---复原源码把这个 opcode 命名为 COPY_PLAYER_TO_OFFSET，但其实际读的是 EnemyManager
@@ -9565,11 +9673,13 @@ end
 ---  ★ t=240 那一帧里 moveRand、wait(40)、jmpNeq、下一次 enmCreate 全部同帧执行（clock 被
 ---    wait 拨到 200 又被 jmp 设回 60），所以 AtEnemy 的出机帧是 60/240/420…
 function s2.MBossCard1(o)
+    local __anm=class.t10_fx.context('stage02:MBossCard1')
     local ct = 0
     t10_kill_async(o)                             -- killAllAsync
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)                           -- enmKillAll
     ct = s_wait(ct, 60)                           -- //60：anmPlay(0, 409)（视觉）
+    class.t10_fx.fire(o,__anm,0x8be0)
     ct = 240                                      -- jmp(MBossCard1_572, 240)
     ct = 60                                       -- jmpNeq(MBossCard1_412, 60)
     while true do                                 -- L412
@@ -9653,6 +9763,7 @@ end
 ---  之后 t=210 / t=310 各 moveRand 一次，t=360 回跳。
 ---  ★ 14 只子机是**同一帧**建出来的（clock 在这一帧被反复拨回 150），每只拿到自己的 %F0。
 function s2.BossCard1(o)
+    local __anm=class.t10_fx.context('stage02:BossCard1')
     local ct = 0
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
@@ -9661,6 +9772,7 @@ function s2.BossCard1(o)
     ct = 0                                        -- jmpNeq(BossCard1_396, 0)
     while true do                                 -- L396
         ct = s_wait(ct, 60)                       -- //60：anmPlay(0, 409)
+        class.t10_fx.fire(o,__anm,0x481c)
         ct = s_wait(ct, 120)                      -- //120：anmSelectedPlay(0)
         ct = s_wait(ct, 150)                      -- //150
         local _a = rndrad()                       -- [0] = %RANDRAD（后续没用，但要消耗随机数）
@@ -9740,6 +9852,7 @@ end
 ---  第二批 −0.017453（%F0 每只 +0.785398）。两批之间与之后各有一条 wait(60)
 ---  （clock 回到 150，靠下一条指令的绝对时间补满 60 帧）。
 function s2.BossCard2(o)
+    local __anm=class.t10_fx.context('stage02:BossCard2')
     local ct = 0
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
@@ -9750,6 +9863,7 @@ function s2.BossCard2(o)
     ct = 0                                        -- jmpNeq(BossCard2_492, 0)
     while true do                                 -- L492
         ct = s_wait(ct, 60)                       -- //60：anmPlay(0, 409)
+        class.t10_fx.fire(o,__anm,0x4ecc)
         ct = s_wait(ct, 120)                      -- //120：anmSelectedPlay(0)
         ct = s_wait(ct, 150)                      -- //150
         local _a = rndrad()                       -- [0] = %RANDRAD
@@ -9830,11 +9944,13 @@ end
 ---  主线程之后每 2 帧在半径 %RANDF×[12]（从 0 起、每帧 +0.1、上限 64）的随机角上
 ---  打一枪 9 发扇形，基准角 [0] 每轮 −0.1309，色号 [20] 在 1..4 循环。
 function s2.BossCard3(o)
+    local __anm=class.t10_fx.context('stage02:BossCard3')
     local ct = 0
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
     ct = s_wait(ct, 60)                           -- //60：anmPlay(0, 409)
+    class.t10_fx.fire(o,__anm,0x56fc)
     ct = s_wait(ct, 120)                          -- //120：anmSelectedPlay(0)
     o.F0, o.F1 = 0.0, 0.02618
     s_pod(o, 0.0, 0.0, s2.BossAtEnemy3)
@@ -10159,9 +10275,12 @@ end
 ---  ★ 主循环的 jmp/jmpNeq 组合把 clock 从 510 直接拨回 90（不等待），所以下一轮的
 ---    三只子机与 t=510 的 nop 同帧出生。
 function s5.MBossCard1(o)
+    local __anm=class.t10_fx.context('stage05:MBossCard1')
+    class.t10_fx.fire(o,__anm,0xc32c)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
+
     task.Wait(90)                                -- //90：anmPlay/anmSetMain/anmSelected…（视觉）
     while true do                                -- L588（t=90）
         o.F0 = t10_angle_player(o)
@@ -10317,9 +10436,12 @@ end
 ---  原作 BossCard1 / _at / _at2 / _at5（_at3/_at4 是 !N，L 不跑）。
 ---  t=90 起三线程：at（右侧光柱臂）、at2（左侧光柱臂）、at5（两列弹），主线程随后 1 帧死循环。
 function s5.BossCard1(o)
+    local __anm=class.t10_fx.context('stage05:BossCard1')
+    class.t10_fx.fire(o,__anm,0x3a84)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
+
     task.Wait(90)                                -- //90
     t10_call_async(o, s5.BossCard1_at)
     t10_call_async(o, s5.BossCard1_at2)
@@ -10584,11 +10706,13 @@ function s5.BossCard3Dummy4(o) s5_boss3_dummy(o, 5, 2, 2, 48.0, 3, -1, 0.1309) e
 ---  原作 BossCard4 / _at / _at2：t=0无敌90帧，t=90再写60帧，合计到t=150。
 ---  t=150 起：一只 at2 常态弹幕 + 每轮两发 at 旋臂。
 function s5.BossCard4(o)
+    local __anm=class.t10_fx.context('stage05:BossCard4')
     t10_kill_async(o)
     t10_enm_kill_all(o)
     m_limit_clear(o)
     m_pos_time(o, "off", 90, 4, 0.0, 224.0)
     task.Wait(90)                                -- //90（setChapter/spell3/setInvuln 在 t=90）
+    class.t10_fx.fire(o,__anm,0x7ce8)
     task.Wait(60)                                -- //150
     local a0 = 3.141593                          -- [0] = π
     t10_call_async(o, s5.BossCard4_at2)
@@ -11162,6 +11286,7 @@ do
     end
     for stage=1,7 do
         local tab=t10mid[('s%02d'):format(stage)]
+        V.register_function(stage==6 and s6mid.main or tab and tab.run,10,('stage%02d:main'):format(stage))
         V.register_functions(10,('stage%02d'):format(stage),tab,{eclg='Ecl_Girl00',bsp='BSpCir00',rsp='RSpCir00',gsp='GSpCir00',g1='Girl01'})
     end
     V.wrap_actor(class.th10_midfairy,10,function(o,hp,x,y,mirror,drop,beh,src,inv,visual_key)
@@ -11182,6 +11307,9 @@ end
 
 do
     local V=OriginalStageVisual
+    V.register_function(s3_MBossCard1_at,10,'stage03:MBossCard1_at')
+    V.register_function(s3_MBossCard1_at2h,10,'stage03:MBossCard1_at2h')
+    V.register_function(s3_MBossCard1,10,'stage03:MBossCard1')
     V.register_function(s3_BossCard1AtH_,10,'stage03:BossCard1AtH_')
     V.register_function(s3_BossCard1AtH,10,'stage03:BossCard1AtH')
     V.register_function(s3_BossCard1AtH2,10,'stage03:BossCard1AtH2')

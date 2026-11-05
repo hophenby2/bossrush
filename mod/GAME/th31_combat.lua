@@ -575,6 +575,10 @@ return function()
             o._original_familiar_collision=true
             o._original_hidden=false
             init(o)
+            -- 时间轴t1的无判定效果实体此前被筛掉；战斗子机仍走原有实体实现。
+            local ambient=({[1000]='ecldata1:14',[1001]='ecldata4a:15',
+                [1002]='ecldata3:19',[1003]='ecldata2:16'})[id]
+            if ambient then OriginalStageVisual.presentation.start(o,8,ambient,-162,240,1) end
             if id==467 or id==468 then
                 _editor_class.TH31.th08_nightblind.install(o,57)
             elseif id==469 then
@@ -624,6 +628,7 @@ return function()
             frame(o)
         end
         card.del=function(o)
+            OriginalStageVisual.presentation.clear(o)
             _editor_class.TH31.th08_nightblind.release(o)
             del(o)
             for _,a in ipairs(o.th08_actors or {}) do if alive(a) then M.discard(a) end end

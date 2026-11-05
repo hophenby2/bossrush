@@ -58,6 +58,8 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---  整波不生、生到一半见底就丢剩下的（`BulletManager.cpp:635-663`）。移植版照做了
 ---  （见下面的 `POOL_SIZE`），不这么做的话同屏会堆到 4500 发、自检报「墙 + 死局 9%」。
 ---
+---历史说明：下列早期拖影/图像代理已由NativeVisual及原始138指令驱动替换；
+---不是当前ECL待办。道具类别仍映射到本项目原语。
 ---与原作的不同（代码里按「差异 N」引用；每条都写了为什么）
 ---  1  拖影是代理：原作 SET_TRAIL 0x19,48,16,1（enemy trail vm），移植版用
 ---     object.smear_add/frame/render 三件套，衰减 13（≈20 帧尾巴）。

@@ -185,6 +185,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -372,6 +380,14 @@
           "R11"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -621,6 +637,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -855,6 +879,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -1036,6 +1068,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -1272,6 +1312,14 @@
           "R05"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -1712,6 +1760,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -2009,6 +2065,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -2263,6 +2327,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -2530,6 +2602,14 @@
           "R05"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -2821,6 +2901,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -3062,6 +3150,14 @@
           "R06"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -3322,6 +3418,14 @@
           "A09",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -3639,6 +3743,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -3851,6 +3963,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -4148,6 +4268,14 @@
           "A09",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -4553,6 +4681,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -4711,6 +4847,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -4997,6 +5141,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -5276,6 +5428,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -5434,6 +5594,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -5661,6 +5829,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -5875,6 +6051,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -6128,6 +6312,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -6413,6 +6605,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -6629,6 +6829,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -6879,6 +7087,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -7146,6 +7362,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -7334,6 +7558,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -7562,6 +7794,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -7799,6 +8039,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -8027,6 +8275,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -8077,6 +8333,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -8298,6 +8562,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -8525,6 +8797,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -8764,6 +9044,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -9000,6 +9288,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -9239,6 +9535,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -9419,6 +9723,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -9652,6 +9964,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -9905,6 +10225,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -10138,6 +10466,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -10370,6 +10706,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -10603,6 +10947,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -10866,6 +11218,14 @@
           "R07"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -11099,6 +11459,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -11405,6 +11773,14 @@
           "R07"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -11638,6 +12014,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -12039,6 +12423,14 @@
           "R07"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -12369,6 +12761,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -12602,6 +13002,14 @@
           "R08"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -13348,6 +13756,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -13539,6 +13955,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -13762,6 +14186,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -13950,6 +14382,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -14166,6 +14606,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -14404,6 +14852,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -14602,6 +15058,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -14874,6 +15338,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -15099,6 +15571,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -15337,6 +15817,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -15532,6 +16020,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -15746,6 +16242,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -15988,6 +16492,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16152,6 +16664,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16307,6 +16827,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16462,6 +16990,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16626,6 +17162,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16781,6 +17325,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -16969,6 +17521,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -17141,6 +17701,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -17352,6 +17920,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -17576,6 +18152,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -17792,6 +18376,14 @@
           "R09"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -18046,6 +18638,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -18265,6 +18865,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -18460,6 +19068,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -18658,6 +19274,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -18838,6 +19462,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -19102,6 +19734,14 @@
           "A10",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -19417,6 +20057,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -19575,6 +20223,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -19733,6 +20389,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -19931,6 +20595,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -20108,6 +20780,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -20315,6 +20995,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -20541,6 +21229,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -20699,6 +21395,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -20912,6 +21616,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -21253,6 +21965,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -21496,6 +22216,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -21766,6 +22494,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -22068,6 +22804,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -22293,6 +23037,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -22582,6 +23334,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -22819,6 +23579,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -23084,6 +23852,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -23360,6 +24136,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -23518,6 +24302,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -23811,6 +24603,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -24139,6 +24939,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -24487,6 +25295,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -24838,6 +25654,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -25155,6 +25979,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -25415,6 +26247,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -25603,6 +26443,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -25841,6 +26689,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -26070,6 +26926,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -26258,6 +27122,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -26420,6 +27292,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -26595,6 +27475,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -26803,6 +27691,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -27072,6 +27968,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -27323,6 +28227,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -27640,6 +28552,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -27845,6 +28765,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -28160,6 +29088,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -28342,6 +29278,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -28598,6 +29542,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -28805,6 +29757,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -29042,6 +30002,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -29328,6 +30296,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -29637,6 +30613,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -29982,6 +30966,14 @@
           "R11"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -30220,6 +31212,14 @@
           "R11"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -30489,6 +31489,14 @@
           "R11"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -30803,6 +31811,14 @@
           "R11"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -30985,6 +32001,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -31254,6 +32278,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -31484,6 +32516,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -31666,6 +32706,14 @@
           "R02"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -31971,6 +33019,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -32239,6 +33295,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -32539,6 +33603,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -32777,6 +33849,14 @@
           "A02",
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -32942,6 +34022,14 @@
         "changes": [
           "A11"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C07"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45031,6 +46119,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45183,6 +46281,18 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45372,6 +46482,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45512,6 +46635,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45669,6 +46805,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -45850,6 +46999,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46017,6 +47176,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46176,6 +47345,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46355,6 +47534,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46513,6 +47702,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46760,6 +47959,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -46885,6 +48094,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -47048,6 +48267,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -47337,6 +48569,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -47515,6 +48760,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -47736,6 +48991,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -47984,6 +49249,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -48193,6 +49468,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -48408,6 +49693,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -48659,6 +49954,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -48916,6 +50221,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -49125,6 +50440,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -49306,6 +50631,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -49633,6 +50968,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C05",
+          "C06",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -49836,6 +51184,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -50051,6 +51409,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -50293,6 +51661,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -50558,6 +51936,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -50785,6 +52173,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -51000,6 +52398,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -51242,6 +52650,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -51442,6 +52860,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -51609,6 +53037,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -51849,6 +53287,16 @@
           "R12"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -52097,6 +53545,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -52320,6 +53778,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -52523,6 +53991,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -52663,6 +54141,17 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -52863,6 +54352,17 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C03",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -53138,6 +54638,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -53373,6 +54883,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -53613,6 +55133,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -53839,6 +55369,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -54074,6 +55614,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -54301,6 +55851,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -54542,6 +56102,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -54775,6 +56345,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -55057,6 +56637,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -55275,6 +56865,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -55502,6 +57102,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -55752,6 +57362,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -55981,6 +57601,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -56207,6 +57837,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -56407,6 +58047,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -56607,6 +58257,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -56766,6 +58426,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -56963,6 +58633,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -57194,6 +58874,18 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C02",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -57415,6 +59107,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -57699,6 +59401,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -57920,6 +59632,18 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C02",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -58206,6 +59930,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -58427,6 +60161,18 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C02",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -58648,6 +60394,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -58919,6 +60675,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -59080,6 +60846,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C05",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -59223,6 +61002,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C05",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -59378,6 +61170,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C05",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -59596,6 +61401,19 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C05",
+          "C08",
+          "C09",
+          "C11"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -59763,6 +61581,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -60007,6 +61835,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -60207,6 +62045,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -60458,6 +62306,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -60712,6 +62570,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -60960,6 +62828,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -61211,6 +63089,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -61428,6 +63316,17 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -61662,6 +63561,17 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C01",
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -61892,6 +63802,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -62140,6 +64060,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -62298,6 +64228,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -62558,6 +64498,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -62828,6 +64778,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -63040,6 +65000,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -63296,6 +65266,16 @@
         "changes": [
           "A13"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C04",
+          "C08",
+          "C09"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -93561,6 +95541,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -93837,6 +95825,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -93994,6 +95990,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -94313,6 +96317,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -94486,6 +96498,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -94805,6 +96825,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -94978,6 +97006,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -95260,6 +97296,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -95409,6 +97453,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -95815,6 +97867,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -96158,6 +98218,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -96458,6 +98526,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -96797,6 +98873,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -97161,6 +99245,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -97509,6 +99601,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -97855,6 +99955,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -97972,6 +100080,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -98140,6 +100256,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -98305,6 +100429,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -98467,6 +100599,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -98620,6 +100760,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -98863,6 +101011,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99004,6 +101160,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99203,6 +101367,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99353,6 +101525,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99510,6 +101690,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99657,6 +101845,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -99865,6 +102061,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -100012,6 +102216,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -100233,6 +102445,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -100389,6 +102609,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -100692,6 +102920,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -100839,6 +103075,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101016,6 +103260,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101163,6 +103415,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101345,6 +103605,14 @@
           "A07",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101610,6 +103878,14 @@
           "A07",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101766,6 +104042,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -101895,6 +104179,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -102091,6 +104383,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -102238,6 +104538,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -102516,6 +104824,14 @@
           "A06",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -102749,6 +105065,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -102969,6 +105293,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -103202,6 +105534,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -103508,6 +105848,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -104464,6 +106812,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -105908,6 +108264,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -107921,6 +110285,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -109926,6 +112298,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -113079,6 +115459,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -116263,6 +118651,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -119658,6 +122054,14 @@
           "R04"
         ],
         "method": "原始指令及源码核对；未运行测试或Lua"
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -119813,6 +122217,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -119969,6 +122381,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -120129,6 +122549,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -120422,6 +122850,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -120587,6 +123023,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -120771,6 +123215,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -121000,6 +123452,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -121220,6 +123680,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -121440,6 +123908,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -121736,6 +124212,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -121955,6 +124439,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -122274,6 +124766,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -122496,6 +124996,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -122706,6 +125214,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -122904,6 +125420,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -123090,6 +125614,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -123246,6 +125778,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -123466,6 +126006,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -123622,6 +126170,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -123873,6 +126429,14 @@
         "changes": [
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     },
     {
@@ -124062,6 +126626,14 @@
           "A05",
           "A15"
         ]
+      },
+      "remaining_closure": {
+        "date": "2026-11-05",
+        "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+        "changes": [
+          "C10"
+        ],
+        "method": "原始字节/源码静态处置；未运行测试或Lua"
       }
     }
   ],
@@ -124111,5 +126683,38 @@
       "R12"
     ],
     "method": "只做源码与文本检查，未运行测试/Lua/游戏；不作未知差异已全部排除的保证。"
+  },
+  "剩余清单处置": {
+    "date": "2026-11-05",
+    "baseline": "ccc6ebb599dbdc91a37b2f8cad3184439a20d09d",
+    "report": "ECL_REMAINING_CLOSURE_2026-11-05.md",
+    "dispositions": [
+      {
+        "previous": "小怪拍照回调、拍摄保护/脉冲及原相机变量",
+        "disposition": "已修复C01–C06、C08、C11；保留项目拍照伤害入口",
+        "state": "源行为缺项已处理"
+      },
+      {
+        "previous": "被省略的纯效果/独立ANM/提示音",
+        "disposition": "已修复C07–C10；原始像素、波形和调度均有源点",
+        "state": "源行为缺项已处理"
+      },
+      {
+        "previous": "妖妖梦拖影仍为代理的旧卡头说明",
+        "disposition": "逐一核对19条活动138，flags均25；NativeVisual的历史/接触/网格路径已在此前接入，旧描述加历史标注",
+        "state": "已存在原生实现，非待续ECL"
+      },
+      {
+        "previous": "计分、道具类别、项目机体、HP伤害换算与Rogue",
+        "disposition": "保留Boss Rush的明确接口映射；无原生P/Bomb原语处沿用现有等价道具，未改ECL发弹/等待/运动参数，也不把这些映射叫作原游戏系统复刻",
+        "state": "项目接口边界，非遗漏指令"
+      },
+      {
+        "previous": "独立卡过场、剧情/选路及成功/失败收尾",
+        "disposition": "当前窗口仍由522项登记的Boss Rush流程驱动；原始文件里死亡/对话/未选难度候选不误植到攻击时钟。死亡候选在数据中保留，不伪称已经于攻击窗口执行",
+        "state": "阶段边界合同，非攻击ECL待续"
+      }
+    ],
+    "source_gaps": "本轮确认项已统一补齐；系统接口明确分列，不当作源缺项修复"
   }
 }

@@ -3,6 +3,8 @@
 -- 激光状态机来自PhotoEffect.cpp；秘鍵来自enm16/script8/sprite11，幽幽子的扇面来自
 -- enm17/script12/sprite11。原始THTX只经texture_png.py封装成PNG，没有重画。
 local N={}
+N.photo=dofile('mod/GAME/th33_photo.lua')
+OriginalStageVisual.adapters[95]={bind=N.photo.bind,frame=N.photo.frame_actor,event=N.photo.flags,tick=N.photo.contact}
 -- 0x2761是有效目标照片数，0x2764才是含拍空的实际快门数。
 -- 只包当前相机的完成快门事件；不读存档统计，重放也经过相同入口。
 function N.end_photo_count(owner)
@@ -25,6 +27,7 @@ function N.begin_photo_count(owner,camera)
     owner.th095_photo_bonus=function(self,bonus,...)
         if bonus=='base score' and IsValid(owner) and owner.photo_damage_limit then
             owner.th095_photos_taken=owner.th095_photos_taken+1
+            N.photo.take(self,owner)
         end
         return previous(self,bonus,...)
     end
@@ -75,6 +78,7 @@ function N.begin_move(o)
 end
 function N.queue_move(o,serial,x,y,state,angle)
     if serial~=o.th095_move_serial then return end
+    o.th095_animation_vx,o.th095_animation_stamp,o.th095_animation_queue=x-o.x,o.ani,true
     o.th095_pending_move={serial=serial,x=x,y=y,state=state,angle=angle}
 end
 function N.flush_move(o,birth)
@@ -126,6 +130,7 @@ function N.move(owner,st,tx,ty,n,mode,box)
         for s=1,n do
             if not token.alive or st.dead then return end
             local t=type(mode)=='function' and mode(s/n) or easing(s/n,mode)
+            owner.th095_motion_snapshot={x=x0,y=y0,dx=dx,dy=dy,n=n,mode=mode,age=s}
             local x,y=x0+dx*t,y0+dy*t
             local angle=math.atan2(-(y-owner.y),x-owner.x)
             if box then

@@ -1,0 +1,2 @@
+-- 原版SoundIdx、波形及DirectSound音量；由export_original_sounds.py导出。
+return {[8]={},[95]={[5]={"Resources/OriginalAudio/95/se_power0.wav",-700,100},[15]={"Resources/OriginalAudio/95/se_tan00.wav",-1100,50},[18]={"Resources/OriginalAudio/95/se_enep01.wav",-900,100},[38]={"Resources/OriginalAudio/95/se_slash.wav",0,100},[42]={"Resources/OriginalAudio/95/se_ch00.wav",-300,100},[45]={"Resources/OriginalAudio/95/se_nice.wav",-500,100}}}
