@@ -5905,6 +5905,7 @@ function class.th07_motion_begin(self, id, move)
     class.th07_spell_active=self.current_card and self.current_card.is_sc or false
     self.th07_shoot_sound=({[4392]=25,[4394]=9})[id] or 7
     self.th07_manual_pose=false
+    self.th07_ns_flags=nil
     TH34Prism.begin(self, id)
     -- 上一张卡关闭体术时会放入NONTJT；新卡恢复原作默认，再由本卡协程改变。
     self.group = GROUP.ENEMY
@@ -5942,6 +5943,7 @@ function class.th07_motion_begin(self, id, move)
     local m = cfg.move
     if m then move(self, m[1], m[2], m[3]-192, 224-m[4]) end
     self.th07_motion_live, self.th07_motion_key = id, cfg.key
+    NativeVisual.orbit_phase(self,cfg.key,class.th07_spell_active)
     OriginalStageVisual.bind_source(self,7,cfg.file:gsub('%.ecl$','')..':'..cfg.sub,true)
     self.th07_visual_clock,self.th07_visual_stamp=0,nil
     if cfg.file=='ecldata4.ecl' then
@@ -6305,9 +6307,9 @@ local function TH34_add_stage78_boss()
     local function shoot(self, op, spr, off, c1, c2, v1, v2, a1, a2, plays)
         local style = bs(spr)
         if op == 64 or op == 65 then
-            w3_spread(self, style, off, c1, c2, v1, v2, a1, a2, op == 64, plays)
+            w3_spread(self, style, off, c1, c2, v1, v2, a1, a2, op == 64, plays, self.th07_ns_flags)
         elseif op == 66 or op == 67 then
-            w3_ring(self, style, off, c1, c2, v1, v2, a1, a2, op == 66, plays)
+            w3_ring(self, style, off, c1, c2, v1, v2, a1, a2, op == 66, plays, self.th07_ns_flags)
         elseif op == 72 then
             w3_random(self, style, off, c1, v1, v2, a2, plays)
         end
@@ -6347,10 +6349,15 @@ local function TH34_add_stage78_boss()
     ---  · opt.drift_t 两次随机漂移的间隔（默认 120；sub83/sub81 的循环长 150 帧）
     ---  · opt.burst { 每组发数 n, 组后静默帧 pause }：周期回调不再是「一路每 gap 帧一发」，
     ---    而是「gap 帧后首发 → 连打 n 发（间隔 gap）→ 静默 pause 帧」循环。
-    ---    原作 sub83/sub81 每轮 t=160 起打到 t=280（12 发），t=280 把周期改成 300，
-    ---    t=310 又 JUMP 回 t=160 把周期重置成 10 —— 净效果就是 12 发 + 40 帧空档。
+    ---    原作 sub83/sub81 每轮t=160登记周期10，t=280改300，t=280 把周期改成 300，
+    ---    t=310 又 JUMP 回 t=160 把周期重置成 10 —— 回调RET会再推进计数，首10后9帧，共13组。
     ---  · fire 传函数就直接用；传 { make = f } 则每次开局调 f() 造一个带累加器的新函数
     ---    （sub78/80/82 的基准角是跨回调累加的，不能每次重掷）。
+    local function normalize_ns(a)
+        local pi=3.1415927410125732
+        if a>pi then return a-2*pi elseif a< -pi then return a+2*pi end
+        return a
+    end
     local function nonspell(menu, id, life, thr, gap, fire, opt)
         opt = opt or {}
         local card = boss.card.New("", 1, 1, 60, TH34_REIMU_HP[id] or hpB(life - thr))
@@ -6363,26 +6370,30 @@ local function TH34_add_stage78_boss()
             local ease = opt.ease or 4
             local f = (type(fire) == "table") and fire.make() or fire
             self._box = opt.box or { -160, 160, 96, 176 }
-            task.New(self, function()
-                task.Wait(t0)
-                task.New(self, function()
-                    if opt.burst then
-                        local n, pause = opt.burst[1], opt.burst[2]
-                        task.Wait(gap)
-                        while true do
-                            for _ = 1, n do f(self); task.Wait(gap) end
-                            task.Wait(pause)
-                        end
-                    else
-                        while true do
-                            task.Wait(gap)
-                            f(self)
-                        end
-                    end
-                end)
+            self.th07_ns_flags=515 -- FAST+无对应DECEL记录，保留原flags字面值。
+            local counter,period,enabled=0,gap,false
+            task.New(self,function()
                 while true do
-                    exdrift(self, 1, ease)
-                    task.Wait(opt.drift_t or 120)
+                    task.Wait(1)
+                    if enabled then
+                        counter=counter+1
+                        if counter>=period then f(self);counter=1 end
+                    end
+                end
+            end)
+            task.New(self,function()
+                task.Wait(t0)
+                enabled,counter=true,0
+                if opt.burst then
+                    while true do
+                        period,counter=gap,0
+                        exdrift(self,1,ease)
+                        task.Wait(120)
+                        period,counter=300,0
+                        task.Wait(30)
+                    end
+                else
+                    while true do exdrift(self,1,ease);task.Wait(opt.drift_t or 120) end
                 end
             end)
         end
@@ -6408,7 +6419,7 @@ local function TH34_add_stage78_boss()
     local function f76(self)
         shoot(self, 66, 4, 8, 64, 2, 3.2, 1, 0, 0, true)
     end
-    ---原作 sub 78：两圈 8 发 ×1 层（速度 3 / 2.5），两个基准角 lf0/lf1 初值 0、
+    ---原作 sub 78：两圈 8 发 ×2 层（速度 3 / 2.5），两个基准角 lf0/lf1 初值 0、
     ---每次回调分别 +0.0560999 / −0.0785398（所以是两条缓慢反向自转的环）。
     ---原作 sub 80：8 发 ×3 层（速度 3→1），基准角 lf0 从 0 起每次 +0.0668424。
     ---原作 sub 82：两圈 8 发 ×1 层（速度 4 / 0.8），lf0 每次 −0.0951998、lf1 每次 +0.1309。
@@ -6438,7 +6449,7 @@ local function TH34_add_stage78_boss()
             local function burst()
                 for i = 0, 17 do
                     shoot(self, 64, 6, 6, 7, 2, 2 + 0.5 * i, 3.8, 0,
-                          1.0472 - 0.0539793 * i, true)
+                          1.0471975803375244 - 0.05397925525903702 * i, true)
                     task.Wait(2)
                 end
             end
@@ -6452,10 +6463,10 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(60)
                 while true do
-                    burst(); exdrift(self, 1, 8); task.Wait(100)
-                    burst(); exdrift(self, 2, 8); task.Wait(100)
-                    spiral(0.0654498); exdrift(self, 1, 8); task.Wait(100)
-                    spiral(-0.0654498); exdrift(self, 2, 4); task.Wait(60)
+                    burst(); exdrift(self, 1, 0); task.Wait(100)
+                    burst(); exdrift(self, 2, 0); task.Wait(100)
+                    spiral(0.06544984877109528); exdrift(self, 1, 0); task.Wait(100)
+                    spiral(-0.06544984877109528); exdrift(self, 2, 4); task.Wait(60)
                 end
             end)
         end
@@ -6477,29 +6488,29 @@ local function TH34_add_stage78_boss()
         local lf0, lf1 = 0, 0
         return function(self)
             shoot(self, 66, 4, 8, 8, 2, 3, 1, lf0, 0, true)
-            lf0 = lf0 + 0.0560999
+            lf0 = normalize_ns(lf0 + .056099869310855865)
             shoot(self, 66, 4, 10, 8, 2, 2.5, 1, lf1, 0, true)
-            lf1 = lf1 - 0.0785398
+            lf1 = normalize_ns(lf1 - .07853981852531433)
         end
     end }, NP2)
     nonspell("紫 非符 6", 3421, 20000, 2700, 10, { make = function()
         local lf0 = 0
         return function(self)
             shoot(self, 66, 4, 8, 8, 3, 3, 1, lf0, 0, true)
-            lf0 = lf0 + 0.0668424
+            lf0 = normalize_ns(lf0 + .06684239953756332)
         end
     end }, NP2)
     nonspell("紫 非符 7", 3423, 20000, 2700, 8, { make = function()
         local lf0, lf1 = 0, 0
         return function(self)
             shoot(self, 66, 4, 10, 8, 1, 4, 1, lf0, 0, true)
-            lf0 = lf0 - 0.0951998
+            lf0 = normalize_ns(lf0 - .09519977867603302)
             shoot(self, 66, 4, 9, 8, 1, 0.8, 1, lf1, 0, true)
-            lf1 = lf1 + 0.1309
+            lf1 = normalize_ns(lf1 + .13089969754219055)
         end
     end }, NP2)
     ---原作 sub83 的周期回调：t=160 起每 10 帧一发打到 t=280（12 发），t=280 把周期改成 300、
-    ---t=310 又 JUMP 回 t=160 把周期重置成 10 —— 净效果就是「12 发（间隔 10 帧）+ 40 帧空档」
+    ---t=310 又 JUMP 回 t=160 把周期重置成 10 —— 首10后9帧，13组后暂停至下轮
     ---的 150 帧循环，随机漂移也在每个循环开头重掷一次（所以 drift_t=150）。
     nonspell("紫 非符 8", 3425, 20000, 2000, 10, f84, {
         t0 = 160, ease = 0, drift_t = 150, burst = { 12, 30 },
@@ -9126,30 +9137,30 @@ local function TH34_add_stage78_boss()
         local lf0, lf1 = 0, 0
         return function(self)
             shoot(self, 66, 4, 8, 8, 2, 3, 1, lf0, 0, true)
-            lf0 = lf0 + 0.0698132
+            lf0 = normalize_ns(lf0 + .06981316953897476)
             shoot(self, 66, 4, 10, 8, 2, 2.5, 1, lf1, 0, true)
-            lf1 = lf1 - 0.0981748
+            lf1 = normalize_ns(lf1 - .09817477315664291)
         end
     end }, NE)
-    ---sub78：8 发 ×3 层（速度 3→1），基准角从 0 起每次 +0.0805537。
+    ---sub78：8 发 ×3 层（速度 3→1），基准角从 0 起每次 +.08055365806818008。
     nonspell("EX 非符 6", 3485, 20000, 2700, 10, { make = function()
         local lf0 = 0
         return function(self)
             shoot(self, 66, 4, 8, 8, 3, 3, 1, lf0, 0, true)
-            lf0 = lf0 + 0.0805537
+            lf0 = normalize_ns(lf0 + .08055365806818008)
         end
     end }, NE)
-    ---sub80：两圈 8 发 ×1 层（速度 4 / 0.8），lf0 每次 −0.0951998、lf1 每次 +0.1309。
+    ---sub80：两圈 8 发 ×1 层（速度 4 / 0.8），lf0 每次 −.09519977867603302、lf1 每次 +.13089969754219055。
     nonspell("EX 非符 7", 3486, 20000, 2700, 8, { make = function()
         local lf0, lf1 = 0, 0
         return function(self)
             shoot(self, 66, 4, 10, 8, 1, 4, 1, lf0, 0, true)
-            lf0 = lf0 - 0.0951998
+            lf0 = normalize_ns(lf0 - .09519977867603302)
             shoot(self, 66, 4, 9, 8, 1, 0.8, 1, lf1, 0, true)
-            lf1 = lf1 + 0.1309
+            lf1 = normalize_ns(lf1 + .13089969754219055)
         end
     end }, NE)
-    ---原作 sub81 与 PH sub83 同构（同样 12 发 + 40 帧空档的 150 帧循环；只有最后一发的
+    ---原作 sub81 与 PH sub83 同构（同样13组、150帧一轮的 150 帧循环；只有最后一发的
     ---环数不同：sub82 是 24 发）。e82 即 sub82。
     nonspell("EX 非符 8", 3487, 20000, 3000, 10, e82, {
         t0 = 160, ease = 0, drift_t = 150, burst = { 12, 30 },
@@ -9172,8 +9183,8 @@ local function TH34_add_stage78_boss()
             ---单条 SPREAD 关于扇心对称，a2 的正负只影响镜像、不影响弹幕集合，照原作取正。
             local function burst()
                 for i = 0, 17 do
-                    gspread(self, bs(6), 6, 7, 2, 4 + 0.214286 * i, 3.8,
-                            Angle(self, player), (1.0472 - 0.0539793 * i) * RAD2DEG, true)
+                    gspread(self, bs(6), 6, 7, 2, 4 + 0.2142857164144516 * i, 3.8,
+                            Angle(self, player), (1.0471975803375244 - 0.05397925525903702 * i) * RAD2DEG, true)
                     task.Wait(2)
                 end
             end
@@ -9188,10 +9199,10 @@ local function TH34_add_stage78_boss()
             task.New(self, function()
                 task.Wait(60)
                 while true do
-                    burst(); exdrift(self, 1, 8); task.Wait(100)
-                    burst(); exdrift(self, 2, 8); task.Wait(100)
-                    spiral(0.0654498); exdrift(self, 1, 8); task.Wait(100)
-                    spiral(-0.0654498); exdrift(self, 2, 4); task.Wait(60)
+                    burst(); exdrift(self, 1, 0); task.Wait(100)
+                    burst(); exdrift(self, 2, 0); task.Wait(100)
+                    spiral(0.06544984877109528); exdrift(self, 1, 0); task.Wait(100)
+                    spiral(-0.06544984877109528); exdrift(self, 2, 4); task.Wait(60)
                 end
             end)
         end

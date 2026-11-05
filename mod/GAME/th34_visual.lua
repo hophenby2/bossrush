@@ -89,6 +89,85 @@ function N.exit_angle(o,native_angle)
     end
     return -a -- TH07弧度口径取反后返回本工程的度。
 end
+-- ECL100 / Effect13：原188号ANM围绕本体的三维轨道，半径目标由最后一次100共享。
+-- 2d方向与四元数照EffectManager，投影照Stage::SetupCameraStageBackground。
+local orbit_colors={0xfff0f0f0,0xfff0f0f0,0xffffffff,0xffffe0e0,0xffffe0e0,0xffffe0e0,
+    0xffffe0ff,0xffffe0ff,0xffffe0ff,0xffe0e0ff,0xffe0e0ff,0xffe0e0ff,
+    0xffe0ffff,0xffe0ffff,0xffe0ffff,0xffe0ffe0,0xffe0ffe0,0xffe0ffe0,
+    0xffe0ffe0,0xffe0ffe0,0xffe0ffe0,0xffffffe0,0xffffffe0,0xffffffe0,
+    0xffffe0e0,0xffffe0e0,0xffffe0e0,0xffffffff}
+local orbit_fx=Class(object,{
+    init=function(o,bank,color,x,y,z)
+        o.bank,o.radius,o.phase,o.fade=bank,0,0,nil
+        o.group,o.bound,o.colli,o.layer=GROUP.GHOST,false,false,LAYER.ENEMY-1
+        local length=math.sqrt(x*x+y*y+z*z)
+        o.nx,o.ny,o.nz=x/length,y/length,z/length
+        local length2=math.sqrt(o.nx*o.nx+o.ny*o.ny)
+        o.ox,o.oy=length2>0 and o.ny/length2 or 0,length2>0 and -o.nx/length2 or 0
+        local a=OriginalStageVisual.actor(o,7,'etama',188)
+        local c=orbit_colors[color+1] or 0xffffffff
+        a.vm.color={math.floor(c/65536)%256,math.floor(c/256)%256,c%256};a.tick=nil
+        o.draw_active=true
+    end,
+    frame=function(o)
+        local b=o.bank
+        local owner=b.owner
+        if not IsValid(owner) then
+            if o.fade==nil then o.fade=0 end
+        elseif owner.th07_orbits~=b then
+            if o.fade==nil then o.fade=0 end
+        else
+            b.x,b.y=owner.x,owner.y
+            o.draw_active=not owner._original_hidden
+            if o.radius<b.distance then o.radius=o.radius+.30000001192092896 end
+            o.phase=o.phase+3.1415927410125732/100
+            if o.phase>3.1415927410125732 then o.phase=o.phase-6.2831854820251465 end
+        end
+        if o.fade~=nil then
+            o.fade=o.fade+1
+            if o.fade>=16 then object.RawDel(o);return end
+            local v=o._original_actor.vm
+            v.alpha[1]=(1-o.fade/16)*255
+            v.scale[1],v.scale[2]=1+o.fade/16,1+o.fade/16
+        end
+        local theta=o.phase*2
+        local c,si=math.cos(theta),math.sin(theta)
+        local nx,ny,nz,ox,oy=o.nx,o.ny,o.nz,o.ox,o.oy
+        -- Rodrigues；初向量与旋转轴正交，dot项为0。
+        local x=(ox*c-nz*oy*si)*o.radius
+        local y=(oy*c+nz*ox*si)*o.radius
+        local z=(nx*oy-ny*ox)*si*o.radius*6
+        local camera=224/math.tan(3.1415927410125732/20)
+        local depth=camera-z
+        o.project_visible=depth>=1 and depth<=10000
+        o.project_scale=camera/depth
+        o.x,o.y=(b.x+x)*o.project_scale,(b.y-y)*o.project_scale
+        OriginalStageVisual.tick(o)
+    end,
+    render=function(o)
+        if o.draw_active and o.project_visible then
+            OriginalANM.draw(o._original_actor.vm,o.x,o.y,0,o.project_scale,o.project_scale,1)
+        end
+    end,
+},true)
+function N.reset_orbits(owner)
+    local b=owner.th07_orbits
+    if not b then return end
+    b.x,b.y=owner.x,owner.y
+    for _,o in ipairs(b.actors) do if IsValid(o) and o.fade==nil then o.fade=0 end end
+    owner.th07_orbits=nil
+end
+function N.orbit_phase(owner,key,spell)
+    local old=owner.th07_orbit_phase
+    if old and (old.key~=key or old.spell) then N.reset_orbits(owner) end
+    owner.th07_orbit_phase={key=key,spell=spell}
+end
+function N.spawn_orbit(owner,c)
+    local bank=owner.th07_orbits
+    if not bank then bank={owner=owner,actors={},x=owner.x,y=owner.y};owner.th07_orbits=bank end
+    bank.distance=c[7]
+    bank.actors[#bank.actors+1]=New(orbit_fx,bank,c[3],c[4],c[5],c[6])
+end
 -- ecldata4/Sub108..120：乐器灵独立于Boss游走，145中断只改各自上下文。
 local instrument_cards={
     [4440]={1,1},[4442]={2,1},[4444]={3,1},
@@ -375,7 +454,9 @@ end
 -- ECL138必须独立于主ANM选择保留；不能只给少数手写发射器补拖尾。
 OriginalStageVisual.adapters[7]={
     event=function(o,c)
-        if c[2]==138 then
+        if c[2]==100 then N.spawn_orbit(o,c)
+        elseif c[2]==99 and c[3]<0 then N.reset_orbits(o)
+        elseif c[2]==138 then
             if c[3]==0 then o.th07_trail=nil;return end
             local box=o._original_contact_box or o._original_damage_box or {8,8}
             o.th07_trail={history={},flags=c[3],count=c[4],collision_count=c[5],step=c[6],

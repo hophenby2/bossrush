@@ -4,9 +4,7 @@ import argparse
 import importlib.util
 import re
 import struct
-import subprocess
 import sys
-import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.dont_write_bytecode = True
@@ -14,7 +12,7 @@ spec = importlib.util.spec_from_file_location('anm_export', Path(__file__).with_
 serializer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(serializer)
 OPS = {8: set(range(54, 63)) | {79, 80, 81, 83, 174},
-       7: {95, 96, 97, 120, 128, 129, 132, 138, 150}}
+       7: {95, 96, 97, 99, 100, 120, 128, 129, 132, 138, 150}}
 
 
 def profiles(game, declarations, binaries):
@@ -33,7 +31,7 @@ def profiles(game, declarations, binaries):
                     continue
                 values = []
                 for i in range((size - 12) // 4):
-                    value, = struct.unpack_from('<f' if game == 7 and op == 150 else '<i', raw, address + 12 + i * 4)
+                    value, = struct.unpack_from('<f' if game == 7 and (op == 150 or op == 100 and i>=1) else '<i', raw, address + 12 + i * 4)
                     values.append({'var': value} if flags & (1 << i) else value)
                 rows.append((time, op, values, mask))
             subs[block[1]] = rows
@@ -79,27 +77,38 @@ def main():
     args = parser.parse_args()
     data = profiles(args.game, args.declarations, args.binaries)
     assert data, '未读取到原作显示指令'
-    with tempfile.TemporaryDirectory(prefix='bossrush-visual-export-') as folder:
-        folder = Path(folder)
-        fresh = folder / 'fresh.lua'
-        fresh.write_text('return ' + serializer.lua(data), 'utf-8')
-        merge = folder / 'merge.lua'
-        merge.write_text('''
-local old=dofile(arg[1]);local fresh=dofile(arg[2]);old[tonumber(arg[3])]=fresh
-local function encode(v)
- if type(v)=='table' then
-  local keys={};for k in pairs(v) do keys[#keys+1]=k end
-  table.sort(keys,function(a,b) if type(a)==type(b) then return a<b end;return type(a)<type(b) end)
-  local rows={};for _,k in ipairs(keys)do rows[#rows+1]='['..encode(k)..']='..encode(v[k]) end
-  return '{'..table.concat(rows,',')..'}'
- elseif type(v)=='string' then return string.format('%q',v)
- else return tostring(v) end
-end
-local f=assert(io.open(arg[1],'wb'))
-f:write('-- 原作ECL显示指令；由export_visual_ecl.py及refresh_visual_sources.py导出。\\nreturn ',encode(old),'\\n');f:close()
-''', 'utf-8')
-        target = ROOT / 'mod/GAME/original/visual_ecl.lua'
-        subprocess.run([args.luajit, str(merge), str(target), str(fresh), str(args.game)], check=True)
+    target=ROOT/'mod/GAME/original/visual_ecl.lua'
+    text=target.read_text()
+    marker=f'[{args.game}]='
+    depth=0;quoted=False;escaped=False;i=text.index('return ')+len('return ')
+    while i<len(text):
+        c=text[i]
+        if quoted:
+            if escaped:escaped=False
+            elif c=='\\':escaped=True
+            elif c=='"':quoted=False
+        elif c=='"':quoted=True
+        elif depth==1 and text.startswith(marker,i):
+            start=i+len(marker);end=start;level=0;string=False;escape=False
+            while end<len(text):
+                c=text[end]
+                if string:
+                    if escape:escape=False
+                    elif c=='\\':escape=True
+                    elif c=='"':string=False
+                elif c=='"':string=True
+                elif c=='{':level+=1
+                elif c=='}':
+                    level-=1
+                    if level==0:break
+                end+=1
+            assert level==0 and end<len(text)
+            target.write_text(text[:start]+serializer.lua(data)+text[end+1:])
+            break
+        elif c=='{':depth+=1
+        elif c=='}':depth-=1
+        i+=1
+    else:raise AssertionError('未找到顶层作品表')
     print(f'TH{args.game}：已从原始字节校验并更新{len(data)}个显示入口')
 
 
