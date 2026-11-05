@@ -87,7 +87,7 @@ F.effect=Class(object,{
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
-        if o.game==6 and (o.kind==3 or o.kind==4) then
+        if o.game==6 and (o.kind==3 or (o.kind>=4 and o.kind<=11)) then
             -- RandomSplash(Big) 首次 EffectManager 回调取两个随机速度，再逐帧减速。
             if not o.effect_velocity then
                 local scale=o.kind==3 and 4/33 or 1/12

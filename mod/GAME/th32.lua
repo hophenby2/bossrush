@@ -275,7 +275,7 @@ end
 -- Func8：扫描所有高度 >=30 的活弹（包括刀和中玉），池满也计入 changedBullets。
 local function particles(b,kind,count,argb)
     -- 原版 th06.exe 0x76298 模板表；复原源码在蓝粒子后多列了一项。
-    local script=({[3]=6,[4]=9,[12]=17,[17]=7,[18]=8})[kind]
+    local script=({[0]=3,4,5,6,9,10,11,12,13,14,15,16,17,[17]=7,[18]=8})[kind]
     assert(script,"未登记的TH06粒子模板 "..tostring(kind))
     for _=1,count do
         OriginalStageVisual.presentation.new_effect(6,'etama4',script,b.x,b.y,b,kind,argb)
@@ -625,7 +625,7 @@ function H.wait(b, v, target)
     local delay = max(0,target-v.epoch)-max(0,v.time-v.epoch)
     if delay > 0 then for _=1,delay do task.Wait() end end
     -- 单卡练习压缩登记前的转场，但原生 phaseTimer 仍须经过这些帧。
-    if a.main and v.epoch>0 then a.phase=a.phase+max(0,min(target,v.epoch)-min(v.time,v.epoch)) end
+    if a.main and not b.th06.road and v.epoch>0 then a.phase=a.phase+max(0,min(target,v.epoch)-min(v.time,v.epoch)) end
     -- 原生 RunEcl 要求 time == 指令时间。TIME_ADD 越过时间戳时不会倒退补执行。
     if target>=v.epoch and v.time>target then while true do task.Wait() end end
     v.time = max(v.time,target)
@@ -640,7 +640,7 @@ function H.call(b, v, fn, i0, f0)
 end
 function H.life(b)
     local a=b.th06_actor
-    return a.death_life or (b.hp + (a.main and a.meta.threshold or 0))
+    return b.hp + (a.main and a.meta.threshold or 0)
 end
 function H.player_angle(b) return atan2(-(player.y-b.y),player.x-b.x) end
 function H.distance(b) return sqrt((player.x-b.x)^2+(player.y-b.y)^2) end
@@ -861,7 +861,7 @@ function H.new_actor(s,b,stage,sub,main,meta)
     if previous and previous.stage==stage and previous.group==meta.group then
         -- CallEclSub 只换脚本上下文；不把正走到一半的移动、速度和活动框重置为零。
         for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
-            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm"}) do
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm","death_particle1","death_particle2"}) do
             a[key]=previous[key]
         end
     end
@@ -869,7 +869,7 @@ function H.new_actor(s,b,stage,sub,main,meta)
     if main and stage==7 and meta.group==14 and not b._original_actor then
         H.poses(b,160,163,164,161,162)
     end
-    for i=1,256 do
+    for i=1,(s.road and 257 or 256) do
         if not s.actors[i] or s.actors[i].dead or not IsValid(s.actors[i].object) then s.actors[i]=a;a.slot=i;break end
     end
     a.co=coroutine.create(function() P[stage][sub](b,a.context) end)
@@ -885,24 +885,25 @@ function H.run_actor(a,initial)
 end
 function H.kill_actor(a,defer)
     if a.dead then return end
-    if a.object.th06.road then
-        if a.death_mode==3 then
-            a.object.hp=1;a.damageable=false;a.death_mode=0
-            return
-        end
-        H.enemy_drop(a)
-        if (a.death_mode or 0)==0 then a.dead=true;object.RawDel(a.object);return end
-    end
+    local mode=a.death_mode or 0
+    a.life_threshold,a.timeout=nil,nil
+    if mode==3 then a.object.hp=1;a.damageable=false;a.death_mode=0
+    elseif a.object.th06.road then H.enemy_drop(a) end
+    H.particles(a.object,a.death_particle1 or 0,mode==3 and 4 or 1,0xffffffff)
+    H.particles(a.object,(a.death_particle2 or 0)+4,4,0xffffffff)
+    if mode==0 then a.dead=true;object.RawDel(a.object);return end
+    if mode==1 then a.interactable=false end
+    a.object.hp=mode==3 and 1 or 0
     if a.death then
-        local fn=a.death;a.death=nil;a.object.hp=max(1,a.object.hp)
-        a.interactable=false;a.damageable=false;a.resume_tick=nil
+        local fn=a.death;a.death=nil
+        a.resume_tick=nil
         local prior=a.context;a.context={}
         for k,value in pairs(prior) do a.context[k]=value end
-        a.context.time,a.context.epoch=0,0;a.death_life=0
+        a.context.time,a.context.epoch=0,0
         H.reset_rank(a)
         a.co=coroutine.create(function() fn(a.object,a.context) end)
-        if not defer then H.run_actor(a) end
-    else a.dead=true;object.RawDel(a.object) end
+        -- 原生击破回调只切PC；下一次EnemyManager轮到该槽才开始time=0。
+    end
 end
 class["原作使魔"] = Class(enemy, {
     init=function(b,s,stage,sub,x,y,z,hp,drop,score)
@@ -931,7 +932,7 @@ class["原作使魔"] = Class(enemy, {
 function H.spawn(b,stage,sub,x,y,z,hp,drop,score)
     local s=b.th06;local count=0
     for _,a in ipairs(s.actors) do if not a.dead then count=count+1 end end
-    if count>=256 then return end
+    if count>=(s.road and 257 or 256) then return end
     H.trace(b,"spawn",stage,sub,x,y,z,hp)
     return New(class["原作使魔"],s,stage,sub,x,y,z,hp,drop,score)
 end
@@ -1007,7 +1008,7 @@ class["原作流程控制"] = Class(object, {
         if s.closed or not IsValid(o.owner) then object.RawDel(o);return end
         s.tick=(s.tick or 0)+1
         -- EnemyManager 按槽顺序：先移动，再执行脚本，最后更新下帧速度。
-        for i=1,256 do
+        for i=1,(s.road and 257 or 256) do
             local a=s.actors[i]
             if a and not IsValid(a.object) then a.dead=true end
             if a and not a.dead and IsValid(a.object) then
@@ -1034,8 +1035,7 @@ class["原作流程控制"] = Class(object, {
                     if not a.dead then H.actor_post(a) end
                     if not a.dead and a.source_clear and a.interactable and not a.invisible and a.entered then
                         a.source_clear=nil
-                        if (a.death_mode or 0)==0 then a.dead=true;object.RawDel(a.object)
-                        else H.kill_actor(a,true) end
+                        H.kill_actor(a,true)
                     end
                 end
             end
@@ -1045,7 +1045,7 @@ class["原作流程控制"] = Class(object, {
 function H.card_init(b,meta)
     b.th06={pool={},next_slot=1,lasers={},laser_pool={},actors={},rank_speed=0}
     b.th06_meta=meta;b.no_hp_render=false;b.NotPlayTimeOutSound=false
-    b._original_ecl_timer=0
+    b._original_ecl_timer=not meta.road and 0 or nil
     local previous=b.th06_previous_motion
     if previous and previous.stage==meta.stage and previous.group==meta.group then
         b.x,b.y=previous.x or b.x,previous.y or b.y
@@ -1066,7 +1066,7 @@ function H.card_del(b)
         for k,value in pairs(b.th06_actor.context) do b.th06_previous_context[k]=value end
         b.th06_previous_motion={stage=b.th06_actor.stage,group=b.th06_actor.meta.group,x=b.x,y=b.y}
         for _,key in ipairs({"mode","move","angle","speed","angular","accel","axisx","axisy","bounds",
-            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm"}) do
+            "offsetx","offsety","offsetz","interval","interval_tick","pattern","extra","muted","sound","laser_index","bat_timer","rotate_anm","death_particle1","death_particle2"}) do
             b.th06_previous_motion[key]=b.th06_actor[key]
         end
     end
@@ -1381,14 +1381,18 @@ function H.enemy_drop(a)
     H.trace(a.object,"enemy_defeat",a.sub,a.initial_life or 1)
     if a.score and a.score>=0 and lstg and lstg.var and lstg.var.score then lstg.var.score=lstg.var.score+a.score end
     local id=a.drop or -2
+    local extra=id>=0 and 3 or 0
     if id==-1 then
         local state=a.object.th06.road_drop_state
         if state.count%3==0 then
-            id=RANDOM_DROPS[state.index];state.index=state.index%#RANDOM_DROPS+1
+            id=RANDOM_DROPS[state.index];state.index=state.index%#RANDOM_DROPS+1;extra=6
         else id=-2 end
         state.count=state.count+1
     end
-    if id>=0 then H.drop_item(a.object,id) end
+    if id>=0 then
+        H.particles(a.object,(a.death_particle2 or 0)+4,extra,0xffffffff)
+        H.drop_item(a.object,id)
+    end
 end
 
 -- TH06_KERNEL_END
@@ -1420,6 +1424,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,1,1,3.0,0.0,0.0,0.0,4)
@@ -1445,6 +1450,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,1,1,3.0,0.0,0.0,0.0,4)
@@ -1469,6 +1475,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -1495,6 +1502,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -1597,6 +1605,7 @@ do
         a.collidable=false
         a.death=P[1][6]
         H.poses(b,128,131,132,129,130)
+        a.death_particle1,a.death_particle2=2,1
         a.life_threshold=500
         a.life_fn=P[1][9]
         a.timeout=1440;a.phase=0
@@ -1753,6 +1762,7 @@ do
         a.death_mode=2
         a.collidable=true
         a.death=P[1][16]
+        a.death_particle1,a.death_particle2=2,1
         H.sprite(b,134)
         if not a.main then b.hp=7000 end
         a.phase=0
@@ -1932,6 +1942,7 @@ do
         a.death_mode=3
         a.collidable=true
         a.death=P[1][17]
+        a.death_particle1,a.death_particle2=2,1
         H.sprite(b,134)
         if not a.main then b.hp=7500 end
         a.phase=0
@@ -2364,6 +2375,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
         a.death=P[2][5]
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=0.7853981852531433,3.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
@@ -2386,6 +2398,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,14)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.1780972480773926,3.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
@@ -2410,6 +2423,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
         a.death=P[2][5]
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,3.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
@@ -2432,6 +2446,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,14)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.9634953737258911,3.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
@@ -2456,6 +2471,7 @@ do
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.death_mode=1
         a.death=P[2][5]
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=2.356194496154785,3.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,3,4,11,10,2,2.5,0.0,0.0,0.0,4)
@@ -2490,6 +2506,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle=H.player_angle(b)+(0.0);a.speed=2.4000000953674316;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,3,1,2.5,0.0,0.0,0.19634954631328583,4)
@@ -2513,6 +2530,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,12)
         b.a,b.b,b.rect=(16.0)/2,(16.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=3.0;a.mode="velocity"
         H.wait(b,v,10000)
@@ -2529,6 +2547,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,8)
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
         a.rotate_anm=true
@@ -2546,6 +2565,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,9)
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
         a.rotate_anm=true
@@ -2563,6 +2583,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,10)
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
         a.rotate_anm=true
@@ -2580,6 +2601,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,11)
         b.a,b.b,b.rect=(22.0)/2,(22.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         H.rand_angle(b,0.7853981852531433,2.356194496154785,false)
         a.speed=5.0;a.mode="velocity"
         a.rotate_anm=true
@@ -2598,6 +2620,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -2803,6 +2826,7 @@ do
         a.damageable=false
         a.death_mode=1
         a.death=P[2][18]
+        a.death_particle1,a.death_particle2=2,1
         b.a,b.b,b.rect=(45.0)/2,(56.0)/2,true
         a.timeout=1920;a.phase=0
         a.timeout_fn=P[2][19]
@@ -2969,6 +2993,7 @@ do
         a.collidable=true
         a.death_mode=3
         a.death=P[2][28]
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=13000 end
         a.phase=0
         a.life_threshold=3200
@@ -3535,6 +3560,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,1,7,1,2.5,0.0,0.0,0.03490658476948738,4)
@@ -3642,6 +3668,7 @@ do
         a.interactable=false
         a.death_mode=1
         a.death=P[3][15]
+        a.death_particle1,a.death_particle2=2,1
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         a.life_threshold=1300
         a.life_fn=P[3][14]
@@ -5385,6 +5412,7 @@ do
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,176.0}
         a.timeout=2400;a.phase=0
         a.timeout_fn=P[4][25]
@@ -5498,6 +5526,7 @@ do
         a.damageable=true
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         H.anm_slot(b,0,17)
         if not a.main then b.hp=17000 end
         a.phase=0
@@ -7062,6 +7091,7 @@ do
         a.damageable=true
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=16000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -7375,6 +7405,7 @@ do
         a.offsetx,a.offsety,a.offsetz=0.0,0.0,0.0
         a.damageable=false
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=5100 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -7408,6 +7439,7 @@ do
         a.damageable=false
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.life_threshold=1700
@@ -7440,6 +7472,7 @@ do
         a.damageable=false
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.death_mode=3
@@ -9094,6 +9127,7 @@ do
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,176.0}
         a.collidable=true
         a.damageable=true
@@ -9369,6 +9403,7 @@ do
         a.damageable=true
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=19000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -9817,6 +9852,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=17000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -10071,6 +10107,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=16000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -10815,6 +10852,7 @@ do
         H.clear_helpers(b)
         H.cancel(b)
         b.a,b.b,b.rect=(40.0)/2,(56.0)/2,true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         a.collidable=true
         a.damageable=true
@@ -11033,6 +11071,7 @@ do
         a.damageable=true
         a.death_mode=2
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=13000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -11121,6 +11160,7 @@ do
         a.death_mode=3
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=15500 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -11403,6 +11443,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=11000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -11508,6 +11549,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=13000 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -12135,6 +12177,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=4700 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -12219,6 +12262,7 @@ do
         a.death_mode=2
         H.trace(b,"spell_end")
         a.collidable=true
+        a.death_particle1,a.death_particle2=2,1
         if not a.main then b.hp=5300 end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
@@ -12338,6 +12382,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,1,1,4.0,0.0,0.0,0.0,4)
@@ -12659,6 +12704,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -12685,6 +12731,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -12713,6 +12760,7 @@ do
         H.sprite(b,3)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
         a.offsetx,a.offsety,a.offsetz=12.0,-12.0,0.0
+        a.death_particle1,a.death_particle2=0,3
         a.angle,a.speed=0.0,2.0;a.mode="velocity"
         H.wait(b,v,60)
         H.sprite(b,5)
@@ -12740,6 +12788,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,3,1,4.0,0.0,0.0,0.19634954631328583,4)
@@ -12765,6 +12814,7 @@ do
         H.wait(b,v,0)
         H.sprite(b,0)
         b.a,b.b,b.rect=(28.0)/2,(28.0)/2,true
+        a.death_particle1,a.death_particle2=1,3
         a.angle,a.speed=1.5707963705062866,2.0;a.mode="velocity"
         a.muted=true
         H.pattern(b,1,0,6,3,1,4.0,0.0,0.0,0.39269909262657166,4)
@@ -13434,6 +13484,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -13821,6 +13872,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -14040,6 +14092,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -14177,6 +14230,7 @@ do
         H.wait(b,v,0)
         a.damageable=false
         H.poses(b,160,163,164,161,162)
+        a.death_particle1,a.death_particle2=2,1
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -14184,6 +14238,7 @@ do
         H.move_to(b,60,64.0,96.0,0.0,1)
         H.wait(b,v,60)
         a.damageable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         H.set_sound(b,7)
         v.c3=0
@@ -14238,6 +14293,7 @@ do
         H.wait(b,v,0)
         a.damageable=false
         H.poses(b,160,163,164,161,162)
+        a.death_particle1,a.death_particle2=2,1
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -14245,6 +14301,7 @@ do
         H.move_to(b,60,256.0,96.0,0.0,1)
         H.wait(b,v,60)
         a.damageable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         H.set_sound(b,7)
         v.c3=0
@@ -14299,6 +14356,7 @@ do
         H.wait(b,v,0)
         a.damageable=false
         H.poses(b,160,163,164,161,162)
+        a.death_particle1,a.death_particle2=2,1
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         b.a,b.b,b.rect=(56.0)/2,(56.0)/2,true
         H.sprite(b,160)
@@ -14306,6 +14364,7 @@ do
         H.move_to(b,60,320.0,96.0,0.0,1)
         H.wait(b,v,60)
         a.damageable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         H.set_sound(b,7)
         v.c3=0
@@ -14363,6 +14422,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -14560,6 +14620,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -14753,6 +14814,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -15025,6 +15087,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -15245,6 +15308,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -15608,6 +15672,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)
@@ -16406,6 +16471,7 @@ do
         a.invisible=false
         a.collidable=true
         a.interactable=true
+        a.death_particle1,a.death_particle2=2,1
         a.bounds={32.0,48.0,352.0,120.0}
         v.repeat_func=6
         H.poses(b,160,163,164,161,162)

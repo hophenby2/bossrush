@@ -13,15 +13,22 @@ STEM = 'ECL_LINE_REVIEW_2026-11-05'
 
 
 def timeline_rows(source, index, game):
-    """读取TH08原始时间轴的地址证据；不推进时间、不执行指令。"""
-    assert game == 8, ('尚未声明其他格式', game)
+    """读取TH06/08原始时间轴的地址证据；不推进时间、不执行指令。"""
     data = source.binary.read_bytes()
-    count = struct.unpack_from('<h', data, 6)[0]
-    assert 0 <= index < count <= 16
-    address = struct.unpack_from('<I', data, 8 + index * 4)[0]
+    if game==6:
+        assert index==0
+        address=struct.unpack_from('<I',data,4)[0]
+    else:
+        assert game==8, ('尚未声明其他格式', game)
+        count = struct.unpack_from('<h', data, 6)[0]
+        assert 0 <= index < count <= 16
+        address = struct.unpack_from('<I', data, 8 + index * 4)[0]
     rows = []
     while True:
-        time, op, size, mask = struct.unpack_from('<ihBB', data, address)
+        if game==6:
+            time, _, op, size=struct.unpack_from('<4h',data,address);mask=255
+        else:
+            time, op, size, mask = struct.unpack_from('<ihBB', data, address)
         if time < 0:
             break
         assert size >= 8 and address + size <= len(data), (source.binary, address, size)
@@ -58,7 +65,7 @@ def render(workspace):
                 lines += [f"- 自制：TH{key} {row['name']}（无原作ECL，不计入完成数）"]
                 continue
             checked = 'x' if key in completed else ' '
-            roots = '/'.join(source['roots']) or '时间轴窗口待逐行核对'
+            roots = '/'.join(source['roots']) or ('时间轴窗口' if key in completed else '时间轴窗口待逐行核对')
             detail = f'；[核对记录](#{game}-{row["id"]})' if key in completed else ''
             lines += [f"- [{checked}] TH{key} {row['name']} — `{source['file']}:{roots}`{detail}"]
         lines.append('')
@@ -86,6 +93,8 @@ def render(workspace):
             source = cache[source_key]
             instructions = (timeline_rows(source, int(sub[8:]), game)
                             if sub.startswith('Timeline') else source.subs[sub])
+            if 'time_start' in part:
+                instructions=[i for i in instructions if part['time_start']<=i.time<part['time_end']]
             # 指令清单只是已人工审阅子程序的地址证据，不能替未审阅卡生成通过状态。
             addresses = ', '.join(f'`0x{i.address:x}`' for i in instructions)
             lines += [f"| `{filename}:{sub}` | {addresses} | {part['note']} |"]

@@ -106,6 +106,7 @@ def statement(stage,r,target):
     if op==97:return [f'H.sprite(b,{value(x[0])})'],False
     if op==98:return [f'H.poses(b,{vals(x[:5])})'],False
     if op==99:return [f'H.anm_slot(b,{vals(x)})'],False
+    if op==100:return [f'a.death_particle1,a.death_particle2={int(x[0])&255},{(int(x[0])>>8)&255}'],False
     if op==103:return [f'b.a,b.b,b.rect=({value(x[0])})/2,({value(x[1])})/2,true'],False
     if op in(104,105,117,132):return [f'a.{ {104:"collidable",105:"damageable",117:"interactable",132:"invisible"}[op]}={lit(bool(x[0]))}'],False
     if op==108:return [f'a.death=P[{stage}][{x[0]}]'],False

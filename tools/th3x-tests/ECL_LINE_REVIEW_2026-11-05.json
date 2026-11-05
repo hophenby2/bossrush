@@ -238156,6 +238156,898 @@
         "tools/th32-tests/expand.py": "75a45f6d801a0f279f2e0c6553d0f0ef6efd6cd0c25b76c012f0f630033c47a8",
         "Resources/System/system.lua": "7067af5a618b7b1966310c6c9855ac8fb7cc7a49d2607ff0e7b64bc8d85eef76"
       }
+    },
+    "32/4000": {
+      "findings": [
+        "96次创建：Sub0/1的120自动枪/40与120角速切换、Sub2/3的60停住/70发弹/130加速转向；镜像只翻最终X位移。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,2008)，普通敌机96次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 2008
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4001": {
+      "findings": [
+        "126次创建：中Boss期间轴继续并抑制生成，后半按实际中Boss攻击帧seek；Sub0/2/3的移动和发弹参数逐行核对。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[2008,5278)，普通敌机126次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 2008,
+          "time_end": 5278
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata1.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4002": {
+      "findings": [
+        "162次创建：五方向减速妖精与180间隔环、击破Sub5一帧脚本延迟弹环、自机追踪Sub6的120自动枪及180转向；死亡回调起始帧已修复。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,2588)，普通敌机162次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 2588
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4003": {
+      "findings": [
+        "302次创建：Sub7随机坠落与Sub8..11旋转贴图旗标120、Sub12五层狙击/130帧加速转向；32/416范围随机时间轴创建逐行核对。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[2588,5983)，普通敌机302次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 2588,
+          "time_end": 5983
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub8",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub9",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub10",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub11",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub12",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4004": {
+      "findings": [
+        "220次创建：三种不同方向/角速/自动间隔的移动妖精及Sub4/5驻点狙击；3805 WAIT_BOSS冻结原时间轴。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,3804)，普通敌机220次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 3804
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4005": {
+      "findings": [
+        "187次创建：Sub2/3及Sub7/8驻点扇/向量加速弹；原WAIT_BOSS结束后从3805续轴，不能扣除中Boss耗时。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[3805,5854)，普通敌机187次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 3805,
+          "time_end": 5854
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub8",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4006": {
+      "findings": [
+        "116次创建：70帧生成不可交互子机、64×8帧旋转弹、30开放交互/60×50帧双型环、击破清弹及主/附属ANM退场中断全部核对。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,4132)，普通敌机116次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 4132
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub10",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub11",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub12",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub13",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub14",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub15",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4007": {
+      "findings": [
+        "279次创建：Sub6..9弧线/直线妖精、Sub16/17驻点有限环、Sub18→20的120帧双层环+90预热/120有效/16收束激光逐行核对；可见不可交互子机现在正常绘制。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[4132,10694)，普通敌机279次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 4132,
+          "time_end": 10694
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub8",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub9",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub11",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub12",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub15",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub16",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub17",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub18",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata4.ecl",
+          "sub": "Sub20",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4008": {
+      "findings": [
+        "66次创建：驻点40路8×5帧环、32路5×4帧环、三色24路分层有限环和40×3帧随机狙；各击破回调/出场无敌保持原值。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,3372)，普通敌机66次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 3372
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub8",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4009": {
+      "findings": [
+        "161次创建：Sub1/9/10/11移动自动枪，30/40/30/10的rank间隔、两种子弹模式和4路狙逐行核对；衔接以3374中BossIRQ为基点。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[3374,7704)，普通敌机161次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 3374,
+          "time_end": 7704
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub9",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub10",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata5.ecl",
+          "sub": "Sub11",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4010": {
+      "findings": [
+        "124次创建：不可见Sub0在40/80/120生成三色慢蓄力粒子，18轮；两类随机直线移动妖精及40帧60路弹环，2567 WAIT_BOSS冻结轴。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,2564)，普通敌机124次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 2564
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4011": {
+      "findings": [
+        "原窗口2567..3167共600帧，没有普通敌机创建；保持WAIT_BOSS后的入场等待，不虚构攻击或把剧情帧当发弹。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata6.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[2567,3167)，普通敌机0次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 2567,
+          "time_end": 3167
+        }
+      ]
+    },
+    "32/4012": {
+      "findings": [
+        "132次创建：70帧解除无敌、正反8×4帧递增圈、两轮双段8×4帧圈及六轮14×3/8×4帧递增路数，4743 WAIT_BOSS。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[0,4740)，普通敌机132次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 0,
+          "time_end": 4740
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub0",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub1",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub2",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub3",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub4",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub5",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub15",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
+    },
+    "32/4013": {
+      "findings": [
+        "206次创建：Sub6/7双扇转向、Sub8/9自动枪、Sub10..14的五种30帧开交互有限发弹循环与30帧主/附属ANM退场；击破Sub30同样等待30帧。",
+        "修复道中载体占用原作敌机槽：载体额外占槽，普通敌机完整保留256槽；修复后半seek被误计入phaseTimer导致重复扣时。",
+        "修复击破回调提前启动，保留到下一次敌机更新从time=0执行；补回ECL100死亡粒子模板/随机散射、原死亡模式与HP零值、退场动画中断。"
+      ],
+      "boundaries": "2177次普通创建逐行静态对照，无ECL/Lua执行。Boss Rush按窗口切段并清场；段边界不保留普通敌机跨中Boss战的存活历史，后半从对应seek/WAIT_BOSS边界续轴；剧情、计分、道具与自机伤害走既有接口。原始独立窗口全部保留，未把这一接口写成原作整关等价。",
+      "implementation": [
+        "mod/GAME/th32.lua",
+        "THlib/anm/original_effects.lua",
+        "tools/th32-tests/expand.py"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Timeline0",
+          "note": "逐行核对原始时间轴窗口[4743,8593)，普通敌机206次创建；所有坐标/HP/掉落/分数/镜像/随机创建参数与Lua相符，剧情/IRQ/WAIT_BOSS边界另列。",
+          "time_start": 4743,
+          "time_end": 8593
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub6",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub7",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub8",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub9",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub10",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub11",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub12",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub13",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub14",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata7.ecl",
+          "sub": "Sub30",
+          "note": "该窗口实际敌机/生成子机/调用/击破回调；所有L/Extra目标分支逐行核对。"
+        }
+      ]
     }
   },
   "in_progress": {
@@ -238169,6 +239061,7 @@
     "TH31全部注册卡共同frame出口统一推进EX清弹生成压制计数，按场景/真实帧去重；移除散布于个别卡内的推进，匹配原作BulletManager.cpp帧尾一次递减。",
     "TH32原版th06.exe SHA256=9f76483c46256804792399296619c1274363c31cd8f1775fafb55106fb852245；原始偏移0x76298/VA0x476298的20项粒子表确认：3→etama4/6(RandomSplashBig)，4→9(RandomSplash)，12→17(无回调)，17→7(Attract)，18→8(AttractSlow)。复原EffectManager.cpp多列一行蓝粒子，不能直接沿用偏移后的编号。补回294个已展开子程序中的原118指令；不因此给未审阅卡自动勾选。",
     "TH32六面宿主Sub16的重复ExIns6不再空实现；四张蕾米莉亚非符和已审阅的五张手写符卡共用蝙蝠翼/独立计时/两侧速度与随机抽样实现；效果池满仍消费源代码中的两次X速度随机数。修正绯红之主旧注释468为368，不改变已核对的实际周期。",
-    "TH32补回120旋转主ANM标志、128主VM中断、129附属VM中断，294个离线子程序仅静态增加对应调用；原有参数/基本块保持。TH06主/附属VM在各敌机ECL后统一推进，不再由早于控制器的行走图系统提前推进；跨enm/enm2保留Enemy独立姿态字段。未以共享修复为未核对道中自动打勾。"
+    "TH32补回120旋转主ANM标志、128主VM中断、129附属VM中断，294个离线子程序仅静态增加对应调用；原有参数/基本块保持。TH06主/附属VM在各敌机ECL后统一推进，不再由早于控制器的行走图系统提前推进；跨enm/enm2保留Enemy独立姿态字段。未以共享修复为未核对道中自动打勾。",
+    "TH32道中核对补回ECL100的死亡粒子编号。模板0..12按原版EXE映射，RandomSplash/Big首回调随机速度及减速分别按19/20帧因子；掉落前3/6粒、击破后1+4粒按原顺序生成；死亡模式0回收、1关闭交互、3设HP1，并清生命/计时阈值，回调不在击破当帧运行。"
   ]
 }
