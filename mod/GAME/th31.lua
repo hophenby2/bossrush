@@ -1097,8 +1097,8 @@ local function spawn_pattern(x, y, d)
             elseif m == 6 then                                -- RANDOM_ANGLE
                 angle = ran:Float(0, d.angle - d.angleStep) + d.angleStep
             elseif m == 7 or m == 8 then                      -- RANDOM_SPEED / RANDOM
-                speed = ran:Float(0, d.speed1 - d.speed2) + d.speed2
                 if m == 7 then
+                    speed = ran:Float(0, d.speed1 - d.speed2) + d.speed2
                     angle = angle + i * (2 * PI) / count1
                     angle = angle + j * d.angleStep + d.angle
                 else
@@ -1106,6 +1106,7 @@ local function spawn_pattern(x, y, d)
                     ---  `GetRandomF32InRange(angle − angleStep) + angleStep`（:146-149）：
                     ---  angle/angleStep 在这里当的是「角的区间端点」，不是「基准角 + 增量」。
                     angle = ran:Float(0, d.angle - d.angleStep) + d.angleStep
+                    speed = ran:Float(0, d.speed1 - d.speed2) + d.speed2
                 end
             end
             spawn_one(d.recs, x, y, add_norm(angle), speed, d.btype, d.color,
@@ -19125,7 +19126,7 @@ local STEP = 0.04908739
 ---  再等 60 帧 ⇒ **一轮 = 12×28 + 72 = 396 帧**，且一圈里 56 发共用**同一个**基准角
 ---  （lf0 只在轮首取一次自机角）。
 local RING_PERIOD, RING_ROUNDS = 12, 28
-local RING_CYCLE = RING_PERIOD * RING_ROUNDS + 72             -- 396
+local RING_CYCLE = RING_PERIOD * RING_ROUNDS + 72 - RING_PERIOD             -- 396
 local RING_LAST = RING_PERIOD * (RING_ROUNDS - 1)             -- 324
 local RING_COUNT, RING_SPEED = 56, 1.0
 local RING_TYPE, RING_COLOR, RING_FLAGS = 2, 6, 514           -- 0x202
@@ -19218,7 +19219,7 @@ local G81_AIM_TYPE, G81_AIM_COLOR = 10, 0
 local function gun81_tick(owner, g)
     local u = g.t % G81_CYCLE
     if u == 0 then
-        g.ang = ran:Float(-PI, PI)                            -- lf0 = RANDOM_ANGLE
+        g.ang = -ran:Float(-PI, PI)                            -- lf0 = RANDOM_ANGLE
         ---#25：上一轮走完 50 帧后打的那发自机狙大玉。它在 u = 210 那一帧出膛 ——
         ---也就是下一轮的 u = 0（与那一轮的第一个环同帧），第一轮没有它。
         if g.t > 0 then
@@ -19282,8 +19283,8 @@ local G83_COLOR_A, G83_COLOR_B = 6, 2
 local function gun83_tick(owner, g)
     local u = g.t % G83_CYCLE
     if u == 0 then
-        g.angA = ran:Float(-PI, PI)
-        g.angB = ran:Float(-PI, PI)
+        g.angA = -ran:Float(-PI, PI)
+        g.angB = -ran:Float(-PI, PI)
     end
     if u % G83_PERIOD == 0 and u < G83_LAST then
         ---#11/#12：色 6 的那条螺旋（记录 +，我们坐标取反成 −）。
@@ -19491,6 +19492,7 @@ local function make_ls(guns)
     local function card_init(owner)
         EX.clear_records(owner)
         EX.pool_clear()
+        OriginalStageVisual.source_event(owner,8,'ecldata7',{0,59,7})
         owner.ls6 = { t = 0, guns = nil }
         -- 位置由阶段入口继承；原作没有在开卡时重置到移动终点。
     end
@@ -19692,7 +19694,7 @@ end
 ---ins_64(240, 0, selfX, 64) 让它在 240 帧里线性抬到我们 (0,160)（TH08 y = 64）。
 local BOSS_X, BOSS_Y = 0, 96
 local BOSS_Y_END = 160
-local BOSS_MOVE_AT, BOSS_MOVE_N = 110, 240
+local BOSS_MOVE_AT, BOSS_MOVE_N = 142, 240
 
 ---7 只使魔（Sub71 t=110 的 7 条 ins_91；色号来自前面那条 ins_6 的 li0，
 ---life 是 ins_91 的 int3，裸字节逐一核对过）。
@@ -19713,7 +19715,7 @@ local FAM_RING_SPEED = 1.2                            -- #29 的 lf0
 local FAM_RING_TYPE = 2
 local FAM_RING_FLAGS = 2690                           -- 0xA82 = FAST|AIMED|SPAWN_SOUND|BOUNCE_BOT
 local FAM_RING_STEP = 0.049087387
-local FAM_GUN_AT = 150                                -- Sub72 #35/#36
+local FAM_GUN_AT = 510                                -- Sub72 #35/#36
 
 ---BOSS 的环（Sub73，0 号子 context，t=110 挂上、自己的 t 从 0 起算）。
 local GUN_FIRST = 600                                 -- Sub73 的第一条指令在 t=600
@@ -19834,7 +19836,7 @@ local familiar = class.th08_combat.actor("ecldata7:72", {
             sweep_tick(self, self.fam_g76)
         end
         ---② 两个 120 帧 Hermite（计时器每帧尾部先 +1 再算进度 ⇒ 这一帧的 u = (t+1)/120）。
-        if t <= FAM_FLIGHT then
+        if t < FAM_FLIGHT then
             local n = t + 1
             if n > FAM_FLIGHT then n = FAM_FLIGHT end
             local u = n / FAM_FLIGHT
@@ -19905,8 +19907,8 @@ local function card_frame(owner)
                         speed1 = GUN_SPEED, speed2 = 0.5,
                         angle = angle, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
                     })
-                    g.a0 = g.a0 + GUN_STEP
-                    g.a1 = g.a1 - GUN_STEP
+                    g.a0 = g.a0 - GUN_STEP
+                    g.a1 = g.a1 + GUN_STEP
                 end
             end
         end
@@ -20137,6 +20139,7 @@ end
 local lw166_laser = Class(laser, {
     init = function(self, x, y, angle, color)
         self._native_laser_phase = { "lw166_state", "lw166_t", 20, 8 }
+        self._native_laser_type,self._native_laser_flags=1,4
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
         ---l1/l2/l3 = 尾/身/头三段长度；这里只要一段 400 的身部。
         ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
@@ -20151,6 +20154,7 @@ local lw166_laser = Class(laser, {
     frame = function(self)
         local native_entered=self.lw166_state
         local t = self.lw166_t
+        if self._original_actor then self._original_actor.vm.rotation[3]=-(t<FAM_STOP_AT and self.lw166_dir or 0) end
         if self.lw166_state == 1 then
             ---VAR 那段宽度爬升：只有最后 LASER_RAMP 帧才长粗，之前恒 1.2。
             if LASER_START_TIME - LASER_RAMP < t then
@@ -20183,7 +20187,7 @@ local lw166_laser = Class(laser, {
             end
         end
         self.lw166_t = t + 1
-        OriginalBulletVisual.native_laser(self,self.lw166_state,t,LASER_WIDTH,LASER_DESPAWN,0,nil,native_entered)
+        OriginalBulletVisual.native_laser(self,self.lw166_state,t,LASER_WIDTH,LASER_DESPAWN,4,nil,native_entered)
         laser.frame(self)
     end,
 })
@@ -20223,6 +20227,7 @@ local LASER_TURN = 2.7488935              -- #2/#16 的 ±(π − 0.3927)
 local LASER_ANGLE_STEP = 0.241661
 
 local function fire_lasers(self)
+    OriginalStageVisual.presentation.sound.play(8,17,self.x)
     ---在 TH08 口径里算完偏移再换算回来（同卡 170 的 Hermite，最不容易搞错符号）。
     local ox, oy = to_th08_x(self.x), to_th08_y(self.y)
     for seg = 1, 2 do
@@ -20295,7 +20300,7 @@ local familiar = class.th08_combat.actor("ecldata7:68", {
                 op = 99, type = FAM_SHOT_TYPE_A, color = EX.color(2),
                 count1 = FAM_SHOT_COUNT1, count2 = FAM_SHOT_COUNT2,
                 speed1 = FAM_SHOT_SPEED1, speed2 = FAM_SHOT_SPEED2,
-                angle = -lf0, step = FAM_SHOT_STEP, flags = FAM_SHOT_FLAGS,
+                angle = -lf0, step = -FAM_SHOT_STEP, flags = FAM_SHOT_FLAGS,
             })
             ---#23：把同一条记录改写成 −π/2（出弹时整块拷给弹，所以第一圈不受影响）。
             EX.set_record(self, 0, EX.K.REL, 0, FAM_REL_FRAMES, FAM_REL_REPEAT,
@@ -20307,7 +20312,7 @@ local familiar = class.th08_combat.actor("ecldata7:68", {
                 op = 99, type = FAM_SHOT_TYPE_B, color = EX.color(2),
                 count1 = FAM_SHOT_COUNT1, count2 = FAM_SHOT_COUNT2,
                 speed1 = FAM_SHOT_SPEED1, speed2 = FAM_SHOT_SPEED2,
-                angle = -lf0, step = FAM_SHOT_STEP, flags = FAM_SHOT_FLAGS,
+                angle = -lf0, step = -FAM_SHOT_STEP, flags = FAM_SHOT_FLAGS,
             })
             ---#30：TERMINATE。
             object.RawDel(self)
@@ -20328,7 +20333,7 @@ local familiar = class.th08_combat.actor("ecldata7:68", {
 ---------------------------------------------------------------
 local BOSS_X, BOSS_Y = 0, 96            -- ins_64(90, 4, 192, 128) 的目标（我们口径）
 local BOSS_MOVE_FRAMES = 90
-local LOOP_FIRST, LOOP_PERIOD = 150, 140    -- #31 JUMP(time := 150) → #26，配 #30 的 WAIT 140
+local LOOP_FIRST, LOOP_PERIOD = 182, 140    -- #31 JUMP(time := 150) → #26，配 #30 的 WAIT 140
 local FAN_TYPE, FAN_COLOR = 1, 2
 local FAN_COUNT, FAN_LAYERS = 80, 2
 local FAN_SPEED1, FAN_SPEED2 = 3.0, 1.5
@@ -20413,7 +20418,7 @@ local function card_frame(owner)
             op = 97, type = FAN_TYPE, color = EX.color(FAN_COLOR),
             count1 = FAN_COUNT, count2 = FAN_LAYERS,
             speed1 = FAN_SPEED1, speed2 = FAN_SPEED2,
-            angle = FAN_ANGLE, step = FAN_STEP, flags = FAN_FLAGS,
+            angle = FAN_ANGLE, step = -FAN_STEP, flags = FAN_FLAGS,
         })
         begin_wander(owner, c)
     end
@@ -21468,7 +21473,8 @@ end
 ---  显示仍保留全长，碰撞时由 visual_match 单独裁剪为原作有效段。
 local lw154_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
-        self._native_laser_phase = { "lw154_state", "lw154_t", p.hbEnd, p.width }
+        self._native_laser_phase = { "lw154_state", "lw154_t", p.despawn, p.width }
+        self._native_laser_type,self._native_laser_speed=p.bulletType,p.speed
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -21494,6 +21500,7 @@ local lw154_laser = Class(laser, {
     frame = function(self)
         local native_entered=self.lw154_state
         local p = self.lw154_p
+        if self.lw154_state==3 and p.despawn==0 then object.RawDel(self);return end
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw154_end = self.lw154_end + p.speed
         if self.lw154_end - self.lw154_start > p.startLength then
@@ -21570,6 +21577,7 @@ local LASER = {
 
 ---Sub52（0 号枪）的一轮：5 条**同角度**的平行光柱（角度 = 出生点 → 当前位置）。
 local function fire_lasers(fam)
+    OriginalStageVisual.presentation.sound.play(8,16,fam.x)
     local dir = math.atan2(fam.y - fam.lw154_by, fam.x - fam.lw154_bx)
     ---#16：不带偏移的第一条（色 6）。
     spawn_laser(fam.x, fam.y, dir, EX.color(LA_COLORS[1]), LASER)
@@ -21603,7 +21611,7 @@ local function fire_pellets(fam, ct)
     ---#5..#9：两个**独立**的 RANDOM_ANGLE（原作 cos 与 sin 各读一次、各抽一次）。
     local r = rnd_sgn() * SHOT_OFFSET
     local ox = math.cos(ran:Float(-PI, PI)) * r
-    local oy = math.sin(ran:Float(-PI, PI)) * r
+    local oy = -math.sin(ran:Float(-PI, PI)) * r
     ---#11：SHOOT_RAND。角 = RNG(角 − 步长) + 步长（BulletManager.cpp:150-152）：
     ---原作 angle = −π、步长 0 ⇒ TH08 的 (−π, 0]，我们坐标里就是 [0, π)（朝屏幕上方）。
     EX.shoot(fam, fam.x + ox, fam.y + oy, {
@@ -21676,6 +21684,7 @@ local familiar = class.th08_combat.actor("ecldata7:51", {
         self.x = self.x + math.cos(self.lw154_ang) * self.lw154_speed
         self.y = self.y + math.sin(self.lw154_ang) * self.lw154_speed
         self.rot = self.lw154_ang * RAD
+        if self._original_actor then self._original_actor.vm.rotation[3]=-self.lw154_ang end
         ---⑤ 出屏回收（EnemyManagerUpdate.cpp:221-256）：Sub51 **没有**碰过
         ---   ALLOW_OFFSCREEN，使魔用的是 spawnTemplate 的默认值（关，EnemyManager.cpp:136-175），
         ---   而 SpawnEnemy2 只拷 int 变量块、不继承父机 flags1（EnemyTimeline.cpp:64-118）
@@ -21974,7 +21983,7 @@ local RING_FLAGS = 514                  -- 0x202 = SPAWN_FAST | SPAWN_SND
 local AIM_FIRST, AIM_CYCLE = 200, 144   -- 8 × 8 + (288 − 208)
 local AIM_GAP, AIM_SHOTS = 8, 8         -- #10 JUMP_DEC(xi0 = 8)
 local AIM_TYPE, AIM_COLOR = 6, 6
-local AIM_SPEED1, AIM_SPEED2 = 2.5, 0   -- lf1（#7 的 0xf8 行）
+local AIM_SPEED1, AIM_SPEED2 = 2.5, 0.8   -- lf1（#7 的 0xf8 行）
 local AIM_FLAGS = 514
 
 ---------------------------------------------------------------------
@@ -22013,7 +22022,8 @@ end
 ---  移植版直接把对象摆到**尾**上、把 l2 设成长度，画出来完全一样（同卡 162 的手法）。
 local lw158_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
-        self._native_laser_phase = { "lw158_state", "lw158_t", p.hbEnd, p.width }
+        self._native_laser_phase = { "lw158_state", "lw158_t", p.despawn, p.width }
+        self._native_laser_type,self._native_laser_speed=p.bulletType,p.speed
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -22038,6 +22048,7 @@ local lw158_laser = Class(laser, {
     frame = function(self)
         local native_entered=self.lw158_state
         local p = self.lw158_p
+        if self.lw158_state==3 and p.despawn==0 then object.RawDel(self);return end
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw158_end = self.lw158_end + p.speed
         if self.lw158_end - self.lw158_start > p.startLength then
@@ -22050,6 +22061,8 @@ local lw158_laser = Class(laser, {
         self.l2 = self.lw158_end - self.lw158_start
 
         local t = self.lw158_t
+        if t>=30070 then object.RawDel(self);return end
+        if self._original_actor then self._original_actor.vm.rotation[3]=-(t<FAM_STOP_AT and self.lw158_dir or 0) end
         local dead = false
         if self.lw158_state == 1 then
             ---STARTING：前 30 帧恒 1.2 粗，之后线性爬到 width（:1090-1104）。
@@ -22092,6 +22105,7 @@ local lw158_laser = Class(laser, {
             object.RawDel(self)
             return
         end
+        if self.th08_seen and class.th08_combat.actor_outside(self) then object.RawDel(self);return end
         self.lw158_t = t + 1
     end,
 })
@@ -22155,7 +22169,7 @@ local familiar = class.th08_combat.actor("ecldata7:56", {
                 spawn_laser(self.x, self.y, self.lw158_dir, EX.color(LA_COLOR), LASER)
             elseif g >= GUN_FIRST and (g - GUN_FIRST) % GUN_PERIOD == 0 then
                 ---#4/#5/#6/#7：lf2 = normalize(lf0 ± 0.392699)（符号随机）；同一条光柱。
-                spawn_laser(self.x, self.y, wrap_pi(self.lw158_dir + rnd_sgn() * GUN_JITTER),
+                spawn_laser(self.x, self.y, wrap_pi(self.lw158_dir - rnd_sgn() * GUN_JITTER),
                         EX.color(LA_COLOR), LASER)
             end
             self.lw158_gun = g + 1
@@ -22223,7 +22237,7 @@ local function gun59(owner, ct)
         op = 99, type = RING_TYPE, color = EX.color(RING_COLOR),
         count1 = RING_COUNT1, count2 = RING_COUNT2,
         speed1 = RING_SPEED1, speed2 = RING_SPEED2,
-        angle = ran:Float(-PI, PI), step = 0, flags = RING_FLAGS,
+        angle = -ran:Float(-PI, PI), step = 0, flags = RING_FLAGS,
     })
 end
 
@@ -22526,7 +22540,8 @@ end
 ---  移植版直接把对象摆到**尾**上、把 l2 设成长度，画出来完全一样（同卡 209 的手法）。
 local lw162_laser = Class(laser, {
     init = function(self, x, y, angle, color, p)
-        self._native_laser_phase = { "lw162_state", "lw162_t", p.hbEnd, p.width }
+        self._native_laser_phase = { "lw162_state", "lw162_t", p.despawn, p.width }
+        self._native_laser_type,self._native_laser_speed=p.bulletType,p.speed
         ---laser:init(index, x, y, rot, l1, l2, l3, w, node, head)（THlib/laser/laser.lua:35）
 ---★ 参数是**我们坐标系的弧度**；THlib 的 `rot` 是**角度制**（AGENTS.md C1）⇒ 这里乘 RAD。
         laser.init(self, color, x, y, angle * RAD, 0, 0, 0, LASER_W0, 0, 0)
@@ -22551,6 +22566,7 @@ local lw162_laser = Class(laser, {
     frame = function(self)
         local native_entered=self.lw162_state
         local p = self.lw162_p
+        if self.lw162_state==3 and p.despawn==0 then object.RawDel(self);return end
         ---① 偏移推进 + 尾端夹取（BulletManager.cpp:1055-1061）。
         self.lw162_end = self.lw162_end + p.speed
         if self.lw162_end - self.lw162_start > p.startLength then
@@ -22563,6 +22579,8 @@ local lw162_laser = Class(laser, {
         self.l2 = self.lw162_end - self.lw162_start
 
         local t = self.lw162_t
+        if t>=30070 then object.RawDel(self);return end
+        if self._original_actor then self._original_actor.vm.rotation[3]=-(t<FAM_STOP_AT and self.lw162_dir or 0) end
         local dead = false
         if self.lw162_state == 1 then
             ---STARTING：前 30 帧恒 1.2 粗，之后线性爬到 width（:1090-1104）。
@@ -22605,6 +22623,7 @@ local lw162_laser = Class(laser, {
             object.RawDel(self)
             return
         end
+        if self.th08_seen and class.th08_combat.actor_outside(self) then object.RawDel(self);return end
         self.lw162_t = t + 1
     end,
 })
@@ -22663,6 +22682,7 @@ local familiar = class.th08_combat.actor("ecldata7:64", {
         if self.lw162_g1 then
             local u = self.lw162_g1
             if u >= GA_FIRST and (u - GA_FIRST) % GA_GAP == 0 then
+                OriginalStageVisual.presentation.sound.play(8,17,self.x)
                 ---Sub65：lf0 = 3.7 只在 t=300 那一次设过，之后每轮只放音 + 出光柱。
                 spawn_laser(self.x, self.y, aim_at_player(self.x, self.y),
                         EX.color(GA_COLOR), LASER_A)
@@ -22672,6 +22692,7 @@ local familiar = class.th08_combat.actor("ecldata7:64", {
         if self.lw162_g2 then
             local u = self.lw162_g2
             if u >= GB_FIRST and (u - GB_FIRST) % GB_GAP == 0 then
+                OriginalStageVisual.presentation.sound.play(8,17,self.x)
                 spawn_laser(self.x, self.y, aim_at_player(self.x, self.y),
                         EX.color(GB_COLOR), LASER_B)
             end
@@ -22701,7 +22722,7 @@ local function gun_tick(owner, g)
         op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT_A, count2 = 1,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = -a, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
+        angle = -a, step = -GUN_ANGLE_STEP, flags = GUN_FLAGS,
     })
     ---#26/#27：把同一条记录改写成 −0.025，再打 2 颗的 FAN（出弹时整块拷给弹，
     ---所以第一发不受影响）。
@@ -22710,7 +22731,7 @@ local function gun_tick(owner, g)
         op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = GUN_COUNT_B, count2 = 1,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = -a, step = GUN_ANGLE_STEP, flags = GUN_FLAGS,
+        angle = -a, step = -GUN_ANGLE_STEP, flags = GUN_FLAGS,
     })
     ---#28/#29：lf0 += ±lf3 → NORMALIZE_ANGLE（Sub62 加、Sub63 减）。
     g.a = wrap_pi(a + g.sign * GUN_STEP)
@@ -58595,11 +58616,11 @@ local TH08_BOSS_MOTION = {
     [162] = { key="6:ecldata7", file="ecldata7", sub=61, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
     [166] = { key="6:ecldata7", file="ecldata7", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
     [170] = { key="6:ecldata7", file="ecldata7", sub=71, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
-    [174] = { key="6:ecldata7", file="ecldata7", sub=77, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
-    [178] = { key="6:ecldata7", file="ecldata7", sub=80, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
-    [182] = { key="6:ecldata7", file="ecldata7", sub=82, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
-    [186] = { key="6:ecldata7", file="ecldata7", sub=84, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,224} },
-    [190] = { key="6:ecldata7", file="ecldata7", sub=87, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,144} },
+    [174] = { key="6:ecldata7", file="ecldata7", origin=42, pos={192,224}, sub=77, bounds=false, dynamic=false, intro={110,4,192,224} },
+    [178] = { key="6:ecldata7", file="ecldata7", origin=46, pos={192,224}, sub=80, bounds=false, dynamic=false, intro={110,4,192,224} },
+    [182] = { key="6:ecldata7", file="ecldata7", origin=47, pos={192,224}, sub=82, bounds=false, dynamic=false, intro={110,4,192,224} },
+    [186] = { key="6:ecldata7", file="ecldata7", origin=48, pos={192,224}, sub=84, bounds=false, dynamic=false, intro={110,4,192,224} },
+    [190] = { key="6:ecldata7", file="ecldata7", origin=49, pos={192,224}, sub=87, bounds=false, dynamic=false, intro={110,4,192,144} },
     [191] = { key="19:ecldata8", file="ecldata8", sub=51, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
     [192] = { key="19:ecldata8", file="ecldata8", sub=56, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
     [193] = { key="19:ecldata8", file="ecldata8", sub=60, bounds={32,48,352,128}, dynamic=false, intro={110,4,192,128} },
