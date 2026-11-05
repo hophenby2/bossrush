@@ -27192,9 +27192,9 @@ local function pl8_y() return 224 - player.y end
 
 ---Sub21（卡根）的节拍（真帧，子程序进入那一帧算 t=0）。
 local T_ROOT = 90                     -- `+90: //90`（ins_64 落位、也是循环起点）
-local CYCLE = 364                     -- Sub21_1408 → `+240: //454`
+local CYCLE = 424                     -- Sub21_1408 → `+240: //454`
 local FAM_N, FAM_GAP = 16, 4          -- ins_6(exI0, 16) / `+4: //94` 的 JUMP_DEC
-local T_WANDER = T_ROOT + 124         -- 轮内 `+120: //214`（ins_67）
+local T_WANDER = T_ROOT + 184         -- 轮内 `+120: //214`（ins_67）
 local BOSS_X, BOSS_Y = 0, 96          -- ins_64(…, 192, 128) 的我们口径
 local FAM_PAUSE0, FAM_PAUSE_STEP = 68, 4   -- exI1 = 68、每只 ins_11(exI1, 4)
 local FAM_RADIUS = 80                 -- ins_17(lf0, 80) / ins_17(lf1, 80)
@@ -27330,7 +27330,7 @@ local function fam_shot23(self, k)
         EX.shoot(self, self.x, self.y, {
             op = 96, type = G23_TYPE, color = EX.color(2),
             count1 = 1, count2 = 1, speed1 = G23_SPEED, speed2 = G23_SPEED2,
-            angle = -(lf1 + j), step = -G23_STEP, flags = G23_FLAGS,
+            angle = -j, step = -G23_STEP, flags = G23_FLAGS,
         })
     end
 end
@@ -27664,10 +27664,10 @@ local function wave(owner)
             op = 97, type = 2, color = EX.color(2),
             count1 = WAVE_FAN, count2 = 1,
             speed1 = WAVE_SPEED, speed2 = WAVE_SPEED2,
-            angle = -th, step = -WAVE_STEP, flags = WAVE_FLAGS,
+            angle = -shot, step = -WAVE_STEP, flags = WAVE_FLAGS,
         })
         ---`ins_15(lf2, π/16)` + `ins_37`（NORMALIZE_ANGLE）。
-        th = wrap_pi(th + WAVE_ANGLE_STEP)
+        th = shot
     end
 end
 
@@ -27739,6 +27739,7 @@ local lw16_fam = class.th08_combat.actor("ecldata6:19", {
     end,
     frame = function(self)
         local t = self.f_t
+        if t>=5001 then object.RawDel(self);return end
         ---① 子 context（枪）：`ins_135(0, 20)` 在 Sub19 的 t=1 挂上，子 context 自己
         ---   的 time 从那一帧算 0（EclRun.cpp:184-203）⇒ 出弹发生在位移之前。
         if t >= 1 and t - 1 <= GUN_LAST and (t - 1) % GUN_PERIOD == 0 then
@@ -27832,6 +27833,7 @@ local function card_frame(owner)
             ---轮头 `ins_52(18)`。
             wave(owner)
         elseif m == T_FAM then
+            OriginalStageVisual.source_event(owner,8,'ecldata6',{0,62})
             ---轮内 120 帧：20 只使魔在**同一帧**全放出去（lf0 = rndAngle + k·π/10）。
             local lf0 = ran:Float(-PI, PI)
             for _ = 1, FAM_N do
@@ -58039,6 +58041,8 @@ local EXTRA_CHARS = {
 local TH31_REIMU_HP = OriginalBalance.cards[8]
 
 CARD[3426],CARD[3427]=dofile('mod/GAME/th31_keine.lua')(class,EX,laser)
+-- 6033为内部键，避开灵梦八方龙杀阵的33；55000为新补非符的全局存档槽。
+CARD[6033]=dofile('mod/GAME/th31_eirin_first.lua')(EX)
 
 local LIST = {
     { 205, "「季节外调的蝴蝶风暴」",   351,  99 },
@@ -58226,13 +58230,15 @@ local LIST = {
     ---  时长3400/60秒，在原时间轴中Boss生成点结束，不再多保留20帧。
     ---  ★ 卡名自选（原作道中无名）。
     { 1004, "六面道中A「永远亭参道」", 3430, 3400/60, 5, nil, "六面道中A「永远亭参道」", 1004 },
-    { 16,  "",                                   422, 35, 5, 11400, "非符一" },
+    { 16,  "",                                   422, 35+21/60, 5, 11400, "中BOSS 非符" },
     --- 122（天丸「壺中の天地」）：Sub21 的 `ins_134(2400, 26)` ⇒ 2400 帧 = **40 秒**
     ---（t=0 那句 `ins_134(3600, 26)` 被 t=90 那句盖掉）；血量同为估值。
     --- ★ 这张取 id 421 —— 410..416 已经被 th33.lua 的七张卡占了（它那里有说明）。
     { 122, "天丸「壺中の天地」", 421, 41.5, 5, 6000 },
     --- 126（神符「天人の系譜」）：Sub52 的 `ins_134(2400, 36)` ⇒ 2400 帧 = **40 秒**；
     --- 血量同为估值（ECL 里只有 boss life）。
+    -- 原Sub28转入Sub33的首非此前未登记；有效HP=18000−2200，时限2400拍。
+    { 6033, "", 55000, 40, 5, 15800, "主BOSS 非符一", 6033 },
     { 126, "神符「天人の系譜」", 420, 40, 5, 6000 },
     --- 二非（6A 的第二张通常弹幕）：Sub36 的 `ins_134(2400, 56)` ⇒ 2400 帧 = **40 秒**；
     --- 血量 = `SET_LIFE 18000` − `ins_133(0, 2200, 56)` 的阈值 2200 ⇒ **15800**。
@@ -58572,6 +58578,7 @@ end
 -- (192,128) 换算为 (0,96)；后两项为边界端点，不能按 TH10 的中心/尺寸解释。
 -- 有后续改框指令的卡仍由各自的原生实现推进，公共层不覆盖其动态活动框。
 local TH08_BOSS_MOTION = {
+    [6033] = {key="5:ecldata6",file="ecldata6",origin=28,sub=33,bounds={32,48,352,128},dynamic=true,pos={192,128}},
     [3426] = { key="3:ecldata3:mid", file="ecldata3", origin=20, sub=30, bounds={32,48,352,224}, dynamic=false, intro={90,4,192,192} },
     [3427] = { key="3:ecldata3:last", file="ecldata3", origin=43, sub=71, bounds={32,48,352,128}, dynamic=false, pos={192,128}, intro={90,4,192,128} },
     [15] = { key="5:ecldata7", file="ecldata7", origin=14, sub=15, bounds={32,48,352,128}, dynamic=false },

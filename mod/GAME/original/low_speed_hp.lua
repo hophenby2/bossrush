@@ -118,7 +118,8 @@ H.scale[8].familiar_normal=0.10634765624999999
 H.scale[8].familiar_spell=0.7643382352941176
 H.entries[8]={
     [15]={raw=14100,hp=1161,immune=0,guard=0,spell=false},
-    [16]={raw=11400,hp=939,immune=0,guard=60,spell=false},
+    [6033]={raw=15800,hp=1301,immune=0,guard=120,spell=false},
+    [16]={raw=11400,hp=939,immune=21,guard=120,spell=false},
     [17]={raw=13900,hp=1145,immune=0,guard=120,spell=false},
     [19]={raw=13000,hp=1071,immune=0,guard=240,spell=false},
     [25]={raw=12000,hp=988,immune=0,guard=240,spell=false},
@@ -297,6 +298,8 @@ H.entries[10]={
     [3669]={raw=9000,hp=1014,immune=90,guard=0,spell=false},
     [3670]={raw=10000,hp=1127,immune=200,guard=0,spell=false},
 }
+-- Global history ID and implementation key refer to the same original phase.
+H.entries[8][55000]=H.entries[8][6033]
 for game,entries in pairs(H.entries) do
     H.cards[game]={}
     for id,row in pairs(entries) do H.cards[game][id]=row.hp end

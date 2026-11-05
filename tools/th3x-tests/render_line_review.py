@@ -36,6 +36,7 @@ def render(workspace):
     manual = json.loads((folder / (STEM + '.json')).read_text())
     completed = manual['reviews']
     cache = {}
+    total=sum(bool(r["source"].get("game")) for r in index)
     lines = ['# TH31–TH35 ECL逐卡逐行核对', '',
              '这份清单取代历史报告中的笼统“类别完成”结论。历史静态扫描、调用闭包和源点数量均不自动计为逐卡完成。', '',
              '勾选条件：人工读完该卡在目标难度下的根程序、同步调用、并行context、生成实体及相关共享运行逻辑；'
@@ -44,7 +45,8 @@ def render(workspace):
              '例如独立练习缺少上一段历史时的初始化映射必须单独记载，不能冒充原作历史。', '',
              '**按用户要求未运行测试、游戏、Lua、ECL模拟或构建。**', '']
     done = sum(f"{r['game']}/{r['id']}" in completed for r in index)
-    lines += [f'当前：{done}/521张原作条目逐行核对完成；{521-done}张未完成；另1张为自制条目。', '']
+    lines += ['原清单521张原作条目；本轮另补回六面A主Boss第一非符，现共522张。', '']
+    lines += [f'当前：{done}/{total}张原作条目逐行核对完成；{total-done}张未完成；另1张为自制条目。', '']
     for game in range(31, 36):
         lines += [f'## TH{game}', '']
         for row in index:
@@ -95,10 +97,10 @@ def render(workspace):
             filename: hashlib.sha256((ROOT / filename).read_bytes()).hexdigest()
             for filename in review['implementation']}
         lines.append('')
-    manual['completed'], manual['pending'] = done, 521-done
+    manual['completed'], manual['pending'] = done, total-done
     (folder / (STEM + '.json')).write_text(json.dumps(manual, ensure_ascii=False, indent=2) + '\n')
     (folder / (STEM + '.md')).write_text('\n'.join(lines))
-    print(f'人工完成 {done}/521；未完成 {521-done}；未执行游戏代码')
+    print(f'人工完成 {done}/{total}；未完成 {total-done}；未执行游戏代码')
 
 
 if __name__ == '__main__':
