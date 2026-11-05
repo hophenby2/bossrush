@@ -36856,10 +36856,10 @@ local BOSS_X, BOSS_Y = 0, 96
 
 ---t=60 之外的时间轴。
 local BOUNDS_T = 60                        -- `ins_75` + `ins_52(61)`
-local GUN_T = 90                           -- `ins_135(0, "Sub52")`
-local WANDER_FIRST = 290                   -- Sub51_496（第一次漂移）
-local WANDER_LOOP_T = 320                  -- `ins_4(90, Sub51_496)`
-local WANDER_RESET_T = 90                  -- ... 把它拨回的 time
+local GUN_T = 122                           -- `ins_135(0, "Sub52")`
+local WANDER_FIRST = 322                   -- Sub51_496（第一次漂移）
+local WANDER_LOOP_T = 352                  -- `ins_4(90, Sub51_496)`
+local WANDER_RESET_T = 122                  -- ... 把它拨回的 time
 local WANDER_PERIOD = WANDER_LOOP_T - WANDER_RESET_T   -- 230 帧一圈
 local WANDER_FRAMES = 60                   -- `ins_67(60, 4, 1.0)` 的第一个操作数
 local WANDER_SPEED = 1.0                   -- ... 第三个操作数
@@ -36971,7 +36971,7 @@ local function gun_shoot(owner, color)
         color = EX.color(color),
         count1 = GUN_COUNT, count2 = 1,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = ran:Float(-PI, PI), step = GUN_ASTEP, flags = GUN_FLAGS,
+        angle = -ran:Float(-PI, PI), step = -GUN_ASTEP, flags = GUN_FLAGS,
     })
 end
 
@@ -37488,10 +37488,10 @@ local BW_L, BW_R, BW_B, BW_T = -160, 160, 96, 176
 local BOSS_X, BOSS_Y = 0, 112
 
 ---Sub53 的时间轴。
-local SPAWN_T = 70                         -- 四条 `ins_92`
-local WANDER_FIRST = 270                   -- Sub53_648（第一条 `ins_67`）
-local LOOP_T = 300                         -- `ins_4(70, Sub53_648)`
-local LOOP_RESET_T = 70                    -- ... 把它拨回的 time
+local SPAWN_T = 102                         -- 四条 `ins_92`
+local WANDER_FIRST = 302                   -- Sub53_648（第一条 `ins_67`）
+local LOOP_T = 332                         -- `ins_4(70, Sub53_648)`
+local LOOP_RESET_T = 102                    -- ... 把它拨回的 time
 local WANDER_FRAMES = 60                   -- `ins_67(60, 4, 1.0)` 的第一个操作数
 local WANDER_SPEED = 1.0                   -- ... 第三个操作数
 local WANDER_EASING = 4                    -- ... 第二个操作数 = movementEasing
@@ -37550,7 +37550,7 @@ local function gun_shoot(fam, g, color)
         color = EX.color(color),
         count1 = GUN_COUNT, count2 = 1,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = g.angle, step = GUN_ASTEP, flags = GUN_FLAGS,
+        angle = g.angle, step = -GUN_ASTEP, flags = GUN_FLAGS,
     })
 end
 
@@ -38616,7 +38616,7 @@ local function gun_fast_step(g, fam)
             op = 96, type = GUN_TYPE, color = EX.color(FAST_COLOR),
             count1 = FAST_COUNT, count2 = 1,
             speed1 = FAST_SPEED, speed2 = GUN_SPEED2,
-            angle = -lf0, step = FAST_STEP, flags = GUN_FLAGS,
+            angle = -lf0, step = -FAST_STEP, flags = GUN_FLAGS,
         })
     end
     g.t = g.t + 1
@@ -38629,7 +38629,7 @@ local function gun_slow_step(g, fam)
             op = 96, type = GUN_TYPE, color = EX.color(SLOW_COLOR),
             count1 = SLOW_COUNT, count2 = 1,
             speed1 = SLOW_SPEED, speed2 = GUN_SPEED2,
-            angle = -SLOW_ANGLE_TH08, step = SLOW_STEP, flags = GUN_FLAGS,
+            angle = -SLOW_ANGLE_TH08, step = -SLOW_STEP, flags = GUN_FLAGS,
         })
     end
     g.t = g.t + 1
@@ -38765,7 +38765,7 @@ local PROG = {
         ---`ins_4(70, Sub56_880)`：time 拨回 70、跳回上面那条 t=70 的指令
         ---（目标 time = 70 ⇒ 同一帧整段重跑）。
         owner.c457_t = LOOP_RESET_T
-        owner.c457_pc = 2                          -- 指向 t=70 那条（PROG 的下标）
+        owner.c457_pc = 3                          -- JMP落点为t270的移动；不会重新生成六只使魔。
     end },
 }
 
@@ -58554,7 +58554,7 @@ local TH08_BOSS_MOTION = {
     [450] = { key="11:ecldata4b", file="ecldata4b", sub=55, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,160} },
     [451] = { key="11:ecldata4b", file="ecldata4b", sub=62, bounds=false, dynamic=true, intro={90,4,192,128} },
     [452] = { key="11:ecldata4b", file="ecldata4b", sub=67, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,160} },
-    [453] = { key="4:ecldata5", file="ecldata5", sub=51, bounds={32,48,352,128}, dynamic=true },
+    [453] = { key="4:ecldata5", file="ecldata5", origin=48, sub=51, bounds={32,48,352,128}, dynamic=true },
     [454] = { key="4:ecldata5", file="ecldata5", sub=62, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
     [455] = { key="4:ecldata5", file="ecldata5", sub=53, bounds={32,48,352,128}, dynamic=false, intro={60,4,192,112} },
     [456] = { key="4:ecldata5", file="ecldata5", sub=66, bounds={32,48,352,128}, dynamic=false, intro={90,4,192,128} },
