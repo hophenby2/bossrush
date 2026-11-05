@@ -16,6 +16,7 @@ N.effect=Class(object,{
         local p=profiles[o.kind]
         if p then
             local t=o.age
+            -- op36第三参4是插值回调号，第四参0才是缓动编号；两段均为线性。
             o.alpha=(o.kind==56 or o.kind==57) and 255 or math.floor(math.min(1,t/10)*255)
             o.radius=p[1]+(p[2]-p[1])*math.min(1,t/120)
             -- 125次计数循环后安装第二段，Configure在插值更新之前读取本拍值。

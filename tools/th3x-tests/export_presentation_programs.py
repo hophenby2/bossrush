@@ -9,8 +9,12 @@ ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('anm_serializer',Path(__file__).with_name('export_original_anm.py'))
 serializer=importlib.util.module_from_spec(spec);spec.loader.exec_module(serializer)
 CONTROL=set(range(54))
-EXTRA={8:{63,90,91,92,93,94,110,124,135,139,140},95:set(range(54,66))|{70,71,77,79,80,81,83,84,100,106,108,109,112,115,116,117,118,119,124,143,144,150,151,152}}
-FX={8:{139,140},95:set(range(54,63))|{77,79,80,81,118,119,124,143,144,150,151,152}}
+EXTRA={8:{63,90,91,92,93,94,110,124,135,136,137,139,140},95:set(range(54,66))|{70,71,77,79,80,81,83,84,100,106,108,109,112,115,116,117,118,119,124,143,144,150,151,152}}
+FX={8:{136,137,139,140},95:set(range(54,63))|{77,79,80,81,118,119,124,143,144,150,151,152}}
+def has_effect(game, instruction):
+ if game==8 and instruction.op in (136,137):
+  return instruction.args and instruction.args[0] == (1 if instruction.op==136 else 13)
+ return instruction.op in FX[game]
 def export(workspace):
  output={};evidence=[]
  for game in (8,95):
@@ -21,7 +25,7 @@ def export(workspace):
    for name,body in src.subs.items():
     # 数据位置不裁剪；难度与人/妖掩码由调度端按原指令选择。
     pos={i.address:n+1 for n,i in enumerate(body)}
-    rows=[];active[name]=any(i.op in FX[game] for i in body)
+    rows=[];active[name]=any(has_effect(game,i) for i in body)
     motion[name]=any(64<=i.op<=74 for i in body)
     for i in body:
      op=i.op if i.op in CONTROL|EXTRA[game] else 0

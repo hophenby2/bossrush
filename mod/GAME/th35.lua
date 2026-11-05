@@ -852,6 +852,7 @@ end
 local function et_on(e, slot)
     local p = e.pat[slot]
     local sx, sy = e.ecs.wx + p.ox, e.ecs.wy + p.oy
+    if not class.t10_can_fire(e, sx, sy) then return end
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do
@@ -882,12 +883,21 @@ end
 local function fire_slot(o, slot)
     local p = o.pat[slot or 0]
     local sx, sy = o.ecs.wx + p.ox, o.ecs.wy + p.oy
+    if not class.t10_can_fire(o, sx, sy) then return end
     local a2p = t10_aim(sx, sy)
     for i2 = 0, p.c2 - 1 do
         for i1 = 0, p.c1 - 1 do
             if not t10_spawn_one(p, sx, sy, i1, i2, a2p) then return end
         end
     end
+end
+
+-- op346 保存距离的平方；op401 在出膛点距自机不足该距离时整枪不发。
+-- 新敌机默认0，不能把这条会影响发弹的指令当成视觉占位。
+function class.t10_can_fire(o, x, y)
+    local range = o.t10_protect_range or 0
+    local dx, dy = x-player.x, y-(224-player.y)
+    return range == 0 or dx*dx+dy*dy >= range*range
 end
 
 ---fire = 原作 etNew + 配置 + etOn：清空该槽、按 cfg 配置、打一波
@@ -1669,6 +1679,12 @@ local function t10_boss_start(b, main, id)
     p.t10_flags=(previous and previous.key==entry.key and previous.flags) or 0
     if previous and previous.key == entry.key then
         p.ecs = previous.ecs
+        if previous.patterns then p.pat = previous.patterns end
+        if previous.registers then
+            for name, value in pairs(previous.registers) do p[name] = value end
+        end
+        p.t10_protect_range = previous.protect_range
+        p.t10_has_previous_registers = previous.registers ~= nil
     else
         p.ecs.off.x, p.ecs.off.y = entry.x, entry.y
         if entry.bounds then m_limit(p, unpack(entry.bounds)) end
@@ -1752,7 +1768,11 @@ end
 function class.t10_boss_end(b)
     class.t10_fx.clear(b)
     local p = b.th10carrier
-    if p and p.ecs then b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs, flags=p.t10_flags } end
+    if p and p.ecs then
+        b.th10_motion = { key=p.th10_motion_key, ecs=p.ecs, flags=p.t10_flags,
+            protect_range=p.t10_protect_range, patterns=p.pat,
+            registers={I0=p.I0,I1=p.I1,I2=p.I2,I3=p.I3,F0=p.F0,F1=p.F1,F2=p.F2,F3=p.F3} }
+    end
     t10_clear_pods(p)
     class.t10_interaction.release(b)
 end
@@ -1768,8 +1788,9 @@ end
 ---这里的调用点均在主程序；Clear(o,true)保留主协程，移除异步协程。
 local function t10_kill_async(o) task.Clear(o, true) end
 
----%ANGLE_PLAYER：从 **offsetMotion.position** 到自机的角度（Enemy.cpp:620）。
-local function t10_angle_player(o) return t10_aim(o.ecs.off.x, o.ecs.off.y) end
+---%ANGLE_PLAYER（-9989）：ReadFloatOperand 读取 worldMotion.position。
+---base圆运动和offset叠加之后的位置才是使魔当前位置，不能只用固定的offset。
+local function t10_angle_player(o) return t10_aim(o.ecs.wx, o.ecs.wy) end
 
 ---%FINAL_ANGLE：本帧的**世界位移角**（Enemy.cpp:591；:856 在夹框前求世界位置差）。
 ---★ 不是极坐标速度角：movePos/moveCircle 走插值时两者会不同，stage07 BossCard9 用它定弹向。
@@ -2795,11 +2816,12 @@ function s7.BossCard1(o)
     t10_kill_async(o)
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)
     t10_enm_kill_all(o)
-    ---原作 Boss1() 在 +20 帧记 `%F0 = %ANGLE_PLAYER`，但開宴的三个子程序
-    ---（at/at2/at2b）都不读 %F0（at2 自己会覆盖它）⇒ 此处不插 wait 边界，
-    ---保持与本卡 ECL 时间轴一致（多一个 wait 会整张卡晚 1 帧）。
+    ---三个激光线程均读取前一段Boss1在t20保存的F0；换卡不清空敌机寄存器。
+    ---独立练习没有上一段敌机历史，以入卡自机角补齐该快照，不增加本卡等待。
+    if not o.t10_has_previous_registers then o.F0 = t10_angle_player(o) end
 
     task.Wait(90)                        -- //90
+    o.I0 = 0                             -- BossCard1@0x3e08..0x3e1c
     while true do                        -- //90 → //570 = 480 帧一轮
         t10_call_async(o, function(p) s7.BossCard1_at2(p, 2) end);  task.Wait(30)
         t10_call_async(o, function(p) s7.BossCard1_at2b(p, 8) end); task.Wait(30)
@@ -9668,10 +9690,8 @@ end
 
 ---卡 3633　厄符「厄神様のバイオリズム」（中 BOSS 鍵山雛）
 ---  原作 MBossCard1 / MBossAtEnemy / MBossAtEnemy2 / MBossAtEnemyAt / MBossDummyShadow。
----  主线程：入场 60 帧后进死循环 —— 每 180 帧一对子机（t=60 出 AtEnemy、t=150 出 AtEnemy2、
----  t=240 同帧 moveRand(40,0,1.0)+wait(40)，随后 jmpNeq 立刻回到 L412 再出一只 AtEnemy）。
----  ★ t=240 那一帧里 moveRand、wait(40)、jmpNeq、下一次 enmCreate 全部同帧执行（clock 被
----    wait 拨到 200 又被 jmp 设回 60），所以 AtEnemy 的出机帧是 60/240/420…
+---  主线程：t60/150各出一只；t240的wait(40)将clock拨回200，必须再等40帧
+---  才能执行时间戳240的push/jmp。周期220帧，AtEnemy出机帧60/280/500…。
 function s2.MBossCard1(o)
     local __anm=class.t10_fx.context('stage02:MBossCard1')
     local ct = 0
@@ -9706,7 +9726,8 @@ function s2.MBossAtEnemy(o)
     ct = s_wait(ct, 120)                          -- //120
     m_vel(o, "base", 1.5707964, 0.0)
     m_vel_time(o, "base", 60, 0, t10_angle_player(o) + 3.1415927 / 6, 5.0)
-    ct = s_wait(ct, 180)                          -- //180：etProtectRange（视觉）
+    ct = s_wait(ct, 180)                          -- //180：etProtectRange(32)
+    o.t10_protect_range = 32
     ct = s_wait(ct, 240)                          -- //240
     t10_delete(o)
 end
@@ -9722,6 +9743,7 @@ function s2.MBossAtEnemy2(o)
     m_vel(o, "base", 1.5707964, 0.0)
     m_vel_time(o, "base", 60, 0, t10_angle_player(o) - 3.1415927 / 6, 5.0)
     ct = s_wait(ct, 180)
+    o.t10_protect_range = 32
     ct = s_wait(ct, 240)
     t10_delete(o)
 end
@@ -9909,7 +9931,8 @@ function s2.Boss2CardAtEnemy(o)
     s_async(o, s2.BossDummyShadow)
     s_async(o, s2.Boss2CardAtEnemyAt, o.F0, o.F1 * 2.0)
     m_circle(o, "base", o.F0, o.F1, 0.0, 1.0)
-    ct = s_wait(ct, 60)                           -- //60：etProtectRange(32)（视觉）
+    ct = s_wait(ct, 60)                           -- //60：etProtectRange(32)
+    o.t10_protect_range = 32
     ct = s_wait(ct, 280)                          -- //280
     t10_delete(o)
 end

@@ -12958,8 +12958,8 @@ local function TH34_add_stage56_boss()
 
     ---原作 ecldata4 Sub121–126，Lunatic。三位演奏者和幽灵各自是 Lua 对象。
     ---主奏：206 帧起每 3 帧一只，共四组 36 只，周期 512；伴奏：354 帧起，
-    ---每 280 帧在 0/60/120/180 各调用两次 Sub125。第一次读到共享 gI0=4，
-    ---随后写成 6；所以首轮左侧是 4+6，右侧是 6+6，不能合并成一次六只。
+    ---每 280 帧在 0/60/120/180 各调用一次 Sub125、每侧六只。另一组CALL的
+    ---二进制mask是0x03（E/N），L不执行；不能按未过滤的反汇编文字重复生成。
     do
         local V = OriginalStageVisual
         local GHOST_COLORS = {2,10,6,13,2,10,6,13}
@@ -13011,6 +13011,7 @@ local function TH34_add_stage56_boss()
                 o.pg_live=spell_live
                 o.pg_angle,o.pg_initial_angle,o.pg_curve=norm(angle),norm(angle),curve
                 o.pg_speed,o.pg_wave=partner and 0.2 or 1.2,wave
+                o._original_enemy_projectile=true
                 V.actor(o,7,'stg4enm',149+variant).tick=nil
             end,
             frame = function(o)
@@ -13053,7 +13054,7 @@ local function TH34_add_stage56_boss()
         end
         class.TH34_poltergeist = Class(object, {
             init = function(o,owner,left,right)
-                o.owner,o.players,o.age,o.partner_count=owner,{owner,left,right},0,4
+                o.owner,o.players,o.age=owner,{owner,left,right},0
                 o.live=spell_live
                 o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY,false,false
             end,
@@ -13094,8 +13095,6 @@ local function TH34_add_stage56_boss()
                     if cycle==0 or cycle==60 or cycle==120 or cycle==180 then
                         local offset=cycle==0 and 1.5707964 or cycle==60 and -1.5707964 or 0
                         for i=2,3 do
-                            accompaniment(o.players[i],o.partner_count,offset)
-                            o.partner_count=6
                             accompaniment(o.players[i],6,offset)
                         end
                     end

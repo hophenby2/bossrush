@@ -230,6 +230,11 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
     local color=override and override.color or (v.secondary and v.color2 or v.color)
+    if override and override.mix then
+        -- TH08 MixColors：先对VM顶点色乘/128并截断饱和，再与纹理相乘。
+        local m=override.mix
+        color={min(255,floor(color[1]*m[1]/128)),min(255,floor(color[2]*m[2]/128)),min(255,floor(color[3]*m[3]/128))}
+    end
     if tint then color={color[1]*tint[1]/255,color[2]*tint[2]/255,color[3]*tint[3]/255} end
     local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img

@@ -18,11 +18,17 @@ def export(workspace,originals):
   for f in (workspace/'original/ECL'/('th095' if game==95 else 'th08')).glob('*.ecl'):
    src=Source(workspace/'decompiled/ecl'/str(game)/(f.stem+'.decl'),f,game)
    for body in src.subs.values():
+    if game==8:
+     # 逐卡使用的PLAY_SOUND变换与直接声音指令也需要原始PCM。
+     needed.update(i.args[3] for i in body if i.op==111 and len(i.args)>3
+                   and i.args[1]==524288 and isinstance(i.args[3],int) and 0<=i.args[3]<len(records))
+     needed.update(i.args[0] for i in body if i.op==124 and i.args
+                   and isinstance(i.args[0],int) and 0<=i.args[0]<len(records))
     if any(i.op in (139,140) if game==8 else i.op==150 for i in body) and all(i.op<63 or i.op in (79,80,81,106,124,139,140,143,144,150,151,152) for i in body):
      needed.update(i.args[0] for i in body if i.op==(106 if game==95 else 124) and i.args and isinstance(i.args[0],int))
   dest=ROOT/'Resources/OriginalAudio'/str(game);dest.mkdir(parents=True,exist_ok=True)
   prefix='[th095]' if game==95 else '[th08]'
-  origin=next(p/'data' for p in originals.iterdir() if p.name.startswith(prefix))
+  origin=next(p/'data' for p in originals.iterdir() if p.name.startswith(prefix) and (p/'data').is_dir())
   result={}
   for i in sorted(needed):
    idx,volume,priority=records[i];name=names[idx]

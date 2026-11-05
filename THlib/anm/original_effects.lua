@@ -128,6 +128,28 @@ F.effect=Class(object,{
         else A.draw(o.vm,o.x,o.y) end
     end,
 },true)
+-- TH08 ExIns1：ScreenEffect::CalcArcadePulse，白色场地脉冲60帧、一次。
+-- 原calc优先级3在敌机11之前；出生帧尚未计算alpha，下一帧从255开始。
+F.screen_pulse=Class(object,{
+    init=function(o,phase)
+        o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.TOP-.5,false,false
+        o.phase,o.age,o.alpha=phase,0,0
+        o.born=stage.current_stage.timer
+        F.objects[#F.objects+1]=o
+    end,
+    frame=function(o)
+        if stage.current_stage.timer==o.born then return end
+        if o.age>=60 then object.RawDel(o);return end
+        o.alpha=255-math.floor(o.age*255/60)
+        o.age=o.age+1
+    end,
+    render=function(o)
+        SetViewMode('world')
+        SetImageState('white','',o.alpha,255,255,255)
+        local w=lstg.world
+        RenderRect('white',w.l,w.r,w.b,w.t)
+    end,
+},true)
 function F.new(game,archive,script,x,y,phase,kind,argb,angle)
     local stage=stage and stage.current_stage
     local clock=stage and stage.timer

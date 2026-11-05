@@ -716,7 +716,8 @@ local function advance(self)
                 bullet.ChangeImage(self, style, color_of(r.i0, EX.color(r.i1)))
                 again = true
             elseif k == K_SND then
-                again = true                    -- PLAY_SOUND：移植版不放音效
+                OriginalStageVisual.presentation.sound.play(8,r.i0,self.x)
+                again = true
             elseif k == K_DESPAWN then
                 self.ex_despawn = EX.despawn_frames(self)
             end
@@ -1709,7 +1710,7 @@ local WAIT_SHORT = 10                       -- 槽 6
 local DIR_TURN_FRAMES = 30                  -- 槽 2 的 intervalFrames
 local DIR_STOP_FRAMES = 60                  -- 槽 4 的 intervalFrames
 local DIR_LAST_FRAMES = 10                  -- 槽 7 的 intervalFrames
-local SOUND_INDEX = 27                      -- 槽 9（占位：不打音效）
+local SOUND_INDEX = 27                      -- 槽 9：原作 se_kira02
 local SPEED_DECAY = 0.006                   -- 每个出弹帧 lf7 -= 0.006
 
 ---子机 Sub38 的 ins_111(0, 32, 0, 120, -1, 0, ±0.006981317)：120 帧里每帧角度 ±0.4°、
@@ -1836,7 +1837,7 @@ storm_bullet = Class(bullet, {
                 ---★ 不能写 `self:ChangeImage(…)`（实例读不到类表方法，见卡 146 的长注）。
                 bullet.ChangeImage(self, r.style, r.color)
             elseif kind == K_PLAY_SOUND then
-                -- 原作是 PlaySoundPositionedByIdx(27, x)，占位：不出声
+                OriginalStageVisual.presentation.sound.play(8,r.index,self.x)
             elseif kind == K_WAIT then
                 self.tf_wait = r.frames
                 self.tf_busy = self.tf_busy + 1
@@ -2094,8 +2095,9 @@ local function boss_frame(owner)
             owner.lw205_move = nil
         end
     end
-    ---t=240 的 ins_67(60, 4, 0)：速度参数是 0 → 位移恒 0（只有那条没人用的随机角被算出来
-    ---又丢掉），所以 BOSS 从第 110 帧起就停在 (0,96)，不另写。
+    ---Sub37的CALL占112帧，故父程序t240实际在卡内352+n*302。
+    ---ins_67的速度0令位移为0，但BeginBoundaryAwareMove仍抽一次随机角。
+    if f >= 352 and (f-352)%PERIOD == 0 then ran:Float(0,1) end
     owner.lw205_frame = f + 1
 end
 
@@ -2396,6 +2398,7 @@ local function boss_frame(owner)
     ---  这个顺序），那几帧 frame 里 lw206_t 还是 nil；卡 205/218 同款守卫。
     if not owner.lw206_t then return end
     local f = owner.lw206_t
+    if f == 110 then OriginalStageVisual.presentation.sound.play(8,15,owner.x) end
     if f == BLIND_FRAME then
         ---ins_135(3, 47)：子 context 3 = 夜盲症。
         owner.lw206_blind = New(lw206_blind)
@@ -2845,6 +2848,7 @@ local function laser_step(owner, lt)
         ---EclRunLow.inl:301-307；AIM_TO_PL 是「从 BOSS 指向自机」的角）
         owner.lw207_lf0 = aim_to_player_th08(owner) - PI / 2
         owner.lw207_li0 = LASER_START0
+        OriginalStageVisual.presentation.sound.play(8,16,owner.x)
     end
     ---块 1：t=120..179，每帧一发，角度每帧 −6°、起始延迟每帧 −2。
     ---第60发之后还要等到下一帧，JUMP_DEC 减到0才进入第二块。
@@ -2858,6 +2862,7 @@ local function laser_step(owner, lt)
         if lt == LASER_FIRST + LASER_COUNT then
             owner.lw207_lf0 = owner.lw207_lf0 + LASER_TURN
             owner.lw207_li0 = LASER_START0
+            OriginalStageVisual.presentation.sound.play(8,16,owner.x)
         end
         New(lw207_laser, owner.x, owner.y, -owner.lw207_lf0, LASER_COLOR2, owner.lw207_li0)
         owner.lw207_lf0 = owner.lw207_lf0 + LASER_STEP
@@ -2992,9 +2997,8 @@ end
 ---      WAIT(180) → SET_SPRITE(7/1) → ACCELERATE_VECTOR(60 帧、每帧沿原方向 +1/30)
 ---    （BulletManager.cpp:311-420 记记录、:816-855 跑状态机、:1205-1228 跑加速）。
 ---  ★ 贴图占位：使魔 "servant"、月亮 "eyeL"、弹 ball_small。17 张全部实现完再统一换。
----  ★ 没移植的纯画面效果：Sub38 每帧的 `ins_137(13, 0)` = ex 13 ApplyRedBackgroundTint
----    （EclExIns.cpp:719-722：给**背景层**逐帧叠 0xffc03030 的乘算色，52 帧）。
----    配音效一样，等统一换素材时再补。
+---  ★ Sub38 的137(13)/137(-1)由原作演出调度保留：背景ANM逐帧使用
+---    0xffc03030混色52帧，采用MixColors的乘/128及饱和截断；不染本体或子弹。
 ---------------------------------------------------------------
 do
 local PI = 3.141592653589793
@@ -3418,7 +3422,7 @@ local function boss_frame(owner)
             ---然后 `ins_135(0, 38)` 重建子 context 0（月亮 + 红光）
             advance_phase(MASK_A)
             advance_phase(MASK_B)
-            eyes[#eyes + 1] = New(lw208_eye, EYE_X, EYE_Y)
+            OriginalStageVisual.presentation.sound.play(8,42,owner.x)
         elseif ph == PHASE_S2 or ph == PHASE_S3 then
             ---t=230 / t=260：两组各推一次（t=260 那条还写了 li1 = 1，ex14 不读它）
             advance_phase(MASK_A)
@@ -3440,6 +3444,11 @@ local function boss_frame(owner)
             begin_wander(owner)
             spawn_familiars(owner)
         end
+        -- Sub38：xi0=50，先减25，再执行25次生成，间隔2帧；各实体独立活60帧。
+        if ph >= PHASE_S1 and ph <= PHASE_S1+48 and (ph-PHASE_S1)%2 == 0 then
+            eyes[#eyes + 1] = New(lw208_eye, EYE_X, EYE_Y)
+        end
+        if ph == PHASE_S1+52 then OriginalStageVisual.presentation.sound.play(8,25,owner.x) end
     end
     local move = owner.lw208_move
     if move then
@@ -3674,12 +3683,17 @@ lw209_spark = Class(object, {
         self.lw209_vx = math.cos(angle) * SPARK_SPEED
         self.lw209_vy = math.sin(angle) * SPARK_SPEED
         self.lw209_life = SPARK_LIFE
+        self.lw209_vm=OriginalANM.new(8,'etama',16)
+        -- type3/色号6使用小型消散调色表的第2项（原色号2）。
+        self.lw209_vm.sprite=self.lw209_vm.sprite+2
+        self.lw209_angle=angle*RAD-90
     end,
-    render = function() end,
+    render = function(self) OriginalANM.draw(self.lw209_vm,self.x,self.y,self.lw209_angle) end,
     frame = function(self)
         self.x = self.x + self.lw209_vx / 2
         self.y = self.y + self.lw209_vy / 2
         self.lw209_life = self.lw209_life - 1
+        OriginalANM.step(self.lw209_vm)
         if self.lw209_life <= 0 then
             object.RawDel(self)
         end
@@ -3835,6 +3849,7 @@ lw209_web = Class(object, {
         if t <= SPARK_LAST and t % SPARK_INTERVAL == 0 and class.th08_combat.can_shoot(self) then
             local angle=ran:Float(-PI,PI) -- DispatchShot先取操作数，之后才检查弹池空槽。
             spawn_by_pool(function()
+                OriginalStageVisual.presentation.sound.play(8,7,self.x)
                 return New(lw209_spark, self.x, self.y, angle)
             end)
         end
@@ -3865,9 +3880,13 @@ lw209_web = Class(object, {
         end
         if t == EXTRA_FRAME then
             if self.lw209_extra and class.th08_combat.can_shoot(self) then
-                spawn_by_pool(function()
-                    return New(lw209_bullet, self.x, self.y, EXTRA_ANGLE, EXTRA_SPEED)
-                end)
+                -- Sub79@0xbfb8的count1=2：一对相反方向，不能只保留向下的一颗。
+                if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,self.x) end
+                for i=0,1 do
+                    spawn_by_pool(function()
+                        return New(lw209_bullet, self.x, self.y, EXTRA_ANGLE-i*PI, EXTRA_SPEED)
+                    end)
+                end
             end
             ---ins_1 TERMINATE（跑完那一发就消失）
             object.RawDel(self)
@@ -3965,6 +3984,7 @@ local function boss_frame(owner)
         local ph = (f - CYCLE_FIRST) % CYCLE_PERIOD
         if ph == 0 then
             ---t=110：lf0 = AIM_TO_PL、xi0 = 0、lf7 = rndUnit·(−π/8) + 2π/5、生成 1 个节点。
+            OriginalStageVisual.presentation.sound.play(8,16,owner.x)
             ---AIM_TO_PL 是 TH08 口径「从 BOSS 指向自机」的角；我们坐标里取反即可。
             local aim = math.atan2(to_th08_y(player.y) - to_th08_y(owner.y),
                                    to_th08_x(player.x) - to_th08_x(owner.x))
@@ -4250,6 +4270,7 @@ local function bullet_bounce(self)
     if not outside_field(self.x, self.y) then
         return
     end
+    OriginalStageVisual.presentation.sound.play(8,25,0)
     if self.x < FIELD_L or self.x >= FIELD_R then
         self.lw210_bvx = -self.lw210_bvx        -- 原作 angle = −angle − π
     end
@@ -4268,6 +4289,7 @@ end
 ---改成「朝自机」、速度跳到 2.4，并把状态清掉 —— 所以只瞄一次、之后直线飞出去。
 local function bullet_dir(self)
     if self.lw210_dir_timer >= TREE_TURN_INTERVAL then
+        OriginalStageVisual.presentation.sound.play(8,25,0)
         self.lw210_dir_done = self.lw210_dir_done + 1
         if self.lw210_dir_done >= 1 then
             self.lw210_state = nil
@@ -4290,7 +4312,9 @@ end
 lw210_bullet = Class(bullet, {
     init = function(self, x, y, angle, speed, color, is_tree)
         ---bullet:init(imgclass, index, stay, destroyable)（THlib/bullet/bullet.lua:75）
-        bullet.init(self, style_of(17), color_of(17, color), false, true)
+        local kind=is_tree and 17 or 3 -- Sub82为type17；Boss的Sub81明确为type3。
+        bullet.init(self, style_of(kind), color_of(kind, color), false, true)
+        self.ex_angle=angle -- 显式提供本拍逻辑角，反射/转向后不读取上一拍净位移。
         self.bound = false                  -- 出屏回收自己判（卡 206/209 同款）
         self.lw210_bvx = math.cos(angle) * speed
         self.lw210_bvy = math.sin(angle) * speed
@@ -4347,6 +4371,9 @@ lw210_bullet = Class(bullet, {
             end
             self.lw210_off = self.lw210_off - 1
         end
+        if self.lw210_bvx*self.lw210_bvx+self.lw210_bvy*self.lw210_bvy>1e-12 then
+            self.ex_angle=math.atan2(self.lw210_bvy,self.lw210_bvx)
+        end
         bullet.frame(self)
     end,
 })
@@ -4370,6 +4397,7 @@ local function tree_gun(owner, t)
     local n = (t - TREE_GUN_FRAME) / TREE_FIRE_PERIOD
     local a = PI + n * TREE_ANGLE_STEP       -- TH08 口径；我们坐标整体取反
     local x, y, color = owner.x, owner.y, owner.lw210_color
+    if pool_used()<POOL_SIZE then OriginalStageVisual.presentation.sound.play(8,7,x) end
     spawn_bullet(x, y, -a, TREE_SHOT_SPEED, color, true)
     spawn_bullet(x, y, -a - PI, TREE_SHOT_SPEED, color, true)
 end
@@ -4393,7 +4421,8 @@ lw210_tree = class.th08_combat.actor("ecldata7sp:80", {
         self.lw210_color = TREE_COLORS[k + 1]
         ---φ = lf4、ψ = lf2（都是 TH08 口径）。控制点留在 TH08 口径算，算完再换算回我们坐标。
         local phi = -PI / 2 + k * (2 * PI / TREE_COUNT)
-        local psi = -k * (2 * PI / TREE_COUNT)
+        -- 第七棵在Sub79@0x100cc单独写lf2=0，不能继续前六棵的递推。
+        local psi = k==TREE_COUNT-1 and 0 or -k * (2 * PI / TREE_COUNT)
         ---★ 两个 p3 的符号是两次独立随机抽，顺序是先 x 后 y（op9 在两条 op36 之前各一条）。
         self.lw210_cx = {
             to_th08_x(x),                                       -- p0 = xf0 = 自己的 x

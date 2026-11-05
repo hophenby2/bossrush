@@ -511,10 +511,13 @@ local function background_class(game,archive,name)
         render=function(o)
             if not o.active then return end
             SetViewMode('world')
+            local tint=S.presentation.background_mix
+            local mixed=game==8 and tint and tint.stamp==stage.current_stage.timer
+                and IsValid(tint.owner) and tint.owner.current_card==tint.card and {mix=tint.color} or nil
             for _,vm in ipairs(o.vms) do
                 -- 红/妖/永/风使用640×480屏幕坐标；文花帖则是场地上沿中心(0,0)。
                 -- 必须分别换算，不能把风神录的(224,240)再当局部坐标叠加一次。
-                if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240) end
+                if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240,nil,nil,nil,nil,nil,mixed) end
             end
         end,
     },true)

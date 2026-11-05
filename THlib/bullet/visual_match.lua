@@ -161,6 +161,9 @@ local function spawn_left(o,game)
     return 0
 end
 function V.can_cancel(o,force)
+    -- 妖妖梦isProjectile敌机仍由EnemyManager管理，不在BulletManager消弹范围。
+    -- 此标记的实体由自己的ECL寿命或所属阶段清理，命中/擦过无敌自机也不提前退场。
+    if o._original_enemy_projectile then return false end
     local c=o.imgclass
     if not c or not c.native_game then return true end
     if force then return true end

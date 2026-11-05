@@ -77,6 +77,8 @@ local function effect(s,c,op,a)
     if s.game==8 then
         if op==139 or op==140 then F.spawn8({x=s.x,y=s.y},s.phase,a[1],a[2],a[3],a[4]) end
         if op==124 and a[1] and s.bank.sound_scripts[c.sub] then T.sound.play(8,a[1],s.x) end
+        if op==136 and a[1]==1 then New(F.screen_pulse,s.phase) end
+        if op==137 then s.ex_callback=a[1]>=0 and a[1] or nil end
     else
         if op>=54 and op<=62 and o._original_presentation_carrier then
             local event={0,op};for _,v in ipairs(a) do event[#event+1]=v end
@@ -273,6 +275,11 @@ function T.advance(o,clock)
         for slot=0,7 do
             if s.terminated then break end
             if s.children[slot] then run(s,s.children[slot]) end
+        end
+        if s.game==8 and not s.terminated and s.ex_callback==13 then
+            -- Background::AccumulateTint(0xffc03030)，每帧只影响背景ANM。
+            T.background_mix={owner=s.phase,card=s.phase.current_card,
+                stamp=stage.current_stage.timer,color={192,48,48}}
         end
         if o._original_presentation_carrier and not s.terminated then
             local before=s.x
