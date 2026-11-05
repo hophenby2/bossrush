@@ -386,6 +386,7 @@ function S.source_frame(o,clock,program)
             resolved[i]=v
         end
         if o.th08_manual_main_anm and c[2]>=54 and c[2]<=62 then enabled=false end
+        if state.game==7 and o.th07_manual_pose and c[2]==95 then enabled=false end
         if enabled then animation_event(o,state.game,state.file,resolved) end
         state.index=state.index+1
     end
