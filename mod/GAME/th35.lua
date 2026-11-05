@@ -739,11 +739,16 @@ end
 
 ---etNew：整套清零并写初值（EnemyEclDispatcher INITIALIZE_BULLET_PATTERN）
 local function et_new(e, slot)
-    e.pat[slot] = pat_new()
+    -- 原etNew在固定槽地址清零；别更换表，让同时使用此槽的旧线程继续读写当前槽。
+    local p=e.pat[slot] or {}
+    for k in pairs(p) do p[k]=nil end
+    for k,v in pairs(pat_new()) do p[k]=v end
+    e.pat[slot]=p
 end
 
 ---etCopy(dst, src)：整槽复制（含 18 条记录）
 local function et_copy(e, dst, src)
+    if dst==src then return end
     local d, s = e.pat[dst], e.pat[src]
     d.type, d.color = s.type, s.color
     d.angle, d.astep = s.angle, s.astep
@@ -10480,6 +10485,7 @@ function s5.BossCard1(o)
     t10_call_async(o, s5.BossCard1_at)
     t10_call_async(o, s5.BossCard1_at2)
     t10_call_async(o, s5.BossCard1_at5)
+    o.I0=0
     while true do task.Wait(1) end               -- L788/L804：clock 91↔90 的 1 帧死循环
 end
 
@@ -10640,7 +10646,6 @@ function s5.Boss2Et_at(o)
     while true do                                -- L1288
         if not (v4 < 448.0) then break end
         ct = 0                                   -- jmpNeq(L380, 0)
-        ct = s_wait(ct, 1)                       -- +1: //1
         local s8 = math.sin(a24)
         a24 = t10_wrap(a24 - 0.1309)
         et_offset(o, 0, -224.0, v4)
@@ -10654,6 +10659,7 @@ function s5.Boss2Et_at(o)
             t10_laser_st_on(o, 8, 6, 3.1415927, w12, w12, 1, 10, 30, 1, 32.0)
         end
         v4 = v4 + 12.0
+        ct = s_wait(ct,1) -- 循环体在0拍先放激光，1拍才检查是否继续。
     end
     t10_delete(o)
 end
