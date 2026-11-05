@@ -1962,7 +1962,7 @@ local function s3_MBossCard1(o)
     class.t10_fx.shadow(o,3,2,function(v)
         local actor=(v.th10_boss or v)._original_actor
         local id=actor and actor.vm.id
-        if id and id~=7 and id~=8 then return id+6 end
+        if id==7 or id==8 then return id+6 end
     end,1) -- MBossOP的原始动画选择条件。
     task.Wait(80)                      -- +80: //80（anmPlay(0, 409) 也是视觉）
     class.t10_fx.fire(o,__anm,0x872c)
@@ -2009,6 +2009,7 @@ local function s3_BossCard1(o)
     local __anm=class.t10_fx.context('stage03:BossCard1')
     class.t10_fx.fire(o,__anm,0x33c4)
     t10_enm_kill_all(o)                        -- enmKillAll()
+    o.I0=0 -- 根程序在第一次回跳前显式清零奇偶计数。
     m_pos_time(o, "off", 60, 4, 0.0, 128.0)    -- movePosTime(60, 4, 0, 128)
     while true do                              -- +160: //2700 → 回 //668（每轮 462 帧）
         local y = rnd() * 32                   -- [0] = %RANDF·32（每轮重置）
@@ -2027,6 +2028,7 @@ local function s3_BossCard1(o)
         end
         m_rand(o, "off", 60, 4, 5.0)           -- moveRand(60, 4, 5.0)
         task.Wait(20)                          -- +60: //60：进入 6 波自机狙
+        et_new(o,0) -- ECL的60拍重新清枪槽，不能继承上一非符的offset/命令。
         local p = o.pat[0]
         p.type, p.color = 12, 3                -- etSprite(0, 12, 3)
         p.aim, p.c1, p.c2 = 0, 9, 1            -- etAim(0, 0) / etCount(0, 9(L), 1)
@@ -2126,6 +2128,7 @@ end
 
 local function s3_BossCard3L_at2(o)
     task.Wait(100)                     -- 原作 at2 的配置在 t=100
+    et_new(o,2)
     local p = o.pat[2]
     p.aim, p.c1, p.c2 = 0, 1, 1        -- etAim(2, 0) / etCount(2, 1, 1)
     p.type, p.color = 24, 8            -- etSprite(2, 24, 8)
@@ -10137,18 +10140,18 @@ end
 
 ---Boss1At：槽 1 每 60 帧打一波（L：[!L] etCount(1,48,1) 覆盖 8；速度 diffF L=2.2）。
 function s2.Boss1At(o)
-    et_new(o, 1)
-    et_aim(o, 1, 2)
-    et_sprite(o, 1, 12, 2)
-    et_count(o, 1, 48, 1)                     -- [!L] L 行覆盖前面的 8
-    et_angle(o, 1, 0.0, 0.0)
-    et_speed(o, 1, 2.2, 1.0)                  -- diffF([0], 1.5, 2.2, 2.2, 2.2) ⇒ L = 2.2
-    local p = o.pat[1]
-    p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
-    p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
     local ct = 0
     while true do
         ct = s_wait(ct, 60)                   -- 起手 jmp(412,60)+jmpNeq 回到 t=60 的 etOn
+        et_new(o, 1)
+        et_aim(o, 1, 2)
+        et_sprite(o, 1, 12, 2)
+        et_count(o, 1, 48, 1)                     -- [!L] L 行覆盖前面的 8
+        et_angle(o, 1, 0.0, 0.0)
+        et_speed(o, 1, 2.2, 1.0)                  -- diffF([0], 1.5, 2.2, 2.2, 2.2) ⇒ L = 2.2
+        local p = o.pat[1]
+        p.ex[0] = tp_record(1, 1, -999999, -999999, -999999.0, -999999.0)
+        p.ex[1] = tp_record(1, 4, -999999, -999999, -999999.0, -999999.0)
         fire_slot(o, 1)
         ct = 0                                -- jmpNeq(Boss1At_96, 0)
     end
