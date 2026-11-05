@@ -594,7 +594,11 @@ function H.wait(b, v, target)
     a.context = v
     local delay = max(0,target-v.epoch)-max(0,v.time-v.epoch)
     if delay > 0 then for _=1,delay do task.Wait() end end
-    v.time = target
+    -- 单卡练习压缩登记前的转场，但原生 phaseTimer 仍须经过这些帧。
+    if a.main and v.epoch>0 then a.phase=a.phase+max(0,min(target,v.epoch)-min(v.time,v.epoch)) end
+    -- 原生 RunEcl 要求 time == 指令时间。TIME_ADD 越过时间戳时不会倒退补执行。
+    if target>=v.epoch and v.time>target then while true do task.Wait() end end
+    v.time = max(v.time,target)
 end
 function H.call(b, v, fn, i0, f0)
     local child = {}
@@ -687,7 +691,20 @@ function H.erase(b)
 end
 function H.clear_helpers(b)
     local s=b.th06
-    for i=2,#s.actors do local a=s.actors[i];if not a.dead and IsValid(a.object) then H.kill_actor(a) end end
+    for i=2,#s.actors do
+        local a=s.actors[i]
+        if not a.dead and IsValid(a.object) then
+            -- ENEMY_KILL_ALL 置 life=0，不提前回收槽位；死亡处理在该敌机本帧 RunEcl 之后。
+            a.object.hp=0;a.source_clear=true
+            if not a.interactable and a.death then
+                local fn=a.death;a.death=nil;a.source_clear=nil
+                local prior=a.context;a.context={}
+                for k,value in pairs(prior) do a.context[k]=value end
+                a.context.time,a.context.epoch=0,0
+                a.co=coroutine.create(function() fn(a.object,a.context) end)
+            end
+        end
+    end
 end
 function H.change_colour(p,c)
     local shape=SHAPES[p.th06_sprite]
@@ -798,7 +815,7 @@ function H.new_actor(s,b,stage,sub,main,meta)
         offsetx=main and (meta.offsetx or 0) or 0,offsety=main and (meta.offsety or 0) or 0,offsetz=0,z=0,angle=0,speed=0,angular=0,accel=0,axisx=0,axisy=0,mode="axis",
         rank=stage==7 and 18 or 32,rank_lo=-.5,rank_hi=.5,rank_n1_lo=0,rank_n1_hi=0,rank_n2_lo=0,rank_n2_hi=0,
         extra={0,0,0,0,0,0,0,0},lasers={},laser_index=0,damageable=true,collidable=true,interactable=true,
-        context=H.ctx(main and meta.epoch or 0),bounds=main and meta.bounds or nil}
+        context=H.ctx(main and meta.epoch or 0),bounds=main and not meta.entry_unbounded and meta.bounds or nil}
     if main and b.th06_previous_context then
         for k,value in pairs(b.th06_previous_context) do if k~="time" and k~="epoch" then a.context[k]=value end end
     end
@@ -825,7 +842,7 @@ function H.run_actor(a,initial)
     local ok,err=coroutine.resume(a.co)
     if not ok and err~=STOP then error(err,0) end
 end
-function H.kill_actor(a)
+function H.kill_actor(a,defer)
     if a.dead then return end
     if a.object.th06.road then
         if a.death_mode==3 then
@@ -843,7 +860,7 @@ function H.kill_actor(a)
         a.context.time,a.context.epoch=0,0;a.death_life=0
         H.reset_rank(a)
         a.co=coroutine.create(function() fn(a.object,a.context) end)
-        H.run_actor(a)
+        if not defer then H.run_actor(a) end
     else a.dead=true;object.RawDel(a.object) end
 end
 class["原作使魔"] = Class(enemy, {
@@ -953,7 +970,7 @@ class["原作流程控制"] = Class(object, {
                         a.context.time,a.context.epoch=0,0
                         H.reset_rank(a)
                         a.co=coroutine.create(function() fn(a.object,a.context) end)
-                    elseif not a.main and a.object.hp<=0 then H.kill_actor(a) end
+                    elseif not a.main and a.object.hp<=0 and a.interactable and not a.invisible and a.entered and not a.source_clear then H.kill_actor(a) end
                     if a.main and a.timeout and a.phase>=a.timeout then a.object.hp=0 end
                     if not a.main and a.timeout and a.phase>=a.timeout and a.timeout_fn then
                         local fn=a.timeout_fn;a.timeout=nil
@@ -965,6 +982,11 @@ class["原作流程控制"] = Class(object, {
                     end
                     H.run_actor(a)
                     if not a.dead then H.actor_post(a) end
+                    if not a.dead and a.source_clear and a.interactable and not a.invisible and a.entered then
+                        a.source_clear=nil
+                        if (a.death_mode or 0)==0 then a.dead=true;object.RawDel(a.object)
+                        else H.kill_actor(a,true) end
+                    end
                 end
             end
         end
@@ -24340,7 +24362,7 @@ end
 
 do
 
-    local meta={stage=2,sub=22,group=5,life=10000,threshold=1500,hp=8500,shot=0,timeout=1500,epoch=0,invul=20,bounds={32.0,48.0,352.0,134.0},order=8,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3907}
+    local meta={stage=2,sub=22,group=5,offsetx=0,offsety=-12,life=10000,threshold=1500,hp=8500,shot=0,timeout=1500,epoch=0,invul=20,bounds={32.0,48.0,352.0,134.0},order=8,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3907}
 
     local card=boss.card.New("",0.3333333333333333,0.3333333333333333,25.0,8500,nil,false)
 
@@ -24358,7 +24380,7 @@ end
 
 do
 
-    local meta={stage=2,sub=30,group=5,life=1500,threshold=0,hp=1500,shot=0,timeout=2100,epoch=0,invul=120,bounds={32.0,48.0,352.0,134.0},order=9,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3908}
+    local meta={stage=2,sub=30,group=5,offsetx=0,offsety=-12,life=1500,threshold=0,hp=1500,shot=0,timeout=2100,epoch=0,invul=120,bounds={32.0,48.0,352.0,134.0},order=9,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3908}
 
     local card=boss.card.New("雹符「冰雹暴风」",2.0,2.0,35.0,1500,nil,false)
 
@@ -24376,7 +24398,7 @@ end
 
 do
 
-    local meta={stage=2,sub=25,group=5,life=13000,threshold=3200,hp=9800,shot=0,timeout=3000,epoch=0,invul=200,bounds={32.0,48.0,352.0,134.0},order=10,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3909}
+    local meta={stage=2,sub=25,group=5,offsetx=0,offsety=-12,life=13000,threshold=3200,hp=9800,shot=0,timeout=3000,epoch=0,invul=200,bounds={32.0,48.0,352.0,134.0},order=10,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3909}
 
     local card=boss.card.New("",3.3333333333333335,3.3333333333333335,50.0,9800,nil,false)
 
@@ -24394,7 +24416,7 @@ end
 
 do
 
-    local meta={stage=2,sub=31,group=5,life=3200,threshold=1400,hp=1800,shot=0,timeout=2400,epoch=0,invul=120,bounds={32.0,48.0,352.0,134.0},order=11,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3910}
+    local meta={stage=2,sub=31,group=5,offsetx=0,offsety=-12,life=3200,threshold=1400,hp=1800,shot=0,timeout=2400,epoch=0,invul=120,bounds={32.0,48.0,352.0,134.0},order=11,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3910}
 
     local card=boss.card.New("冻符「完美冻结」",2.0,2.0,40.0,1800,nil,false)
 
@@ -24412,7 +24434,7 @@ end
 
 do
 
-    local meta={stage=2,sub=32,group=5,life=1400,threshold=0,hp=1400,shot=0,timeout=1980,epoch=60,invul=120,bounds={32.0,48.0,352.0,134.0},order=12,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3911}
+    local meta={stage=2,sub=32,group=5,offsetx=0,offsety=-12,life=1400,threshold=0,hp=1400,shot=0,timeout=1980,epoch=60,invul=120,bounds={32.0,48.0,352.0,134.0},order=12,entry_x=0,entry_y=128,hitbox={48.0,56.0},id=3911}
 
     local card=boss.card.New("雪符「钻石风暴」",2.0,2.0,33.0,1400,nil,false)
 
@@ -24430,7 +24452,7 @@ end
 
 do
 
-    local meta={stage=3,sub=9,group=6,life=13000,threshold=1300,hp=11700,shot=0,timeout=1800,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=13,entry_x=0.0,entry_y=80.0,hitbox={56.0,56.0},id=3912}
+    local meta={stage=3,sub=9,group=6,entry_unbounded=true,life=13000,threshold=1300,hp=11700,shot=0,timeout=1800,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=13,entry_x=0.0,entry_y=80.0,hitbox={56.0,56.0},id=3912}
 
     local card=boss.card.New("",0.0,0.0,30.0,11700,nil,false)
 
@@ -24466,7 +24488,7 @@ end
 
 do
 
-    local meta={stage=3,sub=18,group=7,life=14000,threshold=1900,hp=12100,shot=0,timeout=1800,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=15,entry_x=0.0,entry_y=80.0,hitbox={56.0,56.0},id=3914}
+    local meta={stage=3,sub=18,group=7,offsetx=0,offsety=-12,life=14000,threshold=1900,hp=12100,shot=0,timeout=1800,epoch=0,invul=0,bounds={32.0,48.0,352.0,144.0},order=15,entry_x=0.0,entry_y=80.0,hitbox={56.0,56.0},id=3914}
 
     local card=boss.card.New("",0.0,0.0,30.0,12100,nil,false)
 

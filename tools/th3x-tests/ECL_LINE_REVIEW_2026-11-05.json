@@ -156353,7 +156353,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4",
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1",
         "THlib/bullet/visual_match.lua": "9c21f1a23736a3ad9f94b252739ac34fa3feaa3d2b3d51def815a36ec8d9373f",
         "THlib/anm/original_effects.lua": "b31a5c5841ff849e25499c830f0f2bc4b00dc12c2d4f708009a4bb723657fcfd"
       }
@@ -156604,7 +156604,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4",
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1",
         "THlib/bullet/visual_match.lua": "9c21f1a23736a3ad9f94b252739ac34fa3feaa3d2b3d51def815a36ec8d9373f",
         "THlib/anm/original_effects.lua": "b31a5c5841ff849e25499c830f0f2bc4b00dc12c2d4f708009a4bb723657fcfd"
       }
@@ -156831,7 +156831,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4",
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1",
         "THlib/bullet/visual_match.lua": "9c21f1a23736a3ad9f94b252739ac34fa3feaa3d2b3d51def815a36ec8d9373f",
         "THlib/anm/original_effects.lua": "b31a5c5841ff849e25499c830f0f2bc4b00dc12c2d4f708009a4bb723657fcfd"
       }
@@ -157372,7 +157372,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4",
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1",
         "THlib/bullet/visual_match.lua": "9c21f1a23736a3ad9f94b252739ac34fa3feaa3d2b3d51def815a36ec8d9373f",
         "THlib/anm/original_effects.lua": "b31a5c5841ff849e25499c830f0f2bc4b00dc12c2d4f708009a4bb723657fcfd"
       }
@@ -157859,7 +157859,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4",
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1",
         "THlib/bullet/visual_match.lua": "9c21f1a23736a3ad9f94b252739ac34fa3feaa3d2b3d51def815a36ec8d9373f",
         "THlib/anm/original_effects.lua": "b31a5c5841ff849e25499c830f0f2bc4b00dc12c2d4f708009a4bb723657fcfd"
       }
@@ -158568,7 +158568,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     },
     "32/3901": {
@@ -159268,7 +159268,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     },
     "32/3902": {
@@ -160359,7 +160359,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     },
     "32/3903": {
@@ -160878,7 +160878,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     },
     "32/3904": {
@@ -161837,7 +161837,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     },
     "32/3905": {
@@ -162392,7 +162392,7374 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th32.lua": "914dbe4adeffe64688ab6c3f07948af699874da284eae54883d1b6de904b42b4"
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3906": {
+      "findings": [
+        "逐行核对130帧起八组有限CALL：48次正转/48次反转/16次转向弹交替；每组调用40帧隐身传送、再80帧等待。",
+        "核对9×2转向自机狙：40帧减速后转向启动；132旗标的每段到期行为使用已修复共享弹体。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub20",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub14",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub15",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub16",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub17",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub20",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x1498",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x14a8",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x14b8",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x14c8",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x14d8",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x14e8",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x1500",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x1510",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x1520",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x1530",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1540",
+              "time": 0,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x1558",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x1574",
+              "time": 60,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x1594",
+              "time": 60,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x15a4",
+              "time": 70,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x15c4",
+              "time": 80,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x15e4",
+              "time": 90,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x1604",
+              "time": 130,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1618",
+              "time": 130,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x162c",
+              "time": 130,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x164c",
+              "time": 130,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x166c",
+              "time": 130,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x168c",
+              "time": 130,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x16a4",
+              "time": 130,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x16b8",
+              "time": 130,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x16cc",
+              "time": 130,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x16e0",
+              "time": 130,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x16f8",
+              "time": 210,
+              "op": 3,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub14",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0xdb4",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0xdc4",
+              "time": 40,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0xdd8",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xdec",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xe00",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xe14",
+              "time": 40,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0xe40",
+              "time": 40,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0xe6c",
+              "time": 40,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0xe98",
+              "time": 40,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0xec4",
+              "time": 40,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0xed4",
+              "time": 40,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0xeec",
+              "time": 41,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0xf04",
+              "time": 41,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0xf1c",
+              "time": 41,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0xf34",
+              "time": 41,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub15",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0xf4c",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0xf5c",
+              "time": 40,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0xf70",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xf84",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xf98",
+              "time": 40,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0xfac",
+              "time": 40,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0xfd8",
+              "time": 40,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x1004",
+              "time": 40,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x1030",
+              "time": 40,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x105c",
+              "time": 40,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x106c",
+              "time": 40,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x1084",
+              "time": 41,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x109c",
+              "time": 41,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x10b4",
+              "time": 41,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x10cc",
+              "time": 41,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub16",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x10e4",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x10f4",
+              "time": 40,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1108",
+              "time": 40,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x1134",
+              "time": 40,
+              "op": 67,
+              "mask": 1
+            },
+            {
+              "address": "0x1160",
+              "time": 40,
+              "op": 67,
+              "mask": 2
+            },
+            {
+              "address": "0x118c",
+              "time": 40,
+              "op": 67,
+              "mask": 4
+            },
+            {
+              "address": "0x11b8",
+              "time": 40,
+              "op": 67,
+              "mask": 8
+            },
+            {
+              "address": "0x11e4",
+              "time": 40,
+              "op": 67,
+              "mask": 1
+            },
+            {
+              "address": "0x1210",
+              "time": 40,
+              "op": 67,
+              "mask": 2
+            },
+            {
+              "address": "0x123c",
+              "time": 40,
+              "op": 67,
+              "mask": 4
+            },
+            {
+              "address": "0x1268",
+              "time": 40,
+              "op": 67,
+              "mask": 8
+            },
+            {
+              "address": "0x1294",
+              "time": 40,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12a4",
+              "time": 50,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12bc",
+              "time": 50,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub17",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x12d4",
+              "time": 0,
+              "op": 10,
+              "mask": 255
+            },
+            {
+              "address": "0x12e4",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x12f4",
+              "time": 0,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x1308",
+              "time": 0,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x132c",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1340",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1350",
+              "time": 0,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x1364",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x137c",
+              "time": 40,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x1390",
+              "time": 40,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x13a4",
+              "time": 40,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x13b4",
+              "time": 40,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x13c8",
+              "time": 40,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x13d8",
+              "time": 40,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x13f0",
+              "time": 40,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x1400",
+              "time": 80,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3907": {
+      "findings": [
+        "核对Sub24三处TIME_ADD：普通等待已按加时后差值计算；修复越过下一指令时间戳时仍倒退补执行的边界，按原生time==instr.time停留直至外部阶段回调。",
+        "恢复宿主(0,-12)发射口；逐行核对70帧CALL、三组6层扇/双环、三次移动环与局部bank继承。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。宿主初始化发射口。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub22",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub23",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub24",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x171c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x172c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x173c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x174c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x175c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x176c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x177c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1794",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x17ac",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x17c0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x17d8",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x17f4",
+              "time": 1,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x180c",
+              "time": 1,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 32,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x182c",
+              "time": 10032,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1840",
+              "time": 10092,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub22",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x185c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x186c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x187c",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x188c",
+              "time": 0,
+              "op": 113,
+              "mask": 255
+            },
+            {
+              "address": "0x189c",
+              "time": 0,
+              "op": 114,
+              "mask": 3
+            },
+            {
+              "address": "0x18ac",
+              "time": 0,
+              "op": 114,
+              "mask": 12
+            },
+            {
+              "address": "0x18bc",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x18cc",
+              "time": 0,
+              "op": 116,
+              "mask": 3
+            },
+            {
+              "address": "0x18dc",
+              "time": 0,
+              "op": 116,
+              "mask": 12
+            },
+            {
+              "address": "0x18ec",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x18fc",
+              "time": 20,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x191c",
+              "time": 20,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x192c",
+              "time": 30,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x194c",
+              "time": 40,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x196c",
+              "time": 50,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x198c",
+              "time": 50,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x19a0",
+              "time": 70,
+              "op": 35,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub23",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x19c4",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x19e0",
+              "time": 0,
+              "op": 5,
+              "mask": 1
+            },
+            {
+              "address": "0x19f4",
+              "time": 0,
+              "op": 5,
+              "mask": 2
+            },
+            {
+              "address": "0x1a08",
+              "time": 0,
+              "op": 5,
+              "mask": 4
+            },
+            {
+              "address": "0x1a1c",
+              "time": 0,
+              "op": 5,
+              "mask": 8
+            },
+            {
+              "address": "0x1a30",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1a44",
+              "time": 41,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1a54",
+              "time": 41,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x1a78",
+              "time": 41,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x1a90",
+              "time": 41,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1aa0",
+              "time": 41,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1acc",
+              "time": 43,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1af8",
+              "time": 45,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1b24",
+              "time": 47,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1b50",
+              "time": 49,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1b7c",
+              "time": 51,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x1ba8",
+              "time": 51,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x1bd4",
+              "time": 51,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x1c00",
+              "time": 51,
+              "op": 20,
+              "mask": 1
+            },
+            {
+              "address": "0x1c18",
+              "time": 51,
+              "op": 20,
+              "mask": 2
+            },
+            {
+              "address": "0x1c30",
+              "time": 51,
+              "op": 20,
+              "mask": 4
+            },
+            {
+              "address": "0x1c48",
+              "time": 51,
+              "op": 20,
+              "mask": 8
+            },
+            {
+              "address": "0x1c60",
+              "time": 111,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x1c78",
+              "time": 111,
+              "op": 35,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub24",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x1c9c",
+              "time": 0,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x1cac",
+              "time": 1,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1cc0",
+              "time": 1,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x1ce4",
+              "time": 21,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x1cf8",
+              "time": 21,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x1d08",
+              "time": 21,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x1d34",
+              "time": 21,
+              "op": 69,
+              "mask": 1
+            },
+            {
+              "address": "0x1d60",
+              "time": 21,
+              "op": 69,
+              "mask": 2
+            },
+            {
+              "address": "0x1d8c",
+              "time": 21,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x1db8",
+              "time": 21,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x1de4",
+              "time": 21,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1df4",
+              "time": 21,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x1e0c",
+              "time": 21,
+              "op": 123,
+              "mask": 255
+            },
+            {
+              "address": "0x1e1c",
+              "time": 41,
+              "op": 69,
+              "mask": 1
+            },
+            {
+              "address": "0x1e48",
+              "time": 41,
+              "op": 69,
+              "mask": 2
+            },
+            {
+              "address": "0x1e74",
+              "time": 41,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x1ea0",
+              "time": 41,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x1ecc",
+              "time": 41,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1edc",
+              "time": 41,
+              "op": 123,
+              "mask": 255
+            },
+            {
+              "address": "0x1eec",
+              "time": 61,
+              "op": 69,
+              "mask": 1
+            },
+            {
+              "address": "0x1f18",
+              "time": 61,
+              "op": 69,
+              "mask": 2
+            },
+            {
+              "address": "0x1f44",
+              "time": 61,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x1f70",
+              "time": 61,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x1f9c",
+              "time": 61,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1fac",
+              "time": 61,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x1fc4",
+              "time": 61,
+              "op": 123,
+              "mask": 255
+            },
+            {
+              "address": "0x1fd4",
+              "time": 101,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x1fec",
+              "time": 101,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x2004",
+              "time": 101,
+              "op": 35,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3908": {
+      "findings": [
+        "恢复宿主(0,-12)发射口。逐行核对八轮20帧间隔冰雹、每轮角正负切换、两次随机抽取和每批加.15转后速度；120帧移动后返回120。",
+        "核对260旗标的60帧减速/指定方向恢复、次数1及初生动画，保留源程序达到轮数后强制phase超时。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。宿主初始化发射口。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub30",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x171c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x172c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x173c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x174c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x175c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x176c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x177c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1794",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x17ac",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x17c0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x17d8",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x17f4",
+              "time": 1,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x180c",
+              "time": 1,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 32,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x182c",
+              "time": 10032,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1840",
+              "time": 10092,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub30",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x2b76",
+              "time": 0,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x2ba8",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2bb8",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x2bc8",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x2be4",
+              "time": 120,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2bf4",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2c08",
+              "time": 120,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x2c1c",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2c30",
+              "time": 120,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x2c48",
+              "time": 120,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x2c5c",
+              "time": 120,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x2c70",
+              "time": 120,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2c88",
+              "time": 120,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x2c9c",
+              "time": 120,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2cb4",
+              "time": 120,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x2cc8",
+              "time": 120,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2ce0",
+              "time": 120,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x2cf4",
+              "time": 120,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2d0c",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2d20",
+              "time": 120,
+              "op": 13,
+              "mask": 4
+            },
+            {
+              "address": "0x2d38",
+              "time": 120,
+              "op": 13,
+              "mask": 8
+            },
+            {
+              "address": "0x2d50",
+              "time": 120,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x2d7c",
+              "time": 120,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x2da8",
+              "time": 120,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2db8",
+              "time": 140,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x2dd0",
+              "time": 140,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x2de4",
+              "time": 140,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x2df4",
+              "time": 140,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x2e04",
+              "time": 140,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2e1c",
+              "time": 140,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x2e30",
+              "time": 140,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x2e44",
+              "time": 140,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x2e54",
+              "time": 260,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x2e6c",
+              "time": 260,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3909": {
+      "findings": [
+        "恢复宿主(0,-12)发射口，三条移动光柱的初始狙击从真实发射口计算。",
+        "逐行核对200帧CALL，八组20帧双环+三组50帧移动光柱交替，光柱初始0长、速度4、最长192、9999有效期和离屏回收。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。宿主初始化发射口。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub25",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub26",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub27",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x171c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x172c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x173c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x174c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x175c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x176c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x177c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1794",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x17ac",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x17c0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x17d8",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x17f4",
+              "time": 1,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x180c",
+              "time": 1,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 32,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x182c",
+              "time": 10032,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1840",
+              "time": 10092,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub25",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x2028",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x2034",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2044",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x2054",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x2064",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x2074",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x2084",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2094",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x20a4",
+              "time": 0,
+              "op": 113,
+              "mask": 1
+            },
+            {
+              "address": "0x20b4",
+              "time": 0,
+              "op": 113,
+              "mask": 14
+            },
+            {
+              "address": "0x20c4",
+              "time": 0,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x20d4",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x20e4",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x20f4",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x2104",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x2114",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2128",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x2138",
+              "time": 200,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2148",
+              "time": 200,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x2160",
+              "time": 3200,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub26",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x217c",
+              "time": 0,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x218c",
+              "time": 0,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x21a0",
+              "time": 0,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x21b0",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x21c4",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x21d4",
+              "time": 0,
+              "op": 13,
+              "mask": 1
+            },
+            {
+              "address": "0x21ec",
+              "time": 0,
+              "op": 13,
+              "mask": 2
+            },
+            {
+              "address": "0x2204",
+              "time": 0,
+              "op": 13,
+              "mask": 4
+            },
+            {
+              "address": "0x221c",
+              "time": 0,
+              "op": 13,
+              "mask": 8
+            },
+            {
+              "address": "0x2234",
+              "time": 0,
+              "op": 69,
+              "mask": 1
+            },
+            {
+              "address": "0x2260",
+              "time": 0,
+              "op": 69,
+              "mask": 2
+            },
+            {
+              "address": "0x228c",
+              "time": 0,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x22b8",
+              "time": 0,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x22e4",
+              "time": 10,
+              "op": 71,
+              "mask": 255
+            },
+            {
+              "address": "0x2310",
+              "time": 20,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x2328",
+              "time": 20,
+              "op": 35,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub27",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x234c",
+              "time": 0,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x235c",
+              "time": 0,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x2370",
+              "time": 0,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x2380",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2394",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x23a4",
+              "time": 0,
+              "op": 86,
+              "mask": 255
+            },
+            {
+              "address": "0x23e4",
+              "time": 0,
+              "op": 86,
+              "mask": 255
+            },
+            {
+              "address": "0x2424",
+              "time": 0,
+              "op": 86,
+              "mask": 255
+            },
+            {
+              "address": "0x2464",
+              "time": 0,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x2490",
+              "time": 0,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x24bc",
+              "time": 50,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x24d4",
+              "time": 50,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x24ec",
+              "time": 50,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x2500",
+              "time": 50,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x2514",
+              "time": 50,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x2524",
+              "time": 50,
+              "op": 35,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3910": {
+      "findings": [
+        "恢复宿主发射口；逐行核对六组五色随机弹、205冻结、415加速重启及595返回120。",
+        "原作ExIns0扫描所有未消散弹，立即换白/速度清零；重启逐弹随机方向、.01向量加速220帧，保留初生状态和同帧更新顺序。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。宿主初始化发射口。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub31",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x171c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x172c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x173c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x174c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x175c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x176c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x177c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1794",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x17ac",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x17c0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x17d8",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x17f4",
+              "time": 1,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x180c",
+              "time": 1,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 32,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x182c",
+              "time": 10032,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1840",
+              "time": 10092,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub31",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x2e8c",
+              "time": 0,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x2ebe",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2ece",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x2ede",
+              "time": 0,
+              "op": 113,
+              "mask": 14
+            },
+            {
+              "address": "0x2eee",
+              "time": 0,
+              "op": 114,
+              "mask": 14
+            },
+            {
+              "address": "0x2efe",
+              "time": 0,
+              "op": 116,
+              "mask": 14
+            },
+            {
+              "address": "0x2f0e",
+              "time": 0,
+              "op": 114,
+              "mask": 1
+            },
+            {
+              "address": "0x2f1e",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x2f42",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x2f52",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x2f6e",
+              "time": 120,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2f7e",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2f92",
+              "time": 120,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x2fa6",
+              "time": 120,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x2fb6",
+              "time": 120,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x2fc6",
+              "time": 120,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2fda",
+              "time": 120,
+              "op": 13,
+              "mask": 1
+            },
+            {
+              "address": "0x2ff2",
+              "time": 120,
+              "op": 13,
+              "mask": 2
+            },
+            {
+              "address": "0x300a",
+              "time": 120,
+              "op": 13,
+              "mask": 4
+            },
+            {
+              "address": "0x3022",
+              "time": 120,
+              "op": 13,
+              "mask": 8
+            },
+            {
+              "address": "0x303a",
+              "time": 125,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x3066",
+              "time": 125,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3076",
+              "time": 130,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x30a2",
+              "time": 130,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x30b2",
+              "time": 135,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x30de",
+              "time": 135,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x30ee",
+              "time": 140,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x311a",
+              "time": 140,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x312a",
+              "time": 145,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x3156",
+              "time": 145,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3166",
+              "time": 145,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x317e",
+              "time": 205,
+              "op": 121,
+              "mask": 255
+            },
+            {
+              "address": "0x3192",
+              "time": 265,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x31a6",
+              "time": 265,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x31b6",
+              "time": 265,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x31c6",
+              "time": 265,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x31da",
+              "time": 265,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x31ee",
+              "time": 265,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x3202",
+              "time": 275,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x322e",
+              "time": 275,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x3242",
+              "time": 275,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3256",
+              "time": 275,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x326a",
+              "time": 285,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x3296",
+              "time": 285,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x32aa",
+              "time": 295,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x32d6",
+              "time": 295,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x32e6",
+              "time": 295,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x32fe",
+              "time": 415,
+              "op": 121,
+              "mask": 255
+            },
+            {
+              "address": "0x3312",
+              "time": 415,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x332a",
+              "time": 595,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3911": {
+      "findings": [
+        "恢复宿主发射口；逐行核对60帧符卡登记作为本项目局部起点，190原生/130卡内首发，12次10帧随机发射区后立即开启下一轮。",
+        "核对ExIns1先抽X再抽Y，位置围绕Boss而非shootOffset；START_SPELL重置此前rank设置，当前Lua顺序与原作一致。"
+      ],
+      "boundaries": "逐行审查原始L分支和对应Lua基本块；保留原生时钟/随机顺序。Boss Rush结算/剧情/计分及文件头披露的音画代理沿用，不宣称这些资源完全一致；未运行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。宿主初始化发射口。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata2.ecl",
+          "sub": "Sub32",
+          "note": "逐行核对全部L分支参数、跳转/CALL/RETURN、阶段设置和对应共享组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x171c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x172c",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x173c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x174c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x175c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x176c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x177c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1794",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x17ac",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x17c0",
+              "time": 0,
+              "op": 98,
+              "mask": 255
+            },
+            {
+              "address": "0x17d8",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x17f4",
+              "time": 1,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x180c",
+              "time": 1,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 32,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x182c",
+              "time": 10032,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1840",
+              "time": 10092,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata2.ecl",
+          "sub": "Sub32",
+          "game": 6,
+          "sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+          "instructions": [
+            {
+              "address": "0x334a",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x3356",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x3366",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x3376",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x338e",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x339e",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x33ae",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x33d2",
+              "time": 60,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x3404",
+              "time": 60,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x3414",
+              "time": 60,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x3424",
+              "time": 60,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x3430",
+              "time": 60,
+              "op": 4,
+              "mask": 1
+            },
+            {
+              "address": "0x3444",
+              "time": 60,
+              "op": 4,
+              "mask": 2
+            },
+            {
+              "address": "0x3458",
+              "time": 60,
+              "op": 4,
+              "mask": 4
+            },
+            {
+              "address": "0x346c",
+              "time": 60,
+              "op": 4,
+              "mask": 8
+            },
+            {
+              "address": "0x3480",
+              "time": 60,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x34ac",
+              "time": 60,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x34b8",
+              "time": 60,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x34c8",
+              "time": 60,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x34e4",
+              "time": 180,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x34f4",
+              "time": 180,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3508",
+              "time": 180,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x351c",
+              "time": 180,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x352c",
+              "time": 180,
+              "op": 61,
+              "mask": 255
+            },
+            {
+              "address": "0x353c",
+              "time": 180,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3550",
+              "time": 190,
+              "op": 121,
+              "mask": 255
+            },
+            {
+              "address": "0x3564",
+              "time": 190,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3574",
+              "time": 190,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x358c",
+              "time": 190,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x35a4",
+              "time": 190,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3912": {
+      "findings": [
+        "修复中Boss首次入场提前套用后段活动框：Sub9从(352,-96)加速入场100帧期间保持无框，CALL返回后才启用32/48/352/144框。",
+        "逐行核对有限160轮、奇偶随机偏移散弹/96路环交替、自动间隔30和50帧移动CALL；未把子程序CALL时间并入父脚本时钟。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub9",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub11",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub12",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub16",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub9",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0xefc",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0xf0c",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0xf1c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0xf2c",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0xf3c",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0xf4c",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0xf5c",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0xf74",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0xf84",
+              "time": 0,
+              "op": 113,
+              "mask": 255
+            },
+            {
+              "address": "0xf94",
+              "time": 0,
+              "op": 114,
+              "mask": 3
+            },
+            {
+              "address": "0xfa4",
+              "time": 0,
+              "op": 114,
+              "mask": 12
+            },
+            {
+              "address": "0xfb4",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0xfc4",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0xfd4",
+              "time": 0,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0xfec",
+              "time": 0,
+              "op": 59,
+              "mask": 255
+            },
+            {
+              "address": "0x1008",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1020",
+              "time": 0,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x1040",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1050",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x1060",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x107c",
+              "time": 10,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x109c",
+              "time": 20,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x10bc",
+              "time": 30,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x10dc",
+              "time": 30,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x10f0",
+              "time": 30,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x1108",
+              "time": 30,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x1128",
+              "time": 30,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x1148",
+              "time": 30,
+              "op": 78,
+              "mask": 12
+            },
+            {
+              "address": "0x1154",
+              "time": 30,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x1180",
+              "time": 30,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x11ac",
+              "time": 30,
+              "op": 79,
+              "mask": 12
+            },
+            {
+              "address": "0x11b8",
+              "time": 30,
+              "op": 77,
+              "mask": 12
+            },
+            {
+              "address": "0x11c8",
+              "time": 30,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x11dc",
+              "time": 30,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x11ec",
+              "time": 30,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x11fc",
+              "time": 30,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1214",
+              "time": 30,
+              "op": 77,
+              "mask": 12
+            },
+            {
+              "address": "0x1224",
+              "time": 90,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x123c",
+              "time": 90,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1254",
+              "time": 90,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub11",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1334",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1348",
+              "time": 20,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x135c",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x1374",
+              "time": 20,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x1388",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x13a0",
+              "time": 20,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x13b8",
+              "time": 20,
+              "op": 74,
+              "mask": 1
+            },
+            {
+              "address": "0x13e4",
+              "time": 20,
+              "op": 74,
+              "mask": 2
+            },
+            {
+              "address": "0x1410",
+              "time": 20,
+              "op": 74,
+              "mask": 4
+            },
+            {
+              "address": "0x143c",
+              "time": 20,
+              "op": 74,
+              "mask": 8
+            },
+            {
+              "address": "0x1468",
+              "time": 20,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x147c",
+              "time": 20,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x1494",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x14ac",
+              "time": 20,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x14c0",
+              "time": 20,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x14d8",
+              "time": 20,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x14e8",
+              "time": 28,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x1500",
+              "time": 68,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x150c",
+              "time": 68,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub12",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1528",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x153c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1554",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x1580",
+              "time": 0,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x15ac",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x15d8",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x1604",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1614",
+              "time": 10,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x1620",
+              "time": 10,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub16",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1e10",
+              "time": 0,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x1e20",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x1e30",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x1e3c",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x1e4c",
+              "time": 0,
+              "op": 66,
+              "mask": 255
+            },
+            {
+              "address": "0x1e58",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x1e68",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1e78",
+              "time": 130,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x1e94",
+              "time": 130,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1eac",
+              "time": 130,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3913": {
+      "findings": [
+        "逐行核对120帧蓄力CALL、双6路弹的60帧减速与两次相对折向、每帧相位更新及phase%120的52路环。",
+        "保留原版对f1比较后修改f0的原始指令，未按推测改写；rank在START_SPELL重置，偏移在根程序归零。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub14",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub16",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub14",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x19c2",
+              "time": 0,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x19f4",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1a04",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1a1c",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x1a2c",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x1a3c",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x1a4c",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x1a5c",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x1a78",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1a90",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1aa0",
+              "time": 0,
+              "op": 17,
+              "mask": 4
+            },
+            {
+              "address": "0x1ab8",
+              "time": 0,
+              "op": 17,
+              "mask": 8
+            },
+            {
+              "address": "0x1ad0",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x1ae4",
+              "time": 0,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x1af8",
+              "time": 0,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x1b24",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x1b50",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x1b7c",
+              "time": 0,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x1ba8",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x1bd4",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x1c00",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x1c18",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x1c30",
+              "time": 0,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x1c44",
+              "time": 0,
+              "op": 30,
+              "mask": 255
+            },
+            {
+              "address": "0x1c58",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x1c70",
+              "time": 0,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x1c84",
+              "time": 0,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x1c98",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x1cb0",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1cc0",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1cd4",
+              "time": 0,
+              "op": 17,
+              "mask": 4
+            },
+            {
+              "address": "0x1cec",
+              "time": 0,
+              "op": 17,
+              "mask": 8
+            },
+            {
+              "address": "0x1d04",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x1d18",
+              "time": 0,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x1d2c",
+              "time": 0,
+              "op": 69,
+              "mask": 4
+            },
+            {
+              "address": "0x1d58",
+              "time": 0,
+              "op": 69,
+              "mask": 8
+            },
+            {
+              "address": "0x1d84",
+              "time": 1,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x1d9c",
+              "time": 1,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub16",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1e10",
+              "time": 0,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x1e20",
+              "time": 0,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x1e30",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x1e3c",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x1e4c",
+              "time": 0,
+              "op": 66,
+              "mask": 255
+            },
+            {
+              "address": "0x1e58",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x1e68",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1e78",
+              "time": 130,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x1e94",
+              "time": 130,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1eac",
+              "time": 130,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3914": {
+      "findings": [
+        "恢复宿主Sub17的(0,-12)发射口。",
+        "逐行核对30×4帧递增圈弹、16×2帧加速相位圈、40帧移动与120帧尾等待；数量上限和奇偶旋转由本轮c3生成。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub17",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub18",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub19",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub17",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1ec8",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x1ed8",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x1ee8",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x1ef8",
+              "time": 0,
+              "op": 100,
+              "mask": 255
+            },
+            {
+              "address": "0x1f08",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x1f20",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x1f38",
+              "time": 0,
+              "op": 109,
+              "mask": 255
+            },
+            {
+              "address": "0x1f4c",
+              "time": 0,
+              "op": 43,
+              "mask": 255
+            },
+            {
+              "address": "0x1f64",
+              "time": 0,
+              "op": 59,
+              "mask": 255
+            },
+            {
+              "address": "0x1f80",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x1f98",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x1fb4",
+              "time": 61,
+              "op": 101,
+              "mask": 255
+            },
+            {
+              "address": "0x1fc4",
+              "time": 10061,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x1fd8",
+              "time": 10121,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub18",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1ff4",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x2004",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2014",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x2024",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x2034",
+              "time": 0,
+              "op": 113,
+              "mask": 255
+            },
+            {
+              "address": "0x2044",
+              "time": 0,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x2054",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x2064",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x2074",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x2084",
+              "time": 0,
+              "op": 125,
+              "mask": 255
+            },
+            {
+              "address": "0x2090",
+              "time": 0,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x20b0",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x20c0",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x20d0",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x20ec",
+              "time": 10,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x210c",
+              "time": 20,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x212c",
+              "time": 30,
+              "op": 102,
+              "mask": 255
+            },
+            {
+              "address": "0x214c",
+              "time": 50,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2160",
+              "time": 50,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x2178",
+              "time": 50,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x2188",
+              "time": 170,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub19",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x21a8",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x21c0",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x21d4",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x21e8",
+              "time": 0,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x2200",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x2214",
+              "time": 0,
+              "op": 29,
+              "mask": 255
+            },
+            {
+              "address": "0x2228",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x223c",
+              "time": 0,
+              "op": 14,
+              "mask": 1
+            },
+            {
+              "address": "0x2254",
+              "time": 0,
+              "op": 13,
+              "mask": 4
+            },
+            {
+              "address": "0x226c",
+              "time": 0,
+              "op": 13,
+              "mask": 8
+            },
+            {
+              "address": "0x2284",
+              "time": 0,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x229c",
+              "time": 0,
+              "op": 69,
+              "mask": 255
+            },
+            {
+              "address": "0x22c8",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x22d8",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x22ec",
+              "time": 0,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x2300",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2318",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x232c",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x2344",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x235c",
+              "time": 4,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x2374",
+              "time": 4,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x2388",
+              "time": 4,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x2398",
+              "time": 4,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x23a8",
+              "time": 4,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x23b8",
+              "time": 4,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x23c8",
+              "time": 4,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x23dc",
+              "time": 4,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x23f0",
+              "time": 4,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x2408",
+              "time": 4,
+              "op": 69,
+              "mask": 255
+            },
+            {
+              "address": "0x2434",
+              "time": 4,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x2448",
+              "time": 4,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x245c",
+              "time": 4,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2474",
+              "time": 4,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x2488",
+              "time": 4,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x24a0",
+              "time": 4,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x24b8",
+              "time": 4,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x24d0",
+              "time": 6,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x24e8",
+              "time": 6,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x24fc",
+              "time": 6,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x250c",
+              "time": 6,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x251c",
+              "time": 6,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3915": {
+      "findings": [
+        "逐行核对120帧CALL后九组彩色2/3/4/2/8×2/3/2/4/4路环、7帧循环、96轮相位往返和2000帧缓移。",
+        "修复ENEMY_KILL_ALL提前删除使魔/立即运行死亡回调：现在按原版先置life=0，到各使魔槽执行本帧ECL后处理死亡，保留本帧槽位。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub29",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub29",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x3834",
+              "time": 0,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x3866",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x3872",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x3882",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x389a",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x38aa",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x38ba",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x38ca",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x38e6",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x38fe",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x390e",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3922",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x393e",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3952",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3966",
+              "time": 0,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x3992",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x39aa",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x39d6",
+              "time": 0,
+              "op": 70,
+              "mask": 14
+            },
+            {
+              "address": "0x3a02",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3a1a",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x3a46",
+              "time": 0,
+              "op": 70,
+              "mask": 14
+            },
+            {
+              "address": "0x3a72",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3a8a",
+              "time": 0,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x3ab6",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3ace",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x3afa",
+              "time": 0,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x3b26",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x3b52",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x3b7e",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3b96",
+              "time": 0,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x3bc2",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3bda",
+              "time": 0,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x3c06",
+              "time": 0,
+              "op": 5,
+              "mask": 12
+            },
+            {
+              "address": "0x3c1a",
+              "time": 0,
+              "op": 21,
+              "mask": 12
+            },
+            {
+              "address": "0x3c32",
+              "time": 0,
+              "op": 70,
+              "mask": 12
+            },
+            {
+              "address": "0x3c5e",
+              "time": 0,
+              "op": 20,
+              "mask": 12
+            },
+            {
+              "address": "0x3c76",
+              "time": 0,
+              "op": 70,
+              "mask": 12
+            },
+            {
+              "address": "0x3ca2",
+              "time": 0,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x3cba",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3cce",
+              "time": 0,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x3ce2",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3cfa",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x3d0e",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3d26",
+              "time": 0,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x3d3a",
+              "time": 0,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x3d4e",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x3d66",
+              "time": 0,
+              "op": 13,
+              "mask": 255
+            },
+            {
+              "address": "0x3d7e",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3d8e",
+              "time": 7,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3916": {
+      "findings": [
+        "逐行核对六只不同HP使魔在0/30/60成对生成、70起每2帧递增弹速、四轮232→40减速循环及离场。",
+        "主Boss四组随机三选一攻击逐一核对；每组包含80帧移动CALL，保留随机数消费顺序、rank范围及CALL局部bank。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub20",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub21",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub22",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub23",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub24",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub25",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub20",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x2534",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x2544",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x2550",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2560",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x2570",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x2580",
+              "time": 0,
+              "op": 113,
+              "mask": 3
+            },
+            {
+              "address": "0x2590",
+              "time": 0,
+              "op": 113,
+              "mask": 12
+            },
+            {
+              "address": "0x25a0",
+              "time": 0,
+              "op": 114,
+              "mask": 12
+            },
+            {
+              "address": "0x25b0",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x25c0",
+              "time": 0,
+              "op": 116,
+              "mask": 3
+            },
+            {
+              "address": "0x25d0",
+              "time": 0,
+              "op": 116,
+              "mask": 12
+            },
+            {
+              "address": "0x25e0",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x25f0",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x2600",
+              "time": 0,
+              "op": 125,
+              "mask": 255
+            },
+            {
+              "address": "0x260c",
+              "time": 0,
+              "op": 76,
+              "mask": 255
+            },
+            {
+              "address": "0x261c",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x2640",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x2650",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x2660",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x267c",
+              "time": 160,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2690",
+              "time": 160,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x26a8",
+              "time": 160,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x26bc",
+              "time": 160,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x26d0",
+              "time": 160,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x26f0",
+              "time": 160,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x2710",
+              "time": 160,
+              "op": 39,
+              "mask": 255
+            },
+            {
+              "address": "0x2730",
+              "time": 160,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x2744",
+              "time": 160,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x2754",
+              "time": 160,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x2764",
+              "time": 160,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x277c",
+              "time": 160,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x2794",
+              "time": 160,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x27a4",
+              "time": 280,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub21",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x27c4",
+              "time": 0,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x27e8",
+              "time": 0,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x280c",
+              "time": 30,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x2830",
+              "time": 30,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x2854",
+              "time": 60,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x2878",
+              "time": 60,
+              "op": 95,
+              "mask": 255
+            },
+            {
+              "address": "0x289c",
+              "time": 60,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub22",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x28b4",
+              "time": 0,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x28c8",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x28e0",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x290c",
+              "time": 0,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x2938",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x2964",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x2990",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x29a0",
+              "time": 0,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x29b4",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x29cc",
+              "time": 70,
+              "op": 70,
+              "mask": 255
+            },
+            {
+              "address": "0x29f8",
+              "time": 70,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2a08",
+              "time": 70,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x2a1c",
+              "time": 70,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x2a34",
+              "time": 140,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x2a60",
+              "time": 140,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x2a8c",
+              "time": 140,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x2ab8",
+              "time": 140,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x2ae4",
+              "time": 140,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2af4",
+              "time": 140,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub23",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x2b0c",
+              "time": 0,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x2b38",
+              "time": 0,
+              "op": 75,
+              "mask": 1
+            },
+            {
+              "address": "0x2b64",
+              "time": 0,
+              "op": 75,
+              "mask": 2
+            },
+            {
+              "address": "0x2b90",
+              "time": 0,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x2bbc",
+              "time": 0,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x2be8",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2bf8",
+              "time": 70,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x2c24",
+              "time": 70,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2c34",
+              "time": 140,
+              "op": 75,
+              "mask": 1
+            },
+            {
+              "address": "0x2c60",
+              "time": 140,
+              "op": 75,
+              "mask": 2
+            },
+            {
+              "address": "0x2c8c",
+              "time": 140,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x2cb8",
+              "time": 140,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x2ce4",
+              "time": 140,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2cf4",
+              "time": 140,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub24",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x2d0c",
+              "time": 0,
+              "op": 8,
+              "mask": 255
+            },
+            {
+              "address": "0x2d20",
+              "time": 0,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x2d38",
+              "time": 0,
+              "op": 75,
+              "mask": 1
+            },
+            {
+              "address": "0x2d64",
+              "time": 0,
+              "op": 75,
+              "mask": 2
+            },
+            {
+              "address": "0x2d90",
+              "time": 0,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x2dbc",
+              "time": 0,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x2de8",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2df8",
+              "time": 70,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x2e24",
+              "time": 70,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2e34",
+              "time": 140,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x2e60",
+              "time": 140,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x2e70",
+              "time": 140,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub25",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x2e88",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x2e98",
+              "time": 0,
+              "op": 103,
+              "mask": 255
+            },
+            {
+              "address": "0x2eb0",
+              "time": 0,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x2ec4",
+              "time": 40,
+              "op": 48,
+              "mask": 255
+            },
+            {
+              "address": "0x2ed4",
+              "time": 40,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2ee8",
+              "time": 70,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x2f00",
+              "time": 70,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x2f14",
+              "time": 70,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2f28",
+              "time": 70,
+              "op": 48,
+              "mask": 255
+            },
+            {
+              "address": "0x2f38",
+              "time": 70,
+              "op": 69,
+              "mask": 12
+            },
+            {
+              "address": "0x2f64",
+              "time": 70,
+              "op": 68,
+              "mask": 1
+            },
+            {
+              "address": "0x2f90",
+              "time": 70,
+              "op": 68,
+              "mask": 2
+            },
+            {
+              "address": "0x2fbc",
+              "time": 70,
+              "op": 68,
+              "mask": 4
+            },
+            {
+              "address": "0x2fe8",
+              "time": 70,
+              "op": 68,
+              "mask": 8
+            },
+            {
+              "address": "0x3014",
+              "time": 70,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x302c",
+              "time": 70,
+              "op": 17,
+              "mask": 255
+            },
+            {
+              "address": "0x3044",
+              "time": 70,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3058",
+              "time": 70,
+              "op": 34,
+              "mask": 255
+            },
+            {
+              "address": "0x306c",
+              "time": 70,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x307c",
+              "time": 72,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x3094",
+              "time": 232,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x30ac",
+              "time": 232,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x30c4",
+              "time": 232,
+              "op": 45,
+              "mask": 255
+            },
+            {
+              "address": "0x30d8",
+              "time": 10000,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3917": {
+      "findings": [
+        "逐行核对星形重复ExIns2：保存Boss/自机坐标，160帧预算、每6帧五条边发射、每30帧转4π/5、逐边随机增速。",
+        "核对调用Sub10期间重复ExIns使用当前上下文变量的原始顺序，及80帧移动CALL/181→1循环；ENEMY_KILL_ALL按原生槽序处理。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub30",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub30",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x3dae",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x3dba",
+              "time": 1,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x3dec",
+              "time": 1,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x3dfc",
+              "time": 1,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x3e14",
+              "time": 1,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x3e38",
+              "time": 1,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x3e48",
+              "time": 1,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x3e58",
+              "time": 1,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x3e68",
+              "time": 1,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x3e84",
+              "time": 1,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x3e9c",
+              "time": 1,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x3eac",
+              "time": 1,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3ec0",
+              "time": 1,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x3edc",
+              "time": 1,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3ef0",
+              "time": 1,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f04",
+              "time": 1,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f18",
+              "time": 1,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3f2c",
+              "time": 1,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3f40",
+              "time": 1,
+              "op": 78,
+              "mask": 255
+            },
+            {
+              "address": "0x3f4c",
+              "time": 1,
+              "op": 67,
+              "mask": 4
+            },
+            {
+              "address": "0x3f78",
+              "time": 1,
+              "op": 67,
+              "mask": 8
+            },
+            {
+              "address": "0x3fa4",
+              "time": 1,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x3fb0",
+              "time": 1,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x3fc0",
+              "time": 1,
+              "op": 76,
+              "mask": 255
+            },
+            {
+              "address": "0x3fd0",
+              "time": 81,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x3fe4",
+              "time": 81,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x3ff4",
+              "time": 81,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x4004",
+              "time": 81,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x401c",
+              "time": 181,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4030",
+              "time": 181,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4044",
+              "time": 181,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4058",
+              "time": 181,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x4068",
+              "time": 181,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x4078",
+              "time": 181,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3918": {
+      "findings": [
+        "逐行核对两组6×42路弹60帧停顿后相对转向，40×2帧随机向量加速弹及80帧移动CALL；rank在各子程序切换。",
+        "核对清使魔、关闭重复ExIns和自动发射的先后；源清场现在保留各使魔本帧ECL与下一帧死亡回调顺序。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub26",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub27",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub28",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub26",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x30f4",
+              "time": 0,
+              "op": 104,
+              "mask": 255
+            },
+            {
+              "address": "0x3104",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x3110",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x311c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x312c",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x313c",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x314c",
+              "time": 0,
+              "op": 113,
+              "mask": 1
+            },
+            {
+              "address": "0x315c",
+              "time": 0,
+              "op": 113,
+              "mask": 14
+            },
+            {
+              "address": "0x316c",
+              "time": 0,
+              "op": 114,
+              "mask": 3
+            },
+            {
+              "address": "0x317c",
+              "time": 0,
+              "op": 114,
+              "mask": 12
+            },
+            {
+              "address": "0x318c",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x319c",
+              "time": 0,
+              "op": 116,
+              "mask": 3
+            },
+            {
+              "address": "0x31ac",
+              "time": 0,
+              "op": 116,
+              "mask": 12
+            },
+            {
+              "address": "0x31bc",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x31cc",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x31dc",
+              "time": 0,
+              "op": 125,
+              "mask": 255
+            },
+            {
+              "address": "0x31e8",
+              "time": 0,
+              "op": 76,
+              "mask": 255
+            },
+            {
+              "address": "0x31f8",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x3208",
+              "time": 0,
+              "op": 122,
+              "mask": 255
+            },
+            {
+              "address": "0x3218",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x3228",
+              "time": 0,
+              "op": 117,
+              "mask": 255
+            },
+            {
+              "address": "0x3238",
+              "time": 0,
+              "op": 65,
+              "mask": 255
+            },
+            {
+              "address": "0x3254",
+              "time": 160,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3268",
+              "time": 160,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x3280",
+              "time": 160,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x3298",
+              "time": 160,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x32ac",
+              "time": 160,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x32bc",
+              "time": 160,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x32cc",
+              "time": 160,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x32e4",
+              "time": 160,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x32f4",
+              "time": 280,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub27",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x3314",
+              "time": 0,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x3340",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x3364",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3378",
+              "time": 0,
+              "op": 75,
+              "mask": 1
+            },
+            {
+              "address": "0x33a4",
+              "time": 0,
+              "op": 75,
+              "mask": 2
+            },
+            {
+              "address": "0x33d0",
+              "time": 0,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x33fc",
+              "time": 0,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x3428",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3438",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x3450",
+              "time": 82,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub28",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x3468",
+              "time": 0,
+              "op": 82,
+              "mask": 1
+            },
+            {
+              "address": "0x3494",
+              "time": 0,
+              "op": 82,
+              "mask": 2
+            },
+            {
+              "address": "0x34c0",
+              "time": 0,
+              "op": 82,
+              "mask": 4
+            },
+            {
+              "address": "0x34ec",
+              "time": 0,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x3518",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x353c",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3550",
+              "time": 0,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x3564",
+              "time": 0,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x3590",
+              "time": 0,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x35bc",
+              "time": 0,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x35e8",
+              "time": 0,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x3614",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x362c",
+              "time": 1,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x3644",
+              "time": 21,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x3654",
+              "time": 71,
+              "op": 82,
+              "mask": 1
+            },
+            {
+              "address": "0x3680",
+              "time": 71,
+              "op": 82,
+              "mask": 2
+            },
+            {
+              "address": "0x36ac",
+              "time": 71,
+              "op": 82,
+              "mask": 4
+            },
+            {
+              "address": "0x36d8",
+              "time": 71,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x3704",
+              "time": 71,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x3718",
+              "time": 71,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x372c",
+              "time": 71,
+              "op": 70,
+              "mask": 1
+            },
+            {
+              "address": "0x3758",
+              "time": 71,
+              "op": 70,
+              "mask": 2
+            },
+            {
+              "address": "0x3784",
+              "time": 71,
+              "op": 70,
+              "mask": 4
+            },
+            {
+              "address": "0x37b0",
+              "time": 71,
+              "op": 70,
+              "mask": 8
+            },
+            {
+              "address": "0x37dc",
+              "time": 71,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x37f4",
+              "time": 72,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x380c",
+              "time": 92,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x381c",
+              "time": 92,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3919": {
+      "findings": [
+        "逐行核对40组四方向向量弹、30组四种加速度方向的随机弹及两段间蓄力移动CALL；角度归一化和随机抽样顺序保持原指令。",
+        "停止/向量加速组件使用到期后保留最终速度的修复，未按视觉猜测增加停弹时长。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub32",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub32",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x4512",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x4522",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x452e",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x453e",
+              "time": 0,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x4570",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x4588",
+              "time": 0,
+              "op": 113,
+              "mask": 255
+            },
+            {
+              "address": "0x4598",
+              "time": 0,
+              "op": 114,
+              "mask": 255
+            },
+            {
+              "address": "0x45a8",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x45b8",
+              "time": 0,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x45d4",
+              "time": 0,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x45ec",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x45fc",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4610",
+              "time": 0,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x463c",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4650",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x4668",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x467c",
+              "time": 0,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x46a8",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x46c0",
+              "time": 0,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x46ec",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4704",
+              "time": 0,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x4730",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4748",
+              "time": 0,
+              "op": 68,
+              "mask": 255
+            },
+            {
+              "address": "0x4774",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x4784",
+              "time": 0,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x479c",
+              "time": 0,
+              "op": 26,
+              "mask": 255
+            },
+            {
+              "address": "0x47ac",
+              "time": 1,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x47c4",
+              "time": 1,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x47d8",
+              "time": 1,
+              "op": 47,
+              "mask": 255
+            },
+            {
+              "address": "0x47e8",
+              "time": 1,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x47f8",
+              "time": 1,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x4810",
+              "time": 21,
+              "op": 4,
+              "mask": 4
+            },
+            {
+              "address": "0x4824",
+              "time": 21,
+              "op": 4,
+              "mask": 8
+            },
+            {
+              "address": "0x4838",
+              "time": 21,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x484c",
+              "time": 21,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x4878",
+              "time": 21,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x48a4",
+              "time": 21,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x48bc",
+              "time": 21,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x48e8",
+              "time": 21,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4914",
+              "time": 21,
+              "op": 20,
+              "mask": 4
+            },
+            {
+              "address": "0x492c",
+              "time": 21,
+              "op": 82,
+              "mask": 4
+            },
+            {
+              "address": "0x4958",
+              "time": 21,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x4984",
+              "time": 21,
+              "op": 20,
+              "mask": 4
+            },
+            {
+              "address": "0x499c",
+              "time": 21,
+              "op": 82,
+              "mask": 4
+            },
+            {
+              "address": "0x49c8",
+              "time": 21,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x49f4",
+              "time": 21,
+              "op": 20,
+              "mask": 8
+            },
+            {
+              "address": "0x4a0c",
+              "time": 21,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x4a38",
+              "time": 21,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x4a64",
+              "time": 21,
+              "op": 20,
+              "mask": 8
+            },
+            {
+              "address": "0x4a7c",
+              "time": 21,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x4aa8",
+              "time": 21,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x4ad4",
+              "time": 21,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x4ae4",
+              "time": 21,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x4afc",
+              "time": 21,
+              "op": 26,
+              "mask": 255
+            },
+            {
+              "address": "0x4b0c",
+              "time": 23,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x4b24",
+              "time": 23,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x4b34",
+              "time": 23,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
+      }
+    },
+    "32/3920": {
+      "findings": [
+        "修复压缩60帧符卡登记前转场时没有推进phaseTimer：原版t0设2160超时，t60开始符卡，卡内应剩2100帧；现在保留这60帧相位。",
+        "逐行核对八组彩色向量弹、逐帧间隔、66→60循环，以及phase>600/>1200时增加路数；各向量和角度符号按原值保留。"
+      ],
+      "boundaries": "全部L分支逐行对照原始ECL、Lua基本块和TH06原生组件。框架接管切卡/伤害/剧情计分，音画代理仍按文件头披露；未执行游戏或测试。",
+      "implementation": [
+        "mod/GAME/th32.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub33",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        },
+        {
+          "game": 6,
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "note": "逐行核对全部L分支数据、条件/循环/CALL目标及共享原生组件。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub33",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x4b54",
+              "time": 0,
+              "op": 94,
+              "mask": 255
+            },
+            {
+              "address": "0x4b60",
+              "time": 0,
+              "op": 119,
+              "mask": 255
+            },
+            {
+              "address": "0x4b70",
+              "time": 0,
+              "op": 115,
+              "mask": 255
+            },
+            {
+              "address": "0x4b80",
+              "time": 0,
+              "op": 116,
+              "mask": 255
+            },
+            {
+              "address": "0x4b90",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4b9c",
+              "time": 0,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x4bac",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4bc0",
+              "time": 0,
+              "op": 112,
+              "mask": 255
+            },
+            {
+              "address": "0x4bd0",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x4be8",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x4bf8",
+              "time": 60,
+              "op": 93,
+              "mask": 255
+            },
+            {
+              "address": "0x4c2a",
+              "time": 60,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x4c42",
+              "time": 60,
+              "op": 57,
+              "mask": 255
+            },
+            {
+              "address": "0x4c5e",
+              "time": 60,
+              "op": 35,
+              "mask": 255
+            },
+            {
+              "address": "0x4c76",
+              "time": 60,
+              "op": 105,
+              "mask": 255
+            },
+            {
+              "address": "0x4c86",
+              "time": 60,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4c9a",
+              "time": 60,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4cae",
+              "time": 60,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4cc2",
+              "time": 60,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4cda",
+              "time": 60,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x4d06",
+              "time": 60,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4d32",
+              "time": 61,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4d4a",
+              "time": 61,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x4d76",
+              "time": 61,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4da2",
+              "time": 61,
+              "op": 20,
+              "mask": 12
+            },
+            {
+              "address": "0x4dba",
+              "time": 61,
+              "op": 82,
+              "mask": 12
+            },
+            {
+              "address": "0x4de6",
+              "time": 61,
+              "op": 75,
+              "mask": 12
+            },
+            {
+              "address": "0x4e12",
+              "time": 62,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4e2a",
+              "time": 62,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x4e56",
+              "time": 62,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4e82",
+              "time": 63,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4e9a",
+              "time": 63,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x4ec6",
+              "time": 63,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4ef2",
+              "time": 63,
+              "op": 20,
+              "mask": 4
+            },
+            {
+              "address": "0x4f0a",
+              "time": 63,
+              "op": 82,
+              "mask": 4
+            },
+            {
+              "address": "0x4f36",
+              "time": 63,
+              "op": 75,
+              "mask": 4
+            },
+            {
+              "address": "0x4f62",
+              "time": 63,
+              "op": 20,
+              "mask": 8
+            },
+            {
+              "address": "0x4f7a",
+              "time": 63,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x4fa6",
+              "time": 63,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x4fd2",
+              "time": 64,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x4fea",
+              "time": 64,
+              "op": 82,
+              "mask": 255
+            },
+            {
+              "address": "0x5016",
+              "time": 64,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x5042",
+              "time": 65,
+              "op": 20,
+              "mask": 6
+            },
+            {
+              "address": "0x505a",
+              "time": 65,
+              "op": 82,
+              "mask": 6
+            },
+            {
+              "address": "0x5086",
+              "time": 65,
+              "op": 75,
+              "mask": 6
+            },
+            {
+              "address": "0x50b2",
+              "time": 65,
+              "op": 20,
+              "mask": 8
+            },
+            {
+              "address": "0x50ca",
+              "time": 65,
+              "op": 82,
+              "mask": 8
+            },
+            {
+              "address": "0x50f6",
+              "time": 65,
+              "op": 75,
+              "mask": 8
+            },
+            {
+              "address": "0x5122",
+              "time": 65,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x513a",
+              "time": 65,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x514e",
+              "time": 65,
+              "op": 30,
+              "mask": 255
+            },
+            {
+              "address": "0x5162",
+              "time": 65,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x517a",
+              "time": 65,
+              "op": 21,
+              "mask": 255
+            },
+            {
+              "address": "0x5192",
+              "time": 65,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x51a6",
+              "time": 65,
+              "op": 33,
+              "mask": 255
+            },
+            {
+              "address": "0x51ba",
+              "time": 65,
+              "op": 20,
+              "mask": 255
+            },
+            {
+              "address": "0x51d2",
+              "time": 65,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x51e6",
+              "time": 65,
+              "op": 30,
+              "mask": 255
+            },
+            {
+              "address": "0x51fa",
+              "time": 65,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x520e",
+              "time": 65,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x5222",
+              "time": 65,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x5236",
+              "time": 65,
+              "op": 30,
+              "mask": 255
+            },
+            {
+              "address": "0x524a",
+              "time": 65,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x525e",
+              "time": 65,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x526e",
+              "time": 65,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x527e",
+              "time": 66,
+              "op": 2,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata3.ecl",
+          "sub": "Sub10",
+          "game": 6,
+          "sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+          "instructions": [
+            {
+              "address": "0x1270",
+              "time": 0,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x1280",
+              "time": 0,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x1290",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x12a8",
+              "time": 0,
+              "op": 118,
+              "mask": 255
+            },
+            {
+              "address": "0x12c0",
+              "time": 2,
+              "op": 3,
+              "mask": 255
+            },
+            {
+              "address": "0x12d8",
+              "time": 2,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x12ec",
+              "time": 2,
+              "op": 106,
+              "mask": 255
+            },
+            {
+              "address": "0x12fc",
+              "time": 2,
+              "op": 120,
+              "mask": 255
+            },
+            {
+              "address": "0x130c",
+              "time": 2,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x131c",
+              "time": 2,
+              "op": 36,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th32.lua": "7d702437ffb8f9de4d19cd43a12c30f944219591d861afab1d4de743d4c8ebc1"
       }
     }
   },
@@ -162400,8 +169767,8 @@
     "35/3635": "同类etProtectRange已修复；尚未逐行读完，不勾选。",
     "35/3613": "与開宴共用激光接口；尚未逐行读完，不勾选。"
   },
-  "completed": 152,
-  "pending": 370,
+  "completed": 167,
+  "pending": 355,
   "shared_fixes": [
     "Stage5逐行核对同时纠正同一原作MOVE_RANDOM_IN_BOUNDS原语在六面A/B道中工厂中的上下边界角度反射条件；不因此为未审阅卡新增勾选。",
     "TH31全部注册卡共同frame出口统一推进EX清弹生成压制计数，按场景/真实帧去重；移除散布于个别卡内的推进，匹配原作BulletManager.cpp帧尾一次递减。"
