@@ -248,7 +248,7 @@ function P.transition(owner,native)
             OriginalStageVisual.presentation.sound.play(95,15,owner.x)
         end
     end
-    if camera and camera.photoing and not camera.writing and P.target_contains(camera,owner) then
+    if (native.th095_transition_left or 0)==0 and camera and camera.photoing and not camera.writing and P.target_contains(camera,owner) then
         native.th095_transition_left=120
         OriginalStageVisual.interrupt_background(95,2)
         OriginalStageVisual.presentation.sound.play(95,38,owner.x)
@@ -274,7 +274,13 @@ function P.transition_move(owner,state,native)
     m.age=m.age+1
     local t=math.min(1,m.age/m.n)
     local u=1-(1-t)^2
-    native.queue_move(owner,owner.th095_move_serial,m.x+m.dx*u,m.y+m.dy*u,state)
+    local x,y=m.x+m.dx*u,m.y+m.dy*u
+    local box=state.th095_transition_box
+    if box then
+        x=math.max(box[1],math.min(box[3],x))
+        y=math.max(224-box[4],math.min(224-box[2],y))
+    end
+    native.queue_move(owner,owner.th095_move_serial,x,y,state)
     if m.age>=m.n then state.th095_transition_motion=nil end
 end
 for _,kind in ipairs({'a','b','c'}) do OriginalStageVisual.presentation.manage(95,'ecl9_'..kind..':6') end

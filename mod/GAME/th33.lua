@@ -7854,12 +7854,11 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
                     fired[1] = true
                     gen = gen + 1
                     ---主上下文整个重开 ⇒ 本体那条 ins_67 的插值移动也一起没了。
-                    if st.mv then st.mv.alive = false end
                     run_from_30(owner, DRONE_RING4)      -- Sub7
-                elseif hits >= 6 and not fired[2] then
+                end
+                if hits >= 6 and not fired[2] then
                     fired[2] = true
                     gen = gen + 1
-                    if st.mv then st.mv.alive = false end
                     run_from_30(owner, DRONE_RING8)      -- Sub11
                 end
                 task.Wait(1)
@@ -7882,8 +7881,8 @@ do  -- 60 咲夜 非符（ecl14_a，组 11a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            run_default(self)                            -- Sub3
-            watcher(self)
+            watcher(self) -- 原UpdateScheduledEclCalls先于主/子程序。
+            run_default(self)
         end)
     end
 
@@ -7931,14 +7930,14 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
     ---一帧一只**（一帧一圈，见 EclRunLow.inl 的 5/4 分支），打完 Sub4 就结束。
     ---Sub8（蝙蝠本体）：ins_71(1/15) 每帧加速，t=300 ins_1 结束。
     local BAT_COUNT, BAT_LIFE, BAT_ACC = 96, 300, 1 / 15
-    local BAT_AT, FAN_AT, WALK_AT, WALK_ROUNDS = 60, 90, 150, 10
+    local BAT_AT, FAN_AT, WALK_AT, WALK_ROUNDS = 60, 90, 90, 10
     local WALK_SPEED = 0.5
 
     local st = { dead = false }
     local bats = {}
 
     class.s7b_bat = Class(object, {
-        init = function(self, owner)
+        init = function(self, owner, direction, speed)
             self.group = GROUP.GHOST
             self.layer = LAYER.ENEMY_BULLET_EF
             self.colli = false
@@ -7946,8 +7945,8 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
             self.x, self.y = owner.x, owner.y
             self.rot, self._a = 0, 0
             ---Sub8 的 ins_65(extraFloatV2, extraFloatV3)：方向 rand[0,π)（TH095）、速 rand[0,2)。
-            self._dir = sg_deg(ran:Float(0, math.pi))    -- 我们的角度（度）
-            self._sp = ran:Float(0, 2)
+            self._dir = sg_deg(direction)    -- 我们的角度（度）
+            self._sp = speed
             object.SetV(self, self._sp, self._dir, true)
             task.New(self, function()
                 ---ins_71(0.0666667)：每帧 speed += 1/15，方向不变（加速直线）。
@@ -7988,7 +7987,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
                     for _ = 1, 3 do
                         sg_shot(87, sg_style(4), 2, owner.x, owner.y,
                                 n, 1, 4, 1.5, a, 5.625, false, 514, nil)
-                        a = a + 120
+                        a = (a+120+180)%360-180
                     end
                     task.Wait(4)
                 end
@@ -8006,7 +8005,7 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
                 for _ = 1, FAN6_ROUNDS do
                     local n = PhotoNative.photos_taken(owner) + FAN6_COUNT
                     sg_shot(88, sg_style(12), 1, owner.x, owner.y,
-                            n, 1, 1, 1.5, a, 5.625, true, 514, nil)
+                            n,1,1,1.5,a,5.625,true,514,nil) -- 原88确实叠加当前狙角。
                     task.Wait(60)
                 end
             end
@@ -8039,7 +8038,9 @@ do  -- 61 レミリア 魔符「全世界ナイトメア」（ecl15_a，组 12a 
                 task.Wait(BAT_AT)
                 for _ = 1, BAT_COUNT do
                     if st.dead then return end
-                    bats[#bats + 1] = New(class.s7b_bat, self)
+                    local direction=ran:Float(0,math.pi)
+                    local speed=ran:Float(0,2) -- 原参数在83分配前读取，满池也消费。
+                    bats[#bats+1]=New(class.s7b_bat,self,direction,speed)
                     task.Wait(1)
                 end
             end)
@@ -8134,6 +8135,7 @@ do  -- 62 咲夜 時符「トンネルエフェクト」（ecl14_b，组 11a 第
             local n = 8 + 4 * photo_index(PHOTO_LIMIT)   -- extraIntV0 = (16+8p)/2
             local step = 360 / n                          -- floatV7 = 2π/extraIntV0（度）
             local ang = up and -90 or 90                  -- extraFloatV2 = ∓π/2（TH095，度）
+            if sign<0 then ang=ang-step/2 end -- 原先减π/n，再把步长乘2。
             local R = up and RING_R_UP or RING_R_DOWN     -- extraFloatV3
             task.Wait(80)                                 -- Sub6..9 的 `+80`
             for _ = 1, n do
@@ -8241,16 +8243,16 @@ do  -- 63 レミリア 紅符「ブラッディマジックスクウェア」（
     ---方块的表：前半跑「炸子弹」，后半（slot8/9）是给子弹跑的那一段。
     ---child_ang = ECL 的 floatV0（TH095 弧度）：slot1 的 payload.float0 ⇒ 子弹出厂角
     ---（BulletManager.cpp 的 SPAWN_CHILD：pattern.angle = 第二条记录的 float0）。
-    local function square_recs(dur, ang_delta, child_ang)
+    local function square_recs(dur, ang_delta, child_ang, packed)
         return {
-            sg_rec(SG_CHILD, 0, 0x01010208, 1, 0, 0),    -- slot0：packed/angleStep 已算好
+            sg_rec(SG_CHILD, 0, packed, 1, 0, 0),    -- slot0：packed/angleStep 已算好
             sg_rec(0,       0, 1, CHILD_FLAGS, child_ang, 0), -- slot1：secondary（kind 不重要）
-            sg_rec(SG_POLAR, 0, dur, -1, 0.0333333, ang_delta),
+            sg_rec(SG_POLAR, 0, dur, -1, 0.03333333507180214, ang_delta),
             sg_rec(SG_JUMP,  0, 0, -1, -1, -1),          -- slot3：跳回 slot0
             sg_rec(0, 0, 0, 0, 0, 0), sg_rec(0, 0, 0, 0, 0, 0),
             sg_rec(0, 0, 0, 0, 0, 0), sg_rec(0, 0, 0, 0, 0, 0),
             sg_rec(SG_WAIT,  0, 120, -1, -1, -1),        -- slot8：子弹先定住 120 帧
-            sg_rec(SG_VEC,   0, 240, -1, 0.0083333, -999.99),
+            sg_rec(SG_VEC,   0, 240, -1, 0.008333333767950535, -999.99),
         }
     end
 
@@ -8263,7 +8265,7 @@ do  -- 63 レミリア 紅符「ブラッディマジックスクウェア」（
         local c = ran:Float(-math.pi, math.pi)           -- floatV0 = rand[−π,π)（TH095 弧度）
         for i = 1, 24 do
             local rot = (i <= 12) and 1 or -1            -- 两段 ins_5：+1°/帧、−1°/帧
-            local hook = sg_tr_hook(square_recs(dur, rot, c), SQ_FLAGS)
+            local hook = sg_tr_hook(square_recs(dur,-rot,c,i<=12 and 0x01010208 or 0x01010108), SQ_FLAGS)
             sg_shot(89, sg_style(14), 1, owner.x, owner.y,
                     1, 1, 0.3, 1.5, a, 10.5880, false, SQ_FLAGS, hook)
             a = a + 30
@@ -8284,6 +8286,7 @@ do  -- 63 レミリア 紅符「ブラッディマジックスクウェア」（
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
+            task.Wait(60) -- Sub3先等60帧，再启动第一轮。
             while not st.dead do
                 square_ring(self)
                 task.Wait(120)                            -- t=120（Sub3 的 t=180 相位）
@@ -8370,7 +8373,7 @@ do  -- 64 咲夜 空虚「インフレーションスクウェア」（ecl14_c�
                     if dx * dx + dy * dy >= 64 * 64 then
                         sg_shot(86, sg_style(14), 3, px, py,
                                 1, 1, 1 + 0.2 * photo_index(PHOTO_LIMIT), 1.5,
-                                sg_deg(ran:Float(-math.pi, math.pi)), 36, true, 514, nil)
+                                math.deg(ran:Float(-math.pi,math.pi)),36,true,514,nil)
                     end
                 end
                 task.Wait(1)
@@ -8395,6 +8398,7 @@ do  -- 64 咲夜 空虚「インフレーションスクウェア」（ecl14_c�
             while not st.dead do
                 task.Wait(60)                            -- t=60 ins_117(0,"Sub4")
                 if st.dead then return end
+                sg_bmove(self,st,60,4,1,BOX) -- 原t60与slot0同帧设置运动。
                 phase1(self)                             -- ① 段：30 帧
                 task.Wait(30)                            -- t=90
                 if st.dead then return end
@@ -8478,7 +8482,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
                     local sp = 1 + 0.1 * photo_index(PHOTO_LIMIT)
                     sg_shot(86, sg_style(14), 1, self.x, self.y,
                             1, 1, sp, 1.5,
-                            sg_deg(ran:Float(-math.pi, math.pi)), 36, true, 514, nil)
+                            math.deg(ran:Float(-math.pi,math.pi)),36,true,514,nil)
                     if st.dead then return end
                     gap = 60 - 7 * photo_index(PHOTO_LIMIT) -- 回跳点内每轮重取；总轮数仍取初值。
                     task.Wait(gap)
@@ -8509,7 +8513,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
         task.New(owner, function()
             while not st.dead do
                 local tx = ran:Float(-1, 1) * 64 + player.x
-                local ty = ran:Float(-1, 1) * 64 + player.y
+                local ty=player.y-ran:Float(-1,1)*64
                 bats[#bats + 1] = New(class.s7c_bat, owner, tx, ty)
                 task.Wait(BAT_GAP)
             end
@@ -8532,6 +8536,7 @@ do  -- 65 レミリア 紅蝙蝠「ヴァンピリッシュナイト」（ecl15_
             ---Sub3 的 ins_4(60,-24) 跳回目标是 ins_67（@788），而起 Sub4 的 ins_117(@768)
             ---在跳回目标**之前** ⇒ 蝙蝠发生器只起一次。放进循环里重起会让发生器一帧多个
             ---（自检里 7200 帧堆到 3767 个 object），那是移植错误、不是原作行为。
+            task.Wait(60) -- 原t60替换slot0，从此每10帧生成。
             run_spawner(self)
             while not st.dead do
                 task.Wait(60)
@@ -8621,6 +8626,7 @@ do  -- 66 咲夜 銀符「パーフェクトメイド」（ecl14_d，组 11a 第
     function card:init()
         photo_damage_on(self, PHOTO_LIMIT)
         self.th095_transition_state=st
+        st.th095_transition_box=BOX
         self.x, self.y = BOSS_X, BOSS_START_Y
         st.dead = false
         task.New(self, function()
@@ -8701,7 +8707,7 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
         for _ = 1, 24 do
             spawn_ex_laser(owner, lasers, LASER_ROT, owner.x, owner.y,
                     math.rad(-a_th), 512, 16, 8, 90, 20, 30, 10, 0, 0, 0,
-                    true, false)
+                    true,false,1,2)
             a_th = a_th + 15
             if a_th >= 180 then a_th = a_th - 360 end
         end
@@ -8712,7 +8718,7 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
         local a_th = a0
         for _ = 1, 24 do
             spawn_ex_laser_straight(owner, lasers, LASER_STR, owner.x, owner.y,
-                    math.rad(-a_th), 144, 64, 12)
+                    math.rad(-a_th),144,64,12,12,1)
             a_th = a_th + 15
             if a_th >= 180 then a_th = a_th - 360 end
         end
@@ -8722,8 +8728,8 @@ do  -- 67 レミリア 神鬼「レミリアストーカー」（ecl15_d，组 1
     local function jitter(owner, bx, by, stop)
         task.New(owner, function()
             while not st.dead and not stop.on do
-                owner.x = bx + ran:Float(-1, 1) * 4
-                owner.y = by - ran:Float(-1, 1) * 4      -- TH095 的 y 偏到我们这一侧取反
+                owner.x=max(BOX[1],min(BOX[3],bx+ran:Float(-1,1)*4))
+                owner.y=max(field_y(BOX[4]),min(field_y(BOX[2]),by-ran:Float(-1,1)*4))      -- TH095 的 y 偏到我们这一侧取反
                 task.Wait(1)
             end
         end)
