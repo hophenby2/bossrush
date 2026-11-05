@@ -93134,7 +93134,8 @@
           "key": "2main",
           "sub": 68,
           "file": "ecldata2.ecl",
-          "y": 128
+          "y": 128,
+          "difficulty": 1
         }
       },
       "t1": 0,
@@ -94420,7 +94421,8 @@
             4,
             192,
             112
-          ]
+          ],
+          "difficulty": 1
         }
       },
       "t1": 120,
@@ -94690,7 +94692,8 @@
           "key": "2main",
           "sub": 70,
           "file": "ecldata2.ecl",
-          "y": 128
+          "y": 128,
+          "difficulty": 2
         }
       },
       "t1": 0,

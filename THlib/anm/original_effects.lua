@@ -157,9 +157,10 @@ F.effect=Class(object,{
 -- TH08 ExIns1/10/17：ScreenEffect::CalcArcadePulse，保留时长、次数和原ARGB透明度。
 -- 原calc优先级3在敌机11之前；出生帧尚未计算alpha，下一帧从255开始。
 F.screen_pulse=Class(object,{
-    init=function(o,phase,duration,repeats,alpha)
+    init=function(o,phase,duration,repeats,alpha,color)
         o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.TOP-.5,false,false
         o.phase,o.age,o.alpha=phase,0,0
+        o.pulse_color=color or {255,255,255}
         o.duration,o.repeats,o.maximum=duration or 60,repeats or 1,alpha or 255
         o.born=stage.current_stage.timer
         F.objects[#F.objects+1]=o
@@ -175,7 +176,7 @@ F.screen_pulse=Class(object,{
     end,
     render=function(o)
         SetViewMode('world')
-        SetImageState('white','',o.alpha,255,255,255)
+        SetImageState('white','',o.alpha,o.pulse_color[1],o.pulse_color[2],o.pulse_color[3])
         local w,p=lstg.world,lstg.worldoffset
         local hw,hh=(w.r-w.l)/p.hscale/2,(w.t-w.b)/p.vscale/2
         local x,y=p.centerx+p.dx/p.hscale,p.centery+p.dy/p.vscale

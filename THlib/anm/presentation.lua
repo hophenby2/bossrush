@@ -4,6 +4,14 @@ local T={shared={[8]={},[95]={}},carriers={},managed={},ambients={}}
 local data=dofile('mod/GAME/original/presentation_programs.lua')
 local F=dofile('THlib/anm/original_effects.lua')
 T.sound=dofile('THlib/anm/original_sounds.lua')
+function T.native_pulse(owner,duration,repeats,argb)
+    local alpha=math.floor(argb/0x1000000)%256
+    local r,g,b=math.floor(argb/0x10000)%256,math.floor(argb/0x100)%256,argb%256
+    return New(F.screen_pulse,owner,duration,repeats,alpha,{r,g,b})
+end
+function T.native_shake(owner,duration,amplitude)
+    F.shake_envelope(owner,amplitude,0,duration,0)
+end
 local bit=bit or require('bit')
 local function trunc(n) return n>=0 and math.floor(n) or math.ceil(n) end
 local function copy(v) local r={};for k,n in pairs(v or {}) do r[k]=n end;return r end

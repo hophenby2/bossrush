@@ -1204,7 +1204,7 @@ end
 local function cmdbullet_update(self)
     local list = self.c_list
     for rank = 0, 5 do
-        for i = 1, #list do
+        for i=1,max(#list,self.c_active_count or 0) do
             local st = self.cs[i]
             if st and not st.finished and CMD_RANK[st.type] == rank then
                 cmdsub_run(self, st)
@@ -5892,16 +5892,17 @@ class.th07_motion_source = {
     [4465] = { entry_box={32,48,352,128}, key="2main", file="ecldata2.ecl", sub=53, y=128, box={32,48,352,128} },
     [4466] = { key="2main", file="ecldata2.ecl", sub=64, y=128, box={32,48,352,128}, move={120,4,336,112} },
     [4467] = { key="2main", file="ecldata2.ecl", sub=66, y=128, box={32,48,352,128}, move={120,4,336,112} },
-    [4468] = { key="2main", file="ecldata2.ecl", sub=68, y=128 },
+    [4468] = { difficulty=1, key="2main", file="ecldata2.ecl", sub=68, y=128 },
     [4469] = { key="2main", file="ecldata2.ecl", sub=75, y=128 },
-    [4470] = { key="2main", file="ecldata2.ecl", sub=44, y=128, box={32,48,352,128}, move={120,4,192,112} },
-    [4471] = { key="2main", file="ecldata2.ecl", sub=70, y=128 },
+    [4470] = { difficulty=1, key="2main", file="ecldata2.ecl", sub=44, y=128, box={32,48,352,128}, move={120,4,192,112} },
+    [4471] = { difficulty=2, key="2main", file="ecldata2.ecl", sub=70, y=128 },
     [4472] = { key="3main", file="ecldata3.ecl", sub=50, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4473] = { key="3main", file="ecldata3.ecl", sub=52, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4475] = { key="4lunasa", file="ecldata4.ecl", sub=127, y=128, box={32,48,352,128}, move={120,4,192,80} },
     [4476] = { key="4lunasa", file="ecldata4.ecl", sub=132, y=128, box={32,48,352,128} },
 }
 function class.th07_motion_begin(self, id, move)
+    class.th07_spell_active=self.current_card and self.current_card.is_sc or false
     TH34Prism.begin(self, id)
     -- 上一张卡关闭体术时会放入NONTJT；新卡恢复原作默认，再由本卡协程改变。
     self.group = GROUP.ENEMY
@@ -9560,7 +9561,11 @@ local function TH34_add_stage56_boss()
     ---  · (ox, oy)——炸开位置相对 boss 的偏移（**我们的坐标**，y 已翻转过）；
     ---  · cmd——INIT_BULLET_CMD 的指令串，交给 class["TH34_cmdbullet"] 逐帧模拟。
     local function shoot6(self, ox, oy, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
-        local style, col = th07_style(spr), th07_color(off, spr)
+        local style,col=th07_style(spr),th07_color(off,spr)
+        if not class.th07_spell_active then
+            if v1~=0 then v1=max(.3,v1) end
+            v2=max(.3,v2)
+        end
         local total, room, i = c1 * c2, POOL4_SIZE - pool4_used(), 1
         if _G.__DBG4 then print('ROOM4\t'..tostring(_G.__frame)..'\t'..tostring(total)..'\t'..tostring(room)) end
         ---SPREAD_AIMED / RING_AIMED 的瞄准角取的是**出膛点**（原作
@@ -9599,6 +9604,72 @@ local function TH34_add_stage56_boss()
         end
         if plays then sound4(self) end
         return made
+    end
+    local function native_bullets(fn)
+        for slot=1,1024 do
+            local b=class.th07_slots and class.th07_slots[slot]
+            if b and IsValid(b) and b.status~='del' and b.status~='kill'
+                and not b.th07_cut_removed and not b._native_death_effect then fn(b) end
+        end
+    end
+    function class.th07_ecl_curve(owner,mode,difficulty)
+        OriginalStageVisual.presentation.native_shake(owner,30,12)
+        OriginalStageVisual.presentation.native_pulse(owner,4,3,0x80ffcfcf)
+        native_bullets(function(b)
+            local color=b.th07_color or b._native_color
+            local vm=b._native_anm
+            if not vm or not vm.sprite or (b.th07_special_state or 0)~=0 then return end
+            if mode==1 and color~=8 or mode==2 and color~=4 then return end
+            if color~=2 and color~=4 and color~=6 and color~=8 then return end
+            local angle=math.pi/(ran:Float(0,60)+180)
+            if color==2 or color==4 then angle=-angle end
+            local old=b.c_type or 0
+            if not b.cs then
+                b.cs={}
+                if old~=0 then
+                    b.cs[2]={type=old,dur=b.c_dur,loop=b.c_loop,angle=b.c_angle,speed=b.c_speed,
+                        timer=b.c_timer,done=b.c_done or 0,ax=b.c_vx,ay=b.c_vy}
+                    b.c_exf,b.c_active_count=old,2
+                else b.c_exf=0 end
+            else b.c_active_count=max(b.c_active_count or 0,#(b.c_list or {})) end
+            b.spd,b.c_spd=.3,.3
+            local level=difficulty or 3
+            b.c_list={{type=0x20,flag=0,dur=level<3 and 60 or 240,loop=-1,
+                angle=-angle*RAD2DEG,speed=level<3 and 1/60 or 1/190}}
+            b.c_flags=b.c_flags or 0
+            if not cmdbullet_hasbit(b.c_flags,0x20) then b.c_flags=b.c_flags+0x20 end
+            b.c_cur,b.c_type,b.th07_special_state=1,0,1
+        end)
+    end
+    function class.th07_ecl_transform(owner,mode)
+        if mode==0 then
+            OriginalStageVisual.presentation.native_shake(owner,32,12)
+            OriginalStageVisual.presentation.native_pulse(owner,4,1,0x80cfcfff)
+        end
+        local radius=({128,192,256,999})[mode+1]
+        native_bullets(function(b)
+            if (b.th07_color or b._native_color)~=2 or not b._native_anm or not b._native_anm.sprite
+                or Dist(owner.x,owner.y,b.x,b.y)>=radius then return end
+            local acceleration=ran:Float(0,.005)+.013 -- 先于SpawnBulletPattern，即使满池也读取。
+            for _=1,2 do
+                if pool4_used()>=POOL4_SIZE then break end
+                local angle=-math.pi+ran:Float(0,math.pi)
+                local o=New(class.TH34_cmdbullet,th07_style(0),th07_color(6,0),b.x,b.y,.7,
+                    -angle*RAD2DEG,cmds4(18,{type=0x10,flag=0,dur=180,loop=-1,
+                        speed=acceleration,accel_angle=-90,angle=math.pi/2}))
+                o.th07_sprite,o.th07_color=0,6;pool4[#pool4+1]=o
+            end
+            b.th07_cut_removed=true
+            OriginalBulletVisual.retire(b) -- 原Initialize立即释放，后续扫描不能再次转换。
+        end)
+    end
+    local function chen_trail(owner)
+        return pspawn(owner.x,owner.y,function(o)
+            NativeVisual.trail(o,'stg2enm',12,64,32,1,16,16)
+            for _=1,100 do o.x,o.y=owner.x,owner.y;task.Wait(1) end
+            NativeVisual.interrupt(o,1)
+            task.Wait(40)
+        end,nil,nil,true)
     end
     ---同上，但 (ax, ay) 是**绝对**坐标（原作 SET_SHOOT_OFFSET x=目标x−posX 的绝对定位用法）。
     local function shoot_abs6(self, ax, ay, op, spr, off, c1, c2, v1, v2, a1_th, a2_th, cmd, plays)
@@ -14638,13 +14709,13 @@ local function TH34_add_stage56_boss()
                 for _, d in ipairs({ 0, 2.0944, -2.0944 }) do
                     for n = 1, 4 do
                         shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.3 - 0.3 * (n - 1), 0.5,
-                               d, 0.261799, accel6(0.0155556, 90), false)
+                               d, 0.261799, cmds4(18,{type=0x10,flag=0,dur=90,loop=-1,speed=0.015555555932223797,angle=-999}), false)
                     end
                 end
                 for _, d in ipairs({ 0.314159, -0.314159 }) do
                     for n = 1, 5 do
                         shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.9 - 0.3 * (n - 1), 0.5,
-                               d, 0.314159, accel6(0.000833333, 120), false)
+                               d, 0.314159, cmds4(18,{type=0x10,flag=0,dur=120,loop=-1,speed=0.0008333333535119891,angle=-999}), false)
                     end
                 end
                 sound4(self)                 -- sub43 里只有第 3 方向 count1=3 那组带 0x200
@@ -14894,7 +14965,7 @@ local function TH34_add_stage56_boss()
                 for _, d in ipairs({ 0, 2.0944, -2.0944 }) do
                     for n = 1, 4 do
                         shoot6(self, 0, 0, 64, 3, 10, n, 1, 1.3 - 0.3 * (n - 1), 0.5,
-                               d, 0.261799, accel6(0.0255556, 90), false)
+                               d, 0.261799, cmds4(18,{type=0x10,flag=0,dur=90,loop=-1,speed=0.025555554777383804,angle=-999}), false)
                     end
                 end
                 sound4(self)
@@ -14955,27 +15026,28 @@ local function TH34_add_stage56_boss()
             ---原作 sub57：a1 基准角、v0 起始速度、col 环的色档（gI0）。
             local function sub57(a1, v0, col)
                 local v = v0
-                fan4(self, self.x, self.y, 6, 6, 1, 1, v, 0.5, a1, 0.392699)
+                fan4(self, self.x, self.y, 6, 6, 1, 1, v, 0.5, a1, 0.392699,cmds4(0))
                 v = v - 0.3
-                fan4(self, self.x, self.y, 6, 2, 2, 1, v, 0.5, a1, 0.392699)
+                fan4(self, self.x, self.y, 6, 2, 2, 1, v, 0.5, a1, 0.392699,cmds4(0))
                 v = v - 0.3
                 ---这一圈原作读的是未初始化的 lf0（恒 0），整圈的相位本就不影响形状。
-                ring4(self, self.x, self.y, 6, col, 16, 2, v, 0.5, 0, 0.1309)
-                fan4(self, self.x, self.y, 6, 6, 3, 1, v, 0.5, a1, 0.392699)
+                ring4(self, self.x, self.y, 6, col, 16, 2, v, 0.5, 0,0.1309,cmds4(0))
+                fan4(self, self.x, self.y, 6, 6, 3, 1, v, 0.5, a1, 0.392699,cmds4(0))
                 v = v - 0.3
-                fan4(self, self.x, self.y, 6, 2, 4, 1, v, 0.5, a1, 0.392699)
+                fan4(self, self.x, self.y, 6, 2, 4, 1, v, 0.5, a1, 0.392699,cmds4(0))
                 v = v - 0.3
-                fan4(self, self.x, self.y, 6, 6, 5, 1, v, 0.5, a1, 0.392699)
+                fan4(self, self.x, self.y, 6, 6, 5, 1, v, 0.5, a1, 0.392699,cmds4(0))
                 sound4(self)        -- 第 5 发的 flags=512（0x200）⇒ 响一声
             end
-            local function pass(ord, v0)
+            local function pass(ord,v0,charge)
                 for i = 1, 5 do
                     local k = ord[i]
                     bmove(self, 10, 4, P[k][1], P[k][2])
                     task.Wait(10)
                     sub57(A[k], v0, G[i])
                 end
-                bmove(self, 50, 4, 0, 96)
+                bmove(self,50,4,0,96)
+                if charge then PlaySound("power0",.35,self.x/256) end
                 task.Wait(50)
             end
             ---原作 SUB_CALL 2（sub56 里 gi0=30 / gi1=4）：音效 + 每 4 帧一发粒子、
@@ -14987,9 +15059,11 @@ local function TH34_add_stage56_boss()
             task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
             while true do
                 sub2()                  -- 原作循环头 f=120 SUB_CALL 2
-                pass({ 1, 2, 3, 4, 5 }, 2.2)
+                chen_trail(self)
+                pass({1,2,3,4,5},2.2)
                 sub2()                  -- 原作 f=340 SUB_CALL 2
-                pass({ 4, 3, 2, 1, 5 }, 1.8)
+                chen_trail(self)
+                pass({4,3,2,1,5},1.8,true)
                 PlaySound("power0", 0.35, self.x / 256)
                                         -- ↑ 原作 t=390 的第三次 SUB_CALL 2（gi0=10 / gi1=8 ⇒ 40 帧）
                 task.Wait(80)           -- 原作 t=400..480（RUN_EX_INS / JUMP 回 t=240）
@@ -15029,9 +15103,9 @@ local function TH34_add_stage56_boss()
             local function sub59(a1, col)
                 for n = 1, 6 do
                     fan4(self, self.x, self.y, 6, col, n, 1, 2.0 - 0.3 * (n - 1), 0.5,
-                         a1, 0.392699)
+                         a1,0.392699,cmds4(8192,{type=0x2000,flag=0,dur=300}))
                 end
-                ring4(self, self.x, self.y, 6, col, 24, 2, 1.5, 0.5, 0, 0.1309)
+                ring4(self, self.x, self.y, 6, col, 24, 2, 1.5, 0.5, 0,0.1309,cmds4(8192,{type=0x2000,flag=0,dur=300}))
                 sound4(self)        -- 第 6 发的 flags=0x2200 带 0x200
             end
             ---原作 sub60/sub61：一对绕本体公转的式神（相位差 π，由 sub58 的
@@ -15040,16 +15114,18 @@ local function TH34_add_stage56_boss()
             local function shiki(av, avb, is61)
                 local cx, cy = self.x, self.y
                 local a0 = ran:Float(-PI, PI)
-                local cmd = spin4(avb, 60)
+                local cmd=cmds4(546,{type=0x20,flag=0,dur=60,loop=-1,speed=0,angle=-avb*RAD2DEG})
                 ---op72 RANDOM：每发随机方向 rand[−π,π) + 随机速度 rand[v2,v1]。
                 ---★原作 op72 逐发抽的随机数顺序是**先角度后速度**（vm 桩件
                 ---`RANDOM` 也是先 frange(a1−a2) 再 frange(v1−v2)）；这里必须同序，
                 ---否则随机流错位。
                 local function rnd(o, n, v1, v2)
                     for _ = 1, n do
-                        local th = rngrad()
-                        local v = ran:Float(v2, v1)
-                        dot4(o.x, o.y, 1, 6, v, th, cmd)
+                        if pool4_used()<POOL4_SIZE then
+                            local th=rngrad()
+                            local v=ran:Float(v2,v1)
+                            dot4(o.x,o.y,1,6,v,th,cmd)
+                        end
                     end
                 end
                 for k = 0, 1 do
@@ -15109,12 +15185,16 @@ local function TH34_add_stage56_boss()
             task.Wait(120)              -- 原作 t=0..120 的 MOVE_POS_TIME 120（enter1b 同帧）
             while true do
                 sub2()                  -- 原作循环头 f=120 SUB_CALL 2
+                chen_trail(self)
                 pass({ 1, 2, 3, 4, 5 }, 8,
                      function() shiki(0.0314159, 0.0261799, false) end)
+                class.th07_ecl_curve(self,1,3)
                 task.Wait(40)           -- 原作 t=340..380 的 RUN_EX_INS 空档
                 sub2()                  -- 原作 t=380 SUB_CALL 2
+                chen_trail(self)
                 pass({ 4, 3, 2, 1, 5 }, 4,
                      function() shiki(-0.0314159, -0.0261799, true) end)
+                class.th07_ecl_curve(self,2,3)
                 task.Wait(70)           -- 原作 t=480..550（RUN_EX_INS / OP0 / JUMP）
             end
         end)
@@ -15194,9 +15274,11 @@ local function TH34_add_stage56_boss()
                               speed = 0.016, accel_angle = -1.5708 * RAD2DEG }
                 for _ = 1, n + 22 do
                     ---★ 原作 sub55 就是 op72 RANDOM：逐发**先抽角、后抽速**（BulletManager.cpp:215-231）。
-                    local th = rngrad()
-                    local v = 0.2 + ran:Float(0, 1.2)
-                    dot4(self.x, self.y, 1, col, v, th, cmds4(531, cmd))
+                    if pool4_used()<POOL4_SIZE then
+                        local th=rngrad()
+                        local v=.3+ran:Float(0,1.1) -- 非符Dispatch先把speed2的.2钳到.3。
+                        dot4(self.x,self.y,1,col,v,th,cmds4(531,cmd))
+                    end
                 end
                 sound4(self)
             end
@@ -15307,7 +15389,11 @@ local function TH34_add_stage56_boss()
                 bmove(self, 60, 0, 0, 112)
                 for _ = 1, 6 do ring(); task.Wait(10) end
                 task.Wait(120)          -- SUB_CALL 2（590..710）
-                task.Wait(112)          -- RUN_EX_INS 之后的空档（710..822）
+                class.th07_ecl_transform(self,0)
+                task.Wait(4);class.th07_ecl_transform(self,1)
+                task.Wait(4);class.th07_ecl_transform(self,2)
+                task.Wait(4);class.th07_ecl_transform(self,3)
+                task.Wait(100)          -- RUN_EX_INS 之后的空档（710..822）
                 bmove(self, 60, 4, -144, 32)
                 task.Wait(60)
                 task.Wait(120)          -- SUB_CALL 2（882..1002）
@@ -15330,7 +15416,11 @@ local function TH34_add_stage56_boss()
                 bmove(self, 60, 0, 0, 112)
                 for _ = 1, 6 do ring(); task.Wait(10) end
                 task.Wait(120)          -- SUB_CALL 2（1352..1472）
-                task.Wait(112)          -- RUN_EX_INS 之后的空档
+                class.th07_ecl_transform(self,0)
+                task.Wait(4);class.th07_ecl_transform(self,1)
+                task.Wait(4);class.th07_ecl_transform(self,2)
+                task.Wait(4);class.th07_ecl_transform(self,3)
+                task.Wait(100)          -- RUN_EX_INS 之后的空档
                 bmove(self, 60, 4, 144, 112)
                 task.Wait(100)          -- 移动 60 帧 + 原作 t=844..884 的 40 帧空档
                                         -- （一个周期 = 1564 帧，解释器实测 label240→label240 = 1444 + 前导 120）
@@ -15604,7 +15694,7 @@ local function TH34_add_stage56_boss()
                 end
                 for _ = 1, 6 do
                     ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309, acc)
-                    base, v = base + 0.261799, v + 0.166667
+                    base,v=base+0.261799,v-0.166667
                 end
             end
             local function gate73(base, col)
@@ -15618,11 +15708,11 @@ local function TH34_add_stage56_boss()
                 ---（近乎静止的弹永不离开场地）⇒ 同屏假性顶到 1024、后面整片波被丢掉。
                 local v = 1.5 + ran:Float(0, 0.5)
                 for _ = 1, 9 do
-                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
+                    ring4(self, self.x, self.y, 6, col, 2, 1, v,.5,base,.1309,cmds4(512))
                     base, v = base + 0.174533, v - 0.111111
                 end
                 for _ = 1, 9 do
-                    ring4(self, self.x, self.y, 6, col, 2, 1, v, 0.5, base, 0.1309)
+                    ring4(self, self.x, self.y, 6, col, 2, 1, v,.5,base,.1309,cmds4(512))
                     base, v = base + 0.174533, v + 0.111111
                 end
             end
@@ -16127,6 +16217,7 @@ local function TH34_add_stage56_boss()
         local function onibi(off, sgn)
             pspawn(self.x, self.y, function(o)
                 OriginalStageVisual.actor(o,7,'stg2enm',12)
+                o._original_hidden=true -- 原132(1)的隐藏、非碰撞发射体。
                 -- sub71/72 的 canDie=0、hasNoCollision=1，显示鬼火但不开放受击/体术。
                 local base = 0
                 while true do
