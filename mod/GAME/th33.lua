@@ -12507,7 +12507,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
     local SUB9_AT = 60                                  -- Sub9 起 Sub10 的时刻
 
     local PAIRS0, STEP0 = 3, 2.09439516                 -- Sub4：3 对、每对 +120°（rad）
-    local PAIRS1, STEP1 = 4, 1.04719758                 -- Sub10：4 对、每对 +60°（rad）
+    local PAIRS1, STEP1 = 6, 1.04719758                 -- Sub10：4 对、每对 +60°（rad）
     local OFF_A, OFF_B = 0.052359879, -0.0392699093     -- floatV7（rad）
     local FIRE_MUL = 1.3                                -- Sub7：floatV7 ×= 1.3
     local DOLL_LIFE = 190                               -- Sub5 的 t=190（ins_52(8) 起退场）
@@ -12616,7 +12616,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
             while not st.dead and g == gen do
                 sub4(owner)
                 task.Wait(MOVE_AT)
-                if st.dead then return end
+                if st.dead or g~=gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
                 task.Wait(PULSE_AT - MOVE_AT)
                 if st.dead or g ~= gen then return end
@@ -12642,7 +12642,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
             task.Wait(SUB9_AT - 30)
             while not st.dead and g == gen do
                 spawn_dolls(owner, PAIRS1, STEP1)
-                task.Wait(MOVE_AT - SUB9_AT)
+                task.Wait(MOVE_AT)
                 if st.dead or g ~= gen then return end
                 sg_bmove(owner, st, MOVE_FRAMES, MOVE_EASE, MOVE_SPEED, BOX)
                 task.Wait(ROUND - MOVE_AT)
@@ -12665,7 +12665,6 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,9) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= 3 then
@@ -12676,6 +12675,7 @@ do  -- 20 アリス 非符（ecl6_a，组 20a 第 1 张）
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -13023,7 +13023,7 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
                     ---   浮点 >、<、≥ 的比较，EclRunLow.inl:357。）
                     if not firing then
                         local thx, thy = self.x, FIELD_HALF_H - self.y
-                        if thx <= FIELD_L or thx >= FIELD_R or thy < FIELD_T then
+                        if thx < FIELD_L or thx >= FIELD_R or thy < FIELD_T then
                             ---② Sub8_164：换成「朝自机」的冲刺（记下此刻的自机角）并起 Sub7。
                             local dash_fast = photo_index(PHOTO_LIMIT) >= PHOTO_SLOW
                             local dash = dash_fast and DASH_SPEED_FAST or DASH_SPEED
@@ -13097,8 +13097,8 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
 
     ---Sub5 / Sub10：一套「5 个方向、每个间隔 gap、共 rounds 轮」的人偶。
     local function spawn_spot_dolls(owner, gap, rounds)
+        local g=gen
         task.New(owner, function()
-            local g = gen
             for _ = 1, rounds do
                 for k = 1, #DIRS5 do
                     if st.dead or g ~= gen then return end
@@ -13167,7 +13167,6 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
         task.New(self, function()
             task.Wait(ENTRY_WAIT)
             task.MoveTo(HOME_X, HOME_Y, ENTRY_TIME, EASE_OUT)
-            sub3(self)
             task.New(self, function()                   -- ins_115(0,3,11) 的监视器
                 while not st.dead do
                     if photo_index(PHOTO_LIMIT) >= SWITCH_AT then
@@ -13178,6 +13177,7 @@ do  -- 24 アリス 呪符「ストロードールカミカゼ」（ecl6_c，组
                     task.Wait(1)
                 end
             end)
+            sub3(self)
         end)
     end
 
@@ -13485,7 +13485,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
                     local a = base + k * BEAM_STEP
                     local ox, oy = sg_off(BEAM_OFF, a)
                     spawn_ex_laser_straight(owner, lasers, BEAM_COLOR_A, owner.x + ox, owner.y + oy,
-                            -math.deg(a), BEAM_LEN, BEAM_WIDTH, speed)
+                            -math.deg(a),BEAM_LEN,BEAM_WIDTH,speed,1,6)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)   -- ins_106
                 task.Wait(PASS_GAP)
@@ -13495,7 +13495,7 @@ do  -- 21 上白沢慧音 光符「アマテラス」（ecl5_a，组 21a 第 1 �
                     local a = base + k * BEAM_STEP
                     local ox, oy = sg_off(BEAM_OFF, a)
                     spawn_ex_laser_straight(owner, lasers, BEAM_COLOR_B, owner.x + ox, owner.y + oy,
-                            -math.deg(a), BEAM_LEN, BEAM_WIDTH, speed)
+                            -math.deg(a),BEAM_LEN,BEAM_WIDTH,speed,1,2)
                 end
                 PlaySound("tan00", 0.1, owner.x / 256, false)
                 speed = speed + SPEED_STEP
@@ -13612,7 +13612,7 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
                 PlaySound("tan00", 0.1, x / 256, false)         -- ins_106(16)
                 ---ins_146 的角 = 原始角 0 + 自机角（EclRunTargetPhoto.inl:21-36）。
                 spawn_ex_laser_straight(owner, lasers, RAIN_ROW, x, y,
-                        -sg_aim(x, y), RAIN_LEN, RAIN_W, RAIN_SPEED)
+                        -sg_aim(x,y),RAIN_LEN,RAIN_W,RAIN_SPEED,1,6)
                 local gap = RAIN_GAP - RAIN_STEP * photo_index(PHOTO_LIMIT)
                 if gap < 1 then gap = 1 end
                 task.Wait(gap)                                  -- ins_2(gap) + ins_4(0,−228)
@@ -13636,7 +13636,6 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
 
     ---Sub3：314 帧一轮（Sub4 常驻，Sub5 在 t=0 与 t=152 各起一轮）。
     local function sub3(owner)
-        sub4(owner)
         task.New(owner, function()
             while not st.dead do
                 sub5(owner)                                     -- @792（t=0）
@@ -13649,6 +13648,7 @@ do  -- 23 上白沢慧音 包符「昭和の雨」（ecl5_b，组 21a 第 2 张�
                 task.Wait(ROUND - MOVE_AT)
             end
         end)
+        sub4(owner)
     end
 
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
@@ -13755,9 +13755,9 @@ do  -- 25 上白沢慧音 葵符「水戸の光圀」（ecl5_c，组 21a 第 3 �
                 while not st.dead do
                     if not IsValid(self) then return end
                     spawn_ex_laser_straight(owner, lasers, ORB_ROW, self.x, self.y, sg_deg(a),
-                            ORB_LEN0 + ORB_LEN_STEP * photo_index(PHOTO_LIMIT), ORB_W, ORB_SPEED)
+                            ORB_LEN0+ORB_LEN_STEP*photo_index(PHOTO_LIMIT),ORB_W,ORB_SPEED,7,2)
                     PlaySound("tan00", 0.1, self.x / 256, false)    -- ins_106(7)
-                    a = a + ORB_TURN
+                    a=a+(dx<0 and ORB_TURN or -ORB_TURN)
                     task.Wait(ORB_FIRE_GAP)
                 end
             end)
@@ -13911,7 +13911,7 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
             spawn_ex_laser(owner, lasers, WHEEL_ROW, owner.x, owner.y, sg_deg(base),
                     WHEEL_LEN, WHEEL_W, WHEEL_SPEED,
                     WHEEL_PHASES[1], WHEEL_PHASES[2], WHEEL_PHASES[3], WHEEL_PHASES[4],
-                    sg_deg(th_av), 0, 0, true, true)
+                    sg_deg(th_av),0,0,true,true,1,2)
             base = base + WHEEL_STEP
         end
     end
@@ -13936,7 +13936,6 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
 
     ---Sub3：520 帧一轮（Sub6 常驻，Sub4/Sub5 各在 t=0 / t=260 放一圈轮盘）。
     local function sub3(owner)
-        sub6(owner)
         task.New(owner, function()
             while not st.dead do
                 wheel(owner, WHEEL_AV)                          -- t=0：逆时针
@@ -13952,6 +13951,7 @@ do  -- 27 上白沢慧音 倭符「邪馬台の国」（ecl5_d，组 21a 第 4 �
                 task.Wait(ROUND - MOVE_AT2)
             end
         end)
+        sub6(owner)
     end
 
     local card = boss.card.New(CARD_NAME, 1, 3, CARD_TIME, CARD_HP)
