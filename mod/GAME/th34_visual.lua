@@ -562,6 +562,7 @@ function N.step_laser(o)
     local t,full=o.pl_t,o.pl_lw
     local fade=o.pl_flags%2==1
     local entered,remove_after=o.pl_state,false
+    o.pl_draw_phase=entered
     o.pl_w=full
     if o.pl_state==0 then
         if fade then o.pl_alpha=math.min(255,t*255/math.max(1,o.pl_tStart))
@@ -614,12 +615,21 @@ function N.render_laser(o)
     local len=o.pl_eOff-o.pl_sOff
     local color=math.max(0,math.min(15,o.pl_color))
     local image='th34_laser'..o.pl_sprite..'_'..color
-    local h=o.pl_sprite%2==0 and 14 or 16
+    local h,w=o.pl_sprite%2==0 and 14 or 16,16
+    if o.pl_sprite==4 then
+        local data=OriginalANM.load(7,'etama')
+        local resource=OriginalANM.sprite_resource({data=data,sprite=96+color})
+        image,w,h=resource.img,resource[4],resource[5]
+    end
+    local phase=o.pl_draw_phase or o.pl_state
+    local fade=o.pl_flags%2==1
+    local rgb=fade and phase~=1 and 0 or 255 -- 原fade分支直接写alpha<<24，RGB为0。
     if len>0 and o.pl_w>0 then
-        SetImageState(image,o.pl_sprite<2 and 'mul+add' or '',o.pl_alpha,255,255,255)
+        SetImageState(image,(o.pl_sprite<2 or o.pl_sprite==4) and 'mul+add' or '',o.pl_alpha,rgb,rgb,rgb)
         local mid=(o.pl_sOff+o.pl_eOff)/2
+        local divisor=(phase==1 or fade) and w or 16
         Render(image,o.pl_x+math.cos(o.pl_ang)*mid,o.pl_y+math.sin(o.pl_ang)*mid,
-            o.rot-90,o.pl_w/16,len/h)
+            o.rot-90,o.pl_w/divisor,len/h)
     end
     if (o.pl_sOff<16 or o.pl_spd==0) and (not o.pl_hide or o.pl_state~=0) then
         local image='th34_orb_'..orb_index[color+1]
