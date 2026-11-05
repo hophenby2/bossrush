@@ -58,7 +58,7 @@ local profiles = {
     ["ecldata4b:46"]={spawns={{92,600,0,0},{92,1000,0,0}},events={{0,77,24,24},{0,160,200},{0,80,16},{0,82,0},{1,81,2}},attached=true,life=function(o,a) return (a[7]==13) and 1000 or 600 end},
     ["ecldata4b:30"]={spawns={{92,6000,0,0},{92,4000,0,0},{92,7000,0,0}},events={{0,77,24,24},{0,160,200},{0,80,16},{0,82,0},{1,81,2}},attached=true,life=function(o,a) return a[7] end},
     ["ecldata4b:52"]={spawns={{92,6000,0,0},{92,10000,0,0}},events={{0,77,24,24},{0,160,200},{0,80,16},{0,82,0},{1,81,2}},attached=true,life=function(o,a) return (a[6]==4 or a[6]==10) and 10000 or 6000 end},
-    ["ecldata4b:33"]={spawns={{92,1000,0,0},{92,3000,0,0},{92,700,0,0}},events={{0,77,24,24},{0,160,200},{0,80,16},{0,82,0},{1,81,2}},attached=true,life=function(o,a,parent,n) if parent and parent.th08_combat_card==450 then return 700 end; return n%2==1 and 1000 or 3000 end},
+    ["ecldata4b:33"]={spawns={{92,1000,0,0},{92,3000,0,0},{92,700,0,0}},events={{0,77,24,24},{0,160,200},{0,80,16},{0,82,0},{1,81,2}},attached=true,life=function(o,a,parent,n) if parent and parent.th08_combat_card==449 then return assert(a[6]) end; if parent and parent.th08_combat_card==450 then return 700 end; return n%2==1 and 1000 or 3000 end},
     ["ecldata4b:65"]={spawns={{91,5000,0,0}},events={{0,77,24,24},{0,160,30},{0,80,18}},attached=true},
     ["ecldata4b:70"]={spawns={{94,500,0,0}},events={{0,77,24,24},{0,160,30},{0,80,16},{0,80,3}},attached=false},
     ["ecldata5:55"]={spawns={{92,3000,56,56},{92,3000,-56,56},{92,8000,56,-56},{92,8000,-56,-56}},events={{0,77,24,24},{0,160,30}},attached=true},

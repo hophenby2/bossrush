@@ -32632,19 +32632,12 @@ local FAM_GUN_FRAME = 120                -- ins_74 / ins_135(0,"Sub20") 都在�
 ---  「第 0 号的 orbitAngle + k·2π/count」当目标，每帧只走 2% 的差。
 local function sync_formation(fams, self_fam)
     ---先摘掉已经死掉的（原作的挂链也是随死随摘）。
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     local first = fams[1]
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -32706,19 +32699,19 @@ local function fire_gun20(fam, k)
     EX.shoot(fam, x, y, {
         op = 99, type = even and 13 or 12, color = c,
         count1 = 1, count2 = 2, speed1 = GUN_SPD1A + RANK_SPD, speed2 = GUN_SPD2 + RANK_SPD2,
-        angle = -oa, step = GUN_STEP, flags = 514,
+        angle = -oa, step = -GUN_STEP, flags = 514,
     })
     ---第 2 发：基准角 = 公转角 + lf3、速 2.1→0.9（+ rank）、旗标 2。
     EX.shoot(fam, x, y, {
         op = 99, type = even and 12 or 13, color = c,
         count1 = 1, count2 = 2, speed1 = GUN_SPD1B + RANK_SPD, speed2 = GUN_SPD2 + RANK_SPD2,
-        angle = -a1, step = GUN_STEP, flags = 2,
+        angle = -a1, step = -GUN_STEP, flags = 2,
     })
     ---第 3 发：基准角 = 公转角 − lf3、速 1.6→0.9（+ rank）、旗标 2。
     EX.shoot(fam, x, y, {
         op = 99, type = even and 13 or 12, color = c,
         count1 = 1, count2 = 2, speed1 = GUN_SPD1C + RANK_SPD, speed2 = GUN_SPD2 + RANK_SPD2,
-        angle = -a2, step = GUN_STEP, flags = 2,
+        angle = -a2, step = -GUN_STEP, flags = 2,
     })
 end
 
@@ -33468,19 +33461,12 @@ local RANK_SPD, RANK_SPD2 = 0.15, 0.075
 ---  delta = 目标 − (自己 orbitAngle + 自己角速度)，每帧只走 2%。
 local function sync_formation(fams, self_fam)
     ---先摘掉已经死掉的（原作的挂链也是随死随摘）。
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     local first = fams[1]
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -33514,7 +33500,7 @@ local function fire_gun23(fam, k)
         color = EX.color(fam.fam_color),
         count1 = GUN_WAYS, count2 = 1,
         speed1 = GUN_SPD + RANK_SPD, speed2 = GUN_SPD2 + RANK_SPD2,
-        angle = -ang, step = GUN_STEP, flags = GUN_FLAGS,
+        angle = -ang, step = -GUN_STEP, flags = GUN_FLAGS,
     })
 end
 
@@ -34340,18 +34326,11 @@ local WAVES = {
 ---每帧的 ex 指令 8 `SynchronizeOrbitingChildFormation`（EclExIns.cpp:444-510）。
 ---  移植版把「同 exI2 组」写死成一张列表（本卡每组 4 只，各自一张）。
 local function sync_formation(fams, self_fam)
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -34361,6 +34340,9 @@ local function sync_formation(fams, self_fam)
     if k ~= 0 then
         local first = fams[1]
         local target = wrap_pi(first.fam_oa + k * 2 * PI / count)
+        if first.fam_li7 ~= self_fam.fam_li7 then
+            target=wrap_pi(target+first.fam_oav)
+        end
         local delta = wrap_pi(self_fam.fam_oa + self_fam.fam_oav)
         delta = target - delta
         if math.abs(delta) > PI then
@@ -34385,7 +34367,7 @@ local function fire_gun29(fam, k)
         op = 99, type = (k % 2 == 0) and 13 or 12, color = EX.color(fam.fam_color),
         count1 = 1, count2 = 1,
         speed1 = SHOT_SPD + RANK_SPD, speed2 = SHOT_SPD2 + RANK_SPD2,
-        angle = -ang, step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = -ang, step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
 end
 
@@ -34497,16 +34479,10 @@ local function card_frame(owner)
                 local f = New(familiar, owner, list, W.ang0, W.angvel, W.radial,
                         W.members[i][1], W.members[i][2], W.anm)
                 list[#list + 1] = f
-                ---★ 原作 `ins_92` 在**父机自己的 RunEcl 里**当场调一次子机的
-                ---  `RunEcl`（EnemyTimeline.cpp:86-95：`SpawnEnemy2` 里
-                ---  `CallEclSub` + `RunEcl(enemy)`），同一帧稍后的敌人扫描
-                ---  （EnemyManagerUpdate.cpp:114-174 的 `for enemyIndex < 480`，
-                ---  刚出生的子机槽位号更大 ⇒ 同一帧还会再跑一遍）
-                ---  ⇒ **出生帧使魔要跑 2 遍**（t=0 与 t=1，含两次 UpdateMovement）。
+                -- 出生ECL由M.actor.ecl_birth执行一次；正常对象扫描再推进t1。
                 ---  移植版手工补上第一遍；引擎的 ObjFrame 每帧会把「当帧新建的
                 ---  对象」也算进来（GameObjectPool.cpp:96-112 的 updateMovementsLegacy，
                 ---  新对象 append 到更新链尾、循环体跑完才读 next），天然就是第二遍。
-                familiar_body(f)
             end
         end
     end
@@ -35162,8 +35138,8 @@ local WANDER_EASE = 4
 ---之后每 **500 帧**一轮、乱走在轮首 +420。
 local WANDER_FIRST, WANDER_PERIOD = 540, 500
 
----rank = 32（非符不豁免，EclDependencies.cpp:743-772；相位由回调拉起 ⇒ 影响量 ∓0.5）。
-local RANK_SPD = 0.5
+---使魔是新建实体，保留出生默认rank影响±0.15；不能继承Boss回调重置后的±0.5。
+local RANK_SPD = 0.15
 local RANK_SPD2 = RANK_SPD / 2
 
 ---「x > upper.x − 96」那条把角度改写成 `π − enemy->movementAngle` —— 用的是**上一段**
@@ -35257,20 +35233,13 @@ local SHOT_FLAGS = 0x202         -- SPAWN_FAST(0x2) | PLAY_SPAWN_SND(0x200)
 ---每帧的 ex 指令 8 SynchronizeOrbitingChildFormation（EclExIns.cpp:444-510）。
 ---  本卡 exI2 恒 0 ⇒ 只有一组。第 k 号的目标 = 第 0 号的 orbitAngle + k·2π/count，
 ---  每帧只走误差的 2%（原作用的是「预测到下一帧的角」再比）。
----  ★ `firstChild->li7 != self->li7` 那一支永不生效 ⇒ 不实现（同卡 447/448）。
+---  首机与当前机的li7不等时先预测首机下一拍轨道角；补机后尤其不能省略。
 local function sync_formation(fams, self_fam)
-    local count = 0
-    for i = 1, #fams do
-        local f = fams[i]
-        if IsValid(f) then
-            count = count + 1
-            fams[count] = f
-        end
-    end
-    for i = #fams, count + 1, -1 do fams[i] = nil end
+    local count = class.th08_combat.actor_count(fams)
     if count == 0 then return end
     for i = 1, count do fams[i].fam_exI1 = i - 1 end
     ---li5 / li6：组员数变了就记一笔（原作给别的脚本读，本卡没人读）。
+    self_fam.fam_li5=0
     if self_fam.fam_li6 ~= count then
         if self_fam.fam_li6 ~= 0 then self_fam.fam_li5 = 1 end
         self_fam.fam_li6 = count
@@ -35280,6 +35249,9 @@ local function sync_formation(fams, self_fam)
     if k ~= 0 then
         local first = fams[1]
         local target = wrap_pi(first.fam_oa + k * 2 * PI / count)
+        if first.fam_li7 ~= self_fam.fam_li7 then
+            target=wrap_pi(target+first.fam_oav)
+        end
         local delta = wrap_pi(self_fam.fam_oa + self_fam.fam_oav)
         delta = target - delta
         if math.abs(delta) > PI then
@@ -35298,7 +35270,7 @@ local function fire_gun32(fam, k)
         op = 99, type = btype, color = EX.color(fam.fam_color),
         count1 = 1, count2 = 1,
         speed1 = SHOT_SPEED1, speed2 = SHOT_SPEED2,
-        angle = -ang, step = SHOT_STEP, flags = SHOT_FLAGS,
+        angle = -ang, step = -SHOT_STEP, flags = SHOT_FLAGS,
     })
 end
 
@@ -35381,15 +35353,11 @@ local familiar = class.th08_combat.actor("ecldata4b:33", {
     end,
 })
 
-local function spawn_familiar(owner, ang0, color)
+local function spawn_familiar(owner, ang0, color, life)
     local list = owner.c449_fams
-    local f = New(familiar, owner, list, ang0, FAM_ANGVEL, color)
+    local f = New(familiar, owner, list, ang0, FAM_ANGVEL, color, life)
     list[#list + 1] = f
-    ---★ 原作 `ins_92` 在**父机自己的 RunEcl 里**当场调一次子机的 RunEcl
-    ---  （EnemyTimeline.cpp:86-95），同一帧稍后的敌人扫描还会再跑一遍
-    ---  ⇒ 出生帧使魔要跑 2 遍（t=0 与 t=1，各含一次 UpdateMovement）。
-    ---  移植版手工补第一遍；第二遍由引擎「新对象 append 到更新链尾」天然完成。
-    familiar_body(f)
+    -- 出生ECL由M.actor.ecl_birth执行一次；正常对象扫描再推进t1。
 end
 
 local function card_init(owner)
@@ -35414,7 +35382,7 @@ local function card_frame(owner)
     if t == FAM_SPAWN_FRAME then
         local ang = FAM_ANG0
         for i = 1, #FAM_COLORS do
-            spawn_familiar(owner, ang, FAM_COLORS[i])
+            spawn_familiar(owner, ang, FAM_COLORS[i],i%2==1 and 1000 or 3000)
             ang = wrap_pi(ang + FAM_STEP)
         end
         ---末尾 `ins_135(0, "Sub34")`：子 context 在同一帧就跑 t=0（见下面 ②）。
@@ -35425,7 +35393,7 @@ local function card_frame(owner)
     if e >= 0 and e % EXTRA_PERIOD == 0 then
         local idx = (e / EXTRA_PERIOD) % #EXTRA_COLORS + 1
         if class.th08_combat.actor_count(owner.c449_fams) < CHAIN_CAP then
-            spawn_familiar(owner, EXTRA_ANG0, EXTRA_COLORS[idx])
+            spawn_familiar(owner, EXTRA_ANG0, EXTRA_COLORS[idx],700)
         end
     end
 
