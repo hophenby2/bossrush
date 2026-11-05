@@ -51143,7 +51143,7 @@ end
 ---  ★ 难度闸：判据是 `d & D == D`（D 含 bit3 = Lunatic，EclRun.cpp:69-73）
 ---    ⇒ 只跑 d ∈ {0xff, 0xfe, 0xfc, 0xf8}；本卡每处只取 **0xff / 0xf8** 两条
 ---    （0xf1/0xf2/0xf4 的专有行整条跳过；Sub9/11/13/14 的「间隔」也是取 0xf8 那条）。
----  ★ 时间轴 t=1 的 Sub16 是开场烟尘（差异 2 跳过），t=4870 起是中 BOSS
+---  ★ 时间轴 t=1 的 Sub16 是跨阶段存活的开场烟尘，t=4870 起是中 BOSS
 ---    ⇒ 合并 Timeline1 后共 293 条（含开场烟尘）；事件等待后最后出场为 5025，
 ---       中 BOSS 宿主的实际出场帧为 5225，时限精确取 5225/60 秒。
 ---
@@ -51686,6 +51686,7 @@ unit = class.th08_combat.unit({
     ---击破：掉道具 + 一声击破音。`kill` 是在对象被引擎回收那一下调的，
     ---所以 RawDel 走的（出屏 / 卡结束）不掉道具，与原作一致。
     kill = function(self)
+        if self.sub==7 or self.sub==11 then SUPP.v=0 end -- 原作死亡回调Sub0。
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
         if self.drop_counts then item.Dropitem_PFP(self.x, self.y, self.drop_counts) end
         PlaySound('enep00', 0.3, self.x / 200, true)
@@ -51713,6 +51714,10 @@ local function u_step(u)
 
     ---④ UpdateMovement。
     u_move_update(u)
+    u_shot_tick(u) -- UpdateShotAndAnm在IntegrateVelocity之前。
+    if (u.sub==5 or u.sub==12 or u.sub==15) and u._original_actor then
+        u._original_actor.vm.rotation[3]=-u.ma
+    end
     ---⑤ IntegrateVelocity（mirrorMovementX 只翻 x）。
     if u.mirror then
         u.lx = u.lx - EX.fm * u.vex
@@ -51730,7 +51735,6 @@ local function u_step(u)
     enemybase.frame(u)
     if u.hp <= 0 and not u._original_no_death then u.alive = false return end
     ---⑧ UpdateShotAndAnm 的间隔段。
-    u_shot_tick(u)
     ---⑨ 出屏回收（EnemyManagerUpdate.cpp:223-266）：先记「进过场」，之后出屏就收。
     if not u.seen then
         if in_field(u,u.wx,u.wy,true) then u.seen = true end
@@ -51748,7 +51752,7 @@ local SUB1 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 2,
-                   speed1 = 3, speed2 = 1.2, angle = 0, step = 0.184799567,
+                   speed1 = 3, speed2 = 1.2, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u_interval(u, 50, true)
@@ -51771,7 +51775,7 @@ local SUB2 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 2,
-                   speed1 = 2.7, speed2 = 1, angle = 0, step = 0.184799567,
+                   speed1 = 2.7, speed2 = 1, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u_set_dir_speed(u, 0, 4.5)
@@ -51794,7 +51798,7 @@ local SUB3 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 10, count1 = 1, count2 = 2,
-                   speed1 = 2.6, speed2 = 1.5, angle = 0, step = 0.184799567,
+                   speed1 = 2.6, speed2 = 1.5, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u_interval(u, 30, true)
@@ -51817,7 +51821,7 @@ local SUB4 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 1,
-                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = 0.184799567,
+                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u_interval(u, 50, true)
@@ -51828,7 +51832,7 @@ local SUB4 = {
     { 55, function(u) spawn_fam_offset(u, 5, 100, -2) end },
     { 75, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 7,
-                   speed1 = 4, speed2 = 1, angle = 0, step = 0.165347,
+                   speed1 = 4, speed2 = 1, angle = 0, step = -0.165347,
                    flags = 0x202 })
         shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 2,
                    speed1 = 3, speed2 = 0.5, angle = 0, step = 0,
@@ -51860,7 +51864,7 @@ local SUB6 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 96, type = 1, color = 2, count1 = 1, count2 = 1,
-                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = 0.184799567,
+                   speed1 = 1.7, speed2 = 0.5, angle = 0, step = -0.184799567,
                    flags = 0x203 })
         u.defer = false
         u_interval(u, 50, true)
@@ -51871,7 +51875,7 @@ local SUB6 = {
     { 55, function(u) spawn_fam_offset(u, 5, 100, -2) end },
     { 75, function(u)
         shoot(u, { op = 96, type = 1, color = 2, count1 = 3, count2 = 7,
-                   speed1 = 4, speed2 = 1, angle = 0, step = 0.165347,
+                   speed1 = 4, speed2 = 1, angle = 0, step = -0.165347,
                    flags = 0x202 })
         shoot(u, { op = 98, type = 2, color = 2, count1 = 32, count2 = 2,
                    speed1 = 3, speed2 = 0.5, angle = 0, step = 0,
@@ -51920,10 +51924,10 @@ do
     local function add(t, fn) s[#s + 1] = { t, fn } end
     add(0, function(u) u.exi0 = 24 end)                      ---#0
     local head = #s + 1                                        ---#1（循环头）
-    add(0, function(u) u.li0 = 5 - u.depth end)                ---#1 INT_SUB2 li0 5 depth
+    add(0, function(u) u.li0 = 5 - class.th08_combat.actor_count(u.th08_children or {}) end)                ---#1 INT_SUB2 li0 5 depth
     add(0, function(u)                                         ---#4（0xf8 行）
         shoot(u, { op = 96, type = 2, color = 6, count1 = u.li0, count2 = 3,
-                   speed1 = 2.8, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   speed1 = 2.8, speed2 = 0.5, angle = 0, step = -0.09817477,
                    flags = 0x203 })
     end)
     add(32, function() return { t = 0, pc = head } end)        ---#5 JUMP 0 −156
@@ -51948,7 +51952,7 @@ do
     end)
     add(0, function(u)                                         ---#11（0xf8 行）
         shoot(u, { op = 96, type = 3, color = 6, count1 = 5, count2 = 3,
-                   speed1 = 3.2, speed2 = 0.5, angle = 0, step = 0.448799,
+                   speed1 = 3.2, speed2 = 0.5, angle = 0, step = -0.448799,
                    flags = 0x203 })
     end)
     add(0, function(u, c) c.stall = u.li0 end)                 ---#12 SET_SECONDARY_TIME li0
@@ -51981,7 +51985,7 @@ local SUB11 = {
         SUPP.v = 1
         u.defer = true
         shoot(u, { op = 96, type = 6, color = 6, count1 = 2, count2 = 3,
-                   speed1 = 4, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   speed1 = 4, speed2 = 0.5, angle = 0, step = -0.09817477,
                    flags = 0x202 })
         u.defer = false
         u_interval(u, 10, false)
@@ -51993,7 +51997,7 @@ local SUB11 = {
     { 130, function(u)
         spawn_fam_offset(u, 12, 100, 1)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 5,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1308997,
                    flags = 0x202 })
     end },
     { 150, function(u) spawn_fam_offset(u, 12, 100, 1) end },
@@ -52001,7 +52005,7 @@ local SUB11 = {
     { 190, function(u)
         spawn_fam_offset(u, 12, 100, 1)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 3, count2 = 5,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1308997,
                    flags = 0x202 })
         SUPP.v = 0
     end },
@@ -52015,7 +52019,7 @@ local SUB11 = {
 ---Sub12（Sub11 的使魔 life 100）：朝自机 ±0.1963495 起 0.5 + 加速 0.05；t=1 开碰撞。
 local SUB12 = {
     { 0, function(u)
-        u.lf1 = ran:Float(-1, 1) * 0.1963495
+        u.lf1 = -ran:Float(-1, 1) * 0.19634955
         u.lf0 = add_norm(aim_at(u.wx, u.wy) + u.lf1)
         u_set_dir_speed(u, u.lf0, 0.5)
         u_set_accel(u, 0.05)
@@ -52031,7 +52035,7 @@ local SUB13 = {
     { 0, function(u)
         u.defer = true
         shoot(u, { op = 98, type = 6, color = 2, count1 = 32, count2 = 1,
-                   speed1 = 2.3, speed2 = 0.5, angle = 0, step = 0.09817477,
+                   speed1 = 2.3, speed2 = 0.5, angle = 0, step = -0.09817477,
                    flags = 0x2 })
         u.defer = false
         u_interval(u, 30, false)
@@ -52039,7 +52043,7 @@ local SUB13 = {
     end },
     { 80, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 2, count2 = 8,
-                   speed1 = 1.8, speed2 = 0.5, angle = 0, step = 0.1308997,
+                   speed1 = 1.8, speed2 = 0.5, angle = 0, step = -0.1308997,
                    flags = 0x202 })
     end },
     { 160, function(u)
@@ -52056,17 +52060,17 @@ local SUB13 = {
     end },
     { 190, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     { 210, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     { 230, function(u)
         shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     ---#47 SET_DIR_AND_SPEED(-1.570796, 1.7)：原作向上 ⇒ 我们 +π/2。
@@ -52100,17 +52104,17 @@ local SUB14 = {
     end },
     { 110, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     { 130, function(u)
         shoot(u, { op = 96, type = 1, color = 6, count1 = 5, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     { 150, function(u)
         shoot(u, { op = 98, type = 2, color = 6, count1 = 32, count2 = 1,
-                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = 0.1963495,
+                   speed1 = 2.4, speed2 = 0.5, angle = 0, step = -0.1963495,
                    flags = 0x202 })
     end },
     ---#44 SET_DIR_AND_SPEED(-1.570796, 1.7)：原作向上 ⇒ 我们 +π/2。
@@ -52468,6 +52472,7 @@ local function card_frame(owner)
         local e = TIMELINE[owner.tl_i]
         owner.tl_i = owner.tl_i + 1
         if e[2] == 16 then
+            OriginalStageVisual.presentation.ambient_start(8,"ecldata2","ecldata2:16",e[3],e[4])
             ---差异 2：Sub16 是开场烟尘。
         elseif SUPP.v == 0 then
             ---op2 用随机 x；其余用表里的 x。
