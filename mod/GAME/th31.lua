@@ -44658,11 +44658,13 @@ local FAN_SPECS = {
 local function fan_volley(owner, base_th, turn_th)
     for i = 1, #FAN_SPECS do
         local sp = FAN_SPECS[i]
-        EX.set_record(owner, 0, EX.K.REL, 0, sp[1], 1, our(turn_th), sp[2])
+        local delay,initial=sp[1],sp[3]
+        if turn_th<0 and i==5 then delay,initial=60,1.6 end
+        EX.set_record(owner, 0, EX.K.REL, 0, delay, 1, our(turn_th), sp[2])
         shoot(owner, owner.x, owner.y, {
-            op = 96, type = FAN_TYPE, color = FAN_COLOR,
+            op = 96, type = FAN_TYPE, color = turn_th<0 and EX.color(8) or FAN_COLOR,
             count1 = FAN_COUNT, count2 = 1,
-            speed1 = sp[3] + RANK_SPD, speed2 = FAN_S2 + RANK_SPD2,
+            speed1 = initial + RANK_SPD, speed2 = FAN_S2 + RANK_SPD2,
             angle = our(base_th), step = our(FAN_STEP_TH), flags = FAN_FLAGS,
         })
     end
@@ -44762,7 +44764,7 @@ local function fam_step(fam)
         ---`ins_74 SET_ORBIT_VELOCITIES(6000, ω, 0)` + `ins_106 SET_SHOOT_INTERVAL_DELAYED`。
         fam.c470_radvel = 0
         fam.c470_armed = true
-        fam.c470_iv = math.floor(ran:Float(0, FAM_SHOT_FRAMES))
+        fam.c470_iv = ran:Int(0,FAM_SHOT_FRAMES-1)
     end
     ---UpdateMovement（EnemyManager.cpp:47-53 的 ORBIT 支）。
     fam.c470_r = fam.c470_r + fam.c470_radvel
@@ -44806,6 +44808,7 @@ local FAM_OMEGA_A, FAM_OMEGA_B = 0.02617994, -0.02617994
 ---------------------------------------------------------------------
 local SUB16 = {
     { 0, function(owner, s)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
         s.fan_ang = ran:Float(-PI, PI) * 0.04 - PI / 2
         fan_volley(owner, s.fan_ang, PI / 2)
     end },
@@ -44829,6 +44832,7 @@ local SUB16 = {
         s.fam_radvel = 64
     end },
     { 600, function(owner, s)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
         for i = 1, 4 do
             s.fams[#s.fams + 1] = new_familiar(owner, FAN_DIRS[i], FAM_OMEGA_A,
                     s.fam_radvel, 6)
@@ -44857,6 +44861,8 @@ local function sub16_step(owner)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
+    OriginalStageVisual.source_event(owner,8,"ecldata1",{0,59,0})
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -44890,21 +44896,21 @@ local function card_frame(owner)
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
 
     ---④ 使魔（BOSS 之后才轮到它们）：ECL → 位移 → 延迟出弹。
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
+    class.th08_combat.step_actors(s.fams,function(fam)
         if IsValid(fam) then
             fam_step(fam)
             if class.th08_combat.actor_outside(fam) then
                 object.RawDel(fam)
-                table.remove(s.fams, i)
+
             end
         else
-            table.remove(s.fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c470_main
     if s and s.fams then
         for i = 1, #s.fams do
@@ -45416,8 +45422,8 @@ local function rnd_unit() return ran:Float(0, 1) end
 ---`SET_FLOAT_RNDSIGN`（EclRunLow.inl:257-262）：`(GetRandomU16() & 1 ? 1 : -1) * v`。
 local function rnd_sign() return ran:Int(0, 1) == 0 and -1 or 1 end
 
----非符 ⇒ 出弹叠 rank 缩放（rank 固定 32；相位由回调拉起 ⇒ 影响量 ∓0.5 ⇒ +0.5 / +0.25）。
-local RANK_SPD, RANK_SPD2 = 0.5, 0.25
+---Sub25是时间轴新建宿主，本卡是其首阶段；Boss和新使魔均保留出生默认rank影响±0.15。
+local RANK_SPD, RANK_SPD2 = 0.15, 0.075
 
 ---插值位移的一步（EnemyManager.cpp:84-121 的 INTERPOLATED 支；同卡 470/471）。
 local function move_step(move)
@@ -45527,9 +45533,11 @@ end
 ---Sub28：使魔生成助手（`CALL 28`）。cF0..cF3 = 调用前写好的 sF0..sF3。
 ---------------------------------------------------------------------
 local fam_cls
+local function new_familiar(...) return New(fam_cls,...) end
 
 local SUB28 = {
     { 0, nil, function(owner, s, c)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
         local a = c.args
         s.fams[#s.fams + 1] = new_familiar(owner, a[1], a[2], a[3], a[4])
     end },
@@ -45665,13 +45673,20 @@ local FAM_ROWS = {
 }
 local FAM_X = { 96, 160, 224, 288 }             -- TH08 目标 x
 ---目标 y = `ins_27 rndUnit 48` + `ins_26 192`。
-local function fam_target_y() return rnd_unit() * 48 + 192 end
+local function fam_target_y()
+    rnd_unit() -- Sub26还读取一次随后不使用的lf0 = rndUnit*128+128。
+    return rnd_unit() * 48 + 192
+end
 
 SUB26 = {
     ---★ 用 "call" 而不是「自己写 s.call」：CALL 是**当帧**进入子程序的
     ---  （RunEcl 的 `goto restart_context`），自己赋值会白白晚一帧。
+    { 60, nil, function(owner) OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62}) end },
     { 60, "call", SUB27 },
-    { 180, nil, function(owner, s) begin_wander(owner, s, 60, 4, 1.5) end },
+    { 180, nil, function(owner, s)
+        begin_wander(owner,s,60,4,1.5)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
+    end },
     { 240, nil, function(owner, s, c)
         c.args = { FAM_ROWS[1][1], FAM_ROWS[1][2], FAM_X[1], fam_target_y() }
     end },
@@ -45832,6 +45847,8 @@ end
 ---卡片本体。
 ---------------------------------------------------------------------
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
+    OriginalStageVisual.source_event(owner,8,"ecldata1",{0,59,0})
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -45870,22 +45887,22 @@ local function card_frame(owner)
     if owner.y < BW_B then owner.y = BW_B elseif owner.y > BW_T then owner.y = BW_T end
 
     ---③ 使魔。
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
+    class.th08_combat.step_actors(s.fams,function(fam)
         if IsValid(fam) then
             if fam.c472_t >= FAM_TERMINATE then
                 object.RawDel(fam)
-                table.remove(s.fams, i)
+
             else
                 fam_step(fam)
             end
         else
-            table.remove(s.fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c472_main
     if s and s.fams then
         for i = 1, #s.fams do
@@ -46107,7 +46124,7 @@ fam_cls = class.th08_combat.actor("ecldata1:36", {
         self.c473_ix = { p0 = boss.x, p1 = boss.x + math.cos(ang) * dist,
                          p2 = rnd_sign() * 40, p3 = rnd_sign() * 40 }
         self.c473_iy = { p0 = boss.y, p1 = boss.y + math.sin(ang) * dist,
-                         p2 = rnd_sign() * 40, p3 = rnd_sign() * 40 }
+                         p2 = -rnd_sign() * 40, p3 = -rnd_sign() * 40 }
         self.x, self.y = boss.x, boss.y
         self.group, self.layer = GROUP.INDES, LAYER.ENEMY
         self.img = "servant"
@@ -46132,8 +46149,8 @@ local function fam_gun_fire(fam)
     EX.shoot(fam, fam.x + ox, fam.y - oy, {
         op = 104, type = GUN_TYPE, color = GUN_COLOR,
         count1 = GUN_COUNT, count2 = 1,
-        speed1 = GUN_SPEED + RANK_SPD, speed2 = 0.5 + RANK_SPD2,
-        angle = -PI, step = PI, flags = 0x209,
+        speed1 = GUN_SPEED + 0.15, speed2 = 0.5 + 0.075,
+        angle = PI, step = -PI, flags = 0x209,
     })
 end
 
@@ -46202,23 +46219,28 @@ local SUB33 = {
         ---`#17 SET_CHILD_ECL 0 34`：只在第一次挂；回跳目标是 `#18`，不含这里。
         s.ring_on = true
         if not s.lf_init then
+            OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
             s.lf_init = true
             s.lf7, s.lf6 = PI / 2, PI / 5      -- `#15` lf7 = π/2、`#16` lf6 = lf7/2.5
         end
         spawn_triple(owner, s, 192, 180)
     end },
     { 190, function(owner, s) begin_wander(owner, s, 80, 4, 1.0) end },
-    { 310, function(owner, s) spawn_triple(owner, s, 160, 150) end },
+    { 310, function(owner, s)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
+        spawn_triple(owner,s,160,150)
+    end },
     { 430, function(owner, s) begin_wander(owner, s, 80, 4, 1.0) end },
     { 550, function(owner, s)
+        OriginalStageVisual.source_event(owner,8,"ecldata1",{0,62})
         ---`#42 cF0 = angToPl + lf7`、`#43 exI0 = 6`、`#44 生`、`#45 cF0 −= lf6`，
         ---`#46 JUMP_DEC`（t=560、回到 #44、time 回 550）⇒ 每 10 帧一只。
         s.rep_left = 6
         s.rep_ang = -aim_at_player(owner.x, owner.y) + s.lf7   -- TH08 口径
     end },
-    { 760, function(owner, s)
-        ---`#47/#48 lf7、lf6 各取反`（下一周期的螺旋反向），`#49 JUMP` 回 t=70。
-        s.lf7, s.lf6 = -s.lf7, -s.lf6
+    { 610, function(owner, s) s.lf7,s.lf6=-s.lf7,-s.lf6 end },
+    { 810, function(owner, s)
+        -- 六只使魔的五次回跳额外耗50拍；实际尾跳810→70。
         s.t = 70
         s.pc = T70
     end },
@@ -46250,6 +46272,7 @@ local function sub33_step(owner, s)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
     EX.clear_records(owner)
     EX.pool_clear()
     EX.fm = 1
@@ -46286,21 +46309,17 @@ local function card_frame(owner)
 
     ---→ `parentChainDepth` = BOSS 挂链上的存活使魔数（本卡所有使魔都挂在 BOSS 上）
     ---  = 列表里还活着的个数；Sub35 的 li2 闸用它。
-    local chain = #s.fams
-    for i = #s.fams, 1, -1 do
-        local fam = s.fams[i]
-        if IsValid(fam) then
-            if fam473_step(fam, chain) then
-                object.RawDel(fam)
-                table.remove(s.fams, i)
-            end
-        else
-            table.remove(s.fams, i)
+    local chain=class.th08_combat.actor_count(s.fams)
+    class.th08_combat.step_actors(s.fams,function(fam)
+        if fam473_step(fam,chain) then
+            object.RawDel(fam)
+            chain=chain-1
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     local s = owner.c473_main
     if s and s.fams then
         for i = 1, #s.fams do

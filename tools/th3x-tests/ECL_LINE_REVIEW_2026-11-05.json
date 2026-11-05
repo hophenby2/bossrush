@@ -774,7 +774,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "mod/GAME/original/sounds.lua": "48268fccf7d35b7579993d3bbb035b27ddcd653c84f75b80e2b444af923ed2be"
       }
     },
@@ -1276,7 +1276,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0"
@@ -1883,8 +1883,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -2474,7 +2474,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9",
         "THlib/anm/original.lua": "c09eb9e291da53ea8ff43f6266d8c720a92d74794887210cfe70405be3b7e44c"
@@ -2843,7 +2843,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -9160,8 +9160,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
     },
@@ -10551,7 +10551,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed",
         "THlib/bullet/original_profiles.lua": "f3c9edceea71d49fb087994ddf4d760c6c199b333641a129f236dce0ccb603af"
       }
@@ -11659,7 +11659,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -12201,7 +12201,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -12929,7 +12929,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -13814,8 +13814,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9",
@@ -14330,7 +14330,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -14865,7 +14865,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/original.lua": "c09eb9e291da53ea8ff43f6266d8c720a92d74794887210cfe70405be3b7e44c",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9",
@@ -15552,8 +15552,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/365": {
@@ -15981,7 +15981,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa"
       }
     },
     "31/366": {
@@ -17442,7 +17442,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -22271,7 +22271,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -25248,8 +25248,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_stage_sources.lua": "3ddb60ed13a6ffa4fb3540ee4d97dde4a8b98a7f4074553e559cd009c238bf2e",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
@@ -28227,8 +28227,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_stage_sources.lua": "3ddb60ed13a6ffa4fb3540ee4d97dde4a8b98a7f4074553e559cd009c238bf2e",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
@@ -28974,8 +28974,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -29643,8 +29643,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed",
         "mod/GAME/th31_keine.lua": "810ca9ef3d1cad2af7f0b6a3f33d55471f7f265856bf45ec4ab584df263e21dd"
@@ -30359,8 +30359,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -31076,8 +31076,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -31754,8 +31754,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -32783,8 +32783,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -33278,8 +33278,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -34020,8 +34020,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
@@ -34612,8 +34612,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed",
         "mod/GAME/th31_keine.lua": "810ca9ef3d1cad2af7f0b6a3f33d55471f7f265856bf45ec4ab584df263e21dd"
@@ -41359,8 +41359,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3439": {
@@ -48103,8 +48103,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/370": {
@@ -49003,8 +49003,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/371": {
@@ -49533,8 +49533,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/372": {
@@ -50269,8 +50269,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/384": {
@@ -50687,8 +50687,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -51365,8 +51365,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -52043,8 +52043,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -52685,8 +52685,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -53321,8 +53321,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -53994,8 +53994,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -54673,8 +54673,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -55311,8 +55311,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60"
       }
     },
@@ -55748,8 +55748,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/374": {
@@ -56812,7 +56812,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa"
       }
     },
     "31/375": {
@@ -57119,8 +57119,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/376": {
@@ -57738,8 +57738,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/377": {
@@ -58244,8 +58244,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -58866,8 +58866,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/379": {
@@ -59614,8 +59614,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/380": {
@@ -60387,8 +60387,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/381": {
@@ -61514,8 +61514,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/382": {
@@ -62078,8 +62078,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/383": {
@@ -64935,7 +64935,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa"
       }
     },
     "31/406": {
@@ -65460,7 +65460,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa"
       }
     },
     "31/402": {
@@ -66265,8 +66265,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3431": {
@@ -67601,8 +67601,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/405": {
@@ -68361,7 +68361,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "tools/th3x-tests/export_presentation_programs.py": "2fe1a91b8b718e23cd0d847571a40c64cc53b080fa63690a76801e52a76a95e7"
@@ -69079,11 +69079,11 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "tools/th3x-tests/export_presentation_programs.py": "2fe1a91b8b718e23cd0d847571a40c64cc53b080fa63690a76801e52a76a95e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/407": {
@@ -69831,11 +69831,11 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "tools/th3x-tests/export_presentation_programs.py": "2fe1a91b8b718e23cd0d847571a40c64cc53b080fa63690a76801e52a76a95e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/403": {
@@ -70231,7 +70231,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "tools/th3x-tests/export_presentation_programs.py": "2fe1a91b8b718e23cd0d847571a40c64cc53b080fa63690a76801e52a76a95e7"
@@ -71284,8 +71284,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -72268,8 +72268,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -73131,8 +73131,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -73787,8 +73787,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -76186,8 +76186,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/392": {
@@ -76685,8 +76685,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -77195,8 +77195,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -77675,8 +77675,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -78253,8 +78253,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -79129,8 +79129,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -80388,8 +80388,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/422": {
@@ -81058,8 +81058,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_phase_events.lua": "0ccfe4cdbd9121f900d2515c2f2b828a722aebea96affd9ac7cdb4442eddeb60",
         "mod/GAME/original/low_speed_hp.lua": "ea3e409f7ea59a424199fa1fd678c28a5f4a0ca7db90addf5c15b16dbfab19c6"
       }
@@ -81985,8 +81985,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/55000": {
@@ -82728,7 +82728,7 @@
       ],
       "implementation_sha256": {
         "mod/GAME/th31_eirin_first.lua": "cfaac6224a59598896bad617dfbed7534d512a3919873fee701ec87e788364f8",
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "mod/GAME/th31_stage_sources.lua": "3ddb60ed13a6ffa4fb3540ee4d97dde4a8b98a7f4074553e559cd009c238bf2e",
         "mod/GAME/original/low_speed_hp.lua": "ea3e409f7ea59a424199fa1fd678c28a5f4a0ca7db90addf5c15b16dbfab19c6"
       }
@@ -83423,8 +83423,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
     },
@@ -84128,8 +84128,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
     },
@@ -84629,8 +84629,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb"
       }
     },
@@ -85248,7 +85248,7 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -86044,8 +86044,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/418": {
@@ -86785,8 +86785,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -87432,8 +87432,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/409": {
@@ -88612,8 +88612,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/408": {
@@ -90340,8 +90340,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/presentation.lua": "ee6862c2d75b9a25563e6da4ab6981b04c5512395a40499ba47275b71a20b2eb",
         "THlib/anm/original_effects.lua": "f795b4fb5856c1739fa8e68678dfd5170355e1fa5179ea2d00dadd230466e1e0",
         "THlib/enemy/boss_system.lua": "d0882adaddb68414221701aeb7e23c153ff5f247f80e980abc3a2ff3b99aac08",
@@ -93628,8 +93628,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3414": {
@@ -96912,8 +96912,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3416": {
@@ -100196,8 +100196,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3418": {
@@ -103480,8 +103480,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/433": {
@@ -104305,8 +104305,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -104775,8 +104775,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -105583,8 +105583,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -106117,8 +106117,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -106822,8 +106822,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -107623,8 +107623,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -108955,8 +108955,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -109668,8 +109668,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -110582,8 +110582,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -111125,8 +111125,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/anm/stage_visual.lua": "37bf2c91349ec73bc80f92a6ddc5d7ea718a6324609b7c4923aeb22c40dd3bf9"
       }
     },
@@ -112103,8 +112103,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/445": {
@@ -112776,8 +112776,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/447": {
@@ -113487,8 +113487,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/449": {
@@ -114313,8 +114313,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/444": {
@@ -115225,8 +115225,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -116135,8 +116135,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -117133,8 +117133,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -118171,8 +118171,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -119123,8 +119123,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -120877,8 +120877,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_native.lua": "4770506a890bc45d8f9535f9c4614f1c4a9863a8662ae017a708f331107e2bda"
       }
     },
@@ -123971,8 +123971,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3433": {
@@ -124823,8 +124823,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3434": {
@@ -125487,8 +125487,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3435": {
@@ -128886,8 +128886,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/453": {
@@ -129292,8 +129292,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/455": {
@@ -129745,8 +129745,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/457": {
@@ -130310,8 +130310,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/454": {
@@ -130774,8 +130774,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -131575,8 +131575,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -132189,8 +132189,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -132821,8 +132821,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -133935,8 +133935,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "THlib/bullet/visual_match.lua": "701fdc3ae3c66ccacac3b6b8a22c2cc97c4716bf1fa88198b2b7a8bbb9977eed"
       }
     },
@@ -137950,8 +137950,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/461": {
@@ -138626,8 +138626,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/463": {
@@ -139288,8 +139288,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/465": {
@@ -140088,8 +140088,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/462": {
@@ -140562,8 +140562,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -141364,8 +141364,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -142362,8 +142362,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -142507,8 +142507,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -143521,8 +143521,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -144373,8 +144373,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4",
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b",
         "mod/GAME/th31_nightblind.lua": "4c94890aecf0f673f7def6c323b05d8f03b5962c48579ebfad6eb23a23c595ae"
       }
     },
@@ -147009,8 +147009,8 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     },
     "31/3410": {
@@ -149414,8 +149414,3350 @@
         }
       ],
       "implementation_sha256": {
-        "mod/GAME/th31.lua": "8270d17dd9fd872c89edee2861e7a2dbf681069a709325f01b482ff3af8bb2e7",
-        "mod/GAME/th31_combat.lua": "c91663925568b80a20cb56d3675e27a3fc503e8662bfe2bdc6d29ef2d44703d4"
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
+      }
+    },
+    "31/470": {
+      "findings": [
+        "逐行核对60进入Sub16、双侧六层停弹扇、两次矢量/极坐标组合、64/128半径八使魔和40拍常驻环。",
+        "修复两侧扇形错误共用颜色与参数：第二侧色8；第五层初速1.6、停顿60，不能套用第一侧2.0/70。",
+        "轨道使魔按原作顺序推进，延迟枪初值使用整数抽样；Sub19/Sub20恢复各自显示源，特殊ANM按实际60/660触发。"
+      ],
+      "boundaries": "Boss Rush承接宿主/前段落位、统一HP换算和阶段结束；470的6680拍尾跳超出1260拍攻击窗口，未伪造额外轮次。没有运行测试、Lua/ECL模拟、构建或游戏，不声明实机等价。",
+      "implementation": [
+        "mod/GAME/th31.lua",
+        "mod/GAME/th31_combat.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub15",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub16",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub17",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub19",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub20",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub15",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x1578",
+              "time": 0,
+              "op": 59,
+              "mask": 255
+            },
+            {
+              "address": "0x1588",
+              "time": 0,
+              "op": 80,
+              "mask": 255
+            },
+            {
+              "address": "0x1598",
+              "time": 0,
+              "op": 127,
+              "mask": 255
+            },
+            {
+              "address": "0x15a8",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x15bc",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x15cc",
+              "time": 0,
+              "op": 131,
+              "mask": 243
+            },
+            {
+              "address": "0x15dc",
+              "time": 0,
+              "op": 134,
+              "mask": 243
+            },
+            {
+              "address": "0x15f0",
+              "time": 0,
+              "op": 131,
+              "mask": 252
+            },
+            {
+              "address": "0x1600",
+              "time": 0,
+              "op": 134,
+              "mask": 252
+            },
+            {
+              "address": "0x1614",
+              "time": 0,
+              "op": 133,
+              "mask": 252
+            },
+            {
+              "address": "0x162c",
+              "time": 0,
+              "op": 158,
+              "mask": 243
+            },
+            {
+              "address": "0x1648",
+              "time": 0,
+              "op": 158,
+              "mask": 252
+            },
+            {
+              "address": "0x1664",
+              "time": 0,
+              "op": 158,
+              "mask": 252
+            },
+            {
+              "address": "0x1680",
+              "time": 0,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x1694",
+              "time": 0,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x16b0",
+              "time": 0,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x16d0",
+              "time": 10,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x16f0",
+              "time": 20,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x1710",
+              "time": 30,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x1730",
+              "time": 40,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x1750",
+              "time": 50,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x1770",
+              "time": 60,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x178c",
+              "time": 60,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x179c",
+              "time": 60,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub16",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x17b4",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x17c4",
+              "time": 0,
+              "op": 129,
+              "mask": 255
+            },
+            {
+              "address": "0x17d4",
+              "time": 0,
+              "op": 130,
+              "mask": 255
+            },
+            {
+              "address": "0x17e4",
+              "time": 0,
+              "op": 144,
+              "mask": 255
+            },
+            {
+              "address": "0x17f8",
+              "time": 0,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x1804",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x181c",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x1830",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x184c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1874",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x18a0",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x18c8",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x18f4",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1908",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x1924",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x194c",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1978",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x19a0",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x19cc",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x19f4",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1a20",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1a48",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1a74",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1a88",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x1aa4",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1acc",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1af8",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1b20",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1b4c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1b74",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1ba0",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1bc8",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1bf4",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1c08",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1c30",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1c5c",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1c84",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1cb0",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1cd8",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1d04",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1d2c",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1d58",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1d80",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1dac",
+              "time": 0,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1dd4",
+              "time": 0,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1e00",
+              "time": 60,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x1e18",
+              "time": 60,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x1e2c",
+              "time": 60,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x1e48",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1e70",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1e9c",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1ec4",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1ef0",
+              "time": 60,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x1f04",
+              "time": 60,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x1f20",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1f48",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1f74",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1f9c",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x1fc8",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x1ff0",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x201c",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2044",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x2070",
+              "time": 60,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2084",
+              "time": 60,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x20a0",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x20c8",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x20f4",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x211c",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x2148",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2170",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x219c",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x21c4",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x21f0",
+              "time": 60,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x2204",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x222c",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x2258",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2280",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x22ac",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x22d4",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x2300",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2328",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x2354",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x237c",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x23a8",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x23d0",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x23fc",
+              "time": 120,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x2418",
+              "time": 240,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x2424",
+              "time": 240,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x244c",
+              "time": 240,
+              "op": 7,
+              "mask": 241
+            },
+            {
+              "address": "0x2460",
+              "time": 240,
+              "op": 7,
+              "mask": 242
+            },
+            {
+              "address": "0x2474",
+              "time": 240,
+              "op": 7,
+              "mask": 244
+            },
+            {
+              "address": "0x2488",
+              "time": 240,
+              "op": 7,
+              "mask": 248
+            },
+            {
+              "address": "0x249c",
+              "time": 240,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x24c4",
+              "time": 240,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x24f0",
+              "time": 240,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x251c",
+              "time": 240,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x2548",
+              "time": 240,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x2574",
+              "time": 240,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x25a0",
+              "time": 240,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x25c8",
+              "time": 240,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x25f4",
+              "time": 240,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x2620",
+              "time": 240,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x264c",
+              "time": 240,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x2678",
+              "time": 240,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x26a4",
+              "time": 300,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x26c0",
+              "time": 400,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x26cc",
+              "time": 400,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x26f4",
+              "time": 400,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x271c",
+              "time": 400,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x2748",
+              "time": 400,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x2774",
+              "time": 400,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x27a0",
+              "time": 400,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x27cc",
+              "time": 400,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x27f8",
+              "time": 400,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x2820",
+              "time": 400,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x284c",
+              "time": 400,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x2878",
+              "time": 400,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x28a4",
+              "time": 400,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x28d0",
+              "time": 400,
+              "op": 97,
+              "mask": 255
+            },
+            {
+              "address": "0x28fc",
+              "time": 460,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x2918",
+              "time": 520,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x2934",
+              "time": 520,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2948",
+              "time": 600,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x295c",
+              "time": 600,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x2968",
+              "time": 600,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x298c",
+              "time": 600,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x29a0",
+              "time": 600,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x29c4",
+              "time": 600,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x29d8",
+              "time": 600,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x29fc",
+              "time": 600,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2a10",
+              "time": 600,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x2a34",
+              "time": 600,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2a48",
+              "time": 680,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2a5c",
+              "time": 680,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x2a80",
+              "time": 680,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2a94",
+              "time": 680,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x2ab8",
+              "time": 680,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2acc",
+              "time": 680,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x2af0",
+              "time": 680,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x2b04",
+              "time": 680,
+              "op": 92,
+              "mask": 255
+            },
+            {
+              "address": "0x2b28",
+              "time": 680,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x2b3c",
+              "time": 6680,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub17",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x2b5c",
+              "time": 0,
+              "op": 6,
+              "mask": 241
+            },
+            {
+              "address": "0x2b70",
+              "time": 0,
+              "op": 6,
+              "mask": 242
+            },
+            {
+              "address": "0x2b84",
+              "time": 0,
+              "op": 6,
+              "mask": 244
+            },
+            {
+              "address": "0x2b98",
+              "time": 0,
+              "op": 6,
+              "mask": 248
+            },
+            {
+              "address": "0x2bac",
+              "time": 0,
+              "op": 99,
+              "mask": 241
+            },
+            {
+              "address": "0x2bd8",
+              "time": 0,
+              "op": 99,
+              "mask": 242
+            },
+            {
+              "address": "0x2c04",
+              "time": 0,
+              "op": 99,
+              "mask": 244
+            },
+            {
+              "address": "0x2c30",
+              "time": 0,
+              "op": 99,
+              "mask": 248
+            },
+            {
+              "address": "0x2c5c",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x2c6c",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub19",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x2d18",
+              "time": 0,
+              "op": 54,
+              "mask": 255
+            },
+            {
+              "address": "0x2d28",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x2d3c",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x2d4c",
+              "time": 0,
+              "op": 83,
+              "mask": 255
+            },
+            {
+              "address": "0x2d5c",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x2d68",
+              "time": 0,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x2d94",
+              "time": 0,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x2dc0",
+              "time": 0,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x2dec",
+              "time": 0,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x2e18",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x2e24",
+              "time": 0,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x2e38",
+              "time": 0,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x2e54",
+              "time": 100,
+              "op": 74,
+              "mask": 255
+            },
+            {
+              "address": "0x2e6c",
+              "time": 100,
+              "op": 106,
+              "mask": 241
+            },
+            {
+              "address": "0x2e7c",
+              "time": 100,
+              "op": 106,
+              "mask": 254
+            },
+            {
+              "address": "0x2e8c",
+              "time": 5100,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub20",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x2ea4",
+              "time": 0,
+              "op": 54,
+              "mask": 255
+            },
+            {
+              "address": "0x2eb4",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x2ec8",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x2ed8",
+              "time": 0,
+              "op": 83,
+              "mask": 255
+            },
+            {
+              "address": "0x2ee8",
+              "time": 0,
+              "op": 107,
+              "mask": 255
+            },
+            {
+              "address": "0x2ef4",
+              "time": 0,
+              "op": 97,
+              "mask": 241
+            },
+            {
+              "address": "0x2f20",
+              "time": 0,
+              "op": 97,
+              "mask": 242
+            },
+            {
+              "address": "0x2f4c",
+              "time": 0,
+              "op": 97,
+              "mask": 244
+            },
+            {
+              "address": "0x2f78",
+              "time": 0,
+              "op": 97,
+              "mask": 248
+            },
+            {
+              "address": "0x2fa4",
+              "time": 0,
+              "op": 108,
+              "mask": 255
+            },
+            {
+              "address": "0x2fb0",
+              "time": 0,
+              "op": 18,
+              "mask": 255
+            },
+            {
+              "address": "0x2fc4",
+              "time": 0,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x2fe0",
+              "time": 100,
+              "op": 74,
+              "mask": 255
+            },
+            {
+              "address": "0x2ff8",
+              "time": 100,
+              "op": 106,
+              "mask": 241
+            },
+            {
+              "address": "0x3008",
+              "time": 100,
+              "op": 106,
+              "mask": 254
+            },
+            {
+              "address": "0x3018",
+              "time": 5100,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
+      }
+    },
+    "31/472": {
+      "findings": [
+        "逐行核对220拍同步Sub27、四次Sub28同帧生成、三次10拍Sub29及660拍真实周期；Sub32轨道后180拍Hermite、180建枪和240终止。",
+        "修复Sub28引用其他do块局部工厂的问题，在本卡作用域定义使魔工厂。",
+        "恢复每个目标Y之前原作仍消费的无用X随机数；使魔按出生顺序推进，Hermite位置/切线保留原始坐标量。",
+        "Sub25为全新时间轴宿主，修复Boss及新使魔误套0.5，恢复出生默认rank0.15；同步调用和回跳特殊ANM按原作重放。"
+      ],
+      "boundaries": "Boss Rush承接宿主/前段落位、统一HP换算和阶段结束；470的6680拍尾跳超出1260拍攻击窗口，未伪造额外轮次。没有运行测试、Lua/ECL模拟、构建或游戏，不声明实机等价。",
+      "implementation": [
+        "mod/GAME/th31.lua",
+        "mod/GAME/th31_combat.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub25",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub26",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub27",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub28",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub29",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub30",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub31",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub32",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub25",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x3a84",
+              "time": 0,
+              "op": 59,
+              "mask": 255
+            },
+            {
+              "address": "0x3a94",
+              "time": 0,
+              "op": 80,
+              "mask": 255
+            },
+            {
+              "address": "0x3aa4",
+              "time": 0,
+              "op": 80,
+              "mask": 255
+            },
+            {
+              "address": "0x3ab4",
+              "time": 0,
+              "op": 127,
+              "mask": 255
+            },
+            {
+              "address": "0x3ac4",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x3ad8",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x3ae8",
+              "time": 0,
+              "op": 148,
+              "mask": 255
+            },
+            {
+              "address": "0x3af8",
+              "time": 0,
+              "op": 134,
+              "mask": 255
+            },
+            {
+              "address": "0x3b0c",
+              "time": 0,
+              "op": 63,
+              "mask": 255
+            },
+            {
+              "address": "0x3b20",
+              "time": 0,
+              "op": 64,
+              "mask": 255
+            },
+            {
+              "address": "0x3b3c",
+              "time": 0,
+              "op": 126,
+              "mask": 255
+            },
+            {
+              "address": "0x3b50",
+              "time": 100,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub26",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x3b70",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x3b80",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x3b90",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x3ba0",
+              "time": 0,
+              "op": 123,
+              "mask": 255
+            },
+            {
+              "address": "0x3bac",
+              "time": 0,
+              "op": 144,
+              "mask": 255
+            },
+            {
+              "address": "0x3bc0",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x3bd0",
+              "time": 0,
+              "op": 148,
+              "mask": 255
+            },
+            {
+              "address": "0x3be0",
+              "time": 0,
+              "op": 129,
+              "mask": 255
+            },
+            {
+              "address": "0x3bf0",
+              "time": 0,
+              "op": 130,
+              "mask": 255
+            },
+            {
+              "address": "0x3c00",
+              "time": 0,
+              "op": 134,
+              "mask": 255
+            },
+            {
+              "address": "0x3c14",
+              "time": 0,
+              "op": 133,
+              "mask": 255
+            },
+            {
+              "address": "0x3c2c",
+              "time": 0,
+              "op": 158,
+              "mask": 255
+            },
+            {
+              "address": "0x3c48",
+              "time": 0,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3c68",
+              "time": 10,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3c88",
+              "time": 20,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3ca8",
+              "time": 30,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3cc8",
+              "time": 40,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3ce8",
+              "time": 50,
+              "op": 128,
+              "mask": 255
+            },
+            {
+              "address": "0x3d08",
+              "time": 60,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x3d24",
+              "time": 60,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x3d30",
+              "time": 60,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x3d40",
+              "time": 180,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x3d58",
+              "time": 180,
+              "op": 139,
+              "mask": 255
+            },
+            {
+              "address": "0x3d70",
+              "time": 180,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x3d7c",
+              "time": 240,
+              "op": 124,
+              "mask": 255
+            },
+            {
+              "address": "0x3d8c",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3da4",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3db8",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3dd0",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3de4",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3df8",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3e0c",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3e20",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3e34",
+              "time": 240,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x3e44",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3e5c",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3e70",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3e88",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3e9c",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3eb0",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3ec4",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3ed8",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3eec",
+              "time": 240,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x3efc",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3f14",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3f28",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3f40",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3f54",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3f68",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3f7c",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3f90",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x3fa4",
+              "time": 240,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x3fb4",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3fcc",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x3fe0",
+              "time": 240,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x3ff8",
+              "time": 240,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x400c",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4020",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4034",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4048",
+              "time": 240,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x405c",
+              "time": 240,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x406c",
+              "time": 320,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x407c",
+              "time": 320,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x4094",
+              "time": 370,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x40a4",
+              "time": 370,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x40bc",
+              "time": 420,
+              "op": 52,
+              "mask": 255
+            },
+            {
+              "address": "0x40cc",
+              "time": 420,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x40e4",
+              "time": 470,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub27",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4104",
+              "time": 0,
+              "op": 124,
+              "mask": 255
+            },
+            {
+              "address": "0x4114",
+              "time": 0,
+              "op": 139,
+              "mask": 255
+            },
+            {
+              "address": "0x412c",
+              "time": 30,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x4144",
+              "time": 30,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x4158",
+              "time": 30,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x4170",
+              "time": 30,
+              "op": 7,
+              "mask": 241
+            },
+            {
+              "address": "0x4184",
+              "time": 30,
+              "op": 7,
+              "mask": 242
+            },
+            {
+              "address": "0x4198",
+              "time": 30,
+              "op": 7,
+              "mask": 244
+            },
+            {
+              "address": "0x41ac",
+              "time": 30,
+              "op": 7,
+              "mask": 248
+            },
+            {
+              "address": "0x41c0",
+              "time": 30,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x41e8",
+              "time": 30,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4210",
+              "time": 30,
+              "op": 6,
+              "mask": 241
+            },
+            {
+              "address": "0x4224",
+              "time": 30,
+              "op": 6,
+              "mask": 242
+            },
+            {
+              "address": "0x4238",
+              "time": 30,
+              "op": 6,
+              "mask": 244
+            },
+            {
+              "address": "0x424c",
+              "time": 30,
+              "op": 6,
+              "mask": 248
+            },
+            {
+              "address": "0x4260",
+              "time": 40,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x428c",
+              "time": 40,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x42b8",
+              "time": 40,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x42e0",
+              "time": 50,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x430c",
+              "time": 50,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4338",
+              "time": 50,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4360",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x438c",
+              "time": 60,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x43b8",
+              "time": 60,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x43e0",
+              "time": 70,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x440c",
+              "time": 70,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4438",
+              "time": 110,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x4450",
+              "time": 110,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x4464",
+              "time": 110,
+              "op": 26,
+              "mask": 255
+            },
+            {
+              "address": "0x447c",
+              "time": 110,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x44a4",
+              "time": 120,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x44d0",
+              "time": 120,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x44fc",
+              "time": 120,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4524",
+              "time": 130,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4550",
+              "time": 130,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x457c",
+              "time": 130,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x45a4",
+              "time": 140,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x45d0",
+              "time": 140,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x45fc",
+              "time": 140,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4624",
+              "time": 150,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4650",
+              "time": 150,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x467c",
+              "time": 180,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x4694",
+              "time": 180,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x46a8",
+              "time": 180,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x46c0",
+              "time": 180,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x46e8",
+              "time": 190,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4714",
+              "time": 190,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4740",
+              "time": 190,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4768",
+              "time": 200,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4794",
+              "time": 200,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x47c0",
+              "time": 200,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x47e8",
+              "time": 210,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4814",
+              "time": 210,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4840",
+              "time": 210,
+              "op": 111,
+              "mask": 255
+            },
+            {
+              "address": "0x4868",
+              "time": 220,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x4894",
+              "time": 220,
+              "op": 96,
+              "mask": 255
+            },
+            {
+              "address": "0x48c0",
+              "time": 220,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub28",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x48d8",
+              "time": 0,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x48e4",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x48f8",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x490c",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4920",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4934",
+              "time": 0,
+              "op": 90,
+              "mask": 255
+            },
+            {
+              "address": "0x4958",
+              "time": 0,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub29",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4970",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4984",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x4998",
+              "time": 0,
+              "op": 96,
+              "mask": 241
+            },
+            {
+              "address": "0x49c4",
+              "time": 0,
+              "op": 96,
+              "mask": 242
+            },
+            {
+              "address": "0x49f0",
+              "time": 0,
+              "op": 96,
+              "mask": 244
+            },
+            {
+              "address": "0x4a1c",
+              "time": 0,
+              "op": 96,
+              "mask": 248
+            },
+            {
+              "address": "0x4a48",
+              "time": 0,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x4a5c",
+              "time": 1,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x4a74",
+              "time": 1,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub30",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4a8c",
+              "time": 0,
+              "op": 6,
+              "mask": 241
+            },
+            {
+              "address": "0x4aa0",
+              "time": 0,
+              "op": 6,
+              "mask": 242
+            },
+            {
+              "address": "0x4ab4",
+              "time": 0,
+              "op": 6,
+              "mask": 244
+            },
+            {
+              "address": "0x4ac8",
+              "time": 0,
+              "op": 6,
+              "mask": 248
+            },
+            {
+              "address": "0x4adc",
+              "time": 0,
+              "op": 7,
+              "mask": 241
+            },
+            {
+              "address": "0x4af0",
+              "time": 0,
+              "op": 7,
+              "mask": 242
+            },
+            {
+              "address": "0x4b04",
+              "time": 0,
+              "op": 7,
+              "mask": 244
+            },
+            {
+              "address": "0x4b18",
+              "time": 0,
+              "op": 7,
+              "mask": 248
+            },
+            {
+              "address": "0x4b2c",
+              "time": 0,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4b40",
+              "time": 0,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x4b6c",
+              "time": 0,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x4b80",
+              "time": 0,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x4bac",
+              "time": 0,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x4bc0",
+              "time": 0,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x4bec",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x4bfc",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4c10",
+              "time": 0,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub31",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4c28",
+              "time": 0,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x4c40",
+              "time": 0,
+              "op": 99,
+              "mask": 255
+            },
+            {
+              "address": "0x4c6c",
+              "time": 10,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x4c80",
+              "time": 10,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub32",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4c98",
+              "time": 0,
+              "op": 54,
+              "mask": 255
+            },
+            {
+              "address": "0x4ca8",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x4cbc",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x4ccc",
+              "time": 0,
+              "op": 83,
+              "mask": 255
+            },
+            {
+              "address": "0x4cdc",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x4cec",
+              "time": 0,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x4d00",
+              "time": 0,
+              "op": 73,
+              "mask": 255
+            },
+            {
+              "address": "0x4d1c",
+              "time": 0,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x4d30",
+              "time": 60,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x4d48",
+              "time": 60,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x4d5c",
+              "time": 60,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x4d88",
+              "time": 60,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x4da0",
+              "time": 60,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x4db4",
+              "time": 60,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x4de0",
+              "time": 180,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x4df4",
+              "time": 240,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
+      }
+    },
+    "31/473": {
+      "findings": [
+        "逐行核对70/310三使魔、550六次10拍生成、独立60拍环弹与冻结期间仍推进的Hermite。",
+        "修复漏计五次回跳50拍：翻转在610拍、尾跳810→70，周期740；环枪不随根回跳重新安装。",
+        "修复子机误继承Boss rank0.5，恢复新实体0.15；Y方向Hermite切线取反，RANDOM角区间端点随坐标翻转。",
+        "使用当前存活附着链计数并即时扣除终止实体，按出生顺序运行Sub35；保留后续70拍落点跳过特殊ANM的原作细节。"
+      ],
+      "boundaries": "Boss Rush承接宿主/前段落位、统一HP换算和阶段结束；470的6680拍尾跳超出1260拍攻击窗口，未伪造额外轮次。没有运行测试、Lua/ECL模拟、构建或游戏，不声明实机等价。",
+      "implementation": [
+        "mod/GAME/th31.lua",
+        "mod/GAME/th31_combat.lua"
+      ],
+      "subprograms": [
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub33",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub34",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub35",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        },
+        {
+          "game": 8,
+          "file": "ecldata1.ecl",
+          "sub": "Sub36",
+          "note": "Lunatic有效根程序、同步CALL、并行context、生成实体及相关宿主入口逐条对应。"
+        }
+      ],
+      "source_evidence": [
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub33",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x4e0c",
+              "time": 0,
+              "op": 81,
+              "mask": 255
+            },
+            {
+              "address": "0x4e1c",
+              "time": 0,
+              "op": 123,
+              "mask": 255
+            },
+            {
+              "address": "0x4e28",
+              "time": 0,
+              "op": 144,
+              "mask": 255
+            },
+            {
+              "address": "0x4e3c",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x4e4c",
+              "time": 0,
+              "op": 131,
+              "mask": 255
+            },
+            {
+              "address": "0x4e5c",
+              "time": 0,
+              "op": 148,
+              "mask": 255
+            },
+            {
+              "address": "0x4e6c",
+              "time": 0,
+              "op": 129,
+              "mask": 255
+            },
+            {
+              "address": "0x4e7c",
+              "time": 0,
+              "op": 130,
+              "mask": 255
+            },
+            {
+              "address": "0x4e8c",
+              "time": 0,
+              "op": 134,
+              "mask": 255
+            },
+            {
+              "address": "0x4ea0",
+              "time": 0,
+              "op": 133,
+              "mask": 255
+            },
+            {
+              "address": "0x4eb8",
+              "time": 0,
+              "op": 158,
+              "mask": 255
+            },
+            {
+              "address": "0x4ed4",
+              "time": 10,
+              "op": 75,
+              "mask": 255
+            },
+            {
+              "address": "0x4ef0",
+              "time": 10,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x4f08",
+              "time": 70,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x4f14",
+              "time": 70,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x4f20",
+              "time": 70,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4f34",
+              "time": 70,
+              "op": 28,
+              "mask": 255
+            },
+            {
+              "address": "0x4f4c",
+              "time": 70,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x4f60",
+              "time": 70,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x4f74",
+              "time": 70,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4f88",
+              "time": 70,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x4f9c",
+              "time": 70,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x4fc0",
+              "time": 70,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x4fd4",
+              "time": 70,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x4ff8",
+              "time": 70,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x500c",
+              "time": 70,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x5030",
+              "time": 190,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x5048",
+              "time": 310,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x5054",
+              "time": 310,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x5060",
+              "time": 310,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x5074",
+              "time": 310,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x5088",
+              "time": 310,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x509c",
+              "time": 310,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x50c0",
+              "time": 310,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x50d4",
+              "time": 310,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x50f8",
+              "time": 310,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x510c",
+              "time": 310,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x5130",
+              "time": 430,
+              "op": 67,
+              "mask": 255
+            },
+            {
+              "address": "0x5148",
+              "time": 550,
+              "op": 0,
+              "mask": 255
+            },
+            {
+              "address": "0x5154",
+              "time": 550,
+              "op": 62,
+              "mask": 255
+            },
+            {
+              "address": "0x5160",
+              "time": 550,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x5174",
+              "time": 550,
+              "op": 7,
+              "mask": 255
+            },
+            {
+              "address": "0x5188",
+              "time": 550,
+              "op": 25,
+              "mask": 255
+            },
+            {
+              "address": "0x51a0",
+              "time": 550,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x51b4",
+              "time": 550,
+              "op": 91,
+              "mask": 255
+            },
+            {
+              "address": "0x51d8",
+              "time": 550,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x51ec",
+              "time": 560,
+              "op": 5,
+              "mask": 255
+            },
+            {
+              "address": "0x5204",
+              "time": 560,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x521c",
+              "time": 560,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x5234",
+              "time": 760,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub34",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x5254",
+              "time": 260,
+              "op": 6,
+              "mask": 241
+            },
+            {
+              "address": "0x5268",
+              "time": 260,
+              "op": 6,
+              "mask": 242
+            },
+            {
+              "address": "0x527c",
+              "time": 260,
+              "op": 6,
+              "mask": 244
+            },
+            {
+              "address": "0x5290",
+              "time": 260,
+              "op": 6,
+              "mask": 248
+            },
+            {
+              "address": "0x52a4",
+              "time": 260,
+              "op": 98,
+              "mask": 241
+            },
+            {
+              "address": "0x52d0",
+              "time": 260,
+              "op": 98,
+              "mask": 242
+            },
+            {
+              "address": "0x52fc",
+              "time": 260,
+              "op": 98,
+              "mask": 244
+            },
+            {
+              "address": "0x5328",
+              "time": 260,
+              "op": 98,
+              "mask": 248
+            },
+            {
+              "address": "0x5354",
+              "time": 260,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x5364",
+              "time": 260,
+              "op": 4,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub35",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x5384",
+              "time": 0,
+              "op": 6,
+              "mask": 241
+            },
+            {
+              "address": "0x5398",
+              "time": 0,
+              "op": 6,
+              "mask": 242
+            },
+            {
+              "address": "0x53ac",
+              "time": 0,
+              "op": 6,
+              "mask": 244
+            },
+            {
+              "address": "0x53c0",
+              "time": 0,
+              "op": 6,
+              "mask": 248
+            },
+            {
+              "address": "0x53d4",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x53e8",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x53fc",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x5418",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x542c",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x5440",
+              "time": 0,
+              "op": 50,
+              "mask": 255
+            },
+            {
+              "address": "0x545c",
+              "time": 0,
+              "op": 24,
+              "mask": 255
+            },
+            {
+              "address": "0x5474",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x5490",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x54a4",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x54b8",
+              "time": 0,
+              "op": 24,
+              "mask": 255
+            },
+            {
+              "address": "0x54d0",
+              "time": 0,
+              "op": 42,
+              "mask": 255
+            },
+            {
+              "address": "0x54ec",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x5500",
+              "time": 0,
+              "op": 40,
+              "mask": 255
+            },
+            {
+              "address": "0x551c",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x5534",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x5548",
+              "time": 0,
+              "op": 27,
+              "mask": 255
+            },
+            {
+              "address": "0x5560",
+              "time": 0,
+              "op": 16,
+              "mask": 255
+            },
+            {
+              "address": "0x5574",
+              "time": 0,
+              "op": 110,
+              "mask": 255
+            },
+            {
+              "address": "0x5588",
+              "time": 0,
+              "op": 104,
+              "mask": 241
+            },
+            {
+              "address": "0x55b4",
+              "time": 0,
+              "op": 104,
+              "mask": 242
+            },
+            {
+              "address": "0x55e0",
+              "time": 0,
+              "op": 104,
+              "mask": 244
+            },
+            {
+              "address": "0x560c",
+              "time": 0,
+              "op": 104,
+              "mask": 248
+            },
+            {
+              "address": "0x5638",
+              "time": 0,
+              "op": 30,
+              "mask": 255
+            },
+            {
+              "address": "0x5648",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x5658",
+              "time": 0,
+              "op": 4,
+              "mask": 255
+            },
+            {
+              "address": "0x566c",
+              "time": 0,
+              "op": 53,
+              "mask": 255
+            }
+          ]
+        },
+        {
+          "file": "ecldata1.ecl",
+          "sub": "Sub36",
+          "game": 8,
+          "sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+          "instructions": [
+            {
+              "address": "0x5684",
+              "time": 0,
+              "op": 54,
+              "mask": 255
+            },
+            {
+              "address": "0x5694",
+              "time": 0,
+              "op": 77,
+              "mask": 255
+            },
+            {
+              "address": "0x56a8",
+              "time": 0,
+              "op": 79,
+              "mask": 255
+            },
+            {
+              "address": "0x56b8",
+              "time": 0,
+              "op": 83,
+              "mask": 255
+            },
+            {
+              "address": "0x56c8",
+              "time": 0,
+              "op": 160,
+              "mask": 255
+            },
+            {
+              "address": "0x56d8",
+              "time": 0,
+              "op": 38,
+              "mask": 255
+            },
+            {
+              "address": "0x56f4",
+              "time": 0,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x5708",
+              "time": 0,
+              "op": 15,
+              "mask": 255
+            },
+            {
+              "address": "0x571c",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x5730",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x5744",
+              "time": 0,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x5770",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x5784",
+              "time": 0,
+              "op": 9,
+              "mask": 255
+            },
+            {
+              "address": "0x5798",
+              "time": 0,
+              "op": 36,
+              "mask": 255
+            },
+            {
+              "address": "0x57c4",
+              "time": 0,
+              "op": 2,
+              "mask": 255
+            },
+            {
+              "address": "0x57d4",
+              "time": 0,
+              "op": 6,
+              "mask": 255
+            },
+            {
+              "address": "0x57e8",
+              "time": 0,
+              "op": 135,
+              "mask": 255
+            },
+            {
+              "address": "0x57fc",
+              "time": 120,
+              "op": 1,
+              "mask": 255
+            }
+          ]
+        }
+      ],
+      "implementation_sha256": {
+        "mod/GAME/th31.lua": "51aea909556812a764320b5877201ed3926fd41257c9c6afd56a96cf644d63fa",
+        "mod/GAME/th31_combat.lua": "2b0b15d5eaa8ea73a5bed1e2758d6b6ec22795e3c21b073171e733b0104c001b"
       }
     }
   },
@@ -149423,8 +152765,8 @@
     "35/3635": "同类etProtectRange已修复；尚未逐行读完，不勾选。",
     "35/3613": "与開宴共用激光接口；尚未逐行读完，不勾选。"
   },
-  "completed": 134,
-  "pending": 388,
+  "completed": 137,
+  "pending": 385,
   "shared_fixes": [
     "Stage5逐行核对同时纠正同一原作MOVE_RANDOM_IN_BOUNDS原语在六面A/B道中工厂中的上下边界角度反射条件；不因此为未审阅卡新增勾选。"
   ]
