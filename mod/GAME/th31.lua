@@ -40604,6 +40604,7 @@ local function wander_angle(owner)
     else
         angle = ran:Float(0, PI / 2) - PI / 4
     end
+    angle=(angle+PI)%(2*PI)-PI
     if bx < BW_TH_L + 96 then
         if angle > PI / 2 then
             angle = PI - angle
@@ -40668,6 +40669,7 @@ end
 ---  这里直接按帧展开（第一帧那一发就是 t=0 段的 `ins_97`）。
 ---------------------------------------------------------------------
 local function mount_gun(owner, slot, ang, step)
+    OriginalStageVisual.source_event(owner,8,"ecldata2",{0,62})
     ---`ins_135`：新 context 的变量块从父 context 拷一份 ⇒ lf0/lf2 就是挂上去那一刻的值。
     ---★ 子 context 的 t=0 段开头就是三条 `ins_111`（记录 0 = CULL、1 = REL、2 = VEC）。
     ---  记录 0（`@8216 ins_111(0, 0x2000, 0, 60)`）**必须写**：弹的 `AdvanceTransformProgram`
@@ -40692,7 +40694,7 @@ local function gun_step(owner, g)
         op = 97, type = GUN_TYPE, color = EX.color(GUN_COLOR),
         count1 = 1, count2 = 7,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
-        angle = g.ang, step = GUN_ASTEP, flags = GUN_FLAGS,
+        angle = g.ang, step = -GUN_ASTEP, flags = GUN_FLAGS,
     })
     g.n = g.n - 1
     g.ang = g.ang + g.step
@@ -40731,6 +40733,7 @@ familiar_cls = class.th08_combat.actor("ecldata2:20", {
 
 ---使魔的 ECL：t=0 段 + t=60 的 `ins_71(0)`。
 local function fam_ecl_step(fam)
+    if fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c461_ang end
     if fam.c461_t == 0 then
         ---记录 0/1 + `ins_107/97/108/106/81/65/71`（t=0 段一次跑完）。
         EX.set_record(fam, 0, EX.K.WAIT, 0, FAM_WAIT_FRAMES, -1, -1, -1)
@@ -40755,7 +40758,7 @@ local function fam_shot_tick(fam)
             op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR),
             count1 = 1, count2 = 1,
             speed1 = FAM_SPEED1, speed2 = FAM_SPEED2,
-            angle = fam.c461_ang, step = GUN_ASTEP, flags = FAM_FLAGS,
+            angle = fam.c461_ang, step = -GUN_ASTEP, flags = FAM_FLAGS,
         })
     end
 end
@@ -40847,6 +40850,8 @@ local PROG = {
 }
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
+    OriginalStageVisual.source_event(owner,8,"ecldata2",{0,59,0})
     EX.clear_records(owner)
     EX.pool_clear()
     owner.c461_t = 0
@@ -40903,8 +40908,7 @@ local function card_frame(owner)
     ---   敌机循环里的 `IntegrateVelocity`（EnemyManagerUpdate.cpp:160-167）。踩过：
     ---   原来先位移再出弹，使魔每颗弹都比原作多走了一帧的位置。
     local fams = owner.c461_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             fam_ecl_step(fam)
             fam.c461_speed = fam.c461_speed + fam.c461_accel
@@ -40913,15 +40917,16 @@ local function card_frame(owner)
             fam.y = fam.y + math.sin(fam.c461_ang) * fam.c461_speed
             if class.th08_combat.actor_outside(fam) then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     if owner.c461_fams then
         for i = 1, #owner.c461_fams do
             if IsValid(owner.c461_fams[i]) then object.RawDel(owner.c461_fams[i]) end
@@ -41428,6 +41433,7 @@ local function wander_angle(owner)
     else
         angle = ran:Float(0, PI / 2) - PI / 4
     end
+    angle=(angle+PI)%(2*PI)-PI
     if bx < BW_TH_L + 96 then
         if angle > PI / 2 then
             angle = PI - angle
@@ -41490,6 +41496,7 @@ end
 ---★ 每挂一次是一个从 t=0 重跑的新 context；这里也重开一份状态。
 ---------------------------------------------------------------------
 local function mount_gun(owner, ang, step, count)
+    OriginalStageVisual.source_event(owner,8,"ecldata2",{0,62})
     ---记录 0 / 1 在枪的 t=0 段里写一次（`ins_111` 的槽 0 / 1）。
     EX.set_record(owner, 0, EX.K.CULL, 0, GUN_CULL_FRAMES)
     EX.set_record(owner, 1, EX.K.REL, 1, GUN_DECEL_FRAMES, 1, 0, 0)
@@ -41570,6 +41577,7 @@ familiar_cls = class.th08_combat.actor("ecldata2:28", {
 
 ---使魔的 ECL：t=0 段 + t=60 的 `ins_71(0)`。
 local function fam_ecl_step(fam)
+    if fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c463_ang end
     if fam.c463_t == 0 then
         ---记录 0/1/2 + `ins_107/97/108/106/81/65/71`（t=0 段一次跑完）。
         EX.set_record(fam, 0, EX.K.WAIT, 0, FAM_WAIT_FRAMES)
@@ -41597,7 +41605,7 @@ local function fam_shot_tick(fam)
             op = 97, type = FAM_TYPE, color = EX.color(FAM_COLOR),
             count1 = 1, count2 = 1,
             speed1 = FAM_SPEED1, speed2 = FAM_SPEED2,
-            angle = fam.c463_ang, step = FAM_ASTEP, flags = FAM_FLAGS,
+            angle = fam.c463_ang, step = -FAM_ASTEP, flags = FAM_FLAGS,
         })
     end
 end
@@ -41667,6 +41675,10 @@ local function sub27_step(owner)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
+    if not owner._original_actor or owner._original_actor.archive~="stg2enm" then
+        OriginalStageVisual.source_event(owner,8,"ecldata2",{0,59,0})
+    end
     EX.clear_records(owner)
     EX.pool_clear()
     owner.c463_main = { t = 0, pc = 1 }
@@ -41706,8 +41718,7 @@ local function card_frame(owner)
     ---   ★ 帧尾顺序同 `RunEcl`：ECL → `UpdateMovement` → `UpdateShotAndAnm`（用积分前
     ---   的位置出弹）→ 敌机循环里的 `IntegrateVelocity`（见卡 461 的同一处注释）。
     local fams = owner.c463_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             fam_ecl_step(fam)
             fam.c463_speed = fam.c463_speed + fam.c463_accel
@@ -41716,15 +41727,16 @@ local function card_frame(owner)
             fam.y = fam.y + math.sin(fam.c463_ang) * fam.c463_speed
             if class.th08_combat.actor_outside(fam) then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     if owner.c463_fams then
         for i = 1, #owner.c463_fams do
             if IsValid(owner.c463_fams[i]) then object.RawDel(owner.c463_fams[i]) end
@@ -42560,6 +42572,7 @@ end
 ---★ 每挂一次是一个从 t=0 重跑的新 context；这里也重开一份状态。
 ---------------------------------------------------------------------
 local function mount_gun(owner, ang, step)
+    OriginalStageVisual.source_event(owner,8,"ecldata2",{0,62})
     ---记录 0 / 1 在枪的 t=0 段里写一次（`ins_111` 的槽 0 / 1）。
     EX.set_record(owner, 0, EX.K.CULL, 0, GUN_CULL_FRAMES)
     EX.set_record(owner, 1, EX.K.REL, 1, GUN_DECEL_FRAMES, 1, 0, 0)
@@ -42587,7 +42600,7 @@ local function gun_step(owner, g)
         count2 = GUN_COUNT2,
         speed1 = GUN_SPEED1, speed2 = GUN_SPEED2,
         angle = g.ang,
-        step = (g.phase == 1) and g.astep or GUN_ASTEP_B,
+        step = (g.phase == 1) and g.astep or -GUN_ASTEP_B,
         flags = GUN_FLAGS,
     })
     ---出手后的三条增量（循环体 A 与 B 镜像）。
@@ -42641,13 +42654,18 @@ familiar_cls = class.th08_combat.actor("ecldata2:30", {
 
 ---使魔的 ECL：t=0 段（记录 + 延迟出弹 + 间隔初值）与 t=61 的 `ins_71(0)`。
 local function fam_ecl_step(fam)
+    if fam.c465_t>0 and fam._original_actor then fam._original_actor.vm.rotation[3]=-fam.c465_ang end
     if fam.c465_t == 0 then
         ---记录 0/1/2 + `ins_107/99/108`（t=0 段一次跑完）。
         EX.set_record(fam, 0, EX.K.WAIT, 0, FAM_WAIT_FRAMES)
         EX.set_record(fam, 1, EX.K.SPRITE, 0, FAM_SPRITE_TYPE, FAM_SPRITE_COLOR)
         EX.set_record(fam, 2, EX.K.VEC, 0, FAM_VEC_FRAMES, -1, FAM_VEC_MAG, -999.9)
-        fam.c465_shot_t = ran:Int(0, FAM_SHOT_INTERVAL - 1)
+        fam.c465_shot_t=0
         fam.c465_t = 1
+    elseif fam.c465_t==1 then
+        fam.c465_shot_t=ran:Int(0,FAM_SHOT_INTERVAL-1)
+        fam.c465_interval_enabled=true
+        fam.c465_t=2
     elseif fam.c465_t == FAM_ACCEL_STOP_T then
         fam.c465_accel = 0
         fam.c465_t = fam.c465_t + 1
@@ -42660,6 +42678,7 @@ end
 ---从**当前位置**重发一颗，然后计时器归零（所以是每 9 帧一发）。
 ---★ 存下的 `ins_99` 的角操作数是变量 rndAngle ⇒ 出手那一刻才解析 ⇒ **每发都重摇**。
 local function fam_shot_tick(fam)
+    if not fam.c465_interval_enabled then return end
     fam.c465_shot_t = fam.c465_shot_t + 1
     if fam.c465_shot_t >= FAM_SHOT_INTERVAL then
         fam.c465_shot_t = 0
@@ -42667,7 +42686,7 @@ local function fam_shot_tick(fam)
             op = 99, type = FAM_TYPE, color = EX.color(FAM_COLOR),
             count1 = 1, count2 = 1,
             speed1 = FAM_SPEED1, speed2 = FAM_SPEED2,
-            angle = ran:Float(-PI, PI), step = FAM_ASTEP, flags = FAM_FLAGS,
+            angle = -ran:Float(-PI, PI), step = -FAM_ASTEP, flags = FAM_FLAGS,
         })
     end
 end
@@ -42757,6 +42776,10 @@ local function sub465_step(owner)
 end
 
 local function card_init(owner)
+    owner.th08_manual_main_anm=true
+    if not owner._original_actor or owner._original_actor.archive~="stg2enm" then
+        OriginalStageVisual.source_event(owner,8,"ecldata2",{0,59,0})
+    end
     EX.clear_records(owner)
     EX.pool_clear()
     owner.c465_main = { t = 0, pc = 1, pause = 0 }
@@ -42794,8 +42817,7 @@ local function card_frame(owner)
     ---④ 敌机循环里的使魔（BOSS 之后才轮到它们）：ECL → UpdateMovement →
     ---   延迟出弹 → IntegrateVelocity（RunEcl 里出弹排在积分之前，所以用旧坐标）。
     local fams = owner.c465_fams
-    for i = #fams, 1, -1 do
-        local fam = fams[i]
+    class.th08_combat.step_actors(fams,function(fam)
         if IsValid(fam) then
             fam_ecl_step(fam)
             fam.c465_speed = fam.c465_speed + fam.c465_accel
@@ -42804,15 +42826,16 @@ local function card_frame(owner)
             fam.y = fam.y + math.sin(fam.c465_ang) * fam.c465_speed
             if class.th08_combat.actor_outside(fam) then
                 object.RawDel(fam)
-                table.remove(fams, i)
+
             end
         else
-            table.remove(fams, i)
+
         end
-    end
+    end)
 end
 
 local function card_del(owner)
+    owner.th08_manual_main_anm=nil
     if owner.c465_fams then
         for i = 1, #owner.c465_fams do
             if IsValid(owner.c465_fams[i]) then object.RawDel(owner.c465_fams[i]) end
