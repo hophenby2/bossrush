@@ -92,7 +92,8 @@ local function body_vm(game,kind,color)
     local archive=game==6 and (kind==9 and 'etama4' or 'etama3') or ((game==7 or game==8) and 'etama' or 'bullet')
     local id=game==6 and (kind==9 and 0 or kind) or game==7 and (kind==10 and 25 or kind) or game==8 and body8[kind]
         or game==95 and body95[kind]+color or game==10 and body10[kind]+color
-    local v=A.new(game,archive,assert(id,'原作弹型缺失'))
+    assert(id,'原作弹型缺失')
+    local v=A.new(game,archive,id)
     if game==6 or game==7 or game==8 then
         if not (game==6 and kind==7) then v.sprite=v.sprite+color end
     else A.interrupt(v,2);A.step(v) end
