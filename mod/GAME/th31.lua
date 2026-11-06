@@ -27586,10 +27586,10 @@ local function wave(owner)
             op = 97, type = 2, color = EX.color(2),
             count1 = WAVE_FAN, count2 = 1,
             speed1 = WAVE_SPEED, speed2 = WAVE_SPEED2,
-            angle = -shot, step = -WAVE_STEP, flags = WAVE_FLAGS,
+            angle = -th, step = -WAVE_STEP, flags = WAVE_FLAGS,
         })
         ---`ins_15(lf2, π/16)` + `ins_37`（NORMALIZE_ANGLE）。
-        th = shot
+        th = (th + WAVE_ANGLE_STEP + PI) % (2 * PI) - PI
     end
 end
 

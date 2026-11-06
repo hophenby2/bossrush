@@ -413,7 +413,7 @@ function RenderFunc()
     if GameNet then GameNet.Capture.begin() end
     BeginScene()
     SetViewMode("ui")
-    SetWorldFlag(1)
+    -- SetWorldFlag(1)
     Failed_Show:BeforeRender()
 
     ext.saveScreenBefore()
