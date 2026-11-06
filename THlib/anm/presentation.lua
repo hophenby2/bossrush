@@ -1,7 +1,27 @@
 -- 离线导出的演出调度：只执行标量、CALL/等待/子context和独立ANM，不产生伤害或运动。
 -- 不把时间戳套到墙钟；效果子程序的30/32拍、动态等待及回跳沿各context自己的时间。
 local T={shared={[8]={},[95]={}},carriers={},managed={},ambients={}}
-local data=dofile('mod/GAME/original/presentation_programs.lua')
+-- 原导出文件把 TH08/TH095 全部文件的演出脚本塞进一张表，约 20 万个字面量常量，
+-- 超过 LuaJIT 单函数 65536 常量上限（lj_parse.c: fs_fixup_k，BCMAX_D+1 = 0x10000）。
+-- 现按 ECL 文件切成 presentation_programs.d/，首次访问时才加载。
+local program_index=dofile('mod/GAME/original/presentation_programs_index.lua')
+local program_cache={[8]={},[95]={}}
+local function program_file(game,file)
+    -- 演出常量只导出 TH08(8)/TH095(95)；其余作品（如 TH10 的 game=10）没有数据。
+    -- 原实现靠 data[game] and data[game][file] 短路，这里必须显式挡住，否则索引 nil。
+    local cache=program_cache[game]
+    if not cache or not file then return false end
+    local bank=cache[file]
+    if bank==nil then
+        bank=false
+        local names=program_index[tostring(game)]
+        if names and names[file] then
+            bank=dofile('mod/GAME/original/presentation_programs.d/'..game..'_'..file..'.lua') or false
+        end
+        cache[file]=bank
+    end
+    return bank
+end
 local F=dofile('THlib/anm/original_effects.lua')
 T.sound=dofile('THlib/anm/original_sounds.lua')
 function T.native_pulse(owner,duration,repeats,argb)
@@ -274,7 +294,8 @@ local function run(s,c)
 end
 function T.bind(o,game,key)
     local file,number=key:match('^([^:]+):(.+)$')
-    local bank=data[game] and data[game][file]
+    if not file or not number then return false end
+    local bank=program_file(game,file)
     local sub='Sub'..number
     o._original_native_motion=bank and bank.motion[sub]
     if not bank or not bank.active[sub] then o._original_presentation=nil;return end

@@ -5664,8 +5664,8 @@ end
 --     · `moveVelTime(dur, mode, ang, spd)` 对（角, 速度）一起插值，`−999999`
 --       表示「不改」；首次进入圆运动时把当前位置存成圆心（照 m_circle）。
 --=====================================
-do
 local s6mid = {}
+do
 
 ---镜像角：wrap(π/2 − wrap(a − π/2)) ≡ wrap(π − a)。
 local function s6_mirror(a) return t10_wrap(TH10_PI - a) end
