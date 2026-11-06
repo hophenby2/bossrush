@@ -592,13 +592,15 @@ end
 LoadImageFromFile("weapon_arrow", "THlib\\UI\\weapon_arrow.png")
 LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 
+local rogue_pool_menu=dofile('THlib/UI/rogue_pool.lua')
 player_system_select = Class(object)
 function player_system_select:fresh(mode)
-    -- 随机模式只选择自机；入口一次性设置，避免沿用普通流程的系统选择状态。
+    -- 随机模式选择自机及卡池；入口一次设置，避免沿用普通流程的系统选择状态。
     self.simple_mode = mode=='roguelike' or mode=='rogue_dual' or mode=='rogue_chain'
     self.simple_dual = false
     self.simple_chain = false
     self.simple_title = self.simple_mode and "选择玩家 · 随机十战" or nil
+    rogue_pool_menu.fresh(self,mode)
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
     for i, p in ipairs(scoredata.UnlockSystem) do
@@ -637,6 +639,7 @@ function player_system_select:init(exit_func)
     self.maxcolindex = 0
     self.state = "stage"
     function self:yes()
+        if not rogue_pool_menu.ready(self) then return end
         if self.unlockplayer[self.pos1] == true then
             scoredata.player_select = self.pos1
             lstg.var.player_name = player_list[self.pos1][2]
@@ -704,6 +707,7 @@ function player_system_select:frame()
     local mouse = ext.mouse
     menu:Updatekey()
     menu:ControlExit(0, 30, 540, 510)
+    if self.pool_options then rogue_pool_menu.frame(self);return end
     if menu:keyYes() then
         self:yes()
     elseif GetLastKey() == setting.keys.special then
@@ -782,7 +786,7 @@ function player_system_select:render()
     ui:DrawBack(Alpha, self.timer)
     menu:RenderExit(0, 30, 540, 510, Alpha)
     local mx, my, r = 240, 250, 155 + (cur_setting.easyrender and 0 or sin(self.timer * 3) * 2)
-    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · 随机十战")) or self.title, self.simple_dual and 240 or Alpha * 200 - 100, 460, self.simple_dual and 1.0 or 1.25,
+    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · 随机十战")) or self.title, (self.simple_dual or self.pool_options) and 240 or Alpha * 200 - 100, 460, (self.simple_dual or self.pool_options) and 1.0 or 1.25,
             Color(255 * Alpha, 230, 230, 230), "centerpoint")
     SetImageState("bright_line", "mul+add", Alpha * 255, 255, 255, 255)
     Render("bright_line", Alpha * 200 - 100, 446, 0, 0.5, 0.5)
@@ -848,6 +852,8 @@ function player_system_select:render()
         ui:RenderText("title", ("按%s键选择系统"):format(self.keyname[setting.keys.special]),
                 930, 83 + Alpha * 400, 1, Color(Alpha * (155 + 50 * sin(self.timer * 4)), 255, 255, 255), "right")
 
+    elseif self.pool_options then
+        rogue_pool_menu.render(self)
     else
         local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
             or self.simple_chain and {"TH31 / TH34 / TH35","随机十张符卡或非符，不重复","Boss 剩余 30% HP 或不足 7 秒时","立即创建下一张，旧 Boss 继续战斗","答对可复活三次，支持自动 / F5 保存"}
@@ -872,8 +878,9 @@ function player_system_select:render()
 
     SetImageState("general_button", "", Alpha * 200, 255, 255, 255)
     Render("general_button", 480, 45, 0, 0.3 + self.colindex * 0.05)
-    ui:RenderText("title", ("准备就绪(%s)"):format(self.keyname[setting.keys.shoot]), 480, 45, 1,
-            Color(Alpha * 255, 255, 255, 255 - self.colindex * 100), "centerpoint")
+    local pool_ready=not self.pool_options or (self.pool_status and self.pool_status.valid)
+    ui:RenderText("title", ("准备就绪(%s)"):format(self.pool_options and 'Enter' or self.keyname[setting.keys.shoot]), 480, 45, 1,
+            pool_ready and Color(Alpha * 255, 255, 255, 255 - self.colindex * 100) or Color(Alpha * 180,150,150,150), "centerpoint")
 
 end
 

@@ -15,7 +15,7 @@ boss.card.add=function(parts,level,label,id,...)
     _sc_pr_table[level]=_sc_pr_table[level] or {};table.insert(_sc_pr_table[level],unit)
 end
 dofile('mod/_editor_output.lua')
-for _,id in ipairs({'31','34','35'}) do dofile('mod/GAME/th'..id..'.lua') end
+for _,id in ipairs({'31','32','34','35'}) do dofile('mod/GAME/th'..id..'.lua') end
 local function random()
     local gen={value=1}
     function gen:Seed(v) self.value=v%2147483646+1 end
@@ -55,7 +55,9 @@ New=function(class,cards)
     elseif class.init then class.init(obj);if obj.group==GROUP.GHOST and obj.layer==LAYER.TOP then panels[#panels+1]={obj=obj,class=class} end end
     return obj
 end
-local R=dofile('mod/roguelike.lua');local pool=R.buildPool()
+local R=dofile('mod/roguelike.lua')
+local bossFilters=R.defaultFilters('dual')
+local pool=R.buildPool(bossFilters)
 local counts={};local original={};local spell,non=false,false
 -- 锁住会暴露“拿 Boss 资源 id 查标定表”的代表卡：三面非符、五面中 BOSS 非符、二面过渡非符。
 local calibrated={[427]=1079,[3433]=1153,[467]=338}
@@ -87,12 +89,46 @@ check(done,'接续模式：剩余 179 帧推进')
 local function keys(cards) local out={};for _,v in ipairs(cards) do out[#out+1]=v.key end;return table.concat(out,',') end
 local observed={}
 for seed=1,400 do
-    local plan=R.draw(seed);check(#plan==10,'恰好十战')
+    local plan=R.draw(seed,1,bossFilters);check(#plan==10,'恰好十战')
     local seen={};for _,entry in ipairs(plan) do assert(not seen[entry.key],'本局重复卡');seen[entry.key]=true;observed[entry.source]=true end
-    check(keys(plan)==keys(R.draw(seed)),'相同种子固定路线，支持录像与重建')
+    check(keys(plan)==keys(R.draw(seed,1,bossFilters)),'相同种子固定路线，支持录像与重建')
 end
 check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽到')
-check(keys(R.draw(17))~=keys(R.draw(31415)),'不同种子产生不同路线')
+check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同种子产生不同路线')
+-- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
+local all,count=R.buildPool()
+check(#all==4 and count==387,'全开包含四作的387个已核对条目')
+local forbidden={[4408]=true,[4439]=true,[4457]=true,[4468]=true,[4470]=true,
+    [4471]=true,[4472]=true,[4473]=true,[4475]=true,[4476]=true,[3407]=true,[3411]=true,[351]=true,[368]=true}
+for _,bucket in ipairs(all) do for _,entry in ipairs(bucket.cards) do
+    check(not forbidden[entry.cardId],'Normal/Hard/Phantasm/Last Word/自制不进入新池')
+end end
+local selected=R.defaultFilters()
+selected.stages={TH31=false,TH32=true,TH34=false,TH35=false}
+selected.difficulties={lunatic=false,extra=true}
+selected.encounters={boss=true,road=false}
+for seed=1,30 do
+    local drawn=R.draw(seed,1,selected)
+    local seen={}
+    for _,entry in ipairs(drawn) do
+        check(entry.source=='TH32' and entry.difficulty=='extra' and entry.kind=='boss','只抽所选红魔乡Extra Boss')
+        check(not seen[entry.cardId],'筛选后仍然不重复');seen[entry.cardId]=true
+    end
+    check(keys(drawn)==keys(R.draw(seed,1,selected)),'筛选后的种子可重建')
+end
+local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false
+local state=R.poolStatus(small)
+check(not state.valid and state.count==6,'仅Extra道中不足十张，禁止跨池补抽')
+check(not pcall(R.draw,123,1,small),'直接抽取小池也拒绝，防止绕过准备界面')
+local empty=R.copyFilters(selected);empty.difficulties.extra=false
+check(not R.poolStatus(empty).valid,'空难度不能开始')
+empty=R.copyFilters(selected);empty.encounters.boss=false
+check(not R.poolStatus(empty).valid,'空战斗类型不能开始')
+empty=R.copyFilters(selected);empty.stages.TH32=false
+check(not R.poolStatus(empty).valid,'空来源不能开始')
+local copy=R.copyFilters(selected);copy.stages.TH31=true
+check(not selected.stages.TH31,'筛选副本不回写菜单/本局快照')
+
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
 check(true,'抽取不改原卡参数与函数')
 local function simulate(seed,failRound,variant)

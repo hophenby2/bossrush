@@ -1,6 +1,6 @@
 -- 简易随机十战：借鉴参考项目的事件抽取与逐步推进，不引入天气、道具或商店。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=2,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='随机十战',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -50,8 +50,16 @@ local function releaseChainGhosts(battle)
         if not previousAlive then table.remove(watches,i) end
     end
 end
+local poolSource=dofile('mod/rogue_pool.lua')
+R.sources=poolSource.sources
+R.defaultFilters=poolSource.defaults
+R.copyFilters=poolSource.copy
+R.buildPool=poolSource.build
+function R.poolStatus(filters,width) return poolSource.status(filters,R.COUNT*(width or 1)) end
+
+-- 旧录像初态没有筛选版本，保留旧抽取算法与来源顺序。新局不会走这条路径。
 local sources={{level=29,code='TH31'},{level=32,code='TH34'},{level=33,code='TH35'}}
-function R.buildPool()
+local function replayPoolV1()
     local pool={}
     for _,source in ipairs(sources) do
         local bucket={code=source.code,level=source.level,cards={}}
@@ -71,9 +79,15 @@ function R.buildPool()
     end
     return pool
 end
-function R.draw(seed,width)
+function R.draw(seed,width,filters,poolVersion)
     width=width or 1;assert(width==1 or width==2)
-    local pool=R.buildPool();local gen=Rand();gen:Seed(seed)
+    local pool,total
+    if poolVersion==1 then pool=replayPoolV1()
+    else
+        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual') or nil))
+        assert(total>=R.COUNT*width,'所选随机卡池不足，不能跨池补抽')
+    end
+    local gen=Rand();gen:Seed(seed)
     local cards={}
     for step=1,R.COUNT*width do
         local available={};for _,bucket in ipairs(pool) do if #bucket.cards>0 then available[#available+1]=bucket end end
@@ -88,11 +102,22 @@ function R.draw(seed,width)
     end
     return cards
 end
-function R.start(variant)
+function R.start(variant,filters)
+    variant=variant or 'single'
+    local config=assert(R.modes[variant])
+    local options=R.copyFilters(variant=='single' and (filters or scoredata.rogue10_filters) or R.defaultFilters(variant),variant)
+    local status=R.poolStatus(options,config.width)
+    if not status.valid then return false,status.message end
+    -- stage.group.Start立即序列化录像初态；筛选必须先写入lstg.var，不能只放在菜单对象里。
+    lstg.var.__rogue_pool_version=R.POOL_VERSION
+    lstg.var.rogue_filters=options
+    lstg.var.rogue_variant=variant
+    lstg.var.rogue_run=nil
+    if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options) end
     StopMusic('SCORE')
-    variant=variant or 'single';local config=assert(R.modes[variant]);lstg.var.rogue_variant=variant
     lstg.var.current_system=''
     stage.group.Start(stage.groups[config.name])
+    return true
 end
 function R.finish(self,won)
     if self.rogue_finished then return end
@@ -221,7 +246,10 @@ local function register(variant,config)
         self.rogue_scene_ready=false
         self.rogue_chain_ghosts=nil
         self:Option()
-        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,cards=R.draw(lstg.var.ran_seed,config.width),current=0,completed=0}
+        local version=lstg.var.__rogue_pool_version or (ext.replay.IsReplay() and 1 or R.POOL_VERSION)
+        local filters=version>=2 and R.copyFilters(lstg.var.rogue_filters,variant) or nil
+        lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,
+            cards=R.draw(lstg.var.ran_seed,config.width,filters,version),current=0,completed=0}
         self.level=29
         task.New(self,function() runCards(self) end)
         New(panel)
@@ -267,7 +295,7 @@ local function register(variant,config)
         local back=menu:keyNo() or (mouse:isDown(1) and overButton(mouse.x,mouse.y,300,465))
         local again=menu:keyYes() or (mouse:isDown(1) and overButton(mouse.x,mouse.y,495,660))
         if back then stage.group.ReturnToTitle(true,self.run.won and 1 or 0)
-        elseif again then R.start(self.run.mode) end
+        elseif again then R.start(self.run.mode,self.run.filters) end
     end
     -- SCORE 是全局资源，切场景不会卸载它；返回标题、重开和外部切场都须停播。
     function result:del()
@@ -308,7 +336,11 @@ function panel:render()
     local config=mode(run)
     for side=1,config.width do
         local entry=run.cards[(run.current-1)*config.width+side]
-        local text=entry and entry.source..' · '..(entry.spell and '符卡' or '非符') or '准备开始'
+        local text='准备开始'
+        if entry then
+            local difficulty=entry.difficulty and (entry.difficulty=='extra' and 'Extra · ' or 'Lunatic · ') or ''
+            text=entry.source..' · '..difficulty..(entry.kind=='road' and '道中' or (entry.spell and '符卡' or '非符'))
+        end
         if config.width==2 then text=(side==1 and '右侧 ' or '左侧 ')..text end
         ui:RenderText('title',text,150,315-(side-1)*25,0.65,color,'centerpoint')
     end

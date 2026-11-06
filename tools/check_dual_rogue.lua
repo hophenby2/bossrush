@@ -3,7 +3,7 @@ return function(f)
     local R,check=f.R,f.check
     local sameBoss=false
     for seed=1,500 do
-        local cards=R.draw(seed,2);check(#cards==20,'双模式恰好二十张卡')
+        local cards=R.draw(seed,2,R.defaultFilters('dual'));check(#cards==20,'双模式恰好二十张卡')
         local seen={}
         for i=1,#cards do
             local e=cards[i];assert(not seen[e.cardId],'双模式出现重复符卡');seen[e.cardId]=true
@@ -14,7 +14,7 @@ return function(f)
                 if ca.name==cb.name then sameBoss=true end
             end
         end
-        local again=R.draw(seed,2)
+        local again=R.draw(seed,2,R.defaultFilters('dual'))
         for i,e in ipairs(cards) do assert(e.key==again[i].key,'双模式种子不稳定') end
     end
     check(sameBoss,'允许抽到两名同角色 Boss，不限制角色去重')

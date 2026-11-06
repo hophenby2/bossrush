@@ -257,7 +257,7 @@ function stage_menu:init()
                     elseif practice == 'rogue_chain' then
                         RogueTen.start('chain')
                     elseif practice == 'roguelike' then
-                        RogueTen.start()
+                        RogueTen.start('single',menu_player_system_select.pool_options)
                     elseif practice == 'stage' then
                         local select = menu_practice.stage_selects[menu_practice.pos]
                         if type(select.stage) == "function" then
