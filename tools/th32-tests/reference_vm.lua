@@ -3,7 +3,9 @@
 return function(H,P,data)
     local names={[-10001]='i0',[-10002]='i1',[-10003]='i2',[-10004]='i3',[-10005]='f0',[-10006]='f1',[-10007]='f2',[-10008]='f3',[-10009]='c0',[-10010]='c1',[-10011]='c2',[-10012]='c3'}
     local function tr(n) return n<0 and math.ceil(n) or math.floor(n) end
-    local function norm(n) while n>math.pi do n=n-2*math.pi end;while n< -math.pi do n=n+2*math.pi end;return n end
+    -- TH06的ZUN_PI/ZUN_2PI为单精度；保留原始ECL的正负π端点。
+    local pi,tau=3.1415927410125732,6.2831854820251465
+    local function norm(n) while n>pi do n=n-tau end;while n< -pi do n=n+tau end;return n end
     local function compare(n,a,b)
         if n==0 then return a<b elseif n==1 then return a<=b elseif n==2 then return a==b elseif n==3 then return a>b elseif n==4 then return a>=b else return a~=b end
     end

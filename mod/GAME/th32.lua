@@ -26,6 +26,9 @@ local task, object, bullet, laser = task, object, bullet, laser
 local min, max, floor, sqrt = math.min, math.max, math.floor, math.sqrt
 local cos, sin, atan2 = math.cos, math.sin, math.atan2
 local PI, DEG = math.pi, 180 / math.pi
+-- TH06 Global.cpp:1201的归一化边界是float32的ZUN_PI，而不是Lua的双精度math.pi。
+-- ECL中的+π略大于math.pi；错误换边会把RANDOM的[-π,+π]压成朝左的极窄区间。
+local ECL_PI, ECL_TAU = 3.1415927410125732, 6.2831854820251465
 local bit = require("bit")
 local band = bit.band
 local LEVEL, RANK, POOL_SIZE = 30, 32, 640
@@ -52,8 +55,8 @@ local function colour(sprite, c)
     return c+1
 end
 local function normal_angle(a)
-    while a > PI do a = a - 2 * PI end
-    while a < -PI do a = a + 2 * PI end
+    while a > ECL_PI do a = a - ECL_TAU end
+    while a < -ECL_PI do a = a + ECL_TAU end
     return a
 end
 local function alive(b)
@@ -230,12 +233,14 @@ local function shoot(owner, mode, sprite, c, n, layers, v1, v2, a, step, flags, 
             local angle = a
             if mode == "ring" or mode == "ring_aim" or mode == "random_speed" then angle = a + aimed + i * 2 * PI / n + layer * step
             elseif mode == "offset" or mode == "offset_aim" then angle = a + aimed + PI / n + i * 2 * PI / n
-            elseif mode == "random" or mode == "random_angle" then angle = ran:Float(step, a)
+            -- 原作是angle2+RNG(0..1)*(angle1-angle2)，负区间也保留方向。
+            -- 引擎Rand:Float会交换倒置端点，不能直接把两个原作参数传进去。
+            elseif mode == "random" or mode == "random_angle" then angle = step + ran:Float(0, 1) * (a - step)
             else
                 local k = n % 2 == 1 and floor((i + 1) / 2) or floor(i / 2) + .5
                 angle = a + aimed + (i % 2 == 1 and -1 or 1) * k * step
             end
-            local speed = (mode == "random" or mode == "random_speed") and ran:Float(v2, v1) or v1 - (v1 - v2) * layer / layers
+            local speed = (mode == "random" or mode == "random_speed") and (v2 + ran:Float(0, 1) * (v1 - v2)) or v1 - (v1 - v2) * layer / layers
             s.pool[slot]=New(class["原作弹"],s,sprite,c,x,y,angle,speed,flags or 0,ex)
         end
         if full then break end

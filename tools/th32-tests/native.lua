@@ -9,7 +9,9 @@ _G.GROUP={GHOST=0,ENEMY=2,LASER=10};_G.LAYER={ENEMY=0,ENEMY_BULLET=0}
 _G.SetAttr=function(b,k,v) rawset(b,k,v) end
 _G.BossWalkImageSystem=function() return {SetImageInList=noop,frame=noop,render=noop} end
 -- 本测试对照 ECL 的运动/发弹事件；ANM 另由真实播放器与 Windows 引擎验证。
-_G.OriginalStageVisual={th06_script=function(o) o._original_actor={vm={}} end,poses=noop,slot=noop}
+_G.OriginalStageVisual={th06_script=function(o) o._original_actor={vm={data={sprites={}},rotation={0,0,0}},slots={}} end,poses=noop,slot=noop,tick=noop,
+    presentation={new_effect=function() return {vm={scale={}}} end,clear=noop}}
+_G.OriginalANM={interrupt=noop}
 _G.enemy={init=function(b,style,hp) b.hp=hp;b.maxhp=hp;b._wisys={frame=noop,render=noop};b._a=255;b._r=255;b._g=255;b._b=255 end,render=noop}
 _G.item={obj={}}
 for _,name in ipairs({'faith','point','addcharge','addmisscount','faith_minor'}) do
@@ -197,7 +199,8 @@ if mode=='unit' then
     assert(#b.th06.pool==8)
     local first=b.th06.pool[1]
     approx(first.th06_angle,math.pi/2-math.pi/20)
-    assert(first.th06_spawn==24 and first._index==6 and first.a==16 and first.rect)
+    -- 原生图集直接使用ECL色号+1，不再经过旧代理弹图的八色映射。
+    assert(first.th06_spawn==24 and first._index==2 and first.a==16 and first.rect)
     local distance=0
     for i=1,24 do first.class.frame(first);distance=distance+math.sqrt(first.vx^2+first.vy^2) end
     approx(distance,24*7/2.5+7)
@@ -215,7 +218,7 @@ if mode=='unit' then
     assert(seed(owner)==1 and s.pool[2].th06_sprite==3)
     local small=s.pool[2]
     awake(owner,false)
-    assert(small.th06_awake and small._index==2 and small.th06_vx==0)
+    assert(small.th06_awake and small._index==3 and small.th06_vx==0)
     for _=1,31 do small.class.frame(small);approx(small.vx,0);approx(small.vy,0) end
     small.class.frame(small);approx(small.vx,.01)
     for _=1,119 do small.class.frame(small) end
@@ -235,8 +238,9 @@ if mode=='unit' then
         ray.class.frame(ray)
         if i<50 then assert(not ray.colli) end
         if i==50 then assert(ray.colli and ray.l2<20) end
-        if i==60 then approx(ray.l2,440);approx(ray.w,10) end
-        if i==150 then assert(ray.colli and ray.l2<20) end
+        if i==60 then approx(ray.l2,10);approx(ray.w,10) end -- 预热末帧仍用短段判定。
+        if i==61 then approx(ray.l2,440) end
+        if i==150 then assert(ray.colli and ray.l2==440) end -- ACTIVE进入收束的当帧仍判整段。
         local x,y,l,w=ray.x,ray.y,ray.l2,ray.w
         ray.class.render(ray);assert(x==ray.x and y==ray.y and l==ray.l2 and w==ray.w)
     end
@@ -272,7 +276,7 @@ if mode=='unit' then
     end
     local b,a,s=actor()
     local cross_colour=single(s,9,5,0,0,0,0,0)
-    assert(cross_colour._index==10,'时停 GREEN8 变色要支持四原色泡弹')
+    assert(cross_colour._index==6,'原生泡弹色号直接使用ECL索引')
     cross_colour=single(s,6,15,0,0,0,0,0)
     assert(cross_colour._index==16,'冻结 WHITE 变色要支持八色大玉')
     local frozen=single(s,3,2,0,0,0,2,0)
@@ -300,7 +304,7 @@ if mode=='unit' then
     single(s,9,1,64,0,0,1,0)
     local near=single(s,3,1,48,48,0,0,0);local far=single(s,3,1,200,200,0,0,0)
     H.extra(b,a.context,15,0,true);assert(a.context.i3==1 and near.th06_speed==.01 and far.th06_speed==0)
-    approx(near.th06_angle,-math.pi*.55);assert(near._index==2)
+    approx(near.th06_angle,-math.pi*.55);assert(near._index==3)
     H.extra(b,a.context,16,0,false);approx(a.context.f3,1);assert(a.context.c1==280)
     b.hp=3000;H.extra(b,a.context,16,0,false);approx(a.context.f3,1.5);assert(a.context.c1==160)
     b.hp=6000;a.phase=7200;H.extra(b,a.context,16,0,false);approx(a.context.f3,2);assert(a.context.c1==40)
@@ -350,8 +354,8 @@ local function event(kind,...)
     io.write(table.concat(out,'|'),'\n')
 end
 local function angle(a)
-    while a>math.pi do a=a-2*math.pi end
-    while a< -math.pi do a=a+2*math.pi end
+    while a>3.1415927410125732 do a=a-6.2831854820251465 end
+    while a< -3.1415927410125732 do a=a+6.2831854820251465 end
     return a
 end
 patch('begin',function(b,y,rank) b.th06=state();b.th06.rank_speed=rank or 0;task.Wait(120) end)
