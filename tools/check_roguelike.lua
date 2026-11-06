@@ -97,12 +97,29 @@ check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽�
 check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同种子产生不同路线')
 -- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
 local all,count=R.buildPool()
-check(#all==4 and count==387,'全开包含四作的387个已核对条目')
+check(#all==4 and count==410,'全开包含四作的410个已核对条目')
 local forbidden={[4408]=true,[4439]=true,[4457]=true,[4468]=true,[4470]=true,
-    [4471]=true,[4472]=true,[4473]=true,[4475]=true,[4476]=true,[3407]=true,[3411]=true,[351]=true,[368]=true}
+    [4471]=true,[4472]=true,[4473]=true,[4475]=true,[4476]=true,[351]=true,[368]=true}
 for _,bucket in ipairs(all) do for _,entry in ipairs(bucket.cards) do
-    check(not forbidden[entry.cardId],'Normal/Hard/Phantasm/Last Word/自制不进入新池')
+    check(not forbidden[entry.cardId],'Normal/Hard/Last Word/自制不进入新池')
 end end
+local merged=R.defaultFilters()
+merged.stages={TH31=false,TH32=false,TH34=true,TH35=false}
+merged.difficulties={lunatic=false,extra=true}
+local mergedPool,mergedCount=R.buildPool(merged)
+local phBoss,phRoad,exBoss=false,false,false
+for _,entry in ipairs(mergedPool[1].cards) do
+    phBoss=phBoss or entry.cardId==3440
+    phRoad=phRoad or entry.cardId==3407
+    exBoss=exBoss or entry.cardId==3471
+    check(entry.difficulty=='extra','Extra与Phantasm共用同一筛选键')
+end
+check(mergedCount==45 and phBoss and phRoad and exBoss,'妖妖梦合并池含原EX与PH的Boss和道中')
+local _,oldCount=R.buildPool(nil,2)
+check(oldCount==387,'版本2录像保留原卡池，不因并入Phantasm重抽路线')
+merged.difficulties={lunatic=true,extra=false}
+local lunatic=R.buildPool(merged)
+for _,entry in ipairs(lunatic[1].cards) do check(entry.originalDifficulty=='lunatic','只选Lunatic不混入Extra/Phantasm') end
 local selected=R.defaultFilters()
 selected.stages={TH31=false,TH32=true,TH34=false,TH35=false}
 selected.difficulties={lunatic=false,extra=true}
@@ -118,7 +135,7 @@ for seed=1,30 do
 end
 local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false
 local state=R.poolStatus(small)
-check(not state.valid and state.count==6,'仅Extra道中不足十张，禁止跨池补抽')
+check(not state.valid and state.count==7,'仅Extra/Phantasm道中不足十张，禁止跨池补抽')
 check(not pcall(R.draw,123,1,small),'直接抽取小池也拒绝，防止绕过准备界面')
 local empty=R.copyFilters(selected);empty.difficulties.extra=false
 check(not R.poolStatus(empty).valid,'空难度不能开始')

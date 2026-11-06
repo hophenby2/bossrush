@@ -1,6 +1,6 @@
 -- 简易随机十战：借鉴参考项目的事件抽取与逐步推进，不引入天气、道具或商店。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={POOL_VERSION=2,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=3,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='随机十战',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -84,7 +84,7 @@ function R.draw(seed,width,filters,poolVersion)
     local pool,total
     if poolVersion==1 then pool=replayPoolV1()
     else
-        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual') or nil))
+        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual') or nil),poolVersion)
         assert(total>=R.COUNT*width,'所选随机卡池不足，不能跨池补抽')
     end
     local gen=Rand();gen:Seed(seed)
@@ -338,11 +338,11 @@ function panel:render()
         local entry=run.cards[(run.current-1)*config.width+side]
         local text='准备开始'
         if entry then
-            local difficulty=entry.difficulty and (entry.difficulty=='extra' and 'Extra · ' or 'Lunatic · ') or ''
+            local difficulty=entry.difficulty and (entry.difficulty=='extra' and 'Extra/Phantasm · ' or 'Lunatic · ') or ''
             text=entry.source..' · '..difficulty..(entry.kind=='road' and '道中' or (entry.spell and '符卡' or '非符'))
         end
         if config.width==2 then text=(side==1 and '右侧 ' or '左侧 ')..text end
-        ui:RenderText('title',text,150,315-(side-1)*25,0.65,color,'centerpoint')
+        ui:RenderText('title',text,150,315-(side-1)*25,entry and entry.difficulty=='extra' and 0.55 or 0.65,color,'centerpoint')
     end
     ui:RenderText('title',string.format('失误 %d / %d',lstg.var.dead,R.MISS_LIMIT+((lstg.var.revive and lstg.var.revive.credits) or 0)),150,mode(run).width==2 and 260 or 285,0.7,color,'centerpoint')
     ui:RenderText('title',string.format('答题复活 %d / 3',(lstg.var.revive and lstg.var.revive.used) or 0),150,mode(run).width==2 and 230 or 255,0.65,color,'centerpoint')

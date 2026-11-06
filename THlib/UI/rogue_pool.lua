@@ -6,7 +6,7 @@ local options={
     {group='stages',key='TH34',text='妖妖梦 · TH34',x=505,y=350},
     {group='stages',key='TH35',text='风神录 · TH35',x=720,y=350},
     {group='difficulties',key='lunatic',text='Lunatic',x=505,y=279},
-    {group='difficulties',key='extra',text='Extra',x=720,y=279},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=279},
     {group='encounters',key='boss',text='Boss',x=505,y=208},
     {group='encounters',key='road',text='道中',x=720,y=208},
 }

@@ -33,7 +33,7 @@ function P.copy(filters,variant)
     end
     return out
 end
-function P.build(filters)
+function P.build(filters,poolVersion)
     filters=P.copy(filters)
     local pool,total,seen={},0,{}
     for _,source in ipairs(P.sources) do
@@ -43,13 +43,16 @@ function P.build(filters)
                 local first=unit.sc_group and unit.sc_group[1]
                 local id=first and first.card.card_id
                 local tag=id and tags[source.code][id]
-                if tag and filters.difficulties[tag.difficulty] and filters.encounters[tag.kind]
+                -- extra键保留已有筛选初态；Phantasm只在新版池并入，版本2录像沿用原集合。
+                local difficulty=tag and (tag.difficulty=='phantasm' and 'extra' or tag.difficulty)
+                if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
+                    and not (poolVersion==2 and tag.difficulty=='phantasm')
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''
                     seen[id]=true
                     bucket.cards[#bucket.cards+1]={key=source.code..':'..id,index=index,level=source.level,source=source.code,
                         cardId=id,title=label~='' and label or (first.card.is_sc and first.card.name or '非符'),
-                        spell=first.card.is_sc==true,difficulty=tag.difficulty,kind=tag.kind}
+                        spell=first.card.is_sc==true,difficulty=difficulty,originalDifficulty=tag.difficulty,kind=tag.kind}
                 end
             end
             -- 某作在所选难度/类型下没有候选时不参与来源抽签，不从别处补进卡。
