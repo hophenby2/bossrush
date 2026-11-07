@@ -112,6 +112,9 @@ function pausemenu:frame()
     --执行选项操作
     if (not self.lock) and self.t < 1 then
         local lastkey = GetLastKey()
+        if AndroidInput and AndroidInput.pauseMenu then
+            lastkey = AndroidInput.pauseMenu(self, pause_menu_text) or lastkey
+        end
         --关闭暂停菜单
         if lastkey == setting.keysys.menu then
             PlaySound('cancel00', 0.3)

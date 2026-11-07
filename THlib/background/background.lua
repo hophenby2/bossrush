@@ -74,7 +74,10 @@ function background.Create(bg)
         if setting.displayBG then
             return New(bg), true
         else
-            bg.init(New(Class(object)))
+            local placeholder = New(Class(object))
+            -- 移动端关闭3D背景时只需黑底和原有符卡背景，不必再复制整屏空纹理。
+            placeholder.android_direct_background = AndroidPlatform and not BossRushDesktop
+            bg.init(placeholder)
             return lstg.tmpvar.bg, false
         end
     end
@@ -123,6 +126,7 @@ function background.Capture(bg)
             end
         end,
         render = function(self)
+            if self.direct then return end
             local w = lstg.world
             self.uv1[1], self.uv1[2] = w.l, w.t
             self.uv2[1], self.uv2[2] = w.r, w.t
@@ -146,9 +150,16 @@ function background.Capture(bg)
                     object.Del(self)
                 end
             end,
-            render = function()
-                lstg.PushRenderTarget("WorldTex1")
-                RenderClear(Color(255, 0, 0, 0))
+            render = function(self)
+                local capturer = self.master
+                capturer.direct = capturer.master.android_direct_background
+                if capturer.direct then
+                    SetViewMode('world')
+                    RenderClearViewMode(Color(255, 0, 0, 0))
+                else
+                    lstg.PushRenderTarget("WorldTex1")
+                    RenderClear(Color(255, 0, 0, 0))
+                end
             end
         }, true),
     }, true))

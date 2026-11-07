@@ -37,6 +37,19 @@ if _renderer_text != _renderer.read_text(encoding='utf-8-sig'):
     _renderer.write_text(_renderer_text, encoding='utf-8')
 
 replace('CMakeLists.txt', 'set(CC_USE_GFX LSTGX_USE_GFX)', 'set(CC_USE_GFX ${LSTGX_USE_GFX})')
+# OpenAL 已支持 MONO8/STEREO8；旧解码器却在读取原作 PCM8 音效前将其拒绝。
+replace('frameworks/Audio/AudioDecoderWav.cpp',
+        'if (bit_depth != 16)', 'if (bit_depth != 8 && bit_depth != 16)')
+replace('frameworks/Audio/AudioDecoderWav.cpp',
+        'only support 16bit format, got ', 'only support 8/16bit PCM format, got ')
+# 应用按 Choreographer 的显示时钟请求60帧；不能再在 GL 线程里叠加 Thread.sleep。
+renderer_java = 'frameworks/cocos2d-x/cocos/platform/android/java/src/org/cocos/lib/CocosRenderer.java'
+replace(renderer_java, '    private long mLastTickInNanoSeconds;', '''    private static volatile boolean externalFramePacing;
+    public static void setExternalFramePacing(boolean enabled) { externalFramePacing = enabled; }
+    private long mLastTickInNanoSeconds;''')
+replace(renderer_java,
+        'if (CocosRenderer.sAnimationInterval > CocosRenderer.FPS_CONTROL_THRESHOLD)',
+        'if (!externalFramePacing && CocosRenderer.sAnimationInterval > CocosRenderer.FPS_CONTROL_THRESHOLD)')
 replace('frameworks/LSTG/Object/GameObjectPropertyHash.cpp',
         '//#define PROP_OLD_STYLE', '#define PROP_OLD_STYLE')
 replace('frameworks/LSTG/Object/GameObjectPropertyHash.cpp',

@@ -88,6 +88,10 @@ local function start()
     local function mobileSetting(s)
         s.mod = 'Boss Rush HD'; s.resx, s.resy, s.windowed = frameSize.width, frameSize.height, desktop==true
         s.vsync, s.nosplash = true, true
+        -- 升级安装也启用新的移动端默认值；之后手动关闭的选择继续保留。
+        if not desktop and not s.touchUnlimitedDefaultApplied then
+            s.touchUnlimited, s.touchUnlimitedDefaultApplied = true, true
+        end
     end
     mobileSetting(default_setting)
     function loadConfigure() originalLoadConfigure(); mobileSetting(setting) end
@@ -100,9 +104,7 @@ local function start()
         mobileSetting(cur_setting)
         local f = assert(io.open('User/setting', 'w')); f:write(format_json(Serialize(cur_setting))); f:close()
     end
-    setting.mod = 'Boss Rush HD'
-    setting.resx, setting.resy, setting.windowed = frameSize.width, frameSize.height, desktop==true
-    setting.vsync, setting.nosplash = true, true
+    mobileSetting(setting)
     setting.allowsnapshot = true
     cur_setting = DeSerialize(Serialize(setting))
     AndroidInput = load(desktop and 'game/macos/input.lua' or 'game/android/input.lua')

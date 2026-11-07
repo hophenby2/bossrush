@@ -8,12 +8,16 @@ import android.graphics.Matrix;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
+import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.content.Intent;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -22,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.cocos.lib.CocosActivity;
 import org.cocos.lib.CocosGLSurfaceView;
+import org.cocos.lib.CocosRenderer;
 
 /** 游戏数据仅使用应用私有目录，切后台和失去音频焦点时暂停。 */
 public final class BossRushActivity extends CocosActivity {
@@ -34,6 +39,7 @@ public final class BossRushActivity extends CocosActivity {
     private long startupStarted;
     private boolean nativeResolution;
     private int renderWidth, renderHeight;
+    private FramePacer framePacer;
 
     private void resizeSurface(CocosGLSurfaceView view, int width, int height) {
         if (width <= 0 || height <= 0) return;
@@ -48,6 +54,16 @@ public final class BossRushActivity extends CocosActivity {
 
     @Override public CocosGLSurfaceView onCreateView() {
         CocosGLSurfaceView view = super.onCreateView();
+        view.getHolder().addCallback(new SurfaceHolder.Callback() {
+            private void prefer60Hz(SurfaceHolder holder) {
+                if (Build.VERSION.SDK_INT >= 30 && holder.getSurface().isValid()) {
+                    holder.getSurface().setFrameRate(60.0f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+                }
+            }
+            @Override public void surfaceCreated(SurfaceHolder holder) { prefer60Hz(holder); }
+            @Override public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) { prefer60Hz(holder); }
+            @Override public void surfaceDestroyed(SurfaceHolder holder) {}
+        });
         view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
             resizeSurface(view, right-left, bottom-top));
         view.setOnTouchListener((v, event) -> {
@@ -140,6 +156,9 @@ public final class BossRushActivity extends CocosActivity {
         setEnableVirtualButton(false);
         super.onCreate(state);
         instance = this;
+        CocosRenderer.setExternalFramePacing(true);
+        getGLSurfaceView().setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        framePacer = new FramePacer(getGLSurfaceView());
         showStartup();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
@@ -169,6 +188,7 @@ public final class BossRushActivity extends CocosActivity {
     @Override protected void onResume() {
         super.onResume();
         resumed = true;
+        if (framePacer != null) framePacer.start();
         if (audioManager != null) {
             final boolean active = audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
             runOnGLThread(() -> nativeFocus(active));
@@ -177,6 +197,7 @@ public final class BossRushActivity extends CocosActivity {
 
     @Override protected void onPause() {
         resumed = false;
+        if (framePacer != null) framePacer.stop();
         runOnGLThread(() -> nativeFocus(false));
         if (audioManager != null) audioManager.abandonAudioFocusRequest(focusRequest);
         super.onPause();
@@ -208,6 +229,7 @@ public final class BossRushActivity extends CocosActivity {
     }
 
     @Override protected void onDestroy() {
+        if (framePacer != null) framePacer.stop();
         if (saveManager != null) saveManager.dismiss();
         instance = null;
         super.onDestroy();

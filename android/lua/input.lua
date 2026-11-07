@@ -27,6 +27,27 @@ function I.menuMode()
     if GameNet and GameNet.client() then return false end
     return ext and (ext.StageIsMenu() or (ext.pause_menu and not ext.pause_menu:IsKilled())) or false
 end
+-- 暂停列表没有桌面菜单的鼠标处理：按实际文字位置选行，点击确认，拖动只改变选中项。
+function I.pauseMenu(menu, text)
+    local t = I.pauseTap
+    I.pauseTap = nil
+    if not t then
+        for _, touch in pairs(I.touches) do
+            if touch.pauseMenu == menu then t = touch; break end
+        end
+    end
+    if not t or t.pauseMenu ~= menu or t.pauseChoose ~= menu.choose then return end
+    local x, top, count = menu.choose and 480 or menu.mask_x, menu.choose and 225 or 245, menu.choose and 2 or #text
+    local row = math.floor((top-t.y)/25+0.5)+1
+    if t.x < x-16 or t.x > x+(menu.choose and 150 or 205) or row < 1 or row > count
+        or math.abs(t.y-(top-(row-1)*25)) > 12.5 then return end
+    local field = menu.choose and 'pos2' or 'pos'
+    if menu[field] ~= row then
+        menu[field] = row
+        PlaySound('select00', 0.3)
+    end
+    if t.pauseEnded and not t.pauseMoved then return 13 end
+end
 function I.pulse(key) I.pulses[key] = 2; I.last = key end
 local function binding(action, fallback)
     return setting and setting.keys and setting.keys[action] or fallback
@@ -92,6 +113,11 @@ function I.touch(id, x, y, event)
             lstg.SystemLog(string.format('BOSSRUSH_DRAG_END: target=%.3f,%.3f player=%.3f,%.3f',old.targetX,old.targetY,player.x,player.y))
         end
         if event == 'ended' and old and not old.button and not old.joystick and not old.drag and not old.ignored then I.mouseTap = 2 end
+        if event == 'ended' and old and old.pauseMenu then
+            old.x, old.y, old.pauseEnded = x, y, true
+            old.pauseMoved = old.pauseMoved or (x-old.pauseStartX)^2+(y-old.pauseStartY)^2>64
+            I.pauseTap = old
+        end
         I.touches[id] = nil
         if I.movementId == id then I.movementId = nil end
     else
@@ -137,6 +163,11 @@ function I.touch(id, x, y, event)
                     end
                 end
             end
+            local pause = ext and ext.pause_menu
+            if not t.button and pause and not pause:IsKilled() and not pause.lock and pause.t < 1 then
+                t.pauseMenu, t.pauseChoose = pause, pause.choose
+                t.pauseStartX, t.pauseStartY = x, y
+            end
             if t.button or t.joystick then I.lastTap=nil end
             I.touches[id] = t
         elseif t.drag and t.player == player then
@@ -146,7 +177,10 @@ function I.touch(id, x, y, event)
             local sy = (w.t-w.b)/(w.scrt-w.scrb)/(offset.vscale or 1)
             t.targetX = math.max(w.pl+8, math.min(w.pr-8, t.targetX+(x-t.x)*sx))
             t.targetY = math.max(w.pb+16, math.min(w.pt-32, t.targetY+(y-t.y)*sy))
-        elseif not t.button and not t.joystick and not t.ignored then I.wheel = I.wheel - (y-t.y)*8 end
+        elseif not t.button and not t.joystick and not t.ignored then
+            I.wheel = I.wheel - (y-t.y)*8
+            if t.pauseMenu and (x-t.pauseStartX)^2+(y-t.pauseStartY)^2>64 then t.pauseMoved=true end
+        end
         t.x, t.y = x, y
     end
     rebuild()
@@ -154,6 +188,7 @@ end
 function I.reset(keepToggles)
     I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.lastTap=nil; I.targetX, I.targetY = nil, nil
     if not keepToggles then I.toggles={} end
+    I.pauseTap = nil
 end
 -- 以 1/16 世界单位记录目标，触控、录像与联机使用相同的确定性坐标。
 function I.readMovement(out)

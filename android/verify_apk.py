@@ -37,6 +37,7 @@ with zipfile.ZipFile(apk) as archive:
             assert archive.read(name).decode('utf-8') == source.read_text(encoding='utf-8-sig'), f'游戏脚本有额外改写：{path}'
         elif source.suffix.lower() == '.wav':
             with wave.open(str(source), 'rb') as original, wave.open(io.BytesIO(archive.read(name)), 'rb') as packed:
+                assert packed.getsampwidth() in (1, 2) and packed.getnchannels() in (1, 2), f'引擎不支持的WAV格式：{path}'
                 assert original.getparams() == packed.getparams(), f'WAV 格式改变：{path}'
                 assert original.readframes(original.getnframes()) == packed.readframes(packed.getnframes()), f'WAV 样本改变：{path}'
             wav_count += 1
