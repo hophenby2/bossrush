@@ -173,13 +173,19 @@ local function execute(v)
     error('原作ANM同帧指令未收敛：'..v.data.key..'/'..v.id)
 end
 function A.step(v,dt)
-    for _,child in ipairs(v.children) do A.step(child,dt) end
+    if v.children[1] then for _,child in ipairs(v.children) do A.step(child,dt) end end
     if v.finished then return end
     if not v.stopped then execute(v) end
     if v.finished then return end
     dt=v.unit_speed and 1 or (dt or 1)
-    for i=1,3 do v.rotation[i]=v.rotation[i]+v.omega[i]*dt end
-    for i=1,2 do v.scale[i]=v.scale[i]+v.growth[i]*dt end
+    -- 绝大多数弹雾没有三轴自转/UV流动；不逐粒执行恒为零的积分，保留原指令顺序。
+    local omega,growth=v.omega,v.growth
+    if omega[1]~=0 or omega[2]~=0 or omega[3]~=0 then
+        for i=1,3 do v.rotation[i]=v.rotation[i]+omega[i]*dt end
+    end
+    if growth[1]~=0 or growth[2]~=0 then
+        for i=1,2 do v.scale[i]=v.scale[i]+growth[i]*dt end
+    end
     for key,p in pairs(v.interps) do
         p.time=min(p.duration,p.time+dt)
         local t=p.time/p.duration
@@ -195,7 +201,8 @@ function A.step(v,dt)
         for i,n in ipairs(p.target) do v[key][i]=p.from[i]+(n-p.from[i])*t end
         if p.time>=p.duration then v.interps[key]=nil end
     end
-    v.u=(v.u+v.us*dt)%1;v.v=(v.v+v.vs*dt)%1
+    if v.us~=0 or v.u<0 or v.u>=1 then v.u=(v.u+v.us*dt)%1 end
+    if v.vs~=0 or v.v<0 or v.v>=1 then v.v=(v.v+v.vs*dt)%1 end
     if not v.stopped and not v.wait then v.time=v.time+dt end
 end
 function A.new(game,archive,id,dt)
@@ -216,6 +223,10 @@ function A.sprite_resource(v)
     -- 重试会复用同一张 stage 表，但 ext.lua 会清空 stage 资源池并把 timer 归零。
     if scope~=resource_scope or timer<resource_timer then
         resource_scope=scope;resource_epoch=resource_epoch+1
+        -- 图像句柄随stage资源池释放，避免ANM元数据缓存把上一关纹理永久留在内存中。
+        for _,data in pairs(cache) do
+            for _,sprite in pairs(data.sprites) do sprite.native_draw_resource=nil end
+        end
     end
     resource_timer=timer
     if not s.loaded or s.epoch~=resource_epoch then
@@ -223,10 +234,13 @@ function A.sprite_resource(v)
         if not CheckRes('img',s.img) then LoadImage(s.img,s.tex,s[2],s[3],s[4],s[5]) end
         s.loaded,s.epoch=true,resource_epoch
     end
+    if lstg.AndroidRenderSprite and not s.native_draw_resource then
+        s.native_draw_resource=assert(FindResSprite(s.img))
+    end
     return s
 end
 function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
-    for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end
+    if v.children[1] then for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end end
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
     local color=override and override.color or (v.secondary and v.color2 or v.color)
@@ -238,7 +252,7 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
     if tint then color={color[1]*tint[1]/255,color[2]*tint[2]/255,color[3]*tint[3]/255} end
     local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img
-    SetImageState(image,v.blend,Color(max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])))
+    local ca,cr,cg,cb=max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])
     sx,sy=(sx or 1)*v.scale[1],(sy or sx or 1)*v.scale[2]
     local rot=-v.rotation[3]/rad+(v.follow and (angle or 0) or 0)
     -- X/Y 旋转在原作相机正交的二维精灵上体现为投影宽高。
@@ -250,7 +264,8 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
     if (v.u~=0 or v.v~=0) and RenderTexture then
         local tw,th=GetTextureSize(s.tex)
         if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
-        local co=Color(max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3]))
+        local co=Color(ca,cr,cg,cb)
+        SetImageState(image,v.blend,co)
         local cr,sr=math.cos(rot*rad),math.sin(rot*rad)
         local function corner(dx,dy,u,w)
             return {px+dx*cr-dy*sr,py+dx*sr+dy*cr,.5,u,w,co}
@@ -259,7 +274,12 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
         RenderTexture(s.tex,v.blend,corner(-s[4]*sx/2,s[5]*sy/2,u,w),
             corner(s[4]*sx/2,s[5]*sy/2,u+s[4],w),corner(s[4]*sx/2,-s[5]*sy/2,u+s[4],w+s[5]),
             corner(-s[4]*sx/2,-s[5]*sy/2,u,w+s[5]))
-    else Render(image,px,py,rot,sx,sy) end
+    elseif lstg.AndroidRenderSprite then
+        lstg.AndroidRenderSprite(s.native_draw_resource,v.blend,px,py,rot,sx,sy,ca,cr,cg,cb)
+    else
+        SetImageState(image,v.blend,Color(ca,cr,cg,cb))
+        Render(image,px,py,rot,sx,sy)
+    end
 end
 function A.sprite(v,id) assert(v.data.sprites[id],v.data.key..'/sprite'..id);v.sprite=id end
 function A.cache() return cache end

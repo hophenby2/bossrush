@@ -129,7 +129,20 @@ input.touch(8,350,270,'moved'); assert(lstg.GetKeyState(39) and not lstg.GetKeyS
 input.touch(7,180,130,'cancelled'); input.touch(8,300,270,'moved')
 assert(not lstg.GetKeyState(37) and not lstg.GetKeyState(39), '移动触点不能相互抢占')
 input.reset(); input.touch(9,400,270,'began'); input.touch(9,450,270,'moved')
-player.death=100; input.beginFrame(); assert(not lstg.GetKeyState(39))
+for _,death in ipairs({90,84,50}) do
+    player.death=death;input.touch(9,input.touches[9].x+20,270,'moved');input.beginFrame()
+    assert(not lstg.GetKeyState(39),'死亡演出阶段仍应重置拖动目标')
+end
+for _,death in ipairs({40,1,0,100}) do
+    player.death,player.protect=death,120
+    local x=input.touches[9].x
+    input.touch(9,x+20,270,'moved');input.beginFrame()
+    assert(lstg.GetKeyState(39),'可操作的复活/无敌阶段不能清掉拖动目标')
+    player.x=player.x+20
+end
+player.death=0;player.lock=true;input.beginFrame()
+assert(input.targetX==player.x,'锁定时仍重置拖动，解锁后不能跳到旧目标')
+player.lock=false;player.protect=0
 input.reset(); player.death=0; setting={keys={shoot=65,right=68}}
 input.touch(10,180,130,'began'); input.touch(11,853,90,'began')
 assert(lstg.GetKeyState(68) and lstg.GetKeyState(65) and not lstg.GetKeyState(90))

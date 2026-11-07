@@ -228,6 +228,14 @@ replace('frameworks/cocos2d-x/cocos/2d/CCLabel.h', 'virtual void updateContent()
         return _batchNodes;
     }''')
 replace('frameworks/LSTG/Renderer.cpp', '//#define BATCH_COMMAND', '#define BATCH_COMMAND')
+# 连续同材质的精灵仍按原顺序合并；8192小于16位索引和Cocos VBO上限，减少微小命令块。
+replace('frameworks/LSTG/Renderer.cpp', 'constexpr int limit = 512;', 'constexpr int limit = 8192;')
+# 普通精灵已在入队前变换顶点。合批不能再次乘对象池中可能残留的模型矩阵。
+replace('frameworks/LSTG/Renderer.cpp',
+        'xtc->getMV()->transformPoint(&(_verts.back().vertices));',
+        'if (!xtc->isSkipModelView()) xtc->getMV()->transformPoint(&(_verts.back().vertices));')
+replace('frameworks/LSTG/Renderer.cpp',
+        '*cmd->getMV() = Mat4::IDENTITY;', '*cmd->getMV() = Mat4::IDENTITY;\n    cmd->setSkipModelView(true);')
 replace('frameworks/LSTG/Renderer.cpp', '''	renderTargetStack.pop_back();
 	rt->end();
 

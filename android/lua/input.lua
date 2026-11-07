@@ -59,6 +59,11 @@ local function inPlayfield(x, y)
     return w and player and x >= w.scrl and x <= w.scrr and y >= w.scrb and y <= w.scrt
 end
 local function clock() return lstg.AndroidClock and lstg.AndroidClock() or os.clock() end
+local function controlBlocked(p)
+    local death=p.death or 0
+    -- death<50已进入可操作的复活阶段，>90也由自机系统视为正常；无敌protect不锁定移动。
+    return p.lock or p.dialog or p.time_stop or p.realrealreal_lock or (death>=50 and death<=90)
+end
 local function tapInterval()
     return math.max(50,math.min(500,tonumber(setting and setting.touchBombInterval) or 100))/1000
 end
@@ -154,7 +159,7 @@ function I.touch(id, x, y, event)
                         if t.drag and t.tapTime then
                             local last=I.lastTap
                             if last and last.player==player and t.tapTime-last.time<=tapInterval()
-                                and not player.lock and not player.dialog and (player.death or 0)==0
+                                and not controlBlocked(player)
                                 and not (GameRevive and GameRevive.active()) then
                                 I.pulse(binding('spell',88));t.bombTap=true
                             end
@@ -218,7 +223,7 @@ function I.beginFrame()
     if t and t.drag then
         if t.player ~= player then
             t.drag, t.ignored, I.movementId = nil, true, nil
-        elseif player.lock or player.dialog or (player.death or 0) > 0 then
+        elseif controlBlocked(player) then
             t.targetX, t.targetY = player.x, player.y
         end
     end

@@ -2,6 +2,7 @@
 #include "LSTG/LuaWrapper/LuaWrapper.h"
 #include "LSTG/Util/UtilLuaRes.h"
 #include "LSTG/Renderer.h"
+#include "LSTG/AppFrame.h"
 #include "Classes/XLuaModuleRegistry.h"
 #include "renderer/backend/Device.h"
 #include "renderer/backend/DeviceInfo.h"
@@ -121,6 +122,27 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidVerifyGraphics) {
 #endif
 LUA_REGISTER_FUNC_DEF(lstg, AndroidSetFrameBufferEnabled) {
     lstg::XRenderer::getInstance()->setUseFrameBuffer(lua_toboolean(L, 1)); return 0;
+}
+
+// ANM精灵把几何与顶点色一次送入原有有序批处理，避免逐粒创建Color和反射调用setter。
+// 使用临时四边形，不改共享图像状态；纹理、UV、锚点和全局缩放仍取原资源。
+LUA_REGISTER_FUNC_DEF(lstg, AndroidRenderSprite) {
+    auto* resource = lua::toResSprite(L, 1);
+    if (!resource) return luaL_error(L, "找不到ANM图像资源");
+    auto* mode = RenderMode::getByName(luaL_checkstring(L, 2));
+    if (!mode) return luaL_error(L, "找不到ANM混合模式");
+    const float x = luaL_checknumber(L, 3), y = luaL_checknumber(L, 4);
+    const float rotation = luaL_checknumber(L, 5);
+    const float factor = LPOOL.getImageScale();
+    const float sx = luaL_checknumber(L, 6)*factor, sy = luaL_checknumber(L, 7)*factor;
+    const cocos2d::Color4B color(luaL_checkinteger(L, 9), luaL_checkinteger(L, 10),
+        luaL_checkinteger(L, 11), luaL_checkinteger(L, 8));
+    auto quad = resource->getVertex();
+    quad.tl.colors = quad.tr.colors = quad.bl.colors = quad.br.colors = color;
+    auto* renderer = XRenderer::getInstance();
+    renderer->updateRenderMode(mode);
+    renderer->render(resource->getSprite(), &quad, x, y, rotation, sx, sy, 0.5f);
+    return 0;
 }
 
 LUA_REGISTER_FUNC_DEF(lstg, GetSuperPause) { lua_pushinteger(L, androidSuperPause); return 1; }

@@ -2,6 +2,8 @@
 arg={'original-anm'}
 local f=assert(io.open('tools/check_stage.lua','rb'));local setup=f:read('*a');f:close()
 assert(loadstring(setup:sub(1,assert(setup:find('if path == "--all" then',1,true))-1)))()
+-- 使魔的道中归属查询使用协程栈；静态检查未运行任何任务时也应提供空栈。
+task.stack=task.stack or {}
 local textures,images,draws={},{},{}
 local checks=0
 local function check(v,message) assert(v,message);checks=checks+1 end
