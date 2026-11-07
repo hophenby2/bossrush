@@ -897,6 +897,7 @@ function H.run_actor(a,initial)
 end
 function H.kill_actor(a,defer)
     if a.dead then return end
+    OriginalStageVisual.presentation.sound.play(6,(a.slot-1)%2+2,a.object.x)
     local mode=a.death_mode or 0
     a.life_threshold,a.timeout=nil,nil
     if mode==3 then H.set_life(a.object,1);a.damageable=false;a.death_mode=0

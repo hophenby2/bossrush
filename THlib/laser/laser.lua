@@ -74,26 +74,27 @@ local function checkPlayer(player,self)
         local dy = player.y - self.y
         local rot = self.rot
         local dist = 2
+        local inset = GameDrops and GameDrops.laserInset(player,rot) or 0
         dx, dy = dx * cos(rot) + dy * sin(rot), dy * cos(rot) - dx * sin(rot)
         dy = abs(dy)
         if dx > 0 then
             local flag = false
             if dx < self.l1 then
-                if dy < dx / self.l1 * self.w / dist then
+                if dy < dx / self.l1 * self.w / dist - inset then
                     player.class.colli(player, self)
                 end
                 if dy < dx / self.l1 * self.w / dist + player.grazer.a then
                     flag = true
                 end
             elseif dx < self.l1 + self.l2 then
-                if dy < self.w / dist then
+                if dy < self.w / dist - inset then
                     player.class.colli(player, self)
                 end
                 if dy < self.w / dist + player.grazer.a then
                     flag = true
                 end
             elseif dx < len then
-                if dy < (len - dx) / self.l3 * self.w / dist then
+                if dy < (len - dx) / self.l3 * self.w / dist - inset then
                     player.class.colli(player, self)
                 end
                 if dy < (len - dx) / self.l3 * self.w / dist + player.grazer.a then

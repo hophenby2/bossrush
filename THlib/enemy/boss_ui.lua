@@ -118,7 +118,7 @@ function timeCounter:frame()
     end
     if not (self.open) then
         if not (b.__is_waiting) and b.is_combat then
-            if b.is_sc then
+            if b.is_sc or b.current_card and b.current_card.phase_name then
                 self.yoffsettemp = self.yoffsetmax
             else
                 self.yoffsettemp = 0
@@ -130,7 +130,7 @@ function timeCounter:frame()
         self.ui.drawtimesaver = nil
     end
     if self.open then
-        -- 非符/道中标题直接固定在右上角，计时器持续留在标题下方。
+        -- 非符/道中标题也会上升到右上角，计时器沿用符卡的避让时序。
         if b.is_sc or b.current_card and b.current_card.phase_name then
             self.yoffsettemp = max(self.yoffsettemp - 1 * self.yoffsetspeedrate, 0)
             local s = self.yoffsettemp / self.yoffsetmax
@@ -317,8 +317,7 @@ local sc_name = Class(object)
 ---@param b object @目标对象
 ---@param name string @符卡名称
 ---@param score boolean @是否显示score
----@param phase_title boolean @是否直接显示右上角阶段标题
-function sc_name:init(b, name, score, phase_title)
+function sc_name:init(b, name, score)
     if score == nil then
         score = true
     end
@@ -327,7 +326,6 @@ function sc_name:init(b, name, score, phase_title)
     self.boss = b
     self.name = name or ""
     self.score = score
-    self.phase_title=phase_title
     self.xp = -8
     self.yp = 0
     if self.name == "" then
@@ -350,10 +348,6 @@ function sc_name:init(b, name, score, phase_title)
     self.yoffset2 = 0
     self._dy = ((b.ui_slot or 1) - 1) * 44
     self.bonus = 'FAILED'
-    if phase_title then
-        self.xoffset,self.yoffset,self._scale,self._alpha=0,self.yp,1,1
-        self.talpha,self.talpha2,self.talpha3,self._scale2=1,1,1,0
-    end
 
 end
 local Smooth = task.Smooth
@@ -387,7 +381,6 @@ function sc_name:frame()
         end
         self.bonus = bonus
     end
-    if not self.death and self.phase_title then return end
     if not (self.death) then
         if self.timer > 30 then
             self.xoffset = max(self.xoffset - 10, 0)
@@ -480,7 +473,6 @@ function sc_name:render()
     if previous then SetViewMode(previous) end
 end
 function sc_name:del()
-    if self.phase_title then return end
     object.Preserve(self)
     if not (self.death) then
         self.death = true

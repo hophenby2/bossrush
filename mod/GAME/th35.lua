@@ -1301,6 +1301,7 @@ local function t10_enm_kill_all(keep)
             table.remove(T10_PODS, i)
         elseif o ~= keep and o.t10_root == keep.t10_root and not o.IsLaser
             and class.t10_interaction.kill_all_target(o) then
+            if o._original_death_effect then o._original_death_effect(o) end
             t10_kill_pod(o)
             table.remove(T10_PODS, i)
         end

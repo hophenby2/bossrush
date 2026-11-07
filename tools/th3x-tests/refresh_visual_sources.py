@@ -11,7 +11,7 @@ sys.dont_write_bytecode = True
 spec = importlib.util.spec_from_file_location('anm_export', Path(__file__).with_name('export_original_anm.py'))
 serializer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(serializer)
-OPS = {8: set(range(54, 63)) | {79, 80, 81, 83, 174},
+OPS = {8: set(range(54, 63)) | {79, 80, 81, 83, 138, 174},
        7: {95, 96, 97, 98, 99, 100, 120, 128, 129, 132, 138, 150}}
 
 

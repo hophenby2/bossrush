@@ -23,7 +23,7 @@ function soul_base:init(x, y, v, a, id)
     self.IsAstral = true
     self.x = Forbid(x, lstg.world.l + 12, lstg.world.r - 12)
     self.y = Forbid(y, lstg.world.b + 12, lstg.world.t - 12)
-    New(Astral.DropEffect, self.x, self.y)
+    if item.drops_enabled then New(Astral.DropEffect, self.x, self.y) end
     self.a, self.b = 8, 8
     self.group = GROUP.ITEM2
     self.layer = LAYER.ITEM
@@ -197,6 +197,7 @@ function white:collect()
 end
 
 function Astral.drop(x, y, id, num)
+    if not item.drops_enabled then return end
     local i = Astral.soul_item[Astral.name[id]]
     for _ = 1, num do
         New(i, x, y)

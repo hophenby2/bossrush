@@ -388,6 +388,7 @@ function system:frame()
         p._wisys = PlayerWalkImageSystem(p)
     end
     p._wisys:frame(p.__move_dx)
+    if GameDrops then GameDrops.updateHitbox(p) end
 end
 
 ---渲染事件

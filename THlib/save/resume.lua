@@ -279,7 +279,10 @@ function R.afterLogic()
     session.packets[#session.packets+1]=packet;session.size=session.size+#packet
     if R.recovering then
         if session.frames==R.pending.frames then R.complete() end
-    elseif session.frames==1 or session.frames%R.INTERVAL==0 then R.flush('自动') end
+    -- 全量快照/编码/写盘会阻塞战斗帧；只有明确开启时才周期保存，旧设置缺字段也视为关闭。
+    elseif setting and setting.resumeAutoSave==true and (session.frames==1 or session.frames%R.INTERVAL==0) then
+        R.flush('自动')
+    end
 end
 function R.flush(reason)
     local session=R.session

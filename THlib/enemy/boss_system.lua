@@ -321,7 +321,9 @@ function system:explode()
     b.is_exploding = true
     b.killed = true
     b.no_killeff = true
-    PlaySound("enep01", 0.3, 0, true)
+    if not (OriginalStageVisual and OriginalStageVisual.death.boss_sound(b)) then
+        PlaySound("enep01", 0.3, 0, true)
+    end
     b._colli = false
     b.hp = 0
     task.New(b, function()
@@ -347,7 +349,9 @@ function system:explode()
                 task.Wait()
             end
         end
-        PlaySound("enep01", 0.2, b.x / 256, true)
+        if not (OriginalStageVisual and OriginalStageVisual.death.boss_sound(b)) then
+            PlaySound("enep01", 0.2, b.x / 256, true)
+        end
         if not b.__no_drop_explode_cherry then
             New(boss_explode_cherry, b.x, b.y)
         end
@@ -773,12 +777,12 @@ function system:castcard(name)
     object.Connect(b, b._sc_name_obj, 0, true)
 end
 
--- 阶段标题沿用右上角文字对象，但不触发符卡宣言、分数栏或中央放大的入场动画。
+-- 阶段标题与符卡共用完整上升动画；不触发符卡宣言和分数栏。
 function system:showPhaseName(name)
     local b=self.boss
     self:setSCName(name)
-    if IsValid(b._sc_name_obj) then object.RawDel(b._sc_name_obj) end
-    b._sc_name_obj=New(boss.sc_name,b,name,false,true)
+    if IsValid(b._sc_name_obj) then object.Kill(b._sc_name_obj) end
+    b._sc_name_obj=New(boss.sc_name,b,name,false)
     object.Connect(b,b._sc_name_obj,0,true)
 end
 

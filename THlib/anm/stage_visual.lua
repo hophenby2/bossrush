@@ -6,6 +6,7 @@ local games={ [29]=8,[30]=6,[31]=95,[32]=7,[33]=10 }
 local roles={}
 S.adapters={}
 S.presentation=dofile('THlib/anm/presentation.lua')
+S.death=dofile('THlib/anm/original_death.lua')
 roles[8]={Nightbug={'stg1enm',0,'eff01'},Lorelei={'stg2enm',0,'eff02'},
     Kamishirasawa={'stg3enm',0,'eff03'},Kamishirasawa2={'stg8enm',0,'eff08'},
     Reisen={'stg5enm',12,'eff05'},Tewi={'stg5enm',0,'eff05'},Yagokoro={'stg6enm',0,'eff06'},
@@ -210,6 +211,7 @@ local function source_archive(game,file,alternate)
     return 'stgenm_'..assert(file:match('ecldata_(%a+)'))
 end
 local function animation_event(o,game,file,c)
+    S.death.event(o,game,c)
     local op=c[2]
     if game==8 and op==83 then o._original_form_effect_enabled=c[3]~=0;return end
     if game==8 and op==174 then
@@ -339,6 +341,7 @@ function S.bind_source(o,game,key,preserve,events_override)
     o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank}
     local adapter=S.adapters[game]
     if adapter and adapter.bind and adapter.bind(o,key)==false then return false end
+    S.death.bind(o,game)
     S.presentation.bind(o,game,key)
     if game==95 then o.layer=LAYER.ENEMY-.1 end
     if not preserve then
@@ -346,6 +349,7 @@ function S.bind_source(o,game,key,preserve,events_override)
         if o._original_trail_source then o.th07_trail=nil;o._original_trail_source=nil end
     end
     S.source_frame(o,0)
+    S.death.birth(o)
 end
 function S.visual_program(game,key)
     source_data=source_data or dofile('mod/GAME/original/visual_ecl.lua')
@@ -397,7 +401,7 @@ function S.source_frame(o,clock,program)
     until false
 end
 function S.wrap_actor(cls,game,key)
-    local init,frame,render=cls.init,cls.frame,cls.render
+    local init,frame,render,kill=cls.init,cls.frame,cls.render,cls.kill
     cls.init=function(o,...)
         o._original_visual_birth=true
         local adapter=S.adapters[game]
@@ -405,6 +409,8 @@ function S.wrap_actor(cls,game,key)
         init(o,...)
         o._original_visual_birth=nil
         if not IsValid(o) then return end
+        -- 未映射显示入口的敌机也要保留默认击破效果，不能因缺少姿态表而静默消失。
+        S.death.bind(o,game)
         if type(key)=='function' then o._original_visual_args={...} end
         local resolved=key
         if type(key)=='function' then resolved=key(o,...) end
@@ -437,7 +443,11 @@ function S.wrap_actor(cls,game,key)
         if IsValid(o) then S.tick(o) end
     end
     cls.render=function(o) if not S.draw(o) then render(o) end end
-    cls[1],cls[3],cls[4]=cls.init,cls.frame,cls.render
+    cls.kill=function(o)
+        if o._original_death_effect then o._original_death_effect(o) end
+        if kill then kill(o) end
+    end
+    cls[1],cls[3],cls[4],cls[6]=cls.init,cls.frame,cls.render,cls.kill
     if type(key)=='string' then S.presentation.manage(game,key) end
 end
 function S.actor_class(base,game,key,definition)

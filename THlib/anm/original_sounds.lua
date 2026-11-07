@@ -1,6 +1,10 @@
 -- DirectSound单位为百分之一dB；保留原波形和逻辑SoundIdx，避免用同一弹声代替所有提示。
 local S={played={}}
 local entries=dofile('mod/GAME/original/sounds.lua')
+for game,sounds in pairs(dofile('mod/GAME/original/death_sounds.lua')) do
+    entries[game]=entries[game] or {}
+    for id,entry in pairs(sounds) do entries[game][id]=entry end
+end
 function S.play(game,id,x)
     local entry=entries[game] and entries[game][id]
     if not entry then return end

@@ -2,7 +2,31 @@
 ---启动器
 ---------------------------------------
 
-Include 'THlib\\THlib.lua'
+-- 分辨率界面只需要一组字体、一个色块和三种按键音；战斗框架等确认后再载入。
+SetResourceStatus('global')
+local load_text=dofile('THlib/UI/font_loader.lua')
+load_text('launcher_title',32)
+LoadTexture('launcher_misc','THlib\\misc\\misc.png')
+LoadImage('launcher_white','launcher_misc',56,8,16,16)
+for _,name in ipairs({'select00','ok00','cancel00'}) do
+    LoadSound('launcher_'..name,'THlib\\se\\se_'..name..'.wav')
+end
+local function PlaySound(name,volume)
+    lstg.PlaySound('launcher_'..name,volume or .3)
+end
+local background=FileExist('User\\menu_bg_2.png')
+if background then LoadImageFromFile('launcher_bg','User\\menu_bg_2.png') end
+local background_angle=ran:Float(-85,85)
+local background_x,background_y=198+ran:Float(-120,120),264+ran:Float(-120,120)
+local launcher_mouse={}
+function launcher_mouse:frame()
+    local x,y=GetMousePosition()
+    self.x,self.y=(x-screen.dx)/screen.scale,(y-screen.dy)/screen.scale
+    self.previous,self.down=self.down,GetMouseState(0)
+end
+function launcher_mouse:isUp() return self.previous and not self.down end
+launcher_mouse:frame()
+local launch_pending,launch_drawn=false,false
 
 local settingfile = "User\\setting"
 
@@ -82,6 +106,7 @@ function ChangeVideoMode2(set)
 end
 
 local function start_game()
+    local watch=lstg.StopWatch()
     save_setting()
     loadConfigure()
     SetSplash(true)
@@ -97,12 +122,12 @@ local function start_game()
     SetBGMVolume(setting.bgmvolume / 100)
     ResetScreen()--Lscreen
     SetResourceStatus 'global'
-    ResetUI()
     Include("mod\\root.lua")
     --SetResourceStatus 'stage'
     InitAllClass()--Lobject
-    InitScoreData()--initialize score data--Lscoredata
+    InitGameSaveData()
     stage.Set('none', 'init')
+    if lstg.SystemLog then lstg.SystemLog(('[启动] 确认分辨率后的初始化 %.1fms'):format(watch:GetElapsed()*1000)) end
 end
 
 local Sign = Class(object)
@@ -141,12 +166,14 @@ function Sign:init(boss, x, y, h, v, text, func, onFrame, keyfunc, otherkey)
     end)
 end
 function Sign:frame()
+    if launch_pending then return end
     task.Do(self)
 
     if self.onFrame then
         self.onFrame(self)
     end
-    if sp.math.PointBoundCheck(ext.mouse.x, ext.mouse.y, self.x - self.h, self.x + self.h, self.y - self.v, self.y + self.v) or self.otherkey() then
+    if (launcher_mouse.x>=self.x-self.h and launcher_mouse.x<=self.x+self.h
+        and launcher_mouse.y>=self.y-self.v and launcher_mouse.y<=self.y+self.v) or self.otherkey() then
         if not self.select then
             PlaySound('select00', 0.3)
             task.New(self, function()
@@ -171,7 +198,7 @@ function Sign:frame()
         self.select = false
     end
     if self.select then
-        if ext.mouse:isUp(1) and self.func then
+        if launcher_mouse:isUp() and self.func then
             self.func(self.boss)
             PlaySound('ok00', 0.3)
         end
@@ -186,14 +213,14 @@ end
 function Sign:render()
     SetViewMode "ui"
     for p = 0, 7 do
-        SetImageState("white", "", (80 - p * 10) * self.alpha, 0, 0, 0)
-        RenderRect("white", self.x - self.h + p, self.x + self.h + p, self.y - self.v - p, self.y + self.v - p)
+        SetImageState("launcher_white", "", (80 - p * 10) * self.alpha, 0, 0, 0)
+        RenderRect("launcher_white", self.x - self.h + p, self.x + self.h + p, self.y - self.v - p, self.y + self.v - p)
     end
     local rgb = 230 - self.blk
-    SetImageState("white", "mul+add", 140 * self.alpha, rgb - self.d_r, rgb - self.d_g, rgb - self.d_b)
-    RenderRect("white", self.x - self.h, self.x + self.h, self.y - self.v, self.y + self.v)
+    SetImageState("launcher_white", "mul+add", 140 * self.alpha, rgb - self.d_r, rgb - self.d_g, rgb - self.d_b)
+    RenderRect("launcher_white", self.x - self.h, self.x + self.h, self.y - self.v, self.y + self.v)
 
-    RenderTTF("title", self.text, self.x, self.y, Color(255 * self.alpha, self.blk * 2, self.blk * 2, self.blk * 2), "centerpoint")
+    RenderTTF("launcher_title", self.text, self.x, self.y, Color(255 * self.alpha, self.blk * 2, self.blk * 2, self.blk * 2), "centerpoint")
     SetViewMode("world")
 end
 
@@ -233,8 +260,7 @@ function stage_launcher:init()
     New(Sign, self, 98, 204, 50, 18, "开启(Z,Enter)",
             function()
                 cur_setting.mod = "TouHou Boss Rush"
-                save_setting()
-                start_game()
+                launch_pending=true
             end,
             nil,
             function()
@@ -298,11 +324,47 @@ end
 function stage_launcher:frame()
     task.Do(self)
     UpdateInput()
-    ext.mouse:frame()
+    launcher_mouse:frame()
 end
 function stage_launcher:render()
-    ui.DrawMenuBG()
+    if launch_pending then RenderClear(Color(255,0,0,0));return end
     SetViewMode "ui"
-    ui:RenderText("title", "请选择分辨率", 198, 492, 1, Color(255, 255, 255, 255), "centerpoint")
+    if background then
+        SetImageState('launcher_bg','',255,90,90,90)
+        Render('launcher_bg',background_x,background_y,background_angle)
+    end
+    RenderTTF('launcher_title','请选择分辨率',198,492,Color(255,255,255,255),'centerpoint')
     SetViewMode "world"
 end
+
+-- 启动器独立更新，避免首次显示前加载弹幕、激光、暂停菜单和原作ANM数据。
+-- 确认后由THlib/ext/ext.lua替换这两个回调；先画一帧黑屏再执行同步初始化。
+function FrameFunc()
+    if launch_pending and launch_drawn then
+        start_game()
+        return lstg.quit_flag
+    end
+    if stage.next_stage then
+        stage.current_stage=stage.next_stage;stage.next_stage=nil
+        stage.current_stage.timer=0
+        stage.current_stage:init()
+    end
+    local current=stage.current_stage
+    if current then current:frame();current.timer=current.timer+1 end
+    ObjFrame()
+    UpdateXY()
+    AfterFrame()
+    return lstg.quit_flag
+end
+function RenderFunc()
+    BeginScene()
+    RenderClear(Color(255,0,0,0))
+    if launch_pending then
+        launch_drawn=true
+    else
+        if stage.current_stage then stage.current_stage:render() end
+        ObjRender()
+    end
+    EndScene()
+end
+function FocusLoseFunc() end

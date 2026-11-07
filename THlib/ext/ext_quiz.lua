@@ -46,6 +46,7 @@ function Q.wrap(text,width)
 end
 -- 实例不查类表上的自定义方法；所有操作均由模块函数显式传入对象。
 local Question,Choice,Mask
+local maskColors={red={255,40,55},blue={35,110,255},green={35,210,85}}
 local function descend(o,manual)
     o.bound=false;o.colli=false;o.layer=0;o.alpha=1
     if manual then o.group=GROUP.GHOST;return end
@@ -66,7 +67,7 @@ local function classes()
     },true)
     Choice=Class(object,{
         init=function(o,pos,text,count,manual)
-            o.x=-192+(pos-0.5)*384/count;o.y=Q.CHOICE_Y;o.pos=pos;o.text=text;descend(o,manual)
+            o.x=-192+(pos-0.5)*384/count;o.y=Q.CHOICE_Y;o.pos=pos;o.text=text;o.count=count;descend(o,manual)
         end,
         frame=task.Do,
         render=function(o)
@@ -76,18 +77,23 @@ local function classes()
             else
                 for i,line in ipairs(o.text) do
                     local r,g,b=255,115,120;if line.color=='blue' then r,g,b=110,190,255 end
-                    ui:RenderText('title',line.text,o.x,o.y+(#o.text+1-2*i)*12,0.85,Color(o.alpha*255,r,g,b),'centerpoint')
+                    if line.color=='green' then r,g,b=110,235,145 end
+                    local scale=o.count==3 and 0.7 or 0.85
+                    if o.count==3 and line.color=='green' and i==2 then scale=0.6 end
+                    ui:RenderText('title',line.text,o.x,o.y+(#o.text+1-2*i)*12,scale,Color(o.alpha*255,r,g,b),'centerpoint')
                 end
             end
             if previous then SetViewMode(previous) end
         end,
     },true)
     Mask=Class(object,{
-        init=function(o) descend(o,true);o.layer=-0.1;o.y=Q.TOP end,
+        init=function(o,colors) descend(o,true);o.layer=-0.1;o.y=Q.TOP;o.colors=colors end,
         render=function(o)
             local previous=lstg.viewmode;SetViewMode('world')
-            SetImageState('white','',Color(o.alpha*65,255,40,55));RenderRect('white',-192,0,o.y-Q.DEPTH,o.y)
-            SetImageState('white','',Color(o.alpha*65,35,110,255));RenderRect('white',0,192,o.y-Q.DEPTH,o.y)
+            for i,color in ipairs(o.colors) do
+                SetImageState('white','',Color(o.alpha*65,color[1],color[2],color[3]))
+                RenderRect('white',-192+(i-1)*384/#o.colors,-192+i*384/#o.colors,o.y-Q.DEPTH,o.y)
+            end
             if previous then SetViewMode(previous) end
         end,
     },true)
@@ -136,7 +142,14 @@ function Q.selection(key,state,text,choices,alpha)
     end
     local board=cached.board;local offset=Q.offset(state.age,state.duration,state.linear);alpha=alpha or 1
     if state.colorMask then
-        if not board.mask or not IsValid(board.mask) then board.mask=New(Mask) end
+        if not board.mask or not IsValid(board.mask) then
+            local colors={}
+            for i,lines in ipairs(choices) do
+                local name=type(lines)=='table' and lines[1] and lines[1].color
+                colors[i]=maskColors[name] or maskColors[i==1 and 'red' or 'blue']
+            end
+            board.mask=New(Mask,colors)
+        end
         board.mask.y=Q.TOP-offset;board.mask.alpha=alpha
     end
     if board.question then board.question.y=Q.QUESTION_Y-offset;board.question.alpha=alpha end

@@ -1,5 +1,5 @@
--- 击破阶段后的弹幕二选一。成长和选择过程都保存在 var 中，供录像与关内恢复重建。
-local D={VERSION=2,UNIT=100,TIME=2*60,MIN=100,MAX=100000,BOMB_FRAMES=30*60,BOMB_MAX=3}
+-- 击破阶段后的红蓝绿三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
+local D={VERSION=3,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=3}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -7,16 +7,20 @@ D.pool={
     {{'red','add',15},{'blue','add',-10}},{{'red','add',-10},{'blue','add',15}},
     {{'red','mul',6,5},{'blue','mul',9,10}},{{'red','mul',9,10},{'blue','mul',6,5}},
 }
--- 新版左列只抽红色，右列只抽蓝色；保留旧表供既有录像恢复。
+-- 前十项沿用红蓝版本的编号；绿色降低原判定尺寸的百分比，避免改写旧录像的选项含义。
 D.colorPool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','add',10}},{{'blue','add',10}},
     {{'red','add',15}},{{'blue','add',15}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
     {{'red','mul',6,5}},{{'blue','mul',6,5}},
+    {{'green','add',-5}},{{'green','add',-10}},{{'green','add',-15}},
+    {{'green','mul',9,10}},{{'green','mul',4,5}},
 }
-local function modern() return lstg.var.__drops_version==D.VERSION end
+local function three() return lstg.var.__drops_version==D.VERSION end
+local function modern() return three() or lstg.var.__drops_version==2 end
 local function fresh()
     local p={red=10000,blue=10000,clock=-1,fraction=0}
     if modern() then p.bombs=D.BOMB_MAX;p.bomb_fraction=0 end
+    if three() then p.green=10000 end
     return p
 end
 local function allowDrops(scene)
@@ -47,7 +51,38 @@ end
 -- HUD 只读，不能因渲染而改变零帧保存点。
 function D.values(o)
     local s=peek();local p=s and s.players[D.slot(o)]
-    return p and p.red/100 or 100,p and p.blue/100 or 100
+    return p and p.red/100 or 100,p and p.blue/100 or 100,p and (p.green or 10000)/100 or 100
+end
+function D.hitboxScale(o)
+    if not three() then return 1 end
+    local _,_,green=D.values(o)
+    return green/100
+end
+function D.updateHitbox(p)
+    if not three() and not p._drop_hitbox then return end
+    local box=p._drop_hitbox
+    if not box then box={baseA=p.A,baseB=p.B};p._drop_hitbox=box
+    else
+        -- 行走图每帧会把A/B复制给a/b；只保存未缩小的基础值，不能逐帧重复相乘。
+        if p.A~=box.A then box.baseA=p.A end
+        if p.B~=box.B then box.baseB=p.B end
+    end
+    local scale=D.hitboxScale(p)
+    box.A,box.B=box.baseA*scale,box.baseB*scale
+    p.A,p.B=box.A,box.B
+    p.a,p.b=box.A,box.B -- 原作手动激光/体术读A/B，引擎普通弹判定读a/b。
+end
+function D.laserInset(p,angle)
+    local box=p._drop_hitbox
+    if not three() or not box or box.A==box.baseA and box.B==box.baseB then return 0 end
+    local a=angle*math.pi/180
+    local x,y=math.abs(math.sin(a)),math.abs(math.cos(a))
+    local function radius(w,h)
+        if p.rect then return w*x+h*y end
+        return math.sqrt((w*x)^2+(h*y)^2)
+    end
+    -- 旧直线激光直接比较自机中心到光轴的距离；扣除缩小量，100%时沿用原阈值。
+    return math.max(0,radius(box.baseA,box.baseB)-radius(box.A,box.B))
 end
 function D.power(o) local red=D.values(o);return D.enabled() and red/100 or 1 end
 function D.rate(o) local _,blue=D.values(o);return D.enabled() and not modern() and blue/100 or 1 end
@@ -122,6 +157,7 @@ function D.beginCard(b,card)
 end
 function D.draw(seed,index)
     local gen=Rand();gen:Seed((seed+index*104729)%2147483647)
+    if three() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2,gen:Int(11,15)} end
     if modern() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2} end
     local a=gen:Int(1,#D.pool);local b=gen:Int(1,#D.pool-1);if b>=a then b=b+1 end
     return {a,b}
@@ -146,9 +182,11 @@ end
 function D.apply(slot,option)
     local s=assert(ensure());local p=s.players[D.slot(slot)]
     for _,op in ipairs(assert((modern() and D.colorPool or D.pool)[option])) do
-        local value=p[op[1]]
+        local value=p[op[1]] or 10000
         if op[2]=='add' then value=value+op[3]*100 else value=math.floor(value*op[3]/op[4]+0.5) end
-        p[op[1]]=math.max(D.MIN,math.min(D.MAX,value))
+        local lower,upper=D.MIN,D.MAX
+        if op[1]=='green' then lower,upper=D.HITBOX_MIN,10000 end
+        p[op[1]]=math.max(lower,math.min(upper,value))
     end
 end
 local function players()
@@ -171,7 +209,7 @@ function D.frame(scene)
     local s=peek()
     if not s or not scene or scene.is_menu then GameQuiz.clearSelection('drops');return false end
     if not allowDrops(scene) then
-        -- 兼容已有检查点中排队 / 正在下落的选项，接续战斗不再为强化选择冻结。
+        -- 接续模式不生成强化选项；兼容已有检查点中排队或正在下落的选项。
         if s.active or #s.queue>0 then s.active=nil;s.queue={} end
         GameQuiz.clearSelection('drops',true);return false
     end
@@ -187,16 +225,19 @@ function D.frame(scene)
     row.duration=row.duration or D.TIME
     row.previous=row.previous or {}
     local oldAge=row.age;row.age=row.age+1
-    GameQuiz.selection('drops',row,nil,{D.optionLines(row.options[1]),D.optionLines(row.options[2])})
+    local lines={}
+    for i,id in ipairs(row.options) do lines[i]=D.optionLines(id) end
+    GameQuiz.selection('drops',row,nil,lines)
     local count=(GameNet and GameNet.host()) and 2 or 1;local complete=true
     for i=1,count do
         local p=ps[i]
         if controllable(p) then
             local previous=row.previous[i] or {x=p.x,y=p.y}
             if not row.picks[i] then
-                local choice=GameQuiz.contact(previous,p,oldAge,row.age,2,row.duration,row.linear)
+                local choice=GameQuiz.contact(previous,p,oldAge,row.age,#row.options,row.duration,row.linear)
                 if choice then
                     row.picks[i]=choice;D.apply(i,row.options[choice]);p.protect=math.max(p.protect or 0,60)
+                    D.updateHitbox(p)
                     PlaySound('item00',0.5)
                 end
             end
@@ -215,7 +256,12 @@ function D.optionLines(id)
     local out={}
     for _,op in ipairs((modern() and D.colorPool or D.pool)[id]) do
         local text=op[2]=='add' and string.format('%+d',op[3]) or ('×'..number(op[3]/op[4]))
-        out[#out+1]={color=op[1],text=(op[1]=='red' and '红 ' or '蓝 ')..text}
+        local label=op[1]=='red' and '红 ' or op[1]=='blue' and '蓝 ' or '绿 判定 '
+        if op[1]=='green' and op[2]=='add' then text=text..'个百分点' end
+        if op[1]=='green' then
+            out[#out+1]={color='green',text='绿 判定'}
+            out[#out+1]={color='green',text=text}
+        else out[#out+1]={color=op[1],text=label..text} end
     end
     return out
 end
@@ -226,21 +272,29 @@ function D.renderHUD(scrr,scrt,alpha)
     if not D.enabled() then return end
     local count=(GameNet and GameNet.host()) and 2 or 1
     for i=1,count do
-        local red,blue=D.values(i);local y=scrt-240-(i-1)*(modern() and 44 or 24);local label=count==2 and ('P'..i..' ') or ''
+        local red,blue,green=D.values(i);local y=scrt-240-(i-1)*(three() and 64 or modern() and 44 or 24);local label=count==2 and ('P'..i..' ') or ''
         ui:RenderText('title',label..'火力 '..number(red),scrr+6,y,0.65,Color(alpha,255,120,125),'left','bottom')
         ui:RenderText('title',(modern() and 'Bomb恢复 ' or '射速 ')..number(blue),scrr+150,y,0.65,Color(alpha,110,190,255),'left','bottom')
         if modern() then
             local bombs,progress=D.bombState(i)
             ui:RenderText('title',string.format('Bomb %d/%d  %.0f%%  [X]',bombs,D.BOMB_MAX,progress*100),scrr+6,y-20,0.6,Color(alpha,110,190,255),'left','bottom')
         end
+        if three() then
+            ui:RenderText('title','判定 '..number(green)..'%',scrr+6,y-40,0.6,Color(alpha,110,235,145),'left','bottom')
+        end
     end
 end
 function D.signature()
     local s=peek();if not s then return 'drops=none' end
     local out={'drops',s.seed,s.count}
-    for _,p in ipairs(s.players) do out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',');if modern() then out[#out+1]=table.concat({p.bombs,p.bomb_fraction},',') end end
+    for _,p in ipairs(s.players) do
+        out[#out+1]=table.concat({p.red,p.blue,p.clock,p.fraction},',')
+        if modern() then out[#out+1]=table.concat({p.bombs,p.bomb_fraction},',') end
+        if three() then out[#out+1]='green='..tostring(p.green or 10000) end
+    end
     local function row(r)
         out[#out+1]=table.concat({r.id,r.age,r.options[1],r.options[2],tostring(r.picks[1]),tostring(r.picks[2]),r.duration or D.TIME},',')
+        if r.options[3] then out[#out+1]='option3='..r.options[3] end
         for _,p in ipairs(r.previous or {}) do out[#out+1]=string.format('%.6f,%.6f',p.x,p.y) end
     end
     if s.active then row(s.active) else out[#out+1]='no-active' end

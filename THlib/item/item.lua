@@ -12,7 +12,10 @@ local SetV = SetV
 ---@class item
 local item = Class(object)
 _G.item = item
+-- 全局关闭实物道具；系统道具与关卡直接New的道具也经过文件末尾的统一出口。
+item.drops_enabled = false
 function item:init(x, y, t, v, angle)
+    self._is_pickup = true -- 季节道具可能先放在GHOST组等待，不能只按当前碰撞组识别。
     self.x = Forbid(x, lstg.world.l + 8, lstg.world.r - 8)
     self.y = y
     self.v = v or 1.5
@@ -300,6 +303,7 @@ function items.sakura:collect()
 end
 local sqrt = sqrt
 function item.Dropitem_PFP(x, y, drop)
+    if not item.drops_enabled then return end
     local m
     if drop[1] >= 400 then
         m = drop[1]
@@ -372,7 +376,27 @@ item.DropSwitch = {
 }
 
 function item.Dropitem(itemclass, num, x, y)
+    if not item.drops_enabled then return end
     item.DropSwitch[itemclass](num, x, y)
 end
+
+-- 保留New返回的有效句柄，兼容调用方随后设置吸引、缩放等属性。
+-- RawDel只标记状态，AfterFrame才释放；ObjFrame仍会调已标记对象的frame，
+-- 所以同时换成空对象类，防止UFO/兽灵在本帧自行接取或生成后续道具。
+local discarded_pickup = Class(object, { frame=object.RawDel, render=function() end }, true)
+local create = New
+local function new(class, ...)
+    local o = create(class, ...)
+    if not item.drops_enabled and IsValid(o) then
+        local group = o.group
+        if group==GROUP.ITEM or group==GROUP.ITEM2 or o._is_pickup then
+            o.class = discarded_pickup
+            o.group, o.colli, o.hide = GROUP.GHOST, false, true
+            object.RawDel(o)
+        end
+    end
+    return o
+end
+New, lstg.New = new, new
 
 Include("THlib\\item\\item_func.lua")

@@ -237,9 +237,11 @@ function enemy.death_ef(x, y, hp, index)
 end
 
 function enemy:kill()
-    PlaySound('enep00', 0.3, self.x / 200, true)
     if self._original_death_effect then self._original_death_effect(self)
-    else enemy.death_ef(self.x, self.y, self.maxhp, self.death_ef) end
+    else
+        PlaySound('enep00', 0.3, self.x / 200, true)
+        enemy.death_ef(self.x, self.y, self.maxhp, self.death_ef)
+    end
     if self.drop then
         item.Dropitem_PFP(self.x, self.y, self.drop)
     end

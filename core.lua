@@ -39,8 +39,27 @@ lstg.DoFile("THlib\\lib\\Lscoredata.lua")--玩家存档
 
 
 
+local game_save_data_ready=false
+-- 分辨率选择不读取成长/符卡历史；确认启动后与直接进入游戏共用同一初始化入口。
+function InitGameSaveData()
+    if game_save_data_ready then return end
+    local watch=lstg.StopWatch()
+    InitScoreData()
+    local score_time=watch:GetElapsed()
+    InitSpellCardData()
+    math.randomseed(os.time())
+    CurrentVerifiableOffset = math.random(5, 100)
+    CurrentMoney = scoredata.money + CurrentVerifiableOffset
+    game_save_data_ready=true
+    if lstg.SystemLog then
+        local total=watch:GetElapsed()
+        lstg.SystemLog(('[启动] 存档读取 %.1fms（成长 %.1fms，符卡 %.1fms）'):format(total*1000,score_time*1000,(total-score_time)*1000))
+    end
+end
+
 function GameExit()
     if GameNet and GameNet.active() then GameNet.leave() end
+    if not game_save_data_ready then return end
     if SaveResume then SaveResume.flush('退出游戏') end
     if not lstg.quit_flag then
         if not scoredata["Alt+F4"] then
@@ -68,15 +87,8 @@ function GameInit()
     musicBarList = {}
     AchievementInfo = {}
     InitAllClass()--对所有class的回调函数进行整理，给底层调用
-    InitScoreData()--装载玩家存档
-    InitSpellCardData()
-    math.randomseed(os.time())
-    CurrentVerifiableOffset = math.random(5, 100)
-    CurrentMoney = scoredata.money + CurrentVerifiableOffset
+    if setting.mod~='launcher' then InitGameSaveData() end
     boss_group = {}
-
-    SaveSpellCardData()
-    SaveScoreData()
 
     SetViewMode("world")
     if stage.next_stage == nil then

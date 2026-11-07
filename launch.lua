@@ -154,6 +154,7 @@ default_setting = {
     displaykey = true,
     displayBG = true,
     SCAutoRetry = false,
+    resumeAutoSave = false,
     RepNoGameFps = false,
     ReplayFastSpeed = 240,
     ReplaySlowSpeed = 15,

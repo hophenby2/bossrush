@@ -81,6 +81,7 @@ function Attack:init(col, dmg)
     self.killflag = true
     self.count = 0
     function self:drop_item(x, y)
+        if not item.drops_enabled then return end
         New(main_item, x, y, nil, nil, true, nil, 0.6)
         self.count = self.count + 1
         if self.count > 9 then
@@ -201,6 +202,7 @@ Season.Winter_Attack = Winter_Attack
 Season.Attack = { Spring_Attack, Summer_Attack, Autumn_Attack, Winter_Attack }
 
 function Season.drop(x, y, collect, wait, v, a, value)
+    if not item.drops_enabled then return end
     New(main_item, x, y, v, a, collect, wait, value)
 end
 

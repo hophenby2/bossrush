@@ -233,7 +233,7 @@ function stg.render()
 end
 
 function stg.Start(group)
-    lstg.var.__input_version=2;lstg.var.__drops_version=2;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
+    lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
     -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
@@ -259,7 +259,7 @@ end
 
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
-    lstg.var.__input_version=2;lstg.var.__drops_version=2;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
+    lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     if GameNet then GameNet.newRound() end
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
     lstg.var.__revive_version=2;lstg.var.revive=nil

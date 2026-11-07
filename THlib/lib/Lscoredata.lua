@@ -26,9 +26,10 @@ function InitScoreData()
     if not saved then
         data = {}
     else
-        local text = sp:UnLockString(saved)
-        if pcall(DeSerialize, text) then
-            data = DeSerialize(text)
+        local text = SaveCodec.lock(saved,true)
+        local ok,decoded=pcall(DeSerialize,text)
+        if ok then
+            data = decoded
         else
             lstg.ExtractRes(file, SaveProfiles.path("Score_error.dat"))
             lstg.MsgBoxError("读取 Score.dat 失败\n已为您保留出现错误的存档\n请及时联系作者反馈此问题", "Warning!!", false)
@@ -79,10 +80,10 @@ function InitSpellCardData()
     if not saved then
         data = {}
     else
-        local text = sp:UnLockString(saved)
-        --Print(text)
-        if pcall(DeSerialize, text) then
-            data = DeSerialize(text)
+        local text = SaveCodec.lock(saved,true)
+        local ok,decoded=pcall(DeSerialize,text)
+        if ok then
+            data = decoded
         else
             lstg.ExtractRes(file, SaveProfiles.path("Spellcard_error.dat"))
             lstg.MsgBoxError("读取 Spellcard.dat 失败\n已为您保留出现错误的存档\n请及时联系作者反馈此问题", "Warning!!", false)

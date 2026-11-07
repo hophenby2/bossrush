@@ -21,6 +21,11 @@ local scripts={[0]=28,29,30,31,36,37,38,39,40,41,42,43,44,45,45,45,0,32,33,51,
     56,52,54,104,104,35,53,34,57,58,59,60,48,49,50,88,88,92,71,76,81,82,83,83,
     83,83,84,72,85,86,80,73,77,88,88,87,96,55,100,78,102,103,75,74,77,98}
 local function valid(o) return IsValid(o) and o.status~='del' and o.status~='kill' end
+local function finished(vm)
+    if not vm.finished then return false end
+    for _,child in ipairs(vm.children) do if not finished(child) then return false end end
+    return true
+end
 local function color(v,n)
     n=n%4294967296
     v.color={math.floor(n/65536)%256,math.floor(n/256)%256,n%256}
@@ -61,9 +66,10 @@ F.effect=Class(object,{
         o.rate_source=phase and phase._native_rate_source
         o.vm=A.new(game,archive,script,o.rate_source and o.rate_source.fm)
         if argb then color(o.vm,argb) end
-        if game==7 and kind and kind>=3 and kind<=11 then
-            -- TH07的initCallback在SpawnEffect内执行；坐标换算只反转y分量。
+        if (game==7 or game==8) and kind and kind>=3 and kind<=11 then
+            -- TH07/08的initCallback在SpawnEffect内执行；坐标换算只反转y分量。
             local scale=kind==3 and 4/33 or 1/12
+            scale=scale*(o.rate_source and o.rate_source.fm or 1)
             o.effect_velocity={ran:Float(-128,128)*scale,-ran:Float(-128,128)*scale}
             local divisor=kind==3 and 20 or 19
             o.effect_acceleration={-o.effect_velocity[1]/divisor,-o.effect_velocity[2]/divisor}
@@ -93,7 +99,7 @@ F.effect=Class(object,{
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
-        if (o.game==6 or o.game==7) and o.kind and o.kind>=3 and o.kind<=11 then
+        if (o.game==6 or o.game==7 or o.game==8) and o.kind and o.kind>=3 and o.kind<=11 then
             -- RandomSplash(Big) 首次 EffectManager 回调取两个随机速度，再逐帧减速。
             if not o.effect_velocity then
                 local scale=o.kind==3 and 4/33 or 1/12
@@ -148,7 +154,8 @@ F.effect=Class(object,{
         local rate=source and source.fm or 1
         A.step(o.vm,rate)
         o.age=o.age+rate
-        if o.vm.finished then object.RawDel(o) end
+        -- TH10击破ANM创建的碎片有独立寿命，主VM结束后仍要把子VM播完。
+        if finished(o.vm) then object.RawDel(o) end
     end,
     render=function(o)
         if o.game==8 and o.kind==40 then ring(o)

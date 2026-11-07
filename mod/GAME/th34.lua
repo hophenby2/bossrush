@@ -9479,7 +9479,6 @@ local function TH34_add_stage56_boss()
             if self.th07_doll then
                 -- Sub29 的死亡回调 Sub30 关闭它的激光；击破后协程不能继续发弹。
                 if IsValid(self.th07_doll_laser) then NativeVisual.stop_laser(self.th07_doll_laser) end
-                PlaySound('enep00',0.3,self.x/200,true)
                 NativeVisual.death_effect(self)
             else enemy.kill(self) end
         end,

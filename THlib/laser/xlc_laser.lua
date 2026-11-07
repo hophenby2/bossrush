@@ -43,10 +43,11 @@ function WideLaser:frame()
         local dx = player.x - self.x
         local dy = player.y - self.y
         local rot = self.rot
+        local inset = GameDrops and GameDrops.laserInset(player,rot) or 0
         dx, dy = dx * cos(rot) + dy * sin(rot), dy * cos(rot) - dx * sin(rot)
         dy = abs(dy)
         if dx > 0 then
-            if dy < self.w * 10 / 32 then
+            if dy < self.w * 10 / 32 - inset then
                 player.class.colli(player, self)
             end
             if self.timer % 4 == 0 then

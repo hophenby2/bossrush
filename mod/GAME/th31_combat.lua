@@ -303,6 +303,7 @@ return function()
             o.th08_card_owner=card_owner(linked)
             o._original_accepts_damage,o._original_damageable,o._original_no_death=true,true,false
             o._original_familiar_collision=true
+            if OriginalStageVisual then OriginalStageVisual.death.bind(o,8) end
             local previous=M.current_enemy;M.current_enemy=o
             init(o,sub,x,y,mirror,parent,...)
             M.current_enemy=previous
@@ -331,6 +332,7 @@ return function()
         end) end
         define.kill=function(o)
             if o._original_no_death then object.Preserve(o);return end
+            if o._original_death_effect then o._original_death_effect(o) end
             M.detach_children(o)
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             if kill then kill(o) end
@@ -458,6 +460,7 @@ return function()
             local args={...};local parent=parent_for(args)
             o.th08_source,o.th08_profile=key,cfg
             o.th08_card_owner=card_owner(parent)
+            if OriginalStageVisual then OriginalStageVisual.death.bind(o,8) end
             local previous=M.current_enemy;M.current_enemy=o
             init(o,...)
             M.current_enemy=previous
@@ -531,6 +534,7 @@ return function()
             end
         end
         define.kill=function(o)
+            if o._original_death_effect then o._original_death_effect(o) end
             if OriginalStageVisual then OriginalStageVisual.release_familiar(o) end
             o.th08_dead=true;task.Clear(o)
             M.detach_children(o)

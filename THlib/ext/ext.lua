@@ -121,8 +121,11 @@ local function ChangeGameStage()
     end
     ResetWorldOffset()--by ETC，重置world偏移
     ResetCurSystem()--重制system选择
-    SaveSpellCardData()
-    SaveScoreData()
+    -- 初次进入加载画面和离开分辨率选择时没有新的游玩进度，不重复重写刚读取的存档。
+    if stage.current_stage and stage.current_stage.stage_name~='settings' then
+        SaveSpellCardData()
+        SaveScoreData()
+    end
     if SaveProfiles.pending then ReloadSaveProfile() end
     ext.Aya_texture = nil--重制拍照图像
     ext.notUIdraw = nil

@@ -396,17 +396,18 @@ end
 
 local password = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41 }
 function sp:LockString(str)
-    local result = ""
+    local result = {}
     for i = 1, #str do
-        result = result .. string.char(sp:TweakValue(str:sub(i, i):byte() + password[i % #password + 1], 127, 1))
+        result[i] = string.char((str:byte(i) + password[i % #password + 1] - 1) % 127 + 1)
     end
-    return result
+    return table.concat(result)
 end
 
 function sp:UnLockString(str)
-    local result = ""
+    -- 旧的逐字节字符串拼接反复复制整个前缀；符卡历史扩大后会阻塞启动。
+    local result = {}
     for i = 1, #str do
-        result = result .. string.char(sp:TweakValue(str:sub(i, i):byte() - password[i % #password + 1], 127, 1))
+        result[i] = string.char((str:byte(i) - password[i % #password + 1] - 1) % 127 + 1)
     end
-    return result
+    return table.concat(result)
 end

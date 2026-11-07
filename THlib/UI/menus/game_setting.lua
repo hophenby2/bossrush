@@ -17,6 +17,7 @@ local function other_setting_default()
     cs.frameskip = ds.frameskip
 
     cs.SCAutoRetry = ds.SCAutoRetry
+    cs.resumeAutoSave = ds.resumeAutoSave
 
     cs.displayBG = ds.displayBG
     cs.auradistortion = ds.auradistortion
@@ -333,6 +334,7 @@ function game_setting:init(exit)
         }),
         Newsmall_menu("其他", x1, _line, y2 - h1 * 4, y2 - h1 * 3, {
             Newsetting_button("符卡练习自动重开", "SCAutoRetry", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
+            Newsetting_button("关内自动保存（每2秒）", "resumeAutoSave", _line, x2, y2 - h2 * 2, y2 - h2 * 1),
         }),
         Newsmall_menu("性能", x1, _line, y2 - h1 * 5, y2 - h1 * 4, {
             Newsetting_button("3D背景", "displayBG", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
