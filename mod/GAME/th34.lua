@@ -199,7 +199,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---      ⇒ 死亡弹是 6+10+6+6 = 28 发。
 ---==================== 第 3 面道中（第三张「道中搬运卡」，2026-09-29 增补） ====================
 ---把原作 `data/ecldata3.ecl` **时间轴 0** 的 t=450..3023 那一段道中（265 只）
----复刻成同一关上的第三张符卡（id 3402「三道中『青之骚灵』」，130 秒）。
+---复刻成同一关上的第三张道中卡（id 3402），在原时间轴3393帧交给主Boss。
 ---挂法、坐标换算（我们的 x = th07 的 x − 192、y = 224 − th07 的 y、角度取反）、
 ---逐帧跑时间轴的骨架、「弹池 1024、池满整波不生」的丢弹规则都照抄上面两张卡。
 ---
@@ -239,7 +239,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---  上面的差异 3/18/19/20/23/25。
 ---==================== 第 5 面道中（第四张「道中搬运卡」，2026-09-29 增补） ====================
 ---把原作 `data/ecldata5.ecl` **时间轴 0（偏移 0xAEA8）** 里 t=500..5713 的 94 条
----spawn 复刻成同一关上的第四张符卡（id 3404「五道中『幽明之径』」，120 秒）。
+---spawn 复刻成同一关上的第四张道中卡（id 3404），在原时间轴6113帧交给主Boss。
 ---
 ---数据和读法（逐字节读字节码，没有用 decl；解释器 /tmp/eclwork）：
 ---  · 时间轴 0 = 94 条普通 spawn，字段与第 3 面那张卡相同。
@@ -310,7 +310,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---  差异 1/3/9/18/19/20/24/25。
 ---==================== 第 1 面道中（第五张「道中搬运卡」，2026-09-29 增补） ====================
 ---把原作 `data/ecldata1.ecl` 的**两条时间轴**（tl0 偏移 0x8A00、tl1 偏移 0xA98C）合起来
----复刻成同一关上的第五张符卡（id 3400「一道中『初雪之妖精』」，120 秒）。
+---复刻成同一关上的第五张道中卡（id 3400），在原时间轴5042帧交给主Boss。
 ---原作这两条时间轴**同时跑、各数各的帧**（EnemyManager.cpp:637-645 对每条 timeline 各跑
 ---一遍 RunEclTimeline，timelineCount = 2）；移植版把两边的 spawn 按 t 归并成一张 WAVE1。
 ---挂法、坐标换算（我们的 x = th07 的 x − 192、y = 224 − th07 的 y、角度取反）、逐帧跑
@@ -382,7 +382,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---  SET_VM_AUTO_ROTATE 空操作、DEATH_ANM 0x300 无对应资源）都用上面的差异 3/18/19/25。
 ---==================== 第 2 面道中（第六张「道中搬运卡」，2026-09-29 增补） ====================
 ---把原作 `data/ecldata2.ecl` 的**三条时间轴**（tl0 偏移 0xDDA4、tl1 偏移 0xEE70、tl2 偏移
----0x100F4）合起来复刻成同一关上的第六张符卡（id 3401「二道中『雪之回廊』」，170 秒）。
+---0x100F4）合起来复刻成同一关上的第六张道中卡（id 3401），在7646帧交给主Boss。
 ---三条同样**同时跑**（timelineCount = 3），移植版按 t 归并成一张 WAVE2。
 ---挂法、坐标换算、逐帧跑时间轴、「弹池 1024、池满整波不生」都照抄上面几张卡。
 ---
@@ -447,7 +447,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 ---==================== 第 7 面（EX）/ 第 8 面（PH）道中（第七/八张「道中搬运卡」，2026-09-29 增补） ====================
 ---把原作 `data/ecldata7.ecl`（tl0 偏移 0xDE18，284 条 spawn）与 `data/ecldata8.ecl`
 ---（tl0 偏移 0x11234，374 条 spawn）各复刻成一张符卡（id 3406「EX 道中『妖妖梦・Extra』」、
----id 3407「PH 道中『妖妖梦・Phantasm』」，各 185 秒）。
+---id 3407「PH 道中『妖妖梦・Phantasm』」）；时长分别到8798/9258帧的主Boss对话。
 ---★ 这两个面没有「3 条时间轴」的结构：tl0 就是整段道中，tl1 只是开局的一个特效敌人（跳过）；
 ---  tl0 里除 spawn 外只有 boss 对白/中断（op 8/9/10/12），一律跳过；末尾各有一条**道中 boss
 ---  占位**要剔掉（EX 的 t=8799 sub 67、PH 的 t=9259 sub 69）⇒ 取 EX 282 条、PH 372 条。
@@ -818,10 +818,9 @@ NativeVisual.wrap_road_actor(class["TH34_flame"])
 ---它只负责把这段道中的时间轴按帧跑完。
 do
     local BOSS_NAME = "亡灵"
-    ---原作这一段是 t=720..1614（最后一只的本体打到 1834 帧、残火到 1954 帧），约 17 秒；
-    ---给 24 秒留够收尾的余量。
+    ---原时间轴0在1914帧进入中Boss对话；本卡从720帧开始，不额外等待残留敌机自毁。
     local CARD_NAME = "六面道中「成群的亡灵」"
-    local CARD_TIME = 24
+    local CARD_TIME = (1914-720)/60
     ---关卡号 32 = `core.lua` 的 STAGE_COUNT(32) + 1（已注册），th16AEX 顺延到 33。
     ---th16AEX 的 editname 也是 "1a" 且最后载入，所以 STAGE_COUNT 必须跟着改，
     ---否则 `_editor_boss["1a32"]` 会被它盖掉。见文件头的注册清单。
@@ -921,13 +920,10 @@ do
         sound_tick = sound_tick + 1
     end
     function card:render() end
-    ---★ 这里不需要清理：幽灵/残火是**独立对象**（没有 object.Connect 到 boss），而且都会自己退场 ——
-    ---幽灵按 auto_delete 飞出回收边界（0.02/帧² 加速下最远的 x=±160 要 196 帧），残火自己
-    ---t=120 时 RawDel。最后一只幽灵在卡内 t=894 出生（最晚 t≈1144 出界），就算它临走前被
-    ---击破，那团残火也只活到 t≈1264 —— 都在卡长 1440 之内，所以 del 里没事可做。
-    ---（也正因为它们不挂 _servants，boss_system:refresh(1) 的 KillServants 不会误杀它们。）
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
@@ -1799,9 +1795,8 @@ NativeVisual.wrap_road_actor(class["TH34_fairy4"])
 ---BGM 沿用 boss.Define 时定的 TH07_1（一个 boss 只能有一首），背景仍是第六面。
 do
     local CARD_NAME = "四面道中「骚灵们的合奏」"
-    ---原作这一段 t=200..6622（约 110 秒），最后一只妖精的死亡弹到 t≈6756；
-    ---给 150 秒留够收尾（所有小怪的寿命帧都在卡内跑完，del 里没事可做）。
-    local CARD_TIME = 150
+    ---只移植时间轴0的前段；7122帧生成中Boss Sub35，不能再按150秒保底时长空等。
+    local CARD_TIME = (7122-200)/60
     ---关卡号 32 = core.lua 的 STAGE_COUNT(32) + 1（和上一张卡同一个 boss）。
     local LEVEL = 32
     ---符卡历史槽位（spell_card_data 的键，也是符卡练习的解锁 id），跨关卡唯一。
@@ -1931,10 +1926,10 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 这里不需要清理：所有小怪都是**独立对象**（没有 object.Connect 到 boss），
-    ---寿命最长的妖精是 t=6622 出生、t=8756 自毁，都在 150 秒（9000 帧）的卡内跑完。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
@@ -2255,9 +2250,9 @@ NativeVisual.wrap_road_actor(class["TH34_bigghost3"])
 ---==================== 挂到空 boss 的第三张符卡 ====================
 do
     local CARD_NAME = "三道中「青之骚灵」"
-    ---原作 t=450..3023（约 50 秒）；最晚退场的是 t=2943 的 sub 11 大幽灵
-    ---（2943+4270 = 7213 帧），所以给 130 秒把收尾也包进来。
-    local CARD_TIME = 130
+    ---时间轴0在3393帧进入Boss对话；从450帧到交接共2943帧。
+    ---Sub11的保底寿命不是道中长度，提前击破它后也不能继续等待到130秒。
+    local CARD_TIME = (3393-450)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是第三面 ⇒ 3402。
     local CARD_ID = 3402
@@ -2561,10 +2556,10 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 不用清理：所有小怪都是独立对象（没有 object.Connect 到 boss），
-    ---寿命最长的 sub 11 大幽灵 t=7213 自毁，在 130 秒（7800 帧）内跑完。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
@@ -2949,9 +2944,8 @@ NativeVisual.wrap_road_actor(class["TH34_mid5"])
 ---==================== 挂到空 boss 的第四张符卡 ====================
 do
     local CARD_NAME = "五道中「幽明之径」"
-    ---原作 t=500..5713（约 87 秒）；最晚一只 sub 36 的本体落在 5713+80 = 5793 帧、
-    ---t=122 起飞、再飞约 120 帧出上边界 ⇒ 约 6035 帧收干净。给 120 秒余量。
-    local CARD_TIME = 120
+    ---时间轴0在6113帧进入主Boss对话；中Boss的独立战斗不计入这一条道中轴。
+    local CARD_TIME = (6113-500)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是第五面 ⇒ 3404。
     local CARD_ID = 3404
@@ -3091,10 +3085,10 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 不用清理：所有幽灵都是独立对象（没有 object.Connect 到 boss），
-    ---最晚的一只在 120 秒内飞出场地自毁。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
@@ -3381,11 +3375,8 @@ NativeVisual.wrap_road_actor(class["TH34_bigfairy1"])
 ---==================== 挂到空 boss 的第五张符卡 ====================
 do
     local CARD_NAME = "一道中「初雪之妖精」"
-    ---原作时间轴 0 的 spawn 从 t=600 排到 t=4558（最后一只 sub 19 的本体到
-    ---4558+2000 = 6558 帧才自毁）；t=4642 还有最后一只大妖精（sub 17），
-    ---它 t=142 的收尾弹在 4784 打完、本体到 4642+2142 = 6784 帧才消失 ⇒ 约 6800 帧
-    ---收干净。给 120 秒余量。
-    local CARD_TIME = 120
+    ---从600帧首波到时间轴1的5042帧Boss对话；不能按敌机未被击破时的最长寿命延长。
+    local CARD_TIME = (5042-600)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是第一面 ⇒ 3400。
     local CARD_ID = 3400
@@ -3724,10 +3715,10 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 不用清理：所有妖精都是独立对象（没有 object.Connect 到 boss），
-    ---最晚的一只在 120 秒内自毁。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
@@ -4044,9 +4035,8 @@ NativeVisual.wrap_road_actor(class["TH34_fairy2"])
 ---==================== 挂到空 boss 的第六张符卡 ====================
 do
     local CARD_NAME = "二道中「雪之回廊」"
-    ---原作时间轴 0/1/2 的 spawn 从 t=450 排到 t=7260（最后一批 sub 39 的本体到
-    ---7260+2180 = 9440 帧才自毁）⇒ 约 9440 帧收干净。给 170 秒余量。
-    local CARD_TIME = 170
+    ---三条时间轴合并派发，原时间轴0在7646帧进入主Boss对话。
+    local CARD_TIME = (7646-450)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是第二面 ⇒ 3401。
     local CARD_ID = 3401
@@ -4407,10 +4397,10 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 不用清理：所有妖精都是独立对象（没有 object.Connect 到 boss），
-    ---最晚的一只在 170 秒内自毁。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 end
@@ -5669,10 +5659,8 @@ local W78PH = mk78(true)
 ---==================== 挂到空 boss 的第七张符卡（EX 道中） ====================
 do
     local CARD_NAME = "EX 道中「妖妖梦・Extra」"
-    ---EX 最后一只 spawn 在 t=8298（sub 53 的开幕弹 t=8388 收干净）；再往前 t≈6188 还有
-    ---一只 sub 45，它的子体要打到 6188+3004 = 9192 帧才自毁 ⇒ 约 9200 帧 = 153 秒，
-    ---给到 185 秒留足余量。
-    local CARD_TIME = 185
+    ---时间轴0在8798帧进入蓝的对话；保留最后一波之后原有的500帧交接等待。
+    local CARD_TIME = (8798-545)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是 EX 面 ⇒ 3406。
     local CARD_ID = 3406
@@ -5700,19 +5688,18 @@ do
         sound_tick4 = sound_tick4 + 1
     end
     function card:render() end
-    ---★ 不用清理：所有小怪都是独立对象（没有 object.Connect 到 boss），最晚的一只
-    ---在 185 秒内自毁。
+    -- 原作交接时刻结束此独立道中；road_card统一回收仍在场的道中敌机。
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 
 ---==================== 挂到空 boss 的第八张符卡（PH 道中） ====================
 do
     local CARD_NAME = "PH 道中「妖妖梦・Phantasm」"
-    ---PH 最后一只 spawn 在 t=8758（sub 55）；t≈6088 那只 sub 45 的子体打到 6088+3003
-    ---= 9091 帧 ⇒ 约 9100 帧 = 152 秒，同样给 185 秒。
-    local CARD_TIME = 185
+    ---时间轴0在9258帧进入紫的对话；不再另加残留敌机的寿命余量。
+    local CARD_TIME = (9258-545)/60
     local LEVEL = 32
     ---符卡历史槽位：本关（th34）自己的一段 3400..3407（按面序）；这张是 PH 面 ⇒ 3407。
     local CARD_ID = 3407
@@ -5741,6 +5728,7 @@ do
     function card:render() end
     function card:del() end
 
+    NativeVisual.road_card(card)
     boss.card.add({ { card, "1a" } }, LEVEL, CARD_NAME, CARD_ID)
 end
 end

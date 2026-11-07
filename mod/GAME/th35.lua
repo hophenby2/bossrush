@@ -6074,8 +6074,9 @@ end
 ---=========================== 挂到空 boss 的一张符卡 ===========================
 local BOSS_NAME = "道中"
 local CARD_NAME = "六面道中「妖怪之山的妖精」"
----时长：最后一发弹（Girl02 的双环）在道中开始后约 3220 帧收尾 ⇒ 56 秒留余量。
-local CARD_TIME = 56
+---时长按独立MainSubBoss的对话入口确定，保留原3368..3668之间的300帧交接等待。
+-- MainSubBoss在独立context中于3668帧开始对话；异步context从出生后的下一拍启动。
+local CARD_TIME = (1+3668)/60
 ---符卡历史槽位（spell_card_data 的键 + 练习解锁号）：跨关卡唯一，取 3671
 ---（见 th35.lua 文件头的注册清单；已用 3500/3600/3601..3625/3630..3670）。
 local CARD_ID = 3671
@@ -6428,7 +6429,9 @@ end
 
 ---挂到空 boss「ba」上的一张耐久符卡（与 stage06 道中同一套注册方式）。
 boss.Define("ba", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s01card = boss.card.New("一道中「初雪之妖精」", 84, 84, 84, 10000000)
+-- 原main在4370帧交接；三处回跳额外消耗160+160+190帧，不能只读字面时间。
+local S01_ROAD_TIME=(4370+160+160+190)/60
+t10mid.s01card = boss.card.New("一道中「初雪之妖精」", S01_ROAD_TIME, S01_ROAD_TIME, S01_ROAD_TIME, 10000000)
 function t10mid.s01card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -6815,7 +6818,9 @@ end
 
 ---挂到空 boss「ca」上的一张耐久符卡（与 stage01/06 道中同一套注册方式）。
 boss.Define("ca", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s02card = boss.card.New("二道中「人里の妖精」", 100, 100, 100, 10000000)
+-- 原main在最后一组之后60帧（5864）进入Boss对话。
+local S02_ROAD_TIME=5864/60
+t10mid.s02card = boss.card.New("二道中「人里の妖精」", S02_ROAD_TIME, S02_ROAD_TIME, S02_ROAD_TIME, 10000000)
 function t10mid.s02card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -7362,7 +7367,9 @@ end
 
 ---挂到空 boss「da」上的一张耐久符卡（与 stage01/02/06 道中同一套注册方式）。
 boss.Define("da", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s03card = boss.card.New("三道中「河童の渓谷」", 120, 120, 120, 10000000)
+-- main的5885帧加上三次同步MainSub03/03b各280帧，随后交给主Boss。
+local S03_ROAD_TIME=(5885+3*280)/60
+t10mid.s03card = boss.card.New("三道中「河童の渓谷」", S03_ROAD_TIME, S03_ROAD_TIME, S03_ROAD_TIME, 10000000)
 function t10mid.s03card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -8182,9 +8189,10 @@ t10mid.s04.run = function(card)
 end
 
 ---挂到空 boss「ea」上的一张耐久符卡（与 stage01/02/03/06 道中同一套注册方式）。
----时长：最后一批 Crow01 在道中开始后约 8328 帧 ⇒ 150 秒留余量。
+---原main在8600帧创建Boss；并行道中context在此结束，不再附加收尾余量。
 boss.Define("ea", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s04card = boss.card.New("四道中「妖怪の山」", 150, 150, 150, 10000000)
+local S04_ROAD_TIME=8600/60
+t10mid.s04card = boss.card.New("四道中「妖怪の山」", S04_ROAD_TIME, S04_ROAD_TIME, S04_ROAD_TIME, 10000000)
 function t10mid.s04card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -8555,9 +8563,10 @@ end
 t10mid.install_road(5)
 
 ---挂到空 boss「fa」上的一张耐久符卡（与 stage01/02/03/04/06 道中同一套注册方式）。
----时长：最后一批妖精（MainSub11，约 t=5740 帧）⇒ 120 秒留余量。
+---MainSubMBoss在3800帧创建MainSub8，后者2320帧调用MainSubBoss；三个异步入口各下一拍执行。
 boss.Define("fa", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s05card = boss.card.New("五道中「洩矢の王国跡」", 120, 120, 120, 10000000)
+local S05_ROAD_TIME=(3800+2320+3)/60
+t10mid.s05card = boss.card.New("五道中「洩矢の王国跡」", S05_ROAD_TIME, S05_ROAD_TIME, S05_ROAD_TIME, 10000000)
 function t10mid.s05card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false
@@ -9015,9 +9024,12 @@ t10mid.s07.BEH = {
 t10mid.install_road(7)
 
 ---挂到空 boss「ga」上的一张耐久符卡（与 stage01..06 道中同一套注册方式）。
----独立练习窗口沿用340秒；main的10000组是永久等待，生成表只启动一次。
+---独立练习也在原MainSubBoss入口结束；main的10000组是永久等待，生成表只启动一次。
 boss.Define("ga", "道中", "TH10_1", TH10_bg, { 0, 400 }, nil, "img_void", LEVEL)
-t10mid.s07card = boss.card.New("EX道中「ネイティブフェイス」", 340, 340, 340, 10000000)
+-- MainSub1→10→Boss的等待和为8571帧，十一条异步context各晚一拍，合计8582帧。
+-- main在10000组只做永久等待；不能把不可达的第二轮或main的存活时间当作道中长度。
+local S07_ROAD_TIME=(700+590+730+860+640+1520+61+750+940+1780+11)/60
+t10mid.s07card = boss.card.New("EX道中「ネイティブフェイス」", S07_ROAD_TIME, S07_ROAD_TIME, S07_ROAD_TIME, 10000000)
 function t10mid.s07card:before()
     self.NotPlayTimeOutSound = true
     self.colli = false

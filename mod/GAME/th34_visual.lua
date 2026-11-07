@@ -14,6 +14,41 @@ for i=0,4 do LoadImage('th34_orb_'..i,tex,i*32,32,30,30) end
 LoadImage('th34_source_circle',tex,192,32,64,64)
 LoadImage('th34_source_spirit',tex,0,80,48,16)
 local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
+-- 独立道中卡在原时间轴交接点结束，不等小怪的保底自毁时长。
+-- 这些对象没有连接空Boss，必须另行登记，防止它们跨入下一张独立卡。
+local function track_road(o)
+    local parent=N.road_context or task.stack[#task.stack]
+    local owner=parent and (parent.th07_road_owner or parent.th07_road_units and parent)
+    if not owner or not IsValid(owner) or not owner.th07_road_units or o.th07_road_owner then return end
+    o.th07_road_owner=owner
+    local units=owner.th07_road_units
+    units[#units+1]=o
+end
+function N.begin_road(owner)
+    owner.th07_road_units={}
+end
+function N.end_road(owner)
+    for _,o in ipairs(owner.th07_road_units or {}) do
+        if IsValid(o) then
+            task.Clear(o)
+            SetAttr(o,'colli',false)
+            object.RawDel(o)
+        end
+    end
+    owner.th07_road_units=nil
+end
+local function road_context(o,fn,...)
+    local previous=N.road_context
+    N.road_context=o
+    local result=fn(o,...)
+    N.road_context=previous
+    return result
+end
+function N.road_card(card)
+    local init,del=card.init,card.del
+    card.init=function(owner) N.begin_road(owner);init(owner) end
+    card.del=function(owner) del(owner);N.end_road(owner) end
+end
 -- EnemyManager::OnUpdate：先播放deathAnm1，再生成四个deathAnm2+4碎片。
 -- 独立LuaSTG对象保留完整ANM寿命，不能挂在即将销毁的敌机上。
 function N.death_effect(o)
@@ -38,21 +73,23 @@ function N.task_api(scheduler)
 end
 -- 道中敌机也先RunEcl(0)；独立年龄不借用LuaSTG尚未递增的timer。
 function N.wrap_road_actor(cls)
-    local init,frame=cls.init,cls.frame
+    local init,frame,kill=cls.init,cls.frame,cls.kill
     cls.init=function(o,...)
+        track_road(o)
         o.th07_road_age=0
-        init(o,...)
+        road_context(o,init,...)
         o.auto_delete,o.bound=false,false
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
         local x,y=o.x,o.y
-        frame(o)
+        road_context(o,frame)
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
         o.th07_road_position=nil
         o.x,o.y=x,y
         o.th07_road_age=1
     end
     cls.frame=function(o)
-        frame(o)
+        if o.status=='del' or o.status=='kill' then return end
+        road_context(o,frame)
         if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
         if o.th07_body_birth_pending then
             -- 合并显示的载体在此原本生成另一只敌机：先RunEcl(0)，本帧再正常RunEcl(1)。
@@ -60,7 +97,7 @@ function N.wrap_road_actor(cls)
             o.th07_body_birth_pending=nil
             o.th07_body_tick_offset=1
             o.th07_road_position=nil
-            frame(o)
+            road_context(o,frame)
             if not IsValid(o) or o.status=='del' or o.status=='kill' then return end
         end
         local p=o.th07_road_position
@@ -77,7 +114,8 @@ function N.wrap_road_actor(cls)
             if outside then object.RawDel(o) end
         end
     end
-    cls[1],cls[3]=cls.init,cls.frame
+    cls.kill=function(o) return road_context(o,kill) end
+    cls[1],cls[3],cls[6]=cls.init,cls.frame,cls.kill
 end
 function N.road_position(o,x,y)
     o.th07_road_position={x,y}
@@ -478,8 +516,11 @@ local function draw_trail(o)
 end
 -- ECL138必须独立于主ANM选择保留；不能只给少数手写发射器补拖尾。
 OriginalStageVisual.adapters[7]={
+    -- 引擎本帧仍会遍历已标记删除的对象，交接清场后不能再派发一拍ANM子机。
+    frame=function(o) return o.status=='del' or o.status=='kill' end,
     bind=function(o)
         OriginalStageVisual.death.bind(o,7)
+        if not o._bosssys then track_road(o) end
     end,
     event=function(o,c)
         if c[2]==98 then

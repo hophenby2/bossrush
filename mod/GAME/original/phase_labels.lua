@@ -9,6 +9,13 @@ local roads={
     [32]={[3400]='1',[3401]='2',[3402]='3',[3403]='4',[3404]='5',[3405]='6',[3406]='EX',[3407]='PH'},
     [33]={[3680]='1',[3681]='2',[3682]='3',[3683]='4',[3684]='5',[3671]='6',[3685]='EX'},
 }
+-- 只给真正分段的道中加前后半；整段道中不因最后一波的位置改名。
+local road_parts={
+    [29]={[3409]='前半',[3410]='后半',[3428]='前半',[3437]='后半',
+        [3412]='前半',[3416]='后半',[3414]='前半',[3418]='后半',
+        [3432]='前半',[3435]='后半',[3438]='前半',[3439]='后半'},
+    [32]={[3403]='前半',[3405]='前半'},
+}
 -- 永夜抄同一角色组内混有中Boss和主Boss，不能按角色组给整组命名。
 -- 二面Sub25主Boss宿主从Sub27（463）开始；旧运动key里的mid不能当阶段类型。
 local mid8={[470]=true,[461]=true,[3436]=true,[433]=true,[435]=true,
@@ -19,12 +26,12 @@ local stage8={['1']='1',['2']='2',['3']='3',['4a']='4A',['4b']='4B',['5']='5',
 local stage_sources8
 local function source(card,level,id,band)
     local road=roads[level] and roads[level][id]
-    if road then return road,'road' end
+    if road then return road,'road',nil,road_parts[level] and road_parts[level][id] end
     if level==30 then
         local m=card.th06_source
         if not m then return end
         local stage=m.stage==7 and 'EX' or tostring(m.stage)
-        if m.road then return stage,'road' end
+        if m.road then return stage,'road',nil,m.part=='before' and '前半' or m.part=='after' and '后半' or nil end
         if not card.is_sc then return stage,mid6[m.group] and 'mid' or 'boss',tostring(m.group) end
     elseif not card.is_sc then
         if level==29 then
@@ -58,11 +65,12 @@ function P.apply(card,level,id,boss,band)
     local game=games[level]
     if not game then return end
     if card.phase_name then return card.phase_name end
-    local stage,kind,host=source(card,level,id,band)
+    local stage,kind,host,part=source(card,level,id,band)
     if not stage then return end
     local name=game..stage
     if kind=='road' then
-        name=name..'道中'
+        name=name..'道中'..(part or '')
+        card.phase_part=part
         card.name,card.is_sc=name,false
     else
         -- 每个宿主的中Boss/主Boss分别从一非计数；机体分支和三姐妹独立计数。
