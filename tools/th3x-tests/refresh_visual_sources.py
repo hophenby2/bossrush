@@ -12,7 +12,7 @@ spec = importlib.util.spec_from_file_location('anm_export', Path(__file__).with_
 serializer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(serializer)
 OPS = {8: set(range(54, 63)) | {79, 80, 81, 83, 174},
-       7: {95, 96, 97, 99, 100, 120, 128, 129, 132, 138, 150}}
+       7: {95, 96, 97, 98, 99, 100, 120, 128, 129, 132, 138, 150}}
 
 
 def profiles(game, declarations, binaries):
@@ -78,7 +78,7 @@ def main():
     data = profiles(args.game, args.declarations, args.binaries)
     assert data, '未读取到原作显示指令'
     target=ROOT/'mod/GAME/original/visual_ecl.lua'
-    text=target.read_text()
+    text=target.read_text('utf-8')
     marker=f'[{args.game}]='
     depth=0;quoted=False;escaped=False;i=text.index('return ')+len('return ')
     while i<len(text):
@@ -103,7 +103,7 @@ def main():
                     if level==0:break
                 end+=1
             assert level==0 and end<len(text)
-            target.write_text(text[:start]+serializer.lua(data)+text[end+1:])
+            target.write_text(text[:start]+serializer.lua(data)+text[end+1:],encoding='utf-8',newline='\n')
             break
         elif c=='{':depth+=1
         elif c=='}':depth-=1

@@ -61,7 +61,13 @@ F.effect=Class(object,{
         o.rate_source=phase and phase._native_rate_source
         o.vm=A.new(game,archive,script,o.rate_source and o.rate_source.fm)
         if argb then color(o.vm,argb) end
-        if game==8 and kind==17 then
+        if game==7 and kind and kind>=3 and kind<=11 then
+            -- TH07的initCallback在SpawnEffect内执行；坐标换算只反转y分量。
+            local scale=kind==3 and 4/33 or 1/12
+            o.effect_velocity={ran:Float(-128,128)*scale,-ran:Float(-128,128)*scale}
+            local divisor=kind==3 and 20 or 19
+            o.effect_acceleration={-o.effect_velocity[1]/divisor,-o.effect_velocity[2]/divisor}
+        elseif game==8 and kind==17 then
             o.dir=ran:Float(-math.pi,math.pi)
             o.x,o.y=x+256*math.cos(o.dir),y-256*math.sin(o.dir)
         elseif game==8 and kind==26 then
@@ -87,7 +93,7 @@ F.effect=Class(object,{
         F.objects[#F.objects+1]=o
     end,
     frame=function(o)
-        if o.game==6 and (o.kind==3 or (o.kind>=4 and o.kind<=11)) then
+        if (o.game==6 or o.game==7) and o.kind and o.kind>=3 and o.kind<=11 then
             -- RandomSplash(Big) 首次 EffectManager 回调取两个随机速度，再逐帧减速。
             if not o.effect_velocity then
                 local scale=o.kind==3 and 4/33 or 1/12
@@ -227,10 +233,10 @@ function F.new(game,archive,script,x,y,phase,kind,argb,angle)
         for _,o in ipairs(F.objects) do if valid(o) then n=n+1;F.objects[n]=o end end
         for i=#F.objects,n+1,-1 do F.objects[i]=nil end
     end
-    if game==6 or game==8 then
+    if game==6 or game==7 or game==8 then
         local n=0
         for _,o in ipairs(F.objects) do if valid(o) and o.game==game then n=n+1 end end
-        if n>=512 then return nil end -- EffectManager的普通效果池，不挤占弹幕槽。
+        if n>=(game==7 and 400 or 512) then return nil end -- 各作EffectManager的普通效果池。
     end
     return New(F.effect,game,archive,script,x,y,phase,kind,argb,angle)
 end

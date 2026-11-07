@@ -24,7 +24,7 @@ return function(H,P,data)
         local function put(id,n)
             if names[id] then v[names[id]]=n
             elseif id==-10015 then b.x=n-192 elseif id==-10016 then b.y=224-n elseif id==-10017 then a.z=n
-            elseif id==-10022 then a.phase=n elseif id==-10024 and not a.main then b.hp=n else error('不可写变量 '..id) end
+            elseif id==-10022 then a.phase=n elseif id==-10024 and not a.main then H.set_life(b,n) else error('不可写变量 '..id) end
         end
         local function jump(row,time,offset)
             local pos=row[1]+offset
@@ -91,7 +91,7 @@ return function(H,P,data)
             elseif op==105 then a.damageable=x[1]~=0
             elseif op==107 then a.death_mode=get(x[1])
             elseif op==108 then a.death=P[stage][x[1]]
-            elseif op==111 then if not a.main then b.hp=get(x[1]) end
+            elseif op==111 then if not a.main then H.set_life(b,get(x[1])) end
             elseif op==112 then a.phase=get(x[1])
             elseif op==113 then a.life_threshold=get(x[1])
             elseif op==114 then a.life_fn=P[stage][x[1]]

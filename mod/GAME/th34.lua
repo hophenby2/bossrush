@@ -9480,6 +9480,7 @@ local function TH34_add_stage56_boss()
                 -- Sub29 的死亡回调 Sub30 关闭它的激光；击破后协程不能继续发弹。
                 if IsValid(self.th07_doll_laser) then NativeVisual.stop_laser(self.th07_doll_laser) end
                 PlaySound('enep00',0.3,self.x/200,true)
+                NativeVisual.death_effect(self)
             else enemy.kill(self) end
         end,
         ---子机的自绘运动（`bmove`/`bstep`）没有别的地方驱动：挂在 boss 上的卡有
@@ -16450,7 +16451,7 @@ TH34_add_stage78()
 TH34_add_stage78_boss()
 TH34_add_stage56_boss()
 
--- 道中敌机的外形由原 ECL 的95/96/97指令决定；不再按发弹种类挑代理敌机。
+-- 道中敌机的外形与击破动画由原ECL的95/96/97/98指令决定。
 do
     local V=OriginalStageVisual
     local function subkey(stage)

@@ -28,7 +28,7 @@ def export(cache):
     output={}
     for game,folder,ops in [(8,cache/'ecl'/'8',set(range(54,63))|{79,80,81}),
                             (95,Path(r'E:\workspace\.bossrush-validation\source-assets\th095'),set(range(54,63))|{79,80,81}),
-                            (7,cache/'ecl'/'7',{95,96,97})]:
+                            (7,cache/'ecl'/'7',{95,96,97,98})]:
         profiles={}
         for path in folder.glob('*.decl'):
             subs=read_subs(path)

@@ -14,6 +14,23 @@ for i=0,4 do LoadImage('th34_orb_'..i,tex,i*32,32,30,30) end
 LoadImage('th34_source_circle',tex,192,32,64,64)
 LoadImage('th34_source_spirit',tex,0,80,48,16)
 local orb_index={0,1,1,1,1,2,2,2,2,3,3,3,4,4,4,0}
+-- EnemyManager::OnUpdate：先播放deathAnm1，再生成四个deathAnm2+4碎片。
+-- 独立LuaSTG对象保留完整ANM寿命，不能挂在即将销毁的敌机上。
+local death_scripts={[0]=28,29,30,31,36,37,38,39,40,41,42,43,44}
+function N.death_effect(o)
+    if o.th07_death_effect_spawned then return end
+    o.th07_death_effect_spawned=true
+    local d=o.th07_death_anm or {0,0,0}
+    if d[1]<0 then return end -- SET_DEATH_ANM的有符号字节-1关闭整组击破效果。
+    local function spawn(kind,count)
+        local script=assert(death_scripts[kind],'未登记的妖妖梦击破效果：'..tostring(kind))
+        for _=1,count do
+            OriginalStageVisual.presentation.new_effect(7,'etama',script,o.x,o.y,nil,kind,0xffffffff)
+        end
+    end
+    spawn(d[1],1)
+    spawn(d[2]+4,4)
+end
 -- ECL的零等待不让出一帧；例如同一时间轴位置连续生成的敌机。
 function N.freeze_ecl_busy()
     local held=false
@@ -472,8 +489,19 @@ local function draw_trail(o)
 end
 -- ECL138必须独立于主ANM选择保留；不能只给少数手写发射器补拖尾。
 OriginalStageVisual.adapters[7]={
+    bind=function(o)
+        if not o._bosssys then o._original_death_effect=N.death_effect end
+    end,
     event=function(o,c)
-        if c[2]==100 then N.spawn_orbit(o,c)
+        if c[2]==98 then
+            -- ECL98将三个signed char打包在一个32位字中，不是单个动画编号。
+            local word=c[3]
+            local function byte(n)
+                local value=math.floor(word/256^n)%256
+                return value>=128 and value-256 or value
+            end
+            o.th07_death_anm={byte(0),byte(1),byte(2)}
+        elseif c[2]==100 then N.spawn_orbit(o,c)
         elseif c[2]==99 and c[3]<0 then N.reset_orbits(o)
         elseif c[2]==138 then
             if c[3]==0 then o.th07_trail=nil;return end

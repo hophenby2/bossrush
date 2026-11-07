@@ -9,9 +9,9 @@
 ---原作 ANM 的无判定装饰粒子省略，使魔用现成敌机图，芙兰分身使用芙兰行走图。
 ---差异 2：沿用本测试场的 rank 上限：L=32，Extra=18；原作分别在 10..32 / 14..18 浮动。
 ---各卡仍执行原作的 rank 数量、速度、周期插值与 ins_131；没有按密度另行调参。
----本文件的原作弹体使用 rank_speed=false，Boss 使用原始 HP，保证上述固定 ECL rank 口径。
+---本文件的原作弹体使用 rank_speed=false；血量按原作四种低速满火力机体的活跃TTK中位数换算。
 ---差异 3：自机、Bomb、擦弹和伤害结算走本项目系统；弹体使用原作矩形判定尺寸，
----激光包含原作预热/收束阶段「仅中点有判定」的行为。击破血量与时限取原生 ECL。
+---激光包含原作预热/收束阶段「仅中点有判定」的行为。有效血量/阈值与时限取原生ECL，换算方法见th32_hp.lua。
 ---14 张场外道中载体按原始时间轴分前后半；六面后半是无敌机的入场等待。
 ---非冻结轴在中 Boss 战期间继续推进；后半整关衔接会扣除中 Boss 的原生攻击帧。
 ---差异 4：切卡按项目框架清场，框架入场/结算帧不推进原作道中轴；单卡练习从完整段重放。
@@ -32,6 +32,7 @@ local ECL_PI, ECL_TAU = 3.1415927410125732, 6.2831854820251465
 local bit = require("bit")
 local band = bit.band
 local LEVEL, RANK, POOL_SIZE = 30, 32, 640
+local HPBalance=dofile('mod/GAME/th32_hp.lua')
 
 -- 只列本关实际使用的弹种：{THlib 图样，原精灵宽，原精灵高，原判定全宽}。
 -- BulletManager.cpp 的 grazeSize 是全宽；Player::CheckCollision 再除以二。
@@ -427,7 +428,7 @@ end
 
 local function begin(b, y, rank_speed, start_effect)
     b.th06 = { pool = {}, next_slot = 1, lasers = {},
-        rank_speed = rank_speed or 0 }
+        rank_speed = rank_speed or 0, spell=b._th06_hp_spell }
     b.colli, b.no_hp_render, b.NotPlayTimeOutSound = true, false, false
     if not b.th06_previous_motion or b.th06_previous_motion.stage~=6 then
         -- 六面宿主 Sub15 已走到 (192,96)，不能拿框架的场外出生点代替符卡起点。
@@ -453,7 +454,8 @@ local function new_card(name, timeout, hp, run)
     local c = boss.card.New(name, 2, 2, timeout, hp)
     function c:before() self.th06 = nil;self.a,self.b,self.rect=28,28,true end
     function c:init()
-        self.hp,self.maxhp,self._rank_hp_proxy=c.hp,c.hp,true
+        HPBalance.main(self,c._th06_balance,hp)
+        self._rank_hp_proxy=true
         task.New(self, function() run(self) end)
     end
     function c:frame() if self.th06 then move_step(self);bat_wings(self) end end
@@ -618,6 +620,8 @@ function H.lerp(rank, lo, hi, integer)
     return lo + (integer and trunc(n) or n)
 end
 function H.trace(b, kind, ...)
+    if kind=='spell' then HPBalance.spell(b.th06,true)
+    elseif kind=='spell_end' then HPBalance.spell(b.th06,false) end
     local hook = rawget(_G, "TH32_NATIVE_TRACE")
     if hook then hook(b, kind, ...) end
 end
@@ -645,7 +649,10 @@ function H.call(b, v, fn, i0, f0)
 end
 function H.life(b)
     local a=b.th06_actor
-    return b.hp + (a.main and a.meta.threshold or 0)
+    return HPBalance.raw(b) + (a.main and a.meta.threshold or 0)
+end
+function H.set_life(b,life)
+    HPBalance.unit(b,life,b.th06.spell)
 end
 function H.player_angle(b) return atan2(-(player.y-b.y),player.x-b.x) end
 function H.distance(b) return sqrt((player.x-b.x)^2+(player.y-b.y)^2) end
@@ -892,13 +899,13 @@ function H.kill_actor(a,defer)
     if a.dead then return end
     local mode=a.death_mode or 0
     a.life_threshold,a.timeout=nil,nil
-    if mode==3 then a.object.hp=1;a.damageable=false;a.death_mode=0
+    if mode==3 then H.set_life(a.object,1);a.damageable=false;a.death_mode=0
     elseif a.object.th06.road then H.enemy_drop(a) end
     H.particles(a.object,a.death_particle1 or 0,mode==3 and 4 or 1,0xffffffff)
     H.particles(a.object,(a.death_particle2 or 0)+4,4,0xffffffff)
     if mode==0 then a.dead=true;object.RawDel(a.object);return end
     if mode==1 then a.interactable=false end
-    a.object.hp=mode==3 and 1 or 0
+    H.set_life(a.object,mode==3 and 1 or 0)
     if a.death then
         local fn=a.death;a.death=nil
         a.resume_tick=nil
@@ -916,9 +923,10 @@ class["原作使魔"] = Class(enemy, {
         b.bound=false;b.x,b.y=x-192,224-y
         local a=H.new_actor(s,b,stage,sub,false,{epoch=0,threshold=0})
         a.z=z;a.initial_life=hp;a.drop=drop;a.score=score
+        H.set_life(b,max(1,hp))
         H.run_actor(a,true)
         if not a.dead then H.actor_post(a,false) end
-        if hp>=0 then b.hp=hp end -- SpawnEnemy 在首次 RunEcl 之后再次覆盖正生命值。
+        if not a.dead and hp>=0 then H.set_life(b,hp) end -- 原作首次RunEcl后再次覆盖非负life。
     end,
     frame=function(b)
         if b.th06_actor and not b.th06_actor.dead then
@@ -1019,8 +1027,8 @@ class["原作流程控制"] = Class(object, {
             if a and not a.dead and IsValid(a.object) then
                 H.actor_motion(a)
                 if not a.dead then
-                    if not a.main and a.life_threshold and a.life_threshold>=0 and a.object.hp<a.life_threshold and a.life_fn then
-                        local fn=a.life_fn;a.object.hp=max(1,a.life_threshold);a.life_threshold=nil
+                    if not a.main and a.life_threshold and a.life_threshold>=0 and H.life(a.object)<a.life_threshold and a.life_fn then
+                        local fn=a.life_fn;H.set_life(a.object,max(1,a.life_threshold));a.life_threshold=nil
                         local prior=a.context;a.context={}
                         for k,value in pairs(prior) do a.context[k]=value end
                         a.context.time,a.context.epoch=0,0
@@ -1048,7 +1056,8 @@ class["原作流程控制"] = Class(object, {
     end,
 })
 function H.card_init(b,meta)
-    b.th06={pool={},next_slot=1,lasers={},laser_pool={},actors={},rank_speed=0}
+    local entry=HPBalance.entries[meta.id]
+    b.th06={pool={},next_slot=1,lasers={},laser_pool={},actors={},rank_speed=0,spell=entry and entry.spell or false}
     b.th06_meta=meta;b.no_hp_render=false;b.NotPlayTimeOutSound=false
     b._original_ecl_timer=not meta.road and 0 or nil
     local previous=b.th06_previous_motion
@@ -1059,7 +1068,8 @@ function H.card_init(b,meta)
         b.x,b.y=meta.entry_x or 0,meta.entry_y or 128
     end
     b.th06_saved={a=b.a,b=b.b,rect=b.rect,DMG_factor=b.DMG_factor,_a=b._a}
-    b.hp,b.maxhp,b._rank_hp_proxy=meta.hp,meta.hp,true
+    HPBalance.main(b,entry,meta.hp)
+    b._rank_hp_proxy=true
     if meta.hitbox then b.a,b.b,b.rect=meta.hitbox[1]/2,meta.hitbox[2]/2,true end
     b.th06_control=New(class["原作流程控制"],b,meta)
 end
@@ -1769,7 +1779,7 @@ do
         a.death=P[1][16]
         a.death_particle1,a.death_particle2=2,1
         H.sprite(b,134)
-        if not a.main then b.hp=7000 end
+        if not a.main then H.set_life(b,7000) end
         a.phase=0
         a.life_threshold=900
         a.life_fn=P[1][22]
@@ -1949,7 +1959,7 @@ do
         a.death=P[1][17]
         a.death_particle1,a.death_particle2=2,1
         H.sprite(b,134)
-        if not a.main then b.hp=7500 end
+        if not a.main then H.set_life(b,7500) end
         a.phase=0
         a.life_threshold=800
         a.life_fn=P[1][23]
@@ -2002,7 +2012,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -2883,7 +2893,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.collidable=true
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.phase=0
         a.life_threshold=1500
         a.life_fn=P[2][30]
@@ -2999,7 +3009,7 @@ do
         a.death_mode=3
         a.death=P[2][28]
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=13000 end
+        if not a.main then H.set_life(b,13000) end
         a.phase=0
         a.life_threshold=3200
         a.life_fn=P[2][31]
@@ -3131,7 +3141,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -3940,7 +3950,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         a.collidable=true
-        if not a.main then b.hp=14000 end
+        if not a.main then H.set_life(b,14000) end
         a.phase=0
         a.life_threshold=1900
         a.life_fn=P[3][29]
@@ -4084,7 +4094,7 @@ do
         H.wait(b,v,0)
         a.collidable=true
         H.trace(b,"spell_end")
-        if not a.main then b.hp=12000 end
+        if not a.main then H.set_life(b,12000) end
         a.phase=0
         a.life_threshold=1400
         a.life_fn=P[3][30]
@@ -4281,7 +4291,7 @@ do
         a.collidable=true
         H.trace(b,"spell_end")
         H.clear_helpers(b)
-        if not a.main then b.hp=16500 end
+        if not a.main then H.set_life(b,16500) end
         a.phase=0
         a.life_threshold=3400
         a.life_fn=P[3][32]
@@ -4767,7 +4777,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -5533,7 +5543,7 @@ do
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
         H.anm_slot(b,0,17)
-        if not a.main then b.hp=17000 end
+        if not a.main then H.set_life(b,17000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,144.0}
@@ -7097,7 +7107,7 @@ do
         a.death_mode=2
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=16000 end
+        if not a.main then H.set_life(b,16000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         v.cmp=((a.stage==7 and 4 or 3))-(0)
@@ -7411,7 +7421,7 @@ do
         a.damageable=false
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=5100 end
+        if not a.main then H.set_life(b,5100) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.life_threshold=3400
@@ -8680,7 +8690,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -9409,7 +9419,7 @@ do
         a.death_mode=2
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=19000 end
+        if not a.main then H.set_life(b,19000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,132.0}
@@ -9858,7 +9868,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=17000 end
+        if not a.main then H.set_life(b,17000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,132.0}
@@ -10113,7 +10123,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=16000 end
+        if not a.main then H.set_life(b,16000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,132.0}
@@ -10645,7 +10655,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -11077,7 +11087,7 @@ do
         a.death_mode=2
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=13000 end
+        if not a.main then H.set_life(b,13000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -11166,7 +11176,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=15500 end
+        if not a.main then H.set_life(b,15500) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -11449,7 +11459,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=11000 end
+        if not a.main then H.set_life(b,11000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -11555,7 +11565,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=13000 end
+        if not a.main then H.set_life(b,13000) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -12183,7 +12193,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=4700 end
+        if not a.main then H.set_life(b,4700) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -12268,7 +12278,7 @@ do
         H.trace(b,"spell_end")
         a.collidable=true
         a.death_particle1,a.death_particle2=2,1
-        if not a.main then b.hp=5300 end
+        if not a.main then H.set_life(b,5300) end
         a.phase=0
         a.offsetx,a.offsety,a.offsetz=0.0,-12.0,0.0
         a.bounds={32.0,48.0,352.0,120.0}
@@ -12372,7 +12382,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -13485,7 +13495,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -13873,7 +13883,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=8000 end
+        if not a.main then H.set_life(b,8000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -14093,7 +14103,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=8000 end
+        if not a.main then H.set_life(b,8000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -14423,7 +14433,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=8000 end
+        if not a.main then H.set_life(b,8000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -14621,7 +14631,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -14815,7 +14825,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -15088,7 +15098,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -15309,7 +15319,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=10000 end
+        if not a.main then H.set_life(b,10000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -15673,7 +15683,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=1000 end
+        if not a.main then H.set_life(b,1000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -16472,7 +16482,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,0)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=6000 end
+        if not a.main then H.set_life(b,6000) end
         a.invisible=false
         a.collidable=true
         a.interactable=true
@@ -16626,7 +16636,7 @@ do
         local a=b.th06_actor
         H.wait(b,v,10)
         H.trace(b,"spell_end")
-        if not a.main then b.hp=0 end
+        if not a.main then H.set_life(b,0) end
         H.wait(b,v,3010)
         H.erase(b)
     end
@@ -26345,6 +26355,8 @@ end
 class.boss_order={18,2,19,3,20,4,21,5,22,6,23,7,24,8,25,9,15,16,17,26,10,27,11,28,12,29,1,30,13,31,14}
 
 -- TH06_EXPANDED_END
+
+HPBalance.cards(LEVEL,class.boss_order)
 
 end
 

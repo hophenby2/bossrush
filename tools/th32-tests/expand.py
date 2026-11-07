@@ -30,7 +30,7 @@ def assignment(target,expr):
     if target==-10015:return f'b.x=({expr})-192'
     if target==-10016:return f'b.y=224-({expr})'
     if target==-10017:return f'a.z={expr}'
-    if target==-10024:return f'if not a.main then b.hp={expr} end'
+    if target==-10024:return f'if not a.main then H.set_life(b,{expr}) end'
     return f'{dst(target)}={expr}'
 
 def reachable(source,cards,roads=None):
@@ -110,7 +110,7 @@ def statement(stage,r,target):
     if op==103:return [f'b.a,b.b,b.rect=({value(x[0])})/2,({value(x[1])})/2,true'],False
     if op in(104,105,117,132):return [f'a.{ {104:"collidable",105:"damageable",117:"interactable",132:"invisible"}[op]}={lit(bool(x[0]))}'],False
     if op==108:return [f'a.death=P[{stage}][{x[0]}]'],False
-    if op==111:return [f'if not a.main then b.hp={value(x[0])} end'],False
+    if op==111:return [f'if not a.main then H.set_life(b,{value(x[0])}) end'],False
     if op==112:return [f'a.phase={value(x[0])}'],False
     if op==113:return [f'a.life_threshold={value(x[0])}'],False
     if op==114:return [f'a.life_fn=P[{stage}][{x[0]}]'],False
