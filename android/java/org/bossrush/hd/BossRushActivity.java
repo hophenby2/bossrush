@@ -31,6 +31,7 @@ import org.cocos.lib.CocosRenderer;
 /** 游戏数据仅使用应用私有目录，切后台和失去音频焦点时暂停。 */
 public final class BossRushActivity extends CocosActivity {
     private static BossRushActivity instance;
+    private static volatile boolean requestedVsync;
     private SaveManagerDialog saveManager;
     private AudioManager audioManager;
     private AudioFocusRequest focusRequest;
@@ -87,6 +88,14 @@ public final class BossRushActivity extends CocosActivity {
             current.nativeResolution = nativeResolution;
             CocosGLSurfaceView view = current.getGLSurfaceView();
             if (view != null) current.resizeSurface(view, view.getWidth(), view.getHeight());
+        });
+    }
+
+    public static void configureVsync(boolean enabled) {
+        requestedVsync = enabled;
+        BossRushActivity current = instance;
+        if (current != null) current.runOnUiThread(() -> {
+            if (current.framePacer != null) current.framePacer.configure(enabled);
         });
     }
 
@@ -159,6 +168,7 @@ public final class BossRushActivity extends CocosActivity {
         CocosRenderer.setExternalFramePacing(true);
         getGLSurfaceView().setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         framePacer = new FramePacer(getGLSurfaceView());
+        framePacer.configure(requestedVsync);
         showStartup();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
@@ -187,6 +197,8 @@ public final class BossRushActivity extends CocosActivity {
 
     @Override protected void onResume() {
         super.onResume();
+        // 基类onResume会强制切回连续绘制，必须在它之后恢复按需模式。
+        getGLSurfaceView().setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         resumed = true;
         if (framePacer != null) framePacer.start();
         if (audioManager != null) {
@@ -231,6 +243,7 @@ public final class BossRushActivity extends CocosActivity {
     @Override protected void onDestroy() {
         if (framePacer != null) framePacer.stop();
         if (saveManager != null) saveManager.dismiss();
+        if (framePacer != null) framePacer.close();
         instance = null;
         super.onDestroy();
     }

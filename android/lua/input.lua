@@ -223,8 +223,6 @@ function I.beginFrame()
     if t and t.drag then
         if t.player ~= player then
             t.drag, t.ignored, I.movementId = nil, true, nil
-        elseif controlBlocked(player) then
-            t.targetX, t.targetY = player.x, player.y
         end
     end
     rebuild()

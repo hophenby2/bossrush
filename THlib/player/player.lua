@@ -48,13 +48,16 @@ function player_class:init(slot)
 end
 
 function player_class:frame()
+    self._touch_movement_used=nil
     if self.realrealreal_lock then
+        if ApplyPendingTouchMovement then ApplyPendingTouchMovement(self) end
         return
     end
     task.Do(self)
     self._playersys:doFrameBeforeEvent()
     self._playersys:frame()
     self._playersys:doFrameAfterEvent()
+    if ApplyPendingTouchMovement then ApplyPendingTouchMovement(self) end
     if lstg.var.gray or self.own_gray then
         table.insert(self.graysmear,
                 { x = self.x, y = self.y, rot = self.rot,

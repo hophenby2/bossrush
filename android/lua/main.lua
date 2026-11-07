@@ -87,7 +87,8 @@ local function start()
     local originalLoadConfigure = loadConfigure
     local function mobileSetting(s)
         s.mod = 'Boss Rush HD'; s.resx, s.resy, s.windowed = frameSize.width, frameSize.height, desktop==true
-        s.vsync, s.nosplash = true, true
+        s.nosplash = true
+        if desktop then s.vsync=true elseif s.vsync==nil then s.vsync=false end
         -- 升级安装也启用新的移动端默认值；之后手动关闭的选择继续保留。
         if not desktop and not s.touchUnlimitedDefaultApplied then
             s.touchUnlimited, s.touchUnlimitedDefaultApplied = true, true
@@ -95,7 +96,11 @@ local function start()
     end
     mobileSetting(default_setting)
     function loadConfigure() originalLoadConfigure(); mobileSetting(setting) end
-    function ChangeVideoMode2() return true end
+    function ChangeVideoMode2(s)
+        s=s or cur_setting or setting
+        SetVsync(s.vsync==true)
+        return true
+    end
     function setting_keys_default()
         cur_setting.keys = DeSerialize(Serialize(default_setting.keys))
         cur_setting.keysys = DeSerialize(Serialize(default_setting.keysys))
@@ -138,6 +143,7 @@ local function start()
     GameInit()
     startupMark('game_init')
     if not desktop then
+        SetVsync(setting.vsync==true)
         local ok, result, message = pcall(function()
             return require('cocos.cocos2d.luaj').callStaticMethod('org/bossrush/hd/BossRushActivity',
                 'configureRendering', {setting.androidNativeResolution==true}, '(Z)V')

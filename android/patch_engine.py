@@ -111,6 +111,8 @@ replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
         '#include "platform/android/CCGLViewImpl-android.h"',
         '#include "platform/android/CCGLViewImpl-android.h"\n#ifdef CC_USE_GFX\n#include "renderer/backend/gfx/DeviceGFX.h"\n#endif')
 replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
+        '#include "base/CCDirector.h"', '#include "base/CCDirector.h"\nvoid androidApplySwapInterval();')
+replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
         'glView->setFrameSize(w, h);',
         'glView->setFrameSize(w, h);\n#ifdef CC_USE_GFX\n        cocos2d::backend::DeviceGFX::setSwapchainInfo(nullptr, true, w, h);\n#endif')
 replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
@@ -125,6 +127,9 @@ replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
     }
     cocos2d::Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("glview_window_resized");
     cocos2d::Application::getInstance()->applicationScreenSizeChanged(w, h);''')
+replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
+        '    cocos2d::Application::getInstance()->applicationScreenSizeChanged(w, h);',
+        '    cocos2d::Application::getInstance()->applicationScreenSizeChanged(w, h);\n    androidApplySwapInterval();')
 
 # GLSurfaceView 已拥有 EGL 上下文及窗口，GFX 必须借用，不能再次创建或再次交换同一 Surface。
 gpu = 'frameworks/cocos2d-x/external/gfx/backend/gfx-gles3/GLES3GPUContext.cpp'

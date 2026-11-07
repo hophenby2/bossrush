@@ -6,3 +6,4 @@ extern bool androidProfileText;
 extern double androidTextTime[3];
 extern unsigned androidTextCalls;
 double androidNow();
+void androidApplySwapInterval();

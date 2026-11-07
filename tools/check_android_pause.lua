@@ -63,9 +63,11 @@ local code=assert(source:match('(local function mobileSetting%(s%)[%s%S]-end)%s+
 local make=assert(loadstring(code..'\nreturn mobileSetting'))
 setfenv(make,{desktop=false,frameSize={width=1600,height=720}})
 local apply=make()
-local saved={touchUnlimited=false}
+local saved={touchUnlimited=false,vsync=false}
 apply(saved);assert(saved.touchUnlimited and saved.touchUnlimitedDefaultApplied,'升级应启用移动端默认值')
+assert(saved.vsync==false,'移动端不能强制重开垂直同步')
 saved.touchUnlimited=false;apply(saved);assert(not saved.touchUnlimited,'手动关闭后不能再次强制开启')
+saved.vsync=true;apply(saved);assert(saved.vsync==true,'同步开启的选择也应保留')
 make=assert(loadstring(code..'\nreturn mobileSetting'))
 setfenv(make,{desktop=true,frameSize={width=1600,height=720}})
 saved={touchUnlimited=false};make()(saved);assert(not saved.touchUnlimited,'桌面设置不能受影响')

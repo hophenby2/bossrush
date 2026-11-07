@@ -239,7 +239,7 @@ function A.sprite_resource(v)
     end
     return s
 end
-function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
+function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if v.children[1] then for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end end
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
@@ -254,7 +254,11 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override)
     local image=s.img
     local ca,cr,cg,cb=max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])
     sx,sy=(sx or 1)*v.scale[1],(sy or sx or 1)*v.scale[2]
-    local rot=-v.rotation[3]/rad+(v.follow and (angle or 0) or 0)
+    -- TH06 TranslateRotation为(x*c+y*s,-x*s+y*c)，后续作品则为(x*c-y*s,x*s+y*c)。
+    -- 翻转屏幕Y轴后，TH06的VM角保持正号，其余作品取负号。
+    -- rotation只覆盖当前VM，表示BulletManager最终赋值的世界角，不改变其他调用方的附加旋转。
+    local rot=(v.data.game==6 and 1 or -1)*v.rotation[3]/rad+(v.follow and (angle or 0) or 0)
+    if rotation~=nil then rot=rotation end
     -- X/Y 旋转在原作相机正交的二维精灵上体现为投影宽高。
     sx=sx*math.cos(v.rotation[2]);sy=sy*math.cos(v.rotation[1])
     local px,py=x+v.position[1],y-v.position[2]

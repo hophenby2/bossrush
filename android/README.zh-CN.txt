@@ -1,3 +1,25 @@
+0.13.6 红魔乡子弹方向修复：TH06二维矩阵与后续作品相反，Y轴换算后VM的Z角应保持正号。
+TH06 BulletManager的自动转向为π/2-angle，换算后为运动方向+90°；先前统一减90°使苦无等弹型相差180°。
+普通弹、消散阶段和直线激光按本作矩阵换算；自动转向按管理器的最终赋值覆盖Z角，不叠加VM原角。
+此覆盖仅用于子弹管理器的绘制，不改变Boss、使魔等调用方已有的附加旋转接口。
+依据：th06/src/AnmManager.cpp:646、BulletManager.cpp:1118/1154；th07/src/th07/AnmManager.cpp:1050、BulletManager.cpp:1288；th08/src/AnmManager.cpp:1330、BulletManager.cpp:1585；th095/src/AnmDrawCore.cpp:524、BulletManager.cpp:1325。
+原作矩阵方向检查21300项通过，覆盖五作全部弹型/颜色、六向运动、弹雾/主弹/消散切换、静态旋转、自转、激光及普通/原生绘制路径。
+原作ANM与资源检查438项通过；未改子弹坐标、速度和碰撞方向，未在用户真机逐张目视验收。
+
+0.13.5 始终拖动与同步开关修复：删除触控层对死亡/锁定期间拖动目标的清空。
+普通自机移动没有执行时，在自机frame末尾按已记录的输入补移动；硬锁提前返回也处理拖动，每帧最多移动一次。
+新移动端局在录像初态写入__touch_always_version，旧录像继续保留旧锁定规则，不改写死亡计时或受击判定。
+查明基类CocosActivity.onResume会覆盖渲染模式为CONTINUOUSLY；子类现于super之后重新设WHEN_DIRTY再启动帧调度。
+删除移动端读取/保存设置时强制vsync=true的逻辑，设置回调立即应用SetVsync。
+SetVsync接入当前GL上下文的eglSwapInterval(0/1)，Surface重建后重放请求；BOSSRUSH_VSYNC记录请求值和驱动最小/最大间隔。
+关闭同步使用独立线程的60Hz单调时钟调度，开启同步使用同线程的Choreographer回调，不依赖UI线程逐帧唤醒。
+帧截止时间保留固定相位；暂停、切换同步及退出时取消旧调度链，已执行中的旧回调凭代次号失效。
+实际Activity恢复片段、调度器切换/停止/重启、60Hz回调抖动、高刷新率和独立时钟检查通过。
+已通过死亡全阶段、锁定、硬锁、限速单次移动、松手和旧录像兼容检查，以及同步开关到EGL/Java调度器的传参检查。
+EGL请求0可受驱动EGL_MIN_SWAP_INTERVAL限制，Android BufferQueue满时仍可等待；应用不能关闭系统合成器本身的同步。
+依据：https://registry.khronos.org/EGL/sdk/docs/man/html/eglSwapInterval.xhtml 、https://developer.android.com/games/develop/gameloops 。
+本次未在用户真机测量FPS与实际驱动交换等待，不能把主机调度检查当作真机稳定60帧的结论。
+
 0.13.4 复活拖动与弹雾优化：触控按自机死亡阶段区分可操作状态，death<50或>90不再每帧清空目标。
 protect无敌计时不锁定拖动，死亡演出、对话及显式锁定期间仍清掉旧目标，避免恢复后跳位。
 普通ANM精灵一次原生调用提交几何和顶点色，避免每粒创建Color及反射调用状态设置；UV滚动保留原绘制路径。

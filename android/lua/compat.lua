@@ -181,7 +181,15 @@ expose('SetWindowed', empty)
 expose('SetSplash', empty)
 expose('ShowSplashWindow', empty)
 expose('SetTitle', empty)
-expose('SetVsync', empty)
+expose('SetVsync', function(enabled)
+    if BossRushDesktop then return end
+    native.AndroidSetVsync(enabled==true)
+    local ok,result,message=pcall(function()
+        return require('cocos.cocos2d.luaj').callStaticMethod('org/bossrush/hd/BossRushActivity',
+            'configureVsync',{enabled==true},'(Z)V')
+    end)
+    if not ok or not result then native.SystemLog('BOSSRUSH_VSYNC_JAVA: '..tostring(message or result)) end
+end)
 expose('ChangeVideoMode', function() return true end)
 expose('EnumResolutions', function() return { { 960, 540 } } end)
 expose('EnumGPUs', function() return { 'Android OpenGL ES' } end)

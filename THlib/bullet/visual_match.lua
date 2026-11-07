@@ -6,6 +6,10 @@ if not OriginalANM then dofile('THlib/anm/original.lua') end
 if not OriginalStageVisual then dofile('THlib/anm/stage_visual.lua') end
 V.profiles = dofile('THlib/bullet/original_profiles.lua')
 local A=OriginalANM
+local function anm_angle(game,angle)
+    -- TH06 BulletManager写入π/2-angle，TH07之后写入π/2+angle；这里angle已是Y向上的运动角。
+    return angle+(game==6 and 90 or -90)
+end
 local function animation_rate(o)
     return o._native_rate_source and o._native_rate_source.fm or o._native_animation_rate
 end
@@ -36,7 +40,7 @@ end
 -- 原对象转入无判定消散，仍占弹池槽位；不能另造特效后提前释放原弹槽。
 local native_despawn=Class(object,{
     init=function(o,source)
-        local angle=bullet.GetRenderRotation(source)-90
+        local angle=anm_angle(source.imgclass.native_game,bullet.GetRenderRotation(source))
         o.x,o.y,o.layer=source.x,source.y,source.layer
         -- 消弹可能来自碰撞回调；此时改group会破坏LuaSTG-x正在遍历的碰撞链表。
         -- 立即关判定即可实现无害消散，分组在下个对象更新时再切换。
@@ -58,7 +62,7 @@ local native_despawn=Class(object,{
         end
         A.step(o.vm,animation_rate(o));if o.vm.finished then object.RawDel(o) end
     end,
-    render=function(o) A.draw(o.vm,o.x,o.y,o.angle) end,
+    render=function(o) A.draw(o.vm,o.x,o.y,o.angle,nil,nil,nil,nil,nil,o.vm.follow and o.angle or nil) end,
 },true)
 function V.emit_despawn(o,drop)
     if not o._native_anm then return false end
@@ -268,8 +272,9 @@ function V.render_anm(o)
         v.sprite=111
     end
     -- 运动角由弹体状态机提供；不能使用引擎自动 navi 去改写 ECL 的逻辑角。
-    -- 原作随弹道绘制的角是 angle+π/2；原图朝上，换成向上的 Y 轴后需再减90度。
-    A.draw(v,o.x,o.y,bullet.GetRenderRotation(o)-90,o.hscale,o.vscale,(o._a or 255)/255)
+    -- 红魔乡与后续作品采用相反的ANM旋转矩阵，不能对所有作品统一减90度。
+    local angle=anm_angle(o.imgclass.native_game,bullet.GetRenderRotation(o))
+    A.draw(v,o.x,o.y,angle,o.hscale,o.vscale,(o._a or 255)/255,nil,nil,v.follow and angle or nil)
     v.sprite=sprite
     return true
 end
@@ -442,7 +447,8 @@ function V.render_laser_anm(o)
     local v=o._native_beam
     local spr=v.data.sprites[v.sprite]
     local width=game==6 and o.w*16/7 or laser_width(o)
-    A.draw(v,o.x+cos(o.rot)*len/2,o.y+sin(o.rot)*len/2,o.rot-90,width/spr[4],len/spr[5],o.alpha)
+    local angle=anm_angle(game,o.rot)
+    A.draw(v,o.x+cos(o.rot)*len/2,o.y+sin(o.rot)*len/2,angle,width/spr[4],len/spr[5],o.alpha,nil,nil,v.follow and angle or nil)
     local offset=o.th06_startoff or o._native_laser_start or 0
     local speed=o.th06_speed or o._native_laser_speed or 0
     local phase=o._native_laser_geometry

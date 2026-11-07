@@ -84,6 +84,7 @@ end
 -- 返回自机追随拖拽目标的一帧位移；末帧截断到目标，手指抬起后不保留惯性。
 function TouchInputMovement(p,key,speed)
     if not key or type(key.touch_x)~='number' or type(key.touch_y)~='number' then return end
+    p._touch_movement_used=true
     local dx,dy=key.touch_x-p.x,key.touch_y-p.y
     local unlimited=key.touch_unlimited
     if unlimited==nil then unlimited=lstg.var and lstg.var.__touch_unlimited end
@@ -91,4 +92,20 @@ function TouchInputMovement(p,key,speed)
     local distance=math.sqrt(dx*dx+dy*dy)
     if distance>speed and distance>0 then dx=dx*speed/distance;dy=dy*speed/distance end
     return dx,dy
+end
+
+-- 新移动端流程允许死亡/锁定期间继续拖动；使用已记录的输入，每帧最多积分一次。
+function ApplyPendingTouchMovement(p)
+    if not lstg.var or lstg.var.__touch_always_version~=1 or p._touch_movement_used then return end
+    local key=p.key or KeyState
+    local speed=p.slow==2 and p.llspeed or p.slow==1 and p.lspeed or p.hspeed
+    local dx,dy=TouchInputMovement(p,key,speed or 4)
+    if not dx then return end
+    local rate=p.th08_move_time_scale or 1
+    dx,dy=dx*rate,dy*rate
+    local w=lstg.world
+    local x,y=p.x,p.y
+    p.x=math.max(w.pl+8,math.min(w.pr-8,x+dx))
+    p.y=math.max(w.pb+16,math.min(w.pt-32,y+dy))
+    p.__move_dx,p.__move_dy=p.x-x,p.y-y
 end

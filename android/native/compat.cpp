@@ -17,6 +17,36 @@
 #endif
 #include <chrono>
 #include <cstring>
+#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+#include <EGL/egl.h>
+#endif
+
+static bool androidVsyncRequested=false;
+void androidApplySwapInterval() {
+#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+    const auto display=eglGetCurrentDisplay();
+    const auto context=eglGetCurrentContext();
+    if (display==EGL_NO_DISPLAY || context==EGL_NO_CONTEXT) return;
+    const int interval=androidVsyncRequested ? 1 : 0;
+    const auto ok=eglSwapInterval(display,interval);
+    EGLint id=0,count=0,minimum=-1,maximum=-1;
+    EGLConfig config;
+    if (eglQueryContext(display,context,EGL_CONFIG_ID,&id)) {
+        const EGLint attributes[]={EGL_CONFIG_ID,id,EGL_NONE};
+        if (eglChooseConfig(display,attributes,&config,1,&count) && count) {
+            eglGetConfigAttrib(display,config,EGL_MIN_SWAP_INTERVAL,&minimum);
+            eglGetConfigAttrib(display,config,EGL_MAX_SWAP_INTERVAL,&maximum);
+        }
+    }
+    cocos2d::log("BOSSRUSH_VSYNC: requested=%d result=%d driver_min=%d driver_max=%d",interval,ok,minimum,maximum);
+#endif
+}
+
+LUA_REGISTER_FUNC_DEF(lstg, AndroidSetVsync) {
+    androidVsyncRequested=lua_toboolean(L,1)!=0;
+    androidApplySwapInterval();
+    return 0;
+}
 
 int androidSuperPause = 0;
 int androidCurrentSuperPause = 0;
