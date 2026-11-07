@@ -32,6 +32,7 @@ function ext.InputDuration()
     end
 end
 function ext.DurationAchievement()
+    if not GameFeatures.achievements then return end
     --frame,second,minute,hour,day
     local time = scoredata["Duration"]
     if time[3] >= 30 or time[4] > 0 or time[5] > 0 then
@@ -226,10 +227,10 @@ mask_fader = {
     color = Color(255, 255, 255, 255),
     blend = "one",
     tox = function(t, x)
-        return t * x
+        return screen.dx + t * x
     end,
     toy = function(t, y)
-        return t * (540 - y)
+        return screen.dy + t * (screen.height - y)
     end,
 }
 function mask_fader:BeforeRender()

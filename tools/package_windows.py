@@ -34,41 +34,34 @@ def package(version):
     out=OUTPUT;out.mkdir(parents=True,exist_ok=True)
     name=f'BossRushHD-Windows-x64-{version}'
     target=out/(name+'.zip')
-    guide=f'''Boss Rush HD {version} Windows x64 测试版
+    guide=f'''Boss Rush HD {version} Windows x64 发行版
 
-完整离线包，含 LuaSTG Sub 引擎、脚本与素材。解压后运行 LuaSTGSub.exe。
-请保持 launch、Lua 脚本与各素材文件夹位于 exe 同级，勿在压缩包内直接启动。
-使用 Windows 10 / 11 x64 及支持 Direct3D 11 的显卡。
+完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。完整解压后运行 LuaSTGSub.exe。
+请保持 launch、Lua 脚本及各素材文件夹位于 exe 同级，勿在压缩包内直接启动。
+适用 Windows x64，需要支持 Direct3D 11 的显卡。引擎版本为 LuaSTG Sub 0.21.129。
 
-TH32「猩红测试」现含红魔乡 Lunatic / Extra 的全部 Boss 战与道中。
-帕秋莉四条机体路线展开为 54 条符卡、37 段非符；七面道中按中 Boss 分为 14 张载体卡。
-道中敌机具有原作血量、移动、发弹与镜像行为，使用现成素材及道具代理；六面后半为原作入场等待。
-这些内容位于关卡练习 / 符卡练习中的 TH32。原测试卡继续保留。
+主菜单仅保留：roguelike模式、查看录像、按键设置、其他设置、退出游戏。
+roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后重新洗牌继续。
+可选择永夜抄、红魔乡、妖妖梦、风神录，以及 Lunatic、Extra/Phantasm、Boss / 道中。
+筛选交集内至少有一张候选即可开始。生命、强化、Bomb 和复活次数跨轮保留。
+初始十条命，每局最多三次答题复活机会，答对恢复五条命并获得三秒无敌。
+生命耗尽且未能复活时结算，记录累计完成战数；可重开或返回标题并保存录像。
 
-主菜单：随机十战 / 接续模式 / 双Boss随机十战。
-接续模式在当前 Boss 剩余 HP ≤15% 或剩余时间 <3秒时推进；旧 Boss 继续存活，下一张先用 GHOST 碰撞组等旧 Boss 退出。接续模式不掉落强化选项，Boss 死亡 / 击破结算也不自动全屏消弹。
-双模式每步同时运行两张不同卡，十步共二十张，允许同角色。
-Boss 出场、开卡初始化及第一段指定位置移动按原 X+96 / X-96、原 Y；后续移动沿用原卡。
-两张卡全部结束后推进；第十次失误触发答题复活，每局最多成功三次。
-答题沿用原 Special 的八道数学题；上下左右移动，上顶中玉横线提前确认、符卡放弃，答对后原场续战并无敌三秒。
-答题期间冻结战斗；累计失误不回退，题目与复活次数可关内恢复。不加入天气、商店与道具构筑。
-Rank 初始 50、范围 0–100，每秒自然 +0.05，收卡 +3，中弹 -8。敌弹速度与开卡 HP 在原定义的 90%–110% 间变化。
-当前卡 HP 倍率固定，切关、复活与续玩继承 Rank；新局重置。规则详见 mod/roguelike.txt 和 THlib/rank.txt。F9 联机合作，F5 手动保存，F10 存档同步；暂停、退出及每 120 逻辑帧补存。
+阶段强化三选一：左侧蓝色增加 Bomb 恢复，中间红色增加火力，右侧绿色减小自机判定。
+开局三枚 Bomb，上限三枚；100 蓝值时每三十秒恢复一枚。按 X 立即消耗一枚释放 Bomb。
+保留答题和强化选项的演出，普通道具掉落关闭。
+成就、联机、存档同步和续玩点系统暂时停用，F5/F9/F10 的相关入口关闭。
+普通本地设置、成长记录及录像功能保留，旧十战录像仍按旧规则结束。
 
-本包不含用户存档或录像。旧玩家更新前可保留自己的 User/、replay/，再覆盖游戏文件。
-精确关内续玩需要同 Lua 源码和引擎平台；旧版关内点因源码更新会保留并拒绝重建。
-本次含关内续玩、多存档同步、单/双 Boss 随机十战与接续模式、答题复活、全局 Rank、双人联机和阶段强化。
-随机十战只选择自机，禁用额外系统选择；单 Boss 随机十战击破后立即接续下一位 Boss。
-击破阶段后的选项在 120 逻辑帧（2 秒）内匀速下降。左侧红色只改火力，右侧蓝色只改 Bomb 恢复倍率，初始均为 100。上顶横线提前生效。
-开局 / 上限 3 枚 Bomb，100 蓝值时每 30 秒恢复一枚；蓝值越高恢复越快。按 X 立即消耗一枚，释放花映冢四段蓄力效果，无需按住蓄力。蓝值不再加快射击。
-新局重置，本局继承；选项、恢复余量和库存均支持关内恢复。
-自机火力 150 时，普通弹与追踪弹及拖影宽高均为原来的1.5倍，魔理沙光束宽度同步放大。
-联机两位玩家分别选择与成长，详细规则见 THlib/drops.txt。
-联机支持局域网/公网 IPv4 直连及自部署中继，房主选关开始；对方自机及自机弹为 65% 不透明度。
-失误、Rank、分数、复活额度共享，联机仅保存独立合作统计。F9 房间管理，ESC 暂停；原口令与原自机可重连。
-中继脚本及部署步骤位于 relay/；本包未配置公共中继。详见 THlib/net/联机说明.txt。
-Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证见 licenses/。
+默认操作：方向键移动，Shift 低速，Z 射击/确认，X Bomb/返回，C 特殊，Esc 暂停。
+准备界面可用 Enter 开始，也可使用鼠标；按键可在主菜单中调整。
+
+本包不含玩家存档、录像、个人设置、运行日志、开发及构建缓存。
+首次运行会在游戏目录建立本地数据，请解压到有写入权限的文件夹。
+原有 User/ 和 replay/ 数据可自行保留；恢复续玩入口在当前版本停用。
+引擎及依赖许可证见 licenses/；详细模式规则见 mod/roguelike.txt。
 '''
+
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for relative,path in sorted(files.items()): archive.write(path,name+'/'+relative)
         archive.writestr(name+'/README.zh-CN.txt',guide)
@@ -85,7 +78,7 @@ Windows 引擎使用原发行目录的 LuaSTGSub.exe；引擎和依赖许可证�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.12.0')
+    parser.add_argument('--version',default='0.13.0')
     parser.add_argument('--game-root',type=Path,help='只从指定源码快照读取游戏脚本与素材')
     parser.add_argument('--engine-root',type=Path,default=ENGINE_ROOT,help='Windows 引擎、DLL 及其相邻许可证目录')
     parser.add_argument('--output-dir',type=Path,default=OUTPUT)

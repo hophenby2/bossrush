@@ -246,6 +246,7 @@ function stg.Start(group)
 end
 
 function stg.StartSaving()
+    if not GameFeatures.resume then return end
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('load to save')

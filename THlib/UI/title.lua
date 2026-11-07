@@ -3,11 +3,8 @@ Include("THlib\\UI\\loading.lua")
 stage_menu = stage.New('menu', false, true)
 
 function stage_menu:init()
-    local practice
-    local last_menu
-    local menu_title, menu_replay_loader, menu_replay_saver, menu_sc_pr, menu_practice, menu_setting
-    local menu_achievement, menu_manual, menu_key, menu_music, menu_store
-    local menu_player_system_select, menu_playdata
+    local menu_title, menu_replay_loader, menu_replay_saver, menu_setting
+    local menu_key, menu_music, menu_player_system_select
     --
     --
     mask_fader:Do("open")
@@ -16,8 +13,9 @@ function stage_menu:init()
         mask_fader:Do("close")
         task.Wait(30)
     end
-    do
-        GlobalAddAchievement = true
+    -- 这个旧标志也控制 IncludeLuaFile 的载入时机，停用成就后仍须保留。
+    GlobalAddAchievement = true
+    if GameFeatures.achievements then
         local achi = ext.achievement
         achi:get(1)
         if scoredata["Alt+F4"] then
@@ -67,166 +65,27 @@ function stage_menu:init()
     end
     menu_music = New(music_bar)
 
-    ext.saving.SaveManager:Refresh()
     menu_title = New(main_menu, '', {
-        { "开始新的游戏", function()
-            practice = nil
-            last_menu = menu_title
-            ext.saving.SaveManager:Refresh()
-            if ext.saving.SaveManager:GetRecord(1) or (SaveResume and SaveResume.has()) then
-                New(SimpleChoose, menu_title, function()
-                    menu_player_system_select.state = "stage"
-                    menu_player_system_select:fresh()
-                    menu.FadeIn(menu_player_system_select)
-                    menu.FadeOut(menu_title, "left")
-                end, load(""), "Warning!!", "检测到存档，\n如果开始新游戏\n将会被覆盖。\n是否继续？", 200, 70)
-            else
-                menu_player_system_select.state = "stage"
-                menu_player_system_select:fresh()
-                menu.FadeIn(menu_player_system_select)
-                menu.FadeOut(menu_title, "left")
-            end
-        end, "New Game" },
-        { "恢复关内续玩", function()
-            local ok,err=pcall(SaveResume.request)
-            if not ok then New(SimpleNotice,menu_title,"无法恢复关内位置",tostring(err)) end
-        end, "Resume Position" },
-        { "从关卡检查点继续", function()
-            practice = nil
-            ext.saving.SaveManager:Refresh()
-            local slot = ext.saving.SaveManager:GetRecord(1)
-            if slot then
-                local var = DeSerialize(slot.stages[#slot.stages].stageExtendInfo)
-                local nowstage = slot.stages[#slot.stages].stageName:match('^(.+)@.+$')
-                local systems = {}
-                for i = 1, SYSTEM_COUNT do
-                    if var.current_system:find(tostring(i + 64):char()) then
-                        table.insert(systems, SystemList[i].title)
-                    end
-                end
-                local text = table.concat({
-                    ("接着玩：%s"):format(ui.menu.sntext[nowstage] or nowstage),
-                    ("使用自机：%s"):format(ui.menu.pname[var.rep_player] or var.rep_player),
-                    ("分数：%s"):format(var.score),
-                    ("死亡数：%s"):format(var.dead),
-                    ("收卡数：%s"):format(var.getsc),
-                    ("擦弹点：%s"):format(var.graze),
-                    ("读档次数：%s"):format(var.saving),
-                    "",
-                    ("携带系统：\n%s"):format(table.concat(systems, "\n"))
-                }, "\n")
-                New(SimpleChoose, menu_title, function()
-                    menu.FadeOut(menu_title)
-                    menu.FadeOut(menu_music)
-                    task.New(stage_menu, function()
-                        for i = 1, 60 do
-                            SetBGMVolume(menu_music.now, 1 - i / 60)
-                            task.Wait()
-                        end
-                        StopMusic(menu_music.now)
-                        scoredata["music_bar_time"] = menu_music.music_timer
-                    end)
-                    task.New(stage_menu, function()
-                        MaskFader()
-                        stage.group.StartSaving()
-                    end)
-                end, load(""), "存档数据", text, 230, 110)
-            else
-                PlaySound("invalid")
-            end
-        end, "Continue Game" },
-        { "单篇章游玩", function()
-            practice = 'stage'
-            stage_select.fresh(menu_practice)
-            menu.FadeIn(menu_practice, "left")
-            --menu.FadeIn(menu_difficulty_select_pr,"left")
-            menu.FadeOut(menu_title, "left")
-        end, "Chapter Start" },
-        { "单符卡游玩", function()
-            practice = 'spell'
-            last_menu = menu_title
-            menu_player_system_select:fresh()
-            menu_player_system_select.state = "spell"
+        { "roguelike模式", function()
+            menu_player_system_select:fresh('roguelike')
+            menu_player_system_select.state = "stage"
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
-        end, "Spell Start" },
-        { "随机十战", function()
-            local function enter()
-                practice='roguelike';last_menu=menu_title
-                menu_player_system_select:fresh(practice)
-                menu_player_system_select.state="stage"
-                menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
-            end
-            if SaveResume and SaveResume.has() then
-                New(SimpleChoose,menu_title,enter,load(""),"随机十战","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
-            else enter() end
-        end, "Random 10" },
-        { "接续模式", function()
-            local function enter()
-                practice='rogue_chain';last_menu=menu_title
-                menu_player_system_select:fresh(practice)
-                menu_player_system_select.simple_chain=true
-                menu_player_system_select.simple_title="选择玩家 · 接续模式"
-                menu_player_system_select.state="stage"
-                menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
-            end
-            if SaveResume and SaveResume.has() then
-                New(SimpleChoose,menu_title,enter,load(""),"接续模式","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
-            else enter() end
-        end, "Chain Mode" },
-        { "双Boss随机十战", function()
-            local function enter()
-                practice='rogue_dual';last_menu=menu_title
-                menu_player_system_select:fresh(practice)
-                menu_player_system_select.simple_dual=true
-                menu_player_system_select.simple_title="选择玩家 · 双Boss随机十战"
-                menu_player_system_select.state="stage"
-                menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
-            end
-            if SaveResume and SaveResume.has() then
-                New(SimpleChoose,menu_title,enter,load(""),"双Boss随机十战","开始新一局将替换当前关内续玩点。\n是否继续？",230,70)
-            else enter() end
-        end, "Dual Boss 10" },
+        end, "Roguelike" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)
             menu.FadeIn(menu_replay_loader, "left")
             menu.FadeOut(menu_title, "left")
         end, "Replay" },
-        { "商店", function()
-            menu.FadeIn(menu_store)
-            menu.FadeOut(menu_title, "left")
-        end, "Store" },
-        { "游玩说明", function()
-            manual.refresh(menu_manual)
-            menu.FadeIn(menu_manual)
-            menu.FadeOut(menu_title, "left")
-        end, "Manual" },
-        { "成就", function()
-            Achievement.Refresh(menu_achievement)
-            menu.FadeIn(menu_achievement)
-            menu.FadeOut(menu_title, "left")
-        end, "Achievement" },
-        { "游玩数据", function()
-            playdata_menu.refresh(menu_achievement)
-            menu.FadeIn(menu_playdata)
-            menu.FadeOut(menu_title)
-        end, "Player Data" },
         { "按键设置", function()
             menu.FadeIn(menu_key)
             menu.FadeOut(menu_title, "left")
         end, "Key Settings" },
-        { "联机合作", function() GameNet.open() end, "Co-op" },
-        { "存档 / 同步", function() SaveSync.open() end, "Save / Sync" },
         { "其他设置", function()
             menu.FadeIn(menu_setting)
             menu.FadeOut(menu_title)
             menu_setting.pos = 1
         end, "Options" },
-        { "更新日志", function()
-            local file = io.open("Update.txt", "r")
-            New(SimpleNotice, menu_title, "更新日志", file:read("*a"))
-            file:close()
-        end, "Update Infomation" },
         { "退出游戏", ExitGame, "Quit Game" }
     }, function()
         if menu_title.pos == #menu_title.text then
@@ -234,7 +93,7 @@ function stage_menu:init()
         else
             menu_title.pos = #menu_title.text
         end
-    end, { [2] = not (SaveResume and SaveResume.has()), [3] = not ext.saving.SaveManager:GetRecord(1) })
+    end)
     menu_player_system_select = New(player_system_select, function(start)
         if start == "stage" then
             menu.FadeOut(menu_player_system_select)
@@ -249,45 +108,12 @@ function stage_menu:init()
             end)
             task.New(stage_menu, function()
                 MaskFader()
-                if last_menu and last_menu.level then
-                    stage.group.Start(stage.groups[last_menu.level])
-                else
-                    if practice == 'rogue_dual' then
-                        RogueTen.start('dual')
-                    elseif practice == 'rogue_chain' then
-                        RogueTen.start('chain')
-                    elseif practice == 'roguelike' then
-                        RogueTen.start('single',menu_player_system_select.pool_options)
-                    elseif practice == 'stage' then
-                        local select = menu_practice.stage_selects[menu_practice.pos]
-                        if type(select.stage) == "function" then
-                            select.stage()
-                        else
-                            stage.group.PracticeStart(select.stage.name)
-                        end
-                    else
-                        stage.group.Start(stage.groups["BossRush"])
-                    end
-                end
+                RogueTen.start('single', menu_player_system_select.pool_options)
             end)
-        elseif start == "spell" then
-            menu.FadeIn(menu_sc_pr)
-            sc_pr_menu.TweakCard(menu_sc_pr)
-            menu.FadeOut(menu_player_system_select)
         else
             menu.FadeOut(menu_player_system_select)
-            menu.FadeIn(last_menu or menu_title)
+            menu.FadeIn(menu_title)
         end
-    end)
-    menu_practice = New(stage_select, function()
-        menu.FadeIn(menu_title)
-        menu.FadeOut(menu_practice)
-    end, function()
-        menu.FadeOut(menu_practice)
-        last_menu = menu_practice
-        menu_player_system_select.state = "stage"
-        menu_player_system_select:fresh()
-        menu.FadeIn(menu_player_system_select)
     end)
 
     menu_key = New(key_setting_menu, {
@@ -313,60 +139,11 @@ function stage_menu:init()
             loadConfigure()
         end
     end)
-    menu_manual = New(manual, function()
-        menu.FadeIn(menu_title)
-        menu.FadeOut(menu_manual)
-    end)
-    menu_achievement = New(Achievement, function()
-        menu.FadeIn(menu_title)
-        menu.FadeOut(menu_achievement)
-    end)
-    menu_store = New(system_store, function()
-        menu.FadeIn(menu_title)
-        menu.FadeOut(menu_store)
-    end)
-    menu_playdata = New(playdata_menu, function()
-        menu.FadeIn(menu_title)
-        menu.FadeOut(menu_playdata)
-    end)
     menu_setting = New(game_setting, function()
         menu.FadeIn(menu_title)
         menu.FadeOut(menu_setting)
         save_setting()
     end)
-    --
-    menu_sc_pr = New(sc_pr_menu, function(index, index_group)
-        if index then
-            last_menu = menu_sc_pr
-            lstg.var.sc_index = index--给_sc_table用的
-            lstg.var.sc_group = index_group--给_sc_pr_table用的
-            menu.FadeOut(menu_sc_pr)
-            menu.FadeOut(menu_music)
-            task.New(stage_menu, function()
-                for i = 1, 30 do
-                    SetBGMVolume(menu_music.now, 1 - i / 30)
-                    task.Wait()
-                end
-                StopMusic(menu_music.now)
-                scoredata["music_bar_time"] = menu_music.music_timer
-            end)
-            task.New(stage_menu, function()
-                mask_fader:Do("close")
-                task.Wait(30)
-                stage.IsSCpractice = true
-                stage.group.PracticeStart('Spell Practice@Spell Practice', true)--true = 符卡练习，开启自机无敌
-            end)
-        else
-            menu.FadeIn(menu_player_system_select)
-            menu.FadeOut(menu_sc_pr)
-        end
-    end)
-    if scoredata.menu_sc_pr then
-        menu_sc_pr.pos = scoredata.menu_sc_pr.pos or 1
-        menu_sc_pr.diffpos = scoredata.menu_sc_pr.diffpos or 1
-        menu_sc_pr.spell = menu_sc_pr.spells[menu_sc_pr.diffpos]
-    end
-    --
 
     menu_replay_loader = New(replay_loader, function(filename, stageName)
         if not filename then
@@ -400,18 +177,6 @@ function stage_menu:init()
         menu.FadeIn(menu_music)
 
     end)
-    local sc_init = function()
-        if scoredata.menu_sc_pr then
-            menu_player_system_select.pos1 = scoredata.player_select
-            menu_player_system_select.last_menu = menu_title
-            menu_player_system_select.state = "spell"
-            lstg.var.player_name = player_list[scoredata.player_select][2]
-            menu_sc_pr.diffpos = scoredata.menu_sc_pr.diffpos or 1
-            sc_pr_menu.TweakCard(menu_sc_pr)
-            menu_sc_pr.spell = menu_sc_pr.spells[menu_sc_pr.diffpos]
-            menu_sc_pr.pos = scoredata.menu_sc_pr.pos or 1
-        end
-    end
     ---★ 隐藏秘技：在**主菜单**连按 5 次数字 9 ⇒ 金钱补到 99999（不足才补）。
     ---写在这里用 task、而不是 stage_menu:frame()：menu_title 是 init 的局部变量，而
     ---「主菜单是不是在前台」要看它自己那套 alpha / locked，frame 方法里读不到。
@@ -467,7 +232,7 @@ function stage_menu:init()
     if scoredata.version ~= ui.version then
         if scoredata.version and scoredata.version:sub(2, 2) and tonumber(scoredata.version:sub(2, 2)) >= 5 then
         else
-            if FileExist(SaveProfiles.path("saving1.file")) then
+            if GameFeatures.resume and FileExist(SaveProfiles.path("saving1.file")) then
                 os.remove(SaveProfiles.path("saving1.file"))
             end
         end
@@ -482,20 +247,6 @@ function stage_menu:init()
         --rep播放后返回rep菜单 add by OLC
         stage.IsReplay = nil
         menu.FadeIn(menu_replay_loader, 'left')
-    elseif stage.IsSCpractice then
-        --符卡练习后返回符卡练习菜单 add by OLC
-        stage.IsSCpractice = nil
-        if self.save_replay then
-            menu_replay_saver = New(replay_saver, self.save_replay, self.finish, function()
-                menu.FadeOut(menu_replay_saver, 'right')
-                menu.FadeIn(menu_sc_pr, 'left')
-                task.New(menu_sc_pr, sc_init)
-            end)
-            menu.FadeIn(menu_replay_saver, 'left')
-        else
-            menu.FadeIn(menu_sc_pr, 'left')
-            task.New(menu_sc_pr, sc_init)
-        end
     else
         if self.save_replay then
             menu_replay_saver = New(replay_saver, self.save_replay, self.finish, function()

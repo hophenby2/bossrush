@@ -98,11 +98,11 @@ function I.touch(id, x, y, event)
         local t = I.touches[id]
         if not t then
             t = { x = x, y = y }
-            if x>=480 and x<=630 and y>=510 and y<=538 then t.button={key=120};I.pulse(120) end
-            if x>=640 and x<=790 and y>=510 and y<=538 then
+            if GameFeatures and GameFeatures.coop and x>=480 and x<=630 and y>=510 and y<=538 then t.button={key=120};I.pulse(120) end
+            if GameFeatures and GameFeatures.resume and x>=640 and x<=790 and y>=510 and y<=538 then
                 t.button={key=116}; I.pulse(116)
             end
-            if x>=800 and x<=956 and y>=510 and y<=538 then
+            if GameFeatures and GameFeatures.saveSync and x>=800 and x<=956 and y>=510 and y<=538 then
                 t.button={key=121}; I.pulse(121)
             end
             for _, button in ipairs(I.menuMode() and menuButtons or buttons) do

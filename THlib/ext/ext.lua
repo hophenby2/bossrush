@@ -323,8 +323,8 @@ local ui_drawing = ui_drawing
 local setting = setting
 function FrameFunc()
     if GameNet then GameNet.poll();GameNet.controls() end
-    SaveSync.frame()
-    if SaveSync.visible and not SaveProfiles.pending then
+    if SaveSync then SaveSync.frame() end
+    if SaveSync and SaveSync.visible and not SaveProfiles.pending then
         -- 同步页暂停期间仍更新计时基准，避免返回时补跑数分钟的战斗帧。
         before=stopWatch:GetElapsed(); after=before; offset=0
         return false
@@ -369,10 +369,19 @@ function FrameFunc()
             ext.FRAMECOUNT = 0
         end
         local add = 0
-        offset = offset + (differ - 1)
-        if offset > 1 then
-            add = int(offset)
-            offset = offset - add
+        local loading = (stage.current_stage and stage.current_stage.stage_name == 'init')
+            or (stage.next_stage and stage.next_stage.stage_name == 'init')
+        if loading then
+            -- 资源加载本身占用墙钟时间，补跑只会在下一帧加载更多资源，形成卡顿循环。
+            -- 首帧还要丢弃 GameInit 花费的时间，保证原有加载画面能先呈现。
+            offset = 0
+            ext.FrameCounter = 0
+        else
+            offset = offset + (differ - 1)
+            if offset > 1 then
+                add = int(offset)
+                offset = offset - add
+            end
         end
         DoFrameEx(1 + add)
         --按键弹出菜单
@@ -409,7 +418,7 @@ end
 
 function RenderFunc()
     if SaveResume and SaveResume.recovering then return SaveResume.renderRecovery() end
-    if SaveSync.visible then return end
+    if SaveSync and SaveSync.visible then return end
     if GameNet and GameNet.client() then
         BeginScene();GameNet.clientRender();GameNet.render();EndScene();return
     end
@@ -449,7 +458,7 @@ function RenderFunc()
     Failed_Show:AfterRender()
 
     Failed_Show:frame()
-    SaveSync.render()
+    if SaveSync then SaveSync.render() end
 
     EndScene()
     if GameNet then GameNet.Capture.finish() end

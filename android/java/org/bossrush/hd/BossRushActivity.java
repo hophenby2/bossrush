@@ -1,15 +1,27 @@
 package org.bossrush.hd;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.Matrix;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.content.Intent;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.ImageView;
+import java.io.IOException;
+import java.io.InputStream;
 import org.cocos.lib.CocosActivity;
+import org.cocos.lib.CocosGLSurfaceView;
 
 /** 游戏数据仅使用应用私有目录，切后台和失去音频焦点时暂停。 */
 public final class BossRushActivity extends CocosActivity {
@@ -18,10 +30,88 @@ public final class BossRushActivity extends CocosActivity {
     private AudioManager audioManager;
     private AudioFocusRequest focusRequest;
     private boolean resumed;
+    private ImageView startupView;
+    private long startupStarted;
+    private boolean nativeResolution;
+    private int renderWidth, renderHeight;
+
+    private void resizeSurface(CocosGLSurfaceView view, int width, int height) {
+        if (width <= 0 || height <= 0) return;
+        int[] size = RenderGeometry.bufferSize(width, height, nativeResolution);
+        if (size[0] == renderWidth && size[1] == renderHeight) return;
+        renderWidth = size[0];
+        renderHeight = size[1];
+        view.getHolder().setFixedSize(renderWidth, renderHeight);
+        Log.i("BOSSRUSH_DISPLAY", "view=" + width + "x" + height +
+            " buffer=" + renderWidth + "x" + renderHeight);
+    }
+
+    @Override public CocosGLSurfaceView onCreateView() {
+        CocosGLSurfaceView view = super.onCreateView();
+        view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+            resizeSurface(view, right-left, bottom-top));
+        view.setOnTouchListener((v, event) -> {
+            if (renderWidth <= 0 || renderHeight <= 0) return view.onTouchEvent(event);
+            // Surface可由系统缩放到全屏，触点仍是View像素，必须同步换算全部手指。
+            MotionEvent scaled = MotionEvent.obtain(event);
+            Matrix matrix = new Matrix();
+            matrix.setScale(RenderGeometry.inputScale(renderWidth, view.getWidth()),
+                RenderGeometry.inputScale(renderHeight, view.getHeight()));
+            scaled.transform(matrix);
+            try { return view.onTouchEvent(scaled); }
+            finally { scaled.recycle(); }
+        });
+        return view;
+    }
+
+    public static void configureRendering(boolean nativeResolution) {
+        BossRushActivity current = instance;
+        if (current == null) return;
+        current.runOnUiThread(() -> {
+            current.nativeResolution = nativeResolution;
+            CocosGLSurfaceView view = current.getGLSurfaceView();
+            if (view != null) current.resizeSurface(view, view.getWidth(), view.getHeight());
+        });
+    }
 
     private static native void nativeFocus(boolean active);
     private static native void nativeBack();
     private static native void nativeSaveClose();
+
+    /** GL 初始化前先呈现项目自带加载图，首个游戏帧提交后交还给原加载界面。 */
+    private void showStartup() {
+        try (InputStream stream = getAssets().open("game/THlib/UI/loading.png")) {
+            Bitmap image = BitmapFactory.decodeStream(stream);
+            if (image == null) return;
+            startupView = new ImageView(this);
+            startupView.setBackgroundColor(Color.BLACK);
+            startupView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            startupView.setImageBitmap(image);
+            addContentView(startupView, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        } catch (IOException error) {
+            Log.w("BOSSRUSH_STARTUP", "无法提前读取原加载图", error);
+        }
+    }
+
+    public static void finishStartup() {
+        BossRushActivity current = instance;
+        if (current == null) return;
+        current.runOnUiThread(() -> {
+            ImageView overlay = current.startupView;
+            if (overlay == null) return;
+            current.startupView = null;
+            // GL 命令还要经过 Cocos 提交及交换，稍后移除以免露出未绘制的 Surface。
+            overlay.postDelayed(() -> {
+                if (overlay.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) overlay.getParent()).removeView(overlay);
+                }
+                overlay.setImageDrawable(null);
+            }, 32);
+            Log.i("BOSSRUSH_STARTUP", "首个游戏帧：" +
+                (SystemClock.elapsedRealtime() - current.startupStarted) + " ms");
+        });
+    }
 
     /** 对话框覆盖在游戏 Activity 上，GL 线程继续处理非阻塞同步请求。 */
     public static void openSaveManager(String url) {
@@ -39,13 +129,18 @@ public final class BossRushActivity extends CocosActivity {
     }
 
     @Override protected void onLoadNativeLibraries() {
+        Log.i("BOSSRUSH_STARTUP", "开始加载原生库");
         System.loadLibrary("cocos2dlua");
+        Log.i("BOSSRUSH_STARTUP", "原生库就绪：" +
+            (SystemClock.elapsedRealtime() - startupStarted) + " ms");
     }
 
     @Override protected void onCreate(Bundle state) {
+        startupStarted = SystemClock.elapsedRealtime();
         setEnableVirtualButton(false);
         super.onCreate(state);
         instance = this;
+        showStartup();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         immersive();
         audioManager = (AudioManager) getSystemService(Activity.AUDIO_SERVICE);

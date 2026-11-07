@@ -24,6 +24,9 @@ with zipfile.ZipFile(apk) as archive:
     assert all(name.startswith('lib/arm64-v8a/') for name in names if name.startswith('lib/')), '存在非 ARM64 库'
     index = archive.read('assets/game/asset_index.lua').decode()
     paths = [json.loads(line.strip().rstrip(',')) for line in index.splitlines()[1:-1]]
+    for name in names:
+        if name.startswith('assets/') and Path(name).suffix.lower() in {'.ttf', '.otf', '.ogg'}:
+            assert archive.getinfo(name).compress_type == zipfile.ZIP_STORED, '流式资源不能二次压缩：' + name
     assert len(paths) == len({path.lower() for path in paths}), '资源路径大小写冲突'
     wav_count = 0
     for path in paths:

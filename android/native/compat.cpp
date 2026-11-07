@@ -43,9 +43,20 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidClock) {
     lua_pushnumber(L, androidNow()); return 1;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidDrawStats) {
+    static bool observing = false;
+    static double drawStarted = 0, drawMilliseconds = 0;
+    if (!observing) {
+        observing = true;
+        auto* dispatcher = cocos2d::Director::getInstance()->getEventDispatcher();
+        dispatcher->addCustomEventListener(cocos2d::Director::EVENT_BEFORE_DRAW,
+            [](cocos2d::EventCustom*) { drawStarted = androidNow(); });
+        dispatcher->addCustomEventListener(cocos2d::Director::EVENT_AFTER_DRAW,
+            [](cocos2d::EventCustom*) { drawMilliseconds = (androidNow()-drawStarted)*1000; });
+    }
     auto* renderer = cocos2d::Director::getInstance()->getRenderer();
     lua_pushinteger(L, renderer->getDrawnBatches());
-    lua_pushinteger(L, renderer->getDrawnVertices()); return 2;
+    lua_pushinteger(L, renderer->getDrawnVertices());
+    lua_pushnumber(L, drawMilliseconds); return 3;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidTextProfile) {
     if (lua_gettop(L)) androidProfileText = lua_toboolean(L, 1);

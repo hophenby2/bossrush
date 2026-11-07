@@ -24,6 +24,7 @@ local function other_setting_default()
     cs.easyrender = ds.easyrender
     cs.touchBombInterval = ds.touchBombInterval
     cs.touchUnlimited = ds.touchUnlimited
+    cs.androidNativeResolution = ds.androidNativeResolution
 
 end
 
@@ -334,12 +335,13 @@ function game_setting:init(exit)
         }),
         Newsmall_menu("其他", x1, _line, y2 - h1 * 4, y2 - h1 * 3, {
             Newsetting_button("符卡练习自动重开", "SCAutoRetry", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
-            Newsetting_button("关内自动保存（每2秒）", "resumeAutoSave", _line, x2, y2 - h2 * 2, y2 - h2 * 1),
+            GameFeatures.resume and Newsetting_button("关内自动保存（每2秒）", "resumeAutoSave", _line, x2, y2 - h2 * 2, y2 - h2 * 1) or nil,
         }),
         Newsmall_menu("性能", x1, _line, y2 - h1 * 5, y2 - h1 * 4, {
             Newsetting_button("3D背景", "displayBG", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
             Newsetting_button("Boss法阵特效", "auradistortion", _line, x2, y2 - h2 * 2, y2 - h2 * 1),
             Newsetting_button("简单UI渲染（减少动态渲染）", "easyrender", _line, x2, y2 - h2 * 3, y2 - h2 * 2),
+            AndroidPlatform and not BossRushDesktop and Newsetting_button("原生分辨率（重启生效）","androidNativeResolution",_line,x2,y2-h2*4,y2-h2*3) or nil,
         }),
     }
     if AndroidInput then

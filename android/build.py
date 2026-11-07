@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent
 GAME = ROOT.parent
 CACHE = ROOT / '.cache'
 BUILD = ROOT / 'build'
-LOCK = json.loads((ROOT / 'engine.lock.json').read_text())
+LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
 
@@ -40,6 +40,22 @@ def run(*args, **kwargs):
     subprocess.run(list(map(str, args)), check=True, **kwargs)
 
 
+def executable(directory, name):
+    """同一打包入口兼容 Windows 的可执行文件后缀。"""
+    return Path(directory) / (name + ('.exe' if os.name == 'nt' else ''))
+
+
+def write_utf8(path, text):
+    """生成资源固定为 UTF-8/LF，避免 Windows 改写换行和中文编码。"""
+    path.write_text(text, encoding='utf-8', newline='\n')
+
+
+def asset_compression(path):
+    # FreeType 默认通过 AAsset_seek 流式读取；字体压缩后反复跳读会重复解压。
+    # Ogg 同样需要随机访问，已有自身压缩，直接存储也避免循环播放时再套一层解压。
+    return zipfile.ZIP_STORED if path.suffix.lower() in {'.ttf', '.otf', '.ogg'} else zipfile.ZIP_DEFLATED
+
+
 def copy_tree(source, target):
     shutil.copytree(source, target, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns('.git', '.DS_Store', '*.bat'))
@@ -48,7 +64,7 @@ def copy_tree(source, target):
 def prepare_shaders(target):
     # GFX 通过 glslang 生成 SPIR-V，再转换为设备的 GLES shader；必须显式声明位置和 uniform 块。
     for source in target.glob('*.frag'):
-        text = source.read_text()
+        text = source.read_text(encoding='utf-8')
         uniforms = re.findall(r'^uniform vec4 (\w+);$', text, re.MULTILINE)
         text = re.sub(r'^uniform vec4 \w+;\n', '', text, flags=re.MULTILINE)
         text = text.replace('uniform sampler2D u_texture;', 'layout(binding=2) uniform sampler2D u_texture;')
@@ -57,8 +73,8 @@ def prepare_shaders(target):
         block = 'layout(std140, binding=1) uniform FSBlock {\n' + ''.join(
             '    vec4 ' + name + ';\n' for name in uniforms) + '};\n' if uniforms else ''
         prefix = 'precision highp float;\nlayout(location=0) out vec4 cc_FragColor;\n' + block
-        (target / source.name).write_text(prefix + text)
-    (target / 'common.vert').write_text('''precision highp float;
+        write_utf8(target / source.name, prefix + text)
+    write_utf8(target / 'common.vert', '''precision highp float;
 layout(location=0) in vec4 a_position;
 layout(location=1) in vec4 a_color;
 layout(location=2) in vec2 a_texCoord;
@@ -75,9 +91,9 @@ void main() {
 
 def prepare_posteffect_shaders(target):
     """两个后端都先注入Sub采样口径，再由Android转换GLSL版本。"""
-    helper = (target / 'sampling.glsl').read_text()
+    helper = (target / 'sampling.glsl').read_text(encoding='utf-8')
     for path in target.glob('*.frag'):
-        text = path.read_text()
+        text = path.read_text(encoding='utf-8')
         text = text.replace('precision highp float;', 'precision highp float;\nprecision highp sampler2D;')
         # 此时只替换效果正文；公共采样函数保留真正的纹理读取。
         text = text.replace('texture2D(u_texture,', 'subSampleScreen(')
@@ -87,7 +103,7 @@ def prepare_posteffect_shaders(target):
         anchor = 'varying vec2 v_texCoord;'
         if anchor not in text:
             raise RuntimeError(f'后处理shader上下文不匹配：{path.name}')
-        path.write_text(text.replace(anchor, anchor + '\n' + helper))
+        write_utf8(path, text.replace(anchor, anchor + '\n' + helper))
 
 
 def prepare_engine(archive=None):
@@ -113,7 +129,7 @@ def prepare_engine(archive=None):
 def prepare_sprite_shaders(target):
     """Sub v0.21.129的顶点色与逐像素雾效；两平台共用相同公式。"""
     path = target / 'ColorAdd.frag'
-    text = path.read_text()
+    text = path.read_text(encoding='utf-8')
     for output in ('cc_FragColor', 'gl_FragColor'):
         before = f'{output}.rgb = v_fragmentColor.rgb + tex.rgb;'
         after = f'{output}.rgb = min(v_fragmentColor.rgb + tex.rgb, vec3(1.0));'
@@ -122,19 +138,19 @@ def prepare_sprite_shaders(target):
         if text.count(before) != 1:
             raise RuntimeError(f'加色shader上下文不匹配：ColorAdd.frag/{output}')
         text = text.replace(before, after)
-    path.write_text(text)
+    write_utf8(path, text)
     for filename in ('ColorAdd.frag', 'ColorMulti.frag', 'Common.vert'):
         path = target / filename
-        text = re.sub(r'\b(?:lowp|mediump)\b', 'highp', path.read_text())
+        text = re.sub(r'\b(?:lowp|mediump)\b', 'highp', path.read_text(encoding='utf-8'))
         if filename.endswith('.frag'):
             text = text.replace('precision highp float;', 'precision highp float;\nprecision highp sampler2D;')
-        path.write_text(text)
-    vertex = (ROOT / 'sprite_shaders' / 'fog.vert').read_text()
-    fragment = (ROOT / 'sprite_shaders' / 'fog.frag').read_text()
+        write_utf8(path, text)
+    vertex = (ROOT / 'sprite_shaders' / 'fog.vert').read_text(encoding='utf-8')
+    fragment = (ROOT / 'sprite_shaders' / 'fog.frag').read_text(encoding='utf-8')
     for filename in ('Fog_Liner.vert', 'Fog_Exp1.vert', 'Fog_Exp2.vert'):
-        (target / filename).write_text(vertex)
-    (target / 'ColorMulti_Fog.frag').write_text(fragment)
-    (target / 'ColorAdd_Fog.frag').write_text(fragment.replace('#define SUB_COLOR_ADD 0', '#define SUB_COLOR_ADD 1'))
+        write_utf8(target / filename, vertex)
+    write_utf8(target / 'ColorMulti_Fog.frag', fragment)
+    write_utf8(target / 'ColorAdd_Fog.frag', fragment.replace('#define SUB_COLOR_ADD 0', '#define SUB_COLOR_ADD 1'))
 
 
 def prepare_assets():
@@ -161,7 +177,7 @@ def prepare_assets():
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             if source.suffix == '.lua':
-                target.write_text(source.read_text(encoding='utf-8-sig'), encoding='utf-8')
+                write_utf8(target, source.read_text(encoding='utf-8-sig'))
             elif source.suffix.lower() == '.wav':
                 if not target.exists() or target.stat().st_mtime <= source.stat().st_mtime:
                     # 去掉 JUNK/LIST 等元数据，不改变 PCM 样本、声道、采样率或位深。
@@ -185,12 +201,14 @@ def prepare_assets():
         if path.lower() in seen:
             raise RuntimeError(f'存在大小写冲突：{path} / {seen[path.lower()]}')
         seen[path.lower()] = path
-    (destination / 'asset_index.lua').write_text('return ' + '{\n' + ''.join(
+    write_utf8(destination / 'asset_index.lua', 'return ' + '{\n' + ''.join(
         '  ' + json.dumps(p, ensure_ascii=False) + ',\n' for p in paths) + '}\n')
-    (destination / 'asset_dimensions.lua').write_text('return {\n' + ''.join(
+    write_utf8(destination / 'asset_dimensions.lua', 'return {\n' + ''.join(
         '  [' + json.dumps(p, ensure_ascii=False) + ']={' + str(size[0]) + ',' + str(size[1]) + '},\n'
         for p, size in sorted(dimensions.items())) + '}\n')
     copy_tree(ROOT / 'lua', destination / 'android')
+    for script in (destination / 'android').glob('*.lua'):
+        write_utf8(script, script.read_text(encoding='utf-8-sig'))
     copy_tree(ROOT / 'shaders', destination / 'android' / 'shaders')
     expected_shaders = {p.stem for p in (GAME / 'shader').glob('*.hlsl')}
     ported_shaders = {p.stem for p in (destination / 'android' / 'shaders').glob('*.frag')}
@@ -198,14 +216,14 @@ def prepare_assets():
         raise RuntimeError(f'后处理移植清单未对齐：缺少{expected_shaders-ported_shaders}，多出{ported_shaders-expected_shaders}')
     prepare_posteffect_shaders(destination / 'android' / 'shaders')
     prepare_shaders(destination / 'android' / 'shaders')
-    modes = (ENGINE / 'src/core/corefunc.lua').read_text()
+    modes = (ENGINE / 'src/core/corefunc.lua').read_text(encoding='utf-8')
     modes = modes.split('local shader_path = ', 1)[1].split('local _capture = {}', 1)[0]
     modes = modes.replace("lstg.RenderMode:getByName(''):setAsDefault()",
                           "lstg.RenderMode:getDefault():setProgram(lstg.RenderMode:getByName(''):getProgram())")
-    (destination / 'android/render_modes.lua').write_text(
+    write_utf8(destination / 'android/render_modes.lua',
         '-- 来自固定版本 LuaSTG-x core/corefunc.lua 的渲染模式与雾效。\nlocal shader_path = ' + modes)
-    (destination / 'android/resume-version.txt').write_text(resume_fingerprint(destination))
-    (destination / 'android/net-version.txt').write_text(resume_fingerprint(destination, include_android=False))
+    write_utf8(destination / 'android/resume-version.txt', resume_fingerprint(destination))
+    write_utf8(destination / 'android/net-version.txt', resume_fingerprint(destination, include_android=False))
     shutil.copy2(ROOT / 'lua' / 'main.lua', assets / 'src' / 'main.lua')
     for source in ENGINE.rglob('*'):
         if source.is_file() and source.name.lower() in {
@@ -215,7 +233,7 @@ def prepare_assets():
             target = assets / 'licenses' / source.relative_to(ENGINE)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-    (assets / 'licenses' / 'SOURCE.txt').write_text(
+    write_utf8(assets / 'licenses' / 'SOURCE.txt',
         'LuaSTG-x 20260913 及其随包依赖的源码与许可证来自：\n' + LOCK['url'] +
         '\nSHA-256: ' + LOCK['sha256'] + '\nAndroid 适配变更见项目 android/patch_engine.py 和 android/native/。\n')
     sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'Library/Android/sdk')))
@@ -251,8 +269,9 @@ def package_apk(sdk, ndk, assets):
     platforms = sorted((sdk / 'platforms').glob('*/android.jar'))
     android_jar = platforms[-1]
     java_home = os.environ.get('JAVA_HOME')
-    javac = Path(java_home) / 'bin/javac' if java_home else Path(shutil.which('javac'))
-    keytool = javac.parent / 'keytool'
+    javac = executable(Path(java_home) / 'bin', 'javac') if java_home else Path(shutil.which('javac'))
+    keytool = executable(javac.parent, 'keytool')
+    java_runtime = executable(javac.parent, 'java')
     classes = BUILD / 'classes'
     classes.mkdir(exist_ok=True)
     java = ENGINE / 'frameworks/cocos2d-x/cocos/platform/android/java'
@@ -264,24 +283,29 @@ def package_apk(sdk, ndk, assets):
     gen = BUILD / 'gen'
     gen.mkdir(exist_ok=True)
     java_res = java / 'res'
-    compiled = BUILD / 'resources.zip'
-    if any(java_res.rglob('*.xml')):
-        run(tools / 'aapt2', 'compile', '--dir', java_res, '-o', compiled)
-        resource_args = [compiled]
-    else:
-        resource_args = []
-    run(tools / 'aapt2', 'link', '-o', BUILD / 'resources.apk', '-I', android_jar,
+    resource_args = []
+    for index, source in enumerate((java_res, ROOT / 'res')):
+        if any(source.rglob('*.xml')):
+            compiled = BUILD / f'resources-{index}.zip'
+            run(executable(tools, 'aapt2'), 'compile', '--dir', source, '-o', compiled)
+            resource_args.append(compiled)
+    run(executable(tools, 'aapt2'), 'link', '-o', BUILD / 'resources.apk', '-I', android_jar,
         '--manifest', ROOT / 'AndroidManifest.xml', '--java', gen,
         '--auto-add-overlay', *resource_args)
     sources += list(gen.rglob('*.java'))
     source_list = BUILD / 'java-sources.txt'
-    source_list.write_text('\n'.join('"' + str(p) + '"' for p in sources))
+    source_list.write_text('\n'.join('"' + p.as_posix() + '"' for p in sources), encoding='utf-8')
     run(javac, '-encoding', 'UTF-8', '-source', '11', '-target', '11',
         '-classpath', os.pathsep.join(map(str, [android_jar] + jars)), '-d', classes, '@' + str(source_list))
     dex = BUILD / 'dex'
     dex.mkdir(exist_ok=True)
-    run(tools / 'd8', '--min-api', '28', '--lib', android_jar, '--output', dex,
-        *sorted(classes.rglob('*.class')), *jars)
+    # 汇成一个输入，避免 Windows 命令行长度上限；直接调用 Java 也无需执行 bat。
+    class_archive = BUILD / 'classes.jar'
+    with zipfile.ZipFile(class_archive, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(classes.rglob('*.class')):
+            archive.write(path, path.relative_to(classes).as_posix())
+    run(java_runtime, '-cp', tools / 'lib/d8.jar', 'com.android.tools.r8.D8',
+        '--min-api', '28', '--lib', android_jar, '--output', dex, class_archive, *jars)
     unsigned = BUILD / 'unsigned.apk'
     shutil.copy2(BUILD / 'resources.apk', unsigned)
     libs = sorted(NATIVE.rglob('*.so'))
@@ -291,7 +315,7 @@ def package_apk(sdk, ndk, assets):
     if not cpp.exists():
         cpp = next(ndk.glob('toolchains/llvm/prebuilt/*/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so'))
     libs.append(cpp)
-    strip = next(ndk.glob('toolchains/llvm/prebuilt/*/bin/llvm-strip'))
+    strip = next(ndk.glob('toolchains/llvm/prebuilt/*/bin/llvm-strip' + ('.exe' if os.name == 'nt' else '')))
     staging = BUILD / 'stripped-libs'
     staging.mkdir(exist_ok=True)
     lib_names = set()
@@ -306,13 +330,13 @@ def package_apk(sdk, ndk, assets):
                 apk.write(target, 'lib/arm64-v8a/' + lib.name)
         for path in sorted(assets.rglob('*')):
             if path.is_file():
-                apk.write(path, 'assets/' + path.relative_to(assets).as_posix())
+                apk.write(path, 'assets/' + path.relative_to(assets).as_posix(), compress_type=asset_compression(path))
     sign_apk(tools, keytool, unsigned)
 
 
 def sign_apk(tools, keytool, unsigned):
     aligned = BUILD / 'aligned.apk'
-    run(tools / 'zipalign', '-f', '-p', '4', unsigned, aligned)
+    run(executable(tools, 'zipalign'), '-f', '-p', '4', unsigned, aligned)
     keystore = CACHE / 'debug.keystore'
     if not keystore.exists():
         run(keytool, '-genkeypair', '-keystore', keystore, '-storepass', 'android',
@@ -325,9 +349,10 @@ def sign_apk(tools, keytool, unsigned):
     idsig = Path(str(output) + '.idsig')
     if idsig.exists():
         idsig.unlink()
-    run(tools / 'apksigner', 'sign', '--ks', keystore, '--ks-pass', 'pass:android',
+    signer = [executable(keytool.parent, 'java'), '-jar', tools / 'lib/apksigner.jar']
+    run(*signer, 'sign', '--ks', keystore, '--ks-pass', 'pass:android',
         '--v4-signing-enabled', 'false', '--out', output, aligned)
-    run(tools / 'apksigner', 'verify', '--verbose', output)
+    run(*signer, 'verify', '--verbose', '--print-certs', output)
     digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
     (dist / (output.name + '.sha256')).write_text(digest + '  ' + output.name + '\n')
     print(f'APK：{output}\nSHA-256：{digest}', flush=True)
@@ -374,18 +399,23 @@ def main():
                 with path.open('rb') as resource:
                     while chunk := resource.read(1024*1024):
                         crc = zlib.crc32(chunk, crc)
-                if entry.file_size != path.stat().st_size or entry.CRC != crc:
+                if entry.file_size != path.stat().st_size or entry.CRC != crc or entry.compress_type != asset_compression(path):
                     changed.append(name)
         if changed:
-            # macOS的系统zip可能不写UTF-8文件名标志，中文路径会被Android当成乱码。
-            # 这类更新沿用Python完整打包路径，避免清单正确、APK内实际文件名却错误。
-            if any(not name.isascii() for name in changed):
-                package_apk(sdk, ndk, assets)
-                return
-            run('zip', '-q', unsigned, *changed, cwd=BUILD)
+            # Windows 没有系统 zip；统一用 Python 更新，也保证中文文件名带 UTF-8 标记。
+            changed_names = set(changed)
+            replacement = BUILD / 'updated.apk'
+            with zipfile.ZipFile(unsigned) as source, zipfile.ZipFile(
+                    replacement, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as target:
+                for entry in source.infolist():
+                    if entry.filename not in changed_names:
+                        target.writestr(entry, source.read(entry))
+                for name in sorted(changed):
+                    target.write(current[name], name, compress_type=asset_compression(current[name]))
+            replacement.replace(unsigned)
         tools = max((sdk / 'build-tools').iterdir(), key=lambda p: tuple(map(int, p.name.split('.'))))
         java_home = os.environ.get('JAVA_HOME')
-        keytool = Path(java_home) / 'bin/keytool' if java_home else Path(shutil.which('keytool'))
+        keytool = executable(Path(java_home) / 'bin', 'keytool') if java_home else Path(shutil.which('keytool'))
         sign_apk(tools, keytool, unsigned)
         return
     if not (ndk / 'build/cmake/android.toolchain.cmake').exists():

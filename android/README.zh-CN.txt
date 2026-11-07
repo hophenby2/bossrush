@@ -1,4 +1,28 @@
-当前源码新增：随机十战全程沿用首位 Boss 的 BGM 与关卡背景，符卡背景随当前角色切换。
+0.13.2 宽屏居中与绘制开销优化：过场遮罩的纹理采样补入宽屏留边。
+Android Surface 尺寸改变时同步 GLView、交换链、Lua 屏幕映射及触点坐标，保留当前世界边界与镜头偏移。
+默认将渲染面的短边限制为720像素，保持纵横比；较低分辨率不放大。
+其他设置 → 性能 → 原生分辨率（重启生效）可恢复手机原始分辨率。
+命名键盘和HUD使用的位图字体纳入原生顶点批处理，消除逐次文字调用强制提交批次的开销。
+性能日志BOSSRUSH_PERF新增submit_ms，表示上一显示帧的原生绘制提交耗时，不代表完整GPU耗时。
+已通过原生编译、Lua5.1语法、屏幕/过场居中、世界/镜头保留、渲染尺寸与触点换算的定向检查。
+本次未在用户真机测量优化后的帧率；具体改善需以真机运行结果为准。
+
+0.13.1 启动修复：首次命名界面滚动不再调用不存在的 ctri。
+字体和Ogg以未二次压缩的形式入包，避免引擎流式随机读取时反复解压。
+加载阶段不再补跑启动及加载耗时积压的逻辑帧，单帧使用墙钟预算并为绘制留出时间。
+Android系统启动窗口使用黑色，原生初始化期间提前显示项目原有加载图，首个游戏帧后交给原加载界面。
+GPU回读与对象契约检查仅在graphics/contracts诊断中执行，正常启动不执行。
+启动分段耗时记录为BOSSRUSH_STARTUP，首次命名/加载调度的定向检查为tools/check_android_startup.lua。
+本次未在用户的Android16真机测量修复后的耗时。
+
+0.13.0 当前规则：主菜单仅保留 roguelike模式、查看录像、按键设置、其他设置、退出游戏。
+roguelike模式无战数上限；所选卡池内每轮不重复，全部抽完后重新洗牌继续。
+生命、红蓝绿强化、Bomb 和答题复活次数跨轮保留，生命耗尽且未能复活时结算。
+候选至少一张即可开始，录像记录无限模式版本，旧十战录像继续沿用原规则。
+成就、联机、存档同步及续玩点暂时停用；普通本地设置、成长记录和录像保留。
+
+以下为此前版本的变更与历史验证记录。
+随机战斗全程沿用首位 Boss 的 BGM 与关卡背景，符卡背景随当前角色切换。
 TH31–TH35 复用 TH07–TH10 对应角色的符卡背景；这些作品中没有的角色保留既有背景。
 答题复活恢复五条命，保留三次答题机会和三秒无敌。
 安卓版在战斗区快速双击可释放 Bomb；设置 → 触控可调整双击最大间隔，默认 0.10 秒。
@@ -106,6 +130,18 @@ NDK 默认位置：SDK/ndk/26.3.11579264，可用 ANDROID_NDK_HOME 覆盖。
 
   python3 android/build.py --engine-archive /absolute/path/LuaSTG-x_release_20260913.zip
 
+Windows 使用 PowerShell 指定工具路径与 UTF-8，以下为本机配置：
+
+  $env:PYTHONUTF8='1'
+  $env:JAVA_HOME='C:/Program Files/Java/jdk-24'
+  $env:ANDROID_HOME='E:/workspace/.bossrush-android/sdk'
+  $env:ANDROID_NDK_HOME="$env:ANDROID_HOME/ndk/26.3.11579264"
+  $env:PATH+=";$env:ANDROID_HOME/cmake/3.22.1/bin"
+  python android/build.py --jobs 4
+
+签名沿用 android/.cache/debug.keystore；本机从已有 Android 测试密钥复制，勿删除该密钥。
+打包脚本会执行签名校验并显示公开证书指纹，私钥不会入包或纳入版本控制。
+
 只改 Lua、图片、音乐或 shader 时可以更新资源后重新签名：
 
   python3 android/build.py --update-assets
@@ -122,7 +158,7 @@ NDK 默认位置：SDK/ndk/26.3.11579264，可用 ANDROID_NDK_HOME 覆盖。
   luajit tools/check_stage.lua --all
 
 check.lua 检查只读资源、大小写路径、二进制流、懒加载、触点释放、快速点击和滚动。
-游戏启动时还会执行真实引擎契约检查：对象分组、位置、运动、边界、超级暂停、
+graphics/contracts诊断模式还会执行真实引擎契约检查：对象分组、位置、运动、边界、超级暂停、
 nopause、对象回收以及 Lua 构造错误的安全传播。通过记录在私有 lstg_log.txt。
 verify_apk.py 检查 CRC、SHA-256、全部游戏资源、ARM64 ELF 和 WAV 原始样本。
 WAV 只重写容器头，去除上游解码器无法跳过的 JUNK/LIST 元数据，PCM 数据保持一致。

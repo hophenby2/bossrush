@@ -28,7 +28,7 @@ end
 LoadImageFromFile("loading", "THlib\\UI\\loading.png")
 
 local string = string
-local clock = os.clock
+local clock = lstg.AndroidClock or os.clock
 
 local SetImageState = SetImageState
 local SetFontState = SetFontState
@@ -39,7 +39,8 @@ local RenderText = RenderText
 local RenderRect = RenderRect
 
 local Color = Color
-local time = 1 / 60
+-- 手机留出绘制时间；单次资源加载完成后再检查墙钟预算，不在一帧内持续占满线程。
+local time = AndroidPlatform and 1 / 120 or 1 / 60
 
 
 
@@ -80,6 +81,9 @@ function stage_init:frame()
         self.settime = self.timer
     end
     if self.index > self.maxindex then
+        if AndroidPlatform and not self.jump then
+            lstg.SystemLog(string.format('BOSSRUSH_STARTUP: resources_ready %.1f ms', (clock()-self.start_time)*1000))
+        end
         self.jump = true
     elseif not self.jump then
         local res
@@ -245,7 +249,7 @@ function stage_other:frame()
                 end
             end
             if mouse._wheel ~= 0 then
-                self.ctri()
+                -- 滚轮只移动键盘光标；触屏拖动也会走这里，不存在额外的 ctri 回调。
                 self.state2CursorX = self.state2CursorX - sign(mouse._wheel)
                 if self.state2CursorX == 13 then
                     self.state2CursorY = self.state2CursorY + 1

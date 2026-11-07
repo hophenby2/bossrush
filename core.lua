@@ -4,6 +4,7 @@
 ---=====================================
 
 lstg = lstg or {}
+lstg.DoFile("THlib/features.lua")
 
 ----------------------------------------
 ---各个模块
@@ -16,17 +17,24 @@ lstg.DoFile("THlib\\plus\\plus.lua")--CHU神的plus库，replay系统、plusClas
 lstg.DoFile("THlib/save/codec.lua")
 lstg.DoFile("THlib/save/profiles.lua")
 SaveProfiles.init()
-lstg.DoFile("THlib/save/transport.lua")
-lstg.DoFile("THlib/save/service.lua")
+-- 本地成长记录与设置继续使用原有路径；同步和联机关闭时不初始化网络传输。
+if GameFeatures.saveSync or GameFeatures.coop or GameFeatures.resume then
+    lstg.DoFile("THlib/save/transport.lua")
+end
+if GameFeatures.saveSync or GameFeatures.coop then
+    lstg.DoFile("THlib/save/service.lua")
+end
 lstg.DoFile("THlib/save/resume.lua")
 lstg.DoFile("THlib\\lib\\Lobject.lua")--Luastg的Class、object
 lstg.DoFile("THlib\\lib\\LObjectEvents.lua")--一些object事件函数
 
 lstg.DoFile("THlib\\lib\\Lscreen.lua")--world、3d、viewmode的参数设置
-lstg.DoFile("THlib/net/codec.lua")
-lstg.DoFile("THlib/net/session.lua")
-lstg.DoFile("THlib/net/capture.lua")
-if GameNet then GameNet.Capture.install() end
+if GameFeatures.coop then
+    lstg.DoFile("THlib/net/codec.lua")
+    lstg.DoFile("THlib/net/session.lua")
+    lstg.DoFile("THlib/net/capture.lua")
+    GameNet.Capture.install()
+end
 lstg.DoFile("THlib\\lib\\Linput.lua")--按键状态更新
 lstg.DoFile("THlib\\lib\\Ltask.lua")--task
 lstg.DoFile("THlib\\lib\\Lstage.lua")--stage关卡系统
@@ -61,7 +69,7 @@ function GameExit()
     if GameNet and GameNet.active() then GameNet.leave() end
     if not game_save_data_ready then return end
     if SaveResume then SaveResume.flush('退出游戏') end
-    if not lstg.quit_flag then
+    if GameFeatures.achievements and not lstg.quit_flag then
         if not scoredata["Alt+F4"] then
             scoredata["Alt+F4"] = true
         end
@@ -124,14 +132,14 @@ function ReloadSaveProfile()
     end
     floatmoney=0
     CurrentMoney=scoredata.money+CurrentVerifiableOffset
-    if ext.achievement then
+    if GameFeatures.achievements and ext.achievement then
         ext.achievement.getcount=0
         ext.achievement.achievement={}
         for _,value in pairs(scoredata.Achievement) do
             if value==true then ext.achievement.getcount=ext.achievement.getcount+1 end
         end
     end
-    if ext.saving then
+    if ext.saving and ext.saving.SaveManager then
         ext.saving.SaveManager._repdir=SaveProfiles.userRoot()
         ext.saving.SaveManager:Refresh()
     end
@@ -180,6 +188,7 @@ function AddMusic(id, loopend, looplen, name, noinbar)
 end
 function DefineAchievement(id, name, getway, describe, hide, rank)
     AchievementInfo[id] = { name, getway, describe, hide, rank }
+    if not GameFeatures.achievements then return end
     local data = scoredata
     if data.Achievement[id] == true then
         ext.achievement.getcount = ext.achievement.getcount + 1

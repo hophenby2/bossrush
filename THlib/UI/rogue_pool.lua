@@ -26,7 +26,7 @@ function U.fresh(o,mode)
     o.pool_focus=0
     if mode=='roguelike' then
         o.pool_options=RogueTen.copyFilters(scoredata.rogue10_filters)
-        o.simple_title='随机十战 · 准备'
+        o.simple_title='roguelike模式 · 准备'
         refresh(o)
     end
 end
@@ -114,7 +114,7 @@ function U.render(o)
     local state=o.pool_status
     local valid=state and state.valid
     local statusColor=valid and accent or Color(alpha*255,255,170,125)
-    ui:RenderText('title',string.format('候选 %d 张 · 十张不重复',state and state.count or 0),715,159,0.78,statusColor,'centerpoint')
+    ui:RenderText('title',string.format('候选 %d 张 · 每轮不重复',state and state.count or 0),715,159,0.78,statusColor,'centerpoint')
     local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)
     ui:RenderText('title',message or '仅从已勾选的关卡、难度和战斗类型抽取',715,130,0.6,message and Color(alpha*255,255,170,125) or muted,'centerpoint')
     ui:RenderText('title',('↑↓选择 · %s勾选 · Enter开始'):format(o.keyname[setting.keys.shoot] or 'Z'),715,100,0.66,muted,'centerpoint')

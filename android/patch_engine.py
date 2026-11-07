@@ -24,6 +24,18 @@ def replace(path, before, after):
     target.write_text(text.replace(before, after), encoding='utf-8')
 
 
+
+# 升级旧构建缓存中的文字快路径，保持后续 replace 校验可重复执行。
+_renderer = engine / 'frameworks/LSTG/Renderer.cpp'
+_renderer_text = _renderer.read_text(encoding='utf-8-sig')
+
+_renderer_text = _renderer_text.replace('    const bool glyphBatch = p->getLabelType() == ResFont::LabelType::TTF &&', '    const bool glyphBatch = (p->getLabelType() == ResFont::LabelType::TTF || p->getLabelType() == ResFont::LabelType::BMFONT) &&')
+
+_renderer_text = _renderer_text.replace('        const auto key = std::string("android:glyph:")+p->getRenderMode()->getName();\n        auto* mode = RenderMode::getByName(key);\n        if (!mode) {\n            mode = p->getRenderMode()->clone(key);\n            mode->setProgram(backend::Program::getBuiltinProgram(backend::ProgramType::LABEL_NORMAL));\n            mode->setColor("u_textColor", Color4B::WHITE);\n        }\n        updateRenderMode(mode);', '        auto* mode = p->getRenderMode();\n        if (p->getLabelType() == ResFont::LabelType::TTF) {\n            const auto key = std::string("android:glyph:")+mode->getName();\n            auto* glyphMode = RenderMode::getByName(key);\n            if (!glyphMode) {\n                glyphMode = mode->clone(key);\n                glyphMode->setProgram(backend::Program::getBuiltinProgram(backend::ProgramType::LABEL_NORMAL));\n                glyphMode->setColor("u_textColor", Color4B::WHITE);\n            }\n            mode = glyphMode;\n        }\n        updateRenderMode(mode);')
+
+if _renderer_text != _renderer.read_text(encoding='utf-8-sig'):
+    _renderer.write_text(_renderer_text, encoding='utf-8')
+
 replace('CMakeLists.txt', 'set(CC_USE_GFX LSTGX_USE_GFX)', 'set(CC_USE_GFX ${LSTGX_USE_GFX})')
 replace('frameworks/LSTG/Object/GameObjectPropertyHash.cpp',
         '//#define PROP_OLD_STYLE', '#define PROP_OLD_STYLE')
@@ -88,6 +100,18 @@ replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
 replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
         'glView->setFrameSize(w, h);',
         'glView->setFrameSize(w, h);\n#ifdef CC_USE_GFX\n        cocos2d::backend::DeviceGFX::setSwapchainInfo(nullptr, true, w, h);\n#endif')
+replace('frameworks/cocos2d-x/cocos/platform/android/javaactivity-android.cpp',
+        '    cocos2d::Application::getInstance()->applicationScreenSizeChanged(w, h);', '''    if (w <= 0 || h <= 0) return;
+    auto* view = cocos2d::Director::getInstance()->getOpenGLView();
+    if (view) {
+        // Android 默认回调为空；系统栏、旋转及渲染档位改变后必须更新真实画布。
+        view->setFrameSize(w, h);
+#ifdef CC_USE_GFX
+        cocos2d::backend::DeviceGFX::setSwapchainInfo(nullptr, true, w, h);
+#endif
+    }
+    cocos2d::Director::getInstance()->getEventDispatcher()->dispatchCustomEvent("glview_window_resized");
+    cocos2d::Application::getInstance()->applicationScreenSizeChanged(w, h);''')
 
 # GLSurfaceView 已拥有 EGL 上下文及窗口，GFX 必须借用，不能再次创建或再次交换同一 Surface。
 gpu = 'frameworks/cocos2d-x/external/gfx/backend/gfx-gles3/GLES3GPUContext.cpp'
@@ -219,7 +243,7 @@ replace('frameworks/LSTG/Renderer.cpp', '#include "compat.h"',
 replace('frameworks/LSTG/Renderer.cpp', '''	flushTriangles();
 	updateRenderMode(p->getRenderMode());
 
-	// use temprary label''', '''    const bool glyphBatch = p->getLabelType() == ResFont::LabelType::TTF &&
+	// use temprary label''', '''    const bool glyphBatch = (p->getLabelType() == ResFont::LabelType::TTF || p->getLabelType() == ResFont::LabelType::BMFONT) &&
         !p->isOutlined() && !p->isShadowed() && !p->isGlowed() && !p->isBold() &&
         !p->isUnderlined() && !p->isStrikethrough() && !p->getTTFConfig().distanceFieldEnabled;
     if (!glyphBatch) {
@@ -229,12 +253,16 @@ replace('frameworks/LSTG/Renderer.cpp', '''	flushTriangles();
 
     // use temprary label''')
 replace('frameworks/LSTG/Renderer.cpp', '''	//label->visit(pRenderer, Mat4::IDENTITY, 0);''', '''    if (glyphBatch) {
-        const auto key = std::string("android:glyph:")+p->getRenderMode()->getName();
-        auto* mode = RenderMode::getByName(key);
-        if (!mode) {
-            mode = p->getRenderMode()->clone(key);
-            mode->setProgram(backend::Program::getBuiltinProgram(backend::ProgramType::LABEL_NORMAL));
-            mode->setColor("u_textColor", Color4B::WHITE);
+        auto* mode = p->getRenderMode();
+        if (p->getLabelType() == ResFont::LabelType::TTF) {
+            const auto key = std::string("android:glyph:")+mode->getName();
+            auto* glyphMode = RenderMode::getByName(key);
+            if (!glyphMode) {
+                glyphMode = mode->clone(key);
+                glyphMode->setProgram(backend::Program::getBuiltinProgram(backend::ProgramType::LABEL_NORMAL));
+                glyphMode->setColor("u_textColor", Color4B::WHITE);
+            }
+            mode = glyphMode;
         }
         updateRenderMode(mode);
         const auto& batches = label->androidGlyphBatches();
@@ -258,6 +286,13 @@ replace('frameworks/LSTG/Renderer.cpp', '''	//label->visit(pRenderer, Mat4::IDEN
         return true;
     }
     //label->visit(pRenderer, Mat4::IDENTITY, 0);''')
+
+# 位图文字同样把颜色乘进最终顶点，Label 本身保持白色，防止透明度被乘两次。
+replace('frameworks/LSTG/Renderer.cpp',
+        '\t\tlabel->setOpacity(p->getColor().a);\n\t\tlabel->setColor(Color3B(p->getColor()));',
+        '''        const auto fontColor = glyphBatch ? Color4B::WHITE : p->getColor();
+        label->setOpacity(fontColor.a);
+        label->setColor(Color3B(fontColor));''')
 
 # uniform setters 原本逐字段同步上传 GPU（文字每帧上千次）。在 CPU 合并字段，
 # 真正绑定该 uniform block 时一次提交；相同数据不重复上传。仅作用于 CPU 写入的 UBO。

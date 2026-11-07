@@ -1,6 +1,7 @@
 -- 关内续玩：保存关卡初态和逻辑输入，恢复时有预算地重建场景，校验后交还控制。
 -- 新录像带版本标记；旧录像继续使用原来的随机数和时钟行为。
-local C,P,N=assert(SaveCodec),assert(SaveProfiles),assert(SaveTransport)
+-- 续玩点停用时只保留这套录像规则，不创建快照、输入记录或网络时钟。
+local C,P,N=assert(SaveCodec),assert(SaveProfiles),SaveTransport
 local R={VERSION=1,INTERVAL=120,MAX_FRAMES=1000000,MAX_INPUT=8*1024*1024}
 local rawKey,rawLast=GetKeyState,GetLastKey
 local rawRan,randomFactory=ran,Rand
@@ -190,8 +191,13 @@ function R.decode(bytes)
     assert(type(bytes)=='string' and bytes:sub(1,5)=='BRR1.','关内续玩文件格式无效')
     return R.validate(C.unpack((bytes:gsub('^BRR1%.','BRS1.'))))
 end
-function R.has() for _,suffix in ipairs({'','.bak'}) do local f=io.open(P.path('resume.dat')..suffix,'rb');if f then f:close();return true end end;return false end
+function R.has()
+    if not GameFeatures.resume then return false end
+    for _,suffix in ipairs({'','.bak'}) do local f=io.open(P.path('resume.dat')..suffix,'rb');if f then f:close();return true end end
+    return false
+end
 function R.peek()
+    if not GameFeatures.resume then return nil,'续玩点功能暂时停用' end
     local path=P.path('resume.dat');if R.memo and R.memo.path==path then return R.memo.data end
     local problem
     for _,source in ipairs({path,path..'.bak'}) do
@@ -210,11 +216,13 @@ function R.peek()
     return nil,problem
 end
 function R.clear()
+    if not GameFeatures.resume then return end
     if GameNet and GameNet.active() then return end
     if R.recovering then return end
     os.remove(P.path('resume.dat'));os.remove(P.path('resume.dat')..'.bak');R.session=nil;R.memo=nil
 end
 function R.beforeStageSet(mode)
+    if not GameFeatures.resume then return mode~='resume' end
     if R.recovering and mode~='resume' then R.failure='重建在保存时点前发生了切关';return false end
     if R.session and not R.inLogic then R.flush('离开关卡') end
     return true
@@ -233,7 +241,7 @@ function R.prepareStage()
     R.logicClock={ticks=0};R.inLogic=true;simMath:Seed((lstg.var.ran_seed+104729)%2147483647)
     if R.pending then
         R.session={stage=R.pending.stage,run=R.pending.run,start=clone(R.pending.start),frames=0,packets={},size=0}
-    elseif replayWriter and not replayReader then
+    elseif GameFeatures.resume and replayWriter and not replayReader then
         R.session={stage=nextStage.stage_name,run=lstg.var.__resume_run,start={var=Serialize(lstg.var),stats=stats(),input=clone(KeyState),context=context()},frames=0,packets={},size=0}
     end
 end
@@ -246,7 +254,9 @@ function R.beforeLogic()
     if R.pauseAfterRender then return false end
     if R.recoveryStopped then R.recoveryStopped=nil;return false end
     if not R.enabled then return true end
-    R.inLogic=true;R.inputDown={};R.inputLast=rawLast() or 0
+    R.inLogic=true
+    if not GameFeatures.resume then return true end
+    R.inputDown={};R.inputLast=rawLast() or 0
     if R.recovering then
         local bytes=R.playback;local p=R.position
         R.actionByte,R.inputLast=bytes:byte(p,p+1)
@@ -285,6 +295,7 @@ function R.afterLogic()
     end
 end
 function R.flush(reason)
+    if not GameFeatures.resume then return false end
     local session=R.session
     if R.recovering or R.inLogic or not session or stage.next_stage or not stage.current_stage or stage.current_stage.stage_name~=session.stage then return false end
     local began=clock()
@@ -316,6 +327,7 @@ function R.flush(reason)
     return true
 end
 function R.request()
+    assert(GameFeatures.resume,'续玩点功能暂时停用')
     local data,err=R.peek();assert(data,err or '没有关内续玩记录')
     assert(data.runtime==R.runtime(),'该关内续玩点来自不同引擎或平台，请使用关卡检查点继续')
     assert(data.code==R.codeHash(),'游戏脚本已更新，请使用关卡检查点继续；原续玩文件已保留')
@@ -381,11 +393,13 @@ function R.pump(step)
     if R.failure then R.cancel(R.failure) end
 end
 function R.controls()
+    if not GameFeatures.resume then return end
     if R.recovering then return end
     local key=rawLast()
     if key==116 then R.flush('手动') end
 end
 function R.draw()
+    if not GameFeatures.resume then return end
     if not ui then return end
     if R.session and not R.recovering then
         SetImageState('white','',210,15,30,52);RenderRect('white',640,790,510,538)

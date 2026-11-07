@@ -85,6 +85,7 @@ ext.saving = saving
 local SAVE_DIR = SaveProfiles.userRoot()
 
 function saving.Save(stageNames)
+    if not GameFeatures.resume then return end
     if SaveResume and SaveResume.recovering then return end
     local stages = {}
     for _, v in ipairs(stageNames) do
@@ -99,7 +100,9 @@ function saving.Save(stageNames)
         stages = stages,
     })
 end
-saving.SaveManager = plus.ReplayManager(SAVE_DIR, "file", "saving")
+if GameFeatures.resume then
+    saving.SaveManager = plus.ReplayManager(SAVE_DIR, "file", "saving")
+end
 ----------------------------------------
 ---关卡切换增强功能
 ---用于支持replay
@@ -112,6 +115,7 @@ saving.SaveManager = plus.ReplayManager(SAVE_DIR, "file", "saving")
 ---@param path string @录像文件路径（可选）
 ---@param stageName string @关卡名称
 function stage.Set(mode, path, stageName)
+    if not GameFeatures.resume and (mode == "resume" or mode == "load to save") then return end
     if GameNet and GameNet.host() and mode=="save" then
         mode="none";lstg.var.ran_seed=((os.time()%65536)*877)%65536
         lstg.var.__resume_version=nil;lstg.var.__coop=true;ContinueGame=false

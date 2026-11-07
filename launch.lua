@@ -165,6 +165,7 @@ default_setting = {
     frameskip = false,
     touchBombInterval = 100, -- 双击起点间隔，毫秒
     touchUnlimited = false,
+    androidNativeResolution = false, -- 安卓默认使用720像素高的渲染面，可在设置中恢复原生。
     keys = {
         up = KEY.UP,
         down = KEY.DOWN,

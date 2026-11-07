@@ -35,6 +35,7 @@ function achievement:init()
 end
 local rand = math.random
 function achievement:frame()
+    if not GameFeatures.achievements then return end
     task.Do(self)
     self.timer = self.timer + 1
     local a
@@ -96,6 +97,7 @@ function achievement:frame()
     end
 end
 function achievement:render()
+    if not GameFeatures.achievements then return end
     local a
     SetViewMode("ui")
     if self.achievement[1] then
@@ -113,6 +115,7 @@ function achievement:render()
 end
 local getmoney = { 150, 300, 600, 1000, 1500, 3500 }
 function achievement:get(id)
+    if not GameFeatures.achievements then return end
     if GameNet and GameNet.active() then return end
     if not GlobalAddAchievement or ext.replay.IsReplay() then
         return

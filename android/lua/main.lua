@@ -9,12 +9,18 @@ __G__TRACKBACK__ = function(message)
 end
 local bootError = __G__TRACKBACK__
 local function bootstrap()
+local bootClock = lstg.AndroidClock or os.clock
+local bootStart = bootClock()
+local function startupMark(phase)
+    lstg.SystemLog(string.format('BOSSRUSH_STARTUP: %s %.1f ms', phase, (bootClock()-bootStart)*1000))
+end
 lstg.SystemLog('BOSSRUSH_BOOT: '..(desktop and 'macOS' or 'Android')..' 入口')
 local fu = cc.FileUtils:getInstance()
 fu:addSearchPath('src/')
 fu:addSearchPath('res/')
 require('config')
 require('cocos.init')
+startupMark('cocos_ready')
 package.path = package.path .. ';?/__init__.lua;'
 lstg.SystemLog('BOSSRUSH_BOOT: Cocos 脚本已加载')
 setmetatable(_G, nil)
@@ -35,6 +41,14 @@ local frameSize = director:getOpenGLView():getFrameSize()
 director:getOpenGLView():setDesignResolutionSize(frameSize.width, frameSize.height, cc.ResolutionPolicy.EXACT_FIT)
 local scene = cc.Scene:create()
 director:runWithScene(scene)
+local function finishNativeStartup()
+    if desktop then return end
+    local ok, result, message = pcall(function()
+        return require('cocos.cocos2d.luaj').callStaticMethod(
+            'org/bossrush/hd/BossRushActivity', 'finishStartup', {}, '()V')
+    end)
+    if not ok or not result then lstg.SystemLog('BOSSRUSH_STARTUP_OVERLAY: '..tostring(message or result)) end
+end
 local function fail(message)
     local text = debug.traceback(tostring(message), 2)
     lstg.SystemLog('BOSSRUSH_ERROR: ' .. text)
@@ -42,20 +56,18 @@ local function fail(message)
     label:setDimensions(frameSize.width-80, frameSize.height-80)
     label:setPosition(frameSize.width/2, frameSize.height/2); label:setTextColor({ r=255,g=150,b=150,a=255 })
     scene:addChild(label, 10000)
+    finishNativeStartup()
     scene:unscheduleUpdate()
     return text
 end
 __G__TRACKBACK__ = fail
 local function start()
     lstg.FrameInit()
+    startupMark('frame_init')
     -- x 的帧率计数未包含 Cocos 提交耗时；HUD 使用完整显示帧的墙钟计数。
     local displayedFPS, uiFpsStart, uiFpsFrames = 60, lstg.AndroidClock(), 0
     lstg.GetFPS = function() return displayedFPS end
     lstg.SystemLog('BOSSRUSH_GPU: ' .. lstg.AndroidRendererInfo())
-    if lstg.AndroidVerifyGraphics then
-        assert(lstg.AndroidVerifyGraphics())
-        lstg.SystemLog('BOSSRUSH_GRAPHICS: NPOT sampler 切换与 UBO 零值/分段/重复/覆盖的 GPU 校验通过')
-    end
     for k, v in pairs(lstg) do _G[k] = v end
     FileTaskWrapper = function(_, _, task) return task() end
     FileTaskAsyncWrapper = function(_, _, task) return task() end
@@ -63,6 +75,7 @@ local function start()
     require('core.respool')
     local load = function(path) return assert(loadstring(fu:getStringFromFile(path), '@' .. path))() end
     load('game/android/render_modes.lua')
+    startupMark('render_modes')
     lstg.RenderMode:create('one', ccb.BlendOperation.ADD, ccb.BlendFactor.ONE,
         ccb.BlendFactor.ZERO, lstg.RenderMode:getByName(''):getProgram())
     AndroidPlatform = load('game/android/platform.lua')
@@ -94,6 +107,7 @@ local function start()
     cur_setting = DeSerialize(Serialize(setting))
     AndroidInput = load(desktop and 'game/macos/input.lua' or 'game/android/input.lua')
     lstg.DoFile('core.lua')
+    startupMark('core_ready')
     -- Sub 的辅助函数仅返回内容区坐标；Android 超宽屏 RT 使用完整物理画布。
     local worldToScreen = WorldToScreen
     WorldToScreen = function(...)
@@ -109,13 +123,25 @@ local function start()
         if mode:match('^profile') then profiler = load('game/android/profiler.lua') end
     end
     AndroidInstallClasses()
-    AndroidVerifyObjects()
+    -- 正常启动不执行开发诊断中的 GPU 回读与对象契约检查。
+    if diagnosticsMode and (diagnosticsMode:match('graphics') or diagnosticsMode:match('contracts')) then
+        if lstg.AndroidVerifyGraphics then assert(lstg.AndroidVerifyGraphics()) end
+        AndroidVerifyObjects()
+    end
     local newStage = stage.New
     stage.New = function(name, entrance, menu)
         return newStage(name, entrance or name == 'init', menu)
     end
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 开始')
     GameInit()
+    startupMark('game_init')
+    if not desktop then
+        local ok, result, message = pcall(function()
+            return require('cocos.cocos2d.luaj').callStaticMethod('org/bossrush/hd/BossRushActivity',
+                'configureRendering', {setting.androidNativeResolution==true}, '(Z)V')
+        end)
+        if not ok or not result then lstg.SystemLog('BOSSRUSH_RENDER_CONFIG: '..tostring(message or result)) end
+    end
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 完成')
     if desktop then load('game/macos/test.lua').install() end
     if diagnosticsMode and diagnosticsMode:match('combat') then load('game/android/combat_check.lua').install(diagnosticsMode) end
@@ -125,6 +151,17 @@ local function start()
     pauseCache.install()
     AndroidInput.install(scene)
     lstg.SystemLog('BOSSRUSH_INPUT: 已安装')
+    local display = load('game/android/display.lua')
+    local function syncSurfaceSize()
+        local view = director:getOpenGLView()
+        local size = view:getFrameSize()
+        if size.width<=0 or size.height<=0 or (size.width==frameSize.width and size.height==frameSize.height) then return end
+        frameSize = size
+        view:setDesignResolutionSize(size.width, size.height, cc.ResolutionPolicy.EXACT_FIT)
+        display.resize(size.width, size.height)
+        lstg.SystemLog(string.format('BOSSRUSH_DISPLAY: surface=%dx%d scale=%.4f offset=%.2f,%.2f',
+            size.width,size.height,screen.scale,screen.dx,screen.dy))
+    end
     -- x 的绘制命令池每个 BeginScene 复用一次，触屏控件必须与游戏共用同一帧。
     local endScene = EndScene
     EndScene = function()
@@ -161,6 +198,7 @@ local function start()
     scene:scheduleUpdateWithPriorityLua(function()
         local ok = xpcall(function()
             frames = frames + 1
+            syncSurfaceSize()
             AndroidInput.beginFrame()
             if frames <= 3 then
                 lstg.SystemLog('BOSSRUSH_FRAME: ' .. frames .. ' stage=' .. tostring(stage.current_stage and stage.current_stage.stage_name))
@@ -180,6 +218,10 @@ local function start()
                 lstg.SystemLog('BOSSRUSH_STAGE: ' .. tostring(previousStage and previousStage.stage_name))
             end
             RenderFunc()
+            if frames == 1 then
+                startupMark('first_game_frame')
+                finishNativeStartup()
+            end
             local afterRender = clock()
             uiFpsFrames = uiFpsFrames+1
             if afterRender-uiFpsStart >= 1 then
@@ -191,10 +233,10 @@ local function start()
             renderTime = renderTime + afterRender-afterLogic
             if afterRender-sampleStart >= 5 then
                 if profiler then profiler.report(sampleFrames) end
-                local draws,vertices = lstg.AndroidDrawStats()
-                lstg.SystemLog(string.format('BOSSRUSH_PERF: stage=%s paused=%s fps=%.1f logic_ms=%.3f render_ms=%.3f draws=%d vertices=%d',
+                local draws,vertices,drawMilliseconds = lstg.AndroidDrawStats()
+                lstg.SystemLog(string.format('BOSSRUSH_PERF: stage=%s paused=%s fps=%.1f logic_ms=%.3f render_ms=%.3f submit_ms=%.3f draws=%d vertices=%d',
                     tostring(previousStage and previousStage.stage_name), tostring(not ext.pause_menu:IsKilled()),
-                    sampleFrames/(afterRender-sampleStart), logicTime*1000/sampleFrames, renderTime*1000/sampleFrames,draws,vertices))
+                    sampleFrames/(afterRender-sampleStart), logicTime*1000/sampleFrames, renderTime*1000/sampleFrames,drawMilliseconds or 0,draws,vertices))
                 sampleStart, sampleFrames, logicTime, renderTime = afterRender, 0, 0, 0
             end
             if frames <= 3 then lstg.SystemLog('BOSSRUSH_RENDERED: ' .. frames) end
