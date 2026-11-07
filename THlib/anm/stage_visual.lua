@@ -492,7 +492,7 @@ local function background_class(game,archive,name)
             local owner=boss_group[1]
             if not owner or not IsValid(owner) then return end
             local card=owner.current_card
-            local active=game==95 or (owner.__show_scbg and card and card.is_sc)
+            local active=card and not card.phase_kind and (game==95 or (owner.__show_scbg and card.is_sc))
             if active and (not o.active or o.card~=card) then
                 o.vms={};o.card=card
                 o.age=0

@@ -432,6 +432,13 @@ end
 ---更新符卡背景
 function system:updateBG()
     local b = self.boss
+    if b.current_card and b.current_card.phase_kind then
+        -- current_card先于before/init切换，立即撤下上一阶段的背景，避免道中入场仍残留一层。
+        b.__show_scbg=false
+        if IsValid(b.bg) then b.bg.alpha=0;b.bg.active=false end
+        if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then lstg.tmpvar.bg.hide=false end
+        return
+    end
     if b.hp <= 0 then
         return
     end
@@ -766,6 +773,15 @@ function system:castcard(name)
     object.Connect(b, b._sc_name_obj, 0, true)
 end
 
+-- 阶段标题沿用右上角文字对象，但不触发符卡宣言、分数栏或中央放大的入场动画。
+function system:showPhaseName(name)
+    local b=self.boss
+    self:setSCName(name)
+    if IsValid(b._sc_name_obj) then object.RawDel(b._sc_name_obj) end
+    b._sc_name_obj=New(boss.sc_name,b,name,false,true)
+    object.Connect(b,b._sc_name_obj,0,true)
+end
+
 ---设置血量
 ---@param maxhp number @最大血量
 ---@param hp number @血量
@@ -940,6 +956,7 @@ end
 ---@param sc_bonus boolean @是否有符卡奖励结算
 function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
     local b = self.boss
+    if card.phase_kind then sc_bg,sc_ring=false,false end
     score = score or card.is_sc
     sc_bonus = sc_bonus or card.is_sc
     b.current_card = card
@@ -973,6 +990,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
             self:openSCBonus(sc_bonus)
         else
             self:startSpellHist(card.card_id, b.diff, lstg.var.player_name)
+            if card.phase_name then self:showPhaseName(card.phase_name) end
         end
         self:setStatus(card.hp, card.drop, card.is_extra, is_final, true,
                 card.t1 / 60, card.t2 / 60, card.t3 / 60, card.is_sc, sc_bg, sc_ring)
