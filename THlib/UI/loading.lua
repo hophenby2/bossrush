@@ -25,6 +25,7 @@ local function LoadingImage()
     end)
     return list
 end
+LoadImageFromFile("loading", "THlib\\UI\\loading.png")
 
 local string = string
 local clock = os.clock
@@ -49,6 +50,9 @@ function stage_init:init()
     self.res = LoadingImage()
     self.index = 1
     self.maxindex = #self.res
+    self.textindex = math.random(1, #TIP)
+    self.text = TIP[self.textindex]
+    self.settime = self.timer
     SetResourceStatus("global")
     task.New(self, function()
         while not self.jump do
@@ -67,6 +71,14 @@ end
 function stage_init:frame()
 
     self.timer = int((clock() - self.start_time) * 60)
+    if self.timer - self.settime > 150 then
+        local t = self.textindex
+        while self.textindex == t do
+            self.textindex = math.random(1, #TIP)
+        end
+        self.text = TIP[self.textindex]
+        self.settime = self.timer
+    end
     if self.index > self.maxindex then
         self.jump = true
     elseif not self.jump then
@@ -84,8 +96,26 @@ function stage_init:frame()
     end
 end
 function stage_init:render()
-    -- 载入过程保持纯黑，资源分帧载入和跳转时序不依赖绘制内容。
-    RenderClear(Color(255,0,0,0))
+    Render("loading", 480, 270)
+    ui:RenderText('title', "少女折寿中" .. string.rep(".", int(self.timer / 20 % 6) + 1),
+            480, 25, 1, Color(255, 255, 227, 132), "centerpoint")
+    --SetImageState("title", "mul+add", min(self.timer, 45) / 45 * 255, 200, 200, 200)
+    --Render("title", 480, 270 + sin(self.timer) * 2, 0, 0.5 + sin(self.timer * 4) * 0.001)
+
+    local length = min(self.index / self.maxindex, 1)
+    SetImageState("white", "", 255, 255, 255, 255)
+    RenderRect("white", 150, 810, 50, 75)
+    SetImageState("white", "", 255, 0, 0, 0)
+    RenderRect("white", 152, 808, 52, 73)
+    SetImageState("white", "",
+            Color(180, 255 - 155 * length, 255 * length, 0 + 100 * length))
+    RenderRect("white", 152, 152 + length * 656, 52, 73)
+    SetFontState("Score", "",
+            Color(255, 255 * length, 255 - 28 * length, 100 + 32 * length))
+    ui:RenderText('sc_menu', "Tips : " .. self.text, 480, 170, 1,
+            Color(255, 250, 128, 114 + 50 * sin(self.timer * 2)), "centerpoint")
+    ui:RenderText("title", ("%0.2f%% ( %d / %d ) "):format(length * 100, min(self.index, self.maxindex), self.maxindex),
+            480, 62.5, 0.8, Color(255, 255 * length, 255 - 28 * length, 100 + 32 * length), "centerpoint")
 end
 
 local _keyboard = {}

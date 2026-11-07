@@ -1,5 +1,5 @@
 -- 击破阶段后的红蓝绿三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=3,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=3}
+local D={VERSION=4,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=3}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -15,7 +15,7 @@ D.colorPool={
     {{'green','add',-5}},{{'green','add',-10}},{{'green','add',-15}},
     {{'green','mul',9,10}},{{'green','mul',4,5}},
 }
-local function three() return lstg.var.__drops_version==D.VERSION end
+local function three() return lstg.var.__drops_version==3 or lstg.var.__drops_version==D.VERSION end
 local function modern() return three() or lstg.var.__drops_version==2 end
 local function fresh()
     local p={red=10000,blue=10000,clock=-1,fraction=0}
@@ -157,7 +157,12 @@ function D.beginCard(b,card)
 end
 function D.draw(seed,index)
     local gen=Rand();gen:Seed((seed+index*104729)%2147483647)
-    if three() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2,gen:Int(11,15)} end
+    if three() then
+        -- 保留红、蓝、绿的抽样顺序；新版只交换前两列，旧录像仍按原位置接取。
+        local red,blue,green=gen:Int(1,5)*2-1,gen:Int(1,5)*2,gen:Int(11,15)
+        if lstg.var.__drops_version==D.VERSION then return {blue,red,green} end
+        return {red,blue,green}
+    end
     if modern() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2} end
     local a=gen:Int(1,#D.pool);local b=gen:Int(1,#D.pool-1);if b>=a then b=b+1 end
     return {a,b}
