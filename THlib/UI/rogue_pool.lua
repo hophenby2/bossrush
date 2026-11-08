@@ -5,11 +5,14 @@ local options={
     {group='stages',key='TH32',text='红魔乡 · TH32',x=720,y=388},
     {group='stages',key='TH34',text='妖妖梦 · TH34',x=505,y=350},
     {group='stages',key='TH35',text='风神录 · TH35',x=720,y=350},
-    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=279},
-    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=279},
-    {group='encounters',key='boss',text='Boss',x=505,y=208},
-    {group='encounters',key='road',text='道中',x=720,y=208},
+    {group='stages',key='TH36',text='地灵殿 · TH36',x=505,y=312},
+    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=242},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=242},
+    {group='encounters',key='boss',text='Boss',x=505,y=171},
+    {group='encounters',key='road',text='道中',x=720,y=171},
 }
+local startIndex=#options+1
+local focusCount=startIndex+1
 local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
 local function over(mouse,entry)
     return sp.math.PointBoundCheck(mouse.x,mouse.y,entry.x,entry.x+200,entry.y-16,entry.y+16)
@@ -55,7 +58,7 @@ end
 function U.frame(o)
     local mouse=ext.mouse
     if o.pool_notice_time>0 then o.pool_notice_time=o.pool_notice_time-1 end
-    o.maxcolindex=o.pool_focus==9 and 1 or 0
+    o.maxcolindex=o.pool_focus==startIndex and 1 or 0
     -- Enter始终开始；射击键在选项上切换勾选，在自机/开始按钮上开始。
     if GetLastKey()==KEY.ENTER then o:yes();return end
     if menu:keyYes() or GetLastKey()==setting.keys.shoot then
@@ -63,8 +66,8 @@ function U.frame(o)
         return
     end
     if menu:keyNo() then o:no();return end
-    if menu:keyUp() then o.pool_focus=(o.pool_focus-1)%10;PlaySound('select00') end
-    if menu:keyDown() then o.pool_focus=(o.pool_focus+1)%10;PlaySound('select00') end
+    if menu:keyUp() then o.pool_focus=(o.pool_focus-1)%focusCount;PlaySound('select00') end
+    if menu:keyDown() then o.pool_focus=(o.pool_focus+1)%focusCount;PlaySound('select00') end
     if menu:keyLeft() then o:addpos1(-1) end
     if menu:keyRight() then o:addpos1(1) end
     for index,entry in ipairs(options) do
@@ -82,7 +85,7 @@ function U.frame(o)
         end
     elseif sp.math.PointBoundCheck(mouse.x,mouse.y,420,540,30,60) then
         o.maxcolindex=1
-        if mouse:isDown(1) then o.pool_focus=9;o:yes() end
+        if mouse:isDown(1) then o.pool_focus=startIndex;o:yes() end
     elseif Dist(mouse.x,mouse.y,240+r+45,250)<30 then
         if mouse:isDown(1) then o.pool_focus=0;o:addpos1(1) end
     elseif Dist(mouse.x,mouse.y,240-r-45,250)<30 then
@@ -95,7 +98,7 @@ function U.render(o)
     local muted=Color(alpha*255,165,188,200)
     local accent=Color(alpha*255,189,252,201)
     ui:RenderText('title','抽取范围',715,460,1.05,white,'centerpoint')
-    for _,heading in ipairs({{'关卡',422},{'难度（至少一项）',313},{'战斗（至少一项）',242}}) do
+    for _,heading in ipairs({{'关卡',422},{'难度（至少一项）',276},{'战斗（至少一项）',205}}) do
         ui:RenderText('title',heading[1],505,heading[2],0.72,muted,'left','vcenter')
     end
     for index,entry in ipairs(options) do
@@ -114,10 +117,10 @@ function U.render(o)
     local state=o.pool_status
     local valid=state and state.valid
     local statusColor=valid and accent or Color(alpha*255,255,170,125)
-    ui:RenderText('title',string.format('候选 %d 张 · 每轮不重复',state and state.count or 0),715,159,0.78,statusColor,'centerpoint')
+    ui:RenderText('title',string.format('候选 %d 张 · 每轮不重复',state and state.count or 0),715,126,0.78,statusColor,'centerpoint')
     local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)
-    ui:RenderText('title',message or '仅从已勾选的关卡、难度和战斗类型抽取',715,130,0.6,message and Color(alpha*255,255,170,125) or muted,'centerpoint')
-    ui:RenderText('title',('↑↓选择 · %s勾选 · Enter开始'):format(o.keyname[setting.keys.shoot] or 'Z'),715,100,0.66,muted,'centerpoint')
+    ui:RenderText('title',message or '仅从已勾选的关卡、难度和战斗类型抽取',715,99,0.6,message and Color(alpha*255,255,170,125) or muted,'centerpoint')
+    ui:RenderText('title',('↑↓选择 · %s勾选 · Enter开始'):format(o.keyname[setting.keys.shoot] or 'Z'),715,75,0.66,muted,'centerpoint')
     ui:RenderText('title','← → 选择自机',240,80,0.7,o.pool_focus==0 and accent or muted,'centerpoint')
 end
 return U

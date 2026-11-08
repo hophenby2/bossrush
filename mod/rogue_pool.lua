@@ -1,7 +1,8 @@
 -- 抽卡只认已核对的卡号与来源；注册标题不承担难度/道中分类职责。
 local P={}
 P.sources={{level=29,code='TH31',title='永夜抄'},{level=30,code='TH32',title='红魔乡'},
-    {level=32,code='TH34',title='妖妖梦'},{level=33,code='TH35',title='风神录'}}
+    {level=32,code='TH34',title='妖妖梦'},{level=33,code='TH35',title='风神录'},
+    {level=34,code='TH36',title='地灵殿'}}
 local catalog=dofile('mod/rogue_pool_sources.lua')
 local tags={}
 for code,source in pairs(catalog) do
@@ -15,11 +16,11 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35'},difficulties={'lunatic','extra'},encounters={'boss','road'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'}}
 function P.defaults(variant)
-    -- 双Boss/接续使用各自既有的三作Boss范围；单人十战开放全部四作及道中。
+    -- 双Boss/接续保留既有的三作Boss范围；单人模式开放五作与独立道中。
     local single=not variant or variant=='single'
-    return {stages={TH31=true,TH32=single,TH34=true,TH35=true},
+    return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single},
         difficulties={lunatic=true,extra=true},encounters={boss=true,road=single}}
 end
 function P.copy(filters,variant)
@@ -37,7 +38,8 @@ function P.build(filters,poolVersion)
     filters=P.copy(filters)
     local pool,total,seen={},0,{}
     for _,source in ipairs(P.sources) do
-        if filters.stages[source.code] then
+        -- 新作只进入版本4；旧录像即使缺少筛选初态，也不能因默认值改变而重抽。
+        if filters.stages[source.code] and not (source.code=='TH36' and poolVersion and poolVersion<4) then
             local bucket={code=source.code,level=source.level,cards={}}
             for index,unit in ipairs(_sc_pr_table[source.level] or {}) do
                 local first=unit.sc_group and unit.sc_group[1]

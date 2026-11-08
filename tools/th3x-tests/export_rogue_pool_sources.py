@@ -1,12 +1,13 @@
 """从已逐卡核对的源清单导出随机十战白名单；不运行Lua/ECL，不修改玩家数据。"""
 import argparse
 import json
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 INDEX = ROOT / 'tools/th3x-tests/card-audit-index.json'
-NATIVE = {31: 8, 32: 6, 34: 7, 35: 10}
+NATIVE = {31: 8, 32: 6, 34: 7, 35: 10, 36: 11}
 
 
 def classify(row):
@@ -18,6 +19,8 @@ def classify(row):
         return None, 'Last Word独立模式'
     filename = source['file']
     kind = 'road' if source['kind'] == '时间轴' else 'boss'
+    if game == 36:
+        return ('extra' if source['stage'] == 7 else 'lunatic', kind), None
     if game == 34:
         if filename == 'ecldata8.ecl':
             return ('phantasm', kind), None
@@ -25,13 +28,28 @@ def classify(row):
         if rank != 3:
             return None, {1: 'Normal', 2: 'Hard'}[rank]
     extra = filename == {31: 'ecldata8.ecl', 32: 'ecldata7.ecl',
-                         34: 'ecldata7.ecl', 35: 'stage07.ecl'}[game]
+                         34: 'ecldata7.ecl', 35: 'stage07.ecl', 36: 'stage07.ecl'}[game]
     difficulty = 'extra' if extra else 'lunatic'
     return (difficulty, kind), None
 
 
 def export():
-    rows = [r for r in json.loads(INDEX.read_text())['cards'] if r['game'] in NATIVE]
+    rows = [r for r in json.loads(INDEX.read_text())['cards'] if r['game'] in NATIVE and r['game'] != 36]
+    # TH36独立二进制ECL探针的86阶段，不能把含关底的11101..11107整关伪装成道中。
+    th36 = json.loads((ROOT / 'tools/th36-tests/low_speed_hp.json').read_text(encoding='utf-8'))
+    assert len(th36['cards']) == 86 and len({c['id'] for c in th36['cards']}) == 86
+    owners = {stage: dict((sub, file) for file, sub in re.findall(
+        r'^-- (\w+\.ecl)：([^，]+)，',
+        (ROOT / f'mod/GAME/th36/stage{stage:02d}.lua').read_text(encoding='utf-8'), re.M))
+        for stage in range(1,8)}
+    for c in th36['cards']:
+        filename = owners[c['stage']][c['sub']]
+        assert Path(filename).stem in th36['ecl_sha256']
+        rows.append(dict(game=36,id=c['id'],name=c['name'],source=dict(
+            game=11,file=filename,stage=c['stage'],roots=[c['sub']],kind='阶段')))
+    for stage in range(1,8):
+        rows.append(dict(game=36,id=11200+stage,name=f'地灵殿{stage}面道中',source=dict(
+            game=11,file=f'stage{stage:02d}.ecl',stage=stage,roots=['main'],kind='时间轴')))
     groups = defaultdict(list)
     excluded = []
     for row in rows:
@@ -59,10 +77,10 @@ def export():
             lines.append('        },')
         lines.append('    },')
     lines.append('}')
-    (ROOT / 'mod/rogue_pool_sources.lua').write_text('\n'.join(lines) + '\n')
-    report = ['# 随机十战抽取来源（2026-11-06）', '',
-              '准备界面选择四作、Lunatic与Extra/Phantasm、Boss/道中；Boss包括符卡、非符与中Boss。'
-              '每组至少保留一项；按筛选后的总池无放回抽十张，不足十张禁止开始，不跨池补抽。', '',
+    (ROOT / 'mod/rogue_pool_sources.lua').write_text('\n'.join(lines) + '\n',encoding='utf-8',newline='\n')
+    report = ['# Roguelike抽取来源（2026-11-08）', '',
+              '准备界面选择五作、Lunatic与Extra/Phantasm、Boss/道中；Boss包括符卡、非符与中Boss。'
+              '每组至少保留一项；交集至少一张即可开始，每轮无放回抽取，抽完重新洗牌，不跨池补抽。', '',
               '仅收录已核对来源的卡号。妖妖梦ecldata8的23个Phantasm条目并入Extra/Phantasm开关。'
               'TH34显式Normal/Hard分支、TH31独立Last Word与TH32自制条目仍排除。', '',
               '| 来源 | L Boss | L 道中 | EX/PH Boss | EX/PH 道中 |', '| --- | ---: | ---: | ---: | ---: |']
@@ -84,9 +102,12 @@ def export():
                '- TH34/4468虽然Sub68有共同回调入口，移植卡明确使用Normal分支，仍排除；不能仅凭被共用子程序引用就判为L。',
                '- Extra按原作扩展关ECL文件，TH34的ecldata8为Phantasm，TH31的ecldata8为Extra；两个原作来源均由Extra/Phantasm开关控制。',
                '- 道中取已审阅清单的时间轴类型，不再通过标题包含“道中”猜测。',
+               '- TH36阶段来自`tools/th36-tests/low_speed_hp.json`的原始ECL探针。65个Lunatic、21个Extra阶段归Boss；'
+               '11201–11207是按main时钟执行、剥离Boss演员的独立道中，11101–11107完整关卡不进入随机池。',
                '- 筛选与卡池版本在开局前写入录像/续玩初态；未带版本的旧录像使用旧抽取算法；版本2仍排除Phantasm以保留旧路线，新局版本3使用合并池。',
-               '', '按此前要求未运行测试、游戏或构建；本工具只读取已有源清单并导出白名单及报告。', '']
-    (ROOT / 'tools/th3x-tests/ROGUE_POOL_SOURCES_2026-11-06.md').write_text('\n'.join(report))
+               '- 新局版本4加入TH36；版本1/2/3均保留此前来源集合，旧筛选中未勾选TH36时不会自行补入。',
+               '', '验证入口：`tools/check_roguelike.lua`与`tools/th36-tests/check_rogue.py`；本工具只读取源清单并导出白名单及报告。', '']
+    (ROOT / 'tools/th3x-tests/ROGUE_POOL_SOURCES_2026-11-06.md').write_text('\n'.join(report),encoding='utf-8',newline='\n')
     print('白名单', sum(map(len, groups.values())), '排除', len(excluded), dict(Counter(r for _, r in excluded)))
 
 

@@ -8,6 +8,7 @@
 - 86个独立战斗阶段：54个符卡入口、32个非符入口，ID为11000–11085。
 - 觉的六种自机／支援组合、18个回忆符卡均能单独练习。
 - 七个整关入口，ID为11101–11107，从各面的 `main` 驱动道中、中Boss、主Boss及换卡。正常关卡菜单依次执行这七面。整关的觉路线固定为灵梦／紫，其他路线列在符卡练习中。
+- 七个独立道中入口，ID为11201–11207，沿main的原始出生／等待时钟，剥离Boss与中Boss演员。它们与86个阶段一同接入Roguelike版本4；完整整关入口不重复入池，主线的七条完整流程保持原入口。
 - 阶段分布：一面7、二面7、三面9、四面22、五面10、六面10、Extra21。整关入口另计。
 
 血量按用户要求换算到原作六种自机低速满火力活跃TTK中位数，目标为移植灵梦115.5 DPS。ECL仍读取累计血槽的原始life与阈值；弹幕参数保持原ECL口径。完整口径、机体采样限制和86项血量表见 `mod/GAME/th31_th34_th35_original_player_ttk_hp_calibration.md` 末尾TH36节。
@@ -60,6 +61,10 @@ python tools/th3x-tests/export_original_anm.py --games 11
 `prepare.py`通过二进制管道保存thecl的CP932与UTF-8输出，避免PowerShell重定向改变日文声明的编码。ANM导出器单独追加11，不重写其他作品的资源记录。
 
 ## 验证口径
+
+0.13.8受弹修复：`enemybase`把`colli`赋值缓存为`_colli`，由其frame写入引擎；TH36的演员和怪轮节点跳过该frame，必须显式`SetAttr(...,'colli',...)`。修复前六面Crow00、Crow01、BPhantom00的真实自机弹碰撞均未命中，实际引擎colli为false，尽管缓存为true。原有直接扣HP／自然结束检查不覆盖这条路径。新增`native_enemy_damage.py`将测试自机弹放入实际碰撞分组，经过OriginalCollision和enemybase.colli核对扣血与子弹消耗；怪轮还验证节点收集到原回调的伤害传递。该检查为Windows Sub真引擎，不等于Android设备实测。
+
+Roguelike接入检查：`python tools/th36-tests/run_lua.py tools/check_roguelike.lua`覆盖五作503项筛选、TH36的93项分类、版本2/3原种子路线、无限单候选跨轮及历史接续阈值。`python tools/th36-tests/check_rogue.py`检查七个独立道中的自然结束、Boss剥离、整关Boss保留、九个筛选项与键盘／点击输入；传入`--native 验证目录`另核对真实引擎七条道中、入口集合、无Boss符卡及清场结果。记录为`verification-rogue-2026-11-08.json`。
 
 2026-11-08血量校准同时修正了两处会破坏击破时间的旧问题：三面中Boss第二非符的负阈值注销不能覆盖9000的进场life，逐卡入口须继承中Boss槽1；362指令仅设置spell状态8位，不能直接把可击破的墨迹测验设为全程无敌。妖怪测谎机与被厌恶者的哲学根据ECL持续无敌／隐藏判定为耐久，保留原始HP。
 

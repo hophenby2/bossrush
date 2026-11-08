@@ -38,7 +38,10 @@ local function ring_collision(a)
             if not node or not IsValid(node) then node=New(ring_node,a);a.ring_nodes[i]=node end
             local theta=start+(i-1)*arc*.03125
             node.x,node.y=a.o.x+math.cos(theta)*radius,a.o.y-math.sin(theta)*radius
-            node.colli=band(a.flags,0x21)==0 and a.invul<=0
+            local colli=band(a.flags,0x21)==0 and a.invul<=0
+            node.colli=colli
+            -- 受击节点同样跳过enemybase.frame，缓存开关本身不会开启引擎碰撞。
+            SetAttr(node,'colli',colli)
         end
         local damage=a.ring_damage or 0;a.ring_damage=0
         if damage>=30 then damage=30+math.floor((damage-30)*3/5) end

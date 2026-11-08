@@ -1,0 +1,45 @@
+{
+  "roads": [
+    {
+      "frames": 5591,
+      "births": 301,
+      "stage": 1
+    },
+    {
+      "frames": 5441,
+      "births": 149,
+      "stage": 2
+    },
+    {
+      "frames": 3761,
+      "births": 73,
+      "stage": 3
+    },
+    {
+      "frames": 8321,
+      "births": 260,
+      "stage": 4
+    },
+    {
+      "frames": 10661,
+      "births": 384,
+      "stage": 5
+    },
+    {
+      "frames": 6611,
+      "births": 275,
+      "stage": 6
+    },
+    {
+      "frames": 7741,
+      "births": 422,
+      "stage": 7
+    }
+  ],
+  "road_bosses_excluded": true,
+  "full_stage_boss_preserved": true,
+  "ui_options": 9,
+  "keyboard": true,
+  "touch": true,
+  "scope": "LuaJIT道中演员和自然结束检查关闭发弹；面板输入及点击区域；不替代Android设备实测"
+}

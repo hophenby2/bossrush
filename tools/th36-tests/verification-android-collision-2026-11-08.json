@@ -1,0 +1,27 @@
+{
+  "version": "0.13.8-android",
+  "version_code": 26,
+  "apk": "android/dist/BossRushHD-android-arm64-0.13.8.apk",
+  "bytes": 571680553,
+  "sha256": "8fd6f33397e961b296512d9aeeb1c19f1f0d636fe2e31cfc5596ec9488dc09d2",
+  "signature_verified": true,
+  "resource_verified": true,
+  "user_data_excluded": true,
+  "before_stage6": {
+    "probed": 3,
+    "hits": 0,
+    "engine_colli": false
+  },
+  "after": {
+    "probed": 68,
+    "hits": 68,
+    "stage6_types": 6,
+    "ring_hit": true
+  },
+  "android_device_tested": false,
+  "evidence": [
+    "verification-enemy-damage-2026-11-08.json",
+    "verification-ring-damage-2026-11-08.json"
+  ],
+  "scope": "Windows Sub真引擎实际自机弹碰撞及APK源码/签名/资源校验；未在Android设备运行验收"
+}

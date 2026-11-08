@@ -297,6 +297,7 @@ end
 function H.dialog(a,id)
     -- 差异2：对白由本项目流程略过；阻塞指令保留Boss生死等待，不虚增攻击时钟。
     a.session.dialog=id
+    if a.session.road_only and id==1 then a.session.done=true end
     if a.session.final_dead then a.session.done=true end
 end
 function H.dialog_wait(a,v)
@@ -388,6 +389,11 @@ function H.attach(o,session,sub,x,y,hp,origin,mirrored)
 end
 function H.spawn(a,op,sub,x,y,hp,score,drop)
     local s=a.session
+    -- 随机模式的独立道中只剥离Boss演员，main的发弹、出生和等待时刻仍沿用源程序。
+    if s.road_only and (sub=='Boss' or sub:match('^MBoss%d*$')) then
+        s.skipped_bosses[sub]=(s.skipped_bosses[sub] or 0)+1
+        return
+    end
     if (op==265 or op==266 or op==267 or op==268) and s.boss and live(s.boss) then return end
     local absolute=op==257 or op==261 or op==266 or op==268
     local mirrored=op==260 or op==261 or op==267 or op==268
@@ -452,7 +458,10 @@ local function update(a)
     for i=#a.threads,2,-1 do local t=a.threads[i];if t.dead or coroutine.status(t.co)=='dead' then table.remove(a.threads,i) end end
     H.run_callback(a)
     H.transition(a,a.o.hp<=0 and band(a.flags,0x80)==0)
-    a.o.colli=band(a.flags,0x20)==0 and not a.damage_callback
+    local colli=band(a.flags,0x20)==0 and not a.damage_callback
+    a.o.colli=colli
+    -- enemybase把colli赋值缓存到_colli；ECL演员不走其frame，须同步实际引擎属性。
+    SetAttr(a.o,'colli',colli)
     if not a.proxy then a.o.group=(band(a.flags,2)~=0 or a.contact_invul>0) and GROUP.NONTJT or GROUP.ENEMY end
     local damage=a.invul<=0 and band(a.flags,0x31)==0 and not a.survival and not a.transition_pending and not (a.proxy and not a.practice)
     a.o._original_accepts_damage=damage
@@ -487,11 +496,12 @@ function H.load(stage)
     end
     return programs[stage]
 end
-function H.session(host,stage,sub,meta)
+function H.session(host,stage,sub,meta,options)
     local s={host=host,stage=stage,program=H.load(stage),hp_raw=true,frame=0,rate=1,accumulator=0,actors={},bullets={},lasers={},effects={},
         shot=meta and meta.shot or 0,misses=0,bombs=0,capture=1,score=0,random_seed=ran:Int(0,65535),random_calls=0,
         observed_misses=lstg.var.dead or 0,observed_bombs=GameDrops and GameDrops.bombState and GameDrops.bombState(player) or 0,
         saved_cyfps=lstg.var.CYFPS}
+    s.road_only=options and options.road_only or false;s.skipped_bosses={}
     local hp=meta and meta.total_hp or 10000000
     local a=H.attach(host,s,sub,meta and meta.x or 0,meta and meta.y or 128,hp)
     a.proxy=true;a.practice=meta;s.root=a

@@ -1,0 +1,43 @@
+{
+  "probed": 1,
+  "hits": 1,
+  "broken": 0,
+  "rows": [
+    {
+      "hit": true,
+      "b": 8,
+      "sub": "BossCard1At",
+      "a": 8,
+      "stage": 3,
+      "group": 7,
+      "ring": true,
+      "after": 322.37024221453,
+      "engine_colli": true,
+      "cached_colli": true,
+      "consumed": true,
+      "frame": 84,
+      "hp": 323.12024221453
+    }
+  ],
+  "probe_sha256": "d54fb2ac8f7a5de7bf7ca047b0772507a63f33211c0df7c49274d9c16db8553b",
+  "run_id": "6cedb4d19a074fec9cf02b0e95e7f88d",
+  "cases": [
+    11018
+  ],
+  "source_sha256": {
+    "mod/GAME/th36/bullet_profiles.lua": "21c98ad93465913cd12bb6231c148048f06f152eae2639b916bc3baf5d373913",
+    "mod/GAME/th36/callbacks.lua": "a96bf9ce596680e471e84cf8b25cf8a95a94464b4fd4bfdc11d3d2a05257b25c",
+    "mod/GAME/th36/catalogue.lua": "847ae7af679e5525de35cc5473d4418b6ee137fcb8924ada99c1bc26544da7e0",
+    "mod/GAME/th36/hp.lua": "6cab1b026afb60bba19cec8809d7e14e0242751a2f030ac7374fa6f74125e5ca",
+    "mod/GAME/th36/projectiles.lua": "d4f363e40c557681fa144b9ad517207e95daa4f63584c62b4683870b012f3b04",
+    "mod/GAME/th36/runtime.lua": "bb090d7ecb29bf0c8061ef97ce358f236321b008e24d267c93659c336324a4c8",
+    "mod/GAME/th36/stage01.lua": "059a9df6a24ba746be6f1544fb403b7999c4a18ae5cddcb22d9455c7974cd911",
+    "mod/GAME/th36/stage02.lua": "5c911d8d6c77fc700d864caad5b0fec2bd71d20678a04dfbe4527238e9cf523d",
+    "mod/GAME/th36/stage03.lua": "c122ae7d415028e6a76ad0f65310cbe4fc02db31b410c00f76ce0bc9494efb6b",
+    "mod/GAME/th36/stage04.lua": "320ce9473aeb17b7e4d96607eceb5de1d71ef7e2bf431ebc822c692a19f6c297",
+    "mod/GAME/th36/stage05.lua": "90068b6cee3077b1178d011c7fa53c0ce7e2d8ad31e6ff184c722da49d04a5df",
+    "mod/GAME/th36/stage06.lua": "b2737534e7693946ddda5f81b863ef3922895426c520687c967dc13d0d322c5b",
+    "mod/GAME/th36/stage07.lua": "d339b082900610ec9969cdb54bbbe052fea08e9553960172a62e2dbb0c5cbc69"
+  },
+  "scope": "真实LuaSTG Sub：测试自机弹→碰撞检查→enemybase.colli→实际扣血；非直接Damage或仅检查标志"
+}

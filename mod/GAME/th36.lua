@@ -98,3 +98,17 @@ for stage=1,7 do
     boss.card.add({{card,group..'a'}},LEVEL,name,11100+stage)
     class.boss_order[#class.boss_order+1]=group
 end
+-- 独立道中供随机池及练习使用；整关r1..r7仍完整执行中Boss与关底。
+for stage=1,7 do
+    local group='d'..stage
+    local name='地灵殿·'..(stage==7 and 'Extra' or stage..'面')..'道中'
+    boss.Define(group..'a',name,'TH11_0',TH11_bg,{0,400},nil,'img_void',LEVEL)
+    local limit=3600
+    local card=boss.card.New('',limit,limit,limit,10000000)
+    card.is_sc=false;card.phase_name=name
+    card.th11_source={stage=stage,sub='main',road=true,road_only=true}
+    card.before=function(self) before(self,true) end
+    card.init=function(self) H.session(self,stage,'main',nil,{road_only=true}) end
+    card.frame=tick;card.render=draw;card.del=finish
+    boss.card.add({{card,group..'a'}},LEVEL,name,11200+stage)
+end
