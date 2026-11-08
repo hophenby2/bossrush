@@ -1,0 +1,2490 @@
+{
+  "scope": "真实LuaSTG Sub生命周期、完整时限、整关默认回忆路线、渲染调用与回收；不等同原版逐帧位置/像素对照",
+  "source_ecl_sha256": {
+    "default": "b47210d6bf361a75a56016f5792465ce1890eee86bb6f03cb59b72bcb29fc8aa",
+    "stage01": "392e210374558a7ac6ef7005de49e65ff1075ffa194e1b4a3f85cb23a6a8ebae",
+    "stage02": "a4826ce4668143f0e2bdc1aea9395b664f350683b73c5ce5d698fcfbc8e797d7",
+    "stage03": "51500f94d7657dd9e6343a451cbaf81ef5e982883fecc068d000574ce000773e",
+    "stage04": "79fd4649a7bf32d8789937f7c1df14815d551af307d18e5578d4655673772440",
+    "stage05": "a8a3716c06d9624a8d5a4992dc855fb79f2071c88cc6c93764f43885b7ae0e68",
+    "stage05boss": "95d9ce91609ad149f046ef85348a49ebb719732ca9b4dc36644ed57ada026a54",
+    "stage05mboss": "fa2f091b04b0bfec5d7a7988d4f70d1252ffa660aea2795e3391d01d942e09b6",
+    "stage06": "9558f13321cb31fe48a78b2f99537fe6e3458b8845d73b71e66b9188be7ef3ce",
+    "stage06boss": "395afb28ee3f1e9768dc26af4c434ac365bea16191744935e5d84594499cc3f1",
+    "stage06mboss": "5ddd331f0b0da7c9c580fc06a23cf0e367c97c54cccac7645dbcc9ded7b928de",
+    "stage07": "a5b4ecef99812af380a20192ba0f7a63ce6d342449bcc744fd22946b2dcf0070",
+    "stage07boss": "4e59e57162f972fc50d8a83bfd53d2b74173b653da7363b7e4d14d21ff3de368",
+    "stage07mboss": "e72c61e59594644e9713a4ccb0ea3a67709560c63f7e704bcc00eeb2a4779b28",
+    "stage4c00a": "067dd43ed595b53da07c76b99f732c31a381f551f5dff0a046be887a0d65a8cd",
+    "stage4c00b": "a1ed9c8238eb396d5e57b2ea950e6db334c39ce97ed9dee7612c2279501cbb62",
+    "stage4c00c": "4a90645c570101d248c31d33b786a9aed82d5308bdfdb8abb75484c77de95456",
+    "stage4c01a": "df0acdd47e8d3bcf8340c845ed18981f8647d588a364b38ca3624e20a6ce3f6c",
+    "stage4c01b": "027c12fe361a887d718dff7d7d330bb91b91e188e1c35ccfd1137f168dd1424b",
+    "stage4c01c": "6d94db2d2e4c509590fec20d6e668157dbb67f926a60bdef5d42fac85492823b"
+  },
+  "runs": [
+    {
+      "run_id": "95e0ea81f68f4e4694a30e6a4b5b6762",
+      "directory": "E:\\workspace\\.bossrush-validation\\th36-hp-battle-20261108",
+      "mode": "timeout",
+      "version": "LuaSTG Sub v0.21.129",
+      "expected": 86,
+      "completed": 86,
+      "errors": {},
+      "frozen_lua_files": 52,
+      "frozen_lua_hashes": {
+        "mod/GAME/original/11/bullet.lua": "0500f20cb742664018a89ac9b70c78de72bc1df70a8b518eddcd6c3eddb9b3f2",
+        "mod/GAME/original/11/e00.lua": "7ccc27cdab71f27bd317e5f5125227c6ccce1130b6d1962e5a3c8d100bbcf9eb",
+        "mod/GAME/original/11/e01.lua": "6254d61e9cfc10f2ac1ab4195e161db4fb2c11f9cc27c5705bf33567c99e9428",
+        "mod/GAME/original/11/e02.lua": "5d978b790a1db6b8e3916c3c580f82d37fb11c4bfc9c66ba715e624de98ebed0",
+        "mod/GAME/original/11/e03.lua": "1a02e73c765ffc1e77ec8f6852a3eb5e7faef397e990bb63fc5a5a235633979e",
+        "mod/GAME/original/11/e04.lua": "3c584b47707970be374e3d5a49a2dd3cb8c28f775cc0c7be47df57dc3b67f848",
+        "mod/GAME/original/11/e05.lua": "61665924a16edda2e50ad1e5dae87f6c55ea6999e1f97be1617fd7015d50f414",
+        "mod/GAME/original/11/e06.lua": "1e6accfa5b65f779a74d6a4269b1c0a15ca898d35f5884093bac9bf6aa0d4ee0",
+        "mod/GAME/original/11/e07.lua": "36ceb170afaa909bdbd361d49978d59aec9f86f880a21b22df9101b27b5f8587",
+        "mod/GAME/original/11/e08.lua": "765fefca46a5f775ec7adc1560ddc7db1f2b6e13af4a801a60e6d11a77c91f04",
+        "mod/GAME/original/11/e09.lua": "7c0d3584d88e2e9faca975a4e9f9d128f295778adae3a5bfd3c588e73b7ac11c",
+        "mod/GAME/original/11/e10.lua": "0777be21efa52ae18fdf04d141d3729cf5a9cf5d77dbf68fc807e28b894d1ebb",
+        "mod/GAME/original/11/e11.lua": "f164b39e19187f4528ad1d207d7a1ddda2f723818806d9823929f2db632e1364",
+        "mod/GAME/original/11/enemy.lua": "823773ba64e032a66966f8e53713a133bdca8e54021571cd378016d7b0a4a87f",
+        "mod/GAME/original/11/sig.lua": "e0c35ac2b1a99d50ab11c1a4a6aaa17a1a2f8161eff30ea3274e45cac7c43a94",
+        "mod/GAME/original/11/st01logo.lua": "8413b5747102fd24b4acee32a1ad23ad6974bb5d4bcd3473c57fcfe7a27777af",
+        "mod/GAME/original/11/st02logo.lua": "41517c172755a683fdc35d05ad0f3b4cff2c85df0f97b8525c4294f3397a23d8",
+        "mod/GAME/original/11/st03logo.lua": "fb5f5d354149f5b6aa839dbdd378b5fadad2a0a41ff47b223ff1479919e5c466",
+        "mod/GAME/original/11/st04logo.lua": "ced71cb58e6315eaf5205c6b30ecdee1e9efbd8da09e90a07a81ede944f2b859",
+        "mod/GAME/original/11/st05logo.lua": "7f3994c55a18d8d55dabbb851ad81bba383fb1a2882e108c4aa6629a11249fdf",
+        "mod/GAME/original/11/st06logo.lua": "a6c34ca48e47ce435e20afd2f6eb1d082dc2fd36941ba9f2daed620720646a48",
+        "mod/GAME/original/11/st07logo.lua": "cf7839fcefaff608ed7960a8b971fb5eca907a8d8a068f6142efbc5c6527f3ff",
+        "mod/GAME/original/11/stage01.lua": "02153b75c5e0f7de4986aa8e741bdbe04b74fedcdf8b69ef17347a8df81ab38a",
+        "mod/GAME/original/11/stage02.lua": "f67dd134f537a8522d42c39c2e5a3e7489d602aa6ad9e82f8278b076277ea4e0",
+        "mod/GAME/original/11/stage03.lua": "db96e44b4a99157b9a136d4914e54be38b071c928ed1be94230b0f39db8acb2f",
+        "mod/GAME/original/11/stage04.lua": "d382b8bce7b8c806e9746be278e7a43b51cb1cb165c24b51e3476827526e3088",
+        "mod/GAME/original/11/stage05.lua": "a4ff560bee4fb5e51943aa3a54b39caae358478b03d4c8b0c6ae3ebc3b25d430",
+        "mod/GAME/original/11/stage06.lua": "79050eec6ca1706524e6525867d360e730b40d2e66ce02babdd7164cc3231114",
+        "mod/GAME/original/11/stage07.lua": "7bf07eec908ead721d8eee2c7108a32003caee7a64373b3aa894874f1ab20e77",
+        "mod/GAME/original/11/stgenm01.lua": "f8798c952d8bcc98c38c3df11bbb9027d06dde9b2b1cb547fb6541d0d3fdf84b",
+        "mod/GAME/original/11/stgenm02.lua": "c4549096a87c39461155b69def870792afc0d4dc571efa0160fee1af803b9903",
+        "mod/GAME/original/11/stgenm03.lua": "8361928a2695e26f412b2f8648a4fe2b100c5dfcc6a9d46a02d4540f6a17bb0d",
+        "mod/GAME/original/11/stgenm04.lua": "0b9bec1eb597e02146cb0fdc899a3186d959725063b8c9429b36f4549c95f51e",
+        "mod/GAME/original/11/stgenm05.lua": "e607671c824d6d8be4130dfa77ddabf9c4eb9436eac1605a277043ae28dc0763",
+        "mod/GAME/original/11/stgenm06.lua": "fe36ecab2034d035c36406860910c8e5bbf38d011d78ea1c864c01f68e8955c8",
+        "mod/GAME/original/11/stgenm07.lua": "683580c2b9e458c5b83c624224bf3d6bcca56ac591af71f825182f74ab4c6a67",
+        "mod/GAME/original/th11_low_speed_hp.lua": "af5ea94c5f93f51a6a1b93f5e1a0a5b0162798b0a84fd7f3982c87017fc25252",
+        "mod/GAME/th36/bullet_profiles.lua": "21c98ad93465913cd12bb6231c148048f06f152eae2639b916bc3baf5d373913",
+        "mod/GAME/th36/callbacks.lua": "53e088d1823e67c663ac076e157721242bf01305562f712212c90acebef9e15b",
+        "mod/GAME/th36/catalogue.lua": "847ae7af679e5525de35cc5473d4418b6ee137fcb8924ada99c1bc26544da7e0",
+        "mod/GAME/th36/hp.lua": "6cab1b026afb60bba19cec8809d7e14e0242751a2f030ac7374fa6f74125e5ca",
+        "mod/GAME/th36/projectiles.lua": "d4f363e40c557681fa144b9ad517207e95daa4f63584c62b4683870b012f3b04",
+        "mod/GAME/th36/runtime.lua": "d158507fcc8e6e80544a501912cdb5787f0a14cb09af9583c820b57e0b30692b",
+        "mod/GAME/th36/stage01.lua": "059a9df6a24ba746be6f1544fb403b7999c4a18ae5cddcb22d9455c7974cd911",
+        "mod/GAME/th36/stage02.lua": "5c911d8d6c77fc700d864caad5b0fec2bd71d20678a04dfbe4527238e9cf523d",
+        "mod/GAME/th36/stage03.lua": "c122ae7d415028e6a76ad0f65310cbe4fc02db31b410c00f76ce0bc9494efb6b",
+        "mod/GAME/th36/stage04.lua": "320ce9473aeb17b7e4d96607eceb5de1d71ef7e2bf431ebc822c692a19f6c297",
+        "mod/GAME/th36/stage05.lua": "90068b6cee3077b1178d011c7fa53c0ce7e2d8ad31e6ff184c722da49d04a5df",
+        "mod/GAME/th36/stage06.lua": "b2737534e7693946ddda5f81b863ef3922895426c520687c967dc13d0d322c5b",
+        "mod/GAME/th36/stage07.lua": "d339b082900610ec9969cdb54bbbe052fea08e9553960172a62e2dbb0c5cbc69",
+        "mod/GAME/th36.lua": "7f8a9e5d36f13a96983e041547089dc6ed54b5af75429d58596f3d25779b54a6",
+        "THlib/anm/original.lua": "5a457a8ef4f6de9fb8eb73a47aebe38bd44a8940e13c50172ef56ac2a73ae178"
+      },
+      "frames": 286206,
+      "rows": [
+        {
+          "id": 11000,
+          "frames": 1020,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 227,
+            "bullets": 211
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1138
+          }
+        },
+        {
+          "id": 11001,
+          "frames": 2160,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 6,
+            "actors": 1,
+            "objects": 83,
+            "bullets": 61
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            1
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2160
+          }
+        },
+        {
+          "id": 11002,
+          "frames": 1020,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 263,
+            "bullets": 247
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1020
+          }
+        },
+        {
+          "id": 11003,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 385,
+            "bullets": 369
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11004,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 908,
+            "bullets": 892
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            5
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11005,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 336,
+            "bullets": 320
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11006,
+          "frames": 2400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 2,
+            "objects": 1261,
+            "bullets": 1245
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            9
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2400
+          }
+        },
+        {
+          "id": 11007,
+          "frames": 1800,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 713,
+            "bullets": 697
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1800
+          }
+        },
+        {
+          "id": 11008,
+          "frames": 2040,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 292,
+            "bullets": 276
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            13
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2040
+          }
+        },
+        {
+          "id": 11009,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1502,
+            "bullets": 1486
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11010,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 12,
+            "objects": 1495,
+            "bullets": 1467
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            17
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11011,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1469,
+            "bullets": 1453
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11012,
+          "frames": 2400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 261,
+            "bullets": 244
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            21
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2400
+          }
+        },
+        {
+          "id": 11013,
+          "frames": 2670,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 141,
+            "bullets": 124
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            25
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2670
+          }
+        },
+        {
+          "id": 11014,
+          "frames": 2700,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 256,
+            "actors": 12,
+            "objects": 324,
+            "bullets": 308
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 75,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2700
+          }
+        },
+        {
+          "id": 11015,
+          "frames": 2106,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 12,
+            "objects": 865,
+            "bullets": 837
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            29
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2106
+          }
+        },
+        {
+          "id": 11016,
+          "frames": 2700,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 324,
+            "bullets": 308
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2700
+          }
+        },
+        {
+          "id": 11017,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 24,
+            "objects": 931,
+            "bullets": 903
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11018,
+          "frames": 2580,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 544,
+            "objects": 1014,
+            "bullets": 470
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            33
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2580
+          }
+        },
+        {
+          "id": 11019,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 256,
+            "actors": 25,
+            "objects": 292,
+            "bullets": 0
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11020,
+          "frames": 2400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 2,
+            "objects": 82,
+            "bullets": 59
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            37
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2400
+          }
+        },
+        {
+          "id": 11021,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 357,
+            "bullets": 341
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11022,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 1454,
+            "bullets": 1438
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            41
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11023,
+          "frames": 1590,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 80,
+            "objects": 1852,
+            "bullets": 1756
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1590
+          }
+        },
+        {
+          "id": 11024,
+          "frames": 2580,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 677,
+            "bullets": 661
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2580
+          }
+        },
+        {
+          "id": 11025,
+          "frames": 2580,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 64,
+            "actors": 1,
+            "objects": 363,
+            "bullets": 315
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            45
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2580
+          }
+        },
+        {
+          "id": 11026,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 733,
+            "bullets": 717
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 75,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11027,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 343,
+            "bullets": 327
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            49
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11028,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 276,
+            "bullets": 256
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            61
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11029,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 651,
+            "bullets": 635
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            73
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11030,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 16,
+            "objects": 500,
+            "bullets": 468
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            85
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11031,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 459,
+            "bullets": 443
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            97
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11032,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 55,
+            "actors": 0,
+            "objects": 154,
+            "bullets": 97
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            109
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11033,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 36,
+            "actors": 0,
+            "objects": 110,
+            "bullets": 60
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            53
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11034,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 716,
+            "bullets": 700
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            65
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11035,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 174,
+            "bullets": 157
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            77
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11036,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 16,
+            "objects": 976,
+            "bullets": 950
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            89
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11037,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 31,
+            "actors": 0,
+            "objects": 436,
+            "bullets": 420
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            101
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11038,
+          "frames": 3090,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 6,
+            "objects": 335,
+            "bullets": 313
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            113
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3090
+          }
+        },
+        {
+          "id": 11039,
+          "frames": 3690,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 370,
+            "bullets": 354
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            57
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3690
+          }
+        },
+        {
+          "id": 11040,
+          "frames": 4290,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 252,
+            "bullets": 235
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            69
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4290
+          }
+        },
+        {
+          "id": 11041,
+          "frames": 4290,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 716,
+            "bullets": 700
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            81
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4290
+          }
+        },
+        {
+          "id": 11042,
+          "frames": 4290,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 24,
+            "objects": 429,
+            "bullets": 389
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            93
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4290
+          }
+        },
+        {
+          "id": 11043,
+          "frames": 4290,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 5,
+            "objects": 271,
+            "bullets": 250
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            105
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4290
+          }
+        },
+        {
+          "id": 11044,
+          "frames": 4290,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 23,
+            "objects": 377,
+            "bullets": 350
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 79,
+            "actors": 0
+          },
+          "spell_ids": [
+            117
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4290
+          }
+        },
+        {
+          "id": 11045,
+          "frames": 1620,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1494,
+            "bullets": 1477
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1620
+          }
+        },
+        {
+          "id": 11046,
+          "frames": 2220,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 760,
+            "bullets": 744
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            121
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2220
+          }
+        },
+        {
+          "id": 11047,
+          "frames": 1200,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1040,
+            "bullets": 1023
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 1200
+          }
+        },
+        {
+          "id": 11048,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 18,
+            "objects": 634,
+            "bullets": 600
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11049,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 119,
+            "bullets": 103
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            125
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11050,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 9,
+            "objects": 952,
+            "bullets": 927
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11051,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 16,
+            "objects": 648,
+            "bullets": 616
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            129
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11052,
+          "frames": 2100,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 12,
+            "objects": 435,
+            "bullets": 407
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2100
+          }
+        },
+        {
+          "id": 11053,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 70,
+            "objects": 880,
+            "bullets": 794
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            133
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11054,
+          "frames": 3660,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 16,
+            "objects": 474,
+            "bullets": 442
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            137
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3660
+          }
+        },
+        {
+          "id": 11055,
+          "frames": 2220,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 892,
+            "bullets": 876
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            141
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 2220
+          }
+        },
+        {
+          "id": 11056,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1596,
+            "bullets": 1580
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11057,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 20,
+            "objects": 498,
+            "bullets": 460
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            145
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11058,
+          "frames": 4200,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 6,
+            "objects": 619,
+            "bullets": 597
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4200
+          }
+        },
+        {
+          "id": 11059,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 18,
+            "objects": 168,
+            "bullets": 137
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            149
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11060,
+          "frames": 4200,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 1656,
+            "bullets": 1640
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4200
+          }
+        },
+        {
+          "id": 11061,
+          "frames": 4200,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 10,
+            "objects": 230,
+            "bullets": 204
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            153
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4200
+          }
+        },
+        {
+          "id": 11062,
+          "frames": 4200,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 6,
+            "objects": 471,
+            "bullets": 449
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4200
+          }
+        },
+        {
+          "id": 11063,
+          "frames": 4440,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 2,
+            "objects": 1023,
+            "bullets": 1005
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            157
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 4440
+          }
+        },
+        {
+          "id": 11064,
+          "frames": 8460,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 615,
+            "bullets": 598
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            161
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 8460
+          }
+        },
+        {
+          "id": 11065,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 30,
+            "actors": 1,
+            "objects": 426,
+            "bullets": 410
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            162
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11066,
+          "frames": 3660,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 7,
+            "objects": 1449,
+            "bullets": 1426
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            163
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3660
+          }
+        },
+        {
+          "id": 11067,
+          "frames": 3660,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 257,
+            "bullets": 241
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            164
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3660
+          }
+        },
+        {
+          "id": 11068,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 499,
+            "bullets": 483
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11069,
+          "frames": 5400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 28,
+            "actors": 1,
+            "objects": 81,
+            "bullets": 53
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            165
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 5400
+          }
+        },
+        {
+          "id": 11070,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 295,
+            "bullets": 279
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11071,
+          "frames": 5400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 278,
+            "bullets": 262
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            166
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 5400
+          }
+        },
+        {
+          "id": 11072,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 404,
+            "bullets": 388
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11073,
+          "frames": 5400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 389,
+            "bullets": 373
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            167
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 5400
+          }
+        },
+        {
+          "id": 11074,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 361,
+            "bullets": 345
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11075,
+          "frames": 5400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 375,
+            "bullets": 359
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            168
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 5400
+          }
+        },
+        {
+          "id": 11076,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 393,
+            "bullets": 377
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11077,
+          "frames": 3000,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 8,
+            "objects": 133,
+            "bullets": 16
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 133,
+            "actors": 0
+          },
+          "spell_ids": [
+            169
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3000
+          }
+        },
+        {
+          "id": 11078,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 387,
+            "bullets": 371
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11079,
+          "frames": 5400,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 6,
+            "objects": 781,
+            "bullets": 761
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            170
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 5400
+          }
+        },
+        {
+          "id": 11080,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 84,
+            "bullets": 31
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11081,
+          "frames": 6300,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 303,
+            "bullets": 287
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            171
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 6300
+          }
+        },
+        {
+          "id": 11082,
+          "frames": 3600,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 0,
+            "objects": 280,
+            "bullets": 264
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 76,
+            "actors": 0
+          },
+          "spell_ids": [],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3600
+          }
+        },
+        {
+          "id": 11083,
+          "frames": 6300,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 2,
+            "objects": 418,
+            "bullets": 400
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            172
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 6300
+          }
+        },
+        {
+          "id": 11084,
+          "frames": 3660,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 144,
+            "bullets": 128
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 133,
+            "actors": 0
+          },
+          "spell_ids": [
+            173
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 3660
+          }
+        },
+        {
+          "id": 11085,
+          "frames": 11580,
+          "ended": "timeout",
+          "peak": {
+            "lasers": 0,
+            "actors": 1,
+            "objects": 187,
+            "bullets": 171
+          },
+          "cleanup": {
+            "lasers": 0,
+            "bullets": 0,
+            "objects": 80,
+            "actors": 0
+          },
+          "spell_ids": [
+            174
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 11580
+          }
+        }
+      ]
+    },
+    {
+      "run_id": "af8a438e7876418db8e3406d36ff0d3f",
+      "directory": "E:\\workspace\\.bossrush-validation\\th36-hp-flow-20261108",
+      "mode": "defeat",
+      "version": "LuaSTG Sub v0.21.129",
+      "expected": 7,
+      "completed": 7,
+      "errors": {},
+      "frozen_lua_files": 52,
+      "frozen_lua_hashes": {
+        "mod/GAME/original/11/bullet.lua": "0500f20cb742664018a89ac9b70c78de72bc1df70a8b518eddcd6c3eddb9b3f2",
+        "mod/GAME/original/11/e00.lua": "7ccc27cdab71f27bd317e5f5125227c6ccce1130b6d1962e5a3c8d100bbcf9eb",
+        "mod/GAME/original/11/e01.lua": "6254d61e9cfc10f2ac1ab4195e161db4fb2c11f9cc27c5705bf33567c99e9428",
+        "mod/GAME/original/11/e02.lua": "5d978b790a1db6b8e3916c3c580f82d37fb11c4bfc9c66ba715e624de98ebed0",
+        "mod/GAME/original/11/e03.lua": "1a02e73c765ffc1e77ec8f6852a3eb5e7faef397e990bb63fc5a5a235633979e",
+        "mod/GAME/original/11/e04.lua": "3c584b47707970be374e3d5a49a2dd3cb8c28f775cc0c7be47df57dc3b67f848",
+        "mod/GAME/original/11/e05.lua": "61665924a16edda2e50ad1e5dae87f6c55ea6999e1f97be1617fd7015d50f414",
+        "mod/GAME/original/11/e06.lua": "1e6accfa5b65f779a74d6a4269b1c0a15ca898d35f5884093bac9bf6aa0d4ee0",
+        "mod/GAME/original/11/e07.lua": "36ceb170afaa909bdbd361d49978d59aec9f86f880a21b22df9101b27b5f8587",
+        "mod/GAME/original/11/e08.lua": "765fefca46a5f775ec7adc1560ddc7db1f2b6e13af4a801a60e6d11a77c91f04",
+        "mod/GAME/original/11/e09.lua": "7c0d3584d88e2e9faca975a4e9f9d128f295778adae3a5bfd3c588e73b7ac11c",
+        "mod/GAME/original/11/e10.lua": "0777be21efa52ae18fdf04d141d3729cf5a9cf5d77dbf68fc807e28b894d1ebb",
+        "mod/GAME/original/11/e11.lua": "f164b39e19187f4528ad1d207d7a1ddda2f723818806d9823929f2db632e1364",
+        "mod/GAME/original/11/enemy.lua": "823773ba64e032a66966f8e53713a133bdca8e54021571cd378016d7b0a4a87f",
+        "mod/GAME/original/11/sig.lua": "e0c35ac2b1a99d50ab11c1a4a6aaa17a1a2f8161eff30ea3274e45cac7c43a94",
+        "mod/GAME/original/11/st01logo.lua": "8413b5747102fd24b4acee32a1ad23ad6974bb5d4bcd3473c57fcfe7a27777af",
+        "mod/GAME/original/11/st02logo.lua": "41517c172755a683fdc35d05ad0f3b4cff2c85df0f97b8525c4294f3397a23d8",
+        "mod/GAME/original/11/st03logo.lua": "fb5f5d354149f5b6aa839dbdd378b5fadad2a0a41ff47b223ff1479919e5c466",
+        "mod/GAME/original/11/st04logo.lua": "ced71cb58e6315eaf5205c6b30ecdee1e9efbd8da09e90a07a81ede944f2b859",
+        "mod/GAME/original/11/st05logo.lua": "7f3994c55a18d8d55dabbb851ad81bba383fb1a2882e108c4aa6629a11249fdf",
+        "mod/GAME/original/11/st06logo.lua": "a6c34ca48e47ce435e20afd2f6eb1d082dc2fd36941ba9f2daed620720646a48",
+        "mod/GAME/original/11/st07logo.lua": "cf7839fcefaff608ed7960a8b971fb5eca907a8d8a068f6142efbc5c6527f3ff",
+        "mod/GAME/original/11/stage01.lua": "02153b75c5e0f7de4986aa8e741bdbe04b74fedcdf8b69ef17347a8df81ab38a",
+        "mod/GAME/original/11/stage02.lua": "f67dd134f537a8522d42c39c2e5a3e7489d602aa6ad9e82f8278b076277ea4e0",
+        "mod/GAME/original/11/stage03.lua": "db96e44b4a99157b9a136d4914e54be38b071c928ed1be94230b0f39db8acb2f",
+        "mod/GAME/original/11/stage04.lua": "d382b8bce7b8c806e9746be278e7a43b51cb1cb165c24b51e3476827526e3088",
+        "mod/GAME/original/11/stage05.lua": "a4ff560bee4fb5e51943aa3a54b39caae358478b03d4c8b0c6ae3ebc3b25d430",
+        "mod/GAME/original/11/stage06.lua": "79050eec6ca1706524e6525867d360e730b40d2e66ce02babdd7164cc3231114",
+        "mod/GAME/original/11/stage07.lua": "7bf07eec908ead721d8eee2c7108a32003caee7a64373b3aa894874f1ab20e77",
+        "mod/GAME/original/11/stgenm01.lua": "f8798c952d8bcc98c38c3df11bbb9027d06dde9b2b1cb547fb6541d0d3fdf84b",
+        "mod/GAME/original/11/stgenm02.lua": "c4549096a87c39461155b69def870792afc0d4dc571efa0160fee1af803b9903",
+        "mod/GAME/original/11/stgenm03.lua": "8361928a2695e26f412b2f8648a4fe2b100c5dfcc6a9d46a02d4540f6a17bb0d",
+        "mod/GAME/original/11/stgenm04.lua": "0b9bec1eb597e02146cb0fdc899a3186d959725063b8c9429b36f4549c95f51e",
+        "mod/GAME/original/11/stgenm05.lua": "e607671c824d6d8be4130dfa77ddabf9c4eb9436eac1605a277043ae28dc0763",
+        "mod/GAME/original/11/stgenm06.lua": "fe36ecab2034d035c36406860910c8e5bbf38d011d78ea1c864c01f68e8955c8",
+        "mod/GAME/original/11/stgenm07.lua": "683580c2b9e458c5b83c624224bf3d6bcca56ac591af71f825182f74ab4c6a67",
+        "mod/GAME/original/th11_low_speed_hp.lua": "af5ea94c5f93f51a6a1b93f5e1a0a5b0162798b0a84fd7f3982c87017fc25252",
+        "mod/GAME/th36/bullet_profiles.lua": "21c98ad93465913cd12bb6231c148048f06f152eae2639b916bc3baf5d373913",
+        "mod/GAME/th36/callbacks.lua": "53e088d1823e67c663ac076e157721242bf01305562f712212c90acebef9e15b",
+        "mod/GAME/th36/catalogue.lua": "847ae7af679e5525de35cc5473d4418b6ee137fcb8924ada99c1bc26544da7e0",
+        "mod/GAME/th36/hp.lua": "6cab1b026afb60bba19cec8809d7e14e0242751a2f030ac7374fa6f74125e5ca",
+        "mod/GAME/th36/projectiles.lua": "d4f363e40c557681fa144b9ad517207e95daa4f63584c62b4683870b012f3b04",
+        "mod/GAME/th36/runtime.lua": "d158507fcc8e6e80544a501912cdb5787f0a14cb09af9583c820b57e0b30692b",
+        "mod/GAME/th36/stage01.lua": "059a9df6a24ba746be6f1544fb403b7999c4a18ae5cddcb22d9455c7974cd911",
+        "mod/GAME/th36/stage02.lua": "5c911d8d6c77fc700d864caad5b0fec2bd71d20678a04dfbe4527238e9cf523d",
+        "mod/GAME/th36/stage03.lua": "c122ae7d415028e6a76ad0f65310cbe4fc02db31b410c00f76ce0bc9494efb6b",
+        "mod/GAME/th36/stage04.lua": "320ce9473aeb17b7e4d96607eceb5de1d71ef7e2bf431ebc822c692a19f6c297",
+        "mod/GAME/th36/stage05.lua": "90068b6cee3077b1178d011c7fa53c0ce7e2d8ad31e6ff184c722da49d04a5df",
+        "mod/GAME/th36/stage06.lua": "b2737534e7693946ddda5f81b863ef3922895426c520687c967dc13d0d322c5b",
+        "mod/GAME/th36/stage07.lua": "d339b082900610ec9969cdb54bbbe052fea08e9553960172a62e2dbb0c5cbc69",
+        "mod/GAME/th36.lua": "7f8a9e5d36f13a96983e041547089dc6ed54b5af75429d58596f3d25779b54a6",
+        "THlib/anm/original.lua": "5a457a8ef4f6de9fb8eb73a47aebe38bd44a8940e13c50172ef56ac2a73ae178"
+      },
+      "frames": 96041,
+      "rows": [
+        {
+          "id": 11101,
+          "frames": 8823,
+          "ended": "defeat",
+          "peak": {
+            "actors": 40,
+            "lasers": 6,
+            "objects": 1341,
+            "bullets": 1281
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 170,
+            "bullets": 0
+          },
+          "spell_ids": [
+            1,
+            5,
+            9
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 8941
+          }
+        },
+        {
+          "id": 11102,
+          "frames": 8883,
+          "ended": "defeat",
+          "peak": {
+            "actors": 14,
+            "lasers": 0,
+            "objects": 1580,
+            "bullets": 1456
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 169,
+            "bullets": 0
+          },
+          "spell_ids": [
+            13,
+            17,
+            21,
+            25
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 8883
+          }
+        },
+        {
+          "id": 11103,
+          "frames": 9903,
+          "ended": "defeat",
+          "peak": {
+            "actors": 259,
+            "lasers": 256,
+            "objects": 1647,
+            "bullets": 1456
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 168,
+            "bullets": 0
+          },
+          "spell_ids": [
+            29,
+            33,
+            37,
+            41
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 9903
+          }
+        },
+        {
+          "id": 11104,
+          "frames": 12483,
+          "ended": "defeat",
+          "peak": {
+            "actors": 81,
+            "lasers": 254,
+            "objects": 1615,
+            "bullets": 1475
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 172,
+            "bullets": 0
+          },
+          "spell_ids": [
+            45,
+            49,
+            53,
+            57
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 12483
+          }
+        },
+        {
+          "id": 11105,
+          "frames": 15423,
+          "ended": "defeat",
+          "peak": {
+            "actors": 72,
+            "lasers": 0,
+            "objects": 2063,
+            "bullets": 1934
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 169,
+            "bullets": 0
+          },
+          "spell_ids": [
+            121,
+            125,
+            129,
+            133,
+            137
+          ],
+          "min_rate": 1,
+          "time_scale_events": [],
+          "time_scale_frames": {
+            "1": 15423
+          }
+        },
+        {
+          "id": 11106,
+          "frames": 13003,
+          "ended": "defeat",
+          "peak": {
+            "actors": 31,
+            "lasers": 0,
+            "objects": 1752,
+            "bullets": 1628
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 156,
+            "bullets": 0
+          },
+          "spell_ids": [
+            141,
+            145,
+            149,
+            153,
+            157,
+            161
+          ],
+          "min_rate": 0.25,
+          "time_scale_events": [
+            [
+              12901,
+              0.5,
+              0.5
+            ],
+            [
+              12961,
+              0.25,
+              0.25
+            ],
+            [
+              13001,
+              1,
+              1
+            ]
+          ],
+          "time_scale_frames": {
+            "1": 12903,
+            "0.5": 60,
+            "0.25": 40
+          }
+        },
+        {
+          "id": 11107,
+          "frames": 27523,
+          "ended": "defeat",
+          "peak": {
+            "actors": 26,
+            "lasers": 30,
+            "objects": 1366,
+            "bullets": 1255
+          },
+          "cleanup": {
+            "actors": 0,
+            "lasers": 0,
+            "objects": 152,
+            "bullets": 0
+          },
+          "spell_ids": [
+            162,
+            163,
+            164,
+            165,
+            166,
+            167,
+            168,
+            169,
+            170,
+            171,
+            172,
+            173,
+            174
+          ],
+          "min_rate": 0.25,
+          "time_scale_events": [
+            [
+              27421,
+              0.5,
+              0.5
+            ],
+            [
+              27481,
+              0.25,
+              0.25
+            ],
+            [
+              27521,
+              1,
+              1
+            ]
+          ],
+          "time_scale_frames": {
+            "1": 27423,
+            "0.5": 60,
+            "0.25": 40
+          }
+        }
+      ]
+    }
+  ]
+}

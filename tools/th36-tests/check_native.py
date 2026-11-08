@@ -24,7 +24,7 @@ def main():
         assert {r['id'] for r in data['records']}==expected,('遗漏入口',directory)
         checked=0;hashes={}
         for path,digest in config['hashes'].items():
-            if path=='mod/GAME/th36.lua' or path.startswith('mod/GAME/th36/') or path.startswith('mod/GAME/original/11/') or path=='THlib/anm/original.lua':
+            if path=='mod/GAME/th36.lua' or path=='mod/GAME/original/th11_low_speed_hp.lua' or path.startswith('mod/GAME/th36/') or path.startswith('mod/GAME/original/11/') or path=='THlib/anm/original.lua':
                 current=(ROOT/path).read_bytes();current_hash=hashlib.sha256(current).hexdigest()
                 assert current_hash==digest,('验收源码已变动，必须重跑真引擎',path)
                 checked+=1

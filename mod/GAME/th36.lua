@@ -1,7 +1,7 @@
 -- TH36 东方地灵殿：原版日文1.00a的Lunatic／Extra整关及逐阶段练习。
 -- 七条main按原ECL顺序驱动道中、中Boss、主Boss；觉的六条回忆路线均另列练习。
 -- 20份源文件、掩码和SHA-256见th36/sources.json。运行时只执行Lua函数与LuaSTG对象。
--- 血量保留原作累计血槽的分段差值，不作DPS、密度或难度校准。
+-- 血量按原作六种自机低速满火力活跃TTK中位数换算；ECL内部仍用原作life与阈值。
 -- 差异3：沿用本项目TH11的背景、BGM和界面；没有移植原版STD三维场景与MSG对白。
 -- 差异4：自机、道具及碰撞由LuaSTG框架接管，原版PE的逐像素GPU输出不在此保证。
 local class={}
@@ -26,8 +26,8 @@ class.overlay=Class(object,{
         local m=phases[s.stage..':'..a.sub] or labels[s.stage..':'..tostring(s.spell)]
         local threshold,timeout=0,0
         for i=0,7 do local q=a.interrupts[i];if q and q.hp>=0 then threshold,timeout=q.hp,q.time;break end end
-        local hp=m and m.hp or math.max(1,a.o.maxhp-threshold)
-        local fraction=math.max(0,math.min(1,(a.o.hp-threshold)/hp))
+        local hp=m and m.hp or math.max(1,H.hp.maximum(a)-threshold)
+        local fraction=math.max(0,math.min(1,(H.hp.raw(a)-threshold)/hp))
         SetImageState('white','',Color(160,32,32,48));RenderRect('white',-184,184,210,214)
         SetImageState('white','',Color(255,240,240,255));RenderRect('white',-184,-184+368*fraction,210,214)
         if ui and ui.RenderText then
@@ -68,9 +68,11 @@ for _,meta in ipairs(catalogue) do
     if meta.route~='' then label=label..'（'..meta.route..'）' end
     local scbg=(_editor_class.TH11 or {})['SCBG'..(meta.stage<=3 and 1 or meta.stage==4 and 2 or 3)]
     boss.Define(group..'a',meta.role,'TH11_0',TH11_bg,{0,96},scbg,meta.image,LEVEL)
-    local survival=meta.stage==7 and meta.sub=='BossCard5'
+    local survival=meta.survival
     local t=meta.timeout/60
-    local card=boss.card.New(meta.name,survival and t or 0,survival and t or 0,t,meta.hp,nil,meta.stage==7)
+    local calibrated=assert(H.hp.entries[meta.id])
+    local card=boss.card.New(meta.name,survival and t or 0,survival and t or 0,t,calibrated.hp,nil,meta.stage==7)
+    card._th11_balance=calibrated
     card.th11_source=meta
     card.phase_name=label
     card.before=function(self) before(self,false) end

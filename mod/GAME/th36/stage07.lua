@@ -10955,7 +10955,7 @@ do
         H.spell(a,169,3000,500000,"反応「妖怪ポリグラフ」",342)
         H.at(a,v,0)
         -- 源0x93f8，362号。
-        a.survival=true
+        a.session.spell_flag8=true
         H.at(a,v,0)
         -- 源0x9408，269号。
         H.anm_cast(a,0)
@@ -11739,7 +11739,7 @@ do
         H.spell(a,170,5400,500000,"無意識「弾幕のロールシャッハ」",342)
         H.at(a,v,0)
         -- 源0xa7f0，362号。
-        a.survival=true
+        a.session.spell_flag8=true
         H.at(a,v,0)
         -- 源0xa800，269号。
         H.anm_cast(a,0)
@@ -13585,7 +13585,7 @@ do
         H.spell(a,173,3540,500000,"「嫌われ者のフィロソフィ」",342)
         H.at(a,v,0)
         -- 源0xdaac，362号。
-        a.survival=true
+        a.session.spell_flag8=true
         H.at(a,v,0)
         -- 源0xdabc，336号。
         H.sound(a,55)

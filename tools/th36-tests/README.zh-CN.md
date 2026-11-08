@@ -10,7 +10,7 @@
 - 七个整关入口，ID为11101–11107，从各面的 `main` 驱动道中、中Boss、主Boss及换卡。正常关卡菜单依次执行这七面。整关的觉路线固定为灵梦／紫，其他路线列在符卡练习中。
 - 阶段分布：一面7、二面7、三面9、四面22、五面10、六面10、Extra21。整关入口另计。
 
-血量保留ECL累计血槽的分段差值；时间、发弹数、速度和相位不按本项目DPS或密度标尺校准。
+血量按用户要求换算到原作六种自机低速满火力活跃TTK中位数，目标为移植灵梦115.5 DPS。ECL仍读取累计血槽的原始life与阈值；弹幕参数保持原ECL口径。完整口径、机体采样限制和86项血量表见 `mod/GAME/th31_th34_th35_original_player_ttk_hp_calibration.md` 末尾TH36节。
 
 ## 来源与实现
 
@@ -29,6 +29,8 @@
 | `mod/GAME/th36/bullet_profiles.lua` | 原PE 0x4a3ec0，29项×0xd0的弹型、判定和调色板表 |
 | `mod/GAME/th36/callbacks.lua` | 原PE 0x4a3d64的专用回调，以及0x417ef0／0x418050的勇仪弧形受击／体术采样 |
 | `mod/GAME/th36/catalogue.lua` | 独立二进制探针提取的阶段血量、时限、中文显示名和来源子程序 |
+| `mod/GAME/th36/hp.lua` | 参照TH32的原始life／框架HP边界；整关、逐卡、普通敌机和从属实体共用，耐久与占位血量不缩放 |
+| `mod/GAME/original/th11_low_speed_hp.lua` | 六自机活跃TTK中位数生成的分段HP表；逐机体数据和源文件哈希见 `tools/th36-tests/low_speed_hp.json` |
 | `THlib/anm/original.lua` | 增加TH11的色号解析、子动画、Hermite位置插值及弧形带绘制；旧作品保持各自编号表 |
 
 敌机、子弹、激光、弧形受击节点和演出物件均为LuaSTG对象。原作出生保护在极坐标偏移后逐颗判定；没有额外增加自制底帘、密度修正或保护缺口。
@@ -59,6 +61,20 @@ python tools/th3x-tests/export_original_anm.py --games 11
 
 ## 验证口径
 
+2026-11-08血量校准同时修正了两处会破坏击破时间的旧问题：三面中Boss第二非符的负阈值注销不能覆盖9000的进场life，逐卡入口须继承中Boss槽1；362指令仅设置spell状态8位，不能直接把可击破的墨迹测验设为全程无敌。妖怪测谎机与被厌恶者的哲学根据ECL持续无敌／隐藏判定为耐久，保留原始HP。
+
+重新生成血量表并检查：
+
+```powershell
+$hp='E:\workspace\.bossrush-validation\th36-hp-sht'
+python tools/th36-tests/calibrate_low_speed_hp.py --assets $hp --ecl $src --archive $dat
+python tools/th36-tests/check_hp.py
+```
+
+`check_hp.py`在LuaJIT中以115.5 DPS逐帧扣血核对84个可击破阶段，另外核对2个耐久、原始life阈值、道中残血与最低1 HP、符卡期间普通敌机比例、以及怪轮从属演员31节点的单次伤害换算。检查关闭发弹；真引擎生命周期另由下面两批检查覆盖。
+
+本次血量版的Windows真引擎验收见 `verification-native-hp-2026-11-08.json`：86个阶段完整时限共286,206帧，七条整关击破流程共96,041帧；均无运行错误，清场后敌机／子弹／激光均为0。核对52份运行时文件指纹，包含新增HP表与桥接代码。该结果验证生命周期与流程，不把强制击破流程当作115.5 DPS实测；扣血总量由上述LuaJIT检查独立核对。
+
 本机未安装独立luajit命令，使用私有目录内的Lupa LuaJIT 2.1执行5.1语义检查；没有使用Lua 5.4。
 
 ```powershell
@@ -87,7 +103,7 @@ $flow="E:\workspace\.bossrush-validation\th36-flow-$tag"
 $cards=(11000..11085)-join ','
 python tools/th3x-tests/native_engine.py --output $battle --games 36 --cases $cards --frames 0 --speed 6000 --mode timeout
 python tools/th3x-tests/native_engine.py --output $flow --games 36 --cases 11101,11102,11103,11104,11105,11106,11107 --frames 0 --speed 6000 --mode defeat
-python tools/th36-tests/check_native.py $battle $flow --source $src --output tools/th36-tests/verification-native-2026-11-08.json
+python tools/th36-tests/check_native.py $battle $flow --source $src --output tools/th36-tests/verification-native-hp-2026-11-08.json
 ```
 
 ```powershell

@@ -3,6 +3,8 @@
 -- 场地384×448，原坐标x不缩放，y写入LuaSTG时才换成224-y。
 local class=...
 local H={}
+local HP=dofile('mod/GAME/th36/hp.lua')
+H.hp=HP
 local object,enemy,New,IsValid=object,enemy,New,IsValid
 local A=OriginalANM
 local bit=require('bit')
@@ -52,6 +54,7 @@ local function context(a,name,args)
 end
 function H.call(a,v,fn,name,...)
     assert(fn,'TH11子程序缺失：'..name)
+    HP.phase(a,name)
     -- 勇仪在同一个演员上从MBoss转入Boss，不能只看enmCreate的名称判定终战。
     if name=='Boss' then a.final_boss=true;a.session.final_actor=a end
     local start=H.clock(a)
@@ -258,9 +261,12 @@ function H.spell(a,id,timeout,bonus,name,opcode)
     if opcode==357 then id=id+(a.session.stage==7 and 4 or 3)
     elseif opcode==358 then id=id+2 elseif opcode==359 then id=id+1 end
     a.session.spell=id;a.session.capture=1;a.phase_time=0
+    a.session.spell_flag8=false
+    a.hp_spell=true
+    a.survival=a.hp_phase and a.hp_phase.survival or false
     if H.on_spell then H.on_spell(a,id,name) end
 end
-function H.spell_end(a) a.session.spell=nil;a.survival=false end
+function H.spell_end(a) a.session.spell=nil;a.session.spell_flag8=false;a.survival=false;a.hp_spell=false end
 function H.sound(a,id) if PlaySound and (id==0 or id==1 or id==2) then PlaySound(id==2 and 'enep00' or 'tan00',.25,math.max(-1,math.min(1,a.o.x/192))) end end
 function H.shake(a,t,x,y) if misc and misc.ShakeScreen then misc.ShakeScreen(t,x/8) end end
 function H.fog(a,limit,color) a.fog={limit,color} end
@@ -370,6 +376,7 @@ function H.attach(o,session,sub,x,y,hp,origin,mirrored)
         drops={},guns={},invul=2,phase_time=-1,contact_invul=-1,poses=false,actor_group=0}
     o.th11_actor=a;o.x,o.y=x,224-y
     o.hp,o.maxhp=hp,hp
+    HP.phase(a,sub)
     o._original_collision_game=11
     for n=-9985,-9978 do a.vars[n]=origin and origin.vars[n] or 0 end
     -- TH11的创建参数块还有F4..F7，不能仅拷TH10的八个寄存器。
@@ -391,7 +398,7 @@ function H.spawn(a,op,sub,x,y,hp,score,drop)
     H.update(e)
     return e
 end
-function H.transition(a,dying)
+local function transition(a,dying)
     local chosen,index,timed
     for i=0,7 do
         local it=a.interrupts[i]
@@ -418,11 +425,17 @@ function H.transition(a,dying)
         if timed then a.o.timeout=true end
         a.session.done=true;return
     end
-    a.sub=name;a.threads={thread(a,assert(a.session.program[name],name),name,-1,{})};a.transition_pending=true
+    a.sub=name;a.hp_phase=nil;HP.phase(a,name)
+    a.threads={thread(a,assert(a.session.program[name],name),name,-1,{})};a.transition_pending=true
     a.o._original_accepts_damage=false;a.o.dmg_factor,a.o.DMG_factor=0,0
     if H.on_transition then H.on_transition(a,name,timed) end
 end
-function H.update(a)
+function H.transition(a,dying)
+    local owned=HP.enter(a.session)
+    transition(a,dying)
+    HP.leave(a.session,owned)
+end
+local function update(a)
     if not live(a) or a.updated==a.session.frame then return end
     a.updated=a.session.frame
     a.transition_pending=false
@@ -463,6 +476,11 @@ function H.update(a)
         elseif a.entered and ((x+w< -192 or x-w>192) and band(a.flags,4)==0 or (y+h<0 or y-h>448) and band(a.flags,8)==0) then H.erase(a) end
     end
 end
+function H.update(a)
+    local owned=HP.enter(a.session)
+    update(a)
+    HP.leave(a.session,owned)
+end
 function H.load(stage)
     if not programs[stage] then
         local p={};assert(loadfile(('mod/GAME/th36/stage%02d.lua'):format(stage)))(H,p);programs[stage]=p
@@ -470,16 +488,21 @@ function H.load(stage)
     return programs[stage]
 end
 function H.session(host,stage,sub,meta)
-    local s={host=host,stage=stage,program=H.load(stage),frame=0,rate=1,accumulator=0,actors={},bullets={},lasers={},effects={},
+    local s={host=host,stage=stage,program=H.load(stage),hp_raw=true,frame=0,rate=1,accumulator=0,actors={},bullets={},lasers={},effects={},
         shot=meta and meta.shot or 0,misses=0,bombs=0,capture=1,score=0,random_seed=ran:Int(0,65535),random_calls=0,
         observed_misses=lstg.var.dead or 0,observed_bombs=GameDrops and GameDrops.bombState and GameDrops.bombState(player) or 0,
         saved_cyfps=lstg.var.CYFPS}
     local hp=meta and meta.total_hp or 10000000
     local a=H.attach(host,s,sub,meta and meta.x or 0,meta and meta.y or 128,hp)
     a.proxy=true;a.practice=meta;s.root=a
+    if meta then
+        for _,q in ipairs(meta.inherited or {}) do
+            H.interrupt(a,q.slot,q.threshold,q.timeout,q.next:gsub('^"',''):gsub('"$',''))
+        end
+    end
     if meta then a.is_boss=true;s.boss=a;H.select_anm(a,2);H.anm_main(a,0,meta.sprite or 0);H.limit(a,0,128,280,96) end
     host.th36_session=s;host.bound=false
-    if meta then host.hp=hp-meta.threshold;host.maxhp=meta.hp end
+    HP.leave(s)
     return s
 end
 function H.step(s)
@@ -490,7 +513,7 @@ function H.step(s)
     s.misses,s.bombs=s.misses+lost,s.bombs+used
     if lost>0 or used>0 then s.capture=0 end
     s.observed_misses,s.observed_bombs=misses,bombs
-    if s.root.practice then s.host.hp=s.host.hp+s.root.practice.threshold end
+    HP.enter(s)
     s.accumulator=s.accumulator+s.rate
     while s.accumulator>=1 and not s.done do
         s.accumulator=s.accumulator-1
@@ -502,7 +525,7 @@ function H.step(s)
         end
         s.frame=s.frame+1
     end
-    if s.root.practice then s.host.hp=math.max(0,s.root.o.hp-s.root.practice.threshold);s.host.maxhp=s.root.practice.hp end
+    HP.leave(s)
     if s.done then s.host.hp=0 end
 end
 function H.close(s)

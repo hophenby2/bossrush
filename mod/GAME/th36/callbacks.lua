@@ -9,7 +9,9 @@ local callbacks={}
 local ring_base=Class(enemy,{
     take_damage=function(o,damage)
         local a=o.master
-        if not a.dead and a.invul<=0 then a.ring_damage=(a.ring_damage or 0)+damage end
+        if not a.dead and a.invul<=0 and band(a.flags,0x31)==0 and not a.survival and not a.transition_pending then
+            a.ring_damage=(a.ring_damage or 0)+damage
+        end
     end,
 })
 local ring_node=Class(ring_base,{
@@ -41,7 +43,7 @@ local function ring_collision(a)
         local damage=a.ring_damage or 0;a.ring_damage=0
         if damage>=30 then damage=30+math.floor((damage-30)*3/5) end
         if damage>=70 then damage=50+math.floor((damage-50)/5) end
-        damage=math.min(80,damage);a.o.hp=a.o.hp-damage
+        damage=math.min(80,damage);a.o.hp=a.o.hp-H.hp.damage(a,damage)
     end
     if a.contact_callback and band(a.flags,0x22)==0 and a.contact_invul<=0 and player and IsValid(player) then
         local hit=4+16*life

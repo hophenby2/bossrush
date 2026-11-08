@@ -1,0 +1,11 @@
+{
+  "phases": 86,
+  "ring_units": 1,
+  "survivals": 2,
+  "formula": true,
+  "raw_thresholds": true,
+  "road_units": true,
+  "partial_life": true,
+  "minimum_hp": true,
+  "scope": "LuaJIT中全阶段115.5 DPS扣血；发弹关闭，不替代真引擎碰撞与原作移动Boss TTK实测"
+}

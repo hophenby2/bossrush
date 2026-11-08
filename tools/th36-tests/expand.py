@@ -100,7 +100,7 @@ def statement(row, stage, block):
     if op==346:return [f'a.protect={value(x[0])}'],False
     if op==347:return invoke('life_marker'),False
     if op==360:return [f'a.stars={value(x[0])}'],False
-    if op==362:return ['a.survival=true'],False
+    if op==362:return ['a.session.spell_flag8=true'],False
     if op==363:return ['H.background_end(a)'],False
     if op==365:return ['H.mark_effects(a)'],False
     if op==367:return invoke('time_scale'),False

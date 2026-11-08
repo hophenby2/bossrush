@@ -131,7 +131,8 @@ def catalogue(sources):
         incoming={}
         for n,(_,rows) in pp.items():
             for r in active(rows,stage):
-                if r.op==334:incoming[r.args[3].strip('"')]=r.args[1]
+                # 负阈值用于注销槽位，不能覆盖真正进入阶段时的累计life。
+                if r.op==334 and r.args[1]>=0:incoming[r.args[3].strip('"')]=r.args[1]
         root_hp={}
         for mid in (False,True):
             root='MBoss' if mid else 'Boss'
@@ -147,9 +148,11 @@ def catalogue(sources):
             base=incoming.get(sub,root_hp.get(mid,10000))
             if base<=0:base=root_hp.get(mid,10000)
             p=Probe(pp,stage,base,shot)
+            inherited=[]
             if mid and sub!='MBoss':
                 rp=Probe(pp,stage,root_hp.get(True,10000),shot).run('MBoss',120)
                 p.interrupts={i:dict(it) for i,it in rp.interrupts.items() if i>0}
+                inherited=[dict(slot=i,**it) for i,it in sorted(p.interrupts.items())]
             p.run(sub)
             slots=[it for _,it in sorted(p.interrupts.items()) if it['threshold']>=0]
             if not slots:continue
@@ -163,6 +166,9 @@ def catalogue(sources):
             row=dict(stage=stage,sub=sub,mid=mid,shot=shot,route=ROUTE_NAMES[route] if route is not None else '',
                 total_hp=hp,threshold=threshold,hp=hp-threshold,timeout=timeout,invul=p.invul,
                 spell=number,name=label,role=role[0],image=role[1],sprite=role[2],x=0,y=128,id=next_id)
+            # 362仅置spell.flags的8位。耐久另由源码的持续invul20/10循环，或15→32标志确定。
+            row['survival']=stage==7 and sub in ('BossCard5','BossCard9')
+            if inherited:row['inherited']=inherited
             result.append(row);next_id+=1
     return result
 
