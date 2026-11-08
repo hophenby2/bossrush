@@ -95,7 +95,8 @@ input.touch(5, 500, 420, 'moved'); assert(input.wheel == -160)
 input.touch(5, 500, 420, 'ended'); assert(lstg.GetMouseState(0))
 input.endFrame(); input.endFrame(); assert(not lstg.GetMouseState(0))
 input.reset(); assert(not lstg.GetKeyState(39) and not lstg.GetKeyState(16))
-input.pulse(27); assert(lstg.GetLastKey() == 27 and lstg.GetKeyState(27))
+input.touch(99,920,518,'began');input.touch(99,920,518,'ended')
+assert(lstg.GetLastKey() == 27 and lstg.GetKeyState(27),'右上边缘暂停按钮保持原有暂停输入')
 input.endFrame(); input.endFrame(); assert(not lstg.GetKeyState(27))
 local handlers = {}
 cc.Handler = { EVENT_TOUCHES_BEGAN=1, EVENT_TOUCHES_MOVED=2, EVENT_TOUCHES_ENDED=3, EVENT_TOUCHES_CANCELLED=4 }

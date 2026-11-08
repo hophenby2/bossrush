@@ -16,12 +16,12 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'},cards={'survival'}}
 function P.defaults(variant,poolVersion)
     -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
     local single=not variant or variant=='single'
     return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4},
-        difficulties={lunatic=true,extra=true},encounters={boss=true,road=single}}
+        difficulties={lunatic=true,extra=true},encounters={boss=true,road=single},cards={survival=true}}
 end
 function P.copy(filters,variant,poolVersion)
     local defaults=P.defaults(variant,poolVersion)
@@ -34,7 +34,21 @@ function P.copy(filters,variant,poolVersion)
     end
     -- 旧设置中的勾选也必须失效，不能只移除准备界面的按钮。
     out.stages.TH36=out.stages.TH36 and poolVersion==4
+    if poolVersion and poolVersion<6 then out.cards.survival=true end
     return out
+end
+function P.isSurvival(unit,kind)
+    -- 道中用无敌宿主承载时间轴，实际小怪仍可击破，不能当成耐久符卡过滤。
+    if kind=='road' then return false end
+    local combat=false
+    for _,part in ipairs(unit.sc_group or {}) do
+        local c=part.card
+        if c and c.is_combat~=false then
+            combat=true
+            if not (type(c.t1)=='number' and type(c.t3)=='number' and c.t3>0 and c.t1==c.t3) then return false end
+        end
+    end
+    return combat
 end
 function P.build(filters,poolVersion)
     filters=P.copy(filters,nil,poolVersion)
@@ -49,14 +63,16 @@ function P.build(filters,poolVersion)
                 local tag=id and tags[source.code][id]
                 -- extra键保留已有筛选初态；Phantasm只在新版池并入，版本2录像沿用原集合。
                 local difficulty=tag and (tag.difficulty=='phantasm' and 'extra' or tag.difficulty)
+                local survival=tag and P.isSurvival(unit,tag.kind)
                 if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
                     and not (poolVersion==2 and tag.difficulty=='phantasm')
+                    and (filters.cards.survival or not survival)
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''
                     seen[id]=true
                     bucket.cards[#bucket.cards+1]={key=source.code..':'..id,index=index,level=source.level,source=source.code,
                         cardId=id,title=label~='' and label or (first.card.is_sc and first.card.name or '非符'),
-                        spell=first.card.is_sc==true,difficulty=difficulty,originalDifficulty=tag.difficulty,kind=tag.kind}
+                        spell=first.card.is_sc==true,difficulty=difficulty,originalDifficulty=tag.difficulty,kind=tag.kind,survival=survival}
                 end
             end
             -- 某作在所选难度/类型下没有候选时不参与来源抽签，不从别处补进卡。

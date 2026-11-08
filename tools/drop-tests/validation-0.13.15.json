@@ -1,0 +1,140 @@
+{
+  "version": "0.13.15-android",
+  "version_code": 33,
+  "date": "2026-11-08",
+  "checks": {
+    "drops_and_hud": 6858,
+    "roguelike": 14774,
+    "combat": 866,
+    "android_contract": "通过，包含新暂停按钮区域",
+    "time_filter": {
+      "timed": [
+        {
+          "id": 383,
+          "source": "TH31"
+        },
+        {
+          "id": 392,
+          "source": "TH31"
+        },
+        {
+          "id": 393,
+          "source": "TH31"
+        },
+        {
+          "id": 394,
+          "source": "TH31"
+        },
+        {
+          "id": 395,
+          "source": "TH31"
+        },
+        {
+          "id": 396,
+          "source": "TH31"
+        },
+        {
+          "id": 3984,
+          "source": "TH32"
+        },
+        {
+          "id": 3440,
+          "source": "TH34"
+        },
+        {
+          "id": 3442,
+          "source": "TH34"
+        },
+        {
+          "id": 3470,
+          "source": "TH34"
+        },
+        {
+          "id": 4401,
+          "source": "TH34"
+        },
+        {
+          "id": 4434,
+          "source": "TH34"
+        },
+        {
+          "id": 3607,
+          "source": "TH35"
+        },
+        {
+          "id": 3619,
+          "source": "TH35"
+        },
+        {
+          "id": 3620,
+          "source": "TH35"
+        }
+      ],
+      "all": 410,
+      "filtered": 395
+    },
+    "zero_life_result": {
+      "finished": true,
+      "dead": 10,
+      "current": 42,
+      "quiz": false,
+      "revive": 0
+    },
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\hud-v6-20261108-e",
+      "version": "LuaSTG Sub v0.21.129",
+      "completed": 4,
+      "frames": [
+        960,
+        960,
+        960,
+        960
+      ],
+      "errors": {},
+      "screenshots": [
+        "hud-result.png",
+        "hud-time-filter.png",
+        "hud-zero-life.png",
+        "th35-3601-timeout-late.png",
+        "th35-3601-timeout.png",
+        "th35-3602-timeout-late.png",
+        "th35-3602-timeout.png",
+        "th35-3603-timeout-late.png",
+        "th35-3603-timeout.png",
+        "th35-3604-timeout-late.png",
+        "th35-3604-timeout.png"
+      ]
+    },
+    "apk": {
+      "resources": 2522,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测；移动触控绘制在Windows引擎中检查，不能等同Android GPU实测。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.15.apk",
+    "bytes": 571701545,
+    "sha256": "9ab864b5cd198bde065c4c26a0d58c9c1bbc2182dc8db28d85bd3ad1c29001a9"
+  },
+  "sources_sha256": {
+    "THlib/UI/UI.lua": "4435ba501ff0dfdd2c143437332f0f0b3a7139f960ce8f4f0877d6cc8d433fe2",
+    "THlib/UI/run_hud.lua": "8715699ab834177bb2e9bc617d77966b4131aab8b2ccaca5e32a1be145221968",
+    "THlib/UI/rogue_pool.lua": "3c32ad4474b523f61cccaccc532ecba4fc92daf11c18d0cd3147d4e5a8081faa",
+    "THlib/drops.lua": "d26b2678d5888ffd2ea585703511b4bc6155a532bd4b8d7c21c62e9c4c0345e8",
+    "THlib/ext/ext_other.lua": "123e875ad2ed3bc965d3861e04122d551da27a503915e3f439d9304cb3a56e46",
+    "THlib/ext/ext_stage_group.lua": "64acf58aa26f3c0336b2a681ea24f7fab2a575e6d8d74caac5248d8a882a6ce9",
+    "THlib/ext/ext_revive.lua": "f13f06cf894e079ec0ff83fa592527fa2be14f40eaeb1919a93b747827d044de",
+    "THlib/ext/ext_replay.lua": "8f943bb315edfc1b5b3f8adc2655cc37a0f73e1d06a4c1b223dffe7bac48e3a3",
+    "mod/rogue_pool.lua": "40520da50dd9ecb768f4c8191f17a097e70ef048afb3bac1eaaa64e40cfff9a4",
+    "mod/roguelike.lua": "9041cf0615a739bdfc1ac9fbf51573042e272d0f35c848863726fedde0997e37",
+    "android/lua/input.lua": "e21b94accfb67050070f6dd5b95edb111e710ad8c4244f0f2e1797fef426e179",
+    "android/AndroidManifest.xml": "dc324a95efe72283b2bb0e9d5db227e22dd11d38b1ccbd7c1f66f2160af5f68b"
+  }
+}

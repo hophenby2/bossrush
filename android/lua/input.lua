@@ -18,7 +18,7 @@ local buttons = {
     { key = 16, action = 'slow', x = 781, y = 43, radius = 28, label = '低速', toggle = true },
     { key = 88, action = 'spell', x = 849, y = 43, radius = 28, label = 'Bomb' },
     { key = 67, action = 'special', x = 917, y = 43, radius = 28, label = '特殊' },
-    { key = 27, x = 874, y = 488, radius = 30, label = '暂停' },
+    { key = 27, x = 920, y = 518, radius = 18, label = '暂停' },
 }
 local menuButtons = {
     { key=13, x=890, y=40, radius=28, label='确定' },
@@ -264,11 +264,6 @@ function I.render()
         RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
         local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
         ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .5,Color(230,235,241,247),'centerpoint')
-    end
-    if not menuMode then
-        SetImageState('white', '', Color(90, 34, 57, 82))
-        RenderRect('white', 42, 202, 50, 210)
-        RenderTTF('title', '摇杆', 122, 130, Color(220, 235, 241, 247), 'centerpoint')
     end
 end
 return I

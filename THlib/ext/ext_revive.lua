@@ -2,12 +2,13 @@
 local V={MAX=3,PROTECT=180,LIVES=5}
 local Q=GameQuiz
 local savedFields={'x','y','death','lock','dialog','hide','colli','time_stop'}
+function V.enabled() return lstg.var.__revive_version==1 or lstg.var.__revive_version==2 end
 local function state()
-    if lstg.var.__revive_version~=1 and lstg.var.__revive_version~=2 then return end
+    if not V.enabled() then return end
     if not lstg.var.revive then lstg.var.revive={used=0,credits=0,asked={}} end
     return lstg.var.revive
 end
-function V.misses() return lstg.var.dead-((lstg.var.revive and lstg.var.revive.credits) or 0) end
+function V.misses() return lstg.var.dead-((V.enabled() and lstg.var.revive and lstg.var.revive.credits) or 0) end
 function V.active()
     if not stage.current_stage or stage.current_stage.is_menu then return false end
     local s=state();return s and s.quiz~=nil

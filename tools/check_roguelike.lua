@@ -8,7 +8,21 @@ local total=0
 local function check(value,label) assert(value,label);total=total+1 end
 local oldAdd=boss.card.add
 _sc_pr_table={}
+-- 卡池判断读的是注册后的帧数；部分移植会直接写入原作免疫帧，不能沿用静态桩的秒数。
+local newCard=boss.card.New
+boss.card.New=function(...)
+    local c=newCard(...)
+    c.t1,c.t2,c.t3=math.floor(c.t1*60),math.floor(c.t2*60),math.floor(c.t3*60)
+    return c
+end
 boss.card.add=function(parts,level,label,id,...)
+    -- 与正式Card.add一致，在登记前应用妖妖梦／风神录的最终无敌帧校准。
+    local game=({[32]=7,[33]=10})[level]
+    local balance=game and OriginalBalance and OriginalBalance.entries[game][id]
+    if balance then for _,part in ipairs(parts) do
+        local c=part[1]
+        if c.t1<c.t3 then c._original_balance=balance;c.hp,c.t1,c.t2=balance.hp,balance.immune,balance.immune end
+    end end
     oldAdd(parts,level,label,id,...)
     local unit={CardName=label,sc_group={}}
     for _,part in ipairs(parts) do unit.sc_group[#unit.sc_group+1]={boss=_editor_boss[part[2]..level],card=part[1]} end
@@ -100,6 +114,27 @@ check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同�
 -- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
 local all,count=R.buildPool()
 check(#all==4 and count==410,'新局关闭地灵殿，包含四作410个已核对条目')
+local noTime=R.defaultFilters();noTime.cards.survival=false
+local filtered,filteredCount=R.buildPool(noTime)
+local timeIds={[383]=true,[392]=true,[393]=true,[394]=true,[395]=true,[396]=true,
+    [3984]=true,[3440]=true,[3442]=true,[3470]=true,[4401]=true,[4434]=true,[3607]=true,[3619]=true,[3620]=true}
+local timeCount,roadCount,filteredRoads=0,0,0
+for _,bucket in ipairs(all) do for _,e in ipairs(bucket.cards) do
+    if e.survival then timeCount=timeCount+1;check(timeIds[e.cardId],'按真实无敌时限识别耐久卡，不按卡名猜测') end
+    if e.kind=='road' then roadCount=roadCount+1;check(not e.survival,'道中宿主不是时符') end
+end end
+for _,bucket in ipairs(filtered) do for _,e in ipairs(bucket.cards) do
+    check(not e.survival and not timeIds[e.cardId],'取消时符后不包含任何耐久卡')
+    if e.kind=='road' then filteredRoads=filteredRoads+1 end
+end end
+check(timeCount==15 and filteredCount==395 and filteredRoads==roadCount,'时符开关精确排除15张，保留全部道中')
+for seed=1,30 do
+    for _,e in ipairs(R.draw(seed,1,noTime,6,true)) do check(not e.survival,'无限模式各轮也遵守时符筛选') end
+end
+local _,oldTimeCount=R.buildPool(noTime,5)
+check(oldTimeCount==410,'版本5录像保留原卡池，不因时符筛选改变路线')
+local remembered=R.copyFilters(noTime)
+check(not remembered.cards.survival and not noTime.cards.survival,'时符关闭状态进入筛选副本')
 local th36=R.defaultFilters();th36.stages={TH36=true}
 local disabled,disabledCount=R.buildPool(th36)
 check(#disabled==0 and disabledCount==0 and not R.copyFilters(th36).stages.TH36,'旧配置不能重新启用地灵殿')
@@ -178,6 +213,27 @@ empty=R.copyFilters(selected);empty.stages.TH32=false
 check(not R.poolStatus(empty).valid,'空来源不能开始')
 local copy=R.copyFilters(selected);copy.stages.TH31=true
 check(not selected.stages.TH31,'筛选副本不回写菜单/本局快照')
+do
+    local menuUI=dofile('THlib/UI/rogue_pool.lua')
+    local remembered=scoredata.rogue10_filters;scoredata.rogue10_filters=nil
+    local o={};menuUI.fresh(o,'roguelike')
+    check(o.pool_options.cards.survival and o.pool_status.count==410,'准备界面默认勾选时符')
+    menuUI.toggle(o,9)
+    check(not o.pool_options.cards.survival and o.pool_status.count==395 and menuUI.ready(o),'唯一的时符选项允许取消，不卡至少一项限制')
+    check(not scoredata.rogue10_filters.cards.survival,'保存取消时符的勾选状态')
+    local oldMenu,oldLast,oldMouse,oldBounds,oldKey,oldSetting=menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck,KEY,setting
+    KEY={ENTER=13};setting={keys={shoot=90}}
+    menu=setmetatable({keyYes=function() return true end},{__index=function() return function() return false end end})
+    GetLastKey=function() return 0 end;o.pool_focus=9
+    menuUI.frame(o);check(o.pool_options.cards.survival,'射击键切换当前时符勾选')
+    menu.keyYes=function() return false end
+    sp.math.PointBoundCheck=function(x,y,l,r,b,t) return x>=l and x<=r and y>=b and y<=t end
+    ext.mouse={x=520,y=164,isDown=function() return true end}
+    menuUI.frame(o);check(not o.pool_options.cards.survival,'鼠标与触控使用真实时符按钮区域')
+    menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck=oldMenu,oldLast,oldMouse,oldBounds
+    KEY,setting=oldKey,oldSetting
+    scoredata.rogue10_filters=remembered
+end
 
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
 check(true,'抽取不改原卡参数与函数')
@@ -188,7 +244,7 @@ local function simulate(seed,failRound,variant,endless,filters)
     if not endless then lstg.var.__rogue_endless_version=nil end
     local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
-    check(lstg.var.__revive_version==2,'新局使用五命复活规则')
+    check(lstg.var.__revive_version==0 and lstg.var.revive==nil,'新局禁用答题复活并清除旧状态')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
         for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false;entry.died=stage.current_stage.timer end end end
@@ -258,18 +314,26 @@ run=lstg.var.rogue_run
 check(stage.next_stage==stage.stages[R.modes.chain.result] and run.won and run.completed==10,'接续模式：第十张达到阈值后成功结算')
 -- 进度栏在 ObjRender 中先于符卡名绘制，不能把后续对象留在 UI 坐标系。
 local panel=assert(panels[#panels]);local setView,oldUI=SetViewMode,ui
-ui={RenderText=function() end}
+local stageText={}
+ui={RenderText=function(_,_,value) stageText[#stageText+1]=value end,RunHUD=dofile('THlib/UI/run_hud.lua')}
+lstg.world={scrl=288,scrr=672,scrb=46,scrt=494}
 SetViewMode=function(mode) lstg.viewmode=mode end
 for _,view in ipairs({'world','ui','3d'}) do
     lstg.viewmode=view;panel.class.render(panel.obj)
     check(lstg.viewmode==view,'随机模式进度栏恢复调用方坐标系：'..view)
 end
+check(#stageText==3 and stageText[1]=='10' and stageText[2]=='10' and stageText[3]=='10','左侧每次仅渲染一个大号阶段数字')
+stageText={}
+local renderClear=RenderClear;RenderClear=function() end
+stage.stages[R.modes.chain.result].render({run=lstg.var.rogue_run})
+RenderClear=renderClear
+check(#stageText==3 and stageText[1]=='10','结算中央仅显示结束时的阶段数字，其余文字仅为返回/重开按钮')
 SetViewMode,ui=setView,oldUI
 -- 真实无限入口：风神录Extra道中单卡池抽完后继续，直到失误结束。
 local endlessFilters=R.defaultFilters()
 endlessFilters.stages={TH35=true};endlessFilters.difficulties={extra=true};endlessFilters.encounters={road=true}
 local endlessBattle,endlessRun=simulate(777,25,'single',true,endlessFilters)
-check(endlessRun.endless and endlessRun.poolVersion==5,'新局写入版本5及无限标记')
+check(endlessRun.endless and endlessRun.poolVersion==6,'新局写入版本6及无限标记')
 check(endlessRun.completed>=24 and not endlessRun.won,'无限模式超过十战后仍继续')
 check(endlessRun.cycle>=24 and #endlessRun.cards==1,'小池跨轮洗牌只保留当前轮')
 for _,entry in ipairs(spawned) do check(entry.card.card_id==3685,'多轮严格沿用风神录Extra道中筛选') end

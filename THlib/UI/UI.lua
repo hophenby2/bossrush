@@ -3,6 +3,7 @@ Include "THlib\\UI\\title.lua"
 Include "THlib\\UI\\sc_pr.lua"
 ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
+ui.RunHUD=dofile('THlib/UI/run_hud.lua')
 ui.version = "v5.1.2"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
@@ -495,103 +496,9 @@ function lstg_ui:countdist(x, y)
     end
 end
 
-local white = "white"
-local blend = ""
-local ttf = "title"
-local center = "center"
-local bottom, top = "bottom", "top"
-local left = "left"
-local right = "right"
-local biggest = 9999999999990
-local Forbid = Forbid
 function lstg_ui:drawInfo1()
-    local s = stage.current_stage
-    local alpha = min(s.timer / 120, 1)
-    local falpha = alpha * 255
-    local w = lstg.world
-    local scrl, scrr, scrb, scrt = w.scrl, w.scrr, w.scrb, w.scrt
-    local ui = ui
-    local hiscore = lstg.tmpvar.hiscore or 0
-    local score = self.score or 0
-    local var = lstg.var
-    do
-        ui:RenderText(ttf, "最高分", scrl - 2, scrt + 4,
-                0.8, Color(falpha, 200, 200, 230), right, bottom)
-        ui:RenderText(ttf, formatnum(Forbid(hiscore, score, biggest)), scrl, scrt + 4,
-                0.8, Color(falpha, 173, 173, 173), left, bottom)
-
-        ui:RenderText(ttf, "当前分数", scrr + 2, scrt + 4,
-                0.8, Color(falpha, 200, 200, 230), left, bottom)
-        ui:RenderText(ttf, formatnum(min(score, biggest)), scrr, scrt + 4,
-                0.8, Color(falpha, 255, 255, 255), right, bottom)
-    end--score
-
-    do
-        local sg = stage.current_stage
-        ui:RenderText(ttf, "死亡数", scrr + 6, scrt - 30,
-                0.8, Color(falpha, 200, 100, 100), left, bottom)
-        if sg.AllowMissCount then
-            local r, g, b = 255, 255, 255
-            local pmc = sg.AllowMissCount+((var.revive and var.revive.credits) or 0)
-            if pmc and var.dead > pmc then
-                r, g, b = 155 + 100 * sin(s.timer * 3), 100, 100
-            end
-            ui:RenderText(ttf, ("%d / %s"):format(var.dead, pmc), scrr + 6, scrt - 45,
-                    0.8, Color(falpha, r, g, b), left, bottom)
-        else
-            if lstg.var.is_practice or sg.group._name ~= "BossRush" then
-                ui:RenderText(ttf, ("%d"):format(var.dead), scrr + 6, scrt - 45,
-                        0.8, Color(falpha, 255, 255, 255), left, bottom)
-            else
-                local r, g, b = 255, 255, 255
-                local pmc = s.PassMissCount[s.level + 1]
-                if pmc then pmc=pmc+((var.revive and var.revive.credits) or 0) end
-                if pmc and var.dead > pmc then
-                    r, g, b = 155 + 100 * sin(s.timer * 3), 100, 100
-                end
-                ui:RenderText(ttf, ("%d / %s"):format(var.dead, pmc or "Null"), scrr + 6, scrt - 45,
-                        0.8, Color(falpha, r, g, b), left, bottom)
-            end
-        end
-
-
-        ui:RenderText(ttf, "收卡数", 960 - 6, scrt - 30,
-                0.8, Color(falpha, 100, 200, 100), right, bottom)
-        ui:RenderText(ttf, ("%d"):format(var.getsc), 960 - 6, scrt - 45,
-                0.8, Color(falpha, 255, 255, 255), right, bottom)
-
-        local x1, x2, y1, y2 = scrr + 6 + 45, 960 - 6 - 45, scrt - 30 + 3, scrt - 16 - 3
-        SetImageState(white, blend, falpha, 200, 200, 200)
-        misc.RenderOutLine(white, x1, x2, y2, y1, 0, 1)
-        if var.dead + var.getsc ~= 0 then
-            local b = (x2 - x1) * var.dead / (var.dead + var.getsc)
-            RenderRect(white, x1 + b - 1, x1 + b + 1, y1, y2)
-            SetImageState(white, blend, alpha * 128, 200, 100, 100)
-            RenderRect(white, x1, x1 + b, y1, y2)
-            SetImageState(white, blend, alpha * 128, 100, 200, 100)
-            RenderRect(white, x1 + b, x2, y1, y2)
-
-        end
-
-    end--dead&getsc
-
-    do
-        ui:RenderStatusRow('擦弹',var.graze,scrr+6,954,scrt-70,falpha)
-        ui:RenderStatusRow('资金力',scoredata.money,scrr+6,954,scrt-100,falpha,{255,227,132})
-        if var.saving > 0 then
-            ui:RenderStatusRow('读档次数',var.saving,scrr+6,954,scrt-130,falpha,{150,150,150})
-        end
-        if var.revive then
-            ui:RenderStatusRow('答题复活',('%d / 3'):format(var.revive.used or 0),scrr+6,954,scrt-160,falpha,{173,210,230})
-        end
-        if GameRank and GameRank.enabled() then
-            ui:RenderStatusRow('Rank',('%.1f / 100'):format(GameRank.value()),scrr+6,954,scrt-190,falpha,{173,225,205})
-            ui:RenderStatusRow('弹速 / 下卡HP',('×%.3f'):format(GameRank.factor()),scrr+6,954,scrt-220,falpha,{173,225,205},.7)
-        end
-        if GameDrops then GameDrops.renderHUD(scrr,scrt,falpha) end
-    end--other
-
-
+    local w=lstg.world
+    ui.RunHUD.draw(w.scrr,w.scrt,min(stage.current_stage.timer/120,1)*255)
 end
 
 function ResetUI()

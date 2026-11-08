@@ -387,7 +387,7 @@ function ui_drawing:Afterrender()
             ui.DrawScore(self)
         end
         lstg.system:render()
-        if not setting.displaykey or AndroidPlatform then
+        if not setting.displaykey or AndroidPlatform or lstg.var.rogue_run then
             return
         end
 

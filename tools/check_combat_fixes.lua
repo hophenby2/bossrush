@@ -82,6 +82,10 @@ check(q.result==true,'倒计时结束也按所在答案区判定')
 reset(80);stage.current_stage.revive_miss_limit=10;step();answer(true)
 check(V.misses()==10 and lstg.var.dead==80,'主线关卡超额失误也能复活通过门槛，真实统计不回退')
 reset();lstg.var.__revive_version=nil;check(not step(),'旧录像没有新版本标记时不插入答题')
+reset();lstg.var.__revive_version=0;lstg.var.revive={used=0,credits=5,asked={}}
+local selectionsBefore=selectionCount
+check(not V.enabled() and not step() and not V.active(),'禁用版本不会请求答题或冻结战斗')
+check(V.misses()==lstg.var.dead and player.death==90 and selectionsBefore==selectionCount,'禁用后不抵扣失误、不重置死亡、不生成题目')
 -- 新规则每次答对后有完整五次失误余量，前三次作答机会仍保持原上限。
 reset();lstg.var.__revive_version=2;step();answer(true)
 check(lstg.var.dead==10 and V.misses()==5 and lstg.var.revive.credits==5,'新版复活补五条命，真实死亡数不回退')

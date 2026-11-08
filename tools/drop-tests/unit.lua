@@ -22,11 +22,12 @@ SearchStageLevel={};SetCurSystem=noop;GetGlobal=function(k) return lstg.var[k] e
 for _,name in ipairs({'CopyImage','CopyAnimation','LoadTexture','LoadImage','LoadPS','LoadImageGroup','LoadAnimation','SetImageState','SetAnimationState','SetAnimationCenter','SetImageCenter','LoadImageFromFile','SetImageScale'}) do _G[name]=noop end
 GetTextureSize=function() return 512,512 end
 Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
-GetImageTextureRegion=function(img) assert(img=='star_big10');return 'v310_bullet2',224,128,32,32 end
+GetImageTextureRegion=function(img) assert(img=='star_big10' or img=='star_big2');return 'v310_bullet2',224,img=='star_big2' and 0 or 128,32,32 end
 RenderTexture=noop
 local drawn={};SetViewMode=noop;RenderRect=noop
-ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y,mode=lstg.viewmode} end}
+ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y,scale=scale,mode=lstg.viewmode} end}
 ui.RenderStatusRow=load('THlib/UI/status_row.lua')
+ui.RunHUD=load('THlib/UI/run_hud.lua')
 GetAttr=function(o,k) return rawget(o,k) end;SetAttr=rawset
 load('THlib/lib/Lobject.lua');load('THlib/plus/Utility.lua');load('THlib/eventListener.lua')
 task={Do=noop,Clear=noop,New=noop,SetMode={[1]=function(x) return x end,[2]=function(x) return x end,[3]=function(x) return x end}}
@@ -275,7 +276,7 @@ local early=pick(true);check(early<stationary,'向上移动可以提前接取')
 pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
 check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')
 drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text[#text+1]=v.text end
-check(table.concat(text,'|'):find('火力：|P1 105 / P2 100',1,true),'右侧 HUD 显式显示两位玩家数值，标签和数值左右对齐')
+check(table.concat(text,'|'):find('火力|P1 105|P2 100',1,true),'右侧属性条下方分别显示两位玩家数值')
 -- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
 reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
 p.death=0;check(not D.frame(stage.current_stage) and D.active(),'重生后叠加选择，但不接管战斗')
@@ -510,6 +511,33 @@ do
     RenderTexture=renderTexture
     lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.renderHUD(672,494,255)
     check(Serialize(lstg.var)==before,'新版零帧HUD保持只读，不建立成长状态')
+    local rect=RenderRect;local strips={}
+    RenderRect=function(_,...) strips[#strips+1]={...} end
+    for _,value in ipairs({-.5,0,.5,1,1.5}) do
+        strips={};ui.RunHUD.track(0,200,100,value,255,{255,110,120},1)
+        check(#strips==(value>0 and 2 or 1),'属性条零值不画填充，其他值只画一个填充')
+        if value>0 then check(near(strips[2][2],200*math.min(value,1)),'属性条按数值比例填充并限制在边框内') end
+    end
+    RenderRect=rect
+    local oldRevive,oldRogue,oldRank=GameRevive,RogueTen,GameRank
+    GameRevive={misses=function() return lstg.var.dead end};RogueTen={MISS_LIMIT=10}
+    GameRank={MAX=100,enabled=function() return true end,value=function() return 50 end,factor=function() return 1 end}
+    D.reset();lstg.var.rogue_run={current=42};lstg.var.dead=1
+    lstg.var.upgrades.players[1].red=13500;lstg.var.upgrades.players[1].blue=17500;lstg.var.upgrades.players[1].green=7500
+    local redStars,brightRed=0,0;local render=RenderTexture
+    RenderTexture=function(_,_,a) if a[5]==0 then redStars=redStars+1;if a[6].a==255 then brightRed=brightRed+1 end end end
+    drawn={};before=Serialize(lstg.var);ui.RunHUD.draw(672,494,255)
+    check(Serialize(lstg.var)==before,'完整资源栏绘制只读')
+    check(redStars==10 and brightRed==9,'十条生命失去一条后，只点亮九颗红色大星')
+    local visible={};for _,call in ipairs(drawn) do visible[call.text]=call end
+    check(visible['生命'] and visible['9'] and visible['Bomb'] and visible['3 / 9'],'右上只呈现剩余生命与Bomb库存')
+    check(visible['135'].y==314 and visible['175'].y==243 and visible['75%'].y==172,'三项实际数值置于各自属性条下方')
+    check(visible['Rank'] and visible['×1.000'] and visible['×1.000'].x==942,'Rank条旁边呈现实际倍率')
+    for _,label in ipairs({'最高分','当前分数','擦弹','资金力','死亡数','收卡数','答题复活','读档次数'}) do check(not visible[label],'极简资源栏不显示旧统计：'..label) end
+    drawn={};ui.RunHUD.stage(42,144,270,288)
+    check(#drawn==1 and drawn[1].text=='42' and drawn[1].scale>=4,'阶段区仅绘制大号阿拉伯数字')
+    lstg.var.dead=10;check(ui.RunHUD.lives()==0,'生命耗尽显示零，不出现负数')
+    RenderTexture=render;GameRevive,RogueTen,GameRank=oldRevive,oldRogue,oldRank
 end
 
 -- 复用正式花映冢效果与协程，而非复制一套近似 Bomb。
@@ -625,7 +653,7 @@ end
 local f=assert(io.open(root..'/THlib/UI/menu.lua','rb'));local source=f:read('*a'):gsub('\r\n','\n');f:close()
 local section=assert(source:match('(player_system_select = Class%(object%).-)\nlocal valid'))
 -- 菜单抽取段依赖段外的local；保持正式卡池面板，补足测试宿主的只读查询。
-RogueTen={copyFilters=function() return {stages={},difficulties={},encounters={}} end,
+RogueTen={copyFilters=function() return {stages={},difficulties={},encounters={},cards={survival=true}} end,
     poolStatus=function() return {valid=true,count=410} end}
 assert(loadstring('local rogue_pool_menu=dofile('..string.format('%q',root..'/THlib/UI/rogue_pool.lua')..')\n'..section,'@THlib/UI/menu.lua:player_system_select'))()
 scoredata={UnlockSystem={true,true,true},system_selectid={true,false,true},player_select=1}

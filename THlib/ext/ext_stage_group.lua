@@ -239,7 +239,7 @@ function stg.Start(group)
     -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
     lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil
-    lstg.var.__revive_version=2;lstg.var.revive=nil
+    lstg.var.__revive_version=0;lstg.var.revive=nil -- 新局禁用答题复活；0明确记录在录像初态。
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
@@ -267,7 +267,7 @@ function stg.PracticeStart(stagename, sc_pr)
     if GameNet then GameNet.newRound() end
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
     lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil
-    lstg.var.__revive_version=2;lstg.var.revive=nil
+    lstg.var.__revive_version=0;lstg.var.revive=nil
     lstg.var.__rank_version=1;lstg.var.rank=nil
     lstg.var.is_practice = true
     lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像

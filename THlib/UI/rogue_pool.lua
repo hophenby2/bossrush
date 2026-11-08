@@ -5,10 +5,11 @@ local options={
     {group='stages',key='TH32',text='红魔乡 · TH32',x=720,y=388},
     {group='stages',key='TH34',text='妖妖梦 · TH34',x=505,y=350},
     {group='stages',key='TH35',text='风神录 · TH35',x=720,y=350},
-    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=242},
-    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=242},
-    {group='encounters',key='boss',text='Boss',x=505,y=171},
-    {group='encounters',key='road',text='道中',x=720,y=171},
+    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=276},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=276},
+    {group='encounters',key='boss',text='Boss',x=505,y=205},
+    {group='encounters',key='road',text='道中',x=720,y=205},
+    {group='cards',key='survival',text='时符（耐久卡）',x=505,y=164,optional=true},
 }
 local startIndex=#options+1
 local focusCount=startIndex+1
@@ -36,7 +37,7 @@ function U.toggle(o,index)
     local entry=options[index]
     if not entry then return end
     local group=o.pool_options[entry.group]
-    if group[entry.key] then
+    if group[entry.key] and not entry.optional then
         local another=false
         for key,enabled in pairs(group) do if key~=entry.key and enabled then another=true;break end end
         if not another then notice(o,groupNames[entry.group]..'至少保留一项');return end
@@ -97,7 +98,7 @@ function U.render(o)
     local muted=Color(alpha*255,165,188,200)
     local accent=Color(alpha*255,189,252,201)
     ui:RenderText('title','抽取范围',715,460,1.05,white,'centerpoint')
-    for _,heading in ipairs({{'关卡',422},{'难度（至少一项）',276},{'战斗（至少一项）',205}}) do
+    for _,heading in ipairs({{'关卡',422},{'难度（至少一项）',310},{'战斗（至少一项）',239}}) do
         ui:RenderText('title',heading[1],505,heading[2],0.72,muted,'left','vcenter')
     end
     for index,entry in ipairs(options) do
@@ -118,7 +119,7 @@ function U.render(o)
     local statusColor=valid and accent or Color(alpha*255,255,170,125)
     ui:RenderText('title',string.format('候选 %d 张 · 每轮不重复',state and state.count or 0),715,126,0.78,statusColor,'centerpoint')
     local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)
-    ui:RenderText('title',message or '仅从已勾选的关卡、难度和战斗类型抽取',715,99,0.6,message and Color(alpha*255,255,170,125) or muted,'centerpoint')
+    ui:RenderText('title',message or '取消时符可排除耐久卡，道中保留',715,99,0.6,message and Color(alpha*255,255,170,125) or muted,'centerpoint')
     ui:RenderText('title',('↑↓选择 · %s勾选 · Enter开始'):format(o.keyname[setting.keys.shoot] or 'Z'),715,75,0.66,muted,'centerpoint')
     ui:RenderText('title','← → 选择自机',240,80,0.7,o.pool_focus==0 and accent or muted,'centerpoint')
 end

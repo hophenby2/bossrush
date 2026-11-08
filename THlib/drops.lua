@@ -282,9 +282,9 @@ function D.render()
     -- 选项由共用 Question / Choice 与中玉实体随 ObjRender 绘制，不再叠加面板。
 end
 -- 直接裁切同一张绿色大星的纹理；满星与扇形共用尺寸，避开弹图默认的0.5缩放。
-local function bombStar(x,y,size,fraction,alpha)
+function D.renderStar(image,x,y,size,fraction,alpha)
     if fraction<=0 then return end
-    local tex,u,v,w,h=GetImageTextureRegion('star_big10') -- COLOR.GREEN对应的原有star_big。
+    local tex,u,v,w,h=GetImageTextureRegion(image)
     local color=Color(alpha,255,255,255)
     local function vertex(dx,dy)
         return {x+dx*size,y+dy*size,.5,u+(.5+dx)*w,v+(.5-dy)*h,color}
@@ -314,7 +314,9 @@ function D.renderBombs(x1,x2,y,alpha,count)
     local limit=D.bombLimit()
     local stock=D.bombState(1)
     local value=count==2 and ('P1 %d / P2 %d'):format(stock,D.bombState(2)) or ('%d / %d'):format(stock,limit)
-    ui:RenderStatusRow('Bomb',value,x1,x2,y,alpha,{110,235,145},.8)
+    local color=Color(alpha,110,235,145)
+    ui:RenderText('title','Bomb',x1,y,.8,color,'left','vcenter')
+    ui:RenderText('title',value,x2,y,.8,color,'right','vcenter')
     for slot=1,count do
         local bombs,fraction=D.bombState(slot)
         local left=x1+(count==2 and 26 or 0)
@@ -324,28 +326,17 @@ function D.renderBombs(x1,x2,y,alpha,count)
         if count==2 then ui:RenderText('title','P'..slot,x1,cy-6,.55,Color(alpha,110,235,145),'left','bottom') end
         for i=1,limit do
             local x=left+(i-.5)*step
-            if i<=bombs then bombStar(x,cy,size,1,alpha)
+            if i<=bombs then D.renderStar('star_big10',x,cy,size,1,alpha)
             else
-                bombStar(x,cy,size,1,alpha*.18)
-                if i==bombs+1 then bombStar(x,cy,size,fraction,alpha) end
+                D.renderStar('star_big10',x,cy,size,1,alpha*.18)
+                if i==bombs+1 then D.renderStar('star_big10',x,cy,size,fraction,alpha) end
             end
         end
     end
 end
 function D.renderHUD(scrr,scrt,alpha)
     if not D.enabled() then return end
-    local count=(GameNet and GameNet.host()) and 2 or 1
-    local red,blue,green=D.values(1)
-    local values={number(red),number(blue),number(green)..'%'}
-    if count==2 then
-        local r,b,g=D.values(2)
-        for i,v in ipairs({number(r),number(b),number(g)..'%'}) do values[i]='P1 '..values[i]..' / P2 '..v end
-    end
-    local scale=count==2 and .6 or .8
-    ui:RenderStatusRow('火力',values[1],scrr+6,954,scrt-250,alpha,{255,120,125},scale)
-    ui:RenderStatusRow(modern() and 'Bomb恢复速度' or '射速',values[2],scrr+6,954,scrt-280,alpha,{110,190,255},scale)
-    if three() then ui:RenderStatusRow('判定',values[3],scrr+6,954,scrt-310,alpha,{110,235,145},scale) end
-    if modern() then D.renderBombs(scrr+6,954,scrt-350,alpha,count) end
+    ui.RunHUD.attributes(scrr,scrt,alpha)
 end
 function D.signature()
     local s=peek();if not s then return 'drops=none' end

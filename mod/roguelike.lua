@@ -1,6 +1,6 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={POOL_VERSION=5,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=6,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -327,57 +327,21 @@ local function register(variant,config)
     function result:render()
         SetViewMode('ui');RenderClear(Color(255,12,21,36))
         local c=Color(255,225,241,250);local run=self.run
-        local won_title=config.chain and '接续十战达成！' or (config.width==2 and '双Boss十战达成！' or '十战达成！')
-        local lost_title=config.chain and '接续本局结束' or (config.width==2 and '双Boss本局结束' or '本局结束')
-        ui:RenderText('title',run.won and won_title or lost_title,480,410,1.7,c,'centerpoint')
-        local progress=run.endless and string.format('完成 %d 战',run.completed) or string.format('完成 %d / %d 战',run.completed,R.COUNT)
-        ui:RenderText('title',progress,480,345,1,c,'centerpoint')
-        ui:RenderText('title',string.format('得分 %s    收卡 %d    失误 %d',tostring(run.score),run.captures,run.misses),480,285,0.8,c,'centerpoint')
-        ui:RenderText('title',string.format('用时 %.1f 秒 · 种子 %d · 复活 %d / 3',run.elapsed,run.seed,run.revives or 0),480,235,0.65,c,'centerpoint')
+        ui.RunHUD.stage(run.current or run.completed,480,270,560)
         for _,b in ipairs({{300,465,'返回标题 ESC'},{495,660,'再来一局 ENTER'}}) do
             SetImageState('white','',Color(255,29,64,85));RenderRect('white',b[1],b[2],85,125)
             ui:RenderText('title',b[3],(b[1]+b[2])/2,105,0.65,c,'centerpoint')
         end
     end
 end
--- 单独的 UI 对象在场景渲染之后显示进度，不遮挡战斗区和右侧原有数据。
+-- 战斗和结算共用数字排版，避免阶段号在不同场景采用不同口径。
 function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP end
 function panel:render()
     local run=lstg.var.rogue_run
     if not run then return end
     local previous=lstg.viewmode
     SetViewMode('ui')
-    local color=Color(255,220,239,250)
-    ui:RenderText('title',mode(run).title,150,450,1.0,color,'centerpoint')
-    local progress=run.endless and string.format('第 %d 战',math.max(1,run.current)) or string.format('第 %d / %d 战',math.max(1,run.current),R.COUNT)
-    ui:RenderText('title',progress,150,420,0.85,color,'centerpoint')
-    if run.endless then
-        ui:RenderText('title',string.format('已完成 %d 战',run.completed),150,380,0.75,color,'centerpoint')
-        ui:RenderText('title',string.format('第 %d 轮 · %d / %d',run.cycle,run.cardIndex,#run.cards),150,347,0.65,color,'centerpoint')
-    else
-        for i=1,R.COUNT do
-            local x=45+((i-1)%5)*43;local y=380-math.floor((i-1)/5)*32
-            local done=i<=run.completed;local current=i==run.current
-            SetImageState('white','',Color(220,done and 90 or 30,current and 160 or (done and 165 or 55),done and 135 or 80))
-            RenderRect('white',x,x+34,y,y+24)
-            ui:RenderText('title',tostring(i),x+17,y+12,0.55,color,'centerpoint')
-        end
-    end
-    local config=mode(run)
-    for side=1,config.width do
-        local first=run.endless and run.cardIndex or (run.current-1)*config.width+1
-        local entry=run.cards[first+side-1]
-        local text='准备开始'
-        if entry then
-            local difficulty=entry.difficulty and (entry.difficulty=='extra' and 'Extra/Phantasm · ' or 'Lunatic · ') or ''
-            text=entry.source..' · '..difficulty..(entry.kind=='road' and '道中' or (entry.spell and '符卡' or '非符'))
-        end
-        if config.width==2 then text=(side==1 and '右侧 ' or '左侧 ')..text end
-        ui:RenderText('title',text,150,315-(side-1)*25,entry and entry.difficulty=='extra' and 0.55 or 0.65,color,'centerpoint')
-    end
-    local lives=run.endless and string.format('剩余生命 %d',math.max(0,R.MISS_LIMIT-misses())) or string.format('失误 %d / %d',lstg.var.dead,R.MISS_LIMIT+((lstg.var.revive and lstg.var.revive.credits) or 0))
-    ui:RenderText('title',lives,150,mode(run).width==2 and 260 or 285,0.7,color,'centerpoint')
-    ui:RenderText('title',string.format('答题复活 %d / 3',(lstg.var.revive and lstg.var.revive.used) or 0),150,mode(run).width==2 and 230 or 255,0.65,color,'centerpoint')
+    ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)
     if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)
