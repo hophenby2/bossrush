@@ -246,6 +246,20 @@ return function()
         local card=owner and owner.current_card
         return not not (card and card.is_sc and (card.th08_motion_source or card.th08_lastword_source or card._original_balance))
     end
+    -- SET_LIFE的操作数是原作life，须先校准TTK，再乘一次当前阶段倍率。
+    -- 三面Sub20在出生ECL调用、五面Sub45在已有敌机上调用，不能依赖构造器补做校准。
+    function M.set_life(o,raw)
+        o.hp,o.maxhp=raw,raw
+        o._original_raw_hp,o._original_hp_scale=nil,nil
+        o._hp_growth_last=nil
+        if OriginalBalance then
+            OriginalBalance.unit(o,8,spell_context(o.th08_card_owner or M.owner))
+        elseif GameHPScale and GameHPScale.enabled() then
+            o.maxhp,o.hp=GameHPScale.health(o,raw,raw)
+        elseif o.is_boss and GameRank then
+            o.maxhp,o.hp=GameRank.health(o,raw,raw)
+        end
+    end
     local function attach(o,parent,linked)
         o.th08_parent,o.th08_attached=parent,linked and parent~=nil
         local owner=card_owner(parent)
