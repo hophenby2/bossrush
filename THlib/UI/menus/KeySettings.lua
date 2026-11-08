@@ -148,6 +148,7 @@ function key_setting_menu:frame()
 end
 
 function key_setting_menu:render()
+    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.keys(self,_key_code_to_name) end
     if self.alpha == 0 then
         return
     end

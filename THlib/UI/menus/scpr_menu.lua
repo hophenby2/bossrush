@@ -245,6 +245,7 @@ function sc_pr_menu:frame()
 end
 
 function sc_pr_menu:render()
+    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.spellPractice(self) end
     if self.alpha == 0 then
         return
     end

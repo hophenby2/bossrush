@@ -4,7 +4,7 @@ Include "THlib\\UI\\sc_pr.lua"
 ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
-ui.version = "26.11.8v1"
+ui.version = "26.11.8v2"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
 LoadImage("hint.bonusfail", "hint", 0, 64, 256, 64)
@@ -136,6 +136,7 @@ end
 
 CreateRenderTarget("test")
 function ui:DrawBack(alpha, t)
+    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.background(alpha) end
     SetViewMode('ui')
     SetImageState("sub_menu_bg", '', 255 * alpha, 255, 255, 255)
     Render("sub_menu_bg", 480, 270)
@@ -351,7 +352,7 @@ function lstg_ui:reloadUI()
     SetResourceStatus(pool)
 end
 function lstg_ui:init()
-    if setting.resx > setting.resy then
+    if setting.resx > setting.resy or AndroidPortrait then
         self.type = 1
     else
         self.type = 2
@@ -363,6 +364,9 @@ function lstg_ui:init()
     self:reloadUI()
 end
 function lstg_ui:drawFrame()
+    if AndroidPortrait and AndroidPortrait.enabled() then
+        SetViewMode('ui');RenderClear(Color(255,0,0,0));SetViewMode('world');return
+    end
     self["drawFrame" .. self.type](self)
 end
 function lstg_ui:drawFrame1()
@@ -391,6 +395,7 @@ function lstg_ui:drawFrame2()
     SetViewMode "world"
 end
 function lstg_ui:drawMenuBG()
+    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.background() end
     self["drawMenuBG" .. self.type](self)
 end
 function lstg_ui:drawMenuBG1()
@@ -477,6 +482,9 @@ function lstg_ui:ScoreUpdate()
     self.score_tmp = score_tmp
 end
 function lstg_ui:drawScore()
+    if AndroidPortrait and AndroidPortrait.enabled() then
+        AndroidPortrait.hud(min(stage.current_stage.timer/120,1)*255);SetViewMode('world');return
+    end
     self:ScoreUpdate()
     self["drawScore" .. self.type](self)
 end

@@ -71,7 +71,8 @@ function H.render(x,y,width)
     local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
     local move=t*t*(3-2*t)
     local alpha=math.min(1,(H.DURATION-a.age)/FADE)*255
-    ui:RenderText('title',('×%.2f'):format(a.factor),480+(x-480)*move,270+(y-270)*move,
+    local centerX,centerY=screen.width/2,screen.height/2
+    ui:RenderText('title',('×%.2f'):format(a.factor),centerX+(x-centerX)*move,centerY+(y-centerY)*move,
         2.6-1.6*move,Color(alpha,H.rgb(a.stage)),'centerpoint')
 end
 function H.beginCard(o)

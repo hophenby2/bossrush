@@ -216,6 +216,7 @@ function music_bar:frame()
     end
 end
 function music_bar:render()
+    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.music(self) end
     SetViewMode("ui")
     local r, g, b = sp:HSVtoRGB(self.timer / 3, 0.9, 0.9)
     if self.salpha > 0 then
