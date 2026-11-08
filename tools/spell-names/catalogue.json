@@ -1,0 +1,5651 @@
+{
+  "cards": [
+    {
+      "game": 31,
+      "id": 351,
+      "ja": "「季節外れのバタフライストーム」",
+      "zh": "「不合时令的蝶雨」",
+      "file": "ecldata1sp.ecl",
+      "roots": [
+        "Sub36"
+      ],
+      "source_sha256": "aac506b4eaf8fdfaa90e876f74db711d3c0724f63798e7d62801b02bbb29e00e",
+      "spell_addresses": [
+        31776
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 352,
+      "ja": "「ブラインドナイトバード」",
+      "zh": "「Blind Night-Bird」（失明的夜雀）",
+      "file": "ecldata2sp.ecl",
+      "roots": [
+        "Sub46"
+      ],
+      "source_sha256": "2f83c57da937f35288f6f0e1b6ef3aecddd25b4e80fbc3ed5ef7289bef2229f1",
+      "spell_addresses": [
+        31036
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 353,
+      "ja": "「日出づる国の天子」",
+      "zh": "「日出国之天子」",
+      "file": "ecldata3sp.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "3d458ec6549f1d7fb6c694388adb55c010ac4cb405457ab9af6df2e13928ca5f",
+      "spell_addresses": [
+        34180
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 354,
+      "ja": "「幻朧月睨(ルナティックレッドアイズ)」",
+      "zh": "「幻胧月睨(Lunatic Red Eyes)」（疯狂红眼）",
+      "file": "ecldata5sp.ecl",
+      "roots": [
+        "Sub40"
+      ],
+      "source_sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+      "spell_addresses": [
+        20584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 355,
+      "ja": "「天網蜘網捕蝶の法」",
+      "zh": "「天网蛛网捕蝶之法」",
+      "file": "ecldata6sp.ecl",
+      "roots": [
+        "Sub76"
+      ],
+      "source_sha256": "c1cd463702f1e621b67d1e2f4915fd3e3a27ac61687ef477f4ff1bde554a44d7",
+      "spell_addresses": [
+        47692
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 356,
+      "ja": "「蓬莱の樹海」",
+      "zh": "「蓬莱的树海」",
+      "file": "ecldata7sp.ecl",
+      "roots": [
+        "Sub79"
+      ],
+      "source_sha256": "7f1a847fdd7ceb5e35dfd3529a54961ab4d1c9e7607fbcfb577936465326ab0e",
+      "spell_addresses": [
+        63600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 357,
+      "ja": "「フェニックス再誕」",
+      "zh": "「不死鸟重生」",
+      "file": "ecldata8sp.ecl",
+      "roots": [
+        "Sub110"
+      ],
+      "source_sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+      "spell_addresses": [
+        63916
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 358,
+      "ja": "「エンシェントデューパー」",
+      "zh": "「Ancient Duper」（远古的欺骗者）",
+      "file": "ecldata5sp.ecl",
+      "roots": [
+        "Sub43"
+      ],
+      "source_sha256": "d9140821aae21c9426f7ebb0a4e8334718265bdd011f20b7c026eda901639d4b",
+      "spell_addresses": [
+        22448
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 359,
+      "ja": "「無何有浄化」",
+      "zh": "「无何有的净化」",
+      "file": "ecldata8sp.ecl",
+      "roots": [
+        "Sub113"
+      ],
+      "source_sha256": "695f6f89d34e961d9bef6d4773b63e57339156db5747c0c314a1696aa8217660",
+      "spell_addresses": [
+        69580
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 360,
+      "ja": "「夢想天生」",
+      "zh": "「梦想天生」",
+      "file": "ecldata4asp.ecl",
+      "roots": [
+        "Sub43"
+      ],
+      "source_sha256": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3",
+      "spell_addresses": [
+        33424
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 361,
+      "ja": "「ブレイジングスター」",
+      "zh": "「Blazing Star」（闪亮之星）",
+      "file": "ecldata4bsp.ecl",
+      "roots": [
+        "Sub60"
+      ],
+      "source_sha256": "007da9d02374f01292eada9a065c21b54cebbb81a5bff7a1660753498df65b51",
+      "spell_addresses": [
+        42300
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 362,
+      "ja": "「デフレーションワールド」",
+      "zh": "「Deflation World」（收缩的世界）",
+      "file": "ecldata_sk.ecl",
+      "roots": [
+        "Sub1"
+      ],
+      "source_sha256": "2ec1b8299d4c2a46b8fb59bfb61376d55a20fdae597ce4a05d4bb5e5ea061117",
+      "spell_addresses": [
+        548
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 363,
+      "ja": "「待宵反射衛星斬」",
+      "zh": "「待宵反射卫星斩」",
+      "file": "ecldata_ym.ecl",
+      "roots": [
+        "Sub1"
+      ],
+      "source_sha256": "fc10e4aa40f2d10ab976416cb1ecc0fd773b9934b4cc6f531bfd93f3c1f8be19",
+      "spell_addresses": [
+        540
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 364,
+      "ja": "「グランギニョル座の怪人」",
+      "zh": "「猎奇剧团里的怪人」",
+      "file": "ecldata_al.ecl",
+      "roots": [
+        "Sub1"
+      ],
+      "source_sha256": "fc669292ee41f99c9eed4e72b644c591a522deaa255ed106224f656d5431e4a8",
+      "spell_addresses": [
+        516
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 365,
+      "ja": "「スカーレットディスティニー」",
+      "zh": "「Scarlet Destiny」（绯红命运）",
+      "file": "ecldata_rm.ecl",
+      "roots": [
+        "Sub1"
+      ],
+      "source_sha256": "7ed4ef732520461bee14e61f6f8747c1b65d48d7f20c3381eaf42d380efe36a1",
+      "spell_addresses": [
+        516
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 366,
+      "ja": "「西行寺無余涅槃」",
+      "zh": "「西行寺无余涅槃」",
+      "file": "ecldata_yy.ecl",
+      "roots": [
+        "Sub1"
+      ],
+      "source_sha256": "967ac94f260108eb081c64ed5242debf78c10f4da205aec15de8c5ea2e1cbdda",
+      "spell_addresses": [
+        528
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 367,
+      "ja": "「深弾幕結界　-夢幻泡影-」",
+      "zh": "「深弹幕结界 -梦幻泡影-」",
+      "file": "ecldata_yk.ecl",
+      "roots": [
+        "Sub4"
+      ],
+      "source_sha256": "86037d70bb2dc44357f65eb5ee917b5a07834849fb2f528ef9930ceea71cff7a",
+      "spell_addresses": [
+        3900
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 3426,
+      "ja": "産霊「ファーストピラミッド」",
+      "zh": "产灵「First Pyramid」（最初的金字塔）",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub30"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        13220
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 428,
+      "ja": "始符「エフェメラリティ137」",
+      "zh": "始符「Ephemerality 137」（短命的137）",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        22612
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 429,
+      "ja": "野符「GHQクライシス」",
+      "zh": "野符「GHQ的危机」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub47"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        26004
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 431,
+      "ja": "国体「三種の神器　郷」",
+      "zh": "国体「三种神器　乡」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub62"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        34692
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 432,
+      "ja": "虚史「幻想郷伝説」",
+      "zh": "虚史「幻想乡传说」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub67"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        37280
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 3427,
+      "ja": "未来「高天原」",
+      "zh": "未来「高天原」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub71"
+      ],
+      "source_sha256": "113e52b73dfdd94408b99dd7646ac973554cef76f1b7bd6686a773da6e974ce8",
+      "spell_addresses": [
+        40356
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 370,
+      "ja": "旧史「旧秘境史　-オールドヒストリー-」",
+      "zh": "旧史「旧秘境史 -古代史-」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub51"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        16292
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 371,
+      "ja": "転世「一条戻り橋」",
+      "zh": "转世「一条归桥」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        19644
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 372,
+      "ja": "新史「新幻想史　-ネクストヒストリー-」",
+      "zh": "新史「新幻想史 -现代史-」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub60"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        21920
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 373,
+      "ja": "時効「月のいはかさの呪い」",
+      "zh": "时效「月岩笠的诅咒」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub93"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        40900
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 374,
+      "ja": "不死「火の鳥　-鳳翼天翔-」",
+      "zh": "不死「火鸟　-凤翼天翔-」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub97"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        42496
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 375,
+      "ja": "藤原「滅罪寺院傷」",
+      "zh": "藤原「灭罪寺院伤」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub100"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        47072
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 376,
+      "ja": "不死「徐福時空」",
+      "zh": "不死「徐福时空」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub103"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        48192
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 377,
+      "ja": "滅罪「正直者の死」",
+      "zh": "灭罪「正直者之死」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub108"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        50368
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 378,
+      "ja": "虚人「ウー」",
+      "zh": "虚人「无」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub113"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        52104
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 379,
+      "ja": "不滅「フェニックスの尾」",
+      "zh": "不灭「不死鸟之尾」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub118"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        54064
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 380,
+      "ja": "蓬莱「凱風快晴　-フジヤマヴォルケイノ-」",
+      "zh": "蓬莱「凯风快晴　-Fujiyama Volcano-」（富士火山）",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub126"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        56512
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 381,
+      "ja": "「パゼストバイフェニックス」",
+      "zh": "「Possessed by Phoenix」（不死鸟附体）",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub131"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        59236
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 382,
+      "ja": "「蓬莱人形」",
+      "zh": "「蓬莱人形」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub143"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        62920
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 383,
+      "ja": "「インペリシャブルシューティング」",
+      "zh": "「Imperishable Shooting」（不朽的弹幕）",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub149"
+      ],
+      "source_sha256": "a4da962f3621ef626a62fd01c3d1607f11e5706f3ab45480d3e36ac5b7b67741",
+      "spell_addresses": [
+        64744
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 402,
+      "ja": "薬符「壺中の大銀河」",
+      "zh": "药符「壶中的大银河」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub19"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        10148
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 401,
+      "ja": "神宝「ブリリアントドラゴンバレッタ」",
+      "zh": "神宝「Brilliant Dragon Bullet」（耀眼的龙玉）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub50"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        28312
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 400,
+      "ja": "神宝「ブディストダイアモンド」",
+      "zh": "神宝「Buddhist Diamond」（佛体的金刚石）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        32996
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 399,
+      "ja": "神宝「サラマンダーシールド」",
+      "zh": "神宝「Salamander Shield」（火蜥蜴之盾）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub61"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        37260
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 398,
+      "ja": "神宝「ライフスプリングインフィニティ」",
+      "zh": "神宝「Life Spring Infinity」（无限的生命之泉）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub67"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        41168
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 397,
+      "ja": "神宝「蓬莱の玉の枝  -夢色の郷-」",
+      "zh": "神宝「蓬莱的玉枝　-梦色之乡-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub71"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        44384
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 392,
+      "ja": "「永夜返し  -待宵-」",
+      "zh": "「永夜归返　-待宵-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub77"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        56004
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 393,
+      "ja": "「永夜返し  -子の四つ-」",
+      "zh": "「永夜归返　-子时四刻-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub80"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        57832
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 394,
+      "ja": "「永夜返し  -丑の四つ-」",
+      "zh": "「永夜归返　-丑时四刻-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub82"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        59768
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 395,
+      "ja": "「永夜返し  -寅の四つ-」",
+      "zh": "「永夜归返　-寅时四刻-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub84"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        61584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 396,
+      "ja": "「永夜返し  -世明け-」",
+      "zh": "「永夜归返　-世间开明-」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub87"
+      ],
+      "source_sha256": "20b35dca3820438f0b90ae44e3362a7af27d2fc1ac7ae5888c477dc1c89a3734",
+      "spell_addresses": [
+        63780
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 421,
+      "ja": "天丸「壺中の天地」",
+      "zh": "天丸「壶中的天地」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub21"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        10636
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 420,
+      "ja": "神符「天人の系譜」",
+      "zh": "神符「天人的族谱」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        26844
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 419,
+      "ja": "蘇生「ライジングゲーム」",
+      "zh": "苏生「Rising Game」（复苏游戏）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        29780
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 418,
+      "ja": "神脳「オモイカネブレイン」",
+      "zh": "神脑「Omoikane Brain」（思兼的头脑）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub63"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        33552
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 417,
+      "ja": "天呪「アポロ１３」",
+      "zh": "天咒「Apollo 13」（阿波罗13号）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub68"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        37004
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 409,
+      "ja": "秘術「天文密葬法」",
+      "zh": "秘术「天文密葬法」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub73"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        40564
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 408,
+      "ja": "禁薬「蓬莱の薬」",
+      "zh": "禁药「蓬莱之药」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub78"
+      ],
+      "source_sha256": "3ede62afec737de7970ab979e14db0e6433d1eff43eac3a036a6df10ba821f72",
+      "spell_addresses": [
+        44956
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 434,
+      "ja": "夢境「二重大結界」",
+      "zh": "梦境「二重大结界」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub28"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        17936
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 436,
+      "ja": "散霊「夢想封印　寂」",
+      "zh": "散灵「梦想封印　寂」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub30"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        20288
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 438,
+      "ja": "神技「八方龍殺陣」",
+      "zh": "神技「八方龙杀阵」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub33"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        22628
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 440,
+      "ja": "回霊「夢想封印　侘」",
+      "zh": "回灵「梦想封印　侘」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub41"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        29152
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 441,
+      "ja": "大結界「博麗弾幕結界」",
+      "zh": "大结界「博丽弹幕结界」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub46"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        32968
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 442,
+      "ja": "神霊「夢想封印　瞬」",
+      "zh": "神灵「梦想封印　瞬」",
+      "file": "ecldata4a.ecl",
+      "roots": [
+        "Sub54"
+      ],
+      "source_sha256": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "spell_addresses": [
+        36652
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 444,
+      "ja": "魔空「アステロイドベルト」",
+      "zh": "魔空「Asteroid Belt」（小行星带）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub36"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        18460
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 446,
+      "ja": "黒魔「イベントホライズン」",
+      "zh": "黑魔「Event Horizon」（黑洞边缘）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub41"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        22412
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 448,
+      "ja": "恋風「スターライトタイフーン」",
+      "zh": "恋风「Starlight Typhoon」（星光台风）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub47"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        26552
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 450,
+      "ja": "恋心「ダブルスパーク」",
+      "zh": "恋心「Double Spark」（二重火花）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        31960
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 451,
+      "ja": "光撃「シュート・ザ・ムーン」",
+      "zh": "光击「Shoot the Moon」（射月）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub62"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        36640
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 452,
+      "ja": "魔砲「ファイナルマスタースパーク」",
+      "zh": "魔炮「Final Master Spark」（超究极火花）",
+      "file": "ecldata4b.ecl",
+      "roots": [
+        "Sub67"
+      ],
+      "source_sha256": "aa4c1d45accc12faa9fab021f3ba6a19f668e1edeaafcad04293483d4b18bcc6",
+      "spell_addresses": [
+        41360
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 454,
+      "ja": "幻波「赤眼催眠(マインドブローイング)」",
+      "zh": "幻波「赤眼催眠(Mind Blowing)」（心灵风暴）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub62"
+      ],
+      "source_sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+      "spell_addresses": [
+        25356
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 456,
+      "ja": "狂視「狂視調律(イリュージョンシーカー)」",
+      "zh": "狂视「狂视调律(Illusion Seeker)」（幻觉追迹者）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub66"
+      ],
+      "source_sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+      "spell_addresses": [
+        30140
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 458,
+      "ja": "懶惰「生神停止(マインドストッパー)」",
+      "zh": "懒惰「生神停止(Mind Stopper)」（心灵制止）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub63"
+      ],
+      "source_sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+      "spell_addresses": [
+        27484
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 459,
+      "ja": "散符「真実の月(インビジブルフルムーン)」",
+      "zh": "散符「真实之月(Invisible Full Moon)」（隐形满月）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub75"
+      ],
+      "source_sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+      "spell_addresses": [
+        33420
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 460,
+      "ja": "月眼「月兎遠隔催眠術(テレメスメリズム)」",
+      "zh": "月眼「月兔远程催眠术(Tele-Mesmerism)」（远程催眠）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub78"
+      ],
+      "source_sha256": "3148f45faf78bd8211a956edcdc353be73d2781995d3dadd36bdca8132f8fe19",
+      "spell_addresses": [
+        35808
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 462,
+      "ja": "声符「木菟咆哮」",
+      "zh": "声符「木菟的咆哮」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub23"
+      ],
+      "source_sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+      "spell_addresses": [
+        11228
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 464,
+      "ja": "猛毒「毒蛾の暗闇演舞」",
+      "zh": "猛毒「毒蛾的黑暗演舞」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub38"
+      ],
+      "source_sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+      "spell_addresses": [
+        22880
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 466,
+      "ja": "鷹符「イルスタードダイブ」",
+      "zh": "鹰符「Ill-Starred Dive」（祸延疾冲）",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+      "spell_addresses": [
+        26544
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 468,
+      "ja": "夜盲「夜雀の歌」",
+      "zh": "夜盲「夜雀之歌」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+      "spell_addresses": [
+        30928
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 469,
+      "ja": "夜雀「真夜中のコーラスマスター」",
+      "zh": "夜雀「午夜的合唱指挥」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "a1b183c4e1c9d939290192f84e50ac551e31a5abe91ac396e5b056a813051a10",
+      "spell_addresses": [
+        34744
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 471,
+      "ja": "蛍符「地上の彗星」",
+      "zh": "萤符「地上的彗星」",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub22"
+      ],
+      "source_sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+      "spell_addresses": [
+        12980
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 474,
+      "ja": "灯符「ファイヤフライフェノメノン」",
+      "zh": "灯符「Firefly Phenomenon」（萤光现象）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub38"
+      ],
+      "source_sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+      "spell_addresses": [
+        23872
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 475,
+      "ja": "蠢符「ナイトバグトルネード」",
+      "zh": "蠢符「Night Bug Tornado」（夜虫龙卷）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+      "spell_addresses": [
+        28980
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 31,
+      "id": 476,
+      "ja": "隠蟲「永夜蟄居」",
+      "zh": "隐虫「永夜蛰居」",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub48"
+      ],
+      "source_sha256": "6b44a0ea36648edcdeae522a2ac16d1f09bf2097d3ddaa1a61c8c1703bad68ea",
+      "spell_addresses": [
+        33552
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方永夜抄/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3802,
+      "ja": "神罰「幼きデーモンロード」",
+      "zh": "神罚「幼小的恶魔领主」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub31"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        14904
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3805,
+      "ja": "獄符「千本の針の山」",
+      "zh": "狱符「千针山」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub33"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        16600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3808,
+      "ja": "神術「吸血鬼幻想」",
+      "zh": "神术「吸血鬼幻想」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub35"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        18488
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3811,
+      "ja": "紅符「スカーレットマイスタ」",
+      "zh": "红符「Scarlet Meister」（绯红之主）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub39"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        21880
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 369,
+      "ja": "「紅色の幻想郷」",
+      "zh": "「红色幻想乡」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        25452
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3901,
+      "ja": "月符「ムーンライトレイ」",
+      "zh": "月符「Moonlight Ray」（月亮光）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub9"
+      ],
+      "source_sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+      "spell_addresses": [
+        4524
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3903,
+      "ja": "夜符「ナイトバード」",
+      "zh": "夜符「Night Bird」（夜中鸟）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub22"
+      ],
+      "source_sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+      "spell_addresses": [
+        14334
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3905,
+      "ja": "闇符「ディマーケイション」",
+      "zh": "暗符「Demarcation」（边界线）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub23"
+      ],
+      "source_sha256": "9d9a40e9f7e3ab9346d3874438134659cacf9d34f4aff57b96b4be4ea85b99d7",
+      "spell_addresses": [
+        15980
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3908,
+      "ja": "雹符「ヘイルストーム」",
+      "zh": "雹符「Hailstorm」（冰雹暴风）",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub30"
+      ],
+      "source_sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+      "spell_addresses": [
+        11126
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3910,
+      "ja": "凍符「パーフェクトフリーズ」",
+      "zh": "冻符「Perfect Freeze」（完美冻结）",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub31"
+      ],
+      "source_sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+      "spell_addresses": [
+        11916
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3911,
+      "ja": "雪符「ダイアモンドブリザード」",
+      "zh": "雪符「Diamond Blizzard」（钻石风暴）",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub32"
+      ],
+      "source_sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e",
+      "spell_addresses": [
+        13266
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3913,
+      "ja": "華符「セラギネラ９」",
+      "zh": "华符「Selaginella 9」（卷柏 9）",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub14"
+      ],
+      "source_sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+      "spell_addresses": [
+        6594
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3915,
+      "ja": "虹符「彩虹の風鈴」",
+      "zh": "虹符「彩虹的风铃」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub29"
+      ],
+      "source_sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+      "spell_addresses": [
+        14388
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3917,
+      "ja": "幻符「華想夢葛」",
+      "zh": "幻符「华想梦葛」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub30"
+      ],
+      "source_sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+      "spell_addresses": [
+        15802
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3919,
+      "ja": "彩符「彩光乱舞」",
+      "zh": "彩符「彩光乱舞」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub32"
+      ],
+      "source_sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+      "spell_addresses": [
+        17726
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3920,
+      "ja": "彩符「極彩颱風」",
+      "zh": "彩符「极彩台风」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub33"
+      ],
+      "source_sha256": "44dfcaa737b7d4b3d1275655627e15a9d5b7710fc75a0885fb39d8c9485056d6",
+      "spell_addresses": [
+        19448
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3923,
+      "ja": "火符「アグニシャイン上級」",
+      "zh": "火符「Agni Shine上级」（火神之光 上级）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub43"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        33646
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3925,
+      "ja": "土符「トリリトンシェイク」",
+      "zh": "土符「Trilithon Shake」（三石塔的震动）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        42204
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3926,
+      "ja": "火＆土符「ラーヴァクロムレク」",
+      "zh": "火&土符「Lava Cromlech」（熔岩环石阵）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        44018
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3927,
+      "ja": "金＆水符「マーキュリポイズン」",
+      "zh": "金&水符「Mercury Poison」（水银之毒）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        47484
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3928,
+      "ja": "木＆火符「フォレストブレイズ」",
+      "zh": "木&火符「Forest Blaze」（森林大火）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        45060
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3930,
+      "ja": "水符「ベリーインレイク」",
+      "zh": "水符「Bury in Lake」（湖葬）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub46"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        36648
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3932,
+      "ja": "木符「グリーンストーム」",
+      "zh": "木符「Green Storm」（绿色风暴）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub49"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        39934
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3933,
+      "ja": "水＆木符「ウォーターエルフ」",
+      "zh": "水&木符「Water Elf」（水精灵）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub57"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        46314
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3934,
+      "ja": "金＆水符「マーキュリポイズン」",
+      "zh": "金&水符「Mercury Poison」（水银之毒）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        47484
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3935,
+      "ja": "土＆金符「エメラルドメガリス」",
+      "zh": "土&金符「Emerald Megalith」（祖母绿巨石）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub59"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        48258
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3937,
+      "ja": "木符「シルフィホルン上級」",
+      "zh": "木符「Sylphy Horn上级」（风灵的角笛 上级）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub48"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        38728
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3939,
+      "ja": "火符「アグニレイディアンス」",
+      "zh": "火符「Agni Radiance」（火神的光辉）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        34672
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3940,
+      "ja": "木＆火符「フォレストブレイズ」",
+      "zh": "木&火符「Forest Blaze」（森林大火）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        45060
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3941,
+      "ja": "土＆金符「エメラルドメガリス」",
+      "zh": "土&金符「Emerald Megalith」（祖母绿巨石）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub59"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        48258
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3942,
+      "ja": "火＆土符「ラーヴァクロムレク」",
+      "zh": "火&土符「Lava Cromlech」（熔岩环石阵）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        44018
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3944,
+      "ja": "土符「レイジィトリリトン上級」",
+      "zh": "土符「Lazy Trilithon上级」（慵懒三石塔 上级）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub51"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        41594
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3946,
+      "ja": "金符「シルバードラゴン」",
+      "zh": "金符「Silver Dragon」（银龙）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub54"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        43468
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3947,
+      "ja": "土＆金符「エメラルドメガリス」",
+      "zh": "土&金符「Emerald Megalith」（祖母绿巨石）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub59"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        48258
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3948,
+      "ja": "水＆木符「ウォーターエルフ」",
+      "zh": "水&木符「Water Elf」（水精灵）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub57"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        46314
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3949,
+      "ja": "金＆水符「マーキュリポイズン」",
+      "zh": "金&水符「Mercury Poison」（水银之毒）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60",
+      "spell_addresses": [
+        47484
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3951,
+      "ja": "奇術「幻惑ミスディレクション」",
+      "zh": "奇术「幻惑Misdirection」（幻惑误导）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub18"
+      ],
+      "source_sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+      "spell_addresses": [
+        6522
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3953,
+      "ja": "幻幽「ジャック・ザ・ルドビレ」",
+      "zh": "幻幽「Jack the Ludo Bile」（迷幻的杰克）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub45"
+      ],
+      "source_sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+      "spell_addresses": [
+        20110
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3955,
+      "ja": "幻世「ザ・ワールド」",
+      "zh": "幻世「The World」（世界）",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub47"
+      ],
+      "source_sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+      "spell_addresses": [
+        21434
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3957,
+      "ja": "メイド秘技「殺人ドール」",
+      "zh": "女仆秘技「杀人玩偶」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub50"
+      ],
+      "source_sha256": "50b5c4777a56910148466c7e5ea1c8dadc126e706420604d52421a49bf861d1b",
+      "spell_addresses": [
+        22930
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3959,
+      "ja": "奇術「エターナルミーク」",
+      "zh": "奇术「Eternal Meek」（永恒的温柔）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub14"
+      ],
+      "source_sha256": "4a4d4e5bf7ff79ab49b918267130b42308b3a5565cc892dc0e636b8b667740e5",
+      "spell_addresses": [
+        4524
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3964,
+      "ja": "月符「サイレントセレナ」",
+      "zh": "月符「Silent Selene」（沉静的月神）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub22"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        7888
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3965,
+      "ja": "日符「ロイヤルフレア」",
+      "zh": "日符「Royal Flare」（皇家烈焰）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub23"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        8710
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3966,
+      "ja": "火水木金土符「賢者の石」",
+      "zh": "火水木金土符「贤者之石」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub24"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        10368
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3968,
+      "ja": "禁忌「クランベリートラップ」",
+      "zh": "禁忌「Cranberry Trap」（蔓越莓陷阱）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub33"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        13614
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3970,
+      "ja": "禁忌「レーヴァテイン」",
+      "zh": "禁忌「Laevatein」（莱瓦汀）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub36"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        17148
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3972,
+      "ja": "禁忌「フォーオブアカインド」",
+      "zh": "禁忌「Four of a Kind」（四重存在）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub39"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        19790
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3974,
+      "ja": "禁忌「カゴメカゴメ」",
+      "zh": "禁忌「笼中鸟」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        23224
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3976,
+      "ja": "禁忌「恋の迷路」",
+      "zh": "禁忌「恋之迷宫」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub48"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        25742
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3978,
+      "ja": "禁弾「スターボウブレイク」",
+      "zh": "禁弹「Starbow Break」（星虹破碎）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub50"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        27656
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3980,
+      "ja": "禁弾「カタディオプトリック」",
+      "zh": "禁弹「Catadioptric」（折反射）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub54"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        31126
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3982,
+      "ja": "禁弾「過去を刻む時計」",
+      "zh": "禁弹「铭刻往昔之钟」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub57"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        34292
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3984,
+      "ja": "秘弾「そして誰もいなくなるか？」",
+      "zh": "秘弹「无人生还？」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub60"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        38090
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 32,
+      "id": 3985,
+      "ja": "ＱＥＤ「４９５年の波紋」",
+      "zh": "QED「495年的波纹」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub68"
+      ],
+      "source_sha256": "fb900c7e54b1f5d0c36a2e09986bef8f8fde002ca7b5005d12e3aaec7e856392",
+      "spell_addresses": [
+        49156
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方红魔乡/符卡"
+    },
+    {
+      "game": 33,
+      "id": 410,
+      "ja": "幽雅「死出の誘蛾灯」",
+      "zh": "幽雅「通向黄泉的诱蛾灯」",
+      "file": "ecl17_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "f9d9918aa9d169b27aad95abc573a0214605be62f2de2044843b6780539739cd",
+      "spell_addresses": [
+        732
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 411,
+      "ja": "蝶符「鳳蝶紋の死槍」",
+      "zh": "蝶符「凤蝶纹的死枪」",
+      "file": "ecl17_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "826fe5f9e48173965273294a34eb5c90c495c21b510f74500ae84742f89f0738",
+      "spell_addresses": [
+        628
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 416,
+      "ja": "死符「酔人の生、死の夢幻」",
+      "zh": "死符「醉人之生，死的梦幻」",
+      "file": "ecl17_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d80768fe410edaff8aac6cd0292bca016d6881246985799481bb2f9d286cedae",
+      "spell_addresses": [
+        600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 412,
+      "ja": "「死蝶浮月」",
+      "zh": "「死蝶浮月」",
+      "file": "ecl17_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "361a35a5e57fae58faf98475b86d33be910f98123bcc9bad0bae177f59a00e32",
+      "spell_addresses": [
+        832
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 413,
+      "ja": "密符「御大師様の秘鍵」",
+      "zh": "密符「大师的密传」",
+      "file": "ecl16_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "e07df94527b5655d63e05b05463164911601a47a480b4009bc88af595d77b5ca",
+      "spell_addresses": [
+        636
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 414,
+      "ja": "行符「八千万枚護摩」",
+      "zh": "行符「八千万块护摩」",
+      "file": "ecl16_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "372617c93342f7a8655a30123b52e40fd7e578bd1a59a3b85d6cce62ec9b5a8f",
+      "spell_addresses": [
+        628
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 415,
+      "ja": "超人「飛翔役小角」",
+      "zh": "超人「飞翔役小角」",
+      "file": "ecl16_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "beafc98b4970bfa5678fc16c71720061087a00e1d2d1ae9a986d5e4876289c2d",
+      "spell_addresses": [
+        620
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 453,
+      "ja": "禁忌「フォービドゥンフルーツ」",
+      "zh": "禁忌「Forbidden Fruits」（禁果）",
+      "file": "ecl22_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "faf5d1cd4170a0939a8f3121018b8f0ca1db1d7562470c3b922e5e26322c5639",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 454,
+      "ja": "禁忌「禁じられた遊び」",
+      "zh": "禁忌「被禁止的游戏」",
+      "file": "ecl22_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "a24315c91867c6d1d80bcafd7b3d68c923e480a12a5e609c7b6ab3a3118500fb",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 455,
+      "ja": "境符「色と空の境界」",
+      "zh": "境符「色与空的界线」",
+      "file": "ecl23_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "2f4b257724e1c10489459e7f7469605d654d22a68525eea3b64fe60b123408b0",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 456,
+      "ja": "境符「波と粒の境界」",
+      "zh": "境符「波与粒的界线」",
+      "file": "ecl23_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "c63ccfa39c65fe7963342ffe70f0dbc1ba84f5388ba7cb32e24111d73e8cd0d1",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 457,
+      "ja": "貴人「サンジェルマンの忠告」",
+      "zh": "贵人「圣日耳曼的忠告」",
+      "file": "ecl24_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d55df324143b3a594b4ca373dd8c657024d4dff6b82e4a336417539cb3e5097c",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 458,
+      "ja": "蓬莱「瑞江浦嶋子と五色の瑞亀」",
+      "zh": "蓬莱「瑞江浦岛子与五色的瑞龟」",
+      "file": "ecl24_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "942eafd445c5d6b4f1bf08d4d7d7becc46d2dc2208b4be12503ed01ca358b581",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 459,
+      "ja": "鬼気「濛々迷霧」",
+      "zh": "鬼气「蒙蒙迷雾」",
+      "file": "ecl25_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "6eae2a57d036ea66dd93b5b501e229021254a7ce9445c97ec5443b52caa79a2e",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 460,
+      "ja": "「百万鬼夜行」",
+      "zh": "「百万鬼夜行」",
+      "file": "ecl25_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "b3def76b0c307750286b7bcd0bf7153586c799be8ddee4bb792996922b3410e3",
+      "spell_addresses": [
+        612
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 471,
+      "ja": "嘘言「タン・オブ・ウルフ」",
+      "zh": "谎言「Tongue of Wolf」（狼之舌）",
+      "file": "ecl21_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "0b50e81bfc2e16254e29e8ba8618afe894cf01c5bb63c6f0691aa3538ea55159",
+      "spell_addresses": [
+        740
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 472,
+      "ja": "死歌「八重霧の渡し」",
+      "zh": "死歌「八重雾中渡」",
+      "file": "ecl20_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "201fe075ac246bec6409b85dede626be671d0047a41948debd96bdaea0fec7a6",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 473,
+      "ja": "審判「十王裁判」",
+      "zh": "审判「十王审判」",
+      "file": "ecl21_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "5e945f348fa0703a4524f9198ff2a9c7e738e509770ff688d7983fff9f7cfc31",
+      "spell_addresses": [
+        916
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 474,
+      "ja": "古雨「黄泉中有の旅の雨」",
+      "zh": "古雨「黄泉中有旅途之雨」",
+      "file": "ecl20_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "634e927655173fa412a8b385910dadd7d0b690bd186ab7c13a08c636e0a8312a",
+      "spell_addresses": [
+        600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 475,
+      "ja": "審判「ギルティ・オワ・ノットギルティ」",
+      "zh": "审判「Guilty or Not Guilty」（有罪或无罪）",
+      "file": "ecl21_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "91025cd1e33ac1a04293df0e10a2f86198536c8c1e261c673e3ed699799592d5",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 476,
+      "ja": "死価「プライス・オブ・ライフ」",
+      "zh": "死价「Price of Life」（生命的价值）",
+      "file": "ecl20_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "c900d010a8f07bac0fc0c1ec4d9eb3b5ff58a7e8e2aa33a48e0f85f94406aa38",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 477,
+      "ja": "審判「浄頗梨審判　-射命丸文-」",
+      "zh": "审判「净颇梨审判 -射命丸文-」",
+      "file": "ecl21_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "27438568ee249b05cced19fe0a8f20eb3d0cd80b9f55b75212b543d09e085046",
+      "spell_addresses": [
+        776
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 479,
+      "ja": "新難題「月のイルメナイト」",
+      "zh": "新难题「月的钛铁矿」",
+      "file": "ecl19_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "0750750aa5504bf5f00878c74c566134a3e92079387b4b62aad3adc90a2659f5",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 480,
+      "ja": "薬符「胡蝶夢丸ナイトメア」",
+      "zh": "药符「蝴蝶梦丸噩梦」",
+      "file": "ecl18_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "1cbcd78435cc353e2cc0d7fcbf1e926e9c48cf2710baacf12e238f42107599ea",
+      "spell_addresses": [
+        612
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 481,
+      "ja": "新難題「エイジャの赤石」",
+      "zh": "新难题「艾哲红石」",
+      "file": "ecl19_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "3149f40b686b657e5b5b7958c1ba9b79c637971b79fd190744b88bc150768e5e",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 482,
+      "ja": "錬丹「水銀の海」",
+      "zh": "炼丹「水银之海」",
+      "file": "ecl18_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d987c97259d86a62a2261cee6c72c8ab55ccf1cbd10aadf9972993c4b3ff89a3",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 483,
+      "ja": "新難題「金閣寺の一枚天井」",
+      "zh": "新难题「金阁寺的整块天花板」",
+      "file": "ecl19_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "69b719487d2fe438f31f181631be382f1ab52dd6303a25e8ad30ae253866cc07",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 484,
+      "ja": "秘薬「仙香玉兎」",
+      "zh": "秘药「仙香玉兔」",
+      "file": "ecl18_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "1f6a1df83a0f1b15e1f99bfb78d87c8ee866853a540bfc6c8cff54c66b0133a5",
+      "spell_addresses": [
+        760
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 485,
+      "ja": "新難題「ミステリウム」",
+      "zh": "新难题「Mysterium」（神秘物质）",
+      "file": "ecl19_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "1b245fd89b71577a7e6ae8855ce282bd91d53149cc208c6ee6a958987d01bc5d",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 487,
+      "ja": "魔符「全世界ナイトメア」",
+      "zh": "魔符「全世界噩梦」",
+      "file": "ecl15_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "b87660291642e660ebeaec5440518956d51c5882450f92da1ad8f4d6636155af",
+      "spell_addresses": [
+        908
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 488,
+      "ja": "時符「トンネルエフェクト」",
+      "zh": "时符「Tunnel Effect」（穿隧效应）",
+      "file": "ecl14_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "ba15bb7b28989e18d031cdedace63a30ea6961f6ac0145f0c78d4048b110d53e",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 489,
+      "ja": "紅符「ブラッディマジックスクウェア」",
+      "zh": "红符「Bloody Magic Square」（嗜血魔方阵）",
+      "file": "ecl15_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "2b39fa47b821131d067977165e52b7f2d0c87b62aa255adf9c2a60fa0948f663",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 490,
+      "ja": "空虚「インフレーションスクウェア」",
+      "zh": "空虚「Inflation Square」（膨胀空间）",
+      "file": "ecl14_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "6934a8fda944cc7f13155d54e662e662c3ead12aecd06d271cb8c9b5cdb90536",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 491,
+      "ja": "紅蝙蝠「ヴァンピリッシュナイト」",
+      "zh": "红蝙蝠「Vampirish Night」（吸血鬼之夜）",
+      "file": "ecl15_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "398bcc236653536b24fed4495867851bb5e90f328aacc09dd6077284ca8d9855",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 492,
+      "ja": "銀符「パーフェクトメイド」",
+      "zh": "银符「Perfect Maid」（完美女仆）",
+      "file": "ecl14_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "6c107abf748c3e479519b42da5d6838e936febb1338b2af682caa17791d80d1c",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 493,
+      "ja": "神鬼「レミリアストーカー」",
+      "zh": "神鬼「Remilia Stalker」（蕾米莉亚潜行者）",
+      "file": "ecl15_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "e23b5b832908092d0acaede7fffa1bd6dc8b70051af6cbf0751270707d7634a7",
+      "spell_addresses": [
+        600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 495,
+      "ja": "人智剣「天女返し」",
+      "zh": "人智剑「天女返」",
+      "file": "ecl13_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "46c56201bf05964f625743802d81a6ad3d016dc5a47cea1bb699b594d96f2b39",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 496,
+      "ja": "星符「飛び重ね鱗」",
+      "zh": "星符「交错的鳞片」",
+      "file": "ecl12_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "56822e27290dff1c03bd69d9a1f90bb04bde0d7ea9e5c2430c60fdd894b44d1d",
+      "spell_addresses": [
+        624
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 497,
+      "ja": "妄執剣「修羅の血」",
+      "zh": "妄执剑「修罗之血」",
+      "file": "ecl13_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d4a76f625fc9ef916837b7f06ea66881036307ead42da7ae97297c6d521620e3",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 498,
+      "ja": "鬼神「鳴動持国天」",
+      "zh": "鬼神「鸣动持国天」",
+      "file": "ecl12_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d0166add28f3affed72986210dc4dc78f0cedf915f5d46b46e464bd82a40e337",
+      "spell_addresses": [
+        632
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 499,
+      "ja": "天星剣「涅槃寂静の如し」",
+      "zh": "天星剑「仿若涅槃寂静」",
+      "file": "ecl13_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "d5e208b849d3d861715ce9454007ed395a72bc1ab16a48c3254c38b85493bdfc",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 500,
+      "ja": "化猫「橙」",
+      "zh": "怪猫「橙」",
+      "file": "ecl12_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "3319500246e3ddb0655345b076bb2df30584fbd94da40ff142609245ffddaf8b",
+      "spell_addresses": [
+        620
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 501,
+      "ja": "四生剣「衆生無情の響き」",
+      "zh": "四生剑「众生无情之声」",
+      "file": "ecl13_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "a0e9ff0dc730688d7789da3c01ac4d15b715a641249e2027b17fd617e03bf29f",
+      "spell_addresses": [
+        612
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 503,
+      "ja": "日＆水符「ハイドロジェナスプロミネンス」",
+      "zh": "日&水符「Hydrogenous Prominence」（氢化日珥）",
+      "file": "ecl11_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "4727cd9c80b6d3f3e2e4fe2bca1ce46894d5fcfc4e4d6c46d3bf911a1e40e2c8",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 504,
+      "ja": "華符「彩光蓮華掌」",
+      "zh": "华符「彩光莲华掌」",
+      "file": "ecl10_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "6f24db85c2c390c781f40b004c3d326bba6b79cc5fb1e8565b8d440e1b48b367",
+      "spell_addresses": [
+        708
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 505,
+      "ja": "水＆火符「フロギスティックレイン」",
+      "zh": "水&火符「Phlogistic Rain」（燃素之雨）",
+      "file": "ecl11_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "1194a3cdc9ecd073c56737849ac4be9202749d58b8a8711e85c1b0298aab0670",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 506,
+      "ja": "彩翔「飛花落葉」",
+      "zh": "彩翔「飞花落叶」",
+      "file": "ecl10_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "ed7840c4c56c05a779efc39c8f2b573b1d19083f27c89a000ae0367b94d545ad",
+      "spell_addresses": [
+        708
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 507,
+      "ja": "月＆木符「サテライトヒマワリ」",
+      "zh": "月&木符「Satellite Himawari」（卫星向日葵）",
+      "file": "ecl11_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "88d6b53cbf2976471d8c1cfade484917411b70bc4f46d04b44e81834e4833192",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 508,
+      "ja": "彩華「虹色太極拳」",
+      "zh": "彩华「虹色太极拳」",
+      "file": "ecl10_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "1ec1e3b550a41360e2e2fc34e456abf7ab08812959fd1717214129597544ce2e",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 509,
+      "ja": "日＆月符「ロイヤルダイアモンドリング」",
+      "zh": "日&月符「Royal Diamond Ring」（皇家钻戒）",
+      "file": "ecl11_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "83986dbab67e02f12cc4ecb1c1d9981a2967bcd53a54ab4ce87ad7ea8018151a",
+      "spell_addresses": [
+        592
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 514,
+      "ja": "霧符「ガシングガーデン」",
+      "zh": "雾符「Gassing Garden」（毒气花园）",
+      "file": "ecl9_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "f8beb5404d1420e464c3620a5c65aeeafe43559490da1a02e4ce1560e5b55dfc",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 517,
+      "ja": "脱兎「フラスターエスケープ」",
+      "zh": "脱兔「Fluster Escape」（狼狈逃脱）",
+      "file": "ecl8_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "4bb9dd210e4fe4d511c0357bed6df486724b1a08376059b070ee68388b7024df",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 511,
+      "ja": "散符「朧月花栞（ロケット・イン・ミスト）」",
+      "zh": "散符「胧月花栞(Rocket in Mist)」（雾中火箭）",
+      "file": "ecl7_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "73c0680fdffba4a1dd052e911325173ea080f7ac187dda2541cf4fa1fb4de35c",
+      "spell_addresses": [
+        624
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 515,
+      "ja": "毒符「ポイズンブレス」",
+      "zh": "毒符「Poison Breath」（猛毒气息）",
+      "file": "ecl9_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "5c2f1bbe62417bd1f5bb6e7f116b856df83af82eeedf67d4bab798eab920083d",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 512,
+      "ja": "波符「幻の月（インビジブルハーフムーン）」",
+      "zh": "波符「幻之月(Invisible Half Moon)」（隐形半月）",
+      "file": "ecl7_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "9d31a56beb1e88657827d958ffdfebe61ec161507df11a6ea12cfcbd0264d83b",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 516,
+      "ja": "譫妄「イントゥデリリウム」",
+      "zh": "谵妄「Into Delirium」（陷入疯狂）",
+      "file": "ecl9_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "cb89cd3db4463794f3c0b7828990298f5a7083c94db74f205308cdc032b33f76",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 518,
+      "ja": "借符「大穴牟遅様の薬」",
+      "zh": "借符「大穴牟迟大人的药」",
+      "file": "ecl8_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "3c12577af6c6df5c7d1bcc746b2c276984e02ed41a16d237c6063c38726f3239",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 513,
+      "ja": "狂夢「風狂の夢（ドリームワールド）」",
+      "zh": "狂梦「疯狂的梦(Dream World)」（梦幻世界）",
+      "file": "ecl7_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "c333de92788464d033977b6dca89e5b7a4d281be16a14c7df6bf60a014fe1205",
+      "spell_addresses": [
+        600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 520,
+      "ja": "操符「ドールズインシー」",
+      "zh": "操符「Dolls in Sea」（海中的人偶）",
+      "file": "ecl6_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "e042cdc7c741952ace8503ca0e22e49e25f1a73c084d57f9d98359a52445daae",
+      "spell_addresses": [
+        604
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 521,
+      "ja": "呪符「ストロードールカミカゼ」",
+      "zh": "咒符「Straw Doll Kamikaze」（稻草人偶神风）",
+      "file": "ecl6_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "c37a4480848d0800d6d0c09bab062b2afefa0541b7f401a41cb673d9ddcdf42e",
+      "spell_addresses": [
+        636
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 522,
+      "ja": "赤符「ドールミラセティ」",
+      "zh": "赤符「Doll Mira Ceti」（人偶变光星）",
+      "file": "ecl6_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "7287aacd42ece71d707133ab84d527f1491adfc92ba44d5c7701b534ed07fd35",
+      "spell_addresses": [
+        600
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 523,
+      "ja": "光符「アマテラス」",
+      "zh": "光符「天照」",
+      "file": "ecl5_a.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "bb839a10c7bce304195f81f0e1ca6f8c0ade0a401fe18c0c7ab52049b632a900",
+      "spell_addresses": [
+        584
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 524,
+      "ja": "包符「昭和の雨」",
+      "zh": "包符「昭和之雨」",
+      "file": "ecl5_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "386060fa91f090e3d428490b691188374175c3c1e0578a1af23274473920554c",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 525,
+      "ja": "葵符「水戸の光圀」",
+      "zh": "葵符「水户的光圀」",
+      "file": "ecl5_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "8fee7acd9422214d0317fb48fbde29d251d9f17f5916c5b2203082fb6b46321e",
+      "spell_addresses": [
+        596
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 526,
+      "ja": "倭符「邪馬台の国」",
+      "zh": "倭符「邪马台国」",
+      "file": "ecl5_d.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "c0e5baa7c499399bd9811f2baf9036471ffd7e8ae451f026bbcb3681ecf0bf2c",
+      "spell_addresses": [
+        608
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 528,
+      "ja": "雪符「ダイアモンドブリザード」",
+      "zh": "雪符「Diamond Blizzard」（钻石风暴）",
+      "file": "ecl3_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "06213ac8f5773da28f683d26954b7aac2d43b3579178ec9e86f217cfab1271d7",
+      "spell_addresses": [
+        724
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 529,
+      "ja": "凍符「マイナスＫ」",
+      "zh": "冻符「Minus K」（负K）",
+      "file": "ecl3_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "400d642bc76d84d23d9c1a838970ddd3b24caef2ce18448d8faed80252850cdf",
+      "spell_addresses": [
+        704
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 531,
+      "ja": "寒符「コールドスナップ」",
+      "zh": "寒符「Cold Snap」（寒潮）",
+      "file": "ecl4_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "bb42a20acfccb8be7050be1d7ad2a473e3fd03a9773ff884b0bb84b493f78e40",
+      "spell_addresses": [
+        628
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 532,
+      "ja": "冬符「ノーザンウイナー」",
+      "zh": "冬符「Northern Winner」（北极的胜利者）",
+      "file": "ecl4_c.ecl",
+      "roots": [
+        "Sub3"
+      ],
+      "source_sha256": "995242d5bbb735217d05378ccea331f179831ee17563d64c946b5e6585f8e4ac",
+      "spell_addresses": [
+        1028
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 534,
+      "ja": "蛍符「地上の恒星」",
+      "zh": "萤符「地上的恒星」",
+      "file": "ecl1_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "ca97e13b7f8d2381482279dea805390238703020b767560278697916ede3172e",
+      "spell_addresses": [
+        616
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 535,
+      "ja": "蝶符「バタフライストーム」",
+      "zh": "蝶符「Butterfly Storm」（蝴蝶风暴）",
+      "file": "ecl1_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "66ce379a415d4856fcdb232292865523528a5b6edb5d3030d4d547f763119e24",
+      "spell_addresses": [
+        708
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 537,
+      "ja": "闇符「ダークサイドオブザムーン」",
+      "zh": "暗符「Dark Side of the Moon」（月之暗面）",
+      "file": "ecl2_b.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "504a5e47b171e252c2c2252e1a1adedb3b51afc6e7541cae854a2d1235a3f5bc",
+      "spell_addresses": [
+        588
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 33,
+      "id": 538,
+      "ja": "夜符「ミッドナイトバード」",
+      "zh": "夜符「Midnight Bird」（子夜之鸟）",
+      "file": "ecl2_c.ecl",
+      "roots": [
+        "Sub2"
+      ],
+      "source_sha256": "b3f77151722f254334786f91355c38f02af8d3ddd035f9b0abb44609e928c772",
+      "spell_addresses": [
+        616
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方文花帖/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3440,
+      "ja": "紫奥義「弾幕結界」",
+      "zh": "紫奥义「弹幕结界」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub129"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        59796
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3441,
+      "ja": "結界「生と死の境界」",
+      "zh": "结界「生与死的界线」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub127"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        57008
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3442,
+      "ja": "「人間と妖怪の境界」",
+      "zh": "「人类与妖怪的界线」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub119"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        50868
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3443,
+      "ja": "式神「八雲藍」",
+      "zh": "式神「八云蓝」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub114"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        48224
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3444,
+      "ja": "魍魎「二重黒死蝶」",
+      "zh": "魍魉「二重黑死蝶」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub109"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        45796
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3445,
+      "ja": "罔両「禅寺に棲む妖蝶」",
+      "zh": "罔两「栖息于禅寺的妖蝶」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub104"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        41052
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3446,
+      "ja": "罔両「八雲紫の神隠し」",
+      "zh": "罔两「八云紫的神隐」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub102"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        39392
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3447,
+      "ja": "罔両「ストレートとカーブの夢郷」",
+      "zh": "罔两「直球与曲球的梦乡」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub100"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        37260
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3448,
+      "ja": "結界「光と闇の網目」",
+      "zh": "结界「光明与黑暗的网目」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub97"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        33376
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3449,
+      "ja": "結界「動と静の均衡」",
+      "zh": "结界「动与静的均衡」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub93"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        31920
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3450,
+      "ja": "結界「夢と現の呪」",
+      "zh": "结界「梦境与现实的咒术」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub88"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        27916
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3451,
+      "ja": "式神「憑依荼吉尼天」",
+      "zh": "式神「凭依荼吉尼天」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub63"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        19560
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3452,
+      "ja": "式神「前鬼後鬼の守護」",
+      "zh": "式神「前鬼后鬼的守护」",
+      "file": "ecldata8.ecl",
+      "roots": [
+        "Sub60"
+      ],
+      "source_sha256": "ec55f13deb45b5e291b2cd746b3df9a5fe0f762d5b8f891381c213e3b2b12520",
+      "spell_addresses": [
+        18220
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3471,
+      "ja": "幻神「飯綱権現降臨」",
+      "zh": "幻神「饭纲权现降临」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub123"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        53512
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3470,
+      "ja": "「狐狗狸さんの契約」",
+      "zh": "「狐狗狸先生的契约」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub115"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        47464
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3469,
+      "ja": "式神「橙」",
+      "zh": "式神「橙」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub110"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        45176
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3468,
+      "ja": "式弾「ユーニラタルコンタクト」",
+      "zh": "式弹「Unilateral Contact」（片面接触）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub106"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        43228
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3467,
+      "ja": "式弾「アルティメットブディスト」",
+      "zh": "式弹「Ultimate Buddhist」（至高佛徒）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub101"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        38812
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3466,
+      "ja": "式輝「プリンセス天狐 -Illusion-」",
+      "zh": "式辉「天狐公主 -Illusion-」（天狐公主 -幻象-）",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub99"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        37512
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3465,
+      "ja": "式輝「四面楚歌チャーミング」",
+      "zh": "式辉「迷人的四面楚歌」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub97"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        35696
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3464,
+      "ja": "式輝「狐狸妖怪レーザー」",
+      "zh": "式辉「狐狸妖怪激光」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub94"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        32848
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3463,
+      "ja": "式神「十二神将の宴」",
+      "zh": "式神「十二神将之宴」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub88"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        29712
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3462,
+      "ja": "式神「仙狐思念」",
+      "zh": "式神「仙狐思念」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub85"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        25216
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3461,
+      "ja": "鬼神「飛翔毘沙門天」",
+      "zh": "鬼神「飞翔毘沙门天」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub61"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        17328
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 3460,
+      "ja": "鬼符「青鬼赤鬼」",
+      "zh": "鬼符「青鬼赤鬼」",
+      "file": "ecldata7.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "97c8f63df878f2c39f3d4b6ff1dcf6f160451458c7a897430b111f5dc0f847a6",
+      "spell_addresses": [
+        15948
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4391,
+      "ja": "六道剣「一念無量劫」",
+      "zh": "六道剑「一念无量劫」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub23"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        10228
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4393,
+      "ja": "亡郷「亡我郷 -自尽-」",
+      "zh": "亡乡「亡我乡 -自尽-」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub43"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        25864
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4396,
+      "ja": "亡舞「生者必滅の理 -魔境-」",
+      "zh": "亡舞「生者必灭之理 -魔境-」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub50"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        32272
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4397,
+      "ja": "華霊「バタフライディルージョン」",
+      "zh": "华灵「Butterfly Delusion」（蝶妄想）",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        35336
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4399,
+      "ja": "幽曲「リポジトリ・オブ・ヒロカワ -神霊-」",
+      "zh": "幽曲「埋骨于弘川 -神灵-」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        38836
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4400,
+      "ja": "桜符「完全なる墨染の桜 -開花-」",
+      "zh": "樱符「完全墨染的樱花 -开花-」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        43536
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4401,
+      "ja": "「反魂蝶 -八分咲-」",
+      "zh": "「反魂蝶 -八分咲-」",
+      "file": "ecldata6.ecl",
+      "roots": [
+        "Sub62"
+      ],
+      "source_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68",
+      "spell_addresses": [
+        49040
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4403,
+      "ja": "餓王剣「餓鬼十王の報い」",
+      "zh": "饿王剑「饿鬼十王的报应」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub42"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        18744
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4405,
+      "ja": "獄神剣「業風神閃斬」",
+      "zh": "狱神剑「业风神闪斩」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub57"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        31396
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4407,
+      "ja": "修羅剣「現世妄執」",
+      "zh": "修罗剑「现世妄执」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub62"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        34492
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4408,
+      "ja": "畜趣剣「無為無策の冥罰」",
+      "zh": "畜趣剑「无为无策之冥罚」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub66"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        36452
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4409,
+      "ja": "人神剣「俗諦常住」",
+      "zh": "人神剑「俗谛常住」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub70"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        39388
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4410,
+      "ja": "天神剣「三魂七魄」",
+      "zh": "天神剑「三魂七魄」",
+      "file": "ecldata5.ecl",
+      "roots": [
+        "Sub75"
+      ],
+      "source_sha256": "c09c582f3276ae944ecf1debb14b845e26b1c6a3e3ae137d09e4c8755a506dd0",
+      "spell_addresses": [
+        42828
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4431,
+      "ja": "操符「乙女文楽」",
+      "zh": "操符「少女文乐」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub27"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        15088
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4433,
+      "ja": "蒼符「博愛のオルレアン人形」",
+      "zh": "苍符「博爱的奥尔良人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub42"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        26120
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4435,
+      "ja": "白符「白亜の露西亜人形」",
+      "zh": "白符「白垩的俄罗斯人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub48"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        30804
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4437,
+      "ja": "雅符「春の京人形」",
+      "zh": "雅符「春之京都人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub54"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        37820
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4438,
+      "ja": "咒詛「首吊り蓬莱人形」",
+      "zh": "诅咒「上吊的蓬莱人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        41400
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4441,
+      "ja": "騒符「ライブポルターガイスト」",
+      "zh": "骚符「Live Poltergeist」（骚灵现场演奏）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub121"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        75624
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4443,
+      "ja": "管霊「ゴーストクリフォード」",
+      "zh": "管灵「Ghost Clifford」（灵之克里福德）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub138"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        95412
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4445,
+      "ja": "鍵霊「ベーゼンドルファー神奏」",
+      "zh": "键灵「贝森朵夫神奏」",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub145"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        103664
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4446,
+      "ja": "偽弦「スードストラディヴァリウス」",
+      "zh": "伪弦「Pseudo Stradivarius」（伪斯特拉迪瓦里）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub128"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        84224
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4447,
+      "ja": "騒葬「スティジャンリバーサイド」",
+      "zh": "骚葬「Stygian Riverside」（冥河边缘）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub133"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        90872
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4448,
+      "ja": "大合葬「霊車コンチェルトグロッソ怪」",
+      "zh": "大合葬「灵车大协奏曲怪」",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub135"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        92732
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4451,
+      "ja": "霜符「フロストコラムス」",
+      "zh": "霜符「Frost Columns」（冰霜方阵）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub29"
+      ],
+      "source_sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+      "spell_addresses": [
+        14012
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4453,
+      "ja": "寒符「リンガリングコールド」",
+      "zh": "寒符「Lingering Cold」（延长的冬日）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub42"
+      ],
+      "source_sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+      "spell_addresses": [
+        22960
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4455,
+      "ja": "白符「アンデュレイションレイ」",
+      "zh": "白符「Undulation Ray」（波状光）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+      "spell_addresses": [
+        31504
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4456,
+      "ja": "怪符「テーブルターニング」",
+      "zh": "怪符「Table Turning」（桌灵转）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub55"
+      ],
+      "source_sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+      "spell_addresses": [
+        33580
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4461,
+      "ja": "仙符「鳳凰展翅」",
+      "zh": "仙符「凤凰展翅」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub45"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        25808
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4463,
+      "ja": "式符「飛翔晴明」",
+      "zh": "式符「飞翔晴明」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub56"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        35380,
+        35680
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4464,
+      "ja": "陰陽「晴明大紋」",
+      "zh": "阴阳「晴明大纹」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub58"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        38296
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4466,
+      "ja": "天符「天仙鳴動」",
+      "zh": "天符「天仙鸣动」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub64"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        42160,
+        42460
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4467,
+      "ja": "童符「護法天童乱舞」",
+      "zh": "童符「护法天童乱舞」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub66"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        45672
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4468,
+      "ja": "仙符「屍解永遠」",
+      "zh": "仙符「尸解永远」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub68"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        51420
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4469,
+      "ja": "方符「奇門遁甲」",
+      "zh": "方符「奇门遁甲」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub75"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        54776
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4457,
+      "ja": "冬符「フラワーウィザラウェイ」",
+      "zh": "冬符「Flower Wither Away」（花之凋零）",
+      "file": "ecldata1.ecl",
+      "roots": [
+        "Sub48"
+      ],
+      "source_sha256": "69bfaab7c822814b90f48006c20f2b3e93210fbaf91221a4e9adb4427fff5c6a",
+      "spell_addresses": [
+        28192
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4439,
+      "ja": "紅符「紅毛の和蘭人形」",
+      "zh": "红符「红发的荷兰人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub46"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        29100
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4472,
+      "ja": "闇符「霧の倫敦人形」",
+      "zh": "暗符「雾之伦敦人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub50"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        32960
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4473,
+      "ja": "廻符「輪廻の西蔵人形」",
+      "zh": "回符「轮回的西藏人偶」",
+      "file": "ecldata3.ecl",
+      "roots": [
+        "Sub52"
+      ],
+      "source_sha256": "3d41b592ee385d103bedec020dfd88f73ee9bc5aed75a5611dd792f76b68ca2b",
+      "spell_addresses": [
+        35368
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4470,
+      "ja": "仙符「鳳凰卵」",
+      "zh": "仙符「凤凰卵」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub44"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        24576
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4471,
+      "ja": "鬼符「鬼門金神」",
+      "zh": "鬼符「鬼门金神」",
+      "file": "ecldata2.ecl",
+      "roots": [
+        "Sub70"
+      ],
+      "source_sha256": "e396643651cc7e8ec425657e8e64f53cad694f3e4ffed5527179e123368c6964",
+      "spell_addresses": [
+        52940
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4475,
+      "ja": "弦奏「グァルネリ・デル・ジェス」",
+      "zh": "弦奏「Guarneri del Gesù」（耶稣·瓜尔内里）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub127"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        81720
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 34,
+      "id": 4476,
+      "ja": "合葬「プリズムコンチェルト」",
+      "zh": "合葬「Prism Concerto」（棱镜协奏曲）",
+      "file": "ecldata4.ecl",
+      "roots": [
+        "Sub132"
+      ],
+      "source_sha256": "fad7b7a81a179c9c75e97111de3b2492df8b70d450967be7f3a063046f722c7f",
+      "spell_addresses": [
+        88772
+      ],
+      "japanese_source": "THBWiki原作日文列（本地ECL为汉化版）",
+      "wiki": "https://thwiki.cc/东方妖妖梦/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3600,
+      "ja": "「風神様の神徳」",
+      "zh": "「风神之神德」",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard5"
+      ],
+      "source_sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+      "spell_addresses": [
+        35576
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3601,
+      "ja": "光学「ハイドロカモフラージュ」",
+      "zh": "光学「Hydro-Camouflage」（水迷彩）",
+      "file": "stage03.ecl",
+      "roots": [
+        "MBossCard1"
+      ],
+      "source_sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+      "spell_addresses": [
+        34388
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3602,
+      "ja": "漂溺「光り輝く水底のトラウマ」",
+      "zh": "漂溺「粼粼水底之心伤」",
+      "file": "stage03.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+      "spell_addresses": [
+        13032
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3603,
+      "ja": "水符「河童の幻想大瀑布」",
+      "zh": "水符「河童之幻想大瀑布」",
+      "file": "stage03.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+      "spell_addresses": [
+        19468
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3604,
+      "ja": "河童「スピン・ザ・セファリックプレート」",
+      "zh": "河童「Spin the Cephalic Plate」（回转顶板）",
+      "file": "stage03.ecl",
+      "roots": [
+        "BossCard3L"
+      ],
+      "source_sha256": "9039c829aa1eb34b2183f5b4d53b6a72236026f98740eb760baad680e9fe016f",
+      "spell_addresses": [
+        21740
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3605,
+      "ja": "岐符「サルタクロス」",
+      "zh": "岐符「Saruta Cross」（猿田彦神之岔路）",
+      "file": "stage04.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+      "spell_addresses": [
+        13048
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3606,
+      "ja": "風神「二百十日」",
+      "zh": "风神「二百十日」",
+      "file": "stage04.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+      "spell_addresses": [
+        15544
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3607,
+      "ja": "「無双風神」",
+      "zh": "「无双风神」",
+      "file": "stage04.ecl",
+      "roots": [
+        "BossCard3"
+      ],
+      "source_sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+      "spell_addresses": [
+        18280
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3608,
+      "ja": "塞符「天上天下の照國」",
+      "zh": "塞符「天上天下的照国」",
+      "file": "stage04.ecl",
+      "roots": [
+        "BossCard4"
+      ],
+      "source_sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8",
+      "spell_addresses": [
+        27784
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3609,
+      "ja": "神符「水眼の如き美しき源泉」",
+      "zh": "神符「如水眼之美丽源泉」",
+      "file": "stage07.ecl",
+      "roots": [
+        "MBossCard1"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        70912
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3610,
+      "ja": "神符「杉で結ぶ古き縁」",
+      "zh": "神符「结于杉木之古缘」",
+      "file": "stage07.ecl",
+      "roots": [
+        "MBossCard2"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        72004
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3611,
+      "ja": "神符「神が歩かれた御神渡り」",
+      "zh": "神符「神所踏足之御神渡」",
+      "file": "stage07.ecl",
+      "roots": [
+        "MBossCard3"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        75576
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3612,
+      "ja": "開宴「二拝二拍一拝」",
+      "zh": "开宴「二拜二拍一拜」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        15552
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3613,
+      "ja": "土着神「手長足長さま」",
+      "zh": "土著神「手长足长大人」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        25980
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3614,
+      "ja": "神具「洩矢の鉄の輪」",
+      "zh": "神具「洩矢的铁轮」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard3"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        29736
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3615,
+      "ja": "源符「厭い川の翡翠」",
+      "zh": "源符「厌川的翡翠」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard4"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        31520
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3616,
+      "ja": "蛙狩「蛙は口ゆえ蛇に呑まるる」",
+      "zh": "蛙狩「蛙以口鸣，方致蛇祸」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard5"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        35124
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3617,
+      "ja": "土着神「七つの石と七つの木」",
+      "zh": "土著神「七石七木」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard6"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        37976
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3618,
+      "ja": "土着神「ケロちゃん風雨に負けず」",
+      "zh": "土著神「小小青蛙不输风雨」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard7"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        41652
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3619,
+      "ja": "土着神「宝永四年の赤蛙」",
+      "zh": "土著神「宝永四年的赤蛙」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard8"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        43624
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3620,
+      "ja": "「諏訪大戦　～ 土着神話 vs 中央神話」",
+      "zh": "「诹访大战 ～ 土著神话 vs 中央神话」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard9"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        46208
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3621,
+      "ja": "祟符「ミシャグジさま」",
+      "zh": "祟符「御社宫司大人」",
+      "file": "stage07.ecl",
+      "roots": [
+        "BossCard10"
+      ],
+      "source_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b",
+      "spell_addresses": [
+        17080
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3622,
+      "ja": "奇祭「目処梃子乱舞」",
+      "zh": "奇祭「目处梃子乱舞」",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+      "spell_addresses": [
+        16564
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3623,
+      "ja": "神穀「ディバイニングクロップ」",
+      "zh": "神谷「Divining Crop」（神灵之谷）",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+      "spell_addresses": [
+        20416
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3624,
+      "ja": "神秘「ヤマトトーラス」",
+      "zh": "神秘「Yamato Torus」（大和环面）",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard3H"
+      ],
+      "source_sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+      "spell_addresses": [
+        26948
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3625,
+      "ja": "天竜「雨の源泉」",
+      "zh": "天龙「雨之源泉」",
+      "file": "stage06.ecl",
+      "roots": [
+        "BossCard4"
+      ],
+      "source_sha256": "3a0c6fe836e9aefe1eacee709fcc92298121c1fd5460563282af36a698bad803",
+      "spell_addresses": [
+        29276
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3630,
+      "ja": "葉符「狂いの落葉」",
+      "zh": "叶符「纷乱的落叶」",
+      "file": "stage01.ecl",
+      "roots": [
+        "MBossCard1"
+      ],
+      "source_sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+      "spell_addresses": [
+        30232
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3631,
+      "ja": "秋符「秋の空と乙女の心」",
+      "zh": "秋符「无常秋日与少女的心」",
+      "file": "stage01.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+      "spell_addresses": [
+        8720
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3632,
+      "ja": "豊作「穀物神の約束」",
+      "zh": "丰收「谷物神的允诺」",
+      "file": "stage01.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "7e7e35760a786f2e00ab426eb7e324e0a8d9bfc6202c2085c4e6c7a8bf15358c",
+      "spell_addresses": [
+        16412
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3633,
+      "ja": "厄符「厄神様のバイオリズム」",
+      "zh": "厄符「厄神大人的生理节律」",
+      "file": "stage02.ecl",
+      "roots": [
+        "MBossCard1"
+      ],
+      "source_sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+      "spell_addresses": [
+        35700
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3634,
+      "ja": "疵痕「壊されたお守り」",
+      "zh": "疵痕「损坏的护符」",
+      "file": "stage02.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+      "spell_addresses": [
+        18224
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3635,
+      "ja": "悲運「大鐘婆の火」",
+      "zh": "悲运「大钟婆之火」",
+      "file": "stage02.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+      "spell_addresses": [
+        19848
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3636,
+      "ja": "創符「流刑人形」",
+      "zh": "创符「流放人偶」",
+      "file": "stage02.ecl",
+      "roots": [
+        "BossCard3"
+      ],
+      "source_sha256": "35fa35920b27bc0ce086bdcd9fa0ca3fe4976ddcfe14bea7a6cb2ff9c1c42d9c",
+      "spell_addresses": [
+        22060
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3637,
+      "ja": "秘術「一子相伝の弾幕」",
+      "zh": "秘术「一脉单传之弹幕」",
+      "file": "stage05.ecl",
+      "roots": [
+        "MBossCard1"
+      ],
+      "source_sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+      "spell_addresses": [
+        49752
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3638,
+      "ja": "奇跡「客星の明るすぎる夜」",
+      "zh": "奇迹「客星辉煌之夜」",
+      "file": "stage05.ecl",
+      "roots": [
+        "BossCard1"
+      ],
+      "source_sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+      "spell_addresses": [
+        14764
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3639,
+      "ja": "開海「モーゼの奇跡」",
+      "zh": "开海「摩西之奇迹」",
+      "file": "stage05.ecl",
+      "roots": [
+        "BossCard2"
+      ],
+      "source_sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+      "spell_addresses": [
+        18704
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3640,
+      "ja": "準備「サモンタケミナカタ」",
+      "zh": "准备「Summon Takeminakata」（召请建御名方神）",
+      "file": "stage05.ecl",
+      "roots": [
+        "BossCard3"
+      ],
+      "source_sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+      "spell_addresses": [
+        21992
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 35,
+      "id": 3641,
+      "ja": "大奇跡「八坂の神風」",
+      "zh": "大奇迹「八坂之神风」",
+      "file": "stage05.ecl",
+      "roots": [
+        "BossCard4"
+      ],
+      "source_sha256": "26ddd2feb5b7e0d7c091dc58b309a60e02ef0d9900e2b8b045c91cb2631b8a2b",
+      "spell_addresses": [
+        31900
+      ],
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方风神录/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11001,
+      "ja": "怪奇「釣瓶落としの怪」",
+      "zh": "怪奇「钓瓶落之怪」",
+      "stage": 1,
+      "sub": "MBossCard1",
+      "native_spell_index": 1,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11004,
+      "ja": "蜘蛛「石窟の蜘蛛の巣」",
+      "zh": "蜘蛛「石窟的蜘蛛巢」",
+      "stage": 1,
+      "sub": "BossCard1",
+      "native_spell_index": 5,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11006,
+      "ja": "瘴気「原因不明の熱病」",
+      "zh": "瘴气「原因不明的热病」",
+      "stage": 1,
+      "sub": "BossCard2",
+      "native_spell_index": 9,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11008,
+      "ja": "嫉妬「緑色の眼をした見えない怪物」",
+      "zh": "嫉妒「看不见的绿眼怪兽」",
+      "stage": 2,
+      "sub": "MBossCard1",
+      "native_spell_index": 13,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11010,
+      "ja": "花咲爺「シロの灰」",
+      "zh": "开花爷爷「小白的灰烬」",
+      "stage": 2,
+      "sub": "BossCard1",
+      "native_spell_index": 17,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11012,
+      "ja": "舌切雀「大きな葛籠と小さな葛籠」",
+      "zh": "剪舌麻雀「大葛笼与小葛笼」",
+      "stage": 2,
+      "sub": "BossCard2",
+      "native_spell_index": 21,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11013,
+      "ja": "恨符「丑の刻参り七日目」",
+      "zh": "恨符「丑时参拜第七日」",
+      "stage": 2,
+      "sub": "BossCard3",
+      "native_spell_index": 25,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11015,
+      "ja": "鬼符「怪力乱神」",
+      "zh": "鬼符「怪力乱神」",
+      "stage": 3,
+      "sub": "MBossCard1",
+      "native_spell_index": 29,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11018,
+      "ja": "枷符「咎人の外さぬ枷」",
+      "zh": "枷符「罪人不释之枷」",
+      "stage": 3,
+      "sub": "BossCard1",
+      "native_spell_index": 33,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11020,
+      "ja": "力業「大江山颪」",
+      "zh": "力业「大江山颪」",
+      "stage": 3,
+      "sub": "BossCard2",
+      "native_spell_index": 37,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11022,
+      "ja": "四天王奥義「三歩必殺」",
+      "zh": "四天王奥义「三步必杀」",
+      "stage": 3,
+      "sub": "BossCard3",
+      "native_spell_index": 41,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11025,
+      "ja": "想起「恐怖催眠術」",
+      "zh": "回忆「恐怖催眠术」",
+      "stage": 4,
+      "sub": "BossCard1",
+      "native_spell_index": 45,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11027,
+      "ja": "想起「二重黒死蝶」",
+      "zh": "回忆「二重黑死蝶」",
+      "stage": 4,
+      "sub": "BossCard2_00A",
+      "native_spell_index": 49,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11028,
+      "ja": "想起「戸隠山投げ」",
+      "zh": "回忆「户隐山之投」",
+      "stage": 4,
+      "sub": "BossCard2_00B",
+      "native_spell_index": 61,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11029,
+      "ja": "想起「風神木の葉隠れ」",
+      "zh": "回忆「风神木叶隐身术」",
+      "stage": 4,
+      "sub": "BossCard2_00C",
+      "native_spell_index": 73,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11030,
+      "ja": "想起「春の京人形」",
+      "zh": "回忆「春之京都人偶」",
+      "stage": 4,
+      "sub": "BossCard2_01A",
+      "native_spell_index": 85,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11031,
+      "ja": "想起「マーキュリポイズン」",
+      "zh": "回忆「Mercury Poison」（水银之毒）",
+      "stage": 4,
+      "sub": "BossCard2_01B",
+      "native_spell_index": 97,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11032,
+      "ja": "想起「のびーるアーム」",
+      "zh": "回忆「延展手臂」",
+      "stage": 4,
+      "sub": "BossCard2_01C",
+      "native_spell_index": 109,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11033,
+      "ja": "想起「飛行虫ネスト」",
+      "zh": "回忆「飞行虫之巢」",
+      "stage": 4,
+      "sub": "BossCard3_00A",
+      "native_spell_index": 53,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11034,
+      "ja": "想起「百万鬼夜行」",
+      "zh": "回忆「百万鬼夜行」",
+      "stage": 4,
+      "sub": "BossCard3_00B",
+      "native_spell_index": 65,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11035,
+      "ja": "想起「天狗のマクロバースト」",
+      "zh": "回忆「天狗巨暴流」",
+      "stage": 4,
+      "sub": "BossCard3_00C",
+      "native_spell_index": 77,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11036,
+      "ja": "想起「ストロードールカミカゼ」",
+      "zh": "回忆「Straw Doll Kamikaze」（稻草人偶神风）",
+      "stage": 4,
+      "sub": "BossCard3_01A",
+      "native_spell_index": 89,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11037,
+      "ja": "想起「プリンセスウンディネ」",
+      "zh": "回忆「Princess Undine」（水精公主）",
+      "stage": 4,
+      "sub": "BossCard3_01B",
+      "native_spell_index": 101,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11038,
+      "ja": "想起「河童のポロロッカ」",
+      "zh": "回忆「河童之河口浪潮」",
+      "stage": 4,
+      "sub": "BossCard3_01C",
+      "native_spell_index": 113,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11039,
+      "ja": "想起「波と粒の境界」",
+      "zh": "回忆「波与粒的界线」",
+      "stage": 4,
+      "sub": "BossCard4_00A",
+      "native_spell_index": 57,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11040,
+      "ja": "想起「濛々迷霧」",
+      "zh": "回忆「蒙蒙迷雾」",
+      "stage": 4,
+      "sub": "BossCard4_00B",
+      "native_spell_index": 69,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11041,
+      "ja": "想起「鳥居つむじ風」",
+      "zh": "回忆「鸟居旋风」",
+      "stage": 4,
+      "sub": "BossCard4_00C",
+      "native_spell_index": 81,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11042,
+      "ja": "想起「リターンイナニメトネス」",
+      "zh": "回忆「Return Inanimateness」（回归虚无）",
+      "stage": 4,
+      "sub": "BossCard4_01A",
+      "native_spell_index": 93,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11043,
+      "ja": "想起「賢者の石」",
+      "zh": "回忆「贤者之石」",
+      "stage": 4,
+      "sub": "BossCard4_01B",
+      "native_spell_index": 105,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11044,
+      "ja": "想起「光り輝く水底のトラウマ」",
+      "zh": "回忆「粼粼水底之心伤」",
+      "stage": 4,
+      "sub": "BossCard4_01C",
+      "native_spell_index": 117,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11046,
+      "ja": "猫符「怨霊猫乱歩」",
+      "zh": "猫符「怨灵猫乱步」",
+      "stage": 5,
+      "sub": "MBossCard1",
+      "native_spell_index": 121,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11049,
+      "ja": "呪精「怨霊憑依妖精」",
+      "zh": "咒精「怨灵凭依妖精」",
+      "stage": 5,
+      "sub": "BossCard1",
+      "native_spell_index": 125,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11051,
+      "ja": "屍霊「食人怨霊」",
+      "zh": "尸灵「食人怨灵」",
+      "stage": 5,
+      "sub": "BossCard2",
+      "native_spell_index": 129,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11053,
+      "ja": "贖罪「昔時の針と痛がる怨霊」",
+      "zh": "赎罪「古时之针与痛楚的怨灵」",
+      "stage": 5,
+      "sub": "BossCard3",
+      "native_spell_index": 133,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11054,
+      "ja": "「小悪霊復活せし」",
+      "zh": "「小恶灵复活」",
+      "stage": 5,
+      "sub": "BossCard4",
+      "native_spell_index": 137,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11055,
+      "ja": "妖怪「火焔の車輪」",
+      "zh": "妖怪「火焰的车轮」",
+      "stage": 6,
+      "sub": "MBossCard1",
+      "native_spell_index": 141,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11057,
+      "ja": "核熱「核反応制御不能」",
+      "zh": "核热「核反应失控」",
+      "stage": 6,
+      "sub": "BossCard1",
+      "native_spell_index": 145,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11059,
+      "ja": "爆符「ペタフレア」",
+      "zh": "爆符「Peta-Flare」（千兆耀斑）",
+      "stage": 6,
+      "sub": "BossCard2",
+      "native_spell_index": 149,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11061,
+      "ja": "焔星「十凶星」",
+      "zh": "焰星「十凶星」",
+      "stage": 6,
+      "sub": "BossCard3",
+      "native_spell_index": 153,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11063,
+      "ja": "「ヘルズトカマク」",
+      "zh": "「Hell's Tokamak」（地狱的托卡马克装置）",
+      "stage": 6,
+      "sub": "BossCard4",
+      "native_spell_index": 157,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11064,
+      "ja": "「サブタレイニアンサン」",
+      "zh": "「Subterranean Sun」（地底太阳）",
+      "stage": 6,
+      "sub": "BossCard5",
+      "native_spell_index": 161,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11065,
+      "ja": "秘法「九字刺し」",
+      "zh": "秘法「九字切」",
+      "stage": 7,
+      "sub": "MBossCard1",
+      "native_spell_index": 162,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11066,
+      "ja": "奇跡「ミラクルフルーツ」",
+      "zh": "奇迹「Miracle Fruit」（神秘果）",
+      "stage": 7,
+      "sub": "MBossCard2",
+      "native_spell_index": 163,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11067,
+      "ja": "神徳「五穀豊穣ライスシャワー」",
+      "zh": "神德「五谷丰穰米之浴」",
+      "stage": 7,
+      "sub": "MBossCard3",
+      "native_spell_index": 164,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11069,
+      "ja": "表象「夢枕にご先祖総立ち」",
+      "zh": "表象「列祖列宗入梦来」",
+      "stage": 7,
+      "sub": "BossCard1",
+      "native_spell_index": 165,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11071,
+      "ja": "表象「弾幕パラノイア」",
+      "zh": "表象「弹幕偏执症」",
+      "stage": 7,
+      "sub": "BossCard2",
+      "native_spell_index": 166,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11073,
+      "ja": "本能「イドの解放」",
+      "zh": "本能「本我的解放」",
+      "stage": 7,
+      "sub": "BossCard3",
+      "native_spell_index": 167,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11075,
+      "ja": "抑制「スーパーエゴ」",
+      "zh": "抑制「Super Ego」（超我）",
+      "stage": 7,
+      "sub": "BossCard4",
+      "native_spell_index": 168,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11077,
+      "ja": "反応「妖怪ポリグラフ」",
+      "zh": "反应「妖怪测谎机」",
+      "stage": 7,
+      "sub": "BossCard5",
+      "native_spell_index": 169,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11079,
+      "ja": "無意識「弾幕のロールシャッハ」",
+      "zh": "无意识「弹幕的墨迹测验」",
+      "stage": 7,
+      "sub": "BossCard6",
+      "native_spell_index": 170,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11081,
+      "ja": "復燃「恋の埋火」",
+      "zh": "复燃「恋之埋火」",
+      "stage": 7,
+      "sub": "BossCard7",
+      "native_spell_index": 171,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11083,
+      "ja": "深層「無意識の遺伝子」",
+      "zh": "深层「无意识的基因」",
+      "stage": 7,
+      "sub": "BossCard8",
+      "native_spell_index": 172,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11084,
+      "ja": "「嫌われ者のフィロソフィ」",
+      "zh": "「被厌恶者的哲学」",
+      "stage": 7,
+      "sub": "BossCard9",
+      "native_spell_index": 173,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    },
+    {
+      "game": 36,
+      "id": 11085,
+      "ja": "「サブタレイニアンローズ」",
+      "zh": "「Subterranean Rose」（地底蔷薇）",
+      "stage": 7,
+      "sub": "BossCard10",
+      "native_spell_index": 174,
+      "japanese_source": "原作ECL",
+      "wiki": "https://thwiki.cc/东方地灵殿/符卡"
+    }
+  ],
+  "failures": [],
+  "wiki": {
+    "6": {
+      "url": "https://thwiki.cc/东方红魔乡/符卡",
+      "sha256": "e9a8ffd57a15a7e4cfd2ec820310c0c00cc6442892a0547d8e1a66cb92ae7df8"
+    },
+    "7": {
+      "url": "https://thwiki.cc/东方妖妖梦/符卡",
+      "sha256": "cc05e92bfb792ef7441e9bc9f0d9889279bb1ee641455a10f9cc781f20fa3170"
+    },
+    "8": {
+      "url": "https://thwiki.cc/东方永夜抄/符卡",
+      "sha256": "f79110b6a06aed336f91db482109f6ac13706eb66f0a7a3c481c6387e80346ec"
+    },
+    "95": {
+      "url": "https://thwiki.cc/东方文花帖/符卡",
+      "sha256": "00551476dd6e5af81887c481326f110bc3e18a4c0d659f99c8dd9774d5241967"
+    },
+    "10": {
+      "url": "https://thwiki.cc/东方风神录/符卡",
+      "sha256": "62c49ee034390cb9eb48312c8607f49b6e6d28973342877bcc274d1cae7b998a"
+    },
+    "11": {
+      "url": "https://thwiki.cc/东方地灵殿/符卡",
+      "sha256": "2f58f16c0395f33c71f9daef4281e1728bf6349117c8513df37d66e8f504e04d"
+    }
+  }
+}

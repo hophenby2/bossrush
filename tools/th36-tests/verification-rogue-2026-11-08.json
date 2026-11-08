@@ -38,7 +38,8 @@
   ],
   "road_bosses_excluded": true,
   "full_stage_boss_preserved": true,
-  "ui_options": 9,
+  "ui_options": 8,
+  "th36_selection_disabled": true,
   "keyboard": true,
   "touch": true,
   "scope": "LuaJIT道中演员和自然结束检查关闭发弹；面板输入及点击区域；不替代Android设备实测"

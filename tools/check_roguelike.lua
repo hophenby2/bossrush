@@ -99,9 +99,13 @@ check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽�
 check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同种子产生不同路线')
 -- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
 local all,count=R.buildPool()
-check(#all==5 and count==503,'全开包含五作的503个已核对条目')
+check(#all==4 and count==410,'新局关闭地灵殿，包含四作410个已核对条目')
 local th36=R.defaultFilters();th36.stages={TH36=true}
-local only36,n36=R.buildPool(th36)
+local disabled,disabledCount=R.buildPool(th36)
+check(#disabled==0 and disabledCount==0 and not R.copyFilters(th36).stages.TH36,'旧配置不能重新启用地灵殿')
+local historical,historicalCount=R.buildPool(nil,4)
+check(#historical==5 and historicalCount==503,'版本4录像保留五作503项')
+local only36,n36=R.buildPool(th36,4)
 check(#only36==1 and n36==93,'地灵殿含86阶段和7独立道中')
 local bosses,roads=0,0
 for _,entry in ipairs(only36[1].cards) do
@@ -113,7 +117,7 @@ for _,entry in ipairs(only36[1].cards) do
 end
 check(bosses==86 and roads==7,'地灵殿分类完整')
 th36.difficulties={extra=true};th36.encounters={road=true}
-local ex36,exCount=R.buildPool(th36)
+local ex36,exCount=R.buildPool(th36,4)
 check(exCount==1 and ex36[1].cards[1].cardId==11207,'可只选地灵殿Extra道中')
 check(#R.draw(17,1,th36,4,true)==1,'单候选无限模式不跨池补抽')
 local _,version3=R.buildPool(nil,3)
@@ -122,6 +126,7 @@ local oldRoutes={
     {2,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:4395,TH34:3471,TH32:3955,TH34:3480,TH35:3648,TH31:392'},
     {3,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:3480,TH34:3411,TH32:3955,TH34:3446,TH35:3648,TH31:392'},
     {3,31415,'TH34:3480,TH31:462,TH32:3925,TH32:3982,TH32:3914,TH31:388,TH32:3932,TH34:4464,TH32:3956,TH34:3406'},
+    {4,17,'TH31:409,TH36:11004,TH34:3484,TH32:3912,TH35:3656,TH35:3662,TH34:4402,TH35:3651,TH35:3648,TH31:392'},
 }
 for _,row in ipairs(oldRoutes) do check(keys(R.draw(row[2],1,nil,row[1]))==row[3],'旧版本相同种子保持原路线') end
 check(not R.defaultFilters('dual').stages.TH36 and not R.defaultFilters('chain').stages.TH36,'历史双Boss/接续不扩大来源')
@@ -162,7 +167,7 @@ for seed=1,30 do
 end
 local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false
 local state=R.poolStatus(small)
-check(state.valid and state.count==8,'无限模式允许不足十张的Extra/Phantasm道中池')
+check(state.valid and state.count==7,'关闭地灵殿后Extra/Phantasm独立道中池含七项')
 check(not R.poolStatus(small,1).valid,'历史十战模式仍检查至少十张')
 check(not pcall(R.draw,123,1,small),'直接抽取小池也拒绝，防止绕过准备界面')
 local empty=R.copyFilters(selected);empty.difficulties.extra=false
@@ -260,12 +265,14 @@ for _,view in ipairs({'world','ui','3d'}) do
     check(lstg.viewmode==view,'随机模式进度栏恢复调用方坐标系：'..view)
 end
 SetViewMode,ui=setView,oldUI
--- 真实无限入口：地灵殿单卡池抽完后继续，直到失误结束，不在第十战成功结算。
-local endlessBattle,endlessRun=simulate(777,25,'single',true,th36)
-check(endlessRun.endless and endlessRun.poolVersion==4,'新局写入版本4及无限标记')
+-- 真实无限入口：风神录Extra道中单卡池抽完后继续，直到失误结束。
+local endlessFilters=R.defaultFilters()
+endlessFilters.stages={TH35=true};endlessFilters.difficulties={extra=true};endlessFilters.encounters={road=true}
+local endlessBattle,endlessRun=simulate(777,25,'single',true,endlessFilters)
+check(endlessRun.endless and endlessRun.poolVersion==5,'新局写入版本5及无限标记')
 check(endlessRun.completed>=24 and not endlessRun.won,'无限模式超过十战后仍继续')
 check(endlessRun.cycle>=24 and #endlessRun.cards==1,'小池跨轮洗牌只保留当前轮')
-for _,entry in ipairs(spawned) do check(entry.card.card_id==11207,'多轮严格沿用地灵殿Extra道中筛选') end
+for _,entry in ipairs(spawned) do check(entry.card.card_id==3685,'多轮严格沿用风神录Extra道中筛选') end
 -- 使用正式 Boss 系统函数验证两种自动清屏，而不是只检查接续对象上的标记。
 local f=assert(io.open('THlib/enemy/boss_system.lua','rb'));local bossSource=f:read('*a');f:close()
 local system={}

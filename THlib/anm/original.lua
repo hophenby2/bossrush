@@ -6,6 +6,7 @@ local rad, floor, min, max = math.pi/180, math.floor, math.min, math.max
 local cache = {}
 local resource_scope,resource_epoch=nil,0
 local resource_timer=-1
+local draw_sequence=0
 local op6 = { [0]='delete','sprite','scale','alpha','packed_color','jump','nop','flipx','flipy',
     'rotation','omega','growth','fade','additive','normal','static','sprite_random','position',
     'position_linear','position_decel','position_decel4','stop','interrupt','anchor','stop_hide',
@@ -135,9 +136,14 @@ local function execute(v)
         elseif op=='anchor' then v.anchor=1
         elseif op=='anchor_state' then v.anchor_x=a;v.anchor_y=b
         elseif op=='drawmode' then v.drawmode=a
+        elseif op=='render_byte' and v.data.game==11 then
+            -- TH11的68写VM.persistent020，是原作全局绘制层号，不是可忽略的装饰字节。
+            v.render_layer=a
         elseif op=='secondary' then v.secondary=a~=0
         elseif op=='child' then
-            v.children[#v.children+1]=A.new(v.data.game,v.data.archive,a)
+            local child=A.new(v.data.game,v.data.archive,a)
+            if v.data.game==11 and child.render_layer==nil then child.render_layer=v.render_layer end
+            v.children[#v.children+1]=child
         elseif op=='add_u' then v.u=(v.u+a)%1
         elseif op=='add_v' then v.v=(v.v+a)%1
         elseif op=='u_speed' then v.us=a
@@ -239,6 +245,7 @@ function A.new(game,archive,id,dt,sprite_resolver)
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}
+    if game==11 then draw_sequence=draw_sequence+1;v.draw_sequence=draw_sequence end
     A.step(v,dt)
     return v
 end
@@ -265,8 +272,8 @@ function A.sprite_resource(v)
     end
     return s
 end
-function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
-    if v.children[1] then for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end end
+-- 单个VM和树的绘制分开，TH36的跨敌机效果层不能被每个敌机的render顺序截断。
+function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
     local color=override and override.color or (v.secondary and v.color2 or v.color)
@@ -331,6 +338,25 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     else
         SetImageState(image,v.blend,Color(ca,cr,cg,cb))
         Render(image,px,py,rot,sx,sy)
+    end
+end
+function A.collect_draw_vms(v,rows)
+    rows[#rows+1]=v
+    for _,child in ipairs(v.children) do A.collect_draw_vms(child,rows) end
+    return rows
+end
+function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
+    if v.data.game==11 and v.children[1] then
+        local rows=A.collect_draw_vms(v,{})
+        table.sort(rows,function(a,b)
+            local la,lb=a.render_layer or 0,b.render_layer or 0
+            return la<lb or la==lb and a.draw_sequence<b.draw_sequence
+        end)
+        for _,vm in ipairs(rows) do A.draw_vm(vm,x,y,angle,sx,sy,alpha,tint,override,vm==v and rotation or nil) end
+    else
+        -- 旧作品保留原有调用顺序与参数，不因TH11的层号契约改变。
+        for _,child in ipairs(v.children) do A.draw(child,x,y,angle,sx,sy,alpha,tint,override) end
+        A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     end
 end
 function A.sprite(v,id) assert(v.data.sprites[id],v.data.key..'/sprite'..id);v.sprite=id end

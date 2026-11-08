@@ -234,6 +234,7 @@ end
 
 function stg.Start(group)
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
+    lstg.var.__contact_cancel_version=1 -- 随初态存入录像；旧录像未带此标志时保留旧碰撞语义。
     if GameNet then GameNet.newRound() end
     -- 移动模式随关卡初态保存，录像与续玩不依赖之后的本机设置。
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
@@ -262,6 +263,7 @@ end
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
+    lstg.var.__contact_cancel_version=1
     if GameNet then GameNet.newRound() end
     lstg.var.__touch_unlimited=AndroidInput~=nil and setting.touchUnlimited==true
     lstg.var.__touch_always_version=AndroidInput and not BossRushDesktop and 1 or nil

@@ -2,6 +2,8 @@
 -- 原stage04.std SHA256 c463e52db2fd289608c446c216f0b0477d924ecf93a27aab3d1305ebfd870d7d
 -- 原PE：40EA22/40EA3D取491D7C/80（相机位置）；40DE9D..40DEBC取491E6C..74（相机位移）。
 -- 复原源码将两组extern误用了同一名字；这里以原二进制地址区分。
+-- dofile不会继承调用文件的local class；由TH35显式传入运动函数上下文。
+local class=assert(...,'TH35下潜相机缺少关卡上下文')
 local H={}
 local curve={
     {0,"p",{-0.0,0.0,-550.0}}, -- STD 0x614

@@ -1,0 +1,90 @@
+{
+  "date": "2026-11-08",
+  "card": {
+    "id": 11042,
+    "stage": 4,
+    "sub": "BossCard4_01A",
+    "name": "回忆「Return Inanimateness」（回归虚无）"
+  },
+  "cause": "ANM68层号被忽略；旧递归先画174号白色加算子动画，再画175号红色半透明本体，使辉光被覆盖。",
+  "original": {
+    "red": {
+      "script": 175,
+      "sprite": 376,
+      "layer": 12,
+      "blend": "SRCALPHA/INVSRCALPHA",
+      "rgb": [
+        255,
+        0,
+        0
+      ]
+    },
+    "glow": {
+      "script": 174,
+      "sprite": 375,
+      "layer": 14,
+      "blend": "SRCALPHA/ONE",
+      "rgb": [
+        255,
+        255,
+        255
+      ]
+    },
+    "child_frames": [
+      20,
+      24,
+      28
+    ]
+  },
+  "fix": "保留原混合与颜色，按原作12／14层跨敌机分组绘制；普通弹幕位于两者之间。",
+  "source_sha256": {
+    "THlib/anm/original.lua": "5fddf8cadba4982a4b107f2079c9908812dd5cb70a4bac05668076f862706a55",
+    "mod/GAME/th36/animation_layers.lua": "b70da4760dff80f0811324f09900d5787e3380e26ce0702cddee4b8680efc9a7",
+    "mod/GAME/th36/runtime.lua": "7b15827beab17d5aaea8456413b651d4a7b636288283a87ff439660098dacee3",
+    "mod/GAME/th36.lua": "eebfbb16022006d6b546eae149a6f42294762aae029f95c352fbbb040fd14168"
+  },
+  "tests": {
+    "bomb_visual": 23,
+    "old_anm": 438,
+    "spell_names_background": 4228,
+    "rogue": 2550,
+    "hp_phases": 86,
+    "projectile_bullets": 54
+  },
+  "native": [
+    {
+      "directory": "E:\\workspace\\.bossrush-validation\\th36-bomb-layers-20261108",
+      "run_id": "72f4e8447841480b96cfee3f53873aa3",
+      "entries": 1,
+      "frames": 4290,
+      "errors": {},
+      "cleanup": true
+    },
+    {
+      "directory": "E:\\workspace\\.bossrush-validation\\th36-bomb-layers-all-20261108",
+      "run_id": "c9c49bbbde3847aa9fb8f20ddb0b382e",
+      "entries": 100,
+      "frames": 119644,
+      "errors": {},
+      "cleanup": true
+    }
+  ],
+  "screenshots": {
+    "before": "E:/workspace/.bossrush-validation/th36-names-bg-native-20261108/snapshot/th36-11042-timeout-late.png",
+    "after": "E:/workspace/.bossrush-validation/th36-bomb-layers-20261108/snapshot/th36-11042-timeout-late.png"
+  },
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.10.apk",
+    "version": "0.13.10-android",
+    "version_code": 28,
+    "sha256": "2d1c855b516d52fcc053d50451175574e1dece9dadff365e4f2c624f49c435a2",
+    "bytes": 571701386,
+    "assets": 2520,
+    "crc": true,
+    "signature": true,
+    "user_data_excluded": true,
+    "modified_sources_match": true,
+    "android_device_test": false
+  },
+  "scope": "验证原作ANM的颜色、混合和层次，以及移植版实际渲染／回收；未与原游戏做逐像素全量对比。"
+}

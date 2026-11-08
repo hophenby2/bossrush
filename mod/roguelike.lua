@@ -1,6 +1,6 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
 -- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={POOL_VERSION=4,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=5,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -268,7 +268,7 @@ local function register(variant,config)
         self.rogue_chain_ghosts=nil
         self:Option()
         local version=lstg.var.__rogue_pool_version or (ext.replay.IsReplay() and 1 or R.POOL_VERSION)
-        local filters=version>=2 and R.copyFilters(lstg.var.rogue_filters,variant) or nil
+        local filters=version>=2 and R.copyFilters(lstg.var.rogue_filters,variant,version) or nil
         local endless=variant=='single' and lstg.var.__rogue_endless_version==1
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,
             cards=R.draw(lstg.var.ran_seed,config.width,filters,version,endless),current=0,completed=0,

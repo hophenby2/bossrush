@@ -17,6 +17,7 @@ local function other_setting_default()
     cs.frameskip = ds.frameskip
 
     cs.SCAutoRetry = ds.SCAutoRetry
+    cs.spellNameLanguage = ds.spellNameLanguage
     cs.resumeAutoSave = ds.resumeAutoSave
 
     cs.displayBG = ds.displayBG
@@ -335,7 +336,9 @@ function game_setting:init(exit)
         }),
         Newsmall_menu("其他", x1, _line, y2 - h1 * 4, y2 - h1 * 3, {
             Newsetting_button("符卡练习自动重开", "SCAutoRetry", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
-            GameFeatures.resume and Newsetting_button("关内自动保存（每2秒）", "resumeAutoSave", _line, x2, y2 - h2 * 2, y2 - h2 * 1) or nil,
+            Newsetting_bar("符卡名语言", "spellNameLanguage", 1, 1, 0, 1, 1,
+                    _line, x2, y2 - h2 * 2, y2 - h2 * 1, function(t) return t==1 and "日本語" or "中文" end),
+            GameFeatures.resume and Newsetting_button("关内自动保存（每2秒）", "resumeAutoSave", _line, x2, y2 - h2 * 3, y2 - h2 * 2) or nil,
         }),
         Newsmall_menu("性能", x1, _line, y2 - h1 * 5, y2 - h1 * 4, {
             Newsetting_button("3D背景", "displayBG", _line, x2, y2 - h2 * 1, y2 - h2 * 0),
@@ -358,6 +361,7 @@ function game_setting:init(exit)
 end
 function game_setting:frame()
     task.Do(self)
+    if SpellNames then SpellNames.refresh(cur_setting.spellNameLanguage) end
     SetSEVolume(cur_setting.sevolume / 100)
     SetBGMVolume(cur_setting.bgmvolume / 100)
 

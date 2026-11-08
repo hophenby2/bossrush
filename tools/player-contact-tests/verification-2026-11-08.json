@@ -1,0 +1,448 @@
+{
+  "date": "2026-11-08",
+  "source_sha256": {
+    "THlib/player/player_system.lua": "6555178a3f9d6c32397c665d39c2ea40a1438e01984ea17bdd27c0bce3b24a8f",
+    "THlib/ext/ext_stage_group.lua": "66fddda6c31e380d98f6eaf0f6857aab8ed8e509da6c1a5f833d520cf60f2dd4"
+  },
+  "version_field": "__contact_cancel_version",
+  "native": {
+    "directory": "E:\\workspace\\.bossrush-validation\\player-contact-native-20261108-r4",
+    "run_id": "45f7107d9b6645848a4b39ac8f1064f2",
+    "engine": "LuaSTG Sub v0.21.129",
+    "contact_cases": 54,
+    "states": [
+      "fatal",
+      "protect",
+      "respawn"
+    ],
+    "games": [
+      6,
+      7,
+      8,
+      95,
+      10,
+      11
+    ],
+    "groups": [
+      1,
+      12,
+      5
+    ],
+    "immediate_collision_disabled": true,
+    "native_despawn": true,
+    "all_reclaimed": true,
+    "near_miss": true,
+    "enemy_preserved": true,
+    "legacy": true,
+    "rows": [
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 6,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 7,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 8,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 95,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 10,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 1,
+        "death": 90
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 12,
+        "death": 90
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "fatal",
+        "group": 5,
+        "death": 90
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "protect",
+        "group": 1,
+        "death": 0
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "protect",
+        "group": 12,
+        "death": 0
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "protect",
+        "group": 5,
+        "death": 0
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 1,
+        "death": 49
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 12,
+        "death": 49
+      },
+      {
+        "game": 11,
+        "despawn": true,
+        "mode": "respawn",
+        "group": 5,
+        "death": 49
+      },
+      {
+        "near_miss": true,
+        "enemy_preserved": true,
+        "legacy": true
+      },
+      {
+        "cleanup": true,
+        "count": 54
+      }
+    ]
+  },
+  "regressions": {
+    "drop_suite": 6501,
+    "rogue_suite": 2550
+  },
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.11.apk",
+    "version": "0.13.11-android",
+    "version_code": 29,
+    "bytes": 571701386,
+    "sha256": "a5568b3f1fb4ce6febbb43ffb08bc1b7feb3e5e6946b98e3e6e945567fb517e1",
+    "assets": 2520,
+    "wav": 172,
+    "arm64_libraries": 3,
+    "shaders": 8,
+    "crc": true,
+    "signature": true,
+    "user_data_excluded": true,
+    "modified_sources_match": true,
+    "android_device_test": false
+  },
+  "scope": "真实LuaSTG Sub碰撞→自机回调→实体弹原作消散→对象回收；未进行Android真机测试。"
+}

@@ -7,6 +7,7 @@ local default = function()
 end
 local task = task
 local phase_labels=dofile('mod/GAME/original/phase_labels.lua')
+local spell_names=dofile('THlib/misc/spell_names.lua')
 ---对二人非符的处理
 local non = {}
 boss.ns_group = non
@@ -116,10 +117,13 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
     ---@type boss.card
     local sc
     local insert_sc_group = {}
+    local name_binding
     for _, u in ipairs(sc_group) do
         BOSS = _editor_boss[u[2] .. level]
         sc = u[1]
         CardName=phase_labels.apply(sc,level,data_id,BOSS,u[2]) or CardName
+        local localized,binding=spell_names.bind(sc,level,data_id,CardName)
+        CardName=localized;name_binding=name_binding or binding
         local game=({[32]=7,[33]=10})[level]
         local balance=game and OriginalBalance and OriginalBalance.entries[game][data_id]
         if balance and sc.t1<sc.t3 then
@@ -131,6 +135,7 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
         table.insert(insert_sc_group, s)
         ---@class sc_unit
         local sc_unit = { boss = BOSS, CardName = CardName, card = sc }
+        if binding then binding.units[#binding.units+1]=sc_unit end
         table.insert(_sc_table, sc_unit)
         if OD then
             scoredata["UnlockSC"][OD] = scoredata["UnlockSC"][OD] or false
@@ -152,6 +157,7 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
     _sc_pr_table[level] = _sc_pr_table[level] or {}
     ---@class sc_pr_unit
     local sc_pr_unit = { sc_group = insert_sc_group, CardName = CardName, index = #_sc_table }
+    if name_binding then name_binding.units[#name_binding.units+1]=sc_pr_unit end
     table.insert(_sc_pr_table[level], sc_pr_unit)
 end
 

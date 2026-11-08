@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-08",
+  "feature": "roguelike关闭TH36选择",
+  "pool_version": 5,
+  "current": {
+    "sources": 4,
+    "cards": 410,
+    "th36": false,
+    "stale_filters_sanitized": true
+  },
+  "historical": {
+    "version4_cards": 503,
+    "versions234_routes_unchanged": true
+  },
+  "tests": {
+    "rogue": 2460,
+    "drops": 6501,
+    "ui_options": 8,
+    "keyboard": true,
+    "touch": true
+  },
+  "source_sha256": {
+    "mod/roguelike.lua": "2d66572f13558eaa3d7aff0ebf0d0d7137e0b125a8db03949a8575b37fc2d0d7",
+    "mod/rogue_pool.lua": "378e93c237729731dbcc57a52a763a162f6054300ed6ee9c241a014154263739",
+    "THlib/UI/rogue_pool.lua": "6bb1361f353cb79249a4754a25f7042c0c85bf85235552a6310a92538ca70841"
+  },
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.12.apk",
+    "version": "0.13.12-android",
+    "version_code": 30,
+    "bytes": 571701386,
+    "sha256": "672c2114ad9243b5ac116cdc4caf361efa3609bbd1bc5eba3b157c0e83a94c7d",
+    "assets": 2520,
+    "crc": true,
+    "signature": true,
+    "user_data_excluded": true,
+    "modified_sources_match": true,
+    "android_device_test": false
+  }
+}

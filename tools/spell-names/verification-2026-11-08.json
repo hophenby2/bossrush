@@ -1,0 +1,150 @@
+{
+  "date": "2026-11-08",
+  "source_sha256": {
+    "THlib/drops.lua": "72e151a3d9b39889a40d7ed0b5ebb980966b6a70fb987ff7813959c21f9133bd",
+    "THlib/enemy/boss_card.lua": "3aeb93a29565972a8b77281d1e9f300950fe4075f9e94b3206449d363ee2a402",
+    "THlib/misc/spell_names.lua": "d20a753733742c4a724d5cef9c4402d43351e0cc2676df87c9316e7031a8831e",
+    "THlib/UI/menus/game_setting.lua": "09cf1ee43a3903601a4db449aee67918e1b1178747fcb5dc122dfdecb2cc3908",
+    "launch.lua": "d92082e6a3fdce78dd28b51406430782cea066f361574ed7c6efc393121270b8",
+    "mod/GAME/th36.lua": "fd209def1c4f0637f6f0ef9787acf961dfe0e0d27313de4256122224da59c1de",
+    "mod/GAME/th36/runtime.lua": "f28e3b0587015e14d43ac5872aea7f8279e61caf3a0e1678b556569fa9df75ef",
+    "mod/GAME/th36/background.lua": "54217c1522a73c00a1b1a3579416374997054cb520129120c9f03f9e095b6147",
+    "mod/GAME/th36/catalogue.lua": "25d5bb879c6ead6f72c637787e252bffad2fb15a8629d90d6e52b5fb31d44268",
+    "mod/GAME/original/spell_names.lua": "153e46b769859fd728b7e8a2953ece245948c3825e2122b8a58dcfdf2efefdb3",
+    "android/AndroidManifest.xml": "7bdb27739a7dd41e29225675a85d4ee331157cd5ab3deebacb0a2839aa207964"
+  },
+  "checks": {
+    "names_and_background": 4120,
+    "names": 368,
+    "backgrounds": 54,
+    "drop_suite": 6466,
+    "drop_suite_host": "LuaJIT2.1；宿主JSON桥接，不据此验证cjson实现",
+    "rogue_suite": 2550,
+    "anm_suite": 438,
+    "hp_phases": 86,
+    "semantics": {
+      "checked": 217,
+      "shots": 20833,
+      "frames": 480,
+      "rng_values": 1000,
+      "scope": "独立标量控制流与枪槽对照；不宣称运动、渲染、碰撞全量一致"
+    }
+  },
+  "native": [
+    {
+      "directory": "E:\\workspace\\.bossrush-validation\\th36-names-bg-native-20261108",
+      "run_id": "ee940f497a754089b73a45b166a90396",
+      "entries": 100,
+      "frames": 119644,
+      "frames_per_entry_limit": 1200,
+      "errors": {},
+      "cleanup": true
+    },
+    {
+      "directory": "E:\\workspace\\.bossrush-validation\\spell-names-native-jp-20261108-r2",
+      "run_id": "9c9461cbd2a94e0589a5cf40bf6a84ef",
+      "entries": 6,
+      "frames": 5760,
+      "frames_per_entry_limit": 960,
+      "errors": {},
+      "cleanup": true
+    }
+  ],
+  "japanese_bomb_rows": [
+    {
+      "id": 401,
+      "title": "神宝「ブリリアントドラゴンバレッタ」",
+      "bomb": true,
+      "level": 29,
+      "japanese": "神宝「ブリリアントドラゴンバレッタ」"
+    },
+    {
+      "id": 369,
+      "title": "「紅色の幻想郷」（Lunatic）",
+      "bomb": true,
+      "level": 30,
+      "japanese": "「紅色の幻想郷」"
+    },
+    {
+      "id": 509,
+      "title": "日＆月符「ロイヤルダイアモンドリング」",
+      "bomb": true,
+      "level": 31,
+      "japanese": "日＆月符「ロイヤルダイアモンドリング」"
+    },
+    {
+      "id": 4393,
+      "title": "亡郷「亡我郷 -自尽-」",
+      "bomb": true,
+      "level": 32,
+      "japanese": "亡郷「亡我郷 -自尽-」"
+    },
+    {
+      "id": 3606,
+      "title": "風神「二百十日」",
+      "bomb": true,
+      "level": 33,
+      "japanese": "風神「二百十日」"
+    },
+    {
+      "id": 11034,
+      "title": "地灵殿·4面Boss·古明地觉·想起「百万鬼夜行」（灵梦／萃香）",
+      "level": 34,
+      "bomb": true,
+      "background": [
+        12,
+        13
+      ],
+      "japanese": "想起「百万鬼夜行」"
+    }
+  ],
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.9.apk",
+    "version": "0.13.9-android",
+    "version_code": 27,
+    "bytes": 571697198,
+    "sha256": "989f5c1ff5e92d6a2b42ca63849cac8b0ed93e07f02da1145b01da22c52de2f4",
+    "assets": 2519,
+    "wav": 172,
+    "arm64_libraries": 3,
+    "shaders": 8,
+    "crc": true,
+    "signature": true,
+    "user_data_excluded": true,
+    "device_test": false,
+    "normalized_utf8_asset_sha256": {
+      "THlib/drops.lua": "72e151a3d9b39889a40d7ed0b5ebb980966b6a70fb987ff7813959c21f9133bd",
+      "THlib/enemy/boss_card.lua": "2a06f264a1c5b0c68bbdf7a724779990290725644b8909a4e07c46b2eefa5d7e",
+      "THlib/misc/spell_names.lua": "d20a753733742c4a724d5cef9c4402d43351e0cc2676df87c9316e7031a8831e",
+      "THlib/UI/menus/game_setting.lua": "acde69d13b00285cb4f52a906a0c5707971275aedcc6f5ee592748c3c2fe23e2",
+      "launch.lua": "513b700efd11893f1218af27a43ef9bfaf79b470272b3ea4423465e8ada2776d",
+      "mod/GAME/th36.lua": "fd209def1c4f0637f6f0ef9787acf961dfe0e0d27313de4256122224da59c1de",
+      "mod/GAME/th36/runtime.lua": "f28e3b0587015e14d43ac5872aea7f8279e61caf3a0e1678b556569fa9df75ef",
+      "mod/GAME/th36/background.lua": "54217c1522a73c00a1b1a3579416374997054cb520129120c9f03f9e095b6147",
+      "mod/GAME/th36/catalogue.lua": "25d5bb879c6ead6f72c637787e252bffad2fb15a8629d90d6e52b5fb31d44268",
+      "mod/GAME/original/spell_names.lua": "153e46b769859fd728b7e8a2953ece245948c3825e2122b8a58dcfdf2efefdb3"
+    }
+  },
+  "known_registry_failures": {
+    "count": 15,
+    "ids": [
+      453,
+      454,
+      455,
+      456,
+      457,
+      458,
+      459,
+      460,
+      470,
+      471,
+      472,
+      473,
+      474,
+      475,
+      476
+    ],
+    "scope": "既有全局重复卡号，本次未修改"
+  },
+  "scope": "背景脚本、ANM状态、生命周期与真引擎截图；不是原版逐像素等价证明。无Android设备可实测。"
+}

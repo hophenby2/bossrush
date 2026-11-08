@@ -8,21 +8,11 @@ import sys
 from source import ROOT, Variable, active, load, programs, f32
 from expand import lit
 
-# 显示名采用中文；编号来自原作的spell指令，不按日文名称猜测难度。
-NAMES={1:'怪奇「钓瓶落之怪」',5:'蜘蛛「石窟中的蜘蛛巢」',9:'瘴气「原因不明的热病」',
-13:'妒符「看不见的绿眼怪兽」',17:'嫉妒「丑时参拜第七日」',21:'舌切雀「大葛笼与小葛笼」',25:'恨符「丑时参拜」',
-29:'鬼符「怪力乱神」',33:'怪轮「地狱之苦轮」',37:'枷符「咎人之枷」',41:'四天王奥义「三步必杀」',45:'脑符「恐怖的催眠术」',
-49:'回忆「二重黑死蝶」',53:'回忆「飞行虫之巢」',57:'回忆「波与粒的境界」',
-61:'回忆「风神木叶隐身术」',65:'回忆「天狗巨暴流」',69:'回忆「鸟居旋风」',
-73:'回忆「延展手臂」',77:'回忆「抱头蹲防」',81:'回忆「大江山岚」',
-85:'回忆「春之京人偶」',89:'回忆「稻草人偶神风」',93:'回忆「回归虚无」',
-97:'回忆「水银之海」',101:'回忆「公主天狐」',105:'回忆「红色巨石」',
-109:'回忆「非定向光束」',113:'回忆「贤者之石」',117:'回忆「闪耀的水底创伤」',
-121:'猫符「怨灵猫乱步」',125:'咒精「怨灵凭依妖精」',129:'丧志「食人怨灵」',133:'赎罪「古时之针与痛楚的怨灵」',137:'「死灰复燃」',141:'妖怪「火焰的车轮」',
-145:'核热「核反应失控」',149:'爆符「千兆耀斑」',153:'炽击「地狱的人工太阳」',157:'「地狱极乐熔毁」',161:'「地底太阳」',
-162:'秘法「九字切」',163:'奇迹「神秘果」',164:'神德「五谷丰登米之浴」',165:'表象「列祖列宗在梦中」',
-166:'表象「弹幕偏执症」',167:'本能「本我的解放」',168:'抑制「超我」',169:'反应「妖怪测谎机」',170:'潜意识「弹幕的墨迹测验」',
-171:'复燃「恋爱的埋火」',172:'深层「潜意识的基因」',173:'「被厌恶者的哲学」',174:'「地底的蔷薇」'}
+# 名称按ECL原文匹配THBWiki，避免手填编号把觉的六条回忆路线互换。
+def translations():
+    data=json.loads((ROOT/'tools/spell-names/catalogue.json').read_text('utf-8'))
+    return {c['ja']:c['zh'] for c in data['cards'] if c['game']==36}
+
 ROUTES=('00A','00B','00C','01A','01B','01C')
 ROUTE_NAMES=('灵梦／紫','灵梦／萃香','灵梦／文','魔理沙／爱丽丝','魔理沙／帕秋莉','魔理沙／荷取')
 ROLES={1:('黑谷山女','Yamame',1),2:('水桥帕露西','Parsee',1),3:('星熊勇仪','Yugi',0),4:('古明地觉','Satori',0),5:('火焰猫燐','Rin',0),6:('灵乌路空','Utsuho',0),7:('古明地恋','Koishi',0)}
@@ -160,12 +150,13 @@ def catalogue(sources):
             if hp<=threshold:hp=root_hp.get(mid,10000)
             number=p.spell[0] if p.spell else None
             role=MID_ROLES[stage] if mid else ROLES[stage]
-            label=NAMES.get(number,'') if number is not None else ''
+            original=p.spell[2] if p.spell else ''
+            label=translations()[original] if p.spell else ''
             if number is not None:assert label,('缺少中文卡名',stage,sub,number)
             timeout=next((q['timeout'] for q in slots if q['timeout']>0),3600)+max((f for f,_,op,_ in p.events if op in (342,357,358,359,333)),default=0)
             row=dict(stage=stage,sub=sub,mid=mid,shot=shot,route=ROUTE_NAMES[route] if route is not None else '',
                 total_hp=hp,threshold=threshold,hp=hp-threshold,timeout=timeout,invul=p.invul,
-                spell=number,name=label,role=role[0],image=role[1],sprite=role[2],x=0,y=128,id=next_id)
+                spell=number,name=label,name_ja=original,role=role[0],image=role[1],sprite=role[2],x=0,y=128,id=next_id)
             # 362仅置spell.flags的8位。耐久另由源码的持续invul20/10循环，或15→32标志确定。
             row['survival']=stage==7 and sub in ('BossCard5','BossCard9')
             if inherited:row['inherited']=inherited

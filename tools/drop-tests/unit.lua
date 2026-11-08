@@ -43,6 +43,7 @@ local D=load('THlib/drops.lua');local Q=load('THlib/ext/ext_quiz.lua')
 -- 图形桩保留真实对象池 / 数字回调语义，实际贴图与渲染另由安卓原生回归验证。
 NewObject=function(c) return New(c) end
 Del=function(o) if o.class[2] then o.class[2](o) end;o._live=false end
+object.Del=Del
 bullet=Class(object,{init=function(o,style)
     if not style then return end
     o.imgclass=style;o.class=bullet;o.group=GROUP.INDES;o.a=4;o.b=4;o._layer=-200
@@ -62,6 +63,45 @@ local function reset()
 end
 local function hero(class,slot)
     local p=New(class);if slot==2 then p._net_slot=2;D.bind(p) end;player=p;lstg.player=p;return p
+end
+-- 自机接触实体弹不同于Bomb消弹：致死弹、保护期接触弹都退场，不触发掉落。
+do
+    local original=OriginalBulletVisual
+    OriginalBulletVisual={cancel_bullet=function() error('接触消弹不能被Bomb免疫拦截') end}
+    local function target(group,style,laser)
+        local b=New(object);b.group=group;b.imgclass=style and {};b.IsLaser=laser;return b
+    end
+    reset();lstg.var.__contact_cancel_version=1
+    local p=hero(reimu_player);p.protect=0
+    local b=target(GROUP.ENEMY_BULLET,true);local dead=lstg.var.dead
+    check(player_class.colli(p,b) and p.death==90 and lstg.var.dead==dead+1,'实体弹命中只结算一次死亡')
+    check(not IsValid(b) and not b.colli,'致死弹在返回前消除')
+    for _,death in ipairs({0,1,49,91}) do
+        p.death,p.protect=death,300
+        for _,group in ipairs({GROUP.ENEMY_BULLET,GROUP.ENEMY_BULLET2,GROUP.INDES}) do
+            b=target(group,true);b.ex_flags=4096;b.protect=999
+            player_class.colli(p,b)
+            check(not IsValid(b) and not b.colli,'保护期接触实体弹绕过Bomb免疫：'..death..'/'..group)
+            check(p.death==death and lstg.var.dead==dead+1,'保护期不重复结算死亡')
+        end
+    end
+    p.death,p.protect=0,300
+    for _,b in ipairs({target(GROUP.ENEMY,true),target(GROUP.INDES,false),
+        target(GROUP.PLAYER_BULLET,true),target(GROUP.ENEMY_BULLET,true,true)}) do
+        player_class.colli(p,b);check(IsValid(b),'不把敌机、实体结构、自机弹或激光当作实体弹消除')
+    end
+    p.death=84;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
+    check(IsValid(b),'死亡演出不扩大成自机消弹区域')
+    p.death=0;p.dialog=true;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
+    check(IsValid(b),'对白阶段保持原有无交互');p.dialog=false
+    p.protect=0;cheat=true;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
+    check(not IsValid(b) and p.death==0,'练习无敌也消除实际接触的实体弹');cheat=nil
+    OriginalBulletVisual=original
+    lstg.var.__contact_cancel_version=nil
+    p.protect=0;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
+    check(IsValid(b) and p.death==90,'旧录像未带版本标志，保留致死分支行为')
+    p.death,p.protect=49,300;b=target(GROUP.ENEMY_BULLET,true);player_class.colli(p,b)
+    check(IsValid(b),'旧录像保留复活计时未归零时的行为')
 end
 local function shots(class,blue,enabled,start)
     reset();if enabled==false then lstg.var.__drops_version=nil;lstg.var.upgrades=nil end
@@ -360,6 +400,15 @@ check(D.bombInput(p,{spell=true},{spell=false}) and D.bombState(p)==2 and casts=
 check(not D.bombInput(p,{spell=true},{spell=true}) and casts==1,'长按不连续消耗 Bomb')
 state.players[1].bombs=0;check(not D.bombInput(p,{spell=true},{}) and casts==1,'没有 Bomb 不能释放')
 state.players[1].bombs=1;p.death=90;check(not D.bombInput(p,{spell=true},{}),'死亡期间不释放');p.death=0
+for _,death in ipairs({0,1,49,91,100}) do
+    state.players[1].bombs=1;p.death=death;p.protect=300
+    check(D.bombInput(p,{spell=true},{}),'无敌与复活可操作阶段可以释放 Bomb：'..death)
+end
+for _,death in ipairs({50,84,90}) do
+    state.players[1].bombs=1;p.death=death
+    check(not D.bombInput(p,{spell=true},{}),'死亡演出阶段禁止释放：'..death)
+end
+p.death=0;p.time_stop=true;check(not D.bombInput(p,{spell=true},{}),'时间停止期间不释放');p.time_stop=false
 p.dialog=true;check(not D.bombInput(p,{spell=true},{}),'对话期间不释放');p.dialog=false
 local sig=D.signature();state.players[1].bomb_fraction=1;check(sig~=D.signature(),'Bomb 恢复进度参与确定性签名')
 modernReset();p=New(reimu_player);p.x=-96;p.y=-100;player=p
@@ -480,7 +529,10 @@ end
 -- 真实自机选择菜单：随机模式不接受系统键盘、滚轮或鼠标输入。
 local f=assert(io.open(root..'/THlib/UI/menu.lua','rb'));local source=f:read('*a'):gsub('\r\n','\n');f:close()
 local section=assert(source:match('(player_system_select = Class%(object%).-)\nlocal valid'))
-assert(loadstring(section,'@THlib/UI/menu.lua:player_system_select'))()
+-- 菜单抽取段依赖段外的local；保持正式卡池面板，补足测试宿主的只读查询。
+RogueTen={copyFilters=function() return {stages={},difficulties={},encounters={}} end,
+    poolStatus=function() return {valid=true,count=410} end}
+assert(loadstring('local rogue_pool_menu=dofile('..string.format('%q',root..'/THlib/UI/rogue_pool.lua')..')\n'..section,'@THlib/UI/menu.lua:player_system_select'))()
 scoredata={UnlockSystem={true,true,true},system_selectid={true,false,true},player_select=1}
 SystemList={};player_list={{'灵梦','reimu_player','Reimu'}}
 sp={math={PointBoundCheck=function() return false end},CopyTable=function(_,v) local out={};for k,item in pairs(v) do out[k]=item end;return out end,TweakValue=function(_,v) return v end}

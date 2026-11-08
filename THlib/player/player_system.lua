@@ -406,10 +406,22 @@ function system:shoot()
 end
 
 ---碰撞回调事件
+local function cancel_contact_bullet(other)
+    if not IsValid(other) or not other.colli or other.IsLaser or other.IsBentLaser then return end
+    local group=other.group
+    if group~=GROUP.ENEMY_BULLET and group~=GROUP.ENEMY_BULLET2
+        and not (group==GROUP.INDES and other.imgclass) then return end
+    -- 原作CheckBulletCollision的实体命中返回1，Bomb免疫只过滤返回2。
+    -- 不能走can_cancel：接触消弹必须绕过Bomb免疫，同时保留各弹自己的消散动画。
+    SetAttr(other,'colli',false)
+    object.Del(other)
+end
 function system:colli(other)
     local p = self.player
-    if p.death == 0 and not p.dialog and not cheat and not lstg.var.ON_astral then
-        if p.protect == 0 then
+    local contact=lstg.var.__contact_cancel_version==1
+    local active=p.death==0 or contact and p.protect>0 and (p.death<50 or p.death>90)
+    if active and not p.dialog and (contact or not cheat) and not lstg.var.ON_astral then
+        if p.protect == 0 and not cheat then
             if other.IsBoss and not other.is_combat then
                 --在没有战斗的时候不判定体术
                 return
@@ -427,12 +439,15 @@ function system:colli(other)
                 item.PlayerMiss(p)
                 New(player_death_ef, p.x, p.y)
             end
+            if contact then cancel_contact_bullet(other) end
             return true
         end
-        if other.group == 10 and not other.IsBentLaser then
+        if other.group == 10 and not other.IsBentLaser and not cheat then
             laser.CutOnUnit(other, p)
         end
-        if other.group == 1 then
+        if contact then
+            cancel_contact_bullet(other)
+        elseif other.group == 1 then
             if OriginalBulletVisual then OriginalBulletVisual.cancel_bullet(other,'Del')
             else object.Del(other) end
         end

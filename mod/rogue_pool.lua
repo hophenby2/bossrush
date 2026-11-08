@@ -17,14 +17,14 @@ for code,source in pairs(catalog) do
     end
 end
 local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'}}
-function P.defaults(variant)
-    -- 双Boss/接续保留既有的三作Boss范围；单人模式开放五作与独立道中。
+function P.defaults(variant,poolVersion)
+    -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
     local single=not variant or variant=='single'
-    return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single},
+    return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4},
         difficulties={lunatic=true,extra=true},encounters={boss=true,road=single}}
 end
-function P.copy(filters,variant)
-    local defaults=P.defaults(variant)
+function P.copy(filters,variant,poolVersion)
+    local defaults=P.defaults(variant,poolVersion)
     if type(filters)~='table' then filters={} end
     local out={}
     for group,keys in pairs(fields) do
@@ -32,10 +32,12 @@ function P.copy(filters,variant)
         out[group]={}
         for _,key in ipairs(keys) do out[group][key]=values[key]==true end
     end
+    -- 旧设置中的勾选也必须失效，不能只移除准备界面的按钮。
+    out.stages.TH36=out.stages.TH36 and poolVersion==4
     return out
 end
 function P.build(filters,poolVersion)
-    filters=P.copy(filters)
+    filters=P.copy(filters,nil,poolVersion)
     local pool,total,seen={},0,{}
     for _,source in ipairs(P.sources) do
         -- 新作只进入版本4；旧录像即使缺少筛选初态，也不能因默认值改变而重抽。

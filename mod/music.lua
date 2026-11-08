@@ -3,20 +3,20 @@ AddMusic("SCORE", 62.45, 55.11, "Player's Score", true)
 AddMusic("Bad Apple!!", 219.16, 219.16, "Bad Apple!!")
 AddMusic("SUMMARY", 97, 97, "Eris - Yume, Maboroshi")
 
-AddMusic("TH00_0", 62.45, 55.11, "未命名关卡")
+-- AddMusic("TH00_0", 62.45, 55.11, "未命名关卡")
 
-AddMusic("TH01_0", 62.45, 55.11, "水月")
+-- AddMusic("TH01_0", 62.45, 55.11, "水月")
 
-AddMusic("TH02_0", 62.45, 55.11, "星河")
+-- AddMusic("TH02_0", 62.45, 55.11, "星河")
 
-AddMusic("TH03_0", 62.45, 55.11, "白玉楼")
+-- AddMusic("TH03_0", 62.45, 55.11, "白玉楼")
 
-AddMusic("TH04_0", 62.45, 55.11, "彼岸")
-AddMusic("TH05_0", 62.45, 55.11, "花园")
+-- AddMusic("TH04_0", 62.45, 55.11, "彼岸")
+-- AddMusic("TH05_0", 62.45, 55.11, "花园")
 
-AddMusic("TH20_0", 62.45, 55.11, "地底")
+-- AddMusic("TH20_0", 62.45, 55.11, "地底")
 
-AddMusic("TH22_0", 140.901, 126.729, "西行庭")
+-- AddMusic("TH22_0", 140.901, 126.729, "西行庭")
 
 AddMusic("TH06_0", 150.65, 117.45, "魔法少女達の百年祭")
 AddMusic("TH06_1", 122.02, 122.02, "U.N.オーエンは彼女なのか？")

@@ -1,0 +1,89 @@
+{
+  "date": "2026-11-08",
+  "cause": "独立dofile模块没有接收主文件的local class；四道中首次DiveEnemy触发全局class空引用。",
+  "fix": "loadfile(...)(class)显式传递局部关卡上下文；相机数值不变。",
+  "additional_fix": "六个道中入口从不存在的TH10_1改为已注册TH10_2。",
+  "source_sha256": {
+    "mod/GAME/th35.lua": "a7084a2dd4b302822d653637b3abe2e701ce71bf83fd1a4b719f55b81bd3cbf4",
+    "mod/GAME/th35_dive.lua": "f73507639f78d3c540c67b2904d2bbd1fcc3cb845b2ed83a0e2360f7ca585d02"
+  },
+  "tests": {
+    "camera": 9007,
+    "fields": true,
+    "rogue": 2460,
+    "old_module_reproduced": true
+  },
+  "native": [
+    {
+      "run_id": "24bff05e11e4441ea493fe3e24aa8791",
+      "directory": "E:\\workspace\\.bossrush-validation\\th35-dive-fixed-20261108",
+      "engine": "LuaSTG Sub v0.21.129",
+      "entries": 1,
+      "frames": 8600,
+      "errors": {},
+      "cleanup": true,
+      "cards": [
+        {
+          "id": 3683,
+          "frames": 8600
+        }
+      ]
+    },
+    {
+      "run_id": "aa212ff7fcbb40819ce07efcc7a27010",
+      "directory": "E:\\workspace\\.bossrush-validation\\th35-all-roads-20261108",
+      "engine": "LuaSTG Sub v0.21.129",
+      "entries": 7,
+      "frames": 44443,
+      "errors": {},
+      "cleanup": true,
+      "cards": [
+        {
+          "id": 3671,
+          "frames": 3669
+        },
+        {
+          "id": 3680,
+          "frames": 4880
+        },
+        {
+          "id": 3681,
+          "frames": 5864
+        },
+        {
+          "id": 3682,
+          "frames": 6725
+        },
+        {
+          "id": 3683,
+          "frames": 8600
+        },
+        {
+          "id": 3684,
+          "frames": 6123
+        },
+        {
+          "id": 3685,
+          "frames": 8582
+        }
+      ]
+    }
+  ],
+  "auxiliary_harness": {
+    "test": "tools/check_th35_patterns.lua",
+    "result": "测试宿主在th35_fx.lua:66缺少owner.class，未能进入其后续模式检查；本次以独立相机检查和完整道中真引擎运行验证。"
+  },
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.13.apk",
+    "version": "0.13.13-android",
+    "version_code": 31,
+    "bytes": 571701386,
+    "sha256": "ae390c10a984ae94fe538f9293f05e988b5cd249acb0fe92cb731cd1d5d92684",
+    "assets": 2520,
+    "crc": true,
+    "signature": true,
+    "user_data_excluded": true,
+    "modified_sources_match": true,
+    "android_device_test": false
+  }
+}

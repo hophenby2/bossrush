@@ -264,9 +264,13 @@ function H.spell(a,id,timeout,bonus,name,opcode)
     a.session.spell_flag8=false
     a.hp_spell=true
     a.survival=a.hp_phase and a.hp_phase.survival or false
+    H.start_background(a,id)
     if H.on_spell then H.on_spell(a,id,name) end
 end
-function H.spell_end(a) a.session.spell=nil;a.session.spell_flag8=false;a.survival=false;a.hp_spell=false end
+function H.spell_end(a)
+    H.end_background(a.session)
+    a.session.spell=nil;a.session.spell_flag8=false;a.survival=false;a.hp_spell=false
+end
 function H.sound(a,id) if PlaySound and (id==0 or id==1 or id==2) then PlaySound(id==2 and 'enep00' or 'tan00',.25,math.max(-1,math.min(1,a.o.x/192))) end end
 function H.shake(a,t,x,y) if misc and misc.ShakeScreen then misc.ShakeScreen(t,x/8) end end
 function H.fog(a,limit,color) a.fog={limit,color} end
@@ -357,11 +361,7 @@ local actor_class=Class(enemy,{
     end,
     frame=function(o) end,
     render=function(o)
-        local a=o.th11_actor;if not a or band(a.flags,0x20)~=0 then return end
-        for slot,vm in pairs(a.anm) do
-            local override=slot==0 and a.flash_magenta and {color={255,0,255},alpha=255} or nil
-            A.draw(vm,o.x,o.y,a.anm_angle and -math.deg(a.anm_angle) or nil,nil,nil,nil,nil,override)
-        end
+        if o.th11_actor then H.draw_actor(o.th11_actor) end
     end,
     kill=function(o)
         local a=o.th11_actor
@@ -512,6 +512,7 @@ function H.session(host,stage,sub,meta,options)
     end
     if meta then a.is_boss=true;s.boss=a;H.select_anm(a,2);H.anm_main(a,0,meta.sprite or 0);H.limit(a,0,128,280,96) end
     host.th36_session=s;host.bound=false
+    H.create_animation_planes(s)
     HP.leave(s)
     return s
 end
@@ -530,6 +531,7 @@ function H.step(s)
         local i=1
         while i<=#s.actors do local a=s.actors[i];if live(a) then H.update(a) end;i=i+1 end
         for j=#s.actors,1,-1 do if s.actors[j].dead then table.remove(s.actors,j) end end
+        H.step_backgrounds(s)
         if s.frame%120==0 then
             for j=#s.effects,1,-1 do if not IsValid(s.effects[j]) then table.remove(s.effects,j) end end
         end
@@ -551,4 +553,6 @@ end
 -- 发弹和原作专用回调分开，便于逐项对照，加载时仍是普通Lua函数。
 assert(loadfile('mod/GAME/th36/projectiles.lua'))(H,class)
 assert(loadfile('mod/GAME/th36/callbacks.lua'))(H,class)
+assert(loadfile('mod/GAME/th36/background.lua'))(H,class)
+assert(loadfile('mod/GAME/th36/animation_layers.lua'))(H,class)
 return H

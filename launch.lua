@@ -154,6 +154,7 @@ default_setting = {
     displaykey = true,
     displayBG = true,
     SCAutoRetry = false,
+    spellNameLanguage = 0, -- 符卡名：0为THBWiki中文译名，1为原作日文。
     resumeAutoSave = false,
     RepNoGameFps = false,
     ReplayFastSpeed = 240,

@@ -143,7 +143,9 @@ function D.cooldownStep(p)
 end
 function D.bombInput(p,key,previous)
     if not modern() or not key.spell or previous.spell then return false end
-    if p.lock or p.dialog or p.realrealreal_lock or p.hide or (p.death or 0)~=0 then return false end
+    local death=p.death or 0
+    -- death<50已恢复操作，protect只是无敌计时；不能把复活后的可操作阶段当作死亡演出。
+    if p.lock or p.dialog or p.realrealreal_lock or p.hide or p.time_stop or (death>=50 and death<=90) then return false end
     local s=ensure();local c=s.players[D.slot(p)]
     if c.bombs<1 then return false end
     c.bombs=c.bombs-1

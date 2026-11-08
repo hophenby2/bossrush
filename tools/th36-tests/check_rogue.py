@@ -49,8 +49,8 @@ def main():
         return frames
     ''')
     lua.execute('''
-        RogueTen={copyFilters=dofile('mod/rogue_pool.lua').copy,poolStatus=function() return {valid=true,count=503} end}
-        scoredata={};local keys={}
+        RogueTen={copyFilters=dofile('mod/rogue_pool.lua').copy,poolStatus=function() return {valid=true,count=410} end}
+        scoredata={rogue10_filters={stages={TH31=true,TH32=true,TH34=true,TH35=true,TH36=true}}};local keys={}
         KEY={ENTER=13};setting={keys={shoot=90}}
         menu={keyYes=function() return keys.yes end,keyNo=function() return false end,
               keyUp=function() return keys.up end,keyDown=function() return keys.down end,
@@ -61,20 +61,20 @@ def main():
         sp={math={PointBoundCheck=function(x,y,l,r,b,t) return x>=l and x<=r and y>=b and y<=t end}}
         local U=dofile('THlib/UI/rogue_pool.lua')
         local o={yes=function(o) o.started=true end,no=function() end,addpos1=function() end,alpha=1,keyname={},timer=0}
-        U.fresh(o,'roguelike');assert(o.pool_options.stages.TH36)
+        U.fresh(o,'roguelike');assert(not o.pool_options.stages.TH36,'旧勾选重新启用了地灵殿')
         o.pool_focus=5;keys.yes=true;U.frame(o);keys.yes=false
-        assert(not o.pool_options.stages.TH36,'射击键没有切换地灵殿')
+        assert(not o.pool_options.difficulties.lunatic and not o.pool_options.stages.TH36,'第五项应切换Lunatic而非地灵殿')
         ext.mouse.x,ext.mouse.y=600,312;keys.click=true;U.frame(o);keys.click=false
-        assert(o.pool_options.stages.TH36 and o.pool_focus==5,'触屏没有切换地灵殿')
+        assert(not o.pool_options.stages.TH36,'旧地灵殿按钮位置仍可触屏启用')
         ext.mouse.x,ext.mouse.y=-1000,-1000
-        keys.down=true;o.pool_focus=9;U.frame(o);assert(o.pool_focus==10)
-        U.frame(o);assert(o.pool_focus==0,'键盘焦点没有覆盖全部九个选项和开始按钮');keys.down=false
+        keys.down=true;o.pool_focus=8;U.frame(o);assert(o.pool_focus==9)
+        U.frame(o);assert(o.pool_focus==0,'键盘焦点没有覆盖全部八个选项和开始按钮');keys.down=false
         ext.mouse.x,ext.mouse.y=480,45;keys.click=true;U.frame(o);keys.click=false
-        assert(o.started and o.pool_focus==10,'准备按钮点击失效')
+        assert(o.started and o.pool_focus==9,'准备按钮点击失效')
         local rectangles,labels={},{}
         RenderRect=function(_,l,r,b,t) rectangles[#rectangles+1]={l,r,b,t} end
         ui={RenderText=function(_,_,label) labels[label]=true end}
-        U.render(o);assert(labels['地灵殿 · TH36'] and #rectangles==9)
+        U.render(o);assert(not labels['地灵殿 · TH36'] and #rectangles==8,'地灵殿选项未关闭')
         for i,a in ipairs(rectangles) do
             assert(a[1]>=0 and a[2]<=960 and a[3]>=0 and a[4]<=540)
             for j=1,i-1 do local b=rectangles[j]
@@ -83,7 +83,7 @@ def main():
         end
     ''')
     result=dict(roads=[dict(row.items()) for row in frames.values()],road_bosses_excluded=True,
-                full_stage_boss_preserved=True,ui_options=9,keyboard=True,touch=True,
+                full_stage_boss_preserved=True,ui_options=8,th36_selection_disabled=True,keyboard=True,touch=True,
                 scope='LuaJIT道中演员和自然结束检查关闭发弹；面板输入及点击区域；不替代Android设备实测')
     if args.native:
         config=json.loads((args.native/'native-run.json').read_text('utf-8'))

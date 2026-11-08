@@ -2,7 +2,7 @@
 -- 七条main按原ECL顺序驱动道中、中Boss、主Boss；觉的六条回忆路线均另列练习。
 -- 20份源文件、掩码和SHA-256见th36/sources.json。运行时只执行Lua函数与LuaSTG对象。
 -- 血量按原作六种自机低速满火力活跃TTK中位数换算；ECL内部仍用原作life与阈值。
--- 差异3：沿用本项目TH11的背景、BGM和界面；没有移植原版STD三维场景与MSG对白。
+-- 差异3：符卡背景逐层播放原作ANM；场景、BGM和界面沿用项目TH11，未移植STD与MSG对白。
 -- 差异4：自机、道具及碰撞由LuaSTG框架接管，原版PE的逐像素GPU输出不在此保证。
 local class={}
 _editor_class.TH36=class
@@ -32,7 +32,8 @@ class.overlay=Class(object,{
         SetImageState('white','',Color(255,240,240,255));RenderRect('white',-184,-184+368*fraction,210,214)
         if ui and ui.RenderText then
             local label=labels[s.stage..':'..tostring(s.spell)]
-            ui:RenderText('sc_menu',label and label.name or m and m.role or '',-184,202,.45,Color(255,255,255,255),'left')
+            local name=label and SpellNames.text(LEVEL,label.id,label.name) or m and m.role or ''
+            ui:RenderText('sc_menu',name,-184,202,.45,Color(255,255,255,255),'left')
             if timeout>0 then ui:RenderText('sc_menu',('%.2f'):format(math.max(0,timeout-a.phase_time)/60),184,202,.45,Color(255,255,255,255),'right') end
         end
     end,
@@ -54,7 +55,7 @@ local function draw(b)
     if not b.th11_actor or b.th11_actor.dead then return end
     local a=b.th11_actor
     if require('bit').band(a.flags,0x20)~=0 then return end
-    for _,vm in pairs(a.anm) do OriginalANM.draw(vm,b.x,b.y,a.anm_angle and -math.deg(a.anm_angle) or nil) end
+    H.draw_actor(a)
 end
 local function finish(b)
     H.close(b.th36_session);b.th36_session=nil;b.th11_actor=nil
@@ -66,8 +67,8 @@ for _,meta in ipairs(catalogue) do
     local location=stage_name..(meta.mid and '中Boss' or 'Boss')
     local label='地灵殿·'..location..'·'..meta.role..'·'..(meta.name~='' and meta.name or '非符·'..meta.sub)
     if meta.route~='' then label=label..'（'..meta.route..'）' end
-    local scbg=(_editor_class.TH11 or {})['SCBG'..(meta.stage<=3 and 1 or meta.stage==4 and 2 or 3)]
-    boss.Define(group..'a',meta.role,'TH11_0',TH11_bg,{0,96},scbg,meta.image,LEVEL)
+    -- ECL的spell/结束指令负责背景生命周期；框架不再另加旧TH11的通用背景。
+    boss.Define(group..'a',meta.role,'TH11_0',TH11_bg,{0,96},nil,meta.image,LEVEL)
     local survival=meta.survival
     local t=meta.timeout/60
     local calibrated=assert(H.hp.entries[meta.id])
