@@ -20,6 +20,38 @@ local env={lstg={GetKeyState=function() return false end,GetLastKey=function() r
 env._G=env;setmetatable(env,{__index=_G})
 local chunk=assert(loadfile('native_android_input.lua'));setfenv(chunk,env);local mobile=chunk()
 local endScene=EndScene
+local function captureGrowth()
+    if GameDrops.VERSION<6 then return end
+    local run=lstg.var.rogue_run
+    local saved,dead,net=run.hp_growth,lstg.var.dead,GameNet
+    local players=lstg.var.upgrades.players
+    local red1,red2=players[1].red,players[2].red
+    players[1].red=99000;GameDrops.apply(1,9)
+    assert(GameDrops.values(1)==1188 and near(GameDrops.damage(10,1),118.8),'真实运行时升级与伤害都能突破旧火力上限')
+    local report={}
+    for _,case in ipairs({{'growth-10000',10000,100}, {'growth-30',1e30,1e6},
+        {'growth-100',1e100,1e12},{'growth-300',1e300,1e30},{'growth-dual',1e30,1e6,true}}) do
+        run.hp_growth={shown=case[2],shown_stage=253,total=case[2],stage=253}
+        players[1].red=case[3]*100;players[2].red=1e5
+        lstg.var.dead=2
+        GameNet=case[4] and {host=function() return true end} or net
+        local lines,scale=GameHPScale.layout(case[2],288,157)
+        assert(table.concat(lines)==GameHPScale.format(case[2]) and not table.concat(lines):find('[eE]'))
+        local widths={};local fr=assert(lstg.FontRenderer)
+        assert(fr.SetFontProvider('title'));fr.SetScale(1,1)
+        for _,line in ipairs(lines) do
+            local w=fr.MeasureTextAdvance(line)*scale*.5 -- RenderTTF的字体缩放含0.5。
+            assert(w<=264,'换行后倍率不能越出左侧边界：'..w);widths[#widths+1]=w
+        end
+        BeginScene();SetViewMode('ui');RenderClear(Color(255,12,21,36))
+        ui.RunHUD.stage(253,144,270,288);GameHPScale.render(144,165,288);ui.RunHUD.draw(672,494,255)
+        endScene();Snapshot('snapshot/'..case[1]..'.png')
+        report[#report+1]={snapshot=case[1],multiplier=GameHPScale.format(case[2]),lines=lines,scale=scale,
+            measured_widths=widths,power=GameDrops.values(1),axis=ui.RunHUD.powerAxis(case[3]),dual=case[4] or false}
+    end
+    run.hp_growth=saved;lstg.var.dead=dead;GameNet=net;players[1].red=red1;players[2].red=red2
+    local f=assert(io.open('growth-ui.json','w'));f:write(Serialize(report));f:close()
+end
 EndScene=function()
     if growth() then mobile.render() end
     local result=endScene()
@@ -48,6 +80,7 @@ EndScene=function()
             ui:RenderText('title',('×%.2f'):format(1+index/100),160+(i-1)*128,270,2,Color(255,GameHPScale.rgb(index)),'centerpoint')
         end
         endScene();Snapshot('snapshot/hp-colors.png')
+        captureGrowth()
     end
     return result
 end

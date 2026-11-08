@@ -5902,7 +5902,7 @@ function class.th07_motion_begin(self, id, move)
     local cfg = assert(class.th07_motion_source[id])
     if OriginalCollision then OriginalCollision.unit(self,7,cfg.file:gsub('%.ecl$','')..':'..cfg.sub,true) end
     self.th07_visual_file=cfg.file
-    if self._wisys and self.WALKIMGID then OriginalStageVisual.bind_boss(self._wisys,self.WALKIMGID) end
+    OriginalStageVisual.bind_th07_boss(self,cfg.key)
     class.th07_lasers = {}
     self.th07_laser_interaction, self.th07_laser_tick = nil, 0
     self.th07_orbit_step=nil
@@ -5942,36 +5942,13 @@ function class.th07_motion_begin(self, id, move)
         NativeVisual.instrument_phase(self,id,main)
     else NativeVisual.end_instruments(self) end
 end
--- 缓时复用 TH07 的斩击背景回调和框架 timeslow。原作 ExIns 10/11 以 1/factor
--- 推进计时与运动；这里由统一逻辑帧减速，不能再把弹速除一次，否则会双重减速。
-class["TH34_slow_effect"] = Class(object, {
-    init = function(self, owner)
-        self.group, self.layer, self.bound, self.colli = GROUP.GHOST, LAYER.ENEMY_BULLET-1, false, false
-        self.owner, self.fx = owner, {}
-        local callbacks = _editor_class.TH07 and _editor_class.TH07.youmu_slash
-        self.callbacks = callbacks
-        if callbacks then
-            callbacks.init(self.fx)
-            self.fx.slash_time = 50
-        end
-    end,
-    frame = function(self)
-        if not IsValid(self.owner) or not self.owner.th07_slow_active then object.RawDel(self); return end
-        if self.callbacks then self.callbacks.frame(self.fx) end
-    end,
-    render = function(self)
-        if self.callbacks then self.callbacks.render(self.fx)
-        else
-            SetImageState("white", "mul+rev", 250, 100, 100, 100)
-            RenderRect("white", lstg.world.l, lstg.world.r, lstg.world.t, lstg.world.b)
-        end
-    end,
-    del = function(self) task.Clear(self.fx) end,
-})
+-- ExIns10/11只给两层原作背景发送interrupt2/1（EnemyEclInstr.cpp:562/615）。
+-- eff05.anm自行完成变色、加色混合和旋转，不能再叠旧TH07关卡的全屏反色遮罩。
+-- 1/factor由统一逻辑帧减速承担，不能再把弹速除一次，否则会双重减速。
 function class.th07_set_speed(owner, factor)
     if not owner.th07_slow_active then owner.th07_saved_timeslow = lstg.var.timeslow or 1 end
     owner.th07_slow_active, lstg.var.timeslow = true, factor
-    if not IsValid(owner.th07_speed_effect) then owner.th07_speed_effect = New(class.TH34_slow_effect, owner) end
+    OriginalStageVisual.interrupt_background(7,2)
     -- ExInsYoumuSetGameSpeed 只把箭头弹临时换白；其余弹色保持原样。
     for _, b in ipairs(pool4) do
         if IsValid(b) and (b.th07_sprite or TH07_SPRITE[b.imgclass]) == 4 then b.own_gray = true end
@@ -5982,8 +5959,7 @@ function class.th07_restore_speed(owner)
     lstg.var.timeslow = owner.th07_saved_timeslow or 1
     owner.th07_slow_active, owner.th07_saved_timeslow = nil, nil
     for _, b in ipairs(pool4) do if IsValid(b) then b.own_gray = false end end
-    if IsValid(owner.th07_speed_effect) then object.RawDel(owner.th07_speed_effect) end
-    owner.th07_speed_effect = nil
+    OriginalStageVisual.interrupt_background(7,1)
 end
 -- ExIns 13/14 的状态属于弹体：先让本体下方窄带中的弹弯曲，再把已标记弹重定向。
 -- 指令覆盖后不再回到原先的发弹命令链；直线弹通过现有 frame_other 入口接管。
@@ -11394,7 +11370,7 @@ local function TH34_add_stage56_boss()
     ---每拍的出膛 x 依次 ±24：sub43 从 rand(0,32)−16 起 **+24**（向 x 正方向扫），
     ---sub44 从 rand(0,32)+368 起 **−24**（向 x 负方向扫）—— 左右两个子程连 f0 的
     ---起步值和增量符号都是反的（原作 SUB_FLOAT/ADD_FLOAT 的差别）。
-    ---RUN_EX_INS 10/11 已接入 TH07 斩击回调和统一缓时；换卡时恢复原速度。
+    ---RUN_EX_INS 10/11 已接入原作背景interrupt与统一缓时；换卡时恢复原速度。
     ---INIT_BULLET_CMD slot0 的 `0x2000 spawnDelay 160` 先设置离屏延迟。
     scard("餓王剣「餓鬼十王の報い」", 4403, 50, 1500, false, function(self)
         self.th07_manual_pose=true;pose5(self,128)

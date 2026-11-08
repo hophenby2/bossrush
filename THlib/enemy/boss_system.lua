@@ -978,6 +978,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
                 task.Wait()
             end
         end
+        if OriginalStageVisual then OriginalStageVisual.prepare_boss(b,card) end
         if card.is_sc then
             self:castcard(card.name)
             if score then

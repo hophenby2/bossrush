@@ -17,9 +17,9 @@ roles[8]={Nightbug={'stg1enm',0,'eff01'},Lorelei={'stg2enm',0,'eff02'},
 roles[7]={Chiruno={'stg1enm',128,'eff01'},Whiterock={'stg1enm',132,'eff01'},
     Chen={'stg2enm',128,'eff02'},Alice={'stg3enm',128,'eff03'},
     Lunasa={'stg4enm',128,'eff04'},Merlin={'stg4enm',134,'eff04'},Lyrica={'stg4enm',140,'eff04'},
-    Youmu={'stg5enm',128,'eff05'},Yuyuko={'stg6enm',128,'eff06'},
+    Youmu={'stg5enm',128,'eff05'},Yuyuko={'stg6enm',147,'eff06'},
     Ran={'stg7enm',134,'eff07'},Yukari={'stg8enm',128,'eff08'}}
-roles[6]={Rumia={'stg1enm2',128,'eff01'},Daiyousei={'stg1enm',0,'eff01'},
+roles[6]={Rumia={'stg1enm2',128,'eff01'},Daiyousei={'stg2enm',64,'eff02'},Koakuma={'stg4enm',64,'eff04'},
     Chiruno={'stg2enm2',128,'eff02'},Meirin={'stg3enm',64,'eff03'},
     Knowledge={'stg4enm',65,'eff04'},Sakuya={'stg5enm2',128,'eff05'},
     Remilia={'stg6enm2',160,'eff06'},Flandre={'stg7enm2',160,'eff07'}}
@@ -30,8 +30,69 @@ local names95={'Nightbug','Rumia','Chiruno','Whiterock','Kamishirasawa','Alice',
 roles[95]={}
 for i,name in ipairs(names95) do roles[95][name]={'enm'..i,i==23 and 4 or 2,'enm'..i} end
 roles[10]={Sizuha={'stgenm01',0},Minoriko={'stgenm01',5},Hina={'stgenm02',5},
-    Nitori={'stgenm03',0},Aya={'stgenm04',0},Momizi={'stgenm04',6},
+    Nitori={'stgenm03',0},Aya={'stgenm04',0},Momizi={'stgenm04',9},
     Sanae={'stgenm05',6},Kanako={'stgenm06',6},Suwako={'stgenm07',0}}
+local boss_names={Reimu='博丽灵梦',Marisa='雾雨魔理沙',Chiruno='琪露诺',Whiterock='蕾蒂·霍瓦特洛克',Chen='橙',Alice='爱丽丝·玛格特洛依德',
+    Lunasa='露娜萨·普莉兹姆利巴',Merlin='梅露兰·普莉兹姆利巴',Lyrica='莉莉卡·普莉兹姆利巴',
+    Youmu='魂魄妖梦',Yuyuko='西行寺幽幽子',Ran='八云蓝',Yukari='八云紫',
+    Rumia='露米娅',Daiyousei='大妖精',Koakuma='小恶魔',Meirin='红美铃',Knowledge='帕秋莉·诺蕾姬',
+    Sakuya='十六夜咲夜',Remilia='蕾米莉亚·斯卡蕾特',Flandre='芙兰朵露·斯卡蕾特',
+    Nightbug='莉格露·奈特巴格',Lorelei='米斯蒂娅·萝蕾拉',Kamishirasawa='上白泽慧音',Kamishirasawa2='上白泽慧音',
+    Reisen='铃仙·优昙华院·因幡',Tewi='因幡帝',Yagokoro='八意永琳',Neet='蓬莱山辉夜',Mokou='藤原妹红',
+    Medicine='梅蒂欣·梅兰可莉',Komachi='小野塚小町',Shikieiki='四季映姬·亚玛萨那度',Suika='伊吹萃香',
+    Sizuha='秋静叶',Minoriko='秋穰子',Hina='键山雏',Nitori='河城荷取',Aya='射命丸文',Momizi='犬走椛',
+    Sanae='东风谷早苗',Kanako='八坂神奈子',Suwako='洩矢诹访子'}
+S.boss_names=boss_names
+local groups6={[1]='Remilia',[2]='Rumia',[3]='Rumia',[4]='Daiyousei',[5]='Chiruno',[6]='Meirin',[7]='Meirin',
+    [8]='Koakuma',[9]='Knowledge',[10]='Sakuya',[11]='Sakuya',[12]='Sakuya',[13]='Knowledge',[14]='Flandre',
+    [15]='Knowledge',[16]='Knowledge',[17]='Knowledge'}
+local function boss_identity(o,game,archive,id)
+    if not o._bosssys then return end
+    local role
+    if game==6 then
+        local a=o.th06_actor
+        local group=a and a.main and a.meta.group or o.class and o.class.id and tonumber(o.class.id:match('^(%d+)a30$'))
+        role=groups6[group]
+    elseif game==10 and archive=='stgenm07' and id>=20 then role='Sanae'
+    elseif game~=7 then
+        local best=-math.huge
+        for name,cfg in pairs(roles[game] or {}) do
+            if cfg[1]==archive and cfg[2]<=id and cfg[2]>best then role,best=name,cfg[2] end
+        end
+    end
+    if role then o.name,o._original_boss_role=boss_names[role],role end
+end
+-- 原作95/96来自各Boss的构造入口，不按符卡标题或上一张卡的行走图猜角色。
+-- 96的原始顺序是待机/左停/右停/左移/右移，以下换为播放器的待机/左移/右移/左停/右停。
+local poses7={Chiruno={128,129,130,129,130},Lunasa={128,130,131,132,133},
+    Merlin={134,136,137,138,139},Lyrica={140,142,143,144,145},Yuyuko={147,149,148,151,150}}
+local entries7={
+    ['1mid']={'Chiruno','stg1enm',128,'eff01','ecldata1:20'},
+    ['1main']={'Whiterock','stg1enm',132,'eff01','ecldata1:31'},
+    ['2main']={'Chen','stg2enm',128,'eff02','ecldata2:40'},
+    ['3mid']={'Alice','stg3enm',128,'eff03','ecldata3:13'},
+    ['3main']={'Alice','stg3enm',128,'eff03','ecldata3:31'},
+    ['4lunasa']={'Lunasa','stg4enm',128,'eff04','ecldata4:54'},
+    ['4merlin']={'Merlin','stg4enm',134,'eff04','ecldata4:72'},
+    ['4lyrica']={'Lyrica','stg4enm',140,'eff04','ecldata4:89'},
+    ['5main']={'Youmu','stg5enm',128,'eff05','ecldata5:37'},
+    ['6mid']={'Youmu','stg6enm',128,'eff06','ecldata6:18'},
+    ['6main']={'Yuyuko','stg6enm',147,'eff06','ecldata6:28'},
+    ['7mid']={'Chen','stg7enm',128,'eff02','ecldata7:54'},
+    ['7main']={'Ran','stg7enm',134,'eff07','ecldata7:67'},
+    ['8mid']={'Ran','stg8enm',134,'eff07','ecldata8:56'},
+    ['8main']={'Yukari','stg8enm',128,'eff08','ecldata8:69'},
+}
+S.th07_boss_entries=entries7
+local function identity7(o,archive,id)
+    if not o._bosssys then return end
+    for _,entry in pairs(entries7) do
+        if archive==entry[2] and id==entry[3] then
+            o.name,o.WALKIMGID,o._original_boss_role=boss_names[entry[1]],entry[1],entry[1]
+            return
+        end
+    end
+end
 local function resolve_script(game,archive,id)
     local data=A.load(game,archive)
     if game==6 and not data.ids[id] then
@@ -48,8 +109,10 @@ local function new_script(game,archive,id,dt)
     return A.new(game,file,index,dt)
 end
 function S.actor(o,game,archive,id,poses)
-    o._original_actor={game=game,archive=archive,poses=poses,direction=255,
-        vm=new_script(game,archive,id,o._native_rate_source and o._native_rate_source.fm),slots={},tick=o.ani}
+    local vm=new_script(game,archive,id,o._native_rate_source and o._native_rate_source.fm)
+    o._original_actor={game=game,archive=vm.data.archive,poses=poses,direction=255,
+        vm=vm,slots={},tick=o.ani}
+    boss_identity(o,game,vm.data.archive,poses and poses[1] or id)
     o.hide=false
     return o._original_actor
 end
@@ -57,6 +120,8 @@ function S.set_script(o,id,archive)
     local state=assert(o._original_actor)
     state.archive=archive or state.archive
     state.vm=new_script(state.game,state.archive,id,o._native_rate_source and o._native_rate_source.fm)
+    state.archive=state.vm.data.archive
+    boss_identity(o,state.game,state.archive,state.poses and state.poses[1] or id)
 end
 -- TH10的ECL设置主ANM时保存可视范围，之后的动画缩放不持续改写此快照。
 function S.capture_visibility(o)
@@ -78,6 +143,7 @@ end
 function S.poses(o,poses)
     local state=assert(o._original_actor)
     state.poses=poses;state.direction=255
+    boss_identity(o,state.game,state.archive,poses[1])
 end
 function S.slot(o,index,id,archive)
     local s=assert(o._original_actor)
@@ -278,12 +344,15 @@ local function animation_event(o,game,file,c)
     end
     local source=o._original_source
     -- 57先按当前库创建附属VM，再清alternate标志；61先切到角色库再创建。
-    local alternate=(op>=58 and op<=61) or (op==57 and source and source.alternate)
+    -- 这个标志属于敌机，不能绑在当前ECL播放游标上：手写攻击循环也会发送59/62。
+    local selected=o._original_animation_alternate
+    if selected==nil then selected=source and source.alternate end
+    local alternate=(op>=58 and op<=61) or (op==57 and selected)
     local archive=source_archive(game,file,alternate)
     if game==7 then
         if op==95 then
-            local old=o._original_actor
-            if old then S.set_script(o,c[3]) else S.actor(o,game,archive,c[3]) end
+            S.main_script(o,game,archive,c[3])
+            identity7(o,archive,c[3])
         elseif op==96 then
             local p
             if c[6]~=nil then p={c[3],c[6],c[7],c[4],c[5]}
@@ -296,8 +365,10 @@ local function animation_event(o,game,file,c)
                 p={short(c[3]),short(c[4],true),short(c[5]),short(c[3],true),short(c[4])}
             end
             if p[1]<0 then if o._original_actor then o._original_actor.poses=nil end;return end
-            if not o._original_actor then S.actor(o,game,archive,p[1],p) else S.poses(o,p) end
-        elseif op==97 and o._original_actor then S.slot(o,c[3],c[4])
+            local old=o._original_actor
+            if not old or old.archive~=archive then S.main_script(o,game,archive,p[1]) end
+            S.poses(o,p);identity7(o,archive,p[1])
+        elseif op==97 and o._original_actor then S.slot(o,c[3],c[4],archive)
         elseif op==128 and o._original_actor then A.interrupt(o._original_actor.vm,c[3])
         elseif op==129 and o._original_actor and o._original_actor.slots[c[3]] then A.interrupt(o._original_actor.slots[c[3]],c[4])
         elseif op==132 then o._original_hidden=c[3]~=0
@@ -317,9 +388,12 @@ local function animation_event(o,game,file,c)
         s.slots[c[3]]=c[4]>=0 and new_script(game,archive,c[4]) or nil
     elseif op==62 and o._original_actor then
         local s=o._original_actor
-        if s.poses and s.poses[6] then S.set_script(o,s.poses[6],source_archive(game,file,source and source.alternate)) end
+        if s.poses and s.poses[6] then S.set_script(o,s.poses[6],source_archive(game,file,selected)) end
     end
-    if source and op>=54 and op<=61 then source.alternate=op>=58 end
+    if op>=54 and op<=61 then
+        o._original_animation_alternate=op>=58
+        if source then source.alternate=op>=58 end
+    end
 end
 S.source_event=animation_event
 function S.bind_source(o,game,key,preserve,events_override)
@@ -338,7 +412,9 @@ function S.bind_source(o,game,key,preserve,events_override)
         local sub=key:match(':([^:]+)$')
         if sub=='Boss' or sub=='MBoss' then bank=0 end
     end
-    o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank}
+    if not preserve then o._original_animation_alternate=false end
+    o._original_source={game=game,key=key,file=file,cfg=cfg,index=1,bank=bank,
+        alternate=o._original_animation_alternate}
     local adapter=S.adapters[game]
     if adapter and adapter.bind and adapter.bind(o,key)==false then return false end
     S.death.bind(o,game)
@@ -523,6 +599,10 @@ local function background_class(game,archive,name)
                         end
                     end
                     table.sort(found)
+                    if archive=='stgenm07' then
+                        -- EnemyBeginSpell的Extra分支：早苗使用27/28，诹访子使用38；不能叠四张人物背景。
+                        found=name=='Sanae' and {27,28} or {38}
+                    end
                     for _,id in ipairs(found) do o.vms[#o.vms+1]=A.new(game,archive,id) end
                 else
                     for i=0,count-1 do
@@ -562,12 +642,24 @@ function S.interrupt_background(game,label)
         end
     end
 end
-function S.bind_boss(wisys,name)
+function S.bind_boss(wisys,name,entry)
     local o=wisys.obj
     local level=o.class and o.class.StageLevel
     local game=games[level]
     if o.th07_prism_side then game=7 end
-    local cfg=game and roles[game][name]
+    local cfg=entry or game and roles[game][name]
+    if game==6 and not entry then
+        local group=o.class and o.class.id and tonumber(o.class.id:match('^(%d+)a30$'))
+        local role=groups6[group]
+        if role then
+            local stage=({[1]=6,[2]=1,[3]=1,[4]=2,[5]=2,[6]=3,[7]=3,[8]=4,[9]=4,
+                [10]=5,[11]=5,[12]=6,[13]=7,[14]=7,[15]=4,[16]=4,[17]=4})[group]
+            name=role;local id=roles[6][role][2]
+            local archive='stg'..stage..'enm'
+            if not A.load(6,archive).ids[id] then archive=archive..'2' end
+            cfg={archive,id,'eff0'..stage}
+        end
+    end
     wisys.original=game~=nil
     if not cfg then
         o._original_actor=nil
@@ -576,37 +668,72 @@ function S.bind_boss(wisys,name)
     end
     local archive,base=cfg[1],cfg[2]
     local bgarchive=cfg[3] or archive
-    if game==7 then
+    if game==7 and not entry then
         if name=='Chen' and o.th07_visual_file=='ecldata7.ecl' then
             -- EX入场先加载eff02，蓝的Boss对话才将背景索引改到eff07的两层。
             archive,base,bgarchive='stg7enm',128,'eff02'
         elseif name=='Ran' and o.th07_visual_file=='ecldata8.ecl' then
             archive,base,bgarchive='stg8enm',134,'eff07'
+        elseif name=='Youmu' and o.th07_visual_file=='ecldata6.ecl' then
+            archive,base,bgarchive='stg6enm',128,'eff06'
         end
     end
     local poses
     if game==6 then
         poses={base,base+1,base+2,base+3,base+4}
         if name=='Knowledge' then poses={65,67,68,69,70} end
-        if name=='Meirin' or name=='Daiyousei' then poses=nil end
+        if name=='Chiruno' then poses={128,129,130,129,130} end
+        if name=='Meirin' or name=='Daiyousei' or name=='Koakuma' then poses=nil end
     elseif game==7 then
-        poses={base,base+1,base+2,base+3,base+4}
+        poses=poses7[name] or {base,base+1,base+2,base+3,base+4}
         if name=='Whiterock' then poses={base,133,134,135,136}
-        elseif name=='Chiruno' then poses={128,129,130,129,130}
-        elseif name=='Lunasa' or name=='Merlin' or name=='Lyrica' then poses={base,base+2,base+3,base+4,base+5} end
+        end
     else poses={base,base+1,base+2,base+3,base+4} end
+    if game==10 and name=='Momizi' then poses=nil end -- 原作MBoss只设置9号主VM，没有移动姿态组。
     local actor=S.actor(o,game,archive,base,poses)
+    if game==8 then o._original_animation_alternate=true end
     if game==10 then
         actor.special=base+5
         if OriginalCollision then OriginalCollision.unit(o,10,archive:gsub('stgenm','stage')..':Boss') end
     end
     local a,b=o.a,o.b
     o.WALKIMGID=name;o.img='img_void'
+    if boss_names[name] then o.name,o._original_boss_role=boss_names[name],name end
+    boss_identity(o,game,actor.archive,base)
     -- 只替换绘制资源；img_void 的零判定不能覆盖 ECL 的受击框。
     local box=o._original_damage_box
     o.a,o.b,o.rect=box and box[1]/2 or a,box and box[2]/2 or b,true
     o._bg=background_class(game,bgarchive,name)
     return true
+end
+function S.bind_th07_boss(o,key)
+    local entry=assert(entries7[key],'未登记的原作Boss入口：'..tostring(key))
+    if not o._wisys then return end
+    return S.bind_boss(o._wisys,entry[1],{entry[2],entry[3],entry[4]})
+end
+-- 风神录的同一ANM含不同出场：荷取中Boss=6/主Boss=0，早苗五面中Boss=0/主Boss=6/EX=20。
+-- 原作Boss/MBoss的262与259(slot0)给出这些起始编号；不能只按角色名复用主Boss的ANM库。
+local entries10={s1mid={'Sizuha',1,0},s1boss={'Minoriko',1,5},s2mid={'Hina',2,5},s2boss={'Hina',2,5},
+    s3mid={'Nitori',3,6},s3boss={'Nitori',3,0},s4mid={'Momizi',4,9},s4boss={'Aya',4,0},
+    s5mid={'Sanae',5,0},s5boss={'Sanae',5,6},s6boss={'Kanako',6,6},
+    s7mid={'Sanae',7,20},s7boss={'Suwako',7,0}}
+S.th10_boss_entries=entries10
+function S.prepare_boss(o,card)
+    local level=o.class and o.class.StageLevel
+    if not level or level<29 or level>33 or not o._wisys then return end
+    if card.phase_kind=='road' then o.name='';return end
+    if level==32 then
+        local cfg=_editor_class.TH34.th07_motion_source[card.card_id]
+        if cfg then S.bind_th07_boss(o,cfg.key) end
+    elseif level==33 then
+        local cfg=_editor_class.TH35.t10_boss_entry[card.card_id]
+        local e=cfg and entries10[cfg.key]
+        if e then S.bind_boss(o._wisys,e[1],{'stgenm0'..e[2],e[3]}) end
+    elseif level==30 then S.bind_boss(o._wisys,o.WALKIMGID)
+    else
+        local actor=o._original_actor
+        if actor then boss_identity(o,actor.game,actor.archive,actor.poses and actor.poses[1] or 0) end
+    end
 end
 function S.th06_script(o,stage,id)
     local first='stg'..stage..'enm'

@@ -1,0 +1,529 @@
+{
+  "version": "0.13.20-android",
+  "version_code": 38,
+  "date": "2026-11-08",
+  "修复": [
+    "移除TH34妖梦缓时的旧TH07全屏反色遮罩。",
+    "原作ExIns10/11对符卡背景的两个VM发送interrupt2/1；由eff05.anm执行红色半透明底图、紫色加色魔法阵与旋转，再恢复普通混合。",
+    "共用入口覆盖三魂七魄及其余六张卡；减速倍率、弹速、发弹及自机逻辑未改。"
+  ],
+  "原作依据": {
+    "cpp": {
+      "path": "E:/workspace/th07/src/th07/EnemyEclInstr.cpp",
+      "lines": [
+        556,
+        562,
+        563,
+        585,
+        615,
+        616
+      ],
+      "sha256": "4f3ddfcc9c7bbfa9adc9718c7e1d33fad2ac0deb5f15bb89c253e0425fdbc237"
+    },
+    "anm": "mod/GAME/original/7/eff05.lua"
+  },
+  "checks": {
+    "original_anm": 447,
+    "bullet_orientation": 21300,
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\youmu-slow-fixed-20261108-b",
+      "run_id": "0536199b1ba14bed83ce684c8735252c",
+      "completed": 7,
+      "frames": 10500,
+      "errors": {},
+      "cards": [
+        4391,
+        4403,
+        4405,
+        4407,
+        4408,
+        4409,
+        4410
+      ],
+      "source_snapshot_match": true,
+      "source_notes": [
+        "验证后仅将th34.lua注释中的原作源码行号621纠正为615；代码未变。"
+      ],
+      "observed": {
+        "4408": {
+          "overlays": 0,
+          "slowFrame": 268,
+          "factor": 3,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -1.1221576828,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 261,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 250
+        },
+        "4409": {
+          "overlays": 0,
+          "slowFrame": 204,
+          "factor": 2,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -0.6195028348,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 197,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 50
+        },
+        "4410": {
+          "overlays": 0,
+          "slowFrame": 200,
+          "factor": 3,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -0.5880869068,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 193,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 48
+        },
+        "4407": {
+          "overlays": 0,
+          "slowFrame": 568,
+          "factor": 2,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -3.4783522828,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 561,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 150
+        },
+        "4391": {
+          "overlays": 0,
+          "slowFrame": 144,
+          "factor": 1,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 255
+            },
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 224
+            }
+          ],
+          "normalFactor": 1,
+          "first": 137,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 224,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 350
+        },
+        "4405": {
+          "overlays": 0,
+          "slowFrame": 338,
+          "factor": 3,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -1.6719364228,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 331,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 200
+        },
+        "4403": {
+          "overlays": 0,
+          "slowFrame": 248,
+          "factor": 3,
+          "slow": [
+            {
+              "rotation": 0,
+              "color": [
+                255,
+                64,
+                64
+              ],
+              "blend": "",
+              "omega": 0,
+              "alpha": 64
+            },
+            {
+              "rotation": -0.9650780428,
+              "color": [
+                255,
+                96,
+                255
+              ],
+              "blend": "mul+add",
+              "omega": 0.0525735976,
+              "alpha": 255
+            }
+          ],
+          "normalFactor": 1,
+          "first": 241,
+          "restored": true,
+          "normal": [
+            {
+              "blend": "",
+              "omega": 0,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            },
+            {
+              "blend": "",
+              "omega": -0.007853982,
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ]
+            }
+          ],
+          "normalFrames": 8,
+          "activeFrames": 300
+        }
+      }
+    },
+    "baseline": {
+      "root": "E:\\workspace\\.bossrush-validation\\youmu-slow-before-20261108",
+      "observed": {
+        "4410": {
+          "normal": [
+            {
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "blend": "",
+              "omega": 0
+            },
+            {
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "blend": "",
+              "omega": -0.007853982
+            }
+          ],
+          "factor": 3,
+          "slowFrame": 200,
+          "restored": true,
+          "first": 193,
+          "normalFactor": 1,
+          "overlays": 1,
+          "slow": [
+            {
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "omega": 0,
+              "rotation": 0,
+              "blend": ""
+            },
+            {
+              "alpha": 255,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "omega": -0.007853982,
+              "rotation": -1.107411462,
+              "blend": ""
+            }
+          ],
+          "activeFrames": 48,
+          "normalFrames": 8
+        }
+      }
+    },
+    "apk": {
+      "resources": 2524,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测。",
+    "check_original_ecl_fidelity.lua的旧切割断言、check_bullet_visuals.lua的旧类构造在离线桩中失败；已在修复前快照复现相同错误。本次实际引擎7卡、背景ANM与子弹朝向检查通过。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.20.apk",
+    "bytes": 571709890,
+    "sha256": "0c49f7b574d1dd0878eb7bcb253f961f76b267d7dcebdf390246c93f7ed29806"
+  },
+  "sources_sha256": {
+    "mod/GAME/th34.lua": "41cccd369e52b27ef9aa44d5b700735578cfd5df1aa4f1a04c0f9ff7eb5e8044",
+    "tools/check_original_anm.lua": "c0ed04c8f96719762da6676d591951cb0e2c33c4f63e26c566c4d14ff3e6866e",
+    "tools/th3x-tests/native_slow.lua": "85a9dcf468bb2704b23a3525a9c5b9c962050ccbb5806bae81e49c31fbd93b1d",
+    "tools/th3x-tests/native_slow.py": "c2ac5dc54b44cabcf278c0e4a0dee8b790967ec40f80edf0ee54240a7339e9fb",
+    "android/AndroidManifest.xml": "70d58f0d320a47538b44fe58b0fd9f7199d90a36b606aad60dc16a207e1e20de"
+  }
+}

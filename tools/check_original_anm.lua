@@ -74,6 +74,7 @@ for game,byname in pairs(roles) do
         local o={class={StageLevel=levels[game]},ani=0,timer=0,x=0,y=96,dx=0,rot=0,_a=255,_r=255,_g=255,_b=255}
         local walking={obj=o};o._wisys=walking
         check(V.bind_boss(walking,name),'角色采用原作ANM：'..game..'/'..name)
+        check(type(o.name)=='string' and o.name~='' and o.name==V.boss_names[name],'五作每个角色都提供真实Boss名：'..game..'/'..name)
         local vm=o._original_actor.vm
         check(vm.data.archive==cfg[1],'同角色按作品选择本作资源')
         draws={};V.draw(o)
@@ -85,6 +86,60 @@ for game,byname in pairs(roles) do
 end
 local raw=A.load(7,'stg4enm')
 check(raw.ids[128]~=raw.ids[134] and raw.ids[134]~=raw.ids[140],'三姐妹使用三个原始姿态编号')
+-- 同一六面ANM内128是妖梦、147才是幽幽子；共享Boss载体不能拿上一角色的库解释95/96。
+local changing={class={StageLevel=32},_bosssys={},ani=0,timer=0,x=0,y=96,name='亡灵'}
+changing._wisys={obj=changing}
+V.bind_th07_boss(changing,'5main')
+check(changing.name=='魂魄妖梦' and changing._original_actor.archive=='stg5enm','五面入口选择妖梦及其真实名字')
+V.bind_th07_boss(changing,'6main')
+check(changing.name=='西行寺幽幽子' and changing._original_actor.archive=='stg6enm'
+    and changing._original_actor.vm.id==A.load(7,'stg6enm').ids[147],'完全墨染等六面主Boss卡从147号幽幽子起始')
+local p=changing._original_actor.poses
+check(table.concat(p,',')=='147,149,148,151,150','幽幽子移动/停步顺序与原作96一致')
+V.bind_th07_boss(changing,'6mid')
+check(changing.name=='魂魄妖梦' and changing._original_actor.archive=='stg6enm'
+    and changing._original_actor.vm.id==A.load(7,'stg6enm').ids[128],'六面中Boss选择同库128号妖梦')
+changing.th07_visual_file='ecldata7.ecl'
+V.bind_th07_boss(changing,'2main')
+check(changing._original_actor.archive=='stg2enm','新入口不被上张Extra的ANM库覆盖')
+V.bind_th07_boss(changing,'5main')
+V.source_event(changing,7,'ecldata6',{0,95,147})
+check(changing.name=='西行寺幽幽子' and changing._original_actor.archive=='stg6enm','95按当前ECL文件切换库和身份')
+V.bind_th07_boss(changing,'5main')
+V.source_event(changing,7,'ecldata6',{0,96,147,151,150,149,148})
+check(changing.name=='西行寺幽幽子' and changing._original_actor.archive=='stg6enm'
+    and changing._original_actor.poses[2]==149,'96单独出现时也能建立正确的角色库')
+-- 小恶魔与大妖精、荷取中Boss与主Boss、早苗五面与EX均须区分本面的入口。
+for _,case in ipairs({{4,'大妖精','stg2enm',64},{8,'小恶魔','stg4enm',64},{12,'十六夜咲夜','stg6enm',128},
+    {13,'帕秋莉·诺蕾姬','stg7enm',65}}) do
+    local b={class={StageLevel=30,id=case[1]..'a30'},_bosssys={},ani=0,x=0,y=96}
+    V.bind_boss({obj=b},'Daiyousei')
+    check(b.name==case[2] and b._original_actor.archive==case[3]
+        and b._original_actor.vm.id==A.load(6,case[3]).ids[case[4]],'红魔乡按ECL构造组选择本面角色：'..case[1])
+end
+for key,e in pairs(V.th10_boss_entries) do
+    local b={class={StageLevel=33},_bosssys={},ani=0,x=0,y=96}
+    V.bind_boss({obj=b},e[1],{'stgenm0'..e[2],e[3]})
+    check(b.name==V.boss_names[e[1]] and b._original_actor.archive=='stgenm0'..e[2]
+        and b._original_actor.vm.id==e[3],'风神录原作Boss/MBoss入口：'..key)
+    if key=='s7mid' or key=='s7boss' then
+        local bg={};b.__show_scbg=true;b.current_card={is_sc=true};boss_group={b}
+        b._bg.init(bg);b._bg.frame(bg)
+        check(#bg.vms==(key=='s7mid' and 2 or 1) and bg.vms[1].id==(key=='s7mid' and 27 or 38),
+            'EX早苗/诹访子背景遵循EnemyBeginSpell分支：'..key)
+    end
+end
+local eirin={class={StageLevel=29},_bosssys={},ani=0,x=0,y=96}
+V.bind_boss({obj=eirin},'Yagokoro')
+V.source_event(eirin,8,'ecldata6',{0,59,0})
+V.source_event(eirin,8,'ecldata6',{0,62})
+check(eirin._original_actor.archive=='stg6enm' and eirin._original_actor.vm.id==5,
+    '永琳首非59→62没有ECL游标时仍保留敌机的角色库标志')
+V.bind_source(eirin,8,'ecldata6:33',true)
+check(eirin._original_source.alternate==true,'切换攻击子程序保留敌机ANM库标志')
+V.source_event(eirin,8,'ecldata6',{0,57,1,0})
+V.source_event(eirin,8,'ecldata6',{0,62})
+check(eirin._original_actor.archive=='enemy','原作57清除角色库标志后62遵循公共库分支')
 local actor={ani=0,timer=0,x=0,y=0,rot=0}
 V.bind_source(actor,8,'ecldata_al:2')
 check(actor._original_actor.vm.data.archive=='enemy','永夜抄使魔54指令选择公共enemy.anm')
@@ -227,4 +282,28 @@ end
 local immortal={x=0,y=0,rot=0,timer=0,ani=0}
 V.bind_source(immortal,7,'ecldata8:65');V.source_frame(immortal,900)
 check(not immortal._original_actor.vm.finished,'无条件回跳后的800帧消失指令不能提前截断伪激光')
+-- ExIns10/11只切换原背景VM：缓时底图半透明红、魔法阵紫色加色；恢复时回到白色普通混合。
+local slowed={_original_background=true,_original_background_game=7,
+    vms={A.new(7,'eff05',0),A.new(7,'eff05',1)}}
+for _=1,65 do for _,vm in ipairs(slowed.vms) do A.step(vm) end end
+local objectList=ObjList
+ObjList=function(group)
+    local done=false
+    return function() if group==GROUP.GHOST and not done then done=true;return 1,slowed end end
+end
+V.interrupt_background(7,2)
+for _=1,8 do for _,vm in ipairs(slowed.vms) do A.step(vm) end end
+local base,ring=slowed.vms[1],slowed.vms[2]
+check(base.alpha[1]==64 and base.color[1]==255 and base.color[2]==64 and base.color[3]==64,'缓时保留原作背景而非全屏遮黑')
+check(ring.color[1]==255 and ring.color[2]==96 and ring.color[3]==255 and ring.blend=='mul+add','缓时魔法阵使用原紫色加色混合')
+check(ring.omega[3]>0,'缓时旋转沿原ANM的正向减速')
+draws={};for _,vm in ipairs(slowed.vms) do A.draw(vm,-224,240) end
+check(#draws==2,'缓时实际绘制两层原作背景')
+V.interrupt_background(7,1)
+for _,vm in ipairs(slowed.vms) do
+    A.step(vm)
+    check(vm.alpha[1]==255 and vm.color[1]==255 and vm.color[2]==255 and vm.color[3]==255 and vm.blend=='','恢复时两层背景复原')
+end
+check(near(ring.omega[3],-.007853982),'恢复原作背景的负向旋转速度')
+ObjList=objectList
 print(('原作ANM与资源回归通过：%d 项，%d 个作品/角色组合'):format(checks,role_count))

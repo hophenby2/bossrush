@@ -1,5 +1,5 @@
 -- 击破阶段后的红蓝绿三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=5,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+local D={VERSION=6,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -15,10 +15,10 @@ D.colorPool={
     {{'green','add',-5}},{{'green','add',-10}},{{'green','add',-15}},
     {{'green','mul',9,10}},{{'green','mul',4,5}},
 }
-local function three() local v=lstg.var.__drops_version;return v==3 or v==4 or v==D.VERSION end
+local function three() local v=lstg.var.__drops_version;return v and v>=3 and v<=D.VERSION end
 local function modern() return three() or lstg.var.__drops_version==2 end
 -- 库存规则进入初态版本，旧录像的三枚上限不能因新UI改动而变成九枚。
-function D.bombLimit() return lstg.var.__drops_version==D.VERSION and D.BOMB_MAX or 3 end
+function D.bombLimit() local v=lstg.var.__drops_version;return v and v>=5 and v<=D.VERSION and D.BOMB_MAX or 3 end
 local function fresh()
     local p={red=10000,blue=10000,clock=-1,fraction=0}
     if modern() then p.bombs=D.BOMB_INITIAL;p.bomb_fraction=0 end
@@ -196,6 +196,8 @@ function D.apply(slot,option)
         if op[2]=='add' then value=value+op[3]*100 else value=math.floor(value*op[3]/op[4]+0.5) end
         local lower,upper=D.MIN,D.MAX
         if op[1]=='green' then lower,upper=D.HITBOX_MIN,10000 end
+        -- 火力从第六版起不封顶；旧录像仍按原上限结算，蓝绿规则分别保持原值。
+        if op[1]=='red' and lstg.var.__drops_version>=6 then upper=math.huge end
         p[op[1]]=math.max(lower,math.min(upper,value))
     end
 end

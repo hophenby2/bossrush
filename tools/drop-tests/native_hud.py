@@ -50,5 +50,11 @@ if __name__ == '__main__':
             assert report['revive']==0 and report['dead']==10 and report['current']==5 and report['rank']==0 and report['finished'] and not report['quiz'],report
             for name in ('hp-menu-collapsed.png','hp-menu-expanded.png','hp-stage-01-age-01.png','hp-stage-01-settled.png','hud-result.png','hp-colors.png'):
                 assert (args.output / 'snapshot' / name).is_file(),name
+            growth=json.loads((args.output/'growth-ui.json').read_text(encoding='utf-8'))
+            assert len(growth)==5 and all('e' not in row['multiplier'].lower() for row in growth)
+            assert growth[1]['power']>1000 and len(growth[1]['lines'])>1
+            assert growth[-1]['dual']
+            for row in growth:
+                assert (args.output/'snapshot'/(row['snapshot']+'.png')).is_file()
             print('阶段HP、首次入场动画、折叠菜单、配色和无Rank结算检查通过。',flush=True)
         raise

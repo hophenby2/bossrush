@@ -72,6 +72,20 @@ for index=4,100 do H.enter(index);product=product*(1+index/100);check(near(H.fac
 -- 已累计到很大数值时，左下颜色仍取最新乘入的倍率，而不是累计值。
 state.shown=1000;state.shown_stage=9;state.animation=nil;drawn={};H.render(144,165)
 check(drawn[1].color.r==255 and drawn[1].color.g==255 and drawn[1].color.b==255,'累计值1000、本次1.09时仍显示白色')
+for _,value in ipairs({1.01,10000,123456789012345,1e30,1e100,1e300}) do
+    local label=H.format(value)
+    check(not label:find('[eE]') and label:sub(1,#'×')=='×','倍率始终使用普通十进制：'..value)
+    local lines,scale,gap=H.layout(value,288,157)
+    check(table.concat(lines)==label,'换行不丢失、重复或省略数字：'..value)
+    check(#lines*22*scale<=157 and (#lines<=1 or gap>0),'超长倍率全部留在左侧高度内：'..value)
+    if value>=1e30 then check(#lines>1,'一行放不下时增加行数：'..value) end
+    state.shown=value;state.animation=nil;drawn={};H.render(144,165,288)
+    check(#drawn==#lines,'所有数字行实际进入绘制：'..value)
+    for i,row in ipairs(drawn) do
+        check(row.text==lines[i] and row.y>=8 and row.y<=165,'各行从倍率位置向下排列：'..value)
+        check(row.scale==scale and row.color.r==255 and row.color.b==255,'换行保留最新倍率颜色：'..value)
+    end
+end
 lstg.var.__hp_scale_version=nil
 check(not H.enabled() and H.factor()==1 and New(actor,100).hp==100,'旧录像不启用阶段HP倍率')
 drawn={};H.render(144,165);check(#drawn==0,'旧录像不凭空插入倍率动画')

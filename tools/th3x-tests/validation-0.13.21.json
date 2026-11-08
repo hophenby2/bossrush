@@ -1,0 +1,173 @@
+{
+  "version": "0.13.21-android",
+  "version_code": 39,
+  "date": "2026-11-08",
+  "修复": [
+    "TH31–TH35统一使用原作角色全名，修复亡灵、中Boss、路线等载体标题进入左上角Boss名字。",
+    "TH34由原作构造入口95/96决定角色库和移动姿态：六面幽幽子147、妖梦128；换卡和后续95/96不再继承上一角色的ANM库。",
+    "TH32大妖精、小恶魔改用各自本面的64号ANM；六面咲夜、Extra帕秋莉取本面资源；琪露诺停步姿态按原作98。",
+    "TH35椛取9号且没有移动姿态组；荷取中Boss取6；早苗五面中Boss0、关底6、Extra20，并按原作Extra分支分开背景。",
+    "TH31原作54–61选择的ANM库标志保存于敌机，跨攻击游标和手写59→62调用保持；修复永琳首非施法时误取公共小怪库。",
+    "包含0.13.20的妖梦缓时背景修复。"
+  ],
+  "原作依据": {
+    "entries": 79,
+    "report": "E:\\workspace\\.bossrush-validation\\boss-identity-all-ecl-20261108.json",
+    "sha256": "f34d80fe0bd1ff36c63bc37375262c7ef202efed160e57338d6221129d3d9290",
+    "movement_poses_checked": true,
+    "cpp": [
+      "E:/workspace/th08/src/EclRunLow.inl:425–496",
+      "E:/workspace/th10/src/EnemyEclDispatcher.cpp:EnemyBeginSpell"
+    ],
+    "instruction_samples": [
+      {
+        "game": 7,
+        "key": "6main",
+        "source": "ecldata6:Sub28",
+        "op": 95,
+        "args": [
+          147
+        ],
+        "address": "0x2fe0",
+        "time": 0,
+        "ecl_sha256": "c1e85d808e3df78c6421b4ac7d6794d250f17650c3edecdace76aa2b34dc8e68"
+      },
+      {
+        "game": 10,
+        "key": "s4mid",
+        "source": "stage04:MBoss",
+        "op": 259,
+        "args": [
+          0,
+          9
+        ],
+        "address": "0xd264",
+        "time": 0,
+        "ecl_sha256": "f96202e57dd67a3cb6aa55d41c3ba0e0a090ecd82772a83f49be03526ecb18d8"
+      },
+      {
+        "game": 10,
+        "key": "s7mid",
+        "source": "stage07:MBoss",
+        "op": 262,
+        "args": [
+          0,
+          20
+        ],
+        "address": "0x10bec",
+        "time": 120,
+        "ecl_sha256": "7a3196ced423156e49bc76c055066650f3edca8fc71c4e3acb94712f78f2b24b"
+      },
+      {
+        "game": 6,
+        "key": "Daiyousei",
+        "source": "ecldata2:Sub20",
+        "op": 97,
+        "args": [
+          64
+        ],
+        "address": "0x1530",
+        "time": 0,
+        "ecl_sha256": "aa89aaaf13264d909bbaaa24f2af263ae1a58145ad5cc33fcea5eb9cb920c43e"
+      },
+      {
+        "game": 6,
+        "key": "Koakuma",
+        "source": "ecldata4:Sub21",
+        "op": 97,
+        "args": [
+          64
+        ],
+        "address": "0x1da0",
+        "time": 0,
+        "ecl_sha256": "92695da99b651da492f4fb7c7497b5c8ed8105a23370cc4529901609077c8b60"
+      }
+    ]
+  },
+  "checks": {
+    "original_anm": 550,
+    "boss_roles": 71,
+    "roguelike": 14689,
+    "bullet_orientation": 21300,
+    "native_windows": {
+      "runs": [
+        {
+          "root": "E:\\workspace\\.bossrush-validation\\boss-identity-31-20261108-g",
+          "run_id": "c8bbd0badf6b49dbaffe782b927f7d10",
+          "completed": 137,
+          "expected": 137,
+          "errors": {},
+          "source_snapshot_match": true,
+          "native_test_sha256": "c0801c7213836c324a682f3bc59324e63cc6953df9e097c8c28b423d0c0216f6",
+          "probe_sha256": "a43c157cb4f2623ad4f1996c7325a06b4fb9cb9fda38d17efbced4d301fd4af7"
+        },
+        {
+          "root": "E:\\workspace\\.bossrush-validation\\boss-identity-32-35-20261108-h",
+          "run_id": "e6a77f295de5486aa17beea011502cb7",
+          "completed": 386,
+          "expected": 386,
+          "errors": {},
+          "source_snapshot_match": true,
+          "native_test_sha256": "8d878c7a64a89fd2e5c53408892b3b403dd869ed6e50f5bd097cbc212554b003",
+          "probe_sha256": "a43c157cb4f2623ad4f1996c7325a06b4fb9cb9fda38d17efbced4d301fd4af7"
+        }
+      ],
+      "total_phases": 523,
+      "per_game": {
+        "TH31": 137,
+        "TH32": 106,
+        "TH33": 85,
+        "TH34": 121,
+        "TH35": 74
+      },
+      "logic_frames": 467978,
+      "observation_window": 900,
+      "boss_identity_cards": 478,
+      "actual_ui_names": true,
+      "samples": [
+        {
+          "firstScript": 147,
+          "level": 32,
+          "archive": "stg6enm",
+          "name": "西行寺幽幽子",
+          "frames": 900,
+          "renderedName": "西行寺幽幽子",
+          "key": "6main"
+        },
+        {
+          "firstScript": 9,
+          "level": 33,
+          "archive": "stgenm04",
+          "name": "犬走椛",
+          "frames": 900,
+          "renderedName": "犬走椛",
+          "key": "TH35:s4mid"
+        },
+        {
+          "firstScript": 20,
+          "level": 33,
+          "archive": "stgenm07",
+          "name": "东风谷早苗",
+          "frames": 900,
+          "renderedName": "东风谷早苗",
+          "key": "TH35:s7mid"
+        }
+      ],
+      "notes": [
+        "原作道中不做Boss身份断言；TH32自制368不属于原作ECL身份检查。所有523阶段均实际运行。",
+        "这是每阶段900逻辑帧的身份和实际绘制检查，不代表整卡逐帧一致性验证。",
+        "测试保护状态会令紫的耐久ECL停时；900帧观测结束后仅在验证副本解除停时，以完成正常结算。"
+      ]
+    }
+  },
+  "android": {
+    "file": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.21.apk",
+    "size_bytes": 571709890,
+    "sha256": "081725be0011d072f2d052be4e6bbc1991f2ad6509df37fbb5a7baef98a44260",
+    "assets_verified": 2524,
+    "wav": 172,
+    "arm64_libraries": 3,
+    "postfx_shaders": 8,
+    "phone_tested": false
+  }
+}

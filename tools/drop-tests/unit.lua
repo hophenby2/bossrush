@@ -276,7 +276,8 @@ local early=pick(true);check(early<stationary,'向上移动可以提前接取')
 pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
 check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')
 drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text[#text+1]=v.text end
-check(table.concat(text,'|'):find('火力|P1 105|P2 100',1,true),'右侧属性条下方分别显示两位玩家数值')
+local labels={};for _,label in ipairs(text) do labels[label]=true end
+check(labels['火力'] and labels['P1 105'] and labels['P2 100'],'右侧属性条下方分别显示两位玩家数值')
 -- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
 reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
 p.death=0;check(not D.frame(stage.current_stage) and D.active(),'重生后叠加选择，但不接管战斗')
@@ -435,11 +436,39 @@ check(Q.contact({x=-90,y=top+5},{x=-90,y=top-1,A=3},69,70,2,120,true)==1,'接取
 
 -- 九枚库存使用新初态版本；旧录像的恢复封顶和选项位置仍必须逐帧一致。
 do
-    for _,version in ipairs({2,3,4,D.VERSION}) do
+    for _,version in ipairs({1,2,3,4,5,D.VERSION}) do
+        modernReset();lstg.var.__drops_version=version;D.reset()
+        local c=lstg.var.upgrades.players[1];c.red=99000
+        D.apply(1,9)
+        check(D.values(1)==(version>=6 and 1188 or 1000),'火力跨越旧上限，仅新版本不截断：'..version)
+        c.red=D.MAX;D.apply(1,1)
+        check(D.values(1)==(version>=6 and 1005 or 1000),'满旧上限后加法升级继续生效：'..version)
+    end
+    modernReset();lstg.var.__drops_version=D.VERSION;D.reset()
+    local p=hero(reimu_player);local c=lstg.var.upgrades.players[1];c.red=120000
+    local e=New(targetClass);local shot={dmg=10,killflag=true,mute=true,_drop_owner=1}
+    enemybase.colli(e,shot)
+    check(e.hp==9880 and shot.dmg==10,'超过1000的实际火力仍在命中时乘入一次')
+    for _=1,50 do D.apply(1,9) end
+    check(D.values(1)>1000000,'火力多次乘法升级能够超过一百万')
+    c.blue=D.MAX;D.apply(1,2);c.green=D.HITBOX_MIN;D.apply(1,11)
+    check(c.blue==D.MAX and c.green==D.HITBOX_MIN,'取消红色上限不改变蓝绿的边界')
+    local axis=ui.RunHUD.powerAxis
+    check(axis(1)==3 and axis(1000)==3 and axis(1000.01)==4 and axis(1000000)==6 and axis(math.huge)==309,'对数轴以完整十进制数量级扩展，并能处理浮点溢出')
+    local rect=RenderRect;local strips={}
+    RenderRect=function(_,...) strips[#strips+1]={...} end
+    for _,value in ipairs({10,100,1000}) do
+        strips={};ui.RunHUD.powerTrack(0,300,100,value,255,3)
+        check(near(strips[2][2],100*math.log(value)/math.log(10)),'10、100、1000在对数条上等距：'..value)
+    end
+    strips={};ui.RunHUD.powerTrack(0,300,100,1000,255,6)
+    check(near(strips[2][2],150),'双人共用百万量程时1000落在中点')
+    RenderRect=rect
+    for _,version in ipairs({2,3,4,5,D.VERSION}) do
         modernReset();lstg.var.__drops_version=version;D.reset()
         local p=New(reimu_player);local c=lstg.var.upgrades.players[1]
         check(D.bombState(p)==3,'各版初始持有三枚Bomb：'..version)
-        local limit=version==D.VERSION and 9 or 3
+        local limit=version>=5 and 9 or 3
         check(D.bombLimit()==limit,'版本对应的库存上限：'..version)
         if version>=3 then
             check(D.hitboxScale(p)==1 and c.green==10000,'三色版本保留判定属性：'..version)
@@ -447,7 +476,7 @@ do
             check(options[1]%2==(version>=4 and 0 or 1) and options[3]>=11,'新旧三色选项位置：'..version)
         end
         c.bomb_fraction=D.BOMB_FRAMES*10000-10000;D.playerStep(p)
-        check(D.bombState(p)==(version==D.VERSION and 4 or 3),'初始三枚时新版继续恢复，旧版封顶：'..version)
+        check(D.bombState(p)==(version>=5 and 4 or 3),'初始三枚时新版继续恢复，旧版封顶：'..version)
         c.bombs=limit-1;c.bomb_fraction=D.BOMB_FRAMES*10000-1;c.blue=100000
         D.playerStep(p)
         local stock,progress=D.bombState(p)
@@ -531,7 +560,7 @@ do
     check(redStars==10 and brightRed==9,'十条生命失去一条后，只点亮九颗红色大星')
     local visible={};for _,call in ipairs(drawn) do visible[call.text]=call end
     check(visible['生命'] and visible['9'] and visible['Bomb'] and visible['3 / 9'],'右上只呈现剩余生命与Bomb库存')
-    check(visible['135'].y==314 and visible['175'].y==243 and visible['75%'].y==172,'三项实际数值置于各自属性条下方')
+    check(visible['135'].y==307 and visible['175'].y==243 and visible['75%'].y==172,'三项实际数值置于各自属性条下方，火力留出对数刻度')
     check(not visible['Rank'] and not visible['×1.000'],'右下不再显示Rank条或Rank倍率')
     for _,label in ipairs({'最高分','当前分数','擦弹','资金力','死亡数','收卡数','答题复活','读档次数'}) do check(not visible[label],'极简资源栏不显示旧统计：'..label) end
     drawn={};ui.RunHUD.stage(42,144,270,288)

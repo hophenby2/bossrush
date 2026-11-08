@@ -1,0 +1,158 @@
+{
+  "version": "0.13.22-android",
+  "version_code": 40,
+  "date": "2026-11-08",
+  "changes": [
+    "血量倍率一律显示普通十进制，按左侧可用宽度换行；×仅首行显示，不省略数字，极长时整组缩小以免越出底部。",
+    "火力条使用十进制对数坐标，超过量程时按数量级扩展；双人共用同一量程并控制刻度密度。",
+    "第六版强化规则取消红色火力上限，蓝绿保留各自边界。旧版本录像继续按原火力上限与Bomb库存规则运行。"
+  ],
+  "checks": {
+    "hp_multiplier": 202,
+    "drops": 6885,
+    "roguelike": 14689,
+    "host_notes": "掉落完整单元检查使用Lupa LuaJIT 2.1，cjson encode/decode由Python JSON转接；实际JSON、字体和绘制另经Windows真引擎运行。",
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\growth-ui-20261108-d",
+      "run_id": "d3b4e57792d64fc6b40e7e39382c879f",
+      "completed": 5,
+      "logic_frames": 4800,
+      "errors": {},
+      "source_snapshot_match": true,
+      "cases": [
+        3433,
+        3912,
+        4444,
+        3601,
+        3621
+      ],
+      "growth_snapshots": [
+        {
+          "axis": 3,
+          "lines": [
+            "×10000"
+          ],
+          "power": 100,
+          "dual": false,
+          "multiplier": "×10000",
+          "snapshot": "growth-10000",
+          "scale": 1,
+          "measured_widths": [
+            63.5
+          ]
+        },
+        {
+          "axis": 6,
+          "lines": [
+            "×10000000000000000198846",
+            "24838656"
+          ],
+          "power": 1000000,
+          "dual": false,
+          "multiplier": "×1000000000000000019884624838656",
+          "snapshot": "growth-30",
+          "scale": 1,
+          "measured_widths": [
+            234.5,
+            76
+          ]
+        },
+        {
+          "axis": 12,
+          "lines": [
+            "×10000000000000000159028",
+            "911097599180468360808563",
+            "945281389781327557747838",
+            "772170381060813469985856",
+            "815104"
+          ],
+          "power": 1000000000000,
+          "dual": false,
+          "multiplier": "×10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104",
+          "snapshot": "growth-100",
+          "scale": 1,
+          "measured_widths": [
+            234.5,
+            228,
+            228,
+            228,
+            57
+          ]
+        },
+        {
+          "axis": 30,
+          "lines": [
+            "×10000000000000000525047602552044202",
+            "487044685811081591549158541155118024",
+            "579889081957863713750804478640437044",
+            "438328838781769425232353604305756447",
+            "921847867069828483872009265758037378",
+            "302337947880900593689532349707999450",
+            "811190389676408800746527427801424945",
+            "792587888200568428381156694721963868",
+            "65459400540160"
+          ],
+          "power": 1e+30,
+          "dual": false,
+          "multiplier": "×1000000000000000052504760255204420248704468581108159154915854115511802457988908195786371375080447864043704443832883878176942523235360430575644792184786706982848387200926575803737830233794788090059368953234970799945081119038967640880074652742780142494579258788820056842838115669472196386865459400540160",
+          "snapshot": "growth-300",
+          "scale": 0.6561,
+          "measured_widths": [
+            228.65085,
+            224.3862,
+            224.3862,
+            224.3862,
+            224.3862,
+            224.3862,
+            224.3862,
+            224.3862,
+            87.2613
+          ]
+        },
+        {
+          "axis": 6,
+          "lines": [
+            "×10000000000000000198846",
+            "24838656"
+          ],
+          "power": 1000000,
+          "dual": true,
+          "multiplier": "×1000000000000000019884624838656",
+          "snapshot": "growth-dual",
+          "scale": 1,
+          "measured_widths": [
+            234.5,
+            76
+          ]
+        }
+      ],
+      "font_evidence": "Sub AppFrameFontRenderer.cpp的RenderTTF按0.5缩放；真实FontRenderer测量每行显示宽度均不超过264。"
+    },
+    "apk": {
+      "resources": 2524,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备上实测。"
+  ],
+  "apk": {
+    "path": "E:\\fork\\bossrush\\android\\dist\\BossRushHD-android-arm64-0.13.22.apk",
+    "bytes": 571713986,
+    "sha256": "5ae782b39000285fa06e7620ff5b15ded84b9cb158abec50ce2588593d0f5b47"
+  },
+  "sources_sha256": {
+    "THlib/drops.lua": "845b429405af40fb222c34157684dfb7a005d280e334d1d987067b81cb73d7ed",
+    "THlib/rogue_hp.lua": "b8808ab9ffca862c54483f6c2eaa3bb1591dc1c2a0cdd2cf0a16b0170b5f94d9",
+    "THlib/UI/run_hud.lua": "634f7797f49557d39af3aa98f3afd27a4521b4311e6e7149090924ca1818080a",
+    "tools/check_rogue_hp.lua": "16f0b574e75d8791c5ec70dc8f09d9a7f202fe0afd1f2f11cad8816467eb35b7",
+    "tools/drop-tests/unit.lua": "d610c2a8943ea5713c885be60f3873db3507188093ea9795034d37d4173f9320",
+    "tools/drop-tests/native_hud.lua": "9cd7da7c989a8b8e93d6c4499cd4791ba6d412c1afd9de3bd27b00b667347d08",
+    "tools/drop-tests/native_hud.py": "eba2a788e1d6eff07a8952d4ad38f5bae18233aa5d0bd601a725cba65efc8f66",
+    "android/AndroidManifest.xml": "d3b8b25eb375100e4802a808711fb08c93b1fb4706fc351b0ce1678caab87417"
+  }
+}

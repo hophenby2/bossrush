@@ -24489,7 +24489,7 @@ boss.Define("6a","红美铃·中 Boss","TH06_0",TH06_bg,{0,384},(_editor_class["
 
 boss.Define("7a","红美铃","TH06_0",TH06_bg,{0,384},(_editor_class["TH06"] or {})["SCBG2"],"Meirin",LEVEL)
 
-boss.Define("8a","小恶魔","TH06_0",TH06_bg,{0,384},(_editor_class["TH06"] or {})["SCBG2"],"Daiyousei",LEVEL)
+boss.Define("8a","小恶魔","TH06_0",TH06_bg,{0,384},(_editor_class["TH06"] or {})["SCBG2"],"Koakuma",LEVEL)
 
 boss.Define("9a","帕秋莉·灵梦Ａ路线","TH06_0",TH06_bg,{0,384},(_editor_class["TH06"] or {})["SCBG2"],"Knowledge",LEVEL)
 

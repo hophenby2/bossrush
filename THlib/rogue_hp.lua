@@ -41,14 +41,31 @@ function H.rgb(index)
     else return 255,90,100 end
 end
 function H.format(value)
-    if value>=10000 then return ('×%.3e'):format(value) end
     return '×'..(('%.4f'):format(value):gsub('%.?0+$',''))
 end
-function H.render(x,y)
+-- RenderTTF实际按字体尺寸的0.5倍绘制，title数字字宽按11像素留余量，两侧各留12像素。
+-- 只在多行仍超出底部时缩小整组，先保证常见的大倍率能用正常字号换行。
+-- ×只出现在首行，数字不断位、不省略，排版不参与实际血量计算。
+function H.layout(value,width,height)
+    local digits=H.format(value):sub(#'×'+1)
+    local scale,lines=1,{}
+    repeat
+        local capacity=math.max(2,math.floor((width-24)/(11*scale)))
+        lines={'×'..digits:sub(1,capacity-1)}
+        for i=capacity,#digits,capacity do lines[#lines+1]=digits:sub(i,i+capacity-1) end
+        if #lines*22*scale<=height then break end
+        scale=scale*.9
+    until false
+    return lines,scale,22*scale
+end
+function H.render(x,y,width)
     local s=state();if not s then return end
     local a=s.animation
     local oldAlpha=a and math.max(0,math.min(1,(30-a.age)/6))*255 or 255
-    ui:RenderText('title',H.format(s.shown),x,y,1,Color(oldAlpha,H.rgb(s.shown_stage)),'centerpoint')
+    local lines,scale,gap=H.layout(s.shown,width or x*2,math.max(1,y-8))
+    for i,line in ipairs(lines) do
+        ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),'centerpoint')
+    end
     if not a then return end
     local t=math.max(0,math.min(1,(a.age-6)/24))
     local move=t*t*(3-2*t)

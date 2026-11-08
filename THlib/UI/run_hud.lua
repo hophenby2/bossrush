@@ -1,4 +1,4 @@
--- 战斗UI只呈现剩余资源和成长：星形表示库存，固定量程的条表示属性。
+-- 战斗UI只呈现剩余资源和成长：星形表示库存，火力用自动扩展的对数刻度，其余属性用线性条。
 -- 所有查询保持只读，渲染不能建立成长状态或改变录像的零帧初态。
 local H={}
 local colors={red={255,110,120},blue={110,190,255},green={110,235,145}}
@@ -15,12 +15,33 @@ function H.track(x1,x2,y,fraction,alpha,rgb,divisions)
         SetImageState('white','',color(alpha,rgb))
         RenderRect('white',x1,x1+(x2-x1)*fill,y-5,y+5)
     end
-    -- 红蓝每格100，对应真实上限1000；刻度不随当前值改变，升级时长度才能直接比较。
+    -- 线性条均分量程；火力另画十进制对数刻度，不把增长后的值截在原上限。
     SetImageState('white','',Color(alpha*.45,5,12,20))
     for i=1,(divisions or 10)-1 do
         local x=x1+(x2-x1)*i/(divisions or 10)
         RenderRect('white',x-.5,x+.5,y-5,y+5)
     end
+end
+local LOG10=math.log(10)
+function H.powerAxis(value)
+    if value==math.huge then return 309 end -- 浮点溢出时仍能绘制末端刻度，不能用无穷步长循环。
+    return math.max(3,math.ceil(math.log(math.max(1,value))/LOG10-1e-12))
+end
+function H.powerTrack(x1,x2,y,value,alpha,decades)
+    decades=decades or H.powerAxis(value)
+    local rgb=colors.red
+    H.track(x1,x2,y,math.log(math.max(1,value))/LOG10/decades,alpha,rgb,1)
+    local divisions=math.max(2,math.floor((x2-x1)/64))
+    local step=math.max(1,math.ceil(decades/divisions))
+    local function tick(exponent)
+        local x=x1+(x2-x1)*exponent/decades
+        SetImageState('white','',Color(alpha*.6,5,12,20))
+        RenderRect('white',x-.5,x+.5,y-5,y+5)
+        local label=exponent<=4 and ('%.0f'):format(10^exponent) or '10^'..exponent
+        text(label,x,y-11,.5,alpha,rgb,exponent==0 and 'left' or exponent==decades and 'right' or 'center','vcenter')
+    end
+    for exponent=0,decades,step do tick(exponent) end
+    if decades%step~=0 then tick(decades) end
 end
 function H.attributes(scrr,scrt,alpha)
     local D=GameDrops
@@ -33,14 +54,19 @@ function H.attributes(scrr,scrt,alpha)
     for i,row in ipairs(rows) do
         local cy=y-(i-1)*gap
         text(row[1],x1,cy+20,.7,alpha,colors[row[2]],'left','vcenter')
+        -- 双人栏共用量程，不能把两位玩家不同的火力画成相同长度。
+        local powerMax=math.max(D.values(1),count==2 and D.values(2) or 1)
+        local decades=i==1 and H.powerAxis(powerMax)
         for slot=1,count do
             local values={D.values(slot)}
             local left=x1+(slot-1)*(x2-x1+12)/count
             local right=left+(x2-x1-(count-1)*12)/count
-            H.track(left,right,cy,values[i]/row[3],alpha,colors[row[2]])
+            if i==1 then H.powerTrack(left,right,cy,values[i],alpha,decades)
+            else H.track(left,right,cy,values[i]/row[3],alpha,colors[row[2]]) end
             local value=number(values[i])..(i==3 and '%' or '')
             if count==2 then value='P'..slot..' '..value end
-            text(value,(left+right)/2,cy-20,.7,alpha,colors[row[2]],'centerpoint')
+            local scale=math.min(.7,(right-left-8)/(#value*11))
+            text(value,(left+right)/2,cy-(i==1 and 27 or 20),scale,alpha,colors[row[2]],'centerpoint')
         end
     end
 end
