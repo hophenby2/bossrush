@@ -71,6 +71,7 @@ New=function(class,cards)
     elseif class.init then class.init(obj);if obj.group==GROUP.GHOST and obj.layer==LAYER.TOP then panels[#panels+1]={obj=obj,class=class} end end
     return obj
 end
+local G=dofile('THlib/rogue_hp.lua')
 local R=dofile('mod/roguelike.lua')
 local bossFilters=R.defaultFilters('dual')
 local pool=R.buildPool(bossFilters)
@@ -112,9 +113,9 @@ end
 check(observed.TH31 and observed.TH34 and observed.TH35,'三个来源均能抽到')
 check(keys(R.draw(17,1,bossFilters))~=keys(R.draw(31415,1,bossFilters)),'不同种子产生不同路线')
 -- 新池的来源、交集筛选、小池拒绝和副本隔离；不通过标题猜测难度。
-local all,count=R.buildPool()
+local all,count=R.buildPool(R.defaultFilters(nil,6),6)
 check(#all==4 and count==410,'新局关闭地灵殿，包含四作410个已核对条目')
-local noTime=R.defaultFilters();noTime.cards.survival=false
+local noTime=R.defaultFilters(nil,6);noTime.cards.survival=false
 local filtered,filteredCount=R.buildPool(noTime)
 local timeIds={[383]=true,[392]=true,[393]=true,[394]=true,[395]=true,[396]=true,
     [3984]=true,[3440]=true,[3442]=true,[3470]=true,[4401]=true,[4434]=true,[3607]=true,[3619]=true,[3620]=true}
@@ -135,7 +136,7 @@ local _,oldTimeCount=R.buildPool(noTime,5)
 check(oldTimeCount==410,'版本5录像保留原卡池，不因时符筛选改变路线')
 local remembered=R.copyFilters(noTime)
 check(not remembered.cards.survival and not noTime.cards.survival,'时符关闭状态进入筛选副本')
-local th36=R.defaultFilters();th36.stages={TH36=true}
+local th36=R.defaultFilters(nil,4);th36.stages={TH36=true}
 local disabled,disabledCount=R.buildPool(th36)
 check(#disabled==0 and disabledCount==0 and not R.copyFilters(th36).stages.TH36,'旧配置不能重新启用地灵殿')
 local historical,historicalCount=R.buildPool(nil,4)
@@ -170,7 +171,7 @@ local forbidden={[4408]=true,[4439]=true,[4457]=true,[4468]=true,[4470]=true,
 for _,bucket in ipairs(all) do for _,entry in ipairs(bucket.cards) do
     check(not forbidden[entry.cardId],'Normal/Hard/Last Word/自制不进入新池')
 end end
-local merged=R.defaultFilters()
+local merged=R.defaultFilters(nil,6)
 merged.stages={TH31=false,TH32=false,TH34=true,TH35=false}
 merged.difficulties={lunatic=false,extra=true}
 local mergedPool,mergedCount=R.buildPool(merged)
@@ -200,7 +201,7 @@ for seed=1,30 do
     end
     check(keys(drawn)==keys(R.draw(seed,1,selected)),'筛选后的种子可重建')
 end
-local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false
+local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false;small.encounters.road=true
 local state=R.poolStatus(small)
 check(state.valid and state.count==7,'关闭地灵殿后Extra/Phantasm独立道中池含七项')
 check(not R.poolStatus(small,1).valid,'历史十战模式仍检查至少十张')
@@ -215,24 +216,33 @@ local copy=R.copyFilters(selected);copy.stages.TH31=true
 check(not selected.stages.TH31,'筛选副本不回写菜单/本局快照')
 do
     local menuUI=dofile('THlib/UI/rogue_pool.lua')
-    local remembered=scoredata.rogue10_filters;scoredata.rogue10_filters=nil
-    local o={};menuUI.fresh(o,'roguelike')
-    check(o.pool_options.cards.survival and o.pool_status.count==410,'准备界面默认勾选时符')
+    local remembered,rememberedVersion=scoredata.rogue10_filters,scoredata.rogue10_filters_version
+    scoredata.rogue10_filters=R.defaultFilters(nil,6);scoredata.rogue10_filters_version=6
+    local o={timer=0,orot=0};menuUI.fresh(o,'roguelike')
+    check(not o.pool_expanded and not o.pool_options.cards.survival and not o.pool_options.encounters.road and o.pool_status.count==351,'高级选项默认折叠，新默认排除道中和时符')
+    check(o.pool_options.cards.nonspell and o.pool_options.cards.spell and o.pool_options.stages.TH32,'默认包含四作的非符和符卡')
     menuUI.toggle(o,9)
-    check(not o.pool_options.cards.survival and o.pool_status.count==395 and menuUI.ready(o),'唯一的时符选项允许取消，不卡至少一项限制')
-    check(not scoredata.rogue10_filters.cards.survival,'保存取消时符的勾选状态')
+    check(o.pool_options.cards.survival and o.pool_status.count==366 and menuUI.ready(o),'独立勾选时符，不影响非符/符卡')
+    menuUI.toggle(o,10);menuUI.toggle(o,11)
+    check(o.pool_status.count==15,'仅勾选时符时只保留耐久卡')
+    menuUI.toggle(o,9);check(not menuUI.ready(o),'三种卡片类型全部取消时不能开空局')
+    menuUI.toggle(o,10);menuUI.toggle(o,11)
     local oldMenu,oldLast,oldMouse,oldBounds,oldKey,oldSetting=menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck,KEY,setting
     KEY={ENTER=13};setting={keys={shoot=90}}
     menu=setmetatable({keyYes=function() return true end},{__index=function() return function() return false end end})
-    GetLastKey=function() return 0 end;o.pool_focus=9
-    menuUI.frame(o);check(o.pool_options.cards.survival,'射击键切换当前时符勾选')
+    GetLastKey=function() return 0 end;o.pool_focus=1
+    menuUI.frame(o);check(o.pool_expanded,'射击键展开高级选项')
+    o.pool_focus=10;menuUI.frame(o);check(o.pool_options.cards.survival,'射击键切换展开后的时符')
     menu.keyYes=function() return false end
     sp.math.PointBoundCheck=function(x,y,l,r,b,t) return x>=l and x<=r and y>=b and y<=t end
-    ext.mouse={x=520,y=164,isDown=function() return true end}
-    menuUI.frame(o);check(not o.pool_options.cards.survival,'鼠标与触控使用真实时符按钮区域')
+    ext.mouse={x=520,y=110,_wheel=0,isDown=function() return true end}
+    menuUI.frame(o);check(not o.pool_options.cards.survival,'触控命中新的时符区域')
+    ext.mouse.y=440;menuUI.frame(o);check(not o.pool_expanded,'点击高级选项标题可以折叠')
+    ext.mouse.y=110;menuUI.frame(o);check(not o.pool_options.cards.survival,'折叠后的隐藏选项不参与触控命中')
+    check(scoredata.rogue10_filters_version==7 and not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
     menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck=oldMenu,oldLast,oldMouse,oldBounds
     KEY,setting=oldKey,oldSetting
-    scoredata.rogue10_filters=remembered
+    scoredata.rogue10_filters,scoredata.rogue10_filters_version=remembered,rememberedVersion
 end
 
 for c,values in pairs(original) do for k,v in pairs(values) do assert(c[k]==v,'原卡参数被改动') end end
@@ -245,6 +255,7 @@ local function simulate(seed,failRound,variant,endless,filters)
     local battle=stage.next_stage;stage.next_stage=nil;stage.current_stage=battle;battle.timer=0;battle.task=nil;battle:init()
     check(lstg.var.current_system=='','仅选人，不启用异变系统')
     check(lstg.var.__revive_version==0 and lstg.var.revive==nil,'新局禁用答题复活并清除旧状态')
+    check(lstg.var.__rank_version==0 and lstg.var.rank==nil and G.enabled(),'新局禁用Rank并启用阶段HP倍率')
     for tick=1,3000 do
         task.Do(battle);battle:frame();battle.timer=battle.timer+1
         for _,entry in ipairs(spawned) do if entry.obj._live then entry.obj.life=entry.obj.life-1;if entry.obj.life<=0 then entry.obj._live=false;entry.died=stage.current_stage.timer end end end
@@ -256,7 +267,7 @@ end
 local battle,run=simulate(100)
 check(stage.next_stage==stage.stages[R.RESULT] and run.won and run.completed==10,'十战完成进入成功结算')
 check(#spawned==10,'每次只运行抽中的一张卡，共十张')
-check(#musicEvents==1 and musicEvents[1]==spawned[1].class.bgm,'单 Boss 十战全程只播放首位 Boss 的 BGM')
+check(#musicEvents==1 and musicEvents[1]==spawned[1].class.bgm,'短流程不提前换曲，首位Boss决定首曲')
 check(#backgroundEvents==1 and backgroundEvents[1]==spawned[1].class._bg,'单 Boss 十战只创建首位 Boss 的关卡背景')
 for i=2,#spawned do
     check(spawned[i].tick==spawned[i-1].died,'单 Boss 随机十战死亡后立即创建下一位，没有两战之间的固定等待')
@@ -322,7 +333,7 @@ for _,view in ipairs({'world','ui','3d'}) do
     lstg.viewmode=view;panel.class.render(panel.obj)
     check(lstg.viewmode==view,'随机模式进度栏恢复调用方坐标系：'..view)
 end
-check(#stageText==3 and stageText[1]=='10' and stageText[2]=='10' and stageText[3]=='10','左侧每次仅渲染一个大号阶段数字')
+check(#stageText==9 and stageText[1]=='10' and stageText[4]=='10' and stageText[7]=='10','左侧显示大号阶段数字及累计倍率和入场动画')
 stageText={}
 local renderClear=RenderClear;RenderClear=function() end
 stage.stages[R.modes.chain.result].render({run=lstg.var.rogue_run})
@@ -333,7 +344,7 @@ SetViewMode,ui=setView,oldUI
 local endlessFilters=R.defaultFilters()
 endlessFilters.stages={TH35=true};endlessFilters.difficulties={extra=true};endlessFilters.encounters={road=true}
 local endlessBattle,endlessRun=simulate(777,25,'single',true,endlessFilters)
-check(endlessRun.endless and endlessRun.poolVersion==6,'新局写入版本6及无限标记')
+check(endlessRun.endless and endlessRun.poolVersion==7,'新局写入版本7及无限标记')
 check(endlessRun.completed>=24 and not endlessRun.won,'无限模式超过十战后仍继续')
 check(endlessRun.cycle>=24 and #endlessRun.cards==1,'小池跨轮洗牌只保留当前轮')
 for _,entry in ipairs(spawned) do check(entry.card.card_id==3685,'多轮严格沿用风神录Extra道中筛选') end

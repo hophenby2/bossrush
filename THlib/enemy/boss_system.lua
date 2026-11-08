@@ -129,7 +129,7 @@ function system:frame()
     self:updatePosition() --更新位置指示器
     self:updateBG() --更新符卡背景
 
-    if b.hp < 1145141919810 then
+    if b.hp < 1145141919810 or (GameHPScale and GameHPScale.enabled() and b._hp_growth_last and b.maxhp>0) then
         b.hpbarlen = b.hp / b.maxhp --更新血条长度
     else
         b.hpbarlen = 0
@@ -790,6 +790,7 @@ end
 ---@param maxhp number @最大血量
 ---@param hp number @血量
 function system:setHP(maxhp, hp)
+    if GameHPScale then maxhp,hp=GameHPScale.health(self.boss,maxhp,hp) end
     if GameRank then maxhp,hp=GameRank.health(self.boss,maxhp,hp) end
     self.boss.maxhp, self.boss.hp = maxhp, hp or maxhp
 end
@@ -964,6 +965,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
     score = score or card.is_sc
     sc_bonus = sc_bonus or card.is_sc
     b.current_card = card
+    if GameHPScale then GameHPScale.beginCard(b) end
     if GameRank then GameRank.beginCard(b,card) end
     if GameDrops then GameDrops.beginCard(b,card) end
     task.New(self, function()

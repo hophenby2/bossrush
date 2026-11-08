@@ -1,0 +1,418 @@
+{
+  "version": "0.13.16-android",
+  "version_code": 34,
+  "date": "2026-11-08",
+  "checks": {
+    "hp_and_animation": 137,
+    "roguelike": 14769,
+    "drops_and_hud": 6858,
+    "legacy_rank": 49,
+    "android_contract": "通过",
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\hp-growth-20261108-b",
+      "version": "LuaSTG Sub v0.21.129",
+      "completed": 5,
+      "frames": [
+        960,
+        960,
+        960,
+        960,
+        960
+      ],
+      "errors": {},
+      "hp_records": [
+        {
+          "base": 1153,
+          "factor": 1.01,
+          "proxy": true,
+          "stage": 1,
+          "actors": 1,
+          "id": 3433,
+          "frames": 1,
+          "maxhp": 1164.642487282
+        },
+        {
+          "base": 1153,
+          "factor": 1.01,
+          "proxy": true,
+          "stage": 1,
+          "actors": 1,
+          "id": 3433,
+          "frames": 120,
+          "maxhp": 1164.642487282
+        },
+        {
+          "base": 987,
+          "factor": 1.0302,
+          "proxy": true,
+          "stage": 2,
+          "actors": 0,
+          "id": 3912,
+          "frames": 1,
+          "maxhp": 1016.8074
+        },
+        {
+          "base": 987,
+          "factor": 1.0302,
+          "proxy": true,
+          "stage": 2,
+          "actors": 0,
+          "id": 3912,
+          "frames": 120,
+          "maxhp": 1016.8074
+        },
+        {
+          "base": 1388,
+          "factor": 1.061106,
+          "proxy": false,
+          "stage": 3,
+          "actors": 0,
+          "id": 4444,
+          "frames": 1,
+          "maxhp": 1472.815128
+        },
+        {
+          "base": 1388,
+          "factor": 1.061106,
+          "proxy": false,
+          "stage": 3,
+          "actors": 0,
+          "id": 4444,
+          "frames": 120,
+          "maxhp": 1472.815128
+        },
+        {
+          "base": 1304,
+          "factor": 1.10355024,
+          "proxy": false,
+          "stage": 4,
+          "actors": 0,
+          "id": 3601,
+          "frames": 1,
+          "maxhp": 1439.02951296
+        },
+        {
+          "base": 1304,
+          "factor": 1.10355024,
+          "proxy": false,
+          "stage": 4,
+          "actors": 0,
+          "id": 3601,
+          "frames": 120,
+          "maxhp": 1439.02951296
+        },
+        {
+          "base": 5927,
+          "factor": 1.158727752,
+          "proxy": false,
+          "stage": 5,
+          "actors": 0,
+          "id": 3621,
+          "frames": 1,
+          "maxhp": 6867.779386104
+        },
+        {
+          "base": 5927,
+          "factor": 1.158727752,
+          "proxy": false,
+          "stage": 5,
+          "actors": 0,
+          "id": 3621,
+          "frames": 120,
+          "maxhp": 6867.779386104
+        }
+      ],
+      "animations": [
+        {
+          "snapshot": "hp-stage-01-age-01",
+          "shown": 1,
+          "shown_stage": 0,
+          "animation": {
+            "age": 1,
+            "factor": 1.01,
+            "total": 1.01,
+            "stage": 1
+          },
+          "total": 1.01
+        },
+        {
+          "snapshot": "hp-stage-01-age-12",
+          "shown": 1,
+          "shown_stage": 0,
+          "animation": {
+            "age": 12,
+            "factor": 1.01,
+            "total": 1.01,
+            "stage": 1
+          },
+          "total": 1.01
+        },
+        {
+          "snapshot": "hp-stage-01-age-30",
+          "shown": 1,
+          "shown_stage": 0,
+          "animation": {
+            "age": 30,
+            "factor": 1.01,
+            "total": 1.01,
+            "stage": 1
+          },
+          "total": 1.01
+        },
+        {
+          "snapshot": "hp-stage-01-settled",
+          "shown": 1.01,
+          "shown_stage": 1,
+          "total": 1.01
+        },
+        {
+          "snapshot": "hp-stage-02-age-01",
+          "shown": 1.01,
+          "shown_stage": 1,
+          "animation": {
+            "age": 1,
+            "factor": 1.02,
+            "total": 1.0302,
+            "stage": 2
+          },
+          "total": 1.0302
+        },
+        {
+          "snapshot": "hp-stage-02-age-12",
+          "shown": 1.01,
+          "shown_stage": 1,
+          "animation": {
+            "age": 12,
+            "factor": 1.02,
+            "total": 1.0302,
+            "stage": 2
+          },
+          "total": 1.0302
+        },
+        {
+          "snapshot": "hp-stage-02-age-30",
+          "shown": 1.01,
+          "shown_stage": 1,
+          "animation": {
+            "age": 30,
+            "factor": 1.02,
+            "total": 1.0302,
+            "stage": 2
+          },
+          "total": 1.0302
+        },
+        {
+          "snapshot": "hp-stage-02-settled",
+          "shown": 1.0302,
+          "shown_stage": 2,
+          "total": 1.0302
+        },
+        {
+          "snapshot": "hp-stage-03-age-01",
+          "shown": 1.0302,
+          "shown_stage": 2,
+          "animation": {
+            "age": 1,
+            "factor": 1.03,
+            "total": 1.061106,
+            "stage": 3
+          },
+          "total": 1.061106
+        },
+        {
+          "snapshot": "hp-stage-03-age-12",
+          "shown": 1.0302,
+          "shown_stage": 2,
+          "animation": {
+            "age": 12,
+            "factor": 1.03,
+            "total": 1.061106,
+            "stage": 3
+          },
+          "total": 1.061106
+        },
+        {
+          "snapshot": "hp-stage-03-age-30",
+          "shown": 1.0302,
+          "shown_stage": 2,
+          "animation": {
+            "age": 30,
+            "factor": 1.03,
+            "total": 1.061106,
+            "stage": 3
+          },
+          "total": 1.061106
+        },
+        {
+          "snapshot": "hp-stage-03-settled",
+          "shown": 1.061106,
+          "shown_stage": 3,
+          "total": 1.061106
+        },
+        {
+          "snapshot": "hp-stage-04-age-01",
+          "shown": 1.061106,
+          "shown_stage": 3,
+          "animation": {
+            "age": 1,
+            "factor": 1.04,
+            "total": 1.10355024,
+            "stage": 4
+          },
+          "total": 1.10355024
+        },
+        {
+          "snapshot": "hp-stage-04-age-12",
+          "shown": 1.061106,
+          "shown_stage": 3,
+          "animation": {
+            "age": 12,
+            "factor": 1.04,
+            "total": 1.10355024,
+            "stage": 4
+          },
+          "total": 1.10355024
+        },
+        {
+          "snapshot": "hp-stage-04-age-30",
+          "shown": 1.061106,
+          "shown_stage": 3,
+          "animation": {
+            "age": 30,
+            "factor": 1.04,
+            "total": 1.10355024,
+            "stage": 4
+          },
+          "total": 1.10355024
+        },
+        {
+          "snapshot": "hp-stage-04-settled",
+          "shown": 1.10355024,
+          "shown_stage": 4,
+          "total": 1.10355024
+        },
+        {
+          "snapshot": "hp-stage-05-age-01",
+          "shown": 1.10355024,
+          "shown_stage": 4,
+          "animation": {
+            "age": 1,
+            "factor": 1.05,
+            "total": 1.158727752,
+            "stage": 5
+          },
+          "total": 1.158727752
+        },
+        {
+          "snapshot": "hp-stage-05-age-12",
+          "shown": 1.10355024,
+          "shown_stage": 4,
+          "animation": {
+            "age": 12,
+            "factor": 1.05,
+            "total": 1.158727752,
+            "stage": 5
+          },
+          "total": 1.158727752
+        },
+        {
+          "snapshot": "hp-stage-05-age-30",
+          "shown": 1.10355024,
+          "shown_stage": 4,
+          "animation": {
+            "age": 30,
+            "factor": 1.05,
+            "total": 1.158727752,
+            "stage": 5
+          },
+          "total": 1.158727752
+        },
+        {
+          "snapshot": "hp-stage-05-settled",
+          "shown": 1.158727752,
+          "shown_stage": 5,
+          "total": 1.158727752
+        }
+      ],
+      "result": {
+        "dead": 10,
+        "quiz": false,
+        "finished": true,
+        "revive": 0,
+        "current": 5,
+        "rank": 0
+      },
+      "screenshots": [
+        "hp-colors.png",
+        "hp-menu-collapsed.png",
+        "hp-menu-expanded.png",
+        "hp-stage-01-age-01.png",
+        "hp-stage-01-age-12.png",
+        "hp-stage-01-age-30.png",
+        "hp-stage-01-settled.png",
+        "hp-stage-02-age-01.png",
+        "hp-stage-02-age-12.png",
+        "hp-stage-02-age-30.png",
+        "hp-stage-02-settled.png",
+        "hp-stage-03-age-01.png",
+        "hp-stage-03-age-12.png",
+        "hp-stage-03-age-30.png",
+        "hp-stage-03-settled.png",
+        "hp-stage-04-age-01.png",
+        "hp-stage-04-age-12.png",
+        "hp-stage-04-age-30.png",
+        "hp-stage-04-settled.png",
+        "hp-stage-05-age-01.png",
+        "hp-stage-05-age-12.png",
+        "hp-stage-05-age-30.png",
+        "hp-stage-05-settled.png",
+        "hud-result.png",
+        "th31-3433-timeout-late.png",
+        "th31-3433-timeout.png",
+        "th32-3912-timeout-late.png",
+        "th32-3912-timeout.png",
+        "th34-4444-timeout-late.png",
+        "th34-4444-timeout.png",
+        "th35-3601-timeout-late.png",
+        "th35-3601-timeout.png",
+        "th35-3621-timeout-late.png",
+        "th35-3621-timeout.png"
+      ]
+    },
+    "apk": {
+      "resources": 2523,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测；Windows验证包含正式触控绘制，但不能等同Android GPU实测。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.16.apk",
+    "bytes": 571705717,
+    "sha256": "e0271f10b727b1515b9959c92893d5ac5408f1f045b6b0aff53ca7d1f86a5a69"
+  },
+  "sources_sha256": {
+    "THlib/THlib.lua": "61dce81b3af2f7f18738b5da0df66c84582b5ec5d62adc7a48030615239f0384",
+    "THlib/rogue_hp.lua": "55629617e6135d4fb656a8a52a3db280657713ebb65d56ef4d9b9e77b48d53f6",
+    "THlib/UI/rogue_pool.lua": "3637910f48852877b0eec2d1770d62dbe6ac4a29b176f1058bb240dbc5e5151d",
+    "THlib/UI/run_hud.lua": "1ce381ccec938fad30a15d36540874030710065c9da14daf52c96b1581e764be",
+    "THlib/enemy/boss.lua": "27e355772913745139258f8e3fd1d2314eabd2ad6787143bdfbc43aec9e86576",
+    "THlib/enemy/boss_system.lua": "faadbccb1938a6991cfa4fd6eab370b27afb5cd9b60f098fcc09bae1d4247e7e",
+    "THlib/ext/ext_stage_group.lua": "3816ecf9c98114333ea0e62b850b404b644b1dc9621ed388818803562778928f",
+    "THlib/ext/ext_replay.lua": "a8329d3c25a722d9a6f46033cfafbc6aa020111f7aa777e5024657076f68a6c2",
+    "mod/rogue_pool.lua": "a0a93f49d43b097644883733feecf8482482c9d4a6e1e292f41d3b0ecc0ea20d",
+    "mod/roguelike.lua": "b22e7fc2ae6203805e733aa4564e97d4103c1f31a597d6c100d4b359d134d0ea",
+    "mod/GAME/th31.lua": "b43321e09248d29a16f80aece20af03e9d1bbb11b240ff58fd8b170ebc0be93f",
+    "mod/GAME/th32_hp.lua": "5df729a6d7f6c645640f4caa87a83a7ccfb9ff84dd4041df2446f0f077da68bc",
+    "mod/GAME/th34.lua": "b1d7e5472e83c461fe5d842ecf2ccf5d0f098c313c0feddaf03349f1474eab79",
+    "mod/GAME/th35.lua": "f5689b27698d79edf654fa7fdd7e0b9b9c43c060d523adcdc17f35793864dd94",
+    "mod/GAME/original/low_speed_hp.lua": "0cafca7977a8ed6d87d9eb489bb2f6c9a79fc27d15dcffab280ad97a88ab2707",
+    "android/AndroidManifest.xml": "bb6627da0f778fc07bfadb049bf52db728defd535b9ce42810d967c1c0bcde22"
+  }
+}

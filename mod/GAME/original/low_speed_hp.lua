@@ -311,6 +311,7 @@ function H.unit(o,game,spell)
     scale=(game==8 and o.th08_attached) and scale['familiar_'..mode] or scale[mode]
     o._original_raw_hp,o._original_hp_scale=o.hp,scale
     o.hp=math.max(1,o.hp*scale);o.maxhp=o.hp
+    if GameHPScale then GameHPScale.apply(o) end
 end
 function H.factor(profile,timer)
     -- 带前置可受击/减伤段的入口不能压成从零开始的一段全免。

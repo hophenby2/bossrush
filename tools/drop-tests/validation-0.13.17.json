@@ -1,0 +1,279 @@
+{
+  "version": "0.13.17-android",
+  "version_code": 35,
+  "date": "2026-11-08",
+  "checks": {
+    "shuffle_and_music_clock": 5502,
+    "roguelike": 14769,
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\music-20261108-a",
+      "version": "LuaSTG Sub v0.21.129",
+      "completed": 1,
+      "frames": 1800,
+      "errors": {},
+      "playlist": [
+        "TH06_0",
+        "TH06_1",
+        "TH07_1",
+        "TH08_NEW_0",
+        "TH08_NEW_1",
+        "TH08_NEW_2",
+        "TH08_NEW_3",
+        "TH10_2",
+        "TH10_4"
+      ],
+      "music": {
+        "cycle": 3,
+        "stopped": true,
+        "score": "playing",
+        "pausedChecked": true,
+        "history": [
+          "TH10_2",
+          "TH08_NEW_0",
+          "TH10_4",
+          "TH08_NEW_1",
+          "TH07_1",
+          "TH06_1",
+          "TH08_NEW_2",
+          "TH08_NEW_3",
+          "TH06_0",
+          "TH08_NEW_2",
+          "TH08_NEW_0",
+          "TH10_2",
+          "TH08_NEW_3",
+          "TH06_1",
+          "TH06_0",
+          "TH07_1",
+          "TH10_4",
+          "TH08_NEW_1",
+          "TH10_4",
+          "TH08_NEW_1",
+          "TH06_0",
+          "TH08_NEW_2",
+          "TH08_NEW_3",
+          "TH08_NEW_0",
+          "TH06_1",
+          "TH07_1",
+          "TH10_2"
+        ],
+        "plays": 27
+      },
+      "events": [
+        {
+          "cycle": 1,
+          "remaining": 8,
+          "playing": "playing",
+          "index": 1,
+          "song": "TH10_2"
+        },
+        {
+          "cycle": 1,
+          "remaining": 7,
+          "playing": "playing",
+          "index": 2,
+          "song": "TH08_NEW_0"
+        },
+        {
+          "cycle": 1,
+          "remaining": 6,
+          "playing": "playing",
+          "index": 3,
+          "song": "TH10_4"
+        },
+        {
+          "cycle": 1,
+          "remaining": 5,
+          "playing": "playing",
+          "index": 4,
+          "song": "TH08_NEW_1"
+        },
+        {
+          "cycle": 1,
+          "remaining": 4,
+          "playing": "playing",
+          "index": 5,
+          "song": "TH07_1"
+        },
+        {
+          "cycle": 1,
+          "remaining": 3,
+          "playing": "playing",
+          "index": 6,
+          "song": "TH06_1"
+        },
+        {
+          "cycle": 1,
+          "remaining": 2,
+          "playing": "playing",
+          "index": 7,
+          "song": "TH08_NEW_2"
+        },
+        {
+          "cycle": 1,
+          "remaining": 1,
+          "playing": "playing",
+          "index": 8,
+          "song": "TH08_NEW_3"
+        },
+        {
+          "cycle": 1,
+          "remaining": 0,
+          "playing": "playing",
+          "index": 9,
+          "song": "TH06_0"
+        },
+        {
+          "cycle": 2,
+          "remaining": 8,
+          "playing": "playing",
+          "index": 10,
+          "song": "TH08_NEW_2"
+        },
+        {
+          "cycle": 2,
+          "remaining": 7,
+          "playing": "playing",
+          "index": 11,
+          "song": "TH08_NEW_0"
+        },
+        {
+          "cycle": 2,
+          "remaining": 6,
+          "playing": "playing",
+          "index": 12,
+          "song": "TH10_2"
+        },
+        {
+          "cycle": 2,
+          "remaining": 5,
+          "playing": "playing",
+          "index": 13,
+          "song": "TH08_NEW_3"
+        },
+        {
+          "cycle": 2,
+          "remaining": 4,
+          "playing": "playing",
+          "index": 14,
+          "song": "TH06_1"
+        },
+        {
+          "cycle": 2,
+          "remaining": 3,
+          "playing": "playing",
+          "index": 15,
+          "song": "TH06_0"
+        },
+        {
+          "cycle": 2,
+          "remaining": 2,
+          "playing": "playing",
+          "index": 16,
+          "song": "TH07_1"
+        },
+        {
+          "cycle": 2,
+          "remaining": 1,
+          "playing": "playing",
+          "index": 17,
+          "song": "TH10_4"
+        },
+        {
+          "cycle": 2,
+          "remaining": 0,
+          "playing": "playing",
+          "index": 18,
+          "song": "TH08_NEW_1"
+        },
+        {
+          "cycle": 3,
+          "remaining": 8,
+          "playing": "playing",
+          "index": 19,
+          "song": "TH10_4"
+        },
+        {
+          "cycle": 3,
+          "remaining": 7,
+          "playing": "playing",
+          "index": 20,
+          "song": "TH08_NEW_1"
+        },
+        {
+          "cycle": 3,
+          "remaining": 6,
+          "playing": "playing",
+          "index": 21,
+          "song": "TH06_0"
+        },
+        {
+          "cycle": 3,
+          "remaining": 5,
+          "playing": "playing",
+          "index": 22,
+          "song": "TH08_NEW_2"
+        },
+        {
+          "cycle": 3,
+          "remaining": 4,
+          "playing": "playing",
+          "index": 23,
+          "song": "TH08_NEW_3"
+        },
+        {
+          "cycle": 3,
+          "remaining": 3,
+          "playing": "playing",
+          "index": 24,
+          "song": "TH08_NEW_0"
+        },
+        {
+          "cycle": 3,
+          "remaining": 2,
+          "playing": "playing",
+          "index": 25,
+          "song": "TH06_1"
+        },
+        {
+          "cycle": 3,
+          "remaining": 1,
+          "playing": "playing",
+          "index": 26,
+          "song": "TH07_1"
+        },
+        {
+          "cycle": 3,
+          "remaining": 0,
+          "playing": "playing",
+          "index": 27,
+          "song": "TH10_2"
+        }
+      ]
+    },
+    "apk": {
+      "resources": 2524,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测。",
+    "Windows验证使用正式音源及播放/暂停/停止API；快进音乐逻辑时钟触发原循环点，未实际完整听完27首歌曲，未修改循环点元数据。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.17.apk",
+    "bytes": 571709890,
+    "sha256": "417744c85d0d66047c2ed5f40c01e6878737faf03c56bb48b1d0755ed6d10295"
+  },
+  "sources_sha256": {
+    "mod/rogue_music.lua": "565e63ad6e9b544dd7dfb05503e3afd716636e1725e7b76190ee2308cb64b406",
+    "mod/roguelike.lua": "4333c10fbdf25652c086dea7aeb973a12de4a6e4a1a41d49366127a83c44e9d4",
+    "THlib/ext/ext_other.lua": "d2dfa9bddab61cfb59ea6eb8851173e6c27f346bc21abb69c023283ee984826f",
+    "THlib/ext/ext_stage_group.lua": "7e96b260d40d742e591cd6782f3eb67ca36a7986593e21547524db13980cf710",
+    "android/AndroidManifest.xml": "2f9dbdd97ce18d07f2ee93e8feb1935fab841a85256d8709d75bac5775f42054"
+  }
+}

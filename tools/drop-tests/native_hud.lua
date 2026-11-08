@@ -1,81 +1,82 @@
--- 在独立发行目录记录真实字体、掉落文字和Bomb扇形；不接触玩家存档。
-local checked=false
-local coop=false
-local drawHUD=ui.RunHUD.draw
-ui.RunHUD.draw=function(...)
-    local net=GameNet
-    if coop then GameNet={host=function() return true end} end
-    local ok,err=pcall(drawHUD,...);GameNet=net
-    if not ok then error(err,0) end
+-- Windows真引擎：五种HP实现、倍率动画、折叠菜单和无答题结算；仅写独立验证目录。
+local checked,menusCaptured,resultCaptured=false,false,false
+local pending,captured=nil,{}
+local function growth() return lstg.var.rogue_run and lstg.var.rogue_run.hp_growth end
+local function near(a,b) return math.abs(a-b)<1e-7*math.max(1,math.abs(b)) end
+function HUDNeedRender()
+    local s=growth();if not s then return false end
+    RogueTen.MISS_LIMIT=10
+    local a=s.animation
+    if a then for _,point in ipairs({1,12,30}) do
+        local name=('hp-stage-%02d-age-%02d'):format(a.stage,point)
+        if a.age>=point and not captured[name] then pending=name;captured[name]=true;return true end
+    end end
+    local name=('hp-stage-%02d-settled'):format(s.shown_stage)
+    if s.shown_stage>0 and not captured[name] then pending=name;captured[name]=true;return true end
+    return false
 end
--- 只借用正式触控绘制函数，所有输入包装都限制在私有环境中。
 local env={lstg={GetKeyState=function() return false end,GetLastKey=function() return 0 end},
     require=function() return setmetatable({},{__index=function(_,key) return key:byte() end}) end}
 env._G=env;setmetatable(env,{__index=_G})
-local chunk=assert(loadfile('native_android_input.lua'));setfenv(chunk,env)
-local mobile=chunk()
+local chunk=assert(loadfile('native_android_input.lua'));setfenv(chunk,env);local mobile=chunk()
 local endScene=EndScene
-local menuCaptured,resultCaptured,zeroCaptured=false,false,false
 EndScene=function()
-    local preview=not menuCaptured and lstg.var.rogue_run
-    if preview then
-        SetViewMode('ui');RenderClear(Color(255,12,21,36))
-        local options=RogueTen.defaultFilters();options.cards.survival=false
-        local o={alpha=1,pool_focus=9,pool_options=options,pool_status=RogueTen.poolStatus(options),pool_notice_time=0,keyname=KeyCodeToName()}
-        dofile('THlib/UI/rogue_pool.lua').render(o)
-    elseif coop then mobile.render() end
+    if growth() then mobile.render() end
     local result=endScene()
-    if preview then Snapshot('snapshot/hud-time-filter.png');menuCaptured=true end
+    if pending then
+        Snapshot('snapshot/'..pending..'.png')
+        local s=growth();local f=assert(io.open('hp-animation.jsonl','a'))
+        f:write(Serialize({snapshot=pending,total=s.total,shown=s.shown,shown_stage=s.shown_stage,animation=s.animation}),'\n');f:close();pending=nil
+    end
+    if growth() and not menusCaptured then
+        local U=dofile('THlib/UI/rogue_pool.lua')
+        local o={alpha=1,keyname=KeyCodeToName()};U.fresh(o,'roguelike')
+        assert(not o.pool_expanded and o.pool_status.count==351 and not o.pool_options.cards.survival and not o.pool_options.encounters.road,'新默认筛选必须生效')
+        for _,name in ipairs({'hp-menu-collapsed','hp-menu-expanded'}) do
+            BeginScene();SetViewMode('ui');RenderClear(Color(255,12,21,36));U.render(o);endScene();Snapshot('snapshot/'..name..'.png');U.expand(o)
+        end
+        menusCaptured=true
+    end
     local scene=stage.current_stage
     if scene and scene.stage_name==RogueTen.RESULT and not resultCaptured and scene.timer>=45 then
-        assert(not GameRevive.active() and lstg.var.__revive_version==0,'耗尽生命不能进入答题')
+        assert(not GameRevive.active() and not GameRank.enabled(),'新局不能启用答题或Rank')
         Snapshot('snapshot/hud-result.png');resultCaptured=true
         local f=assert(io.open('hud-death-result.json','w'))
-        f:write(Serialize({revive=lstg.var.__revive_version,dead=lstg.var.dead,current=lstg.var.rogue_run.current,finished=lstg.var.rogue_run.finished,quiz=GameRevive.active()}));f:close()
-    elseif lstg.var.dead==10 and not zeroCaptured and scene and scene.stage_name==RogueTen.BATTLE then
-        Snapshot('snapshot/hud-zero-life.png');zeroCaptured=true
+        f:write(Serialize({rank=lstg.var.__rank_version,revive=lstg.var.__revive_version,dead=lstg.var.dead,current=lstg.var.rogue_run.current,finished=true,quiz=GameRevive.active()}));f:close()
+        BeginScene();SetViewMode('ui');RenderClear(Color(255,12,21,36))
+        for i,index in ipairs({9,19,29,39,49,50}) do
+            ui:RenderText('title',('×%.2f'):format(1+index/100),160+(i-1)*128,270,2,Color(255,GameHPScale.rgb(index)),'centerpoint')
+        end
+        endScene();Snapshot('snapshot/hp-colors.png')
     end
     return result
 end
 return function(host,frames,current)
     if not checked then
-        RogueTen.MISS_LIMIT=10 -- 通用弹幕测试放宽了失误上限；此处恢复正式生命规则。
-        assert(GameDrops.VERSION==5 and lstg.var.__drops_version==5,'新局必须采用九枚库存版本')
-        assert(lstg.var.__revive_version==0 and not GameRevive.enabled(),'新局禁用答题复活')
-        local noTime=RogueTen.defaultFilters();noTime.cards.survival=false
-        local filtered,total=RogueTen.buildPool(noTime)
-        local all,allCount=RogueTen.buildPool();local timed={}
-        for _,bucket in ipairs(all) do for _,e in ipairs(bucket.cards) do
-            if e.survival then timed[#timed+1]={id=e.cardId,source=e.source} end
-        end end
-        local f=assert(io.open('hud-time-filter.json','w'));f:write(Serialize({all=allCount,filtered=total,timed=timed}));f:close()
-        assert(total==395,'真实引擎时符筛选必须与注册回归一致：'..total)
-        for _,bucket in ipairs(filtered) do for _,e in ipairs(bucket.cards) do assert(not e.survival,'不能漏入时符') end end
-        assert(GameDrops.bombState(1)==3,'新局初始持有三枚')
-        local image={GetImageTextureRegion('star_big10')}
-        assert(image[1]=='v310_bullet2' and image[2]==224 and image[3]==128,'核对绿色大星图集')
+        assert(GameHPScale.enabled() and not GameRank.enabled() and lstg.var.__rank_version==0,'新局只启用阶段HP倍率')
+        assert(lstg.var.__revive_version==0 and not GameRevive.enabled(),'禁用答题复活')
+        local f=RogueTen.defaultFilters();local all,n=RogueTen.buildPool(f)
+        assert(n==351 and f.cards.nonspell and f.cards.spell and not f.cards.survival and not f.encounters.road,'默认四作非符/符卡池')
+        for _,b in ipairs(all) do for _,e in ipairs(b.cards) do assert(not e.survival and e.kind=='boss','不能混入道中或时符') end end
         checked=true
     end
-    if frames==300 then
-        coop=current.cardId==3604
-        lstg.var.rogue_run.current=42;lstg.var.dead=2
-        local parts={[3601]=.25,[3602]=.5,[3603]=.75,[3604]=.99}
-        local p=lstg.var.upgrades.players[1]
-        p.red,p.blue,p.green=13500,17500,7500
-        p.bombs,p.bomb_fraction=3,assert(parts[current.cardId])*GameDrops.BOMB_FRAMES*10000
-        local p2=lstg.var.upgrades.players[2]
-        p2.red,p2.blue,p2.green,p2.bombs,p2.bomb_fraction=11500,14000,8500,2,.5*GameDrops.BOMB_FRAMES*10000
-        local row={age=38,duration=120,linear=true,colorMask=true}
-        GameQuiz.selection('hud-verification',row,nil,{GameDrops.optionLines(8),GameDrops.optionLines(3),GameDrops.optionLines(11)})
-        current.hud_progress=parts[current.cardId]
-        local f=assert(io.open('hud-progress.jsonl','a'))
-        f:write(Serialize({id=current.cardId,progress=current.hud_progress,bombs=GameDrops.bombState(1)}),'\n');f:close()
-    elseif frames==900 then
-        local p=lstg.var.upgrades.players[1];p.bombs,p.bomb_fraction=9,0
-        if current.cardId==3604 then
-            p.red,p.blue,p.green=100000,100000,2500
-            GameRank.state().units=GameRank.MAX*GameRank.UNITS
+    if frames==1 or frames==120 then
+        local s=growth();local card=host.current_card;local factor=GameHPScale.factor(host)
+        assert(near(factor,s.total),'Boss采用本阶段累计HP倍率')
+        if not host._rank_hp_proxy then assert(near(host.maxhp,card.hp*factor),'Boss实际maxhp应乘阶段倍率') end
+        if host._th06_hp_scale then
+            local M=dofile('mod/GAME/th32_hp.lua')
+            assert(near(M.raw(host),host.hp/host._th06_hp_scale),'红魔乡原始life保持独立')
         end
-        GameQuiz.clearSelection('hud-verification',true)
+        local actors=0
+        for _,group in ipairs({GROUP.ENEMY,GROUP.NONTJT}) do for _,o in ObjList(group) do
+            if o~=host and o._hp_growth_factor then assert(near(o._hp_growth_factor,s.total),'子机使用本阶段倍率');actors=actors+1 end
+        end end
+        local f=assert(io.open('hp-native.jsonl','a'))
+        f:write(Serialize({id=current.cardId,frames=frames,stage=lstg.var.rogue_run.current,factor=factor,maxhp=host.maxhp,base=card.hp,proxy=host._rank_hp_proxy or false,actors=actors}),'\n');f:close()
+    end
+    if frames==300 then
+        lstg.var.dead=2
+        local p=lstg.var.upgrades.players[1];p.red,p.blue,p.green=13500,17500,7500;p.bombs,p.bomb_fraction=3,.5*GameDrops.BOMB_FRAMES*10000
     end
 end

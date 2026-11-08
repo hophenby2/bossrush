@@ -3536,7 +3536,7 @@ function s7.BossCard10_tbl(o)
     local a = 0
     ---原作阈值是对 lifeSet(10000) 的绝对值；运行时 HP 已按灵梦口径缩放，
     ---所以这里必须按同一比例比较，不能继续写 8000/5500/3500/1700。
-    local maxlife = TH35_REIMU_HP[3621]
+    local maxlife = TH35_REIMU_HP[3621]*(GameHPScale and GameHPScale.factor(o.th10_boss) or 1)
     o.I0 = 0
     while true do                        -- +1: //1
         local life = (o.th10_boss and o.th10_boss.hp) or 0

@@ -1,7 +1,7 @@
 -- 战斗UI只呈现剩余资源和成长：星形表示库存，固定量程的条表示属性。
 -- 所有查询保持只读，渲染不能建立成长状态或改变录像的零帧初态。
 local H={}
-local colors={red={255,110,120},blue={110,190,255},green={110,235,145},rank={205,180,255}}
+local colors={red={255,110,120},blue={110,190,255},green={110,235,145}}
 local function color(alpha,rgb) return Color(alpha,rgb[1],rgb[2],rgb[3]) end
 local function number(value) return (('%.2f'):format(value):gsub('%.?0+$','')) end
 local function text(value,x,y,scale,alpha,rgb,...)
@@ -64,12 +64,6 @@ function H.draw(scrr,scrt,alpha)
         GameDrops.renderBombs(x1,x2,scrt-76,alpha,count)
     end
     if GameDrops then GameDrops.renderHUD(scrr,scrt,alpha) end
-    if GameRank and GameRank.enabled() then
-        local y=scrt-373
-        text('Rank',x1,y+20,.7,alpha,colors.rank,'left','vcenter')
-        H.track(x1,x2-82,y,GameRank.value()/GameRank.MAX,alpha,colors.rank)
-        text(('×%.3f'):format(GameRank.factor()),x2,y,.8,alpha,colors.rank,'right','vcenter')
-    end
 end
 function H.stage(value,x,y,width)
     local label=tostring(math.max(1,math.floor(value or 1)))

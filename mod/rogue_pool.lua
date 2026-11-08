@@ -16,12 +16,14 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'},cards={'survival'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
 function P.defaults(variant,poolVersion)
     -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
     local single=not variant or variant=='single'
+    local historical=poolVersion and poolVersion<7
     return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4},
-        difficulties={lunatic=true,extra=true},encounters={boss=true,road=single},cards={survival=true}}
+        difficulties={lunatic=true,extra=true},encounters={boss=true,road=single and historical or false},
+        cards={nonspell=true,spell=true,survival=historical or false}}
 end
 function P.copy(filters,variant,poolVersion)
     local defaults=P.defaults(variant,poolVersion)
@@ -30,11 +32,16 @@ function P.copy(filters,variant,poolVersion)
     for group,keys in pairs(fields) do
         local values=type(filters[group])=='table' and filters[group] or defaults[group]
         out[group]={}
-        for _,key in ipairs(keys) do out[group][key]=values[key]==true end
+        for _,key in ipairs(keys) do
+            local value=values[key]
+            if value==nil and group=='cards' and (key=='nonspell' or key=='spell') then value=defaults[group][key] end
+            out[group][key]=value==true
+        end
     end
     -- 旧设置中的勾选也必须失效，不能只移除准备界面的按钮。
     out.stages.TH36=out.stages.TH36 and poolVersion==4
     if poolVersion and poolVersion<6 then out.cards.survival=true end
+    if poolVersion and poolVersion<7 then out.cards.nonspell,out.cards.spell=true,true end
     return out
 end
 function P.isSurvival(unit,kind)
@@ -64,9 +71,11 @@ function P.build(filters,poolVersion)
                 -- extra键保留已有筛选初态；Phantasm只在新版池并入，版本2录像沿用原集合。
                 local difficulty=tag and (tag.difficulty=='phantasm' and 'extra' or tag.difficulty)
                 local survival=tag and P.isSurvival(unit,tag.kind)
+                local selected=tag and (tag.kind=='road' or (survival and filters.cards.survival)
+                    or (not survival and (first.card.is_sc and filters.cards.spell or not first.card.is_sc and filters.cards.nonspell)))
                 if tag and filters.difficulties[difficulty] and filters.encounters[tag.kind]
                     and not (poolVersion==2 and tag.difficulty=='phantasm')
-                    and (filters.cards.survival or not survival)
+                    and selected
                     and first.card.is_combat~=false and not seen[id] then
                     local label=unit.CardName or ''
                     seen[id]=true

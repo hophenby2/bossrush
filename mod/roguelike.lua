@@ -1,6 +1,6 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
--- 只组合已经注册的卡，不修改卡片本身的血量、时限、弹幕或奖励。
-local R={POOL_VERSION=6,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+-- 复用原卡的标定值，阶段倍率只作用于运行中的敌机，不改共享卡表、时限或弹幕。
+local R={POOL_VERSION=7,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -51,10 +51,14 @@ local function releaseChainGhosts(battle)
     end
 end
 local poolSource=dofile('mod/rogue_pool.lua')
+local rogueMusic=dofile('mod/rogue_music.lua')
 R.sources=poolSource.sources
 R.defaultFilters=poolSource.defaults
 R.copyFilters=poolSource.copy
 R.buildPool=poolSource.build
+function R.savedFilters()
+    return scoredata.rogue10_filters_version==R.POOL_VERSION and R.copyFilters(scoredata.rogue10_filters) or R.defaultFilters()
+end
 -- 新的单人模式只需一个候选；显式指定宽度时仍校验旧十战模式的卡数。
 function R.poolStatus(filters,width) return poolSource.status(filters,width and R.COUNT*width or 1) end
 
@@ -107,7 +111,7 @@ end
 function R.start(variant,filters)
     variant=variant or 'single'
     local config=assert(R.modes[variant])
-    local options=R.copyFilters(variant=='single' and (filters or scoredata.rogue10_filters) or R.defaultFilters(variant),variant)
+    local options=R.copyFilters(variant=='single' and (filters or R.savedFilters()) or R.defaultFilters(variant),variant)
     local endless=variant=='single'
     local status=endless and R.poolStatus(options) or R.poolStatus(options,config.width)
     if not status.valid then return false,status.message end
@@ -118,7 +122,7 @@ function R.start(variant,filters)
     lstg.var.rogue_filters=options
     lstg.var.rogue_variant=variant
     lstg.var.rogue_run=nil
-    if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options) end
+    if variant=='single' then scoredata.rogue10_filters=R.copyFilters(options);scoredata.rogue10_filters_version=R.POOL_VERSION end
     StopMusic('SCORE')
     lstg.var.current_system=''
     stage.group.Start(stage.groups[config.name])
@@ -130,6 +134,7 @@ function R.finish(self,won)
     local run=lstg.var.rogue_run
     run.won=not run.endless and won and misses()<R.MISS_LIMIT
     run.finished=true
+    rogueMusic.stop(self)
     if GameNet and GameNet.host() then GameNet.finish(run.won) end
     run.score=lstg.var.score;run.misses=lstg.var.dead;run.captures=lstg.var.getsc
     run.revives=lstg.var.revive and lstg.var.revive.used or 0
@@ -149,6 +154,7 @@ local function runCards(self)
     task.Wait(60)
     local config=mode(run)
     local function prepare(entry)
+        if GameHPScale then GameHPScale.enter(run.current) end
         local unit=assert(_sc_pr_table[entry.level][entry.index],'随机卡片已移除')
         local class=unit.sc_group[1].boss
         self.level=entry.level
@@ -157,7 +163,7 @@ local function runCards(self)
             self.rogue_scene_ready=true
             if class._bg then background.Create(class._bg) end
             self.now_music=class.bgm
-            if class.bgm then PlayMusic(class.bgm) end
+            if class.bgm and not rogueMusic.start(self,class.bgm) then PlayMusic(class.bgm) end
         end
         player.protect=math.max(player.protect or 0,90)
         return unit
@@ -273,6 +279,10 @@ local function register(variant,config)
         lstg.var.rogue_run={mode=variant,seed=lstg.var.ran_seed,filters=filters,poolVersion=version,
             cards=R.draw(lstg.var.ran_seed,config.width,filters,version,endless),current=0,completed=0,
             endless=endless,cycle=1,cardIndex=0}
+        if GameHPScale then GameHPScale.init(lstg.var.rogue_run) end
+        -- 曲库取本模式四作的全部原有配乐，不因只选某一Boss而退化成单曲循环。
+        local musicFilters=R.defaultFilters();musicFilters.cards.survival=true;musicFilters.encounters.road=true
+        rogueMusic.init(lstg.var.rogue_run,R.buildPool(musicFilters))
         self.level=29
         task.New(self,function() runCards(self) end)
         New(panel)
@@ -282,6 +292,7 @@ local function register(variant,config)
         end
     end
     function battle:frame()
+        if GameHPScale then GameHPScale.frame() end
         releaseChainGhosts(self)
         if self.rogue_finished then stage.group.frame(self);return end
         if misses()>=R.MISS_LIMIT then R.finish(self,false);return end
@@ -289,6 +300,9 @@ local function register(variant,config)
     end
     function battle:render()
         stage.group.render(self)
+    end
+    function battle:del()
+        rogueMusic.stop(self)
     end
     local result=stage.New(config.result,false,true)
     result.group=group
@@ -342,6 +356,7 @@ function panel:render()
     local previous=lstg.viewmode
     SetViewMode('ui')
     ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)
+    if GameHPScale then GameHPScale.render(lstg.world.scrl/2,165) end
     if previous then SetViewMode(previous) end
 end
 register('single',R.modes.single)

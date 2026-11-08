@@ -44,6 +44,7 @@ function boss:frame()
     -- 原作共享血槽先结算上一帧受击，再检查生命回调；不能等卡的frame之后才扣血。
     if self.th07_shared_damage then TH34Prism.step(self) end
     self._bosssys:frame() --boss系统帧逻辑
+    if GameHPScale then GameHPScale.verify(self) end
     if GameRank then GameRank.verifyHealth(self) end
     self._wisys:frame() --行走图系统帧逻辑
     --受击闪烁

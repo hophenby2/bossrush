@@ -55034,7 +55034,8 @@ local function make_card(build)
     end
     local function u_set_reduction(u, n) u.reduction = n end
     local function u_set_life(u, n)
-        if u.is_boss and GameRank then u.maxhp,u.hp=GameRank.health(u,n,n)
+        if GameHPScale and GameHPScale.enabled() then u.maxhp,u.hp=GameHPScale.health(u,n,n)
+        elseif u.is_boss and GameRank then u.maxhp,u.hp=GameRank.health(u,n,n)
         else u.hp,u.maxhp=n,n end
     end
     ---SET_ITEM_DROP_COUNTS a b ⇒ Dropitem_PFP { 0, b, a }（同 DROP_COUNTS 的口径）。

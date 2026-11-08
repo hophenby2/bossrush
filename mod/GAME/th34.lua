@@ -6979,7 +6979,7 @@ local function TH34_add_stage78_boss()
                     else
                         for k = 2, #LAYER do
                             local L = LAYER[k]
-                            if self.hp < L.at then
+                            if self.hp/(GameHPScale and GameHPScale.factor(self) or 1) < L.at then
                                 if lv < k-1 then
                                     lv = k-1
                                     OriginalStageVisual.presentation.sound.play(7,15,self.x);class.th07_charge6_batch(self,32)   -- 原作 sub128 #7/#15/#23/#31/#39 解锁音
@@ -6989,7 +6989,7 @@ local function TH34_add_stage78_boss()
                                 acc[k] = normalize_ns(acc[k] + L.d)
                             end
                         end
-                        if self.hp < hpS(800) then
+                        if self.hp/(GameHPScale and GameHPScale.factor(self) or 1) < hpS(800) then
                             if lv < 6 then
                                 lv = 6
                                 OriginalStageVisual.presentation.sound.play(7,15,self.x);class.th07_charge6_batch(self,32)   -- 原作 sub128 #47 PLAY_SOUND 0xf
@@ -8181,7 +8181,7 @@ local function TH34_add_stage78_boss()
                     else
                         for k = 2, #LAYER do
                             local L = LAYER[k]
-                            if self.hp < L.at then
+                            if self.hp/(GameHPScale and GameHPScale.factor(self) or 1) < L.at then
                                 if lv < k-1 then
                                     lv = k-1
                                     OriginalStageVisual.presentation.sound.play(7,15,self.x);class.th07_charge6_batch(self,32)   -- 原作 sub124 #7/#15/#23/#31/#39 解锁音

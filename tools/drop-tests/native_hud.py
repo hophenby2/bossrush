@@ -24,10 +24,13 @@ def prepare_hud(output):
         anchor, '                    HUDProbe(host,frames,current)\n' + anchor)
     anchor = '                if started and #records==#entries then'
     assert source.count(anchor) == 1
-    source = source.replace(anchor, anchor + "\n                    if settle==0 then lstg.var.dead=10;lstg.var.rogue_run.current=42 end")
+    source = source.replace(anchor, anchor + "\n                    if settle==0 then lstg.var.dead=10 end")
     anchor = '                    if settle>=120 then complete=true;save(true);break end'
     assert source.count(anchor) == 1
     source = source.replace(anchor, anchor + '\n                    if settle==1 or settle==90 then break end')
+    anchor = '                -- 大批推进只改变验证的墙钟时间'
+    assert source.count(anchor)==1
+    source=source.replace(anchor,'                if HUDNeedRender() then break end\n'+anchor)
     path.write_text(source, encoding='utf-8')
 
 
@@ -36,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     engine.prepare = prepare_hud
-    args.games, args.cases = '35', '3601,3602,3603,3604'
+    args.games, args.cases = '31,32,34,35', '3433,3912,4444,3601,3621'
     args.frames, args.speed, args.seed = 960, 960, 20261108
     args.mode, args.flow = 'timeout', 'single'
     try:
@@ -44,8 +47,8 @@ if __name__ == '__main__':
     except SystemExit as status:
         if status.code == 0:
             report=json.loads((args.output / 'hud-death-result.json').read_text(encoding='utf-8'))
-            assert report['revive']==0 and report['dead']==10 and report['current']==42 and report['finished'] and not report['quiz'],report
-            for name in ('hud-time-filter.png','hud-zero-life.png','hud-result.png'):
+            assert report['revive']==0 and report['dead']==10 and report['current']==5 and report['rank']==0 and report['finished'] and not report['quiz'],report
+            for name in ('hp-menu-collapsed.png','hp-menu-expanded.png','hp-stage-01-age-01.png','hp-stage-01-settled.png','hud-result.png','hp-colors.png'):
                 assert (args.output / 'snapshot' / name).is_file(),name
-            print('时符筛选、零生命、无答题结算与大号阶段数字检查通过。',flush=True)
+            print('阶段HP、首次入场动画、折叠菜单、配色和无Rank结算检查通过。',flush=True)
         raise

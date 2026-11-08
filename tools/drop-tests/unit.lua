@@ -532,7 +532,7 @@ do
     local visible={};for _,call in ipairs(drawn) do visible[call.text]=call end
     check(visible['生命'] and visible['9'] and visible['Bomb'] and visible['3 / 9'],'右上只呈现剩余生命与Bomb库存')
     check(visible['135'].y==314 and visible['175'].y==243 and visible['75%'].y==172,'三项实际数值置于各自属性条下方')
-    check(visible['Rank'] and visible['×1.000'] and visible['×1.000'].x==942,'Rank条旁边呈现实际倍率')
+    check(not visible['Rank'] and not visible['×1.000'],'右下不再显示Rank条或Rank倍率')
     for _,label in ipairs({'最高分','当前分数','擦弹','资金力','死亡数','收卡数','答题复活','读档次数'}) do check(not visible[label],'极简资源栏不显示旧统计：'..label) end
     drawn={};ui.RunHUD.stage(42,144,270,288)
     check(#drawn==1 and drawn[1].text=='42' and drawn[1].scale>=4,'阶段区仅绘制大号阿拉伯数字')
@@ -653,7 +653,8 @@ end
 local f=assert(io.open(root..'/THlib/UI/menu.lua','rb'));local source=f:read('*a'):gsub('\r\n','\n');f:close()
 local section=assert(source:match('(player_system_select = Class%(object%).-)\nlocal valid'))
 -- 菜单抽取段依赖段外的local；保持正式卡池面板，补足测试宿主的只读查询。
-RogueTen={copyFilters=function() return {stages={},difficulties={},encounters={},cards={survival=true}} end,
+RogueTen={POOL_VERSION=7,savedFilters=function() return {stages={},difficulties={},encounters={},cards={survival=false,nonspell=true,spell=true}} end,
+    copyFilters=function() return {stages={},difficulties={},encounters={},cards={survival=false,nonspell=true,spell=true}} end,
     poolStatus=function() return {valid=true,count=410} end}
 assert(loadstring('local rogue_pool_menu=dofile('..string.format('%q',root..'/THlib/UI/rogue_pool.lua')..')\n'..section,'@THlib/UI/menu.lua:player_system_select'))()
 scoredata={UnlockSystem={true,true,true},system_selectid={true,false,true},player_select=1}

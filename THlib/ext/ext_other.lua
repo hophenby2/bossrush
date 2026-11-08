@@ -507,6 +507,7 @@ function ext.MusicFrame(k, i)
     for _, m in pairs(ext.music) do
         m[k] = m[k] + i
     end
+    if k=='timer' and RogueMusic then RogueMusic.frame() end
 end
 function ext.FastMusic()
     for bgm, m in pairs(ext.music) do

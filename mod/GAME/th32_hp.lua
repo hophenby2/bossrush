@@ -12,15 +12,18 @@ function M.raw(o)
     return value
 end
 function M.unit(o,raw,spell)
-    local scale=factor(raw,spell)
+    local scale=factor(raw,spell)*(GameHPScale and GameHPScale.factor(o) or 1)
     o._th06_hp_scale,o._th06_hp_spell=scale,spell
     o.hp,o.maxhp=raw*scale,raw*scale
+    if GameHPScale then GameHPScale.mark(o) end
 end
 function M.main(o,entry,raw)
     local hp=entry and entry.hp or raw
+    hp=hp*(GameHPScale and GameHPScale.factor(o) or 1)
     o._th06_hp_scale=raw>0 and hp/raw or 1
     o._th06_hp_spell=entry and entry.spell or false
     o.hp,o.maxhp=hp,hp
+    if GameHPScale then GameHPScale.mark(o) end
 end
 function M.spell(state,spell)
     if not state or state.spell==spell then return end
@@ -31,9 +34,10 @@ function M.spell(state,spell)
             -- 先还原剩余life，再按原始最大life选比例；切状态不能给残血单位回血。
             local raw=M.raw(o)
             local maximum=o.maxhp/(o._th06_hp_scale or 1)
-            local scale=factor(maximum,spell)
+            local scale=factor(maximum,spell)*(GameHPScale and GameHPScale.factor(o) or 1)
             o._th06_hp_scale,o._th06_hp_spell=scale,spell
             o.hp,o.maxhp=raw*scale,maximum*scale
+            if GameHPScale then GameHPScale.mark(o) end
         end
     end
 end
