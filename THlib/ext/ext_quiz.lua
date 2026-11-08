@@ -80,6 +80,7 @@ local function classes()
                     if line.color=='green' then r,g,b=110,235,145 end
                     local scale=o.count==3 and 0.7 or 0.85
                     if o.count==3 and line.color=='green' and i==2 then scale=0.6 end
+                    scale=line.scale or scale
                     ui:RenderText('title',line.text,o.x,o.y+(#o.text+1-2*i)*12,scale,Color(o.alpha*255,r,g,b),'centerpoint')
                 end
             end

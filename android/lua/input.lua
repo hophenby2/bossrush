@@ -13,10 +13,11 @@ for number = 1, 12 do
     if value then toX[111+number]=value; fromX[value]=111+number end
 end
 local buttons = {
-    { key = 90, action = 'shoot', x = 853, y = 90, radius = 48, label = '射击', toggle = true },
-    { key = 16, action = 'slow', x = 750, y = 92, radius = 40, label = '低速', toggle = true },
-    { key = 88, action = 'spell', x = 853, y = 200, radius = 40, label = 'Bomb' },
-    { key = 67, action = 'special', x = 750, y = 200, radius = 40, label = '特殊' },
+    -- 右侧最底一行留给触控，属性和两人九枚Bomb库存都在按钮上方。
+    { key = 90, action = 'shoot', x = 713, y = 43, radius = 28, label = '射击', toggle = true },
+    { key = 16, action = 'slow', x = 781, y = 43, radius = 28, label = '低速', toggle = true },
+    { key = 88, action = 'spell', x = 849, y = 43, radius = 28, label = 'Bomb' },
+    { key = 67, action = 'special', x = 917, y = 43, radius = 28, label = '特殊' },
     { key = 27, x = 874, y = 488, radius = 30, label = '暂停' },
 }
 local menuButtons = {
@@ -262,7 +263,7 @@ function I.render()
         SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
         RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
         local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
-        RenderTTF('title', label, b.x, b.y, Color(230, 235, 241, 247), 'centerpoint')
+        ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .5,Color(230,235,241,247),'centerpoint')
     end
     if not menuMode then
         SetImageState('white', '', Color(90, 34, 57, 82))

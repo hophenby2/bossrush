@@ -387,7 +387,7 @@ function ui_drawing:Afterrender()
             ui.DrawScore(self)
         end
         lstg.system:render()
-        if not setting.displaykey then
+        if not setting.displaykey or AndroidPlatform then
             return
         end
 
@@ -395,6 +395,8 @@ function ui_drawing:Afterrender()
         local w = lstg.world
         local size = 1.5 - (w.scrr - 672) / 128 * 0.5
         local x, y = (w.scrr + 960) / 2, w.scrb + size * 25 + 5
+        -- 新库存占用右侧下部，按键示意移到左侧空白，避免盖住正在恢复的星形。
+        if GameDrops and GameDrops.bombsEnabled() then x=w.scrl/2 end
 
         for _, i in ipairs(self.pos) do
 

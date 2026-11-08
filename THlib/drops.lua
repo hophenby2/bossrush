@@ -1,5 +1,5 @@
 -- 击破阶段后的红蓝绿三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=4,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=3}
+local D={VERSION=5,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -15,11 +15,13 @@ D.colorPool={
     {{'green','add',-5}},{{'green','add',-10}},{{'green','add',-15}},
     {{'green','mul',9,10}},{{'green','mul',4,5}},
 }
-local function three() return lstg.var.__drops_version==3 or lstg.var.__drops_version==D.VERSION end
+local function three() local v=lstg.var.__drops_version;return v==3 or v==4 or v==D.VERSION end
 local function modern() return three() or lstg.var.__drops_version==2 end
+-- 库存规则进入初态版本，旧录像的三枚上限不能因新UI改动而变成九枚。
+function D.bombLimit() return lstg.var.__drops_version==D.VERSION and D.BOMB_MAX or 3 end
 local function fresh()
     local p={red=10000,blue=10000,clock=-1,fraction=0}
-    if modern() then p.bombs=D.BOMB_MAX;p.bomb_fraction=0 end
+    if modern() then p.bombs=D.BOMB_INITIAL;p.bomb_fraction=0 end
     if three() then p.green=10000 end
     return p
 end
@@ -112,11 +114,12 @@ function D.playerStep(p)
     if p._drop_first_frame then c.clock=(p.timer or 0)-1;p._drop_first_frame=false end
     if modern() then
         -- 满库存不积攒额外恢复量；恢复使用整数，蓝色只参与 Bomb 计时。
-        if c.bombs<D.BOMB_MAX then
+        local limit=D.bombLimit()
+        if c.bombs<limit then
             c.bomb_fraction=c.bomb_fraction+c.blue
             local unit=D.BOMB_FRAMES*10000;local restored=math.floor(c.bomb_fraction/unit)
-            c.bombs=math.min(D.BOMB_MAX,c.bombs+restored)
-            c.bomb_fraction=c.bombs==D.BOMB_MAX and 0 or c.bomb_fraction-restored*unit
+            c.bombs=math.min(limit,c.bombs+restored)
+            c.bomb_fraction=c.bombs==limit and 0 or c.bomb_fraction-restored*unit
         else c.bomb_fraction=0 end
         return
     end
@@ -162,7 +165,7 @@ function D.draw(seed,index)
     if three() then
         -- 保留红、蓝、绿的抽样顺序；新版只交换前两列，旧录像仍按原位置接取。
         local red,blue,green=gen:Int(1,5)*2-1,gen:Int(1,5)*2,gen:Int(11,15)
-        if lstg.var.__drops_version==D.VERSION then return {blue,red,green} end
+        if lstg.var.__drops_version>=4 then return {blue,red,green} end
         return {red,blue,green}
     end
     if modern() then return {gen:Int(1,5)*2-1,gen:Int(1,5)*2} end
@@ -263,33 +266,86 @@ function D.optionLines(id)
     local out={}
     for _,op in ipairs((modern() and D.colorPool or D.pool)[id]) do
         local text=op[2]=='add' and string.format('%+d',op[3]) or ('×'..number(op[3]/op[4]))
-        local label=op[1]=='red' and '红 ' or op[1]=='blue' and '蓝 ' or '绿 判定 '
         if op[1]=='green' and op[2]=='add' then text=text..'个百分点' end
         if op[1]=='green' then
             out[#out+1]={color='green',text='绿 判定'}
             out[#out+1]={color='green',text=text}
-        else out[#out+1]={color=op[1],text=label..text} end
+        else
+            local name=op[1]=='red' and '火力' or modern() and 'Bomb恢复速度' or '射速'
+            out[#out+1]={color=op[1],text=name,scale=op[1]=='blue' and modern() and .5 or .7}
+            out[#out+1]={color=op[1],text=text}
+        end
     end
     return out
 end
 function D.render()
     -- 选项由共用 Question / Choice 与中玉实体随 ObjRender 绘制，不再叠加面板。
 end
+-- 直接裁切同一张绿色大星的纹理；满星与扇形共用尺寸，避开弹图默认的0.5缩放。
+local function bombStar(x,y,size,fraction,alpha)
+    if fraction<=0 then return end
+    local tex,u,v,w,h=GetImageTextureRegion('star_big10') -- COLOR.GREEN对应的原有star_big。
+    local color=Color(alpha,255,255,255)
+    local function vertex(dx,dy)
+        return {x+dx*size,y+dy*size,.5,u+(.5+dx)*w,v+(.5-dy)*h,color}
+    end
+    if fraction>=1 then
+        RenderTexture(tex,'',vertex(-.5,.5),vertex(.5,.5),vertex(.5,-.5),vertex(-.5,-.5))
+        return
+    end
+    -- 从正上方顺时针扫过方形，经过每个角补一个三角面，保持原星形轮廓和UV。
+    local sweep=fraction*2*math.pi
+    local center,previous=vertex(0,0),vertex(0,.5)
+    local function edge(angle)
+        local dx,dy=math.sin(angle),math.cos(angle)
+        local radius=.5/math.max(math.abs(dx),math.abs(dy))
+        local nextVertex=vertex(dx*radius,dy*radius)
+        RenderTexture(tex,'',center,previous,nextVertex,center)
+        previous=nextVertex
+    end
+    for corner=1,4 do
+        local angle=(corner*2-1)*math.pi/4
+        if angle>=sweep then break end
+        edge(angle)
+    end
+    edge(sweep)
+end
+function D.renderBombs(x1,x2,y,alpha,count)
+    local limit=D.bombLimit()
+    local stock=D.bombState(1)
+    local value=count==2 and ('P1 %d / P2 %d'):format(stock,D.bombState(2)) or ('%d / %d'):format(stock,limit)
+    ui:RenderStatusRow('Bomb',value,x1,x2,y,alpha,{110,235,145},.8)
+    for slot=1,count do
+        local bombs,fraction=D.bombState(slot)
+        local left=x1+(count==2 and 26 or 0)
+        local step=(x2-left)/limit
+        local cy=y-25-(slot-1)*28
+        local size=count==2 and 23 or 26
+        if count==2 then ui:RenderText('title','P'..slot,x1,cy-6,.55,Color(alpha,110,235,145),'left','bottom') end
+        for i=1,limit do
+            local x=left+(i-.5)*step
+            if i<=bombs then bombStar(x,cy,size,1,alpha)
+            else
+                bombStar(x,cy,size,1,alpha*.18)
+                if i==bombs+1 then bombStar(x,cy,size,fraction,alpha) end
+            end
+        end
+    end
+end
 function D.renderHUD(scrr,scrt,alpha)
     if not D.enabled() then return end
     local count=(GameNet and GameNet.host()) and 2 or 1
-    for i=1,count do
-        local red,blue,green=D.values(i);local y=scrt-240-(i-1)*(three() and 64 or modern() and 44 or 24);local label=count==2 and ('P'..i..' ') or ''
-        ui:RenderText('title',label..'火力 '..number(red),scrr+6,y,0.65,Color(alpha,255,120,125),'left','bottom')
-        ui:RenderText('title',(modern() and 'Bomb恢复 ' or '射速 ')..number(blue),scrr+150,y,0.65,Color(alpha,110,190,255),'left','bottom')
-        if modern() then
-            local bombs,progress=D.bombState(i)
-            ui:RenderText('title',string.format('Bomb %d/%d  %.0f%%  [X]',bombs,D.BOMB_MAX,progress*100),scrr+6,y-20,0.6,Color(alpha,110,190,255),'left','bottom')
-        end
-        if three() then
-            ui:RenderText('title','判定 '..number(green)..'%',scrr+6,y-40,0.6,Color(alpha,110,235,145),'left','bottom')
-        end
+    local red,blue,green=D.values(1)
+    local values={number(red),number(blue),number(green)..'%'}
+    if count==2 then
+        local r,b,g=D.values(2)
+        for i,v in ipairs({number(r),number(b),number(g)..'%'}) do values[i]='P1 '..values[i]..' / P2 '..v end
     end
+    local scale=count==2 and .6 or .8
+    ui:RenderStatusRow('火力',values[1],scrr+6,954,scrt-250,alpha,{255,120,125},scale)
+    ui:RenderStatusRow(modern() and 'Bomb恢复速度' or '射速',values[2],scrr+6,954,scrt-280,alpha,{110,190,255},scale)
+    if three() then ui:RenderStatusRow('判定',values[3],scrr+6,954,scrt-310,alpha,{110,235,145},scale) end
+    if modern() then D.renderBombs(scrr+6,954,scrt-350,alpha,count) end
 end
 function D.signature()
     local s=peek();if not s then return 'drops=none' end

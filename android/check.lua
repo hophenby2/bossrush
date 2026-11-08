@@ -77,18 +77,18 @@ end
 lstg = { var={}, GetKeyState=function() return false end, GetLastKey=function() return 0 end }
 local input = dofile('android/lua/input.lua')
 input.touch(1, 180, 130, 'began')
-input.touch(2, 853, 90, 'began')
-input.touch(3, 750, 92, 'began')
+input.touch(2, 713, 43, 'began')
+input.touch(3, 781, 43, 'began')
 assert(lstg.GetKeyState(39) and lstg.GetKeyState(90) and lstg.GetKeyState(16))
-input.touch(2, 853, 90, 'ended')
+input.touch(2, 713, 43, 'ended')
 assert(lstg.GetKeyState(39) and lstg.GetKeyState(16) and lstg.GetKeyState(90), '射击抬手后保持开启')
-input.touch(6,853,90,'began');assert(not lstg.GetKeyState(90) and lstg.GetKeyState(16), '再次点击立即关闭射击，低速独立')
-input.touch(6,853,90,'moved');assert(not lstg.GetKeyState(90), '移动事件不重复切换')
-input.touch(6,853,90,'ended')
-input.touch(4, 750, 92, 'began')
-input.touch(3, 750, 92, 'cancelled')
+input.touch(6,713,43,'began');assert(not lstg.GetKeyState(90) and lstg.GetKeyState(16), '再次点击立即关闭射击，低速独立')
+input.touch(6,713,43,'moved');assert(not lstg.GetKeyState(90), '移动事件不重复切换')
+input.touch(6,713,43,'ended')
+input.touch(4, 781, 43, 'began')
+input.touch(3, 781, 43, 'cancelled')
 assert(not lstg.GetKeyState(16), '第二次点击关闭低速，取消另一个触点不会反转开关')
-input.touch(4,750,92,'ended');input.touch(7,750,92,'began');input.touch(7,750,92,'ended')
+input.touch(4,781,43,'ended');input.touch(7,781,43,'began');input.touch(7,781,43,'ended')
 assert(lstg.GetKeyState(16), '重新点击并抬手保持低速')
 input.touch(5, 500, 400, 'began'); assert(lstg.GetMouseState(0))
 input.touch(5, 500, 420, 'moved'); assert(input.wheel == -160)
@@ -107,7 +107,7 @@ cc.Director = { getInstance=function() return {
 } end }
 screen = { scale=2, dx=240, dy=0 }
 input.install({})
-local touch = { getId=function() return 42 end, getLocation=function() return { x=1946, y=180 } end }
+local touch = { getId=function() return 42 end, getLocation=function() return { x=1666, y=86 } end }
 handlers[1]({touch}); assert(lstg.GetKeyState(90))
 handlers[3]({touch}); assert(lstg.GetKeyState(90), '原生抬手仍保持射击')
 handlers[1]({touch});handlers[3]({touch});assert(not lstg.GetKeyState(90), '原生再次点击关闭射击')
@@ -116,7 +116,7 @@ player = { x=0, y=0, hspeed=4, lspeed=2, death=0 }
 lstg.world = { l=-192,r=192,b=-224,t=224,scrl=288,scrr=672,scrb=46,scrt=494,pl=-192,pr=192,pb=-224,pt=224 }
 input.touch(1,400,270,'began')
 assert(not lstg.GetKeyState(39) and not lstg.GetMouseState(0))
-input.touch(2,853,90,'began'); input.touch(3,750,92,'began')
+input.touch(2,713,43,'began'); input.touch(3,781,43,'began')
 input.touch(1,430,290,'moved')
 assert(player.x==0 and player.y==0, '拖拽不能绕过原游戏移动和录像系统')
 assert(lstg.GetKeyState(39) and lstg.GetKeyState(38) and lstg.GetKeyState(90) and lstg.GetKeyState(16))
@@ -139,7 +139,7 @@ input.touch(9,input.touches[9].x+20,270,'moved');input.beginFrame()
 assert(input.targetX>player.x,'显式锁定也保留拖动目标供逻辑帧处理')
 player.lock=false;player.protect=0
 input.reset(); player.death=0; setting={keys={shoot=65,right=68}}
-input.touch(10,180,130,'began'); input.touch(11,853,90,'began')
+input.touch(10,180,130,'began'); input.touch(11,713,43,'began')
 assert(lstg.GetKeyState(68) and lstg.GetKeyState(65) and not lstg.GetKeyState(90))
 local atTitle,atPause=false,false
 ext={StageIsMenu=function() return atTitle end,pause_menu={IsKilled=function() return not atPause end}}
@@ -149,7 +149,7 @@ atPause=false;input.beginFrame();assert(lstg.GetKeyState(65), '继续游戏自�
 atTitle=true;input.beginFrame()
 assert(not lstg.GetKeyState(68) and not lstg.GetKeyState(65) and not input.toggles.shoot, '回到标题清除开关')
 atTitle=false;input.beginFrame();assert(lstg.GetKeyState(65),'进关默认射击')
-input.touch(12,853,90,'began');input.touch(12,853,90,'ended');assert(not lstg.GetKeyState(65),'手动关闭默认射击')
+input.touch(12,713,43,'began');input.touch(12,713,43,'ended');assert(not lstg.GetKeyState(65),'手动关闭默认射击')
 input.reset();input.beginFrame();assert(not lstg.GetKeyState(65), '切后台 / 失焦使用完整重置，清除开关')
 local paused,sceneRenders,blurs,copies=false,0,0,0
 PostEffect=function(fx) if fx=='fx:pause_menu_blur' then blurs=blurs+1 else copies=copies+1 end end

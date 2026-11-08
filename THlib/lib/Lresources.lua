@@ -178,6 +178,11 @@ function GetImageSize(img)
     return unpack(ImageSize[img])
 end
 
+-- 自绘裁切沿用已注册图片的实际图集区域，避免UI另存一份易失配的UV常量。
+function GetImageTextureRegion(img)
+    return unpack(ImageParam[img],1,5)
+end
+
 local TextureSize = {}--缓存纹理大小
 local OriginalLoadTexture = LoadTexture
 local OriginalGetTextureSize = GetTextureSize

@@ -2,6 +2,7 @@ Include "THlib\\UI\\font.lua"
 Include "THlib\\UI\\title.lua"
 Include "THlib\\UI\\sc_pr.lua"
 ui = {}
+ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.version = "v5.1.2"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
@@ -575,32 +576,17 @@ function lstg_ui:drawInfo1()
     end--dead&getsc
 
     do
-        SetImageState("line_7", "", falpha, 255, 255, 255)
-        RenderRect("line_7", scrr + 6, 960 - 6, scrt - 66, scrt - 74)
-        ui:RenderText(ttf, "擦弹：", scrr + 6, scrt - 70,
-                0.8, Color(falpha, 173, 173, 173), left, bottom)
-        ui:RenderText(ttf, var.graze, 960 - 6, scrt - 70,
-                0.8, Color(falpha, 173, 173, 173), right, bottom)
-        RenderRect("line_7", scrr + 6, 960 - 6, scrt - 96, scrt - 104)
-        ui:RenderText(ttf, "资金力：", scrr + 6, scrt - 100,
-                0.8, Color(falpha, 255, 227, 132), left, bottom)
-        ui:RenderText(ttf, scoredata.money, 960 - 6, scrt - 100,
-                0.8, Color(falpha, 255, 227, 132), right, bottom)
+        ui:RenderStatusRow('擦弹',var.graze,scrr+6,954,scrt-70,falpha)
+        ui:RenderStatusRow('资金力',scoredata.money,scrr+6,954,scrt-100,falpha,{255,227,132})
         if var.saving > 0 then
-            RenderRect("line_7", scrr + 6, 960 - 6, scrt - 126, scrt - 134)
-            ui:RenderText(ttf, "读档次数：", scrr + 6, scrt - 130,
-                    0.8, Color(falpha, 150, 150, 150), left, bottom)
-            ui:RenderText(ttf, var.saving, 960 - 6, scrt - 130,
-                    0.8, Color(falpha, 150, 150, 150), right, bottom)
+            ui:RenderStatusRow('读档次数',var.saving,scrr+6,954,scrt-130,falpha,{150,150,150})
         end
         if var.revive then
-            ui:RenderText(ttf,("答题复活：%d / 3"):format(var.revive.used or 0),scrr+6,scrt-160,
-                    0.7,Color(falpha,173,210,230),left,bottom)
+            ui:RenderStatusRow('答题复活',('%d / 3'):format(var.revive.used or 0),scrr+6,954,scrt-160,falpha,{173,210,230})
         end
         if GameRank and GameRank.enabled() then
-            local color=Color(falpha,173,225,205)
-            ui:RenderText(ttf,("Rank %.1f / 100"):format(GameRank.value()),scrr+6,scrt-190,0.7,color,left,bottom)
-            ui:RenderText(ttf,("弹速 ×%.3f  下卡HP ×%.3f"):format(GameRank.factor(),GameRank.factor()),scrr+6,scrt-214,0.52,color,left,bottom)
+            ui:RenderStatusRow('Rank',('%.1f / 100'):format(GameRank.value()),scrr+6,954,scrt-190,falpha,{173,225,205})
+            ui:RenderStatusRow('弹速 / 下卡HP',('×%.3f'):format(GameRank.factor()),scrr+6,954,scrt-220,falpha,{173,225,205},.7)
         end
         if GameDrops then GameDrops.renderHUD(scrr,scrt,falpha) end
     end--other

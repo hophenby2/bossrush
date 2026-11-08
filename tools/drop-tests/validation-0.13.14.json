@@ -1,0 +1,62 @@
+{
+  "version": "0.13.14-android",
+  "version_code": 32,
+  "date": "2026-11-08",
+  "checks": {
+    "drops": 6835,
+    "roguelike": 2460,
+    "android_contract": "通过",
+    "android_always_drag": "通过",
+    "android_pause": "通过",
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\hud-v5-20261108-c",
+      "version": "LuaSTG Sub v0.21.129",
+      "completed": 4,
+      "frames": [
+        960,
+        960,
+        960,
+        960
+      ],
+      "errors": {},
+      "screenshots": [
+        "th35-3601-timeout-late.png",
+        "th35-3601-timeout.png",
+        "th35-3602-timeout-late.png",
+        "th35-3602-timeout.png",
+        "th35-3603-timeout-late.png",
+        "th35-3603-timeout.png",
+        "th35-3604-timeout-late.png",
+        "th35-3604-timeout.png"
+      ]
+    },
+    "apk": {
+      "resources": 2521,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测",
+    "额外的--dual检查在既有tools/check_dual_rogue.lua对象桩中缺少timer，报THlib/anm/stage_visual.lua:419；未计入通过项。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.14.apk",
+    "bytes": 571701467,
+    "sha256": "fa7983e4d502c20af70068fcf544d70ce8e63a64f9255502f3559eb0f84afaaf"
+  },
+  "sources_sha256": {
+    "THlib/UI/UI.lua": "26c19089b9107e467e428f998acfdd07f564935a1ad92532b26856b9755dfec1",
+    "THlib/UI/status_row.lua": "262665652e1c96c1723ce322e1413286a1281cdf41b2fabae78d28728fc389f9",
+    "THlib/drops.lua": "fe03a064c786d1bb27ddeff231de7e8e0a58360af59d27ece77a3b0aa2cde23a",
+    "THlib/ext/ext_other.lua": "9b328a7ed8115562b98f62e75e44db907e62f768e7f01395bea55ed09c40d31e",
+    "THlib/ext/ext_quiz.lua": "0028106c523f2ad2b1935604d985246108bb4f5856b7a768b750d8f93ff59783",
+    "THlib/lib/Lresources.lua": "c84d5a3709e142cfaf8ac99d444752dec033aeee633769b99f5b153f43e5fabb",
+    "android/lua/input.lua": "743a64b5fc8af97471d426c3989251a51b21dd8695b1f75e16ca9276c0356987",
+    "android/AndroidManifest.xml": "efaf700aba562e9ffa4e2416f988c06684ef22ca6cb4a20420c5ecb7b2a8cec7"
+  }
+}

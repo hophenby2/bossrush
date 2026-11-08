@@ -22,8 +22,11 @@ SearchStageLevel={};SetCurSystem=noop;GetGlobal=function(k) return lstg.var[k] e
 for _,name in ipairs({'CopyImage','CopyAnimation','LoadTexture','LoadImage','LoadPS','LoadImageGroup','LoadAnimation','SetImageState','SetAnimationState','SetAnimationCenter','SetImageCenter','LoadImageFromFile','SetImageScale'}) do _G[name]=noop end
 GetTextureSize=function() return 512,512 end
 Color=function(a,r,g,b) return {a=a,r=r,g=g,b=b} end
+GetImageTextureRegion=function(img) assert(img=='star_big10');return 'v310_bullet2',224,128,32,32 end
+RenderTexture=noop
 local drawn={};SetViewMode=noop;RenderRect=noop
 ui={RenderText=function(_,font,text,x,y,scale,color) drawn[#drawn+1]={text=text,color=color,x=x,y=y,mode=lstg.viewmode} end}
+ui.RenderStatusRow=load('THlib/UI/status_row.lua')
 GetAttr=function(o,k) return rawget(o,k) end;SetAttr=rawset
 load('THlib/lib/Lobject.lua');load('THlib/plus/Utility.lua');load('THlib/eventListener.lua')
 task={Do=noop,Clear=noop,New=noop,SetMode={[1]=function(x) return x end,[2]=function(x) return x end,[3]=function(x) return x end}}
@@ -272,7 +275,7 @@ local early=pick(true);check(early<stationary,'向上移动可以提前接取')
 pick(false,true);local r1,b1=D.values(1);local r2,b2=D.values(2)
 check(r1==105 and b1==100 and r2==100 and b2==105,'联机两人独立选择，各自生效')
 drawn={};D.renderHUD(672,504,255);local text={};for _,v in ipairs(drawn) do text[#text+1]=v.text end
-check(table.concat(text,'|'):find('P1 火力 105',1,true) and table.concat(text,'|'):find('P2 火力 100',1,true),'右侧 HUD 显式显示两位玩家数值')
+check(table.concat(text,'|'):find('火力：|P1 105 / P2 100',1,true),'右侧 HUD 显式显示两位玩家数值，标签和数值左右对齐')
 -- 真正死亡时先让重生逻辑继续，不冻结在死亡状态里。
 reset();p=hero(reimu_player);p.death=90;D.award(boss(72));check(not D.frame(stage.current_stage) and not lstg.var.upgrades.active,'死亡时延后开始选项落下')
 p.death=0;check(not D.frame(stage.current_stage) and D.active(),'重生后叠加选择，但不接管战斗')
@@ -354,12 +357,14 @@ local widget={boss=b,infobar=part(),timeCounter=part(),pointer=part()};lstg.view
 check(calls==3 and lstg.viewmode=='ui','Boss信息栏显示完成恢复调用方视图')
 GameRank,task.Smooth=oldRank,oldSmooth
 lstg.world=oldWorld;_G.boss,SetViewMode,Render,RenderText,SetFontState,Dist=oldBoss,oldView,oldRender,oldText,oldFont,oldDist
+local originalDraw=D.draw
 local diagnostic=load('android/lua/drops_check.lua');RogueTen=nil
 check(pcall(diagnostic.install,'drops-new'),'私有诊断不提前访问尚未加载的随机模式')
 R.P.init();lstg.var.__drops_version=1;D.reset();stage.current_stage={is_menu=false,timer=0,stage_name='test'}
 check(pcall(D.frame,stage.current_stage),'私有诊断能在测试槽写出状态，使用独立文件而非受限存档文件名')
 local df=assert(io.open(R.P.userRoot()..'/drops-check.json','rb'));local data=DeSerialize(df:read('*a'));df:close()
 check(data.phase=='battle' and data.red==100 and data.blue==100,'真实诊断输出包含初始数值')
+D.draw=originalDraw
 
 
 -- 新版：红蓝选项独立、匀速掉落和自然恢复 Bomb；旧版回归继续保留在上文。
@@ -427,6 +432,86 @@ Q.clearSelection('modern');check(not IsValid(board.mask),'选取结束清理遮�
 local top=Q.top(70,120,true)
 check(Q.contact({x=-90,y=top+5},{x=-90,y=top-1,A=3},69,70,2,120,true)==1,'接取扫掠与显示使用同一匀速轨迹')
 
+-- 九枚库存使用新初态版本；旧录像的恢复封顶和选项位置仍必须逐帧一致。
+do
+    for _,version in ipairs({2,3,4,D.VERSION}) do
+        modernReset();lstg.var.__drops_version=version;D.reset()
+        local p=New(reimu_player);local c=lstg.var.upgrades.players[1]
+        check(D.bombState(p)==3,'各版初始持有三枚Bomb：'..version)
+        local limit=version==D.VERSION and 9 or 3
+        check(D.bombLimit()==limit,'版本对应的库存上限：'..version)
+        if version>=3 then
+            check(D.hitboxScale(p)==1 and c.green==10000,'三色版本保留判定属性：'..version)
+            local options=D.draw(18373,5)
+            check(options[1]%2==(version>=4 and 0 or 1) and options[3]>=11,'新旧三色选项位置：'..version)
+        end
+        c.bomb_fraction=D.BOMB_FRAMES*10000-10000;D.playerStep(p)
+        check(D.bombState(p)==(version==D.VERSION and 4 or 3),'初始三枚时新版继续恢复，旧版封顶：'..version)
+        c.bombs=limit-1;c.bomb_fraction=D.BOMB_FRAMES*10000-1;c.blue=100000
+        D.playerStep(p)
+        local stock,progress=D.bombState(p)
+        check(stock==limit and progress==0,'最后一枚恢复时封顶，余量归零：'..version)
+        D.playerStep(p);stock,progress=D.bombState(p)
+        check(stock==limit and progress==0,'满库存不额外蓄积：'..version)
+    end
+    modernReset();lstg.var.__drops_version=D.VERSION;D.reset()
+    local p=New(reimu_player);local c=lstg.var.upgrades.players[1]
+    c.bombs=9;c.bomb_fraction=12345
+    local previous=lstg.system;local cast=0;lstg.system={castCharge4=function() cast=cast+1 end}
+    check(D.bombInput(p,{spell=true},{}) and c.bombs==8 and cast==1 and c.bomb_fraction==12345,'九枚库存释放消耗一枚，保留原有恢复量')
+    check(not D.bombInput(p,{spell=true},{spell=true}) and c.bombs==8,'长按Bomb不重复扣库存')
+    lstg.system=previous
+    local red,blue=D.optionLines(1),D.optionLines(8)
+    check(red[1].text=='火力' and red[2].text=='+5','红色掉落同时显示属性名和增量')
+    check(blue[1].text=='Bomb恢复速度' and blue[2].text=='×1.1','蓝色掉落同时显示Bomb恢复速度和倍率')
+    local renderTexture=RenderTexture;local quads={}
+    RenderTexture=function(tex,blend,...)
+        check(tex=='v310_bullet2' and blend=='','Bomb使用已有绿色大星图集和普通混合')
+        quads[#quads+1]={...}
+    end
+    c.bombs=3
+    for _,part in ipairs({0,.25,.5,.75}) do
+        c.bomb_fraction=part*D.BOMB_FRAMES*10000;quads={}
+        local before=Serialize(lstg.var);D.renderBombs(678,954,144,255,1)
+        check(Serialize(lstg.var)==before,'库存图标渲染不改变录像初态和恢复量')
+        local whole,dim,triangles=0,0,{}
+        for _,quad in ipairs(quads) do
+            if quad[1][6].a<255 then dim=dim+1
+            elseif quad[1]==quad[4] then triangles[#triangles+1]=quad
+            else whole=whole+1 end
+            for _,vertex in ipairs(quad) do
+                check(vertex[4]>=224-1e-8 and vertex[4]<=256+1e-8 and vertex[5]>=128-1e-8 and vertex[5]<=160+1e-8,'裁切UV保持绿色star_big10范围')
+            end
+        end
+        check(whole==3 and dim==6,'九个槽位中三颗满星、六颗暗星')
+        if part==0 then check(#triangles==0,'零进度不画恢复扇区')
+        else
+            local area=0
+            for _,q in ipairs(triangles) do
+                local a,b,d=q[1],q[2],q[3]
+                area=area+math.abs((b[1]-a[1])*(d[2]-a[2])-(d[1]-a[1])*(b[2]-a[2]))/2
+            end
+            check(near(area,26*26*part),'四分之一、半枚和四分之三按实际角度裁切星形')
+            local last=triangles[#triangles];local center,edge=last[1],last[3]
+            local dx,dy=edge[1]-center[1],edge[2]-center[2]
+            check(part==.25 and near(dx,13) and near(dy,0) or part==.5 and near(dx,0) and near(dy,-13) or part==.75 and near(dx,-13) and near(dy,0),'恢复从顶部顺时针到达90、180、270度')
+        end
+    end
+    quads={};c.bombs=9;c.bomb_fraction=0;D.renderBombs(678,954,144,255,1)
+    check(#quads==9,'九枚满库存只绘制九颗完整星形')
+    for _,q in ipairs(quads) do check(q[1][6].a==255,'九枚满星全部明亮') end
+    quads={};c.bombs=3;c.bomb_fraction=0;lstg.var.upgrades.players[2].bombs=2
+    D.renderBombs(678,954,144,255,2)
+    check(#quads==18,'联机分别显示两行九槽库存')
+    for i,q in ipairs(quads) do
+        local cy=i<=9 and 119 or 91
+        check(q[1][1]>=678 and q[2][1]<=954 and near(q[1][2],cy+11.5),'联机两行星形留在右侧UI范围内')
+    end
+    RenderTexture=renderTexture
+    lstg.var.upgrades=nil;local before=Serialize(lstg.var);D.renderHUD(672,494,255)
+    check(Serialize(lstg.var)==before,'新版零帧HUD保持只读，不建立成长状态')
+end
+
 -- 复用正式花映冢效果与协程，而非复制一套近似 Bomb。
 modernReset();p=New(reimu_player);player=p
 LoadSound=noop;LoadImageSetCenter=noop;LoadAniFromFile=noop;DoFile=noop
@@ -455,6 +540,16 @@ modernReset();p=New(cooldown);p.x=0;p.y=-100;player=p
 lstg.world.scrl=288;lstg.world.scrr=672;lstg.world.scrb=46;lstg.world.scrt=494
 I.beginFrame();menuMode=false;I.beginFrame()
 check(I.toggles.shoot and I.toggles.slow,'手机进关卡默认开启低速和射击')
+do
+    local rect,ttf=RenderRect,RenderTTF;local buttons={}
+    RenderRect=function(_,x1,x2,y1,y2) buttons[#buttons+1]={x1,x2,y1,y2} end
+    RenderTTF=noop;I.render();RenderRect,RenderTTF=rect,ttf
+    for i=1,4 do
+        local b=buttons[i]
+        check(b[1]>=678 and b[2]<=954 and b[3]>=0 and b[4]<79.5,'四个触控按钮不遮挡属性和两人库存')
+        if i>1 then check(b[1]>buttons[i-1][2],'底部触控按钮互不重叠') end
+    end
+end
 local function mobileFrame()
     I.beginFrame();KeyState={shoot=I.keys[90] or false,slow=I.keys[16] or false};I.readMovement(KeyState)
     p._playersys:frame()
@@ -465,8 +560,8 @@ check(near(p.x,1.6) and near(p.y,-98.8),'3:4 拖拽按原低速沿精确角度�
 I.touch(1,310,360,'moved');local beforeX,beforeY=p.x,p.y;mobileFrame()
 check(p.x<beforeX and p.y>beforeY and near(((p.x-beforeX)^2+(p.y-beforeY)^2)^0.5,p.lspeed),'拖动途中改位置立即改变终点，速度保持一致')
 I.touch(1,310,360,'ended');beforeX,beforeY=p.x,p.y;mobileFrame();check(p.x==beforeX and p.y==beforeY and KeyState.touch_x==nil,'抬手当帧停止移动')
-I.touch(2,853,200,'began');check(I.movementId==nil and I.keys[88],'右侧 Bomb 按钮不抢移动');I.touch(2,853,200,'ended')
-I.touch(3,750,92,'began');I.touch(3,750,92,'ended');check(not I.toggles.slow,'低速开关可手动关闭')
+I.touch(2,849,43,'began');check(I.movementId==nil and I.keys[88],'右侧 Bomb 按钮不抢移动');I.touch(2,849,43,'ended')
+I.touch(3,781,43,'began');I.touch(3,781,43,'ended');check(not I.toggles.slow,'低速开关可手动关闭')
 paused=true;I.beginFrame();paused=false;I.beginFrame();check(not I.toggles.slow and I.toggles.shoot,'暂停回来保持手动开关')
 stage.current_stage={is_menu=false,timer=0};I.beginFrame();check(I.toggles.slow and I.toggles.shoot,'下一关重新默认低速和射击')
 -- 默认场地所有中心区域均可起拖，边缘 UI 不产生拖拽。
@@ -512,7 +607,7 @@ I.reset();setting.touchBombInterval=nil;tapClock=4;I.touch(31,400,270,'began');I
 tapClock=4.05;I.touch(32,400,270,'began');check(not lstg.GetKeyState(88),'拖动后回原点也不会被当成第一次点击')
 I.reset();tap(31,400,270,5,'cancelled');tapClock=5.05;I.touch(32,400,270,'began')
 check(not lstg.GetKeyState(88),'取消触点不构成双击')
-I.reset();tap(31,853,90,6);tapClock=6.05;I.touch(32,400,270,'began')
+I.reset();tap(31,713,43,6);tapClock=6.05;I.touch(32,400,270,'began')
 check(not lstg.GetKeyState(88),'点击射击按钮不会与战斗区触点组合成双击')
 I.reset();lstg.AndroidClock=nil
 
