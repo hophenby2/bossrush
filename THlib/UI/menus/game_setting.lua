@@ -26,7 +26,6 @@ local function other_setting_default()
     cs.touchBombInterval = ds.touchBombInterval
     cs.touchUnlimited = ds.touchUnlimited
     cs.androidNativeResolution = ds.androidNativeResolution
-    cs.androidPortrait = ds.androidPortrait
 
 end
 
@@ -287,7 +286,6 @@ end
 
 game_setting = Class(object)
 function game_setting:init(exit)
-    self.restoreDefaults=other_setting_default
     self.alpha = 0
     self.layer = LAYER.TOP
     self.group = GROUP.GHOST
@@ -354,8 +352,6 @@ function game_setting:init(exit)
             Newsetting_bar("双击 Bomb 最大间隔","touchBombInterval",10,50,50,500,10,
                 _line,x2,y2-h2,y2,function(t) return ("%.2f 秒"):format(t/1000) end),
             Newsetting_button("拖动无移速限制（下一局）","touchUnlimited",_line,x2,y2-h2*2,y2-h2),
-            AndroidPortrait and Newsetting_button("竖屏模式","androidPortrait",_line,x2,y2-h2*3,y2-h2*2,
-                nil,function() ChangeVideoMode2(cur_setting) end) or nil,
         })
     end
     self.menus[self.pos1].choosing = true
@@ -489,7 +485,6 @@ function game_setting:frame()
     end
 end
 function game_setting:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.settings(self) end
     if self.alpha == 0 then
         return
     end

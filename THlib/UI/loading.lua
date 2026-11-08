@@ -100,7 +100,6 @@ function stage_init:frame()
     end
 end
 function stage_init:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.loading(self) end
     Render("loading", 480, 270)
     ui:RenderText('title', "少女折寿中" .. string.rep(".", int(self.timer / 20 % 6) + 1),
             480, 25, 1, Color(255, 255, 227, 132), "centerpoint")
@@ -270,7 +269,6 @@ function stage_other:frame()
 
 end
 function stage_other:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.keyboard(self,_keyboard,'设置玩家标签') end
     local text = [[正式开始游戏前
     你需要输入一个具有象征性*（象征你）的标签
     它将在一些重要地方里显示

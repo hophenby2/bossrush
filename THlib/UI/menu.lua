@@ -227,7 +227,6 @@ function main_menu:init(title, content, exit_func, closepos)
 end
 function main_menu:frame()
     task.Do(self)
-    if GameDebug then GameDebug.frame(self) end
 
     self._pos = self._pos + (self.pos - self._pos) * 0.05
     if self.alpha == 0 or self.locked then
@@ -322,7 +321,6 @@ function main_menu:frame()
 
 end
 function main_menu:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.mainMenu(self) end
     if self.alpha == 0 then
         return
     end
@@ -363,9 +361,6 @@ function main_menu:render()
         end
     end
     menu:RenderExit(0, 30, 540, 510, self.alpha)
-    if GameDebug and GameDebug.enabled then
-        ui:RenderText('title','调试模式',942,40,.8,Color(self.alpha*255,189,252,201),'right','vcenter')
-    end
 end
 
 LoadTexture("badapplePIC", "mod\\badapple.png")
@@ -537,7 +532,6 @@ function stage_select:frame()
 
 end
 function stage_select:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.stagePractice(self) end
     if self.alpha == 0 then
         return
     end
@@ -601,12 +595,11 @@ LoadImageFromFile("general_button", "THlib\\UI\\general_button.png")
 local rogue_pool_menu=dofile('THlib/UI/rogue_pool.lua')
 player_system_select = Class(object)
 function player_system_select:fresh(mode)
-    -- 随机模式和调试练习都只选自机；入口一次设置，避免沿用其他流程的系统与卡池状态。
-    self.practice_mode=mode=='practice'
-    self.simple_mode = self.practice_mode or mode=='roguelike' or mode=='rogue_dual' or mode=='rogue_chain'
+    -- 随机模式选择自机及卡池；入口一次设置，避免沿用普通流程的系统选择状态。
+    self.simple_mode = mode=='roguelike' or mode=='rogue_dual' or mode=='rogue_chain'
     self.simple_dual = false
     self.simple_chain = false
-    self.simple_title = self.practice_mode and '选择玩家 · 调试练习' or self.simple_mode and "选择玩家 · roguelike模式" or nil
+    self.simple_title = self.simple_mode and "选择玩家 · roguelike模式" or nil
     rogue_pool_menu.fresh(self,mode)
     self.unlocksystem = {}
     self.unlockplayer = { true, scoredata.UnlockChiruno or "前往商店购买解锁", scoredata.UnlockAya or "前往商店购买或通关解锁", true }
@@ -786,7 +779,6 @@ function player_system_select:frame()
     end
 end
 function player_system_select:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.playerSelect(self,rogue_pool_menu) end
     if self.alpha == 0 then
         return
     end
@@ -863,8 +855,7 @@ function player_system_select:render()
     elseif self.pool_options then
         rogue_pool_menu.render(self)
     else
-        local tips=self.practice_mode and {'选择自机后进入练习列表','关卡练习只进行所选关卡','符卡练习沿用原有无敌规则'}
-            or self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
+        local tips=self.simple_dual and {"TH31 / TH34 / TH35","每步同时两名 Boss、两张不同卡","十步二十张不重复，允许同角色","出场及首次定位横移 ±96，Y 不变","答对可复活三次，支持自动 / F5 保存"}
             or self.simple_chain and {"TH31 / TH34 / TH35","随机十张符卡或非符，不重复","Boss 剩余 30% HP 或不足 7 秒时","立即创建下一张，旧 Boss 继续战斗","答对可复活三次，支持自动 / F5 保存"}
             or {"TH31 / TH34 / TH35","每战随机一张符卡或非符","十张不重复，十次失误触发答题","答对可复活三次，无异变与道具构筑","支持关内自动保存 / F5 手动保存"}
         for i,text in ipairs(tips) do

@@ -26,15 +26,6 @@ local menuButtons = {
     { key=13, x=890, y=40, radius=28, label='确定' },
     { key=27, x=810, y=40, radius=28, label='返回' },
 }
-local portraitPause={key=27,x=34,y=0,radius=28,label='暂停'}
-local function activeButtons(menuMode)
-    if AndroidPortrait and AndroidPortrait.enabled() then
-        if menuMode then return {} end
-        portraitPause.y=screen.height-44
-        return {portraitPause}
-    end
-    return menuMode and menuButtons or buttons
-end
 function I.menuMode()
     if GameNet and GameNet.client() then return false end
     return ext and (ext.StageIsMenu() or (ext.pause_menu and not ext.pause_menu:IsKilled())) or false
@@ -84,7 +75,6 @@ local function rebuild()
     I.mouse.down = false
     I.targetX, I.targetY = nil, nil
     if not I.menuMode() then
-        if AndroidPortrait and AndroidPortrait.enabled() then I.toggles.shoot,I.toggles.slow=true,true end
         for _,b in ipairs(buttons) do if b.toggle and I.toggles[b.action] then keys[buttonKey(b)]=true end end
     end
     for _, t in pairs(I.touches) do
@@ -113,7 +103,6 @@ local function rebuild()
     I.keys = keys
 end
 function I.touch(id, x, y, event)
-    if AndroidPortrait and AndroidPortrait.touch(id,x,y,event) then return end
     if event == 'ended' or event == 'cancelled' then
         local old = I.touches[id]
         if event=='ended' and old and old.drag and old.tapTime and not old.tapMoved and not old.bombTap
@@ -135,8 +124,6 @@ function I.touch(id, x, y, event)
         local t = I.touches[id]
         if not t then
             t = { x = x, y = y }
-            local debugKey=I.menuMode() and GameDebug and GameDebug.touchKey(x,y)
-            if debugKey and event=='began' then t.button={key=debugKey};I.pulse(debugKey) end
             if GameFeatures and GameFeatures.coop and x>=480 and x<=630 and y>=510 and y<=538 then t.button={key=120};I.pulse(120) end
             if GameFeatures and GameFeatures.resume and x>=640 and x<=790 and y>=510 and y<=538 then
                 t.button={key=116}; I.pulse(116)
@@ -144,7 +131,7 @@ function I.touch(id, x, y, event)
             if GameFeatures and GameFeatures.saveSync and x>=800 and x<=956 and y>=510 and y<=538 then
                 t.button={key=121}; I.pulse(121)
             end
-            for _, button in ipairs(activeButtons(I.menuMode())) do
+            for _, button in ipairs(I.menuMode() and menuButtons or buttons) do
                 if t.button then break end
                 if math.abs(x-button.x)<=button.radius and math.abs(y-button.y)<=button.radius then
                     t.button = button
@@ -198,7 +185,6 @@ function I.reset(keepToggles)
     I.touches = {}; I.movementId = nil; I.keys = {}; I.pulses = {}; I.mouse.down = false; I.mouseTap = 0; I.wheel = 0; I.last = nil; I.lastTap=nil; I.targetX, I.targetY = nil, nil
     if not keepToggles then I.toggles={} end
     I.pauseTap = nil
-    if AndroidPortrait then AndroidPortrait.clearInput() end
 end
 -- 以 1/16 世界单位记录目标，触控、录像与联机使用相同的确定性坐标。
 function I.readMovement(out)
@@ -212,7 +198,6 @@ function I.readMovement(out)
 end
 local previousMode, previousStage, previousPlayer
 function I.beginFrame()
-    if AndroidPortrait then AndroidPortrait.dispatch() end
     local mode = I.menuMode()
     -- 普通暂停只释放触点并暂时屏蔽开关，继续时沿用；回标题 / 切后台则清除开关。
     if previousMode ~= nil and previousMode ~= mode then I.reset(true) end
@@ -237,12 +222,7 @@ function I.endFrame()
     for key, frames in pairs(I.pulses) do I.pulses[key] = frames > 1 and frames - 1 or nil end
     I.last = nil; I.wheel = 0; I.mouseTap = math.max(0, I.mouseTap-1)
 end
-lstg.GetKeyState = function(key)
-    if AndroidPortrait and AndroidPortrait.enabled() and not I.menuMode() and key==binding('spell',88) then
-        return I.pulses[key]~=nil
-    end
-    return I.keys[key] or I.pulses[key] ~= nil or (toX[key] and rawKey(toX[key])) or false
-end
+lstg.GetKeyState = function(key) return I.keys[key] or I.pulses[key] ~= nil or (toX[key] and rawKey(toX[key])) or false end
 lstg.GetLastKey = function() return I.last or fromX[rawLast()] or 0 end
 lstg.GetMousePosition = function()
     local scale = screen and screen.scale or 1
@@ -268,7 +248,7 @@ end
 function I.render()
     SetViewMode('ui')
     local menuMode = I.menuMode()
-    for _, b in ipairs(activeButtons(menuMode)) do
+    for _, b in ipairs(menuMode and menuButtons or buttons) do
         local active=I.keys[buttonKey(b)]
         SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
         RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)

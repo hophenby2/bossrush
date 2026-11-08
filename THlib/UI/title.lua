@@ -5,7 +5,6 @@ stage_menu = stage.New('menu', false, true)
 function stage_menu:init()
     local menu_title, menu_replay_loader, menu_replay_saver, menu_setting
     local menu_key, menu_music, menu_player_system_select
-    local menu_stage_practice,menu_spell_practice
     --
     --
     mask_fader:Do("open")
@@ -66,48 +65,7 @@ function stage_menu:init()
     end
     menu_music = New(music_bar)
 
-    local function startPractice(source,start)
-        menu.FadeOut(source);menu.FadeOut(menu_music)
-        task.New(stage_menu,function()
-            for i=1,60 do SetBGMVolume(menu_music.now,1-i/60);task.Wait() end
-            StopMusic(menu_music.now);scoredata.music_bar_time=menu_music.music_timer
-        end)
-        task.New(stage_menu,function()
-            MaskFader()
-            lstg.var.rogue_run=nil;lstg.var.timeslow=nil
-            start()
-        end)
-    end
-    local function createPracticeMenus()
-        if menu_stage_practice then return end
-        menu_stage_practice=New(stage_select,function()
-            menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_player_system_select)
-        end,function(pos)
-            local entry=menu_stage_practice.stage_selects[pos]
-            startPractice(menu_stage_practice,function()
-                lstg.var.sc_index,lstg.var.sc_group=nil,nil
-                if type(entry.stage)=='function' then entry.stage()
-                else stage.group.PracticeStart(entry.stage.name) end
-            end)
-        end)
-        menu_spell_practice=New(sc_pr_menu,function(index,group)
-            if not index then
-                menu.FadeOut(menu_spell_practice);menu.FadeIn(menu_player_system_select);return
-            end
-            startPractice(menu_spell_practice,function()
-                lstg.var.sc_index,lstg.var.sc_group=index,group
-                stage.group.PracticeStart('Spell Practice@Spell Practice',true)
-            end)
-        end)
-    end
-    local function openPractice(mode)
-        createPracticeMenus()
-        menu_player_system_select:fresh('practice')
-        menu_player_system_select.state=mode
-        menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
-    end
-    local function titleContent()
-        local content={
+    menu_title = New(main_menu, '', {
         { "roguelike模式", function()
             menu_player_system_select:fresh('roguelike')
             menu_player_system_select.state = "stage"
@@ -129,31 +87,13 @@ function stage_menu:init()
             menu_setting.pos = 1
         end, "Options" },
         { "退出游戏", ExitGame, "Quit Game" }
-        }
-        if GameDebug.enabled then
-            table.insert(content,2,{'关卡练习',function() openPractice('stage_practice') end,'Stage Practice'})
-            table.insert(content,3,{'符卡练习',function() openPractice('spell_practice') end,'Spell Practice'})
-        end
-        return content
-    end
-    menu_title = New(main_menu, '', titleContent(), function()
+    }, function()
         if menu_title.pos == #menu_title.text then
             ExitGame()
         else
             menu_title.pos = #menu_title.text
         end
     end)
-    menu_title.on_debug_unlocked=function()
-        -- 原地更新菜单，保留当前选中项；下一次返回标题时直接按会话状态建立两个入口。
-        local selected=menu_title.text[menu_title.pos]
-        menu_title.content=titleContent()
-        menu_title.text,menu_title.func,menu_title.sub_title,menu_title.nopos={},{},{},{}
-        for i,entry in ipairs(menu_title.content) do
-            menu_title.text[i],menu_title.func[i],menu_title.sub_title[i]=entry[1],entry[2],entry[3]
-            if entry[1]==selected then menu_title.pos=i end
-        end
-        menu_title._pos,menu_title.pos_pre=menu_title.pos,menu_title.pos
-    end
     menu_player_system_select = New(player_system_select, function(start)
         if start == "stage" then
             menu.FadeOut(menu_player_system_select)
@@ -170,11 +110,6 @@ function stage_menu:init()
                 MaskFader()
                 RogueTen.start('single', menu_player_system_select.pool_options)
             end)
-        elseif start=='stage_practice' then
-            stage_select.fresh(menu_stage_practice)
-            menu.FadeOut(menu_player_system_select);menu.FadeIn(menu_stage_practice)
-        elseif start=='spell_practice' then
-            menu.FadeOut(menu_player_system_select);menu.FadeIn(menu_spell_practice)
         else
             menu.FadeOut(menu_player_system_select)
             menu.FadeIn(menu_title)
@@ -329,7 +264,6 @@ function stage_menu:init()
 end
 function stage_menu:render()
     ui.DrawMenuBG()
-    if AndroidPortrait and AndroidPortrait.enabled() then return end
     SetViewMode("ui")
 
     local time = scoredata["Duration"]

@@ -243,8 +243,6 @@ end
 ---boss系统击破结算逻辑
 function system:kill()
     local b = self.boss
-    -- 普通阶段超时随后会清空收卡标记；强化奖励只看是否中弹，Bomb不取消奖励。
-    local avoided_timeout=not not (b.timeout and GameDrops and GameDrops.avoided(b))
     if b.is_combat then
         b.ui.drawtimesaver = b.countdown
     end
@@ -260,7 +258,7 @@ function system:kill()
         b.__card_finish = nil
     end
     if not b.cannot_kill then
-        if GameDrops then GameDrops.award(b,avoided_timeout) end
+        if GameDrops then GameDrops.award(b) end
         if not b.__NoPlayerProtect then
             player.protect = player.protect + 60
         end
@@ -336,7 +334,7 @@ function system:explode()
         b.vx = sign * v * cos(angle)
         b.vy = v * sin(angle)
         if not b.__NoCleanBullet then
-            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0, 0, true,lstg.var.__phase_clear_version==1)
+            New(bullet_cleaner, b.x, b.y, 3000, 120, 60, true, true, 0, 0, true)
         end
         if not b.__dieinstantly then
             for _ = 1, 60 do
@@ -722,7 +720,7 @@ function system:popResult(continue)
         PlaySound('enep02', 0.4, 0)
         if not b.__NoCleanBullet then
             --New(bullet_killer, player.x, player.y, true)
-            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0, true,lstg.var.__phase_clear_version==1)
+            New(bullet_cleaner, player.x, player.y, 800, 40, 40, true, true, 0, 0, true)
         end
     end
     if b.is_final or not continue then
@@ -1004,7 +1002,6 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
         self:setStatus(card.hp, card.drop, card.is_extra, is_final, true,
                 card.t1 / 60, card.t2 / 60, card.t3 / 60, card.is_sc, sc_bg, sc_ring)
         self:setIsCombat(card.is_combat)
-        if GameDrops then GameDrops.startCard(b) end
         card.init(b)
     end)
 end

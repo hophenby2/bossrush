@@ -19,7 +19,6 @@ end
 screen = {}
 
 function ResetScreen()
-    if AndroidPortrait and AndroidPortrait.resetScreen() then return end
     local set = setting
     local scr = screen
     local l = lstg
@@ -280,7 +279,6 @@ local unpack = unpack
 local lstg = lstg
 local s = screen
 function SetViewMode(mode)
-    if AndroidPortrait and AndroidPortrait.enabled() then AndroidPortrait.layoutWorld() end
     lstg.viewmode = mode
     if mode == '3d' then
         local d = lstg.view3d
@@ -339,11 +337,7 @@ function WorldToScreen(x, y, off)
     local scr = screen
     local k = scr.scale
     off = off and 0.5 or 0
-    if AndroidPortrait and AndroidPortrait.enabled() then
-        return (w.scrl+(x-w.l)*(w.scrr-w.scrl)/(w.r-w.l))*k+off,
-            (scr.height-w.scrb-(y-w.b)*(w.scrt-w.scrb)/(w.t-w.b))*k+off
-    end
-    return (x-w.l+w.scrl)*k+off,(scr.height-y+w.b-w.scrb)*k+off
+    return (x - w.l + w.scrl) * k + off, (scr.height - y + w.b - w.scrb) * k + off
 end
 
 ---设置渲染矩形（会被SetViewMode覆盖）

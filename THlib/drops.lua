@@ -1,5 +1,5 @@
--- 击破或全避阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=7,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+-- 击破阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
+local D={VERSION=6,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
 -- red/green/blue保留为成长逻辑键；条、文字、遮罩和选项中玉共用显示配色。
 D.palette={red={205,145,255,name='紫',bullet=4},green={255,225,100,name='黄',bullet=12},blue={110,190,255,name='蓝',bullet=6}}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
@@ -159,18 +159,8 @@ function D.bombInput(p,key,previous)
 end
 function D.beginCard(b,card)
     b._drop_awarded=false;b._drop_card_id=card.card_id
-    b._drop_misses=nil
     local uses=rawget(b,'_drop_uses') or {};b._drop_uses=uses
     if card.card_id then uses[card.card_id]=(uses[card.card_id] or 0)+1;b._drop_phase=uses[card.card_id] end
-end
-local function misses() return GameRevive and GameRevive.misses() or lstg.var.dead or 0 end
-function D.startCard(b)
-    -- before演出结束才开始计数；Bomb/Circle_Attack会清掉chip_bonus，不能借收卡标记判断无中弹。
-    b._drop_misses=misses()
-end
-function D.avoided(b)
-    if b._drop_misses==nil then return not not b.chip_bonus end
-    return misses()==b._drop_misses
 end
 function D.draw(seed,index)
     local gen=Rand();gen:Seed((seed+index*104729)%2147483647)
@@ -184,16 +174,11 @@ function D.draw(seed,index)
     local a=gen:Int(1,#D.pool);local b=gen:Int(1,#D.pool-1);if b>=a then b=b+1 end
     return {a,b}
 end
-function D.award(b,avoided_timeout)
+function D.award(b)
     if not allowDrops() then return false end
     local s=ensure()
-    if not s or not b.is_combat or b.cannot_kill or b._drop_awarded then return false end
+    if not s or not b.is_combat or b.cannot_kill or b._drop_awarded or (b.timeout and not b.time_sc) then return false end
     if not b.current_card or b.current_card.is_combat==false then return false end
-    if b.timeout and not b.time_sc then
-        if avoided_timeout==nil then avoided_timeout=D.avoided(b) end
-        -- 第七版起，无中弹撑满普通符/非符时限也给奖励，允许Bomb；旧录像保留原规则。
-        if lstg.var.__drops_version<7 or not avoided_timeout then return false end
-    end
     b._drop_awarded=true
     local id,phase=b._drop_card_id,b._drop_phase or 1
     local awards=rawget(b,'_drop_awards') or {}

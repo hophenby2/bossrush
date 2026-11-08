@@ -14,7 +14,6 @@ local options={
     {group='cards',key='spell',text='符卡',x=720,y=146,optional=true},
 }
 local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
-U.options=options
 local function over(mouse,entry)
     return sp.math.PointBoundCheck(mouse.x,mouse.y,entry.x,entry.x+200,entry.y-14,entry.y+14)
 end

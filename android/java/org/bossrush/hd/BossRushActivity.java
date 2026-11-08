@@ -13,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -100,17 +99,6 @@ public final class BossRushActivity extends CocosActivity {
         });
     }
 
-    /** 记住布局选择，下一次启动在创建 Surface 前就使用对应方向。 */
-    public static void configurePortrait(boolean enabled) {
-        BossRushActivity current = instance;
-        if (current == null) return;
-        current.runOnUiThread(() -> {
-            current.getPreferences(MODE_PRIVATE).edit().putBoolean("portrait", enabled).apply();
-            current.setRequestedOrientation(enabled ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                : ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-        });
-    }
-
     private static native void nativeFocus(boolean active);
     private static native void nativeBack();
     private static native void nativeSaveClose();
@@ -174,8 +162,6 @@ public final class BossRushActivity extends CocosActivity {
 
     @Override protected void onCreate(Bundle state) {
         startupStarted = SystemClock.elapsedRealtime();
-        setRequestedOrientation(getPreferences(MODE_PRIVATE).getBoolean("portrait", true)
-            ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT : ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         setEnableVirtualButton(false);
         super.onCreate(state);
         instance = this;

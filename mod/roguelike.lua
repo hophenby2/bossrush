@@ -339,7 +339,6 @@ local function register(variant,config)
         StopMusic('SCORE')
     end
     function result:render()
-        if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.result(self) end
         SetViewMode('ui');RenderClear(Color(255,12,21,36))
         local c=Color(255,225,241,250);local run=self.run
         ui.RunHUD.stage(run.current or run.completed,480,270,560)
@@ -354,7 +353,6 @@ function panel:init() self.group=GROUP.GHOST;self.layer=LAYER.TOP end
 function panel:render()
     local run=lstg.var.rogue_run
     if not run then return end
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.roguePanel(run) end
     local previous=lstg.viewmode
     SetViewMode('ui')
     ui.RunHUD.stage(run.current,lstg.world.scrl/2,270,lstg.world.scrl)

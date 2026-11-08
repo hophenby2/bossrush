@@ -245,13 +245,6 @@ end
 function V.step_anm(o)
     if o._native_anm_tick==o.ani then return end
     o._native_anm_tick=o.ani
-    if o.imgclass.native_game==10 and lstg.var.__th10_cull_version==1 then
-        -- 原0x40654B先以loadedSprite判断出屏，0x4065A4才ExecuteScript；
-        -- 框架先更新ANM，因此在此保留帧首精灵，避免弹雾切主弹时提前缩小回收余量。
-        local v=o._native_anm
-        o.th10_cull_vm=v
-        o.th10_cull_sprite=v.data.sprites[v.sprite]
-    end
     -- 模板已执行t=0，但BulletManager每次更新仍ExecuteScript一次；
     -- 出生结束的goto activateBullet也会在同帧推进主弹VM。
     V.sync_spawn(o)
@@ -343,19 +336,8 @@ end
 function V.th10_cull(o,delay,x,y)
     o.bound=false
     local p=o.imgclass.native_profile
-    local width,height=p.w,p.h
-    if lstg.var.__th10_cull_version==1 then
-        local v=o._native_anm
-        local sprite
-        if v==o.th10_cull_vm then sprite=o.th10_cull_sprite
-        elseif v then sprite=v.data.sprites[v.sprite] end
-        -- BulletRuntime.cpp:141：没有loadedSprite时不执行边界回收。
-        -- 神德主弹14×16、出生弹雾30×30，不能都套弹型表里的主弹尺寸，也不能乘绘制缩放。
-        if not sprite then return end
-        width,height=sprite[4],sprite[5]
-    end
     -- TH10原始g_BulletCullTop=-64，另外三边为-192/192/448。
-    if delay<=0 and (x+width/2<=-192 or x-width/2>=192 or y+height/2<=-224 or y-height/2>=288) then
+    if delay<=0 and (x+p.w/2<=-192 or x-p.w/2>=192 or y+p.h/2<=-224 or y-p.h/2>=288) then
         V.retire(o)
         return true
     end

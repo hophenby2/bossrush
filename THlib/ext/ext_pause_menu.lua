@@ -253,7 +253,6 @@ function pausemenu.RenderText(x, y, text, color)
     RenderTTF("title", text, x, y, color, "left", "vcenter")
 end
 function pausemenu:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.pause(self) end
 
     if self.kill then
         return "killed"
