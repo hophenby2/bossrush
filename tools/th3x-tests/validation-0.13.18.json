@@ -1,0 +1,320 @@
+{
+  "version": "0.13.18-android",
+  "version_code": 36,
+  "date": "2026-11-08",
+  "修复": [
+    "结界ExIns3/20/6的固定槽9/10、原作ANM96–101与四边网格",
+    "两框之间的反向背景与原始UV插值裁剪",
+    "ExIns5及换卡释放方框与背景遮罩",
+    "导出active入口标记纳入结界开始/停止；原始发弹和运动常量未改"
+  ],
+  "原作依据": {
+    "ECL": {
+      "ecldata4a.ecl": "797c83391c77d386abd264249224821be3d878fcf73b2bd71189dbfd3776f6cf",
+      "ecldata4asp.ecl": "9ac983ec5a34fd607b73891d5ba95a19caadb493565b8986320c04d0de8a8df3"
+    },
+    "engine": [
+      "E:/workspace/th08/src/EclExIns.cpp:85–182,259–270,346–361",
+      "E:/workspace/th08/src/EffectManager.cpp:882–1068",
+      "E:/workspace/th08/src/AnmManager.cpp:1954–1997"
+    ]
+  },
+  "checks": {
+    "warp_barrier": 606,
+    "original_anm": 438,
+    "bullet_orientation": 21300,
+    "combat_fixes": 866,
+    "native_windows": [
+      {
+        "root": "E:\\workspace\\.bossrush-validation\\barrier-fixed-20261108-b",
+        "run_id": "a60c9ce55daa40cb8c0237c6aca68f8c",
+        "version": "LuaSTG Sub v0.21.129",
+        "completed": 2,
+        "errors": {},
+        "frames": 3600,
+        "cards": [
+          {
+            "id": 434,
+            "frames": 1800,
+            "peak": {
+              "bullets": 506,
+              "objects": 526,
+              "lasers": 0,
+              "actors": 0
+            },
+            "ended": "defeat"
+          },
+          {
+            "id": 441,
+            "frames": 1800,
+            "peak": {
+              "bullets": 1212,
+              "objects": 1238,
+              "lasers": 0,
+              "actors": 8
+            },
+            "ended": "defeat"
+          }
+        ],
+        "source_snapshot_match": true,
+        "core_test_hook": "仅在core.lua原文末尾追加隔离测试入口"
+      },
+      {
+        "root": "E:\\workspace\\.bossrush-validation\\barrier-th31-regression-20261108",
+        "run_id": "ee560c120aec4b0797fb7c83784591a2",
+        "version": "LuaSTG Sub v0.21.129",
+        "completed": 15,
+        "errors": {},
+        "frames": 41936,
+        "cards": [
+          {
+            "id": 433,
+            "frames": 2402,
+            "peak": {
+              "objects": 797,
+              "actors": 33,
+              "lasers": 0,
+              "bullets": 756
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 434,
+            "frames": 3002,
+            "peak": {
+              "objects": 535,
+              "actors": 0,
+              "lasers": 0,
+              "bullets": 515
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 435,
+            "frames": 2702,
+            "peak": {
+              "objects": 455,
+              "actors": 11,
+              "lasers": 0,
+              "bullets": 432
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 436,
+            "frames": 2792,
+            "peak": {
+              "objects": 827,
+              "actors": 14,
+              "lasers": 0,
+              "bullets": 795
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 437,
+            "frames": 3002,
+            "peak": {
+              "objects": 182,
+              "actors": 0,
+              "lasers": 0,
+              "bullets": 166
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 438,
+            "frames": 2702,
+            "peak": {
+              "objects": 1390,
+              "actors": 33,
+              "lasers": 0,
+              "bullets": 1343
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 439,
+            "frames": 3122,
+            "peak": {
+              "objects": 178,
+              "actors": 19,
+              "lasers": 0,
+              "bullets": 145
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 440,
+            "frames": 3002,
+            "peak": {
+              "objects": 685,
+              "actors": 8,
+              "lasers": 0,
+              "bullets": 643
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 441,
+            "frames": 3002,
+            "peak": {
+              "objects": 1364,
+              "actors": 8,
+              "lasers": 0,
+              "bullets": 1339
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 442,
+            "frames": 3300,
+            "peak": {
+              "objects": 859,
+              "actors": 0,
+              "lasers": 0,
+              "bullets": 810
+            },
+            "ended": "defeat"
+          },
+          {
+            "id": 443,
+            "frames": 2402,
+            "peak": {
+              "objects": 601,
+              "actors": 5,
+              "lasers": 0,
+              "bullets": 581
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 444,
+            "frames": 2402,
+            "peak": {
+              "objects": 410,
+              "actors": 5,
+              "lasers": 0,
+              "bullets": 390
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 445,
+            "frames": 2402,
+            "peak": {
+              "objects": 708,
+              "actors": 10,
+              "lasers": 0,
+              "bullets": 683
+            },
+            "ended": "timeout"
+          },
+          {
+            "id": 446,
+            "frames": 3300,
+            "peak": {
+              "objects": 1147,
+              "actors": 10,
+              "lasers": 0,
+              "bullets": 1122
+            },
+            "ended": "defeat"
+          },
+          {
+            "id": 447,
+            "frames": 2402,
+            "peak": {
+              "objects": 500,
+              "actors": 12,
+              "lasers": 0,
+              "bullets": 473
+            },
+            "ended": "timeout"
+          }
+        ],
+        "source_snapshot_match": true,
+        "core_test_hook": "仅在core.lua原文末尾追加隔离测试入口"
+      }
+    ],
+    "warp_probe": {
+      "background": 6,
+      "cards": {
+        "434": {
+          "first": 91,
+          "frame300": {
+            "outer": 224,
+            "inner": 112,
+            "script": 98,
+            "uv": 0.55,
+            "x": 0,
+            "y": 16
+          },
+          "frame900": {
+            "outer": 224,
+            "inner": 112,
+            "script": 98,
+            "uv": 0.55000000000002,
+            "x": 0,
+            "y": 16
+          }
+        },
+        "441": {
+          "first": 91,
+          "frame300": {
+            "outer": 316.78384,
+            "inner": 192,
+            "script": 100,
+            "uv": 0.55,
+            "x": 0,
+            "y": 0
+          },
+          "frame900": {
+            "outer": 316.78384,
+            "inner": 192,
+            "script": 100,
+            "uv": 0.55000000000002,
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      "draws": 48,
+      "cleaned": true
+    },
+    "apk": {
+      "resources": 2524,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测。",
+    "仅修复已核实的结界演出缺失；未宣称已全量复核所有作品的全部特效。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.18.apk",
+    "bytes": 571709890,
+    "sha256": "df56262ed6f230590f3b3e46cd72d8fee0127ffd3b8dfa405b36e87fc605c666"
+  },
+  "sources_sha256": {
+    "THlib/anm/original.lua": "04b5e9a94a561e28c013ce6edad757a6baff6cd9f07b703af17e96e8f1e5bbb5",
+    "THlib/anm/original_effects.lua": "f9a4176f5770cf366632b2043ec515544945e562d5861eedeeab53dc83fded95",
+    "THlib/anm/presentation.lua": "376e0a0f798478e437c38d817bff5da68b135a026a3d013343aa721ae648564a",
+    "THlib/anm/stage_visual.lua": "53c490a59a51cf7cac9e3b24136dff47ba1db69f20a62e1b9103a3b7ab7b582b",
+    "android/AndroidManifest.xml": "d6caa727726f75972381ad45361592ea029d7ac1d6e7ee8ba176722e55c3f772",
+    "mod/GAME/original/presentation_programs.d/8_ecldata4a.lua": "b1525b0eed6be718b7819755ae3303554f0b37f808b86401c3692d7256476a28",
+    "mod/GAME/original/presentation_programs.d/8_ecldata4asp.lua": "13fa08eb07ea1cf56333fe658da8c175fc292d5f31fdc0edcc0f78e22924baa5",
+    "mod/GAME/original/presentation_programs.d/8_ecldata4b.lua": "4ceb13afe197c23365ee99c7a00f717602c894b3c87714ad06b2057e648519cf",
+    "mod/GAME/original/presentation_programs.d/8_ecldata4bsp.lua": "31115f0d45e334bf8d1ff26293c3e7747aa22e1ed8d98d9040b72e6c3202dcd6",
+    "mod/GAME/th31.lua": "10c422fb95330fd5b301e3574445eb3e6399c32f73659600a95d46926a26de5e",
+    "tools/th3x-tests/export_presentation_programs.py": "3c9856d4b4127aa92b4e43ae81d4faedd86b63af7f3b4e7b5c7e5f2a284b8f7b",
+    "tools/check_original_warp_barrier.lua": "96f0771caac8ef45519fee878c3cf523a275c49a0185335a6aaf4614294e1363",
+    "tools/th3x-tests/native_warp_barrier.lua": "098295260f5ac2b2706ad2996d6fb29f108ae172f69221598b1b1e8c780f2155",
+    "tools/th3x-tests/native_warp_barrier.py": "ab66edb8a09e62fe62828aedb7843dd3d3bab8a3c1936dd72161e8e775b19bf7"
+  }
+}

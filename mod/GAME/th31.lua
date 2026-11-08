@@ -29255,7 +29255,7 @@ end
 ---  · t=0：`ins_75(32,48,352,416)` 夹框（我们 x∈[−160,160]、y∈[−192,176]）＋
 ---    `ins_64(90, 4, 192, 208)` 90 帧滑到我们 (0,16)；`ins_95()` 清小怪（本文件没有小怪，略）。
 ---  · t=90：`!HL ins_136(20,0)` + `!* ins_137(21,0)` 给 H/L 装上「中结界」：
----    ex 20 = StartMediumBulletWarpBarrier（纯观感的结界特效，占位不做）、
+---    ex 20 = StartMediumBulletWarpBarrier（演出调度接入原版ANM 98/99与方环背景反转）、
 ---    ex 21 = WarpBulletsAcrossMediumBarrier（下面的 warp_barrier）**每帧**跑一遍。
 ---    （E/N 走的是 `!EN ins_136(3,0)` + `ins_137(4,0)` 那对「窄结界」，本文件不做。）
 ---    ★ t=90 那句 `ins_160(300)`（SET_DAMAGE_REDUCTION_TIMER，伤害 /9）按本文件惯例
@@ -31779,8 +31779,8 @@ end
 ---    ★ `ins_2(120)` 的冻结让节拍**正好 120 帧**：冻结期间 context 不前进，解冻当帧
 ---      的 `ins_4(460, …)` 把 time 拨回 460 并**同帧**重跑循环体（`ins_2` 在设置那一帧
 ---      就先扣 1，EclRun.cpp:56-64）。
----  · ★ 本卡的核心：t=90 的 `ins_136(6, 0)`（`StartWideBulletWarpBarrier`，纯观感的结界
----    特效，占位不做）+ `ins_137(7, 0)`（`WarpBulletsAcrossWideBarrier`，EclExIns.cpp:367-443）
+---  · ★ 本卡的核心：t=90 的 `ins_136(6, 0)`（`StartWideBulletWarpBarrier`，演出调度接入
+---    原版ANM 100/101与方环背景反转）+ `ins_137(7, 0)`（`WarpBulletsAcrossWideBarrier`，EclExIns.cpp:367-443）
 ---    —— **每帧全池扫描**（见下面 `warp_wide`）。两个同心方框（中心都是 TH08 (192,224)
 ---    = 我们 (0,0)）：内框半宽 135.76451110839844、外框半宽 224（= 我们那 384×448 的
 ---    场地，左边多出 32 px）。跨区就 cooldown = 2、速度取反、位置按 224/135.7645（涉及

@@ -158,6 +158,8 @@ check(exCount==1 and ex36[1].cards[1].cardId==11207,'可只选地灵殿Extra道�
 check(#R.draw(17,1,th36,4,true)==1,'单候选无限模式不跨池补抽')
 local _,version3=R.buildPool(nil,3)
 check(version3==410,'版本3保持四作410项')
+local _,version7=R.buildPool(nil,7)
+check(version7==351,'版本7录像缺少筛选初态时仍保留Extra/Phantasm')
 local oldRoutes={
     {2,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:4395,TH34:3471,TH32:3955,TH34:3480,TH35:3648,TH31:392'},
     {3,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:3480,TH34:3411,TH32:3955,TH34:3446,TH35:3648,TH31:392'},
@@ -201,7 +203,7 @@ for seed=1,30 do
     end
     check(keys(drawn)==keys(R.draw(seed,1,selected)),'筛选后的种子可重建')
 end
-local small=R.defaultFilters();small.difficulties.lunatic=false;small.encounters.boss=false;small.encounters.road=true
+local small=R.defaultFilters();small.difficulties={lunatic=false,extra=true};small.encounters.boss=false;small.encounters.road=true
 local state=R.poolStatus(small)
 check(state.valid and state.count==7,'关闭地灵殿后Extra/Phantasm独立道中池含七项')
 check(not R.poolStatus(small,1).valid,'历史十战模式仍检查至少十张')
@@ -217,14 +219,14 @@ check(not selected.stages.TH31,'筛选副本不回写菜单/本局快照')
 do
     local menuUI=dofile('THlib/UI/rogue_pool.lua')
     local remembered,rememberedVersion=scoredata.rogue10_filters,scoredata.rogue10_filters_version
-    scoredata.rogue10_filters=R.defaultFilters(nil,6);scoredata.rogue10_filters_version=6
+    scoredata.rogue10_filters=R.defaultFilters(nil,7);scoredata.rogue10_filters_version=7
     local o={timer=0,orot=0};menuUI.fresh(o,'roguelike')
-    check(not o.pool_expanded and not o.pool_options.cards.survival and not o.pool_options.encounters.road and o.pool_status.count==351,'高级选项默认折叠，新默认排除道中和时符')
+    check(not o.pool_expanded and not o.pool_options.difficulties.extra and not o.pool_options.cards.survival and not o.pool_options.encounters.road and o.pool_status.count==249,'高级选项默认折叠，新默认排除Extra/Phantasm、道中和时符')
     check(o.pool_options.cards.nonspell and o.pool_options.cards.spell and o.pool_options.stages.TH32,'默认包含四作的非符和符卡')
     menuUI.toggle(o,9)
-    check(o.pool_options.cards.survival and o.pool_status.count==366 and menuUI.ready(o),'独立勾选时符，不影响非符/符卡')
+    check(o.pool_options.cards.survival and o.pool_status.count==257 and menuUI.ready(o),'独立勾选时符，不影响非符/符卡')
     menuUI.toggle(o,10);menuUI.toggle(o,11)
-    check(o.pool_status.count==15,'仅勾选时符时只保留耐久卡')
+    check(o.pool_status.count==8,'仅勾选时符时只保留Lunatic耐久卡')
     menuUI.toggle(o,9);check(not menuUI.ready(o),'三种卡片类型全部取消时不能开空局')
     menuUI.toggle(o,10);menuUI.toggle(o,11)
     local oldMenu,oldLast,oldMouse,oldBounds,oldKey,oldSetting=menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck,KEY,setting
@@ -239,7 +241,7 @@ do
     menuUI.frame(o);check(not o.pool_options.cards.survival,'触控命中新的时符区域')
     ext.mouse.y=440;menuUI.frame(o);check(not o.pool_expanded,'点击高级选项标题可以折叠')
     ext.mouse.y=110;menuUI.frame(o);check(not o.pool_options.cards.survival,'折叠后的隐藏选项不参与触控命中')
-    check(scoredata.rogue10_filters_version==7 and not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
+    check(scoredata.rogue10_filters_version==R.POOL_VERSION and not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
     menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck=oldMenu,oldLast,oldMouse,oldBounds
     KEY,setting=oldKey,oldSetting
     scoredata.rogue10_filters,scoredata.rogue10_filters_version=remembered,rememberedVersion
@@ -344,7 +346,7 @@ SetViewMode,ui=setView,oldUI
 local endlessFilters=R.defaultFilters()
 endlessFilters.stages={TH35=true};endlessFilters.difficulties={extra=true};endlessFilters.encounters={road=true}
 local endlessBattle,endlessRun=simulate(777,25,'single',true,endlessFilters)
-check(endlessRun.endless and endlessRun.poolVersion==7,'新局写入版本7及无限标记')
+check(endlessRun.endless and endlessRun.poolVersion==R.POOL_VERSION,'新局写入当前卡池版本及无限标记')
 check(endlessRun.completed>=24 and not endlessRun.won,'无限模式超过十战后仍继续')
 check(endlessRun.cycle>=24 and #endlessRun.cards==1,'小池跨轮洗牌只保留当前轮')
 for _,entry in ipairs(spawned) do check(entry.card.card_id==3685,'多轮严格沿用风神录Extra道中筛选') end

@@ -21,8 +21,9 @@ function P.defaults(variant,poolVersion)
     -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
     local single=not variant or variant=='single'
     local historical=poolVersion and poolVersion<7
+    -- 版本8的新局默认只选Lunatic；旧录像缺少筛选初态时仍使用当时的Extra默认值。
     return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4},
-        difficulties={lunatic=true,extra=true},encounters={boss=true,road=single and historical or false},
+        difficulties={lunatic=true,extra=poolVersion~=nil and poolVersion<8},encounters={boss=true,road=single and historical or false},
         cards={nonspell=true,spell=true,survival=historical or false}}
 end
 function P.copy(filters,variant,poolVersion)

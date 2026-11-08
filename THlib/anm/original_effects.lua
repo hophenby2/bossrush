@@ -1,4 +1,4 @@
--- 原作ECL创建的独立ANM。效果17/26的径向位移与40的带状网格不能当普通精灵画。
+-- 原作ECL创建的独立ANM。径向粒子、带状网格和56/58/65的方形结界不能当普通精灵画。
 local F={objects={},shakes={}}
 local A=OriginalANM
 -- 渲染桥接使用100像素世界单位/背景场景单位；ECL位置与速度参数保持原值。
@@ -40,6 +40,8 @@ local function ring(o)
     local count,wave=g.count,g.wave
     local radius,secondary=g.radius,g.secondary
     local half=g.width/math.sin((math.pi-2*math.pi/count)/2)
+    local tw,th=GetTextureSize(s.tex)
+    if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
     local co=Color(v.alpha[1],v.color[1],v.color[2],v.color[3])
     local function points(i)
         local angle=g.angle+i*2*math.pi/count
@@ -49,7 +51,7 @@ local function ring(o)
         local function p(d,u)
             local px,py=x*(r+d),y*(r+d)
             if wave==0 and secondary~=0 then py=-math.sin(angle)*(secondary+d) end
-            return {o.x+px,o.y+py,.5,u,s[3]+s[5]*i/count,co}
+            return {o.x+px,o.y+py,.5,u+v.u*tw,s[3]+s[5]*(1-i/count)+v.v*th,co}
         end
         return p(half,s[2]),p(-half,s[2]+s[4])
     end
@@ -145,7 +147,7 @@ F.effect=Class(object,{
             if o.pulse<=0 then object.RawDel(o);return end
             o.vm.scale[1],o.vm.scale[2]=2*o.pulse/o.duration,2*o.pulse/o.duration
         end
-        if o.game==8 and o.kind==40 then
+        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65) then
             local v=o.vm
             o.geometry={count=math.max(3,math.floor(v.vars[10000] or 24)),wave=v.vars[10001] or 0,
                 radius=v.position[1],secondary=v.position[2],width=v.scale[1],angle=v.rotation[3],secondary_angle=v.rotation[2]}
@@ -158,7 +160,7 @@ F.effect=Class(object,{
         if finished(o.vm) then object.RawDel(o) end
     end,
     render=function(o)
-        if o.game==8 and o.kind==40 then ring(o)
+        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65) then ring(o)
         elseif o.point then
             if not o.projected_scale then return end
             local v=o.vm
@@ -242,7 +244,7 @@ function F.new(game,archive,script,x,y,phase,kind,argb,angle)
     end
     if game==6 or game==7 or game==8 then
         local n=0
-        for _,o in ipairs(F.objects) do if valid(o) and o.game==game then n=n+1 end end
+        for _,o in ipairs(F.objects) do if valid(o) and o.game==game and not o.fixed_slot then n=n+1 end end
         if n>=(game==7 and 400 or 512) then return nil end -- 各作EffectManager的普通效果池。
     end
     return New(F.effect,game,archive,script,x,y,phase,kind,argb,angle)
@@ -253,7 +255,49 @@ function F.spawn8(owner,phase,id,count,argb,angle)
         if not F.new(8,'etama',script,owner.x,owner.y,phase,id,argb,angle) then break end
     end
 end
+-- EclExIns 3/20/6 各占固定槽9、10：同一个径向网格回调，ANM决定四边形和展开半径。
+-- 不能用普通精灵画script96..101：position.x是半径，scale.x是边框带宽。
+function F.stop_warp(phase)
+    local w=F.warp
+    if not w or phase and w.phase~=phase then return end
+    for _,o in ipairs(w.effects) do if valid(o) then object.RawDel(o) end end
+    F.warp=nil
+end
+function F.start_warp(owner,phase,ex)
+    F.stop_warp()
+    local kind=ex==3 and 56 or ex==20 and 65 or 58
+    local script=scripts[kind]
+    -- 固定槽不受普通粒子池512项上限限制，不能因同屏粒子较多而漏掉结界。
+    local outer=New(F.effect,8,'etama',script,owner.x,owner.y,phase,kind)
+    local inner=New(F.effect,8,'etama',script+1,owner.x,owner.y,phase,kind)
+    outer.fixed_slot,inner.fixed_slot=9,10
+    F.warp={phase=phase,card=phase.current_card,effects={outer,inner},x=owner.x,y=owner.y}
+end
+function F.draw_warp_background(owner,vms)
+    local w=F.warp
+    if not w or w.phase~=owner or w.card~=owner.current_card then return end
+    if not valid(w.effects[1]) or not valid(w.effects[2]) then return end
+    -- DrawBulletWarpBarrier以黑色方环写深度，再只在环内重画反向背景。
+    -- 用四个裁剪矩形等价表达深度遮罩，兼容Windows Sub和Android的二维渲染。
+    local outer=w.effects[1].vm.position[1]*0.7071068286895752
+    local inner=w.effects[2].vm.position[1]*0.7071068286895752
+    if outer<=inner then return end
+    local x,y=w.x,w.y
+    local regions={{x-outer,x+outer,y+inner,y+outer},{x-outer,x+outer,y-outer,y-inner},
+        {x-outer,x-inner,y-inner,y+inner},{x+inner,x+outer,y-inner,y+inner}}
+    for _,clip in ipairs(regions) do
+        SetImageState('white','',Color(255,0,0,0))
+        RenderRect('white',clip[1],clip[2],clip[3],clip[4])
+        for i,vm in ipairs(vms) do
+            local view={};for k,n in pairs(vm) do view[k]=n end
+            if i==1 then view.position={416,464,0};view.scale={-1.5,-1.75}
+            else view.rotation={vm.rotation[1],vm.rotation[2],-vm.rotation[3]} end
+            A.draw(view,-224,240,nil,nil,nil,nil,nil,{color={224,192,192},clip=clip})
+        end
+    end
+end
 function F.clear(phase)
+    F.stop_warp(phase)
     for i=#F.shakes,1,-1 do if F.shakes[i].phase==phase then table.remove(F.shakes,i) end end
     if #F.shakes==0 then release_shake() end
     local n=0

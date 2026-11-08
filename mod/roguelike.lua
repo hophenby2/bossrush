@@ -1,6 +1,6 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
 -- 复用原卡的标定值，阶段倍率只作用于运行中的敌机，不改共享卡表、时限或弹幕。
-local R={POOL_VERSION=7,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=8,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -89,7 +89,7 @@ function R.draw(seed,width,filters,poolVersion,wholePool)
     local pool,total
     if poolVersion==1 then pool=replayPoolV1()
     else
-        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual') or nil),poolVersion)
+        pool,total=R.buildPool(filters or (width==2 and R.defaultFilters('dual',poolVersion) or nil),poolVersion)
         assert(total>=(wholePool and 1 or R.COUNT*width),'所选随机卡池不足，不能跨池补抽')
     end
     local count=wholePool and total or R.COUNT*width

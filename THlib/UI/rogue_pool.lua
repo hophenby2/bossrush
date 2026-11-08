@@ -114,23 +114,12 @@ function U.render(o)
             ui:RenderText('title',checked and '√' or '□',entry.x+14,entry.y,.72,checked and accent or muted,'centerpoint')
             ui:RenderText('title',entry.text,entry.x+31,entry.y,.65,checked and white or muted,'left','vcenter')
         end
-    else
-        local f=o.pool_options;local games=0
-        for _,key in ipairs({'TH31','TH32','TH34','TH35'}) do if f.stages[key] then games=games+1 end end
-        local difficulties={};if f.difficulties.lunatic then difficulties[#difficulties+1]='Lunatic' end
-        if f.difficulties.extra then difficulties[#difficulties+1]='Extra/Phantasm' end
-        local types={};for _,p in ipairs({{'nonspell','非符'},{'spell','符卡'},{'survival','时符'}}) do if f.cards[p[1]] then types[#types+1]=p[2] end end
-        local encounters={};if f.encounters.boss then encounters[#encounters+1]='Boss' end;if f.encounters.road then encounters[#encounters+1]='道中' end
-        for i,line in ipairs({games..'作 · '..table.concat(difficulties,' / '),table.concat(types,' / '),table.concat(encounters,' / ')}) do
-            ui:RenderText('title',line,715,380-i*43,.85,white,'centerpoint')
-        end
-        ui:RenderText('title','展开高级选项调整抽取范围',715,185,.7,muted,'centerpoint')
     end
     local state=o.pool_status;local valid=state and state.valid
     local message=o.pool_notice_time>0 and o.pool_notice or (not valid and state and state.message)
-    ui:RenderText('title',message or ('候选 %d 张 · 每轮不重复'):format(state and state.count or 0),715,o.pool_expanded and 77 or 125,.7,
-        message and Color(alpha*255,255,170,125) or accent,'centerpoint')
-    ui:RenderText('title',('↑↓选择 · %s切换 · Enter开始'):format(o.keyname[setting.keys.shoot] or 'Z'),715,o.pool_expanded and 54 or 80,.55,muted,'centerpoint')
+    if message then
+        ui:RenderText('title',message,715,o.pool_expanded and 77 or 125,.7,Color(alpha*255,255,170,125),'centerpoint')
+    end
     ui:RenderText('title','← → 选择自机',240,80,.7,o.pool_focus==0 and accent or muted,'centerpoint')
 end
 return U

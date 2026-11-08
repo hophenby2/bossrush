@@ -550,6 +550,7 @@ local function background_class(game,archive,name)
                 -- 必须分别换算，不能把风神录的(224,240)再当局部坐标叠加一次。
                 if game==95 then A.draw(vm,0,224) else A.draw(vm,-224,240,nil,nil,nil,nil,nil,mixed) end
             end
+            if game==8 then S.presentation.draw_warp_background(boss_group[1],o.vms) end
         end,
     },true)
     backgrounds[key]=bg;return bg

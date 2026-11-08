@@ -13,7 +13,8 @@ EXTRA={8:{63,90,91,92,93,94,110,124,135,136,137,139,140},95:set(range(54,66))|{7
 FX={8:{136,137,139,140},95:set(range(54,63))|{77,79,80,81,118,119,124,143,144,150,151,152}}
 def has_effect(game, instruction):
  if game==8 and instruction.op in (136,137):
-  return instruction.args and instruction.args[0] in ((1,10,15,17) if instruction.op==136 else (13,))
+  # 结界的开始/停止也是真正的演出入口；漏标会使整个Sub28/Sub46被运行时跳过。
+  return instruction.args and instruction.args[0] in ((1,3,5,6,10,15,17,20) if instruction.op==136 else (13,))
  return instruction.op in FX[game]
 def export(workspace):
  output={};evidence=[]

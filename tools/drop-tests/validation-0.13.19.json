@@ -1,0 +1,50 @@
+{
+  "version": "0.13.19-android",
+  "version_code": 37,
+  "date": "2026-11-08",
+  "changes": [
+    "移除高级选项下方的范围摘要、候选数量和操作说明；空卡池等错误提示仍在失败时显示。",
+    "卡池版本8默认不勾选Extra/Phantasm，四作Lunatic的非符/符卡共249项。",
+    "保留旧版本录像的默认卡池；旧版本7缺少筛选初态时仍有351项。"
+  ],
+  "checks": {
+    "roguelike": 14689,
+    "native_windows": {
+      "root": "E:\\workspace\\.bossrush-validation\\advanced-menu-20261108-a",
+      "run_id": "0df6c070a39841f5a570c0a01b5b0945",
+      "completed": 5,
+      "frames": 4800,
+      "errors": {},
+      "game_sources_match": true,
+      "visuals": [
+        "snapshot/hp-menu-collapsed.png",
+        "snapshot/hp-menu-expanded.png"
+      ]
+    },
+    "apk": {
+      "resources": 2524,
+      "wav": 172,
+      "arm64_libraries": 3,
+      "shaders": 8,
+      "signature": "通过",
+      "source_assets_match": true,
+      "no_player_data": true
+    }
+  },
+  "limitations": [
+    "未在安卓设备实测。"
+  ],
+  "apk": {
+    "path": "android/dist/BossRushHD-android-arm64-0.13.19.apk",
+    "bytes": 571709890,
+    "sha256": "298ff01eca9673354461a1c606fb1ea586b0778c5c87e6c7c56ce4d53d90e4b8"
+  },
+  "sources_sha256": {
+    "THlib/UI/rogue_pool.lua": "d9f64ae19d76a30ab1ff0804f5d2a338dfd791af046d6fe2b461ffb654577296",
+    "mod/rogue_pool.lua": "69fbfa7c5147bb859961a29f31a252b2453f4d3eb192242d727014ab14fddba1",
+    "mod/roguelike.lua": "686ed725a6905447bdb44cfc938e3e9096c34e4ebe849e7bdecadcf040999f98",
+    "tools/check_roguelike.lua": "eb0aef6f1cd2a8682904cf44d82ed9d3918dd19731f59a25a48ccb2bbe13a3e4",
+    "tools/drop-tests/native_hud.lua": "95284b9004b99625276c20e5e29a612a7598a6bf8ecb9bb578bbc48320671dec",
+    "android/AndroidManifest.xml": "226becf8f87969023a568a8f99941f494374ee653824720fa825a018e83fddeb"
+  }
+}

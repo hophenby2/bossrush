@@ -31,7 +31,7 @@ EndScene=function()
     if growth() and not menusCaptured then
         local U=dofile('THlib/UI/rogue_pool.lua')
         local o={alpha=1,keyname=KeyCodeToName()};U.fresh(o,'roguelike')
-        assert(not o.pool_expanded and o.pool_status.count==351 and not o.pool_options.cards.survival and not o.pool_options.encounters.road,'新默认筛选必须生效')
+        assert(not o.pool_expanded and o.pool_status.count==249 and not o.pool_options.difficulties.extra and not o.pool_options.cards.survival and not o.pool_options.encounters.road,'新默认筛选必须生效')
         for _,name in ipairs({'hp-menu-collapsed','hp-menu-expanded'}) do
             BeginScene();SetViewMode('ui');RenderClear(Color(255,12,21,36));U.render(o);endScene();Snapshot('snapshot/'..name..'.png');U.expand(o)
         end
@@ -56,7 +56,7 @@ return function(host,frames,current)
         assert(GameHPScale.enabled() and not GameRank.enabled() and lstg.var.__rank_version==0,'新局只启用阶段HP倍率')
         assert(lstg.var.__revive_version==0 and not GameRevive.enabled(),'禁用答题复活')
         local f=RogueTen.defaultFilters();local all,n=RogueTen.buildPool(f)
-        assert(n==351 and f.cards.nonspell and f.cards.spell and not f.cards.survival and not f.encounters.road,'默认四作非符/符卡池')
+        assert(n==249 and not f.difficulties.extra and f.cards.nonspell and f.cards.spell and not f.cards.survival and not f.encounters.road,'默认四作Lunatic非符/符卡池')
         for _,b in ipairs(all) do for _,e in ipairs(b.cards) do assert(not e.survival and e.kind=='boss','不能混入道中或时符') end end
         checked=true
     end

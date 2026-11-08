@@ -272,6 +272,27 @@ function A.sprite_resource(v)
     end
     return s
 end
+-- 方形结界的背景只在方环内反转；裁剪时连同UV插值，不能截断后重新铺满纹理。
+local function clipped_quad(tex,blend,clip,points)
+    for _,edge in ipairs({{1,clip[1],1},{1,clip[2],-1},{2,clip[3],1},{2,clip[4],-1}}) do
+        local axis,bound,sign=edge[1],edge[2],edge[3]
+        local next_points={}
+        local previous=points[#points]
+        if not previous then return end
+        for _,p in ipairs(points) do
+            local inside=(p[axis]-bound)*sign>=0
+            if inside~=((previous[axis]-bound)*sign>=0) then
+                local t=(bound-previous[axis])/(p[axis]-previous[axis])
+                local q={};for i=1,5 do q[i]=previous[i]+(p[i]-previous[i])*t end;q[6]=p[6]
+                next_points[#next_points+1]=q
+            end
+            if inside then next_points[#next_points+1]=p end
+            previous=p
+        end
+        points=next_points
+    end
+    for i=2,#points-1 do RenderTexture(tex,blend,points[1],points[i],points[i+1],points[i+1]) end
+end
 -- 单个VM和树的绘制分开，TH36的跨敌机效果层不能被每个敌机的render顺序截断。
 function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if not v.visible or not v.sprite then return end
@@ -320,7 +341,7 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if v.anchor==1 then px=px+s[4]*sx/2;py=py-s[5]*sy/2 end
     if v.anchor_x==1 then px=px+s[4]*sx/2 elseif v.anchor_x==2 then px=px-s[4]*sx/2 end
     if v.anchor_y==1 then py=py-s[5]*sy/2 elseif v.anchor_y==2 then py=py+s[5]*sy/2 end
-    if (v.u~=0 or v.v~=0) and RenderTexture then
+    if (v.u~=0 or v.v~=0 or override and override.clip) and RenderTexture then
         local tw,th=GetTextureSize(s.tex)
         if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
         local co=Color(ca,cr,cg,cb)
@@ -330,9 +351,11 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
             return {px+dx*cr-dy*sr,py+dx*sr+dy*cr,.5,u,w,co}
         end
         local u,w=s[2]+v.u*tw,s[3]+v.v*th
-        RenderTexture(s.tex,v.blend,corner(-s[4]*sx/2,s[5]*sy/2,u,w),
+        local points={corner(-s[4]*sx/2,s[5]*sy/2,u,w),
             corner(s[4]*sx/2,s[5]*sy/2,u+s[4],w),corner(s[4]*sx/2,-s[5]*sy/2,u+s[4],w+s[5]),
-            corner(-s[4]*sx/2,-s[5]*sy/2,u,w+s[5]))
+            corner(-s[4]*sx/2,-s[5]*sy/2,u,w+s[5])}
+        if override and override.clip then clipped_quad(s.tex,v.blend,override.clip,points)
+        else RenderTexture(s.tex,v.blend,unpack(points)) end
     elseif lstg.AndroidRenderSprite then
         lstg.AndroidRenderSprite(s.native_draw_resource,v.blend,px,py,rot,sx,sy,ca,cr,cg,cb)
     else

@@ -112,6 +112,8 @@ local function effect(s,c,op,a)
         end
         if op==136 and a[1]==15 then F.shake_envelope(s.phase,16,20,20,20) end
         if op==136 and a[1]==17 then New(F.screen_pulse,s.phase,180) end
+        if op==136 and (a[1]==3 or a[1]==20 or a[1]==6) then F.start_warp({x=s.x,y=s.y},s.phase,a[1]) end
+        if op==136 and a[1]==5 then F.stop_warp(s.phase) end
         if op==137 then s.ex_callback=a[1]>=0 and a[1] or nil end
     else
         if op>=54 and op<=62 and o._original_presentation_carrier then
@@ -454,5 +456,6 @@ function T.clear(phase)
 end
 T.new_effect=F.new
 T.spawn8=F.spawn8
+T.draw_warp_background=F.draw_warp_background
 T.advance_shake=F.advance_shake
 return T
