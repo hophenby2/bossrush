@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import struct
 import zipfile
+from release_version import game_version
 
 ROOT=Path(__file__).resolve().parents[1]
 ENGINE_ROOT=ROOT
@@ -43,13 +44,18 @@ def package(version):
 主菜单仅保留：roguelike模式、查看录像、按键设置、其他设置、退出游戏。
 roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后重新洗牌继续。
 可选择永夜抄、红魔乡、妖妖梦、风神录，以及 Lunatic、Extra/Phantasm、Boss / 道中。
-筛选交集内至少有一张候选即可开始。生命、强化、Bomb 和复活次数跨轮保留。
-初始十条命，每局最多三次答题复活机会，答对恢复五条命并获得三秒无敌。
-生命耗尽且未能复活时结算，记录累计完成战数；可重开或返回标题并保存录像。
+高级选项默认收起，默认勾选四作 Lunatic 的非符和符卡；Extra/Phantasm、道中、时符默认不勾选。
+时符选项可排除无法击破的耐久卡；地灵殿目前不开放 roguelike 选择。
+筛选交集内至少有一张候选即可开始。生命、强化和 Bomb 跨轮保留。
+初始十条命，答题复活已禁用；生命耗尽时结算，可重开或返回标题并保存录像。
 
-阶段强化三选一：左侧蓝色增加 Bomb 恢复，中间红色增加火力，右侧绿色减小自机判定。
-开局三枚 Bomb，上限三枚；100 蓝值时每三十秒恢复一枚。按 X 立即消耗一枚释放 Bomb。
-保留答题和强化选项的演出，普通道具掉落关闭。
+阶段强化三选一：左侧蓝色增加 Bomb 恢复，中间紫色增加火力，右侧黄色减小自机判定。
+开局三枚 Bomb，上限九枚；恢复速度为100时每三十秒恢复一枚。按 X 消耗一枚释放 Bomb。
+左上角显示三个属性及属性条，透明度50%；火力无上限，以自动扩展的对数刻度显示。
+右上角使用红星显示生命、绿星显示 Bomb，恢复中的 Bomb 按扇形进度显示。
+每进入第n阶段，敌方血量在当前基础上乘以(1+n/100)；左侧显示阶段号及累计倍率。
+累计血量倍率使用完整数字，过长会换行；符卡名可在设置中切换中文和日文，默认中文。
+强化选项保留下落接取演出，普通道具掉落关闭。
 成就、联机、存档同步和续玩点系统暂时停用，F5/F9/F10 的相关入口关闭。
 普通本地设置、成长记录及录像功能保留，旧十战录像仍按旧规则结束。
 
@@ -59,7 +65,7 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 本包不含玩家存档、录像、个人设置、运行日志、开发及构建缓存。
 首次运行会在游戏目录建立本地数据，请解压到有写入权限的文件夹。
 原有 User/ 和 replay/ 数据可自行保留；恢复续玩入口在当前版本停用。
-引擎及依赖许可证见 licenses/；详细模式规则见 mod/roguelike.txt。
+引擎及依赖许可证见 licenses/。
 '''
 
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
@@ -78,11 +84,11 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version',default='0.13.0')
+    parser.add_argument('--version',help='默认读取THlib/UI/UI.lua的ui.version')
     parser.add_argument('--game-root',type=Path,help='只从指定源码快照读取游戏脚本与素材')
     parser.add_argument('--engine-root',type=Path,default=ENGINE_ROOT,help='Windows 引擎、DLL 及其相邻许可证目录')
     parser.add_argument('--output-dir',type=Path,default=OUTPUT)
     args=parser.parse_args()
     if args.game_root: ROOT=args.game_root.resolve()
     ENGINE_ROOT=args.engine_root.resolve();OUTPUT=args.output_dir.resolve()
-    package(args.version)
+    package(args.version or game_version(ROOT))

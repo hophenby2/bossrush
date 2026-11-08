@@ -93,6 +93,16 @@ local function start()
         if not desktop and not s.touchUnlimitedDefaultApplied then
             s.touchUnlimited, s.touchUnlimitedDefaultApplied = true, true
         end
+        if not desktop then
+            if not s.androidBackgroundDefaultApplied then
+                s.displayBG, s.androidBackgroundDefaultApplied = false, true
+            end
+            if not s.touchBombIntervalDefaultApplied then
+                -- 旧版默认100毫秒迁移到170毫秒，已有自定义间隔继续保留。
+                if s.touchBombInterval==nil or s.touchBombInterval==100 then s.touchBombInterval=170 end
+                s.touchBombIntervalDefaultApplied=true
+            end
+        end
     end
     mobileSetting(default_setting)
     function loadConfigure() originalLoadConfigure(); mobileSetting(setting) end

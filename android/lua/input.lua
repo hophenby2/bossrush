@@ -13,11 +13,13 @@ for number = 1, 12 do
     if value then toX[111+number]=value; fromX[value]=111+number end
 end
 local buttons = {
-    -- 右侧最底一行留给触控，属性和两人九枚Bomb库存都在按钮上方。
-    { key = 90, action = 'shoot', x = 713, y = 43, radius = 28, label = '射击', toggle = true },
-    { key = 16, action = 'slow', x = 781, y = 43, radius = 28, label = '低速', toggle = true },
-    { key = 88, action = 'spell', x = 849, y = 43, radius = 28, label = 'Bomb' },
-    { key = 67, action = 'special', x = 917, y = 43, radius = 28, label = '特殊' },
+    -- 左右镜像共用动作和开关状态；从上到下为射击、低速、Bomb，触控尺寸由56增至76。
+    { key = 90, action = 'shoot', x = 52, y = 210, radius = 38, label = '射击', toggle = true },
+    { key = 16, action = 'slow', x = 52, y = 130, radius = 38, label = '低速', toggle = true },
+    { key = 88, action = 'spell', x = 52, y = 50, radius = 38, label = 'Bomb' },
+    { key = 90, action = 'shoot', x = 908, y = 210, radius = 38, label = '射击', toggle = true },
+    { key = 16, action = 'slow', x = 908, y = 130, radius = 38, label = '低速', toggle = true },
+    { key = 88, action = 'spell', x = 908, y = 50, radius = 38, label = 'Bomb' },
     { key = 27, x = 920, y = 518, radius = 18, label = '暂停' },
 }
 local menuButtons = {
@@ -55,9 +57,9 @@ local function binding(action, fallback)
 end
 local function buttonKey(button) return button.action and binding(button.action, button.key) or button.key end
 local function move(keys, action, fallback) keys[binding(action, fallback)] = true end
-local function inPlayfield(x, y)
-    local w = lstg.world
-    return w and player and x >= w.scrl and x <= w.scrr and y >= w.scrb and y <= w.scrt
+local function canDrag()
+    -- 侧栏与场地共用相对拖动，不再保留左下角的摇杆区域。
+    return lstg.world and player
 end
 local function clock() return lstg.AndroidClock and lstg.AndroidClock() or os.clock() end
 local function controlBlocked(p)
@@ -66,7 +68,7 @@ local function controlBlocked(p)
     return p.lock or p.dialog or p.time_stop or p.realrealreal_lock or (death>=50 and death<=90)
 end
 local function tapInterval()
-    return math.max(50,math.min(500,tonumber(setting and setting.touchBombInterval) or 100))/1000
+    return math.max(50,math.min(500,tonumber(setting and setting.touchBombInterval) or 170))/1000
 end
 local function rebuild()
     local old, keys = I.keys, {}
@@ -77,32 +79,24 @@ local function rebuild()
     end
     for _, t in pairs(I.touches) do
         if t.button then if not t.button.toggle then keys[buttonKey(t.button)] = true end
-        elseif not t.joystick and not t.drag and not t.ignored then
+        elseif not t.drag and not t.ignored then
             I.mouse.down = true; I.mouse.x = t.x; I.mouse.y = t.y
         end
     end
     local t = I.movementId and I.touches[I.movementId]
-    if t then
-        if t.joystick then
-            local dx, dy = t.x - 122, t.y - 130
-            if dx < -18 then move(keys, 'left', 37) end
-            if dx > 18 then move(keys, 'right', 39) end
-            if dy < -18 then move(keys, 'down', 40) end
-            if dy > 18 then move(keys, 'up', 38) end
-        elseif t.drag and t.player == player then
-            -- 目标单独写入逻辑输入，不再将任意拖拽方向量化为八方向按键。
-            I.targetX, I.targetY = t.targetX, t.targetY
-            -- 已有的一字节录像 / 关卡检查点仍沿用方向键，避免继续后改变帧格式。
-            if lstg.var and lstg.var.__input_version~=2 and not (GameNet and GameNet.client()) then
-                local slow=keys[binding('slow',16)] or player.slow==1
-                local threshold=(slow and (player.lspeed or 2) or (player.hspeed or 4))*.5
-                local dx,dy=t.targetX-player.x,t.targetY-player.y
-                if math.abs(dx)>threshold and math.abs(dy)>threshold then threshold=threshold*.70710678 end
-                if dx < -threshold then move(keys,'left',37) end
-                if dx > threshold then move(keys,'right',39) end
-                if dy < -threshold then move(keys,'down',40) end
-                if dy > threshold then move(keys,'up',38) end
-            end
+    if t and t.drag and t.player == player then
+        -- 目标单独写入逻辑输入，不再将任意拖拽方向量化为八方向按键。
+        I.targetX, I.targetY = t.targetX, t.targetY
+        -- 已有的一字节录像 / 关卡检查点仍沿用方向键，避免继续后改变帧格式。
+        if lstg.var and lstg.var.__input_version~=2 and not (GameNet and GameNet.client()) then
+            local slow=keys[binding('slow',16)] or player.slow==1
+            local threshold=(slow and (player.lspeed or 2) or (player.hspeed or 4))*.5
+            local dx,dy=t.targetX-player.x,t.targetY-player.y
+            if math.abs(dx)>threshold and math.abs(dy)>threshold then threshold=threshold*.70710678 end
+            if dx < -threshold then move(keys,'left',37) end
+            if dx > threshold then move(keys,'right',39) end
+            if dy < -threshold then move(keys,'down',40) end
+            if dy > threshold then move(keys,'up',38) end
         end
     end
     for key in pairs(keys) do if not old[key] then I.last = key end end
@@ -118,7 +112,7 @@ function I.touch(id, x, y, event)
         if I.trace and old and old.drag and player and lstg.SystemLog then
             lstg.SystemLog(string.format('BOSSRUSH_DRAG_END: target=%.3f,%.3f player=%.3f,%.3f',old.targetX,old.targetY,player.x,player.y))
         end
-        if event == 'ended' and old and not old.button and not old.joystick and not old.drag and not old.ignored then I.mouseTap = 2 end
+        if event == 'ended' and old and not old.button and not old.drag and not old.ignored then I.mouseTap = 2 end
         if event == 'ended' and old and old.pauseMenu then
             old.x, old.y, old.pauseEnded = x, y, true
             old.pauseMoved = old.pauseMoved or (x-old.pauseStartX)^2+(y-old.pauseStartY)^2>64
@@ -139,33 +133,29 @@ function I.touch(id, x, y, event)
             end
             for _, button in ipairs(I.menuMode() and menuButtons or buttons) do
                 if t.button then break end
-                if (x-button.x)^2 + (y-button.y)^2 <= button.radius^2 then
+                if math.abs(x-button.x)<=button.radius and math.abs(y-button.y)<=button.radius then
                     t.button = button
                     if button.toggle and event=='began' then I.toggles[button.action]=not I.toggles[button.action] end
                     if button.key == 27 then I.pulse(27) end
                     break
                 end
             end
-            if not t.button and not I.menuMode() then
-                if inPlayfield(x, y) then
-                    t.drag = true; t.player = player
-                    t.targetX, t.targetY = player.x, player.y
-                    if event=='began' then t.tapTime=clock();t.tapX,t.tapY=x,y end
-                    if I.trace and lstg.SystemLog then lstg.SystemLog(string.format('BOSSRUSH_DRAG_BEGIN: player=%.3f,%.3f target=%.3f,%.3f',player.x,player.y,t.targetX,t.targetY)) end
-                elseif x < 235 and y < 255 then t.joystick = true end
-                if t.joystick or t.drag then
-                    if I.movementId then t.joystick, t.drag, t.ignored = nil, nil, true
-                    else
-                        I.movementId = id
-                        if t.drag and t.tapTime then
-                            local last=I.lastTap
-                            if last and last.player==player and t.tapTime-last.time<=tapInterval()
-                                and not controlBlocked(player)
-                                and not (GameRevive and GameRevive.active()) then
-                                I.pulse(binding('spell',88));t.bombTap=true
-                            end
-                            I.lastTap=nil
+            if not t.button and not I.menuMode() and canDrag() then
+                t.drag = true; t.player = player
+                t.targetX, t.targetY = player.x, player.y
+                if event=='began' then t.tapTime=clock();t.tapX,t.tapY=x,y end
+                if I.trace and lstg.SystemLog then lstg.SystemLog(string.format('BOSSRUSH_DRAG_BEGIN: player=%.3f,%.3f target=%.3f,%.3f',player.x,player.y,t.targetX,t.targetY)) end
+                if I.movementId then t.drag,t.ignored=nil,true
+                else
+                    I.movementId = id
+                    if t.tapTime then
+                        local last=I.lastTap
+                        if last and last.player==player and t.tapTime-last.time<=tapInterval()
+                            and not controlBlocked(player)
+                            and not (GameRevive and GameRevive.active()) then
+                            I.pulse(binding('spell',88));t.bombTap=true
                         end
+                        I.lastTap=nil
                     end
                 end
             end
@@ -174,7 +164,7 @@ function I.touch(id, x, y, event)
                 t.pauseMenu, t.pauseChoose = pause, pause.choose
                 t.pauseStartX, t.pauseStartY = x, y
             end
-            if t.button or t.joystick then I.lastTap=nil end
+            if t.button then I.lastTap=nil end
             I.touches[id] = t
         elseif t.drag and t.player == player then
             if t.tapX and (x-t.tapX)^2+(y-t.tapY)^2>144 then t.tapMoved=true end
@@ -183,7 +173,7 @@ function I.touch(id, x, y, event)
             local sy = (w.t-w.b)/(w.scrt-w.scrb)/(offset.vscale or 1)
             t.targetX = math.max(w.pl+8, math.min(w.pr-8, t.targetX+(x-t.x)*sx))
             t.targetY = math.max(w.pb+16, math.min(w.pt-32, t.targetY+(y-t.y)*sy))
-        elseif not t.button and not t.joystick and not t.ignored then
+        elseif not t.button and not t.drag and not t.ignored then
             I.wheel = I.wheel - (y-t.y)*8
             if t.pauseMenu and (x-t.pauseStartX)^2+(y-t.pauseStartY)^2>64 then t.pauseMoved=true end
         end
@@ -263,7 +253,7 @@ function I.render()
         SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
         RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
         local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
-        ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .5,Color(230,235,241,247),'centerpoint')
+        ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .75,Color(230,235,241,247),'centerpoint')
     end
 end
 return I

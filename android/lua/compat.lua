@@ -17,15 +17,20 @@ end
 expose('Dist', function(...) return native.Dist(points(...)) end)
 expose('Angle', function(...) return native.Angle(points(...)) end)
 
+-- APK内的脚本不是普通文件；loadfile也必须走资源路径，并保留“只编译、不执行”的语义。
+-- TH35俯冲与TH36各模块还会给返回的chunk传入上下文，不能直接替换成dofile。
+loadfile = function(path)
+    local normalized = P.normalize(path)
+    if not P.exists(path) then return nil, '脚本不存在：' .. normalized end
+    local content = fu:getStringFromFile(P.resolve(path)):gsub('^\239\187\191', '')
+    return loadstring(content, '@' .. normalized)
+end
 expose('DoFile', function(path)
     local normalized = P.normalize(path)
     if normalized:lower() == 'thlib/plus/nativeapi.lua' then
         return P.installNativeAPI()
     end
-    local content = fu:getStringFromFile(P.resolve(path))
-    assert(content ~= '', '脚本不存在或为空：' .. path)
-    content = content:gsub('^\239\187\191', '')
-    local chunk, message = loadstring(content, '@' .. normalized)
+    local chunk, message = loadfile(path)
     assert(chunk, message)
     native.SystemLog('BOSSRUSH_LOAD: ' .. normalized)
     return chunk()

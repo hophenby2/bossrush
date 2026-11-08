@@ -21,6 +21,19 @@ BUILD = ROOT / 'build'
 LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
+sys.path.insert(0, str(ROOT.parent / 'tools'))
+from release_version import game_version
+
+
+def prepare_manifest():
+    """显示版本来自UI.lua；versionCode保留清单中的安装升级序号。"""
+    source = (ROOT / 'AndroidManifest.xml').read_text(encoding='utf-8-sig')
+    source, count = re.subn(r'android:versionName="[^"]*"',
+                           lambda _: f'android:versionName="{game_version(GAME)}"', source)
+    assert count == 1, 'AndroidManifest.xml必须声明一个versionName'
+    path = BUILD / 'AndroidManifest.xml'
+    write_utf8(path, source)
+    return path
 
 
 def resume_fingerprint(game, include_android=True):
@@ -290,7 +303,7 @@ def package_apk(sdk, ndk, assets):
             run(executable(tools, 'aapt2'), 'compile', '--dir', source, '-o', compiled)
             resource_args.append(compiled)
     run(executable(tools, 'aapt2'), 'link', '-o', BUILD / 'resources.apk', '-I', android_jar,
-        '--manifest', ROOT / 'AndroidManifest.xml', '--java', gen,
+        '--manifest', BUILD / 'AndroidManifest.xml', '--java', gen,
         '--auto-add-overlay', *resource_args)
     sources += list(gen.rglob('*.java'))
     source_list = BUILD / 'java-sources.txt'
@@ -356,6 +369,12 @@ def sign_apk(tools, keytool, unsigned):
     digest = hashlib.file_digest(output.open('rb'), 'sha256').hexdigest()
     (dist / (output.name + '.sha256')).write_text(digest + '  ' + output.name + '\n')
     print(f'APK：{output}\nSHA-256：{digest}', flush=True)
+    release = dist / f'BossRushHD-android-arm64-{game_version(GAME)}.apk'
+    shutil.copy2(output, release)
+    write_utf8(dist / (release.name + '.sha256'), digest + '  ' + release.name + '\n')
+    write_utf8(BUILD / 'packaged-manifest.sha256',
+               hashlib.sha256((BUILD / 'AndroidManifest.xml').read_bytes()).hexdigest())
+    print(f'发行包：{release}', flush=True)
 
 
 def main():
@@ -373,6 +392,7 @@ def main():
         if not (GAME / 'core.lua').is_file():
             parser.error('--game-root 必须包含 core.lua')
     BUILD.mkdir(exist_ok=True)
+    manifest = prepare_manifest()
     prepare_engine(args.engine_archive)
     assets = prepare_assets()
     if args.assets_only:
@@ -383,6 +403,11 @@ def main():
         unsigned = BUILD / 'unsigned.apk'
         if not unsigned.exists():
             raise RuntimeError('请先完成一次完整构建')
+        previous = BUILD / 'packaged-manifest.sha256'
+        if not previous.exists() or previous.read_text().strip() != hashlib.sha256(manifest.read_bytes()).hexdigest():
+            # 安装清单在APK的二进制资源中；版本变更不能只替换Lua后沿用旧清单。
+            package_apk(sdk, ndk, assets)
+            return
         current = {p.relative_to(BUILD).as_posix(): p for p in assets.rglob('*') if p.is_file()}
         changed = []
         with zipfile.ZipFile(unsigned) as archive:
