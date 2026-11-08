@@ -1,6 +1,7 @@
 -- 每个新阶段将已累计的敌方HP再乘(1+阶段号/100)，不改原卡表或弹速。
 -- 动画按逻辑帧推进，显示值只在文字落定后更新；录像不依赖实际渲染帧数。
-local H={VERSION=1,DURATION=36}
+local DELAY,FLIGHT,FADE=6,48,6 -- 飞行由24帧延长到48帧，速度减半；停留和淡出节奏保持原值。
+local H={VERSION=1,DURATION=DELAY+FLIGHT+FADE}
 local rawNew=New
 local function state()
     local run=lstg.var.rogue_run
@@ -61,15 +62,15 @@ end
 function H.render(x,y,width)
     local s=state();if not s then return end
     local a=s.animation
-    local oldAlpha=a and math.max(0,math.min(1,(30-a.age)/6))*255 or 255
+    local oldAlpha=a and math.max(0,math.min(1,(DELAY+FLIGHT-a.age)/FADE))*255 or 255
     local lines,scale,gap=H.layout(s.shown,width or x*2,math.max(1,y-8))
     for i,line in ipairs(lines) do
         ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),'centerpoint')
     end
     if not a then return end
-    local t=math.max(0,math.min(1,(a.age-6)/24))
+    local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
     local move=t*t*(3-2*t)
-    local alpha=math.min(1,(H.DURATION-a.age)/6)*255
+    local alpha=math.min(1,(H.DURATION-a.age)/FADE)*255
     ui:RenderText('title',('×%.2f'):format(a.factor),480+(x-480)*move,270+(y-270)*move,
         2.6-1.6*move,Color(alpha,H.rgb(a.stage)),'centerpoint')
 end

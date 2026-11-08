@@ -1,5 +1,7 @@
--- 击破阶段后的红蓝绿三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
+-- 击破阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
 local D={VERSION=6,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+-- red/green/blue保留为成长逻辑键；条、文字、遮罩和选项中玉共用显示配色。
+D.palette={red={205,145,255,name='紫',bullet=4},green={255,225,100,name='黄',bullet=12},blue={110,190,255,name='蓝',bullet=6}}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
 D.pool={
     {{'red','add',5}},{{'blue','add',5}},{{'red','mul',11,10}},{{'blue','mul',11,10}},
@@ -270,7 +272,7 @@ function D.optionLines(id)
         local text=op[2]=='add' and string.format('%+d',op[3]) or ('×'..number(op[3]/op[4]))
         if op[1]=='green' and op[2]=='add' then text=text..'个百分点' end
         if op[1]=='green' then
-            out[#out+1]={color='green',text='绿 判定'}
+            out[#out+1]={color='green',text=D.palette.green.name..' 判定'}
             out[#out+1]={color='green',text=text}
         else
             local name=op[1]=='red' and '火力' or modern() and 'Bomb恢复速度' or '射速'

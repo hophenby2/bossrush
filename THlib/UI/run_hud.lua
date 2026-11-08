@@ -1,7 +1,7 @@
 -- 战斗UI只呈现剩余资源和成长：星形表示库存，火力用自动扩展的对数刻度，其余属性用线性条。
 -- 所有查询保持只读，渲染不能建立成长状态或改变录像的零帧初态。
 local H={}
-local ATTRIBUTE_OPACITY=.1
+local ATTRIBUTE_OPACITY=.5
 local colors={red={255,110,120},blue={110,190,255},green={110,235,145}}
 local function color(alpha,rgb) return Color(alpha,rgb[1],rgb[2],rgb[3]) end
 local function number(value) return (('%.2f'):format(value):gsub('%.?0+$','')) end
@@ -31,7 +31,7 @@ function H.powerAxis(value)
 end
 function H.powerTrack(x1,x2,y,value,alpha,decades)
     decades=decades or H.powerAxis(value)
-    local rgb=colors.red
+    local rgb=(GameDrops and GameDrops.palette or colors).red
     H.track(x1,x2,y,math.log(math.max(1,value))/LOG10/decades,alpha,rgb,1)
     local divisions=math.max(2,math.floor((x2-x1)/64))
     local step=math.max(1,math.ceil(decades/divisions))
@@ -48,6 +48,7 @@ end
 function H.attributes(scrr,scrt,alpha)
     local D=GameDrops
     if not D or not D.enabled() then return end
+    local palette=D.palette or colors
     local count=(GameNet and GameNet.host()) and 2 or 1
     -- 左侧上方留给属性，最下面一行与中央阶段数字之间保留间距。
     local x1,x2=18,lstg.world.scrl-18
@@ -56,7 +57,7 @@ function H.attributes(scrr,scrt,alpha)
     local rows={{'火力','red',D.MAX/D.UNIT},{D.bombsEnabled() and 'Bomb恢复速度' or '射速','blue',D.MAX/D.UNIT},{'判定','green',100}}
     for i,row in ipairs(rows) do
         local cy=y-(i-1)*gap
-        text(row[1],x1,cy+20,.7,alpha*ATTRIBUTE_OPACITY,colors[row[2]],'left','vcenter')
+        text(row[1],x1,cy+20,.7,alpha*ATTRIBUTE_OPACITY,palette[row[2]],'left','vcenter')
         -- 双人栏共用量程，不能把两位玩家不同的火力画成相同长度。
         local powerMax=math.max(D.values(1),count==2 and D.values(2) or 1)
         local decades=i==1 and H.powerAxis(powerMax)
@@ -65,11 +66,11 @@ function H.attributes(scrr,scrt,alpha)
             local left=x1+(slot-1)*(x2-x1+12)/count
             local right=left+(x2-x1-(count-1)*12)/count
             if i==1 then H.powerTrack(left,right,cy,values[i],alpha,decades)
-            else H.track(left,right,cy,values[i]/row[3],alpha,colors[row[2]]) end
+            else H.track(left,right,cy,values[i]/row[3],alpha,palette[row[2]]) end
             local value=number(values[i])..(i==3 and '%' or '')
             if count==2 then value='P'..slot..' '..value end
             local scale=math.min(.7,(right-left-8)/(#value*11))
-            text(value,(left+right)/2,cy-(i==1 and 27 or 20),scale,alpha*ATTRIBUTE_OPACITY,colors[row[2]],'centerpoint')
+            text(value,(left+right)/2,cy-(i==1 and 27 or 20),scale,alpha*ATTRIBUTE_OPACITY,palette[row[2]],'centerpoint')
         end
     end
 end

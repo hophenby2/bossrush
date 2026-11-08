@@ -76,8 +76,8 @@ local function classes()
                 ui:RenderText('title',({'A','B','C','D'})[o.pos]..'. '..o.text,o.x,o.y,0.85,Color(o.alpha*255,255,255,255),'centerpoint')
             else
                 for i,line in ipairs(o.text) do
-                    local r,g,b=255,115,120;if line.color=='blue' then r,g,b=110,190,255 end
-                    if line.color=='green' then r,g,b=110,235,145 end
+                    local rgb=(GameDrops and GameDrops.palette and GameDrops.palette[line.color]) or maskColors[line.color] or {255,115,120}
+                    local r,g,b=rgb[1],rgb[2],rgb[3]
                     local scale=o.count==3 and 0.7 or 0.85
                     if o.count==3 and line.color=='green' and i==2 then scale=0.6 end
                     scale=line.scale or scale
@@ -99,9 +99,9 @@ local function classes()
         end,
     },true)
 end
-function Q.wall(x,y,manual)
+function Q.wall(x,y,manual,index)
     local o=NewObject(bullet)
-    bullet.init(o,ball_mid,2,false,false)
+    bullet.init(o,ball_mid,index or 2,false,false)
     o.fogtime=0;o.x=x;o.y=y;o.a=o.a*1.5;o.b=o.b*1.5;o.bound=false
     if manual then
         -- 选项以扫掠接触结算，不让复活者再被选项弹击杀；仍使用原弹体与贴图。
@@ -114,11 +114,17 @@ end
 function Q.spawn(text,choices,manual)
     classes()
     local board={walls={},labels={}}
+    local function optionColor(index)
+        local lines=choices[index]
+        local name=type(lines)=='table' and lines[1] and lines[1].color
+        local palette=GameDrops and GameDrops.palette
+        return manual and palette and palette[name] and palette[name].bullet or nil
+    end
     if text then board.question=New(Question,text,manual) end
     for i,choice in ipairs(choices) do board.labels[i]=New(Choice,i,choice,#choices,manual) end
-    for x=-16,16 do board.walls[#board.walls+1]=Q.wall(x*Q.STEP,Q.TOP,manual) end
+    for x=-16,16 do board.walls[#board.walls+1]=Q.wall(x*Q.STEP,Q.TOP,manual,optionColor(Q.answer(x*Q.STEP,#choices))) end
     for i=1,#choices-1 do
-        for y=1,8 do board.walls[#board.walls+1]=Q.wall(-192+i*384/#choices,Q.TOP-y*Q.STEP,manual) end
+        for y=1,8 do board.walls[#board.walls+1]=Q.wall(-192+i*384/#choices,Q.TOP-y*Q.STEP,manual,optionColor(i)) end
     end
     return board
 end
@@ -145,9 +151,10 @@ function Q.selection(key,state,text,choices,alpha)
     if state.colorMask then
         if not board.mask or not IsValid(board.mask) then
             local colors={}
+            local palette=GameDrops and GameDrops.palette or maskColors
             for i,lines in ipairs(choices) do
                 local name=type(lines)=='table' and lines[1] and lines[1].color
-                colors[i]=maskColors[name] or maskColors[i==1 and 'red' or 'blue']
+                colors[i]=palette[name] or palette[i==1 and 'red' or 'blue']
             end
             board.mask=New(Mask,colors)
         end
