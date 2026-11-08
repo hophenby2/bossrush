@@ -97,12 +97,47 @@ function T.install()
             target=current.target,peak=current.peak,positions=current.positions,
             rendered=current.rendered or 0,ended=current.ended,phase=current.phase,laser_kinds=current.laser_kinds,
             min_rate=current.min_rate,max_photos=current.max_photos,damage_attempts=current.damage_attempts or 0,
-            cleanup=remaining,original_ecl=current.original_ecl}
+            cleanup=remaining,original_ecl=current.original_ecl,th36_spawns=current.th36_spawns,
+            th36_transitions=current.th36_transitions,th36_spells=current.th36_spells,
+            th36_rates=current.th36_rates,th36_rate_frames=current.th36_rate_frames}
         row.unmapped_visuals=current.unmapped_visuals
         records[#records+1]=row;write('card',row);save(false)
     end
     local function launch()
-        for game=31,35 do if games:find(','..game..',',1,true) then
+        local th36=(_editor_class.TH36 or {}).runtime
+        if th36 then
+            local time_scale=th36.time_scale
+            th36.time_scale=function(a,rate)
+                time_scale(a,rate)
+                if current then
+                    current.th36_rates=current.th36_rates or {}
+                    local rows=current.th36_rates;rows[#rows+1]={a.session.frame,rate,ext.GetFakeFPS()}
+                end
+            end
+            local spawn=th36.spawn
+            th36.spawn=function(a,op,name,...)
+                local created=spawn(a,op,name,...)
+                if current and created then
+                    current.th36_spawns=current.th36_spawns or {}
+                    current.th36_spawns[name]=(current.th36_spawns[name] or 0)+1
+                end
+                return created
+            end
+            th36.on_transition=function(a,name,timed)
+                if current then
+                    current.th36_transitions=current.th36_transitions or {}
+                    local rows=current.th36_transitions;rows[#rows+1]={a.session.frame,name,timed==true}
+                end
+            end
+            th36.on_spell=function(a,id,name)
+                if current then
+                    current.th36_spells=current.th36_spells or {}
+                    local rows=current.th36_spells;rows[#rows+1]={a.session.frame,id,name}
+                    if not a.session.root.practice and not current.captured_boss then current.capture_boss_pending=true end
+                end
+            end
+        end
+        for game=31,36 do if games:find(','..game..',',1,true) then
             local level=game-2
             for index,unit in ipairs(_sc_pr_table[level] or {}) do
                 local card=unit.sc_group[1].card
@@ -176,6 +211,12 @@ function T.install()
                 if not started and stage.current_stage and stage.current_stage.stage_name=='menu' then launch() end
                 if current and host and IsValid(host) and host.is_combat and current.phase=='combat' then
                     frames=frames+1
+                    if host.th36_session then
+                        local rate=ext.GetFakeFPS()
+                        current.min_rate=math.min(current.min_rate or 1,rate)
+                        current.th36_rate_frames=current.th36_rate_frames or {}
+                        local key=tostring(rate);current.th36_rate_frames[key]=(current.th36_rate_frames[key] or 0)+1
+                    end
                     if frames%120==0 or frames==1 then sample() end
                     if frames%1200==0 then save(false) end
                     if mode=='photo' and host.photo_damage_limit and frames%480==0 then
@@ -183,6 +224,13 @@ function T.install()
                     elseif mode=='cancel' and frames%240==0 then
                         -- 普通消弹走可消性和出生状态，不使用换卡的强制清场入口。
                         New(bullet_cleaner,0,0,640,0,1,true,true,0,0)
+                    elseif mode=='defeat' and host.th36_session and not host.th36_session.root.practice and frames%60==0 then
+                        -- 整关的宿主无判定；沿原脚本推进每个真实Boss，保留耐久卡的完整时限。
+                        local a=host.th36_session.boss
+                        if a and not a.dead and IsValid(a.o) and a.phase_time>=600 and not a.survival then
+                            current.damage_attempts=(current.damage_attempts or 0)+1
+                            Damage(a.o,a.o.hp*1000000)
+                        end
                     elseif mode=='defeat' and not current.survival and frames>=current.damage_at and frames%60==0 then
                         current.damage_attempts=(current.damage_attempts or 0)+1
                         Damage(host,host.hp*1000000)
@@ -204,6 +252,7 @@ function T.install()
                 -- 避免隐藏窗口的后台限帧让完整513卡验证花在等待窗口上。
                 if #records~=completed_before or (current and current.phase=='combat' and
                     ((frames>=1 and (current.rendered or 0)==0) or
+                     current.capture_boss_pending or
                      (frames>=300 and not current.captured) or (frames>=900 and not current.captured_late))) then break end
                 end
             end
@@ -217,6 +266,10 @@ function T.install()
             original_render()
             if current then
                 current.rendered=(current.rendered or 0)+1
+                if current.capture_boss_pending then
+                    current.capture_boss_pending=false;current.captured_boss=true
+                    Snapshot(('snapshot/th%d-%d-%s-boss.png'):format(current.level+2,current.cardId,mode))
+                end
                 if frames>=300 and not current.captured then
                     current.captured=true
                     Snapshot(('snapshot/th%d-%d-%s.png'):format(current.level+2,current.cardId,mode))

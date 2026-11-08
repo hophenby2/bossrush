@@ -1,0 +1,135 @@
+{
+  "checks": [
+    {
+      "command": [
+        "tools/th36-tests/check_projectiles.py"
+      ],
+      "exit_code": 0,
+      "output": "{\"pattern_bullets\": 54, \"protected_spawn\": true, \"recursive_slots\": true, \"birth_frames\": 8, \"timeout_result\": true, \"retained_death\": true, \"global_slow_cleanup\": true, \"phantom_blink\": true, \"raw_gravity\": true, \"scope\": \"PE 0x408f20的发弹契约及对象生命周期；不替代全部变换的原版逐帧轨迹对照\"}"
+    },
+    {
+      "command": [
+        "tools/th36-tests/run_lua.py",
+        "tools/check_original_anm.lua"
+      ],
+      "exit_code": 0,
+      "output": "原作ANM与资源回归通过：438 项，70 个作品/角色组合"
+    },
+    {
+      "command": [
+        "tools/th36-tests/run_lua.py",
+        "tools/check_spell_backgrounds.lua"
+      ],
+      "exit_code": 0,
+      "output": "原作ANM与资源回归通过：438 项，70 个作品/角色组合\n符卡背景回归通过：7 项。"
+    },
+    {
+      "command": [
+        "tools/th36-tests/run_lua.py",
+        "tools/check_fields.lua",
+        "mod/GAME/th36.lua",
+        "mod/GAME/th36/runtime.lua",
+        "mod/GAME/th36/projectiles.lua",
+        "mod/GAME/th36/callbacks.lua"
+      ],
+      "exit_code": 0,
+      "output": "通过：frame/render 里没有「init 顶层未赋值」的字段"
+    },
+    {
+      "command": [
+        "tools/th36-tests/run_lua.py",
+        "E:\\workspace\\.bossrush-validation\\check-th36-anm-regression.lua",
+        "E:\\workspace\\.bossrush-validation\\before-th36-anm.lua"
+      ],
+      "exit_code": 0,
+      "output": "旧作品ANM状态与绘制对照通过：46675"
+    },
+    {
+      "command": [
+        "tools/th36-tests/expand.py",
+        "E:\\workspace\\.bossrush-validation\\th36-reproduce",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": "七面离线展开完成，源文件20份；未识别指令会直接中止生成。"
+    }
+  ],
+  "hashes": {
+    "mod/GAME/th36.lua": "0cdd197e3baced826dc3f65cbca648cd50f22d0fcf06433f1d3ecaa23fba9bdc",
+    "THlib/anm/original.lua": "5a457a8ef4f6de9fb8eb73a47aebe38bd44a8940e13c50172ef56ac2a73ae178",
+    "mod/GAME/th36/bullet_profiles.lua": "21c98ad93465913cd12bb6231c148048f06f152eae2639b916bc3baf5d373913",
+    "mod/GAME/th36/callbacks.lua": "4cc6adcfd5a412ea599ac5f5f6395ee576ec563238e2612dca2269e902ce47db",
+    "mod/GAME/th36/catalogue.lua": "56a6cbdf16f87fd08b05d9058f68611ab0d766c0ada5755b23084abd78f9be18",
+    "mod/GAME/th36/projectiles.lua": "d4f363e40c557681fa144b9ad517207e95daa4f63584c62b4683870b012f3b04",
+    "mod/GAME/th36/runtime.lua": "c61c621ec12dae0177f50f825fc9e03f3c193c6d6ea30178c87e4436e66583c8",
+    "mod/GAME/th36/stage01.lua": "059a9df6a24ba746be6f1544fb403b7999c4a18ae5cddcb22d9455c7974cd911",
+    "mod/GAME/th36/stage02.lua": "5c911d8d6c77fc700d864caad5b0fec2bd71d20678a04dfbe4527238e9cf523d",
+    "mod/GAME/th36/stage03.lua": "c122ae7d415028e6a76ad0f65310cbe4fc02db31b410c00f76ce0bc9494efb6b",
+    "mod/GAME/th36/stage04.lua": "320ce9473aeb17b7e4d96607eceb5de1d71ef7e2bf431ebc822c692a19f6c297",
+    "mod/GAME/th36/stage05.lua": "90068b6cee3077b1178d011c7fa53c0ce7e2d8ad31e6ff184c722da49d04a5df",
+    "mod/GAME/th36/stage06.lua": "b2737534e7693946ddda5f81b863ef3922895426c520687c967dc13d0d322c5b",
+    "mod/GAME/th36/stage07.lua": "1fad0cc3e8e275f67ee8f752883435c1a768935a58809760b2493320bde30701"
+  },
+  "source_global_references": [
+    -10000,
+    -9999,
+    -9998,
+    -9997,
+    -9996,
+    -9989,
+    -9987,
+    -9986,
+    -9985,
+    -9984,
+    -9983,
+    -9982,
+    -9981,
+    -9980,
+    -9979,
+    -9978,
+    -9977,
+    -9976,
+    -9971,
+    -9970,
+    -9965,
+    -9964,
+    -9963,
+    -9962,
+    -9959,
+    -9958,
+    -9954,
+    -9949,
+    -9948,
+    -9947,
+    -9946,
+    -9945,
+    -9944,
+    -9940,
+    -9939,
+    -9935,
+    -1
+  ],
+  "unmapped_global_references": [],
+  "project_registration": {
+    "exit_code": 1,
+    "known_duplicate_ids": [
+      453,
+      454,
+      455,
+      456,
+      457,
+      458,
+      459,
+      460,
+      470,
+      471,
+      472,
+      473,
+      474,
+      475,
+      476
+    ],
+    "new_th36_duplicate_ids": [],
+    "scope": "全项目检查仍失败于15处既有重复ID，不报告为全项目通过"
+  }
+}

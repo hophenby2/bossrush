@@ -192,9 +192,13 @@ def main():
     ap.add_argument('--source', type=Path, default=Path(r'E:\workspace\原作'))
     ap.add_argument('--thtk', type=Path, default=Path(r'E:\workspace\thtkGUI-th20tr\thtk\thtk-th20'))
     ap.add_argument('--cache', type=Path, default=Path(r'E:\workspace\.bossrush-validation\original-anm'))
+    ap.add_argument('--games', default='6,7,8,95,10', help='要导出的作品编号；可单独追加11')
     args = ap.parse_args()
-    manifest = {}
-    for game in (6, 7, 8, 95, 10):
+    manifest_path = ROOT/'mod'/'GAME'/'original'/'manifest.json'
+    original_manifest = manifest_path.read_bytes().decode('utf-8') if manifest_path.exists() else '{}\n'
+    manifest = json.loads(original_manifest)
+    requested_games = list(map(int, args.games.split(',')))
+    for game in requested_games:
         cache = args.cache / str(game); cache.mkdir(parents=True, exist_ok=True)
         dats = [p for p in args.source.rglob('*') if p.is_file() and
                 (p.name.lower() == ('th095.dat' if game == 95 else f'th{game:02}.dat') if game != 6 else p.name.startswith('紅魔郷') and p.suffix == '.DAT')]
@@ -211,7 +215,7 @@ def main():
                 if n.lower().endswith('.anm'): selected[n] = dat
         dest = ROOT/'Resources'/'Original'/str(game); dest.mkdir(parents=True, exist_ok=True)
         output = ROOT/'mod'/'GAME'/'original'/str(game); output.mkdir(parents=True, exist_ok=True)
-        manifest[game] = {}
+        manifest[str(game)] = {}
         for n, dat in selected.items():
             archive = Path(n).stem
             path = cache/n
@@ -221,11 +225,22 @@ def main():
             data = parse(decl, cache, dest, game, archive)
             (cache/(archive+'.json')).write_text(json.dumps(data), encoding='utf-8')
             data['game'], data['archive'] = game, archive
-            (output/(archive+'.lua')).write_text('-- 原作 ANM 自动导出；由 tools/th3x-tests/export_original_anm.py 生成。\nreturn '+lua(data)+'\n', encoding='utf-8')
-            manifest[game][archive] = {'source': dat.name, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+            (output/(archive+'.lua')).write_text('-- 原作 ANM 自动导出；由 tools/th3x-tests/export_original_anm.py 生成。\nreturn '+lua(data)+'\n', encoding='utf-8', newline='\n')
+            manifest[str(game)][archive] = {'source': dat.name, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                                        'sprites': len(data['sprites']), 'scripts': len(data['scripts'])}
         print(game, len(selected), 'ANM', flush=True)
-    (ROOT/'mod'/'GAME'/'original'/'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    # 单独追加作品时保留其他作品已核对过的清单字节与混合换行，不重写旧资源记录。
+    merged = original_manifest
+    for game in requested_games:
+        key = str(game)
+        body = json.dumps(manifest[key], ensure_ascii=False, indent=2)
+        block = '  '+json.dumps(key)+': '+body.replace('\n', '\n  ')
+        pattern = re.compile(r'^  "'+key+r'": \{.*?^  \}', re.M | re.S)
+        if pattern.search(merged): merged = pattern.sub(lambda _: block, merged, count=1)
+        else:
+            prefix = merged.rstrip()[:-1].rstrip()
+            merged = prefix + (',' if prefix.strip() != '{' else '') + '\n' + block + '\n}\n'
+    manifest_path.write_bytes(merged.encode('utf-8'))
 
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')

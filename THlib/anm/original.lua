@@ -29,6 +29,9 @@ local op95 = { [0]='nop','delete','static','sprite','jump','jump_dec','iset','fs
     'color2','alpha2','color2_time','alpha2_time','secondary','return','flag27','commit_position',
     'vertices','flag28','unit_speed','alternate_rng' }
 op95[88],op95[89],op95[90],op95[91],op95[92]='child','point_filter','child','child','child'
+local op11={}
+for id,name in pairs(op95) do op11[id]=name end
+op11[95],op11[100],op11[101],op11[102]='child','position_bezier','ring_vertices','sprite_random'
 function A.load(game, archive)
     local key=game..'/'..archive
     if cache[key] then return cache[key] end
@@ -40,7 +43,7 @@ function A.load(game, archive)
         s.tex=tex
         s.path='Resources/Original/'..game..'/'..archive..'_'..s[1]..'.png'
     end
-    local ops=game==6 and op6 or ((game==7 or game==8) and op8 or op95)
+    local ops=game==6 and op6 or ((game==7 or game==8) and op8 or game==11 and op11 or op95)
     for _,script in pairs(data.scripts) do
         script.interrupts={}
         for i,c in ipairs(script) do
@@ -64,6 +67,12 @@ end
 local function value(v,a)
     if type(a)~='table' then return a end
     local id=a.var
+    if v.data.game==11 then
+        if id==10010 then return ran:Float(-math.pi,math.pi) end
+        if id==10011 then return ran:Float(0,1) end
+        if id==10012 then return ran:Float(-1,1) end
+        if id==10022 then return ran:Int(0,2147483647) end
+    end
     if id==10010 then return ran:Float(0,1) end
     if id==10011 then return ran:Float(-1,1) end
     if id==10012 then return ran:Float(-math.pi,math.pi) end
@@ -95,7 +104,7 @@ local function execute(v)
         v.pc=v.pc+1
         if op=='delete' then v.visible=false;v.finished=true;return
         elseif op=='static' then v.finished=true;return
-        elseif op=='sprite' then v.sprite=a+v.sprite_base;v.visible=true
+        elseif op=='sprite' then v.sprite=v.sprite_resolver and v.sprite_resolver(a) or a+v.sprite_base;v.visible=true
         elseif op=='sprite_random' then v.sprite=a+ran:Int(0,b-1);v.visible=true
         elseif op=='jump' then jump(v,a,b)
         elseif op=='jump_dec' then
@@ -135,6 +144,10 @@ local function execute(v)
         elseif op=='v_speed' then v.vs=a
         elseif op=='unit_speed' then v.unit_speed=a~=0
         elseif op=='position_time' then interp(v,'position',a,b,vector(d,e,f))
+        elseif op=='position_bezier' then
+            interp(v,'position',a,8,vector(value(v,c[7]),value(v,c[8]),value(v,c[9])))
+            v.interps.position.controls={vector(b,d,e),vector(value(v,c[10]),value(v,c[11]),value(v,c[12]))}
+        elseif op=='ring_vertices' then v.ring_vertices=a
         elseif op=='rotation_time' then interp(v,'rotation',a,b,vector(d,e,f))
         elseif op=='scale_time' then interp(v,'scale',a,b,vector(d,e))
         elseif op=='color_time' then interp(v,'color',a,b,vector(d,e,f))
@@ -173,7 +186,15 @@ local function execute(v)
     error('原作ANM同帧指令未收敛：'..v.data.key..'/'..v.id)
 end
 function A.step(v,dt)
-    if v.children[1] then for _,child in ipairs(v.children) do A.step(child,dt) end end
+    if v.children[1] then
+        for _,child in ipairs(v.children) do A.step(child,dt) end
+        if v.data.game==11 then
+            for i=#v.children,1,-1 do
+                local child=v.children[i]
+                if child.finished and not child.visible then table.remove(v.children,i) end
+            end
+        end
+    end
     if v.finished then return end
     if not v.stopped then execute(v) end
     if v.finished then return end
@@ -198,18 +219,23 @@ function A.step(v,dt)
             local power=p.mode-10;local u=t*2
             t=u<1 and (1-(1-u)^power)/2 or ((u-1)^power+1)/2
         elseif p.mode==15 then t=0 elseif p.mode==16 then t=1 end
-        for i,n in ipairs(p.target) do v[key][i]=p.from[i]+(n-p.from[i])*t end
+        for i,n in ipairs(p.target) do
+            if p.controls then
+                local t2,t3=t*t,t*t*t
+                v[key][i]=(2*t3-3*t2+1)*p.from[i]+(t3-2*t2+t)*p.controls[1][i]+(-2*t3+3*t2)*n+(t3-t2)*p.controls[2][i]
+            else v[key][i]=p.from[i]+(n-p.from[i])*t end
+        end
         if p.time>=p.duration then v.interps[key]=nil end
     end
     if v.us~=0 or v.u<0 or v.u>=1 then v.u=(v.u+v.us*dt)%1 end
     if v.vs~=0 or v.v<0 or v.v>=1 then v.v=(v.v+v.vs*dt)%1 end
     if not v.stopped and not v.wait then v.time=v.time+dt end
 end
-function A.new(game,archive,id,dt)
+function A.new(game,archive,id,dt,sprite_resolver)
     local data=A.load(game,archive)
     local script=assert(data.scripts[id], '原作ANM脚本缺失：'..data.key..'/'..id)
     local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
-        sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,
+        sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,sprite_resolver=sprite_resolver,
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}
@@ -253,6 +279,28 @@ function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img
     local ca,cr,cg,cb=max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])
+    if v.ring_vertices and RenderTexture then
+        -- TH11 mode13：scale.x是带宽、scale.y是半径，rotation.x是弧长；
+        -- 不能把这三项当作平面精灵的缩放/俯仰角。原码见AnimationExecutionUpdate.inc。
+        local count=v.vars[10000] or v.ring_vertices
+        if count<2 then return end
+        local tw,th=GetTextureSize(s.tex)
+        if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
+        local co=Color(ca,cr,cg,cb)
+        local first=v.rotation[3]-v.rotation[1]/2
+        local step=v.rotation[1]/(count-1)
+        local outer,inner=v.scale[2]+v.scale[1]/2,v.scale[2]-v.scale[1]/2
+        local cx,cy=x+v.position[1],y-v.position[2]
+        local repeats=v.vars[10001] or 1
+        local function point(theta,r,u,w) return {cx+math.cos(theta)*r,cy-math.sin(theta)*r,.5,u,w,co} end
+        for i=0,count-2 do
+            local aa,bb=first+i*step,first+(i+1)*step
+            local vv,ww=(v.v+i*repeats/(count-1))*th,(v.v+(i+1)*repeats/(count-1))*th
+            local u0,u1=s[2]+v.u*tw,s[2]+s[4]+v.u*tw
+            RenderTexture(s.tex,v.blend,point(aa,outer,u0,vv),point(bb,outer,u0,ww),point(bb,inner,u1,ww),point(aa,inner,u1,vv))
+        end
+        return
+    end
     sx,sy=(sx or 1)*v.scale[1],(sy or sx or 1)*v.scale[2]
     -- TH06 TranslateRotation为(x*c+y*s,-x*s+y*c)，后续作品则为(x*c-y*s,x*s+y*c)。
     -- 翻转屏幕Y轴后，TH06的VM角保持正号，其余作品取负号。

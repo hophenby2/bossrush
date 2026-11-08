@@ -1,0 +1,1094 @@
+{
+  "checked": 217,
+  "shots": 20833,
+  "frames": 480,
+  "rng_values": 1000,
+  "cases": [
+    {
+      "stage": 1,
+      "sub": "Boss1At1",
+      "shots": 32
+    },
+    {
+      "stage": 1,
+      "sub": "Boss2At1",
+      "shots": 64
+    },
+    {
+      "stage": 1,
+      "sub": "BossCard1_at",
+      "shots": 46
+    },
+    {
+      "stage": 1,
+      "sub": "BossCard2At_at",
+      "shots": 280
+    },
+    {
+      "stage": 1,
+      "sub": "BossCard2_at",
+      "shots": 520
+    },
+    {
+      "stage": 1,
+      "sub": "Girl01_at",
+      "shots": 1
+    },
+    {
+      "stage": 1,
+      "sub": "Girl04_at",
+      "shots": 30
+    },
+    {
+      "stage": 1,
+      "sub": "Girl04_at2",
+      "shots": 30
+    },
+    {
+      "stage": 1,
+      "sub": "Girl06_at",
+      "shots": 30
+    },
+    {
+      "stage": 1,
+      "sub": "Girl06_at2",
+      "shots": 30
+    },
+    {
+      "stage": 1,
+      "sub": "MBoss2_at",
+      "shots": 960
+    },
+    {
+      "stage": 1,
+      "sub": "MBoss3_at",
+      "shots": 960
+    },
+    {
+      "stage": 1,
+      "sub": "MBossCard1_at",
+      "shots": 96
+    },
+    {
+      "stage": 1,
+      "sub": "MBoss_at1",
+      "shots": 4
+    },
+    {
+      "stage": 1,
+      "sub": "MBoss_at2",
+      "shots": 1
+    },
+    {
+      "stage": 1,
+      "sub": "RGirl02_at",
+      "shots": 7
+    },
+    {
+      "stage": 1,
+      "sub": "RGirl03_at",
+      "shots": 1
+    },
+    {
+      "stage": 1,
+      "sub": "RGirl05_at",
+      "shots": 20
+    },
+    {
+      "stage": 2,
+      "sub": "Boss1At1",
+      "shots": 30
+    },
+    {
+      "stage": 2,
+      "sub": "Boss2At1",
+      "shots": 15
+    },
+    {
+      "stage": 2,
+      "sub": "BossCard1At_at",
+      "shots": 61
+    },
+    {
+      "stage": 2,
+      "sub": "BossCard1_at2",
+      "shots": 2
+    },
+    {
+      "stage": 2,
+      "sub": "BossCard2_at3",
+      "shots": 6
+    },
+    {
+      "stage": 2,
+      "sub": "BossCard2_at4",
+      "shots": 48
+    },
+    {
+      "stage": 2,
+      "sub": "BossCard3_at",
+      "shots": 20
+    },
+    {
+      "stage": 2,
+      "sub": "MBossCard1At_at",
+      "shots": 300
+    },
+    {
+      "stage": 2,
+      "sub": "MBoss_at1",
+      "shots": 480
+    },
+    {
+      "stage": 2,
+      "sub": "MBoss_at2",
+      "shots": 1
+    },
+    {
+      "stage": 2,
+      "sub": "RCir00_at",
+      "shots": 32
+    },
+    {
+      "stage": 2,
+      "sub": "RCir01_at",
+      "shots": 6
+    },
+    {
+      "stage": 2,
+      "sub": "RCir02_at",
+      "shots": 66
+    },
+    {
+      "stage": 2,
+      "sub": "RGirl00_at",
+      "shots": 21
+    },
+    {
+      "stage": 2,
+      "sub": "RGirl01_at",
+      "shots": 1
+    },
+    {
+      "stage": 2,
+      "sub": "RGirl02_at",
+      "shots": 1
+    },
+    {
+      "stage": 2,
+      "sub": "RGirl03_at",
+      "shots": 1
+    },
+    {
+      "stage": 3,
+      "sub": "Boss2At1",
+      "shots": 15
+    },
+    {
+      "stage": 3,
+      "sub": "Boss3_at",
+      "shots": 30
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard1At_at",
+      "shots": 2
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard1_at2",
+      "shots": 105
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at",
+      "shots": 160
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at2",
+      "shots": 39
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at2_h",
+      "shots": 42
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at3",
+      "shots": 21
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at3_h",
+      "shots": 22
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard2_at_h",
+      "shots": 160
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_at",
+      "shots": 320
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_at2",
+      "shots": 320
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_at2b",
+      "shots": 320
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_at3",
+      "shots": 960
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_at3b",
+      "shots": 960
+    },
+    {
+      "stage": 3,
+      "sub": "BossCard3_atb",
+      "shots": 320
+    },
+    {
+      "stage": 3,
+      "sub": "MBoss2B_at",
+      "shots": 60
+    },
+    {
+      "stage": 3,
+      "sub": "MBoss3_at",
+      "shots": 3
+    },
+    {
+      "stage": 3,
+      "sub": "MBossCard1At_at",
+      "shots": 240
+    },
+    {
+      "stage": 3,
+      "sub": "RCir00_at",
+      "shots": 40
+    },
+    {
+      "stage": 3,
+      "sub": "RCir01Boss1_at",
+      "shots": 12
+    },
+    {
+      "stage": 3,
+      "sub": "RCir01Boss1_at2",
+      "shots": 12
+    },
+    {
+      "stage": 3,
+      "sub": "RCir02_at",
+      "shots": 10
+    },
+    {
+      "stage": 3,
+      "sub": "RCir03_at",
+      "shots": 10
+    },
+    {
+      "stage": 3,
+      "sub": "RGirl00_at",
+      "shots": 4
+    },
+    {
+      "stage": 4,
+      "sub": "Boss1_at1",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "Boss1_at1b",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "Boss1_at2",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "Boss1_at2b",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "Boss2_at1",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "Boss2_at1b",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "Boss2_at2",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "Boss2_at2b",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard1_at2",
+      "shots": 17
+    },
+    {
+      "stage": 4,
+      "sub": "MBoss2_at",
+      "shots": 30
+    },
+    {
+      "stage": 4,
+      "sub": "PhantomMBoss2_at",
+      "shots": 1
+    },
+    {
+      "stage": 4,
+      "sub": "PhantomMBoss_at",
+      "shots": 15
+    },
+    {
+      "stage": 4,
+      "sub": "RCir00_at",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "RCir02_at",
+      "shots": 10
+    },
+    {
+      "stage": 4,
+      "sub": "RCir03_at",
+      "shots": 10
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl00_at",
+      "shots": 52
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl00b_at",
+      "shots": 27
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl01_at",
+      "shots": 12
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl01b_at",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl02_at",
+      "shots": 65
+    },
+    {
+      "stage": 4,
+      "sub": "RGirl03_at",
+      "shots": 1584
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Aat3",
+      "shots": 10
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_00Aat",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "BossCardAttack07_00",
+      "shots": 10
+    },
+    {
+      "stage": 4,
+      "sub": "BossCardAttack07_00b",
+      "shots": 10
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Bat",
+      "shots": 40
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Bat2",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Bat3",
+      "shots": 80
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat",
+      "shots": 120
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat2",
+      "shots": 7
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat3",
+      "shots": 16
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat4",
+      "shots": 120
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat5",
+      "shots": 24
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Bat6",
+      "shots": 6
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_00Bat",
+      "shots": 160
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Cat",
+      "shots": 80
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Cat2",
+      "shots": 20
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard2_00Cat3",
+      "shots": 80
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_00Cat",
+      "shots": 17
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_00Cat",
+      "shots": 90
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_00Cat2",
+      "shots": 90
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_01ADollAttack0",
+      "shots": 240
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01Aat",
+      "shots": 30
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01Aat2",
+      "shots": 90
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard3_01Bat",
+      "shots": 22
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01B_Book00",
+      "shots": 5
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01B_Book01",
+      "shots": 14
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01B_Book02",
+      "shots": 90
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01B_Book03",
+      "shots": 3
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4_01B_Book04",
+      "shots": 14
+    },
+    {
+      "stage": 4,
+      "sub": "Boss2Et_at2h",
+      "shots": 96
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4At",
+      "shots": 15
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4AtH",
+      "shots": 15
+    },
+    {
+      "stage": 4,
+      "sub": "BossCard4AtH2",
+      "shots": 8
+    },
+    {
+      "stage": 5,
+      "sub": "Phantom00_atB",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "Phantom01_at",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "Phantom01_atB",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "Phantom02_at",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "Phantom02_at2",
+      "shots": 256
+    },
+    {
+      "stage": 5,
+      "sub": "RCir00_at2",
+      "shots": 16
+    },
+    {
+      "stage": 5,
+      "sub": "RCir01_at",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "RCir01_at2",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "RCir02_at",
+      "shots": 36
+    },
+    {
+      "stage": 5,
+      "sub": "RCir02_at2",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "MBoss1_at",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "MBoss1_at2",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "MBoss2_at",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "MBoss2_at2",
+      "shots": 32
+    },
+    {
+      "stage": 5,
+      "sub": "MBossCard2_at",
+      "shots": 4
+    },
+    {
+      "stage": 5,
+      "sub": "Boss1At1",
+      "shots": 14
+    },
+    {
+      "stage": 5,
+      "sub": "Boss1AtNear",
+      "shots": 360
+    },
+    {
+      "stage": 5,
+      "sub": "Boss2At2",
+      "shots": 14
+    },
+    {
+      "stage": 5,
+      "sub": "Boss2Phantom_atB",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "Boss3At2",
+      "shots": 14
+    },
+    {
+      "stage": 5,
+      "sub": "Boss3Phantom_at",
+      "shots": 24
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard1At",
+      "shots": 120
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard2Phantom_at",
+      "shots": 40
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard2Phantom_at2",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard3At2",
+      "shots": 14
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard3Phantom_at",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard3Phantom_at2",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard4At2",
+      "shots": 14
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard4Girl_at",
+      "shots": 6
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard4Girl_at2",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard4Phantom_at",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard4Phantom_at2",
+      "shots": 1
+    },
+    {
+      "stage": 5,
+      "sub": "BossCard5At",
+      "shots": 48
+    },
+    {
+      "stage": 5,
+      "sub": "RBoss1Girl_at",
+      "shots": 1008
+    },
+    {
+      "stage": 6,
+      "sub": "Crow00_at",
+      "shots": 24
+    },
+    {
+      "stage": 6,
+      "sub": "Crow01_at",
+      "shots": 120
+    },
+    {
+      "stage": 6,
+      "sub": "Crow02_at",
+      "shots": 120
+    },
+    {
+      "stage": 6,
+      "sub": "Crow03_at",
+      "shots": 48
+    },
+    {
+      "stage": 6,
+      "sub": "Phantom00_at",
+      "shots": 27
+    },
+    {
+      "stage": 6,
+      "sub": "Phantom01_at",
+      "shots": 239
+    },
+    {
+      "stage": 6,
+      "sub": "MBossCard1_at",
+      "shots": 12
+    },
+    {
+      "stage": 6,
+      "sub": "Boss1At1",
+      "shots": 48
+    },
+    {
+      "stage": 6,
+      "sub": "Boss2At1b",
+      "shots": 16
+    },
+    {
+      "stage": 6,
+      "sub": "Boss2At2",
+      "shots": 16
+    },
+    {
+      "stage": 6,
+      "sub": "Boss3At1",
+      "shots": 48
+    },
+    {
+      "stage": 6,
+      "sub": "Boss3At2",
+      "shots": 48
+    },
+    {
+      "stage": 6,
+      "sub": "Boss4At1b",
+      "shots": 16
+    },
+    {
+      "stage": 6,
+      "sub": "Boss4At2",
+      "shots": 12
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard1At",
+      "shots": 210
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard1At2",
+      "shots": 210
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard3At",
+      "shots": 19
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard4At",
+      "shots": 19
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard4BombAt",
+      "shots": 8
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard4BombAth",
+      "shots": 9
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard5At",
+      "shots": 19
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard5At2",
+      "shots": 18
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard5BombAt",
+      "shots": 240
+    },
+    {
+      "stage": 6,
+      "sub": "BossCard5BombAt2",
+      "shots": 240
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl00_at",
+      "shots": 42
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl01_at",
+      "shots": 4
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl02_at",
+      "shots": 48
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl03_at",
+      "shots": 12
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl04_at",
+      "shots": 40
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl05_at",
+      "shots": 80
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl06_at",
+      "shots": 22
+    },
+    {
+      "stage": 7,
+      "sub": "RGirl07_at",
+      "shots": 4
+    },
+    {
+      "stage": 7,
+      "sub": "MBossCard1_at",
+      "shots": 219
+    },
+    {
+      "stage": 7,
+      "sub": "MBossCard1_at2",
+      "shots": 6
+    },
+    {
+      "stage": 7,
+      "sub": "MBossCard2_at2",
+      "shots": 6
+    },
+    {
+      "stage": 7,
+      "sub": "MBossCard3_at",
+      "shots": 550
+    },
+    {
+      "stage": 7,
+      "sub": "MBossCard3_at2",
+      "shots": 6
+    },
+    {
+      "stage": 7,
+      "sub": "Boss1At1",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss1At1b",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss2At1",
+      "shots": 160
+    },
+    {
+      "stage": 7,
+      "sub": "Boss3At1",
+      "shots": 160
+    },
+    {
+      "stage": 7,
+      "sub": "Boss4At1",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss4At1b",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss5At1",
+      "shots": 160
+    },
+    {
+      "stage": 7,
+      "sub": "Boss5At1b",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss6At1",
+      "shots": 160
+    },
+    {
+      "stage": 7,
+      "sub": "Boss7At1",
+      "shots": 12
+    },
+    {
+      "stage": 7,
+      "sub": "Boss7At2",
+      "shots": 16
+    },
+    {
+      "stage": 7,
+      "sub": "Boss8At1",
+      "shots": 12
+    },
+    {
+      "stage": 7,
+      "sub": "Boss8At2",
+      "shots": 96
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard10EtAt",
+      "shots": 5
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard10EtAtB",
+      "shots": 9
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard10EtAtC",
+      "shots": 5
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard10EtAtD",
+      "shots": 12
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard1At3",
+      "shots": 40
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard2at",
+      "shots": 480
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard2at2",
+      "shots": 8
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard3At",
+      "shots": 27
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard4At",
+      "shots": 24
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard5At",
+      "shots": 24
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard6EtAt",
+      "shots": 240
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard7EtAt",
+      "shots": 2
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard7EtAt3",
+      "shots": 2
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard8EtAt",
+      "shots": 240
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard9EtAtA",
+      "shots": 174
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard9EtAtB1",
+      "shots": 144
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard9EtAtB2",
+      "shots": 168
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard9EtAtC1",
+      "shots": 70
+    },
+    {
+      "stage": 7,
+      "sub": "BossCard9EtAtC2",
+      "shots": 80
+    }
+  ],
+  "scope": "独立标量控制流与枪槽对照；不宣称运动、渲染、碰撞全量一致"
+}

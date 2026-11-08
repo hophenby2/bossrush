@@ -1748,5 +1748,223 @@
       "sprites": 6,
       "scripts": 9
     }
+  },
+  "11": {
+    "bullet": {
+      "source": "th11.dat",
+      "sha256": "945402ba1b86d93a8da5534d575c4e8209710a4d8e3b1d8d3a597aa17d23aac5",
+      "sprites": 389,
+      "scripts": 198
+    },
+    "enemy": {
+      "source": "th11.dat",
+      "sha256": "bee4a0e940e2a7b2fe03914fdcbec26be0c0bc6e8a17e22f4fb1bd8f49e38f66",
+      "sprites": 187,
+      "scripts": 122
+    },
+    "sig": {
+      "source": "th11.dat",
+      "sha256": "5f09d6fbaf02608546678dc9105669884b1297aa78c72b1ec005a31d11610e75",
+      "sprites": 2,
+      "scripts": 2
+    },
+    "st01logo": {
+      "source": "th11.dat",
+      "sha256": "58839230864cf0a6a6a246e5bab21e3456646c570bdfd883ce18459c80d599a8",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage01": {
+      "source": "th11.dat",
+      "sha256": "00b5299eda7af270c5f7a4b8410fea4381e4ec4c93c1c16bd7a6499e36610ede",
+      "sprites": 40,
+      "scripts": 48
+    },
+    "stgenm01": {
+      "source": "th11.dat",
+      "sha256": "0187eed57bd84f25df9b6d4eab0ab4dd8d382d5340322117ae2e09ed4a880717",
+      "sprites": 47,
+      "scripts": 12
+    },
+    "st02logo": {
+      "source": "th11.dat",
+      "sha256": "7e60725fe48268caa6dc7974f231955ebd2b31a479404283838db03922a74766",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage02": {
+      "source": "th11.dat",
+      "sha256": "d91401872bbe960fd3acc1a4cfa98ec12373842c2c29c40b8b8e71106e5c901c",
+      "sprites": 24,
+      "scripts": 32
+    },
+    "stgenm02": {
+      "source": "th11.dat",
+      "sha256": "9ff6bd88ac28b7fc64efb583f7da27aaf0b2234a834cccffe0745bb7b306d079",
+      "sprites": 38,
+      "scripts": 11
+    },
+    "st03logo": {
+      "source": "th11.dat",
+      "sha256": "5cb6ac788aaadd136073046f18070ff06b91636c53ec416639362f5b274eb6e9",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage03": {
+      "source": "th11.dat",
+      "sha256": "4330c704fd3c94a989ec65aaea11707e68556f68293ef6fc1904fb20cca1c464",
+      "sprites": 9,
+      "scripts": 9
+    },
+    "stgenm03": {
+      "source": "th11.dat",
+      "sha256": "6600faa117506dcafb0f29f48ff97d4055d8962b7a80f77f8b7ace38fa26652d",
+      "sprites": 41,
+      "scripts": 13
+    },
+    "st04logo": {
+      "source": "th11.dat",
+      "sha256": "bd8ded07b6672f992ce58c905f1c6160c669a110b82b2c110abc09967f9747e6",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage04": {
+      "source": "th11.dat",
+      "sha256": "45d999f43f43f91a874de8da7ed4c3292cec305f2d88da5a21dc47a5a92c4a01",
+      "sprites": 3,
+      "scripts": 7
+    },
+    "stgenm04": {
+      "source": "th11.dat",
+      "sha256": "befea5885ad5414f545b0a9a8fb9f41063a93e3043622c23ea74408949f0156f",
+      "sprites": 50,
+      "scripts": 20
+    },
+    "st05logo": {
+      "source": "th11.dat",
+      "sha256": "46970059307c529a7f7fba0284ee185304f7bf46766fa6b5c40b243677ade457",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage05": {
+      "source": "th11.dat",
+      "sha256": "2f1c76d62ebcb2565d48c857fffbc1ba30773d140ac2e325662a07fb0da94e0f",
+      "sprites": 24,
+      "scripts": 32
+    },
+    "stgenm05": {
+      "source": "th11.dat",
+      "sha256": "79f44edfadf6ff7650cc7bdfc88f4c4846490cd0cf26aba8918ee8da7f8aaeae",
+      "sprites": 47,
+      "scripts": 20
+    },
+    "st06logo": {
+      "source": "th11.dat",
+      "sha256": "aefad1e83eeff7dbb52bb9e55a38aa61bd04492bd671d4de6b6bf1fe08c5db2b",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage06": {
+      "source": "th11.dat",
+      "sha256": "f530f21b303a4d0be52b2df523fdb10812d708217a09377eabf8a0b370094741",
+      "sprites": 4,
+      "scripts": 4
+    },
+    "stgenm06": {
+      "source": "th11.dat",
+      "sha256": "ea3684d4dd3d28f25e5694c718b0607b4ed56ba1f16bda3620a7f5c55d173acf",
+      "sprites": 100,
+      "scripts": 38
+    },
+    "st07logo": {
+      "source": "th11.dat",
+      "sha256": "291a871924352ed1fed6e9607c5d28713f6d752ae6eeac1dfbe9e3512af5fe09",
+      "sprites": 5,
+      "scripts": 6
+    },
+    "stage07": {
+      "source": "th11.dat",
+      "sha256": "8d3f5d38581cb86207e0c2a00070b138ffc52edd1d0ec015e4189d156f6b268b",
+      "sprites": 3,
+      "scripts": 10
+    },
+    "stgenm07": {
+      "source": "th11.dat",
+      "sha256": "3721212fc29f04ed92947b6a83cd786a3dad67d611aa42b8e5e51c0aa85edbb8",
+      "sprites": 94,
+      "scripts": 24
+    },
+    "e00": {
+      "source": "th11.dat",
+      "sha256": "766412aff3cdd7841c70e21cac4f05aa989e182a489b367db12183dd448f0473",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e01": {
+      "source": "th11.dat",
+      "sha256": "9b34eceb23de05cae12577fb426074f850b81b3f19a17f7ab47d88c19adb40aa",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e02": {
+      "source": "th11.dat",
+      "sha256": "acddc2338d4b8ed49486b35cd2cea08bc42792dd476c1313d61fd017ee8fd55c",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e03": {
+      "source": "th11.dat",
+      "sha256": "d1a28ab13c5fb3f477a7c1bbc204d8ead9782bc3a27a47e364baf3018f877b73",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e04": {
+      "source": "th11.dat",
+      "sha256": "f7fd595c54388476daed9f6f2d6aa55d7ddc380a045ef6044f0c36e61cb35209",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e05": {
+      "source": "th11.dat",
+      "sha256": "a425211057d04accd1da91130b6b902a2ce110308b9b0fc79f25e9ec902a6e30",
+      "sprites": 4,
+      "scripts": 6
+    },
+    "e06": {
+      "source": "th11.dat",
+      "sha256": "a536026e0c502b58c79425edc7935f2badc64dba036f6d9cb0ff1127657aca3f",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e07": {
+      "source": "th11.dat",
+      "sha256": "23f1c6d2555b4e13ba031440b6b1be5fb5d0c385474140d94dbc5a8c0f45eb15",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e08": {
+      "source": "th11.dat",
+      "sha256": "9d8d9293f3af5d1661d52c4dd635fa905505df16d5543bb4ace9492637fe15e0",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e09": {
+      "source": "th11.dat",
+      "sha256": "1b4e08606d587f965585c28c25ff76b927d1fed8de600e3da4b0995467bdc685",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e10": {
+      "source": "th11.dat",
+      "sha256": "b564b53b6334ce15078b363af409c5868775a9e1da6ffedbf3fe3c7027b98946",
+      "sprites": 6,
+      "scripts": 9
+    },
+    "e11": {
+      "source": "th11.dat",
+      "sha256": "38f3d5ad5346528bde7d8ddee811c39ec17f926264295494b11e28963851b6d6",
+      "sprites": 6,
+      "scripts": 9
+    }
   }
 }

@@ -76,7 +76,8 @@ ui.menu = {
                  "醉生梦死",     -- 31  TH33
                  "成群亡灵",     -- 32  TH34
                  "风神录",       -- 33  TH35
-                 "天空璋AEX" },  -- AEX（关卡号是 STAGE_COUNT + 1 = 34）
+                 "地灵殿整关",   -- 34  TH36
+                 "天空璋AEX" },  -- AEX（关卡号是 STAGE_COUNT + 1 = 35）
     sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
@@ -102,6 +103,7 @@ ui.menu = {
                TH33 = "醉生梦死",
                TH34 = "成群亡灵",
                TH35 = "风神录",
+               TH36 = "地灵殿整关",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },

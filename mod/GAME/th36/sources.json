@@ -1,0 +1,127 @@
+{
+  "version": 11,
+  "difficulty": {
+    "1-6": "Lunatic",
+    "7": "Extra"
+  },
+  "files": {
+    "default.ecl": {
+      "sha256": "b47210d6bf361a75a56016f5792465ce1890eee86bb6f03cb59b72bcb29fc8aa",
+      "subroutines": 6
+    },
+    "stage01.ecl": {
+      "sha256": "392e210374558a7ac6ef7005de49e65ff1075ffa194e1b4a3f85cb23a6a8ebae",
+      "subroutines": 81
+    },
+    "stage02.ecl": {
+      "sha256": "a4826ce4668143f0e2bdc1aea9395b664f350683b73c5ce5d698fcfbc8e797d7",
+      "subroutines": 98
+    },
+    "stage03.ecl": {
+      "sha256": "51500f94d7657dd9e6343a451cbaf81ef5e982883fecc068d000574ce000773e",
+      "subroutines": 127
+    },
+    "stage04.ecl": {
+      "sha256": "79fd4649a7bf32d8789937f7c1df14815d551af307d18e5578d4655673772440",
+      "subroutines": 121
+    },
+    "stage05.ecl": {
+      "sha256": "a8a3716c06d9624a8d5a4992dc855fb79f2071c88cc6c93764f43885b7ae0e68",
+      "subroutines": 60
+    },
+    "stage05boss.ecl": {
+      "sha256": "95d9ce91609ad149f046ef85348a49ebb719732ca9b4dc36644ed57ada026a54",
+      "subroutines": 73
+    },
+    "stage05mboss.ecl": {
+      "sha256": "fa2f091b04b0bfec5d7a7988d4f70d1252ffa660aea2795e3391d01d942e09b6",
+      "subroutines": 11
+    },
+    "stage06.ecl": {
+      "sha256": "9558f13321cb31fe48a78b2f99537fe6e3458b8845d73b71e66b9188be7ef3ce",
+      "subroutines": 36
+    },
+    "stage06boss.ecl": {
+      "sha256": "395afb28ee3f1e9768dc26af4c434ac365bea16191744935e5d84594499cc3f1",
+      "subroutines": 47
+    },
+    "stage06mboss.ecl": {
+      "sha256": "5ddd331f0b0da7c9c580fc06a23cf0e367c97c54cccac7645dbcc9ded7b928de",
+      "subroutines": 4
+    },
+    "stage07.ecl": {
+      "sha256": "a5b4ecef99812af380a20192ba0f7a63ce6d342449bcc744fd22946b2dcf0070",
+      "subroutines": 43
+    },
+    "stage07boss.ecl": {
+      "sha256": "4e59e57162f972fc50d8a83bfd53d2b74173b653da7363b7e4d14d21ff3de368",
+      "subroutines": 66
+    },
+    "stage07mboss.ecl": {
+      "sha256": "e72c61e59594644e9713a4ccb0ea3a67709560c63f7e704bcc00eeb2a4779b28",
+      "subroutines": 13
+    },
+    "stage4c00a.ecl": {
+      "sha256": "067dd43ed595b53da07c76b99f732c31a381f551f5dff0a046be887a0d65a8cd",
+      "subroutines": 9
+    },
+    "stage4c00b.ecl": {
+      "sha256": "a1ed9c8238eb396d5e57b2ea950e6db334c39ce97ed9dee7612c2279501cbb62",
+      "subroutines": 13
+    },
+    "stage4c00c.ecl": {
+      "sha256": "4a90645c570101d248c31d33b786a9aed82d5308bdfdb8abb75484c77de95456",
+      "subroutines": 10
+    },
+    "stage4c01a.ecl": {
+      "sha256": "df0acdd47e8d3bcf8340c845ed18981f8647d588a364b38ca3624e20a6ce3f6c",
+      "subroutines": 14
+    },
+    "stage4c01b.ecl": {
+      "sha256": "027c12fe361a887d718dff7d7d330bb91b91e188e1c35ccfd1137f168dd1424b",
+      "subroutines": 9
+    },
+    "stage4c01c.ecl": {
+      "sha256": "6d94db2d2e4c509590fec20d6e668157dbb67f926a60bdef5d42fac85492823b",
+      "subroutines": 10
+    }
+  },
+  "programs": {
+    "1": {
+      "subroutines": 87,
+      "instructions": 2837,
+      "lua_sha256": "059a9df6a24ba746be6f1544fb403b7999c4a18ae5cddcb22d9455c7974cd911"
+    },
+    "2": {
+      "subroutines": 104,
+      "instructions": 2511,
+      "lua_sha256": "5c911d8d6c77fc700d864caad5b0fec2bd71d20678a04dfbe4527238e9cf523d"
+    },
+    "3": {
+      "subroutines": 133,
+      "instructions": 3536,
+      "lua_sha256": "c122ae7d415028e6a76ad0f65310cbe4fc02db31b410c00f76ce0bc9494efb6b"
+    },
+    "4": {
+      "subroutines": 192,
+      "instructions": 5613,
+      "lua_sha256": "320ce9473aeb17b7e4d96607eceb5de1d71ef7e2bf431ebc822c692a19f6c297"
+    },
+    "5": {
+      "subroutines": 150,
+      "instructions": 3848,
+      "lua_sha256": "90068b6cee3077b1178d011c7fa53c0ce7e2d8ad31e6ff184c722da49d04a5df"
+    },
+    "6": {
+      "subroutines": 93,
+      "instructions": 2884,
+      "lua_sha256": "b2737534e7693946ddda5f81b863ef3922895426c520687c967dc13d0d322c5b"
+    },
+    "7": {
+      "subroutines": 128,
+      "instructions": 4213,
+      "lua_sha256": "1fad0cc3e8e275f67ee8f752883435c1a768935a58809760b2493320bde30701"
+    }
+  },
+  "unmapped_opcodes": []
+}

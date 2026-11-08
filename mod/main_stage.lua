@@ -1379,6 +1379,17 @@ NewStage("TH35", "风神录", 33, function(self)
     self:Next(168)
 end)--33
 
+NewStage("TH36", "地灵殿整关", 34, function(self)
+    self:Option(TH11_bg, "TH11_0")
+    self:Task(function()
+        for _,group in ipairs(_editor_class.TH36.boss_order) do
+            boss.CreateGroup(group,self.level,"a")
+            task.Wait(120)
+        end
+    end)
+    self:Next(169)
+end)--34
+
 NewStage("SUMMARY", nil, 1, function(self)
     self:Option()
     New(SUMMARY)

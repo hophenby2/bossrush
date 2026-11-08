@@ -755,6 +755,15 @@ local function New(class, ...)
     o._live = true
     objects[#objects + 1] = o
     if o.init then o.init(o, ...) end
+    -- TH36用完整Lua对象维护原版弹变换，不经过NewSimpleBullet。
+    -- 仍只推进一次对象frame，把它归入弹统计才能测到密度和回收。
+    if o._original_collision_game==11 and o.imgclass then
+        for i=#objects,1,-1 do if objects[i]==o then table.remove(objects,i);break end end
+        o._stage_native_object=true;o.r=o.a or 4
+        o._sx,o._sy,o._sf,o._v0,o._a0=o.x,o.y,_G.__frame or 0,o.speed or 0,o.rot or 0
+        markAimed(o,o.x,o.y,o.mx or 0,-(o.my or 0),false)
+        bullets[#bullets+1]=o;_G.CREATED_BULLETS=_G.CREATED_BULLETS+1
+    end
     return o
 end
 _G.New = New
@@ -1307,6 +1316,11 @@ local function step_objects()
             table.remove(bullets, i)
         else
             b.timer = b.timer + 1
+            if b._stage_native_object then
+                if b.frame then b.frame(b) end
+                if b._live~=false and b.render then b.render(b) end
+                b.r=b.a or b.r
+            else
             -- ★ 引擎每帧调 `self.frame_other(self)`、`self.render_other(self)`
             --   （`THlib/bullet/bullet.lua:251-259`）—— **只有一个参数**。
             --   原来这里**一次都不调**，于是「自定义运动」的弹在自检里永远静止：
@@ -1325,6 +1339,7 @@ local function step_objects()
             if b.bound and (b.x < -224 or b.x > 224 or b.y < -256 or b.y > 256) then
                 b._live = false
                 table.remove(bullets, i)
+            end
             end
         end
     end
@@ -1355,7 +1370,14 @@ end
 --    （有些文件依赖别的文件里的类，比如 th08-boss_lastword 要用 _editor_class.TH08，
 --      单跑一个文件会误报，这个模式才是它们正确的检查方式）
 ----------------------------------------------------------------------
+if path:gsub('\\','/'):match('mod/GAME/th36%.lua$') then
+    -- TH36的回收边界取ANM精灵尺寸；宽松全局空壳会把这些尺寸也吞掉。
+    dofile('THlib/anm/original.lua')
+    if os.getenv('STAGE_NO_ANM_DRAW')=='1' then OriginalANM.draw=function() end end
+end
 dofile('THlib/bullet/visual_match.lua')
+-- ANM的UV滚动会读取纹理尺寸；这项桩只核对执行，不用于像素级验收。
+if not rawget(_G,'GetTextureSize') then GetTextureSize=function() return 512,512 end end
 
 if path == "--all" then
     local ids = {}

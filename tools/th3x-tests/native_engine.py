@@ -1,4 +1,4 @@
-"""在独立 Windows 发行目录运行 TH31–TH35，保留逐卡进度、错误和截图。"""
+"""在独立 Windows 发行目录运行 TH31–TH36，保留逐卡进度、错误和截图。"""
 from pathlib import Path
 import argparse
 import hashlib
@@ -50,13 +50,13 @@ def prepare(output):
         "lstg.DoFile('launch.lua')\n"
         "setting.mod='launcher';setting.resx=960;setting.resy=540\n"
         "setting.windowed=true;setting.vsync=false;setting.bgmvolume=0;setting.sevolume=0\n"
-        "lstg.SetTitle('TH31-TH35 native verification')\n"
+        "lstg.SetTitle('TH31-TH36 native verification')\n"
         "lstg.SetWindowed(true);lstg.SetResolution(960,540);lstg.SetVsync(false)\n",
         encoding='utf-8')
     core = (output / 'core.lua').read_text(encoding='utf-8-sig')
     core += "\nlocal original_init=GameInit\nfunction GameInit()\n"
     core += " local f=assert(io.open('native-boot.log','w'))\n"
-    core += " local ok,err=xpcall(function() original_init();setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting));Include('mod/root.lua');InitAllClass();InitScoreData();stage.next_stage=stage.stages.init;dofile('native_test.lua').install() end,debug.traceback)\n"
+    core += " local ok,err=xpcall(function() original_init();setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting));Include('mod/root.lua');InitAllClass();InitGameSaveData();stage.next_stage=stage.stages.init;dofile('native_test.lua').install() end,debug.traceback)\n"
     core += " if not ok then f:write(err);FrameFunc=function() return true end;RenderFunc=function() end;GameExit=function() end end;f:close()\nend\n"
     (output / 'core.lua').write_text(core, encoding='utf-8')
 

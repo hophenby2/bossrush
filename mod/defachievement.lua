@@ -658,3 +658,7 @@ DefineAchievement(167, [[成群亡灵]], [[成群亡灵 No Miss]], {
 DefineAchievement(168, [[风神录]], [[风神录 No Miss]], {
     [[第十三张新关卡：东方风神录（TH10）第六面 BOSS 八坂神奈子的最后一张符卡「風神様の神徳」]],
     [[按 data/stage06.ecl 的 BossCard5 逐条移植：5 把圆上枪 + 6 颗装饰卫星，弹先悬停再一起加速射出]] }, false, 6)
+
+DefineAchievement(169, [[地灵殿整关]], [[地灵殿整关 No Miss]], {
+    [[地灵殿Lunatic六面与Extra，按原ECL顺序挑战道中、中Boss与主Boss]],
+    [[觉的六种机体回忆路线可在符卡练习中分别选择]] }, false, 6)
