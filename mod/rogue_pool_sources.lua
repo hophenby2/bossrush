@@ -1,6 +1,6 @@
 -- 随机十战已核对的原作来源白名单；由export_rogue_pool_sources.py导出。
 -- 难度取实际ECL来源/实现分支，不按卡名、Boss名或注册顺序猜测。
--- Phantasm保留原作来源标签，抽取时与Extra共用一个开关；不含文花帖/独立Last Word/自制。
+-- Phantasm与Extra共用开关；永夜抄独立Last Word单独筛选，不含文花帖/自制。
 return {
     TH31={
         lunatic={
@@ -25,6 +25,14 @@ return {
             },
             road={
                 3438,3439,
+            },
+        },
+        lastword={
+            boss={
+                351,352,353,354,355,356,357,358,359,360,361,362,
+                363,364,365,366,367,
+            },
+            road={
             },
         },
     },

@@ -5,8 +5,9 @@ local options={
     {group='stages',key='TH32',text='红魔乡 · TH32',x=720,y=366},
     {group='stages',key='TH34',text='妖妖梦 · TH34',x=505,y=334},
     {group='stages',key='TH35',text='风神录 · TH35',x=720,y=334},
-    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=270},
-    {group='difficulties',key='extra',text='Extra/Phantasm',x=720,y=270},
+    {group='difficulties',key='lunatic',text='Lunatic',x=505,y=270,width=133},
+    {group='difficulties',key='extra',text='Extra/Phantasm',x=646,y=270,width=133},
+    {group='difficulties',key='lastword',text='Last Word',x=787,y=270,width=133},
     {group='encounters',key='boss',text='Boss',x=505,y=208},
     {group='encounters',key='road',text='道中',x=720,y=208},
     {group='cards',key='survival',text='时符（耐久卡）',x=505,y=110,optional=true},
@@ -16,7 +17,7 @@ local options={
 local groupNames={stages='关卡',difficulties='难度',encounters='Boss / 道中'}
 U.options=options
 local function over(mouse,entry)
-    return sp.math.PointBoundCheck(mouse.x,mouse.y,entry.x,entry.x+200,entry.y-14,entry.y+14)
+    return sp.math.PointBoundCheck(mouse.x,mouse.y,entry.x,entry.x+(entry.width or 200),entry.y-14,entry.y+14)
 end
 local function refresh(o) o.pool_status=RogueTen.poolStatus(o.pool_options) end
 local function notice(o,message)
@@ -109,9 +110,10 @@ function U.render(o)
             local checked=o.pool_options[entry.group][entry.key]
             local focused=o.pool_focus==index+1
             local hovered=over(ext.mouse,entry)
+            local right=entry.x+(entry.width or 200)
             SetImageState('white','',Color(alpha*(focused and 155 or hovered and 110 or 75),35,74,91))
-            RenderRect('white',entry.x,entry.x+200,entry.y-14,entry.y+14)
-            if focused then SetImageState('white','',accent);misc.RenderOutLine('white',entry.x,entry.x+200,entry.y-14,entry.y+14,0,1) end
+            RenderRect('white',entry.x,right,entry.y-14,entry.y+14)
+            if focused then SetImageState('white','',accent);misc.RenderOutLine('white',entry.x,right,entry.y-14,entry.y+14,0,1) end
             ui:RenderText('title',checked and '√' or '□',entry.x+14,entry.y,.72,checked and accent or muted,'centerpoint')
             ui:RenderText('title',entry.text,entry.x+31,entry.y,.65,checked and white or muted,'left','vcenter')
         end

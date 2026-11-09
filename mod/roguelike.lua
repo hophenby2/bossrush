@@ -1,6 +1,6 @@
 -- roguelike 模式持续战斗至生命耗尽；所选卡池抽完后重新洗牌，不重置生命和强化。
 -- 复用原卡的标定值，阶段倍率只作用于运行中的敌机，不改共享卡表、时限或弹幕。
-local R={POOL_VERSION=8,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
+local R={POOL_VERSION=9,COUNT=10,MISS_LIMIT=10,NAME='RogueTen',BATTLE='RogueTen@RogueTen',RESULT='RogueResult@RogueTen',
     CHAIN_HP=0.15,CHAIN_TIME_FRAMES=3*60}
 R.modes={single={name=R.NAME,battle=R.BATTLE,result=R.RESULT,title='roguelike模式',width=1,record='rogue10'},
     dual={name='RogueDuo',battle='RogueDuo@RogueDuo',result='RogueDuoResult@RogueDuo',title='双Boss随机十战',width=2,record='rogue_dual10'},
@@ -57,7 +57,9 @@ R.defaultFilters=poolSource.defaults
 R.copyFilters=poolSource.copy
 R.buildPool=poolSource.build
 function R.savedFilters()
-    return scoredata.rogue10_filters_version==R.POOL_VERSION and R.copyFilters(scoredata.rogue10_filters) or R.defaultFilters()
+    local version=scoredata.rogue10_filters_version
+    -- 版本9只新增默认关闭的Last Word开关，保留版本8已经选择的作品、难度和类型。
+    return (version==8 or version==R.POOL_VERSION) and R.copyFilters(scoredata.rogue10_filters) or R.defaultFilters()
 end
 -- 新的单人模式只需一个候选；显式指定宽度时仍校验旧十战模式的卡数。
 function R.poolStatus(filters,width) return poolSource.status(filters,width and R.COUNT*width or 1) end

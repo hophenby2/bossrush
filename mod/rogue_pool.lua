@@ -16,14 +16,14 @@ for code,source in pairs(catalog) do
         end
     end
 end
-local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
+local fields={stages={'TH31','TH32','TH34','TH35','TH36'},difficulties={'lunatic','extra','lastword'},encounters={'boss','road'},cards={'nonspell','spell','survival'}}
 function P.defaults(variant,poolVersion)
     -- 新局关闭TH36选择；仅版本4的历史录像保留当时的五作范围。
     local single=not variant or variant=='single'
     local historical=poolVersion and poolVersion<7
     -- 版本8的新局默认只选Lunatic；旧录像缺少筛选初态时仍使用当时的Extra默认值。
     return {stages={TH31=true,TH32=single,TH34=true,TH35=true,TH36=single and poolVersion==4},
-        difficulties={lunatic=true,extra=poolVersion~=nil and poolVersion<8},encounters={boss=true,road=single and historical or false},
+        difficulties={lunatic=true,extra=poolVersion~=nil and poolVersion<8,lastword=false},encounters={boss=true,road=single and historical or false},
         cards={nonspell=true,spell=true,survival=historical or false}}
 end
 function P.copy(filters,variant,poolVersion)
@@ -41,6 +41,8 @@ function P.copy(filters,variant,poolVersion)
     end
     -- 旧设置中的勾选也必须失效，不能只移除准备界面的按钮。
     out.stages.TH36=out.stages.TH36 and poolVersion==4
+    -- Last Word从版本9开始可选；旧录像保持当时的来源集合与抽取顺序。
+    if poolVersion and poolVersion<9 then out.difficulties.lastword=false end
     if poolVersion and poolVersion<6 then out.cards.survival=true end
     if poolVersion and poolVersion<7 then out.cards.nonspell,out.cards.spell=true,true end
     return out

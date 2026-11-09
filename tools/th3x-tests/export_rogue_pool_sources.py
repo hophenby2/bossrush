@@ -16,7 +16,7 @@ def classify(row):
         return None, '自制条目'
     metadata = row.get('metadata', {})
     if game == 31 and 'th08_lastword_source' in metadata:
-        return None, 'Last Word独立模式'
+        return ('lastword', 'boss'), None
     filename = source['file']
     kind = 'road' if source['kind'] == '时间轴' else 'boss'
     if game == 36:
@@ -60,12 +60,12 @@ def export():
             excluded.append((row, reason))
     lines = ['-- 随机十战已核对的原作来源白名单；由export_rogue_pool_sources.py导出。',
              '-- 难度取实际ECL来源/实现分支，不按卡名、Boss名或注册顺序猜测。',
-             '-- Phantasm保留原作来源标签，抽取时与Extra共用一个开关；不含文花帖/独立Last Word/自制。',
+             '-- Phantasm与Extra共用开关；永夜抄独立Last Word单独筛选，不含文花帖/自制。',
              'return {']
     for game in NATIVE:
         lines.append(f'    TH{game}={{')
-        for difficulty in ('lunatic', 'extra', 'phantasm'):
-            if difficulty == 'phantasm' and not any(groups[game, difficulty, k] for k in ('boss', 'road')):
+        for difficulty in ('lunatic', 'extra', 'phantasm', 'lastword'):
+            if difficulty in ('phantasm', 'lastword') and not any(groups[game, difficulty, k] for k in ('boss', 'road')):
                 continue
             lines.append(f'        {difficulty}={{')
             for kind in ('boss', 'road'):
@@ -78,18 +78,19 @@ def export():
         lines.append('    },')
     lines.append('}')
     (ROOT / 'mod/rogue_pool_sources.lua').write_text('\n'.join(lines) + '\n',encoding='utf-8',newline='\n')
-    report = ['# Roguelike抽取来源（2026-11-08）', '',
-              '准备界面选择五作、Lunatic与Extra/Phantasm、Boss/道中；Boss包括符卡、非符与中Boss。'
+    report = ['# Roguelike抽取来源（2026-11-09）', '',
+              '准备界面选择Lunatic、Extra/Phantasm与Last Word，以及作品、Boss/道中和卡片类型；Boss包括符卡、非符与中Boss。'
               '每组至少保留一项；交集至少一张即可开始，每轮无放回抽取，抽完重新洗牌，不跨池补抽。', '',
               '仅收录已核对来源的卡号。妖妖梦ecldata8的23个Phantasm条目并入Extra/Phantasm开关。'
-              'TH34显式Normal/Hard分支、TH31独立Last Word与TH32自制条目仍排除。', '',
-              '| 来源 | L Boss | L 道中 | EX/PH Boss | EX/PH 道中 |', '| --- | ---: | ---: | ---: | ---: |']
+              'TH31的17张独立Last Word由新开关控制，默认关闭；仍与符卡/时符筛选取交集。'
+              'TH34显式Normal/Hard分支与TH32自制条目仍排除；TH36白名单仅用于版本4历史录像。', '',
+              '| 来源 | L Boss | L 道中 | EX/PH Boss | EX/PH 道中 | Last Word |', '| --- | ---: | ---: | ---: | ---: | ---: |']
     for game in NATIVE:
         counts = [sum(len(groups[game, d, k]) for d in difficulties) for difficulties, k in
                   [(('lunatic',), 'boss'), (('lunatic',), 'road'), (('extra', 'phantasm'), 'boss'),
-                   (('extra', 'phantasm'), 'road')]]
+                   (('extra', 'phantasm'), 'road'), (('lastword',), 'boss')]]
         report.append(f'| TH{game} | ' + ' | '.join(map(str, counts)) + ' |')
-    report += ['', f'全开共{sum(map(len, groups.values()))}个候选；排除{len(excluded)}项。', '',
+    report += ['', f'白名单共{sum(map(len, groups.values()))}个候选（含仅供历史录像使用的TH36）；排除{len(excluded)}项。', '',
                '## 排除条目', '', '| 来源/卡号 | 卡名 | 原ECL入口 | 排除原因 |', '| --- | --- | --- | --- |']
     for row, reason in excluded:
         source = row['source']
@@ -101,6 +102,7 @@ def export():
                '例如ecldata1/Sub39在0x4e10以mask03设置Sub48，ecldata3/Sub37在0x4f20/0x4f30以mask03/04选择Sub50/52。',
                '- TH34/4468虽然Sub68有共同回调入口，移植卡明确使用Normal分支，仍排除；不能仅凭被共用子程序引用就判为L。',
                '- Extra按原作扩展关ECL文件，TH34的ecldata8为Phantasm，TH31的ecldata8为Extra；两个原作来源均由Extra/Phantasm开关控制。',
+               '- Last Word取TH31的th08_lastword_source元数据，卡号351–367，独立于Lunatic与Extra/Phantasm；版本2–8录像仍排除，版本1沿用原抽取算法。',
                '- 道中取已审阅清单的时间轴类型，不再通过标题包含“道中”猜测。',
                '- TH36阶段来自`tools/th36-tests/low_speed_hp.json`的原始ECL探针。65个Lunatic、21个Extra阶段归Boss；'
                '11201–11207是按main时钟执行、剥离Boss演员的独立道中，11101–11107完整关卡不进入随机池。',

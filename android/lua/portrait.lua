@@ -207,12 +207,21 @@ function P.playerSelect(o,pool)
     if o.pool_options then
         button(o,(o.pool_expanded and '− ' or '+ ')..'高级选项',24,WIDTH-24,optionsTop,52,function() pool.expand(o) end,o.pool_expanded)
         if o.pool_expanded then
-            local gap=math.min(50,(optionsTop-216)/5)
+            local layout,row,col,group={},-1,0,nil
             for i,entry in ipairs(pool.options) do
-                local index=i;local col=(i-1)%2;local row=math.floor((i-1)/2)
+                local columns=entry.group=='difficulties' and 3 or 2
+                if entry.group~=group or col>=columns then row=row+1;col=0 end
+                layout[#layout+1]={index=i,entry=entry,row=row,col=col,columns=columns}
+                col=col+1;group=entry.group
+            end
+            local gap=math.min(50,(optionsTop-216)/math.max(1,row))
+            for _,cell in ipairs(layout) do
+                local index,entry=cell.index,cell.entry
+                local width=(WIDTH-36)/cell.columns
+                local x1=24+cell.col*width
                 local checked=o.pool_options[entry.group][entry.key]
-                button(o,(checked and '√ ' or '□ ')..entry.text,24+col*252,WIDTH/2-6+col*252,
-                    optionsTop-62-row*gap,math.min(44,gap-4),function() pool.toggle(o,index) end,checked)
+                button(o,(checked and '√ ' or '□ ')..entry.text,x1,x1+width-12,
+                    optionsTop-62-cell.row*gap,math.min(44,gap-4),function() pool.toggle(o,index) end,checked)
             end
         end
         if o.pool_notice_time>0 and o.pool_notice then label(o.pool_notice,WIDTH/2,130,.8,o.alpha*255,{255,170,125},nil,WIDTH-48) end
