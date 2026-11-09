@@ -244,6 +244,7 @@ function stg.Start(group)
     lstg.var.__rank_version=0;lstg.var.rank=nil
     lstg.var.__hp_scale_version=(group._name=='RogueTen' or group._name=='RogueDuo' or group._name=='RogueChain') and 1 or nil
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
+    lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('save', group[1])
@@ -265,6 +266,8 @@ end
 
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
 function stg.PracticeStart(stagename, sc_pr)
+    if not dofile('mod/original_practice.lua').canStart(stagename,sc_pr) then return false end
+    lstg.var.__original_flow_version=1
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     lstg.var.__phase_clear_version=1

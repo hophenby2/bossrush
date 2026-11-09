@@ -80,7 +80,7 @@ function P.apply(card,level,id,boss,band)
             if previous.phase_key==key then index=math.max(index,previous.phase_index+1) end
         end
         card.phase_key,card.phase_index=key,index
-        name=name..(kind=='mid' and '道中' or '面')..index..'非'
+        name=name..(kind=='mid' and '道中Boss' or '关底')..index..'非'
     end
     card.phase_name,card.phase_kind=name,kind
     return name

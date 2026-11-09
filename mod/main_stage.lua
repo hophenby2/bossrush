@@ -1,3 +1,5 @@
+local original_flow=dofile('mod/GAME/original/stage_flow.lua')
+-- 新局使用共用原作顺序；下方原Task保留给没有流程版本标记的旧录像。
 local sg = stage.group
 sg.New('menu', {}, "BossRush", true, 1)
 
@@ -1176,9 +1178,10 @@ NewStage("TH30", "冥府", 28, function(self)
     self:Next(164)
 end)--28
 
-NewStage("TH31", "永夜LastWord", 29, function(self)
+NewStage("TH31", "永夜抄原作", 29, function(self)
     self:Option(TH08_bg, "TH08_NEW_0")
     self:Task(function()
+        if lstg.var.__original_flow_version==original_flow.VERSION then original_flow.run(self.level);return end
         task.Wait(60)
         ---一张一张来（boss.CreateGroup 会阻塞到这张卡打完）。
         ---原来分成 1..7 / 8..17 两段没有意义；真正的坑是旧版把 17 个角色全
@@ -1201,9 +1204,10 @@ NewStage("TH31", "永夜LastWord", 29, function(self)
     self:Next(52)
 end)--29
 
-NewStage("TH32", "猩红测试", 30, function(self)
+NewStage("TH32", "红魔乡原作", 30, function(self)
     self:Option(TH06_bg, "TH06_0")
     self:Task(function()
+        if lstg.var.__original_flow_version==original_flow.VERSION then original_flow.run(self.level);return end
         -- 各面道中前半 → 中 Boss → 道中后半 → 主 Boss；帕秋莉保留四条机体路线。
         for _, group in ipairs(_editor_class["TH32"].boss_order) do
             boss.CreateGroup(group, self.level)
@@ -1213,11 +1217,12 @@ NewStage("TH32", "猩红测试", 30, function(self)
     self:Next(52)
 end)--30
 
-NewStage("TH33", "醉生梦死", 31, function(self)
+NewStage("TH33", "文花帖原作", 31, function(self)
     ---复用 TH095（文花帖）的背景类与 BGM「幽雅に咲かせ、墨染の桜」——
     ---这张卡就是文花帖第 7 关第 5 幕，幽幽子自己的主题曲。
     self:Option(TH095_bg, "TH07_1")
     self:Task(function()
+        if lstg.var.__original_flow_version==original_flow.VERSION then original_flow.run(self.level);return end
         ---两个 boss 组：组 1 = 西行寺幽幽子（71/73/75/77），组 2 = 魂魄妖梦（72/74/76）。
         ---CreateGroup 按「组号 + 字母 + 关卡号」枚举，所以两次调用正好各建一个 boss。
         boss.CreateGroup(1, self.level)
@@ -1301,11 +1306,12 @@ NewStage("TH33", "醉生梦死", 31, function(self)
     self:Next(166)
 end)--31
 
-NewStage("TH34", "成群亡灵", 32, function(self)
+NewStage("TH34", "妖妖梦原作", 32, function(self)
     ---复用 TH07（妖妖梦）第 6 面的背景类与 BGM「幽雅に咲かせ、墨染の桜」（mod/music.lua:25），
     ---与 mod/GAME/th34.lua 里 boss.Define 用的那两个参数必须一致。
     self:Option(TH07_bg, "TH07_1")
     self:Task(function()
+        if lstg.var.__original_flow_version==original_flow.VERSION then original_flow.run(self.level);return end
         ---只有一个空 boss（editname "1a"），它只是那张「成群的亡灵」耐久卡的载体。
         boss.CreateGroup(1, self.level)
         task.Wait(120)
@@ -1314,11 +1320,12 @@ NewStage("TH34", "成群亡灵", 32, function(self)
     self:Next(167)
 end)--32
 
-NewStage("TH35", "风神录", 33, function(self)
+NewStage("TH35", "风神录原作", 33, function(self)
     ---复用 TH10（风神录）的背景类与 BGM「神さびた古戦場」（mod/music.lua:42），
     ---与 mod/GAME/th35.lua 里 boss.Define 用的那两个参数（"TH10_2" + TH10_bg）必须一致。
     self:Option(TH10_bg, "TH10_2")
     self:Task(function()
+        if lstg.var.__original_flow_version==original_flow.VERSION then original_flow.run(self.level);return end
         ---  组 1 = 六面 BOSS 八坂神奈子（風神様の神徳）
         ---        + stage07 中 BOSS 三张（神符「水眼の如き美しき源泉」/「杉で結ぶ古き縁」/
         ---          「神が歩かれた御神渡り」）+ stage05 BOSS 神奈子四张（奇跡「客星の明るすぎる夜」/

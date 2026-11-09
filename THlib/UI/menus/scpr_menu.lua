@@ -7,38 +7,23 @@ function sc_pr_menu.IfInsertCard(sc)
     return true
 end
 
+local practice_catalog=dofile('mod/original_practice.lua')
 function sc_pr_menu:TweakCard(onlyshowcard, onlyshowspecialcard)
-    self.spells = {}
-    local num = 1
-    for t in ipairs(ui.menu.difftext) do
-        self.spells[t] = {}
-        for i, sc in ipairs(_sc_pr_table[t] or {}) do
-            local card = sc.sc_group[1].card
-            if not onlyshowcard or card.is_sc then
-                if not onlyshowspecialcard or card.is_od then
-                    table.insert(self.spells[t], { i, num, sc_pr_menu.IfInsertCard(card), t })
-
-                end
+    self.spells={}
+    local all,num={},1
+    for tab,entry in ipairs(practice_catalog.stages) do
+        local list={};self.spells[tab]=list
+        for _,row in ipairs(practice_catalog.cards(entry.level)) do
+            local card=row.unit.sc_group[1].card
+            if (not onlyshowcard or card.is_sc) and (not onlyshowspecialcard or card.is_od) then
+                local item={row.index,num,sc_pr_menu.IfInsertCard(card),entry.level}
+                list[#list+1]=item;all[#all+1]=item
             end
-            num = num + 1
+            num=num+1
         end
     end
-    local tmp = {}
-    num = 1
-    for t in ipairs(ui.menu.difftext) do
-        for i, sc in ipairs(_sc_pr_table[t] or {}) do
-            local card = sc.sc_group[1].card
-            if not onlyshowcard or card.is_sc then
-                if not onlyshowspecialcard or card.is_od then
-                    table.insert(tmp, { i, num, sc_pr_menu.IfInsertCard(card), t })
-
-                end
-            end
-            num = num + 1
-        end
-    end
-    table.insert(self.spells, tmp)
-    self.keyname = KeyCodeToName()
+    self.spells[#practice_catalog.stages+1]=all
+    self.keyname=KeyCodeToName()
 end
 
 local function GetCardUnlock(sc)
@@ -64,7 +49,8 @@ function sc_pr_menu:init(exit_func)
     self.pos = 1
     self.pos_changed = 0
     self.state = 1
-    self.difficulty = sp:CopyTable(ui.menu.difftext)
+    self.difficulty = {}
+    for _,entry in ipairs(practice_catalog.stages) do self.difficulty[#self.difficulty+1]=entry.title end
     table.insert(self.difficulty, "全部")
     setmetatable(self.difficulty, { __index = function(t, k)
         return rawget(t, (k - 1) % #t + 1)

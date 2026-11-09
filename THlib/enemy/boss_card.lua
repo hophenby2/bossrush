@@ -6,6 +6,8 @@ boss.card = Card
 local default = function()
 end
 local task = task
+local card_ids=dofile('mod/GAME/original/card_ids.lua')
+local registered_ids={}
 local phase_labels=dofile('mod/GAME/original/phase_labels.lua')
 local spell_names=dofile('THlib/misc/spell_names.lua')
 ---对二人非符的处理
@@ -112,6 +114,10 @@ end
 ---@param CardName string@显示的卡名
 ---@param OD number@只能在符卡练习中挑战，请写下对应的解锁id(请务必按顺序)
 function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
+    local source_id=data_id
+    data_id=card_ids.resolve(level,source_id)
+    assert(not registered_ids[data_id],'符卡历史槽位重复：'..tostring(data_id))
+    registered_ids[data_id]=true
     ---@type boss
     local BOSS
     ---@type boss.card
@@ -121,11 +127,11 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
     for _, u in ipairs(sc_group) do
         BOSS = _editor_boss[u[2] .. level]
         sc = u[1]
-        CardName=phase_labels.apply(sc,level,data_id,BOSS,u[2]) or CardName
-        local localized,binding=spell_names.bind(sc,level,data_id,CardName)
+        CardName=phase_labels.apply(sc,level,source_id,BOSS,u[2]) or CardName
+        local localized,binding=spell_names.bind(sc,level,source_id,CardName)
         CardName=localized;name_binding=name_binding or binding
         local game=({[32]=7,[33]=10})[level]
-        local balance=game and OriginalBalance and OriginalBalance.entries[game][data_id]
+        local balance=game and OriginalBalance and OriginalBalance.entries[game][source_id]
         if balance and sc.t1<sc.t3 then
             sc._original_balance=balance
             sc.hp,sc.t1,sc.t2=balance.hp,balance.immune,balance.immune
@@ -142,10 +148,11 @@ function Card.add(sc_group, level, CardName, data_id, OD, inotherstage)
             sc.locked_id = OD
             sc.is_od = true
         else
-            table.insert(BOSS.cards, sc)
+            if not sc.practice_only then table.insert(BOSS.cards, sc) end
         end
         sc.inotherstage = inotherstage
         sc.card_id = data_id
+        sc.source_card_id = source_id
         local hist = spell_card_data
         if not hist[sc.card_id] then
             hist[sc.card_id] = {}

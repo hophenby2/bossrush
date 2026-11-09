@@ -1223,7 +1223,10 @@ boss.card.New = function(name, t1, t2, t3, hp, drop, is_extra)
 end
 -- 复用了同一个 card_id 的卡（正常情况：同一组里的双 boss 共用一张符卡）
 local global_ids = {}
+local card_ids=dofile('mod/GAME/original/card_ids.lua')
 boss.card.add = function(sc_group, level, CardName, data_id, OD, inotherstage)
+    local source_id=data_id
+    data_id=card_ids.resolve(level,source_id)
     if type(sc_group) ~= "table" or #sc_group < 1 then fail("Card.add: sc_group 为空") return end
     -- 同一次 add 里多张卡共用 data_id 是正常的（双 boss 同一张符卡）；
     -- 只有「跨组」重复才会让 spell_card_data 串掉
@@ -1236,6 +1239,7 @@ boss.card.add = function(sc_group, level, CardName, data_id, OD, inotherstage)
                     :format(tostring(CardName), key, tostring(level)))
         end
         card.card_id = data_id
+        card.source_card_id = source_id
         if not in_this_call then
             in_this_call = true
             if global_ids[data_id] then

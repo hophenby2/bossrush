@@ -373,51 +373,18 @@ LoadTexture("th16AEXPIC", "mod\\th16AEX.png")
 local white = "white"
 stage_select = Class(object)
 function stage_select:fresh()
-    self.stage_text = {}
-    for i, p in pairs(stage_selects) do
-        self.stage_text[i] = p
-    end
-    self.unlocked_day = {}
-    self.stage_selects = {}
-    table.insert(self.stage_selects, {
-        id = -1,
-        title = "天空璋AfterExtra",
-        tex = "th16AEXPIC",
-        pulse = 0,
-        stage = function()
-            stage.group.Start(stage.groups["HSiFS AfterExtra"])
-        end,
-        unlock_way = function()
-            if scoredata.bought[2] then
-                return true
-            else
-                return "请前往商店购买解锁"
-            end
+    local catalog=dofile('mod/original_practice.lua')
+    self.stage_text,self.stage_selects,self.unlocked_day={},{},{}
+    for _,entry in ipairs(catalog.stages) do
+        local unit=stage_selects[entry.level]
+        if unit then
+            self.stage_text[#self.stage_text+1]=unit
+            self.stage_selects[#self.stage_selects+1]=unit
+            self.unlocked_day[#self.stage_selects]=true
         end
-    })
-    table.insert(self.stage_selects, {
-        id = 0,
-        title = "Bad Apple!!",
-        tex = "badapplePIC",
-        pulse = 0,
-        stage = function()
-            stage.group.Start(stage.groups["Bad Apple!!"])
-        end,
-        unlock_way = function()
-            if scoredata.bought[1] then
-                return true
-            else
-                return "请前往商店购买解锁"
-            end
-        end
-    })
-    for _, d in pairs(self.stage_text) do
-        table.insert(self.stage_selects, d)
     end
-    for t, d in ipairs(self.stage_selects) do
-        self.unlocked_day[t] = true
-    end --单篇章游玩已移除解锁限制
-    self.stage_count = #self.stage_selects
+    self.stage_count=#self.stage_selects
+    self.pos=math.max(1,math.min(self.pos or 1,self.stage_count))
 end
 function stage_select:init(exit_func, choose_func)
     self.exit_func = exit_func

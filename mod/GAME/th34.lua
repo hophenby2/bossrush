@@ -460,6 +460,7 @@ TH34Prism=dofile('mod/GAME/th34_prism.lua')
 local NativeVisual = dofile("mod/GAME/th34_visual.lua")
 local laser = OriginalBulletVisual.laser(laser, 7)
 local class = {}
+local flow=dofile('mod/GAME/original/stage_flow.lua')
 _editor_class["TH34"] = class
 
 local task, object, enemy, New = NativeVisual.task_api(task), object, enemy, New
@@ -910,8 +911,10 @@ do
         ---时间轴从卡开始算（原作的 t=720 映射成 0）。
         task.New(self, function()
             for _, w in ipairs(WAVE) do
-                task.Wait(w[1])
-                New(class["TH34_ghost"], w[3], w[4], (w[2] == "R") and 1 or -1, w[5], w[6])
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    New(class["TH34_ghost"], w[3], w[4], (w[2] == "R") and 1 or -1, w[5], w[6])
+                end
             end
         end)
     end
@@ -1906,17 +1909,19 @@ do
         ---spawn 当帧就把子程序跑到第一条 time>0 的指令（原作同样如此，见文件头）。
         task.New(self, function()
             for _, w in ipairs(WAVE4) do
-                task.Wait(w[1])
-                local sub = w[2]
-                if sub <= 8 then
-                    New(class["TH34_turret4"], w[3], w[4], w[6], sub,w[7])
-                elseif sub == 9 then
-                    New(class["TH34_ghost4"], w[3], w[4], w[6],w[7])
-                elseif sub <= 14 then
-                    New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
-                else
-                    New(class["TH34_fairy4"], w[3], w[4], w[6],
-                            (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5],w[7])
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    local sub = w[2]
+                    if sub <= 8 then
+                        New(class["TH34_turret4"], w[3], w[4], w[6], sub,w[7])
+                    elseif sub == 9 then
+                        New(class["TH34_ghost4"], w[3], w[4], w[6],w[7])
+                    elseif sub <= 14 then
+                        New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
+                    else
+                        New(class["TH34_fairy4"], w[3], w[4], w[6],
+                                (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5],w[7])
+                    end
                 end
             end
         end)
@@ -2542,12 +2547,14 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE3) do
-                task.Wait(w[1])
-                local sub = w[2]
-                if sub <= 6 then
-                    New(class["TH34_walker3"], w[3], w[4], w[6], sub, w[7])
-                else
-                    New(class["TH34_bigghost3"], w[3], w[4], w[6], sub)
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    local sub = w[2]
+                    if sub <= 6 then
+                        New(class["TH34_walker3"], w[3], w[4], w[6], sub, w[7])
+                    else
+                        New(class["TH34_bigghost3"], w[3], w[4], w[6], sub)
+                    end
                 end
             end
         end)
@@ -3076,8 +3083,10 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE5) do
-                task.Wait(w[1])
-                New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
+                end
             end
         end)
     end
@@ -3706,8 +3715,10 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE1) do
-                task.Wait(w[1])
-                New(class[W1_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    New(class[W1_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+                end
             end
         end)
     end
@@ -4388,8 +4399,10 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(WAVE2) do
-                task.Wait(w[1])
-                New(class[W2_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    New(class[W2_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+                end
             end
         end)
     end
@@ -5679,8 +5692,10 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(W7) do
-                task.Wait(w[1])
-                spawn78(W78EX, w)
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    spawn78(W78EX, w)
+                end
             end
         end)
     end
@@ -5717,8 +5732,10 @@ do
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
             for _, w in ipairs(W8) do
-                task.Wait(w[1])
-                spawn78(W78PH, w)
+                flow.roadWait(w[1])
+                if flow.roadActive() then
+                    spawn78(W78PH, w)
+                end
             end
         end)
     end

@@ -92,6 +92,7 @@ OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 
 _editor_class["TH35"] = {}
 local class = _editor_class["TH35"]
+local flow=dofile('mod/GAME/original/stage_flow.lua')
 
 local RAD = 180 / math.pi           -- 弧度 → 角度（引擎的 rot / SetV 是角度制）
 local PI = math.pi
@@ -1344,6 +1345,10 @@ end
 
 -- Native RuntimeUpdate先按可视范围判出屏，再跑ECL。这里使用原作坐标和ANM设置时的快照。
 class.t10_fx=dofile('mod/GAME/th35_fx.lua')
+local road_fx_fire=class.t10_fx.fire
+class.t10_fx.fire=function(...)
+    if flow.roadActive() then return road_fx_fire(...) end
+end
 class.t10_dive=assert(loadfile('mod/GAME/th35_dive.lua'))(class)
 class.t10_no_oob_sources=dofile('mod/GAME/th35_no_oob.lua')
 class.t10_interaction=dofile('mod/GAME/th35_interaction.lua')
@@ -1719,6 +1724,17 @@ function class.t10_start_road(owner,main)
     class.th10_enemy_schedule.ensure()
     local p=New(class.th10_ecs_pod,nil,0,0,main)
     p.t10_road_owner=owner
+    local window=owner.current_card and owner.current_card.road_window
+    if window then
+        -- 单独进入后半段时，只预推进生成器，保留原异步协程顺序与寄存器；不创建前半敌机。
+        local context={native=true,preroll=true}
+        p._original_road_window=context
+        for frame=0,window.first-1 do
+            class.t10_run_tasks(p)
+            p.timer=p.timer+1
+        end
+        context.preroll=false
+    end
     local fxkey=OriginalStageVisual.functions[main]
     if fxkey then class.t10_fx.ensure(owner,fxkey,true) end
     t10_track(p)
@@ -5605,6 +5621,7 @@ class.th10_midfairy[3]=class.th10_midfairy.frame
 
 ---造一只妖精。`beh` = 行为子程序（函数）；`src`（可选）把创建者的 $I/%F 拷给子机。
 function t10mid.spawn(hp, x, y, mirror, drop, beh, src, inv, visual_key)
+    if not flow.roadActive() then return end
     class.th10_enemy_schedule.ensure()
     local f = New(class["th10_midfairy"], hp, x, y, mirror, drop, beh, src, inv, visual_key)
     local key=visual_key or OriginalStageVisual.functions[beh]
@@ -6252,7 +6269,7 @@ t10mid.s01.one=function(name,hp,x,y,mirror,drop)
 end
 t10mid.s01.sequence=function(events)
     for _,e in ipairs(events) do
-        if e[1]>0 then task.Wait(e[1]) end
+        if e[1]>0 then flow.roadWait(e[1]) end
         t10mid.s01.one(e[2],e[3],e[4],e[5],e[6],e[7])
     end
 end
@@ -6277,13 +6294,13 @@ t10mid.s01.ms=function(card)
 end
 t10mid.s01.run=function(card)
     local B=t10mid.s01
-    task.Wait(160)
+    flow.roadWait(160)
     for i=0,8 do
         B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,-144+32*i,-16,false,1)
-        task.Wait(20)
+        flow.roadWait(20)
     end
     B.one('Ecl_GGirl00',20,144,-16,false,3)
-    task.Wait(300)
+    flow.roadWait(300)
     B.sequence({
         {0,"RGirl00",20,-144,-64,false,1}, -- 0x9f50 原480
         {20,"RGirl00",20,-144,-64,false,1}, -- 0x9f80 原500
@@ -6307,10 +6324,10 @@ t10mid.s01.run=function(card)
         {10,"GGirl00",20,-144,-64,false,3}, -- 0xa2e0 原1000
         {60,"Girl01",300,-64,-16,true,3}, -- 0xa310 原1060
     })
-    task.Wait(120)
+    flow.roadWait(120)
     for i=0,8 do
         B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,144-32*i,-16,false,1)
-        task.Wait(20)
+        flow.roadWait(20)
     end
     B.one('Ecl_GGirl00',20,-144,-16,false,3)
     B.sequence({
@@ -6320,7 +6337,7 @@ t10mid.s01.run=function(card)
         {20,"BGirl00",20,144,-64,true,2}, -- 0xa648 原1340
         {20,"BGirl00",20,144,-64,true,3}, -- 0xa678 原1360
     })
-    task.New(card,function() B.ms(card) end) -- 原1360创建并行MainSub，下一拍启动。
+    flow.roadAsync(card,function() B.ms(card) end) -- 原1360创建并行MainSub，下一拍启动。
     B.sequence({
         {20,"BGirl00B",20,84,-64,true,2}, -- 0xa6c4 原1380
         {20,"BGirl00B",20,84,-64,true,2}, -- 0xa6f8 原1400
@@ -6377,17 +6394,17 @@ t10mid.s01.run=function(card)
         {80,"RGirl00D",160,-144,-16,false,2}, -- 0xb178 原3240
         {80,"RGirl00D",160,144,-16,true,2}, -- 0xb1ac 原3320
     })
-    task.Wait(100) -- 本卡排除中Boss，deathWait按无Boss通过。
+    flow.roadWait(100) -- 本卡排除中Boss，deathWait按无Boss通过。
     B.sequence({
         {0,"Girl01",300,64,-16,false,3}, -- 0xb1f0 原3420
         {0,"Girl01",300,-64,-16,true,3}, -- 0xb220 原3420
     })
-    task.Wait(160)
+    flow.roadWait(160)
     for i=0,19 do
         B.one(i%2==0 and 'BGirl00E' or 'RGirl00E',20,rnd2()*128,-16,false,1)
-        task.Wait(10)
+        flow.roadWait(10)
     end
-    task.Wait(60)
+    flow.roadWait(60)
     B.sequence({
         {0,"Girl01",300,128,-16,false,0}, -- 0xb46c 原3650
         {0,"Girl01",300,-128,-16,true,0}, -- 0xb49c 原3650
@@ -6640,10 +6657,10 @@ end
 t10mid.s02.sequence=function(card,events)
     local B=t10mid.s02
     for _,e in ipairs(events) do
-        if e[1]>0 then task.Wait(e[1]) end
+        if e[1]>0 then flow.roadWait(e[1]) end
         if e[2]:sub(1,1)=='@' then
             local fn=assert(B[e[2]:sub(2)])
-            task.New(card,function() fn(card) end)
+            flow.roadAsync(card,function() fn(card) end)
         else B.one(e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
@@ -7064,11 +7081,11 @@ end
 t10mid.s03.sequence=function(card,events)
     local B=t10mid.s03
     for _,e in ipairs(events) do
-        if e[1]>0 then task.Wait(e[1]) end
+        if e[1]>0 then flow.roadWait(e[1]) end
         if e[2]:sub(1,1)=='=' then card[e[2]:sub(2)]=e[3]
         elseif e[2]:sub(1,1)=='@' then
             local fn=assert(B[e[2]:sub(3)])
-            if e[2]:sub(2,2)=='c' then fn(card) else task.New(card,function() fn(card) end) end
+            if e[2]:sub(2,2)=='c' then fn(card) else flow.roadAsync(card,function() fn(card) end) end
         else B.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
@@ -7780,11 +7797,11 @@ end
 t10mid.s04.sequence=function(card,events)
     local S=t10mid.s04
     for _,e in ipairs(events) do
-        if e[1]>0 then task.Wait(e[1]) end
+        if e[1]>0 then flow.roadWait(e[1]) end
         if e[2]:sub(1,1)=='=' then card[e[2]:sub(2)]=e[3]
         elseif e[2]:sub(1,1)=='@' then
             local fn=assert(S[e[2]:sub(3)])
-            if e[2]:sub(2,2)=='c' then fn(card) else task.New(card,function() fn(card) end) end
+            if e[2]:sub(2,2)=='c' then fn(card) else flow.roadAsync(card,function() fn(card) end) end
         else S.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
@@ -7912,17 +7929,17 @@ end
 t10mid.s04.ms3=function(card)
     local S=t10mid.s04
     local x=-48
-    task.Wait(30)
+    flow.roadWait(30)
     for i=1,6 do
         card.I0=1
         t10mid.spawn(60,x,-512,false,S.D1,S.de04,card,0,'stage04:DiveEnemy04')
-        task.Wait(40);x=x+32
+        flow.roadWait(40);x=x+32
     end
-    task.Wait(30);x=x+32
+    flow.roadWait(30);x=x+32
     for i=1,24 do
         card.I0=1
         t10mid.spawn(60,x+rnd2()*32,-512,false,S.D1,S.de04,card,0,'stage04:DiveEnemy04')
-        task.Wait(10);x=x-7
+        flow.roadWait(10);x=x-7
     end
 end
 
@@ -7930,22 +7947,22 @@ end
 ---每只间隔 20 帧（t=30/50/70/…/410，共20只）；每圈 x += 32。
 t10mid.s04.ms3b = function(card)
     local S = t10mid.s04
-    task.Wait(30)                                                   -- //30  A#1
+    flow.roadWait(30)                                                   -- //30  A#1
     local x = -128.0
     for k = 1, 10 do
         t10mid.spawn(60, x, -512, false, S.D1, S.de04b, { I0 = 0, I1 = 8, F0 = 0.0 })
-        task.Wait(20)
+        flow.roadWait(20)
         t10mid.spawn(60, x + rnd() * 128.0 + 32.0, -512, false, S.D1, S.de04b,
                      { I0 = 0, I1 = 8, F0 = 0.0 })
-        task.Wait(20)
+        flow.roadWait(20)
         x = x + 32.0
     end
 end
 
 ---MainSub4：t=3600 出中 BOSS（跳过）；t=4100 同步调 MainSub5。
 t10mid.s04.ms4 = function(card)
-    task.Wait(3600)
-    task.Wait(500)
+    flow.roadWait(3600)
+    flow.roadWait(500)
     t10mid.s04.MainSub5(card)                                            -- call("MainSub5")
 end
 
@@ -8067,14 +8084,14 @@ t10mid.s04.ms6l = function(card)
     local S = t10mid.s04
     for i = 1, 25 do
         t10mid.spawn(20, 216, rnd() * 128.0, false, S.D1, S.crow00l, nil, 8)
-        if i < 25 then task.Wait(6) end
+        if i < 25 then flow.roadWait(6) end
     end
 end
 t10mid.s04.ms6r = function(card)
     local S = t10mid.s04
     for i = 1, 25 do
         t10mid.spawn(20, -216, rnd() * 128.0, false, S.D1, S.crow00r, nil, 8)
-        if i < 25 then task.Wait(6) end
+        if i < 25 then flow.roadWait(6) end
     end
 end
 
@@ -8157,14 +8174,14 @@ t10mid.s04.ms8l = function(card)
     local S = t10mid.s04
     for i = 1, 25 do
         t10mid.spawn(20, 216, rnd() * 128.0, false, S.D1, S.crow01l, nil, 8)
-        if i < 25 then task.Wait(12) end
+        if i < 25 then flow.roadWait(12) end
     end
 end
 t10mid.s04.ms8r = function(card)
     local S = t10mid.s04
     for i = 1, 25 do
         t10mid.spawn(20, -216, rnd() * 128.0, false, S.D1, S.crow01r, nil, 8)
-        if i < 25 then task.Wait(12) end
+        if i < 25 then flow.roadWait(12) end
     end
 end
 
@@ -8180,8 +8197,8 @@ t10mid.s04.MainSub8R=t10mid.s04.ms8r
 ---道中总时间轴（main 的 callAsync MainSub1 / MainSub4）。
 t10mid.s04.run = function(card)
     local S = t10mid.s04
-    task.New(card, function() S.MainSub1(card) end)                      -- callAsync("MainSub1")
-    task.New(card, function() S.ms4(card) end)                      -- callAsync("MainSub4")
+    flow.roadAsync(card, function() S.MainSub1(card) end)                      -- callAsync("MainSub1")
+    flow.roadAsync(card, function() S.ms4(card) end)                      -- callAsync("MainSub4")
 end
 
 ---挂到空 boss「ea」上的一张耐久符卡（与 stage01/02/03/06 道中同一套注册方式）。
@@ -8525,7 +8542,7 @@ function t10mid.install_road(stage)
             local locals={}
             for i,v in ipairs({...}) do locals[(i-1)*4]=v end
             for _,e in ipairs(body) do
-                if e[1]>0 then task.Wait(e[1]) end
+                if e[1]>0 then flow.roadWait(e[1]) end
                 local op=e[2]
                 if op:sub(1,1)=='=' then card[op:sub(2)]=read(e[3],card,locals)
                 elseif op:sub(1,1)=='~' then locals[tonumber(op:sub(2))]=read(e[3],card,locals)
@@ -8534,7 +8551,7 @@ function t10mid.install_road(stage)
                     local args={}
                     for i=3,#e do args[#args+1]=read(e[i],card,locals) end
                     if op:sub(2,2)=='a' then
-                        task.New(card,function() call(card,unpack(args)) end)
+                        flow.roadAsync(card,function() call(card,unpack(args)) end)
                     else call(card,unpack(args)) end
                 else
                     local base,col=op,'R'
@@ -8549,11 +8566,11 @@ function t10mid.install_road(stage)
     end
     S.programs=programs
     S.run=function(card)
-        task.New(card,function() programs.MainSub1(card) end)
-        if stage==5 then task.New(card,function() programs.MainSubMBoss(card) end) end
+        flow.roadAsync(card,function() programs.MainSub1(card) end)
+        if stage==5 then flow.roadAsync(card,function() programs.MainSubMBoss(card) end) end
         -- 两关main都用pushi(1)/jmpNeq在10000组无限等待。
         -- 源中第二次MainSub1位于不可达的循环之后，不能据字面时间重放波次。
-        while true do task.Wait(10000) end
+        while true do flow.roadWait(10000) end
     end
 end
 t10mid.install_road(5)

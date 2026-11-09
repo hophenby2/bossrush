@@ -1,10 +1,10 @@
 -- 选关界面右侧的高级选项默认折叠；隐藏时不参与键盘焦点和鼠标命中。
 local U={}
 local options={
-    {group='stages',key='TH31',text='永夜抄 · TH31',x=505,y=366},
-    {group='stages',key='TH32',text='红魔乡 · TH32',x=720,y=366},
-    {group='stages',key='TH34',text='妖妖梦 · TH34',x=505,y=334},
-    {group='stages',key='TH35',text='风神录 · TH35',x=720,y=334},
+    {group='stages',key='TH31',text='永夜抄原作 · TH31',x=505,y=366},
+    {group='stages',key='TH32',text='红魔乡原作 · TH32',x=720,y=366},
+    {group='stages',key='TH34',text='妖妖梦原作 · TH34',x=505,y=334},
+    {group='stages',key='TH35',text='风神录原作 · TH35',x=720,y=334},
     {group='difficulties',key='lunatic',text='Lunatic',x=505,y=270,width=133},
     {group='difficulties',key='extra',text='Extra/Phantasm',x=646,y=270,width=133},
     {group='difficulties',key='lastword',text='Last Word',x=787,y=270,width=133},
