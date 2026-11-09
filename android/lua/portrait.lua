@@ -96,27 +96,36 @@ local function label(value,x,y,size,alpha,rgb,align,width)
     local count=0
     for _ in value:gmatch('[%z\1-\127\194-\244][\128-\191]*') do count=count+1 end
     if width then size=math.min(size,width/math.max(1,count*16)) end
-    ui:RenderText('title',value,x,y,size,Color(alpha,unpack(rgb or {230,241,250})),align or 'center','vcenter')
+    ui:RenderText('title',value,x,y,size,Color(alpha,unpack(rgb or ui.menu and ui.menu.title_color or {255,255,255})),align or 'center','vcenter')
 end
 local function button(o,value,x1,x2,y,height,action,selected,alpha)
     alpha=(alpha or o.alpha or 1)*255
-    rect(x1,x2,y-height/2,y+height/2,alpha*.8,selected and 50 or 24,selected and 94 or 45,selected and 115 or 64)
-    label(value,(x1+x2)/2,y,1.05,alpha,selected and {189,252,201} or nil,nil,x2-x1-math.min(24,(x2-x1)*.15))
+    -- 沿用横屏文字菜单的白/金闪烁与音符；触区仍保留整行大小。
+    local menu=ui.menu or {}
+    local rgb=menu.unfocused_color or {190,190,190}
+    if selected then
+        local k=math.cos(math.rad((o.timer or 0)*(menu.blink_speed or 3)))^2
+        local first,last=menu.focused_color1 or {255,255,255},menu.focused_color2 or {255,227,132}
+        rgb={}
+        for i=1,3 do rgb[i]=first[i]*k+last[i]*(1-k) end
+        if value~='' and value:sub(1,#'√')~='√' and value:sub(1,#'□')~='□' then value='♪ '..value end
+    end
+    label(value,(x1+x2)/2,y,1.05,alpha,rgb,nil,x2-x1-math.min(24,(x2-x1)*.15))
     control(o,x1,x2,y-height/2,y+height/2,action)
 end
 local function pulse(key) AndroidInput.pulse(key) end
-function P.background(alpha)
+function P.background(alpha,submenu)
     SetViewMode('ui')
     alpha=alpha or 1
-    if CheckRes('img','menu_bg') then
-        SetImageState('menu_bg','',Color(alpha*255,110,125,150))
+    local image=submenu and CheckRes('img','sub_menu_bg') and 'sub_menu_bg' or 'menu_bg'
+    if CheckRes('img',image) then
+        SetImageState(image,'',Color(alpha*255,255,255,255))
         local scale=math.max(screen.width/960,screen.height/540)
-        Render('menu_bg',screen.width/2,screen.height/2,0,scale,scale)
+        Render(image,screen.width/2,screen.height/2,0,scale,scale)
     else rect(0,screen.width,0,screen.height,255*alpha,12,21,36) end
-    rect(0,screen.width,0,screen.height,100*alpha,6,13,25)
 end
 local function page(o,title)
-    P.background(o.alpha or 1)
+    P.background(o.alpha or 1,true)
     label(title,WIDTH/2,screen.height-118,1.6,(o.alpha or 1)*255,nil,nil,WIDTH-48)
 end
 local function footer(o,confirm)
@@ -125,12 +134,16 @@ local function footer(o,confirm)
 end
 function P.mainMenu(o)
     if o.alpha==0 then return end
-    page(o,'Boss Rush HD')
+    P.background(o.alpha)
+    if CheckRes('img','title') then
+        SetImageState('title','mul+add',Color(o.alpha*255,255,255,255))
+        Render('title',WIDTH/2,screen.height-160,0,.75,.75)
+    else label('Boss Rush HD',WIDTH/2,screen.height-160,1.6,o.alpha*255) end
     local debug=GameDebug and GameDebug.enabled
-    label(ui.version..(debug and ' · 调试模式' or ''),WIDTH/2,screen.height-164,.8,o.alpha*200,{170,190,210})
-    if not debug then control(o,WIDTH/2-150,WIDTH/2+150,screen.height-188,screen.height-140,function() pulse(KEY['8']) end) end
-    local gap=math.min(88,(screen.height-310)/#o.text)
-    local top=math.min(screen.height-238,screen.height/2+(#o.text-1)*gap/2)
+    label(ui.version..(debug and ' · 调试模式' or ''),WIDTH/2,screen.height-292,.8,o.alpha*200,{190,190,190})
+    if not debug then control(o,WIDTH/2-150,WIDTH/2+150,screen.height-316,screen.height-268,function() pulse(KEY['8']) end) end
+    local gap=math.min(78,(screen.height-354)/#o.text)
+    local top=math.min(screen.height-356,screen.height/2+(#o.text-1)*gap/2)
     for i,value in ipairs(o.text) do
         local index=i
         button(o,value,42,WIDTH-42,top-(i-1)*gap,gap-14,function()
@@ -161,24 +174,25 @@ function P.settings(o)
     local half=math.min(44,(gap-8)/2)
     for i,item in ipairs(items) do
         local index=i;local y=itemTop-(i-1)*gap
-        rect(24,WIDTH-24,y-half,y+half,o.alpha*170,24,45,64)
-        label(item.display_name,42,y+19,1,o.alpha*255,nil,'left',WIDTH-84)
+        rect(24,WIDTH-24,y-half,y-half+1,o.alpha*55,190,190,190)
+        label((item.choosing and '♪ ' or '')..item.display_name,42,y+19,1,o.alpha*255,
+            item.choosing and {255,227,132} or {190,190,190},'left',WIDTH-84)
         local function select() chooseSetting(o,o.pos1,index) end
         if item.max then
             local x1,x2=44,WIDTH-44
             local fraction=(cur_setting[item.name]-item.min)/(item.max-item.min)
             rect(x1,x2,y-20,y-14,o.alpha*170,90,105,125)
-            rect(x1,x1+(x2-x1)*fraction,y-20,y-14,o.alpha*255,189,252,201)
+            rect(x1,x1+(x2-x1)*fraction,y-20,y-14,o.alpha*255,255,227,132)
             local function change(x)
                 select()
                 local f=math.max(0,math.min(1,(x-x1)/(x2-x1)))
                 cur_setting[item.name]=math.min(item.max,item.min+math.floor((item.max-item.min)*f/item.min_unit+.5)*item.min_unit)
             end
-            label(item.display_way(cur_setting[item.name]),WIDTH-42,y+19,.8,o.alpha*255,{189,252,201},'right',150)
+            label(item.display_way(cur_setting[item.name]),WIDTH-42,y+19,.8,o.alpha*255,{255,227,132},'right',150)
             control(o,24,WIDTH-24,y-half,y+2,function() end,change)
         else
             local on=cur_setting[item.name];if item.opposite then on=not on end
-            label(on and '开' or '关',WIDTH-52,y-17,.95,o.alpha*255,on and {189,252,201} or {160,175,190},'right')
+            label(on and '开' or '关',WIDTH-52,y-17,.95,o.alpha*255,on and {255,227,132} or {160,160,160},'right')
             control(o,24,WIDTH-24,y-half,y+half,function()
                 select();cur_setting[item.name]=not cur_setting[item.name];item.otherfunction();PlaySound('select00')
             end)
@@ -384,27 +398,22 @@ function P.loading(o)
 end
 function P.hud(alpha)
     SetViewMode('ui')
-    local y=lstg.world.scrb+26
-    local lives=ui.RunHUD.lives()
-    GameDrops.renderStar('star_big2',24,y+34,26,1,alpha)
-    label('× '..lives,45,y+34,.95,alpha,{255,140,150},'left')
-    if GameDrops.bombsEnabled() then
-        local stock,fraction=GameDrops.bombState(1)
-        GameDrops.renderStar('star_big10',24,y,26,1,alpha)
-        label('× '..stock,45,y,.95,alpha,{150,245,180},'left')
-        if fraction>0 then GameDrops.renderStar('star_big10',118,y,24,fraction,alpha) end
-    end
+    -- 横屏的生命/Bomb星形库存移到场地上方，成长条移到下方三列。
+    local w=lstg.world
+    ui.RunHUD.resources(72,WIDTH-24,screen.height-54,alpha)
+    ui.RunHUD.attributes(w.scrr,w.scrt,alpha,{left=18,right=WIDTH-18,top=w.scrb-70,columns=3,gutter=18})
 end
 function P.roguePanel(run)
     local previous=lstg.viewmode
     SetViewMode('ui')
     local bottom=lstg.world.scrb
-    ui.RunHUD.stage(run.current,WIDTH/2,bottom*.65,200)
-    if GameHPScale then GameHPScale.render(WIDTH/2,math.max(25,bottom*.25),WIDTH-36) end
+    local y=math.max(48,(bottom-135)*.5)
+    ui.RunHUD.stage(run.current,WIDTH*.25,y,WIDTH*.4,math.max(1,math.min(5,(bottom-135)/20)))
+    if GameHPScale then GameHPScale.render(WIDTH*.7,y,WIDTH*.5) end
     if previous then SetViewMode(previous) end
 end
 function P.result(o)
-    SetViewMode('ui');RenderClear(Color(255,12,21,36))
+    P.background()
     ui.RunHUD.stage(o.run.current or o.run.completed,WIDTH/2,screen.height/2,WIDTH-48)
     button(o,'返回标题',40,WIDTH-40,190,64,function() pulse(27) end)
     button(o,'再来一局',40,WIDTH-40,108,64,function() pulse(13) end,true)

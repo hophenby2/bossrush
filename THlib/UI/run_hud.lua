@@ -45,18 +45,23 @@ function H.powerTrack(x1,x2,y,value,alpha,decades)
     for exponent=0,decades,step do tick(exponent) end
     if decades%step~=0 then tick(decades) end
 end
-function H.attributes(scrr,scrt,alpha)
+function H.attributes(scrr,scrt,alpha,layout)
     local D=GameDrops
     if not D or not D.enabled() then return end
     local palette=D.palette or colors
     local count=(GameNet and GameNet.host()) and 2 or 1
-    -- 左侧上方留给属性，最下面一行与中央阶段数字之间保留间距。
-    local x1,x2=18,lstg.world.scrl-18
-    local y=scrt-4
+    -- 横屏左侧纵排；竖屏只传列数与边界，量程、颜色和透明度共用。
+    local left,right=layout and layout.left or 18,layout and layout.right or lstg.world.scrl-18
+    local y=layout and layout.top or scrt-4
+    local columns=layout and layout.columns or 1
+    local gutter=layout and layout.gutter or 0
+    local width=(right-left-(columns-1)*gutter)/columns
     local gap=62
     local rows={{'火力','red',D.MAX/D.UNIT},{D.bombsEnabled() and 'Bomb恢复速度' or '射速','blue',D.MAX/D.UNIT},{'判定','green',100}}
     for i,row in ipairs(rows) do
-        local cy=y-(i-1)*gap
+        local x1=left+(i-1)%columns*(width+gutter)
+        local x2=x1+width
+        local cy=y-math.floor((i-1)/columns)*gap
         text(row[1],x1,cy+20,.7,alpha*ATTRIBUTE_OPACITY,palette[row[2]],'left','vcenter')
         -- 双人栏共用量程，不能把两位玩家不同的火力画成相同长度。
         local powerMax=math.max(D.values(1),count==2 and D.values(2) or 1)
@@ -80,9 +85,7 @@ function H.lives()
     local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
     return math.max(0,limit-misses),limit
 end
-function H.draw(scrr,scrt,alpha)
-    local x1,x2=scrr+18,942
-    local top=scrt-16
+function H.resources(x1,x2,top,alpha)
     local lives,limit=H.lives()
     text('生命',x1,top,.8,alpha,colors.red,'left','vcenter')
     text(lives,x2,top,.8,alpha,colors.red,'right','vcenter')
@@ -94,11 +97,14 @@ function H.draw(scrr,scrt,alpha)
         local count=(GameNet and GameNet.host()) and 2 or 1
         GameDrops.renderBombs(x1,x2,top-60,alpha,count)
     end
+end
+function H.draw(scrr,scrt,alpha)
+    H.resources(scrr+18,942,scrt-16,alpha)
     if GameDrops then GameDrops.renderHUD(scrr,scrt,alpha) end
 end
-function H.stage(value,x,y,width)
+function H.stage(value,x,y,width,maxScale)
     local label=tostring(math.max(1,math.floor(value or 1)))
-    local scale=math.min(8,(width-24)/(#label*16))
+    local scale=math.min(maxScale or 8,(width-24)/(#label*16))
     text(label,x,y,scale,255,{230,241,250},'centerpoint')
 end
 return H

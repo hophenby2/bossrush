@@ -270,8 +270,10 @@ function I.render()
     local menuMode = I.menuMode()
     for _, b in ipairs(activeButtons(menuMode)) do
         local active=I.keys[buttonKey(b)]
-        SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
-        RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
+        if not (AndroidPortrait and AndroidPortrait.enabled()) then
+            SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
+            RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
+        end
         local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
         ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .75,Color(230,235,241,247),'centerpoint')
     end

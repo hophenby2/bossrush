@@ -21,7 +21,7 @@ end
 render();tap(270,556)
 assert(menu.pos==1 and #pulses==0,'触摸回调不直接修改菜单状态')
 P.dispatch();assert(menu.pos==2 and pulses[1]==13,'点选竖屏第二项对应实际菜单动作')
-render();tap(270,1036);P.dispatch()
+render();tap(270,908);P.dispatch()
 assert(pulses[2]==56,'竖屏版本号触区可输入调试口令')
 render();P.touch(1,270,644,'began');P.touch(1,290,644,'moved');P.touch(1,290,644,'ended');P.dispatch()
 assert(menu.pos==2 and #pulses==2,'滑动抬手不误触菜单')

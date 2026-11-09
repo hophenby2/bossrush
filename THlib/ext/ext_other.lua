@@ -193,12 +193,18 @@ function ext.saveScreenAfter()
 end
 
 function ext.RenderFPS()
+    -- 竖屏画布只有540宽；使用实际边缘，保持横屏同一套帧率与录像提示。
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    local x=screen.width-(portrait and 12 or 4)
+    local scale=portrait and .4 or .25
+    local step=portrait and 15 or 9
+    local bottom=portrait and 8 or 1
     if ext.replay.IsReplay() then
         SetFontState("Score", "", 255, 190, 190, 190)
-        RenderText("Score", "Replaying..", 956, 19, 0.25, "right", "bottom")
+        RenderText("Score", "Replaying..", x, bottom+step*2, scale, "right", "bottom")
     end
     SetFontState("Score", "", 255, 255, 255, 255)
-    RenderText("Score", ui.version, 956, 10, 0.25, "right", "bottom")
+    RenderText("Score", ui.version, x, bottom+step, scale, "right", "bottom")
     local fps = GetFPS()
     if fps >= 59 then
         SetFontState("Score", "", 255, 189, 252, 201)
@@ -207,7 +213,7 @@ function ext.RenderFPS()
     else
         SetFontState("Score", "", 255, 250, 128, 114)
     end
-    RenderText("Score", string.format("%.1ffps", fps), 956, 1, 0.25, "right", "bottom")
+    RenderText("Score", string.format("%.1ffps", fps), x, bottom, scale, "right", "bottom")
 end
 
 function ext.GetFakeFPS()
