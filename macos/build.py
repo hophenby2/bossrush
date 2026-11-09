@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """构建可在本机启动的 macOS 测试应用，共用固定 Android 引擎与 Sub 兼容层。"""
 from pathlib import Path
-import argparse,hashlib,importlib.util,json,os,shutil,subprocess,sys
+import argparse,hashlib,importlib.util,json,os,plistlib,re,shutil,subprocess,sys
 ROOT=Path(__file__).resolve().parent
 GAME=ROOT.parent
 BUILD=ROOT/'build'
@@ -99,7 +99,15 @@ def main():
  if not binary:raise RuntimeError('未找到原生构建产物，请先执行完整构建')
  if APP.exists():shutil.rmtree(APP)
  dest=APP/'Contents';(dest/'MacOS').mkdir(parents=True)
- shutil.copy2(binary,dest/'MacOS/BossRushHD');shutil.copy2(ROOT/'Info.plist',dest/'Info.plist')
+ shutil.copy2(binary,dest/'MacOS/BossRushHD')
+ # Apple的数字版本与完整界面版本分开保存，日期版本的v2等后缀留在说明字段。
+ version=shared.game_version(GAME)
+ info=plistlib.loads((ROOT/'Info.plist').read_bytes())
+ info['CFBundleShortVersionString']=re.match(r'^\d+(?:\.\d+){0,2}',version).group()
+ info['CFBundleGetInfoString']=version
+ manifest=(GAME/'android/AndroidManifest.xml').read_text(encoding='utf-8-sig')
+ info['CFBundleVersion']=re.search(r'android:versionCode="(\d+)"',manifest)[1]
+ (dest/'Info.plist').write_bytes(plistlib.dumps(info))
  shutil.copytree(resources(),dest/'Resources')
  bundle_libraries(dest/'MacOS/BossRushHD')
  run('codesign','--force','--deep','--sign','-',APP)
