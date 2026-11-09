@@ -425,4 +425,59 @@ if 'if (!obj[i]->androidFrozen)' not in text:
                         'for (auto i = begin; i < end; ++i)\n\t\tif (!obj[i]->androidFrozen)\n')
     p.write_text(a + 'void GameObjectPool::update(size_t begin, size_t end)' + body +
                  'cocos2d::Vec2 GameObjectPool::getPosition' + rest)
+# 空分组没有回调；无需创建 Lua 栈记录或唤醒工作线程。
+replace('frameworks/LSTG/Object/GameObjectManager.h',
+        'size_t GetObjectCount()  { return pool.size(); }',
+        'size_t GetObjectCount()  { return pool.size(); }\n'
+        '        const std::set<GameObject*, less_obj>& androidCollisionGroup(size_t group) const { return colliList[group]; }')
+replace(manager, '''void GameObjectManager::CollisionCheck(size_t groupA, size_t groupB)
+{
+\tif (!checkGroupID(groupA) || !checkGroupID(groupB))
+\t\tluaL_error(L, "Invalid collision group.");''', '''void GameObjectManager::CollisionCheck(size_t groupA, size_t groupB)
+{
+    if (!checkGroupID(groupA) || !checkGroupID(groupB))
+        luaL_error(L, "Invalid collision group.");
+    if (colliList[groupA].empty() || colliList[groupB].empty()) return;''')
+# 小任务仍先完成全部命中检测，再执行回调，与线程路径保持同样的快照语义。
+# 升级本轮旧缓存；回调可嵌套发起碰撞，命中结果须由当前调用独占。
+_manager_path=engine / manager
+_manager_text=_manager_path.read_text()
+_previous_hits='''                static vector<size_t> hits;
+                hits.clear();
+                for (size_t j=0;j<size;++j)
+                    if (::CollisionCheck(to_colli_lhs[j],to_colli_rhs[j])) hits.push_back(j);
+                for (auto j : hits)
+                    callBack(L,to_colli_lhs[j],to_colli_rhs[j],LGOBJ_CC_COLLI,ot_idx);'''
+_current_hits='''                vector<std::pair<GameObject*,GameObject*>> hits;
+                for (size_t j=0;j<size;++j)
+                    if (::CollisionCheck(to_colli_lhs[j],to_colli_rhs[j])) hits.emplace_back(to_colli_lhs[j],to_colli_rhs[j]);
+                for (const auto& hit : hits)
+                    callBack(L,hit.first,hit.second,LGOBJ_CC_COLLI,ot_idx);'''
+if _previous_hits in _manager_text:
+    _manager_path.write_text(_manager_text.replace(_previous_hits,_current_hits))
+replace(manager, '''\t\t\tconst auto size = to_colli_lhs.size();
+\t\t\tauto dat_l = to_colli_lhs.data();''', '''            const auto size = to_colli_lhs.size();
+            if (size < 2048) {
+                vector<std::pair<GameObject*,GameObject*>> hits;
+                for (size_t j=0;j<size;++j)
+                    if (::CollisionCheck(to_colli_lhs[j],to_colli_rhs[j])) hits.emplace_back(to_colli_lhs[j],to_colli_rhs[j]);
+                for (const auto& hit : hits)
+                    callBack(L,hit.first,hit.second,LGOBJ_CC_COLLI,ot_idx);
+                lua_pop(L,1);
+                return;
+            }
+            auto dat_l = to_colli_lhs.data();''')
+# 这些内部任务只处理独立对象/顶点。少量或零元素直接执行，避免创建三份空 future。
+replace('frameworks/LSTG/Util/Utility.cpp', '''void lstg::deployThreadTaskAndWait(size_t taskSize, size_t nSlice, const std::function<void(int, int, int)>& task)
+{
+\tconst auto nThr = nSlice;''', '''void lstg::deployThreadTaskAndWait(size_t taskSize, size_t nSlice, const std::function<void(int, int, int)>& task)
+{
+    constexpr size_t serialTaskLimit=2048;
+    if (!taskSize) return;
+    if (taskSize<serialTaskLimit) { task(0,taskSize,0);return; }
+    const auto nThr = nSlice;''')
+# 自绘 ANM 不使用对象矩阵；自绘回调中的 DefaultRenderFunc 会按 dirty 标记惰性更新。
+# 绑定节点和灯光仍保留预更新，避免改变它们的可见变换时机。
+replace(manager, 'if (!p->hide/*&&p->isDefaultRender*/)',
+        'if (!p->hide && (p->cls->isDefaultRender || p->cm->getBindNode() || p->cm->getLightSource()))')
 print('已应用固定版本 Android 补丁')

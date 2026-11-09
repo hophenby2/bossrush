@@ -50,6 +50,12 @@ pools.bullets[2]=nextBullet;pools.indes[2]=nextIndes;pools.lasers[2]=nextLaser
 bullet_cleaner.frame(phase)
 check(oldBullet.status=='del' and oldIndes.status=='del' and oldLaser.status=='del','旧子弹、不可消弹与原作激光全部清除')
 check(not nextBullet.status and not nextIndes.status and not nextLaser.status,'下一相首波保留')
+local visits=0
+local oldVisit=object.BulletDo
+object.BulletDo=function(fn) visits=visits+1;return oldVisit(fn) end
+bullet_cleaner.frame(phase)
+check(visits==0 and #phase.targets._live==0,'旧目标清完后不扫描下一相弹池')
+object.BulletDo=oldVisit
 local bomb=cleaner(false)
 local later=point();pools.bullets[3]=later
 bullet_cleaner.frame(bomb)
@@ -61,6 +67,9 @@ local targets={[beam]=true}
 laser.CutOnRadius(beam,70,130,targets)
 local fragment=assert(pools.lasers[1])
 check(targets[fragment] and fragment.secondhand and fragment._master_laser==beam,'旧激光切出的残段继续属于本次消弹')
+local tracked={[beam]=true,_live={beam}}
+laser.CutOnRadius(beam,10,20,tracked)
+check(#tracked._live==2,'新残段进入存活目标跟踪')
 fragment.x,fragment.y=0,0;fragment._native_laser_game=10;fragment.protect=0
 phase=cleaner(true);phase.targets=targets
 bullet_cleaner.frame(phase)

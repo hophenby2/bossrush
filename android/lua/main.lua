@@ -140,7 +140,6 @@ local function start()
         local mode = diagnostics:read('*a'); diagnostics:close()
         diagnosticsMode = mode
         AndroidInput.trace = mode:match('input') ~= nil
-        if mode:match('^profile') then profiler = load('game/android/profiler.lua') end
     end
     AndroidInstallClasses()
     -- 正常启动不执行开发诊断中的 GPU 回读与对象契约检查。
@@ -154,6 +153,11 @@ local function start()
     end
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 开始')
     GameInit()
+    if diagnosticsMode and diagnosticsMode:match('^profile') then profiler = load('game/android/profiler.lua') end
+    if not desktop and lstg.AndroidSetFrameBufferEnabled then
+        lstg.AndroidSetFrameBufferEnabled(diagnosticsMode and diagnosticsMode:match('framebuffer=1')~=nil or false)
+    end
+    if diagnosticsMode and diagnosticsMode:match('contracts') then load('game/android/collision_check.lua').run() end
     if AndroidPortrait then AndroidPortrait.configure(setting) end
     startupMark('game_init')
     if not desktop then
@@ -166,6 +170,9 @@ local function start()
     end
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 完成')
     if desktop then load('game/macos/test.lua').install() end
+    if diagnosticsMode and (diagnosticsMode:match('^profile') or diagnosticsMode:match('^benchmark')) then
+        load('game/android/performance_case.lua').install(diagnosticsMode)
+    end
     if diagnosticsMode and diagnosticsMode:match('combat') then load('game/android/combat_check.lua').install(diagnosticsMode) end
     if diagnosticsMode and diagnosticsMode:match('drops') then load('game/android/drops_check.lua').install(diagnosticsMode) end
     local pauseCache = load('game/android/pause_cache.lua')
@@ -216,12 +223,16 @@ local function start()
     FocusLoseFunc = function() AndroidFocus(false) end
     local frames, previousStage = 0, false
     local clock = lstg.AndroidClock
+    lstg.AndroidDrawStats()
     local sampleStart, sampleFrames, logicTime, renderTime = clock(), 0, 0, 0
     scene:scheduleUpdateWithPriorityLua(function()
         local ok = xpcall(function()
+            local frameStarted=profiler and clock()
             frames = frames + 1
             syncSurfaceSize()
+            if profiler then profiler.begin('input') end
             AndroidInput.beginFrame()
+            if profiler then profiler.finish('input') end
             if frames <= 3 then
                 lstg.SystemLog('BOSSRUSH_FRAME: ' .. frames .. ' stage=' .. tostring(stage.current_stage and stage.current_stage.stage_name))
             end
@@ -246,6 +257,7 @@ local function start()
                 finishNativeStartup()
             end
             local afterRender = clock()
+            if profiler then profiler.frame(afterRender-frameStarted,afterRender) end
             uiFpsFrames = uiFpsFrames+1
             if afterRender-uiFpsStart >= 1 then
                 displayedFPS = uiFpsFrames/(afterRender-uiFpsStart)
@@ -256,10 +268,10 @@ local function start()
             renderTime = renderTime + afterRender-afterLogic
             if afterRender-sampleStart >= 5 then
                 if profiler then profiler.report(sampleFrames) end
-                local draws,vertices,drawMilliseconds = lstg.AndroidDrawStats()
-                lstg.SystemLog(string.format('BOSSRUSH_PERF: stage=%s paused=%s fps=%.1f logic_ms=%.3f render_ms=%.3f submit_ms=%.3f draws=%d vertices=%d',
+                local draws,vertices,drawMilliseconds,submit95,submit99,submitFrames = lstg.AndroidDrawStats()
+                lstg.SystemLog(string.format('BOSSRUSH_PERF: stage=%s paused=%s fps=%.1f logic_ms=%.3f render_ms=%.3f submit_ms=%.3f draws=%d vertices=%d submit_p95_ms=%.3f submit_p99_ms=%.3f submit_frames=%d',
                     tostring(previousStage and previousStage.stage_name), tostring(not ext.pause_menu:IsKilled()),
-                    sampleFrames/(afterRender-sampleStart), logicTime*1000/sampleFrames, renderTime*1000/sampleFrames,drawMilliseconds or 0,draws,vertices))
+                    sampleFrames/(afterRender-sampleStart), logicTime*1000/sampleFrames, renderTime*1000/sampleFrames,drawMilliseconds or 0,draws,vertices,submit95 or 0,submit99 or 0,submitFrames or 0))
                 sampleStart, sampleFrames, logicTime, renderTime = afterRender, 0, 0, 0
             end
             if frames <= 3 then lstg.SystemLog('BOSSRUSH_RENDERED: ' .. frames) end

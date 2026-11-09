@@ -258,7 +258,10 @@ function laser:CutOnRadius(l1, l2, targets)
         BulletBreak_Table:New(self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.index)
         local other_laser = New(laser, self.index, self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.rot, l / 2 / c, l - l / c, l / 2 / c, self.w, 0, self.head)
         -- 这是旧光束被切出的残段，继续属于本次换卡的消弹对象。
-        if targets then targets[other_laser]=true end
+        if targets then
+            targets[other_laser]=true
+            if targets._live then targets._live[#targets._live+1]=other_laser end
+        end
         other_laser._native_laser_game = self._native_laser_game
         other_laser._visual_width_factor = self._visual_width_factor
         other_laser._native_laser_box = self._native_laser_box

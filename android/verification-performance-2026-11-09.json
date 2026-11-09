@@ -1,0 +1,134 @@
+{
+  "date": "2026-11-09",
+  "baseline": "cc1cc84",
+  "platform": "Apple M4 Max 上的 Android 16 ARM64 模拟器，host GPU",
+  "surface": [
+    720,
+    1600
+  ],
+  "seed": 20261109,
+  "phone_measured": false,
+  "runs": {
+    "benchmark-before": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "1297",
+      "checkpoint": "bf00222d761cd359c41c38cdaa1f770925abcb1f83f3a0e8b75fba01b2d12477",
+      "elapsed_s": "20.479645"
+    },
+    "benchmark-after": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "1297",
+      "checkpoint": "bf00222d761cd359c41c38cdaa1f770925abcb1f83f3a0e8b75fba01b2d12477",
+      "elapsed_s": "16.176730"
+    },
+    "benchmark-final": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "1297",
+      "checkpoint": "bf00222d761cd359c41c38cdaa1f770925abcb1f83f3a0e8b75fba01b2d12477",
+      "elapsed_s": "37.470906"
+    },
+    "events-before": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "1200",
+      "objects": "533",
+      "checkpoint": "6d96bed56d69de4d826e7967b61e0ac02d78a6d96d28e29c5de30af3e4d1fdaa",
+      "elapsed_s": "25.223227"
+    },
+    "events-after": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "1200",
+      "objects": "533",
+      "checkpoint": "6d96bed56d69de4d826e7967b61e0ac02d78a6d96d28e29c5de30af3e4d1fdaa",
+      "elapsed_s": "23.218329"
+    },
+    "laser-before": {
+      "card": "452",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "308",
+      "checkpoint": "ff31826fdde4fb534475fad7602fc460b08ffeae2236245e7bfd5f32083e3f75",
+      "elapsed_s": "16.106124"
+    },
+    "laser-after": {
+      "card": "452",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "308",
+      "checkpoint": "ff31826fdde4fb534475fad7602fc460b08ffeae2236245e7bfd5f32083e3f75",
+      "elapsed_s": "15.826557"
+    },
+    "task-size-benchmark": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "1297",
+      "checkpoint": "bf00222d761cd359c41c38cdaa1f770925abcb1f83f3a0e8b75fba01b2d12477",
+      "elapsed_s": "16.050651"
+    },
+    "task-size-events": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "1200",
+      "objects": "533",
+      "checkpoint": "6d96bed56d69de4d826e7967b61e0ac02d78a6d96d28e29c5de30af3e4d1fdaa",
+      "elapsed_s": "44.695082"
+    },
+    "final-contracts": {
+      "card": "3600",
+      "seed": "20261109",
+      "logic_frames": "300",
+      "objects": "237",
+      "checkpoint": "489c1d27a55de4faaf8d1014822802e58e3613708c06bda19c1e88985dcaa171",
+      "elapsed_s": "5.102493"
+    }
+  },
+  "checks": {
+    "anm_state_and_draw_comparisons": 46675,
+    "original_anm_resources": 550,
+    "kanako_rings": 222,
+    "phase_clear_cases": 7,
+    "graphics_direct_pixel_checks": 107,
+    "graphics_buffer_pixel_checks": 107,
+    "native_snapshot_pixel_checks": 107,
+    "background_return_pixel_checks": 107,
+    "collision_dispatch": "空、小、大任务、嵌套回调及命中快照顺序通过",
+    "default_and_custom_default_render_pixels": true,
+    "native_collision_phase_equivalence": "主框、副框、Bomb免伤、actor回退、Lua真值、伤害及消散恢复通过",
+    "native_object_contracts": true,
+    "lua_python_syntax": true,
+    "engine_patch_idempotent": true
+  },
+  "measurement_limits": [
+    "固定输入、持续无敌的诊断场景",
+    "profile 运行包含计时包装器开销",
+    "最后五秒窗口覆盖的逻辑帧区间不同",
+    "重复运行墙钟耗时明显波动；任务粒度优化后 benchmark 为16.050651秒，profile事件场景为44.695082秒，不能据此宣称稳定提速",
+    "尚未采集安卓手机及手机GPU耗时"
+  ],
+  "state_equivalence": {
+    "benchmark-before vs task-size-benchmark": true,
+    "events-before vs task-size-events": true,
+    "laser-before vs laser-after": true
+  },
+  "builds": {
+    "android_arm64": "构建、打包与签名通过",
+    "macos_arm64": "构建与签名通过"
+  },
+  "macos": {
+    "logic_frames": 900,
+    "objects": 1421,
+    "peak": 1357,
+    "checkpoint": "3e69222a3a346ca9dd3cb02f8116b20cc1fcb73b10fe4d7124f3fc8a19d7e958",
+    "baseline_elapsed_s": 15.15579875,
+    "final_elapsed_s": 15.513677333001,
+    "purpose": "共享引擎与脚本一致性验证；不作为安卓性能数据"
+  }
+}

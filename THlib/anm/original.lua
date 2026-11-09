@@ -298,15 +298,16 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     if not v.visible or not v.sprite then return end
     local s=A.sprite_resource(v)
     local color=override and override.color or (v.secondary and v.color2 or v.color)
+    local cr,cg,cb=color[1],color[2],color[3]
     if override and override.mix then
         -- TH08 MixColors：先对VM顶点色乘/128并截断饱和，再与纹理相乘。
         local m=override.mix
-        color={min(255,floor(color[1]*m[1]/128)),min(255,floor(color[2]*m[2]/128)),min(255,floor(color[3]*m[3]/128))}
+        cr,cg,cb=min(255,floor(cr*m[1]/128)),min(255,floor(cg*m[2]/128)),min(255,floor(cb*m[3]/128))
     end
-    if tint then color={color[1]*tint[1]/255,color[2]*tint[2]/255,color[3]*tint[3]/255} end
+    if tint then cr,cg,cb=cr*tint[1]/255,cg*tint[2]/255,cb*tint[3]/255 end
     local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img
-    local ca,cr,cg,cb=max(0,min(255,floor(a))),floor(color[1]),floor(color[2]),floor(color[3])
+    local ca=max(0,min(255,floor(a)));cr,cg,cb=floor(cr),floor(cg),floor(cb)
     if v.ring_vertices and RenderTexture then
         -- TH11 mode13：scale.x是带宽、scale.y是半径，rotation.x是弧长；
         -- 不能把这三项当作平面精灵的缩放/俯仰角。原码见AnimationExecutionUpdate.inc。
@@ -336,7 +337,8 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     local rot=(v.data.game==6 and 1 or -1)*v.rotation[3]/rad+(v.follow and (angle or 0) or 0)
     if rotation~=nil then rot=rotation end
     -- X/Y 旋转在原作相机正交的二维精灵上体现为投影宽高。
-    sx=sx*math.cos(v.rotation[2]);sy=sy*math.cos(v.rotation[1])
+    if v.rotation[2]~=0 then sx=sx*math.cos(v.rotation[2]) end
+    if v.rotation[1]~=0 then sy=sy*math.cos(v.rotation[1]) end
     local px,py=x+v.position[1],y-v.position[2]
     if v.anchor==1 then px=px+s[4]*sx/2;py=py-s[5]*sy/2 end
     if v.anchor_x==1 then px=px+s[4]*sx/2 elseif v.anchor_x==2 then px=px-s[4]*sx/2 end

@@ -6,6 +6,22 @@ function Q.run()
         LoadTexture('android:checker', 'android/test-sampler.png')
         SetTextureSamplerState('android:checker', 'nearest+wrap')
         CreateRenderTarget('android:coordinates')
+        CopyImage('android:object-probe','white')
+        SetImageState('android:object-probe','',Color(255,70,130,230))
+        local function init(o,x)
+            o.img='android:object-probe';o.group=GROUP.GHOST;o.layer=1000;o.bound=false;o.colli=false
+            o.x,o.y=x,100;o.hscale,o.vscale=1,1
+        end
+        -- 对照原生默认绘制与自绘回调里的 DefaultRenderFunc，覆盖矩阵惰性更新。
+        New(Class(object,{init=init,render=DefaultRenderFunc},true),140)
+        New(Class(object,{init=init,render=function(o) DefaultRenderFunc(o) end},true),170)
+    end
+    function s:frame()
+        if self.timer==60 then
+            if not plus.DirectoryExists('snapshot') then plus.CreateDirectory('snapshot') end
+            Snapshot('snapshot/android-graphics.png')
+        end
+        if self.timer==90 then lstg.SystemLog('BOSSRUSH_GRAPHICS_READY: 转场后稳定像素画面') end
     end
     function s:render()
         SetViewMode('ui'); RenderClear(Color(255,0,0,0))
@@ -28,12 +44,15 @@ function Q.run()
             {20,450,.5,0,0,white}, {240,450,.5,12,0,white},
             {240,90,.5,12,8,white}, {20,90,.5,0,8,white})
         local k,dx,dy=screen.scale,screen.dx,screen.dy
-        SetViewport(760*k+dx,920*k+dx,270*k+dy,430*k+dy)
+        local portrait=AndroidPortrait and AndroidPortrait.enabled()
+        local px,py=portrait and 330 or 760,portrait and screen.height-180 or 270
+        SetViewport(px*k+dx,(px+160)*k+dx,py*k+dy,(py+160)*k+dy)
         SetPerspective(0,0,4,0,0,0,0,1,0,math.pi/2,1,.1,20)
         SetImageState('white','',Color(255,180,60,220))
         Render4V('white',-2,2,0,2,2,0,2,-2,0,-2,-2,0)
         SetViewMode('ui')
         RenderTTF('title','Android 2D / RT / NPOT / 3D',480,520,white,'centerpoint')
+        SetViewMode('world')
     end
     stage.Set('none','android_graphics')
 end

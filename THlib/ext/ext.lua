@@ -92,6 +92,7 @@ end
 ---extra user function
 ---设置标题
 local function ChangeGameTitle()
+    if AndroidPlatform then return end -- 移动端 SetTitle 为空实现，不逐帧构造废弃的标题字符串。
     local mod = setting.mod
     local t = table.concat({
         string.format("FPS=%.1f", GetFPS()),
@@ -203,21 +204,25 @@ local function DoFrame()
         return
     end
     --stage和object逻辑
+    local perf=AndroidProfiler
     local nopause = (GetCurrentSuperPause() <= 0)
     if nopause or stage.nopause then
         if GameRank and nopause then GameRank.step() end
         if not stage.current_stage.is_menu and not ext.notUIdraw then
             lstg.system:frame()
         end
+        if perf then perf.begin('logic.stage') end
         task.Do(stage.current_stage)
         -- 主线过关限制也可能在关卡协程内触发答题，本帧立即停止物理更新。
         if GameRevive.active() then
+            if perf then perf.finish('logic.stage') end
             if GameDrops then GameDrops.suspend() end
             if SaveResume then SaveResume.afterLogic() end
             return
         end
         stage.current_stage:frame()
         stage.current_stage.timer = stage.current_stage.timer + 1
+        if perf then perf.finish('logic.stage') end
     end
     if GameRank then GameRank.beforeObjects() end
     ObjFrame()
@@ -253,7 +258,11 @@ local function DoFrame()
         if OriginalCollision then OriginalCollision.finish() end
     end
     -- 使用本帧正常移动和碰撞后的自机位置接取，掉落不冻结关卡或额外移动自机。
-    if nopause and GameDrops then GameDrops.frame(stage.current_stage) end
+    if nopause and GameDrops then
+        if perf then perf.begin('logic.drops') end
+        GameDrops.frame(stage.current_stage)
+        if perf then perf.finish('logic.drops') end
+    end
     UpdateXY()
     AfterFrame()
     if SaveResume then SaveResume.afterLogic() end
@@ -435,13 +444,19 @@ function RenderFunc()
     mask_fader:BeforeRender()
     if stage.current_stage then
 
+        local perf=AndroidProfiler
+        if perf then perf.begin('render.ui.before') end
         ui_drawing:Beforerender()
+        if perf then perf.finish('render.ui.before');perf.begin('render.stage') end
         stage.current_stage:render()
+        if perf then perf.finish('render.stage') end
         ext.CameraBefore()
         ObjRender()
         if GameDrops then GameDrops.render() end
         ext.CameraAfter()
+        if perf then perf.begin('render.ui.after') end
         ui_drawing:Afterrender()
+        if perf then perf.finish('render.ui.after') end
 
         --DrawCollider()
         if DEBUG and Collision_Checker then

@@ -3,6 +3,7 @@
 #include "LSTG/Util/UtilLuaRes.h"
 #include "LSTG/Renderer.h"
 #include "LSTG/AppFrame.h"
+#include "LSTG/Component/ComponentDataColli.h"
 #include "Classes/XLuaModuleRegistry.h"
 #include "renderer/backend/Device.h"
 #include "renderer/backend/DeviceInfo.h"
@@ -17,6 +18,8 @@
 #endif
 #include <chrono>
 #include <cstring>
+#include <array>
+#include <algorithm>
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
 #include <EGL/egl.h>
 #endif
@@ -58,6 +61,7 @@ double androidNow() {
     return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 using namespace lstg;
+#include "original_collision.inc"
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
 #ifdef CC_USE_GFX
@@ -75,19 +79,32 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidClock) {
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidDrawStats) {
     static bool observing = false;
-    static double drawStarted = 0, drawMilliseconds = 0;
+    static double drawStarted = 0, total = 0;
+    static std::array<double, 512> samples{};
+    static unsigned count = 0;
     if (!observing) {
         observing = true;
         auto* dispatcher = cocos2d::Director::getInstance()->getEventDispatcher();
         dispatcher->addCustomEventListener(cocos2d::Director::EVENT_BEFORE_DRAW,
             [](cocos2d::EventCustom*) { drawStarted = androidNow(); });
         dispatcher->addCustomEventListener(cocos2d::Director::EVENT_AFTER_DRAW,
-            [](cocos2d::EventCustom*) { drawMilliseconds = (androidNow()-drawStarted)*1000; });
+            [](cocos2d::EventCustom*) {
+                const auto elapsed=(androidNow()-drawStarted)*1000;
+                samples[count%samples.size()]=elapsed;total+=elapsed;++count;
+            });
     }
     auto* renderer = cocos2d::Director::getInstance()->getRenderer();
     lua_pushinteger(L, renderer->getDrawnBatches());
     lua_pushinteger(L, renderer->getDrawnVertices());
-    lua_pushnumber(L, drawMilliseconds); return 3;
+    lua_pushnumber(L, count ? total/count : 0);
+    auto sorted=samples;
+    const auto size=std::min<size_t>(count,sorted.size());
+    std::sort(sorted.begin(),sorted.begin()+size);
+    lua_pushnumber(L,size ? sorted[(size*95+99)/100-1] : 0);
+    lua_pushnumber(L,size ? sorted[(size*99+99)/100-1] : 0);
+    lua_pushinteger(L,count);
+    count=0;total=0;
+    return 6;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidTextProfile) {
     if (lua_gettop(L)) androidProfileText = lua_toboolean(L, 1);

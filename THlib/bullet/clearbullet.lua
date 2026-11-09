@@ -93,13 +93,18 @@ function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx, nat
     if existing_only then
         -- 换卡圈持续40帧，死亡圈持续60帧；只清开始时已有的对象，保留下一相首波。
         -- Bomb不传此参数，仍持续消除效果期间新出现的弹幕。
-        self.targets={}
-        local function mark(o) self.targets[o]=true end
+        self.targets={_live={}}
+        local function mark(o)
+            if not self.targets[o] then self.targets._live[#self.targets._live+1]=o end
+            self.targets[o]=true
+        end
         object.BulletDo(mark);object.LaserDo(mark)
         if indes then object.IndesDo(mark) end
     end
 end
 function bullet_cleaner:frame()
+    local perf=AndroidProfiler
+    if perf then perf.begin('logic.cancel') end
     if self.timer < self.time then
         self.radius = self.radius + self.delta
         self.a = self.radius
@@ -109,6 +114,22 @@ function bullet_cleaner:frame()
         object.RawDel(self)
     end
     local targets=self.targets
+    if targets and targets._live then
+        -- 只用于判断是否还有待消目标；实际处理仍走原来的分组迭代，保留回调顺序。
+        -- 下一相已有大量新弹时，旧目标清完后无需在剩余40/60帧反复扫描全场。
+        local live,n=targets._live,0
+        for i=1,#live do
+            local o=live[i]
+            if IsValid(o) then
+                n=n+1;live[n]=o
+            end
+        end
+        for i=#live,n+1,-1 do live[i]=nil end
+        if n==0 then
+            if perf then perf.finish('logic.cancel') end
+            return
+        end
+    end
     cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes,targets)
     object.BulletDo(function(o)
         if (not targets or targets[o]) and Dist(self, o) < self.a then
@@ -131,6 +152,7 @@ function bullet_cleaner:frame()
             end
         end)
     end
+    if perf then perf.finish('logic.cancel') end
 end
 
 bomb_bullet_killer = Class(object)

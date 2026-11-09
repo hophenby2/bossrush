@@ -5,17 +5,29 @@ import sys
 from PIL import Image
 
 im = Image.open(sys.argv[1]).convert('RGB')
-k = im.width / 1200
-assert abs(im.height / 540 - k) < .01, im.size
+portrait=im.height>im.width
+k = im.width / (540 if portrait else 1200)
+if not portrait: assert abs(im.height / 540 - k) < .01, im.size
 checks = []
 palette = [(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,0,255),(255,255,0)]
 for row in range(8):
     for col in range(12):
-        checks.append((140+(col+.5)*220/12, 90+(row+.5)*45, palette[(row%2)*3+col%3]))
-checks += [(504,158,palette[0]),(696,158,palette[1]),(504,382,palette[2]),(696,382,palette[5])]
-for x,y in [(400,60),(800,60),(500,40),(700,500),(400,480),(800,480),(390,270),(810,270)]:
-    checks.append((x,y,(0,0,0)))
-checks.append((960,190,(180,60,220)))
+        checks.append(((20 if portrait else 140)+(col+.5)*220/12,
+            (im.height/k-450 if portrait else 90)+(row+.5)*45, palette[(row%2)*3+col%3]))
+if portrait:
+    mid=im.height/k/2
+    checks += [(262,mid-157.5,palette[0]),(405,mid-157.5,palette[1]),
+        (262,mid+157.5,palette[2]),(405,mid+157.5,palette[5])]
+    for x,y in [(20,mid-340),(520,mid-340),(520,mid+340),(400,im.height/k-10)]:
+        checks.append((x,y,(0,0,0)))
+    checks.append((410,100,(180,60,220)))
+    checks += [(466.875,mid-140.625,(70,130,230)),(509.0625,mid-140.625,(70,130,230))]
+else:
+    checks += [(504,158,palette[0]),(696,158,palette[1]),(504,382,palette[2]),(696,382,palette[5])]
+    for x,y in [(400,60),(800,60),(500,40),(700,500),(400,480),(800,480),(390,270),(810,270)]:
+        checks.append((x,y,(0,0,0)))
+    checks.append((960,190,(180,60,220)))
+    checks += [(740,170,(70,130,230)),(770,170,(70,130,230))]
 failures=[]
 for x,y,expected in checks:
     pixel=im.getpixel((round(x*k),round(y*k)))

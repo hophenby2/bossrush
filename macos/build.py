@@ -12,7 +12,7 @@ shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
 def run(*args,**kw):
  print('+',' '.join(map(str,args)),flush=True);subprocess.run(list(map(str,args)),check=True,**kw)
 def shared_patch_hash():
- paths=[GAME/'android/engine.lock.json',GAME/'android/patch_engine.py',GAME/'android/native/compat.cpp',GAME/'android/native/compat.h']
+ paths=[GAME/'android/engine.lock.json',GAME/'android/patch_engine.py']+sorted((GAME/'android/native').glob('*'))
  return hashlib.sha256(b''.join(p.read_bytes() for p in paths)).hexdigest()
 
 def resources():

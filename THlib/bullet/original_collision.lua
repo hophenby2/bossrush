@@ -51,6 +51,9 @@ function C.bullet(o,game,kind)
     o.a,o.b,o.rect=w/2,w/2,true
 end
 local saved,count={},0
+local native=lstg and lstg.AndroidOriginalCollision
+local nativeGroups
+local nativeActive
 local function save(o,enemy)
     count=count+1
     -- 弹密时每帧有上千次保存；复用记录，避免每帧制造上千张临时表。
@@ -71,6 +74,12 @@ local function save(o,enemy)
     end
 end
 function C.begin()
+    nativeActive=native and C.use_native~=false
+    if nativeActive then
+        nativeGroups=nativeGroups or {GROUP.ENEMY_BULLET,GROUP.ENEMY_BULLET2,GROUP.INDES,GROUP.ENEMY,GROUP.NONTJT}
+        count=native('begin',saved,nativeGroups,GROUP.PLAYER,GROUP.PLAYER_BULLET)
+        return
+    end
     count=0
     local active=false
     for _,group in ipairs({GROUP.ENEMY_BULLET,GROUP.ENEMY_BULLET2,GROUP.INDES,GROUP.ENEMY,GROUP.NONTJT}) do
@@ -91,6 +100,7 @@ function C.begin()
     for _,o in ObjList(GROUP.PLAYER) do if o.colli then save(o) end end
 end
 function C.shots()
+    if nativeActive then native('shots');return end
     if count==0 then return end
     for i=1,count do
         local s=saved[i]
@@ -126,6 +136,11 @@ function C.secondary()
     end
 end
 function C.finish()
+    if nativeActive then
+        native('finish')
+        for i=1,count do saved[i][1]=nil end
+        count=0;return
+    end
     for i=1,count do
         local s=saved[i]
         local o=s[1]
