@@ -3,6 +3,7 @@ local count=0
 local function check(v,label) assert(v,label);count=count+1 end
 local function near(a,b) return math.abs(a-b)<1e-8*math.max(1,math.abs(b)) end
 lstg={var={__hp_scale_version=1,rogue_run={}},tmpvar={}}
+screen={width=960,height=540}
 GROUP={ENEMY=2,NONTJT=6,GHOST=0};IsValid=function(o) return o and o._live~=false end
 New=function(c,...) local o={_live=true,group=2};if c.init then c.init(o,...) end;return o end
 local H=dofile('THlib/rogue_hp.lua');H.init(lstg.var.rogue_run)
@@ -15,15 +16,18 @@ ui={RenderText=function(_,_,text,x,y,scale,color) drawn[#drawn+1]={text=text,x=x
 local age,total=state.animation.age,state.total;H.render(144,165)
 check(#drawn==2 and drawn[1].text=='×1' and drawn[2].text=='×1.01' and drawn[2].x==480 and drawn[2].y==270,'第一阶段从屏幕中央显示×1.01')
 check(state.animation.age==age and state.total==total,'渲染保持只读，逻辑帧决定动画')
+screen.width,screen.height=540,1200;drawn={};H.render(270,100)
+check(drawn[2].x==270 and drawn[2].y==600,'竖屏倍率动画从实际屏幕中央出发')
+screen.width,screen.height=960,540
 for _=1,18 do H.frame() end
 drawn={};H.render(144,165)
 check(drawn[2].x<480 and drawn[2].x>144 and drawn[2].y<270 and drawn[2].y>165,'倍率文字快速向左下移动')
-for _=19,30 do H.frame() end
+for _=19,H.DURATION-6 do H.frame() end
 drawn={};H.render(144,165)
 check(drawn[1].color.a==0 and state.shown==1,'落定前淡出旧数值，避免两串倍率重叠，尚不更新累计值')
-for _=31,35 do H.frame() end
+for _=H.DURATION-5,H.DURATION-1 do H.frame() end
 check(state.shown==1,'消失前不提前更新左下累计倍率')
-H.frame();check(near(state.shown,1.01) and not state.animation and state.shown_stage==1,'第36帧消失时更新显示及颜色')
+H.frame();check(near(state.shown,1.01) and not state.animation and state.shown_stage==1,'动画结束时更新显示及颜色')
 H.enter(1);check(near(H.factor(),1.01),'重复进入同一阶段不重复乘血')
 local c={is_combat=true,t1=60,t3=3600,hp=1000}
 local boss={current_card=c,_bosssys={},_live=true};H.beginCard(boss)
@@ -41,9 +45,9 @@ local first=New(actor,100);check(near(first.hp,101),'普通敌机同样使用阶
 H.enter(2);check(near(H.factor(),1.0302) and near(H.factor(first),1.01),'跨阶段累计，已出生单位保留自身倍率')
 local second=New(actor,100);check(near(second.hp,103.02),'新敌机使用新的累计倍率')
 H.enter(3);check(near(H.factor(),1.061106) and #state.queue==1,'快速连续推进不漏动画，第三阶段累计正确')
-for _=1,36 do H.frame() end
+for _=1,H.DURATION do H.frame() end
 check(near(state.shown,1.0302) and state.animation.stage==3,'第二次动画落定后才切入第三次')
-for _=1,36 do H.frame() end
+for _=1,H.DURATION do H.frame() end
 check(near(state.shown,1.061106) and state.shown_stage==3,'左侧显示真实累计值')
 local M=dofile('mod/GAME/th32_hp.lua')
 local red={_live=true};M.main(red,{hp=1000,spell=true},4000)

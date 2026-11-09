@@ -17,6 +17,10 @@ function D.resize(width, height)
         for key, value in pairs(savedOffset) do offset[key]=value end
         lstg.worldoffset = offset
     end
+    if AndroidPortrait then
+        if AndroidPortrait.enabled() then AndroidPortrait.layoutWorld() else AndroidPortrait.restoreWorld() end
+        AndroidPortrait.clearInput()
+    end
     if AndroidInput then AndroidInput.reset(true) end
     if AndroidPauseCache then AndroidPauseCache.invalidate() end
 end

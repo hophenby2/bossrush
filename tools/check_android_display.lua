@@ -35,4 +35,17 @@ for _,size in ipairs({{960,540},{2400,1080},{3168,1440},{1600,720},{1920,1200}})
     assert(math.abs(mask_fader.toy(screen.scale,270)-size[2]/2)<0.001,'过场采样漏算纵向留边')
 end
 assert(inputResets==5 and invalidations==5)
-print('宽屏/过场居中、世界与镜头保留、输入与暂停缓存更新检查通过')
+AndroidPortrait=dofile('android/lua/portrait.lua');setting.androidPortrait=true
+local near=function(a,b) return math.abs(a-b)<0.001 end
+for _,size in ipairs({{1080,2400},{1440,3168},{1200,1920}}) do
+    display.resize(size[1],size[2])
+    assert(screen.width==540 and near(screen.height,540*size[2]/size[1]),'竖屏画布比例错误')
+    assert(world.l==-140 and world.r==140 and bounds[1]==-188 and bounds[2]==188,'竖屏改变了世界或回收边界')
+    assert(offset.dx==17 and offset.hscale==1.25 and offset.centerx==-23,'竖屏改变了镜头')
+    assert(near(world.scrr-world.scrl,540) and near((world.scrt-world.scrb)/540,(world.t-world.b)/280),'战斗区没有等比例显示')
+    local x,y=WorldToScreen((world.l+world.r)/2,(world.b+world.t)/2)
+    assert(near(x,size[1]/2) and near(y,size[2]/2),'战斗区中心映射错误')
+end
+setting.androidPortrait=false;display.resize(1920,1080)
+assert(screen.width==960 and screen.height==540 and world.scrl==288 and world.scrr==672,'切回横屏未还原视口')
+print('横竖屏缩放、世界坐标与回收边界、镜头保留、触点清理检查通过')

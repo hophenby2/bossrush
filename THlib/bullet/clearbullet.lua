@@ -1,7 +1,8 @@
 ---clear_bullet
 ---用消弹圈切割直线激光
 ---@param drop object|fun(x:number, y:number)@掉落的道具
-local function cutLasersByCircle(x1, y1, r, drop, force)
+---@param targets table|nil@换卡时只处理已有弹幕；省略则持续清除新弹
+local function cutLasersByCircle(x1, y1, r, drop, force, targets)
     local drop_func
     if type(drop) == "function" then
         drop_func = drop
@@ -11,7 +12,7 @@ local function cutLasersByCircle(x1, y1, r, drop, force)
         end
     end
     object.LaserDo(function(self)
-        if not self.IsBentLaser and IsValid(self) and self.status~='del' and self.status~='kill' then
+        if (not targets or targets[self]) and not self.IsBentLaser and IsValid(self) and self.status~='del' and self.status~='kill' then
             local native=self._native_laser_game or self._native_laser_managed or self.th06_width
             if (native or (self.colli and self.alpha > 0.999)) and self.protect == 0 then
                 --用尽毕生所学
@@ -40,12 +41,12 @@ local function cutLasersByCircle(x1, y1, r, drop, force)
                     if l >= d then
                         local l1, l2 = l - d, l + d
                         if l1 < len then
-                            _l1, _l2 = laser.CutOnRadius(self, l1, l2)
+                            _l1, _l2 = laser.CutOnRadius(self, l1, l2, targets)
                             cut = true
                         end
                     elseif l >= -d then
                         local l1, l2 = 0, d + l
-                        _l1, _l2 = laser.CutOnRadius(self, l1, l2)
+                        _l1, _l2 = laser.CutOnRadius(self, l1, l2, targets)
                         cut = true
                     end
                     if cut and drop and self.drop_CD == 0 then
@@ -68,7 +69,7 @@ end
 _G.cutLasersByCircle = cutLasersByCircle
 
 bullet_cleaner = Class(object)
-function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx, native_force)
+function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx, native_force, existing_only)
     self.native_force=native_force
     self.x = x
     self.y = y
@@ -89,6 +90,14 @@ function bullet_cleaner:init(x, y, radius, time, time2, into, indes, vy, vx, nat
     self.vx = vx or 0
     self.vy = vy or 0.2
     self.colli = false
+    if existing_only then
+        -- 换卡圈持续40帧，死亡圈持续60帧；只清开始时已有的对象，保留下一相首波。
+        -- Bomb不传此参数，仍持续消除效果期间新出现的弹幕。
+        self.targets={}
+        local function mark(o) self.targets[o]=true end
+        object.BulletDo(mark);object.LaserDo(mark)
+        if indes then object.IndesDo(mark) end
+    end
 end
 function bullet_cleaner:frame()
     if self.timer < self.time then
@@ -99,14 +108,15 @@ function bullet_cleaner:frame()
     if self.timer > self.time2 then
         object.RawDel(self)
     end
-    cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes)
+    local targets=self.targets
+    cutLasersByCircle(self.x, self.y, self.a, (self.into == "Kill") and item.obj.faith_minor,self.indes,targets)
     object.BulletDo(function(o)
-        if Dist(self, o) < self.a then
+        if (not targets or targets[o]) and Dist(self, o) < self.a then
             OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
         end
     end)
     object.LaserDo(function(o)
-        if IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
+        if (not targets or targets[o]) and IsValid(o) and o.status~='del' and o.status~='kill' and Dist(self, o) < self.a then
             if self.indes or not (o.Isradial or o.Isgrowing) then
                 if o._native_laser_game or o._native_laser_managed or o.th06_width then
                     OriginalBulletVisual.cancel_laser(o,self.into=='Kill',self.indes)
@@ -116,7 +126,7 @@ function bullet_cleaner:frame()
     end)
     if self.indes then
         object.IndesDo(function(o)
-            if Dist(self, o) < self.a then
+            if (not targets or targets[o]) and Dist(self, o) < self.a then
                 OriginalBulletVisual.cancel_bullet(o,self.into,self.native_force)
             end
         end)

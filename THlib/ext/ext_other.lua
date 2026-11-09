@@ -261,8 +261,8 @@ function mask_fader:AfterRender()
         uv2[6] = self.color
         uv3[6] = self.color
         uv4[6] = self.color
-        for x = 0.5, 47.5 do
-            for y = 0.5, 27.5 do
+        for x = 0.5, math.ceil(screen.width/20)-.5 do
+            for y = 0.5, math.ceil(screen.height/20)-.5 do
                 uv1[4], uv1[5] = self.tox(k, x * 20 - 10), self.toy(k, y * 20 + 10)
                 uv2[4], uv2[5] = self.tox(k, x * 20 + 10), self.toy(k, y * 20 + 10)
                 uv3[4], uv3[5] = self.tox(k, x * 20 + 10), self.toy(k, y * 20 - 10)
@@ -333,7 +333,7 @@ function Failed_Show:AfterRender()
         PopRenderTarget(self.tex)
         PostEffectGrayColor(self.tex, A)
         SetImageState("white", "", A * 120, 0, 0, 0)
-        RenderRect("white", 0, 960, 0, 540)
+        RenderRect("white", 0, screen.width, 0, screen.height)
     end
 end
 

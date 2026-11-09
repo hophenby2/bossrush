@@ -228,7 +228,7 @@ end
 ---用半径范围来截激光
 ---适用性强
 ---@return number,number@返回实际所切的长短
-function laser:CutOnRadius(l1, l2)
+function laser:CutOnRadius(l1, l2, targets)
     local _len = self.l1 + self.l2 + self.l3
     if l1 < 0 then
         l1 = 0
@@ -257,6 +257,8 @@ function laser:CutOnRadius(l1, l2)
     if l > 4 then
         BulletBreak_Table:New(self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.index)
         local other_laser = New(laser, self.index, self.x + cos(self.rot) * l2, self.y + sin(self.rot) * l2, self.rot, l / 2 / c, l - l / c, l / 2 / c, self.w, 0, self.head)
+        -- 这是旧光束被切出的残段，继续属于本次换卡的消弹对象。
+        if targets then targets[other_laser]=true end
         other_laser._native_laser_game = self._native_laser_game
         other_laser._visual_width_factor = self._visual_width_factor
         other_laser._native_laser_box = self._native_laser_box

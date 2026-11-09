@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.bossrush.hd" android:versionCode="42" android:versionName="26.11.8v1">
+    package="org.bossrush.hd" android:versionCode="43" android:versionName="26.11.8v2">
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33" />
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -13,7 +13,7 @@
         android:theme="@style/BossRushTheme">
         <meta-data android:name="android.app.lib_name" android:value="cocos2dlua" />
         <activity android:name=".BossRushActivity" android:exported="true"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="sensorPortrait"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation|uiMode|smallestScreenSize|screenLayout|density"
             android:launchMode="singleTask">
             <intent-filter>

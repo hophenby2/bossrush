@@ -82,6 +82,7 @@ local function start()
     load('game/android/compat.lua')
     if desktop then load('game/macos/compat.lua') end
     load('game/android/lazy_textures.lua')
+    if not desktop then AndroidPortrait=load('game/android/portrait.lua') end
     args = {}; start_game = true; cjson = cjson or json
     lstg.DoFile('launch.lua')
     local originalLoadConfigure = loadConfigure
@@ -94,6 +95,7 @@ local function start()
             s.touchUnlimited, s.touchUnlimitedDefaultApplied = true, true
         end
         if not desktop then
+            if s.androidPortrait==nil then s.androidPortrait=true end
             if not s.androidBackgroundDefaultApplied then
                 s.displayBG, s.androidBackgroundDefaultApplied = false, true
             end
@@ -109,6 +111,7 @@ local function start()
     function ChangeVideoMode2(s)
         s=s or cur_setting or setting
         SetVsync(s.vsync==true)
+        if AndroidPortrait then AndroidPortrait.configure(s) end
         return true
     end
     function setting_keys_default()
@@ -151,6 +154,7 @@ local function start()
     end
     lstg.SystemLog('BOSSRUSH_GAMEINIT: 开始')
     GameInit()
+    if AndroidPortrait then AndroidPortrait.configure(setting) end
     startupMark('game_init')
     if not desktop then
         SetVsync(setting.vsync==true)
@@ -235,6 +239,7 @@ local function start()
                 previousStage = stage.current_stage
                 lstg.SystemLog('BOSSRUSH_STAGE: ' .. tostring(previousStage and previousStage.stage_name))
             end
+            if AndroidPortrait then AndroidPortrait.beginRender() end
             RenderFunc()
             if frames == 1 then
                 startupMark('first_game_frame')

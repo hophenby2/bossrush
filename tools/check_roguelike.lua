@@ -4,6 +4,7 @@ arg[1]='roguelike-registry'
 local file=assert(io.open('tools/check_stage.lua','rb'));local source=file:read('*a');file:close()
 local position=assert(source:find('if path == "--all" then',1,true))
 assert(loadstring(source:sub(1,position-1)))()
+screen={width=960,height=540}
 local total=0
 local function check(value,label) assert(value,label);total=total+1 end
 local oldAdd=boss.card.add
