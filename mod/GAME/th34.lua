@@ -5836,6 +5836,9 @@ class.th07_motion_source = {
     [4408] = { clear_box=true, key="5main", file="ecldata5.ecl", sub=66, difficulty=1, y=128, move={120,4,320,224} },
     [4409] = { clear_box=true, key="5main", file="ecldata5.ecl", sub=70, y=128, move={120,4,352,416} },
     [4410] = { key="5main", file="ecldata5.ecl", sub=75, y=128, box={32,48,352,128} },
+    ---3 面中 boss 的第一张非符（原作 Sub13）：SET_POS(64,-32) → MOVE_POS_TIME(60,4,192,128)。
+    [4474] = { clear_box=true, key="3mid", file="ecldata3.ecl", sub=13, y=128,
+               pos={64,-32}, move={60,4,192,128} },
     [4430] = { key="3mid", file="ecldata3.ecl", sub=22, y=128, pos={-32,128}, move={60,4,192,128} },
     [4431] = { key="3mid", file="ecldata3.ecl", sub=27, y=128, box={32,48,352,128}, move={120,4,192,112} },
     [4432] = { key="3main", file="ecldata3.ecl", sub=32, y=128, box={32,48,352,128} },
@@ -11872,16 +11875,18 @@ local function TH34_add_stage56_boss()
     ---以下：stage3（爱丽丝·玛格特洛依德）的符卡/非符移植（原作 `ecldata3.ecl`）。
     ---
     ---原作 sub 链（全取 Lunatic 行）：
-    ---  中 boss 非符(22→23→24/25/26) → 操符「乙女文楽 -Lunatic-」(27→28→29/30/31)
+    ---  中 boss 非符0(13→14→15→16/17) → 中 boss 非符(22→23→24/25/26)
+    ---       → 操符「乙女文楽 -Lunatic-」(27→28→29/30/31)
     ---  本体 非符1(32→33→34/35) → 蒼符「博愛のオルレアン人形」(42→43→44/45)
     ---       → 非符2(36→38/39/40) → 白符「白亜の露西亜人形 -Lunatic-」(48→49)
     ---       → 非符3(37→38/39/40) → 雅符「春の京人形」(54→55) → 咒詛「首吊り蓬莱人形」(56→57/58/59)
     ---
     ---坐标/角度/血量口径同文件头。**ECL 的 SUB_CALL 会冻结调用方的时间轴**（EclManager.cpp
     ---只在当前 context 走时间），所以各卡的循环周期不能用「ECL 里写的 t」直接读，一律
-    ---用 /tmp/br34 的逐帧模拟器实测：非符1(中 boss)=600 帧、非符1(本体)=600、
-    ---非符2=420、非符3=580；符卡的子机（蒼符/雅符/咒詛）在 boss 死后由 `spell_live` 一起清。
-    ---卡 id 段：stage3 = 4430..4438。
+    ---用 /tmp/br34 的逐帧模拟器实测：非符0(中 boss)=972 帧（四组 SUB_CALL 的墙钟相加）、
+    ---非符1(中 boss)=600 帧、非符1(本体)=600、非符2=420、非符3=580；符卡的子机
+    ---（蒼符/雅符/咒詛）在 boss 死后由 `spell_live` 一起清。
+    ---卡 id 段：stage3 = 4430..4438；中 boss 第一张非符另用 4474（不挤占既有练习槽位）。
     ---
     ---逐张与原作的差异（本仓库场地 384 宽 / 弹样式代理逼出来的近似）：
     ---  · 原作 BEGIN_SPELLCARD 的 Easy/Normal/Hard 行一律不用，只取 Lunatic 行的名字与数值；
@@ -11904,6 +11909,12 @@ local function TH34_add_stage56_boss()
         self.colli = false
         self.no_hp_render = true
         setface(self, "Alice")
+    end
+    ---原作 sub13（中 boss 第一张非符）：从 (64,-32) 入场到 (192,128) ⇒ 我们 (-128,256)→(0,96)。
+    local function enter3a(self)
+        self._orb, self._mv = nil, nil
+        self.x, self.y = -128, 256
+        bmove(self, 60, 4, 0, 96)
     end
     ---原作 sub22（中 boss）：从左侧 (低 x) 进场到 (192,128) ⇒ 我们 (-224,96)→(0,96)。
     local function enter3(self)
@@ -11956,6 +11967,80 @@ local function TH34_add_stage56_boss()
         end
         if plays then sound4(self) end
     end
+
+    ---──────────────────── アリス 非符 0（原作 sub13/14/15/16/17，3 面**中 boss**） ────────────────────
+    ---原作 sub13 从 (64,-32) 入场到 (192,128)（我们 (-128,256)→(0,96)），t=60 设限位框
+    ---并 SUB_CALL 14。sub14 的 L 行把层数 li4 设为 4，此后每轮：
+    ---  · 先连打两组：组1 色档6/张角+6°/拍数32，组2 色档2/张角−6°/拍数24；
+    ---  · 等 60 帧，然后 GET_EXIT_ANGLE 漂 60 帧（速度1.25），li4 += 1；
+    ---  · 再连打两组：组3 色档10/张角−9°/拍数32，组4 色档13/张角+9°/拍数24；
+    ---  · li4 += 1，MOVE_POS_TIME(60,4,192,128) 回中心，t=180 的 JUMP 回轮首。
+    ---★ SUB_CALL 冻结调用方时间轴，所以每组的实际墙钟长度是 6×拍数 + 30 帧（sub15 的收尾）；
+    ---  一轮墙钟 = 222 + 174 + 60 + 60 + 222 + 174 + 60 = 972 帧。
+    ---
+    ---sub15（每组一次）：
+    ---  · 初始角 f4 = rand[-π,π)；每拍 f4 += 张角（并 normalize）；
+    ---  · 偏移半径 f7 从 100 开始，每拍 -= 90/拍数（拍数32/24 都收 90，结束时为 10）；
+    ---  · f6 = (张角 >= 0) ? -π/2 : +π/2；子弹沿切向飞，所以正/负张角的两组反向旋转；
+    ---  · 每拍 t=0 打 sub16、t=3 打 sub17，各把「层数」个点均布在整圈上
+    ---    （点角 = f4 + k·2π/层数，偏移 = 半径·(cos,sin)，弹角 = 点角 + f6）；
+    ---  · sub16 / sub17 每点都是 SPREAD_ABS：sprite 1、c1=1、c2=2，
+    ---    速度 2.1→1.0 / 1.5→1.1（两层实际为 v1 与 (v1+v2)/2），张角22.5°（c1=1 时无展开）。
+    ---★ INIT_BULLET_CMD 0x20：sub15 在拍循环前写 commands[0]=type32、dur120、angle=f6/-100。
+    ---  sub16 的 flags=2（0x2）**不含 0x20** ⇒ 原作 RunCommands 直接跳过，sub16 弹是直线；
+    ---  sub17 的 flags=34（0x22）**含 0x20** ⇒ 弹在 120 帧内每帧转 f6/-100 rad。
+    ---  这是 sub16/sub17 唯一的运动差异，不能把 0x20 挂到 sub16 上。
+    ---差异 3：GET_EXIT_ANGLE 沿用本文件既有的 `drift` 代理；sub15 的换 ANM(133/128) 不移植
+    ---  （和其它 stage3 卡一样只做弹幕/运动）。
+    ncard("アリス 非符 0", 4474, 15000, 0, 2400, function(self)
+        self.group = GROUP.NONTJT
+        task.New(self, function()
+            task.Wait(60)                         -- sub13 的 60 帧入场
+            self.group = GROUP.ENEMY              -- sub14 t=0 开启体术
+            self._box = box5(32, 48, 352, 128)    -- sub13 t=60 的 SET_MOVEMENT_BOUNDS
+            local layers = 4                      -- L 行 li4 = 4；每轮 +2
+            local function norm(a) return (a + PI) % (2 * PI) - PI end
+            local function volley(col, spread, beats)
+                local angle = ran:Float(-PI, PI)
+                local f6 = spread >= 0 and -PI / 2 or PI / 2
+                local radius, dr = 100, -90 / beats
+                local turn = f6 / -100             -- sub15 的 f7 = f6 / -100 rad/帧
+                local cmd = cmds4(34, acc20(turn, 0, 120))
+                local step = 2 * PI / layers
+                for _ = 1, beats do
+                    for k = 0, layers - 1 do
+                        local th = angle + k * step
+                        shoot6(self, cos(th * RAD2DEG) * radius, -sin(th * RAD2DEG) * radius,
+                               65, 1, col, 1, 2, 2.1, 1.0, th + f6, 0.392699, nil, true)
+                    end
+                    angle = norm(angle + spread)
+                    task.Wait(3)
+                    for k = 0, layers - 1 do
+                        local th = angle + k * step
+                        shoot6(self, cos(th * RAD2DEG) * radius, -sin(th * RAD2DEG) * radius,
+                               65, 1, col, 1, 2, 1.5, 1.1, th + f6, 0.392699, cmd, true)
+                    end
+                    angle = norm(angle + spread)
+                    radius = radius + dr
+                    task.Wait(3)
+                end
+                task.Wait(30)                      -- sub15 收尾 ANM 之后等到 t=6×拍数+30
+            end
+            while true do
+                volley(6, 0.10471976, 32)
+                volley(2, -0.10471976, 24)
+                task.Wait(60)
+                drift(self, 1.25, 60)
+                task.Wait(60)
+                layers = layers + 1
+                volley(10, -0.15707964, 32)
+                volley(13, 0.15707964, 24)
+                layers = layers + 1
+                bmove(self, 60, 4, 0, 96)
+                task.Wait(60)
+            end
+        end)
+    end, { skin = skin3, enter = enter3a })
 
     ---──────────────────── アリス 非符 1（原作 sub22/23/24，3 面**中 boss**） ────────────────────
     ---原作 sub22 进场到 (192,128)（我们 (0,96)）、t=60 设限位框并 SUB_CALL 23；

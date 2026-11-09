@@ -104,6 +104,7 @@ H.entries[7]={
     [4471]={raw=1400,hp=801,immune=0,guard=0,spell=true,windows={{10,130,0},{130,430,1/9}}},
     [4472]={raw=2400,hp=1372,immune=120,guard=240,spell=true},
     [4473]={raw=2400,hp=1372,immune=120,guard=240,spell=true},
+    [4474]={raw=15000,hp=1157,immune=60,guard=120,spell=false},
     [4475]={raw=2100,hp=1201,immune=0,guard=480,spell=true},
     [4476]={raw=2800,hp=1601,immune=0,guard=240,spell=true},
     [5480]={raw=16550,hp=1276,immune=0,guard=180,spell=false},
