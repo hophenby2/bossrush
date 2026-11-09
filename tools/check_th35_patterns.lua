@@ -1,5 +1,6 @@
 -- TH34/TH35 原版弹幕与跨卡清场回归；使用真实协程、子弹样式和激光实现。
 -- 在游戏根目录运行：luajit tools/check_th35_patterns.lua
+local kanako_rings_only=arg[1]=='--kanako-rings'
 arg[1] = 'th35-patterns'
 local f = assert(io.open('tools/check_stage.lua', 'rb'))
 local setup = f:read('*a'); f:close()
@@ -86,7 +87,7 @@ local function check(value, message)
 end
 local function near(a, b) return math.abs(a - b) < 1e-6 end
 local function start(id)
-    local b = { x = 0, y = 80, _live = true }
+    local b = { x = 0, y = 80, timer=0, ani=0, class={StageLevel=33}, _live = true }
     b.current_card = assert(cards[id]); b.current_card.init(b)
     return b
 end
@@ -151,6 +152,60 @@ local function check_laser_quad(l, width, message)
     check(near(along_min, 0) and near(along_max, l.l1 + l.l2 + l.l3)
         and near(across_min, -width / 2) and near(across_max, width / 2), message)
 end
+-- 神奈子各阶段共用原作256×256圆环，出生两帧后按ECL切换红/绿/蓝ANM。
+local function kanako_rings(host)
+    local result={}
+    for _,o in ipairs(objects) do
+        local source=IsValid(o) and o._original_source
+        if source and source.key:match('^stage06:BossCir[RGB][24]?$')
+            and o.t10_root==host.th10carrier and not o._pending_delete then result[#result+1]=o end
+    end
+    return result
+end
+for _,case in ipairs({{3600,6},{3623,3},{3624,3},{3625,3},{3669,3},{3667,3}}) do
+    local host=start(case[1]);local rings
+    for _=1,240 do
+        step(1);rings=kanako_rings(host)
+        if #rings==case[2] then break end
+    end
+    check(#rings==case[2],'实际阶段生成全部原作光圈：'..case[1])
+    for _,o in ipairs(rings) do
+        check(o.timer<2 and not o._original_actor,'生成后前两帧不提前显示光圈')
+        drawn={};o.class.render(o)
+        check(#drawn==0,'原ANM开始前不显示代理光球')
+    end
+    step(3)
+    local colors={R={15,255,0,0},G={16,0,255,0},B={17,0,0,255}}
+    local seen={}
+    for _,o in ipairs(rings) do
+        local color=colors[o._original_source.key:match('BossCir([RGB])')]
+        local actor=assert(o._original_actor);local vm=actor.vm
+        check(actor.game==10 and actor.archive=='stgenm06' and vm.id==color[1],
+            '实际卫星绑定原作stgenm06的15/16/17号ANM')
+        check(vm.sprite==31 and vm.alpha[1]==128 and vm.blend=='mul+add',
+            '保留原作精灵、128透明度和加色混合')
+        check(vm.color[1]==color[2] and vm.color[2]==color[3] and vm.color[3]==color[4],
+            '红绿蓝颜色直接取原ANM')
+        check(not o.colli and not o.bound,'光圈不增加碰撞或默认边界回收')
+        drawn={};o.class.render(o)
+        local draw=drawn[1];local geometry=draw and image_geometry[draw.name]
+        check(#drawn==1 and draw.name==OriginalANM.sprite_resource(vm).img,
+            '实际绘制原作圆环，完全替换代理光球')
+        check(geometry.w==256 and geometry.h==256 and draw.hs==1 and draw.vs==1,
+            '圆环按原作256×256尺寸绘制')
+        check(near(draw.x,o.x) and near(draw.y,o.y),'圆环锚点跟随原有双圆运动')
+        seen[vm.id]=(seen[vm.id] or 0)+1
+    end
+    check(seen[15]==case[2]/3 and seen[16]==case[2]/3 and seen[17]==case[2]/3,
+        '三色光圈完整且不重复叠画：'..case[1])
+    stop(host);step(1)
+    for _,o in ipairs(rings) do check(not IsValid(o) or o._pending_delete,'换卡回收本阶段全部光圈') end
+end
+if kanako_rings_only then
+    print(('神奈子原版光圈回归通过：%d 项。'):format(checks))
+    return
+end
+
 -- 旧卡晚于新卡结束：原实现会把新卡载体一起删掉，之后 600 帧仍是 0 发。
 local old = start(3638); step(20)
 local inheritor = start(3637); step(1)

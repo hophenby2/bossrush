@@ -72,8 +72,8 @@ OriginalBalance=OriginalBalance or dofile('mod/GAME/original/low_speed_hp.lua')
 ---     原作初始化认领变换与出生后逐帧更新分开，不能沿用框架11帧雾化。
 ---  5  etNew 默认 flags=0x203，先播8帧快速出生，再推进 WAIT/ACCELERATE_POLAR。
 ---     kind=2 在变换执行器里为空操作；出生模式由枪的 flags 决定，不能由记录号推断。
----  6  卫星是代理：原作是 TH10 的 anm 15/16/17 圆环（红/绿/蓝）+ flagSet(7)，无判定；
----     这里用一颗小光球（ball_light 2/7/5）画，bound/colli 都关掉。
+---  6  卫星使用原版 stgenm06.anm 的 15/16/17 号红绿蓝圆环；
+---     沿同名 ECL 在出生第 2 帧显示，保持原尺寸、混合与颜色，无碰撞判定。
 ---  7  BossDead 的演出（gameSpeed 0.5 → 0.25、etClearAll、贴图切换、之后 40 帧 flagSet(16)）
 ---     由本仓库的击破/换卡流程接管；这里只补一次震屏。原作 setScreenShake(30, 12, 0)，
 ---     幅度 12 的原作单位与本仓库 misc.ShakeScreen 的 size 不是一套 ⇒ 取 1.5。
@@ -188,15 +188,15 @@ local AT2_RADIUS_K = 0.588          -- moveCircleRel(…, %F2 × 0.588, 0)
 local DIR_ANGVEL_K = 5 / 8          -- 开火角的推进 = 圆角速度 × 5/8（两条收尾都这么算）
 
 ---6 颗装饰卫星（BossCirR2/G2/B2/R4/G4/B4）
----{ 起始角, 偏移圆角速度, 偏移圆半径速度, 基准圆角速度, 基准圆半径速度, 光球色号 }
+---{ 子程序后缀, 起始角, 偏移圆角速度, 偏移圆半径速度, 基准圆角速度, 基准圆半径速度 }
 local SAT_FREEZE = 62               -- 原作 +60 那一支：两路半径速度清零
 local SATS = {
-    { "R2", -PI / 2,     0.0052359877, 2,  0.05235988, 2, 2 },
-    { "G2",  PI / 6,     0.0052359877, 2,  0.05235988, 2, 7 },
-    { "B2",  5 * PI / 6, 0.0052359877, 2,  0.05235988, 2, 5 },
-    { "R4", -PI / 2,    -0.0052359877, 1, -0.05235988, 1, 2 },
-    { "G4",  PI / 6,    -0.0052359877, 1, -0.05235988, 1, 7 },
-    { "B4",  5 * PI / 6,-0.0052359877, 1, -0.05235988, 1, 5 },
+    { "R2", -PI / 2,     0.0052359877, 2,  0.05235988, 2 },
+    { "G2",  PI / 6,     0.0052359877, 2,  0.05235988, 2 },
+    { "B2",  5 * PI / 6, 0.0052359877, 2,  0.05235988, 2 },
+    { "R4", -PI / 2,    -0.0052359877, 1, -0.05235988, 1 },
+    { "G4",  PI / 6,    -0.0052359877, 1, -0.05235988, 1 },
+    { "B4",  5 * PI / 6,-0.0052359877, 1, -0.05235988, 1 },
 }
 ---原作 B2/B4 在 moveCircle 前还有一条 moveVel(1.5707964, 2.0)：它会先写偏移圆的
 ---（角, 速度），紧接着被 moveCircle 的（角, 角速度, 半径, 半径速度）整组覆盖，净效果为零，
@@ -233,19 +233,19 @@ local function gun_wave(boss, kind, color, f0, f3, i1, i2, i3, f2)
     return f0
 end
 
--- 装饰卫星的绘制壳；原生路径由s6.sat接入ECS，旧手算帧只保留未托管时的代理。
+-- 装饰卫星的ANM载体；原生路径由s6.sat接入ECS，显示沿同名ECL选择原版圆环。
 ---  两路圆运动叠加，圆心都在 BOSS 身上（原作每条都挂着 BossCirR2_cir_cpos 线程：
 ---  每帧 moveAdd(BOSS_X, BOSS_Y) 把偏移圆的圆心钉在 BOSS 上）。
 ---  每帧：两路各自「半径 += 半径速度、角 += 角速度」，第 62 帧把两路半径速度清零。
 class["th35_sat"] = Class(object, {
-    init = function(self, master, theta0, off_av, off_rv, base_av, base_rv, color)
+    init = function(self, master, theta0, off_av, off_rv, base_av, base_rv, source)
         self.master = master
         self.th_off_a, self.th_off_av = theta0, off_av          -- 偏移圆（moveCircle）
         self.th_base_a, self.th_base_av = theta0, base_av       -- 基准圆（moveCircleRel）
         self.th_off_r, self.th_off_rv = 0, off_rv
         self.th_base_r, self.th_base_rv = 0, base_rv
         self.th_t = 0
-        self.th_color = color
+        self.th10_satellite_source = source
         self.x, self.y = master.x, master.y
         self.group, self.layer = GROUP.GHOST, LAYER.ENEMY_BULLET - 12
         self.bound, self.colli = false, false
@@ -268,12 +268,7 @@ class["th35_sat"] = Class(object, {
                          - self.th_base_r * math.sin(self.th_base_a)
         end
     end,
-    render = function(self)
-        ---差异 6：原作是 TH10 的 anm 15/16/17（红/绿/蓝圆环），这里用一颗小光球代理
-        local img = "ball_light" .. self.th_color
-        SetImageState(img, "mul+add", 170, 255, 255, 255)
-        Render(img, self.x, self.y, 0, 0.55, 0.55)
-    end,
+    render = function(self) OriginalStageVisual.draw(self) end,
 }, true)
 
 ---=====================================
@@ -4971,7 +4966,7 @@ end
 ---  卫星收掉，不会随三段循环越积越多。参数见文件顶部的 SATS 表（R4/G4/B4 三条）。
 function s6.sat(master,e)
     class.th10_enemy_schedule.ensure()
-    local s=New(class.th35_sat,master,e[2],e[3],e[4],e[5],e[6],e[7])
+    local s=New(class.th35_sat,master,e[2],e[3],e[4],e[5],e[6],'stage06:BossCir'..e[1])
     s.t10_root,s.t10_bossref=master.t10_root or master,master.t10_bossref
     s.t10_managed=true
     s.t10_update=class.th10_ecs_pod.t10_update
@@ -11293,6 +11288,7 @@ do
         -- 主机载体由 Boss 绘制；子机只有原作设置过 ANM 时才显示本体。
         if origin then return V.functions[sub] end
     end)
+    V.wrap_actor(class.th35_sat,10,function(o) return o.th10_satellite_source end)
     class.t10_interaction.wrap(class.th10_midfairy)
     class.t10_interaction.wrap(class.th10_s6fairy)
     class.t10_interaction.wrap(class.th10_ecs_pod)
