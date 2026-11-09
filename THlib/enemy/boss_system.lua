@@ -243,8 +243,8 @@ end
 ---boss系统击破结算逻辑
 function system:kill()
     local b = self.boss
-    -- 普通阶段超时随后会清空收卡标记；强化奖励只看是否中弹，Bomb不取消奖励。
-    local avoided_timeout=not not (b.timeout and GameDrops and GameDrops.avoided(b))
+    -- 第七版录像仍需在清空收卡标记前保存全避结果；新版超时奖励不检查失误。
+    local avoided_timeout=not not (lstg.var.__drops_version==7 and b.timeout and GameDrops and GameDrops.avoided(b))
     if b.is_combat then
         b.ui.drawtimesaver = b.countdown
     end

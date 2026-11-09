@@ -1,5 +1,5 @@
--- 击破或全避阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
-local D={VERSION=7,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
+-- 击破或超时阶段后的紫黄蓝三选一。成长和选择过程都保存在var中，供录像与关内恢复重建。
+local D={VERSION=8,UNIT=100,TIME=2*60,MIN=100,MAX=100000,HITBOX_MIN=2500,BOMB_FRAMES=30*60,BOMB_MAX=9,BOMB_INITIAL=3}
 -- red/green/blue保留为成长逻辑键；条、文字、遮罩和选项中玉共用显示配色。
 D.palette={red={205,145,255,name='紫',bullet=4},green={255,225,100,name='黄',bullet=12},blue={110,190,255,name='蓝',bullet=6}}
 -- 数值以百分之一为整数单位；只做加法和有理数乘法，避免长局累计浮点误差。
@@ -189,9 +189,9 @@ function D.award(b,avoided_timeout)
     local s=ensure()
     if not s or not b.is_combat or b.cannot_kill or b._drop_awarded then return false end
     if not b.current_card or b.current_card.is_combat==false then return false end
-    if b.timeout and not b.time_sc then
+    if b.timeout and not b.time_sc and lstg.var.__drops_version<8 then
         if avoided_timeout==nil then avoided_timeout=D.avoided(b) end
-        -- 第七版起，无中弹撑满普通符/非符时限也给奖励，允许Bomb；旧录像保留原规则。
+        -- 第八版起普通阶段超时直接给奖励；第七版录像仍需无中弹，更早版本仍需击破。
         if lstg.var.__drops_version<7 or not avoided_timeout then return false end
     end
     b._drop_awarded=true
