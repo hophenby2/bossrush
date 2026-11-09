@@ -222,26 +222,34 @@ do
     local remembered,rememberedVersion=scoredata.rogue10_filters,scoredata.rogue10_filters_version
     scoredata.rogue10_filters=R.defaultFilters(nil,7);scoredata.rogue10_filters_version=7
     local o={timer=0,orot=0};menuUI.fresh(o,'roguelike')
+    local function option(group,key)
+        for index,entry in ipairs(menuUI.options) do
+            if entry.group==group and entry.key==key then return index,entry end
+        end
+        error('缺少筛选选项：'..group..'.'..key)
+    end
+    local function toggle(group,key) menuUI.toggle(o,option(group,key)) end
     check(not o.pool_expanded and not o.pool_options.difficulties.extra and not o.pool_options.cards.survival and not o.pool_options.encounters.road and o.pool_status.count==249,'高级选项默认折叠，新默认排除Extra/Phantasm、道中和时符')
     check(o.pool_options.cards.nonspell and o.pool_options.cards.spell and o.pool_options.stages.TH32,'默认包含四作的非符和符卡')
-    menuUI.toggle(o,9)
+    toggle('cards','survival')
     check(o.pool_options.cards.survival and o.pool_status.count==257 and menuUI.ready(o),'独立勾选时符，不影响非符/符卡')
-    menuUI.toggle(o,10);menuUI.toggle(o,11)
+    toggle('cards','nonspell');toggle('cards','spell')
     check(o.pool_status.count==8,'仅勾选时符时只保留Lunatic耐久卡')
-    menuUI.toggle(o,9);check(not menuUI.ready(o),'三种卡片类型全部取消时不能开空局')
-    menuUI.toggle(o,10);menuUI.toggle(o,11)
+    toggle('cards','survival');check(not menuUI.ready(o),'三种卡片类型全部取消时不能开空局')
+    toggle('cards','nonspell');toggle('cards','spell')
     local oldMenu,oldLast,oldMouse,oldBounds,oldKey,oldSetting=menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck,KEY,setting
     KEY={ENTER=13};setting={keys={shoot=90}}
     menu=setmetatable({keyYes=function() return true end},{__index=function() return function() return false end end})
     GetLastKey=function() return 0 end;o.pool_focus=1
     menuUI.frame(o);check(o.pool_expanded,'射击键展开高级选项')
-    o.pool_focus=10;menuUI.frame(o);check(o.pool_options.cards.survival,'射击键切换展开后的时符')
+    local survivalIndex,survival=option('cards','survival')
+    o.pool_focus=survivalIndex+1;menuUI.frame(o);check(o.pool_options.cards.survival,'射击键切换展开后的时符')
     menu.keyYes=function() return false end
     sp.math.PointBoundCheck=function(x,y,l,r,b,t) return x>=l and x<=r and y>=b and y<=t end
-    ext.mouse={x=520,y=110,_wheel=0,isDown=function() return true end}
+    ext.mouse={x=survival.x+15,y=survival.y,_wheel=0,isDown=function() return true end}
     menuUI.frame(o);check(not o.pool_options.cards.survival,'触控命中新的时符区域')
     ext.mouse.y=440;menuUI.frame(o);check(not o.pool_expanded,'点击高级选项标题可以折叠')
-    ext.mouse.y=110;menuUI.frame(o);check(not o.pool_options.cards.survival,'折叠后的隐藏选项不参与触控命中')
+    ext.mouse.y=survival.y;menuUI.frame(o);check(not o.pool_options.cards.survival,'折叠后的隐藏选项不参与触控命中')
     check(scoredata.rogue10_filters_version==R.POOL_VERSION and not R.savedFilters().cards.survival,'新版记住用户实际勾选，不继承旧默认')
     menu,GetLastKey,ext.mouse,sp.math.PointBoundCheck=oldMenu,oldLast,oldMouse,oldBounds
     KEY,setting=oldKey,oldSetting
