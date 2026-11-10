@@ -102,7 +102,8 @@
     "bottom_bar_and_pointer": "复用横屏绘制，仅在竖屏中平移到场内",
     "no_ui_outside_playfield": true,
     "lives_bombs": "左下角竖排阿拉伯数字，避开底部组件",
-    "partial_hp_screenshot_fraction": 0.63
+    "partial_hp_screenshot_fraction": 0.63,
+    "final_partial_hp_screenshot_verified": true
   },
   "image_pixels": {
     "core_exact": 787,
@@ -146,7 +147,7 @@
   "windows_native_startup_verified": false,
   "windows_native_limitations": [
     "本机Wine未进入图形初始化",
-    "此前GitHub任务因账号计费问题没有开始；本次将再次手动触发"
+    "本次GitHub Windows任务在任何步骤执行前被账号计费锁定阻止"
   ],
   "release": {
     "tag": "v26.11.10-slim",
@@ -162,6 +163,13 @@
         "bytes": 141901281,
         "sha256": "bda0a738acbba1cae31c5bace8e7ee38ee76a05f9fe5895f6883f722bada693f"
       }
-    ]
+    ],
+    "uploaded_asset_size_and_sha256_verified": true
+  },
+  "windows_github_attempt": {
+    "run": "https://github.com/hophenby2/bossrush/actions/runs/42804524514",
+    "head_sha": "4d423731facd8e158080253c46609d20f5b6af01",
+    "result": "未开始执行",
+    "annotation": "The job was not started because your account is locked due to a billing issue."
   }
 }
