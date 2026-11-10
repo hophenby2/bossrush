@@ -3,6 +3,10 @@ if rawget(_G,'OriginalStageFlow') then return OriginalStageFlow end
 local F={VERSION=1,installed=false}
 OriginalStageFlow=F
 local ids=dofile('mod/GAME/original/card_ids.lua')
+local function sequenceContext()
+    local s=rawget(_G,'OriginalSequence')
+    return s and s.enabled() and s.context()
+end
 local function context()
     if not task.stack or not task.stack[#task.stack] then return end
     local owner=task.GetSelf()
@@ -21,6 +25,8 @@ function F.roadActive()
 end
 -- 只包装道中生成协程；敌机自身的移动、枪、出生动画仍逐帧执行原实现。
 function F.roadWait(frames)
+    local q=sequenceContext()
+    if q and q.native then return q:nativeWait(frames) end
     local c=context()
     if not c or c.native then return task.Wait(frames) end
     local co,t=cursor(c)
@@ -30,7 +36,11 @@ function F.roadWait(frames)
     if wait>0 then task.Wait(wait) end
     if target>=c.last then while true do task.Wait(10000) end end
 end
-function F.roadAsync(owner,fn)
+function F.roadAsync(owner,fn,primary)
+    local q=owner._sequence_road_context
+    if q and q.native then
+        local co=task.New(owner,fn);q:nativeAsync(co,primary);return co
+    end
     local c=owner._original_road_window
     if not c or c.native then return task.New(owner,fn) end
     local _,t=cursor(c)
@@ -40,6 +50,45 @@ function F.roadAsync(owner,fn)
         return fn()
     end)
     return co
+end
+-- 旧练习仍使用固定窗口；顺序模式的生成器与中Boss共存，按各自原作时钟运行。
+function F.roadEach(owner,waves,spawn)
+    local q=owner._sequence_road_context
+    if q then return q:eachWave(owner,waves,spawn) end
+    for _,w in ipairs(waves) do
+        F.roadWait(w[1])
+        if F.roadActive() then spawn(w) end
+    end
+end
+function F.roadCanSpawn(opcode)
+    local q=sequenceContext()
+    return not q or q:canSpawn(opcode)
+end
+function F.roadBossWait()
+    local q=sequenceContext()
+    if q and q.native then q:nativeBossWait() end
+end
+-- 完整流程保留同步子程序在末次生成至RETURN之间的空白；旧练习录像沿用原先窗口。
+function F.roadTailWait(frames)
+    local q=sequenceContext()
+    if q and q.native then q:nativeWait(frames) end
+end
+function F.roadMid()
+    local q=sequenceContext()
+    if q then for _,marker in ipairs(q.markers) do if not marker.fired then q:fire(marker);break end end end
+end
+function F.roadFinish(length)
+    local q=sequenceContext()
+    if not q or not q.native then return end
+    if not q.mainCo then q.mainCo=coroutine.running() end
+    local time=q.times[q.primary] or 0
+    if time<length then q:nativeWait(length-time) end
+    q:nativeBossWait()
+    q.done=true
+end
+function F.roadEnd()
+    local q=sequenceContext()
+    if q then q.done=true end
 end
 local function find(level,id)
     id=ids.resolve(level,id)

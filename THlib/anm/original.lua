@@ -75,6 +75,7 @@ end
 local function value(v,a)
     if type(a)~='table' then return a end
     local id=a.var
+    local ran=v.random or ran
     if v.data.game==11 then
         if id==10010 then return ran:Float(-math.pi,math.pi) end
         if id==10011 then return ran:Float(0,1) end
@@ -104,6 +105,7 @@ function A.interrupt(v,id)
 end
 local function execute(v)
     local script=v.script
+    local ran=v.random or ran
     for budget=1,8192 do
         local c=script[v.pc]
         if not c or c[1]>floor(v.time) then return end
@@ -139,6 +141,7 @@ local function execute(v)
         elseif op=='additive' then v.blend='mul+add'
         elseif op=='normal' then v.blend=''
         elseif op=='follow' then v.follow=a~=0
+        elseif op=='position_mode' then v.position_mode=a
         elseif op=='flag27' then v.follow=a~=0
         elseif op=='anchor' then v.anchor=1
         elseif op=='anchor_state' then v.anchor_x=a;v.anchor_y=b
@@ -148,7 +151,7 @@ local function execute(v)
             v.render_layer=a
         elseif op=='secondary' then v.secondary=a~=0
         elseif op=='child' then
-            local child=A.new(v.data.game,v.data.archive,a)
+            local child=A.new(v.data.game,v.data.archive,a,nil,nil,v.random)
             if v.data.game==11 and child.render_layer==nil then child.render_layer=v.render_layer end
             v.children[#v.children+1]=child
         elseif op=='add_u' then v.u=(v.u+a)%1
@@ -244,12 +247,12 @@ function A.step(v,dt)
     if v.vs~=0 or v.v<0 or v.v>=1 then v.v=(v.v+v.vs*dt)%1 end
     if not v.stopped and not v.wait then v.time=v.time+dt end
 end
-function A.new(game,archive,id,dt,sprite_resolver)
+function A.new(game,archive,id,dt,sprite_resolver,random)
     local data=A.load(game,archive)
     local script=data.scripts[id]
     if not script then error('原作ANM脚本缺失：'..data.key..'/'..id) end
     local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
-        sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,sprite_resolver=sprite_resolver,
+        sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,sprite_resolver=sprite_resolver,random=random,
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}

@@ -910,12 +910,9 @@ do
         ---WAVE 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---时间轴从卡开始算（原作的 t=720 映射成 0）。
         task.New(self, function()
-            for _, w in ipairs(WAVE) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    New(class["TH34_ghost"], w[3], w[4], (w[2] == "R") and 1 or -1, w[5], w[6])
-                end
-            end
+            flow.roadEach(self,WAVE,function(w)
+                New(class["TH34_ghost"], w[3], w[4], (w[2] == "R") and 1 or -1, w[5], w[6])
+            end)
         end)
     end
     ---音效去重的时钟：一帧推一格（幽灵那边拿它跟自己记住的帧号比）。
@@ -1908,22 +1905,19 @@ do
         ---WAVE4 的 dt 是**相对上一只**的帧间隔，所以用一条协程顺着等下去；
         ---spawn 当帧就把子程序跑到第一条 time>0 的指令（原作同样如此，见文件头）。
         task.New(self, function()
-            for _, w in ipairs(WAVE4) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    local sub = w[2]
-                    if sub <= 8 then
-                        New(class["TH34_turret4"], w[3], w[4], w[6], sub,w[7])
-                    elseif sub == 9 then
-                        New(class["TH34_ghost4"], w[3], w[4], w[6],w[7])
-                    elseif sub <= 14 then
-                        New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
-                    else
-                        New(class["TH34_fairy4"], w[3], w[4], w[6],
-                                (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5],w[7])
-                    end
+            flow.roadEach(self,WAVE4,function(w)
+                local sub = w[2]
+                if sub <= 8 then
+                    New(class["TH34_turret4"], w[3], w[4], w[6], sub,w[7])
+                elseif sub == 9 then
+                    New(class["TH34_ghost4"], w[3], w[4], w[6],w[7])
+                elseif sub <= 14 then
+                    New(class["TH34_tank4"], w[3], w[4], w[6], (sub == 13) and "l" or "r")
+                else
+                    New(class["TH34_fairy4"], w[3], w[4], w[6],
+                            (sub == 17) and "a" or (sub == 19) and "b" or "c", w[5],w[7])
                 end
-            end
+            end)
         end)
     end
     ---音效去重的时钟：一帧推一格（各小怪拿它跟自己记住的帧号比）。
@@ -2546,17 +2540,14 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(WAVE3) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    local sub = w[2]
-                    if sub <= 6 then
-                        New(class["TH34_walker3"], w[3], w[4], w[6], sub, w[7])
-                    else
-                        New(class["TH34_bigghost3"], w[3], w[4], w[6], sub)
-                    end
+            flow.roadEach(self,WAVE3,function(w)
+                local sub = w[2]
+                if sub <= 6 then
+                    New(class["TH34_walker3"], w[3], w[4], w[6], sub, w[7])
+                else
+                    New(class["TH34_bigghost3"], w[3], w[4], w[6], sub)
                 end
-            end
+            end)
         end)
     end
     function card:frame()
@@ -3082,12 +3073,9 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(WAVE5) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
-                end
-            end
+            flow.roadEach(self,WAVE5,function(w)
+                New(class["TH34_mid5"], w[3], w[4], w[6], w[2], w[7], w[5])
+            end)
         end)
     end
     function card:frame()
@@ -3714,12 +3702,9 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(WAVE1) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    New(class[W1_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
-                end
-            end
+            flow.roadEach(self,WAVE1,function(w)
+                New(class[W1_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+            end)
         end)
     end
     function card:frame()
@@ -4398,12 +4383,9 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(WAVE2) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    New(class[W2_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
-                end
-            end
+            flow.roadEach(self,WAVE2,function(w)
+                New(class[W2_CLASS[w[2]]], w[3], w[4], w[6], w[2], w[7], w[5])
+            end)
         end)
     end
     function card:frame()
@@ -5691,12 +5673,9 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(W7) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    spawn78(W78EX, w)
-                end
-            end
+            flow.roadEach(self,W7,function(w)
+                spawn78(W78EX, w)
+            end)
         end)
     end
     function card:frame()
@@ -5731,12 +5710,9 @@ do
         self.th07_shoot_sound=7
         sound_tick4, sound_stamp4 = 0, -1
         task.New(self, function()
-            for _, w in ipairs(W8) do
-                flow.roadWait(w[1])
-                if flow.roadActive() then
-                    spawn78(W78PH, w)
-                end
-            end
+            flow.roadEach(self,W8,function(w)
+                spawn78(W78PH, w)
+            end)
         end)
     end
     function card:frame()

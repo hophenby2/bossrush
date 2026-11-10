@@ -1,0 +1,672 @@
+{
+  "th06_02": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 915840,
+    "loop_end": 3835274,
+    "pcm_bytes": 15341096,
+    "ogg_bytes": 1451516,
+    "pcm_sha256": "f41715997657e9defd65fd533535b85eac90e5994a73c9831a64970ccf2dc901",
+    "ogg_sha256": "9c75aac1b3ce9a45cd0a5845cc543e08f93ad67bbb0909aa1c6ce6aacef4fbb7"
+  },
+  "th06_03": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 126772,
+    "loop_end": 2447402,
+    "pcm_bytes": 9789608,
+    "ogg_bytes": 934590,
+    "pcm_sha256": "eb76b08dc43daad1c2abb2577930bf28bfd2ef7c579c2e63e6580751fbc13ae2",
+    "ogg_sha256": "631e7d50d6a36586ef7f607e81b2775960dd7d187b55c0990aa63e0773fb1dcf"
+  },
+  "th06_04": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 303922,
+    "loop_end": 3859239,
+    "pcm_bytes": 15436956,
+    "ogg_bytes": 1411513,
+    "pcm_sha256": "a19c4a1921f284be8a90fee12a12907aca1582e010348cc336c41562408756ea",
+    "ogg_sha256": "3a4eb05ac614b673fdacb76e6486f1ebf58b3ed496dc668f10205d2a45394d26"
+  },
+  "th06_05": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 255387,
+    "loop_end": 3949028,
+    "pcm_bytes": 15796112,
+    "ogg_bytes": 1453848,
+    "pcm_sha256": "510e0f4638fba978a2baf7c43d2d3da6c1846b29f921f46a529ef8029aded825",
+    "ogg_sha256": "f3646834afb70fc4beec08487c004ecb9666b68f1854d6e9e4838b8484acf0a2"
+  },
+  "th06_06": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1984125,
+    "loop_end": 6166786,
+    "pcm_bytes": 24667144,
+    "ogg_bytes": 2279299,
+    "pcm_sha256": "7e078dead8bc9dee5450c6515510f4d8cd0cddded335bce495cc70cee4243c37",
+    "ogg_sha256": "3b7906772b26dad635bda7e2b22f8fd80dd405ce65df66f762b40749cfa0cc93"
+  },
+  "th06_07": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1038039,
+    "loop_end": 4640658,
+    "pcm_bytes": 18562632,
+    "ogg_bytes": 1703239,
+    "pcm_sha256": "6a5290169cd46efc0ba14306f0d34c8774941858170497d2c6ed3a16d6795dba",
+    "ogg_sha256": "c0c4f2bee0d1e6f6ca5239d084df960991a69dfd0aafbe48a7bdf92ca2ec364d"
+  },
+  "th06_08": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 182801,
+    "loop_end": 4885398,
+    "pcm_bytes": 19541592,
+    "ogg_bytes": 1791482,
+    "pcm_sha256": "583d537aeb96363bdaab7a5264071b8b3ca7273561eb82ffb8cfc49eb950e453",
+    "ogg_sha256": "0ef2db23e5209ac0d216224926c7de3f5dc5dc0c4e20335652c17a86935163e1"
+  },
+  "th06_09": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1296010,
+    "loop_end": 5201385,
+    "pcm_bytes": 20805540,
+    "ogg_bytes": 2011529,
+    "pcm_sha256": "2abb165d92d6317a3e82295985e3c882c03dd54b11abf4ffa3bc021ded6dfaeb",
+    "ogg_sha256": "cfe36f112ef7daca6c6997ca2d0e211c6187ffc1c777acd3bc5244b632787f21"
+  },
+  "th06_10": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 905130,
+    "loop_end": 7184497,
+    "pcm_bytes": 28737988,
+    "ogg_bytes": 2627123,
+    "pcm_sha256": "132bebf9ca4cf857e07e1f8e54e1c16a6a5560505f0ca07137cb26d4c86eee29",
+    "ogg_sha256": "af35d22e966bee8627805d360669a82ac8c1d2b56599f46ecacce4efbfd0fb2a"
+  },
+  "th06_11": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 239441,
+    "loop_end": 3719278,
+    "pcm_bytes": 14877112,
+    "ogg_bytes": 1289230,
+    "pcm_sha256": "34c71917bf718432884aa5afa3ca822011debf40869064c38c9b566a6a3ae6d4",
+    "ogg_sha256": "4a8549ef7a034ea90b915e86b05de3375b6bdfc8ed2a043d1922292661f3de8d"
+  },
+  "th06_12": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 165995,
+    "loop_end": 2608611,
+    "pcm_bytes": 10434444,
+    "ogg_bytes": 932825,
+    "pcm_sha256": "1211d976b60526ef574d70f9a853a9203eaa60e6d11532d25ce8e28fc275812c",
+    "ogg_sha256": "b3549d4d28834fd365fdd84df5bc91359efc449c7bb3508d0c2007a32c6f5ab8"
+  },
+  "th06_13": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1464168,
+    "loop_end": 6210283,
+    "pcm_bytes": 24841132,
+    "ogg_bytes": 2331004,
+    "pcm_sha256": "e16e8af9f033b876bfaca849ae39b50b1df8e00d0ca7f435976900a633587ad3",
+    "ogg_sha256": "b172aefee6aafecc5461324e21f5b4889ab2e1d89a0f44a7ff0c83f5213eaa71"
+  },
+  "th06_14": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1581217,
+    "loop_end": 6761044,
+    "pcm_bytes": 27044176,
+    "ogg_bytes": 2621979,
+    "pcm_sha256": "cd085f0a65451cd051eb8bd6fb1b4ee31176271c86ab593aaa2ff3124a21cbd6",
+    "ogg_sha256": "ced48b87288f039ea8d9fce51b326e2c13c9763c9df7569838504d58da1034db"
+  },
+  "th06_15": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 197127,
+    "loop_end": 5576176,
+    "pcm_bytes": 22304704,
+    "ogg_bytes": 2186452,
+    "pcm_sha256": "17fc61b22e92bdadd4f7019c718d13c421cea3295c9a40ad0da5c29133688475",
+    "ogg_sha256": "b03460d64d488fb14e7d4568594f378e6498514d2ae9e8995fe839fe9f87a264"
+  },
+  "th07_02": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 714720,
+    "loop_end": 3874816,
+    "pcm_bytes": 15499264,
+    "ogg_bytes": 1428393,
+    "pcm_sha256": "0f562a1e5e9a7385fad816dc12af007569caddf93af3f7e1c13f3c066de3dea1",
+    "ogg_sha256": "34b2ad18f78ad1d7f401269f2445f9677616783565cc5454f71ba861c4d3ff59"
+  },
+  "th07_03": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 478120,
+    "loop_end": 3071999,
+    "pcm_bytes": 12287996,
+    "ogg_bytes": 1120732,
+    "pcm_sha256": "a5b585abc540161f31686015c8c281907e69edde0692f3a4c12c791602b08b7e",
+    "ogg_sha256": "4ca99b0b6cd370f62fbc713bfc76482fc6b35c00248447d07c3d46a41a6d9205"
+  },
+  "th07_04": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1055510,
+    "loop_end": 6160035,
+    "pcm_bytes": 24640140,
+    "ogg_bytes": 2295935,
+    "pcm_sha256": "b7c91f7fe7a80f7c4ab1b4aa82a24d663e317c44d5c196cc8148742416511d5f",
+    "ogg_sha256": "ecebefa71df3ade09b5d86e47a7beb8e8d486e377b15b397f0abae22757a2dd7"
+  },
+  "th07_05": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 161674,
+    "loop_end": 2481534,
+    "pcm_bytes": 9926136,
+    "ogg_bytes": 876973,
+    "pcm_sha256": "1e5179ba8c7d843164eef03d143121c05041d9cd4abee79720bc0a3574ee3bf3",
+    "ogg_sha256": "704f56bfbd99807210e70d0e78823301e3d1984bd4524e2d4c72d81d06e987d6"
+  },
+  "th07_06": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 351104,
+    "loop_end": 5504640,
+    "pcm_bytes": 22018560,
+    "ogg_bytes": 2112546,
+    "pcm_sha256": "8770df2658518e9fc483624ebb0e548e917b65bd34a451e5c69c5b1455e28e80",
+    "ogg_sha256": "6e95dc86a46e4b75f358a9d0209b47cbea3d133e83a579c3a86ab22583a308da"
+  },
+  "th07_07": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1254912,
+    "loop_end": 7921664,
+    "pcm_bytes": 31686656,
+    "ogg_bytes": 2831881,
+    "pcm_sha256": "1f70199c062492dec86df9aa8248e8b2f33fc01b5314560b339153c492349839",
+    "ogg_sha256": "d1b9d0f801c977be02af9a4c918599c8d392710887e0857d90e526667afa62c6"
+  },
+  "th07_08": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 358496,
+    "loop_end": 10798336,
+    "pcm_bytes": 43193344,
+    "ogg_bytes": 4150486,
+    "pcm_sha256": "70d9f82e5e2c4d1d29aedf637437bbb29e8aaecda0c281ccb96fd3656674306d",
+    "ogg_sha256": "a6a7efc469428aadf1660e9bc4609fe0886f7293feb0e88ea93b3a9c962313ab"
+  },
+  "th07_09": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 186560,
+    "loop_end": 6224832,
+    "pcm_bytes": 24899328,
+    "ogg_bytes": 2394812,
+    "pcm_sha256": "bdd9f902d01ba3748f541c0b79d9e2f194360cd9fcf89d7f756accb48d86876a",
+    "ogg_sha256": "7927fcda9a6a66967bbf4a5e20a239a13934bf32dc8a2245705942e086866f77"
+  },
+  "th07_10": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 431360,
+    "loop_end": 6563584,
+    "pcm_bytes": 26254336,
+    "ogg_bytes": 2454141,
+    "pcm_sha256": "637db3595fc39edc9b5feeb7e9f7c381ea9647de82016a38acdeaa4165cf4899",
+    "ogg_sha256": "98fb2e336fa9f250c36eb6ebfec11ba8960631e3feb58966d9deaf5eec719ef5"
+  },
+  "th07_11": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 296704,
+    "loop_end": 4939520,
+    "pcm_bytes": 19758080,
+    "ogg_bytes": 1784741,
+    "pcm_sha256": "67ce43db0c0df4b473fb2585249c44cf34549a992c48c6319051034971ee7d0e",
+    "ogg_sha256": "7cf051b296db72c8566cc3ee894ddd06f6e0b7aa52a7366c417c00db6a3c1696"
+  },
+  "th07_12": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 123392,
+    "loop_end": 2534656,
+    "pcm_bytes": 10138624,
+    "ogg_bytes": 1016014,
+    "pcm_sha256": "946d4737788bc633f42cb09f6afcd1063c6f08d4567327e4e62ca9504092f9d9",
+    "ogg_sha256": "8580a370fc7325f4a49f51c63a5601a0d1cfc1beebee754731da4453678214c7"
+  },
+  "th07_13": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 763776,
+    "loop_end": 6353152,
+    "pcm_bytes": 25412608,
+    "ogg_bytes": 2424714,
+    "pcm_sha256": "800b847c5feb58d23de4a3a2ded8682c7ff1233123aaba2e09d9fb9f464a40d6",
+    "ogg_sha256": "a83e01d91941b4dfbfe577cbeb9149a54d9afcdf4ac73c63193a0ac250f22d27"
+  },
+  "th07_13b": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 2912512,
+    "loop_end": 4027200,
+    "pcm_bytes": 16108800,
+    "ogg_bytes": 1491580,
+    "pcm_sha256": "5b921bf3fb04de74fa0000244b1a7e664f853e5f78494a95c3818bc046f98194",
+    "ogg_sha256": "7adbdd2619d43d208cbffe7c742135cdd21561b9d7846f68ec0c644c48b230b3"
+  },
+  "th07_16": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 254720,
+    "loop_end": 6293440,
+    "pcm_bytes": 25173760,
+    "ogg_bytes": 2383405,
+    "pcm_sha256": "da96492586da2411f50f116753c86edb261926b6b6ac9dc5c9bdce836ca0a97f",
+    "ogg_sha256": "e11619dafeab1e5feda00556fda50ad44b603b7ac23afe0f125cb1beacf93db7"
+  },
+  "th07_17": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 64448,
+    "loop_end": 9423392,
+    "pcm_bytes": 37693568,
+    "ogg_bytes": 3663150,
+    "pcm_sha256": "158902a2b80e211e67cedc3ccbc6cf16c321a5f27da36fe56d2640ac89f292c6",
+    "ogg_sha256": "480d0d2eb91fa48a839bb19e40f4866bdeee522f51c78920dec7909fc3a750bc"
+  },
+  "th07_18": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 254720,
+    "loop_end": 6293440,
+    "pcm_bytes": 25173760,
+    "ogg_bytes": 2549425,
+    "pcm_sha256": "7fbba0fc578589a4888e9c0b46df80e48ecc5c663b4893c5138d38f1b655dc40",
+    "ogg_sha256": "9edb0f2a53933fe260686fedd03aaf42eff90108e6b6b0642955a2206492f851"
+  },
+  "th07_19": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 87360,
+    "loop_end": 7380992,
+    "pcm_bytes": 29523968,
+    "ogg_bytes": 2934591,
+    "pcm_sha256": "ecb441e5fa60744619366fe8bae4d0251d55400af1770c37c077f67d3d5d0889",
+    "ogg_sha256": "a162032a467bab78396d35fcd5f2679046a884094e2c36b9cd2a516240b253d3"
+  },
+  "th08_00": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 174976,
+    "loop_end": 5782208,
+    "pcm_bytes": 23128832,
+    "ogg_bytes": 2079366,
+    "pcm_sha256": "0cc52cf9423047c919f6bcfc8fa2b7aafaf0b7fe7adad43006cdbe0a53c7ffcb",
+    "ogg_sha256": "1778bfb5d9adbcab2cb69d7e55b5c3850d17f94a49266ebf63ef0aefdff58d56"
+  },
+  "th08_03": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 696320,
+    "loop_end": 3440640,
+    "pcm_bytes": 13762560,
+    "ogg_bytes": 1256176,
+    "pcm_sha256": "10f3e3366bd3307f168408b5420980268dd7da59de497b3ca03fc51d38c9fa28",
+    "ogg_sha256": "4c4bb0d43610415edf5a9d4387c2389f17459ff37ca5e18bc035e062f04b5b5e"
+  },
+  "th08_04": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 121792,
+    "loop_end": 6599680,
+    "pcm_bytes": 26398720,
+    "ogg_bytes": 2522598,
+    "pcm_sha256": "acfaaa4f8e537048dc5da19c0060876e51ef6a055b90172189225910519cb7c8",
+    "ogg_sha256": "fa4e8a0624442b5576a9d924c85332991db730480afc9d8f2b466ef669e41068"
+  },
+  "th08_05": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1127840,
+    "loop_end": 4244544,
+    "pcm_bytes": 16978176,
+    "ogg_bytes": 1576098,
+    "pcm_sha256": "10e813095ebac581f0df7132c4eca116199bdeaccb6e8da4bb70bf1a16994cb1",
+    "ogg_sha256": "6178e70e771c415e499be3665cc0a378a95979d2f1b797099a21d3213da878b8"
+  },
+  "th08_06": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 685184,
+    "loop_end": 4071424,
+    "pcm_bytes": 16285696,
+    "ogg_bytes": 1497962,
+    "pcm_sha256": "99b6abf40bd9b78280293b65437368054ce069d0a162e45b9e534f8db17cf80d",
+    "ogg_sha256": "779d3ab7f0273f1e18c372d94ab4c7871d04604fdd8e885ec0a161fe0d8eae15"
+  },
+  "th08_07": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1190272,
+    "loop_end": 5048960,
+    "pcm_bytes": 20195840,
+    "ogg_bytes": 1839338,
+    "pcm_sha256": "701612dfc3c4408c0c698102740756a8fb3d43fc4b66156c2349e70f3a0f9f00",
+    "ogg_sha256": "a640da30d4ee8c6eb74ad13e84080c3af301f4343544ab5d471e677bf57c25ac"
+  },
+  "th08_08": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 365248,
+    "loop_end": 4202496,
+    "pcm_bytes": 16809984,
+    "ogg_bytes": 1546122,
+    "pcm_sha256": "da31acd7ae2aec6352b1475122e05b72f44690c3784edd1fbe48369266e58ed7",
+    "ogg_sha256": "db2dc783747260df848ade5f8cb0c9f28c58752d6480f9395e1a4c8825601a8d"
+  },
+  "th08_09": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 584384,
+    "loop_end": 7233536,
+    "pcm_bytes": 28934144,
+    "ogg_bytes": 2738946,
+    "pcm_sha256": "3aaa0e533f78675a3a8826df489fdf93492c93b32b94d9c9793de7139c8d5c08",
+    "ogg_sha256": "a927534074453d48482bf4b4aa44fe050f7da47c7d1d110a152150702177f640"
+  },
+  "th08_10": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 453376,
+    "loop_end": 5588992,
+    "pcm_bytes": 22355968,
+    "ogg_bytes": 2079735,
+    "pcm_sha256": "0c62c2293a006ee18fa46d4cacfdd98c4c68603606d894bfd9234b9bde36e3c1",
+    "ogg_sha256": "65dc7b4f34da78020e7cb8a682143e4a0c0150737c83a2fca1cbe2b2988e85c4"
+  },
+  "th08_11": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 294592,
+    "loop_end": 7694912,
+    "pcm_bytes": 30779648,
+    "ogg_bytes": 2893818,
+    "pcm_sha256": "39697fbc38af73610702822be4dbfb58efa596ab1d7e2395e75fbe22b0918b89",
+    "ogg_sha256": "d493fcdc75994c4b6cdcb0fefd0b7e6eaf20d2066fe78cd516888143235f6e04"
+  },
+  "th08_12": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 133536,
+    "loop_end": 5300096,
+    "pcm_bytes": 21200384,
+    "ogg_bytes": 1942417,
+    "pcm_sha256": "ff5d986644f1466c408045b3f54f48251f6449c913603424b1a907d8aadecf21",
+    "ogg_sha256": "61ceac28db41261a6eed0f8fdbdeebdb60e58b147f2c1f070f57e059b058ceaa"
+  },
+  "th08_13": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 416432,
+    "loop_end": 3812648,
+    "pcm_bytes": 15250592,
+    "ogg_bytes": 1382909,
+    "pcm_sha256": "b902914825798b2f74f1abd280ca765dacc29d37329e377f16017fa9faa99cfc",
+    "ogg_sha256": "5300b7adce3d0d2b25a1cdd1b836996f623fe03cda1f805649fceb2bd88ea639"
+  },
+  "th08_14": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 308928,
+    "loop_end": 7856384,
+    "pcm_bytes": 31425536,
+    "ogg_bytes": 2919572,
+    "pcm_sha256": "fe12fb207a4f4f4d290014b1a5b3040ab597df18871a277a05e42f0206365dcd",
+    "ogg_sha256": "0c4da05780ca4b51c77bbd9c38463a3bc15dad551bcd235da226dd713e837173"
+  },
+  "th08_13b": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 3090656,
+    "loop_end": 3612416,
+    "pcm_bytes": 14449664,
+    "ogg_bytes": 1369531,
+    "pcm_sha256": "66347123259412726781fdec81b891c832ef9ff9020f00e95d38994179715c1b",
+    "ogg_sha256": "1e7091c7058919a6914b750651734739e1bb60940a073ab8dc38ecdc0c1ef63d"
+  },
+  "th08_15": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1669568,
+    "loop_end": 7937024,
+    "pcm_bytes": 31748096,
+    "ogg_bytes": 2990606,
+    "pcm_sha256": "d12905b5b2ddec554f0f0625839b181072f8b401da05e0b8c40d5359fb09e478",
+    "ogg_sha256": "ec8c09dd8bee56d80daa08b08927cbe8910d80b13764636c3b9f32d71e17a779"
+  },
+  "th08_18": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 220320,
+    "loop_end": 7003936,
+    "pcm_bytes": 28015744,
+    "ogg_bytes": 2558598,
+    "pcm_sha256": "1361ac48c32f7e597de9cdc19a96907f77be0e6545df308bfc147dc89faf24b3",
+    "ogg_sha256": "cee3b72952c652d042b12af6267c33aff1fd367c241011e89d8a619e559eb78e"
+  },
+  "th08_19": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 333704,
+    "loop_end": 7796196,
+    "pcm_bytes": 31184784,
+    "ogg_bytes": 2912708,
+    "pcm_sha256": "71b2bdac7557e53e3c149d4d10bd0f3e04e638a760c4a44ef0b913f3a2bec65b",
+    "ogg_sha256": "5dc0c73936e373dfdf951b8da76054a4cfc6d10031e6cde5bd8adf49c022b13a"
+  },
+  "th095_01": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 78520,
+    "loop_end": 3483912,
+    "pcm_bytes": 13935648,
+    "ogg_bytes": 1266694,
+    "pcm_sha256": "16b588be95c6078b5dd4731fafab410782c9821fd127d4a64557bde6a5e131f2",
+    "ogg_sha256": "f25db07abf5ea5ac375c6adfb470ced65b75c51501e6137b12c1ae24f810c340"
+  },
+  "th095_02": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 110208,
+    "loop_end": 5503232,
+    "pcm_bytes": 22012928,
+    "ogg_bytes": 1989066,
+    "pcm_sha256": "85ce0a12497bbdbda87297b3a839a3e00bd45623b6d2edbb41a2c4771647928d",
+    "ogg_sha256": "ef8efa5bb9959b080eeb629fc9c5d7dbfb4afd798100b2d4598720ed8ba4b1e2"
+  },
+  "th095_03": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 262144,
+    "loop_end": 5834240,
+    "pcm_bytes": 23336960,
+    "ogg_bytes": 2124947,
+    "pcm_sha256": "80ef55c36f05ea68c8a8601e92c26c34270084bbd0b2d327c230231d94880f8a",
+    "ogg_sha256": "413685199cd9e33364b6c418c92f341f87dd4bf022ba7a0ca8c64f970972e338"
+  },
+  "th095_04": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 256512,
+    "loop_end": 4361792,
+    "pcm_bytes": 17447168,
+    "ogg_bytes": 1589166,
+    "pcm_sha256": "1d4d3f0faa74863805c1e159d09722bb5934a035dd0d23a472ca8f899d6e266c",
+    "ogg_sha256": "d03027d41885c65a3c1717b67982fe96a6a6e92bca67836521a43df99196900e"
+  },
+  "th09_08_2": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 704320,
+    "loop_end": 7882368,
+    "pcm_bytes": 31529472,
+    "ogg_bytes": 3012458,
+    "pcm_sha256": "8fa215a372d4358b8ad2769dd73685678e19f3e2d9442a20aa71b51057033057",
+    "ogg_sha256": "f3e192f6a58c267cade17e5ae552af5f542225d4b76ded5a5ad77b5a89e8399f"
+  },
+  "th10_02": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 986112,
+    "loop_end": 3718784,
+    "pcm_bytes": 14875136,
+    "ogg_bytes": 1360719,
+    "pcm_sha256": "1262141172fefdc9c8ae0a68ba93f63176164640806dd490bb3828b929170318",
+    "ogg_sha256": "fd50608eabd123948fd0d4796a8b9c26ae1bb0a05fb7f342992ed81e66378c67"
+  },
+  "th10_03": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 162944,
+    "loop_end": 5353216,
+    "pcm_bytes": 21412864,
+    "ogg_bytes": 1994868,
+    "pcm_sha256": "13d38072ce5b67e4c132c4f0848ce0fa8da03eff4603e26f89319c54f0c79c66",
+    "ogg_sha256": "f8602b2fd2b0a0213ea5d603fc9c2c0b2c5cb73577f9ac7e44efd023ad206f8c"
+  },
+  "th10_04": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 127616,
+    "loop_end": 4663680,
+    "pcm_bytes": 18654720,
+    "ogg_bytes": 1642468,
+    "pcm_sha256": "45b14c6585715ae6ff23f940733b57123fd89f0cd7a1350b3a2aa4b2b437c2f8",
+    "ogg_sha256": "8ce532c95e5dc564c4b0ca44a06cc8162f9604b82f12c00b5fa011e39a944630"
+  },
+  "th10_05": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 786432,
+    "loop_end": 8039808,
+    "pcm_bytes": 32159232,
+    "ogg_bytes": 2984291,
+    "pcm_sha256": "7d88f021f901e00d953ff343831dbb716b6e75bdfaab9c589b19743117f5c8b2",
+    "ogg_sha256": "16103edd0f231d5ea9d3353681259d5d832b2a0345ef7b73caf4b7fd264f4ff8"
+  },
+  "th10_06": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 436736,
+    "loop_end": 6447424,
+    "pcm_bytes": 25789696,
+    "ogg_bytes": 2310196,
+    "pcm_sha256": "17f79cde26e838eb890ffd726de22118a34dc048e37081a141d7b017cd50e1f0",
+    "ogg_sha256": "431f8665ce4108f30a3c452efce07be27b20b9bca5374dc3cfd07d702dabe05f"
+  },
+  "th10_07": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 427008,
+    "loop_end": 8997376,
+    "pcm_bytes": 35989504,
+    "ogg_bytes": 3282194,
+    "pcm_sha256": "e9d77b9c7626cabb652a0fd78ff9229be6960fb4ce105831022f6454a4115c0c",
+    "ogg_sha256": "8ac9edb577fc47487a26f980595c990bd2c05a1f30144e26257e2b9a042dcc4e"
+  },
+  "th10_08": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 413184,
+    "loop_end": 3689344,
+    "pcm_bytes": 14757376,
+    "ogg_bytes": 1349444,
+    "pcm_sha256": "3beb1ad562022c93b22c12cd026b75bee90ba71313bbf66fbf18cade05e812fc",
+    "ogg_sha256": "496b497d1bd016949d8915dfcb7f4ea010e538b483aa7ced64733180ba018d89"
+  },
+  "th10_09": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 133120,
+    "loop_end": 8070784,
+    "pcm_bytes": 32283136,
+    "ogg_bytes": 2977311,
+    "pcm_sha256": "dc39567b2e7f79afb37daea1661c35cd4c2924d0414e41ff1334992f937dd164",
+    "ogg_sha256": "df6ac3d2bab8021c22f0d233e1955128b0efcc1a71a6b2c21bb73415aa8ba9e9"
+  },
+  "th10_10": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 641280,
+    "loop_end": 7857984,
+    "pcm_bytes": 31431936,
+    "ogg_bytes": 2887817,
+    "pcm_sha256": "8ec99e2f95ae6e6ed4e0deaa4ff76acb3bbad64d3f939a525b33ff4ec3a34851",
+    "ogg_sha256": "29407dd8b39c753b0e2f387e70f95322881d20963c3173912235f67154f44466"
+  },
+  "th10_11": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 549376,
+    "loop_end": 2982976,
+    "pcm_bytes": 11931904,
+    "ogg_bytes": 1074606,
+    "pcm_sha256": "42d03d31e411392c94c58e20a366800537a7b11f26da404828693a7999ea79e8",
+    "ogg_sha256": "241aa27ce464bf0f52d830d2d8ec8a89a35455c77dae5738156bf9fd25fa0dd2"
+  },
+  "th10_12": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 1271488,
+    "loop_end": 7181312,
+    "pcm_bytes": 28725248,
+    "ogg_bytes": 2517235,
+    "pcm_sha256": "dd88151b7768ef67ee8d285f850a3fd72d0f265ca6c0906b79b1cce1cf5bc61f",
+    "ogg_sha256": "da42dc643870f5ed66b81b0a7644658cbbb1ee63fa49e42930f109ef5b5e1522"
+  },
+  "th10_15": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 103488,
+    "loop_end": 8844000,
+    "pcm_bytes": 35376000,
+    "ogg_bytes": 3226179,
+    "pcm_sha256": "82e8a202af8ce8726db2e0daa7dd5aa2a581bd1a5b247eef29c30964ae42197a",
+    "ogg_sha256": "d5149760b94b053233c259f2fa9a03171231f91c78ce7c8d6a20e7194eda6487"
+  },
+  "th10_13": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 2001664,
+    "loop_end": 3855488,
+    "pcm_bytes": 15421952,
+    "ogg_bytes": 1355795,
+    "pcm_sha256": "f380e28d69195669584999a0efedc0086b1f91f438a4dc2d8187a7574f8b57f2",
+    "ogg_sha256": "97053aeba083796ed0336765bfc8aa069fae493e74f79eb2baf2eead45286f5c"
+  },
+  "th10_14": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 2782849,
+    "loop_end": 3981929,
+    "pcm_bytes": 15927716,
+    "ogg_bytes": 1437154,
+    "pcm_sha256": "676d0bc63a552014cf0733860632522805d7caad0dd21c309569067170cfc9f8",
+    "ogg_sha256": "7dbb52d60dde914ff0bea3ddacc0ada65c5a2748c6ec9cca2f32c6316c6f6da1"
+  }
+}

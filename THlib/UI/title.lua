@@ -5,7 +5,7 @@ stage_menu = stage.New('menu', false, true)
 function stage_menu:init()
     local menu_title, menu_replay_loader, menu_replay_saver, menu_setting
     local menu_key, menu_music, menu_player_system_select
-    local menu_stage_practice,menu_spell_practice
+    local menu_stage_practice,menu_spell_practice,menu_sequence_select
     --
     --
     mask_fader:Do("open")
@@ -114,6 +114,11 @@ function stage_menu:init()
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
         end, "Roguelike" },
+        { "顺序模式", function()
+            menu_player_system_select:fresh('original_sequence')
+            menu_player_system_select.state='original_sequence'
+            menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
+        end, "Original Order" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)
             menu.FadeIn(menu_replay_loader, "left")
@@ -170,6 +175,20 @@ function stage_menu:init()
                 MaskFader()
                 RogueTen.start('single', menu_player_system_select.pool_options)
             end)
+        elseif start=='original_sequence' then
+            if not menu_sequence_select then
+                local function back() menu.FadeOut(menu_sequence_select);menu.FadeIn(menu_player_system_select) end
+                local entries={}
+                for _,entry in ipairs(OriginalSequence.catalog.entries) do
+                    local key=entry.key
+                    entries[#entries+1]={entry.title,function()
+                        startPractice(menu_sequence_select,function() OriginalSequence.start(key) end)
+                    end,'Original Order',key=key}
+                end
+                entries[#entries+1]={'返回',back,'Back',key='back'}
+                menu_sequence_select=New(main_menu,'选择原作关卡',entries,back)
+            end
+            menu.FadeOut(menu_player_system_select);menu.FadeIn(menu_sequence_select)
         elseif start=='stage_practice' then
             stage_select.fresh(menu_stage_practice)
             menu.FadeOut(menu_player_system_select);menu.FadeIn(menu_stage_practice)

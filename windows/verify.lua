@@ -1,6 +1,6 @@
 -- 独立发行包验证：真实Windows引擎逐个解码资源，再运行五作练习入口。
 local f=assert(io.open('native-config.json','rb'));local config=DeSerialize(f:read('*a'));f:close()
-local result={ok=false,images=0,audio=0,entries={}}
+local result={ok=false,images=0,audio=0,music=0,entries={}}
 local finished=false
 local function save(ok,err)
     finished=true;result.ok=ok;result.error=err
@@ -19,6 +19,10 @@ function GameInit()
         for _,path in ipairs(config.audio) do
             LoadSound('release:verify',path);RemoveResource('global',5,'release:verify');result.audio=result.audio+1
         end
+        for _,music in ipairs(config.music or {}) do
+            LoadMusic('release:verify',music.path,music.last,music.length)
+            RemoveResource('global',4,'release:verify');result.music=result.music+1
+        end
         lstg.DoFile('game-core.lua')
         local initialize=GameInit;initialize()
         setting.mod='Boss Rush HD';cur_setting=DeSerialize(Serialize(setting))
@@ -26,6 +30,9 @@ function GameInit()
         scoredata.PlayerBrand='Windows发行验证';scoredata.version=ui.version
         local frame,render=FrameFunc,RenderFunc
         local index,active,ticks=1,false,0
+        local cases={}
+        for _,level in ipairs(config.levels) do cases[#cases+1]={level=level,name='Spell Practice@Spell Practice'} end
+        for _,key in ipairs(config.sequences or {}) do cases[#cases+1]={key=key} end
         local function step()
             if finished then return true end
             ticks=ticks+1;assert(ticks<18000,'练习入口验证超时')
@@ -33,13 +40,20 @@ function GameInit()
             local quit=frame();local scene=stage.current_stage
             if scene and scene.stage_name=='menu' and scene.timer>=45 and not active then
                 lstg.var.player_name,lstg.var.rep_player='reimu_player','Reimu'
-                lstg.var.current_system='';lstg.var.sc_group={config.levels[index],1}
-                assert(stage.group.PracticeStart('Spell Practice@Spell Practice',true)~=false)
+                local case=cases[index]
+                lstg.var.current_system=''
+                if case.key then
+                    case.name=OriginalSequence.catalog.get(case.key).battle
+                    assert(OriginalSequence.start(case.key))
+                else
+                    lstg.var.sc_group={case.level,1}
+                    assert(stage.group.PracticeStart(case.name,true)~=false)
+                end
                 active=true
-            elseif active and scene and scene.stage_name=='Spell Practice@Spell Practice' and scene.timer>=300 then
-                result.entries[#result.entries+1]={level=config.levels[index],frames=scene.timer}
+            elseif active and scene and scene.stage_name==cases[index].name and scene.timer>=300 then
+                result.entries[#result.entries+1]={level=cases[index].level,key=cases[index].key,frames=scene.timer}
                 index=index+1;active=false
-                if index>#config.levels then save(true);return true end
+                if index>#cases then save(true);return true end
                 stage.group.ReturnToTitle(false,0)
             end
             return quit

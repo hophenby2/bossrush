@@ -1223,3 +1223,4 @@ end
 IncludeLuaFile("mod\\main_stage.lua")
 IncludeLuaFile("mod\\rogue_dual.lua")
 IncludeLuaFile("mod\\roguelike.lua")
+IncludeLuaFile("mod\\original_sequence.lua")

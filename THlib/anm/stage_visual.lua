@@ -436,6 +436,9 @@ function S.source_frame(o,clock,program)
     if o._original_presentation_carrier then return end
     if not program and OriginalCollision then OriginalCollision.events(o,clock) end
     local state=program or o._original_source
+    if not program and state and lstg.var.__sequence_version==1 and OriginalSequenceMedia then
+        OriginalSequenceMedia.advance(o,clock,state)
+    end
     if not state or not state.cfg then return end
     local events=state.cfg.events
     local loop=state.game==95 and visual_loops[state.key]

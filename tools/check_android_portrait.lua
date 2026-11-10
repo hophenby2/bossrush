@@ -124,6 +124,15 @@ for _,height in ipairs({960,1200}) do
     for _=55,GameHPScale.DURATION do GameHPScale.frame() end
     assert(not run.hp_growth.animation and run.hp_growth.shown==1.01,'飞行结束后更新累计倍率')
 end
+lstg.var.rogue_run=nil;lstg.var.__sequence_version=1;lstg.var.sequence_run={chapter=1,chapter_name='PH'}
+texts,stars={},{};P.hud(255)
+local chapterFound=false
+for _,t in ipairs(texts) do
+    assert(not t.value:find('×',1,true),'顺序模式不显示血量倍率')
+    if t.value=='PH' then chapterFound=t.x==270 and t.scale==3 end
+end
+assert(chapterFound,'顺序模式顶部居中显示原作面数')
+lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
 P.clearInput();setting.androidPortrait=false
 assert(not P.enabled() and not P.touch(1,270,644,'began'),'横屏交还原有触控处理')
 print('共享菜单绘制、触区/拖动变换、模态阻挡、状态还原及16:9/20:9场内HUD检查通过')

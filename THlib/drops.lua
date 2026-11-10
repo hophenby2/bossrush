@@ -29,7 +29,7 @@ local function fresh()
 end
 local function allowDrops(scene)
     scene=scene or (stage and stage.current_stage)
-    return not (scene and scene.group and scene.group._name=='RogueChain')
+    return lstg.var.__sequence_version~=1 and not (scene and scene.group and scene.group._name=='RogueChain')
 end
 function D.enabled() return modern() or lstg.var.__drops_version==1 end
 D.bombsEnabled=modern

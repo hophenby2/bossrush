@@ -46,6 +46,7 @@ function H.powerTrack(x1,x2,y,value,alpha,decades)
     if decades%step~=0 then tick(decades) end
 end
 function H.attributes(scrr,scrt,alpha,layout)
+    if lstg.var.__sequence_version==1 then return end
     local D=GameDrops
     if not D or not D.enabled() then return end
     local palette=D.palette or colors

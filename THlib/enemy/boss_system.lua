@@ -438,6 +438,7 @@ end
 ---更新符卡背景
 function system:updateBG()
     local b = self.boss
+    if b._sequence_road_carrier then return end -- 道中生成宿主不覆盖真实中Boss的背景显隐状态。
     if b.current_card and b.current_card.phase_kind then
         -- current_card先于before/init切换，立即撤下上一阶段的背景，避免道中入场仍残留一层。
         b.__show_scbg=false

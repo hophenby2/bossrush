@@ -14,6 +14,12 @@ function C.supportsRecord(record)
         return type(group)=='table' and C.levels[group[1]]==true
             and _sc_pr_table[group[1]] and _sc_pr_table[group[1]][group[2]]~=nil
     end
+    local sequence=dofile('mod/sequence_catalog.lua')
+    for _,entry in ipairs(sequence.entries) do
+        if record.stageName==entry.battle then
+            return v.__sequence_version==sequence.VERSION and v.sequence_key==entry.key
+        end
+    end
     if randomStages[record.stageName] then
         -- 第4版允许地灵殿加入随机池；该历史范围不属于精简分支。
         if v.__rogue_pool_version==4 then return false end

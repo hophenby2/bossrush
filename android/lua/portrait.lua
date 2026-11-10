@@ -460,7 +460,10 @@ function P.hud(alpha)
         GameDrops.renderStar('star_big10',x,bombY,20,1,alpha)
         label((count==2 and 'P'..slot..' ' or '')..'x'..bombs,x+17,bombY,.85,alpha,{110,235,145},'left')
     end
-    if not lstg.var.rogue_run then
+    local sequence=lstg.var.__sequence_version==1 and lstg.var.sequence_run
+    if sequence then
+        label(sequence.chapter_name or sequence.chapter,(w.scrl+w.scrr)/2,w.scrt-28,3,alpha,{230,241,250})
+    elseif not lstg.var.rogue_run then
         label(stage.current_stage.level or 1,(w.scrl+w.scrr)/2,w.scrt-28,3,alpha,{230,241,250})
         label('×1',w.scrr-14,w.scrt-28,1,alpha,{230,241,250},'right')
     end

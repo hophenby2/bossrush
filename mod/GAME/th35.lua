@@ -1724,6 +1724,7 @@ function class.t10_start_road(owner,main)
     class.th10_enemy_schedule.ensure()
     local p=New(class.th10_ecs_pod,nil,0,0,main)
     p.t10_road_owner=owner
+    p._sequence_road_context=owner._sequence_road_context
     local window=owner.current_card and owner.current_card.road_window
     if window then
         -- 单独进入后半段时，只预推进生成器，保留原异步协程顺序与寄存器；不创建前半敌机。
@@ -6270,7 +6271,7 @@ end
 t10mid.s01.sequence=function(events)
     for _,e in ipairs(events) do
         if e[1]>0 then flow.roadWait(e[1]) end
-        t10mid.s01.one(e[2],e[3],e[4],e[5],e[6],e[7])
+        if flow.roadCanSpawn(e.native_opcode) then t10mid.s01.one(e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
 t10mid.s01.ms=function(card)
@@ -6383,18 +6384,19 @@ t10mid.s01.run=function(card)
         {0,"BGirl00C",30,-120,-16,false,2}, -- 0xaed8 原2040
         {0,"BGirl00C",30,120,-16,false,2}, -- 0xaf0c 原2040
         {0,"BGirl00C",30,168,-16,false,2}, -- 0xaf40 原2040
-        {560,"RGirl00D",160,-144,-16,false,1}, -- 0xafd8 原2600
-        {80,"RGirl00D",160,144,-16,true,1}, -- 0xb00c 原2680
-        {80,"RGirl00D",160,-144,-16,false,1}, -- 0xb040 原2760
-        {80,"RGirl00D",160,144,-16,true,1}, -- 0xb074 原2840
-        {80,"RGirl00D",160,-144,-16,false,1}, -- 0xb0a8 原2920
-        {80,"RGirl00D",160,144,-16,true,1}, -- 0xb0dc 原3000
-        {80,"RGirl00D",160,-144,-16,false,1}, -- 0xb110 原3080
-        {80,"RGirl00D",160,144,-16,true,1}, -- 0xb144 原3160
-        {80,"RGirl00D",160,-144,-16,false,2}, -- 0xb178 原3240
-        {80,"RGirl00D",160,144,-16,true,2}, -- 0xb1ac 原3320
+        {560,"RGirl00D",160,-144,-16,false,1,native_opcode=266}, -- 0xafd8 原2600
+        {80,"RGirl00D",160,144,-16,true,1,native_opcode=268}, -- 0xb00c 原2680
+        {80,"RGirl00D",160,-144,-16,false,1,native_opcode=266}, -- 0xb040 原2760
+        {80,"RGirl00D",160,144,-16,true,1,native_opcode=268}, -- 0xb074 原2840
+        {80,"RGirl00D",160,-144,-16,false,1,native_opcode=266}, -- 0xb0a8 原2920
+        {80,"RGirl00D",160,144,-16,true,1,native_opcode=268}, -- 0xb0dc 原3000
+        {80,"RGirl00D",160,-144,-16,false,1,native_opcode=266}, -- 0xb110 原3080
+        {80,"RGirl00D",160,144,-16,true,1,native_opcode=268}, -- 0xb144 原3160
+        {80,"RGirl00D",160,-144,-16,false,2,native_opcode=266}, -- 0xb178 原3240
+        {80,"RGirl00D",160,144,-16,true,2,native_opcode=268}, -- 0xb1ac 原3320
     })
-    flow.roadWait(100) -- 本卡排除中Boss，deathWait按无Boss通过。
+    flow.roadBossWait() -- 原作L行ins_340：只阻塞主线程，异步增援仍按自己的时钟前进。
+    flow.roadWait(100)
     B.sequence({
         {0,"Girl01",300,64,-16,false,3}, -- 0xb1f0 原3420
         {0,"Girl01",300,-64,-16,true,3}, -- 0xb220 原3420
@@ -6437,6 +6439,7 @@ t10mid.s01.run=function(card)
         {0,"BGirl00C",30,120,-16,false,2}, -- 0xba24 原3970
         {0,"BGirl00C",30,168,-16,false,2}, -- 0xba58 原3970
     })
+    flow.roadFinish(t10mid.s01.road_time*60)
 end
 
 ---挂到空 boss「ba」上的一张耐久符卡（与 stage06 道中同一套注册方式）。
@@ -6661,7 +6664,7 @@ t10mid.s02.sequence=function(card,events)
         if e[2]:sub(1,1)=='@' then
             local fn=assert(B[e[2]:sub(2)])
             flow.roadAsync(card,function() fn(card) end)
-        else B.one(e[2],e[3],e[4],e[5],e[6],e[7]) end
+        elseif flow.roadCanSpawn(e.native_opcode) then B.one(e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
 t10mid.s02.MainSub01=function(card)
@@ -6736,76 +6739,76 @@ t10mid.s02.run=function(card)
         {10,"RGirl00B",30,80,-16,true,1}, -- 0xbf48
         {10,"BGirl00B",30,96,-16,true,1}, -- 0xbf7c
         {10,"RGirl00B",30,112,-16,true,1}, -- 0xbfb0
-        {2054,"GGirl00D",60,-144,-16,false,1}, -- 0xc028
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xc05c
-        {10,"BGirl00D",60,-112,-16,false,1}, -- 0xc090
-        {10,"BGirl00D",60,-160,-16,false,1}, -- 0xc0c4
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xc0f8
-        {60,"GGirl00D",60,144,-16,true,1}, -- 0xc12c
-        {10,"BGirl00D",60,126,-16,true,1}, -- 0xc160
-        {10,"RGirl00D",60,112,-16,true,1}, -- 0xc194
-        {10,"RGirl00D",60,160,-16,true,1}, -- 0xc1c8
-        {10,"BGirl00D",60,100,-16,true,1}, -- 0xc1fc
-        {60,"GGirl00D",60,-144,-16,false,1}, -- 0xc230
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xc264
-        {10,"BGirl00D",60,-112,-16,false,1}, -- 0xc298
-        {10,"BGirl00D",60,-160,-16,false,1}, -- 0xc2cc
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xc300
-        {60,"GGirl00D",60,144,-16,true,1}, -- 0xc334
-        {10,"BGirl00D",60,126,-16,true,1}, -- 0xc368
-        {10,"RGirl00D",60,112,-16,true,1}, -- 0xc39c
-        {10,"RGirl00D",60,160,-16,true,1}, -- 0xc3d0
-        {10,"BGirl00D",60,100,-16,true,1}, -- 0xc404
-        {60,"GGirl00D",60,-144,-16,false,1}, -- 0xc438
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xc46c
-        {10,"RGirl00D",60,-112,-16,false,1}, -- 0xc4a0
-        {10,"RGirl00D",60,-160,-16,false,1}, -- 0xc4d4
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xc508
-        {60,"GGirl00D",60,144,-16,true,1}, -- 0xc53c
-        {10,"BGirl00D",60,126,-16,true,1}, -- 0xc570
-        {10,"RGirl00D",60,112,-16,true,1}, -- 0xc5a4
-        {10,"RGirl00D",60,160,-16,true,1}, -- 0xc5d8
-        {10,"BGirl00D",60,100,-16,true,1}, -- 0xc60c
-        {60,"GGirl00D",60,-144,-16,false,1}, -- 0xc640
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xc674
-        {10,"BGirl00D",60,-112,-16,false,1}, -- 0xc6a8
-        {10,"BGirl00D",60,-160,-16,false,1}, -- 0xc6dc
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xc710
-        {60,"GGirl00D",60,144,-16,true,1}, -- 0xc744
-        {10,"BGirl00D",60,126,-16,true,1}, -- 0xc778
-        {10,"RGirl00D",60,112,-16,true,1}, -- 0xc7ac
-        {10,"RGirl00D",60,160,-16,true,1}, -- 0xc7e0
-        {10,"BGirl00D",60,100,-16,true,1}, -- 0xc814
-        {60,"GGirl00D",60,-144,-16,false,1}, -- 0xc848
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xc87c
-        {10,"RGirl00D",60,-112,-16,false,1}, -- 0xc8b0
-        {10,"RGirl00D",60,-160,-16,false,1}, -- 0xc8e4
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xc918
-        {60,"GGirl00D",60,144,-16,true,1}, -- 0xc94c
-        {10,"BGirl00D",60,126,-16,true,1}, -- 0xc980
-        {10,"RGirl00D",60,112,-16,true,1}, -- 0xc9b4
-        {10,"RGirl00D",60,160,-16,true,1}, -- 0xc9e8
-        {10,"BGirl00D",60,100,-16,true,1}, -- 0xca1c
-        {60,"GGirl00D",60,-144,-16,false,1}, -- 0xca50
-        {10,"BGirl00D",60,-126,-16,false,1}, -- 0xca84
-        {10,"RGirl00D",60,-112,-16,false,1}, -- 0xcab8
-        {10,"RGirl00D",60,-160,-16,false,1}, -- 0xcaec
-        {10,"BGirl00D",60,-100,-16,false,1}, -- 0xcb20
-        {100,"Girl01",400,224,32,false,2}, -- 0xcb54
-        {60,"Girl01",400,224,32,false,2}, -- 0xcb84
-        {60,"Girl01",400,224,32,false,2}, -- 0xcbb4
-        {60,"Girl01",400,224,32,false,2}, -- 0xcbe4
-        {60,"Girl01",400,-224,32,true,2}, -- 0xcc14
-        {60,"Girl01",400,-224,32,true,2}, -- 0xcc44
-        {60,"Girl01",400,-224,32,true,2}, -- 0xcc74
-        {60,"Girl01",400,-224,32,true,2}, -- 0xcca4
-        {120,"Girl01",300,224,64,false,2}, -- 0xccd4
-        {30,"Girl01",300,-224,64,true,2}, -- 0xcd04
-        {30,"Girl01",300,224,64,false,2}, -- 0xcd34
-        {30,"Girl01",300,-224,64,true,2}, -- 0xcd64
-        {30,"Girl01",300,224,64,false,2}, -- 0xcd94
-        {30,"Girl01",300,-224,64,true,2}, -- 0xcdc4
-        {160,"Girl02",4000,0,-32,false,2}, -- 0xce24
+        {2054,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xc028
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xc05c
+        {10,"BGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xc090
+        {10,"BGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xc0c4
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xc0f8
+        {60,"GGirl00D",60,144,-16,true,1,native_opcode=268}, -- 0xc12c
+        {10,"BGirl00D",60,126,-16,true,1,native_opcode=268}, -- 0xc160
+        {10,"RGirl00D",60,112,-16,true,1,native_opcode=268}, -- 0xc194
+        {10,"RGirl00D",60,160,-16,true,1,native_opcode=268}, -- 0xc1c8
+        {10,"BGirl00D",60,100,-16,true,1,native_opcode=268}, -- 0xc1fc
+        {60,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xc230
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xc264
+        {10,"BGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xc298
+        {10,"BGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xc2cc
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xc300
+        {60,"GGirl00D",60,144,-16,true,1,native_opcode=268}, -- 0xc334
+        {10,"BGirl00D",60,126,-16,true,1,native_opcode=268}, -- 0xc368
+        {10,"RGirl00D",60,112,-16,true,1,native_opcode=268}, -- 0xc39c
+        {10,"RGirl00D",60,160,-16,true,1,native_opcode=268}, -- 0xc3d0
+        {10,"BGirl00D",60,100,-16,true,1,native_opcode=268}, -- 0xc404
+        {60,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xc438
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xc46c
+        {10,"RGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xc4a0
+        {10,"RGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xc4d4
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xc508
+        {60,"GGirl00D",60,144,-16,true,1,native_opcode=268}, -- 0xc53c
+        {10,"BGirl00D",60,126,-16,true,1,native_opcode=268}, -- 0xc570
+        {10,"RGirl00D",60,112,-16,true,1,native_opcode=268}, -- 0xc5a4
+        {10,"RGirl00D",60,160,-16,true,1,native_opcode=268}, -- 0xc5d8
+        {10,"BGirl00D",60,100,-16,true,1,native_opcode=268}, -- 0xc60c
+        {60,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xc640
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xc674
+        {10,"BGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xc6a8
+        {10,"BGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xc6dc
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xc710
+        {60,"GGirl00D",60,144,-16,true,1,native_opcode=268}, -- 0xc744
+        {10,"BGirl00D",60,126,-16,true,1,native_opcode=268}, -- 0xc778
+        {10,"RGirl00D",60,112,-16,true,1,native_opcode=268}, -- 0xc7ac
+        {10,"RGirl00D",60,160,-16,true,1,native_opcode=268}, -- 0xc7e0
+        {10,"BGirl00D",60,100,-16,true,1,native_opcode=268}, -- 0xc814
+        {60,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xc848
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xc87c
+        {10,"RGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xc8b0
+        {10,"RGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xc8e4
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xc918
+        {60,"GGirl00D",60,144,-16,true,1,native_opcode=268}, -- 0xc94c
+        {10,"BGirl00D",60,126,-16,true,1,native_opcode=268}, -- 0xc980
+        {10,"RGirl00D",60,112,-16,true,1,native_opcode=268}, -- 0xc9b4
+        {10,"RGirl00D",60,160,-16,true,1,native_opcode=268}, -- 0xc9e8
+        {10,"BGirl00D",60,100,-16,true,1,native_opcode=268}, -- 0xca1c
+        {60,"GGirl00D",60,-144,-16,false,1,native_opcode=266}, -- 0xca50
+        {10,"BGirl00D",60,-126,-16,false,1,native_opcode=266}, -- 0xca84
+        {10,"RGirl00D",60,-112,-16,false,1,native_opcode=266}, -- 0xcab8
+        {10,"RGirl00D",60,-160,-16,false,1,native_opcode=266}, -- 0xcaec
+        {10,"BGirl00D",60,-100,-16,false,1,native_opcode=266}, -- 0xcb20
+        {100,"Girl01",400,224,32,false,2,native_opcode=266}, -- 0xcb54
+        {60,"Girl01",400,224,32,false,2,native_opcode=266}, -- 0xcb84
+        {60,"Girl01",400,224,32,false,2,native_opcode=266}, -- 0xcbb4
+        {60,"Girl01",400,224,32,false,2,native_opcode=266}, -- 0xcbe4
+        {60,"Girl01",400,-224,32,true,2,native_opcode=268}, -- 0xcc14
+        {60,"Girl01",400,-224,32,true,2,native_opcode=268}, -- 0xcc44
+        {60,"Girl01",400,-224,32,true,2,native_opcode=268}, -- 0xcc74
+        {60,"Girl01",400,-224,32,true,2,native_opcode=268}, -- 0xcca4
+        {120,"Girl01",300,224,64,false,2,native_opcode=266}, -- 0xccd4
+        {30,"Girl01",300,-224,64,true,2,native_opcode=268}, -- 0xcd04
+        {30,"Girl01",300,224,64,false,2,native_opcode=266}, -- 0xcd34
+        {30,"Girl01",300,-224,64,true,2,native_opcode=268}, -- 0xcd64
+        {30,"Girl01",300,224,64,false,2,native_opcode=266}, -- 0xcd94
+        {30,"Girl01",300,-224,64,true,2,native_opcode=268}, -- 0xcdc4
+        {160,"Girl02",4000,0,-32,false,2,native_opcode=266}, -- 0xce24
         {200,"@MainSub02"}, -- 0xce54
         {30,"BGirl00B",30,112,-16,true,1}, -- 0xce74
         {30,"BGirl00B",30,96,-16,true,1}, -- 0xcea8
@@ -6827,6 +6830,7 @@ t10mid.s02.run=function(card)
         {30,"RGirl00B",30,96,-16,true,1}, -- 0xd1d4
         {30,"RGirl00B",30,112,-16,true,1}, -- 0xd208
     })
+    flow.roadFinish(t10mid.s02.road_time*60)
 end
 
 ---挂到空 boss「ca」上的一张耐久符卡（与 stage01/06 道中同一套注册方式）。
@@ -7082,11 +7086,12 @@ t10mid.s03.sequence=function(card,events)
     local B=t10mid.s03
     for _,e in ipairs(events) do
         if e[1]>0 then flow.roadWait(e[1]) end
-        if e[2]:sub(1,1)=='=' then card[e[2]:sub(2)]=e[3]
+        if e[2]=='!wait_boss' then flow.roadBossWait()
+        elseif e[2]:sub(1,1)=='=' then card[e[2]:sub(2)]=e[3]
         elseif e[2]:sub(1,1)=='@' then
             local fn=assert(B[e[2]:sub(3)])
             if e[2]:sub(2,2)=='c' then fn(card) else flow.roadAsync(card,function() fn(card) end) end
-        else B.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
+        elseif flow.roadCanSpawn(e.native_opcode) then B.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
 t10mid.s03.MainSub01=function(card)
@@ -7127,26 +7132,26 @@ t10mid.s03.MainSub01=function(card)
 end
 t10mid.s03.MainSub02=function(card)
     t10mid.s03.sequence(card,{
-        {10,"BGirl00B",20,-224,-16,false,1}, -- 0x9f6c
-        {10,"BGirl00B",20,-224,32,false,1}, -- 0x9fa0
-        {10,"BGirl00B",20,-224,96,false,1}, -- 0x9fd4
-        {10,"BGirl00B",20,-224,64,false,1}, -- 0xa008
-        {10,"RGirl00B",20,-224,96,false,1}, -- 0xa03c
-        {10,"BGirl00B",20,-224,32,false,1}, -- 0xa070
-        {10,"RGirl00B",20,-224,96,false,1}, -- 0xa0a4
-        {10,"GGirl00B",20,-224,16,false,1}, -- 0xa0d8
+        {10,"BGirl00B",20,-224,-16,false,1,native_opcode=266}, -- 0x9f6c
+        {10,"BGirl00B",20,-224,32,false,1,native_opcode=266}, -- 0x9fa0
+        {10,"BGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0x9fd4
+        {10,"BGirl00B",20,-224,64,false,1,native_opcode=266}, -- 0xa008
+        {10,"RGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0xa03c
+        {10,"BGirl00B",20,-224,32,false,1,native_opcode=266}, -- 0xa070
+        {10,"RGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0xa0a4
+        {10,"GGirl00B",20,-224,16,false,1,native_opcode=266}, -- 0xa0d8
     })
 end
 t10mid.s03.MainSub02r=function(card)
     t10mid.s03.sequence(card,{
-        {10,"RGirl00B",20,224,-16,true,1}, -- 0xa140
-        {10,"BGirl00B",20,224,32,true,1}, -- 0xa174
-        {10,"RGirl00B",20,224,96,true,1}, -- 0xa1a8
-        {10,"BGirl00B",20,224,64,true,1}, -- 0xa1dc
-        {10,"RGirl00B",20,224,96,true,1}, -- 0xa210
-        {10,"BGirl00B",20,224,32,true,1}, -- 0xa244
-        {10,"RGirl00B",20,224,96,true,1}, -- 0xa278
-        {10,"GGirl00B",20,224,16,true,1}, -- 0xa2ac
+        {10,"RGirl00B",20,224,-16,true,1,native_opcode=268}, -- 0xa140
+        {10,"BGirl00B",20,224,32,true,1,native_opcode=268}, -- 0xa174
+        {10,"RGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xa1a8
+        {10,"BGirl00B",20,224,64,true,1,native_opcode=268}, -- 0xa1dc
+        {10,"RGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xa210
+        {10,"BGirl00B",20,224,32,true,1,native_opcode=268}, -- 0xa244
+        {10,"RGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xa278
+        {10,"GGirl00B",20,224,16,true,1,native_opcode=268}, -- 0xa2ac
     })
 end
 t10mid.s03.MainSub03=function(card)
@@ -7184,6 +7189,7 @@ t10mid.s03.MainSub03=function(card)
         {20,"=F0",-0.082672998}, -- 0xa88c
         {0,"BGirl00C",110,256,224,true,1}, -- 0xa8a0
     })
+    flow.roadTailWait(40) -- 原作末次生成在240，RETURN在280；同步调用的父时钟此时仍冻结。
 end
 t10mid.s03.MainSub03b=function(card)
     t10mid.s03.sequence(card,{
@@ -7220,29 +7226,30 @@ t10mid.s03.MainSub03b=function(card)
         {20,"=F0",-0.082672998}, -- 0xae80
         {0,"GGirl00C",110,256,224,true,1}, -- 0xae94
     })
+    flow.roadTailWait(40) -- 原作末次生成在240，RETURN在280；同步调用的父时钟此时仍冻结。
 end
 t10mid.s03.MainSub04=function(card)
     t10mid.s03.sequence(card,{
-        {10,"RGirl00B",20,-224,-16,false,1}, -- 0xaefc
-        {10,"YGirl00B",20,-224,32,false,1}, -- 0xaf30
-        {10,"YGirl00B",20,-224,96,false,1}, -- 0xaf64
-        {10,"BGirl00B",20,-224,64,false,1}, -- 0xaf98
-        {10,"YGirl00B",20,-224,96,false,1}, -- 0xafcc
-        {10,"BGirl00B",20,-224,32,false,1}, -- 0xb000
-        {10,"RGirl00B",20,-224,96,false,1}, -- 0xb034
-        {10,"YGirl00B",20,-224,16,false,1}, -- 0xb068
+        {10,"RGirl00B",20,-224,-16,false,1,native_opcode=266}, -- 0xaefc
+        {10,"YGirl00B",20,-224,32,false,1,native_opcode=266}, -- 0xaf30
+        {10,"YGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0xaf64
+        {10,"BGirl00B",20,-224,64,false,1,native_opcode=266}, -- 0xaf98
+        {10,"YGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0xafcc
+        {10,"BGirl00B",20,-224,32,false,1,native_opcode=266}, -- 0xb000
+        {10,"RGirl00B",20,-224,96,false,1,native_opcode=266}, -- 0xb034
+        {10,"YGirl00B",20,-224,16,false,1,native_opcode=266}, -- 0xb068
     })
 end
 t10mid.s03.MainSub04r=function(card)
     t10mid.s03.sequence(card,{
-        {10,"RGirl00B",20,224,-16,true,1}, -- 0xb0d0
-        {10,"YGirl00B",20,224,32,true,1}, -- 0xb104
-        {10,"YGirl00B",20,224,96,true,1}, -- 0xb138
-        {10,"BGirl00B",20,224,64,true,1}, -- 0xb16c
-        {10,"YGirl00B",20,224,96,true,1}, -- 0xb1a0
-        {10,"BGirl00B",20,224,32,true,1}, -- 0xb1d4
-        {10,"RGirl00B",20,224,96,true,1}, -- 0xb208
-        {10,"YGirl00B",20,224,16,true,1}, -- 0xb23c
+        {10,"RGirl00B",20,224,-16,true,1,native_opcode=268}, -- 0xb0d0
+        {10,"YGirl00B",20,224,32,true,1,native_opcode=268}, -- 0xb104
+        {10,"YGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xb138
+        {10,"BGirl00B",20,224,64,true,1,native_opcode=268}, -- 0xb16c
+        {10,"YGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xb1a0
+        {10,"BGirl00B",20,224,32,true,1,native_opcode=268}, -- 0xb1d4
+        {10,"RGirl00B",20,224,96,true,1,native_opcode=268}, -- 0xb208
+        {10,"YGirl00B",20,224,16,true,1,native_opcode=268}, -- 0xb23c
     })
 end
 t10mid.s03.run=function(card)
@@ -7295,6 +7302,7 @@ t10mid.s03.run=function(card)
         {0,"@aMainSub04r"}, -- 0xd2c0
         {0,"@aMainSub04"}, -- 0xd2e0
         {0,"@aMainSub04r"}, -- 0xd300
+        {0,"!wait_boss"}, -- 0xd350 原3280
         {120,"=F0",0.024544001}, -- 0xd3c0
         {0,"Girl02",640,-96,-16,true,3}, -- 0xd3d4
         {0,"@aMainSub04"}, -- 0xd404
@@ -7376,6 +7384,7 @@ t10mid.s03.run=function(card)
         {0,"=F0",-0.024544001}, -- 0xe310
         {0,"Girl02",640,64,-16,true,3}, -- 0xe324
     })
+    flow.roadFinish(t10mid.s03.road_time*60)
 end
 
 ---挂到空 boss「da」上的一张耐久符卡（与 stage01/02/06 道中同一套注册方式）。
@@ -7802,7 +7811,7 @@ t10mid.s04.sequence=function(card,events)
         elseif e[2]:sub(1,1)=='@' then
             local fn=assert(S[e[2]:sub(3)])
             if e[2]:sub(2,2)=='c' then fn(card) else flow.roadAsync(card,function() fn(card) end) end
-        else S.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
+        elseif flow.roadCanSpawn(e.native_opcode) then S.one(card,e[2],e[3],e[4],e[5],e[6],e[7]) end
     end
 end
 t10mid.s04.MainSub1=function(card)
@@ -7972,71 +7981,71 @@ end
 t10mid.s04.MainSub5=function(card)
     t10mid.s04.sequence(card,{
         {0,"=I1",6}, -- 0xf998
-        {0,"BGirl03",120,-192,-24,false,1}, -- 0xf9ac
-        {30,"BGirl03",120,-160,-24,false,1}, -- 0xf9dc
-        {30,"BGirl03",120,-128,-24,false,1}, -- 0xfa0c
-        {30,"BGirl03",120,-216,16,false,1}, -- 0xfa3c
-        {30,"BGirl03",120,-220,32,false,1}, -- 0xfa6c
+        {0,"BGirl03",120,-192,-24,false,1,native_opcode=265}, -- 0xf9ac
+        {30,"BGirl03",120,-160,-24,false,1,native_opcode=265}, -- 0xf9dc
+        {30,"BGirl03",120,-128,-24,false,1,native_opcode=265}, -- 0xfa0c
+        {30,"BGirl03",120,-216,16,false,1,native_opcode=265}, -- 0xfa3c
+        {30,"BGirl03",120,-220,32,false,1,native_opcode=265}, -- 0xfa6c
         {0,"=I1",8}, -- 0xfab0
-        {0,"BGirl03",120,192,-24,true,1}, -- 0xfac4
-        {30,"RGirl03",120,160,-24,true,1}, -- 0xfaf4
-        {30,"BGirl03",120,128,-24,true,1}, -- 0xfb24
-        {30,"RGirl03",120,216,16,true,1}, -- 0xfb54
-        {30,"BGirl03",120,220,32,true,1}, -- 0xfb84
+        {0,"BGirl03",120,192,-24,true,1,native_opcode=267}, -- 0xfac4
+        {30,"RGirl03",120,160,-24,true,1,native_opcode=267}, -- 0xfaf4
+        {30,"BGirl03",120,128,-24,true,1,native_opcode=267}, -- 0xfb24
+        {30,"RGirl03",120,216,16,true,1,native_opcode=267}, -- 0xfb54
+        {30,"BGirl03",120,220,32,true,1,native_opcode=267}, -- 0xfb84
         {60,"=I1",6}, -- 0xfbc8
-        {0,"BGirl03",120,-192,-24,false,1}, -- 0xfbdc
-        {10,"BGirl03",120,-160,-24,false,1}, -- 0xfc0c
-        {10,"BGirl03",120,-128,-24,false,1}, -- 0xfc3c
-        {10,"BGirl03",120,-216,16,false,1}, -- 0xfc6c
-        {10,"RGirl03",120,-220,32,false,1}, -- 0xfc9c
-        {10,"RGirl03",120,-220,64,false,1}, -- 0xfccc
-        {10,"RGirl03",120,-220,96,false,1}, -- 0xfcfc
-        {10,"RGirl03",120,-220,128,false,1}, -- 0xfd2c
+        {0,"BGirl03",120,-192,-24,false,1,native_opcode=265}, -- 0xfbdc
+        {10,"BGirl03",120,-160,-24,false,1,native_opcode=265}, -- 0xfc0c
+        {10,"BGirl03",120,-128,-24,false,1,native_opcode=265}, -- 0xfc3c
+        {10,"BGirl03",120,-216,16,false,1,native_opcode=265}, -- 0xfc6c
+        {10,"RGirl03",120,-220,32,false,1,native_opcode=265}, -- 0xfc9c
+        {10,"RGirl03",120,-220,64,false,1,native_opcode=265}, -- 0xfccc
+        {10,"RGirl03",120,-220,96,false,1,native_opcode=265}, -- 0xfcfc
+        {10,"RGirl03",120,-220,128,false,1,native_opcode=265}, -- 0xfd2c
         {0,"=I1",8}, -- 0xfd70
-        {0,"RGirl03",120,192,-24,true,1}, -- 0xfd84
-        {10,"RGirl03",120,160,-24,true,1}, -- 0xfdb4
-        {10,"RGirl03",120,128,-24,true,1}, -- 0xfde4
-        {10,"RGirl03",120,216,16,true,1}, -- 0xfe14
-        {10,"BGirl03",120,220,32,true,1}, -- 0xfe44
-        {10,"BGirl03",120,220,64,true,1}, -- 0xfe74
-        {10,"BGirl03",120,220,96,true,1}, -- 0xfea4
-        {10,"BGirl03",120,220,128,true,1}, -- 0xfed4
+        {0,"RGirl03",120,192,-24,true,1,native_opcode=267}, -- 0xfd84
+        {10,"RGirl03",120,160,-24,true,1,native_opcode=267}, -- 0xfdb4
+        {10,"RGirl03",120,128,-24,true,1,native_opcode=267}, -- 0xfde4
+        {10,"RGirl03",120,216,16,true,1,native_opcode=267}, -- 0xfe14
+        {10,"BGirl03",120,220,32,true,1,native_opcode=267}, -- 0xfe44
+        {10,"BGirl03",120,220,64,true,1,native_opcode=267}, -- 0xfe74
+        {10,"BGirl03",120,220,96,true,1,native_opcode=267}, -- 0xfea4
+        {10,"BGirl03",120,220,128,true,1,native_opcode=267}, -- 0xfed4
         {60,"=I1",6}, -- 0xff18
-        {0,"BGirl03",120,-192,-24,false,1}, -- 0xff2c
-        {10,"BGirl03",120,-160,-24,false,1}, -- 0xff5c
-        {10,"BGirl03",120,-128,-24,false,1}, -- 0xff8c
-        {10,"BGirl03",120,-216,16,false,1}, -- 0xffbc
-        {10,"RGirl03",120,-220,32,false,1}, -- 0xffec
-        {10,"RGirl03",120,-220,64,false,1}, -- 0x1001c
-        {10,"RGirl03",120,-220,96,false,1}, -- 0x1004c
-        {10,"RGirl03",120,-220,128,false,1}, -- 0x1007c
+        {0,"BGirl03",120,-192,-24,false,1,native_opcode=265}, -- 0xff2c
+        {10,"BGirl03",120,-160,-24,false,1,native_opcode=265}, -- 0xff5c
+        {10,"BGirl03",120,-128,-24,false,1,native_opcode=265}, -- 0xff8c
+        {10,"BGirl03",120,-216,16,false,1,native_opcode=265}, -- 0xffbc
+        {10,"RGirl03",120,-220,32,false,1,native_opcode=265}, -- 0xffec
+        {10,"RGirl03",120,-220,64,false,1,native_opcode=265}, -- 0x1001c
+        {10,"RGirl03",120,-220,96,false,1,native_opcode=265}, -- 0x1004c
+        {10,"RGirl03",120,-220,128,false,1,native_opcode=265}, -- 0x1007c
         {0,"=I1",8}, -- 0x100c0
-        {0,"RGirl03",120,192,-24,true,1}, -- 0x100d4
-        {10,"RGirl03",120,160,-24,true,1}, -- 0x10104
-        {10,"RGirl03",120,128,-24,true,1}, -- 0x10134
-        {10,"RGirl03",120,216,16,true,1}, -- 0x10164
-        {10,"BGirl03",120,220,32,true,1}, -- 0x10194
-        {10,"BGirl03",120,220,64,true,1}, -- 0x101c4
-        {10,"BGirl03",120,220,96,true,1}, -- 0x101f4
-        {10,"BGirl03",120,220,128,true,1}, -- 0x10224
+        {0,"RGirl03",120,192,-24,true,1,native_opcode=267}, -- 0x100d4
+        {10,"RGirl03",120,160,-24,true,1,native_opcode=267}, -- 0x10104
+        {10,"RGirl03",120,128,-24,true,1,native_opcode=267}, -- 0x10134
+        {10,"RGirl03",120,216,16,true,1,native_opcode=267}, -- 0x10164
+        {10,"BGirl03",120,220,32,true,1,native_opcode=267}, -- 0x10194
+        {10,"BGirl03",120,220,64,true,1,native_opcode=267}, -- 0x101c4
+        {10,"BGirl03",120,220,96,true,1,native_opcode=267}, -- 0x101f4
+        {10,"BGirl03",120,220,128,true,1,native_opcode=267}, -- 0x10224
         {60,"=I1",6}, -- 0x10268
-        {0,"BGirl03",120,-192,-24,false,1}, -- 0x1027c
-        {10,"BGirl03",120,-160,-24,false,1}, -- 0x102ac
-        {10,"BGirl03",120,-128,-24,false,1}, -- 0x102dc
-        {10,"BGirl03",120,-216,16,false,1}, -- 0x1030c
-        {10,"RGirl03",120,-220,32,false,1}, -- 0x1033c
-        {10,"RGirl03",120,-220,64,false,1}, -- 0x1036c
-        {10,"RGirl03",120,-220,96,false,1}, -- 0x1039c
-        {10,"RGirl03",120,-220,128,false,1}, -- 0x103cc
+        {0,"BGirl03",120,-192,-24,false,1,native_opcode=265}, -- 0x1027c
+        {10,"BGirl03",120,-160,-24,false,1,native_opcode=265}, -- 0x102ac
+        {10,"BGirl03",120,-128,-24,false,1,native_opcode=265}, -- 0x102dc
+        {10,"BGirl03",120,-216,16,false,1,native_opcode=265}, -- 0x1030c
+        {10,"RGirl03",120,-220,32,false,1,native_opcode=265}, -- 0x1033c
+        {10,"RGirl03",120,-220,64,false,1,native_opcode=265}, -- 0x1036c
+        {10,"RGirl03",120,-220,96,false,1,native_opcode=265}, -- 0x1039c
+        {10,"RGirl03",120,-220,128,false,1,native_opcode=265}, -- 0x103cc
         {0,"=I1",8}, -- 0x10410
-        {0,"RGirl03",120,192,-24,true,1}, -- 0x10424
-        {10,"RGirl03",120,160,-24,true,1}, -- 0x10454
-        {10,"RGirl03",120,128,-24,true,1}, -- 0x10484
-        {10,"RGirl03",120,216,16,true,1}, -- 0x104b4
-        {10,"BGirl03",120,220,32,true,1}, -- 0x104e4
-        {10,"BGirl03",120,220,64,true,1}, -- 0x10514
-        {10,"BGirl03",120,220,96,true,1}, -- 0x10544
-        {10,"BGirl03",120,220,128,true,1}, -- 0x10574
+        {0,"RGirl03",120,192,-24,true,1,native_opcode=267}, -- 0x10424
+        {10,"RGirl03",120,160,-24,true,1,native_opcode=267}, -- 0x10454
+        {10,"RGirl03",120,128,-24,true,1,native_opcode=267}, -- 0x10484
+        {10,"RGirl03",120,216,16,true,1,native_opcode=267}, -- 0x104b4
+        {10,"BGirl03",120,220,32,true,1,native_opcode=267}, -- 0x104e4
+        {10,"BGirl03",120,220,64,true,1,native_opcode=267}, -- 0x10514
+        {10,"BGirl03",120,220,96,true,1,native_opcode=267}, -- 0x10544
+        {10,"BGirl03",120,220,128,true,1,native_opcode=267}, -- 0x10574
         {200,"@aMainSub6L"}, -- 0x105a4
         {30,"@aMainSub6R"}, -- 0x105c4
         {120,"=I0",2}, -- 0x105f8
@@ -8199,6 +8208,7 @@ t10mid.s04.run = function(card)
     local S = t10mid.s04
     flow.roadAsync(card, function() S.MainSub1(card) end)                      -- callAsync("MainSub1")
     flow.roadAsync(card, function() S.ms4(card) end)                      -- callAsync("MainSub4")
+    flow.roadFinish(t10mid.s04.road_time*60)
 end
 
 ---挂到空 boss「ea」上的一张耐久符卡（与 stage01/02/03/06 道中同一套注册方式）。
@@ -8544,7 +8554,10 @@ function t10mid.install_road(stage)
             for _,e in ipairs(body) do
                 if e[1]>0 then flow.roadWait(e[1]) end
                 local op=e[2]
-                if op:sub(1,1)=='=' then card[op:sub(2)]=read(e[3],card,locals)
+                if op=='!wait_boss' then flow.roadBossWait()
+                elseif op=='!mid' then flow.roadMid()
+                elseif op=='!end' then flow.roadEnd()
+                elseif op:sub(1,1)=='=' then card[op:sub(2)]=read(e[3],card,locals)
                 elseif op:sub(1,1)=='~' then locals[tonumber(op:sub(2))]=read(e[3],card,locals)
                 elseif op:sub(1,1)=='@' then
                     local call=assert(programs[op:sub(3)],op)
@@ -8556,9 +8569,11 @@ function t10mid.install_road(stage)
                 else
                     local base,col=op,'R'
                     if not S.BEH[base] then base,col=op:sub(2),op:sub(1,1) end
-                    t10mid.spawn(read(e[3],card,locals),read(e[4],card,locals),read(e[5],card,locals),
-                        e[6],S.DROP[col],assert(S.BEH[base],op),card,S.INV[base] or 0,
-                        ('stage%02d:%s'):format(stage,op))
+                    if flow.roadCanSpawn(e.native_opcode) then
+                        t10mid.spawn(read(e[3],card,locals),read(e[4],card,locals),read(e[5],card,locals),
+                            e[6],S.DROP[col],assert(S.BEH[base],op),card,S.INV[base] or 0,
+                            ('stage%02d:%s'):format(stage,op))
+                    end
                 end
             end
         end
@@ -8566,7 +8581,7 @@ function t10mid.install_road(stage)
     end
     S.programs=programs
     S.run=function(card)
-        flow.roadAsync(card,function() programs.MainSub1(card) end)
+        flow.roadAsync(card,function() programs.MainSub1(card) end,true)
         if stage==5 then flow.roadAsync(card,function() programs.MainSubMBoss(card) end) end
         -- 两关main都用pushi(1)/jmpNeq在10000组无限等待。
         -- 源中第二次MainSub1位于不可达的循环之后，不能据字面时间重放波次。

@@ -34,7 +34,15 @@ def main():
         z.extractall(a.output)
     game=a.output/Path(prefix.rstrip('/'))
     (game/'User').mkdir();(game/'replay').mkdir();(game/'snapshot').mkdir()
-    (game/'native-config.json').write_text(json.dumps({'images':images,'audio':audio,'levels':[29,30,31,32,33]}),encoding='utf-8')
+    sequences=['th08_lunatic_a','th08_lunatic_b','th08_extra','th06_lunatic','th06_extra','th095_scenes','th095_extra',
+        'th07_lunatic','th07_extra','th07_phantasm','th10_lunatic','th10_extra'] if (game/'mod/original_sequence.lua').exists() else []
+    music=[]
+    if sequences:
+        for name,info in json.loads((game/'mod/GAME/original/std/music.json').read_text()).items():
+            music.append({'path':'music/ORIG_'+name+'.ogg','last':info['loop_end']/info['rate'],
+                'length':(info['loop_end']-info['loop_start'])/info['rate']})
+    (game/'native-config.json').write_text(json.dumps({'images':images,'audio':audio,'levels':[29,30,31,32,33],
+        'sequences':sequences,'music':music}),encoding='utf-8')
     shutil.move(game/'core.lua',game/'game-core.lua')
     shutil.copy2(Path(__file__).resolve().parents[1]/'windows/verify.lua',game/'core.lua')
     entry=(game/'launch').read_text(encoding='utf-8-sig')
@@ -51,7 +59,7 @@ def main():
         (a.output/'native-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
         assert report['ok'],report
         assert report['images']==len(images) and report['audio']==len(audio)
-        assert len(report['entries'])==5
+        assert len(report['entries'])==5+len(sequences) and report.get('music',0)==len(music)
         print(json.dumps(report,ensure_ascii=False))
     finally:
         if process.poll() is None:process.kill();process.wait()

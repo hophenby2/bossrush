@@ -82,7 +82,10 @@ def package(version,optimize=False):
 请保持 launch、Lua 脚本及各素材文件夹位于 exe 同级，勿在压缩包内直接启动。
 适用 Windows x64，需要支持 Direct3D 11 的显卡。引擎版本为 LuaSTG Sub 0.21.129。
 
-主菜单仅保留：roguelike模式、查看录像、按键设置、其他设置、退出游戏。
+主菜单提供 roguelike模式、顺序模式、查看录像、按键设置、其他设置、退出游戏。
+顺序模式按当前保留卡集的原作阶段进行：每作Lunatic/Extra/Phantasm各自独立，永夜抄Final A/B分开；文花帖按原作Level 1–10/Extra分场景。
+此模式没有血量倍率或阶段强化，保留生命与Bomb；中Boss战期间道中时间轴继续前进，到原作等待点才停止，错过的增援不会从头补播。
+关卡背景使用原作STD模型、镜头与ANM，符卡背景沿用原作ANM；原曲从PCM/WAV压成Ogg，保留采样率、声道和循环点。
 roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后重新洗牌继续。
 可选择永夜抄、红魔乡、妖妖梦、风神录，以及 Lunatic、Extra/Phantasm、Last Word、Boss / 道中。
 高级选项默认收起，默认勾选四作 Lunatic 的非符和符卡；Extra/Phantasm、Last Word、道中、时符默认不勾选。
