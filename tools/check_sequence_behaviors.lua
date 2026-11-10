@@ -48,26 +48,30 @@ for _,row in ipairs(rows) do if row.callbacks[2]==3 then missile=row;break end e
 check(missile and missile.speed==-2,'永夜抄导弹按SHT保留最初向下的速度')
 object.EnemyNontjtDo=function() end
 local shot=New(P.classes.shot,p,missile)
-check(shot.vy<0,'导弹先从自机下方弹出')
+check(shot.original_vy<0,'导弹先从自机下方弹出')
 for _=1,9 do shot.class.frame(shot) end
-check(shot.vy>0,'导弹逐帧加速后向上飞，不会一直下沉')
+check(shot.original_vy>0,'导弹逐帧加速后向上飞，不会一直下沉')
 p.__slow_flag=true;P.updateOptions(p);local laser
 for _,row in ipairs(P.data(8,'ply01as').levels[6].shots) do if row.callbacks[2]==5 then laser=row;break end end
-shot=New(P.classes.shot,p,laser);shot.original_rows=P.rowsFor(p);p.original_rows=shot.original_rows
+p.original_shot_time=0;P.shoot(p);shot=p.original_fire_slots[laser.frame].owner
+shot.class.frame(shot);shot.class.frame(shot)
 local option=p.original_options[1]
-check(near(shot.x,option[1]+laser.x) and near(shot.y,option[2]+208),'爱丽丝激光中心在子机上方208像素')
+check(near(shot.x,option[1]+laser.x) and near(shot.y,option[2]+218),'爱丽丝回调的208像素偏移之后仍需积分SHT初速10')
 check(shot.b==224 and not shot.vm.follow and near(shot.vm.rotation[3],math.pi/2),'激光保持448像素及ANM原生旋转')
-for _=1,6 do shot.class.frame(shot) end
-check(#shot.history==6 and shot.history[1][2]>shot.y,'爱丽丝激光按源回调保存向上漂移的残影')
+for _=1,5 do shot.class.frame(shot) end
+check(#shot.history==5 and shot.history[2][2]>shot.y,'爱丽丝首帧保留空历史，后续旧残影向上漂移')
+P.resolveShotHits()
 local regionHits=0;local hit=P.hitEnemy
 object.EnemyNontjtDo=function(fn) fn({_live=true,colli=true,hp=100,x=shot.x,y=shot.y,a=0,b=0}) end
 P.hitEnemy=function(_,damage) check(damage==1,'爱丽丝残影各段伤害为原始1点');regionHits=regionHits+1 end
-shot.original_age=7;shot.class.frame(shot)
-check(regionHits==3,'六个历史位置生成隔帧三段残影判定')
-regionHits=0;p.__shoot_flag=false
+shot.original_age=6;shot.class.frame(shot)
+P.resolveShotHits()
+check(regionHits==3,'五个历史位置生成隔帧三段残影判定')
+regionHits=0;p.__shoot_flag=false;p.original_shot_time=-1;shot.original_trail_stopped=true
 P.hitEnemy=function(_,damage) check(damage==laser.damage,'激光释放后的消退阶段保留原伤害');regionHits=regionHits+1 end
 shot.class.frame(shot)
-check(regionHits==1 and shot.original_fade>0,'松开射击后保留主激光判定，不再建立残影区域')
+P.resolveShotHits()
+check(regionHits==1,'回调停止后的ANM消退阶段保留主激光判定')
 P.hitEnemy=hit;object.EnemyNontjtDo=function() end
 for _,machine in ipairs(P.machines(8)) do
     p,s=start(8,machine.id,'th08_lunatic_b');p.__slow_flag=true;P.updateOptions(p)

@@ -195,6 +195,11 @@ local function DoFrame()
         if SaveResume then SaveResume.afterLogic() end
         return
     end
+    -- 永夜抄符卡决死窗口只推进自机决策，冻结道中、敌弹和射击计时。
+    if SequenceResources and SequenceResources.deathbombFrame and SequenceResources.deathbombFrame() then
+        if SaveResume then SaveResume.afterLogic() end
+        return
+    end
     if GameNet then GameNet.beforeLogic() end
     if GameRevive.active() and ext.GetPauseMenuOrder() then
         stage.group.frame_pause(stage.current_stage)
@@ -231,6 +236,10 @@ local function DoFrame()
     end
     if GameRank then GameRank.beforeObjects() end
     ObjFrame()
+    if SequenceResources and SequenceResources.enabled() then
+        SequenceResources.resolveShotHits()
+        SequenceResources.flushDamage()
+    end
     if GameRank then GameRank.afterObjects() end
     ext.boss_ui:frame()
     if nopause or stage.nopause then

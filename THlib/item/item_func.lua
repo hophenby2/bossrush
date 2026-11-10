@@ -102,8 +102,8 @@ function item.TweakScore(s)
 end
 local TweakScore = item.TweakScore
 
-function item.PlayerGraze()
-    if SequenceResources and SequenceResources.enabled() then return SequenceResources.graze() end
+function item.PlayerGraze(...)
+    if SequenceResources and SequenceResources.enabled() then return SequenceResources.graze(...) end
     local var = lstg.var
     var.graze = var.graze + 1
     if SearchStageLevel[9] then

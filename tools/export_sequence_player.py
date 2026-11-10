@@ -25,7 +25,8 @@ def sht(path, game):
         character=int(path.stem[2:4])
         out.update(hitbox=(2.0,3.5)[character],attract=(5.0,7.0)[character],
                    collect=(20.0,24.0)[character],focus_collect=(50.0,59.0)[character])
-        out['options'] = [list(struct.unpack_from('<2f', raw, p)) for p in range(0x20, 0x110, 8)]
+        # 两组各10个Float3（法向0x20、聚焦0x98），不能按Float2连续读进z字段。
+        out['options'] = [list(struct.unpack_from('<2f', raw, p)) for p in range(0x20, 0x110, 12)]
     else:
         out.update(zip(('bombs', 'deathbomb', 'hitbox', 'graze', 'attract', 'collect'),
                        (*struct.unpack_from('<f', raw, 4), *struct.unpack_from('<i', raw, 8),
@@ -33,6 +34,8 @@ def sht(path, game):
         out.update(zip(('poc', 'speed', 'slow'), struct.unpack_from('<3f', raw, 0x20 if game == 7 else 0x1c)[::1] if game == 7 else
                        (struct.unpack_from('<f', raw, 0x1c)[0], *struct.unpack_from('<2f', raw, 0x24))))
         if game == 7: out['cherryPenalty'] = struct.unpack_from('<f', raw, 0x1c)[0]
+        out['diagonal'],out['diagonal_slow'] = struct.unpack_from('<2f',raw,0x2c)
+        if game == 8: out['item_speed'] = struct.unpack_from('<f',raw,0x34)[0]
     for i in range(count):
         pos, power = struct.unpack_from('<Ii', raw, base + i*8)
         rows = []
@@ -57,7 +60,8 @@ def sht(path, game):
             assert interval > 0, (path, pos)
             rows.append(dict(interval=interval, frame=frame, x=x, y=y, hx=hx, hy=hy,
                              angle=-math.degrees(angle), speed=speed, damage=damage,
-                             option=option, kind=kind, shot=shot, animation=animation, callbacks=list(callbacks)))
+                             option=option, kind=kind, shot=shot, animation=animation, sound=sound, callbacks=list(callbacks)))
+            if game == 10: rows[-1]['hit'] = hit
             pos += 0x38 if game == 8 else 0x34
         else: raise ValueError((path, '缺少射击表终止符'))
         out['levels'].append({'power': power, 'shots': rows})
@@ -83,7 +87,7 @@ def th06(source):
                 elif 'MARISA_B_ORB' in fields[11]: anim = 68+int(fields[11][-1])
                 shots.append(dict(zip(('interval','frame','x','y','hx','hy'), numbers),
                                   angle=angle, speed=float(fields[7].rstrip('f')), damage=int(fields[8]),
-                                  option=int(fields[9]),kind=kind,animation=anim,callbacks=[0,kind,0,0]))
+                                  option=int(fields[9]),kind=kind,animation=anim,sound={'SOUND_SHOOT':0,'NO_SOUND':-1}[fields[12]],callbacks=[0,kind,0,0]))
             levels.append({'power': [0,8,16,32,48,64,80,96,127][int(rank)-1], 'shots': shots})
         result[name.lower()] = {'speed': 4 if name.startswith('Reimu') else 5, 'slow': 2 if name.startswith('Reimu') else 2.5,
                                 'bombs': 3, 'deathbomb': 6, 'hitbox': 2.5, 'graze': 48, 'collect': 12, 'attract': 8,

@@ -7,6 +7,9 @@ function T.install()
     local results,errors={},{}
     local current
     local drops,hits,killed={},{},{}
+    local audit={}
+    local decision
+    local background_wait=0
     local spawn,hit=SequenceResources.spawnItem,SequenceResources.hitEnemy
     SequenceResources.spawnItem=function(kind,...)
         local o=spawn(kind,...)
@@ -55,7 +58,7 @@ function T.install()
         f:write(Serialize{completed=#results,expected=#entries,results=results,errors=errors});f:close()
     end
     local function launch()
-        index=index+1;current=entries[index];frames=0;drops={};hits={};killed={};opening={}
+        index=index+1;current=entries[index];frames=0;drops={};hits={};killed={};opening={};audit={};decision=nil;background_wait=0
         if not current then done=true;save();return end
         setupOpening()
         OriginalSequence.start(current.key,current.machine)
@@ -66,6 +69,12 @@ function T.install()
             KeyState.shoot=probe~='background' and probe~='hud';KeyState.slow=math.floor(frames/120)%2==1
             KeyState.spell=not probe and (frames==30 or frames==400)
             KeyState.left=false;KeyState.right=false;KeyState.up=false;KeyState.down=false
+            if probe=='audit' then
+                KeyState.shoot=frames%90<45
+                KeyState.left=frames%240<40;KeyState.right=frames%240>=80 and frames%240<120
+                KeyState.up=frames%240>=160 and frames%240<180;KeyState.down=frames%240>=200 and frames%240<220
+            end
+            if probe=='decision' then KeyState.shoot=false;KeyState.slow=false;KeyState.spell=frames==354 end
             if probe=='bombs' then KeyState.slow=frames>=570 and frames<1050 or frames>=1530 end
             if probe=='continue' then
                 KeyState.shoot=false;KeyState.slow=false
@@ -90,18 +99,38 @@ function T.install()
             for _=1,(probe and frames>=300 and frames<312 and 1 or 20) do
                 DoFrame();mask(mask_fader)
                 if not current and index==0 and stage.current_stage and stage.current_stage.stage_name=='menu' then
-                    for _,e in ipairs(probe and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
+                    for _,e in ipairs(probe and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' and probe~='audit' and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
                         for i,m in ipairs(SequenceResources.machines(e[1])) do
                             if (probe~='hud' and probe~='continue' or i==1) and (probe~='continue' and probe~='bombs' or e[1]~=95) then entries[#entries+1]={key=e[2],machine=m.id,game=e[1]} end
                         end
                     end
-                    if probe and probe~='opening' and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' then for i=#entries,2,-1 do entries[i]=nil end end
+                    if probe=='decision' then
+                        entries={}
+                        for _,m in ipairs(SequenceResources.machines(8)) do entries[#entries+1]={key='th08_lunatic_b',machine=m.id,game=8} end
+                    end
+                    if probe and probe~='opening' and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' and probe~='audit' and probe~='decision' then for i=#entries,2,-1 do entries[i]=nil end end
                     launch();break
                 end
                 if current and SequenceResources.state() and not stage.next_stage then
                     frames=frames+1
                     if player and IsValid(player) then player.protect=600 end
                     local s=SequenceResources.state()
+                    -- 风神录续关会在本帧ResetPool，下一帧任务才重建背景。
+                    if IsValid(stage.current_stage.sequence_background) then background_wait=0
+                    else background_wait=background_wait+1 end
+                    assert(background_wait<100,'当前机体开局没有重建原作背景')
+                    if probe=='audit' and s.game~=95 then
+                        local powers=s.game==10 and {0,19,20,39,40,59,60,79,80,99,100} or {0,7,8,15,16,31,32,47,64,96,128}
+                        s.power=powers[math.min(#powers,math.floor(frames/80)+1)];SequenceResources.sync()
+                        local count=0
+                        for o in pairs(player.original_shots or {}) do if IsValid(o) then
+                            count=count+1
+                            assert(o.audit_post_x==nil or math.abs(o.x-o.audit_post_x)<.00001 and math.abs(o.y-o.audit_post_y)<.00001,('自机弹被引擎重复积分：帧%d, 位移%.3f/%.3f, 速度%.3f/%.3f, pause=%s'):format(frames,o.x-(o.audit_post_x or o.x),o.y-(o.audit_post_y or o.y),o.vx,o.vy,tostring(o.pause)))
+                            assert(o.vm.data.archive==player.original_archive,'自机弹跨角色读取ANM')
+                        end end
+                        assert(count<=({[6]=80,[7]=96,[8]=128,[10]=128})[s.game],'超过原作自机弹池')
+                        if frames%40==0 then audit[#audit+1]={frame=frames,power=s.power,slow=player.__slow_flag,shot_clock=player.original_shot_time,shots=count} end
+                    end
                     if frames==1 then
                         s.power=probe=='opening' and 0 or s.game==10 and 80 or 128;SequenceResources.sync()
                         if probe=='opening' then player.x=-144 end
@@ -112,7 +141,7 @@ function T.install()
                         s.faith=234560;s.faith_timer=130;s.gauge=-8500;s.human=-85;s.time=1234
                         lstg.var.score=123456780;lstg.var.graze=456;SequenceResources.sync()
                     end
-                    if probe=='hud' and frames==120 and s.game~=95 then
+                    if (probe=='hud' or probe=='decision') and frames==120 and s.game~=95 then
                         local chapter=OriginalSequence.catalog.chapters(current.key,lstg.var.player_name)[1]
                         for _,row in ipairs(chapter.units) do
                             local part=row.unit.sc_group[1]
@@ -120,6 +149,18 @@ function T.install()
                                 New(part.boss,{part.card});break
                             end
                         end
+                    end
+                    if probe=='decision' and frames==350 then
+                        s.bombs=1;s.time=1000;player.protect=0;SequenceResources.collide(player,{})
+                        assert(player.original_death_freeze,'符卡决死没有冻结弹幕')
+                        decision={timer=stage.current_stage.timer,window=player.original_deathbomb,time=s.time}
+                    elseif probe=='decision' and frames>350 and frames<355 then
+                        assert(stage.current_stage.timer==decision.timer,'决死窗口仍推进关卡计时')
+                        assert(player.original_deathbomb==decision.window-(frames-350),'决死输入窗口没有逐帧递减')
+                    elseif probe=='decision' and frames==356 then
+                        assert(s.bomb and player.death==0 and not player.original_death_freeze,'接受决死后未恢复正常帧')
+                        assert(player.__slow_flag and stage.current_stage.timer>decision.timer,'决死后没有按原作切换形态并恢复关卡')
+                        assert(s.bomb.time==2,'接受决死帧重复执行了自机更新')
                     end
                     if probe=='opening' then
                         for _,row in ipairs(opening) do
@@ -172,7 +213,7 @@ function T.install()
                         end
                         results[#results+1]={game=current.game,machine=current.machine,frames=frames,
                             power=s.power,bombs=s.bombs,bomb_count=s.bomb_count,score=lstg.var.score,
-                            drops=drops,hit_sources=hits,killed=killed,opening=openingResult}
+                            drops=drops,hit_sources=hits,killed=killed,opening=openingResult,audit=audit}
                         save();launch();break
                     end
                 end
@@ -191,6 +232,7 @@ function T.install()
             end
             if probe=='continue' and current and stage.current_stage.sequence_continue then Snapshot('snapshot/continue-'..current.game..'.png') end
             if probe=='behavior' and current and frames>=380 and frames<400 then Snapshot('snapshot/behavior-'..current.game..'-'..current.machine..'.png') end
+            if probe=='audit' and current and frames>=940 and frames<960 then Snapshot('snapshot/audit-'..current.game..'-'..current.machine..'.png') end
             if probe and current and frames>=300 and frames<312 then Snapshot('snapshot/probe-'..frames..'.png') end
             if current and frames>=500 and frames<520 then
                 Snapshot('snapshot/sequence-'..current.game..'-'..current.machine..'.png')

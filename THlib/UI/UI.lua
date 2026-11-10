@@ -5,7 +5,7 @@ ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
 ui.OriginalHUD=dofile('THlib/UI/original_hud.lua')
-ui.version = "26.11.11-sequence-fix"
+ui.version = "26.11.11-sequence-audit"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
 LoadImage("hint.bonusfail", "hint", 0, 64, 256, 64)

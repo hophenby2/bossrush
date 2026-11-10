@@ -45,7 +45,7 @@ local function play(scene,track)
 end
 function M.enter(scene,chapter,kind,row)
     local game,key,stageTrack,bossTrack=location(chapter,row)
-    local changed=scene.sequence_background_key~=game..'/'..key
+    local changed=scene.sequence_background_key~=game..'/'..key or not scene.sequence_background or not IsValid(scene.sequence_background)
     -- 文花帖每幕独立启动原场景，EX的四个地点也各自取SceneSelect指定背景。
     if changed or game==95 and row then
         scene.sequence_background=New(M.background.class,game,key)
@@ -96,6 +96,8 @@ end
 function M.stop(scene)
     if scene.sequence_music then StopMusic(scene.sequence_music);scene.sequence_music=nil end
     scene.sequence_background=nil
+    scene.sequence_background_key=nil
+    scene.sequence_music_fade=nil
 end
 M.location=location
 return M

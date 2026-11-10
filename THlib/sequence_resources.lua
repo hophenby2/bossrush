@@ -95,7 +95,7 @@ local function pointExtend(s)
     if extra then return ({200,666,9999})[n+1] or 99999 end
     return ({100,250,500,800,1100,9999})[n+1] or 9999+(n-5)*500
 end
-function P.collect(kind,y,full)
+function P.collect(kind,y,full,poolIndex)
     local s=assert(P.state());local game=s.game
     local m=P.machine(game,s.machine);local d=game~=95 and P.data(game,m.primary) or {}
     local sourceY=224-y;local poc=d.poc or 128
@@ -110,7 +110,7 @@ function P.collect(kind,y,full)
             elseif game==10 then P.collect('faith_small',y,full) end
         else
             s.power_chain=0;s.power=min(limit,s.power+gain);if game~=10 then P.addScore(kind=='full' and 1000 or 10) end
-            if s.power==limit and game<10 and P.clear then P.clear('power') end
+            if s.power==limit and game<10 and P.fullPowerTransition then P.fullPowerTransition(kind) end
         end
         if game==10 then s.faith_timer=min(130,s.faith_timer+(kind=='power_big' and 20 or 60)) end
     elseif kind=='point' or kind=='point_small' or kind=='point_full' then
@@ -122,8 +122,8 @@ function P.collect(kind,y,full)
             value=high and max(50000,s.cherry) or 50000-floor(max(0,sourceY-poc))*100+max(0,s.cherry-50000)/5
         elseif game==8 then
             value=high and var().pointrate or var().pointrate/2-floor(sourceY-poc)*floor(var().pointrate/1000)
+            if kind=='point_small' then value=floor(value/100)*10 end
             if s.human<=P.humanThreshold() then value=value*2 end
-            if kind=='point_small' then value=value/10 end
         elseif game==10 then
             sourceY=224-player.y
             value=(kind=='point_full' or sourceY<144) and s.faith or s.faith/2-floor((sourceY-144)*.003289473708719015*(s.faith*.05-5000))
@@ -155,13 +155,14 @@ function P.collect(kind,y,full)
         if not s.time_gauge_suppression or s.time_gauge_suppression<=0 then P.addGauge(player and player.__slow_flag and 111 or -111) end
     elseif kind=='star' then
         P.addScore(s.bomb and 100 or 300+floor((var().graze or 0)/40)*10)
-        if game==7 then P.cherry(s.bomb and 10 or 20,true) end
+        if game==7 then P.cherry(s.bomb and 10 or 20,not s.bomb or (poolIndex or 0)%2==0) end
     elseif kind=='bomb' then s.bombs=min(8,s.bombs+1)
     elseif kind=='life' then s.lives=min(8,s.lives+1);PlaySound('extend',.5) end
     P.sync()
 end
-function P.graze()
+function P.graze(other,new,x,y)
     local s=assert(P.state())
+    if s.game==10 then return end
     local n=s.game==8 and (s.human<=P.humanThreshold() and 3 or s.human<=-20 and 2 or 1) or 1
     if not s.bomb then var().graze=var().graze+n;s.stage_graze=(s.stage_graze or 0)+n end
     if s.game==6 then P.addScore(500)
@@ -174,8 +175,9 @@ function P.graze()
         if s.human>=P.youkaiThreshold() then
             for _,b in ipairs(boss_group or {}) do
                 if IsValid(b) and b.is_combat then
-                    P.collect('time',player.y,true)
-                    if b.is_sc then P.collect('time',player.y,true) end
+                    local count=1
+                    if b.is_sc and not (other and other.IsLaser) then count=P.machine(8,s.machine).id:sub(1,4)=='team' and 3 or 2 end
+                    for _=1,count do P.spawnItem('time',x or other and other.x or player.x,y or other and other.y or player.y,{apex=true}) end
                     break
                 end
             end
@@ -187,7 +189,7 @@ function P.youkaiThreshold() local s=P.state();return s and s.machine=='solo3' a
 function P.isYoukai(p)
     if not p or p.original_game~=8 then return false end
     local m=p.original_machine
-    return m.id:sub(1,4)=='solo' and m.shot==1 or m.id:sub(1,4)=='team' and p.__slow_flag==true
+    return m.id:sub(1,4)=='solo' and m.shot==1 or m.id:sub(1,4)=='team' and p.original_is_youkai==true
 end
 function P.addGauge(n,force)
     local s=P.state();if not s or s.game~=8 or s.bomb and not force then return end
@@ -198,14 +200,16 @@ function P.addGauge(n,force)
     s.gauge=max(lo,min(hi,s.gauge+n));s.human=s.gauge/100
 end
 function P.gaugeStep(p)
-    local s=P.state();if not s or s.game~=8 or s.bomb then return end
-    if s.last_focus~=p.__slow_flag then s.last_focus=p.__slow_flag;s.focus_frames=0;s.gauge_ramp=0 end
-    s.focus_frames=(s.focus_frames or 0)+1
+    local s=P.state();if not s or s.game~=8 then return end
+    if s.last_focus~=p.__slow_flag then s.last_focus=p.__slow_flag;s.focus_frames=0;s.gauge_ramp=0
+    else s.focus_frames=(s.focus_frames or 0)+1 end
+    if s.focus_frames>=7 then p.original_is_youkai=p.__slow_flag end
+    if s.bomb or p.dialog or p.death~=0 then return end
     if s.focus_frames<30 then return end
-    if p.__shoot_flag then
+    if p.original_shot_time>=0 then
         if s.gauge_delay>0 then s.gauge_delay=s.gauge_delay-1
         else
-            P.addGauge((P.isYoukai(p) and 1 or -1)*(s.gauge_ramp>300 and 21 or floor(s.gauge_ramp/15)))
+            P.addGauge((p.__slow_flag and 1 or -1)*(s.gauge_ramp>300 and 21 or floor(s.gauge_ramp/15)))
             s.gauge_ramp=s.gauge_ramp+1
         end
     else

@@ -65,6 +65,7 @@ function P.bombInput(p,key,previous,death)
     else s.bombs=max(0,s.bombs-(game==8 and death and min(2,s.bombs) or 1)) end
     s.bomb_count=s.bomb_count+1
     s.bomb={time=0,spec=spec,x=p.x,y=p.y,objects={}}
+    if game==8 then s.bomb.focus=death and not key.slow or not death and key.slow==true end
     if game==8 and spec.character==5 then
         local v=p.original_options[1];s.bomb.option_x,s.bomb.option_y=v and v[1] or p.x,v and v[2] or p.y
     end
@@ -94,20 +95,8 @@ end
 local function region(p,x,y,w,h,damage,circle)
     local b=P.state().bomb
     b.regions[#b.regions+1]={x=x,y=y,w=w,h=h,circle=circle}
-    local hits=0
-    enemyEach(function(o)
-        local hit=circle and Dist(x,y,o.x,o.y)<w+(o.a or 0) or not circle and math.abs(o.x-x)<w/2+(o.a or 0) and math.abs(o.y-y)<h/2+(o.b or 0)
-        if hit then P.hitEnemy(o,damage,true);hits=hits+damage end
-    end)
-    if circle then P.clear('bomb',x,y,w)
-    else
-        object.BulletIndesDo(function(o)
-            if live(o) and o.imgclass and o.colli and math.abs(o.x-x)<w/2 and math.abs(o.y-y)<h/2 then
-                if OriginalBulletVisual and OriginalBulletVisual.can_cancel and not OriginalBulletVisual.can_cancel(o) then return end
-                P.spawnItem(P.game()==10 and 'faith_minor' or 'star',o.x,o.y,{auto=true});object.Del(o)
-            end
-        end)
-    end
+    local hits=P.queueHitRegion(x,y,w,h,damage,true,circle)
+    if circle then P.clear('bomb',x,y,w) else P.clear('bomb',x,y,nil,{w,h}) end
     return hits
 end
 local function orb(b,p,x,y,a,v,damage,radius,mode)

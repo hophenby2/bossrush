@@ -250,7 +250,7 @@ function grazer:colli(other, new, x, y)
     if other.group ~= GROUP.ENEMY then
         self:other_colli(other)
         if (not (other._graze) or other._inf_graze) or (other.IsLaser and new) then
-            item.PlayerGraze()
+            item.PlayerGraze(other,new,x,y)
             PlaySound("graze", 0.5, self.x / 120)
             table.insert(self.gp, { x = self.x, y = self.y,
                                     a = ran:Float(0, 360), v = ran:Float(4, 5),

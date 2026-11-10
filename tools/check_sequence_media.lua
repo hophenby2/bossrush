@@ -39,4 +39,17 @@ check(signals[1]==5 and #played==0 and stage.current_stage.sequence_music_fade.d
 M.advance(owner,479,state);check(#played==0,'479帧前不提前播放反魂蝶曲')
 M.advance(owner,480,state);check(played[1]=='ORIG_th07_13b','480帧按原ECL开始反魂蝶曲')
 M.advance(owner,600,state);check(#played==1,'同一原始信号只触发一次')
+local create,valid=New,IsValid;local created=0
+New=function() created=created+1;return {_live=true} end
+IsValid=function(o) return o and o._live end
+local scene={};local chapter={level=33,name='1'}
+M.enter(scene,chapter,'stage');local original=scene.sequence_background
+M.enter(scene,chapter,'boss')
+check(created==1 and scene.sequence_background==original,'同一关转入Boss时保持STD时间轴')
+original._live=false;M.enter(scene,chapter,'stage')
+check(created==2 and scene.sequence_background~=original,'重试同一关时不能复用已被ResetPool回收的背景')
+M.stop(scene)
+check(scene.sequence_background_key==nil and scene.sequence_background==nil,'退出时同时清理背景对象与缓存key')
+M.enter(scene,chapter,'stage');check(created==3,'同一stage表第二次开局必须重建STD')
+New,IsValid=create,valid
 print('原作背景/原曲覆盖、循环参数与换曲检查通过：'..n)

@@ -166,6 +166,10 @@ local function spawn_left(o,game)
     elseif game==10 then return o.tb and o.tb.spawn or o.th10_spawn_left or 0 end
     return 0
 end
+function V.spawn_remaining(o)
+    local c=o.imgclass
+    return c and c.native_game and spawn_left(o,c.native_game) or 0
+end
 function V.can_cancel(o,force)
     -- 妖妖梦isProjectile敌机仍由EnemyManager管理，不在BulletManager消弹范围。
     -- 此标记的实体由自己的ECL寿命或所属阶段清理，命中/擦过无敌自机也不提前退场。
@@ -256,7 +260,11 @@ function V.step_anm(o)
     if o._original_cancel_pending and spawn_left(o,o.imgclass.native_game)==0 then
         local into=o._original_cancel_pending
         o._original_cancel_pending=nil
-        if into=='Kill' then New(item.obj.faith_minor,o.x,o.y) end
+        local sequence=o._sequence_cancel_item
+        o._sequence_cancel_item=nil
+        if sequence and SequenceResources and SequenceResources.enabled() then
+            if sequence.kind then SequenceResources.spawnItem(sequence.kind,o.x,o.y,{auto=true}) end
+        elseif into=='Kill' then New(item.obj.faith_minor,o.x,o.y) end
     end
 end
 function V.render_anm(o)
