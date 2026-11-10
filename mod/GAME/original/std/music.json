@@ -529,16 +529,6 @@
     "pcm_sha256": "8fa215a372d4358b8ad2769dd73685678e19f3e2d9442a20aa71b51057033057",
     "ogg_sha256": "f3e192f6a58c267cade17e5ae552af5f542225d4b76ded5a5ad77b5a89e8399f"
   },
-  "th10_02": {
-    "rate": 44100,
-    "channels": 2,
-    "loop_start": 986112,
-    "loop_end": 3718784,
-    "pcm_bytes": 14875136,
-    "ogg_bytes": 1360719,
-    "pcm_sha256": "1262141172fefdc9c8ae0a68ba93f63176164640806dd490bb3828b929170318",
-    "ogg_sha256": "fd50608eabd123948fd0d4796a8b9c26ae1bb0a05fb7f342992ed81e66378c67"
-  },
   "th10_03": {
     "rate": 44100,
     "channels": 2,
@@ -649,24 +639,34 @@
     "pcm_sha256": "82e8a202af8ce8726db2e0daa7dd5aa2a581bd1a5b247eef29c30964ae42197a",
     "ogg_sha256": "d5149760b94b053233c259f2fa9a03171231f91c78ce7c8d6a20e7194eda6487"
   },
-  "th10_13": {
+  "th10_00": {
     "rate": 44100,
     "channels": 2,
-    "loop_start": 2001664,
-    "loop_end": 3855488,
-    "pcm_bytes": 15421952,
-    "ogg_bytes": 1355795,
-    "pcm_sha256": "f380e28d69195669584999a0efedc0086b1f91f438a4dc2d8187a7574f8b57f2",
-    "ogg_sha256": "97053aeba083796ed0336765bfc8aa069fae493e74f79eb2baf2eead45286f5c"
+    "loop_start": 679680,
+    "loop_end": 6001152,
+    "pcm_bytes": 24004608,
+    "ogg_bytes": 2233166,
+    "pcm_sha256": "577c037a40df52a0b09a8c40d097bdd13b5a8f870fe8d75162c23836397bdba6",
+    "ogg_sha256": "f2b7f41c8a3cf2d765b99dcc901c0c0f2cf23103d7fd3abde84fdb63e78f4ae1"
   },
-  "th10_14": {
+  "th10_01": {
     "rate": 44100,
     "channels": 2,
-    "loop_start": 2782849,
-    "loop_end": 3981929,
-    "pcm_bytes": 15927716,
-    "ogg_bytes": 1437154,
-    "pcm_sha256": "676d0bc63a552014cf0733860632522805d7caad0dd21c309569067170cfc9f8",
-    "ogg_sha256": "7dbb52d60dde914ff0bea3ddacc0ada65c5a2748c6ec9cca2f32c6316c6f6da1"
+    "loop_start": 60800,
+    "loop_end": 1967104,
+    "pcm_bytes": 7868416,
+    "ogg_bytes": 714702,
+    "pcm_sha256": "41218f78815e6414816cf0e609fa0aae2ceee9662e54f04c44aa0b391ffb5a41",
+    "ogg_sha256": "9d389c4ac35e20dc1a6e9a2e4430ad17d723abac7466d894b803a1e0c830d933"
+  },
+  "th10_16": {
+    "rate": 44100,
+    "channels": 2,
+    "loop_start": 220296,
+    "loop_end": 7609744,
+    "pcm_bytes": 30438976,
+    "ogg_bytes": 2773075,
+    "pcm_sha256": "ded58d305c16f3c03f0ab92c0932ab38353197ee0caabca5d58a690f9a7f4973",
+    "ogg_sha256": "b82b5934610527a439d787639440b3236e4580319b012d4ba76d3d76e43982d8"
   }
 }

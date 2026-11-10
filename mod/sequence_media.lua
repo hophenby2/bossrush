@@ -26,7 +26,11 @@ local function location(chapter,row)
     key=key or ('stage'..(game==10 and ('%02d'):format(index) or index))
     local data=dofile('mod/GAME/original/std/'..game..'_'..key..'.lua')
     local stageTrack,bossTrack
-    if game==10 then stageTrack=('th10_%02d'):format(index*2);bossTrack=('th10_%02d'):format(index*2+1)
+    -- 风神录的文件名顺序不同于曲目序号：th10_02是标题曲；原作StageDescriptor指定路径。
+    if game==10 then
+        local routes={{'th10_00','th10_01'},{'th10_03','th10_04'},{'th10_05','th10_06'},
+            {'th10_07','th10_08'},{'th10_09','th10_10'},{'th10_11','th10_12'},{'th10_15','th10_16'}}
+        stageTrack,bossTrack=unpack(assert(routes[index]))
     else stageTrack,bossTrack=data.music[1],data.music[2] end
     return game,key,stageTrack,bossTrack
 end

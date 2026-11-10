@@ -176,23 +176,38 @@ local function continuousChapter(scene,chapter,source)
         else index=index+1 end
     end
 end
-function S.run(scene,key)
+function S.run(scene,key,first)
     local entry=assert(S.catalog.get(key))
     local chapters=S.catalog.chapters(key,lstg.var.player_name)
-    lstg.var.sequence_run={key=key,title=entry.title,chapter=0,completed=0,total=#chapters,road_time=0}
+    if not first then lstg.var.sequence_run={key=key,title=entry.title,chapter=0,completed=0,total=#chapters,road_time=0} end
     for index,chapter in ipairs(chapters) do
-        local run=lstg.var.sequence_run
-        run.chapter,run.chapter_name,run.road_time=index,chapter.name,0
-        scene.level=entry.level
-        if SequenceResources then SequenceResources.beginChapter(chapter) end
-        media(scene,chapter,'stage')
-        local source=roadSource(chapter)
-        if source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
-        run.completed=index
-        if SequenceResources then SequenceResources.endChapter(index) end
-        if scene.sequence_finished then return end
+        if not first or index>=first then
+            local resources=SequenceResources and SequenceResources.state()
+            chapter=S.catalog.chapterForRun(entry,chapter,lstg.var.player_name,resources and resources.continues or 0)
+            local run=lstg.var.sequence_run
+            run.chapter,run.chapter_name,run.road_time=index,chapter.name,0
+            scene.level=entry.level
+            if SequenceResources then SequenceResources.beginChapter(chapter) end
+            media(scene,chapter,'stage')
+            local source=roadSource(chapter)
+            if source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
+            run.completed=index
+            if SequenceResources then SequenceResources.endChapter(index) end
+            resources=SequenceResources and SequenceResources.state()
+            if resources and resources.game==8 and resources.clock>=12 and index<#chapters then S.finish(scene,false);return end
+            if scene.sequence_finished then return end
+        end
     end
     S.finish(scene,true)
+end
+function S.restartChapter(scene)
+    local index=lstg.var.sequence_run.chapter
+    task.Clear(scene);ResetPool();boss_group={}
+    scene.sequence_background_key=nil;scene.sequence_background=nil;scene.sequence_last_card=nil
+    if OriginalSequenceMedia then OriginalSequenceMedia.stop(scene) end
+    SequenceResources.spawnPlayer()
+    if ui.OriginalHUD then ui.OriginalHUD.start() end
+    task.New(scene,function() S.run(scene,lstg.var.sequence_key,index) end)
 end
 function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
@@ -203,6 +218,8 @@ function S.start(key,machine)
         lstg.var.sequence_player=selected.id
         lstg.var.player_name=selected.route
         lstg.var.rep_player=selected.name
+        local frames=scoredata and scoredata.OriginalSequencePlayFrames and scoredata.OriginalSequencePlayFrames[game] or 0
+        lstg.var.sequence_continue_limit=game==7 and (frames>=14*216000 and 5 or frames>=7*216000 and 4 or 3) or 3
     end
     lstg.var.rogue_run,lstg.var.sequence_run,lstg.var.timeslow=nil,nil,nil
     lstg.var.current_system=''
@@ -228,7 +245,7 @@ for _,entry in ipairs(S.catalog.entries) do
         if self.sequence_finished then return end
         local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
         local resources=SequenceResources and SequenceResources.state()
-        if resources and resources.lives<0 or not resources and misses>=S.MISS_LIMIT then S.finish(self,false);return end
+        if not resources and misses>=S.MISS_LIMIT then S.finish(self,false);return end
         stage.group.frame(self)
         if OriginalSequenceMedia then OriginalSequenceMedia.frame(self) end
     end

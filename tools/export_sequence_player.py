@@ -21,6 +21,10 @@ def sht(path, game):
     out = {'sha256': hashlib.sha256(raw).hexdigest(), 'levels': []}
     if game == 10:
         out.update(zip(('speed', 'slow'), struct.unpack_from('<2f', raw, 0x10)))
+        # PlayerInitialize在载入SHT后覆盖这三个头字段；原版th10.exe的476FA0..476FBF。
+        character=int(path.stem[2:4])
+        out.update(hitbox=(2.0,3.5)[character],attract=(5.0,7.0)[character],
+                   collect=(20.0,24.0)[character],focus_collect=(50.0,59.0)[character])
         out['options'] = [list(struct.unpack_from('<2f', raw, p)) for p in range(0x20, 0x110, 8)]
     else:
         out.update(zip(('bombs', 'deathbomb', 'hitbox', 'graze', 'attract', 'collect'),

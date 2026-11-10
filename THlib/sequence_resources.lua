@@ -53,8 +53,10 @@ function P.reset()
     local extra=not var().sequence_key:find('lunatic',1,true)
     local d=game~=95 and P.data(game,m.primary) or {}
     local s={game=game,machine=m.id,lives=2,bombs=d.bombs or 3,power=extra and (game==10 and 80 or 128) or 0,
-        points=0,stage_points=0,extends=0,power_chain=0,cherry=0,cherry_max=game==7 and 400000 or 0,
-        cherry_plus=0,border=0,faith=game==10 and 50000 or 0,faith_timer=0,faith_decay=90,time=0,human=0,gauge=0,gauge_ramp=0,gauge_delay=0,bomb_count=0}
+        points=0,stage_points=0,extends=0,power_chain=0,cherry=game==7 and extra and (var().sequence_key:find('phantasm',1,true) and 300000 or 200000) or 0,
+        cherry_max=game==7 and (extra and 400000 or 300000) or 0,
+        cherry_plus=0,border=0,faith=game==10 and 50000 or 0,faith_timer=0,faith_decay=90,time=0,clock=0,continues=0,
+        continue_limit=var().sequence_continue_limit or 3,human=0,gauge=0,gauge_ramp=0,gauge_delay=0,bomb_count=0}
     if game==95 then s.power,s.bombs,s.lives=0,0,9 end
     var().original_resources=s
     var().power,var().faith,var().sakura,var().man=s.power,s.faith,s.cherry_plus,0
@@ -120,7 +122,7 @@ function P.collect(kind,y,full)
             value=high and max(50000,s.cherry) or 50000-floor(max(0,sourceY-poc))*100+max(0,s.cherry-50000)/5
         elseif game==8 then
             value=high and var().pointrate or var().pointrate/2-floor(sourceY-poc)*floor(var().pointrate/1000)
-            if s.human<=-80 then value=value*2 end
+            if s.human<=P.humanThreshold() then value=value*2 end
             if kind=='point_small' then value=value/10 end
         elseif game==10 then
             sourceY=224-player.y
@@ -147,7 +149,10 @@ function P.collect(kind,y,full)
         elseif game==7 then P.collect('cherry',y,full)
         else P.collect('power',y,full) end
     elseif kind=='time' then
-        s.time=s.time+1;P.addScore(s.stage_points>=2000 and 10000 or max(100,floor(s.points/2)*10))
+        s.time=s.time+1;s.total_time=(s.total_time or 0)+1
+        if s.total_time%2==1 then var().pointrate=(var().pointrate or 300000)+10 end
+        P.addScore(s.bomb and 100 or s.stage_points>=2000 and 10000 or max(100,floor(s.points/2)*10))
+        if not s.time_gauge_suppression or s.time_gauge_suppression<=0 then P.addGauge(player and player.__slow_flag and 111 or -111) end
     elseif kind=='star' then
         P.addScore(s.bomb and 100 or 300+floor((var().graze or 0)/40)*10)
         if game==7 then P.cherry(s.bomb and 10 or 20,true) end
@@ -184,8 +189,8 @@ function P.isYoukai(p)
     local m=p.original_machine
     return m.id:sub(1,4)=='solo' and m.shot==1 or m.id:sub(1,4)=='team' and p.__slow_flag==true
 end
-function P.addGauge(n)
-    local s=P.state();if not s or s.game~=8 or s.bomb then return end
+function P.addGauge(n,force)
+    local s=P.state();if not s or s.game~=8 or s.bomb and not force then return end
     local m=P.machine(8,s.machine);local lo,hi=-10000,10000
     if m.id=='team3' then lo=-5000
     elseif m.id=='solo3' then lo,hi=-5000,5000
@@ -194,6 +199,9 @@ function P.addGauge(n)
 end
 function P.gaugeStep(p)
     local s=P.state();if not s or s.game~=8 or s.bomb then return end
+    if s.last_focus~=p.__slow_flag then s.last_focus=p.__slow_flag;s.focus_frames=0;s.gauge_ramp=0 end
+    s.focus_frames=(s.focus_frames or 0)+1
+    if s.focus_frames<30 then return end
     if p.__shoot_flag then
         if s.gauge_delay>0 then s.gauge_delay=s.gauge_delay-1
         else
@@ -223,20 +231,25 @@ end
 function P.miss(p)
     local s=assert(P.state());s.lives=s.lives-1;var().dead=var().dead+1
     if s.game==95 then return end
-    local old=s.power
-    s.power=max(0,s.power-(s.game==10 and 64 or s.game==8 and 16 or s.game==7 and 16 or 16))
+    if s.game~=10 then s.power=s.lives<0 and 0 or max(0,s.power-16) end
     s.bombs=P.data(s.game,P.machine(s.game,s.machine).primary).bombs or 3
-    s.cherry=max(0,s.cherry-50000);s.cherry_plus=0;s.border=0;s.power_chain=0;s.human=0
-    if s.game==10 then s.faith=max(50000,s.faith-floor((s.faith-50000)/30)*10) end
-    if P.spawnItem then
-        for i=1,(s.game==10 and 7 or 6) do
-            P.spawnItem((s.game==10 and (i==2 or i==4 or i==6) or s.game~=10 and i==1) and 'power_big' or 'power',p.x,p.y,{death=true})
-        end
+    -- TH07 UpdateDeath只扣Cherry，不动Cherry+；封顶和倍率来自本机体SHT。
+    if s.game==7 and s.lives>=0 then
+        local m=P.machine(7,s.machine);local d=P.data(7,m.primary)
+        local penalty=min(m.character==2 and 60000 or 100000,floor(s.cherry*d.cherryPenalty))
+        s.cherry=max(0,s.cherry-floor(penalty/10)*10)
     end
+    s.power_chain=0;s.human=0;s.gauge=0
+    if s.game==10 then s.faith=max(50000,s.faith-floor((s.faith-50000)/30)*10) end
+    if s.game==10 then p.original_drop_delay=3;p.original_drop_origin={x=p.x,y=p.y}
+    elseif P.deathDrops then P.deathDrops(p) end
     P.sync()
 end
 function P.beginChapter(chapter)
-    local s=P.state();if s then s.stage_points=0;s.stage_graze=0;s.stage_name=chapter and chapter.name or '1' end
+    local s=P.state();if s then
+        s.stage_points=0;s.stage_graze=0;s.stage_frames=0;s.stage_name=chapter and chapter.name or '1'
+        if s.game==8 then s.time=0 end
+    end
 end
 function P.endChapter(index)
     local s=P.state();if not s or s.game==95 then return end
@@ -254,6 +267,10 @@ function P.endChapter(index)
         local base=({['1']=1000000,['2']=1500000,['3']=2000000,['4A']=2500000,['4B']=2500000,['5']=3000000,['6A']=4000000,['6B']=6000000,EX=6660000})[s.stage_name] or 0
         score=base+(s.stage_graze or 0)*50+s.stage_points*5000+s.time*100
         if last then score=score+s.lives*2500000+s.bombs*500000 end
+        if not extra and stage<6 then
+            local requirement=({['1']=3000,['2']=7200,['3']=8800,['4A']=9999,['4B']=8500,['5']=9999})[s.stage_name]
+            s.clock=min(12,(s.clock or 0)+(s.time>=(requirement or 99999) and 1 or 2))
+        end
     end
     P.addScore(score*(extra and 2 or 1.5))
 end

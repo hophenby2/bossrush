@@ -4,6 +4,12 @@ local M=OriginalSequenceMedia
 local n=0
 local function check(v,label) assert(v,label);n=n+1 end
 local function exists(path) local f=io.open(path,'rb');if f then f:close();return true end;return false end
+local sourceRoutes={{'1','th10_00','th10_01'},{'2','th10_03','th10_04'},{'3','th10_05','th10_06'},
+    {'4','th10_07','th10_08'},{'5','th10_09','th10_10'},{'6','th10_11','th10_12'},{'EX','th10_15','th10_16'}}
+for _,row in ipairs(sourceRoutes) do
+    local _,_,road,boss=M.location{level=33,name=row[1]}
+    check(road==row[2] and boss==row[3],'风神录按原作StageDescriptor路径选曲')
+end
 for _,entry in ipairs(OriginalSequence.catalog.entries) do
     for _,chapter in ipairs(OriginalSequence.catalog.chapters(entry.key,'reimu_player')) do
         for _,row in ipairs(chapter.units) do

@@ -191,6 +191,10 @@ local function DoFrame()
     if SaveResume and not SaveResume.beforeLogic() then return end
     --刷新输入
     GetInput()
+    if SequenceResources and SequenceResources.continueFrame and SequenceResources.continueFrame(stage.current_stage) then
+        if SaveResume then SaveResume.afterLogic() end
+        return
+    end
     if GameNet then GameNet.beforeLogic() end
     if GameRevive.active() and ext.GetPauseMenuOrder() then
         stage.group.frame_pause(stage.current_stage)
@@ -457,6 +461,7 @@ function RenderFunc()
         ext.CameraAfter()
         if perf then perf.begin('render.ui.after') end
         ui_drawing:Afterrender()
+        if SequenceResources and SequenceResources.renderContinue then SequenceResources.renderContinue(stage.current_stage) end
         if perf then perf.finish('render.ui.after') end
 
         --DrawCollider()

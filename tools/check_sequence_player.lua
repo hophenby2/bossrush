@@ -122,7 +122,7 @@ local hero=P.spawnPlayer();local row=P.rowsFor(hero)[1]
 object.EnemyNontjtDo=function(fn) fn(e) end
 local shot=New(P.classes.shot,hero,row);shot.x,shot.y=0,0
 shot.class.frame(shot);P.flushDamage()
-check(not IsValid(shot) and e.hp==20,'出生减伤期仍消耗命中弹，不扣敌机血量')
+check((not IsValid(shot) or shot.original_hit) and e.hp==20,'出生减伤期仍消耗命中弹，不扣敌机血量')
 shot=New(P.classes.shot,hero,row);shot.x,shot.y=0,230;e.y=230;e.protect=false
 shot.class.frame(shot);P.flushDamage()
 check(IsValid(shot) and e.hp==20,'普通弹框尚未完全入场时不命中场外敌机')

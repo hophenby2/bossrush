@@ -147,10 +147,34 @@ F.effect=Class(object,{
             if o.pulse<=0 then object.RawDel(o);return end
             o.vm.scale[1],o.vm.scale[2]=2*o.pulse/o.duration,2*o.pulse/o.duration
         end
-        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65) then
+        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65 or o.bomb_radial) then
             local v=o.vm
             o.geometry={count=math.max(3,math.floor(v.vars[10000] or 24)),wave=v.vars[10001] or 0,
                 radius=v.position[1],secondary=v.position[2],width=v.scale[1],angle=v.rotation[3],secondary_angle=v.rotation[2]}
+            if o.bomb_radial then
+                local k,t=o.kind,o.age;local g=o.geometry
+                if k==42 or k==43 or k==44 or k==45 then
+                    local f=1-(1-t/40)^2
+                    g.radius=256*f;g.count=k==42 and 64 or k==45 and 8 or 48
+                    g.wave=k==42 and 5 or 0;g.width=t<40 and 8 or 8+(t-40)*(k==42 and 2 or 1.5)
+                    g.secondary=k==42 and (t<40 and 0 or 64*f) or k==45 and 0 or 128*f
+                    g.secondary_angle=k==43 and math.pi/4 or k==44 and -math.pi/4 or 0
+                elseif k==48 then
+                    local f=t<30 and 0 or ((t-30)/30)^4
+                    g.radius,g.count,g.width,g.secondary,g.secondary_angle=192,48,3+80*f,.0001+192*f,math.pi/2
+                elseif k==36 or k==37 then
+                    g.count=k==36 and 44 or 54;g.wave,g.secondary=0,0
+                    g.radius=t<40 and 192-384*(1-t/40)^2 or 192
+                    g.width=t<40 and 88-t*2 or 8
+                    g.angle=(o.initial_angle or math.pi/4)+(k==37 and t*math.pi/180 or 0)
+                elseif k==53 then
+                    g.count,g.wave,g.radius,g.width=32,4,192*(1-(1-math.min(30,t)/30)^2),64
+                    g.secondary,g.secondary_angle=64,0
+                    v.alpha[1]=math.max(0,255*(1-(t/30)^4))
+                    v.color={255,math.max(0,255*(1-t/30)),math.max(0,255*(1-t/30))}
+                    if t>=30 then object.RawDel(o);return end
+                end
+            end
         end
         local source=o.rate_source or valid(o.phase) and o.phase._native_rate_source
         local rate=source and source.fm or 1
@@ -160,7 +184,7 @@ F.effect=Class(object,{
         if finished(o.vm) then object.RawDel(o) end
     end,
     render=function(o)
-        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65) then ring(o)
+        if o.game==8 and (o.kind==40 or o.kind==56 or o.kind==58 or o.kind==65 or o.bomb_radial) then ring(o)
         elseif o.point then
             if not o.projected_scale then return end
             local v=o.vm

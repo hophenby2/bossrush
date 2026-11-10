@@ -66,6 +66,12 @@ function T.install()
             KeyState.shoot=probe~='background' and probe~='hud';KeyState.slow=math.floor(frames/120)%2==1
             KeyState.spell=not probe and (frames==30 or frames==400)
             KeyState.left=false;KeyState.right=false;KeyState.up=false;KeyState.down=false
+            if probe=='bombs' then KeyState.slow=frames>=570 and frames<1050 or frames>=1530 end
+            if probe=='continue' then
+                KeyState.shoot=false;KeyState.slow=false
+                local menu=stage.current_stage and stage.current_stage.sequence_continue
+                if menu then KeyState.up=menu.time==34;KeyState.shoot=menu.time==39 end
+            end
             if probe=='opening' and player then
                 KeyState.slow=false
                 for _,row in ipairs(opening) do
@@ -84,12 +90,12 @@ function T.install()
             for _=1,(probe and frames>=300 and frames<312 and 1 or 20) do
                 DoFrame();mask(mask_fader)
                 if not current and index==0 and stage.current_stage and stage.current_stage.stage_name=='menu' then
-                    for _,e in ipairs(probe and probe~='hud' and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
+                    for _,e in ipairs(probe and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
                         for i,m in ipairs(SequenceResources.machines(e[1])) do
-                            if probe~='hud' or i==1 then entries[#entries+1]={key=e[2],machine=m.id,game=e[1]} end
+                            if (probe~='hud' and probe~='continue' or i==1) and (probe~='continue' and probe~='bombs' or e[1]~=95) then entries[#entries+1]={key=e[2],machine=m.id,game=e[1]} end
                         end
                     end
-                    if probe and probe~='opening' and probe~='hud' then for i=#entries,2,-1 do entries[i]=nil end end
+                    if probe and probe~='opening' and probe~='hud' and probe~='behavior' and probe~='continue' and probe~='bombs' then for i=#entries,2,-1 do entries[i]=nil end end
                     launch();break
                 end
                 if current and SequenceResources.state() and not stage.next_stage then
@@ -128,6 +134,18 @@ function T.install()
                         SequenceResources.spawnItem('power',player.x,player.y)
                         SequenceResources.spawnItem('point',player.x,player.y)
                     end
+                    if probe=='continue' and frames==120 then
+                        s.lives=0;SequenceResources.miss(player);player.death=90;player.original_respawn=s.game==10 and 30 or 60
+                    end
+                    if probe=='bombs' and (frames==90 or frames==570 or frames==1050 or frames==1530) then
+                        s.bombs=8;s.power=s.game==10 and 100 or 128
+                        assert(SequenceResources.bombInput(player,{spell=true,slow=frames==570 or frames==1530},{spell=false},frames>=1050),'原作Bomb档位未施放')
+                    end
+                    if probe=='continue' and frames==280 then
+                        assert(s.continues==1 and s.lives==2,'没有通过原作续关菜单恢复残机')
+                        assert(not stage.current_stage.sequence_continue,'续关菜单未结束')
+                        if s.game==10 then assert(lstg.var.sequence_run.road_time<100,'风神录续关没有重启当前道中') end
+                    end
                     if probe=='drops' and frames>=200 and frames<=900 and frames%20==0 then
                         object.EnemyNontjtDo(function(o)
                             if IsValid(o) and o._original_source and not o.protect and o.hp>0 and not o._bosssys then
@@ -136,7 +154,7 @@ function T.install()
                             end
                         end)
                     end
-                    if frames>=1000 then
+                    if frames>=(probe=='bombs' and 2000 or 1000) then
                         if probe=='drops' then
                             assert(#killed>0,'没有击破真实道中敌机')
                             assert((drops.power or 0)+(drops.point or 0)+(drops.faith or 0)>0,'真实敌机击破未生成道具')
@@ -166,6 +184,13 @@ function T.install()
     function RenderFunc()
         local ok,err=xpcall(function()
             render()
+            if probe=='bombs' and current then
+                for i,start in ipairs({200,680,1160,1640}) do
+                    if frames>=start and frames<start+20 then Snapshot('snapshot/bomb-'..current.game..'-'..current.machine..'-'..i..'.png') end
+                end
+            end
+            if probe=='continue' and current and stage.current_stage.sequence_continue then Snapshot('snapshot/continue-'..current.game..'.png') end
+            if probe=='behavior' and current and frames>=380 and frames<400 then Snapshot('snapshot/behavior-'..current.game..'-'..current.machine..'.png') end
             if probe and current and frames>=300 and frames<312 then Snapshot('snapshot/probe-'..frames..'.png') end
             if current and frames>=500 and frames<520 then
                 Snapshot('snapshot/sequence-'..current.game..'-'..current.machine..'.png')

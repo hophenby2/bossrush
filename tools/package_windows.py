@@ -85,6 +85,8 @@ def package(version,optimize=False):
 主菜单提供 roguelike模式、顺序模式、查看录像、按键设置、其他设置、退出游戏。
 顺序模式按当前保留卡集的原作阶段进行：每作Lunatic/Extra/Phantasm各自独立，永夜抄Final A/B分开；文花帖按原作Level 1–10/Extra分场景。
 此模式没有血量倍率或阶段强化，保留生命与Bomb；中Boss战期间道中时间轴继续前进，到原作等待点才停止，错过的增援不会从头补播。
+此模式使用各作原生角色/机体、火力和Bomb（风神录为灵击）、掉落物、樱点/森罗结界、人妖槽/时间点与信仰系统；横屏采用原作界面。
+残机耗尽后按上下选择续关或结束，Z确认、X结束。红魔乡/妖妖梦原地续关，永夜抄受时刻和Final B限制，风神录从本关开头重打；Extra/Phantasm不可续关。
 关卡背景使用原作STD模型、镜头与ANM，符卡背景沿用原作ANM；原曲从PCM/WAV压成Ogg，保留采样率、声道和循环点。
 roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后重新洗牌继续。
 可选择永夜抄、红魔乡、妖妖梦、风神录，以及 Lunatic、Extra/Phantasm、Last Word、Boss / 道中。
@@ -94,7 +96,7 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 普通非符和符卡撑满时限即掉落强化，中弹或使用 Bomb 不取消该超时奖励。
 主菜单连续输入88888开放练习；关卡与符卡练习仅收录TH31–TH35，名称统一为“xxx原作”。
 练习列表与整关按已移植内容的原作阶段排序，被中Boss隔开的道中分别收录；妖妖梦三道中分为前半、中段、后半。
-初始十条命，答题复活已禁用；生命耗尽时结算，可重开或返回标题并保存录像。
+练习/随机局初始十条命，答题复活已禁用；顺序局使用原作残机和续关规则。
 
 阶段强化三选一：左侧蓝色增加 Bomb 恢复，中间紫色增加火力，右侧黄色减小自机判定。
 开局三枚 Bomb，上限九枚；恢复速度为100时每三十秒恢复一枚。按 X 消耗一枚释放 Bomb。
@@ -117,7 +119,7 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 
     if optimize:
         guide=guide.replace('完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。','精简离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。')
-        guide+='\n本版修复铃仙停弹朝向、妖梦缓时与一念无量劫变白效果；新增Boss红白线段血圈，红弧为剩余血量、白弧为已扣血量。\n'
+        guide+='\n本版修复顺序局原曲选择、风神录死亡P点轨迹、永夜抄导弹/激光、魔炮绘制及Cherry/Cherry+规则，并接入原作续关。\n'
         guide+='\n精简范围：保留TH31–TH35及当前随机模式。已删除关卡的旧录像不在兼容范围，原录像文件不改写。\n核心图片无损；非核心适度压缩；音效压缩为Ogg，关卡脚本、资源尺寸和Alpha不变。\n'
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for relative,path in sorted(files.items()): archive.write(path,name+'/'+relative)

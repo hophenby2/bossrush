@@ -19,7 +19,10 @@ def game_root(root,game):
     code='th095' if game==95 else f'th{game:02}'
     matches=[p for p in root.iterdir() if p.is_dir() and p.name.startswith('['+code+']')]
     assert len(matches)==1,(game,matches)
-    return matches[0]/'th06' if game==6 else matches[0]
+    directory=matches[0]/'th06' if game==6 else matches[0]
+    if game!=6 and not (directory/'thbgm.dat').exists():
+        directory=next(directory.rglob('thbgm.dat')).parent
+    return directory
 
 def export_std(path,game):
     data=path.read_bytes();count,_,instances_offset,script_offset=struct.unpack_from('<HHII',data)
@@ -136,7 +139,7 @@ def main():
             (dest/(str(game)+'_'+path.stem+'.lua')).write_text('-- 原作STD模型、实例和镜头指令；由tools/export_sequence_media.py导出。\nreturn '+anm.lua(data)+'\n')
             needed.update(m for m in data.get('music',[]) if m)
         if game==7:needed.add('th07_13b')
-        if game==10:needed={f'th10_{i:02}' for i in range(2,16)}
+        if game==10:needed={f'th10_{i:02}' for i in range(17)}-{ 'th10_02','th10_13','th10_14' }
         if game==95:needed={f'th095_{i:02}' for i in range(1,5)}|{'th09_08_2'}
         tracks[game]=needed
     if not a.background_only:

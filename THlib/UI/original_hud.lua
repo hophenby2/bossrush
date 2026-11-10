@@ -50,11 +50,17 @@ local function text(game,value,x,y,sx,sy,rgb,alpha)
         x=x+advance
     end
 end
-local function digits(game,value,x,y,count,rgb,scale,alpha)
+local function digits(game,value,x,y,count,rgb,scale,alpha,step)
     local base=game==7 and 132 or 136
     local str=('%0'..count..'d'):format(max(0,floor(value)))
     scale=scale or 1
-    for i=1,#str do sprite(game,'ascii',base+tonumber(str:sub(i,i)),x+(i-1)*7*scale,y,scale,scale,rgb,alpha) end
+    local leading=true
+    for i=1,#str do
+        local id=base+tonumber(str:sub(i,i));local s=A.load(game,'ascii').sprites[id]
+        -- AsciiManager的数字VM以中心定位；底部Cherry面板本身才以左上角定位。
+        if str:sub(i,i)~='0' or i==#str then leading=false end
+        if not leading then sprite(game,'ascii',id,x+(i-1)*(step or 7*scale)-s[4]*scale/2,y-s[5]*scale/2,scale,scale,rgb,alpha) end
+    end
 end
 local function rect(x1,x2,y1,y2,rgb,alpha)
     local ox,oy=origin();rgb=rgb or WHITE
@@ -78,7 +84,7 @@ end
 function H.timeThreshold(s)
     -- TH08 GameManager.cpp的g_TimeRequirementParams，顺序入口只提供Lunatic/Extra。
     if not lstg.var.sequence_key:find('lunatic',1,true) then return 0 end
-    return ({['1']=3000,['2']=7200,['3']=8800,['4A']=9999,['4B']=9999,['5']=8500,['6A']=9999,['6B']=9999})[s.stage_name or '1'] or 0
+    return ({['1']=3000,['2']=7200,['3']=8800,['4A']=9999,['4B']=8500,['5']=9999,['6A']=0,['6B']=0})[s.stage_name or '1'] or 0
 end
 local function add(o,key,v) o[key]=v;o.vms[#o.vms+1]=v;return v end
 local function newUI(o)
@@ -114,7 +120,8 @@ H.controller=Class(object,{
     end,
     frame=function(o)
         if not H.enabled() then return end
-        for _,v in ipairs(o.vms) do A.step(v,1) end
+        -- TH07只在初始化时执行cherryBorderActive；逐帧播放会把标签放大到数字上。
+        for _,v in ipairs(o.vms) do if v~=o.border then A.step(v,1) end end
         local s=SequenceResources.state()
         local faded=player and player.y < -176 and player.x < -96
         if faded~=o.faded then
@@ -184,7 +191,7 @@ local function cherry(o,s)
         local pulse=s.cherry_plus%4000;if pulse>=2000 then pulse=4000-pulse end
         local c=s.cherry_plus*192/50000+pulse*64/2000;color={255,c,c};scale=1.41
     end
-    digits(7,s.cherry_plus,p[1]+53,p[2]+2,5,color,scale,alpha)
+    digits(7,s.cherry_plus,p[1]+53+(s.border>0 and 2 or 0),p[2]+2-(s.border>0 and 2 or 0),5,color,scale,alpha,s.border>0 and 10 or 7)
     if s.border>0 then at(o.border,p[1]+24,p[2]+8,alpha/255) end
 end
 local function humanGauge(o,s)

@@ -20,6 +20,15 @@ add('th10_extra','风神录 · Extra',33,'extra')
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
+function C.chapterForRun(entry,chapter,player,continues)
+    -- 永夜抄通常流程续关后转Final A，不能继续沿预选Final B路线进辉夜。
+    if entry.level==29 and chapter.name=='6B' and continues>0 then
+        for _,candidate in ipairs(C.chapters('th08_lunatic_a',player)) do
+            if candidate.name=='6A' then return candidate end
+        end
+    end
+    return chapter
+end
 local function marisa(player)
     return player=='marisa_player' or player=='Marisa'
 end

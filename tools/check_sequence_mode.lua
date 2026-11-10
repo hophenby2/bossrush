@@ -13,6 +13,8 @@ local function ids(chapters)
     return out
 end
 check(#C.entries==12,'五作的实际难度/场景入口各自独立，永夜抄Final A/B分开')
+local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
+check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
     check(C.get(e.key)==e,'用key查询入口，不依赖菜单选项编号')
     for _,player in ipairs({'reimu_player','marisa_player'}) do
