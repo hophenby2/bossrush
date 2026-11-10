@@ -57,7 +57,7 @@ def main():
                             assert int(np.max(np.abs(x[:,:,:3]-y[:,:,:3])))<=2,('透明RGB误差超过2级',path)
                             counts['noncore_lossy_transparent']+=1
     if a.output:a.output.write_text(json.dumps(counts,ensure_ascii=False,indent=2)+'\n')
-    print('APK全量图片校验通过：',counts)
+    print(('Windows' if a.windows else 'APK')+'全量图片校验通过：',counts)
 
 
 if __name__=='__main__':main()

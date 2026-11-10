@@ -1,8 +1,5 @@
 name: Windows精简发行包验证
 on:
-  push:
-    branches: [slim]
-    paths: [windows/release-check.json]
   workflow_dispatch:
 permissions:
   contents: read

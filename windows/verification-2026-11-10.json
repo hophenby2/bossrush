@@ -1,0 +1,42 @@
+{
+  "package": "BossRushHD-Windows-x64-26.11.8v2-slim.zip",
+  "bytes": 141903762,
+  "sha256": "d4919c742292ddf7521170015db46898e3202425759f865c8b14423841996c07",
+  "source_files_checked": 1851,
+  "audio_checked": 172,
+  "aliases": 114,
+  "x64_engine_and_dlls": true,
+  "font_bitmap_dependencies_kept": true,
+  "user_data_excluded": true,
+  "crc": true,
+  "build": {
+    "file": "BossRushHD-Windows-x64-26.11.8v2-slim.zip",
+    "bytes": 141903762,
+    "sha256": "d4919c742292ddf7521170015db46898e3202425759f865c8b14423841996c07",
+    "logical_images": 977,
+    "lossy_images": 119,
+    "deduplicated_images": 114,
+    "converted_audio": 160,
+    "font_bitmaps_kept": [
+      "THlib/UI/font/replay.png",
+      "THlib/UI/font/score_new.png",
+      "THlib/enemy/bonus2.png"
+    ],
+    "engine_sha256": "7673c55ee2cd1daa1a25c3b3ec0547b290f461c1e8acb52af044fe58f86b5f0b",
+    "source_materials_changed": false
+  },
+  "core_images_rgba_exact": 787,
+  "noncore_exact": 71,
+  "noncore_lossy_opaque": 57,
+  "noncore_lossy_transparent": 62,
+  "image_dimensions_and_alpha_unchanged": true,
+  "native_startup_verified": false,
+  "native_limitations": [
+    "本机Wine测试未进入Windows图形引擎初始化",
+    "GitHub Windows任务未开始，账号计费问题阻止执行"
+  ],
+  "github_check": {
+    "run": "https://github.com/hophenby2/bossrush/actions/runs/42798655743",
+    "message": "The job was not started because your account is locked due to a billing issue."
+  }
+}

@@ -1,0 +1,30 @@
+Windows x64精简发行说明（2026-11-10）
+
+文件：BossRushHD-Windows-x64-26.11.8v2-slim.zip
+大小：141,903,762字节（135.33 MiB）。完整解压后运行LuaSTGSub.exe。
+含LuaSTG Sub 0.21.129 x64、d3dcompiler_47.dll、xaudio2_9redist.dll、游戏与引擎许可证。
+不包含玩家User/、replay/、日志及构建缓存。
+
+采用与安卓相同的资源策略：787张核心图逐像素无损；57张非核心不透明图Q90/Q95；
+62张非核心透明图保留PNG，RGB每通道误差最多2，尺寸和Alpha全部相同。
+其余71张非核心图仍保持无损。160个WAV音效转为Ogg，12个保持PCM。
+重复贴图去重114份，原作脚本、符卡ID及逻辑资源名称不变。
+
+Windows引擎源码与实际exe均包含WebP解码支持；图片和音频均按文件头选择解码器。
+压缩资源保留原PNG/WAV逻辑文件名，原文件枚举和声音索引不变。
+windows/assets.lua只解析重复贴图别名，为EnumFiles/FindFiles补齐逻辑文件名及FileExist。
+HGE字体的3张Bitmap由C++内部读取，不经过Lua；这些实体图片保留，不参与路径去重。
+贴图加载仍保留原资源名，每份纹理的采样器状态独立。
+
+验证：ZIP CRC、1851个游戏资源、977张图片、172个WAV逻辑音效、字体Bitmap依赖、
+实际exe的x64 PE头与完整DLL/许可证检查通过；路径别名、枚举和用户目录隔离的LuaJIT检查通过。
+没有声称Windows图形引擎启动通过：本机Wine未进入初始化，GitHub Windows任务被账号计费问题阻止，
+任务在运行任何步骤之前即被拒绝。详细记录见verification-2026-11-10.json。
+Windows验证工作流改为手动触发，避免后续普通提交重复触发这个无法运行的任务。
+
+构建：python3 -m pip install -r android/requirements-assets.txt
+python3 tools/package_windows.py --engine-root <含exe和DLL的目录> --optimize-assets
+校验：python3 tools/check_windows_package.py android/dist/BossRushHD-Windows-x64-26.11.8v2-slim.zip
+Windows运行验收：python tools/run_windows_release.py <发行包.zip> --output <新的隔离验证目录>
+
+本包只保证保留关卡和当前随机模式的录像范围；已删除关卡的旧录像不兼容，原录像文件不改写。

@@ -27,6 +27,7 @@ def main():
         prefix=next(n[:-len('core.lua')] for n in z.namelist() if n.endswith('/core.lua'))
         assert not any('/User/' in '/'+n or '/replay/' in '/'+n for n in z.namelist())
         mapping=dict(re.findall(r'\["(.*?)"\]="(.*?)"',z.read(prefix+'windows/asset_aliases.lua').decode()))
+        assert z.read(prefix+'windows/assets.lua')==(a.root/'windows/assets.lua').read_bytes()
         for source in inputs(a.root):
             relative=source.relative_to(a.root).as_posix()
             payload=z.read(prefix+mapping.get(relative,relative))
