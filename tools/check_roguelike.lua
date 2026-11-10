@@ -30,7 +30,7 @@ boss.card.add=function(parts,level,label,id,...)
     _sc_pr_table[level]=_sc_pr_table[level] or {};table.insert(_sc_pr_table[level],unit)
 end
 dofile('mod/_editor_output.lua')
-for _,id in ipairs({'31','32','34','35','36'}) do dofile('mod/GAME/th'..id..'.lua') end
+for _,id in ipairs({'31','32','34','35'}) do dofile('mod/GAME/th'..id..'.lua') end
 local function random()
     local gen={value=1}
     function gen:Seed(v) self.value=v%2147483646+1 end
@@ -141,22 +141,9 @@ local th36=R.defaultFilters(nil,4);th36.stages={TH36=true}
 local disabled,disabledCount=R.buildPool(th36)
 check(#disabled==0 and disabledCount==0 and not R.copyFilters(th36).stages.TH36,'旧配置不能重新启用地灵殿')
 local historical,historicalCount=R.buildPool(nil,4)
-check(#historical==5 and historicalCount==503,'版本4录像保留五作503项')
+check(#historical==4 and historicalCount==410,'精简版不再载入地灵殿，版本4旧录像由内容入口拒绝')
 local only36,n36=R.buildPool(th36,4)
-check(#only36==1 and n36==93,'地灵殿含86阶段和7独立道中')
-local bosses,roads=0,0
-for _,entry in ipairs(only36[1].cards) do
-    check(entry.cardId<11101 or entry.cardId>11107,'地灵殿整关不伪装成道中入池')
-    if entry.kind=='road' then
-        roads=roads+1
-        check(_sc_pr_table[entry.level][entry.index].sc_group[1].card.th11_source.road_only,'道中入口显式剥离Boss')
-    else bosses=bosses+1 end
-end
-check(bosses==86 and roads==7,'地灵殿分类完整')
-th36.difficulties={extra=true};th36.encounters={road=true}
-local ex36,exCount=R.buildPool(th36,4)
-check(exCount==1 and ex36[1].cards[1].cardId==11207,'可只选地灵殿Extra道中')
-check(#R.draw(17,1,th36,4,true)==1,'单候选无限模式不跨池补抽')
+check(#only36==0 and n36==0,'精简版不存在地灵殿候选或资源占位')
 local _,version3=R.buildPool(nil,3)
 check(version3==410,'版本3保持四作410项')
 local _,version7=R.buildPool(nil,7)
@@ -165,7 +152,6 @@ local oldRoutes={
     {2,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:4395,TH34:3471,TH32:3955,TH34:3480,TH35:3648,TH31:392'},
     {3,17,'TH31:409,TH35:3602,TH32:3938,TH32:3912,TH34:3480,TH34:3411,TH32:3955,TH34:3446,TH35:3648,TH31:392'},
     {3,31415,'TH34:3480,TH31:462,TH32:3925,TH32:3982,TH32:3914,TH31:388,TH32:3932,TH34:4464,TH32:3956,TH34:3406'},
-    {4,17,'TH31:409,TH36:11004,TH34:3484,TH32:3912,TH35:3656,TH35:3662,TH34:4402,TH35:3651,TH35:3648,TH31:392'},
 }
 for _,row in ipairs(oldRoutes) do check(keys(R.draw(row[2],1,nil,row[1]))==row[3],'旧版本相同种子保持原路线') end
 check(not R.defaultFilters('dual').stages.TH36 and not R.defaultFilters('chain').stages.TH36,'历史双Boss/接续不扩大来源')

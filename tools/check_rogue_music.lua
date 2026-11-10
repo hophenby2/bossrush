@@ -6,7 +6,8 @@ musicList={}
 AddMusic=function(id,ending,length,name) musicList[id]={ending,length,name} end
 dofile('mod/music.lua')
 local P=dofile('mod/rogue_pool.lua')
-local options=P.defaults();options.cards.survival=true;options.encounters.road=true
+-- 曲库覆盖包含可选Extra，不让默认难度勾选影响九首曲目的回归。
+local options=P.defaults();options.difficulties.extra=true;options.cards.survival=true;options.encounters.road=true
 local pool=P.build(options)
 local M=dofile('mod/rogue_music.lua')
 local count=0

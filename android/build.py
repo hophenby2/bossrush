@@ -21,6 +21,7 @@ BUILD = ROOT / 'build'
 LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
+OPTIMIZE_ASSETS = False
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
 
@@ -179,6 +180,16 @@ def prepare_assets():
     destination.mkdir(exist_ok=True)
     paths = []
     dimensions = {}
+    image_variants = {}
+    optimized = {}
+    if OPTIMIZE_ASSETS:
+        from asset_optimizer import optimize_images
+        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')]
+        optimized, records = optimize_images(sources,CACHE/'lossless-images')
+        report = {str(p.relative_to(GAME)):r for p,r in records.items()}
+        write_utf8(BUILD/'asset-optimization.json',json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+        saved = sum(r['source_bytes']-r['packed_bytes'] for r in records.values())
+        print(f'无损贴图优化：{len(optimized)}张，入包原始资源减少{saved/1048576:.2f} MiB',flush=True)
     for name in ['THlib', 'Resources', 'mod', 'music', 'BadApple', 'shader',
                  'core.lua', 'launch.lua', 'manual', 'Update.txt']:
         source = GAME / name
@@ -189,7 +200,13 @@ def prepare_assets():
             relative = source.relative_to(GAME)
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            if source.suffix == '.lua':
+            if source in optimized:
+                native = relative.with_suffix('.webp')
+                target = destination/native
+                if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
+                shutil.copy2(optimized[source],target)
+                image_variants[relative.as_posix()]=native.as_posix()
+            elif source.suffix == '.lua':
                 write_utf8(target, source.read_text(encoding='utf-8-sig'))
             elif source.suffix.lower() == '.wav':
                 if not target.exists() or target.stat().st_mtime <= source.stat().st_mtime:
@@ -208,6 +225,7 @@ def prepare_assets():
                     header = image.read(24)
                 if header[:8] == b'\x89PNG\r\n\x1a\n':
                     dimensions[relative.as_posix()] = struct.unpack('>II', header[16:24])
+                    if source in optimized: dimensions[relative.with_suffix('.webp').as_posix()]=dimensions[relative.as_posix()]
     # assets 无目录遍历接口，用打包清单提供确定性枚举与大小写纠正。
     seen = {}
     for path in paths:
@@ -219,6 +237,9 @@ def prepare_assets():
     write_utf8(destination / 'asset_dimensions.lua', 'return {\n' + ''.join(
         '  [' + json.dumps(p, ensure_ascii=False) + ']={' + str(size[0]) + ',' + str(size[1]) + '},\n'
         for p, size in sorted(dimensions.items())) + '}\n')
+    write_utf8(destination/'asset_variants.lua','return {\n'+''.join(
+        '  ['+json.dumps(src,ensure_ascii=False)+']='+json.dumps(dst,ensure_ascii=False)+',\n'
+        for src,dst in sorted(image_variants.items()))+'}\n')
     copy_tree(ROOT / 'lua', destination / 'android')
     for script in (destination / 'android').glob('*.lua'):
         write_utf8(script, script.read_text(encoding='utf-8-sig'))
@@ -386,15 +407,17 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
-    global GAME
+    global GAME, OPTIMIZE_ASSETS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
+    parser.add_argument('--optimize-assets', action='store_true', help='对不透明PNG尝试RGBA像素一致的无损WebP，仅在入包时转换')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
     args = parser.parse_args()
+    OPTIMIZE_ASSETS = args.optimize_assets
     if args.game_root:
         GAME = args.game_root.resolve()
         if not (GAME / 'core.lua').is_file():

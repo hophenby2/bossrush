@@ -1393,6 +1393,10 @@ if path == "--all" then
         -- 列表里混着单引号（'08'），所以两种引号都要认
         for w in (block or ""):gmatch("[\"']([^\"']+)[\"']") do ids[#ids + 1] = w end
     end
+    if #ids==0 then
+        local content=io.open('mod/content.lua','rb')
+        if content then content:close();ids=dofile('mod/content.lua').stages end
+    end
     if #ids == 0 then
         print("FAIL: 没能从 mod/_editor_output.lua 里读出 StageID 列表（路径不对？在游戏根目录跑）")
         os.exit(1)
@@ -1434,6 +1438,10 @@ if path == "--all" then
     -- _editor_output.lua 要先载：全局的 global_obj / Create / WhiteScreen / _bullet
     -- 以及 _editor_class、_editor_boss 都在它里面建
     tryLoad("mod/_editor_output.lua")
+    if GameContent then
+        for _,id in ipairs({'06','07','08','095','10'}) do tryLoad('mod/BG/TH'..id..'/TH'..id..'_bg.lua') end
+        for _,id in ipairs({'06','07','08'}) do tryLoad('mod/GAME/original/shared_th'..id..'_background.lua') end
+    end
     for _, id in ipairs(ids) do
         tryLoad("mod/BG/TH" .. id .. "/TH" .. id .. "_bg.lua")
         tryLoad("mod/GAME/th" .. id .. ".lua")

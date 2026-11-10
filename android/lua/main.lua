@@ -175,6 +175,7 @@ local function start()
     if diagnosticsMode and (diagnosticsMode:match('^profile') or diagnosticsMode:match('^benchmark')) then
         load('game/android/performance_case.lua').install(diagnosticsMode)
     end
+    if diagnosticsMode and diagnosticsMode:match('^content') then load('game/android/content_check.lua').install(diagnosticsMode) end
     if diagnosticsMode and diagnosticsMode:match('combat') then load('game/android/combat_check.lua').install(diagnosticsMode) end
     if diagnosticsMode and diagnosticsMode:match('drops') then load('game/android/drops_check.lua').install(diagnosticsMode) end
     local pauseCache = load('game/android/pause_cache.lua')

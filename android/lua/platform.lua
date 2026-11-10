@@ -5,6 +5,10 @@ local originalOpen, originalRemove, originalRename = io.open, os.remove, os.rena
 local writable = fu:getWritablePath() .. 'bossrush/'
 fu:createDirectory(writable)
 local files = assert(loadstring(fu:getStringFromFile('game/asset_index.lua')))()
+local variants={}
+if fu:isFileExist('game/asset_variants.lua') then
+    variants=assert(loadstring(fu:getStringFromFile('game/asset_variants.lua')))()
+end
 local canonical, directories = {}, { [''] = true }
 for _, path in ipairs(files) do
     canonical[path:lower()] = path
@@ -35,7 +39,8 @@ function P.resolve(path)
     if path:sub(1, 1) == '/' then return path end
     if isWritable(path) then return writable .. path end
     if path:sub(1, 8) == 'android/' then return 'game/' .. path end
-    return 'game/' .. (canonical[path:lower()] or path)
+    local logical=canonical[path:lower()] or path
+    return 'game/' .. (variants[logical] or logical)
 end
 
 function P.exists(path)
@@ -145,6 +150,8 @@ end
 function os.remove(path) return originalRemove(P.resolve(path)) end
 function os.rename(source, destination) return originalRename(P.resolve(source), P.resolve(destination)) end
 function P.installNativeAPI()
+    -- Android/macOS文件系统直接使用UTF-8；录像沿用旧API名称，不能再转成Windows代码页。
+    __UTF8ToANSI=function(path) return path end
     function plus.DirectoryExists(path)
         path = P.normalize(path)
         return directories[path:lower()] or fu:isDirectoryExist(P.resolve(path))

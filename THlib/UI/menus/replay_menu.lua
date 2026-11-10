@@ -365,6 +365,10 @@ function replay_loader:frame()
             self.ctri()
             local slot = ext.replay.GetSlot(self.state1Selected)
             if slot ~= nil then
+                if GameContent and not GameContent.supportsReplay(slot) then
+                    New(SimpleNotice,self,'精简版录像提示',GameContent.replayMessage)
+                    PlaySound('invalid',.3);return
+                end
                 self.state = 1
                 self.state2Text = {}
                 self.state2Selected = 1

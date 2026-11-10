@@ -115,6 +115,10 @@ end
 ---@param path string @录像文件路径（可选）
 ---@param stageName string @关卡名称
 function stage.Set(mode, path, stageName)
+    if mode=='load' and GameContent and not GameContent.supportsReplay(plus.ReplayManager.ReadReplayInfo(path)) then
+        New(SimpleNotice,nil,'精简版录像提示',GameContent.replayMessage)
+        return false
+    end
     if not GameFeatures.resume and (mode == "resume" or mode == "load to save") then return end
     if GameNet and GameNet.host() and mode=="save" then
         mode="none";lstg.var.ran_seed=((os.time()%65536)*877)%65536

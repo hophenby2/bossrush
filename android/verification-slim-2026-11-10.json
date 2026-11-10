@@ -1,0 +1,54 @@
+{
+  "base_commit": "50964994ee986da64bbf4559b6b925b55e02b588",
+  "branch": "slim",
+  "date": "2026-11-10",
+  "apk_bytes": {
+    "full": 571960674,
+    "pruned_before_image_optimization": 253019844,
+    "optimized": 216798445
+  },
+  "reduction_percent": 62.1,
+  "deleted_resource_files": 682,
+  "lossless_opaque_webp_images": 223,
+  "unchanged_stage_sha256": {
+    "31": "960c2fd7dfdd596bc50b4436702d57ef8f8afb3281f7d57625c88f2223e6070a",
+    "32": "e4435462bbad3193c4c1e4c034cc578c743359d0701b059cbec398a66e04a85b",
+    "33": "780f32a8ca5331003ba6c4d910c503eba6f04e2830d8225365c2ef834cb7de5d",
+    "34": "67dcf3d78f8d916df0c3efa729b07c4386657008c519b6b468e32530d04d960a",
+    "35": "1f44e76df1132f465d39ddadca5c471b630773126801fece4b589e75891cb8b7"
+  },
+  "native": {
+    "device": "Android 16 ARM64 emulator",
+    "serial": "emulator-5554",
+    "stages": [
+      "TH31",
+      "TH32",
+      "TH33",
+      "TH34",
+      "TH35"
+    ],
+    "practice_entry_cases": 10,
+    "frames_per_entry": 300,
+    "saved_replay_cases": 2,
+    "replay_frames_verified": 180,
+    "battle_case": 3606,
+    "battle_frames": 900,
+    "state_checkpoint": "c083314723a62d3059c7404da8a80a5511083a6e3a3a56d20700f65c262f8480",
+    "image_frames_compared": [
+      630,
+      720,
+      780
+    ],
+    "image_result": "战斗区逐像素一致；排除顶部120和底部60个原生像素内的动态HUD"
+  },
+  "validation_counts": {
+    "original_practice": 21468,
+    "content_boundary": 597,
+    "roguelike": 14585,
+    "music": 5502,
+    "anm": 550
+  },
+  "compatibility": "保留TH31–TH35和当前随机模式录像；拒绝已删除关卡、历史TH36卡池和不可开局的旧系统组合；不改写原录像",
+  "optimized_apk_sha256": "50f312a742aef706140d5814d6971e60e6fca2c91a6368c0eecd697d41edbed2",
+  "deleted_files_total": 683
+}

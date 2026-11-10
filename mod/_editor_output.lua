@@ -15,7 +15,7 @@ _infinite = 4294967296
 
 
 
-DoFile('mod\\BackGroundLoading.lua')
+
 
 ColorList = { { 250, 128, 114 },
               { 218, 112, 214 },
@@ -43,18 +43,16 @@ WhiteScreen = Class(object, {
     end
 })
 
--- TH30 复用 TH04_bg，TH31/TH32 复用 TH08_bg，TH33 复用 TH095_bg，TH34 复用 TH07_bg，TH35 复用 TH10_bg，TH36 复用 TH11_bg；都不建立单独的 mod/BG 目录。
-local StageID = { "00", "01", "02", "03", "04", "05", "06", "07", '08', "09", "095", "10", "11", "12", "125", "128", "13", "14", "143", "15", "16", "165", "17", "18", "185", "20", "22", "30", "31", "32", "33", "34", "35", "36" }
-for _, p in ipairs(StageID) do
-    if p ~= "30" and p ~= "31" and p ~= "32" and p ~= "33" and p ~= "34" and p ~= "35" and p ~= "36" then
-        IncludeLuaFile("mod\\BG\\TH" .. p .. "\\TH" .. p .. "_bg.lua")
-    end
-    IncludeLuaFile("mod\\GAME\\th" .. p .. ".lua")
+-- 精简版仅载入当前可开局的五作；背景与卡链分开，保持原有level与card_id。
+GameContent=dofile('mod/content.lua')
+for _,code in ipairs({'06','07','08','095','10'}) do
+    IncludeLuaFile('mod/BG/TH'..code..'/TH'..code..'_bg.lua')
 end
-
-IncludeLuaFile("mod\\BadApple.lua")
-IncludeLuaFile("mod\\music.lua")
-IncludeLuaFile("mod\\defachievement.lua")
+for _,code in ipairs({'06','07','08'}) do
+    IncludeLuaFile('mod/GAME/original/shared_th'..code..'_background.lua')
+end
+for _,code in ipairs(GameContent.stages) do IncludeLuaFile('mod/GAME/th'..code..'.lua') end
+IncludeLuaFile('mod/music.lua')
 
 local cos, sin, max, int, sign = cos, sin, max, int, sign
 local bullet, object, boss = bullet, object, boss
@@ -1210,7 +1208,7 @@ function ParticleLaserLine(pR, pG, pB, x, y, col, v, a, GrowTime, Width, Scale, 
     return l
 end
 
-for t = 1, 34 do
+for _,t in ipairs({29,30,31,32,33}) do
     table.insert(LoadRes, function()
         LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t))
         LoadImage(("stage_pic%d"):format(t), ("stage_pic%d"):format(t), 0, 0, 512, 512)
@@ -1225,6 +1223,3 @@ end
 IncludeLuaFile("mod\\main_stage.lua")
 IncludeLuaFile("mod\\rogue_dual.lua")
 IncludeLuaFile("mod\\roguelike.lua")
-IncludeLuaFile("mod\\summary.lua")
-
-IncludeLuaFile("mod\\th16AEX\\root.lua")
