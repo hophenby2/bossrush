@@ -1,0 +1,72 @@
+WAV压缩与非核心大图收益分析（2026-11-10）
+
+本轮范围
+继续在slim分支优化安卓入包音效；大图仅分析，不修改源图和入包策略。
+978份PNG/WebP/JPEG入包图片与上一版逐文件字节一致，已有12首Ogg配乐也未重编码。
+
+音效已完成
+172个WAV中，160个入包副本转为Ogg Vorbis；12个收益不足5%的短音效保留PCM WAV。
+音效在APK内的真实体积：19.32 MiB -> 4.68 MiB，减少14.64 MiB。
+APK：216,798,445字节（206.76 MiB）-> 201,454,829字节（192.12 MiB）。
+文件：android/dist/BossRushHD-Android-arm64-slim-ogg.apk。
+Vorbis使用compression_level=0.2；这是有损音频编码，不声称波形逐样本相同。
+保持原采样率、声道及音频总帧数，不裁剪静音、不重采样、不改音量/声像设置及触发逻辑。
+源WAV保留；通过asset_variants.lua把原WAV逻辑路径解析到真实Ogg，脚本与WAV枚举不改。
+Ogg使用ZIP_STORED，源WAV不与其重复入包。极短音效按实际APK的DEFLATE体积比较收益。
+安装依赖：python3 -m pip install -r android/requirements-assets.txt
+构建：python3 android/build.py --update-assets --optimize-assets --compress-audio
+首次完整构建去掉--update-assets；不加--compress-audio仍可生成PCM对照包。
+
+验证
+编码时逐个解码，核对所有转换音效的采样率、声道和帧数。
+Android 16 ARM64模拟器逐个加载并短暂播放全部172个逻辑音效，原生解码信息与源文件一致。
+Ogg优化器覆盖时长/声道/采样率、短音效收益、缓存及源文件保留；路径回归覆盖WAV枚举与别名。
+PCM/Ogg两包均运行二百十日900帧：650帧扔雷，850帧击破；最终对象状态逐字节一致。
+状态SHA-256：1dd2e61f14162c57fedc942f45786cb0bec431125f4891ac37c7d03ad4115bab。
+未在OnePlus真机实测，不以单次模拟器结果推断真机解码开销。
+
+大图当前占用与收益（本轮未应用）
+阈值为当前APK内每张至少256 KiB；不是按原PNG大小挑选，也不重复计算上轮不透明WebP的收益。
+纳入菜单、界面、菜单角色立绘、关卡预览、符卡背景与道中场景纹理。
+排除弹图、自机/Boss行走图、ANM效果图集及其它战斗核心资源。
+54张非核心大图：源文件合计34.29 MiB，当前APK实际占用27.79 MiB。
+内存试编码的额外收益：无损WebP约5.99 MiB；有损WebP Q90约21.90 MiB；Q85约22.93 MiB。
+收益按当前ZIP条目体积与候选DEFLATE level 6体积比较，只计较小候选；APK目录/签名开销未计。
+无损候选均通过RGBA像素核对；Q90/Q85保留Alpha而改变RGB，未做游戏内视觉验收。
+所有试编码只在内存完成，JSON仅记录尺寸、编码体积、误差指标和源文件散列。
+
+按用途汇总（当前占用 / 无损可省 / Q90可省；单位MiB）
+符卡背景（16张）：7.94 / 0.83 / 6.34
+菜单与界面（4张）：3.21 / 0.16 / 2.77
+菜单角色立绘（4张）：3.08 / 1.01 / 2.49
+道中背景（5张）：2.77 / 0.37 / 1.84
+原作场景纹理（19张）：8.47 / 3.25 / 6.55
+框架仍载入的旧入口图（1张）：0.58 / 0.17 / 0.49
+五作关卡预览（5张）：1.75 / 0.19 / 1.42
+
+体积最大的候选（源PNG / 当前APK / Q90估计；单位MiB）
+Resources/BossBackGround/th08_8_n.png，1600x1210，当前webp：2.82 / 1.54 / 0.35
+THlib/UI/ui_bg.png，1920x1080，当前webp：2.00 / 1.43 / 0.17
+Resources/BossBackGround/th07_7_n.png，1280x960，当前webp：2.11 / 1.30 / 0.28
+Resources/Special/reimu_player_tachie.png，1024x1024，当前png：1.02 / 1.02 / 0.17
+mod/BG/TH09/TH09_bg_hyz_bg5.png，512x512，当前png：0.82 / 0.82 / 0.33
+Resources/Original/95/world03_0.png，512x512，当前png：0.75 / 0.75 / 0.26
+Resources/Special/chiruno_player_tachie.png，1024x1024，当前png：0.76 / 0.74 / 0.15
+Resources/Special/marisa_player_tachie.png，1024x1024，当前png：0.75 / 0.74 / 0.14
+mod/BG/TH095/TH095_bg_back.png，512x512，当前png：0.73 / 0.73 / 0.26
+Resources/Original/95/world10_2.png，512x512，当前png：0.71 / 0.71 / 0.33
+Resources/Original/7/stg4bg4_0.png，512x512，当前png：0.72 / 0.69 / 0.07
+Resources/BossBackGround/th10_12_n.png，1280x960，当前webp：1.10 / 0.69 / 0.12
+
+后续顺序建议（只记录，未实施）
+1. 先处理菜单背景、加载图和关卡预览：Q90合计约可省4.19 MiB，便于独立目视验收。
+2. 菜单立绘无损约可省1.01 MiB；有损Q90约可省2.49 MiB，需检查边缘与渐变。
+3. 场景/符卡背景是主要剩余空间；无损候选约4.45 MiB，Q90约14.73 MiB。透明图还需原生混合/预乘Alpha画面对照。
+4. 另有4组像素完全相同的非核心大图，单独去重约可省1.72 MiB；与编码收益重叠，不能直接相加。
+   world03_0.png / TH095_bg_back.png；stg5bg_0.png / TH07_bg_tex.png；stage_pic29.png / stage_pic30.png；stage03_2.png / TH10_bg_riverback.png。
+5. mod/th16AEX.png仍由通用菜单代码无条件载入，占0.58 MiB；若后续删掉旧入口预载可再省这部分。本轮不改。
+6. 单纯换编码不降低解码后的RGBA纹理内存或绘制成本。多数场景纹理已是512x512，暂不建议为包体直接缩尺寸。
+   例如ui_bg为1920x1080，RGBA8约7.91 MiB；Q90可减文件体积，但纹理内存仍是同一量级。
+
+明细：analysis-large-images-2026-11-10.json；验证记录：verification-audio-2026-11-10.json。
+重跑只读分析：python3 tools/analyze_android_large_images.py --apk android/dist/BossRushHD-Android-arm64-slim.apk --output android/analysis-large-images-2026-11-10.json。

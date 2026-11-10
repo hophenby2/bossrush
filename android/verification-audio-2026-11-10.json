@@ -1,0 +1,44 @@
+{
+  "base_commit": "064dca24f694745471e6f5bdb09eec15f71eb02b",
+  "date": "2026-11-10",
+  "branch": "slim",
+  "apk_before_bytes": 216798445,
+  "apk_after_bytes": 201454829,
+  "apk_after_sha256": "efe0c95b83f27eabf57d7e536cc87a678a78880ad7eefff9f4064097ab8bbb03",
+  "audio": {
+    "sources": 172,
+    "converted_to_vorbis": 160,
+    "kept_pcm": 12,
+    "before_apk_bytes": 20258572,
+    "after_apk_bytes": 4909784,
+    "compression_level": 0.2,
+    "lossy": true,
+    "sample_rate_channels_frames_unchanged": true,
+    "original_wav_files_preserved": true
+  },
+  "native_audio": {
+    "device": "Android 16 ARM64 emulator",
+    "loaded_and_played": 172,
+    "metadata_matched": true
+  },
+  "images": {
+    "packed_files_byte_identical": 978,
+    "analysis_only": true,
+    "large_noncore_images": 54,
+    "current_apk_bytes": 29142229,
+    "lossless_saved_bytes_estimate": 6276366,
+    "q90_saved_bytes_estimate": 22960691
+  },
+  "battle_comparison": {
+    "case": 3606,
+    "frames": 900,
+    "seed": 20261109,
+    "bomb_frame": 650,
+    "clear_frame": 850,
+    "state_checkpoint": "1dd2e61f14162c57fedc942f45786cb0bec431125f4891ac37c7d03ad4115bab",
+    "pcm_ogg_state_byte_identical": true,
+    "pcm_elapsed_s": 17.198699,
+    "ogg_elapsed_s": 17.33146,
+    "timing_note": "仅单次模拟器功能对照，不能据此推断真机性能"
+  }
+}

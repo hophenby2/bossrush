@@ -1,2 +1,3 @@
-# 仅 --optimize-assets 需要；编码结果按RGBA像素校验，原PNG保持不变。
+# --optimize-assets和--compress-audio使用；源PNG和WAV保持不变。
 Pillow==12.0.0
+soundfile==0.14.0

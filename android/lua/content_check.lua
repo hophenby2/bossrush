@@ -1,6 +1,37 @@
 -- 私有content诊断：验证精简版五作的整关/符卡入口，不参与正常开局。
 local T={}
+local function installAudio(mode)
+    lstg.SystemLog('BOSSRUSH_CONTENT_BEGIN: '..mode)
+    local fu=cc.FileUtils:getInstance()
+    local files=assert(loadstring(fu:getStringFromFile('game/asset_index.lua')))()
+    local sounds,rows={},{}
+    for _,path in ipairs(files) do if path:lower():match('%.wav$') then sounds[#sounds+1]=path end end
+    local frame,index,done=FrameFunc,1,false
+    local key='__android_audio_check'
+    FrameFunc=function()
+        local quit=frame()
+        if not done and stage.current_stage.stage_name=='menu' and stage.current_stage.timer>=45 then
+            if index>1 then StopSound(key);RemoveResource('global',5,key) end
+            local path=sounds[index]
+            if path then
+                SetResourceStatus('global');LoadSound(key,path)
+                local sound=assert(FindResSound(key),path)
+                local info=sound:getInfo()
+                assert(not info.no_source,'音效没有可用的解码源：'..path)
+                rows[#rows+1]=table.concat({path,info.frames,info.channel,info.sample_rate,info.time},'\t')
+                PlaySound(key,.01)
+                index=index+1
+            else
+                local file=assert(io.open('User/android-audio-check.tsv','wb'))
+                file:write(table.concat(rows,'\n'));file:close();done=true
+                lstg.SystemLog('BOSSRUSH_CONTENT_DONE: audio='..#rows..' '..mode)
+            end
+        end
+        return quit
+    end
+end
 function T.install(mode)
+    if mode:match('audio=1') then installAudio(mode);return end
     local level=assert(tonumber(mode:match('level=(%d+)')))
     local target=tonumber(mode:match('frames=(%d+)')) or 300
     local whole=mode:match('whole=1')~=nil

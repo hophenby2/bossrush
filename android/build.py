@@ -22,6 +22,7 @@ LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
 OPTIMIZE_ASSETS = False
+COMPRESS_AUDIO = False
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
 
@@ -180,8 +181,17 @@ def prepare_assets():
     destination.mkdir(exist_ok=True)
     paths = []
     dimensions = {}
-    image_variants = {}
+    asset_variants = {}
     optimized = {}
+    audio_variants = {}
+    if COMPRESS_AUDIO:
+        from audio_optimizer import optimize_audio
+        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.wav')]
+        audio_variants, records = optimize_audio(sources,CACHE/'vorbis-sounds')
+        write_utf8(BUILD/'audio-optimization.json',json.dumps(
+            {str(p.relative_to(GAME)):r for p,r in records.items()},ensure_ascii=False,indent=2)+'\n')
+        saved = sum(r['wav_zip_bytes']-r['ogg_bytes'] for r in records.values() if r['converted'])
+        print(f'Ogg音效压缩：{len(audio_variants)}/{len(sources)}个，APK资源减少{saved/1048576:.2f} MiB',flush=True)
     if OPTIMIZE_ASSETS:
         from asset_optimizer import optimize_images
         sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')]
@@ -200,12 +210,12 @@ def prepare_assets():
             relative = source.relative_to(GAME)
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            if source in optimized:
-                native = relative.with_suffix('.webp')
+            if source in optimized or source in audio_variants:
+                native = relative.with_suffix('.ogg' if source in audio_variants else '.webp')
                 target = destination/native
                 if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
-                shutil.copy2(optimized[source],target)
-                image_variants[relative.as_posix()]=native.as_posix()
+                shutil.copy2(audio_variants[source] if source in audio_variants else optimized[source],target)
+                asset_variants[relative.as_posix()]=native.as_posix()
             elif source.suffix == '.lua':
                 write_utf8(target, source.read_text(encoding='utf-8-sig'))
             elif source.suffix.lower() == '.wav':
@@ -239,7 +249,7 @@ def prepare_assets():
         for p, size in sorted(dimensions.items())) + '}\n')
     write_utf8(destination/'asset_variants.lua','return {\n'+''.join(
         '  ['+json.dumps(src,ensure_ascii=False)+']='+json.dumps(dst,ensure_ascii=False)+',\n'
-        for src,dst in sorted(image_variants.items()))+'}\n')
+        for src,dst in sorted(asset_variants.items()))+'}\n')
     copy_tree(ROOT / 'lua', destination / 'android')
     for script in (destination / 'android').glob('*.lua'):
         write_utf8(script, script.read_text(encoding='utf-8-sig'))
@@ -407,17 +417,19 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
-    global GAME, OPTIMIZE_ASSETS
+    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
     parser.add_argument('--optimize-assets', action='store_true', help='对不透明PNG尝试RGBA像素一致的无损WebP，仅在入包时转换')
+    parser.add_argument('--compress-audio', action='store_true', help='将有包体收益的WAV入包副本转为高质量Ogg Vorbis，保留采样率、声道与帧数')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
     args = parser.parse_args()
     OPTIMIZE_ASSETS = args.optimize_assets
+    COMPRESS_AUDIO = args.compress_audio
     if args.game_root:
         GAME = args.game_root.resolve()
         if not (GAME / 'core.lua').is_file():

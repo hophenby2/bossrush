@@ -1,0 +1,1797 @@
+{
+  "baseline_apk": "android/dist/BossRushHD-Android-arm64-slim.apk",
+  "minimum_apk_bytes": 262144,
+  "mode": "只分析；不写回图片，不改APK，不改变尺寸",
+  "scope": "界面、菜单立绘、关卡预览、场景及符卡背景；排除弹图、自机/Boss行走图和ANM效果图集",
+  "candidate_count": 54,
+  "totals": {
+    "source_bytes": 35953280,
+    "current_apk_bytes": 29142229,
+    "lossless_saved_bytes_estimate": 6276366,
+    "90_saved_bytes_estimate": 22960691,
+    "85_saved_bytes_estimate": 24042737
+  },
+  "images": [
+    {
+      "path": "Resources/BossBackGround/th08_8_n.png",
+      "category": "符卡背景",
+      "source_bytes": 2951812,
+      "apk_bytes": 1618091,
+      "current_format": "webp",
+      "width": 1600,
+      "height": 1210,
+      "gpu_rgba8_bytes": 7744000,
+      "rgba_sha256": "62c837858c8d6baa2b32596e0b5adf33f5a52e112ee52ea643144f19ee37dfe5",
+      "source_sha256": "db049479a8ab880a33c81a1766da77e295e6fa20554c41f9908c3024b654f43a",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 1618091,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 363887,
+          "saved_bytes_estimate": 1254204,
+          "visible_rgb_psnr_db": 40.34,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 281980,
+          "saved_bytes_estimate": 1336111,
+          "visible_rgb_psnr_db": 38.51,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "THlib/UI/ui_bg.png",
+      "category": "菜单与界面",
+      "source_bytes": 2095770,
+      "apk_bytes": 1494362,
+      "current_format": "webp",
+      "width": 1920,
+      "height": 1080,
+      "gpu_rgba8_bytes": 8294400,
+      "rgba_sha256": "018147eb6f7dd666f5bde2eac9cafda7c020635f3f495816ca4aca759c076bf4",
+      "source_sha256": "27aa1fc46538f848862af7c0e2240272d961750dd88777227b9a2fddd8fabaf9",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 1494362,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 181870,
+          "saved_bytes_estimate": 1312492,
+          "visible_rgb_psnr_db": 41.98,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 129350,
+          "saved_bytes_estimate": 1365012,
+          "visible_rgb_psnr_db": 40.16,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th07_7_n.png",
+      "category": "符卡背景",
+      "source_bytes": 2215043,
+      "apk_bytes": 1364409,
+      "current_format": "webp",
+      "width": 1280,
+      "height": 960,
+      "gpu_rgba8_bytes": 4915200,
+      "rgba_sha256": "731523eebad70fa10ee9033a618e242e0c9b44ff46fa1dd0c47f7cd7ddbc14f8",
+      "source_sha256": "3ebd889accbfc29f3860aae9122cc018d02779c533835ec2a2181a01e6bd45c9",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 1364409,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 297211,
+          "saved_bytes_estimate": 1067198,
+          "visible_rgb_psnr_db": 39.97,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 223450,
+          "saved_bytes_estimate": 1140959,
+          "visible_rgb_psnr_db": 37.87,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Special/reimu_player_tachie.png",
+      "category": "菜单角色立绘",
+      "source_bytes": 1069336,
+      "apk_bytes": 1069194,
+      "current_format": "png",
+      "width": 1024,
+      "height": 1024,
+      "gpu_rgba8_bytes": 4194304,
+      "rgba_sha256": "9a2034d5f7d80ec02788639a57a7a83f08a2895dc4d956d653b4e2c533d22b27",
+      "source_sha256": "afb73b71b6386b4c007a9260ff73fd75eb9184b8990662ddd3479ed47b885911",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 700907,
+          "saved_bytes_estimate": 368287,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 177546,
+          "saved_bytes_estimate": 891648,
+          "visible_rgb_psnr_db": 40.88,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 149172,
+          "saved_bytes_estimate": 920022,
+          "visible_rgb_psnr_db": 39.56,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/BG/TH09/TH09_bg_hyz_bg5.png",
+      "category": "道中背景",
+      "source_bytes": 861337,
+      "apk_bytes": 861470,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "8535d976878de53cc30af41fc4214d4743ec825be9b71a108c746abeea7d9a3b",
+      "source_sha256": "5a6aac68e6b1192b95f840d8ec0b7f57f7104dcd82171265c0465cd7816fb893",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 711299,
+          "saved_bytes_estimate": 150171,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 345818,
+          "saved_bytes_estimate": 515652,
+          "visible_rgb_psnr_db": 32.95,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 324310,
+          "saved_bytes_estimate": 537160,
+          "visible_rgb_psnr_db": 32.52,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world03_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 784266,
+      "apk_bytes": 784487,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "01b4f7f39ba394d00990c1654ab585a9f8664bb442155334db8b365b01e60a7b",
+      "source_sha256": "18ab7ec2e96c94883cd739d87821e627e25ca826025c19e053c0fae4ee1bcaf5",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 664727,
+          "saved_bytes_estimate": 119760,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 269363,
+          "saved_bytes_estimate": 515124,
+          "visible_rgb_psnr_db": 32.99,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 246111,
+          "saved_bytes_estimate": 538376,
+          "visible_rgb_psnr_db": 32.26,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Special/chiruno_player_tachie.png",
+      "category": "菜单角色立绘",
+      "source_bytes": 794033,
+      "apk_bytes": 777177,
+      "current_format": "png",
+      "width": 1024,
+      "height": 1024,
+      "gpu_rgba8_bytes": 4194304,
+      "rgba_sha256": "60322006bde72401b525491d82cb76a63c9204cc5f729d37da50b2cc12b0254a",
+      "source_sha256": "d35dc6b710c36051a3aa33f171ad2b4bba9b5d8d2944527304991aaca27ff370",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 526461,
+          "saved_bytes_estimate": 250716,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 154004,
+          "saved_bytes_estimate": 623173,
+          "visible_rgb_psnr_db": 41.94,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 128570,
+          "saved_bytes_estimate": 648607,
+          "visible_rgb_psnr_db": 40.64,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Special/marisa_player_tachie.png",
+      "category": "菜单角色立绘",
+      "source_bytes": 790340,
+      "apk_bytes": 773866,
+      "current_format": "png",
+      "width": 1024,
+      "height": 1024,
+      "gpu_rgba8_bytes": 4194304,
+      "rgba_sha256": "48074c6dd8342de38a3a456ae79d680adfba872c796272c1a76365d1b5124905",
+      "source_sha256": "f991a0bc6505abdaae3d5963a8f8ca44a196b3c48bd78c36803236346d977a20",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 539249,
+          "saved_bytes_estimate": 234617,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 150497,
+          "saved_bytes_estimate": 623369,
+          "visible_rgb_psnr_db": 40.87,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 125373,
+          "saved_bytes_estimate": 648493,
+          "visible_rgb_psnr_db": 39.67,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/BG/TH095/TH095_bg_back.png",
+      "category": "道中背景",
+      "source_bytes": 761836,
+      "apk_bytes": 762071,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "01b4f7f39ba394d00990c1654ab585a9f8664bb442155334db8b365b01e60a7b",
+      "source_sha256": "5d5b7e27c66dd1f0a31c17379c35ef1e30a6da78afaa0c7515c4de57b0b2e18c",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 664727,
+          "saved_bytes_estimate": 97344,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 269363,
+          "saved_bytes_estimate": 492708,
+          "visible_rgb_psnr_db": 32.99,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 246111,
+          "saved_bytes_estimate": 515960,
+          "visible_rgb_psnr_db": 32.26,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world10_2.png",
+      "category": "原作场景纹理",
+      "source_bytes": 747870,
+      "apk_bytes": 748082,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "e0cb92adfe4f93d4f5e73c1baf2b13d213f846c5e530f1d440dbfbae8d019fd6",
+      "source_sha256": "eb9405ec85eccdbff6210df1fa274f0c3dac5c04da5cc83c39a11b9425acf122",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 711012,
+          "saved_bytes_estimate": 37070,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 343517,
+          "saved_bytes_estimate": 404565,
+          "visible_rgb_psnr_db": 32.63,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 320104,
+          "saved_bytes_estimate": 427978,
+          "visible_rgb_psnr_db": 32.16,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg4bg4_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 753895,
+      "apk_bytes": 727525,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "8f05ee8eb890709d678b2727b8fef7d9de8ba3b48faaa9687b8d9f23963ec747",
+      "source_sha256": "0e762bab8186314c172bf4f8d343ebc36b143068a6f1515ed926246e5c9a3c74",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 362009,
+          "saved_bytes_estimate": 365516,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 72356,
+          "saved_bytes_estimate": 655169,
+          "visible_rgb_psnr_db": 35.71,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 54919,
+          "saved_bytes_estimate": 672606,
+          "visible_rgb_psnr_db": 34.56,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th10_12_n.png",
+      "category": "符卡背景",
+      "source_bytes": 1148626,
+      "apk_bytes": 724560,
+      "current_format": "webp",
+      "width": 1280,
+      "height": 960,
+      "gpu_rgba8_bytes": 4915200,
+      "rgba_sha256": "c4e0bbcd2397d82bc90b58c3888c8a52b6925563588cf25619bfde2c7792b20b",
+      "source_sha256": "7d6d32d50a9f8a98816ffd10053ec7c2cd62d962d72dd07313a2c79db75e03e6",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 724560,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 130758,
+          "saved_bytes_estimate": 593802,
+          "visible_rgb_psnr_db": 42.43,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 95926,
+          "saved_bytes_estimate": 628634,
+          "visible_rgb_psnr_db": 40.8,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th10_6_n.png",
+      "category": "符卡背景",
+      "source_bytes": 662373,
+      "apk_bytes": 662578,
+      "current_format": "png",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "fafea0b1862ab4585b7484e3bc54ebeb1289d24fc1afedc7d36717e2061c6efd",
+      "source_sha256": "a47b0878ede8d6ad7b1ae3ef9648f239b1c63155ba7a375e4dd4c60ca6179e07",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 526091,
+          "saved_bytes_estimate": 136487,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 117834,
+          "saved_bytes_estimate": 544744,
+          "visible_rgb_psnr_db": 30.61,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 94474,
+          "saved_bytes_estimate": 568104,
+          "visible_rgb_psnr_db": 30.11,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/BG/TH08/TH08_bg_stg6bg2.png",
+      "category": "道中背景",
+      "source_bytes": 1125901,
+      "apk_bytes": 655344,
+      "current_format": "webp",
+      "width": 993,
+      "height": 673,
+      "gpu_rgba8_bytes": 2673156,
+      "rgba_sha256": "340df4f7eee5c6a40bf040a6725b5ac94bad5df68effb33b1c309449b6633062",
+      "source_sha256": "e2bd18a492e0c5f13301bab80a75028469ae7bcc11b7737c5090b605844ca732",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 655344,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 175127,
+          "saved_bytes_estimate": 480217,
+          "visible_rgb_psnr_db": 37.65,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 132063,
+          "saved_bytes_estimate": 523281,
+          "visible_rgb_psnr_db": 36.01,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "THlib/UI/menu_bg_sub.png",
+      "category": "菜单与界面",
+      "source_bytes": 916077,
+      "apk_bytes": 649379,
+      "current_format": "webp",
+      "width": 960,
+      "height": 540,
+      "gpu_rgba8_bytes": 2073600,
+      "rgba_sha256": "e93655126e8e11d1c34e0f8e1a2780360c633e940f786d538b60f04d1bd34ed2",
+      "source_sha256": "fd10980e266dd6e12199cd230357dbe6152a003b3e063b44a1fc9b8da50a2929",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 649379,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 110305,
+          "saved_bytes_estimate": 539074,
+          "visible_rgb_psnr_db": 38.62,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 79721,
+          "saved_bytes_estimate": 569658,
+          "visible_rgb_psnr_db": 37.04,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg6bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 679625,
+      "apk_bytes": 648122,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "d1103cbc53c9984e462a9c8c13db681aecfeb96bbb15da17bd19313aa2a3725f",
+      "source_sha256": "9f7a5f2178a5bacdae3e6726380d2f141c87570238c155fc230fa660c95ec079",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 345074,
+          "saved_bytes_estimate": 303048,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 131771,
+          "saved_bytes_estimate": 516351,
+          "visible_rgb_psnr_db": 40.53,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 117632,
+          "saved_bytes_estimate": 530490,
+          "visible_rgb_psnr_db": 39.51,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "THlib/UI/menu_bg.png",
+      "category": "菜单与界面",
+      "source_bytes": 895358,
+      "apk_bytes": 636789,
+      "current_format": "webp",
+      "width": 960,
+      "height": 540,
+      "gpu_rgba8_bytes": 2073600,
+      "rgba_sha256": "3232b853446a80c576da612acdc09d3b952751f1bd949bb52d7d0dacb7fd631c",
+      "source_sha256": "4980c6877f7c39f67f89505d99122834237dca7603792029e05bd103e2c67afc",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 636789,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 102505,
+          "saved_bytes_estimate": 534284,
+          "visible_rgb_psnr_db": 39.56,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 71691,
+          "saved_bytes_estimate": 565098,
+          "visible_rgb_psnr_db": 37.69,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Special/aya_player_tachie.png",
+      "category": "菜单角色立绘",
+      "source_bytes": 630018,
+      "apk_bytes": 612390,
+      "current_format": "png",
+      "width": 1024,
+      "height": 1024,
+      "gpu_rgba8_bytes": 4194304,
+      "rgba_sha256": "7c2a4cc251b80203274067618596f5b81f574f47874b728f919919d47aee4d51",
+      "source_sha256": "c807695ce5c4227af48820492ac8d8c376ebf6918d3f0fc1f1f017d452625708",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 407830,
+          "saved_bytes_estimate": 204560,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 137140,
+          "saved_bytes_estimate": 475250,
+          "visible_rgb_psnr_db": 42.28,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 119920,
+          "saved_bytes_estimate": 492470,
+          "visible_rgb_psnr_db": 41.13,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/th16AEX.png",
+      "category": "框架仍载入的旧入口图",
+      "source_bytes": 607202,
+      "apk_bytes": 607387,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "018369c9028145653c2bbb00a3e7665b7c81c3ec678437ad9a7ff01e257440e8",
+      "source_sha256": "cdfdb32d5a754103108bf63f7d8e424a095ec4718f65ac263452def4b7e459ec",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 430923,
+          "saved_bytes_estimate": 176464,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 98541,
+          "saved_bytes_estimate": 508846,
+          "visible_rgb_psnr_db": 34.83,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 77449,
+          "saved_bytes_estimate": 529938,
+          "visible_rgb_psnr_db": 33.58,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "THlib/UI/loading.png",
+      "category": "菜单与界面",
+      "source_bytes": 596089,
+      "apk_bytes": 581872,
+      "current_format": "png",
+      "width": 960,
+      "height": 540,
+      "gpu_rgba8_bytes": 2073600,
+      "rgba_sha256": "047f20efc53473bcf04eb2a04df9ed14de92a5e46d2573eb2d3301bc1fcb8676",
+      "source_sha256": "e2bd3e1c91853cd411227139da4aedfd4be4ec72605b4d45a8cd3478c756537e",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 409189,
+          "saved_bytes_estimate": 172683,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 58450,
+          "saved_bytes_estimate": 523422,
+          "visible_rgb_psnr_db": 40.01,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 41943,
+          "saved_bytes_estimate": 539929,
+          "visible_rgb_psnr_db": 38.95,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/GAME/stage_pic33.png",
+      "category": "五作关卡预览",
+      "source_bytes": 577098,
+      "apk_bytes": 562560,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "075e1a614ebc6aaedcf01fd6713772582bbc505d36ff69761becb86eee453ddf",
+      "source_sha256": "3b15a09b16e3c3e58b1f0dc2de1c12ed8e648eeefc3f94e5ca526fc7f420edaf",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 363793,
+          "saved_bytes_estimate": 198767,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 82286,
+          "saved_bytes_estimate": 480274,
+          "visible_rgb_psnr_db": 38.46,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 62436,
+          "saved_bytes_estimate": 500124,
+          "visible_rgb_psnr_db": 36.38,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/10/stage02_1.png",
+      "category": "原作场景纹理",
+      "source_bytes": 555793,
+      "apk_bytes": 531179,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "b37712ee53bedc37c645d8049e3f5c29bb505b140f58c65c2783200b871999eb",
+      "source_sha256": "5a09622539659faf1ecf0185aad5e991c50cc29050d568ccad16a34d3f75ad62",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 288643,
+          "saved_bytes_estimate": 242536,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 190674,
+          "saved_bytes_estimate": 340505,
+          "visible_rgb_psnr_db": 36.63,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 182634,
+          "saved_bytes_estimate": 348545,
+          "visible_rgb_psnr_db": 36.16,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world08_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 519808,
+      "apk_bytes": 518946,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "2444d6040814390f03aa407c52163cb0ba5cdafc5dab6954dc6846ba4910b713",
+      "source_sha256": "22a302073b0661b3895a7cdfe18c790e3cb73b1b3ca614d55664ecd914ad027b",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 346052,
+          "saved_bytes_estimate": 172894,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 136477,
+          "saved_bytes_estimate": 382469,
+          "visible_rgb_psnr_db": 40.56,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 122002,
+          "saved_bytes_estimate": 396944,
+          "visible_rgb_psnr_db": 39.55,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_15_n.png",
+      "category": "符卡背景",
+      "source_bytes": 486182,
+      "apk_bytes": 486332,
+      "current_format": "png",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "16a8b81d3f714475046a0cb62609f0ba1171953794d96ddcc69e4f7d07b6afec",
+      "source_sha256": "0b716a10bdf30c47f94522d2f1328a45908983429a1ba03d37b02ad0a07382bc",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 290300,
+          "saved_bytes_estimate": 196032,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 53644,
+          "saved_bytes_estimate": 432688,
+          "visible_rgb_psnr_db": 40.85,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 39983,
+          "saved_bytes_estimate": 446349,
+          "visible_rgb_psnr_db": 38.74,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg8bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 500814,
+      "apk_bytes": 477587,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "a8d5031c2fc3e50f4bee1ef8c728fd137dde9f00d1388488704c09361a681ebd",
+      "source_sha256": "137da0a9f6419a0494eafe3b683431039dcd15e4a37a627fe851099d286c8908",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 223190,
+          "saved_bytes_estimate": 254397,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 73851,
+          "saved_bytes_estimate": 403736,
+          "visible_rgb_psnr_db": 35.98,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 62822,
+          "saved_bytes_estimate": 414765,
+          "visible_rgb_psnr_db": 35.05,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg7bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 506591,
+      "apk_bytes": 473426,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "9efc746e7ca246343a23904bfafce82887671737eb48b8722cdc87bf2fbf1c03",
+      "source_sha256": "0329550c8df455386c85ddd4f4429669b7f8e17d90b1eb0d8bb653a227fe0f4f",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 225504,
+          "saved_bytes_estimate": 247922,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 80653,
+          "saved_bytes_estimate": 392773,
+          "visible_rgb_psnr_db": 35.65,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 67567,
+          "saved_bytes_estimate": 405859,
+          "visible_rgb_psnr_db": 34.86,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/8/stg5bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 487711,
+      "apk_bytes": 468030,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "83bce041a4d116000802098f065d6ab31f2e895b72c582be3e8ca92155b20866",
+      "source_sha256": "dd350647537a5c37a2aaba944480137591f24ecf01c667c8c225511e3a96c414",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 212215,
+          "saved_bytes_estimate": 255815,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 42400,
+          "saved_bytes_estimate": 425630,
+          "visible_rgb_psnr_db": 38.17,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 32743,
+          "saved_bytes_estimate": 435287,
+          "visible_rgb_psnr_db": 37.16,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg2bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 477270,
+      "apk_bytes": 455180,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "07e93a05f508a6c42fd22b599d35e1a14cbce860b6df54a6c17cb45fda69d97e",
+      "source_sha256": "7cc474fbf10b7ffea2e655862dd6cd7026e5124f74f2e650e26d7a92038f1c60",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 230847,
+          "saved_bytes_estimate": 224333,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 72028,
+          "saved_bytes_estimate": 383152,
+          "visible_rgb_psnr_db": 32.23,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 57379,
+          "saved_bytes_estimate": 397801,
+          "visible_rgb_psnr_db": 31.82,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world10_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 621533,
+      "apk_bytes": 430487,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "57b9d9c4bf410e47eeea227d3d4881698d724fd9f81aa82a9475731018fbd31c",
+      "source_sha256": "3fd6c7443bbdd7770b84ef5b0d3b635961de830aa39c325a657e86cc288fde64",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 430487,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 125234,
+          "saved_bytes_estimate": 305253,
+          "visible_rgb_psnr_db": 38.3,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 105569,
+          "saved_bytes_estimate": 324918,
+          "visible_rgb_psnr_db": 36.63,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg5bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 454493,
+      "apk_bytes": 420352,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "a31a86d4018785affa8260b57695f472795eb296740042a1ec85b23e8cee5549",
+      "source_sha256": "5829fcc0705c3b715ce7858eed3147fb33747913b56c097585e1ea6ab4b33379",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 202283,
+          "saved_bytes_estimate": 218069,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 81229,
+          "saved_bytes_estimate": 339123,
+          "visible_rgb_psnr_db": 42.37,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 68941,
+          "saved_bytes_estimate": 351411,
+          "visible_rgb_psnr_db": 40.21,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th06_7_n.png",
+      "category": "符卡背景",
+      "source_bytes": 398706,
+      "apk_bytes": 398831,
+      "current_format": "png",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "3ebd34e867cb62d240625a29ca702641f4fbf122ff17ad3b38025af1573fec2e",
+      "source_sha256": "1dfc2cf2ad97ac740690cf38625c30156404fb46d788756870079dc774ad1434",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 272493,
+          "saved_bytes_estimate": 126338,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 35685,
+          "saved_bytes_estimate": 363146,
+          "visible_rgb_psnr_db": 40.39,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 24336,
+          "saved_bytes_estimate": 374495,
+          "visible_rgb_psnr_db": 38.78,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/8/stg2bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 402238,
+      "apk_bytes": 379346,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "f7ae7575feae3299d87cc4f44ec50c089214faeb484b49fe0193c8e39e9fb480",
+      "source_sha256": "030adb612ff4ec4cf02394bd0930cb9f23df6eb473faeded13be3ca5bcacd821",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 178011,
+          "saved_bytes_estimate": 201335,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 49975,
+          "saved_bytes_estimate": 329371,
+          "visible_rgb_psnr_db": 35.62,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 39345,
+          "saved_bytes_estimate": 340001,
+          "visible_rgb_psnr_db": 34.94,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_4_n.png",
+      "category": "符卡背景",
+      "source_bytes": 576653,
+      "apk_bytes": 357604,
+      "current_format": "webp",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "ba0869bf7c85b5b1c5ebf85115da6f2d3ab053e1f33e84d84d5ce15ab3865229",
+      "source_sha256": "b9c1d6f758bd0b575fa8f9eb32b4aa5488a7e86b11ab50e0fd70c455bc4c18ff",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 357604,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 91872,
+          "saved_bytes_estimate": 265732,
+          "visible_rgb_psnr_db": 35.52,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 65314,
+          "saved_bytes_estimate": 292290,
+          "visible_rgb_psnr_db": 34.04,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/8/stg6bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 370234,
+      "apk_bytes": 355063,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "a96542a52b2ba84f3098e7627d049bc89421a71ddfbca2d93b41b4e85dbd21a6",
+      "source_sha256": "6e239b70b3394d23c1c183c65ba40018f877d060b1843ca45eb7d4d0df51288f",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 147407,
+          "saved_bytes_estimate": 207656,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 44777,
+          "saved_bytes_estimate": 310286,
+          "visible_rgb_psnr_db": 45.02,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 40477,
+          "saved_bytes_estimate": 314586,
+          "visible_rgb_psnr_db": 43.48,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_12.png",
+      "category": "符卡背景",
+      "source_bytes": 349732,
+      "apk_bytes": 349835,
+      "current_format": "png",
+      "width": 384,
+      "height": 448,
+      "gpu_rgba8_bytes": 688128,
+      "rgba_sha256": "fe6bb2dfd49836e5abe1121c173d38458fe8857fc72d2717f4cd8929df8af68e",
+      "source_sha256": "824c6ed6c3a4f88fa628a75cdeadc680cedd694320784f4b0c54095195b597c0",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 269747,
+          "saved_bytes_estimate": 80088,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 129362,
+          "saved_bytes_estimate": 220473,
+          "visible_rgb_psnr_db": 39.98,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 122424,
+          "saved_bytes_estimate": 227411,
+          "visible_rgb_psnr_db": 38.76,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/BG/TH07/TH07_bg_tex.png",
+      "category": "道中背景",
+      "source_bytes": 342131,
+      "apk_bytes": 340761,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "a31a86d4018785affa8260b57695f472795eb296740042a1ec85b23e8cee5549",
+      "source_sha256": "8b8d9e7a04b86bd970885f3494c10fb591c008398247a25b9f117b7fe3524f56",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 202283,
+          "saved_bytes_estimate": 138478,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 81229,
+          "saved_bytes_estimate": 259532,
+          "visible_rgb_psnr_db": 42.37,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 68941,
+          "saved_bytes_estimate": 271820,
+          "visible_rgb_psnr_db": 40.21,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/GAME/stage_pic31.png",
+      "category": "五作关卡预览",
+      "source_bytes": 424539,
+      "apk_bytes": 336109,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "9e3f7f27b951c513d0cf7cf9c78794cf328ec5ad91536b5cf4144247a7e1ce04",
+      "source_sha256": "dc2a0f3528b0c732bae7e53dc80e7816b9e61a7c198938a11f2bf5e49228e822",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 336109,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 89898,
+          "saved_bytes_estimate": 246211,
+          "visible_rgb_psnr_db": 31.9,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 65528,
+          "saved_bytes_estimate": 270581,
+          "visible_rgb_psnr_db": 31.1,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th07_7.png",
+      "category": "符卡背景",
+      "source_bytes": 328585,
+      "apk_bytes": 328686,
+      "current_format": "png",
+      "width": 384,
+      "height": 448,
+      "gpu_rgba8_bytes": 688128,
+      "rgba_sha256": "163925944695814030d90c5b78aad84ca2df720960f566cd35324aa58d263593",
+      "source_sha256": "b7d861ec1863ed62b7173e8f0aa29d0cff950e5d8cb1d6d8b66e31657d34ab84",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 218584,
+          "saved_bytes_estimate": 110102,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 38355,
+          "saved_bytes_estimate": 290331,
+          "visible_rgb_psnr_db": 37.2,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 29744,
+          "saved_bytes_estimate": 298942,
+          "visible_rgb_psnr_db": 35.79,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th09_0_n.png",
+      "category": "符卡背景",
+      "source_bytes": 490001,
+      "apk_bytes": 321361,
+      "current_format": "webp",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "b0522ed4326ab68e4cfb4bd95e91b479bb42e3fa5d1d1d4f76c60ac371247f53",
+      "source_sha256": "260b7e48ab7855cae29eb4bfe76a17d93e0a47286fb73f7ba1785c8cedaaf0a4",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 321361,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 56240,
+          "saved_bytes_estimate": 265121,
+          "visible_rgb_psnr_db": 40.52,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 38933,
+          "saved_bytes_estimate": 282428,
+          "visible_rgb_psnr_db": 38.52,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/GAME/stage_pic32.png",
+      "category": "五作关卡预览",
+      "source_bytes": 392974,
+      "apk_bytes": 317148,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "ff25a5cab5251269508b190af834c525eb0238bce715a85fcece885ca391e5b1",
+      "source_sha256": "d79bdbbdcb9036570d87c43bf71e0b1ffcc4b241384f9d353cbfa1caba35f2ce",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 317148,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 56256,
+          "saved_bytes_estimate": 260892,
+          "visible_rgb_psnr_db": 32.43,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 43809,
+          "saved_bytes_estimate": 273339,
+          "visible_rgb_psnr_db": 31.78,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world06_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 317891,
+      "apk_bytes": 316188,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "a26ce8ae72a6ba85353dc541623f62cca50905662a239cdd316c3323639d3c15",
+      "source_sha256": "5c60cee44b73dabe7bbaecb64ebc9e7f78945b7b0559c717d696189d274fb314",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 201869,
+          "saved_bytes_estimate": 114319,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 81325,
+          "saved_bytes_estimate": 234863,
+          "visible_rgb_psnr_db": 42.32,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 68929,
+          "saved_bytes_estimate": 247259,
+          "visible_rgb_psnr_db": 40.23,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/GAME/stage_pic30.png",
+      "category": "五作关卡预览",
+      "source_bytes": 429130,
+      "apk_bytes": 309141,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "5e3b08f02af400eab42e8482b3ddc43331143fd63006edce9bee9f77c0bf8e8c",
+      "source_sha256": "5a75b43501f2a5d8b560679e5b8115d7a2633fa1eefabb866505578d22f89964",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 309141,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 58222,
+          "saved_bytes_estimate": 250919,
+          "visible_rgb_psnr_db": 39.29,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 43981,
+          "saved_bytes_estimate": 265160,
+          "visible_rgb_psnr_db": 37.51,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/GAME/stage_pic29.png",
+      "category": "五作关卡预览",
+      "source_bytes": 429130,
+      "apk_bytes": 309141,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "5e3b08f02af400eab42e8482b3ddc43331143fd63006edce9bee9f77c0bf8e8c",
+      "source_sha256": "5a75b43501f2a5d8b560679e5b8115d7a2633fa1eefabb866505578d22f89964",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 309141,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 58222,
+          "saved_bytes_estimate": 250919,
+          "visible_rgb_psnr_db": 39.29,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 43981,
+          "saved_bytes_estimate": 265160,
+          "visible_rgb_psnr_db": 37.51,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_18_n.png",
+      "category": "符卡背景",
+      "source_bytes": 532430,
+      "apk_bytes": 308893,
+      "current_format": "webp",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "338c77dc4686abaf51e38d327a61619e6a32f68471466dac9e6a440108b3c238",
+      "source_sha256": "7686ea359952f07d3ac92350d3e2a3c1bcd6929cf74a44107960c0f7e88a9afd",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 308893,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 90294,
+          "saved_bytes_estimate": 218599,
+          "visible_rgb_psnr_db": 35.14,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 66399,
+          "saved_bytes_estimate": 242494,
+          "visible_rgb_psnr_db": 33.95,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th07_5.png",
+      "category": "符卡背景",
+      "source_bytes": 303574,
+      "apk_bytes": 303669,
+      "current_format": "png",
+      "width": 384,
+      "height": 448,
+      "gpu_rgba8_bytes": 688128,
+      "rgba_sha256": "da66c4001e1598e6de3a931e851350f8ef4b188f649c2e8652b42376cb310ac4",
+      "source_sha256": "da413200cc2ca8d4b357c8acd3247b3dea26af2d326fca3a4523ddcd50428b0a",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 253110,
+          "saved_bytes_estimate": 50559,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 88938,
+          "saved_bytes_estimate": 214731,
+          "visible_rgb_psnr_db": 42.18,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 79879,
+          "saved_bytes_estimate": 223790,
+          "visible_rgb_psnr_db": 40.53,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/7/stg3bg_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 313660,
+      "apk_bytes": 298098,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "8139c2124d611a4a05dceeca7c222b02cafa5fe843b48e0e6a4b2c076cf0bc6d",
+      "source_sha256": "1dda815836094bb5af78580a4c50219010c9397eceac474874d1e2ec04f5cff8",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 114703,
+          "saved_bytes_estimate": 183395,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 31931,
+          "saved_bytes_estimate": 266167,
+          "visible_rgb_psnr_db": 43.92,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 27241,
+          "saved_bytes_estimate": 270857,
+          "visible_rgb_psnr_db": 42.45,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_13_n.png",
+      "category": "符卡背景",
+      "source_bytes": 469601,
+      "apk_bytes": 295310,
+      "current_format": "webp",
+      "width": 640,
+      "height": 480,
+      "gpu_rgba8_bytes": 1228800,
+      "rgba_sha256": "e29ac22dbe7455cfc211c842967c96d4dee644ab3f8f75f2032532745eb71957",
+      "source_sha256": "bf24e2868f0934221f56e1a5155ce5aa7f28e529d2d2a2b8cf23d519295cf1d4",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 295310,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 48969,
+          "saved_bytes_estimate": 246341,
+          "visible_rgb_psnr_db": 40.53,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 32446,
+          "saved_bytes_estimate": 262864,
+          "visible_rgb_psnr_db": 38.51,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/10/stage03_2.png",
+      "category": "原作场景纹理",
+      "source_bytes": 775773,
+      "apk_bytes": 284841,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "001b482f1beb34002615610b53eaa88d90c9552f67bd700639d4da58e4c5843f",
+      "source_sha256": "3d0aa5e01584dbceea3168c7a6ded1880f0782aec0757e3632dac1259c9ddd38",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 284841,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 103813,
+          "saved_bytes_estimate": 181028,
+          "visible_rgb_psnr_db": 35.72,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 80863,
+          "saved_bytes_estimate": 203978,
+          "visible_rgb_psnr_db": 34.45,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "mod/BG/TH10/TH10_bg_riverback.png",
+      "category": "道中背景",
+      "source_bytes": 541139,
+      "apk_bytes": 284841,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "001b482f1beb34002615610b53eaa88d90c9552f67bd700639d4da58e4c5843f",
+      "source_sha256": "ae92090f51d844c2ebf8a686f3aca37ce40825cd699a8aa3146897db75fff311",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 284841,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 103813,
+          "saved_bytes_estimate": 181028,
+          "visible_rgb_psnr_db": 35.72,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 80863,
+          "saved_bytes_estimate": 203978,
+          "visible_rgb_psnr_db": 34.45,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/95/world01_0.png",
+      "category": "原作场景纹理",
+      "source_bytes": 282675,
+      "apk_bytes": 281773,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "337c3a39eb04dd2006201cf47f101d9cde9e881b8a8557f259c347acaf637dda",
+      "source_sha256": "f24833171ff307bc43f88a2f9bcc793a400fdae6cbe71ab82b13585ee39dcb30",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 179519,
+          "saved_bytes_estimate": 102254,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 48459,
+          "saved_bytes_estimate": 233314,
+          "visible_rgb_psnr_db": 35.64,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 38027,
+          "saved_bytes_estimate": 243746,
+          "visible_rgb_psnr_db": 34.95,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/Original/10/stage04_2.png",
+      "category": "原作场景纹理",
+      "source_bytes": 309298,
+      "apk_bytes": 279101,
+      "current_format": "png",
+      "width": 384,
+      "height": 448,
+      "gpu_rgba8_bytes": 688128,
+      "rgba_sha256": "47e9d288b1fef1faa47516c6e736b5e0b70b380119678bbd63b4e70a90699938",
+      "source_sha256": "8dd3225084cd81643f1fc30c604ba4b55efd56b33fe611968fb863a3268f95c5",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 119954,
+          "saved_bytes_estimate": 159147,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 31268,
+          "saved_bytes_estimate": 247833,
+          "visible_rgb_psnr_db": 35.36,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 24052,
+          "saved_bytes_estimate": 255049,
+          "visible_rgb_psnr_db": 34.68,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_17.png",
+      "category": "符卡背景",
+      "source_bytes": 271775,
+      "apk_bytes": 271860,
+      "current_format": "png",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "3592fbe31803615250300bb6f77d70be320222cb226f57fe3ba17a9bec645e96",
+      "source_sha256": "276594e2006796e3a5f8fe82cc3822a585c5db4e92ccc7299d6f94dfa87a19dd",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 166143,
+          "saved_bytes_estimate": 105717,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 28670,
+          "saved_bytes_estimate": 243190,
+          "visible_rgb_psnr_db": 42.33,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 21851,
+          "saved_bytes_estimate": 250009,
+          "visible_rgb_psnr_db": 41.36,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th07_6.png",
+      "category": "符卡背景",
+      "source_bytes": 362305,
+      "apk_bytes": 266306,
+      "current_format": "webp",
+      "width": 512,
+      "height": 512,
+      "gpu_rgba8_bytes": 1048576,
+      "rgba_sha256": "3ca823b5fb18e54a9d5fbf42ac4433510d3324098baf96bca9ca7194440d1c08",
+      "source_sha256": "a4562e80e0e8e4d3e6e4399d9d9a81d81fc356d81177437cee49843012f393fb",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 266306,
+          "saved_bytes_estimate": 0,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 40853,
+          "saved_bytes_estimate": 225453,
+          "visible_rgb_psnr_db": 34.49,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 30880,
+          "saved_bytes_estimate": 235426,
+          "visible_rgb_psnr_db": 33.66,
+          "alpha_exact": true
+        }
+      }
+    },
+    {
+      "path": "Resources/BossBackGround/th08_13.png",
+      "category": "符卡背景",
+      "source_bytes": 265006,
+      "apk_bytes": 265089,
+      "current_format": "png",
+      "width": 384,
+      "height": 448,
+      "gpu_rgba8_bytes": 688128,
+      "rgba_sha256": "f0c53aae905095ab5bb24eff6225a518634b0e594f641a9b526267585f1b5bfd",
+      "source_sha256": "d65c6c9de2ffe91cb4f8c9299b3598cdaadc369764c517d061fe895b9eaddad9",
+      "candidates": {
+        "lossless": {
+          "apk_bytes_estimate": 195599,
+          "saved_bytes_estimate": 69490,
+          "rgba_exact": true
+        },
+        "90": {
+          "apk_bytes_estimate": 66773,
+          "saved_bytes_estimate": 198316,
+          "visible_rgb_psnr_db": 38.88,
+          "alpha_exact": true
+        },
+        "85": {
+          "apk_bytes_estimate": 58904,
+          "saved_bytes_estimate": 206185,
+          "visible_rgb_psnr_db": 37.65,
+          "alpha_exact": true
+        }
+      }
+    }
+  ],
+  "excluded_large_images": [
+    {
+      "path": "Resources/Original/8/eff09al_1.png",
+      "category": null,
+      "source_bytes": 2304970,
+      "apk_bytes": 2211355,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/8/eff09sk_1.png",
+      "category": null,
+      "source_bytes": 2304970,
+      "apk_bytes": 2211355,
+      "current_format": "png"
+    },
+    {
+      "path": "THlib/bullet/img/bullet5.png",
+      "category": null,
+      "source_bytes": 1561184,
+      "apk_bytes": 1522557,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/System/eff_astral.png",
+      "category": null,
+      "source_bytes": 1186596,
+      "apk_bytes": 889624,
+      "current_format": "webp"
+    },
+    {
+      "path": "THlib/bullet/img/bullet3.png",
+      "category": null,
+      "source_bytes": 627793,
+      "apk_bytes": 621957,
+      "current_format": "png"
+    },
+    {
+      "path": "THlib/bullet/img/bullet4.png",
+      "category": null,
+      "source_bytes": 542342,
+      "apk_bytes": 533561,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/8/eff08_3.png",
+      "category": null,
+      "source_bytes": 483201,
+      "apk_bytes": 459555,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/7/stg6enm_1.png",
+      "category": null,
+      "source_bytes": 416487,
+      "apk_bytes": 400401,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/8/stgenm_yy_0.png",
+      "category": null,
+      "source_bytes": 416487,
+      "apk_bytes": 400401,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/System/th33_fan.png",
+      "category": null,
+      "source_bytes": 323051,
+      "apk_bytes": 323131,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/95/enm17_3.png",
+      "category": null,
+      "source_bytes": 322128,
+      "apk_bytes": 322214,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/8/eff07_3.png",
+      "category": null,
+      "source_bytes": 337859,
+      "apk_bytes": 312117,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/10/stgenm01_17.png",
+      "category": null,
+      "source_bytes": 309957,
+      "apk_bytes": 298535,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/10/enemy_0.png",
+      "category": null,
+      "source_bytes": 293970,
+      "apk_bytes": 284106,
+      "current_format": "png"
+    },
+    {
+      "path": "Resources/Original/95/enm19_1.png",
+      "category": null,
+      "source_bytes": 266544,
+      "apk_bytes": 265401,
+      "current_format": "png"
+    }
+  ]
+}
