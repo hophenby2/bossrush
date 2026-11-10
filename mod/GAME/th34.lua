@@ -707,7 +707,7 @@ class["TH34_ghost"] = Class(enemy, {
         self.spd = 0
         self.protect = true                 -- 出生 10 帧无敌（原作 INVINCIBILITY_TIMER）
         self.colli = false                  -- 烟尘阶段不可打（原作 IS_HITTABLE 0）
-        self.drop = { 0, DROP_FAITH[drop], DROP_POINT[drop] }
+        self.drop = SequenceResources and SequenceResources.enabled() and { original_code=drop } or { 0, DROP_FAITH[drop], DROP_POINT[drop] }
         ---两条 Hermite 的常量（原作 t=0 那一帧求值一次后冻结，见文件头的说明）
         self.px0, self.px1 = PUFF_X0, 0
         self.py0, self.py1 = PUFF_Y0, 0
@@ -1747,7 +1747,7 @@ class["TH34_fairy4"] = Class(enemy, {
         self.road_angle=-(({a=0,b=-0.19634955,c=0.19634955})[kind])*RAD2DEG
         if self.mirror==1 then self.road_angle=180-self.road_angle end
         self.protect = true
-        self.drop = { 0, DROP_FAITH[drop], DROP_POINT[drop] }
+        self.drop = SequenceResources and SequenceResources.enabled() and { original_code=drop } or { 0, DROP_FAITH[drop], DROP_POINT[drop] }
         task.New(self, function()
             task.Wait(FA4_INVUL)
             self.protect = false
@@ -2918,7 +2918,9 @@ class["TH34_mid5"] = Class(enemy, {
         ---时间轴的 itemdrop 照掉（差异 35）：原作 SET_DEATH_TYPE 1（SCORE_ONLY）
         ---用 `goto END_BOSS` **落进** DROP_ITEMS 分支（EnemyManager.cpp:968-983），
         ---所以 SCORE_ONLY 一样会 SpawnItem。0=小能量→1 信仰、1=点→1 点、2=大能量→2 信仰。
-        if self.dr == 1 then
+        if SequenceResources and SequenceResources.enabled() then
+            SequenceResources.dropCode(self.dr,self.x,self.y)
+        elseif self.dr == 1 then
             New(item.obj.point, self.x, self.y)
         elseif self.dr == 2 then
             New(item.obj.faith, self.x, self.y)
@@ -3168,7 +3170,7 @@ end
 local function w1_setdrop(self, drop)
     self.dropcode = drop
     local f, p = DROP_FAITH[drop], DROP_POINT[drop]
-    self.drop = { 0, f or 0, p or 0 }
+    self.drop = SequenceResources and SequenceResources.enabled() and drop>=0 and drop<=2 and { original_code=drop } or { 0, f or 0, p or 0 }
 end
 
 ---──────────── 小怪（原作 sub 3 / 4..15 / 19） ────────────
@@ -4451,7 +4453,7 @@ end
 local function setdrop78(self, drop)
     self.dropcode = drop
     local f, p = DROP_FAITH[drop], DROP_POINT[drop]
-    self.drop = { 0, f or 0, p or 0 }
+    self.drop = SequenceResources and SequenceResources.enabled() and drop>=0 and drop<=2 and { original_code=drop } or { 0, f or 0, p or 0 }
 end
 
 local function drop78(self)

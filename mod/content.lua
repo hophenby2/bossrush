@@ -17,7 +17,12 @@ function C.supportsRecord(record)
     local sequence=dofile('mod/sequence_catalog.lua')
     for _,entry in ipairs(sequence.entries) do
         if record.stageName==entry.battle then
-            return v.__sequence_version==sequence.VERSION and v.sequence_key==entry.key
+            if v.__sequence_version~=sequence.VERSION or v.sequence_key~=entry.key then return false end
+            if v.__sequence_system_version then
+                if not SequenceResources or v.__sequence_system_version~=SequenceResources.VERSION then return false end
+                return SequenceResources.machine(SequenceResources.gameByLevel[entry.level],v.sequence_player)~=nil
+            end
+            return true
         end
     end
     if randomStages[record.stageName] then

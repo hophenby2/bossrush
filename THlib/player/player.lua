@@ -22,7 +22,7 @@ function player_class:init(slot)
     if netSlot then GameNet.registerPlayer(self,netSlot) end
     if not netSlot or netSlot==1 then
         SetCurSystem(lstg.var.current_system or "")
-        New(System)
+        if not (SequenceResources and SequenceResources.enabled()) then New(System) end
         New(BulletBreak_Table)
     end
     self.group = GROUP.PLAYER

@@ -349,7 +349,8 @@ end
 function stage:Option(bg, music, full_screen)
     item._init_item(self)
     mask_fader:Do("open")
-    if GameNet then GameNet.spawnPlayers() else New(_G[lstg.var.player_name]) end
+    if SequenceResources and SequenceResources.enabled() then SequenceResources.spawnPlayer()
+    elseif GameNet then GameNet.spawnPlayers() else New(_G[lstg.var.player_name]) end
     if bg then
         background.Create(bg)
     end

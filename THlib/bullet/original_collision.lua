@@ -37,6 +37,11 @@ function C.unit(o,game,key,inherit)
     local box=boxes[game] and boxes[game][key]
     if box and box.inherited and not inherit then box=nil end
     o._original_collision_game=game
+    -- TH10构造器的两个框均为24×24；同步出生包装在导出时展开，不能留下贴图的0×0框。
+    if game==10 and not inherit and not o._original_damage_box then
+        o._original_damage_box={24,24};o._original_contact_box={24,24}
+        o.a,o.b,o.rect=12,12,true
+    end
     if box then
         if box.damage then
             o._original_damage_box=box.damage

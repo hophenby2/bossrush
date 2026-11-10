@@ -151,6 +151,9 @@ end
 local function cross(a,b) return {a[2]*b[3]-a[3]*b[2],a[3]*b[1]-a[1]*b[3],a[1]*b[2]-a[2]*b[1]} end
 local function drawQuad(s,q,v,instance,right,up)
     if not v.visible or not v.sprite then return end
+    -- 原作73号ANM指令禁止透明树冠写深度，否则同平面重叠区域会逐帧争抢像素。
+    -- 差异：Sub的深度开关同时控制测试和写入；这些面按原作STD层次绘制。
+    SetZBufferEnable(v.zwrite_disabled and 0 or 1)
     local sprite=A.sprite_resource(v)
     if q.script then
         -- 永夜抄竹林的type1是两端点之间的朝相机带状面，不能当作普通平面丢掉第二端点。

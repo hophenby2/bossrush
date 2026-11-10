@@ -1,6 +1,7 @@
 -- 红魔乡低速满火力的活跃TTK中位数；只换实际可伤害血量，不改变ECL的life单位。
 local M=dofile('mod/GAME/original/th06_low_speed_hp.lua')
 local function factor(raw,spell)
+    if SequenceResources and SequenceResources.enabled() then return 1 end
     if raw<=0 or raw>=999999 then return 1 end
     return math.max(1,raw*M.scale[spell and 'spell' or 'normal'])/raw
 end
@@ -19,6 +20,7 @@ function M.unit(o,raw,spell)
 end
 function M.main(o,entry,raw)
     local hp=entry and entry.hp or raw
+    if SequenceResources and SequenceResources.enabled() then hp=entry and entry.raw or raw end
     hp=hp*(GameHPScale and GameHPScale.factor(o) or 1)
     o._th06_hp_scale=raw>0 and hp/raw or 1
     o._th06_hp_spell=entry and entry.spell or false

@@ -92,6 +92,9 @@ end
 
 local SearchStageLevel = SearchStageLevel
 function enemybase:take_damage(dmg)
+    if SequenceResources and SequenceResources.enabled() then
+        return
+    end
     lstg.var.score = lstg.var.score + 10
     dmg = min(self.hp, dmg)
     AddMoney(dmg / 60)
@@ -145,6 +148,7 @@ function enemybase:take_damage(dmg)
 end
 --
 function enemybase:colli(other)
+    if SequenceResources and SequenceResources.enabled() and SequenceResources.shotHit(self,other) then return end
     if other.dmg then
         lstg.var.score = lstg.var.score + 10
         local dmg = GameDrops and GameDrops.damage(other.dmg,other) or other.dmg

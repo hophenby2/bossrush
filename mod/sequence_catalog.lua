@@ -39,6 +39,10 @@ local function selected(entry,row,player)
     local id=card.source_card_id or card.card_id
     if entry.level==30 and row.chapter=='4' and row.role=='boss' then
         local m=card.th06_source
+        if SequenceResources and SequenceResources.enabled() then
+            local machine=SequenceResources.machine(6,lstg.var.sequence_player)
+            return m and m.shot==machine.character*2+machine.shot
+        end
         -- 当前自机没有原作A/B机体选择，分别采用灵梦A、魔理沙A对应的原作卡链。
         return m and m.group==(marisa(player) and 16 or 9)
     elseif entry.level==32 then
@@ -46,7 +50,8 @@ local function selected(entry,row,player)
         if m and m.difficulty and m.difficulty~=3 then return false end
         if row.chapter=='4' and row.role=='boss' then
             if id==4441 or id==4447 or id==4448 then return true end
-            local key=marisa(player) and '4lyrica' or '4lunasa'
+            local machine=SequenceResources and SequenceResources.enabled() and SequenceResources.machine(7,lstg.var.sequence_player)
+            local key=machine and machine.character==2 and '4merlin' or marisa(player) and '4lyrica' or '4lunasa'
             return m and m.key==key
         end
     end

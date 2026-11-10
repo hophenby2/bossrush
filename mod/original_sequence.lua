@@ -20,7 +20,15 @@ local function find(level,id)
     error('顺序模式缺少原作阶段：'..level..':'..id)
 end
 local function copy(card)
-    local out={};for k,v in pairs(card) do out[k]=v end;return out
+    local out={};for k,v in pairs(card) do out[k]=v end
+    if SequenceResources and SequenceResources.enabled() then
+        local game=SequenceResources.game()
+        local id=card.source_card_id or card.card_id
+        local balance=OriginalBalance and OriginalBalance.entries[game] and OriginalBalance.entries[game][id]
+        if balance then out.hp=balance.raw end
+        if card._original_balance then out.hp=card._original_balance.raw end
+    end
+    return out
 end
 local detachRoad
 local function spawn(rows,first,last)
@@ -176,17 +184,26 @@ function S.run(scene,key)
         local run=lstg.var.sequence_run
         run.chapter,run.chapter_name,run.road_time=index,chapter.name,0
         scene.level=entry.level
+        if SequenceResources then SequenceResources.beginChapter(chapter) end
         media(scene,chapter,'stage')
         local source=roadSource(chapter)
         if source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
         run.completed=index
+        if SequenceResources then SequenceResources.endChapter(index) end
         if scene.sequence_finished then return end
     end
     S.finish(scene,true)
 end
-function S.start(key)
+function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
+    if SequenceResources then
+        local game=SequenceResources.gameByLevel[entry.level]
+        local selected=assert(SequenceResources.machine(game,machine or SequenceResources.machines(game)[1].id))
+        lstg.var.sequence_player=selected.id
+        lstg.var.player_name=selected.route
+        lstg.var.rep_player=selected.name
+    end
     lstg.var.rogue_run,lstg.var.sequence_run,lstg.var.timeslow=nil,nil,nil
     lstg.var.current_system=''
     StopMusic('SCORE')
@@ -210,7 +227,8 @@ for _,entry in ipairs(S.catalog.entries) do
     function battle:frame()
         if self.sequence_finished then return end
         local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
-        if misses>=S.MISS_LIMIT then S.finish(self,false);return end
+        local resources=SequenceResources and SequenceResources.state()
+        if resources and resources.lives<0 or not resources and misses>=S.MISS_LIMIT then S.finish(self,false);return end
         stage.group.frame(self)
         if OriginalSequenceMedia then OriginalSequenceMedia.frame(self) end
     end

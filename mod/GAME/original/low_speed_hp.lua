@@ -302,10 +302,14 @@ H.entries[10]={
 -- Global history ID and implementation key refer to the same original phase.
 H.entries[8][55000]=H.entries[8][6033]
 for game,entries in pairs(H.entries) do
-    H.cards[game]={}
-    for id,row in pairs(entries) do H.cards[game][id]=row.hp end
+    H.cards[game]=setmetatable({}, {__index=function(_,id)
+        local row=entries[id]
+        if not row then return end
+        return SequenceResources and SequenceResources.enabled() and row.raw or row.hp
+    end})
 end
 function H.unit(o,game,spell)
+    if SequenceResources and SequenceResources.enabled() then o._original_hp_scale=1;return end
     local scale=H.scale[game]
     if not scale or not o.hp or o.hp>=999999 or o._original_hp_scale then return end
     local mode=spell and 'spell' or 'normal'

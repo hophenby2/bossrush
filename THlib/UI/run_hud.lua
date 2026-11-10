@@ -81,12 +81,15 @@ function H.attributes(scrr,scrt,alpha,layout)
     end
 end
 function H.lives()
+    local native=SequenceResources and SequenceResources.state()
+    if native then return math.max(0,native.lives+1),9 end
     local s=stage.current_stage
     local limit=lstg.var.rogue_run and RogueTen.MISS_LIMIT or s.AllowMissCount or 10
     local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
     return math.max(0,limit-misses),limit
 end
 function H.resources(x1,x2,top,alpha)
+    if SequenceResources and SequenceResources.enabled() then return H.original(x1,x2,top,alpha) end
     local lives,limit=H.lives()
     text('生命',x1,top,.8,alpha,colors.red,'left','vcenter')
     text(lives,x2,top,.8,alpha,colors.red,'right','vcenter')
@@ -101,7 +104,27 @@ function H.resources(x1,x2,top,alpha)
 end
 function H.draw(scrr,scrt,alpha)
     H.resources(scrr+18,942,scrt-16,alpha)
+    if SequenceResources and SequenceResources.enabled() then return end
     if GameDrops then GameDrops.renderHUD(scrr,scrt,alpha) end
+end
+function H.original(x1,x2,top,alpha)
+    local P=SequenceResources;local s=P.state();if not s then return end
+    local m=P.machine(s.game,s.machine)
+    local rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},{'残机',math.max(0,s.lives)},
+        {s.game==10 and '灵击 / 火力' or '火力',s.game==10 and ('%.2f / 5.00'):format(s.power/20) or s.power..' / 128'}}
+    if s.game==95 then rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},{'剩余尝试',math.max(0,s.lives+1)}} end
+    if s.game~=10 and s.game~=95 then rows[#rows+1]={'Bomb',s.bombs} end
+    rows[#rows+1]={'擦弹',lstg.var.graze}
+    if s.game==7 then
+        rows[#rows+1]={'樱点',s.cherry..' / '..s.cherry_max};rows[#rows+1]={'樱点＋',s.cherry_plus..' / 50000'}
+        if s.border>0 then rows[#rows+1]={'森罗结界',('%.1f 秒'):format(s.border/60)} end
+    elseif s.game==8 then rows[#rows+1]={'刻符',s.time};rows[#rows+1]={'人妖率',('%+.0f%%'):format(s.human)}
+    elseif s.game==10 then rows[#rows+1]={'信仰',s.faith};rows[#rows+1]={'信仰槽',s.faith_timer..' / 130'} end
+    for i,row in ipairs(rows) do
+        local y=top-(i-1)*32
+        text(row[1],x1,y,.65,alpha,{170,190,210},'left','vcenter')
+        text(row[2],x2,y,i==1 and .5 or .65,alpha,{235,240,255},'right','vcenter')
+    end
 end
 function H.stage(value,x,y,width,maxScale)
     local label=tostring(math.max(1,math.floor(value or 1)))

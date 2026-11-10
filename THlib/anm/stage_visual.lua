@@ -490,7 +490,8 @@ function S.wrap_actor(cls,game,key)
         if not IsValid(o) then return end
         -- 未映射显示入口的敌机也要保留默认击破效果，不能因缺少姿态表而静默消失。
         S.death.bind(o,game)
-        if type(key)=='function' then o._original_visual_args={...} end
+        -- 出生参数中间允许nil（src/inv等）；必须保留实参数，否则unpack会丢掉末尾原作入口名。
+        if type(key)=='function' then o._original_visual_args={n=select('#',...),...} end
         local resolved=key
         if type(key)=='function' then resolved=key(o,...) end
         if resolved then S.bind_source(o,game,resolved) end
@@ -506,7 +507,8 @@ function S.wrap_actor(cls,game,key)
             return
         end
         if type(key)=='function' then
-            local resolved=key(o,unpack(o._original_visual_args))
+            local args=o._original_visual_args
+            local resolved=key(o,unpack(args,1,args.n))
             if resolved and (not o._original_source or resolved~=o._original_source.key) then
                 S.bind_source(o,game,resolved);o._original_visual_origin=o.timer
             end

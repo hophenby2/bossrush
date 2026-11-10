@@ -246,6 +246,10 @@ function stg.Start(group)
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
     lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
+    lstg.var.__sequence_system_version=group.sequence_key and SequenceResources and SequenceResources.VERSION or nil
+    lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
+    if lstg.var.__sequence_system_version then lstg.var.__drops_version=0;lstg.var.upgrades=nil end
+    if not group.sequence_key then lstg.var.original_resources=nil;lstg.var.sequence_player=nil end
     if not group.sequence_key then lstg.var.sequence_run=nil end
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
@@ -271,6 +275,7 @@ function stg.PracticeStart(stagename, sc_pr)
     if not dofile('mod/original_practice.lua').canStart(stagename,sc_pr) then return false end
     lstg.var.__original_flow_version=1
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
+    lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     lstg.var.__phase_clear_version=1

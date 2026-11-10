@@ -6,6 +6,7 @@ function stage_menu:init()
     local menu_title, menu_replay_loader, menu_replay_saver, menu_setting
     local menu_key, menu_music, menu_player_system_select
     local menu_stage_practice,menu_spell_practice,menu_sequence_select
+    local menu_sequence_player
     --
     --
     mask_fader:Do("open")
@@ -106,6 +107,31 @@ function stage_menu:init()
         menu_player_system_select.state=mode
         menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
     end
+    local function openSequence()
+        if not menu_sequence_select then
+            local function back() menu.FadeOut(menu_sequence_select);menu.FadeIn(menu_title) end
+            local entries={}
+            for _,entry in ipairs(OriginalSequence.catalog.entries) do
+                local key,game=entry.key,SequenceResources.gameByLevel[entry.level]
+                entries[#entries+1]={entry.title,function()
+                    local function backPlayer() menu.FadeOut(menu_sequence_player);menu.FadeIn(menu_sequence_select) end
+                    local machines={}
+                    for _,machine in ipairs(SequenceResources.machines(game)) do
+                        local id=machine.id
+                        machines[#machines+1]={machine.name,function()
+                            startPractice(menu_sequence_player,function() OriginalSequence.start(key,id) end)
+                        end,'',key=id}
+                    end
+                    machines[#machines+1]={'返回',backPlayer,'Back',key='back'}
+                    menu_sequence_player=New(main_menu,'选择原作机体',machines,backPlayer)
+                    menu.FadeOut(menu_sequence_select);menu.FadeIn(menu_sequence_player)
+                end,'Original Order',key=key}
+            end
+            entries[#entries+1]={'返回',back,'Back',key='back'}
+            menu_sequence_select=New(main_menu,'选择原作关卡',entries,back)
+        end
+        menu.FadeOut(menu_title);menu.FadeIn(menu_sequence_select)
+    end
     local function titleContent()
         local content={
         { "roguelike模式", function()
@@ -114,11 +140,7 @@ function stage_menu:init()
             menu.FadeIn(menu_player_system_select)
             menu.FadeOut(menu_title)
         end, "Roguelike" },
-        { "顺序模式", function()
-            menu_player_system_select:fresh('original_sequence')
-            menu_player_system_select.state='original_sequence'
-            menu.FadeIn(menu_player_system_select);menu.FadeOut(menu_title)
-        end, "Original Order" },
+        { "顺序模式", openSequence, "Original Order" },
         { "查看录像", function()
             replay_loader.Refresh(menu_replay_loader)
             menu.FadeIn(menu_replay_loader, "left")

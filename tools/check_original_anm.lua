@@ -306,4 +306,12 @@ for _,vm in ipairs(slowed.vms) do
 end
 check(near(ring.omega[3],-.007853982),'恢复原作背景的负向旋转速度')
 ObjList=objectList
+local wrapped={init=function(o) o.x,o.y,o.timer,o.ani=0,0,0,0 end,
+    frame=function() end,render=function() end,kill=function() end}
+V.wrap_actor(wrapped,10,function(o,hp,x,y,mirror,drop,beh,src,inv,key) return key or 'stage01:Ecl_Girl00' end)
+local entry={class={}}
+wrapped.init(entry,20,-144,-16,false,{original_code=2},function() end,nil,0,'stage01:Ecl_BGirl00')
+for _=1,3 do wrapped.frame(entry);entry.timer=entry.timer+1 end
+check(entry._original_source.key=='stage01:Ecl_BGirl00' and entry._original_visual_args.n==9,
+    '出生参数中间的nil不截断尾部原作入口，下一帧仍保留蓝妖精包装')
 print(('原作ANM与资源回归通过：%d 项，%d 个作品/角色组合'):format(checks,role_count))

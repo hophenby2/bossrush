@@ -142,6 +142,7 @@ local function execute(v)
         elseif op=='normal' then v.blend=''
         elseif op=='follow' then v.follow=a~=0
         elseif op=='position_mode' then v.position_mode=a
+        elseif op=='zwrite' then v.zwrite_disabled=a~=0
         elseif op=='flag27' then v.follow=a~=0
         elseif op=='anchor' then v.anchor=1
         elseif op=='anchor_state' then v.anchor_x=a;v.anchor_y=b

@@ -14,6 +14,9 @@ local item = Class(object)
 _G.item = item
 -- 全局关闭实物道具；系统道具与关卡直接New的道具也经过文件末尾的统一出口。
 item.drops_enabled = false
+function item.DropsEnabled()
+    return item.drops_enabled or SequenceResources and SequenceResources.enabled() and SequenceResources.game()~=95
+end
 function item:init(x, y, t, v, angle)
     self._is_pickup = true -- 季节道具可能先放在GHOST组等待，不能只按当前碰撞组识别。
     self.x = Forbid(x, lstg.world.l + 8, lstg.world.r - 8)
@@ -303,7 +306,8 @@ function items.sakura:collect()
 end
 local sqrt = sqrt
 function item.Dropitem_PFP(x, y, drop)
-    if not item.drops_enabled then return end
+    if SequenceResources and SequenceResources.enabled() then return SequenceResources.dropPFP(x,y,drop) end
+    if not item.DropsEnabled() then return end
     local m
     if drop[1] >= 400 then
         m = drop[1]
@@ -376,7 +380,7 @@ item.DropSwitch = {
 }
 
 function item.Dropitem(itemclass, num, x, y)
-    if not item.drops_enabled then return end
+    if not item.DropsEnabled() then return end
     item.DropSwitch[itemclass](num, x, y)
 end
 
@@ -386,8 +390,12 @@ end
 local discarded_pickup = Class(object, { frame=object.RawDel, render=function() end }, true)
 local create = New
 local function new(class, ...)
+    if SequenceResources and SequenceResources.enabled() and SequenceResources.itemAlias then
+        local pickup=SequenceResources.itemAlias(class,...)
+        if pickup then return pickup end
+    end
     local o = create(class, ...)
-    if not item.drops_enabled and IsValid(o) then
+    if not item.DropsEnabled() and IsValid(o) then
         local group = o.group
         if group==GROUP.ITEM or group==GROUP.ITEM2 or o._is_pickup then
             o.class = discarded_pickup

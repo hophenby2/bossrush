@@ -151,6 +151,7 @@ return function()
     form_frames,form_youkai=0,false
     M.form_tick=0
     function M.form()
+        if SequenceResources and SequenceResources.enabled() and SequenceResources.game()==8 then return SequenceResources.isYoukai(player) end
         local current=stage and stage.current_stage
         local stamp=current and current.timer
         if type(stamp)~='number' then stamp=M.form_tick end
@@ -607,7 +608,8 @@ return function()
             M.owner=o;o.th08_combat_card=id;o.th08_combat_time=0
             o.DMG_factor=1
             local balance=card._original_balance
-            o._original_hp_scale=balance and OriginalBalance.scale[8][balance.spell and 'spell' or 'normal'] or nil
+            o._original_hp_scale=SequenceResources and SequenceResources.enabled() and 1
+                or balance and OriginalBalance.scale[8][balance.spell and 'spell' or 'normal'] or nil
             o.th08_actors,o.th08_actor_counts,o.th08_children={},{},{}
             if card.t1<card.t3 then o.no_hp_render,o.NotPlayTimeOutSound=false,false end
             if lw then o.colli=true end

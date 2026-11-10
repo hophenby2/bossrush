@@ -2,6 +2,7 @@ local int, max = int, max
 local SearchStageLevel = SearchStageLevel
 
 function item:PlayerMiss()
+    if SequenceResources and SequenceResources.enabled() then return SequenceResources.miss(self) end
     local var = lstg.var
     var.dead = var.dead + 1
     if GameRank then GameRank.miss() end
@@ -88,6 +89,7 @@ function item.PlayerInit()
     var.elapsed = 0
     var.off_getsc = 0--偏移获取符卡数，用于结算
     var.init_player_data = true
+    if SequenceResources then SequenceResources.reset() end
     -----------------单篇章游玩数据
     var.lost = false--失败flag
     var.get_part = 0--完成度
@@ -101,6 +103,7 @@ end
 local TweakScore = item.TweakScore
 
 function item.PlayerGraze()
+    if SequenceResources and SequenceResources.enabled() then return SequenceResources.graze() end
     local var = lstg.var
     var.graze = var.graze + 1
     if SearchStageLevel[9] then

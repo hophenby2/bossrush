@@ -1382,6 +1382,7 @@ function H.timeline_spawn(b,op,sub,x,y,z,hp,drop,score)
     return obj
 end
 function H.drop_item(b,id)
+    if SequenceResources and SequenceResources.enabled() then return SequenceResources.dropCode(id,b.x,b.y) end
     if not b.th06.road then return end
     local lib=rawget(_G,"item")
     local objects=lib and lib.obj

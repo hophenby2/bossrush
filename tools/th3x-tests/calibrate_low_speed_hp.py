@@ -148,8 +148,13 @@ def main():
                          (key, row['raw'], hp, row['immune'], row['guard'], str(row['spell']).lower(), windows))
         lines.append('}')
     lines.extend(['for game,entries in pairs(H.entries) do',
-                  '    H.cards[game]={}', '    for id,row in pairs(entries) do H.cards[game][id]=row.hp end', 'end',
-                  'function H.unit(o,game,spell)', '    local scale=H.scale[game]',
+                  '    H.cards[game]=setmetatable({}, {__index=function(_,id)',
+                  '        local row=entries[id]', '        if not row then return end',
+                  '        return SequenceResources and SequenceResources.enabled() and row.raw or row.hp',
+                  '    end})', 'end',
+                  'function H.unit(o,game,spell)',
+                  '    if SequenceResources and SequenceResources.enabled() then o._original_hp_scale=1;return end',
+                  '    local scale=H.scale[game]',
                   '    if not scale or not o.hp or o.hp>=999999 or o._original_hp_scale then return end',
                   "    local mode=spell and 'spell' or 'normal'",
                   "    scale=(game==8 and o.th08_attached) and scale['familiar_'..mode] or scale[mode]",

@@ -17,11 +17,26 @@ for game in (7,8,10):
     for path in sorted((args.ecl/str(game)).glob('*.decl')):
         source=path.read_text('utf-8',errors='replace')
         subs=dict(re.findall(r'(?:void|sub)\s+(\w+)\([^)]*\)\s*\{(.*?)\n\}',source,re.S))
+        def th10_birth(name,seen=()):
+            if name in seen:return {}
+            prefix=re.split(r'\n\+\d+:',subs.get(name,''))[0]
+            fields={}
+            for op,arguments in re.findall(r'ins_(\d+)\((.*?)\);',prefix):
+                if int(op)==11:
+                    target=re.match(r'"([^"]+)"',arguments)
+                    if target:fields.update(th10_birth(target[1],(*seen,name)))
+                elif int(op) in (320,321):
+                    size=re.fullmatch(r'\s*([-\d.]+)f,\s*([-\d.]+)f\s*',arguments)
+                    if size:fields['damage' if int(op)==320 else 'contact']='{'+size[1]+','+size[2]+'}'
+            return fields
         direct, bosses, graph = {}, set(), {}
         for name,body in subs.items():
             prefix=re.split(r'\n\+\d+:',body)[0]
             fields=[]
+            if game==10:
+                fields=[key+'='+value for key,value in th10_birth(name).items()]
             for i,op in enumerate([101] if game==7 else [77] if game==8 else [320,321]):
+                if game==10:continue
                 match=re.search(r'ins_'+str(op)+r'\(\s*([-\d.]+)f,\s*([-\d.]+)f',prefix)
                 if match:
                     fields.append(('damage' if i==0 else 'contact')+'={'+match[1]+','+match[2]+'}')

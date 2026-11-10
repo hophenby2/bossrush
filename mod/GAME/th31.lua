@@ -48517,7 +48517,7 @@ unit = class.th08_combat.unit({
         self.protect = self.invuln > 0
         self.astral_dmg_factor = 1
         ---itemDropType（蝶是 −2 ⇒ DROP_TBL 里没有 ⇒ 不掉道具）。
-        self.drop_tbl = DROP_TBL[drop]
+        self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
         self.sub = sub
         self.mirror = mirror and true or false
         self.parent = parent
@@ -49579,7 +49579,7 @@ unit = class.th08_combat.unit({
         self.alive = true
         self.seen = false
         self.allow_off = ALLOW_OFF[sub] or false
-        self.drop_tbl = DROP_TBL[drop]
+        self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
         ---SET_ITEM_DROP_COUNTS 5 4 ⇒ pointItemDropCount = 5（操作数 0）、
         ---powerOrPointItemDropCount = 4（操作数 1，EclRunHigh.inl:706-708）。
         ---Dropitem_PFP 的 { faith值, 信仰个数, 点个数 } ⇒ 4 个信仰(power) + 5 个点。
@@ -50888,7 +50888,7 @@ unit = class.th08_combat.unit({
         self.alive = true
         self.seen = false
         self.allow_off = ALLOW_OFF[sub] or false
-        self.drop_tbl = DROP_TBL[drop]
+        self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
         self.drop_counts = DROP_COUNTS[sub]
         ---贴图（占位，差异 3）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
         self.img = "servant"
@@ -51731,7 +51731,7 @@ unit = class.th08_combat.unit({
         self.alive = true
         self.seen = false
         self.allow_off = false
-        self.drop_tbl = DROP_TBL[drop]
+        self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
         self.drop_counts = DROP_COUNTS[sub]
         ---贴图（占位，差异 3）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
         self.img = "servant"
@@ -53154,7 +53154,7 @@ local function make_card(build)
             self.alive = true
             self.seen = false
             self.allow_off = false
-            self.drop_tbl = DROP_TBL[drop]
+            self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
             self.drop_counts = DROP_COUNTS[sub]
             ---贴图（占位，差异 2）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
             self.img = "servant"
@@ -54151,7 +54151,7 @@ local function make_card(build)
             self.alive = true
             self.seen = false
             self.allow_off = false
-            self.drop_tbl = DROP_TBL[drop]
+            self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
             self.drop_counts = DROP_COUNTS[sub]
             ---贴图（占位，差异 2）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
             self.img = "servant"
@@ -55267,7 +55267,7 @@ local function make_card(build)
             self.alive = true
             self.seen = false
             self.allow_off = false
-            self.drop_tbl = DROP_TBL[drop]
+            self.drop_tbl = SequenceResources and SequenceResources.enabled() and { original_code=drop } or DROP_TBL[drop]
             self.drop_counts = DROP_COUNTS[sub]
             ---贴图（占位，差异 2）—— **必须写在 A/B 之前**：换 img 会按资源半宽覆盖 a/b。
             self.img = "servant"

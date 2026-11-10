@@ -4,11 +4,16 @@ setup=setup:sub(1,assert(setup:find('local pellet=',1,true))-1)
 assert(loadstring(setup))()
 background={init=function() end}
 SetImageState=function() end;RenderRect=function() end
-Set3D=function() end;ClearZBuffer=function() end;SetZBufferEnable=function() end
+local depth,writes,transparent=0,0,0
+Set3D=function() end;ClearZBuffer=function() end;SetZBufferEnable=function(n) depth=n end
 lstg.world={l=-192,r=192,b=-224,t=224}
 local quads=0
 RenderTexture=function(tex,blend,...)
     quads=quads+1
+    if tex:match('original/10/stage01/') then
+        if tex:match('/[23]$') then assert(depth==0,'透明树冠禁止写深度');transparent=transparent+1
+        elseif tex:match('/0$') then assert(depth==1,'不透明地面保持深度');writes=writes+1 end
+    end
     for _,v in ipairs({...}) do for i=1,5 do assert(v[i]==v[i] and math.abs(v[i])<1e12,'三维顶点必须有限：'..tex) end end
 end
 local B=dofile('mod/sequence_background.lua')
@@ -35,4 +40,5 @@ for game,keys in pairs(works) do for _,key in ipairs(keys) do
     end
     count=count+1
 end end
+assert(writes>0 and transparent>0,'实测风神录地面与透明树冠的深度状态')
 print('原作STD模型、ANM资源和镜头推进检查通过：'..count..' 个背景，绘制 '..quads..' 个三维面')

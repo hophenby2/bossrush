@@ -5611,6 +5611,7 @@ class["th10_midfairy"] = Class(enemy, {
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)
+        if SequenceResources and SequenceResources.dropOriginalEnemy(self) then return end
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
     end,
     del = function(self) task.Clear(self) end,
@@ -5814,6 +5815,7 @@ class["th10_s6fairy"] = Class(enemy, {
     end,
     render = function(self) DefaultRenderFunc(self) end,
     kill = function(self)
+        if SequenceResources and SequenceResources.dropOriginalEnemy(self) then return end
         if self.drop_tbl then item.Dropitem_PFP(self.x, self.y, self.drop_tbl) end
     end,
     del = function(self) task.Clear(self) end,
@@ -6265,7 +6267,8 @@ t10mid.s01.one=function(name,hp,x,y,mirror,drop)
     local behaviors={Ecl_Girl00=t10mid.s01.eclg,Girl00=t10mid.s01.g0,
         Girl00B=t10mid.s01.g0b,Girl00C=t10mid.s01.g0c,Girl00D=t10mid.s01.g0d,
         Girl00E=t10mid.s01.g0e,Girl01=t10mid.s01.g1}
-    return t10mid.spawn(hp,x,y,mirror,drop==4 and t10mid.D2 or t10mid.D1,
+    local loot=SequenceResources and SequenceResources.enabled() and {original_code=drop} or (drop==4 and t10mid.D2 or t10mid.D1)
+    return t10mid.spawn(hp,x,y,mirror,loot,
         assert(behaviors[base],name),nil,0,'stage01:'..name)
 end
 t10mid.s01.sequence=function(events)
@@ -6297,7 +6300,7 @@ t10mid.s01.run=function(card)
     local B=t10mid.s01
     flow.roadWait(160)
     for i=0,8 do
-        B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,-144+32*i,-16,false,1)
+        B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,-144+32*i,-16,false,i%2==0 and 2 or 1)
         flow.roadWait(20)
     end
     B.one('Ecl_GGirl00',20,144,-16,false,3)
@@ -6327,7 +6330,7 @@ t10mid.s01.run=function(card)
     })
     flow.roadWait(120)
     for i=0,8 do
-        B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,144-32*i,-16,false,1)
+        B.one(i%2==0 and 'Ecl_BGirl00' or 'Ecl_RGirl00',20,144-32*i,-16,false,i%2==0 and 2 or 1)
         flow.roadWait(20)
     end
     B.one('Ecl_GGirl00',20,-144,-16,false,3)
@@ -6654,7 +6657,8 @@ t10mid.s02.one=function(name,hp,x,y,mirror,drop)
     local B=t10mid.s02
     local f=assert(({Girl00=B.g00,Girl00B=B.g00b,Girl00C=B.g00c,Girl00D=B.g00d,
         Girl01=B.g01,Girl02=B.g02})[base],name)
-    return t10mid.spawn(hp,x,y,mirror,base=='Girl01' and t10mid.D2 or t10mid.D1,f,nil,
+    local loot=SequenceResources and SequenceResources.enabled() and {original_code=drop} or (base=='Girl01' and t10mid.D2 or t10mid.D1)
+    return t10mid.spawn(hp,x,y,mirror,loot,f,nil,
         base=='Girl01' and 30 or (base=='Girl02' and 40 or 0),'stage02:'..name)
 end
 t10mid.s02.sequence=function(card,events)
@@ -7079,7 +7083,8 @@ t10mid.s03.one=function(card,name,hp,x,y,mirror,drop)
     local beh=behaviors[base]
     if base=='SpCir00' then beh=name:sub(1,1)=='R' and B.rsp or (name:sub(1,1)=='G' and B.gsp or B.bsp) end
     local inv=({Girl00B=15,Girl00C=100,Girl01=30,Girl02=40})[base] or 0
-    return t10mid.spawn(hp,x,y,mirror,drop==3 and t10mid.D2 or t10mid.D1,
+    local loot=SequenceResources and SequenceResources.enabled() and {original_code=drop} or (drop==3 and t10mid.D2 or t10mid.D1)
+    return t10mid.spawn(hp,x,y,mirror,loot,
         assert(beh,name),card,inv,'stage03:'..name)
 end
 t10mid.s03.sequence=function(card,events)
