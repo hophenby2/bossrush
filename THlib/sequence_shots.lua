@@ -104,13 +104,21 @@ C.shot=Class(object,{
                 if o.original_fade<=0 then object.RawDel(o);return end
             end
             local count=g==8 and r.callbacks[2]==5 and r.interval*2 or g==7 and r.kind==5 and r.interval or 0
-            if count>0 then
+            -- UpdateShotTrail在移动残影之前，为每隔一帧的历史位置建立16×448、伤害1的区域。
+            if g==8 and r.callbacks[2]==5 and not o.original_fade then
+                for i=1,#o.history,2 do
+                    local v=o.history[i]
+                    enemies(function(e) if overlaps(o,e,v[1],v[2],8,224) then P.hitEnemy(e,1,false) end end)
+                end
+            end
+            local moving=not o.original_fade or not (g==8 and r.callbacks[2]==5)
+            if count>0 and moving then
                 table.insert(o.history,1,{o.x,o.y})
                 if #o.history>count then table.remove(o.history) end
                 if g==8 then for _,v in ipairs(o.history) do v[2]=v[2]+1 end end
             end
-            beam(o)
-            if not o.original_fade and (g==10 and age%4==0 or g==6 or (g==7 or g==8) and age%2==0) then
+            if moving then beam(o) end
+            if g==10 and age%4==0 or g==6 or (g==7 or g==8) and age%2==0 then
                 enemies(function(e)
                     if (g~=10 or e.y-(e.b or 0)<=224) and overlaps(o,e) then
                         local damage=o.original_damage

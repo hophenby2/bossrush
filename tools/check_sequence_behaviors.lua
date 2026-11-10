@@ -59,6 +59,16 @@ check(near(shot.x,option[1]+laser.x) and near(shot.y,option[2]+208),'爱丽丝�
 check(shot.b==224 and not shot.vm.follow and near(shot.vm.rotation[3],math.pi/2),'激光保持448像素及ANM原生旋转')
 for _=1,6 do shot.class.frame(shot) end
 check(#shot.history==6 and shot.history[1][2]>shot.y,'爱丽丝激光按源回调保存向上漂移的残影')
+local regionHits=0;local hit=P.hitEnemy
+object.EnemyNontjtDo=function(fn) fn({_live=true,colli=true,hp=100,x=shot.x,y=shot.y,a=0,b=0}) end
+P.hitEnemy=function(_,damage) check(damage==1,'爱丽丝残影各段伤害为原始1点');regionHits=regionHits+1 end
+shot.original_age=7;shot.class.frame(shot)
+check(regionHits==3,'六个历史位置生成隔帧三段残影判定')
+regionHits=0;p.__shoot_flag=false
+P.hitEnemy=function(_,damage) check(damage==laser.damage,'激光释放后的消退阶段保留原伤害');regionHits=regionHits+1 end
+shot.class.frame(shot)
+check(regionHits==1 and shot.original_fade>0,'松开射击后保留主激光判定，不再建立残影区域')
+P.hitEnemy=hit;object.EnemyNontjtDo=function() end
 for _,machine in ipairs(P.machines(8)) do
     p,s=start(8,machine.id,'th08_lunatic_b');p.__slow_flag=true;P.updateOptions(p)
     if machine.id=='solo4' then check(p.original_options[1]~=nil,'紫单人具有追踪子机')
