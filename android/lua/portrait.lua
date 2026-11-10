@@ -1,6 +1,6 @@
 -- 安卓竖屏只改变显示和触控映射，世界坐标、弹速、判定与录像输入保持原值。
 -- 菜单复用横屏绘制，只移动和缩放组件；触区使用同一份坐标变换。
-local P={controls={},touches={},pending={},TOP_INSET=46,worldViews=setmetatable({},{__mode='k'})}
+local P={controls={},touches={},pending={},TOP_INSET=46,BOSS_BOTTOM_INSET=32,worldViews=setmetatable({},{__mode='k'})}
 local WIDTH=540
 function P.enabled()
     return setting and setting.androidPortrait==true and setting.resy>setting.resx
@@ -130,6 +130,11 @@ end
 function P.bossInsetWorld()
     local w=lstg.world
     return P.TOP_INSET*(w.t-w.b)/(w.scrt-w.scrb)
+end
+-- 与横屏共用底部血条和指示器，仅把整组平移到场地内部。
+function P.bossBottomOffsetWorld()
+    local w=lstg.world
+    return P.BOSS_BOTTOM_INSET*(w.t-w.b)/(w.scrt-w.scrb)
 end
 function P.place(cx,cy,x,y,scale)
     if not P.rendering then return end
@@ -442,7 +447,7 @@ end
 function P.hud(alpha)
     SetViewMode('ui')
     local w=lstg.world
-    local x,y=w.scrl+18,w.scrb+24
+    local x,y=w.scrl+18,w.scrb+44
     local count=GameDrops.bombsEnabled() and ((GameNet and GameNet.host()) and 2 or 1) or 0
     local lives=ui.RunHUD.lives()
     -- 左下角竖排，生命在上、Bomb在下；一颗星配阿拉伯数字。

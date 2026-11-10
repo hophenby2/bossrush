@@ -4,7 +4,7 @@ Include "THlib\\UI\\sc_pr.lua"
 ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
-ui.version = "26.11.8v2"
+ui.version = "26.11.10"
 local LoadImage = LoadImage
 LoadTexture("hint", "THlib\\UI\\hint.png", true)
 LoadImage("hint.bonusfail", "hint", 0, 64, 256, 64)

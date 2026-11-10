@@ -506,7 +506,7 @@ C.finish()
 check(collisionArrow._original_collision_rot==nil,'碰撞结束清除临时角度记录')
 ObjList=oldList
 local visual=OriginalBulletVisual
-local slowArrow=NewSimpleBullet(visual.native_style(7,4,arrow_mid),2,0,0,2,0,false,0,false)
+local slowArrow=NewSimpleBullet(visual.native_style(7,6,arrow_big_c),2,0,0,2,0,false,0,false)
 local arrowVM,arrowSprite=slowArrow._native_anm,slowArrow._native_anm.sprite
 slowArrow.own_gray=true;visual.render_anm(slowArrow)
 check(calls[#calls].name==arrowVM.data.sprites[arrowSprite-slowArrow._native_color+15].img,

@@ -222,7 +222,7 @@ local vx,vy=curved.vx,curved.vy
 local a=Angle(curved,player);tick()
 check(curved.th07_special_state==2 and near(curved.vx,vx+2/75*cos(a))
     and near(curved.vy,vy+2/75*sin(a)),'ExIns14 按重瞄快照加速度，覆盖原弯曲命令')
-local arrow=add(4,0,0);local round=add(0,0,0)
+local arrow=add(6,0,0);local round=add(0,0,0)
 lstg.var.timeslow=4;C.th07_set_speed(owner,3)
 check(lstg.var.timeslow==3 and arrow.own_gray and not round.own_gray,'缓时只临时改箭头色，不再次缩小速度')
 C.th07_motion_end(owner)

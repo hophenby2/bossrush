@@ -51,6 +51,7 @@ function extboss:render()
     SetViewMode("ui")
     local timer = self.timer
     local w = lstg.world
+    local bottom=w.scrb+(AndroidPortrait and AndroidPortrait.enabled() and AndroidPortrait.BOSS_BOTTOM_INSET or 0)
     local alpha = self.alpha
     local white = "white"
     local bosses = boss_group
@@ -76,7 +77,7 @@ function extboss:render()
         end
         local unit, percent
         for _, b in ipairs(boss_group) do
-            if IsValid(b) and not (b.no_hp_render or b.time_sc) then
+            if IsValid(b) and b.maxhp>0 and b.ui.drawhp and not (b.no_hp_render or b.time_sc) then
                 table.insert(validboss, b)
             end
         end
@@ -90,20 +91,20 @@ function extboss:render()
                 --Print(maxlen)
                 b = validboss[i]
                 unit = sin(min(b.__hpbar_timer, 90))
-                percent = b.hp / b.maxhp
+                percent = min(1,max(0,b.hp / b.maxhp))
                 if unit > 0 then
                     local c = b.dmgt / b.dmgmaxt
                     SetImageState(white, "", 255 * alpha, 0, 0, 0)
-                    RenderRect(white, last_x + 1, last_x + percent * maxlen * unit + 1, w.scrb - 22 - 1, w.scrb - 25 - 1)
+                    RenderRect(white, last_x + 1, last_x + percent * maxlen * unit + 1, bottom - 22 - 1, bottom - 25 - 1)
                     SetImageState(white, "mul+add", (100 + c * 100) * alpha,
                             sp:HSVtoRGB((i / #validboss) * 360 + timer / 2, 0.6, 1))
-                    RenderRect(white, last_x, last_x + percent * maxlen * unit, w.scrb - 22, w.scrb - 25)
-                    ui:RenderText('boss_name', b.name, last_x, w.scrb - 22, 0.8,
+                    RenderRect(white, last_x, last_x + percent * maxlen * unit, bottom - 22, bottom - 25)
+                    ui:RenderText('boss_name', b.name, last_x, bottom - 22, 0.8,
                             Color(alpha * 255 * unit, 200, 200, 200), "left", "bottom")
                     for _, a in ipairs(b._sp_point_auto) do
                         local index = 1 - a.dmg / b.maxhp
                         SetImageState(white, "", 255 * alpha, 255, 255, 255)
-                        RenderRect(white, last_x + index * maxlen * unit - 1, last_x + index * maxlen * unit + 1, w.scrb - 21, w.scrb - 26)
+                        RenderRect(white, last_x + index * maxlen * unit - 1, last_x + index * maxlen * unit + 1, bottom - 21, bottom - 26)
                     end
                     last_x = last_x + percent * maxlen * unit
                 end

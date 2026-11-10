@@ -13,10 +13,47 @@ local SetImageState = SetImageState
 local SetRenderRect = SetRenderRect
 local RenderText = RenderText
 local Render = Render
+local Render4V = Render4V
 ----------------------------------------
+
+-- 线段拼接的场内血条：从正上方顺时针，红弧为剩余血量，白弧为已扣血量。
+local hpRing={}
+local hpRingSegments,hpRingOuter,hpRingInner=96,36,34
+for i=0,hpRingSegments do
+    local a=math.pi/2-i*2*math.pi/hpRingSegments
+    hpRing[i]={math.cos(a),math.sin(a)}
+end
+local function ringSegment(b,p,q)
+    Render4V('white',
+        b.x+p[1]*hpRingOuter,b.y+p[2]*hpRingOuter,.5,
+        b.x+p[1]*hpRingInner,b.y+p[2]*hpRingInner,.5,
+        b.x+q[1]*hpRingInner,b.y+q[2]*hpRingInner,.5,
+        b.x+q[1]*hpRingOuter,b.y+q[2]*hpRingOuter,.5)
+end
+local function renderHPRing(self)
+    local b=self.boss
+    if not self.drawhp or not b.is_combat or b.__is_waiting or b.no_hp_render or b.time_sc
+            or not b.maxhp or b.maxhp<=0 then return end
+    local alpha=220*sin(min(90,max(0,b.__hpbar_timer or 0)))
+    if alpha<=0 then return end
+    local cut=min(1,max(0,b.hp/b.maxhp))*hpRingSegments
+    local whole=math.floor(cut)
+    SetImageState('white','',alpha,255,64,64)
+    for i=0,whole-1 do ringSegment(b,hpRing[i],hpRing[i+1]) end
+    local middle
+    if cut>whole then
+        local a=math.pi/2-cut*2*math.pi/hpRingSegments
+        middle={math.cos(a),math.sin(a)}
+        ringSegment(b,hpRing[whole],middle)
+    end
+    SetImageState('white','',alpha,255,255,255)
+    if middle then ringSegment(b,middle,hpRing[whole+1]);whole=whole+1 end
+    for i=whole,hpRingSegments-1 do ringSegment(b,hpRing[i],hpRing[i+1]) end
+end
 
 ---@class boss.ui
 boss.ui = Class(object)
+boss.ui.renderHPRing=renderHPRing
 function boss.ui:init(system, b)
     self.layer = LAYER.TOP + 2
     self.boss = b
@@ -52,6 +89,7 @@ function boss.ui:render()
     local previous=lstg.viewmode
     SetViewMode('world')
     if IsValid(self.boss) then
+        boss.ui.renderHPRing(self)
         if self.infobar and not self.no_infobar then
             self.infobar:render()
         end
@@ -218,7 +256,7 @@ function pointer:frame()
     if not (IsValid(b)) then
         return
     end
-    if b.hp >= 0 then
+    if b.hp >= 0 and b.maxhp>0 then
         self.EnemyIndicater = self.EnemyIndicater + max(b.maxhp / 2 - b.hp, 0) / (b.maxhp / 2) * 90
     end
 end
@@ -231,9 +269,16 @@ function pointer:render()
     if _ui.pointer_x and _ui.drawpointer then
         local w = lstg.world
         local scale = self.scale
-        SetRenderRect(w.l, w.r, w.b - max(16 * scale, 0), w.t,
-                w.scrl, w.scrr, w.scrb - max(16 * scale, 0), w.scrt)
+        local portrait=AndroidPortrait and AndroidPortrait.enabled()
+        if not portrait then
+            SetRenderRect(w.l, w.r, w.b - max(16 * scale, 0), w.t,
+                    w.scrl, w.scrr, w.scrb - max(16 * scale, 0), w.scrt)
+        end
         local x, y = _ui.pointer_x, self.y
+        if portrait then
+            x=min(w.r-24*scale,max(w.l+24*scale,x))
+            y=w.b+AndroidPortrait.bossBottomOffsetWorld()
+        end
         local distsub = 1
         distsub = min(1 - (min(abs(x - player.x), 64) / 128), distsub)
         local hpsub = (sin(self.EnemyIndicater + 270) + 1) * 0.125

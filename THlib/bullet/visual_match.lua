@@ -134,7 +134,7 @@ function V.reisen_phase(o,phase,fade)
     if previous==1 and phase~=1 then v.sprite=v.sprite+16
     elseif previous~=1 and phase==1 then v.sprite=v.sprite-16 end
     o.ex_phase,o.ex_frz=phase,phase~=1
-    v.follow=phase==1
+    v.follow=phase~=0 -- 原作type2淡入仍更新朝向；只有type0保留上次绘制的旋转。
     v.blend=phase==1 and '' or 'mul+add'
     if fade==0 then v.alpha[1]=0
     elseif fade then
@@ -265,8 +265,9 @@ function V.render_anm(o)
     local v=o._native_anm
     local sprite=v.sprite
     -- ExInsYoumuSetGameSpeed只替换箭头的主弹精灵，不重启ANM或给弹雾换色。
-    if o.own_gray and o.imgclass.native_game==7 and o.imgclass.native_type==4 and not o._native_spawn_started then
-        v.sprite=sprite-o._native_color+15
+    if o.own_gray and o.imgclass.native_game==7 and sprite>=96 and sprite<=111
+            and not o._native_spawn_started then
+        v.sprite=111
     elseif o.th08_scaled_color and o.imgclass.native_game==8 and sprite>=96 and sprite<=111
             and not o._native_spawn_started then
         v.sprite=111
@@ -274,6 +275,9 @@ function V.render_anm(o)
     -- 运动角由弹体状态机提供；不能使用引擎自动 navi 去改写 ECL 的逻辑角。
     -- 红魔乡与后续作品采用相反的ANM旋转矩阵，不能对所有作品统一减90度。
     local angle=anm_angle(o.imgclass.native_game,bullet.GetRenderRotation(o))
+    -- TH08 BulletManager::Draw把朝向写回当前VM；type0停弹继续使用这个角。
+    -- 不能只传一次绘制覆盖值，否则关闭follow后会退回脚本的初始rotation。
+    if o.imgclass.native_game==8 and v.follow then v.rotation[3]=-angle*math.pi/180 end
     A.draw(v,o.x,o.y,angle,o.hscale,o.vscale,(o._a or 255)/255,nil,nil,v.follow and angle or nil)
     v.sprite=sprite
     return true

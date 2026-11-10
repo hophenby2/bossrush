@@ -114,6 +114,7 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 
     if optimize:
         guide=guide.replace('完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。','精简离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。')
+        guide+='\n本版修复铃仙停弹朝向、妖梦缓时与一念无量劫变白效果；新增Boss红白线段血圈，红弧为剩余血量、白弧为已扣血量。\n'
         guide+='\n精简范围：保留TH31–TH35及当前随机模式。已删除关卡的旧录像不在兼容范围，原录像文件不改写。\n核心图片无损；非核心适度压缩；音效压缩为Ogg，关卡脚本、资源尺寸和Alpha不变。\n'
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for relative,path in sorted(files.items()): archive.write(path,name+'/'+relative)

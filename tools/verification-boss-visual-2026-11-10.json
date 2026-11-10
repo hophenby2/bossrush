@@ -1,0 +1,167 @@
+{
+  "version": "26.11.10",
+  "branch": "slim",
+  "baseline_commit": "bdde53280966798699fe2bf0640c3cb7b08ce8f5",
+  "original_evidence": [
+    {
+      "game": "TH08",
+      "source": "workspace/reconstructions/th08/src/BulletManager.cpp:1577",
+      "rule": "type非0时将朝向写回VM；type0保留上次绘制的Z旋转"
+    },
+    {
+      "game": "TH08",
+      "source": "workspace/reconstructions/th08/src/EclExIns.cpp:601-715",
+      "rule": "铃仙冻结/淡入/恢复改变VM相位、精灵及混合模式，不清除旋转"
+    },
+    {
+      "game": "TH07",
+      "source": "workspace/reconstructions/th07/src/th07/EnemyEclInstr.cpp:556-618",
+      "rule": "ExIns10/11仅把当时已有的sprite96..111切到111/恢复原色"
+    },
+    {
+      "game": "TH07",
+      "source": "workspace/reconstructions/th07/src/th07/AnmIdx.hpp:218-219",
+      "rule": "白箭头sprite111属于type6，不是type4"
+    },
+    {
+      "game": "TH07",
+      "source": "workspace/original/ECL/th07/ECL/ecldata6.decl:591-604",
+      "rule": "一念无量劫Sub24：ExIns10(1)，50帧后ExIns11(0)；倍率保持1，仍需换白"
+    }
+  ],
+  "passed_luajit_checks": {
+    "check_original_bullet_phase.lua": 34,
+    "check_boss_hp_ui.lua": 1181,
+    "check_original_anm.lua": 550,
+    "check_rogue_hp.lua": 203,
+    "check_slim.lua": 597,
+    "original_practice_checks": 21468,
+    "check_android_portrait.lua": true,
+    "check_windows_assets.lua": true,
+    "check_stage.lua --all": true
+  },
+  "android_environment": {
+    "device": "专用arm64 Android 16/API36.1模拟器",
+    "serial": "emulator-5554",
+    "real_phone_fps_claim": false
+  },
+  "physics_comparison": [
+    {
+      "card": 454,
+      "physics_rows": 511318,
+      "physics_sha256": "caa2f8a6912f91faa820f30c9383557053a3af961b8f20ba11aa5876ea00fbc3",
+      "all_physics_rows_unchanged": true,
+      "native_draw_probe": {
+        "card": 454,
+        "white_draws": 0,
+        "restored_draws": 0,
+        "frozen_draws": 197906,
+        "fade_draws": 0
+      }
+    },
+    {
+      "card": 4391,
+      "physics_rows": 615691,
+      "physics_sha256": "31dc3c254784cde51faf3bdeed4cacdd2e004def1f6d72f1abedea32056c99a4",
+      "all_physics_rows_unchanged": true,
+      "native_draw_probe": {
+        "card": 4391,
+        "white_draws": 142873,
+        "restored_draws": 153073,
+        "frozen_draws": 0,
+        "fade_draws": 0
+      }
+    }
+  ],
+  "native_fade_probe": {
+    "card": 459,
+    "white_draws": 0,
+    "restored_draws": 0,
+    "frozen_draws": 225742,
+    "fade_draws": 31145
+  },
+  "native_five_game_entries": {
+    "levels": [
+      29,
+      30,
+      31,
+      32,
+      33
+    ],
+    "whole_and_spell_entries": 10,
+    "frames_each": 300,
+    "passed": true
+  },
+  "hud": {
+    "ring_segments": 96,
+    "max_quads_per_boss": 97,
+    "radius": 36,
+    "thickness": 2,
+    "remaining": "红弧",
+    "spent": "白弧",
+    "bottom_bar_and_pointer": "复用横屏绘制，仅在竖屏中平移到场内",
+    "no_ui_outside_playfield": true,
+    "lives_bombs": "左下角竖排阿拉伯数字，避开底部组件",
+    "partial_hp_screenshot_fraction": 0.63
+  },
+  "image_pixels": {
+    "core_exact": 787,
+    "noncore_exact": 71,
+    "noncore_lossy_opaque": 57,
+    "noncore_lossy_transparent": 62
+  },
+  "windows_archive": {
+    "package": "BossRushHD-Windows-x64-26.11.10-slim.zip",
+    "bytes": 141901281,
+    "sha256": "bda0a738acbba1cae31c5bace8e7ee38ee76a05f9fe5895f6883f722bada693f",
+    "source_files_checked": 1851,
+    "audio_checked": 172,
+    "aliases": 114,
+    "x64_engine_and_dlls": true,
+    "font_bitmap_dependencies_kept": true,
+    "user_data_excluded": true,
+    "crc": true
+  },
+  "android_package_lua_comparison": {
+    "files": 581,
+    "bom_and_line_endings_normalized": true,
+    "crc": true,
+    "android_lua_included": true
+  },
+  "existing_legacy_test_failures": {
+    "tools/check_bullet_visuals.lua": {
+      "exit_code": 1,
+      "first_error": "luajit: THlib/anm/original_sounds.lua:17: attempt to call global 'LoadSound' (a nil value)"
+    },
+    "tools/check_original_ecl_fidelity.lua": {
+      "exit_code": 1,
+      "first_error": "luajit: THlib/lib/Ltask.lua:34: THlib/anm/original_sounds.lua:17: attempt to call global 'LoadSound' (a nil value)"
+    },
+    "tools/check_th31_combat.lua": {
+      "exit_code": 1,
+      "first_error": "luajit: tools/check_th31_combat.lua:19: 生成使魔只关闭接触判定，仍能成为自机弹目标"
+    }
+  },
+  "legacy_test_note": "在基线bdde532的源文件及测试文件上同样失败；本次另用真实弹体/ANM/ExIns的专项检查和安卓原生绘制覆盖改动。",
+  "windows_native_startup_verified": false,
+  "windows_native_limitations": [
+    "本机Wine未进入图形初始化",
+    "此前GitHub任务因账号计费问题没有开始；本次将再次手动触发"
+  ],
+  "release": {
+    "tag": "v26.11.10-slim",
+    "release_id": 440251823,
+    "assets": [
+      {
+        "name": "BossRushHD-Android-arm64-26.11.10-slim.apk",
+        "bytes": 168762540,
+        "sha256": "cb3ea7e593bd04cd6ec277c8da0de258bc1ca4cd1131bcfeb5705076cf555133"
+      },
+      {
+        "name": "BossRushHD-Windows-x64-26.11.10-slim.zip",
+        "bytes": 141901281,
+        "sha256": "bda0a738acbba1cae31c5bace8e7ee38ee76a05f9fe5895f6883f722bada693f"
+      }
+    ]
+  }
+}

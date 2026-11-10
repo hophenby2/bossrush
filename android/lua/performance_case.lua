@@ -13,11 +13,13 @@ function T.install(mode)
     local frame,after=FrameFunc,AfterFrame
     local started,done,caseStarted=false,false
     local probe
+    local visual=mode:match('visual=1') and dofile('android/boss_visual_probe.lua')
     local stateTrace
     AfterFrame=function(...)
         after(...)
         local scene=stage.current_stage
         if probe and not done then probe.after(scene) end
+        if visual and not done then visual.frame() end
         if not done and mode:match('snap=1') and scene and scene.stage_name=='RogueTen@RogueTen' and
             (scene.timer==630 or scene.timer==720 or scene.timer==780) then
             if not plus.DirectoryExists('snapshot') then plus.CreateDirectory('snapshot') end
@@ -54,6 +56,7 @@ function T.install(mode)
                 card,tostring(current and current.card_id or 'none'),seed,target,#rows,SaveCodec.sha256(table.concat(rows,'\n')),lstg.AndroidClock()-caseStarted))
             assert(not bombAt or bombed,'未执行测试 Bomb');assert(not clearAt or cleared,'未执行测试换卡')
             if probe then probe.finish() end
+            if visual then visual.finish(card) end
             if stateTrace then stateTrace:close();stateTrace=nil end
             local state=assert(io.open('User/android-case-state.txt','wb'))
             state:write(table.concat(rows,'\n'));state:close()
@@ -68,7 +71,10 @@ function T.install(mode)
         end
         local scene=stage.current_stage
         if started and scene and scene.stage_name=='RogueTen@RogueTen' then
-            if mode:match('hold=1') and _boss and IsValid(_boss) then _boss.hp=_boss.maxhp end
+            if mode:match('hold=1') and _boss and IsValid(_boss) then
+                local fraction=tonumber(mode:match('hp_fraction=(%S+)')) or 1
+                _boss.hp=_boss.maxhp*math.max(.01,math.min(1,fraction))
+            end
             if not bombed and bombAt and scene.timer==bombAt then
                 assert(GameDrops.bombInput(player,{spell=true},{spell=false}),'测试 Bomb 未触发');bombed=true
             end

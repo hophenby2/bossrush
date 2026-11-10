@@ -63,6 +63,14 @@ try:
     if not args.mode.startswith('graphics'):
         state=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-case-state.txt')
         (args.output/'state.txt').write_bytes(state.stdout)
+    if 'visual=1' in args.mode:
+        result=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-boss-visual-result.json')
+        (args.output/'visual.json').write_bytes(result.stdout)
+        visual=json.loads(result.stdout)
+        for kind in ['white','frozen']:
+            if visual[kind+'_draws']:
+                shot=adb('exec-out','run-as',package,'cat','files/bossrush/snapshot/android-visual-'+kind+'.png')
+                (args.output/('visual-'+kind+'.png')).write_bytes(shot.stdout)
     if 'probe=1' in args.mode:
         probe=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-performance-probe.json')
         (args.output/'probe.json').write_bytes(probe.stdout)

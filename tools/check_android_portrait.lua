@@ -94,6 +94,7 @@ for _,height in ipairs({960,1200}) do
     P.hud(255);P.roguePanel(run)
     assert(stars[1].image=='star_big2' and stars[2].image=='star_big10' and #stars==2,'命和雷各画一颗星')
     assert(stars[1].x==stars[2].x and stars[1].y-stars[2].y==30,'命在上、雷在下，左侧对齐竖排')
+    assert(stars[2].y-10>=w.scrb+P.BOSS_BOTTOM_INSET,'命雷计数避开新增的底部血条与Boss指示器')
     local found={}
     for _,t in ipairs(texts) do
         assert(t.x>=w.scrl and t.x<=w.scrr and t.y>=w.scrb and t.y<=w.scrt,'战斗HUD全在场地内')
