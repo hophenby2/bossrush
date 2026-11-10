@@ -249,6 +249,11 @@ def prepare_assets():
     write_utf8(assets / 'licenses' / 'SOURCE.txt',
         'LuaSTG-x 20260913 及其随包依赖的源码与许可证来自：\n' + LOCK['url'] +
         '\nSHA-256: ' + LOCK['sha256'] + '\nAndroid 适配变更见项目 android/patch_engine.py 和 android/native/。\n')
+    jit_lock = json.loads((ROOT / 'luajit.lock.json').read_text(encoding='utf-8'))
+    shutil.copy2(ROOT / 'LUAJIT_LICENSE.txt', assets / 'licenses/LUAJIT_LICENSE.txt')
+    write_utf8(assets / 'licenses/LUAJIT_SOURCE.txt',
+        'Android ARM64 LuaJIT源码：' + jit_lock['url'] + '\nSHA-256: ' + jit_lock['sha256'] +
+        '\n本项目补丁：android/build_luajit.py、android/native/luajit_mcode_arena.inc。\n')
     sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'Library/Android/sdk')))
     ndk = Path(os.environ.get('ANDROID_NDK_HOME', str(sdk / 'ndk' / LOCK['ndk'])))
     if (ndk / 'NOTICE').exists():
@@ -261,11 +266,14 @@ def prepare_assets():
 
 
 def native_build(sdk, ndk, jobs):
+    from build_luajit import build as build_luajit
+    luajit = build_luajit(ndk, jobs)
     native = NATIVE
     run('cmake', '-S', ENGINE, '-B', native, '-G', 'Ninja',
         f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
         '-DANDROID_ABI=arm64-v8a', '-DANDROID_PLATFORM=android-28',
         '-DANDROID_STL=c++_shared', '-DCMAKE_BUILD_TYPE=Release',
+        f'-DBOSSRUSH_LUAJIT_LIBRARY={luajit}',
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
         '-DCMAKE_CXX_SCAN_FOR_MODULES=OFF',
         '-DALSOFT_ENABLE_MODULES=OFF',

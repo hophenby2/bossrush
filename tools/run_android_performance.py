@@ -63,6 +63,16 @@ try:
     if not args.mode.startswith('graphics'):
         state=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-case-state.txt')
         (args.output/'state.txt').write_bytes(state.stdout)
+    if 'probe=1' in args.mode:
+        probe=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-performance-probe.json')
+        (args.output/'probe.json').write_bytes(probe.stdout)
+    if 'state=full' in args.mode:
+        state=adb('exec-out','run-as',package,'cat','files/bossrush/User/android-case-frames.txt')
+        (args.output/'frames.txt').write_bytes(state.stdout)
+    if 'snap=1' in args.mode:
+        for frame in [630,720,780]:
+            shot=adb('exec-out','run-as',package,'cat',f'files/bossrush/snapshot/android-case-{frame}.png')
+            (args.output/f'frame-{frame}.png').write_bytes(shot.stdout)
     result={'mode':args.mode,'serial':args.serial,'model':adb('shell','getprop','ro.product.model').stdout.decode().strip(),
             'case':{},'perf':[],'contracts':[line for line in log.splitlines() if any(tag in line for tag in ['CONTRACTS:','COLLISION_CHECK:','CASE_ACTIONS:'])]}
     for line in log.splitlines():

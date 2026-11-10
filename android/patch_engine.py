@@ -37,6 +37,16 @@ if _renderer_text != _renderer.read_text(encoding='utf-8-sig'):
     _renderer.write_text(_renderer_text, encoding='utf-8')
 
 replace('CMakeLists.txt', 'set(CC_USE_GFX LSTGX_USE_GFX)', 'set(CC_USE_GFX ${LSTGX_USE_GFX})')
+_luajit_cmake = engine / 'frameworks/cocos2d-x/external/lua/luajit/CMakeLists.txt'
+_luajit_text = _luajit_cmake.read_text()
+if 'if(ANDROID AND BOSSRUSH_LUAJIT_LIBRARY)' not in _luajit_text:
+    _luajit_cmake.write_text(_luajit_text + '''
+if(ANDROID AND BOSSRUSH_LUAJIT_LIBRARY)
+  get_filename_component(BOSSRUSH_LUAJIT_INCLUDE "${BOSSRUSH_LUAJIT_LIBRARY}" DIRECTORY)
+  set_target_properties(luajit PROPERTIES IMPORTED_LOCATION "${BOSSRUSH_LUAJIT_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${BOSSRUSH_LUAJIT_INCLUDE}")
+endif()
+''')
 # OpenAL 已支持 MONO8/STEREO8；旧解码器却在读取原作 PCM8 音效前将其拒绝。
 replace('frameworks/Audio/AudioDecoderWav.cpp',
         'if (bit_depth != 16)', 'if (bit_depth != 8 && bit_depth != 16)')
@@ -235,6 +245,32 @@ replace('frameworks/cocos2d-x/cocos/2d/CCLabel.h', 'virtual void updateContent()
 replace('frameworks/LSTG/Renderer.cpp', '//#define BATCH_COMMAND', '#define BATCH_COMMAND')
 # 连续同材质的精灵仍按原顺序合并；8192小于16位索引和Cocos VBO上限，减少微小命令块。
 replace('frameworks/LSTG/Renderer.cpp', 'constexpr int limit = 512;', 'constexpr int limit = 8192;')
+replace('frameworks/LSTG/Renderer.cpp', '#include "Global.h"', '#include "sprite_clip.h"\n#include "Global.h"')
+replace('frameworks/LSTG/Renderer.cpp', '\tLMP.clear();\n\tRenderMode::modeMap.clear();',
+        '\tLMP.clear();\n    androidResetSpriteClipping();\n\tRenderMode::modeMap.clear();')
+replace('frameworks/LSTG/Renderer.cpp', '''void XRenderer::addXTCommand(XTrianglesCommand* cmd)
+{
+\tCCASSERT(bRenderStarted, "not in render!");''', '''void XRenderer::addXTCommand(XTrianglesCommand* cmd)
+{
+    CCASSERT(bRenderStarted, "not in render!");
+    if (androidClipSprites && cmd->getVertexCount()==4 && cmd->getDesc()->programState->getCallbackUniforms().empty()) {
+        const auto& projection=cmd->isSkipModelView() ? currentProjection : currentProjection*(*cmd->getMV());
+        if (androidSpriteOutside(cmd->getVertices(),projection,cmd->getDesc()->programState->getProgram())) return;
+    }''')
+replace('frameworks/LSTG/Renderer.cpp', 'const auto size = triToDraw.size();',
+        'const auto size = triToDraw.size();\n    if (androidProfileBatches) androidRecordSpriteBatch(size);')
+# 完整覆盖缓冲区时允许驱动更换存储，避免等待上一帧的GPU读取；部分更新保留其余字节。
+_gles_commands='frameworks/cocos2d-x/external/gfx/backend/gfx-gles3/GLES3Commands.cpp'
+replace(_gles_commands,
+        'static void uploadBufferData(GLenum target, GLintptr offset, GLsizeiptr length, const void *buffer) {',
+        'static void uploadBufferData(GLenum target, GLintptr offset, GLsizeiptr length, const void *buffer, GLsizeiptr capacity) {')
+replace(_gles_commands, '''    //NOTE: do not use GL_MAP_INVALIDATE_BUFFER_BIT here since it can be partially updated
+    GL_CHECK(dst = glMapBufferRange(target, offset, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT));''',
+        '''    const auto invalidate = offset==0 && length==capacity ? GL_MAP_INVALIDATE_BUFFER_BIT : GL_MAP_INVALIDATE_RANGE_BIT;
+    GL_CHECK(dst = glMapBufferRange(target, offset, length, GL_MAP_WRITE_BIT | invalidate));''')
+for _buffer_target in ['GL_ARRAY_BUFFER','GL_ELEMENT_ARRAY_BUFFER','GL_UNIFORM_BUFFER','GL_SHADER_STORAGE_BUFFER']:
+    replace(_gles_commands, f'uploadBufferData({_buffer_target}, offset, size, buffer);',
+            f'uploadBufferData({_buffer_target}, offset, size, buffer, gpuBuffer->size);')
 # 普通精灵已在入队前变换顶点。合批不能再次乘对象池中可能残留的模型矩阵。
 replace('frameworks/LSTG/Renderer.cpp',
         'xtc->getMV()->transformPoint(&(_verts.back().vertices));',

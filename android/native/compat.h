@@ -1,4 +1,7 @@
 #pragma once
+#include <cstddef>
+extern bool androidProfileBatches;
+void androidRecordSpriteBatch(std::size_t size);
 extern int androidSuperPause;
 extern int androidCurrentSuperPause;
 extern int androidWorldFlag;

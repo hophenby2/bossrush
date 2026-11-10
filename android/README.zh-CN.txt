@@ -255,7 +255,9 @@ HP 在开卡时决定，Rank 变化不会让正在打的 Boss 突然回血；详
 
 构建（本机 macOS ARM64 已验证）
 ----------------------------
-需要 Python 3.11+、JDK 17、CMake、Ninja、Android SDK 和 NDK 26.3.11579264。
+需要 Python 3.11.8+、JDK 17、CMake、Ninja、GNU Make、本机C编译器、Android SDK
+和 NDK 26.3.11579264。LuaJIT宿主编译器默认cc/gcc/clang，可用BOSSRUSH_HOST_CC指定；
+Windows还需将MSYS2/MinGW的make与gcc加入PATH。本轮新增源码运行时构建在macOS验证。
 SDK 默认位置：~/Library/Android/sdk，可用 ANDROID_HOME 覆盖。
 NDK 默认位置：SDK/ndk/26.3.11579264，可用 ANDROID_NDK_HOME 覆盖。
 
@@ -265,6 +267,12 @@ NDK 默认位置：SDK/ndk/26.3.11579264，可用 ANDROID_NDK_HOME 覆盖。
 首次构建下载并校验上游源码到 .cache/。也可指定已经下载的发布压缩包：
 
   python3 android/build.py --engine-archive /absolute/path/LuaSTG-x_release_20260913.zip
+
+安卓LuaJIT由luajit.lock.json固定源码提交及SHA-256，替代引擎内的预编译静态库；
+保留Lua5.1语义，不启用LUA52COMPAT。每个Lua状态预留64MiB连续虚拟机器码区，
+仅实际使用的块提交内存，编译/执行沿用RW/RX切换，flush及关闭时整体释放。
+许可证与精确源码地址随APK放入assets/licenses/。新运行时需完整构建一次，
+不能仅用--update-assets复用旧原生库。
 
 Windows 使用 PowerShell 指定工具路径与 UTF-8，以下为本机配置：
 

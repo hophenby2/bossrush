@@ -1,4 +1,5 @@
 #include "compat.h"
+#include "sprite_clip.h"
 #include "LSTG/LuaWrapper/LuaWrapper.h"
 #include "LSTG/Util/UtilLuaRes.h"
 #include "LSTG/Renderer.h"
@@ -20,11 +21,78 @@
 #include <cstring>
 #include <array>
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
 #include <EGL/egl.h>
 #endif
 
 static bool androidVsyncRequested=false;
+bool androidClipSprites=false;
+static cocos2d::Vector<cocos2d::backend::Program*> androidClipPrograms;
+static uint64_t androidClipTested=0,androidClipCulled=0;
+void androidResetSpriteClipping() {
+    androidClipSprites=false;androidClipPrograms.clear();
+    androidClipTested=androidClipCulled=0;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidSpriteClipping) {
+    // 只登记已知MVP顶点程序；模式后续换成自定义程序时自动退出裁剪。
+    androidClipPrograms.clear();
+    for (const char* name : {"","mul+add"}) {
+        if (auto* mode=lstg::RenderMode::getByName(name)) androidClipPrograms.pushBack(mode->getProgram());
+    }
+    androidClipSprites=lua_toboolean(L,1);
+    return 0;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidSpriteClipStats) {
+    lua_pushnumber(L,androidClipTested);lua_pushnumber(L,androidClipCulled);
+    androidClipTested=androidClipCulled=0;return 2;
+}
+bool androidSpriteOutside(const cocos2d::V3F_C4B_T2F* vertices,
+                         const cocos2d::Mat4& projection,
+                         cocos2d::backend::Program* program) {
+    const auto* m=projection.m;
+    if (!androidClipSprites || m[3]!=0 || m[7]!=0 || m[11]!=0 || m[15]!=1 ||
+        !androidClipPrograms.contains(program)) return false;
+    bool left=true,right=true,bottom=true,top=true;
+    for (int i=0;i<4;++i) {
+        const auto& p=vertices[i].vertices;
+        const double xx=double(m[0])*p.x,xy=double(m[4])*p.y,xz=double(m[8])*p.z;
+        const double yx=double(m[1])*p.x,yy=double(m[5])*p.y,yz=double(m[9])*p.z;
+        const double x=xx+xy+xz+m[12],y=yx+yy+yz+m[13];
+        // 留出NDC 0.01及浮点误差余量，旋转/负缩放/大坐标边缘均保守保留。
+        const double ex=.01+8*FLT_EPSILON*(std::abs(xx)+std::abs(xy)+std::abs(xz)+std::abs(m[12]));
+        const double ey=.01+8*FLT_EPSILON*(std::abs(yx)+std::abs(yy)+std::abs(yz)+std::abs(m[13]));
+        left&=x < -1-ex;right&=x > 1+ex;bottom&=y < -1-ey;top&=y > 1+ey;
+    }
+    if (androidProfileBatches) ++androidClipTested;
+    const bool outside=left || right || bottom || top;
+    if (outside && androidProfileBatches) ++androidClipCulled;
+    return outside;
+}
+bool androidProfileBatches=false;
+static uint64_t androidBatchSizes[18]={};
+void androidRecordSpriteBatch(std::size_t size) {
+    ++androidBatchSizes[std::min<std::size_t>(size,17)];
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidBatchProfile) {
+    lua_newtable(L);
+    for (int i=1;i<18;++i) { lua_pushnumber(L,androidBatchSizes[i]);lua_rawseti(L,-2,i); }
+    std::fill(std::begin(androidBatchSizes),std::end(androidBatchSizes),0);
+    androidProfileBatches=lua_toboolean(L,1);
+    return 1;
+}
+#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+extern "C" void bossrush_luajit_mcode_stats(uint64_t*);
+LUA_REGISTER_FUNC_DEF(lstg, AndroidJitMcodeStats) {
+    uint64_t values[11]; bossrush_luajit_mcode_stats(values);
+    const char* names[]={"attempts","os_failures","outside_range","regions","failures",
+        "target","last_hint","last_address","last_errno","mcode_reason","cache_limit_hits"};
+    lua_newtable(L);
+    for (int i=0;i<11;++i) { lua_pushnumber(L,static_cast<lua_Number>(values[i])); lua_setfield(L,-2,names[i]); }
+    return 1;
+}
+#endif
 void androidApplySwapInterval() {
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
     const auto display=eglGetCurrentDisplay();
@@ -76,6 +144,10 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidClock) {
     lua_pushnumber(L, androidNow()); return 1;
+}
+LUA_REGISTER_FUNC_DEF(lstg, AndroidDrawCounts) {
+    auto* renderer=cocos2d::Director::getInstance()->getRenderer();
+    lua_pushinteger(L,renderer->getDrawnBatches());lua_pushinteger(L,renderer->getDrawnVertices());return 2;
 }
 LUA_REGISTER_FUNC_DEF(lstg, AndroidDrawStats) {
     static bool observing = false;

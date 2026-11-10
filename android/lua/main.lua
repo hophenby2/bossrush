@@ -75,6 +75,7 @@ local function start()
     require('core.respool')
     local load = function(path) return assert(loadstring(fu:getStringFromFile(path), '@' .. path))() end
     load('game/android/render_modes.lua')
+    if not desktop and lstg.AndroidSpriteClipping then lstg.AndroidSpriteClipping(true) end
     startupMark('render_modes')
     lstg.RenderMode:create('one', ccb.BlendOperation.ADD, ccb.BlendFactor.ONE,
         ccb.BlendFactor.ZERO, lstg.RenderMode:getByName(''):getProgram())
@@ -139,6 +140,7 @@ local function start()
     if diagnostics then
         local mode = diagnostics:read('*a'); diagnostics:close()
         diagnosticsMode = mode
+        if lstg.AndroidSpriteClipping and mode:match('draw=unculled') then lstg.AndroidSpriteClipping(false) end
         AndroidInput.trace = mode:match('input') ~= nil
     end
     AndroidInstallClasses()

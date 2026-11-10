@@ -1,5 +1,6 @@
 -- 将修改前源码路径作为参数，逐帧比较实际ANM状态和绘制参数；不读写玩家数据，不替代GPU验收。
 local reference=assert(arg[1],'需要修改前ANM源码路径')
+local bothNative=arg[2]=='--both-native'
 local function engine(path,fast)
     local env=setmetatable({},{__index=_G})
     env._G=env
@@ -38,7 +39,7 @@ local function engine(path,fast)
     local load=assert(loadfile(path));setfenv(load,env);load()
     return env.OriginalANM,state,env
 end
-local old,oldState=engine(reference,false)
+local old,oldState=engine(reference,bothNative)
 local new,newState,newEnv=engine('THlib/anm/original.lua',true)
 local checks=0
 local function equal(a,b,label)
@@ -56,7 +57,8 @@ local function compare(a,b)
     assert(#a.children==#b.children)
     for i,child in ipairs(a.children) do compare(child,b.children[i]) end
 end
-for _,source in ipairs({{6,'etama3'},{6,'etama4'},{7,'etama'},{8,'etama'},{95,'bullet'},{10,'bullet'}}) do
+for _,source in ipairs({{6,'etama3'},{6,'etama4'},{7,'etama'},{8,'etama'},{95,'bullet'},{10,'bullet'},
+    {10,'enemy'},{11,'bullet'},{11,'enemy'}}) do
     local game,archive=unpack(source)
     local data=old.load(game,archive)
     for id in pairs(data.scripts) do
@@ -79,6 +81,24 @@ for _,source in ipairs({{6,'etama3'},{6,'etama4'},{7,'etama'},{8,'etama'},{95,'b
         end
     end
 end
+-- 连续指令接管尚未完成的插值，含Bezier转直线和零时长；检查控制点及当前值来源。
+for _,A in ipairs({old,new}) do
+    local script={
+        {0,0,20,0,3,4,op='scale_time'},{0,0,0,20,op='fade'},
+        {2,0,5,4,.5,2,op='scale_time'},{3,0,0,0,12,12,op='scale_time'},
+        {4,0,8,1,2,3,10,20,30,4,5,6,op='position_bezier'},
+        {5,0,6,0,7,8,9,op='position_time'},
+        {6,0,12,0,110,120,130,op='color_time'},{7,0,8,0,5,6,7,op='color_time'},
+        {10,0,0,0,99,op='alpha_time'},{11,0,op='stop'},
+    }
+    script.interrupts={};A.load(11,'bullet').scripts[999999]=script
+end
+local a,b=old.new(11,'bullet',999999),new.new(11,'bullet',999999)
+for frame=1,80 do
+    compare(a,b)
+    local dt=({1,.5,1.25,0,2})[frame%5+1]
+    old.step(a,dt);new.step(b,dt);checks=checks+1
+end
 -- 资源池重建后必须重新取得当前句柄；旧元数据不能持有已经释放的图像。
 local v=new.new(7,'etama',21)
 new.draw(v,0,0)
@@ -100,6 +120,6 @@ local function bench(A,s)
 end
 local before,colors=bench(old,oldState)
 local after,optimized,native=bench(new,newState)
-assert(colors>0 and optimized==0 and native>0,'普通ANM精灵应消除逐粒Color创建')
+assert((bothNative and colors==0 or not bothNative and colors>0) and optimized==0 and native>0,'普通ANM精灵应消除逐粒Color创建')
 print(('ANM逐帧状态及绘制参数一致：%d次；2000弹雾×20帧 Color %d→%d，主机参考耗时 %.3f→%.3fs'):format(
     checks,colors,optimized,before,after))

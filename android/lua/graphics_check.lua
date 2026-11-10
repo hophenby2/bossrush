@@ -5,6 +5,7 @@ function Q.run()
     function s:init()
         LoadTexture('android:checker', 'android/test-sampler.png')
         SetTextureSamplerState('android:checker', 'nearest+wrap')
+        LoadImage('android:clip-probe','android:checker',0,0,1,1)
         CreateRenderTarget('android:coordinates')
         CopyImage('android:object-probe','white')
         SetImageState('android:object-probe','',Color(255,70,130,230))
@@ -33,6 +34,14 @@ function Q.run()
             {w.l,0,w.b,0,Color(255,0,0,255)}, {0,w.r,w.b,0,Color(255,255,255,0)},
         }
         for _,r in ipairs(rectangles) do SetImageState('white','',r[5]); RenderRect('white',r[1],r[2],r[3],r[4]) end
+        -- 中心在视口外而角点仍可见：覆盖四边、旋转、负缩放和RT内透明叠加。
+        local clips={{-210,40,0,48,30},{210,80,0,-48,30},{-100,240,35,48,60},
+            {80,-240,-35,48,-60},{-222,-80,45,90,90},{222,-120,-45,-90,90},
+            {-600,0,0,20,20},{600,0,0,20,20}}
+        for i,p in ipairs(clips) do
+            SetImageState('android:clip-probe',i%2==0 and 'mul+add' or '',Color(160,230,100,190))
+            Render('android:clip-probe',unpack(p))
+        end
         PopRenderTarget('android:coordinates')
         local x1,y1=WorldToScreen(w.l,w.t); local x2,y2=WorldToScreen(w.r,w.b)
         local white=Color(255,255,255,255)

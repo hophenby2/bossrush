@@ -58,12 +58,19 @@ function A.load(game, archive)
     return data
 end
 local function vector(...) return {...} end
-local function interp(v,key,duration,mode,target)
+local function interp(v,key,duration,mode,...)
     if duration<=0 then v.interps[key]=nil;return end
     local source=v[key]
-    local from={}
-    for i,n in ipairs(source) do from[i]=n end
-    v.interps[key]={time=0,duration=duration,mode=mode,from=from,target=target}
+    -- 同属性的新指令接管旧插值；复用已被接管的记录，仍从当前值开始，不延续旧控制点。
+    local p=v.interps[key] or {from={},target={}}
+    local from,target=p.from,p.target
+    local count=0
+    for i,n in ipairs(source) do from[i]=n;count=i end
+    for i=count+1,#from do from[i]=nil end
+    for k in pairs(target) do target[k]=nil end
+    for i=1,select('#',...) do target[i]=select(i,...) end
+    p.time,p.duration,p.mode,p.controls=0,duration,mode,nil
+    v.interps[key]=p
 end
 local function value(v,a)
     if type(a)~='table' then return a end
@@ -149,22 +156,22 @@ local function execute(v)
         elseif op=='u_speed' then v.us=a
         elseif op=='v_speed' then v.vs=a
         elseif op=='unit_speed' then v.unit_speed=a~=0
-        elseif op=='position_time' then interp(v,'position',a,b,vector(d,e,f))
+        elseif op=='position_time' then interp(v,'position',a,b,d,e,f)
         elseif op=='position_bezier' then
-            interp(v,'position',a,8,vector(value(v,c[7]),value(v,c[8]),value(v,c[9])))
+            interp(v,'position',a,8,value(v,c[7]),value(v,c[8]),value(v,c[9]))
             v.interps.position.controls={vector(b,d,e),vector(value(v,c[10]),value(v,c[11]),value(v,c[12]))}
         elseif op=='ring_vertices' then v.ring_vertices=a
-        elseif op=='rotation_time' then interp(v,'rotation',a,b,vector(d,e,f))
-        elseif op=='scale_time' then interp(v,'scale',a,b,vector(d,e))
-        elseif op=='color_time' then interp(v,'color',a,b,vector(d,e,f))
-        elseif op=='packed_color_time' then interp(v,'color',a,b,vector(d%256,floor(d/256)%256,floor(d/65536)%256))
-        elseif op=='alpha_time' then interp(v,'alpha',a,b,vector(d))
-        elseif op=='color2_time' then interp(v,'color2',a,b,vector(d,e,f))
-        elseif op=='alpha2_time' then interp(v,'alpha2',a,b,vector(d))
+        elseif op=='rotation_time' then interp(v,'rotation',a,b,d,e,f)
+        elseif op=='scale_time' then interp(v,'scale',a,b,d,e)
+        elseif op=='color_time' then interp(v,'color',a,b,d,e,f)
+        elseif op=='packed_color_time' then interp(v,'color',a,b,d%256,floor(d/256)%256,floor(d/65536)%256)
+        elseif op=='alpha_time' then interp(v,'alpha',a,b,d)
+        elseif op=='color2_time' then interp(v,'color2',a,b,d,e,f)
+        elseif op=='alpha2_time' then interp(v,'alpha2',a,b,d)
         elseif op=='position_linear' or op=='position_decel' or op=='position_decel4' then
-            interp(v,'position',e,op=='position_linear' and 0 or op=='position_decel' and 4 or 6,vector(a,b,d))
-        elseif op=='fade' then interp(v,'alpha',b,0,vector(a))
-        elseif op=='scale_linear' then interp(v,'scale',d,0,vector(a,b))
+            interp(v,'position',e,op=='position_linear' and 0 or op=='position_decel' and 4 or 6,a,b,d)
+        elseif op=='fade' then interp(v,'alpha',b,0,a)
+        elseif op=='scale_linear' then interp(v,'scale',d,0,a,b)
         elseif op=='wait' then
             v.wait=v.wait or a
             if v.wait>0 then v.wait=v.wait-1;v.pc=v.pc-1;return else v.wait=nil end
@@ -239,7 +246,8 @@ function A.step(v,dt)
 end
 function A.new(game,archive,id,dt,sprite_resolver)
     local data=A.load(game,archive)
-    local script=assert(data.scripts[id], '原作ANM脚本缺失：'..data.key..'/'..id)
+    local script=data.scripts[id]
+    if not script then error('原作ANM脚本缺失：'..data.key..'/'..id) end
     local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
         sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,sprite_resolver=sprite_resolver,
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
@@ -250,7 +258,8 @@ function A.new(game,archive,id,dt,sprite_resolver)
     return v
 end
 function A.sprite_resource(v)
-    local s=assert(v.data.sprites[v.sprite], '原作ANM精灵缺失：'..v.data.key..'/'..v.sprite)
+    local s=v.data.sprites[v.sprite]
+    if not s then error('原作ANM精灵缺失：'..v.data.key..'/'..v.sprite) end
     local scope=stage and stage.current_stage
     local timer=scope and scope.timer or 0
     -- 重试会复用同一张 stage 表，但 ext.lua 会清空 stage 资源池并把 timer 归零。
