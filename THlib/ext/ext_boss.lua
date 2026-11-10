@@ -44,6 +44,7 @@ function extboss:frame()
     end
 end
 function extboss:render()
+    if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
 
     if stage.current_stage.is_menu then
         return

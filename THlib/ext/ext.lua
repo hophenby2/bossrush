@@ -121,6 +121,7 @@ local function ChangeGameStage()
         SaveTexture("LittleSnapShot", "User\\menu_bg_2.png")
     end
     ResetWorldOffset()--by ETC，重置world偏移
+    if ui.OriginalHUD then ui.OriginalHUD.layout(stage.next_stage) end
     ResetCurSystem()--重制system选择
     -- 初次进入加载画面和离开分辨率选择时没有新的游玩进度，不重复重写刚读取的存档。
     if stage.current_stage and stage.current_stage.stage_name~='settings' then

@@ -63,7 +63,7 @@ function T.install()
     function GetInput()
         input()
         if current then
-            KeyState.shoot=probe~='background';KeyState.slow=math.floor(frames/120)%2==1
+            KeyState.shoot=probe~='background' and probe~='hud';KeyState.slow=math.floor(frames/120)%2==1
             KeyState.spell=not probe and (frames==30 or frames==400)
             KeyState.left=false;KeyState.right=false;KeyState.up=false;KeyState.down=false
             if probe=='opening' and player then
@@ -84,10 +84,12 @@ function T.install()
             for _=1,(probe and frames>=300 and frames<312 and 1 or 20) do
                 DoFrame();mask(mask_fader)
                 if not current and index==0 and stage.current_stage and stage.current_stage.stage_name=='menu' then
-                    for _,e in ipairs(probe and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
-                        for _,m in ipairs(SequenceResources.machines(e[1])) do entries[#entries+1]={key=e[2],machine=m.id,game=e[1]} end
+                    for _,e in ipairs(probe and probe~='hud' and {{10,'th10_lunatic'}} or {{6,'th06_lunatic'},{7,'th07_lunatic'},{8,'th08_lunatic_b'},{10,'th10_lunatic'},{95,'th095_scenes'}}) do
+                        for i,m in ipairs(SequenceResources.machines(e[1])) do
+                            if probe~='hud' or i==1 then entries[#entries+1]={key=e[2],machine=m.id,game=e[1]} end
+                        end
                     end
-                    if probe and probe~='opening' then for i=#entries,2,-1 do entries[i]=nil end end
+                    if probe and probe~='opening' and probe~='hud' then for i=#entries,2,-1 do entries[i]=nil end end
                     launch();break
                 end
                 if current and SequenceResources.state() and not stage.next_stage then
@@ -97,6 +99,21 @@ function T.install()
                     if frames==1 then
                         s.power=probe=='opening' and 0 or s.game==10 and 80 or 128;SequenceResources.sync()
                         if probe=='opening' then player.x=-144 end
+                    end
+                    if probe=='hud' and frames==350 then
+                        s.power=s.game==10 and 75 or 96;s.bombs=4;s.lives=3
+                        s.points=42;s.stage_points=42;s.cherry=123450;s.cherry_max=400000;s.cherry_plus=49000;s.border=s.game==7 and 400 or 0
+                        s.faith=234560;s.faith_timer=130;s.gauge=-8500;s.human=-85;s.time=1234
+                        lstg.var.score=123456780;lstg.var.graze=456;SequenceResources.sync()
+                    end
+                    if probe=='hud' and frames==120 and s.game~=95 then
+                        local chapter=OriginalSequence.catalog.chapters(current.key,lstg.var.player_name)[1]
+                        for _,row in ipairs(chapter.units) do
+                            local part=row.unit.sc_group[1]
+                            if row.role=='boss' and part.card.is_sc then
+                                New(part.boss,{part.card});break
+                            end
+                        end
                     end
                     if probe=='opening' then
                         for _,row in ipairs(opening) do

@@ -1,0 +1,74 @@
+{
+  "6/front": {
+    "source": "紅魔郷CM.DAT",
+    "sha256": "2d33c2ce013ed45945a15034cfc0e8d853e338490699061cac1045e2cf0516ec",
+    "sprites": 24,
+    "scripts": 25
+  },
+  "6/ascii": {
+    "source": "紅魔郷IN.DAT",
+    "sha256": "d2b29411e5e94828c2668b0b7fa1e203244f8b8b71b988987db79718ee091188",
+    "sprites": 119,
+    "scripts": 10
+  },
+  "6/asciis": {
+    "source": "紅魔郷IN.DAT",
+    "sha256": "3bda13f9db6c46a05ccd6f2ccc808ef1829de9486f1b28e098ee171d85acd1c2",
+    "sprites": 118,
+    "scripts": 0
+  },
+  "7/ascii": {
+    "source": "th07.dat",
+    "sha256": "4ad14fa8965a40591a94ec86b7f3f4c264be3aa97808a8d2e0c7e1d147a848ae",
+    "sprites": 277,
+    "scripts": 23
+  },
+  "7/front": {
+    "source": "th07.dat",
+    "sha256": "b2a1725eaeac08aa9e2267c4a95bf839bc5de32530eca8662e6e8c2734d76f9a",
+    "sprites": 30,
+    "scripts": 14
+  },
+  "8/ascii": {
+    "source": "th08.dat",
+    "sha256": "f703d05264e942b31b8b5af92b4f9c1c6b97649ea933fa893844130c19db4947",
+    "sprites": 291,
+    "scripts": 27
+  },
+  "8/front": {
+    "source": "th08.dat",
+    "sha256": "9ab5cbaeb378cd6fd1e2160714395150e099153972a9cb3cea2e163f28b5f131",
+    "sprites": 33,
+    "scripts": 16
+  },
+  "8/times": {
+    "source": "th08.dat",
+    "sha256": "4843ad5f2c2f6ae9ce16e602cca29d5ca8d0bd96f80fb85654780dc843b96ca2",
+    "sprites": 16,
+    "scripts": 3
+  },
+  "95/ascii": {
+    "source": "th095.dat",
+    "sha256": "17b0038e5190f334e8669251ab0f8031f1b9f53f5f5c3a2dfac5f5391a4d081a",
+    "sprites": 111,
+    "scripts": 2
+  },
+  "95/front": {
+    "source": "th095.dat",
+    "sha256": "20321e6d34004f1063e032dfacea7dd5236427910ced5996b2e36a82d243835b",
+    "sprites": 24,
+    "scripts": 18
+  },
+  "10/ascii": {
+    "source": "th10.dat",
+    "sha256": "c368930b7fc546931fa1da691f82e3e1766c902c0e32c45106076253b427f66d",
+    "sprites": 235,
+    "scripts": 9
+  },
+  "10/front": {
+    "source": "th10.dat",
+    "sha256": "a282144c2e6d785c6a09d490bef5fd4b667935a724ea1d34607d5fbd5b3bfb2a",
+    "sprites": 85,
+    "scripts": 149
+  }
+}

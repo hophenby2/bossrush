@@ -193,6 +193,7 @@ function ext.saveScreenAfter()
 end
 
 function ext.RenderFPS()
+    if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
     -- 竖屏画布只有540宽；使用实际边缘，保持横屏同一套帧率与录像提示。
     local portrait=AndroidPortrait and AndroidPortrait.enabled()
     local x=screen.width-(portrait and 12 or 4)
@@ -396,6 +397,7 @@ function ui_drawing:Afterrender()
 
             ui.DrawScore(self)
         end
+        if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
         lstg.system:render()
         if not setting.displaykey or AndroidPlatform or lstg.var.rogue_run then
             return

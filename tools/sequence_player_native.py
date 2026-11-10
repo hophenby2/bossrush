@@ -9,7 +9,7 @@ import os
 ROOT=Path(__file__).resolve().parents[1]
 ap=argparse.ArgumentParser(description=__doc__)
 ap.add_argument('--output',type=Path,required=True)
-ap.add_argument('--probe',choices=['background','shots','drops','opening'])
+ap.add_argument('--probe',choices=['background','shots','drops','opening','hud'])
 args=ap.parse_args()
 output=args.output.resolve()
 assert output!=ROOT and ROOT not in output.parents, '验证输出必须放在发行目录以外'
@@ -41,5 +41,5 @@ summary['results']=[{**{k:r[k] for k in ('game','machine','power','score','drops
                     'opening_kills':sum('killed' in row for row in r.get('opening',[]))}
                    for r in report['results']] if report['results'] else []
 print(json.dumps(summary,ensure_ascii=False))
-expected=6 if args.probe=='opening' else 1 if args.probe else 29
+expected=6 if args.probe=='opening' else 5 if args.probe=='hud' else 1 if args.probe else 29
 assert code==0 and not report['errors'] and report['completed']==report['expected'] and report['expected']==expected
