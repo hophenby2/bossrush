@@ -1,8 +1,8 @@
 -- 使用正式路径适配代码，验证无损贴图别名不改变枚举、大小写和存档路径。
 local rawOpen,rawLines,rawRemove,rawRename=io.open,io.lines,os.remove,os.rename
 local assets={
- ['game/asset_index.lua']="return {'Resources/Test.PNG','mod/root.lua','THlib/se/TEST.wav'}",
- ['game/asset_variants.lua']="return {['Resources/Test.PNG']='Resources/Test.webp',['THlib/se/TEST.wav']='THlib/se/TEST.ogg'}",
+ ['game/asset_index.lua']="return {'Resources/Test.PNG','Resources/Duplicate.PNG','mod/root.lua','THlib/se/TEST.wav'}",
+ ['game/asset_variants.lua']="return {['Resources/Test.PNG']='Resources/Test.webp',['Resources/Duplicate.PNG']='Resources/Test.webp',['THlib/se/TEST.wav']='THlib/se/TEST.ogg'}",
  ['game/Resources/Test.webp']='RIFF test WEBP',
  ['game/THlib/se/TEST.ogg']='OggS test Vorbis',
 }
@@ -14,7 +14,8 @@ plus={};P.installNativeAPI()
 assert(__UTF8ToANSI('replay/测试录像.rpy')=='replay/测试录像.rpy','录像文件名保留UTF-8')
 assert(P.resolve('resources\\TEST.png')=='game/Resources/Test.webp','大小写纠正后按别名加载')
 assert(P.exists('Resources/Test.png'),'逻辑PNG在优化后仍能查询存在')
-local files=P.enumerate('Resources','png');assert(#files==1 and files[1][1]=='Resources/Test.PNG','PNG枚举保持原始文件名')
+local files=P.enumerate('Resources','png');assert(#files==2,'去重后PNG枚举仍保留两个逻辑文件')
+assert(P.resolve('resources/duplicate.png')=='game/Resources/Test.webp' and P.exists('Resources/Duplicate.PNG'),'重复贴图按原名解析到同一只读文件')
 assert(P.resolve('mod/root.lua')=='game/mod/root.lua','脚本路径保持原值')
 assert(P.resolve('thlib\\se\\test.wav')=='game/THlib/se/TEST.ogg','音效按原WAV路径解析到Ogg')
 assert(P.exists('THlib/se/test.wav'),'转换后的音效仍能按原路径查询')

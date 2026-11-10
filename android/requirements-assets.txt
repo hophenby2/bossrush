@@ -1,3 +1,3 @@
-# --optimize-assets和--compress-audio使用；源PNG和WAV保持不变。
+# --optimize-assets、--lossy-images和--compress-audio使用；源PNG和WAV保持不变。
 Pillow==12.0.0
 soundfile==0.14.0

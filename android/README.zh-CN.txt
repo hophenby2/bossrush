@@ -1,3 +1,9 @@
+图片分级压缩（2026-11-10）
+--lossy-images：核心787张全部RGBA无损；非核心不透明图Q90/Q95，透明图保持PNG且RGB误差最多2级。
+APK由192.12 MiB降至160.94 MiB，少31.18 MiB；透明图不转WebP，源PNG不变。
+构建：python3 android/build.py --update-assets --lossy-images --compress-audio
+详见“图片分级压缩与验证报告.txt”及verification-images-2026-11-10.json。
+
 音效压缩与大图分析（2026-11-10）
 安卓增加--compress-audio：160个WAV入包副本转Ogg，12个保留PCM；采样率、声道、帧数和逻辑资源路径保持原值。
 源WAV保留，Vorbis为有损编码；APK从206.76 MiB进一步降到192.12 MiB。

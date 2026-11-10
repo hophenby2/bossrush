@@ -1,0 +1,255 @@
+{
+  "base_commit": "31940d4a65a59d2b51a508ea41f2996149f9faeb",
+  "date": "2026-11-10",
+  "apk_before_bytes": 201454829,
+  "apk_after_bytes": 168762453,
+  "apk_after_sha256": "356ed1527ea72a753a5e7974d1363c583c7a8bb6dbd4fb51c6e0aba8f28535b5",
+  "image_before_bytes": 93917615,
+  "image_after_bytes": 61245538,
+  "logical_image_pixels": {
+    "core_exact": 787,
+    "noncore_exact": 71,
+    "noncore_lossy_opaque": 57,
+    "noncore_lossy_transparent": 62
+  },
+  "deduplicated_files": 114,
+  "codecs": {
+    "png-lossless": 361,
+    "source": 307,
+    "webp-lossless": 190,
+    "webp-q90": 49,
+    "png-rgb6": 62,
+    "webp-q95": 8
+  },
+  "all_alpha_and_dimensions_exact": true,
+  "core_transparent_png_header_preserved": true,
+  "audio_fonts_native_game_lua_and_engine_resources_unchanged": true,
+  "gpu_probe": [
+    {
+      "path": "Resources/Original/8/eff09al_1.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/Original/8/eff09sk_1.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "THlib/bullet/img/bullet5.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "THlib/bullet/img/bullet3.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "THlib/bullet/img/bullet4.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/Original/8/eff08_3.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/System/eff_astral.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/Original/10/e03_2.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/Original/10/e10_0.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/Original/10/e05_2.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "THlib/player/marisa/marisa.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "THlib/player/chiruno/ice.png",
+      "core": true,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "Resources/BossBackGround/th08_8_n.png",
+      "core": false,
+      "max_channel_error": 24,
+      "psnr_db": 44.248
+    },
+    {
+      "path": "Resources/BossBackGround/th07_7_n.png",
+      "core": false,
+      "max_channel_error": 19,
+      "psnr_db": 44.006
+    },
+    {
+      "path": "THlib/UI/ui_bg.png",
+      "core": false,
+      "max_channel_error": 21,
+      "psnr_db": 44.699
+    },
+    {
+      "path": "Resources/BossBackGround/th10_12_n.png",
+      "core": false,
+      "max_channel_error": 19,
+      "psnr_db": 45.699
+    },
+    {
+      "path": "mod/BG/TH08/TH08_bg_stg6bg2.png",
+      "core": false,
+      "max_channel_error": 34,
+      "psnr_db": 42.189
+    },
+    {
+      "path": "THlib/UI/menu_bg_sub.png",
+      "core": false,
+      "max_channel_error": 45,
+      "psnr_db": 42.322
+    },
+    {
+      "path": "THlib/UI/menu_bg.png",
+      "core": false,
+      "max_channel_error": 26,
+      "psnr_db": 43.332
+    },
+    {
+      "path": "Resources/Original/10/stage03_2.png",
+      "core": false,
+      "max_channel_error": 21,
+      "psnr_db": 41.109
+    },
+    {
+      "path": "Resources/Original/95/world10_0.png",
+      "core": false,
+      "max_channel_error": 18,
+      "psnr_db": 42.601
+    },
+    {
+      "path": "Resources/Original/8/stg6bg_1.png",
+      "core": false,
+      "max_channel_error": 97,
+      "psnr_db": 41.193
+    },
+    {
+      "path": "Resources/Special/reimu_player_tachie.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 53.422
+    },
+    {
+      "path": "mod/BG/TH09/TH09_bg_hyz_bg5.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 52.844
+    },
+    {
+      "path": "Resources/Special/chiruno_player_tachie.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 54.099
+    },
+    {
+      "path": "Resources/Special/marisa_player_tachie.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 54.012
+    },
+    {
+      "path": "Resources/Original/95/world03_0.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 51.431
+    },
+    {
+      "path": "mod/BG/TH095/TH095_bg_back.png",
+      "core": false,
+      "max_channel_error": 2,
+      "psnr_db": 51.431
+    },
+    {
+      "path": "mod/GAME/stage_pic31.png",
+      "core": false,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "mod/BG/TH10/TH10_bg_waterfallback.png",
+      "core": false,
+      "max_channel_error": 0,
+      "psnr_db": null
+    },
+    {
+      "path": "mod/GAME/stage_pic32.png",
+      "core": false,
+      "max_channel_error": 0,
+      "psnr_db": null
+    }
+  ],
+  "native": {
+    "device": "Android 16 ARM64 emulator",
+    "entry_cases": 10,
+    "entry_frames": 300,
+    "battle": {
+      "card": "3606",
+      "active_card": "3606",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "1069",
+      "checkpoint": "c083314723a62d3059c7404da8a80a5511083a6e3a3a56d20700f65c262f8480",
+      "elapsed_s": "15.053724"
+    },
+    "bomb_clear": {
+      "card": "3606",
+      "active_card": "3606",
+      "seed": "20261109",
+      "logic_frames": "900",
+      "objects": "6",
+      "checkpoint": "1dd2e61f14162c57fedc942f45786cb0bec431125f4891ac37c7d03ad4115bab",
+      "elapsed_s": "17.233078"
+    },
+    "bomb_frame": 650,
+    "clear_frame": 850,
+    "state_matches_full_and_previous_slim": true,
+    "gpu_cases": 31,
+    "gpu_core_cases": 12,
+    "core_gpu_max_channel_error": 0,
+    "transparent_png_gpu_max_channel_error": 2
+  },
+  "policy": {
+    "unknown_is_core": true,
+    "core": "PNG无损重压缩/不透明WebP无损；相同编码文件去重",
+    "noncore_opaque": "Q90；PSNR不足36 dB时尝试Q95，否则回退无损",
+    "noncore_transparent": "PNG；RGB按4级四舍五入，误差<=2；Alpha不变",
+    "transparent_webp": "当前引擎原生混合存在亮度差异，最终禁用",
+    "source_images_unchanged": true,
+    "resizing": false
+  },
+  "apk_reduction_percent": 16.2281
+}

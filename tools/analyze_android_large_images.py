@@ -8,29 +8,19 @@ import io
 import json
 from pathlib import Path
 import re
+import sys
 import zipfile
 import zlib
 
 import numpy as np
 from PIL import Image
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'android'))
+from image_policy import noncore_category
+from asset_optimizer import recompress_png
 
 
 def category(path):
-    if path.startswith('THlib/UI/'):
-        return '菜单与界面'
-    if path.startswith('Resources/Special/') and path.endswith('_player_tachie.png'):
-        return '菜单角色立绘'
-    if re.fullmatch(r'mod/GAME/stage_pic(?:29|30|31|32|33)\.png', path):
-        return '五作关卡预览'
-    if path.startswith('Resources/BossBackGround/'):
-        return '符卡背景'
-    if path.startswith('mod/BG/'):
-        return '道中背景'
-    if path.startswith('Resources/Original/') and re.match(r'(stg\d+bg|stage\d+_|world\d+_)', Path(path).name):
-        return '原作场景纹理'
-    if path == 'mod/th16AEX.png':
-        return '框架仍载入的旧入口图'
-    return None
+    return noncore_category(path)
 
 
 def main():
@@ -70,7 +60,11 @@ def main():
                        source_sha256=hashlib.sha256(original).hexdigest())
             row['candidates'] = {}
             lossless = io.BytesIO()
-            rgba.save(lossless, format='WEBP', lossless=True, method=6, exact=True)
+            opaque=rgba.getchannel('A').getextrema()==(255,255)
+            if opaque:
+                rgba.save(lossless, format='WEBP', lossless=True, method=6, exact=True)
+            else:
+                lossless.write(recompress_png(image,original))
             compressor = zlib.compressobj(6,zlib.DEFLATED,-15)
             packed = compressor.compress(lossless.getvalue())+compressor.flush()
             with Image.open(io.BytesIO(lossless.getvalue())) as decoded:
@@ -78,7 +72,16 @@ def main():
             row['candidates']['lossless'] = {'apk_bytes_estimate':len(packed),
                 'saved_bytes_estimate':max(0,row['apk_bytes']-len(packed)) if exact else 0,
                 'rgba_exact':exact}
-            for quality in (90, 85):
+            if not opaque:
+                values=np.asarray(rgba).copy()
+                values[:,:,:3]=np.minimum((values[:,:,:3].astype('uint16')+2)//4*4,255).astype('uint8')
+                data=recompress_png(Image.fromarray(values),original)
+                compressor=zlib.compressobj(6,zlib.DEFLATED,-15)
+                packed=compressor.compress(data)+compressor.flush()
+                row['candidates']['png-rgb6']={'apk_bytes_estimate':len(packed),
+                    'saved_bytes_estimate':max(0,row['apk_bytes']-len(packed)),
+                    'max_rgb_error':2,'alpha_exact':True}
+            for quality in ((90,85) if opaque else ()):
                 encoded = io.BytesIO()
                 rgba.save(encoded, format='WEBP', quality=quality, method=6, exact=True)
                 data = encoded.getvalue()
@@ -107,6 +110,7 @@ def main():
     report = {'baseline_apk':str(args.apk), 'minimum_apk_bytes':args.min_kib*1024,
               'mode':'只分析；不写回图片，不改APK，不改变尺寸',
               'scope':'界面、菜单立绘、关卡预览、场景及符卡背景；排除弹图、自机/Boss行走图和ANM效果图集',
+              'transparent_policy':'当前引擎透明WebP混合存在差异，透明图只评估PNG无损或RGB6',
               'candidate_count':len(rows), 'totals':dict(totals),
               'images':rows, 'excluded_large_images':sorted(excluded,key=lambda r:r['apk_bytes'],reverse=True)}
     args.output.parent.mkdir(parents=True,exist_ok=True)

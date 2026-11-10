@@ -31,6 +31,7 @@ local function installAudio(mode)
     end
 end
 function T.install(mode)
+    if mode:match('images=1') then dofile('android/image_probe.lua').install(mode);return end
     if mode:match('audio=1') then installAudio(mode);return end
     local level=assert(tonumber(mode:match('level=(%d+)')))
     local target=tonumber(mode:match('frames=(%d+)')) or 300

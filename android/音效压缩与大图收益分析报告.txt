@@ -6,7 +6,8 @@ WAV压缩与非核心大图收益分析（2026-11-10）
 
 音效已完成
 172个WAV中，160个入包副本转为Ogg Vorbis；12个收益不足5%的短音效保留PCM WAV。
-音效在APK内的真实体积：19.32 MiB -> 4.68 MiB，减少14.64 MiB。
+原WAV这一组音效在APK内的真实体积：19.32 MiB -> 4.68 MiB，减少14.64 MiB。
+另有60个原有钢琴Ogg采样占1.51 MiB未转码，因此全部音效实际为6.19 MiB。
 APK：216,798,445字节（206.76 MiB）-> 201,454,829字节（192.12 MiB）。
 文件：android/dist/BossRushHD-Android-arm64-slim-ogg.apk。
 Vorbis使用compression_level=0.2；这是有损音频编码，不声称波形逐样本相同。

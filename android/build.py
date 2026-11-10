@@ -22,6 +22,7 @@ LOCK = json.loads((ROOT / 'engine.lock.json').read_text(encoding='utf-8'))
 ENGINE = CACHE / 'LuaSTG-x'
 NATIVE = BUILD / 'native-gfx'
 OPTIMIZE_ASSETS = False
+LOSSY_IMAGES = False
 COMPRESS_AUDIO = False
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
@@ -195,11 +196,13 @@ def prepare_assets():
     if OPTIMIZE_ASSETS:
         from asset_optimizer import optimize_images
         sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')]
-        optimized, records = optimize_images(sources,CACHE/'lossless-images')
+        optimized, records = optimize_images(sources,CACHE/'lossless-images',GAME,LOSSY_IMAGES)
         report = {str(p.relative_to(GAME)):r for p,r in records.items()}
         write_utf8(BUILD/'asset-optimization.json',json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-        saved = sum(r['source_bytes']-r['packed_bytes'] for r in records.values())
-        print(f'无损贴图优化：{len(optimized)}张，入包原始资源减少{saved/1048576:.2f} MiB',flush=True)
+        saved = sum(r['source_zip_bytes']-r['packed_zip_bytes'] for r in records.values())
+        print(f'贴图优化：{len(optimized)}张，去重前APK资源减少{saved/1048576:.2f} MiB',flush=True)
+    image_copies = {}
+    image_duplicates = {}
     for name in ['THlib', 'Resources', 'mod', 'music', 'BadApple', 'shader',
                  'core.lua', 'launch.lua', 'manual', 'Update.txt']:
         source = GAME / name
@@ -210,11 +213,24 @@ def prepare_assets():
             relative = source.relative_to(GAME)
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            if source in optimized or source in audio_variants:
-                native = relative.with_suffix('.ogg' if source in audio_variants else '.webp')
+            if source.suffix.lower()=='.png' and OPTIMIZE_ASSETS:
+                candidate = optimized.get(source,source)
+                native = relative.with_suffix(candidate.suffix)
+                digest = hashlib.sha256(candidate.read_bytes()).digest()
+                if digest in image_copies:
+                    native = image_copies[digest]
+                    image_duplicates[relative.as_posix()] = native.as_posix()
+                else:
+                    target = destination/native
+                    if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
+                    shutil.copy2(candidate,target)
+                    image_copies[digest] = native
+                if native != relative: asset_variants[relative.as_posix()]=native.as_posix()
+            elif source in audio_variants:
+                native = relative.with_suffix('.ogg')
                 target = destination/native
                 if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
-                shutil.copy2(audio_variants[source] if source in audio_variants else optimized[source],target)
+                shutil.copy2(audio_variants[source],target)
                 asset_variants[relative.as_posix()]=native.as_posix()
             elif source.suffix == '.lua':
                 write_utf8(target, source.read_text(encoding='utf-8-sig'))
@@ -235,7 +251,10 @@ def prepare_assets():
                     header = image.read(24)
                 if header[:8] == b'\x89PNG\r\n\x1a\n':
                     dimensions[relative.as_posix()] = struct.unpack('>II', header[16:24])
-                    if source in optimized: dimensions[relative.with_suffix('.webp').as_posix()]=dimensions[relative.as_posix()]
+                    if OPTIMIZE_ASSETS: dimensions[native.as_posix()]=dimensions[relative.as_posix()]
+    if OPTIMIZE_ASSETS:
+        write_utf8(BUILD/'image-deduplication.json',json.dumps(image_duplicates,ensure_ascii=False,indent=2)+'\n')
+        print(f'相同图片入包去重：{len(image_duplicates)}份，逻辑名称与独立纹理资源保留',flush=True)
     # assets 无目录遍历接口，用打包清单提供确定性枚举与大小写纠正。
     seen = {}
     for path in paths:
@@ -417,18 +436,20 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
-    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO
+    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
-    parser.add_argument('--optimize-assets', action='store_true', help='对不透明PNG尝试RGBA像素一致的无损WebP，仅在入包时转换')
+    parser.add_argument('--optimize-assets', action='store_true', help='图片无损重压缩和相同文件去重，核心透明图保留PNG')
+    parser.add_argument('--lossy-images', action='store_true', help='核心无损；非核心不透明图Q90/Q95、透明图PNG RGB6；隐含--optimize-assets')
     parser.add_argument('--compress-audio', action='store_true', help='将有包体收益的WAV入包副本转为高质量Ogg Vorbis，保留采样率、声道与帧数')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
     args = parser.parse_args()
-    OPTIMIZE_ASSETS = args.optimize_assets
+    OPTIMIZE_ASSETS = args.optimize_assets or args.lossy_images
+    LOSSY_IMAGES = args.lossy_images
     COMPRESS_AUDIO = args.compress_audio
     if args.game_root:
         GAME = args.game_root.resolve()

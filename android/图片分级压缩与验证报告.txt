@@ -1,0 +1,56 @@
+图片分级压缩与无损验证报告（2026-11-10）
+
+范围与实测包体
+基于slim分支31940d4的Ogg精简包；本轮只调整安卓入包图片及诊断工具。
+APK：201,454,829字节（192.12 MiB）-> 168,762,453字节（160.94 MiB）。
+减少31.18 MiB，缩小16.23%。
+图片在APK内的实际压缩后体积：89.57 -> 58.41 MiB。
+文件：android/dist/BossRushHD-Android-arm64-slim-images.apk。
+源PNG、音频、字体、原生库、关卡/框架Lua及引擎自带资源不改；逻辑资源清单逐字节保留。
+仅生成入包副本，没有缩尺寸，也不声称减少解码后的纹理内存或绘制成本。
+
+分级规则
+未明确识别的图片一律为核心。子弹、自机、Boss/敌机行走图、战斗ANM、激光、掉落、HUD/字体贴图保持无损。
+非核心白名单限定为菜单背景、菜单角色立绘、五作关卡预览、符卡/道中背景与明确命名的原作场景纹理。
+具体规则集中在android/image_policy.py；不会把THlib/UI整个目录作为有损范围。
+
+核心资源：787张，全部解码后RGBA逐像素一致。
+透明核心图继续使用PNG；仅替换IDAT压缩数据，保留IHDR、色表、透明度及其它原始块。
+不透明核心图可用无损WebP，每张解码后核对RGBA。收益不足的原文件保留。
+核心编码结果：334张PNG无损重压缩，159张无损WebP，294张原文件。
+
+非核心资源：190张，其中71张仍保持RGBA完全相同。
+57张不透明图采用有损WebP：49张Q90、8张Q95。全量核对尺寸与Alpha；RGB PSNR至少36 dB，收益不足则回退无损。
+62张透明图采用PNG颜色量化：RGB按4级四舍五入，每通道误差不超过2，Alpha逐像素不变。
+这部分PNG继续使用原有透明混合路径，不做Alpha量化，不改贴图边界或UV。
+
+原生透明混合发现与处理
+首轮透明WebP虽然能通过RGBA解码核对，原生GPU对照仍发现背景变暗。
+当前引擎的PNG与WebP预乘Alpha路径不同，因此最终包不把任何透明图转换为WebP。
+旧分析里透明WebP的体积估计不能直接应用；最终160.94 MiB采用了保留PNG混合行为的方案。
+原生源PNG/入包贴图在同一屏幕位置分别截图，排除动态FPS/版本号区域，覆盖普通混合与加色混合。
+31张代表图通过GPU对照：12张核心样本两种模式逐像素一致；6张透明量化样本最大通道误差2；
+其它非核心无损样本逐像素一致，不透明有损样本完成原生画面对照与目视检查。
+
+入包去重
+114份编码后字节完全相同的图片只保留一份实际文件，保留每个逻辑名称和尺寸元数据。
+去重按完整文件字节SHA-256识别，不将核心图片指向有损文件。
+原生每次LoadTexture仍创建独立纹理资源，去重只减少包内文件副本，不合并贴图的采样器状态。
+
+验证
+真实APK全量解码：787张核心、71张非核心无损、57张非核心不透明有损、62张非核心透明量化。
+977张的尺寸和Alpha全部相同；透明图PNG头全部保留；逻辑名称枚举及去重别名均可解析。
+Android 16 ARM64模拟器验证TH31–TH35整关/符卡入口共10个，每个300帧，无缺失资源或Lua异常。
+二百十日900帧对象状态与完整版本/上一版一致：c083314723a62d3059c7404da8a80a5511083a6e3a3a56d20700f65c262f8480。
+扔雷650帧、击破850帧的900帧场景亦一致：1dd2e61f14162c57fedc942f45786cb0bec431125f4891ac37c7d03ad4115bab。
+未在OnePlus真机验证，不将本轮模拟器结果作为真机帧率或启动耗时结论。
+
+构建与回归
+python3 -m pip install -r android/requirements-assets.txt
+python3 android/build.py --update-assets --lossy-images --compress-audio
+--lossy-images隐含--optimize-assets；只用--optimize-assets时所有图片保持无损。首次构建去掉--update-assets。
+python3 android/tests/check_asset_optimizer.py
+luajit tools/check_android_asset_variants.lua
+python3 tools/check_android_image_package.py android/dist/BossRushHD-Android-arm64-slim-images.apk
+python3 tools/run_android_image_probe.py --serial <测试设备> --apk android/dist/BossRushHD-Android-arm64-slim-images.apk --output /tmp/image-probe
+详细记录见verification-images-2026-11-10.json；逐图片编码与去重记录在android/build/asset-optimization.json、image-deduplication.json。
