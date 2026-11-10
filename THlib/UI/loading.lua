@@ -100,7 +100,7 @@ function stage_init:frame()
     end
 end
 function stage_init:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.loading(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.loading(self,stage_init.render) end
     Render("loading", 480, 270)
     ui:RenderText('title', "少女折寿中" .. string.rep(".", int(self.timer / 20 % 6) + 1),
             480, 25, 1, Color(255, 255, 227, 132), "centerpoint")
@@ -270,14 +270,16 @@ function stage_other:frame()
 
 end
 function stage_other:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.keyboard(self,_keyboard,'设置玩家标签') end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.keyboard(self,_keyboard,'设置玩家标签',stage_other.render) end
     local text = [[正式开始游戏前
     你需要输入一个具有象征性*（象征你）的标签
     它将在一些重要地方里显示
     字符长度为4~20，仅限英文字符
     尽量避免大众化，如果实在想不出来可以乱打一通（
     ----确定结果后将无法修改----]]
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,430,270,screen.height-180,.65) end
     RenderTTF("title", text, self.x, 430, Color(255, 255, 255, 255), "center")
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,200,270,screen.height/2,1.5) end
     local font = "replay"
     -- 标题
     SetFontState(font, "", 255 * self.alpha, unpack(ui.menu.title_color))

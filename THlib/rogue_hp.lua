@@ -59,13 +59,13 @@ function H.layout(value,width,height)
     until false
     return lines,scale,22*scale
 end
-function H.render(x,y,width)
+function H.render(x,y,width,height,align)
     local s=state();if not s then return end
     local a=s.animation
     local oldAlpha=a and math.max(0,math.min(1,(DELAY+FLIGHT-a.age)/FADE))*255 or 255
-    local lines,scale,gap=H.layout(s.shown,width or x*2,math.max(1,y-8))
+    local lines,scale,gap=H.layout(s.shown,width or x*2,height or math.max(1,y-8))
     for i,line in ipairs(lines) do
-        ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),'centerpoint')
+        ui:RenderText('title',line,x,y-(i-1)*gap,scale,Color(oldAlpha,H.rgb(s.shown_stage)),align or 'centerpoint','vcenter')
     end
     if not a then return end
     local t=math.max(0,math.min(1,(a.age-DELAY)/FLIGHT))
@@ -73,7 +73,7 @@ function H.render(x,y,width)
     local alpha=math.min(1,(H.DURATION-a.age)/FADE)*255
     local centerX,centerY=screen.width/2,screen.height/2
     ui:RenderText('title',('×%.2f'):format(a.factor),centerX+(x-centerX)*move,centerY+(y-centerY)*move,
-        2.6-1.6*move,Color(alpha,H.rgb(a.stage)),'centerpoint')
+        2.6-1.6*move,Color(alpha,H.rgb(a.stage)),align or 'centerpoint','vcenter')
 end
 function H.beginCard(o)
     o._hp_growth_factor=H.enabled() and H.factor() or nil

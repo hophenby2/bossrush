@@ -231,12 +231,13 @@ function sc_pr_menu:frame()
 end
 
 function sc_pr_menu:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.spellPractice(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.spellPractice(self,sc_pr_menu.render) end
     if self.alpha == 0 then
         return
     end
     SetViewMode('ui')
     ui:DrawBack(self.alpha, self.timer)
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,450,270,screen.height-150,540/960) end
     OriginalSetImageState("white", "",
             Color(0, 0, 0, 0),
             Color(200 * self.alpha, 0, 0, 0),
@@ -260,6 +261,7 @@ function sc_pr_menu:render()
     Render4V("white",
             946 - float, 450, 0.5, 940 - float, 456, 0.5,
             940 - float, 444, 0.5, 946 - float, 450, 0.5)
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,270,270,screen.height/2,.68) end
     SetImageState("white", "", 150 * self.alpha * self.tri_alpha2, 0, 0, 0)
     local y = -15
     RenderRect('white',
@@ -312,6 +314,7 @@ function sc_pr_menu:render()
     ui:DrawMenuTTF(text1, self._pos, self.x - ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'left', self.tri_alpha)
     ui:DrawMenuTTF(text2, self._pos, self.x + ui.menu.sc_pr_width * 0.5, self.y + y, a, self.timer, 'right', self.tri_alpha)
     ui:DrawMenuTTF(text3, self._pos, self.x, self.y + y, a, self.timer, 'center', self.tri_alpha)
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,55,270,140,.6) end
     ui:RenderText("title", ("%s%s：%d"):format(self.difficulty[self.diffpos], "卡数", self.cur_nums),
             130, 70, 1, Color(a * 255, 255, 255, 255), "left", "vcenter")
     ui:RenderText("title", ("%s：%d (特殊：%d)"):format("总卡数", #_sc_table, #_sc_table - boss.card.GetCardNums()),

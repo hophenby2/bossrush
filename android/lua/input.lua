@@ -30,7 +30,7 @@ local portraitPause={key=27,x=34,y=0,radius=28,label='暂停'}
 local function activeButtons(menuMode)
     if AndroidPortrait and AndroidPortrait.enabled() then
         if menuMode then return {} end
-        portraitPause.y=screen.height-44
+        portraitPause.x,portraitPause.y=AndroidPortrait.pauseButton()
         return {portraitPause}
     end
     return menuMode and menuButtons or buttons
@@ -266,6 +266,7 @@ function I.install(scene)
     cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(listener, scene)
 end
 function I.render()
+    if AndroidPortrait then AndroidPortrait.coverOutside() end
     SetViewMode('ui')
     local menuMode = I.menuMode()
     for _, b in ipairs(activeButtons(menuMode)) do

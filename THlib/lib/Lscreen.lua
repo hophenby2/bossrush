@@ -311,6 +311,7 @@ function SetViewMode(mode)
                 world.scrl, world.scrr, world.scrb, world.scrt)
     elseif mode == 'ui' then
         SetRenderRect(0, s.width, 0, s.height, 0, s.width, 0, s.height)
+        if AndroidPortrait then AndroidPortrait.applyMenuView() end
     else
         error('Invalid arguement.')
     end
@@ -366,6 +367,10 @@ function SetRenderRect(l, r, b, t, scrl, scrr, scrb, scrt)
     local dx = scr.dx
     local dy = scr.dy
     if l and r and b and t and scrl and scrr and scrb and scrt then
+        if AndroidPortrait and AndroidPortrait.menuView then
+            scrl,scrb=AndroidPortrait.menuPoint(scrl,scrb)
+            scrr,scrt=AndroidPortrait.menuPoint(scrr,scrt)
+        end
         --设置坐标系
         SetOrtho(l, r, b, t)
         --设置视口

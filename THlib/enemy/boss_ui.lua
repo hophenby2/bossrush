@@ -174,7 +174,7 @@ function timeCounter:render()
     if self.open and self.ui.drawtime then
         local w = lstg.world
         local scrx, scry = w.scrr - 672, w.scrt - 494
-        if AndroidPortrait and AndroidPortrait.enabled() then scrx,scry=0,0 end
+        if AndroidPortrait and AndroidPortrait.enabled() then scrx,scry=0,-AndroidPortrait.bossInsetWorld() end
         local alpha1 = (1 - self.flag / 30) * min(b.timer / 30, 1)
         local cd1, cd2 = max(self.cd1, 0), max(self.cd2, 0)
         local dy = (b.ui_slot - 1) * 44
@@ -286,7 +286,7 @@ function infobar:render()
     if _ui.drawname then
         local w = lstg.world
         local scrx, scry = w.scrl - 288, w.scrt - 494
-        if AndroidPortrait and AndroidPortrait.enabled() then scrx,scry=0,0 end
+        if AndroidPortrait and AndroidPortrait.enabled() then scrx,scry=0,-AndroidPortrait.bossInsetWorld() end
         local dy = (b.ui_slot - 1) * 44
         local x, y
         local anisc = int(self.t / self.mt)
@@ -430,6 +430,7 @@ function sc_name:render()
     local sc_hist = self.sc_hist or { 0, 0 }
     local w = lstg.world
     local scrx, scry = w.scrr - 192, w.scrt - 224
+    if AndroidPortrait and AndroidPortrait.enabled() then scry=scry-AndroidPortrait.TOP_INSET end
     local x = self.x + self.xoffset + self.xp + scrx
     local y = self.y + self.yoffset - self._dy + self.yp + self.yoffset2 * 30 + scry
     -- 接近标题时的淡化仍比较战斗坐标，不能拿屏幕坐标与自机位置比较。

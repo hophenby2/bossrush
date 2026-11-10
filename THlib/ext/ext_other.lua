@@ -199,12 +199,16 @@ function ext.RenderFPS()
     local scale=portrait and .4 or .25
     local step=portrait and 15 or 9
     local bottom=portrait and 8 or 1
-    if ext.replay.IsReplay() then
+    local inPlayfield=portrait and not ext.StageIsMenu()
+    if inPlayfield then x,bottom=lstg.world.scrr-12,lstg.world.scrb+8 end
+    if not inPlayfield and ext.replay.IsReplay() then
         SetFontState("Score", "", 255, 190, 190, 190)
         RenderText("Score", "Replaying..", x, bottom+step*2, scale, "right", "bottom")
     end
-    SetFontState("Score", "", 255, 255, 255, 255)
-    RenderText("Score", ui.version, x, bottom+step, scale, "right", "bottom")
+    if not inPlayfield then
+        SetFontState("Score", "", 255, 255, 255, 255)
+        RenderText("Score", ui.version, x, bottom+step, scale, "right", "bottom")
+    end
     local fps = GetFPS()
     if fps >= 59 then
         SetFontState("Score", "", 255, 189, 252, 201)

@@ -489,7 +489,7 @@ function game_setting:frame()
     end
 end
 function game_setting:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.settings(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.settings(self,game_setting.render) end
     if self.alpha == 0 then
         return
     end

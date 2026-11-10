@@ -80,6 +80,7 @@ function menu:ControlExit(x1, x2, y1, y2, action)
     end
 end
 function menu:RenderExit(x1, x2, y1, y2, alpha)
+    if AndroidPortrait and AndroidPortrait.rendering then return AndroidPortrait.exit(AndroidPortrait.owner,alpha) end
     alpha = alpha * 255
     SetImageState("white", "", alpha * 0.6, 0, 0, 0)
     RenderRect("white", x1, x2, y1, y2)
@@ -322,7 +323,7 @@ function main_menu:frame()
 
 end
 function main_menu:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.mainMenu(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.mainMenu(self,main_menu.render) end
     if self.alpha == 0 then
         return
     end
@@ -336,6 +337,7 @@ function main_menu:render()
     local count = #self.text
     local r2
     local height = min(ui.menu.line_height * 1.2, 395 / #self.text)
+    if AndroidPortrait and AndroidPortrait.rendering then x,y,height=AndroidPortrait.mainLayout(self) end
     local R, G, B
     local sub_x, sub_y = 0, 0
     for i = 1, count do
@@ -504,7 +506,7 @@ function stage_select:frame()
 
 end
 function stage_select:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.stagePractice(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.stagePractice(self,stage_select.render) end
     if self.alpha == 0 then
         return
     end
@@ -753,15 +755,16 @@ function player_system_select:frame()
     end
 end
 function player_system_select:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.playerSelect(self,rogue_pool_menu) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.playerSelect(self,rogue_pool_menu,player_system_select.render) end
     if self.alpha == 0 then
         return
     end
     local Alpha = self.alpha
     ui:DrawBack(Alpha, self.timer)
     menu:RenderExit(0, 30, 540, 510, Alpha)
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(240,250,270,screen.height-300) end
     local mx, my, r = 240, 250, 155 + (cur_setting.easyrender and 0 or sin(self.timer * 3) * 2)
-    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · roguelike模式")) or self.title, (self.simple_dual or self.pool_options) and 240 or Alpha * 200 - 100, 460, (self.simple_dual or self.pool_options) and 1.0 or 1.25,
+    ui:RenderText("title", (self.simple_mode and (self.simple_title or "选择玩家 · roguelike模式")) or self.title, (self.simple_dual or self.pool_options or AndroidPortrait and AndroidPortrait.rendering) and 240 or Alpha * 200 - 100, 460, (self.simple_dual or self.pool_options) and 1.0 or 1.25,
             Color(255 * Alpha, 230, 230, 230), "centerpoint")
     SetImageState("bright_line", "mul+add", Alpha * 255, 255, 255, 255)
     Render("bright_line", Alpha * 200 - 100, 446, 0, 0.5, 0.5)
@@ -796,6 +799,7 @@ function player_system_select:render()
     ui:RenderText("title", self.playername[self.pos1], mx, my + r, 1,
             Color(255 * Alpha * self.tri, 189, 252, 201), "center", "bottom")
 
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(715,270,270,AndroidPortrait.playerOptionsY()) end
     if not self.simple_mode then
         local lines = 8
         for k = -lines, lines do
@@ -840,6 +844,7 @@ function player_system_select:render()
     end
 
     local wa = self.wa_index
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(240,250,270,screen.height-300) end
     SetImageState("weapon_arrow", "", Alpha * (150 + wa[1] * 75), 175 - wa[1] * 75, 175, 175 - wa[1] * 75)
     Render("weapon_arrow", 240 - r - 45, 250, 0, 0.8 + wa[1] * 0.1)
     SetImageState("weapon_arrow", "", Alpha * (150 + wa[2] * 75), 175 - wa[2] * 75, 175, 175 - wa[2] * 75)
@@ -852,6 +857,7 @@ function player_system_select:render()
 
     end
 
+    if AndroidPortrait and AndroidPortrait.rendering then AndroidPortrait.place(480,45,270,90) end
     SetImageState("general_button", "", Alpha * 200, 255, 255, 255)
     Render("general_button", 480, 45, 0, 0.3 + self.colindex * 0.05)
     local pool_ready=not self.pool_options or (self.pool_status and self.pool_status.valid)

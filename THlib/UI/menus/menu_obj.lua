@@ -71,7 +71,7 @@ function SimpleNotice:frame()
 
 end
 function SimpleNotice:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.notice(self) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.notice(self,false,SimpleNotice.render) end
     SetViewMode("ui")
     local scrh = screen.height
     local line_h = 32 * 0.8 * 0.61
@@ -224,7 +224,7 @@ function SimpleChoose:frame()
 
 end
 function SimpleChoose:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.notice(self,true) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.notice(self,true,SimpleChoose.render) end
     SetViewMode("ui")
     local scrh = screen.height
     local line_h = 32 * 0.8 * 0.61

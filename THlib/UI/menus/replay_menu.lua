@@ -264,7 +264,7 @@ function replay_saver:frame()
 end
 
 function replay_saver:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.replays(self,true,_keyboard) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.replays(self,true,_keyboard,replay_saver.render) end
     if self.alpha == 0 then
         return
     end
@@ -473,7 +473,7 @@ function replay_loader:frame()
 end
 
 function replay_loader:render()
-    if AndroidPortrait and AndroidPortrait.enabled() then return AndroidPortrait.replays(self,false) end
+    if AndroidPortrait and AndroidPortrait.enabled() and not AndroidPortrait.rendering then return AndroidPortrait.replays(self,false,nil,replay_loader.render) end
     if self.alpha == 0 then
         return
     end

@@ -70,7 +70,8 @@ function extboss:render()
                     t = t + 1
                 end
             end
-            ui:RenderText('boss_name', show_name, w.scrl + 7, w.scrt - 2, 1,
+            local inset=AndroidPortrait and AndroidPortrait.enabled() and AndroidPortrait.TOP_INSET or 0
+            ui:RenderText('boss_name', show_name, w.scrl + 7, w.scrt - 2-inset, 1,
                     Color(255, 205 + 50 * sin(timer / 4), 227, 132), "noclip")
         end
         local unit, percent
