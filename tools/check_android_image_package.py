@@ -18,18 +18,21 @@ def main():
     p.add_argument('apk',type=Path)
     p.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     p.add_argument('--output',type=Path)
+    p.add_argument('--windows',action='store_true',help='检查Windows ZIP及其逻辑文件名/贴图别名')
     a=p.parse_args()
     counts={'core_exact':0,'noncore_exact':0,'noncore_lossy_opaque':0,'noncore_lossy_transparent':0}
     with zipfile.ZipFile(a.apk) as z:
-        aliases=dict(re.findall(r'\["(.*?)"\]="(.*?)"',z.read('assets/game/asset_variants.lua').decode()))
-        logical=set(re.findall(r'"(.*?)"',z.read('assets/game/asset_index.lua').decode()))
+        prefix=next(n[:-len('core.lua')] for n in z.namelist() if n.endswith('/core.lua')) if a.windows else 'assets/game/'
+        mapping='windows/asset_aliases.lua' if a.windows else 'asset_variants.lua'
+        aliases=dict(re.findall(r'\["(.*?)"\]="(.*?)"',z.read(prefix+mapping).decode()))
+        logical={n[len(prefix):] for n in z.namelist() if n.startswith(prefix)}|set(aliases) if a.windows else set(re.findall(r'"(.*?)"',z.read(prefix+'asset_index.lua').decode()))
         for folder in ('THlib','Resources','mod'):
             for source in (a.root/folder).rglob('*.png'):
                 path=source.relative_to(a.root).as_posix()
                 assert path in logical,('逻辑文件枚举遗漏',path)
                 target=aliases.get(path,path)
                 assert target not in aliases,('资源别名不能形成链',path,target)
-                packed=z.read('assets/game/'+target)
+                packed=z.read(prefix+target)
                 with Image.open(source) as original,Image.open(io.BytesIO(packed)) as decoded:
                     assert original.size==decoded.size,('尺寸变化',path)
                     x,y=original.convert('RGBA'),decoded.convert('RGBA')

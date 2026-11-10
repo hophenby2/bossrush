@@ -5,13 +5,17 @@ import argparse
 import hashlib
 import struct
 import zipfile
+import json
+import re
+import sys
 from release_version import game_version
 
 ROOT=Path(__file__).resolve().parents[1]
+TOOL_ROOT=ROOT
 ENGINE_ROOT=ROOT
 OUTPUT=ROOT/'android/dist'
 
-def package(version):
+def package(version,optimize=False):
     exe=ENGINE_ROOT/'LuaSTGSub.exe'
     data=exe.read_bytes();header=struct.unpack_from('<I',data,0x3c)[0]
     assert data[:2]==b'MZ' and data[header:header+4]==b'PE\0\0', '缺少有效 Windows 引擎'
@@ -32,8 +36,45 @@ def package(version):
     for path in (upstream/'data/license').rglob('*'):
         if path.is_file():files['licenses/'+path.relative_to(upstream/'data/license').as_posix()]=path
     assert not any(n.startswith(('User/','replay/')) for n in files)
+    generated={}
+    aliases={}
+    image_records={}
+    audio_records={}
+    if optimize:
+        sys.path.insert(0,str(TOOL_ROOT/'android'))
+        from asset_optimizer import optimize_images
+        from audio_optimizer import optimize_audio
+        images=[path for name,path in files.items() if name.endswith('.png')]
+        audio=[path for name,path in files.items() if name.endswith('.wav')]
+        optimized,image_records=optimize_images(images,TOOL_ROOT/'android/.cache/lossless-images',ROOT,True)
+        sounds,audio_records=optimize_audio(audio,TOOL_ROOT/'android/.cache/vorbis-sounds')
+        # Sub按文件头解码图片/音频，保留PNG/WAV逻辑文件名以兼容原枚举和原作脚本。
+        for name,path in list(files.items()): files[name]=optimized.get(path,sounds.get(path,path))
+        # HGE字体在C++内部读取Bitmap，不经过Lua LoadTexture；这些图保留实体文件。
+        font_bitmaps=set()
+        for name,path in files.items():
+            if name.endswith('.fnt'):
+                for bitmap in re.findall(r'(?im)^Bitmap\s*=\s*([^\r\n]+)',path.read_text(encoding='utf-8-sig')):
+                    font_bitmaps.add((Path(name).parent/bitmap.strip().strip('"')).as_posix())
+        copies={}
+        for name in sorted(list(files)):
+            if not name.endswith('.png'):continue
+            digest=hashlib.sha256(files[name].read_bytes()).digest()
+            if digest in copies and name not in font_bitmaps:
+                aliases[name]=copies[digest]
+                del files[name]
+            else:copies.setdefault(digest,name)
+        generated['windows/asset_aliases.lua']=('return {\n'+''.join(
+            ' ['+json.dumps(src,ensure_ascii=False)+']='+json.dumps(dst,ensure_ascii=False)+',\n'
+            for src,dst in sorted(aliases.items()))+'}\n').encode()
+        files['windows/assets.lua']=TOOL_ROOT/'windows/assets.lua'
+        entry=(ROOT/'launch').read_text(encoding='utf-8-sig')
+        anchor='lstg.DoFile("launch.lua")'
+        assert entry.count(anchor)==1,'Windows入口不符合预期'
+        generated['launch']=entry.replace(anchor,'lstg.DoFile("windows/assets.lua")\n'+anchor).encode()
+        del files['launch']
     out=OUTPUT;out.mkdir(parents=True,exist_ok=True)
-    name=f'BossRushHD-Windows-x64-{version}'
+    name=f'BossRushHD-Windows-x64-{version}'+('-slim' if optimize else '')
     target=out/(name+'.zip')
     guide=f'''Boss Rush HD {version} Windows x64 发行版
 
@@ -71,17 +112,29 @@ roguelike 模式没有战数上限：所选卡池内每轮不重复，抽完后�
 引擎及依赖许可证见 licenses/。
 '''
 
+    if optimize:
+        guide=guide.replace('完整离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。','精简离线包，含 LuaSTG Sub 引擎、脚本、音乐与素材。')
+        guide+='\n精简范围：保留TH31–TH35及当前随机模式。已删除关卡的旧录像不在兼容范围，原录像文件不改写。\n核心图片无损；非核心适度压缩；音效压缩为Ogg，关卡脚本、资源尺寸和Alpha不变。\n'
     with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for relative,path in sorted(files.items()): archive.write(path,name+'/'+relative)
         archive.writestr(name+'/README.zh-CN.txt',guide)
+        for relative,data in sorted(generated.items()):archive.writestr(name+'/'+relative,data)
     # 对全部成员做 CRC 和逐文件 SHA-256 校验，避免只检查文件名而漏掉素材。
     with zipfile.ZipFile(target) as archive:
         assert archive.testzip() is None,'Windows ZIP CRC 失败'
         for relative,path in files.items():
             assert hashlib.sha256(archive.read(name+'/'+relative)).digest()==hashlib.file_digest(path.open('rb'),'sha256').digest(),relative
+        for relative,data in generated.items():assert archive.read(name+'/'+relative)==data,relative
+        for source,actual in aliases.items():assert name+'/'+actual in archive.namelist(),source
         assert not any('/User/' in n or '/replay/' in n for n in archive.namelist())
     digest=hashlib.file_digest(target.open('rb'),'sha256').hexdigest()
     target.with_suffix('.zip.sha256').write_text(digest+'  '+target.name+'\n')
+    if optimize:
+        report={'file':target.name,'bytes':target.stat().st_size,'sha256':digest,'logical_images':len(image_records),
+                'lossy_images':sum(r.get('lossy',False) for r in image_records.values()),'deduplicated_images':len(aliases),
+                'converted_audio':sum(r['converted'] for r in audio_records.values()),'font_bitmaps_kept':sorted(font_bitmaps),
+                'engine_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_materials_changed':False}
+        (out/(name+'-verification.json')).write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(f'Windows 完整包校验通过：{len(files)} 个文件，{target.stat().st_size/1024/1024:.1f} MiB；SHA-256 {digest}')
     return target
 
@@ -91,7 +144,8 @@ if __name__=='__main__':
     parser.add_argument('--game-root',type=Path,help='只从指定源码快照读取游戏脚本与素材')
     parser.add_argument('--engine-root',type=Path,default=ENGINE_ROOT,help='Windows 引擎、DLL 及其相邻许可证目录')
     parser.add_argument('--output-dir',type=Path,default=OUTPUT)
+    parser.add_argument('--optimize-assets',action='store_true',help='复用核心无损/非核心压缩、Ogg音效及重复图片去重规则')
     args=parser.parse_args()
     if args.game_root: ROOT=args.game_root.resolve()
     ENGINE_ROOT=args.engine_root.resolve();OUTPUT=args.output_dir.resolve()
-    package(args.version or game_version(ROOT))
+    package(args.version or game_version(ROOT),args.optimize_assets)
