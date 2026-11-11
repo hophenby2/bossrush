@@ -1,5 +1,7 @@
 #pragma once
 #include <cstddef>
+#include <cstdint>
+extern uint64_t androidFogStatesCreated,androidFogStatesReused;
 extern bool androidProfileBatches;
 void androidRecordSpriteBatch(std::size_t size);
 extern int androidSuperPause;

@@ -2,6 +2,7 @@
 -- 两代STD的跳转单位、插值指令和暂停不同，不能把风神录编号套给红妖永。
 local B={}
 local A=OriginalANM
+local Geometry=dofile('mod/sequence_geometry.lua')
 local function copy(v) local r={};for i,n in ipairs(v) do r[i]=n end;return r end
 local function vec(a,b,c) return {a,b,c} end
 local function color(n) return {math.floor(n/65536)%256,math.floor(n/256)%256,n%256,math.floor(n/16777216)%256} end
@@ -223,6 +224,11 @@ local function render(s)
     Set3D('fog',s.fog[5],s.fog[6],Color(255,s.fog[1],s.fog[2],s.fog[3]))
     SetViewMode('3d');ClearZBuffer();SetZBufferEnable(1)
     local forward=normalize(dir);local right=normalize(cross(s.up,forward));local up=cross(forward,right)
+    local capture=GameNet and GameNet.Capture
+    local recording=capture and (capture.active or GameNet.active and GameNet.active())
+    local fast=lstg.AndroidRenderQuadBatch~=nil and lstg.AndroidUpdateQuadBatch~=nil and not recording
+    s.geometry_epoch=(s.geometry_epoch or 0)+1
+    local textures=fast and {} or nil
     for _,instance in ipairs(s.instances) do
         local model=s.models[instance[1]];local bound=model.source.bounds
         local dy=bound[2]+instance[3]-s.offset[2]
@@ -231,7 +237,8 @@ local function render(s)
         local depth=dx*forward[1]+dy*forward[2]+dz*forward[3]
         local radius=model.radius
         if depth+radius>0 and (s.data.game==6 or depth-radius<1800) then
-            for i,q in ipairs(model.source.quads) do drawQuad(s,q,model.vms[i],instance,right,up) end
+            if fast then Geometry.draw(s,model,instance,right,up,s.geometry_epoch,textures)
+            else for i,q in ipairs(model.source.quads) do drawQuad(s,q,model.vms[i],instance,right,up) end end
         end
     end
     SetZBufferEnable(0);SetViewMode('world')

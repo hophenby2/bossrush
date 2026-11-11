@@ -1,0 +1,418 @@
+{
+  "date": "2026-11-11",
+  "base_commit": "8cb487d8cdc25db5c137735228d17eb67462eb68",
+  "physical_device_measured": false,
+  "device": "ARM64 Android emulator / Apple M4 Max host GPU",
+  "source_sha256": {
+    "mod/sequence_background.lua": "cfcdec5650a7268078ff71f1b8b48b70dc30a48529cd00ba791047162a0b0394",
+    "mod/sequence_geometry.lua": "74354c4eccba8aaa468847395733c9356b5042aade74ffd15d581652566dcded",
+    "android/native/compat.cpp": "7f5c1fed03a5eb2bc5cfad85f3ad7adca0fcca0ed4c80cbad9491b6203d79a56",
+    "android/native/compat.h": "94cbafcb524e72f067636a2df039b31c37d108acb32176b38f1c8f38b567f935",
+    "android/native/quad_batch.inc": "24c8c48b01b12d69b6703d581ecdc67e0f16b88004b55df69c4c273b1f4a11df",
+    "android/native/fog_state.inc": "89224f7772080f0fd05a534631bbc868c725a70bfd05d76758df9ab6783c6955",
+    "android/lua/compat.lua": "0f4378a50188c7969d665b3959761b0aaa817e63fb0c54b1e44769d768ca58cc",
+    "android/patch_engine.py": "5efa6088c2e5048ff4e93f7f8d40f1354985b4388741dc5b8971b3d69cd045ba",
+    "android/lua/background_probe.lua": "26953008c6dce8e6824ea3e1db6c5f9c6b01263b37da83562a42b8a9e66f7ba3",
+    "android/lua/performance_case.lua": "8739ff1ccbcc865d2d063921da33fab85d375062db9323e3b26ae9d9912d2511",
+    "tools/check_sequence_geometry.lua": "c84402004800bf8be25bb170fb3a7f70b4b42f8f72724f3bc8c59d6b76617e34",
+    "tools/run_android_background.py": "cc9359ab91c3ffd2d7b5c27155d2bf2ac368ae3ca4cfe6ca22792cd71b1ce30e"
+  },
+  "test_apk": {
+    "path": "/Users/happyelements/origin/Boss Rush HD-slim/android/dist/BossRushHD-android-arm64-background-opt-test.apk",
+    "bytes": 274551907,
+    "sha256": "ef1deba62bbccead828c8d962c7c3b9a8f59d54ba1c8ab7e9583733bf6814d28",
+    "native_sha256": "a3056f96ab6b5a4db7b3d1c9006f6b5544c1f3f2ac211aaa1a50da3ad3309420"
+  },
+  "geometry_unit": {
+    "backgrounds": 41,
+    "states": 123,
+    "vertices": 158644,
+    "coordinate_tolerance": 1e-07,
+    "order_color_uv_depth_match": true,
+    "capture_fallback_passed": true
+  },
+  "native_pixels": {
+    "background_states": 123,
+    "fog_scene_samples": 32,
+    "total_screens": 124,
+    "max_channel_error": 0,
+    "std_anm_state_match": true,
+    "excluded_region": "屏幕底部48/1600高度的Android动态FPS文字，位于背景视口外",
+    "fog_analytic_max_tolerance": 3,
+    "fog_analytic_checks": 32
+  },
+  "runs": {
+    "baseline-performance": {
+      "mode": "benchmark sequence=th06_lunatic machine=reimub frames=600 probe=1 components=1 counters=0 tag=1794384239453092000",
+      "mean_ms_per_frame": {
+        "logic": 1.1001793962981927,
+        "render": 6.854312811109351,
+        "bg_render": 6.096608548150333,
+        "bg_view": 2.4052927259306114
+      },
+      "rows": [
+        {
+          "frame": 60,
+          "fps": 56.877366218705,
+          "checkpoint": "c1101cb65f375cb0987c0b570cec6bc698b4dd9834534d39dcef2b5273d51451",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 120,
+          "fps": 59.874343690754,
+          "checkpoint": "6c4945ac93c6e9ae5e6ff5c846adf26da0bc76dc778262d496e4dffb28b159ec",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 180,
+          "fps": 60.13730091502,
+          "checkpoint": "bcef6a1d4074b993c5cdaf1a3b143bedd11dc5b6e8f36bf8bafe12c5ed01f736",
+          "objects": 23,
+          "shots": 6,
+          "enemies": 3
+        },
+        {
+          "frame": 240,
+          "fps": 59.408709981075,
+          "checkpoint": "2b178c53cef854a5cd45aaa2dc1882c7a6b8831d39c25ce901b75eaa924a036a",
+          "objects": 28,
+          "shots": 6,
+          "enemies": 5
+        },
+        {
+          "frame": 300,
+          "fps": 60.53650477356,
+          "checkpoint": "1b3a3d9d4d105ab9282444fb6e5755f42469e1a100cbde75d85ca0836908d238",
+          "objects": 51,
+          "shots": 8,
+          "enemies": 3
+        },
+        {
+          "frame": 360,
+          "fps": 60.059837075131,
+          "checkpoint": "42b6571e1bcc3ee5eb80e95f5a1c67f3f75e15ff6bd3e323b4c87fb3597fd4bb",
+          "objects": 32,
+          "shots": 6,
+          "enemies": 6
+        },
+        {
+          "frame": 420,
+          "fps": 59.930730024594,
+          "checkpoint": "d6a83856bc0c05c4dfe1623055fb81eb9e2e0f460cbf5f3899c8299debc9942d",
+          "objects": 43,
+          "shots": 7,
+          "enemies": 4
+        },
+        {
+          "frame": 480,
+          "fps": 59.141533495351,
+          "checkpoint": "395095dc7ec439ea4379f68ee300d0aa299e8ec93f82a8612f7dd8a0cc805ad6",
+          "objects": 49,
+          "shots": 7,
+          "enemies": 6
+        },
+        {
+          "frame": 540,
+          "fps": 60.897365738596,
+          "checkpoint": "4f4219518430c18ce932fd54da85886b2870c07c699bb3f41222fc790aab9727",
+          "objects": 45,
+          "shots": 6,
+          "enemies": 14
+        },
+        {
+          "frame": 600,
+          "fps": 60.030232725954,
+          "checkpoint": "45e11d4ec813153104d1fe084d16679f6ab5c9d2eaf26afc261af7caa047c177",
+          "objects": 67,
+          "shots": 7,
+          "enemies": 16
+        }
+      ],
+      "jit": {
+        "outside_range": 0,
+        "failures": 0,
+        "last_hint": 482188328960,
+        "last_address": 482188328960,
+        "target": 482956564584,
+        "mcode_reason": 27,
+        "cache_limit_hits": 0,
+        "regions": 25,
+        "last_errno": 0,
+        "attempts": 25,
+        "os_failures": 0
+      },
+      "fog_cache": null
+    },
+    "geometry-native-performance": {
+      "mode": "benchmark sequence=th06_lunatic machine=reimub frames=600 probe=1 components=1 tag=1794383480395034000",
+      "mean_ms_per_frame": {
+        "logic": 1.0997524740722129,
+        "render": 2.8579940351844817,
+        "bg_render": 2.2179284555578334,
+        "bg_view": 1.976321487035185
+      },
+      "rows": [
+        {
+          "frame": 60,
+          "fps": 57.732459007695,
+          "checkpoint": "c1101cb65f375cb0987c0b570cec6bc698b4dd9834534d39dcef2b5273d51451",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 120,
+          "fps": 60.150629627769,
+          "checkpoint": "6c4945ac93c6e9ae5e6ff5c846adf26da0bc76dc778262d496e4dffb28b159ec",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 180,
+          "fps": 59.982375138784,
+          "checkpoint": "bcef6a1d4074b993c5cdaf1a3b143bedd11dc5b6e8f36bf8bafe12c5ed01f736",
+          "objects": 23,
+          "shots": 6,
+          "enemies": 3
+        },
+        {
+          "frame": 240,
+          "fps": 59.934092456354,
+          "checkpoint": "2b178c53cef854a5cd45aaa2dc1882c7a6b8831d39c25ce901b75eaa924a036a",
+          "objects": 28,
+          "shots": 6,
+          "enemies": 5
+        },
+        {
+          "frame": 300,
+          "fps": 60.110789173645,
+          "checkpoint": "1b3a3d9d4d105ab9282444fb6e5755f42469e1a100cbde75d85ca0836908d238",
+          "objects": 51,
+          "shots": 8,
+          "enemies": 3
+        },
+        {
+          "frame": 360,
+          "fps": 59.954037675908,
+          "checkpoint": "42b6571e1bcc3ee5eb80e95f5a1c67f3f75e15ff6bd3e323b4c87fb3597fd4bb",
+          "objects": 32,
+          "shots": 6,
+          "enemies": 6
+        },
+        {
+          "frame": 420,
+          "fps": 59.95135696774,
+          "checkpoint": "d6a83856bc0c05c4dfe1623055fb81eb9e2e0f460cbf5f3899c8299debc9942d",
+          "objects": 43,
+          "shots": 7,
+          "enemies": 4
+        },
+        {
+          "frame": 480,
+          "fps": 60.058341694111,
+          "checkpoint": "395095dc7ec439ea4379f68ee300d0aa299e8ec93f82a8612f7dd8a0cc805ad6",
+          "objects": 49,
+          "shots": 7,
+          "enemies": 6
+        },
+        {
+          "frame": 540,
+          "fps": 60.037408228391,
+          "checkpoint": "4f4219518430c18ce932fd54da85886b2870c07c699bb3f41222fc790aab9727",
+          "objects": 45,
+          "shots": 6,
+          "enemies": 14
+        },
+        {
+          "frame": 600,
+          "fps": 59.912373181493,
+          "checkpoint": "45e11d4ec813153104d1fe084d16679f6ab5c9d2eaf26afc261af7caa047c177",
+          "objects": 67,
+          "shots": 7,
+          "enemies": 16
+        }
+      ],
+      "jit": {
+        "regions": 33,
+        "attempts": 33,
+        "os_failures": 0,
+        "outside_range": 0,
+        "failures": 0,
+        "last_hint": 482179612672,
+        "last_address": 482179612672,
+        "last_errno": 0,
+        "mcode_reason": 27,
+        "cache_limit_hits": 0,
+        "target": 482916940296
+      },
+      "fog_cache": null
+    },
+    "final-performance": {
+      "mode": "benchmark sequence=th06_lunatic machine=reimub frames=600 probe=1 components=1 counters=0 tag=1794384141020745000",
+      "mean_ms_per_frame": {
+        "logic": 1.320002540737902,
+        "render": 0.8816814962966852,
+        "bg_render": 0.36043357963367223,
+        "bg_view": 0.08621395925906167
+      },
+      "rows": [
+        {
+          "frame": 60,
+          "fps": 57.922514879742,
+          "checkpoint": "c1101cb65f375cb0987c0b570cec6bc698b4dd9834534d39dcef2b5273d51451",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 120,
+          "fps": 60.017655153546,
+          "checkpoint": "6c4945ac93c6e9ae5e6ff5c846adf26da0bc76dc778262d496e4dffb28b159ec",
+          "objects": 19,
+          "shots": 6,
+          "enemies": 0
+        },
+        {
+          "frame": 180,
+          "fps": 60.11951507094,
+          "checkpoint": "bcef6a1d4074b993c5cdaf1a3b143bedd11dc5b6e8f36bf8bafe12c5ed01f736",
+          "objects": 23,
+          "shots": 6,
+          "enemies": 3
+        },
+        {
+          "frame": 240,
+          "fps": 59.945596853138,
+          "checkpoint": "2b178c53cef854a5cd45aaa2dc1882c7a6b8831d39c25ce901b75eaa924a036a",
+          "objects": 28,
+          "shots": 6,
+          "enemies": 5
+        },
+        {
+          "frame": 300,
+          "fps": 59.997850037037,
+          "checkpoint": "1b3a3d9d4d105ab9282444fb6e5755f42469e1a100cbde75d85ca0836908d238",
+          "objects": 51,
+          "shots": 8,
+          "enemies": 3
+        },
+        {
+          "frame": 360,
+          "fps": 60.007193362297,
+          "checkpoint": "42b6571e1bcc3ee5eb80e95f5a1c67f3f75e15ff6bd3e323b4c87fb3597fd4bb",
+          "objects": 32,
+          "shots": 6,
+          "enemies": 6
+        },
+        {
+          "frame": 420,
+          "fps": 59.98302474401,
+          "checkpoint": "d6a83856bc0c05c4dfe1623055fb81eb9e2e0f460cbf5f3899c8299debc9942d",
+          "objects": 43,
+          "shots": 7,
+          "enemies": 4
+        },
+        {
+          "frame": 480,
+          "fps": 60.083849475379,
+          "checkpoint": "395095dc7ec439ea4379f68ee300d0aa299e8ec93f82a8612f7dd8a0cc805ad6",
+          "objects": 49,
+          "shots": 7,
+          "enemies": 6
+        },
+        {
+          "frame": 540,
+          "fps": 59.93971305618,
+          "checkpoint": "4f4219518430c18ce932fd54da85886b2870c07c699bb3f41222fc790aab9727",
+          "objects": 45,
+          "shots": 6,
+          "enemies": 14
+        },
+        {
+          "frame": 600,
+          "fps": 60.003102640431,
+          "checkpoint": "45e11d4ec813153104d1fe084d16679f6ab5c9d2eaf26afc261af7caa047c177",
+          "objects": 67,
+          "shots": 7,
+          "enemies": 16
+        }
+      ],
+      "jit": {
+        "target": 482837084456,
+        "attempts": 35,
+        "os_failures": 0,
+        "outside_range": 0,
+        "failures": 0,
+        "last_hint": 482091663360,
+        "last_address": 482091663360,
+        "last_errno": 0,
+        "mcode_reason": 27,
+        "cache_limit_hits": 0,
+        "regions": 35
+      },
+      "fog_cache": {
+        "created": 10,
+        "reused": 11990
+      }
+    }
+  },
+  "replay_checks": [
+    {
+      "key": "th06_lunatic",
+      "record_frames": 300,
+      "replay_frames": 180,
+      "shoot": true,
+      "passed": true
+    },
+    {
+      "key": "th07_lunatic",
+      "record_frames": 300,
+      "replay_frames": 180,
+      "shoot": true,
+      "passed": true
+    },
+    {
+      "key": "th08_lunatic_b",
+      "record_frames": 300,
+      "replay_frames": 180,
+      "shoot": true,
+      "passed": true
+    },
+    {
+      "key": "th10_lunatic",
+      "record_frames": 300,
+      "replay_frames": 180,
+      "shoot": true,
+      "passed": true
+    },
+    {
+      "key": "th095_scenes",
+      "record_frames": 300,
+      "replay_frames": 180,
+      "shoot": true,
+      "passed": true
+    }
+  ],
+  "focus_return_process_preserved": true,
+  "package": {
+    "package": "BossRushHD-android-arm64-background-opt-test.apk",
+    "lua_files": 668,
+    "original_tracks": 67,
+    "full_ogg_decode": false,
+    "loop_frames_unchanged": true,
+    "source_bytes_match": true
+  },
+  "notes": [
+    "未修改ECL、发弹、伤害、碰撞、回收、道中时钟及ANM更新。",
+    "几何实例和透明叠加顺序、镜头与裁剪条件保持原样；未增加视锥裁剪。",
+    "旧引擎/联机绘制采集保留逐面路径。",
+    "只对雾切换启用ProgramState复用，普通setProgram保留原语义；切换前flush且uniform重置。",
+    "毫秒数包含诊断包装开销，无法直接等同于OnePlus真机时间。",
+    "仅构建本地测试APK，原发布APK字节保持不变。"
+  ]
+}

@@ -219,10 +219,12 @@ end
 expose('SetPerspective', function(x,y,z,...)
     if native.AndroidFlushRenderState then native.AndroidFlushRenderState() end
     native.SetPerspective(x,y,z,...)
+    if native.AndroidSetFogCamera then native.AndroidSetFogCamera(x,y,z);return end
     fogCamera={x=x,y=y,z=z,w=0}
     syncFogCamera()
 end)
 expose('SetFog', function(near,far,color)
+    if native.AndroidSetFogState then return native.AndroidSetFogState(near,far,color) end
     if native.AndroidFlushRenderState then native.AndroidFlushRenderState() end
     native.SetFog(near,far,color)
     fogNear,fogFar,fogColor=near or 0,far or 0,color or Color(0xFF000000)

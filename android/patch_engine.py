@@ -271,6 +271,46 @@ replace(_gles_commands, '''    //NOTE: do not use GL_MAP_INVALIDATE_BUFFER_BIT h
 for _buffer_target in ['GL_ARRAY_BUFFER','GL_ELEMENT_ARRAY_BUFFER','GL_UNIFORM_BUFFER','GL_SHADER_STORAGE_BUFFER']:
     replace(_gles_commands, f'uploadBufferData({_buffer_target}, offset, size, buffer);',
             f'uploadBufferData({_buffer_target}, offset, size, buffer, gpuBuffer->size);')
+# 雾切换复用默认状态的存储；普通setProgram仍保留原有重建语义。
+replace('frameworks/LSTG/RenderMode.h',
+        'void setProgram(cocos2d::backend::Program* program);',
+        'void setProgram(cocos2d::backend::Program* program);\n        void setProgramCached(cocos2d::backend::Program* program);')
+replace('frameworks/LSTG/RenderMode.h',
+        'cocos2d::backend::ProgramState* defaultState = nullptr;',
+        '''cocos2d::backend::ProgramState* defaultState = nullptr;
+        bool androidReuseProgramState = false;
+        cocos2d::Map<cocos2d::backend::Program*, cocos2d::backend::ProgramState*> androidProgramStates;''')
+replace('frameworks/LSTG/RenderMode.cpp', '#include "RenderMode.h"',
+        '#include "RenderMode.h"\n#include "compat.h"')
+replace('frameworks/LSTG/RenderMode.cpp', 'void RenderMode::setProgram(Program* program)',
+        '''void RenderMode::setProgramCached(Program* program)
+{
+    if (!program || program == _program) return;
+    if (defaultState) androidProgramStates.insert(_program, defaultState);
+    androidReuseProgramState = true;
+    setProgram(program);
+    androidReuseProgramState = false;
+}
+
+void RenderMode::setProgram(Program* program)''')
+replace('frameworks/LSTG/RenderMode.cpp',
+        'defaultState = new backend::ProgramState(_program);',
+        '''if (androidReuseProgramState && androidProgramStates.find(_program) != androidProgramStates.end()) {
+        defaultState = androidProgramStates.at(_program);
+        defaultState->retain();
+        ++androidFogStatesReused;
+    } else {
+        defaultState = new backend::ProgramState(_program);
+        if (androidReuseProgramState) ++androidFogStatesCreated;
+    }''')
+replace('frameworks/LSTG/RenderMode.cpp',
+        'defaultState->getVertexUniformBuffer(&vertUniformBuffer, vertUniformBufferSize);',
+        '''defaultState->getVertexUniformBuffer(&vertUniformBuffer, vertUniformBufferSize);
+    // 与新建ProgramState的零初始化一致，不能带回上一帧/另一套雾的uniform。
+    if (androidReuseProgramState) {
+        if (fragUniformBuffer) std::memset(fragUniformBuffer, 0, fragUniformBufferSize);
+        if (vertUniformBuffer) std::memset(vertUniformBuffer, 0, vertUniformBufferSize);
+    }''')
 # 普通精灵已在入队前变换顶点。合批不能再次乘对象池中可能残留的模型矩阵。
 replace('frameworks/LSTG/Renderer.cpp',
         'xtc->getMV()->transformPoint(&(_verts.back().vertices));',

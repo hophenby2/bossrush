@@ -1,6 +1,7 @@
 -- 仅私有 profile/benchmark case=N 诊断使用，正常游玩不安装。
 local T={}
 function T.install(mode)
+    if mode:match("backgrounds=1") then dofile("android/background_probe.lua").install(mode);return end
     local card=tonumber(mode:match('case=(%d+)'));if not card then return end
     local target=tonumber(mode:match('frames=(%d+)')) or 900
     local seed=tonumber(mode:match('seed=(%d+)')) or 20261109

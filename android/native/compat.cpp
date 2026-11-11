@@ -2,6 +2,7 @@
 #include "sprite_clip.h"
 #include "LSTG/LuaWrapper/LuaWrapper.h"
 #include "LSTG/Util/UtilLuaRes.h"
+#include "LSTG/Util/UtilLua.h"
 #include "LSTG/Renderer.h"
 #include "LSTG/AppFrame.h"
 #include "LSTG/Component/ComponentDataColli.h"
@@ -130,6 +131,8 @@ double androidNow() {
 }
 using namespace lstg;
 #include "original_collision.inc"
+#include "quad_batch.inc"
+#include "fog_state.inc"
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
 #ifdef CC_USE_GFX
