@@ -83,7 +83,8 @@ function T.install(mode)
         if started and not done and scene.stage_name==name and scene.timer>=target then
             if sequence then
                 assert(not GameHPScale.enabled() and GameHPScale.factor()==1,'顺序模式不能启用血量倍率')
-                assert(lstg.var.upgrades.count==0 and #lstg.var.upgrades.queue==0,'顺序模式不能获得强化')
+                local upgrades=lstg.var.upgrades
+                assert(not upgrades or upgrades.count==0 and #upgrades.queue==0,'顺序模式不能获得强化')
                 if afterMidboss then
                     local run=lstg.var.sequence_run
                     local reached=(run.completed or 0)>0
