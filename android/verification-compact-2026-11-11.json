@@ -1,0 +1,310 @@
+{
+  "date": "2026-11-11",
+  "version": "26.11.11-sequence-ui",
+  "runtime_commit": "c37514f0d04c563f994fccdbf49c7a94f0030e6b",
+  "build_command": "python3 android/build.py --update-assets --lossy-images --compress-audio --optimize-fonts",
+  "apk_before_bytes": 312275802,
+  "apk_after_bytes": 274543546,
+  "saved_bytes": 37732256,
+  "reduction_percent": 12.083,
+  "integrity": {
+    "bytes": 274543546,
+    "sha256": "e15d51f0a720111c98e1ef8fab05bb8b284703f15ae67cc1ac0f5d4b4bbae113",
+    "arm64_libraries": 3,
+    "user_data_excluded": true,
+    "android_lua_matches": true,
+    "fingerprints_match": true
+  },
+  "source_package": {
+    "package": "BossRushHD-android-arm64-26.11.11-sequence-ui.apk",
+    "lua_files": 667,
+    "original_tracks": 67,
+    "full_ogg_decode": true,
+    "loop_frames_unchanged": true,
+    "source_bytes_match": true
+  },
+  "images": {
+    "core_exact": 840,
+    "noncore_exact": 65,
+    "noncore_lossy_opaque": 58,
+    "noncore_lossy_transparent": 67
+  },
+  "image_policy": {
+    "core": "全部RGBA像素无损",
+    "noncore_opaque": "Q85/Q90/Q95，PSNR>=36dB",
+    "noncore_transparent": "保持PNG和Alpha，RGB最大误差4",
+    "dimensions_unchanged": true,
+    "source_pngs_unchanged": true
+  },
+  "gpu": {
+    "cases": 31,
+    "core_cases": 12,
+    "core_max_error": 0,
+    "results": [
+      {
+        "path": "Resources/Original/8/eff09al_1.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/Original/8/eff09sk_1.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "THlib/bullet/img/bullet5.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "THlib/bullet/img/bullet3.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "THlib/bullet/img/bullet4.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/Original/8/eff08_3.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/System/eff_astral.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/Original/10/e03_2.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/Original/10/e10_0.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/Original/10/e05_2.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "THlib/player/marisa/marisa.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "THlib/player/chiruno/ice.png",
+        "core": true,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "Resources/BossBackGround/th08_8_n.png",
+        "core": false,
+        "max_channel_error": 24,
+        "psnr_db": 42.384
+      },
+      {
+        "path": "Resources/BossBackGround/th07_7_n.png",
+        "core": false,
+        "max_channel_error": 21,
+        "psnr_db": 42.047
+      },
+      {
+        "path": "THlib/UI/ui_bg.png",
+        "core": false,
+        "max_channel_error": 28,
+        "psnr_db": 42.715
+      },
+      {
+        "path": "Resources/BossBackGround/th10_12_n.png",
+        "core": false,
+        "max_channel_error": 25,
+        "psnr_db": 43.865
+      },
+      {
+        "path": "mod/BG/TH08/TH08_bg_stg6bg2.png",
+        "core": false,
+        "max_channel_error": 34,
+        "psnr_db": 40.53
+      },
+      {
+        "path": "THlib/UI/menu_bg_sub.png",
+        "core": false,
+        "max_channel_error": 43,
+        "psnr_db": 40.715
+      },
+      {
+        "path": "THlib/UI/menu_bg.png",
+        "core": false,
+        "max_channel_error": 27,
+        "psnr_db": 41.365
+      },
+      {
+        "path": "Resources/Original/10/stage03_2.png",
+        "core": false,
+        "max_channel_error": 21,
+        "psnr_db": 41.109
+      },
+      {
+        "path": "Resources/Original/95/world10_0.png",
+        "core": false,
+        "max_channel_error": 19,
+        "psnr_db": 41.165
+      },
+      {
+        "path": "Resources/Original/8/stg6bg_1.png",
+        "core": false,
+        "max_channel_error": 97,
+        "psnr_db": 41.193
+      },
+      {
+        "path": "Resources/Special/reimu_player_tachie.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 48.494
+      },
+      {
+        "path": "mod/BG/TH09/TH09_bg_hyz_bg5.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 49.108
+      },
+      {
+        "path": "Resources/Special/chiruno_player_tachie.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 49.069
+      },
+      {
+        "path": "Resources/Special/marisa_player_tachie.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 48.969
+      },
+      {
+        "path": "Resources/Original/95/world03_0.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 47.306
+      },
+      {
+        "path": "mod/BG/TH095/TH095_bg_back.png",
+        "core": false,
+        "max_channel_error": 4,
+        "psnr_db": 47.306
+      },
+      {
+        "path": "mod/GAME/stage_pic31.png",
+        "core": false,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "mod/BG/TH10/TH10_bg_waterfallback.png",
+        "core": false,
+        "max_channel_error": 0,
+        "psnr_db": null
+      },
+      {
+        "path": "mod/GAME/stage_pic32.png",
+        "core": false,
+        "max_channel_error": 0,
+        "psnr_db": null
+      }
+    ]
+  },
+  "fonts": {
+    "game/THlib/UI/font/NotoSansCJKjp-Bold.otf": {
+      "converted": true,
+      "source_bytes": 17032620,
+      "packed_bytes": 10876924,
+      "source_sha256": "e53dcb0dcb2922e45d01aae1ebd2f382bb81d4229b18b6b883bd170678af1f76",
+      "packed_sha256": "d0cf067d74795a151d4f5a25af15f85193ae6131d32dcb29746ef094515fb40b",
+      "unicode_characters": 44810,
+      "glyph_cases": 44940,
+      "bitmap_and_metrics_exact": true,
+      "glyph_sha256": "f92edae99d7b25e3da86c2f918e18e71d6da1fffd7108881dc305bdb8b90df3e",
+      "fallback_glyph_kept": true,
+      "apk_bytes_match": true,
+      "full_unicode_kept": true,
+      "rasterized_again": true
+    },
+    "res/font/WenQuanYiMicroHeiMono.ttf": {
+      "converted": true,
+      "source_bytes": 4454784,
+      "packed_bytes": 3864088,
+      "source_sha256": "4d881f955e58445f6b32fedb140fda70fda8bf8215247c75466ed1f059449d08",
+      "packed_sha256": "eab77cfe0a594adf87d2a567e7e8635246a68a5e2a1752a3f082361976442d1b",
+      "unicode_characters": 34599,
+      "glyph_cases": 34728,
+      "bitmap_and_metrics_exact": true,
+      "glyph_sha256": "e26cb5015d2519cd26811391da8650dfc7b785397b233d50cce336480dfb7c3d",
+      "fallback_glyph_kept": true,
+      "apk_bytes_match": true,
+      "full_unicode_kept": true,
+      "rasterized_again": true
+    }
+  },
+  "font_policy": "保留全部Unicode、提示指令和缺字框；仅移除安卓逐码点渲染不用的布局替代字形，保留流式随机读取",
+  "music": {
+    "tracks": 67,
+    "pcm_bytes": 1515559324,
+    "before_ogg_bytes": 140995531,
+    "after_ogg_bytes": 113160464,
+    "compression_level": 0.75,
+    "encoded_from_original_pcm": true,
+    "rate_channels_loop_samples_unchanged": true
+  },
+  "native": {
+    "device": "Android 16 ARM64 emulator",
+    "entries": [
+      {
+        "key": "th06_lunatic",
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      {
+        "key": "th07_lunatic",
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      {
+        "key": "th08_lunatic_a",
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      {
+        "key": "th095_scenes",
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      {
+        "key": "th10_lunatic",
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      }
+    ],
+    "physical_phone_tested": false
+  }
+}

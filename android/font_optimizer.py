@@ -58,6 +58,7 @@ def optimize_fonts(sources, cache):
         font.save(target);font.close()
         check=verify_font_pair(source,target)
         converted=target.stat().st_size<len(raw)*.98
+        if not converted:target.write_bytes(raw) # 收益不足时，缓存记录也必须对应实际使用的原字体。
         record={'converted':converted,'source_bytes':len(raw),'packed_bytes':target.stat().st_size,
                 'source_sha256':hashlib.sha256(raw).hexdigest(),'packed_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),**check}
         metadata.write_text(json.dumps(record,ensure_ascii=False)+'\n')
