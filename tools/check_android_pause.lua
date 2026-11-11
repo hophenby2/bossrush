@@ -66,6 +66,10 @@ local apply=make()
 local saved={touchUnlimited=false,vsync=false}
 apply(saved);assert(saved.touchUnlimited and saved.touchUnlimitedDefaultApplied,'升级应启用移动端默认值')
 assert(saved.androidPortrait==true,'安卓默认启用竖屏')
+assert(saved.touchSlowMode==1,'新安装及旧设置缺省为点击切换低速')
+for _,mode in ipairs({2,3}) do
+    saved.touchSlowMode=mode;apply(saved);assert(saved.touchSlowMode==mode,'已保存的按住模式不能被默认值覆盖')
+end
 assert(saved.vsync==false,'移动端不能强制重开垂直同步')
 saved.touchUnlimited=false;saved.androidPortrait=false;apply(saved)
 assert(not saved.touchUnlimited and not saved.androidPortrait,'手动关闭后不能再次强制开启')

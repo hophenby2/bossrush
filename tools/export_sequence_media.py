@@ -80,7 +80,7 @@ def export_std(path,game):
         result['music']=[data[16+5*128+i*128:16+6*128+i*128].split(b'\0')[0].decode('ascii').strip().removeprefix('bgm/').removesuffix('.mid') for i in range(4)]
     return result
 
-def export_music(root,game,needed,cache,thdat):
+def export_music(root,game,needed,cache,thdat,compression_level=.75,output_root=ROOT):
     directory=game_root(root,game);tracks=[]
     if game==6:
         pos_cache=cache/'th06';pos_cache.mkdir(parents=True,exist_ok=True)
@@ -108,19 +108,21 @@ def export_music(root,game,needed,cache,thdat):
     manifest={}
     for name,channels,rate,bits,samples,start,end in tracks:
         align=channels*bits//8;assert 0<=start<end<=len(samples)//align,(name,start,end,len(samples)//align)
-        output=ROOT/'music'/('ORIG_'+name+'.ogg')
+        output=output_root/'music'/('ORIG_'+name+'.ogg')
+        output.parent.mkdir(parents=True,exist_ok=True)
         raw=io.BytesIO()
         with wave.open(raw,'wb') as wav:
             wav.setnchannels(channels);wav.setsampwidth(bits//8);wav.setframerate(rate);wav.writeframes(samples[:end*align])
         pcm,_=sf.read(io.BytesIO(raw.getvalue()),dtype='float32',always_2d=True)
         # libsndfile的Vorbis编码器不能一次接收整首长曲；分块写入，尾部采样数仍精确保留。
-        with sf.SoundFile(output,'w',samplerate=rate,channels=channels,format='OGG',subtype='VORBIS',compression_level=.65) as ogg:
+        with sf.SoundFile(output,'w',samplerate=rate,channels=channels,format='OGG',subtype='VORBIS',compression_level=compression_level) as ogg:
             for i in range(0,len(pcm),8192):ogg.write(pcm[i:i+8192])
         info=sf.info(output)
         assert info.frames==end and info.samplerate==rate and info.channels==channels,(name,info)
         manifest[name]=dict(rate=rate,channels=channels,loop_start=start,loop_end=end,
             pcm_bytes=end*align,ogg_bytes=output.stat().st_size,pcm_sha256=hashlib.sha256(samples[:end*align]).hexdigest(),
             ogg_sha256=hashlib.sha256(output.read_bytes()).hexdigest())
+        manifest[name]['vorbis_compression_level']=compression_level
         print(name,round(output.stat().st_size/1024),'KiB',flush=True)
     return manifest
 
@@ -128,10 +130,21 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('source',type=Path)
     p.add_argument('--cache',type=Path,default=Path('/tmp/bossrush-sequence-media'))
     p.add_argument('--thdat',default='thdat',help='thtk的原生thdat可执行文件，用于红魔乡循环点')
-    p.add_argument('--background-only',action='store_true');a=p.parse_args();a.cache.mkdir(parents=True,exist_ok=True)
-    dest=ROOT/'mod/GAME/original/std';dest.mkdir(exist_ok=True)
+    p.add_argument('--background-only',action='store_true')
+    p.add_argument('--music-only',action='store_true',help='只重导现有曲目，不改背景和曲库')
+    p.add_argument('--compression-level',type=float,default=.75,help='Vorbis压缩强度，0优先质量、1优先体积；默认0.75')
+    p.add_argument('--output-root',type=Path,default=ROOT,help='可先导出到独立目录评估包体')
+    a=p.parse_args();a.cache.mkdir(parents=True,exist_ok=True)
+    if not 0<=a.compression_level<=1:p.error('--compression-level必须在0..1范围内')
+    if a.music_only and a.background_only:p.error('--music-only与--background-only不能同时使用')
+    dest=a.output_root/'mod/GAME/original/std';dest.mkdir(parents=True,exist_ok=True)
     catalog={};manifest={};tracks={}
-    for game in (6,7,8,95,10):
+    if a.music_only:
+        previous=json.loads((ROOT/'mod/GAME/original/std/music.json').read_text())
+        for name in previous:
+            game=6 if name.startswith('th06') else 7 if name.startswith('th07') else 8 if name.startswith('th08') else 10 if name.startswith('th10') else 95
+            tracks.setdefault(game,set()).add(name)
+    for game in (() if a.music_only else (6,7,8,95,10)):
         catalog[game]={};needed=set()
         for path in sorted((game_root(a.source,game)/'data').glob('*.std')):
             if '_s' in path.stem:continue
@@ -143,7 +156,11 @@ def main():
         if game==95:needed={f'th095_{i:02}' for i in range(1,5)}|{'th09_08_2'}
         tracks[game]=needed
     if not a.background_only:
-        for game,needed in tracks.items():manifest.update(export_music(a.source,game,needed,a.cache,a.thdat))
+        for game,needed in tracks.items():manifest.update(export_music(a.source,game,needed,a.cache,a.thdat,a.compression_level,a.output_root))
+        if a.music_only:
+            for name,m in manifest.items():
+                for key in ('rate','channels','loop_start','loop_end','pcm_sha256'):
+                    assert m[key]==previous[name][key],(name,key,'原始PCM或循环点改变')
         (dest/'music.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
         (dest/'music.lua').write_text('-- 原作PCM采样点换算为秒，播放器使用终点及循环长度。\nreturn '+anm.lua(manifest)+'\n')
     print('STD',sum(map(len,catalog.values())),'原曲',len(manifest))

@@ -25,7 +25,7 @@ take([(k,v) for k,v in records.items() if v['core'] and v['codec']=='webp-lossle
 take([(k,v) for k,v in records.items() if v['core'] and '/player/' in k],2)
 take([(k,v) for k,v in records.items() if v['core'] and '/bullet/' in k],2)
 take([(k,v) for k,v in records.items() if v['codec'].startswith('webp-q')],10)
-take([(k,v) for k,v in records.items() if v['codec']=='png-rgb6'],6)
+take([(k,v) for k,v in records.items() if v['codec'] in ('png-rgb6','png-rgb5')],6)
 take([(k,v) for k,v in records.items() if not v['core'] and v['codec']=='webp-lossless'],3)
 for path in ['Resources/Original/8/eff09al_1.png','Resources/Original/8/eff09sk_1.png']:
     if path not in selected:selected.append(path)
@@ -71,7 +71,8 @@ try:
         error=np.concatenate([x.reshape(-1,3) for x in errors]);mse=float(np.mean(error.astype('float32')**2))
         maximum=int(np.max(np.abs(error)))
         if records[path]['core']:assert maximum==0,(path,maximum)
-        if records[path]['codec']=='png-rgb6':assert maximum<=2,(path,maximum)
+        if records[path]['codec'] in ('png-rgb6','png-rgb5'):
+            assert maximum<=records[path].get('max_rgb_error',2),(path,maximum)
         if records[path]['codec'].startswith('webp-q'):assert maximum>0,('未采到有损图片差异',path)
         results.append({'path':path,'core':records[path]['core'],'max_channel_error':maximum,
                         'psnr_db':round(float(10*np.log10(255**2/mse)),3) if mse else None})

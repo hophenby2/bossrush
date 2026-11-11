@@ -14,6 +14,7 @@ local SetRenderRect = SetRenderRect
 local RenderText = RenderText
 local Render = Render
 local Render4V = Render4V
+local portraitHP=dofile('THlib/enemy/portrait_hp.lua')
 ----------------------------------------
 
 -- 线段拼接的场内血条：从正上方顺时针，红弧为剩余血量，白弧为已扣血量。
@@ -31,6 +32,7 @@ local function ringSegment(b,p,q)
         b.x+q[1]*hpRingOuter,b.y+q[2]*hpRingOuter,.5)
 end
 local function renderHPRing(self)
+    if AndroidPortrait and AndroidPortrait.enabled() then return portraitHP.draw(self) end
     local b=self.boss
     if not self.drawhp or not b.is_combat or b.__is_waiting or b.no_hp_render or b.time_sc
             or not b.maxhp or b.maxhp<=0 then return end
@@ -72,6 +74,7 @@ function boss.ui:init(system, b)
 end
 function boss.ui:frame()
     if IsValid(self.boss) then
+        if AndroidPortrait and AndroidPortrait.enabled() then portraitHP.frame(self) end
         if self.infobar then
             self.infobar:frame()
         end

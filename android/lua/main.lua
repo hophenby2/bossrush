@@ -97,6 +97,7 @@ local function start()
         end
         if not desktop then
             if s.androidPortrait==nil then s.androidPortrait=true end
+            if s.touchSlowMode~=2 and s.touchSlowMode~=3 then s.touchSlowMode=1 end
             if not s.androidBackgroundDefaultApplied then
                 s.displayBG, s.androidBackgroundDefaultApplied = false, true
             end

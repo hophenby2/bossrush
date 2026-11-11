@@ -91,6 +91,7 @@ for _,height in ipairs({960,1200}) do
     inMenu=false;texts,stars={},{}
     local run={current=12,hp_growth={shown=123.456,shown_stage=12}}
     lstg.var.rogue_run,lstg.var.__hp_scale_version=run,1
+    lstg.var.score=12345
     P.hud(255);P.roguePanel(run)
     assert(stars[1].image=='star_big2' and stars[2].image=='star_big10' and #stars==2,'命和雷各画一颗星')
     assert(stars[1].x==stars[2].x and stars[1].y-stars[2].y==30,'命在上、雷在下，左侧对齐竖排')
@@ -101,8 +102,8 @@ for _,height in ipairs({960,1200}) do
         found[t.value]=t
     end
     assert(found.x3 and found.x2,'命和雷使用阿拉伯数字')
-    assert(found['12'].x==270 and found['12'].y==w.scrt-28,'关卡序号顶部居中')
-    assert(found['12'].scale==3,'关卡数字字号为原来的三倍')
+    assert(found['12345'].x==270 and found['12345'].y==w.scrt-28,'分数顶部居中，不再绘制阶段号')
+    assert(found['12345'].scale==2.5,'大分数避让右上倍率')
     assert(found['×123.456'].align=='right' and found['×123.456'].x==w.scrr-14,'倍率右上对齐')
     local px,py=P.pauseButton();assert(px==w.scrl+32 and py==w.scrt-28,'暂停入口使用场内左上角')
     P.applyMenuView()
@@ -126,12 +127,13 @@ for _,height in ipairs({960,1200}) do
 end
 lstg.var.rogue_run=nil;lstg.var.__sequence_version=1;lstg.var.sequence_run={chapter=1,chapter_name='PH'}
 texts,stars={},{};P.hud(255)
-local chapterFound=false
+local scoreFound=false
 for _,t in ipairs(texts) do
     assert(not t.value:find('×',1,true),'顺序模式不显示血量倍率')
-    if t.value=='PH' then chapterFound=t.x==270 and t.scale==3 end
+    assert(t.value~='PH','面数不再作为大数字')
+    if t.value=='12345' then scoreFound=t.x==270 and t.scale==3 end
 end
-assert(chapterFound,'顺序模式顶部居中显示原作面数')
+assert(scoreFound,'顺序模式顶部居中显示分数')
 lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
 P.clearInput();setting.androidPortrait=false
 assert(not P.enabled() and not P.touch(1,270,644,'began'),'横屏交还原有触控处理')

@@ -18,12 +18,15 @@ end
 function P.layoutWorld()
     local w=lstg.world
     if not w then return end
-    if not P.worldViews[w] or w.scrl~=0 or w.scrr~=WIDTH then
+    if not P.worldViews[w] then
         P.worldViews[w]={w.scrl,w.scrr,w.scrb,w.scrt}
     end
-    local height=WIDTH*(w.t-w.b)/(w.r-w.l)
-    w.scrl,w.scrr=0,WIDTH
-    w.scrb,w.scrt=(screen.height-height)/2,(screen.height+height)/2
+    local panel=SequenceResources and SequenceResources.state() and ui and ui.OriginalHUD and ui.OriginalHUD.portraitHeight() or 0
+    local width=panel>0 and math.min(WIDTH,(screen.height-panel-40)*(w.r-w.l)/(w.t-w.b)) or WIDTH
+    local height=width*(w.t-w.b)/(w.r-w.l)
+    w.scrl,w.scrr=(WIDTH-width)/2,(WIDTH+width)/2
+    w.scrt=math.min((screen.height+height)/2,screen.height-panel)
+    w.scrb=w.scrt-height
 end
 function P.restoreWorld()
     local w=lstg.world;local view=w and P.worldViews[w]
@@ -125,6 +128,7 @@ function P.coverOutside()
     local edge=1/screen.scale -- 原生低分辨率画面放大时，留一个原生像素避免边缘插值漏色。
     rect(0,WIDTH,0,w.scrb+edge,255,0,0,0)
     rect(0,WIDTH,w.scrt-edge,screen.height,255,0,0,0)
+    if ui.OriginalHUD and ui.OriginalHUD.portraitBanner then ui.OriginalHUD.portraitBanner() end
     P.covering=nil;SetViewMode('ui')
 end
 function P.bossInsetWorld()
@@ -447,25 +451,46 @@ end
 function P.hud(alpha)
     SetViewMode('ui')
     local w=lstg.world
-    local x,y=w.scrl+18,w.scrb+44
+    local _,buttonY=P.slowButton()
+    local native=ui.OriginalHUD and ui.OriginalHUD.portraitLower
+        and ui.OriginalHUD.portraitLower(w.scrl+12,buttonY,alpha)
+    local x,y=w.scrl+18,buttonY+48
     local count=GameDrops.bombsEnabled() and ((GameNet and GameNet.host()) and 2 or 1) or 0
     local lives=ui.RunHUD.lives()
     -- 左下角竖排，生命在上、Bomb在下；一颗星配阿拉伯数字。
     local lifeY=y+count*30
-    GameDrops.renderStar('star_big2',x,lifeY,20,1,alpha)
-    label('x'..lives,x+17,lifeY,.85,alpha,{255,110,120},'left')
-    for slot=1,count do
+    if not native then
+        GameDrops.renderStar('star_big2',x,lifeY,20,1,alpha)
+        label('x'..lives,x+17,lifeY,.85,alpha,{255,110,120},'left')
+    end
+    for slot=1,native and 0 or count do
         local bombs=GameDrops.bombState(slot)
         local bombY=y+(count-slot)*30
         GameDrops.renderStar('star_big10',x,bombY,20,1,alpha)
         label((count==2 and 'P'..slot..' ' or '')..'x'..bombs,x+17,bombY,.85,alpha,{110,235,145},'left')
     end
-    local sequence=lstg.var.__sequence_version==1 and lstg.var.sequence_run
-    if sequence then
-        label(sequence.chapter_name or sequence.chapter,(w.scrl+w.scrr)/2,w.scrt-28,3,alpha,{230,241,250})
-    elseif not lstg.var.rogue_run then
-        label(stage.current_stage.level or 1,(w.scrl+w.scrr)/2,w.scrt-28,3,alpha,{230,241,250})
-        label('×1',w.scrr-14,w.scrt-28,1,alpha,{230,241,250},'right')
+    if not lstg.var.rogue_run then
+        P.score(alpha)
+        if not lstg.var.__sequence_version then label('×1',w.scrr-14,w.scrt-28,1,alpha,{230,241,250},'right') end
+    end
+end
+function P.score(alpha)
+    local w=lstg.world
+    local value=('%d'):format(math.max(0,math.floor(lstg.var.score or 0)))
+    local width=lstg.var.rogue_run and 200 or w.scrr-w.scrl-140
+    label(value,(w.scrl+w.scrr)/2,w.scrt-28,math.min(3,width/(#value*16)),alpha,{230,241,250})
+end
+function P.slowButton()
+    local w=lstg.world
+    return w.scrl+42,w.scrb+P.BOSS_BOTTOM_INSET+34
+end
+function P.drawSlowButton(b,active)
+    SetImageState('white','',active and Color(210,120,240,170) or Color(160,200,210,225))
+    for i=0,47 do
+        local a,c=i*math.pi/24,(i+1)*math.pi/24
+        local ca,sa,cc,sc=math.cos(a),math.sin(a),math.cos(c),math.sin(c)
+        Render4V('white',b.x+ca*28,b.y+sa*28,.5,b.x+ca*26,b.y+sa*26,.5,
+            b.x+cc*26,b.y+sc*26,.5,b.x+cc*28,b.y+sc*28,.5)
     end
 end
 function P.pauseButton()
@@ -476,7 +501,7 @@ function P.roguePanel(run)
     local previous=lstg.viewmode
     SetViewMode('ui')
     local w=lstg.world
-    label(math.max(1,math.floor(run.current or 1)),(w.scrl+w.scrr)/2,w.scrt-28,3,255,{230,241,250})
+    P.score(255)
     if GameHPScale then GameHPScale.render(w.scrr-14,w.scrt-28,165,44,'right') end
     if previous then SetViewMode(previous) end
 end

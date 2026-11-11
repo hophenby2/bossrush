@@ -1,7 +1,12 @@
 图片分级压缩（2026-11-10）
 --lossy-images：核心787张全部RGBA无损；非核心不透明图Q90/Q95，透明图保持PNG且RGB误差最多2级。
 APK由192.12 MiB降至160.94 MiB，少31.18 MiB；透明图不转WebP，源PNG不变。
-构建：python3 android/build.py --update-assets --lossy-images --compress-audio
+构建：python3 android/build.py --update-assets --lossy-images --compress-audio --optimize-fonts
+
+26.11.11-sequence-ui：竖屏低速按钮支持点击切换、按住低速、按住高速，入口在其他设置→触控。
+字体优化只用于安卓逐码点渲染：保留全部Unicode、提示指令和缺字框，逐字比较FreeType像素与度量；不按当前文案删字符。
+核心图片保持逐像素无损；非核心透明背景保持原PNG和Alpha，RGB最大误差4级；不透明图采用Q85/Q90/Q95，PSNR至少36dB。源PNG不改。
+顺序原曲直接从原始PCM/WAV重编码，libsndfile压缩强度0.75；采样率、声道和循环采样点保持原值，不对旧Ogg二次编码。
 详见“图片分级压缩与验证报告.txt”及verification-images-2026-11-10.json。
 
 音效压缩与大图分析（2026-11-10）

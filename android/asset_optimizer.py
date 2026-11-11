@@ -56,7 +56,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
         logical = source.relative_to(game_root).as_posix() if game_root else source.as_posix()
         category = noncore_category(logical)
         allow_lossy = bool(lossy_noncore and category)
-        version = f'images-{"v4" if allow_lossy else "v3"}-{allow_lossy}-{__version__}'
+        version = f'images-{"v5" if allow_lossy else "v3"}-{allow_lossy}-{__version__}'
         key = hashlib.sha256(str(source).encode() + raw + version.encode()).hexdigest()
         metadata = cache/(key+'.json')
         if metadata.exists():
@@ -93,9 +93,9 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
                             record.update(format=suffix,codec=codec)
                     if allow_lossy and not opaque:
                         # WebP固定预乘Alpha，与当前引擎PNG路径不同；透明图保持PNG。
-                        # 非核心仅将RGB四舍五入到6bit阶梯，逐通道误差<=2，Alpha不动。
+                        # 非核心仅将RGB四舍五入到5bit阶梯，逐通道误差<=4，Alpha不动。
                         values = np.asarray(rgba).copy()
-                        values[:,:,:3] = np.minimum((values[:,:,:3].astype('uint16')+2)//4*4,255).astype('uint8')
+                        values[:,:,:3] = np.minimum((values[:,:,:3].astype('uint16')+4)//8*8,255).astype('uint8')
                         quantized = Image.fromarray(values)
                         result = recompress_png(quantized,raw)
                         packed = zip_size(result)
@@ -104,13 +104,13 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
                                 values = np.asarray(decoded.convert('RGBA')).astype('int16')
                             reference = np.asarray(rgba).astype('int16')
                             assert np.array_equal(reference[:,:,3],values[:,:,3]),source
-                            assert int(np.max(np.abs(reference[:,:,:3]-values[:,:,:3])))<=2,source
+                            assert int(np.max(np.abs(reference[:,:,:3]-values[:,:,:3])))<=4,source
                             changed = not np.array_equal(reference,values)
                             selected,cost = result,packed
-                            record.update(format='png',codec='png-rgb6' if changed else 'png-lossless',lossy=changed)
+                            record.update(format='png',codec='png-rgb5' if changed else 'png-lossless',max_rgb_error=4,lossy=changed)
                     if allow_lossy and opaque:
                         reference = np.asarray(rgba).astype('float32')
-                        for quality in (90,95):
+                        for quality in (85,90,95):
                             encoded = io.BytesIO()
                             rgba.save(encoded,format='WEBP',quality=quality,method=6,exact=True)
                             result = encoded.getvalue()

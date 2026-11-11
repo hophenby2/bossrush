@@ -25,6 +25,7 @@ local function other_setting_default()
     cs.easyrender = ds.easyrender
     cs.touchBombInterval = ds.touchBombInterval
     cs.touchUnlimited = ds.touchUnlimited
+    cs.touchSlowMode = ds.touchSlowMode
     cs.androidNativeResolution = ds.androidNativeResolution
     cs.androidPortrait = ds.androidPortrait
 
@@ -356,6 +357,10 @@ function game_setting:init(exit)
             Newsetting_button("拖动无移速限制（下一局）","touchUnlimited",_line,x2,y2-h2*2,y2-h2),
             AndroidPortrait and Newsetting_button("竖屏模式","androidPortrait",_line,x2,y2-h2*3,y2-h2*2,
                 nil,function() ChangeVideoMode2(cur_setting) end) or nil,
+            AndroidPortrait and Newsetting_bar("竖屏低速按钮","touchSlowMode",1,1,1,3,1,
+                _line,x2,y2-h2*4,y2-h2*3,function(t)
+                    return ({"点击切换高低速","按住低速，松开高速","按住高速，松开低速"})[t]
+                end) or nil,
         })
     end
     self.menus[self.pos1].choosing = true

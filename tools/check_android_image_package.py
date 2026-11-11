@@ -54,7 +54,7 @@ def main():
                             assert 10*np.log10(255**2/mse)>=36,('非核心有损误差过大',path)
                             counts['noncore_lossy_opaque']+=1
                         else:
-                            assert int(np.max(np.abs(x[:,:,:3]-y[:,:,:3])))<=2,('透明RGB误差超过2级',path)
+                            assert int(np.max(np.abs(x[:,:,:3]-y[:,:,:3])))<=4,('非核心透明RGB误差超过4级',path)
                             counts['noncore_lossy_transparent']+=1
     if a.output:a.output.write_text(json.dumps(counts,ensure_ascii=False,indent=2)+'\n')
     print(('Windows' if a.windows else 'APK')+'全量图片校验通过：',counts)

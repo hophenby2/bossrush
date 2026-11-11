@@ -27,6 +27,7 @@ local function near(a,b) return math.abs(a-b)<1e-6 end
 local b={x=17,y=93,hp=100,maxhp=100,is_combat=true,__hpbar_timer=90,
     ui={drawhp=true,infobar={}},name='测试Boss',sc_left=1,dmgt=0,dmgmaxt=1,_sp_point_auto={}}
 local u={boss=b,drawhp=true}
+setting.androidPortrait=false
 for _,hp in ipairs({100,50,37.5,0,-10,120}) do
     b.hp=hp;quads={};boss.ui.renderHPRing(u)
     local arcs={red=0,white=0}
@@ -54,6 +55,24 @@ b.is_combat=false;quads={};boss.ui.renderHPRing(u)
 check(#quads==0,'道中不在隐藏Boss载体周围画血圈');b.is_combat=true
 u.drawhp=false;boss.ui.renderHPRing(u);check(#quads==0,'遵从Boss血条显示开关');u.drawhp=true
 b.maxhp=0;boss.ui.renderHPRing(u);check(#quads==0,'零血量上限不产生除零');b.maxhp=100;b.hp=37.5
+setting.androidPortrait=true
+for _,hp in ipairs({100,50,37.5,0,-10,120}) do
+    b.hp=hp;quads,sprites={},{};boss.ui.renderHPRing(u)
+    check(#quads==math.floor(360*min(1,max(0,hp/100))),'竖屏按参考库的一度白弧绘制当前血量')
+    for _,q in ipairs(quads) do
+        local v=q.v
+        check(near((v[1]-b.x)^2+(v[2]-b.y)^2,60*60)
+            and near((v[4]-b.x)^2+(v[5]-b.y)^2,64*64),'参考库60..64半径')
+    end
+    check(#sprites==2 and sprites[1].name=='portrait_hp_base'
+        and sprites[1].scale==.274 and sprites[2].scale==.256,'内外红圈复用参考库纹理与缩放')
+end
+b.hp=100;b.__hpbar_timer=30;quads={};boss.ui.renderHPRing(u)
+check(#quads==180,'参考库的60帧血条填充动画')
+b.__hpbar_timer=90;b.sp_point={180};b._sp_point_auto={{dmg=50}};sprites={};boss.ui.renderHPRing(u)
+check(#sprites==4 and sprites[3].name=='portrait_hp_node' and near(sprites[3].x,b.x-61),'手动阶段点位于参考半径61')
+check(near(sprites[4].y,b.y-61),'自动伤害节点仍使用真实血量比例')
+b.sp_point={};b._sp_point_auto={};b.hp=37.5
 boss_group={b}
 for _,portrait in ipairs({true,false}) do
     setting.androidPortrait=portrait;rects={}
@@ -70,4 +89,4 @@ for _,portrait in ipairs({true,false}) do
         check(draw.x+24<=192 and draw.y-16>-224,'竖屏指示器完整位于游戏区域内')
     else check(draw.x==190 and draw.y==-224,'横屏保留原有指示器位置') end
 end
-print('Boss红白线段血圈、横竖屏底部血条与指示器检查通过：'..checks)
+print('横屏红白血圈、竖屏AEX血圈、底部血条与指示器检查通过：'..checks)

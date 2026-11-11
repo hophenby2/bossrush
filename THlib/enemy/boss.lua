@@ -299,6 +299,10 @@ local function LoadBossTex()
 
     LoadImage("boss_sc_left", "boss_ui", 64, 64, 32, 32)
     SetImageState("boss_sc_left", "", 255, 128, 255, 128)
+    LoadImageFromFile('portrait_hp_base',patch..'portrait_hp_ring.png')
+    LoadTexture('portrait_hp_nodes',patch..'portrait_hp_nodes.png')
+    LoadImage('portrait_hp_fill','portrait_hp_nodes',4,0,2,2)
+    LoadImage('portrait_hp_node','portrait_hp_nodes',20,0,12,16)
 end
 
 LoadBossTex()

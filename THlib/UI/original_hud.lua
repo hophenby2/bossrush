@@ -1,4 +1,4 @@
--- 横屏顺序模式使用原作640×480画布、front/ascii的像素与动画。
+-- 顺序模式使用原作front/ascii的像素与动画；竖屏只重排这些组件。
 -- 界面对象只读取资源账本；动画状态留在stage对象，不写入存档或录像初态。
 local H={}
 local A=OriginalANM
@@ -11,7 +11,11 @@ function H.enabled(scene)
 end
 function H.layout(scene)
     local w=lstg.world
-    if screen.width<=screen.height or AndroidPortrait and AndroidPortrait.enabled() then H.shifted=false;return end
+    if screen.width<=screen.height or AndroidPortrait and AndroidPortrait.enabled() then
+        H.shifted=false
+        if AndroidPortrait and AndroidPortrait.enabled() then AndroidPortrait.layoutWorld() end
+        return
+    end
     if H.enabled(scene) then
         local left=SequenceResources.game()==95 and 128 or 32
         w.scrl,w.scrr=(screen.width-640)/2+left,(screen.width-640)/2+left+384
@@ -23,11 +27,21 @@ function H.layout(scene)
         H.shifted=false
     end
 end
-local function vm(game,archive,index) return A.new(game,archive,index) end
-local function origin() return (screen.width-640)/2,(screen.height+480)/2 end
+local view
+local function origin()
+    if view then return view.x,view.y end
+    return (screen.width-640)/2,(screen.height+480)/2
+end
+local function withView(x,y,scale,draw)
+    local previous=view;view={x=x,y=y,scale=scale};draw();view=previous
+end
 local function draw(v,x,y,alpha)
     local ox,oy=origin()
-    A.draw(v,ox+(x or 0),oy-(y or 0),0,1,1,alpha or 1)
+    local scale=view and view.scale or 1
+    local position=v.position
+    if view then v.position={position[1]*scale,position[2]*scale,position[3]} end
+    A.draw(v,ox+(x or 0)*scale,oy-(y or 0)*scale,0,scale,scale,alpha or 1)
+    v.position=position
 end
 local function at(v,x,y,alpha)
     -- tile/库存VM由原作Gui逐个指定坐标；保留ANM其余属性。
@@ -37,8 +51,20 @@ local function sprite(game,archive,id,x,y,sx,sy,rgb,alpha)
     local data=A.load(game,archive)
     local s=A.sprite_resource{data=data,sprite=id}
     local ox,oy=origin();sx,sy=sx or 1,sy or sx or 1;rgb=rgb or WHITE
+    local scale=view and view.scale or 1
     SetImageState(s.img,'',Color(alpha or 255,rgb[1],rgb[2],rgb[3]))
-    Render(s.img,ox+x+s[4]*sx/2,oy-y-s[5]*sy/2,0,sx,sy)
+    Render(s.img,ox+(x+s[4]*sx/2)*scale,oy-(y+s[5]*sy/2)*scale,0,sx*scale,sy*scale)
+end
+local function croppedSprite(game,archive,id,x,y,width,height)
+    local s=A.sprite_resource{data=A.load(game,archive),sprite=id}
+    local fit=max(width/s[4],height/s[5])
+    local cw,ch=width/fit,height/fit
+    local u,v=s[2]+(s[4]-cw)/2,s[3]
+    local ox,oy=origin();local scale=view and view.scale or 1
+    local l,r,t,b=ox+x*scale,ox+(x+width)*scale,oy-y*scale,oy-(y+height)*scale
+    local color=Color(255,255,255,255)
+    RenderTexture(s.tex,'',{l,t,.5,u,v,color},{r,t,.5,u+cw,v,color},
+        {r,b,.5,u+cw,v+ch,color},{l,b,.5,u,v+ch,color})
 end
 local function text(game,value,x,y,sx,sy,rgb,alpha)
     value=tostring(value);sx,sy=sx or 1,sy or 1
@@ -64,8 +90,9 @@ local function digits(game,value,x,y,count,rgb,scale,alpha,step)
 end
 local function rect(x1,x2,y1,y2,rgb,alpha)
     local ox,oy=origin();rgb=rgb or WHITE
+    local scale=view and view.scale or 1
     SetImageState('white','',Color(alpha or 255,rgb[1],rgb[2],rgb[3]))
-    RenderRect('white',ox+x1,ox+x2,oy-y2,oy-y1)
+    RenderRect('white',ox+x1*scale,ox+x2*scale,oy-y2*scale,oy-y1*scale)
 end
 local function powerBar(game,power,x,y)
     -- 红妖永的Gui直接画128像素火力条，颜色和16像素高度来自原作四顶点。
@@ -89,6 +116,12 @@ end
 local function add(o,key,v) o[key]=v;o.vms[#o.vms+1]=v;return v end
 local function newUI(o)
     local game=SequenceResources.game();o.game,o.vms,o.front=game,{},{}
+    if AndroidPortrait and AndroidPortrait.enabled() then
+        o.random={seed=((lstg.var.ran_seed or 1)+game*3571)%2147483646+1}
+        function o.random:Float(a,b) self.seed=self.seed*16807%2147483647;return a+(b-a)*self.seed/2147483647 end
+        function o.random:Int(a,b) return min(b,floor(self:Float(a,b+1))) end
+    end
+    local function vm(g,archive,index) return A.new(g,archive,index,nil,nil,o.random) end
     local n=game==6 and 23 or game==7 and 13 or game==8 and 15 or game==95 and 3 or 1
     for i=0,n do o.front[i]=add(o,'front'..i,vm(game,'front',i)) end
     if game==7 then
@@ -119,7 +152,7 @@ H.controller=Class(object,{
         o.scene=stage.current_stage;o.scene.original_ui=o;newUI(o)
     end,
     frame=function(o)
-        if not H.enabled() then return end
+        if not H.enabled() and not (AndroidPortrait and AndroidPortrait.enabled() and SequenceResources.state()) then return end
         -- TH07只在初始化时执行cherryBorderActive；逐帧播放会把标签放大到数字上。
         for _,v in ipairs(o.vms) do if v~=o.border then A.step(v,1) end end
         local s=SequenceResources.state()
@@ -194,7 +227,7 @@ local function cherry(o,s)
     digits(7,s.cherry_plus,p[1]+53+(s.border>0 and 2 or 0),p[2]+2-(s.border>0 and 2 or 0),5,color,scale,alpha,s.border>0 and 10 or 7)
     if s.border>0 then at(o.border,p[1]+24,p[2]+8,alpha/255) end
 end
-local function humanGauge(o,s)
+local function humanGauge(o,s,withoutClock)
     local p=o.gauge5.position
     local color=s.human<=SequenceResources.humanThreshold() and {112,112,255} or s.human<=-20 and {176,176,255}
         or s.human>=SequenceResources.youkaiThreshold() and {255,112,112} or s.human>=20 and {255,176,176} or WHITE
@@ -202,7 +235,17 @@ local function humanGauge(o,s)
     for i=5,8 do draw(o['gauge'..i]) end
     text(8,('%+.2f%%'):format(s.human),p[1]+64+s.human*.4-22,o.gauge8.position[2]-7,.5,.7,color,o.gauge5.alpha[1])
     digits(8,lstg.var.pointrate or 0,p[1]+48,p[2]+11,6,WHITE,1,o.gauge5.alpha[1])
-    draw(o.clock)
+    if not withoutClock then draw(o.clock) end
+end
+local function faithPanel(o,s)
+    local value=floor(s.faith/10)
+    for i=5,1,-1 do o.faith[i].sprite=value%10+30;value=floor(value/10) end
+    for i=0,6 do draw(o.faith[i]) end
+    if s.faith_timer>0 then
+        local alpha=o.faith[0].alpha[1]
+        rect(51,51+s.faith_timer*.29230770468711853,461,463,{0,0,0},alpha)
+        rect(50,50+s.faith_timer*.29230770468711853,460,462,WHITE,alpha)
+    end
 end
 local function modernPanel(o,s)
     local values={max(lstg.var.score or 0,lstg.tmpvar.hiscore or 0),lstg.var.score or 0}
@@ -215,14 +258,7 @@ local function modernPanel(o,s)
     local value=floor(s.power%20*5)
     o.power[0].sprite=floor(s.power/20)+8;o.power[2].sprite=floor(value/10)+8;o.power[3].sprite=value%10+8
     for i=0,3 do draw(o.power[i]) end
-    value=floor(s.faith/10)
-    for i=5,1,-1 do o.faith[i].sprite=value%10+30;value=floor(value/10) end
-    for i=0,6 do draw(o.faith[i]) end
-    if s.faith_timer>0 then
-        local alpha=o.faith[0].alpha[1]
-        rect(51,51+s.faith_timer*.29230770468711853,461,463,{0,0,0},alpha)
-        rect(50,50+s.faith_timer*.29230770468711853,460,462,WHITE,alpha)
-    end
+    faithPanel(o,s)
 end
 function H.draw()
     if not H.enabled() then return false end
@@ -277,4 +313,6 @@ function H.drawBoss(o)
         end
     end
 end
+dofile('THlib/UI/original_portrait.lua')(H,{view=withView,sprite=sprite,crop=croppedSprite,text=text,rect=rect,at=at,
+    cherry=cherry,human=humanGauge,faith=faithPanel,current=current,pointThreshold=pointThreshold})
 return H

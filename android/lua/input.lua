@@ -27,11 +27,18 @@ local menuButtons = {
     { key=27, x=810, y=40, radius=28, label='返回' },
 }
 local portraitPause={key=27,x=34,y=0,radius=28,label='暂停'}
+local portraitSlow={key=16,action='slow',radius=30,label='低速'}
+function I.slowMode()
+    local mode=setting and setting.touchSlowMode
+    return mode==2 and 2 or mode==3 and 3 or 1
+end
 local function activeButtons(menuMode)
     if AndroidPortrait and AndroidPortrait.enabled() then
         if menuMode then return {} end
         portraitPause.x,portraitPause.y=AndroidPortrait.pauseButton()
-        return {portraitPause}
+        portraitSlow.x,portraitSlow.y=AndroidPortrait.slowButton()
+        portraitSlow.toggle=I.slowMode()==1
+        return {portraitPause,portraitSlow}
     end
     return menuMode and menuButtons or buttons
 end
@@ -81,17 +88,28 @@ local function tapInterval()
 end
 local function rebuild()
     local old, keys = I.keys, {}
+    local portrait=AndroidPortrait and AndroidPortrait.enabled()
+    local menuMode,slowHeld=I.menuMode(),false
     I.mouse.down = false
     I.targetX, I.targetY = nil, nil
-    if not I.menuMode() then
-        if AndroidPortrait and AndroidPortrait.enabled() then I.toggles.shoot,I.toggles.slow=true,true end
-        for _,b in ipairs(buttons) do if b.toggle and I.toggles[b.action] then keys[buttonKey(b)]=true end end
+    if not menuMode then
+        if portrait then I.toggles.shoot=true end
+        for _,b in ipairs(buttons) do
+            if b.toggle and I.toggles[b.action] and not (portrait and b.action=='slow') then keys[buttonKey(b)]=true end
+        end
     end
     for _, t in pairs(I.touches) do
-        if t.button then if not t.button.toggle then keys[buttonKey(t.button)] = true end
+        if t.button then
+            if portrait and t.button.action=='slow' then slowHeld=true
+            elseif not t.button.toggle then keys[buttonKey(t.button)] = true end
         elseif not t.drag and not t.ignored then
             I.mouse.down = true; I.mouse.x = t.x; I.mouse.y = t.y
         end
+    end
+    if portrait and not menuMode then
+        local mode=I.slowMode()
+        local slow=mode==1 and I.toggles.slow or mode==2 and slowHeld or mode==3 and not slowHeld
+        keys[binding('slow',16)]=slow or nil
     end
     local t = I.movementId and I.touches[I.movementId]
     if t and t.drag and t.player == player then
@@ -271,11 +289,12 @@ function I.render()
     local menuMode = I.menuMode()
     for _, b in ipairs(activeButtons(menuMode)) do
         local active=I.keys[buttonKey(b)]
+        if b==portraitSlow then AndroidPortrait.drawSlowButton(b,active) end
         if not (AndroidPortrait and AndroidPortrait.enabled()) then
             SetImageState('white', '', active and Color(180,40,110,75) or Color(90,34,57,82))
             RenderRect('white', b.x-b.radius, b.x+b.radius, b.y-b.radius, b.y+b.radius)
         end
-        local label=b.label..(b.toggle and (I.toggles[b.action] and ' 开' or ' 关') or '')
+        local label=b.label..(b.toggle and b~=portraitSlow and (I.toggles[b.action] and ' 开' or ' 关') or '')
         ui:RenderText('title',label,b.x,b.y,menuMode and .8 or .75,Color(230,235,241,247),'centerpoint')
     end
 end

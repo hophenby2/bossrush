@@ -24,6 +24,7 @@ NATIVE = BUILD / 'native-gfx'
 OPTIMIZE_ASSETS = False
 LOSSY_IMAGES = False
 COMPRESS_AUDIO = False
+OPTIMIZE_FONTS = False
 sys.path.insert(0, str(ROOT.parent / 'tools'))
 from release_version import game_version
 
@@ -185,6 +186,16 @@ def prepare_assets():
     asset_variants = {}
     optimized = {}
     audio_variants = {}
+    font_variants = {}
+    if OPTIMIZE_FONTS:
+        from font_optimizer import optimize_fonts
+        font_paths={GAME/'THlib/UI/font/NotoSansCJKjp-Bold.otf':'game/THlib/UI/font/NotoSansCJKjp-Bold.otf',
+                    ENGINE/'res/font/WenQuanYiMicroHeiMono.ttf':'res/font/WenQuanYiMicroHeiMono.ttf'}
+        font_variants,records=optimize_fonts(list(font_paths),CACHE/'unicode-fonts')
+        write_utf8(BUILD/'font-optimization.json',json.dumps({font_paths[p]:r for p,r in records.items()},ensure_ascii=False,indent=2)+'\n')
+        for source,target in font_variants.items():
+            if font_paths[source].startswith('res/'):shutil.copy2(target,assets/font_paths[source])
+        print(f'字体保留全部Unicode和字形像素，减少{sum(r["source_bytes"]-r["packed_bytes"] for r in records.values() if r["converted"])/1048576:.2f} MiB',flush=True)
     if COMPRESS_AUDIO:
         from audio_optimizer import optimize_audio
         sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.wav')]
@@ -232,6 +243,8 @@ def prepare_assets():
                 if target.exists(): raise RuntimeError(f'优化资源路径冲突：{native}')
                 shutil.copy2(audio_variants[source],target)
                 asset_variants[relative.as_posix()]=native.as_posix()
+            elif source in font_variants:
+                shutil.copy2(font_variants[source],target)
             elif source.suffix == '.lua':
                 write_utf8(target, source.read_text(encoding='utf-8-sig'))
             elif source.suffix.lower() == '.wav':
@@ -436,7 +449,7 @@ def sign_apk(tools, keytool, unsigned):
 
 
 def main():
-    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES
+    global GAME, OPTIMIZE_ASSETS, COMPRESS_AUDIO, LOSSY_IMAGES, OPTIMIZE_FONTS
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-root', type=Path, help='从指定的游戏源码快照打包，隔离工作区其他未提交改动')
     parser.add_argument('--engine-archive')
@@ -444,6 +457,7 @@ def main():
     parser.add_argument('--optimize-assets', action='store_true', help='图片无损重压缩和相同文件去重，核心透明图保留PNG')
     parser.add_argument('--lossy-images', action='store_true', help='核心无损；非核心不透明图Q90/Q95、透明图PNG RGB6；隐含--optimize-assets')
     parser.add_argument('--compress-audio', action='store_true', help='将有包体收益的WAV入包副本转为高质量Ogg Vorbis，保留采样率、声道与帧数')
+    parser.add_argument('--optimize-fonts',action='store_true',help='保留全部Unicode和像素，去掉安卓未使用的布局替代字形')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')
     parser.add_argument('--jobs', type=int, default=min(os.cpu_count() or 4, 8))
@@ -451,6 +465,7 @@ def main():
     OPTIMIZE_ASSETS = args.optimize_assets or args.lossy_images
     LOSSY_IMAGES = args.lossy_images
     COMPRESS_AUDIO = args.compress_audio
+    OPTIMIZE_FONTS = args.optimize_fonts
     if args.game_root:
         GAME = args.game_root.resolve()
         if not (GAME / 'core.lua').is_file():
