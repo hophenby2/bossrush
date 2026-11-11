@@ -423,14 +423,18 @@ function P.pause(o)
     rect(w.scrl,w.scrr,w.scrb,w.scrt,o.mask_alph*.65,6,13,25)
     local cx,cy=(w.scrl+w.scrr)/2,(w.scrb+w.scrt)/2
     SetImageState('pause_eff','',Color(o.mask_alph/3,200,180,255));Render('pause_eff',cx,cy,4+4*sin(o.timer*3),.4,.4)
-    local rows=o.choose and {'好！','*不*'} or lstg.tmpvar.pause_menu_text or o.text[ext.replay.IsReplay() and 2 or 1]
-    local title=lstg.tmpvar.pause_menu_text and (ext.rep_over and '播放结束' or '游戏结束') or '游戏暂停'
+    local rows=o.choose and {'好！','*不*'} or o.panel_rows or lstg.tmpvar.pause_menu_text or o.text[ext.replay.IsReplay() and 2 or 1]
+    local title=o.panel_title or lstg.tmpvar.pause_menu_text and (ext.rep_over and '播放结束' or '游戏结束') or '游戏暂停'
     o.RenderText(cx-90,cy+60,o.choose and '真的吗?' or title,Color(o.mask_alph,250,128,114))
+    if o.panel_detail then label(o.panel_detail,cx,cy+95,.55,o.mask_alph) end
     for i,value in ipairs(rows) do
         local index=i;local y=cy+25-(i-1)*40
         local chosen=(o.choose and o.pos2 or o.pos)==i
         o.RenderText(cx-80,y,value,chosen and Color(o.mask_alph,155+100*sin(o.timer*4.5),255,222) or Color(o.mask_alph,100,100,100))
-        control(o,cx-100,cx+160,y-20,y+20,function() if o.choose then o.pos2=index else o.pos=index end;pulse(13) end)
+        control(o,cx-100,cx+160,y-20,y+20,function()
+            if o.on_select then o.on_select(index)
+            else if o.choose then o.pos2=index else o.pos=index end;pulse(13) end
+        end)
     end
 end
 function P.music(o,render)

@@ -128,6 +128,7 @@ local RenderRect = RenderRect
 local RenderText = RenderText
 
 function ui:RenderText(ttfname, text, x, y, size, color, ...)
+    if text=='' then return end
     local a = (color:ARGB())
     for i = 1, 4 do
         RenderTTF2(ttfname, text, x + cos(i * 90 + 45), y + sin(i * 90 + 45), size, Color(a, 0, 0, 0), ...)

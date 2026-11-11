@@ -433,7 +433,7 @@ function system:colli(other)
                 lstg.var.sakura = 0
                 lstg.var.sakura_bonus = false
             else
-                PlaySound("pldead00", 0.5)
+                if not (SequenceResources and SequenceResources.systemSound('death',p.x)) then PlaySound("pldead00", 0.5) end
                 p.death = 90--无决死的10帧
                 if GameNet then GameNet.miss(p) end
                 item.PlayerMiss(p)

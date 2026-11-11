@@ -67,7 +67,7 @@ function TenguCamera:Refresh()
 
     if self.player._playersys:keyIsPressed("spell") then
         self.spell_rot = (self.spell_rot + 90) % 180
-        PlaySound("focusfix2", 1)
+        if not (SequenceResources and SequenceResources.game()==95 and SequenceResources.playOriginalSound(46,self.player.x)) then PlaySound("focusfix2", 1) end
     end
 
 end
@@ -176,7 +176,8 @@ function TenguCamera:GetPhoto()
     self.fpsing = true
     self.photoing = true
     task.New(self, function()
-        PlaySound("focus")
+        if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(44,true,self.player.x)
+        else PlaySound("focus") end
         local data = scoredata
         for i = 1, 60 do
             self.fps = 20 + i / 1.5--ext里的fps设置
@@ -190,8 +191,9 @@ function TenguCamera:GetPhoto()
                         ext.achievement:get(141)
                     end
                 end
-                PlaySound("shutter")
-                StopSound("focus")
+                if not (SequenceResources and SequenceResources.game()==95 and SequenceResources.playOriginalSound(41,self.player.x)) then PlaySound("shutter") end
+                if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(44,false,self.player.x)
+        else StopSound("focus") end
 
                 self.temptext = {}
                 self.nnn = 0--奖励事件个数
@@ -369,7 +371,8 @@ function TenguCamera:GetPhoto()
             task.Wait()
             base_score = base_score - 100
         end
-        StopSound("focus")
+        if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(44,false,self.player.x)
+        else StopSound("focus") end
         self.RR = RR
         self.photoing = false
         self.writing = false

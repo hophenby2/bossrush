@@ -1,0 +1,209 @@
+{
+  "date": "2026-11-11",
+  "branch": "original-sequence",
+  "prior_optimization_commit": "adb7770",
+  "host": {
+    "presentation": 365,
+    "players": 1317,
+    "behaviors": 65,
+    "anm": 551,
+    "anm_game_character_combinations": 71,
+    "sequence_mode": 1292,
+    "android_pause": true,
+    "android_portrait": true,
+    "android_contracts": true
+  },
+  "audio": {
+    "sound_ids": 210,
+    "original_waves": 166,
+    "original_pcm_hashes_match": true,
+    "native_decoded_logical_sounds": 284,
+    "sample_rate_channels_frames_match": true
+  },
+  "native": {
+    "bomb_samples_per_character": [
+      1,
+      20,
+      40,
+      80,
+      120,
+      160,
+      179
+    ],
+    "presentation_cases": {
+      "continue-portrait": {
+        "shots": [
+          "snapshot/presentation-continue.png",
+          "snapshot/presentation-continued.png"
+        ],
+        "rows": [
+          {
+            "yes": false,
+            "time": 40
+          },
+          {
+            "lives": 2,
+            "continues": 1
+          }
+        ],
+        "kind": "continue"
+      },
+      "bomb-reimua": {
+        "kind": "bomb",
+        "rows": [
+          {
+            "time": 1,
+            "script": 400
+          },
+          {
+            "time": 20,
+            "script": 400
+          },
+          {
+            "time": 40,
+            "script": 400
+          },
+          {
+            "time": 80,
+            "script": 400
+          },
+          {
+            "time": 120,
+            "script": 400
+          },
+          {
+            "time": 160,
+            "script": 400
+          },
+          {
+            "time": 179,
+            "script": 400
+          }
+        ],
+        "shots": [
+          "snapshot/presentation-reimua-1.png",
+          "snapshot/presentation-reimua-20.png",
+          "snapshot/presentation-reimua-40.png",
+          "snapshot/presentation-reimua-80.png",
+          "snapshot/presentation-reimua-120.png",
+          "snapshot/presentation-reimua-160.png",
+          "snapshot/presentation-reimua-179.png"
+        ]
+      },
+      "continue-landscape": {
+        "rows": [
+          {
+            "time": 40,
+            "yes": false
+          },
+          {
+            "lives": 2,
+            "continues": 1
+          }
+        ],
+        "shots": [
+          "snapshot/presentation-continue.png",
+          "snapshot/presentation-continued.png"
+        ],
+        "kind": "continue"
+      },
+      "menu-portrait": {
+        "shots": [
+          "snapshot/presentation-menu.png"
+        ],
+        "rows": {},
+        "kind": "menu"
+      },
+      "menu-landscape": {
+        "kind": "menu",
+        "shots": [
+          "snapshot/presentation-menu.png"
+        ],
+        "rows": {}
+      },
+      "bomb-marisab": {
+        "kind": "bomb",
+        "shots": [
+          "snapshot/presentation-marisab-1.png",
+          "snapshot/presentation-marisab-20.png",
+          "snapshot/presentation-marisab-40.png",
+          "snapshot/presentation-marisab-80.png",
+          "snapshot/presentation-marisab-120.png",
+          "snapshot/presentation-marisab-160.png",
+          "snapshot/presentation-marisab-179.png"
+        ],
+        "rows": [
+          {
+            "time": 1,
+            "script": 407
+          },
+          {
+            "time": 20,
+            "script": 407
+          },
+          {
+            "time": 40,
+            "script": 407
+          },
+          {
+            "time": 80,
+            "script": 407
+          },
+          {
+            "time": 120,
+            "script": 407
+          },
+          {
+            "time": 160,
+            "script": 407
+          },
+          {
+            "time": 179,
+            "script": 407
+          }
+        ]
+      }
+    },
+    "sequence_replays": {
+      "th06_lunatic": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      "th07_lunatic": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      "th08_lunatic_b": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      "th095_scenes": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      "th10_lunatic": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      }
+    }
+  },
+  "package": {
+    "package": "BossRushHD-android-arm64-debug.apk",
+    "lua_files": 669,
+    "original_tracks": 67,
+    "full_ogg_decode": false,
+    "loop_frames_unchanged": true,
+    "source_bytes_match": true
+  },
+  "local_test_apk": "android/dist/BossRushHD-android-arm64-sequence-presentation-test.apk",
+  "test_apk_bytes": 276144129,
+  "test_apk_sha256": "63f3136b212d2c7250bb0cb551598c19b1d3f2f8941ae61d9837f87d057f680c",
+  "native_library_matches_build": true,
+  "public_release_file_restored": true,
+  "github_release_published": false
+}

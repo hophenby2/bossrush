@@ -220,6 +220,11 @@ replace('frameworks/LSTG/Renderer.cpp', 'label->visit(pRenderer, proj.getInverse
         ++androidTextCalls;
     }''')
 
+# 空文本不进入Label缓存：CCLabel::alignText的空串分支不会清理上一段文字的atlas顶点。
+replace('frameworks/LSTG/Renderer.cpp',
+        'float x, float y, float width, float height, float scaleX, float scaleY)noexcept\n{',
+        'float x, float y, float width, float height, float scaleX, float scaleY)noexcept\n{\n    if (str.empty()) return true;')
+
 # Label::draw 已通过 _blendFunc 绘制整批字形，无须创建每个字的 Sprite 来改混合模式。
 replace('frameworks/LSTG/Renderer.cpp', '''	label->setBlendFunc(func);
 	if (p->getLabelType() == ResFont::LabelType::TTF)

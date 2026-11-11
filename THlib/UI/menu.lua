@@ -350,8 +350,8 @@ function main_menu:render()
             R, G, B = sp:HSVtoRGB(timer / 5, 0.1, 1)
             ui:RenderText(ttfname, "♪" .. self.text[i], x + xos + r2 * 60, y - i * height,
                     1.2 + 0.2 * self.tri_alpha, Color(self.alpha * 255, R, G, B), "right", "vcenter")
-            ui:RenderText(ttfname, self.sub_title[i], x + xos + r2 * 60 + sub_x, y - i * height + sub_y,
-                    0.7 + 0.2 * self.tri_alpha, Color(self.alpha * 255, R, G, B), "left", "vcenter")
+            if self.sub_title[i] and self.sub_title[i]~='' then ui:RenderText(ttfname, self.sub_title[i], x + xos + r2 * 60 + sub_x, y - i * height + sub_y,
+                    0.7 + 0.2 * self.tri_alpha, Color(self.alpha * 255, R, G, B), "left", "vcenter") end
         else
             if self.nopos[i] then
                 R = R / 2
@@ -360,8 +360,8 @@ function main_menu:render()
             end
             ui:RenderText(ttfname, self.text[i], x + r2 * 60, y - i * height, 1.2,
                     Color(self.alpha * 255, R, G, B), "right", "vcenter")
-            ui:RenderText(ttfname, self.sub_title[i], x + r2 * 60 + sub_x, y - i * height + sub_y, 0.7,
-                    Color(self.alpha * 255, R, G, B), "left", "vcenter")
+            if self.sub_title[i] and self.sub_title[i]~='' then ui:RenderText(ttfname, self.sub_title[i], x + r2 * 60 + sub_x, y - i * height + sub_y, 0.7,
+                    Color(self.alpha * 255, R, G, B), "left", "vcenter") end
         end
     end
     menu:RenderExit(0, 30, 540, 510, self.alpha)

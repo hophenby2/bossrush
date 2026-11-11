@@ -42,6 +42,7 @@ function GetInput()
         end
         KeyState.touch_x,KeyState.touch_y,KeyState.touch_unlimited=nil,nil,nil
         if AndroidInput and lstg.var.__input_version==2 then AndroidInput.readMovement(KeyState) end
+        if SequenceResources and SequenceResources.continueInput then SequenceResources.continueInput(KeyState) end
         -- 记录当前帧的按键
         replayWriter:Record(KeyState)
     elseif rep.IsReplay() then

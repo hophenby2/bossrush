@@ -1,0 +1,76 @@
+顺序模式原作音效、续关菜单和灵击绘制修复
+日期：2026-11-11
+分支：original-sequence
+
+本轮之前的背景几何/雾效优化已以 adb7770 提交并推送；本报告记录后续修复。
+
+一、原作音效
+
+原先只有部分ECL和妖妖梦射击使用原声，拾取、升火力、擦弹、自机死亡等仍走框架音效。
+从五作原始SoundPlayer/Sound表导入完整210个SoundIdx，对应166份原始WAV、8,082,080字节。
+保留原始PCM、DirectSound音量与优先级元数据；逻辑编号不跨作品混用。
+来源：workspace/reconstructions/th06/src/SoundPlayer.cpp、th07/src/th07/SoundPlayer.cpp、
+      th08/src/SoundPlayer.cpp、th095/src/SoundPlayer.cpp、th10/src/Sound.cpp；
+      TH10音量/优先级表来自原始exe的0x4749c8（47项）。
+导入工具：tools/export_sequence_sounds.py。
+逐项波形SHA-256：mod/GAME/original/sequence_sounds_manifest.json。
+
+接入原作SHT射击、拾取、火力升档、满火力、残机奖励、擦弹、命中/低血命中、死亡、
+符卡宣言、倒计时、符卡收取、Bomb、森罗结界及文花帖摄影/蓄力事件。
+火力升级按各作原始门槛判断，满火时不重复播放；永夜抄蓝点按结算后的价值选择拾取音。
+风神录不使用框架的擦弹声。菜单操作音继续使用项目菜单音。
+入包副本沿用高质量Ogg压缩；原始WAV没有重采样或修改。
+当前入包共284个WAV逻辑音效，其中235个以Ogg载荷保存。
+
+二、续关使用原生暂停面板
+
+移除原有黑矩形与独立文字布局，直接调用ext.pause_menu.render；
+标题、选项和续关说明由独立展示对象提供，横竖屏均复用原生暂停样式。
+不调用暂停控制器的FlyIn/frame，避免额外改变随机数、关卡计时与音乐状态。
+保留30帧锁定、默认选择结束、普通录像输入帧和各作续关规则。
+触控/鼠标选择在GetInput写录像前转换为方向键和射击键，回放不依赖触控坐标或UI状态。
+续关期间安卓切换到菜单输入，关闭自动射击和移动拖动。
+
+三、自机旁奇怪小字的来源
+
+THlib/UI/title.lua给原作机体条目传入空副标题；main_menu原先仍调用文字绘制。
+安卓Label缓存复用后，CCLabel::alignText遇到空字符串会提前返回，旧atlas字形顶点没有清除；
+Renderer的字形批次快路径继续提交旧顶点，形成机体名称旁的小字残影。
+现从菜单层跳过空副标题，ui:RenderText跳过空串，并在安卓原生renderText入口直接返回。
+原生修复通过android/patch_engine.py维护，可从干净引擎源码重复应用。
+
+四、风神录灵击
+
+根因是TH10的ANM指令84（allocVertices）原先未执行，mode9生成圆环被当作普通精灵缩放。
+按原作AnmManager.cpp:3583及3867–3925补齐：
+  intVar0决定顶点对数，scale.x为带宽，scale.y为半径；
+  以rotation.z为起角生成完整2π圆环，intVar1控制V方向纹理重复；
+  末对坐标复制首对，仅继续推进V，保持封口和原triangle strip对角线。
+Sub与安卓四边形三角化不同，因此明确提交原strip的两块三角形，统一两端插值。
+灵击树单独采用TH10原始随机操作数范围和层顺序，不改变其他ANM随机范围。
+父控制器结束后，子动画继续按各自ANM时刻更新。
+神德及御射军神使用原始441号缩小演出，其余灵梦/魔理沙使用400/407。
+来源：workspace/reconstructions/th10/src/Player.cpp:2606–2640。
+没有修改ECL、碰撞、伤害、灵击消耗、持续时间或敌弹回收逻辑。
+
+五、验证
+
+主机LuaJIT：
+  check_sequence_presentation.lua：365项（另运行机体基础检查1317项）。
+  check_sequence_behaviors.lua：65项。
+  check_original_anm.lua：551项，71个作品/角色组合。
+  check_sequence_mode.lua：1292项。
+  check_android_pause.lua、check_android_portrait.lua、android/check.lua：通过。
+  210项原始音效的PCM哈希全部匹配。
+
+隔离安卓模拟器：
+  全部284个WAV逻辑音效实际LoadSound/PlaySound，原生解码的采样率、声道和帧数全部匹配。
+  灵梦/魔理沙灵击分别在1/20/40/80/120/160/179帧截图，180帧按原逻辑结束。
+  横竖屏机体菜单、续关面板及实际触控继续通过，20张原生截图完整并已查看。
+  五作各运行300帧并保存、实际回放180帧：TH06、TH07、TH08 Final B、TH095、TH10全部通过。
+  APK内669份游戏Lua与源码一致，67首原曲字节及循环参数不变，签名验证通过。
+  APK原生库与本轮编译、剥离后的库字节一致。
+
+原生截图、运行日志与解码信息：android/dist/sequence-presentation-2026-11-11/（本地验证产物）。
+汇总：android/verification-sequence-presentation-2026-11-11.json。
+本轮没有发布GitHub Release；本地验证APK单独命名保存，已发布版本的本地文件保持原样。

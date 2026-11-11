@@ -25,6 +25,28 @@ function P.continueRun(scene)
     if scene.sequence_music then ResumeMusic(scene.sequence_music) end
     if s.game==10 then OriginalSequence.restartChapter(scene) end
 end
+-- 触控/鼠标只提交选择意图；GetInput在写录像之前将它编码为普通方向键和射击键。
+function P.continueInput(out)
+    local scene=stage and stage.current_stage
+    local menu=scene and scene.sequence_continue
+    if not menu then return end
+    if not (AndroidPortrait and AndroidPortrait.enabled()) and GetMouseState and GetMousePosition then
+        local down=GetMouseState(0)
+        if down and not menu.mouseDown and menu.time>=30 then
+            local x,y=GetMousePosition();x,y=(x-screen.dx)/screen.scale,(y-screen.dy)/screen.scale
+            local row=math.floor((245-y)/25+.5)+1
+            if x>=284 and x<=505 and row>=1 and row<=2 and math.abs(y-(245-(row-1)*25))<=12.5 then menu.pending=row end
+        end
+        menu.mouseDown=down
+    end
+    if not menu.pending or menu.time<30 then return end
+    -- 先放开上一帧的按键，再发一个可重放的边沿；不能直接改menu.yes或调用continueRun。
+    if menu.previous.shoot or menu.previous.up or menu.previous.down then
+        out.shoot,out.up,out.down=false,false,false;return
+    end
+    out.up=(menu.pending==1)~=menu.yes;out.down=false;out.shoot=true
+    menu.pending=nil
+end
 function P.continueFrame(scene)
     local s=P.state();if not s or not scene or scene.sequence_finished then return false end
     local menu=scene.sequence_continue
@@ -36,9 +58,9 @@ function P.continueFrame(scene)
         if scene.sequence_music then PauseMusic(scene.sequence_music) end
     end
     local key=KeyState or {};local previous=menu.previous
-    menu.time=menu.time+1
+    menu.time=menu.time+1;menu.changed=(menu.changed or 0)+1
     if menu.time>=30 then
-        if key.up and not previous.up or key.down and not previous.down then menu.yes=not menu.yes;PlaySound('select00',.3) end
+        if key.up and not previous.up or key.down and not previous.down then menu.yes=not menu.yes;menu.changed=0;PlaySound('select00',.3) end
         if key.spell and not previous.spell then OriginalSequence.finish(scene,false)
         elseif key.shoot and not previous.shoot then
             if menu.yes then P.continueRun(scene) else OriginalSequence.finish(scene,false) end
@@ -49,14 +71,19 @@ function P.continueFrame(scene)
 end
 function P.renderContinue(scene)
     local menu=scene and scene.sequence_continue;if not menu then return end
-    SetViewMode('ui')
-    local x,y=screen.width/2,screen.height/2
-    SetImageState('white','',Color(200,0,0,0));RenderRect('white',x-180,x+180,y-100,y+100)
-    ui:RenderText('title','是否续关？',x,y+60,.9,Color(255,255,255,255),'center')
-    local s=P.state();local detail=s.game==10 and '从本关开头重新开始' or s.game==8 and '时间推进三十分钟' or ('剩余续关次数：'..((s.game==7 and s.continue_limit or 3)-(s.continues or 0)))
-    ui:RenderText('title',detail,x,y+25,.5,Color(255,220,220,220),'center')
-    ui:RenderText('title',(menu.yes and '▶ ' or '   ')..'继续',x,y-15,.7,menu.yes and Color(255,255,160,192) or Color(255,160,160,160),'center')
-    ui:RenderText('title',(menu.yes and '   ' or '▶ ')..'结束',x,y-55,.7,not menu.yes and Color(255,255,160,192) or Color(255,160,160,160),'center')
+    local s=P.state()
+    local detail=s.game==10 and '从本关开头重新开始' or s.game==8 and '时间推进三十分钟' or ('剩余续关次数：'..((s.game==7 and s.continue_limit or 3)-(s.continues or 0)))
+    local panel=menu.panel
+    if not panel then
+        panel={RenderText=ext.pause_menu.RenderText,panel_rows={'继续','结束'},panel_title='是否续关？',lockUntil=30}
+        panel.on_select=function(index) menu.pending=index end
+        menu.panel=panel
+    end
+    local a=1-(1-math.min(20,menu.time)/20)^2
+    panel.timer,panel.eff,panel.pos_changed=menu.time,math.min(20,menu.time),menu.changed or 0
+    panel.mask_alph,panel.mask_color,panel.mask_x=a*240,Color(a*100,0,0,0),a*300
+    panel.pos,panel.panel_detail=menu.yes and 1 or 2,detail
+    ext.pause_menu.render(panel)
     SetViewMode('world')
 end
 return P

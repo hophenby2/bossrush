@@ -32,19 +32,22 @@ local defaultFrameEvent = {
                 table.insert(self.charge_sp, { x = self.x + ran:Float(-100, 100), y = self.y + ran:Float(-100, 100),
                                                scale = 1, alpha = 0, timer = 0, v = ran:Float(0.05, 0.08),
                                                rot = ran:Float(0, 360), omiga = ran:Sign() * ran:Float(3, 1) })
-                if GetSoundState("ch00") == "stopped" then
+                if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(42,true,self.x)
+                elseif GetSoundState("ch00") == "stopped" then
                     PlaySound("ch00")
                 end
             else
                 self.photopre = self.photopre + 2 * (GameDrops and GameDrops.rate(self) or 1)
-                if GetSoundState("ch00") == "playing" then
+                if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(42,false,self.x)
+                elseif GetSoundState("ch00") == "playing" then
                     StopSound("ch00")
                 end
             end
         else
             if not self.playsound then
-                PlaySound("ch01", 1)
-                if GetSoundState("ch00") == "playing" then
+                if not (SequenceResources and SequenceResources.game()==95 and SequenceResources.playOriginalSound(43,self.x)) then PlaySound("ch01", 1) end
+                if SequenceResources and SequenceResources.game()==95 then SequenceResources.loopOriginalSound(42,false,self.x)
+                elseif GetSoundState("ch00") == "playing" then
                     StopSound("ch00")
                 end
                 self.nicemoment = 31
@@ -258,7 +261,7 @@ function aya_player:NewSp(x, y, sign)
         end
         task.Wait(ran:Int(1, 30))
         task.MoveToTarget(cao, 60, 1)
-        PlaySound("item00")
+        if not (SequenceResources and SequenceResources.systemSound('pickup',cao.x)) then PlaySound("item00") end
         cao.photopre = cao.photopre + (sign and 0.5 or 1)
         self.color = { 85, 85, 250 }
         v, a = ran:Float(2, 5), ran:Float(0, 360)

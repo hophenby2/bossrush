@@ -8,6 +8,7 @@ local function var() return lstg.var end
 function P.enabled() return var().__sequence_version==1 and var().__sequence_system_version==P.VERSION end
 function P.state() return P.enabled() and var().original_resources end
 function P.game() local s=P.state();return s and s.game end
+dofile('THlib/sequence_audio.lua')
 local function machine(id,name,character,shot,route,primary,secondary)
     return {id=id,name=name,character=character,shot=shot,route=route,primary=primary,secondary=secondary or primary}
 end
@@ -73,7 +74,7 @@ function P.addScore(n)
         local thresholds=s.game==6 and {10000000,20000000,40000000,60000000} or {20000000,40000000,80000000,150000000}
         if not v.sequence_key:find('lunatic',1,true) then thresholds=s.game==6 and {} or {100000000} end
         while thresholds[s.extends+1] and v.score>=thresholds[s.extends+1] do
-            s.extends=s.extends+1;s.lives=min(8,s.lives+1);PlaySound('extend',.5)
+            s.extends=s.extends+1;s.lives=min(8,s.lives+1);P.systemSound('extend')
         end
     end
 end
@@ -97,6 +98,8 @@ local function pointExtend(s)
 end
 function P.collect(kind,y,full,poolIndex)
     local s=assert(P.state());local game=s.game
+    local previousPower=s.power
+    local pickupMax=false
     local m=P.machine(game,s.machine);local d=game~=95 and P.data(game,m.primary) or {}
     local sourceY=224-y;local poc=d.poc or 128
     local high=full or sourceY<poc
@@ -128,11 +131,12 @@ function P.collect(kind,y,full,poolIndex)
             sourceY=224-player.y
             value=(kind=='point_full' or sourceY<144) and s.faith or s.faith/2-floor((sourceY-144)*.003289473708719015*(s.faith*.05-5000))
         else return end
+        if game==8 then pickupMax=value>=(kind=='point_small' and floor(var().pointrate/100)*10 or var().pointrate) end
         P.addScore(max(0,value))
         if kind=='point' then
             s.points=s.points+1;s.stage_points=s.stage_points+1
             if game==7 or game==8 then
-                while s.points>=pointExtend(s) do s.extends=s.extends+1;s.lives=min(8,s.lives+1);PlaySound('extend',.5) end
+                while s.points>=pointExtend(s) do s.extends=s.extends+1;s.lives=min(8,s.lives+1);P.systemSound('extend') end
             end
         end
         if game==10 then s.faith_timer=min(130,s.faith_timer+100) end
@@ -157,8 +161,9 @@ function P.collect(kind,y,full,poolIndex)
         P.addScore(s.bomb and 100 or 300+floor((var().graze or 0)/40)*10)
         if game==7 then P.cherry(s.bomb and 10 or 20,not s.bomb or (poolIndex or 0)%2==0) end
     elseif kind=='bomb' then s.bombs=min(8,s.bombs+1)
-    elseif kind=='life' then s.lives=min(8,s.lives+1);PlaySound('extend',.5) end
-    P.sync()
+    elseif kind=='life' then s.lives=min(8,s.lives+1);P.systemSound('extend') end
+    if s.power>previousPower and P.powerLevel(s.power,game)>P.powerLevel(previousPower,game) then P.systemSound('powerup') end
+    P.sync();return pickupMax
 end
 function P.graze(other,new,x,y)
     local s=assert(P.state())

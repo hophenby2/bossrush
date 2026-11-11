@@ -145,14 +145,14 @@ function timeCounter:frame()
     if _ui.countdown and self.sound then
         if _ui.countdown > self.t2 and _ui.countdown <= self.t1 and _ui.countdown % 1 == 0 then
             if not b.NotPlayTimeOutSound then
-                PlaySound("timeout", 0.6)
+                if not (SequenceResources and SequenceResources.systemSound('countdown',b.x)) then PlaySound("timeout", 0.6) end
             end
             self.scalewarning = self.scalewarning_1
             self.scalewarning_current = self.scalewarning_1
         end
         if _ui.countdown > 0 and _ui.countdown <= self.t2 and _ui.countdown % 1 == 0 then
             if not b.NotPlayTimeOutSound then
-                PlaySound("timeout2", 0.8)
+                if not (SequenceResources and SequenceResources.systemSound('countdown_low',b.x)) then PlaySound("timeout2", 0.8) end
             end
             self.scalewarning = self.scalewarning_2
             self.scalewarning_current = self.scalewarning_2

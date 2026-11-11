@@ -76,7 +76,7 @@ local function value(v,a)
     if type(a)~='table' then return a end
     local id=a.var
     local ran=v.random or ran
-    if v.data.game==11 then
+    if v.data.game==11 or v.original_spirit then
         if id==10010 then return ran:Float(-math.pi,math.pi) end
         if id==10011 then return ran:Float(0,1) end
         if id==10012 then return ran:Float(-1,1) end
@@ -147,12 +147,12 @@ local function execute(v)
         elseif op=='anchor' then v.anchor=1
         elseif op=='anchor_state' then v.anchor_x=a;v.anchor_y=b
         elseif op=='drawmode' then v.drawmode=a
-        elseif op=='render_byte' and v.data.game==11 then
+        elseif op=='render_byte' and (v.data.game==11 or v.original_spirit) then
             -- TH11的68写VM.persistent020，是原作全局绘制层号，不是可忽略的装饰字节。
             v.render_layer=a
         elseif op=='secondary' then v.secondary=a~=0
         elseif op=='child' then
-            local child=A.new(v.data.game,v.data.archive,a,nil,nil,v.random)
+            local child=A.new(v.data.game,v.data.archive,a,nil,nil,v.random,v.original_spirit)
             if v.data.game==11 and child.render_layer==nil then child.render_layer=v.render_layer end
             v.children[#v.children+1]=child
         elseif op=='add_u' then v.u=(v.u+a)%1
@@ -164,6 +164,7 @@ local function execute(v)
         elseif op=='position_bezier' then
             interp(v,'position',a,8,value(v,c[7]),value(v,c[8]),value(v,c[9]))
             v.interps.position.controls={vector(b,d,e),vector(value(v,c[10]),value(v,c[11]),value(v,c[12]))}
+        elseif op=='vertices' and v.data.game==10 then v.generated_ring=a;v.drawmode=9
         elseif op=='ring_vertices' then v.ring_vertices=a
         elseif op=='rotation_time' then interp(v,'rotation',a,b,d,e,f)
         elseif op=='scale_time' then interp(v,'scale',a,b,d,e)
@@ -248,16 +249,16 @@ function A.step(v,dt)
     if v.vs~=0 or v.v<0 or v.v>=1 then v.v=(v.v+v.vs*dt)%1 end
     if not v.stopped and not v.wait then v.time=v.time+dt end
 end
-function A.new(game,archive,id,dt,sprite_resolver,random)
+function A.new(game,archive,id,dt,sprite_resolver,random,original_spirit)
     local data=A.load(game,archive)
     local script=data.scripts[id]
     if not script then error('原作ANM脚本缺失：'..data.key..'/'..id) end
-    local v={data=data,id=id,script=script,pc=1,time=0,vars={},interps={},visible=false,
+    local v={data=data,id=id,script=script,original_spirit=original_spirit,pc=1,time=0,vars={},interps={},visible=false,
         sprite_base=data.sprite_bases and data.sprite_bases[id] or 0,sprite_resolver=sprite_resolver,random=random,
         position=vector(0,0,0),rotation=vector(0,0,0),omega=vector(0,0,0),scale=vector(1,1),
         growth=vector(0,0),color=vector(255,255,255),alpha=vector(255),color2=vector(255,255,255),
         alpha2=vector(255),blend='',u=0,v=0,us=0,vs=0,children={}}
-    if game==11 then draw_sequence=draw_sequence+1;v.draw_sequence=draw_sequence end
+    if game==11 or original_spirit then draw_sequence=draw_sequence+1;v.draw_sequence=draw_sequence end
     A.step(v,dt)
     return v
 end
@@ -321,6 +322,32 @@ function A.draw_vm(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
     local a=(override and override.alpha or (v.secondary and v.alpha2[1] or v.alpha[1]))*(alpha or 1)
     local image=s.img
     local ca=max(0,min(255,floor(a)));cr,cg,cb=floor(cr),floor(cg),floor(cb)
+    if v.generated_ring and v.drawmode==9 and RenderTexture then
+        -- TH10 AnmManager::UpdateVm的mode9：完整圆环，U横跨带宽，V按intVar1绕圆重复。
+        -- 与TH11的有弧长mode13不同；末对顶点复制首对坐标，只推进V，封口不留缝。
+        local count=v.vars[10000] or v.generated_ring
+        if count<2 then return end
+        local tw,th=GetTextureSize(s.tex)
+        if lstg.SetTextureSamplerState then lstg.SetTextureSamplerState(s.tex,'linear+wrap') end
+        local co=Color(ca,cr,cg,cb)
+        local outer,inner=v.scale[2]+v.scale[1]/2,v.scale[2]-v.scale[1]/2
+        local cx,cy=x+v.position[1],y-v.position[2]
+        local repeats=v.vars[10001] or 0
+        local function point(i,r,u)
+            local theta=v.rotation[3]+(i==count-1 and 0 or i*2*math.pi/(count-1))
+            return {cx+math.cos(theta)*r,cy-math.sin(theta)*r,.5,u,(v.v+i*repeats/(count-1))*th,co}
+        end
+        local u0,u1=s[2]+v.u*tw,s[2]+s[4]+v.u*tw
+        for i=0,count-2 do
+            -- 原triangle strip的对角线连接inner[i]与outer[i+1]。
+            local outerA,innerA=point(i,outer,u0),point(i,inner,u1)
+            local outerB,innerB=point(i+1,outer,u0),point(i+1,inner,u1)
+            -- Sub与Android的四边形三角化对角线不同，退化第四点固定原strip的两块三角形。
+            RenderTexture(s.tex,v.blend,outerA,innerA,outerB,outerB)
+            RenderTexture(s.tex,v.blend,innerA,outerB,innerB,innerB)
+        end
+        return
+    end
     if v.ring_vertices and RenderTexture then
         -- TH11 mode13：scale.x是带宽、scale.y是半径，rotation.x是弧长；
         -- 不能把这三项当作平面精灵的缩放/俯仰角。原码见AnimationExecutionUpdate.inc。
@@ -384,7 +411,7 @@ function A.collect_draw_vms(v,rows)
     return rows
 end
 function A.draw(v,x,y,angle,sx,sy,alpha,tint,override,rotation)
-    if v.data.game==11 and v.children[1] then
+    if (v.data.game==11 or v.original_spirit) and v.children[1] then
         local rows=A.collect_draw_vms(v,{})
         table.sort(rows,function(a,b)
             local la,lb=a.render_layer or 0,b.render_layer or 0

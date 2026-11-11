@@ -44,7 +44,8 @@ local function activeButtons(menuMode)
 end
 function I.menuMode()
     if GameNet and GameNet.client() then return false end
-    return ext and (ext.StageIsMenu() or (ext.pause_menu and not ext.pause_menu:IsKilled())) or false
+    return stage and stage.current_stage and stage.current_stage.sequence_continue~=nil
+        or ext and (ext.StageIsMenu() or (ext.pause_menu and not ext.pause_menu:IsKilled())) or false
 end
 -- 暂停列表没有桌面菜单的鼠标处理：按实际文字位置选行，点击确认，拖动只改变选中项。
 function I.pauseMenu(menu, text)

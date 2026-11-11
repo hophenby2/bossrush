@@ -18,10 +18,7 @@ local function emit(p,row)
     local o=New(P.classes.shot,p,row);shots[o]=true
     pool[index]=o;o.original_pool_slot=index
     if row.sound and row.sound>=0 then
-        -- 差异1：妖妖梦使用已导入原声，其余三作暂以框架弹声代理；触发时机保留SHT原行。
-        if p.original_game==7 and OriginalStageVisual and OriginalStageVisual.presentation then
-            OriginalStageVisual.presentation.sound.play(7,row.sound,p.x)
-        else PlaySound('plst00',.15,p.x/1024) end
+        P.playOriginalSound(row.sound,p.x)
     end
     if p.original_game<10 then
         o.original_new=true

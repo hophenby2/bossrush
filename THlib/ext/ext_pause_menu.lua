@@ -295,7 +295,9 @@ function pausemenu:render()
     --准备选项
     local text
     local Choose = { '好！', '*不*' }
-    if lstg.tmpvar.pause_menu_text then
+    if self.panel_rows then
+        text = self.panel_rows
+    elseif lstg.tmpvar.pause_menu_text then
         text = lstg.tmpvar.pause_menu_text
     else
         text = self.text[m]
@@ -304,7 +306,9 @@ function pausemenu:render()
     if text then
         local y = -20 + dy
         local c = (self.choose and 100) or 255
-        if lstg.tmpvar.pause_menu_text then
+        if self.panel_title then
+            self.RenderText(self.mask_x,y,self.panel_title,Color(self.mask_alph+15,c,c,c))
+        elseif lstg.tmpvar.pause_menu_text then
             --有现有的文字时高亮处理
             if ext.rep_over then
                 self.RenderText(self.mask_x, y, "播放结束", Color(self.mask_alph + 15, c, c, c))
@@ -351,8 +355,10 @@ function pausemenu:render()
         end
     end
 
-    ui:RenderText("title", "Tips : " .. self.tip, 480, 125, 0.8,
-            Color(self.mask_alph, 250, 128, 114 + 50 * sin(self.timer * 2)), "centerpoint")
+    if self.panel_detail or self.tip then
+        ui:RenderText("title", self.panel_detail or ("Tips : " .. self.tip), 480, 125, 0.8,
+                Color(self.mask_alph, 250, 128, 114 + 50 * sin(self.timer * 2)), "centerpoint")
+    end
 end
 
 function pausemenu:FlyIn()

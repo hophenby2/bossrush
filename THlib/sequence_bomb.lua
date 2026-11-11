@@ -72,7 +72,16 @@ function P.bombInput(p,key,previous,death)
     local ids=vmSets[game] and vmSets[game][spec.key]
     if game==8 and spec.character==1 then ids=spec.death and {35,36,37,38,39} or {30,31,32,33,34} end
     p.original_bomb_vms=bombVMs(p,s.bomb,ids)
-    if game==10 then p.original_bomb_vms={P.animation(10,'bullet',p.original_machine.character==0 and 400 or 407)} end
+    if game==10 then
+        local script=p.original_machine.character==0 and 400 or 407
+        -- 原作StartPowerTransition在神德(93..96)及御射军神(109)使用缩小的441号演出。
+        for _,boss in ipairs(boss_group or {}) do
+            local card=live(boss) and boss.current_card
+            local id=card and (card.source_card_id or card.card_id)
+            if boss.is_sc and (id==3600 or id==3621) then script=441;break end
+        end
+        p.original_bomb_vms={P.animation(10,'bullet',script,true)}
+    end
     p.protect=spec.protect;p.original_bomb_speed=1
     if game==6 and spec.key=='marisab' then p.original_bomb_speed=.3
     elseif game==7 and spec.key=='marisab_slow' or game==8 and spec.character==1 then p.original_bomb_speed=.2
@@ -86,7 +95,6 @@ function P.bombInput(p,key,previous,death)
     end
     item.ClearBossBonus();P.sync()
     for _,o in ObjList(GROUP.ITEM) do o.attract=8 end
-    PlaySound('enep02',.6,p.x/200)
     return true
 end
 local function enemyEach(fn)
@@ -306,6 +314,7 @@ function P.stepBomb(p)
         s.bomb=nil;p.original_bomb_speed=1;p.original_bomb_vms=nil;p.nextspell=0;return
     end
     b.regions={}
+    P.bombSound(p,b)
     p.nextspell=b.spec.duration-b.time
     if s.game==6 then th06(p,b) elseif s.game==7 then th07(p,b) elseif s.game==8 then th08(p,b)
     elseif s.game==10 then

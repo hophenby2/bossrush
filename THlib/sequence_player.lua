@@ -6,11 +6,11 @@ local New,object,task=New,object,task
 local class={}
 P.classes=class
 local function live(o) return o and IsValid(o) end
-local function animation(game,archive,id)
+local function animation(game,archive,id,original_spirit)
     local data=OriginalANM.load(game,archive)
     local key=data.ids[id]
     assert(key~=nil,'原作自机动画编号未映射：'..game..'/'..archive..':'..id)
-    return OriginalANM.new(game,archive,key)
+    return OriginalANM.new(game,archive,key,nil,nil,nil,original_spirit)
 end
 P.animation=animation
 local function archive(m,game) return (game==10 and 'pl' or 'player')..('%02d'):format(m.character) end
@@ -76,7 +76,10 @@ function P.flushDamage()
                 local divisor=bomb and (game==6 and 3 or game==7 and 2.5 or game==8 and 2.5 or 1) or (game==10 and 5 or 7)
                 n=n>0 and max(1,floor(n/divisor)) or 0
             end
-            if n>0 then Damage(o,n) end
+            if n>0 then
+                P.systemSound(o.hp<=(o.maxhp or o.hp)*.2 and 'damage_low' or 'damage',o.x)
+                Damage(o,n)
+            end
         end
     end
 end
@@ -214,8 +217,9 @@ class.pickup=Class(object,{
     end,
     colli=function(o,p)
         if p~=player or p.death~=0 or o.original_collected or o.original_time_motion then return end
-        o.original_collected=true;P.collect(o.original_kind,o.y,o.original_full,o.original_pool_index)
-        PlaySound('item00',.3,o.x/200);object.RawDel(o)
+        o.original_collected=true
+        local maxValue=P.collect(o.original_kind,o.y,o.original_full,o.original_pool_index)
+        P.systemSound(P.game()==8 and maxValue and 'pickup_max' or 'pickup',o.x);object.RawDel(o)
     end,
 })
 function P.spawnItem(kind,x,y,flags)
@@ -373,6 +377,7 @@ local function move(p,key)
 end
 function P.breakBorder(p,natural)
     local s=P.state()
+    P.playOriginalSound(33,p.x)
     if natural then
         s.cherry_max=min(9999990,s.cherry_max+10000);P.cherry(10000,false);P.addScore(s.cherry*10)
     else item.ClearBossBonus();s.border_cancel={x=p.x,y=p.y,age=0} end
@@ -392,6 +397,7 @@ function P.stepCherry(p)
         s.border_ready=true
         if p.death==0 and (p.protect or 0)<=0 and not p.dialog and not s.bomb then
             s.border,s.border_ready=540,nil
+            P.playOriginalSound(32,p.x);P.playOriginalSound(36,p.x)
         end
     end
 end
@@ -465,7 +471,7 @@ class.player=Class(player_class,{
                 p.original_deathbomb=p.original_deathbomb-1
                 if p.original_deathbomb<=0 then
                     p.original_deathbomb=nil;p.original_death_freeze=nil;P.miss(p);p.original_respawn=s.game==10 and 30 or 60
-                    New(player_death_ef,p.x,p.y);PlaySound('pldead00',.5);P.clear('death',p.x,p.y,64)
+                    New(player_death_ef,p.x,p.y);P.systemSound('death',p.x);P.clear('death',p.x,p.y,64)
                 end
             end
         elseif p.original_respawn then

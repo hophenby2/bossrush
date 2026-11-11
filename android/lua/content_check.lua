@@ -1,6 +1,7 @@
 -- 私有content诊断：验证精简版五作的整关/符卡入口，不参与正常开局。
 local T={}
 local function installAudio(mode)
+    scoredata.PlayerBrand=scoredata.PlayerBrand or 'Android音效验证';scoredata.version=ui.version
     lstg.SystemLog('BOSSRUSH_CONTENT_BEGIN: '..mode)
     local fu=cc.FileUtils:getInstance()
     local files=assert(loadstring(fu:getStringFromFile('game/asset_index.lua')))()
@@ -31,6 +32,7 @@ local function installAudio(mode)
     end
 end
 function T.install(mode)
+    if mode:match("presentation=1") then dofile("android/sequence_presentation_probe.lua").install(mode);return end
     if mode:match('images=1') then dofile('android/image_probe.lua').install(mode);return end
     if mode:match('audio=1') then installAudio(mode);return end
     local sequenceKey=mode:match('sequence=([%w_]+)')
