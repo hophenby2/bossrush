@@ -1,0 +1,105 @@
+{
+  "date": "2026-11-11",
+  "version": "26.11.11-sequence-fx",
+  "source_commit": "69d778000fddd788d957934fa45b8a1d8b217aee",
+  "branch": "original-sequence",
+  "android_version_code": 47,
+  "assets": {
+    "android": {
+      "file": "BossRushHD-android-arm64-26.11.11-sequence-fx.apk",
+      "bytes": 276144129,
+      "sha256": "94f7c55f9f3fd95927b85a0a56cf0da6bb5b6678615064751ebaca52c1cc1d6e",
+      "github_asset_id": 734844365,
+      "github_digest_matches": true,
+      "download_url": "https://github.com/hophenby2/bossrush/releases/download/v26.11.11-sequence-fx/BossRushHD-android-arm64-26.11.11-sequence-fx.apk"
+    },
+    "windows": {
+      "file": "BossRushHD-Windows-x64-26.11.11-sequence-fx-slim.zip",
+      "bytes": 255614313,
+      "sha256": "9375e4183af6c5d4c55f1c400b13279bc3938be6d84570b7cc0bf9d3ede59cf5",
+      "github_asset_id": 734844361,
+      "github_digest_matches": true,
+      "download_url": "https://github.com/hophenby2/bossrush/releases/download/v26.11.11-sequence-fx/BossRushHD-Windows-x64-26.11.11-sequence-fx-slim.zip"
+    }
+  },
+  "compression": {
+    "core_images_lossless": true,
+    "noncore_policy": "保留尺寸和Alpha，非核心不透明图PSNR>=36dB；透明图RGB误差<=4",
+    "audio": "高质量Ogg，保留采样率、声道和帧数",
+    "image_deduplication": true
+  },
+  "android": {
+    "images": {
+      "core_exact": 840,
+      "noncore_exact": 65,
+      "noncore_lossy_opaque": 58,
+      "noncore_lossy_transparent": 67
+    },
+    "sequence": {
+      "package": "BossRushHD-android-arm64-26.11.11-sequence-fx.apk",
+      "lua_files": 669,
+      "original_tracks": 67,
+      "full_ogg_decode": false,
+      "loop_frames_unchanged": true,
+      "source_bytes_match": true
+    },
+    "install_verified": true,
+    "native_library_matches": true,
+    "android_lua_matches": true,
+    "crc": true,
+    "user_data_excluded": true,
+    "native_replays": {
+      "th06_lunatic": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      },
+      "th10_lunatic": {
+        "record_frames": 300,
+        "replay_frames": 180,
+        "passed": true
+      }
+    }
+  },
+  "windows": {
+    "package": {
+      "package": "BossRushHD-Windows-x64-26.11.11-sequence-fx-slim.zip",
+      "bytes": 255614313,
+      "sha256": "9375e4183af6c5d4c55f1c400b13279bc3938be6d84570b7cc0bf9d3ede59cf5",
+      "source_files_checked": 2176,
+      "audio_checked": 284,
+      "aliases": 115,
+      "x64_engine_and_dlls": true,
+      "font_bitmap_dependencies_kept": true,
+      "user_data_excluded": true,
+      "crc": true
+    },
+    "sequence": {
+      "package": "BossRushHD-Windows-x64-26.11.11-sequence-fx-slim.zip",
+      "lua_files": 669,
+      "original_tracks": 67,
+      "full_ogg_decode": false,
+      "loop_frames_unchanged": true,
+      "source_bytes_match": true
+    },
+    "native_startup_verified": false,
+    "native_limitation": {
+      "workflow_run": "https://github.com/hophenby2/bossrush/actions/runs/42992267719",
+      "head_commit": "872c9a2e2634a46c843966de3ace2a60b06e1b75",
+      "executed_steps": 0,
+      "message": "The job was not started because your account is locked due to a billing issue."
+    }
+  },
+  "github": {
+    "release_id": 441441773,
+    "tag": "v26.11.11-sequence-fx",
+    "source_target_matches": true,
+    "assets_verified": true,
+    "published": true,
+    "latest": true,
+    "url": "https://github.com/hophenby2/bossrush/releases/tag/v26.11.11-sequence-fx",
+    "published_at": "2026-11-11T09:06:38Z",
+    "tag_commit_matches": true,
+    "only_apk_and_zip": true
+  }
+}
