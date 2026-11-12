@@ -116,7 +116,7 @@ function stage_menu:init()
                 entries[#entries+1]={entry.title,function()
                     local function backPlayer() menu.FadeOut(menu_sequence_player);menu.FadeIn(menu_sequence_select) end
                     local machines={}
-                    for _,machine in ipairs(SequenceResources.machines(game)) do
+                    for _,machine in ipairs(OriginalSequence.catalog.machines(entry)) do
                         local id=machine.id
                         machines[#machines+1]={machine.name,function()
                             startPractice(menu_sequence_player,function() OriginalSequence.start(key,id) end)

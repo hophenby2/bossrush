@@ -44,6 +44,7 @@ local function play(scene,track)
     scene.sequence_music_fade=nil
 end
 function M.enter(scene,chapter,kind,row)
+    if chapter.level==35 then return _editor_class.TH38.media(scene,chapter,kind,row) end
     local game,key,stageTrack,bossTrack=location(chapter,row)
     local changed=scene.sequence_background_key~=game..'/'..key or not scene.sequence_background or not IsValid(scene.sequence_background)
     -- 文花帖每幕独立启动原场景，EX的四个地点也各自取SceneSelect指定背景。
@@ -57,6 +58,7 @@ function M.enter(scene,chapter,kind,row)
     play(scene,scene.sequence_default_music)
 end
 function M.frame(scene)
+    if scene.level==35 then return _editor_class.TH38.mediaFrame(scene) end
     local chapter=scene.sequence_chapter
     if not chapter then return end
     for _,b in ipairs(boss_group) do
@@ -94,6 +96,7 @@ function M.advance(owner,clock,state)
     end
 end
 function M.stop(scene)
+    lstg.tmpvar.th38_random=nil;lstg.tmpvar.th38_phase=nil
     if scene.sequence_music then StopMusic(scene.sequence_music);scene.sequence_music=nil end
     scene.sequence_background=nil
     scene.sequence_background_key=nil

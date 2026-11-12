@@ -1,0 +1,12 @@
+{
+  "card": 68061,
+  "frames": 449,
+  "peak": 561,
+  "peak_lasers": 72,
+  "objects": 515,
+  "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+  "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+  "fps": 58.185282401963,
+  "elapsed": 8.6194492499926,
+  "stage": "Spell Practice@Spell Practice"
+}

@@ -7,6 +7,14 @@ function T.install()
     local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
     local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
+    local sequenceSpeed=mode=='th38-sequence' and tonumber(os.getenv('BOSSRUSH_MAC_TEST_SPEED') or '1') or 1
+    local sequenceKill=tonumber(os.getenv('BOSSRUSH_MAC_TEST_KILL') or '')
+    local sequenceEnd=os.getenv('BOSSRUSH_MAC_TEST_END')=='1'
+    local sequenceResult,sequencePhases={},{}
+    if sequenceSpeed>1 then
+        -- 加速只验对象/流程；音效在正常帧率另测，避免超实时重启耗尽OpenAL音源队列。
+        PlaySound=function() end;lstg.PlaySound=function() end
+    end
     local visuals
     if os.getenv('BOSSRUSH_MAC_TEST_VISUAL')=='1' then
         visuals={trails=0,halos=0,low_primary=0}
@@ -49,7 +57,7 @@ function T.install()
         return
     end
     local started,captured,finished=false,false,false
-    local frames,afterCapture,maxBullets=0,0,0
+    local frames,afterCapture,maxBullets,maxLasers=0,0,0,0
     local beforeCaptureFPS
     local checkpoint,checkpointAt
     local logicalTarget=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LOGIC_FRAMES') or '')
@@ -105,7 +113,24 @@ function T.install()
         end
         local beforeX,beforeY=p and p.x,p and p.y
         local quit=false
-        if not (logicalTarget and captured) then quit=original() end
+        if not (logicalTarget and captured) then
+            for _=1,sequenceSpeed do
+                if mode=='th38-sequence' then
+                    if player and IsValid(player) then player.protect=120 end
+                    for _,b in ipairs(boss_group or {}) do
+                        local run=b.th38_run
+                        if run then
+                            local meta=b.current_card and b.current_card.th38_source
+                            if meta and not sequencePhases[tostring(meta.id)] then sequencePhases[tostring(meta.id)]=true;lstg.SystemLog('BOSSRUSH_TH38_PHASE: '..meta.id) end
+                            if sequenceKill and run.host.age>=sequenceKill then b.hp=0 end
+                        end
+                    end
+                    local current=lstg.var.sequence_run
+                    if current and current.key:find('thsss',1,true) then sequenceResult={completed=current.completed,total=current.total,finished=current.finished,won=current.won} end
+                end
+                quit=original();if quit then break end
+            end
+        end
         if canInput and inputTick>=11 and inputTick<=20 then
             local distance=math.sqrt((p.x-beforeX)^2+(p.y-beforeY)^2)
             local expected=unlimited and (inputTick==11 and 40 or 0) or p.lspeed
@@ -128,7 +153,17 @@ function T.install()
         local scene=stage.current_stage
         if scene and scene.stage_name=='menu' and scene.timer>=90 and not started then
             started=true;frames=0;benchmarkStart=lstg.AndroidClock()
-            if mode=='battle' or mode=='input' then
+            if mode=='th38-sequence' then
+                AndroidFocus=function() end
+                OriginalSequence.start(os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE') or 'thsss_lunatic',os.getenv('BOSSRUSH_MAC_TEST_ROUTE') or 'A')
+            elseif (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<69000 then
+                AndroidFocus=function() end
+                local index
+                for i,u in ipairs(_sc_pr_table[35]) do if u.sc_group[1].card.card_id==battleCard then index=i end end
+                assert(index,'缺少夏夜祭测试卡：'..battleCard)
+                lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';lstg.var.sc_group={35,index}
+                stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+            elseif mode=='battle' or mode=='input' then
                 local draw=RogueTen.draw
                 RogueTen.draw=function(seed,width)
                     local plan=draw(seed,width);local chosen
@@ -181,9 +216,15 @@ function T.install()
             local count=0
             for _,o in ObjList(GROUP.ENEMY_BULLET) do count=count+1 end
             for _,o in ObjList(GROUP.INDESTRUCTIBLE or GROUP.INDES) do count=count+1 end
-            for _,o in ObjList(GROUP.LASER) do count=count+1 end
+            local laserCount=0
+            for _,o in ObjList(GROUP.LASER) do
+                count=count+1;laserCount=laserCount+1
+                if o.run and o.IsBentLaser then assert(bent_laser.RenderFunc[o.sample],'夏夜祭曲线激光没有渲染器') end
+            end
+            maxLasers=math.max(maxLasers,laserCount)
             maxBullets=math.max(maxBullets,count)
             local ready=logicalTarget and checkpoint or (not logicalTarget and frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')))
+            if mode=='th38-sequence' and sequenceEnd then ready=sequenceResult.finished==true end
             if mode=='fog' then ready=scene.stage_name=='android_fog' and scene.timer>=181 end
             if ready and not captured then
                 beforeCaptureFPS=beforeCaptureFPS or lstg.GetFPS()
@@ -193,7 +234,7 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,card=battleCard,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
+                    f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true

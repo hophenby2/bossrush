@@ -7,7 +7,7 @@ APP=ROOT/'dist/Boss Rush HD.app'
 BINARY=APP/'Contents/MacOS/BossRushHD'
 def run(*args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','fog','input','audio','settings']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','fog','input','audio','settings','th38-sequence']);args=parser.parse_args()
  run('luajit',ROOT/'tests/input.lua',ROOT.parent)
  run('codesign','--verify','--deep','--strict',APP)
  info=plistlib.loads((APP/'Contents/Info.plist').read_bytes())
@@ -31,7 +31,7 @@ def main():
    logfile=out/(mode+'.log')
    with logfile.open('w') as log:
     process=subprocess.Popen([str(BINARY)],cwd=sandbox,env=env,stdout=log,stderr=subprocess.STDOUT)
-    try:code=process.wait(timeout=55)
+    try:code=process.wait(timeout=600 if mode=='th38-sequence' and env.get('BOSSRUSH_MAC_TEST_END')=='1' else 55)
     except subprocess.TimeoutExpired:
      process.terminate();process.wait(timeout=10);raise RuntimeError(mode+' 超时，见 '+str(logfile))
    for screenshot in data.glob('bossrush/snapshot/*.png'):shutil.copy2(screenshot,out/(mode+'.png'))

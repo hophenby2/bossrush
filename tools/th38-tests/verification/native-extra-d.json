@@ -1,0 +1,39 @@
+{
+  "sequence": {
+    "completed": 1,
+    "won": true,
+    "total": 1,
+    "finished": true
+  },
+  "sequence_phases": {
+    "68059": true,
+    "68069": true,
+    "68075": true,
+    "68057": true,
+    "68070": true,
+    "68060": true,
+    "68073": true,
+    "68058": true,
+    "68065": true,
+    "68072": true,
+    "68062": true,
+    "68064": true,
+    "68068": true,
+    "68061": true,
+    "68071": true,
+    "68074": true,
+    "68077": true,
+    "68076": true,
+    "68078": true,
+    "68066": true,
+    "68063": true,
+    "68067": true
+  },
+  "peak": 2063,
+  "objects": 7,
+  "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+  "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+  "elapsed": 47.112736374955,
+  "frames": 174,
+  "mode": "th38-sequence"
+}

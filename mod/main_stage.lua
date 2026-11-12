@@ -237,3 +237,10 @@ NewStage("TH35", "风神录原作", 33, function(self)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。
     self:Next(168)
 end)--33
+
+-- 夏夜祭使用同一份阶段链，符卡练习和顺序模式不各自重排。
+NewStage("TH38", "夏夜祭原作", 35, function(self)
+    self:Option(_editor_class.TH38.background, "TH38_Stage01")
+    self:Task(function() original_flow.run(self.level) end)
+    self:Next(170)
+end)

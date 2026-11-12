@@ -1,0 +1,52 @@
+{
+  "phase_count": 90,
+  "spell_positions": 51,
+  "spell_classes_with_routes": 81,
+  "nonspells": 27,
+  "road_parts": 12,
+  "compiled_patterns": 937,
+  "compiled_events": 19001,
+  "practice_checks": 21740,
+  "sequence_checks": 1502,
+  "media_checks": 1351,
+  "road_clock_checks": 52,
+  "reference_samples": 9,
+  "runtime_3600": {
+    "combinations": 360,
+    "A_frames": 3600,
+    "BCD_frames": 600,
+    "peak": 10150
+  },
+  "stress_7200": {
+    "phases": 7,
+    "combinations": 28,
+    "A_frames": 7200,
+    "BCD_frames": 600,
+    "peak": 8071
+  },
+  "final_600": {
+    "combinations": 360,
+    "peak": 10443
+  },
+  "native_sequence": {
+    "lunatic_chapters": 6,
+    "lunatic_combat_phases": 56,
+    "extra_chapters": 1,
+    "extra_combat_phases": 22,
+    "forced_kill_age": 300,
+    "speed": 120,
+    "sound_effects_muted": true
+  },
+  "normal_speed_cards": [
+    68003,
+    68050,
+    68051,
+    68061
+  ],
+  "threat_seeds": [
+    1,
+    11111,
+    98765
+  ],
+  "threat_note": "原生点弹以投影速度送入公共工具；不含激光；没有出膛狙判定回调，读数只作观察，不据此改参数。"
+}

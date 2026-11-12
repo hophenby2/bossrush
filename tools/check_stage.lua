@@ -110,6 +110,9 @@ for _, fn in ipairs({ "LoadImage", "LoadImageGroup", "LoadImageFromFile",
         if orig then return orig(name, ...) end
     end
 end
+-- 独立关卡可注册自己的音效/曲目；声音不属于图像资源表。
+LoadSound=LoadSound or function() end
+AddMusic=AddMusic or function() end
 -- ⑤ **静态扫全项目的 LoadImage\***。
 --   ④ 只在「文件真的被载入」时才登记 —— 单跑一个关卡文件时，
 --   别的关卡文件里注册的共用贴图就不在池子里，于是变成**假报**：

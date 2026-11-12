@@ -17,9 +17,17 @@ add('th07_extra','妖妖梦 · Extra',32,'extra')
 add('th07_phantasm','妖妖梦 · Phantasm',32,'phantasm')
 add('th10_lunatic','风神录 · Lunatic',33,'lunatic')
 add('th10_extra','风神录 · Extra',33,'extra')
+add('thsss_lunatic','夏夜祭 · Lunatic · 全阶段',35,'lunatic')
+add('thsss_extra','夏夜祭 · Extra · 全阶段',35,'extra')
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
+function C.machines(entry)
+    local game=SequenceResources.gameByLevel[entry.level]
+    if game then return SequenceResources.machines(game) end
+    return {{id='A',name='灵梦路线 · LuaSTG灵梦',route='reimu_player'},{id='B',name='魔理沙路线 · LuaSTG魔理沙',route='marisa_player'},
+        {id='C',name='早苗路线 · LuaSTG灵梦',route='reimu_player'},{id='D',name='恋路线 · LuaSTG魔理沙',route='marisa_player'}}
+end
 function C.chapterForRun(entry,chapter,player,continues)
     -- 永夜抄通常流程续关后转Final A，不能继续沿预选Final B路线进辉夜。
     if entry.level==29 and chapter.name=='6B' and continues>0 then

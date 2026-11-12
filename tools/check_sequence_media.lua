@@ -13,9 +13,15 @@ end
 for _,entry in ipairs(OriginalSequence.catalog.entries) do
     for _,chapter in ipairs(OriginalSequence.catalog.chapters(entry.key,'reimu_player')) do
         for _,row in ipairs(chapter.units) do
+            if chapter.level~=35 then
             local game,key,road,boss=M.location(chapter,row)
             check(exists('mod/GAME/original/std/'..game..'_'..key..'.lua'),'每个保留阶段都有原作STD')
             check(M.music[road] and M.music[boss],'每个保留阶段都有原作道中曲与Boss曲')
+            else
+                local source=row.unit.sc_group[1].card.th38_source
+                local name=(source.kind=='road' and 'Stage' or 'Boss')..(chapter.name=='EX' and 'Ex' or '0'..chapter.name)
+                check(exists('music/TH38_'..name..'.ogg'),'夏夜祭阶段有原曲资源')
+            end
         end
     end
 end

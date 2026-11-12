@@ -1,7 +1,7 @@
 -- TH31–TH35已注册内容的原作阶段链；A/B路线、机体与难度变体保留在对应面内。
 -- 文花帖按原SceneSelect场景表；妖妖梦/风神录按原时间轴中Boss交接帧拆道中。
 -- 数字为来源卡号；历史槽位映射由card_ids.resolve统一处理。
-return {
+local order={
 [29]={
     {name="1",cards={3409,470,471,3410,472,474,473,475,476}},
     {name="2",cards={3429,461,462,463,464,465,466,467,468,469}},
@@ -70,3 +70,8 @@ splits={
     {level=33,source=3685,parts={{id=65011,first=0,last=5047,part="前半",title="风神录EX道中前半"},{id=65012,first=5047,last=8582,part="后半",title="风神录EX道中后半"}}},
 },
 }
+
+local summer=dofile('mod/GAME/th38/phases.lua')
+order[35]={}
+for _,chapter in ipairs({'1','2','3','4','5','6','EX'}) do order[35][#order[35]+1]={name=chapter,cards=summer.orders[chapter]} end
+return order

@@ -1,0 +1,74 @@
+[
+  {
+    "pattern": "St01/关底Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 1,
+    "native": 340,
+    "reference": 340,
+    "max_position_error": 0.001234007677747435
+  },
+  {
+    "pattern": "St01/关底Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 42,
+    "native": 354,
+    "reference": 354,
+    "max_position_error": 0.0015865221120431232
+  },
+  {
+    "pattern": "St01/关底Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 2026,
+    "native": 344,
+    "reference": 344,
+    "max_position_error": 0.0012275904507036393
+  },
+  {
+    "pattern": "St01/道中Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 1,
+    "native": 574,
+    "reference": 574,
+    "max_position_error": 0.0010520729989530232
+  },
+  {
+    "pattern": "St01/道中Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 42,
+    "native": 591,
+    "reference": 591,
+    "max_position_error": 0.0012384413789217836
+  },
+  {
+    "pattern": "St01/道中Boss/1非L.mbg",
+    "frames": 300,
+    "seed": 2026,
+    "native": 569,
+    "reference": 569,
+    "max_position_error": 0.001162696253736448
+  },
+  {
+    "pattern": "St01/道中Boss/1符L.mbg",
+    "frames": 200,
+    "seed": 1,
+    "native": 345,
+    "reference": 345,
+    "max_position_error": 0.0016443821593345436
+  },
+  {
+    "pattern": "St01/道中Boss/1符L.mbg",
+    "frames": 200,
+    "seed": 42,
+    "native": 345,
+    "reference": 345,
+    "max_position_error": 0.0018482578485139003
+  },
+  {
+    "pattern": "St01/道中Boss/1符L.mbg",
+    "frames": 200,
+    "seed": 2026,
+    "native": 357,
+    "reference": 357,
+    "max_position_error": 0.00231086175258227
+  }
+]
