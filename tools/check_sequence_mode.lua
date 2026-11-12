@@ -12,7 +12,7 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==12,'五作的实际难度/场景入口各自独立，永夜抄Final A/B分开')
+check(#C.entries==15,'官方五作及幕华祭的难度/场景入口独立，永夜抄Final A/B分开')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
@@ -82,7 +82,7 @@ end
 DeSerialize=function(v) return v end
 local content=dofile('mod/content.lua')
 for _,e in ipairs(C.entries) do
-    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,current_system=''}},'当前顺序录像可播放')
+    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,sequence_player=e.native and 'reimu' or nil,current_system=''}},'当前顺序录像可播放')
     check(not content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key='错误路线'}},'录像路线不匹配时拒绝串线')
 end
 stage.current_stage={group={_name='Sequence_th07_lunatic'},timer=0}

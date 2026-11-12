@@ -237,3 +237,13 @@ NewStage("TH35", "风神录原作", 33, function(self)
     ---168 = 本关自己的通关成就（167 是 TH34 的）。
     self:Next(168)
 end)--33
+
+-- 独立来源编号35；保留地灵殿34和旧练习/录像的全部槽位。
+NewStage("TH37", "幕华祭春雪篇", 35, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH37.data.chapters) do TH37.runChapter(self,chapter) end
+        task.Wait(120)
+    end)
+    self:Next()
+end)

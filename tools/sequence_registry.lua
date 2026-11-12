@@ -28,6 +28,7 @@ New=function(cls,...)
 end
 dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
+dofile('mod/GAME/th37.lua')
 OriginalStageFlow.install()
 local function find(fn,seen)
  if seen[fn] then return end;seen[fn]=true

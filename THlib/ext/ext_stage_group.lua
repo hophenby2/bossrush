@@ -246,7 +246,7 @@ function stg.Start(group)
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
     lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
-    lstg.var.__sequence_system_version=group.sequence_key and SequenceResources and SequenceResources.VERSION or nil
+    lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and SequenceResources and SequenceResources.VERSION or nil
     lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
     if lstg.var.__sequence_system_version then lstg.var.__drops_version=0;lstg.var.upgrades=nil end
     if not group.sequence_key then lstg.var.original_resources=nil;lstg.var.sequence_player=nil end

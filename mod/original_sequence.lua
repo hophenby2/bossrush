@@ -70,6 +70,7 @@ local function lastContinuous(rows,first)
     return index
 end
 local function media(scene,chapter,kind,row)
+    if chapter.level==35 then return end
     if OriginalSequenceMedia then OriginalSequenceMedia.enter(scene,chapter,kind,row) end
 end
 function S.finish(scene,won)
@@ -190,7 +191,8 @@ function S.run(scene,key,first)
             if SequenceResources then SequenceResources.beginChapter(chapter) end
             media(scene,chapter,'stage')
             local source=roadSource(chapter)
-            if source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
+            if entry.native=='thmhj2' then TH37.runChapter(scene,chapter)
+            elseif source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
             run.completed=index
             if SequenceResources then SequenceResources.endChapter(index) end
             resources=SequenceResources and SequenceResources.state()
@@ -209,10 +211,22 @@ function S.restartChapter(scene)
     if ui.OriginalHUD then ui.OriginalHUD.start() end
     task.New(scene,function() S.run(scene,lstg.var.sequence_key,index) end)
 end
+function S.machines(entry)
+    if entry.native=='thmhj2' then
+        return {{id='reimu',name='博丽灵梦 · 项目自机',route='reimu_player'},
+            {id='marisa',name='雾雨魔理沙 · 项目自机',route='marisa_player'}}
+    end
+    return SequenceResources.machines(SequenceResources.gameByLevel[entry.level])
+end
 function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
-    if SequenceResources then
+    if entry.native=='thmhj2' then
+        local selected
+        for _,p in ipairs(S.machines(entry)) do if p.id==(machine or 'reimu') then selected=p end end
+        assert(selected,'未知幕华祭自机：'..tostring(machine))
+        lstg.var.sequence_player,lstg.var.player_name,lstg.var.rep_player=selected.id,selected.route,selected.name
+    elseif SequenceResources then
         local game=SequenceResources.gameByLevel[entry.level]
         local selected=assert(SequenceResources.machine(game,machine or SequenceResources.machines(game)[1].id))
         lstg.var.sequence_player=selected.id
@@ -231,14 +245,14 @@ for _,entry in ipairs(S.catalog.entries) do
     local selected=entry
     local difficulty=entry.difficulty=='lunatic' and 4 or entry.difficulty=='extra' and 5 or entry.difficulty=='phantasm' and 6 or 1
     local group=stage.group.New('menu',{},entry.group,false,difficulty)
-    group.sequence_key=entry.key
+    group.sequence_key,group.sequence_native=entry.key,entry.native
     local battle=stage.group.AddStage(entry.group,entry.battle,false)
     battle.displayname,battle.level=entry.title,entry.level
     battle.revive_miss_limit=S.MISS_LIMIT-1
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
-        self:Option()
+        if selected.native=='thmhj2' then self:Option(TH07_bg,'TH07_1') else self:Option() end
         task.New(self,function() S.run(self,selected.key) end)
     end
     function battle:frame()

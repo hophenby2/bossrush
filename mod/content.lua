@@ -1,5 +1,5 @@
 -- 精简分支的内容边界；保留实际level和符卡ID，不把旧录像误放进缺失关卡。
-local C={stages={'31','32','33','34','35'},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true}}
+local C={stages={'31','32','33','34','35','37'},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true}}
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
@@ -18,6 +18,9 @@ function C.supportsRecord(record)
     for _,entry in ipairs(sequence.entries) do
         if record.stageName==entry.battle then
             if v.__sequence_version~=sequence.VERSION or v.sequence_key~=entry.key then return false end
+            if entry.native then
+                return not v.__sequence_system_version and (v.sequence_player=='reimu' or v.sequence_player=='marisa')
+            end
             if v.__sequence_system_version then
                 if not SequenceResources or v.__sequence_system_version~=SequenceResources.VERSION then return false end
                 return SequenceResources.machine(SequenceResources.gameByLevel[entry.level],v.sequence_player)~=nil

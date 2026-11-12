@@ -17,6 +17,11 @@ add('th07_extra','妖妖梦 · Extra',32,'extra')
 add('th07_phantasm','妖妖梦 · Phantasm',32,'phantasm')
 add('th10_lunatic','风神录 · Lunatic',33,'lunatic')
 add('th10_extra','风神录 · Extra',33,'extra')
+-- 幕华祭使用项目自机和独立时钟；不借用红妖永风的原作资源账本。
+add('thmhj2_lunatic','幕华祭春雪篇 · Lunatic',35,'lunatic')
+add('thmhj2_extra','幕华祭春雪篇 · Extra',35,'extra')
+add('thmhj2_phantasm','幕华祭春雪篇 · Phantasm',35,'phantasm')
+for _,entry in ipairs(C.entries) do if entry.level==35 then entry.native='thmhj2' end end
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end

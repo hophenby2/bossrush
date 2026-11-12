@@ -4,6 +4,7 @@ function T.install()
     local mode=os.getenv('BOSSRUSH_MAC_TEST')
     if not mode then return end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
+    local sequenceKey=os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE')
     local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
     local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
@@ -58,6 +59,10 @@ function T.install()
     local settingsObject,settingsChecked,bombBefore,inputBombChecked
     local unlimited=os.getenv('BOSSRUSH_MAC_TEST_UNLIMITED')=='1'
     local inputTick,inputStart,inputStopped,inputChecked=0,nil,nil,false
+    local mhjRepeated,mhjFirstHash=false,nil
+    local mhjDamageChecked,mhjDamageProbe=false,nil
+    local mhjMoves,mhjSamples=0,0
+    local mhjPrevious=setmetatable({},{__mode='k'})
     local timings={}
     for _,name in ipairs({'ObjFrame','CollisionCheck','UpdateXY','AfterFrame'}) do
         local fn=_G[name]
@@ -68,15 +73,21 @@ function T.install()
         function AfterFrame(...)
             after(...)
             local scene=stage.current_stage
-            if scene and scene.stage_name=='RogueTen@RogueTen' and scene.timer==logicalTarget and not checkpoint then
+            if scene and (scene.stage_name=='RogueTen@RogueTen' or scene.stage_name=='Spell Practice@Spell Practice' or sequenceKey and scene.group and scene.group.sequence_key==sequenceKey) and scene.timer==logicalTarget and not checkpoint then
                 local rows={}
                 for _,group in ipairs({1,2,3,4,5,7,8,10}) do
                     for _,o in ObjList(group) do
+                        if o.mhj and o.img and o.img:match('^mhj2_') then assert(CheckRes('img',o.img)=='global','幕华祭动态精灵落入临时关卡池') end
                         rows[#rows+1]=string.format('%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d',group,o.x,o.y,o.vx,o.vy,o.rot,o.a,o.b,o.timer)
                     end
                 end
                 table.sort(rows)
-                checkpoint=SaveCodec.sha256(table.concat(rows,';'))
+                local hash=SaveCodec.sha256(table.concat(rows,';'))
+                if os.getenv('BOSSRUSH_MAC_TEST_TH37_REPEAT')=='1' and not mhjRepeated then
+                    mhjFirstHash=hash;mhjRepeated=true;stage.Restart();return
+                end
+                if mhjFirstHash then assert(hash==mhjFirstHash,'练习重试后的同种子弹幕状态不一致') end
+                checkpoint=hash
                 checkpointAt=scene.timer
                 beforeCaptureFPS=lstg.GetFPS()
             end
@@ -84,6 +95,7 @@ function T.install()
     end
     local original=FrameFunc
     function FrameFunc()
+        if mode=='battle' then AndroidFocus=function() end end
         if player and IsValid(player) then
             player.protect=120
             if mode=='battle' or mode=='input' then AndroidInput.keys[setting.keys.shoot]=true end
@@ -126,9 +138,33 @@ function T.install()
             inputBombChecked=true
         end
         local scene=stage.current_stage
+        if os.getenv('BOSSRUSH_MAC_TEST_TH37_DAMAGE')=='1' and sequenceKey and scene and scene.group and scene.group.sequence_key==sequenceKey then
+            if scene.timer==90 and not mhjDamageProbe then
+                local fairy=New(TH37.runtime.classes.fairy,TH37.runtime.stageState(1),
+                    {type=7,x=224,y=170,speed=0,speedf=0,life=300,hp=100,id=-1})
+                local shotClass=Class(object,{
+                    init=function(o) o.x,o.y=0,70;o.a,o.b=3,3;o.group=GROUP.PLAYER_BULLET;o.layer=LAYER.PLAYER_BULLET;o.dmg=30;o.mute=true end,
+                },true)
+                mhjDamageProbe={enemy=fairy,shot=New(shotClass)}
+            elseif scene.timer==94 and mhjDamageProbe and not mhjDamageChecked then
+                assert(IsValid(mhjDamageProbe.enemy) and mhjDamageProbe.enemy.hp==70,'原生道中敌机未通过真实碰撞扣除30血量')
+                assert(not IsValid(mhjDamageProbe.shot),'命中敌机的自机弹未消耗')
+                object.Del(mhjDamageProbe.enemy);mhjDamageChecked=true
+            end
+        end
         if scene and scene.stage_name=='menu' and scene.timer>=90 and not started then
             started=true;frames=0;benchmarkStart=lstg.AndroidClock()
             if mode=='battle' or mode=='input' then
+                if sequenceKey then
+                    OriginalSequence.start(sequenceKey,'reimu')
+                elseif battleCard>=37000 and TH37 then
+                    local index
+                    for i,unit in ipairs(_sc_pr_table[35]) do if unit.sc_group[1].card.card_id==battleCard then index=i end end
+                    assert(index,'缺少幕华祭测试阶段：'..battleCard)
+                    lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu'
+                    lstg.var.sc_index,lstg.var.sc_group=index,{35,index}
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                else
                 local draw=RogueTen.draw
                 RogueTen.draw=function(seed,width)
                     local plan=draw(seed,width);local chosen
@@ -141,6 +177,7 @@ function T.install()
                 end
                 setting.touchUnlimited=unlimited
                 lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';RogueTen.start()
+                end
             elseif mode=='graphics' then
                 assert(loadstring(cc.FileUtils:getInstance():getStringFromFile('game/android/graphics_check.lua')))().run()
             elseif mode=='fog' then
@@ -183,6 +220,18 @@ function T.install()
             for _,o in ObjList(GROUP.INDESTRUCTIBLE or GROUP.INDES) do count=count+1 end
             for _,o in ObjList(GROUP.LASER) do count=count+1 end
             maxBullets=math.max(maxBullets,count)
+            if sequenceKey or battleCard>=37000 then
+                for _,group in ipairs({GROUP.ENEMY_BULLET,GROUP.INDES,GROUP.LASER}) do
+                    for _,o in ObjList(group) do if o.mhj then
+                        local old=mhjPrevious[o]
+                        if old and o.mhj.age>16 and math.abs(o.mhj.sonspeed or 0)>0.1 then
+                            mhjSamples=mhjSamples+1
+                            if math.abs(o.x-old[1])+math.abs(o.y-old[2])>0.01 then mhjMoves=mhjMoves+1 end
+                        end
+                        mhjPrevious[o]={o.x,o.y}
+                    end end
+                end
+            end
             local ready=logicalTarget and checkpoint or (not logicalTarget and frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')))
             if mode=='fog' then ready=scene.stage_name=='android_fog' and scene.timer>=181 end
             if ready and not captured then
@@ -193,7 +242,7 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,card=battleCard,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
+                    f:write(Serialize({mode=mode,card=battleCard,mhj_moves=mhjMoves,mhj_samples=mhjSamples,mhj_damage_checked=mhjDamageChecked,mhj_repeated=mhjRepeated,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true
