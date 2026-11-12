@@ -70,7 +70,7 @@ local function lastContinuous(rows,first)
     return index
 end
 local function media(scene,chapter,kind,row)
-    if chapter.level==35 then return end
+    if chapter.level==35 or chapter.level==36 then return end
     if OriginalSequenceMedia then OriginalSequenceMedia.enter(scene,chapter,kind,row) end
 end
 function S.finish(scene,won)
@@ -192,6 +192,7 @@ function S.run(scene,key,first)
             media(scene,chapter,'stage')
             local source=roadSource(chapter)
             if entry.native=='thmhj2' then TH37.runChapter(scene,chapter)
+            elseif entry.native=='thasl' then TH38.runChapter(scene,chapter)
             elseif source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
             run.completed=index
             if SequenceResources then SequenceResources.endChapter(index) end
@@ -212,7 +213,7 @@ function S.restartChapter(scene)
     task.New(scene,function() S.run(scene,lstg.var.sequence_key,index) end)
 end
 function S.machines(entry)
-    if entry.native=='thmhj2' then
+    if entry.native then
         return {{id='reimu',name='博丽灵梦 · 项目自机',route='reimu_player'},
             {id='marisa',name='雾雨魔理沙 · 项目自机',route='marisa_player'}}
     end
@@ -221,10 +222,10 @@ end
 function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
-    if entry.native=='thmhj2' then
+    if entry.native then
         local selected
         for _,p in ipairs(S.machines(entry)) do if p.id==(machine or 'reimu') then selected=p end end
-        assert(selected,'未知幕华祭自机：'..tostring(machine))
+        assert(selected,'未知原生关卡自机：'..tostring(machine))
         lstg.var.sequence_player,lstg.var.player_name,lstg.var.rep_player=selected.id,selected.route,selected.name
     elseif SequenceResources then
         local game=SequenceResources.gameByLevel[entry.level]
@@ -252,7 +253,7 @@ for _,entry in ipairs(S.catalog.entries) do
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
-        if selected.native=='thmhj2' then self:Option(TH07_bg,'TH07_1') else self:Option() end
+        if selected.native then self:Option(TH07_bg,'TH07_1') else self:Option() end
         task.New(self,function() S.run(self,selected.key) end)
     end
     function battle:frame()

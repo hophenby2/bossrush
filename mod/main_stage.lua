@@ -247,3 +247,13 @@ NewStage("TH37", "幕华祭春雪篇", 35, function(self)
     end)
     self:Next()
 end)
+
+-- 雪莲华独立关卡练习；顺序模式分别选择Lunatic或Extra A。
+NewStage("TH38", "雪莲华", 36, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH38.data.chapters) do TH38.runChapter(self,chapter) end
+        task.Wait(120)
+    end)
+    self:Next()
+end)

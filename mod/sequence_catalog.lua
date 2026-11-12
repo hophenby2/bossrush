@@ -22,6 +22,9 @@ add('thmhj2_lunatic','幕华祭春雪篇 · Lunatic',35,'lunatic')
 add('thmhj2_extra','幕华祭春雪篇 · Extra',35,'extra')
 add('thmhj2_phantasm','幕华祭春雪篇 · Phantasm',35,'phantasm')
 for _,entry in ipairs(C.entries) do if entry.level==35 then entry.native='thmhj2' end end
+add('thasl_lunatic','雪莲华 · Lunatic',36,'lunatic')
+add('thasl_extra_a','雪莲华 · Extra A',36,'extra')
+for _,entry in ipairs(C.entries) do if entry.level==36 then entry.native='thasl' end end
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
@@ -38,9 +41,10 @@ local function marisa(player)
     return player=='marisa_player' or player=='Marisa'
 end
 function C.chapterAllowed(entry,chapter,player)
-    if entry.difficulty=='extra' then return chapter=='EX' end
+    if entry.native=='thasl' and (chapter=='分支' or chapter=='Last Spell') then return false end
+    if entry.difficulty=='extra' then return chapter==(entry.native=='thasl' and 'EXA' or 'EX') end
     if entry.difficulty=='phantasm' then return chapter=='PH' end
-    if chapter=='EX' or chapter=='PH' or chapter=='Last Word' then return false end
+    if chapter=='EX' or chapter=='EXA' or chapter=='PH' or chapter=='Last Word' then return false end
     if entry.level==29 then
         -- 原作灵梦/妖梦路线遇魔理沙，魔理沙/咲夜路线遇灵梦。
         if chapter=='4A' or chapter=='4B' then return chapter==(marisa(player) and '4A' or '4B') end

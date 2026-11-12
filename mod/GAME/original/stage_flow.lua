@@ -133,6 +133,7 @@ function F.install()
 end
 function F.units(level)
     if level==35 then return assert(TH37,'幕华祭未载入').units() end
+    if level==36 then return assert(TH38,'雪莲华未载入').units() end
     F.install()
     local out,seen={},{}
     for _,chapter in ipairs(assert(F.order[level],'不支持的原作练习关卡')) do

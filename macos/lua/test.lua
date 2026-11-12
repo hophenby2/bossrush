@@ -62,6 +62,7 @@ function T.install()
     local mhjRepeated,mhjFirstHash=false,nil
     local mhjDamageChecked,mhjDamageProbe=false,nil
     local mhjMoves,mhjSamples=0,0
+    local aslPatterns={}
     local mhjPrevious=setmetatable({},{__mode='k'})
     local timings={}
     for _,name in ipairs({'ObjFrame','CollisionCheck','UpdateXY','AfterFrame'}) do
@@ -77,7 +78,7 @@ function T.install()
                 local rows={}
                 for _,group in ipairs({1,2,3,4,5,7,8,10}) do
                     for _,o in ObjList(group) do
-                        if o.mhj and o.img and o.img:match('^mhj2_') then assert(CheckRes('img',o.img)=='global','幕华祭动态精灵落入临时关卡池') end
+                        if (o.mhj or o.asl) and o.img and (o.img:match('^mhj2_') or o.img:match('^asl_')) then assert(CheckRes('img',o.img)=='global','幕华祭动态精灵落入临时关卡池') end
                         rows[#rows+1]=string.format('%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d',group,o.x,o.y,o.vx,o.vy,o.rot,o.a,o.b,o.timer)
                     end
                 end
@@ -138,10 +139,16 @@ function T.install()
             inputBombChecked=true
         end
         local scene=stage.current_stage
-        if os.getenv('BOSSRUSH_MAC_TEST_TH37_DAMAGE')=='1' and sequenceKey and scene and scene.group and scene.group.sequence_key==sequenceKey then
+        if (os.getenv('BOSSRUSH_MAC_TEST_TH37_DAMAGE')=='1' or os.getenv('BOSSRUSH_MAC_TEST_TH38_DAMAGE')=='1') and sequenceKey and scene and scene.group and scene.group.sequence_key==sequenceKey then
             if scene.timer==90 and not mhjDamageProbe then
-                local fairy=New(TH37.runtime.classes.fairy,TH37.runtime.stageState(1),
-                    {type=7,x=224,y=170,speed=0,speedf=0,life=300,hp=100,id=-1})
+                local fairy
+                if os.getenv('BOSSRUSH_MAC_TEST_TH38_DAMAGE')=='1' then
+                    local s={c={closed=false},alive=true,kind='enemy',x=4.5,y=70/48-4.8,life=100,color=5,enemyStyle=1,collision=true,age=1,immune=0,hit=.3}
+                    fairy=New(TH38.runtime.classes.fairy,s)
+                else
+                    fairy=New(TH37.runtime.classes.fairy,TH37.runtime.stageState(1),
+                        {type=7,x=224,y=170,speed=0,speedf=0,life=300,hp=100,id=-1})
+                end
                 local shotClass=Class(object,{
                     init=function(o) o.x,o.y=0,70;o.a,o.b=3,3;o.group=GROUP.PLAYER_BULLET;o.layer=LAYER.PLAYER_BULLET;o.dmg=30;o.mute=true end,
                 },true)
@@ -157,7 +164,14 @@ function T.install()
             if mode=='battle' or mode=='input' then
                 if sequenceKey then
                     OriginalSequence.start(sequenceKey,'reimu')
-                elseif battleCard>=37000 and TH37 then
+                elseif battleCard>=38000 and battleCard<39000 and TH38 then
+                    local index
+                    for i,unit in ipairs(_sc_pr_table[36]) do if unit.sc_group[1].card.card_id==battleCard then index=i end end
+                    assert(index,'缺少雪莲华测试阶段：'..battleCard)
+                    lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu'
+                    lstg.var.sc_index,lstg.var.sc_group=index,{36,index}
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                elseif battleCard>=37000 and battleCard<38000 and TH37 then
                     local index
                     for i,unit in ipairs(_sc_pr_table[35]) do if unit.sc_group[1].card.card_id==battleCard then index=i end end
                     assert(index,'缺少幕华祭测试阶段：'..battleCard)
@@ -215,6 +229,7 @@ function T.install()
                     audioChecked=true;StopSound('damage00')
                 end
             end
+            if TH38 then for c in pairs(TH38.runtime.controllers) do if not c.closed then aslPatterns[c.key]=true end end end
             local count=0
             for _,o in ObjList(GROUP.ENEMY_BULLET) do count=count+1 end
             for _,o in ObjList(GROUP.INDESTRUCTIBLE or GROUP.INDES) do count=count+1 end
@@ -222,9 +237,11 @@ function T.install()
             maxBullets=math.max(maxBullets,count)
             if sequenceKey or battleCard>=37000 then
                 for _,group in ipairs({GROUP.ENEMY_BULLET,GROUP.INDES,GROUP.LASER}) do
-                    for _,o in ObjList(group) do if o.mhj then
+                    for _,o in ObjList(group) do if o.mhj or o.asl then
                         local old=mhjPrevious[o]
-                        if old and o.mhj.age>16 and math.abs(o.mhj.sonspeed or 0)>0.1 then
+                        local motion=o.asl or o.mhj
+                        local speed=o.asl and motion.speed or motion.sonspeed
+                        if old and motion.age>16 and math.abs(speed or 0)>0.1 then
                             mhjSamples=mhjSamples+1
                             if math.abs(o.x-old[1])+math.abs(o.y-old[2])>0.01 then mhjMoves=mhjMoves+1 end
                         end
@@ -242,7 +259,7 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,card=battleCard,mhj_moves=mhjMoves,mhj_samples=mhjSamples,mhj_damage_checked=mhjDamageChecked,mhj_repeated=mhjRepeated,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
+                    f:write(Serialize({mode=mode,card=battleCard,asl_patterns=aslPatterns,asl_bullet_pool=TH38 and TH38.runtime.bulletCount,mhj_moves=mhjMoves,mhj_samples=mhjSamples,mhj_damage_checked=mhjDamageChecked,mhj_repeated=mhjRepeated,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true

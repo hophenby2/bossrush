@@ -12,7 +12,7 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==15,'官方五作及幕华祭的难度/场景入口独立，永夜抄Final A/B分开')
+check(#C.entries==17,'官方五作、幕华祭和雪莲华的难度/场景入口独立，永夜抄Final A/B分开')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
