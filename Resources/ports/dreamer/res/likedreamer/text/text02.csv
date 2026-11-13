@@ -1,0 +1,556 @@
+0,Ver 2.00,NULL,0
+1,Copyright 2021-2023 Outside Sotonohito.,NULL,0
+2,Text test1,Text test2,0
+3,Hiya! I'm Vanilla Alice! I mostly dodge bullets in,cosplay! Like and hit that Follow button!,0
+4,The name's Yuricocoa. If I could be an animal，,I guess I'd be a black cat.,0
+5,They call me UJAKO. If you're looking for danmaku,finesse， then look no further.,0
+6,Wide Form,Deploys shots in a wide angle.,0
+7,Homing Form,Releases shots that follow the enemy.,0
+8,Lock-On Form,Shoots Missiles in the direction of the enemy.,0
+9,Focus Form,Shoots clusters of Missiles straight forward.,0
+10,Carrot Blaster,Shoots Bombs in the direction that the bits face.,0
+11,Vivid Grenade,Shoots Bombs in front of the player.,0
+12,Front Form,Releases Shots straight forward.,0
+13,Slide Form,Shots whose direction changes when you move right or left.,0
+14,Focus Form,Shoots clusters of Missiles straight forward.,0
+15,Homing Form,Shoots Missiles that follow the enemy.,0
+16,Stinging Words,Rapidly fires high-power bullets from the bits.,0
+17,Dark Rampage,Shot and Missile power greatly increases for a while.,0
+18,Slide Form,Shots whose direction changes when you move right or left.,0
+19,Front Form,Releases shots straight forward.,0
+20,Fixed Form,Keeps the bits in the same direction when in Low Speed Mode.,0
+21,Standby Form,Keeps the bits in the same position when in Low Speed Mode.,0
+22,Flaming Hack,A wide-range attack on the whole screen.,0
+23,Cheat Barrier,Deploys a barrier around the player.,0
+24,Shield Enhance (For beginners),Mental Level decreases only slightly when Shield destroyed.,0
+25,Shot Enhance,Increases Shot power when in High Speed Mode.,0
+26,Missile Enhance,Increases Missile power when in Low Speed Mode.,0
+27,Double Enhance (For experts),Increases Shot and Missile power， but Shield not deployable.,0
+28,Is this the equipment you want?,NULL,0
+29,You're okay with this? Don't you wanna give it a,little more thought...?,0
+30,You sure you wanna go into battle like this?,NULL,0
+31,Change the background music volume.,NULL,0
+32,Change the sound effects volume.,NULL,0
+33,Change text language.,NULL,0
+34,Change data window display.,NULL,0
+35,Open game settings.,NULL,0
+36,Open screen settings.,NULL,0
+37,Open Control Configure menu.,NULL,0
+38,Play Tutorial.,NULL,0
+39,Save settings and return.,NULL,0
+40,CONSUMER: Push Low Speed Button for low speed.,ARCADE: Push Shoot Button/Rapid-Fire Button to auto-shoot,0
+41,Change number of helper characters that drop 1Up items.,NULL,0
+42,Reset settings.,NULL,0
+43,Save settings and return.,NULL,0
+44,at high speed/hold Shoot Button for low speed.,NULL,0
+45,[enpty spase],NULL,0
+46,[enpty spase],NULL,0
+47,[enpty spase],NULL,0
+48,(Not unlocked),NULL,0
+49,[enpty spase],NULL,0
+50,Greetings from the danmaku social network Bulletalk,help account.,0
+51,Let's get started with the tutorial.,NULL,0
+52,Check the guide on the lower left side of the screen,if you're confused about the controls.,0
+53,You can configure your controller settings by,opening the Pause Menu.,0
+54,Okay then. Check the controls listed on the screen.,NULL,0
+55,Great.,NULL,0
+56,Next we'll explain how to attack.,NULL,0
+57,You can shoot by holding down either the Shoot,Button or the Rapid-Fire Button.,0
+58,You can shoot by repeatedly pressing the Shoot,Button or holding down the Rapid-Fire Button.,0
+59,Shoot the targets that appear to destroy them.,NULL,0
+60,Nice work.,NULL,0
+61,Next let me teach you about Low Speed Mode.,NULL,0
+62,Your movements will slow when the Low Speed Button,is held down.,0
+63,Your movements will slow when the Shoot Button is,held down.,0
+64,You can launch Missiles that are effective against,more resilient enemies when in this state.,0
+65,Make use of Low Speed Mode and Missiles to destroy,the target.,0
+66,You're good at this.,NULL,0
+67,Now the enemy will shoot bullets too.,NULL,0
+68,Dodge enemy fire so that the round mark at your core,doesn't get hit.,0
+69,Try using Low Speed Mode when you want to see the,gaps between enemy fire more easily.,0
+70,Okay then. Try destroying all the targets while,avoiding getting hit yourself.,0
+71,You got hit. Keep trying until you get the hang of,things.,0
+72,Excellent work.,NULL,0
+73,Here's a summary of what we've done so far.,NULL,0
+74,Next we'll explain about your Mental Gauge.,NULL,0
+75,The Mental Gauge displayed around your icon,increases when you land shots or defeat enemies.,0
+76,The gauge will charge more quickly the closer you,are to the enemy.,0
+77,Keep defeating those enemies until your gauge is,fully charged.,0
+78,Your Mental Level will increase once the gauge is,fully charged.,0
+79,What happens when you get hit by enemy fire when,your Mental Level is increased?,0
+80,Your Shield will activate and your Life won't,decrease.,0
+81,But this will drain your Mental Level. Keep your,Level at least 1 or higher as much as possible.,0
+82,Next we'll cover powerful skills.,NULL,0
+83,I'll give you an item to increase your Mental Level.,Press the Bomb Key once you have it.,0
+84,Don't get shot before it's activated. Let me give,you the item again.,0
+85,The Bomb's been activated. This will deflect enemy,fire and put you in an invincible state.,0
+86,Here's a summary of what we've done so far.,NULL,0
+87,There are all sorts of Shots and Bombs. Test them,out and customize yours to your liking.,0
+88,Let me finish by explaining something really,important...,0
+89,Other players can Like your gameplay...,NULL,0
+90,And they can also Follow you.,NULL,0
+91,You can find your number of Likes and Followers on,the right side of the screen.,0
+92,Keep playing without getting hit to gain more and more,Likes and Followers. This will max out your Buzz Gauge.,0
+93,You may be in for a fun surprise once that happens.,NULL,0
+94,Well then! Enjoy the danmaku life!,NULL,0
+95,[enpty spase],NULL,0
+96,Auto Fever,Buzz Fever immediately activated when Buzz Gauge maxed out.,0
+97,Manual Fever,Bomb Button activates Buzz Fever when Buzz Gauge maxed out.,0
+98,[enpty spase],NULL,0
+99,[enpty spase],NULL,0
+100,I was only being honest! You leave me no choice but,to beat you all!,0
+101,Queen's such a little brat...,So completely arrogant...,0
+102,Queen and her devious tricks...! I'll oust her for,good!,0
+103,I found a cute little bunny! You're the perp，,aren't you?,0
+104,I found that pathetic little tomboy of a kitty cat,up to no good!,0
+105,I found a panda! ...Or is it just a cheater?,NULL,0
+106,You're the boss of this community， aren't you?,I'm warning you I'm strong!,0
+107,Hmph... I'm far stronger and more lady-like than you.,NULL,0
+108,What's so wrong with being resourceful?,I'm practically a saint compared to Queen.,0
+109,As if I， Mochimochi Nene-chan， could lose!,NULL,0
+110,Wow! It looks so yummy! Too bad I'm on a diet...,Hehehe.,0
+111,What a cute little community... I might be forced,to yield to temptation here...,0
+112,All of this sugar is just cloyingly sweet...,I'm more of a potato chip fan myself.,0
+113,Today's dessert is a marshmallow cake!,Eat your heart out!,0
+114,Wanna know what today's dessert is? Raspberry cake!,NULL,0
+115,I was thinking of whipping up a matcha cake today.,Or perhaps some almond jelly?,0
+116,I love marshmallows! Let me get some exercise in,first so I'm nice and hungry!,0
+117,You're out of luck then... I HATE raspberries.,NULL,0
+118,As if I have any interest in whatever you make!,NULL,0
+119,That's so mean! No dessert for you!,NULL,0
+120,I love gaming! Is there anyone here who loves,Blam Blam Blasters?,0
+121,You think you can win in a game against ME?,NULL,0
+122,This is the community that banished me. Time to get,my revenge.,0
+123,Heya guys! Ririka here! The target this time is,Alice?!,0
+124,Heya guys! Ririka here! Today's stream will feature,me absolutely humiliating an overly cocky opponent!,0
+125,Heya guys! Ririka here?ack!,What are YOU doing here?!,0
+126,It's been ages， Ririka! Let's do this!,NULL,0
+127,I'll show all your viewers just how pathetic you,really are...,0
+128,Hmph! Just watch me twist your arm until you admit,defeat!,0
+129,Noooo! I'm dead...! Nice fight!,NULL,0
+130,*gurgle gurgle*,Oh yeah! I can't drown in the virtual world.,0
+131,Hmph... Cat's and water don't mix.,NULL,0
+132,I feel like I'm at the aquarium... This would be a,great place to dispose of a laptop...,0
+133,Did you come here to play with the fluffy jellyfish,too?,0
+134,A jellyfish's venom goes well with creepy foes.,NULL,0
+135,I won't sit by as you harass me and my sea friends!,NULL,0
+136,Jellyfish?! I wouldn't describe them as bouncy...,more like slimy.,0
+137,Creepy? I'm hurt. I'm actually quite charming，,as you can see.,0
+138,Everyone here is so quick to lose their temper.,I'm only acting in self-defense.,0
+139,*glug glug*,NULL,0
+140,It's pitch black... I hope I don't bump into any,monsters...,0
+141,Black cats thrive in the dark... But you'll never,find them confined there.,0
+142,I have a feeling the next opponent's gonna be a pain,in the neck...,0
+143,...Come closer... Are you lonely too...?,NULL,0
+144,You're gonna bully me just like everyone else...,NULL,0
+145,Hey... Wanna be friends...? Don't leave me...,I'll do anything so long as you don't block me...,0
+146,Ack...! I'll p-pass! I'm not lonely!,NULL,0
+147,C'mon. Bullying you would be no fun... You're too,self-conscious.,0
+148,Gross. You're sooo needy. You'll only get in my way!,NULL,0
+149,Hehe... I lost... But I guess it was kinda fun...,NULL,0
+150,Woooow! So sparkly! How I wish I could stay here,forever.,0
+151,It's too sparkly... I feel like I'm a kid again.,NULL,0
+152,What sort of happy-go-lucky simpleton awaits me,here?,0
+153,Oh! You're the wanted rabbit! I won't let you,escape!,0
+154,You sure make a gaudy show with all that thrashing,around! You're nothing but a stray!,0
+155,You there， you big bear-cat thingy! I challenge you,to a battle!,0
+156,Huh? Where the heck are you?!,NULL,0
+157,I'm NOT a stray...,NULL,0
+158,I won't lose to someone so cowardly they can only,peek at me from afar.,0
+159,Aww maaaan! She got me! I had full confidence in the,gaudiness of my bullet barrage too...!,0
+160,She's soooo fast! If I can get through here，,I'll make it to Queen.,0
+161,I can't help but dance... I should try singing.,I'm sure I'll kill it as the world's cutest cat.,0
+162,Time to pick up the pace...,Ooo! I'm getting excited!,0
+163,Cyan! She's too strong! We'll have to face her via a,duet!,0
+164,Stop! We won't let you get any closer to Queen!,NULL,0
+165,We have orders from Queen to send you away!,NULL,0
+166,Two at once?!,NULL,0
+167,You alley cats just don't know when to quit...,NULL,0
+168,You two have no substance... Your music stinks.,NULL,0
+169,We've failed you， Queen! *slump*,NULL,0
+170,This must be Queen's citadel! I won't lose!,NULL,0
+171,I've defeated everyone up until now... I'm sure this,brat will be no different.,0
+172,I finally made it... Just look at me now!,NULL,0
+173,Bwahaha! I never thought you'd make it this far!,This'll make great entertainment!,0
+174,I didn't expect much from you， but I'm pleasantly,surprised! Too bad your winning streak ends here!,0
+175,Hey you! Why do you have to get in the way?!,Your cheap tricks won't work against me!,0
+176,I know that confidence is just a bluff! I'll beat,you and become Queen myself!,0
+177,She spouts nothing but lies and bluffs... I'll show,her what true power really looks like!,0
+178,Don't be so cocky! As if anyone would lose to the,likes of you when armed with my hacking skills!,0
+179,[enpty spase],NULL,0
+180,You still don't intend to surrender? When will you,learn your lesson?!,0
+181,Fleeing is sooo lame... Accepting defeat would have,been much more respectable.,0
+182,What's with this ridiculous ambiance...?,It's kinda hilarious!,0
+183,How DARE you make a fool of me...!,I hate you... I HATE YOU!,0
+184,There's no way YOU could ever win!,NULL,0
+185,I won't judge if you fall to,NULL,0
+186,your knees and cry like a baby!,NULL,0
+187,I'll crush you! Just you wait!,NULL,0
+188,Total victory will be mine!,NULL,0
+189,[enpty spase],NULL,0
+190,[enpty spase],NULL,0
+191,[enpty spase],NULL,0
+192,[enpty spase],NULL,0
+193,Oh! Hiya there， Alice! You still haven't given up,and have been reincarnated again?,0
+194,Oh! Hi there， pretty kitty! Let me pet you!,NULL,0
+195,I wonder if my work has been picked up by those AI,generators... *peek*,0
+196,Hi Hinako! I was just Queen! Too bad!,NULL,0
+197,You're...the artist， aren't you? Feel free to draw,me as a girl of unrivaled beauty.,0
+198,Sheesh... I don't take odd jobs， you know.,NULL,0
+199,Smash that Like button if you like my art and,bullets!,0
+200,I'll be with Crim this time. We'll protect Queen no,matter what.,0
+201,There's no way we'll lose now that Crim's here.,NULL,0
+202,With Crim and I together， we're invincible.,NULL,0
+203,Waaah! She's just too strong!,NULL,0
+204,enpty spase,NULL,0
+205,On the popular danmaku social network Bulletalk...,NULL,0
+206,young girls vie for Likes from other users for,their captivating shooting game gameplay.,0
+207,Among them emerged a user who boasted the most,Likes and Followers...a user they dubbed Queen.,0
+208,However， some grew jealous of Queen. They spread,false rumors and wrote mercilessly harsh insults.,0
+209,This irked Queen， and she launched a counterattack，,making the comment culprits the targets of her barrages!,0
+210,The ordeal went viral in the blink of an eye!,Enemies swooped in from an array of online communities!,0
+211,Who will prove victorious in this fervent war,among danmaku players alike?! Only time will tell!,0
+212,[enpty spase],NULL,0
+213,Change controller button display.,NULL,0
+214,Up,NULL,0
+215,Down,NULL,0
+216,Right,NULL,0
+217,Left,NULL,0
+218,OK,NULL,0
+219,Cancel,NULL,0
+220,Shoot,NULL,0
+221,Bomb,NULL,0
+222,Rapid-Fire,NULL,0
+223,Slow,NULL,0
+224,Pause,NULL,0
+225,Reset settings.,NULL,0
+226,Save settings and return.,NULL,0
+227,[enpty spase],NULL,0
+228,Select stage.,(Available stages only.),0
+229,Select difficulty.,(Difficulties available in Main Mode only.),0
+230,Counter Mode settings.,(Only when Counter Mode unlocked.),0
+231,Change Speed Run settings.,(Only when Speed Run available.),0
+232,Change stage start point.,NULL,0
+233,Change initial Mental Level value.,NULL,0
+234,Change initial Mental Gauge value.,NULL,0
+235,Change initial Buzz Gauge value.,NULL,0
+236,Start practice with the above settings.,NULL,0
+237,Return to Player Selection.,NULL,0
+238,Cannot start because unavailable difficulty level selected!,NULL,0
+239,Full Screen setting.,(can also be changed using the F4 key on the keyboard),0
+240,Frame rate setting.,(lower setting will reduce visibility， but may make operation more comfortable),0
+241,Vertical synchronization setting.,(Applies after restarting the game),0
+242,Improve visibility.,(Background turns black and items become more transparent when turned on),0
+243,Change text animation.,(Text display animation goes away when turned on),0
+244,Change the appearance of Like Items.,(Can be changed to red hearts or yellow stars),0
+245,Sound API setting.,(Try this if sound does not play properly / Applies after restarting the game),0
+246,Reset settings.,NULL,0
+247,Save settings and return.,NULL,0
+248,[enpty spase],NULL,0
+249,[enpty spase],NULL,0
+250,And so， Vanilla Alice， who defeated Queen， was,dubbed Queen herself.,0
+251,So what do you think? I'm the strongest danmaku,girl! ,0
+252,I'm about to start my live stream!,NULL,0
+253,Hehehe... Oh! Thank you for the donation! Love you!,NULL,0
+254,What do you guys wanna see me do?,NULL,0
+255,Whoa! I can't do THAT! Well， I guess it's okay since,I'm Queen (not really though)... How's this?,0
+256,Inappropriate content detected. Your account has,been locked.,0
+257,What?! But that means I'll have to gather Followers,all over again!,0
+258,And so， due to her need for others' approval， she,got carried away as the flattery poured in.,0
+259,Having defeated Queen， Yuricocoa was applauded for,her efforts and was henceforth deemed the new Queen.,0
+260,Hehehe... With my super-strong danmaku abilities and,my beauty， I'm flawless.,0
+261,I'll admit she's strong， but that narcissism is,just gross.',0
+262,Oh? How can you not see that I'm perfect? You oughta,get your eyes checked.,0
+263,All that flattery's gone to her head. omg.','She's a bit blah compared to the last Queen',0
+264,Listen up. A #$@!% like you can go @#$% herself...,NULL,0
+265,Inappropriate language detected. Your account has,been locked.,0
+266,#$@!%ing admin...,NULL,0
+267,She could not keep herself from retaliating with,even harsher words than her commenters.,0
+268,UJAKO (real name: Miyako Ujiya) defeated Queen， who,had hacked into the system with forged numbers.,0
+269,Ahaha! There's no way I could ever lose to you!,NULL,0
+270,Miyako! WHY YOU...!!!,NULL,0
+271,I had the system perfectly hacked， and you had to go,and ruin it all! Why?!,0
+272,I don't like your dirty tricks! What's so special,about your numbers if you have to fake them?,0
+273,I was the center of attention on Bulletalk! You have,to admit THAT'S special!,0
+274,YOU'RE the one that's cheating! Using mods like,that!,0
+275,The difference between me and you is that I know not,to get caught! Omg you're so stupid!,0
+276,As the two bickered， the admin， having regained,control of the platform， locked both girls' accounts.,0
+277,[enpty spase],NULL,0
+278,[enpty spase],NULL,0
+279,[enpty spase],NULL,0
+280,Congratulations on completing the game!,You are the true danmaku Queen!,0
+281,Congratulations on completing the game in Nightmare,Mode! You made it through a true nightmare!,0
+282,Congratulations on completing the game in Chaos,Mode! H-How is that even possible?!,0
+283,Congratulations on completing the game!,You are truly something!,0
+284,Congratulations on completing the game in Nightmare,Mode! You're no queen?you're a goddess!,0
+285,You defeated the strongest boss in the game! No one,can stop you now!,0
+286,Congratulations on completing Trial Mode! Now on to,the path of danmaku shooting!,0
+287,Congratulations on completing Trial Mode!,You earned bragging rights!,0
+288,Congratulations on completing Trial Mode!,Are you sure you're even human...?,0
+289,Congratulations on truly completing the game!,You're a master shooter!,0
+290,Congratulations on truly completing the game!,Could you be...a shooting god?!,0
+291,You....you really completed the game!,You're even more omnipotent than a god!,0
+292,To think that someone could reach this level...!,Thanks for your dedication to Like Dreamer!,0
+293,Congratulations on finishing the run!,Are you satisfied with your time?,0
+294,[enpty spase],NULL,0
+295,Here I go! I heard that the scrolling speed will,increase the faster I defeat enemies.,0
+296,A speed run... Every enemy in my line of sight is,getting wiped off the face of the virtual world...,0
+297,I'll make use of close-range Shots， Bombs， and,Fevers to get even faster times!,0
+298,[enpty spase],NULL,0
+299,[enpty spase],NULL,0
+300,[Tips],Vanilla Alice! Now's your time to shine!,0
+301,[Tips],Yuricocoa! Show me what you got!,0
+302,[Tips],ＵＪＡＫＯ! I know you can do it!,0
+303,[Tips],Make your way through the Main Mode.,0
+304,[Tips],Make your way through the Main Mode.,0
+305,[Tips],Make your way through the Main Mode.,0
+306,[Tips],Make your way through the Main Mode.,0
+307,[Tips],Make your way through the Main Mode.,0
+308,[Tips],Make your way through the Main Mode.,0
+309,[Tips],Make your way through the Main Mode.,0
+310,[Tips],Make your way through the Main Mode.,0
+311,[Tips],Make your way through the Main Mode.,0
+312,[Tips],Defeat Queen!,0
+313,[Tips],A terrifying foe lies in wait in Trial Mode...,0
+314,[Tips],Complete the hidden community in Trial Mode.,0
+315,[Tips],Try completing the Trial!,0
+316,[Tips],Defeat all the bosses!,0
+317,[Tips],Clear all the stages all at once!,0
+318,[Tips],Try a Speed Run!,0
+319,[Tips],Try getting through a nightmarish bullet hell in the Trial Tour!,0
+320,[enpty spase],NULL,0
+321,[enpty spase],NULL,0
+322,[enpty spase],NULL,0
+323,[enpty spase],NULL,0
+324,[enpty spase],NULL,0
+325,Vanilla Alice,You made it to the end with Vanilla Alice.,0
+326,Yuricocoa,You made it to the end with Yuricocoa.,0
+327,UJAKO,You made it to the end with UJAKO.,0
+328,Mochimochi Nene-chan,You completed Stage 1.,0
+329,Madoka,You completed Stage 2.,0
+330,Ririka Sakurazaka,You completed Stage 3.,0
+331,Jellyfish Mizuki,You completed Stage 4.,0
+332,Eko,You completed Stage 5.,0
+333,Kyuri,You completed Stage 6.,0
+334,Dreamer Mu,You completed Stage 6.,0
+335,Crim Sorahoshi,You completed Stage 7.,0
+336,Cyan Sorahoshi,You completed Stage 7.,0
+337,Queen Melona,You completed Stage 8.,0
+338,Absolute Winner Melona,You completed Stage 9.,0
+339,Hinako Tenmabashi,You completed Stage Extra.,0
+340,Like,You completed the Trial Tour.,0
+341,School Scene,You completed Boss Rush.,0
+342,Sisterly Squabble,You completed the All-Stage Tour.,0
+343,Ennui Cat,You finished the Speed Run.,0
+344,Beach Community,You completed the Trial Tour in Nightmare Mode.,0
+345,[enpty spase],NULL,0
+346,[enpty spase],NULL,0
+347,[enpty spase],NULL,0
+348,[enpty spase],NULL,0
+349,[enpty spase],NULL,0
+350,[Tips],Learn the basics in the Tutorial.,0
+351,[Tips],Make your way through the Main Mode.,0
+352,[Tips],Make your way through the Main Mode.,0
+353,[Tips],Make your way through the Main Mode.,0
+354,[Tips],Make your way through the Main Mode.,0
+355,[Tips],Make your way through the Main Mode.,0
+356,[Tips],Make your way through the Main Mode.,0
+357,[Tips],Make your way through the Main Mode.,0
+358,[Tips],Make your way through the Main Mode.,0
+359,[Tips],Make your way through the Main Mode.,0
+360,[Tips],Complete the Trial in Casual Mode.,0
+361,[Tips],Complete the Trial in Maniac Mode.,0
+362,[Tips],Complete the Trial in Expert Mode.,0
+363,[Tips],Try getting through a nightmarish bullet hell in the Trial Tour!,0
+364,[Tips],Try conquering the hidden community in the Trial!,0
+365,[Tips],Defeat all the bosses!,0
+366,[Tips],Be victorious over the bosses of your worst nightmares!,0
+367,[Tips],Why not try making your way through all the communities?!,0
+368,[Tips],Be victorious in the face of revenge fire!,0
+369,[Tips],Be victorious in the face of even fiercer revenge fire!,0
+370,[Tips],Try shooting down her buddies.,0
+371,[Tips],Eat every last tasty little morsel.,0
+372,[Tips],Ever notice how Ririka has a ton of bits?,0
+373,[Tips],Destroy all the Jellyfish's tentacles before they regenerate.,0
+374,[Tips],Let the Vulcans shake you left and right.,0
+375,[Tips],It seems Kyuri is hiding something.,0
+376,[Tips],It seems Cyan is hiding something.,0
+377,[Tips],It seems a certain someone is hiding something.,0
+378,[Tips],What a waste it'd be if you fumbled when your Mental Level is at its peak...,0
+379,[Tips],Have you ever thought it'd be fine to win without any Likes for once?,0
+380,[Tips],Use Bomb after Bomb.,0
+381,[Tips],Keep those Bombs coming!,0
+382,[Tips],Rack in those points and create a buzz.,0
+383,[Tips],Create even more buzz!,0
+384,[Tips],Defeat tons of enemies..,0
+385,[Tips],Defeat even more enemies!,0
+386,[Tips],Get up close and personal with enemies and make them star-struck!,0
+387,[Tips],Get even more up close and personal with enemies!,0
+388,[Tips],Earn a little extra by grazing by bullets.,0
+389,[Tips],Bullets don't scare you! Let 'em whiz right past!,0
+390,[Tips],Do a praise-worthy job at dodging barrages.,0
+391,[Tips],Handling barrages is a cinch so long as you dodge 'em!,0
+392,[Tips],It might be cool to complete something WITHOUT creating a buzz.,0
+393,[Tips],Get more Followers.,0
+394,[Tips],Get even more Followers.,0
+395,[Tips],Get a ton more Followers!,0
+396,[Tips],Get more Likes.,0
+397,[Tips],Get even more Likes.,0
+398,[Tips],Get a ton more Likes!,0
+399,[Tips],This is the last achievement!,0
+400,Welcome!,You watched the entire Tutorial.,0
+401,Animal World,You completed Stage 1.,0
+402,Candy World,You completed Stage 2.,0
+403,Digital World,You completed Stage 3.,0
+404,Ocean World,You completed Stage 4.,0
+405,Dark World,You completed Stage 5.,0
+406,Dream World,You completed Stage 6.,0
+407,Urban World,You completed Stage 7.,0
+408,Kingdom World,You completed Stage 8.,0
+409,Secret World,You completed Stage 9.,0
+410,Beginner Shooter,You completed the Trial Tour in Casual Mode.,0
+411,Intermediate Shooter,You completed the Trial Tour in Maniac Mode.,0
+412,Experienced Shooter,You completed the Trial Tour in Expert Mode.,0
+413,Expert Shooter,You completed the Trial Tour in Nightmare Mode.,0
+414,True Absolute Winner,You completed Stage 9 in the Trial Tour.,0
+415,Boss Maniac,You completed Boss Rush.,0
+416,Boss Master,You completed Boss Rush in Nightmare Mode.,0
+417,Long Runner,You completed the All-Stage Tour.,0
+418,Revenge Fire Heaven,You completed the Trial Tour in Counter Mode.,0
+419,Revenge Fire Hell,You completed the Trial Tour in Counter Mode on Expert or higher.,0
+420,Nene-chan's Rage,You destroyed 4 of Mochimochi Nene-chan's bears.,0
+421,Bon Appetit!,You destroyed the Stage 2 Sub-Boss and all her butter.,0
+422,Turn Bits into Likes,You destroyed 30 bits when battling Ririka Sakurazaka.,0
+423,Jealous Jelly,You destroyed all of boss Jellyfish Mizuki's tentacles.,0
+424,Vulcan Trap,You got a Perfect Bonus on Eko Phase 6.,0
+425,Lost and Found,You defeated the Stage 6 Sub-Boss (Kyuri) in 14 seconds or less and got a 1UP Item.,0
+426,Finders Keepers!,You defeated the Stage 7 Sub-Boss (Cyan Sorahoshi)， destroyed her units， and got a 1UP Item.,0
+427,Luminous Look-Alike,You defeated the Stage 8 enemy that looked exactly like you without using Bombs and got a 1UP Item.,0
+428,Fumbled Fortune,You messed up with your Mental Level maxed out.,0
+429,Freedom from Approval,You completed a stage without any Likes.,0
+430,Bomber Girl,You detonated 20 Bombs total.,0
+431,Bomber Queen,You detonated 200 Bombs total.,0
+432,Talk of the Town,You activated 20 Buzz Fevers total.,0
+433,Feed Filler,You activated 200 Buzz Fevers total.,0
+434,Bullet Beast,You defeated 1000 enemies total.,0
+435,Combat Queen,You defeated 10000 enemies total.,0
+436,Star-Struck Girl,You gained 300 Followers+10 total from regular enemies.,0
+437,Star-Struck Master,You gained 3000 Followers+10 total from regular enemies.,0
+438,Daredevil,You grazed past 500 enemy bullets total.,0
+439,Graze Of Glory,You grazed past 20000 enemy bullets total.,0
+440,Evasion Expert,You reached 30 Perfect Bonuses total.,0
+441,Bullet Hell Master,You reached 300 Perfect Bonuses total.,0
+442,Shy Girl,You completed the Trial Tour without activating Buzz Fever.,0
+443,Almost Famous,You reached 10000 Followers.,0
+444,Fabulously Famous,You reached 50000 Followers.,0
+445,Influencer,You reached 100000 Followers.,0
+446,Attention Fix,You reached 100 million Likes.,0
+447,Bullet Hell Hottie,You reached 1 billion Likes.,0
+448,All Eyes On You,You reached 5 billion Likes.,0
+449,100% Completion!,You completed all other achievements.,0
+450,No data.,NULL,0
+451,An avatar from the Animal Community. Small and agile，,though her bullets are rather plain.,0
+452,The most universal minion unit. Often summoned when,one wants some livelysidekicks.,0
+453,A small rabbit minion unit. It dislikes solitude and,tends to form groups.,0
+454,A sheep minion unit. It forms lines and traverses the area，,inducing drowsiness.,0
+455,A panda avatar. Its outfits reportedly vary in color.,NULL,0
+456,A cat avatar. Though its silky-smooth coat makes it seem cuddly，,it's actuallyquite aggressive.,0
+457,A large dog avatar. Though you may think it's good with defense，,its shield isactually just decoration.,0
+458,Heals its possessor of their mental ailments.,This unit carries mysterious items.,0
+459,Often found following the Item Carrier.,Helpful when you don't have enough Life to win.,0
+460,Mochimochi Nene-chan's favorite teddy bear. Its astounding size,makes it capable of latching onto multiple people at once.,0
+461,A girl who loves stuffed animals.,She keeps seven on a weekly bedtime rotation.,0
+462,A flying macaron minion unit. Has a slightly sour taste.,NULL,0
+463,This spinning cookie minion unit is complete with,strawberry jam filling.,0
+464,A cupcake unit that flaps its leaf-like wings. Though plain，,you'll never tire of its sweet flavor.,0
+465,Flying ice cream that twirls its mint garnish like a propeller.,Its toppings add a touch of decadence.,0
+466,A small gelatin minion unit. It was formerly packaged in plastic.,NULL,0
+467,A candle unit with four faces of different emotions.,Its barrages are the same for each of its faces.,0
+468,A large flan unit. There's no way you'll want to share,this sweet treat.,0
+469,A gargantuan serving of soft-serve sitting atop pancakes.,For those who wish to truly satisfy their sweet tooth.,0
+470,Butter unit found atop pancakes.,NULL,0
+471,Madoka's specialty: a tiered cake boss unit.,Every day is Happy Bullet Day here.,0
+472,A girl who loves both eating and making sweet treats. She often,overeats due to her tendency to make huge batches of desserts.,0
+473,Your standard shooting game aircraft avatar. Though minimally,equipped， it can invade just about anywhere with a skilled pilot.,0
+474,A medium-sized airship unit. It features an understated,gray body and boasts great versatility.,0
+475,A flying shrine maiden avatar with mystical powers.,Skilled at homing shots.,0
+476,A mage avatar. When at its best， it emits a thick laser beam.,NULL,0
+477,An imitation of the well-known shooting game's big boss.,Its barrages are said to be a tad humbler compared to the original.,0
+478,A small-sized canon often found throughout,the game community.,0
+479,A large-sized canon often found throughout,the game community.,0
+480,An enormous flying dragon battleship.,Its wings have less mobility than one would think.,0
+481,Ririka Sakurazaka's boss unit.,Can be customized to be even stronger.,0
+482,A streamer well-acquainted with shooting games.,She's currently aiming for a perfect score in Blam Blam Blasters.,0
+483,A subspecies of Dropeller whose head morphed into a screw-shape.,Races throughwater at high speed.,0
+484,A sea angel minion unit. Receives damage only,when its mouth is open.,0
+485,A jellyfish minion unit. Swims in groups in zig-zag patterns.,NULL,0
+486,A pirate penguin avatar. When multiple group together，,they're called a 'band.',0
+487,An eel unit with a jewel-like feature on its forehead.,NULL,0
+488,A round， yellow submarine unit. A jolly tune can be heard inside.,NULL,0
+489,A giant ray unit. A cross between the oceanic manta ray and,stealth aircraft.,0
+490,A gigantic jellyfish unit controlled by Mizuki.,Its six tentacles regenerate at a high rate.,0
+491,A girl with a thing for water and aquatic life. She loves floating,in the water，which perhaps is to credit for her buoyant personality.,0
+492,A floating soul minion unit that appears near danmaku girls,who are weary from their lack of Likes.,0
+493,A Gothic Lolita minion unit. Apparently some danmaku girls,are particular about what they wear.,0
+494,A pink butterfly avatar. Popular among those who want to,escape reality for a while.,0
+495,A large eye spherical unit. Set to see through to its,challengers' deepest desires.,0
+496,A Grim Reaper avatar. An update is scheduled to fix the issue of,it not beingable to wield its scythe due to its lack of hands.,0
+497,A floating island unit carrying a scarlet flower signifying,melancholy.,0
+498,Eko's doll that grew to enormous proportions thanks to,Mochimochi Nene-chan's help.,0
+499,A boss unit that also serves as Eko's room. She waits,for someone to enter someday， but there are no stairs.,0
+500,A girl who dresses flashy because she longs for attention. Those,who get involved exhaust themselves trying to meet her demands.,0
+501,Eko's doll that serves as her one and only imaginary friend.,NULL,0
+502,A comical alien spaceship. Not a surprising sight for a,danmaku girl.,0
+503,Called so due to the fact that it looks similar to,a Like button but is actually just an imitation.,0
+504,A yellow flower minion unit. Replies in abusive language,when spoken to.,0
+505,A bear minion unit that balances skillfully atop a bullet.,Goes into formation with other units around it.,0
+506,A magical bunny girl avatar. She insists on,carrying two magic rods due to her greed.,0
+507,A witch avatar mounted on a crescent moon seat,whose cradle-like rocking is said to induce sleep.,0
+508,A planetarium that projects bullet barrages in the sky.,NULL,0
+509,A close friend of Dreamer Mu. She dreams of the day,when the scientific mysteries of the world and universe are solved.,0
+510,A boss unit that can mimic the moon.,Depending on how you view it， it can also resemble the sun.,0
+511,A young girl who dreams of becoming an astronaut when she grows up.,A bullet hell fanatic who dreams of shooting every night.,0
+512,A light-equipped drone that can quickly change position to,shine on its target.,0
+513,An avatar based on the popular vocal synthesizer character,released 15 years ago.,0
+514,A drone with the same features as an SLR camera.,Makes taking selfies a breeze.,0
+515,A small urban-dwelling minion unit. Maneuvers,a high-performance skateboard that can outpace even cars.,0
+516,A speaker unit with wheels. Its pitch may sound different,depending on your location due to its high speed.,0
+517,A battle tank fitted with multiple speakers.,Not very popular due to the cacophony of its caterpillar tracks.,0
+518,The broadcast trailer used for the official Bulletalk show. It's,a virtual space， so its satellite dishes are just for decoration.,0
+519,Crim Sorahoshi's transportable stage for live performances.,NULL,0
+520,Cyan Sorahoshi's transportable stage for live performances.,NULL,0
+521,Crim and Cyan's transportable stage for live performances.,NULL,0
+522,One of the vocal synthesizer twin sisters. She's capable of making,anyone feel free to speak their mind.,0
+523,One of the vocal synthesizer twin sisters. Her personality,changes slightly between each user.,0
+524,Minion units that attack in formation. Cannot be stopped because,they're programmed only to advance.,0
+525,Maid minion unit that appears out of nowhere.,Moves in groups.,0
+526,A wooden chariot fitted with a canon.,You'll find many stations around Queen's Castle.,0
+527,An automatic shooting tower that guards Queen's Castle.,NULL,0
+528,Bots that learn when the behavior of certain danmaku girls is inputted.,Bots that have completed their programming can be replicated en masse.,0
+529,A danmaku girl bot of Queen's creation.,Highly aggressive and durable.,0
+530,A dream bot that infinitely increases one's Likes and Followers when in,operation. Effective at making ordinary people appear amazing.,0
+531,A version of the Like Dreamer specialized in attacks. Its number-,increasing function is shoddy， a bug from its rushed production.,0
+532,A genius hacker who became Queen of Bulletalk by fudging numbers.,Her sense of superiority and obsession with winning are unrivaled.,0
+533,A boss unit that reconstructs those who enter it,into unconquerable danmaku girls.,0
+534,A danmaku girl who reemerged super powerful thanks to her gross,obsession with winning due to a previously huge sense of defeat.,0
+535,A graphite pencil minion unit. It moves as if it is,tracing over a line.,0
+536,A red pencil minion unit. It targets danmaku girls.,NULL,0
+537,Mochimochi Nene-chan's favorite teddy bear.,This is the original.,0
+538,A small， mass-produced version of the Sakura Dropeller.,Optional add-ons are under development.,0
+539,A maid avatar said to be able to finish any chore,in the blink of an eye.,0
+540,A rabbit girl avatar said to be capable of seeing,invisible waves.,0
+541,An artist girl avatar. She draws on an imaginary,canvas with an imaginary pencil.,0
+542,A smaller version of the Happy Bullet Hell Cake，,though still a generous size.,0
+543,A super giant boss unit of the Hinako Tenmabashi avatar. The badges,she wears feature game characters she illustrated in the past.,0
+544,A unit formed from a sketch Hinako Tenmabashi made. This thinking,process is said to be a necessary step in improving her artwork.,0
+545,A work expressing the pain an artist feels when creating a piece,just for the sake of ratings... That's how Hinako explains it.,0
+546,A strong danmaku girl and cosplayer friend sloppily drawn and,summoned on the spot.,0
+547,Head-only characters with varying facial expressions.,Sometimes knowledgeable and sometimes dim-witted.,0
+548,A giant frog unit that emits lightning-like waves from its eyes.,NULL,0
+549,A fox spirit unit of black magic that produces strong shock waves.,NULL,0
+550,Hinako Tenmabashi's favorite twin vocal characters.,This illustration is brand-spanking new.,0
+551,An embodiment of the souls of those weary from their lack of Likes and,who seek others' approval. Does not receive attacks until exhausted.,0
+552,A bonus shot of Hinako Tenmabashi. You're sure to get distracted,despite being in the home stretch.,0
+553,A low-level artist who prefers sexy pop styles.,She designed her own avatar herself.,0
+554,[enpty spase],NULL,0
+555,[enpty spase],NULL,0

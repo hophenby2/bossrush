@@ -1,0 +1,207 @@
+--- sound effect resource info
+--- free source from web site
+--- author: Xiliusha
+
+info = {
+	type = "snd",
+	{
+		name = "achievement",
+		filename = "se_achievement.wav",
+		volume = 1.0,
+	},
+	{
+		name = "alert",
+		filename = "se_alert.wav",
+		volume = 1.0,
+	},
+	{
+		name = "bonus",
+		filename = "se_bonus.wav",
+		volume = 1.0,
+	},
+	{
+		name = "bonus2",
+		filename = "se_bonus2.wav",
+		volume = 1.0,
+	},
+	{
+		name = "bonus4",
+		filename = "se_bonus4.wav",
+		volume = 1.0,
+	},
+	{
+		name = "cancel00",
+		filename = "se_cancel00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "cardget",
+		filename = "se_cardget.wav",
+		volume = 1.0,
+	},
+	{
+		name = "cat00",
+		filename = "se_cat00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "ch00",
+		filename = "se_ch00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "ch02",
+		filename = "se_ch02.wav",
+		volume = 1.0,
+	},
+	{
+		name = "damage00",
+		filename = "se_damage00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "damage01",
+		filename = "se_damage01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "dialog",
+		filename = "se_dialog.wav",
+		volume = 1.0,
+	},
+	{
+		name = "enep00",
+		filename = "se_enep00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "enep01",
+		filename = "se_enep01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "enep02",
+		filename = "se_enep02.wav",
+		volume = 1.0,
+	},
+	{
+		name = "extend",
+		filename = "se_extend.wav",
+		volume = 1.0,
+	},
+	{
+		name = "graze",
+		filename = "se_graze.wav",
+		volume = 1.0,
+	},
+	{
+		name = "gun00",
+		filename = "se_gun00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "invalid",
+		filename = "se_invalid.wav",
+		volume = 1.0,
+	},
+	{
+		name = "item00",
+		filename = "se_item00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "item01",
+		filename = "se_item01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "kira00",
+		filename = "se_kira00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "kira01",
+		filename = "se_kira01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "kira02",
+		filename = "se_kira02.wav",
+		volume = 1.0,
+	},
+	{
+		name = "lazer00",
+		filename = "se_lazer00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "lazer01",
+		filename = "se_lazer01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "msl",
+		filename = "se_msl.wav",
+		volume = 0.4,
+	},
+	{
+		name = "nep00",
+		filename = "se_nep00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "ok00",
+		filename = "se_ok00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "pause",
+		filename = "se_pause.wav",
+		volume = 1.0,
+	},
+	{
+		name = "pldead00",
+		filename = "se_pldead00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "plst00",
+		filename = "se_plst00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "select00",
+		filename = "se_select00.wav",
+		volume = 0.5,
+	},
+	{
+		name = "tan00",
+		filename = "se_tan00.wav",
+		volume = 1.0,
+	},
+	{
+		name = "tan01",
+		filename = "se_tan01.wav",
+		volume = 1.0,
+	},
+	{
+		name = "tan02",
+		filename = "se_tan02.wav",
+		volume = 1.0,
+	},
+	{
+		name = "timeout",
+		filename = "se_timeout.wav",
+		volume = 1.0,
+	},
+	{
+		name = "timeout2",
+		filename = "se_timeout2.wav",
+		volume = 1.0,
+	},
+	{
+		name = "timeout3",
+		filename = "se_timeout3.wav",
+		volume = 1.0,
+	},
+}

@@ -28,6 +28,7 @@ end
 dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
 dofile('mod/GAME/th38.lua')
+dofile('tools/native-ports/register.lua')
 local F=OriginalStageFlow
 local legacy,hosts={},{}
 for level=29,33 do
@@ -58,7 +59,7 @@ for _,range in ipairs({{453,460},{470,476}}) do for id=range[1],range[2] do
     check(byId[31][33000+id].sc_group[1].card.source_card_id==id,'文花帖保留原作来源键')
 end end
 local catalog=dofile('mod/original_practice.lua')
-for level=1,35 do check(catalog.allowed(level)==(level>=29 and level<=33 or level==35),'练习范围：'..level) end
+for level=1,37 do check(catalog.allowed(level)==(level>=29 and level<=33 or level>=35),'练习范围：'..level) end
 lstg.var={sc_group={29,1}}
 check(catalog.canStart('TH31@BossRush',false),'允许指定原作整关')
 check(not catalog.canStart('TH36@BossRush',false),'拒绝范围外整关')
@@ -88,7 +89,7 @@ check(snapshot.name=='TH34@BossRush' and snapshot.version==F.VERSION,'整关录�
 state.var.sc_group={32,legacy[32][1].index}
 group.PracticeStart('Spell Practice@Spell Practice',true)
 check(snapshot.name=='Spell Practice@Spell Practice' and state.var.cheat==true,'允许五作符卡入口及练习无敌')
-local expected={137,105,85,129,80,90}
+local expected={137,105,85,129,80,90,128,111}
 for i,entry in ipairs(catalog.stages) do
     local units=F.units(entry.level)
     check(#units==expected[i],'原作条目覆盖数：'..entry.code)
@@ -122,16 +123,16 @@ end
 ui={version='test',menu={}}
 dofile('THlib/UI/menu.lua')
 stage_selects={}
-for level=1,35 do stage_selects[level]={id=level,title='旧关卡'} end
+for level=1,37 do stage_selects[level]={id=level,title='旧关卡'} end
 local menu={pos=35}
 stage_select.fresh(menu)
-check(menu.stage_count==6 and menu.pos==6,'关卡练习显示六作并夹住旧游标')
+check(menu.stage_count==8 and menu.pos==8,'关卡练习显示八作并夹住旧游标')
 for i,entry in ipairs(catalog.stages) do check(menu.stage_selects[i].id==entry.level,'关卡入口按五作顺序排列') end
 dofile('THlib/UI/menus/scpr_menu.lua')
 local spellMenu={}
 KeyCodeToName=function() return {} end
 sc_pr_menu.TweakCard(spellMenu,false,false)
-check(#spellMenu.spells==7 and #spellMenu.spells[7]==626,'符卡练习显示六作和全部')
+check(#spellMenu.spells==9 and #spellMenu.spells[9]==865,'符卡练习显示八作和全部')
 for tab,entry in ipairs(catalog.stages) do
     local rows=spellMenu.spells[tab]
     for i,row in ipairs(rows) do

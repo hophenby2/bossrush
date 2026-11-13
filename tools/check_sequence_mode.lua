@@ -1,6 +1,8 @@
 -- 检查顺序模式的稳定key、原作路线互斥、难度变体、初态和录像范围。
 local f=assert(io.open('tools/sequence_registry.lua','rb'));local setup=f:read('*a');f:close()
 setup=setup:sub(1,assert(setup:find('for _,id in ipairs({3400',1,true))-1)
+setup=setup:gsub('OriginalStageFlow.install%(%)',[[dofile('tools/native-ports/register.lua')
+OriginalStageFlow.install()]])
 assert(loadstring(setup))()
 local C=dofile('mod/sequence_catalog.lua')
 local checks=0
@@ -12,14 +14,15 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==14,'六作的实际难度/场景入口各自独立，永夜抄Final A/B分开')
+check(#C.entries==18,'八作的实际难度与场景入口各自独立')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
     check(C.get(e.key)==e,'用key查询入口，不依赖菜单选项编号')
     for _,player in ipairs({'reimu_player','marisa_player'}) do
         local chapters=C.chapters(e.key,player)
-        check(#chapters==(e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1),'每个入口的原作面数：'..e.key)
+        local count=e.level==37 and 10 or e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1
+        check(#chapters==count,'每个入口的原作面数：'..e.key)
         for _,chapter in ipairs(chapters) do
             check(#chapter.units>0,'每一面都有保留内容')
             for _,row in ipairs(chapter.units) do

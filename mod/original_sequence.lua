@@ -190,7 +190,9 @@ function S.run(scene,key,first)
             if SequenceResources then SequenceResources.beginChapter(chapter) end
             media(scene,chapter,'stage')
             local source=roadSource(chapter)
-            if chapter.level==35 then _editor_class.TH38.runChapter(scene,chapter,spawn,alive,media)
+            local port=GameContent and GameContent.ports[chapter.level]
+            if port then port.runChapter(scene,chapter)
+            elseif chapter.level==35 then _editor_class.TH38.runChapter(scene,chapter,spawn,alive,media)
             elseif source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
             run.completed=index
             if SequenceResources then SequenceResources.endChapter(index) end
@@ -213,6 +215,7 @@ end
 function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
+    lstg.var.theis_route=nil
     if SequenceResources and SequenceResources.gameByLevel[entry.level] then
         local game=SequenceResources.gameByLevel[entry.level]
         local selected=assert(SequenceResources.machine(game,machine or SequenceResources.machines(game)[1].id))
@@ -222,7 +225,14 @@ function S.start(key,machine)
         local frames=scoredata and scoredata.OriginalSequencePlayFrames and scoredata.OriginalSequencePlayFrames[game] or 0
         lstg.var.sequence_continue_limit=game==7 and (frames>=14*216000 and 5 or frames>=7*216000 and 4 or 3) or 3
     end
-    if entry.level==35 then
+    if GameContent and GameContent.ports[entry.level] then
+        local machines=S.catalog.machines(entry)
+        local selected=machines[1]
+        for _,candidate in ipairs(machines) do if candidate.id==machine then selected=candidate end end
+        lstg.var.sequence_player=nil
+        lstg.var.player_name,lstg.var.rep_player=selected.route,selected.name
+        if entry.level==36 then lstg.var.theis_route=selected.id end
+    elseif entry.level==35 then
         lstg.var.sequence_player=nil
         lstg.var.th38_route=machine or 'A'
         local marisa=machine=='B' or machine=='D'
@@ -240,7 +250,7 @@ for _,entry in ipairs(S.catalog.entries) do
     local difficulty=entry.difficulty=='lunatic' and 4 or entry.difficulty=='extra' and 5 or entry.difficulty=='phantasm' and 6 or 1
     local group=stage.group.New('menu',{},entry.group,false,difficulty)
     group.sequence_key=entry.key
-    group.sequence_native_player=entry.level~=35
+    group.sequence_native_player=entry.level~=35 and not (GameContent and GameContent.ports[entry.level])
     local battle=stage.group.AddStage(entry.group,entry.battle,false)
     battle.displayname,battle.level=entry.title,entry.level
     battle.revive_miss_limit=S.MISS_LIMIT-1

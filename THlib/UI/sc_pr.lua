@@ -13,7 +13,7 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
     end
     task.New(self, function()
         task.Wait(10)
-        if GetMusicState(class.bgm) ~= "playing" then
+        if not GameContent.ports[self.level] and GetMusicState(class.bgm) ~= "playing" then
             PlayMusic(class.bgm, nil, nil, true)
         end
         local _ref = {}

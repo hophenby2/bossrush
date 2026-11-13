@@ -6,6 +6,8 @@ local P={stages={
     {code='TH34',level=32,title='妖妖梦原作'},
     {code='TH35',level=33,title='风神录原作'},
     {code='TH38',level=35,title='夏夜祭原作'},
+    {code='TH39',level=36,title='祈华梦原作'},
+    {code='TH40',level=37,title='Like Dreamer'},
 }}
 function P.allowed(level)
     for _,entry in ipairs(P.stages) do if entry.level==level then return true end end

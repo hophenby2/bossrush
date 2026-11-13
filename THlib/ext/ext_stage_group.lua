@@ -277,6 +277,7 @@ function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
     lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.th38_route=nil
+    lstg.var.theis_route=nil
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。
     lstg.var.__input_version=2;lstg.var.__drops_version=GameDrops.VERSION;lstg.var.upgrades=nil;lstg.var.__touch_toggle_version=1
     lstg.var.__phase_clear_version=1

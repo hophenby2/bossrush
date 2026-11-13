@@ -19,12 +19,24 @@ add('th10_lunatic','风神录 · Lunatic',33,'lunatic')
 add('th10_extra','风神录 · Extra',33,'extra')
 add('thsss_lunatic','夏夜祭 · Lunatic · 全阶段',35,'lunatic')
 add('thsss_extra','夏夜祭 · Extra · 全阶段',35,'extra')
+add('theis_lunatic','祈华梦 · Lunatic',36,'lunatic')
+add('theis_extra','祈华梦 · Extra',36,'extra')
+add('likedreamer_nightmare','Like Dreamer · Nightmare',37,'nightmare')
+add('likedreamer_chaos','Like Dreamer · Chaos',37,'chaos')
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
 function C.machines(entry)
-    local game=SequenceResources.gameByLevel[entry.level]
+    local game=SequenceResources and SequenceResources.gameByLevel[entry.level]
     if game then return SequenceResources.machines(game) end
+    if entry.level==36 or entry.level==37 then
+        local machines={{id='reimu',name='灵梦',route='reimu_player'},
+            {id='marisa',name='魔理沙',route='marisa_player'}}
+        if entry.level==36 then
+            machines[#machines+1]={id='mokou',name='妹红路线 · LuaSTG灵梦',route='reimu_player'}
+        end
+        return machines
+    end
     return {{id='A',name='灵梦路线 · LuaSTG灵梦',route='reimu_player'},{id='B',name='魔理沙路线 · LuaSTG魔理沙',route='marisa_player'},
         {id='C',name='早苗路线 · LuaSTG灵梦',route='reimu_player'},{id='D',name='恋路线 · LuaSTG魔理沙',route='marisa_player'}}
 end

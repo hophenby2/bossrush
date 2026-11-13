@@ -7,13 +7,32 @@ function T.install()
     local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
     local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
-    local sequenceSpeed=mode=='th38-sequence' and tonumber(os.getenv('BOSSRUSH_MAC_TEST_SPEED') or '1') or 1
+    local nativePort=mode=='native-port-sequence' or mode=='native-port-practice'
+    local portShoot=nativePort and os.getenv('BOSSRUSH_MAC_TEST_SHOOT')=='1'
+    local isSequence=mode=='th38-sequence' or mode=='native-port-sequence'
+    local sequenceSpeed=(isSequence or mode=='native-port-practice') and tonumber(os.getenv('BOSSRUSH_MAC_TEST_SPEED') or '1') or 1
     local sequenceKill=tonumber(os.getenv('BOSSRUSH_MAC_TEST_KILL') or '')
     local sequenceEnd=os.getenv('BOSSRUSH_MAC_TEST_END')=='1'
     local sequenceResult,sequencePhases={},{}
+    local portBoss,portPhase,portPhaseTime
     if sequenceSpeed>1 then
         -- 加速只验对象/流程；音效在正常帧率另测，避免超实时重启耗尽OpenAL音源队列。
         PlaySound=function() end;lstg.PlaySound=function() end
+    end
+    local nativePortrait=nativePort and os.getenv('BOSSRUSH_MAC_TEST_PORTRAIT')=='1'
+    if nativePortrait then
+        AndroidPortrait=assert(loadfile("android/portrait.lua"))()
+        setting.androidPortrait=true
+        -- 在 16:9 原生窗口内以竖屏逻辑画布和竖屏裁切执行同一渲染路径。
+        AndroidPortrait.enabled=function() return stage.current_stage and not stage.current_stage.is_menu end
+        AndroidPortrait.resetScreen=function()
+            if not AndroidPortrait.enabled() then return false end
+            screen.width,screen.height=540,960
+            screen.scale=setting.resy/960
+            screen.dx=(setting.resx-540*screen.scale)/2
+            screen.dy=0
+            return true
+        end
     end
     local visuals
     if os.getenv('BOSSRUSH_MAC_TEST_VISUAL')=='1' then
@@ -58,6 +77,7 @@ function T.install()
     end
     local started,captured,finished=false,false,false
     local frames,afterCapture,maxBullets,maxLasers=0,0,0,0
+    local portDamage=0
     local beforeCaptureFPS
     local checkpoint,checkpointAt
     local logicalTarget=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LOGIC_FRAMES') or '')
@@ -94,7 +114,9 @@ function T.install()
     function FrameFunc()
         if player and IsValid(player) then
             player.protect=120
-            if mode=='battle' or mode=='input' then AndroidInput.keys[setting.keys.shoot]=true end
+            if mode=='battle' or mode=='input' or portShoot then
+                AndroidInput.keys[setting.keys.shoot]=true
+            end
             if mode=='battle' and not battleShoot then AndroidInput.keys[setting.keys.shoot]=false;AndroidInput.toggles.shoot=false end
             if fixedFocus then AndroidInput.keys[setting.keys.slow]=true;AndroidInput.toggles.slow=true end
         end
@@ -115,7 +137,7 @@ function T.install()
         local quit=false
         if not (logicalTarget and captured) then
             for _=1,sequenceSpeed do
-                if mode=='th38-sequence' then
+                if isSequence then
                     if player and IsValid(player) then player.protect=120 end
                     for _,b in ipairs(boss_group or {}) do
                         local run=b.th38_run
@@ -126,7 +148,38 @@ function T.install()
                         end
                     end
                     local current=lstg.var.sequence_run
-                    if current and current.key:find('thsss',1,true) then sequenceResult={completed=current.completed,total=current.total,finished=current.finished,won=current.won} end
+                    if current then
+                        if nativePort and current.chapter~=sequenceResult.chapter then
+                            lstg.SystemLog('BOSSRUSH_PORT_CHAPTER: '..current.chapter)
+                        end
+                        sequenceResult={chapter=current.chapter,road_time=current.road_time,completed=current.completed,total=current.total,finished=current.finished,won=current.won}
+                        local rt=nativePort and GameContent.ports[37].source.runtime
+                        local actor=rt and rt.boss
+                        if actor and IsValid(actor) then
+                            sequenceResult.boss={type=actor.spawnType,state=actor.state,phase=actor.portPhase,time=actor.helperTimer,hp=actor.hp}
+                        elseif rt then
+                            sequenceResult.enemies=rt.enemyCount
+                        end
+                    end
+                end
+                if sequenceKill and nativePort and GameContent and GameContent.ports[37] then
+                    local theis=GameContent.ports[36].source
+                    local b=theis._boss
+                    if b and IsValid(b) and b.current_card and b.current_card.is_combat
+                        and b.timer>=sequenceKill and b.dmg_factor>0 then
+                        b.hp=0
+                    end
+                    local rt=GameContent.ports[37].source.runtime
+                    local o=rt and rt.boss
+                    if o and IsValid(o) then
+                        if o~=portBoss or o.portPhase~=portPhase then
+                            portBoss,portPhase,portPhaseTime=o,o.portPhase,0
+                        end
+                        if o.targetable and not o.protect then
+                            portPhaseTime=portPhaseTime+1
+                            if portPhaseTime>=sequenceKill then o.hp=0 end
+                        end
+                    end
                 end
                 quit=original();if quit then break end
             end
@@ -153,15 +206,29 @@ function T.install()
         local scene=stage.current_stage
         if scene and scene.stage_name=='menu' and scene.timer>=90 and not started then
             started=true;frames=0;benchmarkStart=lstg.AndroidClock()
-            if mode=='th38-sequence' then
+            if isSequence then
                 AndroidFocus=function() end
+                local first=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FIRST_CHAPTER') or '')
+                if first then
+                    local run=OriginalSequence.run
+                    OriginalSequence.run=function(s,key,resume)
+                        if not resume then
+                            local entry=OriginalSequence.catalog.get(key)
+                            local chapters=OriginalSequence.catalog.chapters(key,lstg.var.player_name)
+                            assert(first>=1 and first<=#chapters,'测试起始章节超出范围')
+                            lstg.var.sequence_run={key=key,title=entry.title,total=#chapters,completed=first-1}
+                        end
+                        return run(s,key,resume or first)
+                    end
+                end
                 OriginalSequence.start(os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE') or 'thsss_lunatic',os.getenv('BOSSRUSH_MAC_TEST_ROUTE') or 'A')
-            elseif (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<69000 then
+            elseif mode=='native-port-practice' or (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<69000 then
                 AndroidFocus=function() end
                 local index
-                for i,u in ipairs(_sc_pr_table[35]) do if u.sc_group[1].card.card_id==battleCard then index=i end end
-                assert(index,'缺少夏夜祭测试卡：'..battleCard)
-                lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';lstg.var.sc_group={35,index}
+                local level=battleCard>=71100 and 37 or battleCard>=70100 and 36 or 35
+                for i,u in ipairs(_sc_pr_table[level]) do if u.sc_group[1].card.card_id==battleCard then index=i end end
+                assert(index,'缺少原作测试卡：'..battleCard)
+                lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';lstg.var.sc_group={level,index}
                 stage.group.PracticeStart('Spell Practice@Spell Practice',true)
             elseif mode=='battle' or mode=='input' then
                 local draw=RogueTen.draw
@@ -197,7 +264,15 @@ function T.install()
             end
         end
         if started then
+            if nativePortrait and AndroidPortrait.enabled() then AndroidPortrait.resetScreen() end
             frames=frames+1
+            if portShoot then
+                local runtime=GameContent.ports[37].source.runtime
+                local actor=runtime and runtime.boss
+                if actor and IsValid(actor) and actor.targetable then
+                    portDamage=math.max(portDamage,actor.maxhp-actor.hp)
+                end
+            end
             if mode=='audio' and frames<=120 then
                 if not audioMusic then for _,name in ipairs(EnumRes2('bgm')) do if GetMusicState(name)=='playing' then audioMusic=name;break end end end
                 for i=1,16 do lstg.PlaySound('damage00',.05,.25);audioCalls=audioCalls+1 end
@@ -224,7 +299,7 @@ function T.install()
             maxLasers=math.max(maxLasers,laserCount)
             maxBullets=math.max(maxBullets,count)
             local ready=logicalTarget and checkpoint or (not logicalTarget and frames>=tonumber(os.getenv('BOSSRUSH_MAC_TEST_FRAMES') or (mode=='battle' and '600' or '180')))
-            if mode=='th38-sequence' and sequenceEnd then ready=sequenceResult.finished==true end
+            if isSequence and sequenceEnd then ready=sequenceResult.finished==true end
             if mode=='fog' then ready=scene.stage_name=='android_fog' and scene.timer>=181 end
             if ready and not captured then
                 beforeCaptureFPS=beforeCaptureFPS or lstg.GetFPS()
@@ -234,7 +309,7 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,
+                    f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,port_damage=portShoot and portDamage or nil,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true

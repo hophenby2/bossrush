@@ -1,5 +1,5 @@
 -- 精简分支的内容边界；保留实际level和符卡ID，不把旧录像误放进缺失关卡。
-local C={stages={'31','32','33','34','35','38'},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true}}
+local C={stages={'31','32','33','34','35','38','39','40'},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true},ports={}}
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}

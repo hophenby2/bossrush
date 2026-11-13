@@ -74,4 +74,5 @@ splits={
 local summer=dofile('mod/GAME/th38/phases.lua')
 order[35]={}
 for _,chapter in ipairs({'1','2','3','4','5','6','EX'}) do order[35][#order[35]+1]={name=chapter,cards=summer.orders[chapter]} end
+for level,work in pairs(GameContent and GameContent.ports or {}) do order[level]=work.order end
 return order

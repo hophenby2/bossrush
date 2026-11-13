@@ -1,0 +1,205 @@
+﻿--- music resource info
+--- musician: 百灵猫neko
+--- author: Xiliusha
+
+info = {
+	type = "bgm",
+	-- menu
+	{
+		name = "menu",
+		filename = "bgm_menu.ogg",
+		loop = {
+			beginning = 5.47815,
+			ending = 113.47996,
+		},
+	},
+	-- stage 1
+	{
+		name = "s1",
+		filename = "bgm_s1.ogg",
+		loop = {
+			beginning = 1.20648,
+			ending = 130.80648,
+		},
+	},
+	-- stage 1 Kaguya
+	{
+		name = "s1_boss",
+		filename = "bgm_s1_boss.ogg",
+		loop = {
+			beginning = 4.03000,
+			ending = 69.11000,
+		},
+	},
+	-- stage 2
+	{
+		name = "s2",
+		filename = "bgm_s2.ogg",
+		loop = {
+			beginning = 4.65415,
+			ending = 139.86542,
+		},
+	},
+	-- stage 2 boss Emitsu
+	{
+		name = "s2_boss",
+		filename = "bgm_s2_boss.ogg",
+		loop = {
+			beginning = 4.40694,
+			ending = 118.00694,
+		},
+	},
+	-- stage 3
+	{
+		name = "s3",
+		filename = "bgm_s3.ogg",
+		loop = {
+			beginning = 1.94810,
+			ending = 167.14291,
+		},
+	},
+	-- stage 3 boss Reimu + Yukari
+	{
+		name = "s3_boss1",
+		filename = "bgm_s3_boss1.ogg",
+		loop = {
+			beginning = 4.44,
+			ending = 152.59,
+		},
+	},
+	-- stage 3 boss Marisa + Yuyuko
+	{
+		name = "s3_boss2",
+		filename = "bgm_s3_boss2.ogg",
+		loop = {
+			beginning = 14.81,
+			ending = 145.18,
+		},
+	},
+	-- stage 3 boss Mokou + Keine
+	{
+		name = "s3_boss3",
+		filename = "bgm_s3_boss3.ogg",
+		loop = {
+			beginning = 2.97066,
+			ending = 171.85955,
+		},
+	},
+	-- stage 4
+	{
+		name = "s4",
+		filename = "bgm_s4.ogg",
+		loop = {
+			beginning = 1.00027,
+			ending = 150.34285,
+		},
+	},
+	-- stage 4 boss
+	{
+		name = "s4_boss",
+		filename = "bgm_s4_boss.ogg",
+		loop = {
+			beginning = 18.54202,
+			ending = 172.85596,
+		},
+	},
+	-- stage 5
+	{
+		name = "s5",
+		filename = "bgm_s5.ogg",
+		loop = {
+			beginning = 8.95,
+			ending = 182.68134,
+		},
+	},
+	-- stage 5 boss1
+	{
+		name = "s5_boss1",
+		filename = "bgm_s5_boss1.ogg",
+		loop = {
+			beginning = 17.60,
+			ending = 148.8,
+		},
+	},
+	-- stage 5 boss2
+	{
+		name = "s5_boss2",
+		filename = "bgm_s5_boss2.ogg",
+		loop = {
+			beginning = 3.2,
+			ending = 123.2,
+		},
+	},
+	-- stage 6
+	{
+		name = "s6",
+		filename = "bgm_s6.ogg",
+		loop = {
+			beginning = 59.27,
+			ending = 161.67,
+		},
+	},
+	-- stage 6 boss
+	{
+		name = "s6_boss",
+		filename = "bgm_s6_boss.ogg",
+		loop = {
+			beginning = 5.91937,
+			ending = 248.88233,
+		},
+	},
+	-- stage 7
+	{
+		name = "s7",
+		filename = "bgm_s7.ogg",
+		loop = {
+			beginning = 3.50612,
+			ending = 174.50612,
+		},
+	},
+	-- stage 7 boss
+	{
+		name = "s7_boss",
+		filename = "bgm_s7_boss.ogg",
+		loop = {
+			beginning = 14.81,
+			ending = 192.59,
+		},
+	},
+	-- ed
+	{
+		name = "ed",
+		filename = "bgm_ed.ogg",
+		loop = {
+			beginning = 2.79000,
+			ending = 114.41000,
+		},
+	},
+	-- staff
+	{
+		name = "staff",
+		filename = "bgm_staff.ogg",
+		loop = {
+			beginning = 0.00000,
+			ending = 183.00000,
+		},
+	},
+	-- score
+	{
+		name = "deathmusic",
+		filename = "bgm_score.ogg",
+		loop = {
+			beginning = 4,
+			length = 75.69231,
+		},
+	},
+	-- card debug
+	{
+		name = "spellcard",
+		filename = "bgm_s2.ogg",
+		loop = {
+			beginning = 4.65415,
+			ending = 139.86542,
+		},
+	},
+}

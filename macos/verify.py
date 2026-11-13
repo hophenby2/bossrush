@@ -7,7 +7,7 @@ APP=ROOT/'dist/Boss Rush HD.app'
 BINARY=APP/'Contents/MacOS/BossRushHD'
 def run(*args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','fog','input','audio','settings','th38-sequence']);args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--smoke',action='store_true');parser.add_argument('--mode',choices=['menu','battle','graphics','fog','input','audio','settings','th38-sequence','native-port-practice','native-port-sequence']);args=parser.parse_args()
  run('luajit',ROOT/'tests/input.lua',ROOT.parent)
  run('codesign','--verify','--deep','--strict',APP)
  info=plistlib.loads((APP/'Contents/Info.plist').read_bytes())
@@ -31,7 +31,7 @@ def main():
    logfile=out/(mode+'.log')
    with logfile.open('w') as log:
     process=subprocess.Popen([str(BINARY)],cwd=sandbox,env=env,stdout=log,stderr=subprocess.STDOUT)
-    try:code=process.wait(timeout=600 if mode=='th38-sequence' and env.get('BOSSRUSH_MAC_TEST_END')=='1' else 55)
+    try:code=process.wait(timeout=600 if mode in ('th38-sequence','native-port-sequence') and env.get('BOSSRUSH_MAC_TEST_END')=='1' else 55)
     except subprocess.TimeoutExpired:
      process.terminate();process.wait(timeout=10);raise RuntimeError(mode+' 超时，见 '+str(logfile))
    for screenshot in data.glob('bossrush/snapshot/*.png'):shutil.copy2(screenshot,out/(mode+'.png'))
@@ -43,6 +43,10 @@ def main():
    result=json.loads(report.read_text());assert 'Metal' in result['version']
    assert result['audio']['renderer']=='OpenAL Soft' and '/Frameworks/soft_oal' in result['audio']['library'],'AL 符号未绑定到打包的 OpenAL Soft'
    assert mode!='battle' or result['peak']>0,'战斗测试没有生成弹幕'
+   if mode=='native-port-practice' and 'port_damage' in result:
+    assert result['port_damage']>0,'原生自机射击未击中 Like Dreamer Boss'
+   if mode=='native-port-sequence' and env.get('BOSSRUSH_MAC_TEST_END')=='1':
+    assert result['sequence'].get('won') and result['sequence']['completed']==result['sequence']['total'],'顺序测试未完成全部章节'
    assert mode!='input' or (result['input_checked'] and result['input_bomb_checked'] and result['paused']),'Mac 逐帧拖拽 / 双击 Bomb / 暂停未完成验证'
    assert mode!='settings' or result['settings_checked'],'触控设置 / 持久保存未完成验证'
    assert mode!='audio' or (result['audio_checked'] and result['audio_calls']==1920),'高频音效 / BGM 状态回归未完成'

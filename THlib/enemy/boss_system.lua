@@ -1000,7 +1000,7 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
             self:openSCBonus(sc_bonus)
         else
             self:startSpellHist(card.card_id, b.diff, lstg.var.player_name)
-            if card.phase_name then self:showPhaseName(card.phase_name) end
+            if card.phase_name and not card.own_phase_display then self:showPhaseName(card.phase_name) end
         end
         self:setStatus(card.hp, card.drop, card.is_extra, is_final, true,
                 card.t1 / 60, card.t2 / 60, card.t3 / 60, card.is_sc, sc_bg, sc_ring)

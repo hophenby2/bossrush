@@ -244,3 +244,14 @@ NewStage("TH38", "夏夜祭原作", 35, function(self)
     self:Task(function() original_flow.run(self.level) end)
     self:Next(170)
 end)
+
+local ports=dofile('mod/GAME/ports/register.lua')
+for _,level in ipairs({36,37}) do
+    local work=GameContent.ports[level]
+    local title=level==36 and '祈华梦原作' or 'Like Dreamer'
+    NewStage(work.code,title,level,function(self)
+        self:Option()
+        self:Task(function() ports.run(work,self) end)
+        self:Next()
+    end)
+end

@@ -44,6 +44,7 @@ local function play(scene,track)
     scene.sequence_music_fade=nil
 end
 function M.enter(scene,chapter,kind,row)
+    if GameContent and GameContent.ports[chapter.level] then scene.sequence_chapter=chapter;return end
     if chapter.level==35 then return _editor_class.TH38.media(scene,chapter,kind,row) end
     local game,key,stageTrack,bossTrack=location(chapter,row)
     local changed=scene.sequence_background_key~=game..'/'..key or not scene.sequence_background or not IsValid(scene.sequence_background)
@@ -58,6 +59,7 @@ function M.enter(scene,chapter,kind,row)
     play(scene,scene.sequence_default_music)
 end
 function M.frame(scene)
+    if GameContent and GameContent.ports[scene.level] then return end
     if scene.level==35 then return _editor_class.TH38.mediaFrame(scene) end
     local chapter=scene.sequence_chapter
     if not chapter then return end
@@ -96,6 +98,8 @@ function M.advance(owner,clock,state)
     end
 end
 function M.stop(scene)
+    local port=GameContent and GameContent.ports[scene.level]
+    if port then port.stop() end
     lstg.tmpvar.th38_random=nil;lstg.tmpvar.th38_phase=nil
     if scene.sequence_music then StopMusic(scene.sequence_music);scene.sequence_music=nil end
     scene.sequence_background=nil
