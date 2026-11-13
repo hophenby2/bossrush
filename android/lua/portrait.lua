@@ -458,6 +458,10 @@ function P.hud(alpha)
     local _,buttonY=P.slowButton()
     local native=ui.OriginalHUD and ui.OriginalHUD.portraitLower
         and ui.OriginalHUD.portraitLower(w.scrl+12,buttonY,alpha)
+    if NativePlayers and NativePlayers.state() then
+        ui.RunHUD.resources(w.scrl+12,w.scrl+200,buttonY+205,alpha)
+        return
+    end
     local x,y=w.scrl+18,buttonY+48
     local count=GameDrops.bombsEnabled() and ((GameNet and GameNet.host()) and 2 or 1) or 0
     local lives=ui.RunHUD.lives()

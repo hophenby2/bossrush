@@ -150,6 +150,7 @@ end
 function enemybase:colli(other)
     if SequenceResources and SequenceResources.enabled() and SequenceResources.shotHit(self,other) then return end
     if other.dmg then
+        if other.native_main then NativePlayers.hitShot(self) end
         lstg.var.score = lstg.var.score + 10
         local dmg = GameDrops and GameDrops.damage(other.dmg,other) or other.dmg
         Damage(self, dmg)

@@ -12,7 +12,7 @@ _editor_class.TH37=R.classes
 LoadTexture('mhj2_barrages','Resources/th37/barrages.png')
 LoadTexture('mhj2_enemys','Resources/th37/enemys.png')
 local function valid(o) return o and IsValid(o) end
-local function setupCard(meta)
+local function setupCard(meta,group)
     local opening=150+(meta.flag=='TRANS' and 100 or 0)
     local total=meta.seconds+opening/60
     local endurance=meta.flag=='TIME' or meta.flag=='TIMENOTHIDE'
@@ -20,6 +20,11 @@ local function setupCard(meta)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,total,meta.hp)
     card.phase_name,card.phase_kind=meta.title,meta.role or 'boss'
     card.mhj_source=meta
+    card.nativeBombFactor=(meta.flag=='LAST' or meta.spell and group.extraBoss) and 0 or 1
+    function card:nativeDamage(timer)
+        if endurance or timer<=opening+meta.immune then return 0 end
+        return 1
+    end
     function card:before() self.mhj_controller=nil;self.mhj_clock=nil end
     function card:init()
         self.mhj_clock,self.mhj_index=0,1
@@ -40,7 +45,12 @@ local function setupCard(meta)
         end
         R.tick(self.mhj_controller)
     end
-    function card:del() R.clear(self.mhj_controller);self.mhj_controller=nil;self.mhj_clock=nil end
+    function card:del()
+        if NativePlayers and NativePlayers.enabled(nil,35) and self.hp<=0 and not self.timeout then
+            NativePlayers.drop(35,self.x,self.y,group.items,true,not meta.spell)
+        end
+        R.clear(self.mhj_controller);self.mhj_controller=nil;self.mhj_clock=nil
+    end
     return card
 end
 local function hideRoad(o)
@@ -90,7 +100,7 @@ for _,chapter in ipairs(D.chapters) do
             boss.Define(band,first.actor,'TH07_1',TH07_bg,{0,70},nil,first.image,35)
             for _,meta in ipairs(group.cards) do
                 meta.role=group.source[3]=='1' and 'boss' or 'mid'
-                local card=setupCard(meta)
+                local card=setupCard(meta,group)
                 boss.card.add({{card,band}},35,'幕华祭'..chapter.name..' '..meta.actor..' '..meta.title,meta.id)
                 C.cards[meta.id]={card=card,band=band}
                 chapter.units[#chapter.units+1]={id=meta.id,role=meta.role}
@@ -108,6 +118,8 @@ function C.units()
     return out
 end
 function C.runChapter(scene,chapter)
+    local resources=NativePlayers and NativePlayers.state()
+    if resources then resources.chapter=chapter.name end
     local meta=assert(C.chapters[chapter.name]);local state=R.stageState(meta.stage)
     local marker=1
     for t=0,meta.length do

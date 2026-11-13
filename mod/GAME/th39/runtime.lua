@@ -670,7 +670,9 @@ R.classes.fairy=Class(enemy,{
     end,
     kill=function(o)
         local s=o.mhj;R.clear(s.controller)
-        if s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end
+        if NativePlayers and NativePlayers.enabled(nil,37) then
+            NativePlayers.drop(37,o.x,o.y,s.items)
+        elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end
         clean(o)
     end,
     del=function(o) R.clear(o.mhj.controller);clean(o) end,

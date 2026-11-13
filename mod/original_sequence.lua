@@ -217,8 +217,7 @@ function S.restartChapter(scene)
 end
 function S.machines(entry)
     if entry.native then
-        return {{id='reimu',name='博丽灵梦 · 项目自机',route='reimu_player'},
-            {id='marisa',name='雾雨魔理沙 · 项目自机',route='marisa_player'}}
+        return NativePlayers.machines(entry.level)
     end
     return SequenceResources.machines(SequenceResources.gameByLevel[entry.level])
 end
@@ -226,10 +225,9 @@ function S.start(key,machine)
     local entry=assert(S.catalog.get(key),'未知顺序关卡key')
     lstg.var.sequence_key=key
     if entry.native then
-        local selected
-        for _,p in ipairs(S.machines(entry)) do if p.id==(machine or 'reimu') then selected=p end end
-        assert(selected,'未知原生关卡自机：'..tostring(machine))
-        lstg.var.sequence_player,lstg.var.player_name,lstg.var.rep_player=selected.id,selected.route,selected.name
+        local selected=assert(NativePlayers.machine(entry.level,machine or 'reimu'),
+            '未知原作机体 '..tostring(machine))
+        lstg.var.sequence_player=selected.id
     elseif SequenceResources then
         local game=SequenceResources.gameByLevel[entry.level]
         local selected=assert(SequenceResources.machine(game,machine or SequenceResources.machines(game)[1].id))
@@ -239,6 +237,7 @@ function S.start(key,machine)
         local frames=scoredata and scoredata.OriginalSequencePlayFrames and scoredata.OriginalSequencePlayFrames[game] or 0
         lstg.var.sequence_continue_limit=game==7 and (frames>=14*216000 and 5 or frames>=7*216000 and 4 or 3) or 3
     end
+    lstg.var.sc_index,lstg.var.sc_group=nil,nil
     lstg.var.rogue_run,lstg.var.sequence_run,lstg.var.timeslow=nil,nil,nil
     lstg.var.current_system=''
     StopMusic('SCORE')
@@ -249,7 +248,7 @@ for _,entry in ipairs(S.catalog.entries) do
     local selected=entry
     local difficulty=entry.difficulty=='lunatic' and 4 or entry.difficulty=='extra' and 5 or entry.difficulty=='phantasm' and 6 or 1
     local group=stage.group.New('menu',{},entry.group,false,difficulty)
-    group.sequence_key,group.sequence_native=entry.key,entry.native
+    group.sequence_key,group.sequence_native,group.sequence_level=entry.key,entry.native,entry.level
     local battle=stage.group.AddStage(entry.group,entry.battle,false)
     battle.displayname,battle.level=entry.title,entry.level
     battle.revive_miss_limit=S.MISS_LIMIT-1
@@ -263,7 +262,11 @@ for _,entry in ipairs(S.catalog.entries) do
         if self.sequence_finished then return end
         local misses=GameRevive and GameRevive.misses() or lstg.var.dead or 0
         local resources=SequenceResources and SequenceResources.state()
-        if not resources and misses>=S.MISS_LIMIT then S.finish(self,false);return end
+        local native=NativePlayers and NativePlayers.state()
+        if native and NativePlayers.out() or not native and not resources and misses>=S.MISS_LIMIT then
+            S.finish(self,false)
+            return
+        end
         stage.group.frame(self)
         if OriginalSequenceMedia then OriginalSequenceMedia.frame(self) end
     end

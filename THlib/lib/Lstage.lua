@@ -350,7 +350,8 @@ function stage:Option(bg, music, full_screen)
     item._init_item(self)
     if ui.OriginalHUD then ui.OriginalHUD.start() end
     mask_fader:Do("open")
-    if SequenceResources and SequenceResources.enabled() then SequenceResources.spawnPlayer()
+    if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
+    elseif SequenceResources and SequenceResources.enabled() then SequenceResources.spawnPlayer()
     elseif GameNet then GameNet.spawnPlayers() else New(_G[lstg.var.player_name]) end
     if bg then
         background.Create(bg)

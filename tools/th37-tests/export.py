@@ -161,6 +161,13 @@ def main():
     ident=next_id;next_id+=1;actorname,img=actors.get(current['actor'],('梦华祭角色','Yukari'));title=names.get(('f' if not kind else '')+key,('符卡' if kind else '通常弹幕')+' '+key)
     c={'id':ident,'pattern':key,'spell':kind==1,'seconds':seconds,'hp':hp,'immune':int(flag) if flag.isdigit() else 0,'flag':flag,'title':title,'actor':actorname,'image':img,'chapter':str(stage) if stage<=6 else 'EX' if stage==7 else 'PH','boss':current['id']}
     current['cards'].append(c);allcards.append(c)
+   elif fn=='SetBossItems':
+    assert current and len(args_)==9
+    current['items']=[int(x) for x in args_]
+    driver.append((tick,fn,args_)) # Retain the historical driver for old replays.
+   elif fn=='ExtraBoss':
+    if current:current['extraBoss']=True
+    driver.append((tick,fn,args_))
    elif fn=='StageEnd':lasttime=tick
    else:
     if fn=='SetEnemy' and args_[7]!='-1':pattern(str(stage)+args_[7])

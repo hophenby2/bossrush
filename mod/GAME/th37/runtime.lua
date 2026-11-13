@@ -334,7 +334,10 @@ R.classes.fairy=Class(enemy,{
         enemybase.init(o,spec.hp);o.mhj=copy(spec);o.mhj.state=state;o.mhj.age=0;o.mhj.events={}
         o.bound=false;o.vx,o.vy=0,0;o.group=GROUP.ENEMY;o.layer=LAYER.ENEMY;o.colli=true
         o.x,o.y=spec.x-224,240-spec.y;o.a,o.b=8,8;o.maxhp=spec.hp
-        o.img='img_void';o.mhj.controller=spec.pattern and R.controller(o,spec.pattern,true) or nil
+        o.img='img_void'
+        -- LuaSTG refreshes the collision dimensions when img changes.
+        if NativePlayers and NativePlayers.enabled(nil,35) then o.a,o.b=8,8 end
+        o.mhj.controller=spec.pattern and R.controller(o,spec.pattern,true) or nil
         state.enemies[#state.enemies+1]=o;R.objects[o]=true
     end,
     frame=function(o)
@@ -366,7 +369,9 @@ R.classes.fairy=Class(enemy,{
     end,
     kill=function(o)
         local s=o.mhj;R.clear(s.controller)
-        if s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end
+        if NativePlayers and NativePlayers.enabled(nil,35) then
+            NativePlayers.drop(35,o.x,o.y,s.items)
+        elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end
         clean(o)
     end,
     del=function(o) R.clear(o.mhj.controller);clean(o) end,

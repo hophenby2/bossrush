@@ -11,16 +11,17 @@ if a.damage:env['BOSSRUSH_MAC_TEST_TH37_DAMAGE']='1'
 if a.repeat:env['BOSSRUSH_MAC_TEST_TH37_REPEAT']='1'
 exe=ROOT/'macos/dist/Boss Rush HD.app/Contents/MacOS/BossRushHD'
 code=[ROOT/'mod/GAME/th37.lua',ROOT/'mod/original_sequence.lua',ROOT/'mod/sequence_catalog.lua',ROOT/'macos/lua/test.lua']+sorted((ROOT/'mod/GAME/th37').rglob('*.lua'))
+code += [ROOT/'THlib/native_players.lua',ROOT/'macos/lua/native_player_probe.lua']
 fingerprints={}
 for path in code:
  rel=path.relative_to(ROOT).as_posix();bundled=exe.parents[1]/'Resources/game'/rel
- bundle_path=exe.parents[1]/'Resources/game/macos/test.lua' if rel=='macos/lua/test.lua' else bundled
+ bundle_path=exe.parents[1]/'Resources/game'/rel.replace('macos/lua/','macos/',1) if rel.startswith('macos/lua/') else bundled
  assert path.read_bytes()==bundle_path.read_bytes(),'Mac资源不是当前源码，请先 --update-assets：'+rel
  fingerprints[rel]=hashlib.sha256(path.read_bytes()).hexdigest()
 with tempfile.TemporaryDirectory(prefix='bossrush-th37-native-') as tmp:
  env['BOSSRUSH_MAC_DATA']=tmp
  with (a.out/'run.log').open('w') as log:
-  started=time.monotonic();proc=subprocess.Popen([str(exe)],cwd=tmp,env=env,stdout=log,stderr=subprocess.STDOUT)
+  started=time.monotonic();proc=subprocess.Popen([str(exe),'-ApplePersistenceIgnoreState','YES'],cwd=tmp,env=env,stdout=log,stderr=subprocess.STDOUT)
   try:code=proc.wait(timeout=max(70,a.frames*(2 if a.repeat else 1)/30+30))
   except subprocess.TimeoutExpired:
    proc.terminate();proc.wait(timeout=10);raise RuntimeError('真实引擎超时：'+str(a.out/'run.log'))

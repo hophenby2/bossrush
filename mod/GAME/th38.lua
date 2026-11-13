@@ -1,6 +1,6 @@
 -- TH38 东方雪莲华 ～ Abyss Soul Lotus. 原生对象接入初版。
 -- 原始数值表离线导出；Lunatic六面与Extra A，分支/Last Spell另列练习。
--- 使用项目自机/伤害/背景/BGM；Unity专用粒子、场景和结界资源未搬运。
+-- 背景/BGM沿用项目资源；自机及结界数值由NativePlayers接入。
 -- 运动/绑定/激光代理仍须与原版逐帧对照，来源和差异见tools/th38-tests/README.zh-CN.md。
 local R=dofile('mod/GAME/th38/runtime.lua')
 local D=R.data
@@ -92,6 +92,8 @@ function C.units()
 end
 function C.runChapter(scene,chapter)
     R.clearAll()
+    local resources=NativePlayers and NativePlayers.state()
+    if resources then resources.chapter=chapter.name end
     local meta=assert(C.chapters[chapter.name]);local roadIndex,bossIndex=1,1;local c
     local length=meta.bosses[#meta.bosses].time
     for t=0,length do

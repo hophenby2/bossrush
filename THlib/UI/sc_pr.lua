@@ -7,7 +7,8 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
     local group, index = lstg.var.sc_group[1], lstg.var.sc_group[2]
     local class = _sc_pr_table[group][index].sc_group[1].boss
     self.level = class.StageLevel or 1
-    New(_G[lstg.var.player_name])
+    if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
+    else New(_G[lstg.var.player_name]) end
     if class._bg ~= nil then
         background.Create(class._bg)
     end

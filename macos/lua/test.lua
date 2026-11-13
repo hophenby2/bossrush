@@ -5,6 +5,8 @@ function T.install()
     if not mode then return end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
     local sequenceKey=os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE')
+    local nativeMachine=os.getenv('BOSSRUSH_MAC_TEST_MACHINE')
+    local nativeProbe=nativeMachine and dofile('macos/native_player_probe.lua')
     local battleCard=tonumber(os.getenv('BOSSRUSH_MAC_TEST_CARD') or '') or 3638
     local fixedFocus=os.getenv('BOSSRUSH_MAC_TEST_FOCUS')=='1'
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
@@ -75,6 +77,7 @@ function T.install()
             after(...)
             local scene=stage.current_stage
             if scene and (scene.stage_name=='RogueTen@RogueTen' or scene.stage_name=='Spell Practice@Spell Practice' or sequenceKey and scene.group and scene.group.sequence_key==sequenceKey) and scene.timer==logicalTarget and not checkpoint then
+                if nativeProbe then nativeProbe.checkpoint() end
                 local rows={}
                 for _,group in ipairs({1,2,3,4,5,7,8,10}) do
                     for _,o in ObjList(group) do
@@ -118,7 +121,9 @@ function T.install()
         end
         local beforeX,beforeY=p and p.x,p and p.y
         local quit=false
+        if nativeProbe and p and p.machine then nativeProbe.before(p) end
         if not (logicalTarget and captured) then quit=original() end
+        if nativeProbe and p and IsValid(p) and p.machine then nativeProbe.after(p) end
         if canInput and inputTick>=11 and inputTick<=20 then
             local distance=math.sqrt((p.x-beforeX)^2+(p.y-beforeY)^2)
             local expected=unlimited and (inputTick==11 and 40 or 0) or p.lspeed
@@ -140,7 +145,7 @@ function T.install()
         end
         local scene=stage.current_stage
         local mhj3Damage=os.getenv('BOSSRUSH_MAC_TEST_TH39_DAMAGE')=='1'
-        if (mhj3Damage or os.getenv('BOSSRUSH_MAC_TEST_TH37_DAMAGE')=='1' or os.getenv('BOSSRUSH_MAC_TEST_TH38_DAMAGE')=='1') and sequenceKey and scene and scene.group and scene.group.sequence_key==sequenceKey then
+        if not nativeProbe and (mhj3Damage or os.getenv('BOSSRUSH_MAC_TEST_TH37_DAMAGE')=='1' or os.getenv('BOSSRUSH_MAC_TEST_TH38_DAMAGE')=='1') and sequenceKey and scene and scene.group and scene.group.sequence_key==sequenceKey then
             local probeAt=mhj3Damage and 120 or 90
             if scene.timer==probeAt and not mhjDamageProbe then
                 local fairy
@@ -170,7 +175,7 @@ function T.install()
             started=true;frames=0;benchmarkStart=lstg.AndroidClock()
             if mode=='battle' or mode=='input' then
                 if sequenceKey then
-                    OriginalSequence.start(sequenceKey,'reimu')
+                    OriginalSequence.start(sequenceKey,nativeMachine or 'reimu')
                 elseif battleCard>=39000 and battleCard<40000 and TH39 then
                     local index
                     for _,row in ipairs(TH39.units()) do
@@ -179,21 +184,21 @@ function T.install()
                     assert(index,'缺少永夜篇测试阶段：'..battleCard)
                     lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu'
                     lstg.var.sc_index,lstg.var.sc_group=index,{37,index}
-                    stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true,nativeMachine)
                 elseif battleCard>=38000 and battleCard<39000 and TH38 then
                     local index
                     for i,unit in ipairs(_sc_pr_table[36]) do if unit.sc_group[1].card.card_id==battleCard then index=i end end
                     assert(index,'缺少雪莲华测试阶段：'..battleCard)
                     lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu'
                     lstg.var.sc_index,lstg.var.sc_group=index,{36,index}
-                    stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true,nativeMachine)
                 elseif battleCard>=37000 and battleCard<38000 and TH37 then
                     local index
                     for i,unit in ipairs(_sc_pr_table[35]) do if unit.sc_group[1].card.card_id==battleCard then index=i end end
                     assert(index,'缺少幕华祭测试阶段：'..battleCard)
                     lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu'
                     lstg.var.sc_index,lstg.var.sc_group=index,{35,index}
-                    stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true,nativeMachine)
                 else
                 local draw=RogueTen.draw
                 RogueTen.draw=function(seed,width)

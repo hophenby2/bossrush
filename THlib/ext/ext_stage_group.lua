@@ -76,54 +76,51 @@ function stg.DefStageValue(stagename, key, value)
 end
 local RetryCountToUnlockAchievement = 0
 
-local ExecuteFlag
 function stg.frame(self)
     ext.sc_pr = false
     cheat = false--符卡练习之外不给自机无敌（符卡练习走 frame_sc_pr）
     if not lstg.var.init_player_data then
         error('玩家数据加载失败')
     end
-    if self.AllowMissCount then
-        if self.AllowMissCount < (GameRevive and GameRevive.misses() or lstg.var.dead) and not ExecuteFlag then
-            PlaySound("pldead01")
-           --lstg.tmpvar.lost = true
-           lstg.var.lost = true
-            ExecuteFlag = true
-            lstg.tmpvar.noPause = true
-            player.colli = false
-            player.lock = true
-            object.EnemyNontjtDo(function(b)
-                task.Clear(b)
-            end)
-            object.BulletIndesDo(function(b)
-                task.Clear(b)
-            end)
-            task.Clear(stage.current_stage)
-            task.New(stage.current_stage, function()
-                Failed_Show:Do(175)
-                for i = 1, 160 do
-                    for _, v in pairs(EnumRes2('bgm')) do
-                        if GetMusicState(v) == "playing" then
-                            SetBGMVolume(v, 1 - i / 160)
-                        end
-                    end
-                    task.Wait()
-                end
+    local native=NativePlayers and NativePlayers.state()
+    local failed
+    if native then failed=NativePlayers.out()
+    elseif self.AllowMissCount then failed=self.AllowMissCount < (GameRevive and GameRevive.misses() or lstg.var.dead) end
+    if failed and not lstg.tmpvar.stage_failure_started then
+        PlaySound("pldead01")
+       --lstg.tmpvar.lost = true
+       lstg.var.lost = true
+        lstg.tmpvar.stage_failure_started = true
+        lstg.tmpvar.noPause = true
+        player.colli = false
+        player.lock = true
+        object.EnemyNontjtDo(function(b)
+            task.Clear(b)
+        end)
+        object.BulletIndesDo(function(b)
+            task.Clear(b)
+        end)
+        task.Clear(stage.current_stage)
+        task.New(stage.current_stage, function()
+            Failed_Show:Do(175)
+            for i = 1, 160 do
                 for _, v in pairs(EnumRes2('bgm')) do
                     if GetMusicState(v) == "playing" then
-                        StopMusic(v)
+                        SetBGMVolume(v, 1 - i / 160)
                     end
                 end
-                mask_fader:Do("close")
-                task.Wait(30)
-                stg.FinishStage()
-                self.AllowMissCount = self.AllowMissCount + 1--防止再检测
-                ExecuteFlag = false
-            end)
-        end
-
+                task.Wait()
+            end
+            for _, v in pairs(EnumRes2('bgm')) do
+                if GetMusicState(v) == "playing" then
+                    StopMusic(v)
+                end
+            end
+            mask_fader:Do("close")
+            task.Wait(30)
+            stg.FinishStage()
+        end)
     end
-    --
     stg.frame_pause(self)
 end
 -- 答题冻结战斗时仍需处理暂停菜单，不能因此启动超额失误的原失败演出。
@@ -253,6 +250,9 @@ function stg.Start(group)
     if lstg.var.__sequence_system_version then lstg.var.__drops_version=0;lstg.var.upgrades=nil end
     if not group.sequence_key then lstg.var.original_resources=nil;lstg.var.sequence_player=nil end
     if not group.sequence_key then lstg.var.sequence_run=nil end
+    if NativePlayers then
+        NativePlayers.configure(group.sequence_native and group.sequence_level,lstg.var.sequence_player)
+    end
     lstg.var.is_practice = false
     lstg.var.cheat = false--普通游玩不给自机无敌
     stage.Set('save', group[1])
@@ -273,7 +273,7 @@ function stg.StartSaving()
 end
 
 ---@param sc_pr boolean @是否符卡练习（符卡练习时自机无敌）
-function stg.PracticeStart(stagename, sc_pr)
+function stg.PracticeStart(stagename, sc_pr, machine)
     if not dofile('mod/original_practice.lua').canStart(stagename,sc_pr) then return false end
     lstg.var.__original_flow_version=1
     -- level36曾是旧版AEX动态槽位；新来源须在录像快照前写入来源版本。
@@ -291,6 +291,14 @@ function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__revive_version=0;lstg.var.revive=nil
     lstg.var.__rank_version=0;lstg.var.rank=nil;lstg.var.__hp_scale_version=nil
     lstg.var.__rogue_music_version=nil
+    if NativePlayers then
+        local level=NativePlayers.practiceLevel(stagename,sc_pr and lstg.var.sc_group)
+        if level and not machine then
+            machine=lstg.var.native_player_level==level and lstg.var.native_player_id
+                or lstg.var.player_name=='marisa_player' and 'marisa' or 'reimu'
+        end
+        NativePlayers.configure(level,machine)
+    end
     lstg.var.is_practice = true
     lstg.var.cheat = sc_pr or false--先写 lstg.var，下一行 stage.Set 会把它一起存进录像
     stage.Set('save', stagename)

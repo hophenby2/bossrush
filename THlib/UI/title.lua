@@ -79,25 +79,41 @@ function stage_menu:init()
             start()
         end)
     end
+    local function selectNativePractice(source,level,start)
+        local machines=NativePlayers and NativePlayers.machines(level)
+        if not machines then startPractice(source,start);return end
+        local selector
+        local function back() menu.FadeOut(selector);menu.FadeIn(source) end
+        local rows={}
+        for _,machine in ipairs(machines) do
+            local id=machine.id
+            rows[#rows+1]={machine.name,function()
+                startPractice(selector,function() start(id) end)
+            end,'',key=id}
+        end
+        rows[#rows+1]={'返回',back,'Back',key='back'}
+        selector=New(main_menu,'选择原作机体',rows,back)
+        menu.FadeOut(source);menu.FadeIn(selector)
+    end
     local function createPracticeMenus()
         if menu_stage_practice then return end
         menu_stage_practice=New(stage_select,function()
             menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_player_system_select)
         end,function(pos)
             local entry=menu_stage_practice.stage_selects[pos]
-            startPractice(menu_stage_practice,function()
+            local name=type(entry.stage)~='function' and entry.stage.name
+            selectNativePractice(menu_stage_practice,NativePlayers and NativePlayers.practiceLevel(name),function(id)
                 lstg.var.sc_index,lstg.var.sc_group=nil,nil
-                if type(entry.stage)=='function' then entry.stage()
-                else stage.group.PracticeStart(entry.stage.name) end
+                if name then stage.group.PracticeStart(name,false,id) else entry.stage() end
             end)
         end)
         menu_spell_practice=New(sc_pr_menu,function(index,group)
             if not index then
                 menu.FadeOut(menu_spell_practice);menu.FadeIn(menu_player_system_select);return
             end
-            startPractice(menu_spell_practice,function()
+            selectNativePractice(menu_spell_practice,group[1],function(id)
                 lstg.var.sc_index,lstg.var.sc_group=index,group
-                stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                stage.group.PracticeStart('Spell Practice@Spell Practice',true,id)
             end)
         end)
     end

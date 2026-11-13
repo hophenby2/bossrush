@@ -28,7 +28,7 @@ FIELDS = [
 ]
 EVENT_FIELDS = {**PROPS, '进入遮罩瞬间': 'maskEntered', '状态': 'status', '状态帧': 'statusFrame'}
 ROAD = set('SetEnemy CopyEnemy AddEvent SetEnemyItems SetNoHarmTime SetHideTime PauseByEnemy Pause BindFamiliar SetEnemyUnderneath SetEnemyBarrageDispel SetEnemyDeadCondition'.split())
-PRESENTATION = set('PlayMusic FadeoutMusic FadeinMusic LoadBackGround ShowDialog SetEnemyBarrageUnderActor RaiseEffect SetBossItems SetEnemyExplo SetBackgroundEffect StopBackgroundEffect AdjustBackgroundEffect FadeinBackground FadeinEnvSound FadeoutEnvSound PlaySound SkipMusic ReplaceBackgroundEffect DistortEffect BreakBackgroundEffect SetBossCardBackground SetBossCardOpenEffect SetBossCardSide SetBossCardTip PreloadMusic SetBossDialogDelay KeepBackground TimeIgnoreBackground SetSpecialItem SetBossCardBombMoveFactor SetBossCardBarrageOrder SetBossCardDialog SetBossCardDispel LastBoss ExtraBoss PauseLantern Respawn PlaceTeammate StartProtect EndProtect'.split())
+PRESENTATION = set('PlayMusic FadeoutMusic FadeinMusic LoadBackGround ShowDialog SetEnemyBarrageUnderActor RaiseEffect SetEnemyExplo SetBackgroundEffect StopBackgroundEffect AdjustBackgroundEffect FadeinBackground FadeinEnvSound FadeoutEnvSound PlaySound SkipMusic ReplaceBackgroundEffect DistortEffect BreakBackgroundEffect SetBossCardBackground SetBossCardOpenEffect SetBossCardSide SetBossCardTip PreloadMusic SetBossDialogDelay KeepBackground TimeIgnoreBackground SetSpecialItem SetBossCardBombMoveFactor SetBossCardBarrageOrder SetBossCardDialog SetBossCardDispel LastBoss PauseLantern Respawn PlaceTeammate StartProtect EndProtect'.split())
 ACTORS = [
     ['莉格露·奈特巴格', 'Tewi'], ['今泉影狼', 'Kagerou'], ['因幡帝', 'Tewi'],
     ['因幡帝', 'Tewi'], ['上白泽慧音', 'Reisen'], ['铃仙·优昙华院·因幡', 'Reisen'],
@@ -327,6 +327,14 @@ class Export:
                     phase['tracks'].setdefault(str(len(group['hosts'])), []).append(track)
                 elif cmd == 'SetBossCardLabel':
                     card['flags'].append(a[0])
+                elif cmd == 'SetBossItems':
+                    assert host and len(a) == 9
+                    host['items'] = [atom(v) for v in a]
+                    self.proxies['stage:' + cmd] += 1
+                elif cmd == 'ExtraBoss':
+                    assert group
+                    group['extraBoss'] = True
+                    self.proxies['stage:' + cmd] += 1
                 elif cmd == 'SetBossCardLSCCondition':
                     card['condition'] = int(a[0])
                 elif cmd == 'SetBossCardBossOrder':

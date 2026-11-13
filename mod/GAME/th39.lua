@@ -58,8 +58,16 @@ local function setupCard(meta,group)
     local card=boss.card.New(meta.kind~=0 and meta.title or '',immune/60,immune/60,timeout/60,meta.hp)
     card.phase_name,card.phase_kind=meta.title,group.role
     card.mhj3_source=meta
+    card.nativeBombFactor=group.extraBoss and (meta.kind==0 and .5 or 0) or 1
+    local start=60+(flag(meta,'DELAY') and 150 or 0)+(flag(meta,'TRANS') and 100 or 0)
+    function card:nativeDamage(timer)
+        if endurance or timer<=start+meta.immune then return 0 end
+        return timer<=start+90 and (timer-start)/180 or 1
+    end
     function card:before() self.mhj3_card=nil end
     function card:init()
+        local state=NativePlayers and NativePlayers.state()
+        if state then state.cardMisses=lstg.var.dead end
         self.mhj3_card={clock=0,actors={},configs={}}
         self.mhj3_hidden=false
         local ctx=self.mhj3_card
@@ -114,6 +122,12 @@ local function setupCard(meta,group)
         if ctx then
             for i,a in ipairs(ctx.actors) do
                 R.clear(a.controller)
+                if NativePlayers and NativePlayers.enabled(nil,37) and self.hp<=0 and not self.timeout then
+                    local state=NativePlayers.state()
+                    if state and state.cardMisses==lstg.var.dead then
+                        NativePlayers.drop(37,a.object.x,a.object.y,group.hosts[i].items,true,meta.kind==0)
+                    end
+                end
                 if i>1 and valid(a.object) then object.Del(a.object) end
             end
         end
@@ -220,6 +234,8 @@ function C.units()
     return C.rows
 end
 function C.runChapter(scene,chapter)
+    local resources=NativePlayers and NativePlayers.state()
+    if resources then resources.chapter=chapter.name end
     local meta=chapter.script and chapter or assert(C.chapters[chapter.name])
     local s=R.stageState(meta.stage)
     local groups={}

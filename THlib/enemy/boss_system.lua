@@ -171,6 +171,9 @@ function system:frame()
         else
             b.time_sc = false
         end
+        if b.current_card and b.current_card.nativeDamage and NativePlayers and NativePlayers.enabled() and timer<b.t3 then
+            b.dmg_factor=b.current_card:nativeDamage(timer)
+        end
         --分数流失
         local native=b.current_card and b.current_card._original_balance
         if native and b.t1~=b.t3 and timer<b.t3 then
