@@ -63,12 +63,19 @@ function M.shoot(p,t)
         fire(26,18,8,75,3,.35,4)
     end
 end
+local bombTimes={reimu={270,400},marisa={300,180},mokou={180,420}}
 function M.bomb(p,s)
     if s.bombs<=0 then return false end
     s.bombs=s.bombs-1
-    p.bombTime=p.slow==1 and 120 or 90
+    p.bombTime=bombTimes[p.machine.id][p.slow==1 and 2 or 1]
+    M.clearBonus()
     lstg.var.bomb_used=(lstg.var.bomb_used or 0)+1
     return true
+end
+local function addBomb(s,n)
+    local stock=s.bombs+n
+    s.bombs=math.min(5,stock)
+    s.pointrate=math.min(5000000,s.pointrate+math.max(0,stock-5)*100000)
 end
 function M.collect(s,kind,amount)
     local dyes=lstg.var.dyeitem
@@ -76,10 +83,14 @@ function M.collect(s,kind,amount)
     dyes[kind]=dyes[kind]+amount
     if kind=='red' then
         s.lifeChip=s.lifeChip+.25*amount
-        s.life=math.min(8,s.life+math.floor(s.lifeChip))
-        s.lifeChip=s.lifeChip%1
+        local lives=s.life+math.floor(s.lifeChip/100)
+        s.life=math.min(8,lives)
+        s.lifeChip=s.lifeChip%100
+        if lives>8 then addBomb(s,lives-8) end
     elseif kind=='green' then
-        s.bombs=math.min(5,s.bombs+amount)
+        s.bombChip=s.bombChip+amount
+        addBomb(s,math.floor(s.bombChip/100))
+        s.bombChip=s.bombChip%100
     elseif kind=='blue' then
         s.stageBlue=s.stageBlue+amount
         lstg.var.score=(lstg.var.score or 0)+s.pointrate*amount

@@ -109,7 +109,7 @@ function P.reset()
         s.lifeChip,s.bombChip,s.star,s.dyeChain=0,0,0,0
         if level==39 then
             v.dyeitem={red=0,blue=0,green=0,night=0}
-            s.pointrate=v.sequence_key=='theis_extra' and 100000 or 50000
+            s.pointrate=spell and 5000000 or v.sequence_key=='theis_extra' and 100000 or 50000
             v.coun_num=0
         elseif level==40 then
             v.lifeleft,v.bomb=s.life,s.bombs
@@ -488,10 +488,11 @@ function P.miss(p)
     if not s then return end
     local adapter=P.adapters[s.level]
     if s.level>=38 then
+        if adapter and adapter.clearBonus then adapter.clearBonus() end
         if adapter and adapter.miss and adapter.miss(p,s) then return end
         lstg.var.dead=(lstg.var.dead or 0)+1
         s.life=s.life-1
-        s.bombs=math.max(s.bombs,2)
+        if s.level==39 then s.bombs=math.max(s.bombs,2) end
         if s.level==38 then
             s.power=math.max(0,s.power-16)
             s.star,s.enchantment,s.enchantmentTime=0,nil,nil

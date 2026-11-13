@@ -141,12 +141,12 @@ function stg.frame_pause(self)
         end
         lstg.var.timeslow = nil
         if lstg.var.is_practice then
-            stage.group.PracticeStart(self.name)
+            stage.group.PracticeStart(self.name,false,nil,lstg.var.like_dreamer_loadout)
         else
             if ContinueGame then
                 stage.group.StartSaving()
             else
-                stage.group.Start(self.group)
+                stage.group.Start(self.group,lstg.var.like_dreamer_loadout)
             end
         end
     end
@@ -158,12 +158,12 @@ function stg.frame_pause(self)
     end
     if order == "重新开始" then
         if lstg.var.is_practice then
-            stage.group.PracticeStart(self.name)
+            stage.group.PracticeStart(self.name,false,nil,lstg.var.like_dreamer_loadout)
         else
             if ContinueGame then
                 stage.group.StartSaving()
             else
-                stage.group.Start(self.group)
+                stage.group.Start(self.group,lstg.var.like_dreamer_loadout)
             end
         end
         lstg.tmpvar.pause_menu_text = nil

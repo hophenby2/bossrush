@@ -307,6 +307,10 @@ env.item.DropItem=function(x,y,items)
 end
 load('EISlib/bullet/bullet.lua')
 load('EISlib/boss/boss.lua')
+if P then
+    local adapter=P.adapters[W.level]
+    adapter.clearBonus=function() env.boss.ClearBonus(true,true) end
+end
 load('EISlib/egg/egg.lua')
 load('EISlib/background/background.lua')
 load('EISlib/stage/stage.lua')

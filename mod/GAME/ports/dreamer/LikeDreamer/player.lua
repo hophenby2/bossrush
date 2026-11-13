@@ -1455,14 +1455,17 @@ function likedreamer_player:_settleDeath()
 
 	self.shotVariant = 0
 	local lives = var.lifeleft or 0
-	if lives ~= 0 and (runtime().routeMode or 0) ~= -1 and rawget(_G, "item_bomb") then
-		local dropCount = self.beingShotCount > 1 and 2 or 1
-		for _ = 1, dropCount do New(item_bomb, self.x, self.y) end
+	local rt=runtime()
+	if lives>0 and rt.routeMode~=-1 then
+		local count=self.beingShotCount>1 and 2 or 1
+		for i=0,count-1 do
+			local angle=rt:randomCoord(rt.frame+i*10,0x4001,0)-0x6000
+			LikeDreamer.Reward.spawnItem(6,self.ldX,self.ldY,normalize16(angle),3.5,30)
+		end
 	end
 	self.beingShotCount = self.beingShotCount + 1
 	if lives > 0 then
 		var.lifeleft = var.lifeleft - 1
-		local rt = runtime()
 		if rt.clearEnemyBullets then
 			rt.clearEnemyBullets(false)
 		end
@@ -1470,7 +1473,6 @@ function likedreamer_player:_settleDeath()
 			rt.onPlayerMiss(self)
 		end
 	else
-		local rt = runtime()
 		if rt.onGameOver then
 			rt.onGameOver(self)
 		end
