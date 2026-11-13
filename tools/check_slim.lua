@@ -33,5 +33,7 @@ check(not C.supportsReplay{stages={record('TH31@BossRush'),record('TH06@BossRush
 check(C.supportsReplay{stages={record('TH31@BossRush'),record('TH35@BossRush')}},'保留关卡可组成多阶段录像')
 check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,1}})),'旧AEX的level36不能误放为雪莲华')
 check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,1},__th38_version=1})),'新来源带版本的练习录像可播放')
+check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1}})),'旧AEX的level37不能误放为永夜篇')
+check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1},__th39_version=1})),'永夜篇录像带来源版本可播放')
 DeSerialize=old
 print(('精简内容与录像边界检查通过：%d 项。'):format(n))

@@ -246,6 +246,7 @@ function stg.Start(group)
     lstg.var.__rogue_music_version=lstg.var.__hp_scale_version and 1 or nil
     lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.__th38_version=group.sequence_native=='thasl' and 1 or nil
+    lstg.var.__th39_version=group.sequence_native=='thmhj3' and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
     lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and SequenceResources and SequenceResources.VERSION or nil
     lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
@@ -277,6 +278,7 @@ function stg.PracticeStart(stagename, sc_pr)
     lstg.var.__original_flow_version=1
     -- level36曾是旧版AEX动态槽位；新来源须在录像快照前写入来源版本。
     lstg.var.__th38_version=(stagename=='TH38@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==36) and 1 or nil
+    lstg.var.__th39_version=(stagename=='TH39@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==37) and 1 or nil
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
     lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。

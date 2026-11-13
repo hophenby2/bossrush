@@ -25,6 +25,10 @@ for _,entry in ipairs(C.entries) do if entry.level==35 then entry.native='thmhj2
 add('thasl_lunatic','雪莲华 · Lunatic',36,'lunatic')
 add('thasl_extra_a','雪莲华 · Extra A',36,'extra')
 for _,entry in ipairs(C.entries) do if entry.level==36 then entry.native='thasl' end end
+add('thmhj3_lunatic','幕华祭永夜篇 · Lunatic',37,'lunatic')
+add('thmhj3_extra','幕华祭永夜篇 · Extra',37,'extra')
+add('thmhj3_phantasm','幕华祭永夜篇 · Phantasm',37,'phantasm')
+for _,entry in ipairs(C.entries) do if entry.level==37 then entry.native='thmhj3' end end
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
@@ -79,7 +83,7 @@ function C.chapters(key,player)
     local entry=assert(C.get(key),'未知顺序关卡key：'..tostring(key))
     local chapters,last={},nil
     for _,row in ipairs(OriginalStageFlow.units(entry.level)) do
-        if C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
+        if not row.practiceOnly and C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
             if not last or last.name~=row.chapter then
                 last={name=row.chapter,level=entry.level,units={}};chapters[#chapters+1]=last
             end

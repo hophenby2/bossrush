@@ -70,7 +70,7 @@ local function lastContinuous(rows,first)
     return index
 end
 local function media(scene,chapter,kind,row)
-    if chapter.level==35 or chapter.level==36 then return end
+    if chapter.level>=35 then return end
     if OriginalSequenceMedia then OriginalSequenceMedia.enter(scene,chapter,kind,row) end
 end
 function S.finish(scene,won)
@@ -193,6 +193,7 @@ function S.run(scene,key,first)
             local source=roadSource(chapter)
             if entry.native=='thmhj2' then TH37.runChapter(scene,chapter)
             elseif entry.native=='thasl' then TH38.runChapter(scene,chapter)
+            elseif entry.native=='thmhj3' then TH39.runChapter(scene,chapter)
             elseif source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
             run.completed=index
             if SequenceResources then SequenceResources.endChapter(index) end
@@ -205,7 +206,9 @@ function S.run(scene,key,first)
 end
 function S.restartChapter(scene)
     local index=lstg.var.sequence_run.chapter
-    task.Clear(scene);ResetPool();boss_group={}
+    task.Clear(scene)
+    if TH39 and scene.group.sequence_native=='thmhj3' then TH39.runtime.clearAll() end
+    ResetPool();boss_group={}
     scene.sequence_background_key=nil;scene.sequence_background=nil;scene.sequence_last_card=nil
     if OriginalSequenceMedia then OriginalSequenceMedia.stop(scene) end
     SequenceResources.spawnPlayer()

@@ -257,3 +257,14 @@ NewStage("TH38", "雪莲华", 36, function(self)
     end)
     self:Next()
 end)
+-- 幕华祭永夜篇整关练习使用同一关卡轴；Last Word 从符卡练习进入。
+NewStage("TH39", "幕华祭永夜篇", 37, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH39.data.chapters) do
+            if chapter.difficulty~=9 then TH39.runChapter(self,chapter) end
+        end
+        task.Wait(120)
+    end)
+    self:Next()
+end)

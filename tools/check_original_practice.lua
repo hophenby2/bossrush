@@ -29,6 +29,7 @@ dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
 dofile('mod/GAME/th37.lua')
 dofile('mod/GAME/th38.lua')
+dofile('mod/GAME/th39.lua')
 local F=OriginalStageFlow
 local legacy,hosts={},{}
 for level=29,33 do
@@ -75,7 +76,7 @@ local env=setmetatable({stg=group,lstg=state,setting={},GameNet=false,AndroidInp
 env.dofile=function(path)
     local chunk=assert(loadfile(path));setfenv(chunk,env);return chunk()
 end
-env.stage.Set=function(mode,name) snapshot={mode=mode,name=name,version=state.var.__original_flow_version,asl=state.var.__th38_version} end
+env.stage.Set=function(mode,name) snapshot={mode=mode,name=name,version=state.var.__original_flow_version,asl=state.var.__th38_version,mhj3=state.var.__th39_version} end
 local entryFile=assert(io.open('THlib/ext/ext_stage_group.lua','rb'))
 local entrySource=entryFile:read('*a');entryFile:close()
 local first=assert(entrySource:find('function stg.PracticeStart(',1,true))
@@ -92,7 +93,10 @@ check(snapshot.name=='Spell Practice@Spell Practice' and state.var.cheat==true,'
 state.var.sc_group={36,1}
 group.PracticeStart('Spell Practice@Spell Practice',true)
 check(snapshot.asl==1,'雪莲华来源版本先于录像快照，避免与旧AEX串线')
-local expected={137,105,85,129,80,121,91}
+state.var.sc_group={37,1}
+group.PracticeStart('Spell Practice@Spell Practice',true)
+check(snapshot.mhj3==1,'永夜篇来源版本先于录像快照，避免与旧AEX串线')
+local expected={137,105,85,129,80,121,91,123}
 for i,entry in ipairs(catalog.stages) do
     local units=F.units(entry.level)
     check(#units==expected[i],'原作条目覆盖数：'..entry.code)
@@ -126,16 +130,16 @@ end
 ui={version='test',menu={}}
 dofile('THlib/UI/menu.lua')
 stage_selects={}
-for level=1,36 do stage_selects[level]={id=level,title='旧关卡'} end
+for level=1,37 do stage_selects[level]={id=level,title='旧关卡'} end
 local menu={pos=35}
 stage_select.fresh(menu)
-check(menu.stage_count==7 and menu.pos==7,'关卡练习显示官方五作、幕华祭与雪莲华并夹住旧游标')
+check(menu.stage_count==8 and menu.pos==8,'关卡练习显示官方五作、幕华祭两作与雪莲华并夹住旧游标')
 for i,entry in ipairs(catalog.stages) do check(menu.stage_selects[i].id==entry.level,'关卡入口按五作顺序排列') end
 dofile('THlib/UI/menus/scpr_menu.lua')
 local spellMenu={}
 KeyCodeToName=function() return {} end
 sc_pr_menu.TweakCard(spellMenu,false,false)
-check(#spellMenu.spells==8 and #spellMenu.spells[8]==748,'符卡练习包含官方五作、幕华祭、雪莲华和全部')
+check(#spellMenu.spells==9 and #spellMenu.spells[9]==748+#TH39.units(),'符卡练习包含官方五作、幕华祭两作、雪莲华和全部')
 for tab,entry in ipairs(catalog.stages) do
     local rows=spellMenu.spells[tab]
     for i,row in ipairs(rows) do
