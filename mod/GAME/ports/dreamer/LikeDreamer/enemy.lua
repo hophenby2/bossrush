@@ -1118,8 +1118,11 @@ function enemyClass:init(rt,typeId,hp,x,y,note,parent)
 end
 
 function enemyClass:colli(other)
-    if self.targetable and not self.protect and other and (other.dmg or other.damage) then
-        local damage = other.dmg or other.damage
+    if other and other.class==LikeDreamer.PlayerShot then
+        return LikeDreamer.PlayerShot.hit(other,self)
+    end
+    if self.targetable and not self.protect and other and other.dmg then
+        local damage = other.dmg
         damageable.take_damage(self,GameDrops and GameDrops.damage(damage,other) or damage)
         other.killerenemy = self
         if not other.killflag then Kill(other) end

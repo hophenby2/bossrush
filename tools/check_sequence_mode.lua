@@ -1,8 +1,6 @@
 -- 检查顺序模式的稳定key、原作路线互斥、难度变体、初态和录像范围。
 local f=assert(io.open('tools/sequence_registry.lua','rb'));local setup=f:read('*a');f:close()
 setup=setup:sub(1,assert(setup:find('for _,id in ipairs({3400',1,true))-1)
-setup=setup:gsub('OriginalStageFlow.install%(%)',[[dofile('tools/native-ports/register.lua')
-OriginalStageFlow.install()]])
 assert(loadstring(setup))()
 local C=dofile('mod/sequence_catalog.lua')
 local checks=0
@@ -14,14 +12,14 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==18,'八作的实际难度与场景入口各自独立')
+check(#C.entries==26,'官方五作、幕华祭和雪莲华的难度/场景入口独立，永夜抄Final A/B分开')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
     check(C.get(e.key)==e,'用key查询入口，不依赖菜单选项编号')
     for _,player in ipairs({'reimu_player','marisa_player'}) do
         local chapters=C.chapters(e.key,player)
-        local count=e.level==37 and 10 or e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1
+        local count=e.level==40 and 10 or e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1
         check(#chapters==count,'每个入口的原作面数：'..e.key)
         for _,chapter in ipairs(chapters) do
             check(#chapter.units>0,'每一面都有保留内容')
@@ -61,6 +59,8 @@ stage.group.AddStage=function(name,title)
     local g=stage.groups[name];g[1]=title;local b={name=title,group=g};stage.stages[title]=b;return b
 end
 musicList={};AddMusic=function(id,last,length,title) musicList[id]={last,length,title} end
+CopyImage=function() end
+local P=dofile('THlib/native_players.lua')
 local S=dofile('mod/original_sequence.lua')
 for _,e in ipairs(C.entries) do
     check(stage.groups[e.group].sequence_key==e.key and stage.stages[e.battle].level==e.level,'独立关卡保留实际来源level')
@@ -71,7 +71,7 @@ local snapshots={}
 local vars={rogue_run={old=true},current_system=''}
 local environment=setmetatable({stg=stage.group,lstg={var=vars},setting={},GameDrops={VERSION=8},
     GameNet=false,AndroidInput=false,stage={stages={menu={}},Set=function(mode,name)
-        snapshots[#snapshots+1]={version=vars.__sequence_version,key=vars.sequence_key,scale=vars.__hp_scale_version,name=name}
+        snapshots[#snapshots+1]={version=vars.__sequence_version,key=vars.sequence_key,scale=vars.__hp_scale_version,name=name,native=vars.__native_player_version,machine=vars.native_player_id}
     end}},{__index=_G})
 local chunk=assert(loadstring(start));setfenv(chunk,environment);chunk()
 -- 入口和Start使用同一份var，版本和key必须在录像快照之前写入。
@@ -81,13 +81,29 @@ for _,e in ipairs(C.entries) do
     local saved=snapshots[#snapshots]
     check(saved.version==1 and saved.key==e.key and saved.name==e.battle,'顺序版本与路线先于录像快照')
     check(saved.scale==nil and vars.rogue_run==nil,'顺序模式不继承随机局血量倍率')
+    check(e.native and saved.native==P.VERSION and saved.machine==P.machines(e.level)[1].id or not e.native and saved.native==nil,'机体版本写入录像初态')
 end
 DeSerialize=function(v) return v end
 local content=dofile('mod/content.lua')
 for _,e in ipairs(C.entries) do
-    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,current_system=''}},'当前顺序录像可播放')
+    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,sequence_player=e.native and e.level<38 and 'reimu' or nil,current_system=''}},'当前顺序录像可播放')
     check(not content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key='错误路线'}},'录像路线不匹配时拒绝串线')
+    if e.native then
+        for _,machine in ipairs(P.machines(e.level)) do
+            local v={__sequence_version=1,sequence_key=e.key,sequence_player=machine.id,
+                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id}
+            local record={stageName=e.battle,stageExtendInfo=v}
+            check(content.supportsRecord(record),'可播放各原作机体的录像')
+            v.native_player_level=0
+            check(not content.supportsRecord(record),'拒绝机体来源错误的录像')
+        end
+    end
 end
+S.start('likedreamer_nightmare','cool',{1,1,1,3,1,1})
+check(vars.like_dreamer_loadout[4]==3 and vars.like_dreamer_loadout[5]==1 and vars.native_player_id=='cool',
+    'Like Dreamer 装备随自机写入顺序模式录像初态')
+S.start('th07_lunatic')
+check(vars.like_dreamer_loadout==nil,'离开 Like Dreamer 清理装备选择')
 stage.current_stage={group={_name='Sequence_th07_lunatic'},timer=0}
 vars.ran_seed=12345
 local D=dofile('THlib/drops.lua');D.reset()

@@ -80,10 +80,13 @@ ui.menu = {
                  "妖妖梦原作",     -- 32  TH34
                  "风神录原作",   -- 33  TH35
                  "地灵殿整关",   -- 34  TH36
-                 "夏夜祭原作", -- 35 TH38
-                 "祈华梦原作", -- 36 TH39
-                 "Like Dreamer", -- 37 TH40
-                 "天空璋AEX" },  -- AEX（STAGE_COUNT + 1）
+                 "幕华祭春雪篇", -- 35 TH37（34保留给完整版地灵殿）
+                 "雪莲华", -- 36 TH38
+                 "幕华祭永夜篇", -- 37 TH39
+                 "夏夜祭原作", -- 38 TH40
+                 "祈华梦原作", -- 39 TH41
+                 "Like Dreamer", -- 40 TH42
+                 "天空璋AEX" },  -- STAGE_COUNT + 1
     sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
@@ -110,9 +113,12 @@ ui.menu = {
                TH34 = "妖妖梦原作",
                TH35 = "风神录原作",
                TH36 = "地灵殿整关",
-               TH38 = "夏夜祭原作",
-               TH39 = "祈华梦原作",
-               TH40 = "Like Dreamer",
+               TH37 = "幕华祭春雪篇",
+               TH38 = "雪莲华",
+               TH39 = "幕华祭永夜篇",
+               TH40 = "夏夜祭原作",
+               TH41 = "祈华梦原作",
+               TH42 = "Like Dreamer",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },

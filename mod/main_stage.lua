@@ -238,17 +238,48 @@ NewStage("TH35", "风神录原作", 33, function(self)
     self:Next(168)
 end)--33
 
--- 夏夜祭使用同一份阶段链，符卡练习和顺序模式不各自重排。
-NewStage("TH38", "夏夜祭原作", 35, function(self)
-    self:Option(_editor_class.TH38.background, "TH38_Stage01")
+-- 独立来源编号35；保留地灵殿34和旧练习/录像的全部槽位。
+NewStage("TH37", "幕华祭春雪篇", 35, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH37.data.chapters) do TH37.runChapter(self,chapter) end
+        task.Wait(120)
+    end)
+    self:Next()
+end)
+
+-- 雪莲华独立关卡练习；顺序模式分别选择Lunatic或Extra A。
+NewStage("TH38", "雪莲华", 36, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH38.data.chapters) do TH38.runChapter(self,chapter) end
+        task.Wait(120)
+    end)
+    self:Next()
+end)
+-- 幕华祭永夜篇整关练习使用同一关卡轴；Last Word 从符卡练习进入。
+NewStage("TH39", "幕华祭永夜篇", 37, function(self)
+    self:Option(TH07_bg, "TH07_1")
+    self:Task(function()
+        for _,chapter in ipairs(TH39.data.chapters) do
+            if chapter.difficulty~=9 then TH39.runChapter(self,chapter) end
+        end
+        task.Wait(120)
+    end)
+    self:Next()
+end)
+
+-- 三作沿用同一份道中和攻击链。
+NewStage("TH40", "夏夜祭原作", 38, function(self)
+    self:Option(_editor_class.TH40.background, "TH40_Stage01")
     self:Task(function() original_flow.run(self.level) end)
     self:Next(170)
 end)
 
 local ports=dofile('mod/GAME/ports/register.lua')
-for _,level in ipairs({36,37}) do
+for _,level in ipairs({39,40}) do
     local work=GameContent.ports[level]
-    local title=level==36 and '祈华梦原作' or 'Like Dreamer'
+    local title=level==39 and '祈华梦原作' or 'Like Dreamer'
     NewStage(work.code,title,level,function(self)
         self:Option()
         self:Task(function() ports.run(work,self) end)

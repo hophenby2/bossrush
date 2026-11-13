@@ -2,7 +2,7 @@
 -- 差异1：原Direct3D曲线网格由LuaSTG原生laser/bent_laser代理，沿用采样数、长度与宽度参数。
 -- 差异2：3D蓄力/放能特效以无判定原图粒子代理；不增加原作没有的攻击。
 local N={patterns={},images={},loaded=false}
-local paths=dofile('mod/GAME/th38/patterns.lua')
+local paths=dofile('mod/GAME/th40/patterns.lua')
 local Class,New,IsValid=Class,New,IsValid
 local object,bullet,enemy,laser,bent_laser=object,bullet,enemy,laser,bent_laser
 local sin,cos,atan2,sqrt,pi=math.sin,math.cos,math.atan2,math.sqrt,math.pi
@@ -133,7 +133,12 @@ local Enemy=Class(enemy,{init=function(o,run,data)
     o.a,o.b=radius*o.width,radius*o.height;sync(o)
 end,frame=function() end,render=draw,kill=function(o)
     if N.enemyDeath then N.enemyDeath(o) end
-    if item and item.DropItem then item.DropItem(o.x,o.y,{o.red_drop or 0,o.blue_drop or 0,o.green_drop or 0}) end
+    if NativePlayers and NativePlayers.enabled(nil,38) then
+        for _,kind in ipairs({'red','blue','green'}) do
+            local amount=o[kind..'_drop'] or 0
+            if amount>0 then NativePlayers.pickup(o.x,o.y,kind,amount) end
+        end
+    elseif item and item.DropItem then item.DropItem(o.x,o.y,{o.red_drop or 0,o.blue_drop or 0,o.green_drop or 0}) end
     erase(o)
 end,del=function(o) erase(o) end})
 local laserColors={1,3,5,7,9,13,14,15}
@@ -306,7 +311,7 @@ update=function(o)
 end
 function N.controller(o,path,bound,anchor)
     local data=N.patterns[path]
-    if not data then data=dofile('mod/GAME/th38/p_'..assert(paths[path],'未编译的夏夜祭弹幕：'..path)..'.lua');N.patterns[path]=data end
+    if not data then data=dofile('mod/GAME/th40/p_'..assert(paths[path],'未编译的夏夜祭弹幕：'..path)..'.lua');N.patterns[path]=data end
     local c=New(Ghost,o.run,{cx=320,cy=240,control=true,emitter=true})
     c.data=data;c.time=0;c.boss_bound=bound;c.born=o.run.time
     c.anchor=type(anchor)=='table' and {anchor[1]+128,anchor[2]+16} or anchor=='current' and {o.cx,o.cy} or {320,146}
@@ -383,9 +388,9 @@ function N.tick(owner,meta)
 end
 function N.stop(owner) if owner.th38_run then N.clear(owner.th38_run.host);owner.th38_run=nil end end
 function N.load()
-    if N.loaded then return end;N.loaded=true;N.sounds={};N.bullet_names=dofile('mod/GAME/th38/bullet_names.lua')
+    if N.loaded then return end;N.loaded=true;N.sounds={};N.bullet_names=dofile('mod/GAME/th40/bullet_names.lua')
     local textures={}
-    for _,a in ipairs(dofile('mod/GAME/th38/atlas.lua')) do
+    for _,a in ipairs(dofile('mod/GAME/th40/atlas.lua')) do
         if not textures[a[2]] then local tex='th38.tex.'..a[2];LoadTexture(tex,a[2]);textures[a[2]]=tex end
         local id='th38.'..a[1];LoadImage(id,textures[a[2]],a[3],a[4],a[5],a[6],2,2);N.images[a[1]]=id
     end

@@ -1,6 +1,6 @@
 -- Like Dreamer：复原版战斗回调与原作帧坐标。碰撞、射击与存档由 Boss Rush 管理。
 local register=dofile('mod/GAME/ports/register.lua')
-local W=register.work('TH40',37)
+local W=register.work('TH42',40)
 local env,load=dofile('mod/GAME/ports/environment.lua')('dreamer')
 local api=env.lstg
 local L=env.LikeDreamer or {}
@@ -15,6 +15,7 @@ env.New,api.New=new,new
 env.GROUP_GHOST=GROUP.GHOST
 env.GROUP_ENEMY=GROUP.ENEMY
 env.GROUP_ENEMY_BULLET=GROUP.ENEMY_BULLET
+env.GROUP_ENEMY_BULLET2=GROUP.ENEMY_BULLET2
 env.GROUP_NONTJT=GROUP.NONTJT
 env.GROUP_INDES=GROUP.INDES
 env.GROUP_PLAYER=GROUP.PLAYER
@@ -25,6 +26,7 @@ env.LAYER_BG=LAYER.BG
 env.LAYER_ENEMY=LAYER.ENEMY
 env.LAYER_ENEMY_BULLET=LAYER.ENEMY_BULLET
 env.LAYER_PLAYER=LAYER.PLAYER
+env.LAYER_PLAYER_BULLET=LAYER.PLAYER_BULLET
 env.LAYER_ITEM=LAYER.ITEM
 env.LAYER_TOP=LAYER.TOP
 api.CheckRes=lstg.CheckRes
@@ -45,6 +47,25 @@ for _,module in ipairs({
     'enemy_visual_early','enemy_visual_mid','enemy_visual_late','boss_early','boss_middle_visual',
     'boss_middle','boss_late','boss_hud','presentation','enemy','enemy_late','background','stages/schedules',
 }) do load('LikeDreamer/'..module..'.lua') end
+L.PlayerClass=load('LikeDreamer/player.lua')
+env.player=nil
+local P=NativePlayers
+if P then
+    P.adapters[W.level]={
+        spawn=function()
+            L.Resources.loadPlayer()
+            local machine=assert(P.machine(W.level,lstg.var.native_player_id))
+            local config=lstg.var.like_dreamer_loadout or {}
+            L.runtime={
+                setupGroup=machine.character,optionSlots={unpack(config,1,4)},specialMode=config[5],
+                specialGauge=lstg.var.like_dreamer_special_gauge,
+            }
+            local p=New(L.PlayerClass)
+            p.machine,p.native_level,p.name=machine,W.level,machine.name
+            return p
+        end,
+    }
+end
 W.source=L
 W.ownHud=true
 
@@ -82,14 +103,29 @@ env.PlayMusic=play
 local function start(number, first)
     clear()
     L.Resources.load(number)
+    env.player=player
     local oldPractice = lstg.var.is_practice
+    local native = P and P.enabled(nil,W.level)
     -- 复用关卡逻辑，保留 Boss Rush 自机、资源和重试设置。
     lstg.var.is_practice=false
     env.difficulty=lstg.var.sequence_key=='likedreamer_chaos' and 4 or 3
     local rt=L.Enemy.Runtime.new(number)
     lstg.var.is_practice=oldPractice
     rt.frame,rt.rawStartFrame,rt.portManaged=first,first,true
-    rt.counterMode=0
+    if not native then rt.counterMode=0 end
+    if native then
+        local p=player
+        p.shotCount,p.specialObjectCount=0,0
+        p.sharedOptionTarget,p.optionTargets=nil,{false,false,false,false}
+        rt.player,rt.cameraX,rt.optionSlots=p,p.ldX,p.optionSlots
+        rt.setupGroup,rt.specialMode=p.setupGroup,p.specialMode
+        rt.specialGauge=p.specialGauge
+        rt.onPlayerMiss=function() lstg.var.dead=(lstg.var.dead or 0)+1 end
+        rt.onGameOver=function()
+            lstg.var.lifeleft=-1
+            lstg.var.dead=(lstg.var.dead or 0)+1
+        end
+    end
     L.runtime=rt
     objects={}
     local guard=New(Guard)
@@ -131,7 +167,7 @@ local function playRange(number, first, last, practice)
             if target and (not IsValid(target) or not target.active) then break end
         end
         local p=player
-        if p and IsValid(p) then
+        if p and IsValid(p) and p.class~=L.PlayerClass then
             p.ldX,p.ldY=L.Core.playerWorldPosition(p.x,p.y)
             rt.cameraX=p.ldX
         end
@@ -140,6 +176,8 @@ local function playRange(number, first, last, practice)
         if not finalBossPractice then L.Schedules.run(number,rt,rt.frame) end
         rt.frame=rt.frame+1
         task.Wait()
+        local state=P and P.state()
+        if state and state.level==W.level then state.life,state.bombs=lstg.var.lifeleft,lstg.var.bomb end
         if rt.frame%120==0 then
             local count=0
             for _,object in ipairs(objects) do
@@ -152,7 +190,7 @@ local function playRange(number, first, last, practice)
     clear()
     object.RawDel(guard)
     task.Wait()
-    if player and IsValid(player) then player.ldX,player.ldY=nil,nil end
+    if player and IsValid(player) and player.class~=L.PlayerClass then player.ldX,player.ldY=nil,nil end
 end
 
 -- Like Dreamer 原作把攻击作为 Boss 状态编号。练习按状态组列出。

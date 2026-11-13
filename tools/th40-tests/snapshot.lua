@@ -3,7 +3,7 @@ local pattern,frames,seed=arg[1],tonumber(arg[2]) or 300,tonumber(arg[3]) or 1
 arg[1]='th38-native-snapshot'
 local f=assert(io.open('tools/check_stage.lua','rb'));local s=f:read('*a');f:close()
 assert(loadstring(s:sub(1,assert(s:find('if path == "--all" then',1,true))-1)))()
-local N=dofile('mod/GAME/th38/native.lua');N.load()
+local N=dofile('mod/GAME/th40/native.lua');N.load()
 lstg.var.th38_seed=seed;player.x,player.y=0,-160
 local owner={x=0,y=100,hp=10000};local run=N.new(owner,{hp=10000})
 N.controller(run.host,pattern,false)

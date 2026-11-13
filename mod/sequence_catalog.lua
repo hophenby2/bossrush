@@ -17,12 +17,28 @@ add('th07_extra','妖妖梦 · Extra',32,'extra')
 add('th07_phantasm','妖妖梦 · Phantasm',32,'phantasm')
 add('th10_lunatic','风神录 · Lunatic',33,'lunatic')
 add('th10_extra','风神录 · Extra',33,'extra')
-add('thsss_lunatic','夏夜祭 · Lunatic · 全阶段',35,'lunatic')
-add('thsss_extra','夏夜祭 · Extra · 全阶段',35,'extra')
-add('theis_lunatic','祈华梦 · Lunatic',36,'lunatic')
-add('theis_extra','祈华梦 · Extra',36,'extra')
-add('likedreamer_nightmare','Like Dreamer · Nightmare',37,'nightmare')
-add('likedreamer_chaos','Like Dreamer · Chaos',37,'chaos')
+-- 幕华祭使用项目自机和独立时钟；不借用红妖永风的原作资源账本。
+add('thmhj2_lunatic','幕华祭春雪篇 · Lunatic',35,'lunatic')
+add('thmhj2_extra','幕华祭春雪篇 · Extra',35,'extra')
+add('thmhj2_phantasm','幕华祭春雪篇 · Phantasm',35,'phantasm')
+for _,entry in ipairs(C.entries) do if entry.level==35 then entry.native='thmhj2' end end
+add('thasl_lunatic','雪莲华 · Lunatic',36,'lunatic')
+add('thasl_extra_a','雪莲华 · Extra A',36,'extra')
+for _,entry in ipairs(C.entries) do if entry.level==36 then entry.native='thasl' end end
+add('thmhj3_lunatic','幕华祭永夜篇 · Lunatic',37,'lunatic')
+add('thmhj3_extra','幕华祭永夜篇 · Extra',37,'extra')
+add('thmhj3_phantasm','幕华祭永夜篇 · Phantasm',37,'phantasm')
+for _,entry in ipairs(C.entries) do if entry.level==37 then entry.native='thmhj3' end end
+local function addNative(key,title,level,difficulty,work)
+    add(key,title,level,difficulty)
+    C.entries[#C.entries].native=work
+end
+addNative('thsss_lunatic','夏夜祭 · Lunatic',38,'lunatic','thsss')
+addNative('thsss_extra','夏夜祭 · Extra',38,'extra','thsss')
+addNative('theis_lunatic','祈华梦 · Lunatic',39,'lunatic','theis')
+addNative('theis_extra','祈华梦 · Extra',39,'extra','theis')
+addNative('likedreamer_nightmare','Like Dreamer · Nightmare',40,'nightmare','likedreamer')
+addNative('likedreamer_chaos','Like Dreamer · Chaos',40,'chaos','likedreamer')
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
@@ -53,9 +69,10 @@ local function marisa(player)
     return player=='marisa_player' or player=='Marisa'
 end
 function C.chapterAllowed(entry,chapter,player)
-    if entry.difficulty=='extra' then return chapter=='EX' end
+    if entry.native=='thasl' and (chapter=='分支' or chapter=='Last Spell') then return false end
+    if entry.difficulty=='extra' then return chapter==(entry.native=='thasl' and 'EXA' or 'EX') end
     if entry.difficulty=='phantasm' then return chapter=='PH' end
-    if chapter=='EX' or chapter=='PH' or chapter=='Last Word' then return false end
+    if chapter=='EX' or chapter=='EXA' or chapter=='PH' or chapter=='Last Word' then return false end
     if entry.level==29 then
         -- 原作灵梦/妖梦路线遇魔理沙，魔理沙/咲夜路线遇灵梦。
         if chapter=='4A' or chapter=='4B' then return chapter==(marisa(player) and '4A' or '4B') end
@@ -90,7 +107,7 @@ function C.chapters(key,player)
     local entry=assert(C.get(key),'未知顺序关卡key：'..tostring(key))
     local chapters,last={},nil
     for _,row in ipairs(OriginalStageFlow.units(entry.level)) do
-        if C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
+        if not row.practiceOnly and C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
             if not last or last.name~=row.chapter then
                 last={name=row.chapter,level=entry.level,units={}};chapters[#chapters+1]=last
             end

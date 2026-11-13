@@ -395,7 +395,7 @@ local function new(class, ...)
         if pickup then return pickup end
     end
     local o = create(class, ...)
-    if not item.DropsEnabled() and IsValid(o) then
+    if not item.DropsEnabled() and IsValid(o) and not o.native_pickup then
         local group = o.group
         if group==GROUP.ITEM or group==GROUP.ITEM2 or o._is_pickup then
             o.class = discarded_pickup

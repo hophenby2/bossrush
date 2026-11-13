@@ -1,6 +1,12 @@
 -- 东方祈华梦：原道中协程、弹型和 Boss 攻击回调在独立的 Lua 环境运行。
 local register=dofile('mod/GAME/ports/register.lua')
-local W=register.work('TH39',36)
+local W=register.work('TH41',39)
+local P=NativePlayers
+if P then dofile('mod/GAME/ports/theis/player.lua') end
+local function resources() return P and P.enabled(nil,W.level) and P.state() end
+local function drop(x,y,kind,count)
+    if count and count>0 then P.pickup(x,y,kind,count) end
+end
 local env,load,assets=dofile('mod/GAME/ports/environment.lua')('theis')
 local api=env.lstg
 local objects
@@ -50,16 +56,68 @@ env.item_chip=item.obj.revdead
 env.item_power=item.obj.faith
 env.item_power_large=item.obj.faith
 env.item_power_full=item.obj.faith
+env.wabisabi_item=Class(object,{
+    init=function(o,x,y,color)
+        if resources() then
+            local pickup=P.pickup(x,y,'night',1)
+            pickup.img=color==1 and 'sabi_item' or 'wabi_item'
+        end
+        object.RawDel(o)
+    end,
+})
 env.dialog={cacheResource=empty,reader={matchScene=empty},player={}}
 env.system={
-    setTargetChain=empty,setCurDamageEnemy=empty,damageEnemyBonus=empty,
-    makeSettlement=empty,setContinueMode=empty,
-    addEnemyCreateCount=empty,addEnemyKillCount=empty,addChain=empty,addBonus=empty,
+    setTargetChain=function(n)
+        local s=resources()
+        if s then s.dyeTarget=n end
+    end,setCurDamageEnemy=empty,
+    damageEnemyBonus=function() if resources() then env.system.addScore(10) end end,
+    setContinueMode=empty,
+    addEnemyCreateCount=function(n)
+        local s=resources()
+        if s then s.enemiesCreated=s.enemiesCreated+n end
+    end,
+    addEnemyKillCount=function(n)
+        local s=resources()
+        if s then s.enemiesKilled=s.enemiesKilled+n end
+    end,
+    makeSettlement=function(chapter,allClear,multiplier)
+        local s=resources()
+        if not s or s.enemiesCreated==0 then return end
+        local base=chapter*10000000+(s.stageChain+s.stageBlue)*100000
+        if allClear and not lstg.var.is_practice then base=base+s.life*50000000+s.bombs*40000000 end
+        local ratio=math.floor(s.enemiesKilled*100/s.enemiesCreated)*.01
+        env.system.addScore(math.floor(base*ratio*(multiplier or 2)/10)*10)
+    end,
+    addChain=function(n)
+        local s=resources()
+        if s then s.dyeChain=s.dyeChain+n;s.stageChain=s.stageChain+n end
+    end,
+    addBonus=function(n)
+        local s=resources()
+        if s then s.pointrate=math.min(5000000,s.pointrate+n) end
+    end,
     addScore=function(score) lstg.var.score=(lstg.var.score or 0)+score end,
-    getBonus=function() return 0 end,
-    getBossCardScore=function() return 0,0 end,
-    checkChainAchieve=function() return false end,
-    getTotalChain=function() return 0 end,
+    getBonus=function() local s=resources();return s and s.pointrate or 0 end,
+    getBossCardScore=function(mode,t1,_,t3,t,base,maximum)
+        local s=resources()
+        if not s or mode=='normal' then return 0 end
+        local chain=s.stageChain
+        local score=10000000+100000*chain
+        if base and maximum and base>=0 and maximum>=0 then
+            if base~=maximum then score=maximum*.01*chain end
+        elseif mode=='lastspell' then
+            score=100000000
+        elseif mode=='spellcard' and t3>t1 then
+            score=score*(1-.5*math.max(0,math.min(1,(t-t1)/(t3-t1))))
+        end
+        return math.floor(score/10)*10
+    end,
+    checkChainAchieve=function()
+        local s=resources()
+        return s and s.dyeTarget and s.stageChain>=s.dyeTarget
+    end,
+    getTotalChain=function() local s=resources();return s and s.dyeChain or 0 end,
     getScore=function() return lstg.var.score or 0 end,
     isNoMiss=function() return (lstg.var.dead or 0)==0 end,
     isNoBomb=function() return (lstg.var.bomb_used or 0)==0 end,
@@ -224,6 +282,29 @@ load('src/core/render.lua')
 load('src/core/tiles.lua')
 load('EISlib/effect/effect.lua')
 load('EISlib/enemy/enemy.lua')
+local bonusDisplay=env.bonus_display
+env.bonus_display=function(x,y,red,blue,green,night,kills,score,...)
+    if not resources() then return bonusDisplay(x,y,red,blue,green,night,kills,score,...) end
+    drop(x,y,'red',red)
+    drop(x+12,y,'blue',blue)
+    drop(x-12,y,'green',green)
+    drop(x,y-12,'night',night)
+    if kills and kills>0 then
+        env.system.addChain(kills)
+        env.system.addBonus(500*kills)
+        env.system.addScore(score or 0)
+    end
+end
+local dropItem=env.item.DropItem
+env.item.DropItem=function(x,y,items)
+    if not resources() then return dropItem(x,y,items) end
+    if items then
+        drop(x,y,'red',items[1])
+        drop(x+12,y,'green',items[2])
+        drop(x-12,y,'blue',items[3])
+    end
+    return {}
+end
 load('EISlib/bullet/bullet.lua')
 load('EISlib/boss/boss.lua')
 load('EISlib/egg/egg.lua')
@@ -274,6 +355,11 @@ local function start()
     env.ext.sc_pr=false
     env.setting.background=setting.displayBG~=false
     env._boss_table={}
+    local s=resources()
+    if s then
+        s.stageChain,s.dyeTarget=0,nil
+        s.stageBlue,s.enemiesCreated,s.enemiesKilled=0,0,0
+    end
     lstg.tmpvar._WLS_IMG_CHECK=nil
     api.ResourceSet.LoadByTag(false,'global')
     return New(Guard)

@@ -1208,9 +1208,9 @@ function ParticleLaserLine(pR, pG, pB, x, y, col, v, a, GrowTime, Width, Scale, 
     return l
 end
 
-for _,t in ipairs({29,30,31,32,33,35,36,37}) do
+for _,t in ipairs({29,30,31,32,33,35,36,37,38,39,40}) do
     table.insert(LoadRes, function()
-        LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t))
+        LoadTexture(("stage_pic%d"):format(t), ("mod\\GAME\\stage_pic%d.png"):format(t>=35 and t<=38 and 32 or t))
         LoadImage(("stage_pic%d"):format(t), ("stage_pic%d"):format(t), 0, 0, 512, 512)
     end)
 end

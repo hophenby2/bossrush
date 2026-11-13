@@ -4,7 +4,7 @@ import argparse,hashlib,json,re,shutil,subprocess,wave,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 p=argparse.ArgumentParser();p.add_argument('--game',type=Path,required=True);p.add_argument('--source',type=Path,required=True);p.add_argument('--media',action='store_true');a=p.parse_args()
-OUT=ROOT/'mod/GAME/th38';ASSET=ROOT/'Resources/th38';OUT.mkdir(exist_ok=True);ASSET.mkdir(exist_ok=True)
+OUT=ROOT/'mod/GAME/th40';ASSET=ROOT/'Resources/th40';OUT.mkdir(exist_ok=True);ASSET.mkdir(exist_ok=True)
 q=lambda s:json.dumps(str(s),ensure_ascii=False)
 def lua(v):
  if v is None:return 'nil'

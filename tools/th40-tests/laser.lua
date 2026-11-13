@@ -5,7 +5,7 @@ assert(loadstring(s:sub(1,assert(s:find('if path == "--all" then',1,true))-1)))(
 local calls={}
 laser.frame=function(o) calls[#calls+1]={mode=o.mode,age=o.age,alpha=o.alpha,colli=o.colli} end
 bent_laser.frame=laser.frame
-local N=dofile('mod/GAME/th38/native.lua');N.load()
+local N=dofile('mod/GAME/th40/native.lua');N.load()
 for _,kind in ipairs({'laser','ray','bend'}) do
     local owner={x=0,y=100,hp=1};local run=N.new(owner,{hp=1})
     local b=N.spawn(run,{mode=kind,type=0,p={},cx=320,cy=128,alpha=80,life=100,width=1,height=.2,length=20,speed=1,direction=90},false)

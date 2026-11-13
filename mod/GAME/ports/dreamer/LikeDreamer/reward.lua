@@ -260,6 +260,14 @@ local function persistProgress(rt)
     lstg.var.like_dreamer_extend_index = rt.extendIndex
 end
 
+function M.spendMental(rt, all)
+    local stock=tokenStock(rt)
+    local threshold=stockThreshold(rt)
+    setTokenStock(rt,all and 0 or stock-1)
+    rt.stockProgress=all and 0 or max(0,(rt.stockProgress or stock*threshold)-threshold)
+    persistProgress(rt)
+end
+
 local function inferExtendIndex(rt)
     local thresholds = EXTEND_THRESHOLDS[Core.clamp(
         floor(tonumber(rt and rt.difficulty) or 1), 0, 4) + 1]

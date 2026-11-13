@@ -79,25 +79,72 @@ function stage_menu:init()
             start()
         end)
     end
+    local dreamerEquipment={
+        dream={{'Wide Form','Homing Form'},{'Lock-On Form','Focus Form'},{'Carrot Blaster','Vivid Grenade'}},
+        cute={{'Front Form','Slide Form'},{'Focus Form','Homing Form'},{'Stinging Words','Dark Rampage'}},
+        cool={{'Slide Form','Front Form'},{'Fixed Form','Standby Form'},{'Flaming Hack','Cheat Barrier'}},
+    }
+    local function selectDreamerEquipment(source,machine,start)
+        local selector
+        local function back() menu.FadeOut(selector);menu.FadeIn(source) end
+        local equipment=dreamerEquipment[machine.id]
+        local choices={equipment[1],equipment[2],equipment[3],
+            {'Shield Enhance','Shot Enhance','Missile Enhance','Double Enhance'},
+            {'Auto Fever','Manual Fever'},{'反击弹关闭','反击弹开启'}}
+        local labels={'主射击','副射击','Bomb','强化','Fever','反击弹'}
+        local loadout,rows={0,0,0,0,0,0},{}
+        for i,options in ipairs(choices) do
+            rows[i]={labels[i]..'　'..options[1],function()
+                loadout[i]=(loadout[i]+1)%#options
+                selector.text[i]=labels[i]..'　'..options[loadout[i]+1]
+            end,''}
+        end
+        rows[#rows+1]={'开始',function()
+            startPractice(selector,function() start(machine.id,loadout) end)
+        end,'Start'}
+        rows[#rows+1]={'返回',back,'Back'}
+        selector=New(main_menu,machine.name,rows,back)
+        menu.FadeOut(source);menu.FadeIn(selector)
+    end
+    local function launchNative(source,level,machine,start)
+        if level==40 then selectDreamerEquipment(source,machine,start)
+        else startPractice(source,function() start(machine.id) end) end
+    end
+    local function selectNativePractice(source,level,start)
+        local machines=NativePlayers and NativePlayers.machines(level)
+        if not machines then startPractice(source,start);return end
+        local selector
+        local function back() menu.FadeOut(selector);menu.FadeIn(source) end
+        local rows={}
+        for _,machine in ipairs(machines) do
+            local id=machine.id
+            rows[#rows+1]={machine.name,function()
+                launchNative(selector,level,machine,start)
+            end,'',key=id}
+        end
+        rows[#rows+1]={'返回',back,'Back',key='back'}
+        selector=New(main_menu,'选择原作机体',rows,back)
+        menu.FadeOut(source);menu.FadeIn(selector)
+    end
     local function createPracticeMenus()
         if menu_stage_practice then return end
         menu_stage_practice=New(stage_select,function()
             menu.FadeOut(menu_stage_practice);menu.FadeIn(menu_player_system_select)
         end,function(pos)
             local entry=menu_stage_practice.stage_selects[pos]
-            startPractice(menu_stage_practice,function()
+            local name=type(entry.stage)~='function' and entry.stage.name
+            selectNativePractice(menu_stage_practice,NativePlayers and NativePlayers.practiceLevel(name),function(id,loadout)
                 lstg.var.sc_index,lstg.var.sc_group=nil,nil
-                if type(entry.stage)=='function' then entry.stage()
-                else stage.group.PracticeStart(entry.stage.name) end
+                if name then stage.group.PracticeStart(name,false,id,loadout) else entry.stage() end
             end)
         end)
         menu_spell_practice=New(sc_pr_menu,function(index,group)
             if not index then
                 menu.FadeOut(menu_spell_practice);menu.FadeIn(menu_player_system_select);return
             end
-            startPractice(menu_spell_practice,function()
+            selectNativePractice(menu_spell_practice,group[1],function(id,loadout)
                 lstg.var.sc_index,lstg.var.sc_group=index,group
-                stage.group.PracticeStart('Spell Practice@Spell Practice',true)
+                stage.group.PracticeStart('Spell Practice@Spell Practice',true,id,loadout)
             end)
         end)
     end
@@ -112,14 +159,16 @@ function stage_menu:init()
             local function back() menu.FadeOut(menu_sequence_select);menu.FadeIn(menu_title) end
             local entries={}
             for _,entry in ipairs(OriginalSequence.catalog.entries) do
-                local key,game=entry.key,SequenceResources.gameByLevel[entry.level]
+                local key=entry.key
                 entries[#entries+1]={entry.title,function()
                     local function backPlayer() menu.FadeOut(menu_sequence_player);menu.FadeIn(menu_sequence_select) end
                     local machines={}
-                    for _,machine in ipairs(OriginalSequence.catalog.machines(entry)) do
+                    for _,machine in ipairs(OriginalSequence.machines(entry)) do
                         local id=machine.id
                         machines[#machines+1]={machine.name,function()
-                            startPractice(menu_sequence_player,function() OriginalSequence.start(key,id) end)
+                            launchNative(menu_sequence_player,entry.level,machine,function(selected,loadout)
+                                OriginalSequence.start(key,selected,loadout)
+                            end)
                         end,'',key=id}
                     end
                     machines[#machines+1]={'返回',backPlayer,'Back',key='back'}

@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-12",
+  "motion": "400tick首敌，2.4px/tick，实际子弹位移、绑定、变速、变量及清场断言通过",
+  "flow": {
+    "chapters": 7,
+    "combat": 71,
+    "remaining": 0
+  },
+  "full": {
+    "stages": 91,
+    "frames": 279977,
+    "errors": 0,
+    "remaining": 0
+  },
+  "registry": {
+    "practice": 22110,
+    "sequence": 1770,
+    "slim": 603
+  },
+  "syntax_luajit": 117,
+  "fields": "通过",
+  "export_repeat_files": 102,
+  "native_cases": 7
+}

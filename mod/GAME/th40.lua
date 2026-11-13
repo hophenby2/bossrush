@@ -1,21 +1,22 @@
 -- 东方夏夜祭～Shining Shooting Star：Lunatic / Extra的原生对象移植。
--- 来源：THSSS.exe中的Boss/SpellCard/GameState与原MBG；离线导出器和SHA见th38目录。
+-- 来源：THSSS.exe中的Boss/SpellCard/GameState与原MBG；离线导出器和SHA见th40目录。
 -- 差异1：原作Direct3D场景用原图平面背景代理；不改变发弹、坐标和阶段顺序。
--- 差异2：原作自机与星屑资源系统尚未移植，此入口使用LuaSTG自机；血量保持原值。
+-- 自机与星屑资源由原生对象处理，Boss 血量使用原表。
 -- 差异3：片头对话、FSC入场粒子和结局交给BossRush转场；FSC攻击本身保留。
 -- 差异4：顺序入口固定包含全部FSC，不模拟原作结界次数解锁条件。
 -- 差异5：单精度属性与特效随机数消耗尚未完整对齐；这是原生移植首版，不声明逐帧等价。
-local class={};_editor_class.TH38=class
-local N=dofile('mod/GAME/th38/native.lua');class.native=N
-local data=dofile('mod/GAME/th38/phases.lua');class.data=data
+local class={};_editor_class.TH40=class
+local N=dofile('mod/GAME/th40/native.lua');class.native=N
+local data=dofile('mod/GAME/th40/phases.lua');class.data=data
 local floor,cos=math.floor,cos
-local LEVEL=35;class.level=LEVEL
+local LEVEL=38;class.level=LEVEL
+if NativePlayers then dofile("mod/GAME/th40/player.lua") end
 if rawget(_G,'DefineAchievement') then DefineAchievement(170,'夏夜祭','完成夏夜祭关卡练习','击破本次练习中的全部阶段',false,2) end
 N.load()
-for source,path in pairs(dofile('mod/GAME/th38/sounds.lua')) do
+for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
     local id='th38.snd.'..source;LoadSound(id,path);N.sounds[source]=id
 end
-for name,track in pairs(dofile('mod/GAME/th38/music.lua')) do AddMusic('TH38_'..name,track.last,track.length,name,true) end
+for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
 class.background=Class(background,{
     init=function(o,chapter) background.init(o,false);o.chapter=chapter or '1';o.layer=LAYER.BG end,
     frame=function(o) o.th38_scroll=(o.th38_scroll or 0)+.5 end,
@@ -33,13 +34,13 @@ local bands={};local function band(meta)
     if meta.kind=='road' then return '1a' end
     return meta.boss..meta.role..'a'
 end
-boss.Define('1a','夏夜祭道中','TH38_Stage01',class.background,{0,500},nil,'img_void',LEVEL)
+boss.Define('1a','夏夜祭道中','TH40_Stage01',class.background,{0,500},nil,'img_void',LEVEL)
 for _,meta in ipairs(data.phases) do
     class.byId[meta.id]=meta
     local id=band(meta)
     if meta.kind~='road' and not bands[id] then
         bands[id]=true
-        boss.Define(id,meta.boss_name,'TH38_Boss'..(meta.chapter=='EX' and 'Ex' or ('0'..meta.chapter)),class.background,{0,100},nil,N.images['Boss'..meta.boss..'-00'] or 'img_void',LEVEL)
+        boss.Define(id,meta.boss_name,'TH40_Boss'..(meta.chapter=='EX' and 'Ex' or ('0'..meta.chapter)),class.background,{0,100},nil,N.images['Boss'..meta.boss..'-00'] or 'img_void',LEVEL)
     end
     local title=meta.kind=='road' and meta.title or meta.kind=='nonspell' and '' or meta.title
     local limit=meta.time/60;local immune=meta.kind=='road' or meta.survival
@@ -79,16 +80,16 @@ function class.media(scene,chapter,kind,row)
     if not scene.sequence_background or not IsValid(scene.sequence_background) then scene.sequence_background=New(class.background,key) end
     local name=(kind=='boss' and 'Boss' or 'Stage')..(key=='EX' and 'Ex' or '0'..key)
     if row then local m=row.unit.sc_group[1].card.th38_source;if m and m.source:find('SSS06_FSC',1,true) then name='Boss06FSC' end end
-    local track='TH38_'..name
+    local track='TH40_'..name
     if scene.sequence_music~=track then if scene.sequence_music then StopMusic(scene.sequence_music) end;PlayMusic(track);scene.sequence_music=track end
 end
 function class.mediaFrame(scene)
     local meta=lstg.tmpvar.th38_phase
     if meta and scene.th38_media_phase~=meta then
         scene.th38_media_phase=meta
-        if meta.chapter=='6' and meta.optional and scene.sequence_music~='TH38_Boss06FSC' then
+        if meta.chapter=='6' and meta.optional and scene.sequence_music~='TH40_Boss06FSC' then
             if scene.sequence_music then StopMusic(scene.sequence_music) end
-            scene.sequence_music='TH38_Boss06FSC';PlayMusic(scene.sequence_music)
+            scene.sequence_music='TH40_Boss06FSC';PlayMusic(scene.sequence_music)
         end
     end
 end

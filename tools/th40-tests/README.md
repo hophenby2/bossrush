@@ -1,15 +1,13 @@
-# 夏夜祭原生移植首版
+# 夏夜祭原生移植
 
-本 worktree 基于 `origin/original-sequence` 的干净提交
-`617c8a84ee4e4e5016e9cfd0e8449ed19b349dba`，分支为 `codex/thsss-native-sequence`。
-没有修改另一个 agent 使用的 `Boss Rush HD-slim`。为避开其 TH37 命名，本作使用 TH38，level 35。
+夏夜祭在当前目录使用 TH40，level 38，练习卡 ID 保持不变。
 
 ## 内容与入口
 
 - 练习：关卡练习、符卡练习增加“夏夜祭原作”。
 - 顺序模式：`thsss_lunatic` 六面、`thsss_extra` Extra，均为包含 FSC 的全阶段路线。
 - 90 个阶段：51 个符卡位置、27 个非符、12 个道中片段。机体分支实际引用 81 个符卡类。
-- 四条攻击路线 A/B/C/D 对应原作灵梦、魔理沙、早苗、恋；C/D 暂用现有 LuaSTG 灵梦/魔理沙自机。
+- 四条攻击路线 A/B/C/D 对应原作灵梦、魔理沙、早苗、恋，均使用原作行走图和独立射击配置。
 - 纳入全部 937 个原 MBG 的离线编译结果；当前阶段入口按项目 th31–th35 的范围选择 Lunatic/Extra。
 - 1159 个原图切片、43 个音效、15 首音乐；音乐循环点取原 GameState/Story 的 PCM 样本参数。
 
@@ -21,7 +19,7 @@
 
 来源是本地 THSSS.exe 反编译出的 `Boss_*`、`SpellCard_SSS*`、`GameState_SSS*`、
 `CS_Data`、`BaseEmitter_CS`、`EventGroup`、`Execution` 等，以及原作 CS/Image/Sound/BGM。
-`mod/GAME/th38/source_manifest.json` 记录原 exe 与 937 个文件的 SHA-256；
+`mod/GAME/th40/source_manifest.json` 记录原 exe 与 937 个文件的 SHA-256；
 `phase_manifest.json` 记录阶段与源类、难度分支、HP、防御、时间和攻击文件的对应关系。
 
 阶段顺序取 Boss 的 Life/Ctrl 调用链。连续道中保持原 TimeMain，Boss 在场只阻止新的道中根发射器；
@@ -31,12 +29,10 @@ B 段等待中 Boss 退场后，从实际 TimeMain 续接。第一面偏移为 `
 
 ## 已知差异
 
-这是可运行的首版，还不能称为原作逐帧复现。
-
 1. Direct3D 场景和蓄力粒子使用原图平面/粒子代理；直线与曲线激光使用 LuaSTG 原生碰撞。
    射线椭圆判定、反射激光的网格拼接等尚未逐帧核对，不能声明判定完全一致。
-2. 使用现有 LuaSTG 自机和资源规则。原作星屑、结界、分数、专属自机与部分敌机掉落行为没有完整移植。
-   顺序模式固定包含全部 FSC，不按原作结界次数解锁；该变化已标在入口和卡头。
+2. 四机体接入残机、Bomb、火力、星屑与红蓝绿附魔。Bomb 范围和伤害以 LuaSTG 实现近似，部分掉落仍待逐项核对。
+   顺序模式固定包含全部 FSC，该变化已标在入口和卡头。
 3. 对话、结局与原 FSC 入场过程由 BossRush 转场代理，原舞台和攻击时钟不计这些对话。
 4. 部分含绑定及多组事件的样本在较长时间后出现随机流差异。属性的单精度舍入和特效随机消耗
    尚未完整还原。`verification/reference-samples.json` 仅证明所列窗口与种子的采样结果。
@@ -48,15 +44,15 @@ B 段等待中 Boss 退场后，从实际 TimeMain 续接。第一面偏移为 `
 道中快杀/慢杀交接，以及练习/顺序/音乐注册回归。验证记录保存在 `verification/`。
 
 ```sh
-STAGE_STRICT_NEW=1 luajit tools/check_stage.lua mod/GAME/th38.lua 120
-luajit tools/th38-tests/sequence.lua
-luajit tools/th38-tests/laser.lua
-luajit tools/th38-tests/runtime.lua 3600
-TH38_TEST_IDS=68006,68053,68075,68085,68089,68090,68091 luajit tools/th38-tests/runtime.lua 7200
+STAGE_STRICT_NEW=1 luajit tools/check_stage.lua mod/GAME/th40.lua 120
+luajit tools/th40-tests/sequence.lua
+luajit tools/th40-tests/laser.lua
+luajit tools/th40-tests/runtime.lua 3600
+TH38_TEST_IDS=68006,68053,68075,68085,68089,68090,68091 luajit tools/th40-tests/runtime.lua 7200
 luajit tools/check_sequence_mode.lua
 luajit tools/check_original_practice.lua
 luajit tools/check_sequence_media.lua
-luajit tools/check_fields.lua mod/GAME/th38.lua mod/GAME/th38/native.lua
+luajit tools/check_fields.lua mod/GAME/th40.lua mod/GAME/th40/native.lua
 ```
 
 `runtime.lua` 的 A 路线运行指定时长，其他三路线每段运行 600 帧。退出后检查所有派生对象均已回收。
@@ -65,7 +61,7 @@ luajit tools/check_fields.lua mod/GAME/th38.lua mod/GAME/th38/native.lua
 该采样不包含激光，也没有原作出膛狙分类回调，不能直接视为原作难度评分。
 
 ```sh
-STAGE_SEED=11111 THREAT_CARDS=3,6,26,50 luajit tools/th38-tests/threat.lua mod/GAME/th38.lua 600
+STAGE_SEED=11111 THREAT_CARDS=3,6,26,50 luajit tools/th40-tests/threat.lua mod/GAME/th40.lua 600
 ```
 
 Mac 原生检查使用临时存档目录，不读取真实玩家数据。加速检查关闭音效，并在战斗阶段 300 帧后

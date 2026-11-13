@@ -5,9 +5,12 @@ local P={stages={
     {code='TH33',level=31,title='文花帖原作'},
     {code='TH34',level=32,title='妖妖梦原作'},
     {code='TH35',level=33,title='风神录原作'},
-    {code='TH38',level=35,title='夏夜祭原作'},
-    {code='TH39',level=36,title='祈华梦原作'},
-    {code='TH40',level=37,title='Like Dreamer'},
+    {code='TH37',level=35,title='幕华祭春雪篇'},
+    {code='TH38',level=36,title='雪莲华'},
+    {code='TH39',level=37,title='幕华祭永夜篇'},
+    {code='TH40',level=38,title='夏夜祭原作'},
+    {code='TH41',level=39,title='祈华梦原作'},
+    {code='TH42',level=40,title='Like Dreamer'},
 }}
 function P.allowed(level)
     for _,entry in ipairs(P.stages) do if entry.level==level then return true end end

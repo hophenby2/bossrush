@@ -2,6 +2,7 @@ local int, max = int, max
 local SearchStageLevel = SearchStageLevel
 
 function item:PlayerMiss()
+    if NativePlayers and NativePlayers.enabled() then return NativePlayers.miss(self) end
     if SequenceResources and SequenceResources.enabled() then return SequenceResources.miss(self) end
     local var = lstg.var
     var.dead = var.dead + 1
@@ -36,6 +37,7 @@ function item.PlayerInit()
     var.dead = 0
     if GameRank then GameRank.reset() end
     if GameDrops then GameDrops.reset() end
+    if NativePlayers then NativePlayers.reset() end
     var.revive=(var.__revive_version==1 or var.__revive_version==2) and {used=0,credits=0,asked={}} or nil
     var.getsc = 0
     var.saving = 0

@@ -10,8 +10,8 @@ New=function(cls,...)
     if cls.init then cls.init(o,...) end
     return o
 end
-local N=dofile('mod/GAME/th38/native.lua');N.load()
-local data=dofile('mod/GAME/th38/phases.lua')
+local N=dofile('mod/GAME/th40/native.lua');N.load()
+local data=dofile('mod/GAME/th40/phases.lua')
 local peak,checked,created=0,0,0
 local new=New
 -- N已经缓存New；用spawn计数，避免改变待测对象生命周期。

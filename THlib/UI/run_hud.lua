@@ -90,6 +90,40 @@ function H.lives()
 end
 function H.resources(x1,x2,top,alpha)
     if SequenceResources and SequenceResources.enabled() then return H.original(x1,x2,top,alpha) end
+    local native=NativePlayers and NativePlayers.state()
+    if native then
+        local m=NativePlayers.machine(native.level,lstg.var.native_player_id)
+        local lives=(native.level==36 or native.level>=38) and math.max(0,native.life) or math.max(0,math.floor(native.life/5))
+        local rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},
+            {native.level==36 and '生命' or '残机',lives}}
+        if native.level>=38 then
+            rows[#rows+1]={native.level==40 and 'Mental' or 'Bomb',native.bombs}
+            if native.level==38 then
+                rows[#rows+1]={'火力',native.power..' / 400'}
+                rows[#rows+1]={'星屑',native.star..' / 3000'}
+            elseif native.level==39 then
+                rows[#rows+1]={'残机碎片',('%d / 4'):format(native.lifeChip*4)}
+                rows[#rows+1]={'染色连锁',native.dyeChain}
+            else
+                rows[#rows+1]={'Dream',('%d%%'):format(math.max(0,lstg.var.like_dreamer_special_gauge or 0)/500)}
+            end
+        elseif native.level==36 then
+            rows[#rows+1]={'残机碎片',native.fragments..' / '..NativePlayers.lifeThreshold(native)}
+            rows[#rows+1]={'结界',NativePlayers.barriers(native)..' / 3'}
+            rows[#rows+1]={'结界能量',('%d%%'):format(math.floor((native.barrier+1)/1000))}
+        else
+            rows[#rows+1]={'残机碎片',math.max(0,native.life)%5 .. ' / 5'}
+            rows[#rows+1]={'Bomb',math.floor(native.bombs/5)}
+            rows[#rows+1]={'Bomb 碎片',native.bombs%5 .. ' / 5'}
+            if native.level==35 then rows[#rows+1]={'火力',native.power..' / 400'} end
+        end
+        for i,row in ipairs(rows) do
+            local y=top-(i-1)*23
+            text(row[1],x1,y,.69,alpha,colors.blue,'left','vcenter')
+            text(row[2],x2,y,.69,alpha,colors.red,'right','vcenter')
+        end
+        return
+    end
     local lives,limit=H.lives()
     text('生命',x1,top,.8,alpha,colors.red,'left','vcenter')
     text(lives,x2,top,.8,alpha,colors.red,'right','vcenter')

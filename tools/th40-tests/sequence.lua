@@ -6,8 +6,8 @@ dofile('THlib/lib/Ltask.lua');dofile('THlib/enemy/boss_card.lua')
 _sc_table,_sc_pr_table={},{}
 dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
-dofile('mod/GAME/th38.lua');dofile('mod/GAME/original/stage_flow.lua').install()
-local C=dofile('mod/sequence_catalog.lua');local T=_editor_class.TH38;local N=T.native
+dofile('mod/GAME/th40.lua');dofile('mod/GAME/original/stage_flow.lua').install()
+local C=dofile('mod/sequence_catalog.lua');local T=_editor_class.TH40;local N=T.native
 local checkCount=0
 local function check(v,why) assert(v,why);checkCount=checkCount+1 end
 local create=N.road_controller;local tick,roads
@@ -42,9 +42,9 @@ for _,entry in ipairs({'thsss_lunatic','thsss_extra'}) do
 end
 for _,o in ipairs(objects) do if o.th38_run then N.stop(o) end end
 print('连续道中快杀/慢杀、控制器偏移、四/六面与关底交接检查通过：'..checkCount)
-local scene={sequence_music='TH38_Boss06'};local played=0
+local scene={sequence_music='TH40_Boss06'};local played=0
 PlayMusic=function() played=played+1 end;StopMusic=function() end
 for _,meta in ipairs(T.data.phases) do if meta.chapter=='6' and meta.optional then lstg.tmpvar.th38_phase=meta;T.mediaFrame(scene) end end
-assert(played==1 and scene.sequence_music=='TH38_Boss06FSC','六面FSC三阶段必须连续播放同一首曲目')
+assert(played==1 and scene.sequence_music=='TH40_Boss06FSC','六面FSC三阶段必须连续播放同一首曲目')
 lstg.tmpvar.th38_phase=nil
 print('FSC三阶段换曲只触发一次')

@@ -1116,7 +1116,6 @@ function M.cancelFromPlayer(projectile, source, ordinal)
     projectile.collisionEnabled = false
     projectile.grazed = true
     projectile.colli = false
-    projectile.group = GROUP_GHOST
     projectile._deleteNextFrame = true
     local rt = runtime()
     projectile._deactivatedFrame = rt and rt.frame or 0
@@ -1214,7 +1213,8 @@ local function updatePlayerHitAndGraze(self)
         local playerClass = LikeDreamer.PlayerClass
         if playerClass and p.class == playerClass and
                 type(playerClass._takeHit) == "function" then
-            playerClass._takeHit(p, self)
+            -- 实际受击由 LuaSTG 碰撞回调处理。
+            return
         else
             M.hitPlayer(self)
             if (p.invulnerableFrames or 0) == 0 then
@@ -1272,6 +1272,9 @@ function bulletClass:frame()
     self.x,self.y = Core.toWorld(x,y)
     self.colli = self.active and self.collisionEnabled and self.radius > 0
     if self.colli then self.group = GROUP_ENEMY_BULLET end
+    if LikeDreamer.PlayerClass and player and player.class==LikeDreamer.PlayerClass then
+        updatePlayerHitAndGraze(self)
+    end
 end
 
 function bulletClass:render()

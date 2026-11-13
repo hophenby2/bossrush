@@ -1,0 +1,85 @@
+{
+  "kind": "LuaJIT模拟，3600/7200帧，两种子",
+  "runs": [
+    {
+      "seed": 20260916,
+      "rows": [
+        {
+          "id": 38004,
+          "peak3600": 748,
+          "peak7200": 748,
+          "emitters": 37,
+          "remaining": 0
+        },
+        {
+          "id": 38012,
+          "peak3600": 74,
+          "peak7200": 74,
+          "emitters": 66,
+          "remaining": 0
+        },
+        {
+          "id": 38035,
+          "peak3600": 1242,
+          "peak7200": 1242,
+          "emitters": 873,
+          "remaining": 0
+        },
+        {
+          "id": 38047,
+          "peak3600": 1642,
+          "peak7200": 1642,
+          "emitters": 77,
+          "remaining": 0
+        },
+        {
+          "id": 38089,
+          "peak3600": 1467,
+          "peak7200": 1467,
+          "emitters": 31,
+          "remaining": 0
+        }
+      ]
+    },
+    {
+      "seed": 11111,
+      "rows": [
+        {
+          "id": 38004,
+          "peak3600": 730,
+          "peak7200": 730,
+          "emitters": 37,
+          "remaining": 0
+        },
+        {
+          "id": 38012,
+          "peak3600": 73,
+          "peak7200": 73,
+          "emitters": 66,
+          "remaining": 0
+        },
+        {
+          "id": 38035,
+          "peak3600": 1242,
+          "peak7200": 1242,
+          "emitters": 873,
+          "remaining": 0
+        },
+        {
+          "id": 38047,
+          "peak3600": 1642,
+          "peak7200": 1642,
+          "emitters": 77,
+          "remaining": 0
+        },
+        {
+          "id": 38089,
+          "peak3600": 1467,
+          "peak7200": 1467,
+          "emitters": 31,
+          "remaining": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 -- 精简分支的内容边界；保留实际level和符卡ID，不把旧录像误放进缺失关卡。
-local C={stages={'31','32','33','34','35','38','39','40'},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true},ports={}}
+local C={stages={'31','32','33','34','35','37','38','39','40','41','42'},ports={},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true,[38]=true,[39]=true,[40]=true}}
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
@@ -8,16 +8,33 @@ function C.supportsRecord(record)
     local ok,v=pcall(DeSerialize,record.stageExtendInfo)
     if not ok or type(v)~='table' then return false end
     if v.current_system and v.current_system~='' then return false end
-    if names[record.stageName] then return true end
+    local native=v.__native_player_version~=nil
+    if native and (not NativePlayers or not NativePlayers.enabled(v)) then return false end
+    if names[record.stageName] then
+        if record.stageName=='TH38@BossRush' and v.__th38_version~=1 then return false end
+        if record.stageName=='TH39@BossRush' and v.__th39_version~=1 then return false end
+        if record.stageName=='TH40@BossRush' and not native then return false end
+        return not native or v.native_player_level==NativePlayers.practiceLevel(record.stageName)
+    end
     if record.stageName=='Spell Practice@Spell Practice' then
         local group=v.sc_group
         return type(group)=='table' and C.levels[group[1]]==true
+            and (not native or v.native_player_level==group[1])
+            and (group[1]~=36 or v.__th38_version==1)
+            and (group[1]~=37 or v.__th39_version==1)
             and _sc_pr_table[group[1]] and _sc_pr_table[group[1]][group[2]]~=nil
     end
     local sequence=dofile('mod/sequence_catalog.lua')
     for _,entry in ipairs(sequence.entries) do
         if record.stageName==entry.battle then
             if v.__sequence_version~=sequence.VERSION or v.sequence_key~=entry.key then return false end
+            if entry.native then
+                if v.__sequence_system_version then return false end
+                if native then return v.native_player_level==entry.level and v.native_player_id==v.sequence_player end
+                if entry.level>=38 then return v.sequence_player==nil end
+                return v.sequence_player=='reimu' or v.sequence_player=='marisa'
+            end
+            if native then return false end
             if v.__sequence_system_version then
                 if not SequenceResources or v.__sequence_system_version~=SequenceResources.VERSION then return false end
                 return SequenceResources.machine(SequenceResources.gameByLevel[entry.level],v.sequence_player)~=nil
@@ -25,6 +42,7 @@ function C.supportsRecord(record)
             return true
         end
     end
+    if native then return false end
     if randomStages[record.stageName] then
         -- 第4版允许地灵殿加入随机池；该历史范围不属于精简分支。
         if v.__rogue_pool_version==4 then return false end

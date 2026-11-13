@@ -3,7 +3,7 @@
 import argparse,json,re,math
 from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--source',type=Path,required=True);p.add_argument('--game',type=Path,required=True);a=p.parse_args()
-ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'mod/GAME/th38';q=lambda s:json.dumps(s,ensure_ascii=False)
+ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'mod/GAME/th40';q=lambda s:json.dumps(s,ensure_ascii=False)
 def lua(v):
  if v is None:return 'nil'
  if isinstance(v,bool):return str(v).lower()

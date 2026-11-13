@@ -45,7 +45,7 @@ local function play(scene,track)
 end
 function M.enter(scene,chapter,kind,row)
     if GameContent and GameContent.ports[chapter.level] then scene.sequence_chapter=chapter;return end
-    if chapter.level==35 then return _editor_class.TH38.media(scene,chapter,kind,row) end
+    if chapter.level==38 then return _editor_class.TH40.media(scene,chapter,kind,row) end
     local game,key,stageTrack,bossTrack=location(chapter,row)
     local changed=scene.sequence_background_key~=game..'/'..key or not scene.sequence_background or not IsValid(scene.sequence_background)
     -- 文花帖每幕独立启动原场景，EX的四个地点也各自取SceneSelect指定背景。
@@ -60,7 +60,7 @@ function M.enter(scene,chapter,kind,row)
 end
 function M.frame(scene)
     if GameContent and GameContent.ports[scene.level] then return end
-    if scene.level==35 then return _editor_class.TH38.mediaFrame(scene) end
+    if scene.level==38 then return _editor_class.TH40.mediaFrame(scene) end
     local chapter=scene.sequence_chapter
     if not chapter then return end
     for _,b in ipairs(boss_group) do
