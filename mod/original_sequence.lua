@@ -210,9 +210,9 @@ function S.restartChapter(scene)
     local index=lstg.var.sequence_run.chapter
     task.Clear(scene)
     if TH39 and scene.group.sequence_native=='thmhj3' then TH39.runtime.clearAll() end
-    ResetPool();boss_group={}
-    scene.sequence_background_key=nil;scene.sequence_background=nil;scene.sequence_last_card=nil
     if OriginalSequenceMedia then OriginalSequenceMedia.stop(scene) end
+    ResetPool();boss_group={}
+    scene.sequence_last_card=nil
     if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
     else SequenceResources.spawnPlayer() end
     if ui.OriginalHUD then ui.OriginalHUD.start() end

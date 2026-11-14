@@ -108,6 +108,7 @@ function item.PlayerGraze(...)
     if SequenceResources and SequenceResources.enabled() then return SequenceResources.graze(...) end
     local var = lstg.var
     var.graze = var.graze + 1
+    if NativePlayers and NativePlayers.enabled(nil,41) then TH43.runtime.gainRankValue(10) end
     if SearchStageLevel[9] then
     end
     if SearchStageLevel[5] then

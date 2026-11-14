@@ -12,7 +12,7 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==26,'官方五作、幕华祭和雪莲华的难度/场景入口独立，永夜抄Final A/B分开')
+check(#C.entries==28,'栖霞园 L 和 Extra 使用独立入口')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
@@ -25,6 +25,10 @@ for _,e in ipairs(C.entries) do
             check(#chapter.units>0,'每一面都有保留内容')
             for _,row in ipairs(chapter.units) do
                 check(row.chapter~='Last Word','Last Word不能混入原作整关路线')
+                if e.native=='thbdb' then
+                    local extra=e.difficulty=='extra'
+                    check(row.difficulty==(extra and 5 or 4) and row.id>=81001 and row.id<88000,'栖霞园关卡使用独立编号和正确难度')
+                end
             end
         end
         if e.level==29 and e.difficulty=='lunatic' then
@@ -85,12 +89,15 @@ end
 DeSerialize=function(v) return v end
 local content=dofile('mod/content.lua')
 for _,e in ipairs(C.entries) do
-    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,sequence_player=e.native and e.level<38 and 'reimu' or nil,current_system=''}},'当前顺序录像可播放')
+    local legacy={stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,
+        sequence_player=e.native and e.level<38 and 'reimu' or nil,current_system=''}}
+    check(content.supportsRecord(legacy)==(e.native~='thbdb'),'旧顺序录像按来源版本放行')
     check(not content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key='错误路线'}},'录像路线不匹配时拒绝串线')
     if e.native then
         for _,machine in ipairs(P.machines(e.level)) do
             local v={__sequence_version=1,sequence_key=e.key,sequence_player=machine.id,
-                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id}
+                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id,
+                __th43_version=e.native=='thbdb' and 1 or nil}
             local record={stageName=e.battle,stageExtendInfo=v}
             check(content.supportsRecord(record),'可播放各原作机体的录像')
             v.native_player_level=0

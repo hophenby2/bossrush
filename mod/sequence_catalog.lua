@@ -39,6 +39,8 @@ addNative('theis_lunatic','祈华梦 · Lunatic',39,'lunatic','theis')
 addNative('theis_extra','祈华梦 · Extra',39,'extra','theis')
 addNative('likedreamer_nightmare','Like Dreamer · Nightmare',40,'nightmare','likedreamer')
 addNative('likedreamer_chaos','Like Dreamer · Chaos',40,'chaos','likedreamer')
+addNative('thbdb_lunatic','栖霞园 · Lunatic',41,'lunatic','thbdb')
+addNative('thbdb_extra','栖霞园 · Extra',41,'extra','thbdb')
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
@@ -81,6 +83,7 @@ function C.chapterAllowed(entry,chapter,player)
     return true
 end
 local function selected(entry,row,player)
+    if entry.native=='thbdb' then return row.difficulty==(entry.difficulty=='extra' and 5 or 4) end
     local card=row.unit.sc_group[1].card
     local id=card.source_card_id or card.card_id
     if entry.level==30 and row.chapter=='4' and row.role=='boss' then

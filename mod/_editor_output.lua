@@ -1215,6 +1215,10 @@ for _,t in ipairs({29,30,31,32,33,35,36,37,38,39,40}) do
     end)
 end
 
+table.insert(LoadRes, function()
+    LoadTexture('stage_pic41','Resources/th43/background/stage1/far_blue_1.png')
+end)
+
 ---开发者模式
 if FileExist("Creative.lua") then
     DoFile("Creative.lua")

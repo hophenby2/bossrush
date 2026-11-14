@@ -5,6 +5,7 @@ function T.install()
     if not mode then return end
     local fixedSeed=tonumber(os.getenv('BOSSRUSH_MAC_TEST_SEED') or '')
     local sequenceKey=os.getenv('BOSSRUSH_MAC_TEST_SEQUENCE')
+    if sequenceKey=='' then sequenceKey=nil end
     local nativeMachine=os.getenv('BOSSRUSH_MAC_TEST_MACHINE')
     local nativeProbe=nativeMachine and
         mode~='native-port-practice' and mode~='native-port-sequence' and mode~='th38-sequence'
@@ -81,6 +82,14 @@ function T.install()
             end
             if tick%15==0 then
                 local p=player and IsValid(player) and player
+        if portShoot and p and p.native_level==41 then
+            for _,b in ipairs(boss_group) do
+                if IsValid(b) and b.th43_card and b.is_combat then
+                    p.x=b.x
+                    break
+                end
+            end
+        end
                 local f=assert(io.open('User/mac-input.json','wb'))
                 f:write(Serialize({stage=stage.current_stage and stage.current_stage.stage_name,x=p and p.x,y=p and p.y,
                     slow=p and p.slow,shoot=p and p.__shoot_flag,preview=AndroidInput.preview,paused=not ext.pause_menu:IsKilled(),
@@ -233,6 +242,19 @@ function T.install()
                     end
                 end
                 if sequenceKill and nativePort and GameContent and GameContent.ports[40] then
+                    if stage.current_stage.level==41 then
+                        for _,boss in ipairs(boss_group) do
+                            local card=IsValid(boss) and boss.current_card
+                            if card and boss.is_combat and boss.th43_card then
+                                local id=tostring(card.card_id)
+                                if not sequencePhases[id] then
+                                    sequencePhases[id]=true
+                                    lstg.SystemLog('BOSSRUSH_TH43_PHASE: '..id)
+                                end
+                                if boss.timer>=sequenceKill then boss.hp=0 end
+                            end
+                        end
+                    end
                     local theis=GameContent.ports[39].source
                     local b=theis._boss
                     if b and IsValid(b) and b.current_card and b.current_card.is_combat
@@ -324,7 +346,7 @@ function T.install()
             elseif mode=='native-port-practice' or (mode=='battle' or mode=='input') and battleCard>=68000 and battleCard<69000 then
                 AndroidFocus=function() end
                 local index
-                local level=battleCard>=71100 and 40 or battleCard>=70100 and 39 or 38
+                local level=battleCard>=81000 and 41 or battleCard>=71100 and 40 or battleCard>=70100 and 39 or 38
                 if battleCard>=37000 and battleCard<40000 then level=math.floor(battleCard/1000)-2 end
                 for i,u in ipairs(_sc_pr_table[level]) do if u.sc_group[1].card.card_id==battleCard then index=i end end
                 assert(index,'缺少原作测试卡：'..battleCard)
@@ -333,6 +355,12 @@ function T.install()
             elseif mode=='battle' or mode=='input' then
                 if sequenceKey then
                     OriginalSequence.start(sequenceKey,nativeMachine or 'reimu')
+                elseif battleCard>=81000 and battleCard<88000 and TH43 then
+                    local index
+                    for _,row in ipairs(TH43.units()) do if row.id==battleCard then index=row.index end end
+                    assert(index,'缺少栖霞园测试阶段：'..battleCard)
+                    lstg.var.sc_index,lstg.var.sc_group=index,{41,index}
+                    stage.group.PracticeStart('Spell Practice@Spell Practice',true,nativeMachine)
                 elseif battleCard>=39000 and battleCard<40000 and TH39 then
                     local index
                     for _,row in ipairs(TH39.units()) do
@@ -395,9 +423,9 @@ function T.install()
             frames=frames+1
             if portShoot then
                 local s=NativePlayers.state()
-                if s and s.level==38 then
+                if s and (s.level==38 or s.level==41) then
                     for _,actor in ipairs(boss_group) do
-                        if actor.th38_run and actor.colli and actor.maxhp then
+                        if (actor.th38_run or actor.th43_card) and actor.colli and actor.maxhp then
                             portDamage=math.max(portDamage,actor.maxhp-actor.hp)
                         end
                     end
@@ -460,6 +488,9 @@ function T.install()
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
                     if portTest.rules then assert(portTest.checked,'原作自机资源检查未完成') end
+                    if portShoot and battleCard>=81000 then
+                        assert(portDamage>0,'实际自机射击未扣除栖霞园 Boss 血量')
+                    end
                     if portTest.expected then
                         portTest.music=GetMusicState(portTest.expected)
                         assert(portTest.music=='playing','曲目未播放：'..portTest.expected)

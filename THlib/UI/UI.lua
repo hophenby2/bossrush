@@ -86,6 +86,7 @@ ui.menu = {
                  "夏夜祭原作", -- 38 TH40
                  "祈华梦原作", -- 39 TH41
                  "Like Dreamer", -- 40 TH42
+                 "栖霞园原作", -- 41 TH43
                  "天空璋AEX" },  -- STAGE_COUNT + 1
     sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
@@ -119,6 +120,7 @@ ui.menu = {
                TH40 = "夏夜祭原作",
                TH41 = "祈华梦原作",
                TH42 = "Like Dreamer",
+               TH43 = "栖霞园原作",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },

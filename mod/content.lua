@@ -1,5 +1,5 @@
 -- 精简分支的内容边界；保留实际level和符卡ID，不把旧录像误放进缺失关卡。
-local C={stages={'31','32','33','34','35','37','38','39','40','41','42'},ports={},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true,[38]=true,[39]=true,[40]=true}}
+local C={stages={'31','32','33','34','35','37','38','39','40','41','42','43'},ports={},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true,[38]=true,[39]=true,[40]=true,[41]=true}}
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
@@ -13,7 +13,8 @@ function C.supportsRecord(record)
     if names[record.stageName] then
         if record.stageName=='TH38@BossRush' and v.__th38_version~=1 then return false end
         if record.stageName=='TH39@BossRush' and v.__th39_version~=1 then return false end
-        if record.stageName=='TH40@BossRush' and not native then return false end
+        if record.stageName=='TH40@BossRush' and (not native or v.__th40_version) then return false end
+        if record.stageName=='TH43@BossRush' and (not native or v.__th43_version~=1) then return false end
         return not native or v.native_player_level==NativePlayers.practiceLevel(record.stageName)
     end
     if record.stageName=='Spell Practice@Spell Practice' then
@@ -22,6 +23,8 @@ function C.supportsRecord(record)
             and (not native or v.native_player_level==group[1])
             and (group[1]~=36 or v.__th38_version==1)
             and (group[1]~=37 or v.__th39_version==1)
+            and (group[1]~=38 or not v.__th40_version)
+            and (group[1]~=41 or native and v.__th43_version==1)
             and _sc_pr_table[group[1]] and _sc_pr_table[group[1]][group[2]]~=nil
     end
     local sequence=dofile('mod/sequence_catalog.lua')
@@ -30,6 +33,7 @@ function C.supportsRecord(record)
             if v.__sequence_version~=sequence.VERSION or v.sequence_key~=entry.key then return false end
             if entry.native then
                 if v.__sequence_system_version then return false end
+                if entry.native=='thbdb' and (not native or v.__th43_version~=1) then return false end
                 if native then return v.native_player_level==entry.level and v.native_player_id==v.sequence_player end
                 if entry.level>=38 then return v.sequence_player==nil end
                 return v.sequence_player=='reimu' or v.sequence_player=='marisa'

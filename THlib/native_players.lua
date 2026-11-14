@@ -1,7 +1,7 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1,adapters={}}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
-local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176}
+local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176,[41]=-176}
 local profiles={
     [35]={
         {'reimu','博丽灵梦',4.5,2,13,'reimu',10,{20,6}},
@@ -44,7 +44,12 @@ profiles[40]={
     {'cute','Yuri Cocoa',0,0,0,'cute',character=1},
     {'cool','UJAKO',0,0,0,'cool',character=2},
 }
-local stages={['TH40@BossRush']=38,['TH41@BossRush']=39,['TH42@BossRush']=40,['TH37@BossRush']=35,['TH38@BossRush']=36,['TH39@BossRush']=37}
+profiles[41]={
+    {'reimu','博丽灵梦',4.4,2.1,1.8,'reimu',20,{1.3,1.3}},
+    {'marisa','雾雨魔理沙',4.8,2.2,.9,'marisa',20,{3.37,3.37}},
+    {'sakuya','十六夜咲夜',4,2,1.8,'sakuya',20,{.685,.685}},
+}
+local stages={['TH40@BossRush']=38,['TH41@BossRush']=39,['TH42@BossRush']=40,['TH43@BossRush']=41,['TH37@BossRush']=35,['TH38@BossRush']=36,['TH39@BossRush']=37}
 for _,list in pairs(profiles) do
     for _,m in ipairs(list) do
         m.id,m.name,m.fast,m.slow,m.damage,m.art,m.window,m.bomb,m.velocity=unpack(m,1,9)
@@ -98,7 +103,10 @@ function P.reset()
     local level=v.native_player_level
     local spell=v.is_practice and v.stage_name=='Spell Practice@Spell Practice'
     local s={level=level,life=10,bombs=level==35 and 10 or 15,power=400,rebirth=false}
-    if level>=38 then
+    local adapter=P.adapters[level]
+    if adapter and adapter.reset then
+        adapter.reset(s,v,spell)
+    elseif level>=38 then
         v.bomb_used=0
         s.life,s.bombs=2,2
         if v.is_practice then
@@ -135,7 +143,7 @@ function P.barriers(s)
 end
 local ResourceItem=Class(item)
 function ResourceItem:init(x,y,kind,amount)
-    local images={life=7,bombs=9,power=1,fragments=7,red=7,green=9,blue=2,night=2,star=2}
+    local images={life=7,bombs=9,power=1,fragments=7,red=7,green=9,blue=2,night=2,star=2,points=3,bombFragments=9,rankPower=1}
     item.init(self,x,y,images[kind])
     self.native_pickup,self.kind,self.amount=true,kind,amount
     local s=P.state()
@@ -217,6 +225,12 @@ local shotImages={
     [37]={{'reimu',0,0,47,144,23,80},{'marisa',48,0,53,161,27,46},
         {'sanae',102,0,256,177,128,36},{'mokou',358,0,68,157,34,50}},
 }
+shotImages[41]={}
+for row,name in ipairs({'reimu','marisa','sakuya'}) do
+    for col,part in ipairs({'main','straight','trail','spread'}) do
+        shotImages[41][#shotImages[41]+1]={name..'_'..part,(col-1)*128,(row-1)*128,128,128,64,64}
+    end
+end
 local artLoaded={}
 local function art(level,name)
     local key='native_player_'..level..'_'..name
@@ -615,6 +629,8 @@ function Player:init()
     self.B=self.A
     self.a,self.b=self.A,self.B
     self.grazeRadius=s.level==36 and (m.art=='marisa' and 38.4 or 26.4) or 24
+    local adapter=P.adapters[s.level]
+    if adapter and adapter.init then adapter.init(self,s) end
     self.grazer.a,self.grazer.b=self.grazeRadius,self.grazeRadius
     self.altForm=false
     self.beams={}
@@ -625,7 +641,6 @@ function Player:init()
         for i=1,24 do imgs[i]=key..i end
         return imgs
     end
-    local adapter=P.adapters[s.level]
     self.baseImages=adapter and adapter.images and adapter.images(self,m) or frames(m.art)
     self.imgs=self.baseImages
     self.img=self.imgs[1]
@@ -650,6 +665,8 @@ function Player:colli(other)
     if s.level==37 then
         if (tonumber(s.chapter) or 0)>=6 then self.hitWindow=30 end
     end
+    local adapter=P.adapters[s.level]
+    if adapter and adapter.hitWindow then self.hitWindow=adapter.hitWindow(self,s) end
     self.hit=self.hitWindow
     local group=other.group
     if group==GROUP.ENEMY_BULLET or group==GROUP.ENEMY_BULLET2 then

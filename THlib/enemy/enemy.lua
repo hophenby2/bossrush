@@ -188,7 +188,9 @@ function enemybase:del()
 end
 
 function Damage(obj, dmg)
-    if obj.class.base.take_damage then
+    if obj._th43_take_damage then
+        obj._th43_take_damage(obj, dmg)
+    elseif obj.class.base.take_damage then
         obj.class.base.take_damage(obj, dmg)
     end
 end

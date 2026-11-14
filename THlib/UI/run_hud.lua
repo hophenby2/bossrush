@@ -93,10 +93,16 @@ function H.resources(x1,x2,top,alpha)
     local native=NativePlayers and NativePlayers.state()
     if native then
         local m=NativePlayers.machine(native.level,lstg.var.native_player_id)
-        local lives=(native.level==36 or native.level>=38) and math.max(0,native.life) or math.max(0,math.floor(native.life/5))
+        if native.level==41 and IsValid(lstg.tmpvar.th43_hide_hud) then return end
+        local lives=(native.level==36 or native.level>=38 and native.level<=40) and math.max(0,native.life) or math.max(0,math.floor(native.life/5))
         local rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},
             {native.level==36 and '生命' or '残机',lives}}
-        if native.level>=38 then
+        if native.level==41 then
+            rows[#rows+1]={'Bomb',math.floor(native.bombs/5)}
+            rows[#rows+1]={'Bomb 碎片',native.bombFragments..' / 100'}
+            rows[#rows+1]={'蓝点',native.points}
+            rows[#rows+1]={'火力等级',native.rank..' · '..native.rankChips..' / 6'}
+        elseif native.level>=38 then
             rows[#rows+1]={native.level==40 and 'Mental' or 'Bomb',native.bombs}
             if native.level==38 then
                 rows[#rows+1]={'火力',native.power..' / 400'}

@@ -34,6 +34,7 @@ dofile('mod/GAME/th38.lua')
 dofile('mod/GAME/th39.lua')
 dofile('mod/GAME/th40.lua')
 dofile('tools/native-ports/register.lua')
+dofile('tools/th43_registry.lua')
 OriginalStageFlow.install()
 local function find(fn,seen)
  if seen[fn] then return end;seen[fn]=true

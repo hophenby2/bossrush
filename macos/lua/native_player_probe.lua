@@ -19,6 +19,9 @@ local function enemy(p)
     if level==35 then
         return New(TH37.runtime.classes.fairy,TH37.runtime.stageState(1),
             {type=7,x=234,y=240-p.y-84,speed=0,speedf=0,life=300,hp=1000,id=-1})
+    elseif level==41 then
+        local R=TH43.runtime
+        return R.env.New(R.env.enemy,p.x,p.y+110,1,1000,false,{0,0})
     elseif level==36 then
         return New(TH38.runtime.classes.fairy,{c={closed=false},alive=true,kind='enemy',
             x=4.5,y=(p.y+84)/48-4.8,life=1000,color=5,enemyStyle=1,collision=true,age=1,immune=0,hit=.65})
@@ -37,7 +40,7 @@ function T.before(p)
     assert(p.machine.id==os.getenv('BOSSRUSH_MAC_TEST_MACHINE'))
     assert(CheckRes('img',p.img)=='global','自机行走图不在全局资源池')
     if t==5 then
-        assert(s.life==(level==36 and (lstg.var.is_practice and 1 or 3) or 10))
+        assert(s.life==(level==36 and (lstg.var.is_practice and 1 or 3) or level==41 and lstg.var.is_practice and 0 or 10))
         assert(lstg.var.__native_player_version==1 and not GameDrops.enabled())
         initialLife,initialBombs=s.life,s.bombs
         checked.spawn=true
@@ -64,7 +67,7 @@ function T.before(p)
         if level==36 then
             assert(s.life==initialLife and NativePlayers.barriers(s)==1,'受击应先扣一层结界')
         else
-            assert(s.life==initialLife and s.bombs==initialBombs-(level==35 and 5 or 10),'决死 Bomb 库存或残机错误')
+            assert(s.life==initialLife and s.bombs==initialBombs-((level==35 or level==41) and 5 or 10),'决死 Bomb 库存或残机错误')
         end
         checked.firstHit=true
     elseif t==171 and level==36 then

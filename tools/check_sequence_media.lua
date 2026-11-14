@@ -26,6 +26,17 @@ for _,entry in ipairs(OriginalSequence.catalog.entries) do
         end
     end
 end
+local bdb=dofile('mod/GAME/th43/source/music.lua')
+for stage=1,7 do
+    for _,suffix in ipairs({'','_boss'}) do
+        local name='s'..stage..suffix
+        local loop=assert(bdb[name])
+        check(loop[1]>=0 and loop[2]>loop[1],'栖霞园原曲循环点：'..name)
+        local f=assert(io.open('Resources/th43/music/bgm_'..name..'.ogg','rb'))
+        check(f:read(4)=='OggS','栖霞园原曲文件可读取：'..name)
+        f:close()
+    end
+end
 local tracks=0
 for name,info in pairs(M.music) do
     tracks=tracks+1

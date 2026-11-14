@@ -286,3 +286,12 @@ for _,level in ipairs({39,40}) do
         self:Next()
     end)
 end
+
+NewStage("TH43", "栖霞园原作", 41, function(self)
+    self:Option()
+    self:Task(function()
+        for i=1,6 do TH43.runChapter(self,{name=tostring(i)}) end
+        TH43.runChapter(self,{name='EX'})
+    end)
+    self:Next()
+end)

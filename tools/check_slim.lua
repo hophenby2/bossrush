@@ -24,18 +24,29 @@ local old=DeSerialize;DeSerialize=function(v) return v end
 local function record(name,v) return {stageName=name,stageExtendInfo=v or {current_system=''}} end
 local nativePlayers=NativePlayers
 NativePlayers={
-    enabled=function(v) return v.__native_player_version==1 and v.native_player_level==38 and v.native_player_id=='A' end,
-    practiceLevel=function(name) if name=='TH40@BossRush' then return 38 end end,
+    enabled=function(v)
+        return v.__native_player_version==1 and (v.native_player_level==38 and v.native_player_id=='A'
+            or v.native_player_level==41 and v.native_player_id=='reimu')
+    end,
+    practiceLevel=function(name)
+        if name=='TH40@BossRush' then return 38 end
+        if name=='TH43@BossRush' then return 41 end
+    end,
 }
 local stageVersions={
     ['38']={__th38_version=1},
     ['39']={__th39_version=1},
     ['40']={__native_player_version=1,native_player_level=38,native_player_id='A'},
+    ['43']={__native_player_version=1,native_player_level=41,native_player_id='reimu',__th43_version=1},
 }
 for _,id in ipairs(C.stages) do
     check(C.supportsRecord(record('TH'..id..'@BossRush',stageVersions[id])),'保留关卡录像可播放')
 end
 check(not C.supportsRecord(record('TH40@BossRush')),'不能将旧 TH40 录像误放为夏夜祭')
+check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={38,1},__th40_version=1})),'旧栖霞园录像不能进入夏夜祭练习')
+local bdbVars=stageVersions['43']
+bdbVars.sc_group={41,1}
+check(C.supportsRecord(record('Spell Practice@Spell Practice',bdbVars)),'栖霞园独立练习录像可播放')
 NativePlayers=nativePlayers
 for level=29,33 do check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={level,1}})),'保留符卡练习录像可播放') end
 check(C.supportsRecord(record('RogueTen@RogueTen',{__rogue_pool_version=9,current_system=''})),'当前随机模式录像可播放')
