@@ -28,7 +28,7 @@
 
 这是可运行、可检查的初版，尚不是原作逐帧等价复刻。
 
-1. 自机、伤害、Bomb、资源与生命规则沿用本项目；HP未作DPS标定。道中和符卡背景用原版贴图分层重组，BGM 使用原版曲目与循环点。原版 Unity 三维场景、粒子、剧情和完整音效演出仍有差异。
+1. 自机、伤害、Bomb、资源与生命规则沿用本项目；HP未作DPS标定。道中使用从 Unity 导出的镜头视角、位移和滚转。一至四面从场景导出背景平面及循环位移，五、六面和 Extra A 用原版纹理重建地形，特殊材质、粒子和部分转场仍有差异。符卡沿用分层背景，BGM 使用原版曲目与循环点。
 2. 弹图使用原图，动画弹型暂用静态切片；敌机使用项目妖精行走图，主Boss使用项目现有行走图。双Boss副体暂用发光球代理，伤害汇到本卡总HP，原版独立血条和死亡/复活联结尚未复现。
 3. 点弹使用原生椭圆判定；敌机的体术/受弹半径、原作扫掠碰撞、各类激光的宽度、尾部离屏、出生/收束和擦弹是原生代理，仍须逐类与原版核对。
 4. 通用数值事件、插值、自机狙、扇形/半径发射、绑定、深绑定、随机移动和常规变速已接入；特殊父子旋转组合、冻结/全局控制、原作自定义组件、HSV/反色着色器等尚未完整复现。原版纯蓄力、爆炸、震屏发射器不制造有判定的替代弹。
@@ -42,6 +42,8 @@
 
 ```sh
 python3 tools/th38-tests/export.py /Users/happyelements/asl
+python3 tools/th38-tests/export_background.py /Users/happyelements/asl
+luajit tools/th38-tests/check_background.lua
 STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_motion.lua
 STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_flow.lua
 STAGE_STRICT_NEW=1 luajit tools/th38-tests/check_full.lua /tmp/th38-full.json

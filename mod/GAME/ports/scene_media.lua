@@ -22,7 +22,7 @@ local function drawLayers(o,layers,alpha)
     end
 end
 
-function M.background(prefix,road,boss)
+function M.background(prefix,road,boss,drawRoad)
     return Class(background,{
         init=function(o)
             o.android_direct_background=true
@@ -38,7 +38,7 @@ function M.background(prefix,road,boss)
             SetViewMode('world')
             RenderClearViewMode(Color(255,14,18,33))
             if setting.displayBG==false then return end
-            drawLayers(o,road,1)
+            if drawRoad then drawRoad(o) else drawLayers(o,road,1) end
             if (o.mediaAlpha or 0)>0 then
                 drawLayers(o,boss and (boss[o.mediaVariant or 2] or boss[2]),o.mediaAlpha)
             end
@@ -92,7 +92,7 @@ function M.install(game,sets,cues)
     end
     for number,set in ipairs(sets) do
         local key=prefix..number..'_'
-        local class=M.background(key,set.road,set.spells)
+        local class=M.background(key,set.road,set.spells,set.drawRoad)
         local init=class.init
         class.init=function(o)
             init(o)

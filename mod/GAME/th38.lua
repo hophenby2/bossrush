@@ -64,7 +64,13 @@ for _,chapter in ipairs(D.chapters) do
             card.phase_name,card.phase_kind='雪莲华 '..chapterLabel..' 道中'..(road.key:sub(-1)=='a' and '前段' or '后段'),'road'
             card.asl_source=road
             function card:before() self.asl_controller=nil;hideRoad(self) end
-            function card:init() Media.card(false);R.clearAll();self.asl_controller=R.controller(nil,road.key,road.first) end
+            function card:init()
+                Media.card(false)
+                local bg=lstg.tmpvar.bg
+                if valid(bg) then bg.aslBackgroundOffset=road.first-bg.timer*2 end
+                R.clearAll()
+                self.asl_controller=R.controller(nil,road.key,road.first)
+            end
             function card:frame() if self.asl_controller then R.tick(self.asl_controller) end end
             function card:del() R.clear(self.asl_controller);self.asl_controller=nil end
             boss.card.add({{card,band}},36,card.phase_name,road.id)
