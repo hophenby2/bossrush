@@ -1,11 +1,12 @@
 -- TH37 东方幕华祭·春雪篇（Part II）：六面Lunatic、Extra、Phantasm。
 -- 56符卡、37非符、28个道中练习窗口；214份CrazyStorm经离线展开，运行时只用LuaSTG对象。
 -- 来源、哈希、事件/发射器计数：th37/sources.json。生成命令与已知差异见tools/th37-tests/README.zh-CN.md。
--- 原始血量/弹数/周期不做密度校准。差异1：本项目自机、伤害、Bomb、掉落、BGM和背景代理。
+-- 原始血量、弹数和周期。背景以原纹理重组，音乐使用发行版波形数据。
 -- 差异2：省略对白、3D场景和剧情演出；Boss立绘用项目现有行走图，弹图和敌机使用原图。
 -- 差异3：原作跨对象缓时、射线、深绑定/区域触发的边缘语义仍需原版逐帧对照，见验证说明。
 local R=dofile('mod/GAME/th37/runtime.lua')
 local D=R.data
+local Media=dofile('mod/GAME/th37/media.lua')
 local C={runtime=R,data=D,level=35,cards={},chapters={},classes=R.classes}
 TH37=C
 _editor_class.TH37=R.classes
@@ -27,6 +28,7 @@ local function setupCard(meta,group)
     end
     function card:before() self.mhj_controller=nil;self.mhj_clock=nil end
     function card:init()
+        Media.card(meta.spell)
         self.mhj_clock,self.mhj_index=0,1
         self.mhj_controller=R.controller(self,meta.pattern,false)
         self.mhj_opening=opening
@@ -63,7 +65,7 @@ end
 for _,chapter in ipairs(D.chapters) do
     C.chapters[chapter.name]=chapter;chapter.units={}
     local roadBand='mhjroad'..chapter.stage..'a'
-    boss.Define(roadBand,'幕华祭'..chapter.name..'道中','TH07_1',TH07_bg,{0,300},nil,'Yukari',35)
+    boss.Define(roadBand,'幕华祭'..chapter.name..'道中',Media.track(chapter.stage,'road'),Media[chapter.stage],{0,300},nil,'Yukari',35)
     chapter.step=dofile('mod/GAME/th37/stage'..chapter.stage..'.lua')
     local ordered={}
     for _,road in ipairs(chapter.roads) do ordered[#ordered+1]={time=road.first,road=road} end
@@ -79,6 +81,7 @@ for _,chapter in ipairs(D.chapters) do
             card.mhj_source={chapter=chapter.name,first=window.first,last=window.last}
             function card:before() self.mhj_road=nil;hideRoad(self) end
             function card:init()
+                Media.card(false)
                 local state=R.stageState(chapter.stage);state.preroll=true
                 -- 独立后半道中仍须建立原始CopyEnemy模板；预滚阶段不创建敌机或弹。
                 for t=0,window.first-1 do chapter.step(R,state,t) end
@@ -97,7 +100,8 @@ for _,chapter in ipairs(D.chapters) do
             local group=entry.boss;local band='mhj'..group.id..'a'
             group.band=band
             local first=group.cards[1]
-            boss.Define(band,first.actor,'TH07_1',TH07_bg,{0,70},nil,first.image,35)
+            local cue=chapter.stage==6 and group.source[3]=='-1' and 'last' or (group.source[3]=='1' and 'boss' or 'road')
+            boss.Define(band,first.actor,Media.track(chapter.stage,cue),Media[chapter.stage],{0,70},nil,first.image,35)
             for _,meta in ipairs(group.cards) do
                 meta.role=group.source[3]=='1' and 'boss' or 'mid'
                 local card=setupCard(meta,group)
@@ -121,6 +125,8 @@ function C.runChapter(scene,chapter)
     local resources=NativePlayers and NativePlayers.state()
     if resources then resources.chapter=chapter.name end
     local meta=assert(C.chapters[chapter.name]);local state=R.stageState(meta.stage)
+    Media.enter(scene,meta.stage)
+    state.media=scene
     local marker=1
     for t=0,meta.length do
         if scene.sequence_finished then R.clearAll();return end
@@ -129,13 +135,23 @@ function C.runChapter(scene,chapter)
         while meta.bosses[marker] and meta.bosses[marker].time==t do
             local group=meta.bosses[marker];local cards={}
             for _,m in ipairs(group.cards) do cards[#cards+1]=C.cards[m.id].card end
+            if group.source[3]=='1' and not state.mhjLastTrack then Media.play(scene,meta.stage,'boss') end
             local actor=New(_editor_boss[group.band..35],cards)
             -- 原作StageManager在Boss存在期间冻结关卡轴；道中敌机和弹仍自然运动。
             while valid(actor) and not scene.sequence_finished do task.Wait() end
+            Media.card(false)
             marker=marker+1
         end
         task.Wait()
     end
     R.clearAll()
+end
+R.stage_PlayMusic=function(s,cue)
+    if not s.media then return end
+    if cue=='last' then s.mhjLastTrack=true end
+    Media.play(s.media,s.stage,cue)
+end
+R.stage_FadeoutMusic=function(s,seconds)
+    if s.media then Media.fade(s.media,tonumber(seconds)) end
 end
 return C

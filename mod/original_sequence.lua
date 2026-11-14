@@ -70,7 +70,7 @@ local function lastContinuous(rows,first)
     return index
 end
 local function media(scene,chapter,kind,row)
-    if chapter.level>=35 then return end
+    if chapter.level>=35 and chapter.level<=37 then return end
     if OriginalSequenceMedia then OriginalSequenceMedia.enter(scene,chapter,kind,row) end
 end
 function S.finish(scene,won)
@@ -258,7 +258,7 @@ for _,entry in ipairs(S.catalog.entries) do
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
-        if selected.native and selected.level<=37 then self:Option(TH07_bg,'TH07_1') else self:Option() end
+        self:Option()
         task.New(self,function() S.run(self,selected.key) end)
     end
     function battle:frame()

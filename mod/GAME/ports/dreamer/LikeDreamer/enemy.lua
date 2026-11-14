@@ -1525,8 +1525,6 @@ function Runtime:spawn(typeId,hp,x,y,note)
     if gateOwners[self.stage] and gateOwners[self.stage][typeId] then self.gate=true end
     if isFinalBoss(typeId) then
         self.gate=true;self.boss=e
-        local stageBgm="ld_bgm_Stage"..self.stage
-        if lstg.CheckRes(4,stageBgm) then StopMusic(stageBgm) end
         local bossBgm="ld_bgm_Boss"..min(5,floor((self.stage+1)/2))
         if lstg.CheckRes(4,bossBgm) then PlayMusic(bossBgm,1,0) end
     end

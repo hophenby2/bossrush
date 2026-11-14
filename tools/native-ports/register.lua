@@ -8,11 +8,11 @@ setting=setting or {}
 plus=plus or {}
 dofile('THlib/plus/Utility.lua')
 LoadPS=function() end
-dofile('mod/GAME/th41.lua')
 local define=boss.Define
 boss.Define=function(id,name,bgm,bg,...)
-    -- Like Dreamer 在启动战斗时创建背景。满足静态桩对默认背景的断言。
+    -- 两作在启动战斗时各自创建原作背景。
     return define(id,name,bgm,bg or background,...)
 end
+dofile('mod/GAME/th41.lua')
 dofile('mod/GAME/th42.lua')
 boss.Define=define

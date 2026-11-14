@@ -970,6 +970,7 @@ end
 function Background:render()
 	SetViewMode("world")
 	lstg.RenderClear(lstg.Color(255, 0, 0, 0))
+	if setting.displayBG == false then return end
 	for _, node in ipairs(self.layers) do
 		if node.kind == "scroll" then
 			Background._renderScrolled(self, node)

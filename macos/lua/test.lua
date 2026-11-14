@@ -14,11 +14,11 @@ function T.install()
     local battleShoot=os.getenv('BOSSRUSH_MAC_TEST_SHOOT')~='0'
     local nativePort=mode=='native-port-sequence' or mode=='native-port-practice'
     local portShoot=nativePort and os.getenv('BOSSRUSH_MAC_TEST_SHOOT')=='1'
-    local portRules=nativePort and os.getenv('BOSSRUSH_MAC_TEST_RULES')=='1'
-    local portLoadout=portRules and {1,1,1,3,1,1} or nil
-    local portRulesChecked=false
-    local portInitialLife,portInitialBombs
-    local hazard=portRules and Class(object,{
+    local portTest={slot=tonumber(os.getenv('BOSSRUSH_MAC_TEST_BOMB_SLOT') or ''),
+        rules=nativePort and os.getenv('BOSSRUSH_MAC_TEST_RULES')=='1',
+        expected=os.getenv('BOSSRUSH_MAC_TEST_BGM'),bullets={},canceled=0,checked=false}
+    local portLoadout=(portTest.rules or portTest.slot) and {1,1,portTest.slot or 1,3,1,1} or nil
+    local hazard=portTest.rules and Class(object,{
         init=function(o,p)
             o.group=GROUP.ENEMY_BULLET
             o.x,o.y,o.a,o.b,o.colli=p.x,p.y,3,3,true
@@ -168,30 +168,45 @@ function T.install()
             for _=1,sequenceSpeed do
                 if isSequence then
                     if player and IsValid(player) then player.protect=120 end
-                    if portRules and p and p.native_level then
+                    if portTest.rules and p and p.native_level then
                         local t=stage.current_stage.timer
                         local s=assert(NativePlayers.state())
                         if t==90 then
-                            portInitialLife,portInitialBombs=s.life,s.bombs
-                            assert(portInitialLife==2 and portInitialBombs==2 and p.machine.id==nativeMachine)
+                            portTest.initialLife,portTest.initialBombs=s.life,s.bombs
+                            assert(portTest.initialLife==2 and portTest.initialBombs==2 and p.machine.id==nativeMachine)
                             if p.native_level==40 then
                                 assert(p.setupGroup==p.machine.character and p.optionSlots[4]==3 and p.specialMode==1)
+                                if portTest.slot then assert(p.optionSlots[3]==portTest.slot) end
+                            end
+                            if portTest.slot and p.native_level==40 then
+                                local port=GameContent.ports[40].source
+                                for y=20,220,20 do
+                                    for x=-35,35,7 do
+                                        portTest.bullets[#portTest.bullets+1]=port.Projectile.spawn(0,1,p.ldX+x,p.ldY-y,0,0,0,4,0)
+                                    end
+                                end
                             end
                             AndroidInput.keys[setting.keys.spell]=true
                         elseif t==91 then
                             AndroidInput.keys[setting.keys.spell]=false
                         elseif t==100 then
-                            assert(s.life==portInitialLife and s.bombs==portInitialBombs-1,
+                            assert(s.life==portTest.initialLife and s.bombs==portTest.initialBombs-1,
                                 ('原作自机 Bomb 库存未扣除，残机 %s，库存 %s，原始库存 %s，锁 %s，Fever %s'):format(
                                     s.life,s.bombs,lstg.var.bomb,tostring(p.bombLock),tostring(p.specialGauge)))
                         elseif t==460 then
+                            if portTest.slot then
+                                for _,bullet in ipairs(portTest.bullets) do
+                                    if not IsValid(bullet) or not bullet.active then portTest.canceled=portTest.canceled+1 end
+                                end
+                                assert(portTest.canceled>0,'Like Dreamer Bomb 未清除测试敌弹')
+                            end
                             p.protect=0
                             New(hazard,p)
                         elseif t==461 then
                             assert(p.hit or (p.playerStateTimer or 0)>=260,'原作自机未收到原生碰撞')
                         elseif t==530 then
-                            assert(s.life==portInitialLife-1 and lstg.var.dead==1,'受击后残机未扣除')
-                            portRulesChecked=true
+                            assert(s.life==portTest.initialLife-1 and lstg.var.dead==1,'受击后残机未扣除')
+                            portTest.checked=true
                         end
                     end
                     for _,b in ipairs(boss_group or {}) do
@@ -310,6 +325,7 @@ function T.install()
                 AndroidFocus=function() end
                 local index
                 local level=battleCard>=71100 and 40 or battleCard>=70100 and 39 or 38
+                if battleCard>=37000 and battleCard<40000 then level=math.floor(battleCard/1000)-2 end
                 for i,u in ipairs(_sc_pr_table[level]) do if u.sc_group[1].card.card_id==battleCard then index=i end end
                 assert(index,'缺少原作测试卡：'..battleCard)
                 lstg.var.player_name='reimu_player';lstg.var.rep_player='Reimu';lstg.var.sc_group={level,index}
@@ -443,9 +459,16 @@ function T.install()
             if captured then
                 afterCapture=afterCapture+1
                 if afterCapture>=30 and not finished then
-                    if portRules then assert(portRulesChecked,'原作自机资源检查未完成') end
+                    if portTest.rules then assert(portTest.checked,'原作自机资源检查未完成') end
+                    if portTest.expected then
+                        portTest.music=GetMusicState(portTest.expected)
+                        assert(portTest.music=='playing','曲目未播放：'..portTest.expected)
+                        local bg=lstg.tmpvar.bg
+                        portTest.background=IsValid(bg)
+                        assert(portTest.background,'没有原作背景对象')
+                    end
                     local f=assert(io.open('User/mac-test.json','wb'))
-                    f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,port_damage=portShoot and portDamage or nil,port_rules=portRules and portRulesChecked or nil,
+                    f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,port_damage=portShoot and portDamage or nil,port_rules=portTest.rules and portTest.checked or nil,bomb_canceled=portTest.slot and portTest.canceled or nil,media_music=portTest.music,media_background=portTest.background,
                         asl_patterns=aslPatterns,asl_bullet_pool=TH38 and TH38.runtime.bulletCount,mhj_moves=mhjMoves,mhj_samples=mhjSamples,mhj_damage_checked=mhjDamageChecked,mhj_repeated=mhjRepeated,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
                         version=lstg.GetVersionName(),data=AndroidPlatform.writable}))

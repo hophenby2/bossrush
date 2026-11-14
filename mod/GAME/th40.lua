@@ -17,30 +17,24 @@ for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
     local id='th38.snd.'..source;LoadSound(id,path);N.sounds[source]=id
 end
 for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
-class.background=Class(background,{
-    init=function(o,chapter) background.init(o,false);o.chapter=chapter or '1';o.layer=LAYER.BG end,
-    frame=function(o) o.th38_scroll=(o.th38_scroll or 0)+.5 end,
-    render=function(o)
-        SetImageState('white','',255,10,18,38);RenderRect('white',lstg.world.l,lstg.world.r,lstg.world.b,lstg.world.t)
-        local run=lstg.tmpvar.th38_phase;local list=run and run.backgrounds or {}
-        for i,name in ipairs(list) do
-            local img=N.images[name]
-            if img then SetImageState(img,i==1 and '' or 'mul+add',i==1 and 200 or 100,255,255,255);RenderRect(img,-192,192,-224,224) end
-        end
-    end,
-})
+class.background=dofile('mod/GAME/th40/background.lua')
+local Media=dofile('mod/GAME/ports/scene_media.lua')
+local function track(chapter,kind)
+    return 'TH40_'..kind..(chapter=='EX' and 'Ex' or '0'..chapter)
+end
 local order={};class.byId={}
 local bands={};local function band(meta)
-    if meta.kind=='road' then return '1a' end
+    if meta.kind=='road' then return 'thsssroad'..meta.chapter..'a' end
     return meta.boss..meta.role..'a'
 end
-boss.Define('1a','夏夜祭道中','TH40_Stage01',class.background,{0,500},nil,'img_void',LEVEL)
 for _,meta in ipairs(data.phases) do
     class.byId[meta.id]=meta
     local id=band(meta)
-    if meta.kind~='road' and not bands[id] then
+    if not bands[id] then
         bands[id]=true
-        boss.Define(id,meta.boss_name,'TH40_Boss'..(meta.chapter=='EX' and 'Ex' or ('0'..meta.chapter)),class.background,{0,100},nil,N.images['Boss'..meta.boss..'-00'] or 'img_void',LEVEL)
+        local cue=meta.role=='boss' and 'Boss' or 'Stage'
+        boss.Define(id,meta.boss_name or '夏夜祭道中',track(meta.chapter,cue),class.background,
+            {0,meta.kind=='road' and 500 or 100},nil,N.images['Boss'..(meta.boss or '')..'-00'] or 'img_void',LEVEL)
     end
     local title=meta.kind=='road' and meta.title or meta.kind=='nonspell' and '' or meta.title
     local limit=meta.time/60;local immune=meta.kind=='road' or meta.survival
@@ -57,6 +51,12 @@ for _,meta in ipairs(data.phases) do
         else task.MoveTo(0,104,60,VALUE_SET.DECEL) end
     end
     card.init=function(o)
+        class.background.enter(meta.chapter,meta)
+        local scene=stage.current_stage
+        if scene and not lstg.var.sequence_run then
+            local cue=meta.role=='boss' and 'Boss' or 'Stage'
+            Media.bgm(scene,meta.chapter=='6' and meta.optional and 'TH40_Boss06FSC' or track(meta.chapter,cue))
+        end
         local run=N.new(o,meta);lstg.tmpvar.th38_phase=meta
         if meta.kind=='road' then o.colli=false;o.hide=true;if meta.begin then meta.begin(run.host,N) end
         else o.colli=true;o.hide=false end
@@ -77,19 +77,17 @@ end
 function class.media(scene,chapter,kind,row)
     scene.sequence_chapter=chapter
     local key=chapter.name
-    if not scene.sequence_background or not IsValid(scene.sequence_background) then scene.sequence_background=New(class.background,key) end
+    scene.sequence_background=class.background.enter(key)
     local name=(kind=='boss' and 'Boss' or 'Stage')..(key=='EX' and 'Ex' or '0'..key)
     if row then local m=row.unit.sc_group[1].card.th38_source;if m and m.source:find('SSS06_FSC',1,true) then name='Boss06FSC' end end
-    local track='TH40_'..name
-    if scene.sequence_music~=track then if scene.sequence_music then StopMusic(scene.sequence_music) end;PlayMusic(track);scene.sequence_music=track end
+    Media.bgm(scene,'TH40_'..name)
 end
 function class.mediaFrame(scene)
     local meta=lstg.tmpvar.th38_phase
     if meta and scene.th38_media_phase~=meta then
         scene.th38_media_phase=meta
         if meta.chapter=='6' and meta.optional and scene.sequence_music~='TH40_Boss06FSC' then
-            if scene.sequence_music then StopMusic(scene.sequence_music) end
-            scene.sequence_music='TH40_Boss06FSC';PlayMusic(scene.sequence_music)
+            Media.bgm(scene,'TH40_Boss06FSC')
         end
     end
 end
@@ -102,6 +100,7 @@ local Road=Class(object,{
 })
 function class.runChapter(scene,chapter,spawn,alive,media)
     local source=assert(data.stages[chapter.name]);local rows=chapter.units
+    local sequence=lstg.var.sequence_run
     lstg.tmpvar.th38_random=N.random(0) -- 原BaseStage.Drama在每面TimeMain=1重建MyRandom(0)。
     local carrier=New(Road);local run=carrier.th38_run
     local mid,backStarted={},false
@@ -121,7 +120,7 @@ function class.runChapter(scene,chapter,spawn,alive,media)
         if #source.bosses>1 and t>source.clock[2] and not occupied and not backStarted then
             backStarted=true;startRoad(source.road_b_id,t)
         end
-        lstg.var.sequence_run.road_time=t
+        if sequence then sequence.road_time=t end
         task.Wait()
     end
     N.stop(carrier);object.Del(carrier)

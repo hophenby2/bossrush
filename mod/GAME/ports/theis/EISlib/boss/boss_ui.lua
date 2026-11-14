@@ -286,16 +286,18 @@ function manager:draw()
 
 	SetViewMode("ui")
 	--lifebar
-	local x, y = WorldToUI(24, 236)
-	--SetImageState("boss_ui_flower", "", color)
-	--Render("boss_ui_flower", x, y, 0, 1)
-	self.lifebar:draw(x, y, 1.0, 0.5, self.lifebar_alpha, self.lifebar_rate)
+	local l, y = WorldToUI(w.l, w.t)
+	local r = WorldToUI(w.r, w.t)
+	local barWidth = math.min(336, (r - l) - 72)
+	y = y - 13
+	self.lifebar:draw(r - 8 - barWidth / 2, y, barWidth / 336,
+		barWidth / 672, self.lifebar_alpha, self.lifebar_rate)
 	--time
 	SetFontState("ui_font_80green", "", color)
 	local time1, time2 = split_time(self.time_left)
-	local tx, ty = WorldToUI(-148, 236)
-	RenderText("ui_font_80green", time1, tx - 32, ty + 2, 0.54, "right", "vcenter")
-	RenderText("ui_font_80green", time2, tx, ty, 0.4, "right", "vcenter")
+	local tx = l + 61
+	RenderText("ui_font_80green", time1, tx - 20, y, 0.54, "right", "vcenter")
+	RenderText("ui_font_80green", time2, tx, y - 1, 0.4, "right", "vcenter")
 	--pointer
 	for _, v in ipairs(self.pointers) do
 		local px, py = WorldToUI(clamp(v, w.l + 20, w.r - 20), w.b)

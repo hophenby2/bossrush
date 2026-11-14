@@ -525,7 +525,10 @@ end
 
 function playerSpecialObject:frame()
 	if self._deleteNextFrame then
-		self._deleteNextFrame = false
+		if self.explodeOnHit and IsValid(self.owner) then
+			likedreamer_player._spawnSpecial(self.owner,0x0d,self.ldX,self.ldY,0,0,10,0)
+			playSound("ld_se_Bomb3",0.5)
+		end
 		Del(self)
 		return
 	end
@@ -691,21 +694,21 @@ end
 function playerSpecialObject:colli(other)
 	if not self.active or not other then return end
 	if other.group == GROUP_ENEMY_BULLET and SPECIAL_CANCEL_TYPES[self.specialType] then
-		other.active = false
-		other.collisionEnabled = false
-		other.colli = false
-		if lstg.IsValid(other) then Del(other) end
+		local projectile=LikeDreamer.Projectile
+		if other.class==projectile.Class then
+			projectile.queueBombCancel(other,self)
+		end
 		return
 	end
 	if other.group ~= GROUP_ENEMY and other.group ~= rawget(_G, "GROUP_NONTJT") then
 		return
 	end
+	if not other.active or not other.targetable or other.protect then return end
 	local rt = runtime()
 	if self.specialType == 0x0c then
-		local x, y = self.ldX, self.ldY
+		-- 碰撞遍历期间只记标志，子炸弹在下一次对象更新创建。
+		self.explodeOnHit=true
 		playerSpecialObject._finish(self)
-		likedreamer_player._spawnSpecial(self.owner, 0x0d, x, y, 0, 0, 10, 0)
-		playSound("ld_se_Bomb3", 0.5)
 		return
 	end
 	local damage = self.damageOrLifetime

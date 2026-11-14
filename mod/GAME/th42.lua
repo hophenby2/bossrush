@@ -83,7 +83,6 @@ local function clear()
         end
     end
     if W.music then StopMusic(W.music);W.music=nil end
-    if W.bossMusic then StopMusic(W.bossMusic);W.bossMusic=nil end
     if L.runtime and lstg.tmpvar.bg==L.runtime.background then lstg.tmpvar.bg=nil end
     objects,L.runtime=nil,nil
 end
@@ -94,12 +93,13 @@ local Guard=Class(object,{
     del=clear,
 })
 
-local function play(name, seconds)
-    if W.music and W.music~=name then StopMusic(W.music) end
-    PlayMusic(name,1,seconds)
+local function play(name,volume,seconds)
+    if W.music==name then return end
+    if W.music then StopMusic(W.music) end
+    PlayMusic(name,volume,seconds)
     W.music=name
 end
-env.PlayMusic=play
+env.PlayMusic,api.PlayMusic=play,play
 local function start(number, first)
     clear()
     L.Resources.load(number)
@@ -135,11 +135,11 @@ local function start(number, first)
     lstg.tmpvar.bg=rt.background
     if L.BossHud then L.BossHud.create(rt) end
     if L.Presentation then L.Presentation.create(rt) end
-    W.bossMusic='ld_bgm_Boss'..math.min(5,math.floor((number+1)/2))
+    local bossMusic='ld_bgm_Boss'..math.min(5,math.floor((number+1)/2))
     if first>=checkpoints[number][#checkpoints[number]] then
-        play(W.bossMusic,0)
+        play(bossMusic,1,0)
     else
-        play('ld_bgm_Stage'..number,first/60)
+        play('ld_bgm_Stage'..number,1,first/60)
     end
     return rt,guard
 end

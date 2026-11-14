@@ -1130,6 +1130,17 @@ function M.cancelFromPlayer(projectile, source, ordinal)
     return true
 end
 
+function M.queueBombCancel(projectile, source)
+    if not projectile.active or not projectile.collisionEnabled then return end
+    local rt=runtime()
+    deactivate(projectile)
+    if not source._ldCancelNoReward then
+        projectile._bombCancelSource=source.specialType
+        projectile._bombCancelFrame=rt.frame
+        projectile._bombCancelOrdinal=projectileRegistry:ordinal(projectile,rt)
+    end
+end
+
 local noPlayerSideCancelObjects = {}
 
 local function playerSideCancelObjects()
@@ -1255,6 +1266,10 @@ function bulletClass:frame()
     projectileRegistry:prepare(runtime())
     if self._deleteNextFrame then
         self._deleteNextFrame = false
+        local source=self._bombCancelSource
+        if source then
+            New(cancelRewardDriverClass,self,source,self._bombCancelOrdinal,self._bombCancelFrame)
+        end
         Del(self)
         return
     end

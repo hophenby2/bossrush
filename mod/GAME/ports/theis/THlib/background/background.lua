@@ -17,7 +17,12 @@ function background:init(is_sc_bg)
 	else
 		self.layer=LAYER_BG-0.1
 		self.alpha=1
-		if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then Del(lstg.tmpvar.bg) end
+		local previous=lstg.tmpvar.bg
+		if IsValid(previous) then
+			if IsValid(previous.Capturer1) then object.Del(previous.Capturer1) end
+			if IsValid(previous.Capturer2) then object.Del(previous.Capturer2) end
+			object.Del(previous)
+		end
 		lstg.tmpvar.bg=self
 	end
 end

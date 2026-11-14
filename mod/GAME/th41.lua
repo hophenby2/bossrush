@@ -1,6 +1,7 @@
 -- 东方祈华梦：原道中协程、弹型和 Boss 攻击回调在独立的 Lua 环境运行。
 local register=dofile('mod/GAME/ports/register.lua')
 local W=register.work('TH41',39)
+W.ownHud=true
 local P=NativePlayers
 if P then dofile('mod/GAME/ports/theis/player.lua') end
 local function resources() return P and P.enabled(nil,W.level) and P.state() end
@@ -130,7 +131,8 @@ env.setting=setmetatable({background=true,background_mask=0},{__index=setting})
 env.EventDispatcher={AddListener=empty}
 env.EVENT={ON_GAME_STAGE_INIT=1,STAGE_CHANGE_BEFORE=2}
 api.EventDispatcher=env.EventDispatcher
-api.globalimagescale=1
+api.globalimagescale=.5
+api.SetImageScale=function(scale) api.globalimagescale=scale end
 api.wis={}
 api.RegisterClass=function(class)
     for i,k in ipairs({'init','del','frame','render','colli','kill'}) do class[i]=class[k] or class[i] or empty end
@@ -165,6 +167,30 @@ end
 env.SetViewMode=function(mode)
     SetViewMode(mode=='worldui' and 'world' or mode)
 end
+-- 原作普通贴图以半尺寸绘制，取景仍由宿主负责。
+env.Render=function(img,x,y,rot,sx,sy,...)
+    if lstg.viewmode=='3d' then return Render(img,x,y,rot,sx,sy,...) end
+    local scale=api.globalimagescale
+    return Render(img,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale,...)
+end
+api.Render=env.Render
+env.RenderText=function(font,text,x,y,scale,...)
+    return RenderText(font,text,x,y,(scale or 1)*api.globalimagescale,...)
+end
+env.DefaultRenderFunc=function(o)
+    local previous=GetImageScale()
+    SetImageScale(api.globalimagescale)
+    DefaultRenderFunc(o)
+    SetImageScale(previous)
+end
+api.DefaultRenderFunc=env.DefaultRenderFunc
+env.object=setmetatable({render=env.DefaultRenderFunc},{__index=object})
+env.RenderClear=function(color)
+    -- RenderClear 会清空整张 Metal framebuffer，覆盖战斗区外的 HUD。
+    RenderClearViewMode(color)
+end
+api.RenderClear=env.RenderClear
+
 local fonts=api.ResourceSet.Create('THEIS.HUD','global')
 fonts:AddTexture('THEIS_hud','res/ui/ui_item_16_9_2.png',false)
 for i=1,16 do
@@ -316,8 +342,19 @@ load('EISlib/background/background.lua')
 load('EISlib/stage/stage.lua')
 env.EISlib.stage.canDialog=function() return false end
 env.EISlib.stage.playMusic=function(name,position) playMusic(name,1,position) end
-env.EISlib.stage.musicFadeOut=function(name)
-    env.StopMusic(name)
+env.EISlib.stage.musicFadeOut=function(name,time)
+    local track=tracks[name]
+    if not track or W.music~=track[1] then return end
+    local id=track[1]
+    env.New(tasker,function()
+        local frames=math.max(1,time or 60)
+        for i=1,frames do
+            if W.music~=id then return end
+            SetBGMVolume(id,1-i/frames)
+            env.task.Wait()
+        end
+        if W.music==id then StopMusic(id);W.music=nil end
+    end)
 end
 
 -- 原引擎的 dialog 卡承担移动和等待，保留其协程，只跳过对话文本。

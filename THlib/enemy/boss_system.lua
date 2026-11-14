@@ -986,7 +986,12 @@ function system:doCard(card, is_final, sc_bg, sc_ring, score, sc_bonus)
         end
         if OriginalStageVisual then OriginalStageVisual.prepare_boss(b,card) end
         if card.is_sc then
-            self:castcard(card.name)
+            if card.own_phase_display then
+                self:setIsSpellcard(true)
+                self:setSCName(card.name)
+            else
+                self:castcard(card.name)
+            end
             if score then
                 self:startSpellHist(card.card_id, b.diff, lstg.var.player_name)
                 task.New(self, function()

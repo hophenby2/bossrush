@@ -5,7 +5,9 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
     item._init_item(self)
     mask_fader:Do("open")
     local group, index = lstg.var.sc_group[1], lstg.var.sc_group[2]
-    local class = _sc_pr_table[group][index].sc_group[1].boss
+    local entry = _sc_pr_table[group][index].sc_group[1]
+    local class = entry.boss
+    local bgm = entry.card.practice_bgm or class.bgm
     self.level = class.StageLevel or 1
     if NativePlayers and NativePlayers.enabled() then NativePlayers.spawn()
     else New(_G[lstg.var.player_name]) end
@@ -14,8 +16,8 @@ stage.group.DefStageValue(name .. '@' .. name, 'init', function(self)
     end
     task.New(self, function()
         task.Wait(10)
-        if not GameContent.ports[self.level] and GetMusicState(class.bgm) ~= "playing" then
-            PlayMusic(class.bgm, nil, nil, true)
+        if not GameContent.ports[self.level] and GetMusicState(bgm) ~= "playing" then
+            PlayMusic(bgm, nil, nil, true)
         end
         local _ref = {}
         local t = 0
