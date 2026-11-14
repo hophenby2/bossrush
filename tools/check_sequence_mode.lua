@@ -58,7 +58,6 @@ stage.group.New=function(title,_,name) local g={_name=name,title=title};stage.gr
 stage.group.AddStage=function(name,title)
     local g=stage.groups[name];g[1]=title;local b={name=title,group=g};stage.stages[title]=b;return b
 end
-musicList={};AddMusic=function(id,last,length,title) musicList[id]={last,length,title} end
 CopyImage=function() end
 local P=dofile('THlib/native_players.lua')
 local S=dofile('mod/original_sequence.lua')

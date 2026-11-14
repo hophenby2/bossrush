@@ -26,6 +26,7 @@ New=function(cls,...)
     end
     return originalNew(cls,...)
 end
+AddMusic=function(id,last,length,title) musicList[id]={last,length,title} end
 dofile('mod/_editor_output.lua')
 for game=31,35 do dofile('mod/GAME/th'..game..'.lua') end
 dofile('mod/GAME/th37.lua')

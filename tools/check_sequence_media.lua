@@ -1,4 +1,4 @@
--- 五作路线的背景/原曲覆盖、循环点，以及反魂蝶原始淡出和480帧换曲。
+-- 顺序模式背景与原曲注册、循环点，以及反魂蝶原始淡出和480帧换曲。
 dofile('tools/check_sequence_mode.lua')
 local M=OriginalSequenceMedia
 local n=0
@@ -13,14 +13,15 @@ end
 for _,entry in ipairs(OriginalSequence.catalog.entries) do
     for _,chapter in ipairs(OriginalSequence.catalog.chapters(entry.key,'reimu_player')) do
         for _,row in ipairs(chapter.units) do
-            if chapter.level~=35 then
-            local game,key,road,boss=M.location(chapter,row)
-            check(exists('mod/GAME/original/std/'..game..'_'..key..'.lua'),'每个保留阶段都有原作STD')
-            check(M.music[road] and M.music[boss],'每个保留阶段都有原作道中曲与Boss曲')
-            else
-                local source=row.unit.sc_group[1].card.th38_source
-                local name=(source.kind=='road' and 'Stage' or 'Boss')..(chapter.name=='EX' and 'Ex' or '0'..chapter.name)
-                check(exists('music/TH38_'..name..'.ogg'),'夏夜祭阶段有原曲资源')
+            if chapter.level<=33 then
+                local game,key,road,boss=M.location(chapter,row)
+                check(exists('mod/GAME/original/std/'..game..'_'..key..'.lua'),'每个保留阶段都有原作STD')
+                check(M.music[road] and M.music[boss],'每个保留阶段都有原作道中曲与Boss曲')
+            elseif chapter.level<=38 then
+                local phase=row.unit.sc_group[1]
+                local bgm=phase.card.practice_bgm or phase.boss.bgm
+                check(musicList[bgm] and exists('music/'..bgm..'.ogg'),('同人作品阶段有原版曲目：%s/%s/%s'):format(entry.key,chapter.name,tostring(bgm)))
+                check(phase.boss._bg~=nil,'同人作品阶段注册了背景')
             end
         end
     end
