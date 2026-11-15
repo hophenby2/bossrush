@@ -179,6 +179,14 @@ local function continuousChapter(scene,chapter,source)
 end
 function S.run(scene,key,first)
     local entry=assert(S.catalog.get(key))
+    if entry.arcade then
+        local run={key=key,title=entry.title,chapter=1,chapter_name='1',
+            completed=0,total=entry.arcade.stages,road_time=0}
+        lstg.var.sequence_run=run
+        local completed=_editor_class[entry.arcade.code].run(scene,run)
+        S.finish(scene,completed~=false)
+        return
+    end
     local chapters=S.catalog.chapters(key,lstg.var.player_name)
     if not first then lstg.var.sequence_run={key=key,title=entry.title,chapter=0,completed=0,total=#chapters,road_time=0} end
     for index,chapter in ipairs(chapters) do
@@ -258,6 +266,8 @@ for _,entry in ipairs(S.catalog.entries) do
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
+        -- 街机自机创建时会读取关卡的运行状态和独立坐标系。
+        if selected.arcade then _editor_class[selected.arcade.code].open(self) end
         if selected.native and selected.level<=37 then self:Option(TH07_bg,'TH07_1') else self:Option() end
         task.New(self,function() S.run(self,selected.key) end)
     end
@@ -275,6 +285,7 @@ for _,entry in ipairs(S.catalog.entries) do
     end
     battle.render=stage.group.render
     function battle:del()
+        if selected.arcade then _editor_class[selected.arcade.code].close(self) end
         if OriginalSequenceMedia then OriginalSequenceMedia.stop(self) end
         lstg.var.timeslow=nil
     end

@@ -12,17 +12,21 @@ local function ids(chapters)
     end end
     return out
 end
-check(#C.entries==26,'官方五作、幕华祭和雪莲华的难度/场景入口独立，永夜抄Final A/B分开')
+local arcade=dofile('mod/GAME/pgm/catalog.lua')
+local ready=0
+for _,work in ipairs(arcade) do if work.sequenceReady then ready=ready+1 end end
+check(#C.entries==26+ready,'保留既有顺序路线，仅纳入已全关验证的原生街机作品')
 local continued=C.chapterForRun(C.get('th08_lunatic_b'),{name='6B'},'reimu_player',1)
 check(continued.name=='6A' and #continued.units>0,'永夜抄在前五面续关后转入Final A')
 for _,e in ipairs(C.entries) do
     check(C.get(e.key)==e,'用key查询入口，不依赖菜单选项编号')
     for _,player in ipairs({'reimu_player','marisa_player'}) do
         local chapters=C.chapters(e.key,player)
-        local count=e.level==40 and 10 or e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1
+        local count=e.arcade and e.arcade.stages or e.level==40 and 10
+            or e.difficulty=='lunatic' and 6 or e.difficulty=='scenes' and 10 or 1
         check(#chapters==count,'每个入口的原作面数：'..e.key)
         for _,chapter in ipairs(chapters) do
-            check(#chapter.units>0,'每一面都有保留内容')
+            if not e.arcade then check(#chapter.units>0,'每一面都有保留内容') end
             for _,row in ipairs(chapter.units) do
                 check(row.chapter~='Last Word','Last Word不能混入原作整关路线')
             end
@@ -50,6 +54,14 @@ for _,e in ipairs(C.entries) do
             for i,row in ipairs(chapters[4].units) do order[row.unit.sc_group[1].card.card_id]=i end
             check(order[3607]<order[3608],'文文L行Boss3→BossCard3→BossCard4，不走Easy的直接BossCard4分支')
         end
+    end
+end
+for _,work in ipairs(arcade) do
+    local entry=C.get(work.key)
+    if work.sequenceReady then
+        check(entry and entry.arcade.code==work.code and entry.native,'街机入口保留原作关卡与机体来源')
+    else
+        check(entry==nil,'尚未全关验证的街机作品暂缓进入顺序模式')
     end
 end
 -- 真实注册流程建立各入口；这里仅模拟stage容器，战斗逻辑另对原始时间轴逐帧核对。
@@ -86,12 +98,13 @@ end
 DeSerialize=function(v) return v end
 local content=dofile('mod/content.lua')
 for _,e in ipairs(C.entries) do
-    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,sequence_player=e.native and e.level<38 and 'reimu' or nil,current_system=''}},'当前顺序录像可播放')
+    check(content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key=e.key,sequence_player=e.native and e.level<38 and 'reimu' or nil,current_system=''}}==not e.arcade,'街机顺序录像必须记录原作机体版本')
     check(not content.supportsRecord{stageName=e.battle,stageExtendInfo={__sequence_version=1,sequence_key='错误路线'}},'录像路线不匹配时拒绝串线')
     if e.native then
         for _,machine in ipairs(P.machines(e.level)) do
             local v={__sequence_version=1,sequence_key=e.key,sequence_player=machine.id,
-                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id}
+                __native_player_version=P.VERSION,native_player_level=e.level,native_player_id=machine.id,
+                __pgm_replay_version=P.pgmReplayVersions[e.level]}
             local record={stageName=e.battle,stageExtendInfo=v}
             check(content.supportsRecord(record),'可播放各原作机体的录像')
             v.native_player_level=0

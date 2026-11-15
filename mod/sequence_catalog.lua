@@ -39,10 +39,18 @@ addNative('theis_lunatic','祈华梦 · Lunatic',39,'lunatic','theis')
 addNative('theis_extra','祈华梦 · Extra',39,'extra','theis')
 addNative('likedreamer_nightmare','Like Dreamer · Nightmare',40,'nightmare','likedreamer')
 addNative('likedreamer_chaos','Like Dreamer · Chaos',40,'chaos','likedreamer')
+for _,work in ipairs(dofile('mod/GAME/pgm/catalog.lua')) do
+    -- 整部原作的原生流程验证通过后才开放顺序入口。
+    if work.sequenceReady then
+        addNative(work.key,work.title,work.level,'arcade','arcade')
+        C.entries[#C.entries].arcade=work
+    end
+end
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
 function C.machines(entry)
+    if entry.arcade then return NativePlayers.machines(entry.level) end
     local game=SequenceResources and SequenceResources.gameByLevel[entry.level]
     if game then return SequenceResources.machines(game) end
     if entry.level==36 or entry.level==37 then
@@ -106,6 +114,12 @@ end
 function C.chapters(key,player)
     local entry=assert(C.get(key),'未知顺序关卡key：'..tostring(key))
     local chapters,last={},nil
+    if entry.arcade then
+        for index=1,entry.arcade.stages do
+            chapters[index]={name=tostring(index),level=entry.level,units={}}
+        end
+        return chapters
+    end
     for _,row in ipairs(OriginalStageFlow.units(entry.level)) do
         if not row.practiceOnly and C.chapterAllowed(entry,row.chapter,player) and selected(entry,row,player) then
             if not last or last.name~=row.chapter then

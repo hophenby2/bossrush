@@ -1215,6 +1215,12 @@ for _,t in ipairs({29,30,31,32,33,35,36,37,38,39,40}) do
     end)
 end
 
+for _,entry in ipairs(GameContent.pgm) do
+    table.insert(LoadRes, function()
+        LoadImageFromFile('stage_pic'..entry.level, 'Resources/'..entry.code:lower()..'/preview.png')
+    end)
+end
+
 ---开发者模式
 if FileExist("Creative.lua") then
     DoFile("Creative.lua")

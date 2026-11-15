@@ -100,12 +100,17 @@ group.PracticeStart('Spell Practice@Spell Practice',true)
 check(snapshot.mhj3==1,'永夜篇来源版本先于录像快照，避免与旧AEX串线')
 local expected={137,105,85,129,80,121,91,123,90,128,111}
 for i,entry in ipairs(catalog.stages) do
-    local units=F.units(entry.level)
-    check(#units==expected[i],'原作条目覆盖数：'..entry.code)
+    local units=catalog.cards(entry.level)
+    check(#units==(entry.stageOnly and 0 or expected[i]),'原作条目覆盖数：'..entry.code)
     for _,row in ipairs(units) do
         check(_sc_pr_table[entry.level][row.index]==row.unit,'显示顺序保留真实注册索引')
         check(not F.hidden[row.unit.sc_group[1].card],'旧整段道中不能重复进入新列表')
     end
+end
+for _,entry in ipairs(GameContent.pgm) do
+    check(catalog.canStart(entry.code..'@BossRush',false),'允许 PGM 整关')
+    lstg.var.sc_group={entry.level,1}
+    check(not catalog.canStart('Spell Practice@Spell Practice',true),'PGM 使用整关入口')
 end
 local function sequence(level,first,ids)
     local units=F.units(level)
@@ -132,20 +137,24 @@ end
 ui={version='test',menu={}}
 dofile('THlib/UI/menu.lua')
 stage_selects={}
-for level=1,40 do stage_selects[level]={id=level,title='旧关卡'} end
+for _,entry in ipairs(catalog.stages) do stage_selects[entry.level]={id=entry.level,title='旧关卡'} end
 local menu={pos=35}
 stage_select.fresh(menu)
-check(menu.stage_count==11 and menu.pos==11,'关卡练习显示官方五作、幕华祭两作与雪莲华并夹住旧游标')
-for i,entry in ipairs(catalog.stages) do check(menu.stage_selects[i].id==entry.level,'关卡入口按五作顺序排列') end
+check(menu.stage_count==#catalog.stages and menu.pos==#catalog.stages,'关卡练习包含街机关卡并夹住旧游标')
+for i,entry in ipairs(catalog.stages) do check(menu.stage_selects[i].id==entry.level,'关卡入口按目录顺序排列') end
 dofile('THlib/UI/menus/scpr_menu.lua')
 local spellMenu={}
 KeyCodeToName=function() return {} end
 sc_pr_menu.TweakCard(spellMenu,false,false)
 check(#spellMenu.spells==12 and #spellMenu.spells[12]==748+#TH39.units()+90+128+111,'符卡练习包含官方五作、幕华祭两作、雪莲华和全部')
-for tab,entry in ipairs(catalog.stages) do
-    local rows=spellMenu.spells[tab]
-    for i,row in ipairs(rows) do
-        check(row[4]==entry.level and row[1]==F.units(entry.level)[i].index,'练习视图映射真实关卡与索引')
+local tab=0
+for _,entry in ipairs(catalog.stages) do
+    if not entry.stageOnly then
+        tab=tab+1
+        local rows=spellMenu.spells[tab]
+        for i,row in ipairs(rows) do
+            check(row[4]==entry.level and row[1]==F.units(entry.level)[i].index,'练习视图映射真实关卡与索引')
+        end
     end
 end
 -- 执行整关调度器：宿主存活时必须等待，全部阶段及多Boss配对按列表完整出场。

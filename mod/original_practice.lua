@@ -12,6 +12,11 @@ local P={stages={
     {code='TH41',level=39,title='祈华梦原作'},
     {code='TH42',level=40,title='Like Dreamer'},
 }}
+local pgm=dofile('mod/GAME/pgm/catalog.lua')
+for _,entry in ipairs(pgm) do
+    entry.stageOnly=true
+    P.stages[#P.stages+1]=entry
+end
 function P.allowed(level)
     for _,entry in ipairs(P.stages) do if entry.level==level then return true end end
     return false
@@ -19,12 +24,17 @@ end
 function P.canStart(name,spell)
     if spell then
         local group=lstg.var.sc_group
-        return name=='Spell Practice@Spell Practice' and type(group)=='table' and P.allowed(group[1])
+        if name~='Spell Practice@Spell Practice' or type(group)~='table' then return false end
+        for _,entry in ipairs(P.stages) do
+            if entry.level==group[1] then return not entry.stageOnly end
+        end
+        return false
     end
     for _,entry in ipairs(P.stages) do if name==entry.code..'@BossRush' then return true end end
     return false
 end
 function P.cards(level)
+    for _,entry in ipairs(pgm) do if level==entry.level then return {} end end
     if OriginalStageFlow then return OriginalStageFlow.units(level) end
     local out={}
     for index,unit in ipairs(_sc_pr_table[level] or {}) do out[#out+1]={index=index,unit=unit} end

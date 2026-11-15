@@ -1,7 +1,14 @@
 -- 精简分支的内容边界；保留实际level和符卡ID，不把旧录像误放进缺失关卡。
 local C={stages={'31','32','33','34','35','37','38','39','40','41','42'},ports={},levels={[29]=true,[30]=true,[31]=true,[32]=true,[33]=true,[35]=true,[36]=true,[37]=true,[38]=true,[39]=true,[40]=true}}
+C.pgm=dofile('mod/GAME/pgm/catalog.lua')
+for _,entry in ipairs(C.pgm) do
+    C.stages[#C.stages+1]=entry.code:sub(3)
+    C.levels[entry.level]=true
+end
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
+local pgm={}
+for _,entry in ipairs(C.pgm) do pgm[entry.code..'@BossRush']=true end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
 function C.supportsRecord(record)
     if type(record)~='table' or type(record.stageName)~='string' then return false end
@@ -14,6 +21,7 @@ function C.supportsRecord(record)
         if record.stageName=='TH38@BossRush' and v.__th38_version~=1 then return false end
         if record.stageName=='TH39@BossRush' and v.__th39_version~=1 then return false end
         if record.stageName=='TH40@BossRush' and not native then return false end
+        if pgm[record.stageName] and not native then return false end
         return not native or v.native_player_level==NativePlayers.practiceLevel(record.stageName)
     end
     if record.stageName=='Spell Practice@Spell Practice' then
@@ -31,6 +39,7 @@ function C.supportsRecord(record)
             if entry.native then
                 if v.__sequence_system_version then return false end
                 if native then return v.native_player_level==entry.level and v.native_player_id==v.sequence_player end
+                if entry.arcade then return false end
                 if entry.level>=38 then return v.sequence_player==nil end
                 return v.sequence_player=='reimu' or v.sequence_player=='marisa'
             end

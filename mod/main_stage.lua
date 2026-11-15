@@ -286,3 +286,16 @@ for _,level in ipairs({39,40}) do
         self:Next()
     end)
 end
+
+for _,entry in ipairs(GameContent.pgm) do
+    local work = _editor_class[entry.code]
+    local name = entry.code..'@BossRush'
+    NewStage(entry.code,entry.title,entry.level,function(self)
+        work.open(self)
+        self:Option()
+        self:Task(function() work.run(self) end)
+        self:Next()
+    end)
+    sg.DefStageValue(name,'del',work.close)
+    sg.DefStageValue(name,'frame',stage.group.frame)
+end

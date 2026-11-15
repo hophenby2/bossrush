@@ -1,5 +1,6 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1,adapters={}}
+P.pgmReplayVersions={[41]=2,[42]=2,[43]=2,[44]=1,[45]=1,[46]=1}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
 local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176}
 local profiles={
@@ -44,7 +45,19 @@ profiles[40]={
     {'cute','Yuri Cocoa',0,0,0,'cute',character=1},
     {'cool','UJAKO',0,0,0,'cool',character=2},
 }
+profiles[41]={
+    {'tiger','Tiger Schwert',0,0,0,'tiger'},
+    {'panzer','Panzer Jäger',0,0,0,'panzer'},
+}
+profiles[42]={{'type_a','Type A',0,0,0,'type_a'}}
+profiles[43]={{'ageha','Ageha',0,0,0,'ageha'}}
+profiles[44]={{'reco','蕾可',0,0,0,'reco'}}
+profiles[45]={{'ageha','Ageha',0,0,0,'ageha'}}
+profiles[46]={{'reco','蕾可',0,0,0,'reco'}}
 local stages={['TH40@BossRush']=38,['TH41@BossRush']=39,['TH42@BossRush']=40,['TH37@BossRush']=35,['TH38@BossRush']=36,['TH39@BossRush']=37}
+for _,entry in ipairs(dofile('mod/GAME/pgm/catalog.lua')) do
+    stages[entry.code..'@BossRush']=entry.level
+end
 for _,list in pairs(profiles) do
     for _,m in ipairs(list) do
         m.id,m.name,m.fast,m.slow,m.damage,m.art,m.window,m.bomb,m.velocity=unpack(m,1,9)
@@ -64,10 +77,13 @@ function P.enabled(v,level)
     v=v or lstg.var
     return v.__native_player_version==P.VERSION and (not level or level==v.native_player_level)
         and P.machine(v.native_player_level,v.native_player_id)~=nil
+        and (not P.pgmReplayVersions[v.native_player_level]
+            or v.__pgm_replay_version==P.pgmReplayVersions[v.native_player_level])
 end
 function P.configure(level,id,loadout)
     local v=lstg.var
     v.__native_player_version,v.native_player_level,v.native_player_id,v.native_player_state=nil,nil,nil,nil
+    v.__pgm_replay_version=P.pgmReplayVersions[level]
     v.like_dreamer_loadout=nil
     if not profiles[level] then return end
     local m=P.machine(level,id) or (not id and profiles[level][1])
@@ -124,6 +140,7 @@ function P.reset()
     elseif v.is_practice and not spell then
         s.life=40
     end
+    if P.pgmReplayVersions[level] then s.life,s.bombs,s.power=2,3,0 end
     v.native_player_state=s
 end
 function P.out()

@@ -86,6 +86,12 @@ ui.menu = {
                  "夏夜祭原作", -- 38 TH40
                  "祈华梦原作", -- 39 TH41
                  "Like Dreamer", -- 40 TH42
+                 "绊地狱 · 第一至五面", -- 41 TH43
+                 "怒首领蜂大往生 · 第一至五面", -- 42 TH44
+                 "Espgaluda · 第一至五面", -- 43 TH45
+                 "虫姬二人 1.5 · 第一至五面", -- 44 TH46
+                 "Espgaluda II · 第一至六面", -- 45 TH47
+                 "虫姬二人 Black Label · 第一至五面", -- 46 TH48
                  "天空璋AEX" },  -- STAGE_COUNT + 1
     sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
@@ -119,6 +125,12 @@ ui.menu = {
                TH40 = "夏夜祭原作",
                TH41 = "祈华梦原作",
                TH42 = "Like Dreamer",
+               TH43 = "绊地狱 · 第一至五面",
+               TH44 = "怒首领蜂大往生 · 第一至五面",
+               TH45 = "Espgaluda · 第一至五面",
+               TH46 = "虫姬二人 1.5 · 第一至五面",
+               TH47 = "Espgaluda II · 第一至六面",
+               TH48 = "虫姬二人 Black Label · 第一至五面",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },

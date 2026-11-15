@@ -109,7 +109,7 @@ function H.resources(x1,x2,top,alpha)
                 rows[#rows+1]={'残机碎片',('%g / 100'):format(native.lifeChip)}
                 rows[#rows+1]={'Bomb 碎片',native.bombChip..' / 100'}
                 rows[#rows+1]={'染色连锁',native.dyeChain}
-            else
+            elseif native.level==40 then
                 rows[#rows+1]={'Dream',('%d%%'):format(math.max(0,lstg.var.like_dreamer_special_gauge or 0)/500)}
             end
         elseif native.level==36 then

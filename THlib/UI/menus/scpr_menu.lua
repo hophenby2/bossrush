@@ -8,10 +8,14 @@ function sc_pr_menu.IfInsertCard(sc)
 end
 
 local practice_catalog=dofile('mod/original_practice.lua')
+local spell_stages={}
+for _,entry in ipairs(practice_catalog.stages) do
+    if not entry.stageOnly then spell_stages[#spell_stages+1]=entry end
+end
 function sc_pr_menu:TweakCard(onlyshowcard, onlyshowspecialcard)
     self.spells={}
     local all,num={},1
-    for tab,entry in ipairs(practice_catalog.stages) do
+    for tab,entry in ipairs(spell_stages) do
         local list={};self.spells[tab]=list
         for _,row in ipairs(practice_catalog.cards(entry.level)) do
             local card=row.unit.sc_group[1].card
@@ -22,7 +26,7 @@ function sc_pr_menu:TweakCard(onlyshowcard, onlyshowspecialcard)
             num=num+1
         end
     end
-    self.spells[#practice_catalog.stages+1]=all
+    self.spells[#spell_stages+1]=all
     self.keyname=KeyCodeToName()
 end
 
@@ -50,7 +54,7 @@ function sc_pr_menu:init(exit_func)
     self.pos_changed = 0
     self.state = 1
     self.difficulty = {}
-    for _,entry in ipairs(practice_catalog.stages) do self.difficulty[#self.difficulty+1]=entry.title end
+    for _,entry in ipairs(spell_stages) do self.difficulty[#self.difficulty+1]=entry.title end
     table.insert(self.difficulty, "全部")
     setmetatable(self.difficulty, { __index = function(t, k)
         return rawget(t, (k - 1) % #t + 1)
