@@ -75,6 +75,13 @@ return function(program)
     end
 
     local P = {}
+    function P.start(o, cursor)
+        o.cursor, o.direction = parameters(o, cursor)
+        if not o.cursor then return false end
+        o.elapsed, o.newVelocity = 0, true
+        return true
+    end
+
     function P.init(o, row)
         local stage = o.run.stage
         o.path = row.path or stage.paths
@@ -85,10 +92,8 @@ return function(program)
             o.h, o.l = program.add(word(o.path, cursor), word(o.path, cursor + 2), row[7], row[8])
             cursor = cursor + 4
         end
-        o.cursor, o.direction = parameters(o, cursor)
-        if not o.cursor then return false end
-        o.l, o.elapsed = s16(o.l - 0x800), 0
-        o.newVelocity = true
+        if not P.start(o, cursor) then return false end
+        o.l = s16(o.l - 0x800)
         if band(row[4], 1) ~= 0 then o.l = s16(o.l - o.run.cameraOffset) end
         return true
     end
