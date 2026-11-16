@@ -1172,8 +1172,8 @@ end
 local registered = {}
 _G.boss = {
     Define = function(editname, name, BGM, BG, xy, SCBG, img, level, scale)
-        -- 注意 SCBG 允许为 nil（原版 th11 就是这样），所以只检查背景类
-        if BG == nil then fail(("boss.Define(%s): 背景类为 nil —— 是不是忘了先载入 mod/BG/THxx/THxx_bg.lua？"):format(editname)) end
+        -- 三作由卡片和关卡时间轴创建场景，栖霞园由自己的运行时创建。
+        if BG == nil and level~=35 and level~=36 and level~=37 and level~=41 then fail(("boss.Define(%s): 背景类为 nil —— 是不是忘了先载入 mod/BG/THxx/THxx_bg.lua？"):format(editname)) end
         if type(img) ~= "string" then fail(("boss.Define(%s): 行走图名不是字符串"):format(editname)) end
         _editor_boss[editname .. level] = Class(boss, {
             cards = {}, name = name, StageLevel = level, bgm = BGM, _bg = BG,

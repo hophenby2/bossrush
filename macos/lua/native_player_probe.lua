@@ -4,6 +4,15 @@ local level
 local checked={}
 local target
 local firstHit,firstMiss,initialLife,initialBombs
+local aslVisual=os.getenv('BOSSRUSH_MAC_TEST_ASL_VISUAL')=='1'
+local invertFrames=0
+if aslVisual then
+    local post=PostEffect
+    function PostEffect(fx,...)
+        if fx=='th38_death_invert' then invertFrames=invertFrames+1 end
+        return post(fx,...)
+    end
+end
 local hazard=Class(object,{
     init=function(o,p)
         o.group=GROUP.ENEMY_BULLET
@@ -78,6 +87,14 @@ function T.before(p)
         assert(s.life==initialLife-cost and lstg.var.dead==1,'决死超时后的掉命错误')
         assert(not NativePlayers.out(),'仍有剩余残机时错误判负')
         checked.miss=true
+    elseif aslVisual and level==36 and t==320 then
+        s.barrier=299999
+        keys('spell',true)
+    elseif aslVisual and level==36 and t==321 then
+        keys('spell',false)
+        assert(s.barrier==0 and p.bombTime,'雪莲华结界解放没有触发')
+        assert(CheckRes('snd','th38_freeze04_jiejieopen')=='global','雪莲华缺少原版结界音效')
+        checked.release=true
     end
 end
 function T.after(p)
@@ -86,6 +103,10 @@ function T.after(p)
 end
 function T.checkpoint()
     assert(checked.spawn and checked.shot,'缺少自机与实际伤害检查')
+    if aslVisual then
+        assert(checked.release and invertFrames>0,'缺少雪莲华结界解放或反色绘制')
+        lstg.SystemLog('BOSSRUSH_ASL_INVERT: '..invertFrames)
+    end
     if not lstg.var.is_practice then assert(checked.firstHit and checked.miss and firstHit and firstMiss) end
 end
 return T

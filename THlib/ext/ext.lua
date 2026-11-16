@@ -463,12 +463,15 @@ function RenderFunc()
         if perf then perf.begin('render.ui.before') end
         ui_drawing:Beforerender()
         if perf then perf.finish('render.ui.before');perf.begin('render.stage') end
+        local visual=TH38 and NativePlayers.enabled(nil,36) and TH38.visual
+        local deathEffect=visual and visual.beginWorld()
         stage.current_stage:render()
         if perf then perf.finish('render.stage') end
         ext.CameraBefore()
         ObjRender()
         if GameDrops then GameDrops.render() end
         ext.CameraAfter()
+        if deathEffect then visual.endWorld(deathEffect) end
         if perf then perf.begin('render.ui.after') end
         ui_drawing:Afterrender()
         if SequenceResources and SequenceResources.renderContinue then SequenceResources.renderContinue(stage.current_stage) end

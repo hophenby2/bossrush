@@ -481,6 +481,7 @@ local function bomb(p,s)
     elseif s.level==36 then
         if P.barriers(s)<3 then return end
         s.barrier,s.barrierReward=0,0
+        TH38.visual.release(p)
     else
         local cost=s.level==37 and p.hit and p.hitWindow==60 and 10 or 5
         if s.bombs<cost then return end
@@ -495,7 +496,7 @@ local function bomb(p,s)
         if IsValid(b) and b.is_combat then b._bosssys:clearBonus('spell') end
     end
     New(bomb_bullet_killer,p.x,p.y,240,240,false)
-    PlaySound('nep00',.5)
+    if s.level~=36 then PlaySound('nep00',.5) end
 end
 function P.miss(p)
     local s=P.state()
@@ -551,9 +552,10 @@ function P.miss(p)
     end
     p.protect=150
     p.death=90
-    New(player_death_ef,p.x,p.y)
+    if s.level==36 then TH38.visual.miss(p)
+    else New(player_death_ef,p.x,p.y) end
     New(bomb_bullet_killer,p.x,p.y,64,64,false)
-    PlaySound('pldead00',.5)
+    if s.level~=36 then PlaySound('pldead00',.5) end
 end
 local function tick(p)
     local s=P.state()
@@ -614,6 +616,7 @@ local function tick(p)
         end
         if p.bombTime==0 then p.bombTime,p.cancelOnlyBomb=nil,nil end
     end
+    if s.level==36 then TH38.visual.update(p,s) end
 end
 function Player:init()
     player_class.init(self)
@@ -668,6 +671,7 @@ function Player:colli(other)
     local adapter=P.adapters[s.level]
     if adapter and adapter.hitWindow then self.hitWindow=adapter.hitWindow(self,s) end
     self.hit=self.hitWindow
+    if s.level==36 then TH38.visual.hit(self,s) end
     local group=other.group
     if group==GROUP.ENEMY_BULLET or group==GROUP.ENEMY_BULLET2 then
         OriginalBulletVisual.cancel_bullet(other,'Del',false)
@@ -678,6 +682,7 @@ end
 function Player:render()
     if self.realrealreal_lock or self.hide or self.death>=50 then return end
     player_class.render(self)
+    if self.native_level==36 then TH38.visual.player(self) end
     local adapter=P.adapters[self.native_level]
     if adapter and adapter.render then adapter.render(self,P.state()) end
     for _,beam in ipairs(self.beams) do

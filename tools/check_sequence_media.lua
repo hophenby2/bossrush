@@ -21,7 +21,7 @@ for _,entry in ipairs(OriginalSequence.catalog.entries) do
                 local phase=row.unit.sc_group[1]
                 local bgm=phase.card.practice_bgm or phase.boss.bgm
                 check(musicList[bgm] and exists('music/'..bgm..'.ogg'),('同人作品阶段有原版曲目：%s/%s/%s'):format(entry.key,chapter.name,tostring(bgm)))
-                check(phase.boss._bg~=nil,'同人作品阶段注册了背景')
+                if chapter.level==38 then check(phase.boss._bg~=nil,'夏夜祭阶段注册了背景') end
             end
         end
     end

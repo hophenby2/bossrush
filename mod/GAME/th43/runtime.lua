@@ -438,54 +438,6 @@ E.sp.UnitListUpdate=function(list)
 end
 E.stage=overlay(stage,{})
 function E.stage.CurrentStage() return stage.current_stage end
-local backdrops={'stage1/far_blue_1.png','stage2/part1/far1.png','stage3/part0/cave1.png',
-    'stage4/part2/sky.png','stage5/purple/far.png','stage6/purple/far.png','stage7/part2/far.png'}
-local sourceBackground=Class(background)
-function sourceBackground:init(n,scenery)
-    self.chapter,self.sight=n,scenery
-    self.group,self.layer=GROUP.GHOST,LAYER.BG-.1
-    self.bound=false
-    local previous=lstg.tmpvar.bg
-    if valid(previous) then background.DelBG() end
-    lstg.tmpvar.bg=self
-    if setting.displayBG then
-        loadTexture('scene'..n,'res/background/'..backdrops[n])
-        if n==1 then loadTexture('scene1_red','res/background/stage1/far_red_1.png') end
-        if n==7 then loadTexture('stage7_moon','res/background/stage7/part2/moon.png') end
-    end
-end
-function sourceBackground:render()
-    if not setting.displayBG then return end
-    SetViewMode('world')
-    local n=self.chapter
-    local tex=n==1 and self.sight and 'scene1_red' or 'scene'..n
-    local w=lstg.world
-    local opacity=Color(255,self.red and 230 or 155,self.red and 83 or 155,self.red and 88 or 165)
-    local tw,th=GetTextureSize(image(tex))
-    local travel=.07*sin(self.timer/20)
-    local y=(self.sky and -.12 or 0)+travel
-    RenderTexture(image(tex),'',
-        {w.l,w.t,.5,tw*.06,th*(.13+y),opacity},
-        {w.r,w.t,.5,tw*.94,th*(.13+y),opacity},
-        {w.r,w.b,.5,tw*.94,th*(.87+y),opacity},
-        {w.l,w.b,.5,tw*.06,th*(.87+y),opacity})
-    if n==7 and self.red then
-        misc.RenderTexInSize(image('stage7_moon'),0,145,0,.17,.17,'mul+add',Color(145,255,165,165))
-    end
-end
-function sourceBackground.changeToRed(o) o.red=true end
-function sourceBackground.flyToSky(o) o.sky=true end
-function sourceBackground.moonAppear(o) o.sky=true end
-function sourceBackground.Sence3(o) o.sight=true end
-sourceBackground.Sence3And4=sourceBackground.Sence3
-for i=1,7 do
-    local chapter=i
-    E['stage'..i..'_background']=Class(sourceBackground,{init=function(o,scenery)
-        sourceBackground.init(o,chapter,scenery and scenery~=0)
-    end})
-    local cls=E['stage'..i..'_background']
-    for _,name in ipairs({'changeToRed','flyToSky','moonAppear','Sence3','Sence3And4'}) do cls[name]=sourceBackground[name] end
-end
 E.boss_death_ef=Class(object,{
     init=function(o,x,y)
         o.x,o.y=x,y
@@ -529,6 +481,7 @@ end
 run('THlib/DNHWalkImageSystem.lua')
 run('EISlib/boss/boss_type.lua')
 run('EISlib/boss/aura.lua')
+assert(loadfile('mod/GAME/th43/background.lua'))(R,resolve)
 function E.EISlib.BossDefinition.Type.changeWalkImage(o,prototype)
     local walk=setmetatable({}, {__index=prototype})
     walk.obj=o

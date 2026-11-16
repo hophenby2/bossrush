@@ -2,7 +2,7 @@
 local R=dofile('mod/GAME/th39/runtime.lua')
 local D=R.data
 local Media=dofile('mod/GAME/th39/media.lua')
-local variants=dofile('mod/GAME/th39/media_variants.lua')
+local BG=dofile('mod/GAME/th39/background.lua')
 local LEVEL=37
 local C={runtime=R,data=D,level=LEVEL,chapters={},cards={},rows={}}
 TH39=C
@@ -56,7 +56,7 @@ local function specialCue(meta)
     if meta.kind==3 or meta.number==5802 then return 'eirin' end
 end
 
-local function setupCard(meta,group)
+local function setupCard(meta,group,chapter)
     local opening=30+(flag(meta,'DELAY') and 150 or 60)+(flag(meta,'TRANS') and 100 or 0)
     local timeout=opening+meta.seconds*60
     local endurance=flag(meta,'TIME') or flag(meta,'TIMENOTHIDE')
@@ -71,9 +71,12 @@ local function setupCard(meta,group)
         if endurance or timer<=start+meta.immune then return 0 end
         return timer<=start+90 and (timer-start)/180 or 1
     end
-    function card:before() self.mhj3_card=nil end
+    function card:before()
+        self.mhj3_card=nil
+        BG.show(R,chapter,group.time)
+        BG.tick(group.time)
+    end
     function card:init()
-        Media.card(meta.kind~=0,variants[meta.id])
         local state=NativePlayers and NativePlayers.state()
         if state then state.cardMisses=lstg.var.dead end
         self.mhj3_card={clock=0,actors={},configs={}}
@@ -102,6 +105,9 @@ local function setupCard(meta,group)
     function card:frame()
         local ctx=self.mhj3_card;if not ctx then return end
         ctx.clock=ctx.clock+1
+        if meta.kind~=0 and ctx.clock==40+(flag(meta,'DELAY') and 150 or 0) then
+            BG.card(chapter,group,meta)
+        end
         local running=ctx.clock>opening
         local remaining=feast and meta.seconds or meta.seconds-math.floor((ctx.clock-opening)/60)
         for _,a in ipairs(ctx.actors) do
@@ -126,6 +132,7 @@ local function setupCard(meta,group)
         end
     end
     function card:del()
+        BG.endCard(group,meta)
         local ctx=self.mhj3_card
         if ctx then
             for i,a in ipairs(ctx.actors) do
@@ -148,6 +155,7 @@ local function advance(s,t)
     return jump and (jump>t and jump or jump+1) or t+1
 end
 local function stageStep(chapter,s,t)
+    if not s.preroll then BG.tick(t) end
     local step=chapter.driver[t]
     if step then step(R,s) end
     return advance(s,t)
@@ -183,14 +191,16 @@ for _,chapter in ipairs(D.chapters) do
             local window=entry.road
             local band='mhj3road'..window.id..'a'
             local title='幕华祭永夜篇 '..chapter.name..' 道中 '..window.first..'–'..window.last
-            boss.Define(band,title,Media.track(chapter.stage,'road'),Media[chapter.stage],{0,300},nil,'Yukari',LEVEL)
+            boss.Define(band,title,Media.track(chapter.stage,'road'),nil,{0,300},nil,'Yukari',LEVEL)
             -- 暂停点由敌机死亡或脚本时限控制，不能被静态练习时限提前截断。
             local card=boss.card.New('',1000000,1000000,1000000,1)
             card.phase_name,card.phase_kind=title,'road'
             card.mhj3_source=window
-            function card:before() self.mhj3_road=nil;detachRoad(self) end
+            function card:before()
+                self.mhj3_road=nil;detachRoad(self)
+                BG.show(R,chapter,window.first)
+            end
             function card:init()
-                Media.card(false)
                 local state=R.stageState(chapter.stage);state.preroll=true
                 local t=0
                 while t<window.first do t=stageStep(chapter,state,t);state.pause=nil end
@@ -214,7 +224,7 @@ for _,chapter in ipairs(D.chapters) do
             local name=D.actors[lead.actor][1]
             local x,y=R.project(lead.x,lead.y)
             local cue=specialCue(group.cards[1]) or (group.role=='mid' and 'road' or 'boss')
-            boss.Define(band,name,Media.track(chapter.stage,cue),Media[chapter.stage],{x,y},nil,D.actors[lead.actor][2],LEVEL)
+            boss.Define(band,name,Media.track(chapter.stage,cue),nil,{x,y},nil,D.actors[lead.actor][2],LEVEL)
             local cls=_editor_boss[band..LEVEL]
             cls.render=function(b)
                 if b._bosssys then b._bosssys:render() end
@@ -229,7 +239,7 @@ for _,chapter in ipairs(D.chapters) do
             for _,meta in ipairs(group.cards) do
                 local title='幕华祭永夜篇 '..chapter.name..' '..meta.title
                 local practiceOnly=chapter.difficulty==9 or meta.kind==2 and (meta.condition or 0)>0
-                local card=setupCard(meta,group)
+                local card=setupCard(meta,group,chapter)
                 local special=specialCue(meta)
                 if special then card.practice_bgm=Media.track(chapter.stage,special) end
                 register(chapter,card,band,meta.id,title,group.role,practiceOnly)
@@ -251,7 +261,8 @@ function C.runChapter(scene,chapter)
     if resources then resources.chapter=chapter.name end
     local meta=chapter.script and chapter or assert(C.chapters[chapter.name])
     local s=R.stageState(meta.stage)
-    Media.enter(scene,meta.stage)
+    BG.show(R,meta)
+    Media.play(scene,meta.stage,'road')
     local groups={}
     for _,group in ipairs(meta.bosses) do groups[group.time]=group end
     local t=0
@@ -259,6 +270,7 @@ function C.runChapter(scene,chapter)
         if lstg.var.sequence_run then lstg.var.sequence_run.road_time=t end
         local group=groups[t]
         if group then
+            BG.tick(t)
             local cards={}
             for _,card in ipairs(group.cards) do
                 if card.kind~=2 or (card.condition or 0)==0 then cards[#cards+1]=C.cards[card.id] end
@@ -267,7 +279,6 @@ function C.runChapter(scene,chapter)
             if cue then Media.play(scene,meta.stage,cue) end
             local actor=New(_editor_boss[group.band..LEVEL],cards)
             while valid(actor) and not scene.sequence_finished do task.Wait() end
-            Media.card(false)
         end
         local nextTick=stageStep(meta,s,t)
         task.Wait()

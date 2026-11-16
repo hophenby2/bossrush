@@ -3,7 +3,7 @@ local R=dofile('mod/GAME/th43/runtime.lua')
 assert(loadfile('mod/GAME/th43/combat.lua'))(R)
 local E=R.env
 local LEVEL=41
-local C={runtime=R,level=LEVEL,chapters={},rows={},cards={}}
+local C={runtime=R,level=LEVEL,chapters={},rows={},cards={},hud=dofile('mod/GAME/th43/hud.lua')}
 TH43=C
 _editor_class.TH43=R
 GameContent.ports[LEVEL]=C
@@ -58,7 +58,7 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         E.New(BossContact,o).th43_bullet=nil
         o.taskers={}
         if practice then
-            E.New(res.background,0)
+            E.New(res.background,true)
         end
         if practice then o.y=144;R.practiceBoss=o end
         o._a,o._r,o._g,o._b=255,255,255,255

@@ -1,11 +1,12 @@
 -- TH38 东方雪莲华 ～ Abyss Soul Lotus. 原生对象接入初版。
 -- 原始数值表离线导出；Lunatic六面与Extra A，分支/Last Spell另列练习。
--- 原版曲目和贴图由媒体模块处理，自机及结界由 NativePlayers 接入。
+-- 原作场景按 Unity 时间轴绘制，自机及结界由 NativePlayers 接入。
 -- 运动/绑定/激光代理仍须与原版逐帧对照，来源和差异见tools/th38-tests/README.zh-CN.md。
 local R=dofile('mod/GAME/th38/runtime.lua')
 local D=R.data
 local Media=dofile('mod/GAME/th38/media.lua')
-local C={runtime=R,data=D,cards={},chapters={},level=36}
+local BG=dofile('mod/GAME/th38/background.lua')
+local C={runtime=R,data=D,cards={},chapters={},level=36,visual=dofile('mod/GAME/th38/visual.lua')}
 TH38=C;_editor_class.TH38=R.classes
 local function valid(o) return o and IsValid(o) end
 local function hideRoad(o)
@@ -25,9 +26,11 @@ local function addCard(meta,band)
     local immune=meta.endurance and duration or min(duration,(opening+meta.immune/2)/60)
     local card=boss.card.New(meta.spell and meta.title or '',immune,immune,duration,meta.hp)
     card.phase_name,card.phase_kind,card.asl_source=phaseLabel(meta),meta.role,meta
-    function card:before() self.asl_controller=nil;self.asl_clock=nil end
+    function card:before()
+        self.asl_controller,self.asl_clock=nil,nil
+        BG.card(meta.key:match('/stage(%d+)/') or 'EXA',meta.spell)
+    end
     function card:init()
-        Media.card(meta.spell)
         R.clearAll();self.asl_clock=0;self.asl_transition=1;self.asl_controller=R.controller(self,meta.key)
     end
     function card:frame()
@@ -42,7 +45,11 @@ local function addCard(meta,band)
             R.tick(self.asl_controller)
         end
     end
-    function card:del() R.clear(self.asl_controller);self.asl_controller=nil;self.asl_clock=nil end
+    function card:del()
+        R.clear(self.asl_controller);self.asl_controller=nil;self.asl_clock=nil
+        -- boss14_2 第一阶段结束后，ST5_back_C 按原作计时等待 400 tick。
+        BG.endCard(meta.key=='L/stage5/boss2/1')
+    end
     boss.card.add({{card,band}},36,phaseLabel(meta),meta.id)
     C.cards[meta.id]={card=card,band=band}
     return card
@@ -57,17 +64,17 @@ for _,chapter in ipairs(D.chapters) do
     for _,entry in ipairs(ordered) do
         if entry.road then
             local road=entry.road;local band='aslroad'..road.id..'a'
-            boss.Define(band,'雪莲华道中',Media.track(number,'road'),Media[number],{0,300},nil,'Yukari',36)
+            boss.Define(band,'雪莲华道中',Media.track(number,'road'),nil,{0,300},nil,'Yukari',36)
             local duration=(road.last-road.first)/120
             local card=boss.card.New('',duration,duration,duration,1)
             local chapterLabel=chapter.name=='EXA' and 'Extra A' or chapter.name..'面'
             card.phase_name,card.phase_kind='雪莲华 '..chapterLabel..' 道中'..(road.key:sub(-1)=='a' and '前段' or '后段'),'road'
             card.asl_source=road
-            function card:before() self.asl_controller=nil;hideRoad(self) end
+            function card:before()
+                self.asl_controller=nil;hideRoad(self)
+                BG.show(chapter.name,'',road.first,false)
+            end
             function card:init()
-                Media.card(false)
-                local bg=lstg.tmpvar.bg
-                if valid(bg) then bg.aslBackgroundOffset=road.first-bg.timer*2 end
                 R.clearAll()
                 self.asl_controller=R.controller(nil,road.key,road.first)
             end
@@ -79,7 +86,7 @@ for _,chapter in ipairs(D.chapters) do
         else
             local group=entry.boss;local band='asl'..group.cards[1].id..'a';group.band=band
             local cue=group.cards[1].role=='mid' and 'road' or 'boss'
-            boss.Define(band,'雪莲华 '..chapter.name..'面',Media.track(number,cue),Media[number],{0,110},nil,'Yukari',36)
+            boss.Define(band,'雪莲华 '..chapter.name..'面',Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
             for _,meta in ipairs(group.cards) do addCard(meta,band);chapter.units[#chapter.units+1]={id=meta.id,role=meta.role} end
         end
     end
@@ -87,7 +94,7 @@ end
 for _,meta in ipairs(D.extra) do
     local number=tonumber(meta.key:match('/stage(%d+)/')) or 7
     local cue=meta.role=='lastspell' and 'last' or 'boss'
-    local band='asl'..meta.id..'a';boss.Define(band,'雪莲华分支',Media.track(number,cue),Media[number],{0,110},nil,'Yukari',36)
+    local band='asl'..meta.id..'a';boss.Define(band,'雪莲华分支',Media.track(number,cue),nil,{0,110},nil,'Yukari',36)
     addCard(meta,band)
 end
 function C.units()
@@ -110,10 +117,12 @@ function C.runChapter(scene,chapter)
     if resources then resources.chapter=chapter.name end
     local meta=assert(C.chapters[chapter.name]);local roadIndex,bossIndex=1,1;local c
     local number=tonumber(meta.name) or 7
-    Media.enter(scene,number)
+    BG.show(meta.name,'',0,true)
+    Media.play(scene,number,'road')
     local length=meta.bosses[#meta.bosses].time
     for t=0,length do
         if scene.sequence_finished then R.clear(c);return end
+        BG.story(t)
         if lstg.var.sequence_run then lstg.var.sequence_run.road_time=t end
         local group=meta.bosses[bossIndex]
         if group and group.time==t then
@@ -122,7 +131,6 @@ function C.runChapter(scene,chapter)
             if group.cards[1].role~='mid' then Media.play(scene,number,'boss') end
             local actor=New(_editor_boss[group.band..36],cards)
             while valid(actor) and not scene.sequence_finished do task.Wait() end
-            Media.card(false)
             bossIndex=bossIndex+1
         end
         local road=meta.roads[roadIndex]

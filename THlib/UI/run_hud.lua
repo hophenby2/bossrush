@@ -1,6 +1,7 @@
 -- 战斗UI只呈现剩余资源和成长：星形表示库存，火力用自动扩展的对数刻度，其余属性用线性条。
 -- 所有查询保持只读，渲染不能建立成长状态或改变录像的零帧初态。
 local H={}
+local MHJ=dofile('THlib/UI/mhj_hud.lua')
 local ATTRIBUTE_OPACITY=.5
 local colors={red={255,110,120},blue={110,190,255},green={110,235,145}}
 local function color(alpha,rgb) return Color(alpha,rgb[1],rgb[2],rgb[3]) end
@@ -93,40 +94,27 @@ function H.resources(x1,x2,top,alpha)
     local native=NativePlayers and NativePlayers.state()
     if native then
         local m=NativePlayers.machine(native.level,lstg.var.native_player_id)
-        if native.level==41 and IsValid(lstg.tmpvar.th43_hide_hud) then return end
-        local lives=(native.level==36 or native.level>=38 and native.level<=40) and math.max(0,native.life) or math.max(0,math.floor(native.life/5))
-        local rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},
-            {native.level==36 and '生命' or '残机',lives}}
+        if native.level==35 or native.level==37 then return MHJ.draw(x1,x2,top,alpha,native,m) end
+        if native.level==36 then return TH38.visual.hud(x1,x2,top,alpha,native,m) end
         if native.level==41 then
-            rows[#rows+1]={'Bomb',math.floor(native.bombs/5)}
-            rows[#rows+1]={'Bomb 碎片',native.bombFragments..' / 100'}
-            rows[#rows+1]={'蓝点',native.points}
-            rows[#rows+1]={'火力等级',native.rank..' · '..native.rankChips..' / 6'}
-        elseif native.level>=38 then
-            rows[#rows+1]={native.level==40 and 'Mental' or 'Bomb',native.bombs}
-            if native.level==38 then
-                rows[#rows+1]={'火力',native.power..' / 400'}
-                rows[#rows+1]={'星屑',native.star..' / 3000'}
-                if native.enchantment then
-                    local label=({red='红',blue='蓝',green='绿'})[native.enchantment]
-                    rows[#rows+1]={label..'附魔',('%.1f s'):format(native.enchantmentTime/60)}
-                end
-            elseif native.level==39 then
-                rows[#rows+1]={'残机碎片',('%g / 100'):format(native.lifeChip)}
-                rows[#rows+1]={'Bomb 碎片',native.bombChip..' / 100'}
-                rows[#rows+1]={'染色连锁',native.dyeChain}
-            else
-                rows[#rows+1]={'Dream',('%d%%'):format(math.max(0,lstg.var.like_dreamer_special_gauge or 0)/500)}
+            if not IsValid(lstg.tmpvar.th43_hide_hud) then TH43.hud.draw(x1,x2,top,alpha,native,m) end
+            return
+        end
+        local rows={{'机体',m.name},{'分数',('%010d'):format(lstg.var.score)},{'残机',math.max(0,native.life)}}
+        rows[#rows+1]={native.level==40 and 'Mental' or 'Bomb',native.bombs}
+        if native.level==38 then
+            rows[#rows+1]={'火力',native.power..' / 400'}
+            rows[#rows+1]={'星屑',native.star..' / 3000'}
+            if native.enchantment then
+                local label=({red='红',blue='蓝',green='绿'})[native.enchantment]
+                rows[#rows+1]={label..'附魔',('%.1f s'):format(native.enchantmentTime/60)}
             end
-        elseif native.level==36 then
-            rows[#rows+1]={'残机碎片',native.fragments..' / '..NativePlayers.lifeThreshold(native)}
-            rows[#rows+1]={'结界',NativePlayers.barriers(native)..' / 3'}
-            rows[#rows+1]={'结界能量',('%d%%'):format(math.floor((native.barrier+1)/1000))}
+        elseif native.level==39 then
+            rows[#rows+1]={'残机碎片',('%g / 100'):format(native.lifeChip)}
+            rows[#rows+1]={'Bomb 碎片',native.bombChip..' / 100'}
+            rows[#rows+1]={'染色连锁',native.dyeChain}
         else
-            rows[#rows+1]={'残机碎片',math.max(0,native.life)%5 .. ' / 5'}
-            rows[#rows+1]={'Bomb',math.floor(native.bombs/5)}
-            rows[#rows+1]={'Bomb 碎片',native.bombs%5 .. ' / 5'}
-            if native.level==35 then rows[#rows+1]={'火力',native.power..' / 400'} end
+            rows[#rows+1]={'Dream',('%d%%'):format(math.max(0,lstg.var.like_dreamer_special_gauge or 0)/500)}
         end
         for i,row in ipairs(rows) do
             local y=top-(i-1)*23

@@ -207,10 +207,10 @@ class Export:
                 out += ',' + k + '=' + self.events(values[i], kind if k == 'Parentevents' else kind + '-son')
         return out + '}'
 
-    def pattern(self, key):
-        if key in self.patterns:
+    def pattern(self, key, prefix='b', directory=None):
+        if (prefix, key) in self.patterns:
             return
-        lines = iter(self.text('b' + key).splitlines())
+        lines = iter(self.text(prefix + key).splitlines())
         assert next(lines) == 'Crazy Storm Data 1.01', key
         line = next(lines)
         order = 0
@@ -275,8 +275,8 @@ class Export:
         head = lua(dict(id=key, total=total, order=order, centerAvailable=available, center=positions, types=profiles))[:-1]
         code = 'return ' + head + ',centerEvents=' + center_code + ',globalEvents=function(c,t,R)\n'
         code += '\n'.join(glob) + '\nend,emitters={\n' + ',\n'.join(rows) + '\n}}\n'
-        (OUT / 'patterns' / (key + '.lua')).write_text(code)
-        self.patterns.add(key)
+        ((directory or OUT / 'patterns') / (prefix + key + '.lua' if directory else key + '.lua')).write_text(code)
+        self.patterns.add((prefix, key))
 
     def new_id(self):
         self.next_id += 1
