@@ -19,6 +19,31 @@ end
 
 M.s16, M.word = s16, word
 
+-- 0x15f43a。读取 0x813000 工作区中的原版字偏移。断点回归可以直接给定当时的字段值。
+function M.rank(run,offset,fixture)
+    if run.ranks then return run.ranks[offset] end
+    return run[fixture]
+end
+
+function M.updateRank(run)
+    if not run.ranks then return end
+    local p = run.player
+    local hyper = p and p.hyperPower
+    local raw = run.loop == 0 and 0x34 + 0x10 * run.difficulty + floor(run.rankTime / 0x100) or 0xf8
+    if hyper then raw = raw + 0x10 * p.hyperRank end
+    raw = math.min(raw,hyper and 0xff or 0xf0 + (run.loop == 0 and 0 or 8))
+    local half,quarter,eighth,sixteenth = floor(raw / 2),floor(raw / 4),floor(raw / 8),floor(raw / 16)
+    local ranks = run.ranks
+    ranks[0x02],ranks[0x20] = raw,sixteenth
+    ranks[0x04],ranks[0x06] = half + quarter + eighth + sixteenth,half + quarter + eighth
+    ranks[0x08],ranks[0x0a] = half + quarter + sixteenth,half + quarter
+    ranks[0x0c],ranks[0x0e] = half + quarter - eighth + sixteenth,half + quarter - eighth
+    ranks[0x10],ranks[0x12] = half + sixteenth,half
+    ranks[0x14],ranks[0x16] = quarter + eighth + sixteenth,quarter + eighth
+    ranks[0x18],ranks[0x1a] = quarter + sixteenth,quarter
+    ranks[0x1c],ranks[0x1e] = quarter - eighth + sixteenth,quarter - eighth
+end
+
 -- 0x14179a、0x182602 使用同一张表。先右移取整，再按象限翻转两个轴。
 function M.vector(speed, angle)
     local direction = band(angle, 0x3f)
@@ -90,6 +115,12 @@ function M.bossSmallRandom(run)
     return value >= 0x80 and value - 0x100 or value
 end
 
+-- 0x143192 与敌机共用递增游标，只以低六位查询掉落参数。
+function M.dropSpeedRandom(run)
+    run.randomByte = band(run.randomByte + 1, 0xff)
+    return byte(M.dropSpeed, band(run.randomByte, 0x3f) + 1)
+end
+
 function M.bossJitter(run)
     run.randomByte = band(run.randomByte + 1, 0xff)
     return M.boss1Jitter[band(run.randomByte,0x7f) + 1]
@@ -102,6 +133,25 @@ end
 
 function M.inInterval(value, start, extent)
     return band(value - start, 0xffff) + extent < 0x10000
+end
+
+-- 0x14253a 只以 0x812ffc 是否为零选择两张表。
+function M.inAimBounds(run, h, l)
+    local box = M.aimBounds[run.loop == 0 and 1 or 2][run.stageNumber]
+    return M.inInterval(h, box[1], box[2]) and M.inInterval(l, box[3], box[4])
+end
+
+-- 0x142592 的纵向检查始终使用第一张表。
+function M.inAimHeight(run, h)
+    local box = M.aimBounds[1][run.stageNumber]
+    return M.inInterval(h, box[1], box[2])
+end
+
+-- 0x142118 每次只沿最短方向转一档。
+function M.turn64(from, target)
+    local diff = band(target - from, 0x3f)
+    if diff == 0 then return from end
+    return band(from + (diff < 0x20 and 1 or -1), 0x3f)
 end
 
 -- 0x1668a4 折减纵向距离，再取长轴加半个短轴。

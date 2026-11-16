@@ -35,7 +35,8 @@ return function(program)
         if o.run.clearActors then return end
         o.clock = o.clock - 1
         if o.clock < 0 then
-            o.clock, o.frameIndex = 1, o.frameIndex % #o.images + 1
+            o.frameIndex = o.frameIndex % #o.images + 1
+            o.clock = o.kind == 0xc and 2 or 1
         end
         o.h = s16(o.h - o.run.scrollStep * 64)
     end
@@ -46,18 +47,38 @@ return function(program)
             o.h, o.l = h, l
             o.dh, o.dl = 0, 0
             o.group, o.layer, o.bound, o.colli = GROUP.GHOST, LAYER.ENEMY + layer / 4, false, false
-            if kind == 0 then
+            if kind == 0x1c then
                 local run = o.run
-                o.frameIndex = band(random(run, program.dropRandom), 0x0e) + 1
-                o.speed = 4 + floor(random(run, program.dropSpeed) / 2)
-                local a = random(run, program.dropAngle)
-                local b = random(run, program.dropSpeed)
-                o.angle = band(0x1f + b - (a < 0x80 and a or a - 0x100), 0x3f)
+                o.speed = 9 + floor(math.abs(program.bossSmallRandom(run)) / 2)
+                local a = program.bossRandom(run) + 1
+                o.angle = band(0x20 + program.dropSpeedRandom(run) - a,0x3f)
+                o.front,o.back,o.right,o.left = 0x980,0x980,0x780,0x780
+                o.images,o.drawH,o.drawL,o.clock,o.update = program.pilotHyper.chips,-0x800,-0x600,1,chip
+                o.frameIndex = 1
+            elseif kind == 0 or kind == 0x10 then
+                local run = o.run
+                if kind == 0x10 then
+                    o.frameIndex = 1
+                    o.speed = 4 + floor(math.abs(program.bossRandom(run)) / 2)
+                    local a = program.bossSmallRandom(run)
+                    o.angle = band(0x24 + program.dropSpeedRandom(run) - a, 0x3f)
+                else
+                    o.frameIndex = band(random(run, program.dropRandom), 0x0e) + 1
+                    o.speed = 4 + floor(random(run, program.dropSpeed) / 2)
+                    local a = random(run, program.dropAngle)
+                    local b = random(run, program.dropSpeed)
+                    o.angle = band(0x1f + b - (a < 0x80 and a or a - 0x100), 0x3f)
+                end
                 o.front, o.back, o.right, o.left = 0x580, 0x580, 0x480, 0x480
                 o.images, o.drawH, o.drawL, o.clock, o.update = program.chips, -0x400, -0x200, 1, chip
             elseif kind == 8 then
                 o.front, o.back, o.right, o.left = 0x680, 0x680, 0x500, 0x500
                 o.images, o.drawH, o.drawL, o.clock, o.update = program.stars, -0x400, -0x300, 1, star
+                o.frameIndex = 1
+                o.clock = o.clock + band(program.randomEnemy(o.run), 0x1f)
+            elseif kind == 0xc then
+                o.front, o.back, o.right, o.left = 0xa80, 0xa80, 0x880, 0x880
+                o.images, o.drawH, o.drawL, o.clock, o.update = program.largeStars, -0x800, -0x600, 2, star
                 o.frameIndex = 1
                 o.clock = o.clock + band(program.randomEnemy(o.run), 0x1f)
             else
@@ -82,7 +103,8 @@ return function(program)
 
     function M.emit(host, kind, shiftH, shiftL)
         local run = host.run
-        assert(kind == 0 or kind == 8 or kind == 0x40, '尚未翻译地面掉落类型')
+        assert(kind == 0 or kind == 8 or kind == 0xc or kind == 0x10 or kind == 0x1c or kind == 0x40,
+            '尚未翻译地面掉落类型')
         local h, l = program.addPacked(host.h, host.l, shiftH or 0, shiftL or 0)
         l = s16(l + run.cameraStep)
         if band(h + 0x800, 0xffff) >= 0xa000
@@ -96,32 +118,40 @@ return function(program)
         end
     end
 
-    function M.step(run)
+    function M.step(run,hyper)
         for slot = 1, 70 do
             local o = run.items[slot]
             if o then
                 local pilot = run.player
                 if o.taken and pilot then
-                    if o.kind == 0 then
+                    if o.kind == 0 or o.kind == 0x10 then
                         pilot.score = pilot.score + 50
                         pilot.chips = min(999, pilot.chips + 1)
                     elseif o.kind == 8 then
                         pilot.score = pilot.score + 50
                         pilot.stars = min(999, pilot.stars + 1)
+                    elseif o.kind == 0xc or o.kind == 0x1c then
+                        pilot.score = pilot.score + 1000
+                        pilot.stars = min(999, pilot.stars + (o.kind == 0x1c and 8 or 2))
                     else
+                        hyper.bee(pilot)
                         pilot.bees = pilot.bees + 1
+                        -- 0x17e486 仅在本面无失误拾到第十个地蜂时累计一面。
+                        local complete = pilot.bees == 10 and pilot.stageMisses == 0
+                        if complete then pilot.fullBeeStages = pilot.fullBeeStages + 1 end
                         local score = program.beeScore[pilot.bees]
-                        if score then pilot.score = pilot.score + score end
+                        if score then pilot.score = pilot.score + (complete and 2 * score or score) end
                     end
                     remove(o)
                 else
                     o.l = s16(o.l - run.cameraStep)
                     o.update(o)
                     o.h, o.l = s16(o.h + o.dh), s16(o.l + o.dl)
-                    local outside = o.kind == 0 and o.h < 0 or o.kind ~= 0 and
+                    local flying = o.kind == 0 or o.kind == 0x10 or o.kind == 0x1c
+                    local outside = flying and o.h < (o.kind == 0x1c and -0x600 or 0) or not flying and
                         (band(o.h + 0x800, 0xffff) >= 0x8800
                         or band(o.l + 0x1c00 + run.cameraOffset, 0xffff) >= 0x7000)
-                    if outside or o.kind == 8 and run.clearActors then
+                    if outside or (o.kind == 8 or o.kind == 0xc) and run.clearActors then
                         remove(o)
                     else
                         o.x, o.y = world(o.h, o.l)
@@ -134,7 +164,7 @@ return function(program)
     function M.contact(run, pilot)
         for slot = 1, 70 do
             local o = run.items[slot]
-            if o and pilot.h + pilot.front >= o.h - o.back and pilot.h - pilot.back <= o.h + o.front
+            if o and o.h ~= 0 and pilot.h + pilot.front >= o.h - o.back and pilot.h - pilot.back <= o.h + o.front
                 and pilot.l + pilot.right >= o.l - o.left and pilot.l - pilot.left <= o.l + o.right then
                 o.taken = true
             end

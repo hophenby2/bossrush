@@ -1,5 +1,5 @@
 -- 0x166abe、0x167158。路径、朝向和发射计数由各自的敌机对象保存。
-return function(program, path, bullets, remove)
+return function(program, path, bullets, remove, hyper)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local floor = math.floor
@@ -11,15 +11,15 @@ return function(program, path, bullets, remove)
         o.flags = 0xa200
         if o.kind == 0x10 then
             o.hp, o.front, o.back, o.right, o.left = 0xc0, 0x600, 0x6c0, 0x540, 0x540
-            o.attackClock = band(0x50 - run.largeRank, 0xff)
-            o.trackClock, o.trackInterval = 1, band(1 - floor(run.trackRank / 16), 0xff)
+            o.attackClock = band(0x50 - program.rank(run,0x18,'largeRank'), 0xff)
+            o.trackClock, o.trackInterval = 1, band(1 - floor(program.rank(run,0x20,'trackRank') / 16), 0xff)
             o.salvoLength = 2 + floor(run.difficulty / 2)
             o.salvoCount = o.salvoLength
         else
             o.hp, o.front, o.back, o.right, o.left = 0x38, 0x480, 0x600, 0x440, 0x440
-            o.attackClock = band(0x60 - run.enemyRank + floor(program.randomEnemy(run) / 2), 0xff)
-            o.trackClock, o.trackInterval = band(1 - floor(run.trackRank / 16), 0xff), 1
-            if run.difficulty == 1 and run.major >= 0x159 then o.attackClock = band(0x2a - run.lateRank, 0xff) end
+            o.attackClock = band(0x60 - program.rank(run,0x16,'enemyRank') + floor(program.randomEnemy(run) / 2), 0xff)
+            o.trackClock, o.trackInterval = band(1 - floor(program.rank(run,0x20,'trackRank') / 16), 0xff), 1
+            if run.difficulty == 1 and run.major >= 0x159 then o.attackClock = band(0x2a - program.rank(run,0x1e,'lateRank'), 0xff) end
         end
         if not path.attach(o) then return end
         o.face = band(o.direction, 0x3f)
@@ -39,9 +39,7 @@ return function(program, path, bullets, remove)
 
     local function canFire(o, pilot)
         local run = o.run
-        local bounds = program.aimBounds[run.loop + 1][run.stageNumber]
-        if not program.inInterval(o.h, bounds[1], bounds[2]) or
-            not program.inInterval(o.l, bounds[3], bounds[4]) then return false end
+        if not program.inAimBounds(run, o.h, o.l) then return false end
         return program.pilotDistance(o, pilot) >= program.aimDistances[run.difficulty + 1]
     end
 
@@ -49,7 +47,7 @@ return function(program, path, bullets, remove)
         local run = o.run
         if o.kind == 0x10 then
             -- 0x166cc0 在一组的首发要求炮口和瞄准角落在同一档。
-            o.attackClock = band(0x18 - run.trackRank, 0xff)
+            o.attackClock = band(0x18 - program.rank(run,0x20,'trackRank'), 0xff)
             if not pilot or not canFire(o, pilot) or run.difficulty == 1 and run.disableScoutShot then return end
             local target = program.angle(o.h + 0x200, o.l, pilot.h, pilot.l, o.face)
             local angle = band(o.face + 2, 0x3c)
@@ -58,22 +56,22 @@ return function(program, path, bullets, remove)
             o.salvoCount = o.salvoCount - 1
             if o.salvoCount < 0 then
                 o.salvoCount = o.salvoLength
-                o.attackClock = band(0x40 - run.salvoRank, 0xff)
+                o.attackClock = band(0x40 - program.rank(run,0x1c,'salvoRank'), 0xff)
             end
             local offset = program.muzzles[0x10][band(o.face + 1, 0x3e) / 2 + 1]
             local h, l = program.addPacked(o.h, o.l, offset[1] + 0x200, offset[2])
-            bullets.emit(run, 0x0c, 4 * run.loop, angle, h, l)
+            bullets.emit(run, 0x0c, run.loop == 0 and 0 or 4, angle, h, l)
             return
         end
-        o.attackClock = band(0xa4 - run.fireRank, 0xff)
+        o.attackClock = band(0xa4 - program.rank(run,0x0e,'fireRank'), 0xff)
         if run.loop == 0 and run.difficulty == 1 and run.major >= 0x159 then
-            o.attackClock = band(0x2a - run.lateRank, 0xff)
+            o.attackClock = band(0x2a - program.rank(run,0x1e,'lateRank'), 0xff)
         end
         if not pilot or not canFire(o, pilot) or run.difficulty == 1 and run.disableScoutShot then return end
         local angle = band(o.face + 2, 0x3c)
         local offset = program.muzzles[0x11][angle / 4 + 1]
         local h, l = program.addPacked(o.h, o.l, offset[1] + 0x200, offset[2])
-        local modifier = (run.difficulty >= 3 and -4 or 0) + 4 * run.loop
+        local modifier = (run.difficulty >= 3 and -4 or 0) + (run.loop == 0 and 0 or 4)
         bullets.emit(run, 0x0d, modifier, angle, h, l)
     end
 
@@ -82,9 +80,12 @@ return function(program, path, bullets, remove)
         if not path.step(o) then remove(o); return end
         if inView(o) then o.entered = true
         elseif o.entered then remove(o); return end
-        if band(o.flags, 0x5c00) ~= 0 then
+        local flags = band(o.flags,0x5c00)
+        if flags ~= 0 then
             o.flags, o.flash = band(o.flags, 0xa3ff), true
+            hyper.hit(o,flags)
             if o.hp < 0 then
+                hyper.kill(run,flags,o.damaged and 10 or 8)
                 if o.damaged then remove(o); return end
                 o.hp, o.damaged = o.kind == 0x10 and 0xe0 or 0x70, true
                 if o.kind == 0x10 then o.flags = band(o.flags, 0xfdff) end

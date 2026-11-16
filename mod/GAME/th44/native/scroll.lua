@@ -50,6 +50,7 @@ return function(program)
         for row = 1, 15 do run.visibleRows[row] = run.stage.tiles[row] end
         run.visibleTop = 0
         run.majorProgress, run.actorProgress, run.scrollStep = 0, 0, 0
+        run.groundProgress, run.groundScroll = 0, 0
         run.cameraOffset, run.cameraStep = 0, 0
         run.cameraFine, run.cameraClipped, run.cameraRelative = 0, false, true
     end
@@ -112,7 +113,7 @@ return function(program)
     end
 
     function M.step(run)
-        if run.freeze then run.scrollStep = 0; return end
+        if run.freeze then run.scrollStep,run.groundScroll = 0,0; return end
         events(run)
         local speed = run.scrollSpeed[1]
         local progress = run.majorProgress + speed
@@ -123,6 +124,8 @@ return function(program)
         run.majorProgress = progress
         local fixed = run.actorProgress + speed
         run.scrollStep, run.actorProgress = floor(fixed / 64), fixed % 64
+        fixed = run.groundProgress + run.scrollSpeed[2]
+        run.groundProgress, run.groundScroll = fixed % 64, fixed - fixed % 64
         for layer = 1, 2 do
             local tile = run.tileProgress[layer] + run.scrollSpeed[layer]
             if tile >= 0x800 then

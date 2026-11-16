@@ -1,5 +1,5 @@
 -- 0x168576、0x168b6e、0x168e70、0x1690ec、0x1695b4 共用坦克判定和炮口表。
-return function(program, path, bullets, effects, remove)
+return function(program, path, bullets, effects, remove, hyper)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local s16, world = program.s16, program.world
@@ -20,7 +20,7 @@ return function(program, path, bullets, effects, remove)
         o.front, o.back, o.right, o.left = 0x780, 0x400, 0x480, 0x480
         o.variant = band(o.kind, 0x1f)
         o.brakes = o.variant ~= 5
-        o.attackClock = o.variant == 7 and run.difficulty == 2 and 0x0a or band(0x28 - run.tankRank, 0xff)
+        o.attackClock = o.variant == 7 and run.difficulty == 2 and 0x0a or band(0x28 - program.rank(run,0x1e,'tankRank'), 0xff)
         o.throttleClock, o.throttleInterval = 1, 2
         if o.variant == 0xb then
             o.speed, o.throttleClock, o.throttleInterval = 0x24, 0, 1
@@ -50,9 +50,7 @@ return function(program, path, bullets, effects, remove)
 
     local function emit(o, aim, muzzle, modifier)
         local run = o.run
-        local bounds = program.aimBounds[run.loop + 1][run.stageNumber]
-        if not program.inInterval(o.h, bounds[1], bounds[2]) or
-            not program.inInterval(o.l, bounds[3], bounds[4]) then return end
+        if not program.inAimBounds(run, o.h, o.l) then return end
         if not aim then return end
         local offset = program.muzzles[7][band(muzzle + 1, 0x3e) / 2 + 1]
         local h, l = program.addPacked(o.h, o.l, offset[1], offset[2])
@@ -66,7 +64,7 @@ return function(program, path, bullets, effects, remove)
         elseif o.attackClock >= 0 then
             return
         end
-        o.attackClock = band(0x5a - o.run.largeRank, 0xff)
+        o.attackClock = band(0x5a - program.rank(o.run,0x18,'largeRank'), 0xff)
         local aim = target(o)
         if aim then emit(o, aim, o.brakes and aim or o.direction, o.variant == 9 and 0 or 3) end
     end
@@ -174,10 +172,13 @@ return function(program, path, bullets, effects, remove)
     end
 
     function M.step(o)
-        o.flash = band(o.flags, 0x5c00) ~= 0
+        local flags = band(o.flags,0x5c00)
+        o.flash = flags ~= 0
         if o.flash then
             o.flags = band(o.flags, 0xa3ff)
+            hyper.hit(o,flags)
             if o.hp < 0 then
+                hyper.kill(o.run,flags,8)
                 -- 0x1685aa 与 0x168ba2 以坦克当时的速度和方向登记爆炸槽。
                 effects.emit(o, {{2,0,0,0,o.speed + 8,o.direction * 4}})
                 remove(o)

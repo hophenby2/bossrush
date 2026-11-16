@@ -1,5 +1,5 @@
 -- 0x17417c。0x174118 在同一机体上登记两个碰撞部件，炮口继续使用机体自身的指令。
-return function(program, path, bullets, effects, remove)
+return function(program, path, bullets, effects, remove, supply, hyper)
     local bit = require('bit')
     local band, bor, bxor = bit.band, bit.bor, bit.bxor
     local floor, min = math.floor, math.min
@@ -29,7 +29,7 @@ return function(program, path, bullets, effects, remove)
         o.front, o.back, o.right, o.left = 0, 0xe00, 0x400, 0x400
         part.front, part.back, part.right, part.left = 0xc00, 0, 0x600, 0x600
         o.trackClock, o.salvoCount = 1, 2
-        o.attackClock = band(0x40 - o.run.carrierRank, 0xff)
+        o.attackClock = band(0x40 - program.rank(o.run,0x1a,'carrierRank'), 0xff)
         o.palette = o.run.difficulty < 3 and 15 or 14
         if not path.attach(o) then return false end
         o.face = aim(o) or band(o.direction, 0x3f)
@@ -60,7 +60,7 @@ return function(program, path, bullets, effects, remove)
         o.salvoCount = o.salvoCount - 1
         if o.salvoCount < 0 then
             o.salvoCount = 2
-            o.attackClock = band(0x50 - run.tankRank, 0xff)
+            o.attackClock = band(0x50 - program.rank(run,0x1e,'tankRank'), 0xff)
         end
     end
 
@@ -72,14 +72,24 @@ return function(program, path, bullets, effects, remove)
         elseif o.entered then remove(o); return end
         local part = o.extraParts[1]
         local base = o.run.difficulty < 3 and 15 or 14
-        if band(bor(o.flags, part.flags), 0x5c00) == 0 then
+        local flags = band(bor(o.flags,part.flags),0x5c00)
+        if flags == 0 then
             o.palette = o.hp < 0x1c0 and 25 or base
         else
             o.flags, part.flags = band(o.flags, 0xa3ff), band(part.flags, 0xa3ff)
+            hyper.hit(o,flags)
             o.palette = bxor(o.palette == 25 and base or o.palette, base == 15 and 16 or 17)
             o.hp = min(o.hp, part.hp)
             part.hp = o.hp
-            if o.hp < 0 then effects.emit(o, destruction); remove(o); return end
+            if o.hp < 0 then
+                hyper.kill(o.run,flags,25)
+                local drop = o.kind == 0x86 and 8 or 0
+                supply.emit(o,drop)
+                if o.run.dual and drop == 0 then supply.emit(o,drop) end
+                effects.emit(o, destruction)
+                remove(o)
+                return
+            end
         end
         position(o)
         attack(o)

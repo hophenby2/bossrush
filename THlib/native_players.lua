@@ -1,6 +1,6 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1,adapters={}}
-P.pgmReplayVersions={[41]=2,[42]=2,[43]=2,[44]=1,[45]=1,[46]=1}
+P.pgmReplayVersions={[41]=2,[42]=3,[43]=2,[44]=1,[45]=1,[46]=1}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
 local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176}
 local profiles={
@@ -49,7 +49,14 @@ profiles[41]={
     {'tiger','Tiger Schwert',0,0,0,'tiger'},
     {'panzer','Panzer Jäger',0,0,0,'panzer'},
 }
-profiles[42]={{'type_a','Type A',0,0,0,'type_a'}}
+profiles[42]={
+    {'type_a','Type A · 射击强化',0,0,0,'type_a',model=1,doll=1},
+    {'type_a_laser','Type A · 激光强化',0,0,0,'type_a',model=1,doll=2},
+    {'type_a_expert','Type A · 专家强化',0,0,0,'type_a',model=1,doll=3},
+    {'type_b','Type B · 射击强化',0,0,0,'type_b',model=2,doll=1},
+    {'type_b_laser','Type B · 激光强化',0,0,0,'type_b',model=2,doll=2},
+    {'type_b_expert','Type B · 专家强化',0,0,0,'type_b',model=2,doll=3},
+}
 profiles[43]={{'ageha','Ageha',0,0,0,'ageha'}}
 profiles[44]={{'reco','蕾可',0,0,0,'reco'}}
 profiles[45]={{'ageha','Ageha',0,0,0,'ageha'}}

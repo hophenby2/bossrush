@@ -1,5 +1,5 @@
 -- 0x174fb8 处理靠近自机后显形的地面物件，0x175134 处理随卷轴移动的隐形判定盒。
-return function(program, path, effects, items, remove)
+return function(program, path, effects, items, remove, hyper)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local s16, world = program.s16, program.world
@@ -34,9 +34,11 @@ return function(program, path, effects, items, remove)
         if visible then o.entered = true
         elseif o.entered then remove(o); return end
         if o.hiddenBox and run.difficulty == 1 and run.major >= 4 then o.flags = bor(o.flags, 0x2000) end
-        if band(o.flags, 0x5c00) ~= 0 then
+        local flags = band(o.flags,0x5c00)
+        if flags ~= 0 then
             o.flags = band(o.flags, 0xa3ff)
             if o.hp < 0 then
+                hyper.kill(o.run,flags,1)
                 items.emit(o, o.drop)
                 effects.emit(o, {{o.hiddenBox and 1 or 12,0,0,0,scrolls=true}})
                 remove(o)

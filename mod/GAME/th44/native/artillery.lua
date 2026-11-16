@@ -1,5 +1,5 @@
 -- 0x17302e。两侧固定管和转动炮塔采用独立的发射计时。
-return function(program, path, bullets, effects, remove)
+return function(program, path, bullets, effects, remove, hyper)
     local bit = require('bit')
     local band, bor, bxor = bit.band, bit.bor, bit.bxor
     local min, floor = math.min, math.floor
@@ -23,8 +23,8 @@ return function(program, path, bullets, effects, remove)
         o.hp, part.hp = 0x200, 0x200
         o.front, o.back, o.right, o.left = 0x600, 0x800, 0x600, 0x600
         part.front, part.back, part.right, part.left = 0x800, 0xc00, 0x800, 0x800
-        o.mainClock = band(0x40 - run.salvoRank, 0xff)
-        o.turretClock = band(0x54 - run.salvoRank - (run.loop ~= 0 and 0x10 or 0), 0xff)
+        o.mainClock = band(0x40 - program.rank(run,0x1c,'salvoRank'), 0xff)
+        o.turretClock = band(0x54 - program.rank(run,0x1c,'salvoRank') - (run.loop ~= 0 and 0x10 or 0), 0xff)
         o.mainCount, o.turretCount, o.trackClock = 3, 3, 1
         o.palette = (run.difficulty == 1 or run.difficulty == 2) and 18 or 12
         if not path.attach(o) then return false end
@@ -60,7 +60,7 @@ return function(program, path, bullets, effects, remove)
         end
         o.mainCount = o.mainCount - 1
         if o.mainCount < 0 then
-            o.mainCount, o.mainClock = 3, band(0x6c - run.rapidRank, 0xff)
+            o.mainCount, o.mainClock = 3, band(0x6c - program.rank(run,0x16,'rapidRank'), 0xff)
         end
     end
 
@@ -78,7 +78,7 @@ return function(program, path, bullets, effects, remove)
         end
         o.turretCount = o.turretCount - 1
         if o.turretCount < 0 then
-            o.turretCount, o.turretClock = 3, band(0x64 - run.largeRank, 0xff)
+            o.turretCount, o.turretClock = 3, band(0x64 - program.rank(run,0x18,'largeRank'), 0xff)
         end
     end
 
@@ -114,14 +114,21 @@ return function(program, path, bullets, effects, remove)
         if visible then o.entered = true
         elseif o.entered then remove(o); return end
         local base = (run.difficulty == 1 or run.difficulty == 2) and 18 or 12
-        if band(bor(o.flags, part.flags), 0x5c00) == 0 then
+        local flags = band(bor(o.flags, part.flags), 0x5c00)
+        if flags == 0 then
             o.palette = o.hp < 0x80 and 25 or base
         else
             o.flags, part.flags = band(o.flags, 0xa3ff), band(part.flags, 0xa3ff)
+            hyper.hit(o,flags)
             o.palette = bxor(o.palette == 25 and base or o.palette, bxor(base, 31))
             o.hp = min(o.hp, part.hp)
             part.hp = o.hp
-            if o.hp < 0 then effects.emit(o, destruction); remove(o); return end
+            if o.hp < 0 then
+                hyper.kill(run,flags,42)
+                effects.emit(o, destruction)
+                remove(o)
+                return
+            end
         end
         placePart(o)
         attack(o)

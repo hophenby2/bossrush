@@ -1,5 +1,5 @@
 -- 0x169f86。舰身和八座炮台采用 0x169d9a 的分部件槽。两类炮口各自消费计时。
-return function(program, path, bullets, effects, remove)
+return function(program, path, bullets, effects, remove, hyper)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local s16, world, vector = program.s16, program.world, program.vector
@@ -236,6 +236,7 @@ return function(program, path, bullets, effects, remove)
         o.clearCredit = hitFlags
         local run = o.run
         run.mid1Defeated = true
+        hyper.kill(run,hitFlags,353)
         if #run.spawnQueue < 40 then
             local callbacks = program.actorCallbacks[0x1c]
             run.spawnQueue[#run.spawnQueue + 1] = {run.major,0,0x1c,0,0,callbacks[1],callbacks[2]}
@@ -252,6 +253,7 @@ return function(program, path, bullets, effects, remove)
         if band(o.flags, 0x5c00) ~= 0 then
             local hitFlags = band(o.flags, 0x5c00)
             o.flags = band(o.flags, 0xa3ff)
+            hyper.hit(o,hitFlags)
             o.flash = not o.flash
             if o.attackWindow == 0 then o.hp = 0x3500 end
             if o.hatchFrame == 0 then
@@ -266,14 +268,17 @@ return function(program, path, bullets, effects, remove)
         o.previousHP = o.hp
         for _, part in ipairs(o.turrets) do
             if part.flags ~= 0x8000 then
-                if band(part.flags, 0x5c00) ~= 0 then
+                local flags = band(part.flags,0x5c00)
+                if flags ~= 0 then
                     part.flags = band(part.flags, 0xa3ff)
+                    hyper.hit(o,flags)
                     part.flash = not part.flash
                     if o.attackWindow == 0 then part.hp = 0x400 end
                 else
                     part.flash = false
                 end
                 if part.forceDestroy or part.hp < 0 then
+                    if not part.forceDestroy then hyper.kill(o.run,flags,26) end
                     effects.emit(part, turretExplosion)
                     part.flags = 0x8000
                 end

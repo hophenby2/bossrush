@@ -1,54 +1,14 @@
 -- 0x190b0a 先结算部件耐久，再经 0x1586e4 推进首面关底挂载的回调。
-return function(program, bullets, effects, remove)
+return function(program, bullets, effects, remove, hyper)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local abs, floor, min, max = math.abs, math.floor, math.min, math.max
     local s16, world, vector = program.s16, program.world, program.vector
     local data = program.boss1
     local M = {parts=9}
-
-    -- 0x1588c2、0x158a18、0x158ace。三组任务都先占槽，执行顺序取决于槽号。
-    local function attach(bank, index, fields)
-        local empty
-        for i = 1, bank.limit do
-            local task = bank[i]
-            if not task and not empty then empty = i end
-            if bank.unique and task and task.index == index then return end
-        end
-        if empty then
-            local task = fields or {}
-            task.index, task.slot = index, empty
-            bank[empty] = task
-        end
-    end
-
-    local function contains(bank, index)
-        for i = 1, bank.limit do
-            if bank[i] and bank[i].index == index then return true end
-        end
-        return false
-    end
-
-    local function stop(bank, index)
-        for i = 1, bank.limit do
-            if bank[i] and bank[i].index == index then bank[i] = nil end
-        end
-    end
-
-    local function tick(o, bank)
-        for i = 1, bank.limit do
-            local task = bank[i]
-            if task then
-                local handlers = assert(bank.handlers[task.index],
-                    ('尚未翻译一面关底%s回调 %02x'):format(bank.label, task.index))
-                if task.running then handlers[2](o, task)
-                else
-                    task.running = true
-                    handlers[1](o, task)
-                end
-            end
-        end
-    end
+    local directory = 'mod/GAME/th44/native/'
+    local scheduler = dofile(directory .. 'boss_tasks.lua')
+    local attach, contains, stop, tick = scheduler.attach, scheduler.contains, scheduler.stop, scheduler.tick
 
     local function request(o, phase)
         o.nextPhase = phase
@@ -203,7 +163,6 @@ return function(program, bullets, effects, remove)
         [7]={start(newTarget,drift), drift}, [8]={straight(0x7400,4), straight(0x7400,4)},
     }
 
-    local directory = 'mod/GAME/th44/native/'
     local attacks = dofile(directory .. 'boss1_attack.lua')(program, bullets, turn)
     local bind = {attach=attach, stop=stop, contains=contains, phase=request}
     local tasks = dofile(directory .. 'boss1_tasks.lua')(program, bind, position, effects)
@@ -212,6 +171,7 @@ return function(program, bullets, effects, remove)
         if band(part.flags, 0x5c00) == 0 then part.flash = false; return end
         part.credit = band(part.flags, 0x5c00)
         part.flags = band(part.flags, 0xa3ff)
+        hyper.hit(part,part.credit)
         if not protected then part.health = part.health - band(0x7fff - part.hp, 0xffff) end
         part.hp, part.flash = 0x7fff, not part.flash
     end
@@ -250,6 +210,11 @@ return function(program, bullets, effects, remove)
                 if o.wings[3 - i].broken then
                     breakWing(o, i)
                 elseif wing.health < 0 then
+                    hyper.kill(o.run,wing.credit or 0,1000)
+                    if band(wing.credit or 0,0x1000) ~= 0 then
+                        hyper.drop(o.run,wing)
+                        if o.spinWingDrops then hyper.drop(o.run,o.wings[3 - i]) end
+                    end
                     breakWing(o, i)
                     o.clearClock = 0x6e
                 end
@@ -267,6 +232,7 @@ return function(program, bullets, effects, remove)
     end
 
     function M.init(o)
+        o.run.bossHyper,o.run.scoreOnlyKills,o.run.hyperDropsLocked = true,true,true
         o.h, o.l = s16(0x97ff), s16(-0x200 - o.run.cameraOffset)
         local boxes = {o,unpack(o.extraParts)}
         for i, part in ipairs(boxes) do
@@ -275,6 +241,7 @@ return function(program, bullets, effects, remove)
             if i > 1 then position(part, 0, 0) end
         end
         o.health, o.timeout = data.health[1], data.health[4]
+        o.lateTier = 8
         o.wings, o.tail = {boxes[2],boxes[4]}, boxes[6]
         for i, wing in ipairs(o.wings) do
             wing.health = data.health[i + 1]
@@ -289,7 +256,7 @@ return function(program, bullets, effects, remove)
         o.components = {limit=10,handlers=tasks.components,label='部件'}
         o.attacks = {limit=10,handlers=attacks,label='攻击'}
         attach(o.directors, 0)
-        o.run.bulletCapacity = max(o.run.bulletCapacity, 160)
+        o.run.bulletCapacity = max(o.run.bulletCapacity,o.run.loop == 0 and 160 or 190)
         o.run.boss1 = o
         return true
     end
@@ -321,26 +288,45 @@ return function(program, bullets, effects, remove)
         end
     end
 
-    local function draw(o, imageId, h, l, dh, dl)
+    local zoomPixels = {}
+    for i, mask in ipairs(data.zoomMasks) do
+        local count = 0
+        for bitIndex = 0, 31 do count = count + band(bit.rshift(mask,bitIndex),1) end
+        zoomPixels[i - 1] = count
+    end
+    zoomPixels[15], zoomPixels[16] = 1, 0
+
+    local function draw(o, imageId, h, l, dh, dl, zoom)
         local image = o.run.art[imageId]
+        local scale = 1
+        if zoom then
+            -- 0x13e386 按两个轴居中。LuaSTG 用同等覆盖宽高的精灵缩放呈现。
+            local grow, code = zoom >= 0x8000, floor(zoom / 0x800) % 16
+            scale = 1 + (grow and 1 or -1) * zoomPixels[grow and 16 - code or code] / 32
+            local center = (0x80 - floor(zoom / 0x100)) / 8
+            dh, dl = dh + center * image[3], dl + center * image[2]
+        end
         local h, l = program.addPacked(h, l, dh, dl)
         local x, y = world(h, l)
-        Render(image[1], floor(x) + image[2] / 2, floor(y) + image[3] / 2)
+        Render(image[1], floor(x) + image[2] * scale / 2, floor(y) + image[3] * scale / 2, 0, scale, scale)
     end
 
     function M.render(o)
         if not o.run.art then return end
         if o.showHull then
-            draw(o, data.hull[o.flash and 31 or 19], o.h, o.l, -0x1a00, -0xc00)
+            local worn = not o.dying and o.health <= 0x6d33
+            draw(o, data.hull[o.flash and 31 or worn and 25 or 19], o.h, o.l, -0x1a00, -0xc00)
             for i, wing in ipairs(o.wings) do
                 if not wing.hidden then
-                    local images = (i == 1 and data.left or data.right)[wing.flash and 31 or 21]
-                    draw(o, images[wing.form + 1], wing.h, wing.l, -0x1400, -0xc00)
+                    local wornWing = not wing.broken and wing.health <= 0x2b33
+                    local images = (i == 1 and data.left or data.right)[wing.flash and 31 or wornWing and 25 or 21]
+                    local zoom = wing.zoom or data.wingZoom[floor(wing.angle / 8) + 1]
+                    draw(o, images[wing.form + 1], wing.h, wing.l, -0x1400, -0xc00, zoom)
                 end
             end
             local tail = o.tail
             if not o.hideTail then
-                draw(o, data.tail[o.flash and 31 or 22][(tail.pitch + 7) * 8 + tail.form + 1],
+                draw(o, data.tail[o.flash and 31 or worn and 25 or 22][(tail.pitch + 7) * 8 + tail.form + 1],
                     tail.h, tail.l, -0xa00, -0x800)
             end
             draw(o, data.base, o.h, o.l, -0x1200, -0x400)

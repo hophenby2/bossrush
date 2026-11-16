@@ -1,5 +1,5 @@
 -- 0x1747e6。履带、两个炮塔和射击计数各按原机体回调推进。
-return function(program, path, bullets, effects, items, remove)
+return function(program, path, bullets, effects, items, remove, hyper)
     local bit = require('bit')
     local band, bor, bxor = bit.band, bit.bor, bit.bxor
     local floor = math.floor
@@ -23,7 +23,7 @@ return function(program, path, bullets, effects, items, remove)
         o.flags, o.hp = 0xa000, 0x1280
         o.front, o.back, o.right, o.left = 0x800, 0xc00, 0xc00, 0xc00
         o.palette = run.difficulty == 0 and 13 or 19
-        o.attackClock, o.aimClock = band(0x80 - run.heavyRank, 0xff), 1
+        o.attackClock, o.aimClock = band(0x80 - program.rank(run,0x12,'heavyRank'), 0xff), 1
         o.primaryCount, o.tier = 1 + (run.loop ~= 0 and 1 or 0), 2
         o.treadClock, o.treadFrame, o.aimSide = 1, 0, 1
         if not path.attach(o) then return false end
@@ -79,10 +79,10 @@ return function(program, path, bullets, effects, items, remove)
         o.primaryCount = o.primaryCount - 1
         if o.primaryCount < 0 then
             o.primaryCount = 1 + (run.loop ~= 0 and 1 or 0)
-            o.attackClock = band(0x0a - floor(run.trackRank / 4), 0xff)
+            o.attackClock = band(0x0a - floor(program.rank(run,0x20,'trackRank') / 4), 0xff)
             o.tier = o.tier - 1
             if o.tier < 0 then
-                o.tier, o.attackClock = 2, band(0x60 - run.largeRank, 0xff)
+                o.tier, o.attackClock = 2, band(0x60 - program.rank(run,0x18,'largeRank'), 0xff)
             end
         end
     end
@@ -98,10 +98,13 @@ return function(program, path, bullets, effects, items, remove)
         if visible then o.entered = true
         elseif o.entered then remove(o); return end
         local base = run.difficulty == 0 and 13 or 19
-        if band(o.flags, 0x5c00) ~= 0 then
+        local flags = band(o.flags,0x5c00)
+        if flags ~= 0 then
             o.flags = band(o.flags, 0xa3ff)
+            hyper.hit(o,flags)
             o.palette = bxor(o.palette == 25 and base or o.palette, bxor(base, 31))
             if o.hp < 0 then
+                hyper.kill(o.run,flags,115)
                 for _, offset in ipairs(program.heavy.drops) do items.emit(o, 8, offset[1], offset[2]) end
                 effects.emit(o, destruction)
                 remove(o)

@@ -103,9 +103,9 @@ return function(program)
         o.h, o.l = s16(o.h + h), s16(o.l + l)
     end
 
-    function P.step(o)
+    function P.step(o, groundScroll)
         if o.run.freeze then return true end
-        if band(o.spawnFlags, 1) ~= 0 then o.h = s16(o.h - o.run.scrollStep * 64) end
+        if band(o.spawnFlags, 1) ~= 0 then o.h = s16(o.h - (groundScroll or o.run.scrollStep * 64)) end
         local cursor = o.cursor
         local direction, duration = byte(o.path, cursor, cursor + 1)
         if direction >= 0x80 or (duration ~= 0 and duration == o.elapsed) then

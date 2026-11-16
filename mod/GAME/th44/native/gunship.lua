@@ -1,5 +1,5 @@
 -- 0x172228。舰体、两个炮塔与敌弹分别持有自身的计时和回调。
-return function(program, path, bullets, effects, remove)
+return function(program, path, bullets, effects, remove, hyper)
     local bit = require('bit')
     local band, bor, bxor = bit.band, bit.bor, bit.bxor
     local min, floor = math.min, math.floor
@@ -29,7 +29,7 @@ return function(program, path, bullets, effects, remove)
         o.hp = run.loop == 0 and 0xe00 or 0x1200
         o.front, o.back, o.right, o.left = 0xa00, 0xa00, 0xa00, 0xa00
         part.front, part.back, part.right, part.left = 0x600, 0, 0x1000, 0x1000
-        o.mainClock, o.turretClock = band(0x50 - run.tankRank, 0xff), band(0x28 - run.tankRank, 0xff)
+        o.mainClock, o.turretClock = band(0x50 - program.rank(run,0x1e,'tankRank'), 0xff), band(0x28 - program.rank(run,0x1e,'tankRank'), 0xff)
         o.mainQuota, o.turretQuota = 1, 4
         o.mainGap, o.turretGap = 0x10, 4
         o.trackClock, o.trackTurret = 2, 1
@@ -95,7 +95,7 @@ return function(program, path, bullets, effects, remove)
                 if pilot then fan(o, pilot) end
                 o.mainCount = o.mainCount - 1
                 if o.mainCount < 0 then
-                    o.mainCount, o.mainClock = o.mainQuota, band(0x50 - run.salvoRank, 0xff)
+                    o.mainCount, o.mainClock = o.mainQuota, band(0x50 - program.rank(run,0x1c,'salvoRank'), 0xff)
                     o.turretPhase = true
                 end
             end
@@ -120,7 +120,7 @@ return function(program, path, bullets, effects, remove)
         end
         o.turretCount = o.turretCount - 1
         if o.turretCount < 0 then
-            o.turretCount, o.turretClock = o.turretQuota, band(0x30 - run.salvoRank, 0xff)
+            o.turretCount, o.turretClock = o.turretQuota, band(0x30 - program.rank(run,0x1c,'salvoRank'), 0xff)
             o.turretPhase = false
         end
     end
@@ -139,12 +139,19 @@ return function(program, path, bullets, effects, remove)
             part.hp = o.hp
         end
         local base = run.difficulty == 4 and 12 or 18
-        if band(bor(o.flags, part.flags), 0x5c00) ~= 0 then
+        local flags = band(bor(o.flags, part.flags), 0x5c00)
+        if flags ~= 0 then
             o.flags, part.flags = band(o.flags, 0xa3ff), band(part.flags, 0xa3ff)
+            hyper.hit(o,flags)
             o.palette = bxor(o.palette == 25 and base or o.palette, bxor(base, 31))
             o.hp = min(o.hp, part.hp)
             part.hp = o.hp
-            if o.hp < 0 then effects.emit(o, destruction); remove(o); return end
+            if o.hp < 0 then
+                hyper.kill(run,flags,83)
+                effects.emit(o, destruction)
+                remove(o)
+                return
+            end
         else
             o.palette = o.hp < 0x255 and 25 or base
         end

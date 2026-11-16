@@ -26,7 +26,7 @@ return function(program, remove)
 
     function M.step(o)
         local run = o.run
-        if not o.stationary then o.h = s16(o.h - run.scrollStep * 64) end
+        if not o.stationary then o.h = s16(o.h - run.groundScroll) end
         local visible = band(o.l + run.cameraOffset + 0x1c00, 0xffff) < 0x7000
             and o.h > -0x800 and o.h < 0x7800
         if visible then o.entered = true

@@ -203,7 +203,7 @@ return function(program, bullets, turn)
     -- 0x194602 生成自己的炮弹发射机。炮翼掉落也不会中断已经下达的生成项。
     attacks[8] = {
         function(o, task)
-            task.clock, task.side, task.modifier, task.count, task.repeats = 0x18,
+            task.clock, task.side, task.modifier, task.count, task.repeats = 0x17,
                 band(program.bossWideRandom(o.run),1) + 1,-1,0xa,2
         end,
         function(o, task)

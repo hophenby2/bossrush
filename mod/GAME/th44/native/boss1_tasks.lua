@@ -2,7 +2,7 @@
 return function(program, bind, position, effects)
     local bit = require('bit')
     local band = bit.band
-    local min, max = math.min, math.max
+    local min, max, floor = math.min, math.max, math.floor
     local attach, stop, contains, phase = bind.attach, bind.stop, bind.contains, bind.phase
     local s16, vector = program.s16, program.vector
     local data = program.boss1
@@ -57,12 +57,11 @@ return function(program, bind, position, effects)
             -- 初始化落入第一次更新，0x10 的倒数当场消费一次。
             clock.stage, clock.wait, clock.wingClock, clock.wingGap, clock.side = 0, 0xf, 0x60, 0x2c, 1
             o.aimTier, o.rapidTier, o.spanTier = o.aimTier or 0, o.rapidTier or 0, o.spanTier or 0
-            o.lateTier, o.pairTier = o.lateTier or 0, o.pairTier or 0
             clock.mainCount = min(0x80, 0x30 + o.aimTier)
             clock.mainGap = max(3, 4 - o.rapidTier)
-            clock.pairGap, clock.pairSpeed = min(4, o.pairTier), min(0x20, -2 + o.spanTier)
+            clock.pairSpeed = min(0x20, -2 + o.spanTier)
             o.aimTier, o.rapidTier = min(0x80, o.aimTier + 2), max(3, o.rapidTier - 1)
-            o.pairTier, o.spanTier = min(4, o.pairTier + 1), min(0x20, o.spanTier + 2)
+            o.spanTier = min(0x20, o.spanTier + 2)
         end,
         function(o, clock)
             local attacks = o.attacks
@@ -77,7 +76,6 @@ return function(program, bind, position, effects)
                 elseif countdown(clock,'wingClock',clock.wingGap) then
                     attach(attacks,clock.side + 2,{count=4,mode=0,modifier=0})
                     clock.side = 3 - clock.side
-                    if clock.side == 1 then clock.pairGap = min(4, clock.pairGap + 1) end
                 end
             end
             if clock.stage == 2 then
@@ -188,7 +186,7 @@ return function(program, bind, position, effects)
 
     directors[6] = {
         function(o, clock)
-            clock.stage, clock.fireClock, clock.volley, clock.interval, clock.speed = 0, 0x70, 0xd, 0x50, 1
+            clock.stage, clock.fireClock, clock.volley, clock.interval = 0, 0x70, 0xd, 0x50
             clock.track = 2
             clock.speedStep, clock.count = 4, min(5, 3 + (o.tailTier or 0))
             o.tailTier = min(5,(o.tailTier or 0) + 1)
@@ -204,8 +202,8 @@ return function(program, bind, position, effects)
             if clock.stage == 1 then steerTail(o,clock) end
             if clock.stage == 1 and not contains(o.attacks,13) and countdown(clock,'fireClock',clock.interval) then
                 clock.interval = clock.interval - 8
-                attach(o.attacks,13,{modifier=clock.volley,count=clock.speed,delta=clock.speedStep})
-                clock.volley, clock.speed, clock.speedStep = clock.volley + 4, clock.speed + 1, clock.speedStep + 2
+                attach(o.attacks,13,{modifier=clock.volley,delta=clock.speedStep})
+                clock.volley, clock.speedStep = clock.volley + 4, clock.speedStep + 2
                 clock.count = clock.count - 1
                 if clock.count == 0 then clock.stage, clock.wait = 2, 0x50 end
             end
@@ -249,8 +247,9 @@ return function(program, bind, position, effects)
 
     local function wingBreak(i)
         return {
-            function(_, clock)
-                clock.phase, clock.wait, clock.gap, clock.drop, clock.zoom = 0, 0x10, 8, 0, 0x6000
+            function(o, clock)
+                local zoom = data.wingZoom[floor(o.wings[i].angle / 8) + 1]
+                clock.phase, clock.wait, clock.gap, clock.drop, clock.zoom = 0, 0x10, 8, 0, zoom
             end,
             function(o, clock)
                 local wing = o.wings[i]
@@ -347,6 +346,7 @@ return function(program, bind, position, effects)
     }
     components[14] = {
         function(o, clock)
+            o.spinWingDrops = false
             clock.spin = program.bossSmallRandom(o.run) == 0 and -1 or 1
             clock.speed, clock.phase, clock.wait, clock.change = clock.spin, 0, 0x60, 0x40
             local gap = max(4,4 - (o.spinTier or 0))
@@ -358,6 +358,7 @@ return function(program, bind, position, effects)
                 clock.wait = clock.wait - 1
                 if clock.wait ~= 0 then return end
                 clock.phase = 1
+                o.spinWingDrops = true
             end
             for _, wing in ipairs(o.wings) do wing.angle = band(wing.angle + clock.speed,0xff) end
             if clock.phase == 1 and countdown(clock,'change',0x40) then
@@ -371,6 +372,7 @@ return function(program, bind, position, effects)
             elseif band(o.wings[1].angle,0xfe) == 0x40 then
                 o.wings[1].angle, o.wings[2].angle = 0x40, 0xc0
                 for _, id in ipairs({5,6,14}) do stop(o.attacks,id) end
+                o.spinWingDrops = false
                 finish(o,'components',clock)
             end
         end,
