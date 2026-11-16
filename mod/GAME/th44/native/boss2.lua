@@ -68,6 +68,7 @@ return function(program, bullets, effects, remove, hyper)
         clock.velocity = min(0x100,clock.velocity + 3)
         o.h = s16(o.h + clock.velocity)
         if o.h >= 0x6200 then
+            o.run.beetlesUseBossHits = true
             attach(o.directors,3)
             o.boxes[9].flags = 0xa000
             o.phase = -1

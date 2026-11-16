@@ -71,6 +71,7 @@ return function(program, bullets, effects, remove, hyper)
     end
 
     local function activate(o)
+        o.run.beetlesUseBossHits = true
         request(o, 2)
         attach(o.directors, 1)
         for _, id in ipairs({0,1,2,3,7}) do attach(o.components, id) end

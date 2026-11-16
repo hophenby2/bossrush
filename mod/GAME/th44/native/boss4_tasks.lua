@@ -408,20 +408,22 @@ return function(program, bullets, effects, items, scheduler, phase)
         end,
     }
 
-    local function animation(index,field,delta,finish,gap)
+    local function animation(index,field,delta,finish,gap,saturate)
         local function update(o,t)
             if not timed(t,'clock',gap) then return end
             local part = index >= 5 and o.boxes[index <= 6 and 5 or 6] or o
             local frame = (part[field] or 0) + delta
+            if saturate and (frame - finish) * delta >= 0 then frame = finish end
             part[field] = frame
             if frame == finish then donePart(o,t) end
         end
         return {function(o,t) t.clock = index <= 2 and 2 or 0; update(o,t) end,update}
     end
     C[1],C[2] = animation(1,'coverFrame',1,7,2),animation(2,'coverFrame',-1,0,2)
-    C[3],C[4] = animation(3,'hullFrame',1,15,1),animation(4,'hullFrame',-1,0,1)
-    C[5],C[6] = animation(5,'hatch',1,8,1),animation(6,'hatch',-1,0,1)
-    C[7],C[8] = animation(7,'hatch',1,8,1),animation(8,'hatch',-1,0,1)
+    -- 0x19f7fc 至 0x19f90e 允许在端点再次挂载，写回端点并立即注销任务。
+    C[3],C[4] = animation(3,'hullFrame',1,15,1,true),animation(4,'hullFrame',-1,0,1,true)
+    C[5],C[6] = animation(5,'hatch',1,8,1,true),animation(6,'hatch',-1,0,1,true)
+    C[7],C[8] = animation(7,'hatch',1,8,1,true),animation(8,'hatch',-1,0,1,true)
 
     local function aimTurret(o)
         local p,pilot = o.boxes[9],o.run.player

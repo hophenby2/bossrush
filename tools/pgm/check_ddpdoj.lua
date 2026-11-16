@@ -21,8 +21,33 @@ end
 
 local runtime = dofile('mod/GAME/th44/native/runtime.lua')
 local program = runtime.program
+local itemFixtures = dofile('mod/GAME/th44/native/item.lua')(program)
 local function equal(actual, expected)
     assert(actual == expected, ('实测 %s，预期 %s'):format(tostring(actual), tostring(expected)))
+end
+
+do
+    -- 两翼舱门或机身在开合端点重复收到指令，原程序当帧注销任务。
+    local directory = 'mod/GAME/th44/native/'
+    local scheduler = dofile(directory .. 'boss_tasks.lua')
+    local tasks = dofile(directory .. 'boss4_tasks.lua')(program,nil,nil,nil,scheduler)
+    local left,right = {hatch=8},{hatch=8}
+    local boss4 = {hullFrame=15,boxes={[5]=left,[6]=right},
+        components={limit=3,handlers=tasks.components}}
+    local function testEndpoints(first)
+        for slot = first,first + 4,2 do scheduler.attach(boss4.components,slot) end
+        scheduler.tick(boss4,boss4.components)
+        for slot = 1,3 do equal(boss4.components[slot],nil) end
+    end
+    testEndpoints(3)
+    equal(boss4.hullFrame,15)
+    equal(left.hatch,8)
+    equal(right.hatch,8)
+    boss4.hullFrame,left.hatch,right.hatch = 0,0,0
+    testEndpoints(4)
+    equal(boss4.hullFrame,0)
+    equal(left.hatch,0)
+    equal(right.hatch,0)
 end
 
 local counts = {339, 332, 414, 382, 770}
@@ -694,6 +719,40 @@ local function verify(withArt, afterFrame)
             equal(pilot.score,i - 1)
         end
     end
+    bossCharge.health = 0x6fb8
+    step()
+    equal(run.bossLowHealth,true)
+    pilot.laserState.merged,pilot.key.spell = true,true
+    bossCharge.damage(bossCharge,0,0x1000)
+    step()
+    equal(run.bombMode,'laser')
+    equal(pilot.bossHits,3)
+    equal(pilot.laserHitWait,4)
+    equal(pilot.hyperHitWait,1)
+    equal(pilot.score,42)
+    runtime.close(run)
+    if afterFrame then afterFrame() end
+
+    -- 0x17e486 用全蜂面数索引底分，依照当时的 HIT 数乘算。
+    run = fixture(1,nil,withArt)
+    pilot = runtime.addPlayer(run,1,1,{h=0x1179,l=0x14c0,keys={},life=2,protect=0xff})
+    local function takeBee()
+        itemFixtures.emit(pilot,0x40)
+        assert(run.items[1])
+        for _=1,3 do step() end
+        equal(run.items[1],nil)
+    end
+    for _=1,10 do takeBee() end
+    equal(pilot.score,1100)
+    equal(pilot.fullBeeStages,1)
+    run.stageCleared = true
+    run = assert(runtime.advance(run))
+    if afterFrame then afterFrame() end
+    pilot = run.player
+    pilot.comboClock,pilot.comboHits = 10,40
+    takeBee()
+    equal(pilot.score,9100)
+    equal(pilot.hyperGauge,144)
     runtime.close(run)
     if afterFrame then afterFrame() end
 
@@ -885,7 +944,7 @@ local function verify(withArt, afterFrame)
     equal(pilot.score,1040)
     for _ = 1,60 do step() end
     equal(next(run.airSupply),nil)
-    for i,threshold in ipairs({1000000,3000000}) do
+    for i,threshold in ipairs({10000000,30000000}) do
         pilot.score,pilot.shotLevel,pilot.laserLevel = threshold - 10,1,1
         local pickup = assert(runtime.supply.emit(pilot,0))
         for _ = 1,3 do step() end
@@ -897,9 +956,52 @@ local function verify(withArt, afterFrame)
     runtime.close(run)
     if afterFrame then afterFrame() end
 
+    -- 原版 1907 帧的满库存 B 加 10 分，1909 帧开始每三帧加 44 分。
+    run = fixture(1,{major=0x14},withArt)
+    pilot = runtime.addPlayer(run,1,1,{h=0x1179,l=0x14c0,keys={},life=2,protect=0xff})
+    local bombPickup = assert(runtime.supply.emit(pilot,8))
+    step()
+    equal(bombPickup.taken,true)
+    for i,score in ipairs({10,10,54,54,54,98}) do
+        step()
+        equal(pilot.bombs,3)
+        equal(pilot.score,score)
+        equal(pilot.maximum,2)
+        equal(pilot.maximumClock,(2 - i) % 3)
+    end
+    pilot.key.spell = true
+    step()
+    equal(pilot.stageBombs,1)
+    equal(pilot.maximum,0)
+    equal(pilot.maximumSuspended,true)
+    runtime.close(run)
+    if afterFrame then afterFrame() end
+
+    -- 0x1440a2 的敌弹命中先于拾取。二周目的另一帧只走 0x144080。
+    for loop = 0,1 do
+        run = fixture(1,{loop=loop},withArt)
+        local pilot = runtime.addPlayer(run,1,1,{h=0x1179,l=0x14c0,keys={},life=2,protect=0})
+        local supply = assert(runtime.supply.emit(pilot,0))
+        local offset = program.bulletOffsets[17]
+        local shot = assert(runtime.bullets.emit(run,0x0d,0,0x20,pilot.h - offset[1],pilot.l - offset[2]))
+        run.frame = 1
+        step()
+        equal(supply.taken,nil)
+        equal(pilot.pendingHit,loop == 1 and shot or nil)
+        if loop == 0 then
+            shot.h,shot.l = pilot.h - shot.dh,pilot.l - shot.dl
+            step()
+            equal(pilot.pendingHit,shot)
+            equal(supply.taken,nil)
+        end
+        runtime.close(run)
+        if afterFrame then afterFrame() end
+    end
+
     run = fixture(1,nil,withArt)
     pilot = runtime.addPlayer(run,1,1,{h=0x1179,l=0x14c0,keys={},life=2,protect=0})
     pilot.shotLevel,pilot.laserLevel = 3,2
+    pilot.chips,pilot.stars,pilot.bees = 5,9,3
     -- 只把该敌弹放在受击盒内。命中、坠毁和扣残机均由正常回调处理。
     local birth = program.bulletOffsets[17]
     bullet = assert(runtime.bullets.emit(run,0x0d,0,0x20,pilot.h - birth[1],pilot.l - birth[2]))
@@ -911,6 +1013,7 @@ local function verify(withArt, afterFrame)
     equal(pilot.active, false)
     equal(pilot.misses, 1)
     equal(pilot.life, 2)
+    equal(pilot.chips + pilot.stars + pilot.bees,0)
     equal(run.airSupply[1].kind,0)
     equal(run.airSupply[2].kind,0)
     equal(run.airSupply[3].kind,0)
@@ -1821,17 +1924,41 @@ local function verify(withArt, afterFrame)
         equal(craft.flags,0x8080)
     end
     equal(fleet.flags,0xa000)
+    local awaiting = assert(runtime.bullets.emitMounted(fleet,0x13,0,0x80,0,0xe00 - fleet.l))
     fleet.damage(fleet,fleet.hp + 1,pilot.hitFlags)
     bossStep()
     equal(fleet.flags,0x8080)
-    for _ = 1,25 do bossStep() end
+    equal(run.bullets[awaiting.slot],awaiting)
+    bossStep()
+    equal(run.bullets[awaiting.slot],nil)
+    for _ = 2,25 do bossStep() end
     equal(run.enemies[fleet.slot],nil)
     runtime.close(run)
     if afterFrame then afterFrame() end
 
-    -- 中 Boss 的 V101 对照使用完成道中时的原始 Rank 和未击破的队列状态。
-    run = fixture(4,{hatchOpenRank=0x5a,salvoRank=0x39},withArt)
+    -- V101 第 40968 帧，炮弹槽 0x818370 登记母舰炮口 0x8149d8。
+    run = runtime.init(4,{rankTime=0x8682,randomByte=0xc2},withArt)
     pilot = runtime.addPlayer(run,1,1,{h=0xc00,l=0xe00,keys={},life=2,protect=0xff})
+    for _ = 1,3772 do bossStep() end
+    local mounted = checkShot(0x13,0x5a6d,0x484,0x85,0x14,0x18130c)
+    equal(mounted.gun.kind,0x9c)
+    equal(mounted.dh,0)
+    for i, row in ipairs({{0x5ab6,0x4ec,2},{0x5a9a,0x520,2},{0x5abe,0x554,3},{0x5aa2,0x588,3},
+        {0x5ac6,0x5bc,4},{0x5aaa,0x5f0,4},{0x5ace,0x624,5},{0x5ab2,0x658,5},{0x5ad6,0x68c,6}}) do
+        bossStep()
+        equal(run.bullets[mounted.slot],mounted)
+        equal(mounted.h,row[1])
+        equal(mounted.l,row[2])
+        equal(mounted.drawFrame,row[3])
+        equal(mounted.dh,i < 9 and 0 or -221)
+        equal(mounted.dl,i < 9 and 0 or -17)
+    end
+    equal(mounted.gun,nil)
+    bossStep()
+    equal(mounted.h,0x59f9)
+    equal(mounted.l,0x67b)
+
+    -- 中 Boss 的 V101 对照继续使用未击破的道中队列。
     for _ = run.frame + 1,7800 do
         if run.major == 0x1d7 then break end
         bossStep()
@@ -1847,7 +1974,10 @@ local function verify(withArt, afterFrame)
     equal(fourthMid.wings[1].l,0x800)
     equal(fourthMid.wings[2].l,0x3000)
     equal(fourthMid.protection,0x77)
-    for _ = 1,32 do bossStep() end
+    equal(run.bulletCapacity,110)
+    for _ = 1,27 do bossStep() end
+    checkShot(11,program.s16(0x8880),0x480,0,0x1a,0x181092)
+    for _ = 28,32 do bossStep() end
     checkShot(11,program.s16(0x87c0),0x480,0,0x1a,0x181092)
     for _ = 33,144 do bossStep() end
     equal(fourthMid.phase,1)
@@ -2059,6 +2189,7 @@ local function verify(withArt, afterFrame)
     run = fixture(5,{tankRank=0x69,hatchOpenRank=0x5a,largeRank=0x3c},withArt)
     pilot = runtime.addPlayer(run,1,1,{h=0xc00,l=0xe00,keys={},life=2,protect=0xff})
     local fifthShip = reachKind(0x81,1300)
+    equal(run.bulletCapacity,160)
     equal(fifthShip.h,program.s16(0x8c7d))
     equal(fifthShip.l,0xc00)
     equal(fifthShip.clock,0x17)
@@ -2449,7 +2580,7 @@ local function verify(withArt, afterFrame)
         equal(pilot.doll,2)
         equal(pilot.maxBombs,loop == 0 and 3 or 2)
         equal(pilot.bombs,loop == 0 and 1 or pilot.maxBombs)
-        equal(pilot.life,2)
+        equal(pilot.life,loop == 0 and 2 or stage - 1)
         equal(pilot.key,controls)
         equal(pilot.shotLevel,3)
         equal(pilot.laserLevel,2)
@@ -2486,6 +2617,47 @@ local function verify(withArt, afterFrame)
             equal(nextRun,nil)
             runtime.close(run)
         end
+        if afterFrame then afterFrame() end
+    end
+
+    -- 0x1529f0 只有失误和用炸弹同时成立时才拒绝二周目面间加命。
+    for _,sample in ipairs({{0,1,2},{1,0,2},{1,1,1},{0,0,20}}) do
+        run = fixture(1,{loop=1},withArt)
+        pilot = runtime.addPlayer(run,1,1,{h=0x1000,l=0xe00,keys={},life=sample[3] == 20 and 20 or 1})
+        pilot.stageMisses,pilot.stageBombs = sample[1],sample[2]
+        run.stageCleared = true
+        run = assert(runtime.advance(run))
+        equal(run.player.life,sample[3])
+        runtime.close(run)
+        if afterFrame then afterFrame() end
+    end
+
+    -- 0x18d2cc / 0x18d320 / 0x18d380 的二周目终局结算只执行一次。
+    run = fixture(5,{loop=1},withArt)
+    pilot = runtime.addPlayer(run,2,2,{h=0x1000,l=0xe00,keys={},life=2})
+    pilot.score,pilot.chips,pilot.stars,pilot.maximum = 70,1,2,1
+    run.stageCleared = true
+    equal(runtime.advance(run),nil)
+    equal(pilot.life,0)
+    equal(pilot.bombs,0)
+    equal(pilot.score,220000570)
+    equal(runtime.advance(run),nil)
+    equal(pilot.score,220000570)
+    runtime.close(run)
+    if afterFrame then afterFrame() end
+
+    -- 0x18e4d6：蜂面、失误、炸弹三种资格任取其一；已达标也可结束本局。
+    for _,sample in ipairs({{2,3,4,false},{3,3,4,true},{2,2,4,true},{2,3,3,true}}) do
+        run = fixture(5,nil,withArt)
+        pilot = runtime.addPlayer(run,2,2,{h=0x1000,l=0xe00,keys={},life=2})
+        pilot.fullBeeStages,pilot.misses,pilot.bombsUsed = sample[1],sample[2],sample[3]
+        run.stageCleared = true
+        equal(runtime.canEnterSecondLoop(run),sample[4])
+        runtime.settle(run)
+        equal(pilot.score,20000000)
+        equal(runtime.advance(run,false),nil)
+        equal(pilot.score,20000000)
+        runtime.close(run)
         if afterFrame then afterFrame() end
     end
 
@@ -2677,7 +2849,46 @@ local function verifyInputRoute()
     runtime.close(run)
 end
 
+local function verifyInputLog(path)
+    local file = assert(io.open(path,'rb'))
+    local input = assert(file:read('*a'))
+    file:close()
+    local keys = {}
+    local buttons = {'shoot','up','down','left','right','spell'}
+    local band = require('bit').band
+    local run = runtime.init(1)
+    runtime.addPlayer(run,1,3,{h=0x1000,l=0xe00,keys=keys,life=2})
+    local cleared = 0
+    for frame = 1,#input do
+        local mask = input:byte(frame)
+        assert(mask < 0x40,'输入只接受方向、射击和符卡键')
+        for i,key in ipairs(buttons) do keys[key] = band(mask,2 ^ (i - 1)) ~= 0 end
+        runtime.step(run)
+        assert(not run.player.defeated,('第 %d 周目第 %d 面失利'):format(run.loop + 1,run.stageNumber))
+        if run.stageCleared and run.player.active then
+            cleared = cleared + 1
+            equal(run.stageNumber,(cleared - 1) % 5 + 1)
+            equal(run.loop,math.floor((cleared - 1) / 5))
+            print(('第 %d 周目第 %d 面通关，输入帧 %d，累计失误 %d'):format(
+                run.loop + 1,run.stageNumber,frame,run.player.misses))
+            local nextRun = runtime.advance(run)
+            if cleared == 10 then
+                equal(frame,#input)
+                equal(nextRun,nil)
+            else
+                run = assert(nextRun,'输入未达成二周目条件')
+            end
+        end
+    end
+    equal(cleared,10)
+    runtime.close(run)
+end
+
 if arg and arg[1] == '--luastg' then return verify end
+if arg and arg[1] == '--replay' then
+    verifyInputLog(assert(arg[2],'请输入方向键、射击和符卡键输入文件'))
+    return
+end
 verify(false)
 verifyInputRoute()
 print('大往生两周目十面流程、末关三形态、自机和持续射击回归通过。')

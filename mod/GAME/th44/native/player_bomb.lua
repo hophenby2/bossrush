@@ -190,6 +190,10 @@ return function(program,bullets,collision,laser,hyper)
         local mode = p.laserState.merged and 'laser' or 'shot'
         p.bombHadCombo = p.comboClock ~= 0
         p.bombs,p.bombsUsed,p.protect = p.bombs - 1,p.bombsUsed + 1,0xff
+        p.stageBombs = p.stageBombs + 1
+        -- 0x148cce 扣两级，关掉连加分，补给恢复满库存后才重新启用。
+        if not p.maximumSuspended then p.maximum = max(0,p.maximum - 2) end
+        p.maximumSuspended = true
         p.run.bombMode = mode
         p.bomb = New(Bomb,p,mode)
         if mode == 'laser' then

@@ -43,6 +43,8 @@ return function(program, path, bullets, effects, remove, supply, hyper)
         o.attackClock,o.openClock,o.openGap = 0x90,0,1
         o.wingClock,o.wingGap,o.wingRound,o.waveRound = 0x1c,0x1c,2,1
         o.protection,o.deathClock,o.rewardClock,o.smokeClock,o.sparkIndex = 0x78,0xc0,0x40,3,1
+        -- 0x179be2 在入场时打开第一组扩展弹槽，保留道中仍在场的敌弹。
+        o.run.bulletCapacity = math.max(o.run.bulletCapacity,110)
         o.run.mid4 = o
         placeWings(o)
         return true

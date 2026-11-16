@@ -180,10 +180,22 @@ return function(program)
         o.update, o.drawFrame, o.animate, o.callback = flight, 1, animateArrow, 0x180ee0
     end
 
-    -- 0x1812d8 暂存速度并显示炮口帧，0x18136e 在下一次更新时放行。
+    -- 0x18130c / 0x18151e。无炮口指针的弹下一帧放行，有指针的弹跟随炮口走完蓄弹帧。
     local function release(o)
         move(o, o.run.cameraStep)
         if outside(o) then remove(o); return end
+        local gun = o.gun
+        if gun then
+            local host = gun.host or gun
+            if o.run.enemies[host.slot] ~= host or band(gun.flags,0x8080) ~= 0x8000 then
+                remove(o)
+                return
+            end
+            o.h,o.l = program.addPacked(gun.h,gun.l,o.offsetH,o.offsetL)
+            halfRate(o)
+            if o.drawFrame ~= 6 then return end
+            o.gun = nil
+        end
         o.dh, o.dl = program.vector(o.speed, o.angle)
         o.update, o.animate = flight, halfRate
     end
@@ -289,6 +301,7 @@ return function(program)
                 o.turnClock,o.turnPeriod,o.turnAmount = settings.turnPeriod,settings.turnPeriod,settings.turnAmount
                 o.accelClock,o.accelPeriod,o.accelAmount = settings.accelPeriod,settings.accelPeriod,settings.accelAmount
                 o.childKind,o.childSpeed = settings.childKind,settings.childSpeed
+                o.gun,o.offsetH,o.offsetL = settings.gun,settings.offsetH,settings.offsetL
             end
         end,
         render = function(o)
@@ -320,6 +333,12 @@ return function(program)
 
     function M.emitPrecise(run, kind, modifier, angle, h, l, settings)
         return emit(run, kind, modifier, angle, h, l, 0x0200, settings)
+    end
+
+    function M.emitMounted(gun,kind,modifier,angle,dh,dl)
+        return M.emitPrecise(gun.run,kind,modifier,angle,s16(gun.h + dh),s16(gun.l + dl),{
+            gun=gun,offsetH=dh,offsetL=dl,
+        })
     end
 
     -- 0x143e1a 按当时仍在槽内的弹记分，0x18048a 消费清弹标志并从弹位分配道具。

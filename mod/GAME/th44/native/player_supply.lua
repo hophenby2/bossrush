@@ -95,11 +95,28 @@ return function(program, laser)
         end
     end
 
+    -- 0x1520f6。补足炸弹登记一级 MAXIMUM，初次满库存拾取登记两级。
+    local function collectBomb(p)
+        if p.bombs < p.maxBombs then
+            p.bombs = p.bombs + 1
+            if p.bombs == p.maxBombs then
+                p.maximumStarted,p.maximumSuspended = true,false
+                p.maximum = min(99,p.maximum + 1)
+            end
+        elseif p.maximum < 99 then
+            p.maximum = p.maximum + 1
+            if not p.maximumSuspended and not p.maximumStarted then
+                p.maximum,p.maximumStarted = p.maximum + 1,true
+            end
+            p.maximumSuspended = false
+        end
+    end
+
     -- 0x17de12 / 0x17de48 把拾取结果写回同一个槽，直到提示图播完才释放。
     local function collect(o,p)
         local kind,score = o.kind,10
         if kind == 8 then
-            if p.bombs == p.maxBombs then score = 1000 else p.bombs = p.bombs + 1 end
+            collectBomb(p)
         elseif kind == 0x10 then
             p.life = min(p.life + 1,0x14)
         else

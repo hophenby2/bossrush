@@ -76,7 +76,7 @@ return function(program, path, bullets, effects, remove, hyper)
                 o.fireClock = band(0xa4 - program.rank(run,0x0e,'escortRank'),0xff)
                 if band(o.flags,0x2000) ~= 0 and program.inAimBounds(run,o.h,o.l) then
                     local a = band(o.face + 2,0x3c)
-                    local at = program.muzzles[0x11][a / 4 + 1]
+                    local at = program.muzzles[0x11][a / 2 + 1]
                     local h,l = program.addPacked(o.h,o.l,at[1] + 0x200,at[2])
                     bullets.emit(run,13,run.loop == 0 and 2 or 6,a,h,l)
                 end

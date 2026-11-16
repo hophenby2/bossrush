@@ -130,17 +130,21 @@ return function(program)
                     elseif o.kind == 8 then
                         pilot.score = pilot.score + 50
                         pilot.stars = min(999, pilot.stars + 1)
-                    elseif o.kind == 0xc or o.kind == 0x1c then
+                    elseif o.kind == 0xc then
                         pilot.score = pilot.score + 1000
-                        pilot.stars = min(999, pilot.stars + (o.kind == 0x1c and 8 or 2))
+                        pilot.stars = min(999, pilot.stars + 2)
+                    elseif o.kind == 0x1c then
+                        -- 0x17ee40 的 Hyper 大道具增加八个小道具计数。
+                        pilot.score = pilot.score + 1000
+                        pilot.chips = min(999,pilot.chips + 8)
                     else
-                        hyper.bee(pilot)
+                        local multiplier = hyper.bee(pilot)
+                        local score = program.beeScore[pilot.fullBeeStages + 1]
                         pilot.bees = pilot.bees + 1
                         -- 0x17e486 仅在本面无失误拾到第十个地蜂时累计一面。
                         local complete = pilot.bees == 10 and pilot.stageMisses == 0
                         if complete then pilot.fullBeeStages = pilot.fullBeeStages + 1 end
-                        local score = program.beeScore[pilot.bees]
-                        if score then pilot.score = pilot.score + (complete and 2 * score or score) end
+                        if score then pilot.score = pilot.score + (complete and 2 * score or score) * multiplier end
                     end
                     remove(o)
                 else

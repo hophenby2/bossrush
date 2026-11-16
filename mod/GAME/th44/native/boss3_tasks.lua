@@ -112,6 +112,7 @@ return function(program, bullets, effects, scheduler, body)
         t.clock = 1
         o.openingFrame = o.openingFrame + 12
         if o.openingFrame == 0x1e0 then
+            o.run.beetlesUseBossHits = true
             done(o,t)
             body.setBoxes(o,true)
             o.protected = false

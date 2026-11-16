@@ -320,10 +320,11 @@ function M.step(run)
             end
             collision.shots(run,pilot.shots,pilot.hitFlags)
             laser.collide(pilot)
-        elseif run.loop ~= 0 and pilot.active then
+        elseif run.loop ~= 0 and not run.dual and pilot.active then
             -- 0x189a56 的二周目补扫只调用 0x144080，另一帧仍可被敌弹击中。
             pilot.pendingHit = bullets.contact(run,pilot)
         end
+        players.tickMaximum(pilot)
         players.extend(pilot,priorScore)
     end
 end
@@ -344,30 +345,78 @@ function M.close(run)
     if run.background then object.RawDel(run.background) end
 end
 
+function M.canEnterSecondLoop(run)
+    local p = run.player
+    -- 0x18e4d6 的地蜂面数按每面加四储存，三项门槛满足一项即可。
+    return run.stageCleared and run.stageNumber == #program.stages and run.loop == 0 and not run.dual
+        and p.active and (p.fullBeeStages >= 3 or p.misses <= 2 or p.bombsUsed <= 3)
+end
+
+function M.settle(run)
+    if not run.stageCleared or run.stageSettled then return end
+    local p = assert(run.player)
+    if not p.active then return end
+    -- 0x18be96 / 0x18bf7e。结算小道具每个 100 分，大道具每个 200 分。
+    local priorScore = p.score
+    p.score = p.score + p.chips * 100 + p.stars * 200
+    if run.stageNumber < #program.stages then
+        players.extend(p,priorScore)
+    else
+        -- 0x18d282 / 0x18d2cc。在周目结算逐一兑换备用残机。炸弹只在二周目结算。
+        local loop = run.loop
+        p.score = p.score + p.life * (loop == 0 and 10000000 or 50000000)
+        p.life = 0
+        if loop ~= 0 then
+            p.score,p.bombs = p.score + p.bombs * 10000000,0
+            if p.maximum > 0 and not p.maximumSuspended then
+                -- 0x18d336 的二周目通关 MAXIMUM 奖励。
+                p.score,p.maximum = p.score + 100000000,0
+            end
+        end
+    end
+    run.stageSettled = true
+end
+
 -- 0x1428da 把下一面的编号交给 0x18b96a。换面清对象槽和地面道具计数，自机库存留在自机槽。
-function M.advance(run)
+function M.advance(run, continueLoop)
     if not run.stageCleared or run.stageAdvanced then return end
     local p = assert(run.player)
-    if p.defeated then return end
+    if not p.active then return end
+    M.settle(run)
     local nextStage,loop = run.stageNumber + 1,run.loop
     if nextStage > #program.stages then
-        -- 0x18e4d6 检查一周目入场条件。原版的地蜂面数按每面加四储存。
-        if loop ~= 0 or run.dual or (p.fullBeeStages < 3 and p.misses > 2 and p.bombsUsed > 3) then return end
+        if continueLoop == false or not M.canEnterSecondLoop(run) then
+            run.stageAdvanced = true
+            return
+        end
         nextStage,loop = 1,1
     end
     local nextRun = M.init(nextStage,{
         loop=loop,dual=run.dual,randomByte=run.randomByte,rankTime=run.rankTime,
         staticRank=run.staticRank,difficulty=run.staticRank and run.difficulty or nil,
     },run.art ~= nil)
-    -- 0x1496de 在关间定位 P1，0x18b9b0 恢复操作。
-    local maxBombs = loop == run.loop and p.maxBombs or program.pilotBombCount[p.doll]
-    local pilot = M.addPlayer(nextRun,p.model,p.doll,{h=0xc00,l=0xe00,keys=p.key,life=p.life,
-        maxBombs=maxBombs,bombs=loop == run.loop and p.bombs or maxBombs,protect=0})
+    -- 0x1496de 在关间定位 P1，0x18b9b0 恢复操作。0x15ed94 单独清除二周目入场时的残机。
+    local newLoop = loop ~= run.loop
+    local life = newLoop and 0 or p.life
+    -- 0x1529f0 在二周目的面间结算。无失误或未用炸弹均可加一残。
+    if run.loop ~= 0 and p.active and (p.stageMisses == 0 or p.stageBombs == 0) then
+        life = math.min(20,life + 1)
+    end
+    local maxBombs = newLoop and program.pilotBombCount[p.doll] or p.maxBombs
+    local pilot = M.addPlayer(nextRun,p.model,p.doll,{h=0xc00,l=0xe00,keys=p.key,
+        life=life,maxBombs=maxBombs,bombs=newLoop and maxBombs or p.bombs,protect=0})
     pilot.shotLevel,pilot.laserLevel = p.shotLevel,p.laserLevel
     pilot.score,pilot.misses,pilot.bombsUsed = p.score,p.misses,p.bombsUsed
     pilot.scoreExtends = p.scoreExtends
     pilot.fullBeeStages,pilot.hyperStock = p.fullBeeStages,p.hyperStock
-    if loop == run.loop then
+    pilot.maximum,pilot.maximumStarted,pilot.maximumSuspended = p.maximum,p.maximumStarted,p.maximumSuspended
+    pilot.maximumGap,pilot.maximumClock = p.maximumGap,p.maximumClock
+    if p.maximum > 0 and not p.maximumSuspended and p.maximumGap > 0 then
+        -- 0x1523ce 换面加快一次结算间隔，从三帧逐步缩至每帧。
+        pilot.maximumGap = p.maximumGap - 1
+        pilot.maximumClock = pilot.maximumGap
+    end
+    if not newLoop then
         pilot.hyperGauge,pilot.hyperRank,pilot.hyperClock = p.hyperGauge,p.hyperRank,p.hyperClock
         pilot.hyperQueued = p.hyperQueued
     end

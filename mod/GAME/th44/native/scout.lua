@@ -69,7 +69,7 @@ return function(program, path, bullets, remove, hyper)
         end
         if not pilot or not canFire(o, pilot) or run.difficulty == 1 and run.disableScoutShot then return end
         local angle = band(o.face + 2, 0x3c)
-        local offset = program.muzzles[0x11][angle / 4 + 1]
+        local offset = program.muzzles[0x11][angle / 2 + 1]
         local h, l = program.addPacked(o.h, o.l, offset[1] + 0x200, offset[2])
         local modifier = (run.difficulty >= 3 and -4 or 0) + (run.loop == 0 and 0 or 4)
         bullets.emit(run, 0x0d, modifier, angle, h, l)

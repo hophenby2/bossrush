@@ -3,8 +3,9 @@ return function(program, weapons, laser, bombs, hyper, supply)
     local byte = string.byte
     local min, max = math.min, math.max
     local M = {}
-    -- V101 默认加命选项 0。0x186750 的首个门槛加上 0x186760 中登记的分差。
-    local extendScore = {1000000,3000000}
+    -- V101 默认选项读取 0x186750 的 BCD $01000000，第二次再加 $02000000。
+    local extendScore = {10000000,30000000}
+    local function lock(system) system.locked = true end
 
     local function move(p, keys)
         local flag = (keys.up and 1 or 0) + (keys.down and 2 or 0)
@@ -45,9 +46,10 @@ return function(program, weapons, laser, bombs, hyper, supply)
             p.x, p.y = program.world(p.h, p.l)
             p.key, p.protect, p.active = options.keys, options.protect or 0xf0, true
             p.life, p.misses = options.life, 0
-            p.stageMisses,p.fullBeeStages = 0,0
+            p.stageMisses,p.stageBombs,p.fullBeeStages = 0,0,0
             p.maxBombs = options.maxBombs or program.pilotBombCount[doll]
             p.bombs,p.bombsUsed = options.bombs or p.maxBombs,0
+            p.maximum,p.maximumGap,p.maximumClock = 0,2,2
             p.hyperStock,p.hyperClock,p.hyperGauge,p.hyperRank,p.hyperQueued = 0,0,0,0,0
             p.comboClock,p.comboHits,p.comboSeed,p.comboValue = 0,0,0,0
             p.bossComboClock,p.bossHits,p.hyperHitWait,p.laserHitWait = 0,0,0,0
@@ -58,6 +60,13 @@ return function(program, weapons, laser, bombs, hyper, supply)
             p.front, p.back = p.profile.front, p.profile.back
             p.right, p.left = unpack(program.pilotBoxes[9])
             p.hitFlags = 0x1000
+            p._playersys = {lock=lock}
+        end,
+        frame = function(p)
+            if p.run.moveAfterClear and not p._playersys.locked and KeyState then
+                move(p,KeyState)
+                p.x,p.y = program.world(p.h,p.l)
+            end
         end,
         render = function(p)
             if not p.active or not p.run.art then return end
@@ -108,6 +117,10 @@ return function(program, weapons, laser, bombs, hyper, supply)
             -- 0x149412 把动画表挂到自机，0x149438 再注册 32 帧退场等待。
             p.misses, p.active, p.crashDelay, p.update = p.misses + 1, false, 38 + 32, crash
             p.stageMisses = p.stageMisses + 1
+            -- 0x1492c0 调用 0x17e15e，失误会清除本面尚未结算的道具数。
+            p.chips,p.stars,p.bees = 0,0,0
+            p.maximum,p.maximumGap,p.maximumClock = 0,2,2
+            p.maximumStarted,p.maximumSuspended = nil,nil
             p.pendingHit = nil
             p.crashedInHyper = p.hyperPower ~= nil
             laser.reset(p)
@@ -131,6 +144,11 @@ return function(program, weapons, laser, bombs, hyper, supply)
             end
         end
         p.x, p.y = program.world(p.h, p.l)
+        -- 0x1491da 在 0x151c2c 递减计时之前结算。卷轴停住、关底战时不计。
+        if not p.maximumSuspended and p.maximumClock == 0 and not p.run.freeze and not p.run.holdMajor
+            and not p.run['boss' .. p.run.stageNumber] then
+            p.score = p.score + p.maximum * (p.run.loop == 0 and 22 or 44)
+        end
     end
 
     function M.spawn(run, model, doll, options)
@@ -144,8 +162,16 @@ return function(program, weapons, laser, bombs, hyper, supply)
         if p.update then p.update(p) end
     end
 
+    function M.tickMaximum(p)
+        if p.active and p.maximum > 0 and not p.maximumSuspended then
+            p.maximumClock = p.maximumClock == 0 and p.maximumGap or p.maximumClock - 1
+        end
+    end
+
     -- 0x1827ae 只在本帧加分后检查门槛，达到残机上限时保留尚未领取的门槛。
     function M.extend(p,priorScore)
+        -- 0x18d23c 在一周目结算关闭分数加命，二周目改由面间规则奖励。
+        if p.run.loop ~= 0 then return end
         local target = extendScore[p.scoreExtends + 1]
         if target and p.score > priorScore and p.score >= target and p.life >= 0 and p.life < 0x14 then
             p.life,p.scoreExtends = p.life + 1,p.scoreExtends + 1

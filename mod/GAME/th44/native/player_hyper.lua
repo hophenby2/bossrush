@@ -193,10 +193,18 @@ return function(program, bullets, laser, items)
             p.bossComboClock,p.bossHits,p.laserHitWait = 10,0,8 + gap
             return
         end
-        laserCharge(p,p.hyperPower and 48 or 4)
-        p.laserHitWait = p.laserHitWait - 1
-        if p.laserHitWait < 0 then
-            p.laserHitWait = p.hyperPower and 0 or 8 + gap - (p.doll == 1 and 0 or 3)
+        local immediate = bomb and p.run.bossLowHealth
+        local add = immediate
+        if not add then
+            laserCharge(p,p.hyperPower and 48 or 4)
+            p.laserHitWait = p.laserHitWait - 1
+            add = p.laserHitWait < 0
+        end
+        if add then
+            -- 0x184e44 的低耐久炸弹分支直接累加 HIT，保留普通激光的等待计数。
+            if not immediate then
+                p.laserHitWait = p.hyperPower and 0 or 8 + gap - (p.doll == 1 and 0 or 3)
+            end
             local hit = 1 + (p.hyperPower or 0)
             p.bossHits = p.bossHits + (band(flags,0x4000) == 0 and hit or 2 * hit)
         end
@@ -216,12 +224,13 @@ return function(program, bullets, laser, items)
         else laserChain(p,points) end
     end
 
-    -- 0x17e43a。以 20 HIT 为一档，充能计算最多用到 200 HIT。
+    -- 0x17e43a 以 20 HIT 为一档充能，0x17e4c8 用完整 HIT 数计算地蜂分值。
     function M.bee(p)
-        if p.hyperPower then return end
         local clock,hits = p.comboClock,p.comboHits
         if p.run.beetlesUseBossHits then clock,hits = p.bossComboClock,p.bossHits end
-        if clock > 0 and hits >= 20 then M.gain(p,72 * floor(min(hits,200) / 20)) end
+        if clock == 0 or hits <= 0 then return 1 end
+        if not p.hyperPower and hits >= 20 then M.gain(p,72 * floor(min(hits,200) / 20)) end
+        return hits
     end
 
     function M.bombEnd(p)
@@ -325,6 +334,12 @@ return function(program, bullets, laser, items)
 
     function M.step(p)
         local run = p.run
+        if run.bossHyper and not run.bossLowHealth and run.bombMode ~= 'laser'
+            and (run.loop == 0 or run.stageNumber ~= 5) then
+            local boss = run['boss' .. run.stageNumber]
+            -- 0x182eec 在关底血条下降到阈值后锁存，最终关二周目跳过。
+            if boss and boss.health >= 0 and boss.health <= 0x6fb8 then run.bossLowHealth = true end
+        end
         for slot = 1,6 do
             local o = run.hyperItems[slot]
             if o then

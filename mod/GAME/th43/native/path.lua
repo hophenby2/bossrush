@@ -1,5 +1,5 @@
 -- 0x0cfb5a 与 0x0cfc24。敌机对象持有路径游标、持续时间、速度和判定标志。
-return function(program)
+return function(program, variant)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local s16, word = program.s16, program.word
@@ -51,6 +51,9 @@ return function(program)
         o.l = s16(o.l - o.run.cameraOffset)
         return cursor
     end
+    if variant then
+        for index, command in pairs(variant.commands) do commands[index] = command end
+    end
 
     local function parameters(o, cursor)
         -- 0x8a 直接退回对象循环。0x8b 不取参数。
@@ -63,7 +66,7 @@ return function(program)
             else
                 local index = band(op, 15)
                 if index == 10 then return nil end
-                if index == 11 then
+                if index == 11 and not commands[index] then
                     cursor = cursor + 1
                 else
                     local command = assert(commands[index], '未知敌机路径指令')
@@ -115,14 +118,16 @@ return function(program)
             duration = byte(o.path, cursor + 1)
             o.cursor, o.elapsed, o.newVelocity = cursor, 0, true
         end
-        if duration ~= 0 then o.elapsed = o.elapsed + 1 end
+        if duration ~= 0 and not (variant and o.run.stopPathClock) then o.elapsed = o.elapsed + 1 end
         o.direction = direction
         if direction < 0x40 then
             if o.newVelocity then
                 o.dh, o.dl = program.vector(o.speed, direction * 4)
                 o.newVelocity = false
             end
-            o.h, o.l = s16(o.h + o.dh), s16(o.l + o.dl)
+            local dh, dl = o.dh, o.dl
+            if variant and o.run.halfPathSpeed then dh, dl = math.floor(dh / 2), math.floor(dl / 2) end
+            o.h, o.l = s16(o.h + dh), s16(o.l + dl)
         end
         return true
     end

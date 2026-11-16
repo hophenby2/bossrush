@@ -104,7 +104,8 @@ return function(program, path, bullets, effects, remove, hyper)
             if target then current = band(target + 2,0x3c) end
         end
         local shape = big and 0x10 or 0x11
-        local index = big and band(craft.face + 1,0x3e) / 2 + 1 or current / 4 + 1
+        -- 0x17cb70 按炮塔的 32 个方向选炮口，弹道角度另按 16 个方向取整。
+        local index = band(craft.face + 1,0x3e) / 2 + 1
         local at = program.muzzles[shape][index]
         local h,l = program.addPacked(craft.h,craft.l,at[1] + 0x200,at[2])
         bullets.emit(run,big and 12 or 13,run.loop == 0 and 0 or 4,current,h,l)
@@ -165,12 +166,12 @@ return function(program, path, bullets, effects, remove, hyper)
         local a = o.startAngle + o.sweep * (o.mirrored and -3 or 3)
         local at = program.mid3.wingMuzzles[band(a + 2,0xfc) / 4 + 1]
         local dh,dl = program.addPacked(0x600,o.muzzleL,at[1],at[2])
-        local h,l = s16(o.h + dh),s16(o.l + dl)
         local run = o.run
-        if run.loop == 0 then bullets.emitPrecise(run,0x13,0,a,h,l)
+        -- 0x17984a 把舰体地址交给炮弹槽，离膛前随舰体移动。
+        if run.loop == 0 then bullets.emitMounted(o,0x13,0,a,dh,dl)
         else
-            bullets.emitPrecise(run,0x13,0,a - 8,h,l)
-            bullets.emitPrecise(run,0x13,0,a + 8,h,l)
+            bullets.emitMounted(o,0x13,0,a - 8,dh,dl)
+            bullets.emitMounted(o,0x13,0,a + 8,dh,dl)
         end
         o.sweep = o.sweep + 1
         if o.sweep == o.sweepCount then

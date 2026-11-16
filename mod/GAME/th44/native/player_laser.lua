@@ -24,7 +24,7 @@ return function(program, collision, weapons)
             o.layer = LAYER.PLAYER - 1
         end,
         render = function(o)
-            if o.pilot.active then draw(o.pilot,o.sprite,o.h + o.drawH,o.l + o.drawL,o.mirror) end
+            if o.pilot.active and o.sprite then draw(o.pilot,o.sprite,o.h + o.drawH,o.l + o.drawL,o.mirror) end
         end,
     })
 
@@ -34,8 +34,10 @@ return function(program, collision, weapons)
             o.profile,o.cursor = profile,0
         end,
         render = function(o)
-            local h,l = unpack(o.profile.head)
-            draw(o.pilot,o.sprite,o.h + h,o.l + l)
+            if o.sprite then
+                local h,l = unpack(o.profile.head)
+                draw(o.pilot,o.sprite,o.h + h,o.l + l)
+            end
         end,
     })
 

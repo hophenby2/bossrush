@@ -58,6 +58,8 @@ return function(program, path, bullets, effects, items, remove, hyper)
         o.clock,o.arrowClock,o.trackClock = band(0x80 - program.rank(run,0x14,'tankRank'),255),0x30,1
         o.phase,o.pose,o.poseClock,o.centerBursts = 0,0,1,2
         o.arrowBursts,o.protection,o.tracking = 6,4,1
+        -- 0x17283a 打开前两组扩展弹槽，避免初段舰队挤掉原本可以发出的弹。
+        run.bulletCapacity = math.max(run.bulletCapacity,160)
         o.turrets = {}
         for i, at in ipairs(turretOffsets) do o.turrets[i] = aim(o,0x5c0,at,band(o.direction,63)) end
         return true

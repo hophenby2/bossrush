@@ -1001,7 +1001,7 @@ def write_native(program, rom, output, resources):
         stream.write('  pilotJitter=' + lua_row(struct.unpack_from('>64i', program, 0x14336E)) + ',\n')
         stream.write('  muzzles={\n')
         for kind, start, count, stride in ((0x07, 0x1687D4, 32, 4), (0x10, 0x166D20, 32, 4),
-                                           (0x11, 0x1673AA, 16, 8), (0x80, 0x171CE2, 32, 4),
+                                           (0x11, 0x1673AA, 32, 4), (0x80, 0x171CE2, 32, 4),
                                            (0x85, 0x171AE2, 32, 4), (0x88, 0x171A62, 32, 4),
                                            (0x89, 0x171B62, 32, 8)):
             stream.write(f'    [{kind}]={{\n')

@@ -119,6 +119,7 @@ return function(program, bullets, effects, items, remove, hyper)
                 if m.frontClock < 0 then
                     m.frontClock,o.entryFrontFrame = 1,o.entryFrontFrame + 1
                     if o.entryFrontFrame == 8 then
+                        run.beetlesUseBossHits = true
                         o.entryFrontFrame,o.draws[11],o.draws[10] = 0,nil,nil
                         for i = 0,5 do o.draws[i] = true end
                         attach(o.directors,3)
@@ -284,7 +285,11 @@ return function(program, bullets, effects, items, remove, hyper)
     end
 
     local function draw(o,part,key,color,index,dh,dl,flip)
-        local image = o.run.art[data.images[key][color][index + 1]]
+        local id = data.images[key][color][index + 1]
+        local image = o.run.art[id]
+        if not image then
+            error(('四面首领部件缺少图像 %s，调色板 %d，帧 %d'):format(key,color,index))
+        end
         local x,y = world(program.addPacked(part.h,part.l,dh,dl))
         Render(image[1],floor(x) + image[2] / 2,floor(y) + image[3] / 2,0,1,flip and -1 or 1)
     end
