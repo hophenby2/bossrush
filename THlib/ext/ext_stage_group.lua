@@ -181,7 +181,8 @@ function stg.frame_sc_pr()
         error('玩家数据加载失败')
     end
 
-    if lstg.var.dead >= 1 then
+    local deathEffect=TH38 and NativePlayers.enabled(nil,36) and TH38.visual.missPending()
+    if lstg.var.dead >= 1 and not deathEffect then
         if ext.replay.IsReplay() then
             ext.pop_pause_menu = true
             ext.rep_over = true
@@ -244,6 +245,7 @@ function stg.Start(group)
     lstg.var.__original_flow_version=group._name=='BossRush' and 1 or nil
     lstg.var.__th38_version=group.sequence_native=='thasl' and 1 or nil
     lstg.var.__th39_version=group.sequence_native=='thmhj3' and 1 or nil
+    lstg.var.__th40_version=group.sequence_native=='thbdb' and 1 or nil
     lstg.var.__sequence_version=group.sequence_key and 1 or nil
     lstg.var.__sequence_system_version=group.sequence_key and not group.sequence_native and SequenceResources and SequenceResources.VERSION or nil
     lstg.var.original_resources=nil -- 新录像初态只保存机体与系统版本，不能带入上一局的对象状态。
@@ -279,6 +281,7 @@ function stg.PracticeStart(stagename, sc_pr, machine)
     -- level36曾是旧版AEX动态槽位；新来源须在录像快照前写入来源版本。
     lstg.var.__th38_version=(stagename=='TH38@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==36) and 1 or nil
     lstg.var.__th39_version=(stagename=='TH39@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==37) and 1 or nil
+    lstg.var.__th40_version=(stagename=='TH40@BossRush' or sc_pr and lstg.var.sc_group and lstg.var.sc_group[1]==38) and 1 or nil
     lstg.var.__sequence_version,lstg.var.sequence_run=nil,nil
     lstg.var.__sequence_system_version,lstg.var.original_resources,lstg.var.sequence_player=nil,nil,nil
     lstg.var.rogue_run=nil -- 从随机局返回后再练习，不继承上一局的阶段/血量倍率与资源显示。

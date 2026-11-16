@@ -1,7 +1,10 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
-local respawnY={[35]=-180,[36]=-176,[37]=-400/3}
+local bdbExtendPoints={1100,2300,3500,4700}
+local bdbExtraExtendPoints={1000,1600}
+local bdbPointValue={20,10,10,5,10}
+local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176}
 local profiles={
     [35]={
         {'reimu','博丽灵梦',4.5,2,13,'reimu',10,{20,6}},
@@ -28,7 +31,12 @@ local profiles={
         {'mokou_b','藤原妹红 B',13/3,2,22,'mokou',nil,{80,29,70,25},52},
     },
 }
-local stages={['TH37@BossRush']=35,['TH38@BossRush']=36,['TH39@BossRush']=37}
+profiles[38]={
+    {'reimu','博丽灵梦',4.4,2.1,1.8,'reimu',20,{1.3,1.3}},
+    {'marisa','雾雨魔理沙',4.8,2.2,.9,'marisa',20,{3.37,3.37}},
+    {'sakuya','十六夜咲夜',4,2,1.8,'sakuya',20,{.685,.685}},
+}
+local stages={['TH37@BossRush']=35,['TH38@BossRush']=36,['TH39@BossRush']=37,['TH40@BossRush']=38}
 for _,list in pairs(profiles) do
     for _,m in ipairs(list) do
         m.id,m.name,m.fast,m.slow,m.damage,m.art,m.window,m.bomb,m.velocity=unpack(m,1,9)
@@ -75,6 +83,10 @@ function P.reset()
         s.life=spell and 1 or v.is_practice and 9 or 3
         s.barrier,s.barrierStart=0,50
         s.fragments,s.lifeThreshold,s.barrierReward=0,1,0
+    elseif level==38 then
+        s.life=spell and 0 or v.is_practice and 40 or 10
+        s.bombs=spell and 0 or v.is_practice and 40 or 15
+        s.points,s.bombFragments,s.rank,s.rankChips,s.rankValue=0,0,0,0,0
     elseif v.is_practice and not spell then
         s.life=40
     end
@@ -89,14 +101,16 @@ function P.barriers(s)
 end
 local ResourceItem=Class(item)
 function ResourceItem:init(x,y,kind,amount)
-    local images={life=7,bombs=9,power=1,fragments=7}
+    local images={life=7,bombs=9,power=1,fragments=7,points=3,bombFragments=9,rankPower=1}
     item.init(self,x,y,images[kind])
     self.native_pickup,self.kind,self.amount=true,kind,amount
 end
 function ResourceItem:collect()
     local s=P.state()
     if not s then return end
-    if self.kind=='fragments' then
+    if self.kind=='points' or self.kind=='bombFragments' or self.kind=='rankPower' then
+        P.gainBDB(self.kind,self.amount)
+    elseif self.kind=='fragments' then
         s.fragments=s.fragments+self.amount
         local need=P.lifeThreshold(s)
         if s.fragments>=need then
@@ -105,7 +119,7 @@ function ResourceItem:collect()
             s.life=math.min(9,s.life+1)
         end
     elseif self.kind=='power' then s.power=math.min(400,s.power+self.amount)
-    else s[self.kind]=math.min(50,s[self.kind]+self.amount) end
+    else s[self.kind]=math.min(s.level==38 and 40 or 50,s[self.kind]+self.amount) end
 end
 function P.lifeThreshold(s)
     if s.lifeThreshold==9 and lstg.var.sequence_key=='thasl_extra_a' then return 99 end
@@ -148,6 +162,41 @@ function P.drop(level,x,y,items,boss,nonspell)
         if boss then drop('power',400,value(5)) end
     end
 end
+function P.gainBDB(kind,amount)
+    local s=P.state()
+    if not s or s.level~=38 then return end
+    if kind=='points' then
+        s.points=s.points+amount
+        for _,value in ipairs(s.difficulty==5 and bdbExtraExtendPoints or bdbExtendPoints) do
+            if s.points-amount<value and s.points>=value then s.life=math.min(40,s.life+5) end
+        end
+    elseif kind=='rankPower' then
+        if TH40 then TH40.runtime.gainRankValue(amount) end
+    elseif kind=='bombFragments' then
+        s.bombFragments=s.bombFragments+amount
+        while s.bombFragments>=100 do
+            s.bombs=math.min(40,s.bombs+5)
+            s.bombFragments=s.bombFragments-100
+        end
+    end
+end
+function P.dropBDB(x,y,green,blue,life,bomb)
+    local result={}
+    if not P.enabled(nil,38) then return result end
+    local function spawn(kind,total,groupSize)
+        while total>0 do
+            local amount=math.min(total,groupSize)
+            result[#result+1]=New(ResourceItem,x+ran:Float(-14,14),y+ran:Float(-12,12),kind,amount)
+            total=total-amount
+        end
+    end
+    if life then New(ResourceItem,x,y,'life',5) end
+    if bomb then New(ResourceItem,x,y,'bombs',5) end
+    spawn('rankPower',green*(bdbPointValue[P.state().difficulty] or 10),50)
+    spawn('points',blue,5)
+    return result
+end
+
 function P.hitShot(target)
     if not target.protect and target.dmg_factor~=0 then
         local s=P.state()
@@ -165,6 +214,12 @@ local shotImages={
     [37]={{'reimu',0,0,47,144,23,80},{'marisa',48,0,53,161,27,46},
         {'sanae',102,0,256,177,128,36},{'mokou',358,0,68,157,34,50}},
 }
+shotImages[38]={}
+for row,name in ipairs({'reimu','marisa','sakuya'}) do
+    for col,part in ipairs({'main','straight','trail','spread'}) do
+        shotImages[38][#shotImages[38]+1]={name..'_'..part,(col-1)*128,(row-1)*128,128,128,64,64}
+    end
+end
 local artLoaded={}
 local function art(level,name)
     local key='native_player_'..level..'_'..name
@@ -388,6 +443,55 @@ local function part3(p,t)
     end
 end
 
+local function bdb(p,t)
+    local slow=p.slow==1
+    local m=p.machine
+    local function fire(part,x,y,speed,angle,dmg,scale,homing)
+        emit(p,p.shotImage..m.id..'_'..part,x,y,speed,angle,dmg,12,scale,homing)
+    end
+    if m.id=='marisa' and not slow then
+        for _,x in ipairs({-72,-40,42,72}) do ray(p,p.x+x,p.y,90,3,.48,.48,true) end
+    end
+    if t%6~=0 then return end
+    if m.id=='reimu' then
+        local count=slow and 2.5 or 1.5
+        for i=-count,count do fire('main',0,0,20,90+4*i,slow and 1.5 or m.damage,.375) end
+        for i,x in ipairs(slow and {-30,-15,15,30} or {-40,-20,20,40}) do
+            local y=i==2 or i==3
+            if slow then fire('straight',x,y and 30 or 0,20,90,1.8,.375)
+            else
+                local dir=({112,100,80,68})[i]+6*math.floor((t%18)/6)*(x<0 and -1 or 1)
+                fire('trail',x,y and 30 or 0,9,dir,1.5,.375,8)
+            end
+        end
+    elseif m.id=='marisa' then
+        for i=-3,3,2 do fire('main',12*i,-15-5*math.abs(i),20,90,m.damage,.375) end
+        if slow then
+            for i,x in ipairs({-36,-12,12,36}) do
+                fire('spread',x,(i==2 or i==3) and 40 or 30,17,90,3,.375)
+            end
+        end
+    else
+        for _,a in ipairs(slow and {-12,-6,0,6,12} or {-20,-9,0,9,20}) do
+            fire('main',0,0,20,90+a,m.damage,.3125)
+        end
+        for i,x in ipairs(slow and {-70,-30,30,70} or {-40,-20,20,40}) do
+            local inner=i==2 or i==3
+            if slow then
+                local y=inner and -10 or 0
+                local target=p.target
+                local rot=target and IsValid(target) and Angle(p.x+x,p.y+y,target.x,target.y) or 90
+                for side=-1,1,2 do
+                    fire('straight',x+5*sin(rot)*side,y-5*cos(rot)*side,20,rot,.9,.4375)
+                end
+            else
+                local rot=({93,66,114,87})[i]
+                for side=-1,1,2 do fire('spread',x,inner and 30 or 0,20,rot+6*side,.9,.3125) end
+            end
+        end
+    end
+end
+
 function Player:shoot()
     local level=self.native_level
     if self.hit or self.death>=50 or P.out() or P.state().recover then return end
@@ -398,6 +502,7 @@ function Player:shoot()
     else
         self.shotClock=self.shotClock+1
         if level==35 then part2(self,self.shotClock)
+        elseif level==38 then bdb(self,self.shotClock)
         else part3(self,self.shotClock) end
     end
 end
@@ -407,6 +512,7 @@ local function bomb(p,s)
     if s.level==36 then
         if P.barriers(s)<3 then return end
         s.barrier,s.barrierReward=0,0
+        TH38.visual.release(p)
     else
         local cost=s.level==37 and p.hit and p.hitWindow==60 and 10 or 5
         if s.bombs<cost then return end
@@ -414,13 +520,17 @@ local function bomb(p,s)
         p.strongBomb=cost==10
     end
     p.hit=nil
+    if s.level==38 then
+        lstg.var.bomb_used=(lstg.var.bomb_used or 0)+1
+        if TH40 then TH40.runtime.addRankChip(-3) end
+    end
     p.bombTime=90
     p.protect=math.max(p.protect,90)
     for _,b in ipairs(boss_group) do
         if IsValid(b) and b.is_combat then b._bosssys:clearBonus('spell') end
     end
     New(bomb_bullet_killer,p.x,p.y,240,240,false)
-    PlaySound('nep00',.5)
+    if s.level~=36 then PlaySound('nep00',.5) end
 end
 function P.miss(p)
     local s=P.state()
@@ -436,7 +546,10 @@ function P.miss(p)
     end
     lstg.var.dead=lstg.var.dead+1
     s.life=s.life-(s.level==36 and 1 or 5)
-    if s.level~=36 then s.bombs=(s.level==35 and 10 or 15)+s.bombs%5 end
+    if s.level==38 then
+        s.bombs=math.max(15,s.bombs)
+        if TH40 then TH40.runtime.playerMiss() end
+    elseif s.level~=36 then s.bombs=(s.level==35 and 10 or 15)+s.bombs%5 end
     if s.level==35 and s.power>=100 then
         if s.life>=5 then
             for i=1,8 do
@@ -457,11 +570,14 @@ function P.miss(p)
             s.rebirth,s.recover=true,240
         end
     end
-    p.protect=150
+    p.protect=s.level==38 and 390 or 150
     p.death=90
-    New(player_death_ef,p.x,p.y)
+    if s.level==36 then TH38.visual.miss(p)
+    else
+        New(player_death_ef,p.x,p.y)
+        PlaySound('pldead00',.5)
+    end
     New(bomb_bullet_killer,p.x,p.y,64,64,false)
-    PlaySound('pldead00',.5)
 end
 local function tick(p)
     local s=P.state()
@@ -488,6 +604,10 @@ local function tick(p)
             p.switchDelay=30
             p.charge=0
         end
+        p.specialHeld=key.special
+    end
+    if s.level==38 and TH40 then
+        if key.special and not p.specialHeld and not p.dialog then TH40.runtime.tryHyper() end
         p.specialHeld=key.special
     end
     if not key.slow then
@@ -520,20 +640,23 @@ local function tick(p)
         end
         if p.bombTime==0 then p.bombTime=nil end
     end
+    if s.level==36 then TH38.visual.update(p,s) end
 end
 function Player:init()
     player_class.init(self)
     local s=assert(P.state())
     local m=P.machine(s.level,lstg.var.native_player_id)
     self.native_level,self.machine=s.level,m
-    self.name=m.name
+    self.name=s.level==38 and m.id or m.name
     self.shotImage=shots(s.level)
     self.hspeed,self.lspeed=m.fast,m.slow
     self.y=respawnY[s.level]
     self.A=s.level==36 and (m.id=='reimu' or m.id=='yukari') and .48 or .72
+    if s.level==38 then self.A=1;self.hscale,self.vscale=.25,.25;self.protect=180 end
     self.B=self.A
     self.a,self.b=self.A,self.B
     self.grazeRadius=s.level==36 and (m.art=='marisa' and 38.4 or 26.4) or 24
+    if s.level==38 then self.grazeRadius=m.id=='reimu' and 50 or 30 end
     self.grazer.a,self.grazer.b=self.grazeRadius,self.grazeRadius
     self.altForm=false
     self.beams={}
@@ -568,7 +691,9 @@ function Player:colli(other)
     if s.level==37 then
         if (tonumber(s.chapter) or 0)>=6 then self.hitWindow=30 end
     end
+    if s.level==38 and s.bombs<5 then self.hitWindow=2 end
     self.hit=self.hitWindow
+    if s.level==36 then TH38.visual.hit(self,s) end
     local group=other.group
     if group==GROUP.ENEMY_BULLET or group==GROUP.ENEMY_BULLET2 then
         OriginalBulletVisual.cancel_bullet(other,'Del',false)
@@ -578,6 +703,7 @@ end
 
 function Player:render()
     if self.realrealreal_lock or self.hide or self.death>=50 then return end
+    if self.native_level==36 then TH38.visual.player(self) end
     player_class.render(self)
     for _,beam in ipairs(self.beams) do
         local x,y,dir,width=unpack(beam)

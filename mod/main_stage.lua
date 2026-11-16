@@ -240,7 +240,7 @@ end)--33
 
 -- 独立来源编号35；保留地灵殿34和旧练习/录像的全部槽位。
 NewStage("TH37", "幕华祭春雪篇", 35, function(self)
-    self:Option(TH07_bg, "TH07_1")
+    self:Option(nil, "TH07_1")
     self:Task(function()
         for _,chapter in ipairs(TH37.data.chapters) do TH37.runChapter(self,chapter) end
         task.Wait(120)
@@ -250,7 +250,7 @@ end)
 
 -- 雪莲华独立关卡练习；顺序模式分别选择Lunatic或Extra A。
 NewStage("TH38", "雪莲华", 36, function(self)
-    self:Option(TH07_bg, "TH07_1")
+    self:Option(nil, "TH07_1")
     self:Task(function()
         for _,chapter in ipairs(TH38.data.chapters) do TH38.runChapter(self,chapter) end
         task.Wait(120)
@@ -259,12 +259,21 @@ NewStage("TH38", "雪莲华", 36, function(self)
 end)
 -- 幕华祭永夜篇整关练习使用同一关卡轴；Last Word 从符卡练习进入。
 NewStage("TH39", "幕华祭永夜篇", 37, function(self)
-    self:Option(TH07_bg, "TH07_1")
+    self:Option(nil, "TH07_1")
     self:Task(function()
         for _,chapter in ipairs(TH39.data.chapters) do
             if chapter.difficulty~=9 then TH39.runChapter(self,chapter) end
         end
         task.Wait(120)
+    end)
+    self:Next()
+end)
+
+NewStage("TH40", "东方栖霞园", 38, function(self)
+    self:Option()
+    self:Task(function()
+        for i=1,6 do TH40.runChapter(self,{name=tostring(i)}) end
+        TH40.runChapter(self,{name='EX'})
     end)
     self:Next()
 end)

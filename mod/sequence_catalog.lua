@@ -29,6 +29,9 @@ add('thmhj3_lunatic','幕华祭永夜篇 · Lunatic',37,'lunatic')
 add('thmhj3_extra','幕华祭永夜篇 · Extra',37,'extra')
 add('thmhj3_phantasm','幕华祭永夜篇 · Phantasm',37,'phantasm')
 for _,entry in ipairs(C.entries) do if entry.level==37 then entry.native='thmhj3' end end
+add('thbdb_lunatic','栖霞园 · Lunatic',38,'lunatic')
+add('thbdb_extra','栖霞园 · Extra',38,'extra')
+for _,entry in ipairs(C.entries) do if entry.level==38 then entry.native='thbdb' end end
 C.byKey={}
 for _,entry in ipairs(C.entries) do C.byKey[entry.key]=entry end
 function C.get(key) return C.byKey[key] end
@@ -57,6 +60,7 @@ function C.chapterAllowed(entry,chapter,player)
     return true
 end
 local function selected(entry,row,player)
+    if entry.native=='thbdb' then return row.difficulty==(entry.difficulty=='extra' and 5 or 4) end
     local card=row.unit.sc_group[1].card
     local id=card.source_card_id or card.card_id
     if entry.level==30 and row.chapter=='4' and row.role=='boss' then

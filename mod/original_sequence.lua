@@ -194,6 +194,7 @@ function S.run(scene,key,first)
             if entry.native=='thmhj2' then TH37.runChapter(scene,chapter)
             elseif entry.native=='thasl' then TH38.runChapter(scene,chapter)
             elseif entry.native=='thmhj3' then TH39.runChapter(scene,chapter)
+            elseif entry.native=='thbdb' then TH40.runChapter(scene,chapter)
             elseif source then continuousChapter(scene,chapter,source) else ordinaryChapter(scene,chapter) end
             run.completed=index
             if SequenceResources then SequenceResources.endChapter(index) end
@@ -208,6 +209,10 @@ function S.restartChapter(scene)
     local index=lstg.var.sequence_run.chapter
     task.Clear(scene)
     if TH39 and scene.group.sequence_native=='thmhj3' then TH39.runtime.clearAll() end
+    if TH40 and scene.group.sequence_native=='thbdb' then
+        TH40.runtime.clear()
+        TH40.runtime.stopMusic()
+    end
     ResetPool();boss_group={}
     scene.sequence_background_key=nil;scene.sequence_background=nil;scene.sequence_last_card=nil
     if OriginalSequenceMedia then OriginalSequenceMedia.stop(scene) end
@@ -255,7 +260,8 @@ for _,entry in ipairs(S.catalog.entries) do
     function battle:init()
         assert(lstg.var.sequence_key==selected.key,'顺序关卡与录像路线不一致')
         self.sequence_finished=false
-        if selected.native then self:Option(TH07_bg,'TH07_1') else self:Option() end
+        if selected.native and selected.native~='thbdb' then self:Option(nil,'TH07_1')
+        else self:Option() end
         task.New(self,function() S.run(self,selected.key) end)
     end
     function battle:frame()
@@ -264,6 +270,10 @@ for _,entry in ipairs(S.catalog.entries) do
         local resources=SequenceResources and SequenceResources.state()
         local native=NativePlayers and NativePlayers.state()
         if native and NativePlayers.out() or not native and not resources and misses>=S.MISS_LIMIT then
+            if native and native.level==36 and TH38.visual.missPending() then
+                task.Clear(self)
+                return
+            end
             S.finish(self,false)
             return
         end
@@ -272,6 +282,7 @@ for _,entry in ipairs(S.catalog.entries) do
     end
     battle.render=stage.group.render
     function battle:del()
+        if selected.native=='thbdb' and TH40 then TH40.runtime.stopMusic() end
         if OriginalSequenceMedia then OriginalSequenceMedia.stop(self) end
         lstg.var.timeslow=nil
     end

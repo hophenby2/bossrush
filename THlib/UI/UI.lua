@@ -83,7 +83,8 @@ ui.menu = {
                  "幕华祭春雪篇", -- 35 TH37（34保留给完整版地灵殿）
                  "雪莲华", -- 36 TH38
                  "幕华祭永夜篇", -- 37 TH39
-                 "天空璋AEX" },  -- AEX（关卡号是 STAGE_COUNT + 1 = 38）
+                 "栖霞园", -- 38 TH40
+                 "天空璋AEX" },  -- AEX（关卡号是 STAGE_COUNT + 1 = 39）
     sntext = { RogueDuo = "双Boss随机十战", RogueChain = "接续模式", RogueTen = "roguelike模式", TH06 = "红魔乡", TH07 = "妖妖梦", TH08 = "永夜抄",
                TH09 = "花映塚", TH095 = "文花帖",
                TH10 = "风神录", TH11 = "地灵殿", TH12 = "星莲船",
@@ -113,6 +114,7 @@ ui.menu = {
                TH37 = "幕华祭春雪篇",
                TH38 = "雪莲华",
                TH39 = "幕华祭永夜篇",
+               TH40 = "栖霞园",
                SUMMARY = "统计",
                ["HSiFS AfterExtra"] = "天空璋AEX",
                ["Spell Practice"] = "符卡练习" },

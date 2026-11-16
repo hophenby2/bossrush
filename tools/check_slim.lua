@@ -22,7 +22,7 @@ for level=29,33 do
 end
 local old=DeSerialize;DeSerialize=function(v) return v end
 local function record(name,v) return {stageName=name,stageExtendInfo=v or {current_system=''}} end
-for _,id in ipairs(C.stages) do check(C.supportsRecord(record('TH'..id..'@BossRush')),'保留关卡录像可播放') end
+for _,id in ipairs(C.stages) do check(C.supportsRecord(record('TH'..id..'@BossRush',{__th40_version=id=='40' and 1 or nil})),'保留关卡录像可播放') end
 for level=29,33 do check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={level,1}})),'保留符卡练习录像可播放') end
 check(C.supportsRecord(record('RogueTen@RogueTen',{__rogue_pool_version=9,current_system=''})),'当前随机模式录像可播放')
 check(not C.supportsRecord(record('RogueTen@RogueTen',{__rogue_pool_version=4})),'不放行依赖已删关卡的历史随机池')
@@ -35,5 +35,7 @@ check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,
 check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={36,1},__th38_version=1})),'新来源带版本的练习录像可播放')
 check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1}})),'旧AEX的level37不能误放为永夜篇')
 check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={37,1},__th39_version=1})),'永夜篇录像带来源版本可播放')
+check(not C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={38,1}})),'拒绝历史AEX进入栖霞园')
+check(C.supportsRecord(record('Spell Practice@Spell Practice',{sc_group={38,1},__th40_version=1})),'放行栖霞园练习录像')
 DeSerialize=old
 print(('精简内容与录像边界检查通过：%d 项。'):format(n))

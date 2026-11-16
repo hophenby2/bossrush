@@ -1,11 +1,12 @@
 -- TH37 东方幕华祭·春雪篇（Part II）：六面Lunatic、Extra、Phantasm。
 -- 56符卡、37非符、28个道中练习窗口；214份CrazyStorm经离线展开，运行时只用LuaSTG对象。
 -- 来源、哈希、事件/发射器计数：th37/sources.json。生成命令与已知差异见tools/th37-tests/README.zh-CN.md。
--- 原始血量/弹数/周期不做密度校准。差异1：本项目自机、伤害、Bomb、掉落、BGM和背景代理。
--- 差异2：省略对白、3D场景和剧情演出；Boss立绘用项目现有行走图，弹图和敌机使用原图。
+-- 沿用原始血量、弹数和周期。差异1：BGM 使用项目曲目，背景使用原作网格和材质及起始镜头。
+-- 差异2：对白和剧情演出省略，Boss立绘用项目行走图，弹图和敌机使用原图。
 -- 差异3：原作跨对象缓时、射线、深绑定/区域触发的边缘语义仍需原版逐帧对照，见验证说明。
 local R=dofile('mod/GAME/th37/runtime.lua')
 local D=R.data
+local BG=dofile('mod/GAME/th37/background.lua')
 local C={runtime=R,data=D,level=35,cards={},chapters={},classes=R.classes}
 TH37=C
 _editor_class.TH37=R.classes
@@ -25,7 +26,10 @@ local function setupCard(meta,group)
         if endurance or timer<=opening+meta.immune then return 0 end
         return 1
     end
-    function card:before() self.mhj_controller=nil;self.mhj_clock=nil end
+    function card:before()
+        self.mhj_controller,self.mhj_clock=nil,nil
+        if ext.sc_pr then BG.show(meta.stage,meta.sceneFrame) end
+    end
     function card:init()
         self.mhj_clock,self.mhj_index=0,1
         self.mhj_controller=R.controller(self,meta.pattern,false)
@@ -63,7 +67,7 @@ end
 for _,chapter in ipairs(D.chapters) do
     C.chapters[chapter.name]=chapter;chapter.units={}
     local roadBand='mhjroad'..chapter.stage..'a'
-    boss.Define(roadBand,'幕华祭'..chapter.name..'道中','TH07_1',TH07_bg,{0,300},nil,'Yukari',35)
+    boss.Define(roadBand,'幕华祭'..chapter.name..'道中','TH07_1',nil,{0,300},nil,'Yukari',35)
     chapter.step=dofile('mod/GAME/th37/stage'..chapter.stage..'.lua')
     local ordered={}
     for _,road in ipairs(chapter.roads) do ordered[#ordered+1]={time=road.first,road=road} end
@@ -77,7 +81,10 @@ for _,chapter in ipairs(D.chapters) do
             local card=boss.card.New('',duration,duration,duration,1)
             card.phase_name,card.phase_kind=title,'road'
             card.mhj_source={chapter=chapter.name,first=window.first,last=window.last}
-            function card:before() self.mhj_road=nil;hideRoad(self) end
+            function card:before()
+                self.mhj_road=nil;hideRoad(self)
+                BG.show(chapter.stage,window.first)
+            end
             function card:init()
                 local state=R.stageState(chapter.stage);state.preroll=true
                 -- 独立后半道中仍须建立原始CopyEnemy模板；预滚阶段不创建敌机或弹。
@@ -97,9 +104,10 @@ for _,chapter in ipairs(D.chapters) do
             local group=entry.boss;local band='mhj'..group.id..'a'
             group.band=band
             local first=group.cards[1]
-            boss.Define(band,first.actor,'TH07_1',TH07_bg,{0,70},nil,first.image,35)
+            boss.Define(band,first.actor,'TH07_1',nil,{0,70},nil,first.image,35)
             for _,meta in ipairs(group.cards) do
                 meta.role=group.source[3]=='1' and 'boss' or 'mid'
+                meta.stage,meta.sceneFrame=chapter.stage,group.time
                 local card=setupCard(meta,group)
                 boss.card.add({{card,band}},35,'幕华祭'..chapter.name..' '..meta.actor..' '..meta.title,meta.id)
                 C.cards[meta.id]={card=card,band=band}
@@ -121,6 +129,7 @@ function C.runChapter(scene,chapter)
     local resources=NativePlayers and NativePlayers.state()
     if resources then resources.chapter=chapter.name end
     local meta=assert(C.chapters[chapter.name]);local state=R.stageState(meta.stage)
+    BG.show(meta.stage)
     local marker=1
     for t=0,meta.length do
         if scene.sequence_finished then R.clearAll();return end

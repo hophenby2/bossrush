@@ -1,6 +1,7 @@
 -- 永夜篇的原生对象。逻辑使用原坐标，渲染和碰撞按 2/3 投影到项目场地。
 local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'}),bulletCount=0,overflow=0,controllers=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th39/catalogue.lua')
+local Mask=dofile('mod/GAME/th39/background_mask.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
 local SCALE=2/3
 function R.project(x,y) return (x-336)*SCALE,(360-y)*SCALE end
@@ -8,7 +9,22 @@ local function projectBullet(x,y) return R.project(x-145,y) end
 local function unproject(o) return o.x/SCALE+481,360-o.y/SCALE end
 local function trunc(x) return x<0 and math.ceil(x) or floor(x) end
 local function valid(o) return o and IsValid(o) end
-local function rnd(a) return a~=0 and ran:Float(-a,a) or 0 end
+local function random(c)
+    if not c.visual then return ran:Float(0,1) end
+    -- 背景有自己的随机状态，练习回放背景时不会改动弹幕的随机序列。
+    c.seed=c.seed*16807%2147483647
+    return c.seed/2147483647
+end
+local function rnd(a,o)
+    if a==0 then return 0 end
+    local c=o.controller
+    if not c or not c.visual then return ran:Float(-a,a) end
+    return (random(c)*2-1)*a
+end
+local function live(c,b)
+    if c.visual then return b.alive end
+    return valid(b)
+end
 local function copy(s)
     local o={};for k,v in pairs(s) do o[k]=v end
     o.changes={};o.limits={};return o
@@ -57,7 +73,7 @@ function R.change(o,key,value,random,op,mode,duration)
         if key=='fx' then value=x-ox elseif key=='fy' then value=y-oy
         else value=angle(bx+ox,by+oy,x,y) end
     elseif value=='自身' then value=initial end
-    value=value+rnd(random)
+    value=value+rnd(random,o)
     o.changes[#o.changes+1]={key=key,value=value,initial=initial,op=op,mode=mode,duration=max(1,duration),left=max(1,duration)}
 end
 local function centerMove(o,x,y,slow,duration)
@@ -124,7 +140,7 @@ local function stepControl(c)
 end
 function R.select(o,layer,kind,...)
     local choices={...}
-    local selected=choices[min(#choices,1+floor(ran:Float(0,#choices)))]
+    local selected=choices[min(#choices,1+floor(o.controller.visual and random(o.controller)*#choices or ran:Float(0,#choices)))]
     local layerKind=({'batch','laser','cover','rebound','force'})[kind+1]
     for _,e in ipairs(o.controller.emitters) do
         if e.parentid==layer and e.kind==layerKind then
@@ -209,10 +225,26 @@ local function texture(s)
     if not p or p[3]<=0 or p[4]<=0 or p[16]=='' then return 'img_void' end
     local n=floor(max(0,s.age-(s.typeChanged or 0))/(1+(p[10] or 0)))%max(1,p[9] or 1)
     local key=p[16] or 'barrages'
-    local height=D.textureHeights[key] or p[4]
+    local c=s.controller
+    local height=(c.textureHeights and c.textureHeights[key]) or D.textureHeights[key] or p[4]
     local columns=max(1,floor(height/p[4]))
     local name='mhj3_b_'..key..'_'..p[1]..'_'..p[2]..'_'..p[3]..'_'..p[4]..'_'..p[5]..'_'..p[6]..'_'..n
-    return R.sprite(name,key,p[1]+floor(n/columns)*p[3],p[2]+n%columns*p[4],p[3],p[4],p[5],p[6])
+    local x,y=p[1]+floor(n/columns)*p[3],p[2]+n%columns*p[4]
+    if c.visual and key:sub(1,6)=='scene/' then
+        local store=c.resources
+        local tex='mhj3_tex_'..key
+        if not CheckRes('tex',tex) then
+            LoadTexture(tex,'Resources/th39/'..key..'.png')
+            if store then store.tex[tex]=GetResourceStatus() end
+        end
+        if not CheckRes('img',name) then
+            LoadImage(name,tex,x,y,p[3],p[4])
+            SetImageCenter(name,p[5],p[6])
+            if store then store.img[name]=GetResourceStatus() end
+        end
+        return name,tex,x,y,p
+    end
+    return R.sprite(name,key,x,y,p[3],p[4],p[5],p[6]),'mhj3_tex_'..key,x,y,p
 end
 function R.loadPattern(id)
     if not R.patterns[id] then R.patterns[id]=dofile('mod/GAME/th39/patterns/'..id..'.lua') end
@@ -247,6 +279,30 @@ local function clean(b)
     end
     R.objects[b]=nil;object.RawDel(b)
 end
+local function updateParticle(s)
+    s.age=s.age+1
+    if s.age>(s.life or 1)+(s.Mist and 15 or 0) then return false end
+    local t=s.age-(s.Mist and 15 or 0)
+    s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
+    if t>0 then
+        -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
+        local dx,dy=motion(s,true,s.controller.slow or 1)
+        s.fx,s.fy=s.fx+dx,s.fy+dy
+        if s.Sonevents then s.Sonevents(s,t,R) end
+        if s.covers then
+            for field,events in pairs(s.covers) do
+                if field.active then events(s,t,R) else s.covers[field]=nil end
+            end
+        end
+        s.maskEntered=0
+        interpolate(s)
+        if t>s.life then return false end
+    end
+    return true
+end
+local function outOfBounds(s)
+    return s.Outdispel and (s.fx<118 or s.fx>844 or s.fy< -51 or s.fy>771)
+end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
@@ -255,25 +311,10 @@ R.classes.projectile=Class(bullet,{
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
     frame=function(b)
-        local s=b.mhj;s.age=s.age+1
-        if s.age>(s.life or 1)+(s.Mist and 15 or 0) then clean(b);return end
-        local t=s.age-(s.Mist and 15 or 0)
-        s.status,s.statusFrame=s.controller.status,s.controller.statusFrame
-        if t>0 then
-            -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
-            local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
-            if s.Sonevents then s.Sonevents(s,t,R) end
-            if s.covers then
-                for field,events in pairs(s.covers) do
-                    if field.active then events(s,t,R) else s.covers[field]=nil end
-                end
-            end
-            s.maskEntered=0
-            interpolate(s)
-            if t>s.life then clean(b);return end
-        end
+        local s=b.mhj
+        if not updateParticle(s) then clean(b);return end
         projected(b)
-        if s.Outdispel and (s.fx<118 or s.fx>844 or s.fy< -51 or s.fy>771) then clean(b) end
+        if outOfBounds(s) then clean(b) end
     end,
     render=function(b)
         if b._a<=0 then return end
@@ -374,29 +415,31 @@ R.classes.familiar=Class(enemy,{
 local function emit(o,bound)
     if o.unselected then return end
     local c=o.controller;local p=c.pattern;local rr=o.rand or {}
-    local n=trunc((o.tiao or 1)+trunc(rnd(rr.tiao or 0)));if n<=0 then return end
+    local n=trunc((o.tiao or 1)+trunc(rnd(rr.tiao or 0,o)));if n<=0 then return end
     local ox,oy=c.offsetx,c.offsety
     local fx,fy=o.fx or o.x,o.fy or o.y
     if bound then fx,fy=bound.fx-ox,bound.fy-oy end
-    local r=(o.r or 0)+trunc(rnd(rr.r or 0));local spread=(o.range or 0)+trunc(rnd(rr.range or 0))
-    local baseRandom=rnd(rr.fdirection or 0)
-    local radial=direction(o.rdirection,o,fx+ox,fy+oy,o.rdirections)+rnd(rr.rdirection or 0)
-    local speed=(o.sonspeed or 0)+rnd(rr.sonspeed or 0);local accel=(o.sonaspeed or 0)+rnd(rr.sonaspeed or 0)
-    local accelRandom=rnd(rr.sonaspeedd or 0)
-    local ws,hs=rnd(rr.wscale or 0),rnd(rr.hscale or 0)
-    local jx,jy=trunc(rnd(rr.fx or 0)),trunc(rnd(rr.fy or 0))
+    local r=(o.r or 0)+trunc(rnd(rr.r or 0,o));local spread=(o.range or 0)+trunc(rnd(rr.range or 0,o))
+    local baseRandom=rnd(rr.fdirection or 0,o)
+    local radial=direction(o.rdirection,o,fx+ox,fy+oy,o.rdirections)+rnd(rr.rdirection or 0,o)
+    local speed=(o.sonspeed or 0)+rnd(rr.sonspeed or 0,o);local accel=(o.sonaspeed or 0)+rnd(rr.sonaspeed or 0,o)
+    local accelRandom=rnd(rr.sonaspeedd or 0,o)
+    local ws,hs=rnd(rr.wscale or 0,o),rnd(rr.hscale or 0,o)
+    local jx,jy=trunc(rnd(rr.fx or 0,o)),trunc(rnd(rr.fy or 0,o))
     local slot=o.type-147
     local config=c.configs[slot]
     local bucket=o.bucket
     for i=0,n-1 do
         local fan=(i-(n-1)/2)*spread/n
-        if R.bulletCount>=10000 then R.overflow=R.overflow+1;return end
+        if not c.visual and R.bulletCount>=10000 then R.overflow=R.overflow+1;return end
         local s=copy(o)
         s.changes,s.limits={},{}
         s.controller,s.pattern,s.bucket=c,p,bucket
         s.parentid,s.layerid=o.id,o.parentid
-        s.counted=true
-        R.bulletCount=R.bulletCount+1
+        if not c.visual then
+            s.counted=true
+            R.bulletCount=R.bulletCount+1
+        end
         s.fx,s.fy=fx+r*cos(radial+fan)+jx+ox,fy+r*sin(radial+fan)+jy+oy
         -- 发射器的积分缓存不能传给弹体；否则静止发射器会把子弹的3.5速度覆盖成0。
         s.mx,s.my,s.ax,s.ay=nil,nil,nil,nil
@@ -407,9 +450,14 @@ local function emit(o,bound)
         s.sonspeedd=direction(o.fdirection,origin,s.fx,s.fy,o.fdirections)+baseRandom+fan+(o.Bindwithspeedd and bound and bound.sonspeedd or 0)
         s.wscale=(s.wscale or 1)+ws;s.hscale=o.syncScale and s.wscale or (s.hscale or 1)+hs
         c.serial=c.serial+1;s.serial=c.serial
-        s.life=o.sonlife;s.age=0;s.head=(o.head or 0)+trunc(rnd(rr.head or 0))
+        s.life=o.sonlife;s.age=0;s.head=(o.head or 0)+trunc(rnd(rr.head or 0,o))
         local b
-        if o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
+        if c.visual then
+            b=s
+            s.is_projectile,s.alive=true,true
+            c.bullets[s]=s
+            c.particles[#c.particles+1]=s
+        elseif o.kind=='laser' then b=New(s.Ray=='Curve' and R.classes.curve or R.classes.beam,s)
         elseif config then b=New(R.classes.familiar,s,slot,config)
         else b=New(R.classes.projectile,s) end
         if bucket then bucket[b]=s end
@@ -442,7 +490,7 @@ local function emitter(spec,c)
         layer[o.id]=layer[o.id] or {}
         o.bucket=layer[o.id]
     end
-    for _,key in ipairs({'speed','speedd','aspeed','aspeedd'}) do o[key]=(o[key] or 0)+rnd(rr[key] or 0) end
+    for _,key in ipairs({'speed','speedd','aspeed','aspeedd'}) do o[key]=(o[key] or 0)+rnd(rr[key] or 0,o) end
     if o.fx==-99998 then o.fx=o.x elseif o.fx==-99999 then o.fx=R.player() end
     if o.fy==-99998 then o.fy=o.y elseif o.fy==-99999 then local _,y=R.player();o.fy=y end
     o.speedd=direction(o.speedd,o,o.fx or o.x,o.fy or o.y,o.speedds)
@@ -473,12 +521,12 @@ local function field(o,c,t)
         local function contains(s)
             if not sources then return (not o.bindid or o.bindid<0) and area(o,s,c) end
             for b,center in pairs(sources) do
-                if s~=center and valid(b) and (not center.Mist or center.age>=15) and area(o,s,c,center) then return true end
+                if s~=center and live(c,b) and (not center.Mist or center.age>=15) and area(o,s,c,center) then return true end
             end
             return false
         end
         for b,s in pairs(targets) do
-            if valid(b) and s.Cover and (not s.Mist or s.age>15) and s.layerid==o.parentid then
+            if live(c,b) and s.Cover and (not s.Mist or s.age>15) and s.layerid==o.parentid then
                 if s.kind~='laser' and contains(s) then
                     s.covers=s.covers or {}
                     local enter=s.covers[o]==nil
@@ -489,7 +537,7 @@ local function field(o,c,t)
         end
     elseif o.kind=='rebound' then
         local ox,oy=o.x+c.offsetx,o.y+c.offsety;local ca,sa=cos(o.angle),sin(o.angle)
-        for b,s in pairs(c.bullets) do if valid(b) and s.Rebound and (not s.Mist or s.age>15) then
+        for b,s in pairs(c.bullets) do if live(c,b) and s.Rebound and (not s.Mist or s.age>15) then
             local dx,dy=s.fx-ox,s.fy-oy;local side=-dx*sa+dy*ca
             local last=s.rebound_side or {};s.rebound_side=last;local previous=last[o];last[o]=side
             if previous and previous*side<0 and abs(dx*ca+dy*sa)<=o.longs/2 then
@@ -498,7 +546,7 @@ local function field(o,c,t)
             end
         end end
     elseif o.kind=='force' then
-        for b,s in pairs(c.bullets) do if valid(b) and s.Force and area(o,s,c) then
+        for b,s in pairs(c.bullets) do if live(c,b) and s.Force and area(o,s,c) then
             local a=o.addaspeedd or 0
             if o.Suction or o.Repulsion then a=angle(s.fx,s.fy,o.x+c.offsetx,o.y+c.offsety)+(o.Repulsion and 180 or 0) end
             s.mx=(s.mx or 0)+(o.addaspeed or 0)*cos(a);s.my=(s.my or 0)+(o.addaspeed or 0)*sin(a)
@@ -508,6 +556,7 @@ end
 local function reset(c)
     for _,e in ipairs(c.emitters or {}) do e.active=false end
     c.emitters={};c.center=copy{fx=c.pattern.center[1],fy=c.pattern.center[2],speed=c.pattern.center[3],speedd=c.pattern.center[4],aspeed=c.pattern.center[5],aspeedd=c.pattern.center[6],is_center=true,host=c.host}
+    if c.visual then c.center.ox,c.center.oy=c.originX,c.originY end
     for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
 end
 function R.controller(host,id,road,configs)
@@ -515,13 +564,29 @@ function R.controller(host,id,road,configs)
     local c={host=host,pattern=p,road=road,time=0,offsetx=0,offsety=0,bullets=setmetatable({},{__mode='k'}),jumps={},eventLimits={},serial=0,status=0,statusFrame=0,configs=configs or {},familiars={},deadFamiliars={},parents={}}
     reset(c);R.controllers[c]=true;return c
 end
+function R.backgroundEffect(id,x,y,seed,textureHeights,resources)
+    local p=R.patterns[id]
+    if not p then
+        p=dofile('mod/GAME/th39/scenes/'..id..'.lua')
+        R.patterns[id]=p
+    end
+    local c={pattern=p,visual=true,road=true,originX=x,originY=y,seed=seed,
+        textureHeights=textureHeights,resources=resources,time=0,offsetx=0,offsety=0,
+        bullets={},particles={},jumps={},eventLimits={},serial=0,status=0,statusFrame=0,
+        configs={},familiars={},deadFamiliars={},parents={},drawList={}}
+    reset(c)
+    return c
+end
 function R.tick(c)
     c.time=c.time+1;c.statusFrame=c.statusFrame+1
     if c.time>c.pattern.total then c.time=1;reset(c) end
     local t=c.time;local center=c.center
     if c.pattern.globalEvents then c.pattern.globalEvents(c,t,R) end
     t=c.time
-    if valid(c.host) then center.ox,center.oy=unproject(c.host) else center.ox,center.oy=center.fx,center.fy end
+    if not c.visual then
+        if valid(c.host) then center.ox,center.oy=unproject(c.host)
+        else center.ox,center.oy=center.fx,center.fy end
+    end
     center.controller=c;center.status,center.statusFrame=c.status,c.statusFrame
     if c.pattern.centerAvailable then
         local dx,dy=motion(center,false)
@@ -539,7 +604,7 @@ function R.tick(c)
         local bucket=layer and layer[o.bindid]
         if not bucket then return out end
         for b,s in pairs(bucket) do
-            if valid(b) and (not s.Mist or s.age>15) then
+            if live(c,b) and (not s.Mist or s.age>15) then
                 out[#out+1]={b,s}
             end
         end
@@ -557,7 +622,7 @@ function R.tick(c)
         if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
         interpolate(o)
         if o.kind=='batch' or o.kind=='laser' then
-            if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0))==0 then
+            if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0,o))==0 then
                 if bound then emit(o,bound)
                 elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
                     for _,pair in ipairs(targets(o)) do emit(o,pair[2]) end
@@ -582,12 +647,76 @@ function R.tick(c)
         else step(o,t-(o.begin or 1)+1) end
     end
 end
+function R.tickBackground(c)
+    if not c.closing then R.tick(c) end
+    local list,n=c.particles,0
+    for i=1,#list do
+        local s=list[i]
+        if updateParticle(s) and not outOfBounds(s) then
+            n=n+1;list[n]=s
+        else
+            s.alive=false
+            c.bullets[s]=nil
+            if s.bucket then s.bucket[s]=nil end
+        end
+    end
+    for i=#list,n+1,-1 do list[i]=nil end
+end
+
+local function visualOrder(a,b)
+    if a.layerid~=b.layerid then return a.layerid<b.layerid end
+    if a.Blend~=b.Blend then return not a.Blend end
+    if a.pattern.order==1 then return a.serial>b.serial end
+    return a.serial<b.serial
+end
+function R.drawBackground(c,opacity,dx,dy)
+    local list=c.drawList
+    for i,s in ipairs(c.particles) do list[i]=s end
+    for i=#list,#c.particles+1,-1 do list[i]=nil end
+    table.sort(list,visualOrder)
+    local function project(x,y)
+        local px,py=projectBullet(x,y)
+        return px+(dx or 0),py+(dy or 0)
+    end
+    local masks=Mask.layers(c,project)
+    for _,s in ipairs(list) do
+        local alpha=(s.alpha or 100)*.01*opacity*(s.Mist and min(1,s.age/15) or 1)
+        if alpha>0 and s.type>0 then
+            local img,tex,u,v,profile=texture(s)
+            local rgb=c.color or {255,255,255,1}
+            local light=rgb[4] or 1
+            local a,r,g,b=min(255,alpha*255),s.colorR or 255,s.colorG or 255,s.colorB or 255
+            r,g,b=min(255,r*rgb[1]*light/255),min(255,g*rgb[2]*light/255),min(255,b*rgb[3]*light/255)
+            local x,y=project(s.fx,s.fy)
+            local rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
+            local hs,vs=s.wscale*SCALE,s.hscale*SCALE
+            local blend=s.Blend and 'mul+add' or ''
+            local layerMasks=masks[s.layerid]
+            if tex and layerMasks and #layerMasks>0 then
+                local color=Color(a,r,g,b)
+                local ca,sa=cos(rot),sin(rot)
+                local w,h=profile[3],profile[4]
+                local function vertex(px,py)
+                    local dx,dy=(px-profile[5])*hs,(profile[6]-py)*vs
+                    return {x+dx*ca-dy*sa,y+dx*sa+dy*ca,.5,u+px,v+py,color}
+                end
+                Mask.draw(layerMasks,tex,blend,{vertex(0,0),vertex(w,0),vertex(w,h),vertex(0,h)})
+            else
+                SetImageState(img,blend,a,r,g,b)
+                Render(img,x,y,rot,hs,vs)
+            end
+        end
+    end
+end
+
 function R.jump(c,index,count,target)
     c.jumps[index]=(c.jumps[index] or 0)+1
     if count==0 or c.jumps[index]<=count then c.time=target end
 end
 function R.quake(c,duration,level)
-    if misc and misc.ShakeScreen then misc.ShakeScreen(duration,level/8) end
+    if c.visual then
+        if c.onQuake then c.onQuake(duration,level) end
+    elseif misc and misc.ShakeScreen then misc.ShakeScreen(duration,level/8) end
 end
 function R.slow(c,duration,mode,t,start)
     local elapsed=t-start+1
