@@ -14,7 +14,7 @@ local P={stages={
 }}
 local pgm=dofile('mod/GAME/pgm/catalog.lua')
 for _,entry in ipairs(pgm) do
-    entry.stageOnly=true
+    entry.stageOnly=not entry.bossPractice
     P.stages[#P.stages+1]=entry
 end
 function P.allowed(level)
@@ -26,7 +26,12 @@ function P.canStart(name,spell)
         local group=lstg.var.sc_group
         if name~='Spell Practice@Spell Practice' or type(group)~='table' then return false end
         for _,entry in ipairs(P.stages) do
-            if entry.level==group[1] then return not entry.stageOnly end
+            if entry.level==group[1] then
+                if entry.bossPractice then
+                    return _sc_pr_table[group[1]] ~= nil and _sc_pr_table[group[1]][group[2]] ~= nil
+                end
+                return not entry.stageOnly
+            end
         end
         return false
     end
@@ -34,8 +39,15 @@ function P.canStart(name,spell)
     return false
 end
 function P.cards(level)
-    for _,entry in ipairs(pgm) do if level==entry.level then return {} end end
-    if OriginalStageFlow then return OriginalStageFlow.units(level) end
+    local pgmPractice
+    for _,entry in ipairs(pgm) do
+        if level==entry.level then
+            if entry.stageOnly then return {} end
+            pgmPractice=true
+            break
+        end
+    end
+    if OriginalStageFlow and not pgmPractice then return OriginalStageFlow.units(level) end
     local out={}
     for index,unit in ipairs(_sc_pr_table[level] or {}) do out[#out+1]={index=index,unit=unit} end
     return out

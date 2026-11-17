@@ -2891,4 +2891,21 @@ if arg and arg[1] == '--replay' then
 end
 verify(false)
 verifyInputRoute()
-print('大往生两周目十面流程、末关三形态、自机和持续射击回归通过。')
+
+-- 所有练习都从地图上的遭遇战进入，对应阶段能开火、超时和清场。
+equal(#runtime.practiceEntries,40)
+for _,entry in ipairs(runtime.practiceEntries) do
+    local run=runtime.initPractice(entry)
+    runtime.addPlayer(run,1,1,{h=0x1000,l=0xe00,life=2,keys={},protect=0xff})
+    runtime.preparePractice(run)
+    local attacked
+    for _=1,31000 do
+        runtime.step(run)
+        if run.practiceStarted and next(run.bullets) then attacked=true end
+        if run.practiceComplete then break end
+    end
+    assert(attacked and run.practiceComplete,entry.title)
+    assert(not next(run.enemies) and not next(run.bullets),entry.title)
+    runtime.close(run)
+end
+print('大往生两周目十面流程、末关三形态、自机、持续射击及阶段练习回归通过。')

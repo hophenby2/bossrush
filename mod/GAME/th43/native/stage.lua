@@ -26,7 +26,7 @@ if NativePlayers then
     }
 end
 
-function M.open(scene)
+function M.open(scene, practice)
     local w = lstg.world
     scene.pgmWorld = {w.l,w.r,w.b,w.t,w.boundl,w.boundr,w.boundb,w.boundt,
         w.scrl,w.scrr,w.scrb,w.scrt,w.pl,w.pr,w.pb,w.pt,w.world}
@@ -35,7 +35,7 @@ function M.open(scene)
     OriginalSetWorld(-112,112,-224,224,-160,160,-270,270,
         center-half,center+half,w.scrb,w.scrt,-112,112,-224,224,w.world)
     SetBound(-160,160,-270,270)
-    scene.pgmRun = runtime.init(1, 'first', true)
+    scene.pgmRun = practice and runtime.initPractice(practice, true) or runtime.init(1, 'first', true)
     lstg.tmpvar.pgmRun = scene.pgmRun
 end
 
@@ -48,8 +48,10 @@ function M.run(scene, sequence)
         clock = clock + 10000000
         if clock >= 10137600 then
             clock = clock - 10137600
+            if run.practice and lstg.var.cheat then run.player.protect = math.max(2, run.player.protect) end
             runtime.step(run)
             publish(run.player, state)
+            if run.practiceComplete then return true end
             if sequence then
                 sequence.chapter = run.route.loop * stages + run.stageNumber
                 sequence.chapter_name = ('%s · 第%d面'):format(routeNames[run.routeName], run.stageNumber)
@@ -74,6 +76,10 @@ function M.run(scene, sequence)
         end
         task.Wait()
     end
+end
+
+function M.registerPractice()
+    dofile('mod/GAME/pgm/practice.lua').register(M.level,'绊地狱',runtime.practiceEntries)
 end
 
 function M.close(scene)

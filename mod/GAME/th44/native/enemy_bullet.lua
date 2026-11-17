@@ -315,7 +315,7 @@ return function(program)
     })
 
     local function emit(run, kind, modifier, angle, h, l, flags, settings)
-        if run.freeze or run.enemyShotGrace > 0 or run.bombMode == 'shot' then return end
+        if run.freeze or run.enemyShotGrace > 0 or run.bombMode == 'shot' or run.practicePreparing then return end
         local template = assert(program.bulletTemplates[kind], '未找到敌弹模板')
         local init = assert(initializers[template[4]], ('尚未翻译敌弹首帧回调 0x%06x'):format(template[4]))
         for i = 1, run.bulletCapacity do

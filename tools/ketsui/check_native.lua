@@ -3024,4 +3024,24 @@ for _,route in ipairs({'first','omote','ura'}) do
     runtime.close(run)
 end
 
-print('绊地狱三路线的生成表、自机武装与坠毁、定点碰撞、敌弹减容、道中和各面关底通过隔离回归。')
+-- 练习从各原生阶段进入，完整运行到超时或撤退，且在该阶段结束后回收对象。
+equal(#runtime.practiceEntries, 62)
+local practicePilot = {x=0,y=-166,respawn=0,protect=255}
+for _, entry in ipairs(runtime.practiceEntries) do
+    local run = runtime.initPractice(entry)
+    local target = assert(run[entry.encounter.key])
+    local attacked = false
+    for _ = 1, 21000 do
+        runtime.step(run, practicePilot)
+        -- 通常路线五面关底末段用炮架释放子机。
+        if next(run.bullets) or entry.encounter.key == 'boss5' and entry.phase == 2 and next(target.children) then
+            attacked = true
+        end
+        if run.practiceComplete then break end
+    end
+    assert(run.practiceStarted and attacked and run.practiceComplete, entry.title)
+    assert(not IsValid(target) and not run[entry.encounter.key] and not next(run.bullets), entry.title)
+    runtime.close(run)
+end
+
+print('绊地狱三路线的生成表、自机武装与坠毁、定点碰撞、敌弹减容、道中、各面关底及阶段练习通过隔离回归。')

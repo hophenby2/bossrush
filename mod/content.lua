@@ -7,8 +7,11 @@ for _,entry in ipairs(C.pgm) do
 end
 local names={}
 for _,id in ipairs(C.stages) do names['TH'..id..'@BossRush']=true end
-local pgm={}
-for _,entry in ipairs(C.pgm) do pgm[entry.code..'@BossRush']=true end
+local pgm,pgmPractice={},{}
+for _,entry in ipairs(C.pgm) do
+    pgm[entry.code..'@BossRush']=true
+    pgmPractice[entry.level]=entry.bossPractice
+end
 local randomStages={['RogueTen@RogueTen']=true,['RogueDuo@RogueDuo']=true,['RogueChain@RogueChain']=true}
 function C.supportsRecord(record)
     if type(record)~='table' or type(record.stageName)~='string' then return false end
@@ -28,6 +31,7 @@ function C.supportsRecord(record)
         local group=v.sc_group
         return type(group)=='table' and C.levels[group[1]]==true
             and (not native or v.native_player_level==group[1])
+            and (not pgmPractice[group[1]] or native)
             and (group[1]~=36 or v.__th38_version==1)
             and (group[1]~=37 or v.__th39_version==1)
             and _sc_pr_table[group[1]] and _sc_pr_table[group[1]][group[2]]~=nil

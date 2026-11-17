@@ -32,6 +32,19 @@ dofile('mod/GAME/th38.lua')
 dofile('mod/GAME/th39.lua')
 dofile('mod/GAME/th40.lua')
 dofile('tools/native-ports/register.lua')
+lstg.LoadTextFile=function(path)
+    local input=assert(io.open(path,'rb'))
+    local data=input:read('*a')
+    input:close()
+    return data
+end
+local define=boss.Define
+boss.Define=function(id,name,bgm,bg,...)
+    return define(id,name,bgm,bg or background,...)
+end
+dofile('mod/GAME/th43.lua')
+dofile('mod/GAME/th44.lua')
+boss.Define=define
 local F=OriginalStageFlow
 local legacy,hosts={},{}
 for level=29,33 do
@@ -98,7 +111,7 @@ check(snapshot.asl==1,'雪莲华来源版本先于录像快照，避免与旧AEX
 state.var.sc_group={37,1}
 group.PracticeStart('Spell Practice@Spell Practice',true)
 check(snapshot.mhj3==1,'永夜篇来源版本先于录像快照，避免与旧AEX串线')
-local expected={137,105,85,129,80,121,91,123,90,128,111}
+local expected={137,105,85,129,80,121,91,123,90,128,111,62,40}
 for i,entry in ipairs(catalog.stages) do
     local units=catalog.cards(entry.level)
     check(#units==(entry.stageOnly and 0 or expected[i]),'原作条目覆盖数：'..entry.code)
@@ -110,8 +123,29 @@ end
 for _,entry in ipairs(GameContent.pgm) do
     check(catalog.canStart(entry.code..'@BossRush',false),'允许 PGM 整关')
     lstg.var.sc_group={entry.level,1}
-    check(not catalog.canStart('Spell Practice@Spell Practice',true),'PGM 使用整关入口')
+    check(catalog.canStart('Spell Practice@Spell Practice',true)==(entry.bossPractice or false),
+        'PGM 练习入口：'..entry.code)
 end
+lstg.var.sc_group={41,63}
+check(not catalog.canStart('Spell Practice@Spell Practice',true),'拒绝未登记的绊地狱阶段')
+local doom={}
+for _,row in ipairs(catalog.cards(41)) do
+    local card=row.unit.sc_group[1].card
+    local entry=card.pgm_practice
+    check(card.practice_only and card.card_id==entry.id, '绊地狱阶段具有独立练习历史槽')
+    if entry.route=='ura' and entry.encounter.key=='boss5' then doom[#doom+1]=entry.phase end
+end
+check(table.concat(doom,',')=='0,1,3,4,5','Doom 阶段按里路线顺序登记')
+lstg.var.sc_group={42,41}
+check(not catalog.canStart('Spell Practice@Spell Practice',true),'拒绝未登记的大往生阶段')
+local finalPhases={}
+for _,row in ipairs(catalog.cards(42)) do
+    local card=row.unit.sc_group[1].card
+    local entry=card.pgm_practice
+    check(card.practice_only and card.card_id==entry.id and entry.code=='TH44','大往生练习注册')
+    if entry.encounter.key=='boss5' and entry.loop==1 then finalPhases[#finalPhases+1]=entry.phase end
+end
+check(table.concat(finalPhases,',')=='1,2,3,4','二周目关底、黄流及绯蜂的阶段顺序')
 local function sequence(level,first,ids)
     local units=F.units(level)
     for i,id in ipairs(ids) do
@@ -146,14 +180,16 @@ dofile('THlib/UI/menus/scpr_menu.lua')
 local spellMenu={}
 KeyCodeToName=function() return {} end
 sc_pr_menu.TweakCard(spellMenu,false,false)
-check(#spellMenu.spells==12 and #spellMenu.spells[12]==748+#TH39.units()+90+128+111,'符卡练习包含官方五作、幕华祭两作、雪莲华和全部')
+check(#spellMenu.spells==14 and #spellMenu.spells[14]==748+#TH39.units()+90+128+111+62+40,
+    '符卡练习包含绊地狱、大往生与原有条目')
 local tab=0
 for _,entry in ipairs(catalog.stages) do
     if not entry.stageOnly then
         tab=tab+1
         local rows=spellMenu.spells[tab]
+        local units=catalog.cards(entry.level)
         for i,row in ipairs(rows) do
-            check(row[4]==entry.level and row[1]==F.units(entry.level)[i].index,'练习视图映射真实关卡与索引')
+            check(row[4]==entry.level and row[1]==units[i].index,'练习视图映射真实关卡与索引')
         end
     end
 end

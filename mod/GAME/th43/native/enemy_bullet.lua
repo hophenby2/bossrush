@@ -908,7 +908,7 @@ return function(program)
     end
 
     emit = function(run, kind, modifier, angle, h, l, extraH, extraL, adjusted, motion)
-        if run.freeze or run.suppressShots then return end
+        if run.freeze or run.suppressShots or run.practicePreparing then return end
         if run.bulletHold and not (run.player and run.player.clearHitbox) then return end
         local desc = program.bullet[kind + 1]
         assert(desc and update[desc[6]], ('尚未翻译敌弹类型 %02x'):format(kind))

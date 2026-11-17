@@ -21,10 +21,15 @@ local mid4 = dofile(directory .. 'mid4.lua')(program, bullets, effects, scroll, 
 local mid5 = dofile(directory .. 'mid5.lua')(program, bullets, effects, scroll, score)
 local players = dofile(directory .. 'player.lua')(program, bullets, items)
 local warning = dofile(directory .. 'warning.lua')(program)
+local practice = dofile(directory .. 'practice.lua')
+local encounters = {
+    boss=boss1,boss2=boss2,boss3=boss3,boss4=boss4,boss5=boss5,
+    mid1=mid1,mid2=mid2,mid3=mid3,mid4=mid4,mid5=mid5,
+}
 local floor = math.floor
 local band = require('bit').band
 
-local M = {program=program, bullets=bullets, enemies=enemies, boss1=boss1, boss2=boss2, boss3=boss3, mid1=mid1, mid2=mid2, mid3=mid3, mid4=mid4,
+local M = {program=program, practiceEntries=practice.entries, bullets=bullets, enemies=enemies, boss1=boss1, boss2=boss2, boss3=boss3, mid1=mid1, mid2=mid2, mid3=mid3, mid4=mid4,
     boss4=boss4, mid5=mid5, players=players, items=items, score=score, chips=chips}
 local art
 
@@ -350,8 +355,34 @@ function M.init(number, route, withArt)
     return run
 end
 
+function M.initPractice(entry, withArt)
+    local run = M.init(entry.stage, entry.route, withArt)
+    run.practice = entry
+    spawn(run, practice.seek(run, program, scroll))
+    local target = assert(run[entry.encounter.key])
+    practice.preparing(run, target, M.step, program)
+    effects.clear(run)
+    items.clear(run)
+    chips.clear(run)
+    run.bulletClearTime, run.bulletHold, run.playerHit = nil, nil, nil
+    return run
+end
+
+local function checkPractice(run)
+    local key = run.practice.encounter.key
+    local target = run[key]
+    if practice.finished(run, target) then
+        if IsValid(target) then encounters[key].close(target) end
+        run[key], run.practiceComplete = nil, true
+        bullets.clear(run, true)
+        effects.clear(run)
+        items.clear(run)
+        chips.clear(run)
+    end
+end
+
 function M.step(run, player)
-    if run.stageCleared then return end
+    if run.stageCleared or run.practiceComplete then return end
     local suppressShots = run.suppressShots
     if run.missShotDelay then
         run.suppressShots = true
@@ -388,7 +419,7 @@ function M.step(run, player)
     if run.warning then warning.step(run.warning) end
     enemies.step(run)
     stepSpawners(run)
-    program.spawnRows(run, spawn)
+    if not run.practice then program.spawnRows(run, spawn) end
     spawnPending(run)
     chips.step(run)
     score.tickCombo(run)
@@ -403,7 +434,9 @@ function M.step(run, player)
         players.step(player, pendingHit)
         if not player.defeated then score.step(player) end
     end
-    if run.stageCleared then
+    if run.practice and not run.practicePreparing then
+        checkPractice(run)
+    elseif run.stageCleared then
         score.stageBonus(run)
         if run.player and run.stageNumber == #program.stages and run.route.loop == 0 then
             local route = score.secondLoop(run.player)

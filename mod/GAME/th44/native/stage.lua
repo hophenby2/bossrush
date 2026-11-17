@@ -68,14 +68,16 @@ if NativePlayers then
             local state = assert(NativePlayers.state())
             local machine = assert(NativePlayers.machine(M.level,lstg.var.native_player_id))
             local run = assert(lstg.tmpvar.pgmRun)
-            return setPlayer(runtime.addPlayer(run,machine.model,machine.doll,{
+            local pilot = runtime.addPlayer(run,machine.model,machine.doll,{
                 h=0x1000,l=0xe00,life=state.life,
-            }),state)
+            })
+            if run.practice then runtime.preparePractice(run) end
+            return setPlayer(pilot,state)
         end,
     }
 end
 
-function M.open(scene)
+function M.open(scene, practice)
     local w = lstg.world
     scene.pgmWorld = {w.l,w.r,w.b,w.t,w.boundl,w.boundr,w.boundb,w.boundt,
         w.scrl,w.scrr,w.scrb,w.scrt,w.pl,w.pr,w.pb,w.pt,w.world}
@@ -84,7 +86,7 @@ function M.open(scene)
     OriginalSetWorld(-112,112,-224,224,-160,160,-270,270,
         center-half,center+half,w.scrb,w.scrt,-112,112,-224,224,w.world)
     SetBound(-160,160,-270,270)
-    scene.pgmRun = runtime.init(1,nil,true)
+    scene.pgmRun = practice and runtime.initPractice(practice,true) or runtime.init(1,nil,true)
     lstg.tmpvar.pgmRun = scene.pgmRun
 end
 
@@ -97,8 +99,10 @@ function M.run(scene,sequence)
         clock = clock + gameClock
         if clock >= boardClock then
             clock = clock - boardClock
+            if run.practice and lstg.var.cheat then run.player.protect = 0xff end
             runtime.step(run)
             publish(run.player,state)
+            if run.practiceComplete then return true end
             if sequence then
                 sequence.chapter = run.loop * stages + run.stageNumber
                 sequence.chapter_name,sequence.road_time = chapterNames[sequence.chapter],run.frame
@@ -126,6 +130,10 @@ function M.run(scene,sequence)
         end
         task.Wait()
     end
+end
+
+function M.registerPractice()
+    dofile('mod/GAME/pgm/practice.lua').register(M.level,'大往生',runtime.practiceEntries)
 end
 
 function M.close(scene)

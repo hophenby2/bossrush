@@ -1,6 +1,7 @@
 -- 大往生 V101 的关卡对象。生成表先分配机体，机体发射后再推进敌弹槽。
 local directory = 'mod/GAME/th44/native/'
 local program = dofile(directory .. 'program.lua')
+local practice = dofile(directory .. 'practice.lua')
 local scroll = dofile(directory .. 'scroll.lua')(program)
 local bullets = dofile(directory .. 'enemy_bullet.lua')(program)
 local effects = dofile(directory .. 'effect.lua')(program)
@@ -15,7 +16,8 @@ local players = dofile(directory .. 'player.lua')(program,weapons,laser,bombs,hy
 local path = dofile('mod/GAME/th43/native/path.lua')(program)
 local band = require('bit').band
 local s16, word = program.s16, program.word
-local M = {program=program, bullets=bullets, scroll=scroll, collision=collision, hyper=hyper, supply=supply}
+local M = {program=program, bullets=bullets, scroll=scroll, collision=collision, hyper=hyper, supply=supply,
+    practiceEntries=practice.entries}
 
 function path.attach(o)
     -- 0x162096 在读取初始坐标后执行挂载的路径指令，再应用该记录的横向参数。
@@ -267,7 +269,29 @@ function M.addPlayer(run, model, doll, options)
     return run.player
 end
 
+function M.initPractice(entry, withArt)
+    local run = M.init(entry.stage, {loop=entry.loop,practice=entry}, withArt)
+    assert(M.spawn(run, practice.seek(run, program, scroll)))
+    return run
+end
+
+local function clearBattle(run)
+    for _, o in pairs(run.enemies) do remove(o) end
+    bullets.close(run)
+    effects.close(run)
+    items.close(run)
+    supply.close(run)
+end
+
+function M.preparePractice(run)
+    practice.prepare(run, M.step)
+    effects.close(run)
+    items.close(run)
+    supply.close(run)
+end
+
 function M.step(run)
+    if run.practiceComplete then return end
     run.frame = run.frame + 1
     run.aimPhase = (run.aimPhase + 1) % 4
     local pilot = run.player
@@ -284,7 +308,7 @@ function M.step(run)
         weapons.step(pilot)
         bombs.step(pilot)
     end
-    program.spawnRows(run, M.spawn)
+    if not run.practice then program.spawnRows(run, M.spawn) end
     -- 0x161cd4 在关卡表之后从队尾消费上一帧敌机登记的生成项。
     for slot = #run.spawnQueue, 1, -1 do
         local row = run.spawnQueue[slot]
@@ -327,14 +351,14 @@ function M.step(run)
         players.tickMaximum(pilot)
         players.extend(pilot,priorScore)
     end
+    if run.practice and not run.practicePreparing and practice.finished(run) then
+        clearBattle(run)
+        run.spawnQueue, run.practiceComplete = {}, true
+    end
 end
 
 function M.close(run)
-    for _, o in pairs(run.enemies) do remove(o) end
-    bullets.close(run)
-    effects.close(run)
-    items.close(run)
-    supply.close(run)
+    clearBattle(run)
     if run.player then
         bombs.close(run.player)
         hyper.close(run.player)
