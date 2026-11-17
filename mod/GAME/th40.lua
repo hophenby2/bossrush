@@ -58,12 +58,17 @@ for _,meta in ipairs(data.phases) do
             Media.bgm(scene,meta.chapter=='6' and meta.optional and 'TH40_Boss06FSC' or track(meta.chapter,cue))
         end
         local run=N.new(o,meta);lstg.tmpvar.th38_phase=meta
+        o.DMG_factor=N.damageFactor(meta)
         if meta.kind=='road' then o.colli=false;o.hide=true;if meta.begin then meta.begin(run.host,N) end
-        else o.colli=true;o.hide=false end
+        else
+            -- 原作 Boss 构造统一设置 Region=20，原图切片的默认判定不能代替它。
+            o.A,o.B=20,20
+            o.colli=true;o.hide=false
+        end
     end
     card.frame=function(o)
         if not o.th38_run then return end
-        N.tick(o,meta);o.DMG_factor=1-(meta.armor or 0)
+        N.tick(o,meta);o.DMG_factor=N.damageFactor(meta)
         if meta.kind~='road' then
             local run=o.th38_run;local row=run.host.speed*cos(run.host.direction)>0.5 and 1 or run.host.speed*cos(run.host.direction)<-.5 and 2 or 0
             local key='Boss'..meta.boss..'-'..row..(floor((o.ani or 0)/6)%4)

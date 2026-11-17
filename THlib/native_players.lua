@@ -263,7 +263,9 @@ end
 local Player=Class(player_class)
 local Shot=Class(player_bullet_straight)
 local function emit(p,img,x,y,v,dir,dmg,r,scale,homing,main)
-    local o=New(Shot,img,p.x+x,p.y+y,v,dir,dmg~=0 and dmg or nil)
+    local adapter=P.adapters[p.native_level]
+    local class=adapter and adapter.shotClass or Shot
+    local o=New(class,img,p.x+x,p.y+y,v,dir,dmg~=0 and dmg or nil)
     o.dir,o.rot=dir,dir-90
     o.a,o.b,o.rect=r,r,false
     o.v,o.homing,o.native_main=v,homing,main
@@ -705,5 +707,6 @@ function P.spawn()
     return New(Player)
 end
 P.emit,P.ray=emit,ray
+P.Shot=Shot
 NativePlayers=P
 return P

@@ -1244,7 +1244,7 @@
         120.0
       ],
       "optional": false,
-      "armor": 1.0,
+      "armor": 0.81,
       "backgrounds": [
         "底色",
         "绿光",
@@ -1252,6 +1252,7 @@
         "红光"
       ],
       "survival": false,
+      "armor_guard": true,
       "variants": {
         "SpellCard_SSS06_06": "「流星神话」"
       },

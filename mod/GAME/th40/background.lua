@@ -20,6 +20,9 @@ local aliases={
     card05a='St05/card05a0',card05b='St05/card05b',card05c='St05/card05c',
     ['底色']='St06/底色0',['红光']='St06/红光0',['绿光']='St06/绿光0',['蓝光']='St06/蓝光0',
 }
+-- 原版切片均为 419×477，居中绘制并由 384×448 的弹幕区裁切。
+local tenseiLayers={{'底色'},{'绿光',300},{'蓝光',100},{'红光',200}}
+local tenseiImages={['底色']=true,['绿光']=true,['蓝光']=true,['红光']=true}
 local function path(chapter,name)
     return aliases[name] or (name:find('/',1,true) and name or folder[chapter]..name)
 end
@@ -31,7 +34,12 @@ local function load(chapter,layers)
             -- 贴图已由原作资源导出；符卡使用自己的原图而非上一张卡的底图。
             local pool=GetResourceStatus()
             SetResourceStatus('stage')
-            LoadImageFromFile(image,directory..file..'.png')
+            if tenseiImages[row[1]] then
+                LoadTexture(image,directory..file..'.png')
+                LoadImage(image,image,0,0,419,477)
+            else
+                LoadImageFromFile(image,directory..file..'.png')
+            end
             SetResourceStatus(pool)
         end
     end
@@ -54,6 +62,22 @@ local function draw(o,layers,alpha)
         end
     end
 end
+local function drawTensei(age)
+    local w=lstg.world
+    local x,y=(w.l+w.r)*.5,(w.b+w.t)*.5
+    for _,layer in ipairs(tenseiLayers) do
+        local alpha=255
+        local fade=layer[2]
+        if fade and age>fade then
+            local tick=(age-fade)%300
+            if tick<=100 then alpha=255-2.55*tick
+            elseif tick<=200 then alpha=2.55*(tick-100) end
+        end
+        local id=prefix..aliases[layer[1]]
+        SetImageState(id,'',math.floor(alpha+.5),255,255,255)
+        Render(id,x,y)
+    end
+end
 local B=Class(background,{
     init=function(o)
         o.android_direct_background=true
@@ -61,6 +85,7 @@ local B=Class(background,{
         o.layer=LAYER.BG-.1
     end,
     frame=function(o)
+        if o.tenseiAge then o.tenseiAge=o.tenseiAge+1;return end
         local alpha=o.mediaAlpha or 0
         local goal=o.mediaSpell and 1 or 0
         o.mediaAlpha=alpha+math.max(-.05,math.min(.05,goal-alpha))
@@ -70,6 +95,7 @@ local B=Class(background,{
         SetViewMode('world')
         RenderClearViewMode(Color(255,10,18,38))
         if setting.displayBG==false or not o.chapter then return end
+        if o.tenseiAge then drawTensei(o.tenseiAge);return end
         draw(o,road[o.chapter],1)
         if (o.mediaAlpha or 0)>0 then draw(o,o.mediaLayers,o.mediaAlpha) end
     end,
@@ -83,6 +109,13 @@ function B.enter(chapter,phase)
     end
     local layers={}
     local names=phase and phase.backgrounds or {}
+    bg.tenseiAge=nil
+    if chapter=='6' and names[1]=='底色' then
+        bg.tenseiAge=0
+        bg.mediaSpell,bg.mediaLayers,bg.mediaAlpha=false,nil,0
+        load(chapter,tenseiLayers)
+        return bg
+    end
     if phase and phase.kind=='spell' and #names==0 then
         if chapter=='4' then names={'Card04c','Card04a','Card04b'}
         elseif chapter=='5' then names={'card05b','card05c','card05a'}

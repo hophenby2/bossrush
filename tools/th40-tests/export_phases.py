@@ -73,6 +73,8 @@ def callbacks(s,source):
   if point:anchor=[192,float(point[1].split(',')[-1])]
   cond=conditions(s,m.start())
   clear='N.clear(o);o.flag=o.flag+1;' if 'flag == ' in cond else ''
+  if 'flag++' in s and 'ClearEmitter();' in s and not clear:
+   cond+=' and o.flag == 1'
   out.append('if '+cond+' then '+clear+'N.controller(o,'+q(key)+','+lua(bound)+','+lua(anchor)+') end')
  for m in re.finditer(r'(?:base\.Boss\.)?MoveUpDown\(([^)]*)\)',s):
   out.append('if '+conditions(s,m.start())+' then N.bob(o,t,'+(m[1].strip() or '80')+') end')
@@ -81,7 +83,10 @@ def callbacks(s,source):
   out.append('if '+conditions(s,m.start())+' then N.wander(o,t,'+','.join(map(str,values))+') end')
  return '\n'.join(out)
 def armor(s,boss):
- m=re.search(r'(?:base\.Boss\.|base\.)Armon = ([^;]+)',s)
+ guard=re.search(r'if \(base\.SpellList\.Count > 0 \|\| base\.MyPlane\.Time < base\.MyPlane\.UnmatchedTime - 30\)\s*\{\s*base\.Boss\.Armon = 1f;\s*\}\s*else\s*\{',s)
+ m=re.search(r'(?:base\.Boss\.|base\.)Armon = ([^;]+)',s[guard.end():] if guard else s)
+ return armor_value(m,boss), bool(guard)
+def armor_value(m,boss):
  if not m:return 0
  value=m[1]
  if 'ArmonArray' in value:
@@ -117,7 +122,7 @@ for chapter in ['01','02','03','04','05','06','Ex']:
    common={'chapter':chs,'boss':who,'boss_name':identities[who],'role':role,'source':bossclass+'.Ctrl'+str(n),'time':limit,'maxhp':10000}
    if emitted and '.mbg' in choose(non):
     hp=re.search(r'base.SpellcardHP = (\d+)',non);hp=int(hp[1]) if hp else 2000
-    add(dict(common,kind='nonspell',title='',hp=10000-hp,dest=movement(non,[192,120]),armor=armor(non,src)),emitted)
+    add(dict(common,kind='nonspell',title='',hp=10000-hp,dest=movement(non,[192,120]),armor=armor(non,src)[0]),emitted)
    spells=list(dict.fromkeys(re.findall(r'new (SpellCard_SSS\w+)\(',method)))
    if not spells:continue
    # 机体A/B/C/D保持同一阶段，运行时按所选LuaSTG自机映射，练习另保留来源。
@@ -128,7 +133,9 @@ for chapter in ['01','02','03','04','05','06','Ex']:
    timed=re.findall(r'base.SpellTime = (\d+)',method);duration=int(timed[-1]) if timed else limit
    backgrounds=re.findall(r'new Background\w*\(StageData, "([^"]+)"',constructor)
    if 'new BackgroundBoss06' in constructor:backgrounds=['底色','绿光','蓝光','红光']
-   meta=dict(common,kind='spell',title=title,hp=2000,time=duration,dest=dest,source=primary,optional='_FSC' in primary,armor=armor(shoot,src),backgrounds=backgrounds,survival=': BaseTimeSC' in ps)
+   defense,armor_guard=armor(shoot,src)
+   meta=dict(common,kind='spell',title=title,hp=2000,time=duration,dest=dest,source=primary,optional='_FSC' in primary,armor=defense,backgrounds=backgrounds,survival=': BaseTimeSC' in ps)
+   if armor_guard:meta['armor_guard']=True
    if 'base.OnSpell = true' in non:meta['hp']=10000
    variants={};variant_fns={}
    for sc in spells:

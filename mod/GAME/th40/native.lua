@@ -336,6 +336,13 @@ function N.route(o)
     local name=lstg.var.th38_route or lstg.var.player_name or 'reimu_player'
     return name=='B' and 'B' or name=='C' and 'C' or name=='D' and 'D' or tostring(name):lower():find('marisa',1,true) and 'B' or 'A'
 end
+function N.damageFactor(meta)
+    local p=lstg.player
+    if meta.armor_guard and p and IsValid(p) then
+        if (p.bombTime and not p.cancelOnlyBomb) or (p.summerDamageGuard or 0)>0 then return 0 end
+    end
+    return 1-(meta.armor or 0)
+end
 function N.clear(o)
     for _,obj in ipairs(o.run.objects) do erase(obj) end
     o.run.objects={};o.run.bullets={};o.run.enemies={};o.run.effects={};o.run.controllers={}
@@ -381,6 +388,7 @@ function N.tick(owner,meta)
     local run=owner.th38_run;if not run then return end
     N.step(run,function()
         local o=run.host;o.age=o.age+1;o.hp=owner.hp or o.hp
+        o.maxhp=owner.maxhp or o.maxhp
         motion(o)
         if meta.step then meta.step(o,o.age,N) end
         if meta.kind~='road' then owner.x,owner.y=o.cx-320,240-o.cy end
