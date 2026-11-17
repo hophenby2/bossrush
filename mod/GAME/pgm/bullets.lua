@@ -71,10 +71,12 @@ local function create(source)
         o.serial = run.serial
     end
 
-    function M.clear(run, discard)
+    function M.clear(run, discard, preserveOnHit)
         for _, o in ObjList(GROUP.ENEMY_BULLET) do
-            if o.run == run then
-                if discard then object.RawDel(o)
+            if o.run == run and not (preserveOnHit and o.keepOnHit) then
+                if discard then
+                    o.hide = true
+                    object.RawDel(o)
                 elseif not o.fade then o.fade, o.colli = 15, false end
             end
         end

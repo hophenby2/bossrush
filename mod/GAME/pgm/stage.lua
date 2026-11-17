@@ -147,6 +147,7 @@ return function(source, bullets, Player, level)
 
     local function discard(o)
         for _, part in pairs(o.parts or {}) do object.RawDel(part) end
+        o.hide = true
         object.RawDel(o)
     end
 
@@ -209,6 +210,7 @@ return function(source, bullets, Player, level)
         if run.done then return end
         local frame = run.frame
         source.updateBackground(run,frame)
+        if source.road then run.roadFrame=frame end
         for _, o in pairs(run.actors) do
             local entry = o.entry
             local nextPose = entry.frames[o.age+1]
@@ -310,10 +312,11 @@ return function(source, bullets, Player, level)
             stageNumber=1,last=source.last,loop=source.loop}
         if source.stageFiles then source.loadStage(run,1)
         else run.data=source.load() end
+        if source.road then source.road.open(run) end
         scene.pgmRun=run
         lstg.tmpvar.pgmRun=run
-        New(source.Background,run)
-        New(HUD,run)
+        run.background = New(source.Background,run)
+        run.hud = New(HUD,run)
     end
 
     function M.run(scene, sequence)
@@ -347,6 +350,14 @@ return function(source, bullets, Player, level)
     function M.close(scene)
         if not scene.pgmWorld then return end
         local run = scene.pgmRun
+        -- RawDel 延至帧尾回收，先停止绘制，避免卸掉图集后还访问旧背景。
+        for _, o in ipairs({run.background, run.hud}) do
+            if IsValid(o) then
+                o.hide = true
+                object.RawDel(o)
+            end
+        end
+        if source.road then source.road.close(run) end
         if source.stageFiles then
             clearActors(run,false)
             bullets.clear(run,true)
@@ -360,7 +371,12 @@ return function(source, bullets, Player, level)
 
     if NativePlayers then
         NativePlayers.adapters[level]={
-            spawn=function() return New(Player,assert(lstg.tmpvar.pgmRun)) end,
+            spawn=function()
+                local run = assert(lstg.tmpvar.pgmRun)
+                local player = New(Player,run)
+                if source.road then source.road.attach(run,player) end
+                return player
+            end,
         }
     end
     return M

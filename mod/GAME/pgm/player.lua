@@ -1,9 +1,10 @@
--- 大往生与 Espgaluda 共用输入、受击和自弹对象。各作提供机体、射击和炸弹参数。
+-- 街机练习共用受击、自弹和炸弹对象。机体可以接入按原程序步进的控制逻辑。
 local abs, min, max, floor = math.abs, math.min, math.max, math.floor
 
 return function(source, bullets, machine)
     local halfWidth,halfHeight=source.halfWidth or 112,source.halfHeight or 224
     local blinkFrame=source.cvTiles and 1 or 0
+    local pilot = machine.pilot
     local Shot = Class(object, {
         init = function(o, run, x, y, vx, damage, image)
             o.run, o.serial, o.x, o.y = run, run.serial, x, y
@@ -61,9 +62,10 @@ return function(source, bullets, machine)
 
     local Player = Class(player_class, {})
 
-    local function setSpawn(p)
-        p.x, p.y = source.world(machine.spawnY or 0x1000,machine.spawnX or 0x1c00)
-        p.protect, p.colli, p.hide = 120, true, false
+    local function setSpawn(p, protection)
+        if pilot then pilot.spawn(p)
+        else p.x, p.y = source.world(machine.spawnY or 0x1000,machine.spawnX or 0x1c00) end
+        p.protect, p.colli, p.hide = protection, true, false
     end
 
     function Player:init(run)
@@ -71,7 +73,7 @@ return function(source, bullets, machine)
         self.run, self.serial, self.held, self.respawn = run, -1, 0, 0
         self.name, self.a, self.b, self.rect = machine.name, 2, 2, true
         self.grazer.colli, self.grazer.a, self.grazer.b = false, 0, 0
-        setSpawn(self)
+        setSpawn(self, 120)
     end
 
     local function fire(p)
@@ -95,17 +97,7 @@ return function(source, bullets, machine)
         end
     end
 
-    function Player:frame()
-        local run = self.run
-        if (self.serial==run.serial and not run.done) or self.lock or self.realrealreal_lock then return end
-        self.serial = run.serial
-        self.protect = max(0,self.protect-1)
-        if self.respawn>0 then
-            self.respawn=self.respawn-1
-            if self.respawn==0 then setSpawn(self) end
-            return
-        end
-        local key, state = self.key or KeyState, NativePlayers.state()
+    local function move(self, key)
         self.held = key.shoot and self.held+1 or 0
         self.laser = key.shoot and (key.slow or self.held>=machine.hold)
         self.slow = self.laser and 1 or 0
@@ -120,6 +112,21 @@ return function(source, bullets, machine)
             local change = dx~=0 and dx or tilt>0 and -1 or tilt<0 and 1 or 0
             self.tilt=max(-machine.turn,min(machine.turn,tilt+change))
         end
+    end
+
+    function Player:frame()
+        local run = self.run
+        if (self.serial==run.serial and not run.done) or self.lock or self.realrealreal_lock then return end
+        self.serial = run.serial
+        self.protect = max(0,self.protect-1)
+        if self.respawn>0 then
+            self.respawn=self.respawn-1
+            if self.respawn==0 then setSpawn(self, pilot and pilot.recoveryProtection or 120)
+            elseif pilot then pilot.fall(self) end
+            return
+        end
+        local key, state = self.key or KeyState, NativePlayers.state()
+        if pilot then pilot.move(self, key) else move(self, key) end
         if run.done then self.laser=false; return end
         if key.spell and not self.spellHeld and state.bombs>0 and not self.splock then
             state.bombs=state.bombs-1
@@ -144,12 +151,17 @@ return function(source, bullets, machine)
     end
 
     function Player:colli(other)
-        if self.protect>0 or self.respawn>0 or self.lock or cheat or other.fade then return end
+        if self.respawn>0 or self.lock or cheat or other.fade then return end
+        if self.protect>0 and not other.cancelOnContact then return end
+        if other.hitPilot and not other.hitPilot(other,self) then return end
+        if other.cancelOnContact then other.cancelOnContact(other) end
+        if self.protect>0 then return end
         local state = NativePlayers.state()
         lstg.var.dead=lstg.var.dead+1
         state.life,state.bombs=state.life-1,machine.bombs
-        self.respawn,self.colli,self.hide=48,false,true
-        bullets.clear(self.run)
+        self.respawn,self.colli,self.hide=pilot and pilot.recoveryFrames or 48,false,true
+        if pilot then self.laser,self.slow=false,0 end
+        bullets.clear(self.run,false,pilot~=nil)
         New(player_death_ef,self.x,self.y)
         PlaySound('pldead00',.5)
     end
