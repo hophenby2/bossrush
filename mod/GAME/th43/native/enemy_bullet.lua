@@ -951,7 +951,7 @@ return function(program)
         emit(run, kind, modifier + run.route.loop * 4, angle, h, l, nil, nil, false, motion)
     end
 
-    -- 0xf7180 的二周目 0x81 分支在同一角度登记两种速度。
+    -- 0xf700a 和 0xf7180 的二周目双速分支共用 0xf6f22。
     function M.emitLongPair(run, kind, modifier, angle, h, l, extraH, extraL, motion)
         emit(run, kind, modifier, angle, h, l, extraH, extraL, false, motion)
         if run.route.loop == 1 then
@@ -1001,7 +1001,7 @@ return function(program)
         end
     end
 
-    -- 0xf7106 保留中央弹，二周目再登记左右两颗。
+    -- 0xf7106 和 0xf7180 的同速三向分支保留中央弹，二周目再登记左右各偏 8 的两颗。
     function M.emitCenterAndWide(run, kind, modifier, angle, h, l, extraH, extraL, motion)
         emit(run, kind, modifier, angle, h, l, extraH, extraL, false, motion)
         if run.route.loop == 1 then

@@ -89,7 +89,8 @@ return function(program, bullets, effects)
         p.needleClock=p.needleClock-1
         if p.needleClock<0 then
             p.needleClock=0xc
-            bullets.emitLongPair(run,9,-2,(1-p.face)*0x80,p.h,p.l,p.face==1 and 0xc00 or -0xc00,0)
+            -- 0x12dd08 进入 0xf7180；子机的组标志为 0、首部件为 0xa301，走 0xf6f7a 的同速三向。
+            bullets.emitCenterAndWide(run,9,-2,(1-p.face)*0x80,p.h,p.l,p.face==1 and 0xc00 or -0xc00,0)
         end
     end
 

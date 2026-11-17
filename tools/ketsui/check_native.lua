@@ -1298,6 +1298,45 @@ for _, route in ipairs({'first', 'omote', 'ura'}) do
     runtime.close(run)
 end
 
+-- Doom 编队子机：0x12dd08 的长针同一炮口三向，同速；翻面后整体反向。
+do
+    local drones = dofile('mod/GAME/th43/native/boss5_drones.lua')(program, runtime.bullets)
+    for face = 0,1 do
+        local run = runtime.init(5,'ura')
+        run.uraBoss, run.cameraStep = true, 0
+        local host = {run=run, h=0x4200, l=0x1c00, phase=4, children={}}
+        drones.prepare(host)
+        local f = host.formation
+        f.mode, f.h, f.l = 1, host.h, host.l
+        drones.spawn(host,1)
+        local drone = host.children[1]
+        drone.face = face
+        local angles = face == 0 and {0x80,0x78,0x88} or {0,0xf8,8}
+        local dh, dl = {-246,-239,-239}, {0,30,-30}
+        local sign = face == 0 and 1 or -1
+        for tick = 1,22 do
+            drones.step(host)
+            local needles = {}
+            for _, shot in ipairs(run.bullets) do
+                if shot.kind == 9 then needles[#needles+1] = shot end
+            end
+            equal(#needles, (tick == 9 or tick == 22) and 3 or 0)
+            for i, shot in ipairs(needles) do
+                equal(shot.h, drone.h-sign*0xc00)
+                equal(shot.l, drone.l)
+                equal(shot.angle, angles[i])
+                equal(shot.speed, 0x16)
+                shot.update(shot)
+                equal(shot.dh, sign*dh[i])
+                equal(shot.dl, sign*dl[i])
+            end
+            runtime.bullets.clear(run,true)
+        end
+        drones.close(host)
+        runtime.close(run)
+    end
+end
+
 for _, route in ipairs({'first', 'omote', 'ura'}) do
     local run = runtime.init(5,route)
     run.pilotH, run.pilotL = 0xde4, 0x0f80
