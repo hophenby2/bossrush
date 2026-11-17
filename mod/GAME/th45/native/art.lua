@@ -15,7 +15,7 @@ return function(program)
             end
             local image = 'th45_native_' .. kind .. '_image_' .. id
             LoadImage(image,texture,x,y,w,h)
-            images[id] = {image,w,h}
+            images[id] = {image,w,h,texture,x,y}
         end
         return images
     end
@@ -23,6 +23,17 @@ return function(program)
     function M.draw(image,h,l,dh,dl,flipX)
         local x,y = program.world(h + dh,l + dl)
         Render(image[1],math.floor(x) + image[2] / 2,math.floor(y) + image[3] / 2,0,flipX and -1 or 1,1)
+    end
+
+    -- IGS023 缩短转换时的分值字样。旋转成竖屏后，原精灵的行数对应横向宽度。
+    function M.drawWidth(image,h,l,dh,dl,width)
+        local height,texture,u,v = unpack(image,3)
+        local x,y = program.world(h + dh,l + dl)
+        x,y = math.floor(x),math.floor(y)
+        local white = Color(255,255,255,255)
+        RenderTexture(texture,'',
+            {x,y+height,0.5,u,v,white}, {x+width,y+height,0.5,u+width,v,white},
+            {x+width,y,0.5,u+width,v+height,white}, {x,y,0.5,u,v+height,white})
     end
 
     local Background = Class(object,{

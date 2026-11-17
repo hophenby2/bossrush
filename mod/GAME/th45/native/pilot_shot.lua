@@ -76,13 +76,15 @@ return function(program,art)
     })
 
     function M.emit(p)
-        local sides = program.pilotShots[p.power + 1]
+        local loadout = p.form == 2 and program.pilotAwakenedShots or program.pilotShots
+        local sides = loadout[p.power + 1]
         local available = {}
-        for slot = 1,10 do
+        local burstLimit = p.run.dual and (p.run.shotCapacity or 7) or 5
+        for slot = 1,burstLimit * #sides do
             if not p.shots[slot] then available[#available + 1] = slot end
             if #available == #sides then break end
         end
-        if #available < #sides then return end
+        if #available < #sides then return false end
         for index,source in ipairs(sides) do
             local side = index == 1 and 1 or -1
             local tilt = side > 0 and p.rightTilt or p.leftTilt
@@ -91,6 +93,7 @@ return function(program,art)
             p.shots[slot] = New(Shot,p,slot,source,variant,band(tilt * side,255),side)
         end
         p.shotFrame = p.shotFrame == 1 and 3 or p.shotFrame - 1
+        return true
     end
 
     function M.remove(o)

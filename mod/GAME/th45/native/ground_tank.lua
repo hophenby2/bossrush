@@ -1,9 +1,9 @@
 -- 0x15998a 分配单部件地炮，0x159b3a 在同一部件上推进移速、炮塔和发射。
-return function(program,path,bullets,art,effects)
+return function(program,path,bullets,art,effects,rewards)
     local bit = require('bit')
     local band,bxor = bit.band,bit.bxor
     local floor = math.floor
-    local M,stationary = {parts=1},{parts=1}
+    local M,stationary,tracking = {parts=1},{parts=1},{parts=1}
 
     function M.init(o)
         local run = o.run
@@ -29,6 +29,15 @@ return function(program,path,bullets,art,effects)
         return true
     end
 
+    function tracking.init(o)
+        -- 0x159d64 读取共享血条的占用位，炮舰还在退场时不派出补位坦克。
+        if o.run.stageNumber==4 and o.run.stage4Gunship then return false end
+        if not M.init(o) then return false end
+        o.tracking,o.turretSteps,o.turnPeriod = true,0xa,1
+        o.shotClock = 0x28-o.run.tankFireRank
+        return true
+    end
+
     local function tickSpeed(o,limit,increment)
         if o.speed == limit then return false end
         o.speedClock = o.speedClock - 1
@@ -42,7 +51,7 @@ return function(program,path,bullets,art,effects)
         o.shotClock = o.shotClock - 1
         if o.shotClock >= 0 then return end
         local run = o.run
-        o.shotClock = 0x5a - run.tankFireRank
+        o.shotClock = 0x5a - (o.tracking and run.tankReloadRank or run.tankFireRank)
         if not program.fireBand(o) then return end
         local angle = program.angle(o.h,o.l,run.player)
         if not angle then return end
@@ -55,6 +64,7 @@ return function(program,path,bullets,art,effects)
         if o.impact then
             o.impact = nil
             if o.hp < 0 then
+                rewards.drop(o,o.h,o.l,o.part[0x22] or 0,o.flags)
                 effects.emit(o,2,band(o.speed + 8,255),o.direction * 4,0,true)
                 return false
             end
@@ -63,7 +73,7 @@ return function(program,path,bullets,art,effects)
         local onscreen = band(o.l + 0xe00 + run.cameraOffset,0xffff) < 0x5400
             and band(o.h + 0x600,0xffff) < 0x7c00
         if onscreen then o.seen = true elseif o.seen then return false end
-        if not run.freeze then
+        if not run.freeze and (not o.tracking or not run.stopPathClock) then
             local dh,dl = program.vector(o.speed,o.direction * 4,run.slowVectors)
             o.h,o.l = program.s16(o.h + dh),program.s16(o.l + dl)
             if o.stationary then
@@ -79,8 +89,20 @@ return function(program,path,bullets,art,effects)
                 end
             elseif o.turning then
                 if not run.stopPathClock then
-                    tickSpeed(o,0x1c,1)
-                    if o.direction ~= o.turretTarget then
+                    if o.tracking then
+                        tickSpeed(o,0x20,2)
+                        if o.turretSteps>0 then
+                            o.turnClock=o.turnClock-1
+                            if o.turnClock<0 then
+                                o.turnClock,o.turretSteps=o.turnPeriod,o.turretSteps-1
+                                local a=program.angle(o.h,o.l,run.player,o.direction)
+                                o.direction=program.towards(o.direction,a)
+                            end
+                        end
+                    else
+                        tickSpeed(o,0x1c,1)
+                    end
+                    if not o.tracking and o.direction ~= o.turretTarget then
                         o.turnClock = o.turnClock - 1
                         if o.turnClock < 0 then
                             o.turnClock = 2
@@ -90,7 +112,7 @@ return function(program,path,bullets,art,effects)
                 end
             elseif not run.stopPathClock then
                 if tickSpeed(o,0,-1) then
-                    o.speedClock,o.speedPeriod = 0,3
+                    o.speedClock,o.speedPeriod = 0,o.tracking and 2 or 3
                     o.shotClock = 0x10
                     o.direction,o.turnClock = band(o.aim,0x3c),0x30
                     o.turnStep = o.direction > o.turretTarget and 4 or -4
@@ -116,5 +138,6 @@ return function(program,path,bullets,art,effects)
     end
 
     stationary.step,stationary.render = M.step,M.render
-    return M,stationary
+    tracking.step,tracking.render = M.step,M.render
+    return M,stationary,tracking
 end

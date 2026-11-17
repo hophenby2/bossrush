@@ -11,10 +11,11 @@ return function(program,art)
     end
 
     local Effect = Class(object,{
-        init = function(o,origin,slot,kind,speed,angle,offset,ground,delay)
+        init = function(o,origin,slot,kind,speed,angle,offset,ground,delay,accelerationH)
             o.run,o.slot,o.frames = origin.run,slot,program.effects[kind]
             o.h,o.l,o.offset,o.delay = origin.h,origin.l,offset,delay or 0
             o.dh,o.dl = program.vector(speed,angle)
+            o.accelerationH = accelerationH or 0
             o.frameIndex,o.ground = 0,ground
             o.group,o.layer,o.bound,o.colli = GROUP.GHOST,LAYER.ENEMY + 1,false,false
         end,
@@ -25,13 +26,22 @@ return function(program,art)
     })
 
     -- 0x179a82 总池为 80 槽，满时的溢出槽不会进入绘制循环。
-    function M.emit(origin,kind,speed,angle,offset,ground,delay)
+    function M.emit(origin,kind,speed,angle,offset,ground,delay,accelerationH)
         local run = origin.run
         for slot = 1,80 do
             if not run.effects[slot] then
-                run.effects[slot] = New(Effect,origin,slot,kind,speed,angle,offset,ground,delay)
-                return
+                local o = New(Effect,origin,slot,kind,speed,angle,offset,ground,delay,accelerationH)
+                run.effects[slot] = o
+                return o
             end
+        end
+    end
+
+    function M.emitSequence(origin,rows)
+        for _,entry in ipairs(rows) do
+            local kind,dh,dl,ground,velocity,delay = unpack(entry)
+            M.emit(origin,kind,floor(velocity / 256),band(velocity,255),dh * 0x10000 + band(dl,0xffff),
+                ground ~= 0,delay)
         end
     end
 
@@ -50,10 +60,12 @@ return function(program,art)
         end
         if o.frameIndex == 0 then
             o.h,o.l = program.addPacked(o.h,o.l,o.offset)
+            if o.onStart then o.onStart(o) end
             o.frameIndex = 1
             setFrame(o,o.frames[1])
             o.clock = o.clock + 1
         end
+        o.dh = s16(o.dh + o.accelerationH)
         local dh,dl = o.dh,o.dl
         if run.halfPathSpeed then dh,dl = floor(dh / 2),floor(dl / 2) end
         o.h,o.l = s16(o.h + dh + (o.ground and run.groundScroll or 0)),s16(o.l + dl - run.cameraStep)

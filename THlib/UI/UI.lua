@@ -88,7 +88,7 @@ ui.menu = {
                  "Like Dreamer", -- 40 TH42
                  "绊地狱 · 第一至五面", -- 41 TH43
                  "怒首领蜂大往生 · 第一至五面", -- 42 TH44
-                 "Espgaluda · 第一至五面", -- 43 TH45
+                 "Espgaluda · 第一至六面", -- 43 TH45
                  "虫姬二人 1.5 · 第一至五面", -- 44 TH46
                  "Espgaluda II · 第一至六面", -- 45 TH47
                  "虫姬二人 Black Label · 第一至五面", -- 46 TH48
@@ -127,7 +127,7 @@ ui.menu = {
                TH42 = "Like Dreamer",
                TH43 = "绊地狱 · 第一至五面",
                TH44 = "怒首领蜂大往生 · 第一至五面",
-               TH45 = "Espgaluda · 第一至五面",
+               TH45 = "Espgaluda · 第一至六面",
                TH46 = "虫姬二人 1.5 · 第一至五面",
                TH47 = "Espgaluda II · 第一至六面",
                TH48 = "虫姬二人 Black Label · 第一至五面",

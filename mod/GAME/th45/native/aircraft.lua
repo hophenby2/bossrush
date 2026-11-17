@@ -1,5 +1,5 @@
 -- 侦察机和两种巡逻机使用同一组路径字节，炮口与射击计时分属各自的控制器。
-return function(program,path,bullets,art,effects)
+return function(program,path,bullets,art,effects,rewards)
     local bit = require('bit')
     local band,bxor = bit.band,bit.bxor
     local floor = math.floor
@@ -68,7 +68,10 @@ return function(program,path,bullets,art,effects)
     end
 
     function scout.step(o)
-        if impact(o,0x0d) then return killed(o,13,0) end
+        if impact(o,0x0d) then
+            rewards.drop(o,o.h-0x400,o.l,o.part[0x22] or 0,o.flags)
+            return killed(o,13,0)
+        end
         local run = o.run
         if run.stageNumber == 5 and run.stageFlags[2] then return killed(o,13,0) end
         if not path.step(o,-run.groundScroll) then return false end
@@ -143,7 +146,10 @@ return function(program,path,bullets,art,effects)
         local run = o.run
         if not path.step(o,-run.groundScroll) or retired(o,0x600,0x7c00) then return false end
         if impact(o,o.flashPalette) then
-            if o.damaged then return killed(o,killEffect,killOffset) end
+            if o.damaged then
+                rewards.drop(o,o.h,o.l,o.part[0x22] or 0,o.flags)
+                return killed(o,killEffect,killOffset)
+            end
             o.damaged,o.hp = true,damageHp
             effects.emit(o,3,0,0,damageOffset,true)
         end

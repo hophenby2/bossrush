@@ -35,8 +35,16 @@ local profiles = {
 }
 local pilotAddress,livesAddress = table.unpack(profiles[emu.romname()] or {})
 local keepLives = os.getenv('CV1000_KEEP_LIVES')=='1'
-local program = machine.devices[':maincpu'].spaces.program
+local cpu = machine.devices[':maincpu']
+local program = cpu.spaces.program
 local pilot = pilotAddress and assert(io.open(output..'.pilot','w'))
+local motionTrace = os.getenv('CV1000_MOTION_TRACE')
+local motionFile,motionTap
+if motionTrace then
+    assert(emu.romname()=='futari15','目前只核对了 Futari 1.5 的定点位移槽')
+    motionFile = assert(io.open(motionTrace,'w'))
+    motionFile:write('frame\tpc\tpr\taddress\tmask\tdata\n')
+end
 local ramFrames = {}
 for value in (os.getenv('CV1000_RAM_FRAMES') or ''):gmatch('%d+') do
     ramFrames[tonumber(value)] = true
@@ -134,6 +142,14 @@ emu.register_frame_done(function()
         machine:load(state)
         return
     end
+    if motionFile and not motionTap and frame >= first-1 then
+        -- 保留 64 位总线的原始写掩码。保存项的字排列与 CPU 地址不同，不能用位移槽的字段序号代替。
+        local x = 0x0c517ed8
+        motionTap = program:install_write_tap(x,x+128*0x54-1,'Futari 1.5 位移槽',function(address,data,mask)
+            motionFile:write(('%d\t%08x\t%08x\t%08x\t%016x\t%016x\n'):format(
+                frame+1,cpu.state.PC.value,cpu.state.PR.value,address,mask,data))
+        end)
+    end
     local key = keys[frame]
     if resume and frame==resume+1 and fireFrom then startPressed:set_value(1)
     elseif key and (not state or resume) then key[1]:set_value(key[2]) end
@@ -177,6 +193,8 @@ emu.register_frame_done(function()
     end
     if saveFrames[frame] then machine:save(output..'.state.'..frame..'.sta') end
     if frame==last then
+        if motionTap then motionTap:remove() end
+        if motionFile then motionFile:close() end
         file:close()
         if uploads then uploads:close() end
         if pilot then pilot:close() end

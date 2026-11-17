@@ -35,6 +35,7 @@ return function(program,bullets,shots)
                     if back < 0xf800 and pf >= back and pb <= band(h + part.front,0xffff)
                         and pr >= band(l - part.left,0xffff) and pl <= band(l + part.right,0xffff) then
                         p.pendingHit,part.impact = true,true
+                        if part.healsOnContact then part.bodyImpact=true end
                         return part
                     end
                 end
@@ -69,6 +70,7 @@ return function(program,bullets,shots)
                                     if bank == 2 or band(part.h,0xffff) < 0x6e00 then
                                         part.damage = (part.damage or 0) + damage
                                         part.hp = s16(part.hp - damage)
+                                        part.rewardMode = p.awakeningMode
                                     end
                                     if part.hp < 0 then break end
                                 end
@@ -78,6 +80,70 @@ return function(program,bullets,shots)
                 end
             end
         end
+    end
+
+    -- 0x11b6aa 和 0x11c00a 共用逐槽截短规则。护罩的后沿、左右宽度和伤害倍率独立读取。
+    local function scanRays(run,p,rays,guard)
+        local bias = 0x2800
+        for _,ray in ipairs(rays) do
+            local back = band(ray.h + bias - (ray.back or 0),0xffff)
+            local front = band(ray.h + bias + ray.length + 0x400,0xffff)
+            local left = band(ray.l + bias - (ray.left or ray.width),0xffff)
+            local right = band(ray.l + bias + (ray.right or ray.width),0xffff)
+            local hitStop,bossHit = 0x7800 + bias,false
+            ray.hitStop = nil
+            for bank = 1,2 do
+                for slot = 1,bank == 1 and 90 or 30 do
+                    local part = run.partSlots[bank][slot]
+                    if part and band(part.flags or 0,0xa000) == 0xa000 and part.hp >= 0 then
+                        local h,l = part.h + bias,part.l + bias
+                        local partBack = band(h - part.back,0xffff)
+                        if partBack < hitStop and partBack < 0x9800 and partBack <= front
+                            and band(h + part.front,0xffff) >= back and band(l - part.left,0xffff) <= right
+                            and band(l + part.right,0xffff) >= left then
+                            hitStop = partBack < back and back + 0x400 or partBack
+                            front,ray.hitStop,part.impact = hitStop,hitStop-bias,true
+                            if bank == 2 or band(part.h,0xffff) < 0x6e00 then
+                                local damage = ray.damage
+                                if guard then
+                                    if bank == 1 then damage = damage * 4
+                                    elseif bossHit then damage = floor(damage / 4) * 2
+                                    else damage = damage * 2 end
+                                elseif bossHit then damage = floor(damage / 8) end
+                                if not run.dual then damage = damage - floor(damage / 4) - floor(damage / 8) end
+                                if not guard and run.halfPathSpeed then damage = damage - floor(damage / 4) end
+                                part.damage = (part.damage or 0) + damage
+                                part.hp = s16(part.hp - damage)
+                                part.rewardMode = p.awakeningMode
+                                bossHit = bank == 2
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function M.lasers(run,p)
+        scanRays(run,p,p.rays,false)
+    end
+
+    -- 0x11b8d8 先把护罩范围内的敌弹改挂爆散，再结算护罩本身对部件的伤害。
+    function M.guard(run,p)
+        local rays = p.guard.segments
+        for i = 1,run.bulletCapacity do
+            local b = run.bullets[i]
+            if b and band(b.flags,0x4000) == 0 then
+                for _,ray in ipairs(rays) do
+                    if b.h >= ray.h - ray.back and b.h <= ray.h + ray.length
+                        and b.l >= ray.l - ray.left and b.l <= ray.l + ray.right then
+                        bullets.contact(b)
+                        break
+                    end
+                end
+            end
+        end
+        scanRays(run,p,rays,true)
     end
 
     return M

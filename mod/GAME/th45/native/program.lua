@@ -16,6 +16,10 @@ function M.s16(value)
     return value >= 0x8000 and value - 0x10000 or value
 end
 
+function M.s8(value)
+    return band(value+128,255)-128
+end
+
 function M.addPacked(h,l,value)
     local low = band(l,0xffff) + band(value,0xffff)
     return M.s16(h + floor(value / 0x10000) + floor(low / 0x10000)),M.s16(low)
@@ -33,6 +37,7 @@ function M.random(run,values,mask)
 end
 
 function M.towards(current,target)
+    current = band(current,63)
     local delta = band(target - current,63)
     if delta == 0 then return current end
     return band(current + (delta < 32 and 1 or -1),63)
@@ -44,12 +49,16 @@ function M.fireBand(o)
     return band(o.h - h0,0xffff) + ht < 0x10000 and band(o.l - l0,0xffff) + lt < 0x10000
 end
 
-function M.patrolFireBand(o)
+function M.atPatrolDistance(o)
     local target = o.run.player
-    if not target or not target.active or not M.fireBand(o) then return false end
+    if not target or not target.active then return false end
     local h,l = math.abs(o.h - target.h),math.abs(o.l - target.l)
     h = h - floor(h / 4)
     return math.max(h,l) + floor(math.min(h,l) / 2) >= M.patrolFireDistance[o.run.stageNumber]
+end
+
+function M.patrolFireBand(o)
+    return M.fireBand(o) and M.atPatrolDistance(o)
 end
 
 function M.vector(speed,angle,slow)
@@ -58,9 +67,8 @@ function M.vector(speed,angle,slow)
 end
 
 -- 0x118b52 以无符号坐标差分八象限，横向差在查表前乘 1.5。
-local aimOffset = {0x80,0x100,0x80,0,0x180,0x100,0x180,0}
 local aimSign = {1,-1,-1,1,-1,1,1,-1}
-function M.angle(h,l,target,current)
+local function aim(h,l,target,current,lookup,precision)
     if not target or not target.active then return current end
     local dh = band(h + 0x2800,0xffff) - band(target.h + 0x2800,0xffff)
     local dl = band(l + 0x2800,0xffff) - band(target.l + 0x2800,0xffff)
@@ -70,10 +78,25 @@ function M.angle(h,l,target,current)
     dl = dl + floor(dl / 2)
     if dl < dh then dh,dl,octant = dl,dh,octant + 1 end
     if dl == 0 then return current end
-    local scaled = dh * 64
+    local scaled = dh * precision
     local index = floor(scaled / dl) * 2
     if (scaled % dl) * 2 > dl then index = index + 1 end
-    return band(floor((aimOffset[octant] + aimSign[octant] * byte(M.aim,index + 1) + 4) / 8),63)
+    return octant,aimSign[octant] * byte(lookup,index + 1)
+end
+
+local aimOffset = {0x80,0x100,0x80,0,0x180,0x100,0x180,0}
+function M.angle(h,l,target,current)
+    local sector,delta = aim(h,l,target,current,M.aim,64)
+    if not delta then return sector end
+    return band(floor((aimOffset[sector]+delta+4)/8),63)
+end
+
+-- 0x118e28 的查表输出直接用作八位弹角。
+local aimOffset8 = {0x40,0x80,0x40,0,0xc0,0x80,0xc0,0}
+function M.angle8(h,l,target,current)
+    local sector,delta = aim(h,l,target,current,M.aim8,32)
+    if not delta then return sector end
+    return band(aimOffset8[sector]+delta,255)
 end
 
 return M

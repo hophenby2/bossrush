@@ -70,7 +70,16 @@ return function(program)
     local function camera(run)
         local p = run.nativePlayer
         local previous = run.cameraOffset
-        if p and p.active then
+        if run.centerCamera then
+            -- 0x14a18a 屏蔽自机推镜，每两帧把卷轴偏移向原点收一像素。
+            run.cameraCenterTick=1-(run.cameraCenterTick or 0)
+            if run.cameraCenterTick==0 then
+                run.cameraOffset=previous>0 and math.max(0,previous-64) or math.min(0,previous+64)
+            end
+            run.cameraFine=run.cameraOffset
+            run.cameraStep,run.playerCameraStep=run.cameraOffset-previous,0
+            return
+        elseif p and p.active then
             local delta = floor(p.cameraMotion / 4)
             delta = delta + floor(delta / 2)
             if delta < 0 and p.l >= 0x3500 or delta >= 0 and p.l <= 0x300 then delta = 0 end
@@ -94,7 +103,7 @@ return function(program)
         if run.freeze then run.groundScroll,run.cameraStep,run.playerCameraStep = 0,0,0; return end
         camera(run)
         local main,alternate = run.scroll[1],run.scroll[2]
-        local previous = main.hPixels
+        local previous = alternate.hPixels
         for index,lane in ipairs(run.scroll) do
             if lane.pendingH then
                 lane.hSpeed,lane.lSpeed = lane.pendingH,lane.pendingL
@@ -125,7 +134,8 @@ return function(program)
                 if block == 0 then dispatch(run,lane,index,lane.major,lane.minor) end
             end
         end
-        run.groundScroll = (main.hPixels - previous) * -64
+        -- 0x14ae1e 用第二路速度更新 0x807040，0x14f226 从这里取地面物件的位移。
+        run.groundScroll = (alternate.hPixels - previous) * -64
         run.major,run.minor = alternate.major,alternate.minor
     end
 
