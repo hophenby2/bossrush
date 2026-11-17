@@ -205,7 +205,12 @@ local function change(s,e,value,son)
     elseif key=='y' or key=='a2_3' then value=value*.01+(op==1 and -9.5 or 0) end
     if mode==3 and ran:Float(0,100)>duration then return end
     if son and target>=12 and target<=16 or not son and target>=24 and target<=29 then duration=1 end
-    if duration<=1 or mode==3 then assign(s,key,op==1 and value or old+(op==0 and value or -value));return end
+    if duration<=1 or mode==3 then
+        local result=op==1 and value or old+(op==0 and value or -value)
+        if key=='direction' and s.parent and s.kind=='bullet' then result=result-s.parent.rotation end
+        assign(s,key,result)
+        return
+    end
     local delta=op==1 and value-old or value
     if op==1 and (key=='direction' or key=='rotation' or key=='a3_3' or key=='a4_5' or key=='a4_10' or key=='a8_5' or key=='a8_7') then delta=(delta+180)%360-180 end
     s.changes[#s.changes+1]={key=key,value=delta,sign=op==2 and -1 or 1,mode=mode,total=duration,age=0}
@@ -341,6 +346,13 @@ local function bossMotion(s)
     s.speed=-a.distance*8.23e-6*t*(t-90)*100;s.direction=a.angle
     if t>=90 then s.moveClock=0;s.destination=nil;s.speed=0 end
 end
+local function followParent(s,parent)
+    local turn=parent.rotation-s.parentRotation
+    local x,y=s.x-s.lastParentX,s.y-s.lastParentY
+    local cosTurn,sinTurn=cos(turn),sin(turn)
+    s.x,s.y=parent.x+x*cosTurn-y*sinTurn,parent.y+x*sinTurn+y*cosTurn
+    s.lastParentX,s.lastParentY,s.parentRotation=parent.x,parent.y,parent.rotation
+end
 local function move(s)
     local c=s.c;s.age=c.time-s.birth
     if s.age<0 then return end
@@ -348,21 +360,25 @@ local function move(s)
     if s.kind=='enemy' and s.native then s.life=s.native.hp end
     if s.kind=='boss' and s.main and valid(c.host) then s.life=c.host.hp end
     if s.kind=='boss' then bossMotion(s) end
+    local parent=s.parent
+    if parent and not parent.alive then s.alive=false;return end
+    local boundBullet=parent and s.kind=='bullet'
+    if boundBullet then followParent(s,parent) end
     events(s,s.events,s.age,true)
     if s.kind=='enemy' and valid(s.native) then s.native.hp=s.life end
     if s.kind=='boss' and s.main and valid(c.host) then c.host.hp=s.life end
-    if s.accel~=0 then local d=aim(s,s.accelDirection);s.djX=s.djX+s.accel*.01*cos(d);s.djY=s.djY+s.accel*.01*sin(d) end
-    local dx,dy=s.speed*.01*cos(s.direction)+s.djX,s.speed*.01*sin(s.direction)+s.djY
-    s.x,s.y=s.x+dx,s.y+dy
-    if s.parent then
-        local host=s.parent
-        if not host.alive then s.alive=false;return end
-        local a=(host.rotation or 0)-(s.parentRotation or host.rotation or 0)
-        local rx,ry=s.x-s.lastParentX,s.y-s.lastParentY
-        s.x,s.y=host.x+rx*cos(a)-ry*sin(a),host.y+rx*sin(a)+ry*cos(a)
-        s.lastParentX,s.lastParentY,s.parentRotation=host.x,host.y,host.rotation
+    local dx,dy
+    if boundBullet then
+        -- 原作的运动绑定以父对象的朝向为角度零点，静止时也更新朝向。
+        s.rotation=s.direction+parent.rotation
+        dx,dy=s.speed*.01*cos(s.rotation),s.speed*.01*sin(s.rotation)
+    else
+        if s.accel~=0 then local d=aim(s,s.accelDirection);s.djX=s.djX+s.accel*.01*cos(d);s.djY=s.djY+s.accel*.01*sin(d) end
+        dx,dy=s.speed*.01*cos(s.direction)+s.djX,s.speed*.01*sin(s.direction)+s.djY
+        if s.followSpeed then s.rotation=math.deg(math.atan2(dy,dx)) end
     end
-    if s.followSpeed then s.rotation=math.deg(math.atan2(dy,dx)) end
+    s.x,s.y=s.x+dx,s.y+dy
+    if parent and not boundBullet then followParent(s,parent) end
     if s.kind=='boss' then
         local host=s.main and c.host or s.native
         if valid(host) then host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0 end
