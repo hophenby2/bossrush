@@ -506,6 +506,21 @@ if 'if (!obj[i]->androidFrozen)' not in text:
                         'for (auto i = begin; i < end; ++i)\n\t\tif (!obj[i]->androidFrozen)\n')
     p.write_text(a + 'void GameObjectPool::update(size_t begin, size_t end)' + body +
                  'cocos2d::Vec2 GameObjectPool::getPosition' + rest)
+# 速度积分直接写对象池，绕过 Lua 属性的变换失效标记。
+# 自绘类在 DefaultRenderFunc 中按需重算矩阵，空场时也必须看到实际移动。
+replace(pool, '''\tfor (auto i = begin; i < end; ++i)
+\t\tif (!obj[i]->androidFrozen)
+\t\tif (navi[i] && (dx[i] != 0 || dy[i] != 0))
+\t\t\trot[i] = atan2(dy[i], dx[i]);''', '''\tfor (auto i = begin; i < end; ++i)
+\t{
+\t\tif (obj[i]->androidFrozen)
+\t\t\tcontinue;
+\t\tconst bool moved = dx[i] != 0 || dy[i] != 0;
+\t\tif (navi[i] && moved)
+\t\t\trot[i] = atan2(dy[i], dx[i]);
+\t\tif (moved || omega[i] != 0)
+\t\t\tobj[i]->cm->setTransformDirty(true);
+\t}''')
 # 空分组没有回调；无需创建 Lua 栈记录或唤醒工作线程。
 replace('frameworks/LSTG/Object/GameObjectManager.h',
         'size_t GetObjectCount()  { return pool.size(); }',

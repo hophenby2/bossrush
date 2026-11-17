@@ -13,49 +13,11 @@ local SetImageState = SetImageState
 local SetRenderRect = SetRenderRect
 local RenderText = RenderText
 local Render = Render
-local Render4V = Render4V
-local portraitHP=dofile('THlib/enemy/portrait_hp.lua')
-----------------------------------------
-
--- 线段拼接的场内血条：从正上方顺时针，红弧为剩余血量，白弧为已扣血量。
-local hpRing={}
-local hpRingSegments,hpRingOuter,hpRingInner=96,36,34
-for i=0,hpRingSegments do
-    local a=math.pi/2-i*2*math.pi/hpRingSegments
-    hpRing[i]={math.cos(a),math.sin(a)}
-end
-local function ringSegment(b,p,q)
-    Render4V('white',
-        b.x+p[1]*hpRingOuter,b.y+p[2]*hpRingOuter,.5,
-        b.x+p[1]*hpRingInner,b.y+p[2]*hpRingInner,.5,
-        b.x+q[1]*hpRingInner,b.y+q[2]*hpRingInner,.5,
-        b.x+q[1]*hpRingOuter,b.y+q[2]*hpRingOuter,.5)
-end
-local function renderHPRing(self)
-    if AndroidPortrait and AndroidPortrait.enabled() then return portraitHP.draw(self) end
-    local b=self.boss
-    if not self.drawhp or not b.is_combat or b.__is_waiting or b.no_hp_render or b.time_sc
-            or not b.maxhp or b.maxhp<=0 then return end
-    local alpha=220*sin(min(90,max(0,b.__hpbar_timer or 0)))
-    if alpha<=0 then return end
-    local cut=min(1,max(0,b.hp/b.maxhp))*hpRingSegments
-    local whole=math.floor(cut)
-    SetImageState('white','',alpha,255,64,64)
-    for i=0,whole-1 do ringSegment(b,hpRing[i],hpRing[i+1]) end
-    local middle
-    if cut>whole then
-        local a=math.pi/2-cut*2*math.pi/hpRingSegments
-        middle={math.cos(a),math.sin(a)}
-        ringSegment(b,hpRing[whole],middle)
-    end
-    SetImageState('white','',alpha,255,255,255)
-    if middle then ringSegment(b,middle,hpRing[whole+1]);whole=whole+1 end
-    for i=whole,hpRingSegments-1 do ringSegment(b,hpRing[i],hpRing[i+1]) end
-end
+local hpRing = dofile('THlib/enemy/portrait_hp.lua')
 
 ---@class boss.ui
 boss.ui = Class(object)
-boss.ui.renderHPRing=renderHPRing
+boss.ui.renderHPRing=hpRing.draw
 function boss.ui:init(system, b)
     self.layer = LAYER.TOP + 2
     self.boss = b
@@ -74,7 +36,7 @@ function boss.ui:init(system, b)
 end
 function boss.ui:frame()
     if IsValid(self.boss) then
-        if AndroidPortrait and AndroidPortrait.enabled() then portraitHP.frame(self) end
+        hpRing.frame(self)
         if self.infobar then
             self.infobar:frame()
         end
@@ -89,19 +51,20 @@ function boss.ui:frame()
     end
 end
 function boss.ui:render()
-    if ui.OriginalHUD and ui.OriginalHUD.enabled() then return end
     local previous=lstg.viewmode
     SetViewMode('world')
     if IsValid(self.boss) then
         boss.ui.renderHPRing(self)
-        if self.infobar and not self.no_infobar then
-            self.infobar:render()
-        end
-        if self.timeCounter and not self.no_timeCounter then
-            self.timeCounter:render()
-        end
-        if self.pointer and not self.no_pointer then
-            self.pointer:render()
+        if not (ui.OriginalHUD and ui.OriginalHUD.enabled()) then
+            if self.infobar and not self.no_infobar then
+                self.infobar:render()
+            end
+            if self.timeCounter and not self.no_timeCounter then
+                self.timeCounter:render()
+            end
+            if self.pointer and not self.no_pointer then
+                self.pointer:render()
+            end
         end
     end
     if previous then SetViewMode(previous) end

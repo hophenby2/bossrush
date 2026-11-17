@@ -34,4 +34,4 @@ for x,y,expected in checks:
     if max(abs(a-b) for a,b in zip(pixel,expected)) > 2:
         failures.append(f'({x:.1f},{y:.1f}) expected={expected} actual={pixel}')
 assert not failures, '\n'.join(failures)
-print(f'通过 {len(checks)} 个 GPU 像素检查：NPOT 多周期平铺、宽屏 RT 位置/裁剪、2D→3D→UI 切换；{im.width}×{im.height}')
+print(f'通过 {len(checks)} 个 GPU 像素检查：移动对象、NPOT 平铺、RT 位置/裁剪、2D→3D→UI 切换；{im.width}×{im.height}')

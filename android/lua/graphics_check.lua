@@ -11,9 +11,9 @@ function Q.run()
         SetImageState('android:object-probe','',Color(255,70,130,230))
         local function init(o,x)
             o.img='android:object-probe';o.group=GROUP.GHOST;o.layer=1000;o.bound=false;o.colli=false
-            o.x,o.y=x,100;o.hscale,o.vscale=1,1
+            o.x,o.y=x,40;o.vy=1;o.hscale,o.vscale=1,1
         end
-        -- 对照原生默认绘制与自绘回调里的 DefaultRenderFunc，覆盖矩阵惰性更新。
+        -- 仅用原生速度积分，从 y=40 移动到截图里的 y≈100，检查空场中的两条矩阵更新路径。
         New(Class(object,{init=init,render=DefaultRenderFunc},true),140)
         New(Class(object,{init=init,render=function(o) DefaultRenderFunc(o) end},true),170)
     end
