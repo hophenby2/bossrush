@@ -14,18 +14,22 @@ from inspect_program import pointer, read_program
 def export(program, graphics, target, resources):
     sprite_colors = np.zeros((0x400, 3), dtype='u1')
     # 两种机体都用 P1 的硬件槽位，移植图集中用不同编号保留各自的颜色。
-    for bank, address in ((0, 0x628a0), (1, 0x62920), (4, 0x62a20), (5, 0x62a60), (23, 0x65ee0)):
+    for bank, address in ((0, 0x628a0), (1, 0x62920), (4, 0x62a20), (5, 0x62a60),
+                          (22, 0x64c20), (23, 0x65ee0)):
         sprite_colors[bank*32:(bank+1)*32] = decode_palette(
             struct.unpack_from('>32H', program, address))
     text_colors = {
         bank: decode_palette(struct.unpack_from('>16H', program, address))
         for bank, address in ((1, 0x625c0), (6, 0x625c0), (7, 0x62740),
-                              (9, 0x626a0), (10, 0x626c0), (12, 0x62680))
+                              (9, 0x626a0), (10, 0x626c0), (11, 0x62780), (12, 0x62680))
     }
 
     def decode(key, colors):
         if key[0] == 'sprite':
             return graphics.sprite(key[1:], colors)
+        if key[0] == 'beam':
+            image = graphics.sprite(key[1:], colors)
+            return image.crop(image.getchannel('A').getbbox())
         _, code, bank, flip = key
         raw = np.frombuffer(graphics.tiles, dtype='u1', count=32, offset=code*32)
         pens = np.stack((raw & 15, raw >> 4), axis=1).reshape(8, 8)
@@ -98,6 +102,24 @@ def export(program, graphics, target, resources):
                             for code, flip in ((0xc358, False), (0xc358, True), (0xc346, False),
                                                (0xc347, False), (0xc34c, False), (0xc34d, False),
                                                (0xc352, False), (0xc353, False))))
+        # 0x103f22 / 0x10407a 的 Boss 血条框和填充动画。图集槽位 22 保存其独立调色板。
+        table('bossPanel', (text_row(start, 28, 12) for start in (0xc35e, 0xc37a)))
+        array('bossMeter', [art(pointer(program, 0x1040fc+i*4), 0x2d0, 22) for i in range(6)])
+        table('pleaseWait', (text_row(0xc4be+i*24, 24, 11) for i in range(6)))
+        # 取 0xbd89c 的正向飞行图，去掉透明边距后让光束两端落在僚机和目标上。
+        out.write('  optionBeam={\n')
+        for ship, flight in enumerate((0xb8e48, 0xba5f2)):
+            base = pointer(program, 0xbd89c+ship*4)
+            beam_frames = []
+            for level in range(5):
+                shot = pointer(program, pointer(program, base+level*4))
+                frames = pointer(program, shot+30)
+                size = struct.unpack_from('>H', program, pointer(program, flight+level*36)+4)[0]
+                beam_frames.append(tuple(atlas.get(('beam', pointer(program, frames+4*i),
+                                                  size >> 9, size & 511, 4+ship, 0),
+                                                 sprite_colors) for i in range(3)))
+            out.write('    {\n' + rows(beam_frames, '      ') + '    },\n')
+        out.write('  },\n')
         table('rects', atlas.rects)
         out.write('}\n')
     atlas.save(resources)

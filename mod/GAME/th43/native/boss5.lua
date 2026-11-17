@@ -1,5 +1,5 @@
 -- 五面关底 0x64。0x1254fe 绑定事件、移动、辅助、发射以及碰撞入口。
-return function(program, bullets, effects, score)
+return function(program, bullets, effects, score, scroll)
     local bit = require('bit')
     local band, bor = bit.band, bit.bor
     local abs, floor, max, min = math.abs, math.floor, math.max, math.min
@@ -168,7 +168,12 @@ return function(program, bullets, effects, score)
     end
 
     movement[9] = function(o, m)
-        if m.fresh then o.phase, o.heading, m.speed = 3, 0, 8; return end
+        if m.fresh then
+            o.phase, o.heading, m.speed = 3, 0, 8
+            aux(o, 0x17)
+            scroll.beginDoom(o.run)
+            return
+        end
         if o.h < 0x5000 then
             m.speed = min(0x18, m.speed + 1)
         else
@@ -240,7 +245,7 @@ return function(program, bullets, effects, score)
         if amount == 0 then
             local flash = phase == 0 and o.run.route.ura and 0x3d966 or weakFlash[phase]
             local remaining = (phase == 3 or phase == 4) and o.hp or o[meter]
-            if remaining <= flash and band(o.run.frame, 0x0e) == 0 then o.hitFlash = 3 end
+            if remaining >= 0 and remaining <= flash and band(o.run.frame, 0x0e) == 0 then o.hitFlash = 3 end
         elseif not o.locked then
             o[meter] = o[meter] - amount
             if o[meter] <= cut then
@@ -287,6 +292,7 @@ return function(program, bullets, effects, score)
             o.colli, o.bound, o.locked = false, false, true
             o.h, o.l, o.heading, o.phase = s16(0x9000), 0x1c00-run.cameraOffset, 0, 0
             o.hp, o.reserve = run.route.ura and 0x61800 or data.hp[1], data.hp[2]
+            o.maxReserve = o.reserve
             o.timeouts, o.parts = {unpack(data.timeouts)}, {}
             o.events, o.auxiliary, o.emitters = {}, {}, {}
             o.children = {}
@@ -295,6 +301,7 @@ return function(program, bullets, effects, score)
             o.sideAim, o.wheel, o.wheelStep = {0,0}, 0, 1
             o.rotary, o.rotaryPosition, o.rotaryGun = {0,14,28,42}, {0,64,128,192}, {0,0,0,0}
             o.underside, o.travel, o.hitFlash, o.sweepDirection = 0, 1, 1, 1
+            o.finalHull = 0
             o.burstLength, o.circleLength, o.fanLength = 0x0a, 4, 2
             o.fanAngle = 8
             o.armFanLength = 3
@@ -305,7 +312,12 @@ return function(program, bullets, effects, score)
             if o.hidden then return end
             local color = o.hitFlash
             if o.phase >= 3 then
-                sprite(o, data.lastHull[color][o.underside % 32 + 1][1], add(o.h,o.l,-0x800,-0x600))
+                if o.finalWing then
+                    local wing = data.lastWings[o.finalWing+1]
+                    sprite(o, wing[1], add(o.h,o.l,-0x1200,0))
+                    sprite(o, wing[2], add(o.h,o.l,-0x1200,-0x1200))
+                end
+                sprite(o, data.lastHull[color][o.finalHull+1][1], add(o.h,o.l,-0x800,-0x600))
                 return
             end
             if o.landing then

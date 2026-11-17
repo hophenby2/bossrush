@@ -105,6 +105,22 @@ return function(program, bullets, effects, api)
         end
     end
 
+    auxiliary[0x17] = function(o)
+        for index = 1, 15 do wait(2); o.finalHull = index end
+    end
+
+    auxiliary[0x18] = function(o)
+        o.finalWing = 0
+        for index = 1, 8 do wait(2); o.finalWing = index end
+    end
+
+    auxiliary[0x19] = function(o)
+        while true do
+            wait(2)
+            o.finalWing = o.finalWing == 30 and 8 or o.finalWing + 1
+        end
+    end
+
     -- 0x129d74 推开阵形，旋转由另外两个辅助槽驱动。
     auxiliary[0x1a] = function(o)
         local f = o.formation
@@ -426,11 +442,11 @@ return function(program, bullets, effects, api)
     events[11], events[12] = pointAttacks, pointAttacks
 
     events[14] = function(o)
+        awaitAux(o, 0x17)
         move(o,5,6,0x5a00,0x1c00)
-        for i = 0,8 do
-            o.underside = i
-            wait(2)
-        end
+        aux(o, 0x18)
+        awaitAux(o, 0x18)
+        aux(o, 0x19)
         o.locked = false
         api.active(o, 3)
         wait(0x10)

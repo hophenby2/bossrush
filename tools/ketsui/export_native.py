@@ -1094,8 +1094,17 @@ def boss5_data(program, art):
                                       for i in range(24)) + '    },\n'
     yield '    droneBoxes={' + ','.join(map(str, struct.unpack_from('>4h', program, 0x12DB0E))) + '},\n'
     yield '    droneHeight={' + ','.join(map(str, struct.unpack_from('>16H', program, 0x12DE5A))) + '},\n'
-    yield '    droneZoom={' + ','.join(str(word(program, 0x12DE7A + 4 * i) >> 11)
-                                      for i in range(33)) + '},\n'
+    yield '    droneZoom={\n'
+    for i in range(30):
+        zoom = word(program, 0x12DE7A + 4 * i) >> 11
+        grow = zoom >= 16
+        slot = 32 - zoom if grow else zoom
+        # IGS023 的放大槽从 16 反向查表。每一位增减一像素，掩码每 32 像素重复。
+        mask = 0 if slot == 16 else 1 if slot == 15 else pointer(program, 0xA786C + 4 * slot)
+        width, height = (size + sum(mask >> (j % 32) & 1 for j in range(size)) * (1 if grow else -1)
+                         for size in (80, 112))
+        yield rows([(zoom, width, height)])
+    yield '    },\n'
     yield '    scoutSetup={' + ','.join(map(str, struct.unpack_from('>3H',program,0x12E814))) + '},\n'
     yield '    cannonTravel={\n'
     for address in (0x1287B2,0x1287F6,0x12883A,0x12887E):
@@ -1118,7 +1127,7 @@ def boss5_data(program, art):
     for name, address, count, size, bank in (
             ('wheels',0x125B50,30,0x1240,0x0f), ('landingWheels',0x125C98,64,0x1e70,0x13),
             ('landingHull',0x125C08,16,0x1858,0x13), ('sideGuns',0x125E02,32,0x0620,0x0f),
-            ('rotaryGuns',0x125F54,32,0x0410,0x13), ('lastHull',0x126692,32,0x0830,0x10),
+            ('rotaryGuns',0x125F54,32,0x0410,0x13), ('lastHull',0x126692,16,0x0830,0x10),
             ('armBase',0x126466,32,0x0a40,0x11), ('armLink',0x126566,32,0x0a40,0x11),
             ('armHead',0x1264E6,32,0x0830,0x11)):
         yield f'    {name}={{\n'
@@ -1127,6 +1136,12 @@ def boss5_data(program, art):
                                              for flip in (0, 0x40))
                                       for i in range(count)), '        ') + '      },\n'
         yield '    },\n'
+    # 0x1265e6 的左右翼不随主机身受击变色，单独使用调色板 0x11。
+    wing_palette = palette.copy()
+    wing_palette[0x11 * 32:0x12 * 32] = decode_palette(struct.unpack_from('>32H', program, 0x63260))
+    yield '    lastWings={\n' + rows(
+        (tuple(art(pointer(program, 0x1266D2 + 4 * i), 0x1248, 0x11 | flip, wing_palette)
+               for flip in (0, 0x40)) for i in range(31))) + '    },\n'
     yield '    droneArt={\n'
     for bank in (0x16,0x1f):
         if bank == 0x16:
@@ -1278,7 +1293,7 @@ def directional_bullet_art(program, art, visual):
 
 def player_data(program, art):
     # 0xb5c72 与 0xbb444 各选自己的武装表。四个子机发射器占不同的自机弹槽。
-    def shot(address, bank, index, lock=None):
+    def shot(address, bank, fly_size, lock=None):
         flags, h, l, dh, dl = struct.unpack_from('>Hhhhh', program, address)
         if flags & 0x20 and flags & 0x1000:
             offsets = [struct.unpack_from('>hh', program, pointer(program, address + 2) + 4 * i)
@@ -1289,23 +1304,18 @@ def player_data(program, art):
         size, front, back, damage, width, _, vector = struct.unpack_from('>7H', program, address + 14)
         flash = pointer(program, address + 10)
         fly = pointer(program, address + 30)
-        flash_count = 3 if flags == 0x8000 else 4
-        fly_count = 6 if lock else 1
-        fly_size = (0x410, 0x410, 0x618, 0x618, 0x620)[index] if lock else 0x210
-        if flags & 0x20 and flags & 0x1000:
-            fly_count, fly_size = 3, size
-        elif flags & 0x20:
-            fly_size = 0x210 if bank == 2 else 0x418
-        frames = tuple(art(pointer(program, flash + i * 4), size, bank) for i in range(flash_count))
-        motion = tuple(art(pointer(program, fly + i * 4), fly_size, bank) for i in range(fly_count))
+        flash_count = 3 if flags & 0xfff7 == 0x8000 else 4
+        fly_count = 6 if lock else 3 if offsets else 1
+        frames = tuple(weapon_art(pointer(program, flash + i * 4), size, bank) for i in range(flash_count))
+        motion = tuple(weapon_art(pointer(program, fly + i * 4), fly_size, bank) for i in range(fly_count))
         return (flags, h, l, dh, dl, front, back, damage, width, vector >> 8, vector & 255,
-                frames, motion, offsets, *(lock or (0, 0)))
+                frames, motion, offsets, *(lock or (0, 0)), word(program, address+28))
 
     def lua_shot(values):
-        *params, frames, motion, offsets, charge, threshold = values
+        *params, frames, motion, offsets, charge, threshold, attributes = values
         offsets = '{' + ','.join('{' + ','.join(map(str, offset)) + '}' for offset in offsets) + '}'
         return '{' + ','.join(map(str, params)) + ',{' + ','.join(map(str, frames)) + '},{' \
-            + ','.join(map(str, motion)) + '},' + offsets + f',{charge},{threshold}}}'
+            + ','.join(map(str, motion)) + '},' + offsets + f',{charge},{threshold},{attributes}}}'
 
     yield '  player={\n'
     death = []
@@ -1319,6 +1329,25 @@ def player_data(program, art):
         death.append((art(sprite,size,6),h,l))
     yield '    death={\n' + rows(death,'      ') + '    },\n'
     for ship in range(2):
+        palette = np.zeros((0x400, 3), dtype='u1')
+        for bank, address in ((2, 0x629A0), (4, 0x62A20)):
+            palette[bank*32:(bank+1)*32] = decode_palette(
+                struct.unpack_from('>32H', program, address + ship*0x40))
+        def weapon_art(address, size, bank):
+            return art(address, size, bank, palette)
+
+        def flight_table(address, indices, layout='>hhHh'):
+            return [struct.unpack_from(layout, program, pointer(program, address+4*i))
+                    for i in indices]
+
+        tiers = (0, 2, 4, 8, 12)
+        flights = {
+            'normal': flight_table((0xB680C, 0xB6A08)[ship], range(5)),
+            'lock': flight_table((0xB6CEC, 0xB702A)[ship], range(5)),
+            'option': flight_table((0xB7492, 0xB78C8)[ship], tiers),
+            'optionLock': flight_table((0xB8E48, 0xBA5F2)[ship], range(0, 45, 9), '>hhH'),
+        }
+
         settings = pointer(program, 0xBC64E + ship * 4)
         profile = program[settings + 10:settings + 14]
         yield '    {profile={' + ','.join(map(str, profile)) + '},\n'
@@ -1330,47 +1359,43 @@ def player_data(program, art):
         yield '     normal={\n'
         for index in range(5):
             address = pointer(program, pointer(program, 0xBC8DE + 4 * ship) + index * 4)
-            yield '      ' + lua_shot(shot(address, 2 if ship == 0 else 6, index)) + ',\n'
+            yield '      ' + lua_shot(shot(address, 2, flights['normal'][index][2])) + ',\n'
         yield '     }, lock={\n'
         for index in range(5):
             address = pointer(program, pointer(program, 0xBC8E6 + 4 * ship) + index * 4)
-            yield '      ' + lua_shot(shot(address, 2 if ship == 0 else 6, index,
+            yield '      ' + lua_shot(shot(address, 4, flights['lock'][index][2],
                                            struct.unpack_from('>HH', program, address + 38))) + ',\n'
         yield '     },\n     optionParams=' + lua_bytes(program[pointer(program, 0xBCDCC + ship * 4):][:32]) + ',\n'
-        fly_base = (0xB680C, 0xB6A08)[ship]
-        lock_base = (0xB6CEC, 0xB702A)[ship]
-        option_base = (0xB7492, 0xB78C8)[ship]
         yield '     fly={\n'
-        for mode, table in (('normal', fly_base), ('lock', lock_base), ('option', option_base)):
-            yield f'      {mode}={{\n'
-            for i in range(5):
-                address = pointer(program, table + i * 4)
-                h, l, size, travel = struct.unpack_from('>hhHh', program, address)
-                yield f'       {{{h},{l},{size},{travel}}},\n'
-            yield '      },\n'
+        for mode, values in flights.items():
+            yield f'      {mode}={{\n' + rows(values, '       ') + '      },\n'
         yield '     }, hit={\n'
         for mode, table in (('normal', (0xB6848, 0xB6A44)[ship]),
                             ('lock', (0xB6D28, 0xB7066)[ship]),
                             ('lockFree', (0xB6D82, 0xB70C0)[ship]),
-                            ('option', (0xB74FA, 0xB7930)[ship])):
+                            ('option', (0xB74FA, 0xB7930)[ship]),
+                            ('optionLock', (0xB8F1A, 0xBA6C4)[ship])):
             yield f'      {mode}={{\n'
-            for i in range(5):
+            indices = tiers if mode == 'option' else range(0, 45, 9) if mode == 'optionLock' else range(5)
+            for i in indices:
                 address = pointer(program, table + i * 4)
                 h, l, size, frames, _, last = struct.unpack_from('>hhHIHH', program, address)
                 assert last % 4 == 0 and 0 < last <= 0x3c
-                ids = [art(pointer(program, frames + 4 * j), size, 2 if ship == 0 else 6)
+                bank = 2 if mode in ('normal', 'option') else 4
+                ids = [weapon_art(pointer(program, frames + 4 * j), size, bank)
                        for j in range(last // 4)]
                 yield f'       {{{h},{l},{{' + ','.join(map(str, ids)) + '}},\n'
             yield '      },\n'
         yield '     },\n'
         for state, name in ((0, 'optionShot'), (1, 'optionLock')):
+            flight = flights['optionLock' if state else 'option']
             yield f'     {name}={{\n'
             for index in range(5):
                 address = pointer(program, pointer(program, 0xBD894 + ship * 4 + state * 8) + 4 * index)
                 yield '      {\n'
                 for slot in range(17 if state else 2 if index < 2 else 4):
                     entry = pointer(program, address + 4 * slot)
-                    yield '       ' + lua_shot(shot(entry, 2 if ship == 0 else 6, index)) + ',\n'
+                    yield '       ' + lua_shot(shot(entry, 4 if state else 2, flight[index][2])) + ',\n'
                 yield '      },\n'
             yield '     },\n'
         yield '    },\n'

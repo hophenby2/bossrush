@@ -47,17 +47,41 @@ function M.shield(p)
     sprite(images, fan[6-p.shieldFrame%4], x, y)
 end
 
-function M.option(o)
-    local x = floor((o.l+o.drawL)/64)-112
-    local y = floor((o.h+o.drawH)/64)-224
+local function optionBeam(p, x, y, targetX, targetY)
+    local dx, dy = targetX-x, targetY-y
+    local length = math.sqrt(dx*dx+dy*dy)
+    if length == 0 then return end
+    local frames = data.optionBeam[p.model][p.level]
+    local image = p.run.art.display[frames[#frames-floor(p.run.frame/2)%#frames]]
+    local angle = math.deg(math.atan2(dy,dx)) - 90
+    Render(image[1], (x+targetX)/2, (y+targetY)/2, angle, 1, length/image[3])
+end
+
+function M.option(o, targetX, targetY)
     local image = o.run.art.display[o.sprite]
-    Render(image[1], x+image[2]/2, y+image[3]/2, 0, 1, o.angle >= 128 and -1 or 1)
+    local x = floor((o.l+o.drawL)/64)-112+image[2]/2
+    local y = floor((o.h+o.drawH)/64)-224+image[3]/2
+    -- 从僚机精灵内部起画，随后用僚机覆盖光束根部。
+    if targetX then optionBeam(o.pilot, x, y, targetX, targetY) end
+    Render(image[1], x, y, 0, 1, o.angle >= 128 and -1 or 1)
 end
 
 function M.hull(p)
     local x = floor((p.l-0x400)/64)-112
     local y = floor((p.h+p.profile.hullOffsetH)/64)-224
     sprite(p.run.art.display, data.hull[p.model][p.turn+9], x, y)
+end
+
+local function bossMeter(run, boss, images)
+    local width = max(0, min(208, floor(boss.reserve / floor(boss.maxReserve / 208))))
+    if width == 0 then return end
+    local frame = floor(run.frame/4)%#data.bossMeter+1
+    local _, _, height, texture, u, v = unpack(images[data.bossMeter[frame]])
+    local left, bottom = -104, 192
+    local right, top = left+width, bottom+height
+    local color = Color(255,255,255,255)
+    RenderTexture(texture, '', {left,top,.5,u+.25,v+.25,color}, {right,top,.5,u+width-.25,v+.25,color},
+        {right,bottom,.5,u+width-.25,v+height-.25,color}, {left,bottom,.5,u+.25,v+height-.25,color})
 end
 
 function M.hud(run)
@@ -75,9 +99,19 @@ function M.hud(run)
         for i = 1, #digits do tile(data.digits[digits:byte(i)-47], 54, 9-#digits+i) end
     end
     local life = data.life[p.model]
+    local boss = run.boss5
+    local showDoom = boss and boss.phase >= 3 and not boss.hidden
+    local lifeRow = showDoom and 51 or 53
+    if showDoom then
+        bossMeter(run, boss, images)
+        for i = 1, 28 do
+            tile(data.bossPanel[1][i], 53, i-1)
+            tile(data.bossPanel[2][i], 52, i-1)
+        end
+    end
     for row = 0,min(8,max(0,p.life))-1 do
-        tile(life[1], 53, row)
-        tile(life[2], 52, row)
+        tile(life[1], lifeRow, row)
+        tile(life[2], lifeRow-1, row)
     end
     for row = 0,27 do
         local panel
@@ -89,9 +123,17 @@ function M.hud(run)
         else panel = row%2 == 1 and 3 or 4 end
         for column, id in ipairs(data.bombPanel[panel]) do tile(id, column-1, row) end
     end
-    for i, id in ipairs(data.insertCoin[1]) do
-        tile(id, 55, 15+i)
-        tile(data.insertCoin[2][i], 54, 15+i)
+    if showDoom then
+        local banner = data.pleaseWait[floor(run.frame/4)%#data.pleaseWait+1]
+        for i = 1, 12 do
+            tile(banner[i], 55, 14+i)
+            tile(banner[12+i], 54, 14+i)
+        end
+    else
+        for i, id in ipairs(data.insertCoin[1]) do
+            tile(id, 55, 15+i)
+            tile(data.insertCoin[2][i], 54, 15+i)
+        end
     end
 end
 

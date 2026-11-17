@@ -21,9 +21,10 @@ return function(program, bullets, effects)
             if p.l <= -0x400 or p.l >= 0x3c00 then return end
             local index = floor(p.target.face/8)+1
             local image = p.run.art.sprites[data.droneArt[p.flash and 2 or 1][index][p.frameIndex+1]]
-            local x,y = program.world(p.h-0xe00,p.l-0xa00)
-            local scale = (32-data.droneZoom[p.zoom+1])/32
-            Render(image[1],floor(x)+image[2]*scale/2,floor(y)+image[3]*scale/2,0,scale,scale)
+            local zoom, width, height = unpack(data.droneZoom[p.zoom+1])
+            local anchor = 16 - zoom -- 0xa940c 按缩放档位补偿两个轴的坐标。
+            local x,y = program.world(p.h-0xe00 + anchor*image[3], p.l-0xa00 + anchor*image[2])
+            Render(image[1],floor(x)+width/2,floor(y)+height/2,0,width/image[2],height/image[3])
         end,
     })
 

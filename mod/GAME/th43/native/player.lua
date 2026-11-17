@@ -8,11 +8,11 @@ return function(program, enemyBullets, items, display)
     local M = {}
     local deathFrames, missFrames = 32, 66
 
-    local function draw(o, sprite, h, l, flip)
+    local function draw(o, sprite, h, l, mirror)
         if not sprite then return end
         local image = o.run.art.sprites[sprite]
         Render(image[1], floor((o.l + l) / 64) - 112 + image[2] / 2,
-            floor((o.h + h) / 64) - 224 + image[3] / 2, 0, 1, flip or 1)
+            floor((o.h + h) / 64) - 224 + image[3] / 2, 0, mirror and -1 or 1, 1)
     end
 
     local function remove(o)
@@ -61,7 +61,6 @@ return function(program, enemyBullets, items, display)
     impact = function(o)
         local pilot = o.pilot
         local kind = o.chargeStep > 0 and (o.expired and 'lockFree' or 'lock') or o.mode
-        if kind == 'optionLock' then kind = 'option' end
         local impactData = pilot.profile.hit[kind][o.level]
         local dh, dl = retireShot(o)
         o.drawH, o.drawL, o.motion = unpack(impactData)
@@ -93,14 +92,10 @@ return function(program, enemyBullets, items, display)
             move(o, p.deltaH, p.deltaL)
         end
         o.dh, o.dl = program.vector(o.speed, o.angle)
-        if o.mode == 'optionLock' then
-            o.update = flight
-        else
-            local fly = p.profile.fly[o.mode][o.level]
-            o.drawH, o.drawL = fly[1], fly[2]
-            if o.chargeStep == 0 then o.h = s16(o.h + fly[4]) end
-            o.update = flight
-        end
+        local fly = p.profile.fly[o.mode][o.level]
+        o.drawH, o.drawL = fly[1], fly[2]
+        if o.chargeStep == 0 and fly[4] then o.h = s16(o.h + fly[4]) end
+        o.update = flight
         if o.chargeStep > 0 then
             o.update = lockFlight
             if p.model == 1 then lockFlight(o) else flight(o) end
@@ -124,16 +119,23 @@ return function(program, enemyBullets, items, display)
             o.imageFrame, o.charge, o.dh, o.dl = #o.motion, 0, 0, 0
             local flash = mode == 'normal' and p.hullFlash or mode == 'lock' and p.lockFlash or p.optionFlash
             o.sprite = shot[12][flash % #shot[12] + 1]
+            o.mirror = mode == 'option' and band(shot[17], 0x4000) ~= 0
             if mode == 'optionLock' then
                 local turn = floor(band(anchor.angle, 0xf8) / 8)
                 local offset = shot[14][turn + 1]
                 o.h, o.l, o.angle = s16(anchor.h + offset[1]), s16(anchor.l + offset[2]), anchor.angle
+                o.mirror = band(o.angle + 2, 0xff) > 0x80
             end
             o.armed = mode == 'option' or mode == 'optionLock'
             o.update = fireFrame
             o.x, o.y = program.world(o.h, o.l)
         end,
-        render = function(o) draw(o, o.sprite, o.drawH, o.drawL) end,
+        render = function(o)
+            -- 锁定僚机的飞行图由持续光束绘制，炮口闪光和命中仍随弹槽播放。
+            if o.mode ~= 'optionLock' or o.update ~= flight then
+                draw(o, o.sprite, o.drawH, o.drawL, o.mirror)
+            end
+        end,
     })
 
     local function shoot(p, mode, shot, anchor, target, first, count)
@@ -277,6 +279,12 @@ return function(program, enemyBullets, items, display)
         if wasActive and not next(p.bombObjects) then p.protect = 0x5a end
     end
 
+    local function optionAimL(pod, target)
+        local gap = pod.index > 2 and 0x300 or 0x1c0
+        local dl = pod.index % 2 == 1 and min(gap, target.left) or -min(gap, target.right)
+        return target.l - dl
+    end
+
     local function positionOption(pod)
         local p = pod.pilot
         local target = p.targets[pod.index]
@@ -287,9 +295,7 @@ return function(program, enemyBullets, items, display)
             pod.deployDelay = max(0, pod.deployDelay - 1)
             if pod.deployDelay == 0 and (pod.index < 3 or p.locked) then
                 if target then
-                    local gap = pod.index > 2 and 0x300 or 0x1c0
-                    local dl = pod.index % 2 == 1 and min(gap, target.left) or -min(gap, target.right)
-                    turnOption(pod, program.aimByte(pod.h, pod.l, target.h, target.l - dl, pod.angle, true))
+                    turnOption(pod, program.aimByte(pod.h, pod.l, target.h, optionAimL(pod,target), pod.angle, true))
                 end
                 pod.deploy = min(16, pod.deploy + 1)
             end
@@ -324,9 +330,17 @@ return function(program, enemyBullets, items, display)
             o.animation, o.animationClock, o.deployDelay, o.deploy = o.frames, 0, 10, 0
         end,
         render = function(o)
-            if o.sprite and o.index <= o.pilot.optionCount and o.pilot.respawn == 0 then
-                display.option(o)
+            local p = o.pilot
+            if not o.sprite or o.index > p.optionCount or p.respawn > 0 then return end
+            local target = p.targets[o.index]
+            local run = p.run
+            local tx, ty
+            if target and p.locked and not (run.stageEnding or run.stageCleared or run.practiceComplete or next(p.bombObjects))
+                and validTarget(target) and target.colli and target.lockable ~= false then
+                -- 在绘制时读两端坐标，使移动、卷轴和换相都使用本帧的位置。
+                tx, ty = program.world(target.h, optionAimL(o,target))
             end
+            display.option(o, tx, ty)
         end,
     })
 

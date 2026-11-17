@@ -30,6 +30,28 @@ function M.release(run, major)
     run.releaseAt = major
 end
 
+-- 0x127202 解除五面末段的停留。里路线接着以 8 像素/帧驶入 0x344 的循环。
+function M.beginDoom(run)
+    run.doomScroll = true
+    run.major, run.minor, run.mapMajor, run.mapMinor = 0x29c, 0x48, 0x29c, 0x48
+    run.holdMajor, run.mapLoop, run.releaseAt = false, nil, nil
+    run.scrollAccumY, run.scrollPixelY = 0, 0
+    run.scrollX = run.cameraOffset / 64
+    run.scrollNextSpeed[1][1] = 0x200
+    -- 练习快进可能已越过这组停留指令。两条流都从里路线接续的位置恢复。
+    for stream, events in ipairs(run.stage.scroll) do
+        local index = 1
+        while events[index] and events[index][1] <= 0x29c do index = index + 1 end
+        run.scrollIndex[stream] = index
+    end
+end
+
+function M.doomTileRow(row, forward)
+    local loopRows = 28 -- 0x344 处的 -928，经原程序扣除 32 像素的换页预留。
+    if row >= forward then return forward - loopRows + (row - forward) % loopRows end
+    return row
+end
+
 local function command(run, row, stream)
     local op, a, b = row[3], row[4], row[5]
     if op == 8 then

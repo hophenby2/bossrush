@@ -14,7 +14,7 @@ local boss1 = dofile(directory .. 'boss1.lua')(program, bullets, effects, score)
 local boss2 = dofile(directory .. 'boss2.lua')(program, bullets, effects, score)
 local boss3 = dofile(directory .. 'boss3.lua')(program, bullets, effects, score)
 local boss4 = dofile(directory .. 'boss4.lua')(program, bullets, effects, score)
-local boss5 = dofile(directory .. 'boss5.lua')(program, bullets, effects, score)
+local boss5 = dofile(directory .. 'boss5.lua')(program, bullets, effects, score, scroll)
 local mid1 = dofile(directory .. 'mid1.lua')(program, path, bullets, effects, score)
 local mid2 = dofile(directory .. 'mid2.lua')(program, bullets, effects, scroll, enemies, score)
 local mid3 = dofile(directory .. 'mid3.lua')(program, path, bullets, effects, items, score)
@@ -130,7 +130,7 @@ local function loadAtlas(kind, rects)
         end
         local name = 'th43_rom_' .. kind .. '_' .. i
         LoadImage(name, texture, x, y, w, h)
-        images[i] = kind == 'tiles' and {name, w, h, texture, x, y} or {name, w, h}
+        images[i] = (kind == 'tiles' or kind == 'display') and {name, w, h, texture, x, y} or {name, w, h}
     end
     return images
 end
@@ -295,13 +295,19 @@ local Background = Class(object, {
         local stage = run.stage
         local firstX = floor(run.scrollX / 32)
         local firstY = floor(run.mapMajor / 4)
+        if run.doomScroll then
+            -- $b02000 的 0x20 从原地图右侧窗口开始。纵向 FIFO 比计数器落后一行。
+            firstX, firstY = stage.across - 8 + firstX, firstY - 1
+        end
         local x = -112 - run.scrollX % 32
         local y = -224 - (run.mapMajor % 4 * 8 + run.scrollPixelY)
         local a,b,c,d = unpack(o.quad)
         for column = 0, 7 do
             local tileX = (firstX + column) % stage.across
             for row = 0, 14 do
-                local tileY = (firstY + row) % stage.forward
+                local tileY = firstY + row
+                if run.doomScroll then tileY = scroll.doomTileRow(tileY, stage.forward) end
+                tileY = tileY % stage.forward
                 local image = images[stage.tiles[tileY * stage.across + tileX + 1]]
                 local left, bottom = x + column*32, y + row*32
                 local right, top = left+32, bottom+32

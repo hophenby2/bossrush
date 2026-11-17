@@ -747,6 +747,69 @@ for _, legacy in ipairs({false,true}) do
     runtime.close(run)
 end
 
+-- B 机满火力的四种弹体各自使用飞行阶段的 ROM 尺寸，纵屏下宽高对调。
+do
+    local panzer = program.player[2]
+    for _, row in ipairs({
+        {panzer.normal[5], 40, 48}, {panzer.lock[5], 32, 96},
+        {panzer.optionShot[5][1], 16, 64}, {panzer.optionLock[5][1], 64, 64},
+    }) do
+        local rect = program.sprites[row[1][13][1]]
+        equal(rect[4], row[2])
+        equal(rect[5], row[3])
+    end
+end
+
+-- 锁定光束每次绘制都取本帧的僚机和目标，松键和换段时立即断开。
+do
+    local run = runtime.init(5, 'ura')
+    local new, render, renderers = New, Render, {}
+    New = function(class, ...)
+        local o = new(class, ...)
+        renderers[o] = class.render
+        return o
+    end
+    local p = runtime.addPlayer(run, 2, {level=5})
+    New = new
+    local pod = p.options[1]
+    pod.angle, pod.sprite = 0, runtime.display.options[2][1][1]
+    run.art = {display={}}
+    for id, rect in ipairs(runtime.display.rects) do
+        run.art.display[id] = {id, rect[4], rect[5]}
+    end
+    local target = {h=0x5200,l=0x2100,left=0x100,right=0x100,hp=1,colli=true}
+    p.locked, p.targets[1] = true, target
+    local calls = {}
+    Render = function(...) calls[#calls+1] = {...} end
+    local function checkEnds()
+        calls = {}
+        renderers[pod](pod)
+        equal(#calls, 2)
+        local id, x, y, rot, _, scale = unpack(calls[1])
+        local half = run.art.display[id][3] * scale / 2
+        local dx, dy = half * math.cos(math.rad(rot+90)), half * math.sin(math.rad(rot+90))
+        local x1, y1 = calls[2][2], calls[2][3]
+        local x2, y2 = program.world(target.h,target.l-target.left)
+        assert(math.abs(x-dx-x1) < 1e-6 and math.abs(y-dy-y1) < 1e-6)
+        assert(math.abs(x+dx-x2) < 1e-6 and math.abs(y+dy-y2) < 1e-6)
+        return id
+    end
+    local firstFrame = checkEnds()
+    pod.h, pod.l, target.h, target.l = pod.h+0x380, pod.l+0x700, target.h-0x100, target.l-0x200
+    run.frame = run.frame + 2
+    assert(checkEnds() ~= firstFrame)
+    target.colli = false
+    calls = {}
+    renderers[pod](pod)
+    equal(#calls, 1)
+    target.colli, p.locked = true, false
+    calls = {}
+    renderers[pod](pod)
+    equal(#calls, 1)
+    Render = render
+    runtime.close(run)
+end
+
 -- 一颗 0x180 普通弹在同帧依次命中两个共位的 0x20 小型机部件。
 local penetration = runtime.init(1, 'first')
 for slot = 11, 12 do
@@ -1277,6 +1340,14 @@ for _, route in ipairs({'first', 'omote', 'ura'}) do
                 and boss.children[1] and boss.children[1].colli
         end, 4000, '子机编队')
         local drone = boss.children[1]
+        assert(run.doomScroll and run.holdMajor and boss.finalWing >= 8 and boss.finalWing <= 30)
+        equal(run.major, 0x344)
+        equal(run.scrollStep, 8)
+        equal(boss.finalHull, 15)
+        local zoom, width, height = unpack(program.boss5.droneZoom[drone.zoom+1])
+        equal(zoom, 16)
+        equal(width, 80)
+        equal(height, 112)
         equal(runtime.playerShot(run, {h=drone.h, l=drone.l, front=0, back=0, right=0, left=0, damage=0x400}), drone)
         drone.damage(drone, drone.hp + 1)
         runtime.step(run, pilot)
