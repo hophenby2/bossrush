@@ -1,5 +1,5 @@
 -- 0xb562c 的输入状态与 0xbb7d2 的自机弹槽。坐标沿用原程序的两条 1/64 像素轴。
-return function(program, enemyBullets, items)
+return function(program, enemyBullets, items, display)
     local bit = require('bit')
     local band = bit.band
     local floor, min, max = math.floor, math.min, math.max
@@ -303,7 +303,7 @@ return function(program, enemyBullets, items)
         pod.h, pod.l = s16(p.h + pod.baseH + dh + oh), s16(p.l + dl + ol)
         pod.x, pod.y = program.world(pod.h, pod.l)
         local orientation = band(floor(band(pod.angle + 2, 0xff) / 4), 0x3e) / 2
-        pod.sprite = p.profile.options[orientation + 1][pod.animation]
+        pod.sprite = display.options[p.model][orientation + 1][pod.animation]
         pod.animationClock = pod.animationClock - 1
         if pod.animationClock < 0 then
             pod.animationClock = pod.animationInterval
@@ -324,8 +324,8 @@ return function(program, enemyBullets, items)
             o.animation, o.animationClock, o.deployDelay, o.deploy = o.frames, 0, 10, 0
         end,
         render = function(o)
-            if o.index <= o.pilot.optionCount and o.pilot.respawn == 0 then
-                draw(o, o.sprite, o.drawH, o.drawL, o.angle >= 128 and -1 or 1)
+            if o.sprite and o.index <= o.pilot.optionCount and o.pilot.respawn == 0 then
+                display.option(o)
             end
         end,
     })
@@ -437,7 +437,8 @@ return function(program, enemyBullets, items)
             p.misses, p.bombsUsed = options.misses or 0, options.bombsUsed or 0
             p.level = options.level or 1
             p.key, p.protect, p.respawn = options.keys, options.protect or 0xf0, 0
-            p.autofireEnabled = options.autofireEnabled ~= false
+            p.shieldFrame = 0
+            p.autofireEnabled, p.legacyInput = options.autofireEnabled ~= false, options.legacyInput
             p.clearHitbox = p.protect > 0
             p.deltaH, p.deltaL, p.turn, p.turnDelay = 0, 0, 0, 0
             p.inputShoot, p.locked, p.held = false, false, 0x19
@@ -470,7 +471,8 @@ return function(program, enemyBullets, items)
                 if row then draw(p,row[1],row[2],row[3]) end
                 return
             end
-            draw(p, p.profile.hull[p.turn + 9], p.profile.hullOffsetH, -0x400)
+            if p.protect > 0 then display.shield(p) end
+            display.hull(p)
         end,
     })
 
@@ -529,15 +531,18 @@ return function(program, enemyBullets, items)
             return
         end
         if p.protect ~= 0xff then p.protect = max(0, p.protect - 1) end
+        p.shieldFrame = p.protect > 0 and p.shieldFrame+1 or 0
         p.clearHitbox = p.protect > 0
         local keys = p.key or KeyState
         if not keys then return end
         movePilot(p, keys)
         local ending = p.run.stageEnding
-        local pressed = not ending and not not keys.shoot
+        local shot, auto = keys.slow, keys.shoot
+        if p.legacyInput then shot, auto = keys.shoot, keys.special end
+        local pressed = not ending and not not shot
         local rising = pressed and not p.inputShoot
-        -- 0xb5986：C 键只补射击沿，长按计时和僚机展开仍读取 A 键。
-        local pulse = not ending and p.autofireEnabled and keys.special and not p.firing
+        -- Z 对应原版 C。0xb5986 每两帧产生一次射击沿，锁定与展开由 Shift 对应的 A 键计时。
+        local pulse = not ending and p.autofireEnabled and auto and not p.firing
         p.inputShoot = pressed
         if pressed then
             if p.held > 0 then

@@ -23,6 +23,10 @@ function P.layoutWorld()
     end
     local panel=SequenceResources and SequenceResources.state() and ui and ui.OriginalHUD and ui.OriginalHUD.portraitHeight() or 0
     local width=panel>0 and math.min(WIDTH,(screen.height-panel-40)*(w.r-w.l)/(w.t-w.b)) or WIDTH
+    if stage and stage.current_stage and stage.current_stage.arcadeHUD then
+        panel = 0
+        width = math.min(WIDTH, screen.height*(w.r-w.l)/(w.t-w.b))
+    end
     local height=width*(w.t-w.b)/(w.r-w.l)
     w.scrl,w.scrr=(WIDTH-width)/2,(WIDTH+width)/2
     w.scrt=math.min((screen.height+height)/2,screen.height-panel)

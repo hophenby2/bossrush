@@ -1,6 +1,7 @@
 -- 原程序在 0x101cd2 更新敌机，0x101d3e 更新敌弹，随后进入碰撞例程。
 local directory = 'mod/GAME/th43/native/'
 local program = dofile(directory .. 'program.lua')
+local display = dofile(directory .. 'display.lua')
 local scroll = dofile(directory .. 'scroll.lua')
 local path = dofile(directory .. 'path.lua')(program)
 local bullets = dofile(directory .. 'enemy_bullet.lua')(program)
@@ -19,7 +20,7 @@ local mid2 = dofile(directory .. 'mid2.lua')(program, bullets, effects, scroll, 
 local mid3 = dofile(directory .. 'mid3.lua')(program, path, bullets, effects, items, score)
 local mid4 = dofile(directory .. 'mid4.lua')(program, bullets, effects, scroll, score)
 local mid5 = dofile(directory .. 'mid5.lua')(program, bullets, effects, scroll, score)
-local players = dofile(directory .. 'player.lua')(program, bullets, items)
+local players = dofile(directory .. 'player.lua')(program, bullets, items, display)
 local warning = dofile(directory .. 'warning.lua')(program)
 local practice = dofile(directory .. 'practice.lua')
 local encounters = {
@@ -29,7 +30,7 @@ local encounters = {
 local floor = math.floor
 local band = require('bit').band
 
-local M = {program=program, practiceEntries=practice.entries, bullets=bullets, enemies=enemies, boss1=boss1, boss2=boss2, boss3=boss3, mid1=mid1, mid2=mid2, mid3=mid3, mid4=mid4,
+local M = {program=program, display=display, practiceEntries=practice.entries, bullets=bullets, enemies=enemies, boss1=boss1, boss2=boss2, boss3=boss3, mid1=mid1, mid2=mid2, mid3=mid3, mid4=mid4,
     boss4=boss4, mid5=mid5, players=players, items=items, score=score, chips=chips}
 local art
 
@@ -129,7 +130,7 @@ local function loadAtlas(kind, rects)
         end
         local name = 'th43_rom_' .. kind .. '_' .. i
         LoadImage(name, texture, x, y, w, h)
-        images[i] = {name, w, h}
+        images[i] = kind == 'tiles' and {name, w, h, texture, x, y} or {name, w, h}
     end
     return images
 end
@@ -137,7 +138,7 @@ end
 local function loadArt()
     if not art or not lstg.CheckRes(2, art.sprites[1][1]) then
         art = {sprites=loadAtlas('sprites', program.sprites), tiles=loadAtlas('tiles', program.tiles),
-            transport=loadAtlas('transport', program.transportSprites)}
+            transport=loadAtlas('transport', program.transportSprites), display=loadAtlas('display', display.rects)}
     end
     return art
 end
@@ -285,22 +286,35 @@ end
 local Background = Class(object, {
     init = function(o, run)
         o.run, o.group, o.layer, o.bound, o.colli = run, GROUP.GHOST, LAYER.BG, false, false
+        local white = Color(255,255,255,255)
+        o.quad = {}
+        for i = 1,4 do o.quad[i] = {0,0,.5,0,0,white} end
     end,
     render = function(o)
         local run, images = o.run, o.run.art.tiles
         local stage = run.stage
         local firstX = floor(run.scrollX / 32)
         local firstY = floor(run.mapMajor / 4)
-        local x = -112 + 16 - run.scrollX % 32
-        local y = -224 + 16 - run.scrollY % 32
+        local x = -112 - run.scrollX % 32
+        local y = -224 - (run.mapMajor % 4 * 8 + run.scrollPixelY)
+        local a,b,c,d = unpack(o.quad)
         for column = 0, 7 do
             local tileX = (firstX + column) % stage.across
             for row = 0, 14 do
                 local tileY = (firstY + row) % stage.forward
                 local image = images[stage.tiles[tileY * stage.across + tileX + 1]]
-                Render(image[1], x + column * 32, y + row * 32)
+                local left, bottom = x + column*32, y + row*32
+                local right, top = left+32, bottom+32
+                local u,v = image[5], image[6]
+                -- 取样点留在各自图块内，避免 Metal 在分数缩放时读到图集的空白隔列。
+                a[1],a[2],a[4],a[5] = left,top,u+.25,v+.25
+                b[1],b[2],b[4],b[5] = right,top,u+31.75,v+.25
+                c[1],c[2],c[4],c[5] = right,bottom,u+31.75,v+31.75
+                d[1],d[2],d[4],d[5] = left,bottom,u+.25,v+31.75
+                RenderTexture(image[4],'',a,b,c,d)
             end
         end
+        display.background(run)
     end,
 })
 
@@ -474,7 +488,8 @@ end
 function M.playerStock(run)
     local p = assert(run.player)
     return {life=p.life,bombs=p.bombs,level=p.level,misses=p.misses,bombsUsed=p.bombsUsed,
-        score=p.score,extends=p.extends,extendSetting=p.extendSetting,autofireEnabled=p.autofireEnabled}
+        score=p.score,extends=p.extends,extendSetting=p.extendSetting,autofireEnabled=p.autofireEnabled,
+        legacyInput=p.legacyInput}
 end
 
 function M.advance(run)

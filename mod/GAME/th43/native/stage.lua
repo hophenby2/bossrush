@@ -3,6 +3,16 @@ local M = {level=41}
 local stages = #runtime.program.stages
 local routeNames = {first='一周目',omote='表二周目',ura='里二周目'}
 
+local HUD = Class(object, {
+    init = function(o, scene)
+        o.scene = scene
+        o.group, o.layer, o.bound, o.colli = GROUP.GHOST, LAYER.TOP, false, false
+    end,
+    render = function(o)
+        runtime.display.hud(o.scene.pgmRun)
+    end,
+})
+
 local function publish(p, state)
     local v = lstg.var
     state.life, state.bombs, state.power = p.life, p.bombs, p.level
@@ -21,7 +31,7 @@ if NativePlayers then
         spawn = function()
             local run = assert(lstg.tmpvar.pgmRun)
             local model = lstg.var.native_player_id == 'panzer' and 2 or 1
-            return setPlayer(runtime.addPlayer(run, model))
+            return setPlayer(runtime.addPlayer(run, model, {legacyInput=lstg.var.__pgm_replay_version==2}))
         end,
     }
 end
@@ -37,6 +47,7 @@ function M.open(scene, practice)
     SetBound(-160,160,-270,270)
     scene.pgmRun = practice and runtime.initPractice(practice, true) or runtime.init(1, 'first', true)
     lstg.tmpvar.pgmRun = scene.pgmRun
+    scene.arcadeHUD = New(HUD, scene)
 end
 
 function M.run(scene, sequence)
@@ -84,6 +95,8 @@ end
 
 function M.close(scene)
     if not scene.pgmWorld then return end
+    object.RawDel(scene.arcadeHUD)
+    scene.arcadeHUD = nil
     runtime.close(scene.pgmRun)
     if player == scene.pgmRun.player then player, lstg.player = nil, nil end
     OriginalSetWorld(unpack(scene.pgmWorld))

@@ -1,6 +1,6 @@
 -- The native fan-game stages store a separate player version in the replay initial state.
 local P={VERSION=1,adapters={}}
-P.pgmReplayVersions={[41]=2,[42]=4,[43]=3,[44]=1,[45]=1,[46]=1}
+P.pgmReplayVersions={[41]=3,[42]=4,[43]=3,[44]=1,[45]=1,[46]=1}
 local lifeThresholds={9,12,15,20,25,30,35,40,40,99}
 local respawnY={[35]=-180,[36]=-176,[37]=-400/3,[38]=-176,[39]=-176}
 local profiles={
@@ -82,10 +82,11 @@ function P.practiceLevel(stageName,group)
 end
 function P.enabled(v,level)
     v=v or lstg.var
+    local ketReplayV2=v.native_player_level==41 and v.__pgm_replay_version==2
     return v.__native_player_version==P.VERSION and (not level or level==v.native_player_level)
         and P.machine(v.native_player_level,v.native_player_id)~=nil
         and (not P.pgmReplayVersions[v.native_player_level]
-            or v.__pgm_replay_version==P.pgmReplayVersions[v.native_player_level])
+            or v.__pgm_replay_version==P.pgmReplayVersions[v.native_player_level] or ketReplayV2)
 end
 function P.configure(level,id,loadout)
     local v=lstg.var

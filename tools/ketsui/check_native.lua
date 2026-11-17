@@ -26,7 +26,7 @@ end
 
 -- 固定自机保护以重复验证五面衔接。伤害由原生自机弹与敌机碰撞回调结算。
 local function checkCampaign(route,run)
-    local keys={shoot=true}
+    local keys={slow=true}
     if run then
         keys=run.player.key
     else
@@ -674,7 +674,7 @@ for _ = 1, 40 do runtime.step(controlled) end
 equal(ship.options[1].h, 0x688)
 equal(ship.options[1].l, 0xb90)
 equal(ship.options[2].l, 0x1370)
-inputs.shoot = true
+inputs.slow = true
 runtime.step(controlled)
 equal(ship.shots[1].h, 0xa48)
 equal(ship.shots[1].l, 0xb10)
@@ -703,7 +703,7 @@ runtime.step(controlled)
 equal(ship.speed, 0x12)
 runtime.step(controlled)
 equal(ship.shots[32].dh, 0x4e5)
-inputs.shoot, inputs.right = false, true
+inputs.slow, inputs.right = false, true
 runtime.step(controlled)
 equal(ship.locked, false)
 equal(ship.speed, 0x13)
@@ -720,13 +720,14 @@ equal(next(ship.bombObjects), nil)
 assert(ship.protect > 0 and ship.protect <= 0x5a)
 runtime.close(controlled)
 
--- C 键每隔一帧测试一次弹槽，保持普通炮口和快移，松开后不补发。
-do
+-- C 键每隔一帧测试一次弹槽。第 2 版录像继续以特殊键读该通道。
+for _, legacy in ipairs({false,true}) do
     local run=runtime.init(1,'first')
     local keys={}
-    local pilot=runtime.addPlayer(run,1,{keys=keys})
+    local pilot=runtime.addPlayer(run,1,{keys=keys,legacyInput=legacy})
+    local autoKey=legacy and 'special' or 'shoot'
     for _=1,40 do runtime.step(run) end
-    keys.special=true
+    keys[autoKey]=true
     runtime.step(run)
     equal(pilot.shots[29].mode,'normal')
     equal(pilot.shots[1].mode,'option')
@@ -739,7 +740,7 @@ do
     equal(pilot.locked,false)
     equal(pilot.speed,pilot.baseSpeed)
     equal(pilot.options[1].deploy,0)
-    keys.special=false
+    keys[autoKey]=false
     local count=pilot.hullFlash
     for _=1,8 do runtime.step(run) end
     equal(pilot.hullFlash,count)
@@ -2110,7 +2111,7 @@ end
 do
     local run = runtime.init(1,'first')
     run.spawnIndex, run.freeze = #run.stage.spawns + 1, true
-    local pilot = runtime.addPlayer(run,1,{keys={shoot=true},h=0x1000,l=0x1c00,protect=0})
+    local pilot = runtime.addPlayer(run,1,{keys={slow=true},h=0x1000,l=0x1c00,protect=0})
     local target
     for _, row in ipairs(run.stage.spawns) do
         if row[10] == 0xd08d2 then target = runtime.enemies.spawn(run,row); break end

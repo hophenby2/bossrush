@@ -387,11 +387,12 @@ function ui_drawing:Beforerender()
     if lstg.var.init_player_data and not stage.current_stage.is_menu and not ext.notUIdraw then
         SetViewMode 'ui'
         RenderClearViewMode(Color(255, 0, 0, 0))
-        ui.DrawFrame(self)
+        if not stage.current_stage.arcadeHUD then ui.DrawFrame(self) end
 
     end
 end
 function ui_drawing:Afterrender()
+    if stage.current_stage.arcadeHUD then return end
     if lstg.var.init_player_data and not stage.current_stage.is_menu and not ext.notUIdraw then
         if lstg.var.init_player_data then
 

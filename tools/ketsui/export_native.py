@@ -1320,13 +1320,8 @@ def player_data(program, art):
     yield '    death={\n' + rows(death,'      ') + '    },\n'
     for ship in range(2):
         settings = pointer(program, 0xBC64E + ship * 4)
-        palette = 0 if ship == 0 else 4
-        size = word(program, settings + 2)
-        hull_table = pointer(program, 0xBC6D2 + ship * 4)
-        hull = [art(pointer(program, hull_table + i * 4), size, palette) for i in range(-8, 9)]
         profile = program[settings + 10:settings + 14]
-        yield '    {hull={' + ','.join(map(str, hull)) + '},\n'
-        yield '     profile={' + ','.join(map(str, profile)) + '},\n'
+        yield '    {profile={' + ','.join(map(str, profile)) + '},\n'
         yield '     hullOffsetH=' + str(signed(word(program, settings))) + ',\n'
         yield '     shotLimit={' + ','.join(str(word(program, pointer(program, 0xBC672 + ship * 8) + i * 2))
                                           for i in range(5)) + '},\n'
@@ -1341,12 +1336,7 @@ def player_data(program, art):
             address = pointer(program, pointer(program, 0xBC8E6 + 4 * ship) + index * 4)
             yield '      ' + lua_shot(shot(address, 2 if ship == 0 else 6, index,
                                            struct.unpack_from('>HH', program, address + 38))) + ',\n'
-        yield '     }, options={\n'
-        for i in range(32):
-            address = pointer(program, (0xBCE14, 0xBD0B4)[ship] + 4 * i)
-            frames = [art(pointer(program, address + 4 * j), 0x410, palette) for j in range(8)]
-            yield '      {' + ','.join(map(str, frames)) + '},\n'
-        yield '     }, optionParams=' + lua_bytes(program[pointer(program, 0xBCDCC + ship * 4):][:32]) + ',\n'
+        yield '     },\n     optionParams=' + lua_bytes(program[pointer(program, 0xBCDCC + ship * 4):][:32]) + ',\n'
         fly_base = (0xB680C, 0xB6A08)[ship]
         lock_base = (0xB6CEC, 0xB702A)[ship]
         option_base = (0xB7492, 0xB78C8)[ship]
