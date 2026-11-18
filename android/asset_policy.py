@@ -12,6 +12,17 @@ DREAMER_BACKGROUNDS = {
 DREAMER_SYSTEM = {'ConfigNumber.png', 'Num_s.png', 'TextBox.png', 'TextIcon.png', 'WhiteBack.png'}
 
 
+def native_font_images(root):
+    images = set()
+    for folder in ('THlib', 'Resources', 'mod'):
+        for font in (root/folder).rglob('*.fnt'):
+            text = font.read_text(encoding='utf-8-sig')
+            for bitmap, page in re.findall(r'(?im)^\s*Bitmap\s*=\s*([^\r\n]+)|\bfile="([^"]+)"', text):
+                image = font.parent/(bitmap or page).strip().strip('"').replace('\\', '/')
+                images.add(image.resolve())
+    return images
+
+
 def include_asset(path):
     path = str(path).replace('\\', '/')
     if not path.startswith(DREAMER):

@@ -8,7 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'android'))
-from asset_policy import include_asset, DREAMER
+from asset_policy import include_asset, native_font_images, DREAMER
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--apk', type=Path)
@@ -34,6 +34,8 @@ assert not include_asset(DREAMER+'bgm/Title.ogg')
 assert include_asset('Resources/th43/boss/Cirno/BossWalkImage.png')
 if args.apk:
     with zipfile.ZipFile(args.apk) as apk:
+        for image in native_font_images(ROOT):
+            assert 'assets/game/'+image.relative_to(ROOT).as_posix() in apk.namelist(), image
         # 使用APK中的实际别名，覆盖图片编码、去重和WAV转换共同作用后的路径。
         resolver = "local a="+apk.read('assets/game/asset_variants.lua').decode().removeprefix('return ')
         resolver += "\nfor line in io.lines() do print('assets/game/'..(a[line] or line)) end"

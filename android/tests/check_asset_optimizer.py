@@ -35,6 +35,17 @@ with tempfile.TemporaryDirectory() as temp:
     assert report[core]['core'] and not report[core]['codec'].startswith('webp-q')
     with Image.open(lossy[background]) as packed:assert packed.getchannel('A').tobytes()==photo.getchannel('A').tobytes()
     with Image.open(lossy.get(core,core)) as packed:assert packed.convert('RGBA').tobytes()==photo.tobytes()
+    variants, report=m.optimize_images([background,core],root/'webp-alpha-cache',root,True,transparent_webp=True)
+    for source in (background,core):
+        with Image.open(variants.get(source,source)) as packed:
+            assert packed.getchannel('A').tobytes()==photo.getchannel('A').tobytes()
+            if source==core:assert packed.convert('RGBA').tobytes()==photo.tobytes()
+    assert report[core]['core'] and not report[core]['lossy']
+    assert m.optimize_images([background,core],root/'webp-alpha-cache',root,True,transparent_webp=True)==(variants,report)
+    font_variants,font_report=m.optimize_images([core],root/'webp-alpha-cache',root,True,
+        transparent_webp=True,png_only={core})
+    assert font_report[core]['format']=='png', '原生位图字体内部的PNG引用不经过Lua别名'
+    with Image.open(font_variants.get(core,core)) as packed:assert packed.convert('RGBA').tobytes()==photo.tobytes()
     from image_policy import noncore_category
     for path in ('THlib/UI/font/score.png','THlib/UI/life.png','THlib/bullet/img/bullet5.png','Resources/Original/10/stgenm06_0.png','Resources/Original/8/eff09al_1.png','unknown.png'):
         assert noncore_category(path) is None,path

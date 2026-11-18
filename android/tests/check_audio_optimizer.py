@@ -48,4 +48,9 @@ with tempfile.TemporaryDirectory() as temp:
     assert records[music]['packed_bytes'] < records[music]['source_bytes']*.95
     assert all(p.read_bytes() == raw for p, raw in original.items()), '源音乐不能被改写'
     assert m.optimize_music([music, low_rate], root/'music-cache') == (variants, records)
+    compact, compact_records=m.optimize_music([music],root/'music-cache',compression_level=.95,minimum_bitrate=80000)
+    assert music in compact and compact[music]!=variants[music]
+    info=sf.info(compact[music])
+    assert (info.frames,info.samplerate,info.channels)==(len(noise),44100,2)
+    assert compact_records[music]['packed_bytes']<records[music]['packed_bytes']
 print('音效及音乐采样率/声道/帧数、包体收益、源文件及缓存检查通过')

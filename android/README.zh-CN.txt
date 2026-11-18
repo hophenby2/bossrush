@@ -1,3 +1,12 @@
+26.11.18-750m-assets 安卓本地候选包（2026-11-18）
+完整APK为714.48 MB（681.38 MiB），低于750,000,000字节。
+--transparent-webp启用透明图片编码，同时需要完整构建以更新原生解码器；PNG与WebP统一使用LuaSTG的未预乘Alpha。
+核心2151张图片RGBA逐像素一致；背景有损编码保留尺寸和Alpha，透明WebP的可见RGB PSNR至少36dB。
+--compact-music压缩全部189首BGM，沿用当前0.95编码档位；全部曲目的采样率、声道、帧数和原作循环点检查通过。
+位图字体内部引用的6张图片保留独立PNG文件，不依赖Lua资源别名。
+37张GPU对照图通过，其中18张核心图片在普通和加色混合下逐像素一致。
+完整构建：python3 android/build.py --lossy-images --compress-audio --optimize-fonts --transparent-webp --compact-music
+
 26.11.18-slim-assets 安卓资源优化（2026-11-18）
 APK由1525.26 MiB降至1177.49 MiB，减少347.77 MiB（22.80%）。
 裁剪Like Dreamer已由切片和宿主界面替代的80个旧资源，完整登记依赖257个文件。

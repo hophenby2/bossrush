@@ -61,13 +61,13 @@ def optimize_audio(sources, cache):
     return variants, records
 
 
-def optimize_music(sources, cache):
+def optimize_music(sources, cache, compression_level=.5, minimum_bitrate=192000):
     import soundfile as sf
     cache.mkdir(parents=True, exist_ok=True)
 
     def encode(source):
         raw = source.read_bytes()
-        codec = f'music-v1-compression-0.5-{sf.__version__}-{sf.__libsndfile_version__}'
+        codec = f'music-v2-compression-{compression_level}-min-{minimum_bitrate}-{sf.__version__}-{sf.__libsndfile_version__}'
         key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
         metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
         if metadata.exists():
@@ -77,13 +77,13 @@ def optimize_music(sources, cache):
         info = sf.info(io.BytesIO(raw))
         record = {'converted': False, 'source_bytes': len(raw), 'packed_bytes': len(raw),
                   'frames': info.frames, 'sample_rate': info.samplerate,
-                  'channels': info.channels, 'compression_level': .5}
-        # 已经低于192kbps的曲目继续使用原编码，避免重复有损压缩。
-        if info.duration > 0 and len(raw) * 8 / info.duration > 192000:
+                  'channels': info.channels, 'compression_level': compression_level}
+        # 低于目标档位的曲目继续使用原编码，避免重复有损压缩。
+        if info.duration > 0 and len(raw) * 8 / info.duration > minimum_bitrate:
             encoded = io.BytesIO()
             with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
                     encoded, 'w', samplerate=info.samplerate, channels=info.channels,
-                    format='OGG', subtype='VORBIS', compression_level=.5) as output:
+                    format='OGG', subtype='VORBIS', compression_level=compression_level) as output:
                 for block in audio.blocks(blocksize=32768, dtype='float32', always_2d=True):
                     output.write(block)
             result = encoded.getvalue()

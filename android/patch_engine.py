@@ -183,6 +183,17 @@ replace('frameworks/cocos2d-x/cocos/renderer/backend/gfx/ProgramGFX.cpp',
         '''const auto version = stage.stage == gfx::ShaderStageFlagBit::COMPUTE ? 310 : 300;
             s.source = UtilsGFX::compileSPIRVtoGLSL(spirvCodes[stage.stage], version, true);''')
 
+# WebP与PNG服从同一个Alpha开关，LuaSTG使用未预乘纹理以支持原作加色混合。
+replace('frameworks/cocos2d-x/cocos/platform/CCImage.cpp',
+        'config.output.colorspace = config.input.has_alpha ? MODE_rgbA : MODE_RGB;',
+        '''const bool premultiplied = config.input.has_alpha && PNG_PREMULTIPLIED_ALPHA_ENABLED;
+        config.output.colorspace = config.input.has_alpha ? (premultiplied ? MODE_rgbA : MODE_RGBA) : MODE_RGB;''')
+replace('frameworks/cocos2d-x/cocos/platform/CCImage.cpp',
+        '''// we ask webp to give data with premultiplied alpha
+        _hasPremultipliedAlpha = (config.input.has_alpha != 0);''',
+        '''// WebP与PNG共用渲染器指定的Alpha模式。
+        _hasPremultipliedAlpha = premultiplied;''')
+
 # GLES 3 支持 NPOT 循环采样；修改描述符后必须更新真正绑定的不可变 sampler。
 texture_gfx = 'frameworks/cocos2d-x/cocos/renderer/backend/gfx/TextureGFX.cpp'
 replace(texture_gfx, 'const bool isPow2 = ISPOW2(_width) && ISPOW2(_height);',

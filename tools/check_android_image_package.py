@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'android'))
 from image_policy import noncore_category
-from asset_policy import include_asset
+from asset_policy import include_asset, native_font_images
 
 
 def main():
@@ -20,6 +20,7 @@ def main():
     p.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1])
     p.add_argument('--output',type=Path)
     p.add_argument('--windows',action='store_true',help='检查Windows ZIP及其逻辑文件名/贴图别名')
+    p.add_argument('--transparent-webp',action='store_true',help='验收已修正原生Alpha解码的透明WebP')
     a=p.parse_args()
     counts={'core_exact':0,'noncore_exact':0,'noncore_lossy_opaque':0,'noncore_lossy_transparent':0}
     with zipfile.ZipFile(a.apk) as z:
@@ -27,6 +28,11 @@ def main():
         mapping='windows/asset_aliases.lua' if a.windows else 'asset_variants.lua'
         aliases=dict(re.findall(r'\["(.*?)"\]="(.*?)"',z.read(prefix+mapping).decode()))
         logical={n[len(prefix):] for n in z.namelist() if n.startswith(prefix)}|set(aliases) if a.windows else set(re.findall(r'"(.*?)"',z.read(prefix+'asset_index.lua').decode()))
+        if not a.windows:
+            for image in native_font_images(a.root):
+                path=image.relative_to(a.root).as_posix()
+                assert prefix+path in z.namelist(), ('位图字体内嵌引用缺失', path)
+                assert path not in aliases, ('位图字体图片不能依赖Lua别名', path)
         for folder in ('THlib','Resources','mod'):
             for source in (a.root/folder).rglob('*.png'):
                 path=source.relative_to(a.root).as_posix()
@@ -42,9 +48,11 @@ def main():
                     x,y=original.convert('RGBA'),decoded.convert('RGBA')
                     assert x.getchannel('A').tobytes()==y.getchannel('A').tobytes(),('Alpha变化',path)
                     opaque=x.getchannel('A').getextrema()==(255,255)
+                    webp=decoded.format=='WEBP'
                     if not opaque:
-                        assert decoded.format=='PNG',('透明图必须保留PNG解码路径',path)
-                        assert source.read_bytes()[8:33]==packed[8:33],('透明图PNG头变化',path)
+                        assert decoded.format=='PNG' or a.transparent_webp and webp,('透明图解码路径未启用',path)
+                        if not webp:
+                            assert source.read_bytes()[8:33]==packed[8:33],('透明图PNG头变化',path)
                     exact=x.tobytes()==y.tobytes()
                     if noncore_category(path) is None:
                         assert exact,('核心图片不是无损',path)
@@ -53,10 +61,11 @@ def main():
                         counts['noncore_exact']+=1
                     else:
                         x=np.asarray(x).astype('int16');y=np.asarray(y).astype('int16')
-                        if opaque:
-                            mse=float(np.mean((x[:,:,:3].astype('float32')-y[:,:,:3])**2))
+                        if opaque or webp:
+                            error=(x[:,:,:3].astype('float32')-y[:,:,:3])*(x[:,:,3:4]/255)
+                            mse=float(np.mean(error**2))
                             assert 10*np.log10(255**2/mse)>=36,('非核心有损误差过大',path)
-                            counts['noncore_lossy_opaque']+=1
+                            counts['noncore_lossy_opaque' if opaque else 'noncore_lossy_transparent']+=1
                         else:
                             assert int(np.max(np.abs(x[:,:,:3]-y[:,:,:3])))<=4,('非核心透明RGB误差超过4级',path)
                             counts['noncore_lossy_transparent']+=1

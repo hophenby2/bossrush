@@ -41,7 +41,7 @@ def recompress_png(image, original):
     return b''.join(output)
 
 
-def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
+def optimize_images(sources, cache, game_root=None, lossy_noncore=False, transparent_webp=False, png_only=()):
     try:
         import numpy as np
         from PIL import Image, __version__, features
@@ -50,6 +50,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
     if not features.check('webp'):
         raise RuntimeError('当前Pillow没有WebP编码支持')
     cache.mkdir(parents=True, exist_ok=True)
+    png_only = set(png_only)
 
     def encode(source):
         raw = source.read_bytes()
@@ -57,6 +58,10 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
         category = noncore_category(logical)
         allow_lossy = bool(lossy_noncore and category)
         version = f'images-{"v5" if allow_lossy else "v3"}-{allow_lossy}-{__version__}'
+        if transparent_webp:
+            version = f'images-v6-webp-alpha-{allow_lossy}-{__version__}'
+        if source in png_only:
+            version += '-png-only'
         key = hashlib.sha256(str(source).encode() + raw + version.encode()).hexdigest()
         metadata = cache/(key+'.json')
         if metadata.exists():
@@ -79,7 +84,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
                                   rgba_sha256=hashlib.sha256(pixels).hexdigest())
                     candidates = [('png-lossless', 'png', recompress_png(image,raw))]
                     opaque = rgba.getchannel('A').getextrema() == (255,255)
-                    if opaque:
+                    if source not in png_only and (opaque or transparent_webp):
                         encoded = io.BytesIO()
                         (rgba.convert('RGB') if opaque else rgba).save(encoded,format='WEBP',lossless=True,exact=True,method=6)
                         candidates.append(('webp-lossless','webp',encoded.getvalue()))
@@ -92,7 +97,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
                             selected, cost = result, packed
                             record.update(format=suffix,codec=codec)
                     if allow_lossy and not opaque:
-                        # WebP固定预乘Alpha，与当前引擎PNG路径不同；透明图保持PNG。
+                        # PNG继续提供低误差候选，透明WebP由修正后的原生解码路径处理。
                         # 非核心仅将RGB四舍五入到5bit阶梯，逐通道误差<=4，Alpha不动。
                         values = np.asarray(rgba).copy()
                         values[:,:,:3] = np.minimum((values[:,:,:3].astype('uint16')+4)//8*8,255).astype('uint8')
@@ -108,7 +113,7 @@ def optimize_images(sources, cache, game_root=None, lossy_noncore=False):
                             changed = not np.array_equal(reference,values)
                             selected,cost = result,packed
                             record.update(format='png',codec='png-rgb5' if changed else 'png-lossless',max_rgb_error=4,lossy=changed)
-                    if allow_lossy and opaque:
+                    if allow_lossy and source not in png_only and (opaque or transparent_webp):
                         reference = np.asarray(rgba).astype('float32')
                         for quality in (85,90,95):
                             encoded = io.BytesIO()

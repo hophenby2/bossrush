@@ -28,7 +28,9 @@ take([(k,v) for k,v in records.items() if v['core'] and '/bullet/' in k],2)
 take([(k,v) for k,v in records.items() if v['codec'].startswith('webp-q')],10)
 take([(k,v) for k,v in records.items() if v['codec'] in ('png-rgb6','png-rgb5')],6)
 take([(k,v) for k,v in records.items() if not v['core'] and v['codec']=='webp-lossless'],3)
-for path in ['Resources/Original/8/eff09al_1.png','Resources/Original/8/eff09sk_1.png']:
+for path in ['Resources/Original/8/eff09al_1.png','Resources/Original/8/eff09sk_1.png',
+             'Resources/th39/barrages.png','Resources/th38/bullet.png',
+             'Resources/ports/dreamer/res/likedreamer/stage/Bullet.png']:
     if path not in selected:selected.append(path)
 base=[a.adb,'-s',a.serial];package='org.bossrush.hd';flag='files/bossrush/User/android-diagnostics'
 def adb(*words,input=None,check=True):
