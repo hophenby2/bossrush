@@ -52,7 +52,13 @@ function extboss:render()
     SetViewMode("ui")
     local timer = self.timer
     local w = lstg.world
-    local bottom=w.scrb+(AndroidPortrait and AndroidPortrait.enabled() and AndroidPortrait.BOSS_BOTTOM_INSET or 0)
+    local bottom=w.scrb
+    if AndroidPortrait and AndroidPortrait.enabled() then
+        bottom=bottom+AndroidPortrait.BOSS_BOTTOM_INSET
+    else
+        -- 阶段刻度在锚点下方 26，横屏底边至少留 4 个 UI 单位。
+        bottom=max(bottom,26+4)
+    end
     local alpha = self.alpha
     local white = "white"
     local bosses = boss_group

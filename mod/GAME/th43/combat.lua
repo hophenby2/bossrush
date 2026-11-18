@@ -107,7 +107,8 @@ local tasker=Class(object,{
 E.tasker=function(fn) return E.New(tasker,nil,0,0,fn) end
 E.boss=setmetatable({utility={cacheResource=noop},class={TAUNT_RANK=3}},{__index=boss})
 function E.boss.createTasker(o,x,y,fn,wait)
-    local actor=E.New(tasker,o,x,y,fn)
+    -- 原作在 init 里挂载掉落、发弹等协程，由脚本在最后一次执行后 Del。
+    local actor=E.New(E.EGGlib.ObjectEvent.object,x,y,fn)
     o.taskers[#o.taskers+1]=actor
     if wait then while valid(actor) do task.Wait() end end
     return actor

@@ -40,7 +40,8 @@ function playerAdapter.init(p)
             end
         end
     end)
-    p.hscale,p.vscale,p.protect=.25,.25,180
+    local bodyScale=.85*E.lstg.globalimagescale
+    p.hscale,p.vscale,p.protect=bodyScale,bodyScale,180
     p.grazeRadius=p.name=='reimu' and 50 or 30
 end
 

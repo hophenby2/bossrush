@@ -1316,54 +1316,65 @@ end
 
 local function midbossPattern149(self, rt)
     local t = self.helperTimer
-    if t >= 64 and t % diff(rt, {200, 160, 160, 160, 160}) == 0 then
-        local layers = diff(rt, {12, 15, 18, 18, 20})
-        local top = diff(rt, {4.5, 5.5, 6, 6.5, 7.7})
-        for i = 0, layers - 1 do
-            local speed = top - i * top / layers * 0.7
-            local spread = floor(i * 0x10000 / max(1, layers - 1))
-            fan(3, 0, self.ldX, self.ldY, aim(self), speed, 2, spread)
-            if difficulty(rt) > 2 and i < layers - 1 then
-                fan(5, 0, self.ldX, self.ldY, aim(self),
-                    speed - top / layers * 0.35, 2, spread + 800)
+    if t >= 64 and (t-64) % diff(rt,{200,160,160,160,160}) == 0 then
+        local layers = diff(rt,{12,15,18,18,20})
+        local top = diff(rt,{4.5,5.5,6,6.5,7.7})
+        local angle = aim(self)
+        for i = 0, layers do
+            local spread = i * floor(0x10000/layers)
+            fan(10,0,self.ldX,self.ldY,angle,top-i*(top-1)/layers,2,spread,10)
+            if difficulty(rt)>2 and i<layers then
+                fan(10,0,self.ldX,self.ldY,angle,top-1-i*(top-2.4)/layers,2,spread+0x5dc,10)
             end
         end
     end
-    if t >= 1200 then setState(self, 1) end
+    if t == 1200 then self.helperTimer = 0 end
 end
 
 local stage9ShipMuzzles = {
-    {-90, -45}, {90, -45}, {-150, 0}, {-55, 45}, {55, 45}, {150, 0},
+    {90,-20,0x4000}, {156,-20,0x4000}, {-95,50,0}, {-156,50,0x8000},
+    {156,-100,0}, {-156,-100,0x8000},
 }
 
 local function midbossPattern14a(self, rt)
-    local t = self.helperTimer
-    local cycle = t % 1100
-    for i, muzzle in ipairs(stage9ShipMuzzles) do
-        local x, y = self.ldX + muzzle[1], self.ldY + muzzle[2]
-        if cycle < 400 then
-            if i <= 2 then
-                local cadence = diff(rt, {160, 120, 80, 60, 50})
-                if (cycle + (i - 1) * floor(cadence / 2)) % cadence == 0 then
-                    ring(3 + i, 0, x, y, cycle * 97,
-                        diff(rt, {2.5, 3, 3.5, 4, 5.5}),
-                        diff(rt, {15, 21, 27, 30, 33}))
-                end
-            elseif (cycle + i * 17) % diff(rt, {120, 90, 60, 40, 36}) == 0 then
-                fire(0x0d, 0x0e, x, y, aim(self, x, y), 5.5)
+    local cycle = self.helperTimer % 1100
+    for i,muzzle in ipairs(stage9ShipMuzzles) do
+        local x,y = self.ldX+muzzle[1],self.ldY+muzzle[2]
+        local primary = i<=2
+        if primary and cycle<600 then
+            local interval = diff(rt,{160,120,80,60,50})
+            local start = (2-i)*interval+100
+            local speed = diff(rt,{2.5,3,3.5,4,5.5})
+            local count = diff(rt,{15,21,27,30,33})
+            if cycle>=start and cycle<400 and (cycle-start)%(2*interval)==0 then
+                ring(2,0,x,y,aim(self,x,y),speed,count)
+            elseif cycle>=560 and (cycle-560)%4==0 then
+                local field = i==1 and "secondaryAngle16" or "targetAngle16"
+                local target = aim(self,x,y)
+                if cycle==560 then self[field]=target end
+                ring(2,0,x,y,self[field],speed+5,count-4)
+                self[field]=Core.turn16(self[field],target,0x80)
             end
-        elseif cycle >= 560 and cycle < 600 and i <= 2 and cycle % 4 == 0 then
-            self.secondaryAngle16 = Core.turn16(self.secondaryAngle16,
-                aim(self, x, y), 0x80)
-            ring(7, 0, x, y, self.secondaryAngle16,
-                8, diff(rt, {13, 17, 21, 25, 29}))
-        elseif cycle >= 630 and cycle < 1070 and
-               cycle % diff(rt, {12, 7, 6, 6, 5}) == 0 then
-            local visual = i <= 2 and 3 or 5
-            local spin = (i % 2 == 0 and -1 or 1) * cycle * 173
-            fire(visual, 1, x, y, spin, 4.5 + (cycle - 630) * 0.01)
-            fire(visual, 1, x, y, spin + 0x8000, 4.5 + (cycle - 630) * 0.01)
-            if difficulty(rt) > 2 then fire(visual, 1, x, y, spin, 3.5) end
+        elseif not primary and cycle<400 then
+            local interval=diff(rt,{120,90,60,40,36})
+            local start=(i-3)*interval+50
+            if cycle>=start and cycle<(difficulty(rt)==2 and 350 or 370) and (cycle-start)%(4*interval)==0 then
+                fire(0x12,0x0e,x,y,(i-1)*0x8000,diff(rt,{6,7,8,9,10}))
+            end
+        elseif cycle>=630 and cycle<1070 then
+            local elapsed=cycle-630
+            local interval=diff(rt,{12,7,6,6,5})+(primary and 2 or 0)
+            if elapsed%interval==0 then
+                local speed=diff(rt,{4,5,5.5,6,7})+elapsed*.01
+                for opposite=0,(primary and 1 or 0) do
+                    local base=muzzle[3]-opposite*0x8000
+                    for sign=-1,1,2 do
+                        local angle=base+sign*elapsed*(primary and 200 or 210)
+                        fire(primary and 3 or 5,0,x,y,angle,speed)
+                        if difficulty(rt)>2 then fire(primary and 3 or 5,0,x,y,angle,speed-.5) end
+                    end
+                end
+            end
         end
     end
 end
@@ -1925,46 +1936,36 @@ end
 
 local function stage9PatternPhase4(self, rt)
     local t = self.helperTimer
-    if self.state == 0x3d or self.state == 0x3e then
-        local cycle = t % 360
-        if cycle == 0 then
-            for i = 0, 3 do
-                local typeId = i % 2 == 0 and 0xda or 0xdb
-                spawnStage9Attack(rt, self, typeId, 0, 0, i,
-                    floor(i * 0x10000 / 4), 0)
-            end
-            if self.state == 0x3e then
-                spawnStage9Attack(rt, self, 0xdc, 0, 0, 4, 0, 0)
-                spawnStage9Attack(rt, self, 0xdd, 0, 0, 5, 0x8000, 0)
-            end
+    if t < 100 then return end
+    local final = self.state == 0xa1
+    local cycle = (t - 100) % (final and 600 or 360)
+    local base
+    if cycle == 0 or final and cycle == 300 then base = 0xda
+    elseif final and cycle == 150 or self.state == 0x3e and cycle == 180 then base = 0xdc end
+    if base then
+        local count = final and 7 or 4
+        local direction = Core.frameRand(final and rt.frame or t) % 2
+        local radius = 150 + Core.frameRand(t) % 31
+        for i = 0, count - 1 do
+            local node = spawnStage9Attack(rt, self, base + direction, 0, 0, i,
+                i * floor(0x10000 / count), 0)
+            if node then node._blOrbitRadius = radius end
         end
-        if self.state == 0x3d and cycle >= 30 and cycle < 130 and cycle % 8 == 0 then
-            ring(4, 1, self.ldX, self.ldY,
-                randomInt(self, rt, cycle, 0, 0xffff),
-                randomRange(self, rt, cycle + 1, 3.5, 7), 25)
-        end
-        if self.state == 0x3d and self.hp < self.maxhp * 0.5 and cycle > 150 then
-            setState(self, 0x3e)
-        end
-    else
-        local cycle = t % 600
-        if cycle == 0 or cycle == 300 then
-            for i = 0, 6 do
-                local typeId = i % 2 == 0 and 0xda or 0xdb
-                spawnStage9Attack(rt, self, typeId, 0, 0, i,
-                    floor(i * 0x10000 / 7), 0)
-            end
-        elseif cycle == 150 then
-            for i = 0, 6 do
-                local typeId = i % 2 == 0 and 0xdc or 0xdd
-                spawnStage9Attack(rt, self, typeId, 0, 0, i,
-                    floor(i * 0x10000 / 7), 0)
-            end
-        end
-        if t >= 300 and cycle >= 30 and cycle < 150 and cycle % 8 == 0 then
-            ring(4, 1, self.ldX, self.ldY,
-                randomInt(self, rt, cycle, 0, 0xffff), 6, 40)
-        end
+    end
+    if self.state == 0x3d and self.hp < self.maxhp * .5 and cycle == 170 then
+        self.state = 0x3e
+    end
+    local start = final and 600 or 340
+    if t < start or self.state == 0x3e then return end
+    local shot = (t - start) % (final and 600 or 360)
+    local interval = final and 8 or diff(rt, {16,10,8,6,6})
+    if shot == 30 then self._blVolleyAim = aim(self, self.ldX, self.ldY + 5) end
+    if shot >= 30 and shot < (final and 150 or 130) and (shot-30)%interval == 0 then
+        local jitter = final and shot*27 or (shot-30)*10
+        ring(final and 4 or 2, 1, self.ldX, self.ldY+5,
+            self._blVolleyAim + Core.frameRand(t) % (2*jitter+1) - jitter,
+            final and 8.8 or diff(rt,{5.5,5.5,6.5,7,7}),
+            final and 40 or diff(rt,{30,30,32,32,32}))
     end
 end
 
@@ -2161,19 +2162,26 @@ local function stage9AttackNode(self, rt)
         if t >= 620 then beginFade() end
     else
         local sign = (typeId == 0xda or typeId == 0xdc) and 1 or -1
-        local radius = sin(min(t, 300) * pi / 300) * 190
-        local orbit = Core.angle16((self.angle16 or 0) + sign * t * 200)
-        local dx, dy = Core.ellipse(orbit, radius, radius * 0.55, sign * 0xa00)
+        self.angle16 = Core.angle16(self.angle16 + sign * 200)
+        local radius = sin(min(t, 300) * pi / 300) * self._blOrbitRadius
+        local dx, dy = Core.polar(self.angle16, radius)
         self.ldX, self.ldY = owner.ldX + dx, owner.ldY + dy
-        if t >= 30 and t < 270 and
-           t % diff(rt, {6, 5, 4, 3, 3}) == 0 then
-            local id = difficulty(rt) == 4 and
-                (sign > 0 and 0x2c or 0x2d) or 0
-            fire(typeId <= 0xdb and 3 or 5, id, self.ldX, self.ldY,
-                orbit + sign * 0x4000, 5.5)
-            fire(typeId <= 0xdb and 3 or 5, id, self.ldX, self.ldY,
-                orbit + sign * 0x4000 + 900, 7)
+        if t == 30 then
+            self.secondaryAngle16 = Core.angle16(self.angle16 + Core.randomAngle(owner.helperTimer,0))
         end
+        local interval = diff(rt,{6,5,4,3,3})
+        if t >= 30 and t < 270 and (t-30)%interval == 0 then
+            local highest = difficulty(rt) == 4
+            local speed = diff(rt,{5,5.5,6.5,7,7}) + (t-30)*(highest and .02 or .012)
+            if highest then
+                fire(typeId < 0xdc and 0x0d or 0x0c, sign > 0 and 0x2c or 0x2d,
+                    self.ldX,self.ldY,self.secondaryAngle16,speed)
+            else
+                ring(typeId < 0xdc and 3 or 2,0,self.ldX,self.ldY,self.secondaryAngle16,speed,2)
+            end
+        end
+        self.secondaryAngle16 = Core.angle16((self.secondaryAngle16 or 0) +
+            sign * (200 + diff(rt,{200,230,270,340,470})))
         if t >= 300 then remove(self) end
     end
 end
