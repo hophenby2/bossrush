@@ -271,7 +271,7 @@ def compile_extra_guns(prefix,output):
     with Path(str(prefix)+'.extra-guns').open('rb')as stream:
         while block:=stream.read(size):
             if len(block)!=size:raise ValueError('跳跃及宽幅炮记录被截断')
-            frame,seq,fn,handle,index,following,active,px,py,respawn,rank,side=struct.unpack_from('>12I',block)
+            frame,seq,fn,handle,index,following,active,px,py,respawn,base_speed,side=struct.unpack_from('>12I',block)
             before,after=block[48:48+0x3f50],block[48+0x3f50:48+2*0x3f50]
             config=block[48+2*0x3f50:48+2*0x3f50+80]
             params=block[-96:]
@@ -289,7 +289,7 @@ def compile_extra_guns(prefix,output):
                     raise ValueError(f'第 {frame} 帧炮台漏写本体字段 {at:x}')
             rows.append([frame,seq,handle,mode,modes[following]if active else mode.replace('_init',''),bool(active),
                 read(config,0),[read(before,a)for a in body_fields],[read(after,a)for a in body_fields],
-                [(v+2147483648)%4294967296-2147483648 for v in (px,py)],respawn,rank,expected,ops[seq]])
+                [(v+2147483648)%4294967296-2147483648 for v in (px,py)],respawn,base_speed,expected,ops[seq]])
     if not rows:raise ValueError('没有捕获到跳跃及宽幅炮')
     def lua(v):
         if isinstance(v,str):return '"'+v+'"'
@@ -334,12 +334,15 @@ def compile_tasks(prefix,output):
         if fn==0xc0966d0:
             # 一批两份烟粒子只提交一次原生效果请求；坐标由本步关节锚点另行核对。
             return None
+        if fn in (0xc0760b0,0xc0760d0,0xc156670):return None
         overlay={0xc14e2f0:'create',0xc14e250:'enable',0xc14e270:'disable'}
         if fn in overlay:return ['overlay',overlay[fn]],0
         raise ValueError(('未处理的演出任务接口',hex(fn)))
     def private(mode,raw):
         if mode=='leap_smoke_init':return [0,12,16]
         if mode=='leap_smoke':return [0,4,12,16]
+        if mode=='landing_init':return [0,8,12,16]
+        if mode=='landing':return [0,4,8,12,16]
         if mode=='enter_init':return [0,4]
         if mode=='enter':return [0,4]+([8]if read(raw,0)!=0 else[])
         if mode.startswith('flash'):return []
@@ -377,6 +380,17 @@ def compile_tasks(prefix,output):
             ops=[list(value)for r in operations[number]if(value:=normalize(r))is not None]
             if mode=='leap_smoke'and any(r[0]==0xc0966d0 for r in operations[number]):
                 ops.insert(0,[['leap_dust',read(before,0x1b7c),read(before,0x1b80),120],0])
+            if mode=='landing_init':
+                # 每个脚点的两组四份图形合并为一个效果工厂请求，脚点取独立 helper 的实参。
+                strips=[r for r in operations[number]if r[0]==0xc156670]
+                if len(strips)!=4:raise ValueError('落地烟尘缺少四组图形分配')
+                for r in strips[::2]:ops.append([['land_burst',*r[21:23],120],0])
+            if mode=='landing':
+                offsets=[r[-1]for r in operations[number]if r[0]in(0xc0760b0,0xc0760d0)]
+                if len(offsets)!=2:raise ValueError('落地缺少两次画面偏移读取')
+                ops.insert(0,[['camera_offset'],offsets])
+                if any(r[0]==0xc0966d0 for r in operations[number]):
+                    ops.append([['land_dust',read(before,0x1b7c),read(before,0x1b80),120],0])
             calls+=len(ops);closed+=not active
             steps.append([frame,number,handle,index,mode,modes[following],bool(active),configs,patches,
                           digest(read(after,at,w)for at,w in fields),state,ops])

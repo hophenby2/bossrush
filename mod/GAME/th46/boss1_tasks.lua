@@ -11,7 +11,8 @@ local source={enter_init=0xc154a10,enter=0xc1548a0,flash_init=0xc154c80,
     reset_init=0xc154ee0,reset=0xc154e40,central_init=0xc154dc0,central=0xc154d30,
     expand_init=0xc155660,expand=0xc1555c0,relax_init=0xc155750,relax=0xc1556d0,
     pose_init=0xc1558e0,pose_down=0xc1557b0,pose_up=0xc155850,
-    leap_smoke_init=0xc155ea0,leap_smoke=0xc157150}
+    leap_smoke_init=0xc155ea0,leap_smoke=0xc157150,
+    landing_init=0xc155da0,landing=0xc156f10}
 local handlers={}
 local Slot,Manager
 local function closeSlot(o)
@@ -64,6 +65,37 @@ handlers.leap_smoke=function(o,v,b)
     b[0x18e4]=y
     v[4]=v[4]+(v[4]<=128 and 2 or v[4]<=288 and 24 or 1)
     if v[0]==1 and v[4]>176 then v[0]=2;invoke(o,'sound',5)end
+    if v[4]>288 then closeSlot(o)end
+end
+
+handlers.landing_init=function(o,v,b)
+    v[0],v[8],v[12],v[16]=0,30,0,1
+    invoke(o,'sound',4)
+    for i=0,1 do
+        invoke(o,'land_burst',b[0x1b7c+i*80],b[0x1b80+i*80]-32*unit,depth(o))
+    end
+    switch(o,'landing')
+end
+handlers.landing=function(o,v,b)
+    -- c0760b0/c0760d0 读取当前画面偏移的负值；不能拿自机移动或固定零代替它。
+    local offset=invoke(o,'camera_offset')
+    assert(type(offset)=='table'and #offset==2,'落地任务缺少本步原版画面偏移')
+    b[0x34c],b[0x350]=offset[1],offset[2]
+    v[8]=v[8]-1
+    if v[8]<0 then b[0x34c],b[0x350]=0,0 end
+    v[12]=v[12]-1
+    if v[12]<0 then
+        v[12]=v[16]
+        invoke(o,'land_dust',b[0x1b7c],b[0x1b80],depth(o))
+    end
+    if v[0]==0 then v[0],v[4]=1,0 end
+    if v[0]~=1 then return end
+    local speed,angle=0x2000,v[4]+128
+    if v[4]<=256 then speed,angle=0x4000,v[4]+128
+    elseif v[4]>272 then angle=672-v[4]end
+    local _,y=vector(speed,angle)
+    b[0x18e4]=y
+    v[4]=v[4]+(v[4]<=128 and 24 or v[4]<=272 and 2 or 1)
     if v[4]>288 then closeSlot(o)end
 end
 
@@ -270,8 +302,8 @@ Manager=Class(object,{
 return {
     source=source,
     fields={{8,4},{12,4},{28,4},{32,4},{48,4},{52,4},{76,4},{80,4},{84,4},{88,4},
-        {0x354,4},{0x169c,4},{0x16ac,4},{0x18e4,4},{0x1a80,4},{0x1ab0,4},{0x1ac0,4},{0x1ac6,2},
-        {0x1ad0,4},{0x1b10,4},{0x1b20,4},{0x1b60,4},{0x1b7c,4},{0x1b80,4},{0x22e0,4},{0x22e4,4}},
+        {0x34c,4},{0x350,4},{0x354,4},{0x169c,4},{0x16ac,4},{0x18e4,4},{0x1a80,4},{0x1ab0,4},{0x1ac0,4},{0x1ac6,2},
+        {0x1ad0,4},{0x1b10,4},{0x1b20,4},{0x1b60,4},{0x1b7c,4},{0x1b80,4},{0x1bcc,4},{0x1bd0,4},{0x22e0,4},{0x22e4,4}},
     create=function(host,api)return New(Manager,host,api)end,
     spawn=add,step=step,stepSlot=stepSlot,
     alive=function(o)return o~=nil and o~=0 and not o.closed end,

@@ -14,7 +14,10 @@ local function same(a,b)
     for i=1,#a do if not same(a[i],b[i])then return false end end
     return true
 end
-function api.invoke()return 0 end
+function api.invoke(_,kind)
+    if kind=='camera_offset'then return row[12][operationIndex+1][2]end
+    return 0
+end
 function api.observe(_,kind,args,result)
     local expected=assert(row[12][operationIndex+1],'多提交了演出接口 '..kind)
     local actual={kind};for _,value in ipairs(args)do actual[#actual+1]=value end

@@ -97,7 +97,9 @@ local Child=Class(object,{
 })
 return {
     load=function()
+        if CheckRes('tex',texture)then return end
         LoadTexture(texture,'Resources/th46/stage1/boss1_children.png')
+        SetTextureSamplerState(texture,'point+clamp')
         for i,row in ipairs(art.frames)do LoadImage(texture..'_'..(i-1),texture,unpack(row))end
     end,
     create=function(...)return New(Child,...)end,

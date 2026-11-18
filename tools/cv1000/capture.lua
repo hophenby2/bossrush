@@ -151,7 +151,8 @@ emu.register_frame_done(function()
         end)
     end
     local key = keys[frame]
-    if resume and frame==resume+1 and fireFrom then startPressed:set_value(1)
+    if resume and frame==resume+1 and fireFrom then
+        startPressed:set_value(frame>=tonumber(fireFrom)and frame<=tonumber(fireTo)and 1 or 0)
     elseif key and (not state or resume) then key[1]:set_value(key[2]) end
     if keepLives and livesAddress then
         local value = program:read_u32(livesAddress)

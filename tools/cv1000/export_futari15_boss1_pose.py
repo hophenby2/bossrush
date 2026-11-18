@@ -1,7 +1,7 @@
-"""离线展开第一面关底 0x0c14e450 的整数关节更新。
+"""离线展开第一/五面关底的整数关节更新（--boss 1 / 5）。
 
 只在导出时分析指令与分支；游戏内文件仅含固定算式和原始数据表。
-循环按原常量展开，八种牵引状态通过数值选择合并，不在运行时解释 SH-3。
+循环按原常量展开，八种牵引或动画状态通过数值选择合并，不在运行时解释 SH-3。
 分支汇合使用后支配关系；半字标志必须按原宽度合并，不能冒充长字。
 """
 import argparse,copy,re,struct
@@ -11,7 +11,9 @@ import capstone
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('ram',type=Path)
 parser.add_argument('output',type=Path)
+parser.add_argument('--boss',type=int,choices=(1,5),default=1)
 args=parser.parse_args()
+entry,code_end,body_size=(0xc1b4c80,0xc1b57d0,0x27a8)if args.boss==5 else(0xc14e450,0xc14f360,0x3f50)
 raw=args.ram.read_bytes()
 if len(raw)!=0x800000:raise ValueError('工作 RAM 必须为 8 MiB')
 class Memory:
@@ -49,9 +51,10 @@ def call(name,*args):
     return expr('%s(%s)'%(name,','.join(map(fmt,args))))
 md=capstone.Cs(capstone.CS_ARCH_SH,capstone.CS_MODE_SH3|capstone.CS_MODE_BIG_ENDIAN)
 code={}
-for a in range(0xc14e450,0xc14f360,2):
+for a in range(entry,code_end,2):
     i=next(md.disasm(sh3.m[a-sh3.base:a-sh3.base+2],a),None)
     if i:code[a]=(i.mnemonic,i.op_str)
+switches={0xc14e9e6:(0xc14e9fc,8,7,0),0xc1b5238:(0xc1b5250,8,2,1)}
 
 def parts(s):return re.split(r',(?![^()]*\))',s)
 def succ(pc):
@@ -59,7 +62,9 @@ def succ(pc):
     if mn in('rts','jmp'):return []
     if mn=='bra':return [int(args,16)]
     if mn=='braf':
-        if pc==0xc14e9e6:return [pc+4+sh3.read(0xc14e9fc+2*i,'h')for i in range(8)]
+        if pc in switches:
+            table,count,_,_=switches[pc]
+            return [pc+4+sh3.read(table+2*i,'h')for i in range(count)]
         before=code[pc-2]
         assert before[0]=='mov.w'
         offset=sh3.read(int(parts(before[1])[0],16),'h')
@@ -157,15 +162,15 @@ class State:
             if mn=='braf':
                 offset=self.r[int(args[1:])]
                 if isinstance(offset,Expr):
-                    assert pc==0xc14e9e6
+                    table,count,index_reg,shift=switches[pc]
+                    index=call('shr',self.r[index_reg],shift)if shift else self.r[index_reg]
                     choices=[]
-                    for i in range(8):
-                        branch=copy.deepcopy(self);branch.guard.append((call('eq',self.r[7],i),True));branch.run(pc+4+sh3.read(0xc14e9fc+2*i,'h'),joins[pc])
+                    for i in range(count):
+                        branch=copy.deepcopy(self);branch.guard.append((call('eq',index,i),True));branch.run(pc+4+sh3.read(table+2*i,'h'),joins[pc])
                         choices.append(branch)
-                    index=self.r[7]
                     def choose(values):
                         value=values[-1]
-                        for i in range(6,-1,-1):value=call('select',call('eq',index,i),values[i],value)
+                        for i in range(count-2,-1,-1):value=call('select',call('eq',index,i),values[i],value)
                         return value
                     self.r=[choose([branch.r[j]for branch in choices])for j in range(16)]
                     self.mach=choose([b.mach for b in choices])
@@ -185,14 +190,14 @@ class Boss(State):
     def __init__(self):
         super().__init__();self.r[4]=0x10000000;self.guard=[]
     def read(self,addr,size):
-        if isinstance(addr,int) and 0x10000000<=addr<0x10003f50:
+        if isinstance(addr,int) and 0x10000000<=addr<0x10000000+body_size:
             if addr in self.mem:return self.mem[addr]
             read_sizes.setdefault(addr-0x10000000,set()).add(size)
             return expr('b[%d]'%(addr-0x10000000))
         return super().read(addr,size)
     def write(self,addr,value):
         if not isinstance(addr,int):raise ValueError('关节写入地址必须在导出时确定')
-        if 0x10000000<=addr<0x10003f50:write_sizes.setdefault(addr-0x10000000,set()).add(self.write_size)
+        if 0x10000000<=addr<0x10000000+body_size:write_sizes.setdefault(addr-0x10000000,set()).add(self.write_size)
         self.mem[addr]=value
     def instruction(self,pc):
         mn,args=code[pc];ss=parts(args)
@@ -229,10 +234,17 @@ class Boss(State):
         elif target==0xc0632b0:r[0]=expr('heading(%s)'%','.join(fmt(r[i]) for i in (6,7,4,5)))
         elif target==0xc063540:r[0]=expr('turn(%s)'%','.join(fmt(r[i]) for i in (4,5,6)))
         elif target==0xc076220:r[0]=expr('aim(%s,%s,px,py,active)'%(fmt(r[5]),fmt(r[6])))
+        elif target==0xc1b6520:
+            # 牵引段长由 24 项定点距离表决定，同时可写回寻向结果。
+            length=self.read(r[15],4);angle=self.read(r[15]+4,4)
+            value=expr('spacing(distance(%s))'%','.join(fmt(r[i])for i in(4,5,6,7)))
+            if angle:self.write(angle,expr('heading(%s)'%','.join(fmt(r[i])for i in(6,7,4,5))))
+            self.write(length,value);r[0]=call('gt',value,3)
+        elif target==0xc1b11b0:r[0]=expr('angle_distance(%s,%s)'%(fmt(r[4]),fmt(r[5])))
         else:raise ValueError(('helper',hex(target)))
 
 
-nodes=set();todo=[0xc14e450]
+nodes=set();todo=[entry]
 while todo:
     pc=todo.pop()
     if pc in nodes:continue
@@ -270,13 +282,13 @@ def read(self,addr,size):
 Boss.read=read
 
 def emit_lua(state,output_fields,needed):
-    input_fields=set((16,20,24))
+    input_fields=set((16,20,24))if args.boss==1 else set()
     for i in needed:
         input_fields.update(map(int,re.findall(r'b\[(\d+)\]',defs[i-1])))
     sizes={a:next(iter(read_sizes.get(a)or write_sizes.get(a)or{4}))for a in input_fields}
     # 四字节半径表位于两张相邻的关节参数表之间；不携带可执行指令。
-    first,last=0xc307c38,0xc307cc0
-    out=['-- 原版 0x0c14e450 的关节、振动与历史位置算式；由离线工具展开，运行时没有指令解释器。',
+    first,last=(0xc31c8c4,0xc31c924)if args.boss==5 else(0xc307c38,0xc307cc0)
+    out=[f'-- 原版 0x{entry:08x} 的关节、振动与历史位置算式；由离线工具展开，运行时没有指令解释器。',
          '-- 本体仍等待完整原生控制器挂载；输入表使用原结构偏移，半字标志保留两字节宽度。',
          "local direction=dofile('mod/GAME/th46/direction.lua')",
          'local heading,vector=direction.heading,direction.vector','local floor=math.floor',
@@ -327,6 +339,14 @@ def emit_lua(state,output_fields,needed):
          '    -- 复用临时算式表，避免每步为大关节结构分配数千个临时槽。',
          '    local v=b._poseWork',
          '    if not v then v={};b._poseWork=v end', '    local landed=false']
+    if args.boss==5:
+        a=out.index('-- 落地只返回事件，由原生控制器挂载 0x0c155da0，不能在算式里伪造演出。')
+        b=out.index('local function update(b,dx,camera,px,py,active)')
+        out[a:b]=['-- 0x0c1b6520：以原版整数距离选牵引段长，超过表尾仍用最后一项。',
+            'local function spacing(d)',
+            '    local i=math.min(23,math.floor(math.abs(d)/65536))',
+            '    return data[i+1]','end',
+            'local function angle_distance(a,b)return math.abs((a-b+256)%512-256)end']
     for i,text in enumerate(defs,1):
         if i not in needed:continue
         if text.startswith('ACTION:'):
@@ -343,8 +363,8 @@ def emit_lua(state,output_fields,needed):
 
 def action(text):defs.append('ACTION:'+text)
 read_sizes,write_sizes={},{}
-state=Boss();state.run(0xc14e450)
-output_fields={a-0x10000000:v for a,v in state.mem.items()if 0x10000000<=a<0x10003f50}
+state=Boss();state.run(entry)
+output_fields={a-0x10000000:v for a,v in state.mem.items()if 0x10000000<=a<0x10000000+body_size}
 for a,sizes in read_sizes.items():
     if len(sizes)!=1:raise ValueError(('混用输入宽度',a,sizes))
 for a,sizes in write_sizes.items():

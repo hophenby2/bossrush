@@ -1,4 +1,4 @@
--- 比对所有跳跃/宽幅炮回调；自机坐标与 rank 是输入，出膛及子敌机请求由原生对象计算。
+-- 比对所有跳跃/宽幅炮回调；自机坐标与基速是输入，出膛及子敌机请求由原生对象计算。
 function Class(_,c)return c end
 function New(c,...)local o={class=c};c.init(o,...);return o end
 object={RawDel=function(o)o.deleted=true end};GROUP={GHOST=0}
@@ -19,7 +19,7 @@ local function operation(kind,...)
 end
 local ports={}
 ports.random=function(n)return operation('random',n)end
-ports.rank=function()return row[12]end
+ports.baseSpeed=function()return row[12]end
 ports.motionFan=function(_,...)operation('motionFan',...);shots=shots+1 end
 ports.fan=function(_,...)operation('fan',...);shots=shots+1 end
 ports.child=function(_,...)operation('child',...);children=children+1 end

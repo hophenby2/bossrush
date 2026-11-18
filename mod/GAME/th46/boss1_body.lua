@@ -1,5 +1,5 @@
 -- 0x0c14b1b0 的 Original 本体初始化。先清零，再按原宽度写入；不能用某个实战姿态当出生状态。
--- 关节、移动及绘图已移植；六个牵引点在绘图后同步，完整战斗主驱动仍等待挂载。
+-- 关节、移动及绘图已移植；六个牵引点在绘图后同步，第二段与演出工厂仍等待完整战斗挂载。
 local core=dofile('mod/GAME/th46/boss1_core.lua')
 local motion=dofile('mod/GAME/th46/boss1_motion.lua')
 local pose=motion.pose
@@ -9,6 +9,7 @@ local tasks=dofile('mod/GAME/th46/boss1_tasks.lua')
 local guns=dofile('mod/GAME/th46/boss1_guns.lua')
 local bindings=dofile('mod/GAME/th46/boss1_bindings.lua')
 local children=dofile('mod/GAME/th46/boss1_children.lua')
+local bullets=dofile('mod/GAME/th46/boss1_bullets.lua')
 local unit,floor=65536,math.floor
 local phases={256,300,388,344,476,432,300,344,388,432,212,168,300,344,388,432}
 local function initialize(camera)
@@ -75,8 +76,9 @@ return {
     tasks=tasks,
     guns=guns,
     children=children,
+    bullets=bullets,
     makeControlAPI=function(o,ports)
-        return bindings(o,{core=core,motion=motion,tasks=tasks,guns=guns,children=children},ports)
+        return bindings(o,{core=core,motion=motion,tasks=tasks,guns=guns,children=children,bullets=bullets},ports)
     end,
     attachTasks=function(o,api)return tasks.create(o,api)end,
     attachControl=function(o,api,mode)return control.create(o,api,mode)end,
@@ -103,6 +105,7 @@ return {
         if o.controlGroup then control.close(o.controlGroup)end
         if o.taskGroup then tasks.close(o.taskGroup)end
         children.close(o.run)
+        bullets.close(o.run)
         if o.motion then motion.close(o.motion)end
         if o.view then view.close(o.view)end
         core.close(o)

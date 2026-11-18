@@ -21,7 +21,7 @@ return function(body,player)
     ports.random=function(n)return operation('random',{n})[2]end
     ports.side=function()return 0 end
     ports.gunRandom=function()return 0 end
-    ports.rank=function()return 43 end
+    ports.baseSpeed=function()return 43 end
     ports.motion=function()end
     ports.signal=function()end
     ports.emit=function()shots=shots+1 end

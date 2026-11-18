@@ -30,7 +30,8 @@ return function(initialize,advance,aim,finish)
             local left,right=aim(o,x-94*unit,y),aim(o,x+94*unit,y)
             if o.aimed==0 then o.aimed,o.angleLeft,o.angleRight=1,left,right end
             local count=o.fanCount+o.side%2
-            local speed=2-assert(o.ports.rank,'跳跃炮缺少原版 rank 接口')(o.run)
+            -- c3c4560 是基速，不是 c38a4ac 的动态 rank；弹分配器随后才加 rank >> 5。
+            local speed=2-assert(o.ports.baseSpeed,'跳跃炮缺少原版基速接口')(o.run)
             o.emit(o.run,x-94*unit,y,o.angleLeft,speed,o.kind,count,o.fanStep,1,o.motionTime,o.motionType)
             o.emit(o.run,x+94*unit,y,o.angleRight,speed,o.kind,count,o.fanStep,1,o.motionTime,o.motionType)
             o.remaining=o.remaining-1

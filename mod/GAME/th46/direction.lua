@@ -56,9 +56,11 @@ local function sine(direction)
     return direction < 256 and value or -value
 end
 
--- 0x0c0632b0 先截掉定点差值的小数位，再查短距离表或搜索向量表。
+local function signed32(n)return (n+2147483648)%4294967296-2147483648 end
+-- 0x0c0632b0 的远距离分支用定点整数做 MUL.L；不能约去 65536，
+-- 自机失效后旧目标坐标仍可能参与瞄准，乘积溢出也属于原版行为。
 local function heading(x, y, targetX, targetY)
-    local dx, dy = floor((targetX-x)/unit), floor((targetY-y)/unit)
+    local dx, dy = floor(signed32(targetX-x)/unit), floor(signed32(targetY-y)/unit)
     local ax, ay = abs(dx), abs(dy)
     local direction
     if ax == ay then
@@ -69,12 +71,14 @@ local function heading(x, y, targetX, targetY)
         direction = near:byte((ay-1)*33+ax+1)
     elseif ay > ax then
         direction = 0
-        while direction < 64 and floor(sine(direction)/32)*ay < -floor(sine(384+direction)/32)*ax do
+        while direction < 64 and signed32(floor(sine(384+direction)/32)*ax*unit)
+            < signed32(-signed32(floor(sine(direction)/32)*ay*unit)) do
             direction = direction + 1
         end
     else
         direction = 128
-        while direction > 64 and -floor(sine(384+direction)/32)*ax < floor(sine(direction)/32)*ay do
+        while direction > 64 and signed32(-signed32(floor(sine(384+direction)/32)*ax*unit))
+            < signed32(floor(sine(direction)/32)*ay*unit) do
             direction = direction - 1
         end
     end

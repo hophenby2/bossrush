@@ -1,5 +1,6 @@
--- 第一面关底 Original 的头部连射、五路扇与左右侧炮，等待完整战斗控制器按原入口挂载。
+-- 第一面关底 Original 的头部连射、五路扇与左右侧炮，跳跃及宽幅炮见 boss1_guns_extra.lua。
 -- 每串先 2 发，每两串加一发、最多 4 发；串间等待 24→20，速度参数 0→24，串内隔 5 步转向最多 4 格。
+-- 差异 1：内部数值已对照；原版三十槽空位复用与共享随机序列竞争仍待统一。
 local direction=dofile('mod/GAME/th46/direction.lua')
 local object,unit,heading,vector=object,direction.unit,direction.heading,direction.vector
 local min,max=math.min,math.max
