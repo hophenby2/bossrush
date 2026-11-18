@@ -45,7 +45,7 @@ env.LoadSound=false -- 音效按本作关卡池加载。
 for _,module in ipairs({
     'core','viewport','resources','projectile','reward','enemy_visual_common','enemy_visual_stage01',
     'enemy_visual_early','enemy_visual_mid','enemy_visual_late','boss_early','boss_middle_visual',
-    'boss_middle','boss_late','boss_hud','presentation','enemy','enemy_late','background','stages/schedules',
+    'boss_middle','boss_late','boss_hud','side_hud','presentation','enemy','enemy_late','background','stages/schedules',
 }) do load('LikeDreamer/'..module..'.lua') end
 L.PlayerClass=load('LikeDreamer/player.lua')
 env.player=nil
@@ -133,6 +133,7 @@ local function start(number, first)
     if lstg.tmpvar.bg and IsValid(lstg.tmpvar.bg) then background.DelBG() end
     rt.background=L.Background.create(rt)
     lstg.tmpvar.bg=rt.background
+    L.SideHud.create(rt)
     if L.BossHud then L.BossHud.create(rt) end
     if L.Presentation then L.Presentation.create(rt) end
     local bossMusic='ld_bgm_Boss'..math.min(5,math.floor((number+1)/2))

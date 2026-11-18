@@ -3,7 +3,7 @@ local f=assert(io.open('tools/check_original_anm.lua','rb'));local source=f:read
 assert(loadstring(source:sub(1,assert(source:find('local pellet=',1,true))-1)))()
 screen={width=960,height=540}
 local portrait=false
-AndroidPortrait={enabled=function() return portrait end}
+AndroidPortrait={enabled=function() return portrait end,layoutWorld=function() end}
 local defaults={scrl=288,scrr=672,scrb=46,scrt=494}
 GetDefaultWorld=function() return defaults end
 GetFPS=function() return 60 end

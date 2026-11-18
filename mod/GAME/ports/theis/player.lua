@@ -82,6 +82,8 @@ function M.collect(s,kind,amount)
     local dyes=lstg.var.dyeitem
     if dyes[kind]==nil then return false end
     dyes[kind]=dyes[kind]+amount
+    local items=lstg.tmpvar._system_items
+    if items then items[kind]=(items[kind] or 0)+amount end
     if kind=='red' then
         s.lifeChip=s.lifeChip+.25*amount
         local lives=s.life+math.floor(s.lifeChip/100)

@@ -21,10 +21,11 @@ local function hostStyle(style)
     if style<=24 then return 12+(style-1)%4+1 end
     return (style-1)%12+1
 end
-function foe:init(x,y,style,hp,bar,drop,_,death,large)
+function foe:init(x,y,style,hp,bar,drop,noCount,death,large)
     enemy.init(self,hostStyle(style),hp,false,false,false)
     self.x,self.y=x,y
     self._original_death_effect=function(o) enemy.death_ef(o.x,o.y,math.min(o.maxhp,150),o.death_ef) end
+    self.no_count=noCount
     self.bound_time=360
     self.shooters={}
     self._stylemgr={setStyle=function(_,nextStyle) foe.change_style(self,nextStyle) end}
@@ -49,6 +50,7 @@ function foe:render()
 end
 function foe:del() enemybase.del(self) end
 function foe:kill()
+    if R.countEnemy then R.countEnemy(self) end
     if self._drop then E.item.DropItem(self.x,self.y,self._drop) end
     if self.drop_blood and self.th43_aura_color then R.dropByAura(self) end
     if self.death and not self.no_death_attack then self.death(self) end

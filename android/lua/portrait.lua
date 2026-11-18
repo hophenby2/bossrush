@@ -22,6 +22,7 @@ function P.layoutWorld()
         P.worldViews[w]={w.scrl,w.scrr,w.scrb,w.scrt}
     end
     local panel=SequenceResources and SequenceResources.state() and ui and ui.OriginalHUD and ui.OriginalHUD.portraitHeight() or 0
+    if NativePlayers and NativePlayers.enabled() and ui and ui.NativeHUD then panel=ui.NativeHUD.compact.height() end
     local width=panel>0 and math.min(WIDTH,(screen.height-panel-40)*(w.r-w.l)/(w.t-w.b)) or WIDTH
     local height=width*(w.t-w.b)/(w.r-w.l)
     w.scrl,w.scrr=(WIDTH-width)/2,(WIDTH+width)/2
@@ -128,7 +129,8 @@ function P.coverOutside()
     local edge=1/screen.scale -- 原生低分辨率画面放大时，留一个原生像素避免边缘插值漏色。
     rect(0,WIDTH,0,w.scrb+edge,255,0,0,0)
     rect(0,WIDTH,w.scrt-edge,screen.height,255,0,0,0)
-    if ui.OriginalHUD and ui.OriginalHUD.portraitBanner then ui.OriginalHUD.portraitBanner() end
+    if NativePlayers and NativePlayers.enabled() and ui.NativeHUD then ui.NativeHUD.compact.banner()
+    elseif ui.OriginalHUD and ui.OriginalHUD.portraitBanner then ui.OriginalHUD.portraitBanner() end
     P.covering=nil;SetViewMode('ui')
 end
 function P.bossInsetWorld()
@@ -459,7 +461,8 @@ function P.hud(alpha)
     local native=ui.OriginalHUD and ui.OriginalHUD.portraitLower
         and ui.OriginalHUD.portraitLower(w.scrl+12,buttonY,alpha)
     if NativePlayers and NativePlayers.state() then
-        ui.RunHUD.resources(w.scrl+12,w.scrl+200,buttonY+205,alpha)
+        ui.NativeHUD.compact.lower(w.scrl+15,buttonY+64)
+        P.score(alpha)
         return
     end
     local x,y=w.scrl+18,buttonY+48

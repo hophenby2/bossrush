@@ -55,7 +55,7 @@ function boss.ui:render()
     SetViewMode('world')
     if IsValid(self.boss) then
         boss.ui.renderHPRing(self)
-        if not (ui.OriginalHUD and ui.OriginalHUD.enabled()) then
+        if not (ui.OriginalHUD and ui.OriginalHUD.enabled()) and not (ui.NativeHUD and ui.NativeHUD.bossPanel(self.boss)) then
             if self.infobar and not self.no_infobar then
                 self.infobar:render()
             end

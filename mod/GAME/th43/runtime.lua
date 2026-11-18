@@ -533,7 +533,11 @@ function R.reset(diff,practice)
     R.practice=practice
     lstg.var.coun_num=lstg.var.coun_num or 0
     local s=resources()
-    if s then s.difficulty=diff end
+    if s then
+        s.difficulty,s.stageChain=diff,0
+        lstg.tmpvar.point_rate=1
+        lstg.tmpvar._system_items={red=0,blue=0,small=0}
+    end
     power.rank,power.hyper,power.infinite,power.time=s and s.rank or 0,false,false,nil
     power.paused=false
     lstg.tmpvar.current_road=nil

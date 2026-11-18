@@ -71,7 +71,7 @@ env.system={
     setTargetChain=function(n)
         local s=resources()
         if s then s.dyeTarget=n end
-    end,setCurDamageEnemy=empty,
+    end,setCurDamageEnemy=function(o) env.lastHitEnemy=o end,
     damageEnemyBonus=function() if resources() then env.system.addScore(10) end end,
     setContinueMode=empty,
     addEnemyCreateCount=function(n)
@@ -386,6 +386,7 @@ local function clear()
     end
     objects=nil
     env._boss=nil
+    env.lastHitEnemy=nil
     if player and IsValid(player) then player.dialog=false end
     if W.music then StopMusic(W.music);W.music=nil end
 end
@@ -404,6 +405,7 @@ local function start()
     env._boss_table={}
     local s=resources()
     if s then
+        lstg.tmpvar._system_items={red=0,blue=0,green=0,night=0}
         s.stageChain,s.dyeTarget=0,nil
         s.stageBlue,s.enemiesCreated,s.enemiesKilled=0,0,0
     end

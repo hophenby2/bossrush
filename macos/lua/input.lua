@@ -66,5 +66,8 @@ function I.install(scene)
     mouse:registerScriptHandler(function(e) I.wheel=I.wheel-e:getScrollY()*120 end,cc.Handler.EVENT_MOUSE_SCROLL)
     cc.Director:getInstance():getEventDispatcher():addEventListenerWithSceneGraphPriority(mouse,scene)
 end
-function I.render() if I.preview then render() end end
+function I.render()
+    if I.preview then render()
+    elseif AndroidPortrait and AndroidPortrait.enabled() then AndroidPortrait.coverOutside() end
+end
 return I

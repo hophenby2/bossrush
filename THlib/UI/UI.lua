@@ -3,6 +3,7 @@ Include "THlib\\UI\\title.lua"
 Include "THlib\\UI\\sc_pr.lua"
 ui = {}
 ui.RenderStatusRow=dofile('THlib/UI/status_row.lua')
+ui.NativeHUD=dofile('THlib/UI/native/hud.lua')
 ui.RunHUD=dofile('THlib/UI/run_hud.lua')
 ui.OriginalHUD=dofile('THlib/UI/original_hud.lua')
 ui.version = "26.11.18-750m-assets"
@@ -386,6 +387,7 @@ function lstg_ui:drawFrame()
     self["drawFrame" .. self.type](self)
 end
 function lstg_ui:drawFrame1()
+    if ui.NativeHUD.frame() then return end
     if ui.OriginalHUD.frame() then return end
     SetViewMode "ui"
     Render("ui_bg", 480, 270, 0, 0.5)
@@ -506,6 +508,7 @@ function lstg_ui:drawScore()
     self["drawScore" .. self.type](self)
 end
 function lstg_ui:drawScore1()
+    if ui.NativeHUD.draw() then return end
     if ui.OriginalHUD.draw() then return end
     SetViewMode "ui"
     self:drawInfo1()

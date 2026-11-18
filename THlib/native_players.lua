@@ -558,7 +558,9 @@ function P.miss(p)
     end
     p.protect=150
     p.death=90
-    if s.level==36 then TH38.visual.miss(p)
+    if s.level==36 then
+        if s.hudClock then s.hudClock=math.max(0,s.hudClock-4800) end
+        TH38.visual.miss(p)
     else New(player_death_ef,p.x,p.y) end
     New(bomb_bullet_killer,p.x,p.y,64,64,false)
     if s.level~=36 then PlaySound('pldead00',.5) end
@@ -583,6 +585,13 @@ local function tick(p)
     if not key.shoot then p.charge,p.laserStart=0,math.max(0,(p.laserStart or 0)-2) end
     p.beams={}
     if s.level==36 then
+        if s.hudClock==nil then
+            s.extraClock=ui and ui.NativeHUD and ui.NativeHUD.isExtra() or lstg.var.sequence_key=='thasl_extra_a'
+            s.hudClock=s.extraClock and 86400 or 172800
+        end
+        if stage.current_stage.timer>=195 and not p.dialog then
+            s.hudClock=math.max(0,s.hudClock-(s.extraClock and 1 or 2))
+        end
         p.switchDelay=math.max(0,(p.switchDelay or 0)-1)
         if key.special and not p.specialHeld and p.switchDelay==0 and not p.hit and p.death<50 and not p.dialog then
             p.altForm=not p.altForm

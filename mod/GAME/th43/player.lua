@@ -17,6 +17,8 @@ end
 
 function playerAdapter.reset(s,v,spell)
     v.bomb_used=0
+    v.dyeitem={red=0,blue=0,small=0}
+    s.dyeChain,s.stageChain=0,0
     s.life=spell and 0 or v.is_practice and 40 or 10
     s.bombs=spell and 0 or v.is_practice and 40 or 15
     s.pointrate=0
@@ -76,13 +78,24 @@ function system.addBonus(n)
 end
 function system.addLife(n) playerAdapter.collect(state(),'life',5*n) end
 function system.addBomb(n) playerAdapter.collect(state(),'bombs',5*n) end
+local function countItem(kind)
+    local v=lstg.var
+    v.dyeitem=v.dyeitem or {}
+    local items=lstg.tmpvar._system_items or {}
+    lstg.tmpvar._system_items=items
+    items[kind]=(items[kind] or 0)+1
+    v.dyeitem[kind]=(v.dyeitem[kind] or 0)+1
+end
 function system.collectPower(rate)
+    if not state() then return end
+    countItem('red')
     addScore(500)
     R.gainRankValue(50*(rate or 1))
 end
 function system.collectSmallPower()
     local s=state()
     if not s then return end
+    countItem('small')
     addScore(system.SMALL_POWER_SCORE)
     local b=currentBoss()
     if not (b and b.current_card and b.current_card.is_sc and b.timer>120) then
@@ -93,6 +106,7 @@ end
 function system.collectBlue(rate,ignorePointRate)
     local s=state()
     if not s then return 0 end
+    countItem('blue')
     playerAdapter.collect(s,'points',1)
     local bonus=math.max((s.difficulty or 4)*10000,s.pointrate or 0)
     local multiplier=ignorePointRate and 1 or math.floor((lstg.tmpvar.point_rate or 1)*100)/100
@@ -126,6 +140,14 @@ local RankRing=Class(object,{
         end
     end,
 })
+function R.countEnemy(o)
+    local s=state()
+    if not s or o.no_count or E.player_class.isInBomb(player) then return end
+    local rank=E.system.PowerRank.getRank()
+    local n=(rank>=4 and 5 or math.max(1,rank))*(o.type and 10 or 1)
+    s.stageChain=(s.stageChain or 0)+n
+    s.dyeChain=(s.dyeChain or 0)+n
+end
 function R.rankUpCircle(rank)
     if not currentBoss() then
         player.protect=math.max(player.protect,30)
