@@ -1,5 +1,7 @@
 -- 栖霞园资源形状计算使用引擎色值和随机对象，注册测试只加载定义。
+GameContent=GameContent or dofile('mod/content.lua')
 lstg.Rand=lstg.Rand or function() return ran end
+lstg.CheckRes=CheckRes
 lstg.Color=function()
     local mt
     local function new() return setmetatable({},mt) end

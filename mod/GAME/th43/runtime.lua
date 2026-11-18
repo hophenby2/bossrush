@@ -17,6 +17,11 @@ E.PreserveObject=object.Preserve
 function E._del(o,trigger) if trigger then Del(o) else object.RawDel(o) end end
 local function noop() end
 local function overlay(base,items) return setmetatable(items or {},{__index=base}) end
+E.math=overlay(math,{
+    clamp=function(x,a,b) return math.max(a,math.min(b,x)) end,
+    inrange=function(x,a,b) return x>=a and x<=b end,
+    lerp=function(a,b,t) return a+(b-a)*t end,
+})
 local function valid(o) return o and IsValid(o) end
 R.noop=noop
 local stg=overlay(lstg)
@@ -28,7 +33,6 @@ E.config={preview_version=false,final_war_machine=true}
 E.achievement={unlock=noop,unlock2=noop}
 E.sp=overlay(sp)
 E.sp.misc=overlay(misc)
-E.math=overlay(math,{inrange=function(x,a,b) return a<=x and x<=b end})
 for name,id in pairs(GROUP) do E['GROUP_'..name]=id end
 for name,layer in pairs(LAYER) do E['LAYER_'..name]=layer end
 local colorNames={'DEEP_RED','RED','DEEP_PURPLE','PURPLE','DEEP_BLUE','BLUE','ROYAL_BLUE','CYAN',
@@ -499,6 +503,16 @@ E.BulletBreak=Class(object,{
     render=E.DefaultRenderFunc,
 })
 run('EISlib/enemy/enemy_style.lua')
+E.EISlib.Enemy.path='EISlib/enemy/'
+-- 发行版这两种默认死尸弹的发弹体均被块注释禁用；换样式仍会读取其main。
+stg.defaultSmallDeathBullet,stg.defaultMiddleDeathBullet={main=noop},{main=noop}
+E.etc={class=function()
+    local c={};c.__index=c
+    c.new=function() return setmetatable({},c) end
+    return c
+end}
+R.enemyStyle=run('EISlib/enemy/enemy_render.lua')
+run('EISlib/enemy/enemy_effect.lua')
 run('EISlib/EGGlib/Particle.lua')
 run('EISlib/effect/effect_draw.lua')
 run('EISlib/effect/encounters.lua')

@@ -194,8 +194,7 @@ function playerAdapter.miss(p,s)
     s.bombs=math.max(15,s.bombs)
     R.playerMiss()
     p.protect,p.death=390,90
-    New(player_death_ef,p.x,p.y)
-    New(bomb_bullet_killer,p.x,p.y,64,64,false)
+    P.death.miss(p)
     PlaySound('pldead00',.5)
     return true
 end

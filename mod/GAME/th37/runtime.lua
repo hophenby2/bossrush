@@ -299,7 +299,7 @@ function R.beginCollisions()
     local px,py=R.player()
     for b in pairs(R.objects) do
         local s=b.mhj
-        if valid(b) and s.kind=='projectile' and b.colli then
+        if valid(b) and s and s.kind=='projectile' and b.colli then
             count=count+1;collisionObjects[count]=b
             if p and p.colli~=false then
                 if R.sweptHit(s,px,py) then
@@ -336,6 +336,19 @@ R.classes.beam=Class(laser,{
         local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
         b.x,b.y,b.rot=s.fx-317,227-s.fy,-s.sonspeedd
         b.w0,b.l2=max(0,s.wscale*16),max(0,s.longs);b._a=max(0,min(255,(s.alpha or 100)*2.55));b.colli=(s.alpha or 100)>95;laser.frame(b)
+    end,
+    render=function(b)
+        local s=b.mhj;local p=D.bulletTypes[33+s.type]
+        if not p then return end
+        local ray=s.Ray==true;local x,y,w,h=p[1],p[2],p[3],p[4]
+        if ray then x,y,w,h=s.type*18,711,18,18 end
+        local id='mhj2_laser_'..s.type..'_'..tostring(ray)
+        if not R.assets[id] then
+            globalResource(function() LoadImage(id,'mhj2_barrages',x,y,w,h);SetImageCenter(id,w/2,0) end)
+            R.assets[id]=true
+        end
+        SetImageState(id,s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,255,255,255)
+        Render(id,b.x,b.y,90-s.sonspeedd,s.wscale,(b.l2 or 0)/(ray and 9 or h))
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
@@ -433,6 +446,7 @@ function R.controller(host,id,road)
     reset(c);return c
 end
 function R.tick(c)
+    if c.closed then return end
     c.time=c.time+1
     if c.time>c.pattern.total then c.time=1;reset(c) end
     local t=c.time;local center=c.center
@@ -494,6 +508,36 @@ end
 function R.clearAll()
     for b in pairs(R.objects) do if valid(b) then clean(b) end end
 end
+function R.stopEmitter(c)
+    if c then c.closed=true;c.emitters={} end
+end
+local DeathEffect=Class(object,{
+    init=function(o,p)
+        o.x,o.y=p.x,p.y;o.group,o.bound,o.colli=GROUP.GHOST,false,false
+        o.effect=R.controller(o,'e14');o.effect.effectLayer=LAYER.PLAYER+1;R.objects[o]=true
+    end,
+    frame=function(o)
+        if o.effect.time<o.effect.pattern.total then R.tick(o.effect)
+        else R.stopEmitter(o.effect);R.objects[o]=nil;object.RawDel(o) end
+    end,
+    render=function() end,
+},true)
+function R.playerDeathEffect(p) New(DeathEffect,p) end
+function R.deathClear(x,y,r)
+    for b in pairs(R.objects) do
+        local s=b.mhj
+        if valid(b) and s and s.is_projectile and not s.Invincible and not s.controller.effectLayer
+            and Dist(x,y,b.x,b.y)<r and not s.dis then Del(b) end
+    end
+end
+function R.deathDamage(x,y,r,damage)
+    for b in pairs(R.objects) do
+        local s=b.mhj
+        if valid(b) and s and not s.is_projectile and not b.protect and b.colli and Dist(x,y,b.x,b.y)<r then
+            b.hp=b.hp-damage
+        end
+    end
+end
 -- 道中敌机使用enemybase的实际受弹入口；运动在原坐标内积分一次，原生vx/vy保持0。
 R.classes.fairy=Class(enemy,{
     init=function(o,state,spec)
@@ -534,13 +578,13 @@ R.classes.fairy=Class(enemy,{
         SetImageState(name,'',min(255,s.age*17),255,255,255);Render(name,o.x,o.y,0,p[11],p[11])
     end,
     kill=function(o)
-        local s=o.mhj;R.clear(s.controller)
+        local s=o.mhj;R.stopEmitter(s.controller)
         if NativePlayers and NativePlayers.enabled(nil,35) then
             NativePlayers.drop(35,o.x,o.y,s.items)
         elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end
         clean(o)
     end,
-    del=function(o) R.clear(o.mhj.controller);clean(o) end,
+    del=function(o) R.stopEmitter(o.mhj.controller);clean(o) end,
 })
 function R.stageState(stage) return {stage=stage,enemies={},templates={},saved={},id=0,clock=0} end
 local function randomValue(v)

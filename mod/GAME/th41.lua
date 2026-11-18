@@ -180,6 +180,11 @@ env.Render=function(img,x,y,rot,sx,sy,...)
     return Render(img,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale,...)
 end
 api.Render=env.Render
+env.RenderAnimation=function(img,t,x,y,rot,sx,sy)
+    local scale=api.globalimagescale
+    return RenderAnimation(img,t,x,y,rot,(sx or 1)*scale,(sy or sx or 1)*scale)
+end
+api.RenderAnimation=env.RenderAnimation
 env.RenderText=function(font,text,x,y,scale,...)
     return RenderText(font,text,x,y,(scale or 1)*api.globalimagescale,...)
 end

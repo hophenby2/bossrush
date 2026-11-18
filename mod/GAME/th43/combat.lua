@@ -24,11 +24,11 @@ end
 function foe:init(x,y,style,hp,bar,drop,noCount,death,large)
     enemy.init(self,hostStyle(style),hp,false,false,false)
     self.x,self.y=x,y
-    self._original_death_effect=function(o) enemy.death_ef(o.x,o.y,math.min(o.maxhp,150),o.death_ef) end
+    self._original_death_effect=function(o) E.New(E.enemy_death_ef,o._death_color,o.x,o.y,math.max(o.hscale,o.vscale),false) end
     self.no_count=noCount
     self.bound_time=360
     self.shooters={}
-    self._stylemgr={setStyle=function(_,nextStyle) foe.change_style(self,nextStyle) end}
+    self._stylemgr=R.enemyStyle.new():constructor(self,style or 1)
     self._drop,self.death,self.type=drop,death,large
     if large==nil then self.type=bar end
     self.th43_aura_color=self.type and E.COLOR_RED
@@ -42,11 +42,12 @@ function foe:init(x,y,style,hp,bar,drop,noCount,death,large)
     self.group=GROUP.ENEMY
 end
 function foe:frame()
-    enemy.frame(self)
+    enemybase.frame(self)
+    self._stylemgr:update()
     if self.bound_time>0 then self.bound_time=self.bound_time-1 else self.bound=true end
 end
 function foe:render()
-    if self.th43_lily then lilyRender(self) else enemy.render(self) end
+    self._stylemgr:draw()
 end
 function foe:del() enemybase.del(self) end
 function foe:kill()
@@ -72,7 +73,7 @@ function foe.changeDropBlood(o,flag)
 end
 function foe.setClashRate(o,rate) o.clash_rate=rate end
 function foe.cancelClashColli(o) o.group=GROUP.NONTJT end
-function foe.change_style(o,style) o._wisys=EnemyWalkImageSystem(o,hostStyle(style),8) end
+function foe.change_style(o,style) o._stylemgr:setStyle(style) end
 function foe.changeAura(o,color) o.th43_aura_color=color end
 function foe.cancelAura(o) o.th43_aura_color=nil end
 foe.canRemove=valid

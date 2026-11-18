@@ -267,7 +267,7 @@ local function projected(b)
 end
 local function clean(b)
     local s=b.mhj
-    if s and s.controller and s.controller.host==b then R.clear(s.controller) end
+    if s and s.controller and s.controller.host==b then R.stopEmitter(s.controller) end
     if s and s.controller and s.controller.bullets then
         s.controller.bullets[b]=nil
         if s.bucket then s.bucket[b]=nil end
@@ -312,6 +312,13 @@ R.classes.projectile=Class(bullet,{
     end,
     frame=function(b)
         local s=b.mhj
+        if s.dis then
+            s.dis=s.dis+1;s.alpha=max(0,(s.cancelAlpha or 100)-s.dis*4)
+            s.wscale=max(0,s.wscale-.06);s.hscale=max(0,s.hscale-.06)
+            projected(b);b.colli=false
+            if s.dis>30 then clean(b) end
+            return
+        end
         if not updateParticle(s) then clean(b);return end
         projected(b)
         if outOfBounds(s) then clean(b) end
@@ -322,7 +329,14 @@ R.classes.projectile=Class(bullet,{
         SetImageState(img,b._blend,b._a,b._r,b._g,b._b)
         Render(img,b.x,b.y,b.rot,b.hscale,b.vscale)
     end,
-    del=function(b) clean(b) end,kill=function(b) clean(b) end,
+    del=function(b)
+        if not b.mhj.dis then b.mhj.cancelAlpha=b.mhj.alpha;b.mhj.dis=0 end
+        b.colli=false;object.Preserve(b)
+    end,
+    kill=function(b)
+        if not b.mhj.dis then b.mhj.cancelAlpha=b.mhj.alpha;b.mhj.dis=0 end
+        b.colli=false;object.Preserve(b)
+    end,
 })
 local function laserWidth(s)
     local p=profile(s.pattern,s.type)
@@ -365,6 +379,14 @@ R.classes.beam=Class(laser,{
         end
         laser.frame(b)
     end,
+    render=function(b)
+        local s=b.mhj;local img,_,_,_,p=texture(s)
+        if not p then return end
+        SetImageCenter(img,p[3]/2,p[4])
+        SetImageState(img,s.Blend and 'mul+add' or '',(s.alpha or 100)*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255)
+        Render(img,b.x,b.y,90-(s.head or s.sonspeedd),s.wscale*SCALE,(b.l2 or 0)/p[4])
+        SetImageCenter(img,p[5],p[6])
+    end,
     del=clean,kill=clean,
 })
 R.classes.curve=Class(bent_laser,{
@@ -374,6 +396,10 @@ R.classes.curve=Class(bent_laser,{
         laserInit(b,s)
     end,
     frame=function(b) if laserStep(b) then bent_laser.frame(b) end end,
+    render=function(b)
+        local s=b.mhj;local _,tex,x,y,p=texture(s);if not p then return end
+        b.data:Render(tex,s.Blend and 'mul+add' or '',Color((s.alpha or 100)*2.55,s.colorR or 255,s.colorG or 255,s.colorB or 255),x,y,p[3],p[4])
+    end,
     del=clean,kill=clean,
 })
 local function fairySprite(b,config,age)
@@ -578,6 +604,7 @@ function R.backgroundEffect(id,x,y,seed,textureHeights,resources)
     return c
 end
 function R.tick(c)
+    if c.closed then return end
     c.time=c.time+1;c.statusFrame=c.statusFrame+1
     if c.time>c.pattern.total then c.time=1;reset(c) end
     local t=c.time;local center=c.center
@@ -732,6 +759,46 @@ function R.clear(c)
         if valid(b) then clean(b) end
     end
 end
+function R.stopEmitter(c)
+    if c then releaseControl(c);c.closed=true;c.emitters={};R.controllers[c]=nil end
+end
+local deathHeights
+local DeathEffect=Class(object,{
+    init=function(o,p)
+        deathHeights=deathHeights or dofile('mod/GAME/th39/scenes/death.lua')
+        o.group,o.bound,o.colli,o.layer=GROUP.GHOST,false,false,LAYER.TOP-1
+        o.effects={};local x,y=R.player()
+        for _,id in ipairs(p.hitWindow==60 and {'e80','e82'} or {'e79','e81'}) do
+            local c=R.backgroundEffect(id,x,y,7919,deathHeights,{tex={},img={}})
+            c.status=({reimu=0,marisa=1,sanae=2,mokou=3})[p.machine.art]
+            o.effects[#o.effects+1]=c
+        end
+        R.objects[o]=true
+    end,
+    frame=function(o)
+        local alive=false
+        for _,c in ipairs(o.effects) do
+            if c.time>=c.pattern.total then c.closing=true end
+            R.tickBackground(c);if not c.closing or #c.particles>0 then alive=true end
+        end
+        if not alive then R.objects[o]=nil;object.RawDel(o) end
+    end,
+    render=function(o) for _,c in ipairs(o.effects) do R.drawBackground(c,1,0,0) end end,
+},true)
+function R.playerDeathEffect(p) New(DeathEffect,p) end
+function R.deathClear(x,y,r)
+    for b in pairs(R.objects) do
+        local s=b.mhj
+        if valid(b) and s and s.is_projectile and not s.Invincible and not s.controller.indestructible
+            and b.group~=GROUP.INDES and Dist(x,y,b.x,b.y)<r and not s.dis then Del(b) end
+    end
+end
+function R.deathDamage(x,y,r,damage)
+    for b in pairs(R.objects) do
+        local s=b.mhj
+        if valid(b) and s and not s.is_projectile and b.colli and not b.protect and Dist(x,y,b.x,b.y)<r then b.hp=b.hp-damage end
+    end
+end
 function R.clearAll()
     for c in pairs(R.controllers) do R.clear(c) end
     for b in pairs(R.objects) do if valid(b) then clean(b) end end
@@ -798,13 +865,13 @@ R.classes.fairy=Class(enemy,{
         if s.age>(s.hide or 0) then fairySprite(o,D.enemyTypes[s.type],s.age) end
     end,
     kill=function(o)
-        local s=o.mhj;R.clear(s.controller)
+        local s=o.mhj;R.stopEmitter(s.controller)
         if NativePlayers and NativePlayers.enabled(nil,37) then
             NativePlayers.drop(37,o.x,o.y,s.items)
         elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end
         clean(o)
     end,
-    del=function(o) R.clear(o.mhj.controller);clean(o) end,
+    del=function(o) R.stopEmitter(o.mhj.controller);clean(o) end,
 })
 function R.stageState(stage)
     return {stage=stage,enemies={},templates={},labels={},familiars={},id=0}

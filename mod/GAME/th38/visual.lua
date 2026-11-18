@@ -120,7 +120,6 @@ function V.release(p)
 end
 function V.miss(p)
     resources()
-    New(particles,p,impact)
     lstg.tmpvar.th38_death_effect=New(wave,p)
 end
 function V.update(p,s)

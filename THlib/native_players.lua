@@ -142,6 +142,9 @@ function P.barriers(s)
     return s.barrier==299999 and 3 or math.floor(s.barrier/100000)
 end
 local ResourceItem=Class(item)
+local SourceVisual=dofile('THlib/native_player_visual.lua')
+local SourceDeath=dofile('THlib/native_player_death.lua')
+P.visual,P.death=SourceVisual,SourceDeath
 function ResourceItem:init(x,y,kind,amount)
     local images={life=7,bombs=9,power=1,fragments=7,red=7,green=9,blue=2,night=2,star=2,points=3,bombFragments=9,rankPower=1}
     item.init(self,x,y,images[kind])
@@ -149,6 +152,31 @@ function ResourceItem:init(x,y,kind,amount)
     local s=P.state()
     local adapter=s and P.adapters[s.level]
     if adapter and adapter.item then adapter.item(self,kind) end
+    if s then SourceVisual.item(self,s.level,kind,amount) end
+end
+function ResourceItem:frame()
+    local s=P.state();local adapter=s and P.adapters[s.level]
+    if adapter and adapter.itemFrame and adapter.itemFrame(self) then return end
+    if not self.native_item_visual then item.frame(self);return end
+    -- XNA道具上抛时每帧旋转1弧度，下落后立即归零；不走宿主24帧缩放。
+    local p=self.target or lstg.player
+    if self.attract>0 and IsValid(p) then
+        SetV(self,self.attract,Angle(self,p))
+    else
+        self.vx=0
+        self.native_fall=(self.native_fall or 3.5)-.07
+        self.vy=math.max(-1.5,self.native_fall)
+        self.native_item_rotation=self.vy>=0 and (self.native_item_rotation or 0)-180/math.pi or 0
+    end
+    if self.y<lstg.world.b-24 then object.RawDel(self) end
+end
+function ResourceItem:render()
+    if not SourceVisual.itemRender(self) then item.render(self) end
+end
+function ResourceItem:colli(other)
+    local r=self.native_pickup_rect
+    if r and (math.abs(self.x-other.x)>r[1] or math.abs(self.y-other.y)>r[2]) then return end
+    item.colli(self,other)
 end
 function ResourceItem:collect()
     local s=P.state()
@@ -271,12 +299,17 @@ local function emit(p,img,x,y,v,dir,dmg,r,scale,homing,main)
     o.v,o.homing,o.native_main=v,homing,main
     if v<=2 then o.maxAge=25 end
     o.hscale,o.vscale=scale or 1,scale or 1
+    local a,b,rect=o.a,o.b,o.rect
+    SourceVisual.shot(p,o,img,scale)
+    o.a,o.b,o.rect=a,b,rect
     return o
 end
 function Shot:render()
     local factor=GameDrops and GameDrops.power(self) or 1
+    SetImageState(self.img,'',self.native_alpha or 255,255,255,255)
     Render(self.img,self.x,self.y,self.rot,self.hscale*factor,self.vscale*factor)
 end
+function Shot:kill() SourceVisual.shotKill(self) end
 function Shot:frame()
     if self.maxAge and self.timer>=self.maxAge then object.Del(self);return end
     if not self.homing then return end
@@ -285,7 +318,7 @@ function Shot:frame()
     if not (target and IsValid(target) and target.colli) then return end
     local delta=(Angle(self,target)-self.dir+180)%360-180
     self.dir=self.dir+math.max(-self.homing,math.min(self.homing,delta))
-    self.rot=self.dir-90
+    self.rot=self.dir+(self.native_rotation_offset or -90)
     self.vx,self.vy=self.v*cos(self.dir),self.v*sin(self.dir)
 end
 local function ray(p,x,y,dir,width,enemyDamage,bossDamage,visible)
@@ -462,7 +495,7 @@ end
 
 function Player:shoot()
     local level=self.native_level
-    if self.hit or self.death>=50 or P.out() or P.state().recover then return end
+    if self.hit or SourceDeath.locked(self) or self.death>=50 or P.out() or P.state().recover then return end
     local adapter=P.adapters[level]
     if adapter and adapter.shoot then
         self.shotClock=self.shotClock+1
@@ -495,6 +528,7 @@ local function bomb(p,s)
         p.strongBomb=cost==10
     end
     p.hit=nil
+    SourceDeath.cancel(p)
     p.bombTime=p.bombTime or 90
     p.nextspell=p.bombTime
     p.protect=math.max(p.protect,p.bombTime)
@@ -507,6 +541,7 @@ end
 function P.miss(p)
     local s=P.state()
     if not s then return end
+    if SourceDeath.defer(p) then return end
     local adapter=P.adapters[s.level]
     if s.level>=38 then
         if adapter and adapter.clearBonus then adapter.clearBonus() end
@@ -518,9 +553,8 @@ function P.miss(p)
             s.power=math.max(0,s.power-16)
             s.star,s.enchantment,s.enchantmentTime=0,nil,nil
         end
-        p.protect,p.death=150,90
-        New(player_death_ef,p.x,p.y)
-        New(bomb_bullet_killer,p.x,p.y,64,64,false)
+        p.protect,p.death=s.level==39 and 360 or s.level==38 and 300 or 150,90
+        SourceDeath.miss(p)
         PlaySound('pldead00',.5)
         return
     end
@@ -530,7 +564,7 @@ function P.miss(p)
         for _,b in ipairs(boss_group) do
             if IsValid(b) and b.is_combat then b._bosssys:clearBonus('hit') end
         end
-        New(bomb_bullet_killer,p.x,p.y,60,60,false)
+        -- 破一层结界不会调用Death_xiaodan，消弹属于各Bomb_break prefab。
         return
     end
     lstg.var.dead=lstg.var.dead+1
@@ -561,9 +595,8 @@ function P.miss(p)
     if s.level==36 then
         if s.hudClock then s.hudClock=math.max(0,s.hudClock-4800) end
         TH38.visual.miss(p)
-    else New(player_death_ef,p.x,p.y) end
-    New(bomb_bullet_killer,p.x,p.y,64,64,false)
-    if s.level~=36 then PlaySound('pldead00',.5) end
+    end
+    SourceDeath.miss(p)
 end
 local function tick(p)
     local s=P.state()
@@ -579,7 +612,8 @@ local function tick(p)
     local key=p._playersys.keyState
     local adapter=P.adapters[s.level]
     if adapter and adapter.frame then adapter.frame(p,s) end
-    if p.death==50 and not P.out() then p.x,p.y=0,respawnY[s.level] end
+    if p.death==50 and not P.out() and not p.native_death_clock then p.x,p.y=0,respawnY[s.level] end
+    SourceDeath.frame(p)
     local pressed=key.spell and not p.spellHeld
     p.spellHeld=key.spell
     if not key.shoot then p.charge,p.laserStart=0,math.max(0,(p.laserStart or 0)-2) end
@@ -667,15 +701,18 @@ function Player:init()
         self.altImages=other.art~=m.art and frames(other.art) or self.baseImages
     end
     self.turn,self.shotClock=0,0
+    SourceVisual.bind(self)
+    if adapter and adapter.bind then adapter.bind(self) end
+    self.a,self.b=self.A,self.B
     self._playersys:addFrameEvent('native_player',1000,tick)
     local move=player_lib.defaultFrameEvent['frame.move'][2]
     self._playersys:addFrameEvent('frame.move',97,function(p)
-        if not p.hit and p.death<50 and not s.recover and not P.out() then move(p)
+        if not p.hit and not SourceDeath.locked(p) and p.death<50 and not s.recover and not P.out() then move(p)
         else p.__move_dx,p.__move_dy=0,0 end
     end)
 end
 function Player:colli(other)
-    if self.hit or self.death~=0 or self.dialog or self.lock or cheat or self.protect>0
+    if self.hit or SourceDeath.locked(self) or self.death~=0 or self.dialog or self.lock or cheat or self.protect>0
         or other.IsBoss and not other.is_combat then return end
     local s=P.state()
     if P.out() then return end
@@ -686,6 +723,8 @@ function Player:colli(other)
     local adapter=P.adapters[s.level]
     if adapter and adapter.hitWindow then self.hitWindow=adapter.hitWindow(self,s) end
     self.hit=self.hitWindow
+    SourceDeath.hit(self)
+    if adapter and adapter.hit then adapter.hit(self,s) end
     if s.level==36 then TH38.visual.hit(self,s) end
     local group=other.group
     if group==GROUP.ENEMY_BULLET or group==GROUP.ENEMY_BULLET2 then
@@ -695,23 +734,21 @@ function Player:colli(other)
 end
 
 function Player:render()
-    if self.realrealreal_lock or self.hide or self.death>=50 then return end
+    if self.realrealreal_lock or self.hide or self.native_body_hidden or self.death>=50 and not self.native_death_clock then return end
     player_class.render(self)
     if self.native_level==36 then TH38.visual.player(self) end
     local adapter=P.adapters[self.native_level]
     if adapter and adapter.render then adapter.render(self,P.state()) end
     for _,beam in ipairs(self.beams) do
+        if not SourceVisual.beam(self,beam) then
         local x,y,dir,width=unpack(beam)
         local length=math.max(0,(lstg.world.t-y)/math.max(.25,sin(dir)))
         SetImageState('white','mul+add',120,115,165,255)
         Render('white',x+length*cos(dir)/2,y+length*sin(dir)/2,dir,length/16,width/8)
         SetImageState('white','',255,255,255,255)
+        end
     end
-    if self.slow==1 then
-        SetImageState('white','',220,255,255,255)
-        RenderRect('white',self.x-1,self.x+1,self.y-1,self.y+1)
-        SetImageState('white','',255,255,255,255)
-    end
+    SourceVisual.focus(self)
 end
 CopyImage('native_asl_sub','reimu_bullet_blue')
 function P.spawn()

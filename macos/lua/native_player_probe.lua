@@ -1,4 +1,5 @@
 -- Called only by the isolated macOS test harness.
+if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_PARITY')=='1' then return dofile('macos/source_parity_probe.lua') end
 local T={}
 local level
 local checked={}
@@ -99,7 +100,7 @@ function T.before(p)
 end
 function T.after(p)
     if p.death==0 and p.hit and not firstHit then firstHit=p.hit end
-    if p.death==89 and not firstMiss then firstMiss=stage.current_stage.timer end
+    if (p.native_death_committed or p.death==89) and not firstMiss then firstMiss=stage.current_stage.timer end
 end
 function T.checkpoint()
     assert(checked.spawn and checked.shot,'缺少自机与实际伤害检查')

@@ -1,7 +1,7 @@
 -- 夏夜祭原生对象：参数和事件条件由离线编译器展开为Lua函数。
 -- 差异1：原Direct3D曲线网格由LuaSTG原生laser/bent_laser代理，沿用采样数、长度与宽度参数。
 -- 差异2：3D蓄力/放能特效以无判定原图粒子代理；不增加原作没有的攻击。
-local N={patterns={},images={},loaded=false}
+local N={patterns={},images={},regions={},loaded=false,runs=setmetatable({},{__mode='k'})}
 local paths=dofile('mod/GAME/th40/patterns.lua')
 local Class,New,IsValid=Class,New,IsValid
 local object,bullet,enemy,laser,bent_laser=object,bullet,enemy,laser,bent_laser
@@ -151,7 +151,7 @@ local Curve=Class(bent_laser,{init=function(o,run,data)
     o.history={};for i=1,max(1,o.length or 30) do o.history[i]={o.x,o.y} end
 end,frame=function() end})
 Line.render=function(o)
-    local img=N.images['Laser0_'..(laserColors[(o.type or 0)+1] or 1)]
+    local img=N.images['Laser0_'..(o.type or 0)]
     if img then
         SetImageState(img,o.blend and 'mul+add' or '',o.alpha,o.red,o.green,o.blue)
         local d=o.rot*R;Render(img,o.x+o.l2*cos(d)/2,o.y+o.l2*sin(d)/2,o.rot,o.l2/256,o.height)
@@ -161,7 +161,13 @@ Curve.render=function(o)
     local a=o.alpha;o.alpha=a/255;o.index=laserColors[(o.type or 0)+1] or 1
     o._r,o._g,o._b=o.red,o.green,o.blue
     -- 原曲线纹理为16*ScaleLength宽，碰撞半径为1*ScaleLength；渲染后恢复碰撞宽度。
-    o.data:SetAllWidth(16*o.height);bent_laser.render(o);o.data:SetAllWidth(o.w);o.alpha=a
+    local region=N.regions['Laser0_'..(o.type or 0)]
+    if region then
+        o.data:SetAllWidth(16*o.height)
+        o.data:Render('th38.tex.'..region[2],o.blend and 'mul+add' or '',Color(a,o.red,o.green,o.blue),region[3],region[4],region[5],region[6])
+        o.data:SetAllWidth(o.w)
+    end
+    o.alpha=a
 end
 N.classes={point=Point,emitter=Ghost,enemy=Enemy,ghost=Ghost,line=Line,curve=Curve}
 local function bulletRegion(o)
@@ -344,11 +350,63 @@ function N.damageFactor(meta)
     return 1-(meta.armor or 0)
 end
 function N.clear(o)
+    N.runs[o.run]=nil
     for _,obj in ipairs(o.run.objects) do erase(obj) end
     o.run.objects={};o.run.bullets={};o.run.enemies={};o.run.effects={};o.run.controllers={}
 end
 function N.clear_bullets(run)
     for _,b in ipairs(run.bullets) do erase(b) end;run.bullets={}
+end
+local BulletEnd=Class(object,{
+    init=function(o,b,x,y)
+        o.x,o.y=x,y;o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.ENEMY_BULLET,false,false
+        local name=b.texture or N.bullet_names[b.type or 0] or ''
+        local kind,color=name:match('bullet(%d+)_(%d+)');kind,color=tonumber(kind),tonumber(color) or b.type or 0
+        o.size=kind==26 and 80/32 or kind==50 and 2 or 1
+        local colors={{255,255,255},{255,0,0},{255,0,0},{238,130,238},{238,130,238},{0,0,255},{0,0,255},
+            {0,255,255},{0,255,255},{0,128,0},{0,128,0},{154,205,50},{255,255,0},{255,255,0},{255,165,0},{255,255,255}}
+        o.color=colors[color+1] or colors[1];o.rot=ran:Int(0,359);o.spin=ran:Int(-3,2)
+        o.white=b.mode=='ray'
+        if o.white then o.vx,o.vy=(b.speed or 0)*cos((b.direction or 0)*R),-(b.speed or 0)*sin((b.direction or 0)*R) end
+    end,
+    frame=function(o) if o.timer>=(o.white and 30 or 31) then erase(o) end end,
+    render=function(o)
+        local img=N.images[o.white and '光点' or 'EndBullet0'..floor(o.timer%32/4)]
+        if not img then return end
+        local t=o.timer;local scale=o.white and max(.2,1-t/30) or o.size+min(t,30-t)*.05
+        SetImageState(img,'',o.white and max(0,255-8*t) or 255,unpack(o.color))
+        Render(img,o.x,o.y,o.rot+o.spin*t,scale)
+    end,
+},true)
+function N.bulletDeath(b)
+    if not b.mode then return end
+    if (b.mode=='laser' or b.mode=='bend') and b.history then
+        for i=1,#b.history,8 do New(BulletEnd,b,unpack(b.history[i])) end
+    else New(BulletEnd,b,b.x,b.y) end
+end
+function N.deathClear(x,y,r,giveItems)
+    for run in pairs(N.runs) do
+        if run then
+            for _,b in ipairs(run.bullets) do
+                if valid(b) and not b.invincible and Dist(x,y,b.x,b.y)<r+(b.region or 0) then
+                    if N.bulletDeath then N.bulletDeath(b) end
+                    if giveItems and NativePlayers and b.mode=='bullet' then NativePlayers.pickup(b.x,b.y,'star',1) end
+                    erase(b)
+                end
+            end
+        end
+    end
+end
+function N.deathDamage(x,y,r,damage)
+    for run in pairs(N.runs) do
+        local owner=run.owner
+        if run then
+            for _,o in ipairs(run.enemies) do
+                if valid(o) and o.colli and Dist(x,y,o.x,o.y)<r+(o.region or 0) then o.hp=o.hp-damage end
+            end
+            if owner.is_combat and owner.colli and Dist(x,y,owner.x,owner.y)<r then Damage(owner,damage) end
+        end
+    end
 end
 function N.step(run,hostUpdate)
     run.time=run.time+1
@@ -379,6 +437,7 @@ function N.step(run,hostUpdate)
 end
 function N.new(owner,meta)
     local run={owner=owner,time=0,objects={},controllers={},enemies={},bullets={},effects={},random=lstg.tmpvar.th38_random or N.random(lstg.var.th38_seed or 0)}
+    N.runs[run]=true
     local host={run=run,th38_host=true,owner=owner,cx=(owner.x or 0)+320,cy=240-(owner.y or 100),speed=4,direction=0,accel=0,accel_angle=0,scale_x=1,scale_y=1,angle=90,follow=false,age=0,flag=1,hp=meta.hp,maxhp=meta.maxhp or meta.hp,dest={320,136},loopy={},once={},tweens={}}
     if meta.dest then host.dest={meta.dest[1]+128,meta.dest[2]+16} end
     host.loops={};run.host=host;owner.th38_run=run
@@ -403,7 +462,7 @@ function N.load()
     local textures={}
     for _,a in ipairs(dofile('mod/GAME/th40/atlas.lua')) do
         if not textures[a[2]] then local tex='th38.tex.'..a[2];LoadTexture(tex,a[2]);textures[a[2]]=tex end
-        local id='th38.'..a[1];LoadImage(id,textures[a[2]],a[3],a[4],a[5],a[6],2,2);N.images[a[1]]=id
+        local id='th38.'..a[1];LoadImage(id,textures[a[2]],a[3],a[4],a[5],a[6],2,2);N.images[a[1]]=id;N.regions[a[1]]=a
     end
 end
 N.update=update;N.spawn=spawn;N.sync=sync;N.motion=motion

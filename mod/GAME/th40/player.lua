@@ -1,6 +1,7 @@
 -- 夏夜祭自机。弹速、间隔与主炮伤害取自 MyPlane_*.cs。
 local P=NativePlayers
 local M={}
+local function native() return _editor_class.TH40.native end
 local shotRadius=15 -- BaseMyBullet 与 BulletGuidance 的原作判定半径。
 local art={
     reimu={'Reimu',{192,144,64,16},{0,176,16,16},{128,144,16,16},{0,208,64,16}},
@@ -30,6 +31,23 @@ function M.images(p,m)
     local images={}
     for i=1,24 do images[i]=prefix..i end
     return images
+end
+function M.bind(p)
+    local dir,index,clock=0,0,0
+    p._wisys={frame=function()
+        clock=clock+1
+        local dx=p.__move_dx or 0;local nextdir=dx>.5 and 2 or dx<-.5 and 1 or 0
+        if nextdir~=dir then index=1
+        elseif nextdir==0 then index=math.floor(clock/6)%8
+        elseif index<4 then index=index+.5 else index=4+math.floor(clock/6)%4 end
+        dir=nextdir
+        p.img=p.summerImages..(dir*8+math.floor(index)+1)
+        p.a,p.b=p.A,p.B
+    end,render=function()
+        if p.native_body_hidden then return end
+        SetImageState(p.img,'',unpack(p.native_tint or {255,255,255,255}))
+        Render(p.img,p.x,p.y,0,1)
+    end}
 end
 local focusedOptions={
     A={{{0,70}}, {{0,70},{0,70}}, {{0,70},{-24,0,87.5},{24,0,92.5}},
@@ -138,7 +156,56 @@ function M.render(p,s)
         local x,y=option(p,i,count)
         Render(p.summerImages..'option',p.x+x,p.y+y,p.timer*2)
     end
+    if p.slow==1 then
+        local images=native().images;local r=p.timer*.02*4*180/math.pi
+        if images.SlowEffect01 then
+            SetImageState(images.SlowEffect01,'',120,255,255,255)
+            Render(images.SlowEffect01,p.x,p.y,-r);Render(images.SlowEffect01,p.x,p.y,r)
+        end
+        if images.Center then Render(images.Center,p.x,p.y,-r) end
+    end
 end
+function M.item(o,kind)
+    local names={power='Item-0',red='StarShardRS',green='StarShardGS',blue='StarShardBS',star='SmallStar',life='Item-6',bombs='SpellItem'}
+    local img=native().images[names[kind]]
+    if not img then return end
+    o.img,o.imgup=img,nil;o.native_item_visual={config={scale=1},name=kind,level=38}
+    local radius=(kind=='life' or kind=='bombs') and 10 or (kind=='red' or kind=='green' or kind=='blue') and 8 or 5
+    o.a,o.b,o.rect=radius,radius,false
+end
+function M.itemFrame(o)
+    if not o.native_item_visual then return false end
+    local p=o.target or player
+    if o.attract>0 and IsValid(p) then SetV(o,math.min(10,o.attract),Angle(o,p))
+    else
+        o.vx=0
+        o.vy=o.timer<=40 and math.max(0,4-o.timer*.1) or -math.min(1.5,(o.timer-40)*.15)
+    end
+    o.native_item_rotation=(o.kind=='red' or o.kind=='blue' or o.kind=='green') and 0 or o.timer<40 and -o.timer*.2*180/math.pi or 0
+    if o.y<lstg.world.b-24 then object.RawDel(o) end
+    return true
+end
+local DeathParticle=Class(object,{
+    init=function(o,p)
+        o.x,o.y=p.x,p.y;o.img=native().images.MyParticle01
+        o.group,o.layer,o.bound,o.colli=GROUP.GHOST,LAYER.PLAYER+1,false,false
+        local a=ran:Int(0,359);local speed=math.floor(ran:Int(20,199)/10)
+        o.vx,o.vy=speed*cos(a),speed*sin(a);o.scale=ran:Int(0,99)/100
+    end,
+    frame=function(o) if o.timer>=20 then object.RawDel(o) end end,
+    render=function(o)
+        if not o.img then return end
+        SetImageState(o.img,'',math.max(0,200*(1-o.timer/20)),255,255,255)
+        Render(o.img,o.x,o.y,0,math.max(.2,o.scale-o.timer/20))
+    end,
+},true)
+function M.hit(p,s)
+    if s.enchantment=='green' then M.miss(p,s);p.hit=nil;return end
+    task.New(p,function()
+        for _=1,4 do for _=1,10 do New(DeathParticle,p) end;task.Wait(1) end
+    end)
+end
+function M.hitWindow() return 20 end
 local extends={3,5,8,10,12,15,18,20,22}
 local enchantmentColors={red={255,110,110},blue={120,185,255},green={125,255,150}}
 function M.frame(p,s)
@@ -196,12 +263,22 @@ function M.collect(s,kind,amount)
     else return kind=='star' end
     return true
 end
+local GreenRemover=Class(object,{
+    init=function(o,p)
+        o.x,o.y=p.x,p.y;o.group,o.bound,o.colli=GROUP.GHOST,false,false
+    end,
+    frame=function(o)
+        native().deathClear(o.x,o.y,500,true)
+        if o.timer>=9 then object.RawDel(o) end
+    end,
+    render=function() end,
+},true)
 local function breakGreen(p,s)
     s.enchantment,s.enchantmentTime,s.star=nil,nil,0
     s.barrierCount=(s.barrierCount or 0)+1
     p.summerDamageGuard=30
     p.protect=math.max(p.protect,60)
-    New(bomb_bullet_killer,p.x,p.y,500,500,false)
+    New(GreenRemover,p)
 end
 function M.bomb(p,s)
     if s.enchantment=='green' then
@@ -214,7 +291,14 @@ function M.bomb(p,s)
     return true
 end
 function M.miss(p,s)
-    if s.enchantment~='green' then p.summerDamageGuard=270;return end
+    if s.enchantment~='green' then
+        p.summerDamageGuard=270
+        for i=0,7 do
+            local a=-2.2707963148739676+i*.1999999965940203
+            P.pickup(p.x+40*math.cos(a),p.y-40*math.sin(a),'power',2)
+        end
+        return
+    end
     breakGreen(p,s)
     return true
 end

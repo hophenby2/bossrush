@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""在隔离存档中验证六作原图、死亡过滤与复活；失败时保留引擎日志。"""
+import argparse,json,os,subprocess,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2]
+ap=argparse.ArgumentParser(description=__doc__)
+ap.add_argument('--out',type=Path,required=True);ap.add_argument('--levels',default='35,36,37,38,39,41')
+args=ap.parse_args();args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=True)
+cases={35:('thmhj2_lunatic','reimu'),36:('thasl_lunatic','reimu'),37:('thmhj3_lunatic','reimu'),
+    38:('thsss_lunatic','A'),39:('theis_lunatic','reimu'),41:('thbdb_lunatic','reimu')}
+binary=ROOT/'macos/dist/Boss Rush HD.app/Contents/MacOS/BossRushHD';rows=[]
+for level in map(int,args.levels.split(',')):
+    sequence,machine=cases[level];data=args.out/str(level);data.mkdir(exist_ok=True)
+    env=dict(os.environ,BOSSRUSH_MAC_DATA=str(data),BOSSRUSH_MAC_TEST='battle',BOSSRUSH_MAC_TEST_SEQUENCE=sequence,
+        BOSSRUSH_MAC_TEST_MACHINE=machine,BOSSRUSH_MAC_TEST_SOURCE_PARITY='1',BOSSRUSH_MAC_TEST_CARD='0',
+        BOSSRUSH_MAC_TEST_LOGIC_FRAMES='300',BOSSRUSH_MAC_TEST_FRAMES='300',BOSSRUSH_MAC_TEST_SHOOT='0')
+    with (data/'stdout.log').open('w') as log:
+        p=subprocess.Popen([str(binary)],cwd=data,env=env,stdout=log,stderr=subprocess.STDOUT)
+        deadline=time.monotonic()+55;error=None
+        while p.poll() is None and time.monotonic()<deadline:
+            trace=data/'lstg_log.txt'
+            if trace.exists():
+                errors=[s for s in trace.read_text(errors='replace').splitlines() if 'BOSSRUSH_ERROR:' in s]
+                if errors:error=errors[-1];p.terminate();break
+            time.sleep(.2)
+        if p.poll() is None:
+            if error:p.wait(timeout=5)
+            else:p.kill();p.wait();error='测试未在55秒内结束'
+    report=data/'bossrush/User/mac-test.json'
+    text=(data/'lstg_log.txt').read_text(errors='replace') if (data/'lstg_log.txt').exists() else ''
+    passed=p.returncode==0 and report.exists() and f'SOURCE_PARITY: {level}' in text
+    row={'level':level,'passed':passed,'exit':p.returncode,'error':error};rows.append(row)
+    print(json.dumps(row,ensure_ascii=False),flush=True)
+(args.out/'results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2)+'\n')
+raise SystemExit(0 if all(r['passed'] for r in rows) else 1)

@@ -1,0 +1,1 @@
+return {["scene/TyndallEffect"]=300,["scene/huohuohuo"]=2000,["scene/bommmmm"]=610,["scene/bommmmm2"]=610,["scene/e-100jianbian"]=600,["scene/biu1"]=1000,["scene/biu2"]=1000,["scene/miss"]=100,["scene/guang1"]=200,["scene/e14"]=448,["scene/Bommmm-W"]=400}

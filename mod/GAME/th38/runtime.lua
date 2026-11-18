@@ -38,6 +38,13 @@ function R.loadAssets()
 end
 local radius={.05,-1,.04,.05,.05,.05,.045,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.05,.15,.24,.05,.06,.06,.24}
 local function image(s)
+    local v=NativePlayers and NativePlayers.visual
+    if v then
+        local key=s.shape==27 and 'yandan'..s.color or s.shape==26 and 'yinfu'..s.color or s.shape==28 and 'xuehua'
+        local clip=key and v.data.unity.bulletclips[key]
+        local id=clip and v.clipSprite(clip,s.age/120)
+        if id then return id end
+    end
     local custom=s.custom and R.data.customs[s.custom]
     if s.customOn==1 and custom then return 'asl_'..custom.file end
     return 'asl_b'..(R.data.sprites[s.shape*16+s.color] and s.shape*16+s.color or 444)
@@ -56,7 +63,7 @@ local function sync(b,s)
     b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     if s.kind=='curve' then b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;return end
     if s.kind=='beam' then
-        b.rot=s.direction+180;b.w0=max(0,s.width*4.8);b.l2=max(0,min(s.length,s.age*abs(s.speed)*.0025)*48)
+        b.rot=s.direction+180;b.w0=max(0,s.width*7.68);b.l2=max(0,min(s.length,s.age*abs(s.speed)*.0025)*192)
         b.w=b.w0;b.alpha=min(1,max(0,s.alpha/100));b.colli=s.collision and s.life>0
         return
     end
@@ -97,20 +104,67 @@ R.classes.fairy=Class(enemy,{
         enemy.frame(b)
         if not b.asl.alive or b.asl.c.closed then clean(b) end
     end,
-    render=function(b) enemy.render(b) end,
+    render=function(b)
+        local v=NativePlayers and NativePlayers.visual
+        local nodes=v and v.data.unity.enemies[b.asl.enemyType]
+        if not nodes then enemy.render(b);return end
+        for _,n in ipairs(nodes) do
+            local img,scale
+            if n.clip then img,scale=v.clipSprite(n.clip,b.asl.age/120) else img,scale=v.sprite(n.sprite) end
+            if img then
+                SetImageState(img,'',b.asl.alpha*2.55,b.asl.red*2.55,b.asl.green*2.55,b.asl.blue*2.55)
+                Render(img,b.x,b.y,b.asl.rotation-90,n.sx*scale*b.asl.scaleX,n.sy*scale*b.asl.scaleY)
+            end
+        end
+    end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
-R.classes.curve=Class(bent_laser,{
+R.classes.curve=Class(object,{
     init=function(b,s)
-        local x,y=project(s.x,s.y)
-        bent_laser.init(b,({2,4,6,10,12,14,16,8})[floor(s.color/2)%8+1],x,y,max(4,floor(s.tailTicks/2)),max(0,s.width*7.68),4,0)
-        b.asl=s;s.native=b;R.objects[b]=true;b.bound=false;b.vx,b.vy=0,0
+        b.x,b.y=project(s.x,s.y)
+        b.group,b.layer,b.bound,b.colli=GROUP.LASER,LAYER.ENEMY_BULLET,false,false
+        b.IsLaser,b.IsBentLaser=true,true
+        b.asl=s;s.native=b;s.path={};R.objects[b]=true;b.vx,b.vy=0,0
     end,
     frame=function(b)
         local s=b.asl
         if not s.alive or s.c.closed then clean(b);return end
-        b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;b.w=max(0,s.width*7.68);b.alpha=max(0,min(1,s.alpha/100));b.colli=s.collision
-        bent_laser.frame(b)
+        local p=player
+        if not valid(p) or not s.collision or s.alpha<100 then return end
+        local r=s.width*(({[3]=.1,[4]=.03,[5]=.06})[s.laserStyle] or .05)*48
+        for i=1,#s.path,2 do
+            local n=s.path[i]
+            if not n.dead then
+                local d=Dist(n.x,n.y,p.x,p.y)
+                if d<r+p.A then p.class.colli(p,b) end
+                if not n.grazed and valid(p.grazer) and d<r+p.grazer.a then
+                    n.grazed=true;p.grazer.class.colli(p.grazer,b,true)
+                end
+            end
+        end
+    end,
+    render=function(b)
+        local s=b.asl;local v=NativePlayers and NativePlayers.visual;if not v then return end
+        local style=s.laserStyle or 0
+        local key=v.data.unity.lasers[({[0]='laser1',[1]='laser2',[2]='laser0',[3]='laser3',[4]='laser_light'..s.color,[5]='laser_ice'..s.color})[style]]
+        if not key then return end
+        local size=v.data.images[key];local tex=v.texture(key);local row=style<4 and size[2]/16 or size[2]
+        local y=style<4 and s.color*row or 0
+        local half=s.width*(style>=4 and .64 or .32)*48/2
+        local color=Color(s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
+        for i=1,#s.path-1 do
+            local a,c=s.path[i],s.path[i+1]
+            if not a.dead and not c.dead then
+                local dx,dy=c.x-a.x,c.y-a.y;local length=math.sqrt(dx*dx+dy*dy)
+                if length>0 then
+                    local nx,ny=-dy/length*half,dx/length*half
+                    local u1,u2=(i-1)/s.tailTicks*size[1],i/s.tailTicks*size[1]
+                    RenderTexture(tex,s.blend==1 and 'mul+add' or '',
+                        {a.x+nx,a.y+ny,.5,u1,y,color},{c.x+nx,c.y+ny,.5,u2,y,color},
+                        {c.x-nx,c.y-ny,.5,u2,y+row,color},{a.x-nx,a.y-ny,.5,u1,y+row,color})
+                end
+            end
+        end
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
@@ -138,6 +192,15 @@ R.classes.beam=Class(laser,{
     frame=function(b)
         if not b.asl.alive or b.asl.c.closed then clean(b);return end
         sync(b,b.asl);laser.frame(b)
+    end,
+    render=function(b)
+        local s=b.asl;local v=NativePlayers and NativePlayers.visual
+        local keys=v and v.data.unity.beams and v.data.unity.beams[s.laserStyle or 0]
+        local img,scale=keys and v.sprite(keys[s.color+1])
+        if img then
+            SetImageState(img,s.blend==1 and 'mul+add' or '',s.alpha*2.55,s.red*2.55,s.green*2.55,s.blue*2.55)
+            Render(img,b.x,b.y,s.direction-90,s.width*scale,math.min(s.length,s.age*abs(s.speed)*.0025)*scale)
+        else laser.render(b) end
     end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
@@ -258,7 +321,8 @@ local function spawn(e,x,y,direction,speed)
         red=e.a7_1+rnd(e.a7_2),green=e.a7_3+rnd(e.a7_4),blue=e.a7_5+rnd(e.a7_6),alpha=e.a7_7+rnd(e.a7_8),
         exit=e.a6_10,delayExit=e.a6_14,outTime=0,mist=e.a6_11,invincible=e.a6_12,dispel=e.a6_13,blend=e.a9_4,
         collision=e.a5_2==0,events=e.sonEvents,limits={},changes={},vars={0,0,0,0},kind=e.a47==1 and 'enemy' or e.a47==3 and (e.a54_1>=2 and 'curve' or 'beam') or 'bullet',
-        enemyStyle=1+(e.a48_1*2+e.a48_2)%9,tailTicks=max(4,e.a54_2 or 4),hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
+        enemyType=e.a48_1,enemyStyle=1+(e.a48_1*2+e.a48_2)%9,laserStyle=e.a54_4 or 0,
+        tailTicks=max(5,floor((e.a54_2 or 5)/5)*5),hit=e.a48_5*.01,immune=e.a48_6,followSpeed=e.a8_9==1,length=e.a54_2 and e.a54_2*.01 or 1,width=e.a54_3 or 1}
     if e.a47==4 then return end -- Unity蓄力/爆炸/震屏只演出，不制造有判定的替代弹。
     local cls=s.kind=='enemy' and R.classes.fairy or s.kind=='curve' and R.classes.curve or s.kind=='beam' and R.classes.beam or R.classes.projectile
     if s.kind=='enemy' then s.vars=c.vars end
@@ -379,6 +443,10 @@ local function move(s)
         if s.followSpeed then s.rotation=math.deg(math.atan2(dy,dx)) end
     end
     s.x,s.y=s.x+dx,s.y+dy
+    if s.kind=='curve' and s.path then
+        local x,y=project(s.x,s.y);table.insert(s.path,1,{x=x,y=y})
+        if #s.path>s.tailTicks then table.remove(s.path) end
+    end
     if parent and not boundBullet then followParent(s,parent) end
     if s.kind=='boss' then
         local host=s.main and c.host or s.native
@@ -467,4 +535,31 @@ function R.clear(c)
     c.emitters,c.entities,c.byName={},{},{};R.controllers[c]=nil
 end
 function R.clearAll() for c in pairs(R.controllers) do R.clear(c) end;R.bulletCount=0 end
+function R.deathClear(x,y,r)
+    for b in pairs(R.objects) do
+        local s=b.asl
+        if valid(b) and s and s.alive then
+            if s.kind=='enemy' or s.kind=='boss' then
+                if s.invincible~=1 and not b.protect and Dist(x,y,b.x,b.y)<r then
+                    if s.kind=='enemy' then b.hp=b.hp-40
+                    elseif valid(s.c.host) then Damage(s.c.host,40) end
+                end
+            elseif s.kind=='beam' and s.invincible~=1 then
+                -- Laser_zhi_delete缩短纵轴，每次回退头部0.16单位；宽度不变。
+                local co,si=cos(s.direction),sin(s.direction)
+                local function distance()
+                    local dx,dy=x-b.x,y-b.y;local along=math.max(0,math.min(b.l2,-dx*co-dy*si))
+                    return math.sqrt((dx+along*co)^2+(dy+along*si)^2)
+                end
+                while s.length>.08*s.width and distance()<r+(b.w or 0)/2 do
+                    s.length=s.length-.04;s.x,s.y=s.x-.16*co,s.y-.16*si;sync(b,s)
+                end
+            elseif s.kind=='curve' then
+                if s.invincible~=1 then
+                    for _,n in ipairs(s.path) do if Dist(x,y,n.x,n.y)<r then n.dead=true end end
+                end
+            elseif s.invincible~=1 and Dist(x,y,b.x,b.y)<r then Del(b) end
+        end
+    end
+end
 return R
