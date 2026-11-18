@@ -89,6 +89,7 @@ function E.New(class,...)
     local o=New(class,...)
     if class.take_damage then o._th43_take_damage=class.take_damage end
     if o.group==GROUP.ENEMY_BULLET or o.group==GROUP.INDES then o.th43_bullet=true end
+    if o.native_pickup then return o end
     local owner=task.stack[#task.stack]
     if owner and owner.IsBoss and owner.class.StageLevel==41 and not owner._sequence_road_carrier then
         R.objects[o]=owner
@@ -186,9 +187,18 @@ function E.Render(name,x,y,rot,h,v,...)
     end
     return Render(key,x,y,rot,h,v,...)
 end
-function E.RenderAnimation(name,...) return RenderAnimation(resolve('ani',name),...) end
+function E.RenderAnimation(name,timer,x,y,rot,h,v)
+    local scale=R.sourceScale or stg.globalimagescale
+    local key=resolve('ani',name)
+    if key~=name or key and key:find('^th43/') then
+        h=h or 1
+        h,v=h*scale,(v or h)*scale
+    end
+    return RenderAnimation(key,timer,x,y,rot,h,v)
+end
 stg.Render,stg.RenderAnimation=E.Render,E.RenderAnimation
 stg.SetImageState=E.SetImageState
+stg.SetAnimationState=E.SetAnimationState
 function stg.SetImgState(o,blend,a,r,g,b)
     local name=o.img
     if name and has('ani',name) then SetAnimationState(name,blend,a,r,g,b)
@@ -319,7 +329,7 @@ E.system={
     gamemode={isSpellCardPractice=function() return R.practice end},
 }
 local power={rank=0}
-local function resources() return NativePlayers and NativePlayers.state() end
+local function resources() return NativePlayers and NativePlayers.enabled(nil,41) and NativePlayers.state() end
 local function updateRank(rank)
     power.rank=rank
     local s=resources()
@@ -366,7 +376,11 @@ function R.addRankChip(n)
     while value>=6 and rank<3 do rank=rank+1;value=value-6 end
     while value<0 and rank>0 do rank=rank-1;value=value+6 end
     s.rankChips=math.max(0,math.min(value,6))
-    if rank~=power.rank then updateRank(rank) end
+    if rank~=power.rank then
+        local raised=rank>power.rank
+        updateRank(rank)
+        if raised and valid(player) then R.rankUpCircle(rank) end
+    end
 end
 function R.gainRankValue(n)
     local s=resources()
@@ -429,6 +443,20 @@ E.laser_bent=overlay(bent_laser,{
 })
 E.effect={}
 E.effect.shakeScreen=misc.ShakeScreen
+local PointScore=Class(object,{
+    init=function(o,x,y,n)
+        o.x,o.y,o.score=x,y,n
+        o.group,o.layer,o.colli,o.bound=GROUP.GHOST,LAYER.ITEM+50,false,false
+    end,
+    frame=function(o) if o.timer>=45 then object.RawDel(o) end end,
+    render=function(o)
+        SetFontState('Score','',Color(255*(1-o.timer/45),255,255,255))
+        RenderText('Score',tostring(o.score),o.x,o.y+o.timer*.5,.35,'center')
+    end,
+})
+function E.effect.GetScoreEffect(o,score)
+    E.New(PointScore,o.x,o.y,score)
+end
 function E.RenderStrokeTTF(_,text,left,right,bottom,top,scale,color)
     ui:RenderText('title',text,(left+right)/2,(bottom+top)/2,scale*.6,color,'center')
 end
@@ -494,27 +522,8 @@ function E.EISlib.BossDefinition.Type.changeWalkImage(o,prototype)
     o.setAction=function(name,t) walk:setAction(name,t) end
 end
 E.item=overlay(item)
-local Blood=Class(item)
-Blood.Small,Blood.Mid,Blood.Big,Blood.Huge=1,2,3,4
-function Blood:init(x,y,kind)
-    item.init(self,x,y,9)
-    self.type,self.native_pickup=kind or 1,true
-end
-function Blood:collect()
-    R.addRankChip(({1,2,3,6})[self.type])
-end
-function Blood.create(...) return E.New(Blood,...) end
-function Blood.killAllChip()
-    for _,o in ObjList(GROUP.ITEM) do if o.class==Blood then Del(o) end end
-end
-E.item.Blood=Blood
-function E.item.DropItem(x,y,drop)
-    if R.dropItems then return R.dropItems(x,y,drop[1] or 0,drop[2] or 0) end
-    return {}
-end
-E.item.PointSmall={create=function(x,y) if R.dropItems then R.dropItems(x,y,0,1) end end}
-E.item.PlayerBomb={create=function(x,y) if R.dropItems then R.dropItems(x,y,0,0,false,true) end end}
-E.item.PlayerLife={create=function(x,y) if R.dropItems then R.dropItems(x,y,0,0,true) end end}
+E.EISlib.path='EISlib/'
+run('EISlib/item/item.lua')
 E.system.spellcard={auxiliary={setChainBonusBase=noop}}
 
 

@@ -65,10 +65,6 @@ local ShotImpact=Class(object,{
     end,
 },true)
 M.shotClass=Class(P.Shot,{
-    render=function(o)
-        -- Mac 默认精灵的变换矩阵可能仍是出生坐标，按本帧的碰撞坐标直接绘制。
-        Render(o.img,o.x,o.y,o.rot,o.hscale,o.vscale)
-    end,
     kill=function(o)
         if o.killerenemy then New(ShotImpact,o) end
     end,

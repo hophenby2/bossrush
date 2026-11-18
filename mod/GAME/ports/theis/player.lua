@@ -25,7 +25,8 @@ function M.images(p,m)
         images[slot]=frames
     end
     p.theisImages=images
-    p.hscale,p.vscale=row[7],row[7]
+    -- 自机由宿主行走图系统绘制；原作世界视图另乘 0.5 的全局贴图比例。
+    p.hscale,p.vscale=row[7]*.5,row[7]*.5
     p.theisShot=prefix
     return images[1]
 end

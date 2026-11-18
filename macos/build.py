@@ -7,6 +7,7 @@ GAME=ROOT.parent
 BUILD=ROOT/'build'
 ENGINE=ROOT/'.cache/LuaSTG-x'
 APP=ROOT/'dist/Boss Rush HD.app'
+sys.path.insert(0,str(GAME/'android'))
 spec=importlib.util.spec_from_file_location('bossrush_android_build',GAME/'android/build.py')
 shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
 def run(*args,**kw):
@@ -70,7 +71,7 @@ def main():
  global GAME
  parser=argparse.ArgumentParser(description=__doc__)
  parser.add_argument('--game-root',type=Path,help='从指定的已提交源码快照复制游戏内容')
- parser.add_argument('--update-assets',action='store_true',help='保留原生程序，只更新游戏脚本与资源')
+ parser.add_argument('--update-assets',action='store_true',help='更新游戏资源；原生补丁有改动时同步重建引擎')
  parser.add_argument('--jobs',type=int,default=min(os.cpu_count() or 4,8))
  args=parser.parse_args()
  if args.game_root:
@@ -78,22 +79,26 @@ def main():
   if not (GAME/'core.lua').is_file():parser.error('--game-root 必须包含 core.lua')
  if sys.platform!='darwin':parser.error('此入口需要 macOS 与 Xcode 命令行工具')
  BUILD.mkdir(parents=True,exist_ok=True)
- if not args.update_assets:
+ fingerprint=shared_patch_hash()
+ native_sources=[ROOT/'patch_engine.py',*sorted((ROOT/'native').glob('*'))]
+ native_hash=hashlib.sha256(fingerprint.encode()+b''.join(p.read_bytes() for p in native_sources if p.is_file())).hexdigest()
+ compiled_marker=BUILD/'native/compiled-patches.sha256'
+ rebuild=(not args.update_assets or not compiled_marker.is_file() or compiled_marker.read_text()!=native_hash)
+ if rebuild:
   shared.CACHE=ROOT/'.cache';shared.ENGINE=ENGINE
   marker=ROOT/'.cache/shared-patch.sha256'
-  fingerprint=shared_patch_hash()
   if not marker.exists() or marker.read_text()!=fingerprint:
    if ENGINE.exists():shutil.rmtree(ENGINE)
    archive=GAME/'android/.cache/engine.zip'
    shared.prepare_engine(archive if archive.exists() else None)
    marker.write_text(fingerprint)
   run(sys.executable,ROOT/'patch_engine.py',ENGINE)
- if not args.update_assets:
   run('cmake','-S',ENGINE,'-B',BUILD/'native','-G','Ninja','-DCMAKE_BUILD_TYPE=Release',
       '-DCMAKE_OSX_ARCHITECTURES=arm64','-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0','-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
       '-DLSTGX_NO_LIVE2D=ON','-DLSTGX_NO_VIDEO=ON','-DLSTGX_NO_YUESCRIPT=ON','-DLSTGX_USE_GFX=OFF',
       '-DFT_DISABLE_PNG=ON','-DFT_DISABLE_BZIP2=ON','-DFT_DISABLE_BROTLI=ON','-DCMAKE_CXX_SCAN_FOR_MODULES=OFF','-DALSOFT_ENABLE_MODULES=OFF','-DALSOFT_RTKIT=OFF')
   run('cmake','--build',BUILD/'native','--target','LuaSTG-x','-j',args.jobs)
+  compiled_marker.write_text(native_hash)
  binaries=list((BUILD/'native').rglob('BossRushHD'))
  binary=next((p for p in binaries if p.is_file()),None)
  if not binary:raise RuntimeError('未找到原生构建产物，请先执行完整构建')

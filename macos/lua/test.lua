@@ -423,9 +423,9 @@ function T.install()
             frames=frames+1
             if portShoot then
                 local s=NativePlayers.state()
-                if s and (s.level==38 or s.level==41) then
+                if s and (s.level==36 or s.level==38 or s.level==41) then
                     for _,actor in ipairs(boss_group) do
-                        if (actor.th38_run or actor.th43_card) and actor.colli and actor.maxhp then
+                        if (s.level==36 or actor.th38_run or actor.th43_card) and actor.colli and actor.maxhp then
                             portDamage=math.max(portDamage,actor.maxhp-actor.hp)
                         end
                     end

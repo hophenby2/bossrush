@@ -28,7 +28,9 @@ function foe:init(x,y,style,hp,bar,drop,_,death,large)
     self.bound_time=360
     self.shooters={}
     self._stylemgr={setStyle=function(_,nextStyle) foe.change_style(self,nextStyle) end}
-    self._drop,self.death,self.type=drop,death,large or bar
+    self._drop,self.death,self.type=drop,death,large
+    if large==nil then self.type=bar end
+    self.th43_aura_color=self.type and E.COLOR_RED
     self.drop_blood=self.type
     if style==lily then
         E.LoadImageGroupFromFile('lily_enemy','res/enemy/LilyWhite.png',false,13,2)
@@ -45,14 +47,10 @@ end
 function foe:render()
     if self.th43_lily then lilyRender(self) else enemy.render(self) end
 end
-local function drops(o,drop)
-    if not drop then return end
-    if R.dropItems then R.dropItems(o.x,o.y,drop[1] or 0,drop[2] or 0) end
-end
 function foe:del() enemybase.del(self) end
 function foe:kill()
-    drops(self,self._drop)
-    if self.drop_blood then E.item.Blood.create(self.x,self.y,E.item.Blood.Small) end
+    if self._drop then E.item.DropItem(self.x,self.y,self._drop) end
+    if self.drop_blood and self.th43_aura_color then R.dropByAura(self) end
     if self.death and not self.no_death_attack then self.death(self) end
     enemy.kill(self)
 end
@@ -66,11 +64,15 @@ function foe.setBoundTime(o,t) o.bound_time=t or 360;o.bound=false end
 function foe.setTauntRank(o,rank) o.taunt_rank=rank end
 function foe.changeDrop(o,drop) o._drop=drop end
 function foe.changeDeathFunc(o,fn) o.death=fn end
-function foe.changeDropBlood(o,flag) o.drop_blood=flag end
+function foe.changeDropBlood(o,flag)
+    o.drop_blood=flag
+    if not flag then foe.cancelAura(o) end
+end
 function foe.setClashRate(o,rate) o.clash_rate=rate end
 function foe.cancelClashColli(o) o.group=GROUP.NONTJT end
 function foe.change_style(o,style) o._wisys=EnemyWalkImageSystem(o,hostStyle(style),8) end
-foe.changeAura,foe.cancelAura=noop,noop
+function foe.changeAura(o,color) o.th43_aura_color=color end
+function foe.cancelAura(o) o.th43_aura_color=nil end
 foe.canRemove=valid
 foe.BIG_TAUNT,foe.SERVANT_TAUNT=2,1
 E.other_enemy=Class(foe,{
@@ -171,7 +173,25 @@ function Card.createFullCard(name,kind,times,hp,drop,prepare,practice,main,finis
     function card:del()
         self.spell_timeout=self.timeout
         finish(self)
-        if self.hp<=0 and not self.timeout then drops(self,drop) end
+        if card.is_combat and NativePlayers.enabled(nil,41) then
+            local cleared=(self.hp<=0 and not self.timeout) or t1==t3
+            if cleared and drop and not self.no_drop_item then
+                local captured=spelling and self.chip_bonus and self.bombchip_bonus and (self.sc_bonus or 0)>0
+                local double=captured and E.system.PowerRank.isInHyper()
+                for _,pickup in ipairs(E.item.DropItem(self.x,self.y,drop)) do
+                    pickup.islocked=true
+                    if double then
+                        pickup.class.changeToDoubleRate(pickup)
+                    else
+                        pickup.isAttract,pickup.isIgnorePointRate=true,not captured
+                        if captured then pickup.max_rate=1 end
+                    end
+                end
+                E.item.Blood.create(self.x,self.y,spelling and E.item.Blood.Huge or E.item.Blood.Big)
+            end
+            self.no_drop_item=false
+            E.EGGlib.ObjectEvent.clearAllAndGetBonus(not cleared)
+        end
         R.clear(self)
         self.th43_card,self.th43_open_bomb,self.protect=nil,nil,false
         if lstg.tmpvar.th43_hide_hud==self then lstg.tmpvar.th43_hide_hud=nil end

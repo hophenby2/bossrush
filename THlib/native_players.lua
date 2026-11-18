@@ -273,6 +273,10 @@ local function emit(p,img,x,y,v,dir,dmg,r,scale,homing,main)
     o.hscale,o.vscale=scale or 1,scale or 1
     return o
 end
+function Shot:render()
+    local factor=GameDrops and GameDrops.power(self) or 1
+    Render(self.img,self.x,self.y,self.rot,self.hscale*factor,self.vscale*factor)
+end
 function Shot:frame()
     if self.maxAge and self.timer>=self.maxAge then object.Del(self);return end
     if not self.homing then return end

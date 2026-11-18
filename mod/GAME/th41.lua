@@ -165,7 +165,13 @@ env.RenderStrokeTTF=function(_,text,left,_,bottom,_,scale,color,_,_,...)
     ui:RenderText('pretty',text,left,bottom,scale*.5,color,...)
 end
 env.SetViewMode=function(mode)
-    SetViewMode(mode=='worldui' and 'world' or mode)
+    if mode=='worldui' then
+        local w=lstg.world
+        SetViewMode('world')
+        SetRenderRect(w.l,w.r,w.b,w.t,w.scrl,w.scrr,w.scrb,w.scrt)
+    else
+        SetViewMode(mode)
+    end
 end
 -- 原作普通贴图以半尺寸绘制，取景仍由宿主负责。
 env.Render=function(img,x,y,rot,sx,sy,...)
@@ -436,6 +442,24 @@ local function road(number, practice)
     finish(guard)
 end
 
+-- 原作登记表的第五项决定练习入场。有独立 Scpr 类的面使用自己的出场动作。
+local practiceCards={}
+for _,info in ipairs(env._sc_table) do practiceCards[info[3]]=info end
+local function practiceBoss(key,index)
+    local stageClass=env._editor_class[key]
+    local practiceKey=key:gsub(':','Scpr:',1)
+    local class=env._editor_class[practiceKey] or stageClass
+    local source=stageClass.cards[index]
+    local card=class.cards[index]
+    if not card or card.name~=source.name or card.is_combat~=source.is_combat then
+        class,card=stageClass,source
+    end
+    local entry=practiceCards[card]
+    local enter=card.perform
+    if entry then enter=entry[5] end
+    local previous=class.cards[(entry and entry[4] or index)-1]
+    return class,enter and previous and {previous,card} or {card}
+end
 local classKeys={}
 for key,class in pairs(env._editor_class) do
     if type(class)=='table' and class.cards and (key:match(':Lunatic$') and not key:find('Scpr',1,true)
@@ -467,10 +491,8 @@ for number=1,7 do
                         playMusic(music)
                         local bg=env['stage'..number..'_background']
                         if bg then new(bg,true) end
-                        local cards={}
-                        if source.perform and class.cards[index-1] then cards[1]=class.cards[index-1] end
-                        cards[#cards+1]=source
-                        local actor=new(class,cards)
+                        local practiceClass,cards=practiceBoss(key,index)
+                        local actor=new(practiceClass,cards)
                         while IsValid(actor) do task.Wait() end
                         finish(guard)
                     end,{stage=number,class=key,index=index,card=source},source.is_sc)
