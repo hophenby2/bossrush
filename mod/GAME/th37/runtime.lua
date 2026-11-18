@@ -512,9 +512,9 @@ function R.stopEmitter(c)
     if c then c.closed=true;c.emitters={} end
 end
 local DeathEffect=Class(object,{
-    init=function(o,p)
-        o.x,o.y=p.x,p.y;o.group,o.bound,o.colli=GROUP.GHOST,false,false
-        o.effect=R.controller(o,'e14');o.effect.effectLayer=LAYER.PLAYER+1;R.objects[o]=true
+    init=function(o,p,id)
+        o.x,o.y=p.x,p.y;o.source_enemy_death=id~=nil;o.group,o.bound,o.colli=GROUP.GHOST,false,false
+        o.effect=R.controller(o,id or 'e14');o.effect.effectLayer=id and LAYER.ENEMY-1 or LAYER.PLAYER+1;R.objects[o]=true
     end,
     frame=function(o)
         if o.effect.time<o.effect.pattern.total then R.tick(o.effect)
@@ -567,7 +567,7 @@ R.classes.fairy=Class(enemy,{
         if s.controller and s.age>=(s.delay or 0) then R.tick(s.controller) end
     end,
     render=function(o)
-        local s=o.mhj;local p=D.enemyTypes[s.type+1]
+        local s=o.mhj;local p=D.enemyTypes[s.type]
         if not p or p[3]==0 or p[4]==0 then return end
         local n=trunc(o.ani/7)%max(1,p[5]);local name='mhj2_enemy_'..s.type..'_'..n
         if not R.assets[name] then
@@ -579,6 +579,9 @@ R.classes.fairy=Class(enemy,{
     end,
     kill=function(o)
         local s=o.mhj;R.stopEmitter(s.controller)
+        local config=D.enemyTypes[s.type]
+        New(DeathEffect,o,'e'..(config[12]+7))
+        if s.items and not s.mana then PlaySound('enep00',.3,o.x/192) end
         if NativePlayers and NativePlayers.enabled(nil,35) then
             NativePlayers.drop(35,o.x,o.y,s.items)
         elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{s.items[2] or 0,s.items[4] or 0,0}) end

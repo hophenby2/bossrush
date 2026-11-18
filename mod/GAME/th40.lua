@@ -1,6 +1,6 @@
 -- 东方夏夜祭～Shining Shooting Star：Lunatic / Extra的原生对象移植。
 -- 来源：THSSS.exe中的Boss/SpellCard/GameState与原MBG；离线导出器和SHA见th40目录。
--- 差异1：原作Direct3D场景用原图平面背景代理；不改变发弹、坐标和阶段顺序。
+-- Direct3D场景保留原模型、旋转中心、相机与雾效时间轴。
 -- 自机与星屑资源由原生对象处理，Boss 血量使用原表。
 -- Boss动作、符卡二维背景、开符立绘沿用原作参数；片头对白和结局由练习流程省略。
 -- 差异4：顺序入口固定包含全部FSC，不模拟原作结界次数解锁条件。
@@ -18,7 +18,7 @@ for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
     local id='th38.snd.'..source;LoadSound(id,path);N.sounds[source]=id
 end
 for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
-class.background=assert(loadfile('mod/GAME/th40/background.lua'))(Visual)
+class.background=assert(loadfile('mod/GAME/th40/background.lua'))(Visual,data)
 local Media=dofile('mod/GAME/ports/scene_media.lua')
 local function track(chapter,kind)
     return 'TH40_'..kind..(chapter=='EX' and 'Ex' or '0'..chapter)
@@ -113,6 +113,7 @@ function class.runChapter(scene,chapter,spawn,alive,media)
         if m then for _,path in ipairs(m.patterns) do N.road_controller(run.host,path,clock+source.offset) end end
     end
     for t=1,source.clock[3] do
+        class.background.story(t)
         if t==2 then startRoad(source.road_a_id,t) end
         if #source.bosses>1 and t==source.clock[1] then
             N.clear_bullets(run)

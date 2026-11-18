@@ -424,7 +424,7 @@ R.classes.familiar=Class(enemy,{
         if b.hp<=0 then object.Kill(b);return end
         s.age=s.age+1
         local t=s.age-(s.Mist and 15 or 0)
-        if t>s.life then clean(b);return end
+        if t>s.life then R.enemyDeathEffect(b,s.familiarConfig[1],s.familiarConfig[3]);clean(b);return end
         if t>0 then
             local dx,dy=motion(s,true,s.controller.slow or 1)
             s.fx,s.fy=s.fx+dx,s.fy+dy
@@ -436,7 +436,10 @@ R.classes.familiar=Class(enemy,{
         SetAttr(b,'colli',b.colli)
     end,
     render=function(b) fairySprite(b,D.enemyTypes[b.mhj.familiarConfig[1]],b.mhj.age) end,
-    del=clean,kill=function(b) b.mhj.killed=true;clean(b) end,
+    del=clean,kill=function(b)
+        R.enemyDeathEffect(b,b.mhj.familiarConfig[1],b.mhj.familiarConfig[3])
+        b.mhj.killed=true;clean(b)
+    end,
 })
 local function emit(o,bound)
     if o.unselected then return end
@@ -786,6 +789,30 @@ local DeathEffect=Class(object,{
     render=function(o) for _,c in ipairs(o.effects) do R.drawBackground(c,1,0,0) end end,
 },true)
 function R.playerDeathEffect(p) New(DeathEffect,p) end
+local enemyDeathHeights
+local EnemyDeathEffect=Class(object,{
+    init=function(o,p,type,effect)
+        o.source_enemy_death=true
+        enemyDeathHeights=enemyDeathHeights or dofile('mod/GAME/th39/scenes/enemy_death.lua')
+        o.group,o.bound,o.colli,o.layer=GROUP.GHOST,false,false,LAYER.PLAYER_BULLET-1
+        local s=p.mhj;local config=D.enemyTypes[type or s.type]
+        local familiar=s.familiarConfig
+        local id=effect and effect>0 and effect or config[17]
+        o.effect=R.backgroundEffect('e'..id,familiar and s.fx or s.x,familiar and s.fy or s.y,7919,enemyDeathHeights,{tex={},img={}})
+        if familiar and familiar[6]==1 then o.layer=LAYER.TOP end
+        o.speed,o.direction,o.motionX,o.motionY=familiar and s.sonspeed or s.speed or 0,familiar and s.sonspeedd or s.speedf or 0,0,0
+        R.objects[o]=true
+    end,
+    frame=function(o)
+        local c=o.effect
+        o.speed=o.speed-o.speed/30;o.motionX,o.motionY=o.motionX+o.speed*cos(o.direction),o.motionY-o.speed*sin(o.direction)
+        if c.time>=c.pattern.total then c.closing=true end
+        R.tickBackground(c)
+        if c.closing and #c.particles==0 then R.objects[o]=nil;object.RawDel(o) end
+    end,
+    render=function(o) R.drawBackground(o.effect,1,o.motionX*SCALE,o.motionY*SCALE) end,
+},true)
+function R.enemyDeathEffect(p,type,effect) return New(EnemyDeathEffect,p,type,effect) end
 function R.deathClear(x,y,r)
     for b in pairs(R.objects) do
         local s=b.mhj
@@ -866,6 +893,8 @@ R.classes.fairy=Class(enemy,{
     end,
     kill=function(o)
         local s=o.mhj;R.stopEmitter(s.controller)
+        R.enemyDeathEffect(o)
+        if s.items and not s.mana then PlaySound('enep00',.3,o.x/192) end
         if NativePlayers and NativePlayers.enabled(nil,37) then
             NativePlayers.drop(37,o.x,o.y,s.items)
         elseif s.items and item and item.DropItem then item.DropItem(o.x,o.y,{tonumber(s.items[2]),tonumber(s.items[4]),0}) end

@@ -191,7 +191,10 @@ local function spawn(run,data,emitter)
     return o
 end
 local update
+local enemyEffect
 function N.enemyDeath(o)
+    enemyEffect=enemyEffect or assert(loadfile('mod/GAME/th40/enemy_death.lua'))(N)
+    enemyEffect.spawn(o)
     if (o.enemy or ''):find('Ghost',1,true) then
         local color=(tonumber(o.enemy:match('(%d+)$')) or 0)*3+2
         for i=0,7 do for j=0,4 do

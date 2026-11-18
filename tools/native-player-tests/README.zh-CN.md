@@ -42,3 +42,24 @@ BOSSRUSH_MAC_TEST_MACHINE=yukari python3 tools/th38-tests/native.py --card 38002
 ```
 
 测试使用独立的临时存档。顺序模式用实际射击命中原生敌机，再通过接触碰撞触发决死、扣结界和扣命。练习检查机体资源在重开后仍可用，并对比同种子的场内状态。
+
+
+## 敌机击破与3D道中（26.11.18-source-scenes）
+
+延续上文六作范围。春雪篇接入六色e7–e12击破；永夜篇导出34套敌机/使魔击破配置，保留原拖曳速度和独立演出层；雪莲华导出九个击破prefab、27个Sprite与九段AnimationClip，按敌机配置选择八套实际使用的演出，空占位prefab保持无演出。夏夜祭使用原EndEnemy及十片40帧三维旋转碎片。祈华梦、栖霞园继续执行原始击破类。
+
+春雪篇使用完整XNA模型，恢复阶段4的1920/3120/11100帧场景转换、模型预备/激活、UV、循环拼接、相机插值和Boss/BGM/模型到达等待。零值相机轴按原代码保留旧值；投影沿用原640×480到战斗区的裁切关系。夏夜祭恢复七个Environment场景、原阶梯/祭坛网格、雾效、云层、相机移动和黑幕转场。雪莲华停止使用LOD，按原Mesh、材质和纹理分别缓存批量顶点。
+
+原生网格提交接口只在加载时解析Lua顶点，逐帧变换在C++完成；深度只读与透明材质的深度写入分别设置。原始数据与贴图均在仓库内，运行不依赖本地原工程。导出入口是`tools/th37-tests/export_scene.py`、`tools/th38-tests/export_enemy_death.py`、`tools/native-player-tests/export_enemy_death.py`与`tools/th40-tests/export_scene.py`，各目录的sources.json保留输入SHA-256。春雪篇导出器的`--unpacked-models`需提供已解压的XNB Model目录，保留模型顶点而不重采样。
+
+这些修改恢复原数据和主要可见行为；不表示跨引擎逐像素等价。Unity的GrabPass特殊材质、粒子模拟以及原作float32/随机序列仍由兼容层表达，Windows Sub未执行本轮原生渲染回归。
+
+```sh
+luajit tools/native-player-tests/check_scene_state.lua
+luajit tools/check_native_background_tracks.lua
+luajit tools/th40-tests/sequence.lua
+python3 tools/native-player-tests/native_scenes.py --out /tmp/source-scenes
+python3 tools/native-player-tests/native_enemy_death.py --out /tmp/source-enemies
+```
+
+原生测试使用隔离存档，保存截图和日志；击破测试实际调用敌机Kill或原作击破类，检查演出被创建、没有碰撞及到期回收。背景测试验证真实Metal网格提交，LuaJIT测试覆盖八条春雪路线、七条雪莲华路线、永夜篇道中及62套符卡/8套Last Word背景，另检查七个夏夜祭场景的转换和对象回收。

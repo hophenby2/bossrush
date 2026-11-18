@@ -481,6 +481,30 @@ local function drawMesh(o,cam,n,d,part,mat)
     local c=Color(unit(opacity)*255,rgb[1]*255,rgb[2]*255,rgb[3]*255)
     local uv=mat.uv or noUV
     local offset=mat.water and o.clock/120*.01 or 0
+    if tex and lstg.AndroidCreateModelMesh then
+        d.native=d.native or setmetatable({},{__mode='k'})
+        local byTexture=d.native[part] or {};d.native[part]=byTexture
+        local native=byTexture[tex]
+        if not native then
+            local vertices={}
+            for _,index in ipairs(part) do
+                local v=d.verts[index]
+                for j=1,5 do vertices[#vertices+1]=v[j] end
+            end
+            native=lstg.AndroidCreateModelMesh(FindResTexture(tex),vertices);byTexture[tex]=native
+        end
+        local x,y,z=viewPoint(cam,point(n.m,0,0,0))
+        local transform={}
+        for i=1,3 do
+            local a,b,c=viewPoint(cam,point(n.m,i==1 and 1 or 0,i==2 and 1 or 0,i==3 and 1 or 0))
+            transform[(i-1)*3+1],transform[(i-1)*3+2],transform[(i-1)*3+3]=a-x,b-y,c-z
+        end
+        transform[10],transform[11],transform[12]=x,y,z
+        local m=n.m
+        local det=m[1]*(m[5]*m[9]-m[6]*m[8])-m[2]*(m[4]*m[9]-m[6]*m[7])+m[3]*(m[4]*m[8]-m[5]*m[7])
+        lstg.AndroidRenderModelMesh(native,mat.blend,c,transform,{uv[1],-uv[2],uv[3],1-uv[4]+offset},mat.cull==1 and det or 0)
+        return
+    end
     for i,v in ipairs(d.verts) do
         local output=vertexPool[i] or {}
         local x,y,z=viewPoint(cam,point(n.m,v[1],v[2],v[3]))
@@ -558,7 +582,7 @@ local function drawCamera(o,cam,nodes)
                 if cz+e>=cam.near and cz-e<=cam.far and math.abs(cx)<=max(0,cz+e)*cam.halfWidth+e*stretch
                         and math.abs(cy)<=max(0,cz+e)*cam.halfHeight+e*stretch then
                     -- 将细分后的网格提交给兼容渲染接口。
-                    local drawMeshData=mesh.lod or mesh
+                    local drawMeshData=mesh
                     for j,part in ipairs(drawMeshData.parts) do
                         local material=d.mesh.materials[j] or d.mesh.materials[#d.mesh.materials]
                         if material.opaque==1 then drawMesh(o,cam,n,drawMeshData,part,material)
@@ -623,6 +647,7 @@ local Scene=Class(background,{
         end
     end,
     del=function(o)
+        for _,mesh in pairs(meshes or {}) do mesh.native=nil end
         for key,pool in pairs(o.resources) do lstg.RemoveResource(pool,1,key) end
     end,
 },true)

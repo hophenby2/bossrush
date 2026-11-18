@@ -132,6 +132,7 @@ double androidNow() {
 using namespace lstg;
 #include "original_collision.inc"
 #include "quad_batch.inc"
+#include "model_mesh.inc"
 #include "fog_state.inc"
 
 LUA_REGISTER_FUNC_DEF(lstg, AndroidRendererInfo) {
@@ -309,6 +310,7 @@ LUA_REGISTER_FUNC_DEF(lstg, SetTextureSamplerState) {
 }
 
 LUA_REGISTER_FUNC_DEF(lstg, ClearZBuffer) {
+    lstg::XRenderer::getInstance()->flushTriangles();
     auto* renderer = cocos2d::Director::getInstance()->getRenderer();
     renderer->clear(cocos2d::ClearFlag::DEPTH, cocos2d::Color4F(0, 0, 0, 0), 1.f, 0, 0.f);
     return 0;
@@ -324,9 +326,11 @@ LUA_REGISTER_FUNC_DEF(lstg, AndroidFlushRenderState) {
 
 LUA_REGISTER_FUNC_DEF(lstg, SetZBufferEnable) {
     const bool enabled = lua_isboolean(L, 1) ? lua_toboolean(L, 1) : luaL_checkinteger(L, 1) != 0;
+    const bool write = lua_isnoneornil(L, 2) ? enabled : enabled && lua_toboolean(L, 2);
+    lstg::XRenderer::getInstance()->flushTriangles();
     auto* renderer = cocos2d::Director::getInstance()->getRenderer();
     renderer->setDepthTest(enabled);
-    renderer->setDepthWrite(enabled);
+    renderer->setDepthWrite(write);
     renderer->setDepthCompareFunction(cocos2d::backend::CompareFunction::LESS_EQUAL);
     return 0;
 }

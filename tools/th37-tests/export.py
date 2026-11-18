@@ -187,6 +187,7 @@ def main():
    effect='e'+group['source'][-1]
    if (data/(effect+'.xna')).exists():pattern(effect,effect)
  pattern('e14','e14')
+ for n in range(7,13):pattern('e'+str(n),'e'+str(n))
  common=[[atom(v) for v in x.split('_')[1:]] for x in text('3').splitlines() if x]
  out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x],'bossTypes':[[atom(v) for v in x.split(',')] for x in text('1').splitlines() if x]}
  (dst/'catalogue.lua').write_text('-- 原始阶段元数据；历史槽位固定在37000段。\nreturn '+lua(out)+'\n')

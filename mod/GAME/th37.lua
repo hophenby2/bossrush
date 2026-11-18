@@ -9,8 +9,13 @@ local D=R.data
 local Media=dofile('mod/GAME/th37/media.lua')
 local BG=dofile('mod/GAME/th37/background.lua')
 local Actor=dofile('mod/GAME/th37/actor.lua')
-local C={runtime=R,data=D,level=35,cards={},chapters={},classes=R.classes}
+local C={runtime=R,background=BG,data=D,level=35,cards={},chapters={},classes=R.classes}
 TH37=C
+BG.musicFrames={}
+for _,chapter in ipairs(D.chapters) do
+    local cues={};BG.musicFrames[chapter.stage]=cues
+    for _,group in ipairs(chapter.bosses) do if group.source[3]=='1' then cues[group.time]=true end end
+end
 _editor_class.TH37=R.classes
 LoadTexture('mhj2_barrages','Resources/th37/barrages.png')
 LoadTexture('mhj2_enemys','Resources/th37/enemys.png')
@@ -33,6 +38,7 @@ local function setupCard(meta,group)
         if ext.sc_pr then BG.show(meta.stage,meta.sceneFrame) end
     end
     function card:init()
+        BG.setBoss(self)
         self.mhj_clock,self.mhj_index=0,1
         self.mhj_controller=R.controller(self,meta.pattern,false)
         self.mhj_portrait=nil
@@ -155,10 +161,12 @@ function C.runChapter(scene,chapter)
         while meta.bosses[marker] and meta.bosses[marker].time==t do
             local group=meta.bosses[marker];local cards={}
             for _,m in ipairs(group.cards) do cards[#cards+1]=C.cards[m.id].card end
-            if group.source[3]=='1' and not state.mhjLastTrack then Media.play(scene,meta.stage,'boss') end
+            if group.source[3]=='1' and not state.mhjLastTrack then Media.play(scene,meta.stage,'boss');BG.signalMusic() end
             local actor=New(_editor_boss[group.band..35],cards)
+            BG.setBoss(actor)
             -- 原作StageManager在Boss存在期间冻结关卡轴；道中敌机和弹仍自然运动。
             while valid(actor) and not scene.sequence_finished do task.Wait() end
+            BG.setBoss(nil)
             marker=marker+1
         end
         task.Wait()
@@ -169,6 +177,7 @@ R.stage_PlayMusic=function(s,cue)
     if not s.media then return end
     if cue=='last' then s.mhjLastTrack=true end
     Media.play(s.media,s.stage,cue)
+    BG.signalMusic()
 end
 R.stage_FadeoutMusic=function(s,seconds)
     if s.media then Media.fade(s.media,tonumber(seconds)) end

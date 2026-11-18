@@ -1,0 +1,2 @@
+-- 原作Enemy.InitType的breakEffect对应图集高度。
+return {["scene/zybzBLUE1"]=800,["scene/zybzBLUE2"]=800,["scene/pzSHgreen"]=200,["scene/cupenzhiGREEN"]=1100,["scene/zybz01BLUE"]=1000,["scene/e1"]=40,["scene/bzxy-JULI"]=100,["scene/lanlinglan"]=144,["scene/zybzPINK"]=800,["scene/bzxg-GULUSHOU"]=72,["scene/3-4mb"]=102,["scene/zybzBLACK1"]=800,["scene/zybzBLACK2"]=800,["scene/bzxg-ZHUBAN"]=150,["scene/zybz01white"]=1000,["scene/zybz01red"]=1000,["scene/zybz01purple"]=1000,["scene/Bommmm-blood"]=400,["scene/2BOSS-fw"]=990,["scene/Bommmm-Tana"]=400}

@@ -1,17 +1,8 @@
--- 夏夜祭关卡原图。各层保持不同的滚动速度，符卡按原阶段选图。
-local Visual=...
+-- 原作3D道中与符卡二维覆盖层。
+local Visual,Data=...
 local directory='Resources/th40/Background/'
 local prefix='TH40_scene_'
-local road={
-    ['1']={{'BG01a',.25},{'BG01b',.66,230},{'Cloud01',.38,160},{'Cloud02',.58,140}},
-    ['2']={{'BG02d',.34},{'bamboo',.35,235,{.56,0,1.2,1}}},
-    ['3']={{'grass',.24},{'tiles',.38,230,{.20,0,.80,1}},{'willow',.51,188,{.56,0,1.28,1}}},
-    ['4']={{'St04/黑暗滤镜0'},{'St04/极光素材0',.39,220}},
-    ['5']={{'St05/夜空底色0'},{'St05/星星10',.29,195},{'St05/星星20',.51,210},{'St05/极光0',.21,150}},
-    ['6']={{'St06/夜空（暗）0'},{'St06/云（暗层）0',.27,190},{'St06/云（亮层）0',.5,145}},
-    EX={{'StEx/天色0'},{'StEx/中层0',.28},{'StEx/草地ex0',.41,255,{0,0,1,.55}},
-        {'StEx/Tree10',.55,198},{'StEx/Tree20',.67,198}},
-}
+local Scene=dofile('mod/GAME/th40/scene.lua')
 local folder={['1']='St01/',['2']='St02/',['3']='St03/',['4']='St04/',['5']='St05/',['6']='St06/',EX='StEx/'}
 local aliases={
     Card02a='St02/Card02a',Card02b='St02/Card02b',Card02c='St02/Card02c',
@@ -45,24 +36,6 @@ local function load(chapter,layers)
         end
     end
 end
-local function draw(o,layers,alpha)
-    local w=lstg.world
-    local width,height=w.r-w.l,w.t-w.b
-    for _,row in ipairs(layers or {}) do
-        local file=path(o.chapter,row[1])
-        local id=prefix..file
-        if CheckRes('img',id) then
-            local x1,y1,x2,y2=0,0,1,1
-            if row[4] then x1,y1,x2,y2=unpack(row[4]) end
-            local l,r=w.l+width*x1,w.l+width*x2
-            local b,t=w.b+height*y1,w.b+height*y2
-            local shift=(o.timer*(row[2] or 0))%(t-b)
-            SetImageState(id,'',math.floor((row[3] or 255)*alpha),255,255,255)
-            RenderRect(id,l,r,b+shift,t+shift)
-            if shift>0 then RenderRect(id,l,r,b+shift-(t-b),b+shift) end
-        end
-    end
-end
 local function drawTensei(age)
     local w=lstg.world
     local x,y=(w.l+w.r)*.5,(w.b+w.t)*.5
@@ -87,6 +60,7 @@ local B=Class(background,{
     end,
     frame=function(o)
         if o.tenseiAge then o.tenseiAge=o.tenseiAge+1;return end
+        if o.scene then Scene.State.step(o.scene,o.story);o.story=nil end
         Visual.tickBackground(o.originalParts)
         local alpha=o.mediaAlpha or 0
         local goal=o.mediaSpell and 1 or 0
@@ -98,7 +72,7 @@ local B=Class(background,{
         RenderClearViewMode(Color(255,10,18,38))
         if setting.displayBG==false or not o.chapter then return end
         if o.tenseiAge then drawTensei(o.tenseiAge);return end
-        draw(o,road[o.chapter],1)
+        Scene.render(o.scene)
         if o.originalParts then Visual.drawBackground(o.originalParts,o.mediaAlpha or 0) end
     end,
 })
@@ -107,7 +81,12 @@ function B.enter(chapter,phase)
     if not IsValid(bg) or bg.class~=B then bg=New(B) end
     if bg.chapter~=chapter then
         bg.chapter,bg.mediaLayers,bg.mediaAlpha=chapter,nil,0
-        load(chapter,road[chapter])
+        local clock=0
+        if phase and not lstg.var.sequence_run then
+            local source=Data.stages[chapter]
+            clock=phase.role=='boss' and source.clock[3] or phase.role=='mid' and source.clock[1] or phase.part=='b' and source.clock[2] or 0
+        end
+        bg.scene=Scene.State.new(chapter,clock)
     end
     bg.originalParts,bg.tenseiAge=Visual.backgrounds(phase)
     bg.mediaSpell=bg.originalParts and #bg.originalParts>0 or false
@@ -118,4 +97,9 @@ function B.enter(chapter,phase)
     end
     return bg
 end
+function B.story(t)
+    local bg=lstg.tmpvar.bg
+    if IsValid(bg) and bg.class==B then bg.story=t end
+end
+B.Scene=Scene
 return B

@@ -12,7 +12,7 @@ function Del(o) if o.class.del then o.class.del(o) end;o.valid=false end
 lstg={tmpvar={},world={l=-192,r=192,b=-240,t=240},view3d={},RemoveResource=function() end}
 background={DelBG=function() if IsValid(lstg.tmpvar.bg) then Del(lstg.tmpvar.bg) end end}
 GROUP={GHOST=0}
-LAYER={BG=-700,PLAYER_BULLET=-500,ENEMY_BULLET=-200}
+LAYER={TOP=1000,BG=-700,PLAYER_BULLET=-500,ENEMY_BULLET=-200}
 setting={displayBG=true}
 local exists={}
 function LoadTexture(_,path)
@@ -28,6 +28,10 @@ function GetTextureSize() return 512,512 end
 function Set3D() end
 function Color(...) return {...} end
 function SetViewMode(mode) view=mode end
+function SetPerspective() end
+function FindResTexture(name) return name end
+lstg.AndroidCreateModelMesh=function(_,v) assert(#v%15==0);return #v/15 end
+lstg.AndroidRenderModelMesh=function(mesh) draws=draws+mesh end
 function ClearZBuffer() end
 function SetZBufferEnable() end
 function SetImageState() end
@@ -59,7 +63,7 @@ for stage=1,8 do
     for _,tick in ipairs({0,360,1800}) do
         spring.show(stage,tick)
         local scene=assert(lstg.tmpvar.bg)
-        scene.timer=0
+        scene.timer=0;scene.class.frame(scene)
         draws=0
         scene.class.render(scene)
         assert(draws>0 and view=='world','春雪篇背景缺少图元或未恢复战斗视口：'..stage..'/'..tick)

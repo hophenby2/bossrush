@@ -1,98 +1,102 @@
--- 春雪篇 XNA 模型通过 LuaSTG 的透视渲染接口绘制，沿用模型材质、起始相机与循环距离。
+-- 春雪篇原始XNA网格、背景时间轴、相机、UV动画与深度模式。
 local B={}
-local path='Resources/th37/scene/'
-local prepared={}
+local State=dofile('mod/GAME/th37/scene_state.lua')
+local models={}
 local white=Color(255,255,255,255)
-local function prepare(stage)
-    local d=prepared[stage]
-    if not d then
-        d=dofile('mod/GAME/th37/scenes/'..stage..'.lua')
-        prepared[stage]=d
+local alphaMode,cutoutMode='',''
+local modesReady=false
+local function modes()
+    if modesReady then return end;modesReady=true
+    if lstg.RenderMode and CreateShaderProgramFromPath then
+        local normal=lstg.RenderMode:getByName(''):getProgram()
+        local cutout=assert(CreateShaderProgramFromPath('src/shader/Common.vert','game/mod/GAME/th37/xna_cutout.frag'))
+        lstg.RenderMode:create('xna:alpha',ccb.BlendOperation.ADD,ccb.BlendFactor.ONE,ccb.BlendFactor.ONE_MINUS_SRC_ALPHA,normal)
+        lstg.RenderMode:create('xna:cutout',ccb.BlendOperation.ADD,ccb.BlendFactor.ONE,ccb.BlendFactor.ONE_MINUS_SRC_ALPHA,cutout)
+        alphaMode,cutoutMode='xna:alpha','xna:cutout'
     end
-    for _,model in ipairs(d.models) do
-        local color=model[6]
-        for _,part in ipairs(model[7]) do
-            local name='th37_mesh_'..part[1]
-            if not CheckRes('tex',name) then LoadTexture(name,path..part[1]..'.png') end
-            if not part.texture then
-                local w,h=GetTextureSize(name)
-                part.texture,part.w,part.h=name,w,h
-                part.tint=Color(255*part[2]*model[5],255*color[1],255*color[2],255*color[3])
-                local vertices=part[3]
-                local minz,maxz=math.huge,-math.huge
-                for i=3,#vertices,5 do
-                    minz=math.min(minz,vertices[i])
-                    maxz=math.max(maxz,vertices[i])
-                end
-                part.minz,part.maxz=minz,maxz
-            end
-        end
+end
+local function prepare(name)
+    local d=models[name]
+    if d then return d end
+    modes()
+    d=dofile('mod/GAME/th37/scenes/models/'..name..'.lua');models[name]=d
+    local pool=GetResourceStatus();SetResourceStatus('global')
+    for _,part in ipairs(d) do
+        local id='th37_mesh_'..part[1]
+        if not CheckRes('tex',id) then LoadTexture(id,'Resources/th37/scene/'..part[1]..'.png') end
+        SetTextureSamplerState(id,'linear+wrap')
+        part.texture=id;part.w,part.h=GetTextureSize(id)
+        if lstg.AndroidCreateModelMesh then part.native=lstg.AndroidCreateModelMesh(FindResTexture(id),part[3]) end
     end
+    SetResourceStatus(pool)
     return d
 end
 local corners={{},{},{}}
-local function draw(part,blend,x,y,z)
-    local vertices,w,h=part[3],part.w,part.h
-    for i=1,#vertices,15 do
-        for j=1,3 do
-            local v=corners[j]
-            local p=i+(j-1)*5
-            v[1],v[2],v[3]=vertices[p]+x,vertices[p+1]+y,vertices[p+2]+z
-            v[4],v[5],v[6]=vertices[p+3]*w,vertices[p+4]*h,part.tint
+local function draw(m,frame,particle)
+    if m.alpha<=0 or m.prepare or m.separate and not particle then return end
+    local data=prepare(m.name)
+    local pos,scale,rotation=m.pos,m.scale,m.rotation
+    local blend=m.blend==1 and (m.cutout and cutoutMode or alphaMode) or 'mul+add'
+    local a=m.alpha*(particle and particle.alpha or 1)
+    if particle then pos,scale,rotation=particle.pos,particle.scale,particle.rotation end
+    local tint=Color(255*a,255*m.color[1]*a,255*m.color[2]*a,255*m.color[3]*a)
+    SetZBufferEnable(m.label~="1003",not m.depth)
+    local u,v=m.uv and m.uv[1]*frame or 0,m.uv and m.uv[2]*frame or 0
+    local cx,sx,cy,sy,cz,sz=math.cos(rotation[1]),math.sin(rotation[1]),math.cos(rotation[2]),math.sin(rotation[2]),math.cos(rotation[3]),math.sin(rotation[3])
+    for _,part in ipairs(data) do
+        if part.native then
+            lstg.AndroidRenderModelMesh(part.native,blend,tint,pos[1],pos[2],pos[3],scale[1],scale[2],scale[3],rotation[1],rotation[2],rotation[3],u,v)
+        else
+            local vertices=part[3]
+            for i=1,#vertices,15 do
+                for j=1,3 do
+                    local out=corners[j];local k=i+(j-1)*5
+                    local x,y,z=(vertices[k]+pos[1])*scale[1],(vertices[k+1]+pos[2])*scale[2],(vertices[k+2]+pos[3])*scale[3]
+                    y,z=y*cx-z*sx,y*sx+z*cx;x,z=x*cy+z*sy,-x*sy+z*cy
+                    out[1],out[2],out[3]=x*cz-y*sz,x*sz+y*cz,z
+                    out[4],out[5],out[6]=(vertices[k+3]+u)*part.w,(vertices[k+4]+v)*part.h,tint
+                end
+                RenderTexture(part.texture,blend,corners[1],corners[2],corners[3],corners[3])
+            end
         end
-        RenderTexture(part.texture,blend,corners[1],corners[2],corners[3],corners[3])
     end
 end
 local Scene=Class(background,{
     init=function(o,chapter,clock)
-        background.DelBG()
-        lstg.tmpvar.bg=o
-        o.layer=LAYER.BG-.1
-        o.bound,o.colli=false,false
-        o.scene,o.clock=prepare(chapter),clock or 0
+        background.DelBG();lstg.tmpvar.bg=o
+        o.layer,o.group,o.bound,o.colli=LAYER.BG-.1,GROUP.GHOST,false,false
+        o.state=State.new(chapter,clock or 0,B.musicFrames and B.musicFrames[chapter]);o.chapter=chapter
     end,
+    frame=function(o) State.step(o.state,o.boss and IsValid(o.boss)) end,
     render=function(o)
         if not setting.displayBG then return end
-        local d=o.scene
-        local scroll=(o.timer+o.clock)*d.speed
-        if d.loop>0 then scroll=scroll%d.loop end
-        local eye,at=d.eye,d.at
-        local previous=lstg.view3d
-        lstg.view3d={}
-        SetViewMode('world')
-        SetImageState('white','',255,0,0,0)
-        local w=lstg.world
-        RenderRect('white',w.l,w.r,w.b,w.t)
-        SetImageState('white','',255,255,255,255)
-        Set3D('eye',eye[1],eye[2],eye[3])
-        Set3D('at',at[1],at[2],at[3])
-        if eye[3]==at[3] and eye[1]==at[1] then Set3D('up',0,0,1)
-        else Set3D('up',0,1,0) end
-        Set3D('fovy',math.pi/4)
-        Set3D('z',.2,10)
-        Set3D('fog',0,0,white)
+        local s=o.state;local eye,at,travel=s.eye,s.at,s.travel
+        local previous=lstg.view3d;lstg.view3d={}
+        SetViewMode('world');SetImageState('white','',255,0,0,0)
+        local w=lstg.world;RenderRect('white',w.l,w.r,w.b,w.t);SetImageState('white','',255,255,255,255)
+        Set3D('eye',eye[1]+travel[1],eye[2]+travel[2],eye[3]+travel[3])
+        Set3D('at',at[1]+travel[1],at[2]+travel[2],at[3]+travel[3]);Set3D('up',unpack(s.up))
+        -- 原作先画640×480，再裁取384×448战斗区；保留240/tan(pi/8)的像素焦距。
+        local fov=2*math.atan(math.tan(math.pi/8)*448/480)
+        Set3D('fovy',fov);Set3D('z',20,s.far);Set3D('fog',0,0,white)
         SetViewMode('3d')
+        -- LuaSTG为左手坐标；XNA为右手坐标。负横纵比恢复原模型的投影方向。
+        SetPerspective(eye[1]+travel[1],eye[2]+travel[2],eye[3]+travel[3],at[1]+travel[1],at[2]+travel[2],at[3]+travel[3],s.up[1],s.up[2],s.up[3],fov,-(w.r-w.l)/(w.t-w.b),20,s.far)
         ClearZBuffer()
-        for _,m in ipairs(d.models) do
-            local label,at,add,transparent,alpha=m[1],m[2],m[3],m[4],m[5]
-            if alpha>0 then
-                local fixed=label>=1003 and label<=1006
-                local z=at[3]-(fixed and 0 or scroll)
-                local blend=add and 'mul+add' or ''
-                SetZBufferEnable(transparent and 0 or 1)
-                for _,part in ipairs(m[7]) do
-                    if part.maxz+z>eye[3]-6 and part.minz+z<eye[3]+12 then draw(part,blend,at[1],at[2],z) end
-                end
-            end
-        end
-        SetZBufferEnable(0)
-        lstg.view3d=previous
-        SetViewMode('world')
+        for _,m in ipairs(s.models) do if m.label~='1003' then draw(m,s.frame) end end
+        for _,p in ipairs(s.particles) do draw(p.model,0,p) end
+        local overlay=State.find(s,1003);if overlay then draw(overlay,s.frame) end
+        SetZBufferEnable(0);lstg.view3d=previous;SetViewMode('world')
+        if s.fade>0 then SetImageState('white','',255*s.fade,0,0,0);RenderRect('white',w.l,w.r,w.b,w.t);SetImageState('white','',255,255,255,255) end
     end,
 },true)
+B.class,B.State=Scene,State
+local function current() local o=lstg.tmpvar.bg;return o and IsValid(o) and o.class==Scene and o end
 function B.show(chapter,clock)
-    if setting and setting.displayBG then New(Scene,chapter,clock) end
+    if setting and setting.displayBG then return New(Scene,chapter,clock) end
 end
+function B.setBoss(boss) local o=current();if o then o.boss=boss end end
+function B.signalMusic() local o=current();if o and o.state.mode=='music' then o.state.mode='boss' end end
 -- 原作Data/<stage><bgtype>.xna：按BSprite更新、循环、缩放及混合顺序绘制。
 local spellData=dofile('mod/GAME/th37/spell_backgrounds.lua')
 local spellObject

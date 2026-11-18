@@ -59,6 +59,11 @@ local function clean(b)
     end
     R.objects[b]=nil;object.RawDel(b)
 end
+local enemyDeath
+function R.enemyDeathEffect(b)
+    enemyDeath=enemyDeath or dofile('mod/GAME/th38/enemy_death.lua')
+    return enemyDeath.spawn(b,b.asl.enemyType)
+end
 local function sync(b,s)
     b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     if s.kind=='curve' then b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0;return end
@@ -117,7 +122,7 @@ R.classes.fairy=Class(enemy,{
             end
         end
     end,
-    del=function(b) clean(b) end,kill=function(b) clean(b) end,
+    del=function(b) clean(b) end,kill=function(b) R.enemyDeathEffect(b);clean(b) end,
 })
 R.classes.curve=Class(object,{
     init=function(b,s)

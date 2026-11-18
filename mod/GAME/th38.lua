@@ -9,6 +9,7 @@ local SpellBG=assert(loadfile('mod/GAME/th38/spell_background.lua'))(Actor)
 local Media=dofile('mod/GAME/th38/media.lua')
 local BG=dofile('mod/GAME/th38/background.lua')
 local C={runtime=R,data=D,cards={},chapters={},level=36,visual=dofile('mod/GAME/th38/visual.lua')}
+C.background=BG
 TH38=C;_editor_class.TH38=R.classes
 local function valid(o) return o and IsValid(o) end
 local function hideRoad(o)

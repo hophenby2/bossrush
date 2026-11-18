@@ -29,7 +29,7 @@ B 段等待中 Boss 退场后，从实际 TimeMain 续接。第一面偏移为 `
 
 ## 已知差异
 
-1. Direct3D 场景和蓄力粒子使用原图平面/粒子代理；直线与曲线激光使用 LuaSTG 原生碰撞。
+1. Direct3D 场景使用原始几何与时间轴；蓄力粒子仍由兼容层绘制；直线与曲线激光使用 LuaSTG 原生碰撞。
    射线椭圆判定、反射激光的网格拼接等尚未逐帧核对，不能声明判定完全一致。
 2. 四机体接入残机、Bomb、火力、星屑与红蓝绿附魔。Bomb 范围和伤害以 LuaSTG 实现近似，部分掉落仍待逐项核对。
    顺序模式固定包含全部 FSC，该变化已标在入口和卡头。
@@ -89,4 +89,4 @@ Mac 可用 `package_mac.py --base-app <已有.app> --engine <已有LuaSTG-x缓�
 `export_visuals.py`从原构造函数离线导出81个符卡类的背景、立绘及中心点；
 `visual.lua`按原BackgroundMove2/Rotate/SC参数绘制，不再将符卡图拉伸铺满并套用统一滚动。
 Boss沿用BaseBossTouhou的左右镜像、转向帧、施法帧和8帧间隔；OnAction从原Shoot条件导出。
-原作道中Direct3D场景仍沿用平面代理，不包含在本次二维符卡背景还原中。
+道中由`scene_state.lua`逐项移植EnvironmentSSS01–06/Ex，保留原相机、雾、对象生成、旋转中心及转场。`export_scene.py`导出27个模型/背景素材，其中阶梯344个、祭坛156个原始三角形，不做模型简化。

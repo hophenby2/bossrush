@@ -1,5 +1,7 @@
 -- Called only by the isolated macOS test harness.
+if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_SCENE') then return dofile('macos/source_scene_probe.lua') end
 if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_PARITY')=='1' then return dofile('macos/source_parity_probe.lua') end
+if os.getenv('BOSSRUSH_MAC_TEST_SOURCE_ENEMY')=='1' then return dofile('macos/source_enemy_probe.lua') end
 local T={}
 local level
 local checked={}
