@@ -1,14 +1,14 @@
 {
   "source": "/Users/happyelements/crack/THMHJ.PartII.Restored",
   "statistics": {
-    "events": 14352,
-    "batch": 3320,
+    "events": 14469,
+    "batch": 3337,
     "laser": 51,
     "cover": 91,
     "rebound": 12,
     "stage_commands": 2695,
     "force": 3,
-    "patterns": 214,
+    "patterns": 215,
     "cards": 93,
     "spells": 56,
     "nonspells": 37,
@@ -426,11 +426,21 @@
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/b8119.dat": "ea213d32d23d1a5088db6a55e8bec0392799f34cbb6a7ad0f3b77ccbdbda5cd9",
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/b852.xna": "7658652c6d0579d3a6d53454764c96f8c09704f25bcd7128e95c49197da10e04",
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/b852.dat": "e266569bc2cd7360d411b6116154e78c1a8867dbd6da5f5e00bfd62fe2766ed2",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/e44.xna": "f0474bbfa27c7b2bf1d50a9e31ecebe3624363e6ddba882227821cc1160a58b5",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/e44.dat": "a5c2eea90a64beb9ce693aac0ef3d2bd4d1322f668468e3db20fcfbb5b8a6db9",
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/3.xna": "04c3412906a073a4147cc1fef8c68cc0712717dab58af973ca3104eeb99d6017",
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/0.xna": "77173f7ab70097944503c670b75aee18c1ce778877f1f0e0ddb97067604120f0",
     "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/barrages.xna": "5afb10b1520a43293f100d339032002cf7bdce179fe7e4ad6c7cbc339b4d7330",
     "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/List/enemys.xna": "51456ef09ac60461639763f485c1b8d0b7d6e6a67e658c57ef7400f64df1b354",
     "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/mist.xna": "0ebb6e9a5158e06df250f8d4f758eeb964f2044a3e0e6615220b0f3ac38f2f61",
-    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/dis.xna": "b44ba55f0deb153214b8a63d7d85389d3de4e3e7113cecd4e5d23d7e15c9774f"
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/dis.xna": "b44ba55f0deb153214b8a63d7d85389d3de4e3e7113cecd4e5d23d7e15c9774f",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/List/bosses.xna": "51e8fb73258a24e23d49b9928672aa7af49cb105c85f73de98b3952cf43045d6",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/List/bosslist.xna": "aeebfaa61cf444ccf191def2d69fb305ec19675a52cebd7fec141ac638412a09",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Black/18.xna": "98dd3745500200c7d74d94afa94b80939689278b947de9d5db5afb0240f6ec05",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Black/25.xna": "7949632b9083746b3acc058b2f624e552ef69d28bc3cd8ec710a809fb52d4cd5",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Black/26.xna": "4b6df555488a5caa823c0a22e069611f47f14a0b35bfecd4c85cd2d36ab4ac93",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Black/27.xna": "c1af6eec6d283ac33bd5fec52e35f60c5ea6cccd8623419db49f92cf24dad3ea",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/1.xna": "5425ec2680218d33428b5b210e8659889eda92a52b750ba10dec34572c45c146",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/63.xna": "ab72587b31577ffca3c1230e8c2b2ad64d7dc4bc8ed51d5e06811ac75230c40c"
   }
 }

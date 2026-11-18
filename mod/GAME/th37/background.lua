@@ -93,4 +93,34 @@ local Scene=Class(background,{
 function B.show(chapter,clock)
     if setting and setting.displayBG then New(Scene,chapter,clock) end
 end
+-- 原作Data/63.xna：四层二维背景覆盖道中，旋转中心与BSprite保持一致。
+local Spell=Class(background,{
+    init=function(o)
+        background.DelBG();lstg.tmpvar.bg=o
+        o.layer=LAYER.BG-.1;o.bound,o.colli=false,false
+        o.parts={{25,256,0,256,0,0},{18,364,364,140,320,-.2},{26,235,235,190,180,.2},{27,256,0,256,0,0}}
+        for _,p in ipairs(o.parts) do
+            local name='mhj2_spell_'..p[1]
+            if not CheckRes('tex',name) then
+                local pool=GetResourceStatus();SetResourceStatus('global')
+                LoadTexture(name,'Resources/th37/spell'..p[1]..'.png')
+                local w,h=GetTextureSize(name);LoadImage(name,name,0,0,w,h)
+                SetImageCenter(name,p[2],p[3]);SetResourceStatus(pool)
+            end
+        end
+    end,
+    render=function(o)
+        if not setting.displayBG then return end
+        SetViewMode('world')
+        SetImageState('white','',255,0,0,0)
+        local w=lstg.world;RenderRect('white',w.l,w.r,w.b,w.t)
+        SetImageState('white','',255,255,255,255)
+        for _,p in ipairs(o.parts) do
+            local name='mhj2_spell_'..p[1]
+            SetImageState(name,'',255*math.min(1,o.timer/60),255,255,255)
+            Render(name,p[4]-192,224-p[5],-p[6]*o.timer,1,1)
+        end
+    end,
+},true)
+function B.spellSix() if setting and setting.displayBG then New(Spell) end end
 return B

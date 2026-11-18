@@ -20,6 +20,7 @@ local function spawn(layer,id,overrides)
     for _,e in ipairs(c.emitters) do
         if e.parentid==layer and e.id==id then
             e.fx,e.fy,e.tiao=315,140,1
+            e.bindid=-1
             e.rand={}
             for k,v in pairs(overrides or {}) do e[k]=v end
             local before=#objects
@@ -33,6 +34,13 @@ end
 local function step(o,n)
     for _=1,n do assert(IsValid(o),'弹体提前回收');o.class.frame(o) end
 end
+-- 原Batch.Shoot在绑定宿主尚未出生时不发射，包含“额外发射”事件。
+local opening=R.controller(nil,'673')
+local before=#objects
+R.tick(opening)
+assert(#objects==before+4,'绑定宿主尚未出生时提前生成了黄色御札或透明宿主')
+for b,s in pairs(opening.bullets) do assert(s.type==238,'开场多出原作没有的弹体') end
+R.clear(opening)
 -- 原BExecution的整数增量先截断。负小数也必须覆盖，正数测不出错图。
 local random=ran.Float
 for _,case in ipairs({{-1.75,257},{-.75,258},{.75,258},{1.75,259}}) do

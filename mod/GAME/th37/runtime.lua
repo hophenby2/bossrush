@@ -159,9 +159,9 @@ local function projected(b)
     b._a=max(0,min(255,(s.alpha or 100)*2.55));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
     -- 原作按Layer顺序绘制，每层先普通弹、后高光弹。
-    b.layer=LAYER.ENEMY_BULLET+(s.layerid or 0)*2+(s.Blend and 1 or 0)
-    b.group=s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET
-    b.colli=not s.dis and s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
+    b.layer=(s.controller.effectLayer or LAYER.ENEMY_BULLET)+(s.layerid or 0)*2+(s.Blend and 1 or 0)
+    b.group=s.controller.effectLayer and GROUP.GHOST or (s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET)
+    b.colli=not s.controller.effectLayer and not s.dis and s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
 end
 local function clean(b)
     local s=b.mhj
@@ -364,7 +364,19 @@ local function emit(o,bound)
         New(o.kind=='laser' and R.classes.beam or R.classes.projectile,s)
     end
 end
-function R.fire(o) emit(o,o.bound_source) end
+local function fire(o,bound)
+    if bound then emit(o,bound);return end
+    if not o.bindid or o.bindid<0 or o.bindid==o.id then emit(o);return end
+    -- Batch.Shoot的额外发射与周期发射都必须找到已出生的绑定宿主。
+    local targets={}
+    for b,s in pairs(o.controller.bullets) do
+        if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then
+            targets[#targets+1]=s
+        end
+    end
+    for _,s in ipairs(targets) do emit(o,s) end
+end
+function R.fire(o) fire(o,o.bound_source) end
 local function emitter(spec,c)
     local o=copy(spec);o.controller=c;o.host=c.host;o.pattern=c.pattern;o.children=setmetatable({},{__mode='k'})
     -- Batch.Copy是浅拷贝，原EventRead的次数限制跨Totalframe循环保留。
@@ -440,12 +452,7 @@ function R.tick(c)
         interpolate(o)
         if o.kind=='batch' or o.kind=='laser' then
             if o.t>0 and ot%o.t+trunc(rnd(o.rand.t or 0))==0 then
-                if bound then emit(o,bound)
-                elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
-                    local targets={}
-                    for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]=s end end
-                    for _,s in ipairs(targets) do emit(o,s) end
-                else emit(o) end
+                fire(o,bound)
             end
         else field(o,c,ot) end
     end

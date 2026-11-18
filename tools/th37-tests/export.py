@@ -94,9 +94,10 @@ def main():
    if k in fields:out+=','+k+'='+events(raw[fields.index(k)],kind if k=='Parentevents' else kind+'-son')
   return out+'}'
  patterns={}
- def pattern(name):
+ def pattern(name,source_name=None):
   if name in patterns:return
-  t=text('b'+name);lines=t.splitlines();i=1;custom=[];global_events=[]
+  source_name=source_name or 'b'+name
+  t=text(source_name);lines=t.splitlines();i=1;custom=[];global_events=[]
   while not lines[i].startswith('Center:'):
    count=int(lines[i].split()[0]);kind=lines[i];i+=1
    block=lines[i:i+count];i+=count
@@ -121,9 +122,9 @@ def main():
    if ge[10]:global_code.append(f'if t=={start} then R.quake(c,{ge[11]},{ge[12]}) end')
    if ge[16]:global_code.append(f'if t>={start} then R.slow(c,{ge[17]},{ge[18]},t,{start}) end')
   # 中心运动独立于宿主；中心脚本控制boss，普通发射器坐标只做一次center偏移。
-  code='-- 离线展开：b'+name+'.xna；事件均已编译为Lua条件和调用。\nreturn {id='+lua(name)+',total='+str(total)+',centerAvailable='+lua(available)+',center='+lua([atom(x) for x in center[:6]])+',centerEvents='+events(ce,'center')+',globalEvents=function(c,t,R)\n'+'\n'.join(global_code)+'\nend,types='+lua(custom)+',emitters={\n'+',\n'.join(rows)+'\n}}\n'
+  code='-- 离线展开：'+source_name+'.xna；事件均已编译为Lua条件和调用。\nreturn {id='+lua(name)+',total='+str(total)+',centerAvailable='+lua(available)+',center='+lua([atom(x) for x in center[:6]])+',centerEvents='+events(ce,'center')+',globalEvents=function(c,t,R)\n'+'\n'.join(global_code)+'\nend,types='+lua(custom)+',emitters={\n'+',\n'.join(rows)+'\n}}\n'
   (dst/'patterns').mkdir(exist_ok=True);(dst/'patterns'/(name+'.lua')).write_text(code)
-  tex=data/('b'+name+'.dat')
+  tex=data/(source_name+'.dat')
   if tex.exists():(art/('b'+name+'.png')).write_bytes(decrypt(tex,0))
  def time(s):
   m,s,f=map(int,s.split(':'));return m*3600+s*60+f
@@ -181,11 +182,17 @@ def main():
   for tick,lines_ in grouped.items():code+=['if t=='+str(tick)+' then']+lines_+['end']
   code+=['end'];(dst/('stage'+str(stage)+'.lua')).write_text('\n'.join(code)+'\n')
   stats['stage_commands']+=len(driver)
+ pattern('e44','e44')
  common=[[atom(v) for v in x.split('_')[1:]] for x in text('3').splitlines() if x]
  out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x]}
  (dst/'catalogue.lua').write_text('-- 原始阶段元数据；历史槽位固定在37000段。\nreturn '+lua(out)+'\n')
  for name,path in [('barrages','Pattern/barrages'),('enemys','List/enemys'),('mist','Pattern/mist'),('dis','Pattern/dis')]:
   (art/(name+'.png')).write_bytes(decrypt(content/'Graphics'/(path+'.xna'),0))
+ for name in ('bosses','bosslist'):
+  (art/(name+'.png')).write_bytes(decrypt(content/'Graphics/List'/(name+'.xna'),0))
+ for name in ('18','25','26','27'):
+  (art/('spell'+name+'.png')).write_bytes(decrypt(content/'Graphics/Black'/(name+'.xna'),0))
+ text('1');text('63')
  stats['patterns']=len(patterns);stats['cards']=len(allcards);stats['spells']=sum(c['spell'] for c in allcards);stats['nonspells']=sum(not c['spell'] for c in allcards);stats['roads']=sum(len(x['roads']) for x in chapters)
  manifest={'source':str(source),'statistics':dict(stats),'unsupported':unsupported,'sha256':hashes}
  (dst/'sources.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'statistics':stats,'unsupported_count':len(unsupported)},ensure_ascii=False,indent=2))

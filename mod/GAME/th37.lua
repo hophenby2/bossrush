@@ -2,12 +2,13 @@
 -- 56符卡、37非符、28个道中练习窗口；214份CrazyStorm经离线展开，运行时只用LuaSTG对象。
 -- 来源、哈希、事件/发射器计数：th37/sources.json。生成命令与已知差异见tools/th37-tests/README.zh-CN.md。
 -- 原始血量、弹数和周期。背景使用原作网格、材质与镜头，音乐使用发行版波形数据。
--- 差异2：省略对白和剧情演出；Boss立绘用项目现有行走图，弹图和敌机使用原图。
+-- 差异2：省略对白和剧情演出；幽幽子使用原作动画与开符立绘，其余Boss沿用项目行走图。
 -- 差异3：原作跨对象缓时、射线、深绑定/区域触发的边缘语义仍需原版逐帧对照，见验证说明。
 local R=dofile('mod/GAME/th37/runtime.lua')
 local D=R.data
 local Media=dofile('mod/GAME/th37/media.lua')
 local BG=dofile('mod/GAME/th37/background.lua')
+local Actor=dofile('mod/GAME/th37/actor.lua')
 local C={runtime=R,data=D,level=35,cards={},chapters={},classes=R.classes}
 TH37=C
 _editor_class.TH37=R.classes
@@ -34,11 +35,21 @@ local function setupCard(meta,group)
     function card:init()
         self.mhj_clock,self.mhj_index=0,1
         self.mhj_controller=R.controller(self,meta.pattern,false)
+        self.mhj_portrait=nil
+        if meta.actor=='西行寺幽幽子' then Actor.bind(self) end
         self.mhj_opening=opening
     end
     function card:frame()
         if not self.mhj_clock then return end
         self.mhj_clock=self.mhj_clock+1
+        if self.mhj_clock==90 and meta.stage==6 and meta.actor=='西行寺幽幽子' and meta.spell then
+            BG.spellSix()
+            self.mhj_portrait=R.controller(nil,'e44')
+            self.mhj_portrait.effectLayer=LAYER.TOP-10
+        end
+        if self.mhj_portrait and self.mhj_portrait.time<self.mhj_portrait.pattern.total then
+            R.tick(self.mhj_portrait)
+        end
         if self.mhj_clock<=opening then
             self.x=self.x+(0-self.x)/20;self.y=self.y+(70-self.y)/20
             return
@@ -55,6 +66,7 @@ local function setupCard(meta,group)
             NativePlayers.drop(35,self.x,self.y,group.items,true,not meta.spell)
         end
         R.clear(self.mhj_controller);self.mhj_controller=nil;self.mhj_clock=nil
+        R.clear(self.mhj_portrait);self.mhj_portrait=nil
     end
     return card
 end
