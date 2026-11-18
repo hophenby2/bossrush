@@ -44,7 +44,10 @@ local function tickEffects(list)
             if f==1 then c.tint=nil end
         end
         if c.breakAge then c.breakAge=c.breakAge+1
-        else R.tickBackground(c) end
+        else
+            if c.once and c.time>=c.pattern.total then c.closing=true end
+            R.tickBackground(c)
+        end
         if c.breakAge and c.breakAge>=15 or c.closing and #c.particles==0 then
             table.remove(list,i)
         end
@@ -53,6 +56,7 @@ end
 local function update(o)
     if not o.spell or o.spell.keep then tickEffects(o.effects) end
     if o.spell then tickEffects(o.spell.effects) end
+    if o.portrait then tickEffects(o.portrait) end
     if o.fade>0 then o.fade=math.max(0,o.fade-.01) end
     local quake=o.quake
     o.shakeX,o.shakeY=0,0
@@ -81,7 +85,12 @@ local Pass=Class(object,{
         o.group,o.colli,o.bound=GROUP.GHOST,false,false
     end,
     frame=function(o) if not IsValid(o.scene) then Del(o) end end,
-    render=function(o) if IsValid(o.scene) then draw(o.scene,o.order) end end,
+    render=function(o)
+        if not IsValid(o.scene) then return end
+        if o.order=='portrait' then
+            for _,c in ipairs(o.scene.portrait or {}) do R.drawBackground(c,1,0,0) end
+        else draw(o.scene,o.order) end
+    end,
 })
 local Scene=Class(background,{
     init=function(o,chapter,start)
@@ -101,6 +110,7 @@ local Scene=Class(background,{
         New(Pass,o,1,LAYER.PLAYER_BULLET+.01)
         New(Pass,o,2,LAYER.ENEMY_BULLET-.01)
         New(Pass,o,0,LAYER.ENEMY_BULLET+.1)
+        New(Pass,o,'portrait',LAYER.TOP-10)
     end,
     frame=update,
     render=function(o)
@@ -150,6 +160,10 @@ function B.card(chapter,group,meta)
     local config=o.script.groups[group.index]
     local card=config.cards[tostring(meta.number)]
     local variant=card.variant or config.variant
+    if card.portrait and not (meta.flags and table.concat(meta.flags,','):find('INFINITE')) then
+        o.portrait={track(o,card.portrait,481,360)}
+        o.portrait[1].once=true
+    end
     if meta.kind~=0 then
         local effects=D.spells[tostring(chapter.stage)][tostring(variant)]
         if effects then
@@ -165,7 +179,7 @@ function B.endCard(group,meta)
     local o=current()
     if not o then return end
     local card=o.script.groups[group.index].cards[tostring(meta.number)]
-    o.spell=nil
+    o.spell=nil;o.portrait=nil
     if card.replace then change(o,card.replace) end
 end
 return B

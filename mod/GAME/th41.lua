@@ -345,6 +345,7 @@ if P then
 end
 load('EISlib/egg/egg.lua')
 load('EISlib/background/background.lua')
+dofile('mod/GAME/ports/spell_background.lua')(env,'theis_spell_composite',env._spellcard_background)
 load('EISlib/stage/stage.lua')
 env.EISlib.stage.canDialog=function() return false end
 env.EISlib.stage.playMusic=function(name,position) playMusic(name,1,position) end

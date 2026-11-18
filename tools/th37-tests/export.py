@@ -182,17 +182,37 @@ def main():
   for tick,lines_ in grouped.items():code+=['if t=='+str(tick)+' then']+lines_+['end']
   code+=['end'];(dst/('stage'+str(stage)+'.lua')).write_text('\n'.join(code)+'\n')
   stats['stage_commands']+=len(driver)
- pattern('e44','e44')
+ for chapter in chapters:
+  for group in chapter['bosses']:
+   effect='e'+group['source'][-1]
+   if (data/(effect+'.xna')).exists():pattern(effect,effect)
  common=[[atom(v) for v in x.split('_')[1:]] for x in text('3').splitlines() if x]
- out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x]}
+ out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x],'bossTypes':[[atom(v) for v in x.split(',')] for x in text('1').splitlines() if x]}
  (dst/'catalogue.lua').write_text('-- 原始阶段元数据；历史槽位固定在37000段。\nreturn '+lua(out)+'\n')
  for name,path in [('barrages','Pattern/barrages'),('enemys','List/enemys'),('mist','Pattern/mist'),('dis','Pattern/dis')]:
   (art/(name+'.png')).write_bytes(decrypt(content/'Graphics'/(path+'.xna'),0))
  for name in ('bosses','bosslist'):
   (art/(name+'.png')).write_bytes(decrypt(content/'Graphics/List'/(name+'.xna'),0))
- for name in ('18','25','26','27'):
-  (art/('spell'+name+'.png')).write_bytes(decrypt(content/'Graphics/Black'/(name+'.xna'),0))
- text('1');text('63')
+ backgrounds={};textures=set()
+ for chapter in chapters:
+  for group in chapter['bosses']:
+   key=str(chapter['stage'])+group['source'][1]
+   if key in backgrounds or not (data/(key+'.xna')).exists() or group['source'][1]=='1':continue
+   parts=[];byid={}
+   for line in text(key).splitlines():
+    match=re.fullmatch(r'(\w+)\((.*)\)',line);assert match,line
+    op,raw=match.groups();v=[atom(x) for x in raw.split(',')]
+    if op=='Create':
+     part={'texture':v[0],'add':str(v[1]).lower()=='true','origin':v[2:4],'position':v[4:6],'alpha':v[6],'move':[0,0],'rotate':0,'scale':[1,1],'turn':[]}
+     textures.add(v[0]);parts.append(part);byid[v[7]]=part
+    else:
+     field={'SetMove':'move','SetRotate':'rotate','SetScale':'scale','TurnWhen':'turn'}[op]
+     if op=='TurnWhen':byid[v[0]][field].append(v[1:])
+     else:byid[v[0]][field]=v[1] if op=='SetRotate' else v[1:]
+   backgrounds[key]=parts
+ (dst/'spell_backgrounds.lua').write_text('-- 原作BossBackground/BSprite参数。\nreturn '+lua(backgrounds)+'\n')
+ for name in sorted(textures):
+  (art/('spell'+str(name)+'.png')).write_bytes(decrypt(content/'Graphics/Black'/(str(name)+'.xna'),0))
  stats['patterns']=len(patterns);stats['cards']=len(allcards);stats['spells']=sum(c['spell'] for c in allcards);stats['nonspells']=sum(not c['spell'] for c in allcards);stats['roads']=sum(len(x['roads']) for x in chapters)
  manifest={'source':str(source),'statistics':dict(stats),'unsupported':unsupported,'sha256':hashes}
  (dst/'sources.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n');print(json.dumps({'statistics':stats,'unsupported_count':len(unsupported)},ensure_ascii=False,indent=2))

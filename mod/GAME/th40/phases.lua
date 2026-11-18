@@ -9,9 +9,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St01/道中Boss/1符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 else
 if (t == 150) then N.controller(o,"St01/道中Boss/1符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 end
 end
 P[3].step=function(o,t,N)
@@ -23,9 +25,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St01/关底Boss/1符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 150) % 430 == 0) then o.action=150 end
 else
 if (t == 150) then N.controller(o,"St01/关底Boss/1符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 150) % 430 == 0) then o.action=150 end
 end
 end
 P[5].step=function(o,t,N)
@@ -37,9 +41,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St01/关底Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 else
 if (t == 150) then N.controller(o,"St01/关底Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 end
 end
 P[7].step=function(o,t,N)
@@ -47,9 +53,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 100) then N.controller(o,"St01/关底Boss/FSC符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 100) then o.action=10000 end
 else
 if (t == 100) then N.controller(o,"St01/关底Boss/FSC符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 100) then o.action=10000 end
 end
 end
 P[8].step=function(o,t,N)
@@ -127,9 +135,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St03/道中Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 else
 if (t == 150) then N.controller(o,"St03/道中Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if (t == 150) then o.action=10000 end
 end
 end
 P[18].step=function(o,t,N)
@@ -140,8 +150,10 @@ P[19].step=function(o,t,N)
 local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St03/关底Boss/1符L.mbg",false,"default") end
+if ((t - 160) % 363 == 0) then o.action=250 end
 else
 if (t == 150) then N.controller(o,"St03/关底Boss/1符L.mbg",false,"default") end
+if ((t - 160) % 363 == 0) then o.action=250 end
 end
 end
 P[20].step=function(o,t,N)
@@ -153,9 +165,11 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St03/关底Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 else
 if (t == 150) then N.controller(o,"St03/关底Boss/2符L.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 end
 end
 P[22].step=function(o,t,N)
@@ -205,18 +219,23 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St04/关底Boss/2符L0.mbg",false,"default") end
 if (t > 100) then N.wander(o,t,205,20,2.0,147.0,100.0,90.0,40.0) end
+if (t == 150) then o.action=10000 end
 elseif route=="B" then
 if (t == 150) then N.controller(o,"St04/关底Boss/2符L1.mbg",false,"default") end
 if (t > 100) then N.wander(o,t,205,20,2.0,147.0,100.0,90.0,40.0) end
+if (t == 150) then o.action=10000 end
 elseif route=="C" then
 if (t == 150) then N.controller(o,"St04/关底Boss/2符L2.mbg",false,"default") end
 if (t > 100) then N.wander(o,t,205,20,2.0,147.0,100.0,90.0,40.0) end
+if (t == 150) then o.action=10000 end
 elseif route=="D" then
 if (t == 150) then N.controller(o,"St04/关底Boss/2符L3.mbg",false,"default") end
 if (t > 100) then N.wander(o,t,205,20,2.0,147.0,100.0,90.0,40.0) end
+if (t == 150) then o.action=10000 end
 else
 if (t == 150) then N.controller(o,"St04/关底Boss/2符L0.mbg",false,"default") end
 if (t > 100) then N.wander(o,t,205,20,2.0,147.0,100.0,90.0,40.0) end
+if (t == 150) then o.action=10000 end
 end
 end
 P[29].step=function(o,t,N)
@@ -224,18 +243,23 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St04/关底Boss/3符L0.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 160) % 363 == 0) then o.action=250 end
 elseif route=="B" then
 if (t == 150) then N.controller(o,"St04/关底Boss/3符L1.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 160) % 363 == 0) then o.action=250 end
 elseif route=="C" then
 if (t == 150) then N.controller(o,"St04/关底Boss/3符L2.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 160) % 363 == 0) then o.action=250 end
 elseif route=="D" then
 if (t == 150) then N.controller(o,"St04/关底Boss/3符L3.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 160) % 363 == 0) then o.action=250 end
 else
 if (t == 150) then N.controller(o,"St04/关底Boss/3符L0.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 160) % 363 == 0) then o.action=250 end
 end
 end
 P[30].step=function(o,t,N)
@@ -243,18 +267,23 @@ local route=N.route(o)
 if route=="A" then
 if (t == 150) then N.controller(o,"St04/关底Boss/4符L0.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 elseif route=="B" then
 if (t == 150) then N.controller(o,"St04/关底Boss/4符L1.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 elseif route=="C" then
 if (t == 150) then N.controller(o,"St04/关底Boss/4符L2.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 elseif route=="D" then
 if (t == 150) then N.controller(o,"St04/关底Boss/4符L3.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 else
 if (t == 150) then N.controller(o,"St04/关底Boss/4符L0.mbg",false,"default") end
 if (t > 100) then N.bob(o,t,80) end
+if ((t - 100) % 200 == 0) then o.action=150 end
 end
 end
 P[31].step=function(o,t,N)

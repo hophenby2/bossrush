@@ -83,3 +83,10 @@ BOSSRUSH_MAC_TEST_SEQUENCE=thsss_extra BOSSRUSH_MAC_TEST_ROUTE=D BOSSRUSH_MAC_TE
 Mac 可用 `package_mac.py --base-app <已有.app> --engine <已有LuaSTG-x缓存>` 复用原生程序，
 在本 worktree 重新打包。它调用项目正式资源管线，重写 WAV 的标准数据块；直接把源码 WAV
 覆盖进 app 会导致截图中出现过的 `se_focus.wav` 解码失败。
+
+## Boss与符卡画面
+
+`export_visuals.py`从原构造函数离线导出81个符卡类的背景、立绘及中心点；
+`visual.lua`按原BackgroundMove2/Rotate/SC参数绘制，不再将符卡图拉伸铺满并套用统一滚动。
+Boss沿用BaseBossTouhou的左右镜像、转向帧、施法帧和8帧间隔；OnAction从原Shoot条件导出。
+原作道中Direct3D场景仍沿用平面代理，不包含在本次二维符卡背景还原中。

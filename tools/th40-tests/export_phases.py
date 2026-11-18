@@ -81,6 +81,8 @@ def callbacks(s,source):
  for m in re.finditer(r'(?:base\.Boss\.)?RandomMove\((\d+),\s*(\d+),\s*([\d.]+)f?,\s*new Rectangle\(([^)]+)\)\)',s):
   values=[int(m[1]),int(m[2]),float(m[3])]+[float(eval(expression(x),{'__builtins__':{}},{})) for x in m[4].split(',')]
   out.append('if '+conditions(s,m.start())+' then N.wander(o,t,'+','.join(map(str,values))+') end')
+ for m in re.finditer(r'base.Boss.OnAction = (\d+)',s):
+  out.append('if '+conditions(s,m.start())+' then o.action='+m[1]+' end')
  return '\n'.join(out)
 def armor(s,boss):
  guard=re.search(r'if \(base\.SpellList\.Count > 0 \|\| base\.MyPlane\.Time < base\.MyPlane\.UnmatchedTime - 30\)\s*\{\s*base\.Boss\.Armon = 1f;\s*\}\s*else\s*\{',s)

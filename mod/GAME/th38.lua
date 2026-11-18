@@ -4,6 +4,8 @@
 -- 运动/绑定/激光代理仍须与原版逐帧对照，来源和差异见tools/th38-tests/README.zh-CN.md。
 local R=dofile('mod/GAME/th38/runtime.lua')
 local D=R.data
+local Actor=dofile('mod/GAME/th38/actor.lua');R.actor=Actor
+local SpellBG=assert(loadfile('mod/GAME/th38/spell_background.lua'))(Actor)
 local Media=dofile('mod/GAME/th38/media.lua')
 local BG=dofile('mod/GAME/th38/background.lua')
 local C={runtime=R,data=D,cards={},chapters={},level=36,visual=dofile('mod/GAME/th38/visual.lua')}
@@ -32,10 +34,19 @@ local function addCard(meta,band)
     end
     function card:init()
         R.clearAll();self.asl_clock=0;self.asl_transition=1;self.asl_controller=R.controller(self,meta.key)
+        if meta.spell then self.asl_portrait=Actor.portrait(meta.key);SpellBG.open(meta.key) end
     end
     function card:frame()
         if not self.asl_clock or not self.asl_controller then return end
         self.asl_clock=self.asl_clock+1
+        if self.asl_clock<=opening then
+            for _,s in ipairs(self.asl_controller.entities) do
+                if s.kind=='boss' then
+                    local o=s.main and self or s.native
+                    if valid(o) then Actor.tick(o,s);Actor.tick(o,s) end
+                end
+            end
+        end
         if self.asl_clock>opening then
             local nextPhase=meta.transitions and meta.transitions[self.asl_transition]
             if nextPhase and ((self.hp or meta.hp)<=nextPhase.hp or meta.ticks-(self.asl_clock-opening)*2<=nextPhase.time) then
@@ -47,6 +58,8 @@ local function addCard(meta,band)
     end
     function card:del()
         R.clear(self.asl_controller);self.asl_controller=nil;self.asl_clock=nil
+        if self.asl_portrait and valid(self.asl_portrait) then Del(self.asl_portrait) end
+        self.asl_portrait=nil;SpellBG.close()
         -- boss14_2 第一阶段结束后，ST5_back_C 按原作计时等待 400 tick。
         BG.endCard(meta.key=='L/stage5/boss2/1')
     end

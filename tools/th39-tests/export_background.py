@@ -41,12 +41,14 @@ class BackgroundExport(export.Export):
             if op == 'Goto':
                 jumps[tick] = export.tick(args[0])
             elif op == 'SetBossStage':
-                group = dict(variant=vals[0], cards={})
+                group = dict(variant=vals[0], portrait=args[2], cards={})
                 cards.append(group)
                 card = None
             elif op == 'SetBossCard':
                 card = {}
                 group['cards'][vals[1]] = card
+            elif op == 'SetBossCardOpenEffect':
+                card['portrait'] = args[0]
             elif op == 'SetBossCardBackground':
                 card['variant'] = vals[0]
             elif op == 'KeepBackground':
@@ -62,6 +64,14 @@ class BackgroundExport(export.Export):
                     events.setdefault(tick, []).append(event)
             elif op in ('StopBackgroundEffect', 'BreakBackgroundEffect', 'AdjustBackgroundEffect', 'FadeinBackground'):
                 events.setdefault(tick, []).append([op, *vals])
+        for g in cards:
+            for c in g['cards'].values():
+                effect = c.get('portrait', g['portrait'])
+                if effect != '-1':
+                    self.pattern(effect, 'e', SCENES)
+                    c['portrait'] = 'e' + effect
+                else:
+                    c['portrait'] = None
         return dict(timeline=events, groups=cards, jumps=jumps)
 
     def spell_background(self, stage, variant):

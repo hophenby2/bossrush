@@ -2,7 +2,7 @@
 -- 来源：THSSS.exe中的Boss/SpellCard/GameState与原MBG；离线导出器和SHA见th40目录。
 -- 差异1：原作Direct3D场景用原图平面背景代理；不改变发弹、坐标和阶段顺序。
 -- 自机与星屑资源由原生对象处理，Boss 血量使用原表。
--- 差异3：片头对话、FSC入场粒子和结局交给BossRush转场；FSC攻击本身保留。
+-- Boss动作、符卡二维背景、开符立绘沿用原作参数；片头对白和结局由练习流程省略。
 -- 差异4：顺序入口固定包含全部FSC，不模拟原作结界次数解锁条件。
 -- 差异5：单精度属性与特效随机数消耗尚未完整对齐；这是原生移植首版，不声明逐帧等价。
 local class={};_editor_class.TH40=class
@@ -13,11 +13,12 @@ local LEVEL=38;class.level=LEVEL
 if NativePlayers then dofile("mod/GAME/th40/player.lua") end
 if rawget(_G,'DefineAchievement') then DefineAchievement(170,'夏夜祭','完成夏夜祭关卡练习','击破本次练习中的全部阶段',false,2) end
 N.load()
+local Visual=assert(loadfile('mod/GAME/th40/visual.lua'))(N);N.visual=Visual
 for source,path in pairs(dofile('mod/GAME/th40/sounds.lua')) do
     local id='th38.snd.'..source;LoadSound(id,path);N.sounds[source]=id
 end
 for name,track in pairs(dofile('mod/GAME/th40/music.lua')) do AddMusic('TH40_'..name,track.last,track.length,name,true) end
-class.background=dofile('mod/GAME/th40/background.lua')
+class.background=assert(loadfile('mod/GAME/th40/background.lua'))(Visual)
 local Media=dofile('mod/GAME/ports/scene_media.lua')
 local function track(chapter,kind)
     return 'TH40_'..kind..(chapter=='EX' and 'Ex' or '0'..chapter)
@@ -64,19 +65,17 @@ for _,meta in ipairs(data.phases) do
             -- 原作 Boss 构造统一设置 Region=20，原图切片的默认判定不能代替它。
             o.A,o.B=20,20
             o.colli=true;o.hide=false
+            Visual.bind(o,meta)
+            o.th40_intro=Visual.open(meta)
         end
     end
     card.frame=function(o)
         if not o.th38_run then return end
         N.tick(o,meta);o.DMG_factor=N.damageFactor(meta)
-        if meta.kind~='road' then
-            local run=o.th38_run;local row=run.host.speed*cos(run.host.direction)>0.5 and 1 or run.host.speed*cos(run.host.direction)<-.5 and 2 or 0
-            local key='Boss'..meta.boss..'-'..row..(floor((o.ani or 0)/6)%4)
-            local img=N.images[key]
-            if img and o.img1 then o.img1[1]=img end
-        end
     end
-    card.del=function(o) N.stop(o);if lstg.tmpvar.th38_phase==meta then lstg.tmpvar.th38_phase=nil end end
+    card.del=function(o)
+        for _,effect in ipairs(o.th40_intro or {}) do if IsValid(effect) then Del(effect) end end
+        o.th40_intro=nil;N.stop(o);if lstg.tmpvar.th38_phase==meta then lstg.tmpvar.th38_phase=nil end end
     boss.card.add({{card,id}},LEVEL,card.phase_name,meta.id)
 end
 function class.media(scene,chapter,kind,row)

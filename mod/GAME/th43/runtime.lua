@@ -421,7 +421,7 @@ E.player_class={
     getGrazeRange=function(p) return p.grazer and p.grazer.a or 0 end,
     isInBomb=function(p) return p and (p.bombTime or (p.nextspell or 0)>0) end,
 }
-E._spellcard_background=_SC_BG or object
+E._spellcard_background=dofile('mod/GAME/ports/spell_background.lua')(E,'th43_spell_composite')
 E.plus=overlay(plus)
 E.plus.Class=function()
     local cls={}

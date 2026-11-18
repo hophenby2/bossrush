@@ -1,4 +1,5 @@
 -- 夏夜祭关卡原图。各层保持不同的滚动速度，符卡按原阶段选图。
+local Visual=...
 local directory='Resources/th40/Background/'
 local prefix='TH40_scene_'
 local road={
@@ -86,6 +87,7 @@ local B=Class(background,{
     end,
     frame=function(o)
         if o.tenseiAge then o.tenseiAge=o.tenseiAge+1;return end
+        Visual.tickBackground(o.originalParts)
         local alpha=o.mediaAlpha or 0
         local goal=o.mediaSpell and 1 or 0
         o.mediaAlpha=alpha+math.max(-.05,math.min(.05,goal-alpha))
@@ -97,7 +99,7 @@ local B=Class(background,{
         if setting.displayBG==false or not o.chapter then return end
         if o.tenseiAge then drawTensei(o.tenseiAge);return end
         draw(o,road[o.chapter],1)
-        if (o.mediaAlpha or 0)>0 then draw(o,o.mediaLayers,o.mediaAlpha) end
+        if o.originalParts then Visual.drawBackground(o.originalParts,o.mediaAlpha or 0) end
     end,
 })
 function B.enter(chapter,phase)
@@ -107,25 +109,13 @@ function B.enter(chapter,phase)
         bg.chapter,bg.mediaLayers,bg.mediaAlpha=chapter,nil,0
         load(chapter,road[chapter])
     end
-    local layers={}
-    local names=phase and phase.backgrounds or {}
-    bg.tenseiAge=nil
-    if chapter=='6' and names[1]=='底色' then
-        bg.tenseiAge=0
-        bg.mediaSpell,bg.mediaLayers,bg.mediaAlpha=false,nil,0
+    bg.originalParts,bg.tenseiAge=Visual.backgrounds(phase)
+    bg.mediaSpell=bg.originalParts and #bg.originalParts>0 or false
+    bg.mediaAlpha=bg.mediaSpell and 1 or 0
+    if bg.tenseiAge then
+        bg.tenseiAge=0;bg.mediaSpell=false;bg.mediaAlpha=0
         load(chapter,tenseiLayers)
-        return bg
     end
-    if phase and phase.kind=='spell' and #names==0 then
-        if chapter=='4' then names={'Card04c','Card04a','Card04b'}
-        elseif chapter=='5' then names={'card05b','card05c','card05a'}
-        elseif chapter=='EX' then names={'StEx/底面','StEx/最上'} end
-    end
-    for i,name in ipairs(names) do
-        layers[#layers+1]={name,i==1 and .14 or -.24,i==1 and 255 or 150}
-    end
-    bg.mediaSpell=#layers>0
-    if bg.mediaSpell then load(chapter,layers);bg.mediaLayers=layers end
     return bg
 end
 return B

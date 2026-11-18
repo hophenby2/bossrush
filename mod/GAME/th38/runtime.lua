@@ -126,7 +126,7 @@ R.classes.partner=Class(enemy,{
         if valid(s.c.host) then s.c.host.hp=max(0,s.c.host.hp-(100000-b.hp)) end
         b.hp=100000;b.x,b.y=project(s.x,s.y);b.vx,b.vy=0,0
     end,
-    render=function(b) Render(b.img,b.x,b.y,0,1.5) end,
+    render=function(b) if R.actor then R.actor.render(b) end end,
     del=function(b) clean(b) end,kill=function(b) clean(b) end,
 })
 R.classes.beam=Class(laser,{
@@ -146,6 +146,7 @@ local entityFields={[0]='x','y','speed','direction','accel','accelDirection','ro
 local integerFields={a4_3=true,a4_9=true,a4_12=true,a6_6=true,a6_4=true,a6_5=true,shape=true,color=true,life=true}
 local function get(s,target,son)
     local key=son and entityFields[target] or emitterFields[target]
+    if son and s.kind=='boss' and target==14 then key='act' end
     local base=son and 24 or 37
     if target>=base and target<base+4 then return s.vars[target-base+1] or 0,'var'..(target-base+1) end
     if son and (s.kind=='beam' or s.kind=='curve') and target==10 then key='width' elseif son and (s.kind=='beam' or s.kind=='curve') and target==11 then key='length' end
@@ -381,7 +382,10 @@ local function move(s)
     if parent and not boundBullet then followParent(s,parent) end
     if s.kind=='boss' then
         local host=s.main and c.host or s.native
-        if valid(host) then host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0 end
+        if valid(host) then
+            host.x,host.y=project(s.x,s.y);host.vx,host.vy=0,0
+            if R.actor then R.actor.tick(host,s) end
+        end
     else
         if s.kind~='enemy' then s.life=s.life-1 end
         local out=s.x<0 or s.x>9.2 or s.y< -10 or s.y>.5
@@ -409,6 +413,7 @@ function R.controller(host,key,first)
             alive=true,kind='boss',birth=0,events=e.sonEvents,vars=c.vars,limits={},changes={},life=e.a6_6,settings=e,moveClock=0}
         s.main=bossIndex==1
         if not s.main then New(R.classes.partner,s) end
+        if R.actor then R.actor.bind(s.main and host or s.native,key,bossIndex) end
         c.entities[#c.entities+1]=s;attach(e,s);e.skip=true
     end
     return c

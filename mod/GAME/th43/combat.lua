@@ -159,6 +159,7 @@ function Card.createFullCard(name,kind,times,hp,drop,prepare,practice,main,finis
     function card:init()
         self.taskers={}
         self.th43_card=true
+        self.th43_spell_visual=spelling
         if card.inTheFrontOfInit then card.inTheFrontOfInit(self) end
         task.New(self,function()
             if self.no_scOpenEffect then self.no_scOpenEffect=false
@@ -197,6 +198,7 @@ function Card.createFullCard(name,kind,times,hp,drop,prepare,practice,main,finis
         end
         R.clear(self)
         self.th43_card,self.th43_open_bomb,self.protect=nil,nil,false
+        self.th43_spell_visual=false
         if lstg.tmpvar.th43_hide_hud==self then lstg.tmpvar.th43_hide_hud=nil end
         R.scope=R.chapterScope
     end

@@ -53,6 +53,13 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         elseif role=='boss' then R.playMusic(res.bgm) end
         if res.bossLoadRes then res.bossLoadRes(o) end
         init(o,selected or cards)
+        if res.scbg then
+            o.th43_spell_background=E.New(res.scbg)
+            R.objects[o.th43_spell_background]=false
+            o.bg=o.th43_spell_background
+        end
+        if o._bosssys.aura then o._bosssys.aura.hide=true end
+        o.no_hp_render=true -- 使用原作HUD血条。
         o.group=GROUP.NONTJT
         o.a,o.b=32,32
         E.New(BossContact,o).th43_bullet=nil
@@ -67,8 +74,16 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
         o.scOpenEffect=o.scOpenEffect or E.boss.defaultScOpenEffect
     end
     class.frame=function(o)
+        -- ext.boss按宿主_bg重设bg；本作由原脚本独立管理符卡背景。
+        o.bg=o.th43_spell_background
         o._bosssys:frame()
         o.DMG_factor=o.dmgrate or 1
+        if IsValid(o.bg) then
+            local goal=o.th43_spell_visual and 1 or 0
+            o.th43_bg_alpha=math.max(0,math.min(1,(o.th43_bg_alpha or 0)+(goal==1 and .025 or -.025)))
+            o.bg.alpha=o.th43_bg_alpha
+            if IsValid(lstg.tmpvar.bg) then lstg.tmpvar.bg.hide=o.bg.alpha>=1 end
+        end
         if R.practiceBoss==o then R.update() end
         if IsValid(o) and o.th43_wisys then o.th43_wisys:frame() end
         o.dmgt=math.max(0,(o.dmgt or 0)-1)
@@ -84,6 +99,8 @@ function Card.createFullCardBoss(editor,res,diff,paths,hidden)
     class.del=function(o)
         del(o)
         R.clear(o)
+        if IsValid(o.th43_spell_background) then Del(o.th43_spell_background) end
+        if IsValid(lstg.tmpvar.bg) then lstg.tmpvar.bg.hide=false end
         if R.practiceBoss==o then R.practiceBoss=nil;R.stopMusic() end
     end
     for _,path in ipairs(paths) do

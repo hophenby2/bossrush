@@ -391,7 +391,10 @@ function N.tick(owner,meta)
         o.maxhp=owner.maxhp or o.maxhp
         motion(o)
         if meta.step then meta.step(o,o.age,N) end
-        if meta.kind~='road' then owner.x,owner.y=o.cx-320,240-o.cy end
+        if meta.kind~='road' then
+            owner.x,owner.y=o.cx-320,240-o.cy
+            if N.visual then N.visual.tickBoss(owner,o) end
+        end
     end)
 end
 function N.stop(owner) if owner.th38_run then N.clear(owner.th38_run.host);owner.th38_run=nil end end

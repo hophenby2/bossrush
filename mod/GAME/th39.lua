@@ -17,16 +17,68 @@ local function detachRoad(o)
     if o.ui then o.ui.hide=true end
     for i=#boss_group,1,-1 do if boss_group[i]==o then table.remove(boss_group,i) end end
 end
+-- Boss.InitSprite / AnimationMachine：进入、循环、回正均沿用原表，不以待机帧代替转向。
+local animationTypes={}
+local function clips(actor)
+    if animationTypes[actor] then return animationTypes[actor] end
+    local out={}
+    for name,a in pairs(D.bossTypes[actor].animations) do
+        local wrap=a[7]>0 and a[7] or 9999
+        local first,count,loopFirst,loopCount,back=a[8],a[9],a[10],a[11],a[12]
+        if count<=0 then first,count,loopCount=loopFirst,loopCount,0 end
+        local function make(key,start,n,loop,nextClip)
+            local frames={}
+            for i=0,n-1 do frames[#frames+1]=start+i end
+            out[key]={data=a,frames=frames,interval=math.max(1,a[13]),wrap=wrap,loop=loop,nextClip=nextClip}
+        end
+        make(name,first,count,a[9]<=0,loopCount>0 and name..'(loop)' or nil)
+        if loopCount>0 then make(name..'(loop)',loopFirst,loopCount,true) end
+        if name=='turnleft' or name=='turnright' then
+            local key=name=='turnleft' and 'backleft' or 'backright'
+            make(key,loopFirst+loopCount,back,false,'idle')
+            if back==0 then
+                local frames={};for i=count-1,0,-1 do frames[#frames+1]=first+i end
+                out[key].frames=frames
+            end
+        end
+    end
+    animationTypes[actor]=out;return out
+end
+local function animate(o,actor)
+    local all=clips(actor)
+    local s=o.mhj3_animation
+    if not s then s={clip='idle',clock=0,x=o.x,age=0,auraScale=0,auraRotation=0};o.mhj3_animation=s end
+    local dx=(o.x-s.x)*1.5;s.x=o.x;s.age=s.age+1
+    s.auraRotation=(s.auraRotation+(o.mhj3_spell and 6 or 3))%360
+    s.auraScale=s.auraScale+((o.mhj3_spell and .5 or .35)-s.auraScale)/8
+    local function play(name) if all[name] then s.clip,s.clock=name,0 end end
+    if math.abs(dx)>=.5 and not s.turned then s.turned=true;play(dx>0 and 'turnright' or 'turnleft')
+    elseif math.abs(dx)<.5 and s.turned then s.turned=false;play(dx>0 and 'backright' or 'backleft') end
+    local c=all[s.clip] or all.idle
+    s.clock=s.clock+1
+    if not c.loop and s.clock>=#c.frames*c.interval and c.nextClip then play(c.nextClip) end
+end
 local function drawBoss(o,actor)
-    if o.mhj3_hidden then return end
-    local p=D.bossTypes[actor]
-    local a=p.animations.idle
-    local n=a[10]+math.floor((o.ani or 0)/math.max(1,a[13]+1))%math.max(1,a[11])
-    local wrap=a[7]>0 and a[7] or 9999
-    local name='mhj3_boss_'..actor..'_'..n
-    R.sprite(name,'bosses',a[1]+n%wrap*a[3],a[2]+math.floor(n/wrap)*a[4],a[3],a[4],a[5],a[6])
+    if o.hide or o.mhj3_hidden then return end
+    local p=D.bossTypes[actor];local s=o.mhj3_animation or {clip='idle',clock=0,age=0}
+    local aura='mhj3_original_aura'
+    if not CheckRes('img',aura) then
+        local pool=GetResourceStatus();SetResourceStatus('global')
+        LoadTexture(aura,'Resources/th39/hud/bosslist.png')
+        LoadImage(aura,aura,316,280,640,640);SetImageCenter(aura,320,320)
+        SetResourceStatus(pool)
+    end
+    local size=((s.auraScale or 0)+.05*math.sin(s.age/math.pi/7))*2/3
+    SetImageState(aura,'mul+add',204,255,255,255)
+    Render(aura,o.x,o.y,-(s.auraRotation or 0),size*1.1,size*1.1)
+    Render(aura,o.x,o.y,s.auraRotation or 0,size,size)
+    local c=clips(actor)[s.clip];local a=c.data
+    local at=math.floor(s.clock/c.interval)
+    at=c.loop and at%#c.frames or math.min(#c.frames-1,at)
+    local n=c.frames[at+1];local name='mhj3_boss_'..actor..'_'..s.clip..'_'..n
+    R.sprite(name,'bosses',a[1]+n%c.wrap*a[3],a[2]+math.floor(n/c.wrap)*a[4],a[3],a[4],a[5],a[6])
     SetImageState(name,'',255,255,255,255)
-    Render(name,o.x,o.y,0,p.scale*2/3)
+    Render(name,o.x,o.y,0,p.scale*2/3*(a[14]==1 and -1 or 1),p.scale*2/3)
 end
 local actorBase=Class(enemy,{take_damage=function(o,dmg) if valid(o.owner) then boss.take_damage(o.owner,dmg) end end})
 R.classes.actor=Class(actorBase,{
@@ -42,6 +94,7 @@ R.classes.actor=Class(actorBase,{
         local b=o.owner
         o.colli=b.colli and not o.mhj3_hidden
         SetAttr(o,'colli',o.colli)
+        animate(o,o.actor)
     end,
     render=function(o) drawBoss(o,o.actor) end,
 })
@@ -94,6 +147,7 @@ local function setupCard(meta,group,chapter)
             local actor=i==1 and self or New(R.classes.actor,self,host.actor,ox,oy)
             local layer=LAYER.ENEMY+(meta.order==1 and i or -i)*.01
             actor.layer=layer
+            actor.mhj3_spell=meta.kind~=0
             if i==1 then
                 if self.mhj3_group~=group then self.x,self.y=ox,oy end
                 self.mhj3_group=group
@@ -130,6 +184,7 @@ local function setupCard(meta,group,chapter)
                 R.tick(a.controller)
             end
         end
+        animate(self,group.hosts[1].actor)
     end
     function card:del()
         BG.endCard(group,meta)
@@ -234,7 +289,9 @@ for _,chapter in ipairs(D.chapters) do
             cls.init=function(b,...)
                 init(b,...)
                 local p=D.bossTypes[lead.actor]
+                b.no_hp_render=true -- 原作HUD已有血条。
                 b.a,b.b=p.size[1]/3,p.size[2]/3
+                if b._bosssys.aura then b._bosssys.aura.hide=true end
             end
             for _,meta in ipairs(group.cards) do
                 local title='幕华祭永夜篇 '..chapter.name..' '..meta.title
