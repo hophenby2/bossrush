@@ -1,0 +1,1202 @@
+[
+  {
+    "stage": 5,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=5 difficulty=0 scenario=0 phases=6 bullets=418 created=22 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=5 difficulty=0 scenario=1 phases=6 bullets=418 created=22 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=5 difficulty=0 scenario=2 phases=6 bullets=418 created=22 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=5 difficulty=0 scenario=3 phases=6 bullets=400 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=5 difficulty=0 scenario=4 phases=6 bullets=1278 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=5 difficulty=1 scenario=0 phases=6 bullets=748 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=5 difficulty=1 scenario=1 phases=6 bullets=748 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=5 difficulty=1 scenario=2 phases=6 bullets=748 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=5 difficulty=1 scenario=3 phases=6 bullets=718 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=5 difficulty=1 scenario=4 phases=6 bullets=1320 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=5 difficulty=2 scenario=0 phases=6 bullets=1166 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=5 difficulty=2 scenario=1 phases=6 bullets=1166 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=5 difficulty=2 scenario=2 phases=6 bullets=1166 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=5 difficulty=2 scenario=3 phases=6 bullets=1106 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=5 difficulty=2 scenario=4 phases=6 bullets=1348 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=5 difficulty=3 scenario=0 phases=6 bullets=1929 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=5 difficulty=3 scenario=1 phases=6 bullets=1929 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=5 difficulty=3 scenario=2 phases=6 bullets=1929 created=34 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=5 difficulty=3 scenario=3 phases=6 bullets=1839 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=5 difficulty=3 scenario=4 phases=6 bullets=1386 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=5 difficulty=4 scenario=0 phases=6 bullets=2395 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=5 difficulty=4 scenario=1 phases=6 bullets=2395 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=5 difficulty=4 scenario=2 phases=6 bullets=2395 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=5 difficulty=4 scenario=3 phases=6 bullets=2275 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 5,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=5 difficulty=4 scenario=4 phases=6 bullets=1436 created=4 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=6 difficulty=0 scenario=0 phases=5 bullets=425 created=32 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=6 difficulty=0 scenario=1 phases=5 bullets=3748 created=32 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=6 difficulty=0 scenario=2 phases=5 bullets=425 created=32 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=6 difficulty=0 scenario=3 phases=5 bullets=397 created=37 remaining=5",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=6 difficulty=0 scenario=4 phases=5 bullets=136 created=8 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=6 difficulty=1 scenario=0 phases=5 bullets=781 created=36 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=6 difficulty=1 scenario=1 phases=5 bullets=5956 created=36 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=6 difficulty=1 scenario=2 phases=5 bullets=781 created=36 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=6 difficulty=1 scenario=3 phases=5 bullets=725 created=41 remaining=5",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=6 difficulty=1 scenario=4 phases=5 bullets=229 created=8 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=6 difficulty=2 scenario=0 phases=5 bullets=1067 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=6 difficulty=2 scenario=1 phases=5 bullets=7944 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=6 difficulty=2 scenario=2 phases=5 bullets=1067 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=6 difficulty=2 scenario=3 phases=5 bullets=970 created=45 remaining=5",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=6 difficulty=2 scenario=4 phases=5 bullets=253 created=8 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=6 difficulty=3 scenario=0 phases=5 bullets=1531 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=6 difficulty=3 scenario=1 phases=5 bullets=10489 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=6 difficulty=3 scenario=2 phases=5 bullets=1531 created=40 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=6 difficulty=3 scenario=3 phases=5 bullets=1384 created=45 remaining=5",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=6 difficulty=3 scenario=4 phases=5 bullets=433 created=8 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=6 difficulty=4 scenario=0 phases=5 bullets=1793 created=42 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=6 difficulty=4 scenario=1 phases=5 bullets=13273 created=42 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=6 difficulty=4 scenario=2 phases=5 bullets=1793 created=42 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=6 difficulty=4 scenario=3 phases=5 bullets=1632 created=47 remaining=5",
+    "error": ""
+  },
+  {
+    "stage": 6,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=6 difficulty=4 scenario=4 phases=5 bullets=541 created=8 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=7 difficulty=0 scenario=0 phases=5 bullets=841 created=54 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=7 difficulty=0 scenario=1 phases=5 bullets=617 created=54 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=7 difficulty=0 scenario=2 phases=5 bullets=841 created=54 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=7 difficulty=0 scenario=3 phases=5 bullets=177 created=54 remaining=6",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=7 difficulty=0 scenario=4 phases=5 bullets=1276 created=20 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=7 difficulty=1 scenario=0 phases=5 bullets=1632 created=56 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=7 difficulty=1 scenario=1 phases=5 bullets=1100 created=56 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=7 difficulty=1 scenario=2 phases=5 bullets=1632 created=56 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=7 difficulty=1 scenario=3 phases=5 bullets=351 created=54 remaining=6",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=7 difficulty=1 scenario=4 phases=5 bullets=1852 created=20 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=7 difficulty=2 scenario=0 phases=5 bullets=2357 created=57 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=7 difficulty=2 scenario=1 phases=5 bullets=1497 created=57 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=7 difficulty=2 scenario=2 phases=5 bullets=2357 created=57 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=7 difficulty=2 scenario=3 phases=5 bullets=533 created=54 remaining=6",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=7 difficulty=2 scenario=4 phases=5 bullets=2068 created=20 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=7 difficulty=3 scenario=0 phases=5 bullets=3218 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=7 difficulty=3 scenario=1 phases=5 bullets=1956 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=7 difficulty=3 scenario=2 phases=5 bullets=3218 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=7 difficulty=3 scenario=3 phases=5 bullets=711 created=54 remaining=6",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=7 difficulty=3 scenario=4 phases=5 bullets=2284 created=20 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=7 difficulty=4 scenario=0 phases=5 bullets=3767 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=7 difficulty=4 scenario=1 phases=5 bullets=2189 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=7 difficulty=4 scenario=2 phases=5 bullets=3767 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=7 difficulty=4 scenario=3 phases=5 bullets=819 created=54 remaining=6",
+    "error": ""
+  },
+  {
+    "stage": 7,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=7 difficulty=4 scenario=4 phases=5 bullets=2620 created=20 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=8 difficulty=0 scenario=0 phases=7 bullets=1248 created=99 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=8 difficulty=0 scenario=1 phases=7 bullets=1248 created=99 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=8 difficulty=0 scenario=2 phases=7 bullets=1248 created=99 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=8 difficulty=0 scenario=3 phases=7 bullets=507 created=118 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=8 difficulty=0 scenario=4 phases=7 bullets=723 created=90 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=8 difficulty=1 scenario=0 phases=7 bullets=2385 created=100 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=8 difficulty=1 scenario=1 phases=7 bullets=2385 created=100 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=8 difficulty=1 scenario=2 phases=7 bullets=2385 created=100 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=8 difficulty=1 scenario=3 phases=7 bullets=798 created=119 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=8 difficulty=1 scenario=4 phases=7 bullets=1411 created=97 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=8 difficulty=2 scenario=0 phases=7 bullets=3329 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=8 difficulty=2 scenario=1 phases=7 bullets=3329 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=8 difficulty=2 scenario=2 phases=7 bullets=3329 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=8 difficulty=2 scenario=3 phases=7 bullets=1256 created=123 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=8 difficulty=2 scenario=4 phases=7 bullets=1869 created=99 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=8 difficulty=3 scenario=0 phases=7 bullets=5706 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=8 difficulty=3 scenario=1 phases=7 bullets=5706 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=8 difficulty=3 scenario=2 phases=7 bullets=5706 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=8 difficulty=3 scenario=3 phases=7 bullets=2242 created=123 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=8 difficulty=3 scenario=4 phases=7 bullets=2962 created=99 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=8 difficulty=4 scenario=0 phases=7 bullets=6483 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=8 difficulty=4 scenario=1 phases=7 bullets=6483 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=8 difficulty=4 scenario=2 phases=7 bullets=6483 created=102 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=8 difficulty=4 scenario=3 phases=7 bullets=2906 created=123 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 8,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=8 difficulty=4 scenario=4 phases=7 bullets=3651 created=103 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=9 difficulty=0 scenario=0 phases=4 bullets=343 created=64 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=9 difficulty=0 scenario=1 phases=4 bullets=343 created=64 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=9 difficulty=0 scenario=2 phases=4 bullets=343 created=58 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=9 difficulty=0 scenario=3 phases=4 bullets=343 created=64 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=9 difficulty=0 scenario=4 phases=4 bullets=1132 created=38 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=9 difficulty=1 scenario=0 phases=4 bullets=547 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=9 difficulty=1 scenario=1 phases=4 bullets=547 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=9 difficulty=1 scenario=2 phases=4 bullets=547 created=59 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=9 difficulty=1 scenario=3 phases=4 bullets=547 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=9 difficulty=1 scenario=4 phases=4 bullets=1448 created=38 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=9 difficulty=2 scenario=0 phases=4 bullets=678 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=9 difficulty=2 scenario=1 phases=4 bullets=678 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=9 difficulty=2 scenario=2 phases=4 bullets=678 created=59 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=9 difficulty=2 scenario=3 phases=4 bullets=678 created=65 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=9 difficulty=2 scenario=4 phases=4 bullets=1896 created=38 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=9 difficulty=3 scenario=0 phases=4 bullets=938 created=66 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=9 difficulty=3 scenario=1 phases=4 bullets=938 created=66 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=9 difficulty=3 scenario=2 phases=4 bullets=938 created=60 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=9 difficulty=3 scenario=3 phases=4 bullets=938 created=66 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=9 difficulty=3 scenario=4 phases=4 bullets=2504 created=38 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=9 difficulty=4 scenario=0 phases=4 bullets=1228 created=70 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=9 difficulty=4 scenario=1 phases=4 bullets=1228 created=70 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=9 difficulty=4 scenario=2 phases=4 bullets=1228 created=64 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=9 difficulty=4 scenario=3 phases=4 bullets=1228 created=70 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 9,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=9 difficulty=4 scenario=4 phases=4 bullets=2728 created=61 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 0,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=10 difficulty=0 scenario=0 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 0,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=10 difficulty=0 scenario=1 phases=16 bullets=9904 created=403 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 0,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=10 difficulty=0 scenario=2 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 0,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=10 difficulty=0 scenario=3 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 0,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=10 difficulty=0 scenario=4 phases=16 bullets=4750 created=322 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 1,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=10 difficulty=1 scenario=0 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 1,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=10 difficulty=1 scenario=1 phases=16 bullets=9904 created=403 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 1,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=10 difficulty=1 scenario=2 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 1,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=10 difficulty=1 scenario=3 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 1,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=10 difficulty=1 scenario=4 phases=16 bullets=4750 created=322 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 2,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=10 difficulty=2 scenario=0 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 2,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=10 difficulty=2 scenario=1 phases=16 bullets=9904 created=403 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 2,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=10 difficulty=2 scenario=2 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 2,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=10 difficulty=2 scenario=3 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 2,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=10 difficulty=2 scenario=4 phases=16 bullets=4750 created=322 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 3,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=10 difficulty=3 scenario=0 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 3,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=10 difficulty=3 scenario=1 phases=16 bullets=9904 created=403 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 3,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=10 difficulty=3 scenario=2 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 3,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=10 difficulty=3 scenario=3 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 3,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=10 difficulty=3 scenario=4 phases=16 bullets=4750 created=322 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 4,
+    "scenario": 0,
+    "passed": true,
+    "output": "stage=10 difficulty=4 scenario=0 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 4,
+    "scenario": 1,
+    "passed": true,
+    "output": "stage=10 difficulty=4 scenario=1 phases=16 bullets=9904 created=403 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 4,
+    "scenario": 2,
+    "passed": true,
+    "output": "stage=10 difficulty=4 scenario=2 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 4,
+    "scenario": 3,
+    "passed": true,
+    "output": "stage=10 difficulty=4 scenario=3 phases=16 bullets=8496 created=394 remaining=0",
+    "error": ""
+  },
+  {
+    "stage": 10,
+    "difficulty": 4,
+    "scenario": 4,
+    "passed": true,
+    "output": "stage=10 difficulty=4 scenario=4 phases=16 bullets=4750 created=322 remaining=0",
+    "error": ""
+  }
+]

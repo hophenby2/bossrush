@@ -104,6 +104,7 @@ function T.install()
     local portDamage=0
     local beforeCaptureFPS
     local checkpoint,checkpointAt
+    local dreamerBoss
     local logicalTarget=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LOGIC_FRAMES') or '')
     local benchmarkStart
     local audioCalls,audioChecked,audioMusic=0,false,nil
@@ -127,6 +128,19 @@ function T.install()
             local scene=stage.current_stage
             if scene and (scene.stage_name=='RogueTen@RogueTen' or scene.stage_name=='Spell Practice@Spell Practice' or sequenceKey and scene.group and scene.group.sequence_key==sequenceKey) and scene.timer==logicalTarget and not checkpoint then
                 if nativeProbe then nativeProbe.checkpoint() end
+                if mode=='native-port-practice' and battleCard>=71100 and battleCard<72100 then
+                    local work=GameContent and GameContent.ports[40]
+                    local rt=work and work.source.runtime
+                    local b=rt and rt.boss
+                    assert(b and IsValid(b),'Like Dreamer 检查点缺少 Boss')
+                    dreamerBoss={stage=rt.stage,type=b.spawnType,state=b.state,timer=b.helperTimer,
+                        phase=b.portPhase,countdown=b.countdown,x=b.ldX,y=b.ldY,combat=b._bmCombat}
+                    local expected=tonumber(os.getenv('BOSSRUSH_MAC_TEST_LD_PHASE') or '')
+                    if expected then
+                        assert(b.portPhase==expected and (b._bmCombat or b._bePhaseMode==1),
+                            'Like Dreamer 未到达指定战斗阶段：'..Serialize(dreamerBoss))
+                    end
+                end
                 local rows={}
                 for _,group in ipairs({1,2,3,4,5,7,8,10}) do
                     for _,o in ObjList(group) do
@@ -502,7 +516,7 @@ function T.install()
                     f:write(Serialize({mode=mode,card=battleCard,sequence=sequenceResult,sequence_phases=sequencePhases,focus=fixedFocus,visuals=visuals,stage=scene.stage_name,frames=frames,peak=maxBullets,peak_lasers=maxLasers,port_damage=portShoot and portDamage or nil,port_rules=portTest.rules and portTest.checked or nil,bomb_canceled=portTest.slot and portTest.canceled or nil,media_music=portTest.music,media_background=portTest.background,
                         asl_patterns=aslPatterns,asl_bullet_pool=TH38 and TH38.runtime.bulletCount,mhj_moves=mhjMoves,mhj_samples=mhjSamples,mhj_damage_checked=mhjDamageChecked,mhj_repeated=mhjRepeated,
                         input_bomb_checked=inputBombChecked,unlimited=unlimited,settings_checked=settingsChecked,audio_calls=audioCalls,audio_checked=audioChecked,checkpoint=checkpoint,logic_frames=checkpointAt,elapsed=benchmarkStart and lstg.AndroidClock()-benchmarkStart,workers=lstg.GetThreadPoolSize(),audio=lstg.MacAudioInfo and lstg.MacAudioInfo(),renderer=lstg.AndroidRendererInfo(),fps=beforeCaptureFPS,objects=lstg.GetnObj(),jit=jit.status(),timings=timings,input_checked=inputChecked,paused=not ext.pause_menu:IsKilled(),
-                        version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
+                        dreamer_boss=dreamerBoss,version=lstg.GetVersionName(),data=AndroidPlatform.writable}))
                     f:close();finished=true
                     lstg.SystemLog('BOSSRUSH_MAC_TEST: '..mode..' 通过')
                     return true

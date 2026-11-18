@@ -1,0 +1,4057 @@
+{
+  "audit_date": "2026-11-18",
+  "scope": "第1–10关关底 Boss 的58阶段，另含第10关前置场景Boss的3阶段。上一轮第9关六组中Boss及全61种子弹运动的回归结果单列。",
+  "conclusion": "报告列出的行为差异已按复原源码消除，数值疑点已回查原 EXE。61 个阶段的 1635 个逐对象场景各运行 7200 帧，直接发弹轨迹全部通过；另通过 150 个对象池生命周期场景和 Mac 原生引擎阶段断言。该结果不代表整场二进制回放或全部视觉效果等价。",
+  "phase_count": 61,
+  "probe_count": 246,
+  "case_count": 1635,
+  "frames_per_case": 7200,
+  "matching_case_count": 1635,
+  "reference_record_count": 3387300,
+  "phase_findings_count": {
+    "所测发弹轨迹回归通过": 61,
+    "仍存在所测发弹差异": 0
+  },
+  "previous_report_summary": {
+    "audit_date": "2026-11-18",
+    "phase_findings_count": {
+      "所测直接发弹未见差异": 11,
+      "存在数值差异，待按 EXE 裁定": 7,
+      "已定位行为差异": 42,
+      "直接弹样本一致，根移动逻辑不符": 1
+    },
+    "reference_record_count": 1318768,
+    "port_sha256": {
+      "mod/GAME/ports/dreamer/LikeDreamer/core.lua": "52362b23519984daa8b954e2977a0ea911f122d871345e12f2c47fe4c8e016d3",
+      "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua": "2e209c284e251f304668b9c4f607b9a5d6877c7d33427e501fb83d7281c172d1",
+      "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua": "8592ae62791a197aed280b45caca3e704cd699157d6d09674981c5273f9eb3b4",
+      "mod/GAME/ports/dreamer/LikeDreamer/boss_middle.lua": "1b2f69b9418f692847972d5fe36e4bad528fc3e822e637167c5b5b1a659cf0a4",
+      "mod/GAME/ports/dreamer/LikeDreamer/boss_late.lua": "83bdf34c0bb645b7c3e5ce9bdd73a4582c35a90e4faa9b889cab5cdb39606605"
+    }
+  },
+  "reference": "/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/reconstructed/project/src",
+  "source_sha256": {
+    "stage_runtime.cpp": "693a4efe911d9f4204bd331b309feb385da13411f95811a74cd3ced5a7a622bb",
+    "stage_runtime_late.cpp": "eb30023cbe8c35680e965420a66d8f36ea823e1e5283bd404dc0e8a35bb9966f",
+    "stage_runtime_boss07.cpp": "9a56c7fa3b6e258d98925c31e2b73a63493cfebfcd3111eaa9c61b484d21f20b",
+    "stage_runtime_boss08.cpp": "4027b02be1ee128e10bbd509d6690d66b57ff9655274a0d3c914ea2934f6a693",
+    "stage_runtime_boss09.cpp": "8ed1aa116bee07f50c158a0ab69e52ec621b242fb068cf6c99779d1bfa53c510",
+    "stage_runtime_boss10_aux.cpp": "ed1f934d6a9756cfae009da0b34256b51aaed533998da7bbd857feb6c1ec86f8",
+    "stage_runtime.h": "f89ad9f31542b763cc6f42eb78ddcb6e3a3e993b2c3579600868926751db3271",
+    "stage_runtime_scene10.cpp": "e3c7ee9f7ed3044ba9e2ab1cfb8bbc064d2b905cab7951f3e2fdff3307722b8a"
+  },
+  "port_sha256": {
+    "mod/GAME/ports/dreamer/LikeDreamer/core.lua": "52362b23519984daa8b954e2977a0ea911f122d871345e12f2c47fe4c8e016d3",
+    "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua": "2e209c284e251f304668b9c4f607b9a5d6877c7d33427e501fb83d7281c172d1",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua": "6dba4f5a4c900eacf883d6197b9262202e207d342c00feca83f63c1dfff02dd3",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_middle.lua": "36bbc4db591fc097370dbbff47d3174b097228eca8951c95802e40e92fcd9f83",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_late.lua": "dd4e8719ab063f9cbe5c6681c73cc49e0cb88c30486b5cd707f9ae3031daa9f2",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_recovered.lua": "18a48dc0caa9a0d5ce34ffea8a02d90e48fd591ce31f18f49eb6d16d8ac770f2",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss07.lua": "31031dae2fcf1c560cc237a6ac50ad9ec194511e54eaa4150cd99ea5055d4566",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss08.lua": "ea45fe756dda1cf373ab10fcadd16da4d51f69f3a66af10eface512ce65d42a3",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua": "152d6a7abe403d40559f8f50e1f94ad7170dca23068d710e16117bb7999f7c0b",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua": "a2187db97c5aefb30061a2092e22830ecf5a98fcd1d6d8c402cf830c1ae40c64",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/defaults.lua": "7c6aea1448012c55be3b0da472ba80beb074ff5051f235aa984ef0dfcb65dd5e",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/early.lua": "d961d23407105898ad30530991cf2fa9c5d5532d18670fb062f7d0c8f05be1e2",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/guard.lua": "73a6aa513618aa347920973cedf9fa032d124b0bc7777d248932c513fdf79df3",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua": "df9e8e26e347983486eef0415e7177a86fd9d6f4ebfa2d1e1ffa4ba34b5ebd0b",
+    "mod/GAME/th42.lua": "e2926a90812b96cb8cbfaeffcccd03a29720f12260cc15266c3e0300e01b06b4"
+  },
+  "method": {
+    "frames_per_case": 7200,
+    "difficulties": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "root_live_child_counts": [
+      0,
+      4
+    ],
+    "node_child_index": 1,
+    "node_live_child_count": 4,
+    "parent_position": [
+      360,
+      200
+    ],
+    "node_start_position": [
+      460,
+      150
+    ],
+    "player_position": "(200 + t%200, 500 + t%100)",
+    "global_frame": "1000+t",
+    "root_position": "直接发弹隔离测试固定 (360,200)，第6关另运行完整根移动分支",
+    "record_columns": [
+      "b",
+      "frame",
+      "visual",
+      "movement_id",
+      "x",
+      "y",
+      "angle16",
+      "speed",
+      "travel",
+      "radius",
+      "aux"
+    ],
+    "coordinate_tolerance": 0.01,
+    "other_numeric_tolerance": 2e-05,
+    "limitations": [
+      "逐对象发弹参照来自本地复原 C++ 源码；精度疑点另以 EXE 常量和指令核实，不是对原 EXE 逐帧录制。",
+      "直接发弹夹具隔离对象，不自动推进新建子对象；创建链、超时、击破与练习跳阶段由独立生命周期夹具检查。",
+      "生命周期夹具使用完整父子对象池模拟，不模拟引擎碰撞；Mac 实机另行检查真实对象加载、目标战斗阶段及可见发弹。",
+      "子对象初态与输入固定，不穷举所有子编号、HP、玩家运动、死亡与特殊武器路径。",
+      "未验证全部渲染、音频、全局弹数上限或从关卡开局到结束的原版二进制整场回放；装饰粒子仍使用宿主绘制代理。"
+    ],
+    "reference_compile_flags": [
+      "-std=c++17",
+      "-O0",
+      "-ffp-contract=off"
+    ]
+  },
+  "numerical_evidence": {
+    "file": "tools/likedreamer_parity/exe_evidence.json",
+    "pi": {
+      "address": "0x14053a020",
+      "type": "float64",
+      "value": 3.14159265358979,
+      "action": "早期复原 float 近似改为 EXE 的 double 常量，Lua 中间 float 运算仍逐步舍入。"
+    },
+    "float_contract": "原版 FUN_140029880 使用分开的 SSE float 乘加；ARM64 参照须加 -ffp-contract=off，避免生成 FMA 后产生伪差异。"
+  },
+  "fixed_this_round": [
+    {
+      "files": [
+        "mod/GAME/ports/dreamer/LikeDreamer/boss_recovered.lua",
+        "mod/GAME/ports/dreamer/LikeDreamer/recovered/"
+      ],
+      "change": "把相关 Boss/附肢的状态、运动、发弹和构造转换成普通 Lua 函数，接入现有 LuaSTG 原生敌机；游戏运行时无 C++ 解释器依赖。"
+    },
+    {
+      "files": [
+        "mod/GAME/ports/dreamer/LikeDreamer/core.lua",
+        "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua"
+      ],
+      "change": "保留并回归 float32 运动、原版角度单位和 0x0e 运动公式修正。"
+    },
+    {
+      "files": [
+        "mod/GAME/ports/dreamer/LikeDreamer/boss_recovered.lua"
+      ],
+      "change": "原版共享判定、延迟伤害、HP 零值死亡阶段、父子编号、护盾 targetable/protect 和阶段计时同步到原生对象。"
+    },
+    {
+      "files": [
+        "mod/GAME/th42.lua",
+        "macos/lua/test.lua",
+        "tools/likedreamer_parity/boss_lifecycle.lua"
+      ],
+      "change": "练习跳段只在当前战斗阶段触发原版超时，避免在过场清掉下一段预装时限；增加目标阶段存活时长与实机阶段编号断言。"
+    }
+  ],
+  "regression": {
+    "stage9_midbosses": {
+      "cases": 120,
+      "matching_records": 1108366,
+      "status": "通过"
+    },
+    "projectile_motion_ids_0_to_0x3c": {
+      "cases": 2745,
+      "matching_records": 312301,
+      "status": "通过"
+    },
+    "native_object_lifecycle": {
+      "cases": 150,
+      "passing_cases": 150,
+      "stages": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "difficulties": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "scenarios": [
+        "根 HP 击破",
+        "计时器超时",
+        "玩家无敌/死亡时段",
+        "附肢击破与伤害转移",
+        "使用实际练习跳段入口并保留末段至少 900 帧"
+      ],
+      "evidence_file": "tools/likedreamer_parity/boss_lifecycle_results.json"
+    },
+    "mac_native_engine": {
+      "status": "通过",
+      "expected_phase_assertion": true,
+      "audio_note": "加速模式关闭音效，不作为音频验收。",
+      "samples": [
+        {
+          "card": 71223,
+          "logic_frames": 1500,
+          "dreamer_boss": {
+            "phase": 3,
+            "stage": 2,
+            "x": 340.83581542969,
+            "y": 211.93550109863,
+            "type": 313,
+            "countdown": 1203,
+            "state": 5,
+            "timer": 597
+          },
+          "peak": 320,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "2e359c9000ac6690e0360305c8396abc4152b9c6520a11c1b2e678db36faef2f",
+          "paused": false
+        },
+        {
+          "card": 71324,
+          "logic_frames": 1500,
+          "dreamer_boss": {
+            "stage": 3,
+            "phase": 4,
+            "state": 7,
+            "timer": 486,
+            "countdown": 1314,
+            "x": 352.20291137695,
+            "type": 314,
+            "y": 206.00382995605
+          },
+          "peak": 493,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "8c54615073733fc241f64151673a575d4cdee38d87d088b7541dc82516c80503",
+          "paused": false
+        },
+        {
+          "card": 71424,
+          "logic_frames": 2400,
+          "dreamer_boss": {
+            "countdown": 754,
+            "timer": 1306,
+            "phase": 4,
+            "x": 187.9571287173,
+            "y": 209.75451610081,
+            "type": 315,
+            "stage": 4,
+            "state": 10
+          },
+          "peak": 353,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "54b6f981f3091b02206e5fd9c7e63bca32ee49764d0d39e24016e8342b5e0490",
+          "paused": false
+        },
+        {
+          "card": 71526,
+          "logic_frames": 2400,
+          "dreamer_boss": {
+            "type": 316,
+            "countdown": 1116,
+            "timer": 474,
+            "x": 347.80874633789,
+            "y": 167.30976867676,
+            "phase": 6,
+            "stage": 5,
+            "combat": true,
+            "state": 13
+          },
+          "peak": 807,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "0e70ed0061dd478ea5e22a3f115cbb9d2ecb61e440753f29f796cee1ac0260b4",
+          "paused": false
+        },
+        {
+          "card": 71625,
+          "logic_frames": 2400,
+          "dreamer_boss": {
+            "phase": 5,
+            "state": 9,
+            "type": 317,
+            "stage": 6,
+            "combat": true,
+            "x": 416.20803833008,
+            "y": 160.75151062012,
+            "timer": 1165,
+            "countdown": 935
+          },
+          "peak": 230,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "1707586ac9c5dc1590e140f67ba0f874f200f7a736bb097d3deb0c5a11382329",
+          "paused": false
+        },
+        {
+          "card": 71725,
+          "logic_frames": 3000,
+          "dreamer_boss": {
+            "phase": 5,
+            "type": 318,
+            "stage": 7,
+            "state": 61,
+            "x": 360,
+            "y": 454.47875976562,
+            "combat": true,
+            "countdown": 345,
+            "timer": 1755
+          },
+          "peak": 754,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "f5d1422e73a30629de3f65f89581c3d817d7d16b5548136a17cdef199790eaed",
+          "paused": false
+        },
+        {
+          "card": 71827,
+          "logic_frames": 3600,
+          "dreamer_boss": {
+            "combat": true,
+            "countdown": 4038,
+            "x": 335.01040649414,
+            "y": 269.88119506836,
+            "type": 319,
+            "timer": 763,
+            "stage": 8,
+            "state": 62,
+            "phase": 7
+          },
+          "peak": 429,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "7d3ae98581922c66901a3c9a2e6ac16522244ed3dcb907b0b23a0dca7c1494f9",
+          "paused": false
+        },
+        {
+          "card": 71924,
+          "logic_frames": 2400,
+          "dreamer_boss": {
+            "phase": 4,
+            "type": 320,
+            "stage": 9,
+            "combat": true,
+            "state": 61,
+            "x": 395.7705078125,
+            "y": 175.41706848145,
+            "timer": 1246,
+            "countdown": 4754
+          },
+          "peak": 240,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "2fe1013cd9ec591562d8a5609f1e0e4cfcb54daf490aec1628bacdfddc12306b",
+          "paused": false
+        },
+        {
+          "card": 72046,
+          "logic_frames": 7000,
+          "dreamer_boss": {
+            "stage": 10,
+            "x": 362.00790405273,
+            "y": 219.4451751709,
+            "combat": true,
+            "phase": 16,
+            "state": 153,
+            "timer": 1813,
+            "countdown": 4038,
+            "type": 321
+          },
+          "peak": 456,
+          "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+          "version": "Boss Rush HD macOS / LuaSTG-x 20260913 / Metal / LuaJIT 2.1.1785763465",
+          "checkpoint": "5cc19641d1ad458e7c4a3341e77a44985c5ea92851781494ad5bdaf3f9ce48c1",
+          "paused": false
+        }
+      ]
+    }
+  },
+  "static_evidence": [
+    {
+      "phase": "9-4",
+      "reference_file": "stage_runtime_boss09.cpp",
+      "reference_anchor": "lateStageBossTargetX_ = 210.0f",
+      "port_file": "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua",
+      "port_anchor": "M.updateStage09Boss",
+      "previous_port_anchor": "bossMove(self, rt, speed, 50, 190, 530, 140, 280, 0x1401)",
+      "status": "已修复并使用原版状态机/表"
+    },
+    {
+      "phase": "10-12",
+      "reference_file": "stage_runtime_late.cpp",
+      "reference_anchor": "kStage10Type11fLaunchSides",
+      "port_file": "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua",
+      "port_anchor": "kStage10Type11fLaunchSides",
+      "previous_port_anchor": "local useLeft = slot % 2 == 0",
+      "status": "已修复并使用原版状态机/表"
+    },
+    {
+      "phase": "10-16",
+      "reference_file": "stage_runtime_boss10_aux.cpp",
+      "reference_anchor": "type == 0x12e",
+      "port_file": "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua",
+      "port_anchor": "M.updateStage10FinalBossEmitter",
+      "previous_port_anchor": "fire(self.spawnType == 0x12e and 4 or 5, 1,",
+      "status": "已修复并使用原版状态机/表"
+    }
+  ],
+  "reproduce": {
+    "generate": "PYTHONDONTWRITEBYTECODE=1 python3 tools/generate_likedreamer_native_bosses.py '/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer'",
+    "boss_traces": "PYTHONDONTWRITEBYTECODE=1 python3 tools/audit_likedreamer_bosses.py '/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer' --frames 7200 --output /tmp/likedreamer-boss-audit.json",
+    "prior_regression": "PYTHONDONTWRITEBYTECODE=1 python3 tools/check_likedreamer_parity.py '/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer'",
+    "lifecycle": "luajit tools/likedreamer_parity/boss_lifecycle.lua STAGE DIFFICULTY SCENARIO  # STAGE=5..10, DIFFICULTY=0..4, SCENARIO=0..4",
+    "mac_last_phase": "BOSSRUSH_MAC_TEST_CARD=72046 BOSSRUSH_MAC_TEST_LD_PHASE=16 BOSSRUSH_MAC_TEST_LOGIC_FRAMES=7000 BOSSRUSH_MAC_TEST_SPEED=8 BOSSRUSH_MAC_TEST_SHOOT=0 python3 macos/verify.py --smoke --mode native-port-practice"
+  },
+  "raw_results_file": "tools/likedreamer_parity/boss_phase_results.json",
+  "phases": [
+    {
+      "stage": 1,
+      "phase": 1,
+      "label": "第1关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 93546,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "根对象首段直接发弹样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "保留已通过的发弹分支；附肢移动中间值和坐标写入按 float32 舍入。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 93546,
+          "port_shots": 93546
+        }
+      ]
+    },
+    {
+      "stage": 1,
+      "phase": 2,
+      "label": "第1关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 115170,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "根对象与 0x15 子部件的直接发弹样本一致。",
+      "previous_matching_cases": 15,
+      "resolution": "保留已通过的发弹分支；附肢移动中间值和坐标写入按 float32 舍入。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            3
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 112674,
+          "port_shots": 112674
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            21,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2496,
+          "port_shots": 2496
+        }
+      ]
+    },
+    {
+      "stage": 1,
+      "phase": 3,
+      "label": "第1关第3阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 86434,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "根对象与 0x16/0x17 子部件的直接发弹样本一致。",
+      "previous_matching_cases": 20,
+      "resolution": "保留已通过的发弹分支；附肢移动中间值和坐标写入按 float32 舍入。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            5
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 49677,
+          "port_shots": 49677
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            22,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 31945,
+          "port_shots": 31945
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            23,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 4812,
+          "port_shots": 4812
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "phase": 1,
+      "label": "第2关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 108824,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "高难度追加弹原先先减角后加角，已改为原版的先加后减；当前样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "根对象追加弹顺序按原版；0x22–0x24 发弹、缓存瞄准角引用、环绕运动改用复原的原生 Lua 状态机。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 108824,
+          "port_shots": 108824
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "phase": 2,
+      "label": "第2关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 19050,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "0x22 子部件样本一致，根对象无直接发弹。",
+      "previous_matching_cases": 15,
+      "resolution": "根对象追加弹顺序按原版；0x22–0x24 发弹、缓存瞄准角引用、环绕运动改用复原的原生 Lua 状态机。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            3
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            34,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 19050,
+          "port_shots": 19050
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "phase": 3,
+      "label": "第2关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 75842,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x23 子部件条数相同，但轨道位置和整数角存在微差。复原源码使用 float 圆周常量，须按 EXE 裁定。",
+      "previous_matching_cases": 10,
+      "resolution": "根对象追加弹顺序按原版；0x22–0x24 发弹、缓存瞄准角引用、环绕运动改用复原的原生 Lua 状态机。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            5
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 66952,
+          "port_shots": 66952
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            35,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 8890,
+          "port_shots": 8890
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "phase": 4,
+      "label": "第2关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 77553,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "根对象样本一致；0x24 在后段出现一个角度单位的差异，须先排除复原精度。",
+      "previous_matching_cases": 10,
+      "resolution": "根对象追加弹顺序按原版；0x22–0x24 发弹、缓存瞄准角引用、环绕运动改用复原的原生 Lua 状态机。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            7
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 75692,
+          "port_shots": 75692
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            36,
+            7
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1861,
+          "port_shots": 1861
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "phase": 1,
+      "label": "第3关第1阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 70013,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "根对象及 0x30/0x31 子部件样本一致。",
+      "previous_matching_cases": 20,
+      "resolution": "保留原有根对象及已通过附肢；0x34 的阶段内循环、运动与发弹按原版，恢复击破伤害转移。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 23128,
+          "port_shots": 23128
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            48,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 6260,
+          "port_shots": 6260
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            49,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 40625,
+          "port_shots": 40625
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "phase": 2,
+      "label": "第3关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 41976,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "根对象直接发弹样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "保留原有根对象及已通过附肢；0x34 的阶段内循环、运动与发弹按原版，恢复击破伤害转移。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            3
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 41976,
+          "port_shots": 41976
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "phase": 3,
+      "label": "第3关第3阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 708,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "0x32/0x33 子部件样本一致。",
+      "previous_matching_cases": 20,
+      "resolution": "保留原有根对象及已通过附肢；0x34 的阶段内循环、运动与发弹按原版，恢复击破伤害转移。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            5
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            50,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 354,
+          "port_shots": 354
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            51,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 354,
+          "port_shots": 354
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "phase": 4,
+      "label": "第3关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 28206,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x34 在难度 3/4 的散射角不一致；极小位置差会改变种子取整，再放大成大角度差。不能未经 EXE 核实就直接改角度。",
+      "previous_matching_cases": 13,
+      "resolution": "保留原有根对象及已通过附肢；0x34 的阶段内循环、运动与发弹按原版，恢复击破伤害转移。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            7
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            52,
+            7
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 28206,
+          "port_shots": 28206
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "phase": 1,
+      "label": "第4关第1阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 31053,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x40 子部件的累计运动、角度及后段出界条数不同。需要以 EXE 的浮点运算和坐标存储顺序确认。",
+      "previous_matching_cases": 10,
+      "resolution": "0x40–0x43 的全部状态分支、长周期发弹、构造字段与 float32 运动按原版；击破伤害转移接入原对象。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 25968,
+          "port_shots": 25968
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            64,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 5085,
+          "port_shots": 5085
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "phase": 2,
+      "label": "第4关第2阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 2275,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x41 轨道运动出现累计微差和一个角度单位的差异。",
+      "previous_matching_cases": 20,
+      "resolution": "0x40–0x43 的全部状态分支、长周期发弹、构造字段与 float32 运动按原版；击破伤害转移接入原对象。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            3
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            5
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            65,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2275,
+          "port_shots": 2275
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "phase": 3,
+      "label": "第4关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 39486,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x42 轨道运动坐标出现累计差异。",
+      "previous_matching_cases": 10,
+      "resolution": "0x40–0x43 的全部状态分支、长周期发弹、构造字段与 float32 运动按原版；击破伤害转移接入原对象。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            7
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 32328,
+          "port_shots": 32328
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            66,
+            7
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 7158,
+          "port_shots": 7158
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "phase": 4,
+      "label": "第4关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 146600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "存在数值差异，待按 EXE 裁定",
+      "previous_notes": "0x43 子部件样本一致；根对象发弹出现一个角度单位的差异。",
+      "previous_matching_cases": 5,
+      "resolution": "0x40–0x43 的全部状态分支、长周期发弹、构造字段与 float32 运动按原版；击破伤害转移接入原对象。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            10
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 141374,
+          "port_shots": 141374
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            67,
+            10
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 5226,
+          "port_shots": 5226
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 1,
+      "label": "第5关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 96710,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "难度 3/4 缺少追加弹层，所测难度 3 为原版 4900 发、移植版 2450 发。",
+      "previous_matching_cases": 6,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 96710,
+          "port_shots": 96710
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 2,
+      "label": "第5关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 23554,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "难度 3/4 的追加弹数量或弹层不符。",
+      "previous_matching_cases": 6,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            3
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 23554,
+          "port_shots": 23554
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 3,
+      "label": "第5关第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 133214,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "难度 3/4 缺少更高速的追加环。",
+      "previous_matching_cases": 6,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            5
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 133214,
+          "port_shots": 133214
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 4,
+      "label": "第5关第4阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 110872,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "旋转环方向与原版相差半周，不能仅凭发弹条数相同判为一致。",
+      "previous_matching_cases": 0,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            7
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 110872,
+          "port_shots": 110872
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 5,
+      "label": "第5关第5阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 20200,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x54 的高难度追加扇形缺失；0x55 需要另测死亡触发分支，空轨迹不计为通过。",
+      "previous_matching_cases": 18,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            9
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            84,
+            9
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 20200,
+          "port_shots": 20200
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            85,
+            9
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "phase": 6,
+      "label": "第5关第6阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 39054,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x56 启动时点、发弹窗口与原版不符。",
+      "previous_matching_cases": 10,
+      "resolution": "关底根对象及 0x54–0x56 改用原版状态机和构造参数，恢复子部件创建、阶段及运动联动。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            11
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            86,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 39054,
+          "port_shots": 39054
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "phase": 1,
+      "label": "第6关第1阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 71319,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "炮臂启动前误入第五支炮臂发弹分支的问题已修；仍有启动计时、发射口偏移和运动差异。",
+      "previous_matching_cases": 0,
+      "resolution": "0x66–0x6f 与关底根对象按原版执行，修正炮臂分支、瞄准缓存、射击参数及运动精度；参照禁用原版不存在的 FMA。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            102,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 28183,
+          "port_shots": 28183
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            103,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 6136,
+          "port_shots": 6136
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            104,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 14788,
+          "port_shots": 14788
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            105,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 13182,
+          "port_shots": 13182
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            106,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 9030,
+          "port_shots": 9030
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "phase": 2,
+      "label": "第6关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 28980,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x6b 主炮的弹型、发射口、弹速和节奏不符。",
+      "previous_matching_cases": 0,
+      "resolution": "0x66–0x6f 与关底根对象按原版执行，修正炮臂分支、瞄准缓存、射击参数及运动精度；参照禁用原版不存在的 FMA。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            107,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 28980,
+          "port_shots": 28980
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            108,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            109,
+            3
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "phase": 3,
+      "label": "第6关第3阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 18054,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x6e 路径部件的发弹时点、发射位置与原版不符。",
+      "previous_matching_cases": 0,
+      "resolution": "0x66–0x6f 与关底根对象按原版执行，修正炮臂分支、瞄准缓存、射击参数及运动精度；参照禁用原版不存在的 FMA。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            110,
+            5
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 18054,
+          "port_shots": 18054
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "phase": 4,
+      "label": "第6关第4阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 9423,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x6f 环部件的发射时点及参数不符。",
+      "previous_matching_cases": 0,
+      "resolution": "0x66–0x6f 与关底根对象按原版执行，修正炮臂分支、瞄准缓存、射击参数及运动精度；参照禁用原版不存在的 FMA。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            111,
+            7
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 9423,
+          "port_shots": 9423
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "phase": 5,
+      "label": "第6关第5阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 25088,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "根对象随机目标种子、坐标区间及发弹基础角不符；同帧的发射原点已经发生差异。",
+      "previous_matching_cases": 0,
+      "resolution": "0x66–0x6f 与关底根对象按原版执行，修正炮臂分支、瞄准缓存、射击参数及运动精度；参照禁用原版不存在的 FMA。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            9
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 25088,
+          "port_shots": 25088
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "phase": 1,
+      "label": "第7关第1阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 20400,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x87–0x8a 部件的发弹周期、弹型和条数不符。",
+      "previous_matching_cases": 0,
+      "resolution": "关底根对象、双头及 0x80–0x94 完整状态/创建链按原版，恢复子编号、父子联系、附肢死亡及阶段计时。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            135,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 16776,
+          "port_shots": 16776
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            136,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1644,
+          "port_shots": 1644
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            137,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 990,
+          "port_shots": 990
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            138,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 990,
+          "port_shots": 990
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "phase": 2,
+      "label": "第7关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 85932,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "左右头部弹型、节奏及数量不符。",
+      "previous_matching_cases": 0,
+      "resolution": "关底根对象、双头及 0x80–0x94 完整状态/创建链按原版，恢复子编号、父子联系、附肢死亡及阶段计时。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            131,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 38196,
+          "port_shots": 38196
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            132,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 47736,
+          "port_shots": 47736
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "phase": 3,
+      "label": "第7关第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 20208,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "同时核对了左右头两条分支，发弹行为不符。",
+      "previous_matching_cases": 0,
+      "resolution": "关底根对象、双头及 0x80–0x94 完整状态/创建链按原版，恢复子编号、父子联系、附肢死亡及阶段计时。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            131,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 11344,
+          "port_shots": 11344
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            132,
+            41
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 8864,
+          "port_shots": 8864
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "phase": 4,
+      "label": "第7关第4阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 2002,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "左头后段越界发射口被压到 x=720；原版样本为 x=774，条数相同仍会改变弹幕位置。右头此分支无直接发弹。",
+      "previous_matching_cases": 5,
+      "resolution": "关底根对象、双头及 0x80–0x94 完整状态/创建链按原版，恢复子编号、父子联系、附肢死亡及阶段计时。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            131,
+            31
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2002,
+          "port_shots": 2002
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            132,
+            51
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "phase": 5,
+      "label": "第7关第5阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 33684,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "左右头末阶段的弹型、节奏及弹数不符。",
+      "previous_matching_cases": 0,
+      "resolution": "关底根对象、双头及 0x80–0x94 完整状态/创建链按原版，恢复子编号、父子联系、附肢死亡及阶段计时。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            131,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 16656,
+          "port_shots": 16656
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            132,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 17028,
+          "port_shots": 17028
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 1,
+      "label": "第8关第1阶段",
+      "cases": 50,
+      "matching_cases": 50,
+      "reference_shots": 193677,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "根状态 1/2 及装置 0xab/0xac 的弹型、节奏和坐标不符。",
+      "previous_matching_cases": 20,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 95008,
+          "port_shots": 95008
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            2
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 54180,
+          "port_shots": 54180
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            167,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            168,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            169,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            170,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            171,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 19445,
+          "port_shots": 19445
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            172,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 25044,
+          "port_shots": 25044
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 2,
+      "label": "第8关第2阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 215541,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "根对象与 0xad 等部件的发弹时点及参数不符。",
+      "previous_matching_cases": 0,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            11
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 215506,
+          "port_shots": 215506
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            173,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 35,
+          "port_shots": 35
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            174,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            175,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 3,
+      "label": "第8关第3阶段",
+      "cases": 30,
+      "matching_cases": 30,
+      "reference_shots": 143124,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "根对象与 0xb0–0xb3 部件的发弹行为不符。",
+      "previous_matching_cases": 0,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            21
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 141580,
+          "port_shots": 141580
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            176,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 252,
+          "port_shots": 252
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            177,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 252,
+          "port_shots": 252
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            178,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 520,
+          "port_shots": 520
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            179,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 520,
+          "port_shots": 520
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 4,
+      "label": "第8关第4阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 97718,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0xb4/0xb5 的运动与发弹时点不符。",
+      "previous_matching_cases": 10,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            31
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            180,
+            31
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 48859,
+          "port_shots": 48859
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            181,
+            31
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 48859,
+          "port_shots": 48859
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 5,
+      "label": "第8关第5阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 337,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0xb6/0xb7 启动窗口及发弹行为不符。",
+      "previous_matching_cases": 10,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            41
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            182,
+            41
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 297,
+          "port_shots": 297
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            183,
+            41
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 40,
+          "port_shots": 40
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 6,
+      "label": "第8关第6阶段",
+      "cases": 35,
+      "matching_cases": 35,
+      "reference_shots": 62999,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "原版 b9/ba 直接挂根，当前移植经 b8 挂根；已按各自父链重新配置夹具后仍有明显时序和弹型差异。",
+      "previous_matching_cases": 25,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            51
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            52
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            184,
+            51
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            185,
+            52
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 31084,
+          "port_shots": 31084
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            186,
+            52
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 31915,
+          "port_shots": 31915
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "phase": 7,
+      "label": "第8关第7阶段",
+      "cases": 270,
+      "matching_cases": 270,
+      "reference_shots": 5688,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "覆盖 0xbc–0xc2 七类发射器和状态 62–67 六个分支，启动时点、运动 ID、弹数等均存在差异。",
+      "previous_matching_cases": 60,
+      "resolution": "根对象及 0xa7–0xc3 按原版，补齐 0xad 分派、共享判定构造与 HP 同步、最后六种攻击状态和原版换段。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            62
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            63
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            64
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            65
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            66
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            67
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            188,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 78,
+          "port_shots": 78
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            189,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 179,
+          "port_shots": 179
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            190,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 119,
+          "port_shots": 119
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            191,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 177,
+          "port_shots": 177
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            192,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 176,
+          "port_shots": 176
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            193,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 110,
+          "port_shots": 110
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            63
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            64
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            65
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            66
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            194,
+            67
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 109,
+          "port_shots": 109
+        }
+      ]
+    },
+    {
+      "stage": 9,
+      "phase": 1,
+      "label": "第9关第1阶段",
+      "cases": 45,
+      "matching_cases": 45,
+      "reference_shots": 17856,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0xce 与 0xd0–0xd5 的发射时点、发射位置及参数不符。",
+      "previous_matching_cases": 10,
+      "resolution": "关底根对象及 0xcd–0xdd 按原版，修正末段目标点/移动范围、子部件旋转速度与发弹；保留已对齐的六组中 Boss。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            206,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 190,
+          "port_shots": 190
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            208,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 237,
+          "port_shots": 237
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            209,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 160,
+          "port_shots": 160
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            210,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 160,
+          "port_shots": 160
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            211,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 697,
+          "port_shots": 697
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            212,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 8206,
+          "port_shots": 8206
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            213,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 8206,
+          "port_shots": 8206
+        }
+      ]
+    },
+    {
+      "stage": 9,
+      "phase": 2,
+      "label": "第9关第2阶段",
+      "cases": 35,
+      "matching_cases": 35,
+      "reference_shots": 3391,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0xcf 与 0xd6–0xd9 的发射时点及参数不符。",
+      "previous_matching_cases": 10,
+      "resolution": "关底根对象及 0xcd–0xdd 按原版，修正末段目标点/移动范围、子部件旋转速度与发弹；保留已对齐的六组中 Boss。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            6
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            207,
+            6
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 237,
+          "port_shots": 237
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            214,
+            6
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1448,
+          "port_shots": 1448
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            215,
+            6
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1448,
+          "port_shots": 1448
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            216,
+            6
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 55,
+          "port_shots": 55
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            217,
+            6
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 203,
+          "port_shots": 203
+        }
+      ]
+    },
+    {
+      "stage": 9,
+      "phase": 3,
+      "label": "第9关第3阶段",
+      "cases": 240,
+      "matching_cases": 240,
+      "reference_shots": 232938,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "普通长流程与最高难度的长流程分别核对，多个子状态的首发时点、弹型、运动 ID、速度及数量不符。",
+      "previous_matching_cases": 100,
+      "resolution": "关底根对象及 0xcd–0xdd 按原版，修正末段目标点/移动范围、子部件旋转速度与发弹；保留已对齐的六组中 Boss。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            11
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 17400,
+          "port_shots": 17400
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            12
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            13
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            14
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            15
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            16
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            17
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 252,
+          "port_shots": 252
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            18
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            19
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            20
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            21
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            22
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            23
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 10520,
+          "port_shots": 10520
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            24
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 5152,
+          "port_shots": 5152
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            25
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 1270,
+          "port_shots": 1270
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            26
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 27184,
+          "port_shots": 27184
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            27
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 17400,
+          "port_shots": 17400
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            111
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 29700,
+          "port_shots": 29700
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            112
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 2400,
+          "port_shots": 2400
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            113
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 1520,
+          "port_shots": 1520
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            114
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 10500,
+          "port_shots": 10500
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            115
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 21640,
+          "port_shots": 21640
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            116
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 58300,
+          "port_shots": 58300
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            117
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 29700,
+          "port_shots": 29700
+        }
+      ]
+    },
+    {
+      "stage": 9,
+      "phase": 4,
+      "label": "第9关第4阶段",
+      "cases": 50,
+      "matching_cases": 50,
+      "reference_shots": 144676,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "直接弹样本一致，根移动逻辑不符",
+      "previous_notes": "固定根位置下，状态 61/62/161 的直接弹和 0xda–0xdd 子部件样本一致；整段仍未对齐：原版移动目标横向 210–510、转向步长 0x300，移植使用 190–530 及默认 0x200，随机种子也不同。",
+      "previous_matching_cases": 50,
+      "resolution": "关底根对象及 0xcd–0xdd 按原版，修正末段目标点/移动范围、子部件旋转速度与发弹；保留已对齐的六组中 Boss。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            61
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 76532,
+          "port_shots": 76532
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            62
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            161
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 66000,
+          "port_shots": 66000
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            218,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 536,
+          "port_shots": 536
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            219,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 536,
+          "port_shots": 536
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            220,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 536,
+          "port_shots": 536
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            221,
+            62
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 536,
+          "port_shots": 536
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 1,
+      "label": "第10关第1阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 535,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x105 发射器的运动、发弹时点与参数不符；原版根在首个第 30 帧把目标传为 (720,-10)，当前移植传为 (220,120)。",
+      "previous_matching_cases": 10,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            1
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            261,
+            1
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 535,
+          "port_shots": 535
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 2,
+      "label": "第10关第2阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31655,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x111 装置的发射时点、弹型及位置不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            273,
+            11
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 31655,
+          "port_shots": 31655
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 3,
+      "label": "第10关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 25375,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x106 发射器和根对象的补充弹不符，根创建目标也不一致。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            21
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 18900,
+          "port_shots": 18900
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            262,
+            21
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 6475,
+          "port_shots": 6475
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 4,
+      "label": "第10关第4阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 43750,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x112 装置的运动及发弹行为不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            274,
+            31
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 43750,
+          "port_shots": 43750
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 5,
+      "label": "第10关第5阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 17470,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x107 发射器、根对象补充弹与创建目标不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            41
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 16710,
+          "port_shots": 16710
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            263,
+            41
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 760,
+          "port_shots": 760
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 6,
+      "label": "第10关第6阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 15345,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x113 和 0x114 的发射口、弹型、运动 ID 及节奏不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            275,
+            51
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 6980,
+          "port_shots": 6980
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            276,
+            51
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 8365,
+          "port_shots": 8365
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 7,
+      "label": "第10关第7阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 8595,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x10c/0x10d 发射器的运动与发弹不符；根自身不直接发弹，未把空轨迹判成通过。",
+      "previous_matching_cases": 10,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            61
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            268,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 3345,
+          "port_shots": 3345
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            269,
+            61
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 5250,
+          "port_shots": 5250
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 8,
+      "label": "第10关第8阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 1020,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "已补测 0x116–0x119 四种无人机。0x116 的瞄准缓存初始化被周期条件跳过，会传入 nil；已按原版第 10 帧起每 4 帧发射四向弹修复。各无人机的运动和其他发弹参数仍有差异。",
+      "previous_matching_cases": 5,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            277,
+            71
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            278,
+            71
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 320,
+          "port_shots": 320
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            279,
+            71
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 300,
+          "port_shots": 300
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            280,
+            71
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 200,
+          "port_shots": 200
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            281,
+            71
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 200,
+          "port_shots": 200
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 9,
+      "label": "第10关第9阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 22260,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x10e 发射器和根对象的补充弹不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            81
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 21300,
+          "port_shots": 21300
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            270,
+            81
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 960,
+          "port_shots": 960
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 10,
+      "label": "第10关第10阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 95035,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x11a 主装置的发射窗口、弹型、轨迹不符；0x11b/c 本身不直接发弹。",
+      "previous_matching_cases": 10,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            282,
+            91
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 95035,
+          "port_shots": 95035
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            283,
+            91
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            284,
+            91
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 11,
+      "label": "第10关第11阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 18470,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x108/0x109 发射器及根对象补充弹不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            101
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 16170,
+          "port_shots": 16170
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            264,
+            101
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1150,
+          "port_shots": 1150
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            265,
+            101
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1150,
+          "port_shots": 1150
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 12,
+      "label": "第10关第12阶段",
+      "cases": 40,
+      "matching_cases": 40,
+      "reference_shots": 3650,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "已追到 0x11e–0x122 炮座和 0x123/0x124 末端发射器，发弹不符。原版 0x11f 选边来自 14 项表，移植按奇偶交替，也不一致。",
+      "previous_matching_cases": 20,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "nodes",
+          "probe": [
+            285,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            286,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2100,
+          "port_shots": 2100
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            287,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            288,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 900,
+          "port_shots": 900
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            289,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            290,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            291,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 465,
+          "port_shots": 465
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            292,
+            111
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 185,
+          "port_shots": 185
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 13,
+      "label": "第10关第13阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 6430,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x10f/0x110 发射器的入场轨迹、发射时点及参数不符。",
+      "previous_matching_cases": 10,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            121
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            271,
+            121
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 3200,
+          "port_shots": 3200
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            272,
+            121
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 3230,
+          "port_shots": 3230
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 14,
+      "label": "第10关第14阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 128235,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "根对象及 0x125/0x126 双装置的发弹时点、弹型和坐标不符。",
+      "previous_matching_cases": 0,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            131
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 21440,
+          "port_shots": 21440
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            293,
+            131
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 52705,
+          "port_shots": 52705
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            294,
+            131
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 54090,
+          "port_shots": 54090
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 15,
+      "label": "第10关第15阶段",
+      "cases": 40,
+      "matching_cases": 40,
+      "reference_shots": 11000,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "0x127 主装置的路径、发弹节奏不符；已补查 0x128–0x12c 辅助对象。",
+      "previous_matching_cases": 25,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            141
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            295,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 9220,
+          "port_shots": 9220
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            296,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            297,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            298,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            299,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 765,
+          "port_shots": 765
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            300,
+            141
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 1015,
+          "port_shots": 1015
+        }
+      ]
+    },
+    {
+      "stage": 10,
+      "phase": 16,
+      "label": "第10关第16阶段",
+      "cases": 75,
+      "matching_cases": 75,
+      "reference_shots": 25280,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "已定位行为差异",
+      "previous_notes": "已覆盖状态 151/152/153 和 0x12e–0x135 全八类末端发射器。0x12e/0x12f 把原版运动 ID 0 写成 1；各类型发射器的轨迹、基础角或参数仍不符。",
+      "previous_matching_cases": 35,
+      "resolution": "最终 Boss 的 16 阶段及 0x105–0x136 的构造/状态/发弹按原版；0x11f 发射侧选择表和最后阶段各发射器使用独立原版分支。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            151
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            152
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "roots",
+          "probe": [
+            153
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            301,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 0,
+          "port_shots": 0
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            302,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2160,
+          "port_shots": 2160
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            303,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2160,
+          "port_shots": 2160
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            304,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 3600,
+          "port_shots": 3600
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            305,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 3600,
+          "port_shots": 3600
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            306,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 4800,
+          "port_shots": 4800
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            307,
+            151
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 4800,
+          "port_shots": 4800
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            308,
+            153
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2080,
+          "port_shots": 2080
+        },
+        {
+          "suite": "nodes",
+          "probe": [
+            309,
+            153
+          ],
+          "cases": 5,
+          "matching_cases": 5,
+          "reference_shots": 2080,
+          "port_shots": 2080
+        }
+      ]
+    },
+    {
+      "stage": 11,
+      "phase": 1,
+      "label": "第10关场景Boss第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 50600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "场景 Boss 状态 2 的直接发弹样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "保留已通过的第 10 关场景 Boss 三阶段直接发弹分支，本轮延长到 7200 帧复核。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            2
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 50600,
+          "port_shots": 50600
+        }
+      ]
+    },
+    {
+      "stage": 11,
+      "phase": 2,
+      "label": "第10关场景Boss第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 31620,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "场景 Boss 状态 4 的直接发弹样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "保留已通过的第 10 关场景 Boss 三阶段直接发弹分支，本轮延长到 7200 帧复核。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            4
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 31620,
+          "port_shots": 31620
+        }
+      ]
+    },
+    {
+      "stage": 11,
+      "phase": 3,
+      "label": "第10关场景Boss第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 57600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收",
+      "finding": "报告列项已处理；受控发弹轨迹回归通过",
+      "previous_finding": "所测直接发弹未见差异",
+      "previous_notes": "场景 Boss 状态 6 的直接发弹样本一致。",
+      "previous_matching_cases": 10,
+      "resolution": "保留已通过的第 10 关场景 Boss 三阶段直接发弹分支，本轮延长到 7200 帧复核。",
+      "objects": [
+        {
+          "suite": "roots",
+          "probe": [
+            6
+          ],
+          "cases": 10,
+          "matching_cases": 10,
+          "reference_shots": 57600,
+          "port_shots": 57600
+        }
+      ]
+    }
+  ],
+  "post_validation_formatting": {
+    "change": "仅移除生成 Lua 文件末尾的多余空行；在同一 LuaJIT 进程逐文件确认去调试字节码完全一致。",
+    "files": {
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss07.lua": {
+        "tested_source_sha256": "ec20138adb1dd9ac499d68b939e17fcdf3a704a261b8883c702a3d9731c18247",
+        "normalized_source_sha256": "31031dae2fcf1c560cc237a6ac50ad9ec194511e54eaa4150cd99ea5055d4566",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss08.lua": {
+        "tested_source_sha256": "cfe144bda145b75cd4137bf1ad24ae8694c53ad2503db2547f920c0d33773be8",
+        "normalized_source_sha256": "ea45fe756dda1cf373ab10fcadd16da4d51f69f3a66af10eface512ce65d42a3",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua": {
+        "tested_source_sha256": "0042ba658b570acd7bd4b7ca6d20c15d394c323e07b8d28eceb73325b3da4b60",
+        "normalized_source_sha256": "152d6a7abe403d40559f8f50e1f94ad7170dca23068d710e16117bb7999f7c0b",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua": {
+        "tested_source_sha256": "798a25299e7a06afd54182e2caf1fa976a583a23c84d2fadbbb2706775219748",
+        "normalized_source_sha256": "a2187db97c5aefb30061a2092e22830ecf5a98fcd1d6d8c402cf830c1ae40c64",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/early.lua": {
+        "tested_source_sha256": "f16368328238a02b08ced2bde3473414042ed6594ca5dd0902d05ff5c20220c8",
+        "normalized_source_sha256": "d961d23407105898ad30530991cf2fa9c5d5532d18670fb062f7d0c8f05be1e2",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/guard.lua": {
+        "tested_source_sha256": "d8f1257e1d1d03f0c5d04f2e25fd20c89c7a2a65a641f2f6c936f6101dd1f0ad",
+        "normalized_source_sha256": "73a6aa513618aa347920973cedf9fa032d124b0bc7777d248932c513fdf79df3",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua": {
+        "tested_source_sha256": "c5426b815c1cc49b4b8ca2bd362ced0db789be7443be8ba20323d32c9e31b8b5",
+        "normalized_source_sha256": "df9e8e26e347983486eef0415e7177a86fd9d6f4ebfa2d1e1ffa4ba34b5ebd0b",
+        "bytecode_identical": true
+      }
+    }
+  }
+}

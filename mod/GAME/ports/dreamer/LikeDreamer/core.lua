@@ -39,6 +39,13 @@ local function mul32(a, b)
 end
 M.mul32 = mul32
 
+-- 原版对象坐标写入 float，转向前保留其舍入结果。
+local floatValue = require("ffi").new("float[1]")
+function M.float32(value)
+    floatValue[0] = value
+    return tonumber(floatValue[0])
+end
+
 function M.angle16(a)
     return a % 0x10000
 end

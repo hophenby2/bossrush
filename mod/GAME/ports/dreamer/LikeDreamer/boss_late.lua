@@ -394,6 +394,20 @@ local function spawnSceneTerminalBlast(self, rt)
     })
 end
 
+function M.spawnRecoveredEffect(rt, kind, image, layer, x, y, angle, speed,
+                                 sx, sy, lifetime, red, green, blue, alpha, owner)
+    if kind == 0x11 and image == -1 then
+        return spawnSceneTerminalBlast({ldX = x, ldY = y}, rt)
+    end
+    if type(image) ~= 'string' or not lstg.CheckRes(2, image) then return end
+    return spawnStageEffect(rt, {
+        kind = 'recovered', sourceType = kind, img = image, x = x, y = y, angle16 = angle,
+        speed = speed, scale = sx, scaleY = sy, lifetime = lifetime > 0 and lifetime or 24,
+        red = red, green = green, blue = blue, alpha = alpha, layer = stageEffectLayer(layer),
+        sourceFrame = rt.frame, ownerEntityId = owner,
+    })
+end
+
 local function bossTarget(self, rt, interval, x1, x2, y1, y2, salt)
     local t = self.helperTimer or 0
     if not self._blTargetX or t % (interval or 50) == 0 then
@@ -1205,10 +1219,29 @@ handlers[0x153] = function(self, rt)
     local damage = min(remaining, max(1, floor((self.maxhp or remaining) / 30)))
     owner.hp = owner.hp - damage
     self._blDamageRemaining = remaining - damage
+    self.hp = max(1,self._blDamageRemaining)
     if self._blDamageRemaining <= 0 then remove(self) end
 end
 
 -- Stage 9 midbosses -------------------------------------------------------
+
+do
+local f32 = Core.float32
+
+local function angleTo(x,y,tx,ty)
+    return Core.aim16(0,0,f32(tx-x),f32(ty-y))
+end
+
+local spawnStage9Child = spawnChild
+local function spawnChild(rt,parent,kind,hp,x,y,index,angle,speed)
+    local child=spawnStage9Child(rt,parent,kind,hp,x,y,index,angle,speed)
+    if child then
+        child.ldX,child.ldY=f32(child.ldX),f32(child.ldY)
+        child.originX,child.originY=child.ldX,child.ldY
+        child.secondaryAngle16,child.targetAngle16=0,0
+    end
+    return child
+end
 
 local midbossConfig = {
     [0x146] = {240, 85000, 1800, 0.3, 160},
@@ -1223,93 +1256,117 @@ local function midbossIndex(typeId)
     return typeId - 0x146 + 1
 end
 
+local function stage9MountFacing(self)
+    local t = self.helperTimer
+    self.secondaryAngle16 = Core.turn16(self.secondaryAngle16,floor((t%1800)/30)*0x444,0xb6)
+    local target = Core.angle16(aim(self)+0xc000)
+    self.targetAngle16 = Core.turn16(self.targetAngle16,target,floor(abs(Core.angleDelta(self.targetAngle16,target))/20)+0x30)
+end
+
 local function midbossEnterMotion(self)
     local t = self.helperTimer
     local typeId = self.spawnType
-    local x, y = self.originX, self.originY
-    if typeId == 0x146 then
-        local q = min(t, 180) / 180
-        self.ldX = x + sin(q * tau) * (1 - q) * 600
-        self.ldY = 600 + (y - 600) * sin(q * pi * 0.5)
-    elseif typeId == 0x147 then
-        local q = min(t, 180) / 180
-        self.ldX = x
-        self.ldY = 1100 + (y - 1100) * sin(q * pi * 0.5)
+    local x, y = 360, 200 -- 原版 markerDraw，区别于生成点。
+    if typeId == 0x146 or typeId == 0x147 then
+        if t < 180 then
+            local entry = sin(t*pi/360)
+            local startY = typeId == 0x146 and 600 or 1100
+            self.ldY = f32(startY + f32(entry*(y-startY)))
+            if typeId == 0x146 then self.ldX=f32(x+f32(sin((t+60)*pi/120)*(entry*600-600))) end
+        elseif t<191 then
+            self.ldX,self.ldY=x,y
+        else
+            self.ldY=f32(self.ldY+f32(.1))
+        end
     elseif typeId == 0x148 then
         if t <= 60 then
             local q = t / 60
-            self.ldY = y - 400 + sin(q * pi * 0.5) * 600
+            self.ldY = f32(y-400+f32(sin(t*pi/120)*600))
         else
             local q = min(1, (t - 60) / 120)
-            self.ldY = y + 200 - sin(q * pi * 0.5) * 200
+            self.ldY = f32(y+f32(sin((t+60)*pi/240)*200))
         end
     elseif typeId == 0x149 then
         local q = min(t, 240) / 240
-        self.ldY = y + 500 * (1 - sin(q * pi * 0.5))
+        self.ldY = f32(y+500-f32(500*sin(t*pi/480)))
     elseif typeId == 0x14a then
-        local q = min(t, 120) / 120
-        self.ldY = 1500 + (y - 1500) * sin(q * pi * 0.5)
+        if t < 120 then
+            self.ldY = f32(1500+f32((y-1500)*sin(t*pi/240)))
+        else
+            self.ldY = f32(self.ldY+f32(.1))
+        end
     else
         local q = min(t, 150) / 150
-        self.ldX = x + sin(q * tau * 1.5) * (1 - q) * 260
-        self.ldY = 1000 + (y - 1000) * sin(q * pi * 0.5)
+        self.ldX = f32(x+f32(sin(t*pi/75)*cos(t*pi/300)*500))
+        self.ldY = f32(1000+f32((y-1000)*sin(t*pi/300)))
     end
 end
 
 local function midbossPattern146(self, rt)
     local t = self.helperTimer
-    local cycle = (t - 30) % 1100
+    if t < 30 then return end
+    local cycle = (t-30)%1100
+    local x,y = self.ldX,self.ldY+70
+    local aimed = aim(self,x,y)
     if cycle < 500 then
-        local interval = diff(rt, {140, 120, 110, 102, 102})
-        if cycle % interval == 0 then
-            local nodeCount = diff(rt, {7, 9, 11, 11, 13})
-            local childType = floor(cycle / interval) % 2 == 0 and 0xc4 or 0xc5
-            for i = 0, nodeCount - 1 do
-                spawnChild(rt, self, childType, 2600, 0, 0, i,
-                    floor(i * 0x10000 / nodeCount), 1.5,
-                    "stage9 first midboss spiral")
+        local interval = diff(rt,{140,120,110,102,102})
+        if cycle%interval ~= 0 then return end
+        local count = diff(rt,{7,9,11,11,13})
+        local sign = cycle%(2*interval)==0 and 1 or -1
+        for i=0,count-1 do
+            spawnChild(rt,self,sign==1 and 0xc4 or 0xc5,600,0,70,i,
+                i*floor(65536/count)+sign*t*0x457,0)
+        end
+        ring(2,0,x,y,aimed,diff(rt,{2.5,3,3.5,4,5}),diff(rt,{15,19,23,25,30}))
+        return
+    end
+    if cycle<580 or cycle>=1060 then return end
+    local elapsed,sweep=cycle-580,cycle*120
+    if elapsed%diff(rt,{45,35,35,35,35})==0 then
+        local count=diff(rt,{6,8,10,10,10})
+        local speed=diff(rt,{3.2,4,5,5,6.4})
+        for layer=0,(difficulty(rt)>2 and 1 or 0) do
+            for side=1,-1,-2 do
+                fan(3,0,x+side*95,self.ldY-5,side*(sweep+0x2000),speed+layer*.5,count,(count-1)*600)
             end
-            ring(2, 0, self.ldX, self.ldY, cycle * 113,
-                diff(rt, {2.5, 3, 3.5, 4, 5}),
-                diff(rt, {15, 19, 23, 25, 30}))
         end
-    elseif cycle >= 580 and cycle < 1060 then
-        if cycle % diff(rt, {45, 35, 35, 35, 35}) == 0 then
-            pairedFan(3, 0, self, aim(self) + sin(cycle * pi / 120) * 5000,
-                diff(rt, {3.2, 4, 5, 5, 6.4}),
-                diff(rt, {6, 8, 10, 10, 10}), 15000, 75, 15)
+    end
+    if elapsed%diff(rt,{14,9,9,8,7})==0 then
+        for side=1,-1,-2 do
+            fan(5,0,x+side*95,self.ldY-5,side*(sweep-0x6000),diff(rt,{4.5,5.5,6,7,8.8}),
+                diff(rt,{3,5,6,7,8}),25000)
         end
-        if cycle % diff(rt, {14, 9, 9, 8, 7}) == 0 then
-            pairedFan(0x0d, 0, self, aim(self),
-                diff(rt, {4.5, 5.5, 6, 7, 8.8}),
-                diff(rt, {3, 5, 6, 7, 8}), 6000, 75, 15)
+    end
+    if cycle>=700 and (cycle-700)%diff(rt,{80,60,50,40,32})==0 then
+        local speed=diff(rt,{6,7,7.5,9,10})
+        if difficulty(rt)>1 then
+            for i=-1,1 do fire(12,0,x,y,aimed+i*1600,speed-2) end
         end
-        if cycle >= 700 and cycle % diff(rt, {80, 60, 50, 40, 32}) == 0 then
-            local a = aim(self)
-            for layer = 0, 2 do fire(7, 0, self.ldX, self.ldY, a, 5 + layer * 1.3) end
-        end
+        fire(12,0,x,y,aimed-800,speed-1)
+        fire(12,0,x,y,aimed+800,speed-1)
+        fire(12,0,x,y,aimed,speed)
     end
 end
 
-local function midbossPattern148(self, rt)
-    local t = self.helperTimer
-    local cycle = t % 1200
-    if cycle >= 30 and cycle < 360 and
-       cycle % diff(rt, {8, 6, 6, 6, 6}) == 0 then
-        local count = diff(rt, {2, 3, 4, 5, 6})
-        local speed = diff(rt, {4.4, 5.5, 6.5, 7, 8.5}) + cycle * 0.004
-        ring(3, 1, self.ldX, self.ldY, cycle * 251, speed, count)
-        ring(5, 1, self.ldX, self.ldY, -cycle * 251, speed, count)
-    elseif cycle >= 450 and cycle < 770 and
-           cycle % diff(rt, {100, 90, 80, 80, 80}) == 0 then
-        local fanCount = diff(rt, {6, 8, 10, 12, 14})
-        for i = 0, fanCount - 1 do
-            fan(7, 0, self.ldX, self.ldY, aim(self),
-                9 - i * 0.32, 3, 2600 + i * 300)
+local function midbossPattern148(self,rt)
+    local cycle=self.helperTimer%1200
+    local x,y=self.ldX,self.ldY+140
+    local interval=diff(rt,{8,6,6,6,6})
+    if cycle>=30 and cycle<360 and (cycle-30)%interval==0 then
+        local angle=cycle<180 and cycle*364 or -cycle*364-32
+        local count=diff(rt,{2,3,4,5,6})
+        local speed=diff(rt,{4.4,5.5,6.5,7,8.5})+(cycle-30)*.004
+        ring(5,0,x,y,angle,speed-1.2,count)
+        ring(3,0,x,y,angle+interval*182,speed,count)
+    elseif cycle>=450 and cycle<770 and (cycle-450)%diff(rt,{100,90,80,80,80})==0 then
+        local angle=aim(self,x,y)
+        for i=0,diff(rt,{6,8,10,12,14})-1 do
+            fan(2,0,x,y,angle,diff(rt,{8,10,10.5,11,12.8})-i*.6,i+1,i*800,10)
         end
-        for layer = 0, diff(rt, {2, 2, 3, 4, 5}) - 1 do
-            fan(8, 0, self.ldX, self.ldY, aim(self),
-                5 + layer * 0.8, 7, 5000)
+        local count=diff(rt,{8,12,14,16,16})
+        for i=0,diff(rt,{2,2,3,4,5})-1 do
+            fan(5,0,x,y,angle,diff(rt,{6,6,6.5,7,8.8})-i*1.2,count+i,
+                (count-1+i)*diff(rt,{4000,3200,2800,2400,2100}),10)
         end
     end
 end
@@ -1368,10 +1425,10 @@ local function midbossPattern14a(self, rt)
                 local speed=diff(rt,{4,5,5.5,6,7})+elapsed*.01
                 for opposite=0,(primary and 1 or 0) do
                     local base=muzzle[3]-opposite*0x8000
-                    for sign=-1,1,2 do
-                        local angle=base+sign*elapsed*(primary and 200 or 210)
-                        fire(primary and 3 or 5,0,x,y,angle,speed)
-                        if difficulty(rt)>2 then fire(primary and 3 or 5,0,x,y,angle,speed-.5) end
+                    local offset=elapsed*(primary and 200 or 210)
+                    for layer=0,(difficulty(rt)>2 and 1 or 0) do
+                        fire(primary and 3 or 5,0,x,y,base+offset,speed-layer*.5)
+                        fire(primary and 3 or 5,0,x,y,base-offset,speed-layer*.5)
                     end
                 end
             end
@@ -1389,7 +1446,7 @@ local function midbossDefeat(self, rt, timeout)
     self.protect = true
     self.hp = 1
     self.countdown = 1
-    setState(self, 2)
+    self.state,self.helperTimer=2,0
 end
 
 local function updateStage9Midboss(self, rt)
@@ -1402,41 +1459,57 @@ local function updateStage9Midboss(self, rt)
         self.helperTimer = 0
         self.targetable = false
         self.protect = true
-        self._blStartX, self._blStartY = self.ldX, self.ldY
+        self.angle16,self.secondaryAngle16,self.targetAngle16=0,0,0
         if self.spawnType == 0x148 then
-            spawnChild(rt, self, 0xc7, 8000, -100, -100, 0, 0, 0)
-            spawnChild(rt, self, 0xc7, 8000, 100, -100, 1, 0, 0)
+            spawnChild(rt, self, 0xc7, 99999999, 100, -100, 0, 0x4000, 1)
+            spawnChild(rt, self, 0xc7, 99999999, -100, -100, 1, 0x4000, 1)
         elseif self.spawnType == 0x14b then
-            spawnChild(rt, self, 0xc9, 9000, -75, 0, 0, 0, 0)
-            spawnChild(rt, self, 0xca, 9000, 75, 0, 1, 0, 0)
+            spawnChild(rt, self, 0xc9, 99999999, -75, 0, 0, 0x8000, 1)
+            spawnChild(rt, self, 0xca, 99999999, 75, 0, 1, 0, 1)
         end
     end
 
     local t = self.helperTimer
+    local index=midbossIndex(self.spawnType)
+    local refresh=index==3 and 30 or 50
+    if rt.frame%refresh==0 or not self._blTargetX then
+        local sample=rt.frame-rt.frame%refresh
+        local stride=({111,222,333,444,111,222})[index]
+        local baseY=({150,220,120,60,150,140})[index]
+        self._blTargetX=(index==4 and 260 or 210)+Core.frameRand(sample)%(index==4 and 201 or 301)
+        self._blTargetY=baseY+Core.frameRand(sample+rt.stage*stride)%(index==4 and 121 or 101)
+    end
     if self.state == 0 then
         midbossEnterMotion(self)
+        if self.spawnType == 0x14b then stage9MountFacing(self) end
         if self.spawnType == 0x147 and t == 120 then
-            local offsets = {{-70, -50}, {70, -50}, {-140, -110}, {140, -110}}
+            local offsets = {{70, -50}, {-70, -50}, {140, -110}, {-140, -110}}
             for i, v in ipairs(offsets) do
-                spawnChild(rt, self, 0xc6, 5000, v[1], v[2], i - 1, 0, 0)
+                spawnChild(rt, self, 0xc6, 99999999, v[1], v[2], i - 1, 0x4000, 1)
             end
         elseif self.spawnType == 0x149 and t == 180 then
-            for i = 0, 5 do
-                local a = floor(i * 0x10000 / 6)
-                local dx, dy = Core.polar(a, 110)
-                spawnChild(rt, self, 0xc8, 8000, dx, dy, i, a, 0)
+            local offsets = {{60,260},{-60,260},{150,230},{-150,230},{230,170},{-230,170}}
+            for i,offset in ipairs(offsets) do
+                spawnChild(rt,self,0xc8,7000,offset[1],offset[2],i-1,0x4000,1)
             end
         end
         if t >= config[1] then
             self.speed = config[4]
             self._blTurn = self.spawnType == 0x148 and 0x309 or 0x200
             setBattle(self, 1, config[2], config[3])
+            self.helperTimer=0
         end
         return
     elseif self.state == 2 then
         self.targetable = false
         self.protect = true
-        if t < 90 then self.ldY = self.ldY + t * 0.002 end
+        if t < 90 then
+            self.ldY = f32(self.ldY+f32(t*f32(.02)))
+            if self.spawnType == 0x14b then
+                self.secondaryAngle16=Core.angle16(self.secondaryAngle16-0x682)
+                self.targetAngle16=Core.angle16(self.targetAngle16+0x682)
+            end
+        end
         if t >= 150 then
             self.active = false
             Del(self)
@@ -1446,9 +1519,15 @@ local function updateStage9Midboss(self, rt)
         return
     end
 
+    if self.hp<=0 or self.countdown<1 then
+        midbossDefeat(self,rt,self.countdown<1)
+        return
+    end
     updateShield(self, rt, 0xc3)
-    bossMove(self, rt, self.speed, 50, 190, 530, 140, 280,
-        self.spawnType * 17)
+    local target=angleTo(self.ldX,self.ldY,self._blTargetX,self._blTargetY)
+    self.angle16=Core.turn16(self.angle16,target,self._blTurn)
+    local dx,dy=Core.polar(self.angle16,self.speed)
+    self.ldX,self.ldY=f32(self.ldX+f32(dx)),f32(self.ldY+f32(dy))
     if self.spawnType == 0x146 then
         midbossPattern146(self, rt)
     elseif self.spawnType == 0x147 then
@@ -1460,14 +1539,10 @@ local function updateStage9Midboss(self, rt)
     elseif self.spawnType == 0x14a then
         midbossPattern14a(self, rt)
     else
-        self._blMountAngle = Core.angle16((self._blMountAngle or 0) + 0x180)
-        self.targetAngle16 = self._blMountAngle
-        self.secondaryAngle16 = Core.turn16(self.secondaryAngle16,
-            aim(self), 0x40)
+        stage9MountFacing(self)
     end
 
-    local timeout = tickCountdown(self)
-    if self.hp <= 0 or timeout then midbossDefeat(self, rt, timeout) end
+    tickCountdown(self)
 end
 
 for typeId = 0x146, 0x14b do handlers[typeId] = updateStage9Midboss end
@@ -1475,23 +1550,32 @@ for typeId = 0x146, 0x14b do handlers[typeId] = updateStage9Midboss end
 local function stage9SpiralNode(self, rt)
     local owner = parentOf(self)
     if not owner or owner.state ~= 1 then remove(self); return end
-    configureVisual(self, self.spawnType - 0xc4 + 5, 22)
+    configureVisual(self, self.spawnType - 0xc4 + 5, 30)
     self.targetable = true
-    if transferChildDamage(self, owner) then return end
-    local t = self.helperTimer
-    local sign = self.spawnType == 0xc4 and 1 or -1
-    self.angle16 = Core.angle16(self.angle16 + sign * (0x160 + t * 5))
-    local radius = t * (1.2 + t * 0.012)
-    local dx, dy = Core.polar(self.angle16, radius)
-    self.ldX, self.ldY = owner.ldX + dx, owner.ldY + dy
-    if t >= 30 then
-        local cadence = diff(rt, {26, 22, 20, 20, 20})
-        local window = diff(rt, {6, 8, 10, 10, 12})
-        local q = (t - 30) % cadence
-        if q < window and q % 2 == 0 then
-            local speed = diff(rt, {5, 6, 6.4, 7.2, 8.5})
-            fire(7, 0, self.ldX, self.ldY, aim(self), speed)
-            if difficulty(rt) > 2 then fire(7, 0, self.ldX, self.ldY, aim(self), speed + 2) end
+    if self.hp<=0 then
+        M.spawnEnemyDeathRewardBurstOnce(self,300,5)
+        if not rt.player or (rt.player.bombLock or 0)==0 then
+            spawnChild(rt,owner,0x153,self.maxhp,-100-owner.ldX,-100-owner.ldY,0,0x4000,0)
+        end
+        remove(self)
+        return
+    end
+    local t=self.helperTimer
+    local sign=self.spawnType==0xc4 and 1 or -1
+    self._blDistance=f32((self._blDistance or 0)+f32(self.speed))
+    self.speed=self.speed+.1
+    self.angle16=Core.angle16(self.angle16+sign*(t+90))
+    local dx,dy=Core.polar(self.angle16,self._blDistance)
+    self.ldX,self.ldY=f32(self.originX+f32(dx)),f32(self.originY+f32(dy))
+    local px,py=playerPosition()
+    if t>=30 and Core.inside(self.ldX,self.ldY,0) and (self.ldX-px)^2+(self.ldY-py)^2>=10000 then
+        local q=(t-30)%diff(rt,{26,22,20,20,20})
+        if q<diff(rt,{6,8,10,10,12}) and q%2==0 then
+            local y=f32(self.ldY+12)
+            local angle=angleTo(self.ldX,y,px,py)
+            local speed=diff(rt,{5,6,6.4,7.2,8.5})
+            fire(13,4,self.ldX,y,angle,speed)
+            if difficulty(rt)>2 then fire(13,4,self.ldX,y,angle,speed+2) end
         end
     end
     if not Core.inside(self.ldX, self.ldY, 200) then remove(self) end
@@ -1503,63 +1587,96 @@ handlers[0xc5] = stage9SpiralNode
 handlers[0xc6] = function(self, rt)
     local owner = parentOf(self)
     if not owner or owner.state == 2 then remove(self); return end
-    configureVisual(self, 11, 30)
-    follow(self, owner, self._blOffsetX, self._blOffsetY, 5)
-    self.targetable = false
-    if owner.state ~= 1 or self.helperTimer < 110 then return end
-    local cycle = (self.helperTimer - 110) % 1000
-    local index = self._blIndex or 0
-    if index < 2 and cycle < 460 then
-        local interval = diff(rt, {120, 80, 70, 60, 60})
-        local q = (cycle + index * floor(interval / 2)) % interval
-        if q == 0 then self._blAim = aim(self) end
-        if q < 24 and q % 3 == 0 then
-            local speed = diff(rt, {6.4, 8, 8.5, 9.5, 11.1})
-            fire(7, 0, self.ldX, self.ldY, self._blAim, speed)
-            fan(7, 0, self.ldX, self.ldY, self._blAim, speed - 0.6, 2, 1800)
-        end
-    elseif index >= 2 and cycle < 400 and
-           cycle % diff(rt, {60, 48, 36, 25, 25}) == 0 then
-        for layer = 0, 4 do
-            ring(5, 0, self.ldX, self.ldY, cycle * 131 + layer * 700,
-                diff(rt, {3.2, 4, 4.5, 5, 6.4}) + layer * 0.35,
-                diff(rt, {9, 9, 11, 11, 13}))
-        end
+    configureVisual(self,11,50)
+    self.ldX,self.ldY=owner.ldX+self._blOffsetX,owner.ldY+self._blOffsetY
+    self.targetable=false
+    local t=self.helperTimer
+    if self.state==0 then
+        if t>=50 then self.state,self.helperTimer=1,0 end
+        return
     end
-    if cycle >= 500 and cycle < 900 then
-        if cycle % diff(rt, {8, 5, 4, 3, 2}) == 0 then
-            fire(0x0d, 8, self.ldX, self.ldY,
-                randomInt(self, rt, cycle + index, 0, 0xffff),
-                randomRange(self, rt, cycle + index + 1, 3, 7))
+    if t<60 then return end
+    local cycle=(t-60)%1000
+    local index=self._blIndex
+    local x,y=self.ldX,self.ldY-60
+    local aimed=aim(self,x,y)
+    if cycle<460 and index<2 then
+        local q=cycle%diff(rt,{120,80,70,60,60})
+        if q==0 then self.secondaryAngle16=aimed end
+        if q<24 and q%3==0 then
+            local speed=diff(rt,{6.4,8,8.5,9.5,11.1})
+            fire(12,0,x,y,self.secondaryAngle16,speed,10)
+            fan(12,0,x,y,self.secondaryAngle16,speed-.5,2,diff(rt,{800,1200,1600,1600,1600}),10)
         end
-        local q = cycle % diff(rt, {120, 100, 80, 60, 50})
-        if q < 40 and q % 5 == 0 then
-            fire(0x0c, 9, self.ldX, self.ldY, aim(self), 6 + q * 0.05)
+    elseif cycle<400 and index>=2 then
+        local interval=diff(rt,{60,48,36,25,25})
+        if cycle%interval==0 then
+            local count=diff(rt,{9,9,11,11,13})
+            local spread=30000
+            if cycle%(2*interval)~=0 then
+                count=count-1
+                spread=floor(30000/count)*(count-1)
+            end
+            for i=-2,2 do
+                fan(9,0,x,y,aimed+i*250,diff(rt,{3.2,4,4.5,5,6.4}),count,spread,10)
+            end
+        end
+    elseif cycle>=500 and cycle<900 then
+        local elapsed=cycle-500
+        if elapsed%diff(rt,{8,5,4,3,2})==0 then
+            local seed=index*222+t
+            local random=Core.frameRand(seed)
+            fire(13,8,x,y,random%20001-0x6710,scriptRandomHundredth(seed,4,diff(rt,{5.5,6,6.5,7,8.8})))
+            if elapsed%diff(rt,{120,100,80,60,50})<40 then
+                fire(12,9,x,y,random%24001-0x6ee0,scriptRandomHundredth(seed+1,5,10))
+            end
         end
     end
 end
 
-handlers[0xc7] = function(self, rt)
-    local owner = parentOf(self)
-    if not owner or owner.state == 2 then remove(self); return end
-    configureVisual(self, 12, 35)
-    follow(self, owner, self._blOffsetX, self._blOffsetY, 4)
-    self.targetable = false
-    self.angle16 = Core.turn16(self.angle16, aim(self), 0x80)
-    if owner.state ~= 1 then return end
-    local cycle = owner.helperTimer % 1200
-    if cycle < 360 then
-        local interval = diff(rt, {70, 48, 36, 36, 36})
-        if (cycle + (self._blIndex or 0) * floor(interval / 2)) % interval == 0 then
-            fan(7, 0, self.ldX, self.ldY, self.angle16,
-                diff(rt, {5.5, 6.5, 7, 8, 9}),
-                diff(rt, {9, 13, 15, 15, 17}), 27000)
-        end
-    elseif cycle >= 770 and cycle < 1120 and
-           cycle % diff(rt, {12, 9, 8, 7, 5}) == 0 then
-        local a = self.angle16 + randomInt(self, rt, cycle, -1800, 1800)
-        fan(8, 0, self.ldX, self.ldY, a, 7.5, 3, 2200)
+handlers[0xc7] = function(self,rt)
+    local owner=parentOf(self)
+    if not owner or owner.state>1 then remove(self);return end
+    configureVisual(self,12,50)
+    self.ldX,self.ldY=owner.ldX+self._blOffsetX,owner.ldY+self._blOffsetY
+    self.targetable=false
+    if self.state==0 then
+        if owner.state==1 then self.state,self.helperTimer=1,0 end
+        return
     end
+    local t=self.helperTimer
+    local cycle=t%1200
+    if cycle>=360 and cycle<770 or cycle>=1120 then return end
+    local angle=aim(self)
+    self.angle16=Core.turn16(self.angle16,angle,48+floor(abs(Core.angleDelta(self.angle16,angle))/10))
+    local dx,dy=Core.polar(self.angle16,70)
+    local x,y=self.ldX+dx,self.ldY+dy
+    if cycle<360 then
+        local interval=diff(rt,{70,48,36,36,36})
+        local start=90+interval*self._blIndex
+        if cycle>=start and (cycle-start)%(2*interval)==0 then
+            local count=diff(rt,{9,13,15,15,17})
+            local speed=diff(rt,{4.5,5.5,6,6.5,7.5})
+            fan(12,0,x,y,self.angle16,speed,count,27000,10)
+            if difficulty(rt)>2 then fan(12,0,x,y,self.angle16,speed+1,count,27000,10) end
+        end
+    elseif (cycle-770)%diff(rt,{12,9,8,7,5})==0 then
+        local offset=Core.frameRand(self._blIndex*9999+t)%16001-0x222e
+        for i=0,2 do
+            fire(self._blIndex==0 and 13 or 12,7,x,y,self.angle16+offset+i*750,
+                diff(rt,{7,8,9,10,12}),10)
+        end
+    end
+end
+
+do
+local chainMounts={{50,150},{100,140},{-50,150},{-100,140},{140,120},{-140,120}}
+local chainTargets={
+    [6]={{720,720},{0,720},{720,480},{0,480},{0,240},{720,240}},
+    [8]={{520,720},{200,720},{640,720},{60,720},{720,540},{0,540}},
+}
+local function chainTurn(angle,target)
+    return Core.turn16(angle,target,floor(abs(Core.angleDelta(angle,target))/10)+48)
 end
 
 handlers[0xc8] = function(self, rt)
@@ -1573,80 +1690,105 @@ handlers[0xc8] = function(self, rt)
             self.hp = self.maxhp
             self._blDeathRewardBurst = false
             self._ldRewardSpawned = false
-            setState(self, 1)
+            self.ldX,self.ldY=f32(owner.ldX+self._blOffsetX),f32(owner.ldY+self._blOffsetY)
+            self.state,self.helperTimer=0,0
         elseif owner.state ~= 1 and t >= 80 then remove(self) end
         return
     end
-    if self.hp <= 0 then
+    local index = self._blIndex
+    local mount = chainMounts[index+1]
+    local x,y = f32(owner.ldX+mount[1]),f32(owner.ldY+mount[2])
+    self.targetable = self.state~=0
+    if self.state==0 and t>=60 then
+        self.secondaryAngle16 = (index==0 or index==3 or index==4) and 1000 or 0x7c18
+        self.speed,self.state,self.helperTimer,self.targetable=1,1,0,true
+    end
+    if self.state==1 then
+        self.secondaryAngle16=Core.turn16(self.secondaryAngle16,angleTo(self.ldX,self.ldY,x,y),0x457)
+        local dx,dy=Core.polar(self.secondaryAngle16,self.speed)
+        self.ldX,self.ldY=f32(self.ldX+f32(dx)),f32(self.ldY+f32(dy))
+        self.angle16=chainTurn(self.angle16,0x4000)
+        local clock=owner.helperTimer
+        local dash
+        if clock==index*15+10 then dash=2
+        elseif clock==index*20+330 then dash=4
+        elseif clock==680 then dash=6
+        elseif clock==950 then dash=8 end
+        if dash then self.state,self.helperTimer=dash,0 end
+    end
+    local state=self.state
+    t=self.helperTimer
+    if state>=2 and state%2==0 then
+        if t<50 then
+            local targets=chainTargets[state]
+            local px,py=playerPosition()
+            local angle=angleTo(self.ldX,self.ldY,px,py)
+            if targets then
+                local dest=targets[index+1]
+                angle=angleTo(self.ldX,self.ldY,dest[1],dest[2])
+            end
+            self.angle16=chainTurn(self.angle16,angle)
+        elseif t==90 then self.speed=10
+        elseif t>90 then
+            local dx,dy=Core.polar(self.angle16,self.speed)
+            self.ldX,self.ldY=f32(self.ldX+f32(dx)),f32(self.ldY+f32(dy))
+            self.speed=self.speed+.2
+            if Core.inside(self.ldX,self.ldY,0) then
+                local dx,dy=Core.polar(self.angle16,60)
+                local reverse=self.angle16+0x8000
+                fire(3,1,f32(self.ldX+f32(dx)),f32(self.ldY+f32(dy)),reverse+Core.frameRand(rt.frame+444)%2401-1200,10)
+                fire(5,1,f32(self.ldX+f32(dx)),f32(self.ldY+f32(dy)),reverse+Core.frameRand(rt.frame)%3001-1500,9)
+            end
+        end
+        if t>=100 and (self.ldX<40 or self.ldX>680 or self.ldY<40 or self.ldY>680) then
+            local count=diff(rt,{12,24,32,20,24})
+            local speed=diff(rt,{3.5,4.5,5,5.5,6.6})
+            ring(2,0,self.ldX,self.ldY,self.angle16,speed,count)
+            if difficulty(rt)>2 then ring(4,7,self.ldX,self.ldY,self.angle16+floor(0x8000/count),speed-1,count*2) end
+            self.state,self.helperTimer=state+1,0
+        end
+    elseif state>=3 then
+        if t>=60 then
+            self.ldX,self.ldY=f32(self.ldX+f32(f32(x-self.ldX)/20)),f32(self.ldY+f32(f32(y-self.ldY)/20))
+            self.angle16=chainTurn(self.angle16,0x4000)
+        end
+        if t>=90 then self.state,self.helperTimer,self.speed=1,0,1 end
+    end
+    if self.hp<=0 and self.state>=1 then
         M.spawnEnemyDeathRewardBurstOnce(self,2000,0)
-        owner.hp = owner.hp - max(1, self.maxhp or 1)
+        spawnChild(rt,owner,0x153,self.maxhp,-100-owner.ldX,-100-owner.ldY,0,0x4000,0)
         self.hp = 1
-        setState(self, -1)
-        return
+        self.state,self.helperTimer,self.targetable = -1,0,false
+    elseif owner.state==2 and self.state>=1 then
+        self.targetable=false
+        self.state,self.helperTimer=-1,0
     end
-    self.targetable = owner.state == 1
-    local index = self._blIndex or 0
-    local orbit = Core.angle16(index * floor(0x10000 / 6) + owner.helperTimer * 0x80)
-    local ox, oy = Core.ellipse(orbit, 110, 70, 0x900)
-    if self.state == 0 and t >= 60 then setState(self, 1); return end
-    if self.state == 1 then
-        follow(self, owner, ox, oy, 4)
-        local T = owner.helperTimer
-        if T == index * 15 + 10 or T == index * 20 + 330 or
-           T == 680 or T == 950 then
-            self._blDashTargetX, self._blDashTargetY = playerPosition()
-            setState(self, 2)
-        end
-    elseif self.state == 2 then
-        if t < 50 then
-            self.angle16 = Core.aim16(self.ldX, self.ldY,
-                self._blDashTargetX, self._blDashTargetY)
-        elseif t == 90 then
-            self.speed = 10
-        elseif t > 90 then
-            move(self)
-            self.speed = self.speed + 0.2
-            if Core.inside(self.ldX, self.ldY, 0) and t % 4 == 0 then
-                fire(index % 2 == 0 and 3 or 5, 0, self.ldX, self.ldY,
-                    self.angle16 + 0x8000, 4.5)
-            end
-            if not Core.inside(self.ldX, self.ldY, -20) then
-                local count = diff(rt, {12, 24, 32, 20, 24})
-                ring(5, 0, self.ldX, self.ldY, self.angle16,
-                    diff(rt, {3.5, 4.5, 5, 5.5, 6.6}), count)
-                if difficulty(rt) > 2 then
-                    ring(3, 0, self.ldX, self.ldY,
-                        self.angle16 + floor(0x8000 / count), 7, count * 2)
-                end
-                setState(self, 3)
-            end
-        end
-    else
-        follow(self, owner, ox, oy, 8)
-        if t >= 90 then setState(self, 1) end
-    end
+end
+
 end
 
 local function stage9LastMount(self, rt)
     local owner = parentOf(self)
-    if not owner or owner.state == 2 then remove(self); return end
+    if not owner then remove(self); return end
     configureVisual(self, self.spawnType - 0xc9 + 14, 36)
-    local sign = self.spawnType == 0xc9 and -1 or 1
-    local orbit = Core.angle16((owner._blMountAngle or 0) +
+    local orbit = Core.angle16(owner.targetAngle16 +
         (self.spawnType == 0xc9 and 0x8000 or 0))
     local dx, dy = Core.polar(orbit, 75)
-    follow(self, owner, dx, dy, 3)
+    self.ldX,self.ldY = f32(owner.ldX+f32(dx)),f32(owner.ldY+f32(dy))
     self.targetable = false
-    if self.spawnType == 0xca then
+    if self.spawnType == 0xc9 then
+        if self.helperTimer % 30 > 19 then self.targetAngle16=Core.angle16(self.targetAngle16+0x222) end
+    else
         local a = aim(self)
         local ex, ey = Core.polar(a, 24)
-        self.ldX, self.ldY = self.ldX + ex, self.ldY + ey
+        self.ldX, self.ldY = f32(self.ldX+f32(ex)),f32(self.ldY+f32(ey))
     end
     if owner.state == 1 and owner.helperTimer == 10 and not self._blEmitter then
         self._blEmitter = spawnChild(rt, self,
-            self.spawnType == 0xc9 and 0xcb or 0xcc, 1,
-            sign * 20, 0, self._blIndex, 0, 0)
+            self.spawnType == 0xc9 and 0xcb or 0xcc, 99999999,
+            0, 0, self._blIndex, 0, 0)
     end
+    if owner.state==2 and owner.helperTimer>=100 then remove(self) end
 end
 
 handlers[0xc9] = stage9LastMount
@@ -1655,36 +1797,41 @@ handlers[0xca] = stage9LastMount
 local function stage9LastEmitter(self, rt)
     local mount = parentOf(self)
     local owner = mount and parentOf(mount)
-    if not mount or not owner or owner.state ~= 1 then remove(self); return end
+    if not mount or not owner or owner.state ~= 1 or (owner.countdown or 0)<1 then remove(self); return end
     configureVisual(self, self.spawnType - 0xcb + 16, 24)
-    follow(self, mount, self._blOffsetX, self._blOffsetY, 2)
+    self.ldX,self.ldY = mount.ldX,mount.ldY
     self.targetable = false
     local t = self.helperTimer
     local cycle = t % 1300
-    local side = self.spawnType == 0xcb and -1 or 1
+    local left = self.spawnType == 0xcb
+    local visual = left and 3 or 2
     if cycle < 540 then
-        local cadence = diff(rt, {40, 34, 30, 30, 30})
-        local q = (cycle + (side > 0 and floor(cadence / 2) or 0)) % cadence
-        if q < 20 and q % 5 == 0 then
-            ring(side < 0 and 3 or 5, 1, self.ldX, self.ldY,
-                side * cycle * 193, diff(rt, {7, 8.9, 8.5, 9, 10}),
-                diff(rt, {11, 17, 19, 19, 23}))
+        local period = diff(rt,{40,34,30,30,30})
+        local elapsed = cycle - (left and 0 or period)
+        if cycle == 0 then self.secondaryAngle16 = aim(self) end
+        if elapsed >= 0 and elapsed % (2*period) < diff(rt,{20,25,25,30,30}) and elapsed%5 == 0 then
+            ring(visual,7,self.ldX,self.ldY,self.secondaryAngle16+(left and 1 or -1)*t*120,
+                diff(rt,{7,8.9,8.5,9,10}),diff(rt,{11,17,19,19,23}))
         end
     elseif cycle == 640 then
-        ring(8, side < 0 and 0x29 or 0x2a, self.ldX, self.ldY,
-            side * cycle * 97, 3, diff(rt, {9, 11, 13, 15, 17}))
-    elseif cycle >= 840 and cycle < 1260 and cycle % 4 == 0 then
-        local localTime = cycle - 840
-        local direction = floor(localTime / diff(rt, {60, 30, 30, 30, 30}))
-        ring(side < 0 and 3 or 5, 1, self.ldX, self.ldY,
-            side * localTime * (110 + direction * 12),
-            diff(rt, {5, 6, 6, 6, 7}) + localTime * 0.02,
-            diff(rt, {9, 13, 15, 17, 19}))
+        ring(visual,left and 0x29 or 0x2a,self.ldX,self.ldY,aim(self),8,diff(rt,{9,11,13,15,17}))
+    elseif cycle >= 840 then
+        local elapsed = cycle-840
+        local count = diff(rt,{9,13,15,17,19})
+        if elapsed == 0 then self.secondaryAngle16 = Core.angle16(aim(self)+2*floor(65536/(3*count))) end
+        if cycle < 1260 and elapsed%4 == 0 then
+            ring(visual,0,self.ldX,self.ldY,self.secondaryAngle16,diff(rt,{5,6,6,6,7})+elapsed*.02,count)
+        end
+        local interval = diff(rt,{60,30,30,30,30})
+        local step = diff(rt,{60,70,80,80,90})+floor(elapsed/interval)*10
+        self.secondaryAngle16 = Core.angle16(self.secondaryAngle16+(elapsed%(2*interval)<interval and -step or step))
     end
 end
 
 handlers[0xcb] = stage9LastEmitter
 handlers[0xcc] = stage9LastEmitter
+
+end
 
 -- Stage 9 final boss ------------------------------------------------------
 
@@ -3533,10 +3680,14 @@ local function finalDrone(self, rt)
         end
     else
         local q = t
-        if self.spawnType == 0x116 and q >= 10 and q <= 40 and q % 4 == 0 then
-            if q == 10 then self._blAim = aim(self) end
-            fan(0x0b, 1, self.ldX, self.ldY, self._blAim,
-                7, 4, (q - 10) * 350)
+        if self.spawnType == 0x116 and q >= 10 and q < 40 and (q - 10) % 4 == 0 then
+            -- 原版以第 10 帧为四帧周期起点；直接 q%4 会跳过瞄准缓存的初始化。
+            local fireY = self.ldY + 95
+            if q == 10 then self._blAim = aim(self, self.ldX, fireY) end
+            local narrow, wide = (q - 10) * 50, (q + 110) * 50
+            for _, offset in ipairs({-narrow, narrow, -wide, wide}) do
+                fire(0x0b, 1, self.ldX, fireY, self._blAim + offset, 5, 10)
+            end
         elseif self.spawnType == 0x117 and q >= 10 and q <= 40 then
             fire(0x0c, 2,
                 self.ldX + randomRange(self, rt, q, -20, 20), self.ldY,
@@ -4139,10 +4290,15 @@ function M.Dispatcher:update(entity, rt)
         return false
     end
     local handler = self.handlers[entity.spawnType]
-    if not handler then return false end
+    local recovered = LikeDreamer.Recovered
+    if not handler and not (recovered and recovered.handles(entity.spawnType)) then return false end
 
     self:initialize(entity)
-    handler(entity, rt)
+    if LikeDreamer.Recovered and LikeDreamer.Recovered.handles(entity.spawnType) then
+        LikeDreamer.Recovered.update(entity, rt)
+    else
+        handler(entity, rt)
+    end
     applyExactLayer(entity)
     if ensureRenderProxies then ensureRenderProxies(entity) end
     -- Late boss nodes own their off-screen parking and removal.  Several
@@ -5138,6 +5294,7 @@ if type(rawget(_G, "Class")) == "function" and
         self.angle16 = Core.angle16(spec.angle16 or 0)
         self.speed = spec.speed or 0
         self.scale = spec.scale or 1
+        self.originalScaleY = spec.scaleY or self.scale
         self.lifetime = spec.lifetime or 0
         self.alpha = spec.alpha or 0xff
         self.red = spec.red or 0xff
@@ -5174,7 +5331,12 @@ if type(rawget(_G, "Class")) == "function" and
             return
         end
 
-        if self.kind == "terminal_driver" then
+        if self.kind == 'recovered' then
+            local dx, dy = Core.polar(self.angle16, self.speed)
+            self.ldX, self.ldY = self.ldX + dx, self.ldY + dy
+            self.drawScaleX, self.drawScaleY = self.scale, self.originalScaleY
+            self.drawAlpha = self.alpha * math.max(0, 1 - age / math.max(1, self.lifetime))
+        elseif self.kind == "terminal_driver" then
             spawnTerminalComponents(self._runtime, self.ldX, self.ldY,
                 self._runtime and self._runtime.frame or self.sourceFrame + 1)
             finishStageEffect(self)

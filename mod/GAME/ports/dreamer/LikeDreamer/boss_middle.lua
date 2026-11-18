@@ -1130,7 +1130,8 @@ local function stage06Arm(self,rt)
                     diff(rt,{2.8,3.5,3.8,4,5})+broken*0.4+i*0.4) end
             end
         end
-    else
+    elseif self.spawnType==0x6a then
+        -- 前四支炮臂尚未到启动时点时，不能落入第五支炮臂的发弹分支。
         localt=t%period;local cadence=diff(rt,{90,60,55,50,50})
         local a=aim(self.ldX,self.ldY)
         if localt%cadence==0 then self.secondaryAngle16=a end
@@ -1901,8 +1902,14 @@ end
 function BossMiddleController:update(entity,rt)
     local fn=self.entityHandlers[entity.spawnType]
     if not fn then return false end
+    local exactRadius = entity._ldExactData and entity.radius
     setAppearance(entity)
-    fn(entity,rt)
+    if exactRadius then entity.radius = exactRadius end
+    if LikeDreamer.Recovered and LikeDreamer.Recovered.handles(entity.spawnType) then
+        LikeDreamer.Recovered.update(entity,rt)
+    else
+        fn(entity,rt)
+    end
     refreshVisual(entity,rt)
     entity._bmDrawAngle=Core.angleToDeg(entity.angle16 or 0x4000)+90
     -- Boss bodies use movement headings internally, but the original queues

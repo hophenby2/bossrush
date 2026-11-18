@@ -3,6 +3,7 @@
 LikeDreamer = LikeDreamer or {}
 
 local Core = LikeDreamer.Core
+local f32 = Core.float32
 local M = {}
 LikeDreamer.Projectile = M
 
@@ -27,7 +28,7 @@ end
 
 -- Projectile helpers in the original use static_cast<int>, not lround.
 local function aim16(x1, y1, x2, y2)
-    return Core.angle16(trunc(atan2(y2 - y1, x2 - x1) * 10430.378350470464))
+    return Core.angle16(trunc(atan2(f32(y2 - y1), f32(x2 - x1)) * 10430.378350470464))
 end
 
 local function scriptRandomAngle(seed)
@@ -356,7 +357,7 @@ function grazeFeedbackClass:frame()
     if self.age >= 0 then
         if self.age == 0 then applyDeferredGrazeReward(self._runtime) end
         local dx, dy = Core.polar(self.angle16, 1)
-        self.ldX, self.ldY = self.ldX + dx, self.ldY + dy
+        self.ldX, self.ldY = f32(self.ldX + f32(dx)), f32(self.ldY + f32(dy))
     end
     Core.syncObject(self, self.ldX, self.ldY)
     if self.age > self.lifetime then Del(self) end
@@ -417,7 +418,7 @@ function grazeParticleClass:frame()
             self.lifetime = self.random % 11 + 10
         end
         local dx, dy = Core.polar(self.angle16, self.speed)
-        self.ldX, self.ldY = self.ldX + dx, self.ldY + dy
+        self.ldX, self.ldY = f32(self.ldX + f32(dx)), f32(self.ldY + f32(dy))
         self.scale = self.scale + 0.01
     end
     Core.syncObject(self, self.ldX, self.ldY)
@@ -576,12 +577,13 @@ M.Class = bulletClass
 function bulletClass:init(visual, projectileId, x, y, angle, initialTravel, speed, radius, arg)
     self.visualSelector = visual or 0
     self.projectileId = projectileId or 0
+    x, y = f32(x), f32(y)
     self.ldX, self.ldY = x, y
     self.anchorX, self.anchorY = x, y
     self.prevX, self.prevY = x, y
     self.angle16 = Core.angle16(trunc(angle or 0))
     self.prevAngle16 = self.angle16
-    self.travel = initialTravel or 0
+    self.travel = f32(initialTravel or 0)
     self.speed = speed or 0
     self.baseSpeed = self.speed
     self.radius = radius or 1
@@ -642,9 +644,9 @@ local function trail(visual, self, radius, allowed)
 end
 
 local function updateCommon(self)
-    self.travel = self.travel + self.speed
+    self.travel = f32(self.travel + f32(self.speed))
     local dx, dy = Core.polar(self.angle16, self.travel)
-    local x, y = self.anchorX + dx, self.anchorY + dy
+    local x, y = f32(self.anchorX + f32(dx)), f32(self.anchorY + f32(dy))
     local id, age, d = self.projectileId, self.age, difficulty()
 
     if id == 0x01 then
@@ -723,9 +725,9 @@ local function updateCommon(self)
 end
 
 local function updateReflect(self)
-    self.travel = self.travel + self.speed
+    self.travel = f32(self.travel + f32(self.speed))
     local dx, dy = Core.polar(self.angle16, self.travel)
-    local x, y = self.anchorX + dx, self.anchorY + dy
+    local x, y = f32(self.anchorX + f32(dx)), f32(self.anchorY + f32(dy))
     self.ldX, self.ldY = x, y
     local left = Core.playfieldOriginX()
     local r = self.radius
@@ -745,7 +747,7 @@ local function updateDirect(self)
     local target = aim16(self.ldX, self.ldY, px, py)
     local dx, dy = Core.polar(self.angle16, self.speed)
     self.prevX, self.prevY = self.ldX, self.ldY
-    self.ldX, self.ldY = self.ldX + dx, self.ldY + dy
+    self.ldX, self.ldY = f32(self.ldX + f32(dx)), f32(self.ldY + f32(dy))
     local id, age, d = self.projectileId, self.age, difficulty()
 
     if id == 0x0c then
@@ -759,7 +761,9 @@ local function updateDirect(self)
         end
         trail(4, self)
     elseif id == 0x0e then
-        local phase = (age + 30) * 2 * pi / 120
+        -- 原版先乘固定角系数，再取 sin。转向步长随后截断为整数，
+        -- 改变浮点运算顺序会让极值附近的步长相差 1。
+        local phase = (age + 30) * 546.1333333333333 * 3.14159265358979 / 32768
         local step = 200
         if age < 240 then
             self.speed = (self.baseSpeed + 3) * 0.5 + sin(phase) * (self.baseSpeed - 3) * 0.5
@@ -812,9 +816,9 @@ local function ownerById(id)
 end
 
 local function updateEmitter(self)
-    self.travel = self.travel + self.speed
+    self.travel = f32(self.travel + f32(self.speed))
     local dx, dy = Core.polar(self.angle16, self.travel)
-    local x, y = self.anchorX + dx, self.anchorY + dy
+    local x, y = f32(self.anchorX + f32(dx)), f32(self.anchorY + f32(dy))
     self.ldX, self.ldY = x, y
     local id, age, d = self.projectileId, self.age, difficulty()
     local frame = runtime() and runtime().frame or 0
@@ -984,12 +988,12 @@ local function updateOrbit(self)
     elseif age > 40 then
         if self.speed < 4 then self.speed = self.speed + 0.05 end
         local dx, dy = Core.polar(self.prevAngle16, self.speed)
-        self.prevX, self.prevY = self.prevX + dx, self.prevY + dy
+        self.prevX, self.prevY = f32(self.prevX + f32(dx)), f32(self.prevY + f32(dy))
     end
     local turn = Core.diff({0x46,0x78,0x8c,0xb4,0xdc}, d)
     self.angle16 = Core.angle16(self.angle16 + (self.projectileId == 0x1f and turn or -turn))
     local ox, oy = Core.ellipse(self.angle16, rx, ry, 0)
-    self.ldX, self.ldY = self.prevX + ox, self.prevY + oy
+    self.ldX, self.ldY = f32(self.prevX + f32(ox)), f32(self.prevY + f32(oy))
     self.anchorX, self.anchorY = self.ldX, self.ldY
     if not Core.inside(self.ldX, self.ldY, 256) then deactivate(self) end
 end
@@ -1003,13 +1007,14 @@ local function updateSpiral(self)
     end
     local radius = self.baseRadius or self.travel
     if age < 0 then radius = 0 elseif age < 10 then radius = sin(age * pi / 20) * radius end
-    self.travel = radius
+    self.travel = f32(radius)
+    radius = self.travel
     self.speed = age * 0.35 - 2
     local dx, dy = Core.polar(self.angle16, self.speed)
-    self.anchorX, self.anchorY = self.anchorX + dx, self.anchorY + dy
+    self.anchorX, self.anchorY = f32(self.anchorX + f32(dx)), f32(self.anchorY + f32(dy))
     self.angle16 = Core.angle16(self.angle16 + (self.projectileId == 0x3a and 0x1bc or -0x1bc))
     dx, dy = Core.polar(self.angle16, radius)
-    self.ldX, self.ldY = self.anchorX + dx, self.anchorY + dy
+    self.ldX, self.ldY = f32(self.anchorX + f32(dx)), f32(self.anchorY + f32(dy))
     if not Core.inside(self.anchorX, self.anchorY, floor((self.baseRadius or 0) + 50)) then deactivate(self) end
 end
 

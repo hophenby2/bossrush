@@ -3,6 +3,7 @@
 LikeDreamer = LikeDreamer or {}
 
 local Core = assert(LikeDreamer.Core)
+local f32 = Core.float32
 local Projectile = assert(LikeDreamer.Projectile)
 local M = {}
 LikeDreamer.BossEarly = M
@@ -27,7 +28,7 @@ local function atan2(y, x)
 end
 
 local function aimAt(x, y, tx, ty)
-    return Core.angle16(trunc(atan2(ty - y, tx - x) * 10430.378350470464))
+    return Core.angle16(trunc(atan2(f32(ty - y), f32(tx - x)) * 10430.378350470464))
 end
 
 local function playerPosition()
@@ -58,7 +59,7 @@ end
 
 local function move(self, angle, speed)
     local dx, dy = Core.polar(angle or self.angle16, speed or self.speed)
-    self.ldX, self.ldY = self.ldX + dx, self.ldY + dy
+    self.ldX, self.ldY = f32(self.ldX + f32(dx)), f32(self.ldY + f32(dy))
 end
 
 local function fire(visual, behavior, x, y, angle, travel, speed, radius, arg)
@@ -849,7 +850,7 @@ local function updateDecoration138(self,rt)
     if not parent or not parent.active then quietRemove(self);return end
     local tx=parent.ldX+(self._beOffsetX or 0);local ty=parent.ldY+(self._beOffsetY or 0)
     if self.helperTimer==0 then self.ldX,self.ldY=parent.ldX,parent.ldY
-    else self.ldX=self.ldX+(tx-self.ldX)/5;self.ldY=self.ldY+(ty-self.ldY)/5 end
+    else self.ldX=f32(self.ldX+f32(f32(tx-self.ldX)/5));self.ldY=f32(self.ldY+f32(f32(ty-self.ldY)/5)) end
     if self.spawnType==0x12 and self.helperTimer==0 then
         spawnChild(rt,self,0x13,99999999,60,120,0,"S01 decoration")
         spawnChild(rt,self,0x13,99999999,-60,120,1,"S01 decoration")
@@ -869,7 +870,7 @@ local function updateChild138(self,rt)
     if t==0 then
         self.ldX,self.ldY=parent.ldX+ox*3,parent.ldY+oy*3
         if self.spawnType==0x16 then self.secondaryAngle16=ox>0 and 0xe000 or 0xa000 end
-    else self.ldX=self.ldX+(tx-self.ldX)/30;self.ldY=self.ldY+(ty-self.ldY)/30 end
+    else self.ldX=f32(self.ldX+f32(f32(tx-self.ldX)/30));self.ldY=f32(self.ldY+f32(f32(ty-self.ldY)/30)) end
     if self.state==0 and t==60 then self.state,self.helperTimer=1,0;self.targetable=true end
     if self.state==1 then
         local pt=parent.helperTimer;local sy=self.ldY-20;local idx=self._beIndex or 0
@@ -991,7 +992,7 @@ local function emitBoss139(self,rt)
                     for opposite=0,1 do
                         local a=center-opposite*0x8000;local speed=diff(rt,{5,6,6.5,7,8})
                         fire(2,0x17,x,y,a,10,speed,1,0)
-                        if d>=3 then fire(2,0x17,x,y,a-2000,10,speed,1,0);fire(2,0x17,x,y,a+2000,10,speed,1,0) end
+                        if d>=3 then fire(2,0x17,x,y,a+2000,10,speed,1,0);fire(2,0x17,x,y,a-2000,10,speed,1,0) end
                     end
                 end
             end
@@ -1282,7 +1283,7 @@ local function updateChild13a(self,rt)
     local t=self.helperTimer;local id=self.spawnType
     if id==0x30 then
         local tx=parent.ldX+self._beOffsetX;local ty=parent.ldY+self._beOffsetY
-        if t==0 then self.ldX,self.ldY=tx,ty else self.ldX=self.ldX+(tx-self.ldX)/5;self.ldY=self.ldY+(ty-self.ldY)/5 end
+        if t==0 then self.ldX,self.ldY=tx,ty else self.ldX=f32(self.ldX+f32(f32(tx-self.ldX)/5));self.ldY=f32(self.ldY+f32(f32(ty-self.ldY)/5)) end
         if self.state==0 and parent.state==1 then self.state,self.helperTimer=1,0;self.targetable=true end
         if self.state==1 then
             local q=(self.helperTimer-10)%diff(rt,{100,60,40,36,30})
@@ -1804,6 +1805,9 @@ function EarlyBossController:_isClaimedChild(entity,id)
 end
 
 function EarlyBossController:_updateChild(entity,rt,id)
+    if LikeDreamer.Recovered and LikeDreamer.Recovered.handles(id) then
+        return LikeDreamer.Recovered.update(entity,rt)
+    end
     if id>=0x12 and id<=0x14 and entity.parent then updateDecoration138(entity,rt);return true end
     if id>=0x15 and id<=0x17 and entity.parent and entity.parentSpawnType==0x138 then updateChild138(entity,rt);return true end
     if id>=0x22 and id<=0x24 and entity.parent and entity.parentSpawnType==0x139 then updateChild139(entity,rt);return true end

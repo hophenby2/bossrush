@@ -43,7 +43,9 @@ api.RenderClear=function(color)
 end
 env.LoadSound=false -- 音效按本作关卡池加载。
 for _,module in ipairs({
-    'core','viewport','resources','projectile','reward','enemy_visual_common','enemy_visual_stage01',
+    'core','viewport','resources','projectile','reward','boss_recovered','recovered/defaults',
+    'recovered/early','recovered/boss07','recovered/boss08','recovered/boss09','recovered/late','recovered/boss10_aux','recovered/guard',
+    'enemy_visual_common','enemy_visual_stage01',
     'enemy_visual_early','enemy_visual_mid','enemy_visual_late','boss_early','boss_middle_visual',
     'boss_middle','boss_late','boss_hud','side_hud','presentation','enemy','enemy_late','background','stages/schedules',
 }) do load('LikeDreamer/'..module..'.lua') end
@@ -158,7 +160,10 @@ local function playRange(number, first, last, practice)
             if actor and IsValid(actor) and actor.spawnType==practice.type and actor.portPhase then
                 if actor.portPhase<practice.phase then
                     -- 走原有超时分支，保留相位转换与部件创建。
-                    actor.countdown=1
+                    -- 原版状态机先判断时限、再递减；置零才能在本帧走超时换段。
+                    if L.Recovered.handles(actor.spawnType) then
+                        L.Recovered.seekPracticePhase(actor,practice.phase)
+                    else actor.countdown=0 end
                 elseif actor.portPhase==practice.phase then
                     target=actor
                 else

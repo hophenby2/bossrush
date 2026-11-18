@@ -1,0 +1,103 @@
+{
+  "binary_sha256": "f2eaa837643054f7fdbb4995b213dd7e00bdc81d3d120ab44e4bf43167b257f2",
+  "scalars": [
+    {
+      "virtual_address": "0x14053a020",
+      "type": "float64",
+      "value": 3.14159265358979,
+      "bytes": "112d4454fb210940"
+    },
+    {
+      "virtual_address": "0x140539d28",
+      "type": "float64",
+      "value": 3.0517578125e-05,
+      "bytes": "000000000000003f"
+    },
+    {
+      "virtual_address": "0x14053a4d8",
+      "type": "float64",
+      "value": 136.53333333333333,
+      "bytes": "1111111111116140"
+    },
+    {
+      "virtual_address": "0x14053a628",
+      "type": "float64",
+      "value": 273.06666666666666,
+      "bytes": "1111111111117140"
+    }
+  ],
+  "float_contract": {
+    "function": "FUN_140029880",
+    "start": "0x140029880",
+    "end_exclusive": "0x14002aac0",
+    "fused_multiply_add_count": 0,
+    "separate_float_examples": [
+      {
+        "address": "0x140029a02",
+        "instruction": "addss xmm7, xmm0"
+      },
+      {
+        "address": "0x140029a95",
+        "instruction": "addss xmm8, dword ptr [rdi + 0x28]"
+      },
+      {
+        "address": "0x140029ae9",
+        "instruction": "addss xmm9, dword ptr [rdi + 0x2c]"
+      },
+      {
+        "address": "0x140029b7d",
+        "instruction": "addss xmm10, xmm8"
+      },
+      {
+        "address": "0x140029bac",
+        "instruction": "addss xmm12, xmm9"
+      },
+      {
+        "address": "0x140029bdd",
+        "instruction": "addss xmm14, xmm8"
+      },
+      {
+        "address": "0x140029c09",
+        "instruction": "addss xmm15, xmm9"
+      },
+      {
+        "address": "0x140029c4c",
+        "instruction": "addss xmm0, dword ptr [rsp + rax*8 + 0xa8]"
+      },
+      {
+        "address": "0x140029c55",
+        "instruction": "addss xmm1, dword ptr [rsp + rax*8 + 0xac]"
+      },
+      {
+        "address": "0x140029de0",
+        "instruction": "addss xmm0, dword ptr [rsp + rbx*8 + 0xa8]"
+      },
+      {
+        "address": "0x140029de9",
+        "instruction": "addss xmm1, dword ptr [rsp + rbx*8 + 0xac]"
+      },
+      {
+        "address": "0x140029f70",
+        "instruction": "addss xmm0, dword ptr [rsp + rax*8 + 0xa8]"
+      },
+      {
+        "address": "0x140029f79",
+        "instruction": "addss xmm1, dword ptr [rsp + rax*8 + 0xac]"
+      },
+      {
+        "address": "0x14002a1bb",
+        "instruction": "addss xmm7, xmm12"
+      },
+      {
+        "address": "0x14002a1e1",
+        "instruction": "addss xmm1, xmm9"
+      },
+      {
+        "address": "0x14002a24a",
+        "instruction": "addss xmm2, xmm12"
+      }
+    ],
+    "reference_compiler_option": "-ffp-contract=off",
+    "reason": "原版使用分开的 SSE 单精度乘加，不能让 ARM64 参照编译器融合为 FMA。"
+  }
+}

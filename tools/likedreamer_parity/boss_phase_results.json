@@ -1,0 +1,4251 @@
+{
+  "reference": "/Users/happyelements/SteamLibrary/steamapps/common/Like Dreamer/reverse/reconstructed/project/src",
+  "frames_per_case": 7200,
+  "record_columns": [
+    "b",
+    "frame",
+    "visual",
+    "movement_id",
+    "x",
+    "y",
+    "angle16",
+    "speed",
+    "travel",
+    "radius",
+    "aux"
+  ],
+  "limitations": [
+    "逐对象诊断，不等于整场实机或全行为对齐验收",
+    "不自动推进新建的子对象",
+    "不包含受击、超时、渲染、音频、全局弹数上限",
+    "复原源码数值微差须回查 EXE"
+  ],
+  "source_sha256": {
+    "stage_runtime.cpp": "693a4efe911d9f4204bd331b309feb385da13411f95811a74cd3ced5a7a622bb",
+    "stage_runtime_late.cpp": "eb30023cbe8c35680e965420a66d8f36ea823e1e5283bd404dc0e8a35bb9966f",
+    "stage_runtime_boss07.cpp": "9a56c7fa3b6e258d98925c31e2b73a63493cfebfcd3111eaa9c61b484d21f20b",
+    "stage_runtime_boss08.cpp": "4027b02be1ee128e10bbd509d6690d66b57ff9655274a0d3c914ea2934f6a693",
+    "stage_runtime_boss09.cpp": "8ed1aa116bee07f50c158a0ab69e52ec621b242fb068cf6c99779d1bfa53c510",
+    "stage_runtime_boss10_aux.cpp": "ed1f934d6a9756cfae009da0b34256b51aaed533998da7bbd857feb6c1ec86f8",
+    "stage_runtime.h": "f89ad9f31542b763cc6f42eb78ddcb6e3a3e993b2c3579600868926751db3271"
+  },
+  "port_sha256": {
+    "mod/GAME/ports/dreamer/LikeDreamer/core.lua": "52362b23519984daa8b954e2977a0ea911f122d871345e12f2c47fe4c8e016d3",
+    "mod/GAME/ports/dreamer/LikeDreamer/projectile.lua": "2e209c284e251f304668b9c4f607b9a5d6877c7d33427e501fb83d7281c172d1",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_early.lua": "6dba4f5a4c900eacf883d6197b9262202e207d342c00feca83f63c1dfff02dd3",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_middle.lua": "36bbc4db591fc097370dbbff47d3174b097228eca8951c95802e40e92fcd9f83",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_late.lua": "dd4e8719ab063f9cbe5c6681c73cc49e0cb88c30486b5cd707f9ae3031daa9f2",
+    "mod/GAME/ports/dreamer/LikeDreamer/boss_recovered.lua": "18a48dc0caa9a0d5ce34ffea8a02d90e48fd591ce31f18f49eb6d16d8ac770f2",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss07.lua": "31031dae2fcf1c560cc237a6ac50ad9ec194511e54eaa4150cd99ea5055d4566",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss08.lua": "ea45fe756dda1cf373ab10fcadd16da4d51f69f3a66af10eface512ce65d42a3",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua": "152d6a7abe403d40559f8f50e1f94ad7170dca23068d710e16117bb7999f7c0b",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua": "a2187db97c5aefb30061a2092e22830ecf5a98fcd1d6d8c402cf830c1ae40c64",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/defaults.lua": "7c6aea1448012c55be3b0da472ba80beb074ff5051f235aa984ef0dfcb65dd5e",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/early.lua": "d961d23407105898ad30530991cf2fa9c5d5532d18670fb062f7d0c8f05be1e2",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/guard.lua": "73a6aa513618aa347920973cedf9fa032d124b0bc7777d248932c513fdf79df3",
+    "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua": "df9e8e26e347983486eef0415e7177a86fd9d6f4ebfa2d1e1ffa4ba34b5ebd0b",
+    "mod/GAME/th42.lua": "e2926a90812b96cb8cbfaeffcccd03a29720f12260cc15266c3e0300e01b06b4"
+  },
+  "probes": [
+    {
+      "suite": "roots",
+      "stage": 1,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 93546,
+      "port_shots": 93546,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 1,
+      "phase": 2,
+      "probe": [
+        3
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 112674,
+      "port_shots": 112674,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 1,
+      "phase": 3,
+      "probe": [
+        5
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 49677,
+      "port_shots": 49677,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 2,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 108824,
+      "port_shots": 108824,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 2,
+      "phase": 2,
+      "probe": [
+        3
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 2,
+      "phase": 3,
+      "probe": [
+        5
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 66952,
+      "port_shots": 66952,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 2,
+      "phase": 4,
+      "probe": [
+        7
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 75692,
+      "port_shots": 75692,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 3,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 23128,
+      "port_shots": 23128,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 3,
+      "phase": 2,
+      "probe": [
+        3
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 41976,
+      "port_shots": 41976,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 3,
+      "phase": 3,
+      "probe": [
+        5
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 3,
+      "phase": 4,
+      "probe": [
+        7
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 4,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 25968,
+      "port_shots": 25968,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 4,
+      "phase": 2,
+      "probe": [
+        3
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 4,
+      "phase": 2,
+      "probe": [
+        5
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 4,
+      "phase": 3,
+      "probe": [
+        7
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 32328,
+      "port_shots": 32328,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 4,
+      "phase": 4,
+      "probe": [
+        10
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 141374,
+      "port_shots": 141374,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 96710,
+      "port_shots": 96710,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 2,
+      "probe": [
+        3
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 23554,
+      "port_shots": 23554,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 3,
+      "probe": [
+        5
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 133214,
+      "port_shots": 133214,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 4,
+      "probe": [
+        7
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 110872,
+      "port_shots": 110872,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 5,
+      "probe": [
+        9
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 5,
+      "phase": 6,
+      "probe": [
+        11
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 6,
+      "phase": 5,
+      "probe": [
+        9
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 25088,
+      "port_shots": 25088,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 95008,
+      "port_shots": 95008,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        2
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 54180,
+      "port_shots": 54180,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 2,
+      "probe": [
+        11
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 215506,
+      "port_shots": 215506,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 3,
+      "probe": [
+        21
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 141580,
+      "port_shots": 141580,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 4,
+      "probe": [
+        31
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 5,
+      "probe": [
+        41
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 6,
+      "probe": [
+        51
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 6,
+      "probe": [
+        52
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        62
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        63
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        64
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        65
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        66
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        67
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        6
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        11
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 17400,
+      "port_shots": 17400,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        12
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        13
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        14
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        15
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        16
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        17
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 252,
+      "port_shots": 252,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        18
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        19
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        20
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        21
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        22
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        23
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 10520,
+      "port_shots": 10520,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        24
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 5152,
+      "port_shots": 5152,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        25
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 1270,
+      "port_shots": 1270,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        26
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 27184,
+      "port_shots": 27184,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        27
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 17400,
+      "port_shots": 17400,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        111
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 29700,
+      "port_shots": 29700,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        112
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 2400,
+      "port_shots": 2400,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        113
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 1520,
+      "port_shots": 1520,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        114
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 10500,
+      "port_shots": 10500,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        115
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 21640,
+      "port_shots": 21640,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        116
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 58300,
+      "port_shots": 58300,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 3,
+      "probe": [
+        117
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 29700,
+      "port_shots": 29700,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        61
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 76532,
+      "port_shots": 76532,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        62
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        161
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 66000,
+      "port_shots": 66000,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 1,
+      "probe": [
+        1
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 3,
+      "probe": [
+        21
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 18900,
+      "port_shots": 18900,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 5,
+      "probe": [
+        41
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 16710,
+      "port_shots": 16710,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 7,
+      "probe": [
+        61
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 9,
+      "probe": [
+        81
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 21300,
+      "port_shots": 21300,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 11,
+      "probe": [
+        101
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 16170,
+      "port_shots": 16170,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 13,
+      "probe": [
+        121
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 14,
+      "probe": [
+        131
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 21440,
+      "port_shots": 21440,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        141
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        151
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        152
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        153
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "roots",
+      "stage": 11,
+      "phase": 1,
+      "probe": [
+        2
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 50600,
+      "port_shots": 50600,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 11,
+      "phase": 2,
+      "probe": [
+        4
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 31620,
+      "port_shots": 31620,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "roots",
+      "stage": 11,
+      "phase": 3,
+      "probe": [
+        6
+      ],
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 57600,
+      "port_shots": 57600,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 1,
+      "phase": 2,
+      "probe": [
+        21,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2496,
+      "port_shots": 2496,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 1,
+      "phase": 3,
+      "probe": [
+        22,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31945,
+      "port_shots": 31945,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 1,
+      "phase": 3,
+      "probe": [
+        23,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 4812,
+      "port_shots": 4812,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 2,
+      "phase": 2,
+      "probe": [
+        34,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 19050,
+      "port_shots": 19050,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 2,
+      "phase": 3,
+      "probe": [
+        35,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 8890,
+      "port_shots": 8890,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 2,
+      "phase": 4,
+      "probe": [
+        36,
+        7
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1861,
+      "port_shots": 1861,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 3,
+      "phase": 1,
+      "probe": [
+        48,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 6260,
+      "port_shots": 6260,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 3,
+      "phase": 1,
+      "probe": [
+        49,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 40625,
+      "port_shots": 40625,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 3,
+      "phase": 3,
+      "probe": [
+        50,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 354,
+      "port_shots": 354,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 3,
+      "phase": 3,
+      "probe": [
+        51,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 354,
+      "port_shots": 354,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 3,
+      "phase": 4,
+      "probe": [
+        52,
+        7
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 28206,
+      "port_shots": 28206,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 4,
+      "phase": 1,
+      "probe": [
+        64,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 5085,
+      "port_shots": 5085,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 4,
+      "phase": 2,
+      "probe": [
+        65,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2275,
+      "port_shots": 2275,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 4,
+      "phase": 3,
+      "probe": [
+        66,
+        7
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 7158,
+      "port_shots": 7158,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 4,
+      "phase": 4,
+      "probe": [
+        67,
+        10
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 5226,
+      "port_shots": 5226,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 5,
+      "phase": 5,
+      "probe": [
+        84,
+        9
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 20200,
+      "port_shots": 20200,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 5,
+      "phase": 5,
+      "probe": [
+        85,
+        9
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 5,
+      "phase": 6,
+      "probe": [
+        86,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 39054,
+      "port_shots": 39054,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 1,
+      "probe": [
+        102,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 28183,
+      "port_shots": 28183,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 1,
+      "probe": [
+        103,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 6136,
+      "port_shots": 6136,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 1,
+      "probe": [
+        104,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 14788,
+      "port_shots": 14788,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 1,
+      "probe": [
+        105,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 13182,
+      "port_shots": 13182,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 1,
+      "probe": [
+        106,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 9030,
+      "port_shots": 9030,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 2,
+      "probe": [
+        107,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 28980,
+      "port_shots": 28980,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 2,
+      "probe": [
+        108,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 2,
+      "probe": [
+        109,
+        3
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 3,
+      "probe": [
+        110,
+        5
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 18054,
+      "port_shots": 18054,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 6,
+      "phase": 4,
+      "probe": [
+        111,
+        7
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 9423,
+      "port_shots": 9423,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 1,
+      "probe": [
+        135,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 16776,
+      "port_shots": 16776,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 1,
+      "probe": [
+        136,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1644,
+      "port_shots": 1644,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 1,
+      "probe": [
+        137,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 990,
+      "port_shots": 990,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 1,
+      "probe": [
+        138,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 990,
+      "port_shots": 990,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 2,
+      "probe": [
+        131,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 38196,
+      "port_shots": 38196,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 2,
+      "probe": [
+        132,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 47736,
+      "port_shots": 47736,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 3,
+      "probe": [
+        131,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 11344,
+      "port_shots": 11344,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 3,
+      "probe": [
+        132,
+        41
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 8864,
+      "port_shots": 8864,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 4,
+      "probe": [
+        131,
+        31
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2002,
+      "port_shots": 2002,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 4,
+      "probe": [
+        132,
+        51
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 5,
+      "probe": [
+        131,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 16656,
+      "port_shots": 16656,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 7,
+      "phase": 5,
+      "probe": [
+        132,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 17028,
+      "port_shots": 17028,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        167,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        168,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        169,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        170,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        171,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 19445,
+      "port_shots": 19445,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 1,
+      "probe": [
+        172,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 25044,
+      "port_shots": 25044,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 2,
+      "probe": [
+        173,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 35,
+      "port_shots": 35,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 2,
+      "probe": [
+        174,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 2,
+      "probe": [
+        175,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 3,
+      "probe": [
+        176,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 252,
+      "port_shots": 252,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 3,
+      "probe": [
+        177,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 252,
+      "port_shots": 252,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 3,
+      "probe": [
+        178,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 520,
+      "port_shots": 520,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 3,
+      "probe": [
+        179,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 520,
+      "port_shots": 520,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 4,
+      "probe": [
+        180,
+        31
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 48859,
+      "port_shots": 48859,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 4,
+      "probe": [
+        181,
+        31
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 48859,
+      "port_shots": 48859,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 5,
+      "probe": [
+        182,
+        41
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 297,
+      "port_shots": 297,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 5,
+      "probe": [
+        183,
+        41
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 40,
+      "port_shots": 40,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 6,
+      "probe": [
+        184,
+        51
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 6,
+      "probe": [
+        185,
+        52
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31084,
+      "port_shots": 31084,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 6,
+      "probe": [
+        186,
+        52
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31915,
+      "port_shots": 31915,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        188,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 78,
+      "port_shots": 78,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        189,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 179,
+      "port_shots": 179,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        190,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 119,
+      "port_shots": 119,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        191,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 177,
+      "port_shots": 177,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        192,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 176,
+      "port_shots": 176,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        193,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 110,
+      "port_shots": 110,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        63
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        64
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        65
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        66
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 8,
+      "phase": 7,
+      "probe": [
+        194,
+        67
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 109,
+      "port_shots": 109,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        206,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 190,
+      "port_shots": 190,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        208,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 237,
+      "port_shots": 237,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        209,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 160,
+      "port_shots": 160,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        210,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 160,
+      "port_shots": 160,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        211,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 697,
+      "port_shots": 697,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        212,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 8206,
+      "port_shots": 8206,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 1,
+      "probe": [
+        213,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 8206,
+      "port_shots": 8206,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        207,
+        6
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 237,
+      "port_shots": 237,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        214,
+        6
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1448,
+      "port_shots": 1448,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        215,
+        6
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1448,
+      "port_shots": 1448,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        216,
+        6
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 55,
+      "port_shots": 55,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 2,
+      "probe": [
+        217,
+        6
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 203,
+      "port_shots": 203,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        218,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 536,
+      "port_shots": 536,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        219,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 536,
+      "port_shots": 536,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        220,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 536,
+      "port_shots": 536,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 9,
+      "phase": 4,
+      "probe": [
+        221,
+        62
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 536,
+      "port_shots": 536,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 1,
+      "probe": [
+        261,
+        1
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 535,
+      "port_shots": 535,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 2,
+      "probe": [
+        273,
+        11
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31655,
+      "port_shots": 31655,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 3,
+      "probe": [
+        262,
+        21
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 6475,
+      "port_shots": 6475,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 4,
+      "probe": [
+        274,
+        31
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 43750,
+      "port_shots": 43750,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 5,
+      "probe": [
+        263,
+        41
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 760,
+      "port_shots": 760,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 6,
+      "probe": [
+        275,
+        51
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 6980,
+      "port_shots": 6980,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 6,
+      "probe": [
+        276,
+        51
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 8365,
+      "port_shots": 8365,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 7,
+      "probe": [
+        268,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 3345,
+      "port_shots": 3345,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 7,
+      "probe": [
+        269,
+        61
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 5250,
+      "port_shots": 5250,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 8,
+      "probe": [
+        277,
+        71
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 8,
+      "probe": [
+        278,
+        71
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 320,
+      "port_shots": 320,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 8,
+      "probe": [
+        279,
+        71
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 300,
+      "port_shots": 300,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 8,
+      "probe": [
+        280,
+        71
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 200,
+      "port_shots": 200,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 8,
+      "probe": [
+        281,
+        71
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 200,
+      "port_shots": 200,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 9,
+      "probe": [
+        270,
+        81
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 960,
+      "port_shots": 960,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 10,
+      "probe": [
+        282,
+        91
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 95035,
+      "port_shots": 95035,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 10,
+      "probe": [
+        283,
+        91
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 10,
+      "probe": [
+        284,
+        91
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 11,
+      "probe": [
+        264,
+        101
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1150,
+      "port_shots": 1150,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 11,
+      "probe": [
+        265,
+        101
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1150,
+      "port_shots": 1150,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        285,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        286,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2100,
+      "port_shots": 2100,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        287,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        288,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 900,
+      "port_shots": 900,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        289,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        290,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        291,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 465,
+      "port_shots": 465,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 12,
+      "probe": [
+        292,
+        111
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 185,
+      "port_shots": 185,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 13,
+      "probe": [
+        271,
+        121
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 3200,
+      "port_shots": 3200,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 13,
+      "probe": [
+        272,
+        121
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 3230,
+      "port_shots": 3230,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 14,
+      "probe": [
+        293,
+        131
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 52705,
+      "port_shots": 52705,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 14,
+      "probe": [
+        294,
+        131
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 54090,
+      "port_shots": 54090,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        295,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 9220,
+      "port_shots": 9220,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        296,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        297,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        298,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        299,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 765,
+      "port_shots": 765,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 15,
+      "probe": [
+        300,
+        141
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 1015,
+      "port_shots": 1015,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        301,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 0,
+      "port_shots": 0,
+      "differences": [],
+      "status": "无直接发弹，须检查创建链"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        302,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2160,
+      "port_shots": 2160,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        303,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2160,
+      "port_shots": 2160,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        304,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 3600,
+      "port_shots": 3600,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        305,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 3600,
+      "port_shots": 3600,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        306,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 4800,
+      "port_shots": 4800,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        307,
+        151
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 4800,
+      "port_shots": 4800,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        308,
+        153
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2080,
+      "port_shots": 2080,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    },
+    {
+      "suite": "nodes",
+      "stage": 10,
+      "phase": 16,
+      "probe": [
+        309,
+        153
+      ],
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 2080,
+      "port_shots": 2080,
+      "differences": [],
+      "status": "直接发弹轨迹一致"
+    }
+  ],
+  "phase_summary": [
+    {
+      "stage": 1,
+      "phase": 1,
+      "label": "第1关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 93546,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 1,
+      "phase": 2,
+      "label": "第1关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 115170,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 1,
+      "phase": 3,
+      "label": "第1关第3阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 86434,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 2,
+      "phase": 1,
+      "label": "第2关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 108824,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 2,
+      "phase": 2,
+      "label": "第2关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 19050,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 2,
+      "phase": 3,
+      "label": "第2关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 75842,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 2,
+      "phase": 4,
+      "label": "第2关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 77553,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 3,
+      "phase": 1,
+      "label": "第3关第1阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 70013,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 3,
+      "phase": 2,
+      "label": "第3关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 41976,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 3,
+      "phase": 3,
+      "label": "第3关第3阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 708,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 3,
+      "phase": 4,
+      "label": "第3关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 28206,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 4,
+      "phase": 1,
+      "label": "第4关第1阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 31053,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 4,
+      "phase": 2,
+      "label": "第4关第2阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 2275,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 4,
+      "phase": 3,
+      "label": "第4关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 39486,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 4,
+      "phase": 4,
+      "label": "第4关第4阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 146600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 1,
+      "label": "第5关第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 96710,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 2,
+      "label": "第5关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 23554,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 3,
+      "label": "第5关第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 133214,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 4,
+      "label": "第5关第4阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 110872,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 5,
+      "label": "第5关第5阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 20200,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 5,
+      "phase": 6,
+      "label": "第5关第6阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 39054,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 6,
+      "phase": 1,
+      "label": "第6关第1阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 71319,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 6,
+      "phase": 2,
+      "label": "第6关第2阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 28980,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 6,
+      "phase": 3,
+      "label": "第6关第3阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 18054,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 6,
+      "phase": 4,
+      "label": "第6关第4阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 9423,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 6,
+      "phase": 5,
+      "label": "第6关第5阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 25088,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 7,
+      "phase": 1,
+      "label": "第7关第1阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 20400,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 7,
+      "phase": 2,
+      "label": "第7关第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 85932,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 7,
+      "phase": 3,
+      "label": "第7关第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 20208,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 7,
+      "phase": 4,
+      "label": "第7关第4阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 2002,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 7,
+      "phase": 5,
+      "label": "第7关第5阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 33684,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 1,
+      "label": "第8关第1阶段",
+      "cases": 50,
+      "matching_cases": 50,
+      "reference_shots": 193677,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 2,
+      "label": "第8关第2阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 215541,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 3,
+      "label": "第8关第3阶段",
+      "cases": 30,
+      "matching_cases": 30,
+      "reference_shots": 143124,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 4,
+      "label": "第8关第4阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 97718,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 5,
+      "label": "第8关第5阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 337,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 6,
+      "label": "第8关第6阶段",
+      "cases": 35,
+      "matching_cases": 35,
+      "reference_shots": 62999,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 8,
+      "phase": 7,
+      "label": "第8关第7阶段",
+      "cases": 270,
+      "matching_cases": 270,
+      "reference_shots": 5688,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 9,
+      "phase": 1,
+      "label": "第9关第1阶段",
+      "cases": 45,
+      "matching_cases": 45,
+      "reference_shots": 17856,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 9,
+      "phase": 2,
+      "label": "第9关第2阶段",
+      "cases": 35,
+      "matching_cases": 35,
+      "reference_shots": 3391,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 9,
+      "phase": 3,
+      "label": "第9关第3阶段",
+      "cases": 240,
+      "matching_cases": 240,
+      "reference_shots": 232938,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 9,
+      "phase": 4,
+      "label": "第9关第4阶段",
+      "cases": 50,
+      "matching_cases": 50,
+      "reference_shots": 144676,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 1,
+      "label": "第10关第1阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 535,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 2,
+      "label": "第10关第2阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 31655,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 3,
+      "label": "第10关第3阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 25375,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 4,
+      "label": "第10关第4阶段",
+      "cases": 5,
+      "matching_cases": 5,
+      "reference_shots": 43750,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 5,
+      "label": "第10关第5阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 17470,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 6,
+      "label": "第10关第6阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 15345,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 7,
+      "label": "第10关第7阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 8595,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 8,
+      "label": "第10关第8阶段",
+      "cases": 25,
+      "matching_cases": 25,
+      "reference_shots": 1020,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 9,
+      "label": "第10关第9阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 22260,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 10,
+      "label": "第10关第10阶段",
+      "cases": 15,
+      "matching_cases": 15,
+      "reference_shots": 95035,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 11,
+      "label": "第10关第11阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 18470,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 12,
+      "label": "第10关第12阶段",
+      "cases": 40,
+      "matching_cases": 40,
+      "reference_shots": 3650,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 13,
+      "label": "第10关第13阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 6430,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 14,
+      "label": "第10关第14阶段",
+      "cases": 20,
+      "matching_cases": 20,
+      "reference_shots": 128235,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 15,
+      "label": "第10关第15阶段",
+      "cases": 40,
+      "matching_cases": 40,
+      "reference_shots": 11000,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 10,
+      "phase": 16,
+      "label": "第10关第16阶段",
+      "cases": 75,
+      "matching_cases": 75,
+      "reference_shots": 25280,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 11,
+      "phase": 1,
+      "label": "第10关场景Boss第1阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 50600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 11,
+      "phase": 2,
+      "label": "第10关场景Boss第2阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 31620,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    },
+    {
+      "stage": 11,
+      "phase": 3,
+      "label": "第10关场景Boss第3阶段",
+      "cases": 10,
+      "matching_cases": 10,
+      "reference_shots": 57600,
+      "status": "所测直接发弹轨迹一致，非整阶段验收"
+    }
+  ],
+  "post_validation_formatting": {
+    "change": "仅移除生成 Lua 文件末尾的多余空行；在同一 LuaJIT 进程逐文件确认去调试字节码完全一致。",
+    "files": {
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss07.lua": {
+        "tested_source_sha256": "ec20138adb1dd9ac499d68b939e17fcdf3a704a261b8883c702a3d9731c18247",
+        "normalized_source_sha256": "31031dae2fcf1c560cc237a6ac50ad9ec194511e54eaa4150cd99ea5055d4566",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss08.lua": {
+        "tested_source_sha256": "cfe144bda145b75cd4137bf1ad24ae8694c53ad2503db2547f920c0d33773be8",
+        "normalized_source_sha256": "ea45fe756dda1cf373ab10fcadd16da4d51f69f3a66af10eface512ce65d42a3",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss09.lua": {
+        "tested_source_sha256": "0042ba658b570acd7bd4b7ca6d20c15d394c323e07b8d28eceb73325b3da4b60",
+        "normalized_source_sha256": "152d6a7abe403d40559f8f50e1f94ad7170dca23068d710e16117bb7999f7c0b",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/boss10_aux.lua": {
+        "tested_source_sha256": "798a25299e7a06afd54182e2caf1fa976a583a23c84d2fadbbb2706775219748",
+        "normalized_source_sha256": "a2187db97c5aefb30061a2092e22830ecf5a98fcd1d6d8c402cf830c1ae40c64",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/early.lua": {
+        "tested_source_sha256": "f16368328238a02b08ced2bde3473414042ed6594ca5dd0902d05ff5c20220c8",
+        "normalized_source_sha256": "d961d23407105898ad30530991cf2fa9c5d5532d18670fb062f7d0c8f05be1e2",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/guard.lua": {
+        "tested_source_sha256": "d8f1257e1d1d03f0c5d04f2e25fd20c89c7a2a65a641f2f6c936f6101dd1f0ad",
+        "normalized_source_sha256": "73a6aa513618aa347920973cedf9fa032d124b0bc7777d248932c513fdf79df3",
+        "bytecode_identical": true
+      },
+      "mod/GAME/ports/dreamer/LikeDreamer/recovered/late.lua": {
+        "tested_source_sha256": "c5426b815c1cc49b4b8ca2bd362ced0db789be7443be8ba20323d32c9e31b8b5",
+        "normalized_source_sha256": "df9e8e26e347983486eef0415e7177a86fd9d6f4ebfa2d1e1ffa4ba34b5ebd0b",
+        "bytecode_identical": true
+      }
+    }
+  }
+}
