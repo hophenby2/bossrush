@@ -1,5 +1,6 @@
 -- 第一面卷轴指令 0x41、0x40 的蜈蚣共用 0x0c0ace50，按节数选择贴图和牵引点。
 local direction = dofile('mod/GAME/th46/direction.lua')
+local death = dofile('mod/GAME/th46/worm_death.lua')
 local unit, heading, vector = direction.unit, direction.heading, direction.vector
 local floor, ceil, min, max, abs = math.floor, math.ceil, math.min, math.max, math.abs
 
@@ -52,14 +53,15 @@ local function hitPilot(o, p)
        and abs(o.boardY/unit-floor(s.y/unit-1))<=50
 end
 
-local function damage(o, amount)
+local function damage(o, amount, flags)
     -- 0x0c0acc70 在进场触发 0x0c0ad682 后才从 0x0e4 扣除伤害。
-    if o.hp<0 or not o.entered then return end
+    if o.hp<=0 or not o.entered or o.baseY>240*unit then return end
     o.hp = o.hp-amount
     o.hitFrame = o.run.roadFrame
-    if o.hp<0 then
+    if o.hp<=0 then
         o.colli = false
         o.defeated = o.run.roadFrame
+        death.begin(o,flags)
     end
 end
 
@@ -155,9 +157,11 @@ local function update(o, frame, p, dx, emit)
     if o.baseY<0 then o.auxY=o.auxY-unit end
 
     collision(o)
-    o.colli = o.hp>=0 and o.y>=-208 and o.y<=208
+    o.player = p
+    o.colli = o.hp>0 and o.y>=-208 and o.y<=208
 
-    if o.hp<0 or o.baseY>=240*unit then return true end
+    if o.deathPhase then death.step(o);return true end
+    if o.baseY>=240*unit then return true end
     if not o.entered and o.baseY>=100*unit then o.entered,o.run.wormGate = true,true end
     firing(o,p,emit)
     return true
@@ -185,16 +189,14 @@ return function(emit)
         end,
         colli = function(o, shot)
             if not shot.dmg or not shot.colli or not o.colli then return end
-            damage(o,shot.dmg)
+            damage(o,shot.dmg,shot.damageFlags)
             object.RawDel(shot)
         end,
         render = function(o)
             if not o.firstX then return end
             local variant = o.variant
             local flash = o.hitFrame and o.run.roadFrame-o.hitFrame<=3 and o.run.roadFrame%2==1
-            local fade = o.defeated and max(0,255-6*max(0,o.run.roadFrame-o.defeated-80)) or 255
-            if fade==0 then return end
-            SetImageState(texture..'_93','',floor(fade*0.4),255,255,255)
+            SetImageState(texture..'_93','',102,255,255,255)
             Render(texture..'_93',o.firstX-120,o.firstY-160,0,variant.flip,1)
             -- 0x0c0ac610 在第一、二节使用独立亮度，最后一节的碰撞盒先于振动计算。
             for i, part in ipairs(variant.parts) do
@@ -203,20 +205,21 @@ return function(emit)
                 local y = curve(t,o.firstY,o.midY,o.lastY)+variant.bodyY
                 y = y+trunc(o.wave[part[4]]/10)/unit
                 local image = texture..'_'..(part[1]+trunc(abs(o.facing-variant.facing)/part[2]))
-                local tone = flash and 255 or part[5]
-                SetImageState(image,'',fade,tone,tone,tone)
+                local tone = o.deathPhase and o.deathTone~=128 and o.deathTone or flash and 255 or part[5]
+                SetImageState(image,'',255,tone,tone,tone)
                 Render(image,x-120,floor(y)-160,0,variant.flip,1)
             end
         end,
     })
 
-    local function close(run)
+    local function removeWorm(run)
         if IsValid(run.worm) then run.worm.hide=true; object.RawDel(run.worm) end
         run.worm, run.wormGate = nil, false
     end
 
     return {
         open = function()
+            death.open()
             if CheckRes('img',texture..'_0') then return end
             LoadTexture(texture,'Resources/th46/stage1/worm1.png')
             SetTextureSamplerState(texture,'point+clamp')
@@ -228,9 +231,9 @@ return function(emit)
             if variants[frame] then
                 run.worm = New(Worm,run,frame,variants[frame])
             elseif IsValid(run.worm) and not update(run.worm,frame,p,dx,emit) then
-                close(run)
+                removeWorm(run)
             end
         end,
-        close = close,
+        close = function(run)removeWorm(run);death.close(run)end,
     }
 end

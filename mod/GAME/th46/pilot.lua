@@ -5,6 +5,8 @@ local unit = 0x10000
 local fullSpeed, focusSpeed, speedStep = 0x28000, 0x14000, 0x2000
 local holdFrames = 16
 local fallFrames, recoveryFrames = 49, 80
+local shotPause = 0xe0
+local rank = dofile('mod/GAME/th46/rank.lua')
 
 local function axis(position, velocity, low, high)
     local nextPosition = position + velocity
@@ -20,6 +22,14 @@ end
 return {
     recoveryFrames = recoveryFrames,
     recoveryProtection = 255,
+    onHit = function(player)
+        -- 0x0c079e10 的受击分支调用 0x0c06b5d0。敌弹队列在倒数归零后恢复分配。
+        local run=player.run
+        if run.stageNumber==1 and run.roadFrame then
+            run.roadShotResume=run.roadFrame+shotPause
+            rank.hit(run)
+        end
+    end,
     spawn = function(player)
         local position = { x=120*unit, y=50*unit, vx=0, vy=0, speed=fullSpeed, held=0 }
         player.pilotPosition = position

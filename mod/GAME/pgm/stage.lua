@@ -327,14 +327,17 @@ return function(source, bullets, Player, level)
             run.clock=run.clock+clockStep
             if run.clock>=clockUnit then
                 run.clock=run.clock-clockUnit
-                run.serial=run.serial+1
-                step(run)
-                if sequence then
-                    if sequence.chapter~=run.stageNumber then
-                        sequence.chapter,sequence.chapter_name=run.stageNumber,tostring(run.stageNumber)
-                        sequence.completed=run.stageNumber-1
+                local advancing=not (source.road and source.road.advance) or source.road.advance(run)
+                if advancing then
+                    run.serial=run.serial+1
+                    step(run)
+                    if sequence then
+                        if sequence.chapter~=run.stageNumber then
+                            sequence.chapter,sequence.chapter_name=run.stageNumber,tostring(run.stageNumber)
+                            sequence.completed=run.stageNumber-1
+                        end
+                        sequence.road_time=run.frame
                     end
-                    sequence.road_time=run.frame
                 end
             end
             task.Wait()

@@ -5,6 +5,9 @@ return function(source, bullets, machine)
     local halfWidth,halfHeight=source.halfWidth or 112,source.halfHeight or 224
     local blinkFrame=source.cvTiles and 1 or 0
     local pilot = machine.pilot
+    -- 地面敌机的原版 flags=0：自弹和光束能命中，本体不参与撞机。
+    local enemyGroups={GROUP.ENEMY}
+    if GROUP.NONTJT then enemyGroups[#enemyGroups+1]=GROUP.NONTJT end
     local Shot = Class(object, {
         init = function(o, run, x, y, vx, damage, image)
             o.run, o.serial, o.x, o.y = run, run.serial, x, y
@@ -42,12 +45,14 @@ return function(source, bullets, machine)
             if o.age >= o.duration then object.RawDel(o); return end
             bullets.clear(o.run)
             if o.age%6 == 0 then
-                for _, target in ObjList(GROUP.ENEMY) do
-                    if target.run==o.run and target.colli and abs(target.x-o.x)<machine.bombWidth+target.a then
-                        local host=target.host
-                        if not host or host.lastBomb~=o.run.serial then
-                            if host then host.lastBomb=o.run.serial end
-                            target.damage(target,machine.bombDamage)
+                for _, group in ipairs(enemyGroups) do
+                    for _, target in ObjList(group) do
+                        if target.run==o.run and target.colli and abs(target.x-o.x)<machine.bombWidth+target.a then
+                            local host=target.host
+                            if not host or host.lastBomb~=o.run.serial then
+                                if host then host.lastBomb=o.run.serial end
+                                target.damage(target,machine.bombDamage)
+                            end
                         end
                     end
                 end
@@ -80,11 +85,13 @@ return function(source, bullets, machine)
         local run = p.run
         if p.laser then
             local nearest, top = nil, halfHeight
-            for _, target in ObjList(GROUP.ENEMY) do
-                local edge = target.y-target.b
-                if target.run==run and target.colli and target.hp>0 and target.y>p.y
-                    and edge<top and abs(target.x-p.x)<target.a+machine.laserWidth then
-                    nearest, top = target, max(p.y+8,edge)
+            for _, group in ipairs(enemyGroups) do
+                for _, target in ObjList(group) do
+                    local edge = target.y-target.b
+                    if target.run==run and target.colli and target.hp>0 and target.y>p.y
+                        and edge<top and abs(target.x-p.x)<target.a+machine.laserWidth then
+                        nearest, top = target, max(p.y+8,edge)
+                    end
                 end
             end
             if nearest and run.serial%2==0 then nearest.damage(nearest,machine.laserDamage) end
@@ -160,7 +167,10 @@ return function(source, bullets, machine)
         lstg.var.dead=lstg.var.dead+1
         state.life,state.bombs=state.life-1,machine.bombs
         self.respawn,self.colli,self.hide=pilot and pilot.recoveryFrames or 48,false,true
-        if pilot then self.laser,self.slow=false,0 end
+        if pilot then
+            self.laser,self.slow=false,0
+            if pilot.onHit then pilot.onHit(self) end
+        end
         bullets.clear(self.run,false,pilot~=nil)
         New(player_death_ef,self.x,self.y)
         PlaySound('pldead00',.5)

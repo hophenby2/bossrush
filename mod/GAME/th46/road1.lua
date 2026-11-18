@@ -1,6 +1,16 @@
 -- 第一面由 0x0c09bdaa 读入的飞虫。0x11 挂载 0x0c0a2940，0x13 和 0x23 共用 0x0c0a2cc0。
 local direction = dofile('mod/GAME/th46/direction.lua')
 local createWorm = dofile('mod/GAME/th46/worm1.lua')
+local createMidBoss = dofile('mod/GAME/th46/midboss1.lua')
+local gold = dofile('mod/GAME/th46/gold.lua')
+local plants = dofile('mod/GAME/th46/plants.lua')
+local flyDeath = dofile('mod/GAME/th46/fly_death.lua')
+local createBeetle = dofile('mod/GAME/th46/beetle.lua')
+local createSkimmer = dofile('mod/GAME/th46/skimmer.lua')
+local createLongfly = dofile('mod/GAME/th46/longfly.lua')
+local createGroundbug = dofile('mod/GAME/th46/groundbug.lua')
+local groundscroll = dofile('mod/GAME/th46/groundscroll.lua')
+local originalRank = dofile('mod/GAME/th46/rank.lua')
 local unit, heading, vector = direction.unit, direction.heading, direction.vector
 local floor, abs = math.floor, math.abs
 -- 带速度的指令在入场后减速转向，0x23 还在初始化完成后镜像横坐标。
@@ -17,6 +27,15 @@ local spawns = {
     {2329,151,352}, {2329,220,368,52}, {2345,180,352}, {2345,135,368,52},
     {2361,199,368,52}, {2377,145,368,52}, {2393,180,352},
     {2409,202,352}, {2425,223,352}, {2438,250,352},
+    -- 0x0c1ee610 起的位置 378–391 和 396 都在中 Boss 提前击破后才挂载。
+    {3436,192,382,52,gated=true}, {3436,129,368,52,gated=true},
+    {3452,228,368,52,gated=true}, {3460,150,367,52,gated=true},
+    {3516,49,368,52,gated=true}, {3524,113,368,52,gated=true},
+    {3532,39,368,52,gated=true}, {3540,83,372,52,gated=true},
+    {3580,147,368,56,gated=true},
+    -- 参数表 1 的速度为 56。397–399 在自然超时分支也能挂载。
+    {3588,202,368,56}, {3588,140,400,56},
+    {3596,223,368,56}, {3604,171,368,56},
     -- 卷轴位置 440–443。第二只蜈蚣自然退场时跳过，提前击破后可挂载。
     {4126,140,368,52,gated=true},
     {4142,126,398,52,gated=true}, {4142,177,368,52,gated=true},
@@ -67,8 +86,7 @@ local function aimAt(o,p)
 end
 
 local function rank(run)
-    -- 0x0c06c290 将逻辑帧计数右移 9 位。第一面起点时计数已走 129 步。
-    return 24+floor((run.roadFrame+129)/512)
+    return originalRank.get(run)
 end
 
 local function turnTowards(current, aim)
@@ -94,11 +112,11 @@ end
 
 return function()
     local Bullet = Class(object, {
-        init = function(o, run, x, y, aim, offset)
+        init = function(o, run, x, y, aim, offset, kind)
             o.run, o.serial, o.age = run, run.serial, 0
             -- 0x0c06e610 在关卡基速 43 上加指令速度和 rank >> 5。
             o.boardVX, o.boardVY = vector(43+(offset or 12)+floor(rank(run)/32),aim)
-            o.bank = offset and 'worm_shot' or 'shot'
+            o.bank = kind==0x19 and 'thin_shot' or kind==0x12 and 'beetle_shot' or offset and 'worm_shot' or 'shot'
             o.spriteColumn, o.flipX, o.flipY = shotFacing(aim)
             o.flash = run.roadFlash
             run.roadFlash = (o.flash+1)%4
@@ -109,6 +127,7 @@ return function()
             o.a, o.b, o.rect, o.bound, o.colli = 1, 2, true, false, true
             -- 原程序注册的是点判定，宽判定额外容纳定点取整的误差。
             o.contactRadius, o.hitPilot, o.keepOnHit = 0, hitPilot, true
+            o.cancelOnClear=cancelOnContact
             if offset then o.cancelOnContact=cancelOnContact end
             place(o)
             if offset and offBoard(o) then
@@ -144,12 +163,19 @@ return function()
                 return
             end
             local bank = o.age==0 and 'flash' or o.bank
-            local phase = o.age==0 and o.flash or floor((o.age+1)/2)%4
-            local image = 'th46_road1_'..bank..'_'..o.spriteColumn..'_'..phase
+            local col, phase = o.spriteColumn, o.flash
+            if o.age>0 then
+                if o.bank=='thin_shot' then
+                    col,phase=floor(col/2),floor((o.age+2)/3)%3
+                else
+                    phase=floor((o.age+1)/2)%4
+                end
+            end
+            local image = 'th46_road1_'..bank..'_'..col..'_'..phase
             local alpha = o.fade and o.fade*17 or 255
             SetImageState(image,'',alpha,255,255,255)
             Render(image,floor(o.x),floor(o.y),0,o.flipX,o.flipY)
-            if o.age>0 then
+            if o.age>0 and o.bank~='thin_shot' then
                 -- 0x0c06f130 在弹体后画上一格的残影。以 LuaSTG 加色近似板上的 0x3aff 混色。
                 SetImageState(image,'mul+add',floor(58*alpha/255),255,255,255)
                 Render(image,floor(o.x-o.boardVX/unit),floor(o.y-o.boardVY/unit),0,o.flipX,o.flipY)
@@ -158,12 +184,38 @@ return function()
         end,
     })
 
-    local worm = createWorm(function(run,x,y,aim,offset) New(Bullet,run,x,y,aim,offset) end)
-
-    local function damage(o, amount)
-        o.hp = o.hp-amount
-        o.colli = o.hp > 0
+    local function emit(run,x,y,aim,offset,kind)
+        if run.roadShotResume and run.roadFrame<run.roadShotResume then return end
+        New(Bullet,run,x,y,aim,offset,kind)
     end
+    local worm = createWorm(emit)
+    local midBoss = createMidBoss(emit)
+    local beetle = createBeetle(emit)
+    local skimmer = createSkimmer(emit)
+    local longfly = createLongfly(emit)
+    local groundbug = createGroundbug(emit)
+
+    local damage = flyDeath.damage
+
+    local Shadows=Class(object,{
+        init=function(o,run)
+            o.run,o.group,o.layer,o.bound,o.colli=run,GROUP.GHOST,LAYER.ENEMY-1,false,false
+        end,
+        render=function(o)
+            -- 原版投影深度比飞虫本体低一层；集中在独立对象绘制，避免盖住先画的其它飞虫。
+            for _,bug in pairs(o.run.roadEnemies) do
+                if IsValid(bug) then
+                    local sector=floor(((bug.facing+8)%512)/16)
+                    local flip=sector>15 and -1 or 1
+                    local column=sector>15 and 32-sector or sector
+                    local image='th46_road1_shadow_'..column
+                    -- 差异 1：保留原投影图、锚点与 (+24,-88) 偏移，板上黑色混合用半透明黑近似。
+                    SetImageState(image,'',128,0,0,0)
+                    Render(image,floor(bug.x)+24,floor(bug.y)-88,0,flip,1)
+                end
+            end
+        end,
+    })
 
     local Enemy = Class(object, {
         init = function(o, run, spawn, p)
@@ -172,6 +224,7 @@ return function()
             o.heading, o.facing = 256, 0
             o.turning, o.speed = spawn[4]~=nil, spawn[4] or 48
             o.hp, o.damage = 64, damage
+            o.player = p
             o.aimClock, o.turnClock, o.turns = 36-floor(rank(run)/16), 2, 50
             o.wingClock, o.wing, o.entered = 0, 0, false
             o.group, o.layer = GROUP.ENEMY, LAYER.ENEMY
@@ -187,7 +240,8 @@ return function()
         end,
         colli = function(o, shot)
             if not shot.dmg or not shot.colli or not o.colli then return end
-            damage(o,shot.dmg)
+            damage(o,shot.dmg,shot.damageFlags)
+            shot.colli=false
             object.RawDel(shot)
         end,
         render = function(o)
@@ -205,7 +259,7 @@ return function()
         if p.respawn ~= 0 then return end
         local offset = muzzle[floor(aim/16)+1]
         local x,y = o.boardX+offset[1]*unit, o.boardY+offset[2]*unit
-        if y>112*unit then New(Bullet,o.run,x,y,aim) end
+        if y>112*unit then emit(o.run,x,y,aim) end
     end
 
     local function turningFlight(o,p,aim)
@@ -274,7 +328,14 @@ return function()
     local function step(run, frame, p, previousVX)
         local dx = camera(run, previousVX)
         run.roadCameraDelta = dx
+        groundscroll.step(run)
         worm.step(run,frame,p,dx)
+        plants.step(run,frame,p)
+        midBoss.step(run,frame,p,dx)
+        beetle.step(run,frame,p)
+        skimmer.step(run,frame,p)
+        longfly.step(run,frame,p)
+        groundbug.step(run,frame,p)
         for i = 1, run.nextRoadSpawn-1 do
             local o = run.roadEnemies[i]
             if IsValid(o) and not updateEnemy(o,p,dx) then run.roadEnemies[i]=nil end
@@ -282,12 +343,13 @@ return function()
         local index = run.nextRoadSpawn
         while spawns[index] and spawns[index][1] == frame do
             local spawn = spawns[index]
-            if not spawn.gated or not run.wormGate then
+            if not spawn.gated or not (run.wormGate or run.midGate) then
                 run.roadEnemies[index] = New(Enemy,run,spawn,p)
             end
             index=index+1
         end
         run.nextRoadSpawn = index
+        if run.wormClearUntil and frame<=run.wormClearUntil then run.wormClearShots()end
     end
 
     local Clock = Class(object, {
@@ -297,7 +359,20 @@ return function()
         end,
         frame = function(o)
             local run = o.run
-            if run.stageNumber ~= 1 then object.RawDel(o); return end
+            if run.stageNumber ~= 1 then
+                worm.close(run)
+                gold.close(run)
+                plants.close(run)
+                flyDeath.close(run)
+                beetle.close(run)
+                skimmer.close(run)
+                longfly.close(run)
+                groundbug.close(run)
+                if IsValid(run.roadShadows) then object.RawDel(run.roadShadows) end
+                run.goldStage=0
+                object.RawDel(o)
+                return
+            end
             if not run.roadFrame or o.serial == run.serial then return end
             o.serial = run.serial
             -- 卷轴读取上一步的速度，0x0c076220 的寻向读取本步自机的新坐标。
@@ -307,13 +382,33 @@ return function()
     })
 
     local function open(run)
+        run.wormClearUntil=nil
+        run.wormClearShots=function()
+            for _,o in ObjList(GROUP.ENEMY_BULLET)do
+                if o.run==run and o.cancelOnClear and not o.cancelFrame then o.cancelOnClear(o)end
+            end
+        end
+        run.goldStage=0
         run.roadCamera, run.roadCameraRest, run.roadCameraDelta = 0, 0, 0
+        run.roadShotResume=nil
+        run.roadSlow=nil
+        run.roadRank,run.roadRankTime=nil,nil
         run.roadEnemies, run.nextRoadSpawn, run.roadFlash = {}, 1, 0
         worm.open()
+        midBoss.open()
+        gold.open()
+        plants.open(run)
+        flyDeath.open(run)
+        beetle.open(run)
+        skimmer.open(run)
+        longfly.open(run)
+        groundscroll.open(run)
+        groundbug.open(run)
         if not CheckRes('img','th46_road1_bug_0_0') then
             LoadTexture('th46_road1','Resources/th46/stage1/road1.png')
             SetTextureSamplerState('th46_road1','point+clamp')
             for direction = 0, 16 do
+                LoadImage('th46_road1_shadow_'..direction,'th46_road1',direction*80,800,80,80)
                 for phase = 0, 3 do
                     local suffix = direction..'_'..phase
                     LoadImage('th46_road1_bug_'..suffix,'th46_road1',direction*80,phase*80,80,80)
@@ -325,12 +420,29 @@ return function()
             for phase = 0, 15 do
                 LoadImage('th46_road1_cancel_'..phase,'th46_road1',544+phase*16,576,16,16)
             end
+            for direction=0,8 do
+                for phase=0,2 do
+                    LoadImage('th46_road1_thin_shot_'..direction..'_'..phase,'th46_road1',direction*32,704+phase*32,32,32)
+                end
+            end
         end
+        run.roadShadows=New(Shadows,run)
         -- 删除已经由对应原生飞虫和首发敌弹重建的采样轨迹。
         for frame, id in pairs({[94]=16,[219]=21,[4684]=1298,[4947]=1395}) do
             local sampled = run.data.enemies[frame] or {}
             for i, entry in ipairs(sampled) do
                 if entry.id==id then table.remove(sampled,i); break end
+            end
+        end
+        -- 与原版裁片比对过的中 Boss 翅、爪、腹部，以及禁入段重复拆分的飞虫轨迹。
+        local replaced={
+            [927]=true,[940]=true,[941]=true,[972]=true,[973]=true,[981]=true,[982]=true,
+            [1072]=true,[1074]=true,[1075]=true,[1091]=true,[1093]=true,[1098]=true,[1101]=true,[1102]=true,
+        }
+        for frame=2684,3735 do
+            local sampled=run.data.enemies[frame] or {}
+            for i=#sampled,1,-1 do
+                if replaced[sampled[i].id] then table.remove(sampled,i) end
             end
         end
         for _, span in ipairs(sampledWormShots) do
@@ -349,10 +461,30 @@ return function()
 
     return {
         open = open,
+        advance = function(run)
+            local slow=run.roadSlow
+            if not slow then originalRank.advance(run);return true end
+            -- 原版第 8655、8657…8817 帧更新；8818 仍等待，8819 起每帧更新。
+            slow.phase=1-slow.phase
+            if slow.phase==1 then originalRank.advance(run);return true end
+            if not slow.enabled then run.roadSlow=nil end
+            return false
+        end,
         attach = function(run, player) run.roadClock=New(Clock,run,player) end,
         close = function(run)
+            run.wormClearUntil,run.wormClearShots=nil,nil
+            run.roadSlow=nil
             if IsValid(run.roadClock) then object.RawDel(run.roadClock) end
+            if IsValid(run.roadShadows) then object.RawDel(run.roadShadows) end
             worm.close(run)
+            midBoss.close(run)
+            gold.close(run)
+            plants.close(run)
+            flyDeath.close(run)
+            beetle.close(run)
+            skimmer.close(run)
+            longfly.close(run)
+            groundbug.close(run)
             for _, o in pairs(run.roadEnemies) do
                 if IsValid(o) then o.hide=true; object.RawDel(o) end
             end
