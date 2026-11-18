@@ -253,12 +253,14 @@ local function DoFrame()
         local ck = CollisionCheck
         local GROUP = GROUP
         if OriginalCollision then OriginalCollision.begin() end
+        if TH37 then TH37.runtime.beginCollisions() end
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET)
         ck(GROUP.PLAYER, GROUP.ENEMY_BULLET2)
         ck(GROUP.PLAYER, GROUP.ENEMY)
         ck(GROUP.PLAYER, GROUP.INDES)
 
         ck(GROUP.PLAYER, GROUP.LASER)
+        if TH37 then TH37.runtime.finishCollisions() end
         if OriginalCollision then OriginalCollision.shots() end
         ck(GROUP.ENEMY, GROUP.PLAYER_BULLET)
         ck(GROUP.NONTJT, GROUP.PLAYER_BULLET)

@@ -70,6 +70,8 @@ local function interpolate(o)
                     o.host.x,o.host.y=(hx*19+x-93)/20-224,240-(hy*19+y)/20
                     o.ox,o.oy=(o.ox*19+x-93)/20,(o.oy*19+y)/20
                 end
+            elseif o.is_center then
+                o.ox=(o.ox*19+x-93)/20;o.oy=(o.oy*19+y)/20
             else o.fx=(o.fx*19+x)/20;o.fy=(o.fy*19+y)/20 end
         else
             local old=o[c.key] or 0;if type(old)=='boolean' then old=old and 1 or 0 end
@@ -79,7 +81,15 @@ local function interpolate(o)
                 v=c.initial+delta*sin(360*(c.duration-c.left)/c.duration)
             elseif c.mode=='固定' then v=c.op==0 and c.value or old+(c.op==1 and c.value or -c.value)
             elseif c.op==0 then v=(old*(c.left-1)+c.value)/c.left
-            else v=old+(c.op==1 and c.value or -c.value)/c.duration end
+            else
+                local delta=c.value/c.duration
+                -- Execution/BExecution先将整数属性的增量截断，再加减原值。
+                if intFields[c.key] then delta=trunc(delta) end
+                v=old+(c.op==1 and delta or -delta)
+            end
+            if c.mode=='固定' and c.op~=0 and intFields[c.key] then
+                v=old+(c.op==1 and trunc(c.value) or -trunc(c.value))
+            end
             set(o,c.key,v)
         end
         c.left=c.left-1
@@ -98,6 +108,18 @@ local function motion(o,son,scale)
         o.ax=(o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0);o[accel]=false
     end
     o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale
+    if son and (o.sonspeed or 0)~=0 then
+        -- Barrage.Update用去掉横纵倍率后的速度更新逻辑方向，事件随后可修改head。
+        local heading
+        if o.my~=0 then
+            local vx,vy=o.mx/(o.xscale or 1),o.my/(o.yscale or 1)
+            heading=90-math.deg(math.atan(vx/vy))+(o.my<0 and 180 or 0)
+        else heading=o.mx>=0 and 0 or 180 end
+        if heading==heading then
+            if o.sonspeed>0 then o.sonspeedd=heading end
+            if o.Withspeedd then o.head=heading end
+        end
+    end
     return o.mx*scale,o.my*scale
 end
 -- Lua模块缓存跨练习重试保留；动态切出的精灵也必须放全局池，避免关卡池清除后留下假缓存。
@@ -132,13 +154,14 @@ local function projected(b)
     b.x,b.y=s.fx-317,227-s.fy;b.vx,b.vy=0,0
     local img,p=texture(s.pattern,s.type);b.img=img
     b.a,b.b=max(0,(p[7]+1)*(s.wscale or 1)),max(0,(p[7]+1)*(s.hscale or 1))
-    b.rect=false;b.rot=-((s.Withspeedd and math.deg(math.atan2(s.my or 0,s.mx or 0)) or s.head or 0)+90)
+    b.rect=false;b.rot=-((s.head or 0)+90)
     b.hscale,b.vscale=s.wscale,s.hscale
-    local born=s.Mist and min(1,s.age/15) or 1
-    b._a=max(0,min(255,(s.alpha or 100)*2.55*born));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
+    b._a=max(0,min(255,(s.alpha or 100)*2.55));b._r,b._g,b._b=s.colorR or 255,s.colorG or 255,s.colorB or 255
     b._blend=s.Blend and 'mul+add' or ''
+    -- 原作按Layer顺序绘制，每层先普通弹、后高光弹。
+    b.layer=LAYER.ENEMY_BULLET+(s.layerid or 0)*2+(s.Blend and 1 or 0)
     b.group=s.Invincible and GROUP.INDES or GROUP.ENEMY_BULLET
-    b.colli=s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
+    b.colli=not s.dis and s.age>(s.Mist and 15 or 0) and s.type>0 and (s.alpha or 100)>95 and s.wscale>0 and s.hscale>0
 end
 local function clean(b)
     local s=b.mhj
@@ -146,32 +169,160 @@ local function clean(b)
     if s then s.object=nil end
     R.objects[b]=nil;object.RawDel(b)
 end
+local function effectAssets()
+    if R.assets.effects then return end
+    globalResource(function()
+        LoadTexture('mhj2_mist','Resources/th37/mist.png')
+        LoadTexture('mhj2_dis','Resources/th37/dis.png')
+        for color=0,7 do
+            LoadImage('mhj2_mist_'..color,'mhj2_mist',color*32,0,32,30)
+            SetImageCenter('mhj2_mist_'..color,16,15)
+            LoadImage('mhj2_dis_'..color,'mhj2_dis',color*32,0,32,32)
+            SetImageCenter('mhj2_dis_'..color,16,16)
+        end
+    end)
+    R.assets.effects=true
+end
+local function drawSprite(b,img,x,y,rot,sx,sy,alpha)
+    SetImageState(img,b._blend,max(0,min(255,alpha)),b._r,b._g,b._b)
+    Render(img,x,y,rot,sx,sy)
+end
+local function cancelProjectile(b)
+    local s=b.mhj
+    if not s.dis then
+        s.dis=true;s.Blend=true;s.age=(s.Mist and 15 or 0)+s.life+1
+        s.cancelAngle=ran:Float(0,360);s.cancelScale=1.1
+    end
+    b.colli=false
+    object.Preserve(b)
+end
+local function updateShadows(s)
+    for i=#s.shadows,1,-1 do
+        local shadow=s.shadows[i]
+        shadow.alpha=shadow.alpha-.02
+        if shadow.alpha<=0 then table.remove(s.shadows,i) end
+    end
+    if s.Afterimage and s.age<=(s.Mist and 15 or 0)+s.life then
+        s.shadows[#s.shadows+1]={x=s.fx,y=s.fy,head=s.head,alpha=.4*s.alpha/100-.02}
+    end
+end
+local function projectileOutside(s)
+    if #s.shadows>0 then return false end
+    if s.Outdispel then return s.fx< -16 or s.fx>545 or s.fy< -33 or s.fy>515 end
+    return s.fx< -316 or s.fx>767 or s.fy< -333 or s.fy>815
+end
 R.classes.projectile=Class(bullet,{
     init=function(b,s)
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
-        s.is_projectile=true;b.mhj=s;b.bound=false;b.group=GROUP.ENEMY_BULLET;b.layer=LAYER.ENEMY_BULLET;b.vx,b.vy=0,0
+        effectAssets()
+        s.is_projectile=true;s.kind='projectile';b.mhj=s;b.bound=false;b.group=GROUP.ENEMY_BULLET;b.layer=LAYER.ENEMY_BULLET;b.vx,b.vy=0,0
         b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
+        s.shadows={};s.previousX,s.previousY=s.fx,s.fy
+        if s.Withspeedd then s.head=s.sonspeedd end
         R.objects[b]=true;s.controller.bullets[b]=s;projected(b)
     end,
     frame=function(b)
         local s=b.mhj;s.age=s.age+1
-        if s.age>(s.life or 1)+(s.Mist and 15 or 0) then clean(b);return end
+        s.previousX,s.previousY=s.fx,s.fy
         local t=s.age-(s.Mist and 15 or 0)
         if t>0 then
             -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
-            local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
+            if not s.dis then
+                local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
+            end
+            updateShadows(s)
             if s.Sonevents then s.Sonevents(s,t,R) end
             interpolate(s)
+            if t>s.life then
+                if not s.Dispel or s.type<=0 then clean(b);return end
+                s.fadeout=(s.fadeout or 0)+5;s.alpha=100-s.fadeout
+                local _,profile=texture(s.pattern,s.type)
+                local delta=s.type<=228 and profile[3]<=32 and -.06 or .06
+                s.wscale=max(0,s.wscale+delta);s.hscale=max(0,s.hscale+delta)
+                if s.fadeout>=100 then clean(b);return end
+            end
+            if s.dis then s.cancelScale=max(0,(s.cancelScale or 1.1)-.05) end
         end
         projected(b)
-        if s.Outdispel and (s.fx<125-80 or s.fx>509+80 or s.fy<-80 or s.fy>560) then clean(b) end
+        if projectileOutside(s) then clean(b) end
     end,
     render=function(b)
-        SetImageState(b.img,b._blend,b._a,b._r,b._g,b._b)
-        Render(b.img,b.x,b.y,b.rot,b.hscale,b.vscale)
+        local s=b.mhj
+        if s.type<=0 then return end
+        local _,profile=texture(s.pattern,s.type)
+        if s.Mist and s.age<=15 then
+            local born=s.age/15
+            local small=profile[3]<=(s.type<=228 and 32 or 48)
+            if small and profile[8]>=0 then
+                local scale=profile[3]/30+1.5*(1-born)
+                drawSprite(b,'mhj2_mist_'..profile[8],b.x,b.y,b.rot,scale,scale,b._a*born)
+            else
+                local extra=small and 0 or 1-born
+                drawSprite(b,b.img,b.x,b.y,b.rot,b.hscale+extra,b.vscale+extra,b._a*born)
+            end
+            return
+        end
+        if not s.dis or s.type>228 or profile[3]>=48 then
+            drawSprite(b,b.img,b.x,b.y,b.rot,b.hscale,b.vscale,b._a)
+        end
+        if s.Afterimage then
+            for _,shadow in ipairs(s.shadows) do
+                drawSprite(b,b.img,shadow.x-317,227-shadow.y,-(shadow.head+90),b.hscale,b.vscale,shadow.alpha*255)
+            end
+        end
+        if s.dis and s.type<=228 and profile[3]<48 and profile[8]>=0 then
+            drawSprite(b,'mhj2_dis_'..profile[8],b.x,b.y,s.cancelAngle,s.cancelScale,s.cancelScale,b._a)
+        end
     end,
-    del=function(b) clean(b) end,kill=function(b) clean(b) end,
+    del=cancelProjectile,kill=cancelProjectile,
 })
+-- Barrage.Judge先取相对运动线段到自机的最近点，再按head旋转后测椭圆。
+function R.sweptHit(s,px,py)
+    if s.wscale<=0 or s.hscale<=0 or s.type<=0 then return false end
+    local bx,by=s.previousX or s.fx,s.previousY or s.fy
+    local dx,dy=s.fx-bx,s.fy-by
+    local distance=dx*dx+dy*dy
+    local along=distance>0 and ((px-bx)*dx+(py-by)*dy)/distance or 1
+    -- 原Judge在线段外回退到本帧端点。
+    if along<0 or along>1 then along=1 end
+    local x,y=px-(bx+along*dx),py-(by+along*dy)
+    local ca,sa=cos(s.head or 0),sin(s.head or 0)
+    local rx,ry=x*ca+y*sa,y*ca-x*sa
+    local _,profile=texture(s.pattern,s.type)
+    local radius=profile[7]+1
+    return rx*rx/(radius*s.hscale)^2+ry*ry/(radius*s.wscale)^2<=1
+end
+local collisionObjects={}
+function R.beginCollisions()
+    local count=0
+    local p=valid(player) and player
+    local px,py=R.player()
+    for b in pairs(R.objects) do
+        local s=b.mhj
+        if valid(b) and s.kind=='projectile' and b.colli then
+            count=count+1;collisionObjects[count]=b
+            if p and p.colli~=false then
+                if R.sweptHit(s,px,py) then
+                    p.class.colli(p,b)
+                elseif valid(p.grazer) and not b._graze and s.life>2 and (not s.Invincible or s.age>=20) then
+                    local dx,dy=(s.previousX or s.fx)-px,(s.previousY or s.fy)-py
+                    if dx*dx+dy*dy<=4900 then p.grazer.class.colli(p.grazer,b) end
+                end
+            end
+            -- 自机碰撞由上述原作算法处理；随后恢复，使Bomb仍使用原生分组。
+            if valid(b) then b.colli=false end
+        end
+    end
+    R.collisionCount=count
+end
+function R.finishCollisions()
+    for i=1,R.collisionCount or 0 do
+        local b=collisionObjects[i]
+        if valid(b) and not b.mhj.dis then b.colli=true end
+        collisionObjects[i]=nil
+    end
+    R.collisionCount=0
+end
 R.classes.beam=Class(laser,{
     init=function(b,s)
         laser.init(b,({2,4,6,10,12,14,16,8})[(s.type-1)%8+1],s.fx-317,227-s.fy,-s.sonspeedd,0,max(1,s.longs),0,max(1,s.wscale*16),0,0)
@@ -260,7 +411,8 @@ local function field(o,c,t)
     end
 end
 local function reset(c)
-    c.emitters={};c.center=copy{fx=c.pattern.center[1],fy=c.pattern.center[2],speed=c.pattern.center[3],speedd=c.pattern.center[4],aspeed=c.pattern.center[5],aspeedd=c.pattern.center[6],is_center=true,host=c.host}
+    local initial=c.pattern.center
+    c.emitters={};c.center=copy{fx=initial[1],fy=initial[2],ox=initial[1],oy=initial[2],speed=initial[3],speedd=initial[4],aspeed=initial[5],aspeedd=initial[6],is_center=true,host=c.host}
     for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
 end
 function R.controller(host,id,road)
@@ -274,9 +426,7 @@ function R.tick(c)
     local t=c.time;local center=c.center
     if c.pattern.globalEvents then c.pattern.globalEvents(c,t,R) end
     t=c.time
-    if valid(c.host) then center.ox,center.oy=c.host.x+317,227-c.host.y else center.ox,center.oy=center.fx,center.fy end
-    c.pattern.centerEvents(center,t,R);interpolate(center)
-    local dx,dy=motion(center,false);center.fx,center.fy=center.fx+dx,center.fy+dy
+    if valid(c.host) then center.ox,center.oy=c.host.x+317,227-c.host.y end
     if c.pattern.centerAvailable then
         c.offsetx=center.ox-center.fx;c.offsety=center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
@@ -293,7 +443,7 @@ function R.tick(c)
                 if bound then emit(o,bound)
                 elseif o.bindid and o.bindid>=0 and o.bindid~=o.id then
                     local targets={}
-                    for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid then targets[#targets+1]=s end end
+                    for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]=s end end
                     for _,s in ipairs(targets) do emit(o,s) end
                 else emit(o) end
             end
@@ -302,13 +452,21 @@ function R.tick(c)
     for _,o in ipairs(c.emitters) do
         if o.Deepbind and o.bindid and o.bindid>=0 and o.bindid~=o.id then
             local targets={}
-            for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid then targets[#targets+1]={b,s} end end
+            for b,s in pairs(c.bullets) do if valid(b) and s.parentid==o.bindid and s.layerid==o.parentid and (not s.Mist or s.age>15) then targets[#targets+1]={b,s} end end
             for _,pair in ipairs(targets) do
                 local child=o.children[pair[1]]
                 if not child then child=emitter(o,c);child.bindid=-1;child.Deepbind=false;child.limits={};o.children[pair[1]]=child end
                 step(child,pair[2].age-(child.begin or 1)+2,pair[2])
             end
         else step(o,t-(o.begin or 1)+1) end
+    end
+    -- CrazyStorm.Update在各层发射之后推进中心；中心基准x/y始终不变。
+    if c.pattern.centerAvailable then
+        local dx,dy=motion(center,false)
+        -- 保留原Center.Update的ox连续累加speedx、speedy这一行为。
+        center.ox=center.ox+dx+dy
+        if valid(c.host) then c.host.x,c.host.y=c.host.x+dx,c.host.y-dy end
+        c.pattern.centerEvents(center,t,R);interpolate(center)
     end
 end
 function R.jump(c,index,count,target)
@@ -323,10 +481,11 @@ function R.slow(c,duration,mode,t,start)
 end
 function R.clear(c)
     if not c then return end
-    for b in pairs(c.bullets) do if valid(b) then object.Del(b) end end
+    c.closed=true
+    for b in pairs(c.bullets) do if valid(b) then clean(b) end end
 end
 function R.clearAll()
-    for b in pairs(R.objects) do if valid(b) then object.Del(b) end end
+    for b in pairs(R.objects) do if valid(b) then clean(b) end end
 end
 -- 道中敌机使用enemybase的实际受弹入口；运动在原坐标内积分一次，原生vx/vy保持0。
 R.classes.fairy=Class(enemy,{

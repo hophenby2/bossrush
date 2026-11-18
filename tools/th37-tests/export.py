@@ -184,7 +184,7 @@ def main():
  common=[[atom(v) for v in x.split('_')[1:]] for x in text('3').splitlines() if x]
  out={'chapters':chapters,'cards':allcards,'bulletTypes':common,'enemyTypes':[[atom(v) for v in x.split(',')] for x in text('0').splitlines() if x]}
  (dst/'catalogue.lua').write_text('-- 原始阶段元数据；历史槽位固定在37000段。\nreturn '+lua(out)+'\n')
- for name,path in [('barrages','Pattern/barrages'),('enemys','List/enemys')]:
+ for name,path in [('barrages','Pattern/barrages'),('enemys','List/enemys'),('mist','Pattern/mist'),('dis','Pattern/dis')]:
   (art/(name+'.png')).write_bytes(decrypt(content/'Graphics'/(path+'.xna'),0))
  stats['patterns']=len(patterns);stats['cards']=len(allcards);stats['spells']=sum(c['spell'] for c in allcards);stats['nonspells']=sum(not c['spell'] for c in allcards);stats['roads']=sum(len(x['roads']) for x in chapters)
  manifest={'source':str(source),'statistics':dict(stats),'unsupported':unsupported,'sha256':hashes}

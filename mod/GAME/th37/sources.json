@@ -429,6 +429,8 @@
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/3.xna": "04c3412906a073a4147cc1fef8c68cc0712717dab58af973ca3104eeb99d6017",
     "src/THMHJ/bin/x86/Debug/net461/Content/Data/0.xna": "77173f7ab70097944503c670b75aee18c1ce778877f1f0e0ddb97067604120f0",
     "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/barrages.xna": "5afb10b1520a43293f100d339032002cf7bdce179fe7e4ad6c7cbc339b4d7330",
-    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/List/enemys.xna": "51456ef09ac60461639763f485c1b8d0b7d6e6a67e658c57ef7400f64df1b354"
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/List/enemys.xna": "51456ef09ac60461639763f485c1b8d0b7d6e6a67e658c57ef7400f64df1b354",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/mist.xna": "0ebb6e9a5158e06df250f8d4f758eeb964f2044a3e0e6615220b0f3ac38f2f61",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Graphics/Pattern/dis.xna": "b44ba55f0deb153214b8a63d7d85389d3de4e3e7113cecd4e5d23d7e15c9774f"
   }
 }
