@@ -11,6 +11,7 @@ from PIL import Image
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--serial',required=True)
 p.add_argument('--apk',type=Path,required=True)
+p.add_argument('--skip-install',action='store_true',help='使用已经安装的同一APK，避免重复安装占用测试设备空间')
 p.add_argument('--output',type=Path,required=True)
 p.add_argument('--adb',default=str(Path.home()/'Library/Android/sdk/platform-tools/adb'))
 a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
@@ -32,7 +33,8 @@ for path in ['Resources/Original/8/eff09al_1.png','Resources/Original/8/eff09sk_
 base=[a.adb,'-s',a.serial];package='org.bossrush.hd';flag='files/bossrush/User/android-diagnostics'
 def adb(*words,input=None,check=True):
     return subprocess.run(base+list(words),input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=check)
-adb('install','-r',str(a.apk.resolve()))
+if not a.skip_install:
+    adb('install','-r',str(a.apk.resolve()))
 saved=adb('exec-out','run-as',package,'cat',flag,check=False)
 token='tag='+str(time.time_ns());mode='content images=1 '+token
 try:

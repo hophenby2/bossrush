@@ -31,7 +31,19 @@ def check(package,root,decode):
                     count=0
                     for block in audio.blocks(blocksize=32768):count+=len(block)
                     assert count==m['loop_end'],relative
+        native_music=0
+        for source in sorted((root/'Resources/ports/theis/res/music').glob('*.ogg')):
+            relative=source.relative_to(root).as_posix()
+            original=sf.info(source)
+            with sf.SoundFile(io.BytesIO(z.read(prefix+relative))) as audio:
+                assert (audio.frames,audio.samplerate,audio.channels)==(
+                    original.frames,original.samplerate,original.channels),relative
+                if decode:
+                    count=sum(len(block) for block in audio.blocks(blocksize=32768))
+                    assert count==original.frames,relative
+            native_music+=1
         return {'package':package.name,'lua_files':scripts,'original_tracks':len(manifest),
+            'native_tracks':native_music,
             'full_ogg_decode':decode,'loop_frames_unchanged':True,'source_bytes_match':True}
 
 def main():

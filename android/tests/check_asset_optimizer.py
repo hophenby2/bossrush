@@ -38,6 +38,16 @@ with tempfile.TemporaryDirectory() as temp:
     from image_policy import noncore_category
     for path in ('THlib/UI/font/score.png','THlib/UI/life.png','THlib/bullet/img/bullet5.png','Resources/Original/10/stgenm06_0.png','Resources/Original/8/eff09al_1.png','unknown.png'):
         assert noncore_category(path) is None,path
+    for path in ('Resources/th39/scene/6bg-01.png','Resources/th38/background/unity/sky.png',
+                 'Resources/ports/theis/res/background/stage1/sky.png',
+                 'Resources/ports/dreamer/res/likedreamer/optimized/background/back1_02.png',
+                 'Resources/th43/boss/Cirno/scbg1.png'):
+        assert noncore_category(path), path
+    for path in ('Resources/th39/bosses.png','Resources/th38/bullet.png',
+                 'Resources/ports/theis/res/bullet/bullet.png',
+                 'Resources/ports/dreamer/res/likedreamer/stage/Bullet.png',
+                 'Resources/th43/boss/Cirno/BossWalkImage.png'):
+        assert noncore_category(path) is None, path
     opaque_bg=background.with_name('TH10_bg_opaque.png');photo.convert('RGB').save(opaque_bg)
     variants,report=m.optimize_images([opaque_bg],root/'opaque-cache',root,True)
     assert report[opaque_bg]['codec'].startswith('webp-q') and report[opaque_bg]['visible_rgb_psnr_db']>=36

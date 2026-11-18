@@ -13,6 +13,7 @@ import wave
 import re
 import struct
 import zlib
+from asset_policy import include_asset
 
 ROOT = Path(__file__).resolve().parent
 GAME = ROOT.parent
@@ -186,6 +187,7 @@ def prepare_assets():
     asset_variants = {}
     optimized = {}
     audio_variants = {}
+    music_variants = {}
     font_variants = {}
     if OPTIMIZE_FONTS:
         from font_optimizer import optimize_fonts
@@ -197,16 +199,24 @@ def prepare_assets():
             if font_paths[source].startswith('res/'):shutil.copy2(target,assets/font_paths[source])
         print(f'字体保留全部Unicode和字形像素，减少{sum(r["source_bytes"]-r["packed_bytes"] for r in records.values() if r["converted"])/1048576:.2f} MiB',flush=True)
     if COMPRESS_AUDIO:
-        from audio_optimizer import optimize_audio
-        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.wav')]
+        from audio_optimizer import optimize_audio, optimize_music
+        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.wav')
+                   if include_asset(p.relative_to(GAME))]
         audio_variants, records = optimize_audio(sources,CACHE/'vorbis-sounds')
         write_utf8(BUILD/'audio-optimization.json',json.dumps(
             {str(p.relative_to(GAME)):r for p,r in records.items()},ensure_ascii=False,indent=2)+'\n')
         saved = sum(r['wav_zip_bytes']-r['ogg_bytes'] for r in records.values() if r['converted'])
         print(f'Ogg音效压缩：{len(audio_variants)}/{len(sources)}个，APK资源减少{saved/1048576:.2f} MiB',flush=True)
+        music_sources = sorted((GAME/'Resources/ports/theis/res/music').glob('*.ogg'))
+        music_variants, records = optimize_music(music_sources, CACHE/'vorbis-music')
+        write_utf8(BUILD/'music-optimization.json', json.dumps(
+            {str(p.relative_to(GAME)): r for p, r in records.items()}, ensure_ascii=False, indent=2)+'\n')
+        saved = sum(r['source_bytes']-r['packed_bytes'] for r in records.values())
+        print(f'Ogg音乐压缩：{len(music_variants)}/{len(music_sources)}首，APK资源减少{saved/1048576:.2f} MiB',flush=True)
     if OPTIMIZE_ASSETS:
         from asset_optimizer import optimize_images
-        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')]
+        sources = [p for folder in ['THlib','Resources','mod'] for p in (GAME/folder).rglob('*.png')
+                   if include_asset(p.relative_to(GAME))]
         optimized, records = optimize_images(sources,CACHE/'lossless-images',GAME,LOSSY_IMAGES)
         report = {str(p.relative_to(GAME)):r for p,r in records.items()}
         write_utf8(BUILD/'asset-optimization.json',json.dumps(report,ensure_ascii=False,indent=2)+'\n')
@@ -214,6 +224,7 @@ def prepare_assets():
         print(f'贴图优化：{len(optimized)}张，去重前APK资源减少{saved/1048576:.2f} MiB',flush=True)
     image_copies = {}
     image_duplicates = {}
+    excluded = {}
     for name in ['THlib', 'Resources', 'mod', 'music', 'BadApple', 'shader',
                  'core.lua', 'launch.lua', 'manual', 'Update.txt']:
         source = GAME / name
@@ -222,6 +233,9 @@ def prepare_assets():
             if not source.is_file() or source.name.startswith('.'):
                 continue
             relative = source.relative_to(GAME)
+            if not include_asset(relative):
+                excluded[relative.as_posix()] = source.stat().st_size
+                continue
             target = destination / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             if source.suffix.lower()=='.png' and OPTIMIZE_ASSETS:
@@ -237,6 +251,8 @@ def prepare_assets():
                     shutil.copy2(candidate,target)
                     image_copies[digest] = native
                 if native != relative: asset_variants[relative.as_posix()]=native.as_posix()
+            elif source in music_variants:
+                shutil.copy2(music_variants[source], target)
             elif source in audio_variants:
                 native = relative.with_suffix('.ogg')
                 target = destination/native
@@ -265,6 +281,8 @@ def prepare_assets():
                 if header[:8] == b'\x89PNG\r\n\x1a\n':
                     dimensions[relative.as_posix()] = struct.unpack('>II', header[16:24])
                     if OPTIMIZE_ASSETS: dimensions[native.as_posix()]=dimensions[relative.as_posix()]
+    write_utf8(BUILD/'asset-pruning.json', json.dumps(excluded, ensure_ascii=False, indent=2)+'\n')
+    print(f'裁剪Like Dreamer旧图集和宿主已替代的界面资源：{len(excluded)}个', flush=True)
     if OPTIMIZE_ASSETS:
         write_utf8(BUILD/'image-deduplication.json',json.dumps(image_duplicates,ensure_ascii=False,indent=2)+'\n')
         print(f'相同图片入包去重：{len(image_duplicates)}份，逻辑名称与独立纹理资源保留',flush=True)
@@ -455,8 +473,8 @@ def main():
     parser.add_argument('--engine-archive')
     parser.add_argument('--assets-only', action='store_true')
     parser.add_argument('--optimize-assets', action='store_true', help='图片无损重压缩和相同文件去重，核心透明图保留PNG')
-    parser.add_argument('--lossy-images', action='store_true', help='核心无损；非核心不透明图Q90/Q95、透明图PNG RGB6；隐含--optimize-assets')
-    parser.add_argument('--compress-audio', action='store_true', help='将有包体收益的WAV入包副本转为高质量Ogg Vorbis，保留采样率、声道与帧数')
+    parser.add_argument('--lossy-images', action='store_true', help='核心无损；背景不透明图Q85/Q90/Q95、透明PNG的RGB误差最多4级；隐含--optimize-assets')
+    parser.add_argument('--compress-audio', action='store_true', help='压缩WAV和祈华梦高码率音乐，保留采样率、声道与帧数')
     parser.add_argument('--optimize-fonts',action='store_true',help='保留全部Unicode和像素，去掉安卓未使用的布局替代字形')
     parser.add_argument('--package-only', action='store_true')
     parser.add_argument('--update-assets', '--update-lua', dest='update_assets', action='store_true', help='复用已经生成的原生库，更新 assets 并重新签名')

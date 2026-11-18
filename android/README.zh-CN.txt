@@ -1,3 +1,11 @@
+26.11.18-slim-assets 安卓资源优化（2026-11-18）
+APK由1525.26 MiB降至1177.49 MiB，减少347.77 MiB（22.80%）。
+裁剪Like Dreamer已由切片和宿主界面替代的80个旧资源，完整登记依赖257个文件。
+--compress-audio将祈华梦17首高码率音乐的入包副本转为约160kbps Vorbis，168.64 MiB降至58.90 MiB。
+新增作品场景纹理纳入--lossy-images；尺寸与Alpha逐像素保留，透明PNG的RGB误差最多4级，不透明图PSNR至少36dB。
+核心2151张图片RGBA逐像素一致；原始PNG与Ogg保留在源码目录，音乐采样率、声道、解码帧数和脚本循环点保留。
+构建：python3 android/build.py --package-only --lossy-images --compress-audio --optimize-fonts
+
 图片分级压缩（2026-11-10）
 --lossy-images：核心787张全部RGBA无损；非核心不透明图Q90/Q95，透明图保持PNG且RGB误差最多2级。
 APK由192.12 MiB降至160.94 MiB，少31.18 MiB；透明图不转WebP，源PNG不变。

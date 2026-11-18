@@ -34,4 +34,18 @@ with tempfile.TemporaryDirectory() as temp:
         assert records[p]['ogg_bytes'] < records[p]['wav_zip_bytes']*.95
     assert all(p.read_bytes() == raw for p,raw in original.items()), '不能改写源WAV'
     assert m.optimize_audio(paths,root/'cache') == (variants,records)
-print('Ogg采样率/声道/时长、包体收益、源WAV及缓存检查通过')
+    music = root/'music.ogg'
+    low_rate = root/'low-rate.ogg'
+    noise = np.random.default_rng(17).normal(0, .1, (44100*2+137, 2)).astype('float32')
+    sf.write(music, noise, 44100, format='OGG', subtype='VORBIS', compression_level=0)
+    sf.write(low_rate, noise, 44100, format='OGG', subtype='VORBIS', compression_level=.9)
+    original = {p: p.read_bytes() for p in (music, low_rate)}
+    variants, records = m.optimize_music([music, low_rate], root/'music-cache')
+    assert music in variants and low_rate not in variants
+    before, after = sf.info(music), sf.info(variants[music])
+    assert (before.frames, before.samplerate, before.channels) == (after.frames, after.samplerate, after.channels)
+    assert after.frames == len(noise), '循环点使用的非整秒帧数不能改变'
+    assert records[music]['packed_bytes'] < records[music]['source_bytes']*.95
+    assert all(p.read_bytes() == raw for p, raw in original.items()), '源音乐不能被改写'
+    assert m.optimize_music([music, low_rate], root/'music-cache') == (variants, records)
+print('音效及音乐采样率/声道/帧数、包体收益、源文件及缓存检查通过')

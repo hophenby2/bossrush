@@ -1,4 +1,4 @@
-"""安卓入包音效：源WAV保留，只在Ogg比ZIP内的PCM更小时替换。"""
+"""安卓入包音频，保留源文件与解码帧数，只替换有包体收益的编码。"""
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import hashlib
@@ -49,6 +49,52 @@ def optimize_audio(sources, cache):
                 raise RuntimeError(f'Ogg改变了音效采样率、声道或帧数：{source}')
             target.write_bytes(result)
             record['converted'] = True
+        metadata.write_text(json.dumps(record, ensure_ascii=False) + '\n')
+        return source, target if record['converted'] else None, record
+
+    variants, records = {}, {}
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for source, target, record in pool.map(encode, sources):
+            if target:
+                variants[source] = target
+            records[source] = record
+    return variants, records
+
+
+def optimize_music(sources, cache):
+    import soundfile as sf
+    cache.mkdir(parents=True, exist_ok=True)
+
+    def encode(source):
+        raw = source.read_bytes()
+        codec = f'music-v1-compression-0.5-{sf.__version__}-{sf.__libsndfile_version__}'
+        key = hashlib.sha256(str(source).encode() + raw + codec.encode()).hexdigest()
+        metadata, target = cache / (key + '.json'), cache / (key + '.ogg')
+        if metadata.exists():
+            record = json.loads(metadata.read_text())
+            if not record['converted'] or target.exists():
+                return source, target if record['converted'] else None, record
+        info = sf.info(io.BytesIO(raw))
+        record = {'converted': False, 'source_bytes': len(raw), 'packed_bytes': len(raw),
+                  'frames': info.frames, 'sample_rate': info.samplerate,
+                  'channels': info.channels, 'compression_level': .5}
+        # 已经低于192kbps的曲目继续使用原编码，避免重复有损压缩。
+        if info.duration > 0 and len(raw) * 8 / info.duration > 192000:
+            encoded = io.BytesIO()
+            with sf.SoundFile(io.BytesIO(raw)) as audio, sf.SoundFile(
+                    encoded, 'w', samplerate=info.samplerate, channels=info.channels,
+                    format='OGG', subtype='VORBIS', compression_level=.5) as output:
+                for block in audio.blocks(blocksize=32768, dtype='float32', always_2d=True):
+                    output.write(block)
+            result = encoded.getvalue()
+            if len(result) < len(raw) * .95:
+                with sf.SoundFile(io.BytesIO(result)) as decoded:
+                    frames = sum(len(block) for block in decoded.blocks(blocksize=32768))
+                    if (frames, decoded.samplerate, decoded.channels) != (
+                            info.frames, info.samplerate, info.channels):
+                        raise RuntimeError(f'Ogg改变了音乐采样率、声道或帧数：{source}')
+                target.write_bytes(result)
+                record.update(converted=True, packed_bytes=len(result))
         metadata.write_text(json.dumps(record, ensure_ascii=False) + '\n')
         return source, target if record['converted'] else None, record
 

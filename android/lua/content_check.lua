@@ -43,7 +43,8 @@ function T.install(mode)
     local replayCheck=mode:match('replay=1')~=nil
     local shoot=mode:match('shoot=1')~=nil
     local afterMidboss=mode:match('after_midboss=1')~=nil
-    local codes={[29]='TH31',[30]='TH32',[31]='TH33',[32]='TH34',[33]='TH35'}
+    local codes={[29]='TH31',[30]='TH32',[31]='TH33',[32]='TH34',[33]='TH35',
+        [35]='TH37',[36]='TH38',[37]='TH39',[38]='TH40',[39]='TH41',[40]='TH42',[41]='TH43'}
     assert(codes[level],'不支持的内容验证关卡')
     scoredata.PlayerBrand=scoredata.PlayerBrand or 'Android内容验证';scoredata.version=ui.version
     local originalTime=os.time
@@ -118,8 +119,10 @@ function T.install(mode)
             snapshotComplete=scene.timer+3
             if sequence then
                 local bg=scene.sequence_background
-                lstg.SystemLog('BOSSRUSH_SEQUENCE_STATE: '..scene.sequence_background_key..' hidden='..tostring(bg.hide)..
-                    ' position='..table.concat(bg.position,',')..' direction='..table.concat(bg.direction,',')..' time='..bg.time)
+                if bg and scene.sequence_background_key and bg.position and bg.direction then
+                    lstg.SystemLog('BOSSRUSH_SEQUENCE_STATE: '..scene.sequence_background_key..' hidden='..tostring(bg.hide)..
+                        ' position='..table.concat(bg.position,',')..' direction='..table.concat(bg.direction,',')..' time='..bg.time)
+                end
             end
         end
     end

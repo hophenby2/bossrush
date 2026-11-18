@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'android'))
 from image_policy import noncore_category
+from asset_policy import include_asset
 
 
 def main():
@@ -29,6 +30,9 @@ def main():
         for folder in ('THlib','Resources','mod'):
             for source in (a.root/folder).rglob('*.png'):
                 path=source.relative_to(a.root).as_posix()
+                if not a.windows and not include_asset(path):
+                    assert path not in logical, ('冗余资源仍在逻辑清单', path)
+                    continue
                 assert path in logical,('逻辑文件枚举遗漏',path)
                 target=aliases.get(path,path)
                 assert target not in aliases,('资源别名不能形成链',path,target)

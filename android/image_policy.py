@@ -18,6 +18,19 @@ def noncore_category(path):
         return '道中背景'
     if path.startswith('Resources/Original/') and re.match(r'(stg\d+bg|stage\d+_|world\d+_)', PurePosixPath(path).name):
         return '原作场景纹理'
+    if path.startswith((
+        'Resources/th37/scene/', 'Resources/th37/media/',
+        'Resources/th38/background/', 'Resources/th38/media/',
+        'Resources/th39/scene/', 'Resources/th39/media/',
+        'Resources/th40/Background/', 'Resources/th43/background/',
+        'Resources/ports/theis/res/background/',
+        'Resources/ports/dreamer/res/likedreamer/optimized/background/',
+    )):
+        return '同人作品场景纹理'
+    if path.startswith('Resources/th43/boss/') and (
+        re.fullmatch(r'scbg\d*\.png', PurePosixPath(path).name) or '/bgch/' in path
+    ):
+        return '栖霞园符卡背景'
     if path == 'mod/th16AEX.png':
         return '旧入口预览'
     return None
