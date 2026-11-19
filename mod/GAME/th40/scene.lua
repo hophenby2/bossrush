@@ -86,9 +86,10 @@ function M.render(s)
     Set3D('eye',unpack(eye));Set3D('at',unpack(at));Set3D('up',unpack(up));Set3D('fovy',fov);Set3D('z',1,far)
     Set3D('fog',s.fogStart,s.fogEnd,Color(255,unpack(s.fogColor)));SetViewMode('3d')
     SetPerspective(eye[1],eye[2],eye[3],at[1],at[2],at[3],up[1],up[2],up[3],fov,(384/404)/(448/468),1,far)
-    ClearZBuffer();SetZBufferEnable(s.chapter=='5' or s.chapter=='6' and s.story<800)
+    -- 使用数字状态，兼容 Sub 与 LuaSTG-x 的深度缓冲接口。
+    ClearZBuffer();SetZBufferEnable((s.chapter=='5' or s.chapter=='6' and s.story<800) and 1 or 0)
     for _,o in ipairs(s.objects) do draw(o,s) end
-    SetZBufferEnable(false)
+    SetZBufferEnable(0)
     -- BaseParticle3D uses a second camera with a 234-pixel focal length.
     if #s.particles>0 then
         Set3D('eye',0,0,234);Set3D('at',0,0,0);Set3D('up',0,-1,0);Set3D('fovy',2*math.atan(224/234));Set3D('z',1,1000);Set3D('fog',0,0,Color(255,0,0,0));SetViewMode('3d')

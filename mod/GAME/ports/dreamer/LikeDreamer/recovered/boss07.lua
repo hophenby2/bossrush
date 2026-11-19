@@ -219,9 +219,7 @@ M.updateStage07Boss = function(ctx, enemy)
                         end
                     end
                 end
-                ::__continue2::
             end
-            ::__loop_end1::
         end;
         do return nil end
     end;
@@ -265,128 +263,135 @@ M.updateStage07Boss = function(ctx, enemy)
             (enemy).helperTimer = 0;
             do
                 local __switch4 = (ctx).lateStageBossBreaksRemaining_
-                if __switch4 == 5 then goto __case5
-                elseif __switch4 == 4 then goto __case6
-                elseif __switch4 == 3 then goto __case7
-                elseif __switch4 == 2 then goto __case8
-                elseif __switch4 == 1 then goto __case9
-                else goto __case10 end
-                ::__case5::;
-                (emitBreakFeedback)(enemy);
-                ctx:spawnPostDeathCounterEntity(enemy, 140);
-                (enemy).helperState = 10;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end3;
-                ::__case6::;
-                do
-                    local leftSurvived = ((combatState == 12) or ((combatState == 11) and (firstHp >= secondHp)));
-                    if (combatState == 11) then
+                if __switch4 == 5 then __switch4 = 1
+                elseif __switch4 == 4 then __switch4 = 2
+                elseif __switch4 == 3 then __switch4 = 3
+                elseif __switch4 == 2 then __switch4 = 4
+                elseif __switch4 == 1 then __switch4 = 5
+                else __switch4 = 6 end
+                repeat
+                    if __switch4 <= 1 then
+                        (emitBreakFeedback)(enemy);
+                        ctx:spawnPostDeathCounterEntity(enemy, 140);
+                        (enemy).helperState = 10;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch4 <= 2 then
                         do
-                            local lost = (function() if leftSurvived then return second else return first end end)();
-                            if (lost ~= nil) then
+                            local leftSurvived = ((combatState == 12) or ((combatState == 11) and (firstHp >= secondHp)));
+                            if (combatState == 11) then
                                 do
-                                    ctx:spawnStage07BossNode(enemy, (function() if leftSurvived then return 130 else return 129 end end)(), (function() if leftSurvived then return 1 else return 0 end end)(), f32(((lost).x - (enemy).x)), f32(((lost).y - (enemy).y)), (16384 % 65536), 0, 80, 99999999)
+                                    local lost = (function() if leftSurvived then return second else return first end end)();
+                                    if (lost ~= nil) then
+                                        do
+                                            ctx:spawnStage07BossNode(enemy, (function() if leftSurvived then return 130 else return 129 end end)(), (function() if leftSurvived then return 1 else return 0 end end)(), f32(((lost).x - (enemy).x)), f32(((lost).y - (enemy).y)), (16384 % 65536), 0, 80, 99999999)
+                                        end
+                                    end
                                 end
+                            end;
+                            local survivor = (function() if leftSurvived then return first else return second end end)();
+                            if (survivor ~= nil) then
+                                do
+                                    (emitBreakFeedback)(survivor);
+                                    ctx:spawnPostDeathCounterEntity(survivor, 140);
+                                    ctx:spawnEnemyDeathEffects(survivor, 1, true)
+                                end
+                            else
+                                do
+                                    (emitBreakFeedback)(enemy);
+                                    ctx:spawnPostDeathCounterEntity(enemy, 140)
+                                end
+                            end;
+                            (enemy).helperState = (function() if leftSurvived then return 20 else return 40 end end)();
+                            (ctx).lateStageBossPhaseMode_ = 2;
+                            do break end
+                        end;
+                    end
+                    if __switch4 <= 3 then
+                        if (combatState == 21) then
+                            do
+                                if (first ~= nil) then
+                                    do
+                                        (emitBreakFeedback)(first);
+                                        ctx:spawnPostDeathCounterEntity(first, 140);
+                                        ctx:spawnEnemyDeathEffects(first, 1, true)
+                                    end
+                                else
+                                    do
+                                        (emitBreakFeedback)(enemy);
+                                        ctx:spawnPostDeathCounterEntity(enemy, 140)
+                                    end
+                                end;
+                                (enemy).helperState = 30
                             end
-                        end
-                    end;
-                    local survivor = (function() if leftSurvived then return first else return second end end)();
-                    if (survivor ~= nil) then
+                        else
+                            do
+                                if (second ~= nil) then
+                                    do
+                                        (emitBreakFeedback)(second);
+                                        ctx:spawnPostDeathCounterEntity(second, 140);
+                                        ctx:spawnEnemyDeathEffects(second, 1, true)
+                                    end
+                                else
+                                    do
+                                        (emitBreakFeedback)(enemy);
+                                        ctx:spawnPostDeathCounterEntity(enemy, 140)
+                                    end
+                                end;
+                                (enemy).helperState = 50
+                            end
+                        end;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch4 <= 4 then
                         do
-                            (emitBreakFeedback)(survivor);
-                            ctx:spawnPostDeathCounterEntity(survivor, 140);
-                            ctx:spawnEnemyDeathEffects(survivor, 1, true)
-                        end
-                    else
-                        do
-                            (emitBreakFeedback)(enemy);
-                            ctx:spawnPostDeathCounterEntity(enemy, 140)
-                        end
-                    end;
-                    (enemy).helperState = (function() if leftSurvived then return 20 else return 40 end end)();
-                    (ctx).lateStageBossPhaseMode_ = 2;
-                    goto __switch_end3
-                end;
-                ::__case7::;
-                if (combatState == 21) then
-                    do
+                            local broken = (function() if (combatState == 31) then return first else return second end end)();
+                            local source = (function() if (broken ~= nil) then return broken else return enemy end end)();
+                            (emitBreakFeedback)(source);
+                            ctx:spawnPostDeathCounterEntity(source, 140);
+                            (enemy).helperState = (function() if (combatState == 31) then return 59 else return 60 end end)();
+                            (ctx).lateStageBossPhaseMode_ = 2;
+                            do break end
+                        end;
+                    end
+                    if __switch4 <= 5 then
                         if (first ~= nil) then
                             do
                                 (emitBreakFeedback)(first);
-                                ctx:spawnPostDeathCounterEntity(first, 140);
-                                ctx:spawnEnemyDeathEffects(first, 1, true)
-                            end
-                        else
-                            do
-                                (emitBreakFeedback)(enemy);
-                                ctx:spawnPostDeathCounterEntity(enemy, 140)
+                                ctx:spawnPostDeathCounterEntity(first, 140)
                             end
                         end;
-                        (enemy).helperState = 30
-                    end
-                else
-                    do
                         if (second ~= nil) then
                             do
                                 (emitBreakFeedback)(second);
-                                ctx:spawnPostDeathCounterEntity(second, 140);
-                                ctx:spawnEnemyDeathEffects(second, 1, true)
+                                ctx:spawnPostDeathCounterEntity(second, 140)
                             end
-                        else
+                        end;
+                        if ((first == nil) and (second == nil)) then
                             do
                                 (emitBreakFeedback)(enemy);
                                 ctx:spawnPostDeathCounterEntity(enemy, 140)
                             end
                         end;
-                        (enemy).helperState = 50
+                        if (first ~= nil) then
+                            ctx:spawnEnemyDeathEffects(first, 1, true)
+                        end;
+                        if (second ~= nil) then
+                            ctx:spawnEnemyDeathEffects(second, 1, true)
+                        end;
+                        (enemy).helperState = 70;
+                        (ctx).lateStageBossPhaseMode_ = (-1);
+                        (ctx).lateStageClearStarted_ = true;
+                        (ctx).lateStageClearTimer_ = 0;
+                        ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
+                        do break end;
                     end
-                end;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end3;
-                ::__case8::;
-                do
-                    local broken = (function() if (combatState == 31) then return first else return second end end)();
-                    local source = (function() if (broken ~= nil) then return broken else return enemy end end)();
-                    (emitBreakFeedback)(source);
-                    ctx:spawnPostDeathCounterEntity(source, 140);
-                    (enemy).helperState = (function() if (combatState == 31) then return 59 else return 60 end end)();
-                    (ctx).lateStageBossPhaseMode_ = 2;
-                    goto __switch_end3
-                end;
-                ::__case9::;
-                if (first ~= nil) then
-                    do
-                        (emitBreakFeedback)(first);
-                        ctx:spawnPostDeathCounterEntity(first, 140)
+                    if __switch4 <= 6 then
+                        do break end
                     end
-                end;
-                if (second ~= nil) then
-                    do
-                        (emitBreakFeedback)(second);
-                        ctx:spawnPostDeathCounterEntity(second, 140)
-                    end
-                end;
-                if ((first == nil) and (second == nil)) then
-                    do
-                        (emitBreakFeedback)(enemy);
-                        ctx:spawnPostDeathCounterEntity(enemy, 140)
-                    end
-                end;
-                if (first ~= nil) then
-                    ctx:spawnEnemyDeathEffects(first, 1, true)
-                end;
-                if (second ~= nil) then
-                    ctx:spawnEnemyDeathEffects(second, 1, true)
-                end;
-                (enemy).helperState = 70;
-                (ctx).lateStageBossPhaseMode_ = (-1);
-                (ctx).lateStageClearStarted_ = true;
-                (ctx).lateStageClearTimer_ = 0;
-                ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
-                goto __switch_end3;
-                ::__case10::;
-                goto __switch_end3
-                ::__switch_end3::
+                until true
             end;
             (ctx).lateStageBossBreaksRemaining_ = math.max(0, ((ctx).lateStageBossBreaksRemaining_ - 1));
             (ctx).lateStageBossPhaseIndex_ = math.min(4, ((ctx).lateStageBossPhaseIndex_ + 1))
@@ -401,200 +406,198 @@ M.updateStage07Boss = function(ctx, enemy)
     local timer = (enemy).helperTimer;
     do
         local __switch12 = (enemy).helperState
-        if __switch12 == 0 then goto __case13
-        elseif __switch12 == 1 then goto __case14
-        elseif __switch12 == 10 then goto __case15
-        elseif __switch12 == 11 then goto __case16
-        elseif __switch12 == 12 then goto __case17
-        elseif __switch12 == 13 then goto __case18
-        elseif __switch12 == 20 then goto __case19
-        elseif __switch12 == 30 then goto __case20
-        elseif __switch12 == 40 then goto __case21
-        elseif __switch12 == 50 then goto __case22
-        elseif __switch12 == 59 then goto __case23
-        elseif __switch12 == 60 then goto __case24
-        elseif __switch12 == 21 then goto __case25
-        elseif __switch12 == 31 then goto __case26
-        elseif __switch12 == 41 then goto __case27
-        elseif __switch12 == 51 then goto __case28
-        elseif __switch12 == 61 then goto __case29
-        elseif __switch12 == 70 then goto __case30
-        else goto __case31 end
-        ::__case13::;
-        if (timer == 0) then
-            do
-                ctx:spawnStage07BossNode(enemy, 131, 0, f32((-f32(80))), f32(0), (16384 % 65536), 0.29999999999999999, 70, 99999999);
-                ctx:spawnStage07BossNode(enemy, 132, 1, f32(80), f32(0), (16384 % 65536), 0.29999999999999999, 70, 99999999);
-                ctx:spawnStage07BossNode(enemy, 133, 2, f32((-f32(115))), f32((-f32(120))), (16384 % 65536), 1, 50, 99999999);
-                ctx:spawnStage07BossNode(enemy, 134, 3, f32(115), f32((-f32(120))), (16384 % 65536), 1, 50, 99999999);
-                ctx:spawnStage07BossNode(enemy, 135, 4, f32(230), f32((-f32(70))), (16384 % 65536), 1, 60, 20000);
-                ctx:spawnStage07BossNode(enemy, 135, 5, f32((-f32(230))), f32((-f32(70))), (16384 % 65536), 1, 60, 20000);
-                ctx:spawnStage07BossNode(enemy, 136, 6, f32(70), f32(145), (16384 % 65536), 1, 24, 10000);
-                ctx:spawnStage07BossNode(enemy, 136, 7, f32((-f32(70))), f32(145), (16384 % 65536), 1, 24, 10000);
-                ctx:spawnStage07BossNode(enemy, 136, 8, f32(185), f32(115), (16384 % 65536), 1, 24, 10000);
-                ctx:spawnStage07BossNode(enemy, 136, 9, f32((-f32(185))), f32(115), (16384 % 65536), 1, 24, 10000);
-                ctx:spawnStage07BossNode(enemy, 137, 10, f32(50), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
-                ctx:spawnStage07BossNode(enemy, 138, 11, f32((-f32(50))), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
-                ctx:spawnStage07BossNode(enemy, 138, 12, f32(200), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
-                ctx:spawnStage07BossNode(enemy, 137, 13, f32((-f32(200))), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
-                ctx:spawnStage07BossNode(enemy, 128, 14, f32(460), f32(800), (16384 % 65536), 1, 30, 99999999);
-                ctx:spawnStage07BossNode(enemy, 128, 15, f32(265), f32(800), (16384 % 65536), 1, 30, 99999999);
-                ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
-            end
-        end;
-        if (timer == 20) then
-            do
-                ctx:spawnStage07BossNode(enemy, 128, 16, f32(110), f32(800), (16384 % 65536), 1, 30, 99999999);
-                ctx:spawnStage07BossNode(enemy, 128, 17, f32(610), f32(800), (16384 % 65536), 1, 30, 99999999)
-            end
-        end;
-        if (timer == 80) then
-            do
-                ctx:playPlayerSound((ctx).bossSe7SoundHandle_, 25)
-            end
-        end;
-        if (timer < 80) then
-            do
-                (enemy).y = f32(f32(1000))
-            end
-        else
-            if (timer < 200) then
-                do
-                    local t = ((timer - 80) / 120);
-                    (enemy).y = f32(f32((f32(1000) + f32(((250 - 1000) * (0.5 - (math.cos((t * kPi)) * 0.5)))))))
-                end
-            else
-                do
-                    (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
-                end
-            end
-        end;
-        if (timer == 240) then
-            do
-                (ctx).lateStageBossBreaksRemaining_ = 5;
-                (openPhase)(1, 148000, 3600, 0)
-            end
-        end;
-        goto __switch_end11;
-        ::__case14::;
-        do
-            (enemy).targetable = false;
-            local target = stage07RadiansToAngle(math.atan2(f32(((ctx).lateStageBossTargetY_ - (enemy).y)), f32(((ctx).lateStageBossTargetX_ - (enemy).x))));
-            (enemy).sourceAngle16 = (approachStage07Angle((enemy).sourceAngle16, target, 512) % 65536);
-            local radians = stage07AngleRadians((enemy).sourceAngle16);
-            (enemy).x = f32(f32(((enemy).x + f32((math.cos(radians) * 0.20000000000000001)))));
-            (enemy).y = f32(f32(((enemy).y + f32((math.sin(radians) * 0.20000000000000001)))));
-            goto __switch_end11
-        end;
-        ::__case15::;
-        (enemy).targetable = false;
-        if (timer < 90) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0500000007))))))
-            end
-        end;
-        if ((timer == 1) or (timer == 90)) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy)
-            end
-        end;
-        if (timer == 90) then
-            ctx:playPlayerSound((ctx).blast1SoundHandle_, 25)
-        end;
-        if (timer == 390) then
-            (openPhase)(11, 70000, 2100, 1)
-        end;
-        goto __switch_end11;
-        ::__case16::;
-        ::__case17::;
-        ::__case18::;
-        do
-            (enemy).targetable = false;
-            local first = (findHead)(0);
-            local second = (findHead)(1);
-            local firstHp = (function() if (first ~= nil) then return (first).hp else return 0 end end)();
-            local secondHp = (function() if (second ~= nil) then return (second).hp else return 0 end end)();
-            if ((enemy).helperState == 11) then
-                do
-                    local lost = nil;
-                    local detachedType = 0;
-                    if (firstHp < 0) then
+        if __switch12 == 0 then __switch12 = 1
+        elseif __switch12 == 1 then __switch12 = 2
+        elseif __switch12 == 10 then __switch12 = 3
+        elseif __switch12 == 11 then __switch12 = 4
+        elseif __switch12 == 12 then __switch12 = 5
+        elseif __switch12 == 13 then __switch12 = 6
+        elseif __switch12 == 20 then __switch12 = 7
+        elseif __switch12 == 30 then __switch12 = 8
+        elseif __switch12 == 40 then __switch12 = 9
+        elseif __switch12 == 50 then __switch12 = 10
+        elseif __switch12 == 59 then __switch12 = 11
+        elseif __switch12 == 60 then __switch12 = 12
+        elseif __switch12 == 21 then __switch12 = 13
+        elseif __switch12 == 31 then __switch12 = 14
+        elseif __switch12 == 41 then __switch12 = 15
+        elseif __switch12 == 51 then __switch12 = 16
+        elseif __switch12 == 61 then __switch12 = 17
+        elseif __switch12 == 70 then __switch12 = 18
+        else __switch12 = 19 end
+        repeat
+            if __switch12 <= 1 then
+                if (timer == 0) then
+                    do
+                        ctx:spawnStage07BossNode(enemy, 131, 0, f32((-f32(80))), f32(0), (16384 % 65536), 0.29999999999999999, 70, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 132, 1, f32(80), f32(0), (16384 % 65536), 0.29999999999999999, 70, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 133, 2, f32((-f32(115))), f32((-f32(120))), (16384 % 65536), 1, 50, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 134, 3, f32(115), f32((-f32(120))), (16384 % 65536), 1, 50, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 135, 4, f32(230), f32((-f32(70))), (16384 % 65536), 1, 60, 20000);
+                        ctx:spawnStage07BossNode(enemy, 135, 5, f32((-f32(230))), f32((-f32(70))), (16384 % 65536), 1, 60, 20000);
+                        ctx:spawnStage07BossNode(enemy, 136, 6, f32(70), f32(145), (16384 % 65536), 1, 24, 10000);
+                        ctx:spawnStage07BossNode(enemy, 136, 7, f32((-f32(70))), f32(145), (16384 % 65536), 1, 24, 10000);
+                        ctx:spawnStage07BossNode(enemy, 136, 8, f32(185), f32(115), (16384 % 65536), 1, 24, 10000);
+                        ctx:spawnStage07BossNode(enemy, 136, 9, f32((-f32(185))), f32(115), (16384 % 65536), 1, 24, 10000);
+                        ctx:spawnStage07BossNode(enemy, 137, 10, f32(50), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 138, 11, f32((-f32(50))), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 138, 12, f32(200), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 137, 13, f32((-f32(200))), f32((-f32(190))), (16384 % 65536), 1, 20, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 128, 14, f32(460), f32(800), (16384 % 65536), 1, 30, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 128, 15, f32(265), f32(800), (16384 % 65536), 1, 30, 99999999);
+                        ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
+                    end
+                end;
+                if (timer == 20) then
+                    do
+                        ctx:spawnStage07BossNode(enemy, 128, 16, f32(110), f32(800), (16384 % 65536), 1, 30, 99999999);
+                        ctx:spawnStage07BossNode(enemy, 128, 17, f32(610), f32(800), (16384 % 65536), 1, 30, 99999999)
+                    end
+                end;
+                if (timer == 80) then
+                    do
+                        ctx:playPlayerSound((ctx).bossSe7SoundHandle_, 25)
+                    end
+                end;
+                if (timer < 80) then
+                    do
+                        (enemy).y = f32(f32(1000))
+                    end
+                else
+                    if (timer < 200) then
                         do
-                            (enemy).helperState = 13;
-                            lost = first;
-                            detachedType = 129
+                            local t = ((timer - 80) / 120);
+                            (enemy).y = f32(f32((f32(1000) + f32(((250 - 1000) * (0.5 - (math.cos((t * kPi)) * 0.5)))))))
                         end
                     else
-                        if (secondHp < 0) then
-                            do
-                                (enemy).helperState = 12;
-                                lost = second;
-                                detachedType = 130
+                        do
+                            (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
+                        end
+                    end
+                end;
+                if (timer == 240) then
+                    do
+                        (ctx).lateStageBossBreaksRemaining_ = 5;
+                        (openPhase)(1, 148000, 3600, 0)
+                    end
+                end;
+                do break end;
+            end
+            if __switch12 <= 2 then
+                do
+                    (enemy).targetable = false;
+                    local target = stage07RadiansToAngle(math.atan2(f32(((ctx).lateStageBossTargetY_ - (enemy).y)), f32(((ctx).lateStageBossTargetX_ - (enemy).x))));
+                    (enemy).sourceAngle16 = (approachStage07Angle((enemy).sourceAngle16, target, 512) % 65536);
+                    local radians = stage07AngleRadians((enemy).sourceAngle16);
+                    (enemy).x = f32(f32(((enemy).x + f32((math.cos(radians) * 0.20000000000000001)))));
+                    (enemy).y = f32(f32(((enemy).y + f32((math.sin(radians) * 0.20000000000000001)))));
+                    do break end
+                end;
+            end
+            if __switch12 <= 3 then
+                (enemy).targetable = false;
+                if (timer < 90) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0500000007))))))
+                    end
+                end;
+                if ((timer == 1) or (timer == 90)) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 90) then
+                    ctx:playPlayerSound((ctx).blast1SoundHandle_, 25)
+                end;
+                if (timer == 390) then
+                    (openPhase)(11, 70000, 2100, 1)
+                end;
+                do break end;
+            end
+            if __switch12 <= 6 then
+                do
+                    (enemy).targetable = false;
+                    local first = (findHead)(0);
+                    local second = (findHead)(1);
+                    local firstHp = (function() if (first ~= nil) then return (first).hp else return 0 end end)();
+                    local secondHp = (function() if (second ~= nil) then return (second).hp else return 0 end end)();
+                    if ((enemy).helperState == 11) then
+                        do
+                            local lost = nil;
+                            local detachedType = 0;
+                            if (firstHp < 0) then
+                                do
+                                    (enemy).helperState = 13;
+                                    lost = first;
+                                    detachedType = 129
+                                end
+                            else
+                                if (secondHp < 0) then
+                                    do
+                                        (enemy).helperState = 12;
+                                        lost = second;
+                                        detachedType = 130
+                                    end
+                                end
+                            end;
+                            if (lost ~= nil) then
+                                do
+                                    ctx:spawnStage07BossNode(enemy, detachedType, (function() if (detachedType == 129) then return 0 else return 1 end end)(), f32(((lost).x - (enemy).x)), f32(((lost).y - (enemy).y)), (16384 % 65536), 0, 80, 99999999);
+                                    ctx:spawnPlayerSideObject(25, (lost).x, (lost).y, 0, (0 % 65536), 0, f32(80))
+                                end
                             end
                         end
                     end;
-                    if (lost ~= nil) then
-                        do
-                            ctx:spawnStage07BossNode(enemy, detachedType, (function() if (detachedType == 129) then return 0 else return 1 end end)(), f32(((lost).x - (enemy).x)), f32(((lost).y - (enemy).y)), (16384 % 65536), 0, 80, 99999999);
-                            ctx:spawnPlayerSideObject(25, (lost).x, (lost).y, 0, (0 % 65536), 0, f32(80))
-                        end
+                    (enemy).hp = (math.max(0, firstHp) + math.max(0, secondHp));
+                    do break end
+                end;
+            end
+            if __switch12 <= 12 then
+                (enemy).targetable = false;
+                if (timer == 180) then
+                    do
+                        local hitPoints = (function() if ((enemy).helperState >= 59) then return 80000 else return 70000 end end)();
+                        (openPhase)((function() if ((enemy).helperState >= 59) then return 61 else return ((enemy).helperState + 1) end end)(), hitPoints, 2100, cpp.clamp((5 - (ctx).lateStageBossBreaksRemaining_), 1, 4))
                     end
-                end
-            end;
-            (enemy).hp = (math.max(0, firstHp) + math.max(0, secondHp));
-            goto __switch_end11
-        end;
-        ::__case19::;
-        ::__case20::;
-        ::__case21::;
-        ::__case22::;
-        ::__case23::;
-        ::__case24::;
-        (enemy).targetable = false;
-        if (timer == 180) then
-            do
-                local hitPoints = (function() if ((enemy).helperState >= 59) then return 80000 else return 70000 end end)();
-                (openPhase)((function() if ((enemy).helperState >= 59) then return 61 else return ((enemy).helperState + 1) end end)(), hitPoints, 2100, cpp.clamp((5 - (ctx).lateStageBossBreaksRemaining_), 1, 4))
+                end;
+                do break end;
             end
-        end;
-        goto __switch_end11;
-        ::__case25::;
-        ::__case26::;
-        ::__case27::;
-        ::__case28::;
-        ::__case29::;
-        do
-            (enemy).targetable = false;
-            local first = (findHead)(0);
-            local second = (findHead)(1);
-            local firstHp = (function() if (first ~= nil) then return (first).hp else return 0 end end)();
-            local secondHp = (function() if (second ~= nil) then return (second).hp else return 0 end end)();
-            (enemy).hp = math.min((enemy).hp, math.min(firstHp, secondHp));
-            goto __switch_end11
-        end;
-        ::__case30::;
-        (enemy).targetable = false;
-        if ((timer < 240) and (math.fmod(timer, 3) == 0)) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy)
+            if __switch12 <= 17 then
+                do
+                    (enemy).targetable = false;
+                    local first = (findHead)(0);
+                    local second = (findHead)(1);
+                    local firstHp = (function() if (first ~= nil) then return (first).hp else return 0 end end)();
+                    local secondHp = (function() if (second ~= nil) then return (second).hp else return 0 end end)();
+                    (enemy).hp = math.min((enemy).hp, math.min(firstHp, secondHp));
+                    do break end
+                end;
             end
-        end;
-        if (timer == 240) then
-            do
-                ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
-                ctx:spawnEnemyDeathEffects(enemy, 2, true)
+            if __switch12 <= 18 then
+                (enemy).targetable = false;
+                if ((timer < 240) and (math.fmod(timer, 3) == 0)) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 240) then
+                    do
+                        ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
+                        ctx:spawnEnemyDeathEffects(enemy, 2, true)
+                    end
+                end;
+                if (timer >= 480) then
+                    do
+                        ctx:clearLateStageGate(7);
+                        (enemy).active = false
+                    end
+                end;
+                do break end;
             end
-        end;
-        if (timer >= 480) then
-            do
-                ctx:clearLateStageGate(7);
-                (enemy).active = false
+            if __switch12 <= 19 then
+                do break end
             end
-        end;
-        goto __switch_end11;
-        ::__case31::;
-        goto __switch_end11
-        ::__switch_end11::
+        until true
     end;
     (enemy).drawHp = (enemy).hp;
     (ctx).lateStageBossCountdownDraw_ = (ctx).lateStageBossCountdown_;
@@ -877,10 +880,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                                 ctx:spawnProjectileSpread(selector, 0, shotX, shotY, (enemy).secondaryAngle16, f32(10), ((kMiddleSpeed)[index + 1] - (layer * (kLayerDrop)[index + 1])), 1, 2, spread, 0);
                                                 spread = (spread + (kMiddleSpreadStep)[index + 1])
                                             end
-                                            ::__continue33::
                                             layer = layer + 1
                                         end
-                                        ::__loop_end32::
                                     end;
                                     firedQuiet = true
                                 end
@@ -1334,10 +1335,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                             local angle = (function() if positiveSide then return ((i * 14000) - 14000) else return ((i * 14000) + 18768) end end)();
                                             ctx:spawnProjectileNode(2, 0, shotX, shotY, normalizeStage07Angle(angle), f32(10), (kSpeed)[difficulty + 1], 1, 0)
                                         end
-                                        ::__continue35::
                                         i = i + 1
                                     end
-                                    ::__loop_end34::
                                 end;
                                 fired = true
                             end
@@ -1542,10 +1541,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                     do
                                         ctx:spawnProjectileNode(4, 0, muzzleX, muzzleY, normalizeStage07Angle(((aimed + jitter) + (i * 700))), f32(0), (kSpeed)[difficulty + 1], 1, 0)
                                     end
-                                    ::__continue37::
                                     i = i + 1
                                 end
-                                ::__loop_end36::
                             end;
                             if (difficulty > 2) then
                                 do
@@ -1556,10 +1553,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                             do
                                                 ctx:spawnProjectileNode(4, 0, muzzleX, muzzleY, normalizeStage07Angle(((aimed + extraJitter) + (i * 2800))), f32(0), (kSpeed)[difficulty + 1], 1, 0)
                                             end
-                                            ::__continue39::
                                             i = i + 1
                                         end
-                                        ::__loop_end38::
                                     end
                                 end
                             end;
@@ -1742,10 +1737,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                                 ctx:spawnProjectileNode(5, 0, (enemy).x, (enemy).y, normalizeStage07Angle((((i * 3000) + (timer * 300)) - 4500)), f32(0), (speed + 1), 1, 0);
                                                 ctx:spawnProjectileNode(5, 0, (enemy).x, (enemy).y, normalizeStage07Angle((((i * 3000) + (timer * 300)) + 28268)), f32(0), (speed + 1), 1, 0)
                                             end
-                                            ::__continue41::
                                             i = i + 1
                                         end
-                                        ::__loop_end40::
                                     end
                                 end
                             end;
@@ -1812,10 +1805,8 @@ M.updateStage07BossNode = function(ctx, enemy)
                                 local selector = (function() if ((parent).spawnType == 131) then return 3 else return 2 end end)();
                                 ctx:spawnProjectileSpread(selector, 0, (enemy).x, (enemy).y, normalizeStage07Angle((aimed + ((layer * trunc(65536 / (count * 5))) * 2))), f32(10), ((kFinalBaseSpeed)[index + 1] + (layer * 0.90000000000000002)), 1, count, 65536, 0)
                             end
-                            ::__continue43::
                             layer = layer + 1
                         end
-                        ::__loop_end42::
                     end;
                     ctx:spawnEnemyDeathEffects(enemy, 0, false);
                     (enemy).active = false;

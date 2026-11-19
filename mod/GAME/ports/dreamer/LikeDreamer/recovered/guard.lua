@@ -139,29 +139,24 @@ end
 M.maybeSpawnStage10GuardNode = function(ctx, owner)
     do
         local __switch2 = (owner).spawnType
-        if __switch2 == 273 then goto __case3
-        elseif __switch2 == 274 then goto __case4
-        elseif __switch2 == 275 then goto __case5
-        elseif __switch2 == 277 then goto __case6
-        elseif __switch2 == 282 then goto __case7
-        elseif __switch2 == 285 then goto __case8
-        elseif __switch2 == 293 then goto __case9
-        elseif __switch2 == 294 then goto __case10
-        elseif __switch2 == 301 then goto __case11
-        else goto __case12 end
-        ::__case3::;
-        ::__case4::;
-        ::__case5::;
-        ::__case6::;
-        ::__case7::;
-        ::__case8::;
-        ::__case9::;
-        ::__case10::;
-        ::__case11::;
-        goto __switch_end1;
-        ::__case12::;
-        do return end
-        ::__switch_end1::
+        if __switch2 == 273 then __switch2 = 1
+        elseif __switch2 == 274 then __switch2 = 2
+        elseif __switch2 == 275 then __switch2 = 3
+        elseif __switch2 == 277 then __switch2 = 4
+        elseif __switch2 == 282 then __switch2 = 5
+        elseif __switch2 == 285 then __switch2 = 6
+        elseif __switch2 == 293 then __switch2 = 7
+        elseif __switch2 == 294 then __switch2 = 8
+        elseif __switch2 == 301 then __switch2 = 9
+        else __switch2 = 10 end
+        repeat
+            if __switch2 <= 9 then
+                do break end;
+            end
+            if __switch2 <= 10 then
+                do return end
+            end
+        until true
     end;
     if (((ctx).player_).invulnerableFrames < 61) then
         do
@@ -228,10 +223,8 @@ M.updateStage10GuardNode = function(ctx, enemy)
                                 local scale = sceneRandomHundredth(scaleSeed, 1.1000000000000001, 2.2000000000000002);
                                 ctx:spawnStageEffect(44, spark, 72, 72, (enemy).x, (enemy).y, sceneRandomAngle(angleSeed), sceneRandomHundredth(speedSeed, 16, 26), scale, scale, 0, 255, 255, 255, 192, 0)
                             end
-                            ::__continue14::
                             i = i + 1
                         end
-                        ::__loop_end13::
                     end
                 end
             end;

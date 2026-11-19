@@ -7,8 +7,15 @@ LikeDreamer.Recovered = R
 local bit = require('bit')
 local ffi = require('ffi')
 ffi.cdef('double hypot(double x, double y); double _hypot(double x, double y);')
-local hasHypot, hypot = pcall(function() return ffi.C.hypot end)
-if not hasHypot then hypot = ffi.C._hypot end
+local hypot
+if ffi.os == 'Windows' then
+    -- Sub 静态链接运行库，默认符号表没有 hypot；闭包保留 DLL 句柄，避免被提前卸载。
+    local crt = ffi.load('ucrtbase')
+    hypot = function(x, y) return crt.hypot(x, y) end
+else
+    local hasHypot, nativeHypot = pcall(function() return ffi.C.hypot end)
+    hypot = hasHypot and nativeHypot or ffi.C._hypot
+end
 local floor, ceil = math.floor, math.ceil
 R.f32 = Core.float32
 function R.trunc(x) return x < 0 and ceil(x) or floor(x) end

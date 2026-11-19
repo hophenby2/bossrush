@@ -67,9 +67,7 @@ lateSpawnSpec = function(spawnType)
                     end
                 end
             end
-            ::__continue2::
         end
-        ::__loop_end1::
     end;
     do return nil end
 end
@@ -85,9 +83,7 @@ lateBossSpec = function(spawnType)
                     end
                 end
             end
-            ::__continue4::
         end
-        ::__loop_end3::
     end;
     do return nil end
 end
@@ -103,9 +99,7 @@ stage10FinalBossNodeSpec = function(spawnType)
                     end
                 end
             end
-            ::__continue6::
         end
-        ::__loop_end5::
     end;
     do return nil end
 end
@@ -162,107 +156,95 @@ end
 lateEnemyDeathRewardWindow = function(spawnType)
     do
         local __switch8 = spawnType
-        if __switch8 == 68 then goto __case9
-        elseif __switch8 == 69 then goto __case10
-        elseif __switch8 == 70 then goto __case11
-        elseif __switch8 == 71 then goto __case12
-        elseif __switch8 == 72 then goto __case13
-        elseif __switch8 == 73 then goto __case14
-        elseif __switch8 == 74 then goto __case15
-        elseif __switch8 == 77 then goto __case16
-        elseif __switch8 == 113 then goto __case17
-        elseif __switch8 == 114 then goto __case18
-        elseif __switch8 == 115 then goto __case19
-        elseif __switch8 == 78 then goto __case20
-        elseif __switch8 == 76 then goto __case21
-        elseif __switch8 == 112 then goto __case22
-        elseif __switch8 == 116 then goto __case23
-        elseif __switch8 == 117 then goto __case24
-        elseif __switch8 == 118 then goto __case25
-        elseif __switch8 == 79 then goto __case26
-        elseif __switch8 == 119 then goto __case27
-        else goto __case28 end
-        ::__case9::;
-        do return 200 end;
-        ::__case10::;
-        do return 240 end;
-        ::__case11::;
-        ::__case12::;
-        ::__case13::;
-        ::__case14::;
-        ::__case15::;
-        ::__case16::;
-        ::__case17::;
-        ::__case18::;
-        ::__case19::;
-        ::__case20::;
-        do return 500 end;
-        ::__case21::;
-        do return 300 end;
-        ::__case22::;
-        do return 360 end;
-        ::__case23::;
-        ::__case24::;
-        do return 600 end;
-        ::__case25::;
-        do return 800 end;
-        ::__case26::;
-        ::__case27::;
-        do return 1800 end;
-        ::__case28::;
-        do return 0 end
-        ::__switch_end7::
+        if __switch8 == 68 then __switch8 = 1
+        elseif __switch8 == 69 then __switch8 = 2
+        elseif __switch8 == 70 then __switch8 = 3
+        elseif __switch8 == 71 then __switch8 = 4
+        elseif __switch8 == 72 then __switch8 = 5
+        elseif __switch8 == 73 then __switch8 = 6
+        elseif __switch8 == 74 then __switch8 = 7
+        elseif __switch8 == 77 then __switch8 = 8
+        elseif __switch8 == 113 then __switch8 = 9
+        elseif __switch8 == 114 then __switch8 = 10
+        elseif __switch8 == 115 then __switch8 = 11
+        elseif __switch8 == 78 then __switch8 = 12
+        elseif __switch8 == 76 then __switch8 = 13
+        elseif __switch8 == 112 then __switch8 = 14
+        elseif __switch8 == 116 then __switch8 = 15
+        elseif __switch8 == 117 then __switch8 = 16
+        elseif __switch8 == 118 then __switch8 = 17
+        elseif __switch8 == 79 then __switch8 = 18
+        elseif __switch8 == 119 then __switch8 = 19
+        else __switch8 = 20 end
+        repeat
+            if __switch8 <= 1 then
+                do return 200 end;
+            end
+            if __switch8 <= 2 then
+                do return 240 end;
+            end
+            if __switch8 <= 12 then
+                do return 500 end;
+            end
+            if __switch8 <= 13 then
+                do return 300 end;
+            end
+            if __switch8 <= 14 then
+                do return 360 end;
+            end
+            if __switch8 <= 16 then
+                do return 600 end;
+            end
+            if __switch8 <= 17 then
+                do return 800 end;
+            end
+            if __switch8 <= 19 then
+                do return 1800 end;
+            end
+            if __switch8 <= 20 then
+                do return 0 end
+            end
+        until true
     end
 end
 
 lateEnemyDeathEffectMode = function(spawnType)
     do
         local __switch30 = spawnType
-        if __switch30 == 68 then goto __case31
-        elseif __switch30 == 69 then goto __case32
-        elseif __switch30 == 76 then goto __case33
-        elseif __switch30 == 78 then goto __case34
-        elseif __switch30 == 73 then goto __case35
-        elseif __switch30 == 112 then goto __case36
-        elseif __switch30 == 116 then goto __case37
-        elseif __switch30 == 70 then goto __case38
-        elseif __switch30 == 71 then goto __case39
-        elseif __switch30 == 72 then goto __case40
-        elseif __switch30 == 74 then goto __case41
-        elseif __switch30 == 113 then goto __case42
-        elseif __switch30 == 114 then goto __case43
-        elseif __switch30 == 115 then goto __case44
-        elseif __switch30 == 117 then goto __case45
-        elseif __switch30 == 77 then goto __case46
-        elseif __switch30 == 79 then goto __case47
-        elseif __switch30 == 118 then goto __case48
-        elseif __switch30 == 119 then goto __case49
-        else goto __case50 end
-        ::__case31::;
-        ::__case32::;
-        ::__case33::;
-        ::__case34::;
-        ::__case35::;
-        ::__case36::;
-        ::__case37::;
-        do return 0 end;
-        ::__case38::;
-        ::__case39::;
-        ::__case40::;
-        ::__case41::;
-        ::__case42::;
-        ::__case43::;
-        ::__case44::;
-        ::__case45::;
-        do return 1 end;
-        ::__case46::;
-        ::__case47::;
-        ::__case48::;
-        ::__case49::;
-        do return 2 end;
-        ::__case50::;
-        do return 0 end
-        ::__switch_end29::
+        if __switch30 == 68 then __switch30 = 1
+        elseif __switch30 == 69 then __switch30 = 2
+        elseif __switch30 == 76 then __switch30 = 3
+        elseif __switch30 == 78 then __switch30 = 4
+        elseif __switch30 == 73 then __switch30 = 5
+        elseif __switch30 == 112 then __switch30 = 6
+        elseif __switch30 == 116 then __switch30 = 7
+        elseif __switch30 == 70 then __switch30 = 8
+        elseif __switch30 == 71 then __switch30 = 9
+        elseif __switch30 == 72 then __switch30 = 10
+        elseif __switch30 == 74 then __switch30 = 11
+        elseif __switch30 == 113 then __switch30 = 12
+        elseif __switch30 == 114 then __switch30 = 13
+        elseif __switch30 == 115 then __switch30 = 14
+        elseif __switch30 == 117 then __switch30 = 15
+        elseif __switch30 == 77 then __switch30 = 16
+        elseif __switch30 == 79 then __switch30 = 17
+        elseif __switch30 == 118 then __switch30 = 18
+        elseif __switch30 == 119 then __switch30 = 19
+        else __switch30 = 20 end
+        repeat
+            if __switch30 <= 7 then
+                do return 0 end;
+            end
+            if __switch30 <= 15 then
+                do return 1 end;
+            end
+            if __switch30 <= 19 then
+                do return 2 end;
+            end
+            if __switch30 <= 20 then
+                do return 0 end
+            end
+        until true
     end
 end
 
@@ -287,34 +269,42 @@ end
 M.clearLateStageGate = function(ctx, stage)
     do
         local __switch52 = stage
-        if __switch52 == 5 then goto __case53
-        elseif __switch52 == 6 then goto __case54
-        elseif __switch52 == 7 then goto __case55
-        elseif __switch52 == 8 then goto __case56
-        elseif __switch52 == 9 then goto __case57
-        elseif __switch52 == 10 then goto __case58
-        else goto __case59 end
-        ::__case53::;
-        (ctx).stage05GateFlag_ = false;
-        goto __switch_end51;
-        ::__case54::;
-        (ctx).stage06GateFlag_ = false;
-        goto __switch_end51;
-        ::__case55::;
-        (ctx).stage07GateFlag_ = false;
-        goto __switch_end51;
-        ::__case56::;
-        (ctx).stage08GateFlag_ = false;
-        goto __switch_end51;
-        ::__case57::;
-        (ctx).stage09GateFlag_ = false;
-        goto __switch_end51;
-        ::__case58::;
-        (ctx).stage10GateFlag_ = false;
-        goto __switch_end51;
-        ::__case59::;
-        goto __switch_end51
-        ::__switch_end51::
+        if __switch52 == 5 then __switch52 = 1
+        elseif __switch52 == 6 then __switch52 = 2
+        elseif __switch52 == 7 then __switch52 = 3
+        elseif __switch52 == 8 then __switch52 = 4
+        elseif __switch52 == 9 then __switch52 = 5
+        elseif __switch52 == 10 then __switch52 = 6
+        else __switch52 = 7 end
+        repeat
+            if __switch52 <= 1 then
+                (ctx).stage05GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 2 then
+                (ctx).stage06GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 3 then
+                (ctx).stage07GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 4 then
+                (ctx).stage08GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 5 then
+                (ctx).stage09GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 6 then
+                (ctx).stage10GateFlag_ = false;
+                do break end;
+            end
+            if __switch52 <= 7 then
+                do break end
+            end
+        until true
     end
 end
 
@@ -443,10 +433,8 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
                             end
                         end
                     end
-                    ::__continue61::
                     source = source + 1
                 end
-                ::__loop_end60::
             end;
             do return end
         end
@@ -464,31 +452,31 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
                     do
                         local source = 0
                         while (source < 2) do
-                            do
-                                local start = (source * 210);
-                                local interval = (kFanInterval)[difficulty + 1];
-                                if (((cycle < start) or (cycle >= (start + 210))) or (math.fmod((cycle - start), interval) ~= 0)) then
-                                    do
-                                        goto __continue63
-                                    end
-                                end;
-                                local x = f32(((enemy).x + ((kSources)[source + 1])[0 + 1]));
-                                local y = f32(((enemy).y + ((kSources)[source + 1])[1 + 1]));
-                                local shot = trunc((cycle - start) / interval);
-                                local cachedAim = (function() if (source == 0) then return cpp.ref(function() return (enemy).secondaryAngle16 end, function(value) (enemy).secondaryAngle16 = value end) else return cpp.ref(function() return (enemy).targetAngle16 end, function(value) (enemy).targetAngle16 = value end) end end)();
-                                if (cycle == start) then
-                                    do
-                                        cpp.set(cachedAim, ((aimFrom)(x, y) % 65536))
-                                    end
-                                end;
-                                ctx:spawnProjectileSpread(3, 0, x, y, cpp.get(cachedAim), f32(10), (kFanSpeed)[difficulty + 1], 1, (shot + 1), (shot * (kSpreadUnit)[difficulty + 1]), 0);
-                                cpp.set(cachedAim, (approachAngle16(cpp.get(cachedAim), (aimFrom)(x, y), 444) % 65536));
-                                ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
-                            end
-                            ::__continue63::
+                            repeat
+                                do
+                                    local start = (source * 210);
+                                    local interval = (kFanInterval)[difficulty + 1];
+                                    if (((cycle < start) or (cycle >= (start + 210))) or (math.fmod((cycle - start), interval) ~= 0)) then
+                                        do
+                                            do break end
+                                        end
+                                    end;
+                                    local x = f32(((enemy).x + ((kSources)[source + 1])[0 + 1]));
+                                    local y = f32(((enemy).y + ((kSources)[source + 1])[1 + 1]));
+                                    local shot = trunc((cycle - start) / interval);
+                                    local cachedAim = (function() if (source == 0) then return cpp.ref(function() return (enemy).secondaryAngle16 end, function(value) (enemy).secondaryAngle16 = value end) else return cpp.ref(function() return (enemy).targetAngle16 end, function(value) (enemy).targetAngle16 = value end) end end)();
+                                    if (cycle == start) then
+                                        do
+                                            cpp.set(cachedAim, ((aimFrom)(x, y) % 65536))
+                                        end
+                                    end;
+                                    ctx:spawnProjectileSpread(3, 0, x, y, cpp.get(cachedAim), f32(10), (kFanSpeed)[difficulty + 1], 1, (shot + 1), (shot * (kSpreadUnit)[difficulty + 1]), 0);
+                                    cpp.set(cachedAim, (approachAngle16(cpp.get(cachedAim), (aimFrom)(x, y), 444) % 65536));
+                                    ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
+                                end
+                            until true
                             source = source + 1
                         end
-                        ::__loop_end62::
                     end
                 end
             end;
@@ -522,10 +510,8 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
                                     end
                                 end
                             end
-                            ::__continue65::
                             source = source + 1
                         end
-                        ::__loop_end64::
                     end
                 end
             end;
@@ -546,32 +532,32 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
             do
                 local source = 0
                 while (source < 2) do
-                    do
-                        local interval = (kRingInterval)[difficulty + 1];
-                        if ((timer < 30) or (math.fmod((timer - 30), interval) ~= 0)) then
-                            goto __continue67
-                        end;
-                        local x = f32(((enemy).x + ((kSources)[source + 1])[0 + 1]));
-                        local y = f32(((enemy).y + ((kSources)[source + 1])[1 + 1]));
-                        local rotation = (timer * (kRotationStep)[difficulty + 1]);
-                        if (source == 1) then
-                            rotation = (-rotation)
-                        end;
-                        local center = normalizeAngle16((16384 + rotation));
-                        local count = (kRingCount)[difficulty + 1];
-                        local speed = (kRingSpeed)[difficulty + 1];
-                        ctx:spawnProjectileSpread(13, 0, x, y, center, f32(0), speed, 1, count, 65536, 0);
-                        if (difficulty > 2) then
-                            do
-                                ctx:spawnProjectileSpread(13, 0, x, y, center, f32(0), (speed + 2), 1, count, 65536, 0)
-                            end
-                        end;
-                        ctx:playPlayerSound((ctx).bullet1SoundHandle_, 16)
-                    end
-                    ::__continue67::
+                    repeat
+                        do
+                            local interval = (kRingInterval)[difficulty + 1];
+                            if ((timer < 30) or (math.fmod((timer - 30), interval) ~= 0)) then
+                                do break end
+                            end;
+                            local x = f32(((enemy).x + ((kSources)[source + 1])[0 + 1]));
+                            local y = f32(((enemy).y + ((kSources)[source + 1])[1 + 1]));
+                            local rotation = (timer * (kRotationStep)[difficulty + 1]);
+                            if (source == 1) then
+                                rotation = (-rotation)
+                            end;
+                            local center = normalizeAngle16((16384 + rotation));
+                            local count = (kRingCount)[difficulty + 1];
+                            local speed = (kRingSpeed)[difficulty + 1];
+                            ctx:spawnProjectileSpread(13, 0, x, y, center, f32(0), speed, 1, count, 65536, 0);
+                            if (difficulty > 2) then
+                                do
+                                    ctx:spawnProjectileSpread(13, 0, x, y, center, f32(0), (speed + 2), 1, count, 65536, 0)
+                                end
+                            end;
+                            ctx:playPlayerSound((ctx).bullet1SoundHandle_, 16)
+                        end
+                    until true
                     source = source + 1
                 end
-                ::__loop_end66::
             end;
             if (timer >= 120) then
                 do
@@ -664,10 +650,8 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
                     end
                 end
             end
-            ::__continue69::
             source = source + 1
         end
-        ::__loop_end68::
     end;
     local kPairInterval = {71, 43, 31, 27, 24};
     local kPairSpeed = {5, 6, 7, 8, 9};
@@ -694,10 +678,8 @@ M.emitStage05BossProjectiles = function(ctx, enemy)
                     end
                 end
             end
-            ::__continue71::
             source = source + 1
         end
-        ::__loop_end70::
     end
 end
 
@@ -808,10 +790,8 @@ M.updateStage05BossChild = function(ctx, enemy)
                             do
                                 ctx:spawnProjectileNode(13, 0, (enemy).x, f32(((enemy).y + f32(10))), normalizeAngle16((center + (i * 400))), f32(10), speed, 1, 0)
                             end
-                            ::__continue73::
                             i = i + 1
                         end
-                        ::__loop_end72::
                     end;
                     if (difficulty > 2) then
                         do
@@ -821,10 +801,8 @@ M.updateStage05BossChild = function(ctx, enemy)
                                     do
                                         ctx:spawnProjectileNode(13, 0, (enemy).x, f32(((enemy).y + f32(10))), normalizeAngle16(((center + 1111) + (i * 400))), f32(10), (speed + 1), 1, 0)
                                     end
-                                    ::__continue75::
                                     i = i + 1
                                 end
-                                ::__loop_end74::
                             end
                         end
                     end;
@@ -1093,43 +1071,51 @@ M.updateStage05Boss = function(ctx, enemy)
             (enemy).radius = 200;
             do
                 local __switch77 = (ctx).lateStageBossBreaksRemaining_
-                if __switch77 == 6 then goto __case78
-                elseif __switch77 == 5 then goto __case79
-                elseif __switch77 == 4 then goto __case80
-                elseif __switch77 == 3 then goto __case81
-                elseif __switch77 == 2 then goto __case82
-                elseif __switch77 == 1 then goto __case83
-                else goto __case84 end
-                ::__case78::;
-                (enemy).helperState = 2;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end76;
-                ::__case79::;
-                (enemy).helperState = 4;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end76;
-                ::__case80::;
-                (enemy).helperState = 6;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end76;
-                ::__case81::;
-                (enemy).helperState = 8;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end76;
-                ::__case82::;
-                (enemy).helperState = 10;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end76;
-                ::__case83::;
-                (enemy).helperState = 14;
-                (ctx).lateStageBossPhaseMode_ = (-1);
-                (ctx).lateStageClearStarted_ = true;
-                (ctx).lateStageClearTimer_ = 0;
-                ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
-                goto __switch_end76;
-                ::__case84::;
-                goto __switch_end76
-                ::__switch_end76::
+                if __switch77 == 6 then __switch77 = 1
+                elseif __switch77 == 5 then __switch77 = 2
+                elseif __switch77 == 4 then __switch77 = 3
+                elseif __switch77 == 3 then __switch77 = 4
+                elseif __switch77 == 2 then __switch77 = 5
+                elseif __switch77 == 1 then __switch77 = 6
+                else __switch77 = 7 end
+                repeat
+                    if __switch77 <= 1 then
+                        (enemy).helperState = 2;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch77 <= 2 then
+                        (enemy).helperState = 4;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch77 <= 3 then
+                        (enemy).helperState = 6;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch77 <= 4 then
+                        (enemy).helperState = 8;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch77 <= 5 then
+                        (enemy).helperState = 10;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch77 <= 6 then
+                        (enemy).helperState = 14;
+                        (ctx).lateStageBossPhaseMode_ = (-1);
+                        (ctx).lateStageClearStarted_ = true;
+                        (ctx).lateStageClearTimer_ = 0;
+                        ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
+                        do break end;
+                    end
+                    if __switch77 <= 7 then
+                        do break end
+                    end
+                until true
             end;
             (ctx).lateStageBossBreaksRemaining_ = math.max(0, ((ctx).lateStageBossBreaksRemaining_ - 1));
             (ctx).lateStageBossPhaseIndex_ = (ctx).lateStageBossPhaseIndex_ + 1
@@ -1163,278 +1149,283 @@ M.updateStage05Boss = function(ctx, enemy)
     local timer = (enemy).helperTimer;
     do
         local __switch86 = (enemy).helperState
-        if __switch86 == 0 then goto __case87
-        elseif __switch86 == 1 then goto __case88
-        elseif __switch86 == 3 then goto __case89
-        elseif __switch86 == 5 then goto __case90
-        elseif __switch86 == 7 then goto __case91
-        elseif __switch86 == 2 then goto __case92
-        elseif __switch86 == 4 then goto __case93
-        elseif __switch86 == 6 then goto __case94
-        elseif __switch86 == 8 then goto __case95
-        elseif __switch86 == 9 then goto __case96
-        elseif __switch86 == 10 then goto __case99
-        elseif __switch86 == 11 then goto __case100
-        elseif __switch86 == 12 then goto __case101
-        elseif __switch86 == 13 then goto __case102
-        elseif __switch86 == 14 then goto __case103
-        else goto __case104 end
-        ::__case87::;
-        do
-            if (timer == 0) then
+        if __switch86 == 0 then __switch86 = 1
+        elseif __switch86 == 1 then __switch86 = 2
+        elseif __switch86 == 3 then __switch86 = 3
+        elseif __switch86 == 5 then __switch86 = 4
+        elseif __switch86 == 7 then __switch86 = 5
+        elseif __switch86 == 2 then __switch86 = 6
+        elseif __switch86 == 4 then __switch86 = 7
+        elseif __switch86 == 6 then __switch86 = 8
+        elseif __switch86 == 8 then __switch86 = 9
+        elseif __switch86 == 9 then __switch86 = 10
+        elseif __switch86 == 10 then __switch86 = 11
+        elseif __switch86 == 11 then __switch86 = 12
+        elseif __switch86 == 12 then __switch86 = 13
+        elseif __switch86 == 13 then __switch86 = 14
+        elseif __switch86 == 14 then __switch86 = 15
+        else __switch86 = 16 end
+        repeat
+            if __switch86 <= 1 then
                 do
-                    ctx:playPlayerSound((ctx).bossSe9SoundHandle_, 25)
-                end
-            end;
-            if (timer <= 200) then
-                do
-                    local entrance = math.sin(((timer * kPi) / 400));
-                    (enemy).y = f32(f32((f32(2800) + f32((entrance * f32(((enemy).originY - f32(2800))))))))
-                end
-            else
-                do
-                    (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
-                end
-            end;
-            (enemy).targetable = false;
-            if (timer == 240) then
-                do
-                    (openPhase)(1, 60000, 1500, 0.29999999999999999, 175, 0)
-                end
-            end;
-            goto __switch_end85
-        end;
-        ::__case88::;
-        ::__case89::;
-        ::__case90::;
-        ::__case91::;
-        (steerAndMove)(0.29999999999999999);
-        ctx:emitStage05BossProjectiles(enemy);
-        goto __switch_end85;
-        ::__case92::;
-        ::__case93::;
-        ::__case94::;
-        (enemy).targetable = false;
-        if (timer == 1) then
-            do
-                ctx:spawnStageEffect(54, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
-            end
-        end;
-        if (timer < 90) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy);
-                (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0900000035))))))
-            end
-        else
-            do
-                (steerAndMove)(0.29999999999999999)
-            end
-        end;
-        if (timer == 90) then
-            do
-                ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
-                ctx:spawnStageEffect(17, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
-            end
-        end;
-        if (timer == 100) then
-            do
-                (enemy).y = f32(f32(((enemy).y - f32(444))))
-            end
-        end;
-        if ((timer >= 100) and (timer < 180)) then
-            do
-                (enemy).y = f32(f32(((enemy).y - f32((1 - math.sin((((timer - 100) * kPi) / 280)))))))
-            end
-        end;
-        if (timer == 180) then
-            do
-                if ((enemy).helperState == 2) then
-                    do
-                        (openPhase)(3, 55000, 1500, 0.29999999999999999, 175, 1)
-                    end
-                else
-                    if ((enemy).helperState == 4) then
+                    if (timer == 0) then
                         do
-                            (openPhase)(5, 55000, 1500, 0.29999999999999999, 175, 2)
+                            ctx:playPlayerSound((ctx).bossSe9SoundHandle_, 25)
+                        end
+                    end;
+                    if (timer <= 200) then
+                        do
+                            local entrance = math.sin(((timer * kPi) / 400));
+                            (enemy).y = f32(f32((f32(2800) + f32((entrance * f32(((enemy).originY - f32(2800))))))))
                         end
                     else
                         do
-                            (openPhase)(7, 70000, 1800, 0.29999999999999999, 175, 3)
+                            (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
                         end
-                    end
-                end
-            end
-        end;
-        goto __switch_end85;
-        ::__case95::;
-        (enemy).targetable = false;
-        if (timer < 120) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy)
-            end
-        end;
-        if (timer < 120) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0199999996))))))
-            end
-        else
-            if (timer >= 130) then
-                do
-                    (steerAndMove)(0.29999999999999999)
-                end
-            end
-        end;
-        if (timer == 120) then
-            do
-                ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
-                ctx:spawnStageEffect(17, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
-            end
-        end;
-        if (timer == 130) then
-            do
-                (enemy).y = f32(f32(((enemy).y - f32(40))))
-            end
-        end;
-        if (timer == 210) then
-            do
-                ctx:spawnStage05BossChild(enemy, 84, f32(0), f32(0), (16384 % 65536), 1, 40, 99999999, 0, "S05 FUN_14001c8b0 state 8 timer 210 child 0x54")
-            end
-        end;
-        if (timer == 380) then
-            do
-                (openPhase)(9, 45000, 1800, 0.29999999999999999, 80, 4)
-            end
-        end;
-        goto __switch_end85;
-        ::__case96::;
-        do
-            (steerAndMove)(0.29999999999999999);
-            local kInterval = {60, 40, 36, 36, 30};
-            local kAngles = {(50352 % 65536), (51552 % 65536), (52752 % 65536), (47952 % 65536), (46752 % 65536), (45552 % 65536)};
-            if (timer >= 10) then
-                do
-                    local v_local = math.fmod((timer - 10), 700);
-                    local interval = (kInterval)[difficulty + 1];
-                    if ((v_local < 360) and (math.fmod(v_local, interval) == 0)) then
+                    end;
+                    (enemy).targetable = false;
+                    if (timer == 240) then
                         do
+                            (openPhase)(1, 60000, 1500, 0.29999999999999999, 175, 0)
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch86 <= 5 then
+                (steerAndMove)(0.29999999999999999);
+                ctx:emitStage05BossProjectiles(enemy);
+                do break end;
+            end
+            if __switch86 <= 8 then
+                (enemy).targetable = false;
+                if (timer == 1) then
+                    do
+                        ctx:spawnStageEffect(54, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                    end
+                end;
+                if (timer < 90) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy);
+                        (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0900000035))))))
+                    end
+                else
+                    do
+                        (steerAndMove)(0.29999999999999999)
+                    end
+                end;
+                if (timer == 90) then
+                    do
+                        ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
+                        ctx:spawnStageEffect(17, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                    end
+                end;
+                if (timer == 100) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y - f32(444))))
+                    end
+                end;
+                if ((timer >= 100) and (timer < 180)) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y - f32((1 - math.sin((((timer - 100) * kPi) / 280)))))))
+                    end
+                end;
+                if (timer == 180) then
+                    do
+                        if ((enemy).helperState == 2) then
                             do
-
-                                for _, angle in ipairs(kAngles) do
-                                    do
-                                        ctx:spawnStage05BossChild(enemy, 85, f32(0), f32((-f32(20))), angle, 6, 25, 10, 2, "S05 FUN_14001c8b0 state 9 child 0x55")
-                                    end
-                                    ::__continue98::
+                                (openPhase)(3, 55000, 1500, 0.29999999999999999, 175, 1)
+                            end
+                        else
+                            if ((enemy).helperState == 4) then
+                                do
+                                    (openPhase)(5, 55000, 1500, 0.29999999999999999, 175, 2)
                                 end
-                                ::__loop_end97::
-                            end;
-                            ctx:playPlayerSound((ctx).bullet2SoundHandle_, 19)
+                            else
+                                do
+                                    (openPhase)(7, 70000, 1800, 0.29999999999999999, 175, 3)
+                                end
+                            end
                         end
                     end
-                end
-            end;
-            goto __switch_end85
-        end;
-        ::__case99::;
-        (enemy).targetable = false;
-        (enemy).y = f32(f32(((enemy).y + f32(0.100000001))));
-        if (timer == 1) then
-            do
-                ctx:playPlayerSound((ctx).enemyDown3SoundHandle_, 25);
-                ctx:spawnStageEffect(54, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                end;
+                do break end;
             end
-        end;
-        if (timer < 90) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy)
+            if __switch86 <= 9 then
+                (enemy).targetable = false;
+                if (timer < 120) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer < 120) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0199999996))))))
+                    end
+                else
+                    if (timer >= 130) then
+                        do
+                            (steerAndMove)(0.29999999999999999)
+                        end
+                    end
+                end;
+                if (timer == 120) then
+                    do
+                        ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
+                        ctx:spawnStageEffect(17, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                    end
+                end;
+                if (timer == 130) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y - f32(40))))
+                    end
+                end;
+                if (timer == 210) then
+                    do
+                        ctx:spawnStage05BossChild(enemy, 84, f32(0), f32(0), (16384 % 65536), 1, 40, 99999999, 0, "S05 FUN_14001c8b0 state 8 timer 210 child 0x54")
+                    end
+                end;
+                if (timer == 380) then
+                    do
+                        (openPhase)(9, 45000, 1800, 0.29999999999999999, 80, 4)
+                    end
+                end;
+                do break end;
             end
-        end;
-        if (timer == 180) then
-            do
-                (openPhase)(11, 80000, 2100, 0.29999999999999999, 200, 5)
-            end
-        end;
-        goto __switch_end85;
-        ::__case100::;
-        (steerAndMove)(0.29999999999999999);
-        if (timer == 60) then
-            do
-                ctx:spawnStage05BossChild(enemy, 86, f32(90), f32((-f32(30))), (16384 % 65536), 1, 40, 99999999, 1, "S05 FUN_14001c8b0 state 11 timer 60 right 0x56");
-                ctx:spawnStage05BossChild(enemy, 86, f32((-f32(90))), f32((-f32(30))), (16384 % 65536), 1, 40, 99999999, 1, "S05 FUN_14001c8b0 state 11 timer 60 left 0x56");
-                ctx:playPlayerSound((ctx).bossSe1SoundHandle_, 25)
-            end
-        end;
-        if (timer == 450) then
-            do
-                (enemy).originX = f32((enemy).x);
-                (enemy).originY = f32((enemy).y);
-                (enemy).helperState = 12;
-                (enemy).helperTimer = 0
-            end
-        end;
-        goto __switch_end85;
-        ::__case101::;
-        do
-            if (timer == 1) then
+            if __switch86 <= 10 then
                 do
-                    (enemy).originX = f32((enemy).x);
-                    (enemy).originY = f32((enemy).y);
-                    (enemy).markerDrawX = f32(cpp.clamp(((ctx).player_).x, f32(210), f32(510)));
-                    (enemy).markerDrawY = f32(cpp.clamp(f32((((ctx).player_).y - f32(320))), f32(200), f32(350)))
-                end
-            end;
-            local t = math.sin(((cpp.clamp(timer, 0, 60) * kPi) / 120));
-            (enemy).x = f32(f32(((enemy).originX + f32((f32(((enemy).markerDrawX - (enemy).originX)) * t)))));
-            (enemy).y = f32(f32(((enemy).originY + f32((f32(((enemy).markerDrawY - (enemy).originY)) * t)))));
-            if (timer == 60) then
+                    (steerAndMove)(0.29999999999999999);
+                    local kInterval = {60, 40, 36, 36, 30};
+                    local kAngles = {(50352 % 65536), (51552 % 65536), (52752 % 65536), (47952 % 65536), (46752 % 65536), (45552 % 65536)};
+                    if (timer >= 10) then
+                        do
+                            local v_local = math.fmod((timer - 10), 700);
+                            local interval = (kInterval)[difficulty + 1];
+                            if ((v_local < 360) and (math.fmod(v_local, interval) == 0)) then
+                                do
+                                    do
+
+                                        for _, angle in ipairs(kAngles) do
+                                            do
+                                                ctx:spawnStage05BossChild(enemy, 85, f32(0), f32((-f32(20))), angle, 6, 25, 10, 2, "S05 FUN_14001c8b0 state 9 child 0x55")
+                                            end
+                                        end
+                                    end;
+                                    ctx:playPlayerSound((ctx).bullet2SoundHandle_, 19)
+                                end
+                            end
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch86 <= 11 then
+                (enemy).targetable = false;
+                (enemy).y = f32(f32(((enemy).y + f32(0.100000001))));
+                if (timer == 1) then
+                    do
+                        ctx:playPlayerSound((ctx).enemyDown3SoundHandle_, 25);
+                        ctx:spawnStageEffect(54, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                    end
+                end;
+                if (timer < 90) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 180) then
+                    do
+                        (openPhase)(11, 80000, 2100, 0.29999999999999999, 200, 5)
+                    end
+                end;
+                do break end;
+            end
+            if __switch86 <= 12 then
+                (steerAndMove)(0.29999999999999999);
+                if (timer == 60) then
+                    do
+                        ctx:spawnStage05BossChild(enemy, 86, f32(90), f32((-f32(30))), (16384 % 65536), 1, 40, 99999999, 1, "S05 FUN_14001c8b0 state 11 timer 60 right 0x56");
+                        ctx:spawnStage05BossChild(enemy, 86, f32((-f32(90))), f32((-f32(30))), (16384 % 65536), 1, 40, 99999999, 1, "S05 FUN_14001c8b0 state 11 timer 60 left 0x56");
+                        ctx:playPlayerSound((ctx).bossSe1SoundHandle_, 25)
+                    end
+                end;
+                if (timer == 450) then
+                    do
+                        (enemy).originX = f32((enemy).x);
+                        (enemy).originY = f32((enemy).y);
+                        (enemy).helperState = 12;
+                        (enemy).helperTimer = 0
+                    end
+                end;
+                do break end;
+            end
+            if __switch86 <= 13 then
                 do
-                    (enemy).helperState = 13;
-                    (enemy).helperTimer = 0;
-                    (enemy).sourceSpeed = 0.10000000000000001;
-                    (enemy).speed = f32(f32(0.100000001))
-                end
-            end;
-            goto __switch_end85
-        end;
-        ::__case102::;
-        (steerAndMove)(0.10000000000000001);
-        if ((timer >= 40) and (timer < 120)) then
-            do
-                (enemy).y = f32(f32(((enemy).y - f32((math.sin((((timer - 40) * kPi) / 80)) * 2.3999999999999999)))))
+                    if (timer == 1) then
+                        do
+                            (enemy).originX = f32((enemy).x);
+                            (enemy).originY = f32((enemy).y);
+                            (enemy).markerDrawX = f32(cpp.clamp(((ctx).player_).x, f32(210), f32(510)));
+                            (enemy).markerDrawY = f32(cpp.clamp(f32((((ctx).player_).y - f32(320))), f32(200), f32(350)))
+                        end
+                    end;
+                    local t = math.sin(((cpp.clamp(timer, 0, 60) * kPi) / 120));
+                    (enemy).x = f32(f32(((enemy).originX + f32((f32(((enemy).markerDrawX - (enemy).originX)) * t)))));
+                    (enemy).y = f32(f32(((enemy).originY + f32((f32(((enemy).markerDrawY - (enemy).originY)) * t)))));
+                    if (timer == 60) then
+                        do
+                            (enemy).helperState = 13;
+                            (enemy).helperTimer = 0;
+                            (enemy).sourceSpeed = 0.10000000000000001;
+                            (enemy).speed = f32(f32(0.100000001))
+                        end
+                    end;
+                    do break end
+                end;
             end
-        end;
-        if (timer == 780) then
-            do
-                (enemy).helperState = 11;
-                (enemy).helperTimer = 90;
-                (enemy).sourceSpeed = 0.29999999999999999;
-                (enemy).speed = f32(f32(0.300000012))
+            if __switch86 <= 14 then
+                (steerAndMove)(0.10000000000000001);
+                if ((timer >= 40) and (timer < 120)) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y - f32((math.sin((((timer - 40) * kPi) / 80)) * 2.3999999999999999)))))
+                    end
+                end;
+                if (timer == 780) then
+                    do
+                        (enemy).helperState = 11;
+                        (enemy).helperTimer = 90;
+                        (enemy).sourceSpeed = 0.29999999999999999;
+                        (enemy).speed = f32(f32(0.300000012))
+                    end
+                end;
+                do break end;
             end
-        end;
-        goto __switch_end85;
-        ::__case103::;
-        (enemy).targetable = false;
-        if (timer < 240) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32(0.200000003))));
-                ctx:spawnStage02DeathExplosionChain(enemy)
+            if __switch86 <= 15 then
+                (enemy).targetable = false;
+                if (timer < 240) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32(0.200000003))));
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 240) then
+                    do
+                        ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
+                        ctx:spawnStageEffect(16, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+                    end
+                end;
+                if (timer >= 480) then
+                    do
+                        ctx:clearLateStageGate(5);
+                        (enemy).active = false
+                    end
+                end;
+                do break end;
             end
-        end;
-        if (timer == 240) then
-            do
-                ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
-                ctx:spawnStageEffect(16, (-1), 0, 40, (enemy).x, (enemy).y, (0 % 65536), 0, 1, 1, 0, 255, 255, 255, 255, 0)
+            if __switch86 <= 16 then
+                do break end
             end
-        end;
-        if (timer >= 480) then
-            do
-                ctx:clearLateStageGate(5);
-                (enemy).active = false
-            end
-        end;
-        goto __switch_end85;
-        ::__case104::;
-        goto __switch_end85
-        ::__switch_end85::
+        until true
     end;
     (enemy).drawHp = (enemy).hp;
     (ctx).lateStageBossCountdownDraw_ = (ctx).lateStageBossCountdown_;
@@ -1761,10 +1752,8 @@ M.updateStage06BossNode = function(ctx, enemy)
                                                     end
                                                 end
                                             end
-                                            ::__continue106::
                                             quadrant = quadrant + 1
                                         end
-                                        ::__loop_end105::
                                     end;
                                     fired = true
                                 end
@@ -1803,10 +1792,8 @@ M.updateStage06BossNode = function(ctx, enemy)
                                                     ctx:spawnProjectileNode(4, 0, (first)[1], (first)[2], normalizeAngle16(((orbitBase + (i * 3333)) - 32768)), f32(0), speed, 1, 0);
                                                     ctx:spawnProjectileNode(4, 0, (second)[1], (second)[2], normalizeAngle16((orbitBase + (i * 3333))), f32(0), speed, 1, 0)
                                                 end
-                                                ::__continue108::
                                                 i = i + 1
                                             end
-                                            ::__loop_end107::
                                         end;
                                         fired = true
                                     end
@@ -1974,10 +1961,8 @@ M.updateStage06BossNode = function(ctx, enemy)
                                         local direction = (function() if ((enemy).spawnType == 108) then return 1 else return (-1) end end)();
                                         ctx:spawnProjectileSpread((function() if ((enemy).spawnType == 108) then return 5 else return 4 end end)(), 0, (enemy).x, (enemy).y, normalizeAngle16((((direction * layer) * 600) + randomAngle)), f32(0), (kSpeed)[difficulty + 1], 1, (kRingCount)[difficulty + 1], 65536, 0)
                                     end
-                                    ::__continue110::
                                     layer = layer + 1
                                 end
-                                ::__loop_end109::
                             end;
                             fired = true
                         end
@@ -2388,38 +2373,45 @@ M.updateStage06Boss = function(ctx, enemy)
             (enemy).helperTimer = 0;
             do
                 local __switch112 = (ctx).lateStageBossBreaksRemaining_
-                if __switch112 == 5 then goto __case113
-                elseif __switch112 == 4 then goto __case114
-                elseif __switch112 == 3 then goto __case115
-                elseif __switch112 == 2 then goto __case116
-                elseif __switch112 == 1 then goto __case117
-                else goto __case118 end
-                ::__case113::;
-                (enemy).helperState = 2;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end111;
-                ::__case114::;
-                (enemy).helperState = 4;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end111;
-                ::__case115::;
-                (enemy).helperState = 6;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end111;
-                ::__case116::;
-                (enemy).helperState = 8;
-                (ctx).lateStageBossPhaseMode_ = 2;
-                goto __switch_end111;
-                ::__case117::;
-                (enemy).helperState = 10;
-                (ctx).lateStageBossPhaseMode_ = (-1);
-                (ctx).lateStageClearStarted_ = true;
-                (ctx).lateStageClearTimer_ = 0;
-                ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
-                goto __switch_end111;
-                ::__case118::;
-                goto __switch_end111
-                ::__switch_end111::
+                if __switch112 == 5 then __switch112 = 1
+                elseif __switch112 == 4 then __switch112 = 2
+                elseif __switch112 == 3 then __switch112 = 3
+                elseif __switch112 == 2 then __switch112 = 4
+                elseif __switch112 == 1 then __switch112 = 5
+                else __switch112 = 6 end
+                repeat
+                    if __switch112 <= 1 then
+                        (enemy).helperState = 2;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch112 <= 2 then
+                        (enemy).helperState = 4;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch112 <= 3 then
+                        (enemy).helperState = 6;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch112 <= 4 then
+                        (enemy).helperState = 8;
+                        (ctx).lateStageBossPhaseMode_ = 2;
+                        do break end;
+                    end
+                    if __switch112 <= 5 then
+                        (enemy).helperState = 10;
+                        (ctx).lateStageBossPhaseMode_ = (-1);
+                        (ctx).lateStageClearStarted_ = true;
+                        (ctx).lateStageClearTimer_ = 0;
+                        ((ctx).player_).invulnerableFrames = math.max(((ctx).player_).invulnerableFrames, 360);
+                        do break end;
+                    end
+                    if __switch112 <= 6 then
+                        do break end
+                    end
+                until true
             end;
             (ctx).lateStageBossBreaksRemaining_ = math.max(0, ((ctx).lateStageBossBreaksRemaining_ - 1))
         end
@@ -2455,268 +2447,269 @@ M.updateStage06Boss = function(ctx, enemy)
     local timer = (enemy).helperTimer;
     do
         local __switch120 = (enemy).helperState
-        if __switch120 == 0 then goto __case121
-        elseif __switch120 == 1 then goto __case124
-        elseif __switch120 == 2 then goto __case125
-        elseif __switch120 == 3 then goto __case126
-        elseif __switch120 == 4 then goto __case127
-        elseif __switch120 == 5 then goto __case128
-        elseif __switch120 == 6 then goto __case131
-        elseif __switch120 == 8 then goto __case132
-        elseif __switch120 == 7 then goto __case133
-        elseif __switch120 == 9 then goto __case136
-        elseif __switch120 == 10 then goto __case141
-        else goto __case142 end
-        ::__case121::;
-        do
-            if (timer == 0) then
+        if __switch120 == 0 then __switch120 = 1
+        elseif __switch120 == 1 then __switch120 = 2
+        elseif __switch120 == 2 then __switch120 = 3
+        elseif __switch120 == 3 then __switch120 = 4
+        elseif __switch120 == 4 then __switch120 = 5
+        elseif __switch120 == 5 then __switch120 = 6
+        elseif __switch120 == 6 then __switch120 = 7
+        elseif __switch120 == 8 then __switch120 = 8
+        elseif __switch120 == 7 then __switch120 = 9
+        elseif __switch120 == 9 then __switch120 = 10
+        elseif __switch120 == 10 then __switch120 = 11
+        else __switch120 = 12 end
+        repeat
+            if __switch120 <= 1 then
                 do
-                    ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
-                end
-            end;
-            if ((timer >= 60) and (timer < 160)) then
-                do
-                    local t = ((timer - 60) / 100);
-                    local ease = math.sin(((t * kPi) * 0.5));
-                    (enemy).x = f32(f32((f32((f32(480) + f32(((360 - 480) * ease)))) + f32((math.sin((t * kPi)) * 45)))));
-                    (enemy).y = f32(f32((f32((f32(150) + f32(((240 - 150) * ease)))) - f32((math.sin((t * kPi)) * 30)))))
-                end
-            else
-                if (timer >= 160) then
-                    do
-                        (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
-                    end
-                end
-            end;
-            local kTypes = {106, 105, 104, 103, 102};
-            local kAngleOrder = {3, 1, 4, 2, 8};
-            do
-                local i = 0
-                while (i < 5) do
-                    do
-                        if (timer == (150 + (i * 10))) then
-                            do
-                                ctx:spawnStage06BossNode(enemy, (kTypes)[i + 1], i, f32(75), f32(0), normalizeAngle16((((kAngleOrder)[i + 1] * 13107) + 16384)), 60)
-                            end
-                        end
-                    end
-                    ::__continue123::
-                    i = i + 1
-                end
-                ::__loop_end122::
-            end;
-            if (timer == 220) then
-                do
-                    ctx:spawnStage06BossNode(enemy, 100, 0, f32(75), f32(0), (32768 % 65536), 40);
-                    ctx:spawnStage06BossNode(enemy, 101, 1, f32(75), f32(0), (0 % 65536), 40)
-                end
-            end;
-            if (timer == 240) then
-                do
-                    (openPhase)(1, 100000, 3600, 0.29999999999999999, 0)
-                end
-            end;
-            goto __switch_end119
-        end;
-        ::__case124::;
-        (steerAndMove)(0.29999999999999999);
-        goto __switch_end119;
-        ::__case125::;
-        if (timer < 90) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.00999999977))))))
-            end
-        end;
-        if (timer == 100) then
-            do
-                (enemy).sourceSpeed = 1.6000000000000001;
-                (enemy).speed = f32(f32(1.60000002))
-            end
-        end;
-        if (timer >= 100) then
-            do
-                (steerAndMove)(1.6000000000000001)
-            end
-        end;
-        if (timer == 180) then
-            do
-                (openPhase)(3, 86000, 2100, 1.6000000000000001, 1)
-            end
-        end;
-        goto __switch_end119;
-        ::__case126::;
-        (steerAndMove)(1.6000000000000001);
-        if (timer == 30) then
-            do
-                ctx:spawnStage06BossNode(enemy, 107, 0, f32(90), f32(0), (16384 % 65536), 40)
-            end
-        end;
-        goto __switch_end119;
-        ::__case127::;
-        if (timer < 120) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0199999996))))))
-            end
-        end;
-        if (timer == 130) then
-            do
-                (enemy).y = f32(f32(((enemy).y - f32(75))));
-                (enemy).sourceSpeed = 0.59999999999999998;
-                (enemy).speed = f32(f32(0.600000024))
-            end
-        end;
-        if (timer >= 130) then
-            do
-                (steerAndMove)(0.59999999999999998)
-            end
-        end;
-        if (timer == 380) then
-            do
-                (openPhase)(5, 68000, 1800, 0.59999999999999998, 2)
-            end
-        end;
-        goto __switch_end119;
-        ::__case128::;
-        (steerAndMove)(0.59999999999999998);
-        if (timer == 10) then
-            do
-                local kOffsetX = {f32(100), f32((-f32(100))), f32(210), f32((-f32(210)))};
-                local kOffsetY = {f32((-f32(120))), f32((-f32(120))), f32((-f32(70))), f32((-f32(70)))};
-                do
-                    local i = 0
-                    while (i < 4) do
+                    if (timer == 0) then
                         do
-                            ctx:spawnStage06BossNode(enemy, 110, i, (kOffsetX)[i + 1], (kOffsetY)[i + 1], (16384 % 65536), 40)
+                            ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
                         end
-                        ::__continue130::
-                        i = i + 1
-                    end
-                    ::__loop_end129::
-                end;
-                ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
-            end
-        end;
-        goto __switch_end119;
-        ::__case131::;
-        ::__case132::;
-        (enemy).y = f32(f32(((enemy).y + f32(0.100000001))));
-        if (timer == 1) then
-            do
-                ctx:playPlayerSound((ctx).enemyDown3SoundHandle_, 25)
-            end
-        end;
-        if (timer < 90) then
-            do
-                ctx:spawnStage02DeathExplosionChain(enemy)
-            end
-        end;
-        if (timer == 180) then
-            do
-                if ((enemy).helperState == 6) then
-                    do
-                        (openPhase)(7, 70000, 2100, 0.59999999999999998, 3)
-                    end
-                else
-                    do
-                        (openPhase)(9, 80000, 2100, 0.59999999999999998, 4)
-                    end
-                end
-            end
-        end;
-        goto __switch_end119;
-        ::__case133::;
-        do
-            (steerAndMove)(0.59999999999999998);
-            local kCount = {17, 21, 25, 25, 27};
-            local count = (kCount)[difficulty + 1];
-            local step = math.max(1, trunc(100 / count));
-            do
-                local i = 0
-                while (i < count) do
-                    do
-                        if (timer == (10 + (i * step))) then
+                    end;
+                    if ((timer >= 60) and (timer < 160)) then
+                        do
+                            local t = ((timer - 60) / 100);
+                            local ease = math.sin(((t * kPi) * 0.5));
+                            (enemy).x = f32(f32((f32((f32(480) + f32(((360 - 480) * ease)))) + f32((math.sin((t * kPi)) * 45)))));
+                            (enemy).y = f32(f32((f32((f32(150) + f32(((240 - 150) * ease)))) - f32((math.sin((t * kPi)) * 30)))))
+                        end
+                    else
+                        if (timer >= 160) then
                             do
-                                ctx:spawnStage06BossNode(enemy, 111, i, f32(0), f32(0), normalizeAngle16(((i * trunc(65536 / count)) - 16384)), 40)
+                                (enemy).y = f32(f32(((enemy).y + f32(0.100000001))))
                             end
                         end
-                    end
-                    ::__continue135::
-                    i = i + 1
-                end
-                ::__loop_end134::
-            end;
-            goto __switch_end119
-        end;
-        ::__case136::;
-        do
-            (steerAndMove)(0.59999999999999998);
-            local baseInterval = (function() if (difficulty == 0) then return 120 else return 100 end end)();
-            local switchFrame = ((baseInterval + 12) * 5);
-            local interval = (function() if (timer >= switchFrame) then return trunc(baseInterval / 2) else return baseInterval end end)();
-            if ((timer > 59) and (math.fmod((timer - 60), interval) == 0)) then
-                do
-                    local firstFamily = (function() if (timer < switchFrame) then return (math.fmod((timer - 60), (interval * 2)) == 0) else return (u32(bit.band(lateStageScriptRand(timer), 1)) == 0) end end)();
-                    local kRingCount = {15, 19, 21, 12, 9};
-                    local count = (kRingCount)[difficulty + 1];
-                    local random = lateStageScriptRand(timer);
-                    local baseAngle = normalizeAngle16(u32((random - trunc(random / 65537))));
-                    local visual = (function() if firstFamily then return 2 else return 3 end end)();
-                    local projectileId = (function() if firstFamily then return 31 else return 32 end end)();
-                    local direction = (function() if firstFamily then return (-1) else return 1 end end)();
-                    local extraLayers = (function() if (difficulty == 4) then return 4 else return (function() if (difficulty == 3) then return 2 else return 0 end end)() end end)();
+                    end;
+                    local kTypes = {106, 105, 104, 103, 102};
+                    local kAngleOrder = {3, 1, 4, 2, 8};
                     do
-                        local layer = 0
-                        while (layer <= extraLayers) do
+                        local i = 0
+                        while (i < 5) do
                             do
-                                local angle = normalizeAngle16((baseAngle + ((direction * layer) * 1200)));
-                                local shotX = (function() if (bit.band(layer, 1) == 0) then return f32(((enemy).x - f32(33))) else return (enemy).x end end)();
-                                local shotY = (function() if (bit.band(layer, 1) == 0) then return f32(((enemy).y - f32(83))) else return (enemy).y end end)();
-                                do
-                                    local i = 0
-                                    while (i < count) do
-                                        do
-                                            ctx:spawnProjectileNode(visual, projectileId, shotX, shotY, normalizeAngle16((angle + (i * trunc(65536 / count)))), f32(0), 0, 1, 0)
-                                        end
-                                        ::__continue140::
-                                        i = i + 1
+                                if (timer == (150 + (i * 10))) then
+                                    do
+                                        ctx:spawnStage06BossNode(enemy, (kTypes)[i + 1], i, f32(75), f32(0), normalizeAngle16((((kAngleOrder)[i + 1] * 13107) + 16384)), 60)
                                     end
-                                    ::__loop_end139::
                                 end
                             end
-                            ::__continue138::
-                            layer = layer + 1
+                            i = i + 1
                         end
-                        ::__loop_end137::
                     end;
-                    ctx:playPlayerSound((ctx).bullet2SoundHandle_, 19)
-                end
-            end;
-            goto __switch_end119
-        end;
-        ::__case141::;
-        (enemy).targetable = false;
-        if (timer < 240) then
-            do
-                (enemy).y = f32(f32(((enemy).y + f32(0.200000003))));
-                ctx:spawnStage02DeathExplosionChain(enemy)
+                    if (timer == 220) then
+                        do
+                            ctx:spawnStage06BossNode(enemy, 100, 0, f32(75), f32(0), (32768 % 65536), 40);
+                            ctx:spawnStage06BossNode(enemy, 101, 1, f32(75), f32(0), (0 % 65536), 40)
+                        end
+                    end;
+                    if (timer == 240) then
+                        do
+                            (openPhase)(1, 100000, 3600, 0.29999999999999999, 0)
+                        end
+                    end;
+                    do break end
+                end;
             end
-        end;
-        if (timer == 240) then
-            do
-                ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
-                ctx:spawnEnemyDeathEffects(enemy, 2, true)
+            if __switch120 <= 2 then
+                (steerAndMove)(0.29999999999999999);
+                do break end;
             end
-        end;
-        if (timer >= 480) then
-            do
-                ctx:clearLateStageGate(6);
-                (enemy).active = false
+            if __switch120 <= 3 then
+                if (timer < 90) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.00999999977))))))
+                    end
+                end;
+                if (timer == 100) then
+                    do
+                        (enemy).sourceSpeed = 1.6000000000000001;
+                        (enemy).speed = f32(f32(1.60000002))
+                    end
+                end;
+                if (timer >= 100) then
+                    do
+                        (steerAndMove)(1.6000000000000001)
+                    end
+                end;
+                if (timer == 180) then
+                    do
+                        (openPhase)(3, 86000, 2100, 1.6000000000000001, 1)
+                    end
+                end;
+                do break end;
             end
-        end;
-        goto __switch_end119;
-        ::__case142::;
-        goto __switch_end119
-        ::__switch_end119::
+            if __switch120 <= 4 then
+                (steerAndMove)(1.6000000000000001);
+                if (timer == 30) then
+                    do
+                        ctx:spawnStage06BossNode(enemy, 107, 0, f32(90), f32(0), (16384 % 65536), 40)
+                    end
+                end;
+                do break end;
+            end
+            if __switch120 <= 5 then
+                if (timer < 120) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32((f32(timer) * f32(0.0199999996))))))
+                    end
+                end;
+                if (timer == 130) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y - f32(75))));
+                        (enemy).sourceSpeed = 0.59999999999999998;
+                        (enemy).speed = f32(f32(0.600000024))
+                    end
+                end;
+                if (timer >= 130) then
+                    do
+                        (steerAndMove)(0.59999999999999998)
+                    end
+                end;
+                if (timer == 380) then
+                    do
+                        (openPhase)(5, 68000, 1800, 0.59999999999999998, 2)
+                    end
+                end;
+                do break end;
+            end
+            if __switch120 <= 6 then
+                (steerAndMove)(0.59999999999999998);
+                if (timer == 10) then
+                    do
+                        local kOffsetX = {f32(100), f32((-f32(100))), f32(210), f32((-f32(210)))};
+                        local kOffsetY = {f32((-f32(120))), f32((-f32(120))), f32((-f32(70))), f32((-f32(70)))};
+                        do
+                            local i = 0
+                            while (i < 4) do
+                                do
+                                    ctx:spawnStage06BossNode(enemy, 110, i, (kOffsetX)[i + 1], (kOffsetY)[i + 1], (16384 % 65536), 40)
+                                end
+                                i = i + 1
+                            end
+                        end;
+                        ctx:playPlayerSound((ctx).bossSe8SoundHandle_, 25)
+                    end
+                end;
+                do break end;
+            end
+            if __switch120 <= 8 then
+                (enemy).y = f32(f32(((enemy).y + f32(0.100000001))));
+                if (timer == 1) then
+                    do
+                        ctx:playPlayerSound((ctx).enemyDown3SoundHandle_, 25)
+                    end
+                end;
+                if (timer < 90) then
+                    do
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 180) then
+                    do
+                        if ((enemy).helperState == 6) then
+                            do
+                                (openPhase)(7, 70000, 2100, 0.59999999999999998, 3)
+                            end
+                        else
+                            do
+                                (openPhase)(9, 80000, 2100, 0.59999999999999998, 4)
+                            end
+                        end
+                    end
+                end;
+                do break end;
+            end
+            if __switch120 <= 9 then
+                do
+                    (steerAndMove)(0.59999999999999998);
+                    local kCount = {17, 21, 25, 25, 27};
+                    local count = (kCount)[difficulty + 1];
+                    local step = math.max(1, trunc(100 / count));
+                    do
+                        local i = 0
+                        while (i < count) do
+                            do
+                                if (timer == (10 + (i * step))) then
+                                    do
+                                        ctx:spawnStage06BossNode(enemy, 111, i, f32(0), f32(0), normalizeAngle16(((i * trunc(65536 / count)) - 16384)), 40)
+                                    end
+                                end
+                            end
+                            i = i + 1
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch120 <= 10 then
+                do
+                    (steerAndMove)(0.59999999999999998);
+                    local baseInterval = (function() if (difficulty == 0) then return 120 else return 100 end end)();
+                    local switchFrame = ((baseInterval + 12) * 5);
+                    local interval = (function() if (timer >= switchFrame) then return trunc(baseInterval / 2) else return baseInterval end end)();
+                    if ((timer > 59) and (math.fmod((timer - 60), interval) == 0)) then
+                        do
+                            local firstFamily = (function() if (timer < switchFrame) then return (math.fmod((timer - 60), (interval * 2)) == 0) else return (u32(bit.band(lateStageScriptRand(timer), 1)) == 0) end end)();
+                            local kRingCount = {15, 19, 21, 12, 9};
+                            local count = (kRingCount)[difficulty + 1];
+                            local random = lateStageScriptRand(timer);
+                            local baseAngle = normalizeAngle16(u32((random - trunc(random / 65537))));
+                            local visual = (function() if firstFamily then return 2 else return 3 end end)();
+                            local projectileId = (function() if firstFamily then return 31 else return 32 end end)();
+                            local direction = (function() if firstFamily then return (-1) else return 1 end end)();
+                            local extraLayers = (function() if (difficulty == 4) then return 4 else return (function() if (difficulty == 3) then return 2 else return 0 end end)() end end)();
+                            do
+                                local layer = 0
+                                while (layer <= extraLayers) do
+                                    do
+                                        local angle = normalizeAngle16((baseAngle + ((direction * layer) * 1200)));
+                                        local shotX = (function() if (bit.band(layer, 1) == 0) then return f32(((enemy).x - f32(33))) else return (enemy).x end end)();
+                                        local shotY = (function() if (bit.band(layer, 1) == 0) then return f32(((enemy).y - f32(83))) else return (enemy).y end end)();
+                                        do
+                                            local i = 0
+                                            while (i < count) do
+                                                do
+                                                    ctx:spawnProjectileNode(visual, projectileId, shotX, shotY, normalizeAngle16((angle + (i * trunc(65536 / count)))), f32(0), 0, 1, 0)
+                                                end
+                                                i = i + 1
+                                            end
+                                        end
+                                    end
+                                    layer = layer + 1
+                                end
+                            end;
+                            ctx:playPlayerSound((ctx).bullet2SoundHandle_, 19)
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch120 <= 11 then
+                (enemy).targetable = false;
+                if (timer < 240) then
+                    do
+                        (enemy).y = f32(f32(((enemy).y + f32(0.200000003))));
+                        ctx:spawnStage02DeathExplosionChain(enemy)
+                    end
+                end;
+                if (timer == 240) then
+                    do
+                        ctx:playPlayerSound((ctx).blast2SoundHandle_, 25);
+                        ctx:spawnEnemyDeathEffects(enemy, 2, true)
+                    end
+                end;
+                if (timer >= 480) then
+                    do
+                        ctx:clearLateStageGate(6);
+                        (enemy).active = false
+                    end
+                end;
+                do break end;
+            end
+            if __switch120 <= 12 then
+                do break end
+            end
+        until true
     end;
     (enemy).drawHp = (enemy).hp;
     (ctx).lateStageBossCountdownDraw_ = (ctx).lateStageBossCountdown_;
@@ -2746,50 +2739,62 @@ M.spawnStage10FinalBossNode = function(ctx, parent, spawnType)
     local note = nil;
     do
         local __switch144 = spawnType
-        if __switch144 == 273 then goto __case145
-        elseif __switch144 == 274 then goto __case146
-        elseif __switch144 == 275 then goto __case147
-        elseif __switch144 == 277 then goto __case148
-        elseif __switch144 == 282 then goto __case149
-        elseif __switch144 == 285 then goto __case150
-        elseif __switch144 == 293 then goto __case151
-        elseif __switch144 == 294 then goto __case152
-        elseif __switch144 == 295 then goto __case153
-        elseif __switch144 == 301 then goto __case154
-        else goto __case155 end
-        ::__case145::;
-        note = "S10 FUN_140052fb0 state 11 timer 30 node 0x111";
-        goto __switch_end143;
-        ::__case146::;
-        note = "S10 FUN_140052fb0 state 31 timer 30 node 0x112";
-        goto __switch_end143;
-        ::__case147::;
-        note = "S10 FUN_140052fb0 state 51 timer 30 node 0x113";
-        goto __switch_end143;
-        ::__case148::;
-        note = "S10 FUN_140052fb0 state 71 timer 30 node 0x115";
-        goto __switch_end143;
-        ::__case149::;
-        note = "S10 FUN_140052fb0 state 91 timer 30 node 0x11a";
-        goto __switch_end143;
-        ::__case150::;
-        note = "S10 FUN_140052fb0 state 111 timer 30 node 0x11d";
-        goto __switch_end143;
-        ::__case151::;
-        note = "S10 FUN_140052fb0 state 131 timer 30 node 0x125";
-        goto __switch_end143;
-        ::__case152::;
-        note = "S10 FUN_140052fb0 state 131 timer 30 node 0x126";
-        goto __switch_end143;
-        ::__case153::;
-        note = "S10 FUN_140052fb0 state 141 timer 30 node 0x127";
-        goto __switch_end143;
-        ::__case154::;
-        note = "S10 FUN_140052fb0 state 151 timer 30 node 0x12d";
-        goto __switch_end143;
-        ::__case155::;
-        goto __switch_end143
-        ::__switch_end143::
+        if __switch144 == 273 then __switch144 = 1
+        elseif __switch144 == 274 then __switch144 = 2
+        elseif __switch144 == 275 then __switch144 = 3
+        elseif __switch144 == 277 then __switch144 = 4
+        elseif __switch144 == 282 then __switch144 = 5
+        elseif __switch144 == 285 then __switch144 = 6
+        elseif __switch144 == 293 then __switch144 = 7
+        elseif __switch144 == 294 then __switch144 = 8
+        elseif __switch144 == 295 then __switch144 = 9
+        elseif __switch144 == 301 then __switch144 = 10
+        else __switch144 = 11 end
+        repeat
+            if __switch144 <= 1 then
+                note = "S10 FUN_140052fb0 state 11 timer 30 node 0x111";
+                do break end;
+            end
+            if __switch144 <= 2 then
+                note = "S10 FUN_140052fb0 state 31 timer 30 node 0x112";
+                do break end;
+            end
+            if __switch144 <= 3 then
+                note = "S10 FUN_140052fb0 state 51 timer 30 node 0x113";
+                do break end;
+            end
+            if __switch144 <= 4 then
+                note = "S10 FUN_140052fb0 state 71 timer 30 node 0x115";
+                do break end;
+            end
+            if __switch144 <= 5 then
+                note = "S10 FUN_140052fb0 state 91 timer 30 node 0x11a";
+                do break end;
+            end
+            if __switch144 <= 6 then
+                note = "S10 FUN_140052fb0 state 111 timer 30 node 0x11d";
+                do break end;
+            end
+            if __switch144 <= 7 then
+                note = "S10 FUN_140052fb0 state 131 timer 30 node 0x125";
+                do break end;
+            end
+            if __switch144 <= 8 then
+                note = "S10 FUN_140052fb0 state 131 timer 30 node 0x126";
+                do break end;
+            end
+            if __switch144 <= 9 then
+                note = "S10 FUN_140052fb0 state 141 timer 30 node 0x127";
+                do break end;
+            end
+            if __switch144 <= 10 then
+                note = "S10 FUN_140052fb0 state 151 timer 30 node 0x12d";
+                do break end;
+            end
+            if __switch144 <= 11 then
+                do break end
+            end
+        until true
     end;
     local node = cpp.newEnemy();
     (node).entityId = (function() local __old = (ctx).nextEntityId_; (ctx).nextEntityId_ = (ctx).nextEntityId_ + 1; return __old end)();
@@ -3039,9 +3044,7 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                                                                         do
                                                                             ctx:spawnProjectileNode(11, 1, (enemy).x, fireY, normalizeAngle16(((enemy).targetAngle16 + offset)), f32(10), 5, 1, 0)
                                                                         end
-                                                                        ::__continue157::
                                                                     end
-                                                                    ::__loop_end156::
                                                                 end;
                                                                 ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
                                                             end
@@ -3068,10 +3071,8 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                                                                                 do
                                                                                     ctx:spawnProjectileNode(3, 1, (enemy).x, fireY, normalizeAngle16(((aimed - 6000) + (i * 3000))), f32(10), 2.3999999999999999, 1, 0)
                                                                                 end
-                                                                                ::__continue159::
                                                                                 i = i + 1
                                                                             end
-                                                                            ::__loop_end158::
                                                                         end;
                                                                         ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
                                                                     end
@@ -3218,10 +3219,8 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                                                                 ctx:spawnProjectileNode(7, 0, (enemy).x, fireY, normalizeAngle16(((aimed - 18000) + (i * 2000))), f32(0), 8.5, 1, 0);
                                                                 ctx:spawnProjectileNode(7, 0, (enemy).x, fireY, normalizeAngle16(((aimed + 6000) + (i * 2000))), f32(0), 8.5, 1, 0)
                                                             end
-                                                            ::__continue161::
                                                             i = i + 1
                                                         end
-                                                        ::__loop_end160::
                                                     end;
                                                     ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
                                                 end
@@ -3243,10 +3242,8 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                                                                     ctx:spawnProjectileNode(4, 0, (enemy).x, fireY, normalizeAngle16(((aimed + firstOffset) + (i * 5000))), f32(0), 5.5, 1, 0);
                                                                     ctx:spawnProjectileNode(0, 0, (enemy).x, fireY, normalizeAngle16(((aimed + secondOffset) + (i * 5000))), f32(0), 6.5, 1, 0)
                                                                 end
-                                                                ::__continue163::
                                                                 i = i + 1
                                                             end
-                                                            ::__loop_end162::
                                                         end;
                                                         ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
                                                     end
@@ -3438,10 +3435,8 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                                             end
                                         end
                                     end
-                                    ::__continue165::
                                     i = i + 1
                                 end
-                                ::__loop_end164::
                             end
                         end
                     end
@@ -3586,64 +3581,76 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
                     (enemy).targetableTimer = 0;
                     do
                         local __switch167 = (enemy).spawnType
-                        if __switch167 == 273 then goto __case168
-                        elseif __switch167 == 274 then goto __case169
-                        elseif __switch167 == 275 then goto __case170
-                        elseif __switch167 == 277 then goto __case171
-                        elseif __switch167 == 282 then goto __case172
-                        elseif __switch167 == 285 then goto __case173
-                        elseif __switch167 == 293 then goto __case174
-                        elseif __switch167 == 294 then goto __case175
-                        elseif __switch167 == 295 then goto __case176
-                        elseif __switch167 == 301 then goto __case177
-                        else goto __case178 end
-                        ::__case168::;
-                        (enemy).sourceSpeed = 0.29999999999999999;
-                        goto __switch_end166;
-                        ::__case169::;
-                        (enemy).sourceSpeed = 30;
-                        (enemy).markerDrawX = f32(f32(540));
-                        (enemy).markerDrawY = f32(f32(330));
-                        goto __switch_end166;
-                        ::__case170::;
-                        (enemy).sourceSpeed = 0.5;
-                        goto __switch_end166;
-                        ::__case171::;
-                        (enemy).sourceSpeed = 1;
-                        goto __switch_end166;
-                        ::__case172::;
-                        (enemy).sourceSpeed = 70;
-                        (enemy).markerDrawX = f32(f32(300));
-                        (enemy).markerDrawY = f32(f32(140));
-                        goto __switch_end166;
-                        ::__case173::;
-                        (enemy).sourceSpeed = 20;
-                        (enemy).markerDrawX = f32(f32(320));
-                        (enemy).markerDrawY = f32(f32(220));
-                        goto __switch_end166;
-                        ::__case174::;
-                        (enemy).sourceSpeed = 0.29999999999999999;
-                        (enemy).markerDrawX = f32(f32(510));
-                        (enemy).markerDrawY = f32(f32(250));
-                        goto __switch_end166;
-                        ::__case175::;
-                        (enemy).sourceSpeed = 0.29999999999999999;
-                        (enemy).markerDrawX = f32(f32(210));
-                        (enemy).markerDrawY = f32(f32(250));
-                        goto __switch_end166;
-                        ::__case176::;
-                        (enemy).sourceSpeed = 0.29999999999999999;
-                        (enemy).markerDrawX = f32(f32(360));
-                        (enemy).markerDrawY = f32(f32(250));
-                        goto __switch_end166;
-                        ::__case177::;
-                        (enemy).sourceSpeed = 0.29999999999999999;
-                        (enemy).markerDrawX = f32(f32(360));
-                        (enemy).markerDrawY = f32(f32(290));
-                        goto __switch_end166;
-                        ::__case178::;
-                        goto __switch_end166
-                        ::__switch_end166::
+                        if __switch167 == 273 then __switch167 = 1
+                        elseif __switch167 == 274 then __switch167 = 2
+                        elseif __switch167 == 275 then __switch167 = 3
+                        elseif __switch167 == 277 then __switch167 = 4
+                        elseif __switch167 == 282 then __switch167 = 5
+                        elseif __switch167 == 285 then __switch167 = 6
+                        elseif __switch167 == 293 then __switch167 = 7
+                        elseif __switch167 == 294 then __switch167 = 8
+                        elseif __switch167 == 295 then __switch167 = 9
+                        elseif __switch167 == 301 then __switch167 = 10
+                        else __switch167 = 11 end
+                        repeat
+                            if __switch167 <= 1 then
+                                (enemy).sourceSpeed = 0.29999999999999999;
+                                do break end;
+                            end
+                            if __switch167 <= 2 then
+                                (enemy).sourceSpeed = 30;
+                                (enemy).markerDrawX = f32(f32(540));
+                                (enemy).markerDrawY = f32(f32(330));
+                                do break end;
+                            end
+                            if __switch167 <= 3 then
+                                (enemy).sourceSpeed = 0.5;
+                                do break end;
+                            end
+                            if __switch167 <= 4 then
+                                (enemy).sourceSpeed = 1;
+                                do break end;
+                            end
+                            if __switch167 <= 5 then
+                                (enemy).sourceSpeed = 70;
+                                (enemy).markerDrawX = f32(f32(300));
+                                (enemy).markerDrawY = f32(f32(140));
+                                do break end;
+                            end
+                            if __switch167 <= 6 then
+                                (enemy).sourceSpeed = 20;
+                                (enemy).markerDrawX = f32(f32(320));
+                                (enemy).markerDrawY = f32(f32(220));
+                                do break end;
+                            end
+                            if __switch167 <= 7 then
+                                (enemy).sourceSpeed = 0.29999999999999999;
+                                (enemy).markerDrawX = f32(f32(510));
+                                (enemy).markerDrawY = f32(f32(250));
+                                do break end;
+                            end
+                            if __switch167 <= 8 then
+                                (enemy).sourceSpeed = 0.29999999999999999;
+                                (enemy).markerDrawX = f32(f32(210));
+                                (enemy).markerDrawY = f32(f32(250));
+                                do break end;
+                            end
+                            if __switch167 <= 9 then
+                                (enemy).sourceSpeed = 0.29999999999999999;
+                                (enemy).markerDrawX = f32(f32(360));
+                                (enemy).markerDrawY = f32(f32(250));
+                                do break end;
+                            end
+                            if __switch167 <= 10 then
+                                (enemy).sourceSpeed = 0.29999999999999999;
+                                (enemy).markerDrawX = f32(f32(360));
+                                (enemy).markerDrawY = f32(f32(290));
+                                do break end;
+                            end
+                            if __switch167 <= 11 then
+                                do break end
+                            end
+                        until true
                     end
                 end
             end;
@@ -3704,974 +3711,946 @@ M.updateStage10FinalBossNode = function(ctx, enemy)
     local fired = false;
     do
         local __switch180 = (enemy).spawnType
-        if __switch180 == 273 then goto __case181
-        elseif __switch180 == 274 then goto __case182
-        elseif __switch180 == 275 then goto __case187
-        elseif __switch180 == 277 then goto __case190
-        elseif __switch180 == 282 then goto __case193
-        elseif __switch180 == 285 then goto __case202
-        elseif __switch180 == 293 then goto __case203
-        elseif __switch180 == 294 then goto __case204
-        elseif __switch180 == 295 then goto __case217
-        elseif __switch180 == 301 then goto __case228
-        else goto __case229 end
-        ::__case181::;
-        do
-            if (math.fmod(timer, 50) == 0) then
+        if __switch180 == 273 then __switch180 = 1
+        elseif __switch180 == 274 then __switch180 = 2
+        elseif __switch180 == 275 then __switch180 = 3
+        elseif __switch180 == 277 then __switch180 = 4
+        elseif __switch180 == 282 then __switch180 = 5
+        elseif __switch180 == 285 then __switch180 = 6
+        elseif __switch180 == 293 then __switch180 = 7
+        elseif __switch180 == 294 then __switch180 = 8
+        elseif __switch180 == 295 then __switch180 = 9
+        elseif __switch180 == 301 then __switch180 = 10
+        else __switch180 = 11 end
+        repeat
+            if __switch180 <= 1 then
                 do
-                    (enemy).markerDrawX = f32(f32((f32(210) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 301)))));
-                    (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand((((ctx).frame_ + 1111) + (enemy).entityId)), 101)))))
-                end
-            end;
-            (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.29999999999999999);
-            if (timer >= 30) then
-                do
-                    local v_local = math.fmod((timer - 30), 920);
-                    local shortFan = ((((v_local >= 30) and (v_local < 70)) or ((v_local >= 480) and (v_local < 520))) and (bit.band(v_local, 3) == 0));
-                    if shortFan then
-                        do
-                            local aimed = (aimAt)(f32(((enemy).x - f32(99))), f32(((enemy).y - f32(120))));
-                            ctx:spawnProjectileSpread(11, 0, f32(((enemy).x - f32(99))), f32(((enemy).y - f32(120))), aimed, f32(0), 11.1, 6, 5, 10000, 0);
-                            fired = true
-                        end
-                    end;
-                    if (v_local == 80) then
-                        do
-                            (enemy).secondaryAngle16 = (normalizeAngle16(((aimAt)(f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105)))) - 16384)) % 65536)
-                        end
-                    end;
-                    if (((v_local >= 80) and (v_local < 390)) and (bit.band(v_local, 1) == 0)) then
-                        do
-                            local speed = (5.5 + ((v_local - 80) * 0.025000000000000001));
-                            ctx:spawnProjectileNode(2, 57, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), (enemy).secondaryAngle16, f32(0), speed, 6, 0);
-                            ctx:spawnProjectileNode(3, 9, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), (enemy).secondaryAngle16, f32(0), (speed + 2), 6, 0);
-                            (enemy).secondaryAngle16 = (normalizeAngle16(((enemy).secondaryAngle16 - 2400)) % 65536);
-                            fired = true
-                        end
-                    end;
-                    if (((v_local >= 520) and (v_local < 900)) and (bit.band((v_local - 520), 7) == 0)) then
-                        do
-                            local aimed = (aimAt)(f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))));
-                            local oscillation = trunc((math.sin(((timer * kTau) / 150)) * 12000));
-                            local speed = (5 + ((v_local - 520) * 0.016));
-                            ctx:spawnProjectileSpread(2, 0, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), normalizeAngle16((aimed + oscillation)), f32(0), speed, 6, 9, 24000, 0);
-                            fired = true
-                        end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case182::;
-        do
-            local v_local = math.fmod(timer, 1100);
-            if (v_local == 1) then
-                do
-                    (enemy).markerDrawX = f32(f32(540));
-                    (enemy).markerDrawY = f32(f32(330));
-                    (enemy).sourceSpeed = 10
-                end
-            else
-                if (v_local == 40) then
-                    do
-                        (enemy).markerDrawX = f32(f32(120));
-                        (enemy).markerDrawY = f32(f32(240));
-                        (enemy).sourceSpeed = 20
-                    end
-                else
-                    if (v_local == 110) then
-                        do
-                            (enemy).markerDrawX = f32(f32(500));
-                            (enemy).markerDrawY = f32(f32(190))
-                        end
-                    else
-                        if (v_local == 180) then
-                            do
-                                (enemy).markerDrawX = f32(f32(150));
-                                (enemy).markerDrawY = f32(f32(160))
-                            end
-                        else
-                            if (v_local == 250) then
-                                do
-                                    (enemy).markerDrawX = f32(f32(380));
-                                    (enemy).markerDrawY = f32(f32(60))
-                                end
-                            else
-                                if (((v_local >= 360) and (v_local < 600)) and (math.fmod(v_local, 20) == 0)) then
-                                    do
-                                        (enemy).markerDrawX = f32(f32((f32(160) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 361)))));
-                                        (enemy).markerDrawY = f32(f32((f32(80) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 5555)), 221)))));
-                                        (enemy).sourceSpeed = 5
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end;
-            (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, math.max(5, (enemy).sourceSpeed));
-            if ((v_local >= 40) and (v_local < 320)) then
-                do
-                    local segment = math.fmod((v_local - 40), 70);
-                    if ((segment <= 35) and (bit.band(segment, 1) == 0)) then
-                        do
-                            local aimed = (aimAt)((enemy).x, (enemy).y);
-                            local kBaseSpeeds = {5, 7, 9, 11, 13};
-                            do
-
-                                for _, baseSpeed in ipairs(kBaseSpeeds) do
-                                    do
-                                        ctx:spawnProjectileNode(13, 4, (enemy).x, (enemy).y, aimed, f32(0), (baseSpeed + (segment * 0.29999999999999999)), 1, 0)
-                                    end
-                                    ::__continue184::
-                                end
-                                ::__loop_end183::
-                            end;
-                            fired = true
-                        end
-                    end;
-                    if (((v_local >= 90) and (v_local < 320)) and (math.fmod((v_local - 90), 70) == 0)) then
-                        do
-                            local ringTime = (v_local - 90);
-                            local base = normalizeAngle16(lateBossFrameRand(timer));
-                            ctx:spawnProjectileSpread(10, 0, (enemy).x, (enemy).y, base, f32(0), (3 + (ringTime * 0.012)), 1, 25, 65536, 0);
-                            ctx:spawnProjectileSpread(10, 0, (enemy).x, (enemy).y, (aimAt)((enemy).x, (enemy).y), f32(0), (4 + (ringTime * 0.017000000000000001)), 1, 25, 65536, 0);
-                            fired = true
-                        end
-                    end
-                end
-            end;
-            if (((v_local >= 360) and (v_local < 600)) and (math.fmod(v_local, 20) == 0)) then
-                do
-                    local aimed = (aimAt)((enemy).x, (enemy).y);
-                    local speed = (5 + ((v_local - 350) * 0.0070000000000000001));
-                    do
-                        local i = 0
-                        while (i < 7) do
-                            do
-                                local angle = normalizeAngle16(((aimed - 2000) + (i * 666)));
-                                ctx:spawnProjectileNode(13, 1, (enemy).x, (enemy).y, angle, f32(0), speed, 1, 0);
-                                ctx:spawnProjectileNode(13, 1, (enemy).x, (enemy).y, angle, f32(0), (speed + 1), 1, 0)
-                            end
-                            ::__continue186::
-                            i = i + 1
-                        end
-                        ::__loop_end185::
-                    end;
-                    fired = true
-                end
-            end;
-            if ((v_local >= 640) and (v_local < 1060)) then
-                do
-                    local speed = (3.6000000000000001 + ((v_local - 640) * 0.0070000000000000001));
-                    ctx:spawnProjectileNode(13, 3, (enemy).x, (enemy).y, normalizeAngle16((timer * 2400)), f32(0), speed, 1, 0);
-                    if (bit.band(v_local, 1) == 0) then
-                        do
-                            ctx:spawnProjectileNode(12, 3, (enemy).x, (enemy).y, normalizeAngle16(((-timer) * 1000)), f32(0), (speed + 1.1499999999999999), 1, 0)
-                        end
-                    end;
-                    fired = true
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case187::;
-        do
-            if (timer == 1) then
-                do
-                    local kOffsetX = {f32(100), f32((-f32(100))), f32(210), f32((-f32(210)))};
-                    local kOffsetY = {f32((-f32(120))), f32((-f32(120))), f32((-f32(70))), f32((-f32(70)))};
-                    do
-                        local i = 0
-                        while (i < (#kOffsetX)) do
-                            do
-                                (spawnAuxNode)(276, (enemy).entityId, (enemy).spawnType, i, (enemy).x, (enemy).y, (kOffsetX)[i + 1], (kOffsetY)[i + 1], 99999999, 40)
-                            end
-                            ::__continue189::
-                            i = i + 1
-                        end
-                        ::__loop_end188::
-                    end
-                end
-            end;
-            if (math.fmod(timer, 50) == 0) then
-                do
-                    (enemy).markerDrawX = f32(f32((f32(240) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 241)))));
-                    (enemy).markerDrawY = f32(f32((f32(150) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 3333)), 101)))))
-                end
-            end;
-            local speed = (function() if (timer < 180) then return (0.5 + (3.5 * math.sin(((timer * kPi) / 360)))) else return 4 end end)();
-            (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 768, speed);
-            if (timer >= 40) then
-                do
-                    local v_local = math.fmod((timer - 40), 1200);
-                    local burst = math.fmod(v_local, 80);
-                    if (burst == 0) then
-                        do
-                            (enemy).secondaryAngle16 = (((function() if (v_local < 420) then return (function() if ((enemy).y <= ((ctx).player_).y) then return 16384 else return 49152 end end)() else return (aimAt)((enemy).x, f32(((enemy).y + f32(20)))) end end)() % 65536) % 65536)
-                        end
-                    end;
-                    if ((burst < 40) and (math.fmod(burst, 5) == 0)) then
-                        do
-                            ctx:spawnProjectileNode(7, 1, f32(((enemy).x + f32(20))), f32(((enemy).y + f32(20))), (enemy).secondaryAngle16, f32(10), 8, 1, 0);
-                            ctx:spawnProjectileNode(7, 1, f32(((enemy).x - f32(20))), f32(((enemy).y + f32(20))), (enemy).secondaryAngle16, f32(10), 8, 1, 0);
-                            fired = true
-                        end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case190::;
-        do
-            local scheduleClock = timer;
-            local scheduledTimer = 20;
-            do
-                local i = 0
-                while (i < 30) do
-                    do
-                        if ((scheduleClock >= 20) and (scheduleClock < scheduledTimer)) then
-                            do
-                                local isActive = function(node)
-                                    do return (node).active end
-                                end;
-                                local activeCount = (cpp.count_if((ctx).enemies_, (ctx).enemies_, isActive) + cpp.count_if((ctx).pendingEnemies_, (ctx).pendingEnemies_, isActive));
-                                if (activeCount < 3) then
-                                    do
-                                        scheduleClock = scheduledTimer;
-                                        (enemy).helperTimer = scheduledTimer
-                                    end
-                                end
-                            end
-                        end;
-                        if (scheduleClock == scheduledTimer) then
-                            do
-                                local selector = bit.band(i, 3);
-                                local type = (function() if (selector == 0) then return 280 else return (function() if (selector == 1) then return 281 else return (function() if (selector == 2) then return 278 else return 279 end end)() end end)() end end)();
-                                local spawnX = f32(170);
-                                if (math.fmod(i, 3) == 0) then
-                                    do
-                                        spawnX = f32(f32((f32(260) + f32(math.fmod(lateBossFrameRand(scheduleClock), 201)))))
-                                    end
-                                else
-                                    if (math.fmod(i, 3) == 2) then
-                                        do
-                                            spawnX = f32(f32(550))
-                                        end
-                                    end
-                                end;
-                                (spawnAuxNode)(type, (enemy).entityId, (enemy).spawnType, (i + 2), spawnX, f32((-f32(150))), spawnX, f32((-f32(150))), 10000, 120)
-                            end
-                        end;
-                        if (math.fmod(i, 3) ~= 1) then
-                            do
-                                scheduledTimer = (scheduledTimer + 260)
-                            end
-                        end
-                    end
-                    ::__continue192::
-                    i = i + 1
-                end
-                ::__loop_end191::
-            end;
-            goto __switch_end179
-        end;
-        ::__case193::;
-        do
-            if (((enemy).helperState == 1) or ((enemy).helperState == 3)) then
-                do
-                    if (math.fmod(timer, 90) == 0) then
+                    if (math.fmod(timer, 50) == 0) then
                         do
                             (enemy).markerDrawX = f32(f32((f32(210) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 301)))));
-                            (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 5555)), 101)))))
+                            (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand((((ctx).frame_ + 1111) + (enemy).entityId)), 101)))))
                         end
                     end;
-                    (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, math.max(10, (enemy).sourceSpeed));
-                    if (((timer >= 30) and (timer < 360)) and (math.fmod((timer - 30), 30) == 0)) then
+                    (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.29999999999999999);
+                    if (timer >= 30) then
                         do
-                            ctx:spawnProjectileSpread(3, 0, (enemy).x, f32(((enemy).y - f32(100))), (aimAt)((enemy).x, f32(((enemy).y - f32(100)))), f32(0), 8.8000000000000007, 6, 5, 11248, 0);
-                            fired = true
-                        end
-                    end;
-                    local ringCadence = (function() if ((enemy).helperState == 3) then return 13 else return 27 end end)();
-                    if (((timer >= 30) and (timer < 360)) and (math.fmod((timer - 30), ringCadence) == 0)) then
-                        do
-                            ctx:spawnProjectileSpread(4, 0, (enemy).x, f32(((enemy).y - f32(100))), normalizeAngle16((timer * 60)), f32(0), 6.7999999999999998, 6, 29, 65536, 0);
-                            fired = true
-                        end
-                    end;
-                    if (timer >= 360) then
-                        do
-                            (enemy).helperState = 2;
-                            (enemy).helperTimer = 0;
-                            (enemy).sourceSpeed = 30
-                        end
-                    end
-                end
-            else
-                if ((enemy).helperState == 2) then
-                    do
-                        local phase = f32((math.sin(((timer * kTau) / 220)) * 180));
-                        (enemy).markerDrawX = f32(f32((f32(360) + phase)));
-                        (enemy).markerDrawY = f32(f32(((enemy).markerDrawY - f32(0.100000001))));
-                        (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, 30);
-                        local fireMirrorBurst = function(right)
-                            local sideX = f32(((enemy).x + (function() if right then return f32(120) else return f32((-f32(120))) end end)()));
-                            local fireY = f32(((enemy).y - f32(70)));
-                            do
-                                local i = 0
-                                while (i < 30) do
-                                    do
-                                        local jitterX = (math.fmod(lateBossFrameRand((timer + (i * 55))), 41) - 20);
-                                        local angle3 = normalizeAngle16((15884 + math.fmod(lateBossFrameRand((timer + (i * 5555))), 1001)));
-                                        local angle5 = normalizeAngle16((15884 + math.fmod(lateBossFrameRand((timer + (i * 55555))), 1001)));
-                                        ctx:spawnProjectileNode(3, 0, f32((sideX + f32(jitterX))), fireY, angle3, f32(0), (8 + i), 1, 0);
-                                        ctx:spawnProjectileNode(5, 0, f32((sideX + f32(jitterX))), fireY, angle5, f32(0), (8.3000000000000007 + i), 1, 0)
-                                    end
-                                    ::__continue195::
-                                    i = i + 1
+                            local v_local = math.fmod((timer - 30), 920);
+                            local shortFan = ((((v_local >= 30) and (v_local < 70)) or ((v_local >= 480) and (v_local < 520))) and (bit.band(v_local, 3) == 0));
+                            if shortFan then
+                                do
+                                    local aimed = (aimAt)(f32(((enemy).x - f32(99))), f32(((enemy).y - f32(120))));
+                                    ctx:spawnProjectileSpread(11, 0, f32(((enemy).x - f32(99))), f32(((enemy).y - f32(120))), aimed, f32(0), 11.1, 6, 5, 10000, 0);
+                                    fired = true
                                 end
-                                ::__loop_end194::
                             end;
-                            local ringSeed = (math.fmod(lateBossFrameRand(timer), 1001) - 30384);
-                            do
-                                local i = 0
-                                while (i < 27) do
-                                    do
-                                        ctx:spawnProjectileNode(2, 0, sideX, fireY, normalizeAngle16((ringSeed + (i * 1038))), f32(0), 11.1, 1, 0)
-                                    end
-                                    ::__continue197::
-                                    i = i + 1
+                            if (v_local == 80) then
+                                do
+                                    (enemy).secondaryAngle16 = (normalizeAngle16(((aimAt)(f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105)))) - 16384)) % 65536)
                                 end
-                                ::__loop_end196::
                             end;
-                            local kSpeeds = {5, 6, 7};
-                            local kRightBases = {13768, 15768, 17768};
-                            local kLeftBases = {(-11000), (-13000), (-15000)};
+                            if (((v_local >= 80) and (v_local < 390)) and (bit.band(v_local, 1) == 0)) then
+                                do
+                                    local speed = (5.5 + ((v_local - 80) * 0.025000000000000001));
+                                    ctx:spawnProjectileNode(2, 57, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), (enemy).secondaryAngle16, f32(0), speed, 6, 0);
+                                    ctx:spawnProjectileNode(3, 9, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), (enemy).secondaryAngle16, f32(0), (speed + 2), 6, 0);
+                                    (enemy).secondaryAngle16 = (normalizeAngle16(((enemy).secondaryAngle16 - 2400)) % 65536);
+                                    fired = true
+                                end
+                            end;
+                            if (((v_local >= 520) and (v_local < 900)) and (bit.band((v_local - 520), 7) == 0)) then
+                                do
+                                    local aimed = (aimAt)(f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))));
+                                    local oscillation = trunc((math.sin(((timer * kTau) / 150)) * 12000));
+                                    local speed = (5 + ((v_local - 520) * 0.016));
+                                    ctx:spawnProjectileSpread(2, 0, f32(((enemy).x + f32(108))), f32(((enemy).y - f32(105))), normalizeAngle16((aimed + oscillation)), f32(0), speed, 6, 9, 24000, 0);
+                                    fired = true
+                                end
+                            end
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 2 then
+                do
+                    local v_local = math.fmod(timer, 1100);
+                    if (v_local == 1) then
+                        do
+                            (enemy).markerDrawX = f32(f32(540));
+                            (enemy).markerDrawY = f32(f32(330));
+                            (enemy).sourceSpeed = 10
+                        end
+                    else
+                        if (v_local == 40) then
                             do
-                                local layer = 0
-                                while (layer < (#kSpeeds)) do
+                                (enemy).markerDrawX = f32(f32(120));
+                                (enemy).markerDrawY = f32(f32(240));
+                                (enemy).sourceSpeed = 20
+                            end
+                        else
+                            if (v_local == 110) then
+                                do
+                                    (enemy).markerDrawX = f32(f32(500));
+                                    (enemy).markerDrawY = f32(f32(190))
+                                end
+                            else
+                                if (v_local == 180) then
                                     do
-                                        local base = (function() if right then return (kRightBases)[layer + 1] else return (kLeftBases)[layer + 1] end end)();
+                                        (enemy).markerDrawX = f32(f32(150));
+                                        (enemy).markerDrawY = f32(f32(160))
+                                    end
+                                else
+                                    if (v_local == 250) then
                                         do
-                                            local i = 0
-                                            while (i < 11) do
-                                                do
-                                                    ctx:spawnProjectileNode(4, 0, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 3000))), f32(0), (kSpeeds)[layer + 1], 1, 0)
-                                                end
-                                                ::__continue201::
-                                                i = i + 1
+                                            (enemy).markerDrawX = f32(f32(380));
+                                            (enemy).markerDrawY = f32(f32(60))
+                                        end
+                                    else
+                                        if (((v_local >= 360) and (v_local < 600)) and (math.fmod(v_local, 20) == 0)) then
+                                            do
+                                                (enemy).markerDrawX = f32(f32((f32(160) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 361)))));
+                                                (enemy).markerDrawY = f32(f32((f32(80) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 5555)), 221)))));
+                                                (enemy).sourceSpeed = 5
                                             end
-                                            ::__loop_end200::
                                         end
                                     end
-                                    ::__continue199::
-                                    layer = layer + 1
                                 end
-                                ::__loop_end198::
-                            end
-                        end;
-                        if (((timer >= 60) and (timer < 620)) and (math.fmod((timer - 60), 72) == 0)) then
-                            do
-                                (fireMirrorBurst)(true);
-                                fired = true
-                            end
-                        end;
-                        if (((timer >= 96) and (timer < 620)) and (math.fmod((timer - 96), 72) == 0)) then
-                            do
-                                (fireMirrorBurst)(false);
-                                fired = true
-                            end
-                        end;
-                        if (timer >= 640) then
-                            do
-                                (enemy).helperState = 3;
-                                (enemy).helperTimer = 19;
-                                (enemy).sourceSpeed = 70
                             end
                         end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case202::;
-        do
-            if ((enemy).helperState == 1) then
+                    end;
+                    (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, math.max(5, (enemy).sourceSpeed));
+                    if ((v_local >= 40) and (v_local < 320)) then
+                        do
+                            local segment = math.fmod((v_local - 40), 70);
+                            if ((segment <= 35) and (bit.band(segment, 1) == 0)) then
+                                do
+                                    local aimed = (aimAt)((enemy).x, (enemy).y);
+                                    local kBaseSpeeds = {5, 7, 9, 11, 13};
+                                    do
+
+                                        for _, baseSpeed in ipairs(kBaseSpeeds) do
+                                            do
+                                                ctx:spawnProjectileNode(13, 4, (enemy).x, (enemy).y, aimed, f32(0), (baseSpeed + (segment * 0.29999999999999999)), 1, 0)
+                                            end
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            if (((v_local >= 90) and (v_local < 320)) and (math.fmod((v_local - 90), 70) == 0)) then
+                                do
+                                    local ringTime = (v_local - 90);
+                                    local base = normalizeAngle16(lateBossFrameRand(timer));
+                                    ctx:spawnProjectileSpread(10, 0, (enemy).x, (enemy).y, base, f32(0), (3 + (ringTime * 0.012)), 1, 25, 65536, 0);
+                                    ctx:spawnProjectileSpread(10, 0, (enemy).x, (enemy).y, (aimAt)((enemy).x, (enemy).y), f32(0), (4 + (ringTime * 0.017000000000000001)), 1, 25, 65536, 0);
+                                    fired = true
+                                end
+                            end
+                        end
+                    end;
+                    if (((v_local >= 360) and (v_local < 600)) and (math.fmod(v_local, 20) == 0)) then
+                        do
+                            local aimed = (aimAt)((enemy).x, (enemy).y);
+                            local speed = (5 + ((v_local - 350) * 0.0070000000000000001));
+                            do
+                                local i = 0
+                                while (i < 7) do
+                                    do
+                                        local angle = normalizeAngle16(((aimed - 2000) + (i * 666)));
+                                        ctx:spawnProjectileNode(13, 1, (enemy).x, (enemy).y, angle, f32(0), speed, 1, 0);
+                                        ctx:spawnProjectileNode(13, 1, (enemy).x, (enemy).y, angle, f32(0), (speed + 1), 1, 0)
+                                    end
+                                    i = i + 1
+                                end
+                            end;
+                            fired = true
+                        end
+                    end;
+                    if ((v_local >= 640) and (v_local < 1060)) then
+                        do
+                            local speed = (3.6000000000000001 + ((v_local - 640) * 0.0070000000000000001));
+                            ctx:spawnProjectileNode(13, 3, (enemy).x, (enemy).y, normalizeAngle16((timer * 2400)), f32(0), speed, 1, 0);
+                            if (bit.band(v_local, 1) == 0) then
+                                do
+                                    ctx:spawnProjectileNode(12, 3, (enemy).x, (enemy).y, normalizeAngle16(((-timer) * 1000)), f32(0), (speed + 1.1499999999999999), 1, 0)
+                                end
+                            end;
+                            fired = true
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 3 then
                 do
                     if (timer == 1) then
                         do
-                            (enemy).markerDrawX = f32(f32(320));
-                            (enemy).markerDrawY = f32(f32(220))
+                            local kOffsetX = {f32(100), f32((-f32(100))), f32(210), f32((-f32(210)))};
+                            local kOffsetY = {f32((-f32(120))), f32((-f32(120))), f32((-f32(70))), f32((-f32(70)))};
+                            do
+                                local i = 0
+                                while (i < (#kOffsetX)) do
+                                    do
+                                        (spawnAuxNode)(276, (enemy).entityId, (enemy).spawnType, i, (enemy).x, (enemy).y, (kOffsetX)[i + 1], (kOffsetY)[i + 1], 99999999, 40)
+                                    end
+                                    i = i + 1
+                                end
+                            end
+                        end
+                    end;
+                    if (math.fmod(timer, 50) == 0) then
+                        do
+                            (enemy).markerDrawX = f32(f32((f32(240) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 241)))));
+                            (enemy).markerDrawY = f32(f32((f32(150) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 3333)), 101)))))
+                        end
+                    end;
+                    local speed = (function() if (timer < 180) then return (0.5 + (3.5 * math.sin(((timer * kPi) / 360)))) else return 4 end end)();
+                    (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 768, speed);
+                    if (timer >= 40) then
+                        do
+                            local v_local = math.fmod((timer - 40), 1200);
+                            local burst = math.fmod(v_local, 80);
+                            if (burst == 0) then
+                                do
+                                    (enemy).secondaryAngle16 = (((function() if (v_local < 420) then return (function() if ((enemy).y <= ((ctx).player_).y) then return 16384 else return 49152 end end)() else return (aimAt)((enemy).x, f32(((enemy).y + f32(20)))) end end)() % 65536) % 65536)
+                                end
+                            end;
+                            if ((burst < 40) and (math.fmod(burst, 5) == 0)) then
+                                do
+                                    ctx:spawnProjectileNode(7, 1, f32(((enemy).x + f32(20))), f32(((enemy).y + f32(20))), (enemy).secondaryAngle16, f32(10), 8, 1, 0);
+                                    ctx:spawnProjectileNode(7, 1, f32(((enemy).x - f32(20))), f32(((enemy).y + f32(20))), (enemy).secondaryAngle16, f32(10), 8, 1, 0);
+                                    fired = true
+                                end
+                            end
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 4 then
+                do
+                    local scheduleClock = timer;
+                    local scheduledTimer = 20;
+                    do
+                        local i = 0
+                        while (i < 30) do
+                            do
+                                if ((scheduleClock >= 20) and (scheduleClock < scheduledTimer)) then
+                                    do
+                                        local isActive = function(node)
+                                            do return (node).active end
+                                        end;
+                                        local activeCount = (cpp.count_if((ctx).enemies_, (ctx).enemies_, isActive) + cpp.count_if((ctx).pendingEnemies_, (ctx).pendingEnemies_, isActive));
+                                        if (activeCount < 3) then
+                                            do
+                                                scheduleClock = scheduledTimer;
+                                                (enemy).helperTimer = scheduledTimer
+                                            end
+                                        end
+                                    end
+                                end;
+                                if (scheduleClock == scheduledTimer) then
+                                    do
+                                        local selector = bit.band(i, 3);
+                                        local type = (function() if (selector == 0) then return 280 else return (function() if (selector == 1) then return 281 else return (function() if (selector == 2) then return 278 else return 279 end end)() end end)() end end)();
+                                        local spawnX = f32(170);
+                                        if (math.fmod(i, 3) == 0) then
+                                            do
+                                                spawnX = f32(f32((f32(260) + f32(math.fmod(lateBossFrameRand(scheduleClock), 201)))))
+                                            end
+                                        else
+                                            if (math.fmod(i, 3) == 2) then
+                                                do
+                                                    spawnX = f32(f32(550))
+                                                end
+                                            end
+                                        end;
+                                        (spawnAuxNode)(type, (enemy).entityId, (enemy).spawnType, (i + 2), spawnX, f32((-f32(150))), spawnX, f32((-f32(150))), 10000, 120)
+                                    end
+                                end;
+                                if (math.fmod(i, 3) ~= 1) then
+                                    do
+                                        scheduledTimer = (scheduledTimer + 260)
+                                    end
+                                end
+                            end
+                            i = i + 1
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 5 then
+                do
+                    if (((enemy).helperState == 1) or ((enemy).helperState == 3)) then
+                        do
+                            if (math.fmod(timer, 90) == 0) then
+                                do
+                                    (enemy).markerDrawX = f32(f32((f32(210) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 301)))));
+                                    (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 5555)), 101)))))
+                                end
+                            end;
+                            (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, math.max(10, (enemy).sourceSpeed));
+                            if (((timer >= 30) and (timer < 360)) and (math.fmod((timer - 30), 30) == 0)) then
+                                do
+                                    ctx:spawnProjectileSpread(3, 0, (enemy).x, f32(((enemy).y - f32(100))), (aimAt)((enemy).x, f32(((enemy).y - f32(100)))), f32(0), 8.8000000000000007, 6, 5, 11248, 0);
+                                    fired = true
+                                end
+                            end;
+                            local ringCadence = (function() if ((enemy).helperState == 3) then return 13 else return 27 end end)();
+                            if (((timer >= 30) and (timer < 360)) and (math.fmod((timer - 30), ringCadence) == 0)) then
+                                do
+                                    ctx:spawnProjectileSpread(4, 0, (enemy).x, f32(((enemy).y - f32(100))), normalizeAngle16((timer * 60)), f32(0), 6.7999999999999998, 6, 29, 65536, 0);
+                                    fired = true
+                                end
+                            end;
+                            if (timer >= 360) then
+                                do
+                                    (enemy).helperState = 2;
+                                    (enemy).helperTimer = 0;
+                                    (enemy).sourceSpeed = 30
+                                end
+                            end
                         end
                     else
-                        if ((timer >= 210) and (timer < 421)) then
+                        if ((enemy).helperState == 2) then
                             do
-                                local phase = (((timer - 210) * kTau) / 210);
-                                (enemy).markerDrawX = f32(f32((f32(360) - f32((math.sin(phase) * 240)))));
-                                (enemy).markerDrawY = f32(f32((f32(250) + f32((math.cos(phase) * 80)))))
-                            end
-                        end
-                    end;
-                    (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, 20);
-                    if (timer >= 450) then
-                        do
-                            (enemy).helperState = 2;
-                            (enemy).helperTimer = 0;
-                            (enemy).sourceSpeed = 0.69999999999999996
-                        end
-                    end
-                end
-            else
-                if ((enemy).helperState == 2) then
-                    do
-                        if (math.fmod(timer, 50) == 0) then
-                            do
-                                (enemy).markerDrawX = f32(f32((f32(210) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 301)))));
-                                (enemy).markerDrawY = f32(f32((f32(220) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 1111)), 101)))))
-                            end
-                        end;
-                        (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.69999999999999996);
-                        if (timer >= 800) then
-                            do
-                                (enemy).helperState = 1;
-                                (enemy).helperTimer = 0;
-                                (enemy).sourceSpeed = 20
-                            end
-                        end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case203::;
-        ::__case204::;
-        do
-            local right = ((enemy).spawnType == 293);
-            if (math.fmod(timer, 50) == 0) then
-                do
-                    (enemy).markerDrawX = f32(f32(((function() if right then return f32(460) else return f32(160) end end)() + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 101)))));
-                    (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + ((enemy).entityId * 7777))), 101)))))
-                end
-            end;
-            (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.29999999999999999);
-            if (timer < 10) then
-                do
-                    goto __switch_end179
-                end
-            end;
-            local v_local = math.fmod((timer - 10), 1800);
-            local muzzleX = f32(((enemy).x + (function() if right then return f32((-f32(88))) else return f32(80) end end)()));
-            local muzzleY = f32(((enemy).y + (function() if right then return f32((-f32(120))) else return f32((-f32(122))) end end)()));
-            local aimed = (aimAt)(muzzleX, muzzleY);
-            local kFanBases = {0, 420, 870};
-            do
-
-                for _, base in ipairs(kFanBases) do
-                    do
-                        if (v_local == (base + 30)) then
-                            do
-                                (enemy).secondaryAngle16 = (aimed % 65536)
-                            end
-                        end;
-                        if (((v_local >= (base + 30)) and (v_local < (base + 70))) and (math.fmod(((v_local - base) - 30), 4) == 0)) then
-                            do
-                                local visual = (function() if right then return 11 else return 10 end end)();
-                                local speed = (6 + (((v_local - base) - 30) * 0.29999999999999999));
-                                do
-                                    local i = 0
-                                    while (i < 5) do
-                                        do
-                                            ctx:spawnProjectileNode(visual, 0, muzzleX, muzzleY, normalizeAngle16((((enemy).secondaryAngle16 - 3000) + (i * 1500))), f32(10), speed, 1, 0)
+                                local phase = f32((math.sin(((timer * kTau) / 220)) * 180));
+                                (enemy).markerDrawX = f32(f32((f32(360) + phase)));
+                                (enemy).markerDrawY = f32(f32(((enemy).markerDrawY - f32(0.100000001))));
+                                (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, 30);
+                                local fireMirrorBurst = function(right)
+                                    local sideX = f32(((enemy).x + (function() if right then return f32(120) else return f32((-f32(120))) end end)()));
+                                    local fireY = f32(((enemy).y - f32(70)));
+                                    do
+                                        local i = 0
+                                        while (i < 30) do
+                                            do
+                                                local jitterX = (math.fmod(lateBossFrameRand((timer + (i * 55))), 41) - 20);
+                                                local angle3 = normalizeAngle16((15884 + math.fmod(lateBossFrameRand((timer + (i * 5555))), 1001)));
+                                                local angle5 = normalizeAngle16((15884 + math.fmod(lateBossFrameRand((timer + (i * 55555))), 1001)));
+                                                ctx:spawnProjectileNode(3, 0, f32((sideX + f32(jitterX))), fireY, angle3, f32(0), (8 + i), 1, 0);
+                                                ctx:spawnProjectileNode(5, 0, f32((sideX + f32(jitterX))), fireY, angle5, f32(0), (8.3000000000000007 + i), 1, 0)
+                                            end
+                                            i = i + 1
                                         end
-                                        ::__continue208::
-                                        i = i + 1
+                                    end;
+                                    local ringSeed = (math.fmod(lateBossFrameRand(timer), 1001) - 30384);
+                                    do
+                                        local i = 0
+                                        while (i < 27) do
+                                            do
+                                                ctx:spawnProjectileNode(2, 0, sideX, fireY, normalizeAngle16((ringSeed + (i * 1038))), f32(0), 11.1, 1, 0)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    local kSpeeds = {5, 6, 7};
+                                    local kRightBases = {13768, 15768, 17768};
+                                    local kLeftBases = {(-11000), (-13000), (-15000)};
+                                    do
+                                        local layer = 0
+                                        while (layer < (#kSpeeds)) do
+                                            do
+                                                local base = (function() if right then return (kRightBases)[layer + 1] else return (kLeftBases)[layer + 1] end end)();
+                                                do
+                                                    local i = 0
+                                                    while (i < 11) do
+                                                        do
+                                                            ctx:spawnProjectileNode(4, 0, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 3000))), f32(0), (kSpeeds)[layer + 1], 1, 0)
+                                                        end
+                                                        i = i + 1
+                                                    end
+                                                end
+                                            end
+                                            layer = layer + 1
+                                        end
                                     end
-                                    ::__loop_end207::
                                 end;
-                                (enemy).secondaryAngle16 = (approachAngle16((enemy).secondaryAngle16, aimed, 320) % 65536);
-                                fired = true
+                                if (((timer >= 60) and (timer < 620)) and (math.fmod((timer - 60), 72) == 0)) then
+                                    do
+                                        (fireMirrorBurst)(true);
+                                        fired = true
+                                    end
+                                end;
+                                if (((timer >= 96) and (timer < 620)) and (math.fmod((timer - 96), 72) == 0)) then
+                                    do
+                                        (fireMirrorBurst)(false);
+                                        fired = true
+                                    end
+                                end;
+                                if (timer >= 640) then
+                                    do
+                                        (enemy).helperState = 3;
+                                        (enemy).helperTimer = 19;
+                                        (enemy).sourceSpeed = 70
+                                    end
+                                end
                             end
                         end
-                    end
-                    ::__continue206::
-                end
-                ::__loop_end205::
-            end;
-            local earlyStart = (function() if right then return 60 else return 74 end end)();
-            if (((v_local >= earlyStart) and (v_local < 420)) and (math.fmod((v_local - earlyStart), 28) == 0)) then
-                do
-                    local amplitude = (function() if right then return 9000 else return (-14162) end end)();
-                    local oscillation = trunc((math.sin((((timer - 90) * kTau) / 180)) * amplitude));
-                    local speed = (4 + ((v_local - 60) * 0.016));
-                    do
-                        local i = 0
-                        while (i < 13) do
-                            do
-                                ctx:spawnProjectileNode((function() if right then return 3 else return 2 end end)(), 0, muzzleX, muzzleY, normalizeAngle16((((aimed + oscillation) - 12000) + (i * 2000))), f32(10), speed, 1, 0)
-                            end
-                            ::__continue210::
-                            i = i + 1
-                        end
-                        ::__loop_end209::
                     end;
-                    fired = true
-                end
-            end;
-            if (((right and (v_local >= 480)) and (v_local < 870)) and (math.fmod((v_local - 480), 36) == 0)) then
+                    do break end
+                end;
+            end
+            if __switch180 <= 6 then
                 do
-                    local speed = (4.5999999999999996 + ((v_local - 480) * 0.0080000000000000002));
-                    do
-                        local i = 0
-                        while (i < 11) do
-                            do
-                                ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed - 2000) + (i * 400))), f32(0), speed, 1, 0);
-                                ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed + 6000) + (i * 400))), f32(0), speed, 1, 0);
-                                ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed - 10000) + (i * 400))), f32(0), speed, 1, 0)
-                            end
-                            ::__continue212::
-                            i = i + 1
-                        end
-                        ::__loop_end211::
-                    end;
-                    fired = true
-                end
-            end;
-            if ((((not right) and (v_local >= 480)) and (v_local < 870)) and (math.fmod((v_local - 480), 6) == 0)) then
-                do
-                    local speed = ((5 + ((v_local - 480) * 0.012)) + (math.sin((((timer - 480) * kTau) / 180)) * 0.80000000000000004));
-                    do
-                        local i = 0
-                        while (i < 7) do
-                            do
-                                ctx:spawnProjectileNode(8, 0, muzzleX, muzzleY, normalizeAngle16(((((enemy).secondaryAngle16 + (v_local * 240)) + 15872) + (i * 9362))), f32(0), speed, 1, 0)
-                            end
-                            ::__continue214::
-                            i = i + 1
-                        end
-                        ::__loop_end213::
-                    end;
-                    fired = true
-                end
-            end;
-            local spiralStart = (function() if right then return 930 else return 946 end end)();
-            if (v_local == spiralStart) then
-                do
-                    (enemy).secondaryAngle16 = (aimed % 65536)
-                end
-            end;
-            if ((v_local >= spiralStart) and (v_local < 1790)) then
-                do
-                    local offset = (v_local - spiralStart);
-                    local within32 = bit.band(offset, 31);
-                    if ((within32 < 18) and (math.fmod(within32, 3) == 0)) then
+                    if ((enemy).helperState == 1) then
                         do
-                            local speed = (5.5 + ((v_local - 930) * 0.01));
+                            if (timer == 1) then
+                                do
+                                    (enemy).markerDrawX = f32(f32(320));
+                                    (enemy).markerDrawY = f32(f32(220))
+                                end
+                            else
+                                if ((timer >= 210) and (timer < 421)) then
+                                    do
+                                        local phase = (((timer - 210) * kTau) / 210);
+                                        (enemy).markerDrawX = f32(f32((f32(360) - f32((math.sin(phase) * 240)))));
+                                        (enemy).markerDrawY = f32(f32((f32(250) + f32((math.cos(phase) * 80)))))
+                                    end
+                                end
+                            end;
+                            (moveByDivisor)((enemy).markerDrawX, (enemy).markerDrawY, 20);
+                            if (timer >= 450) then
+                                do
+                                    (enemy).helperState = 2;
+                                    (enemy).helperTimer = 0;
+                                    (enemy).sourceSpeed = 0.69999999999999996
+                                end
+                            end
+                        end
+                    else
+                        if ((enemy).helperState == 2) then
+                            do
+                                if (math.fmod(timer, 50) == 0) then
+                                    do
+                                        (enemy).markerDrawX = f32(f32((f32(210) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 301)))));
+                                        (enemy).markerDrawY = f32(f32((f32(220) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + 1111)), 101)))))
+                                    end
+                                end;
+                                (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.69999999999999996);
+                                if (timer >= 800) then
+                                    do
+                                        (enemy).helperState = 1;
+                                        (enemy).helperTimer = 0;
+                                        (enemy).sourceSpeed = 20
+                                    end
+                                end
+                            end
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 8 then
+                do
+                    local right = ((enemy).spawnType == 293);
+                    if (math.fmod(timer, 50) == 0) then
+                        do
+                            (enemy).markerDrawX = f32(f32(((function() if right then return f32(460) else return f32(160) end end)() + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + (enemy).entityId)), 101)))));
+                            (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(lateBossFrameRand(((ctx).frame_ + ((enemy).entityId * 7777))), 101)))))
+                        end
+                    end;
+                    (steerAndMove)((enemy).markerDrawX, (enemy).markerDrawY, 512, 0.29999999999999999);
+                    if (timer < 10) then
+                        do
+                            do break end
+                        end
+                    end;
+                    local v_local = math.fmod((timer - 10), 1800);
+                    local muzzleX = f32(((enemy).x + (function() if right then return f32((-f32(88))) else return f32(80) end end)()));
+                    local muzzleY = f32(((enemy).y + (function() if right then return f32((-f32(120))) else return f32((-f32(122))) end end)()));
+                    local aimed = (aimAt)(muzzleX, muzzleY);
+                    local kFanBases = {0, 420, 870};
+                    do
+
+                        for _, base in ipairs(kFanBases) do
+                            do
+                                if (v_local == (base + 30)) then
+                                    do
+                                        (enemy).secondaryAngle16 = (aimed % 65536)
+                                    end
+                                end;
+                                if (((v_local >= (base + 30)) and (v_local < (base + 70))) and (math.fmod(((v_local - base) - 30), 4) == 0)) then
+                                    do
+                                        local visual = (function() if right then return 11 else return 10 end end)();
+                                        local speed = (6 + (((v_local - base) - 30) * 0.29999999999999999));
+                                        do
+                                            local i = 0
+                                            while (i < 5) do
+                                                do
+                                                    ctx:spawnProjectileNode(visual, 0, muzzleX, muzzleY, normalizeAngle16((((enemy).secondaryAngle16 - 3000) + (i * 1500))), f32(10), speed, 1, 0)
+                                                end
+                                                i = i + 1
+                                            end
+                                        end;
+                                        (enemy).secondaryAngle16 = (approachAngle16((enemy).secondaryAngle16, aimed, 320) % 65536);
+                                        fired = true
+                                    end
+                                end
+                            end
+                        end
+                    end;
+                    local earlyStart = (function() if right then return 60 else return 74 end end)();
+                    if (((v_local >= earlyStart) and (v_local < 420)) and (math.fmod((v_local - earlyStart), 28) == 0)) then
+                        do
+                            local amplitude = (function() if right then return 9000 else return (-14162) end end)();
+                            local oscillation = trunc((math.sin((((timer - 90) * kTau) / 180)) * amplitude));
+                            local speed = (4 + ((v_local - 60) * 0.016));
                             do
                                 local i = 0
                                 while (i < 13) do
                                     do
-                                        ctx:spawnProjectileNode((function() if right then return 11 else return 10 end end)(), 0, muzzleX, muzzleY, normalizeAngle16(((enemy).secondaryAngle16 + (i * 5041))), f32(10), speed, 1, 0)
+                                        ctx:spawnProjectileNode((function() if right then return 3 else return 2 end end)(), 0, muzzleX, muzzleY, normalizeAngle16((((aimed + oscillation) - 12000) + (i * 2000))), f32(10), speed, 1, 0)
                                     end
-                                    ::__continue216::
                                     i = i + 1
                                 end
-                                ::__loop_end215::
                             end;
                             fired = true
                         end
                     end;
-                    local curve = (60 + trunc((v_local - 930) / 16));
-                    (enemy).secondaryAngle16 = (normalizeAngle16(((enemy).secondaryAngle16 + (function() if right then return (-curve) else return curve end end)())) % 65536)
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case217::;
-        do
-            local advance = function(endTimer)
-                if ((enemy).helperTimer == endTimer) then
-                    do
-                        (enemy).helperState = (enemy).helperState + 1;
-                        (enemy).helperTimer = 0
-                    end
-                end
-            end;
-            local state = (enemy).helperState;
-            local travelState = ((((((((((state >= 1) and (state <= 4)) or (state == 6)) or (state == 7)) or (state == 9)) or (state == 11)) or (state == 14)) or (state == 16)) or (state == 25)) or (state == 98));
-            if travelState then
-                do
-                    if (timer == 1) then
+                    if (((right and (v_local >= 480)) and (v_local < 870)) and (math.fmod((v_local - 480), 36) == 0)) then
                         do
-                            (enemy).originX = f32((enemy).x);
-                            (enemy).originY = f32((enemy).y);
-                            local random = lateBossFrameRand((((ctx).frame_ + (enemy).entityId) + (state * 8765)));
-                            (enemy).markerDrawX = f32(f32((f32(160) + f32(math.fmod(random, 401)))));
-                            (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(u32(bit.rshift(random, 8)), 301)))));
-                            if ((state == 14) or (state == 25)) then
+                            local speed = (4.5999999999999996 + ((v_local - 480) * 0.0080000000000000002));
+                            do
+                                local i = 0
+                                while (i < 11) do
+                                    do
+                                        ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed - 2000) + (i * 400))), f32(0), speed, 1, 0);
+                                        ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed + 6000) + (i * 400))), f32(0), speed, 1, 0);
+                                        ctx:spawnProjectileNode(5, 0, muzzleX, muzzleY, normalizeAngle16(((aimed - 10000) + (i * 400))), f32(0), speed, 1, 0)
+                                    end
+                                    i = i + 1
+                                end
+                            end;
+                            fired = true
+                        end
+                    end;
+                    if ((((not right) and (v_local >= 480)) and (v_local < 870)) and (math.fmod((v_local - 480), 6) == 0)) then
+                        do
+                            local speed = ((5 + ((v_local - 480) * 0.012)) + (math.sin((((timer - 480) * kTau) / 180)) * 0.80000000000000004));
+                            do
+                                local i = 0
+                                while (i < 7) do
+                                    do
+                                        ctx:spawnProjectileNode(8, 0, muzzleX, muzzleY, normalizeAngle16(((((enemy).secondaryAngle16 + (v_local * 240)) + 15872) + (i * 9362))), f32(0), speed, 1, 0)
+                                    end
+                                    i = i + 1
+                                end
+                            end;
+                            fired = true
+                        end
+                    end;
+                    local spiralStart = (function() if right then return 930 else return 946 end end)();
+                    if (v_local == spiralStart) then
+                        do
+                            (enemy).secondaryAngle16 = (aimed % 65536)
+                        end
+                    end;
+                    if ((v_local >= spiralStart) and (v_local < 1790)) then
+                        do
+                            local offset = (v_local - spiralStart);
+                            local within32 = bit.band(offset, 31);
+                            if ((within32 < 18) and (math.fmod(within32, 3) == 0)) then
                                 do
-                                    (enemy).markerDrawX = f32(f32(360));
-                                    (enemy).markerDrawY = f32(f32(250))
+                                    local speed = (5.5 + ((v_local - 930) * 0.01));
+                                    do
+                                        local i = 0
+                                        while (i < 13) do
+                                            do
+                                                ctx:spawnProjectileNode((function() if right then return 11 else return 10 end end)(), 0, muzzleX, muzzleY, normalizeAngle16(((enemy).secondaryAngle16 + (i * 5041))), f32(10), speed, 1, 0)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            local curve = (60 + trunc((v_local - 930) / 16));
+                            (enemy).secondaryAngle16 = (normalizeAngle16(((enemy).secondaryAngle16 + (function() if right then return (-curve) else return curve end end)())) % 65536)
+                        end
+                    end;
+                    do break end
+                end;
+            end
+            if __switch180 <= 9 then
+                do
+                    local advance = function(endTimer)
+                        if ((enemy).helperTimer == endTimer) then
+                            do
+                                (enemy).helperState = (enemy).helperState + 1;
+                                (enemy).helperTimer = 0
+                            end
+                        end
+                    end;
+                    local state = (enemy).helperState;
+                    local travelState = ((((((((((state >= 1) and (state <= 4)) or (state == 6)) or (state == 7)) or (state == 9)) or (state == 11)) or (state == 14)) or (state == 16)) or (state == 25)) or (state == 98));
+                    if travelState then
+                        do
+                            if (timer == 1) then
+                                do
+                                    (enemy).originX = f32((enemy).x);
+                                    (enemy).originY = f32((enemy).y);
+                                    local random = lateBossFrameRand((((ctx).frame_ + (enemy).entityId) + (state * 8765)));
+                                    (enemy).markerDrawX = f32(f32((f32(160) + f32(math.fmod(random, 401)))));
+                                    (enemy).markerDrawY = f32(f32((f32(200) + f32(math.fmod(u32(bit.rshift(random, 8)), 301)))));
+                                    if ((state == 14) or (state == 25)) then
+                                        do
+                                            (enemy).markerDrawX = f32(f32(360));
+                                            (enemy).markerDrawY = f32(f32(250))
+                                        end
+                                    else
+                                        if (state == 16) then
+                                            do
+                                                (enemy).markerDrawX = f32(f32(280));
+                                                (enemy).markerDrawY = f32(f32(360))
+                                            end
+                                        else
+                                            if (state == 98) then
+                                                do
+                                                    (enemy).markerDrawX = f32((parent).x);
+                                                    (enemy).markerDrawY = f32((parent).y);
+                                                    (enemy).targetable = false
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end;
+                            local p = cpp.clamp((timer / 35), 0, 1);
+                            local eased = math.sin(((p * kPi) * 0.5));
+                            (enemy).x = f32(f32(((enemy).originX + f32((f32(((enemy).markerDrawX - (enemy).originX)) * eased)))));
+                            (enemy).y = f32(f32(((enemy).originY + f32((f32(((enemy).markerDrawY - (enemy).originY)) * eased)))));
+                            (enemy).sourceAngle16 = (normalizeAngle16(trunc(((math.atan2(f32(((enemy).markerDrawY - (enemy).y)), f32(((enemy).markerDrawX - (enemy).x))) * 65536) / kTau))) % 65536);
+                            (advance)(35);
+                            do break end
+                        end
+                    end;
+                    if (((((state == 5) or (state == 8)) or (state == 10)) or (state == 12)) or (state == 13)) then
+                        do
+                            (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999);
+                            if (timer == 40) then
+                                do
+                                    local emitterType = (function() if (state == 13) then return 300 else return 299 end end)();
+                                    local aimed = (aimAt)((enemy).x, (enemy).y);
+                                    do
+                                        local i = 0
+                                        while (i < 4) do
+                                            do
+                                                ctx:spawnStage10FinalBossEmitter(enemy, emitterType, (enemy).x, (enemy).y, normalizeAngle16((aimed + (i * 16384))), 5, i)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    if (state ~= 13) then
+                                        do
+                                            ctx:spawnProjectileSpread(12, 1, (enemy).x, (enemy).y, aimed, f32(0), 5, 1, 20, 65536, 0)
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            (advance)((function() if (state == 12) then return 60 else return (function() if (state == 13) then return 120 else return 90 end end)() end end)());
+                            do break end
+                        end
+                    end;
+                    if (state == 15) then
+                        do
+                            if (timer < 100) then
+                                do
+                                    (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999)
+                                end
+                            end;
+                            if (timer == 90) then
+                                do
+                                    do
+                                        local i = 0
+                                        while (i < 32) do
+                                            do
+                                                local random = lateBossFrameRand((((enemy).entityId + (i * 88)) + timer));
+                                                local heading = normalizeAngle16(u32(bit.band(random, 65535)));
+                                                local speed = (4 + (math.fmod(u32(bit.rshift(random, 16)), 401) / 100));
+                                                ctx:spawnStage10FinalBossEmitter(enemy, 297, (enemy).x, (enemy).y, heading, speed, i)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            if (timer == 100) then
+                                do
+                                    (enemy).originX = f32((enemy).x);
+                                    (enemy).originY = f32((enemy).y);
+                                    (enemy).x = f32(f32((-f32(1000))));
+                                    (enemy).y = f32(f32((-f32(1000))))
+                                end
+                            end;
+                            if ((timer >= 150) and (timer < 690)) then
+                                do
+                                    local cadence = (function() if (timer < 246) then return 24 else return 6 end end)();
+                                    if (math.fmod((timer - 150), cadence) == 0) then
+                                        do
+                                            local random = lateBossFrameRand(((enemy).entityId + (timer * 88888)));
+                                            local x = f32((f32(60) + f32(math.fmod(random, 601))));
+                                            local angle = normalizeAngle16((((aimAt)(x, f32((-f32(20)))) - 1800) + math.fmod(u32(bit.rshift(random, 16)), 3601)));
+                                            ctx:spawnProjectileNode(2, 60, x, f32((-f32(20))), angle, f32(0), 7, 1, 0);
+                                            fired = true
+                                        end
+                                    end
+                                end
+                            end;
+                            (advance)(720);
+                            do break end
+                        end
+                    end;
+                    if (state == 17) then
+                        do
+                            (enemy).targetable = false;
+                            (advance)(20);
+                            do break end
+                        end
+                    end;
+                    if ((state >= 18) and (state <= 20)) then
+                        do
+                            if (timer == 50) then
+                                do
+                                    local base = normalizeAngle16(lateBossFrameRand(((enemy).entityId + (state * 77))));
+                                    ctx:spawnProjectileSpread(5, 0, (enemy).x, (enemy).y, base, f32(0), (5 + ((state - 18) * 0.5)), 1, 17, 65536, 0);
+                                    fired = true
+                                end
+                            end;
+                            (advance)(50);
+                            do break end
+                        end
+                    end;
+                    if ((state >= 21) and (state <= 24)) then
+                        do
+                            if ((timer == 70) and (state ~= 24)) then
+                                do
+                                    local base = normalizeAngle16(lateBossFrameRand(((enemy).entityId + (state * 888))));
+                                    do
+                                        local i = 0
+                                        while (i < 4) do
+                                            do
+                                                ctx:spawnProjectileSpread((function() if (bit.band(i, 1) == 0) then return 5 else return 3 end end)(), 0, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 16384))), f32(0), (3 + (i * 0.40000000000000002)), 1, (27 + (i * 2)), 65536, 0)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    local stateScale = (function() if (state == 21) then return (1.1000000000000001 + (math.sin(((timer * kPi) / 140)) * 0.5)) else return 1.6000000000000001 end end)();
+                                    local radiusWave = math.sin(((timer * kPi) / 70));
+                                    local verticalRadius = (((1 - (radiusWave * 0.5)) * stateScale) * 120);
+                                    local horizontalRadius = (((0.5 + radiusWave) * stateScale) * 120);
+                                    do
+                                        local i = 0
+                                        while (i < 128) do
+                                            do
+                                                local positionRandom = lateBossFrameRand((state + (i * 99)));
+                                                local orbitAngle = normalizeAngle16((math.fmod(positionRandom, 25601) - 29184));
+                                                local orbitRadians = fixedAngleRadians(orbitAngle);
+                                                local shotX = f32(((enemy).x + f32((math.cos(orbitRadians) * horizontalRadius))));
+                                                local shotY = f32(((enemy).y + f32((math.sin(orbitRadians) * verticalRadius))));
+                                                local angleRandom = lateBossFrameRand(((state * 44) + (i * 9999)));
+                                                local shotAngle = normalizeAngle16((math.fmod(angleRandom, 25601) - 29184));
+                                                local speedRandom = lateBossFrameRand((state + (i * 999)));
+                                                local speed = (5 + (math.fmod(speedRandom, 1301) / 100));
+                                                ctx:spawnProjectileNode(12, 0, shotX, shotY, shotAngle, f32(0), speed, 1, 0)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            (advance)((function() if (state == 24) then return 35 else return 120 end end)());
+                            do break end
+                        end
+                    end;
+                    if (state == 26) then
+                        do
+                            if (timer == 80) then
+                                do
+                                    do
+                                        local i = 0
+                                        while (i < 155) do
+                                            do
+                                                local random = lateBossFrameRand((((enemy).entityId + (timer * 3333)) + (i * 999)));
+                                                ctx:spawnProjectileNode(12, 0, (enemy).x, (enemy).y, normalizeAngle16(u32(bit.band(random, 65535))), f32(0), (2.5 + (math.fmod(u32(bit.rshift(random, 16)), 351) / 100)), 1, 0)
+                                            end
+                                            i = i + 1
+                                        end
+                                    end;
+                                    fired = true
+                                end
+                            end;
+                            if (timer < 120) then
+                                do
+                                    (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999)
                                 end
                             else
-                                if (state == 16) then
-                                    do
-                                        (enemy).markerDrawX = f32(f32(280));
-                                        (enemy).markerDrawY = f32(f32(360))
-                                    end
-                                else
-                                    if (state == 98) then
+                                do
+                                    local phase = (((timer - 120) * kTau) / 120);
+                                    (enemy).x = f32(f32(((enemy).originX + f32((math.cos(phase) * 80)))));
+                                    (enemy).y = f32(f32(((enemy).originY + f32((math.sin(phase) * 90)))))
+                                end
+                            end;
+                            (advance)(240);
+                            do break end
+                        end
+                    end;
+                    if ((state >= 27) and (state <= 31)) then
+                        do
+                            if (timer == 1) then
+                                do
+                                    local kX = {f32(870), f32((-f32(150))), f32(870), f32(120), f32(400)};
+                                    local kY = {f32(100), f32(240), f32(480), f32(870), f32((-f32(150)))};
+                                    local kAngle = {30768, 2000, 30768, 51152, 14384};
+                                    local index = (state - 27);
+                                    (enemy).x = f32((kX)[index + 1]);
+                                    (enemy).y = f32((kY)[index + 1]);
+                                    (enemy).sourceAngle16 = (normalizeAngle16((kAngle)[index + 1]) % 65536);
+                                    (enemy).sourceSpeed = 10
+                                end
+                            end;
+                            if (timer > 49) then
+                                do
+                                    local radians = fixedAngleRadians((enemy).sourceAngle16);
+                                    (enemy).x = f32(f32(((enemy).x + f32((math.cos(radians) * (enemy).sourceSpeed)))));
+                                    (enemy).y = f32(f32(((enemy).y + f32((math.sin(radians) * (enemy).sourceSpeed)))));
+                                    (enemy).sourceSpeed = ((enemy).sourceSpeed + 0.050000000000000003);
+                                    local radiusRandom = lateBossFrameRand(((timer * 88) + state));
+                                    local burstRadius = math.fmod(radiusRandom, 111);
+                                    local orbitRandom = lateBossFrameRand(((timer * 888) + state));
+                                    local burstOrbit = normalizeAngle16(math.fmod(orbitRandom, 65537));
+                                    local burstOrbitRadians = fixedAngleRadians(burstOrbit);
+                                    local burstX = f32(((enemy).x + f32((math.cos(burstOrbitRadians) * burstRadius))));
+                                    local burstY = f32(((enemy).y + f32((math.sin(burstOrbitRadians) * burstRadius))));
+                                    local horizontalOrigin = f32((((ctx).player_).x / f32(6)));
+                                    if ((((burstX >= f32((horizontalOrigin + f32(20)))) and (burstX <= f32((horizontalOrigin + f32(580))))) and (burstY >= f32(20))) and (burstY <= f32(700))) then
                                         do
-                                            (enemy).markerDrawX = f32((parent).x);
-                                            (enemy).markerDrawY = f32((parent).y);
-                                            (enemy).targetable = false
+                                            local headingRandom = lateBossFrameRand(((timer * 555) + state));
+                                            local burstHeading = normalizeAngle16((((enemy).sourceAngle16 + 26102) + math.fmod(headingRandom, 7333)));
+                                            local speedRandom = lateBossFrameRand(((timer * 5555) + state));
+                                            local burstSpeed = (1 + (math.fmod(speedRandom, 151) / 100));
+                                            ctx:spawnProjectileNode(2, 18, burstX, burstY, burstHeading, f32(0), burstSpeed, 1, 0);
+                                            fired = true
+                                        end
+                                    end;
+                                    if (timer < 140) then
+                                        do
+                                            local projectEllipse = function(orbitAngle, verticalRadius, horizontalRadius)
+                                                orbitAngle = (orbitAngle % 65536);
+                                                local tilt = fixedAngleRadians((enemy).sourceAngle16);
+                                                local orbit = fixedAngleRadians(orbitAngle);
+                                                local tiltCos = math.cos(tilt);
+                                                local tiltSin = math.sin(tilt);
+                                                local orbitCos = math.cos(orbit);
+                                                local orbitSin = math.sin(orbit);
+                                                do return {f32(((enemy).x + f32((((tiltCos * orbitCos) * horizontalRadius) - ((tiltSin * orbitSin) * verticalRadius))))), f32(((enemy).y + f32((((tiltCos * orbitSin) * verticalRadius) + ((tiltSin * orbitCos) * horizontalRadius)))))} end
+                                            end;
+                                            local insideFireArea = function(x, y)
+                                                x = f32(x);
+                                                y = f32(y);
+                                                local horizontalOrigin = f32((((ctx).player_).x / f32(6)));
+                                                do return ((((x >= f32((horizontalOrigin + f32(20)))) and (x <= f32((horizontalOrigin + f32(580))))) and (y >= f32(20))) and (y <= f32(700))) end
+                                            end;
+                                            local orbitAngle = normalizeAngle16((timer * 2500));
+                                            local first = (projectEllipse)(orbitAngle, 132, 110);
+                                            local secondOrbit = normalizeAngle16((orbitAngle + 32768));
+                                            local second = (projectEllipse)(secondOrbit, 100, 80);
+                                            local firstHeading = normalizeAngle16(((enemy).sourceAngle16 + orbitAngle));
+                                            local secondHeading = normalizeAngle16((firstHeading + 32768));
+                                            if (insideFireArea)((first)[1], (first)[2]) then
+                                                do
+                                                    ctx:spawnProjectileNode(13, 3, (first)[1], (first)[2], firstHeading, f32(0), 5.2999999999999998, 1, 0);
+                                                    fired = true
+                                                end
+                                            end;
+                                            if (insideFireArea)((second)[1], (second)[2]) then
+                                                do
+                                                    ctx:spawnProjectileNode(13, 3, (second)[1], (second)[2], secondHeading, f32(0), 5.2999999999999998, 1, 0);
+                                                    fired = true
+                                                end
+                                            end
                                         end
                                     end
                                 end
-                            end
+                            end;
+                            (advance)(140);
+                            do break end
                         end
                     end;
-                    local p = cpp.clamp((timer / 35), 0, 1);
-                    local eased = math.sin(((p * kPi) * 0.5));
-                    (enemy).x = f32(f32(((enemy).originX + f32((f32(((enemy).markerDrawX - (enemy).originX)) * eased)))));
-                    (enemy).y = f32(f32(((enemy).originY + f32((f32(((enemy).markerDrawY - (enemy).originY)) * eased)))));
-                    (enemy).sourceAngle16 = (normalizeAngle16(trunc(((math.atan2(f32(((enemy).markerDrawY - (enemy).y)), f32(((enemy).markerDrawX - (enemy).x))) * 65536) / kTau))) % 65536);
-                    (advance)(35);
-                    goto __switch_end179
-                end
-            end;
-            if (((((state == 5) or (state == 8)) or (state == 10)) or (state == 12)) or (state == 13)) then
-                do
-                    (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999);
-                    if (timer == 40) then
+                    if (state == 99) then
                         do
-                            local emitterType = (function() if (state == 13) then return 300 else return 299 end end)();
-                            local aimed = (aimAt)((enemy).x, (enemy).y);
-                            do
-                                local i = 0
-                                while (i < 4) do
-                                    do
-                                        ctx:spawnStage10FinalBossEmitter(enemy, emitterType, (enemy).x, (enemy).y, normalizeAngle16((aimed + (i * 16384))), 5, i)
-                                    end
-                                    ::__continue219::
-                                    i = i + 1
-                                end
-                                ::__loop_end218::
-                            end;
-                            if (state ~= 13) then
+                            (enemy).targetable = false;
+                            if (timer < 180) then
                                 do
-                                    ctx:spawnProjectileSpread(12, 1, (enemy).x, (enemy).y, aimed, f32(0), 5, 1, 20, 65536, 0)
+                                    (enemy).drawBodyThisFrame = false
                                 end
                             end;
-                            fired = true
-                        end
-                    end;
-                    (advance)((function() if (state == 12) then return 60 else return (function() if (state == 13) then return 120 else return 90 end end)() end end)());
-                    goto __switch_end179
-                end
-            end;
-            if (state == 15) then
-                do
-                    if (timer < 100) then
-                        do
-                            (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999)
-                        end
-                    end;
-                    if (timer == 90) then
-                        do
-                            do
-                                local i = 0
-                                while (i < 32) do
-                                    do
-                                        local random = lateBossFrameRand((((enemy).entityId + (i * 88)) + timer));
-                                        local heading = normalizeAngle16(u32(bit.band(random, 65535)));
-                                        local speed = (4 + (math.fmod(u32(bit.rshift(random, 16)), 401) / 100));
-                                        ctx:spawnStage10FinalBossEmitter(enemy, 297, (enemy).x, (enemy).y, heading, speed, i)
-                                    end
-                                    ::__continue221::
-                                    i = i + 1
-                                end
-                                ::__loop_end220::
-                            end;
-                            fired = true
-                        end
-                    end;
-                    if (timer == 100) then
-                        do
-                            (enemy).originX = f32((enemy).x);
-                            (enemy).originY = f32((enemy).y);
-                            (enemy).x = f32(f32((-f32(1000))));
-                            (enemy).y = f32(f32((-f32(1000))))
-                        end
-                    end;
-                    if ((timer >= 150) and (timer < 690)) then
-                        do
-                            local cadence = (function() if (timer < 246) then return 24 else return 6 end end)();
-                            if (math.fmod((timer - 150), cadence) == 0) then
+                            if ((timer < 280) and (bit.band(timer, 1) == 0)) then
                                 do
                                     local random = lateBossFrameRand(((enemy).entityId + (timer * 88888)));
-                                    local x = f32((f32(60) + f32(math.fmod(random, 601))));
-                                    local angle = normalizeAngle16((((aimAt)(x, f32((-f32(20)))) - 1800) + math.fmod(u32(bit.rshift(random, 16)), 3601)));
-                                    ctx:spawnProjectileNode(2, 60, x, f32((-f32(20))), angle, f32(0), 7, 1, 0);
-                                    fired = true
+                                    ctx:spawnStage10FinalBossEmitter(enemy, 298, (enemy).x, (enemy).y, normalizeAngle16(u32(bit.band(random, 65535))), 12, trunc(timer / 2))
                                 end
-                            end
-                        end
-                    end;
-                    (advance)(720);
-                    goto __switch_end179
-                end
-            end;
-            if (state == 17) then
-                do
-                    (enemy).targetable = false;
-                    (advance)(20);
-                    goto __switch_end179
-                end
-            end;
-            if ((state >= 18) and (state <= 20)) then
-                do
-                    if (timer == 50) then
-                        do
-                            local base = normalizeAngle16(lateBossFrameRand(((enemy).entityId + (state * 77))));
-                            ctx:spawnProjectileSpread(5, 0, (enemy).x, (enemy).y, base, f32(0), (5 + ((state - 18) * 0.5)), 1, 17, 65536, 0);
-                            fired = true
-                        end
-                    end;
-                    (advance)(50);
-                    goto __switch_end179
-                end
-            end;
-            if ((state >= 21) and (state <= 24)) then
-                do
-                    if ((timer == 70) and (state ~= 24)) then
-                        do
-                            local base = normalizeAngle16(lateBossFrameRand(((enemy).entityId + (state * 888))));
-                            do
-                                local i = 0
-                                while (i < 4) do
-                                    do
-                                        ctx:spawnProjectileSpread((function() if (bit.band(i, 1) == 0) then return 5 else return 3 end end)(), 0, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 16384))), f32(0), (3 + (i * 0.40000000000000002)), 1, (27 + (i * 2)), 65536, 0)
-                                    end
-                                    ::__continue223::
-                                    i = i + 1
-                                end
-                                ::__loop_end222::
                             end;
-                            local stateScale = (function() if (state == 21) then return (1.1000000000000001 + (math.sin(((timer * kPi) / 140)) * 0.5)) else return 1.6000000000000001 end end)();
-                            local radiusWave = math.sin(((timer * kPi) / 70));
-                            local verticalRadius = (((1 - (radiusWave * 0.5)) * stateScale) * 120);
-                            local horizontalRadius = (((0.5 + radiusWave) * stateScale) * 120);
-                            do
-                                local i = 0
-                                while (i < 128) do
-                                    do
-                                        local positionRandom = lateBossFrameRand((state + (i * 99)));
-                                        local orbitAngle = normalizeAngle16((math.fmod(positionRandom, 25601) - 29184));
-                                        local orbitRadians = fixedAngleRadians(orbitAngle);
-                                        local shotX = f32(((enemy).x + f32((math.cos(orbitRadians) * horizontalRadius))));
-                                        local shotY = f32(((enemy).y + f32((math.sin(orbitRadians) * verticalRadius))));
-                                        local angleRandom = lateBossFrameRand(((state * 44) + (i * 9999)));
-                                        local shotAngle = normalizeAngle16((math.fmod(angleRandom, 25601) - 29184));
-                                        local speedRandom = lateBossFrameRand((state + (i * 999)));
-                                        local speed = (5 + (math.fmod(speedRandom, 1301) / 100));
-                                        ctx:spawnProjectileNode(12, 0, shotX, shotY, shotAngle, f32(0), speed, 1, 0)
-                                    end
-                                    ::__continue225::
-                                    i = i + 1
-                                end
-                                ::__loop_end224::
-                            end;
-                            fired = true
-                        end
-                    end;
-                    (advance)((function() if (state == 24) then return 35 else return 120 end end)());
-                    goto __switch_end179
-                end
-            end;
-            if (state == 26) then
-                do
-                    if (timer == 80) then
-                        do
-                            do
-                                local i = 0
-                                while (i < 155) do
-                                    do
-                                        local random = lateBossFrameRand((((enemy).entityId + (timer * 3333)) + (i * 999)));
-                                        ctx:spawnProjectileNode(12, 0, (enemy).x, (enemy).y, normalizeAngle16(u32(bit.band(random, 65535))), f32(0), (2.5 + (math.fmod(u32(bit.rshift(random, 16)), 351) / 100)), 1, 0)
-                                    end
-                                    ::__continue227::
-                                    i = i + 1
-                                end
-                                ::__loop_end226::
-                            end;
-                            fired = true
-                        end
-                    end;
-                    if (timer < 120) then
-                        do
-                            (steerAndMove)(((ctx).player_).x, ((ctx).player_).y, 512, 0.29999999999999999)
-                        end
-                    else
-                        do
-                            local phase = (((timer - 120) * kTau) / 120);
-                            (enemy).x = f32(f32(((enemy).originX + f32((math.cos(phase) * 80)))));
-                            (enemy).y = f32(f32(((enemy).originY + f32((math.sin(phase) * 90)))))
-                        end
-                    end;
-                    (advance)(240);
-                    goto __switch_end179
-                end
-            end;
-            if ((state >= 27) and (state <= 31)) then
-                do
-                    if (timer == 1) then
-                        do
-                            local kX = {f32(870), f32((-f32(150))), f32(870), f32(120), f32(400)};
-                            local kY = {f32(100), f32(240), f32(480), f32(870), f32((-f32(150)))};
-                            local kAngle = {30768, 2000, 30768, 51152, 14384};
-                            local index = (state - 27);
-                            (enemy).x = f32((kX)[index + 1]);
-                            (enemy).y = f32((kY)[index + 1]);
-                            (enemy).sourceAngle16 = (normalizeAngle16((kAngle)[index + 1]) % 65536);
-                            (enemy).sourceSpeed = 10
-                        end
-                    end;
-                    if (timer > 49) then
-                        do
-                            local radians = fixedAngleRadians((enemy).sourceAngle16);
-                            (enemy).x = f32(f32(((enemy).x + f32((math.cos(radians) * (enemy).sourceSpeed)))));
-                            (enemy).y = f32(f32(((enemy).y + f32((math.sin(radians) * (enemy).sourceSpeed)))));
-                            (enemy).sourceSpeed = ((enemy).sourceSpeed + 0.050000000000000003);
-                            local radiusRandom = lateBossFrameRand(((timer * 88) + state));
-                            local burstRadius = math.fmod(radiusRandom, 111);
-                            local orbitRandom = lateBossFrameRand(((timer * 888) + state));
-                            local burstOrbit = normalizeAngle16(math.fmod(orbitRandom, 65537));
-                            local burstOrbitRadians = fixedAngleRadians(burstOrbit);
-                            local burstX = f32(((enemy).x + f32((math.cos(burstOrbitRadians) * burstRadius))));
-                            local burstY = f32(((enemy).y + f32((math.sin(burstOrbitRadians) * burstRadius))));
-                            local horizontalOrigin = f32((((ctx).player_).x / f32(6)));
-                            if ((((burstX >= f32((horizontalOrigin + f32(20)))) and (burstX <= f32((horizontalOrigin + f32(580))))) and (burstY >= f32(20))) and (burstY <= f32(700))) then
+                            if (timer >= 300) then
                                 do
-                                    local headingRandom = lateBossFrameRand(((timer * 555) + state));
-                                    local burstHeading = normalizeAngle16((((enemy).sourceAngle16 + 26102) + math.fmod(headingRandom, 7333)));
-                                    local speedRandom = lateBossFrameRand(((timer * 5555) + state));
-                                    local burstSpeed = (1 + (math.fmod(speedRandom, 151) / 100));
-                                    ctx:spawnProjectileNode(2, 18, burstX, burstY, burstHeading, f32(0), burstSpeed, 1, 0);
-                                    fired = true
-                                end
-                            end;
-                            if (timer < 140) then
-                                do
-                                    local projectEllipse = function(orbitAngle, verticalRadius, horizontalRadius)
-                                        orbitAngle = (orbitAngle % 65536);
-                                        local tilt = fixedAngleRadians((enemy).sourceAngle16);
-                                        local orbit = fixedAngleRadians(orbitAngle);
-                                        local tiltCos = math.cos(tilt);
-                                        local tiltSin = math.sin(tilt);
-                                        local orbitCos = math.cos(orbit);
-                                        local orbitSin = math.sin(orbit);
-                                        do return {f32(((enemy).x + f32((((tiltCos * orbitCos) * horizontalRadius) - ((tiltSin * orbitSin) * verticalRadius))))), f32(((enemy).y + f32((((tiltCos * orbitSin) * verticalRadius) + ((tiltSin * orbitCos) * horizontalRadius)))))} end
-                                    end;
-                                    local insideFireArea = function(x, y)
-                                        x = f32(x);
-                                        y = f32(y);
-                                        local horizontalOrigin = f32((((ctx).player_).x / f32(6)));
-                                        do return ((((x >= f32((horizontalOrigin + f32(20)))) and (x <= f32((horizontalOrigin + f32(580))))) and (y >= f32(20))) and (y <= f32(700))) end
-                                    end;
-                                    local orbitAngle = normalizeAngle16((timer * 2500));
-                                    local first = (projectEllipse)(orbitAngle, 132, 110);
-                                    local secondOrbit = normalizeAngle16((orbitAngle + 32768));
-                                    local second = (projectEllipse)(secondOrbit, 100, 80);
-                                    local firstHeading = normalizeAngle16(((enemy).sourceAngle16 + orbitAngle));
-                                    local secondHeading = normalizeAngle16((firstHeading + 32768));
-                                    if (insideFireArea)((first)[1], (first)[2]) then
+                                    (enemy).active = false;
+                                    if ((parent).liveChildCount > 0) then
                                         do
-                                            ctx:spawnProjectileNode(13, 3, (first)[1], (first)[2], firstHeading, f32(0), 5.2999999999999998, 1, 0);
-                                            fired = true
-                                        end
-                                    end;
-                                    if (insideFireArea)((second)[1], (second)[2]) then
-                                        do
-                                            ctx:spawnProjectileNode(13, 3, (second)[1], (second)[2], secondHeading, f32(0), 5.2999999999999998, 1, 0);
-                                            fired = true
+                                            (parent).liveChildCount = (parent).liveChildCount - 1
                                         end
                                     end
                                 end
                             end
                         end
                     end;
-                    (advance)(140);
-                    goto __switch_end179
-                end
-            end;
-            if (state == 99) then
+                    do break end
+                end;
+            end
+            if __switch180 <= 10 then
                 do
-                    (enemy).targetable = false;
-                    if (timer < 180) then
+                    (enemy).x = f32(f32(((enemy).x + f32((f32(((parent).x - (enemy).x)) * f32(0.200000003))))));
+                    (enemy).y = f32(f32(((enemy).y + f32((f32((f32(((parent).y + f32(60))) - (enemy).y)) * f32(0.200000003))))));
+                    if (((enemy).helperState == 1) and ((enemy).hp < trunc(((enemy).maxHp * 3) / 4))) then
                         do
-                            (enemy).drawBodyThisFrame = false
+                            (enemy).helperState = 2;
+                            (enemy).helperTimer = 0;
+                            do return end
                         end
                     end;
-                    if ((timer < 280) and (bit.band(timer, 1) == 0)) then
+                    if (((enemy).helperState == 2) and ((enemy).hp < trunc((enemy).maxHp / 2))) then
                         do
-                            local random = lateBossFrameRand(((enemy).entityId + (timer * 88888)));
-                            ctx:spawnStage10FinalBossEmitter(enemy, 298, (enemy).x, (enemy).y, normalizeAngle16(u32(bit.band(random, 65535))), 12, trunc(timer / 2))
+                            (enemy).helperState = 3;
+                            (enemy).helperTimer = 0;
+                            do return end
                         end
                     end;
-                    if (timer >= 300) then
+                    if (((enemy).helperState >= 1) and ((enemy).helperState <= 3)) then
                         do
-                            (enemy).active = false;
-                            if ((parent).liveChildCount > 0) then
+                            if ((timer >= 10) and (math.fmod((timer - 10), 360) == 0)) then
                                 do
-                                    (parent).liveChildCount = (parent).liveChildCount - 1
+                                    local type = (302 + (((enemy).helperState - 1) * 2));
+                                    ctx:spawnStage10FinalBossEmitter(enemy, type, f32(0), f32((-f32(123))), normalizeAngle16(lateBossFrameRand((timer + (enemy).entityId))), 0, trunc(timer / 360))
+                                end
+                            end;
+                            if ((timer >= 190) and (math.fmod((timer - 190), 360) == 0)) then
+                                do
+                                    local type = (303 + (((enemy).helperState - 1) * 2));
+                                    ctx:spawnStage10FinalBossEmitter(enemy, type, f32(0), f32((-f32(123))), normalizeAngle16(lateBossFrameRand((timer + (enemy).entityId))), 0, trunc(timer / 360))
                                 end
                             end
                         end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case228::;
-        do
-            (enemy).x = f32(f32(((enemy).x + f32((f32(((parent).x - (enemy).x)) * f32(0.200000003))))));
-            (enemy).y = f32(f32(((enemy).y + f32((f32((f32(((parent).y + f32(60))) - (enemy).y)) * f32(0.200000003))))));
-            if (((enemy).helperState == 1) and ((enemy).hp < trunc(((enemy).maxHp * 3) / 4))) then
-                do
-                    (enemy).helperState = 2;
-                    (enemy).helperTimer = 0;
-                    do return end
-                end
-            end;
-            if (((enemy).helperState == 2) and ((enemy).hp < trunc((enemy).maxHp / 2))) then
-                do
-                    (enemy).helperState = 3;
-                    (enemy).helperTimer = 0;
-                    do return end
-                end
-            end;
-            if (((enemy).helperState >= 1) and ((enemy).helperState <= 3)) then
-                do
-                    if ((timer >= 10) and (math.fmod((timer - 10), 360) == 0)) then
-                        do
-                            local type = (302 + (((enemy).helperState - 1) * 2));
-                            ctx:spawnStage10FinalBossEmitter(enemy, type, f32(0), f32((-f32(123))), normalizeAngle16(lateBossFrameRand((timer + (enemy).entityId))), 0, trunc(timer / 360))
-                        end
                     end;
-                    if ((timer >= 190) and (math.fmod((timer - 190), 360) == 0)) then
-                        do
-                            local type = (303 + (((enemy).helperState - 1) * 2));
-                            ctx:spawnStage10FinalBossEmitter(enemy, type, f32(0), f32((-f32(123))), normalizeAngle16(lateBossFrameRand((timer + (enemy).entityId))), 0, trunc(timer / 360))
-                        end
-                    end
-                end
-            end;
-            goto __switch_end179
-        end;
-        ::__case229::;
-        goto __switch_end179
-        ::__switch_end179::
+                    do break end
+                end;
+            end
+            if __switch180 <= 11 then
+                do break end
+            end
+        until true
     end;
     if fired then
         do
@@ -4838,16 +4817,12 @@ M.updateLateStageBoss = function(ctx, enemy)
                                                         ctx:spawnProjectileNode(10, 53, rightX, sourceY, normalizeAngle16((((rightAim + (i * 5000)) - (layer * 2800)) - 21500)), f32(0), speed, 1, 0);
                                                         ctx:spawnProjectileNode(10, 54, leftX, sourceY, normalizeAngle16((((leftAim + (i * 3571)) + (layer * 2800)) - 8500)), f32(0), speed, 1, 0)
                                                     end
-                                                    ::__continue233::
                                                     i = i + 1
                                                 end
-                                                ::__loop_end232::
                                             end
                                         end
-                                        ::__continue231::
                                         layer = layer + 1
                                     end
-                                    ::__loop_end230::
                                 end;
                                 ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
                             end
@@ -4874,10 +4849,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                 local angle = (function() if right then return (((base + 6384) + jitter) + (i * 1285)) else return (((base - 24384) - jitter) + (i * 1285)) end end)();
                                 ctx:spawnProjectileNode((function() if right then return 3 else return 2 end end)(), 8, (function() if right then return rightX else return leftX end end)(), sourceY, normalizeAngle16(angle), f32(10), 7.2000000000000002, 1, 0)
                             end
-                            ::__continue235::
                             i = i + 1
                         end
-                        ::__loop_end234::
                     end;
                     ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
                 end;
@@ -4926,10 +4899,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                         do
                                             ctx:spawnProjectileNode(13, 0, (enemy).x, burstY, normalizeAngle16((((enemy).secondaryAngle16 + (i * 2000)) - 1000)), f32(10), 9, 1, 0)
                                         end
-                                        ::__continue237::
                                         i = i + 1
                                     end
-                                    ::__loop_end236::
                                 end;
                                 do
                                     local i = 0
@@ -4937,10 +4908,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                         do
                                             ctx:spawnProjectileNode(13, 0, (enemy).x, burstY, normalizeAngle16((((enemy).secondaryAngle16 + (i * 2000)) - 2000)), f32(10), 8, 1, 0)
                                         end
-                                        ::__continue239::
                                         i = i + 1
                                     end
-                                    ::__loop_end238::
                                 end;
                                 (enemy).secondaryAngle16 = (approachAngle16((enemy).secondaryAngle16, (aimFrom)((enemy).x, burstY), 1200) % 65536);
                                 ctx:playPlayerSound((ctx).bullet1SoundHandle_, 19)
@@ -4959,10 +4928,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                         do
                                             ctx:spawnProjectileNode(2, 55, leftX, streamY, normalizeAngle16(((timer * 356) - (i * 32768))), f32(10), 5, 1, 0)
                                         end
-                                        ::__continue241::
                                         i = i + 1
                                     end
-                                    ::__loop_end240::
                                 end;
                                 ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
                             end
@@ -4980,10 +4947,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                         do
                                             ctx:spawnProjectileNode(2, 55, rightX, streamY, normalizeAngle16((((-timer) * 356) - (i * 32768))), f32(10), 5, 1, 0)
                                         end
-                                        ::__continue243::
                                         i = i + 1
                                     end
-                                    ::__loop_end242::
                                 end;
                                 ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
                             end
@@ -5011,9 +4976,7 @@ M.updateLateStageBoss = function(ctx, enemy)
                             ctx:spawnProjectileNode(13, 11, firstX, sourceY, firstAngle, f32(10), speed, 1, 0);
                             ctx:spawnProjectileNode(13, 11, secondX, sourceY, secondAngle, f32(10), speed, 1, 0)
                         end
-                        ::__continue245::
                     end
-                    ::__loop_end244::
                 end;
                 ctx:playPlayerSound((ctx).bullet2SoundHandle_, 12)
             end
@@ -5082,9 +5045,7 @@ M.updateLateStageBoss = function(ctx, enemy)
                                             ctx:audio("StopSoundMem", handle)
                                         end
                                     end
-                                    ::__continue247::
                                 end
-                                ::__loop_end246::
                             end;
                             do
 
@@ -5094,9 +5055,7 @@ M.updateLateStageBoss = function(ctx, enemy)
                                             ctx:audio("StopSoundMem", handle)
                                         end
                                     end
-                                    ::__continue249::
                                 end
-                                ::__loop_end248::
                             end;
                             (ctx).activeBossBgmIndex_ = (-1)
                         end
@@ -5490,10 +5449,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                                     do
                                                         fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, 268, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 4369))), speed, i) and 1 or 0)) ~= 0)
                                                     end
-                                                    ::__continue251::
                                                     i = i + 1
                                                 end
-                                                ::__loop_end250::
                                             end
                                         end
                                     end;
@@ -5507,10 +5464,8 @@ M.updateLateStageBoss = function(ctx, enemy)
                                                     do
                                                         fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, 269, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 4369))), speed, i) and 1 or 0)) ~= 0)
                                                     end
-                                                    ::__continue253::
                                                     i = i + 1
                                                 end
-                                                ::__loop_end252::
                                             end
                                         end
                                     end
@@ -5575,16 +5530,14 @@ M.updateLateStageBoss = function(ctx, enemy)
                                                                     local type = (function() if (bit.band(index, 1) == 0) then return 271 else return 272 end end)();
                                                                     local targetX = (function() if (type == 271) then return f32(10) else return f32(590) end end)();
                                                                     fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, type, targetX, (enemy).y, normalizeAngle16(49152), speed, index) and 1 or 0)) ~= 0);
-                                                                    goto __loop_end254
+                                                                    do break end
                                                                 end
                                                             end;
                                                             scheduled = (scheduled + math.max(interval, 80));
                                                             interval = (interval - 10)
                                                         end
-                                                        ::__continue255::
                                                         index = index + 1
                                                     end
-                                                    ::__loop_end254::
                                                 end
                                             end
                                         else
@@ -5771,42 +5724,52 @@ M.updateLateStageBoss = function(ctx, enemy)
                             local nodeType = 0;
                             do
                                 local __switch257 = (enemy).helperState
-                                if __switch257 == 11 then goto __case258
-                                elseif __switch257 == 31 then goto __case259
-                                elseif __switch257 == 51 then goto __case260
-                                elseif __switch257 == 71 then goto __case261
-                                elseif __switch257 == 91 then goto __case262
-                                elseif __switch257 == 111 then goto __case263
-                                elseif __switch257 == 141 then goto __case264
-                                elseif __switch257 == 151 then goto __case265
-                                else goto __case266 end
-                                ::__case258::;
-                                nodeType = 273;
-                                goto __switch_end256;
-                                ::__case259::;
-                                nodeType = 274;
-                                goto __switch_end256;
-                                ::__case260::;
-                                nodeType = 275;
-                                goto __switch_end256;
-                                ::__case261::;
-                                nodeType = 277;
-                                goto __switch_end256;
-                                ::__case262::;
-                                nodeType = 282;
-                                goto __switch_end256;
-                                ::__case263::;
-                                nodeType = 285;
-                                goto __switch_end256;
-                                ::__case264::;
-                                nodeType = 295;
-                                goto __switch_end256;
-                                ::__case265::;
-                                nodeType = 301;
-                                goto __switch_end256;
-                                ::__case266::;
-                                goto __switch_end256
-                                ::__switch_end256::
+                                if __switch257 == 11 then __switch257 = 1
+                                elseif __switch257 == 31 then __switch257 = 2
+                                elseif __switch257 == 51 then __switch257 = 3
+                                elseif __switch257 == 71 then __switch257 = 4
+                                elseif __switch257 == 91 then __switch257 = 5
+                                elseif __switch257 == 111 then __switch257 = 6
+                                elseif __switch257 == 141 then __switch257 = 7
+                                elseif __switch257 == 151 then __switch257 = 8
+                                else __switch257 = 9 end
+                                repeat
+                                    if __switch257 <= 1 then
+                                        nodeType = 273;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 2 then
+                                        nodeType = 274;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 3 then
+                                        nodeType = 275;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 4 then
+                                        nodeType = 277;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 5 then
+                                        nodeType = 282;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 6 then
+                                        nodeType = 285;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 7 then
+                                        nodeType = 295;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 8 then
+                                        nodeType = 301;
+                                        do break end;
+                                    end
+                                    if __switch257 <= 9 then
+                                        do break end
+                                    end
+                                until true
                             end;
                             if (nodeType ~= 0) then
                                 do
@@ -6057,10 +6020,8 @@ M.emitRecoveredFinalRootPattern = function(ctx, enemy)
                                         do
                                             fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, 268, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 4369))), speed, i) and 1 or 0)) ~= 0)
                                         end
-                                        ::__continue268::
                                         i = i + 1
                                     end
-                                    ::__loop_end267::
                                 end
                             end
                         end;
@@ -6074,10 +6035,8 @@ M.emitRecoveredFinalRootPattern = function(ctx, enemy)
                                         do
                                             fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, 269, (enemy).x, (enemy).y, normalizeAngle16((base + (i * 4369))), speed, i) and 1 or 0)) ~= 0)
                                         end
-                                        ::__continue270::
                                         i = i + 1
                                     end
-                                    ::__loop_end269::
                                 end
                             end
                         end
@@ -6142,16 +6101,14 @@ M.emitRecoveredFinalRootPattern = function(ctx, enemy)
                                                         local type = (function() if (bit.band(index, 1) == 0) then return 271 else return 272 end end)();
                                                         local targetX = (function() if (type == 271) then return f32(10) else return f32(590) end end)();
                                                         fired = (bit.bor((fired and 1 or 0), (ctx:spawnStage10FinalBossEmitter(enemy, type, targetX, (enemy).y, normalizeAngle16(49152), speed, index) and 1 or 0)) ~= 0);
-                                                        goto __loop_end271
+                                                        do break end
                                                     end
                                                 end;
                                                 scheduled = (scheduled + math.max(interval, 80));
                                                 interval = (interval - 10)
                                             end
-                                            ::__continue272::
                                             index = index + 1
                                         end
-                                        ::__loop_end271::
                                     end
                                 end
                             else

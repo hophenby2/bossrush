@@ -815,27 +815,27 @@ M.updateStage04Type40 = function(ctx, enemy, parent)
                             do
                                 local segment = 0
                                 while (segment < 20) do
-                                    do
-                                        if (math.fmod(segment, (kDivisor)[difficulty + 1]) ~= 0) then
-                                            do
-                                                goto __continue2
-                                            end
-                                        end;
-                                        local fraction = f32((f32(segment) / f32(20)));
-                                        local wave = f32((f32(4) * math.sin(((((ctx).frame_ - (segment * 7)) * kTau) / 80))));
-                                        local sourceX = f32((f32((anchorX + f32((f32(((enemy).x - anchorX)) * fraction)))) + wave));
-                                        local sourceY = f32((anchorY + f32((f32(((enemy).y - anchorY)) * fraction))));
-                                        if (sourceOnScreen)(sourceX, sourceY) then
-                                            do
-                                                ctx:playPlayerSound((ctx).bullet1SoundHandle_, 9)
-                                            end
-                                        end;
-                                        ctx:spawnProjectileSpread(4, 0, sourceX, sourceY, normalizeAngle16((chainAngle + 32768)), f32(0), ((kSpeed)[difficulty + 1] + ((timer - start) * 0.10000000000000001)), 1, 2, (16384 + (segment * 1638)), 0)
-                                    end
-                                    ::__continue2::
+                                    repeat
+                                        do
+                                            if (math.fmod(segment, (kDivisor)[difficulty + 1]) ~= 0) then
+                                                do
+                                                    do break end
+                                                end
+                                            end;
+                                            local fraction = f32((f32(segment) / f32(20)));
+                                            local wave = f32((f32(4) * math.sin(((((ctx).frame_ - (segment * 7)) * kTau) / 80))));
+                                            local sourceX = f32((f32((anchorX + f32((f32(((enemy).x - anchorX)) * fraction)))) + wave));
+                                            local sourceY = f32((anchorY + f32((f32(((enemy).y - anchorY)) * fraction))));
+                                            if (sourceOnScreen)(sourceX, sourceY) then
+                                                do
+                                                    ctx:playPlayerSound((ctx).bullet1SoundHandle_, 9)
+                                                end
+                                            end;
+                                            ctx:spawnProjectileSpread(4, 0, sourceX, sourceY, normalizeAngle16((chainAngle + 32768)), f32(0), ((kSpeed)[difficulty + 1] + ((timer - start) * 0.10000000000000001)), 1, 2, (16384 + (segment * 1638)), 0)
+                                        end
+                                    until true
                                     segment = segment + 1
                                 end
-                                ::__loop_end1::
                             end
                         end
                     end
@@ -907,25 +907,25 @@ M.updateStage04Type40 = function(ctx, enemy, parent)
             do
                 local segment = 0
                 while (segment < 20) do
-                    do
-                        if (timer ~= (60 - (segment * 3))) then
-                            do
-                                goto __continue4
-                            end
-                        end;
-                        local fraction = f32((f32(segment) / f32(20)));
-                        local pointX = f32((f32((anchorX + f32((f32(((enemy).x - anchorX)) * fraction)))) + (f32(4) * math.sin(((((ctx).frame_ - (segment * 7)) * kTau) / 80)))));
-                        local pointY = f32((anchorY + f32((f32(((enemy).y - anchorY)) * fraction))));
-                        local burst = (function() if ((#(ctx).effectMediumFrames_) > 5) then return ((ctx).effectMediumFrames_)[5 + 1] else return (-1) end end)();
-                        local spark = (function() if ((#(ctx).playerFrames_) > 14) then return ((ctx).playerFrames_)[14 + 1] else return (-1) end end)();
-                        ctx:spawnStageEffect(42, burst, 200, 29, pointX, pointY, scriptRandomAngle(u32((timer + segment))), 0, 1, 1, 24, 255, 255, 255, 192, 0);
-                        ctx:spawnStageEffect(44, spark, 80, 62, pointX, pointY, scriptRandomAngle(u32(((ctx).frame_ + segment))), 8, 1, 1, 0, 255, 255, 255, 192, 0);
-                        ctx:playPlayerSound((ctx).enemyDown1SoundHandle_, 19)
-                    end
-                    ::__continue4::
+                    repeat
+                        do
+                            if (timer ~= (60 - (segment * 3))) then
+                                do
+                                    do break end
+                                end
+                            end;
+                            local fraction = f32((f32(segment) / f32(20)));
+                            local pointX = f32((f32((anchorX + f32((f32(((enemy).x - anchorX)) * fraction)))) + (f32(4) * math.sin(((((ctx).frame_ - (segment * 7)) * kTau) / 80)))));
+                            local pointY = f32((anchorY + f32((f32(((enemy).y - anchorY)) * fraction))));
+                            local burst = (function() if ((#(ctx).effectMediumFrames_) > 5) then return ((ctx).effectMediumFrames_)[5 + 1] else return (-1) end end)();
+                            local spark = (function() if ((#(ctx).playerFrames_) > 14) then return ((ctx).playerFrames_)[14 + 1] else return (-1) end end)();
+                            ctx:spawnStageEffect(42, burst, 200, 29, pointX, pointY, scriptRandomAngle(u32((timer + segment))), 0, 1, 1, 24, 255, 255, 255, 192, 0);
+                            ctx:spawnStageEffect(44, spark, 80, 62, pointX, pointY, scriptRandomAngle(u32(((ctx).frame_ + segment))), 8, 1, 1, 0, 255, 255, 255, 192, 0);
+                            ctx:playPlayerSound((ctx).enemyDown1SoundHandle_, 19)
+                        end
+                    until true
                     segment = segment + 1
                 end
-                ::__loop_end3::
             end;
             if (((parent).helperState ~= 1) and (timer >= 80)) then
                 do
@@ -1031,10 +1031,8 @@ M.updateStage04Type41 = function(ctx, enemy, parent)
                             end
                         end
                     end
-                    ::__continue6::
                     wave = wave + 1
                 end
-                ::__loop_end5::
             end
         end
     end;
@@ -1194,9 +1192,7 @@ M.updateStage04Type42Or43 = function(ctx, enemy, parent)
                                     end
                                 end
                             end
-                            ::__continue8::
                         end
-                        ::__loop_end7::
                     end;
                     local kIntervalC = {48, 30, 18, 14, 12};
                     local kSpeedC = {4, 5, 5.5, 6.5, 7.7000000000000001};

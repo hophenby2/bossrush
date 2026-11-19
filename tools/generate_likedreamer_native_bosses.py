@@ -32,6 +32,109 @@ def unwrap(n):
  while n.get('kind') in ('ImplicitCastExpr','ParenExpr','ExprWithCleanups','MaterializeTemporaryExpr','CXXBindTemporaryExpr','FullExpr','ConstantExpr') and children(n): n=children(n)[0]
  return n
 
+def lower_lua51(source):
+ """将生成器的前向跳转还原为分支和循环，兼容禁用 goto 的 Sub 引擎。"""
+ lines = source.splitlines()
+ switches = [i for i, line in enumerate(lines)
+             if re.fullmatch(r'\s*local __switch\d+ = .+', line)
+             and i + 1 < len(lines) and re.search(r'\bgoto\b', lines[i + 1])]
+ # 先处理内层 switch；用分支序号保留 C++ case 的贯穿行为。
+ for start in reversed(switches):
+  match = re.fullmatch(r'(\s*)local (__switch\d+) = (.+)', lines[start])
+  indent, value, expression = match.groups()
+  finish = next(i for i in range(start + 1, len(lines))
+                if re.fullmatch(re.escape(indent) + r'::__switch_end\d+::', lines[i]))
+  target = lines[finish].strip()[2:-2]
+  cursor, dispatch = start + 1, []
+  while True:
+   branch = re.fullmatch(re.escape(indent) + r'(if|elseif) ' + value + r' == (.+) then goto (__case\d+)', lines[cursor])
+   if not branch:
+    break
+   dispatch.append(branch.groups())
+   cursor += 1
+  fallback = re.fullmatch(re.escape(indent) + (r'else goto (\w+) end' if dispatch else r'goto (\w+)'), lines[cursor])
+  if not fallback:
+   raise ValueError('无法转换 switch 分派：' + lines[cursor])
+  cursor += 1
+  cases = []
+  for line in lines[cursor:finish]:
+   label = re.fullmatch(re.escape(indent) + r'::(__case\d+)::;?', line)
+   if label:
+    cases.append((label[1], []))
+   elif cases:
+    cases[-1][1].append(line)
+   elif line.strip():
+    raise ValueError('switch 分支前有未识别语句：' + line)
+  positions = {label: i for i, (label, _) in enumerate(cases, 1)}
+  positions[target] = len(cases) + 1
+  result = [indent + 'local ' + value + ' = ' + expression]
+  for keyword, condition, label in dispatch:
+   result.append(indent + keyword + ' ' + value + ' == ' + condition + ' then ' + value + ' = ' + str(positions[label]))
+  if dispatch:
+   result.append(indent + 'else ' + value + ' = ' + str(positions[fallback[1]]) + ' end')
+  else:
+   result.append(indent + value + ' = ' + str(positions[fallback[1]]))
+  result.append(indent + 'repeat')
+  for index, (_, body) in enumerate(cases, 1):
+   if not any(line.strip() for line in body):
+    continue
+   result.append(indent + '    if ' + value + ' <= ' + str(index) + ' then')
+   for line in body:
+    line = re.sub(r'\bgoto ' + target + r'\b', 'do break end', line)
+    result.append('        ' + line if line else '')
+   result.append(indent + '    end')
+  result.append(indent + 'until true')
+  lines[start:finish + 1] = result
+
+ # 每次取最早的 continue 标签，保证内层循环先完成转换。
+ while True:
+  found = next(((i, re.fullmatch(r'(\s*)::(__continue\d+)::', line))
+                for i, line in enumerate(lines) if re.fullmatch(r'\s*::__continue\d+::', line)), None)
+  if found is None:
+   break
+  marker, match = found
+  body_indent, cont = match.groups()
+  indent = body_indent[:-4]
+  start = next(i for i in range(marker - 1, -1, -1)
+               if re.fullmatch(re.escape(indent) + r'(?:while .+ do|for .+ do|repeat)', lines[i]))
+  finish = next(i for i in range(marker + 1, len(lines))
+                if re.fullmatch(re.escape(indent) + r'(?:end|until .+)', lines[i]))
+  end_match = re.fullmatch(re.escape(indent) + r'::(__loop_end\d+)::', lines[finish + 1])
+  if not end_match:
+   raise ValueError('无法定位循环结束标签：' + lines[finish + 1])
+  target = end_match[1]
+  body, step = lines[start + 1:marker], lines[marker + 1:finish]
+  has_continue = any(re.search(r'\bgoto ' + cont + r'\b', line) for line in body)
+  has_break = any(re.search(r'\bgoto ' + target + r'\b', line) for line in body)
+  # 当前恢复源码的 continue 不跨 switch；以后出现这种结构时须显式处理，不能误跳。
+  for i, line in enumerate(body):
+   if not re.search(r'\bgoto (?:' + cont + '|' + target + r')\b', line):
+    continue
+   for j in range(i):
+    nested = re.fullmatch(r'(\s*)repeat', body[j])
+    if nested and len(nested[1]) >= len(body_indent):
+     closed = any(re.fullmatch(re.escape(nested[1]) + r'until .+', part) for part in body[j + 1:i])
+     if not closed:
+      raise ValueError('循环跳转跨越 switch，需显式转换：' + line)
+  if has_continue:
+   result = [lines[start]]
+   if has_break:
+    result.append(body_indent + 'local ' + target + ' = false')
+   result.append(body_indent + 'repeat')
+   for line in body:
+    line = re.sub(r'\bgoto ' + cont + r'\b', 'do break end', line)
+    line = re.sub(r'\bgoto ' + target + r'\b', target + ' = true; do break end', line)
+    result.append('    ' + line if line else '')
+   result.append(body_indent + 'until true')
+   if has_break:
+    result.append(body_indent + 'if ' + target + ' then break end')
+   result.extend(step)
+   result.append(lines[finish])
+  else:
+   result = [lines[start]] + [re.sub(r'\bgoto ' + target + r'\b', 'do break end', line) for line in body] + step + [lines[finish]]
+  lines[start:finish + 2] = result
+ return '\n'.join(lines) + '\n'
+
 class Lua:
  def __init__(self, tree, unit):
   self.tree,self.unit=tree,unit
@@ -313,7 +416,7 @@ class Lua:
    target=('M.'if n['kind']=='CXXMethodDecl'else'')+ident(n['name'])
    out.append(target+' = '+self.function(n,n['kind']=='CXXMethodDecl'))
   out += ['cpp.install(M)', 'return M']
-  return '\n\n'.join(out)+'\n'
+  return lower_lua51('\n\n'.join(out)+'\n')
 
 
 def compile_unit(reference, directory, name, filename, names):
@@ -368,7 +471,17 @@ def compile_unit(reference, directory, name, filename, names):
 
 
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('reference',type=Path);parser.add_argument('--unit',choices=UNITS,action='append');args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('reference',type=Path,nargs='?');parser.add_argument('--unit',choices=UNITS,action='append');parser.add_argument('--lower-existing',action='store_true',help='仅将已有生成物转换为 Sub 兼容语法，不运行编译或验证');args=parser.parse_args()
+ if args.lower_existing:
+  outputs=[]
+  for name in args.unit or UNITS:
+   target=DEST/(name+'.lua')
+   outputs.append((target,lower_lua51(target.read_text(encoding='utf-8'))))
+  for target,source in outputs:
+   with target.open('w',encoding='utf-8',newline='\n') as handle:handle.write(source)
+   print(target.name,'已转换为 Sub 兼容语法',flush=True)
+  return
+ if args.reference is None:parser.error('重新生成需要提供复原源码目录')
  reference=args.reference
  if not (reference/'stage_runtime.h').exists():reference=reference/'reverse/reconstructed/project/src'
  with tempfile.TemporaryDirectory(prefix='likedreamer-native-')as path:

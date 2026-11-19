@@ -152,6 +152,13 @@ local function resolve(kind,name)
     if name and has(kind,image(name)) then return image(name) end
     return name
 end
+-- 原作混用字符串类型和数字类型；Sub 的底层接口只接受数字，字符串查询还需对应资源前缀。
+function stg.CheckRes(kind,name)
+    if type(kind)=='string' then
+        return CheckRes(kind,resolve(kind,name))
+    end
+    return lstg.CheckRes(kind,name)
+end
 E.LoadTexture,E.LoadImage,E.LoadAnimation=loadTexture,loadImage,loadAnimation
 stg.LoadTexture,stg.LoadImage=loadTexture,loadImage
 stg.IsValid=IsValid

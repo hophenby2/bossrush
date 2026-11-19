@@ -40,7 +40,8 @@ local function draw(m,frame,particle)
     local a=m.alpha*(particle and particle.alpha or 1)
     if particle then pos,scale,rotation=particle.pos,particle.scale,particle.rotation end
     local tint=Color(255*a,255*m.color[1]*a,255*m.color[2]*a,255*m.color[3]*a)
-    SetZBufferEnable(m.label~="1003",not m.depth)
+    -- Sub 的深度状态要求数字；第二参保留给 LuaSTG-x 的深度写入开关。
+    SetZBufferEnable(m.label~="1003" and 1 or 0,not m.depth)
     local u,v=m.uv and m.uv[1]*frame or 0,m.uv and m.uv[2]*frame or 0
     local cx,sx,cy,sy,cz,sz=math.cos(rotation[1]),math.sin(rotation[1]),math.cos(rotation[2]),math.sin(rotation[2]),math.cos(rotation[3]),math.sin(rotation[3])
     for _,part in ipairs(data) do
