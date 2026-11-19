@@ -1,0 +1,81 @@
+{
+  "source_sha256": {
+    "src/THMHJ/THMHJ/Batch.cs": "36f2bdd0ddde5899f016db3cef70100ac8e8c45fac1d91f71fe02fa76aac88c7",
+    "src/THMHJ/THMHJ/Lase.cs": "df0206f30cce3b501c584cc3427a5a1257765658c5840a4429cbe09926eeca0b",
+    "src/THMHJ/THMHJ/Barrage.cs": "0bb4e046a50b0e3dc781aac533933236ca0e68553f0dc5e5d4fffe0ea7e34223",
+    "src/THMHJ/THMHJ/Event.cs": "238f372457ed7830a6bf81d1e75de114aecaa8b15fcec02ccf9504b600b641dd",
+    "src/THMHJ/THMHJ/EventRead.cs": "15f2215bcda5ddec0838c70fd2eb1d6181102f7303103c5937ca19a0646ccc57",
+    "src/THMHJ/THMHJ/Execution.cs": "ca68955915869ce4919f1701296963840ee37205ed98a14231a27bd2bd5b1e65",
+    "src/THMHJ/THMHJ/BExecution.cs": "fd3f2ba0076396decb06a225332cfadf0ddcb9f761552b958a31362efab43d6c",
+    "src/THMHJ/THMHJ/COExecution.cs": "3f3568d66689132d6ef98d84520197d71c33c2977e7602717a1cafd3948e1b78",
+    "src/THMHJ/THMHJ/LExecution.cs": "eb3c2ab2cd5cede592012850612f6a906b8a208508d4e62a067269891796e086",
+    "src/THMHJ/THMHJ/BLExecution.cs": "981681616a9febda08b0ab6e034f873b6a4ddfafe85fff0b1dbc49a385dfd6b0",
+    "src/THMHJ/THMHJ/CExecution.cs": "4ab831b9870b57e846166cedad8660cccf011879f88bdf3971e8d86e83769dad",
+    "src/THMHJ/THMHJ/Cover.cs": "16dbe05263861dcd630f7f860f1f52fd15a72e1872933d3688e8503473362b8b",
+    "src/THMHJ/THMHJ/Force.cs": "2339e3fdc6b761dfb21e6365f194366c7ed80c258500a22d287dc5b5540929b8",
+    "src/THMHJ/THMHJ/Rebound.cs": "17f8a2ef8cae37068b0b4907b5fdabd2f9b85e19001882c813b07ee1382588e5",
+    "src/THMHJ/THMHJ/Center.cs": "f45ca5f8f96a057516d0b0510a71f928c5fb5bf27e21fefaf7b6473597d08f98",
+    "src/THMHJ/THMHJ/Time.cs": "a866c7619f58e8335280a39425b0e51b8a7f9c1c346cca4ae5577cc3e5f06592",
+    "src/THMHJ/THMHJ/GlobalEvent.cs": "5c7af810cb8939e6c1f3841f5e00d44636e9fe4efa9e721149bdc4c35b1fe9a0",
+    "src/THMHJ/THMHJ/Layer.cs": "4809771204d8a0ebba28e3f63d565eab72ee27ba7bfb03af30c79396ab06562d",
+    "src/THMHJ/THMHJ/LayerManager.cs": "ad729f959004e13324049146cd28c7d87e4a83149429e098ec5692445a737e3f",
+    "src/THMHJ/THMHJ/Grazebox.cs": "40a15c3928de983fb455f27e77e8e452068d7ff7de5a5c76a22d765341b04d07",
+    "src/THMHJ/THMHJ/Shadows.cs": "8dc4cb5c89fe3bb56073855cc3abbf6ee47c2a964fb5bf7553522b871c83eb76",
+    "src/THMHJ/THMHJ/CSManager.cs": "389ac77251f14100d07f256d14c5556cb07ccfecda7389d064a668f002c20b4d",
+    "src/THMHJ/THMHJ/CrazyStorm.cs": "09be0ef39ff4090532799233f109b49e5e4e92cfa6e639163550d00993ecf8dc",
+    "src/THMHJ/THMHJ/BarrageType.cs": "e70ffdd01e8df651dd7d3993f64372694d46576baa690457e41270c9ca3bca5a",
+    "src/THMHJ/THMHJ/Line.cs": "e4f429f44899f6d488af6661605add8980c2d9ae1bc3fb3e1ffa49fccc6c9b7f",
+    "src/THMHJ/THMHJ/PointF.cs": "9d5ed935e343785fbc6e36d2b3f814ddcb77d6297ee908041028d7b36d9ad1b5",
+    "src/THMHJ/THMHJ/SakuraStatus.cs": "3b1784e727df24b6d3536fa275a1c82543f8dc5c07a38c7fe0b8f490d29859bd",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/3.xna": "04c3412906a073a4147cc1fef8c68cc0712717dab58af973ca3104eeb99d6017",
+    "src/THMHJ/bin/x86/Debug/net461/Content/Data/b652.xna": "d1bac877b8a9622fdc822d2915513a240c2fb63dadfd0887f17e2591f5c6a3a0"
+  },
+  "omitted_methods": {
+    "Batch": [],
+    "Lase": [],
+    "Barrage": [
+      "Draw",
+      "LUpdate",
+      "LDraw"
+    ],
+    "Event": [],
+    "EventRead": [],
+    "Execution": [],
+    "BExecution": [],
+    "COExecution": [],
+    "LExecution": [],
+    "BLExecution": [],
+    "CExecution": [],
+    "Cover": [],
+    "Force": [],
+    "Rebound": [],
+    "Center": [],
+    "Time": [],
+    "GlobalEvent": [],
+    "Layer": [],
+    "LayerManager": [],
+    "Grazebox": [],
+    "Shadows": [],
+    "CSManager": [
+      "Draw",
+      "DrawUnderActor",
+      "DrawUnderBarrage",
+      "DrawOverTop",
+      "DrawUnderneath"
+    ],
+    "CrazyStorm": [
+      "Draw"
+    ],
+    "BarrageType": [],
+    "Line": [],
+    "PointF": [],
+    "SakuraStatus": []
+  },
+  "fixture_sha256": "8c1df4c0d51424da88790037148265fec5d200c0c7f986db080cf5eb65084fa0",
+  "harness_sha256": "29ddc5275062027014f531b37f9cc94b7e48689b4564a36d841d29cb9c40db51",
+  "cases": [
+    "静止",
+    "移动",
+    "按3.5像素每帧追灯"
+  ]
+}

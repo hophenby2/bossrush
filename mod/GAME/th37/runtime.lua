@@ -4,6 +4,14 @@
 local R={patterns={},classes={},assets={},objects=setmetatable({},{__mode='k'})}
 local D=dofile('mod/GAME/th37/catalogue.lua')
 local floor,abs,min,max=math.floor,math.abs,math.min,math.max
+local float=require('ffi').typeof('float')
+local function f32(x) return tonumber(float(x)) end
+local radians,degrees,pi=f32(.0174532924),f32(57.29578),f32(math.pi)
+local function sourceCos(a) return f32(math.cos(f32(f32(a)*radians))) end
+local function sourceSin(a) return f32(math.sin(f32(f32(a)*radians))) end
+local function velocity(o,speed,direction)
+    return f32(f32(f32(o.xscale or 1)*f32(speed))*sourceCos(direction)),f32(f32(f32(o.yscale or 1)*f32(speed))*sourceSin(direction))
+end
 local function trunc(x) return x<0 and math.ceil(x) or floor(x) end
 local function valid(o) return o and IsValid(o) end
 local function rnd(a) return a~=0 and ran:Float(-a,a) or 0 end
@@ -15,7 +23,13 @@ function R.player(context)
     local c=context and (context.controller or context);local t=c and c.weaponTarget
     if t then return t.X+93,t.Y+(-13) end
     return valid(player) and player.x+317 or 317,valid(player) and 227-player.y or 407 end
-local function angle(x,y,tx,ty) return math.deg(math.atan2(ty-y,tx-x)) end
+local function angle(x,y,tx,ty)
+    -- Main.Twopointangle保留原作竖直线的0.1分母及单精度运算。
+    local dx,dy=f32(f32(tx)-f32(x)),f32(f32(ty)-f32(y))
+    local a=f32(math.atan(f32(dy/(dx==0 and f32(dx+f32(.1)) or dx))))
+    if dx<0 then a=f32(a+pi) end
+    return f32(a*degrees)
+end
 local function direction(v,o,x,y,point)
     if v==-99999 then local px,py=R.player(o);return angle(x,y,px,py)
     elseif v==-99998 then return angle(x,y,(o.x or x)-4,(o.y or y)+16)
@@ -26,10 +40,18 @@ local intFields={t=true,tiao=true,r=true,life=true,type=true,sonlife=true}
 local boolFields={Mist=true,Dispel=true,Blend=true,Afterimage=true,Outdispel=true,Invincible=true}
 local function set(o,key,v)
     if intFields[key] then v=trunc(v) end
+    if o.is_projectile and type(v)=='number' and not intFields[key] then v=f32(v) end
     if boolFields[key] then v=v~=0 end
     o[key]=v
     if key=='speed' or key=='speedd' or key=='xscale' or key=='yscale' then o.motion_dirty=true end
-    if key=='sonspeed' or key=='sonspeedd' then o.sonmotion_dirty=true end
+    if key=='sonspeed' or key=='sonspeedd' then
+        -- BExecution立即写回速度分量，下一帧力场在这个速度上继续叠加。
+        o.sonmotion_dirty=true
+        if o.is_projectile then
+            o.mx,o.my=velocity(o,o.sonspeed or 0,o.sonspeedd or 0)
+            o.sonmotion_dirty=false
+        end
+    end
     if key=='aspeed' or key=='aspeedd' then o.accel_dirty=true end
     if key=='sonaspeed' or key=='sonaspeedd' then o.sonaccel_dirty=true end
 end
@@ -65,12 +87,14 @@ local function interpolate(o)
             local x,y=c.x,c.y
             if c.mode=='follow' then x=R.player();y=o.fy end
             if o.is_center and valid(o.host) then
-                local hx,hy=o.host.x+224,240-o.host.y
+                local hx,hy=f32(o.host.x+224),f32(240-o.host.y)
                 if c.mode=='follow' then
                     local px=R.player();o.host.x=(hx*19+px-93)/20-224
                     o.ox=(o.ox*19+px-93)/20
                 else
-                    o.host.x,o.host.y=(hx*19+x-93)/20-224,240-(hy*19+y)/20
+                    -- CExecution用当前位置加差值；不能改写成加权平均后再舍入。
+                    o.host.x=f32(hx+f32(f32(f32(x-93)-hx)/20))-224
+                    o.host.y=240-f32(hy+f32(f32(y-hy)/20))
                     o.ox,o.oy=(o.ox*19+x-93)/20,(o.oy*19+y)/20
                 end
             elseif o.is_center then
@@ -105,24 +129,33 @@ local function motion(o,son,scale)
     local a=son and 'sonaspeed' or 'aspeed';local ad=son and 'sonaspeedd' or 'aspeedd'
     local dirty=son and 'sonmotion_dirty' or 'motion_dirty';local accel=son and 'sonaccel_dirty' or 'accel_dirty'
     if o[dirty] or o.mx==nil then
-        o.mx=(o.xscale or 1)*(o[s] or 0)*cos(o[d] or 0);o.my=(o.yscale or 1)*(o[s] or 0)*sin(o[d] or 0);o[dirty]=false
+        if son then o.mx,o.my=velocity(o,o[s] or 0,o[d] or 0)
+        else o.mx=(o.xscale or 1)*(o[s] or 0)*cos(o[d] or 0);o.my=(o.yscale or 1)*(o[s] or 0)*sin(o[d] or 0) end
+        o[dirty]=false
     end
     if o[accel] or o.ax==nil then
-        o.ax=(o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0);o[accel]=false
+        if son then o.ax,o.ay=velocity(o,o[a] or 0,o[ad] or 0)
+        else o.ax=(o.xscale or 1)*(o[a] or 0)*cos(o[ad] or 0);o.ay=(o.yscale or 1)*(o[a] or 0)*sin(o[ad] or 0) end
+        o[accel]=false
     end
-    o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale
+    if son then
+        o.mx=f32(o.mx+f32(o.ax*f32(scale)));o.my=f32(o.my+f32(o.ay*f32(scale)))
+    else o.mx=o.mx+o.ax*scale;o.my=o.my+o.ay*scale end
     if son and (o.sonspeed or 0)~=0 then
         -- Barrage.Update用去掉横纵倍率后的速度更新逻辑方向，事件随后可修改head。
         local heading
         if o.my~=0 then
             local vx,vy=o.mx/(o.xscale or 1),o.my/(o.yscale or 1)
-            heading=90-math.deg(math.atan(vx/vy))+(o.my<0 and 180 or 0)
+            local a=f32(f32(pi/2)-f32(math.atan(f32(f32(vx)/f32(vy)))))
+            if o.my<0 then a=f32(a+pi) end
+            heading=f32(a*degrees)
         else heading=o.mx>=0 and 0 or 180 end
         if heading==heading then
             if o.sonspeed>0 then o.sonspeedd=heading end
             if o.Withspeedd then o.head=heading end
         end
     end
+    if son then return f32(o.mx*f32(scale)),f32(o.my*f32(scale)) end
     return o.mx*scale,o.my*scale
 end
 -- Lua模块缓存跨练习重试保留；动态切出的精灵也必须放全局池，避免关卡池清除后留下假缓存。
@@ -219,6 +252,7 @@ R.classes.projectile=Class(bullet,{
         -- 不经过通用雾化类；CrazyStorm自己有15帧出生与事件时钟。
         effectAssets()
         s.is_projectile=true;s.kind='projectile';b.mhj=s;b.bound=false;b.group=GROUP.ENEMY_BULLET;b.layer=LAYER.ENEMY_BULLET;b.vx,b.vy=0,0
+        s.fx,s.fy=f32(s.fx),f32(s.fy)
         b._a,b._r,b._g,b._b=255,255,255,255;b._blend='';s.age=0;s.changes={};s.limits=s.limits or {};s.object=nil
         s.shadows={};s.previousX,s.previousY=s.fx,s.fy
         if s.Withspeedd then s.head=s.sonspeedd end
@@ -231,7 +265,7 @@ R.classes.projectile=Class(bullet,{
         if t>0 then
             -- 原Barrage.Update先积分，再更新事件；速度变化从下一运动帧生效。
             if not s.dis then
-                local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=s.fx+dx,s.fy+dy
+                local dx,dy=motion(s,true,s.controller.slow or 1);s.fx,s.fy=f32(s.fx+dx),f32(s.fy+dy)
             end
             updateShadows(s)
             if s.Sonevents then s.Sonevents(s,t,R) end
@@ -419,7 +453,8 @@ end
 local function area(o,s,c,center)
     if s.layerid~=o.parentid then return false end
     if o.type==1 and s.parentid~=o.controlid-1 then return false end
-    local x,y=o.x-4+c.offsetx,o.y+16+c.offsety
+    -- Cover.Update的未绑定区域在原始绝对坐标中，不随弹幕中心移动。
+    local x,y=o.x-4,o.y+16
     if center then x,y=center.fx,center.fy end
     local dx,dy=s.fx-x,s.fy-y
     if o.Circle then return dx*dx+dy*dy<=max(o.halfw,o.halfh)^2 end
@@ -462,18 +497,20 @@ local function field(o,c,t)
             end
         end end
     elseif o.kind=='force' then
-        local x,y=o.x-4+c.offsetx,o.y+16+c.offsety
+        local x,y=o.x-4,o.y+16
         local function forceAngle(fx,fy)
             local a=o.addaspeedd or 0
             if o.Suction or o.Repulsion then a=angle(fx,fy,x,y)+(o.Repulsion and 180 or 0) end
             return a
         end
-        for b,s in pairs(c.bullets) do if valid(b) and s.kind~='laser' and s.Force and (not s.Mist or s.age>15) and area(o,s,c) then
+        -- Force.Update也会在雾化期间积累速度；Barrage到第16帧才开始位移。
+        for b,s in pairs(c.bullets) do if valid(b) and s.Force and area(o,s,c) then
             local a=forceAngle(s.fx,s.fy)
             if s.mx==nil or s.sonmotion_dirty then
-                s.mx=(s.xscale or 1)*s.sonspeed*cos(s.sonspeedd);s.my=(s.yscale or 1)*s.sonspeed*sin(s.sonspeedd);s.sonmotion_dirty=false
+                s.mx,s.my=velocity(s,s.sonspeed,s.sonspeedd);s.sonmotion_dirty=false
             end
-            s.mx=s.mx+(s.xscale or 1)*(o.addaspeed or 0)*cos(a);s.my=s.my+(s.yscale or 1)*(o.addaspeed or 0)*sin(a)
+            local ax,ay=velocity(s,o.addaspeed or 0,a)
+            s.mx,s.my=f32(s.mx+ax),f32(s.my+ay)
         end end
     end
 end
@@ -484,6 +521,13 @@ local function reset(c)
     local initial=c.pattern.center
     c.emitters={};c.center=copy{fx=initial[1],fy=initial[2],ox=initial[1],oy=initial[2],speed=initial[3],speedd=initial[4],aspeed=initial[5],aspeedd=initial[6],is_center=true,host=c.host}
     for _,spec in ipairs(c.pattern.emitters) do c.emitters[#c.emitters+1]=emitter(spec,c) end
+    -- Layer.Update先作用于已有弹体，再生成新弹；新生魂不能提前吃到出生帧的力场。
+    local order={force=1,rebound=2,cover=3,laser=4,batch=5}
+    table.sort(c.emitters,function(a,b)
+        if a.parentid~=b.parentid then return a.parentid<b.parentid end
+        if order[a.kind]~=order[b.kind] then return order[a.kind]<order[b.kind] end
+        return a.id<b.id
+    end)
 end
 function R.controller(host,id,road)
     local p=R.loadPattern(id)
@@ -497,7 +541,7 @@ function R.tick(c)
     local t=c.time;local center=c.center
     if c.pattern.globalEvents then c.pattern.globalEvents(c,t,R) end
     t=c.time
-    if valid(c.host) then center.ox,center.oy=c.host.x+317,227-c.host.y end
+    if valid(c.host) then center.ox,center.oy=f32(c.host.x+317),f32(227-c.host.y) end
     if c.pattern.centerAvailable then
         c.offsetx=center.ox-center.fx;c.offsety=center.oy-center.fy
     else c.offsetx,c.offsety=0,0 end
@@ -505,7 +549,7 @@ function R.tick(c)
         o.active=ot>=1 and ot<=o.life
         if ot<1 or ot>o.life then return end
         o.time=ot
-        local mx,my=motion(o,false);o.x,o.y=o.x+mx,o.y+my
+        local mx,my=motion(o,false);o.x,o.y=f32(o.x+mx),f32(o.y+my)
         if o.fx then o.fx=o.fx+mx end;if o.fy then o.fy=o.fy+my end
         o.bound_source=bound
         if o.kind~='rebound' and o.Parentevents then o.Parentevents(o,ot,R) end
@@ -533,7 +577,7 @@ function R.tick(c)
         local dx,dy=motion(center,false)
         -- 保留原Center.Update的ox连续累加speedx、speedy这一行为。
         center.ox=center.ox+dx+dy
-        if valid(c.host) then c.host.x,c.host.y=c.host.x+dx,c.host.y-dy end
+        if valid(c.host) then c.host.x,c.host.y=f32(c.host.x+224+dx)-224,240-f32(240-c.host.y+dy) end
         c.pattern.centerEvents(center,t,R);interpolate(center)
     end
 end

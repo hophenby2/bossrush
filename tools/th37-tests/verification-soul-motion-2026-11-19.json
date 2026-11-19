@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-19",
+  "scope": "仅彷徨的空蝉的灯笼、影子、追踪魂及其减速区域",
+  "comparison": {
+    "source": "原始C#直接编译",
+    "cases": [
+      {
+        "name": "静止",
+        "points": 1298,
+        "max_position_error_px": 4.664e-05
+      },
+      {
+        "name": "移动",
+        "points": 1298,
+        "max_position_error_px": 7.594e-05
+      },
+      {
+        "name": "追灯",
+        "points": 1059,
+        "max_position_error_px": 0.04629819
+      }
+    ],
+    "total_points": 3655,
+    "max_allowed_error_px": 0.05,
+    "speed_phases_and_lifetimes_match": true,
+    "missing": 0,
+    "extra": 0,
+    "fixture_sha256": "8c1df4c0d51424da88790037148265fec5d200c0c7f986db080cf5eb65084fa0"
+  },
+  "native": {
+    "level": 35,
+    "passed": true,
+    "exit": 0,
+    "error": null,
+    "source_sha256": {
+      "THlib/ext/ext.lua": "893ceb10ed664d1ea1bf95d24c47406dbbd84567c6d24a3b8cc1dac0aa4643bd",
+      "THlib/native_time.lua": "e6f802b1f02423599417b6fd268b71e8bd914f497b0e274d5d392f56bbdb8657",
+      "THlib/native_players.lua": "8c32a5c1c6ae9012b456f5bd28b9fca27c7e2723f809b17daa47fd69c1d226b3",
+      "mod/GAME/th37/runtime.lua": "e92b1089ae7432e12ff212e38680c6afdb06d79ab219bfc4c786fa29ffdb5385",
+      "mod/GAME/th37/patterns/652.lua": "02a835ff9fb9debea538892a8f8dd7826147eb62be9e38cf7f618112ae5c6cf9",
+      "macos/lua/test.lua": "d5f446c2292f23e33d532d55d917e21a5f9e7da5e7eeff291cc96c899ca54764",
+      "macos/lua/source_logic_probe.lua": "03063159e66391105957e3e5375b08fdea7b0e90b1edde6b9c251b5b78a3f1cc",
+      "macos/lua/source_logic_mechanics.lua": "9544e395f064c4d132a3ebff961bacd50b2b24c2e2a316c38eef620337a7348c"
+    },
+    "card": 37064,
+    "logic_frames": 900,
+    "checkpoint": "d9553d6936f924d582a9cccb2ecdbe506d806c9d9d3b55a6a65ca9e542b72500",
+    "fps": 60.601464583848,
+    "renderer": "macOS_GPUFamily2_v1 / Apple M4 Max",
+    "assertions": [
+      "[LOG] SOURCE_LOGIC: 彷徨的空蝉真实引擎魂位移、追踪和灯笼触发通过"
+    ]
+  }
+}
